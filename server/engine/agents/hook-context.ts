@@ -7,6 +7,6 @@
  */
 
 export type AgentHarnessHookContext = unknown;
-export function buildAgentHookContext(..._args: unknown[]): unknown {
+export function buildAgentHookContext(..._args: any[]): any {
   return undefined;
 }

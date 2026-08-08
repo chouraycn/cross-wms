@@ -12,7 +12,7 @@ import {
 } from "./talk-events.js";
 
 /** 规范化可选字符串：去空白后返回，空串返回 undefined。 */
-function normalizeOptionalString(value: unknown): string | undefined {
+function normalizeOptionalString(value: any): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }
@@ -65,12 +65,12 @@ export type TalkSessionController = {
   readonly recentEvents: readonly TalkEvent[];
   clearActiveTurn(): void;
   emit<TPayload>(input: TalkEventInput<TPayload>): TalkEvent<TPayload>;
-  ensureTurn(params?: { payload?: unknown; turnId?: string }): TalkEnsureTurnResult;
-  startTurn(params?: { payload?: unknown; turnId?: string }): TalkEnsureTurnResult;
-  endTurn(params?: { payload?: unknown; turnId?: string }): TalkTurnResult;
-  cancelTurn(params?: { payload?: unknown; turnId?: string }): TalkTurnResult;
-  finishOutputAudio(params?: { payload?: unknown; turnId?: string }): TalkEvent | undefined;
-  startOutputAudio(params?: { payload?: unknown; turnId?: string }): TalkEnsureTurnResult;
+  ensureTurn(params?: { payload?: any; turnId?: string }): TalkEnsureTurnResult;
+  startTurn(params?: { payload?: any; turnId?: string }): TalkEnsureTurnResult;
+  endTurn(params?: { payload?: any; turnId?: string }): TalkTurnResult;
+  cancelTurn(params?: { payload?: any; turnId?: string }): TalkTurnResult;
+  finishOutputAudio(params?: { payload?: any; turnId?: string }): TalkEvent | undefined;
+  startOutputAudio(params?: { payload?: any; turnId?: string }): TalkEnsureTurnResult;
 };
 
 /**
@@ -90,7 +90,7 @@ export type TalkSessionControllerOptions = {
   sequencer?: TalkEventSequencer;
 };
 
-function defaultTalkEventPayload(payload: unknown): unknown {
+function defaultTalkEventPayload(payload: any): any {
   return payload === undefined ? {} : payload;
 }
 
@@ -139,14 +139,14 @@ export function createTalkSessionController(
     return activeTurnId;
   };
 
-  const ensureTurn = (ensureParams: { payload?: unknown; turnId?: string } = {}) => {
+  const ensureTurn = (ensureParams: { payload?: any; turnId?: string } = {}) => {
     if (activeTurnId) {
       return { turnId: activeTurnId };
     }
     return startTurn(ensureParams);
   };
 
-  const startTurn = (startParams: { payload?: unknown; turnId?: string } = {}) => {
+  const startTurn = (startParams: { payload?: any; turnId?: string } = {}) => {
     const turnId = normalizeOptionalString(startParams.turnId) ?? `${turnIdPrefix}-${++turnSeq}`;
     outputAudioActive = false;
     activeTurnId = turnId;
@@ -162,7 +162,7 @@ export function createTalkSessionController(
 
   const finishTurn = (
     type: "turn.ended" | "turn.cancelled",
-    paramsForTurn: { payload?: unknown; turnId?: string } = {},
+    paramsForTurn: { payload?: any; turnId?: string } = {},
   ): TalkTurnResult => {
     const turnId = resolveActiveTurn(paramsForTurn.turnId);
     if (typeof turnId !== "string") {

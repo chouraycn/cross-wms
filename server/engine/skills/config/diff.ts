@@ -1,15 +1,15 @@
 export interface DiffEntry {
   path: string;
   op: 'add' | 'remove' | 'replace';
-  oldValue?: unknown;
-  newValue?: unknown;
+  oldValue?: any;
+  newValue?: any;
 }
 
-function isObject(value: unknown): value is Record<string, unknown> {
+function isObject(value: any): value is Record<string, any> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
-function isArray(value: unknown): value is unknown[] {
+function isArray(value: any): value is any[] {
   return Array.isArray(value);
 }
 
@@ -17,7 +17,7 @@ function getPath(parentPath: string, key: string | number): string {
   return parentPath ? `${parentPath}.${key}` : String(key);
 }
 
-export function deepDiff(obj1: unknown, obj2: unknown, path = ''): DiffEntry[] {
+export function deepDiff(obj1: any, obj2: any, path = ''): DiffEntry[] {
   const diffs: DiffEntry[] = [];
 
   if (obj1 === obj2) {
@@ -122,10 +122,10 @@ export function deepDiff(obj1: unknown, obj2: unknown, path = ''): DiffEntry[] {
   return diffs;
 }
 
-function getNestedValue(obj: unknown, path: string): unknown {
+function getNestedValue(obj: any, path: string): any {
   if (!path) return obj;
   const parts = path.split('.');
-  let current: unknown = obj;
+  let current: any = obj;
 
   for (const part of parts) {
     if (current === null || current === undefined) {
@@ -148,12 +148,12 @@ function getNestedValue(obj: unknown, path: string): unknown {
   return current;
 }
 
-function setNestedValue(obj: unknown, path: string, value: unknown): unknown {
+function setNestedValue(obj: any, path: string, value: any): any {
   if (!path) return value;
 
   const parts = path.split('.');
   const root = structuredClone(obj);
-  let current: unknown = root;
+  let current: any = root;
 
   for (let i = 0; i < parts.length - 1; i++) {
     const part = parts[i];
@@ -169,7 +169,7 @@ function setNestedValue(obj: unknown, path: string, value: unknown): unknown {
       const index = Number(part);
       if (!Number.isNaN(index)) {
         if (current[index] === null || current[index] === undefined) {
-          current[index] = isNextArray ? ([] as unknown) : ({} as unknown);
+          current[index] = isNextArray ? ([] as any) : ({} as any);
         }
         current = current[index];
       }
@@ -189,12 +189,12 @@ function setNestedValue(obj: unknown, path: string, value: unknown): unknown {
   return root;
 }
 
-function deleteNestedValue(obj: unknown, path: string): unknown {
+function deleteNestedValue(obj: any, path: string): any {
   if (!path) return undefined;
 
   const parts = path.split('.');
   const root = structuredClone(obj);
-  let current: unknown = root;
+  let current: any = root;
 
   for (let i = 0; i < parts.length - 1; i++) {
     const part = parts[i];
@@ -224,7 +224,7 @@ function deleteNestedValue(obj: unknown, path: string): unknown {
   return root;
 }
 
-export function applyPatch(obj: unknown, patches: DiffEntry[]): unknown {
+export function applyPatch(obj: any, patches: DiffEntry[]): any {
   let result = obj;
 
   const sortedPatches = [...patches].sort((a, b) => {

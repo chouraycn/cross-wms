@@ -18,7 +18,7 @@ function Textarea({ className, ...props }: React.ComponentProps<'textarea'> & { 
         '&:focus': { borderColor: 'primary.main', boxShadow: '0 0 0 2px rgba(25,118,210,0.2)' },
         '&:disabled': { bgcolor: 'action.disabledBackground' },
       }}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     />
   )
 }

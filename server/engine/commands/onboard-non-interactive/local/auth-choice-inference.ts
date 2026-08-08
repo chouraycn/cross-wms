@@ -23,7 +23,7 @@ export type AuthChoiceInference = {
   matches: AuthChoiceFlag[];
 };
 
-function hasStringValue(value: unknown): boolean {
+function hasStringValue(value: any): boolean {
   return typeof value === "string" ? Boolean(normalizeOptionalString(value)) : Boolean(value);
 }
 

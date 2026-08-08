@@ -16,9 +16,9 @@ type LoadAgentModelRegistryOptions = {
 
 /** Load the agent model registry with optional provider filtering/normalization. */
 export function loadAgentModelRegistry(
-  config: Record<string, unknown>,
+  config: Record<string, any>,
   options: LoadAgentModelRegistryOptions = {},
-): { agentDir: string; registry: Record<string, unknown> } {
+): { agentDir: string; registry: Record<string, any> } {
   // Cross-wms does not have auth storage or model discovery pipeline.
   return {
     agentDir: "",

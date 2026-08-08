@@ -33,7 +33,7 @@ vi.mock("../../config/runtime-schema.js", () => ({
   loadGatewayRuntimeConfigSchema: loadGatewayRuntimeConfigSchemaMock,
 }));
 
-function invokeExecFileCallback(args: unknown[], error: Error | null) {
+function invokeExecFileCallback(args: any[], error: Error | null) {
   const callback = args.at(-1);
   if (typeof callback !== "function") {
     throw new Error("expected execFile callback");
@@ -42,7 +42,7 @@ function invokeExecFileCallback(args: unknown[], error: Error | null) {
 }
 
 function mockExecFileError(error: Error) {
-  execFileMock.mockImplementation((...args: unknown[]) => {
+  execFileMock.mockImplementation((...args: any[]) => {
     invokeExecFileCallback(args, error);
     return {} as never;
   });
@@ -91,7 +91,7 @@ describe("resolveConfigOpenCommand", () => {
 describe("config.openFile", () => {
   it("opens the configured file without shell interpolation", async () => {
     await withEnvAsync({ OPENCLAW_CONFIG_PATH: "/tmp/config $(touch pwned).json" }, async () => {
-      execFileMock.mockImplementation((...args: unknown[]) => {
+      execFileMock.mockImplementation((...args: any[]) => {
         expect(["open", "xdg-open", "powershell.exe"]).toContain(args[0]);
         expect(args[1]).toEqual(["/tmp/config $(touch pwned).json"]);
         invokeExecFileCallback(args, null);

@@ -9,5 +9,5 @@ export function resolveRuntimeTextTransforms(): PluginTextTransforms | undefined
   const pluginTextTransforms = Array.isArray(registry?.textTransforms)
     ? registry.textTransforms.map((entry) => entry.transforms)
     : [];
-  return (mergePluginTextTransforms as (...args: unknown[]) => unknown)(...pluginTextTransforms) as PluginTextTransforms | undefined;
+  return (mergePluginTextTransforms as (...args: any[]) => unknown)(...pluginTextTransforms) as PluginTextTransforms | undefined;
 }

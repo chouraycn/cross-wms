@@ -36,7 +36,7 @@ function createInboundClaimForumCtx() {
 
 function expectFirstErrorLog(
   logger: { error: ReturnType<typeof vi.fn> },
-  expected: readonly unknown[],
+  expected: readonly any[],
 ): void {
   expect(logger.error).toHaveBeenCalledTimes(1);
   const call = logger.error.mock.calls[0];

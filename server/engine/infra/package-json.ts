@@ -1,14 +1,14 @@
 // 移植自 openclaw/src/infra/package-json.ts
 
-export function readPackageJson(...args: unknown[]): unknown {
+export function readPackageJson(...args: any[]): any {
   return undefined;
 }
-export function readPackageVersion(...args: unknown[]): Promise<string | null> {
+export function readPackageVersion(...args: any[]): Promise<string | null> {
   return Promise.resolve("");
 }
-export function readPackageName(...args: unknown[]): unknown {
+export function readPackageName(...args: any[]): any {
   return undefined;
 }
-export function readPackageManagerSpec(...args: unknown[]): unknown {
+export function readPackageManagerSpec(...args: any[]): any {
   return undefined;
 }

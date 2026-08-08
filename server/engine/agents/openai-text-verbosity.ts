@@ -11,7 +11,7 @@
  */
 
 // 内联降级实现：返回 lower-case 后的字符串，非字符串或空串返回 undefined。
-function normalizeOptionalLowercaseString(value: unknown): string | undefined {
+function normalizeOptionalLowercaseString(value: any): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }
@@ -30,7 +30,7 @@ const log = {
 /** @deprecated OpenAI provider-owned stream helper; do not use from third-party plugins. */
 export type OpenAITextVerbosity = "low" | "medium" | "high";
 
-function normalizeOpenAITextVerbosity(value: unknown): OpenAITextVerbosity | undefined {
+function normalizeOpenAITextVerbosity(value: any): OpenAITextVerbosity | undefined {
   if (typeof value !== "string") {
     return undefined;
   }
@@ -43,7 +43,7 @@ function normalizeOpenAITextVerbosity(value: unknown): OpenAITextVerbosity | und
 
 /** @deprecated OpenAI provider-owned stream helper; do not use from third-party plugins. */
 export function resolveOpenAITextVerbosity(
-  extraParams: Record<string, unknown> | undefined,
+  extraParams: Record<string, any> | undefined,
 ): OpenAITextVerbosity | undefined {
   const raw = extraParams?.textVerbosity ?? extraParams?.text_verbosity;
   const normalized = normalizeOpenAITextVerbosity(raw);

@@ -6,22 +6,22 @@
  *
  * 移植自 openclaw/src/agents/openai-compatible-conversation-turn.ts —— 无外部依赖。
  */
-function hasNonEmptyString(value: unknown): boolean {
+function hasNonEmptyString(value: any): boolean {
   return typeof value === "string" && value.trim().length > 0;
 }
 
-function hasNonEmptyContentPart(part: unknown): boolean {
+function hasNonEmptyContentPart(part: any): boolean {
   if (!part || typeof part !== "object") {
     return false;
   }
-  const record = part as Record<string, unknown>;
+  const record = part as Record<string, any>;
   if (record.type === "text") {
     return hasNonEmptyString(record.text);
   }
   return true;
 }
 
-function hasNonEmptyMessageContent(content: unknown): boolean {
+function hasNonEmptyMessageContent(content: any): boolean {
   if (hasNonEmptyString(content)) {
     return true;
   }
@@ -31,7 +31,7 @@ function hasNonEmptyMessageContent(content: unknown): boolean {
   return content.some(hasNonEmptyContentPart);
 }
 
-function hasAssistantToolCall(message: Record<string, unknown>): boolean {
+function hasAssistantToolCall(message: Record<string, any>): boolean {
   const toolCalls = message.tool_calls;
   return (
     Array.isArray(toolCalls) &&
@@ -42,7 +42,7 @@ function hasAssistantToolCall(message: Record<string, unknown>): boolean {
 }
 
 /** Returns whether an OpenAI-compatible messages payload contains a usable turn. */
-export function hasOpenAICompatibleConversationTurn(messages: unknown): boolean {
+export function hasOpenAICompatibleConversationTurn(messages: any): boolean {
   if (!Array.isArray(messages)) {
     return false;
   }
@@ -50,7 +50,7 @@ export function hasOpenAICompatibleConversationTurn(messages: unknown): boolean 
     if (!message || typeof message !== "object") {
       return false;
     }
-    const record = message as Record<string, unknown>;
+    const record = message as Record<string, any>;
     if (record.role === "user") {
       return hasNonEmptyMessageContent(record.content);
     }

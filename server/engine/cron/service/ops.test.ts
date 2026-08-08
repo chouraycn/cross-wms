@@ -157,7 +157,7 @@ async function expectDueIsolatedManualRunProgresses(storePath: string, now: numb
 }
 
 function expectWarnedJob(params: { field: "jobId" | "jobStatus"; value: string; message: string }) {
-  const warnCalls = logger.warn.mock.calls as unknown as Array<[Record<string, unknown>, string]>;
+  const warnCalls = logger.warn.mock.calls as unknown as Array<[Record<string, any>, string]>;
   const warning = warnCalls.find(
     ([metadata, message]) => metadata[params.field] === params.value && message === params.message,
   );
@@ -286,7 +286,7 @@ describe("cron service ops seam coverage", () => {
     }
 
     const loaded = await loadCronJobsStoreWithConfigJobs(storePath);
-    const persisted = loaded.store.jobs[0] as CronJob & { notify?: unknown };
+    const persisted = loaded.store.jobs[0] as CronJob & { notify?: any };
     expect(persisted.notify).toBeUndefined();
     expect(persisted.delivery).toEqual({
       mode: "announce",

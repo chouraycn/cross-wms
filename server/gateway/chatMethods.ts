@@ -32,7 +32,7 @@ const activeRuns = new Map<string, {
 
 // ========== Chat Send ==========
 
-async function chatSend(params: unknown, _ctx: GatewayMethodContext) {
+async function chatSend(params: any, _ctx: GatewayMethodContext) {
   const {
     sessionKey,
     message,
@@ -137,7 +137,7 @@ async function chatSend(params: unknown, _ctx: GatewayMethodContext) {
 
 // ========== Chat History ==========
 
-async function chatHistoryGet(params: unknown, _ctx: GatewayMethodContext) {
+async function chatHistoryGet(params: any, _ctx: GatewayMethodContext) {
   const {
     sessionKey,
     limit = 50,
@@ -168,7 +168,7 @@ async function chatHistoryGet(params: unknown, _ctx: GatewayMethodContext) {
 
 // ========== Chat Abort ==========
 
-async function chatAbort(params: unknown, _ctx: GatewayMethodContext) {
+async function chatAbort(params: any, _ctx: GatewayMethodContext) {
   const { runId, sessionKey } = params as { runId?: string; sessionKey?: string };
 
   if (!runId && !sessionKey) {
@@ -204,7 +204,7 @@ async function chatAbort(params: unknown, _ctx: GatewayMethodContext) {
 
 // ========== Chat Status ==========
 
-async function chatStatus(params: unknown, _ctx: GatewayMethodContext) {
+async function chatStatus(params: any, _ctx: GatewayMethodContext) {
   const { runId, sessionKey } = params as { runId?: string; sessionKey?: string };
 
   if (runId) {
@@ -227,7 +227,7 @@ async function chatStatus(params: unknown, _ctx: GatewayMethodContext) {
 
 // ========== Chat Inject ==========
 
-async function chatInject(params: unknown, _ctx: GatewayMethodContext) {
+async function chatInject(params: any, _ctx: GatewayMethodContext) {
   const {
     sessionKey,
     role = "system",
@@ -237,7 +237,7 @@ async function chatInject(params: unknown, _ctx: GatewayMethodContext) {
     sessionKey: string;
     role?: "system" | "user" | "assistant" | "tool";
     content: string;
-    metadata?: Record<string, unknown>;
+    metadata?: Record<string, any>;
   };
 
   if (!sessionKey || !content) {
@@ -261,7 +261,7 @@ async function chatInject(params: unknown, _ctx: GatewayMethodContext) {
 
 // ========== Chat Clear ==========
 
-async function chatClear(params: unknown, _ctx: GatewayMethodContext) {
+async function chatClear(params: any, _ctx: GatewayMethodContext) {
   const { sessionKey } = params as { sessionKey: string };
 
   if (!sessionKey) {
@@ -282,7 +282,7 @@ async function chatClear(params: unknown, _ctx: GatewayMethodContext) {
 
 // ========== Chat Stats ==========
 
-async function chatStats(_params: unknown, _ctx: GatewayMethodContext) {
+async function chatStats(_params: any, _ctx: GatewayMethodContext) {
   const sessions = getSessions();
   let totalMessages = 0;
   for (const s of sessions) {
@@ -302,7 +302,7 @@ async function chatStats(_params: unknown, _ctx: GatewayMethodContext) {
 
 // ========== Chat Search ==========
 
-async function chatSearch(params: unknown, _ctx: GatewayMethodContext) {
+async function chatSearch(params: any, _ctx: GatewayMethodContext) {
   const {
     sessionKey,
     query,
@@ -332,7 +332,7 @@ async function chatSearch(params: unknown, _ctx: GatewayMethodContext) {
 
 // ========== Chat Startup ==========
 
-async function chatStartup(params: unknown, ctx: GatewayMethodContext) {
+async function chatStartup(params: any, ctx: GatewayMethodContext) {
   const { sessionKey, limit = 50 } = params as { sessionKey?: string; limit?: number };
 
   // 聚合初始状态：会话历史 + agent 列表 + 统计元数据
@@ -350,10 +350,10 @@ async function chatStartup(params: unknown, ctx: GatewayMethodContext) {
     }),
   ]);
 
-  const startup: Record<string, unknown> = {
+  const startup: Record<string, any> = {
     ts: Date.now(),
     agents: (agentsResult.ok && agentsResult.result
-      ? (agentsResult.result as Record<string, unknown>).agents
+      ? (agentsResult.result as Record<string, any>).agents
       : []) ?? [],
     stats: statsResult.ok ? statsResult.result : null,
     sessionKey: sessionKey ?? null,
@@ -405,7 +405,7 @@ export function registerChatMethods(): void {
 
 export function appendChatMessage(
   sessionKey: string,
-  message: { role: string; content: string; metadata?: Record<string, unknown> },
+  message: { role: string; content: string; metadata?: Record<string, any> },
 ): void {
   addMessage({
     sessionId: sessionKey,

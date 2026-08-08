@@ -8,12 +8,12 @@ import { FsSafeError } from "../../infra/fs-safe.js";
 /* ------------------------------------------------------------------ */
 
 const mocks = vi.hoisted(() => ({
-  loadConfigReturn: {} as Record<string, unknown>,
-  listAgentEntries: vi.fn((_cfg?: unknown) => [] as Array<Record<string, unknown>>),
-  findAgentEntryIndex: vi.fn((_list?: unknown, _agentId?: string) => -1),
-  applyAgentConfig: vi.fn((_cfg: unknown, _opts: unknown) => ({})),
+  loadConfigReturn: {} as Record<string, any>,
+  listAgentEntries: vi.fn((_cfg?: any) => [] as Array<Record<string, any>>),
+  findAgentEntryIndex: vi.fn((_list?: any, _agentId?: string) => -1),
+  applyAgentConfig: vi.fn((_cfg: any, _opts: any) => ({})),
   pruneAgentConfig: vi.fn(() => ({ config: {}, removedBindings: 0 })),
-  writeConfigFile: vi.fn(async (_nextConfig?: unknown) => {}),
+  writeConfigFile: vi.fn(async (_nextConfig?: any) => {}),
   ensureAgentWorkspace: vi.fn(
     async (params?: { dir?: string }): Promise<{ dir: string; identityPathCreated: boolean }> => ({
       dir: params?.dir
@@ -27,8 +27,8 @@ const mocks = vi.hoisted(() => ({
     "/state/workspace-attestations/test-agent.attested",
   ]),
   shouldRemoveWorkspaceAttestation: vi.fn(async () => true),
-  resolveAgentDir: vi.fn((_cfg?: unknown, _agentId?: string) => "/agents/test-agent"),
-  resolveAgentWorkspaceDir: vi.fn((_cfg?: unknown, _agentId?: string) => "/workspace/test-agent"),
+  resolveAgentDir: vi.fn((_cfg?: any, _agentId?: string) => "/agents/test-agent"),
+  resolveAgentWorkspaceDir: vi.fn((_cfg?: any, _agentId?: string) => "/workspace/test-agent"),
   resolveSessionTranscriptsDirForAgent: vi.fn((_agentId?: string) => "/transcripts/test-agent"),
   listAgentsForGateway: vi.fn(() => ({
     defaultId: "main",
@@ -41,29 +41,29 @@ const mocks = vi.hoisted(() => ({
   fsMkdir: vi.fn(async () => undefined),
   fsAppendFile: vi.fn(async () => {}),
   fsReadFile: vi.fn(async () => ""),
-  fsStat: vi.fn(async (..._args: unknown[]) => null as import("node:fs").Stats | null),
-  fsLstat: vi.fn(async (..._args: unknown[]) => null as import("node:fs").Stats | null),
+  fsStat: vi.fn(async (..._args: any[]) => null as import("node:fs").Stats | null),
+  fsLstat: vi.fn(async (..._args: any[]) => null as import("node:fs").Stats | null),
   fsRealpath: vi.fn(async (p: string) => p),
   fsReadlink: vi.fn(async () => ""),
-  fsOpen: vi.fn(async () => ({}) as unknown),
-  rootRead: vi.fn(async (_params?: unknown) => ({
+  fsOpen: vi.fn(async () => ({}) as any),
+  rootRead: vi.fn(async (_params?: any) => ({
     buffer: Buffer.from(""),
     realPath: "/workspace/test-agent/AGENTS.md",
     stat: { size: 0, mtimeMs: 0 },
   })),
-  rootOpen: vi.fn(async (_params?: unknown) => ({
+  rootOpen: vi.fn(async (_params?: any) => ({
     handle: { close: vi.fn(async () => {}) },
     realPath: "/workspace/test-agent/AGENTS.md",
     stat: { size: 0, mtimeMs: 0 },
   })),
-  rootStat: vi.fn(async (_params?: unknown) => ({
+  rootStat: vi.fn(async (_params?: any) => ({
     isFile: true,
     isSymbolicLink: false,
     mtimeMs: 0,
     nlink: 1,
     size: 0,
   })),
-  rootWrite: vi.fn(async (_params?: unknown) => {}),
+  rootWrite: vi.fn(async (_params?: any) => {}),
 }));
 
 vi.mock("../../config/config.js", async () => {
@@ -73,10 +73,10 @@ vi.mock("../../config/config.js", async () => {
     ...actual,
     getRuntimeConfig: () => mocks.loadConfigReturn,
     writeConfigFile: mocks.writeConfigFile,
-    replaceConfigFile: async (params: { nextConfig: unknown }) =>
+    replaceConfigFile: async (params: { nextConfig: any }) =>
       await mocks.writeConfigFile(params.nextConfig),
     mutateConfigFileWithRetry: async (params: {
-      mutate: (draft: Record<string, unknown>, context: unknown) => unknown;
+      mutate: (draft: Record<string, any>, context: any) => unknown;
     }) => {
       const draft = structuredClone(mocks.loadConfigReturn);
       const result = await params.mutate(draft, {
@@ -111,7 +111,7 @@ vi.mock("../../agents/agent-scope.js", () => ({
   listAgentIds: () => ["main"],
   listAgentEntries: mocks.listAgentEntries,
   resolveAgentDir: mocks.resolveAgentDir,
-  resolveAgentConfig: (cfg: unknown, agentId: string) =>
+  resolveAgentConfig: (cfg: any, agentId: string) =>
     getAgentList(cfg).find((entry) => entry.id === agentId),
   resolveAgentWorkspaceDir: mocks.resolveAgentWorkspaceDir,
 }));
@@ -155,15 +155,15 @@ vi.mock("../../infra/fs-safe.js", async () => {
   return {
     ...actual,
     root: vi.fn(async (rootDir: string) => ({
-      open: async (relativePath: string, options?: Record<string, unknown>) =>
+      open: async (relativePath: string, options?: Record<string, any>) =>
         await mocks.rootOpen({ rootDir, relativePath, ...options }),
       stat: async (relativePath: string) => await mocks.rootStat({ rootDir, relativePath }),
-      read: async (relativePath: string, options?: Record<string, unknown>) =>
+      read: async (relativePath: string, options?: Record<string, any>) =>
         await mocks.rootRead({ rootDir, relativePath, ...options }),
       write: async (
         relativePath: string,
         data: string | Buffer,
-        options?: Record<string, unknown>,
+        options?: Record<string, any>,
       ) =>
         await mocks.rootWrite({
           rootDir,
@@ -207,16 +207,16 @@ const { testing: agentsTesting, agentsHandlers } = await import("./agents.js");
 
 beforeEach(() => {
   agentsTesting.resetDepsForTests();
-  mocks.listAgentEntries.mockImplementation((cfg: unknown) => getAgentList(cfg));
-  mocks.findAgentEntryIndex.mockImplementation((list: unknown, agentId?: string) =>
+  mocks.listAgentEntries.mockImplementation((cfg: any) => getAgentList(cfg));
+  mocks.findAgentEntryIndex.mockImplementation((list: any, agentId?: string) =>
     (Array.isArray(list) ? (list as MockAgentEntry[]) : []).findIndex(
       (entry) => entry.id === agentId,
     ),
   );
-  mocks.applyAgentConfig.mockImplementation((cfg: unknown, opts: unknown) =>
+  mocks.applyAgentConfig.mockImplementation((cfg: any, opts: any) =>
     mergeAgentConfig(cfg, opts),
   );
-  mocks.resolveAgentWorkspaceDir.mockImplementation((cfg: unknown, agentId?: string) =>
+  mocks.resolveAgentWorkspaceDir.mockImplementation((cfg: any, agentId?: string) =>
     resolveMockWorkspaceDir(cfg, agentId),
   );
   mocks.resolveWorkspaceAttestationPaths.mockImplementation((_workspaceDir: string) => [
@@ -244,23 +244,23 @@ beforeEach(() => {
 });
 
 function makeRootForTest(overrides?: {
-  open?: (params: Record<string, unknown>) => Promise<unknown>;
-  read?: (params: Record<string, unknown>) => Promise<unknown>;
-  stat?: (params: Record<string, unknown>) => Promise<unknown>;
-  write?: (params: Record<string, unknown>) => Promise<unknown>;
+  open?: (params: Record<string, any>) => Promise<any>;
+  read?: (params: Record<string, any>) => Promise<any>;
+  stat?: (params: Record<string, any>) => Promise<any>;
+  write?: (params: Record<string, any>) => Promise<any>;
 }) {
   return async (rootDir: string) =>
     ({
-      open: async (relativePath: string, options?: Record<string, unknown>) =>
+      open: async (relativePath: string, options?: Record<string, any>) =>
         await (overrides?.open ?? mocks.rootOpen)({ rootDir, relativePath, ...options }),
       stat: async (relativePath: string) =>
         await (overrides?.stat ?? mocks.rootStat)({ rootDir, relativePath }),
-      read: async (relativePath: string, options?: Record<string, unknown>) =>
+      read: async (relativePath: string, options?: Record<string, any>) =>
         await (overrides?.read ?? mocks.rootRead)({ rootDir, relativePath, ...options }),
       write: async (
         relativePath: string,
         data: string | Buffer,
-        options?: Record<string, unknown>,
+        options?: Record<string, any>,
       ) =>
         await (overrides?.write ?? mocks.rootWrite)({
           rootDir,
@@ -271,7 +271,7 @@ function makeRootForTest(overrides?: {
     }) as never;
 }
 
-function makeCall(method: keyof typeof agentsHandlers, params: Record<string, unknown>) {
+function makeCall(method: keyof typeof agentsHandlers, params: Record<string, any>) {
   const respond = vi.fn();
   const handler = agentsHandlers[method];
   const promise = handler({
@@ -285,11 +285,11 @@ function makeCall(method: keyof typeof agentsHandlers, params: Record<string, un
   return { respond, promise };
 }
 
-function expectRecordFields(record: unknown, expected: Record<string, unknown>) {
+function expectRecordFields(record: any, expected: Record<string, any>) {
   if (!record || typeof record !== "object") {
     throw new Error("Expected record");
   }
-  const actual = record as Record<string, unknown>;
+  const actual = record as Record<string, any>;
   for (const [key, value] of Object.entries(expected)) {
     expect(actual[key]).toEqual(value);
   }
@@ -304,7 +304,7 @@ function mockCallArg(mock: ReturnType<typeof vi.fn>, callIndex = 0, argIndex = 0
   return call[argIndex];
 }
 
-function expectRespondOk(respond: ReturnType<typeof vi.fn>, expected: Record<string, unknown>) {
+function expectRespondOk(respond: ReturnType<typeof vi.fn>, expected: Record<string, any>) {
   expect(mockCallArg(respond)).toBe(true);
   const payload = expectRecordFields(mockCallArg(respond, 0, 1), expected);
   expect(mockCallArg(respond, 0, 2)).toBeUndefined();
@@ -319,16 +319,16 @@ function expectRespondErrorContaining(respond: ReturnType<typeof vi.fn>, text: s
   return error;
 }
 
-function firstRespondResult(respond: ReturnType<typeof vi.fn>): unknown {
+function firstRespondResult(respond: ReturnType<typeof vi.fn>): any {
   return mockCallArg(respond, 0, 1);
 }
 
-function expectStringContaining(value: unknown, text: string) {
+function expectStringContaining(value: any, text: string) {
   expect(typeof value).toBe("string");
   expect(value as string).toContain(text);
 }
 
-function expectStringNotContaining(value: unknown, text: string) {
+function expectStringNotContaining(value: any, text: string) {
   expect(typeof value).toBe("string");
   expect(value as string).not.toContain(text);
 }
@@ -384,13 +384,13 @@ type MockConfig = {
   };
 };
 
-function getAgentList(cfg: unknown): MockAgentEntry[] {
+function getAgentList(cfg: any): MockAgentEntry[] {
   return ((cfg as MockConfig | undefined)?.agents?.list ?? []).map((entry) =>
     Object.assign({}, entry),
   );
 }
 
-function mergeAgentConfig(cfg: unknown, opts: unknown): MockConfig {
+function mergeAgentConfig(cfg: any, opts: any): MockConfig {
   const config = (cfg as MockConfig | undefined) ?? {};
   const params = (opts as {
     agentId?: string;
@@ -426,7 +426,7 @@ function mergeAgentConfig(cfg: unknown, opts: unknown): MockConfig {
   };
 }
 
-function resolveMockWorkspaceDir(cfg: unknown, agentId?: string): string {
+function resolveMockWorkspaceDir(cfg: any, agentId?: string): string {
   const resolvedAgentId = agentId ?? "";
   return (
     getAgentList(cfg).find((entry) => entry.id === resolvedAgentId)?.workspace ??
@@ -506,7 +506,7 @@ beforeEach(() => {
         truncate: async () => {},
         writeFile: async () => {},
         close: async () => {},
-      }) as unknown,
+      }) as any,
   );
 });
 
@@ -1258,7 +1258,7 @@ describe("agents.files.list", () => {
     const rootOpen = vi.fn(async () => {
       throw createErrnoError("EACCES");
     });
-    const rootStat = vi.fn(async ({ relativePath }: Record<string, unknown>) => {
+    const rootStat = vi.fn(async ({ relativePath }: Record<string, any>) => {
       if (relativePath === "AGENTS.md") {
         return {
           isFile: true,
@@ -1292,7 +1292,7 @@ describe("agents.files.list", () => {
       throw createErrnoError("helper-unavailable");
     });
     agentsTesting.setDepsForTests({ root: makeRootForTest({ stat: rootStat }) });
-    mocks.fsLstat.mockImplementation(async (filePath: unknown) => {
+    mocks.fsLstat.mockImplementation(async (filePath: any) => {
       if (filePath === "/workspace/main/AGENTS.md") {
         return makeFileStat({ size: 23, mtimeMs: 6789 });
       }

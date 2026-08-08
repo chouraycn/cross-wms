@@ -80,7 +80,7 @@ export function buildXfyunRequest(
   sampleRate: number,
   speed?: number,
   volume?: number,
-): Record<string, unknown> {
+): Record<string, any> {
   // 讯飞要求 base64 文本
   const textBase64 = Buffer.from(text, 'utf8').toString('base64');
   return {

@@ -8,8 +8,8 @@ import {
 } from "@openclaw-src/config/legacy.shared.js";
 
 function applyLegacyAudioTranscriptionModel(params: {
-  raw: Record<string, unknown>;
-  source: unknown;
+  raw: Record<string, any>;
+  source: any;
   changes: string[];
   movedMessage: string;
   alreadySetMessage: string;
@@ -23,7 +23,7 @@ function applyLegacyAudioTranscriptionModel(params: {
   const tools = ensureRecord(params.raw, "tools");
   const media = ensureRecord(tools, "media");
   const mediaAudio = ensureRecord(media, "audio");
-  const models = Array.isArray(mediaAudio.models) ? (mediaAudio.models as unknown[]) : [];
+  const models = Array.isArray(mediaAudio.models) ? (mediaAudio.models as any[]) : [];
   if (models.length === 0) {
     mediaAudio.enabled = true;
     mediaAudio.models = [mapped];

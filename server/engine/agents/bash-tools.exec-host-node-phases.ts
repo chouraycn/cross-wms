@@ -244,36 +244,36 @@ export function shouldUsePty(command: string): boolean {
 // ============================================================================
 
 /** Stub: never skip approval preparation in cross-wms. */
-export function shouldSkipNodeApprovalPrepare(_params?: unknown): boolean {
+export function shouldSkipNodeApprovalPrepare(_params?: any): boolean {
   return false;
 }
 
 /** Stub: no formatted node run tool result available. */
-export function formatNodeRunToolResult(_params?: unknown): string {
+export function formatNodeRunToolResult(_params?: any): string {
   return "";
 }
 
 /** Stub: no node execution target resolution available. */
-export function resolveNodeExecutionTarget(_params?: unknown): unknown {
+export function resolveNodeExecutionTarget(_params?: any): any {
   return undefined;
 }
 
 /** Stub: no node system-run invoke builder available. */
-export function buildNodeSystemRunInvoke(_params?: unknown): unknown {
+export function buildNodeSystemRunInvoke(_params?: any): any {
   return undefined;
 }
 
 /** Stub: direct node system-run invocation not available in cross-wms. */
-export function invokeNodeSystemRunDirect(_params?: unknown): unknown {
+export function invokeNodeSystemRunDirect(_params?: any): any {
   return undefined;
 }
 
 /** Stub: no node system-run preparation available. */
-export function prepareNodeSystemRun(_params?: unknown): unknown {
+export function prepareNodeSystemRun(_params?: any): any {
   return undefined;
 }
 
 /** Stub: no node approval requirement analysis available. */
-export function analyzeNodeApprovalRequirement(_params?: unknown): unknown {
+export function analyzeNodeApprovalRequirement(_params?: any): any {
   return undefined;
 }

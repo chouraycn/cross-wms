@@ -38,11 +38,11 @@ export class ToolTimeoutError extends ToolError {
   /** 配置的超时值（毫秒） */
   readonly timeoutMs: number;
 
-  constructor(toolName: string, timeoutMs: number, cause?: unknown) {
+  constructor(toolName: string, timeoutMs: number, cause?: any) {
     super(`工具 '${toolName}' 执行超时（${timeoutMs}ms）`, toolName, 'timeout');
     this.timeoutMs = timeoutMs;
     if (cause !== undefined) {
-      (this as { cause?: unknown }).cause = cause;
+      (this as { cause?: any }).cause = cause;
     }
   }
 }
@@ -56,11 +56,11 @@ export class ToolAbortError extends ToolError {
   /** 取消原因（user_cancel / cascaded / external） */
   readonly abortReason: string;
 
-  constructor(toolName: string, abortReason: string = 'cascaded', cause?: unknown) {
+  constructor(toolName: string, abortReason: string = 'cascaded', cause?: any) {
     super(`工具 '${toolName}' 执行已取消`, toolName, 'abort');
     this.abortReason = abortReason;
     if (cause !== undefined) {
-      (this as { cause?: unknown }).cause = cause;
+      (this as { cause?: any }).cause = cause;
     }
   }
 }
@@ -115,23 +115,23 @@ export class QueueFullError extends ToolError {
 // ===================== 类型守卫 =====================
 
 /** 判断是否为工具超时错误 */
-export function isToolTimeoutError(err: unknown): err is ToolTimeoutError {
+export function isToolTimeoutError(err: any): err is ToolTimeoutError {
   return err instanceof ToolTimeoutError;
 }
 
 /** 判断是否为工具取消错误 */
-export function isToolAbortError(err: unknown): err is ToolAbortError {
+export function isToolAbortError(err: any): err is ToolAbortError {
   return err instanceof ToolAbortError;
 }
 
 /** 判断是否为队列错误 */
-export function isQueueError(err: unknown): err is QueueTimeoutError | QueueCancelledError | QueueFullError {
+export function isQueueError(err: any): err is QueueTimeoutError | QueueCancelledError | QueueFullError {
   return err instanceof QueueTimeoutError ||
     err instanceof QueueCancelledError ||
     err instanceof QueueFullError;
 }
 
 /** 判断是否为可重试的瞬时错误（超时 + 队列超时） */
-export function isTransientToolError(err: unknown): boolean {
+export function isTransientToolError(err: any): boolean {
   return err instanceof ToolTimeoutError || err instanceof QueueTimeoutError;
 }

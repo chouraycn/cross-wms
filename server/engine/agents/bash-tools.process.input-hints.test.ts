@@ -22,7 +22,7 @@ afterEach(() => {
 
 async function runProcessAction(
   processTool: ProcessTool,
-  args: Record<string, unknown>,
+  args: Record<string, any>,
 ): Promise<ProcessToolResult> {
   return processTool.execute("toolcall", args as Parameters<ProcessTool["execute"]>[1], undefined);
 }
@@ -32,11 +32,11 @@ function textOf(result: ProcessToolResult): string {
   return item?.type === "text" ? item.text : "";
 }
 
-function expectRecordFields(record: unknown, expected: Record<string, unknown>) {
+function expectRecordFields(record: any, expected: Record<string, any>) {
   if (!record || typeof record !== "object") {
     throw new Error("Expected record");
   }
-  const actual = record as Record<string, unknown>;
+  const actual = record as Record<string, any>;
   for (const [key, value] of Object.entries(expected)) {
     expect(actual[key]).toEqual(value);
   }
@@ -139,7 +139,7 @@ describe("process input-wait hints", () => {
 
     expect(textOf(result)).toContain("sess-list");
     expect(textOf(result)).toContain("[input-wait]");
-    const sessions = (result.details as { sessions?: Array<Record<string, unknown>> }).sessions;
+    const sessions = (result.details as { sessions?: Array<Record<string, any>> }).sessions;
     expectRecordFields(sessions?.[0], {
       sessionId: "sess-list",
       stdinWritable: true,

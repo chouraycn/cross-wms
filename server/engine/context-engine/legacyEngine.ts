@@ -72,7 +72,7 @@ export class LegacyContextEngine implements ContextEngine {
     sessionKey?: string;
     sessionFile?: string;
     initialMessages?: AgentMessage[];
-    runtimeSettings?: unknown;
+    runtimeSettings?: any;
     runtimeContext?: ContextEngineRuntimeContext;
   }): Promise<BootstrapResult> {
     const { sessionId, initialMessages } = params;
@@ -181,7 +181,7 @@ export class LegacyContextEngine implements ContextEngine {
     availableTools?: Set<string>;
     model?: string;
     prompt?: string;
-    runtimeSettings?: unknown;
+    runtimeSettings?: any;
     runtimeContext?: ContextEngineRuntimeContext;
   }): Promise<AssembleResult> {
     const { tokenBudget, runtimeContext } = params;
@@ -239,7 +239,7 @@ export class LegacyContextEngine implements ContextEngine {
       role: m.role,
       content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content),
       toolCallId: (m as { tool_call_id?: string }).tool_call_id,
-      toolCalls: (m as { tool_calls?: unknown[] }).tool_calls,
+      toolCalls: (m as { tool_calls?: any[] }).tool_calls,
       timestamp: Date.now(),
     }));
 
@@ -260,7 +260,7 @@ export class LegacyContextEngine implements ContextEngine {
     autoCompactionSummary?: string;
     isHeartbeat?: boolean;
     tokenBudget?: number;
-    runtimeSettings?: unknown;
+    runtimeSettings?: any;
     runtimeContext?: ContextEngineRuntimeContext;
   }): Promise<void> {
     const { messages, runtimeContext } = params;
@@ -296,7 +296,7 @@ export class LegacyContextEngine implements ContextEngine {
     currentTokenCount?: number;
     compactionTarget?: 'budget' | 'threshold';
     customInstructions?: string;
-    runtimeSettings?: unknown;
+    runtimeSettings?: any;
     runtimeContext?: ContextEngineRuntimeContext;
     abortSignal?: AbortSignal;
   }): Promise<CompactResult> {
@@ -463,7 +463,7 @@ export class LegacyContextEngine implements ContextEngine {
     sessionId: string;
     sessionKey?: string;
     sessionFile?: string;
-    runtimeSettings?: unknown;
+    runtimeSettings?: any;
     runtimeContext?: ContextEngineRuntimeContext;
   }): Promise<ContextEngineMaintenanceResult> {
     const { runtimeContext } = params;
@@ -627,7 +627,7 @@ export function createLegacyContextEngine(
 
 export function createLegacyContextEngineLegacy(
   sessionId: string,
-  options?: Record<string, unknown>
+  options?: Record<string, any>
 ): LegacyContextEngine {
   const engine = new LegacyContextEngine();
   engine.bootstrap({

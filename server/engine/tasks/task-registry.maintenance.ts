@@ -49,13 +49,13 @@ export type TaskRegistryMaintenanceDiagnostics = {
 };
 
 type TaskRegistryMaintenanceRuntime = {
-  listAcpSessionEntries?: () => Array<Record<string, unknown>>;
-  readAcpSessionEntry?: (sessionKey: string) => Record<string, unknown> | undefined;
+  listAcpSessionEntries?: () => Array<Record<string, any>>;
+  readAcpSessionEntry?: (sessionKey: string) => Record<string, any> | undefined;
   closeAcpSession?: (params: { sessionKey: string; reason: string }) => Promise<void>;
-  listSessionBindingsBySession?: (sessionKey: string) => Array<Record<string, unknown>>;
+  listSessionBindingsBySession?: (sessionKey: string) => Array<Record<string, any>>;
   unbindSessionBindings?: (ids: readonly string[]) => void;
-  listCronJobs?: () => Array<Record<string, unknown>>;
-  readCronRunLog?: (jobId: string) => Array<Record<string, unknown>>;
+  listCronJobs?: () => Array<Record<string, any>>;
+  readCronRunLog?: (jobId: string) => Array<Record<string, any>>;
   isCronJobActive?: (jobId: string) => boolean;
   isPluginStateDatabaseOpen?: () => boolean;
   sweepExpiredPluginStateEntries?: () => number;
@@ -175,7 +175,7 @@ export function getInspectableTaskAuditSummary() {
 export function getInspectableTaskAuditFindings(_options?: {
   now?: number;
   limit?: number;
-}): Array<Record<string, unknown>> {
+}): Array<Record<string, any>> {
   return [];
 }
 

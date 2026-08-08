@@ -11,7 +11,7 @@ const DOCUMENT_EXTRACTOR_ARTIFACT_CANDIDATES = [
   "document-extractor-api.js",
 ] as const;
 
-function isDocumentExtractorPlugin(value: unknown): value is DocumentExtractorPlugin {
+function isDocumentExtractorPlugin(value: any): value is DocumentExtractorPlugin {
   return (
     isRecord(value) &&
     typeof value.id === "string" &&
@@ -23,12 +23,12 @@ function isDocumentExtractorPlugin(value: unknown): value is DocumentExtractorPl
   );
 }
 
-function collectExtractorFactories(mod: Record<string, unknown>): {
+function collectExtractorFactories(mod: Record<string, any>): {
   extractors: DocumentExtractorPlugin[];
-  errors: unknown[];
+  errors: any[];
 } {
   const extractors: DocumentExtractorPlugin[] = [];
-  const errors: unknown[] = [];
+  const errors: any[] = [];
   for (const [name, exported] of Object.entries(mod).toSorted(([left], [right]) =>
     left.localeCompare(right),
   )) {
@@ -40,7 +40,7 @@ function collectExtractorFactories(mod: Record<string, unknown>): {
     ) {
       continue;
     }
-    let candidate: unknown;
+    let candidate: any;
     try {
       candidate = exported();
     } catch (error) {
@@ -59,7 +59,7 @@ export function loadBundledDocumentExtractorEntriesFromDir(params: {
   dirName: string;
   pluginId: string;
 }): PluginDocumentExtractorEntry[] | null {
-  const mod = loadBundledPluginPublicArtifactModuleFromCandidatesSync<Record<string, unknown>>({
+  const mod = loadBundledPluginPublicArtifactModuleFromCandidatesSync<Record<string, any>>({
     dirName: params.dirName,
     artifactCandidates: DOCUMENT_EXTRACTOR_ARTIFACT_CANDIDATES,
   });

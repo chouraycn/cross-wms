@@ -17,15 +17,15 @@ interface JsonSchemaObject {
   oneOf?: JsonSchemaObject[];
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return typeof value === "object" && value !== null;
 }
 
-function isJsonSchemaObject(value: unknown): value is JsonSchemaObject {
+function isJsonSchemaObject(value: any): value is JsonSchemaObject {
   return isRecord(value);
 }
 
-function hasTypeBoxMetadata(schema: unknown): boolean {
+function hasTypeBoxMetadata(schema: any): boolean {
   return isRecord(schema) && Object.getOwnPropertySymbols(schema).includes(TYPEBOX_KIND);
 }
 
@@ -39,7 +39,7 @@ function getSchemaTypes(schema: JsonSchemaObject): string[] {
   return [];
 }
 
-function matchesJsonType(value: unknown, type: string): boolean {
+function matchesJsonType(value: any, type: string): boolean {
   switch (type) {
     case "number":
       return typeof value === "number";
@@ -60,7 +60,7 @@ function matchesJsonType(value: unknown, type: string): boolean {
   }
 }
 
-function isValidatorSchema(value: unknown): value is Tool["parameters"] {
+function isValidatorSchema(value: any): value is Tool["parameters"] {
   return isRecord(value);
 }
 
@@ -91,7 +91,7 @@ function getSubSchemaValidator(schema: JsonSchemaObject): ReturnType<typeof Comp
   }
 }
 
-function coercePrimitiveByType(value: unknown, type: string): unknown {
+function coercePrimitiveByType(value: any, type: string): any {
   switch (type) {
     case "number": {
       if (value === null) {
@@ -165,7 +165,7 @@ function coercePrimitiveByType(value: unknown, type: string): unknown {
   }
 }
 
-function applySchemaObjectCoercion(value: Record<string, unknown>, schema: JsonSchemaObject): void {
+function applySchemaObjectCoercion(value: Record<string, any>, schema: JsonSchemaObject): void {
   const properties = schema.properties;
   const definedKeys = new Set<string>(properties ? Object.keys(properties) : []);
 
@@ -186,7 +186,7 @@ function applySchemaObjectCoercion(value: Record<string, unknown>, schema: JsonS
   }
 }
 
-function applySchemaArrayCoercion(value: unknown[], schema: JsonSchemaObject): void {
+function applySchemaArrayCoercion(value: any[], schema: JsonSchemaObject): void {
   if (Array.isArray(schema.items)) {
     for (let index = 0; index < value.length; index++) {
       const itemSchema = schema.items[index];
@@ -204,7 +204,7 @@ function applySchemaArrayCoercion(value: unknown[], schema: JsonSchemaObject): v
   }
 }
 
-function coerceWithUnionSchema(value: unknown, schemas: JsonSchemaObject[]): unknown {
+function coerceWithUnionSchema(value: any, schemas: JsonSchemaObject[]): any {
   for (const schema of schemas) {
     const candidate = structuredClone(value);
     const coerced = coerceWithJsonSchema(candidate, schema);
@@ -216,7 +216,7 @@ function coerceWithUnionSchema(value: unknown, schemas: JsonSchemaObject[]): unk
   return value;
 }
 
-function coerceWithJsonSchema(value: unknown, schema: JsonSchemaObject): unknown {
+function coerceWithJsonSchema(value: any, schema: JsonSchemaObject): any {
   let nextValue = value;
 
   if (Array.isArray(schema.allOf)) {
@@ -283,7 +283,7 @@ function formatValidationPath(error: TLocalizedValidationError): string {
 }
 
 /** Finds the target tool and validates/coerces a model-emitted tool call. */
-export function validateToolCall(tools: Tool[], toolCall: ToolCall): unknown {
+export function validateToolCall(tools: Tool[], toolCall: ToolCall): any {
   const tool = tools.find((t) => t.name === toolCall.name);
   if (!tool) {
     throw new Error(`Tool "${toolCall.name}" not found`);
@@ -292,7 +292,7 @@ export function validateToolCall(tools: Tool[], toolCall: ToolCall): unknown {
 }
 
 /** Validates tool arguments against TypeBox or plain JSON-schema parameters. */
-export function validateToolArguments(tool: Tool, toolCall: ToolCall): unknown {
+export function validateToolArguments(tool: Tool, toolCall: ToolCall): any {
   const args = structuredClone(toolCall.arguments);
   Value.Convert(tool.parameters, args);
 

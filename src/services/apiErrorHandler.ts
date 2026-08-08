@@ -7,7 +7,7 @@ export interface ApiError {
   code: number;
   message: string;
   userMessage: string;
-  details?: unknown;
+  details?: any;
   retryable?: boolean;
 }
 
@@ -31,7 +31,7 @@ const NETWORK_ERRORS: Record<string, { userMessage: string; retryable: boolean }
   'Failed to fetch': { userMessage: '无法连接到服务器，请检查网络或稍后重试', retryable: true },
 };
 
-export function createApiError(error: unknown, context?: string): ApiError {
+export function createApiError(error: any, context?: string): ApiError {
   if (error instanceof Error) {
     const networkInfo = NETWORK_ERRORS[error.name] || NETWORK_ERRORS[error.message];
     if (networkInfo) {
@@ -75,22 +75,22 @@ export function createApiError(error: unknown, context?: string): ApiError {
   };
 }
 
-export function getErrorMessage(error: unknown, context?: string): string {
+export function getErrorMessage(error: any, context?: string): string {
   const apiError = createApiError(error, context);
   return apiError.userMessage;
 }
 
-export function isRetryableError(error: unknown): boolean {
+export function isRetryableError(error: any): boolean {
   const apiError = createApiError(error);
   return apiError.retryable ?? true;
 }
 
-export function isNetworkError(error: unknown): boolean {
+export function isNetworkError(error: any): boolean {
   const apiError = createApiError(error);
   return apiError.code === 0;
 }
 
-export function isAuthError(error: unknown): boolean {
+export function isAuthError(error: any): boolean {
   const apiError = createApiError(error);
   return apiError.code === 401 || apiError.code === 403;
 }

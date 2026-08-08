@@ -11,13 +11,13 @@ const mocks = vi.hoisted(() => {
   const runtimeErrors: string[] = [];
   const defaultRuntime = {
     log: vi.fn(),
-    error: vi.fn((value: unknown) => {
+    error: vi.fn((value: any) => {
       runtimeErrors.push(String(value));
     }),
     writeStdout: vi.fn((value: string) => {
       runtimeStdout.push(value.endsWith("\n") ? value.slice(0, -1) : value);
     }),
-    writeJson: vi.fn((value: unknown, space = 2) => {
+    writeJson: vi.fn((value: any, space = 2) => {
       runtimeStdout.push(JSON.stringify(value, null, space > 0 ? space : undefined));
     }),
     exit: vi.fn((code: number) => {
@@ -30,10 +30,10 @@ const mocks = vi.hoisted(() => {
     runtimeErrors,
     loadConfigMock: vi.fn(() => ({})),
     resolveAgentIdByWorkspacePathMock: vi.fn(
-      (_config: unknown, _workspacePath: string): string | undefined => undefined,
+      (_config: any, _workspacePath: string): string | undefined => undefined,
     ),
-    resolveDefaultAgentIdMock: vi.fn((_config: unknown) => "main"),
-    resolveAgentWorkspaceDirMock: vi.fn((_config: unknown, _agentId: string) => ""),
+    resolveDefaultAgentIdMock: vi.fn((_config: any) => "main"),
+    resolveAgentWorkspaceDirMock: vi.fn((_config: any, _agentId: string) => ""),
     resolveClawHubBaseUrlMock: vi.fn((baseUrl?: string) =>
       (baseUrl ?? "https://clawhub.ai").replace(/\/+$/, ""),
     ),
@@ -58,18 +58,18 @@ vi.mock("../config/config.js", () => ({
 }));
 
 vi.mock("../agents/agent-scope.js", () => ({
-  resolveAgentIdByWorkspacePath: (config: unknown, workspacePath: string) =>
+  resolveAgentIdByWorkspacePath: (config: any, workspacePath: string) =>
     mocks.resolveAgentIdByWorkspacePathMock(config, workspacePath),
-  resolveDefaultAgentId: (config: unknown) => mocks.resolveDefaultAgentIdMock(config),
-  resolveAgentWorkspaceDir: (config: unknown, agentId: string) =>
+  resolveDefaultAgentId: (config: any) => mocks.resolveDefaultAgentIdMock(config),
+  resolveAgentWorkspaceDir: (config: any, agentId: string) =>
     mocks.resolveAgentWorkspaceDirMock(config, agentId),
 }));
 
 vi.mock("../infra/clawhub.js", () => ({
   downloadClawHubSkillArchive: mocks.noopAsync,
-  fetchClawHubSkillCard: (...args: unknown[]) => mocks.fetchClawHubSkillCardMock(...args),
+  fetchClawHubSkillCard: (...args: any[]) => mocks.fetchClawHubSkillCardMock(...args),
   fetchClawHubSkillDetail: mocks.noopAsync,
-  fetchClawHubSkillVerification: (...args: unknown[]) =>
+  fetchClawHubSkillVerification: (...args: any[]) =>
     mocks.fetchClawHubSkillVerificationMock(...args),
   resolveClawHubBaseUrl: (baseUrl?: string) => mocks.resolveClawHubBaseUrlMock(baseUrl),
   searchClawHubSkills: mocks.noopAsync,
@@ -184,7 +184,7 @@ describe("skills verify CLI", () => {
       tag: undefined,
       baseUrl: "https://private.example.com/clawhub",
     });
-    const payload = JSON.parse(mocks.runtimeStdout.at(-1) ?? "{}") as Record<string, unknown>;
+    const payload = JSON.parse(mocks.runtimeStdout.at(-1) ?? "{}") as Record<string, any>;
     expect(payload.ok).toBe(true);
     expect(payload.artifact).toEqual({
       sourceFingerprint: "publisher-source-fingerprint-without-generated-card",

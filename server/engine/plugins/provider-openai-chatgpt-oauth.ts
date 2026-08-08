@@ -38,11 +38,11 @@ function loadOpenAICodexOAuthFacade(): OpenAICodexOAuthFacade {
   });
 }
 
-function isOAuthCredential(value: unknown): value is OAuthCredentials {
+function isOAuthCredential(value: any): value is OAuthCredentials {
   if (!value || typeof value !== "object") {
     return false;
   }
-  const record = value as Record<string, unknown>;
+  const record = value as Record<string, any>;
   return (
     record.type === "oauth" &&
     record.provider === OPENAI_CODEX_PROVIDER_ID &&

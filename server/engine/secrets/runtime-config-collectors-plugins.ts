@@ -133,7 +133,7 @@ export function collectPluginConfigAssignments(params: {
 
 function collectConfiguredPluginSecretAssignments(params: {
   pluginId: string;
-  pluginConfig: Record<string, unknown>;
+  pluginConfig: Record<string, any>;
   secretPaths: ReadonlyArray<{ path: string; expected?: "string" }>;
   active: boolean;
   inactiveReason: string;
@@ -170,16 +170,16 @@ function collectConfiguredPluginSecretAssignments(params: {
 }
 
 function createPluginConfigAssignmentApply(
-  pluginConfig: Record<string, unknown>,
+  pluginConfig: Record<string, any>,
   relativePath: string,
-): (value: unknown) => void {
+): (value: any) => void {
   return (value) => {
     // Manifest paths use dotted/bracket notation; assignment writes need concrete object/array steps.
     const segments = normalizeStringEntries(relativePath.replace(/\[(\d+)\]/g, ".$1").split("."));
     if (segments.length === 0) {
       return;
     }
-    let current: unknown = pluginConfig;
+    let current: any = pluginConfig;
     for (const segment of segments.slice(0, -1)) {
       if (Array.isArray(current)) {
         const index = parsePluginConfigArrayIndex(segment);

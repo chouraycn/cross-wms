@@ -27,7 +27,7 @@ export type RuntimeHealthStoreOptions<T extends RuntimeHealthRecordEnvelope> = {
   /** Optional expiry backstop on top of liveness filtering. */
   ttlMs?: number;
   /** Validates domain fields and strips unknown ones; envelope is pre-validated. */
-  normalizeRecord: (value: Record<string, unknown> & RuntimeHealthRecordEnvelope) => T | undefined;
+  normalizeRecord: (value: Record<string, any> & RuntimeHealthRecordEnvelope) => T | undefined;
   /** Groups records for display dedupe across recorder processes. */
   displayKey: (record: T) => string;
   /** Which failedAtMs wins per display group: root cause vs most recent reason. */
@@ -44,8 +44,8 @@ export type RuntimeHealthStore<T extends RuntimeHealthRecordEnvelope> = {
 };
 
 function hasValidEnvelope(
-  value: unknown,
-): value is Record<string, unknown> & RuntimeHealthRecordEnvelope {
+  value: any,
+): value is Record<string, any> & RuntimeHealthRecordEnvelope {
   if (!value || typeof value !== "object") {
     return false;
   }
@@ -103,7 +103,7 @@ export function createRuntimeHealthStore<T extends RuntimeHealthRecordEnvelope>(
       ...(options.ttlMs != null ? { defaultTtlMs: options.ttlMs } : {}),
     });
 
-  const normalize = (value: unknown): T | undefined =>
+  const normalize = (value: any): T | undefined =>
     hasValidEnvelope(value) ? options.normalizeRecord(value) : undefined;
 
   return {

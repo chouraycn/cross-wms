@@ -4,17 +4,17 @@
  * 降级策略：返回空。
  */
 export function resolvePluginWebFetchProviders(params: {
-  config?: unknown;
+  config?: any;
   env?: NodeJS.ProcessEnv;
-}): unknown[] {
+}): any[] {
   void params;
   return [];
 }
 
 export function resolveRuntimeWebFetchProviders(params: {
-  config?: unknown;
+  config?: any;
   env?: NodeJS.ProcessEnv;
-}): unknown[] {
+}): any[] {
   void params;
   return [];
 }

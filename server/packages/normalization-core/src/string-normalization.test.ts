@@ -61,7 +61,7 @@ describe("normalization-core/string-normalization", () => {
 
   it("normalizes sorted unique trimmed string lists", () => {
     expect(normalizeSortedUniqueTrimmedStringList([" b ", "a", "b", "", "a"])).toEqual(["a", "b"]);
-    expect(normalizeSortedUniqueTrimmedStringList(["z", 1, " a "] as unknown[])).toEqual([
+    expect(normalizeSortedUniqueTrimmedStringList(["z", 1, " a "] as any[])).toEqual([
       "a",
       "z",
     ]);

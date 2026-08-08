@@ -112,7 +112,7 @@ type SessionWithAgentPrompt = {
   };
 };
 
-type PromptReleaseStreamFn = ((...args: unknown[]) => unknown) & {
+type PromptReleaseStreamFn = ((...args: any[]) => unknown) & {
   __openclawSessionLockPromptReleaseInstalled?: boolean;
 };
 
@@ -186,7 +186,7 @@ function splitSessionFileLines(text: string): string[] {
   return normalizeStringEntries(text.split(/\r?\n/));
 }
 
-function isJsonRecord(value: unknown): value is Record<string, unknown> {
+function isJsonRecord(value: any): value is Record<string, any> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
@@ -195,7 +195,7 @@ function parsePromptReleasedMessageLine(
   options?: { allowAnyMessage?: boolean },
 ): SessionMessageEntry | undefined {
   try {
-    const parsed = JSON.parse(line) as unknown;
+    const parsed = JSON.parse(line) as any;
     if (
       !isJsonRecord(parsed) ||
       parsed.type !== "message" ||
@@ -234,7 +234,7 @@ function parsePromptReleasedMessageLine(
   }
 }
 
-function hasSessionEntryBase(record: Record<string, unknown>): boolean {
+function hasSessionEntryBase(record: Record<string, any>): boolean {
   return (
     typeof record.id === "string" &&
     record.id.trim().length > 0 &&
@@ -248,7 +248,7 @@ type PromptReleasedSessionMetadataEntry = CustomEntry | LabelEntry | SessionInfo
 
 type PromptReleasedOpaqueEntry = {
   type: "prompt_released_opaque";
-  record: unknown;
+  record: any;
 };
 
 type PromptReleasedSessionEntry =
@@ -266,7 +266,7 @@ function parsePromptReleasedGlobalMetadataLine(
   line: string,
 ): PromptReleasedSessionMetadataEntry | undefined {
   try {
-    const parsed = JSON.parse(line) as unknown;
+    const parsed = JSON.parse(line) as any;
     if (!isJsonRecord(parsed) || !hasSessionEntryBase(parsed)) {
       return undefined;
     }
@@ -317,7 +317,7 @@ function parsePromptReleasedGlobalMetadataLine(
 
 function parsePromptReleasedOpaqueLine(line: string): PromptReleasedOpaqueEntry | undefined {
   try {
-    const record = JSON.parse(line) as unknown;
+    const record = JSON.parse(line) as any;
     return !isJsonRecord(record) || record.type !== "message"
       ? { type: "prompt_released_opaque", record }
       : undefined;
@@ -478,15 +478,15 @@ function haveSamePublishedEntries(
   return true;
 }
 
-function normalizeTranscriptEntryId(value: unknown): string | undefined {
+function normalizeTranscriptEntryId(value: any): string | undefined {
   return typeof value === "string" && value.trim().length > 0 ? value : undefined;
 }
 
 function omitRecordKeys(
-  record: Record<string, unknown>,
+  record: Record<string, any>,
   keys: Set<string>,
-): Record<string, unknown> {
-  const result: Record<string, unknown> = {};
+): Record<string, any> {
+  const result: Record<string, any> = {};
   for (const [key, value] of Object.entries(record)) {
     if (!keys.has(key)) {
       result[key] = value;
@@ -500,8 +500,8 @@ function lineMatchesLinearTranscriptMigration(params: {
   currentLine: string;
   expectedParentId: string | null;
 }): { ok: true; nextPreviousId?: string } | { ok: false } {
-  let previousParsed: unknown;
-  let currentParsed: unknown;
+  let previousParsed: any;
+  let currentParsed: any;
   try {
     previousParsed = JSON.parse(params.previousLine);
     currentParsed = JSON.parse(params.currentLine);
@@ -832,7 +832,7 @@ function resolveSessionFileFenceKey(sessionFile: string): string {
 
 type SessionFileOwnerWaiter = {
   resolve: () => void;
-  reject: (error: unknown) => void;
+  reject: (error: any) => void;
   timer?: NodeJS.Timeout;
   abortListener?: () => void;
   signal?: AbortSignal;
@@ -870,11 +870,11 @@ class EmbeddedAttemptSessionFileOwnerTimeoutError extends Error {
   }
 }
 
-function abortReason(signal: AbortSignal): unknown {
-  return "reason" in signal ? (signal as { reason?: unknown }).reason : undefined;
+function abortReason(signal: AbortSignal): any {
+  return "reason" in signal ? (signal as { reason?: any }).reason : undefined;
 }
 
-function abortOwnerWaitReason(signal: AbortSignal): unknown {
+function abortOwnerWaitReason(signal: AbortSignal): any {
   return abortReason(signal) ?? new Error("operation aborted", { cause: signal });
 }
 
@@ -1116,7 +1116,7 @@ function readSessionFileFingerprintSync(sessionFile: string): SessionFileFingerp
   }
 }
 
-async function waitForSessionEventQueue(_session: unknown): Promise<void> {}
+async function waitForSessionEventQueue(_session: any): Promise<void> {}
 
 export class EmbeddedAttemptSessionTakeoverError extends Error {
   constructor(sessionFile: string) {
@@ -1138,12 +1138,12 @@ export type EmbeddedAttemptSessionLockController = {
     validateAppend?: SessionFileWriteAppendValidator<T>,
   ): T;
   reacquireAfterPrompt(): Promise<void>;
-  waitForSessionEvents(session: unknown): Promise<void>;
+  waitForSessionEvents(session: any): Promise<void>;
   withSessionWriteLock<T>(
     run: () => Promise<T> | T,
     options?: OwnedSessionTranscriptWriteOptions<T>,
   ): Promise<T>;
-  acquireForCleanup(params?: { session?: unknown }): Promise<SessionLock>;
+  acquireForCleanup(params?: { session?: any }): Promise<SessionLock>;
   hasSessionTakeover(): boolean;
   dispose(): Promise<void>;
 };
@@ -1703,7 +1703,7 @@ export async function createEmbeddedAttemptSessionLockController(params: {
     release: () => Promise<void> | void,
   ): Promise<T> {
     const scope = createActiveWriteLockScope();
-    let outcome: { ok: true; value: T } | { ok: false; error: unknown };
+    let outcome: { ok: true; value: T } | { ok: false; error: any };
     try {
       outcome = { ok: true, value: await activeWriteLock.run(scope.state, run) };
     } catch (error) {
@@ -1997,7 +1997,7 @@ export async function createEmbeddedAttemptSessionLockController(params: {
     },
     waitForSessionEvents: waitForSessionEventQueue,
     withSessionWriteLock,
-    async acquireForCleanup(cleanupParams?: { session?: unknown }): Promise<SessionLock> {
+    async acquireForCleanup(cleanupParams?: { session?: any }): Promise<SessionLock> {
       if (cleanupParams?.session) {
         await waitForSessionEventQueue(cleanupParams.session);
       }
@@ -2033,8 +2033,8 @@ export async function createEmbeddedAttemptSessionLockController(params: {
 }
 
 export function installPromptSubmissionLockRelease(params: {
-  session: unknown;
-  waitForSessionEvents: (session: unknown) => Promise<void>;
+  session: any;
+  waitForSessionEvents: (session: any) => Promise<void>;
   releaseForPrompt: () => Promise<void>;
   reacquireAfterPrompt: () => Promise<void>;
   sessionFile?: string;
@@ -2055,7 +2055,7 @@ export function installPromptSubmissionLockRelease(params: {
     return;
   }
   const originalStreamFn = currentStreamFn.bind(agent);
-  const wrappedStreamFn: PromptReleaseStreamFn = async (...args: unknown[]) => {
+  const wrappedStreamFn: PromptReleaseStreamFn = async (...args: any[]) => {
     await params.waitForSessionEvents(params.session);
     await params.releaseForPrompt();
     try {

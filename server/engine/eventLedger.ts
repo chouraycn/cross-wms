@@ -65,7 +65,7 @@ export interface LedgerEvent {
   seq: number;
   sessionId: string;
   type: EventType;
-  payload: Record<string, unknown>;
+  payload: Record<string, any>;
   timestamp: number;
   runId?: string;
   actor?: string;
@@ -81,7 +81,7 @@ export interface LedgerSessionMeta {
   status: 'active' | 'archived' | 'incomplete' | 'deleted';
   lastEventType?: EventType;
   cwd?: string;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
 }
 
 export interface ReconstructedSession {
@@ -92,12 +92,12 @@ export interface ReconstructedSession {
     role: string;
     content: string;
     timestamp: number;
-    toolCalls?: unknown[];
+    toolCalls?: any[];
     toolResults?: Array<{ toolCallId: string; content: string }>;
     thinking?: string;
-    metadata: Record<string, unknown>;
+    metadata: Record<string, any>;
   }>;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
   status: string;
   eventCount: number;
   lastUpdated: number;
@@ -198,7 +198,7 @@ export class EventLedger {
   async recordEvent(
     sessionId: string,
     type: EventType,
-    payload: Record<string, unknown> = {},
+    payload: Record<string, any> = {},
     options?: { runId?: string; actor?: string }
   ): Promise<LedgerEvent> {
     this.ensureInit();
@@ -303,7 +303,7 @@ export class EventLedger {
 
   async recordEvents(
     sessionId: string,
-    events: Array<{ type: EventType; payload: Record<string, unknown>; runId?: string }>
+    events: Array<{ type: EventType; payload: Record<string, any>; runId?: string }>
   ): Promise<LedgerEvent[]> {
     const results: LedgerEvent[] = [];
     for (const evt of events) {
@@ -325,7 +325,7 @@ export class EventLedger {
     const db = this.getDb();
 
     let sql = 'SELECT * FROM ledger_events WHERE session_id = ?';
-    const params: unknown[] = [sessionId];
+    const params: any[] = [sessionId];
 
     if (options.fromSeq !== undefined) {
       sql += ' AND seq >= ?';
@@ -423,7 +423,7 @@ export class EventLedger {
     const db = this.getDb();
 
     let sql = 'SELECT * FROM ledger_sessions';
-    const params: unknown[] = [];
+    const params: any[] = [];
 
     if (options?.status) {
       sql += ' WHERE status = ?';
@@ -484,7 +484,7 @@ export class EventLedger {
   private replayEvents(events: LedgerEvent[]): ReconstructedSession {
     let title = '新对话';
     const messages: ReconstructedSession['messages'] = [];
-    const metadata: Record<string, unknown> = {};
+    const metadata: Record<string, any> = {};
     let status = 'active';
     let lastUpdated = 0;
 
@@ -495,12 +495,12 @@ export class EventLedger {
       switch (event.type) {
         case 'session.created':
           if (p.title) title = String(p.title);
-          if (p.metadata) Object.assign(metadata, p.metadata as Record<string, unknown>);
+          if (p.metadata) Object.assign(metadata, p.metadata as Record<string, any>);
           break;
 
         case 'session.updated':
           if (p.title) title = String(p.title);
-          if (p.metadata) Object.assign(metadata, p.metadata as Record<string, unknown>);
+          if (p.metadata) Object.assign(metadata, p.metadata as Record<string, any>);
           break;
 
         case 'session.archived':
@@ -525,9 +525,9 @@ export class EventLedger {
               role: String(p.role || 'user'),
               content: String(p.content || ''),
               timestamp: event.timestamp,
-              toolCalls: p.toolCalls ? (p.toolCalls as unknown[]) : undefined,
+              toolCalls: p.toolCalls ? (p.toolCalls as any[]) : undefined,
               thinking: p.thinning ? String(p.thinning) : undefined,
-              metadata: (p.metadata as Record<string, unknown>) || {},
+              metadata: (p.metadata as Record<string, any>) || {},
             });
           }
           break;
@@ -697,7 +697,7 @@ export class EventLedger {
     _timestamp: number,
     _seq: number,
     _eventCount: number,
-    _payload: Record<string, unknown>
+    _payload: Record<string, any>
   ): void {
     // 简化：不维护详细缓存，只做基本的 LRU
     if (this.sessionCache.size > 100) {
@@ -737,7 +737,7 @@ export class EventLedger {
 
 // ==================== 工具函数 ====================
 
-function safeJsonParse(text: string, fallback: Record<string, unknown>): Record<string, unknown> {
+function safeJsonParse(text: string, fallback: Record<string, any>): Record<string, any> {
   try {
     const parsed = JSON.parse(text);
     return typeof parsed === 'object' && parsed !== null ? parsed : fallback;

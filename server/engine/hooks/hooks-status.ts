@@ -184,10 +184,10 @@ function buildHookStatus(
 
 export type BuildHookStatusOptions = {
   entries: HookEntry[];
-  config?: Record<string, unknown>;
+  config?: Record<string, any>;
   eligibility?: HookEligibilityContext;
-  getHookConfig?: (config: Record<string, unknown> | undefined, hookKey: string) => HookConfig | undefined;
-  isEnabled?: (entry: HookEntry, hookConfig: HookConfig | undefined, config: Record<string, unknown> | undefined) => {
+  getHookConfig?: (config: Record<string, any> | undefined, hookKey: string) => HookConfig | undefined;
+  isEnabled?: (entry: HookEntry, hookConfig: HookConfig | undefined, config: Record<string, any> | undefined) => {
     enabled: boolean;
     reason?: string;
   };
@@ -215,10 +215,10 @@ export function buildHookStatusReport(
   const isConfigSatisfied = (pathStr: string): boolean => {
     if (!config) return false;
     const parts = pathStr.split('.');
-    let current: unknown = config;
+    let current: any = config;
     for (const part of parts) {
       if (current && typeof current === 'object' && part in current) {
-        current = (current as Record<string, unknown>)[part];
+        current = (current as Record<string, any>)[part];
       } else {
         return false;
       }

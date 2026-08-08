@@ -37,7 +37,7 @@ interface SkillMdFrontmatter {
   tags?: string[];
   dependencies?: SkillDependency[];
   permissions?: SkillPermission[];
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 /** 完整的 SKILL.md 解析结果 */

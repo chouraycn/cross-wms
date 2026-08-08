@@ -1,1 +1,1 @@
-export const resolveRuntimePlugin = (..._args: unknown[]): unknown => undefined;
+export const resolveRuntimePlugin = (..._args: any[]): any => undefined;

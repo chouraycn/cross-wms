@@ -36,10 +36,10 @@ vi.mock("../session-transcript-readers.js", async () => {
 });
 
 function createResponder() {
-  const calls: Array<{ ok: boolean; payload?: unknown; error?: unknown }> = [];
+  const calls: Array<{ ok: boolean; payload?: any; error?: any }> = [];
   return {
     calls,
-    respond: (ok: boolean, payload?: unknown, error?: unknown) => {
+    respond: (ok: boolean, payload?: any, error?: any) => {
       calls.push({ ok, payload, error });
     },
   };
@@ -49,7 +49,7 @@ type SessionFilesMethod = "sessions.files.list" | "sessions.files.get";
 
 async function invokeSessionFilesHandler(
   method: SessionFilesMethod,
-  params: Record<string, unknown>,
+  params: Record<string, any>,
 ) {
   const responder = createResponder();
   await sessionsFilesHandlers[method]?.({
@@ -63,19 +63,19 @@ async function invokeSessionFilesHandler(
   return responder.calls;
 }
 
-function expectOkPayload(calls: ReturnType<typeof createResponder>["calls"]): Record<string, unknown> {
+function expectOkPayload(calls: ReturnType<typeof createResponder>["calls"]): Record<string, any> {
   expect(calls).toHaveLength(1);
   expect(calls[0]?.ok).toBe(true);
-  return calls[0]?.payload as Record<string, unknown>;
+  return calls[0]?.payload as Record<string, any>;
 }
 
-function expectError(calls: ReturnType<typeof createResponder>["calls"]): Record<string, unknown> {
+function expectError(calls: ReturnType<typeof createResponder>["calls"]): Record<string, any> {
   expect(calls).toHaveLength(1);
   expect(calls[0]?.ok).toBe(false);
-  return calls[0]?.error as Record<string, unknown>;
+  return calls[0]?.error as Record<string, any>;
 }
 
-function assistantToolCall(name: string, args: Record<string, unknown>) {
+function assistantToolCall(name: string, args: Record<string, any>) {
   return {
     role: "assistant",
     content: [
@@ -141,14 +141,14 @@ describe("sessions.files RPC handlers", () => {
     );
 
     expect(payload.root).toBe(workspaceRoot);
-    expect(payload.files.map((file: Record<string, unknown>) => [file.path, file.kind])).toEqual([
+    expect(payload.files.map((file: Record<string, any>) => [file.path, file.kind])).toEqual([
       ["package.json", "modified"],
       ["ui/chat.ts", "modified"],
       ["src/readme.md", "read"],
     ]);
     expect(payload.browser.path).toBe("");
     expect(
-      payload.browser.entries.map((entry: Record<string, unknown>) => [
+      payload.browser.entries.map((entry: Record<string, any>) => [
         entry.path,
         entry.kind,
         entry.sessionKind,
@@ -189,7 +189,7 @@ describe("sessions.files RPC handlers", () => {
       }),
     );
 
-    expect(payload.files.map((file: Record<string, unknown>) => [file.path, file.kind])).toEqual([
+    expect(payload.files.map((file: Record<string, any>) => [file.path, file.kind])).toEqual([
       ["package.json", "modified"],
       ["ui/vite.config.ts", "modified"],
       ["src/readme.md", "read"],
@@ -218,7 +218,7 @@ describe("sessions.files RPC handlers", () => {
       }),
     );
 
-    expect(payload.files.map((file: Record<string, unknown>) => [file.path, file.kind])).toEqual([
+    expect(payload.files.map((file: Record<string, any>) => [file.path, file.kind])).toEqual([
       ["old-name.md", "modified"],
       ["package.json", "modified"],
       ["src/readme.md", "modified"],
@@ -266,7 +266,7 @@ describe("sessions.files RPC handlers", () => {
       }),
     ]);
     expect(
-      payload.browser.entries.map((entry: Record<string, unknown>) => [
+      payload.browser.entries.map((entry: Record<string, any>) => [
         entry.path,
         entry.kind,
         entry.sessionKind,
@@ -384,7 +384,7 @@ describe("sessions.files RPC handlers", () => {
 
     expect(folderPayload.browser.parentPath).toBe("");
     expect(
-      folderPayload.browser.entries.map((entry: Record<string, unknown>) => [
+      folderPayload.browser.entries.map((entry: Record<string, any>) => [
         entry.path,
         entry.kind,
         entry.sessionKind,
@@ -403,7 +403,7 @@ describe("sessions.files RPC handlers", () => {
 
     expect(searchPayload.browser.search).toBe("vite");
     expect(
-      searchPayload.browser.entries.map((entry: Record<string, unknown>) => entry.path),
+      searchPayload.browser.entries.map((entry: Record<string, any>) => entry.path),
     ).toEqual(["ui/vite.config.ts"]);
 
     const error = expectError(
@@ -528,7 +528,7 @@ describe("sessions.files RPC handlers", () => {
       }),
     );
     const entry = payload.browser.entries.find(
-      (browserEntry: Record<string, unknown>) => browserEntry.path === "dated.txt",
+      (browserEntry: Record<string, any>) => browserEntry.path === "dated.txt",
     );
 
     expect(Number.isInteger(entry.updatedAtMs)).toBe(true);

@@ -17,7 +17,7 @@ export type SummaryStrategy = 'single' | 'split' | 'oversized-fallback';
 
 /** 摘要请求 */
 export interface SummaryRequest {
-  messages: unknown[];
+  messages: any[];
   strategy: SummaryStrategy;
   maxTokens: number;
   /** 保留的最近消息数 */
@@ -92,8 +92,8 @@ export function selectSummaryStrategy(params: {
 
 /** 生成单块摘要 */
 export async function generateSingleSummary(
-  messages: unknown[],
-  generateSummary: (messages: unknown[]) => Promise<string>,
+  messages: any[],
+  generateSummary: (messages: any[]) => Promise<string>,
 ): Promise<string> {
   if (messages.length === 0) {
     return 'No prior history.';
@@ -103,8 +103,8 @@ export async function generateSingleSummary(
 
 /** 生成多块分块摘要 */
 export async function generateSplitSummary(
-  chunks: unknown[][],
-  generateSummary: (messages: unknown[]) => Promise<string>,
+  chunks: any[][],
+  generateSummary: (messages: any[]) => Promise<string>,
 ): Promise<PartialSummary[]> {
   const summaries: PartialSummary[] = [];
 
@@ -124,7 +124,7 @@ export async function generateSplitSummary(
 /** 合并部分摘要 */
 export async function mergePartialSummaries(
   partials: PartialSummary[],
-  generateSummary: (messages: unknown[]) => Promise<string>,
+  generateSummary: (messages: any[]) => Promise<string>,
 ): Promise<string> {
   if (partials.length === 0) {
     return 'No prior history.';
@@ -148,9 +148,9 @@ export async function mergePartialSummaries(
 
 /** 生成超大降级摘要 */
 export async function generateOversizedFallbackSummary(
-  smallMessages: unknown[],
+  smallMessages: any[],
   oversizedNotes: string[],
-  generateSummary: (messages: unknown[]) => Promise<string>,
+  generateSummary: (messages: any[]) => Promise<string>,
 ): Promise<string> {
   const parts: string[] = [];
 
@@ -178,9 +178,9 @@ export async function generateOversizedFallbackSummary(
  */
 export async function executeMultiLevelSummary(
   request: SummaryRequest,
-  generateSummary: (messages: unknown[]) => Promise<string>,
-  chunks?: unknown[][],
-  oversizedPlan?: { smallMessages: unknown[]; oversizedNotes: string[] },
+  generateSummary: (messages: any[]) => Promise<string>,
+  chunks?: any[][],
+  oversizedPlan?: { smallMessages: any[]; oversizedNotes: string[] },
 ): Promise<SummaryResult> {
   const startTime = Date.now();
   const { messages, strategy, keepRecentCount } = request;

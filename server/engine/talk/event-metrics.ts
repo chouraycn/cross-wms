@@ -7,17 +7,17 @@
 
 /** Coerce an unknown payload into an optional record for safe key reads. */
 export function asOptionalRecord(
-  value: unknown,
-): Record<string, unknown> | undefined {
+  value: any,
+): Record<string, any> | undefined {
   if (value && typeof value === "object" && !Array.isArray(value)) {
-    return value as Record<string, unknown>;
+    return value as Record<string, any>;
   }
   return undefined;
 }
 
 /** Read the first non-negative finite number from a provider payload record. */
 export function firstFiniteTalkEventNumber(
-  record: Record<string, unknown> | undefined,
+  record: Record<string, any> | undefined,
   keys: readonly string[],
 ): number | undefined {
   if (!record) {

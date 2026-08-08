@@ -4,6 +4,6 @@ export type GatewayWsSharedHandlerParams = unknown;
 
 export type AttachGatewayWsConnectionHandlerParams = unknown;
 
-export function attachGatewayWsConnectionHandler(...args: unknown[]): unknown {
+export function attachGatewayWsConnectionHandler(...args: any[]): any {
   return undefined;
 }

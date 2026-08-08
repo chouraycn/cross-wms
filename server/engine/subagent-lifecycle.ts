@@ -35,9 +35,9 @@ export interface SubagentInfo {
   ttlMs?: number;
   toolCount: number;
   messageCount: number;
-  result?: unknown;
+  result?: any;
   error?: Error;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 /** 子代理创建选项 */
@@ -46,15 +46,15 @@ export interface SubagentCreateOptions {
   mode: SubagentMode;
   parentSessionId: string;
   ttlMs?: number;
-  initialMessages?: Array<{ role: string; content: unknown }>;
-  metadata?: Record<string, unknown>;
+  initialMessages?: Array<{ role: string; content: any }>;
+  metadata?: Record<string, any>;
 }
 
 /** 子代理生命周期事件 */
 export type SubagentLifecycleEvent =
   | { type: 'created'; subagent: SubagentInfo }
   | { type: 'activated'; subagent: SubagentInfo }
-  | { type: 'completed'; subagent: SubagentInfo; result?: unknown }
+  | { type: 'completed'; subagent: SubagentInfo; result?: any }
   | { type: 'failed'; subagent: SubagentInfo; error: Error }
   | { type: 'expired'; subagent: SubagentInfo }
   | { type: 'disposed'; subagent: SubagentInfo };
@@ -174,7 +174,7 @@ export class SubagentLifecycleManager {
   /**
    * 标记子代理完成
    */
-  complete(subagentId: string, result?: unknown): boolean {
+  complete(subagentId: string, result?: any): boolean {
     const subagent = this.subagents.get(subagentId);
     if (!subagent) return false;
 

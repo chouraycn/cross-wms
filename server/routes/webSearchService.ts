@@ -57,7 +57,7 @@ router.post('/test', async (req, res) => {
     const options: WebSearchOptions = {};
 
     // 从 secrets DB 加载 API Key
-    const searchConfig: Record<string, unknown> = {};
+    const searchConfig: Record<string, any> = {};
     try {
       const keyName = provider === 'kimi' ? 'KIMI_API_KEY' : 'MINIMAX_API_KEY';
       const apiKey = getSecretValueByKey('encrypted', keyName, 'web-search-test');

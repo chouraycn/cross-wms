@@ -32,8 +32,8 @@ export interface TransportConfig {
 export interface TransportMessage {
   id: string;
   type: string;
-  payload: unknown;
-  metadata?: Record<string, unknown>;
+  payload: any;
+  metadata?: Record<string, any>;
   timestamp: number;
 }
 
@@ -41,12 +41,12 @@ export interface TransportResponse {
   success: boolean;
   statusCode?: number;
   message?: string;
-  data?: unknown;
+  data?: any;
 }
 
 export interface TransportEvent {
   type: "connected" | "disconnected" | "error" | "message" | "timeout";
-  data?: unknown;
+  data?: any;
   timestamp: number;
 }
 

@@ -18,17 +18,17 @@ export interface RunTransitionResult {
 
 export interface StartOptions {
   timeoutMs?: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface CompleteOptions {
-  result?: unknown;
-  metadata?: Record<string, unknown>;
+  result?: any;
+  metadata?: Record<string, any>;
 }
 
 export interface FailOptions {
   error?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export function startSubagent(instanceId: string, options: StartOptions = {}): RunTransitionResult {
@@ -244,7 +244,7 @@ export function createRunningSubagent(
   name: string,
   taskDescription: string,
   parentSessionKey?: string,
-  metadata?: Record<string, unknown>,
+  metadata?: Record<string, any>,
 ): SubagentInstance {
   const sessionKey = generateSessionKey(definitionId);
   const instance: SubagentInstance = {

@@ -22,7 +22,7 @@ export interface McpServerConfig {
 export interface McpToolInfo {
   name: string;
   description: string;
-  inputSchema?: Record<string, unknown>;
+  inputSchema?: Record<string, any>;
 }
 
 /** MCP Server 运行时状态 */

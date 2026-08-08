@@ -50,7 +50,7 @@ type PluginManifestRecord = {
 type OpenClawPackageManifest = {
   extensions?: readonly string[];
   setupEntry?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 // ============================================================================

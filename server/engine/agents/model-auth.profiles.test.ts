@@ -116,15 +116,15 @@ vi.mock("./provider-auth-aliases.js", () => ({
 vi.mock("./model-auth-env-vars.js", () => {
   // Workspace-provided auth evidence is only trusted when the plugin is in the
   // effective allowlist, mirroring runtime plugin scoping.
-  const hasAllowedPlugin = (config: unknown, pluginId: string): boolean => {
+  const hasAllowedPlugin = (config: any, pluginId: string): boolean => {
     if (!config || typeof config !== "object") {
       return false;
     }
-    const plugins = (config as { plugins?: unknown }).plugins;
+    const plugins = (config as { plugins?: any }).plugins;
     if (!plugins || typeof plugins !== "object") {
       return false;
     }
-    const allow = (plugins as { allow?: unknown }).allow;
+    const allow = (plugins as { allow?: any }).allow;
     return Array.isArray(allow) && allow.includes(pluginId);
   };
   const candidates = {
@@ -168,7 +168,7 @@ vi.mock("./model-auth-env-vars.js", () => {
           source: "gcloud adc",
         },
       ],
-    } satisfies Record<string, readonly unknown[]>;
+    } satisfies Record<string, readonly any[]>;
     if (!hasAllowedPlugin(params?.config, "workspace-cloud")) {
       return evidence;
     }
@@ -209,7 +209,7 @@ vi.mock("../plugins/provider-runtime.js", () => ({
   refreshProviderOAuthCredentialWithPlugin: async () => null,
   resolveProviderSyntheticAuthWithPlugin: (params: {
     provider: string;
-    context: { providerConfig?: { api?: string; baseUrl?: string; models?: unknown[] } };
+    context: { providerConfig?: { api?: string; baseUrl?: string; models?: any[] } };
   }) => {
     if (params.provider !== "demo-local") {
       return undefined;
@@ -246,11 +246,11 @@ vi.mock("../plugins/providers.js", () => ({
 }));
 
 const cliCredentialMocks = vi.hoisted(() => ({
-  readClaudeCliCredentialsCached: vi.fn<(options?: unknown) => ClaudeCliCredential | null>(
+  readClaudeCliCredentialsCached: vi.fn<(options?: any) => ClaudeCliCredential | null>(
     () => null,
   ),
-  readCodexCliCredentialsCached: vi.fn<(options?: unknown) => OAuthCredential | null>(() => null),
-  readMiniMaxCliCredentialsCached: vi.fn<(options?: unknown) => OAuthCredential | null>(() => null),
+  readCodexCliCredentialsCached: vi.fn<(options?: any) => OAuthCredential | null>(() => null),
+  readMiniMaxCliCredentialsCached: vi.fn<(options?: any) => OAuthCredential | null>(() => null),
 }));
 
 vi.mock("./cli-credentials.js", () => cliCredentialMocks);
@@ -701,7 +701,7 @@ describe("getApiKeyForModel", () => {
         Z_AI_API_KEY: undefined,
       },
       async () => {
-        let error: unknown = null;
+        let error: any = null;
         try {
           await resolveApiKeyForProvider({
             provider: "zai",

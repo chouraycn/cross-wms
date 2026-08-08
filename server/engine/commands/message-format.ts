@@ -15,18 +15,18 @@ import { shortenText } from "./text-format.js";
 const resolveChannelLabel = (channel: ChannelId) =>
   getLoadedChannelPlugin(channel)?.meta.label ?? channel;
 
-function extractMessageId(payload: unknown): string | null {
+function extractMessageId(payload: any): string | null {
   if (!payload || typeof payload !== "object") {
     return null;
   }
-  const direct = (payload as { messageId?: unknown }).messageId;
+  const direct = (payload as { messageId?: any }).messageId;
   const directId = normalizeOptionalString(direct);
   if (directId) {
     return directId;
   }
-  const result = (payload as { result?: unknown }).result;
+  const result = (payload as { result?: any }).result;
   if (result && typeof result === "object") {
-    const nested = (result as { messageId?: unknown }).messageId;
+    const nested = (result as { messageId?: any }).messageId;
     const nestedId = normalizeOptionalString(nested);
     if (nestedId) {
       return nestedId;
@@ -39,11 +39,11 @@ type FormatOpts = {
   width: number;
 };
 
-function renderObjectSummary(payload: unknown, opts: FormatOpts): string[] {
+function renderObjectSummary(payload: any, opts: FormatOpts): string[] {
   if (!payload || typeof payload !== "object") {
     return [String(payload)];
   }
-  const obj = payload as Record<string, unknown>;
+  const obj = payload as Record<string, any>;
   const keys = Object.keys(obj);
   if (keys.length === 0) {
     return [theme.muted("(empty)")];
@@ -87,15 +87,15 @@ function renderObjectSummary(payload: unknown, opts: FormatOpts): string[] {
   ];
 }
 
-function renderMessageList(messages: unknown[], opts: FormatOpts, emptyLabel: string): string[] {
+function renderMessageList(messages: any[], opts: FormatOpts, emptyLabel: string): string[] {
   const rows = messages.slice(0, 25).map((m) => {
-    const msg = m as Record<string, unknown>;
+    const msg = m as Record<string, any>;
     const id =
       (typeof msg.id === "string" && msg.id) ||
       (typeof msg.ts === "string" && msg.ts) ||
       (typeof msg.messageId === "string" && msg.messageId) ||
       "";
-    const authorObj = msg.author as Record<string, unknown> | undefined;
+    const authorObj = msg.author as Record<string, any> | undefined;
     const author =
       (typeof msg.authorTag === "string" && msg.authorTag) ||
       (typeof authorObj?.username === "string" && authorObj.username) ||
@@ -135,38 +135,38 @@ function renderMessageList(messages: unknown[], opts: FormatOpts, emptyLabel: st
   ];
 }
 
-function renderMessagesFromPayload(payload: unknown, opts: FormatOpts): string[] | null {
+function renderMessagesFromPayload(payload: any, opts: FormatOpts): string[] | null {
   if (!payload || typeof payload !== "object") {
     return null;
   }
-  const messages = (payload as { messages?: unknown }).messages;
+  const messages = (payload as { messages?: any }).messages;
   if (!Array.isArray(messages)) {
     return null;
   }
   return renderMessageList(messages, opts, "No messages.");
 }
 
-function renderPinsFromPayload(payload: unknown, opts: FormatOpts): string[] | null {
+function renderPinsFromPayload(payload: any, opts: FormatOpts): string[] | null {
   if (!payload || typeof payload !== "object") {
     return null;
   }
-  const pins = (payload as { pins?: unknown }).pins;
+  const pins = (payload as { pins?: any }).pins;
   if (!Array.isArray(pins)) {
     return null;
   }
   return renderMessageList(pins, opts, "No pins.");
 }
 
-function extractDiscordSearchResultsMessages(results: unknown): unknown[] | null {
+function extractDiscordSearchResultsMessages(results: any): any[] | null {
   if (!results || typeof results !== "object") {
     return null;
   }
-  const raw = (results as { messages?: unknown }).messages;
+  const raw = (results as { messages?: any }).messages;
   if (!Array.isArray(raw)) {
     return null;
   }
   // Discord search returns messages as array-of-array; first element is the message.
-  const flattened: unknown[] = [];
+  const flattened: any[] = [];
   for (const entry of raw) {
     if (Array.isArray(entry) && entry.length > 0) {
       flattened.push(entry[0]);
@@ -177,18 +177,18 @@ function extractDiscordSearchResultsMessages(results: unknown): unknown[] | null
   return flattened.length ? flattened : null;
 }
 
-function renderReactions(payload: unknown, opts: FormatOpts): string[] | null {
+function renderReactions(payload: any, opts: FormatOpts): string[] | null {
   if (!payload || typeof payload !== "object") {
     return null;
   }
-  const reactions = (payload as { reactions?: unknown }).reactions;
+  const reactions = (payload as { reactions?: any }).reactions;
   if (!Array.isArray(reactions)) {
     return null;
   }
 
   const rows = reactions.slice(0, 50).map((r) => {
-    const entry = r as Record<string, unknown>;
-    const emojiObj = entry.emoji as Record<string, unknown> | undefined;
+    const entry = r as Record<string, any>;
+    const emojiObj = entry.emoji as Record<string, any> | undefined;
     const emoji =
       (typeof emojiObj?.raw === "string" && emojiObj.raw) ||
       (typeof entry.name === "string" && entry.name) ||
@@ -196,7 +196,7 @@ function renderReactions(payload: unknown, opts: FormatOpts): string[] | null {
       "";
     const count = typeof entry.count === "number" ? String(entry.count) : "";
     const userList = Array.isArray(entry.users)
-      ? (entry.users as unknown[])
+      ? (entry.users as any[])
           .slice(0, 8)
           .map((u) => {
             if (typeof u === "string") {
@@ -205,7 +205,7 @@ function renderReactions(payload: unknown, opts: FormatOpts): string[] | null {
             if (!u || typeof u !== "object") {
               return "";
             }
-            const user = u as Record<string, unknown>;
+            const user = u as Record<string, any>;
             return (
               (typeof user.tag === "string" && user.tag) ||
               (typeof user.username === "string" && user.username) ||
@@ -334,8 +334,8 @@ export function formatMessageCliText(result: MessageActionRunResult): string[] {
   const lines: string[] = [];
 
   if (result.action === "react") {
-    const added = (payload as { added?: unknown }).added;
-    const removed = (payload as { removed?: unknown }).removed;
+    const added = (payload as { added?: any }).added;
+    const removed = (payload as { removed?: any }).removed;
     if (typeof added === "string" && added.trim()) {
       lines.push(ok(`✅ Reaction added: ${added.trim()}`));
       return lines;
@@ -379,7 +379,7 @@ export function formatMessageCliText(result: MessageActionRunResult): string[] {
   }
 
   if (result.action === "search") {
-    const results = (payload as { results?: unknown }).results;
+    const results = (payload as { results?: any }).results;
     const list = extractDiscordSearchResultsMessages(results);
     if (list) {
       lines.push(heading("Search results"));

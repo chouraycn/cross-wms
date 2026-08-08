@@ -49,7 +49,7 @@ export type CompactionCheckpointStore = {
     maxBytes?: number;
   }) => Promise<CapturedCompactionCheckpointSnapshot | null>;
   persistCheckpoint: (params: {
-    cfg?: unknown;
+    cfg?: any;
     sessionKey: string;
     sessionId: string;
     reason: SessionCompactionCheckpointReason;
@@ -66,20 +66,20 @@ export type CompactionCheckpointStore = {
   cleanupSnapshot: (
     snapshot: CapturedCompactionCheckpointSnapshot | null | undefined,
   ) => Promise<void>;
-  branchCheckpointSession: (params: unknown) => Promise<unknown>;
-  restoreCheckpointSession: (params: unknown) => Promise<unknown>;
+  branchCheckpointSession: (params: any) => Promise<any>;
+  restoreCheckpointSession: (params: any) => Promise<any>;
 };
 
 /** 最小 ContextEngine 接口，对齐 openclaw context-engine/types.ts。 */
 export type ContextEngine = {
   info: { id: string; name: string };
-  bootstrap: (params: unknown) => Promise<unknown>;
-  maintain: (params: unknown) => Promise<unknown>;
-  ingest: (params: unknown) => Promise<unknown>;
-  ingestBatch: (params: unknown) => Promise<unknown>;
-  afterTurn: (params: unknown) => Promise<void>;
-  assemble: (params: unknown) => Promise<unknown>;
-  compact: (params: unknown) => Promise<unknown>;
+  bootstrap: (params: any) => Promise<any>;
+  maintain: (params: any) => Promise<any>;
+  ingest: (params: any) => Promise<any>;
+  ingestBatch: (params: any) => Promise<any>;
+  afterTurn: (params: any) => Promise<void>;
+  assemble: (params: any) => Promise<any>;
+  compact: (params: any) => Promise<any>;
 };
 
 // ---------------------------------------------------------------------------
@@ -143,10 +143,10 @@ function isGooglePromptCacheEligible(params: {
  */
 export function resolveProviderCacheTtlEligibility(params: {
   provider: string;
-  config?: unknown;
+  config?: any;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
-  context: unknown;
+  context: any;
 }): boolean {
   void params.config;
   void params.workspaceDir;
@@ -175,10 +175,10 @@ export function resolveProviderCacheTtlEligibility(params: {
  */
 export async function prepareProviderRuntimeAuth(params: {
   provider: string;
-  config?: unknown;
+  config?: any;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
-  context: unknown;
+  context: any;
 }): Promise<{ prepared: false; reason: string }> {
   void params;
   return { prepared: false, reason: "no provider runtime plugin available" };
@@ -200,10 +200,10 @@ const LEGACY_CONTEXT_ENGINE_ID = "legacy";
 function createLegacyContextEngine(): ContextEngine {
   return {
     info: { id: LEGACY_CONTEXT_ENGINE_ID, name: "Legacy Context Engine" },
-    async bootstrap(_params: unknown) {
+    async bootstrap(_params: any) {
       return { bootstrapped: false, reason: "context engine downgraded to legacy" };
     },
-    async maintain(_params: unknown) {
+    async maintain(_params: any) {
       return {
         changed: false,
         bytesFreed: 0,
@@ -211,19 +211,19 @@ function createLegacyContextEngine(): ContextEngine {
         reason: "context engine downgraded to legacy",
       };
     },
-    async ingest(_params: unknown) {
+    async ingest(_params: any) {
       return { ingested: false };
     },
-    async ingestBatch(_params: unknown) {
+    async ingestBatch(_params: any) {
       return { ingestedCount: 0 };
     },
-    async afterTurn(_params: unknown) {
+    async afterTurn(_params: any) {
       return undefined;
     },
-    async assemble(_params: unknown) {
+    async assemble(_params: any) {
       return { messages: [] };
     },
-    async compact(_params: unknown) {
+    async compact(_params: any) {
       return { compacted: false };
     },
   };
@@ -239,7 +239,7 @@ let cachedLegacyContextEngine: ContextEngine | undefined;
  * （owner="core"）以便 resolveContextEngineOwnerPluginId 能正确识别。
  */
 export async function resolveContextEngine(
-  _config?: unknown,
+  _config?: any,
   _options?: { agentDir?: string; workspaceDir?: string },
 ): Promise<ContextEngine> {
   cachedLegacyContextEngine ??= createLegacyContextEngine();
@@ -307,13 +307,13 @@ const SESSION_HEADER_READ_MAX_BYTES = 64 * 1024;
 const SESSION_TAIL_READ_INITIAL_BYTES = 64 * 1024;
 export const MAX_COMPACTION_CHECKPOINT_LEAF_SCAN_BYTES = 64 * 1024 * 1024;
 
-function parseTranscriptLine(line: string): Record<string, unknown> | null {
+function parseTranscriptLine(line: string): Record<string, any> | null {
   try {
-    const parsed = JSON.parse(line) as unknown;
+    const parsed = JSON.parse(line) as any;
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
       return null;
     }
-    return parsed as Record<string, unknown>;
+    return parsed as Record<string, any>;
   } catch {
     return null;
   }
@@ -347,7 +347,7 @@ async function readSessionIdFromTranscriptHeaderAsync(
     if (!firstLine) {
       return null;
     }
-    const parsed = JSON.parse(firstLine) as { type?: unknown; id?: unknown };
+    const parsed = JSON.parse(firstLine) as { type?: any; id?: any };
     if (parsed.type !== "session" || typeof parsed.id !== "string" || !parsed.id.trim()) {
       return null;
     }
@@ -570,7 +570,7 @@ type PersistedCompactionCheckpoint = {
  */
 async function persistSessionCompactionCheckpoint(
   params: {
-    cfg?: unknown;
+    cfg?: any;
     sessionKey: string;
     sessionId: string;
     reason: SessionCompactionCheckpointReason;
@@ -685,7 +685,7 @@ async function copyTranscriptFile(params: {
  * updateSessionStore + forkCheckpointTranscriptFromStoredBoundary 完成；
  * cross-wms 改为读取检查点 JSON，复制 preCompaction.sessionFile 到新的分支文件。
  */
-async function branchCheckpointSession(params: unknown): Promise<{
+async function branchCheckpointSession(params: any): Promise<{
   status: "created" | "missing-session" | "missing-checkpoint" | "missing-boundary" | "failed";
   key?: string;
   checkpointPath?: string;
@@ -740,7 +740,7 @@ async function branchCheckpointSession(params: unknown): Promise<{
  * updateSessionStore + forkCheckpointTranscriptFromStoredBoundary 完成；
  * cross-wms 改为读取检查点 JSON，复制 preCompaction.sessionFile 到恢复文件。
  */
-async function restoreCheckpointSession(params: unknown): Promise<{
+async function restoreCheckpointSession(params: any): Promise<{
   status: "created" | "missing-session" | "missing-checkpoint" | "missing-boundary" | "failed";
   key?: string;
   checkpointPath?: string;
@@ -827,7 +827,7 @@ function normalizeAgentId(agentId: string): string {
  * 直接落回 state dir。
  */
 export function resolveAgentDir(
-  cfg: unknown,
+  cfg: any,
   agentId: string,
   env: NodeJS.ProcessEnv = process.env,
 ): string {
@@ -845,7 +845,7 @@ export function resolveAgentDir(
  */
 export function resolveSessionAgentIds(params: {
   sessionKey?: string;
-  config?: unknown;
+  config?: any;
   agentId?: string;
   fallbackAgentId?: string;
 }): { defaultAgentId: string; sessionAgentId: string } {
@@ -921,7 +921,7 @@ export type ModelFallbackObservation = {
  * 当 timedOut 为 true 且 failoverReason / profileFailureReason 未显式提供时，
  * 回退为 "timeout"。返回结构化观察对象，不返回 null。
  */
-export function resolveModelFallbackObservation(...args: unknown[]): ModelFallbackObservation {
+export function resolveModelFallbackObservation(...args: any[]): ModelFallbackObservation {
   const input = (args[0] ?? {}) as {
     stage?: string;
     decision?: string;
@@ -965,12 +965,12 @@ export type RunTimeoutAttribution = {
  * 移植自 openclaw timeout.ts：从运行状态中提取 timedOut 信号、elapsed/deadline
  * 等字段，返回结构化归因对象。当 signal.aborted 为 true 时也视为超时。
  */
-export function resolveRunTimeoutAttribution(...args: unknown[]): RunTimeoutAttribution {
+export function resolveRunTimeoutAttribution(...args: any[]): RunTimeoutAttribution {
   const input = (args[0] ?? {}) as {
     timedOut?: boolean;
     elapsedMs?: number;
     deadlineMs?: number;
-    signal?: { aborted?: boolean; reason?: unknown };
+    signal?: { aborted?: boolean; reason?: any };
   };
   const timedOut =
     Boolean(input.timedOut) || Boolean(input.signal?.aborted);
@@ -999,17 +999,17 @@ export type AcceptedSession = {
  * 从工具结果中提取 details.status === "accepted" 且包含 runId + childSessionKey 的记录。
  * 无匹配时返回 null（与 openclaw 行为一致）。
  */
-export function resolveAcceptedSession(...args: unknown[]): AcceptedSession | null {
+export function resolveAcceptedSession(...args: any[]): AcceptedSession | null {
   const result = args[0];
   if (!result || typeof result !== "object") {
     return null;
   }
-  const outer = result as Record<string, unknown>;
+  const outer = result as Record<string, any>;
   const detailsRaw = outer.details;
   if (!detailsRaw || typeof detailsRaw !== "object") {
     return null;
   }
-  const details = detailsRaw as Record<string, unknown>;
+  const details = detailsRaw as Record<string, any>;
   if (details.status !== "accepted") {
     return null;
   }
@@ -1035,7 +1035,7 @@ export type Infra = {
   };
   db: {
     /** cross-wms 未移植 sqlite 子系统，这里为占位句柄。 */
-    handle: unknown;
+    handle: any;
   };
   logger: {
     debug: (message: string) => void;
@@ -1083,12 +1083,12 @@ export function resolveInfra(params?: {
 /** 最小工作区存储，使用内存 Map 模拟 kv 行为。 */
 export type WorkspaceStorage = {
   get: (key: string) => Promise<unknown | undefined>;
-  set: (key: string, value: unknown) => Promise<void>;
+  set: (key: string, value: any) => Promise<void>;
   delete: (key: string) => Promise<void>;
   keys: () => Promise<string[]>;
 };
 
-const workspaceStorageMap = new Map<string, unknown>();
+const workspaceStorageMap = new Map<string, any>();
 
 /**
  * 解析工作区存储句柄。
@@ -1105,7 +1105,7 @@ export function resolveWorkspaceStorage(params?: {
     async get(key: string) {
       return workspaceStorageMap.get(key);
     },
-    async set(key: string, value: unknown) {
+    async set(key: string, value: any) {
       workspaceStorageMap.set(key, value);
     },
     async delete(key: string) {
@@ -1137,14 +1137,14 @@ export function resolveWorkspaceStorageSessionRoot(params?: {
 
 /** 最小嵌入式代理消息句柄。 */
 export type EmbeddedAgentMessaging = {
-  queueMessage: (params: unknown) => Promise<void>;
+  queueMessage: (params: any) => Promise<void>;
   waitForRunEnd: () => Promise<void>;
 };
 
 /** 内存队列中的消息条目。 */
 type QueuedEmbeddedAgentMessage = {
   enqueuedAt: number;
-  payload: unknown;
+  payload: any;
 };
 
 /** 进程级消息队列，queueMessage 写入、waitForRunEnd 等待 run 结束信号。 */
@@ -1183,13 +1183,13 @@ export function drainEmbeddedAgentMessageQueue(): QueuedEmbeddedAgentMessage[] {
  * queueMessage 将消息存入内存队列，waitForRunEnd 通过 deferred promise
  * 实际等待 signalEmbeddedAgentRunEnded 触发的 run 结束信号。
  */
-export function resolveEmbeddedAgentMessaging(..._args: unknown[]): EmbeddedAgentMessaging {
+export function resolveEmbeddedAgentMessaging(..._args: any[]): EmbeddedAgentMessaging {
   // 确保 run-end latch 已初始化，保证 waitForRunEnd 能实际挂起。
   if (!embeddedAgentRunEndPromise) {
     resetEmbeddedAgentRunEndLatch();
   }
   return {
-    async queueMessage(params: unknown) {
+    async queueMessage(params: any) {
       embeddedAgentMessageQueue.push({
         enqueuedAt: Date.now(),
         payload: params,
@@ -1216,7 +1216,7 @@ export type AcpRuntimeAvailability = {
  * 依次检查 sandboxed 标志、config policy（config.acp.enabled）、backend 是否已注册。
  * cross-wms 未移植 ACP backend registry，因此最终 available 为 false。
  */
-export function resolveAcpRuntimeAvailability(...args: unknown[]): AcpRuntimeAvailability {
+export function resolveAcpRuntimeAvailability(...args: any[]): AcpRuntimeAvailability {
   const params = (args[0] ?? {}) as {
     sandboxed?: boolean;
     config?: { acp?: { enabled?: boolean; backend?: string } };

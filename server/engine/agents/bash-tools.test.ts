@@ -339,9 +339,9 @@ const waitOneTurn = () =>
   new Promise<void>((resolve) => {
     setImmediate(resolve);
   });
-const readTotalLines = (details: unknown) => (details as { totalLines?: number }).totalLines;
-const readProcessStatus = (details: unknown) => (details as { status?: string }).status;
-const readProcessStatusOrRunning = (details: unknown) =>
+const readTotalLines = (details: any) => (details as { totalLines?: number }).totalLines;
+const readProcessStatus = (details: any) => (details as { status?: string }).status;
+const readProcessStatusOrRunning = (details: any) =>
   readProcessStatus(details) ?? PROCESS_STATUS_RUNNING;
 const expectTextContainsValues = (
   text: string,
@@ -426,7 +426,7 @@ function requireSessionId(details: { sessionId?: string }): string {
   }
   return details.sessionId;
 }
-const requireRunningSessionId = (result: { details: unknown }) => {
+const requireRunningSessionId = (result: { details: any }) => {
   expect(readProcessStatus(result.details)).toBe(PROCESS_STATUS_RUNNING);
   return requireSessionId(result.details as { sessionId?: string });
 };
@@ -457,7 +457,7 @@ async function startBackgroundCommand(tool: ExecToolInstance, command: string) {
   return requireRunningSessionId(result);
 }
 
-async function expectNotifyOnExitWake(tool: ExecToolInstance, expected: Record<string, unknown>) {
+async function expectNotifyOnExitWake(tool: ExecToolInstance, expected: Record<string, any>) {
   const wakeHandler = vi.fn().mockResolvedValue({ status: "skipped", reason: "disabled" });
   const dispose = setHeartbeatWakeHandler(
     wakeHandler as unknown as Parameters<typeof setHeartbeatWakeHandler>[0],

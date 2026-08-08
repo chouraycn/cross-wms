@@ -55,7 +55,7 @@ const providerRuntimeDeps = {
   ...defaultProviderRuntimeDeps,
 };
 
-let preparedExtraParamsCache = new WeakMap<OpenClawConfig, Map<string, Record<string, unknown>>>();
+let preparedExtraParamsCache = new WeakMap<OpenClawConfig, Map<string, Record<string, any>>>();
 const REQUEST_SCOPED_EXTRA_PARAM_KEYS = new Set(["response_format", "responseFormat", "stop"]);
 
 export const testing = {
@@ -91,7 +91,7 @@ export function resolveExtraParams(params: {
   provider: string;
   modelId: string;
   agentId?: string;
-}): Record<string, unknown> | undefined {
+}): Record<string, any> | undefined {
   const defaultParams = params.cfg?.agents?.defaults?.params ?? undefined;
   const canonicalKey = modelKey(params.provider, params.modelId);
   const legacyKey = legacyModelKey(params.provider, params.modelId);
@@ -161,7 +161,7 @@ type CacheRetentionStreamOptions = Partial<SimpleStreamOptions> & {
   cacheRetention?: "none" | "short" | "long";
   cachedContent?: string;
   topP?: number;
-  responseFormat?: Record<string, unknown>;
+  responseFormat?: Record<string, any>;
   frequencyPenalty?: number;
   presencePenalty?: number;
   seed?: number;
@@ -169,11 +169,11 @@ type CacheRetentionStreamOptions = Partial<SimpleStreamOptions> & {
 };
 type SupportedTransport = AgentRuntimeTransport;
 
-function resolveSupportedTransport(value: unknown): SupportedTransport | undefined {
+function resolveSupportedTransport(value: any): SupportedTransport | undefined {
   return value === "sse" || value === "websocket" || value === "auto" ? value : undefined;
 }
 
-function hasExplicitTransportSetting(settings: { transport?: unknown }): boolean {
+function hasExplicitTransportSetting(settings: { transport?: any }): boolean {
   return Object.hasOwn(settings, "transport");
 }
 
@@ -181,11 +181,11 @@ function clearPreparedExtraParamsCache(): void {
   preparedExtraParamsCache = new WeakMap();
 }
 
-function fingerprintPreparedExtraParamsModel(model?: ProviderRuntimeModel): unknown {
+function fingerprintPreparedExtraParamsModel(model?: ProviderRuntimeModel): any {
   if (!model) {
     return null;
   }
-  const record = model as unknown as Record<string, unknown>;
+  const record = model as unknown as Record<string, any>;
   return {
     api: model.api,
     provider: model.provider,
@@ -210,10 +210,10 @@ function resolvePreparedExtraParamsCacheKey(params: {
   modelId: string;
   agentDir?: string;
   workspaceDir?: string;
-  extraParamsOverride?: Record<string, unknown>;
+  extraParamsOverride?: Record<string, any>;
   thinkingLevel?: ThinkLevel;
   agentId?: string;
-  resolvedExtraParams?: Record<string, unknown>;
+  resolvedExtraParams?: Record<string, any>;
   model?: ProviderRuntimeModel;
   resolvedTransport?: SupportedTransport;
 }): string {
@@ -238,14 +238,14 @@ export function resolvePreparedExtraParams(params: {
   modelId: string;
   agentDir?: string;
   workspaceDir?: string;
-  extraParamsOverride?: Record<string, unknown>;
+  extraParamsOverride?: Record<string, any>;
   thinkingLevel?: ThinkLevel;
   agentId?: string;
-  resolvedExtraParams?: Record<string, unknown>;
+  resolvedExtraParams?: Record<string, any>;
   model?: ProviderRuntimeModel;
   resolvedTransport?: SupportedTransport;
   providerRuntimeHandle?: ProviderRuntimePluginHandle;
-}): Record<string, unknown> {
+}): Record<string, any> {
   const resolvedExtraParams =
     params.resolvedExtraParams ??
     resolveExtraParams({
@@ -346,8 +346,8 @@ export function resolvePreparedExtraParams(params: {
 }
 
 function sanitizeExtraParamsRecord(
-  value: Record<string, unknown> | undefined,
-): Record<string, unknown> | undefined {
+  value: Record<string, any> | undefined,
+): Record<string, any> | undefined {
   if (!value) {
     return undefined;
   }
@@ -359,8 +359,8 @@ function sanitizeExtraParamsRecord(
 }
 
 function stripRequestScopedExtraParams(
-  value: Record<string, unknown> | undefined,
-): Record<string, unknown> | undefined {
+  value: Record<string, any> | undefined,
+): Record<string, any> | undefined {
   if (!value) {
     return undefined;
   }
@@ -370,14 +370,14 @@ function stripRequestScopedExtraParams(
   return Object.keys(filtered).length > 0 ? filtered : undefined;
 }
 
-function hasRequestScopedExtraParams(value: Record<string, unknown> | undefined): boolean {
+function hasRequestScopedExtraParams(value: Record<string, any> | undefined): boolean {
   if (!value) {
     return false;
   }
   return [...REQUEST_SCOPED_EXTRA_PARAM_KEYS].some((key) => Object.hasOwn(value, key));
 }
 
-function hasFunctionExtraParamValue(value: Record<string, unknown> | undefined): boolean {
+function hasFunctionExtraParamValue(value: Record<string, any> | undefined): boolean {
   return Boolean(value && Object.values(value).some((item) => typeof item === "function"));
 }
 function shouldApplyDefaultOpenAIGptRuntimeParams(params: {
@@ -392,7 +392,7 @@ function shouldApplyDefaultOpenAIGptRuntimeParams(params: {
 
 function applyDefaultOpenAIGptRuntimeParams(
   params: { provider: string; modelId: string },
-  merged: Record<string, unknown>,
+  merged: Record<string, any>,
 ): void {
   if (!shouldApplyDefaultOpenAIGptRuntimeParams(params)) {
     return;
@@ -410,7 +410,7 @@ function applyDefaultOpenAIGptRuntimeParams(
 
 export function resolveAgentTransportOverride(params: {
   settingsManager: Pick<SettingsManager, "getGlobalSettings" | "getProjectSettings">;
-  effectiveExtraParams: Record<string, unknown> | undefined;
+  effectiveExtraParams: Record<string, any> | undefined;
 }): SupportedTransport | undefined {
   const globalSettings = params.settingsManager.getGlobalSettings();
   const projectSettings = params.settingsManager.getProjectSettings();
@@ -422,7 +422,7 @@ export function resolveAgentTransportOverride(params: {
 
 export function resolveExplicitSettingsTransport(params: {
   settingsManager: Pick<SettingsManager, "getGlobalSettings" | "getProjectSettings">;
-  sessionTransport: unknown;
+  sessionTransport: any;
 }): SupportedTransport | undefined {
   const globalSettings = params.settingsManager.getGlobalSettings();
   const projectSettings = params.settingsManager.getProjectSettings();
@@ -435,7 +435,7 @@ export function resolveExplicitSettingsTransport(params: {
   return resolveSupportedTransport(params.sessionTransport);
 }
 
-function normalizeStopSequences(value: unknown): string[] | undefined {
+function normalizeStopSequences(value: any): string[] | undefined {
   const list = typeof value === "string" ? [value] : Array.isArray(value) ? value : undefined;
   if (!list) {
     return undefined;
@@ -448,7 +448,7 @@ function normalizeStopSequences(value: unknown): string[] | undefined {
 
 function createStreamFnWithExtraParams(
   baseStreamFn: StreamFn | undefined,
-  extraParams: Record<string, unknown> | undefined,
+  extraParams: Record<string, any> | undefined,
   provider: string,
   model?: ProviderRuntimeModel,
 ): StreamFn | undefined {
@@ -477,7 +477,7 @@ function createStreamFnWithExtraParams(
     typeof resolvedResponseFormat === "object" &&
     !Array.isArray(resolvedResponseFormat)
   ) {
-    streamParams.responseFormat = resolvedResponseFormat as Record<string, unknown>;
+    streamParams.responseFormat = resolvedResponseFormat as Record<string, any>;
   }
   const transport = resolveSupportedTransport(extraParams.transport);
   if (transport) {
@@ -526,12 +526,12 @@ function createStreamFnWithExtraParams(
     streamParams.stop = resolvedStop;
   }
 
-  const readSupportsPromptCacheKey = (m: unknown): boolean => {
-    const compat = (m as { compat?: unknown })?.compat;
+  const readSupportsPromptCacheKey = (m: any): boolean => {
+    const compat = (m as { compat?: any })?.compat;
     if (!compat || typeof compat !== "object") {
       return false;
     }
-    return (compat as Record<string, unknown>).supportsPromptCacheKey === true;
+    return (compat as Record<string, any>).supportsPromptCacheKey === true;
   };
 
   const initialCacheRetention = resolveCacheRetention(
@@ -573,18 +573,18 @@ function createStreamFnWithExtraParams(
 }
 
 function resolveAliasedParamValue(
-  sources: Array<Record<string, unknown> | undefined>,
+  sources: Array<Record<string, any> | undefined>,
   snakeCaseKey: string,
   camelCaseKey: string,
-): unknown {
+): any {
   return resolveAliasedParamValueFromKeys(sources, [snakeCaseKey, camelCaseKey]);
 }
 
 function resolveAliasedParamValueFromKeys(
-  sources: Array<Record<string, unknown> | undefined>,
+  sources: Array<Record<string, any> | undefined>,
   keys: readonly string[],
-): unknown {
-  let resolved: unknown = undefined;
+): any {
+  let resolved: any = undefined;
   let seen = false;
   for (const source of sources) {
     if (!source) {
@@ -603,8 +603,8 @@ function resolveAliasedParamValueFromKeys(
 }
 
 function applyCanonicalAliasedParamValue(params: {
-  merged: Record<string, unknown>;
-  sources: Array<Record<string, unknown> | undefined>;
+  merged: Record<string, any>;
+  sources: Array<Record<string, any> | undefined>;
   keys: readonly string[];
   canonicalKey: string;
 }): void {
@@ -619,8 +619,8 @@ function applyCanonicalAliasedParamValue(params: {
 }
 
 function canonicalizeOpenRouterResponseCacheParams(
-  merged: Record<string, unknown>,
-  sources: Array<Record<string, unknown> | undefined>,
+  merged: Record<string, any>,
+  sources: Array<Record<string, any> | undefined>,
 ): void {
   applyCanonicalAliasedParamValue({
     merged,
@@ -671,7 +671,7 @@ function shouldStripOpenAICompletionsStore(model: ProviderRuntimeModel): boolean
   }
   const compat =
     model.compat && typeof model.compat === "object"
-      ? (model.compat as Record<string, unknown>)
+      ? (model.compat as Record<string, any>)
       : undefined;
   const capabilities = resolveProviderRequestPolicyConfig({
     provider: typeof model.provider === "string" ? model.provider : undefined,
@@ -696,7 +696,7 @@ function createOpenAICompletionsStoreCompatWrapper(baseStreamFn: StreamFn | unde
   };
 }
 
-function sanitizeExtraBodyRecord(value: Record<string, unknown>): Record<string, unknown> {
+function sanitizeExtraBodyRecord(value: Record<string, any>): Record<string, any> {
   return Object.fromEntries(
     Object.entries(sanitizeExtraParamsRecord(value) ?? {}).filter(
       ([, entry]) => entry !== undefined,
@@ -704,7 +704,7 @@ function sanitizeExtraBodyRecord(value: Record<string, unknown>): Record<string,
   );
 }
 
-function resolveExtraBodyParam(rawExtraBody: unknown): Record<string, unknown> | undefined {
+function resolveExtraBodyParam(rawExtraBody: any): Record<string, any> | undefined {
   if (rawExtraBody === undefined || rawExtraBody === null) {
     return undefined;
   }
@@ -713,13 +713,13 @@ function resolveExtraBodyParam(rawExtraBody: unknown): Record<string, unknown> |
     log.warn(`ignoring invalid extra_body param: ${summary}`);
     return undefined;
   }
-  const extraBody = sanitizeExtraBodyRecord(rawExtraBody as Record<string, unknown>);
+  const extraBody = sanitizeExtraBodyRecord(rawExtraBody as Record<string, any>);
   return Object.keys(extraBody).length > 0 ? extraBody : undefined;
 }
 
 function resolveChatTemplateKwargsParam(
-  rawChatTemplateKwargs: unknown,
-): Record<string, unknown> | undefined {
+  rawChatTemplateKwargs: any,
+): Record<string, any> | undefined {
   if (rawChatTemplateKwargs === undefined || rawChatTemplateKwargs === null) {
     return undefined;
   }
@@ -732,14 +732,14 @@ function resolveChatTemplateKwargsParam(
     return undefined;
   }
   const chatTemplateKwargs = sanitizeExtraBodyRecord(
-    rawChatTemplateKwargs as Record<string, unknown>,
+    rawChatTemplateKwargs as Record<string, any>,
   );
   return Object.keys(chatTemplateKwargs).length > 0 ? chatTemplateKwargs : undefined;
 }
 
 function createOpenAICompletionsChatTemplateKwargsWrapper(params: {
   baseStreamFn: StreamFn | undefined;
-  configured: Record<string, unknown>;
+  configured: Record<string, any>;
 }): StreamFn {
   const underlying = params.baseStreamFn ?? streamSimple;
   return (model, context, options) => {
@@ -750,7 +750,7 @@ function createOpenAICompletionsChatTemplateKwargsWrapper(params: {
       const existing = payloadObj.chat_template_kwargs;
       if (existing && typeof existing === "object" && !Array.isArray(existing)) {
         payloadObj.chat_template_kwargs = {
-          ...(existing as Record<string, unknown>),
+          ...(existing as Record<string, any>),
           ...params.configured,
         };
         return;
@@ -762,7 +762,7 @@ function createOpenAICompletionsChatTemplateKwargsWrapper(params: {
 
 function createOpenAICompletionsExtraBodyWrapper(
   baseStreamFn: StreamFn | undefined,
-  extraBody: Record<string, unknown>,
+  extraBody: Record<string, any>,
 ): StreamFn {
   const underlying = baseStreamFn ?? streamSimple;
   return (model, context, options) => {
@@ -788,9 +788,9 @@ type ApplyExtraParamsContext = {
   workspaceDir?: string;
   thinkingLevel?: ThinkLevel;
   model?: ProviderRuntimeModel;
-  effectiveExtraParams: Record<string, unknown>;
-  resolvedExtraParams?: Record<string, unknown>;
-  override?: Record<string, unknown>;
+  effectiveExtraParams: Record<string, any>;
+  resolvedExtraParams?: Record<string, any>;
+  override?: Record<string, any>;
 };
 
 function applyPrePluginStreamWrappers(ctx: ApplyExtraParamsContext): void {
@@ -925,7 +925,7 @@ function applyPostPluginStreamWrappers(
   log.warn(`ignoring invalid parallel_tool_calls param: ${summary}`);
 }
 
-function normalizeDeepSeekV4CandidateId(modelId: unknown): string | undefined {
+function normalizeDeepSeekV4CandidateId(modelId: any): string | undefined {
   if (typeof modelId !== "string") {
     return undefined;
   }
@@ -945,7 +945,7 @@ function isDeepSeekV4OpenAICompletionsModel(model: Parameters<StreamFn>[0]): boo
   );
 }
 
-function isMicrosoftFoundryProviderId(provider: unknown): boolean {
+function isMicrosoftFoundryProviderId(provider: any): boolean {
   if (typeof provider !== "string") {
     return false;
   }
@@ -996,7 +996,7 @@ function shouldSanitizeDeepSeekV4NonNativeFields(model: Parameters<StreamFn>[0])
   );
 }
 
-function stripDeepSeekV4ReasoningContent(payload: Record<string, unknown>): void {
+function stripDeepSeekV4ReasoningContent(payload: Record<string, any>): void {
   if (!Array.isArray(payload.messages)) {
     return;
   }
@@ -1004,7 +1004,7 @@ function stripDeepSeekV4ReasoningContent(payload: Record<string, unknown>): void
     if (!message || typeof message !== "object") {
       continue;
     }
-    delete (message as Record<string, unknown>).reasoning_content;
+    delete (message as Record<string, any>).reasoning_content;
   }
 }
 
@@ -1048,7 +1048,7 @@ export function applyExtraParamsToAgent(
   cfg: OpenClawConfig | undefined,
   provider: string,
   modelId: string,
-  extraParamsOverride?: Record<string, unknown>,
+  extraParamsOverride?: Record<string, any>,
   thinkingLevel?: ThinkLevel,
   agentId?: string,
   workspaceDir?: string,
@@ -1056,10 +1056,10 @@ export function applyExtraParamsToAgent(
   agentDir?: string,
   resolvedTransport?: SupportedTransport,
   options?: {
-    preparedExtraParams?: Record<string, unknown>;
+    preparedExtraParams?: Record<string, any>;
     nativeWebSearchPolicyContext?: NativeWebSearchToolPolicyParams;
   },
-): { effectiveExtraParams: Record<string, unknown> } {
+): { effectiveExtraParams: Record<string, any> } {
   const resolvedExtraParams = resolveExtraParams({
     cfg,
     provider,

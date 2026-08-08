@@ -51,7 +51,7 @@ function Badge({
     return React.cloneElement(child, {
       className: cn(badgeVariants({ variant }), (child.props as { className?: string }).className),
       ...props,
-    } as Record<string, unknown>)
+    } as Record<string, any>)
   }
   return (
     <Box
@@ -74,7 +74,7 @@ function Badge({
         },
         ...(Array.isArray(sx) ? sx : sx ? [sx] : []),
       ]}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     >
       {children}
     </Box>

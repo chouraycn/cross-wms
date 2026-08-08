@@ -10,7 +10,7 @@ describe("embedded OpenClaw queued steering cancellation", () => {
   it("waits for the queued user message_end transcript boundary", async () => {
     // A queued steer is only durable once the user message_end event lands in
     // the active transcript.
-    let emit!: (event: unknown) => void;
+    let emit!: (event: any) => void;
     const activeSession: EmbeddedAgentActiveSessionSteerTarget = {
       getSteeringMessages: () => [],
       steer: async () => {},
@@ -96,7 +96,7 @@ describe("embedded OpenClaw queued steering cancellation", () => {
 
   it("rejects and removes the queued steering message when the session ends first", async () => {
     vi.useFakeTimers();
-    let emit!: (event: unknown) => void;
+    let emit!: (event: any) => void;
     const targetMessage = {
       role: "user",
       content: [{ type: "text", text: "completion after parent stopped" }],
@@ -153,7 +153,7 @@ describe("embedded OpenClaw queued steering cancellation", () => {
     // steer until the retry path either commits it or truly terminates.
     vi.useFakeTimers();
     try {
-      let emit!: (event: unknown) => void;
+      let emit!: (event: any) => void;
       const targetMessage = {
         role: "user",
         content: [{ type: "text", text: "completion survives retry" }],
@@ -205,7 +205,7 @@ describe("embedded OpenClaw queued steering cancellation", () => {
   it("keeps queued steering pending when auto-compaction starts after agent_end", async () => {
     vi.useFakeTimers();
     try {
-      let emit!: (event: unknown) => void;
+      let emit!: (event: any) => void;
       const targetMessage = {
         role: "user",
         content: [{ type: "text", text: "completion survives compaction" }],

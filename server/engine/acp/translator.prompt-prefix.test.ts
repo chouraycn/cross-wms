@@ -26,14 +26,14 @@ describe("acp prompt cwd prefix", () => {
       return {};
     });
 
-  function chatSendPayload(requestSpy: { mock: { calls: unknown[][] } }, index = 0) {
+  function chatSendPayload(requestSpy: { mock: { calls: any[][] } }, index = 0) {
     const call = requestSpy.mock.calls[index];
     expect(call?.[0]).toBe("chat.send");
     expect(call?.[2]).toEqual({ timeoutMs: null });
     if (!call?.[1] || typeof call[1] !== "object") {
       throw new Error(`expected chat.send payload ${index}`);
     }
-    return call?.[1] as Record<string, unknown>;
+    return call?.[1] as Record<string, any>;
   }
 
   async function runPromptAndCaptureRequest(
@@ -41,7 +41,7 @@ describe("acp prompt cwd prefix", () => {
       cwd?: string;
       prefixCwd?: boolean;
       provenanceMode?: "meta" | "meta+receipt";
-      meta?: Record<string, unknown>;
+      meta?: Record<string, any>;
     } = {},
   ) {
     const sessionStore = createInMemorySessionStore();

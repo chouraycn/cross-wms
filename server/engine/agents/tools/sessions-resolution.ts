@@ -127,7 +127,7 @@ async function isRequesterSpawnedSessionVisible(params: {
   }
   try {
     const resolved = await sessionsResolutionDeps.callGateway<{
-      key?: unknown;
+      key?: any;
     }>({
       method: "sessions.resolve",
       params: {
@@ -236,10 +236,10 @@ function buildSessionIdResolveParams(params: {
 }
 
 async function callGatewayResolveSession(
-  params: Record<string, unknown> & { allowMissing?: boolean },
+  params: Record<string, any> & { allowMissing?: boolean },
 ) {
   try {
-    return await sessionsResolutionDeps.callGateway<unknown>({
+    return await sessionsResolutionDeps.callGateway<any>({
       method: "sessions.resolve",
       params,
     });
@@ -255,9 +255,9 @@ async function callGatewayResolveSession(
     }
     // Protocol v4 gateways predating allowMissing reject the additive field.
     // Retry without it for mixed-version correctness; remove at the next protocol break.
-    const legacyParams: Record<string, unknown> = { ...params };
+    const legacyParams: Record<string, any> = { ...params };
     delete legacyParams.allowMissing;
-    return await sessionsResolutionDeps.callGateway<unknown>({
+    return await sessionsResolutionDeps.callGateway<any>({
       method: "sessions.resolve",
       params: legacyParams,
     });
@@ -271,7 +271,7 @@ async function callGatewayResolveSessionId(params: {
   allowMissing?: boolean;
 }): Promise<string> {
   const result = await callGatewayResolveSession(buildSessionIdResolveParams(params));
-  const key = normalizeOptionalString((result as { key?: unknown })?.key) ?? "";
+  const key = normalizeOptionalString((result as { key?: any })?.key) ?? "";
   if (!key) {
     throw new Error(
       `Session not found: ${params.sessionId} (use the full sessionKey from sessions_list)`,
@@ -331,7 +331,7 @@ async function resolveSessionKeyFromKey(params: {
       spawnedBy: params.restrictToSpawned ? params.requesterInternalKey : undefined,
       ...(params.allowMissing ? { allowMissing: true } : {}),
     });
-    const key = normalizeOptionalString((result as { key?: unknown })?.key) ?? "";
+    const key = normalizeOptionalString((result as { key?: any })?.key) ?? "";
     if (!key) {
       return null;
     }

@@ -32,25 +32,25 @@ export function buildForwardCompatTemplate(params: {
 export function expectResolvedForwardCompatFallbackResult(params: {
   result: {
     error?: string;
-    model?: unknown;
+    model?: any;
   };
-  expectedModel: Record<string, unknown>;
+  expectedModel: Record<string, any>;
 }) {
   expect(params.result.error).toBeUndefined();
   expectModelFields(params.result.model, params.expectedModel);
 }
 
 export function expectResolvedForwardCompatFallbackWithRegistryResult(params: {
-  result: unknown;
-  expectedModel: Record<string, unknown>;
+  result: any;
+  expectedModel: Record<string, any>;
 }) {
   expectModelFields(params.result, params.expectedModel);
 }
 
-function expectModelFields(actual: unknown, expected: Record<string, unknown>) {
+function expectModelFields(actual: any, expected: Record<string, any>) {
   // Forward-compatible fallbacks only assert fields that define the contract;
   // unrelated catalog metadata can vary by source.
-  const actualModel = actual as Record<string, unknown> | undefined;
+  const actualModel = actual as Record<string, any> | undefined;
   expect(actualModel).toBeDefined();
   for (const [key, value] of Object.entries(expected)) {
     expect(actualModel?.[key]).toEqual(value);
@@ -60,7 +60,7 @@ function expectModelFields(actual: unknown, expected: Record<string, unknown>) {
 export function expectUnknownModelErrorResult(
   result: {
     error?: string;
-    model?: unknown;
+    model?: any;
   },
   provider: string,
   id: string,

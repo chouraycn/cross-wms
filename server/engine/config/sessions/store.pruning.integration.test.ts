@@ -87,7 +87,7 @@ async function expectPathMissing(targetPath: string): Promise<void> {
   try {
     await fs.stat(targetPath);
   } catch (error) {
-    expect((error as { code?: unknown }).code).toBe("ENOENT");
+    expect((error as { code?: any }).code).toBe("ENOENT");
     return;
   }
   throw new Error(`expected missing path: ${targetPath}`);
@@ -426,7 +426,7 @@ describe("Integration: saveSessionStore with pruning", () => {
     expect(preview?.missingKeys.has("legacy-nested-role-present")).toBe(false);
     const rawAfterDryRun = JSON.parse(await fs.readFile(storePath, "utf-8")) as Record<
       string,
-      unknown
+      any
     >;
     expect(rawAfterDryRun).toHaveProperty("invalid-no-file");
 

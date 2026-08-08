@@ -8,7 +8,7 @@ import { describe, expect, it } from "vitest";
 
 const require = createRequire(import.meta.url);
 const rootAliasPath = fileURLToPath(new URL("../../plugin-sdk/root-alias.cjs", import.meta.url));
-const rootSdk = require(rootAliasPath) as Record<string, unknown>;
+const rootSdk = require(rootAliasPath) as Record<string, any>;
 const rootAliasSource = fs.readFileSync(rootAliasPath, "utf-8");
 const compatPath = fileURLToPath(new URL("../../plugin-sdk/compat.ts", import.meta.url));
 const packageJsonPath = fileURLToPath(new URL("../../../package.json", import.meta.url));
@@ -30,8 +30,8 @@ const legacyRootExportNames = [
 ] as const;
 
 type EmptySchema = {
-  safeParse: (value: unknown) =>
-    | { success: true; data?: unknown }
+  safeParse: (value: any) =>
+    | { success: true; data?: any }
     | {
         success: false;
         error: { issues: Array<{ path: Array<string | number>; message: string }> };
@@ -43,7 +43,7 @@ type DiagnosticEventsStateFixture = {
 };
 
 function requirePropertyDescriptor(
-  target: Record<string, unknown>,
+  target: Record<string, any>,
   propertyName: string,
 ): PropertyDescriptor {
   const descriptor = Object.getOwnPropertyDescriptor(target, propertyName);
@@ -54,7 +54,7 @@ function requirePropertyDescriptor(
 }
 
 function expectEnumerableConfigurableDescriptor(
-  target: Record<string, unknown>,
+  target: Record<string, any>,
   propertyName: string,
 ): void {
   const descriptor = requirePropertyDescriptor(target, propertyName);
@@ -66,19 +66,19 @@ function loadRootAliasWithStubs(options?: {
   distExists?: boolean;
   distEntries?: string[];
   env?: Record<string, string | undefined>;
-  monolithicExports?: Record<string | symbol, unknown>;
+  monolithicExports?: Record<string | symbol, any>;
   aliasPath?: string;
   cwd?: string;
   defaultTmpDir?: string;
-  packageExports?: Record<string, unknown>;
+  packageExports?: Record<string, any>;
   platform?: string;
   existingPaths?: string[];
-  privateLocalOnlySubpaths?: unknown;
+  privateLocalOnlySubpaths?: any;
   packageVersion?: string;
 }) {
   let createJitiCalls = 0;
   let jitiLoadCalls = 0;
-  const createJitiOptions: Record<string, unknown>[] = [];
+  const createJitiOptions: Record<string, any>[] = [];
   const loadedSpecifiers: string[] = [];
   const monolithicExports = options?.monolithicExports ?? {
     slowHelper: () => "loaded",
@@ -95,13 +95,13 @@ function loadRootAliasWithStubs(options?: {
     context,
     { filename: rootAliasPath },
   ) as (
-    exports: Record<string, unknown>,
+    exports: Record<string, any>,
     require: NodeJS.Require,
-    module: { exports: Record<string, unknown> },
+    module: { exports: Record<string, any> },
     filename: string,
     dirname: string,
   ) => void;
-  const module = { exports: {} as Record<string, unknown> };
+  const module = { exports: {} as Record<string, any> };
   const aliasPath = options?.aliasPath ?? rootAliasPath;
   const localRequire = ((id: string) => {
     if (id === "node:path") {
@@ -151,7 +151,7 @@ function loadRootAliasWithStubs(options?: {
     }
     if (id === "jiti") {
       return {
-        createJiti(_filename: string, jitiOptions?: Record<string, unknown>) {
+        createJiti(_filename: string, jitiOptions?: Record<string, any>) {
           createJitiCalls += 1;
           createJitiOptions.push(jitiOptions ?? {});
           return (specifier: string) => {
@@ -177,7 +177,7 @@ function loadRootAliasWithStubs(options?: {
       return createJitiOptions;
     },
     loadedSpecifiers,
-    globalContext: context as Record<PropertyKey, unknown>,
+    globalContext: context as Record<PropertyKey, any>,
   };
 }
 
@@ -202,7 +202,7 @@ function loadDiagnosticEventsAlias(distEntries: string[]) {
 }
 
 function ensureDiagnosticEventsStateFixture(
-  context: Record<PropertyKey, unknown>,
+  context: Record<PropertyKey, any>,
 ): DiagnosticEventsStateFixture {
   const existing = context[diagnosticEventsStateKey] as DiagnosticEventsStateFixture | undefined;
   if (existing) {
@@ -805,7 +805,7 @@ describe("plugin-sdk root alias", () => {
       exportName: "delegateCompactionToRuntime",
       exportValue: () => "delegated",
       expectIdentity: true,
-      assertForwarded: (value: unknown) => {
+      assertForwarded: (value: any) => {
         if (typeof value !== "function") {
           throw new Error("expected delegateCompactionToRuntime export");
         }
@@ -817,7 +817,7 @@ describe("plugin-sdk root alias", () => {
       exportName: "onDiagnosticEvent",
       exportValue: () => () => undefined,
       expectIdentity: false,
-      assertForwarded: (value: unknown) => {
+      assertForwarded: (value: any) => {
         if (typeof value !== "function") {
           throw new Error("expected onDiagnosticEvent export");
         }
@@ -872,7 +872,7 @@ describe("plugin-sdk root alias", () => {
 
   it("does not publish private local-only plugin-sdk subpaths", () => {
     const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf-8")) as {
-      exports?: Record<string, unknown>;
+      exports?: Record<string, any>;
     };
     const privateSubpathsPath = path.join(
       path.dirname(packageJsonPath),

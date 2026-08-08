@@ -2,8 +2,8 @@
 export type WebProviderConfigSource = {
   tools?: {
     web?: {
-      search?: unknown;
-      fetch?: unknown;
+      search?: any;
+      fetch?: any;
     };
   };
 };
@@ -36,11 +36,11 @@ type ProviderWithCredential = {
 
 type WebContentProcessEnv = Record<string, string | undefined>;
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function normalizeSecretInputString(value: unknown): string | undefined {
+function normalizeSecretInputString(value: any): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }
@@ -48,7 +48,7 @@ function normalizeSecretInputString(value: unknown): string | undefined {
   return trimmed.length > 0 ? trimmed : undefined;
 }
 
-function normalizeSecretInput(value: unknown): string {
+function normalizeSecretInput(value: any): string {
   if (typeof value !== "string") {
     return "";
   }
@@ -63,7 +63,7 @@ function normalizeSecretInput(value: unknown): string {
   return latin1Only.trim();
 }
 
-function isSecretRef(value: unknown): value is SecretRef {
+function isSecretRef(value: any): value is SecretRef {
   if (!isRecord(value)) {
     return false;
   }
@@ -79,7 +79,7 @@ function isSecretRef(value: unknown): value is SecretRef {
   );
 }
 
-function coerceSecretRef(value: unknown): SecretRef | null {
+function coerceSecretRef(value: any): SecretRef | null {
   if (isSecretRef(value)) {
     return value;
   }
@@ -118,7 +118,7 @@ function coerceSecretRef(value: unknown): SecretRef | null {
 export function resolveWebProviderConfig(
   cfg: WebProviderConfigSource | undefined,
   kind: "search" | "fetch",
-): Record<string, unknown> | undefined {
+): Record<string, any> | undefined {
   const webConfig = cfg?.tools?.web;
   if (!webConfig || typeof webConfig !== "object") {
     return undefined;
@@ -127,7 +127,7 @@ export function resolveWebProviderConfig(
   if (!toolConfig || typeof toolConfig !== "object") {
     return undefined;
   }
-  return toolConfig as Record<string, unknown>;
+  return toolConfig as Record<string, any>;
 }
 
 export function readWebProviderEnvValue(
@@ -152,7 +152,7 @@ export function providerRequiresCredential(
 export function hasWebProviderEntryCredential<
   TProvider extends ProviderWithCredential,
   TConfigSource extends WebProviderConfigSource,
-  TConfig extends Record<string, unknown> | undefined,
+  TConfig extends Record<string, any> | undefined,
 >(params: {
   provider: TProvider;
   config: TConfigSource | undefined;
@@ -229,7 +229,7 @@ export function hasWebProviderEntryCredential<
 export function resolveWebProviderDefinition<
   TProvider extends { id: string },
   TConfigSource extends WebProviderConfigSource,
-  TConfig extends Record<string, unknown> | undefined,
+  TConfig extends Record<string, any> | undefined,
   TRuntimeMetadata extends RuntimeWebProviderMetadata,
   TDefinition,
 >(params: {

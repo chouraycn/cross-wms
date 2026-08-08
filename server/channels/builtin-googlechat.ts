@@ -170,7 +170,7 @@ export function createGoogleChatChannelPlugin(): ChannelPlugin {
 
   const googleChatConfig: ChannelConfigAdapter<GoogleChatAccountConfig> = {
     listAccountIds: (config: AppConfig): ChannelId[] => {
-      const gcConfig = config.googlechat as Record<string, unknown> | undefined;
+      const gcConfig = config.googlechat as Record<string, any> | undefined;
       if (gcConfig && gcConfig.clientEmail && gcConfig.privateKey) {
         return [GOOGLECHAT_CHANNEL_ID];
       }
@@ -181,7 +181,7 @@ export function createGoogleChatChannelPlugin(): ChannelPlugin {
       accountId: ChannelId,
     ): GoogleChatAccountConfig | null => {
       if (accountId !== GOOGLECHAT_CHANNEL_ID) return null;
-      const gcCfg = config.googlechat as Record<string, unknown> | undefined;
+      const gcCfg = config.googlechat as Record<string, any> | undefined;
       if (gcCfg && gcCfg.clientEmail && gcCfg.privateKey) {
         return {
           clientEmail: String(gcCfg.clientEmail),
@@ -213,7 +213,7 @@ export function createGoogleChatChannelPlugin(): ChannelPlugin {
         try {
           const rendered = await ctx.render();
           const text = rendered.parts
-            .map((p: { content: unknown }) => String(p.content))
+            .map((p: { content: any }) => String(p.content))
             .join("\n");
 
           const endpoint = resolveMessageEndpoint(account, ctx.to);
@@ -223,7 +223,7 @@ export function createGoogleChatChannelPlugin(): ChannelPlugin {
             ? text.slice(0, GOOGLE_CHAT_TEXT_LIMIT - 3) + "..."
             : text;
 
-          const body: Record<string, unknown> = {
+          const body: Record<string, any> = {
             text: messageText,
           };
 
@@ -291,8 +291,8 @@ export function createGoogleChatChannelPlugin(): ChannelPlugin {
  *
  * Google Chat 在用户发消息时会向配置的 Webhook URL POST JSON 载荷。
  */
-export function parseGoogleChatWebhook(body: unknown): GoogleChatWebhookResult {
-  const data = body as Record<string, unknown>;
+export function parseGoogleChatWebhook(body: any): GoogleChatWebhookResult {
+  const data = body as Record<string, any>;
   if (!data || typeof data !== "object") {
     return { success: false, error: "Invalid Google Chat webhook payload" };
   }
@@ -303,7 +303,7 @@ export function parseGoogleChatWebhook(body: unknown): GoogleChatWebhookResult {
     return { success: false, error: `Unsupported Google Chat event type: ${type}` };
   }
 
-  const message = data.message as Record<string, unknown> | undefined;
+  const message = data.message as Record<string, any> | undefined;
   if (!message) {
     return { success: false, error: "No message in Google Chat event" };
   }
@@ -313,9 +313,9 @@ export function parseGoogleChatWebhook(body: unknown): GoogleChatWebhookResult {
     return { success: false, error: "Empty message text" };
   }
 
-  const space = message.space as Record<string, unknown> | undefined;
-  const sender = message.sender as Record<string, unknown> | undefined;
-  const thread = message.thread as Record<string, unknown> | undefined;
+  const space = message.space as Record<string, any> | undefined;
+  const sender = message.sender as Record<string, any> | undefined;
+  const thread = message.thread as Record<string, any> | undefined;
   const spaceType = String(space?.type || "");
 
   return {

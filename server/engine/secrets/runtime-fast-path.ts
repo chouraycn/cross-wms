@@ -143,13 +143,13 @@ export function createEmptyRuntimeWebToolsMetadata(): RuntimeWebToolsMetadata {
 }
 
 function hasActiveRuntimeWebFetchProviderSurface(
-  fetch: unknown,
+  fetch: any,
   defaults: SecretDefaults | undefined,
 ): boolean {
   if (!fetch || typeof fetch !== "object" || Array.isArray(fetch)) {
     return false;
   }
-  const fetchConfig = fetch as Record<string, unknown>;
+  const fetchConfig = fetch as Record<string, any>;
   if (fetchConfig.enabled === false) {
     return false;
   }
@@ -166,10 +166,10 @@ function hasRuntimeWebToolConfigSurface(config: OpenClawConfig): boolean {
     web &&
     typeof web === "object" &&
     !Array.isArray(web) &&
-    typeof (web as Record<string, unknown>).fetch === "object" &&
-    (web as { fetch?: { enabled?: unknown } }).fetch?.enabled === false;
+    typeof (web as Record<string, any>).fetch === "object" &&
+    (web as { fetch?: { enabled?: any } }).fetch?.enabled === false;
   if (web && typeof web === "object" && !Array.isArray(web)) {
-    const webRecord = web as Record<string, unknown>;
+    const webRecord = web as Record<string, any>;
     if ("search" in webRecord || "x_search" in webRecord) {
       return true;
     }
@@ -188,7 +188,7 @@ function hasRuntimeWebToolConfigSurface(config: OpenClawConfig): boolean {
     if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
       return false;
     }
-    const pluginConfig = (entry as { config?: unknown }).config;
+    const pluginConfig = (entry as { config?: any }).config;
     return (
       pluginConfig !== null &&
       typeof pluginConfig === "object" &&

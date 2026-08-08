@@ -15,7 +15,7 @@ import {
   shouldEnableOpenClawCompileCache,
 } from "./entry.compile-cache.js";
 
-function requireFirstMockCall(mock: { mock: { calls: unknown[][] } }, label: string): unknown[] {
+function requireFirstMockCall(mock: { mock: { calls: any[][] } }, label: string): any[] {
   const [call] = mock.mock.calls;
   if (!call) {
     throw new Error(`expected ${label} call`);

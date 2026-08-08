@@ -83,7 +83,7 @@ describe('heartbeat-filter', () => {
           role: 'assistant',
           content: HEARTBEAT_TOKEN,
           tool_calls: [{ id: '1', type: 'function', function: { name: 'foo', arguments: '{}' } }],
-        } as unknown),
+        } as any),
       ).toBe(false);
     });
 
@@ -123,7 +123,7 @@ describe('heartbeat-filter', () => {
 
   describe('filterHeartbeatTranscriptArtifacts', () => {
     it('returns the input reference for empty arrays', () => {
-      const arr: Array<{ role: string; content?: unknown }> = [];
+      const arr: Array<{ role: string; content?: any }> = [];
       expect(filterHeartbeatTranscriptArtifacts(arr)).toBe(arr);
     });
 

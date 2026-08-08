@@ -20,19 +20,19 @@ export type PlainTextToolCallNameMatcher = {
 
 /** Result of repairing the final message carried by a provider stream `done` event. */
 export type PlainTextToolCallMessageNormalization =
-  | { kind: "promoted" | "scrubbed"; message: Record<string, unknown> }
+  | { kind: "promoted" | "scrubbed"; message: Record<string, any> }
   | undefined;
 
 /** Stream-level hooks used to promote leaked text tool calls into provider events. */
 export type PlainTextToolCallStreamNormalizerOptions = {
   /** Expands a promoted final message into provider-native tool-call stream events. */
-  createPromotedToolCallEvents(message: Record<string, unknown>): Iterable<unknown>;
+  createPromotedToolCallEvents(message: Record<string, any>): Iterable<any>;
   /** Tool-name matcher scoped to the exact request being normalized. */
   matcher: PlainTextToolCallNameMatcher;
   /** Repairs or scrubs the final done-message snapshot after text buffering completes. */
   normalizeDoneMessage(params: {
-    message: unknown;
-    reason: unknown;
+    message: any;
+    reason: any;
   }): PlainTextToolCallMessageNormalization;
   /** Stop after the first normalized done event when the wrapped provider has completed. */
   stopAfterDone?: boolean;
@@ -49,8 +49,8 @@ const TEXT_TOOL_CALL_SUPPRESSED_MARKER_SCAN_CHARS = 2_048;
 
 type PlainTextToolCallBufferState = "possible" | "impossible" | "over-cap";
 
-function asRecord(value: unknown): Record<string, unknown> | undefined {
-  return value && typeof value === "object" ? (value as Record<string, unknown>) : undefined;
+function asRecord(value: any): Record<string, any> | undefined {
+  return value && typeof value === "object" ? (value as Record<string, any>) : undefined;
 }
 
 function couldStillBeJsonPayload(text: string, start: number): boolean {
@@ -360,14 +360,14 @@ function getPlainTextToolCallBufferState(
     : "over-cap";
 }
 
-function getTextToolCallEventText(event: Record<string, unknown>): string | undefined {
+function getTextToolCallEventText(event: Record<string, any>): string | undefined {
   if (typeof event.delta === "string") {
     return event.delta;
   }
   return typeof event.content === "string" ? event.content : undefined;
 }
 
-function appendTextToolCallBuffer(bufferedText: string, event: Record<string, unknown>): string {
+function appendTextToolCallBuffer(bufferedText: string, event: Record<string, any>): string {
   const text = getTextToolCallEventText(event);
   if (text === undefined) {
     return bufferedText;
@@ -395,7 +395,7 @@ function hasSuppressedToolCallClosingMarker(text: string): boolean {
 
 function shouldRescanSuppressedTextToolCallBuffer(
   previousBufferedText: string,
-  event: Record<string, unknown>,
+  event: Record<string, any>,
 ): boolean {
   const eventText = getTextToolCallEventText(event);
   if (!eventText) {
@@ -418,7 +418,7 @@ function truncateSuppressedTextToolCallBuffer(text: string): string {
 
 function appendSuppressedTextToolCallBuffer(
   bufferedText: string,
-  event: Record<string, unknown>,
+  event: Record<string, any>,
 ): { changed: boolean; scanText: string; text: string } {
   const nextText = appendTextToolCallBuffer(bufferedText, event);
   if (nextText === bufferedText) {
@@ -446,11 +446,11 @@ function shouldSuppressBufferedTextBlock(blockText: string, bufferedText: string
 }
 
 function scrubBufferedTextFromContent(
-  content: unknown,
+  content: any,
   bufferedText: string,
   matcher: PlainTextToolCallNameMatcher,
-  options?: { onlyTextIndex?: unknown; preserveEmptyTextBlocks?: boolean },
-): { changed: boolean; content: unknown } {
+  options?: { onlyTextIndex?: any; preserveEmptyTextBlocks?: boolean },
+): { changed: boolean; content: any } {
   if (Array.isArray(content)) {
     if (typeof options?.onlyTextIndex === "number") {
       const block = content[options.onlyTextIndex];
@@ -498,11 +498,11 @@ function scrubBufferedTextFromContent(
 }
 
 function scrubOverCapTextPrefixFromContent(
-  content: readonly unknown[],
+  content: readonly any[],
   matcher: PlainTextToolCallNameMatcher,
   options?: { preserveEmptyTextBlocks?: boolean },
-): { changed: boolean; content: unknown } {
-  let currentContent: readonly unknown[] = content;
+): { changed: boolean; content: any } {
+  let currentContent: readonly any[] = content;
   let changed = false;
   for (let count = 0; count < 32; count += 1) {
     const scrubbed = scrubFirstOverCapTextPrefixFromContent(currentContent, matcher, options);
@@ -516,10 +516,10 @@ function scrubOverCapTextPrefixFromContent(
 }
 
 function scrubFirstOverCapTextPrefixFromContent(
-  content: readonly unknown[],
+  content: readonly any[],
   matcher: PlainTextToolCallNameMatcher,
   options?: { preserveEmptyTextBlocks?: boolean },
-): { changed: boolean; content: unknown } {
+): { changed: boolean; content: any } {
   const suppressedTextIndexes = new Set<number>();
   let accumulated = "";
   let reachedOverCap = false;
@@ -589,12 +589,12 @@ function scrubFirstOverCapTextPrefixFromContent(
 }
 
 function scrubSuppressedTextIndexesFromContent(
-  content: readonly unknown[],
+  content: readonly any[],
   suppressedTextIndexes: ReadonlySet<number>,
   options?: { preserveEmptyTextBlocks?: boolean },
   visibleSuffix?: string,
   visibleSuffixIndex?: number,
-): { changed: boolean; content: unknown } {
+): { changed: boolean; content: any } {
   const nextContent = content.flatMap((block, blockIndex) => {
     if (!suppressedTextIndexes.has(blockIndex)) {
       return [block];
@@ -614,15 +614,15 @@ function scrubSuppressedTextIndexesFromContent(
 }
 
 function stripPlainTextToolCallsFromContent(
-  content: unknown,
+  content: any,
   matcher: PlainTextToolCallNameMatcher,
   options?: { preserveEmptyTextBlocks?: boolean },
-): { changed: boolean; content: unknown } {
+): { changed: boolean; content: any } {
   if (Array.isArray(content)) {
     const textBlocks = content
       .map((block, index) => ({ index, record: asRecord(block) }))
       .filter(
-        (entry): entry is { index: number; record: Record<string, unknown> } =>
+        (entry): entry is { index: number; record: Record<string, any> } =>
           entry.record?.type === "text" && typeof entry.record.text === "string",
       );
     const joinedText = textBlocks.map((entry) => String(entry.record.text)).join("\n");
@@ -652,7 +652,7 @@ function stripPlainTextToolCallsFromContent(
     }
 
     let changed = false;
-    const nextContent: unknown[] = [];
+    const nextContent: any[] = [];
     for (const block of content) {
       const record = asRecord(block);
       if (record?.type !== "text" || typeof record.text !== "string") {
@@ -683,13 +683,13 @@ function stripPlainTextToolCallsFromContent(
 }
 
 function stripOverCapPlainTextToolCallsFromContent(
-  content: unknown,
+  content: any,
   matcher: PlainTextToolCallNameMatcher,
   options?: { preserveEmptyTextBlocks?: boolean },
-): { changed: boolean; content: unknown } {
+): { changed: boolean; content: any } {
   if (Array.isArray(content)) {
     let changed = false;
-    const nextContent: unknown[] = [];
+    const nextContent: any[] = [];
     for (const block of content) {
       const record = asRecord(block);
       if (
@@ -724,11 +724,11 @@ function stripOverCapPlainTextToolCallsFromContent(
 }
 
 function scrubPlainTextToolCallContent(
-  content: unknown,
+  content: any,
   bufferedText: string,
   matcher: PlainTextToolCallNameMatcher,
-  options?: { onlyTextIndex?: unknown; preserveEmptyTextBlocks?: boolean },
-): { changed: boolean; content: unknown } {
+  options?: { onlyTextIndex?: any; preserveEmptyTextBlocks?: boolean },
+): { changed: boolean; content: any } {
   const scrubbed = scrubBufferedTextFromContent(content, bufferedText, matcher, options);
   const stripped =
     options?.onlyTextIndex === undefined
@@ -738,10 +738,10 @@ function scrubPlainTextToolCallContent(
 }
 
 function shouldPreserveEmptyTextBlocksForEventIndex(
-  content: unknown,
+  content: any,
   bufferedText: string,
   matcher: PlainTextToolCallNameMatcher,
-  eventContentIndex: unknown,
+  eventContentIndex: any,
 ): boolean {
   if (
     typeof eventContentIndex !== "number" ||
@@ -764,12 +764,12 @@ function shouldPreserveEmptyTextBlocksForEventIndex(
 }
 
 function scrubBufferedTextFromPartial(
-  event: Record<string, unknown>,
+  event: Record<string, any>,
   bufferedText: string,
   matcher: PlainTextToolCallNameMatcher,
-  contentIndex?: unknown,
+  contentIndex?: any,
   options?: { preserveEmptyTextBlocks?: boolean },
-): Record<string, unknown> {
+): Record<string, any> {
   const partial = asRecord(event.partial);
   if (!partial) {
     return event;
@@ -799,11 +799,11 @@ function scrubBufferedTextFromPartial(
 }
 
 function scrubBufferedTextFromMessage(
-  event: Record<string, unknown>,
+  event: Record<string, any>,
   bufferedText: string,
   matcher: PlainTextToolCallNameMatcher,
-  contentIndex?: unknown,
-): Record<string, unknown> {
+  contentIndex?: any,
+): Record<string, any> {
   const message = asRecord(event.message);
   if (!message) {
     return event;
@@ -824,11 +824,11 @@ function scrubBufferedTextFromMessage(
 }
 
 function scrubBufferedTextFromError(
-  event: Record<string, unknown>,
+  event: Record<string, any>,
   bufferedText: string,
   matcher: PlainTextToolCallNameMatcher,
-  contentIndex?: unknown,
-): Record<string, unknown> {
+  contentIndex?: any,
+): Record<string, any> {
   const error = asRecord(event.error);
   if (!error) {
     return event;
@@ -849,11 +849,11 @@ function scrubBufferedTextFromError(
 }
 
 function replaceTextContentWithVisibleSuffix(
-  record: Record<string, unknown>,
+  record: Record<string, any>,
   visibleText: string,
-  contentIndex?: unknown,
+  contentIndex?: any,
   matcher?: PlainTextToolCallNameMatcher,
-): Record<string, unknown> {
+): Record<string, any> {
   if (typeof record.content === "string") {
     return { ...record, content: visibleText };
   }
@@ -921,11 +921,11 @@ function replaceTextContentWithVisibleSuffix(
 }
 
 function scrubReclassifiedMixedTextFromPartial(
-  event: Record<string, unknown>,
+  event: Record<string, any>,
   visibleText: string,
-  contentIndex?: unknown,
+  contentIndex?: any,
   matcher?: PlainTextToolCallNameMatcher,
-): Record<string, unknown> {
+): Record<string, any> {
   const partial = asRecord(event.partial);
   if (!partial) {
     return event;
@@ -937,11 +937,11 @@ function scrubReclassifiedMixedTextFromPartial(
 }
 
 function scrubReclassifiedMixedTextFromError(
-  event: Record<string, unknown>,
+  event: Record<string, any>,
   visibleText: string,
-  contentIndex?: unknown,
+  contentIndex?: any,
   matcher?: PlainTextToolCallNameMatcher,
-): Record<string, unknown> {
+): Record<string, any> {
   const error = asRecord(event.error);
   if (!error) {
     return event;
@@ -956,8 +956,8 @@ function scrubReclassifiedMixedTextFromError(
 export function scrubOverCapPlainTextToolCallMessage(params: {
   candidateText: string | undefined;
   matcher: PlainTextToolCallNameMatcher;
-  message: unknown;
-}): Record<string, unknown> | undefined {
+  message: any;
+}): Record<string, any> | undefined {
   const record = asRecord(params.message);
   const candidateText = params.candidateText;
   if (!record || !candidateText) {
@@ -1004,9 +1004,9 @@ export function scrubOverCapPlainTextToolCallMessage(params: {
 }
 
 function createScrubbedTextDeltaEvent(
-  event: Record<string, unknown>,
+  event: Record<string, any>,
   text: string,
-): Record<string, unknown> {
+): Record<string, any> {
   const partial = asRecord(event.partial);
   const syntheticContent =
     typeof event.contentIndex === "number"
@@ -1030,20 +1030,20 @@ function createScrubbedTextDeltaEvent(
 
 function appendReclassifiedVisibleDelta(
   visibleText: string,
-  event: Record<string, unknown>,
+  event: Record<string, any>,
 ): string {
   return typeof event.delta === "string" ? `${visibleText}${event.delta}` : visibleText;
 }
 
 function isAllowedTextToolCallLikeEvent(
-  event: Record<string, unknown>,
+  event: Record<string, any>,
   matcher: PlainTextToolCallNameMatcher,
 ): boolean {
   const text = getTextToolCallEventText(event);
   return Boolean(text?.trim() && getPlainTextToolCallBufferState(text, matcher) !== "impossible");
 }
 
-function isBufferedTextEvent(bufferedEvent: unknown): boolean {
+function isBufferedTextEvent(bufferedEvent: any): boolean {
   const bufferedRecord = asRecord(bufferedEvent);
   const bufferedType = typeof bufferedRecord?.type === "string" ? bufferedRecord.type : "";
   return (
@@ -1053,15 +1053,15 @@ function isBufferedTextEvent(bufferedEvent: unknown): boolean {
 
 /** Buffers provider stream text long enough to promote or hide leaked plain-text tool calls. */
 export async function* normalizePlainTextToolCallStreamEvents(
-  source: AsyncIterable<unknown>,
+  source: AsyncIterable<any>,
   options: PlainTextToolCallStreamNormalizerOptions,
 ): AsyncGenerator {
-  const bufferedEvents: unknown[] = [];
+  const bufferedEvents: any[] = [];
   let bufferedText = "";
   let suppressingOverCapTextToolCall = false;
-  let suppressedTextContentIndex: unknown;
+  let suppressedTextContentIndex: any;
   let hasSuppressedTextContentIndex = false;
-  let reclassifiedMixedTextContentIndex: unknown;
+  let reclassifiedMixedTextContentIndex: any;
   let hasReclassifiedMixedTextContentIndex = false;
   let scrubReclassifiedMixedTextFromDone = false;
   let reclassifiedMixedVisibleText: string | undefined;

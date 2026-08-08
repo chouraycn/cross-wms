@@ -35,8 +35,8 @@ describe('MemoryDocumentStorage', () => {
     const s = new MemoryDocumentStorage();
     s.create('items', 1, { id: 1, tag: 'x' });
     s.create('items', 2, { id: 2, tag: 'y' });
-    expect(s.find('items', (i: unknown) => i.tag === 'x')).toHaveLength(1);
-    expect(s.findOne('items', (i: unknown) => i.tag === 'y')?.id).toBe(2);
+    expect(s.find('items', (i: any) => i.tag === 'x')).toHaveLength(1);
+    expect(s.findOne('items', (i: any) => i.tag === 'y')?.id).toBe(2);
   });
 
   it('nextId is monotonic and persisted', () => {

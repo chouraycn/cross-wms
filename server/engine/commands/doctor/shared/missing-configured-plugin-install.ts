@@ -125,7 +125,7 @@ function resolveCandidateClawHubSpec(install: PluginPackageInstall): string | un
   return undefined;
 }
 
-function addConfiguredPluginId(ids: Set<string>, value: unknown): void {
+function addConfiguredPluginId(ids: Set<string>, value: any): void {
   if (typeof value !== "string") {
     return;
   }
@@ -1179,7 +1179,7 @@ function resolveExistingCandidateClawHubPackagePath(params: {
 async function readNpmPackageVersion(packagePath: string): Promise<string | undefined> {
   try {
     const parsed = JSON.parse(await readFile(path.join(packagePath, "package.json"), "utf-8")) as {
-      version?: unknown;
+      version?: any;
     };
     return typeof parsed.version === "string" && parsed.version.trim()
       ? parsed.version.trim()

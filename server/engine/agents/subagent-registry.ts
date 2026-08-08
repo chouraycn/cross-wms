@@ -62,9 +62,9 @@ export function replaceSubagentRunAfterSteer(params: {
     runId: params.nextRunId,
     runTimeoutSeconds: params.runTimeoutSeconds ?? previous.runTimeoutSeconds,
     suppressAnnounceReason: undefined,
-    endedAt: undefined as unknown as number,
+    endedAt: undefined as any as number,
     outcome: undefined,
-    cleanupCompletedAt: undefined as unknown as number,
+    cleanupCompletedAt: undefined as any as number,
     cleanupHandled: false,
   };
   if (params.transcriptFile) {
@@ -78,14 +78,14 @@ export function registerSubagentRun(params: {
   runId: string;
   childSessionKey: string;
   requesterSessionKey: string;
-  requesterOrigin?: unknown;
+  requesterOrigin?: any;
   workspaceDir?: string;
   agentDir?: string;
   cleanup?: "delete" | "keep";
   runTimeoutSeconds?: number;
   spawnMode?: string;
   createdAt?: number;
-  [key: string]: unknown;
+  [key: string]: any;
 }) {
   const entry = {
     runId: params.runId,
@@ -163,7 +163,7 @@ export async function finalizeInterruptedSubagentRun(params: {
 
 export function resolveRequesterForChildSession(childSessionKey: string): {
   requesterSessionKey: string;
-  requesterOrigin?: unknown;
+  requesterOrigin?: any;
 } | null {
   for (const entry of subagentRuns.values()) {
     if (entry.childSessionKey === childSessionKey) {
@@ -365,7 +365,7 @@ export const testing = {
   async sweepOnceForTests() {
     // No-op in cross-wms
   },
-  setDepsForTest(overrides?: unknown) {
+  setDepsForTest(overrides?: any) {
     // No-op in cross-wms
   },
 } as const;

@@ -13,7 +13,7 @@ type BrowserDoctorDeps = {
   env?: NodeJS.ProcessEnv;
   getUid?: () => number;
   resolveManagedExecutable?: (
-    resolved: unknown,
+    resolved: any,
     platform: NodeJS.Platform,
   ) => { path: string } | null;
   resolveChromeExecutable?: (platform: NodeJS.Platform) => { path: string } | null;

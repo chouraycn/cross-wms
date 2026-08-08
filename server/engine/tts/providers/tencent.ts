@@ -101,7 +101,7 @@ export function buildTencentRequest(
   sampleRate: number,
   speed?: number,
   volume?: number,
-): Record<string, unknown> {
+): Record<string, any> {
   return {
     Text: text,
     SessionId: 'tts-runtime',

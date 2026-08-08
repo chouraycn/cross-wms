@@ -33,7 +33,7 @@ type MockResponse = {
   url?: string;
   headers?: { get: (key: string) => string | null };
   text?: () => Promise<string>;
-  json?: () => Promise<unknown>;
+  json?: () => Promise<any>;
 };
 
 function htmlResponse(html: string, url = "https://example.com/"): MockResponse {
@@ -86,11 +86,11 @@ function installMockFetch(
 
 function firstFetchRequestInit(
   mockFetch: ReturnType<typeof installMockFetch>,
-): (RequestInit & { dispatcher?: unknown }) | undefined {
-  return mockFetch.mock.calls[0]?.[1] as (RequestInit & { dispatcher?: unknown }) | undefined;
+): (RequestInit & { dispatcher?: any }) | undefined {
+  return mockFetch.mock.calls[0]?.[1] as (RequestInit & { dispatcher?: any }) | undefined;
 }
 
-function createFetchTool(fetchOverrides: Record<string, unknown> = {}) {
+function createFetchTool(fetchOverrides: Record<string, any> = {}) {
   return createWebFetchTool({
     config: {
       tools: {
@@ -208,7 +208,7 @@ describe("web_fetch extraction fallbacks", () => {
         });
         return textResponse("Loaded page", resolveRequestUrl(input)) as Response;
       });
-      const updates: unknown[] = [];
+      const updates: any[] = [];
       const tool = createFetchTool({ firecrawl: { enabled: false } });
       const resultPromise = tool?.execute?.(
         "call",
@@ -245,7 +245,7 @@ describe("web_fetch extraction fallbacks", () => {
     vi.useFakeTimers();
     try {
       installPlainTextFetch("Loaded quickly");
-      const updates: unknown[] = [];
+      const updates: any[] = [];
       const tool = createFetchTool({ firecrawl: { enabled: false } });
 
       await tool?.execute?.("call", { url: "https://example.com/" }, undefined, (partial) => {
@@ -287,7 +287,7 @@ describe("web_fetch extraction fallbacks", () => {
           }, 6000);
         });
       });
-      const updates: unknown[] = [];
+      const updates: any[] = [];
       const controller = new AbortController();
       const tool = createFetchTool({ firecrawl: { enabled: false } });
       const resultPromise = tool?.execute?.(
@@ -298,7 +298,7 @@ describe("web_fetch extraction fallbacks", () => {
           updates.push(partial);
         },
       );
-      const observedResultPromise = resultPromise?.catch((error: unknown) => error);
+      const observedResultPromise = resultPromise?.catch((error: any) => error);
 
       await vi.advanceTimersByTimeAsync(0);
       controller.abort();
@@ -350,7 +350,7 @@ describe("web_fetch extraction fallbacks", () => {
           headers: { "content-type": "text/plain" },
         });
       });
-      const updates: unknown[] = [];
+      const updates: any[] = [];
       const controller = new AbortController();
       const tool = createFetchTool({ firecrawl: { enabled: false } });
       const resultPromise = tool?.execute?.(
@@ -361,7 +361,7 @@ describe("web_fetch extraction fallbacks", () => {
           updates.push(partial);
         },
       );
-      const observedResultPromise = resultPromise?.catch((error: unknown) => error);
+      const observedResultPromise = resultPromise?.catch((error: any) => error);
 
       await vi.advanceTimersByTimeAsync(0);
       controller.abort(new Error("cancelled"));

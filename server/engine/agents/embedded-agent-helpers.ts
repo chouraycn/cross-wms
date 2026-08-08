@@ -82,7 +82,7 @@ export type AssistantMessage = {
   role: "assistant";
   content?: string;
   errorMessage?: string;
-  toolCalls?: Array<{ id: string; name: string; arguments: unknown }>;
+  toolCalls?: Array<{ id: string; name: string; arguments: any }>;
 };
 
 export function isTimeoutErrorMessage(message: string): boolean {
@@ -98,7 +98,7 @@ export function isTimeoutErrorMessage(message: string): boolean {
 export function formatAssistantErrorText(
   assistant: AssistantMessage,
   _options: {
-    cfg?: unknown;
+    cfg?: any;
     sessionKey?: string;
     provider: string;
     model: string;

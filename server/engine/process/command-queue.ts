@@ -32,7 +32,7 @@ export class CommandLaneTaskTimeoutError extends Error {
   }
 }
 
-export function isCommandLaneTaskTimeoutError(err: unknown, lane?: string): boolean {
+export function isCommandLaneTaskTimeoutError(err: any, lane?: string): boolean {
   if (!(err instanceof Error)) {
     return false;
   }
@@ -59,9 +59,9 @@ export class GatewayDrainingError extends Error {
 // the main auto-reply workflow.
 
 type QueueEntry = {
-  task: () => Promise<unknown>;
-  resolve: (value: unknown) => void;
-  reject: (reason?: unknown) => void;
+  task: () => Promise<any>;
+  resolve: (value: any) => void;
+  reject: (reason?: any) => void;
   enqueuedAt: number;
   sequence: number;
   priority: number;
@@ -100,7 +100,7 @@ type ActiveTaskWaiter = {
   timeout?: ReturnType<typeof setTimeout>;
 };
 
-function isExpectedNonErrorLaneFailure(err: unknown): boolean {
+function isExpectedNonErrorLaneFailure(err: any): boolean {
   return err instanceof Error && err.name === "LiveSessionModelSwitchError";
 }
 
@@ -274,7 +274,7 @@ function enqueueLaneEntry(state: LaneState, entry: QueueEntry): void {
   state.queue.splice(insertAt, 0, entry);
 }
 
-async function runQueueEntryTask(lane: string, entry: QueueEntry): Promise<unknown> {
+async function runQueueEntryTask(lane: string, entry: QueueEntry): Promise<any> {
   const taskPromise = Promise.resolve().then(entry.task);
   const taskTimeoutMs = normalizeTaskTimeoutMs(entry.taskTimeoutMs);
   if (taskTimeoutMs === undefined) {
@@ -360,7 +360,7 @@ async function runQueueEntryTask(lane: string, entry: QueueEntry): Promise<unkno
     return await Promise.race([taskPromise, timeoutPromise]);
   } catch (err) {
     if (timedOut) {
-      void taskPromise.catch((lateErr: unknown) => {
+      void taskPromise.catch((lateErr: any) => {
         diag.warn(
           `lane task rejected after timeout: lane=${lane} timeoutMs=${taskTimeoutMs} error="${String(lateErr)}"`,
         );

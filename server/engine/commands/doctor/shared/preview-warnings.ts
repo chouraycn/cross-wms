@@ -32,7 +32,7 @@ function loadChannelDoctorModule(): Promise<ChannelDoctorModule> {
   return channelDoctorModuleLoader.load();
 }
 
-function listAgentRecords(cfg: OpenClawConfig): Record<string, unknown>[] {
+function listAgentRecords(cfg: OpenClawConfig): Record<string, any>[] {
   return Array.isArray(cfg.agents?.list) ? cfg.agents.list.filter(hasRecord) : [];
 }
 
@@ -63,7 +63,7 @@ function hasSubagentAllowlistConfig(cfg: OpenClawConfig): boolean {
   });
 }
 
-function hasToolsBySenderKey(value: unknown): boolean {
+function hasToolsBySenderKey(value: any): boolean {
   if (Array.isArray(value)) {
     return value.some(hasToolsBySenderKey);
   }
@@ -314,7 +314,7 @@ type ConfiguredToolSectionGrantEntry = {
 };
 
 function collectConfiguredToolSectionGrantEntries(params: {
-  tools?: Record<string, unknown> | null;
+  tools?: Record<string, any> | null;
   pathLabel: string;
 }): ConfiguredToolSectionGrantEntry[] {
   const entries: ConfiguredToolSectionGrantEntry[] = [];
@@ -333,11 +333,11 @@ function formatQuotedList(values: string[]): string {
   return values.map((value) => `"${value}"`).join(", ");
 }
 
-function hasNonEmptyStringList(value: unknown): value is string[] {
+function hasNonEmptyStringList(value: any): value is string[] {
   return Array.isArray(value) && value.some((entry) => typeof entry === "string");
 }
 
-function readPreviewStringList(value: unknown): string[] | undefined {
+function readPreviewStringList(value: any): string[] | undefined {
   return Array.isArray(value)
     ? value.filter((entry): entry is string => typeof entry === "string")
     : undefined;
@@ -376,8 +376,8 @@ function formatProfileConfiguredSectionGrantAdvice(params: {
 }
 
 function collectProfileConfiguredToolSectionScopeWarnings(params: {
-  tools?: Record<string, unknown> | null;
-  inheritedTools?: Record<string, unknown> | null;
+  tools?: Record<string, any> | null;
+  inheritedTools?: Record<string, any> | null;
   pathLabel: string;
   inheritedPathLabel?: string;
   includeInheritedSections?: boolean;
@@ -432,8 +432,8 @@ function collectProfileConfiguredToolSectionScopeWarnings(params: {
 }
 
 function collectByProviderConfiguredToolSectionWarnings(params: {
-  tools?: Record<string, unknown> | null;
-  inheritedTools?: Record<string, unknown> | null;
+  tools?: Record<string, any> | null;
+  inheritedTools?: Record<string, any> | null;
   pathLabel: string;
   configuredEntries: ConfiguredToolSectionGrantEntry[];
 }): string[] {
@@ -489,7 +489,7 @@ function collectByProviderConfiguredToolSectionWarnings(params: {
 }
 
 function resolveInheritedProviderPolicyForPreview(
-  inheritedByProvider: Record<string, unknown> | undefined,
+  inheritedByProvider: Record<string, any> | undefined,
   providerKey: string,
 ): ToolPolicyConfig | undefined {
   if (!inheritedByProvider) {
@@ -508,18 +508,18 @@ function resolveInheritedProviderPolicyForPreview(
 }
 
 function resolveProviderPolicyEntryForPreview(params: {
-  byProvider?: Record<string, unknown>;
+  byProvider?: Record<string, any>;
   modelProvider?: string;
   modelId?: string;
-}): { key: string; policy: Record<string, unknown> } | undefined {
+}): { key: string; policy: Record<string, any> } | undefined {
   const entry = resolveProviderToolPolicyEntry(params);
   return entry ? { key: entry.key, policy: entry.policy } : undefined;
 }
 
 function collectInheritedByProviderConfiguredToolSectionWarnings(params: {
-  inheritedTools?: Record<string, unknown> | null;
+  inheritedTools?: Record<string, any> | null;
   inheritedPathLabel: string;
-  overridingTools?: Record<string, unknown> | null;
+  overridingTools?: Record<string, any> | null;
   overridingPathLabel: string;
   configuredEntries: ConfiguredToolSectionGrantEntry[];
   modelProvider?: string;

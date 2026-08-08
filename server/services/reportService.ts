@@ -48,8 +48,8 @@ function generateFileName(reportType: string, warehouseId?: string): string {
  * @param rows 数据行
  * @returns CSV 字符串
  */
-function toCSV(headers: string[], rows: Record<string, unknown>[]): string {
-  const escapeCSV = (field: unknown): string => {
+function toCSV(headers: string[], rows: Record<string, any>[]): string {
+  const escapeCSV = (field: any): string => {
     const str = String(field ?? '');
     if (str.includes(',') || str.includes('"') || str.includes('\n')) {
       return `"${str.replace(/"/g, '""')}"`;
@@ -175,7 +175,7 @@ export function generateInboundReport(
       product_name: product?.name || '',
       quantity: record.quantity,
       operator: record.operator,
-      remarks: (record as unknown as Record<string, unknown>).remarks ?? '',
+      remarks: (record as unknown as Record<string, any>).remarks ?? '',
       created_at: record.createdAt,
     };
   });
@@ -239,7 +239,7 @@ export function generateOutboundReport(
       product_name: product?.name || '',
       quantity: record.quantity,
       operator: record.operator,
-      remarks: (record as unknown as Record<string, unknown>).remarks ?? '',
+      remarks: (record as unknown as Record<string, any>).remarks ?? '',
       created_at: record.createdAt,
     };
   });
@@ -277,7 +277,7 @@ export function generateOutboundReport(
  * 获取报表列表
  * @returns 报表记录列表
  */
-export function getReportList(): Array<Record<string, unknown>> {
+export function getReportList(): Array<Record<string, any>> {
   const reports = getReports();
   return reports.map(r => ({
     id: r.id,

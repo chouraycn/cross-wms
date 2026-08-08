@@ -65,7 +65,7 @@ export class WmsFileStorage implements DocumentStorage {
   }
 
   get<T>(collection: string, id: string | number): T | undefined {
-    const file = readFile<T & { id: unknown }>(collection);
+    const file = readFile<T & { id: any }>(collection);
     return file.items.find((item) => item.id === id) as T | undefined;
   }
 
@@ -77,16 +77,16 @@ export class WmsFileStorage implements DocumentStorage {
   }
 
   update<T>(collection: string, id: string | number, data: Partial<T>): T | null {
-    const file = readFile<T & { id: unknown }>(collection);
+    const file = readFile<T & { id: any }>(collection);
     const index = file.items.findIndex((item) => item.id === id);
     if (index === -1) return null;
-    file.items[index] = { ...file.items[index], ...data, id } as T & { id: unknown };
+    file.items[index] = { ...file.items[index], ...data, id } as T & { id: any };
     writeFile(collection, file);
     return file.items[index] as T;
   }
 
   delete(collection: string, id: string | number): boolean {
-    const file = readFile<{ id: unknown }>(collection);
+    const file = readFile<{ id: any }>(collection);
     const originalLen = file.items.length;
     file.items = file.items.filter((item) => item.id !== id);
     if (file.items.length === originalLen) return false;
@@ -109,14 +109,14 @@ export class WmsFileStorage implements DocumentStorage {
   // ===================== 计数 =====================
 
   count(collection: string): number {
-    const file = readFile<unknown>(collection);
+    const file = readFile<any>(collection);
     return file.items.length;
   }
 
   // ===================== 自增 ID =====================
 
   nextId(collection: string): number {
-    const file = readFile<unknown>(collection);
+    const file = readFile<any>(collection);
     const next = (file.lastId ?? 0) + 1;
     file.lastId = next;
     writeFile(collection, file);

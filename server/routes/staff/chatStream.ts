@@ -45,7 +45,7 @@ function tenantOf(req: Request): string {
 }
 
 /** 写入一条 SSE 事件（规范格式：event: <type>\\ndata: <json>） */
-function writeSse(res: Response, type: string, data: Record<string, unknown>): void {
+function writeSse(res: Response, type: string, data: Record<string, any>): void {
   res.write(`event: ${type}\n`);
   res.write(`data: ${JSON.stringify(data)}\n\n`);
 }
@@ -80,7 +80,7 @@ function emitEvent(
   tenantId: string,
   sessionId: string,
   type: string,
-  data: Record<string, unknown>,
+  data: Record<string, any>,
 ): void {
   if (res.writable && !res.writableEnded) {
     writeSse(res, type, data);
@@ -92,7 +92,7 @@ function recordTrace(
   tenantId: string,
   sessionId: string,
   type: string,
-  data: Record<string, unknown>,
+  data: Record<string, any>,
 ): void {
   if (!TRACE_EVENT_TYPES.has(type)) return;
   try {
@@ -155,7 +155,7 @@ router.post('/turn', async (req: Request, res: Response) => {
     const out = await runStaffChatTurn(
       { tenantId, sessionId: session.id, agentId: agent_id, message, history, model },
       (ev) => {
-        const d = ev.data as Record<string, unknown>;
+        const d = ev.data as Record<string, any>;
         if (ev.type === 'text.delta') accumulated += (d?.text as string) || '';
         else if (ev.type === 'thinking.delta') thinking += (d?.text as string) || '';
       },
@@ -243,7 +243,7 @@ router.post('/stream', async (req: Request, res: Response) => {
     const out = await runStaffChatTurn(
       { tenantId, sessionId: sid, agentId: agent_id, message, history, model },
       (ev) => {
-        const d = ev.data as Record<string, unknown>;
+        const d = ev.data as Record<string, any>;
         // 只把前端能消费的事件映射到前端契约，其余（thinking.* / text.end）忽略。
         if (ev.type === 'text.delta') {
           // 前端 useChatSession 读 event.data.text（兼容 stream_delta / text.delta / token）
@@ -583,7 +583,7 @@ function buildTurnTraces(
   };
 
   for (const ev of events) {
-    const p = (((ev.payload_json as string | null) ?? '{}') as unknown as Record<string, unknown>);
+    const p = (((ev.payload_json as string | null) ?? '{}') as unknown as Record<string, any>);
     if (ev.event_type === 'user_message_received') {
       startTurn(typeof p.message_id === 'string' ? p.message_id : null, ev.created_at);
       continue;

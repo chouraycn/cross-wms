@@ -70,7 +70,7 @@ export type HooksGmailConfig = {
 export type HookConfig = {
   enabled?: boolean;
   env?: Record<string, string>;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 export type HookInstallRecord = InstallRecordBase & {

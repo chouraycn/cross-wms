@@ -18,7 +18,7 @@ async function importSanitizer() {
     MAX_IMAGE_INPUT_PIXELS: 25_000_000,
     buildImageResizeSideGrid: () => [1200],
     getImageMetadata: getImageMetadataMock,
-    isImageProcessorUnavailableError: (error: unknown) => error === backendUnavailableError,
+    isImageProcessorUnavailableError: (error: any) => error === backendUnavailableError,
     readImageMetadataFromHeader: readImageMetadataFromHeaderMock,
     resizeToJpeg: async () => {
       throw backendUnavailableError;

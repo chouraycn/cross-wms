@@ -89,7 +89,7 @@ describe("configureCommand", () => {
       const { handler } = findEntry("configure");
       const res = handler(ctx({ args: { action: "validate" as ConfigureSubcommand } }));
       expect(res.ok).toBe(true);
-      const data = res.data as { valid: boolean; errors: unknown[]; warnings: unknown[] };
+      const data = res.data as { valid: boolean; errors: any[]; warnings: any[] };
       expect(data.valid).toBe(true);
       expect(data.errors).toEqual([]);
       expect(data.warnings).toEqual([]);

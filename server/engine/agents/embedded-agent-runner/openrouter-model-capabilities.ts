@@ -84,11 +84,11 @@ export interface OpenRouterModelCapabilities {
 // SQLite cache
 // ---------------------------------------------------------------------------
 
-function isValidCapabilities(value: unknown): value is OpenRouterModelCapabilities {
+function isValidCapabilities(value: any): value is OpenRouterModelCapabilities {
   if (!value || typeof value !== "object") {
     return false;
   }
-  const record = value as Record<string, unknown>;
+  const record = value as Record<string, any>;
   return (
     typeof record.name === "string" &&
     Array.isArray(record.input) &&
@@ -113,7 +113,7 @@ function writeSqliteCache(map: Map<string, OpenRouterModelCapabilities>): void {
     for (const [id, capabilities] of map) {
       store.register(id, capabilities);
     }
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = formatErrorMessage(err);
     log.debug(`Failed to write OpenRouter SQLite cache: ${message}`);
   }
@@ -132,7 +132,7 @@ function readSqliteCache(): Map<string, OpenRouterModelCapabilities> | undefined
       }
     }
     return map.size > 0 ? map : undefined;
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = formatErrorMessage(err);
     log.debug(`Failed to read OpenRouter SQLite cache: ${message}`);
     return undefined;
@@ -221,7 +221,7 @@ async function doFetch(): Promise<void> {
     cache = map;
     writeSqliteCache(map);
     log.debug(`Cached ${map.size} OpenRouter models from API`);
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = formatErrorMessage(err);
     log.warn(`Failed to fetch OpenRouter models: ${message}`);
   } finally {

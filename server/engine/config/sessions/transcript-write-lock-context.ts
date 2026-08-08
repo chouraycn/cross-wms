@@ -64,7 +64,7 @@ export async function withOwnedSessionTranscriptWrites<T>(
   return await ownedTranscriptWriteContext.run(context, run);
 }
 
-export function bindOwnedSessionTranscriptWrites<TArgs extends unknown[], TResult>(
+export function bindOwnedSessionTranscriptWrites<TArgs extends any[], TResult>(
   context: OwnedSessionTranscriptWriteContext,
   run: (...args: TArgs) => TResult,
 ): (...args: TArgs) => TResult {

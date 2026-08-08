@@ -23,7 +23,7 @@ export async function cleanupBrowserSessionsForLifecycleEnd(params: {
   cfg?: OpenClawConfig;
   sessionKeys: string[];
   onWarn?: (message: string) => void;
-  onError?: (error: unknown) => void;
+  onError?: (error: any) => void;
 }): Promise<void> {
   if (isBrowserCleanupDisabled(params.cfg)) {
     return;

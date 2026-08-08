@@ -1,4 +1,4 @@
 
-export function printDaemonStatus(..._args: unknown[]): unknown {
+export function printDaemonStatus(..._args: any[]): any {
   console.warn('printDaemonStatus is not available in cross-wms'); return undefined;
 }

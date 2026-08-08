@@ -157,10 +157,10 @@ describe('CacheManager', () => {
       cache2.set('b', 'value-b');
 
       // 模拟过期
-      for (const entry of (cache1 as unknown).cache.values()) {
+      for (const entry of (cache1 as any).cache.values()) {
         entry.expiresAt = Date.now() - 1;
       }
-      for (const entry of (cache2 as unknown).cache.values()) {
+      for (const entry of (cache2 as any).cache.values()) {
         entry.expiresAt = Date.now() - 1;
       }
 

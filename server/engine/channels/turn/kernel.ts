@@ -13,7 +13,7 @@ export function createTurn(params: {
   threadId?: string;
   source: TurnSource;
   inputMessage?: ChannelMessage;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }): TurnContext {
   const now = Date.now();
   const turnId = `turn-${params.conversationId}-${now}-${Math.random().toString(36).slice(2, 8)}`;
@@ -70,7 +70,7 @@ export function addOutputMessage(turnId: string, message: ChannelMessage): boole
   return true;
 }
 
-export function setTurnMetadata(turnId: string, key: string, value: unknown): boolean {
+export function setTurnMetadata(turnId: string, key: string, value: any): boolean {
   const turn = activeTurns.get(turnId);
   if (!turn) return false;
 

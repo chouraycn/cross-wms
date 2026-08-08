@@ -4,16 +4,16 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vite
 import { TEST_UNDICI_RUNTIME_DEPS_KEY } from "./undici-runtime.js";
 
 const { agentCtor, envHttpProxyAgentCtor, proxyAgentCtor } = vi.hoisted(() => ({
-  agentCtor: vi.fn(function MockAgent(this: { options: unknown }, options: unknown) {
+  agentCtor: vi.fn(function MockAgent(this: { options: any }, options: any) {
     this.options = options;
   }),
   envHttpProxyAgentCtor: vi.fn(function MockEnvHttpProxyAgent(
-    this: { options: unknown },
-    options: unknown,
+    this: { options: any },
+    options: any,
   ) {
     this.options = options;
   }),
-  proxyAgentCtor: vi.fn(function MockProxyAgent(this: { options: unknown }, options: unknown) {
+  proxyAgentCtor: vi.fn(function MockProxyAgent(this: { options: any }, options: any) {
     this.options = options;
   }),
 }));
@@ -46,7 +46,7 @@ beforeEach(() => {
   proxyAgentCtor.mockClear();
   getDefaultAutoSelectFamily.mockReturnValue(true);
   isWSL2SyncMock.mockReturnValue(false);
-  (globalThis as Record<string, unknown>)[TEST_UNDICI_RUNTIME_DEPS_KEY] = {
+  (globalThis as Record<string, any>)[TEST_UNDICI_RUNTIME_DEPS_KEY] = {
     Agent: agentCtor,
     EnvHttpProxyAgent: envHttpProxyAgentCtor,
     ProxyAgent: proxyAgentCtor,
@@ -79,14 +79,14 @@ function createDispatcherWithPinnedOverride(lookup: PinnedHostname["lookup"]) {
   return (call?.[0] as { connect?: { lookup?: PinnedHostname["lookup"] } })?.connect?.lookup;
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error(`expected ${label}`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function requireFirstAgentOptions(): Record<string, unknown> {
+function requireFirstAgentOptions(): Record<string, any> {
   const [call] = agentCtor.mock.calls;
   if (!call) {
     throw new Error("expected Agent constructor call");
@@ -107,7 +107,7 @@ describe("createPinnedDispatcher", () => {
 
     const dispatcherOptions = (
       dispatcher as {
-        options?: { allowH2?: boolean; connect?: Record<string, unknown> };
+        options?: { allowH2?: boolean; connect?: Record<string, any> };
       }
     ).options;
     expect(dispatcherOptions?.connect?.lookup).toBe(lookup);

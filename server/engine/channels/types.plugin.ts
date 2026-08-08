@@ -9,29 +9,29 @@ export type ChannelConfigRuntimeSchema = unknown;
 
 export type ChannelConfigSchema = {
   type?: "object";
-  properties?: Record<string, unknown>;
+  properties?: Record<string, any>;
   required?: string[];
   additionalProperties?: boolean;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 export type ChannelConfigUiHint = unknown;
 
 export type ChannelGatewayMethodDescriptor = unknown;
 
-export type ChannelPlugin<ResolvedAccount = unknown, Probe = unknown, Audit = unknown> = {
+export type ChannelPlugin<ResolvedAccount = any, Probe = any, Audit = any> = {
   id: string;
-  meta?: unknown;
-  capabilities?: unknown;
-  config?: unknown;
+  meta?: any;
+  capabilities?: any;
+  config?: any;
   configSchema?: ChannelConfigSchema;
-  setup?: unknown;
-  pairing?: unknown;
+  setup?: any;
+  pairing?: any;
   security?: import("./types.adapters.js").ChannelSecurityAdapter<ResolvedAccount>;
-  groups?: unknown;
-  mentions?: unknown;
-  outbound?: unknown;
-  status?: unknown;
+  groups?: any;
+  mentions?: any;
+  outbound?: any;
+  status?: any;
   gatewayMethods?: string[];
-  [key: string]: unknown;
+  [key: string]: any;
 };

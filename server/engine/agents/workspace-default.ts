@@ -14,7 +14,7 @@ import path from "node:path";
 import { resolveRequiredHomeDir } from "../infra/_runtime-stubs.js";
 
 // 降级实现：normalizeOptionalLowercaseString 来自 @openclaw/normalization-core/string-coerce
-function normalizeOptionalLowercaseString(value: unknown): string | undefined {
+function normalizeOptionalLowercaseString(value: any): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }

@@ -15,7 +15,7 @@ export type { ChannelCommandDefaults };
 export const resolveReadOnlyChannelCommandDefaults = (
   _channelId: string,
   _options?: {
-    config?: unknown;
+    config?: any;
     env?: NodeJS.ProcessEnv;
     stateDir?: string;
     workspaceDir?: string;

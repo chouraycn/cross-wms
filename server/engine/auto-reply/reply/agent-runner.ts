@@ -243,11 +243,11 @@ function resolveReplyRunDeliveryContext(params: {
   });
 }
 
-function hasNonEmptyStringArray(value: unknown): boolean {
+function hasNonEmptyStringArray(value: any): boolean {
   return Array.isArray(value) && value.some((entry) => typeof entry === "string" && entry.trim());
 }
 
-function hasCommittedMessagingTargetDeliveryEvidence(value: unknown): boolean {
+function hasCommittedMessagingTargetDeliveryEvidence(value: any): boolean {
   if (!Array.isArray(value)) {
     return false;
   }
@@ -255,7 +255,7 @@ function hasCommittedMessagingTargetDeliveryEvidence(value: unknown): boolean {
     if (!entry || typeof entry !== "object") {
       return false;
     }
-    const record = entry as { text?: unknown; mediaUrls?: unknown };
+    const record = entry as { text?: any; mediaUrls?: any };
     if ("text" in record || "mediaUrls" in record) {
       return (
         (typeof record.text === "string" && record.text.trim().length > 0) ||
@@ -271,7 +271,7 @@ function hasSuccessfulSideEffectDelivery(params: {
   directlySentBlockKeys?: Set<string>;
   messagingToolSentTexts?: string[];
   messagingToolSentMediaUrls?: string[];
-  messagingToolSentTargets?: unknown[];
+  messagingToolSentTargets?: any[];
   didSendViaMessagingTool?: boolean;
   successfulCronAdds?: number;
   didSendDeterministicApprovalPrompt?: boolean;
@@ -289,7 +289,7 @@ function hasSuccessfulSourceReplyDelivery(params: {
   directlySentBlockKeys?: Set<string>;
   messagingToolSentTexts?: string[];
   messagingToolSentMediaUrls?: string[];
-  messagingToolSentTargets?: unknown[];
+  messagingToolSentTargets?: any[];
 }): boolean {
   return (
     (params.blockReplyPipeline?.didStream() && !params.blockReplyPipeline.isAborted()) ||
@@ -786,9 +786,9 @@ async function accumulateSessionUsageFromTranscript(params: {
       if (!line.trim()) {
         continue;
       }
-      let parsed: { message?: { usage?: unknown } } | undefined;
+      let parsed: { message?: { usage?: any } } | undefined;
       try {
-        parsed = JSON.parse(line) as { message?: { usage?: unknown } };
+        parsed = JSON.parse(line) as { message?: { usage?: any } };
       } catch {
         continue;
       }

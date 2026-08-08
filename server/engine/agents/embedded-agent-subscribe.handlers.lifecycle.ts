@@ -7,9 +7,9 @@
  */
 
 export { handleCompactionEnd, handleCompactionStart } from "./embedded-agent-subscribe.handlers.compaction.js";
-export function handleAgentStart(..._args: unknown[]): unknown {
+export function handleAgentStart(..._args: any[]): any {
   return undefined;
 }
-export function handleAgentEnd(..._args: unknown[]): unknown {
+export function handleAgentEnd(..._args: any[]): any {
   return undefined;
 }

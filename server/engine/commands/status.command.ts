@@ -62,7 +62,7 @@ function loadStatusNodeModeModule() {
 export function resolvePairingRecoveryContext(params: {
   error?: string | null;
   closeReason?: string | null;
-  details?: unknown;
+  details?: any;
 }): {
   requestId: string | null;
   reason: ConnectPairingRequiredReason | null;

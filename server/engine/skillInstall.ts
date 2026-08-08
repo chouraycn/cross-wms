@@ -861,7 +861,7 @@ export class SkillInstallManager {
   /**
    * IO 错误转换为 InstallResult
    */
-  private ioErrorResult(e: unknown, fallback: string): InstallResult {
+  private ioErrorResult(e: any, fallback: string): InstallResult {
     const error = e instanceof Error ? e.message : String(e);
     return {
       success: false,

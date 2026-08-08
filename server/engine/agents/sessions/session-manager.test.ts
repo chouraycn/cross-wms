@@ -227,7 +227,7 @@ describe("SessionManager.open", () => {
     const persistedEntries = (await fs.readFile(sessionFile, "utf8"))
       .trim()
       .split("\n")
-      .map((line) => JSON.parse(line) as { type: string; version?: number; message?: unknown });
+      .map((line) => JSON.parse(line) as { type: string; version?: number; message?: any });
     expect(persistedEntries[0]).toMatchObject({
       type: "session",
       version: CURRENT_SESSION_VERSION,
@@ -438,7 +438,7 @@ describe("SessionManager.open", () => {
         nan: null,
       },
     });
-    expect((warmEntry as { data?: Record<string, unknown> }).data).not.toHaveProperty("dropped");
+    expect((warmEntry as { data?: Record<string, any> }).data).not.toHaveProperty("dropped");
   });
 
   it("serializes owned appends once and caches those exact bytes", async () => {
@@ -490,7 +490,7 @@ describe("SessionManager.open", () => {
   it("validates the transcript prefix after entries with custom serializers are serialized", async () => {
     const appenders: Array<{
       name: string;
-      append: (manager: SessionManager, value: unknown) => void;
+      append: (manager: SessionManager, value: any) => void;
     }> = [
       {
         name: "custom",
@@ -537,7 +537,7 @@ describe("SessionManager.open", () => {
     const serializerCases: Array<{
       name: string;
       createValue: (rewriteTranscript: () => void) => {
-        value: unknown;
+        value: any;
         cleanup?: () => void;
       };
     }> = [
@@ -588,7 +588,7 @@ describe("SessionManager.open", () => {
                  
                 Object.defineProperty(BigInt.prototype, "toJSON", originalBigIntToJson);
               } else {
-                delete (BigInt.prototype as { toJSON?: unknown }).toJSON;
+                delete (BigInt.prototype as { toJSON?: any }).toJSON;
               }
             },
           };
@@ -1064,7 +1064,7 @@ describe("SessionManager.open", () => {
       .find((entry) => entry.type === "custom");
     expect(serializationCount).toBe(1);
     expect(warmEntry).toMatchObject({ data: { kept: "value", stateful: "first" } });
-    expect((warmEntry as { data?: Record<string, unknown> }).data).not.toHaveProperty("dropped");
+    expect((warmEntry as { data?: Record<string, any> }).data).not.toHaveProperty("dropped");
   });
 
   it("keeps the exported file loader mutable and separate from warm SessionManager entries", async () => {
@@ -1082,7 +1082,7 @@ describe("SessionManager.open", () => {
     if (!messageEntry || messageEntry.type !== "message") {
       throw new Error("expected message entry");
     }
-    (messageEntry.message as { content: unknown }).content = "caller-owned mutation";
+    (messageEntry.message as { content: any }).content = "caller-owned mutation";
 
     expect(readMessageContent(messageEntry)).toBe("caller-owned mutation");
     expect(
@@ -1243,7 +1243,7 @@ describe("SessionManager.open", () => {
       throw new Error("expected message entry");
     }
     expect(() => {
-      (returnedEntry.message as { content: unknown }).content = "mutated only in caller";
+      (returnedEntry.message as { content: any }).content = "mutated only in caller";
     }).toThrow(TypeError);
 
     const originalParse = JSON.parse;
@@ -1285,7 +1285,7 @@ describe("SessionManager.open", () => {
     }
 
     expect(() => {
-      (returnedEntry.message as { content: unknown }).content = "mutated";
+      (returnedEntry.message as { content: any }).content = "mutated";
     }).toThrow(TypeError);
   });
 
@@ -1424,7 +1424,7 @@ describe("SessionManager.open", () => {
     const records = (await fs.readFile(sessionFile, "utf8"))
       .trim()
       .split("\n")
-      .map((line) => JSON.parse(line) as unknown);
+      .map((line) => JSON.parse(line) as any);
     expect(records).toContainEqual(metadata);
     expect(sessionManager.getEntries()).toEqual([assistantEntry]);
   });
@@ -1741,7 +1741,7 @@ describe("SessionManager.open", () => {
     const records = (await fs.readFile(sessionFile!, "utf8"))
       .trim()
       .split("\n")
-      .map((line) => JSON.parse(line) as Record<string, unknown>);
+      .map((line) => JSON.parse(line) as Record<string, any>);
     const metadataIndex = records.findIndex(
       (record) => JSON.stringify(record) === JSON.stringify(opaqueMetadata),
     );
@@ -2038,7 +2038,7 @@ describe("SessionManager.open", () => {
     const rewritten = (await fs.readFile(sessionFile, "utf-8"))
       .trim()
       .split("\n")
-      .map((line) => JSON.parse(line) as Record<string, unknown>);
+      .map((line) => JSON.parse(line) as Record<string, any>);
     expect(rewritten.at(-1)).toMatchObject({
       type: "leaf",
       targetId: baseAnswer.id,
@@ -2287,7 +2287,7 @@ describe("SessionManager.open", () => {
     const branchedRecords = (await fs.readFile(branchedFile!, "utf8"))
       .trim()
       .split("\n")
-      .map((line) => JSON.parse(line) as Record<string, unknown>);
+      .map((line) => JSON.parse(line) as Record<string, any>);
 
     expect(branchedRecords.some((record) => record.type === "leaf")).toBe(false);
     expect(branchedRecords.find((record) => record.id === replacementEntry.id)?.parentId).toBe(
@@ -2458,8 +2458,8 @@ describe("SessionManager.open", () => {
   });
 });
 
-function readMessageContent(entry: SessionEntry): unknown {
-  const content = (entry as { message: { content: unknown } }).message.content;
+function readMessageContent(entry: SessionEntry): any {
+  const content = (entry as { message: { content: any } }).message.content;
   if (Array.isArray(content)) {
     return content.map((part) => (part as { text?: string }).text ?? "").join("");
   }

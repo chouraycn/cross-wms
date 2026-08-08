@@ -70,7 +70,7 @@ export type AgentRuntimeModel = {
   contextWindow?: number;
   maxTokens?: number;
   contextTokens?: number;
-  compat?: unknown;
+  compat?: any;
 };
 
 /** Text replacement rule used by provider input/output transforms. */
@@ -256,7 +256,7 @@ export type AgentRuntimeReplyPayload = {
   isCompactionNotice?: boolean;
   isFallbackNotice?: boolean;
   isStatusNotice?: boolean;
-  channelData?: Record<string, unknown>;
+  channelData?: Record<string, any>;
 };
 
 /** Stable section IDs for provider system prompt overrides. */
@@ -327,7 +327,7 @@ export type AgentRuntimeOutcomeClassification =
       rawError?: string;
     }
   | {
-      error: unknown;
+      error: any;
     }
   | null
   | undefined;
@@ -336,7 +336,7 @@ export type AgentRuntimeOutcomeClassification =
 export type AgentRuntimeOutcomeClassifier = (params: {
   provider: string;
   model: string;
-  result: unknown;
+  result: any;
   hasDirectlySentBlockReply?: boolean;
   hasBlockReplyPipelineOutput?: boolean;
 }) => AgentRuntimeOutcomeClassification;
@@ -386,7 +386,7 @@ export type PreparedOpenClawToolPlanning = {
 /** Tool normalization and diagnostics hooks for one runtime attempt. */
 export type AgentRuntimeToolPlan = {
   preparedPlanning?: PreparedOpenClawToolPlanning;
-  normalize<TSchemaType extends TSchema = TSchema, TResult = unknown>(
+  normalize<TSchemaType extends TSchema = TSchema, TResult = any>(
     tools: AgentTool<TSchemaType, TResult>[],
     params?: {
       workspaceDir?: string;
@@ -428,15 +428,15 @@ export type AgentRuntimeOutcomePlan = {
 
 /** Extra transport parameter plan for one runtime attempt. */
 export type AgentRuntimeTransportPlan = {
-  extraParams: Record<string, unknown>;
+  extraParams: Record<string, any>;
   resolveExtraParams(params?: {
-    extraParamsOverride?: Record<string, unknown>;
+    extraParamsOverride?: Record<string, any>;
     thinkingLevel?: AgentRuntimeThinkLevel;
     agentId?: string;
     workspaceDir?: string;
     model?: AgentRuntimeModel;
     resolvedTransport?: AgentRuntimeTransport;
-  }): Record<string, unknown>;
+  }): Record<string, any>;
 };
 
 /** Complete prepared runtime plan consumed by embedded-agent attempts. */
@@ -496,7 +496,7 @@ export type BuildAgentRuntimePlanParams = {
   sessionAuthProfileCandidateIds?: string[];
   agentId?: string;
   thinkingLevel?: AgentRuntimeThinkLevel;
-  extraParamsOverride?: Record<string, unknown>;
+  extraParamsOverride?: Record<string, any>;
   resolvedTransport?: AgentRuntimeTransport;
   providerRuntimeHandle?: AgentRuntimeProviderHandle;
 };

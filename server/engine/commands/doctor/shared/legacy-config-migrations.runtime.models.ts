@@ -30,7 +30,7 @@ function resolveStaleContextWindowFix(params: {
   return fix && params.contextWindow === fix.stale ? fix : undefined;
 }
 
-function hasStaleContextWindowValue(providers: unknown): boolean {
+function hasStaleContextWindowValue(providers: any): boolean {
   const providersRecord = getRecord(providers);
   if (!providersRecord) {
     return false;
@@ -58,7 +58,7 @@ function hasStaleContextWindowValue(providers: unknown): boolean {
   return false;
 }
 
-function hasInvalidThinkingFormat(providers: unknown): boolean {
+function hasInvalidThinkingFormat(providers: any): boolean {
   const providersRecord = getRecord(providers);
   if (!providersRecord) {
     return false;
@@ -88,7 +88,7 @@ const LEGACY_VLLM_QWEN_THINKING_FORMAT_KEYS = [
 ] as const;
 
 function normalizeLegacyVllmQwenThinkingFormat(
-  value: unknown,
+  value: any,
 ): "qwen" | "qwen-chat-template" | undefined {
   if (typeof value !== "string") {
     return undefined;
@@ -115,10 +115,10 @@ function normalizeLegacyVllmQwenThinkingFormat(
   }
 }
 
-function getLegacyVllmQwenThinkingFormat(params: Record<string, unknown>):
+function getLegacyVllmQwenThinkingFormat(params: Record<string, any>):
   | {
       key: (typeof LEGACY_VLLM_QWEN_THINKING_FORMAT_KEYS)[number];
-      value: unknown;
+      value: any;
       compat: "qwen" | "qwen-chat-template" | undefined;
     }
   | undefined {
@@ -148,7 +148,7 @@ function parseVllmAgentModelKey(key: string): string | undefined {
   return modelId && modelId !== "*" ? modelId : undefined;
 }
 
-function hasLegacyVllmQwenThinkingFormat(defaultModels: unknown): boolean {
+function hasLegacyVllmQwenThinkingFormat(defaultModels: any): boolean {
   const models = getRecord(defaultModels);
   if (!models) {
     return false;
@@ -165,12 +165,12 @@ function hasLegacyVllmQwenThinkingFormat(defaultModels: unknown): boolean {
   return false;
 }
 
-function hasLegacyVllmQwenThinkingProviderParams(provider: unknown): boolean {
+function hasLegacyVllmQwenThinkingProviderParams(provider: any): boolean {
   const params = getRecord(getRecord(provider)?.params);
   return Boolean(params && getLegacyVllmQwenThinkingFormat(params));
 }
 
-function hasLegacyVllmQwenThinkingModelParams(provider: unknown): boolean {
+function hasLegacyVllmQwenThinkingModelParams(provider: any): boolean {
   const models = getRecord(provider)?.models;
   if (!Array.isArray(models)) {
     return false;
@@ -181,12 +181,12 @@ function hasLegacyVllmQwenThinkingModelParams(provider: unknown): boolean {
   });
 }
 
-function hasLegacyVllmQwenThinkingParams(params: unknown): boolean {
+function hasLegacyVllmQwenThinkingParams(params: any): boolean {
   const record = getRecord(params);
   return Boolean(record && getLegacyVllmQwenThinkingFormat(record));
 }
 
-function hasLegacyVllmQwenThinkingAgentParams(agents: unknown): boolean {
+function hasLegacyVllmQwenThinkingAgentParams(agents: any): boolean {
   const list = getRecord(agents)?.list;
   if (!Array.isArray(list)) {
     return false;
@@ -195,9 +195,9 @@ function hasLegacyVllmQwenThinkingAgentParams(agents: unknown): boolean {
 }
 
 function findOrCreateVllmModelEntry(
-  raw: Record<string, unknown>,
+  raw: Record<string, any>,
   modelId: string,
-): { model: Record<string, unknown>; index: number } | undefined {
+): { model: Record<string, any>; index: number } | undefined {
   const modelsRoot = getOrCreateRecord(raw, "models");
   const providers = modelsRoot ? getOrCreateRecord(modelsRoot, "providers") : undefined;
   const vllm = providers ? getOrCreateVllmProvider(providers) : undefined;
@@ -224,8 +224,8 @@ function findOrCreateVllmModelEntry(
 }
 
 function listExistingVllmModelTargets(
-  raw: Record<string, unknown>,
-): Array<{ model: Record<string, unknown>; index: number }> {
+  raw: Record<string, any>,
+): Array<{ model: Record<string, any>; index: number }> {
   const models = findVllmProvider(getRecord(getRecord(raw.models)?.providers))?.models;
   if (!Array.isArray(models)) {
     return [];
@@ -236,7 +236,7 @@ function listExistingVllmModelTargets(
   });
 }
 
-function collectVllmModelIdsFromSelection(value: unknown): string[] {
+function collectVllmModelIdsFromSelection(value: any): string[] {
   if (typeof value === "string") {
     const modelId = parseVllmAgentModelKey(value);
     return modelId ? [modelId] : [];
@@ -266,7 +266,7 @@ function collectVllmModelIdsFromSelection(value: unknown): string[] {
   return ids;
 }
 
-function collectVllmModelIdsFromAgentModelMap(value: unknown): string[] {
+function collectVllmModelIdsFromAgentModelMap(value: any): string[] {
   const models = getRecord(value);
   if (!models) {
     return [];
@@ -278,11 +278,11 @@ function collectVllmModelIdsFromAgentModelMap(value: unknown): string[] {
 }
 
 function createVllmModelTargets(
-  raw: Record<string, unknown>,
+  raw: Record<string, any>,
   modelIds: string[],
-): Array<{ model: Record<string, unknown>; index: number }> {
-  const targets: Array<{ model: Record<string, unknown>; index: number }> = [];
-  const seen = new Set<Record<string, unknown>>();
+): Array<{ model: Record<string, any>; index: number }> {
+  const targets: Array<{ model: Record<string, any>; index: number }> = [];
+  const seen = new Set<Record<string, any>>();
   for (const modelId of modelIds) {
     const target = findOrCreateVllmModelEntry(raw, modelId);
     if (!target || seen.has(target.model)) {
@@ -295,10 +295,10 @@ function createVllmModelTargets(
 }
 
 function combineVllmModelTargets(
-  ...groups: Array<Array<{ model: Record<string, unknown>; index: number }>>
-): Array<{ model: Record<string, unknown>; index: number }> {
-  const targets: Array<{ model: Record<string, unknown>; index: number }> = [];
-  const seen = new Set<Record<string, unknown>>();
+  ...groups: Array<Array<{ model: Record<string, any>; index: number }>>
+): Array<{ model: Record<string, any>; index: number }> {
+  const targets: Array<{ model: Record<string, any>; index: number }> = [];
+  const seen = new Set<Record<string, any>>();
   for (const group of groups) {
     for (const target of group) {
       if (seen.has(target.model)) {
@@ -311,7 +311,7 @@ function combineVllmModelTargets(
   return targets;
 }
 
-function collectVllmModelIdsFromAgentList(value: unknown): string[] {
+function collectVllmModelIdsFromAgentList(value: any): string[] {
   if (!Array.isArray(value)) {
     return [];
   }
@@ -327,11 +327,11 @@ function collectVllmModelIdsFromAgentList(value: unknown): string[] {
 }
 
 function getOrCreateRecord(
-  root: Record<string, unknown>,
+  root: Record<string, any>,
   key: string,
-): Record<string, unknown> | undefined {
+): Record<string, any> | undefined {
   if (root[key] === undefined) {
-    const next: Record<string, unknown> = {};
+    const next: Record<string, any> = {};
     root[key] = next;
     return next;
   }
@@ -339,8 +339,8 @@ function getOrCreateRecord(
 }
 
 function findVllmProvider(
-  providers: Record<string, unknown> | null | undefined,
-): Record<string, unknown> | undefined {
+  providers: Record<string, any> | null | undefined,
+): Record<string, any> | undefined {
   if (!providers) {
     return undefined;
   }
@@ -349,8 +349,8 @@ function findVllmProvider(
 }
 
 function getOrCreateVllmProvider(
-  providers: Record<string, unknown>,
-): Record<string, unknown> | undefined {
+  providers: Record<string, any>,
+): Record<string, any> | undefined {
   const key = Object.keys(providers).find((entry) => normalizeProviderId(entry) === "vllm");
   if (key) {
     return getRecord(providers[key]) ?? undefined;
@@ -358,7 +358,7 @@ function getOrCreateVllmProvider(
   return getOrCreateRecord(providers, "vllm");
 }
 
-function hasLegacyVllmQwenThinkingNormalizedProvider(providers: unknown): boolean {
+function hasLegacyVllmQwenThinkingNormalizedProvider(providers: any): boolean {
   const providersRecord = getRecord(providers);
   if (!providersRecord || getRecord(providersRecord.vllm)) {
     return false;
@@ -370,13 +370,13 @@ function hasLegacyVllmQwenThinkingNormalizedProvider(providers: unknown): boolea
   );
 }
 
-function preserveMigratedVllmQwenReasoning(model: Record<string, unknown>): void {
+function preserveMigratedVllmQwenReasoning(model: Record<string, any>): void {
   if (model.reasoning === undefined) {
     model.reasoning = true;
   }
 }
 
-function removeLegacyVllmQwenThinkingParams(params: Record<string, unknown>): void {
+function removeLegacyVllmQwenThinkingParams(params: Record<string, any>): void {
   for (const key of LEGACY_VLLM_QWEN_THINKING_FORMAT_KEYS) {
     delete params[key];
   }
@@ -384,8 +384,8 @@ function removeLegacyVllmQwenThinkingParams(params: Record<string, unknown>): vo
 
 function applyLegacyVllmQwenThinkingFormat(params: {
   sourcePath: string;
-  legacyParams: Record<string, unknown>;
-  target: { model: Record<string, unknown>; index: number };
+  legacyParams: Record<string, any>;
+  target: { model: Record<string, any>; index: number };
   legacyFormat: NonNullable<ReturnType<typeof getLegacyVllmQwenThinkingFormat>>;
   changes: string[];
 }): boolean {
@@ -418,7 +418,7 @@ function applyLegacyVllmQwenThinkingFormat(params: {
 
 function removeUntargetedLegacyVllmQwenThinkingFormat(params: {
   sourcePath: string;
-  legacyParams: Record<string, unknown>;
+  legacyParams: Record<string, any>;
   legacyFormat: NonNullable<ReturnType<typeof getLegacyVllmQwenThinkingFormat>>;
   changes: string[];
 }): void {
@@ -484,7 +484,7 @@ const STALE_CONTEXT_WINDOW_RULE: LegacyConfigRule = {
   match: (value) => hasStaleContextWindowValue(value),
 };
 
-function normalizeString(value: unknown): string {
+function normalizeString(value: any): string {
   return typeof value === "string" ? value.trim().toLowerCase() : "";
 }
 
@@ -811,7 +811,7 @@ function isChannelModelOverridePath(path: string): boolean {
   return path.includes(".modelByChannel.");
 }
 
-function scanKnownModelRefs(value: unknown, key?: string, path = ""): boolean {
+function scanKnownModelRefs(value: any, key?: string, path = ""): boolean {
   if (typeof value === "string") {
     return Boolean(
       key &&
@@ -848,12 +848,12 @@ function rewriteModelRefString(value: string, path: string, changes: string[]): 
 }
 
 function rewriteModelRefMapKeys(
-  record: Record<string, unknown>,
+  record: Record<string, any>,
   path: string,
   changes: string[],
-): { value: Record<string, unknown>; changed: boolean } {
+): { value: Record<string, any>; changed: boolean } {
   let changed = false;
-  const next: Record<string, unknown> = {};
+  const next: Record<string, any> = {};
   for (const [key, child] of Object.entries(record)) {
     const upgradedKey = upgradeRetiredModelRef(key);
     const nextKey = upgradedKey ?? key;
@@ -872,10 +872,10 @@ function rewriteModelRefMapKeys(
 }
 
 function rewriteKnownModelRefs(
-  value: unknown,
+  value: any,
   path: string,
   changes: string[],
-): { value: unknown; changed: boolean } {
+): { value: any; changed: boolean } {
   const key = pathKey(path);
   if (typeof value === "string") {
     if (!MODEL_REF_STRING_KEYS.has(key) && !isChannelModelOverridePath(path)) {
@@ -911,7 +911,7 @@ function rewriteKnownModelRefs(
     changed ||= rewrittenKeys.changed;
   }
 
-  const next: Record<string, unknown> = {};
+  const next: Record<string, any> = {};
   for (const [childKey, child] of Object.entries(working)) {
     const rewritten = rewriteKnownModelRefs(child, `${path}.${childKey}`, changes);
     changed ||= rewritten.changed;
@@ -954,7 +954,7 @@ const CANONICAL_PROVIDER_MODEL_LEAK_KEYS = [
   "request",
 ] as const;
 
-function hasCanonicalOpenAIProvider(providers: Record<string, unknown>): boolean {
+function hasCanonicalOpenAIProvider(providers: Record<string, any>): boolean {
   return Object.keys(providers).some(
     (providerId) => normalizeProviderId(providerId) === OPENAI_PROVIDER_ID,
   );
@@ -962,11 +962,11 @@ function hasCanonicalOpenAIProvider(providers: Record<string, unknown>): boolean
 
 function normalizeLegacyOpenAIResponsesApi(
   providerId: string,
-  provider: Record<string, unknown>,
+  provider: Record<string, any>,
   changes: string[],
-): { value: Record<string, unknown>; changed: boolean } {
+): { value: Record<string, any>; changed: boolean } {
   let changed = false;
-  const next: Record<string, unknown> = { ...provider };
+  const next: Record<string, any> = { ...provider };
   if (next.api === LEGACY_OPENAI_CODEX_RESPONSES_API) {
     next.api = OPENAI_CHATGPT_RESPONSES_API;
     changes.push(
@@ -1000,13 +1000,13 @@ function normalizeLegacyOpenAIResponsesApi(
   return { value: next, changed };
 }
 
-function hasOwnDefinedProperty(record: Record<string, unknown>, key: string): boolean {
+function hasOwnDefinedProperty(record: Record<string, any>, key: string): boolean {
   return Object.hasOwn(record, key) && record[key] !== undefined;
 }
 
 function collectModelMergeBlockers(params: {
-  canonical: Record<string, unknown>;
-  legacy: Record<string, unknown>;
+  canonical: Record<string, any>;
+  legacy: Record<string, any>;
 }): string[] {
   const blockers: string[] = [];
   for (const key of MODEL_UNSCOPED_PROVIDER_DEFAULT_KEYS) {
@@ -1023,22 +1023,22 @@ function collectModelMergeBlockers(params: {
 }
 
 function getCanonicalOpenAIProviderEntry(
-  providers: Record<string, unknown>,
-): { key: string; value: Record<string, unknown> } | undefined {
+  providers: Record<string, any>,
+): { key: string; value: Record<string, any> } | undefined {
   const key = Object.keys(providers).find((k) => normalizeProviderId(k) === OPENAI_PROVIDER_ID);
   const value = key ? getRecord(providers[key]) : undefined;
   return key && value ? { key, value } : undefined;
 }
 
 function getMergeableLegacyOpenAIModels(params: {
-  canonical: Record<string, unknown>;
-  legacy: Record<string, unknown>;
-}): unknown[] {
-  const legacyModels: unknown[] = Array.isArray(params.legacy.models)
-    ? (params.legacy.models as unknown[])
+  canonical: Record<string, any>;
+  legacy: Record<string, any>;
+}): any[] {
+  const legacyModels: any[] = Array.isArray(params.legacy.models)
+    ? (params.legacy.models as any[])
     : [];
-  const canonicalModels: unknown[] = Array.isArray(params.canonical.models)
-    ? (params.canonical.models as unknown[])
+  const canonicalModels: any[] = Array.isArray(params.canonical.models)
+    ? (params.canonical.models as any[])
     : [];
   const canonicalModelIds = new Set<string>();
   const canonicalModelNames = new Set<string>();
@@ -1065,7 +1065,7 @@ function getMergeableLegacyOpenAIModels(params: {
   });
 }
 
-function hasAutoFixableLegacyOpenAICodexProvider(providersValue: unknown): boolean {
+function hasAutoFixableLegacyOpenAICodexProvider(providersValue: any): boolean {
   const providers = getRecord(providersValue);
   if (!providers) {
     return false;
@@ -1098,7 +1098,7 @@ function hasAutoFixableLegacyOpenAICodexProvider(providersValue: unknown): boole
   return false;
 }
 
-export function collectBlockedLegacyOpenAICodexProviderWarnings(raw: unknown): string[] {
+export function collectBlockedLegacyOpenAICodexProviderWarnings(raw: any): string[] {
   const models = getRecord(getRecord(raw)?.models);
   const providers = getRecord(models?.providers);
   const canonicalEntry = providers ? getCanonicalOpenAIProviderEntry(providers) : undefined;
@@ -1138,15 +1138,15 @@ export function collectBlockedLegacyOpenAICodexProviderWarnings(raw: unknown): s
 }
 
 function buildMergedLegacyOpenAIModel(
-  model: unknown,
-  legacyProvider: Record<string, unknown>,
-): unknown {
+  model: any,
+  legacyProvider: Record<string, any>,
+): any {
   const modelRecord = getRecord(model);
   if (!modelRecord) {
     return model;
   }
 
-  const patch: Record<string, unknown> = {};
+  const patch: Record<string, any> = {};
   const legacyBaseUrl =
     typeof legacyProvider.baseUrl === "string" ? legacyProvider.baseUrl : undefined;
   const legacyApi = typeof legacyProvider.api === "string" ? legacyProvider.api : undefined;
@@ -1187,7 +1187,7 @@ function buildMergedLegacyOpenAIModel(
   return Object.keys(patch).length > 0 ? Object.assign({}, modelRecord, patch) : model;
 }
 
-function migrateLegacyOpenAICodexProvider(raw: Record<string, unknown>, changes: string[]): void {
+function migrateLegacyOpenAICodexProvider(raw: Record<string, any>, changes: string[]): void {
   const models = getRecord(raw.models);
   const providers = getRecord(models?.providers);
   if (!models || !providers) {
@@ -1223,8 +1223,8 @@ function migrateLegacyOpenAICodexProvider(raw: Record<string, unknown>, changes:
       const canonicalEntry = getCanonicalOpenAIProviderEntry(providers);
       const canonicalKey = canonicalEntry?.key ?? OPENAI_PROVIDER_ID;
       const canonical = canonicalEntry?.value ?? {};
-      const canonicalModels: unknown[] = Array.isArray(canonical.models)
-        ? (canonical.models as unknown[])
+      const canonicalModels: any[] = Array.isArray(canonical.models)
+        ? (canonical.models as any[])
         : [];
       const modelsToMerge = getMergeableLegacyOpenAIModels({
         canonical,

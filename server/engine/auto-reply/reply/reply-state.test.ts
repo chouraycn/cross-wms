@@ -35,7 +35,7 @@ afterEach(async () => {
 async function seedSessionStore(params: {
   storePath: string;
   sessionKey: string;
-  entry: Record<string, unknown>;
+  entry: Record<string, any>;
 }) {
   await fs.mkdir(path.dirname(params.storePath), { recursive: true });
   await fs.writeFile(

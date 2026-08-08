@@ -48,7 +48,7 @@ vi.mock("../../plugins/install-security-scan.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../plugins/install-security-scan.js")>();
   return {
     ...actual,
-    evaluateSkillInstallPolicy: (...args: unknown[]) => evaluateSkillInstallPolicyMock(...args),
+    evaluateSkillInstallPolicy: (...args: any[]) => evaluateSkillInstallPolicyMock(...args),
   };
 });
 
@@ -301,7 +301,7 @@ describe("skills-clawhub", () => {
       }),
     });
     const telemetrySkills = reportClawHubSkillInstallTelemetryMock.mock.calls[0]?.[0]?.skills as
-      | Record<string, Record<string, unknown>>
+      | Record<string, Record<string, any>>
       | undefined;
     expect(Object.keys(telemetrySkills?.agentreceipt ?? {}).toSorted()).toEqual([
       "installedAt",
@@ -346,7 +346,7 @@ describe("skills-clawhub", () => {
 
     const lock = JSON.parse(
       await fs.readFile(path.join(workspaceDir, ".clawhub", "lock.json"), "utf8"),
-    ) as { skills: Record<string, Record<string, unknown>> };
+    ) as { skills: Record<string, Record<string, any>> };
     expect(lock.skills.weather).toMatchObject({
       version: "1.0.0",
       registry: "https://clawhub.ai",
@@ -357,7 +357,7 @@ describe("skills-clawhub", () => {
         path.join(workspaceDir, "skills", "weather", ".clawhub", "origin.json"),
         "utf8",
       ),
-    ) as Record<string, unknown>;
+    ) as Record<string, any>;
     expect(origin).toMatchObject({
       version: 1,
       registry: "https://clawhub.ai",
@@ -432,7 +432,7 @@ describe("skills-clawhub", () => {
       });
       const lock = JSON.parse(
         await fs.readFile(path.join(workspaceDir, ".clawhub", "lock.json"), "utf8"),
-      ) as { skills: Record<string, Record<string, unknown>> };
+      ) as { skills: Record<string, Record<string, any>> };
       expect(lock.skills.agentreceipt).toMatchObject({
         version: "1.0.0",
         registry: "https://clawhub.ai",
@@ -459,7 +459,7 @@ describe("skills-clawhub", () => {
           path.join(workspaceDir, "skills", "agentreceipt", ".clawhub", "origin.json"),
           "utf8",
         ),
-      ) as Record<string, unknown>;
+      ) as Record<string, any>;
       expect(origin).toMatchObject({
         version: 1,
         slug: "agentreceipt",
@@ -536,7 +536,7 @@ describe("skills-clawhub", () => {
       });
       const lock = JSON.parse(
         await fs.readFile(path.join(workspaceDir, ".clawhub", "lock.json"), "utf8"),
-      ) as { skills: Record<string, Record<string, unknown>> };
+      ) as { skills: Record<string, Record<string, any>> };
       expect(lock.skills.agentreceipt).toMatchObject({
         sourceUrl: verifiedSourceUrl,
         verification: {
@@ -557,7 +557,7 @@ describe("skills-clawhub", () => {
           path.join(workspaceDir, "skills", "agentreceipt", ".clawhub", "origin.json"),
           "utf8",
         ),
-      ) as Record<string, unknown>;
+      ) as Record<string, any>;
       expect(origin.sourceUrl).toBe(verifiedSourceUrl);
     } finally {
       await fs.rm(workspaceDir, { recursive: true, force: true });
@@ -630,14 +630,14 @@ describe("skills-clawhub", () => {
       });
       const lock = JSON.parse(
         await fs.readFile(path.join(workspaceDir, ".clawhub", "lock.json"), "utf8"),
-      ) as { skills: Record<string, Record<string, unknown>> };
+      ) as { skills: Record<string, Record<string, any>> };
       expect(lock.skills.agentreceipt?.sourceUrl).toBeUndefined();
       const origin = JSON.parse(
         await fs.readFile(
           path.join(workspaceDir, "skills", "agentreceipt", ".clawhub", "origin.json"),
           "utf8",
         ),
-      ) as Record<string, unknown>;
+      ) as Record<string, any>;
       expect(origin.sourceUrl).toBeUndefined();
     } finally {
       await fs.rm(workspaceDir, { recursive: true, force: true });
@@ -680,14 +680,14 @@ describe("skills-clawhub", () => {
       });
       const lock = JSON.parse(
         await fs.readFile(path.join(workspaceDir, ".clawhub", "lock.json"), "utf8"),
-      ) as { skills: Record<string, Record<string, unknown>> };
+      ) as { skills: Record<string, Record<string, any>> };
       expect(lock.skills.agentreceipt?.sourceUrl).toBeUndefined();
       const origin = JSON.parse(
         await fs.readFile(
           path.join(workspaceDir, "skills", "agentreceipt", ".clawhub", "origin.json"),
           "utf8",
         ),
-      ) as Record<string, unknown>;
+      ) as Record<string, any>;
       expect(origin.sourceUrl).toBeUndefined();
     } finally {
       await fs.rm(workspaceDir, { recursive: true, force: true });
@@ -712,7 +712,7 @@ describe("skills-clawhub", () => {
       expectInstalledSkill(result, { slug: "agentreceipt", version: "1.0.0" });
       const lock = JSON.parse(
         await fs.readFile(path.join(workspaceDir, ".clawhub", "lock.json"), "utf8"),
-      ) as { skills: Record<string, Record<string, unknown>> };
+      ) as { skills: Record<string, Record<string, any>> };
       expect(lock.skills.agentreceipt?.verification).toBeUndefined();
       expect(lock.skills.agentreceipt?.artifact).toMatchObject({
         sha256: "a".repeat(64),
@@ -915,7 +915,7 @@ describe("skills-clawhub", () => {
     ]);
     const lock = JSON.parse(
       await fs.readFile(path.join(workspaceDir, ".clawhub", "lock.json"), "utf8"),
-    ) as { skills: Record<string, Record<string, unknown>> };
+    ) as { skills: Record<string, Record<string, any>> };
     expect(lock.skills.weather?.ownerHandle).toBe("demo-owner");
   });
 
@@ -1024,9 +1024,9 @@ describe("skills-clawhub", () => {
       return { workspaceDir, skillDir };
     }
 
-    function expectLegacyUpdateSuccess(results: unknown, workspaceDir: string, slug: string) {
+    function expectLegacyUpdateSuccess(results: any, workspaceDir: string, slug: string) {
       expect(Array.isArray(results)).toBe(true);
-      const first = (results as Array<Record<string, unknown>>)[0];
+      const first = (results as Array<Record<string, any>>)[0];
       expect(first?.ok).toBe(true);
       expect(first?.slug).toBe(slug);
       expect(first?.previousVersion).toBe("0.9.0");
@@ -1849,8 +1849,8 @@ describe("ClawHub origin provenance readback", () => {
   async function writeOriginWithProvenance(params: {
     workspaceDir: string;
     slug: string;
-    origin: Record<string, unknown>;
-    lockSkill?: Record<string, unknown>;
+    origin: Record<string, any>;
+    lockSkill?: Record<string, any>;
   }) {
     const skillDir = path.join(params.workspaceDir, "skills", params.slug);
     await fs.mkdir(path.join(skillDir, ".clawhub"), { recursive: true });

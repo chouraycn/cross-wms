@@ -38,7 +38,7 @@ async function ensureModuleFixture(root: string, relativePath = "dist/plugin-sdk
   return moduleUrlFrom(root, relativePath);
 }
 
-async function writeJsonFixture(root: string, relativePath: string, value: unknown) {
+async function writeJsonFixture(root: string, relativePath: string, value: any) {
   const filePath = path.join(root, relativePath);
   await fs.mkdir(path.dirname(filePath), { recursive: true });
   await fs.writeFile(filePath, JSON.stringify(value), "utf-8");

@@ -8,9 +8,9 @@
 /** Resolves the effective OAuth credential, optionally reading external CLI bootstrap state. */
 export function resolveEffectiveOAuthCredential(params: {
   profileId: string;
-  credential: Record<string, unknown>;
+  credential: Record<string, any>;
   allowKeychainPrompt?: boolean;
-}): Record<string, unknown> {
+}): Record<string, any> {
   // Cross-wms does not have the managed OAuth selector or external CLI bootstrap.
   // Return the credential as-is.
   return params.credential;

@@ -19,7 +19,7 @@ export type SecurityVerdict = {
   decision: SecurityVerdictDecision;
   reasons: string[];
   score: number;
-  details: Record<string, unknown>;
+  details: Record<string, any>;
   source: VerificationSource;
   slug: string;
   version?: string;

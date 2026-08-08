@@ -70,13 +70,13 @@ type RuntimeRepairPrompt = {
 };
 
 function repairPromptCalls(confirmRuntimeRepair: {
-  mock: { calls: unknown[][] };
+  mock: { calls: any[][] };
 }): RuntimeRepairPrompt[] {
   return confirmRuntimeRepair.mock.calls.map((call) => call[0] as RuntimeRepairPrompt);
 }
 
 function hasRepairPromptMessage(
-  confirmRuntimeRepair: { mock: { calls: unknown[][] } },
+  confirmRuntimeRepair: { mock: { calls: any[][] } },
   text: string,
 ): boolean {
   return repairPromptCalls(confirmRuntimeRepair).some((prompt) => prompt.message?.includes(text));
@@ -91,7 +91,7 @@ async function runStateIntegrity(cfg: OpenClawConfig) {
 
 function writeSessionStore(
   cfg: OpenClawConfig,
-  sessions: Record<string, { sessionId: string; updatedAt: number } & Record<string, unknown>>,
+  sessions: Record<string, { sessionId: string; updatedAt: number } & Record<string, any>>,
 ) {
   setupSessionState(cfg, process.env, process.env.HOME ?? "");
   const storePath = resolveStorePath(cfg.session?.store, { agentId: "main" });
@@ -683,7 +683,7 @@ describe("doctor state integrity oauth dir checks", () => {
         lastProvider: "heartbeat",
         source: "heartbeat",
         origin: { provider: "heartbeat" },
-      } as SessionEntry & Record<string, unknown>;
+      } as SessionEntry & Record<string, any>;
       expect(resolveHeartbeatMainSessionRepairCandidate({ entry, transcriptPath })).toBeNull();
     } finally {
       fs.rmSync(tempDir, { recursive: true, force: true });

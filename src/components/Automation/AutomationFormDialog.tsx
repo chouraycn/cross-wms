@@ -72,11 +72,11 @@ export interface AutomationFormDialogProps {
   formNotificationConfig: NotificationConfig;
   formErrors: Record<string, string>;
   /** 富触发器配置（由 TriggerConfigPanel 编辑） */
-  formTriggerConfig: Record<string, unknown>;
+  formTriggerConfig: Record<string, any>;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onFieldChange: (field: string, value: any) => void;
   /** 富触发器配置变更回调 */
-  onTriggerConfigChange: (config: Record<string, unknown>) => void;
+  onTriggerConfigChange: (config: Record<string, any>) => void;
   /** 切换触发器类型（同时重置默认 config） */
   onTriggerTypeChange: (type: TriggerType) => void;
   onToggleWeekday: (day: string) => void;

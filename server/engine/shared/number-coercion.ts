@@ -6,7 +6,7 @@
  */
 
 /** 解析非负整数，输入非有限或为负返回 undefined */
-export function resolveNonNegativeInteger(value: unknown): number | undefined {
+export function resolveNonNegativeInteger(value: any): number | undefined {
   if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
     return undefined;
   }

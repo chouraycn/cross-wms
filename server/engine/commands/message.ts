@@ -22,18 +22,18 @@ import type { OutboundSendDeps } from "@openclaw-src/infra/outbound/deliver.js";
 import { runMessageAction } from "@openclaw-src/infra/outbound/message-action-runner.js";
 import { type RuntimeEnv, writeRuntimeJson } from "@openclaw-src/runtime.js";
 
-function extractMessageId(payload: unknown): string | undefined {
+function extractMessageId(payload: any): string | undefined {
   if (!payload || typeof payload !== "object") {
     return undefined;
   }
-  const record = payload as Record<string, unknown>;
+  const record = payload as Record<string, any>;
   const direct = normalizeOptionalString(record.messageId);
   if (direct) {
     return direct;
   }
   const result = record.result;
   if (result && typeof result === "object") {
-    const nested = normalizeOptionalString((result as Record<string, unknown>).messageId);
+    const nested = normalizeOptionalString((result as Record<string, any>).messageId);
     if (nested) {
       return nested;
     }
@@ -55,7 +55,7 @@ function buildMessageCliJson(result: Awaited<ReturnType<typeof runMessageAction>
 
 /** Resolves config/secrets, runs a channel message action, then renders JSON or text. */
 export async function messageCommand(
-  opts: Record<string, unknown>,
+  opts: Record<string, any>,
   deps: CliDeps,
   runtime: RuntimeEnv,
 ) {

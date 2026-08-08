@@ -52,7 +52,7 @@ const AUTH_PROFILE_TYPES = new Set<AuthProfileCredential["type"]>(["api_key", "o
 
 // Persisted credential normalization accepts old field names and SecretRef-ish
 // values, then emits the current credential discriminated union.
-function normalizeOptionalCredentialString(value: unknown): string | undefined {
+function normalizeOptionalCredentialString(value: any): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }
@@ -60,14 +60,14 @@ function normalizeOptionalCredentialString(value: unknown): string | undefined {
   return trimmed ? value : undefined;
 }
 
-function normalizeExpiryField(value: unknown): number | undefined {
+function normalizeExpiryField(value: any): number | undefined {
   if (value === undefined) {
     return undefined;
   }
   return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : 0;
 }
 
-function normalizeCredentialMetadata(value: unknown): Record<string, string> | undefined {
+function normalizeCredentialMetadata(value: any): Record<string, string> | undefined {
   if (!isRecord(value)) {
     return undefined;
   }
@@ -83,7 +83,7 @@ function normalizeCredentialMetadata(value: unknown): Record<string, string> | u
 // Secret-backed key/token fields may have been stored in the value field by old
 // writers. Move them to the ref field so secret values are not treated as text.
 function normalizeSecretBackedField(params: {
-  entry: Record<string, unknown>;
+  entry: Record<string, any>;
   valueField: "key" | "token";
   refField: "keyRef" | "tokenRef";
 }): void {
@@ -98,8 +98,8 @@ function normalizeSecretBackedField(params: {
   delete params.entry[params.valueField];
 }
 
-function normalizeCommonCredentialFields(entry: Record<string, unknown>): Record<string, unknown> {
-  const normalized: Record<string, unknown> = {
+function normalizeCommonCredentialFields(entry: Record<string, any>): Record<string, any> {
+  const normalized: Record<string, any> = {
     provider: typeof entry.provider === "string" ? normalizeProviderId(entry.provider) : "",
   };
   const copyToAgents = asBoolean(entry.copyToAgents);
@@ -117,8 +117,8 @@ function normalizeCommonCredentialFields(entry: Record<string, unknown>): Record
   return normalized;
 }
 
-function normalizeRawCredentialEntry(raw: Record<string, unknown>): Partial<AuthProfileCredential> {
-  const entry = { ...raw } as Record<string, unknown>;
+function normalizeRawCredentialEntry(raw: Record<string, any>): Partial<AuthProfileCredential> {
+  const entry = { ...raw } as Record<string, any>;
   if (!("type" in entry) && typeof entry["mode"] === "string") {
     entry["type"] = entry["mode"];
   }
@@ -135,7 +135,7 @@ function normalizeRawCredentialEntry(raw: Record<string, unknown>): Partial<Auth
   normalizeSecretBackedField({ entry, valueField: "key", refField: "keyRef" });
   normalizeSecretBackedField({ entry, valueField: "token", refField: "tokenRef" });
   if (entry.type === "api_key") {
-    const normalized: Record<string, unknown> = {
+    const normalized: Record<string, any> = {
       type: "api_key",
       ...normalizeCommonCredentialFields(entry),
     };
@@ -153,7 +153,7 @@ function normalizeRawCredentialEntry(raw: Record<string, unknown>): Partial<Auth
     return normalized as Partial<AuthProfileCredential>;
   }
   if (entry.type === "token") {
-    const normalized: Record<string, unknown> = {
+    const normalized: Record<string, any> = {
       type: "token",
       ...normalizeCommonCredentialFields(entry),
     };
@@ -172,7 +172,7 @@ function normalizeRawCredentialEntry(raw: Record<string, unknown>): Partial<Auth
     return normalized as Partial<AuthProfileCredential>;
   }
   if (entry.type === "oauth") {
-    const normalized: Record<string, unknown> = {
+    const normalized: Record<string, any> = {
       type: "oauth",
       ...normalizeCommonCredentialFields(entry),
     };
@@ -204,7 +204,7 @@ function normalizeRawCredentialEntry(raw: Record<string, unknown>): Partial<Auth
 }
 
 function parseCredentialEntry(
-  raw: unknown,
+  raw: any,
   fallbackProvider?: string,
 ): { ok: true; credential: AuthProfileCredential } | { ok: false; reason: CredentialRejectReason } {
   if (!isRecord(raw)) {
@@ -248,7 +248,7 @@ function warnRejectedCredentialEntries(source: string, rejected: RejectedCredent
   });
 }
 
-function coerceLegacyAuthStore(raw: unknown): LegacyAuthStore | null {
+function coerceLegacyAuthStore(raw: any): LegacyAuthStore | null {
   if (!isRecord(raw)) {
     return null;
   }
@@ -271,7 +271,7 @@ function coerceLegacyAuthStore(raw: unknown): LegacyAuthStore | null {
 }
 
 /** Coerces a persisted auth profile store payload into the current store shape. */
-export function coercePersistedAuthProfileStore(raw: unknown): AuthProfileStore | null {
+export function coercePersistedAuthProfileStore(raw: any): AuthProfileStore | null {
   if (!isRecord(raw)) {
     return null;
   }
@@ -714,12 +714,12 @@ export function buildPersistedAuthProfileSecretsStore(
         return [];
       }
       if (credential.type === "api_key" && credential.keyRef && credential.key !== undefined) {
-        const sanitized = { ...credential } as Record<string, unknown>;
+        const sanitized = { ...credential } as Record<string, any>;
         delete sanitized.key;
         return [[profileId, sanitized]];
       }
       if (credential.type === "token" && credential.tokenRef && credential.token !== undefined) {
-        const sanitized = { ...credential } as Record<string, unknown>;
+        const sanitized = { ...credential } as Record<string, any>;
         delete sanitized.token;
         return [[profileId, sanitized]];
       }

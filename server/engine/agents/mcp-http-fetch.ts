@@ -4,7 +4,7 @@
  * 降级实现：提供 MCP HTTP fetch 构建，不再抛出 stub 错误。
  */
 
-export function buildMcpHttpFetch(_params: unknown): unknown {
+export function buildMcpHttpFetch(_params: any): any {
   return null;
 }
 

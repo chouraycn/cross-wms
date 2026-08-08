@@ -111,7 +111,7 @@ export interface AdapterCompatConfig {
   /** 自定义请求头 */
   extraHeaders?: Record<string, string>;
   /** 自定义请求体参数 */
-  extraBodyParams?: Record<string, unknown>;
+  extraBodyParams?: Record<string, any>;
   /** 消息角色映射 */
   roleMap?: Record<string, string>;
   /** 是否支持 system 消息 */
@@ -296,7 +296,7 @@ export interface ImageGenInput {
   width?: number;
   height?: number;
   numImages?: number;
-  extraParams?: Record<string, unknown>;
+  extraParams?: Record<string, any>;
 }
 
 /** 视频生成输入 */
@@ -306,7 +306,7 @@ export interface VideoGenInput {
   durationSeconds?: number;
   width?: number;
   height?: number;
-  extraParams?: Record<string, unknown>;
+  extraParams?: Record<string, any>;
 }
 
 /** 多媒体生成结果 */
@@ -316,7 +316,7 @@ export interface MediaGenResponse {
   /** 任务状态（同步端点通常为 succeeded） */
   status: 'succeeded' | 'failed' | 'pending';
   /** 原始响应（调试用） */
-  raw?: unknown;
+  raw?: any;
 }
 
 /** 多媒体生成适配器接口（图像/视频） */

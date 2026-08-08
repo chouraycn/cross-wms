@@ -14,7 +14,7 @@ import type {
 
 const MEDIA_CAPABILITIES = ["audio", "image", "video"] as const;
 
-function isMediaCapability(value: unknown): value is MediaUnderstandingCapability {
+function isMediaCapability(value: any): value is MediaUnderstandingCapability {
   return typeof value === "string" && (MEDIA_CAPABILITIES as readonly string[]).includes(value);
 }
 

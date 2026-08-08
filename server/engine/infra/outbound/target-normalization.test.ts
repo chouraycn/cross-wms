@@ -19,15 +19,15 @@ let normalizeTargetForProvider: TargetNormalizationModule["normalizeTargetForPro
 let resetTargetNormalizerCacheForTests: TargetNormalizationModule["testing"]["resetTargetNormalizerCacheForTests"];
 
 vi.mock("../../channels/plugins/registry-loaded-read.js", () => ({
-  getLoadedChannelPluginForRead: (...args: unknown[]) => getLoadedChannelPluginMock(...args),
+  getLoadedChannelPluginForRead: (...args: any[]) => getLoadedChannelPluginMock(...args),
 }));
 
 vi.mock("../../channels/plugins/index.js", () => ({
-  getChannelPlugin: (...args: unknown[]) => getChannelPluginMock(...args),
+  getChannelPlugin: (...args: any[]) => getChannelPluginMock(...args),
 }));
 
 vi.mock("../../plugins/runtime.js", () => ({
-  getActivePluginChannelRegistryVersion: (...args: unknown[]) =>
+  getActivePluginChannelRegistryVersion: (...args: any[]) =>
     getActivePluginChannelRegistryVersionMock(...args),
 }));
 

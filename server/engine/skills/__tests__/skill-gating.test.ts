@@ -10,7 +10,7 @@ import {
 
 // Mock exec
 vi.mock("child_process", () => ({
-  exec: vi.fn((_cmd: string, _opts: unknown, cb: (err: Error | null, result: { stdout: string; stderr: string }) => void) => {
+  exec: vi.fn((_cmd: string, _opts: any, cb: (err: Error | null, result: { stdout: string; stderr: string }) => void) => {
     cb(null, { stdout: "/usr/bin/node", stderr: "" });
   }),
 }));

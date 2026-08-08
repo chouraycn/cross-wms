@@ -34,7 +34,7 @@ type RuntimeOnlyOverlay = {
 
 const mocks = vi.hoisted(() => ({
   resolveExternalCliAuthProfiles: vi.fn<
-    (store?: unknown, options?: unknown) => RuntimeOnlyOverlay[]
+    (store?: any, options?: any) => RuntimeOnlyOverlay[]
   >(() => []),
 }));
 

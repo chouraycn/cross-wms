@@ -12,14 +12,14 @@ export const testing = {
   resolveSessionMcpRuntimeIdleTtlMs: () => 600_000,
 };
 
-export function createBundleMcpJsonSchemaValidator(): unknown {
+export function createBundleMcpJsonSchemaValidator(): any {
   return { getValidator: () => ({ valid: true, data: undefined, errorMessage: undefined }) };
 }
 
 export function resolveSessionMcpConfigSummary(_params: {
   workspaceDir: string;
-  cfg?: unknown;
-  manifestRegistry?: unknown;
+  cfg?: any;
+  manifestRegistry?: any;
 }): { fingerprint: string; serverNames: string[] } {
   return { fingerprint: "", serverNames: [] };
 }
@@ -28,8 +28,8 @@ export function createSessionMcpRuntime(_params: {
   sessionId: string;
   sessionKey?: string;
   workspaceDir: string;
-  cfg?: unknown;
-  manifestRegistry?: unknown;
+  cfg?: any;
+  manifestRegistry?: any;
 }): null {
   return null;
 }
@@ -42,7 +42,7 @@ export async function getOrCreateSessionMcpRuntime(_params: {
   sessionId: string;
   sessionKey?: string;
   workspaceDir: string;
-  cfg?: unknown;
+  cfg?: any;
 }): Promise<null> {
   return null;
 }
@@ -58,7 +58,7 @@ export async function disposeSessionMcpRuntime(_sessionId: string): Promise<void
 export async function retireSessionMcpRuntime(_params: {
   sessionId?: string | null;
   reason: string;
-  onError?: (error: unknown, sessionId: string, reason: string) => void;
+  onError?: (error: any, sessionId: string, reason: string) => void;
 }): Promise<boolean> {
   return false;
 }
@@ -66,7 +66,7 @@ export async function retireSessionMcpRuntime(_params: {
 export async function retireSessionMcpRuntimeForSessionKey(_params: {
   sessionKey?: string | null;
   reason: string;
-  onError?: (error: unknown, sessionId: string, reason: string) => void;
+  onError?: (error: any, sessionId: string, reason: string) => void;
 }): Promise<boolean> {
   return false;
 }

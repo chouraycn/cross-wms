@@ -1,49 +1,49 @@
 // 移植自 openclaw/src/gateway/server-methods/talk-shared.ts
 
-export function canUseTalkDirectTools(...args: unknown[]): unknown {
+export function canUseTalkDirectTools(...args: any[]): any {
   return false;
 }
 
-export function broadcastTalkRoomEvents(...args: unknown[]): unknown {
+export function broadcastTalkRoomEvents(...args: any[]): any {
   return undefined;
 }
 
-export function talkHandoffErrorCode(...args: unknown[]): unknown {
+export function talkHandoffErrorCode(...args: any[]): any {
   return undefined;
 }
 
-export function getVoiceCallStreamingConfig(...args: unknown[]): unknown {
+export function getVoiceCallStreamingConfig(...args: any[]): any {
   return undefined;
 }
 
-export function buildTalkRealtimeConfig(...args: unknown[]): unknown {
+export function buildTalkRealtimeConfig(...args: any[]): any {
   return undefined;
 }
 
-export function buildTalkTranscriptionConfig(...args: unknown[]): unknown {
+export function buildTalkTranscriptionConfig(...args: any[]): any {
   return undefined;
 }
 
-export function configuredOrFalse(...args: unknown[]): unknown {
+export function configuredOrFalse(...args: any[]): any {
   return undefined;
 }
 
-export function resolveConfiguredRealtimeTranscriptionProvider(...args: unknown[]): unknown {
+export function resolveConfiguredRealtimeTranscriptionProvider(...args: any[]): any {
   return undefined;
 }
 
-export function buildRealtimeInstructions(...args: unknown[]): unknown {
+export function buildRealtimeInstructions(...args: any[]): any {
   return undefined;
 }
 
-export function buildRealtimeVoiceLaunchOptions(...args: unknown[]): unknown {
+export function buildRealtimeVoiceLaunchOptions(...args: any[]): any {
   return undefined;
 }
 
-export function withRealtimeBrowserOverrides(...args: unknown[]): unknown {
+export function withRealtimeBrowserOverrides(...args: any[]): any {
   return undefined;
 }
 
-export function isUnsupportedBrowserWebRtcSession(...args: unknown[]): unknown {
+export function isUnsupportedBrowserWebRtcSession(...args: any[]): any {
   return false;
 }

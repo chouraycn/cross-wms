@@ -228,7 +228,7 @@ router.get('/pages', async (_req, res) => {
     const response = await sendCommand('browser_tab_list');
     const tabs = response.output?.tabs ?? [];
     // 映射为前端 PageInfo 结构：以 index 作为 id
-    const pages = tabs.map((t: unknown) => ({
+    const pages = tabs.map((t: any) => ({
       id: String(t.index),
       url: t.url,
       title: t.title,
@@ -254,7 +254,7 @@ router.post('/new-page', async (req, res) => {
     const { url } = req.body;
     const response = await sendCommand('browser_tab_new', { url });
     const tabs = response.output?.tabs ?? [];
-    const pages = tabs.map((t: unknown) => ({
+    const pages = tabs.map((t: any) => ({
       id: String(t.index),
       url: t.url,
       title: t.title,

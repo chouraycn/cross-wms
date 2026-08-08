@@ -23,16 +23,16 @@ const {
   recordMusicGenerationTaskProgress,
 } = await import("./music-generate-background.js");
 
-function getDeliveredInternalEvents(): Array<Record<string, unknown>> {
+function getDeliveredInternalEvents(): Array<Record<string, any>> {
   // Completion agents receive internal events; tests inspect them to keep the
   // visible-reply media contract explicit.
   const params = announceDeliveryMocks.deliverSubagentAnnouncement.mock.calls.at(0)?.[0] as
-    | { internalEvents?: unknown }
+    | { internalEvents?: any }
     | undefined;
   if (!Array.isArray(params?.internalEvents)) {
     throw new Error("Expected delivered internal events");
   }
-  return params.internalEvents as Array<Record<string, unknown>>;
+  return params.internalEvents as Array<Record<string, any>>;
 }
 
 function expectReplyInstructionContains(text: string) {

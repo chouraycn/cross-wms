@@ -19,7 +19,7 @@ export type ConfigureSubcommand = "show" | "validate" | "set" | "reset" | "wizar
 
 export interface ConfigureEntry {
   key: string;
-  value: unknown;
+  value: any;
   source: "default" | "config" | "env" | "secret";
   description: string;
 }

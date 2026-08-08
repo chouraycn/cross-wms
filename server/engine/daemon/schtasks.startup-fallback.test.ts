@@ -172,7 +172,7 @@ function expectTaskkillPid(pid: number): void {
 function expectStartupFallbackSpawn() {
   expect(spawn).toHaveBeenCalled();
   const calls = spawn.mock.calls as unknown as Array<
-    [string, readonly string[], Record<string, unknown>]
+    [string, readonly string[], Record<string, any>]
   >;
   const lastCall = calls[calls.length - 1];
   if (!lastCall) {

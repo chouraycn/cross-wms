@@ -11,116 +11,116 @@
  * 完整实现见 openclaw 源码。
  */
 
-export const archiveFileOnDisk: unknown = undefined;
+export const archiveFileOnDisk: any = undefined;
 
-export const archiveSessionTranscripts: unknown = undefined;
+export const archiveSessionTranscripts: any = undefined;
 
-export const cleanupArchivedSessionTranscripts: unknown = undefined;
+export const cleanupArchivedSessionTranscripts: any = undefined;
 
-export const resolveSessionTranscriptCandidates: unknown = undefined;
+export const resolveSessionTranscriptCandidates: any = undefined;
 
-export const resolveSessionTranscriptResetArchiveCandidatesAsync: unknown = undefined;
+export const resolveSessionTranscriptResetArchiveCandidatesAsync: any = undefined;
 
 export type ReadRecentSessionMessagesOptions = unknown;
 
 export type ReadSessionMessagesAsyncOptions = unknown;
 
-export function attachOpenClawTranscriptMeta(..._args: unknown[]): unknown {
+export function attachOpenClawTranscriptMeta(..._args: any[]): any {
   return undefined;
 }
 
-export function readSessionMessages(..._args: unknown[]): unknown {
+export function readSessionMessages(..._args: any[]): any {
   return undefined;
 }
 
-export function readRecentSessionMessages(..._args: unknown[]): unknown {
+export function readRecentSessionMessages(..._args: any[]): any {
   return undefined;
 }
 
-export function visitSessionMessages(..._args: unknown[]): unknown {
+export function visitSessionMessages(..._args: any[]): any {
   return undefined;
 }
 
-export function readSessionMessageCount(..._args: unknown[]): unknown {
+export function readSessionMessageCount(..._args: any[]): any {
   return undefined;
 }
 
-export async function readSessionMessagesAsync(..._args: unknown[]): Promise<unknown> {
+export async function readSessionMessagesAsync(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
 
-export async function readSessionMessagesWithSourceAsync(..._args: unknown[]): Promise<unknown> {
+export async function readSessionMessagesWithSourceAsync(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
 
-export async function readSessionMessageByIdAsync(..._args: unknown[]): Promise<unknown> {
+export async function readSessionMessageByIdAsync(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
 
-export async function visitSessionMessagesAsync(..._args: unknown[]): Promise<unknown> {
+export async function visitSessionMessagesAsync(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
 
-export async function readSessionMessageCountAsync(..._args: unknown[]): Promise<unknown> {
+export async function readSessionMessageCountAsync(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
 
-export function readRecentSessionMessagesWithStats(..._args: unknown[]): unknown {
+export function readRecentSessionMessagesWithStats(..._args: any[]): any {
   return undefined;
 }
 
-export async function readRecentSessionMessagesAsync(..._args: unknown[]): Promise<unknown> {
+export async function readRecentSessionMessagesAsync(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
 
-export async function readRecentSessionMessagesWithStatsAsync(..._args: unknown[]): Promise<unknown> {
+export async function readRecentSessionMessagesWithStatsAsync(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
 
-export function readRecentSessionTranscriptLines(..._args: unknown[]): unknown {
+export function readRecentSessionTranscriptLines(..._args: any[]): any {
   return undefined;
 }
 
-export function capArrayByJsonBytes(..._args: unknown[]): unknown {
+export function capArrayByJsonBytes(..._args: any[]): any {
   return undefined;
 }
 
-export function readSessionTitleFieldsFromTranscript(..._args: unknown[]): unknown {
+export function readSessionTitleFieldsFromTranscript(..._args: any[]): any {
   return undefined;
 }
 
-export async function readSessionTitleFieldsFromTranscriptAsync(..._args: unknown[]): Promise<unknown> {
+export async function readSessionTitleFieldsFromTranscriptAsync(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
 
-export async function resolveSessionHistoryTranscriptPathAsync(..._args: unknown[]): Promise<unknown> {
+export async function resolveSessionHistoryTranscriptPathAsync(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
 
-export function readFirstUserMessageFromTranscript(..._args: unknown[]): unknown {
+export function readFirstUserMessageFromTranscript(..._args: any[]): any {
   return undefined;
 }
 
-export function readLatestSessionUsageFromTranscript(..._args: unknown[]): unknown {
+export function readLatestSessionUsageFromTranscript(..._args: any[]): any {
   return undefined;
 }
 
-export async function readLatestSessionUsageFromTranscriptAsync(..._args: unknown[]): Promise<unknown> {
+export async function readLatestSessionUsageFromTranscriptAsync(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
 
-export async function readRecentSessionUsageFromTranscriptAsync(..._args: unknown[]): Promise<unknown> {
+export async function readRecentSessionUsageFromTranscriptAsync(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
 
-export async function readLatestRecentSessionUsageFromTranscriptAsync(..._args: unknown[]): Promise<unknown> {
+export async function readLatestRecentSessionUsageFromTranscriptAsync(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
 
-export function readRecentSessionUsageFromTranscript(..._args: unknown[]): unknown {
+export function readRecentSessionUsageFromTranscript(..._args: any[]): any {
   return undefined;
 }
 
-export function readSessionPreviewItemsFromTranscript(..._args: unknown[]): unknown {
+export function readSessionPreviewItemsFromTranscript(..._args: any[]): any {
   return undefined;
 }

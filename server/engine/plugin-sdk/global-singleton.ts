@@ -1,5 +1,5 @@
 export function resolveGlobalSingleton<T>(key: symbol, create: () => T): T {
-  const globalStore = globalThis as Record<PropertyKey, unknown>;
+  const globalStore = globalThis as Record<PropertyKey, any>;
   if (Object.hasOwn(globalStore, key)) {
     return globalStore[key] as T;
   }

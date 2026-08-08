@@ -5,7 +5,7 @@
  * otherwise reject or erase, and returns null for circular structures.
  */
 /** Safely stringify diagnostic values, preserving bigint/errors/functions in readable form. */
-export function safeJsonStringify(value: unknown): string | null {
+export function safeJsonStringify(value: any): string | null {
   try {
     return JSON.stringify(value, (_key, val) => {
       if (typeof val === "bigint") {

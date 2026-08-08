@@ -58,7 +58,7 @@ export function registerCronListCommand(cron: Command) {
       .option("--json", "Output JSON", false)
       .action(async (opts) => {
         try {
-          const listParams: Record<string, unknown> = {
+          const listParams: Record<string, any> = {
             includeDisabled: Boolean(opts.all),
           };
           const agentId = normalizeOptionalString(opts.agent);
@@ -149,7 +149,7 @@ export function registerCronAddCommand(cron: Command) {
         async (
           nameArg: string | undefined,
           messageArg: string | undefined,
-          opts: GatewayRpcOpts & Record<string, unknown>,
+          opts: GatewayRpcOpts & Record<string, any>,
           cmd?: Command,
         ) => {
           try {

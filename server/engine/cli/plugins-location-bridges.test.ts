@@ -15,12 +15,12 @@ const startupInfo: InstalledPluginStartupInfo = {
 };
 
 vi.mock("../plugins/installed-plugin-index-store.js", () => ({
-  readPersistedInstalledPluginIndex: (...args: unknown[]) =>
+  readPersistedInstalledPluginIndex: (...args: any[]) =>
     readPersistedInstalledPluginIndexMock(...args),
 }));
 
 vi.mock("../plugins/manifest-registry-installed.js", () => ({
-  loadPluginManifestRegistryForInstalledIndex: (...args: unknown[]) =>
+  loadPluginManifestRegistryForInstalledIndex: (...args: any[]) =>
     loadPluginManifestRegistryForInstalledIndexMock(...args),
 }));
 

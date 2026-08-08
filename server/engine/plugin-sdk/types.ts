@@ -83,23 +83,23 @@ export interface PluginSdkApi {
   /** 注册 hook */
   registerHook(
     hookName: string,
-    handler: (payload: unknown) => unknown,
-    options?: { priority?: number; metadata?: Record<string, unknown> },
+    handler: (payload: any) => unknown,
+    options?: { priority?: number; metadata?: Record<string, any> },
   ): string;
   /** 注销 hook */
   unregisterHook(hookId: string): boolean;
   /** 读取配置 */
   getConfig<T = unknown>(key: string): T | undefined;
   /** 读取全部配置 */
-  getAllConfig(): Record<string, unknown>;
+  getAllConfig(): Record<string, any>;
   /** 请求权限 */
   requestPermission(permission: PluginPermission, reason?: string): Promise<boolean>;
   /** 检查权限 */
   hasPermission(permission: PluginPermission): boolean;
   /** 触发事件 */
-  emit(event: string, payload?: unknown): void;
+  emit(event: string, payload?: any): void;
   /** 订阅事件 */
-  on(event: string, handler: (payload: unknown) => void): () => void;
+  on(event: string, handler: (payload: any) => void): () => void;
   /** 受限 logger（绑定到当前插件） */
   logger: PluginLogger;
 }
@@ -114,7 +114,7 @@ export interface PluginSdkToolRegistration {
     required?: string[];
   };
   riskLevel?: 'auto' | 'confirm' | 'high-risk';
-  handler: (args: unknown) => Promise<unknown> | unknown;
+  handler: (args: any) => Promise<any> | unknown;
 }
 
 /** 装饰器元数据（由 @plugin / @hook 等装饰器写入） */
@@ -123,7 +123,7 @@ export interface PluginDecoratorMetadata {
   name?: string;
   description?: string;
   priority?: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 /** 命令定义 */
@@ -133,7 +133,7 @@ export interface PluginCommandDefinition {
   /** 命令描述 */
   description: string;
   /** 命令处理器 */
-  handler: (args: string[], context: PluginContext) => Promise<unknown> | unknown;
+  handler: (args: string[], context: PluginContext) => Promise<any> | unknown;
   /** 是否需要权限 */
   requirePermission?: PluginPermission;
 }
@@ -181,9 +181,9 @@ export interface PluginToolCapability {
     required?: string[];
   };
   handler: (
-    args: Record<string, unknown>,
+    args: Record<string, any>,
     ctx: { pluginId: string; sessionId?: string },
-  ) => Promise<unknown> | unknown;
+  ) => Promise<any> | unknown;
   timeoutMs?: number;
 }
 
@@ -217,7 +217,7 @@ export interface PluginChannelCapability {
 
 /** Hook 处理器返回结果 */
 export interface PluginHookHandlerResult {
-  mutatedPayload?: unknown;
+  mutatedPayload?: any;
   stopPropagation?: boolean;
 }
 
@@ -227,7 +227,7 @@ export interface PluginHookCapability {
   event: string;
   priority?: number;
   handler: (
-    payload: unknown,
+    payload: any,
     ctx: { pluginId: string; sessionId?: string },
   ) => Promise<PluginHookHandlerResult | undefined> | PluginHookHandlerResult | undefined;
 }
@@ -260,7 +260,7 @@ export type PluginCapability =
 /** 生命周期上下文 */
 export interface PluginLifecycleContext {
   pluginId: string;
-  config: Record<string, unknown>;
+  config: Record<string, any>;
 }
 
 /** 运行时生命周期注册 */
@@ -276,7 +276,7 @@ export interface PluginRuntime {
   definition: PluginDefinition;
   capabilities: PluginCapability[];
   status: PluginRuntimeStatus;
-  config: Record<string, unknown>;
+  config: Record<string, any>;
   error?: string;
   lifecycle?: PluginRuntimeLifecycleRegistration;
   activatedAt?: number;
@@ -295,7 +295,7 @@ export interface PluginApi {
   registerCommand(cap: PluginCommandCapability): void;
   registerService(cap: PluginServiceCapability): void;
   registerLifecycle(lifecycle: PluginRuntimeLifecycleRegistration): void;
-  getConfig(): Record<string, unknown>;
+  getConfig(): Record<string, any>;
   getConfigSchema(): PluginConfigSchema;
 }
 

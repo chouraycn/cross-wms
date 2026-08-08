@@ -130,7 +130,7 @@ export function createPluginApprovalHandlers(
           }
           return opts.forwarder
             .handlePluginApprovalRequested(requestEvent)
-            .catch((err: unknown) => {
+            .catch((err: any) => {
               context.logGateway?.error?.(
                 `plugin approvals: forward request failed: ${String(err)}`,
               );

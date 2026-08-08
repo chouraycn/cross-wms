@@ -253,7 +253,7 @@ export function listAgentSessions(
 }> {
   const { db } = openAgentDatabase(options);
   let sql = 'SELECT * FROM agent_sessions';
-  const params: unknown[] = [];
+  const params: any[] = [];
   if (options.status) {
     sql += ' WHERE status = ?';
     params.push(options.status);
@@ -290,7 +290,7 @@ export function addAgentMessage(
     role: string;
     content: string;
     model?: string;
-    toolCalls?: unknown;
+    toolCalls?: any;
     thinking?: string;
     thinkingDurationMs?: number;
   }
@@ -329,13 +329,13 @@ export function getAgentMessages(
   content: string;
   model: string | null;
   timestamp: number;
-  toolCalls: unknown | null;
+  toolCalls: any | null;
   thinking: string | null;
   thinkingDurationMs: number | null;
 }> {
   const { db } = openAgentDatabase(options);
   let sql: string;
-  const params: unknown[] = [];
+  const params: any[] = [];
   if (options.limit) {
     sql = `
       SELECT * FROM (
@@ -381,7 +381,7 @@ export function recordToolCall(
     sessionId: string;
     messageId?: string;
     toolName: string;
-    arguments?: unknown;
+    arguments?: any;
   }
 ): void {
   runAgentWriteTransaction(
@@ -406,7 +406,7 @@ export function recordToolCall(
 export function completeToolCall(
   options: AgentDatabaseOptions & {
     toolCallId: string;
-    result?: unknown;
+    result?: any;
     error?: string;
   }
 ): void {
@@ -438,7 +438,7 @@ export function setAgentCache(
   options: AgentDatabaseOptions & {
     scope: string;
     key: string;
-    value: unknown;
+    value: any;
     expiresAt?: number;
   }
 ): void {

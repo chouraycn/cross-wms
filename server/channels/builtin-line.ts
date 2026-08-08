@@ -83,7 +83,7 @@ export function createLineChannelPlugin(): ChannelPlugin {
 
   const lineConfig: ChannelConfigAdapter<LineAccountConfig> = {
     listAccountIds: (config: AppConfig): ChannelId[] => {
-      const lineCfg = config.line as Record<string, unknown> | undefined;
+      const lineCfg = config.line as Record<string, any> | undefined;
       if (lineCfg && lineCfg.channelAccessToken) {
         return [LINE_CHANNEL_ID];
       }
@@ -94,7 +94,7 @@ export function createLineChannelPlugin(): ChannelPlugin {
       accountId: ChannelId,
     ): LineAccountConfig | null => {
       if (accountId !== LINE_CHANNEL_ID) return null;
-      const lineCfg = config.line as Record<string, unknown> | undefined;
+      const lineCfg = config.line as Record<string, any> | undefined;
       if (lineCfg && lineCfg.channelAccessToken) {
         return {
           channelAccessToken: String(lineCfg.channelAccessToken),
@@ -125,7 +125,7 @@ export function createLineChannelPlugin(): ChannelPlugin {
         try {
           const rendered = await ctx.render();
           const text = rendered.parts
-            .map((p: { content: unknown }) => String(p.content))
+            .map((p: { content: any }) => String(p.content))
             .join("\n");
 
           const target = ctx.to;
@@ -145,7 +145,7 @@ export function createLineChannelPlugin(): ChannelPlugin {
             ? `${LINE_API_BASE}/v2/bot/message/reply`
             : `${LINE_API_BASE}/v2/bot/message/push`;
 
-          const body: Record<string, unknown> = {
+          const body: Record<string, any> = {
             messages: [
               {
                 type: "text",
@@ -206,13 +206,13 @@ export function createLineChannelPlugin(): ChannelPlugin {
  * LINE 在用户发消息时会向配置的 Webhook URL POST JSON 载荷。
  * 载荷格式参考 LINE Messaging API 文档。
  */
-export function parseLineWebhook(body: unknown): LineWebhookResult {
-  const data = body as Record<string, unknown>;
+export function parseLineWebhook(body: any): LineWebhookResult {
+  const data = body as Record<string, any>;
   if (!data || typeof data !== "object") {
     return { success: false, error: "Invalid LINE webhook payload" };
   }
 
-  const events = data.events as Array<Record<string, unknown>> | undefined;
+  const events = data.events as Array<Record<string, any>> | undefined;
   if (!Array.isArray(events) || events.length === 0) {
     return { success: false, error: "No events in LINE webhook payload" };
   }
@@ -224,7 +224,7 @@ export function parseLineWebhook(body: unknown): LineWebhookResult {
     return { success: false, error: `Unsupported LINE event type: ${type}` };
   }
 
-  const message = event.message as Record<string, unknown> | undefined;
+  const message = event.message as Record<string, any> | undefined;
   if (!message) {
     return { success: false, error: "No message in LINE event" };
   }
@@ -239,7 +239,7 @@ export function parseLineWebhook(body: unknown): LineWebhookResult {
     return { success: false, error: "Empty message text" };
   }
 
-  const source = event.source as Record<string, unknown> | undefined;
+  const source = event.source as Record<string, any> | undefined;
   const sourceType = String(source?.type || "");
   const userId = String(source?.userId || "");
   const channelId = String(source?.groupId || source?.roomId || source?.userId || "");

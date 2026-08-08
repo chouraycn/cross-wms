@@ -22,29 +22,29 @@ type GatewayRequestContext = {
 /** WebSocket 运行时参数（降级占位）。 */
 type GatewayWsRuntimeParams = {
   context?: GatewayRequestContext;
-  wss?: unknown;
-  clients?: unknown;
-  preauthConnectionBudget?: unknown;
+  wss?: any;
+  clients?: any;
+  preauthConnectionBudget?: any;
   port?: number;
   gatewayHost?: string;
   pluginSurfaceScheme?: string;
-  getPluginNodeCapabilities?: unknown;
-  resolvedAuth?: unknown;
-  getResolvedAuth?: unknown;
-  getRequiredSharedGatewaySessionGeneration?: unknown;
-  rateLimiter?: unknown;
-  browserRateLimiter?: unknown;
-  nodeReapprovalCoordinator?: unknown;
+  getPluginNodeCapabilities?: any;
+  resolvedAuth?: any;
+  getResolvedAuth?: any;
+  getRequiredSharedGatewaySessionGeneration?: any;
+  rateLimiter?: any;
+  browserRateLimiter?: any;
+  nodeReapprovalCoordinator?: any;
   preauthHandshakeTimeoutMs?: number;
-  isStartupPending?: unknown;
-  gatewayMethods?: unknown;
-  events?: unknown;
-  logGateway?: unknown;
-  logHealth?: unknown;
-  logWsControl?: unknown;
-  extraHandlers?: unknown;
-  getMethodRegistry?: unknown;
-  broadcast?: unknown;
+  isStartupPending?: any;
+  gatewayMethods?: any;
+  events?: any;
+  logGateway?: any;
+  logHealth?: any;
+  logWsControl?: any;
+  extraHandlers?: any;
+  getMethodRegistry?: any;
+  broadcast?: any;
 };
 
 /**

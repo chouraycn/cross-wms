@@ -15,7 +15,7 @@ import { logger } from '../logger.js';
 const router = Router();
 
 router.post('/', async (req: Request, res: Response) => {
-  const argv = (req.body as { argv?: unknown })?.argv;
+  const argv = (req.body as { argv?: any })?.argv;
 
   if (!Array.isArray(argv) || !argv.every((a) => typeof a === 'string')) {
     return res

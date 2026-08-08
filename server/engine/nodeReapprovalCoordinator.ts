@@ -16,7 +16,7 @@ export interface NodePairingRequestInput {
   platform?: string;
   version?: string;
   coreVersion?: string;
-  permissions?: Record<string, unknown>;
+  permissions?: Record<string, any>;
   fingerprints?: string[];
 }
 
@@ -48,7 +48,7 @@ export interface NodeReapprovalCoordinator {
 interface DeferredResult {
   promise: Promise<RequestNodePairingResult | null>;
   resolve: (result: RequestNodePairingResult | null) => void;
-  reject: (error: unknown) => void;
+  reject: (error: any) => void;
 }
 
 interface QueuedRequest {

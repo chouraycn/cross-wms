@@ -10,22 +10,22 @@ type AgentConfig = {
   model?: string;
   provider?: string;
   thinkingLevel?: string;
-  tools?: Record<string, unknown>;
+  tools?: Record<string, any>;
   systemPrompt?: string;
-  permissions?: Record<string, unknown>;
+  permissions?: Record<string, any>;
   maxTurns?: number;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 /** Resolve the effective agent config by merging CLI flags, workspace config, and defaults. */
 export function resolveEffectiveAgentConfig(params: {
-  cliFlags?: Record<string, unknown>;
-  workspaceConfig?: unknown;
+  cliFlags?: Record<string, any>;
+  workspaceConfig?: any;
   agentId?: string;
   defaults?: Partial<AgentConfig>;
 }): AgentConfig {
   const defaults = params.defaults ?? {};
-  const workspace = params.workspaceConfig as Record<string, unknown> | undefined;
+  const workspace = params.workspaceConfig as Record<string, any> | undefined;
   const cli = params.cliFlags ?? {};
   return {
     agentId: (cli.agentId as string) ?? params.agentId ?? defaults.agentId,
@@ -37,15 +37,15 @@ export function resolveEffectiveAgentConfig(params: {
       defaults.thinkingLevel,
     tools: {
       ...defaults.tools,
-      ...((workspace?.tools as Record<string, unknown>) ?? {}),
-      ...((cli.tools as Record<string, unknown>) ?? {}),
+      ...((workspace?.tools as Record<string, any>) ?? {}),
+      ...((cli.tools as Record<string, any>) ?? {}),
     },
     systemPrompt:
       (cli.systemPrompt as string) ?? (workspace?.systemPrompt as string) ?? defaults.systemPrompt,
     permissions: {
       ...defaults.permissions,
-      ...((workspace?.permissions as Record<string, unknown>) ?? {}),
-      ...((cli.permissions as Record<string, unknown>) ?? {}),
+      ...((workspace?.permissions as Record<string, any>) ?? {}),
+      ...((cli.permissions as Record<string, any>) ?? {}),
     },
     maxTurns: (cli.maxTurns as number) ?? (workspace?.maxTurns as number) ?? defaults.maxTurns,
   };
@@ -67,9 +67,9 @@ export function validateAgentConfig(config: AgentConfig): string[] {
 export function mergeToolPermissionOverrides(
   config: AgentConfig,
   toolName: string,
-  overrides: Record<string, unknown>,
+  overrides: Record<string, any>,
 ): AgentConfig {
-  const currentPermissions = config.permissions?.[toolName] as Record<string, unknown> | undefined;
+  const currentPermissions = config.permissions?.[toolName] as Record<string, any> | undefined;
   return {
     ...config,
     permissions: {
@@ -120,7 +120,7 @@ type AgentSettingsManagerLike = {
  */
 export function applyAgentCompactionSettingsFromConfig(params: {
   settingsManager: AgentSettingsManagerLike;
-  cfg?: unknown;
+  cfg?: any;
   contextTokenBudget?: number;
 }): {
   didOverride: boolean;
@@ -135,7 +135,7 @@ export function applyAgentCompactionSettingsFromConfig(params: {
 }
 
 /** Compatibility stub: always resolves to the default compaction mode. */
-export function resolveEffectiveCompactionMode(_cfg?: unknown): AgentCompactionMode {
+export function resolveEffectiveCompactionMode(_cfg?: any): AgentCompactionMode {
   return "default";
 }
 
@@ -154,7 +154,7 @@ export function isSilentOverflowProneModel(_model: {
  */
 export function applyAgentAutoCompactionGuard(params: {
   settingsManager: AgentSettingsManagerLike;
-  contextEngineInfo?: unknown;
+  contextEngineInfo?: any;
   compactionMode?: AgentCompactionMode;
   silentOverflowProneProvider?: boolean;
 }): { supported: boolean; disabled: boolean } {

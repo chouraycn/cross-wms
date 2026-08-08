@@ -37,7 +37,7 @@ export function broadcastTalkRoomEvents(
   context: {
     broadcastToConnIds: (
       event: string,
-      payload: unknown,
+      payload: any,
       connIds: Set<string>,
       opts?: { dropIfSlow?: boolean },
     ) => void;
@@ -66,16 +66,16 @@ export function talkHandoffErrorCode(reason: TalkHandoffFailureReason) {
     : ErrorCodes.UNAVAILABLE;
 }
 
-function getRecord(value: unknown): Record<string, unknown> | undefined {
+function getRecord(value: any): Record<string, any> | undefined {
   return asOptionalRecord(value) ?? undefined;
 }
 
-function singleRecordKey(record: Record<string, unknown> | undefined): string | undefined {
+function singleRecordKey(record: Record<string, any> | undefined): string | undefined {
   const keys = record ? Object.keys(record) : [];
   return keys.length === 1 ? keys[0] : undefined;
 }
 
-function getVoiceCallProviderConfig<TConfig extends Record<string, unknown>>(
+function getVoiceCallProviderConfig<TConfig extends Record<string, any>>(
   config: OpenClawConfig,
   sectionName: "realtime" | "streaming",
 ): {
@@ -117,12 +117,12 @@ export function getVoiceCallStreamingConfig(config: OpenClawConfig): {
   return getVoiceCallProviderConfig(config, "streaming");
 }
 
-type RealtimeProviderWithConfig<TConfig extends Record<string, unknown>> = VoiceModelProvider & {
+type RealtimeProviderWithConfig<TConfig extends Record<string, any>> = VoiceModelProvider & {
   resolveConfig?: (ctx: { cfg: OpenClawConfig; rawConfig: TConfig }) => TConfig;
   isConfigured: (ctx: { cfg: OpenClawConfig; providerConfig: TConfig }) => boolean;
 };
 
-function resolveConfiguredVoiceModelDefaultRef<TConfig extends Record<string, unknown>>(params: {
+function resolveConfiguredVoiceModelDefaultRef<TConfig extends Record<string, any>>(params: {
   config: OpenClawConfig;
   provider: string | undefined;
   providerConfigs: Record<string, TConfig>;
@@ -302,12 +302,12 @@ type RealtimeVoiceLaunchOptions = {
 };
 
 type RealtimeVoiceLaunchOptionInput = {
-  model?: unknown;
-  voice?: unknown;
-  vadThreshold?: unknown;
-  silenceDurationMs?: unknown;
-  prefixPaddingMs?: unknown;
-  reasoningEffort?: unknown;
+  model?: any;
+  voice?: any;
+  vadThreshold?: any;
+  silenceDurationMs?: any;
+  prefixPaddingMs?: any;
+  reasoningEffort?: any;
 };
 
 export function buildRealtimeVoiceLaunchOptions(params: {

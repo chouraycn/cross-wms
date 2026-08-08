@@ -262,7 +262,7 @@ function buildProviderAllowFromResolution(params: {
   };
 }
 
-function describeAllowFromResolutionError(err: unknown): string {
+function describeAllowFromResolutionError(err: any): string {
   if (err instanceof Error) {
     const name = normalizeOptionalString(err.name) ?? "";
     return name || "Error";

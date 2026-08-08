@@ -24,7 +24,7 @@ const mockWriteConfigFile = vi.fn<
 >(async () => {});
 const mockResolveSecretRefValue = vi.fn();
 const mockReadBestEffortRuntimeConfigSchema = vi.fn();
-const mockLoadPluginMetadataSnapshot = vi.fn((_configForTest: unknown) =>
+const mockLoadPluginMetadataSnapshot = vi.fn((_configForTest: any) =>
   createPluginMetadataSnapshot(),
 );
 
@@ -45,7 +45,7 @@ vi.mock("../config/config.js", async (importOriginal) => {
 });
 
 vi.mock("../secrets/resolve.js", () => ({
-  resolveSecretRefValue: (...args: unknown[]) => mockResolveSecretRefValue(...args),
+  resolveSecretRefValue: (...args: any[]) => mockResolveSecretRefValue(...args),
 }));
 
 vi.mock("../config/runtime-schema.js", () => ({
@@ -56,8 +56,8 @@ vi.mock("../plugins/plugin-metadata-snapshot.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../plugins/plugin-metadata-snapshot.js")>();
   return {
     ...actual,
-    loadPluginMetadataSnapshot: (config: unknown) => mockLoadPluginMetadataSnapshot(config),
-    resolvePluginMetadataSnapshot: (params: { config?: unknown }) =>
+    loadPluginMetadataSnapshot: (config: any) => mockLoadPluginMetadataSnapshot(config),
+    resolvePluginMetadataSnapshot: (params: { config?: any }) =>
       mockLoadPluginMetadataSnapshot(params.config),
   };
 });
@@ -102,7 +102,7 @@ function setSnapshotOnce(snapshot: ConfigFileSnapshot) {
   mockReadConfigFileSnapshot.mockResolvedValueOnce(snapshot);
 }
 
-function writeTempJson5File(prefix: string, value: unknown): string {
+function writeTempJson5File(prefix: string, value: any): string {
   const pathname = path.join(
     os.tmpdir(),
     `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}.json5`,
@@ -298,7 +298,7 @@ function makeInvalidSnapshot(params: {
   };
 }
 
-function firstMockArg(mock: { mock: { calls: ReadonlyArray<ReadonlyArray<unknown>> } }): unknown {
+function firstMockArg(mock: { mock: { calls: ReadonlyArray<ReadonlyArray<any>> } }): any {
   const call = mock.mock.calls[0];
   if (!call) {
     throw new Error("expected mock to have at least one call");
@@ -306,7 +306,7 @@ function firstMockArg(mock: { mock: { calls: ReadonlyArray<ReadonlyArray<unknown
   return call[0];
 }
 
-function lastMockArg(mock: { mock: { calls: ReadonlyArray<ReadonlyArray<unknown>> } }): unknown {
+function lastMockArg(mock: { mock: { calls: ReadonlyArray<ReadonlyArray<any>> } }): any {
   const calls = mock.mock.calls;
   const call = calls[calls.length - 1];
   if (!call) {
@@ -315,10 +315,10 @@ function lastMockArg(mock: { mock: { calls: ReadonlyArray<ReadonlyArray<unknown>
   return call[0];
 }
 
-function parseLastLogPayload(): unknown {
+function parseLastLogPayload(): any {
   const raw = lastMockArg(mockLog);
   expect(typeof raw).toBe("string");
-  return JSON.parse(String(raw)) as unknown;
+  return JSON.parse(String(raw)) as any;
 }
 
 async function runValidateJsonAndGetPayload() {
@@ -371,11 +371,11 @@ function expectErrorIncludes(text: string) {
   expect(mockError.mock.calls.map((call) => String(call[0])).join("\n")).toContain(text);
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error(`expected ${label} to be an object`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 function requireResolveSecretRefCall(index: number): [unknown, unknown] {
@@ -1212,10 +1212,10 @@ describe("config cli", () => {
       expect(mockError).not.toHaveBeenCalled();
       expect(defaultRuntime.writeJson).toHaveBeenCalledTimes(1);
       const payload = parseLastLogPayload() as {
-        properties?: Record<string, unknown>;
+        properties?: Record<string, any>;
       };
       const gateway = payload.properties?.gateway as
-        | { properties?: Record<string, unknown> }
+        | { properties?: Record<string, any> }
         | undefined;
       const gatewayPort = gateway?.properties?.port as
         | { title?: string; description?: string }
@@ -1261,7 +1261,7 @@ describe("config cli", () => {
 
       expect(defaultRuntime.writeJson).toHaveBeenCalledTimes(1);
       const payload = parseLastLogPayload() as {
-        properties?: Record<string, unknown>;
+        properties?: Record<string, any>;
       };
       expect(payload.properties?.$schema).toEqual({ type: "string" });
       const channels = requireRecord(payload.properties?.channels, "schema channels");
@@ -1410,7 +1410,7 @@ describe("config cli", () => {
 
       expect(mockWriteConfigFile).toHaveBeenCalledTimes(1);
       const written = firstWrittenConfig() as {
-        channels?: { discord?: { guilds?: unknown } };
+        channels?: { discord?: { guilds?: any } };
       };
       expect(written.channels?.discord?.guilds).toEqual({
         "1495587801394184362": {
@@ -1441,7 +1441,7 @@ describe("config cli", () => {
 
       expect(mockWriteConfigFile).toHaveBeenCalledTimes(1);
       const written = firstWrittenConfig() as {
-        channels?: { telegram?: { groups?: unknown } };
+        channels?: { telegram?: { groups?: any } };
       };
       expect(written.channels?.telegram?.groups).toEqual({
         "1495587801394184362": {
@@ -1460,7 +1460,7 @@ describe("config cli", () => {
 
       expect(mockWriteConfigFile).toHaveBeenCalledTimes(1);
       const written = firstWrittenConfig() as {
-        agents?: { list?: unknown };
+        agents?: { list?: any };
       };
       expect(written.agents?.list).toEqual([{ id: "tech" }]);
       expect(Array.isArray(written.agents?.list)).toBe(true);
@@ -2131,24 +2131,24 @@ describe("config cli", () => {
       }
 
       expect(mockWriteConfigFile).toHaveBeenCalledTimes(1);
-      const written = firstWrittenConfig() as Record<string, unknown>;
+      const written = firstWrittenConfig() as Record<string, any>;
       expect(
-        ((written.agents as Record<string, unknown>).defaults as Record<string, unknown>).models,
+        ((written.agents as Record<string, any>).defaults as Record<string, any>).models,
       ).toEqual({
         "openai/gpt-5.4": { alias: "GPT 5.4" },
         "openai/gpt-5.5": { params: { fastMode: true } },
       });
       expect(
         (
-          ((written.agents as Record<string, unknown>).defaults as Record<string, unknown>)
-            .model as Record<string, unknown>
+          ((written.agents as Record<string, any>).defaults as Record<string, any>)
+            .model as Record<string, any>
         ).primary,
       ).toBe("openai/gpt-5.5");
       expect(
-        ((written.channels as Record<string, unknown>).slack as Record<string, unknown>).botToken,
+        ((written.channels as Record<string, any>).slack as Record<string, any>).botToken,
       ).toEqual({ source: "env", provider: "default", id: "SLACK_BOT_TOKEN" });
       expect(
-        ((written.channels as Record<string, unknown>).discord as Record<string, unknown>).token,
+        ((written.channels as Record<string, any>).discord as Record<string, any>).token,
       ).toEqual({ source: "env", provider: "default", id: "DISCORD_BOT_TOKEN" });
     });
 
@@ -2179,9 +2179,9 @@ describe("config cli", () => {
         fs.rmSync(pathname, { force: true });
       }
 
-      const written = firstWrittenConfig() as Record<string, unknown>;
+      const written = firstWrittenConfig() as Record<string, any>;
       expect(
-        ((written.agents as Record<string, unknown>).defaults as Record<string, unknown>).models,
+        ((written.agents as Record<string, any>).defaults as Record<string, any>).models,
       ).toEqual({
         "openai/gpt-5.4": { alias: "GPT 5.4" },
         "openai/gpt-5.5": {},
@@ -2210,8 +2210,8 @@ describe("config cli", () => {
         fs.rmSync(pathname, { force: true });
       }
 
-      const written = firstWrittenConfig() as Record<string, unknown>;
-      expect((written.channels as Record<string, unknown>).slack).toEqual({
+      const written = firstWrittenConfig() as Record<string, any>;
+      expect((written.channels as Record<string, any>).slack).toEqual({
         enabled: true,
         mode: "socket",
       });
@@ -2245,7 +2245,7 @@ describe("config cli", () => {
       }
 
       const written = firstWrittenConfig() as {
-        channels?: { discord?: { guilds?: unknown } };
+        channels?: { discord?: { guilds?: any } };
       };
       expect(written.channels?.discord?.guilds).toEqual({
         "123456789012345678": {
@@ -2632,16 +2632,16 @@ describe("config cli", () => {
         fs.rmSync(pathname, { force: true });
       }
 
-      const written = firstWrittenConfig() as Record<string, unknown>;
-      const channels = (written.channels as Record<string, unknown>).discord as Record<
+      const written = firstWrittenConfig() as Record<string, any>;
+      const channels = (written.channels as Record<string, any>).discord as Record<
         string,
-        unknown
+        any
       >;
       expect(
-        ((channels.guilds as Record<string, unknown>).guild as Record<string, unknown>)
-          .channels as Record<string, unknown>,
+        ((channels.guilds as Record<string, any>).guild as Record<string, any>)
+          .channels as Record<string, any>,
       ).toEqual({ maintainers: { enabled: true, requireMention: true } });
-      expect((written.channels as Record<string, unknown>).slack).not.toHaveProperty("appToken");
+      expect((written.channels as Record<string, any>).slack).not.toHaveProperty("appToken");
       expect(requireWriteOptions().unsetPaths).toEqual([["channels", "slack", "appToken"]]);
     });
 
@@ -3239,7 +3239,7 @@ describe("config cli", () => {
 
       expect(mockWriteConfigFile).toHaveBeenCalledTimes(1);
       const written = firstWrittenConfig() as {
-        channels?: { discord?: { guilds?: Record<string, unknown> } };
+        channels?: { discord?: { guilds?: Record<string, any> } };
       };
       expect(written.channels?.discord?.guilds).toEqual({
         "456": { channels: ["alerts"] },

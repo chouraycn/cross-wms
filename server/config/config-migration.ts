@@ -13,7 +13,7 @@
 export const CURRENT_CONFIG_VERSION = 3;
 
 /** 配置根类型 */
-export type AppConfig = Record<string, unknown> & {
+export type AppConfig = Record<string, any> & {
   configVersion?: number;
 };
 
@@ -450,7 +450,7 @@ configMigrationManager.registerMigration({
     const next: AppConfig = { ...config };
     if (typeof next.port === 'number') {
       next.server = {
-        ...((next.server as Record<string, unknown>) ?? {}),
+        ...((next.server as Record<string, any>) ?? {}),
         port: next.port,
       };
       delete next.port;
@@ -462,13 +462,13 @@ configMigrationManager.registerMigration({
   },
   rollback: (config) => {
     const next: AppConfig = { ...config };
-    const server = next.server as Record<string, unknown> | undefined;
+    const server = next.server as Record<string, any> | undefined;
     if (server && typeof server.port === 'number') {
       next.port = server.port;
       delete next.server;
     }
     if (next.logging && typeof next.logging === 'object') {
-      const logging = next.logging as Record<string, unknown>;
+      const logging = next.logging as Record<string, any>;
       if (logging.level === 'info' && Object.keys(logging).length === 1) {
         delete next.logging;
       }
@@ -492,12 +492,12 @@ configMigrationManager.registerMigration({
     const next: AppConfig = { ...config };
     const apiKey = next.apiKey as string | undefined;
     if (apiKey) {
-      const ai = (next.ai as Record<string, unknown>) ?? {};
-      const providers = (ai.providers as Record<string, unknown>) ?? {};
+      const ai = (next.ai as Record<string, any>) ?? {};
+      const providers = (ai.providers as Record<string, any>) ?? {};
       next.ai = {
         ...ai,
         defaultModel: ai.defaultModel ?? 'gpt-4o-mini',
-        providers: { ...providers, openai: { ...((providers.openai as Record<string, unknown>) ?? {}), apiKey } },
+        providers: { ...providers, openai: { ...((providers.openai as Record<string, any>) ?? {}), apiKey } },
       };
       delete next.apiKey;
     } else if (!next.ai) {
@@ -507,10 +507,10 @@ configMigrationManager.registerMigration({
   },
   rollback: (config) => {
     const next: AppConfig = { ...config };
-    const ai = next.ai as Record<string, unknown> | undefined;
+    const ai = next.ai as Record<string, any> | undefined;
     if (ai) {
-      const providers = ai.providers as Record<string, unknown> | undefined;
-      const openai = providers?.openai as Record<string, unknown> | undefined;
+      const providers = ai.providers as Record<string, any> | undefined;
+      const openai = providers?.openai as Record<string, any> | undefined;
       if (openai && typeof openai.apiKey === 'string') {
         next.apiKey = openai.apiKey;
         delete next.ai;

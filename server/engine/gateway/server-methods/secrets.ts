@@ -11,7 +11,7 @@ import {
 import { isKnownSecretTargetId } from "../../secrets/target-registry.js";
 import type { GatewayRequestHandlers } from "./types.js";
 
-function errorMessage(error: unknown): string {
+function errorMessage(error: any): string {
   return error instanceof Error ? error.message : String(error);
 }
 
@@ -69,7 +69,7 @@ export function createSecretsHandlers(params: {
     assignments: Array<{
       path: string;
       pathSegments: string[];
-      value: unknown;
+      value: any;
     }>;
     diagnostics: string[];
     inactiveRefPaths: string[];
@@ -139,7 +139,7 @@ export function createSecretsHandlers(params: {
             undefined,
             errorShape(
               ErrorCodes.INVALID_REQUEST,
-              `invalid secrets.resolve params: unknown target id "${String(targetId)}"`,
+              `invalid secrets.resolve params: any target id "${String(targetId)}"`,
             ),
           );
           return;

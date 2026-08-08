@@ -67,7 +67,7 @@ export function evaluateGatewayAuthSurfaceStates(params: {
   env: NodeJS.ProcessEnv;
   defaults?: SecretDefaults;
 }): GatewayAuthSurfaceStateMap {
-  const gateway = params.config.gateway as Record<string, unknown> | undefined;
+  const gateway = params.config.gateway as Record<string, any> | undefined;
   if (!isRecord(gateway)) {
     return {
       "gateway.auth.token": createState({

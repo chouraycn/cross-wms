@@ -5,16 +5,16 @@
  */
 
 export type SystemPromptRuntimeParams = {
-  runtimeInfo: Record<string, unknown>;
+  runtimeInfo: Record<string, any>;
   userTimezone: string;
   userTime?: string;
   userTimeFormat?: string;
 };
 
 export function buildSystemPromptParams(params: {
-  config?: unknown;
+  config?: any;
   agentId?: string;
-  runtime?: Record<string, unknown>;
+  runtime?: Record<string, any>;
   workspaceDir?: string;
   cwd?: string;
 }): SystemPromptRuntimeParams {

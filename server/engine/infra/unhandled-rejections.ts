@@ -21,8 +21,8 @@ function restoreTerminalState(_reason: string, _options?: { resumeStdinIfPaused?
   // no-op
 }
 
-type UnhandledRejectionHandler = (reason: unknown) => boolean;
-type UncaughtExceptionHandler = (error: unknown) => boolean;
+type UnhandledRejectionHandler = (reason: any) => boolean;
+type UncaughtExceptionHandler = (error: any) => boolean;
 
 // 插件通过自己的分阶段 node_modules 解析 `openclaw/plugin-sdk/runtime`，
 // 这会加载此模块的单独副本。为了保持注册表状态跨实例共享，
@@ -155,12 +155,12 @@ const TRANSIENT_SQLITE_MESSAGE_SNIPPETS = [
  * openclaw 的 errors.ts 导出 collectErrorGraphCandidates，cross-wms 未导出，这里本地实现。
  */
 function collectErrorGraphCandidates(
-  err: unknown,
-  resolveNested?: (current: Record<string, unknown>) => Iterable<unknown>,
-): unknown[] {
-  const queue: unknown[] = [err];
-  const seen = new Set<unknown>();
-  const candidates: unknown[] = [];
+  err: any,
+  resolveNested?: (current: Record<string, any>) => Iterable<any>,
+): any[] {
+  const queue: any[] = [err];
+  const seen = new Set<any>();
+  const candidates: any[] = [];
 
   while (queue.length > 0) {
     const current = queue.shift();
@@ -173,7 +173,7 @@ function collectErrorGraphCandidates(
     if (!current || typeof current !== "object" || !resolveNested) {
       continue;
     }
-    for (const nested of resolveNested(current as Record<string, unknown>)) {
+    for (const nested of resolveNested(current as Record<string, any>)) {
       if (nested != null && !seen.has(nested)) {
         queue.push(nested);
       }
@@ -186,7 +186,7 @@ function collectErrorGraphCandidates(
  * 格式化未捕获错误（降级实现）。
  * openclaw 的 errors.ts 导出 formatUncaughtError，cross-wms 未导出，这里本地实现。
  */
-function formatUncaughtError(err: unknown): string {
+function formatUncaughtError(err: any): string {
   if (extractErrorCode(err) === "INVALID_CONFIG") {
     return formatErrorMessage(err);
   }
@@ -197,7 +197,7 @@ function formatUncaughtError(err: unknown): string {
   return formatErrorMessage(err);
 }
 
-function hasSqliteSignal(err: unknown): boolean {
+function hasSqliteSignal(err: any): boolean {
   if (!err || typeof err !== "object") {
     return false;
   }
@@ -246,14 +246,14 @@ function isBenignUncaughtNetworkMessage(message: string): boolean {
   return message === WS_PRE_HANDSHAKE_CLOSE_MESSAGE;
 }
 
-function getErrorCause(err: unknown): unknown {
+function getErrorCause(err: any): any {
   if (!err || typeof err !== "object") {
     return undefined;
   }
-  return (err as { cause?: unknown }).cause;
+  return (err as { cause?: any }).cause;
 }
 
-function extractErrorCodeOrErrno(err: unknown): string | undefined {
+function extractErrorCodeOrErrno(err: any): string | undefined {
   const code = extractErrorCode(err);
   if (typeof code === "string" && code) {
     return code.trim().toUpperCase();
@@ -264,7 +264,7 @@ function extractErrorCodeOrErrno(err: unknown): string | undefined {
   if (!err || typeof err !== "object") {
     return undefined;
   }
-  const errno = (err as { errno?: unknown }).errno;
+  const errno = (err as { errno?: any }).errno;
   if (typeof errno === "string" && errno.trim()) {
     return errno.trim().toUpperCase();
   }
@@ -274,11 +274,11 @@ function extractErrorCodeOrErrno(err: unknown): string | undefined {
   return undefined;
 }
 
-function extractNumericErrorCode(err: unknown, key: "errno" | "errcode"): number | undefined {
+function extractNumericErrorCode(err: any, key: "errno" | "errcode"): number | undefined {
   if (!err || typeof err !== "object") {
     return undefined;
   }
-  const value = (err as Record<"errno" | "errcode", unknown>)[key];
+  const value = (err as Record<"errno" | "errcode", any>)[key];
   if (typeof value === "number" && Number.isFinite(value)) {
     return value;
   }
@@ -289,7 +289,7 @@ function extractNumericErrorCode(err: unknown, key: "errno" | "errcode"): number
   return undefined;
 }
 
-function extractErrorCodeWithCause(err: unknown): string | undefined {
+function extractErrorCodeWithCause(err: any): string | undefined {
   const direct = extractErrorCode(err);
   if (typeof direct === "string") {
     return direct;
@@ -311,7 +311,7 @@ function extractErrorCodeWithCause(err: unknown): string | undefined {
  * 检查错误是否为 AbortError。
  * 这些通常是意图取消（例如在关闭期间），不应导致崩溃。
  */
-export function isAbortError(err: unknown): boolean {
+export function isAbortError(err: any): boolean {
   if (!err || typeof err !== "object") {
     return false;
   }
@@ -327,19 +327,19 @@ export function isAbortError(err: unknown): boolean {
   return false;
 }
 
-function isFatalError(err: unknown): boolean {
+function isFatalError(err: any): boolean {
   const code = extractErrorCodeWithCause(err);
   return code !== undefined && FATAL_ERROR_CODES.has(code);
 }
 
-function isConfigError(err: unknown): boolean {
+function isConfigError(err: any): boolean {
   const code = extractErrorCodeWithCause(err);
   return code !== undefined && CONFIG_ERROR_CODES.has(code);
 }
 
-function collectNestedUnhandledErrorCandidates(err: unknown): unknown[] {
+function collectNestedUnhandledErrorCandidates(err: any): any[] {
   return collectErrorGraphCandidates(err, (current) => {
-    const nested: Array<unknown> = [
+    const nested: Array<any> = [
       current.cause,
       current.reason,
       current.original,
@@ -357,7 +357,7 @@ function collectNestedUnhandledErrorCandidates(err: unknown): unknown[] {
  * 检查错误是否为不应使 gateway 崩溃的瞬时网络错误。
  * 这些通常是会自行解决的临时连接问题。
  */
-export function isTransientNetworkError(err: unknown): boolean {
+export function isTransientNetworkError(err: any): boolean {
   if (!err) {
     return false;
   }
@@ -375,7 +375,7 @@ export function isTransientNetworkError(err: unknown): boolean {
     if (!candidate || typeof candidate !== "object") {
       continue;
     }
-    const rawMessage = (candidate as { message?: unknown }).message;
+    const rawMessage = (candidate as { message?: any }).message;
     const message = normalizeLowercaseStringOrEmpty(rawMessage);
     if (!message) {
       continue;
@@ -394,7 +394,7 @@ export function isTransientNetworkError(err: unknown): boolean {
   return false;
 }
 
-export function isTransientSqliteError(err: unknown): boolean {
+export function isTransientSqliteError(err: any): boolean {
   if (!err) {
     return false;
   }
@@ -419,8 +419,8 @@ export function isTransientSqliteError(err: unknown): boolean {
     }
 
     const messageParts = [
-      (candidate as { message?: unknown }).message,
-      (candidate as { errstr?: unknown }).errstr,
+      (candidate as { message?: any }).message,
+      (candidate as { errstr?: any }).errstr,
     ];
     for (const rawMessage of messageParts) {
       const message = normalizeLowercaseStringOrEmpty(rawMessage);
@@ -448,7 +448,7 @@ export function isTransientSqliteError(err: unknown): boolean {
  * 为避免错误分类无关的存储失败，我们要求同时有 ENOSPC 代码
  * 和 watch/inotify 相关消息指示器，类似于 hasSqliteSignal 门控 SQLite 错误。
  */
-export function isTransientFileWatchError(err: unknown): boolean {
+export function isTransientFileWatchError(err: any): boolean {
   if (!err) {
     return false;
   }
@@ -503,13 +503,13 @@ export function isTransientFileWatchError(err: unknown): boolean {
   return false;
 }
 
-export function isTransientUnhandledRejectionError(err: unknown): boolean {
+export function isTransientUnhandledRejectionError(err: any): boolean {
   return (
     isTransientNetworkError(err) || isTransientSqliteError(err) || isTransientFileWatchError(err)
   );
 }
 
-function isBenignUncaughtNetworkException(err: unknown): boolean {
+function isBenignUncaughtNetworkException(err: any): boolean {
   for (const candidate of collectNestedUnhandledErrorCandidates(err)) {
     const code = extractErrorCodeOrErrno(candidate);
     if (code && BENIGN_UNCAUGHT_EXCEPTION_NETWORK_CODES.has(code)) {
@@ -518,7 +518,7 @@ function isBenignUncaughtNetworkException(err: unknown): boolean {
     if (!candidate || typeof candidate !== "object") {
       continue;
     }
-    const message = normalizeLowercaseStringOrEmpty((candidate as { message?: unknown }).message);
+    const message = normalizeLowercaseStringOrEmpty((candidate as { message?: any }).message);
     if (message && isBenignUncaughtNetworkMessage(message)) {
       return true;
     }
@@ -526,7 +526,7 @@ function isBenignUncaughtNetworkException(err: unknown): boolean {
   return false;
 }
 
-export function isBenignUncaughtExceptionError(err: unknown): boolean {
+export function isBenignUncaughtExceptionError(err: any): boolean {
   if (isBenignUncaughtNetworkException(err)) {
     return true;
   }
@@ -546,7 +546,7 @@ export function registerUnhandledRejectionHandler(handler: UnhandledRejectionHan
   };
 }
 
-export function isUnhandledRejectionHandled(reason: unknown): boolean {
+export function isUnhandledRejectionHandled(reason: any): boolean {
   for (const handler of handlers) {
     try {
       if (handler(reason)) {
@@ -569,7 +569,7 @@ export function registerUncaughtExceptionHandler(handler: UncaughtExceptionHandl
   };
 }
 
-export function isUncaughtExceptionHandled(error: unknown): boolean {
+export function isUncaughtExceptionHandled(error: any): boolean {
   for (const handler of exceptionHandlers) {
     try {
       if (handler(error)) {
@@ -586,7 +586,7 @@ export function isUncaughtExceptionHandled(error: unknown): boolean {
 }
 
 export function installUnhandledRejectionHandler(): void {
-  const exitWithTerminalRestore = (reason: string, error?: unknown, hookReason = reason) => {
+  const exitWithTerminalRestore = (reason: string, error?: any, hookReason = reason) => {
     for (const message of runFatalErrorHooks({ reason: hookReason, error })) {
       console.error("[openclaw]", message);
     }

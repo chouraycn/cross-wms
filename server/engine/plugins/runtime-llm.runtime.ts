@@ -17,11 +17,11 @@ export type RuntimeLlmAuthority = {
 export type CreateRuntimeLlmOptions = {
   getConfig?: () => unknown;
   authority?: RuntimeLlmAuthority;
-  logger?: unknown;
+  logger?: any;
 };
 
 export type RuntimeLlm = {
-  complete: (request: unknown) => Promise<unknown>;
+  complete: (request: any) => Promise<any>;
 };
 
 export function createRuntimeLlm(_options: CreateRuntimeLlmOptions): RuntimeLlm {

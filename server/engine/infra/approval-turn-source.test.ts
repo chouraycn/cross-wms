@@ -9,7 +9,7 @@ vi.mock("../config/config.js", () => ({
 }));
 
 vi.mock("./exec-approval-surface.js", () => ({
-  resolveApprovalInitiatingSurfaceState: (...args: unknown[]) =>
+  resolveApprovalInitiatingSurfaceState: (...args: any[]) =>
     resolveApprovalInitiatingSurfaceStateMock(...args),
 }));
 

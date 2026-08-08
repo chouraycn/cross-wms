@@ -90,14 +90,14 @@ export function createWebChannelPlugin(): ChannelPlugin {
     },
     resolveAccount: (_config: AppConfig, accountId: ChannelId) => {
       if (accountId === WEB_CHANNEL_ID) {
-        return accountId as unknown;
+        return accountId as any;
       }
       return null;
     },
-    isEnabled: (_account: unknown, _config: AppConfig): boolean => {
+    isEnabled: (_account: any, _config: AppConfig): boolean => {
       return true;
     },
-    isConfigured: (_account: unknown, _config: AppConfig): boolean => {
+    isConfigured: (_account: any, _config: AppConfig): boolean => {
       return true;
     },
   };

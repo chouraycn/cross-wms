@@ -12,14 +12,14 @@ export type RetryInfo = {
   attempt: number;
   maxAttempts: number;
   delayMs: number;
-  err: unknown;
+  err: any;
   label?: string;
 };
 
 export type RetryOptions = RetryConfig & {
   label?: string;
-  shouldRetry?: (err: unknown, attempt: number) => boolean;
-  retryAfterMs?: (err: unknown) => number | undefined;
+  shouldRetry?: (err: any, attempt: number) => boolean;
+  retryAfterMs?: (err: any) => number | undefined;
   onRetry?: (info: RetryInfo) => void;
 };
 
@@ -65,7 +65,7 @@ export async function retryAsync<T>(
     : attemptsOrOptions;
   const config = resolveRetryConfig(DEFAULT_RETRY_CONFIG, opts);
   const maxAttempts = config.attempts;
-  let lastErr: unknown;
+  let lastErr: any;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {

@@ -166,7 +166,7 @@ export function parseModelPattern(
 /** Resolve model patterns to actual Model objects with optional thinking levels. */
 export async function resolveModelScope(
   _patterns: string[],
-  _modelRegistry: unknown,
+  _modelRegistry: any,
 ): Promise<ScopedModel[]> {
   // Full model registry not available in cross-wms
   return [];
@@ -176,7 +176,7 @@ export async function resolveModelScope(
 export function resolveCliModel(options: {
   cliProvider?: string;
   cliModel?: string;
-  modelRegistry: unknown;
+  modelRegistry: any;
 }): ResolveCliModelResult {
   if (!options.cliModel) {
     return { model: undefined, warning: undefined, error: undefined };
@@ -197,7 +197,7 @@ export async function findInitialModel(options: {
   defaultProvider?: string;
   defaultModelId?: string;
   defaultThinkingLevel?: ThinkingLevel;
-  modelRegistry: unknown;
+  modelRegistry: any;
 }): Promise<InitialModelResult> {
   if (options.scopedModels.length > 0 && !options.isContinuing) {
     return {
@@ -215,7 +215,7 @@ export async function restoreModelFromSession(
   _savedModelId: string,
   currentModel: Model | undefined,
   _shouldPrintMessages: boolean,
-  _modelRegistry: unknown,
+  _modelRegistry: any,
 ): Promise<{ model: Model | undefined; fallbackMessage: string | undefined }> {
   // Full model registry not available in cross-wms
   if (currentModel) {

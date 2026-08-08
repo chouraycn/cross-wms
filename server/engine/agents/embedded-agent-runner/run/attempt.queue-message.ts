@@ -9,20 +9,20 @@ import { log } from "../logger.js";
  * whether the queued user message reached the transcript.
  */
 export type EmbeddedAgentActiveSessionSteerTarget = {
-  agent?: unknown;
+  agent?: any;
   getSteeringMessages?(): readonly string[];
   steer(text: string): Promise<void>;
-  subscribe(listener: (event: unknown) => void): () => void;
+  subscribe(listener: (event: any) => void): () => void;
 };
 
 /** Default wait for a steered user message to appear in the active transcript. */
 const DEFAULT_QUEUE_TRANSCRIPT_COMMIT_TIMEOUT_MS = 120_000;
 
-function extractQueuedUserMessageText(message: unknown): string | undefined {
+function extractQueuedUserMessageText(message: any): string | undefined {
   if (!message || typeof message !== "object") {
     return undefined;
   }
-  const record = message as { content?: unknown; role?: unknown };
+  const record = message as { content?: any; role?: any };
   if (record.role !== "user") {
     return undefined;
   }
@@ -37,7 +37,7 @@ function extractQueuedUserMessageText(message: unknown): string | undefined {
       if (!block || typeof block !== "object") {
         return undefined;
       }
-      const typedBlock = block as { text?: unknown; type?: unknown };
+      const typedBlock = block as { text?: any; type?: any };
       return typedBlock.type === "text" && typeof typedBlock.text === "string"
         ? typedBlock.text
         : undefined;
@@ -47,41 +47,41 @@ function extractQueuedUserMessageText(message: unknown): string | undefined {
   return text || undefined;
 }
 
-function isQueuedUserMessageEnd(event: unknown, text: string): boolean {
+function isQueuedUserMessageEnd(event: any, text: string): boolean {
   if (!event || typeof event !== "object") {
     return false;
   }
-  const record = event as { message?: unknown; type?: unknown };
+  const record = event as { message?: any; type?: any };
   return record.type === "message_end" && extractQueuedUserMessageText(record.message) === text;
 }
 
-function isTerminalActiveSessionEvent(event: unknown): boolean {
+function isTerminalActiveSessionEvent(event: any): boolean {
   return Boolean(
-    event && typeof event === "object" && (event as { type?: unknown }).type === "agent_end",
+    event && typeof event === "object" && (event as { type?: any }).type === "agent_end",
   );
 }
 
-function isAutoRetryStartEvent(event: unknown): boolean {
+function isAutoRetryStartEvent(event: any): boolean {
   return Boolean(
-    event && typeof event === "object" && (event as { type?: unknown }).type === "auto_retry_start",
+    event && typeof event === "object" && (event as { type?: any }).type === "auto_retry_start",
   );
 }
 
-function isCompactionStartEvent(event: unknown): boolean {
+function isCompactionStartEvent(event: any): boolean {
   return Boolean(
-    event && typeof event === "object" && (event as { type?: unknown }).type === "compaction_start",
+    event && typeof event === "object" && (event as { type?: any }).type === "compaction_start",
   );
 }
 
-function getAgentSteeringQueueMessages(agent: unknown): unknown[] | undefined {
+function getAgentSteeringQueueMessages(agent: any): any[] | undefined {
   if (!agent || typeof agent !== "object") {
     return undefined;
   }
-  const queue = (agent as { steeringQueue?: unknown }).steeringQueue;
+  const queue = (agent as { steeringQueue?: any }).steeringQueue;
   if (!queue || typeof queue !== "object") {
     return undefined;
   }
-  const messages = (queue as { messages?: unknown }).messages;
+  const messages = (queue as { messages?: any }).messages;
   return Array.isArray(messages) ? messages : undefined;
 }
 
@@ -130,7 +130,7 @@ export async function steerAndWaitForTranscriptCommit(
   await new Promise<void>((resolve, reject) => {
     let settled = false;
     let terminalTimer: ReturnType<typeof setTimeout> | undefined;
-    const finish = (err?: unknown) => {
+    const finish = (err?: any) => {
       if (settled) {
         return;
       }
@@ -157,7 +157,7 @@ export async function steerAndWaitForTranscriptCommit(
             log.warn("failed to find queued steering message for cancellation");
           }
         })
-        .catch((err: unknown) => {
+        .catch((err: any) => {
           log.warn(`failed to cancel queued steering message: ${String(err)}`);
         })
         .finally(() => {
@@ -206,7 +206,7 @@ export async function steerAndWaitForTranscriptCommit(
         scheduleTerminalCancellation();
       }
     });
-    activeSession.steer(text).catch((err: unknown) => {
+    activeSession.steer(text).catch((err: any) => {
       finish(err);
     });
   });

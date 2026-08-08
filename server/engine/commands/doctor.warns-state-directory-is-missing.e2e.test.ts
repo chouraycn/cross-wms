@@ -41,7 +41,7 @@ function storedCodexOAuthProfile() {
   };
 }
 
-function mockAuthProfileStore(profiles: Record<string, unknown> = {}): void {
+function mockAuthProfileStore(profiles: Record<string, any> = {}): void {
   ensureAuthProfileStore.mockReturnValue({
     version: 1,
     profiles,
@@ -49,7 +49,7 @@ function mockAuthProfileStore(profiles: Record<string, unknown> = {}): void {
 }
 
 function mockCodexProviderSnapshot(params: {
-  provider: Record<string, unknown>;
+  provider: Record<string, any>;
   withConfigOAuth?: boolean;
 }): void {
   mockDoctorConfigSnapshot({

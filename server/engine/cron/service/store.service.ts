@@ -16,7 +16,7 @@ import { loadedCronStoreFromJson } from "../store/row-codec.js";
  */
 function warnInvalidPersistedCronJob(params: {
   state: CronServiceState;
-  raw: Record<string, unknown>;
+  raw: Record<string, any>;
   index: number;
   reason: string;
 }): void {
@@ -40,7 +40,7 @@ function warnInvalidPersistedCronJob(params: {
 /**
  * 验证 cron 任务是否为有效的持久化形状
  */
-function getInvalidPersistedCronJobReason(raw: Record<string, unknown>): string | null {
+function getInvalidPersistedCronJobReason(raw: Record<string, any>): string | null {
   if (typeof raw.id !== "string" || !raw.id.trim()) {
     return "missing or invalid id";
   }
@@ -50,7 +50,7 @@ function getInvalidPersistedCronJobReason(raw: Record<string, unknown>): string 
   if (!raw.schedule || typeof raw.schedule !== "object") {
     return "missing schedule";
   }
-  const schedule = raw.schedule as Record<string, unknown>;
+  const schedule = raw.schedule as Record<string, any>;
   if (typeof schedule.kind !== "string") {
     return "missing schedule.kind";
   }
@@ -63,7 +63,7 @@ function getInvalidPersistedCronJobReason(raw: Record<string, unknown>): string 
   if (!raw.payload || typeof raw.payload !== "object") {
     return "missing payload";
   }
-  const payload = raw.payload as Record<string, unknown>;
+  const payload = raw.payload as Record<string, any>;
   if (typeof payload.kind !== "string") {
     return "missing payload.kind";
   }
@@ -151,7 +151,7 @@ export async function ensureLoaded(
     ? new JsonCronJobStore(state.deps.storePath)
     : getDefaultCronStore();
   const loaded = await store.load();
-  const loadedJobs = loaded.store.jobs as unknown as Record<string, unknown>[];
+  const loadedJobs = loaded.store.jobs as unknown as Record<string, any>[];
   const jobs: CronJob[] = [];
   const nowMs = state.deps.nowMs();
   const quarantinedConfigJobs: CronQuarantineEntry[] = [...loaded.invalidConfigRows];
@@ -167,7 +167,7 @@ export async function ensureLoaded(
       };
       const runtimeState = raw.state;
       if (runtimeState && typeof runtimeState === "object" && !Array.isArray(runtimeState)) {
-        quarantineEntry.state = structuredClone(runtimeState as Record<string, unknown>);
+        quarantineEntry.state = structuredClone(runtimeState as Record<string, any>);
       }
       if (typeof raw.updatedAtMs === "number" && Number.isFinite(raw.updatedAtMs)) {
         quarantineEntry.updatedAtMs = raw.updatedAtMs;
@@ -180,7 +180,7 @@ export async function ensureLoaded(
     jobs.push(hydrated);
   }
 
-  const loadedResult = loadedCronStoreFromJson(jobs as unknown as unknown[]);
+  const loadedResult = loadedCronStoreFromJson(jobs as unknown as any[]);
   state.store = {
     version: 1,
     jobs: loadedResult.store.jobs,

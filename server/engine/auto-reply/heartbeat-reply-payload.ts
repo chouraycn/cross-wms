@@ -9,7 +9,7 @@ import type { ReplyPayload } from './reply-payload.js';
 
 const REASONING_PREFIX_RE = /^(?:reasoning:|thinking\.{0,3}(?=\s*(?:>\s*)?_))/u;
 
-function normalizeLowercaseStringOrEmpty(value: unknown): string {
+function normalizeLowercaseStringOrEmpty(value: any): string {
   if (typeof value !== 'string') return '';
   const trimmed = value.trim();
   return trimmed ? trimmed.toLowerCase() : '';
@@ -37,7 +37,7 @@ function isReasoningReplyPayload(payload: {
   return REASONING_PREFIX_RE.test(unquoted);
 }
 
-function normalizeOptionalString(value: unknown): string | undefined {
+function normalizeOptionalString(value: any): string | undefined {
   if (typeof value !== 'string') return undefined;
   const trimmed = value.trim();
   return trimmed ? trimmed : undefined;
@@ -48,9 +48,9 @@ function hasOutboundReplyContent(payload: {
   text?: string;
   mediaUrls?: string[];
   mediaUrl?: string;
-  presentation?: unknown;
-  interactive?: unknown;
-  channelData?: unknown;
+  presentation?: any;
+  interactive?: any;
+  channelData?: any;
 }): boolean {
   const text = normalizeOptionalString(payload.text);
   const mediaUrl = normalizeOptionalString(payload.mediaUrl);

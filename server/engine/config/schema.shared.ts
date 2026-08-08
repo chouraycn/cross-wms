@@ -18,7 +18,7 @@ export function cloneSchema<T>(value: T): T {
 }
 
 /** Narrow unknown JSON-schema fragments to non-array objects. */
-export function asSchemaObject(value: unknown): object | null {
+export function asSchemaObject(value: any): object | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return null;
   }

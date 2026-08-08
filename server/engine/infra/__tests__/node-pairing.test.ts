@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 
 // 使用 vi.hoisted 创建内存存储，确保在 vi.mock 工厂执行前完成初始化
-const memoryStore = vi.hoisted(() => new Map<string, unknown>());
+const memoryStore = vi.hoisted(() => new Map<string, any>());
 
 // 部分模拟 pairing-files.js：保留真实的 resolvePairingPaths、createAsyncLock 等纯函数，
 // 仅替换 readJsonIfExists 和 writeJson 为内存 I/O 实现
@@ -9,11 +9,11 @@ vi.mock("../pairing-files.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../pairing-files.js")>();
   return {
     ...actual,
-    readJsonIfExists: async (filePath: string): Promise<unknown> => {
+    readJsonIfExists: async (filePath: string): Promise<any> => {
       const value = memoryStore.get(filePath);
       return value === undefined ? null : JSON.parse(JSON.stringify(value));
     },
-    writeJson: async (filePath: string, value: unknown): Promise<void> => {
+    writeJson: async (filePath: string, value: any): Promise<void> => {
       memoryStore.set(filePath, JSON.parse(JSON.stringify(value)));
     },
   };
@@ -40,22 +40,22 @@ const PATHS = resolvePairingPaths(BASE_DIR, "nodes");
 const pendingPath = PATHS.pendingPath;
 const pairedPath = PATHS.pairedPath;
 
-function setPending(pendingById: Record<string, unknown>): void {
+function setPending(pendingById: Record<string, any>): void {
   memoryStore.set(pendingPath, JSON.parse(JSON.stringify(pendingById)));
 }
 
-function setPaired(pairedByNodeId: Record<string, unknown>): void {
+function setPaired(pairedByNodeId: Record<string, any>): void {
   memoryStore.set(pairedPath, JSON.parse(JSON.stringify(pairedByNodeId)));
 }
 
-function getPending(): Record<string, unknown> {
+function getPending(): Record<string, any> {
   const value = memoryStore.get(pendingPath);
-  return (value as Record<string, unknown>) ?? {};
+  return (value as Record<string, any>) ?? {};
 }
 
-function getPaired(): Record<string, unknown> {
+function getPaired(): Record<string, any> {
   const value = memoryStore.get(pairedPath);
-  return (value as Record<string, unknown>) ?? {};
+  return (value as Record<string, any>) ?? {};
 }
 
 describe("node-pairing 模块单元测试", () => {

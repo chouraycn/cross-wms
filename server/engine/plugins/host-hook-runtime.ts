@@ -45,7 +45,7 @@ type AgentEventPayload = {
   runId?: string;
   data?: {
     phase?: string;
-    [key: string]: unknown;
+    [key: string]: any;
   };
 };
 
@@ -56,10 +56,10 @@ type AgentEventPayload = {
  * 这里定义与 openclaw SubsystemLogger 结构兼容的最小接口。
  */
 type SubsystemLogger = {
-  debug: (...args: unknown[]) => void;
-  info: (...args: unknown[]) => void;
-  warn: (...args: unknown[]) => void;
-  error: (...args: unknown[]) => void;
+  debug: (...args: any[]) => void;
+  info: (...args: any[]) => void;
+  warn: (...args: any[]) => void;
+  error: (...args: any[]) => void;
 };
 
 /**
@@ -70,10 +70,10 @@ type SubsystemLogger = {
  */
 function createSubsystemLogger(_namespace: string): SubsystemLogger {
   return {
-    debug: (...args: unknown[]) => log.debug(`[${_namespace}]`, ...args),
-    info: (...args: unknown[]) => log.info(`[${_namespace}]`, ...args),
-    warn: (...args: unknown[]) => log.warn(`[${_namespace}]`, ...args),
-    error: (...args: unknown[]) => log.error(`[${_namespace}]`, ...args),
+    debug: (...args: any[]) => log.debug(`[${_namespace}]`, ...args),
+    info: (...args: any[]) => log.info(`[${_namespace}]`, ...args),
+    warn: (...args: any[]) => log.warn(`[${_namespace}]`, ...args),
+    error: (...args: any[]) => log.error(`[${_namespace}]`, ...args),
   };
 }
 
@@ -406,7 +406,7 @@ function isTerminalAgentRunEvent(event: AgentEventPayload): boolean {
 function logAgentEventSubscriptionFailure(params: {
   pluginId: string;
   subscriptionId: string;
-  error: unknown;
+  error: any;
 }): void {
   log.warn(
     `plugin agent event subscription failed: plugin=${params.pluginId} subscription=${params.subscriptionId} error=${String(params.error)}`,
@@ -455,7 +455,7 @@ export function dispatchPluginAgentEventSubscriptions(params: {
       const pending = Promise.resolve(
         registration.subscription.handle(structuredClone(params.event), ctx),
       )
-        .catch((error: unknown) => {
+        .catch((error: any) => {
           logAgentEventSubscriptionFailure({
             pluginId,
             subscriptionId: registration.subscription.id,
@@ -587,9 +587,9 @@ export async function cleanupPluginSessionSchedulerJobs(params: {
   excludeJobKeys?: ReadonlySet<string>;
   shouldCleanup?: () => boolean;
   preserveOwnerRegistry?: PluginRegistry | null;
-}): Promise<Array<{ pluginId: string; hookId: string; error: unknown }>> {
+}): Promise<Array<{ pluginId: string; hookId: string; error: any }>> {
   const state = getPluginHostRuntimeState();
-  const failures: Array<{ pluginId: string; hookId: string; error: unknown }> = [];
+  const failures: Array<{ pluginId: string; hookId: string; error: any }> = [];
   const shouldCleanup = params.shouldCleanup ?? (() => true);
   if (!shouldCleanup()) {
     return failures;

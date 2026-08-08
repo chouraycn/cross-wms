@@ -10,7 +10,7 @@ function toSnakeCaseKey(key: string): string {
 }
 
 export function resolveSnakeCaseParamKey(
-  params: Record<string, unknown>,
+  params: Record<string, any>,
   key: string,
 ): string | undefined {
   if (Object.hasOwn(params, key)) {
@@ -23,7 +23,7 @@ export function resolveSnakeCaseParamKey(
   return undefined;
 }
 
-export function readSnakeCaseParamRaw(params: Record<string, unknown>, key: string): unknown {
+export function readSnakeCaseParamRaw(params: Record<string, any>, key: string): any {
   const resolvedKey = resolveSnakeCaseParamKey(params, key);
   if (resolvedKey) {
     return params[resolvedKey];

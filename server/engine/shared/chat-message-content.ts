@@ -3,11 +3,11 @@
 import { readStringValue } from "@openclaw/normalization-core/string-coerce";
 
 /** Returns inline string content or the first array text block without scanning later blocks. */
-export function extractFirstTextBlock(message: unknown): string | undefined {
+export function extractFirstTextBlock(message: any): string | undefined {
   if (!message || typeof message !== "object") {
     return undefined;
   }
-  const content = (message as { content?: unknown }).content;
+  const content = (message as { content?: any }).content;
   const inline = readStringValue(content);
   if (inline !== undefined) {
     return inline;
@@ -19,23 +19,23 @@ export function extractFirstTextBlock(message: unknown): string | undefined {
   if (!first || typeof first !== "object") {
     return undefined;
   }
-  return readStringValue((first as { text?: unknown }).text);
+  return readStringValue((first as { text?: any }).text);
 }
 
 export type AssistantPhase = "commentary" | "final_answer";
 
-function isAssistantTextContentBlockType(value: unknown): boolean {
+function isAssistantTextContentBlockType(value: any): boolean {
   return value === "text" || value === "input_text" || value === "output_text";
 }
 
 /** Narrows unknown phase metadata to assistant text phases that affect visibility. */
-export function normalizeAssistantPhase(value: unknown): AssistantPhase | undefined {
+export function normalizeAssistantPhase(value: any): AssistantPhase | undefined {
   return value === "commentary" || value === "final_answer" ? value : undefined;
 }
 
 /** Parses assistant text block signatures, preserving legacy raw ids when not JSON encoded. */
 export function parseAssistantTextSignature(
-  value: unknown,
+  value: any,
 ): { id?: string; phase?: AssistantPhase } | null {
   if (typeof value !== "string" || value.trim().length === 0) {
     return null;
@@ -44,7 +44,7 @@ export function parseAssistantTextSignature(
     return { id: value };
   }
   try {
-    const parsed = JSON.parse(value) as { id?: unknown; phase?: unknown; v?: unknown };
+    const parsed = JSON.parse(value) as { id?: any; phase?: any; v?: any };
     if (parsed.v !== 1) {
       return null;
     }
@@ -60,11 +60,11 @@ export function parseAssistantTextSignature(
 }
 
 /** Resolves a message phase only when the top-level phase or all explicit blocks agree. */
-export function resolveAssistantMessagePhase(message: unknown): AssistantPhase | undefined {
+export function resolveAssistantMessagePhase(message: any): AssistantPhase | undefined {
   if (!message || typeof message !== "object") {
     return undefined;
   }
-  const entry = message as { phase?: unknown; content?: unknown };
+  const entry = message as { phase?: any; content?: any };
   const directPhase = normalizeAssistantPhase(entry.phase);
   if (directPhase) {
     return directPhase;
@@ -77,7 +77,7 @@ export function resolveAssistantMessagePhase(message: unknown): AssistantPhase |
     if (!block || typeof block !== "object") {
       continue;
     }
-    const record = block as { type?: unknown; textSignature?: unknown };
+    const record = block as { type?: any; textSignature?: any };
     if (!isAssistantTextContentBlockType(record.type)) {
       continue;
     }
@@ -90,15 +90,15 @@ export function resolveAssistantMessagePhase(message: unknown): AssistantPhase |
 }
 
 /** Finds assistant phase metadata on event payloads that may wrap message-like records. */
-export function resolveAssistantEventPhase(data: unknown): AssistantPhase | undefined {
+export function resolveAssistantEventPhase(data: any): AssistantPhase | undefined {
   if (!data || typeof data !== "object") {
     return undefined;
   }
   const record = data as {
-    phase?: unknown;
-    message?: unknown;
-    partial?: unknown;
-    item?: unknown;
+    phase?: any;
+    message?: any;
+    partial?: any;
+    item?: any;
   };
   return (
     normalizeAssistantPhase(record.phase) ??
@@ -111,7 +111,7 @@ export function resolveAssistantEventPhase(data: unknown): AssistantPhase | unde
 
 /** Extracts assistant text for a requested phase without mixing legacy and explicitly phased text. */
 export function extractAssistantTextForPhase(
-  message: unknown,
+  message: any,
   options?: {
     phase?: AssistantPhase;
     sanitizeText?: (text: string) => string;
@@ -121,7 +121,7 @@ export function extractAssistantTextForPhase(
   if (!message || typeof message !== "object") {
     return undefined;
   }
-  const entry = message as { text?: unknown; content?: unknown; phase?: unknown };
+  const entry = message as { text?: any; content?: any; phase?: any };
   const messagePhase = normalizeAssistantPhase(entry.phase);
   const phase = options?.phase;
   const shouldIncludeContent = (resolvedPhase?: AssistantPhase) => {
@@ -160,7 +160,7 @@ export function extractAssistantTextForPhase(
     if (!block || typeof block !== "object") {
       return false;
     }
-    const record = block as { type?: unknown; textSignature?: unknown };
+    const record = block as { type?: any; textSignature?: any };
     if (!isAssistantTextContentBlockType(record.type)) {
       return false;
     }
@@ -177,7 +177,7 @@ export function extractAssistantTextForPhase(
       if (!block || typeof block !== "object") {
         return null;
       }
-      const record = block as { type?: unknown; text?: unknown; textSignature?: unknown };
+      const record = block as { type?: any; text?: any; textSignature?: any };
       if (!isAssistantTextContentBlockType(record.type) || typeof record.text !== "string") {
         return null;
       }
@@ -199,7 +199,7 @@ export function extractAssistantTextForPhase(
 }
 
 /** Returns user-visible assistant text, preferring final answers over legacy unphased text. */
-export function extractAssistantVisibleText(message: unknown): string | undefined {
+export function extractAssistantVisibleText(message: any): string | undefined {
   const finalAnswerText = extractAssistantTextForPhase(message, { phase: "final_answer" });
   if (finalAnswerText) {
     return finalAnswerText;

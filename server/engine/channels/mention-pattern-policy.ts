@@ -46,11 +46,11 @@ function normalizeIdList(values?: string[]): Set<string> {
   return normalized;
 }
 
-function isMentionPatternsPolicyConfig(value: unknown): value is MentionPatternsPolicyConfig {
+function isMentionPatternsPolicyConfig(value: any): value is MentionPatternsPolicyConfig {
   return value != null && typeof value === "object" && !Array.isArray(value);
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return value != null && typeof value === "object" && !Array.isArray(value);
 }
 

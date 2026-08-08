@@ -34,7 +34,7 @@ vi.mock("../../runtime.js", () => ({
 
 vi.mock("../../infra/restart.js", () => ({
   clearGatewayRestartIntentSync: () => clearGatewayRestartIntentSync(),
-  writeGatewayRestartIntentSync: (opts: unknown) => writeGatewayRestartIntentSync(opts),
+  writeGatewayRestartIntentSync: (opts: any) => writeGatewayRestartIntentSync(opts),
 }));
 
 let runServiceRestart: typeof import("./lifecycle-core.js").runServiceRestart;

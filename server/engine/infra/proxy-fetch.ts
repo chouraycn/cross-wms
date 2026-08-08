@@ -12,7 +12,7 @@ export function makeProxyFetch(params?: {
 }
 
 /** Gets the proxy URL from a proxy fetch instance. */
-export function getProxyUrlFromFetch(_fetchFn?: unknown): string | undefined {
+export function getProxyUrlFromFetch(_fetchFn?: any): string | undefined {
   return undefined;
 }
 

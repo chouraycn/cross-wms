@@ -56,7 +56,7 @@ const makeError = (overrides: Partial<ValidationError>): ValidationError => ({
 });
 
 /** Runtime shape shared by all exported lazy protocol validator functions. */
-type ProtocolValidator = (value: unknown) => boolean;
+type ProtocolValidator = (value: any) => boolean;
 
 describe("lazy protocol validators", () => {
   it("validates through exported lazy validators", () => {

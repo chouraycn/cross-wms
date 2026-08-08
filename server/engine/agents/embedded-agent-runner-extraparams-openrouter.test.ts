@@ -26,7 +26,7 @@ beforeEach(() => {
       const providerRouting =
         params.context.extraParams?.provider != null &&
         typeof params.context.extraParams.provider === "object"
-          ? (params.context.extraParams.provider as Record<string, unknown>)
+          ? (params.context.extraParams.provider as Record<string, any>)
           : undefined;
       let streamFn = params.context.streamFn;
       if (providerRouting) {

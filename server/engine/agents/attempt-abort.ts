@@ -6,6 +6,6 @@
  */
 
 /** Releases the embedded attempt session lock on abort. */
-export function releaseEmbeddedAttemptSessionLockForAbort(..._args: unknown[]): void {
+export function releaseEmbeddedAttemptSessionLockForAbort(..._args: any[]): void {
   // Cross-wms does not have session lock management.
 }

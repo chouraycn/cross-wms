@@ -258,7 +258,7 @@ function publishToRelay(relayUrl: string, event: NostrEvent, timeoutMs: number):
 
     ws.onmessage = (msg: MessageEvent) => {
       try {
-        const data = JSON.parse(msg.data as string) as unknown[];
+        const data = JSON.parse(msg.data as string) as any[];
         if (Array.isArray(data) && data[0] === "OK" && data[1] === event.id) {
           if (!settled) {
             settled = true;
@@ -335,7 +335,7 @@ function subscribeToDms(
 
   ws.onmessage = (msg: MessageEvent) => {
     try {
-      const data = JSON.parse(msg.data as string) as unknown[];
+      const data = JSON.parse(msg.data as string) as any[];
       if (Array.isArray(data) && data[0] === "EVENT" && data[1] === subId) {
         onEvent(data[2] as NostrEvent);
       }
@@ -394,7 +394,7 @@ export function createNostrChannelPlugin(): ChannelPlugin {
 
   const nostrChannelConfig: ChannelConfigAdapter<NostrAccountConfig> = {
     listAccountIds: (config: AppConfig): ChannelId[] => {
-      const nostrConfig = config.nostr as Record<string, unknown>;
+      const nostrConfig = config.nostr as Record<string, any>;
       if (nostrConfig && nostrConfig.privateKey) {
         return [NOSTR_CHANNEL_ID];
       }
@@ -402,7 +402,7 @@ export function createNostrChannelPlugin(): ChannelPlugin {
     },
     resolveAccount: (config: AppConfig, accountId: ChannelId): NostrAccountConfig | null => {
       if (accountId !== NOSTR_CHANNEL_ID) return null;
-      const nostrConfig = config.nostr as Record<string, unknown>;
+      const nostrConfig = config.nostr as Record<string, any>;
       if (nostrConfig && nostrConfig.privateKey) {
         const privateKey = String(nostrConfig.privateKey);
         return {
@@ -441,7 +441,7 @@ export function createNostrChannelPlugin(): ChannelPlugin {
         try {
           const rendered = await ctx.render();
           const text = rendered.parts
-            .map((p: { content: unknown }) => String(p.content))
+            .map((p: { content: any }) => String(p.content))
             .join("\n");
 
           const recipientPubkey = ctx.to;

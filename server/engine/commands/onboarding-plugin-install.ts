@@ -530,7 +530,7 @@ function summarizeInstallError(message: string): string {
   return cleaned.length > 180 ? `${cleaned.slice(0, 179)}…` : cleaned;
 }
 
-function isTimeoutError(error: unknown): boolean {
+function isTimeoutError(error: any): boolean {
   return error instanceof Error && error.message === "timeout";
 }
 

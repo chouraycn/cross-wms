@@ -8,7 +8,7 @@ const runtime = vi.hoisted(() => ({
   error: vi.fn<(line: string) => void>(),
 }));
 const resolveControlUiLinksMock = vi.hoisted(() =>
-  vi.fn((_opts?: unknown) => ({ httpUrl: "http://127.0.0.1:18789" })),
+  vi.fn((_opts?: any) => ({ httpUrl: "http://127.0.0.1:18789" })),
 );
 const isSystemdUnavailableDetailMock = vi.hoisted(() => vi.fn(() => false));
 const renderSystemdUnavailableHintsMock = vi.hoisted(() => vi.fn<() => string[]>(() => []));
@@ -26,7 +26,7 @@ vi.mock("../../../packages/terminal-core/src/theme.js", async () => {
   >("../../../packages/terminal-core/src/theme.js");
   return {
     ...actual,
-    colorize: (_rich: boolean, _theme: unknown, text: string) => text,
+    colorize: (_rich: boolean, _theme: any, text: string) => text,
   };
 });
 

@@ -4,6 +4,6 @@
  * 降级实现：提供 stream object events 包装，不再抛出 stub 错误。
  */
 
-export function wrapStreamObjectEvents(stream: unknown): unknown {
+export function wrapStreamObjectEvents(stream: any): any {
   return stream;
 }

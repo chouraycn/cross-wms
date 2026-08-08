@@ -54,7 +54,7 @@ function normalizeThinkingEffort(level?: string | null): string | null {
 function messageContentToResponsesContent(
   content: MessageContent,
   role: string,
-): Array<Record<string, unknown>> {
+): Array<Record<string, any>> {
   const isAssistant = role === 'assistant';
   const textType = isAssistant ? 'output_text' : 'input_text';
 
@@ -62,7 +62,7 @@ function messageContentToResponsesContent(
     return [{ type: textType, text: content }];
   }
 
-  const parts: Array<Record<string, unknown>> = [];
+  const parts: Array<Record<string, any>> = [];
   for (const part of content) {
     if (part.type === 'text' && part.text !== undefined) {
       parts.push({ type: textType, text: part.text });
@@ -78,15 +78,15 @@ function messageContentToResponsesContent(
  */
 function messagesToResponsesInput(
   messages: Array<{ role: string; content: MessageContent }>,
-): Array<Record<string, unknown>> {
-  const input: Array<Record<string, unknown>> = [];
+): Array<Record<string, any>> {
+  const input: Array<Record<string, any>> = [];
 
   for (const msg of messages) {
     const role = msg.role;
 
     // tool 结果消息 → function_call_output
     if (role === 'tool') {
-      const toolMsg = msg as Record<string, unknown>;
+      const toolMsg = msg as Record<string, any>;
       const callId = toolMsg.tool_call_id as string | undefined;
       const outputContent =
         typeof msg.content === 'string'
@@ -102,7 +102,7 @@ function messagesToResponsesInput(
 
     // assistant 消息可能携带 tool_calls → 拆分为 message + function_call 项
     if (role === 'assistant') {
-      const assistantMsg = msg as Record<string, unknown>;
+      const assistantMsg = msg as Record<string, any>;
       const toolCalls = assistantMsg.tool_calls as Array<{
         id: string;
         function: { name: string; arguments: string };
@@ -139,8 +139,8 @@ function messagesToResponsesInput(
         (assistantMsg.thinkingSignature as string | undefined);
       if (reasoningSig) {
         try {
-          const parsed = JSON.parse(reasoningSig) as Record<string, unknown>;
-          const reasoningItem: Record<string, unknown> = { type: 'reasoning' };
+          const parsed = JSON.parse(reasoningSig) as Record<string, any>;
+          const reasoningItem: Record<string, any> = { type: 'reasoning' };
           if (typeof parsed.id === 'string') reasoningItem.id = parsed.id;
           if (typeof parsed.encrypted_content === 'string') {
             reasoningItem.encrypted_content = parsed.encrypted_content;
@@ -171,7 +171,7 @@ function messagesToResponsesInput(
  * Responses API 的 tools 使用顶层 name/description/parameters（非 function 嵌套）：
  * { type: 'function', name, description, parameters }
  */
-function toResponsesTools(tools: ToolDefinition[]): Array<Record<string, unknown>> {
+function toResponsesTools(tools: ToolDefinition[]): Array<Record<string, any>> {
   return tools.map(tool => ({
     type: 'function',
     name: tool.function.name,
@@ -233,7 +233,7 @@ export class OpenAIResponsesAdapter implements IAiApiAdapter {
 
     // 构建请求体：input 替代 messages
     const input = messagesToResponsesInput(messages);
-    const body: Record<string, unknown> = {
+    const body: Record<string, any> = {
       model: modelId,
       input,
       stream: true,
@@ -353,9 +353,9 @@ export class OpenAIResponsesAdapter implements IAiApiAdapter {
 
           if (dataStr === '[DONE]' || dataStr === 'DONE') continue;
 
-          let parsed: Record<string, unknown>;
+          let parsed: Record<string, any>;
           try {
-            parsed = JSON.parse(dataStr) as Record<string, unknown>;
+            parsed = JSON.parse(dataStr) as Record<string, any>;
           } catch {
             continue;
           }
@@ -405,7 +405,7 @@ export class OpenAIResponsesAdapter implements IAiApiAdapter {
 
           // 输出项新增：function_call / reasoning
           if (eventType === 'response.output_item.added') {
-            const item = parsed.item as Record<string, unknown> | undefined;
+            const item = parsed.item as Record<string, any> | undefined;
             if (item) {
               const itemType = item.type as string | undefined;
               if (itemType === 'function_call') {
@@ -437,7 +437,7 @@ export class OpenAIResponsesAdapter implements IAiApiAdapter {
 
           // 输出项完成：提取 reasoning 签名
           if (eventType === 'response.output_item.done') {
-            const item = parsed.item as Record<string, unknown> | undefined;
+            const item = parsed.item as Record<string, any> | undefined;
             if (item && item.type === 'reasoning') {
               const sig = extractOpenAIResponsesThinkingSignature(item);
               if (sig?.signature) {
@@ -450,8 +450,8 @@ export class OpenAIResponsesAdapter implements IAiApiAdapter {
 
           // 响应完成：最终 usage 与 output
           if (eventType === 'response.completed' || eventType === 'response.done') {
-            const resp = (parsed.response as Record<string, unknown> | undefined) || parsed;
-            const usage = resp.usage as Record<string, unknown> | undefined;
+            const resp = (parsed.response as Record<string, any> | undefined) || parsed;
+            const usage = resp.usage as Record<string, any> | undefined;
             if (usage) {
               usageData = {
                 promptTokens: usage.input_tokens as number | undefined,
@@ -464,7 +464,7 @@ export class OpenAIResponsesAdapter implements IAiApiAdapter {
               }
             }
             // 解析最终 output 以补全 tool_calls / 签名
-            const output = resp.output as Array<Record<string, unknown>> | undefined;
+            const output = resp.output as Array<Record<string, any>> | undefined;
             if (Array.isArray(output)) {
               for (const outItem of output) {
                 if (outItem.type === 'reasoning') {

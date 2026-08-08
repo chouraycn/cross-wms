@@ -12,7 +12,7 @@
 import crypto from "node:crypto";
 
 // 降级实现：normalizeOptionalString 来自 @openclaw/normalization-core/string-coerce
-function normalizeOptionalString(value: unknown): string | undefined {
+function normalizeOptionalString(value: any): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }

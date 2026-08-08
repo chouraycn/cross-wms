@@ -6,7 +6,7 @@
 
 export const extractDeliveryInfo = (
   _sessionKey: string,
-  _opts?: unknown,
+  _opts?: any,
 ): {
   deliveryContext: { channel: string; to: string; threadId?: string; accountId?: string };
   threadId: undefined;

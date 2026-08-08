@@ -117,11 +117,11 @@ type NormalizedStoredIdentity =
     }
   | { kind: "recognized-invalid" };
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return Boolean(value) && typeof value === "object";
 }
 
-function hasRecognizedIdentityShape(parsed: unknown): boolean {
+function hasRecognizedIdentityShape(parsed: any): boolean {
   return (
     isRecord(parsed) &&
     ("publicKeyPem" in parsed ||
@@ -131,7 +131,7 @@ function hasRecognizedIdentityShape(parsed: unknown): boolean {
   );
 }
 
-function normalizeStoredIdentity(parsed: unknown): NormalizedStoredIdentity | null {
+function normalizeStoredIdentity(parsed: any): NormalizedStoredIdentity | null {
   if (
     isRecord(parsed) &&
     "version" in parsed &&

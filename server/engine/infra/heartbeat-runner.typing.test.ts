@@ -35,7 +35,7 @@ function createHeartbeatConfig(params: {
   tmpDir: string;
   storePath: string;
   session?: OpenClawConfig["session"];
-  channelHeartbeat?: Record<string, unknown>;
+  channelHeartbeat?: Record<string, any>;
 }): OpenClawConfig {
   return {
     agents: {
@@ -73,7 +73,7 @@ function expectTypingCall(
   if (!call) {
     throw new Error("missing typing call");
   }
-  const [params] = call as [{ cfg?: unknown; to?: unknown }];
+  const [params] = call as [{ cfg?: any; to?: any }];
   expect(params.cfg).toBe(expected.cfg);
   expect(params.to).toBe(expected.to);
 }

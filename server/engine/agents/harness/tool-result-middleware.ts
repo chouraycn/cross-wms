@@ -37,7 +37,7 @@ type MiddlewareToolResultCoerceOptions = {
   sanitizeDetails?: boolean;
 };
 
-function isValidMiddlewareContentBlock(value: unknown): boolean {
+function isValidMiddlewareContentBlock(value: any): boolean {
   if (!isRecord(value) || typeof value.type !== "string") {
     return false;
   }
@@ -56,7 +56,7 @@ function isValidMiddlewareContentBlock(value: unknown): boolean {
 }
 
 function isValidMiddlewareDetails(
-  value: unknown,
+  value: any,
   state: { keys: number; bytes: number; seen: WeakSet<object> } = {
     keys: 0,
     bytes: 0,
@@ -110,7 +110,7 @@ function isValidMiddlewareDetails(
   return true;
 }
 
-function isValidMiddlewareToolResult(value: unknown): value is OpenClawAgentToolResult {
+function isValidMiddlewareToolResult(value: any): value is OpenClawAgentToolResult {
   if (!isRecord(value) || !Array.isArray(value.content)) {
     return false;
   }
@@ -127,7 +127,7 @@ function createMiddlewareContentCoerceState(): MiddlewareContentCoerceState {
 }
 
 function descendMiddlewareContentCoerceState(
-  value: unknown,
+  value: any,
   state: MiddlewareContentCoerceState,
 ): MiddlewareContentCoerceState | undefined {
   if (state.depth >= MAX_MIDDLEWARE_CONTENT_DEPTH) {
@@ -144,7 +144,7 @@ function descendMiddlewareContentCoerceState(
   return { depth: state.depth + 1, seen: state.seen };
 }
 
-function stringifyMiddlewareTextPayload(value: unknown): string | undefined {
+function stringifyMiddlewareTextPayload(value: any): string | undefined {
   const seen = new WeakSet<object>();
   try {
     return JSON.stringify(value, (_key, val) => {
@@ -168,7 +168,7 @@ function stringifyMiddlewareTextPayload(value: unknown): string | undefined {
 }
 
 function coerceMiddlewareText(
-  value: unknown,
+  value: any,
   state: MiddlewareContentCoerceState = createMiddlewareContentCoerceState(),
   options: MiddlewareToolResultCoerceOptions = {},
 ): string | undefined {
@@ -235,7 +235,7 @@ function appendMiddlewareContentBlock(
 }
 
 function coerceMiddlewareContentArray(
-  content: unknown[],
+  content: any[],
   state: MiddlewareContentCoerceState,
   options: MiddlewareToolResultCoerceOptions = {},
 ): MiddlewareContentBlock[] {
@@ -271,7 +271,7 @@ function coerceMiddlewareContentArray(
 }
 
 function coerceMiddlewareContentBlocks(
-  value: unknown,
+  value: any,
   state: MiddlewareContentCoerceState = createMiddlewareContentCoerceState(),
   options: MiddlewareToolResultCoerceOptions = {},
 ): MiddlewareContentBlock[] {
@@ -315,7 +315,7 @@ function coerceMiddlewareContentBlocks(
 }
 
 function coerceMiddlewareToolResult(
-  value: unknown,
+  value: any,
   options: MiddlewareToolResultCoerceOptions = {},
 ): OpenClawAgentToolResult | undefined {
   if (isValidMiddlewareToolResult(value)) {
@@ -370,7 +370,7 @@ function coerceMiddlewareToolResult(
  * `{ truncated, originalSizeBytes }` marker. Returns `null` for inputs that
  * cannot be represented at all (top-level function/symbol/undefined).
  */
-function sanitizeMiddlewareDetailsValue(value: unknown): unknown {
+function sanitizeMiddlewareDetailsValue(value: any): any {
   const seen = new WeakSet<object>();
   try {
     const serialized = JSON.stringify(value, (_key, val) => {

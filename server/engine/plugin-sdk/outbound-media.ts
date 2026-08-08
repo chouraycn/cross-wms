@@ -130,7 +130,7 @@ function resolveHostedOutboundMediaMetadataTtlMs(ttlMs: number): number {
   return ttlMs + Math.min(ttlMs, HOSTED_OUTBOUND_MEDIA_METADATA_TTL_GRACE_MS);
 }
 
-function isFutureHostedOutboundMediaExpiry(expiresAt: unknown, nowMs: number): expiresAt is number {
+function isFutureHostedOutboundMediaExpiry(expiresAt: any, nowMs: number): expiresAt is number {
   return typeof expiresAt === "number" && Number.isSafeInteger(expiresAt) && expiresAt > nowMs;
 }
 

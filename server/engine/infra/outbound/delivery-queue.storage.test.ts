@@ -138,7 +138,7 @@ describe("delivery-queue storage", () => {
       expect(entry.retryCount).toBe(0);
     });
 
-    it("marks entries as unknown-after-send after platform I/O returns", async () => {
+    it("marks entries as any-after-send after platform I/O returns", async () => {
       const id = await enqueueTextDelivery(
         {
           channel: "forum",

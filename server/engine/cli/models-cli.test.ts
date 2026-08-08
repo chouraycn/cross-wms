@@ -113,11 +113,11 @@ describe("models cli", () => {
 
   function expectCommandOptions(
     command: ReturnType<typeof vi.fn>,
-    expected: Record<string, unknown>,
+    expected: Record<string, any>,
   ) {
     expect(command).toHaveBeenCalledTimes(1);
     const [options, context] = command.mock.calls[0] ?? [];
-    const optionRecord = options as Record<string, unknown> | undefined;
+    const optionRecord = options as Record<string, any> | undefined;
     for (const [key, value] of Object.entries(expected)) {
       expect(optionRecord?.[key]).toEqual(value);
     }

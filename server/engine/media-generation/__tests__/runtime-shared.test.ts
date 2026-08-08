@@ -208,7 +208,7 @@ describe("media-generation duration normalization", () => {
 
 describe("media-generation failure summarization", () => {
   it("recordCapabilityCandidateFailure 应该记录失败尝试", () => {
-    const attempts: unknown[] = [];
+    const attempts: any[] = [];
     recordCapabilityCandidateFailure({
       attempts,
       provider: "openai",

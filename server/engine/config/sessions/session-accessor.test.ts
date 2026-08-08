@@ -1406,7 +1406,7 @@ describe("session accessor file-backed seam", () => {
     ];
     const originalTranscript = `${transcriptRecords.map((record) => JSON.stringify(record)).join("\n")}\n`;
     fs.writeFileSync(manualTranscriptPath, originalTranscript, { encoding: "utf-8", mode: 0o640 });
-    const updates: unknown[] = [];
+    const updates: any[] = [];
     const unsubscribe = onSessionTranscriptUpdate((update) => updates.push(update));
 
     const result = await trimSessionTranscriptForManualCompact(scope, {
@@ -1423,7 +1423,7 @@ describe("session accessor file-backed seam", () => {
       .readFileSync(manualTranscriptPath, "utf-8")
       .trim()
       .split("\n")
-      .map((line) => JSON.parse(line) as Record<string, unknown>);
+      .map((line) => JSON.parse(line) as Record<string, any>);
     expect(trimmedRecords).toMatchObject([
       { type: "session", id: sessionId },
       { type: "message", id: "entry-3", parentId: null },
@@ -1569,7 +1569,7 @@ describe("session accessor file-backed seam", () => {
       .readFileSync(sessionFile, "utf-8")
       .trim()
       .split("\n")
-      .map((line) => JSON.parse(line) as Record<string, unknown>);
+      .map((line) => JSON.parse(line) as Record<string, any>);
     expect(persisted.find((entry) => entry.type === "leaf")).toMatchObject({
       targetId: null,
       appendParentId: null,
@@ -1816,7 +1816,7 @@ describe("session accessor file-backed seam", () => {
       sessionKey: "agent:main:main",
       storePath,
     };
-    const updates: unknown[] = [];
+    const updates: any[] = [];
     const unsubscribe = onSessionTranscriptUpdate((update) => {
       updates.push(update);
     });
@@ -2073,7 +2073,7 @@ describe("session accessor file-backed seam", () => {
       storePath,
     };
     const publishOptions: Array<boolean | undefined> = [];
-    const publishedEntryBatches: unknown[][] = [];
+    const publishedEntryBatches: any[][] = [];
 
     await withOwnedSessionTranscriptWrites(
       {

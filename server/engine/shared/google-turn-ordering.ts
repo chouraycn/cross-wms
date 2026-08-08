@@ -19,7 +19,7 @@ const GOOGLE_TURN_ORDER_BOOTSTRAP_TEXT = "(session bootstrap)";
 
 /** Add a synthetic user bootstrap when Google-style providers receive assistant-first turns. */
 export function sanitizeGoogleAssistantFirstOrdering(messages: AgentMessage[]): AgentMessage[] {
-  const first = messages[0] as { role?: unknown; content?: unknown } | undefined;
+  const first = messages[0] as { role?: any; content?: any } | undefined;
   const role = first?.role;
   const content = first?.content;
   if (

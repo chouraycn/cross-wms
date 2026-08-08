@@ -107,8 +107,8 @@ export function getWebSearchProviders(
 
 export interface ResolveWebSearchCredentialOptions {
   provider: WebSearchProviderPlugin;
-  searchConfig?: Record<string, unknown>;
-  config?: Record<string, unknown>;
+  searchConfig?: Record<string, any>;
+  config?: Record<string, any>;
   env?: Record<string, string>;
 }
 
@@ -162,8 +162,8 @@ export function resolveWebSearchCredential(
 // ==================== 自动检测 ====================
 
 export interface AutoDetectWebSearchProviderOptions {
-  searchConfig?: Record<string, unknown>;
-  config?: Record<string, unknown>;
+  searchConfig?: Record<string, any>;
+  config?: Record<string, any>;
   env?: Record<string, string>;
   onlyPluginIds?: readonly string[];
 }
@@ -216,7 +216,7 @@ export function autoDetectWebSearchProvider(
 
 export function createWebSearchTool(
   provider: PluginWebSearchProviderEntry,
-  searchConfig?: Record<string, unknown>,
+  searchConfig?: Record<string, any>,
 ): WebSearchProviderToolDefinition | null {
   return provider.createTool({
     searchConfig,

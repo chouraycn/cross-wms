@@ -26,7 +26,7 @@ export interface ApprovalEventData {
   toolName?: string;
   command?: string;
   filePath?: string;
-  details: Record<string, unknown>;
+  details: Record<string, any>;
   riskLevel?: 'safe' | 'low' | 'medium' | 'high' | 'critical';
   reason?: string;
   timeout?: number;
@@ -100,7 +100,7 @@ export function useApprovalEvents(options: UseApprovalEventsOptions = {}): UseAp
 
     try {
       if (!audioContextRef.current) {
-        audioContextRef.current = new (window.AudioContext || (window as unknown).webkitAudioContext)();
+        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
       }
 
       const ctx = audioContextRef.current;

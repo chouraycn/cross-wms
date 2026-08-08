@@ -2,15 +2,15 @@
 
 export type ChannelSchemaMetadataWithOwnership = unknown;
 export type ChannelDmPolicyMetadata = unknown;
-export function collectPluginSchemaMetadata(...args: unknown[]): unknown {
+export function collectPluginSchemaMetadata(...args: any[]): any {
   return [];
 }
-export function collectChannelSchemaMetadataWithOwnership(...args: unknown[]): unknown {
+export function collectChannelSchemaMetadataWithOwnership(...args: any[]): any {
   return [];
 }
-export function collectChannelSchemaMetadata(...args: unknown[]): unknown {
+export function collectChannelSchemaMetadata(...args: any[]): any {
   return [];
 }
-export function collectChannelDmPolicyMetadata(...args: unknown[]): unknown {
+export function collectChannelDmPolicyMetadata(...args: any[]): any {
   return [];
 }

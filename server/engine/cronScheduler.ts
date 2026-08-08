@@ -41,7 +41,7 @@ export interface CronJob {
   description?: string;
   cronExpression: string;
   taskType: string;
-  taskParams: Record<string, unknown>;
+  taskParams: Record<string, any>;
   sessionKey?: string;
   agent?: string;
   timezone?: string;
@@ -60,7 +60,7 @@ export interface CronJob {
   totalFailures: number;
   createdAt: number;
   updatedAt: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface CronExecutionResult {
@@ -69,7 +69,7 @@ export interface CronExecutionResult {
   startedAt: number;
   completedAt: number;
   success: boolean;
-  result?: unknown;
+  result?: any;
   error?: string;
   durationMs: number;
   retryCount: number;
@@ -87,7 +87,7 @@ const DEFAULT_TIMEOUT_MS = 5 * 60 * 1000;
 const DEFAULT_MAX_RETRIES = 3;
 const DEFAULT_RETRY_DELAY_MS = 5000;
 
-type TaskExecutor = (params: Record<string, unknown>, context: { jobId: string; sessionKey?: string }) => Promise<unknown>;
+type TaskExecutor = (params: Record<string, any>, context: { jobId: string; sessionKey?: string }) => Promise<any>;
 
 class CronScheduler {
   private readonly jobs = new Map<string, CronJob>();
@@ -114,7 +114,7 @@ class CronScheduler {
     name: string;
     cronExpression: string;
     taskType: string;
-    taskParams: Record<string, unknown>;
+    taskParams: Record<string, any>;
     description?: string;
     sessionKey?: string;
     agent?: string;
@@ -122,7 +122,7 @@ class CronScheduler {
     retryDelayMs?: number;
     timeoutMs?: number;
     enabled?: boolean;
-    metadata?: Record<string, unknown>;
+    metadata?: Record<string, any>;
   }): CronJob {
     const now = Date.now();
     const id = `cron_${now}_${Math.random().toString(36).slice(2, 8)}`;
@@ -440,7 +440,7 @@ class CronScheduler {
   private extractAnnounceTarget(job: CronJob): CronAnnounceTarget | null {
     const meta = job.metadata;
     if (!meta) return null;
-    const raw = (meta as Record<string, unknown>).announceTarget;
+    const raw = (meta as Record<string, any>).announceTarget;
     if (raw && typeof raw === "object") {
       const t = raw as CronAnnounceTarget;
       if (t.channel || t.to || t.accountId || t.sessionKey) {
@@ -454,7 +454,7 @@ class CronScheduler {
   private async deliverAnnounce(
     job: CronJob,
     runId: string,
-    result: unknown,
+    result: any,
   ): Promise<void> {
     if (!this.deliveryAdapter) return;
     const target = this.extractAnnounceTarget(job);
@@ -608,7 +608,7 @@ class CronScheduler {
 }
 
 /** 将执行结果序列化为字符串，避免循环引用/超大对象导致 JSON.stringify 抛错 */
-function safeSerialize(value: unknown): unknown {
+function safeSerialize(value: any): any {
   if (value === undefined || value === null) return value;
   if (typeof value === "string") return value;
   try {
@@ -620,13 +620,13 @@ function safeSerialize(value: unknown): unknown {
 }
 
 /** 生成运行摘要（用于 run-log 的 summary 字段，便于人读与查询） */
-function summarizeResult(value: unknown): string {
+function summarizeResult(value: any): string {
   if (value === undefined || value === null) return "";
   const str = typeof value === "string" ? value : safeJsonStringify(value);
   return str.length > 200 ? str.slice(0, 200) + "..." : str;
 }
 
-function safeJsonStringify(value: unknown): string {
+function safeJsonStringify(value: any): string {
   try {
     return JSON.stringify(value);
   } catch {

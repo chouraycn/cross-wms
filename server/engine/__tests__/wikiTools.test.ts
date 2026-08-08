@@ -60,11 +60,11 @@ vi.mock('../onnxEmbedding.js', () => ({
 vi.mock('../../storage/databaseManager.js', () => {
   // 内存 mock 数据
   const mockState = {
-    entries: [] as Array<unknown>,
-    versions: [] as Array<unknown>,
-    links: [] as Array<unknown>,
-    tagDefs: [] as Array<unknown>, // 标签定义表 wiki_tags: {id, name, category, description, created_at}
-    entryTags: [] as Array<unknown>, // 条目-标签关联 wiki_entry_tags: {entry_id, tag_id, created_at}
+    entries: [] as Array<any>,
+    versions: [] as Array<any>,
+    links: [] as Array<any>,
+    tagDefs: [] as Array<any>, // 标签定义表 wiki_tags: {id, name, category, description, created_at}
+    entryTags: [] as Array<any>, // 条目-标签关联 wiki_entry_tags: {entry_id, tag_id, created_at}
     nextEntryId: 1,
     nextVersionId: 1,
     nextLinkId: 1,
@@ -72,7 +72,7 @@ vi.mock('../../storage/databaseManager.js', () => {
   };
 
   const ok = { changes: 0, lastInsertRowid: 0 };
-  const stmt = (extra: Record<string, unknown>) => ({
+  const stmt = (extra: Record<string, any>) => ({
     run: vi.fn(() => ({ changes: 0, lastInsertRowid: 0 })),
     get: vi.fn(() => undefined),
     all: vi.fn(() => []),
@@ -86,7 +86,7 @@ vi.mock('../../storage/databaseManager.js', () => {
           // ============ DELETE（带 WHERE 的优先匹配）============
           if (sql.includes('DELETE FROM wiki_entries WHERE id')) {
             return stmt({
-              run: vi.fn((...params: unknown[]) => {
+              run: vi.fn((...params: any[]) => {
                 const id = params[0] as number;
                 const idx = mockState.entries.findIndex((e) => e.id === id);
                 if (idx >= 0) {
@@ -99,7 +99,7 @@ vi.mock('../../storage/databaseManager.js', () => {
           }
           if (sql.includes('DELETE FROM wiki_links WHERE id')) {
             return stmt({
-              run: vi.fn((...params: unknown[]) => {
+              run: vi.fn((...params: any[]) => {
                 const id = params[0] as number;
                 const idx = mockState.links.findIndex((l) => l.id === id);
                 if (idx >= 0) {
@@ -112,7 +112,7 @@ vi.mock('../../storage/databaseManager.js', () => {
           }
           if (sql.includes('DELETE FROM wiki_entry_tags WHERE entry_id')) {
             return stmt({
-              run: vi.fn((...params: unknown[]) => {
+              run: vi.fn((...params: any[]) => {
                 const entryId = params[0];
                 const tagId = params[1];
                 const before = mockState.entryTags.length;
@@ -178,7 +178,7 @@ vi.mock('../../storage/databaseManager.js', () => {
           // ============ INSERT ============
           if (sql.includes('INSERT INTO wiki_entries')) {
             return stmt({
-              run: vi.fn((...params: unknown[]) => {
+              run: vi.fn((...params: any[]) => {
                 const id = mockState.nextEntryId++;
                 mockState.entries.push({
                   id,
@@ -200,7 +200,7 @@ vi.mock('../../storage/databaseManager.js', () => {
           }
           if (sql.includes('INSERT INTO wiki_versions')) {
             return stmt({
-              run: vi.fn((...params: unknown[]) => {
+              run: vi.fn((...params: any[]) => {
                 const v = {
                   id: mockState.nextVersionId++,
                   entry_id: params[0],
@@ -218,7 +218,7 @@ vi.mock('../../storage/databaseManager.js', () => {
           }
           if (sql.includes('INSERT INTO wiki_links')) {
             return stmt({
-              run: vi.fn((...params: unknown[]) => {
+              run: vi.fn((...params: any[]) => {
                 const link = {
                   id: mockState.nextLinkId++,
                   source_id: params[0],
@@ -234,7 +234,7 @@ vi.mock('../../storage/databaseManager.js', () => {
           }
           if (sql.includes('INSERT INTO wiki_tags')) {
             return stmt({
-              run: vi.fn((...params: unknown[]) => {
+              run: vi.fn((...params: any[]) => {
                 const tag = {
                   id: mockState.nextTagId++,
                   name: params[0],
@@ -249,7 +249,7 @@ vi.mock('../../storage/databaseManager.js', () => {
           }
           if (sql.includes('INSERT INTO wiki_entry_tags')) {
             return stmt({
-              run: vi.fn((...params: unknown[]) => {
+              run: vi.fn((...params: any[]) => {
                 mockState.entryTags.push({
                   entry_id: params[0],
                   tag_id: params[1],
@@ -269,7 +269,7 @@ vi.mock('../../storage/databaseManager.js', () => {
           // ============ UPDATE ============
           if (sql.includes('UPDATE wiki_entries')) {
             return stmt({
-              run: vi.fn((...params: unknown[]) => {
+              run: vi.fn((...params: any[]) => {
                 // params: [title, content, summary, metadata, updated_at, id]
                 const id = params[params.length - 1] as number;
                 const idx = mockState.entries.findIndex((e) => e.id === id);
@@ -293,7 +293,7 @@ vi.mock('../../storage/databaseManager.js', () => {
           // ============ SELECT 单行 (get) ============
           if (sql.includes('SELECT * FROM wiki_entries WHERE id')) {
             return stmt({
-              get: vi.fn((...params: unknown[]) => {
+              get: vi.fn((...params: any[]) => {
                 const id = params[0] as number;
                 return mockState.entries.find((e) => e.id === id);
               }),
@@ -301,7 +301,7 @@ vi.mock('../../storage/databaseManager.js', () => {
           }
           if (sql.includes('SELECT * FROM wiki_links WHERE id')) {
             return stmt({
-              get: vi.fn((...params: unknown[]) => {
+              get: vi.fn((...params: any[]) => {
                 const id = params[0] as number;
                 return mockState.links.find((l) => l.id === id);
               }),
@@ -309,7 +309,7 @@ vi.mock('../../storage/databaseManager.js', () => {
           }
           if (sql.includes('SELECT * FROM wiki_tags WHERE name')) {
             return stmt({
-              get: vi.fn((...params: unknown[]) => {
+              get: vi.fn((...params: any[]) => {
                 const name = params[0] as string;
                 return mockState.tagDefs.find((t) => t.name === name);
               }),
@@ -317,7 +317,7 @@ vi.mock('../../storage/databaseManager.js', () => {
           }
           if (sql.includes('SELECT * FROM wiki_tags WHERE id')) {
             return stmt({
-              get: vi.fn((...params: unknown[]) => {
+              get: vi.fn((...params: any[]) => {
                 const id = params[0] as number;
                 return mockState.tagDefs.find((t) => t.id === id);
               }),
@@ -325,7 +325,7 @@ vi.mock('../../storage/databaseManager.js', () => {
           }
           if (sql.includes('SELECT MAX(version)')) {
             return stmt({
-              get: vi.fn((...params: unknown[]) => {
+              get: vi.fn((...params: any[]) => {
                 const entryId = params[0];
                 const vers = mockState.versions.filter((v) => v.entry_id === entryId);
                 const max = vers.reduce((m, v) => Math.max(m, v.version), 0);
@@ -361,7 +361,7 @@ vi.mock('../../storage/databaseManager.js', () => {
           // getEntryTags — JOIN wiki_tags / wiki_entry_tags
           if (sql.includes('WHERE et.entry_id')) {
             return stmt({
-              all: vi.fn((...params: unknown[]) => {
+              all: vi.fn((...params: any[]) => {
                 const entryId = params[0];
                 const tagIds = mockState.entryTags
                   .filter((et) => et.entry_id === entryId)
@@ -386,7 +386,7 @@ vi.mock('../../storage/databaseManager.js', () => {
           }
           if (sql.includes('SELECT * FROM wiki_versions WHERE entry_id')) {
             return stmt({
-              all: vi.fn((...params: unknown[]) => {
+              all: vi.fn((...params: any[]) => {
                 const entryId = params[0];
                 return mockState.versions
                   .filter((v) => v.entry_id === entryId)
@@ -396,7 +396,7 @@ vi.mock('../../storage/databaseManager.js', () => {
           }
           if (sql.includes('SELECT * FROM wiki_links WHERE source_id')) {
             return stmt({
-              all: vi.fn((...params: unknown[]) => {
+              all: vi.fn((...params: any[]) => {
                 const sourceId = params[0];
                 return mockState.links.filter((l) => l.source_id === sourceId);
               }),
@@ -404,7 +404,7 @@ vi.mock('../../storage/databaseManager.js', () => {
           }
           if (sql.includes('SELECT * FROM wiki_links WHERE target_id')) {
             return stmt({
-              all: vi.fn((...params: unknown[]) => {
+              all: vi.fn((...params: any[]) => {
                 const targetId = params[0];
                 return mockState.links.filter((l) => l.target_id === targetId);
               }),
@@ -419,7 +419,7 @@ vi.mock('../../storage/databaseManager.js', () => {
           if (sql.includes('wiki_fts MATCH')) {
             return stmt({
               all: vi.fn(() =>
-                mockState.entries.map((e: unknown) => ({ ...e, rank: 0.5 })),
+                mockState.entries.map((e: any) => ({ ...e, rank: 0.5 })),
               ),
             });
           }
@@ -427,7 +427,7 @@ vi.mock('../../storage/databaseManager.js', () => {
           if (sql.includes('SELECT e.id, e.title, e.content')) {
             return stmt({
               all: vi.fn(() =>
-                mockState.entries.map((e: unknown) => ({ ...e, distance: 0.2 })),
+                mockState.entries.map((e: any) => ({ ...e, distance: 0.2 })),
               ),
             });
           }
@@ -465,7 +465,7 @@ tags: ["API", "REST", "设计"]
 \`\`\`typescript
 interface ApiResponse {
   code: number;
-  data: unknown;
+  data: any;
   message: string;
 }
 \`\`\`
@@ -629,8 +629,8 @@ describe('Wiki Store - CRUD 操作', () => {
 // ===================== Wiki Store 链接测试 =====================
 
 describe('Wiki Store - 链接管理', () => {
-  let sourceEntry: unknown;
-  let targetEntry: unknown;
+  let sourceEntry: any;
+  let targetEntry: any;
 
   beforeAll(async () => {
     clearAllWiki();

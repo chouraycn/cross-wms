@@ -217,7 +217,7 @@ export function streamWithIdleTimeout(
 
     const streamAbortController = new AbortController();
     const sourceSignal = options?.signal;
-    const abortStream = (reason?: unknown) => {
+    const abortStream = (reason?: any) => {
       if (!streamAbortController.signal.aborted) {
         streamAbortController.abort(reason);
       }
@@ -360,7 +360,7 @@ export function streamWithIdleTimeout(
           clearStreamPromiseTimer();
           return wrapStream(stream);
         },
-        (error: unknown) => {
+        (error: any) => {
           clearStreamPromiseTimer();
           cleanupSourceSignal();
           throw error;

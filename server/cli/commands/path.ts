@@ -38,7 +38,7 @@ function getPath(name: string): PathEntry | undefined {
   return getPaths().find((p) => p.name === name);
 }
 
-function formatJsonOutput(data: unknown): string {
+function formatJsonOutput(data: any): string {
   return JSON.stringify(data, null, 2);
 }
 

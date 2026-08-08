@@ -5,7 +5,7 @@
 import { isMac, isLinux, PLATFORM } from '../toolTypes.js';
 
 /** desktop_clipboard - Read/write clipboard using pbcopy/pbpaste */
-export async function handleDesktopClipboard(args: Record<string, unknown>): Promise<string> {
+export async function handleDesktopClipboard(args: Record<string, any>): Promise<string> {
   const { execSync } = await import('child_process');
 
   try {
@@ -94,7 +94,7 @@ export async function handleDesktopClipboard(args: Record<string, unknown>): Pro
         error: `Invalid action: ${action}. Use 'get' or 'set'`,
       });
     }
-  } catch (e: unknown) {
+  } catch (e: any) {
     return JSON.stringify({
       success: false,
       error: e instanceof Error ? e.message : 'Clipboard operation failed',

@@ -32,7 +32,7 @@ describe("cli program (smoke)", () => {
     await program.parseAsync(argv, { from: "user" });
   }
 
-  function firstMockArg(mock: { mock: { calls: ReadonlyArray<ReadonlyArray<unknown>> } }): unknown {
+  function firstMockArg(mock: { mock: { calls: ReadonlyArray<ReadonlyArray<any>> } }): any {
     const call = mock.mock.calls[0];
     if (!call) {
       throw new Error("expected mock to have at least one call");

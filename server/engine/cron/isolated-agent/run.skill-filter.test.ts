@@ -22,19 +22,19 @@ import {
 
 const runCronIsolatedAgentTurn = await loadRunCronIsolatedAgentTurn();
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     throw new Error(`expected ${label} to be an object`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 function getMockCallArg(
-  mock: { mock: { calls: readonly unknown[][] } },
+  mock: { mock: { calls: readonly any[][] } },
   callIndex: number,
   argIndex: number,
   label: string,
-): unknown {
+): any {
   const call = mock.mock.calls[callIndex];
   if (!call) {
     throw new Error(`expected ${label} call ${callIndex}`);
@@ -43,9 +43,9 @@ function getMockCallArg(
 }
 
 function getFirstMockArg(
-  mock: { mock: { calls: readonly unknown[][] } },
+  mock: { mock: { calls: readonly any[][] } },
   label: string,
-): Record<string, unknown> {
+): Record<string, any> {
   return requireRecord(getMockCallArg(mock, 0, 0, label), `${label} params`);
 }
 
@@ -54,7 +54,7 @@ function getFirstMockArg(
 describe("runCronIsolatedAgentTurn — skill filter", () => {
   setupRunCronIsolatedAgentTurnSuite();
 
-  async function runSkillFilterCase(overrides?: Record<string, unknown>) {
+  async function runSkillFilterCase(overrides?: Record<string, any>) {
     const result = await runCronIsolatedAgentTurn(makeIsolatedAgentParamsFixture(overrides));
     expect(result.status).toBe("ok");
     return result;
@@ -72,7 +72,7 @@ describe("runCronIsolatedAgentTurn — skill filter", () => {
 
   function mockCliFallbackInvocation() {
     runWithModelFallbackMock.mockImplementationOnce(
-      async (params: { run: (provider: string, model: string) => Promise<unknown> }) => {
+      async (params: { run: (provider: string, model: string) => Promise<any> }) => {
         const result = await params.run("claude-cli", "claude-opus-4-6");
         return { result, provider: "claude-cli", model: "claude-opus-4-6", attempts: [] };
       },
@@ -195,7 +195,7 @@ describe("runCronIsolatedAgentTurn — skill filter", () => {
       "nvidia/deepseek-ai/deepseek-v3.2",
     ];
 
-    async function expectPrimaryOverridePreservesDefaults(modelOverride: unknown) {
+    async function expectPrimaryOverridePreservesDefaults(modelOverride: any) {
       resolveAgentConfigMock.mockReturnValue({ model: modelOverride });
       await runSkillFilterCase({
         cfg: {

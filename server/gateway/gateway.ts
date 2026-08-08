@@ -53,7 +53,7 @@ export interface OpenAIChatCompletionRequest {
   max_tokens?: number;
   tools?: Array<{
     type: 'function';
-    function: { name: string; description?: string; parameters: Record<string, unknown> };
+    function: { name: string; description?: string; parameters: Record<string, any> };
   }>;
   tool_choice?: 'auto' | 'none' | { type: 'function'; function: { name: string } };
   stop?: string | string[];
@@ -81,7 +81,7 @@ export interface OpenAIModel {
   object: 'model';
   created: number;
   owned_by: string;
-  permission: unknown[];
+  permission: any[];
   root: string;
   parent: string | null;
   provider?: string;

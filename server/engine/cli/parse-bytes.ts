@@ -48,7 +48,7 @@ export function parseByteSize(raw: string, opts?: BytesParseOptions): number {
   const unit = normalizeLowercaseStringOrEmpty(m[2] ?? opts?.defaultUnit ?? "b");
   const multiplier = UNIT_MULTIPLIERS[unit];
   if (!multiplier) {
-    throw invalidByteSize(raw, `unknown unit "${unit}"`);
+    throw invalidByteSize(raw, `any unit "${unit}"`);
   }
 
   const bytes = Math.round(value * multiplier);

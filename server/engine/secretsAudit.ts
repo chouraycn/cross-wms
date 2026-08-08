@@ -51,7 +51,7 @@ export interface SecretsAuditFinding {
   /** 发现描述信息 */
   message: string;
   /** 额外详情 */
-  details?: Record<string, unknown>;
+  details?: Record<string, any>;
 }
 
 /**

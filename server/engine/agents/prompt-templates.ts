@@ -11,13 +11,13 @@ export type PromptTemplate = {
 
 export type LoadPromptTemplatesOptions = {
   agentId?: string;
-  config?: unknown;
+  config?: any;
 };
 
 export function loadPromptTemplates(_options?: LoadPromptTemplatesOptions): PromptTemplate[] {
   return [];
 }
 
-export function expandPromptTemplate(template: string, _params?: Record<string, unknown>): string {
+export function expandPromptTemplate(template: string, _params?: Record<string, any>): string {
   return template;
 }

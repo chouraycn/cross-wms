@@ -48,12 +48,12 @@ function isConfigPathTruthyWithDefaults(
   return defaults[pathStr] ?? false;
 }
 
-function getNestedValue(obj: unknown, pathStr: string): unknown {
+function getNestedValue(obj: any, pathStr: string): any {
   const parts = pathStr.split(".");
-  let current: unknown = obj;
+  let current: any = obj;
   for (const part of parts) {
     if (current && typeof current === "object" && part in current) {
-      current = (current as Record<string, unknown>)[part];
+      current = (current as Record<string, any>)[part];
     } else {
       return undefined;
     }
@@ -76,7 +76,7 @@ export function resolveSkillConfig(
   return entry;
 }
 
-function normalizeAllowlist(input: unknown): ReadonlySet<string> | undefined {
+function normalizeAllowlist(input: any): ReadonlySet<string> | undefined {
   if (!input) {
     return undefined;
   }
@@ -122,7 +122,7 @@ function evaluateRuntimeEligibility(params: {
   os?: string | string[];
   remotePlatforms?: string[];
   always?: boolean;
-  requires?: Record<string, unknown>;
+  requires?: Record<string, any>;
   hasBin: (name: string) => Promise<boolean>;
   hasRemoteBin?: (name: string) => boolean;
   hasAnyRemoteBin?: (names: string[]) => boolean;

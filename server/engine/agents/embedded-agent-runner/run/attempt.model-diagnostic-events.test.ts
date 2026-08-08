@@ -68,7 +68,7 @@ async function collectTrustedModelCallEvents(run: () => Promise<void>): Promise<
   }
 }
 
-async function drain(stream: AsyncIterable<unknown>): Promise<void> {
+async function drain(stream: AsyncIterable<any>): Promise<void> {
   // Force stream iteration so completion events include response byte and timing
   // accounting.
   for await (const _ of stream) {
@@ -76,18 +76,18 @@ async function drain(stream: AsyncIterable<unknown>): Promise<void> {
   }
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!isRecord(value)) {
     throw new Error(`Expected ${label} to be an object`);
   }
   return value;
 }
 
-function readRecordField(record: Record<string, unknown>, key: string, label: string) {
+function readRecordField(record: Record<string, any>, key: string, label: string) {
   const value = record[key];
   if (!isRecord(value)) {
     throw new Error(`Expected ${label} to be an object`);
@@ -95,7 +95,7 @@ function readRecordField(record: Record<string, unknown>, key: string, label: st
   return value;
 }
 
-function expectNumberField(record: Record<string, unknown>, key: string) {
+function expectNumberField(record: Record<string, any>, key: string) {
   expect(typeof record[key]).toBe("number");
 }
 
@@ -133,7 +133,7 @@ describe("wrapStreamFnWithDiagnosticModelCallEvents", () => {
     async function* stream() {
       yield { type: "text", text: "ok" };
     }
-    const originalStream = stream() as unknown as AsyncIterable<unknown> & {
+    const originalStream = stream() as unknown as AsyncIterable<any> & {
       result: () => Promise<string>;
     };
     originalStream.result = async () => "kept";
@@ -231,7 +231,7 @@ describe("wrapStreamFnWithDiagnosticModelCallEvents", () => {
       },
     );
 
-    const returned = wrapped({} as never, {} as never, {} as never) as AsyncIterable<unknown>;
+    const returned = wrapped({} as never, {} as never, {} as never) as AsyncIterable<any>;
     const iterator = returned[Symbol.asyncIterator]();
 
     try {
@@ -300,7 +300,7 @@ describe("wrapStreamFnWithDiagnosticModelCallEvents", () => {
     );
 
     try {
-      await drain(wrapped({} as never, {} as never, {} as never) as AsyncIterable<unknown>);
+      await drain(wrapped({} as never, {} as never, {} as never) as AsyncIterable<any>);
       await waitForDiagnosticEventsDrained();
     } finally {
       stop();
@@ -343,7 +343,7 @@ describe("wrapStreamFnWithDiagnosticModelCallEvents", () => {
       const streamResult = await wrapped({} as never, {} as never, {
         onPayload: async () => replacementPayload,
       });
-      await drain(streamResult as unknown as AsyncIterable<unknown>);
+      await drain(streamResult as unknown as AsyncIterable<any>);
     });
 
     const completedEvent = getEvent(events, 1);
@@ -395,7 +395,7 @@ describe("wrapStreamFnWithDiagnosticModelCallEvents", () => {
     );
 
     const events = await collectModelCallEvents(async () => {
-      await drain(wrapped({} as never, {} as never, {} as never) as AsyncIterable<unknown>);
+      await drain(wrapped({} as never, {} as never, {} as never) as AsyncIterable<any>);
     });
 
     const completedEvent = getEvent(events, 1);
@@ -431,13 +431,13 @@ describe("wrapStreamFnWithDiagnosticModelCallEvents", () => {
       },
     );
 
-    const chunks: unknown[] = [];
+    const chunks: any[] = [];
     const events = await collectModelCallEvents(async () => {
       for await (const chunk of wrapped(
         {} as never,
         {} as never,
         {} as never,
-      ) as AsyncIterable<unknown>) {
+      ) as AsyncIterable<any>) {
         chunks.push(chunk);
       }
     });
@@ -496,7 +496,7 @@ describe("wrapStreamFnWithDiagnosticModelCallEvents", () => {
         } as never,
         {},
       );
-      await drain(streamResult as unknown as AsyncIterable<unknown>);
+      await drain(streamResult as unknown as AsyncIterable<any>);
     });
 
     const startedEvent = getEvent(
@@ -636,7 +636,7 @@ describe("wrapStreamFnWithDiagnosticModelCallEvents", () => {
       const response = wrapped({} as never, {} as never, {} as never) as unknown as typeof stream;
       for await (const event of response as AsyncIterable<{ type: string }>) {
         if (event.type === "done") {
-          await (response as { result: () => Promise<unknown> }).result();
+          await (response as { result: () => Promise<any> }).result();
           break;
         }
       }
@@ -684,7 +684,7 @@ describe("wrapStreamFnWithDiagnosticModelCallEvents", () => {
     );
 
     await drain(
-      wrapped({} as never, {} as never, callerOptions) as unknown as AsyncIterable<unknown>,
+      wrapped({} as never, {} as never, callerOptions) as unknown as AsyncIterable<any>,
     );
 
     expect(capturedOptions).toHaveLength(1);
@@ -707,7 +707,7 @@ describe("wrapStreamFnWithDiagnosticModelCallEvents", () => {
     const stream = {
       [Symbol.asyncIterator]() {
         return {
-          async next(): Promise<IteratorResult<unknown>> {
+          async next(): Promise<IteratorResult<any>> {
             throw new TypeError(`provider failed [request_id=${requestId}]`);
           },
         };
@@ -726,7 +726,7 @@ describe("wrapStreamFnWithDiagnosticModelCallEvents", () => {
 
     const events = await collectModelCallEvents(async () => {
       await expect(
-        drain(wrapped({} as never, {} as never, {} as never) as AsyncIterable<unknown>),
+        drain(wrapped({} as never, {} as never, {} as never) as AsyncIterable<any>),
       ).rejects.toThrow("provider failed");
     });
 
@@ -745,7 +745,7 @@ describe("wrapStreamFnWithDiagnosticModelCallEvents", () => {
     const stream = {
       [Symbol.asyncIterator]() {
         return {
-          async next(): Promise<IteratorResult<unknown>> {
+          async next(): Promise<IteratorResult<any>> {
             throw new Error("terminated");
           },
         };
@@ -764,7 +764,7 @@ describe("wrapStreamFnWithDiagnosticModelCallEvents", () => {
 
     const events = await collectModelCallEvents(async () => {
       await expect(
-        drain(wrapped({} as never, {} as never, {} as never) as AsyncIterable<unknown>),
+        drain(wrapped({} as never, {} as never, {} as never) as AsyncIterable<any>),
       ).rejects.toThrow("terminated");
     });
 
@@ -807,7 +807,7 @@ describe("wrapStreamFnWithDiagnosticModelCallEvents", () => {
         {} as never,
         {} as never,
         {} as never,
-      ) as unknown as AsyncIterable<unknown>;
+      ) as unknown as AsyncIterable<any>;
       expect(returned).not.toBe(stream);
       await drain(returned);
     });
@@ -850,7 +850,7 @@ describe("wrapStreamFnWithDiagnosticModelCallEvents", () => {
     );
 
     const events = await collectModelCallEvents(async () => {
-      await drain(wrapped({} as never, {} as never, {} as never) as AsyncIterable<unknown>);
+      await drain(wrapped({} as never, {} as never, {} as never) as AsyncIterable<any>);
     });
     await new Promise<void>((resolve) => {
       setImmediate(resolve);
@@ -920,7 +920,7 @@ describe("wrapStreamFnWithDiagnosticModelCallEvents", () => {
         {} as never,
         {} as never,
         {} as never,
-      ) as AsyncIterable<unknown>) {
+      ) as AsyncIterable<any>) {
         break;
       }
     });

@@ -21,7 +21,7 @@ const runCronIsolatedAgentTurn = await loadRunCronIsolatedAgentTurn();
 
 // ---------- helpers ----------
 
-function makeJob(overrides?: Record<string, unknown>) {
+function makeJob(overrides?: Record<string, any>) {
   return {
     id: "cron-model-switch-job",
     name: "Model Switch Test",
@@ -37,7 +37,7 @@ function makeJob(overrides?: Record<string, unknown>) {
   } as never;
 }
 
-function makeParams(overrides?: Record<string, unknown>) {
+function makeParams(overrides?: Record<string, any>) {
   return {
     cfg: {},
     deps: {} as never,
@@ -133,7 +133,7 @@ describe("runCronIsolatedAgentTurn — LiveSessionModelSwitchError retry (#57206
       async (params: {
         provider: string;
         model: string;
-        run: (p: string, m: string) => Promise<unknown>;
+        run: (p: string, m: string) => Promise<any>;
       }) => {
         callCount++;
         if (callCount === 1) {

@@ -111,7 +111,7 @@ const healthCommand = vi.hoisted(() => vi.fn(async () => {}));
 const ensureWorkspaceAndSessions = vi.hoisted(() => vi.fn(async () => {}));
 const replaceConfigFile = vi.hoisted(() => vi.fn(async () => ({ config: {} })));
 const resolveGatewayPort = vi.hoisted(() =>
-  vi.fn((_cfg?: unknown, env?: NodeJS.ProcessEnv) => {
+  vi.fn((_cfg?: any, env?: NodeJS.ProcessEnv) => {
     const raw = env?.OPENCLAW_GATEWAY_PORT ?? process.env.OPENCLAW_GATEWAY_PORT;
     const port = raw ? Number.parseInt(raw, 10) : Number.NaN;
     return Number.isFinite(port) && port > 0 ? port : 18789;
@@ -139,7 +139,7 @@ const createConfigIO = vi.hoisted(() =>
 const ensureSystemdUserLingerInteractive = vi.hoisted(() => vi.fn(async () => {}));
 const isSystemdUserServiceAvailable = vi.hoisted(() => vi.fn(async () => true));
 const ensureControlUiAssetsBuilt = vi.hoisted(() => vi.fn(async () => ({ ok: true })));
-const runTui = vi.hoisted(() => vi.fn(async (_options: unknown) => {}));
+const runTui = vi.hoisted(() => vi.fn(async (_options: any) => {}));
 const setupWizardShellCompletion = vi.hoisted(() => vi.fn(async () => {}));
 const probeGatewayReachable = vi.hoisted(() => vi.fn(async () => ({ ok: true })));
 const buildPluginCompatibilitySnapshotNotices = vi.hoisted(() =>
@@ -150,21 +150,21 @@ const formatPluginCompatibilityNotice = vi.hoisted(() =>
 );
 
 function getWizardNoteCalls(note: WizardPrompter["note"]) {
-  return (note as unknown as { mock: { calls: unknown[][] } }).mock.calls;
+  return (note as unknown as { mock: { calls: any[][] } }).mock.calls;
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     throw new Error(`expected ${label} to be an object`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 function expectRecordFields(
-  value: unknown,
-  expected: Record<string, unknown>,
+  value: any,
+  expected: Record<string, any>,
   label: string,
-): Record<string, unknown> {
+): Record<string, any> {
   const record = requireRecord(value, label);
   for (const [key, expectedValue] of Object.entries(expected)) {
     expect(record[key], `${label}.${key}`).toEqual(expectedValue);
@@ -173,12 +173,12 @@ function expectRecordFields(
 }
 
 function getMockCallArg(
-  mock: { mock: { calls: readonly unknown[][] } },
+  mock: { mock: { calls: readonly any[][] } },
   callIndex: number,
   argIndex: number,
   label: string,
-): unknown {
-  const call = (mock.mock.calls as unknown[][])[callIndex];
+): any {
+  const call = (mock.mock.calls as any[][])[callIndex];
   if (!call) {
     throw new Error(`expected ${label} call ${callIndex}`);
   }
@@ -186,7 +186,7 @@ function getMockCallArg(
 }
 
 function expectMockCallArgNotNull(
-  mock: { mock: { calls: readonly unknown[][] } },
+  mock: { mock: { calls: readonly any[][] } },
   callIndex: number,
   argIndex: number,
   label: string,
@@ -267,11 +267,11 @@ vi.mock("../config/config.js", () => ({
 
 vi.mock("../commands/onboard-helpers.js", () => ({
   DEFAULT_WORKSPACE: "/tmp/openclaw-workspace",
-  applyWizardMetadata: (cfg: unknown) => cfg,
+  applyWizardMetadata: (cfg: any) => cfg,
   summarizeExistingConfig: () => "summary",
   handleReset: async () => {},
   randomToken: () => "test-token",
-  normalizeGatewayTokenInput: (value: unknown) => ({
+  normalizeGatewayTokenInput: (value: any) => ({
     ok: true,
     token: typeof value === "string" ? value.trim() : "",
     error: null,
@@ -390,7 +390,7 @@ describe("runSetupWizard", () => {
     ]);
 
     const caseDir = await makeCaseDir("provider-missing-id-");
-    const select = vi.fn(async ({ message }: WizardSelectParams<unknown>) => {
+    const select = vi.fn(async ({ message }: WizardSelectParams<any>) => {
       if (message === "Setup mode") {
         return "quickstart";
       }
@@ -448,7 +448,7 @@ describe("runSetupWizard", () => {
     });
 
     const select = vi.fn(
-      async (_params: WizardSelectParams<unknown>) => "quickstart",
+      async (_params: WizardSelectParams<any>) => "quickstart",
     ) as unknown as WizardPrompter["select"];
     const prompter = buildWizardPrompter({ select });
     const runtime = createRuntime({ throwsOnExit: true });
@@ -477,7 +477,7 @@ describe("runSetupWizard", () => {
 
   it("skips prompts and setup steps when flags are set", async () => {
     const select = vi.fn(
-      async (_params: WizardSelectParams<unknown>) => "quickstart",
+      async (_params: WizardSelectParams<any>) => "quickstart",
     ) as unknown as WizardPrompter["select"];
     const multiselect: WizardPrompter["multiselect"] = vi.fn(async () => []);
     const prompter = buildWizardPrompter({ select, multiselect });
@@ -585,7 +585,7 @@ describe("runSetupWizard", () => {
     });
 
     const workspaceDir = await makeCaseDir("plugin-install-migration-");
-    const select = vi.fn(async ({ options }: WizardSelectParams<unknown>) => {
+    const select = vi.fn(async ({ options }: WizardSelectParams<any>) => {
       const values = options.map((option) => option.value);
       if (values.includes("keep")) {
         return "keep";
@@ -680,7 +680,7 @@ describe("runSetupWizard", () => {
       await fs.writeFile(path.join(workspaceDir, DEFAULT_BOOTSTRAP_FILENAME), "{}");
     }
 
-    const select = vi.fn(async (opts: WizardSelectParams<unknown>) => {
+    const select = vi.fn(async (opts: WizardSelectParams<any>) => {
       if (opts.message === "How do you want to hatch your agent?") {
         return "tui";
       }
@@ -975,7 +975,7 @@ describe("runSetupWizard", () => {
 
     expect(applyAuthChoice).toHaveBeenCalledTimes(1);
     const call = getMockCallArg(applyAuthChoice, 0, 0, "openai auth choice");
-    const opts = (call as { opts?: Record<string, unknown> }).opts ?? {};
+    const opts = (call as { opts?: Record<string, any> }).opts ?? {};
     expect(opts.openaiApiKey).toBe("sk-flag-value");
   });
 
@@ -1051,7 +1051,7 @@ describe("runSetupWizard", () => {
     });
 
     const note: WizardPrompter["note"] = vi.fn(async () => {});
-    const select = vi.fn(async (opts: WizardSelectParams<unknown>) => {
+    const select = vi.fn(async (opts: WizardSelectParams<any>) => {
       if (opts.message === "Config handling") {
         return "keep";
       }
@@ -1113,7 +1113,7 @@ describe("runSetupWizard", () => {
       warnings: [],
       legacyIssues: [],
     });
-    const select = vi.fn(async (opts: WizardSelectParams<unknown>) => {
+    const select = vi.fn(async (opts: WizardSelectParams<any>) => {
       if (opts.message === "Config handling") {
         return "keep";
       }
@@ -1220,7 +1220,7 @@ describe("runSetupWizard", () => {
       }
     }
 
-    const calls = (note as unknown as { mock: { calls: unknown[][] } }).mock.calls;
+    const calls = (note as unknown as { mock: { calls: any[][] } }).mock.calls;
     const matchingQuickStartNotes = calls.filter(
       (call) =>
         call?.[1] === "QuickStart" &&
@@ -1268,7 +1268,7 @@ describe("runSetupWizard", () => {
       }
     }
 
-    const calls = (note as unknown as { mock: { calls: unknown[][] } }).mock.calls;
+    const calls = (note as unknown as { mock: { calls: any[][] } }).mock.calls;
     const matchingQuickStartNotes = calls.filter(
       (call) =>
         call?.[1] === "QuickStart" &&

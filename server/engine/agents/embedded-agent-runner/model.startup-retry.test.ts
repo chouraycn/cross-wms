@@ -5,12 +5,12 @@ const discoverAuthStorageMock = vi.fn<(agentDir?: string) => { mocked: true }>((
   mocked: true,
 }));
 const discoverModelsMock = vi.fn<
-  (authStorage: unknown, agentDir: string) => { find: ReturnType<typeof vi.fn> }
+  (authStorage: any, agentDir: string) => { find: ReturnType<typeof vi.fn> }
 >(() => ({ find: vi.fn(() => null) }));
 
-const prepareProviderDynamicModelMock = vi.fn<(params: unknown) => Promise<void>>(async () => {});
+const prepareProviderDynamicModelMock = vi.fn<(params: any) => Promise<void>>(async () => {});
 let dynamicAttempts = 0;
-const runProviderDynamicModelMock = vi.fn<(params: unknown) => unknown>(() =>
+const runProviderDynamicModelMock = vi.fn<(params: any) => unknown>(() =>
   // First dynamic lookup simulates startup catalog warmup; the retry path must
   // resolve on the second attempt only when explicitly enabled.
   dynamicAttempts > 1
@@ -52,8 +52,8 @@ describe("resolveModelAsync startup retry", () => {
     buildProviderUnknownModelHintWithPlugin: () => undefined,
     normalizeProviderResolvedModelWithPlugin: () => undefined,
     normalizeProviderTransportWithPlugin: () => undefined,
-    prepareProviderDynamicModel: (params: unknown) => prepareProviderDynamicModelMock(params),
-    runProviderDynamicModel: (params: unknown) => runProviderDynamicModelMock(params),
+    prepareProviderDynamicModel: (params: any) => prepareProviderDynamicModelMock(params),
+    runProviderDynamicModel: (params: any) => runProviderDynamicModelMock(params),
     applyProviderResolvedTransportWithPlugin: () => undefined,
   };
 

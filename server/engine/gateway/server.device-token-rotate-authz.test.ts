@@ -54,7 +54,7 @@ async function connectPairingScopedOperator(params: {
 async function connectApprovedNode(params: {
   port: number;
   name: string;
-  onInvoke: (payload: unknown) => void;
+  onInvoke: (payload: any) => void;
 }): Promise<GatewayClient> {
   const paired = await pairDeviceIdentity({
     name: params.name,
@@ -374,7 +374,7 @@ async function withRevokedNodeDevice(
 describe("gateway device.token.rotate/revoke ownership guard (IDOR)", () => {
   let ownershipGuardServer: Awaited<ReturnType<typeof startServer>>;
   let pairingScopeDeniedCase: {
-    pairedBAfterRevokeRevokedAtMs: unknown;
+    pairedBAfterRevokeRevokedAtMs: any;
     pairedBToken: string | undefined;
     revokeMessage: string | undefined;
     revokeOk: boolean;

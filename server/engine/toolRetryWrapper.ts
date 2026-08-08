@@ -22,7 +22,7 @@ export interface ToolRetryOptions {
   maxRetryDelayMs?: number;
   jitter?: number;
   /** P2-3: 重试事件回调 — 由 toolExecutor 传入，用于触发 SSE tool_retry 事件 */
-  onRetryEvent?: (info: { attempt: number; maxAttempts: number; reason: string; error: unknown }) => void;
+  onRetryEvent?: (info: { attempt: number; maxAttempts: number; reason: string; error: any }) => void;
 }
 
 const DEFAULT_RETRY_CONFIG: RetryConfig = {
@@ -34,7 +34,7 @@ const DEFAULT_RETRY_CONFIG: RetryConfig = {
 
 const DEFAULT_MAX_ATTEMPTS = 3;
 
-export function isTransientError(error: unknown): boolean {
+export function isTransientError(error: any): boolean {
   if (!(error instanceof Error)) return false;
 
   // P1-3: 统一错误类型 ToolTimeoutError 视为瞬时错误（可重试）

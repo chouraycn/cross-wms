@@ -1,5 +1,5 @@
 /** Parse an ISO-like session timestamp to milliseconds. */
-export function parseSessionTimestampMs(value: unknown): number | undefined {
+export function parseSessionTimestampMs(value: any): number | undefined {
   if (typeof value !== "string" || !value.trim()) {
     return undefined;
   }

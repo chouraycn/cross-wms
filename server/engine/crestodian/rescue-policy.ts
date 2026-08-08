@@ -36,7 +36,7 @@ type CrestodianRescuePolicyInput = {
   isDirectMessage: boolean;
 };
 
-function resolvePendingTtlMinutes(value: unknown): number {
+function resolvePendingTtlMinutes(value: any): number {
   return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : 15;
 }
 

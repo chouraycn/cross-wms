@@ -255,7 +255,7 @@ function hasExplicitImageGenerationModelConfig(cfg?: OpenClawConfig): boolean {
   return hasToolModelConfig(coerceToolModelConfig(cfg?.agents?.defaults?.imageGenerationModel));
 }
 
-function resolveAction(args: Record<string, unknown>): "generate" | "list" | "status" {
+function resolveAction(args: Record<string, any>): "generate" | "list" | "status" {
   return resolveGenerateAction({
     args,
     allowed: ["generate", "status", "list"],
@@ -263,7 +263,7 @@ function resolveAction(args: Record<string, unknown>): "generate" | "list" | "st
   });
 }
 
-function resolveRequestedCount(args: Record<string, unknown>): number {
+function resolveRequestedCount(args: Record<string, any>): number {
   if (readSnakeCaseParamRaw(args, "count") === null) {
     throw new ToolInputError(`count must be between 1 and ${MAX_COUNT}`);
   }
@@ -373,14 +373,14 @@ function normalizeFalCreativity(raw: string | undefined): FalCreativity | undefi
   throw new ToolInputError("fal.creativity must be one of raw, low, medium, or high");
 }
 
-function readRecordParam(params: Record<string, unknown>, key: string): Record<string, unknown> {
+function readRecordParam(params: Record<string, any>, key: string): Record<string, any> {
   const raw = params[key];
   return raw && typeof raw === "object" && !Array.isArray(raw)
-    ? (raw as Record<string, unknown>)
+    ? (raw as Record<string, any>)
     : {};
 }
 
-function normalizeOpenAIOptions(args: Record<string, unknown>): ImageGenerationOpenAIOptions {
+function normalizeOpenAIOptions(args: Record<string, any>): ImageGenerationOpenAIOptions {
   const raw = readRecordParam(args, "openai");
   const background = normalizeOpenAIBackground(readStringParam(raw, "background"));
   const moderation = normalizeOpenAIModeration(readStringParam(raw, "moderation"));
@@ -403,7 +403,7 @@ function normalizeOpenAIOptions(args: Record<string, unknown>): ImageGenerationO
 }
 
 function normalizeProviderOptions(
-  args: Record<string, unknown>,
+  args: Record<string, any>,
 ): ImageGenerationProviderOptions | undefined {
   const falRaw = readRecordParam(args, "fal");
   const falCreativity = normalizeFalCreativity(readStringParam(falRaw, "creativity"));
@@ -414,7 +414,7 @@ function normalizeProviderOptions(
     : undefined;
 }
 
-function normalizeReferenceImages(args: Record<string, unknown>): string[] {
+function normalizeReferenceImages(args: Record<string, any>): string[] {
   return normalizeMediaReferenceInputs({
     args,
     singularKey: "image",
@@ -677,7 +677,7 @@ type ExecutedImageGeneration = {
   paths: string[];
   attachments: AgentGeneratedAttachment[];
   contentText: string;
-  details: Record<string, unknown>;
+  details: Record<string, any>;
   wakeResult: string;
 };
 
@@ -888,7 +888,7 @@ export function createImageGenerateTool(options?: {
       'Create/edit images. Session chats: background task; do not call image_generate again for same request; wait completion, then report through the current visible-reply contract with generated media attached using structured media fields. Transparent: outputFormat="png" or "webp" + background="transparent"; OpenAI also supports openai.background and routes default model to gpt-image-1.5. Use action="list" for providers/models/readiness/auth, "status" for active task.',
     parameters: ImageGenerateToolSchema,
     execute: async (_toolCallId, args) => {
-      const params = args as Record<string, unknown>;
+      const params = args as Record<string, any>;
       const action = resolveAction(params);
       if (action === "list") {
         return createImageGenerateListActionResult({

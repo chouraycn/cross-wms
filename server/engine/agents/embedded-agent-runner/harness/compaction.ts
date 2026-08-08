@@ -1,1 +1,1 @@
-export const resolveCompaction = (..._args: unknown[]): unknown => undefined;
+export const resolveCompaction = (..._args: any[]): any => undefined;

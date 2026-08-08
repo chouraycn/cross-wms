@@ -11,11 +11,11 @@ export type AuditFinding = {
   description: string;
   recommendation: string;
   autoFixable?: boolean;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 export type AuditContext = {
-  config?: Record<string, unknown>;
+  config?: Record<string, any>;
   envVars?: string[];
   filePaths?: string[];
   networkEndpoints?: string[];
@@ -87,9 +87,9 @@ export async function runSecurityAudit(ctx: AuditContext = {}): Promise<AuditRes
   // 3. Check config for insecure defaults
   if (ctx.config) {
     const config = ctx.config;
-    const gateway = config['gateway'] as Record<string, unknown> | undefined;
+    const gateway = config['gateway'] as Record<string, any> | undefined;
     if (gateway) {
-      const auth = gateway['auth'] as Record<string, unknown> | undefined;
+      const auth = gateway['auth'] as Record<string, any> | undefined;
       if (!auth || auth['mode'] === 'none' || auth['mode'] === undefined) {
         findings.push({
           id: 'config-no-auth',
@@ -103,7 +103,7 @@ export async function runSecurityAudit(ctx: AuditContext = {}): Promise<AuditRes
       }
     }
 
-    const logging = config['logging'] as Record<string, unknown> | undefined;
+    const logging = config['logging'] as Record<string, any> | undefined;
     if (logging && logging['redactSecrets'] === false) {
       findings.push({
         id: 'config-no-redact',

@@ -107,8 +107,8 @@ export function getWebFetchProviders(
 
 export interface ResolveWebFetchCredentialOptions {
   provider: WebFetchProviderPlugin;
-  fetchConfig?: Record<string, unknown>;
-  config?: Record<string, unknown>;
+  fetchConfig?: Record<string, any>;
+  config?: Record<string, any>;
   env?: Record<string, string>;
 }
 
@@ -162,8 +162,8 @@ export function resolveWebFetchCredential(
 // ==================== 自动检测 ====================
 
 export interface AutoDetectWebFetchProviderOptions {
-  fetchConfig?: Record<string, unknown>;
-  config?: Record<string, unknown>;
+  fetchConfig?: Record<string, any>;
+  config?: Record<string, any>;
   env?: Record<string, string>;
   onlyPluginIds?: readonly string[];
 }
@@ -216,8 +216,8 @@ export function autoDetectWebFetchProvider(
 
 export interface WebFetchFallbackChainOptions {
   preferredProviderId?: string;
-  fetchConfig?: Record<string, unknown>;
-  config?: Record<string, unknown>;
+  fetchConfig?: Record<string, any>;
+  config?: Record<string, any>;
   env?: Record<string, string>;
   onlyPluginIds?: readonly string[];
 }
@@ -242,7 +242,7 @@ export function buildWebFetchFallbackChain(
 
 export interface WebFetchFallbackExecuteOptions<T> {
   chain: PluginWebFetchProviderEntry[];
-  fetchConfig?: Record<string, unknown>;
+  fetchConfig?: Record<string, any>;
   shouldFallback?: (result: T | null, error?: Error) => boolean;
   execute: (provider: PluginWebFetchProviderEntry, tool: WebFetchProviderToolDefinition) => Promise<T | null>;
 }
@@ -287,7 +287,7 @@ export async function executeWithWebFetchFallback<T>(
 
 export function createWebFetchTool(
   provider: PluginWebFetchProviderEntry,
-  fetchConfig?: Record<string, unknown>,
+  fetchConfig?: Record<string, any>,
 ): WebFetchProviderToolDefinition | null {
   return provider.createTool({
     fetchConfig,

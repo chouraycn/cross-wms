@@ -74,8 +74,8 @@ describe("enqueueKeyedTask", () => {
 
   it("does not leak unhandled rejections when a task failure is already awaited", async () => {
     const tails = new Map<string, Promise<void>>();
-    const unhandled: unknown[] = [];
-    const onUnhandledRejection = (reason: unknown) => {
+    const unhandled: any[] = [];
+    const onUnhandledRejection = (reason: any) => {
       unhandled.push(reason);
     };
     process.on("unhandledRejection", onUnhandledRejection);

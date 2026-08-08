@@ -144,7 +144,7 @@ initializeDefaults();
 
 // ========== Sessions Methods ==========
 
-async function sessionsList(params: unknown, _ctx: GatewayMethodContext) {
+async function sessionsList(params: any, _ctx: GatewayMethodContext) {
   const { limit = 50, offset = 0 } = params as { limit?: number; offset?: number };
   const allSessions = Array.from(sessions.values())
     .sort((a, b) => b.updatedAt - a.updatedAt)
@@ -155,13 +155,13 @@ async function sessionsList(params: unknown, _ctx: GatewayMethodContext) {
   };
 }
 
-async function sessionsGet(params: unknown, _ctx: GatewayMethodContext) {
+async function sessionsGet(params: any, _ctx: GatewayMethodContext) {
   const { key } = params as { key: string };
   return sessions.get(key) ?? null;
 }
 
-async function sessionsCreate(params: unknown, _ctx: GatewayMethodContext) {
-  const { key, label, meta } = params as { key: string; label?: string; meta?: Record<string, unknown> };
+async function sessionsCreate(params: any, _ctx: GatewayMethodContext) {
+  const { key, label, meta } = params as { key: string; label?: string; meta?: Record<string, any> };
   const now = Date.now();
   const session: GatewaySession = {
     id: `sess_${now}_${Math.random().toString(36).slice(2, 8)}`,
@@ -176,12 +176,12 @@ async function sessionsCreate(params: unknown, _ctx: GatewayMethodContext) {
   return session;
 }
 
-async function sessionsDelete(params: unknown, _ctx: GatewayMethodContext) {
+async function sessionsDelete(params: any, _ctx: GatewayMethodContext) {
   const { key } = params as { key: string };
   return { deleted: sessions.delete(key) };
 }
 
-async function sessionsResolve(params: unknown, _ctx: GatewayMethodContext) {
+async function sessionsResolve(params: any, _ctx: GatewayMethodContext) {
   const { key, label } = params as { key?: string; label?: string };
   if (key && sessions.has(key)) {
     return { ok: true, key };
@@ -198,35 +198,35 @@ async function sessionsResolve(params: unknown, _ctx: GatewayMethodContext) {
 
 // ========== Agents Methods ==========
 
-async function agentsList(_params: unknown, _ctx: GatewayMethodContext) {
+async function agentsList(_params: any, _ctx: GatewayMethodContext) {
   return {
     agents: Array.from(agents.values()),
     total: agents.size,
   };
 }
 
-async function agentsGet(params: unknown, _ctx: GatewayMethodContext) {
+async function agentsGet(params: any, _ctx: GatewayMethodContext) {
   const { id } = params as { id: string };
   return agents.get(id) ?? null;
 }
 
 // ========== Models Methods ==========
 
-async function modelsList(_params: unknown, _ctx: GatewayMethodContext) {
+async function modelsList(_params: any, _ctx: GatewayMethodContext) {
   return {
     models: Array.from(models.values()),
     total: models.size,
   };
 }
 
-async function modelsGet(params: unknown, _ctx: GatewayMethodContext) {
+async function modelsGet(params: any, _ctx: GatewayMethodContext) {
   const { id } = params as { id: string };
   return models.get(id) ?? null;
 }
 
 // ========== Tools Methods ==========
 
-async function toolsList(params: unknown, _ctx: GatewayMethodContext) {
+async function toolsList(params: any, _ctx: GatewayMethodContext) {
   const { category, search } = params as { category?: string; search?: string };
   let result = Array.from(tools.values());
   if (category) {
@@ -243,14 +243,14 @@ async function toolsList(params: unknown, _ctx: GatewayMethodContext) {
   return { tools: result, total: result.length };
 }
 
-async function toolsGet(params: unknown, _ctx: GatewayMethodContext) {
+async function toolsGet(params: any, _ctx: GatewayMethodContext) {
   const { name } = params as { name: string };
   return tools.get(name) ?? null;
 }
 
 // ========== Health Methods ==========
 
-async function healthGet(_params: unknown, _ctx: GatewayMethodContext): Promise<GatewayHealth> {
+async function healthGet(_params: any, _ctx: GatewayMethodContext): Promise<GatewayHealth> {
   return {
     status: "healthy",
     timestamp: Date.now(),
@@ -265,7 +265,7 @@ async function healthGet(_params: unknown, _ctx: GatewayMethodContext): Promise<
 
 // ========== System Methods ==========
 
-async function systemStats(_params: unknown, _ctx: GatewayMethodContext): Promise<GatewayStats> {
+async function systemStats(_params: any, _ctx: GatewayMethodContext): Promise<GatewayStats> {
   return {
     totalSessions: sessions.size,
     totalMessages,
@@ -275,7 +275,7 @@ async function systemStats(_params: unknown, _ctx: GatewayMethodContext): Promis
   };
 }
 
-async function systemMethodsList(_params: unknown, _ctx: GatewayMethodContext) {
+async function systemMethodsList(_params: any, _ctx: GatewayMethodContext) {
   return {
     methods: [
       "sessions.list",
@@ -315,7 +315,7 @@ const steerQueue = new Map<string, SteerInjection[]>();
  * sessions.send — 发送消息到会话，等价于 chat.send 的会话语义别名。
  * 与 openclaw 一致：内部转发到 chat.send，复用其 runChatSession 执行路径。
  */
-async function sessionsSend(params: unknown, ctx: GatewayMethodContext) {
+async function sessionsSend(params: any, ctx: GatewayMethodContext) {
   const { sessionKey, message, model, agent, mode } = params as {
     sessionKey?: string;
     message?: string;
@@ -345,7 +345,7 @@ async function sessionsSend(params: unknown, ctx: GatewayMethodContext) {
  * sessions.steer — 引导会话，向会话注入一条系统级引导消息，不影响用户消息历史。
  * 与 openclaw 一致：steer 是非破坏性的方向引导，排队等待下一次 run 消费。
  */
-async function sessionsSteer(params: unknown, _ctx: GatewayMethodContext) {
+async function sessionsSteer(params: any, _ctx: GatewayMethodContext) {
   const { sessionKey, message, role = "system" } = params as {
     sessionKey?: string;
     message?: string;
@@ -396,7 +396,7 @@ const modelAuthStates = new Map<string, ModelAuthState>();
  * models.authStatus — 返回模型 provider 的认证状态。
  * 参考 openclaw models-auth-status.ts，精简为基于内存状态 + models.list 的聚合。
  */
-async function modelsAuthStatus(params: unknown, _ctx: GatewayMethodContext) {
+async function modelsAuthStatus(params: any, _ctx: GatewayMethodContext) {
   const { provider, refresh = false } = params as { provider?: string; refresh?: boolean };
 
   const registry = getMethodRegistry();
@@ -406,7 +406,7 @@ async function modelsAuthStatus(params: unknown, _ctx: GatewayMethodContext) {
   });
 
   const allModels = (modelsResult.ok && modelsResult.result
-    ? (modelsResult.result as Record<string, unknown>).models
+    ? (modelsResult.result as Record<string, any>).models
     : []) as Array<{ id: string; provider?: string }>;
 
   // 聚合 provider 列表（从已注册模型推导）
@@ -420,7 +420,7 @@ async function modelsAuthStatus(params: unknown, _ctx: GatewayMethodContext) {
   }
 
   const now = Date.now();
-  const providers: Array<Record<string, unknown>> = [];
+  const providers: Array<Record<string, any>> = [];
   for (const p of providerSet) {
     const state = modelAuthStates.get(p);
     // refresh=true 时重新校验（此处刷新 lastCheckedAt）
@@ -456,7 +456,7 @@ async function modelsAuthStatus(params: unknown, _ctx: GatewayMethodContext) {
  * models.authLogout — 登出指定 provider 的模型认证。
  * 参考 openclaw models-auth-status.ts，清除内存认证状态。
  */
-async function modelsAuthLogout(params: unknown, _ctx: GatewayMethodContext) {
+async function modelsAuthLogout(params: any, _ctx: GatewayMethodContext) {
   const { provider } = params as { provider?: string };
 
   if (!provider) {

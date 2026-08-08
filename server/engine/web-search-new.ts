@@ -777,7 +777,7 @@ async function executeWithSearchFallback(
   params: WebSearchParams,
   signal?: AbortSignal,
   onProgress?: WebSearchProgressCallback,
-  searchConfig?: Record<string, unknown>,
+  searchConfig?: Record<string, any>,
 ): Promise<SearchFallbackResult> {
   const errors: Array<{ providerId: string; error: string }> = [];
 
@@ -808,7 +808,7 @@ async function executeWithSearchFallback(
         message: `Searching with ${provider.label}...`,
       });
 
-      const providerArgs: Record<string, unknown> = {
+      const providerArgs: Record<string, any> = {
         query: params.query,
         maxResults: params.maxResults,
         timeoutMs: params.timeoutMs,
@@ -853,8 +853,8 @@ async function executeWithSearchFallback(
 export interface WebSearchOptions {
   signal?: AbortSignal;
   onProgress?: WebSearchProgressCallback;
-  searchConfig?: Record<string, unknown>;
-  config?: Record<string, unknown>;
+  searchConfig?: Record<string, any>;
+  config?: Record<string, any>;
 }
 
 export async function webSearch(
@@ -1040,12 +1040,12 @@ async function webSearchInternal(
 
 // ==================== 工具处理函数（用于 toolRegistry） ====================
 
-export async function handleWebSearchV3(args: Record<string, unknown>): Promise<string> {
+export async function handleWebSearchV3(args: Record<string, any>): Promise<string> {
   try {
     // 从 secrets DB 加载搜索 API Key，构建 searchConfig 传递给 Provider
     // Kimi 和 MiniMax 都从 searchConfig.apiKey 读取密钥
     // MiniMax 还需要 searchConfig.groupId
-    const searchConfig: Record<string, unknown> = {};
+    const searchConfig: Record<string, any> = {};
     try {
       const kimiKey = getSecretValueByKey('encrypted', 'KIMI_API_KEY', 'web_search');
       if (kimiKey) {

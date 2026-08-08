@@ -29,8 +29,8 @@ function createRuntime(): RuntimeEnv & { lines: string[] } {
   const lines: string[] = [];
   return {
     lines,
-    log: (...args: unknown[]) => lines.push(args.join(" ")),
-    error: (...args: unknown[]) => lines.push(args.join(" ")),
+    log: (...args: any[]) => lines.push(args.join(" ")),
+    error: (...args: any[]) => lines.push(args.join(" ")),
     exit: (code?: number) => {
       throw new Error(`exit ${code ?? 0}`);
     },

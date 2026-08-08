@@ -13,12 +13,12 @@ const loadSessionEntryMock = vi.fn((sessionKey: string, _opts?: { agentId?: stri
 }));
 
 vi.mock("../server-session-key.js", () => ({
-  resolveSessionKeyForRun: (...args: unknown[]) => resolveSessionKeyForRunMock(...args),
+  resolveSessionKeyForRun: (...args: any[]) => resolveSessionKeyForRunMock(...args),
 }));
 
 vi.mock("./chat.js", () => ({
   chatHandlers: {
-    "chat.abort": (...args: unknown[]) => chatAbortMock(...args),
+    "chat.abort": (...args: any[]) => chatAbortMock(...args),
   },
 }));
 
@@ -26,10 +26,10 @@ vi.mock("../session-utils.js", async () => {
   const actual = await vi.importActual<typeof import("../session-utils.js")>("../session-utils.js");
   return {
     ...actual,
-    listSessionsFromStoreAsync: (...args: unknown[]) => listSessionsFromStoreAsyncMock(...args),
-    loadCombinedSessionStoreForGateway: (...args: unknown[]) =>
+    listSessionsFromStoreAsync: (...args: any[]) => listSessionsFromStoreAsyncMock(...args),
+    loadCombinedSessionStoreForGateway: (...args: any[]) =>
       loadCombinedSessionStoreForGatewayMock(...args),
-    loadSessionEntry: (...args: unknown[]) =>
+    loadSessionEntry: (...args: any[]) =>
       loadSessionEntryMock(...(args as [string, { agentId?: string }?])),
   };
 });
@@ -95,7 +95,7 @@ function createGlobalWorkRunContext(activeRun: ActiveRun): GatewayRequestContext
 
 async function callSessions(
   method: keyof typeof sessionsHandlers,
-  params: Record<string, unknown>,
+  params: Record<string, any>,
   options: {
     context: GatewayRequestContext;
     respond?: RespondFn;
@@ -115,7 +115,7 @@ async function callSessions(
   return respond;
 }
 
-function expectChatAbortParams(params: Record<string, unknown>): void {
+function expectChatAbortParams(params: Record<string, any>): void {
   expect(chatAbortMock).toHaveBeenCalledTimes(1);
   expect(chatAbortMock.mock.calls[0]?.[0]).toEqual(expect.objectContaining({ params }));
 }

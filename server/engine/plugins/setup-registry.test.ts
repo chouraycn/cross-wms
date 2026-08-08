@@ -60,8 +60,8 @@ function writeSetupApiStub(pluginRoot: string): void {
 function mockSinglePlugin(plugin: {
   id: string;
   rootDir: string;
-  setup?: unknown;
-  configContracts?: unknown;
+  setup?: any;
+  configContracts?: any;
 }) {
   mocks.loadPluginManifestRegistry.mockReturnValue({
     plugins: [plugin],
@@ -77,7 +77,7 @@ function mockVoiceCallConfigMigrationRegistration(registerResult?: () => Promise
     return () => ({
       default: {
         register(api: {
-          registerConfigMigration: (migrate: (config: unknown) => unknown) => void;
+          registerConfigMigration: (migrate: (config: any) => unknown) => void;
         }) {
           api.registerConfigMigration((config) => ({ config, changes: ["voice-call"] }));
           return registerResult?.();
@@ -156,8 +156,8 @@ function mockDuplicateSetupClaims(params: {
 }
 
 async function expectNoUnhandledRejection(run: () => void | Promise<void>): Promise<void> {
-  const unhandledRejections: unknown[] = [];
-  const onUnhandledRejection = (reason: unknown) => {
+  const unhandledRejections: any[] = [];
+  const onUnhandledRejection = (reason: any) => {
     unhandledRejections.push(reason);
   };
   process.on("unhandledRejection", onUnhandledRejection);
@@ -171,17 +171,17 @@ async function expectNoUnhandledRejection(run: () => void | Promise<void>): Prom
   expect(unhandledRejections).toStrictEqual([]);
 }
 
-function requireRecord(value: unknown): Record<string, unknown> {
+function requireRecord(value: any): Record<string, any> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("Expected a non-array record");
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 function mockCall(
-  mock: { mock: { calls: ReadonlyArray<ReadonlyArray<unknown>> } },
+  mock: { mock: { calls: ReadonlyArray<ReadonlyArray<any>> } },
   callIndex = 0,
-): ReadonlyArray<unknown> {
+): ReadonlyArray<any> {
   const call = mock.mock.calls[callIndex];
   if (!call) {
     throw new Error(`Expected mock call ${callIndex + 1}`);
@@ -190,14 +190,14 @@ function mockCall(
 }
 
 function mockArg(
-  mock: { mock: { calls: ReadonlyArray<ReadonlyArray<unknown>> } },
+  mock: { mock: { calls: ReadonlyArray<ReadonlyArray<any>> } },
   callIndex: number,
   argIndex: number,
-): unknown {
+): any {
   return mockCall(mock, callIndex)[argIndex];
 }
 
-function firstRecordArg(mock: { mock: { calls: ReadonlyArray<ReadonlyArray<unknown>> } }) {
+function firstRecordArg(mock: { mock: { calls: ReadonlyArray<ReadonlyArray<any>> } }) {
   return requireRecord(mockArg(mock, 0, 0));
 }
 
@@ -209,8 +209,8 @@ afterEach(() => {
 describe("setup-registry module loader", () => {
   let windowsSourceTransformCase: {
     expectedFilename: string;
-    filename: unknown;
-    options: Record<string, unknown>;
+    filename: any;
+    options: Record<string, any>;
   };
 
   beforeAll(async () => {
@@ -330,7 +330,7 @@ describe("setup-registry module loader", () => {
       return () => ({
         default: {
           register(api: {
-            registerConfigMigration: (migrate: (config: unknown) => unknown) => void;
+            registerConfigMigration: (migrate: (config: any) => unknown) => void;
           }) {
             api.registerConfigMigration((config) => ({ config, changes: ["unexpected"] }));
           },
@@ -382,7 +382,7 @@ describe("setup-registry module loader", () => {
       return () => ({
         default: {
           register(api: {
-            registerConfigMigration: (migrate: (config: unknown) => unknown) => void;
+            registerConfigMigration: (migrate: (config: any) => unknown) => void;
           }) {
             api.registerConfigMigration((config) => ({
               config,

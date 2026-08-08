@@ -59,7 +59,7 @@ export interface AttemptContext {
   /** 父 attempt ID（嵌套调用时） */
   parentAttemptId?: string;
   /** 自定义元数据 */
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface AttemptResult<T = unknown> {
@@ -81,7 +81,7 @@ export interface AttemptOptions {
   /** 父 attempt ID */
   parentAttemptId?: string;
   /** 自定义元数据 */
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
   /** 进度回调 */
   onProgress?: (progress: number, message?: string) => void;
 }
@@ -97,7 +97,7 @@ interface AttemptEntry<T = unknown> {
   timeoutMs: number;
   allowConcurrentPerSession: boolean;
   parentAttemptId?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
   onProgress?: (progress: number, message?: string) => void;
   createdAt: number;
   startedAt?: number;
@@ -209,7 +209,7 @@ export class AttemptRunner extends EventEmitter {
         metadata: options.metadata,
         onProgress: options.onProgress,
         createdAt: Date.now(),
-        resolve: resolve as (result: AttemptResult<unknown>) => void,
+        resolve: resolve as (result: AttemptResult<any>) => void,
         reject,
       };
 

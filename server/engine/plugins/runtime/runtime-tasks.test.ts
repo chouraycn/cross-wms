@@ -18,14 +18,14 @@ afterEach(() => {
   resetRuntimeTaskTestState();
 });
 
-function requireRecord(value: unknown): Record<string, unknown> {
+function requireRecord(value: any): Record<string, any> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("Expected a non-array record");
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function requireRecordById(items: readonly unknown[], id: string): Record<string, unknown> {
+function requireRecordById(items: readonly any[], id: string): Record<string, any> {
   for (const item of items) {
     const record = requireRecord(item);
     if (record.id === id) {
@@ -108,7 +108,7 @@ describe("runtime tasks", () => {
     expect(taskSummary.active).toBe(1);
     const flowTasks = flow.tasks;
     expect(Array.isArray(flowTasks)).toBe(true);
-    const flowTask = requireRecordById(flowTasks as unknown[], child.task.taskId);
+    const flowTask = requireRecordById(flowTasks as any[], child.task.taskId);
     expect(flowTask.flowId).toBe(created.flowId);
     expect(flowTask.title).toBe("Review PR 1");
     expect(flowTask.label).toBe("Inbox triage");

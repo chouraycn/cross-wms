@@ -13,18 +13,18 @@
 
 export type ActiveSessionForShutdown = unknown;
 
-export function noteActiveSessionForShutdown(..._args: unknown[]): unknown {
+export function noteActiveSessionForShutdown(..._args: any[]): any {
   return undefined;
 }
 
-export function forgetActiveSessionForShutdown(..._args: unknown[]): unknown {
+export function forgetActiveSessionForShutdown(..._args: any[]): any {
   return undefined;
 }
 
-export function listActiveSessionsForShutdown(..._args: unknown[]): unknown {
+export function listActiveSessionsForShutdown(..._args: any[]): any {
   return [];
 }
 
-export function clearActiveSessionsForShutdownTracker(..._args: unknown[]): unknown {
+export function clearActiveSessionsForShutdownTracker(..._args: any[]): any {
   return undefined;
 }

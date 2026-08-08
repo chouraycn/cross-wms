@@ -33,8 +33,8 @@ vi.mock("../../runtime.js", () => ({
 const { runDaemonInstall } = await import("./install.js");
 const { clearConfigCache, clearRuntimeConfigSnapshot } = await import("../../config/config.js");
 
-async function readJson(filePath: string): Promise<Record<string, unknown>> {
-  return JSON.parse(await fs.readFile(filePath, "utf8")) as Record<string, unknown>;
+async function readJson(filePath: string): Promise<Record<string, any>> {
+  return JSON.parse(await fs.readFile(filePath, "utf8")) as Record<string, any>;
 }
 
 describe("runDaemonInstall integration", () => {

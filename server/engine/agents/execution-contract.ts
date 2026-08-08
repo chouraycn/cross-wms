@@ -6,12 +6,12 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function stripProviderPrefix(..._args: unknown[]): unknown {
+export function stripProviderPrefix(..._args: any[]): any {
   return undefined;
 }
-export function isStrictAgenticSupportedProviderModel(..._args: unknown[]): unknown {
+export function isStrictAgenticSupportedProviderModel(..._args: any[]): any {
   return false;
 }
-export function isStrictAgenticExecutionContractActive(..._args: unknown[]): unknown {
+export function isStrictAgenticExecutionContractActive(..._args: any[]): any {
   return false;
 }

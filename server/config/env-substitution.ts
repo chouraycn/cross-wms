@@ -107,17 +107,17 @@ function substituteString(
   return chunks.join('');
 }
 
-function isPlainObject(value: unknown): value is Record<string, unknown> {
+function isPlainObject(value: any): value is Record<string, any> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function substituteAny(
-  value: unknown,
+  value: any,
   env: NodeJS.ProcessEnv,
   path: string,
   preserveList: Set<string> | undefined,
   onMissing?: (varName: string, configPath: string) => void,
-): unknown {
+): any {
   if (typeof value === 'string') {
     return substituteString(value, env, path, preserveList, onMissing);
   }
@@ -127,7 +127,7 @@ function substituteAny(
     );
   }
   if (isPlainObject(value)) {
-    const result: Record<string, unknown> = {};
+    const result: Record<string, any> = {};
     for (const [key, val] of Object.entries(value)) {
       const childPath = path ? `${path}.${key}` : key;
       result[key] = substituteAny(val, env, childPath, preserveList, onMissing);
@@ -199,10 +199,10 @@ export function containsEnvVarReference(value: string): boolean {
  * - 其他原始值：原样返回
  */
 export function resolveConfigEnvVars(
-  obj: unknown,
+  obj: any,
   env: NodeJS.ProcessEnv = process.env,
   opts?: { onMissing?: (varName: string, configPath: string) => void; preserve?: string[] },
-): unknown {
+): any {
   const preserveList = opts?.preserve ? new Set(opts.preserve) : undefined;
   return substituteAny(obj, env, '', preserveList, opts?.onMissing);
 }

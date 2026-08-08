@@ -73,9 +73,9 @@ vi.mock("../secrets/target-registry.js", () => {
     includeInAudit: true,
   };
 
-  const readRecord = (value: unknown): Record<string, unknown> | null =>
+  const readRecord = (value: any): Record<string, any> | null =>
     value && typeof value === "object" && !Array.isArray(value)
-      ? (value as Record<string, unknown>)
+      ? (value as Record<string, any>)
       : null;
 
   return {
@@ -84,7 +84,7 @@ vi.mock("../secrets/target-registry.js", () => {
         entry: typeof entry;
         path: string;
         pathSegments: string[];
-        value: unknown;
+        value: any;
         accountId?: string;
       }> = [];
       const channels = readRecord(cfg.channels);
@@ -136,7 +136,7 @@ describe("normalizeCompatibilityConfigValues", () => {
     expect(res.changes).toStrictEqual([]);
   };
 
-  const ollamaModel = (overrides: Record<string, unknown> = {}) => ({
+  const ollamaModel = (overrides: Record<string, any> = {}) => ({
     id: "llama3.3",
     name: "Llama 3.3",
     reasoning: false,
@@ -451,7 +451,7 @@ describe("normalizeCompatibilityConfigValues", () => {
           },
         },
       } as unknown as OpenClawConfig);
-      const channel = (res.config.channels as Record<string, { accounts?: Record<string, unknown> }>)?.[
+      const channel = (res.config.channels as Record<string, { accounts?: Record<string, any> }>)?.[
         channelId
       ];
 
@@ -570,7 +570,7 @@ describe("normalizeCompatibilityConfigValues", () => {
     } as unknown as OpenClawConfig);
 
     expect(
-      (res.config.browser?.ssrfPolicy as Record<string, unknown> | undefined)?.allowPrivateNetwork,
+      (res.config.browser?.ssrfPolicy as Record<string, any> | undefined)?.allowPrivateNetwork,
     ).toBeUndefined();
     expect(res.config.browser?.ssrfPolicy?.dangerouslyAllowPrivateNetwork).toBe(true);
     expect(res.config.browser?.ssrfPolicy?.allowedHostnames).toEqual(["localhost"]);
@@ -590,7 +590,7 @@ describe("normalizeCompatibilityConfigValues", () => {
     } as unknown as OpenClawConfig);
 
     expect(
-      (res.config.browser?.ssrfPolicy as Record<string, unknown> | undefined)?.allowPrivateNetwork,
+      (res.config.browser?.ssrfPolicy as Record<string, any> | undefined)?.allowPrivateNetwork,
     ).toBeUndefined();
     expect(res.config.browser?.ssrfPolicy?.dangerouslyAllowPrivateNetwork).toBe(true);
     expect(res.changes).toContain(
@@ -1693,12 +1693,12 @@ describe("normalizeCompatibilityConfigValues", () => {
   });
 
   it("keeps native Ollama params prototype-safe while setting num_ctx", () => {
-    const providerParams: Record<string, unknown> = { temperature: 0.2 };
+    const providerParams: Record<string, any> = { temperature: 0.2 };
     Object.defineProperty(providerParams, "__proto__", {
       enumerable: true,
       value: { think: "high" },
     });
-    const modelParams: Record<string, unknown> = { top_p: 0.9 };
+    const modelParams: Record<string, any> = { top_p: 0.9 };
     Object.defineProperty(modelParams, "__proto__", {
       enumerable: true,
       value: { keep_alive: "forever" },
@@ -1725,11 +1725,11 @@ describe("normalizeCompatibilityConfigValues", () => {
 
     const nextProviderParams = res.config.models?.providers?.ollama?.params as Record<
       string,
-      unknown
+      any
     >;
     const nextModelParams = res.config.models?.providers?.ollama?.models?.[0]?.params as Record<
       string,
-      unknown
+      any
     >;
     expect(Object.getPrototypeOf(nextProviderParams)).toBe(Object.prototype);
     expect(Object.getPrototypeOf(nextModelParams)).toBe(Object.prototype);

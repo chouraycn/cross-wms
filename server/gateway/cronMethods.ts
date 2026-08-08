@@ -20,14 +20,14 @@ export interface CronJob {
   runCount: number;
   createdAt: number;
   updatedAt: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 const cronJobs = new Map<string, CronJob>();
 
 // ========== Cron List ==========
 
-async function cronList(params: unknown, _ctx: GatewayMethodContext) {
+async function cronList(params: any, _ctx: GatewayMethodContext) {
   const {
     enabledOnly = false,
     limit = 50,
@@ -58,7 +58,7 @@ async function cronList(params: unknown, _ctx: GatewayMethodContext) {
 
 // ========== Cron Get ==========
 
-async function cronGet(params: unknown, _ctx: GatewayMethodContext) {
+async function cronGet(params: any, _ctx: GatewayMethodContext) {
   const { id } = params as { id: string };
   const job = cronJobs.get(id);
   return {
@@ -69,7 +69,7 @@ async function cronGet(params: unknown, _ctx: GatewayMethodContext) {
 
 // ========== Cron Create ==========
 
-async function cronCreate(params: unknown, _ctx: GatewayMethodContext) {
+async function cronCreate(params: any, _ctx: GatewayMethodContext) {
   const {
     name,
     cronExpression,
@@ -87,7 +87,7 @@ async function cronCreate(params: unknown, _ctx: GatewayMethodContext) {
     agent?: string;
     prompt: string;
     enabled?: boolean;
-    metadata?: Record<string, unknown>;
+    metadata?: Record<string, any>;
   };
 
   if (!name || !cronExpression || !prompt) {
@@ -125,7 +125,7 @@ async function cronCreate(params: unknown, _ctx: GatewayMethodContext) {
 
 // ========== Cron Update ==========
 
-async function cronUpdate(params: unknown, _ctx: GatewayMethodContext) {
+async function cronUpdate(params: any, _ctx: GatewayMethodContext) {
   const { id, ...updates } = params as {
     id: string;
     name?: string;
@@ -133,7 +133,7 @@ async function cronUpdate(params: unknown, _ctx: GatewayMethodContext) {
     description?: string;
     prompt?: string;
     enabled?: boolean;
-    metadata?: Record<string, unknown>;
+    metadata?: Record<string, any>;
   };
 
   const job = cronJobs.get(id);
@@ -157,7 +157,7 @@ async function cronUpdate(params: unknown, _ctx: GatewayMethodContext) {
 
 // ========== Cron Delete ==========
 
-async function cronDelete(params: unknown, _ctx: GatewayMethodContext) {
+async function cronDelete(params: any, _ctx: GatewayMethodContext) {
   const { id } = params as { id: string };
   const deleted = cronJobs.delete(id);
   return {
@@ -168,7 +168,7 @@ async function cronDelete(params: unknown, _ctx: GatewayMethodContext) {
 
 // ========== Cron Enable/Disable ==========
 
-async function cronEnable(params: unknown, _ctx: GatewayMethodContext) {
+async function cronEnable(params: any, _ctx: GatewayMethodContext) {
   const { id, enabled = true } = params as { id: string; enabled?: boolean };
 
   const job = cronJobs.get(id);
@@ -187,7 +187,7 @@ async function cronEnable(params: unknown, _ctx: GatewayMethodContext) {
 
 // ========== Cron Trigger ==========
 
-async function cronTrigger(params: unknown, _ctx: GatewayMethodContext) {
+async function cronTrigger(params: any, _ctx: GatewayMethodContext) {
   const { id } = params as { id: string };
 
   const job = cronJobs.get(id);
@@ -207,7 +207,7 @@ async function cronTrigger(params: unknown, _ctx: GatewayMethodContext) {
 
 // ========== Cron Stats ==========
 
-async function cronStats(_params: unknown, _ctx: GatewayMethodContext) {
+async function cronStats(_params: any, _ctx: GatewayMethodContext) {
   const jobs = Array.from(cronJobs.values());
   return {
     ok: true,

@@ -44,16 +44,16 @@ function applyProviderOverridesToConfig(
     return config;
   }
   const next = structuredClone(config);
-  const tools = (next.tools ??= {}) as Record<string, unknown>;
-  const web = (tools.web ??= {}) as Record<string, unknown>;
+  const tools = (next.tools ??= {}) as Record<string, any>;
+  const web = (tools.web ??= {}) as Record<string, any>;
   const webSearch = normalizeOptionalString(overrides?.webSearch);
   if (webSearch) {
-    const search = (web.search ??= {}) as Record<string, unknown>;
+    const search = (web.search ??= {}) as Record<string, any>;
     search.provider = webSearch;
   }
   const webFetch = normalizeOptionalString(overrides?.webFetch);
   if (webFetch) {
-    const fetch = (web.fetch ??= {}) as Record<string, unknown>;
+    const fetch = (web.fetch ??= {}) as Record<string, any>;
     fetch.provider = webFetch;
   }
   return next;

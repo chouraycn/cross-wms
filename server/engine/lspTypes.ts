@@ -120,7 +120,7 @@ export interface LSPCompletionItem {
   /** 是否预选（默认选中） */
   preselect?: boolean;
   /** 补全项数据（服务器返回的额外数据） */
-  data?: unknown;
+  data?: any;
 }
 
 /**
@@ -178,7 +178,7 @@ export interface LSPDiagnostic {
   /** 标签（如 unnecessary、deprecated） */
   tags?: number[];
   /** 诊断数据（用于后续操作） */
-  data?: unknown;
+  data?: any;
 }
 
 // ===================== Hover 相关类型 =====================
@@ -278,7 +278,7 @@ export interface LSPServerConfigExtended {
   /** 工作目录 */
   cwd?: string;
   /** 初始化选项 */
-  initializationOptions?: Record<string, unknown>;
+  initializationOptions?: Record<string, any>;
   /** 支持的能力 */
   capabilities?: string[];
   /** 文件扩展名 */
@@ -471,10 +471,10 @@ export interface LSPCodeAction {
   command?: {
     title: string;
     command: string;
-    arguments?: unknown[];
+    arguments?: any[];
   };
   /** 附加数据 */
-  data?: unknown;
+  data?: any;
 }
 
 // ===================== Signature Help 相关类型 =====================
@@ -577,7 +577,7 @@ export interface LSPWorkspaceSymbol {
   /** 容器名称（如所属类名） */
   containerName?: string;
   /** 附加数据 */
-  data?: unknown;
+  data?: any;
 }
 
 // ===================== 工具调用结果类型（v3.2 新增） =====================

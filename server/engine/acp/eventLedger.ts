@@ -8,7 +8,7 @@
 type ContentBlock = {
   type: string;
   text?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 type SessionUpdate = {
@@ -18,7 +18,7 @@ type SessionUpdate = {
   status?: string;
   toolCallId?: string;
   availableCommands?: Array<{ name: string }>;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 export type AcpEventLedgerEntry = {
@@ -134,11 +134,11 @@ function getSerializedLedgerByteLength(store: LedgerStore): number {
   return Buffer.byteLength(serializeLedgerStore(store), "utf8");
 }
 
-function normalizeEvent(raw: unknown): AcpEventLedgerEntry | undefined {
+function normalizeEvent(raw: any): AcpEventLedgerEntry | undefined {
   if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
     return undefined;
   }
-  const record = raw as Record<string, unknown>;
+  const record = raw as Record<string, any>;
   const seq = record.seq;
   const at = record.at;
   const sessionId = record.sessionId;
@@ -156,7 +156,7 @@ function normalizeEvent(raw: unknown): AcpEventLedgerEntry | undefined {
     typeof sessionKey !== "string" ||
     typeof update !== "object" ||
     update === null ||
-    typeof (update as Record<string, unknown>).sessionUpdate !== "string"
+    typeof (update as Record<string, any>).sessionUpdate !== "string"
   ) {
     return undefined;
   }
@@ -171,11 +171,11 @@ function normalizeEvent(raw: unknown): AcpEventLedgerEntry | undefined {
   };
 }
 
-function normalizeSession(raw: unknown): LedgerSession | undefined {
+function normalizeSession(raw: any): LedgerSession | undefined {
   if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
     return undefined;
   }
-  const record = raw as Record<string, unknown>;
+  const record = raw as Record<string, any>;
   const sessionId = record.sessionId;
   const sessionKey = record.sessionKey;
   const cwd = record.cwd;
@@ -214,19 +214,19 @@ function normalizeSession(raw: unknown): LedgerSession | undefined {
   };
 }
 
-function normalizeStore(raw: unknown): LedgerStore {
+function normalizeStore(raw: any): LedgerStore {
   if (
     typeof raw !== "object" ||
     raw === null ||
     Array.isArray(raw) ||
-    (raw as Record<string, unknown>).version !== LEDGER_VERSION ||
-    typeof (raw as Record<string, unknown>).sessions !== "object"
+    (raw as Record<string, any>).version !== LEDGER_VERSION ||
+    typeof (raw as Record<string, any>).sessions !== "object"
   ) {
     return createEmptyStore();
   }
 
   const sessions: Record<string, LedgerSession> = {};
-  const rawSessions = (raw as Record<string, unknown>).sessions as Record<string, unknown>;
+  const rawSessions = (raw as Record<string, any>).sessions as Record<string, any>;
 
   for (const [sessionId, value] of Object.entries(rawSessions)) {
     const session = normalizeSession(value);

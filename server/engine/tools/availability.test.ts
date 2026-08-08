@@ -11,7 +11,7 @@ const baseDescriptor: ToolDescriptor = {
   executor: { kind: "core", executorId: "example" },
 };
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }
 

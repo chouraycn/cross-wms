@@ -635,7 +635,7 @@ export type ToolsConfig = {
           timezone?: string;
         };
       };
-    } & Record<string, unknown>;
+    } & Record<string, any>;
     /** X (formerly Twitter) search tool configuration using xAI Grok. */
     x_search?: {
       /** Enable X search tool (default: true when xAI auth is available via plugin config or XAI_API_KEY). */

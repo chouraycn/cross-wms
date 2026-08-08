@@ -5,14 +5,14 @@ import type { SpawnAdapter, IPCMessage } from '../types.js';
 function createStubAdapter(): SpawnAdapter & {
   emitStdout: (chunk: string) => void;
   emitStderr: (chunk: string) => void;
-  emitIPC: (msg: unknown) => void;
+  emitIPC: (msg: any) => void;
   killMock: ReturnType<typeof vi.fn>;
   writeMock: ReturnType<typeof vi.fn>;
   endMock: ReturnType<typeof vi.fn>;
 } {
   const stdoutListeners: Array<(chunk: string) => void> = [];
   const stderrListeners: Array<(chunk: string) => void> = [];
-  const ipcListeners: Array<(message: unknown) => void> = [];
+  const ipcListeners: Array<(message: any) => void> = [];
   let resolveWait: ((value: { code: number | null; signal: NodeJS.Signals | null }) => void) | null = null;
   return {
     pid: 1234,

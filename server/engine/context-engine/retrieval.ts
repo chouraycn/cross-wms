@@ -16,7 +16,7 @@ export interface VectorRecord {
   id: string;
   vector?: number[];
   content: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
   source?: string;
   timestamp?: number;
 }
@@ -25,7 +25,7 @@ export interface SearchResult {
   id: string;
   content: string;
   score: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
   source?: string;
   timestamp?: number;
 }
@@ -33,7 +33,7 @@ export interface SearchResult {
 export interface SearchOptions {
   topK?: number;
   minScore?: number;
-  filter?: Record<string, unknown>;
+  filter?: Record<string, any>;
   includeMetadata?: boolean;
   hybridSearch?: boolean;
   textWeight?: number;

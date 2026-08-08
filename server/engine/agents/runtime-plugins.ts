@@ -6,6 +6,6 @@
  */
 
 /** Ensures runtime plugins are loaded. */
-export function ensureRuntimePluginsLoaded(..._args: unknown[]): void {
+export function ensureRuntimePluginsLoaded(..._args: any[]): void {
   // Cross-wms does not have the runtime plugin system.
 }

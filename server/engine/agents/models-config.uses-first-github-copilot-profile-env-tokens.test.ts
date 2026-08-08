@@ -31,14 +31,14 @@ vi.mock("../plugins/provider-runtime.js", () => ({
 }));
 
 vi.mock("./models-config.providers.js", () => ({
-  applyNativeStreamingUsageCompat: (providers: unknown) => providers,
-  enforceSourceManagedProviderSecrets: ({ providers }: { providers: unknown }) => providers,
-  normalizeProviderCatalogModelsForConfig: (providers: unknown) => providers,
-  normalizeProviders: ({ providers }: { providers: unknown }) => providers,
+  applyNativeStreamingUsageCompat: (providers: any) => providers,
+  enforceSourceManagedProviderSecrets: ({ providers }: { providers: any }) => providers,
+  normalizeProviderCatalogModelsForConfig: (providers: any) => providers,
+  normalizeProviders: ({ providers }: { providers: any }) => providers,
   resolveImplicitProviders: async ({
     explicitProviders,
   }: {
-    explicitProviders?: Record<string, unknown>;
+    explicitProviders?: Record<string, any>;
   }) => explicitProviders ?? {},
 }));
 
@@ -276,7 +276,7 @@ function expectCopilotProviderFromPlan(
   expect(plan.action).toBe("write");
   const parsed =
     plan.action === "write"
-      ? (JSON.parse(plan.contents) as { providers?: Record<string, unknown> })
+      ? (JSON.parse(plan.contents) as { providers?: Record<string, any> })
       : {};
   const provider = parsed.providers?.["github-copilot"];
   if (provider === null || typeof provider !== "object") {

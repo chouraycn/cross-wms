@@ -191,7 +191,7 @@ export function normalizeAgentId(value: string | undefined | null): string {
   );
 }
 
-export function normalizeOptionalAgentId(value: unknown): string | undefined {
+export function normalizeOptionalAgentId(value: any): string | undefined {
   const trimmed = normalizeOptionalString(value);
   return trimmed ? normalizeAgentId(trimmed) : undefined;
 }

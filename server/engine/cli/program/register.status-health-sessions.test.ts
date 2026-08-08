@@ -52,17 +52,17 @@ const setVerbose = mocks.setVerbose;
 const runtime = mocks.runtime;
 
 type MockCalls = {
-  mock: { calls: unknown[][] };
+  mock: { calls: any[][] };
 };
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object") {
     throw new Error(`expected ${label}`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function expectCommandOptions(command: MockCalls, expected: Record<string, unknown>) {
+function expectCommandOptions(command: MockCalls, expected: Record<string, any>) {
   expect(command.mock.calls).toHaveLength(1);
   const call = command.mock.calls[0];
   if (!call) {

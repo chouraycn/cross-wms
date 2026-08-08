@@ -2,15 +2,15 @@
 
 export type PluginRuntimeGatewayRequestScope = unknown;
 export type PluginRuntimePluginScope = unknown;
-export function withPluginRuntimeGatewayRequestScope(...args: unknown[]): unknown {
+export function withPluginRuntimeGatewayRequestScope(...args: any[]): any {
   return undefined;
 }
-export function withPluginRuntimePluginScope(...args: unknown[]): unknown {
+export function withPluginRuntimePluginScope(...args: any[]): any {
   return undefined;
 }
-export function withPluginRuntimePluginIdScope(...args: unknown[]): unknown {
+export function withPluginRuntimePluginIdScope(...args: any[]): any {
   return undefined;
 }
-export function getPluginRuntimeGatewayRequestScope(...args: unknown[]): unknown {
+export function getPluginRuntimeGatewayRequestScope(...args: any[]): any {
   return undefined;
 }

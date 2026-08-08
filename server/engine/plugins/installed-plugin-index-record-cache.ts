@@ -20,7 +20,7 @@
  * openclaw 不同。这里保留 openclaw 原版字段集以维持 InstallRecordsCacheEntry
  * 中 records 的 Record<string, PluginInstallRecord> 类型契约。
  */
-type PluginInstallRecord = Record<string, unknown>;
+type PluginInstallRecord = Record<string, any>;
 
 /** Cached installed plugin records for one store/recovery key. */
 export type InstallRecordsCacheEntry = {

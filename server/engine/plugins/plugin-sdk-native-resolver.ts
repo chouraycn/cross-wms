@@ -133,14 +133,14 @@ function resolveLoaderPackageRootFromModulePath(modulePath: string): string {
     if (fs.existsSync(packageJsonPath)) {
       try {
         const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8")) as {
-          bin?: unknown;
-          name?: unknown;
+          bin?: any;
+          name?: any;
         };
         if (
           packageJson.name === "openclaw" ||
           (typeof packageJson.bin === "object" &&
             packageJson.bin !== null &&
-            typeof (packageJson.bin as { openclaw?: unknown }).openclaw === "string")
+            typeof (packageJson.bin as { openclaw?: any }).openclaw === "string")
         ) {
           return cursor;
         }

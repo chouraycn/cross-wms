@@ -62,7 +62,7 @@ function createManagedTaskFlow(
   return flow;
 }
 
-function readFirstJsonLog(runtime: RuntimeEnv): unknown {
+function readFirstJsonLog(runtime: RuntimeEnv): any {
   const calls = vi.mocked(runtime.log).mock.calls;
   const [message] = calls[0] ?? [];
   return JSON.parse(String(message));
@@ -182,7 +182,7 @@ describe("tasks commands", () => {
       const limitedRuntime = createRuntime();
       await tasksAuditCommand({ json: true, limit: 1 }, limitedRuntime);
 
-      const limitedPayload = readFirstJsonLog(limitedRuntime) as { findings: unknown[] };
+      const limitedPayload = readFirstJsonLog(limitedRuntime) as { findings: any[] };
       const [limitedFinding] = limitedPayload.findings as Array<{ ageMs?: number }>;
 
       expect(limitedPayload.findings).toHaveLength(1);
@@ -364,7 +364,7 @@ describe("tasks commands", () => {
         }),
       );
 
-      const updated = JSON.parse(await fs.readFile(storePath, "utf8")) as Record<string, unknown>;
+      const updated = JSON.parse(await fs.readFile(storePath, "utf8")) as Record<string, any>;
       expect(updated[childSessionKey]).toBeUndefined();
       expect(updated["agent:main:telegram:dm:recent"]).toBeDefined();
     });
@@ -555,7 +555,7 @@ describe("tasks commands", () => {
       expect(payload.maintenance.sessions.stores[0]?.pruned).toBe(1);
       expect(payload.maintenance.sessions.stores[0]?.preservedRunning).toBe(1);
 
-      const updated = JSON.parse(await fs.readFile(storePath, "utf-8")) as Record<string, unknown>;
+      const updated = JSON.parse(await fs.readFile(storePath, "utf-8")) as Record<string, any>;
       expect(updated["agent:main:cron:done-job:run:old-run"]).toBeUndefined();
       for (const key of [
         "agent:main:cron:running-job:run:old-run",

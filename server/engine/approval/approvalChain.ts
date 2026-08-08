@@ -50,7 +50,7 @@ export interface ApprovalRequestPayload {
   /** 工具名称 */
   toolName: string;
   /** 工具参数 */
-  toolArgs: Record<string, unknown>;
+  toolArgs: Record<string, any>;
   /** 风险等级 */
   riskLevel: ApprovalRiskLevel;
   /** 审批原因 */

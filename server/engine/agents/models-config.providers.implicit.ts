@@ -11,7 +11,7 @@
 
 /** Resolve the plugin discovery filter used by implicit provider discovery tests. */
 export function resolveProviderDiscoveryFilterForTest(params: {
-  config?: Record<string, unknown>;
+  config?: Record<string, any>;
   workspaceDir?: string;
   env: NodeJS.ProcessEnv;
   resolveOwners?: (provider: string) => readonly string[] | undefined;
@@ -39,7 +39,7 @@ export function resolveProviderDiscoveryFilterForTest(params: {
 
 /** Resolve provider owner plugin IDs from a preloaded metadata snapshot for tests. */
 export function resolvePluginMetadataProviderOwnersForTest(
-  _pluginMetadataSnapshot: unknown,
+  _pluginMetadataSnapshot: any,
   _provider: string,
 ): readonly string[] | undefined {
   // Full plugin metadata owner resolution requires the plugin metadata snapshot system.
@@ -50,15 +50,15 @@ export function resolvePluginMetadataProviderOwnersForTest(
 export async function resolveImplicitProviders(
   _params: {
     agentDir: string;
-    config?: Record<string, unknown>;
+    config?: Record<string, any>;
     env?: NodeJS.ProcessEnv;
     workspaceDir?: string;
-    explicitProviders?: Record<string, unknown> | null;
+    explicitProviders?: Record<string, any> | null;
     providerDiscoveryProviderIds?: readonly string[];
     providerDiscoveryTimeoutMs?: number;
     providerDiscoveryEntriesOnly?: boolean;
   },
-): Promise<Record<string, unknown>> {
+): Promise<Record<string, any>> {
   // Full implicit provider discovery requires the plugin runtime, model catalog
   // core, and auth profile store — not available in cross-wms.
   return {};

@@ -30,13 +30,13 @@ const DEFAULT_THREAD_BINDING_IDLE_HOURS = 24;
 const DEFAULT_THREAD_BINDING_MAX_AGE_HOURS = 0;
 
 type SessionThreadBindingsConfigShape = {
-  enabled?: unknown;
-  idleHours?: unknown;
-  maxAgeHours?: unknown;
-  spawnSessions?: unknown;
-  spawnSubagentSessions?: unknown;
-  spawnAcpSessions?: unknown;
-  defaultSpawnContext?: unknown;
+  enabled?: any;
+  idleHours?: any;
+  maxAgeHours?: any;
+  spawnSessions?: any;
+  spawnSubagentSessions?: any;
+  spawnAcpSessions?: any;
+  defaultSpawnContext?: any;
 };
 
 type ChannelThreadBindingsContainerShape = {
@@ -97,14 +97,14 @@ function resolveDefaultTopLevelPlacement(channel: string): "current" | "child" {
   );
 }
 
-function normalizeBoolean(value: unknown): boolean | undefined {
+function normalizeBoolean(value: any): boolean | undefined {
   if (typeof value !== "boolean") {
     return undefined;
   }
   return value;
 }
 
-function normalizeThreadBindingHours(raw: unknown): number | undefined {
+function normalizeThreadBindingHours(raw: any): number | undefined {
   if (typeof raw !== "number" || !Number.isFinite(raw)) {
     return undefined;
   }
@@ -114,7 +114,7 @@ function normalizeThreadBindingHours(raw: unknown): number | undefined {
   return raw;
 }
 
-function resolveThreadBindingHoursMs(raw: unknown, fallbackHours: number): number {
+function resolveThreadBindingHoursMs(raw: any, fallbackHours: number): number {
   const hours = normalizeThreadBindingHours(raw) ?? fallbackHours;
   const durationMs = Math.floor(hours * 60 * 60 * 1000);
   if (!Number.isFinite(durationMs) || durationMs < 0) {
@@ -125,8 +125,8 @@ function resolveThreadBindingHoursMs(raw: unknown, fallbackHours: number): numbe
 
 /** Resolves thread-binding idle timeout with channel/account override before session default. */
 export function resolveThreadBindingIdleTimeoutMs(params: {
-  channelIdleHoursRaw: unknown;
-  sessionIdleHoursRaw: unknown;
+  channelIdleHoursRaw: any;
+  sessionIdleHoursRaw: any;
 }): number {
   return resolveThreadBindingHoursMs(
     params.channelIdleHoursRaw,
@@ -136,8 +136,8 @@ export function resolveThreadBindingIdleTimeoutMs(params: {
 
 /** Resolves thread-binding max age with channel/account override before session default. */
 export function resolveThreadBindingMaxAgeMs(params: {
-  channelMaxAgeHoursRaw: unknown;
-  sessionMaxAgeHoursRaw: unknown;
+  channelMaxAgeHoursRaw: any;
+  sessionMaxAgeHoursRaw: any;
 }): number {
   return resolveThreadBindingHoursMs(
     params.channelMaxAgeHoursRaw,
@@ -157,8 +157,8 @@ export function resolveThreadBindingEffectiveExpiresAt(params: {
 
 /** Resolves the effective enabled flag for thread bindings. */
 export function resolveThreadBindingsEnabled(params: {
-  channelEnabledRaw: unknown;
-  sessionEnabledRaw: unknown;
+  channelEnabledRaw: any;
+  sessionEnabledRaw: any;
 }): boolean {
   return (
     normalizeBoolean(params.channelEnabledRaw) ?? normalizeBoolean(params.sessionEnabledRaw) ?? true
@@ -173,7 +173,7 @@ function resolveChannelThreadBindings(params: {
   root?: SessionThreadBindingsConfigShape;
   account?: SessionThreadBindingsConfigShape;
 } {
-  const channels = params.cfg.channels as Record<string, unknown> | undefined;
+  const channels = params.cfg.channels as Record<string, any> | undefined;
   const channelConfig = channels?.[params.channel] as
     | ChannelThreadBindingsContainerShape
     | undefined;
@@ -190,7 +190,7 @@ function resolveSpawnFlagKey(
   return kind === "subagent" ? "spawnSubagentSessions" : "spawnAcpSessions";
 }
 
-function normalizeSpawnContext(value: unknown): ThreadBindingSpawnContext | undefined {
+function normalizeSpawnContext(value: any): ThreadBindingSpawnContext | undefined {
   return value === "isolated" || value === "fork" ? value : undefined;
 }
 

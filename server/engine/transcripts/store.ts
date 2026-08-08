@@ -65,7 +65,7 @@ export class TranscriptsStore {
   }
 
   private async hasSessionMetadata(dir: string): Promise<boolean> {
-    return (await readJsonFile<unknown>(path.join(dir, "metadata.json"))) !== undefined;
+    return (await readJsonFile<any>(path.join(dir, "metadata.json"))) !== undefined;
   }
 
   private async findSessionDirForSession(session: TranscriptSessionDescriptor): Promise<string> {

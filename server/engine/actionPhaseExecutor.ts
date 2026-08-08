@@ -66,7 +66,7 @@ export class ActionPhaseExecutor {
   /** 数字员工（per-call）MCP 客户端管理器：隔离 MCP server 连接 */
   private readonly staffMcpManager?: import('./mcpClientManager.js').McpClientManager;
   /** 数字员工（per-call）物化技能执行器 */
-  private readonly extraSkillExecutor?: (id: string, params: Record<string, unknown>, ctx?: import('../types/skill-runtime.js').SkillContext) => Promise<import('../types/skill-runtime.js').SkillResult>;
+  private readonly extraSkillExecutor?: (id: string, params: Record<string, any>, ctx?: import('../types/skill-runtime.js').SkillContext) => Promise<import('../types/skill-runtime.js').SkillResult>;
   /** 数字员工（per-call）技能权限配置 */
   private readonly skillPermissionConfig?: import('../types/skill-runtime.js').SkillPermissionConfig;
   /** 数字员工技能调用事件回调（写侧统计来源）。仅 staff 注入，未注入时通用路径安全跳过 */
@@ -83,7 +83,7 @@ export class ActionPhaseExecutor {
       turn: number;
     };
     staffMcpManager?: import('./mcpClientManager.js').McpClientManager;
-    extraSkillExecutor?: (id: string, params: Record<string, unknown>, ctx?: import('../types/skill-runtime.js').SkillContext) => Promise<import('../types/skill-runtime.js').SkillResult>;
+    extraSkillExecutor?: (id: string, params: Record<string, any>, ctx?: import('../types/skill-runtime.js').SkillContext) => Promise<import('../types/skill-runtime.js').SkillResult>;
     skillPermissionConfig?: import('../types/skill-runtime.js').SkillPermissionConfig;
     /** 数字员工技能调用事件回调（写侧统计来源）。仅 staff 注入 */
     onSkillExecuted?: (p: { sessionId: string; skillId: string }) => void;
@@ -386,7 +386,7 @@ export class ActionPhaseExecutor {
     result = middlewareResult.content;
 
     // P1-2 修复：传入实际消息数组，使上下文累积保护生效
-      result = guardToolResultContext(result, context.currentMessages as unknown[], 128000);
+      result = guardToolResultContext(result, context.currentMessages as any[], 128000);
 
     // 统计记录（使用 effectiveToolName，让健康分跟踪实际执行的工具）
     toolExecutionStats.record({
@@ -418,7 +418,7 @@ export class ActionPhaseExecutor {
     if (toolCallRecordId) {
       try {
         const success = middlewareResult.errorType === 'none';
-        let resultData: unknown = null;
+        let resultData: any = null;
         let errorMsg: string | undefined;
         if (success) {
           try { resultData = JSON.parse(result); } catch { resultData = result; }

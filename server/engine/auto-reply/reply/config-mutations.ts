@@ -13,12 +13,12 @@ export class AutoReplyConfigMutationError extends Error {}
 class AutoReplyConfigNoopMutation extends Error {}
 
 /** Extracts user-facing mutation error text from config command failures. */
-export function formatAutoReplyConfigMutationError(error: unknown): string | null {
+export function formatAutoReplyConfigMutationError(error: any): string | null {
   return error instanceof AutoReplyConfigMutationError ? error.message : null;
 }
 
 function assertValidConfig(
-  next: Record<string, unknown>,
+  next: Record<string, any>,
   action: string,
 ): { config: OpenClawConfig } {
   const validated = validateConfigObjectWithPlugins(next);
@@ -38,7 +38,7 @@ export async function unsetConfigPath(path: string[]): Promise<boolean> {
       base: "source",
       afterWrite: { mode: "auto" },
       transform: (currentConfig) => {
-        const next = structuredClone(currentConfig) as Record<string, unknown>;
+        const next = structuredClone(currentConfig) as Record<string, any>;
         const removed = unsetConfigValueAtPath(next, path);
         if (!removed) {
           throw new AutoReplyConfigNoopMutation();
@@ -58,12 +58,12 @@ export async function unsetConfigPath(path: string[]): Promise<boolean> {
 }
 
 /** Sets and validates a config path in the source config file. */
-export async function setConfigPath(path: string[], value: unknown): Promise<void> {
+export async function setConfigPath(path: string[], value: any): Promise<void> {
   await transformConfigFileWithRetry({
     base: "source",
     afterWrite: { mode: "auto" },
     transform: (currentConfig) => {
-      const next = structuredClone(currentConfig) as Record<string, unknown>;
+      const next = structuredClone(currentConfig) as Record<string, any>;
       setConfigValueAtPath(next, path, value);
       return { nextConfig: assertValidConfig(next, "set").config };
     },
@@ -102,7 +102,7 @@ type MaybePromise<T> = T | Promise<T>;
 
 type ApplyAllowlistConfigEdit = (params: {
   cfg: OpenClawConfig;
-  parsedConfig: Record<string, unknown>;
+  parsedConfig: Record<string, any>;
   accountId?: string | null;
   scope: "dm" | "group";
   action: "add" | "remove";
@@ -122,7 +122,7 @@ export async function applyAllowlistConfigMutation(params: {
     base: "source",
     afterWrite: { mode: "auto" },
     transform: async (currentConfig) => {
-      const latestParsedConfig = structuredClone(currentConfig) as Record<string, unknown>;
+      const latestParsedConfig = structuredClone(currentConfig) as Record<string, any>;
       const latestEditResult = await params.applyConfigEdit({
         cfg: currentConfig,
         parsedConfig: latestParsedConfig,

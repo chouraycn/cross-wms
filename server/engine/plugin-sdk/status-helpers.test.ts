@@ -31,10 +31,10 @@ type ExpectedAccountSnapshot = {
   lastStartAt: number | null;
   lastStopAt: number | null;
   lastError: string | null;
-  probe?: unknown;
+  probe?: any;
   lastInboundAt: number | null;
   lastOutboundAt: number | null;
-} & Record<string, unknown>;
+} & Record<string, any>;
 
 const defaultChannelSummary = {
   configured: false,

@@ -63,7 +63,7 @@ describe("secrets runtime snapshot zalo token activity", () => {
     });
 
     expect(
-      (snapshot.config.channels?.zalo?.accounts?.work as { botToken?: unknown } | undefined)
+      (snapshot.config.channels?.zalo?.accounts?.work as { botToken?: any } | undefined)
         ?.botToken,
     ).toBe("resolved-zalo-work-token");
     expect(snapshot.warnings.map((warning) => warning.path)).not.toContain(
@@ -120,7 +120,7 @@ describe("secrets runtime snapshot zalo token activity", () => {
     });
 
     expect(
-      (snapshot.config.channels?.zalo?.accounts?.default as { botToken?: unknown } | undefined)
+      (snapshot.config.channels?.zalo?.accounts?.default as { botToken?: any } | undefined)
         ?.botToken,
     ).toBe("resolved-zalo-default-token");
     expect(snapshot.warnings.map((warning) => warning.path)).not.toContain(

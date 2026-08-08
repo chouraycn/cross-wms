@@ -9,12 +9,12 @@ export type RunTasksWithConcurrencyOptions<T> = {
   tasks: Array<() => Promise<T>>;
   limit: number;
   errorMode?: ConcurrencyErrorMode;
-  onTaskError?: (error: unknown, index: number) => void;
+  onTaskError?: (error: any, index: number) => void;
 };
 
 export type RunTasksWithConcurrencyResult<T> = {
   results: T[];
-  firstError: unknown;
+  firstError: any;
   hasError: boolean;
 };
 
@@ -30,7 +30,7 @@ export async function runTasksWithConcurrency<T>(
   const resolvedLimit = Math.max(1, Math.min(limit, tasks.length));
   const results: T[] = Array.from({ length: tasks.length });
   let next = 0;
-  let firstError: unknown = undefined as unknown;
+  let firstError: any = undefined as any;
   let hasError = false;
 
   const workers = Array.from({ length: resolvedLimit }, async () => {

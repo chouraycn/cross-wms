@@ -57,7 +57,7 @@ export class ChatServiceRuntime implements AcpRuntime {
   async executeTurn(params: {
     handle: AcpRuntimeHandle;
     text: string;
-    attachments?: unknown[];
+    attachments?: any[];
     mode: string;
     signal: AbortSignal;
     requestId: string;
@@ -75,7 +75,7 @@ export class ChatServiceRuntime implements AcpRuntime {
   private async *createEventStream(
     handle: AcpRuntimeHandle,
     text: string,
-    attachments?: unknown[],
+    attachments?: any[],
     signal?: AbortSignal,
   ): AsyncIterable<AcpTurnEvent> {
     const queue: AcpTurnEvent[] = [];
@@ -170,7 +170,7 @@ export class ChatServiceRuntime implements AcpRuntime {
 /**
  * 将单个 SSE 事件转换为 AcpTurnEvent 数组
  */
-function convertSSEtoAcpEvents(event: Record<string, unknown>): AcpTurnEvent[] {
+function convertSSEtoAcpEvents(event: Record<string, any>): AcpTurnEvent[] {
   const events: AcpTurnEvent[] = [];
   const type = event.type as string;
 

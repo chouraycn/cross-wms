@@ -6,4 +6,4 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export const TOOL_DISPLAY_CONFIG: unknown = undefined;
+export const TOOL_DISPLAY_CONFIG: any = undefined;

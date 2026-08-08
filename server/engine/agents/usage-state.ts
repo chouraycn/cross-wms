@@ -36,7 +36,7 @@ function normalizeProviderId(provider: string): string {
   return provider.trim().toLowerCase();
 }
 
-function asDateTimestampMs(value: unknown): number | undefined {
+function asDateTimestampMs(value: any): number | undefined {
   if (typeof value === "number" && Number.isFinite(value) && value > 0) {
     return Math.floor(value);
   }

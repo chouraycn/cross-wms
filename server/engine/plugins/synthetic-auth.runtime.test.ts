@@ -17,7 +17,7 @@ type ExternalAuthManifestRegistryResult = {
 const getPluginRegistryState = vi.hoisted(() => vi.fn());
 const pluginRegistryMocks = vi.hoisted(() => ({
   loadPluginRegistrySnapshotWithMetadata: vi.fn(
-    (_params?: unknown): SyntheticAuthRegistrySnapshotResult => ({
+    (_params?: any): SyntheticAuthRegistrySnapshotResult => ({
       source: "persisted",
       snapshot: { plugins: [] },
       diagnostics: [],

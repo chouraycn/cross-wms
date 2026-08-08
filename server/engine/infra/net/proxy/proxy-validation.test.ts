@@ -238,7 +238,7 @@ describe("proxy validation", () => {
       timeoutMs: 5000,
     });
     const deniedCall = fetchCheck.mock.calls[1]?.[0] as
-      | { proxyUrl?: unknown; targetUrl?: string; timeoutMs?: unknown }
+      | { proxyUrl?: any; targetUrl?: string; timeoutMs?: any }
       | undefined;
     expect(deniedCall?.proxyUrl).toBe("http://127.0.0.1:3128");
     expect(deniedCall?.timeoutMs).toBe(5000);

@@ -124,7 +124,7 @@ export function createPikaProvider(
       const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
       try {
-        const body: Record<string, unknown> = {
+        const body: Record<string, any> = {
           model,
           promptText: req.prompt,
           duration: durationSeconds,

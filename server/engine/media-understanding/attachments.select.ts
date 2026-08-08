@@ -49,11 +49,11 @@ function orderAttachments(
   return list;
 }
 
-function isAttachmentRecord(value: unknown): value is MediaAttachment {
+function isAttachmentRecord(value: any): value is MediaAttachment {
   if (!value || typeof value !== "object") {
     return false;
   }
-  const entry = value as Record<string, unknown>;
+  const entry = value as Record<string, any>;
   if (typeof entry.index !== "number") {
     return false;
   }

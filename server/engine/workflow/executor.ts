@@ -101,7 +101,7 @@ import type {
 
 type ActionConfig = {
   type: 'ai_call' | 'tool_execution' | 'notification' | 'data_transform' | 'api_call' | 'script';
-  params: Record<string, unknown>;
+  params: Record<string, any>;
 };
 
 async function sendNotification(options: { title: string; body: string; type?: string }): Promise<void> {
@@ -164,7 +164,7 @@ export class WorkflowExecutor {
   private pauseResolvers: Map<string, () => void> = new Map();
   private variableContexts: Map<string, VariableContext> = new Map();
   private subWorkflowLoaders: Map<string, (workflowId: string) => Promise<Workflow | null>> = new Map();
-  private mergeNodeInputs: Map<string, Map<string, Record<string, unknown>>> = new Map();
+  private mergeNodeInputs: Map<string, Map<string, Record<string, any>>> = new Map();
 
   /**
    * 设置子工作流加载器
@@ -303,7 +303,7 @@ export class WorkflowExecutor {
     workflow: Workflow,
     triggerType: 'manual' | 'schedule' | 'event' | 'webhook',
     triggeredBy?: string,
-    initialVariables?: Record<string, unknown>,
+    initialVariables?: Record<string, any>,
     sessionId?: string
   ): Promise<string> {
     if (this.activeExecutions >= this.maxConcurrentExecutions) {
@@ -454,7 +454,7 @@ export class WorkflowExecutor {
 
     try {
       const timeout = node.timeout || 0;
-      let output: Record<string, unknown>;
+      let output: Record<string, any>;
 
       if (timeout > 0) {
         output = await this.executeWithTimeout(
@@ -522,7 +522,7 @@ export class WorkflowExecutor {
     node: WorkflowNode,
     context: ExecutionContext,
     variableCtx: VariableContext
-  ): Promise<Record<string, unknown>> {
+  ): Promise<Record<string, any>> {
     switch (node.type) {
       case 'trigger':
         return this.executeTrigger(node, context);
@@ -585,7 +585,7 @@ export class WorkflowExecutor {
   private async executeTrigger(
     node: WorkflowNode,
     context: ExecutionContext
-  ): Promise<Record<string, unknown>> {
+  ): Promise<Record<string, any>> {
     this.log(context, 'info', `触发器激活: ${node.name}`, node.id);
     return { triggered: true, triggerType: context.triggerType };
   }
@@ -598,7 +598,7 @@ export class WorkflowExecutor {
     node: WorkflowNode,
     context: ExecutionContext,
     variableCtx: VariableContext
-  ): Promise<Record<string, unknown>> {
+  ): Promise<Record<string, any>> {
     const config = node.config as unknown as ConditionConfig;
     const result = this.evaluateCondition(config, variableCtx);
 
@@ -622,13 +622,13 @@ export class WorkflowExecutor {
   private async executeAction(
     node: WorkflowNode,
     context: ExecutionContext
-  ): Promise<Record<string, unknown>> {
+  ): Promise<Record<string, any>> {
     const config = node.config as ActionConfig;
     const timeout = node.timeout || 30000;
 
     this.log(context, 'info', `执行动作: ${node.name} (type: ${config.type})`, node.id);
 
-    let result: Record<string, unknown>;
+    let result: Record<string, any>;
 
     switch (config.type) {
       case 'ai_call':
@@ -663,7 +663,7 @@ export class WorkflowExecutor {
   private async executeAICall(
     config: ActionConfig,
     context: ExecutionContext
-  ): Promise<Record<string, unknown>> {
+  ): Promise<Record<string, any>> {
     const { prompt, modelId, systemPrompt } = config.params;
     if (!prompt) {
       throw new Error('AI 调用缺少 prompt 参数');
@@ -698,7 +698,7 @@ export class WorkflowExecutor {
   private async executeToolCall(
     config: ActionConfig,
     context: ExecutionContext
-  ): Promise<Record<string, unknown>> {
+  ): Promise<Record<string, any>> {
     const { toolName, arguments: args } = config.params;
     if (!toolName) {
       throw new Error('工具调用缺少 toolName 参数');
@@ -706,7 +706,7 @@ export class WorkflowExecutor {
 
     const strToolName = String(toolName);
     const effectiveToolName = toolFallbackManager.checkAndFallback(strToolName);
-    const strArgs = args as Record<string, unknown> || {};
+    const strArgs = args as Record<string, any> || {};
     const execStartTime = Date.now();
     let retryCount = 0;
     const receiptId = uuidv4();
@@ -832,7 +832,7 @@ export class WorkflowExecutor {
   private async executeNotification(
     config: ActionConfig,
     context: ExecutionContext
-  ): Promise<Record<string, unknown>> {
+  ): Promise<Record<string, any>> {
     const { title, message, type } = config.params;
     if (!title || !message) {
       throw new Error('通知缺少 title 或 message 参数');
@@ -868,7 +868,7 @@ export class WorkflowExecutor {
   private async executeDataTransform(
     config: ActionConfig,
     context: ExecutionContext
-  ): Promise<Record<string, unknown>> {
+  ): Promise<Record<string, any>> {
     const { input, transform } = config.params;
     if (!input || !transform) {
       throw new Error('数据转换缺少 input 或 transform 参数');
@@ -895,7 +895,7 @@ export class WorkflowExecutor {
   private async executeApiCall(
     config: ActionConfig,
     context: ExecutionContext
-  ): Promise<Record<string, unknown>> {
+  ): Promise<Record<string, any>> {
     const { url, method, headers, body } = config.params;
     if (!url || !method) {
       throw new Error('API 调用缺少 url 或 method 参数');
@@ -928,7 +928,7 @@ export class WorkflowExecutor {
   private async executeScript(
     config: ActionConfig,
     context: ExecutionContext
-  ): Promise<Record<string, unknown>> {
+  ): Promise<Record<string, any>> {
     const { script, language } = config.params;
     if (!script) {
       throw new Error('脚本执行缺少 script 参数');
@@ -953,13 +953,13 @@ export class WorkflowExecutor {
    * 应用数据转换
    */
   private applyTransform(
-    input: unknown,
-    transform: unknown,
+    input: any,
+    transform: any,
     variableCtx: VariableContext
-  ): unknown {
+  ): any {
     if (typeof transform === 'object' && transform !== null) {
-      const result: Record<string, unknown> = {};
-      for (const [key, value] of Object.entries(transform as Record<string, unknown>)) {
+      const result: Record<string, any> = {};
+      for (const [key, value] of Object.entries(transform as Record<string, any>)) {
         if (typeof value === 'string' && value.startsWith('{{') && value.endsWith('}}')) {
           const expr = value.slice(2, -2).trim();
           result[key] = variableCtx.evaluate(expr) ?? this.evaluateExpression(expr, { input, ...variableCtx.snapshot() });
@@ -979,8 +979,8 @@ export class WorkflowExecutor {
    */
   private evaluateExpression(
     expr: string,
-    context: Record<string, unknown>
-  ): unknown {
+    context: Record<string, any>
+  ): any {
     try {
       assertWorkflowScriptSafe(expr, 'expression');
       const keys = Object.keys(context);
@@ -999,7 +999,7 @@ export class WorkflowExecutor {
     script: string,
     language: string,
     variableCtx: VariableContext
-  ): unknown {
+  ): any {
     if (language === 'javascript' || !language) {
       assertWorkflowScriptSafe(script, 'script');
       const variablesObj = variableCtx.snapshot();
@@ -1019,7 +1019,7 @@ export class WorkflowExecutor {
     node: WorkflowNode,
     context: ExecutionContext,
     variableCtx: VariableContext
-  ): Promise<Record<string, unknown>> {
+  ): Promise<Record<string, any>> {
     const config = node.config as unknown as ParallelConfigExt;
     this.log(context, 'info', `并行执行 ${config.branches.length} 个分支`, node.id);
 
@@ -1091,9 +1091,9 @@ export class WorkflowExecutor {
     node: WorkflowNode,
     context: ExecutionContext,
     variableCtx: VariableContext
-  ): Promise<Record<string, unknown>> {
+  ): Promise<Record<string, any>> {
     const config = node.config as unknown as LoopConfig;
-    const iteratorData = variableCtx.get(config.iteratorSource) as unknown[];
+    const iteratorData = variableCtx.get(config.iteratorSource) as any[];
     const maxIterations = config.maxIterations || 100;
 
     if (!Array.isArray(iteratorData)) {
@@ -1107,7 +1107,7 @@ export class WorkflowExecutor {
       throw new Error(`找不到循环体节点: ${config.bodyNodeId}`);
     }
 
-    const results: unknown[] = [];
+    const results: any[] = [];
     const iterations = Math.min(iteratorData.length, maxIterations);
 
     for (let i = 0; i < iterations; i++) {
@@ -1132,7 +1132,7 @@ export class WorkflowExecutor {
     node: WorkflowNode,
     context: ExecutionContext,
     variableCtx: VariableContext
-  ): Promise<Record<string, unknown>> {
+  ): Promise<Record<string, any>> {
     const config = node.config;
 
     if (config.type === 'duration' && config.duration) {
@@ -1161,7 +1161,7 @@ export class WorkflowExecutor {
     node: WorkflowNode,
     context: ExecutionContext,
     variableCtx: VariableContext
-  ): Promise<Record<string, unknown>> {
+  ): Promise<Record<string, any>> {
     const config = node.config as unknown as DelayConfig;
     let duration = config.duration;
 
@@ -1185,7 +1185,7 @@ export class WorkflowExecutor {
     node: WorkflowNode,
     context: ExecutionContext,
     variableCtx: VariableContext
-  ): Promise<Record<string, unknown>> {
+  ): Promise<Record<string, any>> {
     const config = node.config as unknown as ScriptConfig;
     if (!config.code) {
       throw new Error('脚本节点缺少代码');
@@ -1212,12 +1212,12 @@ export class WorkflowExecutor {
   private executeTransform(
     node: WorkflowNode,
     variableCtx: VariableContext
-  ): Record<string, unknown> {
+  ): Record<string, any> {
     const config = node.config as unknown as TransformConfig;
-    const result: Record<string, unknown> = {};
+    const result: Record<string, any> = {};
 
     for (const mapping of config.mappings) {
-      let value: unknown;
+      let value: any;
 
       if (mapping.source.startsWith('{{') && mapping.source.endsWith('}}')) {
         const expr = mapping.source.slice(2, -2).trim();
@@ -1248,7 +1248,7 @@ export class WorkflowExecutor {
   /**
    * 应用转换函数
    */
-  private applyTransformFunction(value: unknown, transform: string): unknown {
+  private applyTransformFunction(value: any, transform: string): any {
     const str = String(value);
     switch (transform) {
       case 'uppercase':
@@ -1287,7 +1287,7 @@ export class WorkflowExecutor {
     node: WorkflowNode,
     context: ExecutionContext,
     variableCtx: VariableContext
-  ): Promise<Record<string, unknown>> {
+  ): Promise<Record<string, any>> {
     const config = node.config as unknown as MergeConfig;
     const executionId = context.executionId;
     const mergeKey = `${executionId}:${node.id}`;
@@ -1337,9 +1337,9 @@ export class WorkflowExecutor {
    * 合并输入数据
    */
   private mergeInputs(
-    inputs: Map<string, Record<string, unknown>>,
+    inputs: Map<string, Record<string, any>>,
     strategy: string
-  ): Record<string, unknown> {
+  ): Record<string, any> {
     const inputArray = Array.from(inputs.values());
 
     switch (strategy) {
@@ -1348,9 +1348,9 @@ export class WorkflowExecutor {
       case 'last':
         return { ...(inputArray[inputArray.length - 1] || {}) };
       case 'concat':
-        const result: Record<string, unknown[]> = {};
+        const result: Record<string, any[]> = {};
         for (const input of inputArray) {
-          const inputObj = input as Record<string, unknown>;
+          const inputObj = input as Record<string, any>;
           for (const [key, value] of Object.entries(inputObj)) {
             if (!result[key]) {
               result[key] = [];
@@ -1400,7 +1400,7 @@ export class WorkflowExecutor {
     node: WorkflowNode,
     context: ExecutionContext,
     variableCtx: VariableContext
-  ): Promise<Record<string, unknown>> {
+  ): Promise<Record<string, any>> {
     const config = node.config as unknown as SwitchConfig;
     const expressionValue = variableCtx.evaluate(config.expression);
 
@@ -1430,7 +1430,7 @@ export class WorkflowExecutor {
     node: WorkflowNode,
     context: ExecutionContext,
     variableCtx: VariableContext
-  ): Promise<Record<string, unknown>> {
+  ): Promise<Record<string, any>> {
     const config = node.config as unknown as SubWorkflowConfig;
     if (!config.workflowId) {
       throw new Error('子工作流节点缺少工作流 ID');
@@ -1448,7 +1448,7 @@ export class WorkflowExecutor {
       throw new Error(`找不到子工作流: ${config.workflowId}`);
     }
 
-    const subVariables: Record<string, unknown> = {};
+    const subVariables: Record<string, any> = {};
     if (config.inputMappings) {
       for (const mapping of config.inputMappings) {
         const value = variableCtx.get(mapping.source);
@@ -1469,7 +1469,7 @@ export class WorkflowExecutor {
 
     const subExecutionId = await this.execute(subWorkflow, 'manual', undefined, subVariables);
     const subExecution = this.getExecution(subExecutionId);
-    const subResult: Record<string, unknown> = {
+    const subResult: Record<string, any> = {
       subWorkflowCompleted: true,
       workflowId: config.workflowId,
       async: false,
@@ -1521,7 +1521,7 @@ export class WorkflowExecutor {
    */
   evaluateCondition(
     config: ConditionConfig,
-    variableCtx: VariableContext | Record<string, unknown>
+    variableCtx: VariableContext | Record<string, any>
   ): boolean {
     const variables = variableCtx instanceof VariableContext
       ? variableCtx
@@ -1563,7 +1563,7 @@ export class WorkflowExecutor {
     node: WorkflowNode,
     context: ExecutionContext,
     variableCtx: VariableContext,
-    error: unknown
+    error: any
   ): Promise<number> {
     const retryPolicy = node.retryPolicy;
     if (!retryPolicy || retryPolicy.maxRetries === 0) {

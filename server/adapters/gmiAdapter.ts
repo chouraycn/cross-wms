@@ -45,7 +45,7 @@ export class GmiAdapter implements IAiApiAdapter {
       Object.assign(headers, compat.extraHeaders);
     }
 
-    const body: Record<string, unknown> = {
+    const body: Record<string, any> = {
       model: modelId,
       messages,
       temperature,

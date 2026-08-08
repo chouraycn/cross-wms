@@ -16,7 +16,7 @@ import {
   resolveBundlePluginRoot,
 } from "./bundle-mcp.test-support.js";
 
-function getServerArgs(value: unknown): unknown[] | undefined {
+function getServerArgs(value: any): any[] | undefined {
   return isRecord(value) && Array.isArray(value.args) ? value.args : undefined;
 }
 
@@ -27,7 +27,7 @@ function normalizePathForAssertion(value: string | undefined): string | undefine
   return path.normalize(value).replace(/\\/g, "/");
 }
 
-async function expectResolvedPathEqual(actual: unknown, expected: string): Promise<void> {
+async function expectResolvedPathEqual(actual: any, expected: string): Promise<void> {
   expect(typeof actual).toBe("string");
   if (typeof actual !== "string") {
     return;
@@ -37,7 +37,7 @@ async function expectResolvedPathEqual(actual: unknown, expected: string): Promi
   );
 }
 
-function expectNoDiagnostics(diagnostics: unknown[]) {
+function expectNoDiagnostics(diagnostics: any[]) {
   expect(diagnostics).toStrictEqual([]);
 }
 
@@ -56,7 +56,7 @@ function createEnabledBundleConfig(pluginIds: string[]): OpenClawConfig {
 }
 
 async function expectInlineBundleMcpServer(params: {
-  loadedServer: unknown;
+  loadedServer: any;
   pluginRoot: string;
   commandRelativePath: string;
   argRelativePaths: readonly string[];

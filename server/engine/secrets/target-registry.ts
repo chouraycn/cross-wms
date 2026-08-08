@@ -163,7 +163,7 @@ export function getSecretTargetById(id: string): SecretTarget | undefined {
 }
 
 /** 检查目标 ID 是否已知 */
-export function isKnownSecretTargetId(value: unknown): value is string {
+export function isKnownSecretTargetId(value: any): value is string {
   if (typeof value !== 'string') return false;
   return getSecretTargetRegistry().some(e => e.id === value);
 }

@@ -21,7 +21,7 @@ const {
     }
     return bytes;
   }),
-  resolveProviderHttpRequestConfigMock: vi.fn((params: Record<string, unknown>) => ({
+  resolveProviderHttpRequestConfigMock: vi.fn((params: Record<string, any>) => ({
     baseUrl: params.baseUrl ?? params.defaultBaseUrl ?? "https://example.test/v1",
     allowPrivateNetwork: false,
     headers: new Headers(params.defaultHeaders as HeadersInit | undefined),
@@ -36,7 +36,7 @@ vi.mock("openclaw/plugin-sdk/provider-http", () => ({
   resolveProviderHttpRequestConfig: resolveProviderHttpRequestConfigMock,
 }));
 
-function requireFirstMockArg(mock: ReturnType<typeof vi.fn>): Record<string, unknown> {
+function requireFirstMockArg(mock: ReturnType<typeof vi.fn>): Record<string, any> {
   const [call] = mock.mock.calls;
   if (!call) {
     throw new Error("missing first mock call");
@@ -45,7 +45,7 @@ function requireFirstMockArg(mock: ReturnType<typeof vi.fn>): Record<string, unk
   if (!arg || typeof arg !== "object") {
     throw new Error("missing first mock argument");
   }
-  return arg as Record<string, unknown>;
+  return arg as Record<string, any>;
 }
 
 describe("createOpenAiCompatibleSpeechProvider", () => {
@@ -114,7 +114,7 @@ describe("createOpenAiCompatibleSpeechProvider", () => {
     vi.stubEnv("DEMO_API_KEY", "sk-env");
 
     const provider = createOpenAiCompatibleSpeechProvider<{
-      routing?: Record<string, unknown>;
+      routing?: Record<string, any>;
     }>({
       id: "demo",
       label: "Demo",
@@ -131,7 +131,7 @@ describe("createOpenAiCompatibleSpeechProvider", () => {
       baseUrlPolicy: { kind: "trim-trailing-slash" },
       readExtraConfig: (raw) =>
         typeof raw?.routing === "object" && raw.routing !== null && !Array.isArray(raw.routing)
-          ? { routing: raw.routing as Record<string, unknown> }
+          ? { routing: raw.routing as Record<string, any> }
           : {},
       extraJsonBodyFields: [{ configKey: "routing", requestKey: "provider" }],
     });

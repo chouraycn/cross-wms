@@ -60,7 +60,7 @@ describe("clearSessionQueues", () => {
     });
     (
       testing as {
-        setDepsForTests: (deps: Partial<Record<string, unknown>> | undefined) => void;
+        setDepsForTests: (deps: Partial<Record<string, any>> | undefined) => void;
       }
     ).setDepsForTests({
       resolveEmbeddedSessionLane: "broken",

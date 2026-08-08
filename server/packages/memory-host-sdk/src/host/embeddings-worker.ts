@@ -60,7 +60,7 @@ type LocalEmbeddingWorkerResponse =
 /** Pending parent request plus abort cleanup. */
 type PendingRequest = {
   resolve: (value: number[] | number[][] | undefined) => void;
-  reject: (err: unknown) => void;
+  reject: (err: any) => void;
   abort?: () => void;
 };
 
@@ -306,7 +306,7 @@ class LocalEmbeddingWorkerClient {
   }
 
   /** Route one worker response to the matching pending request. */
-  private handleMessage(message: unknown): void {
+  private handleMessage(message: any): void {
     const response = message as Partial<LocalEmbeddingWorkerResponse>;
     if (typeof response.id !== "number") {
       return;
@@ -342,7 +342,7 @@ class LocalEmbeddingWorkerClient {
   }
 
   /** Reject all pending requests after child process failure. */
-  private rejectPending(err: unknown): void {
+  private rejectPending(err: any): void {
     const pending = [...this.pending.values()];
     this.pending.clear();
     for (const entry of pending) {
@@ -398,7 +398,7 @@ export async function createLocalEmbeddingWorkerProvider(
 }
 
 /** Convert abort reasons or arbitrary thrown values into lint-safe Error objects. */
-function toLintErrorObject(value: unknown, fallbackMessage: string): Error {
+function toLintErrorObject(value: any, fallbackMessage: string): Error {
   if (value instanceof Error) {
     return value;
   }

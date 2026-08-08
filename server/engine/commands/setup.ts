@@ -37,12 +37,12 @@ type SetupCommandDeps = {
     runtime: RuntimeEnv,
     opts: { path?: string; suffix?: string },
   ) => void | Promise<void>;
-  mkdir?: (dir: string, options: { recursive: true }) => Promise<unknown>;
+  mkdir?: (dir: string, options: { recursive: true }) => Promise<any>;
   resolveSessionTranscriptsDir?: () => string | Promise<string>;
   replaceConfigFile?: (params: {
     nextConfig: OpenClawConfig;
     afterWrite: { mode: "auto" };
-  }) => Promise<unknown>;
+  }) => Promise<any>;
 };
 
 type AgentWorkspaceModule = typeof import("@openclaw-src/agents/workspace.js");

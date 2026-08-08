@@ -36,13 +36,13 @@ export type PluginSessionExtensionRegistration = {
   pluginId: string;
   sessionId: string;
   key: string;
-  value: unknown;
+  value: any;
 };
 
 export type PluginSessionExtensionProjection = {
   pluginId: string;
   sessionId: string;
-  value: unknown;
+  value: any;
 };
 
 export type PluginToolPolicyDecision =
@@ -74,7 +74,7 @@ export type PluginTrustedToolPolicyRegistration = {
 export type PluginToolMetadataRegistration = {
   pluginId: string;
   toolName: string;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
 };
 
 export type PluginControlUiDescriptor = {
@@ -87,11 +87,11 @@ export type PluginSessionActionContext = {
   sessionId: string;
   pluginId: string;
   action: string;
-  params?: unknown;
+  params?: any;
 };
 
 export type PluginSessionActionResult =
-  | { ok: true; result?: unknown }
+  | { ok: true; result?: any }
   | { ok: false; error: string };
 
 export type PluginSessionActionRegistration = {
@@ -125,7 +125,7 @@ export type PluginAgentEventEmitResult =
 export type PluginRunContextPatch = {
   pluginId: string;
   key: string;
-  value: unknown;
+  value: any;
 };
 
 export type PluginRunContextGetParams = {
@@ -180,7 +180,7 @@ export type PluginSessionAttachmentParams = {
   file?: PluginSessionAttachmentFile;
   files: PluginSessionAttachmentFile[];
   url?: string;
-  content?: unknown;
+  content?: any;
   text?: string;
   sessionKey?: string;
   threadId?: string | number;
@@ -212,7 +212,7 @@ export type PluginSessionTurnScheduleParams = {
   delayMs?: number;
   at?: string | number | Date;
   tag?: string;
-  payload?: unknown;
+  payload?: any;
 };
 
 export type PluginSessionTurnUnscheduleByTagParams = {
@@ -237,7 +237,7 @@ export function normalizePluginHostHookId(value: string | undefined): string {
 export function buildPluginAgentTurnPrepareContext(params: {
   sessionId: string;
   pluginId?: string;
-}): unknown {
+}): any {
   void params;
   return undefined;
 }

@@ -292,7 +292,7 @@ export async function buildContextReply(params: HandleCommandsParams): Promise<R
   const totalsLine =
     cachedContextUsageTokens != null
       ? `Session tokens (cached): ${formatInt(cachedContextUsageTokens)} total / ctx=${contextWindowLabel}`
-      : `Session tokens (cached): unknown / ctx=${contextWindowLabel}`;
+      : `Session tokens (cached): any / ctx=${contextWindowLabel}`;
   const sharedContextLines = [
     `Workspace: ${workspaceLabel}`,
     `Bootstrap max/file: ${bootstrapMaxLabel}`,

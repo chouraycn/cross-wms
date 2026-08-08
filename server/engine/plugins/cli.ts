@@ -5,7 +5,7 @@
  * 类型定义保留形状供下游引用。
  */
 
-export const loadValidatedConfigForPluginRegistration: unknown = undefined;
+export const loadValidatedConfigForPluginRegistration: any = undefined;
 
 
 

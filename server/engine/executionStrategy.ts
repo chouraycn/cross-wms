@@ -222,7 +222,7 @@ export class ExecutionStrategyFactory {
    * 在此处内联轻量判断以保单一真相源）。
    */
   static resolveAutoMode(
-    messages: Array<{ role: string; content: unknown }>,
+    messages: Array<{ role: string; content: any }>,
     userMessage: string,
   ): ExecutionMode {
     try {

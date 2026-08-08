@@ -212,7 +212,7 @@ function loadSessionsRuntimeModule(): Promise<SessionsRuntimeModule> {
   return sessionsRuntimeModulePromise;
 }
 
-function requireSessionKey(key: unknown, respond: RespondFn): string | null {
+function requireSessionKey(key: any, respond: RespondFn): string | null {
   const raw =
     typeof key === "string"
       ? key
@@ -283,8 +283,8 @@ function loadSessionEntriesForTarget(params: {
 }
 
 function resolveOptionalInitialSessionMessage(params: {
-  task?: unknown;
-  message?: unknown;
+  task?: any;
+  message?: any;
 }): string | undefined {
   if (typeof params.task === "string" && params.task.trim()) {
     return params.task;
@@ -295,13 +295,13 @@ function resolveOptionalInitialSessionMessage(params: {
   return undefined;
 }
 
-function shouldAttachPendingMessageSeq(params: { payload: unknown; cached?: boolean }): boolean {
+function shouldAttachPendingMessageSeq(params: { payload: any; cached?: boolean }): boolean {
   if (params.cached) {
     return false;
   }
   const status =
     params.payload && typeof params.payload === "object"
-      ? (params.payload as { status?: unknown }).status
+      ? (params.payload as { status?: any }).status
       : undefined;
   return status === "started";
 }
@@ -671,7 +671,7 @@ async function interruptSessionRunIfActive(params: {
 async function handleSessionSend(params: {
   method: "sessions.send" | "sessions.steer";
   req: GatewayRequestHandlerOptions["req"];
-  params: Record<string, unknown>;
+  params: Record<string, any>;
   respond: RespondFn;
   context: GatewayRequestContext;
   client: GatewayClient | null;
@@ -684,7 +684,7 @@ async function handleSessionSend(params: {
     return;
   }
   const p = params.params;
-  const key = requireSessionKey((p as { key?: unknown }).key, params.respond);
+  const key = requireSessionKey((p as { key?: any }).key, params.respond);
   if (!key) {
     return;
   }
@@ -771,7 +771,7 @@ async function handleSessionSend(params: {
       storePath,
     })) + 1;
   let sendAcked = false;
-  let sendPayload: unknown;
+  let sendPayload: any;
   let sendCached = false;
   let startedRunId: string | undefined;
   const rawIdempotencyKey = (p as { idempotencyKey?: string }).idempotencyKey;
@@ -786,7 +786,7 @@ async function handleSessionSend(params: {
       ...(canonicalKey === "global" && requestedAgentId ? { agentId: requestedAgentId } : {}),
       message: (p as { message: string }).message,
       thinking: (p as { thinking?: string }).thinking,
-      attachments: (p as { attachments?: unknown[] }).attachments,
+      attachments: (p as { attachments?: any[] }).attachments,
       timeoutMs: (p as { timeoutMs?: number }).timeoutMs,
       idempotencyKey,
     },
@@ -797,7 +797,7 @@ async function handleSessionSend(params: {
       startedRunId =
         payload &&
         typeof payload === "object" &&
-        typeof (payload as { runId?: unknown }).runId === "string"
+        typeof (payload as { runId?: any }).runId === "string"
           ? (payload as { runId: string }).runId
           : undefined;
       if (ok && shouldAttachPendingMessageSeq({ payload, cached: meta?.cached === true })) {
@@ -1462,9 +1462,9 @@ export const sessionsHandlers: GatewayRequestHandlers = {
     const createdEntry = created.entry;
 
     const initialMessage = resolveOptionalInitialSessionMessage(p);
-    let runPayload: Record<string, unknown> | undefined;
-    let runError: unknown;
-    let runMeta: Record<string, unknown> | undefined;
+    let runPayload: Record<string, any> | undefined;
+    let runError: any;
+    let runMeta: Record<string, any> | undefined;
     const messageSeq = initialMessage
       ? (await readSessionMessageCountAsync({
           agentId: target.agentId,
@@ -1486,7 +1486,7 @@ export const sessionsHandlers: GatewayRequestHandlers = {
         },
         respond: (ok, payload, error, meta) => {
           if (ok && payload && typeof payload === "object") {
-            runPayload = payload as Record<string, unknown>;
+            runPayload = payload as Record<string, any>;
           } else {
             runError = error;
           }
@@ -1948,8 +1948,8 @@ export const sessionsHandlers: GatewayRequestHandlers = {
         const runIds =
           payload &&
           typeof payload === "object" &&
-          Array.isArray((payload as { runIds?: unknown[] }).runIds)
-            ? (payload as { runIds: unknown[] }).runIds.filter((value): value is string =>
+          Array.isArray((payload as { runIds?: any[] }).runIds)
+            ? (payload as { runIds: any[] }).runIds.filter((value): value is string =>
                 Boolean(normalizeOptionalString(value)),
               )
             : [];
@@ -2314,10 +2314,10 @@ export const sessionsHandlers: GatewayRequestHandlers = {
   },
   "sessions.get": async ({ params, respond, context }) => {
     const p = params as {
-      key?: unknown;
-      sessionKey?: unknown;
-      limit?: unknown;
-      agentId?: unknown;
+      key?: any;
+      sessionKey?: any;
+      limit?: any;
+      agentId?: any;
     };
     const key = requireSessionKey(p.key ?? p.sessionKey, respond);
     if (!key) {

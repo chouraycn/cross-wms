@@ -9,7 +9,7 @@ export interface ErrorContext {
   sessionId?: string;
   userId?: string;
   timestamp?: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface ErrorLogEntry {

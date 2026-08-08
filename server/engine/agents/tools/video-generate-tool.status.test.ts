@@ -82,15 +82,15 @@ describe("createVideoGenerateTool status actions", () => {
     expect(text).toContain("Do not call video_generate again for this request.");
     const details = result?.details as
       | {
-          action?: unknown;
-          duplicateGuard?: unknown;
-          active?: unknown;
-          existingTask?: unknown;
-          status?: unknown;
-          taskKind?: unknown;
-          provider?: unknown;
-          task?: { taskId?: unknown; runId?: unknown };
-          progressSummary?: unknown;
+          action?: any;
+          duplicateGuard?: any;
+          active?: any;
+          existingTask?: any;
+          status?: any;
+          taskKind?: any;
+          provider?: any;
+          task?: { taskId?: any; runId?: any };
+          progressSummary?: any;
         }
       | undefined;
     expect(details?.action).toBe("status");
@@ -130,14 +130,14 @@ describe("createVideoGenerateTool status actions", () => {
 
     expect(text).toContain("Video generation task task-active is already queued with google.");
     const details = result.details as {
-      action?: unknown;
-      active?: unknown;
-      existingTask?: unknown;
-      status?: unknown;
-      taskKind?: unknown;
-      provider?: unknown;
-      task?: { taskId?: unknown };
-      progressSummary?: unknown;
+      action?: any;
+      active?: any;
+      existingTask?: any;
+      status?: any;
+      taskKind?: any;
+      provider?: any;
+      task?: { taskId?: any };
+      progressSummary?: any;
     };
     expect(details.action).toBe("status");
     expect(details.active).toBe(true);

@@ -131,7 +131,7 @@ function loadListProbeRuntime(): Promise<ListProbeRuntime> {
   return listProbeRuntimeLoader.load();
 }
 
-function parseOptionalPositiveFiniteOption(raw: unknown, label: string, fallback: number): number {
+function parseOptionalPositiveFiniteOption(raw: any, label: string, fallback: number): number {
   if (raw === undefined || raw === null || raw === "") {
     return fallback;
   }
@@ -142,7 +142,7 @@ function parseOptionalPositiveFiniteOption(raw: unknown, label: string, fallback
   return parsed;
 }
 
-function parseOptionalPositiveIntegerOption(raw: unknown, label: string, fallback: number): number {
+function parseOptionalPositiveIntegerOption(raw: any, label: string, fallback: number): number {
   if (raw === undefined || raw === null || raw === "") {
     return fallback;
   }
@@ -153,7 +153,7 @@ function parseOptionalPositiveIntegerOption(raw: unknown, label: string, fallbac
   return parsed;
 }
 
-function isCompletePluginMetadataSnapshot(value: unknown): value is PluginMetadataSnapshot {
+function isCompletePluginMetadataSnapshot(value: any): value is PluginMetadataSnapshot {
   if (!value || typeof value !== "object") {
     return false;
   }

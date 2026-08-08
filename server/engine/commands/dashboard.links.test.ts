@@ -60,7 +60,7 @@ function expectNoLogWith(text: string): void {
   expect(logMessages().join("\n")).not.toContain(text);
 }
 
-function mockSnapshot(token: unknown = "abc") {
+function mockSnapshot(token: any = "abc") {
   readConfigFileSnapshotMock.mockResolvedValue({
     path: "/tmp/openclaw.json",
     exists: true,

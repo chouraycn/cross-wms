@@ -35,7 +35,7 @@ interface Widget {
   id: string;
   title: string;
   type: "chart" | "counter" | "list" | "status";
-  data: unknown;
+  data: any;
 }
 
 function getWidgets(): Widget[] {
@@ -57,7 +57,7 @@ function getMetrics(): Record<string, number> {
   };
 }
 
-function formatJsonOutput(data: unknown): string {
+function formatJsonOutput(data: any): string {
   return JSON.stringify(data, null, 2);
 }
 

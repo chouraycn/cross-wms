@@ -10,7 +10,7 @@ export type UserTurnSessionEntry = {
   updatedAt: number;
   sessionFile?: string;
   threadId?: string | number;
-} & Record<string, unknown>;
+} & Record<string, any>;
 
 export type UserTurnBeforeMessageWrite = (params: {
   message: PersistedUserTurnMessage;
@@ -27,7 +27,7 @@ type UserTurnTranscriptPersistenceTarget = {
   agentId: string;
   threadId?: string | number;
   cwd?: string;
-  config?: unknown;
+  config?: any;
   beforeMessageWrite?: UserTurnBeforeMessageWrite;
 };
 
@@ -37,7 +37,7 @@ export type UserTurnTranscriptFileTarget = {
   agentId?: string;
   sessionKey?: string;
   cwd?: string;
-  config?: unknown;
+  config?: any;
 };
 
 export type UserTurnTranscriptTarget =

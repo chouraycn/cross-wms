@@ -8,7 +8,7 @@
  */
 
 /** OpenClaw 配置（降级为 unknown 占位）。 */
-export type OpenClawConfig = Record<string, unknown>;
+export type OpenClawConfig = Record<string, any>;
 
 /** 工具文件系统策略（降级为 unknown 占位）。 */
 export type ToolFsPolicy = unknown;

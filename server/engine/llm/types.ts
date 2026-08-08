@@ -60,8 +60,8 @@ export type Model<TApi extends Api = Api> = {
 export type StreamEvent =
   | { type: 'text'; content: string }
   | { type: 'thinking'; content: string }
-  | { type: 'tool_call'; toolName: string; arguments: Record<string, unknown> }
-  | { type: 'tool_result'; toolName: string; result: unknown }
+  | { type: 'tool_call'; toolName: string; arguments: Record<string, any> }
+  | { type: 'tool_result'; toolName: string; result: any }
   | { type: 'usage'; usage: Usage }
   | { type: 'done'; usage: Usage }
   | { type: 'error'; error: string };
@@ -71,7 +71,7 @@ export type CompleteOptions = {
   messages: Array<{ role: 'system' | 'user' | 'assistant' | 'tool'; content: string }>;
   temperature?: number;
   maxTokens?: number;
-  tools?: Array<{ name: string; description: string; parameters: Record<string, unknown> }>;
+  tools?: Array<{ name: string; description: string; parameters: Record<string, any> }>;
   thinkingLevel?: ModelThinkingLevel;
   signal?: AbortSignal;
   /** 用户标识（用于国内厂商合规审计） */

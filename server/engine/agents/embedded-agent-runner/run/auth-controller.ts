@@ -212,7 +212,7 @@ export function createEmbeddedRunAuthController(params: {
         );
       }
     })()
-      .catch((err: unknown) => {
+      .catch((err: any) => {
         const runtimeModel = params.getRuntimeModel();
         params.log.warn(
           `Runtime auth refresh failed for ${runtimeModel.provider}: ${formatErrorMessage(err)}`,
@@ -316,7 +316,7 @@ export function createEmbeddedRunAuthController(params: {
   const throwAuthProfileFailover = (failoverParams: {
     allInCooldown: boolean;
     message?: string;
-    error?: unknown;
+    error?: any;
   }): never => {
     const provider = params.getProvider();
     const modelId = params.getModelId();

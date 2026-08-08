@@ -115,7 +115,7 @@ function normalizeCliMessagingToolName(toolName: string): string {
 function extractCliMessagingTarget(
   context: PreparedCliRunContext,
   toolName: string,
-  args: Record<string, unknown>,
+  args: Record<string, any>,
 ): MessagingToolSend | undefined {
   const normalizedToolName = normalizeCliMessagingToolName(toolName);
   const currentProvider = context.params.messageChannel ?? context.params.messageProvider;
@@ -164,8 +164,8 @@ function buildCliMcpCaptureKey(context: PreparedCliRunContext): string | undefin
 }
 
 function extractCliMessagingContent(
-  args: Record<string, unknown>,
-  result: unknown,
+  args: Record<string, any>,
+  result: any,
 ): Pick<MessagingToolSend, "text" | "mediaUrls"> {
   const text = ["message", "SendMessage", "content", "text", "caption"]
     .map((key) => args[key])
@@ -325,7 +325,7 @@ function parseCliBackendPreserveEnv(raw: string | undefined): Set<string> {
   }
   if (trimmed.startsWith("[")) {
     try {
-      const parsed = JSON.parse(trimmed) as unknown;
+      const parsed = JSON.parse(trimmed) as any;
       return new Set(
         Array.isArray(parsed)
           ? parsed.filter((entry): entry is string => typeof entry === "string")
@@ -544,7 +544,7 @@ export async function executePreparedCliRun(
   });
 
   let completedOutput: CliOutput | undefined;
-  let executionError: unknown;
+  let executionError: any;
   const cleanupOuterResource = async (cleanup: (() => Promise<void>) | undefined) => {
     try {
       await cleanup?.();
@@ -586,7 +586,7 @@ export async function executePreparedCliRun(
       const inFlightPreparedMessagingCalls = new Set<McpLoopbackToolCallStart>();
       const pendingMessagingCalls = new Map<
         string,
-        { toolName: string; args: Record<string, unknown>; target?: MessagingToolSend }
+        { toolName: string; args: Record<string, any>; target?: MessagingToolSend }
       >();
       const messagingToolSentTexts: string[] = [];
       const messagingToolSentTextKeys = new Set<string>();
@@ -622,9 +622,9 @@ export async function executePreparedCliRun(
         );
       };
       let runOutput: CliOutput | undefined;
-      let runError: unknown;
+      let runError: any;
       let runFailed = false;
-      const recordRunError = (error: unknown) => {
+      const recordRunError = (error: any) => {
         if (runFailed) {
           return;
         }
@@ -750,8 +750,8 @@ export async function executePreparedCliRun(
         const commitMessagingToolResult = (paramsLocal: {
           toolName: string;
           target?: MessagingToolSend;
-          args?: Record<string, unknown>;
-          result?: unknown;
+          args?: Record<string, any>;
+          result?: any;
           isError?: boolean;
         }) => {
           if (!isDeliveredMessagingToolResult(paramsLocal)) {
@@ -834,7 +834,7 @@ export async function executePreparedCliRun(
           };
           const isPreparedMessagingDelivery = (
             toolName: string,
-            toolArgs: Record<string, unknown>,
+            toolArgs: Record<string, any>,
           ) => {
             return (
               toolArgs.dryRun !== true &&
@@ -901,7 +901,7 @@ export async function executePreparedCliRun(
         const emitCliToolUseStart = (event: {
           toolCallId: string;
           name: string;
-          args: Record<string, unknown>;
+          args: Record<string, any>;
         }) => {
           observedCliActivity = true;
           const toolName = normalizeCliMessagingToolName(event.name);
@@ -943,7 +943,7 @@ export async function executePreparedCliRun(
           toolCallId: string;
           name: string;
           isError: boolean;
-          result?: unknown;
+          result?: any;
         }) => {
           observedCliActivity = true;
           const pending = pendingMessagingCalls.get(event.toolCallId);

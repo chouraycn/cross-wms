@@ -82,14 +82,14 @@ function assertCommandRegistry(_commands: ChatCommandDefinition[]): void {
 /** Builds and caches the chat-command registry for the current channel-plugin registry version. */
 type ChannelPlugin = {
   id: string;
-  capabilities?: unknown;
+  capabilities?: any;
 };
 
-function asChannelPlugin(plugin: unknown): ChannelPlugin {
+function asChannelPlugin(plugin: any): ChannelPlugin {
   return plugin as ChannelPlugin;
 }
 
-function supportsNativeCommands(plugin: unknown): boolean {
+function supportsNativeCommands(plugin: any): boolean {
   const capabilities = asChannelPlugin(plugin).capabilities as
     | { nativeCommands?: boolean }
     | undefined;

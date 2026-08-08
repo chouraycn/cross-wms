@@ -53,7 +53,7 @@ type ChannelPresenceSignal = {
 };
 
 /** Returns true when a channel config entry contains settings beyond enabled/disabled state. */
-export function hasMeaningfulChannelConfig(value: unknown): boolean {
+export function hasMeaningfulChannelConfig(value: any): boolean {
   if (!isRecord(value)) {
     return false;
   }

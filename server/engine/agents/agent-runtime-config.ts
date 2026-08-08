@@ -6,7 +6,7 @@
  */
 
 /** Resolves agent runtime configuration. */
-export async function resolveAgentRuntimeConfig(..._args: unknown[]): Promise<Record<string, unknown>> {
+export async function resolveAgentRuntimeConfig(..._args: any[]): Promise<Record<string, any>> {
   // Cross-wms does not have full agent runtime config resolution.
   return {};
 }

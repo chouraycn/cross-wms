@@ -27,7 +27,7 @@ function currentDateDir(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-async function createHarness(stateDir: string, pluginConfig: Record<string, unknown> = {}) {
+async function createHarness(stateDir: string, pluginConfig: Record<string, any> = {}) {
   const config = { transcripts: { enabled: true, ...pluginConfig } };
   const logger = { warn: vi.fn() };
   return {

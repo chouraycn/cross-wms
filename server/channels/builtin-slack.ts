@@ -56,7 +56,7 @@ export function createSlackChannelPlugin(): ChannelPlugin {
 
   const slackChannelConfig: ChannelConfigAdapter<SlackAccountConfig> = {
     listAccountIds: (config: AppConfig): ChannelId[] => {
-      const slackConfig = config.slack as Record<string, unknown>;
+      const slackConfig = config.slack as Record<string, any>;
       if (slackConfig && (slackConfig.webhookUrl || slackConfig.token)) {
         return [SLACK_CHANNEL_ID];
       }
@@ -64,7 +64,7 @@ export function createSlackChannelPlugin(): ChannelPlugin {
     },
     resolveAccount: (config: AppConfig, accountId: ChannelId): SlackAccountConfig | null => {
       if (accountId !== SLACK_CHANNEL_ID) return null;
-      const slackConfig = config.slack as Record<string, unknown>;
+      const slackConfig = config.slack as Record<string, any>;
       if (slackConfig && (slackConfig.webhookUrl || slackConfig.token)) {
         return {
           webhookUrl: slackConfig.webhookUrl as string,
@@ -96,10 +96,10 @@ export function createSlackChannelPlugin(): ChannelPlugin {
         try {
           const rendered = await ctx.render();
           const text = rendered.parts
-            .map((p: { content: unknown }) => String(p.content))
+            .map((p: { content: any }) => String(p.content))
             .join("\n");
 
-          const body: Record<string, unknown> = {
+          const body: Record<string, any> = {
             text: text.length > 4000 ? text.slice(0, 3997) + "..." : text,
           };
 
@@ -147,8 +147,8 @@ export function createSlackChannelPlugin(): ChannelPlugin {
   });
 }
 
-export function parseSlackWebhook(body: unknown, account: SlackAccountConfig): SlackWebhookResult {
-  const data = body as Record<string, unknown>;
+export function parseSlackWebhook(body: any, account: SlackAccountConfig): SlackWebhookResult {
+  const data = body as Record<string, any>;
 
   const type = String(data.type || "");
 
@@ -160,7 +160,7 @@ export function parseSlackWebhook(body: unknown, account: SlackAccountConfig): S
     return { success: false, error: `Unsupported event type: ${type}` };
   }
 
-  const event = data.event as Record<string, unknown>;
+  const event = data.event as Record<string, any>;
   const eventType = String(event.type || "");
 
   if (eventType !== "message") {

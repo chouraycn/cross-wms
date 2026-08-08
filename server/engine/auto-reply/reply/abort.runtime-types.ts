@@ -17,7 +17,7 @@ import type { OpenClawConfig } from "../../infra/_runtime-stubs.js";
 export type FinalizedMsgContext = {
   Body?: string;
   From?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 /** Result from the fast abort path before normal reply dispatch starts. */

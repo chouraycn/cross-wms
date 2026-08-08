@@ -8,7 +8,7 @@ export type FilterCondition = {
 
 export type FilterExpression = FilterCondition | { or: FilterExpression[] } | { and: FilterExpression[] };
 
-export function normalizeSkillFilter(skillFilter?: ReadonlyArray<unknown>): string[] | undefined {
+export function normalizeSkillFilter(skillFilter?: ReadonlyArray<any>): string[] | undefined {
   if (skillFilter === undefined) {
     return undefined;
   }
@@ -19,7 +19,7 @@ export function normalizeSkillFilter(skillFilter?: ReadonlyArray<unknown>): stri
 }
 
 export function normalizeSkillFilterForComparison(
-  skillFilter?: ReadonlyArray<unknown>,
+  skillFilter?: ReadonlyArray<any>,
 ): string[] | undefined {
   const normalized = normalizeSkillFilter(skillFilter);
   if (normalized === undefined) {
@@ -29,8 +29,8 @@ export function normalizeSkillFilterForComparison(
 }
 
 export function matchesSkillFilter(
-  cached?: ReadonlyArray<unknown>,
-  next?: ReadonlyArray<unknown>,
+  cached?: ReadonlyArray<any>,
+  next?: ReadonlyArray<any>,
 ): boolean {
   const cachedNormalized = normalizeSkillFilterForComparison(cached);
   const nextNormalized = normalizeSkillFilterForComparison(next);
@@ -102,7 +102,7 @@ export function matchCondition(
 }
 
 export function evaluateFilter(
-  item: Record<string, unknown>,
+  item: Record<string, any>,
   filter: FilterExpression,
 ): boolean {
   if ("or" in filter) {

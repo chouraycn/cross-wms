@@ -7,7 +7,7 @@ export class SocketIoTransport implements ChannelTransport {
   config: TransportConfig;
   status: TransportStatus = "disconnected";
 
-  private socket: unknown = null;
+  private socket: any = null;
   private isServer = false;
 
   private stats: TransportStats = {
@@ -218,7 +218,7 @@ export class SocketIoTransport implements ChannelTransport {
     }
   }
 
-  private emitEvent(type: TransportEvent["type"], data?: unknown): void {
+  private emitEvent(type: TransportEvent["type"], data?: any): void {
     const handlers = this.eventHandlers.get(type);
     if (!handlers) return;
 

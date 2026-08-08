@@ -8,7 +8,7 @@ import { isRecord } from "../shared/safe-record.js";
 
 function collectProviderApiKeyAssignment(params: {
   providerId: string;
-  providerConfig: Record<string, unknown>;
+  providerConfig: Record<string, any>;
   pathPrefix: string;
   defaults: SecretDefaults | undefined;
   context: ResolverContext;
@@ -31,7 +31,7 @@ function collectProviderApiKeyAssignment(params: {
 
 /** Collects provider API key SecretRefs from a TTS config block. */
 export function collectTtsApiKeyAssignments(params: {
-  tts: Record<string, unknown>;
+  tts: Record<string, any>;
   pathPrefix: string;
   defaults: SecretDefaults | undefined;
   context: ResolverContext;

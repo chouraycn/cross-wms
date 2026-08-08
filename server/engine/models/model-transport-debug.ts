@@ -79,7 +79,7 @@ export class TransportDebugger {
     endpoint: string;
     method: string;
     headers?: Record<string, string>;
-    body?: unknown;
+    body?: any;
   }): string {
     const requestId = this.generateRequestId();
     const info: TransportDebugInfo = {
@@ -111,7 +111,7 @@ export class TransportDebugger {
       tokensIn?: number;
       tokensOut?: number;
       headers?: Record<string, string>;
-      body?: unknown;
+      body?: any;
     },
   ): TransportDebugInfo | undefined {
     const info = this.requests.get(requestId);
@@ -213,7 +213,7 @@ export class TransportDebugger {
   private logRequest(
     info: TransportDebugInfo,
     headers?: Record<string, string>,
-    body?: unknown,
+    body?: any,
   ): void {
     const parts = [
       `→ ${info.method} ${info.endpoint}`,
@@ -241,7 +241,7 @@ export class TransportDebugger {
   private logResponse(
     info: TransportDebugInfo,
     headers?: Record<string, string>,
-    body?: unknown,
+    body?: any,
   ): void {
     const parts = [
       `← ${info.statusCode ?? '?'} ${info.method} ${info.endpoint}`,

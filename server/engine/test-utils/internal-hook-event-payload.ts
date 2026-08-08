@@ -3,7 +3,7 @@ export function createInternalHookEventPayload(
   type: string,
   action: string,
   sessionKey: string,
-  context: Record<string, unknown>,
+  context: Record<string, any>,
 ) {
   return {
     type,

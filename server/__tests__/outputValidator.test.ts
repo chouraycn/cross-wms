@@ -71,7 +71,7 @@ describe('OutputValidator', () => {
       const validation = validator.validate('wms_outbound_list', result);
       // 如果 type 不匹配触发修复，code 会被转为 number
       if (validation.wasRepaired) {
-        expect((validation.data as Record<string, unknown>).code).toBe(200);
+        expect((validation.data as Record<string, any>).code).toBe(200);
       }
       expect(validation.isValid).toBe(true);
     });

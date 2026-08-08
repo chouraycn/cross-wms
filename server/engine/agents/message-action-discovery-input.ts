@@ -6,7 +6,7 @@
  */
 
 /** Builds embedded message action discovery input. */
-export function buildEmbeddedMessageActionDiscoveryInput(..._args: unknown[]): Record<string, unknown> {
+export function buildEmbeddedMessageActionDiscoveryInput(..._args: any[]): Record<string, any> {
   // Cross-wms does not have message action discovery.
   return {};
 }

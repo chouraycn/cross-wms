@@ -11,6 +11,6 @@
  * 完整实现见 openclaw 源码。
  */
 
-export function augmentChatHistoryWithCliSessionImports(..._args: unknown[]): unknown {
+export function augmentChatHistoryWithCliSessionImports(..._args: any[]): any {
   return undefined;
 }

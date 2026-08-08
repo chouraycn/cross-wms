@@ -339,7 +339,7 @@ async function loadNpmPackageVersions(params: {
     return null;
   }
 
-  let parsed: unknown;
+  let parsed: any;
   try {
     parsed = JSON.parse(versions.stdout.trim());
   } catch {
@@ -1242,7 +1242,7 @@ async function resolveManagedNpmGenerationUseForInstall(params: {
 function resolveRequiredPlatformPackageNames(
   packageMetadata?: OpenClawPackageManifest,
 ): { ok: true; packageNames: string[] } | { ok: false; error: string } {
-  const raw = packageMetadata?.install?.requiredPlatformPackages as unknown;
+  const raw = packageMetadata?.install?.requiredPlatformPackages as any;
   if (raw === undefined) {
     return { ok: true, packageNames: [] };
   }

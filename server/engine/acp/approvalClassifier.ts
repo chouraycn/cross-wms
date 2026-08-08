@@ -110,7 +110,7 @@ function parseToolNameFromTitle(title: string | null | undefined): string | unde
 }
 
 function readFirstStringValue(
-  source: Record<string, unknown> | undefined,
+  source: Record<string, any> | undefined,
   keys: string[],
 ): string | undefined {
   if (!source) return undefined;
@@ -125,11 +125,11 @@ function readFirstStringValue(
 
 function resolveToolNameForPermission(toolCall?: {
   title?: string | null;
-  _meta?: unknown;
-  rawInput?: unknown;
+  _meta?: any;
+  rawInput?: any;
 }): string | undefined {
-  const toolMeta = toolCall?.["_meta"] as Record<string, unknown> | undefined;
-  const rawInput = toolCall?.rawInput as Record<string, unknown> | undefined;
+  const toolMeta = toolCall?.["_meta"] as Record<string, any> | undefined;
+  const rawInput = toolCall?.rawInput as Record<string, any> | undefined;
 
   const fromMeta = readFirstStringValue(toolMeta, ["toolName", "tool_name", "name"]);
   const fromRawInput = readFirstStringValue(rawInput, ["tool", "toolName", "tool_name", "name"]);
@@ -168,11 +168,11 @@ function extractPathFromToolTitle(toolTitle: string | undefined, toolName: strin
 }
 
 function resolveToolPathCandidate(
-  toolCall?: { rawInput?: unknown },
+  toolCall?: { rawInput?: any },
   toolName?: string,
   toolTitle?: string,
 ): string | undefined {
-  const rawInput = toolCall?.rawInput as Record<string, unknown> | undefined;
+  const rawInput = toolCall?.rawInput as Record<string, any> | undefined;
   return (
     readFirstStringValue(rawInput, ["path", "file_path", "filePath"]) ??
     extractPathFromToolTitle(toolTitle, toolName)
@@ -211,7 +211,7 @@ function isPathInside(parent: string, child: string): boolean {
 }
 
 function isReadToolCallScopedToCwd(
-  toolCall?: { rawInput?: unknown },
+  toolCall?: { rawInput?: any },
   toolName?: string,
   toolTitle?: string,
   cwd?: string,
@@ -237,8 +237,8 @@ function isReadToolCallScopedToCwd(
 export function classifyAcpToolApproval(params: {
   toolCall?: {
     title?: string | null;
-    _meta?: unknown;
-    rawInput?: unknown;
+    _meta?: any;
+    rawInput?: any;
   };
   cwd?: string;
 }): AcpApprovalClassification {
@@ -291,10 +291,10 @@ export function classifyAcpToolApproval(params: {
 }
 
 /** 检查工具是否为变更操作 */
-function isMutatingToolCall(toolName: string, rawInput?: unknown): boolean {
+function isMutatingToolCall(toolName: string, rawInput?: any): boolean {
   if (WRITE_TOOLS.has(toolName)) return true;
 
-  const input = rawInput as Record<string, unknown> | undefined;
+  const input = rawInput as Record<string, any> | undefined;
   if (!input) return false;
 
   // 检查是否包含写操作标志
@@ -315,8 +315,8 @@ export class ApprovalClassifier {
   classifyAcp(params: {
     toolCall?: {
       title?: string | null;
-      _meta?: unknown;
-      rawInput?: unknown;
+      _meta?: any;
+      rawInput?: any;
     };
     cwd?: string;
   }): AcpApprovalClassification {
@@ -447,7 +447,7 @@ export class ApprovalClassifier {
     };
   }
 
-  private assessInputRisk(input: unknown): number {
+  private assessInputRisk(input: any): number {
     if (!input) return 0;
 
     let score = 0;

@@ -38,7 +38,7 @@ export function registerNodesNotifyCommand(nodes: Command) {
             opts.invokeTimeout,
             "--invoke-timeout",
           );
-          const invokeParams: Record<string, unknown> = {
+          const invokeParams: Record<string, any> = {
             nodeId,
             command: "system.notify",
             params: {

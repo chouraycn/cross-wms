@@ -15,8 +15,8 @@ const setRegistry = (registry: ReturnType<typeof createTestRegistry>) => {
 
 const callGatewayMock = vi.fn();
 vi.mock("../../gateway/call.js", () => ({
-  callGateway: (...args: unknown[]) => callGatewayMock(...args),
-  callGatewayLeastPrivilege: (...args: unknown[]) => callGatewayMock(...args),
+  callGateway: (...args: any[]) => callGatewayMock(...args),
+  callGatewayLeastPrivilege: (...args: any[]) => callGatewayMock(...args),
   randomIdempotencyKey: () => "idem-1",
 }));
 
@@ -40,7 +40,7 @@ function gatewayCall(): {
   url?: string;
   token?: string;
   timeoutMs?: number;
-  params?: Record<string, unknown>;
+  params?: Record<string, any>;
 } {
   const [call] = callGatewayMock.mock.calls;
   if (!call) {
@@ -54,7 +54,7 @@ function gatewayCall(): {
     url?: string;
     token?: string;
     timeoutMs?: number;
-    params?: Record<string, unknown>;
+    params?: Record<string, any>;
   };
 }
 
@@ -63,10 +63,10 @@ describe("sendMessage channel normalization", () => {
     const resolvedCfg = {
       __resolvedCfgMarker: "cfg-from-secret-resolution",
       channels: {},
-    } as Record<string, unknown>;
+    } as Record<string, any>;
     const seen: {
-      resolveCfg?: unknown;
-      sendCfg?: unknown;
+      resolveCfg?: any;
+      sendCfg?: any;
       to?: string;
     } = {};
     const localChatAliasPlugin: ChannelPlugin = {
@@ -196,7 +196,7 @@ describe("sendMessage channel normalization", () => {
 
 describe("sendMessage replyToId threading", () => {
   const setupThreadChatCapture = () => {
-    const capturedCtx: Record<string, unknown>[] = [];
+    const capturedCtx: Record<string, any>[] = [];
     const plugin = createThreadChatLikePlugin({
       onSendText: (ctx) => {
         capturedCtx.push(ctx);
@@ -360,12 +360,12 @@ describe("gateway url override hardening", () => {
       if (value && typeof value === "object" && !Array.isArray(value)) {
         for (const [nestedKey, nestedValue] of Object.entries(value)) {
           expect(
-            ((result as Record<string, unknown>)[key] as Record<string, unknown>)[nestedKey],
+            ((result as Record<string, any>)[key] as Record<string, any>)[nestedKey],
           ).toEqual(nestedValue);
         }
         continue;
       }
-      expect((result as Record<string, unknown>)[key]).toEqual(value);
+      expect((result as Record<string, any>)[key]).toEqual(value);
     }
   });
 
@@ -446,7 +446,7 @@ const createLocalChatAliasPlugin = (): ChannelPlugin => ({
     deliveryMode: "direct",
     sendText: async ({ deps, to, text }) => {
       const send = deps?.localchat as
-        | ((to: string, text: string, opts?: unknown) => Promise<{ messageId: string }>)
+        | ((to: string, text: string, opts?: any) => Promise<{ messageId: string }>)
         | undefined;
       if (!send) {
         throw new Error("localchat missing");
@@ -461,7 +461,7 @@ const createDemoAliasOutbound = (opts?: { includePoll?: boolean }): ChannelOutbo
   deliveryMode: "direct",
   sendText: async ({ deps, to, text }) => {
     const send = deps?.["demo-alias-channel"] as
-      | ((to: string, text: string, opts?: unknown) => Promise<{ messageId: string }>)
+      | ((to: string, text: string, opts?: any) => Promise<{ messageId: string }>)
       | undefined;
     if (!send) {
       throw new Error("demo-alias-channel missing");
@@ -471,7 +471,7 @@ const createDemoAliasOutbound = (opts?: { includePoll?: boolean }): ChannelOutbo
   },
   sendMedia: async ({ deps, to, text, mediaUrl }) => {
     const send = deps?.["demo-alias-channel"] as
-      | ((to: string, text: string, opts?: unknown) => Promise<{ messageId: string }>)
+      | ((to: string, text: string, opts?: any) => Promise<{ messageId: string }>)
       | undefined;
     if (!send) {
       throw new Error("demo-alias-channel missing");
@@ -488,7 +488,7 @@ const createDemoAliasOutbound = (opts?: { includePoll?: boolean }): ChannelOutbo
 });
 
 const createThreadChatLikePlugin = (opts: {
-  onSendText: (ctx: Record<string, unknown>) => void;
+  onSendText: (ctx: Record<string, any>) => void;
 }): ChannelPlugin => ({
   id: "threadchat",
   meta: {
@@ -506,7 +506,7 @@ const createThreadChatLikePlugin = (opts: {
   outbound: {
     deliveryMode: "direct",
     sendText: async (ctx) => {
-      opts.onSendText(ctx as unknown as Record<string, unknown>);
+      opts.onSendText(ctx as unknown as Record<string, any>);
       return { channel: "threadchat", messageId: "m1" };
     },
     sendMedia: async () => ({ channel: "threadchat", messageId: "m2" }),

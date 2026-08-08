@@ -47,7 +47,7 @@ export function parseSSEChunk(buffer: string): { frames: SSEFrame[]; remainder: 
 }
 
 /** 解析 SSE data 字段为 JSON，处理 `[DONE]` 标记。 */
-export function parseSSEData(data: string): unknown | undefined {
+export function parseSSEData(data: string): any | undefined {
   if (data === '[DONE]') return null;
   try {
     return JSON.parse(data);
@@ -57,8 +57,8 @@ export function parseSSEData(data: string): unknown | undefined {
 }
 
 /** 将 NDJSON 字符串切分为 JSON 对象，未完成的最后一行作为 remainder。 */
-export function parseNDJSONChunk(buffer: string): { items: unknown[]; remainder: string } {
-  const items: unknown[] = [];
+export function parseNDJSONChunk(buffer: string): { items: any[]; remainder: string } {
+  const items: any[] = [];
   const lines = buffer.split(/\r?\n/);
   const remainder = lines.pop() ?? '';
   for (const line of lines) {
@@ -73,8 +73,8 @@ export function parseNDJSONChunk(buffer: string): { items: unknown[]; remainder:
 }
 
 /** Bedrock eventStream：每帧是 { bytes: base64 } 或 { payload: ... }。 */
-export function parseBedrockEventStreamChunk(buffer: string): { items: unknown[]; remainder: string } {
-  const items: unknown[] = [];
+export function parseBedrockEventStreamChunk(buffer: string): { items: any[]; remainder: string } {
+  const items: any[] = [];
   const lines = buffer.split(/\r?\n/);
   const remainder = lines.pop() ?? '';
   for (const line of lines) {
@@ -101,8 +101,8 @@ export function parseBedrockEventStreamChunk(buffer: string): { items: unknown[]
 /** 将原始 chunk 流转换为 StreamEvent 流。 */
 export async function* asyncIterableToStreamEvents(
   chunks: AsyncIterable<Uint8Array | string>,
-  parser: (chunk: string) => { items: unknown[]; remainder: string },
-  eventParser: (item: unknown) => StreamEvent[],
+  parser: (chunk: string) => { items: any[]; remainder: string },
+  eventParser: (item: any) => StreamEvent[],
 ): AsyncGenerator<StreamEvent> {
   let buffer = '';
   for await (const raw of chunks) {
@@ -128,7 +128,7 @@ export async function* asyncIterableToStreamEvents(
 }
 
 /** 创建一个 SSE 解析器（与 asyncIterableToStreamEvents 配合）。 */
-export function makeSSEParser(): (chunk: string) => { items: unknown[]; remainder: string } {
+export function makeSSEParser(): (chunk: string) => { items: any[]; remainder: string } {
   let buffer = '';
   return (chunk: string) => {
     buffer += chunk;
@@ -142,7 +142,7 @@ export function makeSSEParser(): (chunk: string) => { items: unknown[]; remainde
 }
 
 /** 创建一个 NDJSON 解析器。 */
-export function makeNDJSONParser(): (chunk: string) => { items: unknown[]; remainder: string } {
+export function makeNDJSONParser(): (chunk: string) => { items: any[]; remainder: string } {
   let buffer = '';
   return (chunk: string) => {
     buffer += chunk;

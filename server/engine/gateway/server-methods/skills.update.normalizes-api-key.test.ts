@@ -5,8 +5,8 @@ import { describe, expect, it, vi } from "vitest";
 import type { OpenClawConfig } from "../../config/config.js";
 import { REDACTED_SENTINEL } from "../../config/redact-snapshot.js";
 
-let writtenConfig: unknown = null;
-let loadedConfig: unknown = {
+let writtenConfig: any = null;
+let loadedConfig: any = {
   skills: {
     entries: {},
   },
@@ -16,10 +16,10 @@ vi.mock("../../config/config.js", () => {
   return {
     loadConfig: () => loadedConfig,
     getRuntimeConfig: () => loadedConfig,
-    writeConfigFile: async (cfg: unknown) => {
+    writeConfigFile: async (cfg: any) => {
       writtenConfig = cfg;
     },
-    replaceConfigFile: async ({ nextConfig }: { nextConfig: unknown }) => {
+    replaceConfigFile: async ({ nextConfig }: { nextConfig: any }) => {
       writtenConfig = nextConfig;
     },
     mutateConfigFileWithRetry: async (params: {
@@ -53,13 +53,13 @@ vi.mock("../../config/config.js", () => {
 
 const { skillsHandlers } = await import("./skills.js");
 
-function expectWrittenSkillEntry(skillKey: string, entry: unknown) {
+function expectWrittenSkillEntry(skillKey: string, entry: any) {
   if (!writtenConfig) {
     throw new Error("Expected written config");
   }
   const config = writtenConfig as {
     skills?: {
-      entries?: Record<string, unknown>;
+      entries?: Record<string, any>;
     };
   };
   expect(Object.keys(config).toSorted()).toEqual(["skills"]);
@@ -77,7 +77,7 @@ describe("skills.update", () => {
     };
 
     let ok: boolean | null = null;
-    let error: unknown = null;
+    let error: any = null;
     await skillsHandlers["skills.update"]({
       params: {
         skillKey: "brave-search",
@@ -108,7 +108,7 @@ describe("skills.update", () => {
       },
     };
 
-    let responseResult: unknown = null;
+    let responseResult: any = null;
     await skillsHandlers["skills.update"]({
       params: {
         skillKey: "demo-skill",
@@ -137,7 +137,7 @@ describe("skills.update", () => {
     });
 
     // Response must not expose plaintext secrets
-    const config = (responseResult as { config: Record<string, unknown> }).config;
+    const config = (responseResult as { config: Record<string, any> }).config;
     expect(config.apiKey).toBe(REDACTED_SENTINEL);
     const env = config.env as Record<string, string>;
     expect(env.GEMINI_API_KEY).toBe(REDACTED_SENTINEL);

@@ -165,7 +165,7 @@ describe("message action media helpers", () => {
   maybeIt("normalizes mediaUrl and fileUrl sandbox media params", async () => {
     const sandboxRoot = await fs.mkdtemp(path.join(os.tmpdir(), "msg-params-alias-"));
     try {
-      const args: Record<string, unknown> = {
+      const args: Record<string, any> = {
         mediaUrl: " file:///workspace/assets/photo.png ",
         fileUrl: "/workspace/docs/report.pdf",
       };
@@ -188,7 +188,7 @@ describe("message action media helpers", () => {
   maybeIt("normalizes extension event image sandbox media params", async () => {
     const sandboxRoot = await fs.mkdtemp(path.join(os.tmpdir(), "msg-params-image-"));
     try {
-      const args: Record<string, unknown> = {
+      const args: Record<string, any> = {
         image: " file:///workspace/assets/event-cover.png ",
       };
 
@@ -209,7 +209,7 @@ describe("message action media helpers", () => {
   maybeIt("normalizes extension avatarPath and avatarUrl sandbox media params", async () => {
     const sandboxRoot = await fs.mkdtemp(path.join(os.tmpdir(), "msg-params-avatar-"));
     try {
-      const args: Record<string, unknown> = {
+      const args: Record<string, any> = {
         avatarPath: "/workspace/avatars/profile.png",
         avatarUrl: "file:///workspace/avatars/remote-avatar.jpg",
       };
@@ -233,12 +233,12 @@ describe("message action media helpers", () => {
   maybeIt("normalizes the selected structured attachment sandbox source", async () => {
     const sandboxRoot = await fs.mkdtemp(path.join(os.tmpdir(), "msg-params-attachment-"));
     try {
-      const attachment: Record<string, unknown> = {
+      const attachment: Record<string, any> = {
         path: "/workspace/replies/photo.png",
         mimeType: "image/png",
         name: "photo.png",
       };
-      const args: Record<string, unknown> = {
+      const args: Record<string, any> = {
         attachments: [attachment],
       };
 
@@ -349,7 +349,7 @@ describe("message action media helpers", () => {
   maybeIt("normalizes extension snake_case avatar_path and avatar_url aliases", async () => {
     const sandboxRoot = await fs.mkdtemp(path.join(os.tmpdir(), "msg-params-avatar-snake-"));
     try {
-      const args: Record<string, unknown> = {
+      const args: Record<string, any> = {
         avatar_path: "/workspace/avatars/profile.png",
         avatar_url: "file:///workspace/avatars/remote-avatar.jpg",
       };
@@ -373,7 +373,7 @@ describe("message action media helpers", () => {
   maybeIt("prefers canonical extension media params over invalid snake_case aliases", async () => {
     const sandboxRoot = await fs.mkdtemp(path.join(os.tmpdir(), "msg-params-avatar-canonical-"));
     try {
-      const args: Record<string, unknown> = {
+      const args: Record<string, any> = {
         avatarUrl: "https://example.com/avatars/profile.png",
         avatar_url: "data:text/plain;base64,QQ==",
         avatarPath: "/workspace/avatars/profile.png",
@@ -401,7 +401,7 @@ describe("message action media helpers", () => {
   maybeIt("keeps remote HTTP avatarUrl unchanged under sandbox normalization", async () => {
     const sandboxRoot = await fs.mkdtemp(path.join(os.tmpdir(), "msg-params-avatar-remote-"));
     try {
-      const args: Record<string, unknown> = {
+      const args: Record<string, any> = {
         avatarUrl: "https://example.com/avatars/profile.png",
         avatarPath: "/workspace/avatars/local.png",
       };
@@ -425,7 +425,7 @@ describe("message action media helpers", () => {
   maybeIt("keeps mxc:// avatarUrl unchanged under sandbox normalization", async () => {
     const sandboxRoot = await fs.mkdtemp(path.join(os.tmpdir(), "msg-params-avatar-mxc-"));
     try {
-      const args: Record<string, unknown> = {
+      const args: Record<string, any> = {
         avatarUrl: "mxc://matrix.org/abc123def456",
         avatarPath: "/workspace/avatars/local.png",
       };
@@ -451,7 +451,7 @@ describe("message action media helpers", () => {
     async () => {
       const sandboxRoot = await fs.mkdtemp(path.join(os.tmpdir(), "msg-params-remote-alias-"));
       try {
-        const args: Record<string, unknown> = {
+        const args: Record<string, any> = {
           mediaUrl: "https://example.com/assets/photo.png?sig=1",
           fileUrl: "https://example.com/docs/report.pdf?sig=2",
         };
@@ -473,7 +473,7 @@ describe("message action media helpers", () => {
   );
 
   it("uses mediaUrl and fileUrl aliases when inferring attachment filenames", async () => {
-    const mediaArgs: Record<string, unknown> = {
+    const mediaArgs: Record<string, any> = {
       mediaUrl: "https://example.com/pic.png",
     };
     await hydrateAttachmentParamsForAction({
@@ -486,7 +486,7 @@ describe("message action media helpers", () => {
     });
     expect(mediaArgs.filename).toBe("pic.png");
 
-    const fileArgs: Record<string, unknown> = {
+    const fileArgs: Record<string, any> = {
       fileUrl: "https://example.com/docs/report.pdf",
     };
     await hydrateAttachmentParamsForAction({
@@ -501,7 +501,7 @@ describe("message action media helpers", () => {
   });
 
   it("uses only the leaf filename from Windows-style attachment hints", async () => {
-    const args: Record<string, unknown> = {
+    const args: Record<string, any> = {
       fileUrl: String.raw`C:\Users\Ada\Downloads\report.pdf`,
     };
 
@@ -518,7 +518,7 @@ describe("message action media helpers", () => {
   });
 
   it("falls back to extension-based attachment names for remote-host file URLs", async () => {
-    const args: Record<string, unknown> = {
+    const args: Record<string, any> = {
       media: "file://attacker/share/photo.png",
     };
 
@@ -540,7 +540,7 @@ describe("message action media helpers", () => {
     // resolver — not the channel runtime — must run. Pre-PR this was
     // gated only on sendAttachment/setGroupIcon/upload-file, letting
     // imessage reply forward an arbitrary host path to imsg.
-    const args: Record<string, unknown> = {
+    const args: Record<string, any> = {
       mediaUrl: "https://example.com/cute.png",
     };
 
@@ -557,7 +557,7 @@ describe("message action media helpers", () => {
   });
 
   it("hydrates reply attachments from the first structured attachment source", async () => {
-    const args: Record<string, unknown> = {
+    const args: Record<string, any> = {
       attachments: [
         {
           url: "https://example.com/cute.png",
@@ -581,7 +581,7 @@ describe("message action media helpers", () => {
   });
 
   it("does not hydrate ignored structured attachments when plugin media params win", async () => {
-    const args: Record<string, unknown> = {
+    const args: Record<string, any> = {
       avatarPath: "/workspace/avatars/profile.png",
       attachments: [
         {
@@ -611,7 +611,7 @@ describe("message action media helpers", () => {
     // message -> caption when the agent only supplied `message`. Reply has
     // its own `text`/`message` field, so caption fallback would invent a
     // bogus caption param on the reply payload.
-    const args: Record<string, unknown> = {
+    const args: Record<string, any> = {
       mediaUrl: "https://example.com/cute.png",
       message: "🦞",
     };
@@ -630,7 +630,7 @@ describe("message action media helpers", () => {
 
   it("hydrates buffer-only send params into outbound media paths", async () => {
     await withTempOpenClawStateDir(async () => {
-      const args: Record<string, unknown> = {
+      const args: Record<string, any> = {
         buffer: Buffer.from("artifact bytes").toString("base64"),
         filename: "artifact.txt",
         contentType: "text/plain",
@@ -655,7 +655,7 @@ describe("message action media helpers", () => {
   it("rejects oversized buffer-only send params before base64 decoding", async () => {
     await withTempOpenClawStateDir(async () => {
       const fromSpy = vi.spyOn(Buffer, "from");
-      const args: Record<string, unknown> = {
+      const args: Record<string, any> = {
         buffer: Buffer.alloc(MEDIA_MAX_BYTES + 1, 1).toString("base64"),
         contentType: "application/octet-stream",
       };
@@ -671,7 +671,7 @@ describe("message action media helpers", () => {
           }),
         ).rejects.toThrow(/too large|limit/i);
 
-        const base64Calls = (fromSpy.mock.calls as ReadonlyArray<readonly unknown[]>).filter(
+        const base64Calls = (fromSpy.mock.calls as ReadonlyArray<readonly any[]>).filter(
           (call) => call[1] === "base64",
         );
         expect(base64Calls).toHaveLength(0);
@@ -685,7 +685,7 @@ describe("message action media helpers", () => {
 
   it("rejects invalid buffer-only send base64 without staging media", async () => {
     await withTempOpenClawStateDir(async () => {
-      const args: Record<string, unknown> = {
+      const args: Record<string, any> = {
         buffer: "not-base64!",
         contentType: "text/plain",
       };
@@ -707,7 +707,7 @@ describe("message action media helpers", () => {
 
   it("skips send buffer materialization when an explicit media source is present", async () => {
     await withTempOpenClawStateDir(async (stateDir) => {
-      const args: Record<string, unknown> = {
+      const args: Record<string, any> = {
         buffer: Buffer.from("ignored").toString("base64"),
         mediaUrl: "https://example.com/pic.png",
       };
@@ -729,7 +729,7 @@ describe("message action media helpers", () => {
 
   it("previews dry-run buffer-only sends without writing outbound media files", async () => {
     await withTempOpenClawStateDir(async (stateDir) => {
-      const args: Record<string, unknown> = {
+      const args: Record<string, any> = {
         buffer: Buffer.from("preview").toString("base64"),
         filename: "preview.txt",
         contentType: "text/plain",
@@ -766,7 +766,7 @@ describe("message action sandbox media hydration", () => {
       const slotLink = path.join(sandboxRoot, "slot");
       await fs.symlink(insideDir, slotLink);
 
-      const args: Record<string, unknown> = {
+      const args: Record<string, any> = {
         media: "slot/note.txt",
       };
       const mediaPolicy = {

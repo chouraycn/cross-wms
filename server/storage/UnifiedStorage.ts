@@ -121,7 +121,7 @@ export interface UnifiedStorage {
  */
 function matchesFilter<T>(item: T, filter: QueryFilter<T>): boolean {
   for (const [key, value] of Object.entries(filter)) {
-    if ((item as Record<string, unknown>)[key] !== value) {
+    if ((item as Record<string, any>)[key] !== value) {
       return false;
     }
   }
@@ -242,7 +242,7 @@ class SqlCollectionHandle<T> implements CollectionHandle<T> {
   }
 
   create(id: string | number, data: T): T {
-    const entries = Object.entries(data as Record<string, unknown>);
+    const entries = Object.entries(data as Record<string, any>);
     const columns = entries.map(([k]) => k).join(', ');
     const placeholders = entries.map(() => '?').join(', ');
     this.engine.run(
@@ -255,7 +255,7 @@ class SqlCollectionHandle<T> implements CollectionHandle<T> {
   update(id: string | number, data: Partial<T>): T | null {
     const existing = this.get(id);
     if (!existing) return null;
-    const entries = Object.entries(data as Record<string, unknown>);
+    const entries = Object.entries(data as Record<string, any>);
     if (entries.length === 0) return existing;
     const setClause = entries.map(([k]) => `${k} = ?`).join(', ');
     this.engine.run(
@@ -274,7 +274,7 @@ class SqlCollectionHandle<T> implements CollectionHandle<T> {
   }
 
   query(filter: QueryFilter<T>): T[] {
-    const entries = Object.entries(filter as Record<string, unknown>);
+    const entries = Object.entries(filter as Record<string, any>);
     if (entries.length === 0) return this.list();
     const whereClause = entries.map(([k]) => `${k} = ?`).join(' AND ');
     return this.engine.all<T>(

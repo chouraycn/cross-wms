@@ -11,7 +11,7 @@ type GatewayClientAuth = {
   token?: string;
   password?: string;
 };
-type ResolveGatewayClientBootstrap = (params: unknown) => Promise<{
+type ResolveGatewayClientBootstrap = (params: any) => Promise<{
   url: string;
   urlSource: string;
   auth: GatewayClientAuth;
@@ -22,21 +22,21 @@ type GatewayClientOptions = GatewayClientCallbacks &
     url?: string;
   };
 type MockAcpStream = {
-  writable: WritableStream<unknown>;
-  readable: ReadableStream<unknown>;
+  writable: WritableStream<any>;
+  readable: ReadableStream<any>;
 };
 
 const mockState = vi.hoisted(() => ({
   acpProtocolVersion: 1,
-  acpInputMessages: [] as unknown[],
+  acpInputMessages: [] as any[],
   gateways: [] as MockGatewayClient[],
   gatewayAuth: [] as GatewayClientAuth[],
   gatewayOptions: [] as GatewayClientOptions[],
   agentSideConnectionCtor: vi.fn(),
   agentStart: vi.fn(),
   routeLogsToStderr: vi.fn(),
-  startProxy: vi.fn(async (_configForTest: unknown) => null as unknown),
-  stopProxy: vi.fn(async (_handle: unknown) => {}),
+  startProxy: vi.fn(async (_configForTest: any) => null as any),
+  stopProxy: vi.fn(async (_handle: any) => {}),
   resolveGatewayClientBootstrap: vi.fn<ResolveGatewayClientBootstrap>(async (_params) => ({
     url: "ws://127.0.0.1:18789",
     urlSource: "local loopback",
@@ -77,8 +77,8 @@ vi.mock("@agentclientprotocol/sdk", () => ({
     initialize: "initialize",
   },
   AgentSideConnection: function AgentSideConnection(
-    factory: (conn: unknown) => unknown,
-    stream: unknown,
+    factory: (conn: any) => unknown,
+    stream: any,
   ) {
     mockState.agentSideConnectionCtor(factory, stream);
     factory({});
@@ -127,7 +127,7 @@ vi.mock("../gateway/call.js", () => ({
 }));
 
 vi.mock("../gateway/client-bootstrap.js", () => ({
-  resolveGatewayClientBootstrap: (params: unknown) =>
+  resolveGatewayClientBootstrap: (params: any) =>
     mockState.resolveGatewayClientBootstrap(params),
 }));
 
@@ -157,8 +157,8 @@ vi.mock("../logging/console.js", () => ({
 }));
 
 vi.mock("../infra/net/proxy/proxy-lifecycle.js", () => ({
-  startProxy: (config: unknown) => mockState.startProxy(config),
-  stopProxy: (handle: unknown) => mockState.stopProxy(handle),
+  startProxy: (config: any) => mockState.startProxy(config),
+  stopProxy: (handle: any) => mockState.stopProxy(handle),
 }));
 
 vi.mock("./translator.js", () => ({
@@ -186,7 +186,7 @@ describe("serveAcpGateway startup", () => {
     return gateway;
   }
 
-  function getGatewayBootstrapParams(): { env?: unknown; gatewayUrl?: unknown } {
+  function getGatewayBootstrapParams(): { env?: any; gatewayUrl?: any } {
     const firstCall = mockState.resolveGatewayClientBootstrap.mock.calls[0];
     if (!firstCall) {
       throw new Error("Expected gateway bootstrap resolution call");
@@ -234,9 +234,9 @@ describe("serveAcpGateway startup", () => {
     return stream as MockAcpStream;
   }
 
-  async function readCapturedAcpMessages(): Promise<unknown[]> {
+  async function readCapturedAcpMessages(): Promise<any[]> {
     const reader = getCapturedAcpStream().readable.getReader();
-    const messages: unknown[] = [];
+    const messages: any[] = [];
     try {
       while (true) {
         const { done, value } = await reader.read();
@@ -250,7 +250,7 @@ describe("serveAcpGateway startup", () => {
     }
   }
 
-  async function captureAcpMessagesAfterStartup(inputMessages: unknown[]): Promise<unknown[]> {
+  async function captureAcpMessagesAfterStartup(inputMessages: any[]): Promise<any[]> {
     mockState.acpInputMessages.push(...inputMessages);
     const { signalHandlers, onceSpy } = captureProcessSignalHandlers();
     const servePromise = serveAcpGateway({});

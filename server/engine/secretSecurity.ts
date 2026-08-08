@@ -224,10 +224,10 @@ export function normalizeResolvedSecretInputString(value: string): string {
  * @returns 包含 parse 方法的 schema 对象
  */
 export function buildOptionalSecretInputSchema(): {
-  parse: (value: unknown) => SecretInput | undefined;
+  parse: (value: any) => SecretInput | undefined;
 } {
   return {
-    parse: (value: unknown): SecretInput | undefined => {
+    parse: (value: any): SecretInput | undefined => {
       if (value === undefined || value === null) return undefined;
 
       if (typeof value === 'string') {

@@ -2,8 +2,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  currentConfig: {} as Record<string, unknown>,
-  writtenConfig: undefined as Record<string, unknown> | undefined,
+  currentConfig: {} as Record<string, any>,
+  writtenConfig: undefined as Record<string, any> | undefined,
 }));
 
 vi.mock("./models/shared.js", async () => {
@@ -12,11 +12,11 @@ vi.mock("./models/shared.js", async () => {
     ...actual,
     updateConfig: async (
       mutator: (
-        cfg: Record<string, unknown>,
+        cfg: Record<string, any>,
         context: {
-          runtimeConfig: Record<string, unknown>;
+          runtimeConfig: Record<string, any>;
         },
-      ) => Record<string, unknown>,
+      ) => Record<string, any>,
     ) => {
       const sourceConfig = structuredClone(mocks.currentConfig);
       const runtimeConfig = structuredClone(mocks.currentConfig);
@@ -30,7 +30,7 @@ vi.mock("./models/shared.js", async () => {
 import { modelsFallbacksAddCommand } from "./models/fallbacks.js";
 import { modelsSetCommand } from "./models/set.js";
 
-function mockConfigSnapshot(config: Record<string, unknown> = {}) {
+function mockConfigSnapshot(config: Record<string, any> = {}) {
   mocks.currentConfig = config;
   mocks.writtenConfig = undefined;
 }

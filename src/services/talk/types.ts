@@ -10,7 +10,7 @@ export interface TalkProviderConfig {
   modelId?: string;
   outputFormat?: string;
   apiKey?: string | { ref?: string; env?: string };
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 /** Talk realtime 配置 */

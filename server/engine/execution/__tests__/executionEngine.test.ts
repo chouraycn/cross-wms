@@ -77,7 +77,7 @@ describe('ExecutionEngine — 执行引擎', () => {
     // 6
     it('注册无 executor 的工具应抛出错误', () => {
       expect(() =>
-        engine.registerTool({ name: 'bad', executor: undefined as unknown }),
+        engine.registerTool({ name: 'bad', executor: undefined as any }),
       ).toThrow();
     });
   });
@@ -87,7 +87,7 @@ describe('ExecutionEngine — 执行引擎', () => {
     it('应成功执行单一步骤', async () => {
       engine.registerTool({
         name: 'greet',
-        executor: async (_, args: unknown) => `Hello, ${args.name}!`,
+        executor: async (_, args: any) => `Hello, ${args.name}!`,
       });
 
       const step: ExecutionStep = {
@@ -308,7 +308,7 @@ describe('ExecutionEngine — 执行引擎', () => {
 
       engine.registerTool({
         name: 'delay_a',
-        executor: async (_, args: unknown) => {
+        executor: async (_, args: any) => {
           await new Promise((r) => setTimeout(r, args.delay));
           completed.push('a');
           return 'A';
@@ -316,7 +316,7 @@ describe('ExecutionEngine — 执行引擎', () => {
       });
       engine.registerTool({
         name: 'delay_b',
-        executor: async (_, args: unknown) => {
+        executor: async (_, args: any) => {
           await new Promise((r) => setTimeout(r, args.delay));
           completed.push('b');
           return 'B';

@@ -29,7 +29,7 @@ const pluginPackagingHintItems = pluginPackagingRecoveryHints.map((text) => ({
   text,
 }));
 
-function expectLatestRuntimeJson(payload: unknown) {
+function expectLatestRuntimeJson(payload: any) {
   const calls = defaultRuntime.writeJson.mock.calls;
   expect(calls[calls.length - 1]?.[0]).toEqual(payload);
 }
@@ -44,7 +44,7 @@ vi.mock("../../config/issue-format.js", () => ({
   formatConfigIssueLines: (
     issues: Array<{ path: string; message: string }>,
     _prefix: string,
-    _opts?: unknown,
+    _opts?: any,
   ) => issues.map((i) => `${i.path}: ${i.message}`),
 }));
 

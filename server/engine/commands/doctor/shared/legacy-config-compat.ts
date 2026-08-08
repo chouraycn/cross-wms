@@ -3,14 +3,14 @@ import { applyChannelDoctorCompatibilityMigrations } from "./channel-legacy-conf
 import { LEGACY_CONFIG_MIGRATIONS } from "./legacy-config-migrations.js";
 
 /** Apply all legacy doctor migrations to raw config, returning null when nothing changed. */
-export function applyLegacyDoctorMigrations(raw: unknown): {
-  next: Record<string, unknown> | null;
+export function applyLegacyDoctorMigrations(raw: any): {
+  next: Record<string, any> | null;
   changes: string[];
 } {
   if (!raw || typeof raw !== "object") {
     return { next: null, changes: [] };
   }
-  const original = raw as Record<string, unknown>;
+  const original = raw as Record<string, any>;
   const next = structuredClone(original);
   const changes: string[] = [];
   for (const migration of LEGACY_CONFIG_MIGRATIONS) {

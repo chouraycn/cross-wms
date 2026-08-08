@@ -158,10 +158,10 @@ export const cronQuarantineFileSchema = z.object({
 });
 
 /** 验证 cron 存储文件 */
-export function validateCronStoreFile(data: unknown): data is { version: 1; jobs: unknown[] } {
+export function validateCronStoreFile(data: any): data is { version: 1; jobs: any[] } {
   if (!data || typeof data !== "object" || Array.isArray(data)) {
     return false;
   }
-  const record = data as Record<string, unknown>;
+  const record = data as Record<string, any>;
   return record.version === 1 && Array.isArray(record.jobs);
 }

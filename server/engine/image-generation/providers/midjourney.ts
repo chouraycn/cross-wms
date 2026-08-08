@@ -140,7 +140,7 @@ export function createMidjourneyProvider(
       const timeoutMs = req.timeoutMs ?? defaultTimeoutMs;
       const baseUrl = resolveBaseUrl(req, defaultBaseUrl);
 
-      const mjOptions = req.providerOptions?.midjourney as Record<string, unknown> | undefined;
+      const mjOptions = req.providerOptions?.midjourney as Record<string, any> | undefined;
       const stylize = mjOptions?.stylize || defaultStylize;
       const quality = mjOptions?.quality || defaultQuality;
       const chaos = (mjOptions?.chaos as number | undefined) || defaultChaos;

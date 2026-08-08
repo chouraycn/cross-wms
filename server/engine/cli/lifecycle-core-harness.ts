@@ -1,16 +1,16 @@
 
-export function resetLifecycleRuntimeLogs(..._args: unknown[]): unknown {
+export function resetLifecycleRuntimeLogs(..._args: any[]): any {
   console.warn('resetLifecycleRuntimeLogs is not available in cross-wms'); return undefined;
 }
 
-export function resetLifecycleServiceMocks(..._args: unknown[]): unknown {
+export function resetLifecycleServiceMocks(..._args: any[]): any {
   console.warn('resetLifecycleServiceMocks is not available in cross-wms'); return undefined;
 }
 
-export function stubEmptyGatewayEnv(..._args: unknown[]): unknown {
+export function stubEmptyGatewayEnv(..._args: any[]): any {
   console.warn('stubEmptyGatewayEnv is not available in cross-wms'); return undefined;
 }
 
-export const runtimeLogs: unknown = undefined;
-export const defaultRuntime: unknown = undefined;
-export const service: unknown = undefined;
+export const runtimeLogs: any = undefined;
+export const defaultRuntime: any = undefined;
+export const service: any = undefined;

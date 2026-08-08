@@ -34,7 +34,7 @@ export interface MockOrderUpsertInput {
   refundable?: boolean;
   total_amount?: number;
   currency?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 /** 插入或更新 mock 订单（按 order_id 幂等） */

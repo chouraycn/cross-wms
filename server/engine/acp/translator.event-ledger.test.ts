@@ -83,7 +83,7 @@ function createChatEvent(params: {
   } as unknown as EventFrame;
 }
 
-async function waitForChatSend(requestMock: { mock: { calls: Array<readonly unknown[]> } }) {
+async function waitForChatSend(requestMock: { mock: { calls: Array<readonly any[]> } }) {
   await vi.waitFor(() =>
     expect(requestMock.mock.calls.some((call) => call[0] === "chat.send")).toBe(true),
   );
@@ -335,7 +335,7 @@ describe("ACP translator event ledger replay", () => {
 
   it("marks replay incomplete when an accepted prompt cannot be recorded", async () => {
     const innerLedger = createInMemoryAcpEventLedger();
-    let markIncompleteResolve: ((value: unknown) => void) | undefined;
+    let markIncompleteResolve: ((value: any) => void) | undefined;
     const markIncompletePromise = new Promise((resolve) => {
       markIncompleteResolve = resolve;
     });

@@ -20,23 +20,23 @@ vi.mock("./model-selection.js", async () => {
     await vi.importActual<typeof import("./model-selection.js")>("./model-selection.js");
   return {
     normalizeStoredOverrideModel: actual.normalizeStoredOverrideModel,
-    resolveDefaultModelForAgent: (...args: unknown[]) =>
+    resolveDefaultModelForAgent: (...args: any[]) =>
       state.resolveDefaultModelForAgentMock(...args),
-    resolvePersistedSelectedModelRef: (...args: unknown[]) =>
+    resolvePersistedSelectedModelRef: (...args: any[]) =>
       state.resolvePersistedSelectedModelRefMock(...args),
   };
 });
 
 vi.mock("../config/sessions/session-accessor.js", () => ({
   loadSessionEntry: (scope: { sessionKey: string }) => {
-    const store = state.loadSessionStoreMock(scope) as Record<string, unknown> | undefined;
+    const store = state.loadSessionStoreMock(scope) as Record<string, any> | undefined;
     return store?.[scope.sessionKey];
   },
-  patchSessionEntry: (...args: unknown[]) => state.updateSessionStoreMock(...args),
+  patchSessionEntry: (...args: any[]) => state.updateSessionStoreMock(...args),
 }));
 
 vi.mock("../config/sessions/paths.js", () => ({
-  resolveStorePath: (...args: unknown[]) => state.resolveStorePathMock(...args),
+  resolveStorePath: (...args: any[]) => state.resolveStorePathMock(...args),
 }));
 
 let mod: typeof import("./live-model-switch.js");
@@ -126,12 +126,12 @@ describe("live model switch", () => {
         async (
           scope: { sessionKey: string },
           updater: (
-            entry: Record<string, unknown>,
-          ) => Promise<Record<string, unknown> | null> | Record<string, unknown> | null,
+            entry: Record<string, any>,
+          ) => Promise<Record<string, any> | null> | Record<string, any> | null,
         ) => {
           const store = state.loadSessionStoreMock(scope) as Record<
             string,
-            Record<string, unknown>
+            Record<string, any>
           >;
           const entry = store?.[scope.sessionKey];
           if (!entry) {

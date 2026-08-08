@@ -6,12 +6,12 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function createGetGoalTool(..._args: unknown[]): unknown {
+export function createGetGoalTool(..._args: any[]): any {
   return undefined;
 }
-export function createCreateGoalTool(..._args: unknown[]): unknown {
+export function createCreateGoalTool(..._args: any[]): any {
   return undefined;
 }
-export function createUpdateGoalTool(..._args: unknown[]): unknown {
+export function createUpdateGoalTool(..._args: any[]): any {
   return undefined;
 }

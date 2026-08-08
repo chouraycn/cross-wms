@@ -2,9 +2,9 @@
 
 export type PluginHostSessionCleanupMode = unknown;
 export type PluginHostSessionCleanupStoreParams = unknown;
-export function clearPluginOwnedSessionState(...args: unknown[]): unknown {
+export function clearPluginOwnedSessionState(...args: any[]): any {
   return undefined;
 }
-export function cleanupPluginHostSessionStore(...args: unknown[]): unknown {
+export function cleanupPluginHostSessionStore(...args: any[]): any {
   return undefined;
 }

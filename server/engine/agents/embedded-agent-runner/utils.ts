@@ -5,7 +5,7 @@
 import type { ReasoningLevel, ThinkLevel } from "../../auto-reply/thinking.js";
 import type { ThinkingLevel } from "../runtime/index.js";
 
-export function normalizeContextTokenBudget(value: unknown): number | undefined {
+export function normalizeContextTokenBudget(value: any): number | undefined {
   return typeof value === "number" && Number.isFinite(value) && value > 0
     ? Math.floor(value)
     : undefined;

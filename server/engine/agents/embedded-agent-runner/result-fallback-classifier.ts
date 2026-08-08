@@ -21,13 +21,13 @@ import type { EmbeddedAgentRunResult } from "./types.js";
  * copy; delivered messages, deliberate silent replies, hook blocks, and aborts must not trigger
  * another model attempt.
  */
-function isEmbeddedAgentRunResult(value: unknown): value is EmbeddedAgentRunResult {
+function isEmbeddedAgentRunResult(value: any): value is EmbeddedAgentRunResult {
   return Boolean(
     value &&
     typeof value === "object" &&
     "meta" in value &&
-    (value as { meta?: unknown }).meta &&
-    typeof (value as { meta?: unknown }).meta === "object",
+    (value as { meta?: any }).meta &&
+    typeof (value as { meta?: any }).meta === "object",
   );
 }
 
@@ -171,7 +171,7 @@ function classifyBusinessDenialErrorPayloadReason(
 export function classifyEmbeddedAgentRunResultForModelFallback(params: {
   provider: string;
   model: string;
-  result: unknown;
+  result: any;
   hasDirectlySentBlockReply?: boolean;
   hasBlockReplyPipelineOutput?: boolean;
 }): ModelFallbackResultClassification {

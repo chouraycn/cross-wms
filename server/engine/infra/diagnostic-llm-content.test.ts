@@ -111,7 +111,7 @@ describe("resolveDiagnosticModelContentCapturePolicy", () => {
   });
 
   it("resolves tool content flags independently from model-visible content", () => {
-    const base = (captureContent: Record<string, unknown>) =>
+    const base = (captureContent: Record<string, any>) =>
       resolveDiagnosticModelContentCapturePolicy({
         diagnostics: {
           enabled: true,

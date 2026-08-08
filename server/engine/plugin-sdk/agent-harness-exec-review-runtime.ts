@@ -8,7 +8,7 @@
 export async function reviewExecRequestWithConfiguredModel(params: {
   cfg?: import("../config/types.openclaw.js").OpenClawConfig;
   agentId?: string;
-  reviewer?: unknown;
+  reviewer?: any;
   input: import("../infra/exec-auto-review.js").ExecAutoReviewInput;
 }): Promise<import("../infra/exec-auto-review.js").ExecAutoReviewDecision> {
   const { createModelExecAutoReviewer } = await import("../agents/exec-auto-reviewer.js");

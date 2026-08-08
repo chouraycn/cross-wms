@@ -20,7 +20,7 @@ const emptyPluginMetadataSnapshot = vi.hoisted(() => ({
 }));
 
 vi.mock("./provider-model-normalization.runtime.js", () => ({
-  normalizeProviderModelIdWithRuntime: (params: unknown) =>
+  normalizeProviderModelIdWithRuntime: (params: any) =>
     normalizeProviderModelIdWithPluginMock(params),
 }));
 
@@ -257,7 +257,7 @@ describe("model-selection plugin runtime normalization", () => {
     const { normalizeModelRef } = await import("./model-selection-normalize.js");
     normalizeModelRef("custom", "my-model");
     const callArgs = normalizeProviderModelIdWithPluginMock.mock.calls[0]?.[0] as
-      | { plugins?: unknown }
+      | { plugins?: any }
       | undefined;
     expect(callArgs).toBeDefined();
     expect(callArgs?.plugins).toBeUndefined();

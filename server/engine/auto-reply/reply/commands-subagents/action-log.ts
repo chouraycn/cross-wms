@@ -37,7 +37,7 @@ export async function handleSubagentsLogAction(
     return targetResolution.reply;
   }
 
-  const history = await callGateway<{ messages: Array<unknown> }>({
+  const history = await callGateway<{ messages: Array<any> }>({
     method: "chat.history",
     params: { sessionKey: targetResolution.entry.childSessionKey, limit },
   });

@@ -9,10 +9,10 @@ type AgentProjectSettings = {
   agentId?: string;
   model?: string;
   thinkingLevel?: string;
-  tools?: Record<string, unknown>;
+  tools?: Record<string, any>;
   systemPrompt?: string;
-  permissions?: Record<string, unknown>;
-  [key: string]: unknown;
+  permissions?: Record<string, any>;
+  [key: string]: any;
 };
 
 type SettingsSnapshot = {
@@ -23,7 +23,7 @@ type SettingsSnapshot = {
 
 /** Freeze the current project-level agent settings into an immutable snapshot. */
 export function freezeAgentProjectSettingsSnapshot(params: {
-  config?: unknown;
+  config?: any;
   agentId?: string;
   workspaceDir?: string;
 }): SettingsSnapshot {
@@ -39,7 +39,7 @@ export function freezeAgentProjectSettingsSnapshot(params: {
 export function readSettingsSnapshotValue(
   snapshot: SettingsSnapshot,
   key: string,
-): unknown {
+): any {
   return snapshot.settings[key];
 }
 
@@ -81,17 +81,17 @@ export const DEFAULT_EMBEDDED_AGENT_PROJECT_SETTINGS_POLICY = Object.freeze({
 });
 
 /** Stub: no enabled bundle-agent settings snapshot exists in cross-wms. */
-export function loadEnabledBundleAgentSettingsSnapshot(_params?: unknown): SettingsSnapshot | undefined {
+export function loadEnabledBundleAgentSettingsSnapshot(_params?: any): SettingsSnapshot | undefined {
   return undefined;
 }
 
 /** Stub: resolves to the default policy (no project-level overrides). */
-export function resolveEmbeddedAgentProjectSettingsPolicy(_params?: unknown): typeof DEFAULT_EMBEDDED_AGENT_PROJECT_SETTINGS_POLICY {
+export function resolveEmbeddedAgentProjectSettingsPolicy(_params?: any): typeof DEFAULT_EMBEDDED_AGENT_PROJECT_SETTINGS_POLICY {
   return DEFAULT_EMBEDDED_AGENT_PROJECT_SETTINGS_POLICY;
 }
 
 /** Stub: builds an empty snapshot for the requested agent. */
-export function buildEmbeddedAgentSettingsSnapshot(_params?: unknown): SettingsSnapshot {
+export function buildEmbeddedAgentSettingsSnapshot(_params?: any): SettingsSnapshot {
   return {
     settings: {},
     frozenAt: new Date(),

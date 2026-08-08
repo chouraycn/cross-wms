@@ -301,7 +301,7 @@ function isValidPluginIntegrationProviderId(value: string): boolean {
 
 /** Narrows a secret provider config to the plugin-integration exec shape. */
 export function isPluginIntegrationSecretProviderConfig(
-  value: unknown,
+  value: any,
 ): value is PluginIntegrationSecretProviderConfig {
   return (
     typeof value === "object" &&

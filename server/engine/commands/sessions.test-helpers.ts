@@ -6,7 +6,7 @@ import path from "node:path";
 import { vi } from "vitest";
 import type { RuntimeEnv } from "../runtime.js";
 
-const sessionsConfigState = vi.hoisted<{ loadConfig: () => Record<string, unknown> }>(() => ({
+const sessionsConfigState = vi.hoisted<{ loadConfig: () => Record<string, any> }>(() => ({
   loadConfig: () => ({
     agents: {
       defaults: {
@@ -43,7 +43,7 @@ export function mockSessionsConfig() {
   // warnings before importing `sessions.ts`.
 }
 
-export function setMockSessionsConfig(loader: () => Record<string, unknown>) {
+export function setMockSessionsConfig(loader: () => Record<string, any>) {
   sessionsConfigState.loadConfig = loader;
 }
 
@@ -61,8 +61,8 @@ export function makeRuntime(params?: { throwOnError?: boolean }): {
   const throwOnError = params?.throwOnError ?? false;
   return {
     runtime: {
-      log: (msg: unknown) => logs.push(String(msg)),
-      error: (msg: unknown) => {
+      log: (msg: any) => logs.push(String(msg)),
+      error: (msg: any) => {
         errors.push(String(msg));
         if (throwOnError) {
           throw new Error(String(msg));
@@ -77,7 +77,7 @@ export function makeRuntime(params?: { throwOnError?: boolean }): {
   };
 }
 
-export function writeStore(data: unknown, prefix = "sessions"): string {
+export function writeStore(data: any, prefix = "sessions"): string {
   const fileName = `${[prefix, Date.now(), randomUUID()].join("-")}.json`;
   const file = path.join(os.tmpdir(), fileName);
   fs.writeFileSync(file, JSON.stringify(data, null, 2));

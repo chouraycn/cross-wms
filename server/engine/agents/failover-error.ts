@@ -46,7 +46,7 @@ export class FailoverError extends Error {
       authProfileFailure?: { allInCooldown: boolean };
       sessionId?: string;
       lane?: string;
-      cause?: unknown;
+      cause?: any;
       suspend?: boolean;
     },
   ) {
@@ -67,15 +67,15 @@ export class FailoverError extends Error {
   }
 }
 
-export function isFailoverError(err: unknown): err is FailoverError {
+export function isFailoverError(err: any): err is FailoverError {
   if (err instanceof FailoverError) {
     return true;
   }
   return Boolean(
     err &&
     typeof err === "object" &&
-    (err as { name?: unknown }).name === "FailoverError" &&
-    typeof (err as { reason?: unknown }).reason === "string",
+    (err as { name?: any }).name === "FailoverError" &&
+    typeof (err as { reason?: any }).reason === "string",
   );
 }
 
@@ -107,8 +107,8 @@ export function resolveFailoverStatus(reason: FailoverReason): number | undefine
 }
 
 function findErrorProperty<T>(
-  err: unknown,
-  reader: (candidate: unknown) => T | undefined,
+  err: any,
+  reader: (candidate: any) => T | undefined,
   seen: Set<object> = new Set(),
 ): T | undefined {
   const direct = reader(err);
@@ -122,7 +122,7 @@ function findErrorProperty<T>(
     return undefined;
   }
   seen.add(err);
-  const candidate = err as { error?: unknown; cause?: unknown };
+  const candidate = err as { error?: any; cause?: any };
   return (
     findErrorProperty(candidate.error, reader, seen) ??
     findErrorProperty(candidate.cause, reader, seen)
@@ -141,13 +141,13 @@ function parseStrictNonNegativeInteger(value: string): number | undefined {
   return num;
 }
 
-function readDirectStatusCode(err: unknown): number | undefined {
+function readDirectStatusCode(err: any): number | undefined {
   if (!err || typeof err !== "object") {
     return undefined;
   }
   const candidate =
-    (err as { status?: unknown; statusCode?: unknown }).status ??
-    (err as { statusCode?: unknown }).statusCode;
+    (err as { status?: any; statusCode?: any }).status ??
+    (err as { statusCode?: any }).statusCode;
   if (typeof candidate === "number") {
     return candidate;
   }
@@ -157,25 +157,25 @@ function readDirectStatusCode(err: unknown): number | undefined {
   return undefined;
 }
 
-function getStatusCode(err: unknown): number | undefined {
+function getStatusCode(err: any): number | undefined {
   return findErrorProperty(err, readDirectStatusCode);
 }
 
-function readDirectErrorCode(err: unknown): string | undefined {
+function readDirectErrorCode(err: any): string | undefined {
   if (!err || typeof err !== "object") {
     return undefined;
   }
-  const directCode = (err as { code?: unknown }).code;
+  const directCode = (err as { code?: any }).code;
   if (typeof directCode === "string") {
     const trimmed = directCode.trim();
     return trimmed ? trimmed : undefined;
   }
-  const detailCode = (err as { detail?: { code?: unknown } }).detail?.code;
+  const detailCode = (err as { detail?: { code?: any } }).detail?.code;
   if (typeof detailCode === "string") {
     const trimmed = detailCode.trim();
     return trimmed ? trimmed : undefined;
   }
-  const status = (err as { status?: unknown }).status;
+  const status = (err as { status?: any }).status;
   if (typeof status !== "string" || /^\d+$/.test(status)) {
     return undefined;
   }
@@ -183,11 +183,11 @@ function readDirectErrorCode(err: unknown): string | undefined {
   return trimmed ? trimmed : undefined;
 }
 
-function getErrorCode(err: unknown): string | undefined {
+function getErrorCode(err: any): string | undefined {
   return findErrorProperty(err, readDirectErrorCode);
 }
 
-function readDirectErrorMessage(err: unknown): string | undefined {
+function readDirectErrorMessage(err: any): string | undefined {
   if (err instanceof Error) {
     return err.message || undefined;
   }
@@ -201,7 +201,7 @@ function readDirectErrorMessage(err: unknown): string | undefined {
     return err.description ?? undefined;
   }
   if (err && typeof err === "object") {
-    const message = (err as { message?: unknown }).message;
+    const message = (err as { message?: any }).message;
     if (typeof message === "string") {
       return message || undefined;
     }
@@ -209,16 +209,16 @@ function readDirectErrorMessage(err: unknown): string | undefined {
   return undefined;
 }
 
-function getErrorMessage(err: unknown): string {
+function getErrorMessage(err: any): string {
   return findErrorProperty(err, readDirectErrorMessage) ?? "";
 }
 
-function readErrorName(err: unknown): string | undefined {
+function readErrorName(err: any): string | undefined {
   if (err instanceof Error) {
     return err.name;
   }
   if (err && typeof err === "object") {
-    const name = (err as { name?: unknown }).name;
+    const name = (err as { name?: any }).name;
     if (typeof name === "string") {
       return name || undefined;
     }
@@ -237,7 +237,7 @@ function isTimeoutErrorMessage(message: string): boolean {
   return TIMEOUT_ERROR_MESSAGES.some((re) => re.test(message));
 }
 
-function hasTimeoutHint(err: unknown): boolean {
+function hasTimeoutHint(err: any): boolean {
   if (!err) {
     return false;
   }
@@ -248,7 +248,7 @@ function hasTimeoutHint(err: unknown): boolean {
   return Boolean(message && isTimeoutErrorMessage(message));
 }
 
-export function isTimeoutError(err: unknown): boolean {
+export function isTimeoutError(err: any): boolean {
   if (hasTimeoutHint(err)) {
     return true;
   }
@@ -262,18 +262,18 @@ export function isTimeoutError(err: unknown): boolean {
   if (message && ABORT_TIMEOUT_RE.test(message)) {
     return true;
   }
-  const cause = "cause" in err ? (err as { cause?: unknown }).cause : undefined;
-  const reason = "reason" in err ? (err as { reason?: unknown }).reason : undefined;
+  const cause = "cause" in err ? (err as { cause?: any }).cause : undefined;
+  const reason = "reason" in err ? (err as { reason?: any }).reason : undefined;
   return hasTimeoutHint(cause) || hasTimeoutHint(reason);
 }
 
-function isSessionWriteLockAcquireError(err: unknown): boolean {
+function isSessionWriteLockAcquireError(err: any): boolean {
   return Boolean(
     err && typeof err === "object" && readErrorName(err) === "SessionWriteLockAcquireError",
   );
 }
 
-function hasSessionWriteLockContention(err: unknown, seen: Set<object> = new Set()): boolean {
+function hasSessionWriteLockContention(err: any, seen: Set<object> = new Set()): boolean {
   if (isSessionWriteLockAcquireError(err)) {
     return true;
   }
@@ -284,7 +284,7 @@ function hasSessionWriteLockContention(err: unknown, seen: Set<object> = new Set
     return false;
   }
   seen.add(err);
-  const candidate = err as { error?: unknown; cause?: unknown; reason?: unknown };
+  const candidate = err as { error?: any; cause?: any; reason?: any };
   return (
     hasSessionWriteLockContention(candidate.error, seen) ||
     hasSessionWriteLockContention(candidate.cause, seen) ||
@@ -292,13 +292,13 @@ function hasSessionWriteLockContention(err: unknown, seen: Set<object> = new Set
   );
 }
 
-function isEmbeddedAttemptSessionTakeover(err: unknown): boolean {
+function isEmbeddedAttemptSessionTakeover(err: any): boolean {
   return Boolean(
     err && typeof err === "object" && readErrorName(err) === "EmbeddedAttemptSessionTakeoverError",
   );
 }
 
-function hasEmbeddedAttemptSessionTakeover(err: unknown, seen: Set<object> = new Set()): boolean {
+function hasEmbeddedAttemptSessionTakeover(err: any, seen: Set<object> = new Set()): boolean {
   if (isEmbeddedAttemptSessionTakeover(err)) {
     return true;
   }
@@ -309,7 +309,7 @@ function hasEmbeddedAttemptSessionTakeover(err: unknown, seen: Set<object> = new
     return false;
   }
   seen.add(err);
-  const candidate = err as { error?: unknown; cause?: unknown; reason?: unknown };
+  const candidate = err as { error?: any; cause?: any; reason?: any };
   return (
     hasEmbeddedAttemptSessionTakeover(candidate.error, seen) ||
     hasEmbeddedAttemptSessionTakeover(candidate.cause, seen) ||
@@ -317,7 +317,7 @@ function hasEmbeddedAttemptSessionTakeover(err: unknown, seen: Set<object> = new
   );
 }
 
-export function isNonProviderRuntimeCoordinationError(err: unknown): boolean {
+export function isNonProviderRuntimeCoordinationError(err: any): boolean {
   if (!hasSessionWriteLockContention(err) && !hasEmbeddedAttemptSessionTakeover(err)) {
     return false;
   }
@@ -386,7 +386,7 @@ function classifyFailoverSignal(signal: {
   return null;
 }
 
-function normalizeErrorSignal(err: unknown, providerHint?: string): {
+function normalizeErrorSignal(err: any, providerHint?: string): {
   status?: number;
   code?: string;
   errorType?: string;
@@ -405,11 +405,11 @@ function normalizeErrorSignal(err: unknown, providerHint?: string): {
   };
 }
 
-function getNestedErrorCandidates(err: unknown): unknown[] {
+function getNestedErrorCandidates(err: any): any[] {
   if (!err || typeof err !== "object") {
     return [];
   }
-  const candidate = err as { error?: unknown; cause?: unknown };
+  const candidate = err as { error?: any; cause?: any };
   return [candidate.error, candidate.cause].filter(
     (value): value is unknown => value !== undefined && value !== err,
   );
@@ -420,7 +420,7 @@ function isFormatClassification(classification: FailoverClassification | null): 
 }
 
 function resolveFailoverClassificationFromErrorInternal(
-  err: unknown,
+  err: any,
   seen: Set<object>,
   depth: number,
   providerHint?: string,
@@ -498,21 +498,21 @@ function resolveFailoverClassificationFromErrorInternal(
 }
 
 function resolveFailoverClassificationFromError(
-  err: unknown,
+  err: any,
   providerHint?: string,
 ): FailoverClassification | null {
   return resolveFailoverClassificationFromErrorInternal(err, new Set<object>(), 0, providerHint);
 }
 
 export function resolveFailoverReasonFromError(
-  err: unknown,
+  err: any,
   providerHint?: string,
 ): FailoverReason | null {
   const classification = resolveFailoverClassificationFromError(err, providerHint);
   return classification?.kind === "reason" ? classification.reason : null;
 }
 
-export function describeFailoverError(err: unknown): {
+export function describeFailoverError(err: any): {
   message: string;
   rawError?: string;
   reason?: FailoverReason;
@@ -552,7 +552,7 @@ export function describeFailoverError(err: unknown): {
 }
 
 export function coerceToFailoverError(
-  err: unknown,
+  err: any,
   context?: {
     provider?: string;
     model?: string;

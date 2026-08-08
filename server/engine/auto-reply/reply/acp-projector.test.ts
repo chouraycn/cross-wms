@@ -34,7 +34,7 @@ function createProjectorHarness(
 }
 
 function createLiveCfgOverrides(
-  streamOverrides: Record<string, unknown>,
+  streamOverrides: Record<string, any>,
 ): Parameters<typeof createCfg>[0] {
   return {
     acp: {
@@ -48,7 +48,7 @@ function createLiveCfgOverrides(
 }
 
 function createHiddenBoundaryCfg(
-  streamOverrides: Record<string, unknown> = {},
+  streamOverrides: Record<string, any> = {},
 ): Parameters<typeof createCfg>[0] {
   return createLiveCfgOverrides({
     coalesceIdleMs: 0,

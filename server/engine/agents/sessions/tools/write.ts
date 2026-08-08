@@ -66,7 +66,7 @@ const defaultWriteOperations: WriteOperations = {
         error &&
         typeof error === "object" &&
         "code" in error &&
-        (error as { code?: unknown }).code === "ENOENT"
+        (error as { code?: any }).code === "ENOENT"
       ) {
         return null;
       }
@@ -256,11 +256,11 @@ function formatWriteResult(
   return `\n${theme.fg("error", output)}`;
 }
 
-function isMissingFileError(error: unknown): boolean {
+function isMissingFileError(error: any): boolean {
   if (!error || typeof error !== "object") {
     return false;
   }
-  if ("code" in error && (error as { code?: unknown }).code === "ENOENT") {
+  if ("code" in error && (error as { code?: any }).code === "ENOENT") {
     return true;
   }
   return error instanceof Error && error.message.includes("No such file or directory");
@@ -319,7 +319,7 @@ async function didWriteMetadataChange(
   return afterStat.size !== beforeStat.size || afterStat.mtimeMs !== beforeStat.mtimeMs;
 }
 
-function isWriteRecoveryCandidate(error: unknown, signal: AbortSignal | undefined): boolean {
+function isWriteRecoveryCandidate(error: any, signal: AbortSignal | undefined): boolean {
   if (signal?.aborted) {
     return true;
   }
@@ -338,7 +338,7 @@ function isWriteRecoveryCandidate(error: unknown, signal: AbortSignal | undefine
 async function recoverSuccessfulWrite(params: {
   absolutePath: string;
   content: string;
-  error: unknown;
+  error: any;
   ops: WriteOperations;
   path: string;
   precheck: WriteToolPrecheck;
@@ -415,7 +415,7 @@ export function createWriteToolDefinition(
             ],
             details: undefined,
           };
-        } catch (error: unknown) {
+        } catch (error: any) {
           const recovered = await recoverSuccessfulWrite({
             absolutePath,
             content,

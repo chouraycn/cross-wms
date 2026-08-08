@@ -17,7 +17,7 @@ type ChannelDoctorCompatibilityNormalizer = (params: {
   cfg: OpenClawConfig;
 }) => ChannelDoctorCompatibilityMutation;
 
-function collectRelevantDoctorChannelIds(raw: unknown): string[] {
+function collectRelevantDoctorChannelIds(raw: any): string[] {
   const channels = isRecord(raw) && isRecord(raw.channels) ? raw.channels : null;
   if (!channels) {
     return [];
@@ -39,7 +39,7 @@ function resolveBundledChannelCompatibilityNormalizer(
 }
 
 function collectPluginDoctorCompatibilityIds(params: {
-  raw: unknown;
+  raw: any;
   unresolvedChannelIds: readonly string[];
 }): string[] {
   const unresolvedChannelIds = new Set(params.unresolvedChannelIds);
@@ -54,8 +54,8 @@ function collectPluginDoctorCompatibilityIds(params: {
 }
 
 /** Apply bundled and plugin channel compatibility migrations to a legacy config object. */
-export function applyChannelDoctorCompatibilityMigrations(cfg: Record<string, unknown>): {
-  next: Record<string, unknown>;
+export function applyChannelDoctorCompatibilityMigrations(cfg: Record<string, any>): {
+  next: Record<string, any>;
   changes: string[];
 } {
   let nextCfg = cfg as OpenClawConfig;
@@ -87,7 +87,7 @@ export function applyChannelDoctorCompatibilityMigrations(cfg: Record<string, un
   }
 
   return {
-    next: nextCfg as OpenClawConfig & Record<string, unknown>,
+    next: nextCfg as OpenClawConfig & Record<string, any>,
     changes,
   };
 }

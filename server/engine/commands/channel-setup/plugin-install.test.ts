@@ -27,36 +27,36 @@ vi.mock("node:child_process", async () => {
   const actual = await vi.importActual<typeof import("node:child_process")>("node:child_process");
   return {
     ...actual,
-    execFileSync: (...args: unknown[]) => execFileSync(...args),
+    execFileSync: (...args: any[]) => execFileSync(...args),
   };
 });
 
 const installPluginFromNpmSpec = vi.fn();
 const applyPluginAutoEnable = vi.fn();
 vi.mock("../../plugins/install.js", () => ({
-  installPluginFromNpmSpec: (...args: unknown[]) => installPluginFromNpmSpec(...args),
+  installPluginFromNpmSpec: (...args: any[]) => installPluginFromNpmSpec(...args),
 }));
 
 vi.mock("../../config/plugin-auto-enable.js", () => ({
-  applyPluginAutoEnable: (...args: unknown[]) => applyPluginAutoEnable(...args),
+  applyPluginAutoEnable: (...args: any[]) => applyPluginAutoEnable(...args),
 }));
 
 const resolveBundledPluginSources = vi.fn();
 const getChannelPluginCatalogEntry = vi.fn();
-const listChannelPluginCatalogEntries = vi.fn((..._args: unknown[]) => []);
+const listChannelPluginCatalogEntries = vi.fn((..._args: any[]) => []);
 vi.mock("../../channels/plugins/catalog.js", () => {
   return {
-    getChannelPluginCatalogEntry: (...args: unknown[]) => getChannelPluginCatalogEntry(...args),
-    listChannelPluginCatalogEntries: (...args: unknown[]) =>
+    getChannelPluginCatalogEntry: (...args: any[]) => getChannelPluginCatalogEntry(...args),
+    listChannelPluginCatalogEntries: (...args: any[]) =>
       listChannelPluginCatalogEntries(...args),
-    listRawChannelPluginCatalogEntries: (...args: unknown[]) =>
+    listRawChannelPluginCatalogEntries: (...args: any[]) =>
       listChannelPluginCatalogEntries(...args),
   };
 });
 
 const loadPluginManifestRegistry = vi.fn();
 vi.mock("../../plugins/manifest-registry.js", () => ({
-  loadPluginManifestRegistry: (...args: unknown[]) => loadPluginManifestRegistry(...args),
+  loadPluginManifestRegistry: (...args: any[]) => loadPluginManifestRegistry(...args),
 }));
 
 vi.mock("../../plugins/bundled-sources.js", () => ({
@@ -81,16 +81,16 @@ vi.mock("../../plugins/bundled-sources.js", () => ({
     }
     return undefined;
   },
-  resolveBundledPluginSources: (...args: unknown[]) => resolveBundledPluginSources(...args),
+  resolveBundledPluginSources: (...args: any[]) => resolveBundledPluginSources(...args),
 }));
 
 vi.mock("../../plugins/loader.js", () => ({
   loadOpenClawPlugins: vi.fn(),
 }));
 
-const discoverOpenClawPlugins = vi.fn((_args?: unknown) => ({ candidates: [], diagnostics: [] }));
+const discoverOpenClawPlugins = vi.fn((_args?: any) => ({ candidates: [], diagnostics: [] }));
 vi.mock("../../plugins/discovery.js", () => ({
-  discoverOpenClawPlugins: (args: unknown) => discoverOpenClawPlugins(args),
+  discoverOpenClawPlugins: (args: any) => discoverOpenClawPlugins(args),
 }));
 
 import fs from "node:fs";
@@ -216,7 +216,7 @@ beforeEach(() => {
   execFileSync.mockImplementation(() => {
     throw new Error("not a git worktree");
   });
-  applyPluginAutoEnable.mockImplementation((params: { config: unknown }) => ({
+  applyPluginAutoEnable.mockImplementation((params: { config: any }) => ({
     config: params.config,
     changes: [],
     autoEnabledReasons: {},
@@ -309,32 +309,32 @@ function expectPluginLoadedFromLocalPath(
   expect(result.cfg.plugins?.load?.paths).toContain(expectedPath);
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!isRecord(value)) {
     throw new Error(`expected ${label} to be an object`);
   }
   return value;
 }
 
-function requireArray(value: unknown, label: string): unknown[] {
+function requireArray(value: any, label: string): any[] {
   if (!Array.isArray(value)) {
     throw new Error(`expected ${label} to be an array`);
   }
   return value;
 }
 
-function expectRecordFields(value: unknown, label: string, expected: Record<string, unknown>) {
+function expectRecordFields(value: any, label: string, expected: Record<string, any>) {
   const record = requireRecord(value, label);
   for (const [key, expectedValue] of Object.entries(expected)) {
     expect(record[key]).toEqual(expectedValue);
   }
 }
 
-type MockWithCalls = { mock: { calls: unknown[][] } };
+type MockWithCalls = { mock: { calls: any[][] } };
 
 function requireMockCallArg(mock: MockWithCalls, callIndex: number, argIndex = 0) {
   return requireRecord(mock.mock.calls[callIndex]?.[argIndex], "mock call argument");
@@ -344,14 +344,14 @@ function requireSelectOptions(select: MockWithCalls) {
   return requireArray(requireMockCallArg(select, 0).options, "select options");
 }
 
-function requireOptionByValue(options: unknown[], value: string) {
+function requireOptionByValue(options: any[], value: string) {
   const option = options.find(
     (candidate) => requireRecord(candidate, "select option").value === value,
   );
   return requireRecord(option, `select option ${value}`);
 }
 
-function expectLoadOpenClawPluginFields(expected: Record<string, unknown>, callIndex = 0) {
+function expectLoadOpenClawPluginFields(expected: Record<string, any>, callIndex = 0) {
   expectRecordFields(
     requireMockCallArg(vi.mocked(loadOpenClawPlugins), callIndex),
     "loadOpenClawPlugins args",
@@ -887,7 +887,7 @@ describe("ensureChannelSetupPluginInstalled", () => {
     const runtime = makeRuntime();
     const cfg: OpenClawConfig = {};
     let sawTrustedCandidate = false;
-    loadPluginManifestRegistry.mockImplementation((args: unknown) => {
+    loadPluginManifestRegistry.mockImplementation((args: any) => {
       if (
         isRecord(args) &&
         args.config === cfg &&

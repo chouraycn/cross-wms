@@ -15,7 +15,7 @@ function asText(text: string): TextContent {
   return { type: "text", text };
 }
 
-function serializeMalformedTextBlock(block: unknown): string {
+function serializeMalformedTextBlock(block: any): string {
   try {
     const serialized = JSON.stringify(block);
     return typeof serialized === "string" ? serialized : "[malformed text block]";
@@ -24,20 +24,20 @@ function serializeMalformedTextBlock(block: unknown): string {
   }
 }
 
-function coerceTextBlock(block: unknown): string | null {
+function coerceTextBlock(block: any): string | null {
   if (!block || typeof block !== "object") {
     return null;
   }
-  if ((block as { type?: unknown }).type !== "text") {
+  if ((block as { type?: any }).type !== "text") {
     return null;
   }
-  const text = (block as { text?: unknown }).text;
+  const text = (block as { text?: any }).text;
   return typeof text === "string" ? text : serializeMalformedTextBlock(block);
 }
 
-function isImageBlock(block: unknown): boolean {
+function isImageBlock(block: any): boolean {
   return (
-    Boolean(block) && typeof block === "object" && (block as { type?: unknown }).type === "image"
+    Boolean(block) && typeof block === "object" && (block as { type?: any }).type === "image"
   );
 }
 
@@ -178,17 +178,17 @@ function estimateMessageChars(message: AgentMessage): number {
       if (b.type === "text" && typeof b.text === "string") {
         chars += estimateWeightedTextChars(b.text);
       }
-      const blockType = (b as { type?: unknown }).type;
+      const blockType = (b as { type?: any }).type;
       if (blockType === "thinking" || blockType === "redacted_thinking") {
-        const thinking = (b as { thinking?: unknown }).thinking;
+        const thinking = (b as { thinking?: any }).thinking;
         if (typeof thinking === "string") {
           chars += estimateWeightedTextChars(thinking);
         }
-        const data = (b as { data?: unknown }).data;
+        const data = (b as { data?: any }).data;
         if (blockType === "redacted_thinking" && typeof data === "string") {
           chars += estimateWeightedTextChars(data);
         }
-        const signature = (b as { thinkingSignature?: unknown }).thinkingSignature;
+        const signature = (b as { thinkingSignature?: any }).thinkingSignature;
         if (typeof signature === "string") {
           chars += estimateWeightedTextChars(signature);
         }
@@ -349,7 +349,7 @@ export function pruneContextMessages(params: {
     prunableToolIndexes.push(i);
 
     const updated = softTrimToolResultMessage({
-      msg: msg as unknown as ToolResultMessage,
+      msg: msg as any as ToolResultMessage,
       settings,
     });
     if (!updated) {
@@ -357,12 +357,12 @@ export function pruneContextMessages(params: {
     }
 
     const beforeChars = estimateMessageChars(msg);
-    const afterChars = estimateMessageChars(updated as unknown as AgentMessage);
+    const afterChars = estimateMessageChars(updated as any as AgentMessage);
     totalChars += afterChars - beforeChars;
     if (!next) {
       next = messages.slice();
     }
-    next[i] = updated as unknown as AgentMessage;
+    next[i] = updated as any as AgentMessage;
   }
 
   const outputAfterSoftTrim = next ?? messages;
@@ -403,8 +403,8 @@ export function pruneContextMessages(params: {
     if (!next) {
       next = messages.slice();
     }
-    next[i] = cleared as unknown as AgentMessage;
-    const afterChars = estimateMessageChars(cleared as unknown as AgentMessage);
+    next[i] = cleared as any as AgentMessage;
+    const afterChars = estimateMessageChars(cleared as any as AgentMessage);
     totalChars += afterChars - beforeChars;
     ratio = totalChars / charWindow;
   }

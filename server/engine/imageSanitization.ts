@@ -137,15 +137,15 @@ function resizeImageBase64(
 }
 
 export function sanitizeMessageImages(
-  messages: Array<{ role: string; content: unknown; [key: string]: unknown }>,
+  messages: Array<{ role: string; content: any; [key: string]: any }>,
   limits: ImageSanitizationLimits,
-): Array<{ role: string; content: unknown; [key: string]: unknown }> {
+): Array<{ role: string; content: any; [key: string]: any }> {
   if (!limits.maxDimensionPx && !limits.maxBytes) {
     return messages;
   }
 
   let touched = false;
-  const result: Array<{ role: string; content: unknown; [key: string]: unknown }> = [];
+  const result: Array<{ role: string; content: any; [key: string]: any }> = [];
 
   for (const msg of messages) {
     if (msg.role !== 'user' || !Array.isArray(msg.content)) {
@@ -155,7 +155,7 @@ export function sanitizeMessageImages(
 
     const content = msg.content as Array<{ type: string; image_url?: { url: string; detail?: string } }>;
     let msgTouched = false;
-    const newContent: Array<{ type: string; [key: string]: unknown }> = [];
+    const newContent: Array<{ type: string; [key: string]: any }> = [];
 
     for (const part of content) {
       if (part.type !== 'image_url' || !part.image_url?.url) {

@@ -138,14 +138,14 @@ async function runExec(
 // 移植实现
 // ============================================================================
 
-function parsePossiblyNoisyJsonObject(stdout: string): Record<string, unknown> {
+function parsePossiblyNoisyJsonObject(stdout: string): Record<string, any> {
   const trimmed = stdout.trim();
   const start = trimmed.indexOf("{");
   const end = trimmed.lastIndexOf("}");
   if (start >= 0 && end > start) {
-    return JSON.parse(trimmed.slice(start, end + 1)) as Record<string, unknown>;
+    return JSON.parse(trimmed.slice(start, end + 1)) as Record<string, any>;
   }
-  return JSON.parse(trimmed) as Record<string, unknown>;
+  return JSON.parse(trimmed) as Record<string, any>;
 }
 
 /**
@@ -239,7 +239,7 @@ export async function getTailnetHostname(
   const candidates = detectedBinary
     ? [detectedBinary]
     : ["tailscale", "/Applications/Tailscale.app/Contents/MacOS/Tailscale"];
-  let lastError: unknown;
+  let lastError: any;
 
   for (const candidate of candidates) {
     if (candidate.startsWith("/") && !existsSync(candidate)) {
@@ -253,7 +253,7 @@ export async function getTailnetHostname(
       const parsed = stdout ? parsePossiblyNoisyJsonObject(stdout) : {};
       const self =
         typeof parsed.Self === "object" && parsed.Self !== null
-          ? (parsed.Self as Record<string, unknown>)
+          ? (parsed.Self as Record<string, any>)
           : undefined;
       const dns = typeof self?.DNSName === "string" ? self.DNSName : undefined;
       const ips = Array.isArray(self?.TailscaleIPs)
@@ -306,10 +306,10 @@ async function getTailscaleBinary(): Promise<string> {
 }
 
 type ExecErrorDetails = {
-  stdout?: unknown;
-  stderr?: unknown;
-  message?: unknown;
-  code?: unknown;
+  stdout?: any;
+  stderr?: any;
+  message?: any;
+  code?: any;
 };
 
 export type TailscaleWhoisIdentity = {
@@ -324,7 +324,7 @@ type TailscaleWhoisCacheEntry = {
 
 const whoisCache = new Map<string, TailscaleWhoisCacheEntry>();
 
-function extractExecErrorText(err: unknown) {
+function extractExecErrorText(err: any) {
   const errOutput = err as ExecErrorDetails;
   const stdout = typeof errOutput.stdout === "string" ? errOutput.stdout : "";
   const stderr = typeof errOutput.stderr === "string" ? errOutput.stderr : "";
@@ -333,7 +333,7 @@ function extractExecErrorText(err: unknown) {
   return { stdout, stderr, message, code };
 }
 
-function isPermissionDeniedError(err: unknown): boolean {
+function isPermissionDeniedError(err: any): boolean {
   const { stdout, stderr, message, code } = extractExecErrorText(err);
   if (code.toUpperCase() === "EACCES") {
     return true;
@@ -417,7 +417,7 @@ export async function hasTailscaleFunnelRouteForPort(
 const TAILSCALE_LOOPBACK_PROXY_HOSTS = new Set(["127.0.0.1", "localhost", "[::1]", "::1"]);
 
 export function tailscaleFunnelStatusCoversPort(
-  status: Record<string, unknown>,
+  status: Record<string, any>,
   port: number,
 ): boolean {
   for (const proxy of funnelStatusBackendsForPort(status)) {
@@ -445,9 +445,9 @@ function tailscaleProxyMatchesLoopbackPort(proxy: string, port: number): boolean
   return TAILSCALE_LOOPBACK_PROXY_HOSTS.has(host);
 }
 
-function funnelStatusBackendsForPort(status: Record<string, unknown>): Set<string> {
+function funnelStatusBackendsForPort(status: Record<string, any>): Set<string> {
   const backends = new Set<string>();
-  const allowFunnel = (status as { AllowFunnel?: Record<string, unknown> }).AllowFunnel ?? {};
+  const allowFunnel = (status as { AllowFunnel?: Record<string, any> }).AllowFunnel ?? {};
   const enabledHosts = new Set(
     Object.entries(allowFunnel)
       .filter(([, value]) => value === true)
@@ -456,7 +456,7 @@ function funnelStatusBackendsForPort(status: Record<string, unknown>): Set<strin
   if (enabledHosts.size === 0) {
     return backends;
   }
-  const web = (status as { Web?: Record<string, unknown> }).Web;
+  const web = (status as { Web?: Record<string, any> }).Web;
   if (!web || typeof web !== "object") {
     return backends;
   }
@@ -467,12 +467,12 @@ function funnelStatusBackendsForPort(status: Record<string, unknown>): Set<strin
     if (!handlers || typeof handlers !== "object") {
       continue;
     }
-    const handlerEntries = (handlers as { Handlers?: Record<string, unknown> }).Handlers;
+    const handlerEntries = (handlers as { Handlers?: Record<string, any> }).Handlers;
     if (!handlerEntries || typeof handlerEntries !== "object") {
       continue;
     }
     for (const handler of Object.values(handlerEntries)) {
-      const proxy = (handler as { Proxy?: unknown })?.Proxy;
+      const proxy = (handler as { Proxy?: any })?.Proxy;
       if (typeof proxy === "string" && proxy.length > 0) {
         backends.add(proxy);
       }
@@ -513,7 +513,7 @@ export async function disableTailscaleFunnel(exec: typeof runExec = runExec) {
   });
 }
 
-function parseWhoisIdentity(payload: Record<string, unknown>): TailscaleWhoisIdentity | null {
+function parseWhoisIdentity(payload: Record<string, any>): TailscaleWhoisIdentity | null {
   const userProfile =
     readRecord(payload.UserProfile) ?? readRecord(payload.userProfile) ?? readRecord(payload.User);
   const login =

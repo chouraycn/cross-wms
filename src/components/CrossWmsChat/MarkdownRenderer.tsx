@@ -22,20 +22,20 @@ import { getGrayScale } from '../../constants/theme';
 
 const commonLanguages = ['tsx', 'typescript', 'javascript', 'bash', 'sh', 'json', 'python', 'py', 'sql'];
 
-const lazyLanguageImports: Record<string, () => Promise<{ default: unknown }>> = {
-  css: () => import('react-syntax-highlighter/dist/esm/languages/prism/css') as Promise<{ default: unknown }>,
-  yaml: () => import('react-syntax-highlighter/dist/esm/languages/prism/yaml') as Promise<{ default: unknown }>,
-  yml: () => import('react-syntax-highlighter/dist/esm/languages/prism/yaml') as Promise<{ default: unknown }>,
-  c: () => import('react-syntax-highlighter/dist/esm/languages/prism/c') as Promise<{ default: unknown }>,
-  cpp: () => import('react-syntax-highlighter/dist/esm/languages/prism/cpp') as Promise<{ default: unknown }>,
-  java: () => import('react-syntax-highlighter/dist/esm/languages/prism/java') as Promise<{ default: unknown }>,
-  go: () => import('react-syntax-highlighter/dist/esm/languages/prism/go') as Promise<{ default: unknown }>,
-  rust: () => import('react-syntax-highlighter/dist/esm/languages/prism/rust') as Promise<{ default: unknown }>,
-  html: () => import('react-syntax-highlighter/dist/esm/languages/prism/markup') as Promise<{ default: unknown }>,
-  xml: () => import('react-syntax-highlighter/dist/esm/languages/prism/markup') as Promise<{ default: unknown }>,
-  markdown: () => import('react-syntax-highlighter/dist/esm/languages/prism/markdown') as Promise<{ default: unknown }>,
-  md: () => import('react-syntax-highlighter/dist/esm/languages/prism/markdown') as Promise<{ default: unknown }>,
-  diff: () => import('react-syntax-highlighter/dist/esm/languages/prism/diff') as Promise<{ default: unknown }>,
+const lazyLanguageImports: Record<string, () => Promise<{ default: any }>> = {
+  css: () => import('react-syntax-highlighter/dist/esm/languages/prism/css') as Promise<{ default: any }>,
+  yaml: () => import('react-syntax-highlighter/dist/esm/languages/prism/yaml') as Promise<{ default: any }>,
+  yml: () => import('react-syntax-highlighter/dist/esm/languages/prism/yaml') as Promise<{ default: any }>,
+  c: () => import('react-syntax-highlighter/dist/esm/languages/prism/c') as Promise<{ default: any }>,
+  cpp: () => import('react-syntax-highlighter/dist/esm/languages/prism/cpp') as Promise<{ default: any }>,
+  java: () => import('react-syntax-highlighter/dist/esm/languages/prism/java') as Promise<{ default: any }>,
+  go: () => import('react-syntax-highlighter/dist/esm/languages/prism/go') as Promise<{ default: any }>,
+  rust: () => import('react-syntax-highlighter/dist/esm/languages/prism/rust') as Promise<{ default: any }>,
+  html: () => import('react-syntax-highlighter/dist/esm/languages/prism/markup') as Promise<{ default: any }>,
+  xml: () => import('react-syntax-highlighter/dist/esm/languages/prism/markup') as Promise<{ default: any }>,
+  markdown: () => import('react-syntax-highlighter/dist/esm/languages/prism/markdown') as Promise<{ default: any }>,
+  md: () => import('react-syntax-highlighter/dist/esm/languages/prism/markdown') as Promise<{ default: any }>,
+  diff: () => import('react-syntax-highlighter/dist/esm/languages/prism/diff') as Promise<{ default: any }>,
 };
 
 const loadedLanguages = new Set<string>(commonLanguages);
@@ -150,7 +150,7 @@ export const MarkdownRenderer = React.memo(function MarkdownRenderer({ content, 
   // when only content changed (not theme/copy state)
   const markdownComponents = useMemo(() => ({
     // 代码块：有语言标注 → 语法高亮；否则 → 纯文本
-    code({ className, children, node, ...props }: unknown) {
+    code({ className, children, node, ...props }: any) {
       const match = /language-(\w+)/.exec(className || '');
       const codeString = String(children).replace(/\n$/, '');
 
@@ -262,7 +262,7 @@ export const MarkdownRenderer = React.memo(function MarkdownRenderer({ content, 
       );
     },
     // 表格
-    table({ children }: unknown) {
+    table({ children }: any) {
       return (
         <div style={{ overflowX: 'auto', margin: '8px 0' }}>
           <table
@@ -277,7 +277,7 @@ export const MarkdownRenderer = React.memo(function MarkdownRenderer({ content, 
         </div>
       );
     },
-    th({ children }: unknown) {
+    th({ children }: any) {
       return (
         <th
           style={{
@@ -292,7 +292,7 @@ export const MarkdownRenderer = React.memo(function MarkdownRenderer({ content, 
         </th>
       );
     },
-    td({ children }: unknown) {
+    td({ children }: any) {
       return (
         <td
           style={{
@@ -305,7 +305,7 @@ export const MarkdownRenderer = React.memo(function MarkdownRenderer({ content, 
       );
     },
     // 链接
-    a({ children, href }: unknown) {
+    a({ children, href }: any) {
       return (
         <a
           href={href}
@@ -321,7 +321,7 @@ export const MarkdownRenderer = React.memo(function MarkdownRenderer({ content, 
       );
     },
     // 图片 — 统一显示为文件附件样式，不直接渲染图片
-    img({ src, alt }: unknown) {
+    img({ src, alt }: any) {
       const fileName = alt || (src ? src.split('/').pop()?.split('?')[0] || 'image' : 'image');
       const ext = fileName.split('.').pop()?.toLowerCase() || '';
       const isImageExt = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'ico', 'tiff', 'avif'].includes(ext);
@@ -352,7 +352,7 @@ export const MarkdownRenderer = React.memo(function MarkdownRenderer({ content, 
       );
     },
     // 引用
-    blockquote({ children }: unknown) {
+    blockquote({ children }: any) {
       return (
         <blockquote
           style={{

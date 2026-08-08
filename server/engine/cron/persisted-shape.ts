@@ -11,7 +11,7 @@ export type InvalidPersistedCronJobReason =
 
 /** Returns the first structural reason a persisted cron job cannot be loaded safely. */
 export function getInvalidPersistedCronJobReason(
-  candidate: Record<string, unknown>,
+  candidate: Record<string, any>,
 ): InvalidPersistedCronJobReason | null {
   const id = candidate.id;
   if (typeof id !== "string" || !id.trim()) {
@@ -29,7 +29,7 @@ export function getInvalidPersistedCronJobReason(
   if (typeof schedule !== "object") {
     return "missing-schedule";
   }
-  const scheduleRecord = schedule as Record<string, unknown>;
+  const scheduleRecord = schedule as Record<string, any>;
   const scheduleKind = scheduleRecord.kind;
   if (scheduleKind !== "at" && scheduleKind !== "every" && scheduleKind !== "cron") {
     return "invalid-schedule";
@@ -56,7 +56,7 @@ export function getInvalidPersistedCronJobReason(
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
     return "missing-payload";
   }
-  const payloadRecord = payload as Record<string, unknown>;
+  const payloadRecord = payload as Record<string, any>;
   const payloadKind = payloadRecord.kind;
   if (payloadKind !== "systemEvent" && payloadKind !== "agentTurn" && payloadKind !== "command") {
     return "invalid-payload";

@@ -450,7 +450,7 @@ describe("diagnostic support export", () => {
       host?: { hostname?: string };
       error?: { code?: string; name?: string };
       snapshot?: {
-        events?: Array<Record<string, unknown>>;
+        events?: Array<Record<string, any>>;
         summary?: { byType?: Record<string, number> };
       };
     };
@@ -591,7 +591,7 @@ describe("diagnostic support export", () => {
       },
       stateDir: tempDir,
     };
-    const wideSnapshot: Record<string, unknown> = {
+    const wideSnapshot: Record<string, any> = {
       ["__proto__"]: "polluted",
       constructor: "polluted",
       prototype: "polluted",
@@ -602,7 +602,7 @@ describe("diagnostic support export", () => {
 
     const snapshot = sanitizeSupportSnapshotValue(wideSnapshot, redaction) as Record<
       string,
-      unknown
+      any
     >;
 
     expect(Object.getPrototypeOf(snapshot)).toBe(null);
@@ -621,10 +621,10 @@ describe("diagnostic support export", () => {
     const array = sanitizeSupportConfigValue(
       Array.from({ length: 1005 }, (_entry, index) => ({ name: `item-${index}` })),
       redaction,
-    ) as Record<string, unknown>;
+    ) as Record<string, any>;
 
     expect(Array.isArray(array)).toBe(false);
-    expect((array.items as unknown[]).length).toBe(1000);
+    expect((array.items as any[]).length).toBe(1000);
     expect(array.truncated).toBe(true);
     expect(array.count).toBe(1005);
     expect(array.limit).toBe(1000);

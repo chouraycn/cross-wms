@@ -144,7 +144,7 @@ describe("Translator - Rate Limit", () => {
       const wrapped = withRateLimit(fn, { limiter });
       wrapped(); // consume
       const result = wrapped();
-      expect((result as unknown).error).toContain("Rate limit");
+      expect((result as any).error).toContain("Rate limit");
     });
 
     it("should use custom keyFn", () => {
@@ -163,7 +163,7 @@ describe("Translator - Rate Limit", () => {
 
   describe("getRateLimitKeyFromRequest", () => {
     it("should extract session id from request", () => {
-      const key = getRateLimitKeyFromRequest({ sessionId: "sess-1" } as unknown);
+      const key = getRateLimitKeyFromRequest({ sessionId: "sess-1" } as any);
       expect(key).toBe("session:sess-1");
     });
   });

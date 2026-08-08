@@ -67,7 +67,7 @@ export type ChannelCapabilityProvider = CapabilityProvider<ChannelSendOptions, C
 export function registerChannelProvider(
   pluginId: string,
   provider: ChannelCapabilityProvider,
-  metadata?: Record<string, unknown>,
+  metadata?: Record<string, any>,
 ): void {
   capabilityProviderRegistry.register(pluginId, provider, metadata);
 }

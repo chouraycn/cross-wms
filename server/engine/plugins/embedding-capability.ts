@@ -70,7 +70,7 @@ export type EmbeddingCapabilityProvider = CapabilityProvider<EmbeddingInvokeOpti
 export function registerEmbeddingCapabilityProvider(
   pluginId: string,
   provider: EmbeddingCapabilityProvider,
-  metadata?: Record<string, unknown>,
+  metadata?: Record<string, any>,
 ): void {
   capabilityProviderRegistry.register(pluginId, provider, metadata);
 }

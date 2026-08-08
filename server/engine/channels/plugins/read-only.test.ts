@@ -34,11 +34,11 @@ function pluginIds(plugins: ReturnType<typeof listReadOnlyChannelPluginsForConfi
   return plugins.map((entry) => entry.id);
 }
 
-function expectRecordFields(record: unknown, expected: Record<string, unknown>) {
+function expectRecordFields(record: any, expected: Record<string, any>) {
   if (!record || typeof record !== "object") {
     throw new Error("Expected record");
   }
-  const actual = record as Record<string, unknown>;
+  const actual = record as Record<string, any>;
   for (const [key, value] of Object.entries(expected)) {
     expect(actual[key]).toEqual(value);
   }
@@ -62,7 +62,7 @@ vi.mock("../../plugins/plugin-module-loader-cache.js", async (importOriginal) =>
 
   type LoaderConfig = {
     plugins?: {
-      load?: { paths?: unknown };
+      load?: { paths?: any };
     };
   };
   type LoaderParams = {
@@ -71,11 +71,11 @@ vi.mock("../../plugins/plugin-module-loader-cache.js", async (importOriginal) =>
     workspaceDir?: string;
   };
 
-  function readJson(filePath: string): unknown {
+  function readJson(filePath: string): any {
     return JSON.parse(fs.readFileSync(filePath, "utf-8"));
   }
 
-  function isRecord(value: unknown): value is Record<string, unknown> {
+  function isRecord(value: any): value is Record<string, any> {
     return Boolean(value && typeof value === "object" && !Array.isArray(value));
   }
 
@@ -126,7 +126,7 @@ vi.mock("../../plugins/plugin-module-loader-cache.js", async (importOriginal) =>
         return [];
       }
       const setupPath = path.join(pluginDir, setupEntry);
-      let setupModule: unknown;
+      let setupModule: any;
       try {
         setupModule = require(setupPath);
       } catch (error) {
@@ -138,8 +138,8 @@ vi.mock("../../plugins/plugin-module-loader-cache.js", async (importOriginal) =>
         });
         return [];
       }
-      const entry = ((setupModule as { default?: unknown }).default ?? setupModule) as {
-        plugin?: unknown;
+      const entry = ((setupModule as { default?: any }).default ?? setupModule) as {
+        plugin?: any;
       };
       const plugin = entry.plugin;
       return plugin ? [{ pluginId: manifest.id, plugin }] : [];
@@ -1044,7 +1044,7 @@ describe("listReadOnlyChannelPluginsForConfig", () => {
     });
     const inheritedAccounts = Object.create({
       inherited: { token: "prototype-token" },
-    }) as Record<string, unknown>;
+    }) as Record<string, any>;
     inheritedAccounts.default = { token: "default-token" };
     inheritedAccounts.named = { token: "named-token" };
     const cfg = {

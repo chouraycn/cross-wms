@@ -73,7 +73,7 @@ const SkillDocQualityPage: React.FC = () => {
     try {
       const res = await fetchDocQualityCheck();
       setData(res);
-    } catch (e: unknown) {
+    } catch (e: any) {
       showToast(`加载失败: ${e?.message || e}`, 'error');
     } finally {
       setLoading(false);

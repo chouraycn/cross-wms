@@ -228,7 +228,7 @@ export class WorkflowValidator {
     const nodeIds = new Set(workflow.nodes.map(n => n.id));
 
     for (const node of workflow.nodes) {
-      const config = node.config as Record<string, unknown> || {};
+      const config = node.config as Record<string, any> || {};
 
       if (node.type === 'condition') {
         const condConfig = config as { branches?: { true?: string; false?: string } };
@@ -305,7 +305,7 @@ export class WorkflowValidator {
    */
   private validateConfiguration(workflow: Workflow, issues: ValidationIssue[]): void {
     for (const node of workflow.nodes) {
-      const config = node.config as Record<string, unknown> || {};
+      const config = node.config as Record<string, any> || {};
 
       switch (node.type) {
         case 'delay':
@@ -329,7 +329,7 @@ export class WorkflowValidator {
           break;
 
         case 'transform':
-          const transformConfig = config as { mappings?: unknown[] };
+          const transformConfig = config as { mappings?: any[] };
           if (!transformConfig.mappings || transformConfig.mappings.length === 0) {
             issues.push({
               level: 'warning',
@@ -340,7 +340,7 @@ export class WorkflowValidator {
           break;
 
         case 'switch':
-          const switchConfig = config as { expression?: string; cases?: unknown[] };
+          const switchConfig = config as { expression?: string; cases?: any[] };
           if (!switchConfig.expression) {
             issues.push({
               level: 'error',

@@ -66,7 +66,7 @@ export function resolveHeartbeatVisibility(params: {
   const channelDefaults = channelsCfg?.defaults?.heartbeat;
 
   // 第二层：Per-channel 配置（在 channel 根级别）
-  const channelCfg = (cfg.channels as Record<string, unknown> | undefined)?.[channel] as
+  const channelCfg = (cfg.channels as Record<string, any> | undefined)?.[channel] as
     | {
         heartbeat?: ChannelHeartbeatVisibilityConfig;
         accounts?: Record<string, { heartbeat?: ChannelHeartbeatVisibilityConfig }>;

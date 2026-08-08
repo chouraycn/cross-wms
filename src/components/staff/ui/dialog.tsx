@@ -18,7 +18,7 @@ interface DialogProps {
   onClose?: (reason?: 'escapeKeyDown' | 'backdropClick') => void
   children?: React.ReactNode
   className?: string
-  [key: string]: unknown
+  [key: string]: any
 }
 
 function Dialog({
@@ -42,7 +42,7 @@ function Dialog({
   )
 
   const handleClose = React.useCallback(
-    (_e: unknown, reason: 'escapeKeyDown' | 'backdropClick') => {
+    (_e: any, reason: 'escapeKeyDown' | 'backdropClick') => {
       setOpen(false)
       onClose?.(reason)
     },
@@ -71,7 +71,7 @@ const DialogTrigger = React.forwardRef<HTMLButtonElement, React.ComponentProps<'
           )
           setOpen(true)
         },
-      } as Record<string, unknown>)
+      } as Record<string, any>)
     }
     return (
       <button
@@ -98,7 +98,7 @@ const DialogClose = React.forwardRef<HTMLButtonElement, React.ComponentProps<'bu
     }
     if (asChild && React.isValidElement(children)) {
       const child = children as React.ReactElement
-      return React.cloneElement(child, { ref, onClick: handle } as Record<string, unknown>)
+      return React.cloneElement(child, { ref, onClick: handle } as Record<string, any>)
     }
     return (
       <button ref={ref} type="button" onClick={handle} {...props}>
@@ -127,7 +127,7 @@ const DialogContent = React.forwardRef<
       data-slot="dialog-content"
       className={cn('p-4', className)}
       sx={{ position: 'relative' }}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     >
       {children}
       {showCloseButton && (
@@ -149,7 +149,7 @@ function DialogHeader({ className, ...props }: React.ComponentProps<'div'> & { s
     <Box
       data-slot="dialog-header"
       className={cn('flex flex-col gap-2', className)}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     />
   )
 }
@@ -168,7 +168,7 @@ function DialogFooter({
         'flex flex-col-reverse gap-2 px-6 py-3 sm:flex-row sm:justify-end',
         className,
       )}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     >
       {children}
       {showCloseButton && (
@@ -187,7 +187,7 @@ const DialogTitle = React.forwardRef<HTMLDivElement, React.ComponentProps<'div'>
         ref={ref}
         data-slot="dialog-title"
         className={cn('text-base font-medium leading-none', className)}
-        {...(props as Record<string, unknown>)}
+        {...(props as Record<string, any>)}
       />
     )
   },
@@ -200,7 +200,7 @@ const DialogDescription = React.forwardRef<HTMLDivElement, React.ComponentProps<
         ref={ref}
         data-slot="dialog-description"
         className={cn('text-sm text-muted-foreground', className)}
-        {...(props as Record<string, unknown>)}
+        {...(props as Record<string, any>)}
       />
     )
   },

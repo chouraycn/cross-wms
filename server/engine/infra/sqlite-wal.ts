@@ -44,7 +44,7 @@ export type SqliteWalMaintenanceOptions = {
   checkpointMode?: SqliteWalCheckpointMode;
   databaseLabel?: string;
   databasePath?: string;
-  onCheckpointError?: (error: unknown) => void;
+  onCheckpointError?: (error: any) => void;
 };
 
 export type SqliteConnectionPragmaOptions = SqliteWalMaintenanceOptions & {
@@ -255,11 +255,11 @@ function resolvePathJournalPolicy(targetPath: string): SqliteFilesystemJournalPo
   return combineMountEntryJournalPolicies(mountLookupPaths);
 }
 
-function readJournalModeResult(row: unknown): string | null {
+function readJournalModeResult(row: any): string | null {
   if (!row || typeof row !== "object") {
     return null;
   }
-  const record = row as Record<string, unknown>;
+  const record = row as Record<string, any>;
   const value = record.journal_mode ?? Object.values(record)[0];
   return typeof value === "string" ? value.toLowerCase() : null;
 }

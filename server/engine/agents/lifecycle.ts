@@ -17,7 +17,7 @@ export interface AgentLifecycleEvent {
   to: AgentLifecycleState;
   timestamp: number;
   reason?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export const VALID_TRANSITIONS: Record<AgentLifecycleState, AgentLifecycleState[]> = {
@@ -39,7 +39,7 @@ export function getAgentState(agentId: string): AgentLifecycleState {
   return stateStore.get(agentId) ?? 'created';
 }
 
-export function setAgentState(agentId: string, next: AgentLifecycleState, reason?: string, metadata?: Record<string, unknown>): boolean {
+export function setAgentState(agentId: string, next: AgentLifecycleState, reason?: string, metadata?: Record<string, any>): boolean {
   const current = getAgentState(agentId);
   const allowed = VALID_TRANSITIONS[current];
   if (!allowed.includes(next)) {

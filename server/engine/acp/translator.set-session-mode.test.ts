@@ -26,7 +26,7 @@ function createAgentWithSession(request: GatewayClient["request"]) {
 }
 
 function createRequestRecorder(
-  handler: (...args: Parameters<GatewayClient["request"]>) => Promise<unknown>,
+  handler: (...args: Parameters<GatewayClient["request"]>) => Promise<any>,
 ) {
   const calls: Parameters<GatewayClient["request"]>[] = [];
   const request = (async (...args: Parameters<GatewayClient["request"]>) => {

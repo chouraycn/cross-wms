@@ -11,7 +11,7 @@ export type SkillPackage = {
   description: string;
   files: string[];
   dependencies: Record<string, string>;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
   createdAt: number;
 };
 
@@ -32,7 +32,7 @@ export type CreatePackageOptions = {
   version?: string;
   description?: string;
   dependencies?: Record<string, string>;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
   includeHidden?: boolean;
 };
 
@@ -380,7 +380,7 @@ export async function publishPackage(
   packagePath: string,
   registryUrl: string,
   options: PublishPackageOptions = {},
-): Promise<{ success: boolean; response?: unknown; error?: string }> {
+): Promise<{ success: boolean; response?: any; error?: string }> {
   const { authToken, timeout = 30000 } = options;
 
   try {

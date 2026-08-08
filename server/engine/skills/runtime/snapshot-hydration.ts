@@ -1,5 +1,5 @@
 export interface SnapshotWithRuntimeSkills {
-  resolvedSkills?: unknown;
+  resolvedSkills?: any;
 }
 
 export interface SnapshotRebuild<T extends SnapshotWithRuntimeSkills> {

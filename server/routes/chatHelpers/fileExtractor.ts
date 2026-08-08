@@ -1,7 +1,7 @@
 import { promises as fsp } from 'fs';
 
 // 动态 require（用于可选依赖 pdf-parse/mammoth/xlsx）
-declare function require(id: string): unknown;
+declare function require(id: string): any;
 
 // ===================== File Content Extraction =====================
 

@@ -1,11 +1,11 @@
 // 移植自 openclaw/src/infra/approval-view-model.ts
 
-export function buildPendingApprovalView(...args: unknown[]): unknown {
+export function buildPendingApprovalView(...args: any[]): any {
   return undefined;
 }
-export function buildResolvedApprovalView(...args: unknown[]): unknown {
+export function buildResolvedApprovalView(...args: any[]): any {
   return undefined;
 }
-export function buildExpiredApprovalView(...args: unknown[]): unknown {
+export function buildExpiredApprovalView(...args: any[]): any {
   return undefined;
 }

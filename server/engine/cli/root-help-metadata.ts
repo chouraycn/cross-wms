@@ -158,8 +158,8 @@ function isPrecomputedSubcommandHelpName(
 }
 
 function isSubcommandHelpTextRecord(
-  value: unknown,
-): value is Partial<Record<PrecomputedSubcommandHelpName, unknown>> {
+  value: any,
+): value is Partial<Record<PrecomputedSubcommandHelpName, any>> {
   return typeof value === "object" && value !== null;
 }
 

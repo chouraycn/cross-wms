@@ -37,7 +37,7 @@ const TASK_FLOW_STATUSES = new Set<TaskFlowStatus>([
 ]);
 
 function parsePersistedFlowValue<T extends string>(
-  value: unknown,
+  value: any,
   values: ReadonlySet<T>,
   label: string,
 ): T {
@@ -47,14 +47,14 @@ function parsePersistedFlowValue<T extends string>(
   throw new Error(`Invalid persisted task flow ${label}: ${JSON.stringify(value)}`);
 }
 
-export function parseOptionalTaskFlowSyncMode(value: unknown): TaskFlowSyncMode | undefined {
+export function parseOptionalTaskFlowSyncMode(value: any): TaskFlowSyncMode | undefined {
   if (value == null || value === "") {
     return undefined;
   }
   return parsePersistedFlowValue(value, TASK_FLOW_SYNC_MODES, "sync mode");
 }
 
-export function parseTaskFlowStatus(value: unknown): TaskFlowStatus {
+export function parseTaskFlowStatus(value: any): TaskFlowStatus {
   return parsePersistedFlowValue(value, TASK_FLOW_STATUSES, "status");
 }
 

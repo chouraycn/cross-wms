@@ -152,7 +152,7 @@ async function validateAttachmentFiles(
     if (!file || typeof file !== "object" || Array.isArray(file)) {
       return { error: "attachment file entry must be an object" };
     }
-    const filePath = normalizeOptionalString((file as { path?: unknown }).path);
+    const filePath = normalizeOptionalString((file as { path?: any }).path);
     if (!filePath) {
       return { error: "attachment file path is required" };
     }
@@ -214,7 +214,7 @@ function resolveAttachmentFilePath(params: {
   return resolvePathFromInput(params.filePath, resolveWorkspaceRoot(workspaceDir) as string);
 }
 
-function normalizeOptionalThreadId(value: unknown): string | number | undefined {
+function normalizeOptionalThreadId(value: any): string | number | undefined {
   if (typeof value === "number" && Number.isFinite(value)) {
     return value;
   }
@@ -223,9 +223,9 @@ function normalizeOptionalThreadId(value: unknown): string | number | undefined 
 
 /** Resolves the thread id used when delivering a plugin session attachment. */
 export function resolveSessionAttachmentThreadId(params: {
-  deliveryThreadId?: unknown;
-  explicitThreadId?: unknown;
-  fallbackThreadId?: unknown;
+  deliveryThreadId?: any;
+  explicitThreadId?: any;
+  fallbackThreadId?: any;
   hintThreadTs?: string;
 }): string | number | undefined {
   return (

@@ -4,6 +4,6 @@
  * 降级实现：提供 embedded agent 运行，不再抛出 stub 错误。
  */
 
-export async function runEmbeddedAgent(_params: unknown): Promise<unknown> {
+export async function runEmbeddedAgent(_params: any): Promise<any> {
   return null;
 }

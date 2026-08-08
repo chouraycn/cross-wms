@@ -8,11 +8,11 @@
  */
 
 /** Clear the auth profile override for a session (no-op in cross-wms). */
-export function clearSessionAuthProfileOverride(..._args: unknown[]): void {
+export function clearSessionAuthProfileOverride(..._args: any[]): void {
   // No-op: session auth profile override not available in cross-wms.
 }
 
 /** Resolve the auth profile override for a session (returns undefined in cross-wms). */
-export function resolveSessionAuthProfileOverride(..._args: unknown[]): undefined {
+export function resolveSessionAuthProfileOverride(..._args: any[]): undefined {
   return undefined;
 }

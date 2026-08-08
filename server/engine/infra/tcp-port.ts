@@ -5,7 +5,7 @@ import { parseStrictPositiveInteger } from "./parse-finite-number.js";
 export const MAX_TCP_PORT = 65_535;
 
 /** 解析正 TCP 端口，对缺失/无效输入返回 null。 */
-export function parseTcpPort(raw: unknown): number | null {
+export function parseTcpPort(raw: any): number | null {
   if (raw === undefined || raw === null) {
     return null;
   }

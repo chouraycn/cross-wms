@@ -8,7 +8,7 @@ import { resolveAgentModelPrimaryValue } from "@openclaw-src/config/model-input.
 import type { OpenClawConfig } from "@openclaw-src/config/types.openclaw.js";
 import { shortenHomePath } from "@openclaw-src/utils.js";
 
-type CrontabReader = () => Promise<{ stdout?: unknown; stderr?: unknown }>;
+type CrontabReader = () => Promise<{ stdout?: any; stderr?: any }>;
 
 const execFileAsync = promisify(execFile);
 const LEGACY_WHATSAPP_HEALTH_SCRIPT_RE =
@@ -19,7 +19,7 @@ function pluralize(count: number, noun: string) {
   return `${count} ${noun}${count === 1 ? "" : "s"}`;
 }
 
-function normalizeModelProvider(value: unknown): string | undefined {
+function normalizeModelProvider(value: any): string | undefined {
   const raw = normalizeOptionalString(value);
   if (!raw) {
     return undefined;
@@ -31,7 +31,7 @@ function normalizeModelProvider(value: unknown): string | undefined {
   return raw.slice(0, slash).trim().toLowerCase() || undefined;
 }
 
-function normalizeModelRef(value: unknown): string | undefined {
+function normalizeModelRef(value: any): string | undefined {
   const raw = normalizeOptionalString(value);
   if (!raw) {
     return undefined;
@@ -45,13 +45,13 @@ function normalizeModelRef(value: unknown): string | undefined {
   return provider && model ? `${provider}/${model}` : undefined;
 }
 
-function normalizeModelMismatchKey(value: unknown): string | undefined {
+function normalizeModelMismatchKey(value: any): string | undefined {
   return normalizeModelRef(value) ?? normalizeOptionalString(value)?.toLowerCase();
 }
 
-function getRecord(value: unknown): Record<string, unknown> | null {
+function getRecord(value: any): Record<string, any> | null {
   return value && typeof value === "object" && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
+    ? (value as Record<string, any>)
     : null;
 }
 
@@ -65,7 +65,7 @@ function formatProviderCounts(counts: Map<string, number>): string {
 /** Emit a note when cron jobs pin models instead of inheriting the default model. */
 export function noteCronModelOverrides(params: {
   cfg: OpenClawConfig;
-  jobs: Array<Record<string, unknown>>;
+  jobs: Array<Record<string, any>>;
   storePath: string;
 }) {
   const defaultModel = resolveAgentModelPrimaryValue(params.cfg.agents?.defaults?.model);
@@ -132,7 +132,7 @@ async function readUserCrontab(): Promise<{ stdout: string; stderr?: string }> {
   };
 }
 
-function coerceCrontabText(crontab: unknown): string {
+function coerceCrontabText(crontab: any): string {
   if (typeof crontab === "string") {
     return crontab;
   }
@@ -145,7 +145,7 @@ function coerceCrontabText(crontab: unknown): string {
   return "";
 }
 
-function findLegacyWhatsAppHealthCrontabLines(crontab: unknown): string[] {
+function findLegacyWhatsAppHealthCrontabLines(crontab: any): string[] {
   return coerceCrontabText(crontab)
     .split(/\r?\n/u)
     .map((line) => line.trim())
@@ -164,7 +164,7 @@ export async function collectLegacyWhatsAppCrontabHealthWarning(
     return null;
   }
 
-  let crontab: unknown;
+  let crontab: any;
   try {
     crontab = (await (params.readCrontab ?? readUserCrontab)()).stdout;
   } catch {

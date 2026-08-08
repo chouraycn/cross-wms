@@ -8,7 +8,7 @@ import type { EmbeddedContextFile } from "./embedded-agent-helpers/types.js";
 
 export type AttemptContextEngine = unknown;
 
-type AttemptBootstrapContext<TBootstrapFile = unknown, TContextFile = unknown> = {
+type AttemptBootstrapContext<TBootstrapFile = any, TContextFile = any> = {
   bootstrapFiles: TBootstrapFile[];
   contextFiles: TContextFile[];
 };
@@ -143,16 +143,16 @@ export function buildContextEnginePromptCacheInfo(params: {
  * historical messages that were present before prompt submission.
  */
 export function findCurrentAttemptAssistantMessage(params: {
-  messagesSnapshot: Array<{ role: string; usage?: unknown; timestamp?: unknown }>;
+  messagesSnapshot: Array<{ role: string; usage?: any; timestamp?: any }>;
   prePromptMessageCount: number;
-}): { role: "assistant"; usage?: unknown; timestamp?: unknown } | undefined {
+}): { role: "assistant"; usage?: any; timestamp?: any } | undefined {
   return params.messagesSnapshot
     .slice(Math.max(0, params.prePromptMessageCount))
     .toReversed()
-    .find((message): message is { role: "assistant"; usage?: unknown; timestamp?: unknown } => message.role === "assistant");
+    .find((message): message is { role: "assistant"; usage?: any; timestamp?: any } => message.role === "assistant");
 }
 
-function parsePromptCacheTouchTimestamp(value: unknown): number | null {
+function parsePromptCacheTouchTimestamp(value: any): number | null {
   if (typeof value === "number" && Number.isFinite(value)) {
     return value;
   }
@@ -172,7 +172,7 @@ function parsePromptCacheTouchTimestamp(value: unknown): number | null {
  */
 export function resolvePromptCacheTouchTimestamp(params: {
   lastCallUsage?: NormalizedUsage;
-  assistantTimestamp?: unknown;
+  assistantTimestamp?: any;
   fallbackLastCacheTouchAt?: number | null;
 }): number | null {
   const hasCacheUsage =
@@ -188,9 +188,9 @@ export function resolvePromptCacheTouchTimestamp(params: {
   );
 }
 
-function normalizeUsage(usage: unknown): NormalizedUsage | undefined {
+function normalizeUsage(usage: any): NormalizedUsage | undefined {
   if (!usage || typeof usage !== "object") return undefined;
-  const u = usage as Record<string, unknown>;
+  const u = usage as Record<string, any>;
   return {
     ...(typeof u.cacheRead === "number" ? { cacheRead: u.cacheRead } : {}),
     ...(typeof u.cacheWrite === "number" ? { cacheWrite: u.cacheWrite } : {}),
@@ -205,7 +205,7 @@ function normalizeUsage(usage: unknown): NormalizedUsage | undefined {
  * carried-forward touch timestamp from earlier attempts.
  */
 export function buildLoopPromptCacheInfo(params: {
-  messagesSnapshot: Array<{ role: string; usage?: unknown; timestamp?: unknown }>;
+  messagesSnapshot: Array<{ role: string; usage?: any; timestamp?: any }>;
   prePromptMessageCount: number;
   retention?: "none" | "short" | "long";
   fallbackLastCacheTouchAt?: number | null;

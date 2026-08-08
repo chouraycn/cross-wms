@@ -158,7 +158,7 @@ function resolveDiscoveryEntries(params: {
 }
 
 function discoverSecretTargetsFromEntries(
-  source: unknown,
+  source: any,
   discoveryEntries: CompiledTargetRegistryEntry[],
 ): DiscoveredConfigSecretTarget[] {
   const out: DiscoveredConfigSecretTarget[] = [];
@@ -261,7 +261,7 @@ export function listSecretTargetRegistryEntries(): SecretTargetRegistryEntry[] {
 /**
  * Narrows unknown input to a target id currently present in the compiled registry.
  */
-export function isKnownSecretTargetId(value: unknown): value is string {
+export function isKnownSecretTargetId(value: any): value is string {
   return (
     typeof value === "string" && getCompiledSecretTargetRegistryState().knownTargetIds.has(value)
   );
@@ -416,7 +416,7 @@ export function discoverConfigSecretTargetsByIds(
  * Discovers secret-bearing values in auth-profiles.json store objects.
  */
 export function discoverAuthProfileSecretTargets(
-  store: unknown,
+  store: any,
   targetIds?: Iterable<string>,
 ): DiscoveredConfigSecretTarget[] {
   const allowedTargetIds = normalizeAllowedTargetIds(targetIds);

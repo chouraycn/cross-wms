@@ -1,101 +1,101 @@
 // 移植自 openclaw/src/channels/plugins/group-policy-warnings.ts
 
-export function composeWarningCollectors(..._args: unknown[]): unknown {
+export function composeWarningCollectors(..._args: any[]): any {
   return undefined;
 }
 
-export function projectWarningCollector(..._args: unknown[]): unknown {
+export function projectWarningCollector(..._args: any[]): any {
   return undefined;
 }
 
-export function projectConfigWarningCollector(..._args: unknown[]): unknown {
+export function projectConfigWarningCollector(..._args: any[]): any {
   return undefined;
 }
 
-export function projectConfigAccountIdWarningCollector(..._args: unknown[]): unknown {
+export function projectConfigAccountIdWarningCollector(..._args: any[]): any {
   return undefined;
 }
 
-export function projectAccountWarningCollector(..._args: unknown[]): unknown {
+export function projectAccountWarningCollector(..._args: any[]): any {
   return undefined;
 }
 
-export function projectAccountConfigWarningCollector(..._args: unknown[]): unknown {
+export function projectAccountConfigWarningCollector(..._args: any[]): any {
   return undefined;
 }
 
-export function createConditionalWarningCollector(..._args: unknown[]): unknown {
+export function createConditionalWarningCollector(..._args: any[]): any {
   return undefined;
 }
 
-export function composeAccountWarningCollectors(..._args: unknown[]): unknown {
+export function composeAccountWarningCollectors(..._args: any[]): any {
   return undefined;
 }
 
-export function buildOpenGroupPolicyWarning(..._args: unknown[]): unknown {
+export function buildOpenGroupPolicyWarning(..._args: any[]): any {
   return undefined;
 }
 
-export function buildOpenGroupPolicyRestrictSendersWarning(..._args: unknown[]): unknown {
+export function buildOpenGroupPolicyRestrictSendersWarning(..._args: any[]): any {
   return undefined;
 }
 
-export function buildOpenGroupPolicyNoRouteAllowlistWarning(..._args: unknown[]): unknown {
+export function buildOpenGroupPolicyNoRouteAllowlistWarning(..._args: any[]): any {
   return undefined;
 }
 
-export function buildOpenGroupPolicyConfigureRouteAllowlistWarning(..._args: unknown[]): unknown {
+export function buildOpenGroupPolicyConfigureRouteAllowlistWarning(..._args: any[]): any {
   return undefined;
 }
 
-export function collectOpenGroupPolicyRestrictSendersWarnings(..._args: unknown[]): unknown {
+export function collectOpenGroupPolicyRestrictSendersWarnings(..._args: any[]): any {
   return [];
 }
 
-export function collectAllowlistProviderRestrictSendersWarnings(..._args: unknown[]): unknown {
+export function collectAllowlistProviderRestrictSendersWarnings(..._args: any[]): any {
   return [];
 }
 
-export function createAllowlistProviderRestrictSendersWarningCollector(..._args: unknown[]): unknown {
+export function createAllowlistProviderRestrictSendersWarningCollector(..._args: any[]): any {
   return undefined;
 }
 
-export function createOpenGroupPolicyRestrictSendersWarningCollector(..._args: unknown[]): unknown {
+export function createOpenGroupPolicyRestrictSendersWarningCollector(..._args: any[]): any {
   return undefined;
 }
 
-export function collectAllowlistProviderGroupPolicyWarnings(..._args: unknown[]): unknown {
+export function collectAllowlistProviderGroupPolicyWarnings(..._args: any[]): any {
   return [];
 }
 
-export function createAllowlistProviderGroupPolicyWarningCollector(..._args: unknown[]): unknown {
+export function createAllowlistProviderGroupPolicyWarningCollector(..._args: any[]): any {
   return undefined;
 }
 
-export function collectOpenProviderGroupPolicyWarnings(..._args: unknown[]): unknown {
+export function collectOpenProviderGroupPolicyWarnings(..._args: any[]): any {
   return [];
 }
 
-export function createOpenProviderGroupPolicyWarningCollector(..._args: unknown[]): unknown {
+export function createOpenProviderGroupPolicyWarningCollector(..._args: any[]): any {
   return undefined;
 }
 
-export function createAllowlistProviderOpenWarningCollector(..._args: unknown[]): unknown {
+export function createAllowlistProviderOpenWarningCollector(..._args: any[]): any {
   return undefined;
 }
 
-export function collectOpenGroupPolicyRouteAllowlistWarnings(..._args: unknown[]): unknown {
+export function collectOpenGroupPolicyRouteAllowlistWarnings(..._args: any[]): any {
   return [];
 }
 
-export function createAllowlistProviderRouteAllowlistWarningCollector(..._args: unknown[]): unknown {
+export function createAllowlistProviderRouteAllowlistWarningCollector(..._args: any[]): any {
   return undefined;
 }
 
-export function collectOpenGroupPolicyConfiguredRouteWarnings(..._args: unknown[]): unknown {
+export function collectOpenGroupPolicyConfiguredRouteWarnings(..._args: any[]): any {
   return [];
 }
 
-export function createOpenProviderConfiguredRouteWarningCollector(..._args: unknown[]): unknown {
+export function createOpenProviderConfiguredRouteWarningCollector(..._args: any[]): any {
   return undefined;
 }

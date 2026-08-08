@@ -9,11 +9,11 @@ vi.mock("./post-json.js", () => ({
 }));
 
 function requirePostJsonParams(): {
-  url?: unknown;
-  headers?: unknown;
-  signal?: unknown;
-  body?: unknown;
-  errorPrefix?: unknown;
+  url?: any;
+  headers?: any;
+  signal?: any;
+  body?: any;
+  errorPrefix?: any;
 } {
   const [call] = postJsonMock.mock.calls;
   if (!call) {

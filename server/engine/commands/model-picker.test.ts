@@ -232,19 +232,19 @@ function manifestTextRow(
 
 type MockCallSource = {
   mock: {
-    calls: ReadonlyArray<ReadonlyArray<unknown>>;
+    calls: ReadonlyArray<ReadonlyArray<any>>;
   };
 };
 
-type PickerOption = Record<string, unknown> & {
+type PickerOption = Record<string, any> & {
   value: string;
 };
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object") {
     throw new Error(`expected ${label}`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 function mockArg(source: MockCallSource, callIndex: number, argIndex: number, label: string) {

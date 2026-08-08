@@ -243,11 +243,11 @@ function normalizeToolCallNameForDispatch(
 const REPLAY_TOOL_CALL_NAME_MAX_CHARS = 64;
 
 type ReplayToolCallBlock = {
-  type?: unknown;
-  id?: unknown;
-  name?: unknown;
-  input?: unknown;
-  arguments?: unknown;
+  type?: any;
+  id?: any;
+  name?: any;
+  input?: any;
+  arguments?: any;
 };
 
 type ReplayToolCallSanitizeReport = {
@@ -256,22 +256,22 @@ type ReplayToolCallSanitizeReport = {
 };
 
 type AnthropicToolResultContentBlock = {
-  type?: unknown;
-  toolUseId?: unknown;
-  toolCallId?: unknown;
-  tool_use_id?: unknown;
-  tool_call_id?: unknown;
+  type?: any;
+  toolUseId?: any;
+  toolCallId?: any;
+  tool_use_id?: any;
+  tool_call_id?: any;
 };
 
-function isThinkingLikeReplayBlock(block: unknown): boolean {
+function isThinkingLikeReplayBlock(block: any): boolean {
   if (!block || typeof block !== "object") {
     return false;
   }
-  const type = (block as { type?: unknown }).type;
+  const type = (block as { type?: any }).type;
   return type === "thinking" || type === "redacted_thinking";
 }
 
-function isReplaySafeThinkingTurn(content: unknown[], allowedToolNames?: Set<string>): boolean {
+function isReplaySafeThinkingTurn(content: any[], allowedToolNames?: Set<string>): boolean {
   const seenToolCallIds = new Set<string>();
   for (const block of content) {
     if (!isReplayToolCallBlock(block)) {
@@ -292,11 +292,11 @@ function isReplaySafeThinkingTurn(content: unknown[], allowedToolNames?: Set<str
   return true;
 }
 
-function isReplayToolCallBlock(block: unknown): block is ReplayToolCallBlock {
+function isReplayToolCallBlock(block: any): block is ReplayToolCallBlock {
   if (!block || typeof block !== "object") {
     return false;
   }
-  return isRunnerToolCallBlockType((block as { type?: unknown }).type);
+  return isRunnerToolCallBlockType((block as { type?: any }).type);
 }
 
 function replayToolCallHasInput(block: ReplayToolCallBlock): boolean {
@@ -335,7 +335,7 @@ function collectFollowingToolResults(
   return { ids, displaced };
 }
 
-function replayToolCallNonEmptyString(value: unknown): value is string {
+function replayToolCallNonEmptyString(value: any): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
 
@@ -486,7 +486,7 @@ function isSignedThinkingReplayAssistantSpan(message: AgentMessage | undefined):
   if (!message || typeof message !== "object" || message.role !== "assistant") {
     return false;
   }
-  const content = (message as { content?: unknown }).content;
+  const content = (message as { content?: any }).content;
   if (!Array.isArray(content)) {
     return false;
   }
@@ -524,13 +524,13 @@ function sanitizeAnthropicReplayToolResults(
       isSignedThinkingReplayAssistantSpan(previous);
     const validToolUseIds = new Set<string>();
     if (previous && typeof previous === "object" && previous.role === "assistant") {
-      const previousContent = (previous as { content?: unknown }).content;
+      const previousContent = (previous as { content?: any }).content;
       if (Array.isArray(previousContent)) {
         for (const block of previousContent) {
           if (!block || typeof block !== "object") {
             continue;
           }
-          const typedBlock = block as { type?: unknown; id?: unknown };
+          const typedBlock = block as { type?: any; id?: any };
           if (!isRunnerToolCallBlockType(typedBlock.type) || typeof typedBlock.id !== "string") {
             continue;
           }
@@ -586,7 +586,7 @@ function assistantTurnHasReplayToolCall(message: AgentMessage): boolean {
   if (!message || typeof message !== "object" || message.role !== "assistant") {
     return false;
   }
-  const content = (message as { content?: unknown }).content;
+  const content = (message as { content?: any }).content;
   if (!Array.isArray(content)) {
     return false;
   }
@@ -608,11 +608,11 @@ function stripTrailingAssistantPrefillTurns(messages: AgentMessage[]): AgentMess
   return end === messages.length ? messages : messages.slice(0, end);
 }
 
-function normalizeToolCallIdsInMessage(message: unknown): void {
+function normalizeToolCallIdsInMessage(message: any): void {
   if (!message || typeof message !== "object") {
     return;
   }
-  const content = (message as { content?: unknown }).content;
+  const content = (message as { content?: any }).content;
   if (!Array.isArray(content)) {
     return;
   }
@@ -622,7 +622,7 @@ function normalizeToolCallIdsInMessage(message: unknown): void {
     if (!block || typeof block !== "object") {
       continue;
     }
-    const typedBlock = block as { type?: unknown; id?: unknown };
+    const typedBlock = block as { type?: any; id?: any };
     if (!isRunnerToolCallBlockType(typedBlock.type) || typeof typedBlock.id !== "string") {
       continue;
     }
@@ -639,7 +639,7 @@ function normalizeToolCallIdsInMessage(message: unknown): void {
     if (!block || typeof block !== "object") {
       continue;
     }
-    const typedBlock = block as { type?: unknown; id?: unknown };
+    const typedBlock = block as { type?: any; id?: any };
     if (!isRunnerToolCallBlockType(typedBlock.type)) {
       continue;
     }
@@ -667,11 +667,11 @@ function normalizeToolCallIdsInMessage(message: unknown): void {
 }
 
 function trimWhitespaceFromToolCallNamesInMessage(
-  message: unknown,
+  message: any,
   allowedToolNames?: Set<string>,
 ): void {
   visitObjectContentBlocks(message, (block) => {
-    const typedBlock = block as { type?: unknown; name?: unknown; id?: unknown };
+    const typedBlock = block as { type?: any; name?: any; id?: any };
     if (!isRunnerToolCallBlockType(typedBlock.type)) {
       return;
     }
@@ -692,7 +692,7 @@ function trimWhitespaceFromToolCallNamesInMessage(
 }
 
 function classifyToolCallMessage(
-  message: unknown,
+  message: any,
   allowedToolNames?: Set<string>,
 ):
   | { kind: "none" }
@@ -703,7 +703,7 @@ function classifyToolCallMessage(
   if (!message || typeof message !== "object") {
     return { kind: "none" };
   }
-  const content = (message as { content?: unknown }).content;
+  const content = (message as { content?: any }).content;
   if (!Array.isArray(content)) {
     return { kind: "none" };
   }
@@ -718,7 +718,7 @@ function classifyToolCallMessage(
     if (!block || typeof block !== "object") {
       continue;
     }
-    const typedBlock = block as { type?: unknown; name?: unknown };
+    const typedBlock = block as { type?: any; name?: any };
     if (!isRunnerToolCallBlockType(typedBlock.type)) {
       continue;
     }
@@ -771,11 +771,11 @@ function classifyToolCallMessage(
   return unknownToolName ? { kind: "unknown", toolName: unknownToolName } : { kind: "incomplete" };
 }
 
-function rewriteUnknownToolLoopMessage(message: unknown, toolName: string): void {
+function rewriteUnknownToolLoopMessage(message: any, toolName: string): void {
   if (!message || typeof message !== "object") {
     return;
   }
-  (message as { content?: unknown }).content = [
+  (message as { content?: any }).content = [
     {
       type: "text",
       text: `I can't use the tool "${toolName}" here because it isn't available. I need to stop retrying it and answer without that tool.`,
@@ -784,7 +784,7 @@ function rewriteUnknownToolLoopMessage(message: unknown, toolName: string): void
 }
 
 function guardUnknownToolLoopInMessage(
-  message: unknown,
+  message: any,
   state: UnknownToolLoopGuardState,
   params: {
     allowedToolNames?: Set<string>;
@@ -863,12 +863,12 @@ type PromotedTextToolCallBlock = {
   type: "toolCall";
   id: string;
   name: string;
-  arguments: Record<string, unknown>;
+  arguments: Record<string, any>;
   partialArgs: string;
 };
 
-function asRecord(value: unknown): Record<string, unknown> | undefined {
-  return value && typeof value === "object" ? (value as Record<string, unknown>) : undefined;
+function asRecord(value: any): Record<string, any> | undefined {
+  return value && typeof value === "object" ? (value as Record<string, any>) : undefined;
 }
 
 function createStandaloneTextToolCallId(): string {
@@ -888,16 +888,16 @@ function createPromotedTextToolCallBlock(
   };
 }
 
-function isRetainableNonVisibleBlock(block: Record<string, unknown>): boolean {
+function isRetainableNonVisibleBlock(block: Record<string, any>): boolean {
   return block.type === "thinking" || block.type === "redacted_thinking";
 }
 
-const STANDALONE_TEXT_TOOL_CALL_PROMOTION_STOP_REASONS = new Set<unknown>(["stop"]);
-const STANDALONE_TEXT_TOOL_CALL_SCRUB_STOP_REASONS = new Set<unknown>(["stop", "length"]);
+const STANDALONE_TEXT_TOOL_CALL_PROMOTION_STOP_REASONS = new Set<any>(["stop"]);
+const STANDALONE_TEXT_TOOL_CALL_SCRUB_STOP_REASONS = new Set<any>(["stop", "length"]);
 
 function extractStandaloneTextToolCallCandidateForStopReasons(
-  message: unknown,
-  allowedStopReasons: ReadonlySet<unknown>,
+  message: any,
+  allowedStopReasons: ReadonlySet<any>,
 ):
   | {
       text: string;
@@ -913,9 +913,9 @@ function extractStandaloneTextToolCallCandidateForStopReasons(
 }
 
 function promoteStandaloneTextToolCallMessage(
-  message: unknown,
+  message: any,
   allowedToolNames?: Set<string>,
-): Record<string, unknown> | undefined {
+): Record<string, any> | undefined {
   if (!allowedToolNames) {
     return undefined;
   }
@@ -931,10 +931,10 @@ function promoteStandaloneTextToolCallMessage(
 }
 
 function createPromotedToolCallEvents(
-  message: Record<string, unknown>,
-): Array<Record<string, unknown>> {
+  message: Record<string, any>,
+): Array<Record<string, any>> {
   const content = Array.isArray(message.content) ? message.content : [];
-  const events: Array<Record<string, unknown>> = [];
+  const events: Array<Record<string, any>> = [];
   content.forEach((block, contentIndex) => {
     const record = asRecord(block);
     if (record?.type !== "toolCall") {
@@ -967,11 +967,11 @@ function wrapStreamPromoteStandaloneTextToolCalls(
   const matcher = createStandaloneToolCallNameMatcher(allowedToolNames);
   const normalizedMessages = new WeakMap<
     object,
-    { kind: "promoted" | "scrubbed"; message: Record<string, unknown> }
+    { kind: "promoted" | "scrubbed"; message: Record<string, any> }
   >();
   const normalizeMessage = (
-    message: unknown,
-  ): { kind: "promoted" | "scrubbed"; message: Record<string, unknown> } | undefined => {
+    message: any,
+  ): { kind: "promoted" | "scrubbed"; message: Record<string, any> } | undefined => {
     if (!message || typeof message !== "object") {
       return undefined;
     }
@@ -1010,12 +1010,12 @@ function wrapStreamPromoteStandaloneTextToolCalls(
   };
 
   const originalAsyncIterator = stream[Symbol.asyncIterator].bind(stream);
-  (stream as unknown as { [Symbol.asyncIterator]: () => AsyncIterator<unknown> })[
+  (stream as unknown as { [Symbol.asyncIterator]: () => AsyncIterator<any> })[
     Symbol.asyncIterator
   ] = async function* () {
     const source = {
       [Symbol.asyncIterator]: originalAsyncIterator,
-    } as AsyncIterable<unknown>;
+    } as AsyncIterable<any>;
     yield* normalizePlainTextToolCallStreamEvents(source, {
       createPromotedToolCallEvents,
       matcher,
@@ -1200,13 +1200,13 @@ export function wrapStreamFnSanitizeMalformedToolCalls(
   provider?: string | null,
 ): StreamFn {
   return (model, context, options) => {
-    const ctx = context as unknown as { messages?: unknown };
+    const ctx = context as unknown as { messages?: any };
     const messages = ctx?.messages;
     if (!Array.isArray(messages)) {
       return baseFn(model, context, options);
     }
     const allowProviderOwnedThinkingReplay = shouldAllowProviderOwnedThinkingReplay({
-      modelApi: (model as { api?: unknown })?.api as string | null | undefined,
+      modelApi: (model as { api?: any })?.api as string | null | undefined,
       provider,
       policy: {
         validateAnthropicTurns: transcriptPolicy?.validateAnthropicTurns === true,
@@ -1220,9 +1220,9 @@ export function wrapStreamFnSanitizeMalformedToolCalls(
       allowProviderOwnedThinkingReplay,
     );
     const isOpenAIResponsesApi =
-      (model as { api?: unknown }).api === "openai-responses" ||
-      (model as { api?: unknown }).api === "openai-chatgpt-responses" ||
-      (model as { api?: unknown }).api === "azure-openai-responses";
+      (model as { api?: any }).api === "openai-responses" ||
+      (model as { api?: any }).api === "openai-chatgpt-responses" ||
+      (model as { api?: any }).api === "azure-openai-responses";
     const replayInputsChanged = sanitized.messages !== messages;
     let nextMessages = isOpenAIResponsesApi
       ? sanitizeToolUseResultPairing(sanitized.messages, {
@@ -1259,9 +1259,9 @@ export function wrapStreamFnSanitizeMalformedToolCalls(
       }
     }
     const nextContext = {
-      ...(context as unknown as Record<string, unknown>),
+      ...(context as unknown as Record<string, any>),
       messages: nextMessages,
-    } as unknown;
+    } as any;
     return baseFn(model, nextContext as typeof context, options);
   };
 }

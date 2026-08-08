@@ -24,7 +24,7 @@ import {
 import { parseAgentSessionKey } from "../../routing/session-key.js";
 import { readPositiveIntegerParam } from "./common.js";
 
-type EmbeddedCallGateway = <T = Record<string, unknown>>(opts: CallGatewayOptions) => Promise<T>;
+type EmbeddedCallGateway = <T = Record<string, any>>(opts: CallGatewayOptions) => Promise<T>;
 
 interface EmbeddedGatewayRuntime {
   resolveSessionAgentId: (opts: {
@@ -34,30 +34,30 @@ interface EmbeddedGatewayRuntime {
   }) => string;
   getRuntimeConfig: () => OpenClawConfig;
   augmentChatHistoryWithCliSessionImports: (opts: {
-    entry: unknown;
+    entry: any;
     provider: string | undefined;
-    localMessages: unknown[];
-  }) => unknown[];
+    localMessages: any[];
+  }) => any[];
   getMaxChatHistoryMessagesBytes: () => number;
-  augmentChatHistoryWithCanvasBlocks: (msgs: unknown[]) => unknown[];
+  augmentChatHistoryWithCanvasBlocks: (msgs: any[]) => any[];
   CHAT_HISTORY_MAX_SINGLE_MESSAGE_BYTES: number;
-  enforceChatHistoryFinalBudget: (opts: { messages: unknown[]; maxBytes: number }) => {
-    messages: unknown[];
+  enforceChatHistoryFinalBudget: (opts: { messages: any[]; maxBytes: number }) => {
+    messages: any[];
   };
   replaceOversizedChatHistoryMessages: (opts: {
-    messages: unknown[];
+    messages: any[];
     maxSingleMessageBytes: number;
-  }) => { messages: unknown[] };
+  }) => { messages: any[] };
   resolveEffectiveChatHistoryMaxChars: (cfg: OpenClawConfig) => number;
   projectRecentChatDisplayMessages: (
-    msgs: unknown[],
+    msgs: any[],
     opts?: { maxChars?: number; maxMessages?: number },
-  ) => unknown[];
-  capArrayByJsonBytes: (items: unknown[], maxBytes: number) => { items: unknown[] };
+  ) => any[];
+  capArrayByJsonBytes: (items: any[], maxBytes: number) => { items: any[] };
   listSessionsFromStoreAsync: (opts: {
     cfg: OpenClawConfig;
     storePath: string;
-    store: unknown;
+    store: any;
     opts: SessionsListParams;
   }) => Promise<SessionsListResult>;
   loadCombinedSessionStoreForGateway: (
@@ -65,7 +65,7 @@ interface EmbeddedGatewayRuntime {
     opts?: { agentId?: string },
   ) => {
     storePath: string;
-    store: unknown;
+    store: any;
   };
   resolveSessionKeyFromResolveParams: (opts: {
     cfg: OpenClawConfig;
@@ -77,15 +77,15 @@ interface EmbeddedGatewayRuntime {
   ) => {
     cfg: OpenClawConfig;
     storePath: string | undefined;
-    entry: Record<string, unknown> | undefined;
+    entry: Record<string, any> | undefined;
   };
   readSessionMessagesAsync: (
     scope: SessionTranscriptReadScope,
     opts: ReadSessionMessagesAsyncOptions,
-  ) => Promise<unknown[]>;
+  ) => Promise<any[]>;
   resolveSessionModelRef: (
     cfg: OpenClawConfig,
-    entry: unknown,
+    entry: any,
     sessionAgentId: string,
   ) => { provider: string | undefined };
 }
@@ -100,7 +100,7 @@ async function getRuntime(): Promise<EmbeddedGatewayRuntime> {
   return runtimeMod;
 }
 
-async function handleSessionsList(params: Record<string, unknown>) {
+async function handleSessionsList(params: Record<string, any>) {
   const rt = await getRuntime();
   const cfg = rt.getRuntimeConfig();
   const opts = params as SessionsListParams;
@@ -115,7 +115,7 @@ async function handleSessionsList(params: Record<string, unknown>) {
   });
 }
 
-async function handleSessionsResolve(params: Record<string, unknown>) {
+async function handleSessionsResolve(params: Record<string, any>) {
   const rt = await getRuntime();
   const cfg = rt.getRuntimeConfig();
   const resolved = await rt.resolveSessionKeyFromResolveParams({
@@ -131,10 +131,10 @@ async function handleSessionsResolve(params: Record<string, unknown>) {
   return { ok: true, key: resolved.key };
 }
 
-async function handleChatHistory(params: Record<string, unknown>): Promise<{
+async function handleChatHistory(params: Record<string, any>): Promise<{
   sessionKey: string;
   sessionId: string | undefined;
-  messages: unknown[];
+  messages: any[];
   thinkingLevel?: string;
   fastMode?: FastMode;
   verboseLevel?: string;
@@ -224,9 +224,9 @@ async function handleChatHistory(params: Record<string, unknown>): Promise<{
 
 /** Creates a local callGateway replacement for supported session methods. */
 export function createEmbeddedCallGateway(): EmbeddedCallGateway {
-  return async <T = Record<string, unknown>>(opts: CallGatewayOptions): Promise<T> => {
+  return async <T = Record<string, any>>(opts: CallGatewayOptions): Promise<T> => {
     const method = opts.method?.trim();
-    const params = (opts.params ?? {}) as Record<string, unknown>;
+    const params = (opts.params ?? {}) as Record<string, any>;
 
     switch (method) {
       case "sessions.list":

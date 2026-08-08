@@ -8,7 +8,7 @@ const MAX_HOOK_LOG_MESSAGE_LENGTH = 500;
 const MAX_TIMER_TIMEOUT_MS = 2_147_483_647;
 
 type FireAndForgetHookJob = {
-  task: () => Promise<unknown>;
+  task: () => Promise<any>;
   label: string;
   loggerFn: (message: string) => void;
   timeoutMs: number;
@@ -81,20 +81,20 @@ function redactSecrets(message: string): string {
     .replace(/token["\s:=]+["']?[^"'\s]+/gi, 'token=***');
 }
 
-export function formatHookErrorForLog(err: unknown): string {
+export function formatHookErrorForLog(err: any): string {
   const message = err instanceof Error ? err.message : String(err);
   const formatted = replaceLogControlCharacters(redactSecrets(message))
     .replace(/\s+/g, ' ')
     .trim();
-  return (formatted || 'unknown error').slice(0, MAX_HOOK_LOG_MESSAGE_LENGTH);
+  return (formatted || 'any error').slice(0, MAX_HOOK_LOG_MESSAGE_LENGTH);
 }
 
 export function fireAndForgetHook(
-  task: Promise<unknown>,
+  task: Promise<any>,
   label: string,
   loggerFn: (message: string) => void = (msg) => logger.debug(msg),
 ): void {
-  void task.catch((err: unknown) => {
+  void task.catch((err: any) => {
     loggerFn(`${label}: ${formatHookErrorForLog(err)}`);
   });
 }
@@ -116,7 +116,7 @@ function runFireAndForgetHookJob(
 
   void Promise.resolve()
     .then(job.task)
-    .catch((err: unknown) => {
+    .catch((err: any) => {
       if (!didLogTimeout) {
         job.loggerFn(`${job.label}: ${formatHookErrorForLog(err)}`);
       }
@@ -144,7 +144,7 @@ function drainFireAndForgetHookQueue(
 }
 
 export function fireAndForgetBoundedHook(
-  task: () => Promise<unknown>,
+  task: () => Promise<any>,
   label: string,
   loggerFn: (message: string) => void = (msg) => logger.debug(msg),
   options: FireAndForgetBoundedHookOptions = {},

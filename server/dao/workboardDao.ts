@@ -19,7 +19,7 @@ export interface WorkboardTask {
   claimedAt: string | null;
   startedAt: string | null;
   completedAt: string | null;
-  result: unknown | null;
+  result: any | null;
   error: string | null;
   dependsOn: string[];
   createdAt: string;
@@ -44,7 +44,7 @@ function nowIso(): string {
   return new Date().toISOString();
 }
 
-function normalizeTaskRow(row: Record<string, unknown>): WorkboardTask {
+function normalizeTaskRow(row: Record<string, any>): WorkboardTask {
   return {
     id: String(row.id),
     sessionId: String(row.session_id),
@@ -66,7 +66,7 @@ function normalizeTaskRow(row: Record<string, unknown>): WorkboardTask {
   };
 }
 
-function normalizeWorkerRow(row: Record<string, unknown>): WorkboardWorker {
+function normalizeWorkerRow(row: Record<string, any>): WorkboardWorker {
   return {
     id: String(row.id),
     name: String(row.name),
@@ -83,13 +83,13 @@ function normalizeWorkerRow(row: Record<string, unknown>): WorkboardWorker {
 export function findTasksBySession(sessionId: string): WorkboardTask[] {
   const rows = db()
     .prepare('SELECT * FROM workboard_tasks WHERE session_id = ? ORDER BY order_index ASC, created_at DESC')
-    .all(sessionId) as Array<Record<string, unknown>>;
+    .all(sessionId) as Array<Record<string, any>>;
   return rows.map(normalizeTaskRow);
 }
 
 export function findTaskById(id: string): WorkboardTask | undefined {
   const row = db().prepare('SELECT * FROM workboard_tasks WHERE id = ?').get(id) as
-    | Record<string, unknown>
+    | Record<string, any>
     | undefined;
   return row ? normalizeTaskRow(row) : undefined;
 }
@@ -97,7 +97,7 @@ export function findTaskById(id: string): WorkboardTask | undefined {
 export function findSubtasks(parentTaskId: string): WorkboardTask[] {
   const rows = db()
     .prepare('SELECT * FROM workboard_tasks WHERE parent_task_id = ? ORDER BY order_index ASC, created_at ASC')
-    .all(parentTaskId) as Array<Record<string, unknown>>;
+    .all(parentTaskId) as Array<Record<string, any>>;
   return rows.map(normalizeTaskRow);
 }
 
@@ -111,7 +111,7 @@ export function createTask(data: {
   parentTaskId?: string;
   assignedTo?: string;
   dependsOn?: string[];
-  result?: unknown;
+  result?: any;
   error?: string;
 }): WorkboardTask {
   const id = uuidv4();
@@ -157,7 +157,7 @@ export function updateTask(
     parentTaskId: string;
     assignedTo: string;
     dependsOn: string[];
-    result: unknown;
+    result: any;
     error: string;
   }>
 ): WorkboardTask | undefined {
@@ -165,7 +165,7 @@ export function updateTask(
   if (!existing) return undefined;
 
   const fields: string[] = [];
-  const vals: unknown[] = [];
+  const vals: any[] = [];
   const now = nowIso();
 
   if (data.title !== undefined) {
@@ -258,14 +258,14 @@ export function claimTask(taskId: string, workerId: string): WorkboardTask | und
   return findTaskById(taskId);
 }
 
-export function completeTask(taskId: string, result?: unknown): WorkboardTask | undefined {
+export function completeTask(taskId: string, result?: any): WorkboardTask | undefined {
   const task = findTaskById(taskId);
   if (!task) return undefined;
   if (task.status === 'done' || task.status === 'cancelled') return task;
 
   const now = nowIso();
   const fields = ['status = ?', 'completed_at = ?', 'updated_at = ?'];
-  const vals: unknown[] = ['done', now, now];
+  const vals: any[] = ['done', now, now];
 
   if (result !== undefined) {
     fields.push('result = ?');
@@ -340,7 +340,7 @@ export function getAvailableTasks(workerType?: WorkerType): WorkboardTask[] {
                WHERE t.status = 'pending' 
                  AND (t.assigned_to IS NULL OR t.assigned_to = '')`;
   
-  const params: unknown[] = [];
+  const params: any[] = [];
 
   if (workerType) {
     query += ` AND (
@@ -359,13 +359,13 @@ export function getAvailableTasks(workerType?: WorkerType): WorkboardTask[] {
     END ASC,
     t.created_at ASC`;
 
-  const rows = db().prepare(query).all(...params) as Array<Record<string, unknown>>;
+  const rows = db().prepare(query).all(...params) as Array<Record<string, any>>;
   return rows.map(normalizeTaskRow);
 }
 
 export function getWorkerTasks(workerId: string, status?: TaskStatus): WorkboardTask[] {
   let query = 'SELECT * FROM workboard_tasks WHERE assigned_to = ?';
-  const params: unknown[] = [workerId];
+  const params: any[] = [workerId];
 
   if (status) {
     query += ' AND status = ?';
@@ -374,7 +374,7 @@ export function getWorkerTasks(workerId: string, status?: TaskStatus): Workboard
 
   query += ' ORDER BY updated_at DESC';
 
-  const rows = db().prepare(query).all(...params) as Array<Record<string, unknown>>;
+  const rows = db().prepare(query).all(...params) as Array<Record<string, any>>;
   return rows.map(normalizeTaskRow);
 }
 
@@ -385,14 +385,14 @@ export function getBlockingTasks(taskId: string): WorkboardTask[] {
   const placeholders = task.dependsOn.map(() => '?').join(', ');
   const rows = db()
     .prepare(`SELECT * FROM workboard_tasks WHERE id IN (${placeholders})`)
-    .all(...task.dependsOn) as Array<Record<string, unknown>>;
+    .all(...task.dependsOn) as Array<Record<string, any>>;
   return rows.map(normalizeTaskRow);
 }
 
 export function getBlockedByTasks(taskId: string): WorkboardTask[] {
   const rows = db()
     .prepare('SELECT * FROM workboard_tasks WHERE depends_on IS NOT NULL')
-    .all() as Array<Record<string, unknown>>;
+    .all() as Array<Record<string, any>>;
   return rows
     .map(normalizeTaskRow)
     .filter(t => t.dependsOn.includes(taskId));
@@ -403,13 +403,13 @@ export function getBlockedByTasks(taskId: string): WorkboardTask[] {
 export function findAllWorkers(): WorkboardWorker[] {
   const rows = db()
     .prepare('SELECT * FROM workboard_workers ORDER BY created_at DESC')
-    .all() as Array<Record<string, unknown>>;
+    .all() as Array<Record<string, any>>;
   return rows.map(normalizeWorkerRow);
 }
 
 export function findWorkerById(id: string): WorkboardWorker | undefined {
   const row = db().prepare('SELECT * FROM workboard_workers WHERE id = ?').get(id) as
-    | Record<string, unknown>
+    | Record<string, any>
     | undefined;
   return row ? normalizeWorkerRow(row) : undefined;
 }
@@ -417,14 +417,14 @@ export function findWorkerById(id: string): WorkboardWorker | undefined {
 export function findWorkersByType(type: WorkerType): WorkboardWorker[] {
   const rows = db()
     .prepare('SELECT * FROM workboard_workers WHERE type = ? ORDER BY created_at DESC')
-    .all(type) as Array<Record<string, unknown>>;
+    .all(type) as Array<Record<string, any>>;
   return rows.map(normalizeWorkerRow);
 }
 
 export function findWorkersByStatus(status: WorkerStatus): WorkboardWorker[] {
   const rows = db()
     .prepare('SELECT * FROM workboard_workers WHERE status = ? ORDER BY last_heartbeat DESC')
-    .all(status) as Array<Record<string, unknown>>;
+    .all(status) as Array<Record<string, any>>;
   return rows.map(normalizeWorkerRow);
 }
 
@@ -465,7 +465,7 @@ export function updateWorker(
   if (!existing) return undefined;
 
   const fields: string[] = [];
-  const vals: unknown[] = [];
+  const vals: any[] = [];
 
   if (data.name !== undefined) {
     fields.push('name = ?');

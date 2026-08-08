@@ -34,7 +34,7 @@ function loadPrecomputedChannelOptions(): string[] | null {
     return precomputedChannelOptions;
   }
   try {
-    const parsed = readCliStartupMetadata(__filename) as { channelOptions?: unknown } | null;
+    const parsed = readCliStartupMetadata(__filename) as { channelOptions?: any } | null;
     if (parsed && Array.isArray(parsed.channelOptions)) {
       precomputedChannelOptions = dedupe(
         parsed.channelOptions.filter((value): value is string => typeof value === "string"),

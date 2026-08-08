@@ -32,8 +32,8 @@ type ToolPluginMetadata = {
   id: string;
   name: string;
   description?: string;
-  configSchema?: unknown;
-  activation?: unknown;
+  configSchema?: any;
+  activation?: any;
   tools: ToolPluginMetadataTool[];
 };
 // ===== 类型占位结束 =====
@@ -57,7 +57,7 @@ const defaultRuntime = {
 // ===== 内联常量与简单工具函数 stub =====
 const PLUGIN_MANIFEST_FILENAME = "openclaw.plugin.json";
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
@@ -69,11 +69,11 @@ function toSafeImportPath(path: string): string {
   return path;
 }
 
-function getToolPluginMetadata(_entry: unknown): ToolPluginMetadata | undefined {
+function getToolPluginMetadata(_entry: any): ToolPluginMetadata | undefined {
   return undefined;
 }
 
-function resolvePackageExtensionEntries(_packageManifest: unknown): {
+function resolvePackageExtensionEntries(_packageManifest: any): {
   status: "ok" | "missing" | "empty" | "error";
   entries: string[];
   error?: string;
@@ -82,7 +82,7 @@ function resolvePackageExtensionEntries(_packageManifest: unknown): {
 }
 
 function loadPluginManifest(_rootDir: string, _strict: boolean):
-  | { ok: true; manifest: Record<string, unknown> }
+  | { ok: true; manifest: Record<string, any> }
   | { ok: false; error: string } {
   return { ok: false, error: "Plugin manifest loading not supported in stub mode." };
 }
@@ -98,7 +98,7 @@ function getCachedPluginModuleLoader(_params: {
   modulePath: string;
   importerUrl: string;
   loaderFilename: string;
-  aliasMap?: unknown;
+  aliasMap?: any;
 }): (importPath: string) => unknown {
   return () => undefined;
 }
@@ -121,10 +121,10 @@ export type PluginsInitOptions = {
   name?: string;
 };
 
-type JsonObject = Record<string, unknown>;
+type JsonObject = Record<string, any>;
 
 type LoadedToolPlugin = {
-  entry: unknown;
+  entry: any;
   metadata: ToolPluginMetadata;
 };
 
@@ -138,7 +138,7 @@ function readJsonFile(filePath: string): JsonObject {
   return JSON.parse(fs.readFileSync(filePath, "utf8")) as JsonObject;
 }
 
-function writeJsonFile(filePath: string, value: unknown): void {
+function writeJsonFile(filePath: string, value: any): void {
    
   const fs = require("node:fs") as typeof import("node:fs");
   fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`);
@@ -196,7 +196,7 @@ function readPackageManifest(rootDir: string): JsonObject {
   return readJsonFile(packagePath);
 }
 
-async function importToolPluginEntry(_entryPath: string): Promise<unknown> {
+async function importToolPluginEntry(_entryPath: string): Promise<any> {
   const loader = getCachedPluginModuleLoader({
     cache: toolPluginEntryModuleLoaders,
     modulePath: _entryPath,
@@ -206,7 +206,7 @@ async function importToolPluginEntry(_entryPath: string): Promise<unknown> {
   const loaded = loader(toSafeImportPath(_entryPath));
   const mod =
     loaded && typeof loaded === "object"
-      ? (loaded as { default?: unknown; createEntry?: unknown; entry?: unknown })
+      ? (loaded as { default?: any; createEntry?: any; entry?: any })
       : undefined;
   const candidate = unwrapDefaultModuleExport(
     mod?.default ?? mod?.createEntry ?? mod?.entry ?? loaded,
@@ -315,7 +315,7 @@ export function validateToolPluginProject(params: {
   if (!params.manifest.configSchema || typeof params.manifest.configSchema !== "object") {
     errors.push("openclaw.plugin.json must include object configSchema");
   }
-  const manifestContracts = params.manifest.contracts as { tools?: unknown } | undefined;
+  const manifestContracts = params.manifest.contracts as { tools?: any } | undefined;
   const manifestTools = Array.isArray(manifestContracts?.tools)
     ? manifestContracts.tools.filter((tool): tool is string => typeof tool === "string")
     : [];

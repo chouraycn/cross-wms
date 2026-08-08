@@ -52,7 +52,7 @@ type ResolveInboundConversationParams = Parameters<
 >[0];
 
 const mocks = vi.hoisted(() => ({
-  routeReply: vi.fn(async (_params: unknown) => ({ ok: true, messageId: "mock" })),
+  routeReply: vi.fn(async (_params: any) => ({ ok: true, messageId: "mock" })),
   tryFastAbortFromMessage: vi.fn<() => Promise<AbortResult>>(async () => ({
     handled: false,
     aborted: false,
@@ -89,10 +89,10 @@ const hookMocks = vi.hoisted(() => ({
     ),
     runMessageReceived: vi.fn(async () => {}),
     runBeforeDispatch: vi.fn<
-      (eventValue: unknown, _ctx: unknown) => Promise<PluginHookBeforeDispatchResult | undefined>
+      (eventValue: any, _ctx: any) => Promise<PluginHookBeforeDispatchResult | undefined>
     >(async () => undefined),
     runReplyDispatch: vi.fn<
-      (eventValue: unknown, _ctx: unknown) => Promise<PluginHookReplyDispatchResult | undefined>
+      (eventValue: any, _ctx: any) => Promise<PluginHookReplyDispatchResult | undefined>
     >(async () => undefined),
     runReplyPayloadSending: vi.fn(async () => undefined),
   },
@@ -115,10 +115,10 @@ const acpMocks = vi.hoisted(() => ({
       sessionKey: string;
       cfg?: OpenClawConfig;
       mutate: (
-        current: Record<string, unknown> | undefined,
-        entry: { acp?: Record<string, unknown> } | undefined,
-      ) => Record<string, unknown> | null | undefined;
-    }) => Promise<unknown>
+        current: Record<string, any> | undefined,
+        entry: { acp?: Record<string, any> } | undefined,
+      ) => Record<string, any> | null | undefined;
+    }) => Promise<any>
   >(async () => null),
   requireAcpRuntimeBackend: vi.fn<() => unknown>(),
 }));
@@ -138,14 +138,14 @@ const pluginConversationBindingMocks = vi.hoisted(() => ({
   shownFallbackNoticeBindingIds: new Set<string>(),
 }));
 const sessionStoreMocks = vi.hoisted(() => ({
-  currentEntry: undefined as Record<string, unknown> | undefined,
+  currentEntry: undefined as Record<string, any> | undefined,
   loadSessionStore: vi.fn(() => ({})),
   readSessionEntry: vi.fn(() => sessionStoreMocks.currentEntry),
   resolveStorePath: vi.fn(() => "/tmp/mock-sessions.json"),
   resolveSessionStoreEntry: vi.fn(() => ({ existing: sessionStoreMocks.currentEntry })),
   updateSessionStoreEntry: vi.fn(
     async (params: {
-      update: (entry: Record<string, unknown>) => Promise<Record<string, unknown> | null>;
+      update: (entry: Record<string, any>) => Promise<Record<string, any> | null>;
     }) => {
       if (!sessionStoreMocks.currentEntry) {
         return null;
@@ -164,7 +164,7 @@ const acpManagerRuntimeMocks = vi.hoisted(() => ({
 }));
 const agentEventMocks = vi.hoisted(() => ({
   emitAgentEvent: vi.fn(),
-  onAgentEvent: vi.fn<(listener: unknown) => () => void>(() => () => {}),
+  onAgentEvent: vi.fn<(listener: any) => () => void>(() => () => {}),
 }));
 const ttsMocks = vi.hoisted(() => {
   const state = {
@@ -173,7 +173,7 @@ const ttsMocks = vi.hoisted(() => {
   };
   return {
     state,
-    maybeApplyTtsToPayload: vi.fn(async (paramsUnknown: unknown) => {
+    maybeApplyTtsToPayload: vi.fn(async (paramsUnknown: any) => {
       const params = paramsUnknown as {
         payload: ReplyPayload;
         kind: "tool" | "block" | "final";
@@ -206,15 +206,15 @@ const ttsMocks = vi.hoisted(() => {
       }
       return params.payload;
     }),
-    normalizeTtsAutoMode: vi.fn((value: unknown) =>
+    normalizeTtsAutoMode: vi.fn((value: any) =>
       typeof value === "string" ? value : undefined,
     ),
     resolveTtsConfig: vi.fn((_cfg: OpenClawConfig) => ({ mode: "final" })),
   };
 });
 const transcriptMocks = vi.hoisted(() => ({
-  persistAcpDispatchTranscript: vi.fn(async (_params: unknown) => undefined),
-  appendAssistantMessageToSessionTranscript: vi.fn(async (_params: unknown) => ({
+  persistAcpDispatchTranscript: vi.fn(async (_params: any) => undefined),
+  appendAssistantMessageToSessionTranscript: vi.fn(async (_params: any) => ({
     ok: true,
     sessionFile: "/tmp/session.jsonl",
     messageId: "message-1",
@@ -222,7 +222,7 @@ const transcriptMocks = vi.hoisted(() => ({
 }));
 const replyMediaPathMocks = vi.hoisted(() => ({
   createReplyMediaPathNormalizer: vi.fn(
-    (_params?: unknown) => async (payload: ReplyPayload) => payload,
+    (_params?: any) => async (payload: ReplyPayload) => payload,
   ),
 }));
 const runtimePluginMocks = vi.hoisted(() => ({
@@ -491,8 +491,8 @@ vi.mock("../../bindings/records.js", () => ({
     sessionBindingMocks.touch(...args),
 }));
 vi.mock("../../infra/agent-events.js", () => ({
-  emitAgentEvent: (params: unknown) => agentEventMocks.emitAgentEvent(params),
-  onAgentEvent: (listener: unknown) => agentEventMocks.onAgentEvent(listener),
+  emitAgentEvent: (params: any) => agentEventMocks.emitAgentEvent(params),
+  onAgentEvent: (listener: any) => agentEventMocks.onAgentEvent(listener),
 }));
 vi.mock("../../plugins/conversation-binding.js", () => ({
   buildPluginBindingDeclinedText: () => "Plugin binding request was declined.",
@@ -515,7 +515,7 @@ vi.mock("../../plugins/conversation-binding.js", () => ({
       pluginId?: string;
       pluginName?: string;
       pluginRoot?: string;
-      data?: Record<string, unknown>;
+      data?: Record<string, any>;
     };
     return {
       bindingId: record.bindingId,
@@ -539,15 +539,15 @@ vi.mock("./dispatch-acp-manager.runtime.js", () => ({
   }),
 }));
 vi.mock("../../tts/tts.js", () => ({
-  maybeApplyTtsToPayload: (params: unknown) => ttsMocks.maybeApplyTtsToPayload(params),
-  normalizeTtsAutoMode: (value: unknown) => ttsMocks.normalizeTtsAutoMode(value),
+  maybeApplyTtsToPayload: (params: any) => ttsMocks.maybeApplyTtsToPayload(params),
+  normalizeTtsAutoMode: (value: any) => ttsMocks.normalizeTtsAutoMode(value),
   resolveTtsConfig: (cfg: OpenClawConfig) => ttsMocks.resolveTtsConfig(cfg),
 }));
 vi.mock("../../tts/tts.runtime.js", () => ({
-  maybeApplyTtsToPayload: (params: unknown) => ttsMocks.maybeApplyTtsToPayload(params),
+  maybeApplyTtsToPayload: (params: any) => ttsMocks.maybeApplyTtsToPayload(params),
 }));
 vi.mock("./reply-media-paths.runtime.js", () => ({
-  createReplyMediaPathNormalizer: (params: unknown) =>
+  createReplyMediaPathNormalizer: (params: any) =>
     replyMediaPathMocks.createReplyMediaPathNormalizer(params),
 }));
 vi.mock("../../plugins/runtime-plugins.runtime.js", () => ({
@@ -574,14 +574,14 @@ vi.mock("../../tts/status-config.js", () => ({
   }),
 }));
 vi.mock("./dispatch-acp-tts.runtime.js", () => ({
-  maybeApplyTtsToPayload: (params: unknown) => ttsMocks.maybeApplyTtsToPayload(params),
+  maybeApplyTtsToPayload: (params: any) => ttsMocks.maybeApplyTtsToPayload(params),
 }));
 vi.mock("./dispatch-acp-transcript.runtime.js", () => ({
-  persistAcpDispatchTranscript: (params: unknown) =>
+  persistAcpDispatchTranscript: (params: any) =>
     transcriptMocks.persistAcpDispatchTranscript(params),
 }));
 vi.mock("../../config/sessions/transcript.js", () => ({
-  appendAssistantMessageToSessionTranscript: (params: unknown) =>
+  appendAssistantMessageToSessionTranscript: (params: any) =>
     transcriptMocks.appendAssistantMessageToSessionTranscript(params),
 }));
 vi.mock("./dispatch-acp-session.runtime.js", () => ({
@@ -589,7 +589,7 @@ vi.mock("./dispatch-acp-session.runtime.js", () => ({
     acpMocks.readAcpSessionEntry(params),
 }));
 vi.mock("../../tts/tts-config.js", () => ({
-  normalizeTtsAutoMode: (value: unknown) => ttsMocks.normalizeTtsAutoMode(value),
+  normalizeTtsAutoMode: (value: any) => ttsMocks.normalizeTtsAutoMode(value),
   resolveConfiguredTtsMode: (cfg: OpenClawConfig) => ttsMocks.resolveTtsConfig(cfg).mode,
   shouldCleanTtsDirectiveText: () => true,
   shouldAttemptTtsPayload: () => true,
@@ -638,7 +638,7 @@ beforeAll(async () => {
 
 function createDispatcher(): ReplyDispatcher {
   let beforeDeliver: ReplyDispatchBeforeDeliver | undefined;
-  const beforeDeliverTasks: Promise<unknown>[] = [];
+  const beforeDeliverTasks: Promise<any>[] = [];
   const runBeforeDeliver = (kind: "tool" | "block" | "final", payload: ReplyPayload): void => {
     if (!beforeDeliver) {
       return;
@@ -676,7 +676,7 @@ function createDispatcher(): ReplyDispatcher {
   };
 }
 
-function shouldUseAcpReplyDispatchHook(eventUnknown: unknown): boolean {
+function shouldUseAcpReplyDispatchHook(eventUnknown: any): boolean {
   const event = eventUnknown as {
     sessionKey?: string;
     ctx?: {
@@ -739,7 +739,7 @@ function createMockAcpSessionManager() {
       const entry = acpMocks.readAcpSessionEntry({
         cfg: params.cfg,
         sessionKey: params.sessionKey,
-      }) as { acp?: Record<string, unknown> } | null;
+      }) as { acp?: Record<string, any> } | null;
       if (entry?.acp) {
         return {
           kind: "ready" as const,
@@ -782,11 +782,11 @@ function createMockAcpSessionManager() {
         cfg: OpenClawConfig;
         sessionKey: string;
         text?: string;
-        attachments?: unknown[];
+        attachments?: any[];
         mode: string;
         requestId: string;
         signal?: AbortSignal;
-        onEvent: (event: Record<string, unknown>) => Promise<void>;
+        onEvent: (event: Record<string, any>) => Promise<void>;
       }) => {
         const entry = acpMocks.readAcpSessionEntry({
           cfg: params.cfg,
@@ -830,8 +830,8 @@ function createMockAcpSessionManager() {
   };
 }
 
-function firstMockCall(mockFn: ReturnType<typeof vi.fn>, label: string, index = 0): unknown[] {
-  const call = mockFn.mock.calls[index] as unknown[] | undefined;
+function firstMockCall(mockFn: ReturnType<typeof vi.fn>, label: string, index = 0): any[] {
+  const call = mockFn.mock.calls[index] as any[] | undefined;
   if (!call) {
     throw new Error(`expected ${label} call #${index + 1}`);
   }
@@ -843,7 +843,7 @@ function firstMockArg(
   label: string,
   index = 0,
   argIndex = 0,
-): unknown {
+): any {
   return firstMockCall(mockFn, label, index)[argIndex];
 }
 
@@ -861,12 +861,12 @@ function firstFinalReplyPayload(dispatcher: ReplyDispatcher): ReplyPayload | und
   ) as ReplyPayload;
 }
 
-function firstRouteReplyCall(): Record<string, unknown> {
+function firstRouteReplyCall(): Record<string, any> {
   const call = firstMockArg(mocks.routeReply, "route reply");
   if (!call || typeof call !== "object") {
     throw new Error("expected route reply params");
   }
-  return call as Record<string, unknown>;
+  return call as Record<string, any>;
 }
 
 function installThreadingTestPlugin(params: { defaultAccountId?: string; id: string }) {
@@ -1052,7 +1052,7 @@ describe("dispatchReplyFromConfig", () => {
     hookMocks.runner.runBeforeDispatch.mockClear();
     hookMocks.runner.runBeforeDispatch.mockResolvedValue(undefined);
     hookMocks.runner.runReplyDispatch.mockClear();
-    hookMocks.runner.runReplyDispatch.mockImplementation(async (event: unknown, ctx: unknown) => {
+    hookMocks.runner.runReplyDispatch.mockImplementation(async (event: any, ctx: any) => {
       if (!shouldUseAcpReplyDispatchHook(event)) {
         return undefined;
       }
@@ -1119,7 +1119,7 @@ describe("dispatchReplyFromConfig", () => {
     const pluginLoadOptions = firstMockArg(
       runtimePluginMocks.ensureRuntimePluginsLoaded,
       "runtime plugin load",
-    ) as { config?: unknown; workspaceDir?: unknown };
+    ) as { config?: any; workspaceDir?: any };
     expect(pluginLoadOptions.config).toBe(cfg);
     expect(typeof pluginLoadOptions.workspaceDir).toBe("string");
     expect(runtimePluginMocks.ensureRuntimePluginsLoaded.mock.invocationCallOrder[0]).toBeLessThan(
@@ -1288,8 +1288,8 @@ describe("dispatchReplyFromConfig", () => {
     const replyDispatchCall = firstMockCall(hookMocks.runner.runReplyDispatch, "reply dispatch") as
       | [
           {
-            originatingAccountId?: unknown;
-            shouldRouteToOriginating?: unknown;
+            originatingAccountId?: any;
+            shouldRouteToOriginating?: any;
           },
           unknown,
         ]
@@ -1724,12 +1724,12 @@ describe("dispatchReplyFromConfig", () => {
     expect(dispatcher.sendFinalReply).not.toHaveBeenCalled();
     const routeCall = firstRouteReplyCall() as
       | {
-          accountId?: unknown;
-          channel?: unknown;
-          groupId?: unknown;
-          isGroup?: unknown;
-          threadId?: unknown;
-          to?: unknown;
+          accountId?: any;
+          channel?: any;
+          groupId?: any;
+          isGroup?: any;
+          threadId?: any;
+          to?: any;
         }
       | undefined;
     expect(routeCall?.channel).toBe("telegram");
@@ -1771,23 +1771,23 @@ describe("dispatchReplyFromConfig", () => {
 
     expect(dispatcher.sendFinalReply).not.toHaveBeenCalled();
     const routeCall = firstRouteReplyCall() as
-      | { accountId?: unknown; channel?: unknown; to?: unknown }
+      | { accountId?: any; channel?: any; to?: any }
       | undefined;
     expect(routeCall?.channel).toBe("telegram");
     expect(routeCall?.to).toBe("telegram:999");
     expect(routeCall?.accountId).toBe("acc-1");
     const normalizerOptions = replyMediaPathMocks.createReplyMediaPathNormalizer.mock
-      .calls[0]?.[0] as { accountId?: unknown; messageProvider?: unknown } | undefined;
+      .calls[0]?.[0] as { accountId?: any; messageProvider?: any } | undefined;
     expect(normalizerOptions?.messageProvider).toBe("telegram");
     expect(normalizerOptions?.accountId).toBe("acc-1");
     const replyDispatchCall = firstMockCall(hookMocks.runner.runReplyDispatch, "reply dispatch") as
       | [
           {
-            originatingAccountId?: unknown;
-            originatingChannel?: unknown;
-            originatingThreadId?: unknown;
-            originatingTo?: unknown;
-            shouldRouteToOriginating?: unknown;
+            originatingAccountId?: any;
+            originatingChannel?: any;
+            originatingThreadId?: any;
+            originatingTo?: any;
+            shouldRouteToOriginating?: any;
           },
           unknown,
         ]
@@ -1843,11 +1843,11 @@ describe("dispatchReplyFromConfig", () => {
     expect(dispatcher.sendFinalReply).not.toHaveBeenCalled();
     const routeCall = firstRouteReplyCall() as
       | {
-          accountId?: unknown;
-          channel?: unknown;
-          replyDelivery?: unknown;
-          threadId?: unknown;
-          to?: unknown;
+          accountId?: any;
+          channel?: any;
+          replyDelivery?: any;
+          threadId?: any;
+          to?: any;
         }
       | undefined;
     expect(routeCall?.channel).toBe("feishu");
@@ -1861,12 +1861,12 @@ describe("dispatchReplyFromConfig", () => {
     const replyDispatchCall = firstMockCall(hookMocks.runner.runReplyDispatch, "reply dispatch") as
       | [
           {
-            originatingAccountId?: unknown;
-            originatingChannel?: unknown;
-            originatingChatType?: unknown;
-            originatingThreadId?: unknown;
-            originatingTo?: unknown;
-            shouldRouteToOriginating?: unknown;
+            originatingAccountId?: any;
+            originatingChannel?: any;
+            originatingChatType?: any;
+            originatingThreadId?: any;
+            originatingTo?: any;
+            shouldRouteToOriginating?: any;
           },
           unknown,
         ]
@@ -1903,7 +1903,7 @@ describe("dispatchReplyFromConfig", () => {
 
     expect(dispatcher.sendFinalReply).not.toHaveBeenCalled();
     const routeCall = firstRouteReplyCall() as
-      | { accountId?: unknown; channel?: unknown; to?: unknown }
+      | { accountId?: any; channel?: any; to?: any }
       | undefined;
     expect(routeCall?.channel).toBe("discord");
     expect(routeCall?.to).toBe("channel:123");
@@ -1952,11 +1952,11 @@ describe("dispatchReplyFromConfig", () => {
     const replyDispatchCall = firstMockCall(hookMocks.runner.runReplyDispatch, "reply dispatch") as
       | [
           {
-            originatingChannel?: unknown;
-            originatingTo?: unknown;
-            sendPolicy?: unknown;
-            shouldRouteToOriginating?: unknown;
-            suppressUserDelivery?: unknown;
+            originatingChannel?: any;
+            originatingTo?: any;
+            sendPolicy?: any;
+            shouldRouteToOriginating?: any;
+            suppressUserDelivery?: any;
           },
           unknown,
         ]
@@ -2111,7 +2111,7 @@ describe("dispatchReplyFromConfig", () => {
     await dispatchReplyFromConfig({ ctx, cfg, dispatcher, replyResolver });
 
     expect(dispatcher.sendFinalReply).not.toHaveBeenCalled();
-    const routeCall = firstRouteReplyCall() as { channel?: unknown; to?: unknown } | undefined;
+    const routeCall = firstRouteReplyCall() as { channel?: any; to?: any } | undefined;
     expect(routeCall?.channel).toBe("telegram");
     expect(routeCall?.to).toBe("telegram:999");
   });
@@ -2133,7 +2133,7 @@ describe("dispatchReplyFromConfig", () => {
     await dispatchReplyFromConfig({ ctx, cfg, dispatcher, replyResolver });
 
     expect(dispatcher.sendFinalReply).not.toHaveBeenCalled();
-    const routeCall = firstRouteReplyCall() as { channel?: unknown; to?: unknown } | undefined;
+    const routeCall = firstRouteReplyCall() as { channel?: any; to?: any } | undefined;
     expect(routeCall?.channel).toBe("feishu");
     expect(routeCall?.to).toBe("ou_feishu_direct_123");
   });
@@ -2204,7 +2204,7 @@ describe("dispatchReplyFromConfig", () => {
 
     expect(dispatcher.sendFinalReply).not.toHaveBeenCalled();
     const routeCall = firstRouteReplyCall() as
-      | { channel?: unknown; policyConversationType?: unknown; to?: unknown }
+      | { channel?: any; policyConversationType?: any; to?: any }
       | undefined;
     expect(routeCall?.channel).toBe("imessage");
     expect(routeCall?.policyConversationType).toBe("direct");
@@ -2241,7 +2241,7 @@ describe("dispatchReplyFromConfig", () => {
     await dispatchReplyFromConfig({ ctx, cfg, dispatcher, replyResolver });
 
     const normalizerOptions = replyMediaPathMocks.createReplyMediaPathNormalizer.mock
-      .calls[0]?.[0] as { cfg?: unknown; messageProvider?: unknown } | undefined;
+      .calls[0]?.[0] as { cfg?: any; messageProvider?: any } | undefined;
     expect(normalizerOptions?.cfg).toBe(cfg);
     expect(normalizerOptions?.messageProvider).toBe("telegram");
     expect(dispatcher.sendToolResult).not.toHaveBeenCalled();
@@ -3341,7 +3341,7 @@ describe("dispatchReplyFromConfig", () => {
     });
 
     const normalizerOptions = replyMediaPathMocks.createReplyMediaPathNormalizer.mock
-      .calls[0]?.[0] as { cfg?: unknown; messageProvider?: unknown } | undefined;
+      .calls[0]?.[0] as { cfg?: any; messageProvider?: any } | undefined;
     expect(normalizerOptions?.cfg).toBe(cfg);
     expect(normalizerOptions?.messageProvider).toBe("webchat");
     expect(dispatcher.sendToolResult).not.toHaveBeenCalled();
@@ -4575,15 +4575,15 @@ describe("dispatchReplyFromConfig", () => {
       },
     };
     acpMocks.readAcpSessionEntry.mockImplementation(() => currentAcpEntry);
-    acpMocks.upsertAcpSessionMeta.mockImplementation(async (paramsUnknown: unknown) => {
+    acpMocks.upsertAcpSessionMeta.mockImplementation(async (paramsUnknown: any) => {
       const params = paramsUnknown as {
         mutate: (
-          current: Record<string, unknown> | undefined,
-          entry: { acp?: Record<string, unknown> } | undefined,
-        ) => Record<string, unknown> | null | undefined;
+          current: Record<string, any> | undefined,
+          entry: { acp?: Record<string, any> } | undefined,
+        ) => Record<string, any> | null | undefined;
       };
-      const nextMeta = params.mutate(currentAcpEntry.acp as Record<string, unknown>, {
-        acp: currentAcpEntry.acp as Record<string, unknown>,
+      const nextMeta = params.mutate(currentAcpEntry.acp as Record<string, any>, {
+        acp: currentAcpEntry.acp as Record<string, any>,
       });
       if (nextMeta === null) {
         return null;
@@ -4621,7 +4621,7 @@ describe("dispatchReplyFromConfig", () => {
 
     expect(replyResolver).not.toHaveBeenCalled();
     const ensureSessionOptions = firstMockArg(runtime.ensureSession, "ensure session") as
-      | { agent?: unknown; mode?: unknown; sessionKey?: unknown }
+      | { agent?: any; mode?: any; sessionKey?: any }
       | undefined;
     expect(ensureSessionOptions?.sessionKey).toBe("agent:codex-acp:session-1");
     expect(ensureSessionOptions?.agent).toBe("codex");
@@ -4685,10 +4685,10 @@ describe("dispatchReplyFromConfig", () => {
       .map(
         (call) =>
           call[0] as {
-            data?: { phase?: unknown };
-            runId?: unknown;
-            sessionKey?: unknown;
-            stream?: unknown;
+            data?: { phase?: any };
+            runId?: any;
+            sessionKey?: any;
+            stream?: any;
           },
       )
       .find((event) => event.runId === "run-acp-lifecycle-end");
@@ -4751,10 +4751,10 @@ describe("dispatchReplyFromConfig", () => {
       .map(
         (call) =>
           call[0] as {
-            data?: { error?: unknown; phase?: unknown };
-            runId?: unknown;
-            sessionKey?: unknown;
-            stream?: unknown;
+            data?: { error?: any; phase?: any };
+            runId?: any;
+            sessionKey?: any;
+            stream?: any;
           },
       )
       .find((event) => event.runId === "run-acp-lifecycle-error");
@@ -4967,7 +4967,7 @@ describe("dispatchReplyFromConfig", () => {
     const bindingLookup = firstMockArg(
       sessionBindingMocks.resolveByConversation,
       "conversation binding lookup",
-    ) as { accountId?: unknown; channel?: unknown; conversationId?: unknown } | undefined;
+    ) as { accountId?: any; channel?: any; conversationId?: any } | undefined;
     expect(bindingLookup?.channel).toBe("discord");
     expect(bindingLookup?.accountId).toBe("work");
     expect(bindingLookup?.conversationId).toBe("thread-1");
@@ -5053,12 +5053,12 @@ describe("dispatchReplyFromConfig", () => {
     });
     expect(sessionBindingMocks.touch).toHaveBeenCalledWith("binding-acp-current");
     const ensureSessionOptions = firstMockArg(runtime.ensureSession, "ensure session") as
-      | { agent?: unknown; sessionKey?: unknown }
+      | { agent?: any; sessionKey?: any }
       | undefined;
     expect(ensureSessionOptions?.sessionKey).toBe(boundSessionKey);
     expect(ensureSessionOptions?.agent).toBe("opencode");
     const runTurnOptions = firstMockArg(runtime.runTurn, "run turn") as
-      | { text?: unknown }
+      | { text?: any }
       | undefined;
     expect(runTurnOptions?.text).toBe("continue");
     expect(replyResolver).not.toHaveBeenCalled();
@@ -5207,7 +5207,7 @@ describe("dispatchReplyFromConfig", () => {
     await dispatchReplyFromConfig({ ctx, cfg: emptyConfig, dispatcher, replyResolver });
 
     const normalizerOptions = replyMediaPathMocks.createReplyMediaPathNormalizer.mock
-      .calls[0]?.[0] as { messageProvider?: unknown } | undefined;
+      .calls[0]?.[0] as { messageProvider?: any } | undefined;
     expect(normalizerOptions?.messageProvider).toBe("feishu");
     const finalPayload = firstFinalReplyPayload(dispatcher);
     expect(finalPayload?.mediaUrl).toBe("/tmp/openclaw-media/normalized-tts.ogg");
@@ -5257,7 +5257,7 @@ describe("dispatchReplyFromConfig", () => {
     await dispatchReplyFromConfig({ ctx, cfg, dispatcher });
 
     const closeOptions = firstMockArg(runtime.close, "runtime close") as
-      | { reason?: unknown }
+      | { reason?: any }
       | undefined;
     expect(closeOptions?.reason).toBe("oneshot-complete");
   });
@@ -5650,12 +5650,12 @@ describe("dispatchReplyFromConfig", () => {
     ) as
       | [
           {
-            content?: unknown;
-            from?: unknown;
-            metadata?: Record<string, unknown>;
-            timestamp?: unknown;
+            content?: any;
+            from?: any;
+            metadata?: Record<string, any>;
+            timestamp?: any;
           },
-          { accountId?: unknown; channelId?: unknown; conversationId?: unknown },
+          { accountId?: any; channelId?: any; conversationId?: any },
         ]
       | [];
     expect(event?.from).toBe(ctx.From);
@@ -5748,8 +5748,8 @@ describe("dispatchReplyFromConfig", () => {
       "message received hook",
     ) as
       | [
-          { content?: unknown; from?: unknown; metadata?: Record<string, unknown> },
-          { accountId?: unknown; channelId?: unknown; conversationId?: unknown },
+          { content?: any; from?: any; metadata?: Record<string, any> },
+          { accountId?: any; channelId?: any; conversationId?: any },
         ]
       | [];
     expect(event?.from).toBe(ctx.From);
@@ -5765,7 +5765,7 @@ describe("dispatchReplyFromConfig", () => {
     expect(hookContext?.conversationId).toBe("telegram:-10099");
     const internalHookEvent = (
       internalHookMocks.triggerInternalHook.mock.calls as unknown as Array<
-        [{ action?: unknown; sessionKey?: unknown; type?: unknown }]
+        [{ action?: any; sessionKey?: any; type?: any }]
       >
     )[0]?.[0];
     expect(internalHookEvent?.type).toBe("message");
@@ -5801,11 +5801,11 @@ describe("dispatchReplyFromConfig", () => {
           unknown,
           unknown,
           {
-            channelId?: unknown;
-            content?: unknown;
-            from?: unknown;
-            messageId?: unknown;
-            metadata?: Record<string, unknown>;
+            channelId?: any;
+            content?: any;
+            from?: any;
+            messageId?: any;
+            metadata?: Record<string, any>;
           },
         ]
       | undefined;
@@ -5858,7 +5858,7 @@ describe("dispatchReplyFromConfig", () => {
     const createHookCall = firstMockCall(
       internalHookMocks.createInternalHookEvent,
       "internal hook event",
-    ) as [unknown, unknown, unknown, { content?: unknown; messageId?: unknown }] | undefined;
+    ) as [unknown, unknown, unknown, { content?: any; messageId?: any }] | undefined;
     expect(createHookCall?.[0]).toBe("message");
     expect(createHookCall?.[1]).toBe("received");
     expect(createHookCall?.[2]).toBe("agent:main:discord:guild:123");
@@ -5983,7 +5983,7 @@ describe("dispatchReplyFromConfig", () => {
     const processedEvent = firstMockArg(
       diagnosticMocks.logMessageProcessed,
       "message processed",
-    ) as { channel?: unknown; outcome?: unknown; sessionKey?: unknown } | undefined;
+    ) as { channel?: any; outcome?: any; sessionKey?: any } | undefined;
     expect(processedEvent?.channel).toBe("slack");
     expect(processedEvent?.outcome).toBe("completed");
     expect(processedEvent?.sessionKey).toBe("agent:main:main");
@@ -6049,7 +6049,7 @@ describe("dispatchReplyFromConfig", () => {
 
     expect(diagnosticMocks.logMessageQueued).toHaveBeenCalledTimes(1);
     const queued = diagnosticMocks.logMessageQueued.mock.calls[0]?.[0] as
-      | { sessionId?: unknown; sessionKey?: unknown }
+      | { sessionId?: any; sessionKey?: any }
       | undefined;
     expect(queued?.sessionKey).toBe("agent:main:source-convo");
     expect(queued?.sessionId).toBeUndefined();
@@ -6209,12 +6209,12 @@ describe("dispatchReplyFromConfig", () => {
       .calls[0] as unknown as
       | [
           unknown,
-          { accountId?: unknown; channel?: unknown; content?: unknown; conversationId?: unknown },
+          { accountId?: any; channel?: any; content?: any; conversationId?: any },
           {
-            accountId?: unknown;
-            channelId?: unknown;
-            conversationId?: unknown;
-            pluginBinding?: { data?: Record<string, unknown> };
+            accountId?: any;
+            channelId?: any;
+            conversationId?: any;
+            pluginBinding?: { data?: Record<string, any> };
           },
         ]
       | undefined;
@@ -6755,8 +6755,8 @@ describe("dispatchReplyFromConfig", () => {
       .calls[0] as unknown as
       | [
           unknown,
-          { accountId?: unknown; channel?: unknown; content?: unknown; conversationId?: unknown },
-          { accountId?: unknown; channelId?: unknown; conversationId?: unknown },
+          { accountId?: any; channel?: any; content?: any; conversationId?: any },
+          { accountId?: any; channelId?: any; conversationId?: any },
         ]
       | undefined;
     expect(inboundClaimCall?.[0]).toBe("openclaw-codex-app-server");
@@ -7053,7 +7053,7 @@ describe("dispatchReplyFromConfig", () => {
 
     expect(replyResolver).toHaveBeenCalledTimes(1);
     const skippedEvent = diagnosticMocks.logMessageProcessed.mock.calls
-      .map(([event]) => event as { channel?: unknown; outcome?: unknown; reason?: unknown })
+      .map(([event]) => event as { channel?: any; outcome?: any; reason?: any })
       .find((event) => event.outcome === "skipped");
     expect(skippedEvent?.channel).toBe("whatsapp");
     expect(skippedEvent?.reason).toBe("duplicate");
@@ -7072,8 +7072,8 @@ describe("dispatchReplyFromConfig", () => {
     const replyResolver = vi.fn(async () => ({ text: "hi" }) as ReplyPayload);
     const inboundTrace = createDiagnosticTraceContext();
     const processedTraces: Array<{
-      outcome?: unknown;
-      reason?: unknown;
+      outcome?: any;
+      reason?: any;
       traceId?: string;
       spanId?: string;
     }> = [];
@@ -7147,7 +7147,7 @@ describe("dispatchReplyFromConfig", () => {
 
     expect(replyResolver).toHaveBeenCalledTimes(2);
     const errorEvent = diagnosticMocks.logMessageProcessed.mock.calls
-      .map(([event]) => event as { channel?: unknown; error?: unknown; outcome?: unknown })
+      .map(([event]) => event as { channel?: any; error?: any; outcome?: any })
       .find((event) => event.outcome === "error");
     expect(errorEvent?.channel).toBe("whatsapp");
     expect(errorEvent?.error).toBe("Error: dispatch failed");
@@ -7368,7 +7368,7 @@ describe("dispatchReplyFromConfig", () => {
     expect(blockReplySentTexts.join("")).not.toContain("[[tts");
     expect(blockReplySentTexts.join("")).not.toContain("hidden");
     const ttsCall = ttsMocks.maybeApplyTtsToPayload.mock.calls
-      .map(([call]) => call as { kind?: unknown; payload?: ReplyPayload })
+      .map(([call]) => call as { kind?: any; payload?: ReplyPayload })
       .find((call) => call.kind === "final");
     expect(ttsCall?.kind).toBe("final");
     expect(ttsCall?.payload).toEqual({ text: "Intro [[tts:text]]hidden[[/tts:text]] visible" });
@@ -7789,14 +7789,14 @@ describe("before_dispatch hook", () => {
     ) as
       | [
           {
-            body?: unknown;
-            channel?: unknown;
-            content?: unknown;
-            isGroup?: unknown;
-            senderId?: unknown;
-            timestamp?: unknown;
+            body?: any;
+            channel?: any;
+            content?: any;
+            isGroup?: any;
+            senderId?: any;
+            timestamp?: any;
           },
-          { channelId?: unknown; senderId?: unknown },
+          { channelId?: any; senderId?: any },
         ]
       | undefined;
     expect(beforeDispatchCall?.[0]?.content).toBe("command body");
@@ -7809,7 +7809,7 @@ describe("before_dispatch hook", () => {
     expect(beforeDispatchCall?.[1]?.senderId).toBe("signal:user:alice");
     expect(dispatcher.sendFinalReply).not.toHaveBeenCalled();
     const routeCall = firstRouteReplyCall() as
-      | { channel?: unknown; payload?: ReplyPayload; to?: unknown }
+      | { channel?: any; payload?: ReplyPayload; to?: any }
       | undefined;
     expect(routeCall?.channel).toBe("telegram");
     expect(routeCall?.to).toBe("telegram:999");
@@ -7838,18 +7838,18 @@ describe("before_dispatch hook", () => {
     ) as
       | [
           {
-            replyToId?: unknown;
-            replyToIdFull?: unknown;
-            replyToBody?: unknown;
-            replyToSender?: unknown;
-            replyToIsQuote?: unknown;
+            replyToId?: any;
+            replyToIdFull?: any;
+            replyToBody?: any;
+            replyToSender?: any;
+            replyToIsQuote?: any;
           },
           {
-            replyToId?: unknown;
-            replyToIdFull?: unknown;
-            replyToBody?: unknown;
-            replyToSender?: unknown;
-            replyToIsQuote?: unknown;
+            replyToId?: any;
+            replyToIdFull?: any;
+            replyToBody?: any;
+            replyToSender?: any;
+            replyToIsQuote?: any;
           },
         ]
       | undefined;
@@ -7959,7 +7959,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
       updatedAt: 0,
       sendPolicy: "deny",
     };
-    hookMocks.runner.runReplyDispatch.mockImplementation(async (event: unknown) => {
+    hookMocks.runner.runReplyDispatch.mockImplementation(async (event: any) => {
       const candidate = event as { isTailDispatch?: boolean };
       if (candidate.isTailDispatch) {
         return {
@@ -7988,10 +7988,10 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
     );
     const tailDispatchEvent = tailDispatchCall?.[0] as
       | {
-          isTailDispatch?: unknown;
-          sendPolicy?: unknown;
-          suppressReplyLifecycle?: unknown;
-          suppressUserDelivery?: unknown;
+          isTailDispatch?: any;
+          sendPolicy?: any;
+          suppressReplyLifecycle?: any;
+          suppressUserDelivery?: any;
         }
       | undefined;
     expect(tailDispatchEvent?.isTailDispatch).toBe(true);
@@ -8129,12 +8129,12 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
     };
     const dispatcher = createDispatcher();
     let capturedOnBlockReply:
-      | ((payload: ReplyPayload, context?: unknown) => Promise<void>)
+      | ((payload: ReplyPayload, context?: any) => Promise<void>)
       | undefined;
     const replyResolver = vi.fn(
       async (_ctx: MsgContext, opts?: GetReplyOptions, _cfg?: OpenClawConfig) => {
         capturedOnBlockReply = opts?.onBlockReply as
-          | ((payload: ReplyPayload, context?: unknown) => Promise<void>)
+          | ((payload: ReplyPayload, context?: any) => Promise<void>)
           | undefined;
         return [] as ReplyPayload[];
       },
@@ -8448,7 +8448,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
     ctx: Partial<MsgContext>;
     cfg: OpenClawConfig;
     replyOptions?: { sourceReplyDeliveryMode: "message_tool_only" };
-    expectedClaim: Record<string, unknown>;
+    expectedClaim: Record<string, any>;
     pluginReply?: ReplyPayload;
     expectPluginReplyDelivered?: boolean;
   }>)(
@@ -8899,15 +8899,15 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
     }
     const replyDispatchCall = hookMocks.runner.runReplyDispatch.mock.calls.find(
       ([event]) =>
-        (event as { sourceReplyDeliveryMode?: unknown }).sourceReplyDeliveryMode ===
+        (event as { sourceReplyDeliveryMode?: any }).sourceReplyDeliveryMode ===
         "message_tool_only",
     );
     const replyDispatchEvent = replyDispatchCall?.[0] as
       | {
-          sendPolicy?: unknown;
-          sourceReplyDeliveryMode?: unknown;
-          suppressReplyLifecycle?: unknown;
-          suppressUserDelivery?: unknown;
+          sendPolicy?: any;
+          sourceReplyDeliveryMode?: any;
+          suppressReplyLifecycle?: any;
+          suppressUserDelivery?: any;
         }
       | undefined;
     expect(replyDispatchEvent?.suppressUserDelivery).toBe(true);

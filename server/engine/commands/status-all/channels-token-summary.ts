@@ -8,7 +8,7 @@ import type { ChannelAccountSnapshot } from "@openclaw-src/channels/plugins/type
 import { sha256HexPrefix } from "@openclaw-src/logging/redact-identifier.js";
 
 export type ChannelAccountTokenSummaryRow = {
-  account: unknown;
+  account: any;
   enabled: boolean;
   snapshot: ChannelAccountSnapshot;
 };
@@ -70,10 +70,10 @@ export function summarizeTokenConfig(params: {
     return { state: null, detail: null };
   }
 
-  const accountIsHttpMode = (rec: Record<string, unknown>) =>
+  const accountIsHttpMode = (rec: Record<string, any>) =>
     typeof rec.mode === "string" && rec.mode.trim() === "http";
   const hasCredentialAvailable = (
-    rec: Record<string, unknown>,
+    rec: Record<string, any>,
     valueKey: string,
     statusKey: string,
   ) => {

@@ -35,7 +35,7 @@ export interface QueuedMessage {
   /** 队列模式 */
   mode: QueueMode;
   /** 请求体中的附加字段 */
-  extra: Record<string, unknown>;
+  extra: Record<string, any>;
   /** 入队时间戳 */
   enqueuedAt: number;
   /** 关联的 assistantMessageId（前端占位用） */
@@ -163,7 +163,7 @@ export class MessageQueue extends EventEmitter {
     sessionId: string,
     content: string,
     mode: QueueMode,
-    extra: Record<string, unknown> = {},
+    extra: Record<string, any> = {},
   ): { accepted: boolean; messageId: string; assistantMessageId: string; reason?: string } {
     const sq = this.getOrCreateSession(sessionId);
     sq.lastActiveAt = Date.now();

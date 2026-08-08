@@ -12,7 +12,7 @@ import { normalizeSecretInput } from "../../utils/normalize-secret-input.js";
  */
 /** Returns the first usable credential for a web-search provider. */
 export function resolveWebSearchProviderCredential(params: {
-  credentialValue: unknown;
+  credentialValue: any;
   path: string;
   envVars: string[];
 }): string | undefined {

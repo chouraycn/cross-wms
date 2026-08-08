@@ -7,7 +7,7 @@ import {
 /** Plugin-facing plain-text tool call block with source offsets for repair. */
 export type PlainTextToolCallBlock = {
   /** Parsed JSON arguments object. */
-  arguments: Record<string, unknown>;
+  arguments: Record<string, any>;
   /** Exclusive end offset of the parsed block. */
   end: number;
   /** Tool name parsed from the standalone block. */
@@ -47,17 +47,17 @@ type ToolPayloadTextBlock = {
 /** Minimal tool-result-like object shape accepted by payload extraction helpers. */
 export type ToolPayloadCarrier = {
   /** Structured payload preferred over content text when present. */
-  details?: unknown;
+  details?: any;
   /** Provider/tool content blocks or fallback payload. */
-  content?: unknown;
+  content?: any;
 };
 
-function isToolPayloadTextBlock(block: unknown): block is ToolPayloadTextBlock {
+function isToolPayloadTextBlock(block: any): block is ToolPayloadTextBlock {
   return (
     Boolean(block) &&
     typeof block === "object" &&
-    (block as { type?: unknown }).type === "text" &&
-    typeof (block as { text?: unknown }).text === "string"
+    (block as { type?: any }).type === "text" &&
+    typeof (block as { text?: any }).text === "string"
   );
 }
 
@@ -65,7 +65,7 @@ function isToolPayloadTextBlock(block: unknown): block is ToolPayloadTextBlock {
  * Extract the most useful payload from tool result-like objects shared across
  * outbound core flows and bundled plugin helpers.
  */
-export function extractToolPayload(result: ToolPayloadCarrier | null | undefined): unknown {
+export function extractToolPayload(result: ToolPayloadCarrier | null | undefined): any {
   if (!result) {
     return undefined;
   }

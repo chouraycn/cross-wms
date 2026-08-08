@@ -219,11 +219,11 @@ export async function createChildAdapter(params: {
   };
 
   let waitResult: { code: number | null; signal: NodeJS.Signals | null } | null = null;
-  let waitError: unknown;
+  let waitError: any;
   let resolveWait:
     | ((value: { code: number | null; signal: NodeJS.Signals | null }) => void)
     | null = null;
-  let rejectWait: ((reason?: unknown) => void) | null = null;
+  let rejectWait: ((reason?: any) => void) | null = null;
   let waitPromise: Promise<{ code: number | null; signal: NodeJS.Signals | null }> | null = null;
   let forceKillWaitFallbackTimer: NodeJS.Timeout | null = null;
   let childExitState: { code: number | null; signal: NodeJS.Signals | null } | null = null;
@@ -262,7 +262,7 @@ export async function createChildAdapter(params: {
     }
   };
 
-  const rejectPendingWait = (error: unknown) => {
+  const rejectPendingWait = (error: any) => {
     if (waitResult || waitError !== undefined) {
       return;
     }

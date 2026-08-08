@@ -6,9 +6,9 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function stringEnum(..._args: unknown[]): unknown {
+export function stringEnum(..._args: any[]): any {
   return undefined;
 }
-export function optionalStringEnum(..._args: unknown[]): unknown {
+export function optionalStringEnum(..._args: any[]): any {
   return undefined;
 }

@@ -10,8 +10,8 @@ const runner = new BenchmarkRunner({ defaultIterations: 100, defaultWarmup: 10 }
 /**
  * 生成指定大小的对象
  */
-function generateLargeObject(kbSize: number): Record<string, unknown> {
-  const obj: Record<string, unknown> = {
+function generateLargeObject(kbSize: number): Record<string, any> {
+  const obj: Record<string, any> = {
     id: 'test-object',
     name: `Large Object ${kbSize}KB`,
     timestamp: Date.now(),
@@ -32,7 +32,7 @@ function generateLargeObject(kbSize: number): Record<string, unknown> {
 
   let i = 0;
   while (currentBytes < targetBytes) {
-    (obj.array as unknown[]).push({
+    (obj.array as any[]).push({
       index: i,
       data: `item-${i}-${'x'.repeat(Math.min(100, Math.floor((targetBytes - currentBytes) / 10)))}`,
       tags: [`tag-${i % 10}`, `category-${i % 5}`],
@@ -101,20 +101,20 @@ async function jsonBenchmarks() {
 /**
  * 深拷贝性能对比
  */
-function deepCloneJson(obj: unknown): unknown {
+function deepCloneJson(obj: any): any {
   return JSON.parse(JSON.stringify(obj));
 }
 
-function deepCloneRecursive(obj: unknown): unknown {
+function deepCloneRecursive(obj: any): any {
   if (obj === null || typeof obj !== 'object') {
     return obj;
   }
   if (Array.isArray(obj)) {
     return obj.map((item) => deepCloneRecursive(item));
   }
-  const result: Record<string, unknown> = {};
-  for (const key of Object.keys(obj as Record<string, unknown>)) {
-    result[key] = deepCloneRecursive((obj as Record<string, unknown>)[key]);
+  const result: Record<string, any> = {};
+  for (const key of Object.keys(obj as Record<string, any>)) {
+    result[key] = deepCloneRecursive((obj as Record<string, any>)[key]);
   }
   return result;
 }

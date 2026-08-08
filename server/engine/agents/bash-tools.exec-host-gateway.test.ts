@@ -31,11 +31,11 @@ type BuildExecApprovalFollowupTargetMock = (
 ) => ExecApprovalFollowupTarget | null;
 type MockAllowlistSegment = Omit<ExecCommandSegment, "raw"> & { raw?: string };
 type MockAllowlistResult = {
-  allowlistMatches: unknown[];
+  allowlistMatches: any[];
   analysisOk: boolean;
   allowlistSatisfied: boolean;
   segments: MockAllowlistSegment[];
-  segmentAllowlistEntries: unknown[];
+  segmentAllowlistEntries: any[];
   segmentSatisfiedBy?: ExecSegmentSatisfiedBy[];
   authorizationPlan?: ExecAuthorizationPlan;
 };

@@ -151,7 +151,7 @@ export class ExecutionEngine extends EventEmitter {
     let skippedCount = 0;
     let finalStatus: ExecutionStatus = 'completed';
     let finalError: string | undefined;
-    let finalOutput: unknown;
+    let finalOutput: any;
 
     try {
       for (let i = 0; i < steps.length; i++) {
@@ -272,7 +272,7 @@ export class ExecutionEngine extends EventEmitter {
     const context = this.activeExecutions.get(executionId);
     if (!context) return false;
     if (context.abortSignal) {
-      (context as unknown).abortController?.abort?.();
+      (context as any).abortController?.abort?.();
     }
     return true;
   }
@@ -392,7 +392,7 @@ export class ExecutionEngine extends EventEmitter {
     step: ExecutionStep,
     context: ExecutionContext,
     timeoutMs?: number,
-  ): Promise<unknown> {
+  ): Promise<any> {
     if (step.type === 'tool_call') {
       return this.executeToolCall(step, context, timeoutMs);
     }
@@ -408,7 +408,7 @@ export class ExecutionEngine extends EventEmitter {
     step: ExecutionStep,
     context: ExecutionContext,
     timeoutMs?: number,
-  ): Promise<unknown> {
+  ): Promise<any> {
     if (!step.toolName) {
       throw new Error(`步骤 ${step.name} 缺少 toolName`);
     }
@@ -436,7 +436,7 @@ export class ExecutionEngine extends EventEmitter {
     children: ExecutionStep[],
     context: ExecutionContext,
     _timeoutMs?: number,
-  ): Promise<unknown[]> {
+  ): Promise<any[]> {
     const promises = children.map((child) =>
       this.executeStep(child, context, this.defaultConfig),
     );
@@ -446,7 +446,7 @@ export class ExecutionEngine extends EventEmitter {
 
   // ===================== 内部：事件 =====================
 
-  private emitEvent(type: ExecutionEvent['type'], executionId: string, data?: unknown): void {
+  private emitEvent(type: ExecutionEvent['type'], executionId: string, data?: any): void {
     const event: ExecutionEvent = {
       type,
       executionId,

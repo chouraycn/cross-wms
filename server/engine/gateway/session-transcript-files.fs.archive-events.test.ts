@@ -87,7 +87,7 @@ describe("archiveSessionTranscriptsDetailed failure surface", () => {
         throw renameError;
       });
 
-      const errors: Array<{ err: unknown; sourcePath: string }> = [];
+      const errors: Array<{ err: any; sourcePath: string }> = [];
       const archived = archiveSessionTranscriptsDetailed({
         sessionId,
         storePath: path.join(tmpDir, "store.json"),

@@ -31,7 +31,7 @@ async function expectGatewayHookCall(params: {
   expect(handler).toHaveBeenCalledWith(params.event, params.gatewayCtx);
 }
 
-function requireFirstMockCall(mock: { mock: { calls: unknown[][] } }, label: string): unknown[] {
+function requireFirstMockCall(mock: { mock: { calls: any[][] } }, label: string): any[] {
   const call = mock.mock.calls[0];
   if (!call) {
     throw new Error(`expected ${label} call`);

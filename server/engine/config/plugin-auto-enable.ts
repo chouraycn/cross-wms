@@ -13,20 +13,20 @@ export type PluginAutoEnableResult = {
 export const applyPluginAutoEnable: (params: {
   config: OpenClawConfig;
   env?: NodeJS.ProcessEnv;
-  manifestRegistry?: unknown;
-  discovery?: unknown;
+  manifestRegistry?: any;
+  discovery?: any;
 }) => PluginAutoEnableResult = (params: {
   config: OpenClawConfig;
   env?: NodeJS.ProcessEnv;
-  manifestRegistry?: unknown;
-  discovery?: unknown;
+  manifestRegistry?: any;
+  discovery?: any;
 }) => {
   return { config: params.config, enabledPlugins: [], autoEnabledReasons: {} };
 };
 
 export type materializePluginAutoEnableCandidates = unknown;
-export const materializePluginAutoEnableCandidates: unknown = undefined;
+export const materializePluginAutoEnableCandidates: any = undefined;
 export type detectPluginAutoEnableCandidates = unknown;
-export const detectPluginAutoEnableCandidates: unknown = undefined;
+export const detectPluginAutoEnableCandidates: any = undefined;
 export type resolvePluginAutoEnableCandidateReason = unknown;
-export const resolvePluginAutoEnableCandidateReason: unknown = undefined;
+export const resolvePluginAutoEnableCandidateReason: any = undefined;

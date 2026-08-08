@@ -36,7 +36,7 @@ function createClient(
     scopes?: string[];
   } = {},
 ): GatewayRequestHandlerOptions["client"] {
-  const connect: Record<string, unknown> = {
+  const connect: Record<string, any> = {
     client: {
       id: params.clientId ?? "test-client",
       displayName: params.displayName ?? "Test Client",
@@ -56,7 +56,7 @@ function createClient(
 
 function createMockOptions(
   method: string,
-  params: Record<string, unknown>,
+  params: Record<string, any>,
   overrides?: Partial<GatewayRequestHandlerOptions>,
 ): GatewayRequestHandlerOptions {
   return {
@@ -76,23 +76,23 @@ function createNoExecApprovalContext(): GatewayRequestHandlerOptions["context"] 
 
 type MockCallSource = {
   mock: {
-    calls: ArrayLike<ReadonlyArray<unknown>>;
+    calls: ArrayLike<ReadonlyArray<any>>;
   };
 };
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object") {
     throw new Error(`expected ${label}`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function requireArray(value: unknown, label: string): unknown[] {
+function requireArray(value: any, label: string): any[] {
   expect(Array.isArray(value), label).toBe(true);
-  return value as unknown[];
+  return value as any[];
 }
 
-function mockCall(source: unknown, index: number, label: string) {
+function mockCall(source: any, index: number, label: string) {
   const call = (source as MockCallSource).mock.calls[index];
   if (!call) {
     throw new Error(`Expected ${label}`);
@@ -100,7 +100,7 @@ function mockCall(source: unknown, index: number, label: string) {
   return call;
 }
 
-function responseCall(source: unknown, index = 0) {
+function responseCall(source: any, index = 0) {
   const call = mockCall(source, index, `response call ${index}`);
   return {
     ok: call[0],
@@ -109,20 +109,20 @@ function responseCall(source: unknown, index = 0) {
   };
 }
 
-function responseResult(source: unknown, index = 0) {
+function responseResult(source: any, index = 0) {
   return requireRecord(responseCall(source, index).result, `response result ${index}`);
 }
 
-function responseError(source: unknown, index = 0) {
+function responseError(source: any, index = 0) {
   return requireRecord(responseCall(source, index).error, `response error ${index}`);
 }
 
-function acceptedResult(source: unknown) {
+function acceptedResult(source: any) {
   const callSource = source as MockCallSource;
   const call = Array.from(callSource.mock.calls).find((candidate) => {
     const result = candidate[1];
     return typeof result === "object" && result !== null && "status" in result
-      ? (result as Record<string, unknown>).status === "accepted"
+      ? (result as Record<string, any>).status === "accepted"
       : false;
   });
   if (!call) {
@@ -131,25 +131,25 @@ function acceptedResult(source: unknown) {
   return requireRecord(call[1], "accepted response result");
 }
 
-function acceptedApprovalId(source: unknown) {
+function acceptedApprovalId(source: any) {
   const id = acceptedResult(source).id;
   expect(id, "accepted approval id").toBeTypeOf("string");
   return id as string;
 }
 
-function expectResponseOk(source: unknown, index = 0) {
+function expectResponseOk(source: any, index = 0) {
   const call = responseCall(source, index);
   expect(call.ok).toBe(true);
   expect(call.error).toBeUndefined();
   return requireRecord(call.result, `response result ${index}`);
 }
 
-function expectResponseRejected(source: unknown, index = 0) {
+function expectResponseRejected(source: any, index = 0) {
   expect(responseCall(source, index).ok).toBe(false);
   return responseError(source, index);
 }
 
-async function waitForAcceptedApproval(respond: unknown) {
+async function waitForAcceptedApproval(respond: any) {
   await vi.waitFor(() => {
     const accepted = acceptedResult(respond);
     expect(accepted.status).toBe("accepted");
@@ -199,7 +199,7 @@ function registerOwnedApproval(
   return record;
 }
 
-function expectPluginApprovalId(value: unknown, label: string): string {
+function expectPluginApprovalId(value: any, label: string): string {
   expect(value, label).toBeTypeOf("string");
   if (typeof value !== "string") {
     throw new Error(`${label} must be a string`);

@@ -6,7 +6,7 @@ import { createCommandWorkspaceHarness } from "./commands-filesystem.test-suppor
 import { handleMcpCommand } from "./commands-mcp.js";
 import { buildCommandTestParams } from "./commands.test-harness.js";
 
-const mcpServers = vi.hoisted(() => new Map<string, Record<string, unknown>>());
+const mcpServers = vi.hoisted(() => new Map<string, Record<string, any>>());
 
 vi.mock("../../config/mcp-config.js", () => ({
   listConfiguredMcpServers: vi.fn(async () => ({
@@ -16,7 +16,7 @@ vi.mock("../../config/mcp-config.js", () => ({
     mcpServers: Object.fromEntries(mcpServers),
   })),
   setConfiguredMcpServer: vi.fn(async ({ name, server }) => {
-    mcpServers.set(name, { ...(server as Record<string, unknown>) });
+    mcpServers.set(name, { ...(server as Record<string, any>) });
     return {
       ok: true,
       path: "/tmp/openclaw.json",

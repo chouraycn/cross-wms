@@ -26,7 +26,7 @@ const ALLOW_ALL_POLICY: ModelVisibilityPolicy = {
 
 /** Create a model visibility policy (returns permissive allow-all in cross-wms). */
 export function createModelVisibilityPolicy(
-  ..._args: unknown[]
+  ..._args: any[]
 ): ModelVisibilityPolicy {
   return ALLOW_ALL_POLICY;
 }

@@ -38,7 +38,7 @@ export class SessionBindingError extends Error {
   }
 }
 
-export function isSessionBindingError(error: unknown): error is SessionBindingError {
+export function isSessionBindingError(error: any): error is SessionBindingError {
   return error instanceof SessionBindingError;
 }
 
@@ -55,7 +55,7 @@ function toAdapterKey(params: { channel: string; accountId: string }): string {
   return `${params.channel.toLowerCase()}:${normalizeAccountId(params.accountId)}`;
 }
 
-function normalizePlacement(raw: unknown): SessionBindingPlacement | undefined {
+function normalizePlacement(raw: any): SessionBindingPlacement | undefined {
   return raw === "current" || raw === "child" ? raw : undefined;
 }
 

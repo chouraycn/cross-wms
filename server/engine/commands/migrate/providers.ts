@@ -32,8 +32,8 @@ export function resolveMigrationProvider(
 export function buildMigrationProviderOptions(
   opts: MigrateCommonOptions,
   providerId = opts.provider,
-): Record<string, unknown> | undefined {
-  const options: Record<string, unknown> = {};
+): Record<string, any> | undefined {
+  const options: Record<string, any> = {};
   if (providerId === "codex" && opts.verifyPluginApps === true) {
     options.verifyPluginApps = true;
   }

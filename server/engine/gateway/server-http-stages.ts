@@ -19,19 +19,19 @@ export type HttpStageContext = {
     method?: string;
     user?: string;
   };
-  body?: unknown;
+  body?: any;
   route?: {
     path: string;
     method: string;
   };
-  error?: unknown;
-  metadata: Record<string, unknown>;
+  error?: any;
+  metadata: Record<string, any>;
 };
 
 type StageHandlers = Map<HttpStage, Set<HttpStageHandler>>;
 
 const stageHandlers: StageHandlers = new Map();
-const globalErrorHandlers = new Set<(error: unknown, context: HttpStageContext) => void>();
+const globalErrorHandlers = new Set<(error: any, context: HttpStageContext) => void>();
 
 export function registerHttpStageHandler(stage: HttpStage, handler: HttpStageHandler): void {
   if (!stageHandlers.has(stage)) {
@@ -46,11 +46,11 @@ export function unregisterHttpStageHandler(stage: HttpStage, handler: HttpStageH
   return handlers.delete(handler);
 }
 
-export function registerGlobalErrorHandler(handler: (error: unknown, context: HttpStageContext) => void): void {
+export function registerGlobalErrorHandler(handler: (error: any, context: HttpStageContext) => void): void {
   globalErrorHandlers.add(handler);
 }
 
-export function unregisterGlobalErrorHandler(handler: (error: unknown, context: HttpStageContext) => void): boolean {
+export function unregisterGlobalErrorHandler(handler: (error: any, context: HttpStageContext) => void): boolean {
   return globalErrorHandlers.delete(handler);
 }
 

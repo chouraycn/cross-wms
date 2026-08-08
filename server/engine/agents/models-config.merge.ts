@@ -5,12 +5,12 @@
  */
 
 export type ExistingProviderConfig = {
-  models?: Record<string, unknown>;
-  secrets?: Record<string, unknown>;
-  [key: string]: unknown;
+  models?: Record<string, any>;
+  secrets?: Record<string, any>;
+  [key: string]: any;
 };
 
-export function mergeProviderModels(base: Record<string, unknown>, override: Record<string, unknown>): Record<string, unknown> {
+export function mergeProviderModels(base: Record<string, any>, override: Record<string, any>): Record<string, any> {
   return { ...base, ...override };
 }
 

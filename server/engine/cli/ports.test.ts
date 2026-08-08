@@ -29,8 +29,8 @@ function makeErrServer(code: string): net.Server {
     return fake;
   };
   (fake as unknown as { unref: () => net.Server }).unref = () => fake;
-  (fake as unknown as { listen: (...args: unknown[]) => net.Server }).listen = (
-    ..._args: unknown[]
+  (fake as unknown as { listen: (...args: any[]) => net.Server }).listen = (
+    ..._args: any[]
   ) => {
     setImmediate(() => fake.emit("error", err));
     return fake;
@@ -38,7 +38,7 @@ function makeErrServer(code: string): net.Server {
   return fake;
 }
 
-async function expectRejectCode(promise: Promise<unknown>, code: string): Promise<void> {
+async function expectRejectCode(promise: Promise<any>, code: string): Promise<void> {
   try {
     await promise;
   } catch (error) {
@@ -82,8 +82,8 @@ describe("probePortFree", () => {
       return fakeServer;
     };
     (fakeServer as unknown as { unref: () => net.Server }).unref = () => fakeServer;
-    (fakeServer as unknown as { listen: (...args: unknown[]) => net.Server }).listen = (
-      ..._args: unknown[]
+    (fakeServer as unknown as { listen: (...args: any[]) => net.Server }).listen = (
+      ..._args: any[]
     ) => {
       // Simulate a successful bind by firing the "listening" callback.
       const callback = _args.find((a) => typeof a === "function") as (() => void) | undefined;
@@ -108,8 +108,8 @@ describe("waitForPortBindable", () => {
       return fakeServer;
     };
     (fakeServer as unknown as { unref: () => net.Server }).unref = () => fakeServer;
-    (fakeServer as unknown as { listen: (...args: unknown[]) => net.Server }).listen = (
-      ...args: unknown[]
+    (fakeServer as unknown as { listen: (...args: any[]) => net.Server }).listen = (
+      ...args: any[]
     ) => {
       const [port, host] = args as [number, string];
       listenCalls.push({ port, host });

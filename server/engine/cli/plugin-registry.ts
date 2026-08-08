@@ -37,8 +37,8 @@ export const testing: Record<string, never> = {};
  */
 export function ensurePluginRegistryLoaded(_params: {
   scope: PluginRegistryScope;
-  config?: unknown;
-  activationSourceConfig?: unknown;
+  config?: any;
+  activationSourceConfig?: any;
 }): void {
   // no-op
 }

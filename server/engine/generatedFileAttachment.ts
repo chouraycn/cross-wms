@@ -44,7 +44,7 @@ export interface GeneratedFilePayload {
 }
 
 /** SSE send 回调签名（与 runChatSession 的 onEvent 对齐） */
-export type FileEventSender = (event: { type: string; [key: string]: unknown }) => void;
+export type FileEventSender = (event: { type: string; [key: string]: any }) => void;
 
 /**
  * 生成稳定 fileId：sha256(sessionId + ' ' + fileName) → base64url，截断 18 字符。
@@ -167,9 +167,9 @@ export function buildGeneratedFilePayload(
  */
 export function extractGeneratedFileFromToolResult(
   toolName: string,
-  resultJson: string | Record<string, unknown> | null | undefined,
+  resultJson: string | Record<string, any> | null | undefined,
 ): GeneratedFilePayload | null {
-  let data: Record<string, unknown> | null = null;
+  let data: Record<string, any> | null = null;
   if (typeof resultJson === 'string') {
     try {
       data = JSON.parse(resultJson);
@@ -177,7 +177,7 @@ export function extractGeneratedFileFromToolResult(
       return null;
     }
   } else if (resultJson && typeof resultJson === 'object') {
-    data = resultJson as Record<string, unknown>;
+    data = resultJson as Record<string, any>;
   }
   if (!data || typeof data !== 'object') return null;
   if (data.error) return null;
@@ -242,10 +242,10 @@ export function extractFilesFromMarkerText(text: string): string[] {
 
 /** 从工具结果 JSON 中递归抽取 stdout/stderr/output 文本（供标记扫描） */
 export function extractMarkerTextFromToolResult(
-  resultJson: string | Record<string, unknown> | null | undefined,
+  resultJson: string | Record<string, any> | null | undefined,
 ): string {
   let text = '';
-  let data: unknown;
+  let data: any;
   if (typeof resultJson === 'string') {
     try {
       data = JSON.parse(resultJson);
@@ -257,7 +257,7 @@ export function extractMarkerTextFromToolResult(
   }
   if (!data) return '';
 
-  const collect = (obj: unknown, depth: number): void => {
+  const collect = (obj: any, depth: number): void => {
     if (!obj || depth > 5) return;
     if (typeof obj === 'string') {
       text += obj + '\n';
@@ -268,7 +268,7 @@ export function extractMarkerTextFromToolResult(
       return;
     }
     if (typeof obj === 'object') {
-      const rec = obj as Record<string, unknown>;
+      const rec = obj as Record<string, any>;
       for (const key of ['stdout', 'stderr', 'output']) {
         if (typeof rec[key] === 'string') text += (rec[key] as string) + '\n';
       }

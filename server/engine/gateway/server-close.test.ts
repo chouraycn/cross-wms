@@ -87,7 +87,7 @@ type DrainActiveSessionsForShutdown = NonNullable<
 >;
 const originalRestartTraceEnv = process.env.OPENCLAW_GATEWAY_RESTART_TRACE;
 
-function firstMockCall<T extends readonly unknown[]>(mock: { mock: { calls: readonly T[] } }) {
+function firstMockCall<T extends readonly any[]>(mock: { mock: { calls: readonly T[] } }) {
   return mock.mock.calls[0];
 }
 
@@ -253,7 +253,7 @@ describe("createGatewayCloseHandler", () => {
     await close({ reason: "gateway restarting", restartExpectedMs: 123 });
 
     const hookCalls = mocks.triggerInternalHook.mock.calls as unknown as Array<
-      [{ type?: string; action?: string; context?: Record<string, unknown> }]
+      [{ type?: string; action?: string; context?: Record<string, any> }]
     >;
     const shutdownEvent = hookCalls.find(
       ([event]) => event?.type === "gateway" && event?.action === "shutdown",

@@ -13,7 +13,7 @@ const HOOK_KEY = "bootstrap-extra-files";
 const log = createSubsystemLogger("bootstrap-extra-files");
 
 /** Resolve legacy and current config keys for extra bootstrap file patterns. */
-function resolveExtraBootstrapPatterns(hookConfig: Record<string, unknown>): string[] {
+function resolveExtraBootstrapPatterns(hookConfig: Record<string, any>): string[] {
   const fromPaths = normalizeTrimmedStringList(hookConfig.paths);
   if (fromPaths.length > 0) {
     return fromPaths;
@@ -37,7 +37,7 @@ const bootstrapExtraFilesHook: HookHandler = async (event) => {
     return;
   }
 
-  const patterns = resolveExtraBootstrapPatterns(hookConfig as Record<string, unknown>);
+  const patterns = resolveExtraBootstrapPatterns(hookConfig as Record<string, any>);
   if (patterns.length === 0) {
     return;
   }

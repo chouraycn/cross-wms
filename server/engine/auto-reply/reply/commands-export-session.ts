@@ -30,7 +30,7 @@ interface SessionData {
   leafId: string | null;
   hasLeafControl: boolean;
   systemPrompt?: string;
-  tools?: Array<{ name: string; description?: string; parameters?: unknown }>;
+  tools?: Array<{ name: string; description?: string; parameters?: any }>;
 }
 
 type SessionExportJsonlWarning = {
@@ -161,7 +161,7 @@ async function writeNewDefaultExportFile(filePath: string, html: string): Promis
   throw new Error(`Could not find an unused export filename near ${filePath}`);
 }
 
-function isSessionFileEntry(value: unknown): value is SessionFileEntry {
+function isSessionFileEntry(value: any): value is SessionFileEntry {
   if (!isRecord(value) || typeof value.type !== "string") {
     return false;
   }
@@ -185,7 +185,7 @@ function parseSessionEntriesWithWarnings(content: string): {
       continue;
     }
     try {
-      const parsed = JSON.parse(line) as unknown;
+      const parsed = JSON.parse(line) as any;
       if (!isSessionFileEntry(parsed)) {
         warnings.push({ code: "invalid-session-row", row: index + 1 });
         continue;

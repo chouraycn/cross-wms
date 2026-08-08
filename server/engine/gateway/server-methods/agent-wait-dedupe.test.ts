@@ -26,7 +26,7 @@ type RunEntryParams = {
   runId: string;
   ts?: number;
   ok?: boolean;
-  payload: Record<string, unknown>;
+  payload: Record<string, any>;
 };
 
 describe("agent wait dedupe helper", () => {
@@ -52,8 +52,8 @@ describe("agent wait dedupe helper", () => {
 
   function agentMetaPayload(
     runId: string,
-    meta: Record<string, unknown>,
-    overrides: Record<string, unknown> = {},
+    meta: Record<string, any>,
+    overrides: Record<string, any> = {},
   ) {
     return {
       runId,
@@ -65,15 +65,15 @@ describe("agent wait dedupe helper", () => {
     };
   }
 
-  function okPayload(runId: string, overrides: Record<string, unknown> = {}) {
+  function okPayload(runId: string, overrides: Record<string, any> = {}) {
     return { runId, status: "ok", ...overrides };
   }
 
-  function okSnapshot(overrides: Record<string, unknown> = {}) {
+  function okSnapshot(overrides: Record<string, any> = {}) {
     return { status: "ok", error: undefined, ...overrides };
   }
 
-  function queueTimeoutPayload(runId: string, overrides: Record<string, unknown> = {}) {
+  function queueTimeoutPayload(runId: string, overrides: Record<string, any> = {}) {
     return {
       runId,
       status: "timeout",
@@ -104,7 +104,7 @@ describe("agent wait dedupe helper", () => {
   function expectTerminalSnapshot(
     dedupe: Map<string, DedupeEntry>,
     runId: string,
-    snapshot: Record<string, unknown>,
+    snapshot: Record<string, any>,
     options: SnapshotReadOptions = {},
   ) {
     expect(

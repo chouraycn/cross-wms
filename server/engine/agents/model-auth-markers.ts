@@ -98,12 +98,12 @@ export function isOAuthApiKeyMarker(value: string): boolean {
 }
 
 /** Resolve the API-key placeholder for a non-env secret-ref source. */
-export function resolveNonEnvSecretRefApiKeyMarker(_source: unknown): string {
+export function resolveNonEnvSecretRefApiKeyMarker(_source: any): string {
   return NON_ENV_SECRETREF_MARKER;
 }
 
 /** Resolve the header-value placeholder for a non-env secret-ref source. */
-export function resolveNonEnvSecretRefHeaderValueMarker(_source: unknown): string {
+export function resolveNonEnvSecretRefHeaderValueMarker(_source: any): string {
   return NON_ENV_SECRETREF_MARKER;
 }
 

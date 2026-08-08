@@ -111,8 +111,8 @@ const RISK_CONFIG: Record<string, { label: string; color: 'default' | 'info' | '
 /** 根据 Schema 字段类型渲染表单控件 */
 function renderConfigField(
   field: PluginConfigSchemaField,
-  values: Record<string, unknown>,
-  onChange: (key: string, value: unknown) => void
+  values: Record<string, any>,
+  onChange: (key: string, value: any) => void
 ): React.ReactElement {
   const label = field.label || field.key;
   const value = values[field.key] ?? field.default ?? '';
@@ -185,9 +185,9 @@ function renderConfigField(
           )}
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {field.properties?.map((prop) =>
-              renderConfigField(prop, (value as Record<string, unknown>) || {}, (k, v) => {
+              renderConfigField(prop, (value as Record<string, any>) || {}, (k, v) => {
                 onChange(field.key, {
-                  ...(value as Record<string, unknown>),
+                  ...(value as Record<string, any>),
                   [k]: v,
                 });
               })
@@ -257,7 +257,7 @@ const PluginsPage: React.FC = () => {
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
   const [configTarget, setConfigTarget] = useState<PluginInfo | null>(null);
   const [configSchema, setConfigSchema] = useState<PluginConfigSchema | null>(null);
-  const [configValues, setConfigValues] = useState<Record<string, unknown>>({});
+  const [configValues, setConfigValues] = useState<Record<string, any>>({});
   const [configLoading, setConfigLoading] = useState(false);
   const [configSaving, setConfigSaving] = useState(false);
 
@@ -369,7 +369,7 @@ const PluginsPage: React.FC = () => {
   }, []);
 
   // 更新单个配置字段
-  const handleConfigFieldChange = useCallback((key: string, value: unknown) => {
+  const handleConfigFieldChange = useCallback((key: string, value: any) => {
     setConfigValues((prev) => ({
       ...prev,
       [key]: value,

@@ -120,7 +120,7 @@ export const MODELS_CONFIG_IMPLICIT_ENV_VARS = [
 ];
 
 /** Canonical custom proxy provider config used by models-config tests. */
-export const CUSTOM_PROXY_MODELS_CONFIG: Record<string, unknown> = {
+export const CUSTOM_PROXY_MODELS_CONFIG: Record<string, any> = {
   models: {
     providers: {
       "custom-proxy": {

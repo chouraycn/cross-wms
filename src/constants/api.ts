@@ -10,7 +10,7 @@
 /** API 基础地址 */
 const _envBaseUrl = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_BASE_URL) || '';
 export const API_BASE_URL = _envBaseUrl
-  || (typeof window !== 'undefined' && (window as unknown as Record<string, unknown>).__API_BASE_URL__ as string)
+  || (typeof window !== 'undefined' && (window as unknown as Record<string, any>).__API_BASE_URL__ as string)
   || ''; // 默认使用相对路径，通过 Vite 代理 / pywebview 代理转发
 
 /** API 路径前缀 */

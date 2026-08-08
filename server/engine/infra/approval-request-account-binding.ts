@@ -6,7 +6,7 @@ export type ApprovalRequestSessionEntry = {
   channelProvider?: string;
   channelAccountId?: string;
   requesterAccountId?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 /** Resolves the persisted approval request session entry. */

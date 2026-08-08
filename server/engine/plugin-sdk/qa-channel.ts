@@ -87,7 +87,7 @@ type FacadeModule = {
     attachments?: QaBusAttachment[];
     toolCalls?: QaBusToolCall[];
   }) => Promise<{ message: QaBusMessage }>;
-  setQaChannelRuntime: (runtime: unknown) => void;
+  setQaChannelRuntime: (runtime: any) => void;
 };
 
 function loadFacadeModule(): FacadeModule {

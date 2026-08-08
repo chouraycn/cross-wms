@@ -53,7 +53,7 @@ export async function writeClaudeMcpCaptureConfig(params: {
   mcpConfigPath: string;
   captureKey: string;
 }): Promise<void> {
-  const raw = JSON.parse(await fs.readFile(params.mcpConfigPath, "utf-8")) as unknown;
+  const raw = JSON.parse(await fs.readFile(params.mcpConfigPath, "utf-8")) as any;
   if (!isRecord(raw)) {
     throw new Error("Claude MCP capture requires an object config");
   }

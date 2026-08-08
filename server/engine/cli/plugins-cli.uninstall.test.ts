@@ -32,10 +32,10 @@ function expectRuntimeLogIncludes(fragment: string) {
 function expectLatestUninstallPlanParams(expected: {
   pluginId: string;
   deleteFiles: boolean;
-  channelIds?: unknown;
+  channelIds?: any;
 }) {
   const params = planPluginUninstall.mock.calls[planPluginUninstall.mock.calls.length - 1]?.[0] as
-    | { pluginId?: string; deleteFiles?: boolean; channelIds?: unknown }
+    | { pluginId?: string; deleteFiles?: boolean; channelIds?: any }
     | undefined;
   if (params === undefined) {
     throw new Error("expected latest plugin uninstall plan params");

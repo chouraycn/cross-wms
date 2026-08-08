@@ -4,7 +4,7 @@ import { normalizeStoredCronJobs } from "./store-migration.js";
 
 const DEFAULT_TOP_OF_HOUR_STAGGER_MS = 5 * 60 * 1000;
 
-function makeLegacyJob(overrides: Record<string, unknown>): Record<string, unknown> {
+function makeLegacyJob(overrides: Record<string, any>): Record<string, any> {
   return {
     id: "job-legacy",
     agentId: undefined,
@@ -25,7 +25,7 @@ function makeLegacyJob(overrides: Record<string, unknown>): Record<string, unkno
   };
 }
 
-function normalizeOneJob(job: Record<string, unknown>) {
+function normalizeOneJob(job: Record<string, any>) {
   const jobs = [job];
   const result = normalizeStoredCronJobs(jobs);
   return { job: jobs[0], result };
@@ -44,7 +44,7 @@ describe("normalizeStoredCronJobs", () => {
         to: "12345",
         threadId: " 77 ",
       },
-    ] as Array<Record<string, unknown>>;
+    ] as Array<Record<string, any>>;
 
     const result = normalizeStoredCronJobs(jobs);
 
@@ -57,18 +57,18 @@ describe("normalizeStoredCronJobs", () => {
     const [job] = jobs;
     expect(job?.jobId).toBeUndefined();
     expect(job?.id).toBe("legacy-job");
-    const schedule = job?.schedule as Record<string, unknown> | undefined;
+    const schedule = job?.schedule as Record<string, any> | undefined;
     expect(schedule?.kind).toBe("cron");
     expect(schedule?.expr).toBe("*/5 * * * *");
     expect(schedule?.tz).toBe("UTC");
     expect(job?.message).toBeUndefined();
     expect(job?.provider).toBeUndefined();
-    const delivery = job?.delivery as Record<string, unknown> | undefined;
+    const delivery = job?.delivery as Record<string, any> | undefined;
     expect(delivery?.mode).toBe("announce");
     expect(delivery?.channel).toBe("telegram");
     expect(delivery?.to).toBe("12345");
     expect(delivery?.threadId).toBe("77");
-    const payload = job?.payload as Record<string, unknown> | undefined;
+    const payload = job?.payload as Record<string, any> | undefined;
     expect(payload?.kind).toBe("agentTurn");
     expect(payload?.message).toBe("say hi");
     expect(payload?.model).toBe("openai/gpt-5.5");
@@ -85,17 +85,17 @@ describe("normalizeStoredCronJobs", () => {
           provider: " Slack ",
         },
       },
-    ] as Array<Record<string, unknown>>;
+    ] as Array<Record<string, any>>;
 
     const result = normalizeStoredCronJobs(jobs);
 
     expect(result.mutated).toBe(true);
     expect(result.issues.legacyPayloadProvider).toBe(1);
-    const payload = jobs[0]?.payload as Record<string, unknown> | undefined;
+    const payload = jobs[0]?.payload as Record<string, any> | undefined;
     expect(payload?.kind).toBe("agentTurn");
     expect(payload?.message).toBe("ping");
     expect(payload?.provider).toBeUndefined();
-    const delivery = jobs[0]?.delivery as Record<string, unknown> | undefined;
+    const delivery = jobs[0]?.delivery as Record<string, any> | undefined;
     expect(delivery?.mode).toBe("announce");
     expect(delivery?.channel).toBe("slack");
   });
@@ -116,7 +116,7 @@ describe("normalizeStoredCronJobs", () => {
 
     expect(result.mutated).toBe(true);
     expect(result.issues.legacyPayloadCodexModel).toBe(1);
-    const payload = job.payload as Record<string, unknown>;
+    const payload = job.payload as Record<string, any>;
     expect(payload.kind).toBe("agentTurn");
     expect(payload.message).toBe("ping");
     expect(payload.model).toBe("openai/gpt-5.5");
@@ -160,7 +160,7 @@ describe("normalizeStoredCronJobs", () => {
     expect(result.mutated).toBe(true);
     expect(result.issues.legacyAgentTurnCommandPayload).toBe(1);
     expect(job.delivery).toEqual({ mode: "announce", channel: "telegram", to: "123" });
-    const payload = job.payload as Record<string, unknown>;
+    const payload = job.payload as Record<string, any>;
     expect(payload).toEqual({
       kind: "command",
       argv: ["sh", "-lc", command],
@@ -192,7 +192,7 @@ describe("normalizeStoredCronJobs", () => {
     expect(result.issues.unresolvedAgentTurnShellToolPrompt).toBe(1);
     expect(result.unresolvedAgentTurnCommandPromptJobs).toEqual(["Legacy job"]);
     expect(result.unresolvedAgentTurnShellToolPromptJobs).toEqual([]);
-    const payload = job.payload as Record<string, unknown>;
+    const payload = job.payload as Record<string, any>;
     expect(payload.kind).toBe("agentTurn");
     expect(payload.message).toContain(command);
     expect(payload.toolsAllow).toEqual(["read", "message"]);
@@ -217,7 +217,7 @@ describe("normalizeStoredCronJobs", () => {
     expect(result.issues.legacyAgentTurnCommandPayload).toBeUndefined();
     expect(result.issues.unresolvedAgentTurnShellToolPrompt).toBe(1);
     expect(result.unresolvedAgentTurnShellToolPromptJobs).toEqual(["Legacy job"]);
-    const payload = job.payload as Record<string, unknown>;
+    const payload = job.payload as Record<string, any>;
     expect(payload.kind).toBe("agentTurn");
     expect(payload.message).toContain("Run deterministic health first");
     expect(payload.toolsAllow).toEqual(["bash", "read", "message"]);
@@ -279,7 +279,7 @@ describe("normalizeStoredCronJobs", () => {
     );
 
     expect(result.issues.unresolvedAgentTurnShellToolPrompt).toBeUndefined();
-    const payload = job.payload as Record<string, unknown>;
+    const payload = job.payload as Record<string, any>;
     expect(payload.kind).toBe("agentTurn");
     expect(payload.message).toContain("python3 scripts/check_mail.py");
   });
@@ -297,7 +297,7 @@ describe("normalizeStoredCronJobs", () => {
         delivery: { mode: "announce" },
         state: {},
       },
-    ] as Array<Record<string, unknown>>;
+    ] as Array<Record<string, any>>;
 
     const result = normalizeStoredCronJobs(jobs);
 
@@ -411,16 +411,16 @@ describe("normalizeStoredCronJobs", () => {
         delivery: { mode: "announce" },
         state: {},
       },
-    ] as Array<Record<string, unknown>>;
+    ] as Array<Record<string, any>>;
 
     const result = normalizeStoredCronJobs(jobs);
 
     expect(result.mutated).toBe(true);
     expect(result.issues.legacyPayloadKind).toBe(2);
-    const firstPayload = jobs[0]?.payload as Record<string, unknown> | undefined;
+    const firstPayload = jobs[0]?.payload as Record<string, any> | undefined;
     expect(firstPayload?.kind).toBe("agentTurn");
     expect(firstPayload?.message).toBe("ping");
-    const secondPayload = jobs[1]?.payload as Record<string, unknown> | undefined;
+    const secondPayload = jobs[1]?.payload as Record<string, any> | undefined;
     expect(secondPayload?.kind).toBe("systemEvent");
     expect(secondPayload?.text).toBe("pong");
   });
@@ -454,13 +454,13 @@ describe("normalizeStoredCronJobs", () => {
     });
     expect("isolation" in job).toBe(false);
 
-    const payload = job.payload as Record<string, unknown>;
+    const payload = job.payload as Record<string, any>;
     expect(payload.deliver).toBeUndefined();
     expect(payload.channel).toBeUndefined();
     expect(payload.to).toBeUndefined();
     expect(payload.bestEffortDeliver).toBeUndefined();
 
-    const schedule = job.schedule as Record<string, unknown>;
+    const schedule = job.schedule as Record<string, any>;
     expect(schedule.kind).toBe("at");
     expect(schedule.at).toBe(new Date(1_700_000_000_000).toISOString());
     expect(schedule.atMs).toBeUndefined();
@@ -488,7 +488,7 @@ describe("normalizeStoredCronJobs", () => {
       }),
     );
 
-    const schedule = job.schedule as Record<string, unknown>;
+    const schedule = job.schedule as Record<string, any>;
     expect(result.mutated).toBe(true);
     expect(result.issues.invalidSchedule).toBeUndefined();
     expect(schedule.at).toBe(at);
@@ -525,7 +525,7 @@ describe("normalizeStoredCronJobs", () => {
       }),
     );
 
-    const schedule = job.schedule as Record<string, unknown>;
+    const schedule = job.schedule as Record<string, any>;
     expect(schedule.kind).toBe("every");
     expect(schedule.anchorMs).toBe(createdAtMs);
   });
@@ -539,7 +539,7 @@ describe("normalizeStoredCronJobs", () => {
       }),
     );
 
-    const schedule = job.schedule as Record<string, unknown>;
+    const schedule = job.schedule as Record<string, any>;
     expect(schedule.kind).toBe("cron");
     expect(schedule.staggerMs).toBe(DEFAULT_TOP_OF_HOUR_STAGGER_MS);
   });
@@ -553,7 +553,7 @@ describe("normalizeStoredCronJobs", () => {
       }),
     );
 
-    const schedule = job.schedule as Record<string, unknown>;
+    const schedule = job.schedule as Record<string, any>;
     expect(schedule.kind).toBe("cron");
     expect(schedule.staggerMs).toBe(DEFAULT_TOP_OF_HOUR_STAGGER_MS);
   });
@@ -572,7 +572,7 @@ describe("normalizeStoredCronJobs", () => {
       }),
     );
 
-    const schedule = job.schedule as Record<string, unknown>;
+    const schedule = job.schedule as Record<string, any>;
     expect(schedule.kind).toBe("cron");
     expect(schedule.staggerMs).toBeUndefined();
   });
@@ -591,7 +591,7 @@ describe("normalizeStoredCronJobs", () => {
     });
 
     expect(result.mutated).toBe(true);
-    const schedule = job.schedule as Record<string, unknown>;
+    const schedule = job.schedule as Record<string, any>;
     expect(schedule.kind).toBe("cron");
     expect(schedule.expr).toBe("0 */2 * * *");
     expect(job.sessionTarget).toBe("main");

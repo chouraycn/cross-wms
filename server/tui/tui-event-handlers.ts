@@ -14,10 +14,10 @@ import type {
 } from "./tui-types.js";
 
 type EventHandlerChatLog = {
-  startTool: (toolCallId: string, toolName: string, args: unknown) => void;
+  startTool: (toolCallId: string, toolName: string, args: any) => void;
   updateToolResult: (
     toolCallId: string,
-    result: unknown,
+    result: any,
     options?: { partial?: boolean; isError?: boolean },
   ) => void;
   addSystem: (text: string) => void;
@@ -248,7 +248,7 @@ export function createEventHandlers(context: EventHandlerContext) {
   };
 
   const parseProviderModelRef = (
-    modelRef: unknown,
+    modelRef: any,
   ): { provider: string; model: string } | undefined => {
     if (typeof modelRef !== "string") {
       return undefined;
@@ -504,11 +504,11 @@ export function createEventHandlers(context: EventHandlerContext) {
     void loadHistory?.();
   };
 
-  const messageHasDisplayableNonTextContent = (message: unknown): boolean => {
+  const messageHasDisplayableNonTextContent = (message: any): boolean => {
     if (!message || typeof message !== "object") {
       return false;
     }
-    const record = message as Record<string, unknown>;
+    const record = message as Record<string, any>;
     if (typeof record.mediaUrl === "string" && record.mediaUrl.trim()) {
       return true;
     }
@@ -525,7 +525,7 @@ export function createEventHandlers(context: EventHandlerContext) {
       if (!block || typeof block !== "object") {
         return false;
       }
-      const type = (block as Record<string, unknown>).type;
+      const type = (block as Record<string, any>).type;
       return typeof type === "string" && type !== "text" && type !== "thinking";
     });
   };
@@ -582,7 +582,7 @@ export function createEventHandlers(context: EventHandlerContext) {
     return selectedAgentId === defaultAgentId;
   };
 
-  const handleChatEvent = (payload: unknown) => {
+  const handleChatEvent = (payload: any) => {
     if (!payload || typeof payload !== "object") {
       return;
     }
@@ -681,8 +681,8 @@ export function createEventHandlers(context: EventHandlerContext) {
       }
       const stopReason =
         evt.message && typeof evt.message === "object" && !Array.isArray(evt.message)
-          ? typeof (evt.message as Record<string, unknown>).stopReason === "string"
-            ? ((evt.message as Record<string, unknown>).stopReason as string)
+          ? typeof (evt.message as Record<string, any>).stopReason === "string"
+            ? ((evt.message as Record<string, any>).stopReason as string)
             : ""
           : "";
 
@@ -731,7 +731,7 @@ export function createEventHandlers(context: EventHandlerContext) {
     tui.requestRender();
   };
 
-  const handleSessionsChangedEvent = (payload: unknown) => {
+  const handleSessionsChangedEvent = (payload: any) => {
     if (!payload || typeof payload !== "object") {
       return;
     }
@@ -765,7 +765,7 @@ export function createEventHandlers(context: EventHandlerContext) {
     tui.requestRender();
   };
 
-  const handleAgentEvent = (payload: unknown) => {
+  const handleAgentEvent = (payload: any) => {
     if (!payload || typeof payload !== "object") {
       return;
     }
@@ -922,7 +922,7 @@ export function createEventHandlers(context: EventHandlerContext) {
     }
   };
 
-  const handleBtwEvent = (payload: unknown) => {
+  const handleBtwEvent = (payload: any) => {
     if (!payload || typeof payload !== "object") {
       return;
     }

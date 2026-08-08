@@ -26,7 +26,7 @@ export function listPartners(
 ): { items: PartnerRow[]; total: number } {
   const db = initDb();
   const conditions: string[] = [];
-  const params: unknown[] = [];
+  const params: any[] = [];
 
   if (type) {
     conditions.push('type = ?');
@@ -66,7 +66,7 @@ export function getAllPartnersByType(
 ): Array<{ id: string; name: string; type: string }> {
   const db = initDb();
   let sql = 'SELECT id, name, type FROM partners';
-  const params: unknown[] = [];
+  const params: any[] = [];
   if (type) {
     sql += ' WHERE type = ?';
     params.push(type);

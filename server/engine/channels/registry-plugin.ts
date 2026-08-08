@@ -8,6 +8,6 @@ export type PluginContractRegistryShardRef = {
 };
 
 /** Gets the plugin contract registry shard refs. */
-export function getPluginContractRegistryShardRefs(_params?: unknown): PluginContractRegistryShardRef[] {
+export function getPluginContractRegistryShardRefs(_params?: any): PluginContractRegistryShardRef[] {
   return [];
 }

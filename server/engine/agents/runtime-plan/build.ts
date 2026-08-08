@@ -44,7 +44,7 @@ function formatResolvedRef(params: { provider: string; modelId: string }): strin
   return `${params.provider}/${params.modelId}`;
 }
 
-function asOpenClawConfig(value: unknown): OpenClawConfig | undefined {
+function asOpenClawConfig(value: any): OpenClawConfig | undefined {
   return value !== null && typeof value === "object" && !Array.isArray(value)
     ? (value as OpenClawConfig)
     : undefined;
@@ -298,7 +298,7 @@ export function buildAgentRuntimePlan(params: BuildAgentRuntimePlanParams): Agen
       preparedPlanning: {
         loadMetadataSnapshot: loadToolPlanningMetadataSnapshot,
       },
-      normalize<TSchemaType extends TSchema = TSchema, TResult = unknown>(
+      normalize<TSchemaType extends TSchema = TSchema, TResult = any>(
         tools: AgentTool<TSchemaType, TResult>[],
         overrides?: {
           workspaceDir?: string;

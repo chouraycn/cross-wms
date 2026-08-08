@@ -51,7 +51,7 @@ vi.mock("./install.runtime.js", async () => {
     await vi.importActual<typeof import("./install.runtime.js")>("./install.runtime.js");
   return {
     ...actual,
-    resolveCompatibilityHostVersion: (...args: unknown[]) =>
+    resolveCompatibilityHostVersion: (...args: any[]) =>
       resolveCompatibilityHostVersionMock(...args),
     scanBundleInstallSource: (
       ...args: Parameters<typeof installSecurityScan.scanBundleInstallSource>
@@ -99,7 +99,7 @@ const DYNAMIC_ARCHIVE_TEMPLATE_PRESETS = [
       name: "@evil/..",
       version: "0.0.1",
       openclaw: { extensions: ["./dist/index.js"] },
-    } as Record<string, unknown>,
+    } as Record<string, any>,
   },
   {
     outName: "reserved.tgz",
@@ -108,7 +108,7 @@ const DYNAMIC_ARCHIVE_TEMPLATE_PRESETS = [
       name: "@evil/.",
       version: "0.0.1",
       openclaw: { extensions: ["./dist/index.js"] },
-    } as Record<string, unknown>,
+    } as Record<string, any>,
   },
   {
     outName: "bad.tgz",
@@ -116,7 +116,7 @@ const DYNAMIC_ARCHIVE_TEMPLATE_PRESETS = [
     packageJson: {
       name: "@openclaw/nope",
       version: "0.0.1",
-    } as Record<string, unknown>,
+    } as Record<string, any>,
   },
   {
     outName: "archive-with-deps.tgz",
@@ -126,7 +126,7 @@ const DYNAMIC_ARCHIVE_TEMPLATE_PRESETS = [
       version: "0.0.1",
       openclaw: { extensions: ["./dist/index.js"] },
       dependencies: { "left-pad": "1.3.0" },
-    } as Record<string, unknown>,
+    } as Record<string, any>,
   },
   {
     outName: "voice-call-0.0.1.tgz",
@@ -135,7 +135,7 @@ const DYNAMIC_ARCHIVE_TEMPLATE_PRESETS = [
       name: "@openclaw/voice-call",
       version: "0.0.1",
       openclaw: { extensions: ["./dist/index.js"] },
-    } as Record<string, unknown>,
+    } as Record<string, any>,
   },
   {
     outName: "voice-call-0.0.2.tgz",
@@ -144,7 +144,7 @@ const DYNAMIC_ARCHIVE_TEMPLATE_PRESETS = [
       name: "@openclaw/voice-call",
       version: "0.0.2",
       openclaw: { extensions: ["./dist/index.js"] },
-    } as Record<string, unknown>,
+    } as Record<string, any>,
   },
 ];
 
@@ -534,7 +534,7 @@ function setupManifestInstallFixture(params: { manifestId: string; packageName?:
 function setPluginMinHostVersion(pluginDir: string, minHostVersion: string) {
   const packageJsonPath = path.join(pluginDir, "package.json");
   const manifest = JSON.parse(fs.readFileSync(packageJsonPath, "utf-8")) as {
-    openclaw?: { install?: Record<string, unknown> };
+    openclaw?: { install?: Record<string, any> };
   };
   manifest.openclaw = {
     ...manifest.openclaw,
@@ -546,10 +546,10 @@ function setPluginMinHostVersion(pluginDir: string, minHostVersion: string) {
   fs.writeFileSync(packageJsonPath, JSON.stringify(manifest), "utf-8");
 }
 
-function setPluginPackageCompatibility(pluginDir: string, pluginApiRange: unknown) {
+function setPluginPackageCompatibility(pluginDir: string, pluginApiRange: any) {
   const packageJsonPath = path.join(pluginDir, "package.json");
   const manifest = JSON.parse(fs.readFileSync(packageJsonPath, "utf-8")) as {
-    openclaw?: { compat?: Record<string, unknown> };
+    openclaw?: { compat?: Record<string, any> };
   };
   manifest.openclaw = {
     ...manifest.openclaw,
@@ -586,24 +586,24 @@ function expectWarningExcludes(warnings: readonly string[], fragment: string) {
   expect(warnings.join("\n")).not.toContain(fragment);
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error(`expected ${label} to be an object`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function firstMockCall(mock: { mock: { calls: unknown[][] } }): unknown[] | undefined {
+function firstMockCall(mock: { mock: { calls: any[][] } }): any[] | undefined {
   return mock.mock.calls[0];
 }
 
-function requireHookPayload(handler: ReturnType<typeof vi.fn>): Record<string, unknown> {
+function requireHookPayload(handler: ReturnType<typeof vi.fn>): Record<string, any> {
   const payload = firstMockCall(handler)?.[0];
   return requireRecord(payload, "before_install hook payload");
 }
 
 function expectHookRequest(
-  payload: Record<string, unknown>,
+  payload: Record<string, any>,
   expected: { kind: string; mode: string },
 ) {
   const request = requireRecord(payload.request, "before_install hook request");
@@ -665,7 +665,7 @@ async function expectArchiveInstallReservedSegmentRejection(params: {
 }
 
 async function installArchivePackageAndReturnResult(params: {
-  packageJson: Record<string, unknown>;
+  packageJson: Record<string, any>;
   outName: string;
   withDistIndex?: boolean;
   flatRoot?: boolean;
@@ -691,7 +691,7 @@ async function installArchivePackageAndReturnResult(params: {
 }
 
 function buildDynamicArchiveTemplateKey(params: {
-  packageJson: Record<string, unknown>;
+  packageJson: Record<string, any>;
   withDistIndex: boolean;
   distIndexJsContent?: string;
   flatRoot: boolean;
@@ -709,7 +709,7 @@ function buildDynamicArchiveTemplateKey(params: {
 }
 
 async function ensureDynamicArchiveTemplate(params: {
-  packageJson: Record<string, unknown>;
+  packageJson: Record<string, any>;
   outName: string;
   withDistIndex: boolean;
   distIndexJsContent?: string;
@@ -3784,7 +3784,7 @@ describe("installPluginFromDir", () => {
     const { pluginDir, extensionsDir } = setupInstallPluginFromDirFixture();
     const packageJsonPath = path.join(pluginDir, "package.json");
     const manifest = JSON.parse(fs.readFileSync(packageJsonPath, "utf-8")) as {
-      openclaw?: Record<string, unknown>;
+      openclaw?: Record<string, any>;
     };
     manifest.openclaw = {
       ...manifest.openclaw,

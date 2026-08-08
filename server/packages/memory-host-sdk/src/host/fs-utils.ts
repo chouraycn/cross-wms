@@ -21,7 +21,7 @@ if (!hasPythonModeOverride) {
 
 /** True for missing-file errors emitted by Node or fs-safe. */
 export function isFileMissingError(
-  err: unknown,
+  err: any,
 ): err is NodeJS.ErrnoException & { code: "ENOENT" | "ENOTDIR" | "not-found" } {
   return Boolean(
     err &&
@@ -29,6 +29,6 @@ export function isFileMissingError(
     "code" in err &&
     ((err as Partial<NodeJS.ErrnoException>).code === "ENOENT" ||
       (err as Partial<NodeJS.ErrnoException>).code === "ENOTDIR" ||
-      (err as { code?: unknown }).code === "not-found"),
+      (err as { code?: any }).code === "not-found"),
   );
 }

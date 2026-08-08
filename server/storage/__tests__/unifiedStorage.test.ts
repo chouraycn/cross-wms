@@ -146,7 +146,7 @@ describe('UnifiedStorage — query with filter', () => {
 describe('UnifiedStorage — nextId', () => {
   it('returns monotonically increasing ids', () => {
     const storage = createMemoryStorage();
-    const seq = storage.getCollection<Record<string, unknown>>('seq');
+    const seq = storage.getCollection<Record<string, any>>('seq');
     expect(seq.nextId()).toBe(1);
     expect(seq.nextId()).toBe(2);
     expect(seq.nextId()).toBe(3);
@@ -154,8 +154,8 @@ describe('UnifiedStorage — nextId', () => {
 
   it('isolates id sequences per collection', () => {
     const storage = createMemoryStorage();
-    const a = storage.getCollection<Record<string, unknown>>('a');
-    const b = storage.getCollection<Record<string, unknown>>('b');
+    const a = storage.getCollection<Record<string, any>>('a');
+    const b = storage.getCollection<Record<string, any>>('b');
     a.nextId();
     a.nextId();
     expect(b.nextId()).toBe(1);
@@ -243,7 +243,7 @@ describe('UnifiedStorage — getBackend', () => {
 
   it('respects collectionBackends config', () => {
     const doc = new MemoryDocumentStorage();
-    const mockSql: unknown = {
+    const mockSql: any = {
       isConnected: () => true,
       all: () => [],
       get: () => undefined,
@@ -287,7 +287,7 @@ describe('createUnifiedStorage factory', () => {
 
   it('creates hybrid storage when both backends provided', () => {
     const doc = new MemoryDocumentStorage();
-    const mockSql: unknown = {
+    const mockSql: any = {
       connect: () => Promise.resolve(),
       disconnect: () => Promise.resolve(),
       isConnected: () => true,

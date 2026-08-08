@@ -6,9 +6,9 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function writeFakeClaudeLiveCli(..._args: unknown[]): unknown {
+export function writeFakeClaudeLiveCli(..._args: any[]): any {
   return undefined;
 }
-export function writeFakeClaudeCli(..._args: unknown[]): unknown {
+export function writeFakeClaudeCli(..._args: any[]): any {
   return undefined;
 }

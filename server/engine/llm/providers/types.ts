@@ -55,15 +55,15 @@ export type ProviderHeaderBuilder = (ctx: ProviderRequestContext) => Record<stri
 export type ProviderRequestBodyBuilder = (ctx: ProviderRequestContext) => unknown;
 
 /** 流式 chunk 解析器：输入原始 chunk 数据，返回标准化的 StreamEvent 列表。 */
-export type ProviderStreamChunkParser = (chunk: unknown) => StreamEvent[];
+export type ProviderStreamChunkParser = (chunk: any) => StreamEvent[];
 
 /** Usage 解析器：从原始响应中提取 token 计数。 */
 export type ProviderUsageParser = (
-  data: unknown,
+  data: any,
 ) => { input: number; output: number; cacheRead: number; cacheWrite: number };
 
 /** 完成（finish_reason / stop_reason）映射器。 */
-export type ProviderFinishReasonMapper = (reason: unknown) => 'stop' | 'length' | 'tool_call' | 'error' | 'unknown';
+export type ProviderFinishReasonMapper = (reason: any) => 'stop' | 'length' | 'tool_call' | 'error' | 'unknown';
 
 /** Provider 抽象描述，将元数据与各纯函数聚合。 */
 export type Provider = {

@@ -26,14 +26,14 @@ function resolveGlobalSingleton<T>(
   factory: () => T,
 ): T {
   const store = globalThis as GlobalRegistryWorkspaceState & {
-    [k: symbol]: unknown;
+    [k: symbol]: any;
   };
-  const existing = (store as Record<symbol, unknown>)[key];
+  const existing = (store as Record<symbol, any>)[key];
   if (existing) {
     return existing as T;
   }
   const value = factory();
-  (store as Record<symbol, unknown>)[key] = value;
+  (store as Record<symbol, any>)[key] = value;
   return value;
 }
 

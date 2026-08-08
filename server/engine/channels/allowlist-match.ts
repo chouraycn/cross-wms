@@ -27,7 +27,7 @@ export interface AllowlistEntry {
   type: AllowlistEntryType;
   value: string;
   label?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface ChannelAllowlist {

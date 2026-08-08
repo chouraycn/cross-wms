@@ -43,11 +43,11 @@ function readModelPricingHealth(params: {
   if (!probeHealth || typeof probeHealth !== "object") {
     return undefined;
   }
-  const modelPricing = (probeHealth as { modelPricing?: unknown }).modelPricing;
+  const modelPricing = (probeHealth as { modelPricing?: any }).modelPricing;
   if (!modelPricing || typeof modelPricing !== "object") {
     return undefined;
   }
-  const state = (modelPricing as { state?: unknown }).state;
+  const state = (modelPricing as { state?: any }).state;
   if (state !== "ok" && state !== "degraded" && state !== "disabled") {
     return undefined;
   }

@@ -23,7 +23,7 @@ export const OPENAI_PROVIDER_ID = "openai";
 export const OPENAI_CODEX_PROVIDER_ID = OPENAI_PROVIDER_ID;
 
 // OpenAI 仅对官方 API 端点默认使用 Codex runtime。自定义 baseUrl 保留其已配置的 provider 行为。
-function isOfficialOpenAIBaseUrl(baseUrl: unknown): boolean {
+function isOfficialOpenAIBaseUrl(baseUrl: any): boolean {
   if (typeof baseUrl !== "string" || !baseUrl.trim()) {
     return true;
   }
@@ -46,7 +46,7 @@ function resolveOpenAIProviderConfig(config: OpenClawConfig | undefined) {
   if (!config || typeof config !== "object") {
     return undefined;
   }
-  const providers = (config as { models?: { providers?: Record<string, unknown> } }).models
+  const providers = (config as { models?: { providers?: Record<string, any> } }).models
     ?.providers;
   if (!providers) {
     return undefined;
@@ -65,7 +65,7 @@ function resolveOpenAIProviderConfig(config: OpenClawConfig | undefined) {
 
 function openAIProviderUsesCustomBaseUrl(config: OpenClawConfig | undefined): boolean {
   const providerConfig = resolveOpenAIProviderConfig(config);
-  const baseUrl = (providerConfig as { baseUrl?: unknown } | undefined)?.baseUrl;
+  const baseUrl = (providerConfig as { baseUrl?: any } | undefined)?.baseUrl;
   return !isOfficialOpenAIBaseUrl(baseUrl);
 }
 
@@ -84,7 +84,7 @@ export function openAIProviderUsesCodexRuntimeByDefault(params: {
 }
 
 /** 从 provider/model ref 解析 provider 部分。 */
-export function parseModelRefProvider(value: unknown): string | undefined {
+export function parseModelRefProvider(value: any): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }

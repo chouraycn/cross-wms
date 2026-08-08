@@ -10,7 +10,7 @@ import { booleanToInteger, integerToBoolean } from "./scalar-codec.js";
 /**
  * 将 cron 投递配置编码为扁平对象
  */
-export function encodeDelivery(delivery: CronDelivery | undefined): Record<string, unknown> {
+export function encodeDelivery(delivery: CronDelivery | undefined): Record<string, any> {
   const failureDestination = delivery?.failureDestination;
   return {
     delivery_mode: delivery?.mode ?? null,
@@ -45,14 +45,14 @@ function readFailureDestinationField(value: string | null): string | undefined {
   return value === "" || value == null ? undefined : value;
 }
 
-function cronDeliveryModeFromValue(value: unknown): CronDelivery["mode"] | undefined {
+function cronDeliveryModeFromValue(value: any): CronDelivery["mode"] | undefined {
   return value === "none" || value === "announce" || value === "webhook" ? value : undefined;
 }
 
 /**
  * 从扁平记录重建投递配置，保留旧的部分行
  */
-export function decodeDelivery(row: Record<string, unknown>): CronDelivery | undefined {
+export function decodeDelivery(row: Record<string, any>): CronDelivery | undefined {
   const rowMode = cronDeliveryModeFromValue(row.delivery_mode ?? row.mode);
   const hasDeliveryColumns =
     Boolean(

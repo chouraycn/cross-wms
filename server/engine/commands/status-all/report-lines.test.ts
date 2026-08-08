@@ -77,7 +77,7 @@ describe("buildStatusAllReportLines", () => {
     expect(output).toContain("ABSENT");
     expect(diagnosisSpy).toHaveBeenCalledOnce();
     const [diagnosisOptions] = diagnosisSpy.mock.calls[0] as unknown as [
-      { secretDiagnostics?: unknown[] },
+      { secretDiagnostics?: any[] },
     ];
     expect(diagnosisOptions?.secretDiagnostics).toEqual([]);
   });

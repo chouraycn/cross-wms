@@ -18,13 +18,13 @@ export interface DurableMessage {
   lastAttemptedAt?: number;
   error?: string;
   receipt?: MessageReceipt;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface MessageReceipt {
   messageId: string;
   deliveredAt?: number;
-  channelData?: Record<string, unknown>;
+  channelData?: Record<string, any>;
 }
 
 export interface DurableMessageStore {
@@ -82,7 +82,7 @@ export class DurableMessageManager {
     to: string;
     content: string;
     strategy: DeliveryStrategy;
-    metadata?: Record<string, unknown>;
+    metadata?: Record<string, any>;
   }): Promise<DurableMessage> {
     const message: DurableMessage = {
       id: this.generateId(),

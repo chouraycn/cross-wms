@@ -78,7 +78,7 @@ describe("createDefaultDeps", () => {
     expect(runtimeFactories.signal).not.toHaveBeenCalled();
     expect(runtimeFactories.imessage).not.toHaveBeenCalled();
 
-    const sendTelegram = deps.telegram as (...args: unknown[]) => Promise<unknown>;
+    const sendTelegram = deps.telegram as (...args: any[]) => Promise<any>;
     await sendTelegram("chat", "hello", { verbose: false });
 
     expect(runtimeFactories.telegram).toHaveBeenCalledTimes(1);
@@ -98,7 +98,7 @@ describe("createDefaultDeps", () => {
   it("reuses cached runtime send surfaces after first lazy load", async () => {
     const createDefaultDeps = await loadCreateDefaultDeps("module-cache");
     const deps = createDefaultDeps();
-    const sendDiscord = deps.discord as (...args: unknown[]) => Promise<unknown>;
+    const sendDiscord = deps.discord as (...args: any[]) => Promise<any>;
 
     await sendDiscord("channel", "first", { verbose: false });
     await sendDiscord("channel", "second", { verbose: false });

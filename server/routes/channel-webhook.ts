@@ -166,7 +166,7 @@ router.post('/dingtalk', (req: Request, res: Response) => {
       token: process.env.DINGTALK_TOKEN,
     };
 
-    const body = (req.body ?? {}) as Record<string, unknown>;
+    const body = (req.body ?? {}) as Record<string, any>;
     const originalMsg = body.msg;
 
     const result: DingTalkWebhookResult = parseDingTalkWebhook(body, account, {

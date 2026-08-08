@@ -38,7 +38,7 @@ let buildProviderRegistry: typeof import("./runner.js").buildProviderRegistry;
 let clearMediaUnderstandingBinaryCacheForTests: typeof import("./runner.js").clearMediaUnderstandingBinaryCacheForTests;
 let runCapability: typeof import("./runner.js").runCapability;
 
-function createOpenAiAudioCfg(providerOverrides: Record<string, unknown> = {}): OpenClawConfig {
+function createOpenAiAudioCfg(providerOverrides: Record<string, any> = {}): OpenClawConfig {
   return {
     models: {
       providers: {

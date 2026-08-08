@@ -63,42 +63,42 @@ const HISTORY_MAX = 50;
 
 /** 合成请求体（前端 POST /api/tts/synthesize）。 */
 interface SynthesizeRequestBody {
-  text?: unknown;
-  provider?: unknown;
-  voice?: unknown;
-  language?: unknown;
-  format?: unknown;
-  speed?: unknown;
-  pitch?: unknown;
-  volume?: unknown;
-  sampleRate?: unknown;
-  ssml?: unknown;
+  text?: any;
+  provider?: any;
+  voice?: any;
+  language?: any;
+  format?: any;
+  speed?: any;
+  pitch?: any;
+  volume?: any;
+  sampleRate?: any;
+  ssml?: any;
   /** 凭证/端点覆盖（可选，默认走环境变量）。 */
-  apiKey?: unknown;
-  apiEndpoint?: unknown;
-  region?: unknown;
-  modelId?: unknown;
-  appId?: unknown;
-  token?: unknown;
+  apiKey?: any;
+  apiEndpoint?: any;
+  region?: any;
+  modelId?: any;
+  appId?: any;
+  token?: any;
   /** 文本预处理选项（前端预处理开关，后端透传元数据）。 */
-  normalizeNumbers?: unknown;
-  normalizePunctuation?: unknown;
-  fullWidthToHalf?: unknown;
+  normalizeNumbers?: any;
+  normalizePunctuation?: any;
+  fullWidthToHalf?: any;
 }
 
-function toNumber(value: unknown, fallback?: number): number | undefined {
+function toNumber(value: any, fallback?: number): number | undefined {
   if (value === null || value === undefined) return fallback;
   const n = Number(value);
   return Number.isFinite(n) ? n : fallback;
 }
 
-function toStr(value: unknown, fallback?: string): string | undefined {
+function toStr(value: any, fallback?: string): string | undefined {
   if (value === null || value === undefined) return fallback;
   const s = String(value).trim();
   return s.length > 0 ? s : fallback;
 }
 
-function toBool(value: unknown, fallback = false): boolean {
+function toBool(value: any, fallback = false): boolean {
   if (value === null || value === undefined) return fallback;
   if (typeof value === 'boolean') return value;
   if (typeof value === 'string') return value === 'true' || value === '1';
@@ -306,7 +306,7 @@ router.post('/synthesize', async (req, res) => {
     fs.writeFileSync(filePath, result.audio);
     const audioUrl = `/api/uploads/${savedFileName}`;
 
-    const meta = (result.metadata ?? {}) as Record<string, unknown>;
+    const meta = (result.metadata ?? {}) as Record<string, any>;
     const entry: TTSHistoryEntry = {
       id: fileId,
       text,

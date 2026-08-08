@@ -1,20 +1,20 @@
 export type RuntimeOverride = {
   key: string;
-  value: unknown;
+  value: any;
   source: string;
   timestamp: number;
 };
 
 export type RuntimeOverrideOptions = {
   allowOverride?: boolean;
-  defaultValue?: unknown;
-  validator?: (value: unknown) => boolean;
+  defaultValue?: any;
+  validator?: (value: any) => boolean;
 };
 
 export class RuntimeOverrides {
   private overrides: Map<string, RuntimeOverride> = new Map();
 
-  set(key: string, value: unknown, source: string = "unknown"): void {
+  set(key: string, value: any, source: string = "unknown"): void {
     this.overrides.set(key, {
       key,
       value,
@@ -27,7 +27,7 @@ export class RuntimeOverrides {
     return this.overrides.get(key);
   }
 
-  getValue(key: string): unknown {
+  getValue(key: string): any {
     const override = this.overrides.get(key);
     return override?.value;
   }
@@ -62,8 +62,8 @@ export class RuntimeOverrides {
     }
   }
 
-  toJSON(): Record<string, unknown> {
-    const result: Record<string, unknown> = {};
+  toJSON(): Record<string, any> {
+    const result: Record<string, any> = {};
     for (const [key, override] of this.overrides) {
       result[key] = override.value;
     }
@@ -78,7 +78,7 @@ export function getRuntimeOverride<T = unknown>(key: string, defaultValue?: T): 
   return value !== undefined ? (value as T) : defaultValue as T;
 }
 
-export function setRuntimeOverride(key: string, value: unknown, source: string = "unknown"): void {
+export function setRuntimeOverride(key: string, value: any, source: string = "unknown"): void {
   runtimeOverrides.set(key, value, source);
 }
 

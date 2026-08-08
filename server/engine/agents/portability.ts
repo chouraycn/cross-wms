@@ -8,12 +8,12 @@
 
 export type AuthProfilePortabilityReason = unknown;
 export type AuthProfilePortability = unknown;
-export function resolveAuthProfilePortability(..._args: unknown[]): unknown {
+export function resolveAuthProfilePortability(..._args: any[]): any {
   return undefined;
 }
-export function isAuthProfileCredentialPortableForAgentCopy(..._args: unknown[]): unknown {
+export function isAuthProfileCredentialPortableForAgentCopy(..._args: any[]): any {
   return false;
 }
-export function buildPortableAuthProfileSecretsStoreForAgentCopy(..._args: unknown[]): unknown {
+export function buildPortableAuthProfileSecretsStoreForAgentCopy(..._args: any[]): any {
   return undefined;
 }

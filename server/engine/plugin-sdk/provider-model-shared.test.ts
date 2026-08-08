@@ -16,23 +16,23 @@ import {
   supportsClaudeNativeXhighEffort,
 } from "./provider-model-shared.js";
 
-function expectFields(value: unknown, expected: Record<string, unknown>): void {
+function expectFields(value: any, expected: Record<string, any>): void {
   if (!value || typeof value !== "object") {
     throw new Error("expected fields object");
   }
-  const record = value as Record<string, unknown>;
+  const record = value as Record<string, any>;
   for (const [key, expectedValue] of Object.entries(expected)) {
     expect(record[key], key).toEqual(expectedValue);
   }
 }
 
-function readLevelIds(profile: unknown): string[] {
-  const levels = (profile as { levels?: Array<{ id?: unknown }> } | undefined)?.levels;
+function readLevelIds(profile: any): string[] {
+  const levels = (profile as { levels?: Array<{ id?: any }> } | undefined)?.levels;
   expect(Array.isArray(levels)).toBe(true);
   return (levels ?? []).map((level) => String(level.id));
 }
 
-function expectLevelIdsInclude(profile: unknown, expectedIds: readonly string[]): void {
+function expectLevelIdsInclude(profile: any, expectedIds: readonly string[]): void {
   const ids = readLevelIds(profile);
   for (const id of expectedIds) {
     expect(ids.includes(id), `level ${id}`).toBe(true);

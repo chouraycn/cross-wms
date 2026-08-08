@@ -13,7 +13,7 @@
  */
 
 // 内联降级实现：当输入本身就是字符串时返回它，否则返回 undefined。
-function readStringValue(value: unknown): string | undefined {
+function readStringValue(value: any): string | undefined {
   return typeof value === "string" ? value : undefined;
 }
 
@@ -44,7 +44,7 @@ function resolveProviderRequestCapabilities(params: {
   capability?: string;
   transport?: string;
   modelId?: string | undefined;
-  compat?: unknown;
+  compat?: any;
 }): ProviderRequestCapabilities {
   const provider = (readStringValue(params.provider) ?? "").trim().toLowerCase();
   const baseUrl = readStringValue(params.baseUrl)?.trim();
@@ -93,11 +93,11 @@ function resolveProviderRequestCapabilities(params: {
 type OpenAITransportKind = "stream" | "websocket";
 
 type OpenAIStrictToolModel = {
-  provider?: unknown;
-  api?: unknown;
-  baseUrl?: unknown;
-  id?: unknown;
-  compat?: unknown;
+  provider?: any;
+  api?: any;
+  baseUrl?: any;
+  id?: any;
+  compat?: any;
 };
 
 const optionalString = readStringValue;

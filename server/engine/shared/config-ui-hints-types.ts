@@ -9,7 +9,7 @@ export type ConfigUiHint = {
   advanced?: boolean;
   sensitive?: boolean;
   placeholder?: string;
-  itemTemplate?: unknown;
+  itemTemplate?: any;
 };
 
 /** 按点分 config 路径键的 UI 提示，`*` 匹配动态段 */

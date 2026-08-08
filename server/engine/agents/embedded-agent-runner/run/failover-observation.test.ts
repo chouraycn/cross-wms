@@ -28,7 +28,7 @@ function normalizeObservation(
   });
 }
 
-function firstWarnCall(warnSpy: { mock: { calls: unknown[][] } }): unknown[] {
+function firstWarnCall(warnSpy: { mock: { calls: any[][] } }): any[] {
   const call = warnSpy.mock.calls[0];
   if (!call) {
     throw new Error("Expected warning log");
@@ -36,7 +36,7 @@ function firstWarnCall(warnSpy: { mock: { calls: unknown[][] } }): unknown[] {
   return call;
 }
 
-function firstWarnDetails(warnSpy: { mock: { calls: unknown[][] } }): {
+function firstWarnDetails(warnSpy: { mock: { calls: any[][] } }): {
   consoleMessage?: string;
   model?: string;
   provider?: string;

@@ -86,7 +86,7 @@ async function tryCreateLockFile(lockPath: string): Promise<boolean> {
     await handle.writeFile(String(process.pid));
     await handle.close();
     return true;
-  } catch (err: unknown) {
+  } catch (err: any) {
     const code = (err as NodeJS.ErrnoException).code;
     if (code === 'EEXIST') {
       return false;
@@ -115,7 +115,7 @@ async function detectAndCleanStaleLock(
       return true;
     }
     return false;
-  } catch (err: unknown) {
+  } catch (err: any) {
     const code = (err as NodeJS.ErrnoException).code;
     if (code === 'ENOENT') {
       // 锁文件已不存在，视为已可获取

@@ -21,94 +21,94 @@ export type CliBackendLiveEnvSnapshot = unknown;
 
 export type CliBackendLiveProviderSkipDecision = unknown;
 
-export function resolveCliBackendLiveModelSelection(..._args: unknown[]): unknown {
+export function resolveCliBackendLiveModelSelection(..._args: any[]): any {
   return undefined;
 }
 
-export function parseJsonStringArray(..._args: unknown[]): unknown {
+export function parseJsonStringArray(..._args: any[]): any {
   return undefined;
 }
 
-export function parseImageMode(..._args: unknown[]): unknown {
+export function parseImageMode(..._args: any[]): any {
   return undefined;
 }
 
-export function shouldRunCliImageProbe(..._args: unknown[]): unknown {
+export function shouldRunCliImageProbe(..._args: any[]): any {
   return false;
 }
 
-export function shouldRunCliMcpProbe(..._args: unknown[]): unknown {
+export function shouldRunCliMcpProbe(..._args: any[]): any {
   return false;
 }
 
-export function resolveCliBackendLiveArgs(..._args: unknown[]): unknown {
+export function resolveCliBackendLiveArgs(..._args: any[]): any {
   return undefined;
 }
 
-export function resolveCliModelSwitchProbeTarget(..._args: unknown[]): unknown {
+export function resolveCliModelSwitchProbeTarget(..._args: any[]): any {
   return undefined;
 }
 
-export function shouldRunCliModelSwitchProbe(..._args: unknown[]): unknown {
+export function shouldRunCliModelSwitchProbe(..._args: any[]): any {
   return false;
 }
 
-export function shouldAllowCliBackendLiveProviderSkip(..._args: unknown[]): unknown {
+export function shouldAllowCliBackendLiveProviderSkip(..._args: any[]): any {
   return false;
 }
 
-export function resolveCliBackendLiveProviderSkipDecision(..._args: unknown[]): unknown {
+export function resolveCliBackendLiveProviderSkipDecision(..._args: any[]): any {
   return undefined;
 }
 
-export function isCliBackendLiveTimeoutPayload(..._args: unknown[]): unknown {
+export function isCliBackendLiveTimeoutPayload(..._args: any[]): any {
   return false;
 }
 
-export function shouldRetryCliBackendLiveTimeout(..._args: unknown[]): unknown {
+export function shouldRetryCliBackendLiveTimeout(..._args: any[]): any {
   return false;
 }
 
-export function matchesCliBackendReply(..._args: unknown[]): unknown {
+export function matchesCliBackendReply(..._args: any[]): any {
   return undefined;
 }
 
-export function withClaudeMcpConfigOverrides(..._args: unknown[]): unknown {
+export function withClaudeMcpConfigOverrides(..._args: any[]): any {
   return undefined;
 }
 
-export async function getFreeGatewayPort(..._args: unknown[]): Promise<unknown> {
+export async function getFreeGatewayPort(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
 
-export async function createBootstrapWorkspace(..._args: unknown[]): Promise<unknown> {
+export async function createBootstrapWorkspace(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
 
-export function shouldRetryCliCronMcpProbeReply(..._args: unknown[]): unknown {
+export function shouldRetryCliCronMcpProbeReply(..._args: any[]): any {
   return false;
 }
 
-export async function connectTestGatewayClient(..._args: unknown[]): Promise<unknown> {
+export async function connectTestGatewayClient(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
 
-export function snapshotCliBackendLiveEnv(..._args: unknown[]): unknown {
+export function snapshotCliBackendLiveEnv(..._args: any[]): any {
   return undefined;
 }
 
-export function applyCliBackendLiveEnv(..._args: unknown[]): unknown {
+export function applyCliBackendLiveEnv(..._args: any[]): any {
   return undefined;
 }
 
-export function restoreCliBackendLiveEnv(..._args: unknown[]): unknown {
+export function restoreCliBackendLiveEnv(..._args: any[]): any {
   return undefined;
 }
 
-export async function ensurePairedTestGatewayClientIdentity(..._args: unknown[]): Promise<unknown> {
+export async function ensurePairedTestGatewayClientIdentity(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
 
-export const CLI_BACKEND_LIVE_PROVIDER_SKIP_ENV: unknown = undefined;
+export const CLI_BACKEND_LIVE_PROVIDER_SKIP_ENV: any = undefined;
 
-export const CLI_BACKEND_LIVE_ADVISORY_ENV: unknown = undefined;
+export const CLI_BACKEND_LIVE_ADVISORY_ENV: any = undefined;

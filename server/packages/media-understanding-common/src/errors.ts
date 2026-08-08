@@ -21,6 +21,6 @@ export class MediaUnderstandingSkipError extends Error {
 }
 
 /** Narrow unknown errors to media-understanding skip errors. */
-export function isMediaUnderstandingSkipError(err: unknown): err is MediaUnderstandingSkipError {
+export function isMediaUnderstandingSkipError(err: any): err is MediaUnderstandingSkipError {
   return err instanceof MediaUnderstandingSkipError;
 }

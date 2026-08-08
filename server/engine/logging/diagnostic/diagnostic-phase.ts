@@ -6,7 +6,7 @@ export type DiagnosticPhase = {
   durationMs?: number;
   completed: boolean;
   error?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 type DiagnosticPhaseStack = {
@@ -18,7 +18,7 @@ const phaseStack: DiagnosticPhaseStack = {
   phases: [],
 };
 
-export function startDiagnosticPhase(name: string, metadata?: Record<string, unknown>): void {
+export function startDiagnosticPhase(name: string, metadata?: Record<string, any>): void {
   const phase: DiagnosticPhase = {
     name,
     startedAt: Date.now(),

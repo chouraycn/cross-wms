@@ -13,7 +13,7 @@ import { randomUUID } from 'node:crypto';
 import { logger } from '../../logger.js';
 
 /** BTW 消息附带的上下文信息（任意键值对，用于溯源或元数据记录）。 */
-export type BtwContext = Record<string, unknown>;
+export type BtwContext = Record<string, any>;
 
 /** "by the way" 附带消息。 */
 export interface BtwMessage {
@@ -68,7 +68,7 @@ export function formatBtwMessage(msg: BtwMessage): string {
 }
 
 /** 将上下文值格式化为字符串，对象/数组使用 JSON 序列化。 */
-function formatContextValue(value: unknown): string {
+function formatContextValue(value: any): string {
   if (value === null) {
     return 'null';
   }

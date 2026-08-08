@@ -111,7 +111,7 @@ export async function searchMarketplace(params: MarketplaceQueryParams): Promise
   } = params;
 
   let query = 'SELECT * FROM marketplace_skills WHERE 1=1';
-  const paramsArray: unknown[] = [];
+  const paramsArray: any[] = [];
 
   if (category) {
     query += ' AND category = ?';
@@ -395,7 +395,7 @@ export async function updateSkillInMarketplace(skillId: string, updates: Partial
 
   const now = new Date().toISOString();
   const updateFields: string[] = [];
-  const updateParams: unknown[] = [];
+  const updateParams: any[] = [];
 
   if (updates.name !== undefined) { updateFields.push('name = ?'); updateParams.push(updates.name); }
   if (updates.desc !== undefined) { updateFields.push('"desc" = ?'); updateParams.push(updates.desc); }

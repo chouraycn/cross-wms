@@ -9,24 +9,24 @@
 export type MediaGenerationTaskHandle = unknown;
 export type MediaGenerateBackgroundScheduler = unknown;
 export type MediaGenerateAsyncStartCallback = unknown;
-export function shouldDetachMediaGenerationTask(..._args: unknown[]): unknown {
+export function shouldDetachMediaGenerationTask(..._args: any[]): any {
   return false;
 }
-export function withMediaGenerationTaskKeepalive(..._args: unknown[]): unknown {
+export function withMediaGenerationTaskKeepalive(..._args: any[]): any {
   return undefined;
 }
-export function createDefaultMediaGenerateBackgroundScheduler(..._args: unknown[]): unknown {
+export function createDefaultMediaGenerateBackgroundScheduler(..._args: any[]): any {
   return undefined;
 }
-export function buildMediaGenerationStartedToolResult(..._args: unknown[]): unknown {
+export function buildMediaGenerationStartedToolResult(..._args: any[]): any {
   return undefined;
 }
-export function notifyMediaGenerationAsyncTaskStarted(..._args: unknown[]): unknown {
+export function notifyMediaGenerationAsyncTaskStarted(..._args: any[]): any {
   return undefined;
 }
-export function scheduleMediaGenerationTaskCompletion(..._args: unknown[]): unknown {
+export function scheduleMediaGenerationTaskCompletion(..._args: any[]): any {
   return undefined;
 }
-export function createMediaGenerationTaskLifecycle(..._args: unknown[]): unknown {
+export function createMediaGenerationTaskLifecycle(..._args: any[]): any {
   return undefined;
 }

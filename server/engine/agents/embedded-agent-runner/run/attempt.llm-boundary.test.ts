@@ -36,7 +36,7 @@ describe("normalizeMessagesForLlmBoundary", () => {
 
     const output = normalizeMessagesForLlmBoundary(
       input as Parameters<typeof normalizeMessagesForLlmBoundary>[0],
-    ) as unknown as Array<{ content?: unknown }>;
+    ) as unknown as Array<{ content?: any }>;
 
     // Historical single-text-block messages are form-canonicalized to a plain
     // string after metadata stripping (cache-bust fix — issue #3658).
@@ -187,7 +187,7 @@ describe("normalizeMessagesForLlmBoundary", () => {
     const output = normalizeMessagesForLlmBoundary(
       input as Parameters<typeof normalizeMessagesForLlmBoundary>[0],
       { timezone: "UTC", includeTimestamp: false },
-    ) as unknown as Array<Record<string, unknown>>;
+    ) as unknown as Array<Record<string, any>>;
 
     expect(output[0]?.content).toBe("Stored ask with index metadata");
     expect(output[0]?.["__openclaw"]).toEqual({
@@ -370,7 +370,7 @@ describe("normalizeMessagesForLlmBoundary", () => {
 
     const output = normalizeMessagesForLlmBoundary(
       input as Parameters<typeof normalizeMessagesForLlmBoundary>[0],
-    ) as unknown as Array<{ content?: unknown }>;
+    ) as unknown as Array<{ content?: any }>;
 
     // Historical: form-canonicalized to plain string after metadata strip.
     expect(output[0]?.content).toBe("Old ask");
@@ -408,7 +408,7 @@ describe("normalizeMessagesForLlmBoundary", () => {
 
     const output = normalizeMessagesForLlmBoundary(
       input as Parameters<typeof normalizeMessagesForLlmBoundary>[0],
-    ) as unknown as Array<{ content?: unknown }>;
+    ) as unknown as Array<{ content?: any }>;
 
     // Current turn (only user message): form-canonicalized to plain string;
     // metadata blocks preserved for the LLM.
@@ -435,7 +435,7 @@ describe("normalizeMessagesForLlmBoundary", () => {
 
     const output = normalizeMessagesForLlmBoundary(
       input as Parameters<typeof normalizeMessagesForLlmBoundary>[0],
-    ) as unknown as Array<Record<string, unknown>>;
+    ) as unknown as Array<Record<string, any>>;
 
     expect(output[0]).not.toHaveProperty("details");
     expect(output[0]?.content).toEqual([{ type: "text", text: "visible output" }]);
@@ -466,7 +466,7 @@ describe("normalizeMessagesForLlmBoundary", () => {
 
     const output = normalizeMessagesForLlmBoundary(
       input as Parameters<typeof normalizeMessagesForLlmBoundary>[0],
-    ) as unknown as Array<{ content?: unknown }>;
+    ) as unknown as Array<{ content?: any }>;
 
     expect(output[0]?.content).toBe("old ask");
     expect(output[2]?.content).toBe("current ask");
@@ -497,7 +497,7 @@ describe("normalizeMessagesForLlmBoundary", () => {
 
     const output = normalizeMessagesForLlmBoundary(
       input as Parameters<typeof normalizeMessagesForLlmBoundary>[0],
-    ) as unknown as Array<{ content?: unknown }>;
+    ) as unknown as Array<{ content?: any }>;
 
     // Multi-block historical stays as array.
     expect(Array.isArray(output[0]?.content)).toBe(true);
@@ -549,7 +549,7 @@ describe("normalizeMessagesForLlmBoundary", () => {
 
     const output = normalizeMessagesForLlmBoundary(
       input as Parameters<typeof normalizeMessagesForLlmBoundary>[0],
-    ) as unknown as Array<Record<string, unknown>>;
+    ) as unknown as Array<Record<string, any>>;
 
     expect(output).toHaveLength(5);
     expect(output.some((item) => item.content === "current secret runtime context")).toBe(true);
@@ -595,7 +595,7 @@ describe("normalizeMessagesForLlmBoundary", () => {
       messages: rebuiltAfterOverflow as Parameters<typeof normalizeMessagesForLlmBoundary>[0],
     });
     const retryInput = normalizeMessagesForLlmBoundary(retryMessages) as unknown as Array<
-      Record<string, unknown>
+      Record<string, any>
     >;
 
     expect(retryInput.map((message) => message.role)).toEqual([
@@ -641,7 +641,7 @@ describe("normalizeMessagesForLlmBoundary", () => {
 
     const modelInput = normalizeMessagesForLlmBoundary(
       promptInput as Parameters<typeof normalizeMessagesForLlmBoundary>[0],
-    ) as unknown as Array<Record<string, unknown>>;
+    ) as unknown as Array<Record<string, any>>;
 
     expect(modelInput.map((message) => message.role)).toEqual([
       "user",
@@ -682,7 +682,7 @@ describe("normalizeMessagesForLlmBoundary", () => {
 
     const output = normalizeMessagesForLlmBoundary(
       input as Parameters<typeof normalizeMessagesForLlmBoundary>[0],
-    ) as unknown as Array<Record<string, unknown>>;
+    ) as unknown as Array<Record<string, any>>;
 
     // Single-text-block user message is form-canonicalized to a plain string.
     expect(output[0]?.content).toBe(
@@ -726,8 +726,8 @@ describe("normalizeMessagesForLlmBoundary", () => {
     armed = true;
     const armedResult = await session.agent.transformContext(messages);
     cleanup();
-    const unarmedRecords = unarmed as Array<{ content?: unknown }>;
-    const armedRecords = armedResult as Array<{ content?: unknown }>;
+    const unarmedRecords = unarmed as Array<{ content?: any }>;
+    const armedRecords = armedResult as Array<{ content?: any }>;
 
     expect(unarmedRecords[0]?.content).toEqual([
       { type: "text", text: "visible transcript prompt" },

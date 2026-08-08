@@ -5,7 +5,7 @@ import { formatErrorMessage } from "../infra/errors.js";
 export type ProviderOperationRetryStage = "read" | "poll" | "download" | "create";
 
 export type TransientProviderRetryParams = {
-  error: unknown;
+  error: any;
   message: string;
   provider: string;
   apiKeyIndex: number;
@@ -59,24 +59,24 @@ export function providerOperationRetryConfig(
   return options ?? defaultTransientProviderRetryForStage(stage);
 }
 
-function readErrorName(error: unknown): string | undefined {
+function readErrorName(error: any): string | undefined {
   if (typeof error !== "object" || error === null) {
     return undefined;
   }
-  const name = (error as { name?: unknown }).name;
+  const name = (error as { name?: any }).name;
   return typeof name === "string" ? name : undefined;
 }
 
-function isTimeoutNamedError(error: unknown): boolean {
+function isTimeoutNamedError(error: any): boolean {
   const name = readErrorName(error);
   return name === "TimeoutError" || name === "RequestTimeoutError";
 }
 
-function readErrorStatus(error: unknown): number | undefined {
+function readErrorStatus(error: any): number | undefined {
   if (typeof error !== "object" || error === null) {
     return undefined;
   }
-  const record = error as { status?: unknown; statusCode?: unknown; code?: unknown };
+  const record = error as { status?: any; statusCode?: any; code?: any };
   for (const value of [record.status, record.statusCode, record.code]) {
     if (typeof value === "number" && Number.isInteger(value)) {
       return value;
@@ -88,22 +88,22 @@ function readErrorStatus(error: unknown): number | undefined {
   return undefined;
 }
 
-function readErrorCode(error: unknown): string | undefined {
+function readErrorCode(error: any): string | undefined {
   if (typeof error !== "object" || error === null) {
     return undefined;
   }
-  const code = (error as { code?: unknown }).code;
+  const code = (error as { code?: any }).code;
   return typeof code === "string" ? code : undefined;
 }
 
-function readErrorCause(error: unknown): unknown {
+function readErrorCause(error: any): any {
   if (typeof error !== "object" || error === null) {
     return undefined;
   }
-  return (error as { cause?: unknown }).cause;
+  return (error as { cause?: any }).cause;
 }
 
-function hasTransientNetworkSignal(error: unknown, message: string): boolean {
+function hasTransientNetworkSignal(error: any, message: string): boolean {
   const transientCodes = /\b(?:ECONNRESET|ECONNREFUSED|ETIMEDOUT|EAI_AGAIN)\b/i;
   if (transientCodes.test(message)) {
     return true;
@@ -124,7 +124,7 @@ function hasTransientNetworkSignal(error: unknown, message: string): boolean {
   return transientCodes.test(causeMessage);
 }
 
-function hasTimeoutSignal(error: unknown, message: string): boolean {
+function hasTimeoutSignal(error: any, message: string): boolean {
   if (isTimeoutNamedError(error)) {
     return true;
   }
@@ -144,7 +144,7 @@ function hasTimeoutSignal(error: unknown, message: string): boolean {
 }
 
 /** 判断 provider 操作错误是否属于瞬时性错误（可重试） */
-export function isTransientProviderOperationError(error: unknown, message: string): boolean {
+export function isTransientProviderOperationError(error: any, message: string): boolean {
   const status = readErrorStatus(error);
   if (status !== undefined) {
     return status === 500 || status === 502 || status === 503 || status === 504;
@@ -201,7 +201,7 @@ export function resolveTransientProviderDelayMs(
 
 export function shouldRetrySameKeyProviderOperation(params: {
   options: TransientProviderRetryOptions;
-  error: unknown;
+  error: any;
   message: string;
   provider: string;
   apiKeyIndex: number;
@@ -238,7 +238,7 @@ export async function executeProviderOperationWithRetry<T>(params: {
   const retryConfig = providerOperationRetryConfig(params.stage, params.retry);
   const retryOptions = resolveTransientProviderRetryOptions(retryConfig);
   const maxAttempts = resolveTransientProviderAttempts(retryOptions);
-  let lastError: unknown;
+  let lastError: any;
 
   for (let attemptNumber = 1; attemptNumber <= maxAttempts; attemptNumber += 1) {
     try {

@@ -39,9 +39,9 @@ export type MediaUnderstandingOutput = {
 export type MediaUnderstandingProvider = {
   id: string;
   capabilities?: MediaUnderstandingCapability[];
-  transcribeAudio?: unknown;
-  describeVideo?: unknown;
-  describeImage?: unknown;
-  describeImages?: unknown;
-  extractStructured?: unknown;
+  transcribeAudio?: any;
+  describeVideo?: any;
+  describeImage?: any;
+  describeImages?: any;
+  extractStructured?: any;
 };

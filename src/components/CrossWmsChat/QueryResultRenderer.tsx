@@ -113,7 +113,7 @@ interface QueryResultRendererProps {
 /**
  * v1.7.0: 带元数据的 CSV 导出（在现有 exportCsv 基础上拼接元信息头部）
  */
-function exportCsv(columns: string[], rows: Record<string, unknown>[], filename?: string): void {
+function exportCsv(columns: string[], rows: Record<string, any>[], filename?: string): void {
   // 使用独立工具函数 exportCsvWithMetadata（无元信息时退化为纯数据导出）
   exportCsvWithMetadata(columns, rows);
 }
@@ -140,7 +140,7 @@ export function QueryResultRenderer({
   }, [columns, rows, sql, dataSource, queryResult.queryIntent]);
 
   // v1.7.0: 行点击跳转回调 — 根据 dataSource 智能路由
-  const handleRowClick = useCallback((params: { row: Record<string, unknown> }) => {
+  const handleRowClick = useCallback((params: { row: Record<string, any> }) => {
     const row = params.row;
 
     if (dataSource === 'inventory_items') {
@@ -253,8 +253,8 @@ export function QueryResultRenderer({
 /** 渲染表格模式 */
 function renderTable(
   columns: string[],
-  rows: Record<string, unknown>[],
-  onRowClick?: (params: { row: Record<string, unknown> }) => void,
+  rows: Record<string, any>[],
+  onRowClick?: (params: { row: Record<string, any> }) => void,
   dataSource?: DataSourceType,
   onConfirmReplenishment?: (suggestionId: number) => void,
   isDark?: boolean,
@@ -357,7 +357,7 @@ function renderTable(
 
 /** 渲染柱状图 */
 function renderBarChart(
-  rows: Record<string, unknown>[],
+  rows: Record<string, any>[],
   chartConfig?: QueryResult['chartConfig'],
   isDark?: boolean,
 ): React.ReactNode {
@@ -384,7 +384,7 @@ function renderBarChart(
 
 /** 渲染折线图 */
 function renderLineChart(
-  rows: Record<string, unknown>[],
+  rows: Record<string, any>[],
   chartConfig?: QueryResult['chartConfig'],
   isDark?: boolean,
 ): React.ReactNode {
@@ -411,7 +411,7 @@ function renderLineChart(
 
 /** 渲染饼图 */
 function renderPieChart(
-  rows: Record<string, unknown>[],
+  rows: Record<string, any>[],
   chartConfig?: QueryResult['chartConfig'],
 ): React.ReactNode {
   const nameKey = chartConfig?.nameKey || (rows.length > 0 ? Object.keys(rows[0])[0] : 'name');

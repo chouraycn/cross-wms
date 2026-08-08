@@ -24,11 +24,11 @@ import { defaultRuntime, type RuntimeEnv } from "../../runtime.js";
 import type { GatewayRpcOpts } from "../gateway-rpc.js";
 import { callGatewayFromCli } from "../gateway-rpc.js";
 
-export function parseCronCommandArgv(value: unknown): string[] | undefined {
+export function parseCronCommandArgv(value: any): string[] | undefined {
   if (typeof value !== "string") {
     return undefined;
   }
-  let parsed: unknown;
+  let parsed: any;
   try {
     parsed = JSON.parse(value);
   } catch {
@@ -44,7 +44,7 @@ export function parseCronCommandArgv(value: unknown): string[] | undefined {
   return parsed;
 }
 
-export function parseCronCommandEnv(values: unknown): Record<string, string> | undefined {
+export function parseCronCommandEnv(values: any): Record<string, string> | undefined {
   const rawValues = Array.isArray(values) ? values : typeof values === "string" ? [values] : [];
   if (rawValues.length === 0) {
     return undefined;
@@ -72,7 +72,7 @@ export const getCronChannelOptions = () => {
   return pluginIds.length > 0 ? ["last", ...pluginIds].join("|") : "last|<channel-id>";
 };
 
-function toLocalIsoTime(value: unknown): string | undefined {
+function toLocalIsoTime(value: any): string | undefined {
   return typeof value === "number" && Number.isFinite(value)
     ? formatTimestamp(new Date(value), { style: "long" })
     : undefined;
@@ -84,11 +84,11 @@ function toLocalIsoTime(value: unknown): string | undefined {
  * numeric timestamps (matching the diagnostic log `time` format). Stored data
  * and the gateway protocol stay unchanged; raw numeric fields are preserved.
  */
-function enrichCronRunEntriesForDisplay(value: unknown): unknown {
+function enrichCronRunEntriesForDisplay(value: any): any {
   if (!value || typeof value !== "object") {
     return value;
   }
-  const record = value as Record<string, unknown>;
+  const record = value as Record<string, any>;
   const entries = record.entries;
   if (!Array.isArray(entries)) {
     return value;
@@ -97,11 +97,11 @@ function enrichCronRunEntriesForDisplay(value: unknown): unknown {
     if (!entry || typeof entry !== "object") {
       return entry;
     }
-    const item = entry as Record<string, unknown>;
+    const item = entry as Record<string, any>;
     if (item.action !== "finished") {
       return item;
     }
-    const extra: Record<string, unknown> = {};
+    const extra: Record<string, any> = {};
     const cause = typeof item.errorReason === "string" ? item.errorReason.trim() : "";
     if (cause) {
       extra.cause = cause;
@@ -123,7 +123,7 @@ function enrichCronRunEntriesForDisplay(value: unknown): unknown {
   return { ...record, entries: nextEntries };
 }
 
-export function printCronJson(value: unknown) {
+export function printCronJson(value: any) {
   defaultRuntime.writeJson(enrichCronRunEntriesForDisplay(value));
 }
 
@@ -132,11 +132,11 @@ export function printCronJson(value: unknown) {
  * derived from enabled + state.runningAtMs + state.lastRunStatus.
  * This mirrors the human-readable status shown by `cron list` / `cron show`.
  */
-export function enrichCronJsonWithStatus(value: unknown): unknown {
+export function enrichCronJsonWithStatus(value: any): any {
   if (!value || typeof value !== "object") {
     return value;
   }
-  const obj = value as Record<string, unknown>;
+  const obj = value as Record<string, any>;
 
   // Single job object (has 'state' and 'enabled')
   if ("state" in obj && "enabled" in obj) {
@@ -166,7 +166,7 @@ function computeStatus(job: CronJob): string {
   return state.lastRunStatus ?? state.lastStatus ?? "idle";
 }
 
-export function handleCronCliError(err: unknown) {
+export function handleCronCliError(err: any) {
   defaultRuntime.error(danger(String(err)));
   defaultRuntime.exit(1);
 }
@@ -253,7 +253,7 @@ export function parseCronStaggerMs(params: {
   return parsed;
 }
 
-export function parseCronToolsAllow(input: unknown): string[] | undefined {
+export function parseCronToolsAllow(input: any): string[] | undefined {
   const raw = Array.isArray(input)
     ? input.map((value) => String(value)).join(" ")
     : typeof input === "string"
@@ -266,7 +266,7 @@ export function parseCronToolsAllow(input: unknown): string[] | undefined {
   return tools.length > 0 ? tools : undefined;
 }
 
-export function parseCronFallbacks(input: unknown): string[] | undefined {
+export function parseCronFallbacks(input: any): string[] | undefined {
   if (input === undefined) {
     return undefined;
   }
@@ -324,7 +324,7 @@ const CRON_DELIVERY_PAD = 64;
 const CRON_AGENT_PAD = 10;
 const CRON_MODEL_PAD = 20;
 
-const stringifyCell = (value: unknown, fallback = "-") => {
+const stringifyCell = (value: any, fallback = "-") => {
   if (typeof value === "string") {
     return value;
   }
@@ -334,7 +334,7 @@ const stringifyCell = (value: unknown, fallback = "-") => {
   return fallback;
 };
 
-const pad = (value: unknown, width: number) => stringifyCell(value).padEnd(width);
+const pad = (value: any, width: number) => stringifyCell(value).padEnd(width);
 
 const truncate = (value: string, width: number) => {
   if (value.length <= width) {
@@ -396,20 +396,20 @@ const formatSchedule = (schedule: CronSchedule | undefined) => {
   return `${base} (stagger ${formatDurationHuman(staggerMs)})`;
 };
 
-export function coerceCronDeliveryPreviews(value: unknown): Map<string, CronDeliveryPreview> {
+export function coerceCronDeliveryPreviews(value: any): Map<string, CronDeliveryPreview> {
   const previews =
     value && typeof value === "object"
-      ? (value as { deliveryPreviews?: unknown }).deliveryPreviews
+      ? (value as { deliveryPreviews?: any }).deliveryPreviews
       : undefined;
   if (!previews || typeof previews !== "object") {
     return new Map();
   }
   return new Map(
-    Object.entries(previews as Record<string, unknown>).flatMap(([jobId, preview]) => {
+    Object.entries(previews as Record<string, any>).flatMap(([jobId, preview]) => {
       if (!preview || typeof preview !== "object") {
         return [];
       }
-      const record = preview as { label?: unknown; detail?: unknown };
+      const record = preview as { label?: any; detail?: any };
       if (typeof record.label !== "string" || typeof record.detail !== "string") {
         return [];
       }

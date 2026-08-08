@@ -40,8 +40,8 @@ async function defaultListNodes(_opts: CanvasGatewayOptions): Promise<CanvasNode
 async function defaultCallGatewayTool(
   _command: string,
   _opts: CanvasGatewayOptions,
-  _params: Record<string, unknown>,
-): Promise<{ payload?: unknown }> {
+  _params: Record<string, any>,
+): Promise<{ payload?: any }> {
   throw new Error(
     "Canvas gateway tool caller is not configured. Provide callGatewayTool in createCanvasTool options.",
   );
@@ -50,7 +50,7 @@ async function defaultCallGatewayTool(
 // ==================== 参数读取辅助 ====================
 
 function readStringParam(
-  params: Record<string, unknown>,
+  params: Record<string, any>,
   key: string,
   options: { required?: boolean; trim?: boolean; label?: string } = {},
 ): string | undefined {
@@ -66,7 +66,7 @@ function readStringParam(
 }
 
 function readNumberParam(
-  params: Record<string, unknown>,
+  params: Record<string, any>,
   key: string,
   options: { min?: number; max?: number } = {},
 ): number | undefined {
@@ -80,7 +80,7 @@ function readNumberParam(
 }
 
 function readPositiveIntegerParam(
-  params: Record<string, unknown>,
+  params: Record<string, any>,
   key: string,
 ): number | undefined {
   const raw = params[key];
@@ -90,7 +90,7 @@ function readPositiveIntegerParam(
   return num;
 }
 
-function readGatewayCallOptions(params: Record<string, unknown>): CanvasGatewayOptions {
+function readGatewayCallOptions(params: Record<string, any>): CanvasGatewayOptions {
   return {
     gatewayUrl: readStringParam(params, "gatewayUrl", { trim: false }),
     gatewayToken: readStringParam(params, "gatewayToken", { trim: false }),
@@ -169,10 +169,10 @@ async function readJsonlFromPath(
 
 // ==================== JSON 结果辅助 ====================
 
-function jsonResult(payload: unknown): AgentToolResult {
+function jsonResult(payload: any): AgentToolResult {
   return {
     content: [{ type: "text", text: JSON.stringify(payload) }],
-    details: payload as Record<string, unknown>,
+    details: payload as Record<string, any>,
   };
 }
 
@@ -249,7 +249,7 @@ export function createCanvasTool(options: CreateCanvasToolOptions = {}): AnyAgen
       "Control node canvases (present/hide/navigate/eval/snapshot/A2UI). Use snapshot to capture the rendered UI and save it as an image file.",
     parameters: CanvasToolSchema,
     execute: async (_toolCallId, args) => {
-      const params = args as Record<string, unknown>;
+      const params = args as Record<string, any>;
       const action = readStringParam(params, "action", { required: true }) as CanvasAction;
       const gatewayOpts = readGatewayCallOptions(params);
 
@@ -260,7 +260,7 @@ export function createCanvasTool(options: CreateCanvasToolOptions = {}): AnyAgen
         true,
       );
 
-      const invoke = async (command: string, invokeParams?: Record<string, unknown>) =>
+      const invoke = async (command: string, invokeParams?: Record<string, any>) =>
         callGatewayTool("node.invoke", gatewayOpts, {
           ...(nodeId ? { nodeId } : {}),
           command,
@@ -276,7 +276,7 @@ export function createCanvasTool(options: CreateCanvasToolOptions = {}): AnyAgen
             width: readNumberParam(params, "width"),
             height: readNumberParam(params, "height"),
           };
-          const invokeParams: Record<string, unknown> = {};
+          const invokeParams: Record<string, any> = {};
           const presentTarget =
             readStringParam(params, "target", { trim: true }) ??
             readStringParam(params, "url", { trim: true });

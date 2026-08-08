@@ -104,7 +104,7 @@ describe("ensureDockerImage", () => {
     // would pass image inspection but fail sandbox file operations later.
     spawnState.imageExists = false;
 
-    let err: unknown;
+    let err: any;
     try {
       await ensureDockerImage(DEFAULT_SANDBOX_IMAGE);
     } catch (caught) {

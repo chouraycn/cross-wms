@@ -341,7 +341,7 @@ const AiEngineSettingsContext = createContext<DomainSettingsValue<AiEngineConfig
  */
 export function openExternalLink(url: string): void {
   if (window.electronAPI?.openExternalLink) {
-    window.electronAPI.openExternalLink(url).catch((_err: unknown) => {
+    window.electronAPI.openExternalLink(url).catch((_err: any) => {
       // console.error('Failed to open external link:', _err);
     });
   } else {
@@ -383,11 +383,11 @@ function loadSettingsFromLocalStorage(): AppSettings {
 export function mergeWithDefaults(parsed: Partial<AppSettings>): AppSettings {
   // Deep merge with defaults to ensure all fields exist even if storage is partial
   // Migrate from old API-based config and remove sync-related fields from docLinks
-  const rawDocs = parsed.tencentDocs as { docLinks?: unknown[]; onlineData?: unknown[] } | undefined;
+  const rawDocs = parsed.tencentDocs as { docLinks?: any[]; onlineData?: any[] } | undefined;
   const docLinks: DocLinkItem[] =
     rawDocs && Array.isArray(rawDocs.docLinks)
-      ? rawDocs.docLinks.map((link: unknown) => {
-          const record = link as Record<string, unknown>;
+      ? rawDocs.docLinks.map((link: any) => {
+          const record = link as Record<string, any>;
           return {
             // Only pick the fields that belong to the simplified DocLinkItem
             id: String(record.id ?? ''),
@@ -402,8 +402,8 @@ export function mergeWithDefaults(parsed: Partial<AppSettings>): AppSettings {
   // 在线数据加载
   const onlineData: OnlineDataEntry[] =
     rawDocs && Array.isArray(rawDocs.onlineData)
-      ? rawDocs.onlineData.map((entry: unknown) => {
-          const record = entry as Record<string, unknown>;
+      ? rawDocs.onlineData.map((entry: any) => {
+          const record = entry as Record<string, any>;
           return {
             id: String(record.id ?? ''),
             name: String(record.name ?? ''),
@@ -417,11 +417,11 @@ export function mergeWithDefaults(parsed: Partial<AppSettings>): AppSettings {
   const tencentDocs = { docLinks, onlineData };
 
   // 企业文档链接迁移
-  const rawWeComDocs = parsed.wecomDocs as { docLinks?: unknown[] } | undefined;
+  const rawWeComDocs = parsed.wecomDocs as { docLinks?: any[] } | undefined;
   const wecomDocLinks: WeComDocLinkItem[] =
     rawWeComDocs && Array.isArray(rawWeComDocs.docLinks)
-      ? rawWeComDocs.docLinks.map((link: unknown) => {
-          const record = link as Record<string, unknown>;
+      ? rawWeComDocs.docLinks.map((link: any) => {
+          const record = link as Record<string, any>;
           return {
             id: String(record.id ?? ''),
             url: String(record.url ?? ''),
@@ -608,7 +608,7 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   // 监听外部语言变化（如直接调用 i18n 的 changeLanguage）
   useEffect(() => {
-    const handler = (data: unknown) => {
+    const handler = (data: any) => {
       const { current } = data as { current: SupportedLanguage };
       setSettings((prev) => {
         if (prev.language === current) return prev;

@@ -6,21 +6,21 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function resolvePdfInputs(..._args: unknown[]): unknown {
+export function resolvePdfInputs(..._args: any[]): any {
   return undefined;
 }
-export function providerSupportsNativePdf(..._args: unknown[]): unknown {
+export function providerSupportsNativePdf(..._args: any[]): any {
   return undefined;
 }
-export function parsePageRange(..._args: unknown[]): unknown {
+export function parsePageRange(..._args: any[]): any {
   return undefined;
 }
-export function coercePdfAssistantText(..._args: unknown[]): unknown {
+export function coercePdfAssistantText(..._args: any[]): any {
   return undefined;
 }
-export function coercePdfModelConfig(..._args: unknown[]): unknown {
+export function coercePdfModelConfig(..._args: any[]): any {
   return undefined;
 }
-export function resolvePdfToolMaxTokens(..._args: unknown[]): unknown {
+export function resolvePdfToolMaxTokens(..._args: any[]): any {
   return undefined;
 }

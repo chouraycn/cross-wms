@@ -124,14 +124,14 @@ async function writeTalkConfig(config: {
 
 async function fetchTalkConfig(
   ws: GatewaySocket,
-  params?: { includeSecrets?: boolean } | Record<string, unknown>,
+  params?: { includeSecrets?: boolean } | Record<string, any>,
 ) {
   return rpcReq<TalkConfigPayload>(ws, "talk.config", params ?? {}, 60_000);
 }
 
 async function fetchOkTalkConfig(
   ws: GatewaySocket,
-  params?: { includeSecrets?: boolean } | Record<string, unknown>,
+  params?: { includeSecrets?: boolean } | Record<string, any>,
 ) {
   const res = await fetchTalkConfig(ws, params);
   expect(res.ok, JSON.stringify(res.error)).toBe(true);
@@ -444,7 +444,7 @@ describe("gateway talk.config", () => {
       },
     });
 
-    const sentinelKeyBefore = ({} as Record<string, unknown>).polluted;
+    const sentinelKeyBefore = ({} as Record<string, any>).polluted;
 
     await withEnvAsync({ [GENERIC_TALK_API_ENV]: "env-acme-key" }, async () => {
       await withSpeechProviders(
@@ -467,7 +467,7 @@ describe("gateway talk.config", () => {
     // The strip helper must not have leaked the hostile `polluted` field onto
     // Object.prototype: a fresh empty object should not gain a `.polluted`
     // property as a side effect of processing the request.
-    const sentinelKeyAfter = ({} as Record<string, unknown>).polluted;
+    const sentinelKeyAfter = ({} as Record<string, any>).polluted;
     expect(sentinelKeyAfter).toBe(sentinelKeyBefore);
     expect(sentinelKeyAfter).toBeUndefined();
   });

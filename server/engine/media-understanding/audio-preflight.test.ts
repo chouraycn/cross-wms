@@ -7,12 +7,12 @@ const runAudioTranscriptionMock = vi.hoisted(() => vi.fn());
 const sendTranscriptEchoMock = vi.hoisted(() => vi.fn());
 
 vi.mock("./audio-transcription-runner.js", () => ({
-  runAudioTranscription: (...args: unknown[]) => runAudioTranscriptionMock(...args),
+  runAudioTranscription: (...args: any[]) => runAudioTranscriptionMock(...args),
 }));
 
 vi.mock("./echo-transcript.js", () => ({
   DEFAULT_ECHO_TRANSCRIPT_FORMAT: '📝 "{transcript}"',
-  sendTranscriptEcho: (...args: unknown[]) => sendTranscriptEchoMock(...args),
+  sendTranscriptEcho: (...args: any[]) => sendTranscriptEchoMock(...args),
 }));
 
 describe("transcribeFirstAudio", () => {

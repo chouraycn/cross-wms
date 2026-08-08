@@ -83,11 +83,11 @@ export const buildGoogleRequestBody: ProviderRequestBodyBuilder = (ctx) => {
       contents.push({ role, parts: [{ text: m.content }] });
     }
   }
-  const body: Record<string, unknown> = { contents };
+  const body: Record<string, any> = { contents };
   if (systemParts.length > 0) {
     body.systemInstruction = { parts: [{ text: systemParts.join('\n\n') }] };
   }
-  const generationConfig: Record<string, unknown> = {};
+  const generationConfig: Record<string, any> = {};
   if (options.temperature !== undefined) generationConfig.temperature = options.temperature;
   if (options.maxTokens !== undefined) generationConfig.maxOutputTokens = options.maxTokens;
   if (Object.keys(generationConfig).length > 0) body.generationConfig = generationConfig;
@@ -114,7 +114,7 @@ export const parseGoogleStreamChunk: ProviderStreamChunkParser = (chunk) => {
     if (!item || typeof item !== 'object') continue;
     const data = item as {
       candidates?: Array<{
-        content?: { parts?: Array<{ text?: string; functionCall?: { name?: string; args?: Record<string, unknown> } }> };
+        content?: { parts?: Array<{ text?: string; functionCall?: { name?: string; args?: Record<string, any> } }> };
         finishReason?: string;
       }>;
       usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number; cachedContentTokenCount?: number };

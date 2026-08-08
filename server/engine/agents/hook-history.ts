@@ -6,10 +6,10 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function limitAgentHookHistoryMessages(..._args: unknown[]): unknown {
+export function limitAgentHookHistoryMessages(..._args: any[]): any {
   return undefined;
 }
-export function buildAgentHookConversationMessages(..._args: unknown[]): unknown {
+export function buildAgentHookConversationMessages(..._args: any[]): any {
   return undefined;
 }
-export const MAX_AGENT_HOOK_HISTORY_MESSAGES: unknown = undefined;
+export const MAX_AGENT_HOOK_HISTORY_MESSAGES: any = undefined;

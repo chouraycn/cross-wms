@@ -38,9 +38,9 @@ import { isPluginEnabledByDefaultForPlatform } from "./default-enablement.js";
 type OpenClawConfig = {
   plugins?: {
     enabled?: boolean;
-    [key: string]: unknown;
+    [key: string]: any;
   };
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 /**
@@ -135,7 +135,7 @@ function createPluginActivationSource(_params: { config?: OpenClawConfig }): Plu
   return undefined;
 }
 
-function normalizePluginsConfig(_plugins: unknown): NormalizedPluginsConfig {
+function normalizePluginsConfig(_plugins: any): NormalizedPluginsConfig {
   return {
     enabled: true,
     entries: {},

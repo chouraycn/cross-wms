@@ -16,10 +16,10 @@ const mocks = vi.hoisted(() => ({
   initSessionState: vi.fn(),
 }));
 vi.mock("./commands-core.js", () => ({
-  emitResetCommandHooks: (...args: unknown[]) => mocks.emitResetCommandHooks(...args),
+  emitResetCommandHooks: (...args: any[]) => mocks.emitResetCommandHooks(...args),
 }));
 vi.mock("./commands-core.runtime.js", () => ({
-  emitResetCommandHooks: (...args: unknown[]) => mocks.emitResetCommandHooks(...args),
+  emitResetCommandHooks: (...args: any[]) => mocks.emitResetCommandHooks(...args),
 }));
 registerGetReplyRuntimeOverrides(mocks);
 

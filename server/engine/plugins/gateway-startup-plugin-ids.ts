@@ -92,7 +92,7 @@ function normalizePluginsConfigForInstalledIndex(
   return normalizePluginsConfigWithResolver(config, lookup.normalizePluginId);
 }
 
-function isConfigActivationValueEnabled(value: unknown): boolean {
+function isConfigActivationValueEnabled(value: any): boolean {
   if (value === false) {
     return false;
   }
@@ -381,7 +381,7 @@ function manifestOwnsConfiguredWebSearchProvider(params: {
   });
 }
 
-function listModelProviderRefs(value: unknown): string[] {
+function listModelProviderRefs(value: any): string[] {
   if (typeof value === "string") {
     return [value];
   }
@@ -402,7 +402,7 @@ function listModelProviderRefs(value: unknown): string[] {
   return refs;
 }
 
-function listModelProviderRefParts(value: unknown): Array<{ providerId: string; modelId: string }> {
+function listModelProviderRefParts(value: any): Array<{ providerId: string; modelId: string }> {
   return listModelProviderRefs(value)
     .map((ref) => {
       const slashIndex = ref.indexOf("/");
@@ -419,7 +419,7 @@ function listModelProviderRefParts(value: unknown): Array<{ providerId: string; 
     );
 }
 
-function collectModelProviderIds(value: unknown): ReadonlySet<string> {
+function collectModelProviderIds(value: any): ReadonlySet<string> {
   return new Set(
     listModelProviderRefs(value)
       .map((ref) => {
@@ -461,14 +461,14 @@ function collectConfiguredAgentModelProviderIds(
 ): ReadonlySet<string> {
   const modelIdsByProvider = new Map<string, Set<string>>();
   const manifestModelProviders = buildManifestModelProviderLookup(manifestRegistry);
-  const addModelProviderRefs = (value: unknown) => {
+  const addModelProviderRefs = (value: any) => {
     for (const { providerId, modelId } of listModelProviderRefParts(value)) {
       const modelIds = modelIdsByProvider.get(providerId) ?? new Set<string>();
       modelIds.add(modelId);
       modelIdsByProvider.set(providerId, modelIds);
     }
   };
-  const addModelMapProviderIds = (models: unknown) => {
+  const addModelMapProviderIds = (models: any) => {
     if (!isRecord(models)) {
       return;
     }
@@ -562,7 +562,7 @@ function collectConfiguredVoiceProviderIds(config: OpenClawConfig): ConfiguredVo
 // boot. Missing/"auto" stays lazy, and "none" disables provider-backed embeddings.
 const MEMORY_EMBEDDING_PROVIDER_STARTUP_SKIP_IDS: ReadonlySet<string> = new Set(["auto", "none"]);
 
-function normalizeMemoryEmbeddingProviderIdValue(value: unknown): string | undefined {
+function normalizeMemoryEmbeddingProviderIdValue(value: any): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }
@@ -570,7 +570,7 @@ function normalizeMemoryEmbeddingProviderIdValue(value: unknown): string | undef
   return normalized || undefined;
 }
 
-function normalizeExplicitMemoryEmbeddingProviderId(value: unknown): string | undefined {
+function normalizeExplicitMemoryEmbeddingProviderId(value: any): string | undefined {
   const normalized = normalizeMemoryEmbeddingProviderIdValue(value);
   return normalized && !MEMORY_EMBEDDING_PROVIDER_STARTUP_SKIP_IDS.has(normalized)
     ? normalized
@@ -578,7 +578,7 @@ function normalizeExplicitMemoryEmbeddingProviderId(value: unknown): string | un
 }
 
 function readMemorySearchEnabled(
-  memorySearch: Record<string, unknown> | undefined,
+  memorySearch: Record<string, any> | undefined,
 ): boolean | undefined {
   const enabled = memorySearch?.enabled;
   return typeof enabled === "boolean" ? enabled : undefined;
@@ -631,8 +631,8 @@ function resolveMemoryEmbeddingProviderOwnerIds(
 }
 
 function resolveEffectiveMemoryEmbeddingProviderEntries(
-  defaults: Record<string, unknown> | undefined,
-  override: Record<string, unknown> | undefined,
+  defaults: Record<string, any> | undefined,
+  override: Record<string, any> | undefined,
 ): Array<{
   configuredId: string;
   source: MemoryEmbeddingStartupProviderSource;
@@ -683,7 +683,7 @@ export function collectConfiguredMemoryEmbeddingStartupProviderOwners(
   const byConfiguredIdAndSource = new Map<string, ConfiguredMemoryEmbeddingStartupProviderOwner>();
   const defaultsBlock = config.agents?.defaults?.memorySearch;
   const defaults = isRecord(defaultsBlock) ? defaultsBlock : undefined;
-  const addEffectiveProviders = (override: Record<string, unknown> | undefined) => {
+  const addEffectiveProviders = (override: Record<string, any> | undefined) => {
     for (const { configuredId, source } of resolveEffectiveMemoryEmbeddingProviderEntries(
       defaults,
       override,
@@ -808,7 +808,7 @@ function collectConfiguredStartupChannelIds(params: {
 
 function collectValidationHeartbeatTargetChannelIds(config: OpenClawConfig): string[] {
   const channelIds: string[] = [];
-  const pushTarget = (target: unknown) => {
+  const pushTarget = (target: any) => {
     if (typeof target !== "string") {
       return;
     }
@@ -873,7 +873,7 @@ function collectConfiguredProviderIds(config: OpenClawConfig): string[] {
 
 function collectValidationConfiguredProviderIds(config: OpenClawConfig): string[] {
   const providerIds: string[] = [];
-  const pushProviderId = (value: unknown) => {
+  const pushProviderId = (value: any) => {
     if (typeof value !== "string") {
       return;
     }

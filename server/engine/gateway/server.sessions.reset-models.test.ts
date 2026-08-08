@@ -268,7 +268,7 @@ test("sessions.reset clears stale estimated context budget status", async () => 
     ok: true;
     entry: {
       sessionId: string;
-      contextBudgetStatus?: unknown;
+      contextBudgetStatus?: any;
       contextTokens?: number;
     };
   }>("sessions.reset", { key: "main" });
@@ -280,7 +280,7 @@ test("sessions.reset clears stale estimated context budget status", async () => 
 
   const store = JSON.parse(await fs.readFile(storePath, "utf-8")) as Record<
     string,
-    { contextBudgetStatus?: unknown; contextTokens?: number }
+    { contextBudgetStatus?: any; contextTokens?: number }
   >;
   expect(store["agent:main:main"]?.contextBudgetStatus).toBeUndefined();
   expect(store["agent:main:main"]?.contextTokens).toBeUndefined();
@@ -311,7 +311,7 @@ test("sessions.reset drops cached skills snapshot so /new rebuilds visible skill
     key: string;
     entry: {
       sessionId: string;
-      skillsSnapshot?: unknown;
+      skillsSnapshot?: any;
     };
   }>("sessions.reset", { key: "main" });
 
@@ -321,7 +321,7 @@ test("sessions.reset drops cached skills snapshot so /new rebuilds visible skill
 
   const store = JSON.parse(await fs.readFile(storePath, "utf-8")) as Record<
     string,
-    { skillsSnapshot?: unknown }
+    { skillsSnapshot?: any }
   >;
   expect(store["agent:main:main"]?.skillsSnapshot).toBeUndefined();
 });

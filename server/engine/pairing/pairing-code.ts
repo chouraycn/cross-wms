@@ -47,7 +47,7 @@ export class PairingCodeGenerator {
         };
 
         this.usedCodes.set(code, codeInfo);
-        logger.debug(`[PairingCode] Generated code ${code} for device ${deviceId ?? "unknown"}`);
+        logger.debug(`[PairingCode] Generated code ${code} for device ${deviceId ?? "any"}`);
         return codeInfo;
       }
     }

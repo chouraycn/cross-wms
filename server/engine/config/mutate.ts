@@ -11,20 +11,20 @@ export type ConfigMutationCommit = unknown;
 export type TransformConfigFileParams = unknown;
 export type TransformConfigFileWithRetryParams = unknown;
 export type ConfigMutationResult = unknown;
-export function replaceConfigFile(...args: unknown[]): unknown {
+export function replaceConfigFile(...args: any[]): any {
   return undefined;
 }
-export function transformConfigFile(...args: unknown[]): unknown {
+export function transformConfigFile(...args: any[]): any {
   return undefined;
 }
-export function transformConfigFileWithRetry(...args: unknown[]): unknown {
+export function transformConfigFileWithRetry(...args: any[]): any {
   return undefined;
 }
-export function mutateConfigFile(...args: unknown[]): unknown {
+export function mutateConfigFile(...args: any[]): any {
   return undefined;
 }
-export function mutateConfigFileWithRetry(...args: unknown[]): unknown {
+export function mutateConfigFileWithRetry(...args: any[]): any {
   return undefined;
 }
 export type ConfigMutationConflictError = unknown;
-export const ConfigMutationConflictError: new (...args: unknown[]) => unknown = undefined as unknown as new (...args: unknown[]) => unknown;
+export const ConfigMutationConflictError: new (...args: any[]) => unknown = undefined as unknown as new (...args: any[]) => unknown;

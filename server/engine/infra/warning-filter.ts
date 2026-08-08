@@ -31,7 +31,7 @@ export function shouldIgnoreWarning(warning: ProcessWarning): boolean {
   return false;
 }
 
-function normalizeWarningArgs(args: unknown[]): ProcessWarning {
+function normalizeWarningArgs(args: any[]): ProcessWarning {
   const warningArg = args[0];
   const secondArg = args[1];
   const thirdArg = args[2];
@@ -48,7 +48,7 @@ function normalizeWarningArgs(args: unknown[]): ProcessWarning {
   }
 
   if (secondArg && typeof secondArg === "object" && !Array.isArray(secondArg)) {
-    const options = secondArg as { type?: unknown; code?: unknown };
+    const options = secondArg as { type?: any; code?: any };
     if (typeof options.type === "string") {
       name = options.type;
     }
@@ -77,7 +77,7 @@ export function installProcessWarningFilter(): void {
   }
 
   const originalEmitWarning = process.emitWarning.bind(process);
-  const wrappedEmitWarning: typeof process.emitWarning = ((...args: unknown[]) => {
+  const wrappedEmitWarning: typeof process.emitWarning = ((...args: any[]) => {
     if (shouldIgnoreWarning(normalizeWarningArgs(args))) {
       return;
     }

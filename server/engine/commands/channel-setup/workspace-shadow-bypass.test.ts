@@ -14,14 +14,14 @@ import type { PluginManifestRecord } from "../../plugins/manifest-registry.js";
 // Mocks (hoisted to module top level)
 // ---------------------------------------------------------------------------
 
-const listChannelPluginCatalogEntries = vi.hoisted(() => vi.fn((_opts?: unknown): unknown[] => []));
-const listChatChannels = vi.hoisted(() => vi.fn((): unknown[] => []));
+const listChannelPluginCatalogEntries = vi.hoisted(() => vi.fn((_opts?: any): any[] => []));
+const listChatChannels = vi.hoisted(() => vi.fn((): any[] => []));
 const loadPluginManifestRegistry = vi.hoisted(() => vi.fn());
 const loadPluginRegistrySnapshot = vi.hoisted(() => vi.fn());
 const loadPluginRegistrySnapshotWithMetadata = vi.hoisted(() => vi.fn());
-const listPluginContributionIds = vi.hoisted(() => vi.fn((_params?: unknown): string[] => []));
+const listPluginContributionIds = vi.hoisted(() => vi.fn((_params?: any): string[] => []));
 const applyPluginAutoEnable = vi.hoisted(() =>
-  vi.fn(({ config }: { config: unknown }) => ({
+  vi.fn(({ config }: { config: any }) => ({
     config: config as never,
     changes: [] as string[],
     autoEnabledReasons: {},
@@ -30,28 +30,28 @@ const applyPluginAutoEnable = vi.hoisted(() =>
 const getChannelPluginCatalogEntry = vi.hoisted(() => vi.fn());
 
 vi.mock("../../channels/plugins/catalog.js", () => ({
-  listChannelPluginCatalogEntries: (opts?: unknown) => listChannelPluginCatalogEntries(opts),
-  listRawChannelPluginCatalogEntries: (opts?: unknown) => listChannelPluginCatalogEntries(opts),
-  getChannelPluginCatalogEntry: (...args: unknown[]) =>
-    getChannelPluginCatalogEntry(...(args as [string, Record<string, unknown>])),
+  listChannelPluginCatalogEntries: (opts?: any) => listChannelPluginCatalogEntries(opts),
+  listRawChannelPluginCatalogEntries: (opts?: any) => listChannelPluginCatalogEntries(opts),
+  getChannelPluginCatalogEntry: (...args: any[]) =>
+    getChannelPluginCatalogEntry(...(args as [string, Record<string, any>])),
 }));
 vi.mock("../../channels/registry.js", () => ({
   listChatChannels: () => listChatChannels(),
   normalizeAnyChannelId: (channelId?: string) => channelId?.trim().toLowerCase() ?? null,
 }));
 vi.mock("../../plugins/manifest-registry.js", () => ({
-  loadPluginManifestRegistry: (...a: unknown[]) => loadPluginManifestRegistry(...a),
+  loadPluginManifestRegistry: (...a: any[]) => loadPluginManifestRegistry(...a),
 }));
 vi.mock("../../plugins/plugin-registry.js", () => ({
-  loadPluginManifestRegistryForPluginRegistry: (...args: unknown[]) =>
+  loadPluginManifestRegistryForPluginRegistry: (...args: any[]) =>
     loadPluginManifestRegistry(...args),
-  loadPluginRegistrySnapshot: (...args: unknown[]) => loadPluginRegistrySnapshot(...args),
-  loadPluginRegistrySnapshotWithMetadata: (...args: unknown[]) =>
+  loadPluginRegistrySnapshot: (...args: any[]) => loadPluginRegistrySnapshot(...args),
+  loadPluginRegistrySnapshotWithMetadata: (...args: any[]) =>
     loadPluginRegistrySnapshotWithMetadata(...args),
-  listPluginContributionIds: (...args: unknown[]) => listPluginContributionIds(...args),
+  listPluginContributionIds: (...args: any[]) => listPluginContributionIds(...args),
 }));
 vi.mock("../../config/plugin-auto-enable.js", () => ({
-  applyPluginAutoEnable: (a: unknown) => applyPluginAutoEnable(a as { config: unknown }),
+  applyPluginAutoEnable: (a: any) => applyPluginAutoEnable(a as { config: any }),
 }));
 vi.mock("../../plugins/loader.js", () => ({
   loadOpenClawPlugins: vi.fn(),
@@ -77,7 +77,7 @@ beforeEach(() => {
     plugins: [],
     diagnostics: [],
   });
-  loadPluginRegistrySnapshotWithMetadata.mockImplementation((...args: unknown[]) => ({
+  loadPluginRegistrySnapshotWithMetadata.mockImplementation((...args: any[]) => ({
     snapshot: loadPluginRegistrySnapshot(...args),
     source: "derived",
     diagnostics: [],
@@ -119,7 +119,7 @@ function createManifestChannelPlugin(id: string, channels: string[]): PluginMani
 }
 
 function mockWorkspaceOnlyCatalogEntry(entry: ReturnType<typeof createWorkspaceCatalogEntry>) {
-  listChannelPluginCatalogEntries.mockImplementation((opts?: unknown) =>
+  listChannelPluginCatalogEntries.mockImplementation((opts?: any) =>
     (opts as { excludeWorkspace?: boolean } | undefined)?.excludeWorkspace ? [] : [entry],
   );
 }
@@ -260,9 +260,9 @@ describe("resolveChannelSetupEntries workspace shadow exclusion (GHSA-2qrv-rc5x-
       install: { npmSpec: "trusted-telegram-shadow" },
     };
     listChannelPluginCatalogEntries.mockReturnValue([workspaceEntry]);
-    applyPluginAutoEnable.mockImplementation(({ config }: { config: unknown }) => ({
+    applyPluginAutoEnable.mockImplementation(({ config }: { config: any }) => ({
       config: {
-        ...(config as Record<string, unknown>),
+        ...(config as Record<string, any>),
         plugins: {
           enabled: true,
           allow: ["trusted-telegram-shadow"],
@@ -310,9 +310,9 @@ describe("resolveChannelSetupEntries workspace shadow exclusion (GHSA-2qrv-rc5x-
 
   it("does not surface untrusted workspace-only entries as installed", () => {
     mockWorkspaceOnlyCatalogEntry(createWorkspaceCatalogEntry("my-cool-plugin", "My Cool Plugin"));
-    applyPluginAutoEnable.mockImplementation(({ config }: { config: unknown }) => ({
+    applyPluginAutoEnable.mockImplementation(({ config }: { config: any }) => ({
       config: {
-        ...(config as Record<string, unknown>),
+        ...(config as Record<string, any>),
         plugins: {},
       } as never,
       changes: [] as string[],

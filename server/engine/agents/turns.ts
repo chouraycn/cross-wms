@@ -4,14 +4,14 @@
  * 降级实现：提供 turn 验证和合并，不再抛出 stub 错误。
  */
 
-export function validateGeminiTurns(turns: unknown[]): unknown[] {
+export function validateGeminiTurns(turns: any[]): any[] {
   return turns;
 }
 
-export function mergeConsecutiveUserTurns(turns: unknown[]): unknown[] {
+export function mergeConsecutiveUserTurns(turns: any[]): any[] {
   return turns;
 }
 
-export function validateAnthropicTurns(turns: unknown[]): unknown[] {
+export function validateAnthropicTurns(turns: any[]): any[] {
   return turns;
 }

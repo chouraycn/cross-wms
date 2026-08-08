@@ -118,7 +118,7 @@ function normalizeContributionId(value: string): string {
   return value.trim();
 }
 
-function collectObjectKeys(value: Record<string, unknown> | undefined): readonly string[] {
+function collectObjectKeys(value: Record<string, any> | undefined): readonly string[] {
   return value ? Object.keys(value) : [];
 }
 
@@ -142,7 +142,7 @@ function listManifestContractValues(
 /** 占位：为已安装索引加载 manifest 注册表（manifest-registry-installed.ts 未移植）。 */
 function loadPluginManifestRegistryForInstalledIndex(_params: {
   index: PluginRegistrySnapshot;
-  config?: unknown;
+  config?: any;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   pluginIds?: readonly string[];
@@ -174,7 +174,7 @@ function listManifestContributionIds(
     case "channels":
       return plugin.channels;
     case "channelConfigs":
-      return collectObjectKeys(plugin.channelConfigs as Record<string, unknown> | undefined);
+      return collectObjectKeys(plugin.channelConfigs as Record<string, any> | undefined);
     case "setupProviders":
       return plugin.setup?.providers?.map((provider) => provider.id) ?? [];
     case "cliBackends":
@@ -182,10 +182,10 @@ function listManifestContributionIds(
     case "modelCatalogProviders":
       return [
         ...collectObjectKeys(
-          (plugin.modelCatalog as { providers?: Record<string, unknown> } | undefined)?.providers,
+          (plugin.modelCatalog as { providers?: Record<string, any> } | undefined)?.providers,
         ),
         ...collectObjectKeys(
-          (plugin.modelCatalog as { aliases?: Record<string, unknown> } | undefined)?.aliases,
+          (plugin.modelCatalog as { aliases?: Record<string, any> } | undefined)?.aliases,
         ),
       ];
     case "commandAliases":
@@ -339,7 +339,7 @@ export function loadPluginManifestRegistryForPluginRegistry(
 
 /** 占位：normalizePluginsConfigWithResolver（config-normalization-shared.ts 未移植）。 */
 function normalizePluginsConfigWithResolver(
-  _config: unknown,
+  _config: any,
   _resolver: (pluginId: string) => string,
 ): NormalizedPluginsConfig {
   return {

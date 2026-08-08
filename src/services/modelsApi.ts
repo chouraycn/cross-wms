@@ -146,7 +146,7 @@ export interface FailoverDecision {
   reason?: string;
   errorCategory?: string;
   timestamp: number;
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 /** 获取所有模型的故障转移运行时健康状态 */

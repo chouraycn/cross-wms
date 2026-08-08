@@ -4,13 +4,13 @@ import { describe, expect, it } from "vitest";
 import { HEARTBEAT_RESPONSE_TOOL_NAME } from "../../auto-reply/heartbeat-tool-response.js";
 import { createHeartbeatResponseTool } from "./heartbeat-response-tool.js";
 
-function readSchemaProperty(schema: unknown, key: string): Record<string, unknown> {
-  const root = schema as { properties?: Record<string, unknown> };
+function readSchemaProperty(schema: any, key: string): Record<string, any> {
+  const root = schema as { properties?: Record<string, any> };
   const property = root.properties?.[key];
   if (property === undefined) {
     throw new Error(`expected schema property ${key}`);
   }
-  return property as Record<string, unknown>;
+  return property as Record<string, any>;
 }
 
 type HeartbeatResponseDetails = {

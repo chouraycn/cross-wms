@@ -158,22 +158,22 @@ function createOpenAiCatalogProviderPlugin(
   };
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!isRecord(value)) {
     throw new Error(`Expected ${label} to be an object`);
   }
   return value;
 }
 
-function firstMockArg(mock: { mock: { calls: unknown[][] } }): unknown {
+function firstMockArg(mock: { mock: { calls: any[][] } }): any {
   return mock.mock.calls[0]?.[0];
 }
 
-function firstMockStringArg(mock: { mock: { calls: unknown[][] } }, label: string): string {
+function firstMockStringArg(mock: { mock: { calls: any[][] } }, label: string): string {
   const value = firstMockArg(mock);
   if (typeof value !== "string") {
     throw new Error(`Expected ${label} to be a string`);
@@ -181,17 +181,17 @@ function firstMockStringArg(mock: { mock: { calls: unknown[][] } }, label: strin
   return value;
 }
 
-function expectRecordFields(record: Record<string, unknown>, fields: Record<string, unknown>) {
+function expectRecordFields(record: Record<string, any>, fields: Record<string, any>) {
   for (const [key, value] of Object.entries(fields)) {
     expect(record[key]).toEqual(value);
   }
 }
 
-function expectObjectOrArrayFields(value: unknown, fields: Record<string, unknown>) {
+function expectObjectOrArrayFields(value: any, fields: Record<string, any>) {
   if (!isRecord(value) && !Array.isArray(value)) {
     throw new Error("Expected value to be an object or array");
   }
-  const record = value as Record<string, unknown>;
+  const record = value as Record<string, any>;
   expectRecordFields(record, fields);
 }
 
@@ -210,7 +210,7 @@ function expectProviderRuntimePluginLoad(params: { provider: string; expectedPlu
   });
 }
 
-function createDemoRuntimeContext<TContext extends Record<string, unknown>>(
+function createDemoRuntimeContext<TContext extends Record<string, any>>(
   overrides: TContext,
 ): TContext & { provider: string; modelId: string } {
   return {
@@ -220,7 +220,7 @@ function createDemoRuntimeContext<TContext extends Record<string, unknown>>(
   };
 }
 
-function createDemoProviderContext<TContext extends Record<string, unknown>>(
+function createDemoProviderContext<TContext extends Record<string, any>>(
   overrides: TContext,
 ): TContext & { provider: string } {
   return {
@@ -229,7 +229,7 @@ function createDemoProviderContext<TContext extends Record<string, unknown>>(
   };
 }
 
-function createDemoResolvedModelContext<TContext extends Record<string, unknown>>(
+function createDemoResolvedModelContext<TContext extends Record<string, any>>(
   overrides: TContext,
 ): TContext & { provider: string; modelId: string; model: ProviderRuntimeModel } {
   return createDemoRuntimeContext({
@@ -238,7 +238,7 @@ function createDemoResolvedModelContext<TContext extends Record<string, unknown>
   });
 }
 
-function expectCalledOnce(...mocks: Array<{ mock: { calls: unknown[] } }>) {
+function expectCalledOnce(...mocks: Array<{ mock: { calls: any[] } }>) {
   for (const mockFn of mocks) {
     expect(mockFn).toHaveBeenCalledTimes(1);
   }
@@ -247,7 +247,7 @@ function expectCalledOnce(...mocks: Array<{ mock: { calls: unknown[] } }>) {
 function expectResolvedValues(
   cases: ReadonlyArray<{
     actual: () => unknown;
-    expected: unknown;
+    expected: any;
   }>,
 ) {
   cases.forEach(({ actual, expected }) => {
@@ -257,8 +257,8 @@ function expectResolvedValues(
 
 async function expectResolvedMatches(
   cases: ReadonlyArray<{
-    actual: () => Promise<unknown>;
-    expected: Record<string, unknown>;
+    actual: () => Promise<any>;
+    expected: Record<string, any>;
   }>,
 ) {
   await Promise.all(
@@ -270,8 +270,8 @@ async function expectResolvedMatches(
 
 async function expectResolvedAsyncValues(
   cases: ReadonlyArray<{
-    actual: () => Promise<unknown>;
-    expected: unknown;
+    actual: () => Promise<any>;
+    expected: any;
   }>,
 ) {
   await Promise.all(
@@ -289,20 +289,20 @@ describe("provider-runtime", () => {
         resolveBundledProviderPolicySurfaceMock(provider),
     }));
     vi.doMock("./providers.js", () => ({
-      resolveCatalogHookProviderPluginIds: (params: unknown) =>
+      resolveCatalogHookProviderPluginIds: (params: any) =>
         resolveCatalogHookProviderPluginIdsMock(params as never),
-      resolveExternalAuthProfileCompatFallbackPluginIds: (params: unknown) =>
+      resolveExternalAuthProfileCompatFallbackPluginIds: (params: any) =>
         resolveExternalAuthProfileCompatFallbackPluginIdsMock(params as never),
-      resolveExternalAuthProfileProviderPluginIds: (params: unknown) =>
+      resolveExternalAuthProfileProviderPluginIds: (params: any) =>
         resolveExternalAuthProfileProviderPluginIdsMock(params as never),
-      resolveOwningPluginIdsForProvider: (params: unknown) =>
+      resolveOwningPluginIdsForProvider: (params: any) =>
         resolveOwningPluginIdsForProviderMock(params as never),
-      resolveOwningPluginIdsForProviderRef: (params: unknown) =>
+      resolveOwningPluginIdsForProviderRef: (params: any) =>
         resolveOwningPluginIdsForProviderMock(params as never),
     }));
     vi.doMock("./providers.runtime.js", () => ({
-      resolvePluginProviders: (params: unknown) => resolvePluginProvidersMock(params as never),
-      isPluginProvidersLoadInFlight: (params: unknown) =>
+      resolvePluginProviders: (params: any) => resolvePluginProvidersMock(params as never),
+      isPluginProvidersLoadInFlight: (params: any) =>
         isPluginProvidersLoadInFlightMock(params as never),
     }));
     vi.doMock("../logging/subsystem.js", () => ({
@@ -1093,7 +1093,7 @@ describe("provider-runtime", () => {
       baseUrl: "https://runtime.example.com/v1",
       expiresAt: 123,
     });
-    const prepareRuntimeAuthCalls = prepareRuntimeAuth.mock.calls as unknown[][];
+    const prepareRuntimeAuthCalls = prepareRuntimeAuth.mock.calls as any[][];
     expectRecordFields(requireRecord(prepareRuntimeAuthCalls[0]?.[0], "runtime auth context"), {
       apiKey: "raw-token",
       modelId: MODEL.id,
@@ -1912,7 +1912,7 @@ describe("provider-runtime", () => {
       displayName: "Demo",
       windows: [{ label: "Day", usedPercent: 25 }],
     }));
-    resolvePluginProvidersMock.mockImplementation((_params: unknown) => {
+    resolvePluginProvidersMock.mockImplementation((_params: any) => {
       return [
         {
           id: DEMO_PROVIDER_ID,

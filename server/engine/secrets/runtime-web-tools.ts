@@ -223,7 +223,7 @@ async function resolveSecretInputWithEnvFallback(params: {
   sourceConfig: OpenClawConfig;
   context: ResolverContext;
   defaults: SecretDefaults | undefined;
-  value: unknown;
+  value: any;
   path: string;
   envVars: string[];
   restrictEnvRefsToEnvVars?: boolean;
@@ -344,7 +344,7 @@ function setResolvedWebSearchApiKey(params: {
     params.provider.setConfiguredCredentialValue(params.resolvedConfig, params.value);
     return;
   }
-  const tools = ensureObject(params.resolvedConfig as Record<string, unknown>, "tools");
+  const tools = ensureObject(params.resolvedConfig as Record<string, any>, "tools");
   const web = ensureObject(tools, "web");
   const search = ensureObject(web, "search");
   params.provider.setCredentialValue(search, params.value);
@@ -457,8 +457,8 @@ async function resolveBundledWebFetchProviders(params: {
 function readConfiguredProviderCredential(params: {
   provider: PluginWebSearchProviderEntry;
   config: OpenClawConfig;
-  search: Record<string, unknown> | undefined;
-}): unknown {
+  search: Record<string, any> | undefined;
+}): any {
   return (
     params.provider.getConfiguredCredentialValue?.(params.config) ??
     params.provider.getCredentialValue(params.search)
@@ -468,8 +468,8 @@ function readConfiguredProviderCredential(params: {
 function readConfiguredProviderCredentialFallback(params: {
   provider: PluginWebSearchProviderEntry;
   config: OpenClawConfig;
-  search: Record<string, unknown> | undefined;
-}): { path: string; value: unknown } | undefined {
+  search: Record<string, any> | undefined;
+}): { path: string; value: any } | undefined {
   return params.provider.getConfiguredCredentialFallback?.(params.config);
 }
 
@@ -487,7 +487,7 @@ function setResolvedWebFetchApiKey(params: {
   provider: PluginWebFetchProviderEntry;
   value: string;
 }): void {
-  const tools = ensureObject(params.resolvedConfig as Record<string, unknown>, "tools");
+  const tools = ensureObject(params.resolvedConfig as Record<string, any>, "tools");
   const web = ensureObject(tools, "web");
   const fetch = ensureObject(web, "fetch");
   if (params.provider.setConfiguredCredentialValue) {
@@ -500,8 +500,8 @@ function setResolvedWebFetchApiKey(params: {
 function readConfiguredFetchProviderCredential(params: {
   provider: PluginWebFetchProviderEntry;
   config: OpenClawConfig;
-  fetch: Record<string, unknown> | undefined;
-}): unknown {
+  fetch: Record<string, any> | undefined;
+}): any {
   const configuredValue = params.provider.getConfiguredCredentialValue?.(params.config);
   return configuredValue ?? params.provider.getCredentialValue(params.fetch);
 }
@@ -509,8 +509,8 @@ function readConfiguredFetchProviderCredential(params: {
 function readConfiguredFetchProviderCredentialFallback(params: {
   provider: PluginWebFetchProviderEntry;
   config: OpenClawConfig;
-  fetch: Record<string, unknown> | undefined;
-}): { path: string; value: unknown } | undefined {
+  fetch: Record<string, any> | undefined;
+}): { path: string; value: any } | undefined {
   return params.provider.getConfiguredCredentialFallback?.(params.config);
 }
 
@@ -570,8 +570,8 @@ export async function resolveRuntimeWebTools(params: {
     legacyXSearchResolved &&
     Object.hasOwn(legacyXSearchSource, "apiKey")
   ) {
-    const legacyXSearchSourceRecord = legacyXSearchSource as Record<string, unknown>;
-    const legacyXSearchResolvedRecord = legacyXSearchResolved as Record<string, unknown>;
+    const legacyXSearchSourceRecord = legacyXSearchSource as Record<string, any>;
+    const legacyXSearchResolvedRecord = legacyXSearchResolved as Record<string, any>;
     const resolution = await resolveSecretInputWithEnvFallback({
       sourceConfig: params.sourceConfig,
       context: params.context,

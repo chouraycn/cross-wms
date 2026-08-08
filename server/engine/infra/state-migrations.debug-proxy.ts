@@ -144,7 +144,7 @@ export function detectLegacyDebugProxyCaptureSidecar(
 }
 
 function listSqliteColumns(db: DatabaseSync, table: string): Set<string> {
-  const rows = db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name?: unknown }>;
+  const rows = db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name?: any }>;
   return new Set(rows.flatMap((row) => (typeof row.name === "string" ? [row.name] : [])));
 }
 
@@ -426,7 +426,7 @@ export function migrateLegacyDebugProxyCaptureSidecar(params: {
         );
         for (const blob of legacy.blobs) {
           const existing = selectBlob.get(blob.blobId) as
-            | { encoding?: unknown; sizeBytes?: unknown; sha256?: unknown; data?: Uint8Array }
+            | { encoding?: any; sizeBytes?: any; sha256?: any; data?: Uint8Array }
             | undefined;
           if (existing) {
             if (
@@ -521,7 +521,7 @@ export function migrateLegacyDebugProxyCaptureSidecar(params: {
           seenCounts.set(key, seenCount);
           let existingCount = existingCounts.get(key);
           if (existingCount === undefined) {
-            const row = existingEventCount.get(...values) as { count?: unknown } | undefined;
+            const row = existingEventCount.get(...values) as { count?: any } | undefined;
             existingCount = Number(row?.count ?? 0);
             existingCounts.set(key, existingCount);
           }

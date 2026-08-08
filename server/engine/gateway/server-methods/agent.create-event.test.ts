@@ -46,7 +46,7 @@ vi.mock("../../tasks/detached-task-runtime.js", () => ({
 
 import { agentHandlers } from "./agent.js";
 
-function firstMockCall<T extends readonly unknown[]>(mock: { mock: { calls: readonly T[] } }) {
+function firstMockCall<T extends readonly any[]>(mock: { mock: { calls: readonly T[] } }) {
   return mock.mock.calls[0];
 }
 

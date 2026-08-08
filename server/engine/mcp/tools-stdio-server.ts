@@ -31,23 +31,23 @@ export type StdioServerConfig = {
 };
 
 export type StdioRequestHandler = (
-  params: Record<string, unknown> | undefined,
-) => Promise<unknown>;
+  params: Record<string, any> | undefined,
+) => Promise<any>;
 
 export type StdioToolHandler = (
-  args: Record<string, unknown>,
+  args: Record<string, any>,
 ) => Promise<{ content: Array<{ type: string; text?: string }>; isError?: boolean }>;
 
 type McpMessage = {
   jsonrpc: '2.0';
   id?: string | number | null;
   method?: string;
-  params?: Record<string, unknown>;
-  result?: unknown;
+  params?: Record<string, any>;
+  result?: any;
   error?: {
     code: number;
     message: string;
-    data?: unknown;
+    data?: any;
   };
 };
 
@@ -111,7 +111,7 @@ export class McpStdioServer {
 
     this.registerRequestHandler(MCPMethod.TOOLS_CALL, async (params) => {
       const name = params?.name as string | undefined;
-      const args = (params?.arguments as Record<string, unknown>) ?? {};
+      const args = (params?.arguments as Record<string, any>) ?? {};
       if (!name) {
         throw new Error('Tool name required');
       }
@@ -127,7 +127,7 @@ export class McpStdioServer {
     });
   }
 
-  private handleInitialize(params: Record<string, unknown> | undefined) {
+  private handleInitialize(params: Record<string, any> | undefined) {
     if (params?.clientInfo && typeof params.clientInfo === 'object') {
       const clientInfo = params.clientInfo as { name?: string; version?: string };
       this.clientInfo = {
@@ -179,7 +179,7 @@ export class McpStdioServer {
     }));
   }
 
-  async callTool(name: string, args: Record<string, unknown>): Promise<MCPToolCallResult> {
+  async callTool(name: string, args: Record<string, any>): Promise<MCPToolCallResult> {
     const entry = this.tools.get(name);
     if (!entry) {
       return {
@@ -329,7 +329,7 @@ export class McpStdioServer {
     }
   }
 
-  sendNotification(method: string, params?: Record<string, unknown>): void {
+  sendNotification(method: string, params?: Record<string, any>): void {
     if (!this.initialized) return;
     const notification: McpMessage = {
       jsonrpc: '2.0',
@@ -339,7 +339,7 @@ export class McpStdioServer {
     this.sendMessage(notification);
   }
 
-  async sendRequest(method: string, params?: Record<string, unknown>): Promise<JsonRpcResponse> {
+  async sendRequest(method: string, params?: Record<string, any>): Promise<JsonRpcResponse> {
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const request: JsonRpcRequest = {
       jsonrpc: '2.0',

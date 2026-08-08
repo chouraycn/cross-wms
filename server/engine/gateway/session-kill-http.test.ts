@@ -20,7 +20,7 @@ const REQUESTER_ADMIN_HEADERS = {
   "x-openclaw-requester-session-key": "agent:other:main",
 };
 
-let cfg: Record<string, unknown> = {};
+let cfg: Record<string, any> = {};
 const authMock = vi.fn(async (): Promise<GatewayAuthResult> => ({ ok: true }));
 const loadSessionEntryMock = vi.fn();
 const killSubagentRunAdminMock = vi.fn();
@@ -129,10 +129,10 @@ async function expectForbiddenMissingScope(response: Response, message: string) 
   });
 }
 
-function expectErrorResponse(body: unknown, expected: { type: string; message?: string }) {
+function expectErrorResponse(body: any, expected: { type: string; message?: string }) {
   const response = body as {
-    ok?: unknown;
-    error?: { type?: unknown; message?: unknown };
+    ok?: any;
+    error?: { type?: any; message?: any };
   };
   if (Object.hasOwn(response, "ok")) {
     expect(response.ok).toBe(false);

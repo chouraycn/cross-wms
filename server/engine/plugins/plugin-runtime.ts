@@ -114,7 +114,7 @@ export class PluginRuntime {
 
   /** 加载单个插件 */
   async load(
-    manifestRaw: unknown,
+    manifestRaw: any,
     installPath: string,
     options: LoadPluginOptions = {},
   ): Promise<PluginLoadResult> {
@@ -126,7 +126,7 @@ export class PluginRuntime {
 
   /** 批量加载插件 */
   async loadBatch(
-    plugins: Array<{ manifest: unknown; installPath: string }>,
+    plugins: Array<{ manifest: any; installPath: string }>,
     options: LoadPluginOptions = {},
   ): Promise<PluginBatchLoadResult> {
     return loadPluginsBatch(plugins, {
@@ -144,8 +144,8 @@ export class PluginRuntime {
 
   /** 安装插件 */
   async install(
-    manifestRaw: unknown,
-    config?: Record<string, unknown>,
+    manifestRaw: any,
+    config?: Record<string, any>,
   ): Promise<LifecycleOperationResult> {
     assertValidManifest(manifestRaw);
     const manifest = normalizePluginManifest(manifestRaw);
@@ -155,7 +155,7 @@ export class PluginRuntime {
   /** 启用插件 */
   async activate(
     manifest: PluginManifest,
-    config?: Record<string, unknown>,
+    config?: Record<string, any>,
   ): Promise<LifecycleOperationResult> {
     const result = await activatePlugin(manifest, config);
     return result;
@@ -175,7 +175,7 @@ export class PluginRuntime {
   async update(
     manifest: PluginManifest,
     fromVersion: string,
-    config?: Record<string, unknown>,
+    config?: Record<string, any>,
   ): Promise<LifecycleOperationResult> {
     return updatePluginEntry(manifest, fromVersion, config);
   }
@@ -217,7 +217,7 @@ export class PluginRuntime {
   /** 为插件创建上下文 */
   createContext(
     manifest: PluginManifest,
-    config?: Record<string, unknown>,
+    config?: Record<string, any>,
   ): PluginContext {
     return createPluginContext({
       manifest,
@@ -261,12 +261,12 @@ export class PluginRuntime {
   // ===================== Manifest 工具 =====================
 
   /** 校验 manifest */
-  validateManifest(manifest: unknown) {
+  validateManifest(manifest: any) {
     return validatePluginManifest(manifest);
   }
 
   /** 规范化 manifest */
-  normalizeManifest(manifest: unknown): PluginManifest {
+  normalizeManifest(manifest: any): PluginManifest {
     return normalizePluginManifest(manifest);
   }
 

@@ -30,7 +30,7 @@ export const CONFIGURE_WIZARD_SECTIONS = [
 export type WizardSection = (typeof CONFIGURE_WIZARD_SECTIONS)[number];
 
 /** Parse repeated `--section` values into known configure wizard sections and invalid entries. */
-export function parseConfigureWizardSections(raw: unknown): {
+export function parseConfigureWizardSections(raw: any): {
   sections: WizardSection[];
   invalid: string[];
 } {

@@ -77,11 +77,11 @@ class I18nManager {
 
   public t(key: string, params?: Record<string, string>): string {
     const keys = key.split(".");
-    let value: unknown = this.translations[this.locale] || this.translations[DEFAULT_LOCALE];
+    let value: any = this.translations[this.locale] || this.translations[DEFAULT_LOCALE];
 
     for (const k of keys) {
       if (value && typeof value === "object") {
-        value = (value as Record<string, unknown>)[k];
+        value = (value as Record<string, any>)[k];
       } else {
         value = undefined;
         break;
@@ -92,7 +92,7 @@ class I18nManager {
       value = this.translations[DEFAULT_LOCALE];
       for (const k of keys) {
         if (value && typeof value === "object") {
-          value = (value as Record<string, unknown>)[k];
+          value = (value as Record<string, any>)[k];
         } else {
           value = undefined;
           break;

@@ -482,7 +482,7 @@ export function buildGatewayStatusJsonPayload(params: {
     | {
         connectLatencyMs?: number | null;
         error?: string | null;
-        health?: unknown;
+        health?: any;
       }
     | null
     | undefined;
@@ -512,7 +512,7 @@ export function buildGatewayStatusJsonPayload(params: {
     "modelPricing" in params.gatewayProbe.health
       ? {
           // Preserve model pricing when the gateway already returned it; do not synthesize pricing locally.
-          modelPricing: (params.gatewayProbe.health as { modelPricing?: unknown }).modelPricing,
+          modelPricing: (params.gatewayProbe.health as { modelPricing?: any }).modelPricing,
         }
       : {}),
   };

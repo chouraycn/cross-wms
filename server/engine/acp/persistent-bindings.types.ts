@@ -31,7 +31,7 @@ export type SessionBindingRecord = {
   };
   status: string;
   boundAt: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 export type ResolvedConfiguredAcpBinding = {
@@ -39,12 +39,12 @@ export type ResolvedConfiguredAcpBinding = {
   record: SessionBindingRecord;
 };
 
-export function normalizeMode(value: unknown): AcpRuntimeSessionMode {
+export function normalizeMode(value: any): AcpRuntimeSessionMode {
   const raw = typeof value === "string" ? value.trim().toLowerCase() : "";
   return raw === "oneshot" ? "oneshot" : "persistent";
 }
 
-export function normalizeBindingConfig(raw: unknown): {
+export function normalizeBindingConfig(raw: any): {
   mode?: AcpRuntimeSessionMode;
   cwd?: string;
   backend?: string;

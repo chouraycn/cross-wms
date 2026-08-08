@@ -1,7 +1,7 @@
 import { logger } from '../../logger.js';
 
 /** Check if an error is a gateway connect assembly error. */
-export function isGatewayConnectAssemblyError(err: unknown): boolean {
+export function isGatewayConnectAssemblyError(err: any): boolean {
   if (err instanceof Error) {
     return err.message.includes('gateway connect') || err.message.includes('assembly');
   }
@@ -52,7 +52,7 @@ export class GatewayClient {
 
   async request<T = unknown>(
     method: string,
-    params?: Record<string, unknown>,
+    params?: Record<string, any>,
     options?: GatewayClientRequestOptions,
   ): Promise<T> {
     if (!this.connected) {

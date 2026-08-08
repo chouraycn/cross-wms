@@ -6,10 +6,10 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function normalizePositiveLimit(..._args: unknown[]): unknown {
+export function normalizePositiveLimit(..._args: any[]): any {
   return undefined;
 }
-export function appendBoundedTextTail(..._args: unknown[]): unknown {
+export function appendBoundedTextTail(..._args: any[]): any {
   return undefined;
 }
-export const SESSION_TOOL_STDERR_TAIL_BYTES: unknown = undefined;
+export const SESSION_TOOL_STDERR_TAIL_BYTES: any = undefined;

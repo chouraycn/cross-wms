@@ -21,7 +21,7 @@ installGatewayTestHooks({ scope: "suite" });
 const createStubChannelPlugin = (params: {
   id: ChannelPlugin["id"];
   label: string;
-  summary?: Record<string, unknown>;
+  summary?: Record<string, any>;
   logoutCleared?: boolean;
 }): ChannelPlugin => ({
   ...createChannelTestPluginBase({
@@ -115,8 +115,8 @@ describe("gateway server channels", () => {
         {
           configured?: boolean;
           tokenSource?: string;
-          probe?: unknown;
-          lastProbeAt?: unknown;
+          probe?: any;
+          lastProbeAt?: any;
           linked?: boolean;
         }
       >;

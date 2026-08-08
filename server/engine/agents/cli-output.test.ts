@@ -1027,7 +1027,7 @@ describe("createCliJsonlStreamingParser", () => {
 
   it("surfaces Claude tool_use start and result events", () => {
     const starts: CliToolUseStartDelta[] = [];
-    const results: Array<{ toolCallId: string; name: string; isError: boolean; result?: unknown }> =
+    const results: Array<{ toolCallId: string; name: string; isError: boolean; result?: any }> =
       [];
     const parser = createCliJsonlStreamingParser({
       backend: {
@@ -1239,7 +1239,7 @@ describe("createCliJsonlStreamingParser", () => {
     },
   ])("emits hosted result events for $useType", (fixture) => {
     const starts: CliToolUseStartDelta[] = [];
-    const results: Array<{ toolCallId: string; name: string; isError: boolean; result?: unknown }> =
+    const results: Array<{ toolCallId: string; name: string; isError: boolean; result?: any }> =
       [];
     const parser = createCliJsonlStreamingParser({
       backend: {
@@ -1294,7 +1294,7 @@ describe("createCliJsonlStreamingParser", () => {
   });
 
   it("emits streamed server tool result blocks", () => {
-    const results: Array<{ toolCallId: string; name: string; isError: boolean; result?: unknown }> =
+    const results: Array<{ toolCallId: string; name: string; isError: boolean; result?: any }> =
       [];
     const parser = createCliJsonlStreamingParser({
       backend: {

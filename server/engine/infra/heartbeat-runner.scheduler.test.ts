@@ -13,7 +13,7 @@ import {
 
 describe("startHeartbeatRunner", () => {
   type RunOnce = Parameters<typeof startHeartbeatRunner>[0]["runOnce"];
-  type MockRunOnce = RunOnce & { mock: { calls: unknown[][] } };
+  type MockRunOnce = RunOnce & { mock: { calls: any[][] } };
   const TEST_SCHEDULER_SEED = "heartbeat-runner-test-seed";
 
   function useFakeHeartbeatTime() {
@@ -72,13 +72,13 @@ describe("startHeartbeatRunner", () => {
     if (!options || typeof options !== "object") {
       throw new Error(`expected heartbeat run options ${callIndex}`);
     }
-    return options as Record<string, unknown>;
+    return options as Record<string, any>;
   }
 
   function expectRunCallFields(
     runSpy: MockRunOnce,
     callIndex: number,
-    expected: Record<string, unknown>,
+    expected: Record<string, any>,
   ) {
     const options = getRunCall(runSpy, callIndex);
     for (const [key, value] of Object.entries(expected)) {
@@ -146,7 +146,7 @@ describe("startHeartbeatRunner", () => {
     cfg: OpenClawConfig;
     runSpy: MockRunOnce;
     wake: Parameters<typeof requestHeartbeat>[0];
-    expectedCall: Record<string, unknown>;
+    expectedCall: Record<string, any>;
   }) {
     const runner = startHeartbeatRunner({
       cfg: params.cfg,

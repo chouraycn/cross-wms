@@ -8,7 +8,7 @@
 /** Reads the generated models JSON file for test assertions. */
 export function readGeneratedModelsJson(
   _filePath?: string,
-): Record<string, unknown> | undefined {
+): Record<string, any> | undefined {
   // Cross-wms does not have the generated models JSON artifact in the same location.
   return undefined;
 }

@@ -40,10 +40,10 @@ async function siliconFlowSearch(
       throw new Error(`硅基流动搜索失败: HTTP ${response.status} ${errorText}`);
     }
 
-    const data = (await response.json()) as Record<string, unknown>;
+    const data = (await response.json()) as Record<string, any>;
     const results: Array<{ title: string; url: string; snippet?: string }> = [];
 
-    const items = (data.results as Array<Record<string, unknown>>) || [];
+    const items = (data.results as Array<Record<string, any>>) || [];
     for (const item of items) {
       const title = String(item.title || item.name || '');
       const url = String(item.url || item.link || '');
@@ -80,16 +80,16 @@ const plugin: WebSearchProviderPlugin = {
   inactiveSecretPaths: [],
   autoDetectOrder: 3,
 
-  getCredentialValue(searchConfig?: Record<string, unknown>): unknown {
+  getCredentialValue(searchConfig?: Record<string, any>): any {
     return searchConfig?.apiKey;
   },
-  setCredentialValue(searchConfigTarget: Record<string, unknown>, value: unknown): void {
+  setCredentialValue(searchConfigTarget: Record<string, any>, value: any): void {
     searchConfigTarget.apiKey = value;
   },
-  getConfiguredCredentialValue(config: Record<string, unknown>): unknown {
+  getConfiguredCredentialValue(config: Record<string, any>): any {
     return config.apiKey;
   },
-  setConfiguredCredentialValue(configTarget: Record<string, unknown>, value: unknown): void {
+  setConfiguredCredentialValue(configTarget: Record<string, any>, value: any): void {
     configTarget.apiKey = value;
   },
 

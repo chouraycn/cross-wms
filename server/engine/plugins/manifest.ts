@@ -539,7 +539,7 @@ export type PluginManifestLoadResult =
   | { ok: true; manifest: PluginManifest; manifestPath: string }
   | { ok: false; error: string; manifestPath: string };
 
-function normalizeStringListRecord(value: unknown): Record<string, string[]> | undefined {
+function normalizeStringListRecord(value: any): Record<string, string[]> | undefined {
   if (!isRecord(value)) {
     return undefined;
   }
@@ -558,7 +558,7 @@ function normalizeStringListRecord(value: unknown): Record<string, string[]> | u
   return Object.keys(normalized).length > 0 ? normalized : undefined;
 }
 
-function normalizeStringRecord(value: unknown): Record<string, string> | undefined {
+function normalizeStringRecord(value: any): Record<string, string> | undefined {
   if (!isRecord(value)) {
     return undefined;
   }
@@ -577,7 +577,7 @@ function normalizeStringRecord(value: unknown): Record<string, string> | undefin
 const MEDIA_UNDERSTANDING_CAPABILITIES = new Set(["image", "audio", "video"]);
 
 function normalizeMediaUnderstandingCapabilityRecord(
-  value: unknown,
+  value: any,
 ): Partial<Record<PluginManifestMediaUnderstandingCapability, string>> | undefined {
   if (!isRecord(value)) {
     return undefined;
@@ -596,7 +596,7 @@ function normalizeMediaUnderstandingCapabilityRecord(
 }
 
 function normalizeMediaUnderstandingPriorityRecord(
-  value: unknown,
+  value: any,
 ): Partial<Record<PluginManifestMediaUnderstandingCapability, number>> | undefined {
   if (!isRecord(value)) {
     return undefined;
@@ -616,7 +616,7 @@ function normalizeMediaUnderstandingPriorityRecord(
 }
 
 function normalizeMediaUnderstandingCapabilities(
-  value: unknown,
+  value: any,
 ): PluginManifestMediaUnderstandingCapability[] | undefined {
   const values = normalizeTrimmedStringList(value).filter((entry) =>
     MEDIA_UNDERSTANDING_CAPABILITIES.has(entry),
@@ -624,13 +624,13 @@ function normalizeMediaUnderstandingCapabilities(
   return values.length > 0 ? values : undefined;
 }
 
-function normalizeMediaUnderstandingNativeDocumentInputs(value: unknown): Array<"pdf"> | undefined {
+function normalizeMediaUnderstandingNativeDocumentInputs(value: any): Array<"pdf"> | undefined {
   const values = normalizeTrimmedStringList(value).filter((entry) => entry === "pdf");
   return values.length > 0 ? values : undefined;
 }
 
 function normalizeMediaUnderstandingDocumentModels(
-  value: unknown,
+  value: any,
 ): PluginManifestMediaUnderstandingProviderMetadata["documentModels"] | undefined {
   if (!isRecord(value)) {
     return undefined;
@@ -650,7 +650,7 @@ function normalizeMediaUnderstandingDocumentModels(
 }
 
 function normalizeMediaUnderstandingProviderMetadata(
-  value: unknown,
+  value: any,
 ): Record<string, PluginManifestMediaUnderstandingProviderMetadata> | undefined {
   if (!isRecord(value)) {
     return undefined;
@@ -684,7 +684,7 @@ function normalizeMediaUnderstandingProviderMetadata(
 }
 
 function normalizeProviderBaseUrlGuard(
-  value: unknown,
+  value: any,
 ): PluginManifestProviderBaseUrlGuard | undefined {
   if (!isRecord(value)) {
     return undefined;
@@ -703,7 +703,7 @@ function normalizeProviderBaseUrlGuard(
 }
 
 function normalizeCapabilityProviderAuthSignals(
-  value: unknown,
+  value: any,
 ): PluginManifestCapabilityProviderAuthSignal[] | undefined {
   if (!Array.isArray(value)) {
     return undefined;
@@ -727,7 +727,7 @@ function normalizeCapabilityProviderAuthSignals(
 }
 
 function normalizeCapabilityProviderModeConfigSignal(
-  value: unknown,
+  value: any,
 ): PluginManifestCapabilityProviderModeConfigSignal | undefined {
   if (!isRecord(value)) {
     return undefined;
@@ -746,7 +746,7 @@ function normalizeCapabilityProviderModeConfigSignal(
 }
 
 function normalizeCapabilityProviderConfigSignals(
-  value: unknown,
+  value: any,
 ): PluginManifestCapabilityProviderConfigSignal[] | undefined {
   if (!Array.isArray(value)) {
     return undefined;
@@ -781,7 +781,7 @@ function normalizeCapabilityProviderConfigSignals(
 }
 
 function normalizeCapabilityProviderMetadataEntry(
-  rawMetadata: Record<string, unknown>,
+  rawMetadata: Record<string, any>,
 ): PluginManifestCapabilityProviderMetadata | undefined {
   const aliases = normalizeTrimmedStringList(rawMetadata.aliases);
   const authProviders = normalizeTrimmedStringList(rawMetadata.authProviders);
@@ -799,7 +799,7 @@ function normalizeCapabilityProviderMetadataEntry(
 }
 
 function normalizeCapabilityProviderMetadata(
-  value: unknown,
+  value: any,
 ): Record<string, PluginManifestCapabilityProviderMetadata> | undefined {
   if (!isRecord(value)) {
     return undefined;
@@ -819,7 +819,7 @@ function normalizeCapabilityProviderMetadata(
 }
 
 function normalizePluginToolMetadata(
-  value: unknown,
+  value: any,
 ): Record<string, PluginManifestToolMetadata> | undefined {
   if (!isRecord(value)) {
     return undefined;
@@ -843,7 +843,7 @@ function normalizePluginToolMetadata(
   return Object.keys(normalized).length > 0 ? normalized : undefined;
 }
 
-function normalizeManifestContracts(value: unknown): PluginManifestContracts | undefined {
+function normalizeManifestContracts(value: any): PluginManifestContracts | undefined {
   if (!isRecord(value)) {
     return undefined;
   }
@@ -898,7 +898,7 @@ function normalizeManifestContracts(value: unknown): PluginManifestContracts | u
   return Object.keys(contracts).length > 0 ? contracts : undefined;
 }
 
-function isManifestConfigLiteral(value: unknown): value is PluginManifestConfigLiteral {
+function isManifestConfigLiteral(value: any): value is PluginManifestConfigLiteral {
   return (
     value === null ||
     typeof value === "string" ||
@@ -908,7 +908,7 @@ function isManifestConfigLiteral(value: unknown): value is PluginManifestConfigL
 }
 
 function normalizeManifestDangerousConfigFlags(
-  value: unknown,
+  value: any,
 ): PluginManifestDangerousConfigFlag[] | undefined {
   if (!Array.isArray(value)) {
     return undefined;
@@ -928,7 +928,7 @@ function normalizeManifestDangerousConfigFlags(
 }
 
 function normalizeManifestSecretInputPaths(
-  value: unknown,
+  value: any,
 ): PluginManifestSecretInputPath[] | undefined {
   if (!Array.isArray(value)) {
     return undefined;
@@ -952,7 +952,7 @@ function normalizeManifestSecretInputPaths(
 }
 
 function normalizeManifestConfigContracts(
-  value: unknown,
+  value: any,
 ): PluginManifestConfigContracts | undefined {
   if (!isRecord(value)) {
     return undefined;
@@ -984,7 +984,7 @@ function normalizeManifestConfigContracts(
   return Object.keys(configContracts).length > 0 ? configContracts : undefined;
 }
 
-function normalizeManifestModelSupport(value: unknown): PluginManifestModelSupport | undefined {
+function normalizeManifestModelSupport(value: any): PluginManifestModelSupport | undefined {
   if (!isRecord(value)) {
     return undefined;
   }
@@ -1000,7 +1000,7 @@ function normalizeManifestModelSupport(value: unknown): PluginManifestModelSuppo
 }
 
 function normalizeManifestModelPricingSource(
-  value: unknown,
+  value: any,
 ): PluginManifestModelPricingSource | false | undefined {
   if (value === false) {
     return false;
@@ -1021,7 +1021,7 @@ function normalizeManifestModelPricingSource(
 }
 
 function normalizeManifestModelPricingProvider(
-  value: unknown,
+  value: any,
 ): PluginManifestModelPricingProvider | undefined {
   if (!isRecord(value)) {
     return undefined;
@@ -1037,7 +1037,7 @@ function normalizeManifestModelPricingProvider(
 }
 
 function normalizeManifestModelPricing(
-  value: unknown,
+  value: any,
   params: { ownedProviders: ReadonlySet<string> },
 ): PluginManifestModelPricing | undefined {
   if (!isRecord(value) || !isRecord(value.providers)) {
@@ -1063,7 +1063,7 @@ function normalizeManifestModelPricing(
 }
 
 function normalizeManifestModelIdPrefixRules(
-  value: unknown,
+  value: any,
 ): PluginManifestModelIdPrefixRule[] | undefined {
   if (!Array.isArray(value)) {
     return undefined;
@@ -1084,7 +1084,7 @@ function normalizeManifestModelIdPrefixRules(
 }
 
 function normalizeManifestModelIdNormalizationProvider(
-  value: unknown,
+  value: any,
 ): PluginManifestModelIdNormalizationProvider | undefined {
   if (!isRecord(value)) {
     return undefined;
@@ -1116,7 +1116,7 @@ function normalizeManifestModelIdNormalizationProvider(
 }
 
 function normalizeManifestModelIdNormalization(
-  value: unknown,
+  value: any,
   params: { ownedProviders: ReadonlySet<string> },
 ): PluginManifestModelIdNormalization | undefined {
   if (!isRecord(value) || !isRecord(value.providers)) {
@@ -1142,7 +1142,7 @@ function normalizeManifestModelIdNormalization(
 }
 
 function normalizeManifestProviderEndpoints(
-  value: unknown,
+  value: any,
 ): PluginManifestProviderEndpoint[] | undefined {
   if (!Array.isArray(value)) {
     return undefined;
@@ -1183,7 +1183,7 @@ function normalizeManifestProviderEndpoints(
 }
 
 function normalizeManifestProviderRequestProvider(
-  value: unknown,
+  value: any,
 ): PluginManifestProviderRequestProvider | undefined {
   if (!isRecord(value)) {
     return undefined;
@@ -1207,7 +1207,7 @@ function normalizeManifestProviderRequestProvider(
 }
 
 function normalizeManifestProviderRequest(
-  value: unknown,
+  value: any,
   params: { ownedProviders: ReadonlySet<string> },
 ): PluginManifestProviderRequest | undefined {
   if (!isRecord(value) || !isRecord(value.providers)) {
@@ -1233,7 +1233,7 @@ function normalizeManifestProviderRequest(
 }
 
 function normalizeManifestStringArray(
-  value: unknown,
+  value: any,
   options?: { maxItems?: number; maxLength?: number; pattern?: RegExp },
 ): string[] | undefined {
   if (!Array.isArray(value)) {
@@ -1259,7 +1259,7 @@ function normalizeManifestStringArray(
 }
 
 function normalizeManifestTrimmedStringArray(
-  value: unknown,
+  value: any,
   options?: { maxItems?: number; pattern?: RegExp },
 ): string[] | undefined {
   const normalized = normalizeTrimmedStringList(value).filter(
@@ -1270,14 +1270,14 @@ function normalizeManifestTrimmedStringArray(
   return limited.length > 0 ? limited : undefined;
 }
 
-function normalizeManifestPositiveInteger(value: unknown, max: number): number | undefined {
+function normalizeManifestPositiveInteger(value: any, max: number): number | undefined {
   return typeof value === "number" && Number.isInteger(value) && value > 0 && value <= max
     ? value
     : undefined;
 }
 
 function normalizeManifestSecretProviderIntegrations(
-  value: unknown,
+  value: any,
 ): Record<string, PluginManifestSecretProviderIntegration> | undefined {
   if (!isRecord(value)) {
     return undefined;
@@ -1337,7 +1337,7 @@ function normalizeManifestSecretProviderIntegrations(
   return Object.keys(normalized).length > 0 ? normalized : undefined;
 }
 
-export function normalizeManifestActivation(value: unknown): PluginManifestActivation | undefined {
+export function normalizeManifestActivation(value: any): PluginManifestActivation | undefined {
   if (!isRecord(value)) {
     return undefined;
   }
@@ -1385,7 +1385,7 @@ const MANIFEST_DEFAULT_ENABLEMENT_PLATFORMS = new Set<PluginManifestDefaultPlatf
   "netbsd",
 ]);
 
-function normalizeManifestDefaultPlatforms(value: unknown): PluginManifestDefaultPlatform[] {
+function normalizeManifestDefaultPlatforms(value: any): PluginManifestDefaultPlatform[] {
   return normalizeTrimmedStringList(value).filter(
     (platform): platform is PluginManifestDefaultPlatform =>
       MANIFEST_DEFAULT_ENABLEMENT_PLATFORMS.has(platform as PluginManifestDefaultPlatform),
@@ -1393,7 +1393,7 @@ function normalizeManifestDefaultPlatforms(value: unknown): PluginManifestDefaul
 }
 
 function normalizeManifestSetupProviders(
-  value: unknown,
+  value: any,
 ): PluginManifestSetupProvider[] | undefined {
   if (!Array.isArray(value)) {
     return undefined;
@@ -1421,7 +1421,7 @@ function normalizeManifestSetupProviders(
 }
 
 function normalizeManifestSetupProviderAuthEvidence(
-  value: unknown,
+  value: any,
 ): PluginManifestSetupProviderAuthEvidence[] | undefined {
   if (!Array.isArray(value)) {
     return undefined;
@@ -1456,7 +1456,7 @@ function normalizeManifestSetupProviderAuthEvidence(
   return normalized.length > 0 ? normalized : undefined;
 }
 
-function normalizeManifestSetup(value: unknown): PluginManifestSetup | undefined {
+function normalizeManifestSetup(value: any): PluginManifestSetup | undefined {
   if (!isRecord(value)) {
     return undefined;
   }
@@ -1474,7 +1474,7 @@ function normalizeManifestSetup(value: unknown): PluginManifestSetup | undefined
   return Object.keys(setup).length > 0 ? setup : undefined;
 }
 
-function normalizeManifestQaRunners(value: unknown): PluginManifestQaRunner[] | undefined {
+function normalizeManifestQaRunners(value: any): PluginManifestQaRunner[] | undefined {
   if (!Array.isArray(value)) {
     return undefined;
   }
@@ -1497,7 +1497,7 @@ function normalizeManifestQaRunners(value: unknown): PluginManifestQaRunner[] | 
 }
 
 function normalizeProviderAuthChoices(
-  value: unknown,
+  value: any,
 ): PluginManifestProviderAuthChoice[] | undefined {
   if (!Array.isArray(value)) {
     return undefined;
@@ -1560,7 +1560,7 @@ function normalizeProviderAuthChoices(
 }
 
 function normalizeChannelConfigs(
-  value: unknown,
+  value: any,
 ): Record<string, PluginManifestChannelConfig> | undefined {
   if (!isRecord(value)) {
     return undefined;
@@ -1600,7 +1600,7 @@ function normalizeChannelConfigs(
 }
 
 export function normalizeManifestChannelCommandDefaults(
-  value: unknown,
+  value: any,
 ): PluginManifestChannelCommandDefaults | undefined {
   if (!isRecord(value)) {
     return undefined;
@@ -1678,7 +1678,7 @@ function setCachedPluginManifestLoadResult(
   });
 }
 
-function parsePluginKind(raw: unknown): PluginKind | PluginKind[] | undefined {
+function parsePluginKind(raw: any): PluginKind | PluginKind[] | undefined {
   if (typeof raw === "string") {
     return raw as PluginKind;
   }
@@ -1731,7 +1731,7 @@ export function loadPluginManifest(
     setCachedPluginManifestLoadResult(cacheKey, stats, result);
     return result;
   };
-  let raw: unknown;
+  let raw: any;
   try {
     raw = parseJsonWithJson5Fallback(fs.readFileSync(opened.fd, "utf-8"));
   } catch (err) {
@@ -2011,7 +2011,7 @@ export function getPackageManifestMetadata(
 export function resolvePackageExtensionEntries(
   manifest: PackageManifest | undefined,
 ): PackageExtensionResolution {
-  const rawOpenClaw = manifest?.[MANIFEST_KEY] as unknown;
+  const rawOpenClaw = manifest?.[MANIFEST_KEY] as any;
   if (rawOpenClaw === undefined || rawOpenClaw === null) {
     return { status: "missing", entries: [] };
   }

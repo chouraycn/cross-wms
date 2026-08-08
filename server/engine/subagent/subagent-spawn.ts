@@ -247,7 +247,7 @@ export async function spawnSubagent(
   }
 }
 
-export function validateSpawnOptions(options: unknown): {
+export function validateSpawnOptions(options: any): {
   success: boolean;
   data?: SpawnOptions;
   error?: string;

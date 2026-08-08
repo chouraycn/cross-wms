@@ -27,7 +27,7 @@ export type SubagentCommandContext = {
   workspaceDir?: string;
   userId?: string;
   agentId?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 // 子 agent 命令处理结果

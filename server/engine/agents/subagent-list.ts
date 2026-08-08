@@ -182,6 +182,6 @@ export function buildLatestSubagentRunIndex(runs: SubagentRunRecord[]) {
 }
 
 /** Stub: session entry resolution by key is not available in cross-wms. */
-export function resolveSessionEntryForKey(_params?: unknown): unknown {
+export function resolveSessionEntryForKey(_params?: any): any {
   return undefined;
 }

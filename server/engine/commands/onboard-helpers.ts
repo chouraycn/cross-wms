@@ -132,7 +132,7 @@ function formatGatewayBind(value: string | undefined): string | undefined {
 }
 
 /** Normalizes gateway token prompts while rejecting JS stringification sentinels. */
-export function normalizeGatewayTokenInput(value: unknown): string {
+export function normalizeGatewayTokenInput(value: any): string {
   if (typeof value !== "string") {
     return "";
   }
@@ -146,7 +146,7 @@ export function normalizeGatewayTokenInput(value: unknown): string {
 }
 
 /** Validates gateway password prompt input. */
-export function validateGatewayPasswordInput(value: unknown): string | undefined {
+export function validateGatewayPasswordInput(value: any): string | undefined {
   if (typeof value !== "string") {
     return "Required";
   }
@@ -393,8 +393,8 @@ export async function waitForGatewayReachable(params: {
   return { ok: false, detail: lastDetail };
 }
 
-function summarizeError(err: unknown): string {
-  let raw = "unknown error";
+function summarizeError(err: any): string {
+  let raw = "any error";
   if (err instanceof Error) {
     raw = err.message || raw;
   } else if (typeof err === "string") {

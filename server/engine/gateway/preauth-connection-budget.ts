@@ -2,6 +2,6 @@
 
 export type PreauthConnectionBudget = unknown;
 
-export function createPreauthConnectionBudget(...args: unknown[]): unknown {
+export function createPreauthConnectionBudget(...args: any[]): any {
   return undefined;
 }

@@ -107,7 +107,7 @@ async function assertUnmanagedGatewayRestartEnabled(port: number): Promise<void>
   if (!probe?.ok) {
     return;
   }
-  if (!isRestartEnabled(probe.configSnapshot as { commands?: unknown } | undefined)) {
+  if (!isRestartEnabled(probe.configSnapshot as { commands?: any } | undefined)) {
     throw new Error(
       "Gateway restart is disabled in the running gateway config (commands.restart=false); unmanaged SIGUSR1 restart would be ignored",
     );

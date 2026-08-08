@@ -4,10 +4,10 @@ import { createSessionsHistoryTool } from "./tools/sessions-history-tool.js";
 
 const callGatewayMock = vi.fn();
 vi.mock("../gateway/call.js", () => ({
-  callGateway: (opts: unknown) => callGatewayMock(opts),
+  callGateway: (opts: any) => callGatewayMock(opts),
 }));
 
-let mockConfig: Record<string, unknown> = {
+let mockConfig: Record<string, any> = {
   session: { mainKey: "main", scope: "per-sender" },
 };
 vi.mock("../config/config.js", async () => {
@@ -23,17 +23,17 @@ function getSessionsHistoryTool(options?: { sandboxed?: boolean }) {
     agentSessionKey: "main",
     sandboxed: options?.sandboxed,
     config: mockConfig as never,
-    callGateway: (opts: unknown) => callGatewayMock(opts),
+    callGateway: (opts: any) => callGatewayMock(opts),
   });
 }
 
 function mockGatewayWithHistory(
-  extra?: (req: { method?: string; params?: Record<string, unknown> }) => unknown,
+  extra?: (req: { method?: string; params?: Record<string, any> }) => unknown,
 ) {
   // Most visibility tests need chat.history plus optional session resolution/listing.
   callGatewayMock.mockClear();
-  callGatewayMock.mockImplementation(async (opts: unknown) => {
-    const req = opts as { method?: string; params?: Record<string, unknown> };
+  callGatewayMock.mockImplementation(async (opts: any) => {
+    const req = opts as { method?: string; params?: Record<string, any> };
     const handled = extra?.(req);
     if (handled !== undefined) {
       return handled;

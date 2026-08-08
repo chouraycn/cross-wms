@@ -116,7 +116,7 @@ vi.mock("../plugins/installed-plugin-index-records.js", async () => {
   };
 });
 
-function asConfig(value: unknown): OpenClawConfig {
+function asConfig(value: any): OpenClawConfig {
   return value as OpenClawConfig;
 }
 
@@ -135,12 +135,12 @@ function providerPluginId(provider: ProviderUnderTest): string {
   }
 }
 
-function ensureRecord(target: Record<string, unknown>, key: string): Record<string, unknown> {
+function ensureRecord(target: Record<string, any>, key: string): Record<string, any> {
   const current = target[key];
   if (typeof current === "object" && current !== null && !Array.isArray(current)) {
-    return current as Record<string, unknown>;
+    return current as Record<string, any>;
   }
-  const next: Record<string, unknown> = {};
+  const next: Record<string, any> = {};
   target[key] = next;
   return next;
 }
@@ -148,9 +148,9 @@ function ensureRecord(target: Record<string, unknown>, key: string): Record<stri
 function setConfiguredProviderKey(
   configTarget: OpenClawConfig,
   pluginId: string,
-  value: unknown,
+  value: any,
 ): void {
-  const plugins = ensureRecord(configTarget as Record<string, unknown>, "plugins");
+  const plugins = ensureRecord(configTarget as Record<string, any>, "plugins");
   const entries = ensureRecord(plugins, "entries");
   const pluginEntry = ensureRecord(entries, pluginId);
   const config = ensureRecord(pluginEntry, "config");
@@ -158,8 +158,8 @@ function setConfiguredProviderKey(
   webSearch.apiKey = value;
 }
 
-function setConfiguredFetchProviderKey(configTarget: OpenClawConfig, value: unknown): void {
-  const plugins = ensureRecord(configTarget as Record<string, unknown>, "plugins");
+function setConfiguredFetchProviderKey(configTarget: OpenClawConfig, value: any): void {
+  const plugins = ensureRecord(configTarget as Record<string, any>, "plugins");
   const entries = ensureRecord(plugins, "entries");
   const pluginEntry = ensureRecord(entries, "firecrawl");
   const config = ensureRecord(pluginEntry, "config");
@@ -194,14 +194,14 @@ function createTestProvider(params: {
       const entryConfig = config?.plugins?.entries?.[params.pluginId]?.config;
       const configuredValue =
         entryConfig && typeof entryConfig === "object"
-          ? (entryConfig as { webSearch?: { apiKey?: unknown } }).webSearch?.apiKey
+          ? (entryConfig as { webSearch?: { apiKey?: any } }).webSearch?.apiKey
           : undefined;
       if (configuredValue !== undefined || params.provider !== "brave") {
         return configuredValue;
       }
       const search = config?.tools?.web?.search;
       return search && typeof search === "object"
-        ? (search as { apiKey?: unknown }).apiKey
+        ? (search as { apiKey?: any }).apiKey
         : undefined;
     },
     getConfiguredCredentialFallback: (config) => {
@@ -210,7 +210,7 @@ function createTestProvider(params: {
         return search && typeof search === "object" && "apiKey" in search
           ? {
               path: "tools.web.search.apiKey",
-              value: (search as { apiKey?: unknown }).apiKey,
+              value: (search as { apiKey?: any }).apiKey,
             }
           : undefined;
       }
@@ -219,7 +219,7 @@ function createTestProvider(params: {
         return provider && typeof provider === "object" && "apiKey" in provider
           ? {
               path: "models.providers.google.apiKey",
-              value: (provider as { apiKey?: unknown }).apiKey,
+              value: (provider as { apiKey?: any }).apiKey,
             }
           : undefined;
       }
@@ -270,14 +270,14 @@ function buildTestWebFetchProviders(): PluginWebFetchProviderEntry[] {
       getConfiguredCredentialValue: (config) => {
         const entryConfig = config?.plugins?.entries?.firecrawl?.config;
         return entryConfig && typeof entryConfig === "object"
-          ? (entryConfig as { webFetch?: { apiKey?: unknown } }).webFetch?.apiKey
+          ? (entryConfig as { webFetch?: { apiKey?: any } }).webFetch?.apiKey
           : undefined;
       },
       getConfiguredCredentialFallback: (config) => {
         const entryConfig = config?.plugins?.entries?.firecrawl?.config;
         const apiKey =
           entryConfig && typeof entryConfig === "object"
-            ? (entryConfig as { webSearch?: { apiKey?: unknown } }).webSearch?.apiKey
+            ? (entryConfig as { webSearch?: { apiKey?: any } }).webSearch?.apiKey
             : undefined;
         return apiKey === undefined
           ? undefined
@@ -337,27 +337,27 @@ function createProviderSecretRefConfig(
   });
 }
 
-function readProviderKey(config: OpenClawConfig, provider: ProviderUnderTest): unknown {
+function readProviderKey(config: OpenClawConfig, provider: ProviderUnderTest): any {
   const pluginConfig = config.plugins?.entries?.[providerPluginId(provider)]?.config as
-    | { webSearch?: { apiKey?: unknown } }
+    | { webSearch?: { apiKey?: any } }
     | undefined;
   return pluginConfig?.webSearch?.apiKey;
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object") {
     throw new Error(`expected ${label}`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function diagnostics(value: unknown) {
+function diagnostics(value: any) {
   expect(Array.isArray(value), "diagnostics").toBe(true);
-  return value as Array<Record<string, unknown>>;
+  return value as Array<Record<string, any>>;
 }
 
 function expectDiagnostic(
-  value: unknown,
+  value: any,
   fields: { code: string; path?: string; messageIncludes?: string },
 ) {
   const diagnostic = diagnostics(value).find(
@@ -374,11 +374,11 @@ function expectDiagnostic(
   }
 }
 
-function expectNoDiagnosticCode(value: unknown, code: string) {
+function expectNoDiagnosticCode(value: any, code: string) {
   expect(diagnostics(value).some((diagnostic) => diagnostic.code === code)).toBe(false);
 }
 
-function firstMockArg(source: { mock: { calls: Array<Array<unknown>> } }) {
+function firstMockArg(source: { mock: { calls: Array<Array<any>> } }) {
   const call = source.mock.calls[0];
   if (!call) {
     throw new Error("expected mock call options");
@@ -1478,7 +1478,7 @@ describe("runtime web tools resolution", () => {
     expect(
       (
         resolvedConfig.plugins?.entries?.firecrawl?.config as
-          | { webFetch?: { apiKey?: unknown } }
+          | { webFetch?: { apiKey?: any } }
           | undefined
       )?.webFetch?.apiKey,
     ).toBe("firecrawl-config-key");
@@ -1518,7 +1518,7 @@ describe("runtime web tools resolution", () => {
     expect(
       (
         resolvedConfig.plugins?.entries?.firecrawl?.config as
-          | { webFetch?: { apiKey?: unknown } }
+          | { webFetch?: { apiKey?: any } }
           | undefined
       )?.webFetch?.apiKey,
     ).toBe("firecrawl-fallback-key");
@@ -1560,7 +1560,7 @@ describe("runtime web tools resolution", () => {
     expect(
       (
         resolvedConfig.plugins?.entries?.firecrawl?.config as
-          | { webFetch?: { apiKey?: unknown } }
+          | { webFetch?: { apiKey?: any } }
           | undefined
       )?.webFetch?.apiKey,
     ).toBe("firecrawl-search-ref-key");
@@ -1592,7 +1592,7 @@ describe("runtime web tools resolution", () => {
     expect(
       (
         resolvedConfig.plugins?.entries?.firecrawl?.config as
-          | { webFetch?: { apiKey?: unknown } }
+          | { webFetch?: { apiKey?: any } }
           | undefined
       )?.webFetch?.apiKey,
     ).toBe("firecrawl-runtime-key");
@@ -1622,7 +1622,7 @@ describe("runtime web tools resolution", () => {
     expect(
       (
         resolvedConfig.plugins?.entries?.firecrawl?.config as
-          | { webFetch?: { apiKey?: unknown } }
+          | { webFetch?: { apiKey?: any } }
           | undefined
       )?.webFetch?.apiKey,
     ).toBe("firecrawl-legacy-key");

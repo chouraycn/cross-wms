@@ -126,7 +126,7 @@ export function mergePairLoopGuardConfig(
   return hasValue ? merged : undefined;
 }
 
-function positiveInteger(value: unknown): number | undefined {
+function positiveInteger(value: any): number | undefined {
   return typeof value === "number" && Number.isFinite(value) && value > 0
     ? Math.floor(value)
     : undefined;

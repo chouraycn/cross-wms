@@ -88,7 +88,7 @@ describe("diagnostics gateway methods", () => {
       },
       undefined,
     ]);
-    expect(Object.keys(firstRespondCall?.[1] as Record<string, unknown>).toSorted()).toEqual([
+    expect(Object.keys(firstRespondCall?.[1] as Record<string, any>).toSorted()).toEqual([
       "capacity",
       "count",
       "dropped",

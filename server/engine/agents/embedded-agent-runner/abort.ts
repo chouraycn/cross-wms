@@ -4,7 +4,7 @@
 import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
 
 /** Return true for AbortError objects or lower-level aborted messages. */
-export function isRunnerAbortError(err: unknown): boolean {
+export function isRunnerAbortError(err: any): boolean {
   if (!err || typeof err !== "object") {
     return false;
   }

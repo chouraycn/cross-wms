@@ -80,7 +80,7 @@ export interface CoordinateInput {
   /** 本次失败所使用的 Key 索引（未使用 Key 时为 -1） */
   keyIndex: number;
   /** 失败错误 */
-  error: unknown;
+  error: any;
   /** 完整模型配置（用于解析降级目标的名称） */
   modelsConfig?: ModelsFile;
   /** 所需的模型能力（跨模型匹配时使用） */
@@ -93,7 +93,7 @@ export interface CoordinateInput {
  * v2.x: 委托到共享的 model-utils.classifyErrorFromObject，消除三套重复实现。
  * 保留此包装函数以兼容已有调用方（如有）。
  */
-function classifyErrorCategory(error: unknown): ErrorCategory {
+function classifyErrorCategory(error: any): ErrorCategory {
   return classifyErrorFromObject(error);
 }
 
@@ -180,7 +180,7 @@ export class BackoffCoordinator {
       }
 
       // 非限流错误：仅对「原本可恢复」的错误类型做跨模型降级，
-      // auth / unknown 等保持不降级（与历史 tryFallback 行为一致，避免误切模型）。
+      // auth / any 等保持不降级（与历史 tryFallback 行为一致，避免误切模型）。
       const RECOVERABLE = ['model_not_supported', 'timeout', 'network', 'server'];
       if (!RECOVERABLE.includes(category)) {
         return {

@@ -224,7 +224,7 @@ export function getMatchFeedback(filters?: {
 }): MatchFeedback[] {
   const db = initDb();
   let sql = 'SELECT * FROM match_feedback WHERE 1=1';
-  const params: unknown[] = [];
+  const params: any[] = [];
 
   if (filters?.skillId) {
     sql += ' AND skill_id = ?';

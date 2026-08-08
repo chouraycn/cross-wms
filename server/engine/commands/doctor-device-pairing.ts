@@ -91,7 +91,7 @@ function hasNumberVersion(value: object): value is { version: number } {
   return "version" in value && typeof value.version === "number";
 }
 
-function isDeviceAuthStoreTokenEntry(value: unknown): value is DeviceAuthStore["tokens"][string] {
+function isDeviceAuthStoreTokenEntry(value: any): value is DeviceAuthStore["tokens"][string] {
   return (
     typeof value === "object" &&
     value !== null &&
@@ -365,7 +365,7 @@ function collectPairedRecordIssues(snapshot: DoctorPairingSnapshot): string[] {
   return lines;
 }
 
-function readJsonFile(filePath: string): unknown {
+function readJsonFile(filePath: string): any {
   return tryReadJsonSync(filePath);
 }
 

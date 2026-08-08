@@ -27,16 +27,16 @@ export function startAcpSpawnParentStreamRelay(params: {
   agentId: string;
   mainKey?: string;
   sessionScope?: "per-sender" | "global";
-  eventRouting?: Record<string, unknown>;
+  eventRouting?: Record<string, any>;
   logPath?: string;
-  deliveryContext?: Record<string, unknown>;
+  deliveryContext?: Record<string, any>;
   surfaceUpdates?: boolean;
   streamFlushMs?: number;
   noOutputNoticeMs?: number;
   noOutputPollMs?: number;
   maxRelayLifetimeMs?: number;
   emitStartNotice?: boolean;
-  cfg?: Record<string, unknown>;
+  cfg?: Record<string, any>;
 }): AcpSpawnParentRelayHandle {
   // Cross-wms does not have the full agent event system for relay.
   // Return a no-op handle so callers don't crash.

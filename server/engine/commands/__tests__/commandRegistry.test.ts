@@ -266,7 +266,7 @@ describe("CommandRegistry", () => {
     });
 
     it("无参数命令仅传入空 args", async () => {
-      let observedArgs: unknown;
+      let observedArgs: any;
       registerCommand(makeDefinition("noarg"), (ctx) => {
         observedArgs = ctx.args;
         return { ok: true };

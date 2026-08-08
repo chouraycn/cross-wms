@@ -156,7 +156,7 @@ describe("file log redaction", () => {
     logger.info({ route: "/api/health" }, "request completed");
 
     const [line] = fs.readFileSync(logPath, "utf8").trim().split("\n");
-    const record = JSON.parse(line ?? "{}") as Record<string, unknown>;
+    const record = JSON.parse(line ?? "{}") as Record<string, any>;
     expect(record.traceId).toBe(TRACE_ID);
     expect(record.spanId).toBe(SPAN_ID);
   });
@@ -174,7 +174,7 @@ describe("file log redaction", () => {
     });
 
     const [line] = fs.readFileSync(logPath, "utf8").trim().split("\n");
-    const record = JSON.parse(line ?? "{}") as Record<string, unknown>;
+    const record = JSON.parse(line ?? "{}") as Record<string, any>;
     expect(record.traceId).toBe(TRACE_ID);
     expect(record.spanId).toBe(SPAN_ID);
   });
@@ -186,7 +186,7 @@ describe("file log redaction", () => {
     getLogger().info({ route: "/api/health" }, "request completed");
 
     const [line] = fs.readFileSync(logPath, "utf8").trim().split("\n");
-    const record = JSON.parse(line ?? "{}") as Record<string, unknown>;
+    const record = JSON.parse(line ?? "{}") as Record<string, any>;
     expect(record.hostname).toBeTypeOf("string");
     expect(record.hostname).not.toBe("");
     expect(record.message).toBe("request completed");
@@ -211,7 +211,7 @@ describe("file log redaction", () => {
       .readFileSync(logPath, "utf8")
       .trim()
       .split("\n")
-      .map((line) => JSON.parse(line) as Record<string, unknown>);
+      .map((line) => JSON.parse(line) as Record<string, any>);
     expect(records).toHaveLength(3);
     expect(resolvedHostnames).toEqual(["", "lr-macbook"]);
     expect(records[0]?.hostname).toBe("unknown");
@@ -220,7 +220,7 @@ describe("file log redaction", () => {
     expect(records[1]?.message).toBe("second request");
     expect(records[2]?.hostname).toBe("lr-macbook");
     expect(records[2]?.message).toBe("third request");
-    expect((records[1]?.["_meta"] as Record<string, unknown> | undefined)?.hostname).toBe(
+    expect((records[1]?.["_meta"] as Record<string, any> | undefined)?.hostname).toBe(
       "lr-macbook",
     );
   });
@@ -236,7 +236,7 @@ describe("file log redaction", () => {
     logger.info({ sessionKey: "agent:main:discord:channel:c1" }, "session routed");
 
     const [line] = fs.readFileSync(logPath, "utf8").trim().split("\n");
-    const record = JSON.parse(line ?? "{}") as Record<string, unknown>;
+    const record = JSON.parse(line ?? "{}") as Record<string, any>;
     expect(record.agent_id).toBe("agent-main");
     expect(record.session_id).toBe("agent:main:discord:channel:c1");
     expect(record.channel).toBe("discord");

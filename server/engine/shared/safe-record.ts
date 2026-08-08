@@ -1,6 +1,6 @@
 // 防御性对象守卫，应对可能含有恶意陷阱的值
 /** 判断值是否为 record（非 null、对象、非数组），陷阱不抛错 */
-export function isRecord(value: unknown): value is Record<string, unknown> {
+export function isRecord(value: any): value is Record<string, any> {
   try {
     return Boolean(value && typeof value === "object" && !Array.isArray(value));
   } catch {
@@ -9,7 +9,7 @@ export function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 /** 从 record-like 值读取一个属性，不让陷阱逃逸 */
-export function readRecordValue(value: unknown, key: string): unknown {
+export function readRecordValue(value: any, key: string): any {
   if (!isRecord(value)) {
     return undefined;
   }
@@ -21,7 +21,7 @@ export function readRecordValue(value: unknown, key: string): unknown {
 }
 
 /** 防御性地复制数组项，应对可能在 length/index 访问上抛错的值 */
-export function copyArrayEntries(value: unknown): unknown[] {
+export function copyArrayEntries(value: any): any[] {
   let isArray: boolean;
   try {
     isArray = Array.isArray(value);
@@ -32,7 +32,7 @@ export function copyArrayEntries(value: unknown): unknown[] {
     return [];
   }
 
-  const arrayValue = value as readonly unknown[];
+  const arrayValue = value as readonly any[];
   let length: number;
   try {
     length = arrayValue.length;
@@ -40,7 +40,7 @@ export function copyArrayEntries(value: unknown): unknown[] {
     return [];
   }
 
-  const entries: unknown[] = [];
+  const entries: any[] = [];
   for (let index = 0; index < length; index += 1) {
     try {
       entries.push(arrayValue[index]);
@@ -52,7 +52,7 @@ export function copyArrayEntries(value: unknown): unknown[] {
 }
 
 /** 复制值也是 record 形态的 record 项 */
-export function copyRecordEntries<T>(value: unknown): Array<[string, T]> {
+export function copyRecordEntries<T>(value: any): Array<[string, T]> {
   if (!isRecord(value)) {
     return [];
   }

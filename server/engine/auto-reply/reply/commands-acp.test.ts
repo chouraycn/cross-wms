@@ -64,22 +64,22 @@ const hoisted = vi.hoisted(() => {
 
 function createAcpCommandSessionBindingService() {
   const forward =
-    <A extends unknown[], T>(fn: (...args: A) => T) =>
+    <A extends any[], T>(fn: (...args: A) => T) =>
     (...args: A) =>
       fn(...args);
   return {
-    bind: (input: unknown) => hoisted.sessionBindingBindMock(input),
-    getCapabilities: forward((params: unknown) => hoisted.sessionBindingCapabilitiesMock(params)),
+    bind: (input: any) => hoisted.sessionBindingBindMock(input),
+    getCapabilities: forward((params: any) => hoisted.sessionBindingCapabilitiesMock(params)),
     listBySession: (targetSessionKey: string) =>
       hoisted.sessionBindingListBySessionMock(targetSessionKey),
-    resolveByConversation: (ref: unknown) => hoisted.sessionBindingResolveByConversationMock(ref),
+    resolveByConversation: (ref: any) => hoisted.sessionBindingResolveByConversationMock(ref),
     touch: vi.fn(),
-    unbind: (input: unknown) => hoisted.sessionBindingUnbindMock(input),
+    unbind: (input: any) => hoisted.sessionBindingUnbindMock(input),
   };
 }
 
 vi.mock("../../gateway/call.js", () => ({
-  callGateway: (args: unknown) => hoisted.callGatewayMock(args),
+  callGateway: (args: any) => hoisted.callGatewayMock(args),
 }));
 
 vi.mock("../../acp/runtime/registry.js", () => ({
@@ -88,10 +88,10 @@ vi.mock("../../acp/runtime/registry.js", () => ({
 }));
 
 vi.mock("../../acp/runtime/session-meta.js", () => ({
-  listAcpSessionEntries: (args: unknown) => hoisted.listAcpSessionEntriesMock(args),
-  readAcpSessionEntry: (args: unknown) => hoisted.readAcpSessionEntryMock(args),
-  upsertAcpSessionMeta: (args: unknown) => hoisted.upsertAcpSessionMetaMock(args),
-  resolveSessionStorePathForAcp: (args: unknown) => hoisted.resolveSessionStorePathForAcpMock(args),
+  listAcpSessionEntries: (args: any) => hoisted.listAcpSessionEntriesMock(args),
+  readAcpSessionEntry: (args: any) => hoisted.readAcpSessionEntryMock(args),
+  upsertAcpSessionMeta: (args: any) => hoisted.upsertAcpSessionMetaMock(args),
+  resolveSessionStorePathForAcp: (args: any) => hoisted.resolveSessionStorePathForAcpMock(args),
 }));
 
 vi.mock("../../agents/acp-spawn.js", () => ({
@@ -125,7 +125,7 @@ vi.mock("../../config/sessions.js", async () => {
   );
   return {
     ...actual,
-    loadSessionStore: (...args: unknown[]) => hoisted.loadSessionStoreMock(...args),
+    loadSessionStore: (...args: any[]) => hoisted.loadSessionStoreMock(...args),
   };
 });
 
@@ -592,7 +592,7 @@ type AcpBindInput = {
     parentConversationId?: string;
   };
   placement: "current" | "child";
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 function createAcpThreadBinding(input: AcpBindInput): FakeBinding {
@@ -619,11 +619,11 @@ function createAcpThreadBinding(input: AcpBindInput): FakeBinding {
 
 type MockWithCalls = {
   mock: {
-    calls: Array<Array<unknown>>;
+    calls: Array<Array<any>>;
   };
 };
 
-function mockCallArg(mock: MockWithCalls, callIndex = 0, argIndex = 0): unknown {
+function mockCallArg(mock: MockWithCalls, callIndex = 0, argIndex = 0): any {
   const call = mock.mock.calls[callIndex];
   if (!call) {
     throw new Error(`Expected mock call ${callIndex}`);
@@ -632,13 +632,13 @@ function mockCallArg(mock: MockWithCalls, callIndex = 0, argIndex = 0): unknown 
 }
 
 function expectRecordFields(
-  record: unknown,
-  expected: Record<string, unknown>,
-): Record<string, unknown> {
+  record: any,
+  expected: Record<string, any>,
+): Record<string, any> {
   if (!record || typeof record !== "object") {
     throw new Error("Expected record");
   }
-  const actual = record as Record<string, unknown>;
+  const actual = record as Record<string, any>;
   for (const [key, value] of Object.entries(expected)) {
     expect(actual[key]).toEqual(value);
   }
@@ -647,21 +647,21 @@ function expectRecordFields(
 
 function expectMockCallFields(
   mock: MockWithCalls,
-  expected: Record<string, unknown>,
+  expected: Record<string, any>,
   callIndex = 0,
-): Record<string, unknown> {
+): Record<string, any> {
   return expectRecordFields(mockCallArg(mock, callIndex), expected);
 }
 
 function expectBindingBindCall(
   expected: {
-    conversation?: Record<string, unknown>;
-    metadata?: Record<string, unknown>;
+    conversation?: Record<string, any>;
+    metadata?: Record<string, any>;
     placement?: "current" | "child";
     targetKind?: "session";
   },
   callIndex = 0,
-): Record<string, unknown> {
+): Record<string, any> {
   const input = expectMockCallFields(
     hoisted.sessionBindingBindMock,
     {
@@ -679,8 +679,8 @@ function expectBindingBindCall(
   return input;
 }
 
-function gatewayRequests(): Array<Record<string, unknown>> {
-  return hoisted.callGatewayMock.mock.calls.map((call) => call[0] as Record<string, unknown>);
+function gatewayRequests(): Array<Record<string, any>> {
+  return hoisted.callGatewayMock.mock.calls.map((call) => call[0] as Record<string, any>);
 }
 
 function expectGatewayMethodCalled(method: string): void {
@@ -693,7 +693,7 @@ function expectGatewayMethodNotCalled(method: string): void {
 
 function expectBoundIntroTextToExclude(match: string): void {
   const calls = hoisted.sessionBindingBindMock.mock.calls as Array<
-    [{ metadata?: { introText?: unknown } }]
+    [{ metadata?: { introText?: any } }]
   >;
   const introText = calls
     .map((call) => call[0]?.metadata?.introText)
@@ -1042,7 +1042,7 @@ describe("/acp command", () => {
       resolveSession: (input: { sessionKey: string }) => {
         const entry = hoisted.readAcpSessionEntryMock({
           sessionKey: input.sessionKey,
-        }) as { acp?: Record<string, unknown> } | null;
+        }) as { acp?: Record<string, any> } | null;
         const meta =
           entry?.acp ??
           ({
@@ -1059,14 +1059,14 @@ describe("/acp command", () => {
           meta,
         };
       },
-      cancelSession: async (input: unknown) => {
+      cancelSession: async (input: any) => {
         await hoisted.cancelMock(input);
       },
       getSessionStatus: async (input: { sessionKey: string }) => {
         const status = await hoisted.getStatusMock(input);
         const entry = hoisted.readAcpSessionEntryMock({
           sessionKey: input.sessionKey,
-        }) as { acp?: Record<string, unknown> } | null;
+        }) as { acp?: Record<string, any> } | null;
         const meta = entry?.acp ?? {};
         return {
           sessionKey: input.sessionKey,
@@ -1097,8 +1097,8 @@ describe("/acp command", () => {
         },
         errorsByCode: {},
       }),
-      runTurn: async (input: { onEvent?: (event: unknown) => Promise<void> | void }) => {
-        for await (const event of hoisted.runTurnMock(input) as AsyncIterable<unknown>) {
+      runTurn: async (input: { onEvent?: (event: any) => Promise<void> | void }) => {
+        for await (const event of hoisted.runTurnMock(input) as AsyncIterable<any>) {
           await input.onEvent?.(event);
         }
       },
@@ -1110,7 +1110,7 @@ describe("/acp command", () => {
         await hoisted.setConfigOptionMock(input);
         return { [input.key]: input.value };
       },
-      updateSessionRuntimeOptions: async (input: { patch: Record<string, unknown> }) => input.patch,
+      updateSessionRuntimeOptions: async (input: { patch: Record<string, any> }) => input.patch,
       closeSession: async (input: { clearMeta?: boolean; sessionKey: string }) => {
         await hoisted.closeMock(input);
         if (input.clearMeta === true) {
@@ -1165,7 +1165,7 @@ describe("/acp command", () => {
       targetKind: "session",
       placement: "child",
     });
-    const introText = (bindInput.metadata as { introText?: unknown } | undefined)?.introText;
+    const introText = (bindInput.metadata as { introText?: any } | undefined)?.introText;
     expect(typeof introText).toBe("string");
     expect(introText).toContain("cwd: /home/bob/clawd");
     expectBoundIntroTextToExclude("session ids: pending (available after the first reply)");
@@ -1175,7 +1175,7 @@ describe("/acp command", () => {
       | {
           sessionKey: string;
           mutate: (
-            current: unknown,
+            current: any,
             entry: { sessionId: string; updatedAt: number } | undefined,
           ) => {
             backend?: string;
@@ -1729,7 +1729,7 @@ describe("/acp command", () => {
     const clearMetaArgs = mockCallArg(hoisted.upsertAcpSessionMetaMock) as
       | {
           sessionKey: string;
-          mutate: (current: unknown, entry: { sessionId: string; updatedAt: number }) => unknown;
+          mutate: (current: any, entry: { sessionId: string; updatedAt: number }) => unknown;
         }
       | undefined;
     expect(clearMetaArgs?.sessionKey).toBe(defaultAcpSessionKey);

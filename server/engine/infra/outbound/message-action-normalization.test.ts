@@ -18,7 +18,7 @@ vi.mock("../../utils/message-channel.js", () => ({
 describe("normalizeMessageActionInput", () => {
   type NormalizeMessageActionInputCase = {
     input: Parameters<typeof normalizeMessageActionInput>[0];
-    expectedFields?: Record<string, unknown>;
+    expectedFields?: Record<string, any>;
     absentFields?: string[];
   };
 

@@ -34,10 +34,10 @@ import type { PluginOrigin } from "./plugin-origin.types.js";
 type OpenClawConfig = {
   plugins?: {
     entries?: Record<string, { enabled?: boolean }>;
-    [key: string]: unknown;
+    [key: string]: any;
   };
-  channels?: Record<string, unknown>;
-  [key: string]: unknown;
+  channels?: Record<string, any>;
+  [key: string]: any;
 };
 
 // ============================================================================
@@ -131,7 +131,7 @@ type PluginManifestRecord = {
 type PluginPackageChannel = {
   id?: string;
   label?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 // ============================================================================

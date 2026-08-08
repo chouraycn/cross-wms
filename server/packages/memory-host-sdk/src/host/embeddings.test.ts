@@ -25,7 +25,7 @@ afterEach(() => {
 
 function createDeferred<T>() {
   let resolve: ((value: T) => void) | undefined;
-  let reject: ((reason?: unknown) => void) | undefined;
+  let reject: ((reason?: any) => void) | undefined;
   const promise = new Promise<T>((res, rej) => {
     resolve = res;
     reject = rej;
@@ -266,7 +266,7 @@ describe("local embedding provider", () => {
 
   it("does not wait for pending local llama initialization before close resolves", async () => {
     const disposeLlama = vi.fn();
-    const getLlamaGate = createDeferred<unknown>();
+    const getLlamaGate = createDeferred<any>();
     nodeLlamaMock.importNodeLlamaCpp.mockResolvedValue({
       getLlama: async () => (await getLlamaGate.promise) as never,
       resolveModelFile: vi.fn(async (modelPath: string) => `/resolved/${modelPath}`),
@@ -459,7 +459,7 @@ process.on("message", (message) => {
     const embedPromise = provider.embedQuery("stuck");
     const embedError = embedPromise.then(
       () => undefined,
-      (err: unknown) => err,
+      (err: any) => err,
     );
     await expect
       .poll(async () => {

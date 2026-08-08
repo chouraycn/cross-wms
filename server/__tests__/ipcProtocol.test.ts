@@ -58,8 +58,8 @@ async function createTestClient(): Promise<{
 // ===================== Test Suite =====================
 
 describe('CDFKnowIPCClient', () => {
-  let CDFKnowIPCClient: unknown;
-  let client: unknown;
+  let CDFKnowIPCClient: any;
+  let client: any;
   let mockSocket: MockSocket;
 
   beforeEach(async () => {

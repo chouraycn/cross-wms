@@ -18,40 +18,40 @@ export const compactionPlanningWorkerTesting = {
 
 /** Builds summary chunks — simplified to single-chunk in cross-wms. */
 export async function buildSummaryChunksWithWorker(params: {
-  messages: unknown[];
+  messages: any[];
   maxChunkTokens: number;
   signal?: AbortSignal;
-}): Promise<unknown[][]> {
+}): Promise<any[][]> {
   // Simplified: return all messages as a single chunk
   return [params.messages];
 }
 
 /** Builds an oversized-message fallback plan — simplified in cross-wms. */
 export async function buildOversizedFallbackPlanWithWorker(params: {
-  messages: unknown[];
+  messages: any[];
   contextWindow: number;
   signal?: AbortSignal;
-}): Promise<{ smallMessages: unknown[]; oversizedNotes: string[] }> {
+}): Promise<{ smallMessages: any[]; oversizedNotes: string[] }> {
   // Simplified: treat all messages as small
   return { smallMessages: params.messages, oversizedNotes: [] };
 }
 
 /** Builds a staged summarization split plan — simplified in cross-wms. */
 export async function buildStageSplitPlanWithWorker(params: {
-  messages: unknown[];
+  messages: any[];
   maxChunkTokens: number;
   parts?: number;
   minMessagesForSplit?: number;
   signal?: AbortSignal;
-}): Promise<{ mode: "single" } | { mode: "split"; chunks: unknown[][] }> {
+}): Promise<{ mode: "single" } | { mode: "split"; chunks: any[][] }> {
   // Simplified: always use single mode
   return { mode: "single" };
 }
 
 /** Builds a history-pruning plan — simplified in cross-wms. */
 export async function buildHistoryPrunePlanWithWorker(params: {
-  messagesToSummarize: unknown[];
-  turnPrefixMessages: unknown[];
+  messagesToSummarize: any[];
+  turnPrefixMessages: any[];
   tokensBefore: number;
   contextWindowTokens: number;
   maxHistoryShare: number;
@@ -69,7 +69,7 @@ export async function buildHistoryPrunePlanWithWorker(params: {
 
 /** Computes the adaptive compaction chunk ratio — simplified in cross-wms. */
 export async function computeAdaptiveChunkRatioWithWorker(params: {
-  messages: unknown[];
+  messages: any[];
   contextWindow: number;
   signal?: AbortSignal;
 }): Promise<number> {

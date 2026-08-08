@@ -13,6 +13,6 @@
 
 export type ChannelManager = unknown;
 
-export function createChannelManager(..._args: unknown[]): unknown {
+export function createChannelManager(..._args: any[]): any {
   return undefined;
 }

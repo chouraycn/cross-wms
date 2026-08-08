@@ -34,7 +34,7 @@ const sessionStore = vi.hoisted(
 );
 
 vi.mock("../gateway/call.js", () => ({
-  callGateway: vi.fn(async (opts: unknown) => {
+  callGateway: vi.fn(async (opts: any) => {
     const request = opts as { method?: string };
     if (request.method === "agent.wait") {
       return { status: "pending" };
@@ -74,8 +74,8 @@ vi.mock("../config/sessions/session-accessor.js", () => ({
   patchSessionEntry: async () => null,
 }));
 
-const announceSpy = vi.fn(async (_params: unknown) => true);
-const runSubagentEndedHookMock = vi.fn(async (_eventValue?: unknown, _ctx?: unknown) => {});
+const announceSpy = vi.fn(async (_params: any) => true);
+const runSubagentEndedHookMock = vi.fn(async (_eventValue?: any, _ctx?: any) => {});
 const emitSessionLifecycleEventMock = vi.fn();
 const removeInternalSessionEffectsTranscriptMock = vi.fn(async (_sessionFile?: string) => {});
 
@@ -89,16 +89,16 @@ function countMatching<T>(items: readonly T[], predicate: (item: T) => boolean) 
   return count;
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error(`expected ${label}`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 function requireSubagentEndedHookCall(runId: string): {
-  event: Record<string, unknown>;
-  ctx: Record<string, unknown>;
+  event: Record<string, any>;
+  ctx: Record<string, any>;
 } {
   const call = runSubagentEndedHookMock.mock.calls.find((candidate) => {
     const ctx = candidate[1] as { runId?: string } | undefined;
@@ -113,7 +113,7 @@ function requireSubagentEndedHookCall(runId: string): {
   };
 }
 
-function requireSessionLifecycleEventCall(label: string): Record<string, unknown> {
+function requireSessionLifecycleEventCall(label: string): Record<string, any> {
   const call = emitSessionLifecycleEventMock.mock.calls[0];
   if (!call) {
     throw new Error(`expected ${label}`);
@@ -121,7 +121,7 @@ function requireSessionLifecycleEventCall(label: string): Record<string, unknown
   return requireRecord(call[0], label);
 }
 
-function requireFirstAnnounceCall(): Record<string, unknown> {
+function requireFirstAnnounceCall(): Record<string, any> {
   const call = announceSpy.mock.calls[0];
   if (!call) {
     throw new Error("expected announce call");
@@ -786,7 +786,7 @@ describe("subagent registry steer restarts", () => {
 
   it("retries deferred parent cleanup after a descendant announces", async () => {
     let parentAttempts = 0;
-    announceSpy.mockImplementation(async (params: unknown) => {
+    announceSpy.mockImplementation(async (params: any) => {
       const typed = params as { childRunId?: string };
       if (typed.childRunId === "run-parent") {
         parentAttempts += 1;

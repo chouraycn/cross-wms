@@ -50,7 +50,7 @@ export async function readResponseTextSnippet(
 export async function readResponseJsonWithLimit(
   res: Response,
   options: ResponseJsonOptions,
-): Promise<unknown> {
+): Promise<any> {
   const maxBytes = options.maxBytes ?? DEFAULT_JSON_BODY_MAX_BYTES;
   const contentLength = parseContentLength(res.headers.get("content-length"), options.errorPrefix);
   if (typeof contentLength === "number" && contentLength > maxBytes) {

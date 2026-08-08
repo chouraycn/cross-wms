@@ -154,8 +154,8 @@ type CoreChannel = ChannelCase["channel"];
 type TestSendFn = (
   to: string,
   text: string,
-  options?: Record<string, unknown>,
-) => Promise<{ messageId?: string } & Record<string, unknown>>;
+  options?: Record<string, any>,
+) => Promise<{ messageId?: string } & Record<string, any>>;
 
 function withRequiredMessageId(channel: CoreChannel, result: Awaited<ReturnType<TestSendFn>>) {
   return {

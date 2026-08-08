@@ -8,11 +8,11 @@
 
 export function createSessionsSendTool(_opts?: {
   agentSessionKey?: string;
-  agentChannel?: unknown;
+  agentChannel?: any;
   sandboxed?: boolean;
-  config?: unknown;
-  callGateway?: unknown;
-}): unknown {
+  config?: any;
+  callGateway?: any;
+}): any {
   return {
     label: "Session Send",
     name: "sessions_send",

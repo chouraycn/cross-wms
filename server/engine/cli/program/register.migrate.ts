@@ -20,7 +20,7 @@ function collectMigrationPlugin(value: string, previous: string[] | undefined): 
   return [...(previous ?? []), value];
 }
 
-function readMigrationSkills(value: unknown): string[] | undefined {
+function readMigrationSkills(value: any): string[] | undefined {
   if (!Array.isArray(value)) {
     return undefined;
   }
@@ -31,7 +31,7 @@ function readMigrationSkills(value: unknown): string[] | undefined {
   return skills.length > 0 ? skills : undefined;
 }
 
-function readMigrationPlugins(value: unknown): string[] | undefined {
+function readMigrationPlugins(value: any): string[] | undefined {
   if (!Array.isArray(value)) {
     return undefined;
   }
@@ -85,7 +85,7 @@ function addMigrationOptions(command: Command): Command {
   );
 }
 
-function readVerifyPluginApps(value: unknown): boolean {
+function readVerifyPluginApps(value: any): boolean {
   return value === true;
 }
 

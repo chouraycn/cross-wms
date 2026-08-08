@@ -3,7 +3,7 @@ import { loadBundledPluginPublicSurfaceModuleSync } from "./facade-loader.js";
 
 type FacadeModule = {
   isQaLabCliAvailable: () => boolean;
-  registerQaLabCli: (program: unknown) => void;
+  registerQaLabCli: (program: any) => void;
 };
 
 function loadFacadeModule(): FacadeModule {
@@ -13,7 +13,7 @@ function loadFacadeModule(): FacadeModule {
   });
 }
 
-function isMissingQaLabFacadeError(err: unknown): boolean {
+function isMissingQaLabFacadeError(err: any): boolean {
   if (!(err instanceof Error)) {
     return false;
   }

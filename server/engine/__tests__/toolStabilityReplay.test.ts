@@ -446,10 +446,10 @@ describe('toolAuditLog — 审计日志', () => {
 
       const entries = toolAuditLog.getRecentEntries(50);
       const found = entries.find(e =>
-        e.toolName === testToolName && e.args && (e.args as unknown).password === '[REDACTED]'
+        e.toolName === testToolName && e.args && (e.args as any).password === '[REDACTED]'
       );
       expect(found).toBeDefined();
-      expect((found!.args as unknown).username).toBe('admin');
+      expect((found!.args as any).username).toBe('admin');
     });
 
     it('应脱敏 token / apiKey / secret 字段', () => {
@@ -466,10 +466,10 @@ describe('toolAuditLog — 审计日志', () => {
       const entries = toolAuditLog.getRecentEntries(50);
       const found = entries.find(e =>
         e.toolName === testToolName &&
-        (e.args as unknown).token === '[REDACTED]' &&
-        (e.args as unknown).apiKey === '[REDACTED]' &&
-        (e.args as unknown).secret === '[REDACTED]' &&
-        (e.args as unknown).credential === '[REDACTED]'
+        (e.args as any).token === '[REDACTED]' &&
+        (e.args as any).apiKey === '[REDACTED]' &&
+        (e.args as any).secret === '[REDACTED]' &&
+        (e.args as any).credential === '[REDACTED]'
       );
       expect(found).toBeDefined();
     });
@@ -489,8 +489,8 @@ describe('toolAuditLog — 审计日志', () => {
       const entries = toolAuditLog.getRecentEntries(50);
       const found = entries.find(e =>
         e.toolName === testToolName &&
-        typeof (e.args as unknown).data === 'string' &&
-        (e.args as unknown).data.includes('truncated')
+        typeof (e.args as any).data === 'string' &&
+        (e.args as any).data.includes('truncated')
       );
       expect(found).toBeDefined();
     });

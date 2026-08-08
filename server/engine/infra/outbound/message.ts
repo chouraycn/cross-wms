@@ -8,11 +8,11 @@ export type MessageSendParams = {
   requesterAccountId?: string;
   requesterSenderId?: string;
   channel?: string;
-  cfg?: unknown;
+  cfg?: any;
   mediaUrl?: string;
   mediaUrls?: string[];
-  payloads?: unknown[];
-  buffer?: unknown;
+  payloads?: any[];
+  buffer?: any;
   idempotencyKey?: string;
   dryRun?: boolean;
 };

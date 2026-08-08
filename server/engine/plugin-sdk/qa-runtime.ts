@@ -19,10 +19,10 @@ type QaRuntimeSurface = {
       preferredLiveModel?: string;
     },
   ) => string;
-  startQaLiveLaneGateway: (...args: unknown[]) => Promise<unknown>;
+  startQaLiveLaneGateway: (...args: any[]) => Promise<any>;
 };
 
-function isMissingQaRuntimeError(error: unknown) {
+function isMissingQaRuntimeError(error: any) {
   return (
     error instanceof Error &&
     (error.message === "Unable to resolve bundled plugin public surface qa-lab/runtime-api.js" ||
@@ -347,7 +347,7 @@ export function renderQaMarkdownReport(params: {
 }
 
 /** Append a formatted live-lane issue while preserving the caller-owned issue list. */
-export function appendQaLiveLaneIssue(issues: string[], label: string, error: unknown) {
+export function appendQaLiveLaneIssue(issues: string[], label: string, error: any) {
   issues.push(`${label}: ${formatErrorMessage(error)}`);
 }
 
@@ -375,7 +375,7 @@ export function printLiveTransportQaArtifacts(
   }
 }
 
-function describeQaDockerError(error: unknown) {
+function describeQaDockerError(error: any) {
   if (error instanceof Error) {
     return error.message;
   }
@@ -434,7 +434,7 @@ function trimQaDockerCommandOutput(output: string) {
   return lines.length <= 120 ? trimmed : lines.slice(-120).join("\n");
 }
 
-function renderQaDockerCommandFailure(command: string, args: string[], error: unknown) {
+function renderQaDockerCommandFailure(command: string, args: string[], error: any) {
   const failedProcess = error as Error & { stdout?: string; stderr?: string };
   const renderedStdout = trimQaDockerCommandOutput(failedProcess.stdout ?? "");
   const renderedStderr = trimQaDockerCommandOutput(failedProcess.stderr ?? "");
@@ -459,7 +459,7 @@ function normalizeDockerServiceStatus(row?: { Health?: string; State?: string })
   if (state) {
     return state;
   }
-  return "unknown";
+  return "any";
 }
 
 function firstDockerOutputLine(stdout: string) {
@@ -549,7 +549,7 @@ export function createQaDockerRuntime(params: {
       label?: string;
       composeFile?: string;
       fetchImpl: QaDockerFetchLike;
-      sleepImpl: (ms: number) => Promise<unknown>;
+      sleepImpl: (ms: number) => Promise<any>;
       timeoutMs?: number;
       pollMs?: number;
     },
@@ -558,7 +558,7 @@ export function createQaDockerRuntime(params: {
     const pollMs = deps.pollMs ?? 1_000;
     const startMs = Date.now();
     const deadline = startMs + timeoutMs;
-    let lastError: unknown = null;
+    let lastError: any = null;
 
     while (Date.now() < deadline) {
       let response: QaDockerFetchResponse | undefined;
@@ -591,7 +591,7 @@ export function createQaDockerRuntime(params: {
     composeFile: string,
     repoRoot: string,
     runCommand: QaDockerRunCommand,
-    sleepImpl: (ms: number) => Promise<unknown>,
+    sleepImpl: (ms: number) => Promise<any>,
     timeoutMs = 360_000,
     pollMs = 1_000,
   ) => {
@@ -738,7 +738,7 @@ export async function startLiveTransportQaOutputTee(params: {
   };
 }
 
-function toLintErrorObject(value: unknown, fallbackMessage: string): Error {
+function toLintErrorObject(value: any, fallbackMessage: string): Error {
   if (value instanceof Error) {
     return value;
   }

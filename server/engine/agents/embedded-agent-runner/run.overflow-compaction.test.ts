@@ -89,7 +89,7 @@ function makeForwardingCase(internalEvents: AgentInternalEvent[]) {
   } satisfies {
     runId: string;
     params: Partial<RunEmbeddedAgentParams>;
-    expected: Record<string, unknown>;
+    expected: Record<string, any>;
   };
 }
 
@@ -177,11 +177,11 @@ function makeForwardedRuntimePlan(overrides: RuntimePlanOverrides = {}): AgentRu
 
 type MockWithCalls = {
   mock: {
-    calls: ReadonlyArray<ReadonlyArray<unknown>>;
+    calls: ReadonlyArray<ReadonlyArray<any>>;
   };
 };
 
-function mockCall(mock: MockWithCalls, callIndex = 0): ReadonlyArray<unknown> {
+function mockCall(mock: MockWithCalls, callIndex = 0): ReadonlyArray<any> {
   const call = mock.mock.calls[callIndex];
   if (!call) {
     throw new Error(`Expected mock call ${callIndex}`);
@@ -189,7 +189,7 @@ function mockCall(mock: MockWithCalls, callIndex = 0): ReadonlyArray<unknown> {
   return call;
 }
 
-function mockCallArg(mock: MockWithCalls, callIndex = 0, argIndex = 0): unknown {
+function mockCallArg(mock: MockWithCalls, callIndex = 0, argIndex = 0): any {
   const call = mockCall(mock, callIndex);
   if (argIndex >= call.length) {
     throw new Error(`Expected mock call ${callIndex} argument ${argIndex}`);
@@ -198,13 +198,13 @@ function mockCallArg(mock: MockWithCalls, callIndex = 0, argIndex = 0): unknown 
 }
 
 function expectRecordFields(
-  record: unknown,
-  expected: Record<string, unknown>,
-): Record<string, unknown> {
+  record: any,
+  expected: Record<string, any>,
+): Record<string, any> {
   if (!record || typeof record !== "object") {
     throw new Error("Expected record");
   }
-  const actual = record as Record<string, unknown>;
+  const actual = record as Record<string, any>;
   for (const [key, value] of Object.entries(expected)) {
     expect(actual[key]).toEqual(value);
   }
@@ -213,17 +213,17 @@ function expectRecordFields(
 
 function expectMockCallFields(
   mock: MockWithCalls,
-  expected: Record<string, unknown>,
+  expected: Record<string, any>,
   callIndex = 0,
-): Record<string, unknown> {
+): Record<string, any> {
   return expectRecordFields(mockCallArg(mock, callIndex), expected);
 }
 
 function expectRuntimePlanFields(
-  runtimePlan: unknown,
+  runtimePlan: any,
   expected: {
-    auth?: Record<string, unknown>;
-    resolvedRef?: Record<string, unknown>;
+    auth?: Record<string, any>;
+    resolvedRef?: Record<string, any>;
   },
 ): void {
   // Tests care about the resolved refs and auth handoff, not the entire plan
@@ -802,7 +802,7 @@ describe("runEmbeddedAgent overflow compaction trigger routing", () => {
     const authProfileStore = expectRecordFields(pluginParams.authProfileStore, {});
     expect(authProfileStore.profiles).toEqual({});
     expect(
-      (pluginParams as { toolAuthProfileStore?: unknown }).toolAuthProfileStore,
+      (pluginParams as { toolAuthProfileStore?: any }).toolAuthProfileStore,
     ).toBeUndefined();
   });
 
@@ -880,8 +880,8 @@ describe("runEmbeddedAgent overflow compaction trigger routing", () => {
     expect(mockedGetApiKeyForModel).not.toHaveBeenCalled();
     expect(pluginRunAttempt).toHaveBeenCalledTimes(1);
     const harnessParams = mockCallArg(pluginRunAttempt) as {
-      authProfileStore?: { profiles?: Record<string, unknown> };
-      toolAuthProfileStore?: unknown;
+      authProfileStore?: { profiles?: Record<string, any> };
+      toolAuthProfileStore?: any;
     };
     const forwardedAuthStore = expectRecordFields(harnessParams.authProfileStore, {});
     const authProfiles = expectRecordFields(forwardedAuthStore.profiles, {});
@@ -1043,7 +1043,7 @@ describe("runEmbeddedAgent overflow compaction trigger routing", () => {
     });
     await vi.waitFor(() => expect(runQueuedTask).toBeTypeOf("function"));
 
-    const runResult = runPromise.catch((error: unknown) => error);
+    const runResult = runPromise.catch((error: any) => error);
     rotateAgentEventLifecycleGeneration();
     abortController.abort();
     runQueuedTask?.();
@@ -1076,7 +1076,7 @@ describe("runEmbeddedAgent overflow compaction trigger routing", () => {
 
   it("marks user-triggered session queue work as foreground", async () => {
     mockedRunEmbeddedAttempt.mockResolvedValueOnce(makeAttemptResult({ promptError: null }));
-    const observedPriorities: unknown[] = [];
+    const observedPriorities: any[] = [];
 
     await runEmbeddedAgent({
       ...overflowBaseRunParams,
@@ -1093,7 +1093,7 @@ describe("runEmbeddedAgent overflow compaction trigger routing", () => {
 
   it("marks cron-triggered session queue work as background", async () => {
     mockedRunEmbeddedAttempt.mockResolvedValueOnce(makeAttemptResult({ promptError: null }));
-    const observedPriorities: unknown[] = [];
+    const observedPriorities: any[] = [];
 
     await runEmbeddedAgent({
       ...overflowBaseRunParams,
@@ -1207,9 +1207,9 @@ describe("runEmbeddedAgent overflow compaction trigger routing", () => {
       },
     });
     const harnessParams = mockCallArg(pluginRunAttempt) as {
-      runtimePlan?: unknown;
-      authProfileStore?: { profiles?: Record<string, unknown> };
-      toolAuthProfileStore?: unknown;
+      runtimePlan?: any;
+      authProfileStore?: { profiles?: Record<string, any> };
+      toolAuthProfileStore?: any;
     };
     expect(harnessParams?.runtimePlan).toBe(runtimePlan);
     const forwardedAuthStore = expectRecordFields(harnessParams.authProfileStore, {});
@@ -1291,7 +1291,7 @@ describe("runEmbeddedAgent overflow compaction trigger routing", () => {
         forwardedAuthProfileId: "openai:work",
       },
     });
-    const harnessParams = mockCallArg(pluginRunAttempt) as { runtimePlan?: unknown };
+    const harnessParams = mockCallArg(pluginRunAttempt) as { runtimePlan?: any };
     expect(harnessParams?.runtimePlan).toBe(runtimePlan);
     expect(mockedMarkAuthProfileSuccess).toHaveBeenCalledTimes(1);
     const [[successParams]] = mockedMarkAuthProfileSuccess.mock.calls as unknown as Array<
@@ -1452,10 +1452,10 @@ describe("runEmbeddedAgent overflow compaction trigger routing", () => {
       version: 1,
       profiles: {},
     });
-    mockedResolveAuthProfileOrder.mockImplementation((params?: unknown) => {
+    mockedResolveAuthProfileOrder.mockImplementation((params?: any) => {
       const { provider, store } = (params ?? {}) as {
         provider?: string;
-        store?: { profiles?: Record<string, unknown> };
+        store?: { profiles?: Record<string, any> };
       };
       return provider === "openai" && store?.profiles?.["openai:default"] ? ["openai:default"] : [];
     });
@@ -1537,8 +1537,8 @@ describe("runEmbeddedAgent overflow compaction trigger routing", () => {
       },
     });
     const harnessParams = mockCallArg(pluginRunAttempt) as {
-      authProfileStore?: { profiles?: Record<string, unknown> };
-      toolAuthProfileStore?: unknown;
+      authProfileStore?: { profiles?: Record<string, any> };
+      toolAuthProfileStore?: any;
     };
     const forwardedAuthStore = expectRecordFields(harnessParams.authProfileStore, {});
     const authProfiles = expectRecordFields(forwardedAuthStore.profiles, {});
@@ -1652,7 +1652,7 @@ describe("runEmbeddedAgent overflow compaction trigger routing", () => {
       }),
     );
     mockedCoerceToFailoverError.mockReturnValueOnce(normalizedLimit);
-    mockedDescribeFailoverError.mockImplementation((err: unknown) => ({
+    mockedDescribeFailoverError.mockImplementation((err: any) => ({
       message: err instanceof Error ? err.message : String(err),
       reason: err === normalizedLimit ? "rate_limit" : undefined,
       status: err === normalizedLimit ? 429 : undefined,
@@ -1764,7 +1764,7 @@ describe("runEmbeddedAgent overflow compaction trigger routing", () => {
         forwardedAuthProfileId: "openai:default",
       },
     });
-    const harnessParams = mockCallArg(pluginRunAttempt) as { runtimePlan?: unknown };
+    const harnessParams = mockCallArg(pluginRunAttempt) as { runtimePlan?: any };
     expect(harnessParams?.runtimePlan).toBe(runtimePlan);
   });
 
@@ -1837,7 +1837,7 @@ describe("runEmbeddedAgent overflow compaction trigger routing", () => {
         forwardedAuthProfileId: "openai:default",
       },
     });
-    const harnessParams = mockCallArg(pluginRunAttempt) as { runtimePlan?: unknown };
+    const harnessParams = mockCallArg(pluginRunAttempt) as { runtimePlan?: any };
     expect(harnessParams?.runtimePlan).toBe(runtimePlan);
   });
 
@@ -1923,8 +1923,8 @@ describe("runEmbeddedAgent overflow compaction trigger routing", () => {
       },
     });
     const harnessParams = mockCallArg(pluginRunAttempt) as {
-      runtimePlan?: unknown;
-      authProfileStore?: { profiles?: Record<string, unknown> };
+      runtimePlan?: any;
+      authProfileStore?: { profiles?: Record<string, any> };
     };
     expect(harnessParams?.runtimePlan).toBe(runtimePlan);
     const authProfileStore = expectRecordFields(harnessParams.authProfileStore, {});
@@ -2008,7 +2008,7 @@ describe("runEmbeddedAgent overflow compaction trigger routing", () => {
       },
     });
     mockedCoerceToFailoverError.mockReturnValueOnce(normalizedLimit);
-    mockedDescribeFailoverError.mockImplementation((err: unknown) => ({
+    mockedDescribeFailoverError.mockImplementation((err: any) => ({
       message: err instanceof Error ? err.message : String(err),
       reason: err === normalizedLimit ? "rate_limit" : undefined,
       status: err === normalizedLimit ? 429 : undefined,
@@ -2325,7 +2325,7 @@ describe("runEmbeddedAgent overflow compaction trigger routing", () => {
     const promptError = new Error(
       "Codex ran out of room in the model's context window. Start a new thread or clear earlier history before retrying.",
     );
-    const terminalLifecycleMeta: Array<Record<string, unknown>> = [];
+    const terminalLifecycleMeta: Array<Record<string, any>> = [];
     mockedRunEmbeddedAttempt.mockResolvedValueOnce(
       makeAttemptResult({
         promptError,
@@ -2669,7 +2669,7 @@ describe("runEmbeddedAgent overflow compaction trigger routing", () => {
       },
     });
     mockedCoerceToFailoverError.mockReturnValue(normalized);
-    mockedDescribeFailoverError.mockImplementation((err: unknown) => ({
+    mockedDescribeFailoverError.mockImplementation((err: any) => ({
       message: err instanceof Error ? err.message : String(err),
       reason: err === normalized ? "rate_limit" : undefined,
       status: err === normalized ? 429 : undefined,

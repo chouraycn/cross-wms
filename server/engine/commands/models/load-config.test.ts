@@ -34,7 +34,7 @@ describe("models load-config", () => {
   };
   const targetIds = new Set(["models.providers.*.apiKey"]);
 
-  function mockResolvedConfigFlow(params: { sourceConfig: unknown; diagnostics: string[] }) {
+  function mockResolvedConfigFlow(params: { sourceConfig: any; diagnostics: string[] }) {
     mocks.getRuntimeConfig.mockReturnValue(runtimeConfig);
     mocks.getRuntimeConfigSourceSnapshot.mockReturnValue(params.sourceConfig);
     mocks.getModelsCommandSecretTargetIds.mockReturnValue(targetIds);

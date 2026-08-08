@@ -80,7 +80,7 @@ export type AcpRuntimeStatus = {
   backendSessionId?: string;
   /** Upstream harness session identifier, if known at status time. */
   agentSessionId?: string;
-  details?: Record<string, unknown>;
+  details?: Record<string, any>;
 };
 
 export type AcpRuntimeDoctorReport = {

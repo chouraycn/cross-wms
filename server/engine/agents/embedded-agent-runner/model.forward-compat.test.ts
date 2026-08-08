@@ -87,7 +87,7 @@ function createRuntimeHooks() {
 }
 
 function createRegistry(
-  entries: Array<{ provider: string; modelId: string; model: Record<string, unknown> }>,
+  entries: Array<{ provider: string; modelId: string; model: Record<string, any> }>,
 ) {
   // Minimal registry contract used by resolveModelWithRegistry.
   return {

@@ -62,7 +62,7 @@ export const streamMistral: StreamFunction<"mistral-chat", MistralOptions> = (
       let payload = buildChatPayload(model, context, transformedMessages, options);
       const nextPayload = await options?.onPayload?.(payload, model);
       if (nextPayload !== undefined) {
-        payload = nextPayload as Record<string, unknown>;
+        payload = nextPayload as Record<string, any>;
       }
 
       stream.push({ type: "start", partial: output });
@@ -175,9 +175,9 @@ function deriveMistralToolCallId(id: string, attempt: number): string {
     .slice(0, MISTRAL_TOOL_CALL_ID_LENGTH);
 }
 
-function formatMistralError(error: unknown): string {
+function formatMistralError(error: any): string {
   if (error instanceof Error) {
-    const sdkError = error as Error & { statusCode?: unknown; body?: unknown };
+    const sdkError = error as Error & { statusCode?: any; body?: any };
     const statusCode = typeof sdkError.statusCode === "number" ? sdkError.statusCode : undefined;
     const bodyText = typeof sdkError.body === "string" ? sdkError.body.trim() : undefined;
     if (statusCode !== undefined && bodyText) {
@@ -198,7 +198,7 @@ function truncateErrorText(text: string, maxChars: number): string {
   return `${text.slice(0, maxChars)}... [truncated ${text.length - maxChars} chars]`;
 }
 
-function safeJsonStringify(value: unknown): string {
+function safeJsonStringify(value: any): string {
   try {
     const serialized = JSON.stringify(value);
     return serialized === undefined ? String(value) : serialized;
@@ -212,9 +212,9 @@ function buildChatPayload(
   context: Context,
   messages: Message[],
   options?: MistralOptions,
-): Record<string, unknown> {
+): Record<string, any> {
   const modelInput = (model as unknown as { input?: string[] }).input || [];
-  const payload: Record<string, unknown> = {
+  const payload: Record<string, any> = {
     model: model.id,
     stream: true,
     messages: toChatMessages(messages, modelInput.includes("image")),
@@ -246,7 +246,7 @@ function buildChatPayload(
   }
 
   if (context.systemPrompt) {
-    const msgs = payload.messages as Array<Record<string, unknown>>;
+    const msgs = payload.messages as Array<Record<string, any>>;
     msgs.unshift({
       role: "system",
       content: sanitizeSurrogates(stripSystemPromptCacheBoundary(context.systemPrompt) as string),
@@ -260,7 +260,7 @@ async function simulateChatStream(
   model: Model<"mistral-chat">,
   output: AssistantMessage,
   stream: AssistantMessageEventStream,
-  _payload: Record<string, unknown>,
+  _payload: Record<string, any>,
   _options: MistralOptions | undefined,
   _apiKey: string,
 ): Promise<void> {
@@ -294,7 +294,7 @@ async function simulateChatStream(
   finishCurrentBlock(currentBlock);
 }
 
-function toFunctionTools(tools: Tool[]): Array<{ type: "function"; function: Record<string, unknown> }> {
+function toFunctionTools(tools: Tool[]): Array<{ type: "function"; function: Record<string, any> }> {
   return tools.flatMap((tool) => {
     try {
       return {
@@ -302,7 +302,7 @@ function toFunctionTools(tools: Tool[]): Array<{ type: "function"; function: Rec
         function: {
           name: tool.name,
           description: tool.description,
-          parameters: stripSymbolKeys(tool.parameters) as Record<string, unknown>,
+          parameters: stripSymbolKeys(tool.parameters) as Record<string, any>,
           strict: false,
         },
       };
@@ -312,13 +312,13 @@ function toFunctionTools(tools: Tool[]): Array<{ type: "function"; function: Rec
   });
 }
 
-function stripSymbolKeys(value: unknown): unknown {
+function stripSymbolKeys(value: any): any {
   if (Array.isArray(value)) {
     return value.map((item) => stripSymbolKeys(item));
   }
 
   if (value && typeof value === "object") {
-    const result: Record<string, unknown> = {};
+    const result: Record<string, any> = {};
     for (const [key, entry] of Object.entries(value)) {
       result[key] = stripSymbolKeys(entry);
     }
@@ -331,8 +331,8 @@ function stripSymbolKeys(value: unknown): unknown {
 function toChatMessages(
   messages: Message[],
   supportsImages: boolean,
-): Array<Record<string, unknown>> {
-  const result: Array<Record<string, unknown>> = [];
+): Array<Record<string, any>> {
+  const result: Array<Record<string, any>> = [];
 
   for (const msg of messages) {
     if (msg.role === "user") {
@@ -341,7 +341,7 @@ function toChatMessages(
         continue;
       }
       const hadImages = msg.content.some((item) => item.type === "image");
-      const content: Array<Record<string, unknown>> = msg.content
+      const content: Array<Record<string, any>> = msg.content
         .filter((item) => item.type === "text" || supportsImages)
         .map((item) => {
           if (item.type === "text") {
@@ -360,8 +360,8 @@ function toChatMessages(
     }
 
     if (msg.role === "assistant") {
-      const contentParts: Array<Record<string, unknown>> = [];
-      const toolCalls: Array<Record<string, unknown>> = [];
+      const contentParts: Array<Record<string, any>> = [];
+      const toolCalls: Array<Record<string, any>> = [];
 
       for (const block of msg.content) {
         if (block.type === "text") {
@@ -386,7 +386,7 @@ function toChatMessages(
         });
       }
 
-      const assistantMessage: Record<string, unknown> = { role: "assistant" };
+      const assistantMessage: Record<string, any> = { role: "assistant" };
       if (contentParts.length > 0) {
         assistantMessage.content = contentParts;
       }
@@ -400,7 +400,7 @@ function toChatMessages(
     }
 
     if (msg.role === "toolResult") {
-      const toolContent: Array<Record<string, unknown>> = [];
+      const toolContent: Array<Record<string, any>> = [];
       const textResult = msg.content
         .filter((part) => part.type === "text")
         .map((part) => (part.type === "text" ? sanitizeSurrogates(part.text) : ""))

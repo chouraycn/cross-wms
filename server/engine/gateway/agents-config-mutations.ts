@@ -3,23 +3,23 @@
 export type AgentDeleteMutationResult = unknown;
 
 export class AgentConfigPreconditionError {
-  constructor(...args: unknown[]) {
+  constructor(...args: any[]) {
     // Stub: not fully ported
   }
 }
 
-export function isConfiguredAgent(...args: unknown[]): unknown {
+export function isConfiguredAgent(...args: any[]): any {
   return false;
 }
 
-export async function createAgentConfigEntry(...args: unknown[]): Promise<unknown> {
+export async function createAgentConfigEntry(...args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
 
-export async function updateAgentConfigEntry(...args: unknown[]): Promise<unknown> {
+export async function updateAgentConfigEntry(...args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
 
-export async function deleteAgentConfigEntry(...args: unknown[]): Promise<unknown> {
+export async function deleteAgentConfigEntry(...args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }

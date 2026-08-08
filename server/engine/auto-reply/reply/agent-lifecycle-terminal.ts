@@ -7,11 +7,11 @@ import { formatErrorMessage } from '@openclaw-src/infra/errors.js';
 export type AgentLifecycleTerminalBackstop = {
   emit: (
     phase: "end" | "error",
-    resultOrError: unknown,
-    extraData?: Record<string, unknown>,
+    resultOrError: any,
+    extraData?: Record<string, any>,
   ) => void;
   getDeferredError: () => string | undefined;
-  note: (evt: { stream: string; data: Record<string, unknown> }) => void;
+  note: (evt: { stream: string; data: Record<string, any> }) => void;
 };
 
 const DEFERRED_TERMINAL_METADATA_KEYS = [
@@ -24,12 +24,12 @@ const DEFERRED_TERMINAL_METADATA_KEYS = [
   "replayInvalid",
 ] as const;
 
-export function resolveAgentLifecycleTerminalMetadata(meta: unknown): Record<string, unknown> {
-  const metadata: Record<string, unknown> = {};
+export function resolveAgentLifecycleTerminalMetadata(meta: any): Record<string, any> {
+  const metadata: Record<string, any> = {};
   if (!meta || typeof meta !== "object") {
     return metadata;
   }
-  const record = meta as Record<string, unknown>;
+  const record = meta as Record<string, any>;
   for (const key of DEFERRED_TERMINAL_METADATA_KEYS) {
     if (Object.hasOwn(record, key)) {
       metadata[key] = record[key];
@@ -51,9 +51,9 @@ export function createAgentLifecycleTerminalBackstop(params: {
   let terminalEmitted = false;
   let startedAt = params.startedAt;
   let deferredError: string | undefined;
-  const deferredTerminalMetadata: Record<string, unknown> = {};
+  const deferredTerminalMetadata: Record<string, any> = {};
 
-  const note = (evt: { stream: string; data: Record<string, unknown> }) => {
+  const note = (evt: { stream: string; data: Record<string, any> }) => {
     if (evt.stream !== "lifecycle") {
       return;
     }
@@ -77,7 +77,7 @@ export function createAgentLifecycleTerminalBackstop(params: {
     terminalEmitted = true;
     const abortLifecycleFields = params.resolveAbortLifecycleFields();
     const restartAbort = abortLifecycleFields.stopReason === AGENT_RUN_RESTART_ABORT_STOP_REASON;
-    const data: Record<string, unknown> = {
+    const data: Record<string, any> = {
       ...deferredTerminalMetadata,
       phase: restartAbort ? "end" : phase,
       endedAt: Date.now(),
@@ -92,7 +92,7 @@ export function createAgentLifecycleTerminalBackstop(params: {
     } else {
       const meta =
         resultOrError && typeof resultOrError === "object" && "meta" in resultOrError
-          ? (resultOrError as { meta?: Record<string, unknown> }).meta
+          ? (resultOrError as { meta?: Record<string, any> }).meta
           : undefined;
       Object.assign(data, resolveAgentLifecycleTerminalMetadata(meta));
       if (abortLifecycleFields.aborted === true) {

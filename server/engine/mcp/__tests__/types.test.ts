@@ -103,7 +103,7 @@ describe('MCP Types and Constants', () => {
   describe('类型导出', () => {
     it('应该导出 JsonRpcRequest 类型', () => {
       // 类型测试 - 仅验证导出存在
-      const test: { jsonrpc: '2.0'; id: string; method: string; params?: unknown } = {
+      const test: { jsonrpc: '2.0'; id: string; method: string; params?: any } = {
         jsonrpc: '2.0',
         id: 'test',
         method: 'test',
@@ -112,7 +112,7 @@ describe('MCP Types and Constants', () => {
     });
 
     it('应该导出 JsonRpcResponse 类型', () => {
-      const test: { jsonrpc: '2.0'; id: string; result?: unknown; error?: unknown } = {
+      const test: { jsonrpc: '2.0'; id: string; result?: any; error?: any } = {
         jsonrpc: '2.0',
         id: 'test',
         result: {},
@@ -121,7 +121,7 @@ describe('MCP Types and Constants', () => {
     });
 
     it('应该导出 MCPTool 类型', () => {
-      const tool: { name: string; description: string; inputSchema: Record<string, unknown> } = {
+      const tool: { name: string; description: string; inputSchema: Record<string, any> } = {
         name: 'test',
         description: 'Test',
         inputSchema: {},

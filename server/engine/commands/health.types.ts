@@ -5,9 +5,9 @@ export type ChannelAccountHealthSummary = {
   configured?: boolean;
   linked?: boolean;
   authAgeMs?: number | null;
-  probe?: unknown;
+  probe?: any;
   lastProbeAt?: number | null;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 /** Channel-level health summary with optional per-account details. */

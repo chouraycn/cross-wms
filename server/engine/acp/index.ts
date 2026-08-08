@@ -396,12 +396,12 @@ let ACP_SESSION_MANAGER_SINGLETON: AcpSessionManager | null = null;
 
 export interface AcpSessionManagerDeps {
   readSessionEntry(params: {
-    cfg: unknown;
+    cfg: any;
     sessionKey: string;
     clone: boolean;
   }): { acp?: import("./types.js").SessionAcpMeta } | null;
   upsertSessionMeta(params: {
-    cfg: unknown;
+    cfg: any;
     sessionKey: string;
     mutate: (
       current: import("./types.js").SessionAcpMeta | undefined,

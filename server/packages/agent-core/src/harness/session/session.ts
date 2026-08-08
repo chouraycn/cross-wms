@@ -192,7 +192,7 @@ export class Session<TMetadata extends SessionMetadata = SessionMetadata> {
     summary: string,
     firstKeptEntryId: string,
     tokensBefore: number,
-    details?: unknown,
+    details?: any,
     fromHook?: boolean,
   ): Promise<string> {
     return this.appendTypedEntry({
@@ -209,7 +209,7 @@ export class Session<TMetadata extends SessionMetadata = SessionMetadata> {
   }
 
   /** Append a non-LLM transcript marker for harness-specific state. */
-  async appendCustomEntry(customType: string, data?: unknown): Promise<string> {
+  async appendCustomEntry(customType: string, data?: any): Promise<string> {
     return this.appendTypedEntry({
       type: "custom",
       id: await this.storage.createEntryId(),
@@ -225,7 +225,7 @@ export class Session<TMetadata extends SessionMetadata = SessionMetadata> {
     customType: string,
     content: string | (TextContent | ImageContent)[],
     display: boolean,
-    details?: unknown,
+    details?: any,
   ): Promise<string> {
     return this.appendTypedEntry({
       type: "custom_message",
@@ -267,7 +267,7 @@ export class Session<TMetadata extends SessionMetadata = SessionMetadata> {
   /** Move the visible branch leaf and optionally attach a summary of the abandoned branch. */
   async moveTo(
     entryId: string | null,
-    summary?: { summary: string; details?: unknown; fromHook?: boolean },
+    summary?: { summary: string; details?: any; fromHook?: boolean },
   ): Promise<string | undefined> {
     if (entryId !== null && !(await this.storage.getEntry(entryId))) {
       throw new SessionError("not_found", `Entry ${entryId} not found`);

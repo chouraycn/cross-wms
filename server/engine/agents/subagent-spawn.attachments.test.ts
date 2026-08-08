@@ -15,7 +15,7 @@ import {
 const callGatewayMock = vi.fn();
 const updateSessionStoreMock = vi.fn();
 
-let configOverride: Record<string, unknown> = {
+let configOverride: Record<string, any> = {
   ...createSubagentSpawnTestConfig(),
 };
 let workspaceDirOverride = "";
@@ -86,8 +86,8 @@ describe("spawnSubagentDirect filename validation", () => {
     subagentSpawnModule.resetSubagentRegistryForTests();
     callGatewayMock.mockClear();
     updateSessionStoreMock.mockReset();
-    const store: Record<string, Record<string, unknown>> = {};
-    updateSessionStoreMock.mockImplementation(async (_storePath: unknown, mutator: unknown) => {
+    const store: Record<string, Record<string, any>> = {};
+    updateSessionStoreMock.mockImplementation(async (_storePath: any, mutator: any) => {
       if (typeof mutator !== "function") {
         throw new Error("missing session store mutator");
       }
@@ -201,9 +201,9 @@ describe("spawnSubagentDirect filename validation", () => {
       path.join(os.tmpdir(), `openclaw-subagent-home-attachments-${process.pid}-${Date.now()}-`),
     );
     const expectedCwd = path.join(homeDir, "task-repo");
-    let persistedStore: Record<string, Record<string, unknown>> | undefined;
-    const store: Record<string, Record<string, unknown>> = {};
-    updateSessionStoreMock.mockImplementation(async (_storePath: unknown, mutator: unknown) => {
+    let persistedStore: Record<string, Record<string, any>> | undefined;
+    const store: Record<string, Record<string, any>> = {};
+    updateSessionStoreMock.mockImplementation(async (_storePath: any, mutator: any) => {
       if (typeof mutator !== "function") {
         throw new Error("missing session store mutator");
       }
@@ -237,9 +237,9 @@ describe("spawnSubagentDirect filename validation", () => {
   it("removes materialized attachments when lineage patching fails", async () => {
     // Attachments are created before the child session lineage patch; failures
     // must delete both the child session and materialized files.
-    const calls: Array<{ method?: string; params?: Record<string, unknown> }> = [];
-    const store: Record<string, Record<string, unknown>> = {};
-    updateSessionStoreMock.mockImplementation(async (_storePath: unknown, mutator: unknown) => {
+    const calls: Array<{ method?: string; params?: Record<string, any> }> = [];
+    const store: Record<string, Record<string, any>> = {};
+    updateSessionStoreMock.mockImplementation(async (_storePath: any, mutator: any) => {
       if (typeof mutator !== "function") {
         throw new Error("missing session store mutator");
       }
@@ -249,8 +249,8 @@ describe("spawnSubagentDirect filename validation", () => {
       }
       return store;
     });
-    callGatewayMock.mockImplementation(async (opts: unknown) => {
-      const request = opts as { method?: string; params?: Record<string, unknown> };
+    callGatewayMock.mockImplementation(async (opts: any) => {
+      const request = opts as { method?: string; params?: Record<string, any> };
       calls.push(request);
       if (request.method === "sessions.delete") {
         return { ok: true };

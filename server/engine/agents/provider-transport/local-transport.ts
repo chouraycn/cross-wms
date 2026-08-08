@@ -63,7 +63,7 @@ export class LocalTransport extends BaseTransportLayer {
     }
   }
 
-  async sendMessage(message: unknown): Promise<void> {
+  async sendMessage(message: any): Promise<void> {
     const bodySize = typeof message === 'string' ? message.length : JSON.stringify(message).length;
     this.stats.bytesSent += bodySize;
 

@@ -37,13 +37,13 @@ vi.mock("./shared.js", () => ({
   resolveModelsTargetAgent: mocks.resolveModelsTargetAgent,
 }));
 
-function createRuntime(): OutputRuntimeEnv & { logs: string[]; jsonPayloads: unknown[] } {
+function createRuntime(): OutputRuntimeEnv & { logs: string[]; jsonPayloads: any[] } {
   const logs: string[] = [];
-  const jsonPayloads: unknown[] = [];
+  const jsonPayloads: any[] = [];
   return {
     logs,
     jsonPayloads,
-    log: (...args: unknown[]) => {
+    log: (...args: any[]) => {
       logs.push(args.map((value) => String(value)).join(" "));
     },
     error: vi.fn(),
@@ -51,7 +51,7 @@ function createRuntime(): OutputRuntimeEnv & { logs: string[]; jsonPayloads: unk
       throw new Error(`exit ${code}`);
     }),
     writeStdout: vi.fn(),
-    writeJson: (value: unknown) => {
+    writeJson: (value: any) => {
       jsonPayloads.push(value);
     },
   };

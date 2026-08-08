@@ -52,7 +52,7 @@ const MEMORY_CORE_TRANSCRIPT_UPDATE_SUBSCRIBER_KEY = Symbol.for(
 
 // Memory-core needs target-only internal updates before the SQLite flip, while
 // the public SDK listener stays file-backed during the compatibility window.
-(globalThis as Record<symbol, unknown>)[MEMORY_CORE_TRANSCRIPT_UPDATE_SUBSCRIBER_KEY] ??=
+(globalThis as Record<symbol, any>)[MEMORY_CORE_TRANSCRIPT_UPDATE_SUBSCRIBER_KEY] ??=
   onInternalSessionTranscriptUpdate;
 
 export {

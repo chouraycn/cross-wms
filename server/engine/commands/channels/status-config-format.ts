@@ -55,7 +55,7 @@ export async function formatConfigChannelsStatusLines(
 
   const accountLines = (
     plugin: ChannelStatusPluginLabel,
-    accounts: Array<Record<string, unknown>>,
+    accounts: Array<Record<string, any>>,
   ) =>
     accounts.map((account) => {
       const bits: string[] = [];

@@ -7,45 +7,45 @@
  */
 
 export type ProcessSession = unknown;
-export function createSessionSlug(..._args: unknown[]): unknown {
+export function createSessionSlug(..._args: any[]): any {
   return undefined;
 }
-export function addSession(..._args: unknown[]): unknown {
+export function addSession(..._args: any[]): any {
   return undefined;
 }
-export function getSession(..._args: unknown[]): unknown {
+export function getSession(..._args: any[]): any {
   return undefined;
 }
-export function getFinishedSession(..._args: unknown[]): unknown {
+export function getFinishedSession(..._args: any[]): any {
   return undefined;
 }
-export function deleteSession(..._args: unknown[]): unknown {
+export function deleteSession(..._args: any[]): any {
   return undefined;
 }
-export function appendOutput(..._args: unknown[]): unknown {
+export function appendOutput(..._args: any[]): any {
   return undefined;
 }
-export function drainSession(..._args: unknown[]): unknown {
+export function drainSession(..._args: any[]): any {
   return undefined;
 }
-export function markExited(..._args: unknown[]): unknown {
+export function markExited(..._args: any[]): any {
   return undefined;
 }
-export function markBackgrounded(..._args: unknown[]): unknown {
+export function markBackgrounded(..._args: any[]): any {
   return undefined;
 }
-export function tail(..._args: unknown[]): unknown {
+export function tail(..._args: any[]): any {
   return undefined;
 }
-export function listRunningSessions(..._args: unknown[]): unknown {
+export function listRunningSessions(..._args: any[]): any {
   return [];
 }
-export function listFinishedSessions(..._args: unknown[]): unknown {
+export function listFinishedSessions(..._args: any[]): any {
   return [];
 }
-export function resetProcessRegistryForTests(..._args: unknown[]): unknown {
+export function resetProcessRegistryForTests(..._args: any[]): any {
   return undefined;
 }
-export function setJobTtlMs(..._args: unknown[]): unknown {
+export function setJobTtlMs(..._args: any[]): any {
   return undefined;
 }

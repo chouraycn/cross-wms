@@ -20,7 +20,7 @@ export type SandboxToolPolicy = {
 
 type AnyAgentTool = {
   name: string;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 type AgentToolsConfig = {
@@ -29,8 +29,8 @@ type AgentToolsConfig = {
   deny?: string[];
   alsoAllow?: string[];
   byProvider?: Record<string, AgentToolsConfig>;
-  exec?: unknown;
-  fs?: unknown;
+  exec?: any;
+  fs?: any;
   subagents?: {
     tools?: {
       allow?: string[];
@@ -38,7 +38,7 @@ type AgentToolsConfig = {
       alsoAllow?: string[];
     };
   };
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 type OpenClawConfig = {
@@ -50,7 +50,7 @@ type OpenClawConfig = {
       };
     };
   };
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 /**

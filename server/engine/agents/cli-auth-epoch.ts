@@ -12,7 +12,7 @@ import crypto from "node:crypto";
 export const CLI_AUTH_EPOCH_VERSION = 6;
 
 /** Overrides credential readers for auth-epoch unit tests. */
-export function setCliAuthEpochTestDeps(_overrides: unknown): void {
+export function setCliAuthEpochTestDeps(_overrides: any): void {
   // No-op in cross-wms
 }
 

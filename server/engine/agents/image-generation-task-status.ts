@@ -6,28 +6,28 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export const IMAGE_GENERATION_TASK_KIND: unknown = undefined;
-export function findActiveImageGenerationTaskForSession(..._args: unknown[]): unknown {
+export const IMAGE_GENERATION_TASK_KIND: any = undefined;
+export function findActiveImageGenerationTaskForSession(..._args: any[]): any {
   return [];
 }
-export function listActiveImageGenerationTasksForSession(..._args: unknown[]): unknown {
+export function listActiveImageGenerationTasksForSession(..._args: any[]): any {
   return [];
 }
-export function findDuplicateGuardImageGenerationTaskForSession(..._args: unknown[]): unknown {
+export function findDuplicateGuardImageGenerationTaskForSession(..._args: any[]): any {
   return [];
 }
-export function buildImageGenerationTaskStatusDetails(..._args: unknown[]): unknown {
+export function buildImageGenerationTaskStatusDetails(..._args: any[]): any {
   return undefined;
 }
-export function buildImageGenerationTaskStatusListDetails(..._args: unknown[]): unknown {
+export function buildImageGenerationTaskStatusListDetails(..._args: any[]): any {
   return undefined;
 }
-export function buildImageGenerationTaskStatusText(..._args: unknown[]): unknown {
+export function buildImageGenerationTaskStatusText(..._args: any[]): any {
   return undefined;
 }
-export function buildImageGenerationTaskStatusListText(..._args: unknown[]): unknown {
+export function buildImageGenerationTaskStatusListText(..._args: any[]): any {
   return undefined;
 }
-export function buildActiveImageGenerationTaskPromptContextForSession(..._args: unknown[]): unknown {
+export function buildActiveImageGenerationTaskPromptContextForSession(..._args: any[]): any {
   return undefined;
 }

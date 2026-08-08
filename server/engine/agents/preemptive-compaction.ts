@@ -8,19 +8,19 @@
 
 export type PreemptiveCompactionDecision = unknown;
 export type LlmBoundaryTokenPressure = unknown;
-export function estimateLlmBoundaryTokenPressure(..._args: unknown[]): unknown {
+export function estimateLlmBoundaryTokenPressure(..._args: any[]): any {
   return undefined;
 }
-export function estimateRenderedLlmBoundaryTokenPressure(..._args: unknown[]): unknown {
+export function estimateRenderedLlmBoundaryTokenPressure(..._args: any[]): any {
   return undefined;
 }
-export function shouldPreemptivelyCompactBeforePrompt(..._args: unknown[]): unknown {
+export function shouldPreemptivelyCompactBeforePrompt(..._args: any[]): any {
   return false;
 }
-export function formatPrePromptPrecheckLog(..._args: unknown[]): unknown {
+export function formatPrePromptPrecheckLog(..._args: any[]): any {
   return "";
 }
-export function buildPrePromptContextBudgetStatus(..._args: unknown[]): unknown {
+export function buildPrePromptContextBudgetStatus(..._args: any[]): any {
   return undefined;
 }
-export const PREEMPTIVE_OVERFLOW_ERROR_TEXT: unknown = undefined;
+export const PREEMPTIVE_OVERFLOW_ERROR_TEXT: any = undefined;

@@ -15,22 +15,22 @@ export type SharedGatewayAuthClient = unknown;
 
 export type SharedGatewaySessionGenerationState = unknown;
 
-export function disconnectStaleSharedGatewayAuthClients(..._args: unknown[]): unknown {
+export function disconnectStaleSharedGatewayAuthClients(..._args: any[]): any {
   return undefined;
 }
 
-export function disconnectAllSharedGatewayAuthClients(..._args: unknown[]): unknown {
+export function disconnectAllSharedGatewayAuthClients(..._args: any[]): any {
   return undefined;
 }
 
-export function getRequiredSharedGatewaySessionGeneration(..._args: unknown[]): unknown {
+export function getRequiredSharedGatewaySessionGeneration(..._args: any[]): any {
   return undefined;
 }
 
-export function setCurrentSharedGatewaySessionGeneration(..._args: unknown[]): unknown {
+export function setCurrentSharedGatewaySessionGeneration(..._args: any[]): any {
   return undefined;
 }
 
-export function enforceSharedGatewaySessionGenerationForConfigWrite(..._args: unknown[]): unknown {
+export function enforceSharedGatewaySessionGenerationForConfigWrite(..._args: any[]): any {
   return undefined;
 }

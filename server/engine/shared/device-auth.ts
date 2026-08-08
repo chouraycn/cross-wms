@@ -19,7 +19,7 @@ export function normalizeDeviceAuthRole(role: string): string {
 }
 
 /** Normalize device-auth scopes, dedupe/sort them, and include implied operator scopes. */
-export function normalizeDeviceAuthScopes(scopes: readonly unknown[] | undefined): string[] {
+export function normalizeDeviceAuthScopes(scopes: readonly any[] | undefined): string[] {
   if (!Array.isArray(scopes)) {
     return [];
   }

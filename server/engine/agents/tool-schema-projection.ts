@@ -9,14 +9,14 @@ export type RuntimeToolSchemaDiagnostic = {
   issue: string;
 };
 
-export function inspectRuntimeToolInputSchemas(tools: unknown[]): RuntimeToolSchemaDiagnostic[] {
+export function inspectRuntimeToolInputSchemas(tools: any[]): RuntimeToolSchemaDiagnostic[] {
   return [];
 }
 
-export function filterRuntimeCompatibleTools(tools: unknown[]): unknown[] {
+export function filterRuntimeCompatibleTools(tools: any[]): any[] {
   return tools;
 }
 
-export function filterProviderNormalizableTools(tools: unknown[]): unknown[] {
+export function filterProviderNormalizableTools(tools: any[]): any[] {
   return tools;
 }

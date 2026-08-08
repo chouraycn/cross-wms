@@ -6,17 +6,17 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function mockOpenAICodexTemplateModel(..._args: unknown[]): unknown {
+export function mockOpenAICodexTemplateModel(..._args: any[]): any {
   return undefined;
 }
-export function buildOpenAICodexForwardCompatExpectation(..._args: unknown[]): unknown {
+export function buildOpenAICodexForwardCompatExpectation(..._args: any[]): any {
   return undefined;
 }
-export function resetMockDiscoverModels(..._args: unknown[]): unknown {
+export function resetMockDiscoverModels(..._args: any[]): any {
   return undefined;
 }
-export function mockDiscoveredModel(..._args: unknown[]): unknown {
+export function mockDiscoveredModel(..._args: any[]): any {
   return undefined;
 }
-export const makeModel: unknown = undefined;
-export const OPENAI_CODEX_TEMPLATE_MODEL: unknown = undefined;
+export const makeModel: any = undefined;
+export const OPENAI_CODEX_TEMPLATE_MODEL: any = undefined;

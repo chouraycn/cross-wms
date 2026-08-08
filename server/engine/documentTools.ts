@@ -146,7 +146,7 @@ function getFileExtension(filePath: string): string {
 // ===================== 处理器 =====================
 
 const handleDocumentExtractText: ToolHandler = async (
-  args: Record<string, unknown>
+  args: Record<string, any>
 ): Promise<string> => {
   const fs = require('fs');
   const path = require('path');

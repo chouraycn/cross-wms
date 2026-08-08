@@ -180,7 +180,7 @@ describe("bonjour-discovery", () => {
       platform: "darwin",
       timeoutMs: 800,
       domains: ["local."],
-      run: run as unknown as typeof runCommandWithTimeout,
+      run: run as any as typeof runCommandWithTimeout,
     });
 
     const beacon = getOnlyBeacon(beacons);

@@ -22,8 +22,8 @@ export async function extractPdfContent(params: {
   minTextChars: number;
   password?: string;
   pageNumbers?: number[];
-  config?: unknown;
-  onImageExtractionError?: (error: unknown) => void;
+  config?: any;
+  onImageExtractionError?: (error: any) => void;
 }): Promise<PdfExtractedContent> {
   const extracted = await extractDocumentContent({
     buffer: params.buffer,

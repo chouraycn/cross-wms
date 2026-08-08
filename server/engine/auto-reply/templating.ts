@@ -35,13 +35,13 @@ type StickerContextMetadata = {
   uniqueFileId?: string;
   isAnimated?: boolean;
   isVideo?: boolean;
-} & Record<string, unknown>;
+} & Record<string, any>;
 
 type UntrustedStructuredContextEntry = {
   label: string;
   source?: string;
   type?: string;
-  payload: unknown;
+  payload: any;
 };
 
 /** Structured supplemental facts projected into prompt context by inbound finalization. */
@@ -71,7 +71,7 @@ export type SupplementalContextFacts = {
     modelParentSessionKey?: string;
     senderAllowed?: boolean;
   };
-  untrustedContext?: Array<{ label: string; source?: string; type?: string; payload: unknown }>;
+  untrustedContext?: Array<{ label: string; source?: string; type?: string; payload: any }>;
   groupSystemPrompt?: string;
   /** Prompt-like group metadata from user-controlled sources; never enters the system prompt. */
   untrustedGroupSystemPrompt?: string;
@@ -361,7 +361,7 @@ export type TemplateContext = MsgContext & {
   IsNewSession?: string;
 };
 
-function formatTemplateValue(value: unknown): string {
+function formatTemplateValue(value: any): string {
   if (value == null) {
     return "";
   }

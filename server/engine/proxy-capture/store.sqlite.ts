@@ -156,19 +156,19 @@ function openPathBasedDebugProxyCaptureStore(
   }
 }
 
-function serializeJson(value: unknown): string | null {
+function serializeJson(value: any): string | null {
   return value == null ? null : JSON.stringify(value);
 }
 
 // Metadata is optional and user/tool supplied, so parse defensively for coverage
 // summaries instead of assuming every event has valid JSON.
-function parseMetaJson(metaJson: unknown): Record<string, unknown> | null {
+function parseMetaJson(metaJson: any): Record<string, any> | null {
   if (typeof metaJson !== "string" || metaJson.trim().length === 0) {
     return null;
   }
   try {
-    const parsed = JSON.parse(metaJson) as unknown;
-    return parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>) : null;
+    const parsed = JSON.parse(metaJson) as any;
+    return parsed && typeof parsed === "object" ? (parsed as Record<string, any>) : null;
   } catch {
     return null;
   }
@@ -409,7 +409,7 @@ class DebugProxyCaptureStoreImpl {
       .all(limit) as CaptureSessionSummary[];
   }
 
-  getSessionEvents(sessionId: string, limit = 500): Array<Record<string, unknown>> {
+  getSessionEvents(sessionId: string, limit = 500): Array<Record<string, any>> {
     return this.db
       .prepare(
         `SELECT
@@ -422,7 +422,7 @@ class DebugProxyCaptureStoreImpl {
          ORDER BY ts DESC, id DESC
          LIMIT ?`,
       )
-      .all(sessionId, limit) as Array<Record<string, unknown>>;
+      .all(sessionId, limit) as Array<Record<string, any>>;
   }
 
   summarizeSessionCoverage(sessionId: string): CaptureSessionCoverageSummary {
@@ -928,7 +928,7 @@ export function persistEventPayload(
   };
 }
 
-export function safeJsonString(value: unknown): string | undefined {
+export function safeJsonString(value: any): string | undefined {
   const raw = serializeJson(value);
   return raw ?? undefined;
 }

@@ -36,7 +36,7 @@ export type ChannelRunQueueParams = {
   /** Lifecycle signal propagated to queued tasks. */
   abortSignal?: AbortSignal;
   /** Best-effort sink for task failures after enqueueing. */
-  onError?: (error: unknown) => void;
+  onError?: (error: any) => void;
 };
 
 /** Bind a fixed account id into a status writer so lifecycle code can emit partial snapshots. */
@@ -60,7 +60,7 @@ export function createChannelRunQueue(params: ChannelRunQueueParams): ChannelRun
     setStatus: params.setStatus,
     abortSignal: params.abortSignal,
   });
-  const reportError = (error: unknown) => {
+  const reportError = (error: any) => {
     try {
       params.onError?.(error);
     } catch {

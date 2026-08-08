@@ -12,14 +12,14 @@ const installPluginFromInstalledPackageDirMock = vi.fn();
 const preflightPluginGitInstallPolicyMock = vi.fn();
 
 vi.mock("../process/exec.js", () => ({
-  runCommandWithTimeout: (...args: unknown[]) => runCommandWithTimeoutMock(...args),
+  runCommandWithTimeout: (...args: any[]) => runCommandWithTimeoutMock(...args),
 }));
 
 vi.mock("./install.js", async () => {
   const actual = await vi.importActual<typeof import("./install.js")>("./install.js");
   return {
     ...actual,
-    installPluginFromInstalledPackageDir: (...args: unknown[]) =>
+    installPluginFromInstalledPackageDir: (...args: any[]) =>
       installPluginFromInstalledPackageDirMock(...args),
   };
 });
@@ -30,7 +30,7 @@ vi.mock("./install-security-scan.js", async () => {
   );
   return {
     ...actual,
-    preflightPluginGitInstallPolicy: (...args: unknown[]) =>
+    preflightPluginGitInstallPolicy: (...args: any[]) =>
       preflightPluginGitInstallPolicyMock(...args),
   };
 });

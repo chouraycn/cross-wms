@@ -7,27 +7,27 @@
  */
 
 export type LegacySubagentRunRecord = unknown;
-export function normalizeSubagentRunState(..._args: unknown[]): unknown {
+export function normalizeSubagentRunState(..._args: any[]): any {
   return undefined;
 }
-export function ensureCompletionState(..._args: unknown[]): unknown {
+export function ensureCompletionState(..._args: any[]): any {
   return undefined;
 }
-export function ensureDeliveryState(..._args: unknown[]): unknown {
+export function ensureDeliveryState(..._args: any[]): any {
   return undefined;
 }
-export function clearDeliveryState(..._args: unknown[]): unknown {
+export function clearDeliveryState(..._args: any[]): any {
   return undefined;
 }
-export function isDeliverySuspended(..._args: unknown[]): unknown {
+export function isDeliverySuspended(..._args: any[]): any {
   return false;
 }
-export function getDeliveryAttemptCount(..._args: unknown[]): unknown {
+export function getDeliveryAttemptCount(..._args: any[]): any {
   return undefined;
 }
-export function getDeliveryLastAttemptAt(..._args: unknown[]): unknown {
+export function getDeliveryLastAttemptAt(..._args: any[]): any {
   return undefined;
 }
-export function getDeliveryLastError(..._args: unknown[]): unknown {
+export function getDeliveryLastError(..._args: any[]): any {
   return undefined;
 }

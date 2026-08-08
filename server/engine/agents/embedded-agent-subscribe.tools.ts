@@ -10,9 +10,9 @@ export { isToolResultError } from "./tool-result-error.js";
 /** Build a standardized tool lifecycle error result. */
 export function buildToolLifecycleErrorResult(params: {
   toolName: string;
-  error: unknown;
+  error: any;
   sessionId?: string;
-}): { error: string; toolName: string; details?: unknown } {
+}): { error: string; toolName: string; details?: any } {
   const message = params.error instanceof Error ? params.error.message : String(params.error);
   return {
     error: `Tool ${params.toolName} failed: ${message}`,
@@ -22,7 +22,7 @@ export function buildToolLifecycleErrorResult(params: {
 }
 
 /** Sanitize tool args for logging, removing sensitive data. */
-export function sanitizeToolArgs(args: unknown): unknown {
+export function sanitizeToolArgs(args: any): any {
   if (args === null || args === undefined) {
     return args;
   }
@@ -40,8 +40,8 @@ export function sanitizeToolArgs(args: unknown): unknown {
       "password", "secret", "token", "apiKey", "api_key",
       "authorization", "credential", "privateKey", "private_key",
     ]);
-    const result: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(args as Record<string, unknown>)) {
+    const result: Record<string, any> = {};
+    for (const [key, value] of Object.entries(args as Record<string, any>)) {
       if (sensitiveKeys.has(key)) {
         result[key] = "[REDACTED]";
       } else {
@@ -54,7 +54,7 @@ export function sanitizeToolArgs(args: unknown): unknown {
 }
 
 /** Sanitize a tool result for user-facing display. */
-export function sanitizeToolResult(result: unknown): unknown {
+export function sanitizeToolResult(result: any): any {
   if (result === null || result === undefined) {
     return result;
   }
@@ -68,7 +68,7 @@ export function sanitizeToolResult(result: unknown): unknown {
 }
 
 /** Extract human-readable text from a tool result. */
-export function extractToolResultText(result: unknown): string {
+export function extractToolResultText(result: any): string {
   if (result === null || result === undefined) {
     return "";
   }
@@ -76,7 +76,7 @@ export function extractToolResultText(result: unknown): string {
     return result;
   }
   if (typeof result === "object" && result !== null) {
-    const rec = result as Record<string, unknown>;
+    const rec = result as Record<string, any>;
     if (typeof rec.text === "string") {
       return rec.text;
     }
@@ -103,25 +103,25 @@ export function extractToolResultText(result: unknown): string {
 
 /** Collect media URLs from a record-shaped tool result. */
 export function collectMessagingMediaUrlsFromRecord(
-  _result: Record<string, unknown>,
+  _result: Record<string, any>,
 ): string[] {
   return [];
 }
 
 /** Collect media URLs from a tool result. */
-export function collectMessagingMediaUrlsFromToolResult(_result: unknown): string[] {
+export function collectMessagingMediaUrlsFromToolResult(_result: any): string[] {
   return [];
 }
 
 /** Extract a messaging tool source reply payload. */
 export function extractMessagingToolSourceReplyPayload(
-  _result: unknown,
-): Record<string, unknown> | undefined {
+  _result: any,
+): Record<string, any> | undefined {
   return undefined;
 }
 
 /** Return true if a tool result's media is from a trusted source. */
-export function isToolResultMediaTrusted(_result: unknown): boolean {
+export function isToolResultMediaTrusted(_result: any): boolean {
   return false;
 }
 
@@ -132,17 +132,17 @@ export function filterToolResultMediaUrls(urls: string[], _trusted?: boolean): s
 
 /** Extract a media artifact from a tool result. */
 export function extractToolResultMediaArtifact(
-  _result: unknown,
+  _result: any,
 ): { url: string; mimeType?: string } | undefined {
   return undefined;
 }
 
 /** Extract an error code from a tool result. */
-export function extractToolErrorCode(result: unknown): string | undefined {
+export function extractToolErrorCode(result: any): string | undefined {
   if (!result || typeof result !== "object") {
     return undefined;
   }
-  const rec = result as Record<string, unknown>;
+  const rec = result as Record<string, any>;
   if (typeof rec.errorCode === "string") {
     return rec.errorCode;
   }
@@ -156,11 +156,11 @@ export function extractToolErrorCode(result: unknown): string | undefined {
 }
 
 /** Return true if a tool result indicates a timeout. */
-export function isToolResultTimedOut(result: unknown): boolean {
+export function isToolResultTimedOut(result: any): boolean {
   if (!result || typeof result !== "object") {
     return false;
   }
-  const rec = result as Record<string, unknown>;
+  const rec = result as Record<string, any>;
   if (rec.timedOut === true) {
     return true;
   }
@@ -169,11 +169,11 @@ export function isToolResultTimedOut(result: unknown): boolean {
 }
 
 /** Extract a tool error message from a result. */
-export function extractToolErrorMessage(result: unknown): string | undefined {
+export function extractToolErrorMessage(result: any): string | undefined {
   if (!result || typeof result !== "object") {
     return undefined;
   }
-  const rec = result as Record<string, unknown>;
+  const rec = result as Record<string, any>;
   if (typeof rec.error === "string") {
     return rec.error;
   }
@@ -191,14 +191,14 @@ export function extractToolErrorMessage(result: unknown): string | undefined {
 
 /** Extract a messaging tool send payload from tool args. */
 export function extractMessagingToolSend(
-  _args: unknown,
+  _args: any,
 ): { to: string; message: string; channel?: string } | undefined {
   return undefined;
 }
 
 /** Extract a messaging tool send result from tool result. */
 export function extractMessagingToolSendResult(
-  _result: unknown,
+  _result: any,
 ): { success: boolean; messageId?: string } | undefined {
   return undefined;
 }

@@ -6,10 +6,10 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function resolveImageModelConfigForTool(..._args: unknown[]): unknown {
+export function resolveImageModelConfigForTool(..._args: any[]): any {
   return undefined;
 }
-export function createImageTool(..._args: unknown[]): unknown {
+export function createImageTool(..._args: any[]): any {
   return undefined;
 }
-export const testing_image_tool: unknown = undefined;
+export const testing_image_tool: any = undefined;

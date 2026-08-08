@@ -18,9 +18,9 @@ function repairNullAgentWorkspaces(cfg: OpenClawConfig, changes: string[]): Open
 
   let repaired = 0;
   const nextAgents = agents.map((agent) => {
-    if (agent && typeof agent === "object" && (agent as Record<string, unknown>).workspace === null) {
+    if (agent && typeof agent === "object" && (agent as Record<string, any>).workspace === null) {
       repaired += 1;
-      const { workspace: _workspace, ...rest } = agent as Record<string, unknown>;
+      const { workspace: _workspace, ...rest } = agent as Record<string, any>;
       return rest;
     }
     return agent;

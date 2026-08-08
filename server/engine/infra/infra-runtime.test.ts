@@ -26,13 +26,13 @@ const cleanStaleGatewayProcessesSyncMock = vi.hoisted(() => vi.fn());
 const findGatewayPidsOnPortSyncMock = vi.hoisted(() => vi.fn());
 
 vi.mock("./restart-stale-pids.js", () => ({
-  cleanStaleGatewayProcessesSync: (...args: unknown[]) =>
+  cleanStaleGatewayProcessesSync: (...args: any[]) =>
     cleanStaleGatewayProcessesSyncMock(...args),
-  findGatewayPidsOnPortSync: (...args: unknown[]) => findGatewayPidsOnPortSyncMock(...args),
+  findGatewayPidsOnPortSync: (...args: any[]) => findGatewayPidsOnPortSyncMock(...args),
 }));
 
 vi.mock("./windows-task-restart.js", () => ({
-  relaunchGatewayScheduledTask: (...args: unknown[]) => relaunchGatewayScheduledTaskMock(...args),
+  relaunchGatewayScheduledTask: (...args: any[]) => relaunchGatewayScheduledTaskMock(...args),
 }));
 
 const originalPlatformDescriptor = Object.getOwnPropertyDescriptor(process, "platform");
@@ -60,7 +60,7 @@ function withoutSigusr1Listeners(fn: () => void): void {
   }
 }
 
-function countSigusr1Emits(calls: readonly unknown[][]): number {
+function countSigusr1Emits(calls: readonly any[][]): number {
   let count = 0;
   for (const args of calls) {
     if (args[0] === "SIGUSR1") {

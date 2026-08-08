@@ -13,25 +13,25 @@ const runSecretsApplyMock = vi.hoisted(() => vi.fn());
 const tempDirs: string[] = [];
 
 vi.mock("@clack/prompts", () => ({
-  confirm: (...args: unknown[]) => confirmMock(...args),
-  select: (...args: unknown[]) => selectMock(...args),
+  confirm: (...args: any[]) => confirmMock(...args),
+  select: (...args: any[]) => selectMock(...args),
   text: vi.fn(),
 }));
 
 vi.mock("./config-io.js", () => ({
-  createSecretsConfigIO: (...args: unknown[]) => createSecretsConfigIOMock(...args),
+  createSecretsConfigIO: (...args: any[]) => createSecretsConfigIOMock(...args),
 }));
 
 vi.mock("../agents/auth-profiles/persisted.js", () => ({
-  loadPersistedAuthProfileStore: (...args: unknown[]) => loadPersistedAuthProfileStoreMock(...args),
+  loadPersistedAuthProfileStore: (...args: any[]) => loadPersistedAuthProfileStoreMock(...args),
 }));
 
 vi.mock("../plugins/manifest-registry.js", () => ({
-  loadPluginManifestRegistry: (...args: unknown[]) => loadPluginManifestRegistryMock(...args),
+  loadPluginManifestRegistry: (...args: any[]) => loadPluginManifestRegistryMock(...args),
 }));
 
 vi.mock("./apply.js", () => ({
-  runSecretsApply: (...args: unknown[]) => runSecretsApplyMock(...args),
+  runSecretsApply: (...args: any[]) => runSecretsApplyMock(...args),
 }));
 
 const { runSecretsConfigureInteractive } = await import("./configure.js");

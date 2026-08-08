@@ -9,7 +9,7 @@ export function redactBounded(text: string, maxChars: number = MAX_REDACT_CHARS)
   return `${truncated}...(truncated, ${text.length} total chars)`;
 }
 
-export function redactBoundedJson(obj: unknown, maxChars: number = MAX_REDACT_CHARS): string {
+export function redactBoundedJson(obj: any, maxChars: number = MAX_REDACT_CHARS): string {
   try {
     const json = JSON.stringify(obj);
     return redactBounded(json, maxChars);

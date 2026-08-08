@@ -4,14 +4,14 @@ import type { OpenClawConfig } from "@openclaw-src/config/types.js";
 import { LEGACY_CONFIG_MIGRATIONS_RUNTIME_TTS } from "./legacy-config-migrations.runtime.tts.js";
 import { normalizeLegacyTalkConfig } from "./legacy-talk-config-normalizer.js";
 
-function migrateLegacyConfig(raw: unknown): {
+function migrateLegacyConfig(raw: any): {
   config: OpenClawConfig | null;
   changes: string[];
 } {
   if (!raw || typeof raw !== "object") {
     return { config: null, changes: [] };
   }
-  const next = structuredClone(raw) as Record<string, unknown>;
+  const next = structuredClone(raw) as Record<string, any>;
   const changes: string[] = [];
   for (const migration of LEGACY_CONFIG_MIGRATIONS_RUNTIME_TTS) {
     migration.apply(next, changes);
@@ -337,23 +337,23 @@ describe("legacy migrate provider-shaped config", () => {
     const migratedConfig = res.config as
       | {
           agents?: {
-            defaults?: { tts?: Record<string, unknown> };
-            list?: Array<{ id?: string; tts?: Record<string, unknown> }>;
+            defaults?: { tts?: Record<string, any> };
+            list?: Array<{ id?: string; tts?: Record<string, any> }>;
           };
           channels?: {
             discord?: {
-              tts?: Record<string, unknown>;
-              voice?: { tts?: Record<string, unknown> };
+              tts?: Record<string, any>;
+              voice?: { tts?: Record<string, any> };
               accounts?: {
                 primary?: {
-                  tts?: Record<string, unknown>;
-                  voice?: { tts?: Record<string, unknown> };
+                  tts?: Record<string, any>;
+                  voice?: { tts?: Record<string, any> };
                 };
               };
             };
           };
           plugins?: {
-            entries?: Record<string, { config?: { tts?: Record<string, unknown> } }>;
+            entries?: Record<string, { config?: { tts?: Record<string, any> } }>;
           };
         }
       | undefined;
@@ -496,29 +496,29 @@ describe("legacy migrate provider-shaped config", () => {
     ]);
     const migratedConfig = res.config as
       | {
-          messages?: { tts?: { auto?: unknown } };
+          messages?: { tts?: { auto?: any } };
           agents?: {
-            defaults?: { tts?: { enabled?: unknown; auto?: unknown } };
-            list?: Array<{ id?: string; tts?: { auto?: unknown } }>;
+            defaults?: { tts?: { enabled?: any; auto?: any } };
+            list?: Array<{ id?: string; tts?: { auto?: any } }>;
           };
           channels?: {
             discord?: {
-              tts?: { enabled?: unknown; auto?: unknown };
-              voice?: { tts?: { auto?: unknown } };
+              tts?: { enabled?: any; auto?: any };
+              voice?: { tts?: { auto?: any } };
               accounts?: {
                 primary?: {
-                  tts?: { enabled?: unknown; auto?: unknown };
-                  voice?: { tts?: { auto?: unknown } };
+                  tts?: { enabled?: any; auto?: any };
+                  voice?: { tts?: { auto?: any } };
                 };
               };
             };
             feishu?: {
-              tts?: { auto?: unknown };
-              accounts?: { english?: { tts?: { auto?: unknown } } };
+              tts?: { auto?: any };
+              accounts?: { english?: { tts?: { auto?: any } } };
             };
           };
           plugins?: {
-            entries?: Record<string, { config?: { tts?: { auto?: unknown } } }>;
+            entries?: Record<string, { config?: { tts?: { auto?: any } } }>;
           };
         }
       | undefined;
@@ -564,7 +564,7 @@ describe("legacy migrate provider-shaped config", () => {
     ]);
     const voiceCallTts = (
       res.config?.plugins?.entries as
-        | Record<string, { config?: { tts?: Record<string, unknown> } }>
+        | Record<string, { config?: { tts?: Record<string, any> } }>
         | undefined
     )?.["voice-call"]?.config?.tts;
     expect(voiceCallTts).toEqual({
@@ -605,7 +605,7 @@ describe("legacy migrate provider-shaped config", () => {
     ]);
     const voiceCallTts = (
       res.config?.plugins?.entries as
-        | Record<string, { config?: { tts?: Record<string, unknown> } }>
+        | Record<string, { config?: { tts?: Record<string, any> } }>
         | undefined
     )?.["voice-call"]?.config?.tts;
     expect(voiceCallTts).toEqual({

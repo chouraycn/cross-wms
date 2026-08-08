@@ -59,7 +59,7 @@ export function normalizeExecTarget(value?: string | null): ExecTarget | null {
   return normalizeExecHost(normalized);
 }
 
-export function requireValidExecTarget(value?: unknown): ExecTarget | null {
+export function requireValidExecTarget(value?: any): ExecTarget | null {
   if (value == null) {
     return null;
   }
@@ -647,7 +647,7 @@ function renameExecApprovalsWithFallback(tempPath: string, filePath: string): vo
   }
 }
 
-function coerceAllowlistEntries(allowlist: unknown): ExecAllowlistEntry[] | undefined {
+function coerceAllowlistEntries(allowlist: any): ExecAllowlistEntry[] | undefined {
   if (!Array.isArray(allowlist) || allowlist.length === 0) {
     return Array.isArray(allowlist) ? (allowlist as ExecAllowlistEntry[]) : undefined;
   }
@@ -663,7 +663,7 @@ function coerceAllowlistEntries(allowlist: unknown): ExecAllowlistEntry[] | unde
         changed = true;
       }
     } else if (item && typeof item === "object" && !Array.isArray(item)) {
-      const pattern = (item as { pattern?: unknown }).pattern;
+      const pattern = (item as { pattern?: any }).pattern;
       if (typeof pattern === "string" && pattern.trim().length > 0) {
         result.push(item as ExecAllowlistEntry);
       } else {
@@ -949,19 +949,19 @@ function readExecApprovalsForNoPersistence(filePath: string): ExecApprovalsFile 
   return normalizeExecApprovals({ version: 1, agents: {} });
 }
 
-function isExecSecurity(value: unknown): value is ExecSecurity {
+function isExecSecurity(value: any): value is ExecSecurity {
   return value === "allowlist" || value === "full" || value === "deny";
 }
 
-function isExecAsk(value: unknown): value is ExecAsk {
+function isExecAsk(value: any): value is ExecAsk {
   return value === "always" || value === "off" || value === "on-miss";
 }
 
-function normalizeSecurity(value: unknown, fallback: ExecSecurity): ExecSecurity {
+function normalizeSecurity(value: any, fallback: ExecSecurity): ExecSecurity {
   return isExecSecurity(value) ? value : fallback;
 }
 
-function normalizeAsk(value: unknown, fallback: ExecAsk): ExecAsk {
+function normalizeAsk(value: any, fallback: ExecAsk): ExecAsk {
   return isExecAsk(value) ? value : fallback;
 }
 
@@ -1853,7 +1853,7 @@ export function isExecApprovalDecisionAllowed(params: {
 export async function requestExecApprovalViaSocket(params: {
   socketPath: string;
   token: string;
-  request: Record<string, unknown>;
+  request: Record<string, any>;
   timeoutMs?: number;
 }): Promise<ExecApprovalDecision | null> {
   const { socketPath, token, request } = params;

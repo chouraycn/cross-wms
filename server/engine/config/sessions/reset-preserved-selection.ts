@@ -16,7 +16,7 @@ type SessionEntry = {
   authProfileOverride?: string;
   authProfileOverrideSource?: "user" | "auto" | string;
   authProfileOverrideCompactionCount?: number;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 type ResetPreservedSelectionState = Pick<

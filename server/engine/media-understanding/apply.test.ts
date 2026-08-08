@@ -127,7 +127,7 @@ function getRunFfmpegArgs(index = 0) {
   return args;
 }
 
-function expectCliRunOptions(options: unknown) {
+function expectCliRunOptions(options: any) {
   expect(options).toEqual({
     timeoutMs: 60_000,
     maxBuffer: CLI_OUTPUT_MAX_BUFFER,
@@ -275,10 +275,10 @@ describe("applyMediaUnderstanding", () => {
     vi.doMock("../agents/model-auth.js", () => ({
       resolveApiKeyForProvider: resolveApiKeyForProviderMock,
       hasAvailableAuthForProvider: hasAvailableAuthForProviderMock,
-      isProviderAuthError: (err: unknown, code?: string) =>
+      isProviderAuthError: (err: any, code?: string) =>
         err instanceof Error &&
         "code" in err &&
-        (code === undefined || (err as { code?: unknown }).code === code),
+        (code === undefined || (err as { code?: any }).code === code),
       requireApiKey: (auth: { apiKey?: string; mode?: string }, provider: string) => {
         if (auth?.apiKey) {
           return auth.apiKey;

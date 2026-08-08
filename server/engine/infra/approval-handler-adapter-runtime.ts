@@ -6,22 +6,22 @@ export const CHANNEL_APPROVAL_NATIVE_RUNTIME_CONTEXT_CAPABILITY = "approval.nati
 
 /** Creates a lazy-loading approval runtime adapter. Simplified port without lazy-runtime module. */
 export function createLazyChannelApprovalNativeRuntimeAdapter<
-  TPendingPayload = unknown,
-  TPreparedTarget = unknown,
-  TPendingEntry = unknown,
-  TBinding = unknown,
-  TFinalPayload = unknown,
+  TPendingPayload = any,
+  TPreparedTarget = any,
+  TPendingEntry = any,
+  TBinding = any,
+  TFinalPayload = any,
 >(params: {
-  load: () => Promise<unknown>;
+  load: () => Promise<any>;
   isConfigured: () => boolean;
-  shouldHandle: (params: unknown) => boolean;
+  shouldHandle: (params: any) => boolean;
   eventKinds?: readonly string[];
-  resolveApprovalKind?: (params: unknown) => string | undefined;
+  resolveApprovalKind?: (params: any) => string | undefined;
 }): {
-  availability: { isConfigured: () => boolean; shouldHandle: (params: unknown) => boolean };
+  availability: { isConfigured: () => boolean; shouldHandle: (params: any) => boolean };
   eventKinds?: readonly string[];
-  resolveApprovalKind?: (params: unknown) => string | undefined;
-  load: () => Promise<unknown>;
+  resolveApprovalKind?: (params: any) => string | undefined;
+  load: () => Promise<any>;
 } {
   return {
     ...(params.eventKinds ? { eventKinds: params.eventKinds } : {}),

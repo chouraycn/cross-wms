@@ -57,7 +57,7 @@ function compileSlackInteractiveRepliesForTest(
     channelData: {
       ...payload.channelData,
       slack: {
-        ...(payload.channelData?.slack as Record<string, unknown> | undefined),
+        ...(payload.channelData?.slack as Record<string, any> | undefined),
         blocks: [{ type: "section", text }],
       },
     },
@@ -74,7 +74,7 @@ const slackMessaging: ChannelMessagingAdapter = {
     (cfg.channels?.slack as { capabilities?: { interactiveReplies?: boolean } } | undefined)
       ?.capabilities?.interactiveReplies === true,
   hasStructuredReplyPayload: ({ payload }) => {
-    const blocks = (payload.channelData?.slack as { blocks?: unknown } | undefined)?.blocks;
+    const blocks = (payload.channelData?.slack as { blocks?: any } | undefined)?.blocks;
     if (typeof blocks === "string") {
       return blocks.trim().length > 0;
     }
@@ -149,24 +149,24 @@ function lastDelivery() {
   if (!delivery || typeof delivery !== "object") {
     throw new Error("expected outbound delivery");
   }
-  return delivery as Record<string, unknown>;
+  return delivery as Record<string, any>;
 }
 
-function expectLastDeliveryFields(fields: Record<string, unknown>) {
+function expectLastDeliveryFields(fields: Record<string, any>) {
   const delivery = lastDelivery();
   for (const [key, expected] of Object.entries(fields)) {
     expect(delivery[key]).toEqual(expected);
   }
 }
 
-function lastDeliveryPayload(index = 0): Record<string, unknown> {
+function lastDeliveryPayload(index = 0): Record<string, any> {
   const payloads = lastDelivery().payloads;
   expect(Array.isArray(payloads)).toBe(true);
-  const payload = (payloads as unknown[])[index];
+  const payload = (payloads as any[])[index];
   if (!payload || typeof payload !== "object") {
     throw new Error(`expected delivery payload ${index}`);
   }
-  return payload as Record<string, unknown>;
+  return payload as Record<string, any>;
 }
 
 async function expectSlackNoDelivery(
@@ -553,7 +553,7 @@ describe("routeReply", () => {
       async ({
         onPayloadDeliveryOutcome,
       }: {
-        onPayloadDeliveryOutcome?: (outcome: unknown) => void;
+        onPayloadDeliveryOutcome?: (outcome: any) => void;
       }) => {
         onPayloadDeliveryOutcome?.({
           index: 0,
@@ -592,7 +592,7 @@ describe("routeReply", () => {
       async ({
         onPayloadDeliveryOutcome,
       }: {
-        onPayloadDeliveryOutcome?: (outcome: unknown) => void;
+        onPayloadDeliveryOutcome?: (outcome: any) => void;
       }) => {
         onPayloadDeliveryOutcome?.({
           index: 0,
@@ -623,7 +623,7 @@ describe("routeReply", () => {
       async ({
         onPayloadDeliveryOutcome,
       }: {
-        onPayloadDeliveryOutcome?: (outcome: unknown) => void;
+        onPayloadDeliveryOutcome?: (outcome: any) => void;
       }) => {
         onPayloadDeliveryOutcome?.({
           index: 0,
@@ -673,7 +673,7 @@ describe("routeReply", () => {
 
     expect(res.ok).toBe(true);
     expect(lastDeliveryPayload().text).toBe("native command response");
-    const session = lastDelivery().session as Record<string, unknown>;
+    const session = lastDelivery().session as Record<string, any>;
     expect(session.key).toBe("agent:main:main");
     expect(session.policyKey).toBe("agent:main:direct:U123");
     expect(session.conversationType).toBeUndefined();
@@ -980,7 +980,7 @@ describe("routeReply", () => {
       groupId: "channel:C123",
       cfg: {} as never,
     });
-    const mirror = lastDelivery().mirror as Record<string, unknown>;
+    const mirror = lastDelivery().mirror as Record<string, any>;
     expect(mirror.sessionKey).toBe("agent:main:main");
     expect(mirror.text).toBe("hi");
     expect(mirror.isGroup).toBe(true);

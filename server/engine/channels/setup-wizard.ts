@@ -24,6 +24,6 @@ export type ChannelSetupWizardStatus = unknown;
 
 export type ChannelSetupWizardTextInput = unknown;
 
-export function buildChannelSetupWizardAdapterFromSetupWizard(..._args: unknown[]): unknown {
+export function buildChannelSetupWizardAdapterFromSetupWizard(..._args: any[]): any {
   return undefined;
 }

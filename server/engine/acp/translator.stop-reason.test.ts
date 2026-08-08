@@ -21,7 +21,7 @@ function requireValue<T>(value: T | undefined, label: string): T {
 }
 
 function requireFirstRequestIdempotencyKey(requestMock: {
-  mock: { calls: ReadonlyArray<ReadonlyArray<unknown>> };
+  mock: { calls: ReadonlyArray<ReadonlyArray<any>> };
 }): string {
   const firstCall = requestMock.mock.calls[0];
   if (!firstCall) {
@@ -31,7 +31,7 @@ function requireFirstRequestIdempotencyKey(requestMock: {
   if (!params || typeof params !== "object") {
     throw new Error("expected request params");
   }
-  const idempotencyKey = (params as { idempotencyKey?: unknown }).idempotencyKey;
+  const idempotencyKey = (params as { idempotencyKey?: any }).idempotencyKey;
   if (typeof idempotencyKey !== "string") {
     throw new Error("expected request idempotency key");
   }
@@ -87,7 +87,7 @@ describe("acp translator stop reason mapping", () => {
 
   it("reconciles provisional ACP session keys to canonical Gateway keys by run id", async () => {
     const sentRunIds: string[] = [];
-    const request = vi.fn(async (method: string, params?: Record<string, unknown>) => {
+    const request = vi.fn(async (method: string, params?: Record<string, any>) => {
       if (method === "chat.send") {
         const runId = params?.idempotencyKey;
         if (typeof runId === "string") {
@@ -210,7 +210,7 @@ describe("acp translator stop reason mapping", () => {
 
   it("reconciles a missed final event on reconnect via agent.wait", async () => {
     let runId: string | undefined;
-    const request = vi.fn(async (method: string, params?: Record<string, unknown>) => {
+    const request = vi.fn(async (method: string, params?: Record<string, any>) => {
       if (method === "chat.send") {
         runId = params?.idempotencyKey as string | undefined;
         return {};
@@ -247,9 +247,9 @@ describe("acp translator stop reason mapping", () => {
     vi.useFakeTimers();
     try {
       let chatRunId: string | undefined;
-      const agentWaitParams: Array<Record<string, unknown> | undefined> = [];
+      const agentWaitParams: Array<Record<string, any> | undefined> = [];
       let waitCount = 0;
-      const request = vi.fn(async (method: string, params?: Record<string, unknown>) => {
+      const request = vi.fn(async (method: string, params?: Record<string, any>) => {
         if (method === "chat.send") {
           const runId = params?.idempotencyKey;
           if (typeof runId !== "string") {
@@ -475,7 +475,7 @@ describe("acp translator stop reason mapping", () => {
     vi.useFakeTimers();
     try {
       let acceptedWaitCount = 0;
-      const requestMock = vi.fn(async (method: string, params?: Record<string, unknown>) => {
+      const requestMock = vi.fn(async (method: string, params?: Record<string, any>) => {
         if (method === "chat.send") {
           return params?.sessionKey === "agent:main:second"
             ? Promise.reject(new Error("gateway closed (1006): connection lost"))
@@ -624,7 +624,7 @@ describe("acp translator stop reason mapping", () => {
     vi.useFakeTimers();
     try {
       let sendCount = 0;
-      const requestMock = vi.fn(async (method: string, params?: Record<string, unknown>) => {
+      const requestMock = vi.fn(async (method: string, params?: Record<string, any>) => {
         if (method === "chat.send") {
           sendCount += 1;
           if (sendCount === 1) {

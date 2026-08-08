@@ -5,7 +5,7 @@ export type BundledProviderPolicySurface = {
   allowedBaseUrls?: string[];
   defaultBaseUrl?: string;
 };
-export function resolveBundledProviderPolicySurface(params: unknown): BundledProviderPolicySurface | undefined {
+export function resolveBundledProviderPolicySurface(params: any): BundledProviderPolicySurface | undefined {
   void params;
   return undefined;
 }

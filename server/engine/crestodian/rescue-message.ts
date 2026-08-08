@@ -34,7 +34,7 @@ type RescuePendingOperation = {
   createdAt: string;
   expiresAt: string;
   operation: CrestodianOperation;
-  auditDetails: Record<string, unknown>;
+  auditDetails: Record<string, any>;
 };
 
 /** Input required to process one possible `/crestodian` rescue message. */
@@ -53,7 +53,7 @@ const APPROVAL_RE = /^(yes|y|apply|approve|approved|do it)$/i;
 
 function createCaptureRuntime(): { runtime: RuntimeEnv; read: () => string } {
   const lines: string[] = [];
-  const push = (...args: unknown[]) => {
+  const push = (...args: any[]) => {
     lines.push(args.map((arg) => (typeof arg === "string" ? arg : JSON.stringify(arg))).join(" "));
   };
   return {
@@ -123,7 +123,7 @@ async function writePending(pendingPath: string, pending: RescuePendingOperation
   });
 }
 
-function buildAuditDetails(input: CrestodianRescueMessageInput): Record<string, unknown> {
+function buildAuditDetails(input: CrestodianRescueMessageInput): Record<string, any> {
   return {
     rescue: true,
     channel: input.command.channelId ?? input.command.channel,

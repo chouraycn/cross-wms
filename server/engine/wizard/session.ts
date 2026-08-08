@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import { WizardCancelledError, type WizardProgress, type WizardPrompter } from "./prompts.js";
 
 type WizardStepOption = {
-  value: unknown;
+  value: any;
   label: string;
   hint?: string;
 };
@@ -16,7 +16,7 @@ type WizardStep = {
   message?: string;
   format?: "plain";
   options?: WizardStepOption[];
-  initialValue?: unknown;
+  initialValue?: any;
   placeholder?: string;
   sensitive?: boolean;
   executor?: "gateway" | "client";
@@ -34,12 +34,12 @@ type WizardNextResult = {
 type Deferred<T> = {
   promise: Promise<T>;
   resolve: (value: T) => void;
-  reject: (err: unknown) => void;
+  reject: (err: any) => void;
 };
 
 function createDeferred<T>(): Deferred<T> {
   let resolve!: (value: T) => void;
-  let reject!: (err: unknown) => void;
+  let reject!: (err: any) => void;
   const promise = new Promise<T>((res, rej) => {
     resolve = res;
     reject = rej;
@@ -161,7 +161,7 @@ class WizardSessionPrompter implements WizardPrompter {
     };
   }
 
-  private async prompt(step: Omit<WizardStep, "id">): Promise<unknown> {
+  private async prompt(step: Omit<WizardStep, "id">): Promise<any> {
     return await this.session.awaitAnswer({
       ...step,
       id: randomUUID(),
@@ -173,7 +173,7 @@ export class WizardSession {
   private currentStep: WizardStep | null = null;
   private stepDeferred: Deferred<WizardStep | null> | null = null;
   private pendingTerminalResolution = false;
-  private answerDeferred = new Map<string, Deferred<unknown>>();
+  private answerDeferred = new Map<string, Deferred<any>>();
   private status: WizardSessionStatus = "running";
   private error: string | undefined;
 
@@ -203,7 +203,7 @@ export class WizardSession {
     return { done: true, status: this.status, error: this.error };
   }
 
-  async answer(stepId: string, value: unknown): Promise<void> {
+  async answer(stepId: string, value: any): Promise<void> {
     const deferred = this.answerDeferred.get(stepId);
     if (!deferred) {
       throw new Error("wizard: no pending step");
@@ -249,12 +249,12 @@ export class WizardSession {
     }
   }
 
-  async awaitAnswer(step: WizardStep): Promise<unknown> {
+  async awaitAnswer(step: WizardStep): Promise<any> {
     if (this.status !== "running") {
       throw new Error("wizard: session not running");
     }
     this.pushStep(step);
-    const deferred = createDeferred<unknown>();
+    const deferred = createDeferred<any>();
     this.answerDeferred.set(step.id, deferred);
     return await deferred.promise;
   }

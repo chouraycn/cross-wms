@@ -103,7 +103,7 @@ function extractImages(html: string, baseUrl: string, max = 10): string[] {
   return images;
 }
 
-function ok(res: Response, data: unknown): void {
+function ok(res: Response, data: any): void {
   res.json({ success: true, data });
 }
 

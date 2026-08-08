@@ -85,7 +85,7 @@ describe("scheduled task runtime derivation", () => {
     ).resolves.toMatchObject({ status: "running" });
   });
 
-  it("treats Running without numeric result as unknown", async () => {
+  it("treats Running without numeric result as any", async () => {
     await expect(
       readRuntimeFromQueryOutput(taskQueryOutput(["Status: Running"])),
     ).resolves.toMatchObject({
@@ -128,7 +128,7 @@ describe("scheduled task runtime derivation", () => {
     });
   });
 
-  it("treats localized status without result code as unknown", async () => {
+  it("treats localized status without result code as any", async () => {
     await expect(
       readRuntimeFromQueryOutput(taskQueryOutput(["Status: Wird ausgeführt"])),
     ).resolves.toMatchObject({

@@ -9,16 +9,16 @@ export type { BashSandboxConfig } from "./bash-tools.shared.js";
 export type { ExecElevatedDefaults, ExecToolDefaults, ExecToolDetails } from "./bash-tools.exec-types.js";
 
 /** Placeholder exec tool. */
-export const execTool: Record<string, unknown> = {
+export const execTool: Record<string, any> = {
   name: "exec",
   description: "Execute bash commands (cross-wms placeholder).",
 };
 
 /** Testing exports. */
-export const testing: Record<string, unknown> = {};
+export const testing: Record<string, any> = {};
 
 /** Creates an exec tool instance. */
-export function createExecTool(..._args: unknown[]): Record<string, unknown> {
+export function createExecTool(..._args: any[]): Record<string, any> {
   return {
     name: "exec",
     description: "Execute bash commands (cross-wms placeholder).",

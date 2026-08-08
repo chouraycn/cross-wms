@@ -19,7 +19,7 @@ type StopAndClearMessageIdParams<T> = {
 };
 
 type ClearFinalizableDraftMessageParams<T> = StopAndClearMessageIdParams<T> & {
-  isValidMessageId: (value: unknown) => value is T;
+  isValidMessageId: (value: any) => value is T;
   deleteMessage: (messageId: T) => Promise<void>;
   onDeleteSuccess?: (messageId: T) => void;
   warn?: (message: string) => void;

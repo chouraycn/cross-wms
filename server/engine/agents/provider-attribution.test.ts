@@ -1,12 +1,12 @@
 // Verifies provider attribution headers and endpoint classification policies.
 import { describe, expect, it, vi } from "vitest";
 
-function expectRecordFields(record: unknown, expected: Record<string, unknown>) {
+function expectRecordFields(record: any, expected: Record<string, any>) {
   // Policy helpers return broad records; assertions pin only the relevant fields.
   if (!record || typeof record !== "object") {
     throw new Error("Expected record");
   }
-  const actual = record as Record<string, unknown>;
+  const actual = record as Record<string, any>;
   for (const [key, value] of Object.entries(expected)) {
     expect(actual[key]).toEqual(value);
   }

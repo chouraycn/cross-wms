@@ -28,17 +28,17 @@ export type AnyAgentTool = {
   label?: string;
   name: string;
   description: string;
-  parameters?: unknown;
+  parameters?: any;
   execute?: (
     toolCallId: string,
-    args: unknown,
+    args: any,
     signal?: AbortSignal,
   ) => Promise<AgentToolResult>;
 };
 
 export interface AgentToolResult {
   content: Array<{ type: "text"; text: string }>;
-  details?: Record<string, unknown>;
+  details?: Record<string, any>;
 }
 
 /** Diffs 工具参数（与 parameters schema 对应） */
@@ -192,7 +192,7 @@ export function createDiffsTool(options: CreateDiffsToolOptions = {}): AnyAgentT
 
       const rendered = await renderDiffDocument(input, renderOptions, "viewer");
 
-      const baseDetails: Record<string, unknown> = {
+      const baseDetails: Record<string, any> = {
         title: rendered.title,
         inputKind: rendered.inputKind,
         fileCount: rendered.fileCount,
@@ -220,7 +220,7 @@ export function createDiffsTool(options: CreateDiffsToolOptions = {}): AnyAgentT
       await fs.writeFile(outputPath, rendered.html, "utf8");
 
       const stats = await fs.stat(outputPath);
-      const details: Record<string, unknown> = {
+      const details: Record<string, any> = {
         ...baseDetails,
         outputPath,
         filePath: outputPath,

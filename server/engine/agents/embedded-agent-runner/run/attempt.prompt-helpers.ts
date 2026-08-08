@@ -45,7 +45,7 @@ type PromptBuildHookRunner = {
   runAgentTurnPrepare?: (
     event: {
       prompt: string;
-      messages: unknown[];
+      messages: any[];
       queuedInjections: PluginNextTurnInjectionRecord[];
     },
     ctx: PluginHookAgentContext,
@@ -55,11 +55,11 @@ type PromptBuildHookRunner = {
     ctx: PluginHookAgentContext,
   ) => Promise<PluginAgentTurnPrepareResult | undefined>;
   runBeforePromptBuild: (
-    event: { prompt: string; messages: unknown[] },
+    event: { prompt: string; messages: any[] },
     ctx: PluginHookAgentContext,
   ) => Promise<PluginHookBeforePromptBuildResult | undefined>;
   runBeforeAgentStart: (
-    event: { prompt: string; messages: unknown[] },
+    event: { prompt: string; messages: any[] },
     ctx: PluginHookAgentContext,
   ) => Promise<PluginHookBeforeAgentStartResult | undefined>;
 };
@@ -105,7 +105,7 @@ export function forgetPromptBuildDrainCacheForRun(runId: string | undefined): vo
 export async function resolvePromptBuildHookResult(params: {
   config: OpenClawConfig;
   prompt: string;
-  messages: unknown[];
+  messages: any[];
   hookCtx: PluginHookAgentContext;
   hookRunner?: PromptBuildHookRunner | null;
   beforeAgentStartResult?: PluginHookBeforeAgentStartResult;
@@ -137,7 +137,7 @@ export async function resolvePromptBuildHookResult(params: {
             },
             params.hookCtx,
           )
-          .catch((hookErr: unknown) => {
+          .catch((hookErr: any) => {
             log.warn(`agent_turn_prepare hook failed: ${String(hookErr)}`);
             return undefined;
           })
@@ -155,7 +155,7 @@ export async function resolvePromptBuildHookResult(params: {
             },
             params.hookCtx,
           )
-          .catch((hookErr: unknown) => {
+          .catch((hookErr: any) => {
             log.warn(`heartbeat_prompt_contribution hook failed: ${String(hookErr)}`);
             return undefined;
           })
@@ -169,7 +169,7 @@ export async function resolvePromptBuildHookResult(params: {
           },
           params.hookCtx,
         )
-        .catch((hookErr: unknown) => {
+        .catch((hookErr: any) => {
           log.warn(`before_prompt_build hook failed: ${String(hookErr)}`);
           return undefined;
         })
@@ -185,7 +185,7 @@ export async function resolvePromptBuildHookResult(params: {
             },
             params.hookCtx,
           )
-          .catch((hookErr: unknown) => {
+          .catch((hookErr: any) => {
             log.warn(
               `deprecated before_agent_start hook failed during prompt build: ${String(hookErr)}`,
             );
@@ -267,7 +267,7 @@ type PromptSubmissionSkipReason = "blank_user_prompt" | "empty_prompt_history_im
  */
 export function resolvePromptSubmissionSkipReason(params: {
   prompt: string;
-  messages: readonly unknown[];
+  messages: readonly any[];
   imageCount: number;
   runtimeOnly?: boolean;
 }): PromptSubmissionSkipReason | null {
@@ -279,18 +279,18 @@ export function resolvePromptSubmissionSkipReason(params: {
     : "empty_prompt_history_images";
 }
 
-function hasVisiblePromptHistory(message: unknown): boolean {
+function hasVisiblePromptHistory(message: any): boolean {
   if (!message || typeof message !== "object") {
     return false;
   }
-  const record = message as { role?: unknown; content?: unknown };
+  const record = message as { role?: any; content?: any };
   if (record.role !== "user" && record.role !== "assistant") {
     return false;
   }
   return hasNonEmptyContent(record.content);
 }
 
-function hasNonEmptyContent(content: unknown): boolean {
+function hasNonEmptyContent(content: any): boolean {
   if (typeof content === "string") {
     return content.trim().length > 0;
   }
@@ -300,7 +300,7 @@ function hasNonEmptyContent(content: unknown): boolean {
   if (!content || typeof content !== "object") {
     return false;
   }
-  const record = content as { text?: unknown; content?: unknown };
+  const record = content as { text?: any; content?: any };
   return hasNonEmptyContent(record.text) || hasNonEmptyContent(record.content);
 }
 
@@ -312,7 +312,7 @@ const MAX_STRUCTURED_JSON_DEPTH = 4;
 const MAX_STRUCTURED_JSON_ARRAY_ITEMS = 16;
 const MAX_STRUCTURED_JSON_OBJECT_KEYS = 32;
 
-function summarizeStructuredMediaRef(label: string, value: unknown): string | undefined {
+function summarizeStructuredMediaRef(label: string, value: any): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }
@@ -344,10 +344,10 @@ function summarizeStructuredJsonString(value: string): string {
 }
 
 function sanitizeStructuredJsonValue(
-  value: unknown,
+  value: any,
   depth = 0,
   seen: WeakSet<object> = new WeakSet(),
-): unknown {
+): any {
   if (typeof value === "string") {
     return summarizeStructuredJsonString(value);
   }
@@ -371,10 +371,10 @@ function sanitizeStructuredJsonValue(
     seen.delete(value);
     return limited;
   }
-  const output: Record<string, unknown> = {};
+  const output: Record<string, any> = {};
   let copied = 0;
   let skipped = 0;
-  for (const key in value as Record<string, unknown>) {
+  for (const key in value as Record<string, any>) {
     if (!Object.hasOwn(value, key)) {
       continue;
     }
@@ -383,7 +383,7 @@ function sanitizeStructuredJsonValue(
       continue;
     }
     output[key] = sanitizeStructuredJsonValue(
-      (value as Record<string, unknown>)[key],
+      (value as Record<string, any>)[key],
       depth + 1,
       seen,
     );
@@ -396,7 +396,7 @@ function sanitizeStructuredJsonValue(
   return output;
 }
 
-function stringifyStructuredJsonFallback(part: unknown): string | undefined {
+function stringifyStructuredJsonFallback(part: any): string | undefined {
   try {
     const serialized = JSON.stringify(sanitizeStructuredJsonValue(part));
     if (!serialized || serialized === "{}") {
@@ -414,11 +414,11 @@ function stringifyStructuredJsonFallback(part: unknown): string | undefined {
   }
 }
 
-function stringifyStructuredContentPart(part: unknown): string | undefined {
+function stringifyStructuredContentPart(part: any): string | undefined {
   if (!part || typeof part !== "object") {
     return undefined;
   }
-  const record = part as Record<string, unknown>;
+  const record = part as Record<string, any>;
   if (record.type === "text") {
     const text = typeof record.text === "string" ? record.text.trim() : "";
     return text || undefined;
@@ -429,7 +429,7 @@ function stringifyStructuredContentPart(part: unknown): string | undefined {
       typeof imageUrl === "string"
         ? imageUrl
         : imageUrl && typeof imageUrl === "object"
-          ? (imageUrl as { url?: unknown }).url
+          ? (imageUrl as { url?: any }).url
           : undefined;
     return summarizeStructuredMediaRef("image_url", url);
   }
@@ -452,7 +452,7 @@ function stringifyStructuredContentPart(part: unknown): string | undefined {
   return stringifyStructuredJsonFallback(part);
 }
 
-function extractUserMessagePromptText(content: unknown): string | undefined {
+function extractUserMessagePromptText(content: any): string | undefined {
   if (typeof content === "string") {
     const trimmed = content.trim();
     return trimmed || undefined;
@@ -493,7 +493,7 @@ function promptAlreadyIncludesQueuedUserMessage(prompt: string, orphanText: stri
 export function mergeOrphanedTrailingUserPrompt(params: {
   prompt: string;
   trigger: EmbeddedRunAttemptParams["trigger"];
-  leafMessage: { content?: unknown };
+  leafMessage: { content?: any };
 }): { prompt: string; merged: boolean; removeLeaf: boolean } {
   const orphanText = extractUserMessagePromptText(params.leafMessage.content);
   if (!orphanText) {

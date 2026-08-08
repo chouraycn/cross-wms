@@ -5,13 +5,13 @@ import type { ToolDefinition } from './tool-catalog.js';
 export interface OpenAIFunctionDefinition {
   name: string;
   description?: string;
-  parameters: Record<string, unknown>;
+  parameters: Record<string, any>;
 }
 
 export interface AnthropicToolDefinition {
   name: string;
   description?: string;
-  input_schema: Record<string, unknown>;
+  input_schema: Record<string, any>;
 }
 
 export function toOpenAIFunction(tool: ToolDefinition): OpenAIFunctionDefinition {
@@ -67,7 +67,7 @@ export function fromOpenAIFunctions(fns: OpenAIFunctionDefinition[]): ToolDefini
 export interface MCPToolDefinition {
   name: string;
   description?: string;
-  inputSchema: Record<string, unknown>;
+  inputSchema: Record<string, any>;
 }
 
 export function toMCPTool(tool: ToolDefinition): MCPToolDefinition {
@@ -91,7 +91,7 @@ export function fromMCPTool(tool: MCPToolDefinition): ToolDefinition {
   };
 }
 
-export function validateToolDefinition(tool: unknown): tool is ToolDefinition {
+export function validateToolDefinition(tool: any): tool is ToolDefinition {
   const schema = z.object({
     name: z.string(),
     description: z.string().default(''),
@@ -107,13 +107,13 @@ export function validateToolDefinition(tool: unknown): tool is ToolDefinition {
   return schema.safeParse(tool).success;
 }
 
-export function normalizeToolDefinition(tool: Record<string, unknown>): ToolDefinition {
+export function normalizeToolDefinition(tool: Record<string, any>): ToolDefinition {
   return {
     name: String(tool.name ?? 'unknown'),
     description: String(tool.description ?? ''),
-    parameters: (tool.parameters as Record<string, unknown>) || {},
-    inputSchema: (tool.inputSchema as Record<string, unknown>) || undefined,
-    outputSchema: (tool.outputSchema as Record<string, unknown>) || undefined,
+    parameters: (tool.parameters as Record<string, any>) || {},
+    inputSchema: (tool.inputSchema as Record<string, any>) || undefined,
+    outputSchema: (tool.outputSchema as Record<string, any>) || undefined,
     tags: Array.isArray(tool.tags) ? tool.tags as string[] : [],
     category: String(tool.category ?? 'general'),
     deprecated: Boolean(tool.deprecated ?? false),

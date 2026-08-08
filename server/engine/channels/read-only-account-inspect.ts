@@ -19,7 +19,7 @@ import {
 
 // Read-only account inspection facade for status/setup diagnostics. Prefer a
 // loaded plugin inspector, then the lightweight bundled inspector artifact.
-export type ReadOnlyInspectedAccount = Record<string, unknown>;
+export type ReadOnlyInspectedAccount = Record<string, any>;
 
 /** Inspects channel account config without loading mutable runtime surfaces. */
 export async function inspectReadOnlyChannelAccount(params: {

@@ -10,7 +10,7 @@ const packageRootCache = new Map<string, string | null>();
 const argv1CandidateCache = new Map<string, string[]>();
 
 function parsePackageName(raw: string): string | null {
-  const parsed = JSON.parse(raw) as { name?: unknown };
+  const parsed = JSON.parse(raw) as { name?: any };
   return typeof parsed.name === "string" ? parsed.name : null;
 }
 

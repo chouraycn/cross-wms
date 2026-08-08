@@ -131,7 +131,7 @@ export function createReplyMediaPathNormalizer(params: {
       mediaAccess: resolveMediaAccessForSource(media),
     })
       .then((saved) => saved.path)
-      .catch((err: unknown) => {
+      .catch((err: any) => {
         persistedMediaBySource.delete(media);
         throw err;
       });
@@ -217,7 +217,7 @@ export function createReplyMediaPathNormalizer(params: {
 
     const normalizedMedia: string[] = [];
     const seen = new Set<string>();
-    let firstMediaDropError: unknown;
+    let firstMediaDropError: any;
     for (const media of mediaList) {
       let normalized: string;
       try {

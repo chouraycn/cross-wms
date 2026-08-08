@@ -23,6 +23,6 @@ export type BashResult = {
 };
 
 /** Execute bash with operations (unsupported in cross-wms). */
-export function executeBashWithOperations(..._args: unknown[]): never {
+export function executeBashWithOperations(..._args: any[]): never {
   throw new Error("Bash execution with operations is not supported in cross-wms");
 }

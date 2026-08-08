@@ -12,7 +12,7 @@ export const TALK_TEST_PROVIDER_API_KEY_PATH_SEGMENTS = [
   "apiKey",
 ] as const;
 
-export function buildTalkTestProviderConfig(apiKey: unknown): OpenClawConfig {
+export function buildTalkTestProviderConfig(apiKey: any): OpenClawConfig {
   return {
     talk: {
       providers: {
@@ -24,6 +24,6 @@ export function buildTalkTestProviderConfig(apiKey: unknown): OpenClawConfig {
   } as OpenClawConfig;
 }
 
-export function readTalkTestProviderApiKey(config: OpenClawConfig): unknown {
+export function readTalkTestProviderApiKey(config: OpenClawConfig): any {
   return config.talk?.providers?.[TALK_TEST_PROVIDER_ID]?.apiKey;
 }

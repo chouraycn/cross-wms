@@ -6,18 +6,18 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function channelTargetSchema(..._args: unknown[]): unknown {
+export function channelTargetSchema(..._args: any[]): any {
   return undefined;
 }
-export function channelTargetsSchema(..._args: unknown[]): unknown {
+export function channelTargetsSchema(..._args: any[]): any {
   return undefined;
 }
-export function optionalFiniteNumberSchema(..._args: unknown[]): unknown {
+export function optionalFiniteNumberSchema(..._args: any[]): any {
   return undefined;
 }
-export function optionalPositiveIntegerSchema(..._args: unknown[]): unknown {
+export function optionalPositiveIntegerSchema(..._args: any[]): any {
   return undefined;
 }
-export function optionalNonNegativeIntegerSchema(..._args: unknown[]): unknown {
+export function optionalNonNegativeIntegerSchema(..._args: any[]): any {
   return undefined;
 }

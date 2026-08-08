@@ -28,8 +28,8 @@ let agentStepDeps: {
   callGateway: GatewayCaller;
 } = defaultAgentStepDeps;
 
-function extractAgentCommandReply(result: unknown): string | undefined {
-  const payloads = (result as { payloads?: unknown } | undefined)?.payloads;
+function extractAgentCommandReply(result: any): string | undefined {
+  const payloads = (result as { payloads?: any } | undefined)?.payloads;
   if (!Array.isArray(payloads)) {
     return undefined;
   }
@@ -37,7 +37,7 @@ function extractAgentCommandReply(result: unknown): string | undefined {
     .map((payload) =>
       payload &&
       typeof payload === "object" &&
-      typeof (payload as { text?: unknown }).text === "string"
+      typeof (payload as { text?: any }).text === "string"
         ? (payload as { text: string }).text
         : "",
     )

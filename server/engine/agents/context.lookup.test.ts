@@ -13,7 +13,7 @@ type ContextModule = typeof import("./context.js");
 
 const contextTestState = vi.hoisted(() => {
   const state = {
-    loadConfigImpl: () => ({}) as unknown,
+    loadConfigImpl: () => ({}) as any,
     discoveredModels: [] as DiscoveredModel[],
     staticCatalogModels: [] as DiscoveredModel[],
     runtimeConfigSnapshot: null as OpenClawConfig | null,

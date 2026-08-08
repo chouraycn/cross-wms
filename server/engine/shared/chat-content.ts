@@ -1,6 +1,6 @@
 // 将任意 provider content 值强转为可显示文本，避免抛错
 /** 把任意值转换为字符串，对象则 JSON.stringify */
-export function coerceChatContentText(value: unknown): string {
+export function coerceChatContentText(value: any): string {
   if (typeof value === "string") {
     return value;
   }
@@ -27,7 +27,7 @@ export function coerceChatContentText(value: unknown): string {
 
 /** 从字符串内容或 OpenAI 风格的 text 块中抽取规范化纯文本 */
 export function extractTextFromChatContent(
-  content: unknown,
+  content: any,
   opts?: {
     sanitizeText?: (text: string) => string;
     joinWith?: string;
@@ -36,12 +36,12 @@ export function extractTextFromChatContent(
 ): string | null {
   const normalizeText = opts?.normalizeText ?? ((text: string) => text.replace(/\s+/g, " ").trim());
   const joinWith = opts?.joinWith ?? " ";
-  const sanitize = (text: unknown): string => {
+  const sanitize = (text: any): string => {
     const raw = coerceChatContentText(text);
     const sanitized = opts?.sanitizeText ? opts.sanitizeText(raw) : raw;
     return coerceChatContentText(sanitized);
   };
-  const normalize = (text: unknown): string =>
+  const normalize = (text: any): string =>
     coerceChatContentText(normalizeText(coerceChatContentText(text)));
 
   if (typeof content === "string") {
@@ -60,10 +60,10 @@ export function extractTextFromChatContent(
       continue;
     }
     // 非 text 块包含媒体或工具 payload，这里只需要可见文本
-    if ((block as { type?: unknown }).type !== "text") {
+    if ((block as { type?: any }).type !== "text") {
       continue;
     }
-    const text = (block as { text?: unknown }).text;
+    const text = (block as { text?: any }).text;
     const value = sanitize(text);
     if (value.trim()) {
       chunks.push(value);

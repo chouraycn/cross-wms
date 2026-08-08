@@ -30,7 +30,7 @@ export type ReplyPipelineStage =
   | 'finalize';
 
 export type ReplyHooks = {
-  onStage?: (stage: ReplyPipelineStage, data: unknown) => void;
+  onStage?: (stage: ReplyPipelineStage, data: any) => void;
   onError?: (error: Error, stage: ReplyPipelineStage) => void;
   shouldGenerate?: (ctx: ReplyContext) => boolean | Promise<boolean>;
   generate?: (ctx: ReplyContext, opts?: GetReplyOptions) => Promise<ReplyPayload | ReplyPayload[]>;

@@ -15,7 +15,7 @@ type ReplyTimingSummary = {
 };
 
 type ReplyTimingLogger = {
-  warn: (message: string, details?: Record<string, unknown>) => void;
+  warn: (message: string, details?: Record<string, any>) => void;
 };
 
 type ReplyTimingTracker = {
@@ -26,7 +26,7 @@ type ReplyTimingTracker = {
     outcome?: string;
     reason?: string;
     error?: string;
-    details?: Record<string, unknown>;
+    details?: Record<string, any>;
   }) => void;
 };
 

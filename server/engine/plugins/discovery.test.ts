@@ -243,7 +243,7 @@ function createPackagePluginWithEntry(params: {
   }
 }
 
-function createBundleRoot(bundleDir: string, markerPath: string, manifest?: unknown) {
+function createBundleRoot(bundleDir: string, markerPath: string, manifest?: any) {
   mkdirSafe(path.dirname(path.join(bundleDir, markerPath)));
   if (manifest) {
     fs.writeFileSync(path.join(bundleDir, markerPath), JSON.stringify(manifest), "utf-8");
@@ -357,7 +357,7 @@ function expectCandidateFields(
         origin?: string;
       }
     | undefined,
-  expected: Record<string, unknown>,
+  expected: Record<string, any>,
 ) {
   if (!candidate) {
     throw new Error("Expected plugin candidate");

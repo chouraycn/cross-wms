@@ -62,7 +62,7 @@ async function completeReplyWithRetry(params: {
     return {
       text,
       errorMessage:
-        typeof (response as { errorMessage?: unknown }).errorMessage === "string"
+        typeof (response as { errorMessage?: any }).errorMessage === "string"
           ? ((response as { errorMessage?: string }).errorMessage ?? undefined)
           : undefined,
     };
@@ -253,14 +253,14 @@ describeLive("openai reasoning compat live", () => {
         "user",
       ]);
       const assistantToolIds = (
-        ((sanitized[1] as { content?: unknown }).content ?? []) as unknown[]
+        ((sanitized[1] as { content?: any }).content ?? []) as any[]
       )
         .filter(
           (block): block is { type: "toolCall"; id: string } =>
             typeof block === "object" &&
             block !== null &&
-            (block as { type?: unknown }).type === "toolCall" &&
-            typeof (block as { id?: unknown }).id === "string",
+            (block as { type?: any }).type === "toolCall" &&
+            typeof (block as { id?: any }).id === "string",
         )
         .map((block) => block.id);
       expect(assistantToolIds).toHaveLength(3);
@@ -301,7 +301,7 @@ describeLive("openai reasoning compat live", () => {
         .join(" ")
         .trim();
       const errorMessage =
-        typeof (response as { errorMessage?: unknown }).errorMessage === "string"
+        typeof (response as { errorMessage?: any }).errorMessage === "string"
           ? ((response as { errorMessage?: string }).errorMessage ?? "")
           : "";
       if (errorMessage && isKnownLiveBlocker(errorMessage)) {

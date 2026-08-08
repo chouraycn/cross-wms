@@ -10,13 +10,13 @@
 export type ToolPolicyAuditLogLevel = "info" | "debug";
 
 /** Log tools removed by an allow/deny policy filter step (no-op in cross-wms). */
-export function auditToolPolicyFilter(..._args: unknown[]): void {
+export function auditToolPolicyFilter(..._args: any[]): void {
   // No-op: audit logging requires subsystem logger + policy match helpers
   // that are not available in cross-wms.
 }
 
 /** Log a sandbox tool blocked by policy before execution (no-op in cross-wms). */
-export function auditSandboxToolPolicyBlock(..._args: unknown[]): void {
+export function auditSandboxToolPolicyBlock(..._args: any[]): void {
   // No-op: audit logging requires subsystem logger + policy match helpers
   // that are not available in cross-wms.
 }

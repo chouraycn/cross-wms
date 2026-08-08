@@ -45,7 +45,7 @@ type PluginMetadataSnapshotMemo = {
 type PersistedRegistryMemoState = {
   contextHash: string;
   fastHash: string;
-  fingerprint: unknown;
+  fingerprint: any;
 };
 
 const MAX_PLUGIN_METADATA_SNAPSHOT_MEMOS = 8;
@@ -103,7 +103,7 @@ function getActiveDiagnosticsTimelineSpan(): { phase?: string } | undefined {
 }
 
 /** 占位：测量诊断时间线 span（diagnostics-timeline.ts 未移植）。 */
-function measureDiagnosticsTimelineSpanSync<T>(label: string, fn: () => T, _options?: unknown): T {
+function measureDiagnosticsTimelineSpanSync<T>(label: string, fn: () => T, _options?: any): T {
   void label;
   return fn();
 }
@@ -134,14 +134,14 @@ function resolveUserPath(value: string, _env: NodeJS.ProcessEnv): string {
 }
 
 /** 占位：解析已安装 manifest 注册表索引指纹（manifest-registry-installed.ts 未移植）。 */
-function resolveInstalledManifestRegistryIndexFingerprint(_index: unknown): string {
+function resolveInstalledManifestRegistryIndexFingerprint(_index: any): string {
   return "";
 }
 
 /** 占位：为已安装索引加载 manifest 注册表（manifest-registry-installed.ts 未移植）。 */
 function loadPluginManifestRegistryForInstalledIndex(_params: {
-  index: unknown;
-  config?: unknown;
+  index: any;
+  config?: any;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   pluginIds?: readonly string[];
@@ -152,11 +152,11 @@ function loadPluginManifestRegistryForInstalledIndex(_params: {
 
 /** 占位：获取当前插件元数据快照（current-plugin-metadata-snapshot.ts 未移植）。 */
 function getCurrentPluginMetadataSnapshot(_params: {
-  config?: unknown;
+  config?: any;
   env?: NodeJS.ProcessEnv;
   workspaceDir?: string;
   pluginIds?: readonly string[];
-  pluginIdScope?: unknown;
+  pluginIdScope?: any;
   allowWorkspaceScopedSnapshot?: boolean;
   requireDefaultDiscoveryContext?: boolean;
 }): PluginMetadataSnapshot | undefined {
@@ -212,7 +212,7 @@ function resolvePersistedRegistryFastMemoFingerprint(params: {
   env: NodeJS.ProcessEnv;
   preferPersisted?: boolean;
   stateDir?: string;
-}): Record<string, unknown> {
+}): Record<string, any> {
   const disabledByEnv = params.env.OPENCLAW_DISABLE_PERSISTED_PLUGIN_REGISTRY?.trim().toLowerCase();
   const disabled =
     params.preferPersisted === false ||
@@ -234,7 +234,7 @@ function resolvePersistedRegistryFastMemoFingerprint(params: {
 
 function resolvePersistedRegistryMemoContextHash(params: {
   env: NodeJS.ProcessEnv;
-  fastFingerprint: unknown;
+  fastFingerprint: any;
   preferPersisted?: boolean;
   stateDir?: string;
 }): string {
@@ -325,7 +325,7 @@ function resolvePersistedRegistryMemoStateForLookup(
   return resolvePersistedRegistryMemoState(params);
 }
 
-function resolveProvidedIndexMemoState(index: unknown): PersistedRegistryMemoState {
+function resolveProvidedIndexMemoState(index: any): PersistedRegistryMemoState {
   const fingerprint = {
     providedIndex: resolveInstalledManifestRegistryIndexFingerprint(index),
   };
@@ -408,7 +408,7 @@ function cloneSnapshotInput<T>(value: T): T {
 }
 
 function normalizeInstalledPluginIndex(index: InstalledPluginIndex): InstalledPluginIndex {
-  const idx = index as Record<string, unknown>;
+  const idx = index as Record<string, any>;
   return {
     version: (idx.version as number) ?? 1,
     hostContractVersion: (idx.hostContractVersion as string) ?? "",
@@ -417,8 +417,8 @@ function normalizeInstalledPluginIndex(index: InstalledPluginIndex): InstalledPl
     policyHash: (idx.policyHash as string) ?? "",
     generatedAtMs: (idx.generatedAtMs as number) ?? 0,
     installRecords: cloneSnapshotInput((idx.installRecords as object) ?? {}),
-    plugins: ((idx.plugins as unknown[]) ?? []).map(cloneSnapshotInput),
-    diagnostics: ((idx.diagnostics as unknown[]) ?? []).map(cloneSnapshotInput),
+    plugins: ((idx.plugins as any[]) ?? []).map(cloneSnapshotInput),
+    diagnostics: ((idx.diagnostics as any[]) ?? []).map(cloneSnapshotInput),
     ...(idx.warning ? { warning: idx.warning } : {}),
     ...(idx.refreshReason ? { refreshReason: idx.refreshReason } : {}),
   } as unknown as InstalledPluginIndex;
@@ -443,7 +443,7 @@ export function isPluginMetadataSnapshotCompatible(params: {
     PluginMetadataSnapshot,
     "configFingerprint" | "index" | "pluginIds" | "policyHash" | "workspaceDir"
   >;
-  config?: unknown;
+  config?: any;
   env?: NodeJS.ProcessEnv;
   allowScopedSnapshot?: boolean;
   pluginIds?: readonly string[];
@@ -532,10 +532,10 @@ function buildPluginMetadataOwnerMaps(
         appendOwner(providers, alias, plugin.id);
       }
     }
-    for (const providerId of Object.keys((plugin.modelCatalog as { providers?: Record<string, unknown> } | undefined)?.providers ?? {})) {
+    for (const providerId of Object.keys((plugin.modelCatalog as { providers?: Record<string, any> } | undefined)?.providers ?? {})) {
       appendOwner(modelCatalogProviders, providerId, plugin.id);
     }
-    for (const providerId of Object.keys((plugin.modelCatalog as { aliases?: Record<string, unknown> } | undefined)?.aliases ?? {})) {
+    for (const providerId of Object.keys((plugin.modelCatalog as { aliases?: Record<string, any> } | undefined)?.aliases ?? {})) {
       appendOwner(modelCatalogProviders, providerId, plugin.id);
     }
     for (const cliBackendId of plugin.cliBackends ?? []) {
@@ -656,11 +656,11 @@ function canMemoizePluginMetadataSnapshotResult(result: {
     Array.isArray(snapshot.plugins) &&
     Array.isArray(snapshot.diagnostics) &&
     Array.isArray(snapshot.registryDiagnostics) &&
-    Array.isArray((snapshot.manifestRegistry as { plugins?: unknown[] })?.plugins ?? []) &&
-    Array.isArray((snapshot.manifestRegistry as { diagnostics?: unknown[] })?.diagnostics ?? []) &&
-    Array.isArray((snapshot.index as unknown as { plugins?: unknown[] })?.plugins ?? []) &&
-    Array.isArray((snapshot.index as unknown as { diagnostics?: unknown[] })?.diagnostics ?? []);
-  const hasPluginMetadata = snapshot.plugins.length > 0 || (snapshot.index as unknown as { plugins?: unknown[] }).plugins!.length > 0;
+    Array.isArray((snapshot.manifestRegistry as { plugins?: any[] })?.plugins ?? []) &&
+    Array.isArray((snapshot.manifestRegistry as { diagnostics?: any[] })?.diagnostics ?? []) &&
+    Array.isArray((snapshot.index as unknown as { plugins?: any[] })?.plugins ?? []) &&
+    Array.isArray((snapshot.index as unknown as { diagnostics?: any[] })?.diagnostics ?? []);
+  const hasPluginMetadata = snapshot.plugins.length > 0 || (snapshot.index as unknown as { plugins?: any[] }).plugins!.length > 0;
   return hasCompleteSnapshotShape && hasPluginMetadata;
 }
 
@@ -724,7 +724,7 @@ function loadPluginMetadataSnapshotImpl(params: LoadPluginMetadataSnapshotParams
   const index = normalizeInstalledPluginIndex(registryResult.snapshot);
   const pluginIds = resolvePluginMetadataSnapshotPluginIds({ params, index });
   const manifestStartedAt = performance.now();
-  const indexPlugins = (index as unknown as { plugins?: unknown[] }).plugins ?? [];
+  const indexPlugins = (index as unknown as { plugins?: any[] }).plugins ?? [];
   const manifestRegistry =
     indexPlugins.length === 0
       ? loadPluginManifestRegistry({

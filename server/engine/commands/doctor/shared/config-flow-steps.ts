@@ -89,7 +89,7 @@ export function applyUnknownConfigKeyStep(params: {
   }
   const protectedAuth = protectActiveAuthProfileConfig({
     before: params.state.candidate,
-    after: unknown.config,
+    after: any.config,
   });
 
   return {
@@ -101,7 +101,7 @@ export function applyUnknownConfigKeyStep(params: {
         ? params.state.fixHints
         : [...params.state.fixHints, `Run "${params.doctorFixCommand}" to remove these keys.`],
     },
-    removed: unknown.removed,
+    removed: any.removed,
     repairs: protectedAuth.repairs,
     warnings: protectedAuth.warnings,
   };

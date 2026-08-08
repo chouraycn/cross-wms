@@ -50,4 +50,4 @@ export function createFetchGuard(options: FetchGuardOptions = {}) {
 export type FetchGuard = ReturnType<typeof createFetchGuard>;
 
 // Auto-generated stub exports (added by auto-fix-exports.mjs)
-export const fetchWithSsrFGuard: (...args: unknown[]) => unknown = undefined as unknown as (...args: unknown[]) => unknown;
+export const fetchWithSsrFGuard: (...args: any[]) => unknown = undefined as unknown as (...args: any[]) => unknown;

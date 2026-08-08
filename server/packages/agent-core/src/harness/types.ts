@@ -25,7 +25,7 @@ export function err<TValue, TError>(error: TError): Result<TValue, TError> {
 }
 
 /** Normalize unknown thrown values into Error instances before using them as typed error causes. */
-export function toError(error: unknown): Error {
+export function toError(error: any): Error {
   if (error instanceof Error) {
     return error;
   }
@@ -107,7 +107,7 @@ export interface AgentHarnessStreamOptionsPatch extends Omit<
   /** Header patch. `undefined` values delete keys; explicit `headers: undefined` clears all headers. */
   headers?: Record<string, string | undefined>;
   /** Metadata patch. `undefined` values delete keys; explicit `metadata: undefined` clears all metadata. */
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 /** Kind of filesystem object as addressed by a {@link FileSystem}. Symlinks are not followed automatically. */
@@ -545,7 +545,7 @@ export interface BeforeProviderRequestEvent {
 export interface BeforeProviderPayloadEvent {
   type: "before_provider_payload";
   model: Model;
-  payload: unknown;
+  payload: any;
 }
 
 export interface AfterProviderResponseEvent {
@@ -558,16 +558,16 @@ export interface ToolCallEvent {
   type: "tool_call";
   toolCallId: string;
   toolName: string;
-  input: Record<string, unknown>;
+  input: Record<string, any>;
 }
 
 export interface ToolResultEvent {
   type: "tool_result";
   toolCallId: string;
   toolName: string;
-  input: Record<string, unknown>;
+  input: Record<string, any>;
   content: Array<TextContent | ImageContent>;
-  details: unknown;
+  details: any;
   isError: boolean;
 }
 
@@ -669,7 +669,7 @@ export interface BeforeProviderRequestResult {
 
 /** Hook result for replacing the provider payload after construction. */
 export interface BeforeProviderPayloadResult {
-  payload: unknown;
+  payload: any;
 }
 
 /** Hook result for blocking a tool call before execution. */
@@ -681,7 +681,7 @@ export interface ToolCallResult {
 /** Hook patch for a completed tool result before it is persisted/emitted. */
 export interface ToolResultPatch {
   content?: Array<TextContent | ImageContent>;
-  details?: unknown;
+  details?: any;
   isError?: boolean;
   terminate?: boolean;
 }
@@ -695,7 +695,7 @@ export interface SessionBeforeCompactResult {
 /** Hook result for cancelling, labeling, or supplying branch-summary behavior before tree navigation. */
 export interface SessionBeforeTreeResult {
   cancel?: boolean;
-  summary?: { summary: string; details?: unknown };
+  summary?: { summary: string; details?: any };
   customInstructions?: string;
   replaceInstructions?: boolean;
   label?: string;
@@ -734,7 +734,7 @@ export interface CompactResult {
   summary: string;
   firstKeptEntryId: string;
   tokensBefore: number;
-  details?: unknown;
+  details?: any;
 }
 
 /** Result of moving the active session-tree leaf. */

@@ -135,7 +135,7 @@ describe('plugins/api', () => {
         pluginId: 'p1',
         manifest: makeManifest(),
       });
-      const received: unknown[] = [];
+      const received: any[] = [];
       api.on('test-event', (payload) => received.push(payload));
       api.emit('test-event', { hello: 'world' });
       expect(received.length).toBe(1);

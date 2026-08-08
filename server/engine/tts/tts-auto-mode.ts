@@ -6,7 +6,7 @@ import type { TtsAutoMode } from "../config/types.tts.js";
 export const TTS_AUTO_MODES = new Set<TtsAutoMode>(["off", "always", "inbound", "tagged"]);
 
 /** Normalize an unknown value into a supported TTS auto mode. */
-export function normalizeTtsAutoMode(value: unknown): TtsAutoMode | undefined {
+export function normalizeTtsAutoMode(value: any): TtsAutoMode | undefined {
   if (typeof value !== "string") {
     return undefined;
   }

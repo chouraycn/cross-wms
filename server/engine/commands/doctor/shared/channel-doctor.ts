@@ -75,7 +75,7 @@ function collectConfiguredChannelIds(cfg: OpenClawConfig): string[] {
   if (!channels) {
     return [];
   }
-  const channelEntries = channels as Record<string, unknown>;
+  const channelEntries = channels as Record<string, any>;
   return Object.keys(channels)
     .filter((channelId) => {
       if (channelId === "defaults") {
@@ -89,7 +89,7 @@ function collectConfiguredChannelIds(cfg: OpenClawConfig): string[] {
         !entry ||
         typeof entry !== "object" ||
         Array.isArray(entry) ||
-        (entry as { enabled?: unknown }).enabled !== false
+        (entry as { enabled?: any }).enabled !== false
       );
     })
     .toSorted();
@@ -103,10 +103,10 @@ function isChannelDoctorBlockedByConfig(channelId: string, cfg: OpenClawConfig):
   if (cfg.plugins?.entries?.[normalizedChannelId]?.enabled === false) {
     return true;
   }
-  const channelEntry = (cfg.channels as Record<string, unknown> | undefined)?.[normalizedChannelId];
+  const channelEntry = (cfg.channels as Record<string, any> | undefined)?.[normalizedChannelId];
   return (
     Boolean(channelEntry && typeof channelEntry === "object" && !Array.isArray(channelEntry)) &&
-    (channelEntry as { enabled?: unknown }).enabled === false
+    (channelEntry as { enabled?: any }).enabled === false
   );
 }
 
@@ -155,13 +155,13 @@ function listReadOnlyChannelPluginsById(
 function mergeDoctorAdapters(
   adapters: Array<ChannelDoctorAdapter | undefined>,
 ): ChannelDoctorAdapter | undefined {
-  const merged: Partial<Record<keyof ChannelDoctorAdapter, unknown>> = {};
+  const merged: Partial<Record<keyof ChannelDoctorAdapter, any>> = {};
   for (const adapter of adapters) {
     if (!adapter) {
       continue;
     }
     for (const [key, value] of Object.entries(adapter) as Array<
-      [keyof ChannelDoctorAdapter, unknown]
+      [keyof ChannelDoctorAdapter, any]
     >) {
       // Earlier adapters win so read-only installed plugins can override bundled fallbacks.
       if (merged[key] !== undefined) {
@@ -178,7 +178,7 @@ function mergeDoctorAdapters(
 
 function isValidChannelDoctorAdapterValue(
   key: keyof ChannelDoctorAdapter,
-  value: unknown,
+  value: any,
 ): boolean {
   if (value == null) {
     return false;

@@ -8,9 +8,9 @@
 
 export type WriteOperations = unknown;
 export type WriteToolOptions = unknown;
-export function createWriteToolDefinition(..._args: unknown[]): unknown {
+export function createWriteToolDefinition(..._args: any[]): any {
   return undefined;
 }
-export function createWriteTool(..._args: unknown[]): unknown {
+export function createWriteTool(..._args: any[]): any {
   return undefined;
 }

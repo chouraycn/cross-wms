@@ -190,8 +190,8 @@ export function formatDevicePairingForbiddenMessage(result: DevicePairingForbidd
 async function loadState(baseDir?: string): Promise<DevicePairingStateFile> {
   const { pendingPath, pairedPath } = resolvePairingPaths(baseDir, "devices");
   const [pending, paired] = await Promise.all([
-    readJsonIfExists<unknown>(pendingPath),
-    readJsonIfExists<unknown>(pairedPath),
+    readJsonIfExists<any>(pendingPath),
+    readJsonIfExists<any>(pairedPath),
   ]);
   const state: DevicePairingStateFile = {
     pendingById: coercePairingStateRecord<DevicePairingPendingRequest>(pending),

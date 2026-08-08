@@ -27,7 +27,7 @@ export function createMediaAttachmentCache(
   return new MediaAttachmentCache(attachments, options);
 }
 
-export function normalizeMediaAttachments(ctx: Record<string, unknown>): MediaAttachment[] {
+export function normalizeMediaAttachments(ctx: Record<string, any>): MediaAttachment[] {
   const results: MediaAttachment[] = [];
   const mediaPath = ctx.MediaPath as string | undefined;
   const mediaUrl = ctx.MediaUrl as string | undefined;
@@ -46,7 +46,7 @@ export function normalizeMediaAttachments(ctx: Record<string, unknown>): MediaAt
 
 export function resolveMediaAttachmentLocalRoots(params: {
   cfg?: OpenClawConfig;
-  ctx?: Record<string, unknown>;
+  ctx?: Record<string, any>;
   workspaceDir?: string;
 }): string[] | undefined {
   if (params.workspaceDir) {
@@ -58,7 +58,7 @@ export function resolveMediaAttachmentLocalRoots(params: {
 export type RunCapabilityParams = {
   capability: MediaUnderstandingCapability;
   cfg: OpenClawConfig;
-  ctx: Record<string, unknown>;
+  ctx: Record<string, any>;
   attachments: MediaAttachmentCache;
   media: MediaAttachment[];
   agentId?: string;
@@ -105,7 +105,7 @@ export async function runCapability(params: RunCapabilityParams): Promise<RunCap
         kind: kindMap[capability],
         attachmentIndex: attachment.index,
         text: "",
-        provider: params.activeModel?.provider ?? "unknown",
+        provider: params.activeModel?.provider ?? "any",
         model: params.activeModel?.model,
       });
     }

@@ -104,7 +104,7 @@ const MEMORY_FILE_NAMES = [DEFAULT_MEMORY_FILENAME] as const;
 const ALLOWED_FILE_NAMES = new Set<string>([...BOOTSTRAP_FILE_NAMES, ...MEMORY_FILE_NAMES]);
 
 function resolveAgentWorkspaceFileOrRespondError(
-  params: Record<string, unknown>,
+  params: Record<string, any>,
   respond: RespondFn,
   cfg: OpenClawConfig,
 ): {
@@ -395,8 +395,8 @@ function normalizeIdentityForFile(
 
 function createAgentIdentityConfig(params: {
   safeName?: string;
-  emoji?: unknown;
-  avatar?: unknown;
+  emoji?: any;
+  avatar?: any;
 }): IdentityConfig | undefined {
   const emoji = resolveOptionalStringParam(params.emoji);
   const avatar = resolveOptionalStringParam(params.avatar);

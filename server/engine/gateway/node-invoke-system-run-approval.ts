@@ -11,6 +11,6 @@
  * 完整实现见 openclaw 源码。
  */
 
-export function sanitizeSystemRunParamsForForwarding(..._args: unknown[]): unknown {
+export function sanitizeSystemRunParamsForForwarding(..._args: any[]): any {
   return undefined;
 }

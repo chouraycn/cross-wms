@@ -7,10 +7,10 @@ type SchemaParseResult<TData = unknown> =
 
 /** Asserts a schema accepts config and exposes the expected normalized value. */
 export function expectSchemaConfigValue(params: {
-  schema: { safeParse: (value: unknown) => SchemaParseResult };
-  config: unknown;
-  readValue: (config: unknown) => unknown;
-  expectedValue: unknown;
+  schema: { safeParse: (value: any) => SchemaParseResult };
+  config: any;
+  readValue: (config: any) => unknown;
+  expectedValue: any;
 }) {
   const res = params.schema.safeParse(params.config);
   expect(res.success).toBe(true);
@@ -21,8 +21,8 @@ export function expectSchemaConfigValue(params: {
 }
 
 export function expectSchemaValid(
-  schema: { safeParse: (value: unknown) => SchemaParseResult },
-  config: unknown,
+  schema: { safeParse: (value: any) => SchemaParseResult },
+  config: any,
 ) {
   const res = schema.safeParse(config);
   expect(res.success).toBe(true);

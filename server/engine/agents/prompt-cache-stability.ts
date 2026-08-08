@@ -8,7 +8,7 @@
  */
 
 // 降级实现：normalizeLowercaseStringOrEmpty 来自 @openclaw/normalization-core/string-coerce
-function normalizeLowercaseStringOrEmpty(value: unknown): string {
+function normalizeLowercaseStringOrEmpty(value: any): string {
   if (typeof value !== "string") {
     return "";
   }

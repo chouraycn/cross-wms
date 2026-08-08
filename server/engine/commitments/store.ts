@@ -165,33 +165,33 @@ async function atomicWrite(
 // ===================== 校验工具 =====================
 
 /** 判断值是否为普通记录对象 */
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 /** 规范化可选字符串：非字符串或空串返回 undefined */
-function normalizeOptionalString(value: unknown): string | undefined {
+function normalizeOptionalString(value: any): string | undefined {
   if (typeof value !== "string") return undefined;
   const trimmed = value.trim();
   return trimmed ? trimmed : undefined;
 }
 
 /** 规范化非负有限数：非法返回 undefined */
-function normalizeNonNegativeNumber(value: unknown): number | undefined {
+function normalizeNonNegativeNumber(value: any): number | undefined {
   return typeof value === "number" && Number.isFinite(value) && value >= 0
     ? value
     : undefined;
 }
 
 /** 规范化非负整数：非法返回 undefined */
-function normalizeNonNegativeInteger(value: unknown): number | undefined {
+function normalizeNonNegativeInteger(value: any): number | undefined {
   return typeof value === "number" && Number.isInteger(value) && value >= 0
     ? value
     : undefined;
 }
 
 /** 规范化字符串数组 */
-function normalizeStringArray(value: unknown): string[] | undefined {
+function normalizeStringArray(value: any): string[] | undefined {
   if (!Array.isArray(value)) return undefined;
   const result = value.filter((v) => typeof v === "string" && v.trim().length > 0);
   return result.length > 0 ? result : undefined;
@@ -209,7 +209,7 @@ function emptyStore(): CommitmentStoreFile {
  *
  * 必填字段缺失或枚举值非法时返回 null；可选字段被裁剪为干净形态。
  */
-export function coerceCommitment(raw: unknown): CommitmentRecord | null {
+export function coerceCommitment(raw: any): CommitmentRecord | null {
   if (!isRecord(raw)) {
     return null;
   }
@@ -326,7 +326,7 @@ export function coerceCommitment(raw: unknown): CommitmentRecord | null {
 }
 
 /** 校验并规范化心跳记录 */
-function coerceHeartbeat(raw: unknown): CommitmentHeartbeat | undefined {
+function coerceHeartbeat(raw: any): CommitmentHeartbeat | undefined {
   if (!isRecord(raw)) {
     return undefined;
   }
@@ -363,7 +363,7 @@ function coerceHeartbeat(raw: unknown): CommitmentHeartbeat | undefined {
 }
 
 /** 判断记录是否含有遗留的 source 文本字段 */
-function hasLegacySourceText(raw: unknown): boolean {
+function hasLegacySourceText(raw: any): boolean {
   return isRecord(raw) && ("sourceUserText" in raw || "sourceAssistantText" in raw);
 }
 
@@ -399,7 +399,7 @@ async function loadCommitmentStoreInternal(
   const resolved = resolveCommitmentStorePath(storePath);
   try {
     const raw = await fs.promises.readFile(resolved, "utf-8");
-    const parsed: unknown = JSON.parse(raw);
+    const parsed: any = JSON.parse(raw);
     if (
       !isRecord(parsed) ||
       parsed.version !== STORE_VERSION ||
@@ -429,7 +429,7 @@ async function loadCommitmentStoreInternal(
       hadLegacySourceText,
     };
   } catch (err) {
-    if ((err as { code?: unknown })?.code === "ENOENT") {
+    if ((err as { code?: any })?.code === "ENOENT") {
       return { store: emptyStore(), hadLegacySourceText: false };
     }
     throw err;
@@ -631,7 +631,7 @@ type AddCommitmentParams =
       attempts?: number;
       storePath?: string;
       tags?: string[];
-      metadata?: Record<string, unknown>;
+      metadata?: Record<string, any>;
     };
 
 export async function addCommitment(params: AddCommitmentParams): Promise<{ added: number; duplicates: number }> {
@@ -659,7 +659,7 @@ async function addCommitmentDirect(params: {
   attempts?: number;
   storePath?: string;
   tags?: string[];
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }): Promise<{ added: number; duplicates: number }> {
   const nowMs = params.createdAtMs ?? Date.now();
   const storePath = params.storePath;

@@ -397,7 +397,7 @@ export {
  */
 export async function resolveSecretRefsAsync(
   refs: SecretRef[],
-  options: { env?: NodeJS.ProcessEnv; cache?: Map<string, unknown> } = {}
+  options: { env?: NodeJS.ProcessEnv; cache?: Map<string, any> } = {}
 ): Promise<Map<string, ResolvedSecret | null>> {
   const results = new Map<string, ResolvedSecret | null>();
 

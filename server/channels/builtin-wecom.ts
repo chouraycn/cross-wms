@@ -89,7 +89,7 @@ export function createWeComChannelPlugin(): ChannelPlugin {
 
   const wecomChannelConfig: ChannelConfigAdapter<WeComAccountConfig> = {
     listAccountIds: (config: AppConfig): ChannelId[] => {
-      const wecomConfig = config.wecom as Record<string, unknown>;
+      const wecomConfig = config.wecom as Record<string, any>;
       if (wecomConfig && wecomConfig.corpId && wecomConfig.corpSecret && wecomConfig.agentId) {
         return [WECOM_CHANNEL_ID];
       }
@@ -97,7 +97,7 @@ export function createWeComChannelPlugin(): ChannelPlugin {
     },
     resolveAccount: (config: AppConfig, accountId: ChannelId): WeComAccountConfig | null => {
       if (accountId !== WECOM_CHANNEL_ID) return null;
-      const wecomConfig = config.wecom as Record<string, unknown>;
+      const wecomConfig = config.wecom as Record<string, any>;
       if (wecomConfig && wecomConfig.corpId && wecomConfig.corpSecret && wecomConfig.agentId) {
         return {
           corpId: String(wecomConfig.corpId),
@@ -134,7 +134,7 @@ export function createWeComChannelPlugin(): ChannelPlugin {
           const token = await getAccessToken(account);
           const rendered = await ctx.render();
           const text = rendered.parts
-            .map((p: { content: unknown }) => String(p.content))
+            .map((p: { content: any }) => String(p.content))
             .join("\n");
 
           const response = await fetch("https://qyapi.weixin.qq.com/cgi-bin/message/send", {
@@ -178,8 +178,8 @@ export function createWeComChannelPlugin(): ChannelPlugin {
 /**
  * 解析企业微信 webhook 事件（独立函数，供 webhook 路由调用）
  */
-export function parseWeComWebhook(body: unknown, _account: WeComAccountConfig): WeComWebhookResult {
-  const data = body as Record<string, unknown>;
+export function parseWeComWebhook(body: any, _account: WeComAccountConfig): WeComWebhookResult {
+  const data = body as Record<string, any>;
   const msgType = String(data.MsgType || "");
 
   if (msgType === "text") {

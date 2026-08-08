@@ -50,26 +50,26 @@ const router = Router();
 const store: CronJobStore = getDefaultCronStore();
 
 /** 判断是否为普通对象（非数组、非 null） */
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 /** 把字符串规范化为可选时区：空白或非字符串返回 undefined */
-function normalizeTimezone(value: unknown): string | undefined {
+function normalizeTimezone(value: any): string | undefined {
   if (typeof value !== 'string') return undefined;
   const trimmed = value.trim();
   return trimmed ? trimmed : undefined;
 }
 
 /** 从 body 提取 cron 表达式（cronExpression 或 cron），返回去除空白后的字符串 */
-function extractCronExpr(body: Record<string, unknown>): string {
+function extractCronExpr(body: Record<string, any>): string {
   if (typeof body.cronExpression === 'string') return body.cronExpression.trim();
   if (typeof body.cron === 'string') return body.cron.trim();
   return '';
 }
 
 /** 校验并提取 sessionTarget，非法值回退到 "isolated" */
-function coerceSessionTarget(value: unknown): SessionTarget {
+function coerceSessionTarget(value: any): SessionTarget {
   if (typeof value !== 'string') return 'isolated';
   if (value === 'main' || value === 'isolated' || value === 'current') return value;
   if (value.startsWith('session:')) return value as SessionTarget;
@@ -77,13 +77,13 @@ function coerceSessionTarget(value: unknown): SessionTarget {
 }
 
 /** 校验并提取 wakeMode，非法值回退到 "next-heartbeat" */
-function coerceWakeMode(value: unknown): WakeMode {
+function coerceWakeMode(value: any): WakeMode {
   if (value === 'next-heartbeat' || value === 'now') return value;
   return 'next-heartbeat';
 }
 
 /** 校验 payload 结构（按 kind 检查必需字段） */
-function isCronPayload(value: unknown): value is Payload {
+function isCronPayload(value: any): value is Payload {
   if (!isRecord(value) || typeof value.kind !== 'string') return false;
   if (value.kind === 'systemEvent') return typeof value.text === 'string';
   if (value.kind === 'agentTurn') return typeof value.message === 'string';
@@ -169,7 +169,7 @@ router.post('/parse', async (req: Request, res: Response) => {
         description: `Cron schedule: ${expr}`,
       },
     });
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'failed to parse cron expression';
     logger.warn('[CronAPI] /parse 失败:', message);
     res.status(400).json({ success: false, error: message });
@@ -187,7 +187,7 @@ router.get('/', async (_req: Request, res: Response) => {
     const jobs = await listJobs();
     const data = jobs.map(withComputedNextRun);
     res.json({ success: true, data, total: data.length });
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'failed to list cron jobs';
     logger.error('[CronAPI] GET / 失败:', message);
     res.status(500).json({ success: false, error: message });
@@ -262,7 +262,7 @@ router.post('/', async (req: Request, res: Response) => {
     await persistJobs(jobs);
 
     res.status(201).json({ success: true, data: withComputedNextRun(job) });
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'failed to create cron job';
     logger.error('[CronAPI] POST / 失败:', message);
     res.status(400).json({ success: false, error: message });
@@ -280,7 +280,7 @@ router.get('/:id', async (req: Request, res: Response) => {
       return res.status(404).json({ success: false, error: 'cron job not found' });
     }
     res.json({ success: true, data: withComputedNextRun(job) });
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'failed to get cron job';
     logger.error('[CronAPI] GET /:id 失败:', message);
     res.status(500).json({ success: false, error: message });
@@ -355,7 +355,7 @@ router.put('/:id', async (req: Request, res: Response) => {
     await persistJobs(jobs);
 
     res.json({ success: true, data: withComputedNextRun(next) });
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'failed to update cron job';
     logger.error('[CronAPI] PUT /:id 失败:', message);
     res.status(400).json({ success: false, error: message });
@@ -379,7 +379,7 @@ router.delete('/:id', async (req: Request, res: Response) => {
     }
     await persistJobs(next);
     res.json({ success: true, deleted: req.params.id });
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'failed to delete cron job';
     logger.error('[CronAPI] DELETE /:id 失败:', message);
     res.status(500).json({ success: false, error: message });

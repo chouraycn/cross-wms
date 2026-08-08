@@ -195,7 +195,7 @@ describe('classifyError（通过 callAIModelStream HTTP 响应间接验证）', 
 
   it('400 + model not found 应归类为 model_not_supported 错误', async () => {
     global.fetch = vi.fn().mockResolvedValue(
-      createErrorResponse(400, 'model not found: unknown-model'),
+      createErrorResponse(400, 'model not found: any-model'),
     );
     await expect(
       callAIModelStream(baseConfig, [{ role: 'user', content: 'hello' }], noopChunk),

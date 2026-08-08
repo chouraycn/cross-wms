@@ -13,7 +13,7 @@ export type Issue = {
   updatedAt?: number;
   resolvedAt?: number;
   resolved?: boolean;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 export type IssueFormatOptions = {
@@ -70,7 +70,7 @@ export function createIssue(
     severity?: IssueSeverity;
     type?: IssueType;
     tags?: string[];
-    metadata?: Record<string, unknown>;
+    metadata?: Record<string, any>;
   } = {},
 ): Issue {
   return {

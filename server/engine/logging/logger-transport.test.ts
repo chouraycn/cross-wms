@@ -42,10 +42,10 @@ describe("logger transport registry", () => {
     const loggerModule = await importLoggerModule("public-api");
 
     expect(
-      (loggerModule as unknown as Record<string, unknown>).registerLogTransport,
+      (loggerModule as unknown as Record<string, any>).registerLogTransport,
     ).toBeUndefined();
     expect(
-      (loggerModule.testApi as unknown as Record<string, unknown>).registerLogTransportForTest,
+      (loggerModule.testApi as unknown as Record<string, any>).registerLogTransportForTest,
     ).toBeUndefined();
   });
 
@@ -53,7 +53,7 @@ describe("logger transport registry", () => {
     await importLoggerModule("global-state");
 
     expect(
-      (globalThis as typeof globalThis & Record<PropertyKey, unknown>)[
+      (globalThis as typeof globalThis & Record<PropertyKey, any>)[
         Symbol.for("openclaw.logging.transports")
       ],
     ).toBeUndefined();

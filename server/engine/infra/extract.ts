@@ -13,7 +13,7 @@ export type CommandRisk =
   | { kind: "dynamic-argument"; command: string; argumentIndex: number; text: string; span: SourceSpan }
   | { kind: "shell-wrapper"; executable: string; flag: string; payload: string; text: string; span: SourceSpan }
   | { kind: "syntax-error"; text: string; span: SourceSpan }
-  | { kind: string; text: string; span: SourceSpan; [key: string]: unknown };
+  | { kind: string; text: string; span: SourceSpan; [key: string]: any };
 
 export type CommandStep = {
   id: string;
@@ -31,7 +31,7 @@ export type CommandExplanation = {
   shapes: string[];
   topLevelCommands: CommandStep[];
   nestedCommands: CommandStep[];
-  operators: unknown[];
+  operators: any[];
   risks: CommandRisk[];
 };
 

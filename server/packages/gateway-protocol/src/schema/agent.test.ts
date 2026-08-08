@@ -18,7 +18,7 @@ type AgentInternalEvent = {
   status: "ok" | "error";
   statusLabel: string;
   result: string;
-  attachments?: unknown[];
+  attachments?: any[];
   mediaUrls?: string[];
   replyInstruction?: string;
 };

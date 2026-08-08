@@ -7,7 +7,7 @@ import { createCliRuntimeCapture, mockRuntimeModule } from "./test-runtime-captu
 const mocks = vi.hoisted(() => ({
   loadConfig: vi.fn(),
   runCommandWithTimeout: vi.fn(),
-  resolveCommandSecretRefsViaGateway: vi.fn(async ({ config }: { config: unknown }) => ({
+  resolveCommandSecretRefsViaGateway: vi.fn(async ({ config }: { config: any }) => ({
     resolvedConfig: config,
     diagnostics: [] as string[],
   })),
@@ -87,7 +87,7 @@ function createDefaultSecretProvider() {
   };
 }
 
-function createLocalGatewayConfigWithAuth(auth: Record<string, unknown>) {
+function createLocalGatewayConfigWithAuth(auth: Record<string, any>) {
   return {
     secrets: createDefaultSecretProvider(),
     gateway: {
@@ -127,7 +127,7 @@ describe("registerQrCli", () => {
     await expect(runQr(args)).rejects.toThrow("exit");
   }
 
-  function readRuntimeCallText(call: unknown[] | undefined): string {
+  function readRuntimeCallText(call: any[] | undefined): string {
     const value = call?.[0];
     if (typeof value === "string") {
       return value;

@@ -17,7 +17,7 @@ import { extractAssistantText } from "../embedded-agent-utils.js";
 type PdfModelConfig = { primary?: string; fallbacks?: string[] };
 
 /** Reads `pdf` and `pdfs` tool arguments into a trimmed, de-duplicated PDF input list. */
-export function resolvePdfInputs(record: Record<string, unknown>): string[] {
+export function resolvePdfInputs(record: Record<string, any>): string[] {
   const pdfCandidates: string[] = [];
   if (typeof record.pdf === "string") {
     pdfCandidates.push(record.pdf);

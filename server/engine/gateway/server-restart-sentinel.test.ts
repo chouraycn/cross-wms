@@ -9,12 +9,12 @@ type RecordInboundSessionAndDispatchReplyParams = Parameters<
   typeof import("../channels/turn/kernel.js").dispatchAssembledChannelTurn
 >[0] & {
   deliver: (payload: { text?: string; replyToId?: string | null }) => Promise<void>;
-  onDispatchError: (err: unknown, info: { kind: string }) => void;
+  onDispatchError: (err: any, info: { kind: string }) => void;
 };
 
 const mocks = vi.hoisted(() => {
   const state = {
-    queuedSessionDelivery: null as Record<string, unknown> | null,
+    queuedSessionDelivery: null as Record<string, any> | null,
   };
 
   return {
@@ -22,7 +22,7 @@ const mocks = vi.hoisted(() => {
     get queuedSessionDelivery() {
       return state.queuedSessionDelivery;
     },
-    set queuedSessionDelivery(value: Record<string, unknown> | null) {
+    set queuedSessionDelivery(value: Record<string, any> | null) {
       state.queuedSessionDelivery = value;
     },
     readRestartSentinel: vi.fn(
@@ -71,7 +71,7 @@ const mocks = vi.hoisted(() => {
         | { channel?: string; to?: string; accountId?: string; threadId?: string | number }
         | undefined => undefined,
     ),
-    mergeDeliveryContext: vi.fn((a?: Record<string, unknown>, b?: Record<string, unknown>) => ({
+    mergeDeliveryContext: vi.fn((a?: Record<string, any>, b?: Record<string, any>) => ({
       ...b,
       ...a,
     })),
@@ -87,7 +87,7 @@ const mocks = vi.hoisted(() => {
     failDelivery: vi.fn(async () => {}),
     enqueueSystemEvent: vi.fn(),
     requestHeartbeat: vi.fn(),
-    enqueueSessionDelivery: vi.fn(async (payload: Record<string, unknown>) => {
+    enqueueSessionDelivery: vi.fn(async (payload: Record<string, any>) => {
       state.queuedSessionDelivery = payload;
       return "session-delivery-1";
     }),
@@ -96,13 +96,13 @@ const mocks = vi.hoisted(() => {
       async (params: {
         logLabel: string;
         log: { warn: (message: string) => void };
-        selectEntry: (entry: Record<string, unknown>, now: number) => { match: boolean };
-        deliver: (entry: Record<string, unknown>) => Promise<void>;
+        selectEntry: (entry: Record<string, any>, now: number) => { match: boolean };
+        deliver: (entry: Record<string, any>) => Promise<void>;
       }) => {
         if (!state.queuedSessionDelivery) {
           return;
         }
-        const entry: Record<string, unknown> & {
+        const entry: Record<string, any> & {
           id: string;
           enqueuedAt: number;
           retryCount: number;
@@ -146,7 +146,7 @@ const mocks = vi.hoisted(() => {
     resolveAgentConfig: vi.fn(() => undefined),
     resolveAgentWorkspaceDir: vi.fn(() => "/tmp/openclaw-test-workspace"),
     resolveDefaultAgentId: vi.fn(() => "main"),
-    normalizeSessionDeliveryFields: vi.fn((source?: Record<string, unknown>) => ({
+    normalizeSessionDeliveryFields: vi.fn((source?: Record<string, any>) => ({
       deliveryContext: source?.deliveryContext,
       lastChannel: source?.lastChannel ?? source?.channel,
       lastTo: source?.lastTo,
@@ -239,14 +239,14 @@ vi.mock("../channels/turn/kernel.js", () => ({
         replyToId?: string | null;
       };
       deliver: (payload: { text?: string; replyToId?: string | null }) => Promise<void>;
-      onError?: (err: unknown, info: { kind: string }) => void;
+      onError?: (err: any, info: { kind: string }) => void;
     };
   }) => {
     await mocks.recordInboundSessionAndDispatchReply({
       ...params,
       deliver: async (payload: { text?: string; replyToId?: string | null }) =>
         params.delivery.deliver(params.delivery.preparePayload?.(payload) ?? payload),
-      onDispatchError: (err: unknown, info: { kind: string }) =>
+      onDispatchError: (err: any, info: { kind: string }) =>
         params.delivery.onError?.(err, info),
     } as unknown as RecordInboundSessionAndDispatchReplyParams);
   },
@@ -307,20 +307,20 @@ const {
 } = await import("./server-restart-sentinel.js");
 
 function expectRecordFields(
-  record: unknown,
-  expected: Record<string, unknown>,
-): Record<string, unknown> {
+  record: any,
+  expected: Record<string, any>,
+): Record<string, any> {
   if (!record || typeof record !== "object") {
     throw new Error("Expected record");
   }
-  const actual = record as Record<string, unknown>;
+  const actual = record as Record<string, any>;
   for (const [key, value] of Object.entries(expected)) {
     expect(actual[key]).toEqual(value);
   }
   return actual;
 }
 
-function mockCallArg(mock: { mock: { calls: Array<Array<unknown>> } }, callIndex = 0): unknown {
+function mockCallArg(mock: { mock: { calls: Array<Array<any>> } }, callIndex = 0): any {
   const call = mock.mock.calls[callIndex];
   if (!call) {
     throw new Error(`Expected mock call ${callIndex}`);
@@ -328,7 +328,7 @@ function mockCallArg(mock: { mock: { calls: Array<Array<unknown>> } }, callIndex
   return call[0];
 }
 
-function lastMockCallArg(mock: { mock: { calls: Array<Array<unknown>> } }): unknown {
+function lastMockCallArg(mock: { mock: { calls: Array<Array<any>> } }): any {
   const calls = mock.mock.calls;
   const call = calls[calls.length - 1];
   if (!call) {
@@ -338,14 +338,14 @@ function lastMockCallArg(mock: { mock: { calls: Array<Array<unknown>> } }): unkn
 }
 
 function expectMockCallFields(
-  mock: { mock: { calls: Array<Array<unknown>> } },
-  expected: Record<string, unknown>,
+  mock: { mock: { calls: Array<Array<any>> } },
+  expected: Record<string, any>,
   callIndex = 0,
-): Record<string, unknown> {
+): Record<string, any> {
   return expectRecordFields(mockCallArg(mock, callIndex), expected);
 }
 
-function expectNthSystemEventFields(callIndex: number, expected: Record<string, unknown>): void {
+function expectNthSystemEventFields(callIndex: number, expected: Record<string, any>): void {
   const call = mocks.enqueueSystemEvent.mock.calls[callIndex];
   if (!call) {
     throw new Error(`Expected enqueueSystemEvent call at index ${callIndex}`);
@@ -354,10 +354,10 @@ function expectNthSystemEventFields(callIndex: number, expected: Record<string, 
 }
 
 function expectContinuationDispatchFields(
-  expected: Record<string, unknown>,
-  expectedCtx?: Record<string, unknown>,
+  expected: Record<string, any>,
+  expectedCtx?: Record<string, any>,
   callIndex = 0,
-): Record<string, unknown> {
+): Record<string, any> {
   const params = expectMockCallFields(
     mocks.recordInboundSessionAndDispatchReply,
     expected,
@@ -1166,7 +1166,7 @@ describe("scheduleRestartSentinelWake", () => {
       },
     } as Awaited<ReturnType<typeof mocks.readRestartSentinel>>);
     mocks.recordInboundSessionAndDispatchReply.mockImplementationOnce(
-      async (params: { onDispatchError: (err: unknown, info: { kind: string }) => void }) => {
+      async (params: { onDispatchError: (err: any, info: { kind: string }) => void }) => {
         params.onDispatchError(new Error("route failed"), { kind: "final" });
       },
     );
@@ -1231,7 +1231,7 @@ describe("scheduleRestartSentinelWake", () => {
       2,
     );
     const deliveredBusyReply = (
-      mocks.deliverOutboundPayloads.mock.calls as unknown as Array<
+      mocks.deliverOutboundPayloads.mock.calls as any as Array<
         [{ payloads?: Array<{ text?: string }> }]
       >
     ).some(([call]) => call.payloads?.some((payload) => payload.text === busyReply) === true);

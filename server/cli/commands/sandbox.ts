@@ -83,7 +83,7 @@ function execInSandbox(id: string, command: string): { exitCode: number; stdout:
 }
 
 /** 格式化 JSON 输出 */
-function formatJsonOutput(data: unknown): string {
+function formatJsonOutput(data: any): string {
   return JSON.stringify(data, null, 2);
 }
 

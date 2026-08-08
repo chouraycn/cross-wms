@@ -7,7 +7,7 @@ export class GrpcTransport implements ChannelTransport {
   config: TransportConfig;
   status: TransportStatus = "disconnected";
 
-  private client: unknown = null;
+  private client: any = null;
   private stats: TransportStats = {
     messagesSent: 0,
     messagesReceived: 0,
@@ -129,7 +129,7 @@ export class GrpcTransport implements ChannelTransport {
     await this.connect();
   }
 
-  private emitEvent(type: TransportEvent["type"], data?: unknown): void {
+  private emitEvent(type: TransportEvent["type"], data?: any): void {
     const handlers = this.eventHandlers.get(type);
     if (!handlers) return;
 

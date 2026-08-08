@@ -156,8 +156,8 @@ describe("maybeRepairLegacyOAuthProfileIds", () => {
     ) as {
       cfg?: OpenClawConfig;
       store?: AuthProfileStore;
-      provider?: unknown;
-      legacyProfileId?: unknown;
+      provider?: any;
+      legacyProfileId?: any;
     };
     expect(repairCall.cfg?.auth?.profiles?.["anthropic:default"]).toEqual({
       provider: "anthropic",

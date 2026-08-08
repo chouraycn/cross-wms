@@ -25,7 +25,7 @@ function isGenericMediaType(mediaType: string | undefined): boolean {
 }
 
 /** Resolves image media types from current-turn attachment metadata or filenames. */
-function resolveCurrentImageMediaType(pathValue: unknown, mediaType?: unknown): string | undefined {
+function resolveCurrentImageMediaType(pathValue: any, mediaType?: any): string | undefined {
   const mediaPath = normalizeOptionalString(pathValue);
   if (!mediaPath) {
     return undefined;

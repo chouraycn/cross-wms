@@ -28,7 +28,7 @@ type PackageManifest = {
   name: string;
   version: string;
   dependencies?: Record<string, string>;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 type PackedPackage = {

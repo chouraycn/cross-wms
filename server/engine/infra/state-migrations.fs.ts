@@ -6,7 +6,7 @@ import JSON5 from "json5";
 export type SessionEntryLike = {
   sessionId?: string;
   updatedAt?: number;
-} & Record<string, unknown>;
+} & Record<string, any>;
 
 /** 读取目录条目，目录缺失/不可读时返回空列表。 */
 export function safeReadDir(dir: string): fs.Dirent[] {

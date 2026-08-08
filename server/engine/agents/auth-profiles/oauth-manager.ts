@@ -54,7 +54,7 @@ export type OAuthManagerAdapter = {
     profileId: string;
     credential: OAuthCredential;
   }) => OAuthCredential | null;
-  isRefreshTokenReusedError: (error: unknown) => boolean;
+  isRefreshTokenReusedError: (error: any) => boolean;
 };
 
 export type ResolvedOAuthAccess = {
@@ -75,11 +75,11 @@ export class OAuthManagerRefreshError extends OAuthRefreshFailureError {
     attemptedCredentials?: OAuthCredential[];
     profileId: string;
     refreshedStore: AuthProfileStore;
-    cause: unknown;
+    cause: any;
   }) {
     const structuredCause =
       typeof params.cause === "object" && params.cause !== null
-        ? (params.cause as { code?: unknown; lockPath?: unknown; cause?: unknown })
+        ? (params.cause as { code?: any; lockPath?: any; cause?: any })
         : undefined;
     const delegatedCause =
       structuredCause?.code === "refresh_contention" && structuredCause.cause
@@ -188,11 +188,11 @@ function redactOAuthCredentialSecrets(message: string, secrets: string[]): strin
   return redacted;
 }
 
-function formatRawErrorMessage(error: unknown): string {
+function formatRawErrorMessage(error: any): string {
   if (error instanceof Error) {
     let formatted = error.message || error.name || "Error";
-    let cause: unknown = error.cause;
-    const seen = new Set<unknown>([error]);
+    let cause: any = error.cause;
+    const seen = new Set<any>([error]);
     while (cause && !seen.has(cause)) {
       seen.add(cause);
       if (cause instanceof Error) {
@@ -224,11 +224,11 @@ function formatRawErrorMessage(error: unknown): string {
   }
 }
 
-function formatRedactedOAuthRefreshError(error: unknown, secrets: string[]): string {
+function formatRedactedOAuthRefreshError(error: any, secrets: string[]): string {
   return redactSensitiveText(redactOAuthCredentialSecrets(formatRawErrorMessage(error), secrets));
 }
 
-function createRedactedOAuthRefreshCause(cause: unknown, secrets: string[]): Error {
+function createRedactedOAuthRefreshCause(cause: any, secrets: string[]): Error {
   const redacted = formatRedactedOAuthRefreshError(cause, secrets);
   const sanitized = new Error(redacted);
   if (cause instanceof Error && cause.name) {
@@ -359,7 +359,7 @@ export function createOAuthManager(adapter: OAuthManagerAdapter) {
     return null;
   }
 
-  const refreshQueues = new Map<string, Promise<unknown>>();
+  const refreshQueues = new Map<string, Promise<any>>();
 
   function refreshQueueKey(provider: string, profileId: string): string {
     return `${provider}\u0000${profileId}`;

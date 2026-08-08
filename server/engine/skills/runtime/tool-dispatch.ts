@@ -6,7 +6,7 @@ export type ToolDispatchContext = {
   skillName: string;
   commandName: string;
   toolName?: string;
-  args?: Record<string, unknown>;
+  args?: Record<string, any>;
   rawArgs?: string;
 };
 
@@ -45,7 +45,7 @@ export function listRegisteredTools(): string[] {
 
 export async function dispatchSkillCommand(
   command: SkillCommandSpec,
-  args?: Record<string, unknown>,
+  args?: Record<string, any>,
   rawArgs?: string,
 ): Promise<ToolDispatchResult> {
   const toolName = command.dispatch?.toolName;

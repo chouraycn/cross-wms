@@ -9,7 +9,7 @@ import {
   unsetConfiguredMcpServer,
 } from "./mcp-config.js";
 
-function validationOk(raw: unknown) {
+function validationOk(raw: any) {
   return { ok: true as const, config: raw, warnings: [] };
 }
 
@@ -35,7 +35,7 @@ const mockReadSourceConfigSnapshot = vi.hoisted(() => async () => {
   }
 });
 
-const mockReplaceConfigFile = vi.hoisted(() => async ({ nextConfig }: { nextConfig: unknown }) => {
+const mockReplaceConfigFile = vi.hoisted(() => async ({ nextConfig }: { nextConfig: any }) => {
   const fsLocal = await import("node:fs/promises");
   const pathLocal = await import("node:path");
   const configPath = pathLocal.join(process.env.OPENCLAW_STATE_DIR ?? "", "openclaw.json");
@@ -56,7 +56,7 @@ vi.mock("./validation.js", () => ({
 }));
 
 async function withMcpConfigHome<T>(
-  config: unknown,
+  config: any,
   fn: (params: { configPath: string }) => Promise<T>,
 ) {
   return await withTempHome(

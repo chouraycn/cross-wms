@@ -30,7 +30,7 @@ const {
   consumeSelectedSystemEventEntriesMock: vi.fn((_sessionKey, entries) => entries ?? []),
   requestHeartbeatMock: vi.fn(),
   runHeartbeatOnceMock: vi.fn<
-    (...args: unknown[]) => Promise<{ status: "ran"; durationMs: number }>
+    (...args: any[]) => Promise<{ status: "ran"; durationMs: number }>
   >(async () => ({ status: "ran", durationMs: 1 })),
   loadConfigMock: vi.fn(),
   fetchWithSsrFGuardMock: vi.fn(),
@@ -78,11 +78,11 @@ const {
   })),
 }));
 
-function enqueueSystemEvent(text: string, opts?: unknown) {
+function enqueueSystemEvent(text: string, opts?: any) {
   return enqueueSystemEventMock(text, opts);
 }
 
-function enqueueSystemEventEntry(text: string, opts?: unknown) {
+function enqueueSystemEventEntry(text: string, opts?: any) {
   const result = enqueueSystemEventMock(text, opts);
   if (result === false || result === null) {
     return null;
@@ -93,15 +93,15 @@ function enqueueSystemEventEntry(text: string, opts?: unknown) {
   };
 }
 
-function consumeSelectedSystemEventEntries(sessionKey: string, entries: readonly unknown[]) {
+function consumeSelectedSystemEventEntries(sessionKey: string, entries: readonly any[]) {
   return consumeSelectedSystemEventEntriesMock(sessionKey, entries);
 }
 
-function requestHeartbeat(...args: unknown[]) {
+function requestHeartbeat(...args: any[]) {
   return requestHeartbeatMock(...args);
 }
 
-function runHeartbeatOnce(...args: unknown[]) {
+function runHeartbeatOnce(...args: any[]) {
   return runHeartbeatOnceMock(...args);
 }
 
@@ -189,20 +189,20 @@ function createCronConfig(name: string): OpenClawConfig {
   } as OpenClawConfig;
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object") {
     throw new Error(`expected ${label}`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function requireArray(value: unknown, label: string): Array<unknown> {
+function requireArray(value: any, label: string): Array<any> {
   expect(Array.isArray(value), label).toBe(true);
-  return value as Array<unknown>;
+  return value as Array<any>;
 }
 
 function callArg(
-  mock: { mock: { calls: Array<Array<unknown>> } },
+  mock: { mock: { calls: Array<Array<any>> } },
   callIndex: number,
   argIndex: number,
   label: string,
@@ -217,11 +217,11 @@ function callArg(
   return call[argIndex];
 }
 
-function expectMainCronRunSessionKey(value: unknown, jobId: string) {
+function expectMainCronRunSessionKey(value: any, jobId: string) {
   expect(value).toMatch(new RegExp(`^agent:main:cron:${jobId}:run:\\d+$`));
 }
 
-function lastMockCall(mock: { mock: { calls: Array<Array<unknown>> } }, label: string) {
+function lastMockCall(mock: { mock: { calls: Array<Array<any>> } }, label: string) {
   const calls = mock.mock.calls;
   const call = calls[calls.length - 1];
   if (!call) {
@@ -230,7 +230,7 @@ function lastMockCall(mock: { mock: { calls: Array<Array<unknown>> } }, label: s
   return call;
 }
 
-function expectHookContext(callIndex: number, fields: { config?: unknown; hasGetCron?: boolean }) {
+function expectHookContext(callIndex: number, fields: { config?: any; hasGetCron?: boolean }) {
   const context = requireRecord(
     callArg(runCronChangedMock, callIndex, 1, "cron_changed context"),
     "cron_changed context",
@@ -243,7 +243,7 @@ function expectHookContext(callIndex: number, fields: { config?: unknown; hasGet
   }
 }
 
-function expectIsolatedRunFields(fields: Record<string, unknown>) {
+function expectIsolatedRunFields(fields: Record<string, any>) {
   const options = requireRecord(
     callArg(runCronIsolatedAgentTurnMock, 0, 0, "isolated cron run"),
     "isolated cron run",
@@ -464,8 +464,8 @@ describe("buildGatewayCronService", () => {
 
       // The hook context should use getRuntimeConfig() (runtimeCfg), not startupCfg
       expect(runCronChangedMock).toHaveBeenCalledTimes(1);
-      const calls = runCronChangedMock.mock.calls as unknown[][];
-      const hookCtx = calls[0]?.[1] as { config?: unknown } | undefined;
+      const calls = runCronChangedMock.mock.calls as any[][];
+      const hookCtx = calls[0]?.[1] as { config?: any } | undefined;
       expect(hookCtx?.config).toBe(runtimeCfg);
       expect(hookCtx?.config).not.toBe(startupCfg);
     } finally {
@@ -751,7 +751,7 @@ describe("buildGatewayCronService", () => {
                 sessionKey?: string | null;
                 reason?: string;
                 heartbeat?: { target?: string };
-              }) => Promise<unknown>;
+              }) => Promise<any>;
             };
           };
         }
@@ -1289,11 +1289,11 @@ describe("buildGatewayCronService", () => {
 
       const options = expectIsolatedRunFields({ sessionKey: `cron:${job.id}` });
       expect(requireRecord(options.job, "isolated job").id).toBe(job.id);
-      const isolatedRunCalls = runCronIsolatedAgentTurnMock.mock.calls as Array<Array<unknown>>;
+      const isolatedRunCalls = runCronIsolatedAgentTurnMock.mock.calls as Array<Array<any>>;
       expect(
         isolatedRunCalls.some(([value]) => {
           const record =
-            value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+            value && typeof value === "object" ? (value as Record<string, any>) : {};
           return record.sessionKey === "main";
         }),
       ).toBe(false);
@@ -1433,8 +1433,8 @@ describe("buildGatewayCronService", () => {
               runHeartbeatOnce?: (opts?: {
                 agentId?: string;
                 sessionKey?: string | null;
-                heartbeat?: Record<string, unknown>;
-              }) => Promise<unknown>;
+                heartbeat?: Record<string, any>;
+              }) => Promise<any>;
             };
           };
         }

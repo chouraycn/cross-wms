@@ -3,26 +3,26 @@ import { Command } from "commander";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { addGatewayServiceCommands } from "./register-service-commands.js";
 
-const runDaemonInstall = vi.fn(async (_opts: unknown) => {});
-const runDaemonRestart = vi.fn(async (_opts: unknown) => {});
-const runDaemonStart = vi.fn(async (_opts: unknown) => {});
-const runDaemonStatus = vi.fn(async (_opts: unknown) => {});
-const runDaemonStop = vi.fn(async (_opts: unknown) => {});
-const runDaemonUninstall = vi.fn(async (_opts: unknown) => {});
+const runDaemonInstall = vi.fn(async (_opts: any) => {});
+const runDaemonRestart = vi.fn(async (_opts: any) => {});
+const runDaemonStart = vi.fn(async (_opts: any) => {});
+const runDaemonStatus = vi.fn(async (_opts: any) => {});
+const runDaemonStop = vi.fn(async (_opts: any) => {});
+const runDaemonUninstall = vi.fn(async (_opts: any) => {});
 
 vi.mock("./install.runtime.js", () => ({
-  runDaemonInstall: (opts: unknown) => runDaemonInstall(opts),
+  runDaemonInstall: (opts: any) => runDaemonInstall(opts),
 }));
 
 vi.mock("./status.runtime.js", () => ({
-  runDaemonStatus: (opts: unknown) => runDaemonStatus(opts),
+  runDaemonStatus: (opts: any) => runDaemonStatus(opts),
 }));
 
 vi.mock("./lifecycle.runtime.js", () => ({
-  runDaemonRestart: (opts: unknown) => runDaemonRestart(opts),
-  runDaemonStart: (opts: unknown) => runDaemonStart(opts),
-  runDaemonStop: (opts: unknown) => runDaemonStop(opts),
-  runDaemonUninstall: (opts: unknown) => runDaemonUninstall(opts),
+  runDaemonRestart: (opts: any) => runDaemonRestart(opts),
+  runDaemonStart: (opts: any) => runDaemonStart(opts),
+  runDaemonStop: (opts: any) => runDaemonStop(opts),
+  runDaemonUninstall: (opts: any) => runDaemonUninstall(opts),
 }));
 
 function createGatewayParentLikeCommand() {
@@ -38,7 +38,7 @@ function createGatewayParentLikeCommand() {
 
 function expectSingleDaemonCall(mockFn: ReturnType<typeof vi.fn>) {
   expect(mockFn).toHaveBeenCalledTimes(1);
-  const opts = mockFn.mock.calls[0]?.[0] as Record<string, unknown> | undefined;
+  const opts = mockFn.mock.calls[0]?.[0] as Record<string, any> | undefined;
   if (opts === undefined) {
     throw new Error("expected daemon call options");
   }
@@ -95,7 +95,7 @@ describe("addGatewayServiceCommands", () => {
       argv: ["status", "--token", "tok_status", "--password", "pw_status"],
       assert: () => {
         const opts = expectSingleDaemonCall(runDaemonStatus);
-        const rpc = opts.rpc as { token?: unknown; password?: unknown } | undefined;
+        const rpc = opts.rpc as { token?: any; password?: any } | undefined;
         expect(rpc?.token).toBe("tok_status");
         expect(rpc?.password).toBe("pw_status"); // pragma: allowlist secret
       },

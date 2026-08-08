@@ -174,7 +174,7 @@ vi.mock("../acp/control-plane/spawn.js", () => ({
 }));
 
 vi.mock("../acp/runtime/session-meta.js", () => ({
-  readAcpSessionMeta: (params: unknown) => hoisted.readAcpSessionMetaMock(params),
+  readAcpSessionMeta: (params: any) => hoisted.readAcpSessionMetaMock(params),
 }));
 
 vi.mock("../channels/plugins/index.js", () => ({
@@ -257,7 +257,7 @@ type CrossAgentWorkspaceFixture = {
 };
 
 function replaceSpawnConfig(next: OpenClawConfig): void {
-  const current = hoisted.state.cfg as Record<string, unknown>;
+  const current = hoisted.state.cfg as Record<string, any>;
   for (const key of Object.keys(current)) {
     delete current[key];
   }
@@ -305,8 +305,8 @@ function createRelayHandle(overrides?: {
 
 function expectResolvedIntroTextInBindMetadata(): void {
   const callWithMetadata = hoisted.sessionBindingBindMock.mock.calls.find(
-    (call: unknown[]) =>
-      typeof (call[0] as { metadata?: { introText?: unknown } } | undefined)?.metadata
+    (call: any[]) =>
+      typeof (call[0] as { metadata?: { introText?: any } } | undefined)?.metadata
         ?.introText === "string",
   );
   const introText =
@@ -376,9 +376,9 @@ function configureCrossAgentWorkspaceSpawn(fixture: CrossAgentWorkspaceFixture):
   });
 }
 
-function findAgentGatewayCall(): { method?: string; params?: Record<string, unknown> } | undefined {
+function findAgentGatewayCall(): { method?: string; params?: Record<string, any> } | undefined {
   return hoisted.callGatewayMock.mock.calls
-    .map((call: unknown[]) => call[0] as { method?: string; params?: Record<string, unknown> })
+    .map((call: any[]) => call[0] as { method?: string; params?: Record<string, any> })
     .find((request) => request.method === "agent");
 }
 
@@ -406,20 +406,20 @@ function expectAcceptedSpawn(result: SpawnResult): Extract<SpawnResult, { status
 }
 
 function expectRecordFields(
-  record: unknown,
-  expected: Record<string, unknown>,
-): Record<string, unknown> {
+  record: any,
+  expected: Record<string, any>,
+): Record<string, any> {
   if (!record || typeof record !== "object") {
     throw new Error("Expected record");
   }
-  const actual = record as Record<string, unknown>;
+  const actual = record as Record<string, any>;
   for (const [key, value] of Object.entries(expected)) {
     expect(actual[key]).toEqual(value);
   }
   return actual;
 }
 
-function firstMockCall(mock: { mock: { calls: unknown[][] } }, label: string): unknown[] {
+function firstMockCall(mock: { mock: { calls: any[][] } }, label: string): any[] {
   const call = mock.mock.calls[0];
   if (!call) {
     throw new Error(`Expected ${label} to be called`);
@@ -427,7 +427,7 @@ function firstMockCall(mock: { mock: { calls: unknown[][] } }, label: string): u
   return call;
 }
 
-function latestMockCall(mock: { mock: { calls: unknown[][] } }, label: string): unknown[] {
+function latestMockCall(mock: { mock: { calls: any[][] } }, label: string): any[] {
   const call = mock.mock.calls[mock.mock.calls.length - 1];
   if (!call) {
     throw new Error(`Expected ${label} to be called`);
@@ -435,17 +435,17 @@ function latestMockCall(mock: { mock: { calls: unknown[][] } }, label: string): 
   return call;
 }
 
-function latestBindingInput(): Record<string, unknown> {
+function latestBindingInput(): Record<string, any> {
   return expectRecordFields(latestMockCall(hoisted.sessionBindingBindMock, "session bind")[0], {});
 }
 
-function gatewayRequests(): Array<{ method?: string; params?: Record<string, unknown> }> {
+function gatewayRequests(): Array<{ method?: string; params?: Record<string, any> }> {
   return hoisted.callGatewayMock.mock.calls.map(
-    (call: unknown[]) => call[0] as { method?: string; params?: Record<string, unknown> },
+    (call: any[]) => call[0] as { method?: string; params?: Record<string, any> },
   );
 }
 
-function gatewayRequest(method: string): { method?: string; params?: Record<string, unknown> } {
+function gatewayRequest(method: string): { method?: string; params?: Record<string, any> } {
   const request = gatewayRequests().find((candidate) => candidate.method === method);
   if (!request) {
     throw new Error(`Expected gateway request for ${method}`);
@@ -457,11 +457,11 @@ function expectGatewayMethodNotCalled(method: string): void {
   expect(gatewayRequests().some((request) => request.method === method)).toBe(false);
 }
 
-function expectSessionPatchFields(expected: Record<string, unknown>): void {
+function expectSessionPatchFields(expected: Record<string, any>): void {
   expectRecordFields(gatewayRequest("sessions.patch").params, expected);
 }
 
-function expectInitializeSessionFields(expected: Record<string, unknown>): Record<string, unknown> {
+function expectInitializeSessionFields(expected: Record<string, any>): Record<string, any> {
   return expectRecordFields(
     firstMockCall(hoisted.initializeSessionMock, "session initialization")[0],
     expected,
@@ -469,11 +469,11 @@ function expectInitializeSessionFields(expected: Record<string, unknown>): Recor
 }
 
 function expectBindingCallFields(expected: {
-  conversation?: Record<string, unknown>;
-  metadata?: Record<string, unknown>;
+  conversation?: Record<string, any>;
+  metadata?: Record<string, any>;
   placement?: string;
   targetKind?: string;
-}): Record<string, unknown> {
+}): Record<string, any> {
   const input = expectRecordFields(latestBindingInput(), {
     ...(expected.placement ? { placement: expected.placement } : {}),
     ...(expected.targetKind ? { targetKind: expected.targetKind } : {}),
@@ -487,7 +487,7 @@ function expectBindingCallFields(expected: {
   return input;
 }
 
-function expectRelayCallFields(expected: Record<string, unknown>, callIndex = 0): void {
+function expectRelayCallFields(expected: Record<string, any>, callIndex = 0): void {
   expectRecordFields(
     hoisted.startAcpSpawnParentStreamRelayMock.mock.calls[callIndex]?.[0],
     expected,
@@ -698,7 +698,7 @@ describe("spawnAcpDirect", () => {
     hoisted.listTasksForOwnerKeyMock.mockReset().mockReturnValue([]);
 
     hoisted.callGatewayMock.mockReset();
-    hoisted.callGatewayMock.mockImplementation(async (argsUnknown: unknown) => {
+    hoisted.callGatewayMock.mockImplementation(async (argsUnknown: any) => {
       const args = argsUnknown as { method?: string };
       if (args.method === "sessions.patch") {
         return { ok: true };
@@ -719,9 +719,9 @@ describe("spawnAcpDirect", () => {
     hoisted.getAcpSessionManagerMock.mockReset().mockReturnValue({
       initializeSession: async (params: AcpInitializeSessionInput) =>
         await hoisted.initializeSessionMock(params),
-      closeSession: async (params: unknown) => await hoisted.closeSessionMock(params),
+      closeSession: async (params: any) => await hoisted.closeSessionMock(params),
     });
-    hoisted.initializeSessionMock.mockReset().mockImplementation(async (argsUnknown: unknown) => {
+    hoisted.initializeSessionMock.mockReset().mockImplementation(async (argsUnknown: any) => {
       const args = argsUnknown as AcpInitializeSessionInput;
       const runtimeSessionName = `${args.sessionKey}:runtime`;
       const cwd = typeof args.cwd === "string" ? args.cwd : undefined;
@@ -762,7 +762,7 @@ describe("spawnAcpDirect", () => {
         async (input: {
           targetSessionKey: string;
           conversation: { accountId: string };
-          metadata?: Record<string, unknown>;
+          metadata?: Record<string, any>;
         }) =>
           createSessionBinding({
             targetSessionKey: input.targetSessionKey,
@@ -815,7 +815,7 @@ describe("spawnAcpDirect", () => {
     });
     hoisted.resolveSessionTranscriptFileMock
       .mockReset()
-      .mockImplementation(async (params: unknown) => {
+      .mockImplementation(async (params: any) => {
         const typed = params as { threadId?: string };
         const sessionFile = typed.threadId
           ? `/tmp/agents/codex/sessions/sess-123-topic-${typed.threadId}.jsonl`
@@ -866,10 +866,10 @@ describe("spawnAcpDirect", () => {
       placement: "child",
     });
     const patchCallIndex = hoisted.callGatewayMock.mock.calls.findIndex(
-      (call: unknown[]) => (call[0] as { method?: string }).method === "sessions.patch",
+      (call: any[]) => (call[0] as { method?: string }).method === "sessions.patch",
     );
     const agentCallIndex = hoisted.callGatewayMock.mock.calls.findIndex(
-      (call: unknown[]) => (call[0] as { method?: string }).method === "agent",
+      (call: any[]) => (call[0] as { method?: string }).method === "agent",
     );
     const patchCallOrder = hoisted.callGatewayMock.mock.invocationCallOrder[patchCallIndex];
     const initializeCallOrder = hoisted.initializeSessionMock.mock.invocationCallOrder[0];
@@ -894,7 +894,7 @@ describe("spawnAcpDirect", () => {
     });
     expect(initInput.sessionKey).toMatch(/^agent:codex:acp:/);
     const transcriptCalls = hoisted.resolveSessionTranscriptFileMock.mock.calls.map(
-      (call: unknown[]) => call[0] as { threadId?: string },
+      (call: any[]) => call[0] as { threadId?: string },
     );
     expect(transcriptCalls).toHaveLength(2);
     expect(transcriptCalls[0]?.threadId).toBeUndefined();
@@ -911,7 +911,7 @@ describe("spawnAcpDirect", () => {
         spawnedBy: "agent:main:main",
       } satisfies SessionEntry,
     });
-    hoisted.readAcpSessionMetaMock.mockImplementation((paramsUnknown: unknown) => {
+    hoisted.readAcpSessionMetaMock.mockImplementation((paramsUnknown: any) => {
       const params = paramsUnknown as { sessionKey?: string };
       return params.sessionKey === ownedSessionKey
         ? {
@@ -956,7 +956,7 @@ describe("spawnAcpDirect", () => {
         spawnedBy: "agent:other:main",
       } satisfies SessionEntry,
     });
-    hoisted.readAcpSessionMetaMock.mockImplementation((paramsUnknown: unknown) => {
+    hoisted.readAcpSessionMetaMock.mockImplementation((paramsUnknown: any) => {
       const params = paramsUnknown as { sessionKey?: string };
       return params.sessionKey === otherSessionKey
         ? {
@@ -1730,7 +1730,7 @@ describe("spawnAcpDirect", () => {
       async (input: {
         targetSessionKey: string;
         conversation: { accountId: string; conversationId: string; parentConversationId?: string };
-        metadata?: Record<string, unknown>;
+        metadata?: Record<string, any>;
       }) =>
         createSessionBinding({
           targetSessionKey: input.targetSessionKey,
@@ -1788,7 +1788,7 @@ describe("spawnAcpDirect", () => {
       async (input: {
         targetSessionKey: string;
         conversation: { accountId: string; conversationId: string; parentConversationId?: string };
-        metadata?: Record<string, unknown>;
+        metadata?: Record<string, any>;
       }) =>
         createSessionBinding({
           targetSessionKey: input.targetSessionKey,
@@ -1846,7 +1846,7 @@ describe("spawnAcpDirect", () => {
       async (input: {
         targetSessionKey: string;
         conversation: { accountId: string; conversationId: string; parentConversationId?: string };
-        metadata?: Record<string, unknown>;
+        metadata?: Record<string, any>;
       }) =>
         createSessionBinding({
           targetSessionKey: input.targetSessionKey,
@@ -1996,7 +1996,7 @@ describe("spawnAcpDirect", () => {
       async (input: {
         targetSessionKey: string;
         conversation: { accountId: string; conversationId: string };
-        metadata?: Record<string, unknown>;
+        metadata?: Record<string, any>;
       }) =>
         createSessionBinding({
           targetSessionKey: input.targetSessionKey,
@@ -2044,7 +2044,7 @@ describe("spawnAcpDirect", () => {
       threadId: undefined,
     });
     const transcriptCalls = hoisted.resolveSessionTranscriptFileMock.mock.calls.map(
-      (call: unknown[]) => call[0] as { threadId?: string },
+      (call: any[]) => call[0] as { threadId?: string },
     );
     expect(transcriptCalls).toHaveLength(1);
     expect(transcriptCalls[0]?.threadId).toBeUndefined();
@@ -2090,7 +2090,7 @@ describe("spawnAcpDirect", () => {
       async (input: {
         targetSessionKey: string;
         conversation: { accountId: string; conversationId: string };
-        metadata?: Record<string, unknown>;
+        metadata?: Record<string, any>;
       }) =>
         createSessionBinding({
           targetSessionKey: input.targetSessionKey,
@@ -2197,7 +2197,7 @@ describe("spawnAcpDirect", () => {
           conversationId: string;
           parentConversationId?: string;
         };
-        metadata?: Record<string, unknown>;
+        metadata?: Record<string, any>;
       }) =>
         createSessionBinding({
           targetSessionKey: input.targetSessionKey,
@@ -2276,7 +2276,7 @@ describe("spawnAcpDirect", () => {
         async (input: {
           targetSessionKey: string;
           conversation: { accountId: string; conversationId: string };
-          metadata?: Record<string, unknown>;
+          metadata?: Record<string, any>;
         }) =>
           createSessionBinding({
             targetSessionKey: input.targetSessionKey,
@@ -2326,7 +2326,7 @@ describe("spawnAcpDirect", () => {
       async (input: {
         targetSessionKey: string;
         conversation: { accountId: string; conversationId: string };
-        metadata?: Record<string, unknown>;
+        metadata?: Record<string, any>;
       }) =>
         createSessionBinding({
           targetSessionKey: input.targetSessionKey,
@@ -2437,7 +2437,7 @@ describe("spawnAcpDirect", () => {
     expect(result.status).toBe("accepted");
     expect(result.childSessionKey).toMatch(/^agent:codex:acp:/);
     const agentCall = hoisted.callGatewayMock.mock.calls
-      .map((call: unknown[]) => call[0] as { method?: string; params?: Record<string, unknown> })
+      .map((call: any[]) => call[0] as { method?: string; params?: Record<string, any> })
       .find((request) => request.method === "agent");
     expect(agentCall?.params?.sessionKey).toBe(result.childSessionKey);
   });
@@ -2604,10 +2604,10 @@ describe("spawnAcpDirect", () => {
     const accepted = expectAcceptedSpawn(result);
     expect(accepted.streamLogPath).toBe("/tmp/sess-main.acp-stream.jsonl");
     const agentCall = hoisted.callGatewayMock.mock.calls
-      .map((call: unknown[]) => call[0] as { method?: string; params?: Record<string, unknown> })
+      .map((call: any[]) => call[0] as { method?: string; params?: Record<string, any> })
       .find((request) => request.method === "agent");
     const agentCallIndex = hoisted.callGatewayMock.mock.calls.findIndex(
-      (call: unknown[]) => (call[0] as { method?: string }).method === "agent",
+      (call: any[]) => (call[0] as { method?: string }).method === "agent",
     );
     const relayCallOrder = hoisted.startAcpSpawnParentStreamRelayMock.mock.invocationCallOrder[0];
     const agentCallOrder = hoisted.callGatewayMock.mock.invocationCallOrder[agentCallIndex];
@@ -2622,7 +2622,7 @@ describe("spawnAcpDirect", () => {
       emitStartNotice: false,
     });
     const relayRuns = hoisted.startAcpSpawnParentStreamRelayMock.mock.calls.map(
-      (call: unknown[]) => (call[0] as { runId?: string }).runId,
+      (call: any[]) => (call[0] as { runId?: string }).runId,
     );
     expect(relayRuns).toContain(agentCall?.params?.idempotencyKey);
     expect(relayRuns).toContain(accepted.runId);
@@ -2658,7 +2658,7 @@ describe("spawnAcpDirect", () => {
     hoisted.loadSessionStoreMock.mockReset().mockImplementation(() => {
       const store: Record<
         string,
-        { sessionId: string; updatedAt: number; deliveryContext?: unknown }
+        { sessionId: string; updatedAt: number; deliveryContext?: any }
       > = {
         "agent:main:subagent:parent": {
           sessionId: "parent-sess-1",
@@ -2697,7 +2697,7 @@ describe("spawnAcpDirect", () => {
     expect(accepted.mode).toBe("run");
     expect(accepted.streamLogPath).toBe("/tmp/sess-main.acp-stream.jsonl");
     const agentCall = hoisted.callGatewayMock.mock.calls
-      .map((call: unknown[]) => call[0] as { method?: string; params?: Record<string, unknown> })
+      .map((call: any[]) => call[0] as { method?: string; params?: Record<string, any> })
       .find((request) => request.method === "agent");
     expect(agentCall?.params?.deliver).toBe(false);
     expect(agentCall?.params?.channel).toBeUndefined();
@@ -2737,7 +2737,7 @@ describe("spawnAcpDirect", () => {
         {
           sessionId: string;
           updatedAt: number;
-          deliveryContext?: unknown;
+          deliveryContext?: any;
           spawnedBy?: string;
           spawnDepth?: number;
           subagentRole?: string;
@@ -3052,7 +3052,7 @@ describe("spawnAcpDirect", () => {
     expect(secondHandle.notifyStarted).toHaveBeenCalledTimes(1);
     const notifyOrder = secondHandle.notifyStarted.mock.invocationCallOrder;
     const agentCallIndex = hoisted.callGatewayMock.mock.calls.findIndex(
-      (call: unknown[]) => (call[0] as { method?: string }).method === "agent",
+      (call: any[]) => (call[0] as { method?: string }).method === "agent",
     );
     const agentCallOrder = hoisted.callGatewayMock.mock.invocationCallOrder[agentCallIndex];
     expect(typeof agentCallOrder).toBe("number");
@@ -3092,7 +3092,7 @@ describe("spawnAcpDirect", () => {
       },
     });
     const agentCall = hoisted.callGatewayMock.mock.calls
-      .map((call: unknown[]) => call[0] as { method?: string; params?: Record<string, unknown> })
+      .map((call: any[]) => call[0] as { method?: string; params?: Record<string, any> })
       .find((request) => request.method === "agent");
     expect(agentCall?.params?.deliver).toBe(true);
     expect(agentCall?.params?.channel).toBe("telegram");
@@ -3163,7 +3163,7 @@ describe("spawnAcpDirect", () => {
   it("disposes pre-registered parent relay when initial ACP dispatch fails", async () => {
     const relayHandle = createRelayHandle();
     hoisted.startAcpSpawnParentStreamRelayMock.mockReturnValueOnce(relayHandle);
-    hoisted.callGatewayMock.mockImplementation(async (argsUnknown: unknown) => {
+    hoisted.callGatewayMock.mockImplementation(async (argsUnknown: any) => {
       const args = argsUnknown as { method?: string };
       if (args.method === "sessions.patch") {
         return { ok: true };

@@ -34,7 +34,7 @@ export interface SandboxContext {
   sessionKey?: string;
   userId?: string;
   toolName?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface SandboxResult {

@@ -100,7 +100,7 @@ async function tryRenderContent(
   html: string;
   title: string;
   finalUrl: string;
-  jsResult?: unknown;
+  jsResult?: any;
 } | null> {
   try {
     const { renderContent } = await import('../services/browserHostClient.js');
@@ -123,7 +123,7 @@ async function tryRenderContent(
 
 // ===================== Handler: web_search =====================
 
-export async function handleWebSearch(args: Record<string, unknown>): Promise<string> {
+export async function handleWebSearch(args: Record<string, any>): Promise<string> {
   const query = String(args.query || '').trim();
   if (!query) {
     return JSON.stringify({ success: false, error: '搜索关键词不能为空' });
@@ -229,7 +229,7 @@ export async function handleWebSearch(args: Record<string, unknown>): Promise<st
 
 // ===================== Handler: web_fetch =====================
 
-export async function handleWebFetch(args: Record<string, unknown>): Promise<string> {
+export async function handleWebFetch(args: Record<string, any>): Promise<string> {
   const rawUrl = String(args.url || '').trim();
   if (!rawUrl) {
     return JSON.stringify({ success: false, error: 'URL 不能为空' });
@@ -357,7 +357,7 @@ export async function handleWebFetch(args: Record<string, unknown>): Promise<str
 
 // ===================== Handler: web_api_call =====================
 
-export async function handleWebApiCall(args: Record<string, unknown>): Promise<string> {
+export async function handleWebApiCall(args: Record<string, any>): Promise<string> {
   // v3.0: 如果指定了 templateId，使用 webApiTemplates 引擎执行
   if (args.templateId) {
     try {

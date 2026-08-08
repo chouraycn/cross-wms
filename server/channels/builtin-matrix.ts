@@ -74,7 +74,7 @@ export function createMatrixChannelPlugin(): ChannelPlugin {
 
   const matrixChannelConfig: ChannelConfigAdapter<MatrixAccountConfig> = {
     listAccountIds: (config: AppConfig): ChannelId[] => {
-      const matrixConfig = config.matrix as Record<string, unknown>;
+      const matrixConfig = config.matrix as Record<string, any>;
       if (matrixConfig && matrixConfig.homeserverUrl && matrixConfig.accessToken) {
         return [MATRIX_CHANNEL_ID];
       }
@@ -82,7 +82,7 @@ export function createMatrixChannelPlugin(): ChannelPlugin {
     },
     resolveAccount: (config: AppConfig, accountId: ChannelId): MatrixAccountConfig | null => {
       if (accountId !== MATRIX_CHANNEL_ID) return null;
-      const matrixConfig = config.matrix as Record<string, unknown>;
+      const matrixConfig = config.matrix as Record<string, any>;
       if (matrixConfig && matrixConfig.homeserverUrl && matrixConfig.accessToken) {
         return {
           homeserverUrl: String(matrixConfig.homeserverUrl),
@@ -114,7 +114,7 @@ export function createMatrixChannelPlugin(): ChannelPlugin {
         try {
           const rendered = await ctx.render();
           const text = rendered.parts
-            .map((p: { content: unknown }) => String(p.content))
+            .map((p: { content: any }) => String(p.content))
             .join("\n");
 
           const roomId = ctx.to;
@@ -122,7 +122,7 @@ export function createMatrixChannelPlugin(): ChannelPlugin {
             return { success: false, error: "Matrix room ID not provided" };
           }
 
-          const body: Record<string, unknown> = {
+          const body: Record<string, any> = {
             msgtype: "m.text",
             body: text,
             format: "org.matrix.custom.html",
@@ -166,8 +166,8 @@ export function createMatrixChannelPlugin(): ChannelPlugin {
   });
 }
 
-export function parseMatrixWebhook(body: unknown): MatrixWebhookResult {
-  const data = body as Record<string, unknown>;
+export function parseMatrixWebhook(body: any): MatrixWebhookResult {
+  const data = body as Record<string, any>;
 
   if (!data.type || !data.room_id || !data.content) {
     return { success: false, error: "Invalid Matrix event format" };
@@ -178,7 +178,7 @@ export function parseMatrixWebhook(body: unknown): MatrixWebhookResult {
     return { success: false, error: `Unsupported event type: ${type}` };
   }
 
-  const content = data.content as Record<string, unknown>;
+  const content = data.content as Record<string, any>;
   const msgtype = String(content.msgtype || "");
 
   if (msgtype !== "m.text") {

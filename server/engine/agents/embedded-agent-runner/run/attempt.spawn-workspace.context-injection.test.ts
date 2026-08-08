@@ -18,7 +18,7 @@ async function resolveBootstrapContext(params: {
   bootstrapContextRunKind?: string;
   bootstrapMode?: "full" | "limited" | "none";
   completed?: boolean;
-  resolver?: () => Promise<{ bootstrapFiles: unknown[]; contextFiles: unknown[] }>;
+  resolver?: () => Promise<{ bootstrapFiles: any[]; contextFiles: any[] }>;
 }) {
   // Helper exposes both resolved context and dependency calls so tests can
   // assert when bootstrap probing is skipped.
@@ -237,7 +237,7 @@ describe("embedded attempt context injection", () => {
       | undefined;
     const projectedMessages = assembleInput?.messages?.map((message) => ({
       role: message.role,
-      content: (message as { content?: unknown }).content,
+      content: (message as { content?: any }).content,
     }));
     expect(projectedMessages).toEqual([
       { role: "user", content: "real question" },

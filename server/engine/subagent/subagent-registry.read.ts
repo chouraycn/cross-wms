@@ -91,7 +91,7 @@ export function readSubagentDefinitionId(instanceId: string): string | undefined
   return instance?.definitionId;
 }
 
-export function readSubagentResult(instanceId: string): unknown {
+export function readSubagentResult(instanceId: string): any {
   const instance = readSubagent(instanceId);
   return instance?.result;
 }
@@ -101,7 +101,7 @@ export function readSubagentError(instanceId: string): string | undefined {
   return instance?.error;
 }
 
-export function readSubagentMetadata(instanceId: string): Record<string, unknown> | undefined {
+export function readSubagentMetadata(instanceId: string): Record<string, any> | undefined {
   const instance = readSubagent(instanceId);
   return instance?.metadata;
 }

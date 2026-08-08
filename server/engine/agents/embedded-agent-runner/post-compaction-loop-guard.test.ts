@@ -5,7 +5,7 @@ import {
   PostCompactionLoopPersistedError,
 } from "./post-compaction-loop-guard.js";
 
-function callOutcome(toolName: string, args: unknown, result: string) {
+function callOutcome(toolName: string, args: any, result: string) {
   // The guard compares stable hashes instead of full payloads to keep runtime
   // state bounded.
   return { toolName, argsHash: JSON.stringify(args), resultHash: result };

@@ -24,7 +24,7 @@ type LogRecord = {
   msg: string;
   hostname: string;
   pid: number;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 type LoggerTransport = (record: LogRecord) => void;
@@ -105,7 +105,7 @@ export class EngineLogger {
     this.transports.push(transport);
   }
 
-  private formatMessage(level: LogLevel, args: unknown[]): LogRecord {
+  private formatMessage(level: LogLevel, args: any[]): LogRecord {
     const now = new Date();
     const msg = args
       .map((arg) => {
@@ -128,7 +128,7 @@ export class EngineLogger {
     };
   }
 
-  private log(level: LogLevel, ...args: unknown[]): void {
+  private log(level: LogLevel, ...args: any[]): void {
     if (!shouldLog(level, this.level)) return;
 
     const record = this.formatMessage(level, args);
@@ -142,27 +142,27 @@ export class EngineLogger {
     }
   }
 
-  trace(...args: unknown[]): void {
+  trace(...args: any[]): void {
     this.log(LogLevel.Trace, ...args);
   }
 
-  debug(...args: unknown[]): void {
+  debug(...args: any[]): void {
     this.log(LogLevel.Debug, ...args);
   }
 
-  info(...args: unknown[]): void {
+  info(...args: any[]): void {
     this.log(LogLevel.Info, ...args);
   }
 
-  warn(...args: unknown[]): void {
+  warn(...args: any[]): void {
     this.log(LogLevel.Warn, ...args);
   }
 
-  error(...args: unknown[]): void {
+  error(...args: any[]): void {
     this.log(LogLevel.Error, ...args);
   }
 
-  fatal(...args: unknown[]): void {
+  fatal(...args: any[]): void {
     this.log(LogLevel.Fatal, ...args);
   }
 
@@ -170,7 +170,7 @@ export class EngineLogger {
     return shouldLog(level, this.level);
   }
 
-  child(bindings: Record<string, unknown>): EngineLogger {
+  child(bindings: Record<string, any>): EngineLogger {
     const child = new EngineLogger({
       level: this.level,
       file: this.file,
@@ -208,7 +208,7 @@ export function getLogger(): EngineLogger {
 }
 
 export function getChildLogger(
-  bindings?: Record<string, unknown>,
+  bindings?: Record<string, any>,
   opts?: { level?: LogLevel },
 ): EngineLogger {
   const base = getLogger();

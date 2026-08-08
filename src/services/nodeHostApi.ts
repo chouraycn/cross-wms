@@ -55,12 +55,12 @@ export interface NodeHostTool {
   invokeCount: number;
   averageDurationMs: number;
   permissions?: string[];
-  inputSchema?: Record<string, unknown>;
+  inputSchema?: Record<string, any>;
 }
 
 /** 工具调用参数 */
 export interface NodeHostToolInvokeParams {
-  input: Record<string, unknown>;
+  input: Record<string, any>;
 }
 
 /** 工具调用结果 */

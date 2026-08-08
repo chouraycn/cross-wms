@@ -17,7 +17,7 @@ import {
 
 const runCronIsolatedAgentTurn = await loadRunCronIsolatedAgentTurn();
 
-function makeParams(overrides?: Record<string, unknown>) {
+function makeParams(overrides?: Record<string, any>) {
   return {
     cfg: {},
     deps: {} as never,

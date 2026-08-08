@@ -55,7 +55,7 @@ const {
 
   return {
     buildProviderRequestDispatcherPolicyMock: vi.fn<
-      (_request?: unknown) => { mode: "direct" } | undefined
+      (_request?: any) => { mode: "direct" } | undefined
     >(() => undefined),
     fetchWithSsrFGuardMock: vi.fn(),
     ensureModelProviderLocalServiceMock: vi.fn(),
@@ -69,7 +69,7 @@ const {
       }),
     ),
     shouldUseEnvHttpProxyForUrlMock: vi.fn(() => false),
-    withTrustedEnvProxyGuardedFetchModeMock: vi.fn((params: Record<string, unknown>) => ({
+    withTrustedEnvProxyGuardedFetchModeMock: vi.fn((params: Record<string, any>) => ({
       ...params,
       mode: "trusted_env_proxy",
     })),
@@ -97,7 +97,7 @@ vi.mock("./provider-request-config.js", () => ({
   resolveProviderRequestPolicyConfig: resolveProviderRequestPolicyConfigMock,
 }));
 
-function latestGuardedFetchParams(): Record<string, unknown> {
+function latestGuardedFetchParams(): Record<string, any> {
   // All transport calls should pass through the SSRF-guarded fetch seam.
   const calls = fetchWithSsrFGuardMock.mock.calls;
   const params = calls[calls.length - 1]?.[0];
@@ -107,7 +107,7 @@ function latestGuardedFetchParams(): Record<string, unknown> {
   return params;
 }
 
-function latestTrustedEnvProxyParams(): Record<string, unknown> {
+function latestTrustedEnvProxyParams(): Record<string, any> {
   const calls = withTrustedEnvProxyGuardedFetchModeMock.mock.calls;
   const params = calls[calls.length - 1]?.[0];
   if (!params || typeof params !== "object") {
@@ -220,7 +220,7 @@ describe("buildGuardedModelFetch", () => {
       release,
     });
 
-    let error: unknown;
+    let error: any;
     try {
       await buildGuardedModelFetch(model)("https://proxy.example.com/chat/completions", {
         method: "POST",
@@ -660,7 +660,7 @@ describe("buildGuardedModelFetch", () => {
     const fetcher = buildGuardedModelFetch(model);
     await fetcher("https://api.openai.com/v1/responses", { method: "POST" });
 
-    const policy = latestGuardedFetchParams().policy as Record<string, unknown> | undefined;
+    const policy = latestGuardedFetchParams().policy as Record<string, any> | undefined;
     expect(policy).toEqual({
       allowRfc2544BenchmarkRange: true,
       allowIpv6UniqueLocalRange: true,

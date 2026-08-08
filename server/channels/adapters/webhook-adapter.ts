@@ -78,7 +78,7 @@ export class WebhookChannelAdapter extends ChannelAdapter {
     }
   }
 
-  async handleIncomingWebhook(payload: unknown): Promise<ChannelMessage | null> {
+  async handleIncomingWebhook(payload: any): Promise<ChannelMessage | null> {
     if (typeof payload !== 'object' || payload === null) {
       return null;
     }

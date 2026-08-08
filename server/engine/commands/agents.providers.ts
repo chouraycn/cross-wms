@@ -52,7 +52,7 @@ export function buildProviderSummaryMetadataIndex(
   );
 }
 
-function isUnresolvedSecretRefResolutionError(error: unknown): boolean {
+function isUnresolvedSecretRefResolutionError(error: any): boolean {
   return (
     error instanceof Error &&
     typeof error.message === "string" &&
@@ -85,7 +85,7 @@ async function resolveReadOnlyAccount(params: {
   plugin: ChannelPlugin;
   cfg: OpenClawConfig;
   accountId: string;
-}): Promise<unknown> {
+}): Promise<any> {
   if (params.plugin.config.inspectAccount) {
     return await Promise.resolve(params.plugin.config.inspectAccount(params.cfg, params.accountId));
   }
@@ -103,7 +103,7 @@ export async function buildProviderStatusIndex(
   })) {
     const accountIds = plugin.config.listAccountIds(cfg);
     for (const accountId of accountIds) {
-      let account: unknown;
+      let account: any;
       try {
         account = await resolveReadOnlyAccount({ plugin, cfg, accountId });
       } catch (error) {
@@ -179,7 +179,7 @@ function shouldShowProviderEntry(params: {
     params.entry.visibleInConfiguredLists ??
     params.metadataByProvider.get(params.entry.provider)?.visibleInConfiguredLists;
   if (visibleInConfiguredLists === false) {
-    const providerConfig = (params.cfg as Record<string, unknown>)[params.entry.provider];
+    const providerConfig = (params.cfg as Record<string, any>)[params.entry.provider];
     return Boolean(params.entry.configured) || Boolean(providerConfig);
   }
   return Boolean(params.entry.configured);
@@ -260,7 +260,7 @@ export function listProvidersForAgent(params: {
             provider: channel,
             providerLabel: metadataByProvider.get(channel)?.label,
             accountId,
-          })}: unknown`,
+          })}: any`,
         );
       }
     }

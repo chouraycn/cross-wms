@@ -14,10 +14,10 @@ export type ResolvedCodexNativeWebSearchConfig = {
   userLocation?: CodexNativeSearchUserLocation;
 };
 
-export function resolveCodexNativeWebSearchConfig(_params: unknown): ResolvedCodexNativeWebSearchConfig | null {
+export function resolveCodexNativeWebSearchConfig(_params: any): ResolvedCodexNativeWebSearchConfig | null {
   return null;
 }
 
-export function describeCodexNativeWebSearch(_params: unknown): string {
+export function describeCodexNativeWebSearch(_params: any): string {
   return "";
 }

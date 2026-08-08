@@ -78,7 +78,7 @@ function createClient(scopes: string[], deviceId?: string, opts?: { isDeviceToke
 }
 
 function createOptions(
-  params: Record<string, unknown>,
+  params: Record<string, any>,
   overrides?: Partial<GatewayRequestHandlerOptions>,
 ): {
   context: ReturnType<typeof createContext>;
@@ -168,9 +168,9 @@ async function pairLegacyNode(stateDir: string, nodeId: string): Promise<void> {
 async function readPaired(
   stateDir: string,
   subdir: "devices" | "nodes",
-): Promise<Record<string, unknown>> {
+): Promise<Record<string, any>> {
   const { pairedPath } = resolvePairingPaths(stateDir, subdir);
-  return JSON.parse(await readFile(pairedPath, "utf8")) as Record<string, unknown>;
+  return JSON.parse(await readFile(pairedPath, "utf8")) as Record<string, any>;
 }
 
 describe("nodeHandlers node.pair.remove", () => {
@@ -252,7 +252,7 @@ describe("nodeHandlers node.pair.remove", () => {
       } else {
         const { pairedPath } = resolvePairingPaths(state.stateDir, "devices");
         const paired = await readPaired(state.stateDir, "devices");
-        delete (paired[nodeId] as { tokens?: Record<string, unknown> }).tokens;
+        delete (paired[nodeId] as { tokens?: Record<string, any> }).tokens;
         await writeFile(pairedPath, `${JSON.stringify(paired, null, 2)}\n`, "utf8");
       }
 
@@ -349,7 +349,7 @@ describe("nodeHandlers node.pair.remove", () => {
 
     const before = await readPaired(state.stateDir, "devices");
     expect(
-      (before[nodeId] as { roles?: string[]; tokens?: Record<string, unknown> }).roles,
+      (before[nodeId] as { roles?: string[]; tokens?: Record<string, any> }).roles,
     ).toEqual(["operator", "node"]);
 
     const { context, opts } = createOptions({ nodeId });
@@ -359,17 +359,17 @@ describe("nodeHandlers node.pair.remove", () => {
 
     expect(opts.respond).toHaveBeenCalledWith(true, { nodeId }, undefined);
     const after = await readPaired(state.stateDir, "devices");
-    expect((after[nodeId] as { roles?: string[]; tokens?: Record<string, unknown> }).roles).toEqual(
+    expect((after[nodeId] as { roles?: string[]; tokens?: Record<string, any> }).roles).toEqual(
       ["operator"],
     );
     expect(
       Object.hasOwn(
-        (after[nodeId] as { tokens?: Record<string, unknown> }).tokens ?? {},
+        (after[nodeId] as { tokens?: Record<string, any> }).tokens ?? {},
         "operator",
       ),
     ).toBe(true);
     expect(
-      Object.hasOwn((after[nodeId] as { tokens?: Record<string, unknown> }).tokens ?? {}, "node"),
+      Object.hasOwn((after[nodeId] as { tokens?: Record<string, any> }).tokens ?? {}, "node"),
     ).toBe(false);
     expect(context.invalidateClientsForDevice).toHaveBeenCalledWith(nodeId, {
       role: "node",

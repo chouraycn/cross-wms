@@ -7,13 +7,13 @@
  */
 
 /** Resolve effective tool inventory runtime model context (returns empty in cross-wms). */
-export function resolveEffectiveToolInventoryRuntimeModelContext(..._args: unknown[]): null {
+export function resolveEffectiveToolInventoryRuntimeModelContext(..._args: any[]): null {
   return null;
 }
 
 /** Resolve effective tool inventory (returns empty in cross-wms). */
-export function resolveEffectiveToolInventory(..._args: unknown[]): {
-  tools: unknown[];
+export function resolveEffectiveToolInventory(..._args: any[]): {
+  tools: any[];
   labels: Map<string, string>;
 } {
   return {

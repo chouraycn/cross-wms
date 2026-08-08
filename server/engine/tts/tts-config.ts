@@ -23,12 +23,12 @@ export type TtsConfigResolutionContext = {
   accountId?: string;
 };
 
-function deepMergeDefined(base: unknown, override: unknown): unknown {
+function deepMergeDefined(base: any, override: any): any {
   if (!isPlainObject(base) || !isPlainObject(override)) {
     return override === undefined ? base : override;
   }
 
-  const result: Record<string, unknown> = { ...base };
+  const result: Record<string, any> = { ...base };
   for (const [key, value] of Object.entries(override)) {
     // TTS overrides are user-editable config. Skip prototype mutation keys while
     // preserving deep merge semantics for real nested provider/persona config.
@@ -78,18 +78,18 @@ function resolveRecordEntry<T>(
   return key ? entries[key] : undefined;
 }
 
-function asTtsConfig(value: unknown): TtsConfig | undefined {
+function asTtsConfig(value: any): TtsConfig | undefined {
   return isPlainObject(value) ? (value as TtsConfig) : undefined;
 }
 
-function asObjectRecord(value: unknown): Record<string, unknown> | undefined {
+function asObjectRecord(value: any): Record<string, any> | undefined {
   return isPlainObject(value) ? value : undefined;
 }
 
 function resolveChannelConfig(
   cfg: OpenClawConfig,
   channelId: string | undefined,
-): Record<string, unknown> | undefined {
+): Record<string, any> | undefined {
   if (!isPlainObject(cfg.channels)) {
     return undefined;
   }
@@ -99,7 +99,7 @@ function resolveChannelConfig(
   }
   return asObjectRecord(
     resolveRecordEntry(
-      cfg.channels as Record<string, unknown>,
+      cfg.channels as Record<string, any>,
       normalizedChannelId,
       normalizeLowercaseStringOrEmpty,
     ),
@@ -133,7 +133,7 @@ export function resolveEffectiveTtsConfig(
   const agentOverride = resolveAgentTtsOverride(cfg, context.agentId);
   const channelOverride = resolveChannelTtsOverride(cfg, context);
   const accountOverride = resolveAccountTtsOverride(cfg, context);
-  let merged: unknown = base;
+  let merged: any = base;
   for (const override of [agentOverride, channelOverride, accountOverride]) {
     merged = deepMergeDefined(merged, override ?? {});
   }
@@ -165,7 +165,7 @@ function readTtsPrefsAutoMode(prefsPath: string): TtsAutoMode | undefined {
       return undefined;
     }
     const prefs = JSON.parse(readFileSync(prefsPath, "utf8")) as {
-      tts?: { auto?: unknown; enabled?: unknown };
+      tts?: { auto?: any; enabled?: any };
     };
     const auto = normalizeTtsAutoMode(prefs.tts?.auto);
     if (auto) {

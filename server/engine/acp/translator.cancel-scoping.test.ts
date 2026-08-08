@@ -19,7 +19,7 @@ type SessionUpdatePayload = {
   sessionId?: string;
   update?: {
     sessionUpdate?: string;
-    content?: unknown;
+    content?: any;
     toolCallId?: string;
     status?: string;
   };
@@ -33,7 +33,7 @@ function createPromptRequest(sessionId: string): PromptRequest {
   } as unknown as PromptRequest;
 }
 
-function createChatEvent(payload: Record<string, unknown>): EventFrame {
+function createChatEvent(payload: Record<string, any>): EventFrame {
   return {
     type: "event",
     event: "chat",
@@ -41,7 +41,7 @@ function createChatEvent(payload: Record<string, unknown>): EventFrame {
   } as EventFrame;
 }
 
-function createToolEvent(payload: Record<string, unknown>): EventFrame {
+function createToolEvent(payload: Record<string, any>): EventFrame {
   return {
     type: "event",
     event: "agent",
@@ -51,7 +51,7 @@ function createToolEvent(payload: Record<string, unknown>): EventFrame {
 
 function createHarness(sessions: Array<{ sessionId: string; sessionKey: string }>): Harness {
   const sentRunIds: string[] = [];
-  const requestSpy = vi.fn(async (method: string, params?: Record<string, unknown>) => {
+  const requestSpy = vi.fn(async (method: string, params?: Record<string, any>) => {
     if (method === "chat.send") {
       const runId = params?.idempotencyKey;
       if (typeof runId === "string") {

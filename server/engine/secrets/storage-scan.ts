@@ -119,21 +119,21 @@ export type ReadJsonObjectOptions = {
  * Non-object JSON values are treated as absent because scanners expect record-shaped stores.
  */
 export function readJsonObjectIfExists(filePath: string): {
-  value: Record<string, unknown> | null;
+  value: Record<string, any> | null;
   error?: string;
 };
 export function readJsonObjectIfExists(
   filePath: string,
   options: ReadJsonObjectOptions,
 ): {
-  value: Record<string, unknown> | null;
+  value: Record<string, any> | null;
   error?: string;
 };
 export function readJsonObjectIfExists(
   filePath: string,
   options: ReadJsonObjectOptions = {},
 ): {
-  value: Record<string, unknown> | null;
+  value: Record<string, any> | null;
   error?: string;
 } {
   if (!fs.existsSync(filePath)) {
@@ -159,7 +159,7 @@ export function readJsonObjectIfExists(
       };
     }
     const raw = fs.readFileSync(filePath, "utf8");
-    const parsed: unknown = JSON.parse(raw);
+    const parsed: any = JSON.parse(raw);
     if (!isJsonObject(parsed)) {
       return { value: null };
     }

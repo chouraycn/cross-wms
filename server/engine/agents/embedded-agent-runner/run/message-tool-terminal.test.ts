@@ -255,7 +255,7 @@ describe("message-tool-only source replies", () => {
 
 function createAfterToolCallContext(params: {
   toolName: string;
-  args: Record<string, unknown>;
+  args: Record<string, any>;
   isError?: boolean;
   result?: AfterToolCallContext["result"];
 }): AfterToolCallContext {
@@ -327,7 +327,7 @@ function createSuppressedSendResult(): AfterToolCallContext["result"] {
 
 function createToolCallAssistant(
   toolName: string,
-  args: Record<string, unknown>,
+  args: Record<string, any>,
 ): AfterToolCallContext["assistantMessage"] {
   return {
     role: "assistant",

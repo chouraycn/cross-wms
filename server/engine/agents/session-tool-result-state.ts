@@ -17,7 +17,7 @@ type PendingToolCallState = {
   trackToolCalls: (calls: PendingToolCall[]) => void;
   getPendingIds: () => string[];
   shouldFlushForSanitizedDrop: () => boolean;
-  shouldFlushBeforeNonToolResult: (nextRole: unknown, toolCallCount: number) => boolean;
+  shouldFlushBeforeNonToolResult: (nextRole: any, toolCallCount: number) => boolean;
   shouldFlushBeforeNewToolCalls: (toolCallCount: number) => boolean;
 };
 
@@ -42,7 +42,7 @@ export function createPendingToolCallState(): PendingToolCallState {
     },
     getPendingIds: () => Array.from(pending.keys()),
     shouldFlushForSanitizedDrop: () => pending.size > 0,
-    shouldFlushBeforeNonToolResult: (nextRole: unknown, toolCallCount: number) =>
+    shouldFlushBeforeNonToolResult: (nextRole: any, toolCallCount: number) =>
       pending.size > 0 && (toolCallCount === 0 || nextRole !== "assistant"),
     shouldFlushBeforeNewToolCalls: (toolCallCount: number) => pending.size > 0 && toolCallCount > 0,
   };

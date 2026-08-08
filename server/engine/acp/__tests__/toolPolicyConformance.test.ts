@@ -31,7 +31,7 @@ describe("ToolPolicyConformance", () => {
     });
 
     it("should return empty array for unknown group", () => {
-      const tools = getToolsInGroup("group:unknown" as unknown);
+      const tools = getToolsInGroup("group: any" as any);
       expect(tools).toEqual([]);
     });
   });
@@ -67,7 +67,7 @@ describe("ToolPolicyConformance", () => {
     });
 
     it("should return false for unknown group", () => {
-      expect(isToolInGroup("exec", "group:unknown" as unknown)).toBe(false);
+      expect(isToolInGroup("exec", "group: any" as any)).toBe(false);
     });
   });
 
@@ -80,7 +80,7 @@ describe("ToolPolicyConformance", () => {
 
     it("should return false for invalid group ids", () => {
       expect(validateToolGroupId("invalid")).toBe(false);
-      expect(validateToolGroupId("group:unknown")).toBe(false);
+      expect(validateToolGroupId("group: any")).toBe(false);
       expect(validateToolGroupId("")).toBe(false);
     });
   });

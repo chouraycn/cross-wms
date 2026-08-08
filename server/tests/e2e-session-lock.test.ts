@@ -97,7 +97,7 @@ async function test4_appendAndRead(): Promise<void> {
   const lines = FileStorage.readSessionLines(sessionId);
   assert('4a 行数正确', lines.length === 6, `expected 6, got ${lines.length}`);
 
-  const firstLine = lines[0] as unknown;
+  const firstLine = lines[0] as any;
   assert('4b 首行是 session header', firstLine.session?.id === sessionId);
 
   // 清理
@@ -121,10 +121,10 @@ async function test5_rewriteFirstLine(): Promise<void> {
   const lines = FileStorage.readSessionLines(sessionId);
   assert('5a 行数不变', lines.length === 4, `expected 4, got ${lines.length}`);
 
-  const firstLine = lines[0] as unknown;
+  const firstLine = lines[0] as any;
   assert('5b 首行已更新', firstLine.session?.title === 'New', `got ${firstLine.session?.title}`);
 
-  const secondLine = lines[1] as unknown;
+  const secondLine = lines[1] as any;
   assert('5c 后续行保留', secondLine.message?.content === 'msg-0');
 
   // 清理

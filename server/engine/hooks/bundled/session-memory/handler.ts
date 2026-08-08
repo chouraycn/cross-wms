@@ -169,7 +169,7 @@ async function saveSessionMemoryNow(event: Parameters<HookHandler>[0]): Promise<
     // Prefer previousSessionEntry (old session before /new) over current (which may be empty)
     const sessionEntry = (context.previousSessionEntry || context.sessionEntry || {}) as Record<
       string,
-      unknown
+      any
     >;
     const currentSessionId = sessionEntry.sessionId as string;
     let currentSessionFile = (sessionEntry.sessionFile as string) || undefined;

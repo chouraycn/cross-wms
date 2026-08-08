@@ -71,7 +71,7 @@ describe("program helpers", () => {
 
   it("resolveActionArgs returns empty array for missing/invalid args", () => {
     const command = new Command();
-    (command as unknown as { args?: unknown }).args = "not-an-array";
+    (command as unknown as { args?: any }).args = "not-an-array";
     expect(resolveActionArgs(command)).toStrictEqual([]);
     expect(resolveActionArgs(undefined)).toStrictEqual([]);
   });

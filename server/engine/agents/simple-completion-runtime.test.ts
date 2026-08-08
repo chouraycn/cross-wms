@@ -14,7 +14,7 @@ const hoisted = vi.hoisted(() => ({
   setRuntimeApiKeyMock: vi.fn(),
   resolveCopilotApiTokenMock: vi.fn(),
   prepareProviderRuntimeAuthMock: vi.fn(),
-  prepareModelForSimpleCompletionMock: vi.fn((params: { model: unknown }) => params.model),
+  prepareModelForSimpleCompletionMock: vi.fn((params: { model: any }) => params.model),
   completeMock: vi.fn(),
 }));
 
@@ -65,9 +65,9 @@ beforeEach(() => {
   hoisted.prepareModelForSimpleCompletionMock.mockReset();
   hoisted.completeMock.mockReset();
 
-  hoisted.applyLocalNoAuthHeaderOverrideMock.mockImplementation((model: unknown) => model);
+  hoisted.applyLocalNoAuthHeaderOverrideMock.mockImplementation((model: any) => model);
   hoisted.prepareModelForSimpleCompletionMock.mockImplementation(
-    (params: { model: unknown }) => params.model,
+    (params: { model: any }) => params.model,
   );
   hoisted.completeMock.mockResolvedValue({ content: [{ type: "text", text: "ok" }] });
 
@@ -81,7 +81,7 @@ beforeEach(() => {
     },
     modelRegistry: {},
   });
-  hoisted.resolveModelAsyncMock.mockImplementation((...args: unknown[]) =>
+  hoisted.resolveModelAsyncMock.mockImplementation((...args: any[]) =>
     Promise.resolve(hoisted.resolveModelMock(...args)),
   );
   hoisted.getApiKeyForModelMock.mockResolvedValue({
@@ -107,7 +107,7 @@ function expectPreparedModelResult(
   }
 }
 
-function callArg(mock: { mock: { calls: unknown[][] } }, index = 0): unknown {
+function callArg(mock: { mock: { calls: any[][] } }, index = 0): any {
   const call = mock.mock.calls[index];
   if (!call) {
     throw new Error(`Expected mock call ${index}`);

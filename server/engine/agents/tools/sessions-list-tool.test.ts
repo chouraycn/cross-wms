@@ -19,7 +19,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("../../gateway/call.js", () => ({
-  callGateway: (opts: unknown) => mocks.gatewayCall(opts),
+  callGateway: (opts: any) => mocks.gatewayCall(opts),
 }));
 
 vi.mock("./sessions-helpers.js", async (importActual) => {
@@ -53,7 +53,7 @@ type SessionsListDetails = {
   }>;
 };
 
-function getSessionsListDetails(result: { details?: unknown }): SessionsListDetails {
+function getSessionsListDetails(result: { details?: any }): SessionsListDetails {
   return result.details as SessionsListDetails;
 }
 
@@ -76,7 +76,7 @@ describe("sessions-list-tool", () => {
   it("keeps deliveryContext.threadId in sessions_list results", async () => {
     // Thread/topic ids are required for channel-specific follow-up routing, so
     // list results must preserve both string and numeric variants.
-    mocks.gatewayCall.mockImplementation(async (opts: unknown) => {
+    mocks.gatewayCall.mockImplementation(async (opts: any) => {
       const request = opts as { method?: string };
       if (request.method === "sessions.list") {
         return {
@@ -130,7 +130,7 @@ describe("sessions-list-tool", () => {
   });
 
   it("keeps numeric deliveryContext.threadId in sessions_list results", async () => {
-    mocks.gatewayCall.mockImplementation(async (opts: unknown) => {
+    mocks.gatewayCall.mockImplementation(async (opts: any) => {
       const request = opts as { method?: string };
       if (request.method === "sessions.list") {
         return {
@@ -166,7 +166,7 @@ describe("sessions-list-tool", () => {
   });
 
   it("keeps live session setting metadata in sessions_list results", async () => {
-    mocks.gatewayCall.mockImplementation(async (opts: unknown) => {
+    mocks.gatewayCall.mockImplementation(async (opts: any) => {
       const request = opts as { method?: string };
       if (request.method === "sessions.list") {
         return {

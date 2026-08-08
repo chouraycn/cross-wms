@@ -11,12 +11,12 @@
  * 完整实现见 openclaw 源码。
  */
 
-export function resolveMcpLoopbackScopedTools(..._args: unknown[]): unknown {
+export function resolveMcpLoopbackScopedTools(..._args: any[]): any {
   return undefined;
 }
 
 export class McpLoopbackToolCache {
-  constructor(..._args: unknown[]) {
+  constructor(..._args: any[]) {
     // Stub: not fully ported
   }
 }

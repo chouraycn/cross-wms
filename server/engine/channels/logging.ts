@@ -6,7 +6,7 @@ export interface ChannelLogEntry {
   messageId: string;
   direction: 'inbound' | 'outbound';
   type: 'text' | 'attachment' | 'event';
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export function logChannelMessage(entry: ChannelLogEntry): void {
@@ -23,7 +23,7 @@ export function formatChannelLog(entry: ChannelLogEntry): string {
 
 export function sanitizeChannelLog(entry: ChannelLogEntry): ChannelLogEntry {
   if (!entry.metadata) return entry;
-  const sanitized: Record<string, unknown> = {};
+  const sanitized: Record<string, any> = {};
   for (const [key, value] of Object.entries(entry.metadata)) {
     if (key.toLowerCase().includes('secret') || key.toLowerCase().includes('token')) {
       sanitized[key] = '<redacted>';

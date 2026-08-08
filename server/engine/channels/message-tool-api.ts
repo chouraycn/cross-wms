@@ -9,7 +9,7 @@ import type {
 export type ChannelMessageToolDiscoveryAdapter = ChannelMessageActionAdapter;
 
 export function resolveBundledChannelMessageToolDiscoveryAdapter(
-  ..._args: unknown[]
+  ..._args: any[]
 ): ChannelMessageToolDiscoveryAdapter | undefined {
   return undefined;
 }

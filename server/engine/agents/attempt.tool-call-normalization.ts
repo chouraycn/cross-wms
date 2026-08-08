@@ -5,7 +5,7 @@
  * Cross-wms simplified: pass-through implementations without deep stream wrapping.
  */
 
-type StreamFn = (params: Record<string, unknown>) => AsyncIterable<Record<string, unknown>>;
+type StreamFn = (params: Record<string, any>) => AsyncIterable<Record<string, any>>;
 
 /** Wraps a stream function to promote standalone text tool calls. */
 export function wrapStreamFnPromoteStandaloneTextToolCalls(params: {
@@ -31,16 +31,16 @@ export function shouldApplyReplayToolCallIdSanitizer(params: {
 
 /** Sanitizes replay tool call IDs for streaming. */
 export function sanitizeReplayToolCallIdsForStream(params: {
-  chunk: Record<string, unknown>;
+  chunk: Record<string, any>;
   modelApi?: string;
-}): Record<string, unknown> {
+}): Record<string, any> {
   return params.chunk;
 }
 
 /** Sanitizes OpenAI Responses replay for streaming. */
 export function sanitizeOpenAIResponsesReplayForStream(params: {
-  chunk: Record<string, unknown>;
-}): Record<string, unknown> {
+  chunk: Record<string, any>;
+}): Record<string, any> {
   return params.chunk;
 }
 

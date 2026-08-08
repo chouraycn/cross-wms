@@ -35,7 +35,7 @@ export function assertContains<T>(actual: T[], expected: T, message?: string): v
 
 export async function assertThrows<T extends Error>(
   fn: () => Promise<void> | void,
-  expectedError?: new (...args: unknown[]) => T | RegExp,
+  expectedError?: new (...args: any[]) => T | RegExp,
   message?: string
 ): Promise<void> {
   try {

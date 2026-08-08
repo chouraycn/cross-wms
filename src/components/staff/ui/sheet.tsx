@@ -40,11 +40,11 @@ function SheetTrigger({ asChild = false, children, ...props }: { asChild?: boole
         (child.props as { onClick?: (e: React.MouseEvent) => void }).onClick?.(e)
         setOpen(true)
       },
-      ...(props as Record<string, unknown>),
-    } as Record<string, unknown>)
+      ...(props as Record<string, any>),
+    } as Record<string, any>)
   }
   return (
-    <button type="button" data-slot="sheet-trigger" onClick={() => setOpen(true)} {...(props as Record<string, unknown>)}>
+    <button type="button" data-slot="sheet-trigger" onClick={() => setOpen(true)} {...(props as Record<string, any>)}>
       {children}
     </button>
   )
@@ -60,11 +60,11 @@ function SheetClose({ asChild = false, children, ...props }: { asChild?: boolean
         (child.props as { onClick?: (e: React.MouseEvent) => void }).onClick?.(e)
         setOpen(false)
       },
-      ...(props as Record<string, unknown>),
-    } as Record<string, unknown>)
+      ...(props as Record<string, any>),
+    } as Record<string, any>)
   }
   return (
-    <button type="button" data-slot="sheet-close" onClick={() => setOpen(false)} {...(props as Record<string, unknown>)}>
+    <button type="button" data-slot="sheet-close" onClick={() => setOpen(false)} {...(props as Record<string, any>)}>
       {children}
     </button>
   )
@@ -112,7 +112,7 @@ function SheetContent({
             boxShadow: 6,
           },
         }}
-        {...(props as Record<string, unknown>)}
+        {...(props as Record<string, any>)}
       >
         <Box
           data-slot="sheet-content"
@@ -163,16 +163,16 @@ function SheetContent({
 }
 
 function SheetHeader({ className, sx, ...props }: React.ComponentProps<'div'> & { sx?: SxProps<Theme> }) {
-  return <Box component="div" data-slot="sheet-header" className={className} sx={[{ display: 'flex', flexDirection: 'column', gap: '2px', p: '16px' }, ...(Array.isArray(sx) ? sx : sx ? [sx] : [])]} {...(props as Record<string, unknown>)} />
+  return <Box component="div" data-slot="sheet-header" className={className} sx={[{ display: 'flex', flexDirection: 'column', gap: '2px', p: '16px' }, ...(Array.isArray(sx) ? sx : sx ? [sx] : [])]} {...(props as Record<string, any>)} />
 }
 function SheetFooter({ className, sx, ...props }: React.ComponentProps<'div'> & { sx?: SxProps<Theme> }) {
-  return <Box component="div" data-slot="sheet-footer" className={className} sx={[{ mt: 'auto', display: 'flex', flexDirection: 'column', gap: '8px', p: '16px' }, ...(Array.isArray(sx) ? sx : sx ? [sx] : [])]} {...(props as Record<string, unknown>)} />
+  return <Box component="div" data-slot="sheet-footer" className={className} sx={[{ mt: 'auto', display: 'flex', flexDirection: 'column', gap: '8px', p: '16px' }, ...(Array.isArray(sx) ? sx : sx ? [sx] : [])]} {...(props as Record<string, any>)} />
 }
 function SheetTitle({ className, sx, ...props }: React.ComponentProps<'div'> & { sx?: SxProps<Theme> }) {
-  return <Box component="div" data-slot="sheet-title" className={className} sx={[{ fontSize: '16px', fontWeight: 500 }, ...(Array.isArray(sx) ? sx : sx ? [sx] : [])]} {...(props as Record<string, unknown>)} />
+  return <Box component="div" data-slot="sheet-title" className={className} sx={[{ fontSize: '16px', fontWeight: 500 }, ...(Array.isArray(sx) ? sx : sx ? [sx] : [])]} {...(props as Record<string, any>)} />
 }
 function SheetDescription({ className, sx, ...props }: React.ComponentProps<'div'> & { sx?: SxProps<Theme> }) {
-  return <Box component="div" data-slot="sheet-description" className={className} sx={[{ fontSize: '14px', color: 'var(--muted-foreground, #6d726e)' }, ...(Array.isArray(sx) ? sx : sx ? [sx] : [])]} {...(props as Record<string, unknown>)} />
+  return <Box component="div" data-slot="sheet-description" className={className} sx={[{ fontSize: '14px', color: 'var(--muted-foreground, #6d726e)' }, ...(Array.isArray(sx) ? sx : sx ? [sx] : [])]} {...(props as Record<string, any>)} />
 }
 
 export {

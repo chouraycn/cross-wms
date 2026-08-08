@@ -74,7 +74,7 @@ describe("secrets runtime snapshot nextcloud talk file precedence", () => {
     });
 
     const workAccount = snapshot.config.channels?.["nextcloud-talk"]?.accounts?.work as
-      | { botSecret?: unknown; apiPassword?: unknown }
+      | { botSecret?: any; apiPassword?: any }
       | undefined;
     expect(workAccount?.botSecret).toBe("resolved-nextcloud-work-bot-secret");
     expect(workAccount?.apiPassword).toBe("resolved-nextcloud-work-api-password");

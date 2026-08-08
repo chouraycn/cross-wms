@@ -48,7 +48,7 @@ export type TalkProviderConfig = {
   /** Provider API key (optional; provider-specific env fallback may apply). */
   apiKey?: SecretInput;
   /** Provider-owned Talk config fields. */
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 export type TalkRealtimeConfig = {

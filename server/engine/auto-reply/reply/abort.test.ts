@@ -65,7 +65,7 @@ const acpManagerMocks = vi.hoisted(() => ({
       | {
           kind: "ready";
           sessionKey: string;
-          meta: unknown;
+          meta: any;
         }
   >(() => ({ kind: "none" })),
   cancelSession: vi.fn(async () => {}),
@@ -1043,7 +1043,7 @@ describe("abort detection", () => {
     });
 
     expect(result.handled).toBe(true);
-    const store = JSON.parse(await fs.readFile(storePath, "utf8")) as Record<string, unknown>;
+    const store = JSON.parse(await fs.readFile(storePath, "utf8")) as Record<string, any>;
     const entry = store[sessionKey] as {
       abortedLastRun?: boolean;
       abortCutoffMessageSid?: string;
@@ -1071,7 +1071,7 @@ describe("abort detection", () => {
     });
 
     expect(result.handled).toBe(true);
-    const store = JSON.parse(await fs.readFile(storePath, "utf8")) as Record<string, unknown>;
+    const store = JSON.parse(await fs.readFile(storePath, "utf8")) as Record<string, any>;
     const entry = store[sessionKey] as {
       abortedLastRun?: boolean;
       abortCutoffMessageSid?: string;
@@ -1101,7 +1101,7 @@ describe("abort detection", () => {
     });
 
     expect(result.handled).toBe(true);
-    const store = JSON.parse(await fs.readFile(storePath, "utf8")) as Record<string, unknown>;
+    const store = JSON.parse(await fs.readFile(storePath, "utf8")) as Record<string, any>;
     const entry = store[targetSessionKey] as {
       abortedLastRun?: boolean;
       abortCutoffMessageSid?: string;

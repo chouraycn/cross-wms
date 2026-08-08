@@ -44,7 +44,7 @@ function stubPluginModuleLoaderJitiFactory(createJiti: PluginModuleLoaderFactory
   )[pluginModuleLoaderJitiFactoryOverrideKey] = createJiti;
 }
 
-function writeJson(targetPath: string, value: unknown): void {
+function writeJson(targetPath: string, value: any): void {
   fs.mkdirSync(path.dirname(targetPath), { recursive: true });
   fs.writeFileSync(targetPath, `${JSON.stringify(value, null, 2)}\n`, "utf8");
 }
@@ -376,7 +376,7 @@ describe("loadBundledEntryExportSync", () => {
     const importerPath = path.join(pluginRoot, "index.js");
     fs.writeFileSync(importerPath, "export default {};\n", "utf8");
 
-    let thrown: unknown;
+    let thrown: any;
     try {
       loadBundledEntryExportSync(pathToFileURL(importerPath).href, {
         specifier: "./src/secret-contract.js",
@@ -501,7 +501,7 @@ describe("loadBundledEntryExportSync", () => {
     ).toEqual({ id: "telegram" });
 
     expect(
-      loadBundledEntryExportSync<Record<string, unknown>>(pathToFileURL(importerPath).href, {
+      loadBundledEntryExportSync<Record<string, any>>(pathToFileURL(importerPath).href, {
         specifier: "./secret-contract-api.js",
         exportName: "channelSecrets",
       }),

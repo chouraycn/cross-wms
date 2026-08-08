@@ -186,8 +186,8 @@ export function authorizeGatewayConnect(
   };
 }
 
-export function resolveGatewayAuth(config: Record<string, unknown>): GatewayAuthConfig {
-  const gatewayConfig = (config.gateway as Record<string, unknown>) ?? {};
+export function resolveGatewayAuth(config: Record<string, any>): GatewayAuthConfig {
+  const gatewayConfig = (config.gateway as Record<string, any>) ?? {};
 
   return {
     sharedSecret: typeof gatewayConfig.sharedSecret === 'string' ? gatewayConfig.sharedSecret : undefined,
@@ -197,14 +197,14 @@ export function resolveGatewayAuth(config: Record<string, unknown>): GatewayAuth
       : [],
     rateLimit: typeof gatewayConfig.rateLimit === 'object'
       ? {
-          enabled: typeof (gatewayConfig.rateLimit as Record<string, unknown>).enabled === 'boolean'
-            ? (gatewayConfig.rateLimit as Record<string, unknown>).enabled
+          enabled: typeof (gatewayConfig.rateLimit as Record<string, any>).enabled === 'boolean'
+            ? (gatewayConfig.rateLimit as Record<string, any>).enabled
             : true,
-          maxAttempts: typeof (gatewayConfig.rateLimit as Record<string, unknown>).maxAttempts === 'number'
-            ? (gatewayConfig.rateLimit as Record<string, unknown>).maxAttempts
+          maxAttempts: typeof (gatewayConfig.rateLimit as Record<string, any>).maxAttempts === 'number'
+            ? (gatewayConfig.rateLimit as Record<string, any>).maxAttempts
             : DEFAULT_RATE_LIMIT_MAX_ATTEMPTS,
-          windowMs: typeof (gatewayConfig.rateLimit as Record<string, unknown>).windowMs === 'number'
-            ? (gatewayConfig.rateLimit as Record<string, unknown>).windowMs
+          windowMs: typeof (gatewayConfig.rateLimit as Record<string, any>).windowMs === 'number'
+            ? (gatewayConfig.rateLimit as Record<string, any>).windowMs
             : DEFAULT_RATE_LIMIT_WINDOW_MS,
         } as GatewayAuthConfig['rateLimit']
       : undefined,

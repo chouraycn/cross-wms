@@ -34,7 +34,7 @@ type UndiciEnvHttpProxyAgentOptions = ConstructorParameters<
 type UndiciProxyAgentOptions = ConstructorParameters<UndiciRuntimeDeps["ProxyAgent"]>[0];
 type UndiciProxyAgentOptionsRecord = Exclude<UndiciProxyAgentOptions, string | URL>;
 type UndiciProxyClientFactory = NonNullable<UndiciProxyAgentOptionsRecord["clientFactory"]>;
-type UnknownFunction = (...args: unknown[]) => unknown;
+type UnknownFunction = (...args: any[]) => unknown;
 
 // Guarded fetch dispatchers intentionally stay on HTTP/1.1. Undici 8 enables
 // HTTP/2 ALPN by default, but our guarded paths rely on dispatcher overrides
@@ -44,8 +44,8 @@ const HTTP1_ONLY_DISPATCHER_OPTIONS = Object.freeze({
 });
 
 function applyMissingConnectOptions(
-  connect: Record<string, unknown>,
-  defaults: Record<string, unknown>,
+  connect: Record<string, any>,
+  defaults: Record<string, any>,
 ): void {
   for (const [key, value] of Object.entries(defaults)) {
     if (!(key in connect)) {
@@ -54,7 +54,7 @@ function applyMissingConnectOptions(
   }
 }
 
-function isUndiciRuntimeDeps(value: unknown): value is UndiciRuntimeDeps {
+function isUndiciRuntimeDeps(value: any): value is UndiciRuntimeDeps {
   return (
     typeof value === "object" &&
     value !== null &&
@@ -65,7 +65,7 @@ function isUndiciRuntimeDeps(value: unknown): value is UndiciRuntimeDeps {
   );
 }
 
-function isUndiciGlobalDispatcherDeps(value: unknown): value is UndiciGlobalDispatcherDeps {
+function isUndiciGlobalDispatcherDeps(value: any): value is UndiciGlobalDispatcherDeps {
   return (
     typeof value === "object" &&
     value !== null &&
@@ -77,11 +77,11 @@ function isUndiciGlobalDispatcherDeps(value: unknown): value is UndiciGlobalDisp
 }
 
 function loadUndiciProxyPoolCtor(): typeof import("undici").Pool {
-  const override = (globalThis as Record<string, unknown>)[TEST_UNDICI_RUNTIME_DEPS_KEY];
+  const override = (globalThis as Record<string, any>)[TEST_UNDICI_RUNTIME_DEPS_KEY];
   if (
     typeof override === "object" &&
     override !== null &&
-    typeof (override as { Pool?: unknown }).Pool === "function"
+    typeof (override as { Pool?: any }).Pool === "function"
   ) {
     return (override as { Pool: typeof import("undici").Pool }).Pool;
   }
@@ -90,7 +90,7 @@ function loadUndiciProxyPoolCtor(): typeof import("undici").Pool {
   return (require("undici") as typeof import("undici")).Pool;
 }
 
-function stripIpServernameFromConnectOptions(options: unknown): unknown {
+function stripIpServernameFromConnectOptions(options: any): any {
   // OpenSSL rejects IP literals as SNI values; strip only IP servernames while
   // preserving hostname SNI for HTTPS proxies.
   if (!isRecord(options) || typeof options.servername !== "string") {
@@ -105,11 +105,11 @@ function stripIpServernameFromConnectOptions(options: unknown): unknown {
   return next;
 }
 
-function stripIpServernameFromConnect(connect: unknown): unknown {
+function stripIpServernameFromConnect(connect: any): any {
   if (typeof connect !== "function") {
     return connect;
   }
-  return (options: unknown, callback: unknown): unknown =>
+  return (options: any, callback: any): any =>
     (connect as UnknownFunction)(stripIpServernameFromConnectOptions(options), callback);
 }
 
@@ -142,7 +142,7 @@ function addIpSafeProxyClientFactory<TOptions extends object>(options: TOptions)
 
 /** Loads undici lazily, allowing tests to inject constructors without global side effects. */
 export function loadUndiciRuntimeDeps(): UndiciRuntimeDeps {
-  const override = (globalThis as Record<string, unknown>)[TEST_UNDICI_RUNTIME_DEPS_KEY];
+  const override = (globalThis as Record<string, any>)[TEST_UNDICI_RUNTIME_DEPS_KEY];
   if (isUndiciRuntimeDeps(override)) {
     return override;
   }
@@ -160,7 +160,7 @@ export function loadUndiciRuntimeDeps(): UndiciRuntimeDeps {
 
 /** Loads only the undici global-dispatcher API used by startup proxy setup. */
 export function loadUndiciGlobalDispatcherDeps(): UndiciGlobalDispatcherDeps {
-  const override = (globalThis as Record<string, unknown>)[TEST_UNDICI_RUNTIME_DEPS_KEY];
+  const override = (globalThis as Record<string, any>)[TEST_UNDICI_RUNTIME_DEPS_KEY];
   if (isUndiciGlobalDispatcherDeps(override)) {
     return override;
   }
@@ -186,7 +186,7 @@ function withHttp1OnlyDispatcherOptions<T extends object | undefined>(
   }
   // Enforce HTTP/1.1-only — must come after options to prevent accidental override
   Object.assign(base, HTTP1_ONLY_DISPATCHER_OPTIONS);
-  const baseRecord = base as Record<string, unknown>;
+  const baseRecord = base as Record<string, any>;
   const targets = applyTo ?? { connect: true };
   const autoSelectConnect = resolveUndiciAutoSelectFamilyConnectOptions();
   if (autoSelectConnect && targets.connect && typeof baseRecord.connect !== "function") {

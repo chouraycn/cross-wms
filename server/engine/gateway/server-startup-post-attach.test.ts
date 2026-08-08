@@ -66,7 +66,7 @@ const hoisted = vi.hoisted(() => {
   const ensureRuntimePluginsLoaded = vi.fn();
   const clearCurrentProviderAuthState = vi.fn();
   const warmCurrentProviderAuthStateOffMainThread = vi.fn(
-    async (_cfg?: unknown, _options?: unknown) => {},
+    async (_cfg?: any, _options?: any) => {},
   );
   const setAuthProfileFailureHook = vi.fn();
   const transcriptsAutoStartService = {
@@ -249,7 +249,7 @@ const { STARTUP_UNAVAILABLE_GATEWAY_METHODS } = await import("./methods/core-des
 type PostAttachParams = Parameters<typeof startGatewayPostAttachRuntime>[0];
 type PostAttachRuntimeDeps = NonNullable<Parameters<typeof startGatewayPostAttachRuntime>[1]>;
 
-function mockCallArg(mock: { mock: { calls: unknown[][] } }, index = 0, argIndex = 0): unknown {
+function mockCallArg(mock: { mock: { calls: any[][] } }, index = 0, argIndex = 0): any {
   const call = mock.mock.calls.at(index);
   if (!call) {
     throw new Error(`expected mock call ${index}`);
@@ -1684,7 +1684,7 @@ describe("startGatewayPostAttachRuntime", () => {
     let resolveWatcher: (() => void) | undefined;
     let watcherSignal: AbortSignal | undefined;
     hoisted.startGmailWatcherWithLogs.mockImplementationOnce(
-      async (...args: unknown[]) =>
+      async (...args: any[]) =>
         await new Promise<void>((resolve) => {
           const [params] = args as [{ signal?: AbortSignal }];
           watcherSignal = params.signal;

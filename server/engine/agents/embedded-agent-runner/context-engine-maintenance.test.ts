@@ -22,12 +22,12 @@ import { withStateDirEnv } from "../../test-helpers/state-dir-env.js";
 import { castAgentMessage } from "../test-helpers/agent-message-fixtures.js";
 import { resolveSessionLane } from "./lanes.js";
 
-const rewriteTranscriptEntriesInSessionManagerMock = vi.fn((_params?: unknown) => ({
+const rewriteTranscriptEntriesInSessionManagerMock = vi.fn((_params?: any) => ({
   changed: true,
   bytesFreed: 77,
   rewrittenEntries: 1,
 }));
-const rewriteTranscriptEntriesInRuntimeTranscriptMock = vi.fn(async (_params?: unknown) => ({
+const rewriteTranscriptEntriesInRuntimeTranscriptMock = vi.fn(async (_params?: any) => ({
   changed: true,
   bytesFreed: 123,
   rewrittenEntries: 2,
@@ -79,18 +79,18 @@ async function waitForAssertion(
   }
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error(`expected ${label}`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function firstMaintainParams(maintain: { mock: { calls: unknown[][] } }): Record<string, unknown> {
+function firstMaintainParams(maintain: { mock: { calls: any[][] } }): Record<string, any> {
   return requireRecord(maintain.mock.calls[0]?.[0], "maintain params");
 }
 
-function expectRecordFields(record: Record<string, unknown>, expected: Record<string, unknown>) {
+function expectRecordFields(record: Record<string, any>, expected: Record<string, any>) {
   for (const [key, value] of Object.entries(expected)) {
     expect(record[key]).toBe(value);
   }
@@ -105,9 +105,9 @@ vi.mock("./context-engine-capabilities.js", () => ({
 }));
 
 vi.mock("./transcript-rewrite.js", () => ({
-  rewriteTranscriptEntriesInSessionManager: (params: unknown) =>
+  rewriteTranscriptEntriesInSessionManager: (params: any) =>
     rewriteTranscriptEntriesInSessionManagerMock(params),
-  rewriteTranscriptEntriesInRuntimeTranscript: (params: unknown) =>
+  rewriteTranscriptEntriesInRuntimeTranscript: (params: any) =>
     rewriteTranscriptEntriesInRuntimeTranscriptMock(params),
 }));
 
@@ -208,7 +208,7 @@ describe("buildContextEngineMaintenanceRuntimeContext", () => {
     const sessionManager = { appendMessage: vi.fn() } as unknown as Parameters<
       typeof buildContextEngineMaintenanceRuntimeContext
     >[0]["sessionManager"];
-    rewriteTranscriptEntriesInSessionManagerMock.mockImplementationOnce((_params?: unknown) => {
+    rewriteTranscriptEntriesInSessionManagerMock.mockImplementationOnce((_params?: any) => {
       events.push("rewrite");
       return {
         changed: true,
@@ -265,7 +265,7 @@ describe("buildContextEngineMaintenanceRuntimeContext", () => {
       await Promise.resolve();
 
       rewriteTranscriptEntriesInRuntimeTranscriptMock.mockImplementationOnce(
-        async (_params?: unknown) => {
+        async (_params?: any) => {
           events.push("rewrite");
           return {
             changed: true,
@@ -366,7 +366,7 @@ describe("runContextEngineMaintenance", () => {
   });
 
   it("passes a rewrite-capable runtime context into maintain()", async () => {
-    const maintain = vi.fn(async (_params?: unknown) => ({
+    const maintain = vi.fn(async (_params?: any) => ({
       changed: false,
       bytesFreed: 0,
       rewrittenEntries: 0,
@@ -402,7 +402,7 @@ describe("runContextEngineMaintenance", () => {
       requireRecord(maintainParams.runtimeContext, "maintain runtime context").workspaceDir,
     ).toBe("/tmp/workspace");
     const runtimeContext = maintainParams.runtimeContext as
-      | { rewriteTranscriptEntries?: (request: unknown) => Promise<unknown> }
+      | { rewriteTranscriptEntries?: (request: any) => Promise<any> }
       | undefined;
     if (!runtimeContext?.rewriteTranscriptEntries) {
       throw new Error("expected maintain runtime context rewrite helper");
@@ -420,7 +420,7 @@ describe("runContextEngineMaintenance", () => {
   });
 
   it("forces background maintenance rewrites through the session file even when a session manager exists", async () => {
-    const maintain = vi.fn(async (params?: unknown) => {
+    const maintain = vi.fn(async (params?: any) => {
       await (
         params as { runtimeContext?: ContextEngineRuntimeContext } | undefined
       )?.runtimeContext?.rewriteTranscriptEntries?.({
@@ -487,7 +487,7 @@ describe("runContextEngineMaintenance", () => {
 
   it("locks foreground maintenance rewrites that use the active session manager", async () => {
     const events: string[] = [];
-    const maintain = vi.fn(async (params?: unknown) => {
+    const maintain = vi.fn(async (params?: any) => {
       events.push("maintain-start");
       await (
         params as { runtimeContext?: ContextEngineRuntimeContext } | undefined
@@ -506,7 +506,7 @@ describe("runContextEngineMaintenance", () => {
     const sessionManager = { appendMessage: vi.fn() } as unknown as Parameters<
       typeof buildContextEngineMaintenanceRuntimeContext
     >[0]["sessionManager"];
-    rewriteTranscriptEntriesInSessionManagerMock.mockImplementationOnce((_params?: unknown) => {
+    rewriteTranscriptEntriesInSessionManagerMock.mockImplementationOnce((_params?: any) => {
       events.push("rewrite");
       return {
         changed: true,
@@ -566,7 +566,7 @@ describe("runContextEngineMaintenance", () => {
         });
         await Promise.resolve();
 
-        const maintain = vi.fn(async (params?: unknown) => {
+        const maintain = vi.fn(async (params?: any) => {
           await (
             params as { runtimeContext?: ContextEngineRuntimeContext } | undefined
           )?.runtimeContext?.rewriteTranscriptEntries?.({
@@ -595,7 +595,7 @@ describe("runContextEngineMaintenance", () => {
             turnMaintenanceMode: "background" as const,
           },
           ingest: async () => ({ ingested: true }),
-          assemble: async ({ messages }: { messages: unknown[] }) => ({
+          assemble: async ({ messages }: { messages: any[] }) => ({
             messages,
             estimatedTokens: 0,
           }),
@@ -723,7 +723,7 @@ describe("runContextEngineMaintenance", () => {
             turnMaintenanceMode: "background" as const,
           },
           ingest: async () => ({ ingested: true }),
-          assemble: async ({ messages }: { messages: unknown[] }) => ({
+          assemble: async ({ messages }: { messages: any[] }) => ({
             messages,
             estimatedTokens: 0,
           }),
@@ -808,7 +808,7 @@ describe("runContextEngineMaintenance", () => {
             turnMaintenanceMode: "background" as const,
           },
           ingest: async () => ({ ingested: true }),
-          assemble: async ({ messages }: { messages: unknown[] }) => ({
+          assemble: async ({ messages }: { messages: any[] }) => ({
             messages,
             estimatedTokens: 0,
           }),
@@ -907,7 +907,7 @@ describe("runContextEngineMaintenance", () => {
             turnMaintenanceMode: "background" as const,
           },
           ingest: async () => ({ ingested: true }),
-          assemble: async ({ messages }: { messages: unknown[] }) => ({
+          assemble: async ({ messages }: { messages: any[] }) => ({
             messages,
             estimatedTokens: 0,
           }),
@@ -1007,7 +1007,7 @@ describe("runContextEngineMaintenance", () => {
           turnMaintenanceMode: "background" as const,
         },
         ingest: async () => ({ ingested: true }),
-        assemble: async ({ messages }: { messages: unknown[] }) => ({
+        assemble: async ({ messages }: { messages: any[] }) => ({
           messages,
           estimatedTokens: 0,
         }),
@@ -1068,7 +1068,7 @@ describe("runContextEngineMaintenance", () => {
             turnMaintenanceMode: "background" as const,
           },
           ingest: async () => ({ ingested: true }),
-          assemble: async ({ messages }: { messages: unknown[] }) => ({
+          assemble: async ({ messages }: { messages: any[] }) => ({
             messages,
             estimatedTokens: 0,
           }),
@@ -1158,7 +1158,7 @@ describe("runContextEngineMaintenance", () => {
             turnMaintenanceMode: "background" as const,
           },
           ingest: async () => ({ ingested: true }),
-          assemble: async ({ messages }: { messages: unknown[] }) => ({
+          assemble: async ({ messages }: { messages: any[] }) => ({
             messages,
             estimatedTokens: 0,
           }),
@@ -1221,7 +1221,7 @@ describe("runContextEngineMaintenance", () => {
             turnMaintenanceMode: "background" as const,
           },
           ingest: async () => ({ ingested: true }),
-          assemble: async ({ messages }: { messages: unknown[] }) => ({
+          assemble: async ({ messages }: { messages: any[] }) => ({
             messages,
             estimatedTokens: 0,
           }),
@@ -1290,7 +1290,7 @@ describe("runContextEngineMaintenance", () => {
             turnMaintenanceMode: "background" as const,
           },
           ingest: async () => ({ ingested: true }),
-          assemble: async ({ messages }: { messages: unknown[] }) => ({
+          assemble: async ({ messages }: { messages: any[] }) => ({
             messages,
             estimatedTokens: 0,
           }),
@@ -1356,7 +1356,7 @@ describe("runContextEngineMaintenance", () => {
         const sessionLane = resolveSessionLane(sessionKey);
         const events: string[] = [];
         let allowRewrite: (() => void) | undefined;
-        const maintain = vi.fn(async (params?: unknown) => {
+        const maintain = vi.fn(async (params?: any) => {
           events.push("maintenance-start");
           await new Promise<void>((resolve) => {
             allowRewrite = resolve;
@@ -1385,7 +1385,7 @@ describe("runContextEngineMaintenance", () => {
         });
 
         rewriteTranscriptEntriesInRuntimeTranscriptMock.mockImplementationOnce(
-          async (_params?: unknown) => {
+          async (_params?: any) => {
             events.push("rewrite");
             return {
               changed: true,
@@ -1402,7 +1402,7 @@ describe("runContextEngineMaintenance", () => {
             turnMaintenanceMode: "background" as const,
           },
           ingest: async () => ({ ingested: true }),
-          assemble: async ({ messages }: { messages: unknown[] }) => ({
+          assemble: async ({ messages }: { messages: any[] }) => ({
             messages,
             estimatedTokens: 0,
           }),
@@ -1476,7 +1476,7 @@ describe("runContextEngineMaintenance", () => {
             turnMaintenanceMode: "background" as const,
           },
           ingest: async () => ({ ingested: true }),
-          assemble: async ({ messages }: { messages: unknown[] }) => ({
+          assemble: async ({ messages }: { messages: any[] }) => ({
             messages,
             estimatedTokens: 0,
           }),
@@ -1528,7 +1528,7 @@ describe("runContextEngineMaintenance", () => {
             turnMaintenanceMode: "background" as const,
           },
           ingest: async () => ({ ingested: true }),
-          assemble: async ({ messages }: { messages: unknown[] }) => ({
+          assemble: async ({ messages }: { messages: any[] }) => ({
             messages,
             estimatedTokens: 0,
           }),
@@ -1586,7 +1586,7 @@ describe("runContextEngineMaintenance", () => {
             turnMaintenanceMode: "background" as const,
           },
           ingest: async () => ({ ingested: true }),
-          assemble: async ({ messages }: { messages: unknown[] }) => ({
+          assemble: async ({ messages }: { messages: any[] }) => ({
             messages,
             estimatedTokens: 0,
           }),

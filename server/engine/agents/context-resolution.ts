@@ -19,7 +19,7 @@ import {
 } from "./context-cache.js";
 
 /** 内联降级实现：将输入归一化为小写字符串，非字符串返回空串。 */
-function normalizeLowercaseStringOrEmpty(value: unknown): string {
+function normalizeLowercaseStringOrEmpty(value: any): string {
   return typeof value === "string" ? value.toLowerCase() : "";
 }
 
@@ -28,7 +28,7 @@ function normalizeLowercaseStringOrEmpty(value: unknown): string {
  * 对应 openclaw 的 OpenClawConfig 的最小子集。
  */
 type OpenClawConfigLike = {
-  models?: unknown;
+  models?: any;
 };
 
 type ConfigModelEntry = { id?: string; contextWindow?: number; contextTokens?: number };

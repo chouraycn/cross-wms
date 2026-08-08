@@ -49,7 +49,7 @@ export interface HealthCheckResult {
   healthy: boolean;
   latency?: number;
   error?: string;
-  details?: Record<string, unknown>;
+  details?: Record<string, any>;
 }
 
 /** 渠道事件 */
@@ -59,7 +59,7 @@ export interface ChannelHealthEvent {
   previousStatus?: ChannelStatus;
   currentStatus?: ChannelStatus;
   timestamp: number;
-  details?: Record<string, unknown>;
+  details?: Record<string, any>;
 }
 
 // ===================== 默认配置 =====================
@@ -513,7 +513,7 @@ export class ChannelHealthMonitor extends EventEmitter {
   /**
    * 发送数据给单个客户端
    */
-  private emitToClient(client: { write: (data: string) => void; destroy?: () => void }, data: unknown): void {
+  private emitToClient(client: { write: (data: string) => void; destroy?: () => void }, data: any): void {
     try {
       client.write(`data: ${JSON.stringify(data)}\n\n`);
     } catch {

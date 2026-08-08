@@ -56,7 +56,7 @@ describe("subagent run liveness", () => {
     expect(isLiveUnendedSubagentRun(entry, now)).toBe(true);
   });
 
-  it("ignores non-real fixture timestamps as unknown instead of stale", () => {
+  it("ignores non-real fixture timestamps as any instead of stale", () => {
     // Small fixture timestamps appear in tests and old synthetic records; they
     // should not be interpreted as Unix epoch production runs.
     const entry = {

@@ -1,4 +1,4 @@
 
-export async function repairLoadedGatewayServiceForStart(..._args: unknown[]): Promise<void> {
+export async function repairLoadedGatewayServiceForStart(..._args: any[]): Promise<void> {
   console.warn('repairLoadedGatewayServiceForStart is not available in cross-wms');
 }

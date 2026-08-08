@@ -110,7 +110,7 @@ let activeLiveCompletionConfig: OpenClawConfig | undefined;
 
 type OllamaRuntimeApi = {
   createConfiguredOllamaStreamFn: (params: {
-    model: { baseUrl?: string; headers?: unknown };
+    model: { baseUrl?: string; headers?: any };
     providerBaseUrl?: string;
   }) => StreamFn;
 };
@@ -368,7 +368,7 @@ function createLiveOllamaRuntimeStreamFn(params: {
   };
 }
 
-function readConfiguredOllamaBaseUrl(provider: unknown): string {
+function readConfiguredOllamaBaseUrl(provider: any): string {
   return readStringProperty(provider, "baseUrl") || readStringProperty(provider, "baseURL");
 }
 
@@ -402,11 +402,11 @@ function isOllamaRemoteApiKeyReference(value: SecretInput | undefined): boolean 
   return ref?.source === "env" && ref.id.trim() === OLLAMA_REMOTE_API_KEY_ENV;
 }
 
-function readStringProperty(value: unknown, key: string): string {
+function readStringProperty(value: any, key: string): string {
   if (!value || typeof value !== "object" || !(key in value)) {
     return "";
   }
-  const raw = (value as Record<string, unknown>)[key];
+  const raw = (value as Record<string, any>)[key];
   return typeof raw === "string" ? raw.trim() : "";
 }
 
@@ -612,7 +612,7 @@ function formatSkippedPreview(
   );
 }
 
-function isGoogleModelNotFoundError(err: unknown): boolean {
+function isGoogleModelNotFoundError(err: any): boolean {
   const msg = String(err);
   if (!/not found/i.test(msg)) {
     return false;
@@ -1450,11 +1450,11 @@ async function completeSimpleWithTimeout<TApi extends Api>(
   }
 }
 
-function requireToolChoicePayload(payload: unknown): unknown {
+function requireToolChoicePayload(payload: any): any {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
     return undefined;
   }
-  const candidate = payload as { tools?: unknown; tool_choice?: unknown };
+  const candidate = payload as { tools?: any; tool_choice?: any };
   if (!Array.isArray(candidate.tools) || candidate.tools.length === 0) {
     return undefined;
   }

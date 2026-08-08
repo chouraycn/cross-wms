@@ -4,15 +4,15 @@
 export type MessageActionDispatchResult = {
   ok: boolean;
   error?: string;
-  result?: unknown;
+  result?: any;
 };
 
 /** Dispatches a channel message action. Simplified without real channel plugin. */
 export async function dispatchChannelMessageAction(params: {
   action: string;
   channel?: string;
-  args?: Record<string, unknown>;
-  cfg?: unknown;
+  args?: Record<string, any>;
+  cfg?: any;
 }): Promise<MessageActionDispatchResult> {
   return { ok: false, error: `channel dispatch not available: ${params.action}` };
 }

@@ -135,8 +135,8 @@ describe("beforeDeliver in reply dispatcher", () => {
   });
 
   it("preserves payload metadata through beforeDeliver rewrites", async () => {
-    let deliveredMetadata: unknown;
-    let deliveredAssistantMessageIndex: unknown;
+    let deliveredMetadata: any;
+    let deliveredAssistantMessageIndex: any;
 
     const dispatcher = createReplyDispatcher({
       deliver: async (payload, info) => {

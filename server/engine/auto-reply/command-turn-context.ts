@@ -35,14 +35,14 @@ export type CommandTurnContext =
 
 /** Loose inbound context shape accepted from channel adapters and tests before normalization. */
 export type CommandTurnContextInput = {
-  CommandTurn?: unknown;
-  CommandSource?: unknown;
-  CommandAuthorized?: unknown;
-  CommandBody?: unknown;
-  BodyForCommands?: unknown;
-  RawBody?: unknown;
-  Body?: unknown;
-  BotUsername?: unknown;
+  CommandTurn?: any;
+  CommandSource?: any;
+  CommandAuthorized?: any;
+  CommandBody?: any;
+  BodyForCommands?: any;
+  RawBody?: any;
+  Body?: any;
+  BotUsername?: any;
 };
 
 function resolveCommandBody(input: CommandTurnContextInput): string | undefined {
@@ -73,11 +73,11 @@ export function commandTurnKindToSource(kind: CommandTurnKind): CommandTurnSourc
   return "message";
 }
 
-function normalizeCommandTurnKind(value: unknown): CommandTurnKind | undefined {
+function normalizeCommandTurnKind(value: any): CommandTurnKind | undefined {
   return value === "native" || value === "text-slash" || value === "normal" ? value : undefined;
 }
 
-function normalizeCommandTurnSource(value: unknown): CommandTurnSource | undefined {
+function normalizeCommandTurnSource(value: any): CommandTurnSource | undefined {
   return value === "native" || value === "text" || value === "message" ? value : undefined;
 }
 
@@ -129,13 +129,13 @@ export function createCommandTurnContext(
 }
 
 function normalizeExplicitCommandTurn(
-  value: unknown,
+  value: any,
   input: CommandTurnContextInput,
 ): CommandTurnContext | undefined {
   if (!value || typeof value !== "object") {
     return undefined;
   }
-  const record = value as Record<string, unknown>;
+  const record = value as Record<string, any>;
   const kind = normalizeCommandTurnKind(record.kind);
   const source =
     normalizeCommandTurnSource(record.source) ?? (kind ? commandTurnKindToSource(kind) : undefined);
@@ -207,13 +207,13 @@ export function isExplicitCommandTurn(commandTurn: CommandTurnContext | undefine
 /** Resolves the target session override allowed only for native command invocations. */
 export function resolveCommandTurnTargetSessionKey(input: {
   CommandTurn?: CommandTurnContext;
-  CommandSource?: unknown;
-  CommandAuthorized?: unknown;
-  CommandBody?: unknown;
-  BodyForCommands?: unknown;
-  RawBody?: unknown;
-  Body?: unknown;
-  CommandTargetSessionKey?: unknown;
+  CommandSource?: any;
+  CommandAuthorized?: any;
+  CommandBody?: any;
+  BodyForCommands?: any;
+  RawBody?: any;
+  Body?: any;
+  CommandTargetSessionKey?: any;
 }): string | undefined {
   if (
     !isNativeCommandTurn(resolveCommandTurnContext(input)) ||

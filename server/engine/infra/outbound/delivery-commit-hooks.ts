@@ -49,6 +49,6 @@ export async function runOutboundDeliveryCommitHooks(
 }
 
 /** Type guard for batched outbound delivery results crossing loose boundaries. */
-export function isOutboundDeliveryResultArray(value: unknown): value is OutboundDeliveryResult[] {
+export function isOutboundDeliveryResultArray(value: any): value is OutboundDeliveryResult[] {
   return Array.isArray(value);
 }

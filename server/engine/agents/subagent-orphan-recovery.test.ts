@@ -99,11 +99,11 @@ function getResumeMessage() {
     firstCallParam(vi.mocked(gateway.callGateway).mock.calls, "resume gateway"),
     "resume gateway params",
   );
-  const params = call.params as Record<string, unknown>;
+  const params = call.params as Record<string, any>;
   return params.message as string;
 }
 
-function firstCallParam(calls: ReadonlyArray<readonly unknown[]>, label: string) {
+function firstCallParam(calls: ReadonlyArray<readonly any[]>, label: string) {
   const call = calls[0];
   if (call === undefined) {
     throw new Error(`expected ${label} call`);
@@ -111,11 +111,11 @@ function firstCallParam(calls: ReadonlyArray<readonly unknown[]>, label: string)
   return call[0];
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error(`expected ${label} to be a record`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 function requireFirstUpdateSessionStoreCall() {
@@ -168,7 +168,7 @@ describe("subagent-orphan-recovery", () => {
       "gateway resume params",
     );
     expect(opts.method).toBe("agent");
-    const params = opts.params as Record<string, unknown>;
+    const params = opts.params as Record<string, any>;
     expect(params.sessionKey).toBe("agent:main:subagent:test-session-1");
     expect(params.message).toContain("gateway reload");
     expect(params.message).toContain("Test task: implement feature X");
@@ -378,7 +378,7 @@ describe("subagent-orphan-recovery", () => {
         updatedAt: 0,
       },
     };
-    (updater as (store: Record<string, unknown>) => void)(mockStore);
+    (updater as (store: Record<string, any>) => void)(mockStore);
     expect(mockStore["agent:main:subagent:test-session-1"]?.abortedLastRun).toBe(false);
   });
 

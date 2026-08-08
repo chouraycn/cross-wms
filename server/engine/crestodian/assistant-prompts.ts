@@ -110,7 +110,7 @@ export function parseCrestodianAssistantPlanText(
   if (!jsonText) {
     return null;
   }
-  let parsed: unknown;
+  let parsed: any;
   try {
     parsed = JSON.parse(jsonText);
   } catch {
@@ -119,7 +119,7 @@ export function parseCrestodianAssistantPlanText(
   if (!parsed || typeof parsed !== "object") {
     return null;
   }
-  const record = parsed as Record<string, unknown>;
+  const record = parsed as Record<string, any>;
   const command = typeof record.command === "string" ? record.command.trim() : "";
   if (!command) {
     return null;

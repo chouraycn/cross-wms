@@ -4,7 +4,7 @@ import { resolvePluginDocumentExtractors } from "./document-extractors.runtime.j
 import { loadPluginMetadataSnapshot } from "./plugin-metadata-snapshot.js";
 
 const mocks = vi.hoisted(() => ({
-  loadPluginMetadataSnapshot: vi.fn((_params?: unknown) => ({
+  loadPluginMetadataSnapshot: vi.fn((_params?: any) => ({
     plugins: [
       {
         id: "document-extract",
@@ -50,7 +50,7 @@ vi.mock("./document-extractor-public-artifacts.js", () => ({
 vi.mock("./plugin-metadata-snapshot.js", () => ({
   loadPluginMetadataSnapshot: mocks.loadPluginMetadataSnapshot,
   resolvePluginMetadataSnapshot: vi.fn(
-    (params?: { pluginMetadataSnapshot?: unknown }) =>
+    (params?: { pluginMetadataSnapshot?: any }) =>
       params?.pluginMetadataSnapshot ?? mocks.loadPluginMetadataSnapshot(params),
   ),
 }));

@@ -8,7 +8,7 @@ const listeners = new Set<(event: SkillsChangeEvent) => void>();
 const workspaceVersions = new Map<string, number>();
 const INITIAL_SKILLS_SNAPSHOT_VERSION = Date.now();
 let globalVersion = INITIAL_SKILLS_SNAPSHOT_VERSION;
-let listenerErrorHandler: ((err: unknown) => void) | undefined;
+let listenerErrorHandler: ((err: any) => void) | undefined;
 
 function bumpVersion(current: number): number {
   const now = Date.now();
@@ -25,7 +25,7 @@ function emit(event: SkillsChangeEvent) {
   }
 }
 
-export function setSkillsChangeListenerErrorHandler(handler?: (err: unknown) => void): void {
+export function setSkillsChangeListenerErrorHandler(handler?: (err: any) => void): void {
   listenerErrorHandler = handler;
 }
 

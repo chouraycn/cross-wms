@@ -41,7 +41,7 @@ export class PermissionChecker {
     logger.debug('[PermissionChecker] All permissions cleared');
   }
 
-  check(action: string, resource: string, context?: Record<string, unknown>): PermissionCheckResult {
+  check(action: string, resource: string, context?: Record<string, any>): PermissionCheckResult {
     for (let i = this.permissions.length - 1; i >= 0; i--) {
       const perm = this.permissions[i];
       if (this.matches(perm.action, action) && this.matches(perm.resource, resource)) {
@@ -66,25 +66,25 @@ export class PermissionChecker {
 
   checkAll(
     requests: Array<{ action: string; resource: string }>,
-    context?: Record<string, unknown>,
+    context?: Record<string, any>,
   ): PermissionCheckResult[] {
     return requests.map(req => this.check(req.action, req.resource, context));
   }
 
-  isAllowed(action: string, resource: string, context?: Record<string, unknown>): boolean {
+  isAllowed(action: string, resource: string, context?: Record<string, any>): boolean {
     return this.check(action, resource, context).allowed;
   }
 
   allAllowed(
     requests: Array<{ action: string; resource: string }>,
-    context?: Record<string, unknown>,
+    context?: Record<string, any>,
   ): boolean {
     return requests.every(req => this.isAllowed(req.action, req.resource, context));
   }
 
   anyAllowed(
     requests: Array<{ action: string; resource: string }>,
-    context?: Record<string, unknown>,
+    context?: Record<string, any>,
   ): boolean {
     return requests.some(req => this.isAllowed(req.action, req.resource, context));
   }
@@ -109,8 +109,8 @@ export class PermissionChecker {
   }
 
   private evaluateConditions(
-    conditions: Record<string, unknown>,
-    context: Record<string, unknown>,
+    conditions: Record<string, any>,
+    context: Record<string, any>,
   ): boolean {
     for (const [key, expected] of Object.entries(conditions)) {
       const actual = context[key];
@@ -122,7 +122,7 @@ export class PermissionChecker {
         if (typeof actual !== 'object' || actual === null) {
           return false;
         }
-        if (!this.evaluateConditions(expected as Record<string, unknown>, actual as Record<string, unknown>)) {
+        if (!this.evaluateConditions(expected as Record<string, any>, actual as Record<string, any>)) {
           return false;
         }
       } else if (actual !== expected) {

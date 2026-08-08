@@ -25,7 +25,7 @@ export type MessageCliHelpers = {
   withMessageBase: (command: Command) => Command;
   withMessageTarget: (command: Command) => Command;
   withRequiredMessageTarget: (command: Command) => Command;
-  runMessageAction: (action: string, opts: Record<string, unknown>) => Promise<void>;
+  runMessageAction: (action: string, opts: Record<string, any>) => Promise<void>;
 };
 
 const GATEWAY_STOP_TIMEOUT_MS = 2500;
@@ -48,7 +48,7 @@ type MessagePluginPreloadPlan =
   | { preload: true; loadOptions: MessagePluginLoadOptions }
   | { preload: false };
 
-function normalizeMessageOptions(opts: Record<string, unknown>): Record<string, unknown> {
+function normalizeMessageOptions(opts: Record<string, any>): Record<string, any> {
   const { account, ...rest } = opts;
   return {
     ...rest,
@@ -56,7 +56,7 @@ function normalizeMessageOptions(opts: Record<string, unknown>): Record<string, 
   };
 }
 
-function validateMessageNumericOptions(opts: Record<string, unknown>): void {
+function validateMessageNumericOptions(opts: Record<string, any>): void {
   for (const [key, flag] of STRICT_POSITIVE_INTEGER_OPTIONS) {
     if (opts[key] === undefined) {
       continue;
@@ -97,7 +97,7 @@ async function runPluginStopHooks(): Promise<void> {
   }
 }
 
-function resolveScopedMessageChannel(opts: Record<string, unknown>): string | undefined {
+function resolveScopedMessageChannel(opts: Record<string, any>): string | undefined {
   return resolveMessageSecretScope({
     channel: opts.channel,
     target: opts.target,
@@ -125,7 +125,7 @@ function isGatewayOwnedMessageAction(action: string, scopedChannel: string | und
 
 function resolveMessagePluginPreloadPlan(
   action: string,
-  opts: Record<string, unknown>,
+  opts: Record<string, any>,
 ): MessagePluginPreloadPlan {
   const scopedChannel = resolveScopedMessageChannel(opts);
   const loadOptions = scopedChannel
@@ -161,7 +161,7 @@ export function createMessageCliHelpers(
   const withRequiredMessageTarget = (command: Command) =>
     command.requiredOption("-t, --target <dest>", CHANNEL_TARGET_DESCRIPTION);
 
-  const runMessageAction = async (action: string, opts: Record<string, unknown>) => {
+  const runMessageAction = async (action: string, opts: Record<string, any>) => {
     setVerbose(Boolean(opts.verbose));
     let failed = false;
     await runCommandWithRuntime(

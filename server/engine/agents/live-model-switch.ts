@@ -21,7 +21,7 @@ export type LiveSessionModelSelection = {
  * Returns null in cross-wms since session store is not available.
  */
 export function resolveLiveSessionModelSelection(_params: {
-  cfg?: unknown;
+  cfg?: any;
   sessionKey?: string;
   agentId?: string;
   defaultProvider: string;
@@ -58,7 +58,7 @@ export function hasDifferentLiveSessionModelSelection(
  * Returns undefined in cross-wms since session store is not available.
  */
 export function shouldSwitchToLiveModel(_params: {
-  cfg?: unknown;
+  cfg?: any;
   sessionKey?: string;
   agentId?: string;
   defaultProvider: string;
@@ -74,7 +74,7 @@ export function shouldSwitchToLiveModel(_params: {
 
 /** Clear the liveModelSwitchPending flag — no-op in cross-wms. */
 export async function clearLiveModelSwitchPending(_params: {
-  cfg?: unknown;
+  cfg?: any;
   sessionKey?: string;
   agentId?: string;
 }): Promise<void> {

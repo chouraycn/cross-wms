@@ -22,10 +22,10 @@ type CapabilityContractEntry<T> = {
 
 type ProviderContractEntry = CapabilityContractEntry<ProviderPlugin>;
 type WebSearchProviderContractEntry = CapabilityContractEntry<WebSearchProviderPlugin> & {
-  credentialValue: unknown;
+  credentialValue: any;
 };
 type WebFetchProviderContractEntry = CapabilityContractEntry<WebFetchProviderPlugin> & {
-  credentialValue: unknown;
+  credentialValue: any;
 };
 
 type PluginRegistrationContractEntry = BundledPluginContractSnapshot;
@@ -264,7 +264,7 @@ function loadProviderContractPluginIds(): string[] {
   return [...resolveBundledProviderContractPluginIds()];
 }
 
-function resolveWebSearchCredentialValue(provider: WebSearchProviderPlugin): unknown {
+function resolveWebSearchCredentialValue(provider: WebSearchProviderPlugin): any {
   if (provider.requiresCredential === false) {
     return `${provider.id}-no-key-needed`;
   }
@@ -280,7 +280,7 @@ function resolveWebSearchCredentialValue(provider: WebSearchProviderPlugin): unk
     : "sk-test";
 }
 
-function resolveWebFetchCredentialValue(provider: WebFetchProviderPlugin): unknown {
+function resolveWebFetchCredentialValue(provider: WebFetchProviderPlugin): any {
   if (provider.requiresCredential === false) {
     return `${provider.id}-no-key-needed`;
   }

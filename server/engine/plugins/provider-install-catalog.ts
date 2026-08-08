@@ -5,15 +5,15 @@ export type ProviderInstallCatalogEntry = {
   label?: string;
   authMethods?: string[];
 };
-export function resolveProviderInstallCatalogEntries(params: unknown): ProviderInstallCatalogEntry[] {
+export function resolveProviderInstallCatalogEntries(params: any): ProviderInstallCatalogEntry[] {
   void params;
   return [];
 }
-export function resolveProviderInstallCatalogEntry(params: unknown): ProviderInstallCatalogEntry | undefined {
+export function resolveProviderInstallCatalogEntry(params: any): ProviderInstallCatalogEntry | undefined {
   void params;
   return undefined;
 }
-export function resolveDeprecatedProviderInstallCatalogEntry(params: unknown): ProviderInstallCatalogEntry | undefined {
+export function resolveDeprecatedProviderInstallCatalogEntry(params: any): ProviderInstallCatalogEntry | undefined {
   void params;
   return undefined;
 }

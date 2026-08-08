@@ -12,7 +12,7 @@ import {
   withSameOriginMcpHttpHeaders,
 } from "./mcp-http-fetch.js";
 
-const testGlobal = globalThis as Record<string, unknown>;
+const testGlobal = globalThis as Record<string, any>;
 const { lookupMock } = vi.hoisted(() => ({
   lookupMock: vi.fn(),
 }));
@@ -22,15 +22,15 @@ vi.mock("node:dns/promises", () => ({
 }));
 
 class TestAgent {
-  constructor(readonly options: unknown) {}
+  constructor(readonly options: any) {}
 }
 
 class TestEnvHttpProxyAgent {
-  constructor(readonly options: unknown) {}
+  constructor(readonly options: any) {}
 }
 
 class TestProxyAgent {
-  constructor(readonly options: unknown) {}
+  constructor(readonly options: any) {}
 }
 
 function redirectResponse(location: string, status = 302): Response {
@@ -40,26 +40,26 @@ function redirectResponse(location: string, status = 302): Response {
   });
 }
 
-function getDispatcher(init: unknown): unknown {
+function getDispatcher(init: any): any {
   if (typeof init !== "object" || init === null || !("dispatcher" in init)) {
     return undefined;
   }
-  return (init as { dispatcher?: unknown }).dispatcher;
+  return (init as { dispatcher?: any }).dispatcher;
 }
 
-function getDispatcherConnectOptions(init: unknown): Record<string, unknown> | undefined {
+function getDispatcherConnectOptions(init: any): Record<string, any> | undefined {
   const dispatcher = getDispatcher(init);
   if (!(dispatcher instanceof TestAgent)) {
     return undefined;
   }
-  const options = dispatcher.options as { connect?: Record<string, unknown> };
+  const options = dispatcher.options as { connect?: Record<string, any> };
   return options.connect;
 }
 
 describe("MCP HTTP fetch helpers", () => {
   const fetchCalls: Array<{
     url: string | URL | Request;
-    init: unknown;
+    init: any;
   }> = [];
 
   beforeEach(() => {
@@ -78,7 +78,7 @@ describe("MCP HTTP fetch helpers", () => {
       Agent: TestAgent,
       EnvHttpProxyAgent: TestEnvHttpProxyAgent,
       ProxyAgent: TestProxyAgent,
-      fetch: async (url: string | URL | Request, init?: unknown) => {
+      fetch: async (url: string | URL | Request, init?: any) => {
         fetchCalls.push({ url, init });
         return new Response("ok");
       },
@@ -160,7 +160,7 @@ describe("MCP HTTP fetch helpers", () => {
       Agent: TestAgent,
       EnvHttpProxyAgent: TestEnvHttpProxyAgent,
       ProxyAgent: TestProxyAgent,
-      fetch: async (url: string | URL | Request, init?: unknown) => {
+      fetch: async (url: string | URL | Request, init?: any) => {
         fetchCalls.push({ url, init });
         return fetchCalls.length === 1
           ? redirectResponse("https://auth.example.com/token")
@@ -230,7 +230,7 @@ describe("MCP HTTP fetch helpers", () => {
       Agent: TestAgent,
       EnvHttpProxyAgent: TestEnvHttpProxyAgent,
       ProxyAgent: TestProxyAgent,
-      fetch: async (url: string | URL | Request, init?: unknown) => {
+      fetch: async (url: string | URL | Request, init?: any) => {
         fetchCalls.push({ url, init });
         return new ForeignResponse() as unknown as Response;
       },

@@ -69,7 +69,7 @@ let hotReloadStop: (() => void) | null = null;
 function isAutomationDue(automation: {
   id: string;
   lastRunAt: string | null;
-  executionPolicy?: Record<string, unknown> | null;
+  executionPolicy?: Record<string, any> | null;
 }): boolean {
   const { lastRunAt, executionPolicy } = automation;
 

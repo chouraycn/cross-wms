@@ -86,7 +86,7 @@ function resolveTimerTimeoutMs(value: number | undefined, fallback: number): num
 }
 
 /** 格式化错误信息。 */
-function formatErrorMessage(error: unknown): string {
+function formatErrorMessage(error: any): string {
   if (error instanceof Error) {
     return error.message;
   }
@@ -103,7 +103,7 @@ function normalizeSnippet(text: string): string {
   return `${normalized.slice(0, MAX_SNIPPET_CHARS - 1).trimEnd()}...`;
 }
 
-function buildSearchQuery(args: unknown): string {
+function buildSearchQuery(args: any): string {
   const parsed = parseRealtimeVoiceAgentConsultArgs(args);
   return [parsed.question, parsed.context].filter(Boolean).join("\n\n");
 }
@@ -175,7 +175,7 @@ export async function resolveRealtimeVoiceFastContextConsult(params: {
   agentId: string;
   sessionKey: string;
   config: RealtimeVoiceFastContextConfig;
-  args: unknown;
+  args: any;
   logger: Logger;
   labels?: Partial<RealtimeVoiceFastContextLabels>;
   /** 注入的搜索管理器解析器（替代 openclaw 的 getActiveMemorySearchManager）。 */

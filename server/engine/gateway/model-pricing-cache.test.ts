@@ -1388,7 +1388,7 @@ function createManifestRecord(overrides: Partial<PluginManifestRecord>): PluginM
   };
 }
 
-function toLintErrorObject(value: unknown, fallbackMessage: string): Error {
+function toLintErrorObject(value: any, fallbackMessage: string): Error {
   if (value instanceof Error) {
     return value;
   }

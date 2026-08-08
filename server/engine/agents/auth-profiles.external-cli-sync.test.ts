@@ -8,11 +8,11 @@ import type { AuthProfileStore, OAuthCredential } from "./auth-profiles/types.js
 import type { ClaudeCliCredential } from "./cli-credentials.js";
 
 const mocks = vi.hoisted(() => ({
-  readClaudeCliCredentialsCached: vi.fn<(options?: unknown) => ClaudeCliCredential | null>(
+  readClaudeCliCredentialsCached: vi.fn<(options?: any) => ClaudeCliCredential | null>(
     () => null,
   ),
-  readCodexCliCredentialsCached: vi.fn<(options?: unknown) => OAuthCredential | null>(() => null),
-  readMiniMaxCliCredentialsCached: vi.fn<(options?: unknown) => OAuthCredential | null>(() => null),
+  readCodexCliCredentialsCached: vi.fn<(options?: any) => OAuthCredential | null>(() => null),
+  readMiniMaxCliCredentialsCached: vi.fn<(options?: any) => OAuthCredential | null>(() => null),
 }));
 
 let readExternalCliBootstrapCredential: typeof import("./auth-profiles/external-cli-sync.js").readExternalCliBootstrapCredential;
@@ -63,7 +63,7 @@ function expectSingleProfileCredential(
   if (!credential) {
     throw new Error(`Expected credential for profile ${profileId}`);
   }
-  return credential as Record<string, unknown>;
+  return credential as Record<string, any>;
 }
 
 function expectSingleProfile(
@@ -85,8 +85,8 @@ function expectSingleProfile(
 }
 
 function expectCredentialFields(
-  credential: Record<string, unknown> | undefined,
-  expected: Record<string, unknown>,
+  credential: Record<string, any> | undefined,
+  expected: Record<string, any>,
 ) {
   if (!credential) {
     throw new Error("Expected credential");
@@ -96,7 +96,7 @@ function expectCredentialFields(
   }
 }
 
-function expectReaderPolicyCall(mock: { mock: { calls: unknown[][] } }) {
+function expectReaderPolicyCall(mock: { mock: { calls: any[][] } }) {
   expect(mock.mock.calls).toStrictEqual([
     [
       {
@@ -388,7 +388,7 @@ describe("external cli oauth resolution", () => {
 
     const profile = expectSingleProfile(profiles, CLAUDE_CLI_PROFILE_ID);
     expect(profile?.persistence).toBe("persisted");
-    expectCredentialFields(profile?.credential as Record<string, unknown>, {
+    expectCredentialFields(profile?.credential as Record<string, any>, {
       type: "oauth",
       provider: "claude-cli",
       access: "claude-cli-access",
@@ -443,7 +443,7 @@ describe("external cli oauth resolution", () => {
 
     const profile = expectSingleProfile(profiles, CLAUDE_CLI_PROFILE_ID);
     expect(profile?.persistence).toBe("persisted");
-    expectCredentialFields(profile?.credential as Record<string, unknown>, {
+    expectCredentialFields(profile?.credential as Record<string, any>, {
       provider: "claude-cli",
       access: "claude-cli-fresh-access",
     });
@@ -488,7 +488,7 @@ describe("external cli oauth resolution", () => {
 
     const profile = expectSingleProfile(profiles, CLAUDE_CLI_PROFILE_ID);
     expect(profile?.persistence).toBe("persisted");
-    expectCredentialFields(profile?.credential as Record<string, unknown>, {
+    expectCredentialFields(profile?.credential as Record<string, any>, {
       type: "oauth",
       provider: "claude-cli",
     });
@@ -565,7 +565,7 @@ describe("external cli oauth resolution", () => {
     const profilesById = new Map(
       profiles.map((profile) => [profile.profileId, profile.credential]),
     );
-    expectCredentialFields(profilesById.get(MINIMAX_CLI_PROFILE_ID) as Record<string, unknown>, {
+    expectCredentialFields(profilesById.get(MINIMAX_CLI_PROFILE_ID) as Record<string, any>, {
       access: "minimax-fresh-access",
       refresh: "minimax-fresh-refresh",
     });

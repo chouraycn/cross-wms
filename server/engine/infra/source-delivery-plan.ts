@@ -7,12 +7,12 @@ export type SourceDeliveryMessageToolTarget = unknown;
 export type SourceDeliveryVisibleDelivery = unknown;
 export type SourceDeliveryOutcome = unknown;
 export type SourceDeliveryPlan = unknown;
-export function sourceDeliveryTargetsMatch(...args: unknown[]): unknown {
+export function sourceDeliveryTargetsMatch(...args: any[]): any {
   return undefined;
 }
-export function createSourceDeliveryPlan(...args: unknown[]): unknown {
+export function createSourceDeliveryPlan(...args: any[]): any {
   return undefined;
 }
-export function resolveSourceDeliveryOutcome(...args: unknown[]): unknown {
+export function resolveSourceDeliveryOutcome(...args: any[]): any {
   return undefined;
 }

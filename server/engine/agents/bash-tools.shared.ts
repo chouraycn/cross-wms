@@ -7,39 +7,39 @@
  */
 
 export type BashSandboxConfig = unknown;
-export function buildSandboxEnv(..._args: unknown[]): unknown {
+export function buildSandboxEnv(..._args: any[]): any {
   return undefined;
 }
-export function coerceEnv(..._args: unknown[]): unknown {
+export function coerceEnv(..._args: any[]): any {
   return undefined;
 }
-export function buildDockerExecArgs(..._args: unknown[]): unknown {
+export function buildDockerExecArgs(..._args: any[]): any {
   return undefined;
 }
-export async function resolveSandboxWorkdir(..._args: unknown[]): Promise<unknown> {
+export async function resolveSandboxWorkdir(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
-export function resolveWorkdir(..._args: unknown[]): unknown {
+export function resolveWorkdir(..._args: any[]): any {
   return undefined;
 }
-export function clampWithDefault(..._args: unknown[]): unknown {
+export function clampWithDefault(..._args: any[]): any {
   return undefined;
 }
-export function readEnvInt(..._args: unknown[]): unknown {
+export function readEnvInt(..._args: any[]): any {
   return undefined;
 }
-export function chunkString(..._args: unknown[]): unknown {
+export function chunkString(..._args: any[]): any {
   return undefined;
 }
-export function truncateMiddle(..._args: unknown[]): unknown {
+export function truncateMiddle(..._args: any[]): any {
   return undefined;
 }
-export function sliceLogLines(..._args: unknown[]): unknown {
+export function sliceLogLines(..._args: any[]): any {
   return undefined;
 }
-export function deriveSessionName(..._args: unknown[]): unknown {
+export function deriveSessionName(..._args: any[]): any {
   return undefined;
 }
-export function pad(..._args: unknown[]): unknown {
+export function pad(..._args: any[]): any {
   return undefined;
 }

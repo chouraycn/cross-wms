@@ -8,10 +8,10 @@ export function buildAgentModelCatalogCacheKey(params: { agentId?: string; provi
   return `${params.agentId ?? "default"}:${params.provider ?? "unknown"}`;
 }
 
-export function readCachedAgentModelCatalog(_params: unknown): unknown {
+export function readCachedAgentModelCatalog(_params: any): any {
   return null;
 }
 
-export function writeCachedAgentModelCatalog(_params: unknown): void {
+export function writeCachedAgentModelCatalog(_params: any): void {
   // no-op in cross-wms降级实现
 }

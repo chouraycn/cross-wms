@@ -7,6 +7,6 @@
  */
 
 /** Return true when a provider id resolves to a configured CLI backend (always false in cross-wms). */
-export function isCliProvider(..._args: unknown[]): false {
+export function isCliProvider(..._args: any[]): false {
   return false;
 }

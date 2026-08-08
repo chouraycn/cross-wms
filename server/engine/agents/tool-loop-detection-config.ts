@@ -7,11 +7,11 @@
 
 /** Resolves effective tool loop-detection config by overlaying agent settings on globals. */
 export function resolveToolLoopDetectionConfig(params: {
-  cfg?: Record<string, unknown>;
+  cfg?: Record<string, any>;
   agentId?: string;
-}): Record<string, unknown> | undefined {
-  const tools = params.cfg?.tools as Record<string, unknown> | undefined;
-  const global = tools?.loopDetection as Record<string, unknown> | undefined;
+}): Record<string, any> | undefined {
+  const tools = params.cfg?.tools as Record<string, any> | undefined;
+  const global = tools?.loopDetection as Record<string, any> | undefined;
   // Cross-wms does not have resolveAgentConfig; return global config only.
   return global;
 }

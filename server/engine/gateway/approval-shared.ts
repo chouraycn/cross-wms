@@ -1,57 +1,57 @@
 // 移植自 openclaw/src/gateway/server-methods/approval-shared.ts
 
-export function isApprovalDecision(...args: unknown[]): unknown {
+export function isApprovalDecision(...args: any[]): any {
   return false;
 }
 
-export function isApprovalRecordVisibleToClient(...args: unknown[]): unknown {
+export function isApprovalRecordVisibleToClient(...args: any[]): any {
   return false;
 }
 
-export function listVisiblePendingApprovalRequests(...args: unknown[]): unknown {
+export function listVisiblePendingApprovalRequests(...args: any[]): any {
   return [];
 }
 
-export function bindApprovalRequesterMetadata(...args: unknown[]): unknown {
+export function bindApprovalRequesterMetadata(...args: any[]): any {
   return undefined;
 }
 
-export function bindApprovalReviewerDeviceIds(...args: unknown[]): unknown {
+export function bindApprovalReviewerDeviceIds(...args: any[]): any {
   return undefined;
 }
 
-export function registerPendingApprovalRecord(...args: unknown[]): unknown {
+export function registerPendingApprovalRecord(...args: any[]): any {
   return undefined;
 }
 
-export function buildRequestedApprovalEvent(...args: unknown[]): unknown {
+export function buildRequestedApprovalEvent(...args: any[]): any {
   return undefined;
 }
 
-export function resolveApprovalDecisionParams(...args: unknown[]): unknown {
+export function resolveApprovalDecisionParams(...args: any[]): any {
   return undefined;
 }
 
-export function resolveApprovalRequestRecipientConnIds(...args: unknown[]): unknown {
+export function resolveApprovalRequestRecipientConnIds(...args: any[]): any {
   return undefined;
 }
 
-export function resolvePendingApprovalRecord(...args: unknown[]): unknown {
+export function resolvePendingApprovalRecord(...args: any[]): any {
   return undefined;
 }
 
-export function respondPendingApprovalLookupError(...args: unknown[]): unknown {
+export function respondPendingApprovalLookupError(...args: any[]): any {
   return undefined;
 }
 
-export async function handleApprovalWaitDecision(...args: unknown[]): Promise<unknown> {
+export async function handleApprovalWaitDecision(...args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
 
-export async function handlePendingApprovalRequest(...args: unknown[]): Promise<unknown> {
+export async function handlePendingApprovalRequest(...args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
 
-export async function handleApprovalResolve(...args: unknown[]): Promise<unknown> {
+export async function handleApprovalResolve(...args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }

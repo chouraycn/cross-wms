@@ -5,7 +5,7 @@ import { vi, type Mock } from "vitest";
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
 import type { GatewayRequestHandlerOptions } from "./types.js";
 
-type UnknownMock = Mock<(...args: unknown[]) => unknown>;
+type UnknownMock = Mock<(...args: any[]) => unknown>;
 type GatewayLogMocks = {
   error: UnknownMock;
   warn: UnknownMock;
@@ -53,7 +53,7 @@ export function createConfigWriteSnapshot(config: OpenClawConfig) {
 /** Builds request-handler options with captured response and gateway log mocks. */
 export function createConfigHandlerHarness(args?: {
   method?: string;
-  params?: unknown;
+  params?: any;
   overrides?: Partial<GatewayRequestHandlerOptions>;
   contextOverrides?: Partial<GatewayRequestHandlerOptions["context"]>;
 }): ConfigHandlerHarness {

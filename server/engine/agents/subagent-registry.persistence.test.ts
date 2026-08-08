@@ -49,11 +49,11 @@ vi.mock("./subagent-orphan-recovery.js", () => ({
   scheduleOrphanRecovery: vi.fn(),
 }));
 
-function expectFields(value: unknown, expected: Record<string, unknown>): void {
+function expectFields(value: any, expected: Record<string, any>): void {
   if (!value || typeof value !== "object") {
     throw new Error("expected fields object");
   }
-  const record = value as Record<string, unknown>;
+  const record = value as Record<string, any>;
   for (const [key, expectedValue] of Object.entries(expected)) {
     expect(record[key], key).toEqual(expectedValue);
   }
@@ -101,7 +101,7 @@ describe("subagent registry persistence", () => {
     });
   };
 
-  const seedChildSessionsForPersistedRuns = async (persisted: Record<string, unknown>) => {
+  const seedChildSessionsForPersistedRuns = async (persisted: Record<string, any>) => {
     const runs = (persisted.runs ?? {}) as Record<
       string,
       {
@@ -122,7 +122,7 @@ describe("subagent registry persistence", () => {
   };
 
   const writePersistedRegistry = async (
-    persisted: Record<string, unknown>,
+    persisted: Record<string, any>,
     opts?: { seedChildSessions?: boolean },
   ) => {
     // Each persisted-registry fixture gets its own state dir so session stores
@@ -143,7 +143,7 @@ describe("subagent registry persistence", () => {
     runId: string,
   ): Promise<T | undefined> => {
     const parsed = JSON.parse(await fs.readFile(registryPath, "utf8")) as {
-      runs?: Record<string, unknown>;
+      runs?: Record<string, any>;
     };
     return parsed.runs?.[runId] as T | undefined;
   };
@@ -308,7 +308,7 @@ describe("subagent registry persistence", () => {
     expect(
       calls.some(
         (call) =>
-          (call as { childSessionKey?: unknown } | undefined)?.childSessionKey ===
+          (call as { childSessionKey?: any } | undefined)?.childSessionKey ===
           "agent:main:subagent:two",
       ),
     ).toBe(false);
@@ -652,14 +652,14 @@ describe("subagent registry persistence", () => {
     restartRegistry();
     await waitForRegistryWork(async () => {
       const afterSecond = JSON.parse(await fs.readFile(registryPath, "utf8")) as {
-        runs?: Record<string, unknown>;
+        runs?: Record<string, any>;
       };
       return announceSpy.mock.calls.length === 2 && afterSecond.runs?.["run-4"] === undefined;
     });
 
     expect(announceSpy).toHaveBeenCalledTimes(2);
     const afterSecond = JSON.parse(await fs.readFile(registryPath, "utf8")) as {
-      runs?: Record<string, unknown>;
+      runs?: Record<string, any>;
     };
     expect(afterSecond.runs?.["run-4"]).toBeUndefined();
   });
@@ -678,14 +678,14 @@ describe("subagent registry persistence", () => {
     restartRegistry();
     await waitForRegistryWork(async () => {
       const after = JSON.parse(await fs.readFile(registryPath, "utf8")) as {
-        runs?: Record<string, unknown>;
+        runs?: Record<string, any>;
       };
       return after.runs?.["run-orphan-restore"] === undefined;
     });
 
     expect(announceSpy).not.toHaveBeenCalled();
     const after = JSON.parse(await fs.readFile(registryPath, "utf8")) as {
-      runs?: Record<string, unknown>;
+      runs?: Record<string, any>;
     };
     expect(after.runs?.["run-orphan-restore"]).toBeUndefined();
     expect(listSubagentRunsForRequester("agent:main:main")).toHaveLength(0);
@@ -714,7 +714,7 @@ describe("subagent registry persistence", () => {
     restartRegistry();
     await waitForRegistryWork(async () => {
       const after = JSON.parse(await fs.readFile(registryPath, "utf8")) as {
-        runs?: Record<string, unknown>;
+        runs?: Record<string, any>;
       };
       return after.runs?.[runId] === undefined;
     });
@@ -729,7 +729,7 @@ describe("subagent registry persistence", () => {
       expectFields(request, {
         method: "agent.wait",
       });
-      expectFields((request as { params?: unknown }).params, {
+      expectFields((request as { params?: any }).params, {
         runId: "run-stale-aborted-restore",
       });
       return {
@@ -770,7 +770,7 @@ describe("subagent registry persistence", () => {
     expect(callGateway).toHaveBeenCalledTimes(1);
     const [request] = vi.mocked(callGateway).mock.calls.at(0) ?? [];
     expectFields(request, { method: "agent.wait" });
-    expectFields((request as { params?: unknown } | undefined)?.params, { runId });
+    expectFields((request as { params?: any } | undefined)?.params, { runId });
     expect(
       listSubagentRunsForRequester("agent:main:main").some((entry) => entry.runId === runId),
     ).toBe(true);
@@ -790,7 +790,7 @@ describe("subagent registry persistence", () => {
       task: "orphan attachments",
       cleanup: "delete",
     });
-    Object.assign(persisted.runs["run-orphan-attachments"] as Record<string, unknown>, {
+    Object.assign(persisted.runs["run-orphan-attachments"] as Record<string, any>, {
       attachmentsRootDir,
       attachmentsDir,
     });
@@ -811,7 +811,7 @@ describe("subagent registry persistence", () => {
 
     await expect(fs.access(attachmentsDir)).rejects.toHaveProperty("code", "ENOENT");
     const after = JSON.parse(await fs.readFile(registryPath, "utf8")) as {
-      runs?: Record<string, unknown>;
+      runs?: Record<string, any>;
     };
     expect(after.runs?.["run-orphan-attachments"]).toBeUndefined();
   });

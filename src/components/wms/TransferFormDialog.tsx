@@ -104,7 +104,7 @@ const TransferFormDialog: React.FC<TransferFormDialogProps> = ({ open, onClose, 
         .then((res) => res.json())
         .then((json) => {
           if (json.code === 0 && Array.isArray(json.data)) {
-            setWarehouses(json.data.map((w: Record<string, unknown>) => ({ id: w.id as string, name: w.name as string })));
+            setWarehouses(json.data.map((w: Record<string, any>) => ({ id: w.id as string, name: w.name as string })));
           }
         })
         .catch(() => { /* ignore */ });
@@ -122,7 +122,7 @@ const TransferFormDialog: React.FC<TransferFormDialogProps> = ({ open, onClose, 
       const resp = await fetch(`/api/inventory?warehouseId=${encodeURIComponent(fromWarehouseId)}`);
       const json = await resp.json();
       if (json.code === 0 && Array.isArray(json.data)) {
-        const found = json.data.find((item: Record<string, unknown>) => item.sku === sku);
+        const found = json.data.find((item: Record<string, any>) => item.sku === sku);
         if (found) {
           setInventoryInfo({ quantity: found.quantity as number, name: found.name as string });
           if (!name) setName(found.name as string);

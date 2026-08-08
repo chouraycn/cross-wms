@@ -11,8 +11,8 @@ const model = {
   compat: { requiresOpenAiAnthropicToolPayload: true },
 } as unknown as Model<"anthropic-messages">;
 
-function runWrapper(payload: Record<string, unknown>) {
-  const payloads: Array<Record<string, unknown>> = [];
+function runWrapper(payload: Record<string, any>) {
+  const payloads: Array<Record<string, any>> = [];
   const baseStreamFn: StreamFn = (nextModel, context, options) => {
     options?.onPayload?.(payload, nextModel);
     payloads.push(structuredClone(payload));
@@ -95,7 +95,7 @@ describe("createOpenAIAnthropicToolPayloadCompatibilityWrapper", () => {
   });
 
   it("skips unreadable and structurally invalid schemas while preserving healthy siblings", () => {
-    const circularSchema: Record<string, unknown> = {
+    const circularSchema: Record<string, any> = {
       type: "object",
       properties: {},
     };

@@ -40,7 +40,7 @@ router.get('/', (req: Request, res: Response) => {
     const includeStats = req.query.includeStats === 'true';
     const result = getSuggestions(filters);
 
-    const response: Record<string, unknown> = {
+    const response: Record<string, any> = {
       items: result.items,
       total: result.total,
       page: result.page,

@@ -27,7 +27,7 @@ export function decodeListSessionsCursor(value: string | null | undefined): List
   if (!value) {
     return { offset: 0 };
   }
-  let parsed: unknown;
+  let parsed: any;
   try {
     parsed = JSON.parse(Buffer.from(value, "base64url").toString("utf8"));
   } catch {
@@ -36,7 +36,7 @@ export function decodeListSessionsCursor(value: string | null | undefined): List
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
     throw new Error("Invalid ACP session list cursor.");
   }
-  const record = parsed as Record<string, unknown>;
+  const record = parsed as Record<string, any>;
   if (record.v !== 1) {
     throw new Error("Unsupported ACP session list cursor.");
   }
@@ -62,7 +62,7 @@ export function assertAbsoluteCwd(cwd: string, method: string): void {
 }
 
 export function resolveListSessionsPageSize(
-  meta: Record<string, unknown> | null | undefined,
+  meta: Record<string, any> | null | undefined,
 ): number {
   const requested = meta ? readNumber(meta, ["limit", "pageSize"]) : undefined;
   if (requested === undefined) {
@@ -71,7 +71,7 @@ export function resolveListSessionsPageSize(
   return Math.min(ACP_LIST_SESSIONS_MAX_PAGE_SIZE, Math.max(1, Math.floor(requested)));
 }
 
-function readNumber(record: Record<string, unknown>, keys: string[]): number | undefined {
+function readNumber(record: Record<string, any>, keys: string[]): number | undefined {
   for (const key of keys) {
     const value = record[key];
     if (typeof value === "number" && Number.isFinite(value)) {

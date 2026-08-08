@@ -39,7 +39,7 @@ vi.mock("./session-utils.js", () => ({
 
 vi.mock("./session-transcript-readers.js", () => ({
   readSessionMessagesAsync: readSessionMessagesMock,
-  readSessionMessagesWithSourceAsync: async (...args: unknown[]) => ({
+  readSessionMessagesWithSourceAsync: async (...args: any[]) => ({
     messages: await readSessionMessagesMock(...args),
     transcriptPath: await resolveSessionHistoryTranscriptPathMock(...args),
   }),
@@ -72,7 +72,7 @@ async function createNoisyPngBuffer(width: number, height: number): Promise<Buff
   return createNoisyPngFixtureBuffer(width, height);
 }
 
-function requireAttachmentIdFromUrl(url: unknown): string {
+function requireAttachmentIdFromUrl(url: any): string {
   expect(url).toBeTypeOf("string");
   const attachmentId = String(url).split("/").at(-2);
   if (!attachmentId) {
@@ -99,7 +99,7 @@ type ManagedImageBlock = {
   openUrl?: string;
 };
 
-function requireBlock(blocks: unknown[], index = 0): ManagedImageBlock {
+function requireBlock(blocks: any[], index = 0): ManagedImageBlock {
   const block = blocks[index];
   if (!block) {
     throw new Error(`expected block ${index}`);
@@ -117,7 +117,7 @@ async function createFixture(
   const originalPath = path.join(stateDir, "files", filename);
   await fs.mkdir(path.dirname(originalPath), { recursive: true });
   await fs.writeFile(originalPath, Buffer.from("original-image"));
-  const record: Record<string, unknown> = {
+  const record: Record<string, any> = {
     attachmentId,
     sessionKey,
     ...(options?.agentId ? { agentId: options.agentId } : {}),
@@ -149,9 +149,9 @@ async function requestManagedImage(params: {
   method?: string;
   scopes?: string[];
   denyAuth?: boolean;
-  authResponse?: Record<string, unknown>;
+  authResponse?: Record<string, any>;
   headers?: Record<string, string>;
-  transcriptMessages?: Record<string, unknown>[];
+  transcriptMessages?: Record<string, any>[];
   sessionEntry?: { sessionId: string; sessionFile?: string };
   resolvedTranscriptPath?: string | null;
   onReadTranscriptMessages?: () => Promise<void> | void;
@@ -1012,7 +1012,7 @@ describe("attachManagedOutgoingImagesToMessage", () => {
 
     await attachManagedOutgoingImagesToMessage({
       messageId: "msg-committed",
-      blocks: blocks as Record<string, unknown>[],
+      blocks: blocks as Record<string, any>[],
       stateDir,
     });
 

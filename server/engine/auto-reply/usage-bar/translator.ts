@@ -1,12 +1,12 @@
 // @ts-nocheck
-export type UsageBarTemplate = Record<string, unknown>;
-export type UsageContract = Record<string, unknown>;
-type Vocab = Record<string, unknown>;
+export type UsageBarTemplate = Record<string, any>;
+export type UsageContract = Record<string, any>;
+type Vocab = Record<string, any>;
 
-const isObject = (v: unknown): v is Record<string, unknown> =>
+const isObject = (v: any): v is Record<string, any> =>
   typeof v === "object" && v !== null && !Array.isArray(v);
 
-function toGlyphs(scale: unknown): string[] {
+function toGlyphs(scale: any): string[] {
   if (Array.isArray(scale)) {
     return scale.filter((g): g is string => typeof g === "string");
   }
@@ -16,7 +16,7 @@ function toGlyphs(scale: unknown): string[] {
   return [];
 }
 
-function num(value: unknown): string {
+function num(value: any): string {
   if (value === null || value === undefined || value === "") {
     return "";
   }
@@ -31,7 +31,7 @@ function num(value: unknown): string {
   return String(Math.trunc(n));
 }
 
-function fixed(value: unknown, digits: number): string {
+function fixed(value: any, digits: number): string {
   if (value === null || value === undefined || value === "") {
     return "";
   }
@@ -42,7 +42,7 @@ function fixed(value: unknown, digits: number): string {
   return n.toFixed(Math.max(0, digits));
 }
 
-function dur(value: unknown): string {
+function dur(value: any): string {
   if (value === null || value === undefined || value === "") {
     return "";
   }
@@ -61,7 +61,7 @@ function dur(value: unknown): string {
   return `${Math.floor(s / 60)}m`;
 }
 
-function pct(value: unknown): string {
+function pct(value: any): string {
   if (value === null || value === undefined || value === "") {
     return "";
   }
@@ -69,7 +69,7 @@ function pct(value: unknown): string {
   return Number.isFinite(n) ? `${Math.round(n)}%` : "";
 }
 
-function inv(value: unknown): unknown {
+function inv(value: any): any {
   if (value === null || value === undefined || value === "") {
     return value;
   }
@@ -80,7 +80,7 @@ function inv(value: unknown): unknown {
   return 100 - Math.max(0, Math.min(100, n));
 }
 
-function norm(value: unknown): number {
+function norm(value: any): number {
   const n = Number(value);
   if (value === null || value === undefined || !Number.isFinite(n)) {
     return 0;
@@ -88,7 +88,7 @@ function norm(value: unknown): number {
   return Math.max(0, Math.min(100, n)) / 100;
 }
 
-function meter(value: unknown, width: number, scale: unknown): string {
+function meter(value: any, width: number, scale: any): string {
   const glyphs = toGlyphs(scale);
   if (glyphs.length < 2 || width < 1) {
     return "";
@@ -112,7 +112,7 @@ function meter(value: unknown, width: number, scale: unknown): string {
 
 const VERB_NAMES = new Set(["num", "fixed", "dur", "pct", "inv", "alias", "meter"]);
 
-function applyVerb(name: string, args: string[], value: unknown, vocab: Vocab): unknown {
+function applyVerb(name: string, args: string[], value: any, vocab: Vocab): any {
   switch (name) {
     case "num":
       return num(value);
@@ -129,7 +129,7 @@ function applyVerb(name: string, args: string[], value: unknown, vocab: Vocab): 
     case "alias": {
       const aliases = isObject(vocab["_aliases"]) ? vocab["_aliases"] : {};
       const table =
-        args[0] && isObject(aliases[args[0]]) ? (aliases[args[0]] as Record<string, unknown>) : {};
+        args[0] && isObject(aliases[args[0]]) ? (aliases[args[0]] as Record<string, any>) : {};
       const key = String(value);
       if (key in table) {
         return table[key];
@@ -147,8 +147,8 @@ function applyVerb(name: string, args: string[], value: unknown, vocab: Vocab): 
   }
 }
 
-function getPath(ctx: unknown, path: string): unknown {
-  let cur: unknown = ctx;
+function getPath(ctx: any, path: string): any {
+  let cur: any = ctx;
   for (const part of path.split(".")) {
     if (!isObject(cur)) {
       return undefined;
@@ -163,7 +163,7 @@ function getPath(ctx: unknown, path: string): unknown {
 
 const TOKEN = /\{([^}]+)\}/g;
 
-function interp(text: string, ctx: unknown, vocab: Vocab): string {
+function interp(text: string, ctx: any, vocab: Vocab): string {
   return text.replace(TOKEN, (_match, body: string) => {
     const parts = body.split("|");
     let val = getPath(ctx, (parts[0] ?? "").trim());
@@ -188,9 +188,9 @@ function interp(text: string, ctx: unknown, vocab: Vocab): string {
   });
 }
 
-type Segment = Record<string, unknown>;
+type Segment = Record<string, any>;
 
-function renderSegment(seg: Segment, ctx: unknown, vocab: Vocab): string | null {
+function renderSegment(seg: Segment, ctx: any, vocab: Vocab): string | null {
   if ("when" in seg) {
     const v = getPath(ctx, String(seg.when));
     if (v === null || v === undefined || v === false || v === "") {
@@ -236,7 +236,7 @@ function renderSegment(seg: Segment, ctx: unknown, vocab: Vocab): string | null 
 
 function resolveLayout(
   template: UsageBarTemplate,
-  surface: unknown,
+  surface: any,
 ): { sep: string; pieces: Segment[] } {
   const output = template.output;
   if (isObject(output)) {

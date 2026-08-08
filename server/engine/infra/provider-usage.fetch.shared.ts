@@ -1,20 +1,20 @@
 // 移植自 openclaw/src/infra/provider-usage.fetch.shared.ts
 
-export function fetchJson(...args: unknown[]): unknown {
+export function fetchJson(...args: any[]): any {
   return undefined;
 }
-export function discardUsageResponseBody(...args: unknown[]): unknown {
+export function discardUsageResponseBody(...args: any[]): any {
   return undefined;
 }
-export function parseFiniteNumber(...args: unknown[]): unknown {
+export function parseFiniteNumber(...args: any[]): any {
   return undefined;
 }
-export function buildUsageErrorSnapshot(...args: unknown[]): unknown {
+export function buildUsageErrorSnapshot(...args: any[]): any {
   return undefined;
 }
-export function buildUsageHttpErrorSnapshot(...args: unknown[]): unknown {
+export function buildUsageHttpErrorSnapshot(...args: any[]): any {
   return undefined;
 }
-export function readUsageJson(...args: unknown[]): unknown {
+export function readUsageJson(...args: any[]): any {
   return undefined;
 }

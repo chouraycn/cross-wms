@@ -24,7 +24,7 @@ async function mkdirSafe(dir: string) {
 async function writePluginFixture(params: {
   dir: string;
   id: string;
-  schema: Record<string, unknown>;
+  schema: Record<string, any>;
   channels?: string[];
 }) {
   await mkdirSafe(params.dir);
@@ -33,7 +33,7 @@ async function writePluginFixture(params: {
     `export default { id: "${params.id}", register() {} };`,
     "utf-8",
   );
-  const manifest: Record<string, unknown> = {
+  const manifest: Record<string, any> = {
     id: params.id,
     configSchema: params.schema,
   };
@@ -139,7 +139,7 @@ describe("config plugin validation", () => {
       VITEST: "true",
     }) satisfies NodeJS.ProcessEnv;
 
-  const validateInSuite = (raw: unknown) =>
+  const validateInSuite = (raw: any) =>
     validateConfigObjectWithPlugins(raw, { env: suiteEnv() });
 
   const validateRemovedPluginConfig = (removedId: string) =>
@@ -229,7 +229,7 @@ describe("config plugin validation", () => {
       "openclaw.plugin.json",
     );
     const voiceCallManifest = JSON.parse(await fs.readFile(voiceCallManifestPath, "utf-8")) as {
-      configSchema?: Record<string, unknown>;
+      configSchema?: Record<string, any>;
     };
     if (!voiceCallManifest.configSchema) {
       throw new Error("voice-call manifest missing configSchema");
@@ -319,7 +319,7 @@ describe("config plugin validation", () => {
   });
 
   describe("missing Codex plugin diagnostics", () => {
-    const validateWithMissingCodexPlugin = (raw: Record<string, unknown>) =>
+    const validateWithMissingCodexPlugin = (raw: Record<string, any>) =>
       validateConfigObjectWithPlugins(
         {
           agents: { list: [{ id: "openclaw" }] },

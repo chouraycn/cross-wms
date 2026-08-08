@@ -56,7 +56,7 @@ function messageForReason(params: {
 }
 
 /** 将一个 provider failover 错误转换为 OpenAI 兼容的错误信封。 */
-export function resolveOpenAiCompatError(err: unknown): OpenAiCompatError | undefined {
+export function resolveOpenAiCompatError(err: any): OpenAiCompatError | undefined {
   const described = describeFailoverError(err);
   const reason = described.reason;
   if (!reason) {
@@ -84,11 +84,11 @@ export function resolveOpenAiCompatError(err: unknown): OpenAiCompatError | unde
 
 /** 在 provider 分发前校验 OpenAI 兼容的采样参数。 */
 export function validateOpenAiSamplingParams(params: {
-  temperature?: unknown;
-  topP?: unknown;
-  frequencyPenalty?: unknown;
-  presencePenalty?: unknown;
-  seed?: unknown;
+  temperature?: any;
+  topP?: any;
+  frequencyPenalty?: any;
+  presencePenalty?: any;
+  seed?: any;
 }): string | undefined {
   if (params.temperature != null) {
     if (typeof params.temperature !== "number" || !Number.isFinite(params.temperature)) {

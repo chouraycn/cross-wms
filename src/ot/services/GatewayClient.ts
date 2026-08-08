@@ -15,13 +15,13 @@ export type GatewayConnectionStatus = 'disconnected' | 'connecting' | 'connected
 export interface GatewayEvent {
   type: 'event';
   event: string;
-  payload?: unknown;
+  payload?: any;
   seq?: number;
 }
 
 interface PendingRequest {
-  resolve: (value: unknown) => void;
-  reject: (reason: unknown) => void;
+  resolve: (value: any) => void;
+  reject: (reason: any) => void;
   timer: ReturnType<typeof setTimeout>;
 }
 
@@ -113,7 +113,7 @@ export class GatewayClient {
   }
 
   /** 发送 RPC 请求 */
-  request<T = unknown>(method: string, params?: Record<string, unknown>, timeoutMs = 30000): Promise<T> {
+  request<T = unknown>(method: string, params?: Record<string, any>, timeoutMs = 30000): Promise<T> {
     return new Promise((resolve, reject) => {
       const ws = this.ws;
       if (!ws || ws.readyState !== WebSocket.OPEN) {
@@ -129,7 +129,7 @@ export class GatewayClient {
         reject(new Error(`RPC timeout: ${method}`));
       }, timeoutMs);
 
-      this.pending.set(id, { resolve: resolve as (value: unknown) => void, reject, timer });
+      this.pending.set(id, { resolve: resolve as (value: any) => void, reject, timer });
 
       try {
         ws.send(JSON.stringify(frame));
@@ -185,7 +185,7 @@ export class GatewayClient {
     }
   }
 
-  private requestOnSocket<T>(ws: WebSocket, method: string, params: Record<string, unknown>, timeoutMs = 10000): Promise<T> {
+  private requestOnSocket<T>(ws: WebSocket, method: string, params: Record<string, any>, timeoutMs = 10000): Promise<T> {
     return new Promise((resolve, reject) => {
       const id = String(++this.requestId);
       const frame = { type: 'req', id, method, params };
@@ -195,7 +195,7 @@ export class GatewayClient {
         reject(new Error(`RPC timeout: ${method}`));
       }, timeoutMs);
 
-      this.pending.set(id, { resolve: resolve as (value: unknown) => void, reject, timer });
+      this.pending.set(id, { resolve: resolve as (value: any) => void, reject, timer });
 
       try {
         ws.send(JSON.stringify(frame));
@@ -208,14 +208,14 @@ export class GatewayClient {
   }
 
   private handleMessage(raw: string) {
-    let parsed: unknown;
+    let parsed: any;
     try {
       parsed = JSON.parse(raw);
     } catch {
       return;
     }
 
-    const frame = parsed as Record<string, unknown>;
+    const frame = parsed as Record<string, any>;
 
     if (frame.type === 'res') {
       // RPC 响应

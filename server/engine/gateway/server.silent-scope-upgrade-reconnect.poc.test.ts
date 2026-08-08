@@ -33,17 +33,17 @@ installGatewayTestHooks({ scope: "suite" });
 await import("./server.js");
 
 type ScopeUpgradeAttempt = {
-  ok?: unknown;
-  error?: { message?: unknown; details?: unknown };
+  ok?: any;
+  error?: { message?: any; details?: any };
 };
 
 type ScopeUpgradeDetails = {
-  requestId?: unknown;
-  reason?: unknown;
-  remediationHint?: unknown;
-  requestedRole?: unknown;
-  requestedScopes?: unknown;
-  approvedScopes?: unknown;
+  requestId?: any;
+  reason?: any;
+  remediationHint?: any;
+  requestedRole?: any;
+  requestedScopes?: any;
+  approvedScopes?: any;
 };
 
 function scopeUpgradeDetails(attempt: ScopeUpgradeAttempt) {
@@ -101,7 +101,7 @@ async function connectWithLoadedIdentity(
 }
 
 function responseRequestId(response: ScopeUpgradeAttempt) {
-  return (response.error?.details as { requestId?: unknown; code?: string } | undefined)?.requestId;
+  return (response.error?.details as { requestId?: any; code?: string } | undefined)?.requestId;
 }
 
 async function expectReadScopedPairing(deviceId: string) {
@@ -123,7 +123,7 @@ async function expectRejectedScopeUpgradeAttempt({
   token,
 }: {
   attempt: ScopeUpgradeAttempt;
-  requestedEvent: Promise<unknown>;
+  requestedEvent: Promise<any>;
   deviceId: string;
   token: string;
 }) {
@@ -164,7 +164,7 @@ describe("gateway silent scope-upgrade reconnect", () => {
     let watcherWs: WebSocket | undefined;
     let sharedAuthReconnectWs: WebSocket | undefined;
     let postAttemptDeviceTokenWs: WebSocket | undefined;
-    let requestedEvent: Promise<unknown>;
+    let requestedEvent: Promise<any>;
 
     try {
       ({ ws: watcherWs, requestedEvent } = await watchScopeUpgradeRequests(started.port));
@@ -212,7 +212,7 @@ describe("gateway silent scope-upgrade reconnect", () => {
 
     let watcherWs: WebSocket | undefined;
     let backendReconnectWs: WebSocket | undefined;
-    let requestedEvent: Promise<unknown>;
+    let requestedEvent: Promise<any>;
 
     try {
       ({ ws: watcherWs, requestedEvent } = await watchScopeUpgradeRequests(started.port));
@@ -306,7 +306,7 @@ describe("gateway silent scope-upgrade reconnect", () => {
 
     const approveOriginal = devicePairingModule.approveDevicePairing;
     let simulatedRace = false;
-    const forwardApprove = async (requestId: string, optionsOrBaseDir?: unknown) => {
+    const forwardApprove = async (requestId: string, optionsOrBaseDir?: any) => {
       if (optionsOrBaseDir && typeof optionsOrBaseDir === "object") {
         return await approveOriginal(
           requestId,
@@ -317,7 +317,7 @@ describe("gateway silent scope-upgrade reconnect", () => {
     };
     const approveSpy = vi
       .spyOn(devicePairingModule, "approveDevicePairing")
-      .mockImplementation(async (requestId: string, optionsOrBaseDir?: unknown) => {
+      .mockImplementation(async (requestId: string, optionsOrBaseDir?: any) => {
         if (simulatedRace) {
           return await forwardApprove(requestId, optionsOrBaseDir);
         }
@@ -366,7 +366,7 @@ describe("gateway silent scope-upgrade reconnect", () => {
         300,
       )
         .then((event) => ({ ok: true as const, event }))
-        .catch((error: unknown) => ({ ok: false as const, error }));
+        .catch((error: any) => ({ ok: false as const, error }));
 
       const connection = await connectWithLoadedIdentity(started.port, loaded);
       ws = connection.ws;

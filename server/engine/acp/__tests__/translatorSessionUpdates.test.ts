@@ -11,37 +11,37 @@ import type { AcpTurnEvent } from "../acpTypes.js";
 describe("Translator - Session Updates", () => {
   describe("toSessionUpdate", () => {
     it("should convert message event to text update", () => {
-      const event: AcpTurnEvent = { type: "message", content: "Hello" } as unknown;
+      const event: AcpTurnEvent = { type: "message", content: "Hello" } as any;
       const result = toSessionUpdate(event, 1);
       expect(result).toEqual({ kind: "text", text: "Hello", sequence: 1 });
     });
 
     it("should convert thinking event to thinking update", () => {
-      const event: AcpTurnEvent = { type: "thinking", content: "thinking..." } as unknown;
+      const event: AcpTurnEvent = { type: "thinking", content: "thinking..." } as any;
       const result = toSessionUpdate(event, 1);
       expect(result).toEqual({ kind: "thinking", thinking: "thinking...", sequence: 1 });
     });
 
     it("should convert tool_use event to tool_call update", () => {
-      const event: AcpTurnEvent = { type: "tool_use", id: "tc1", name: "search", input: { q: "x" } } as unknown;
+      const event: AcpTurnEvent = { type: "tool_use", id: "tc1", name: "search", input: { q: "x" } } as any;
       const result = toSessionUpdate(event, 1);
       expect(result).toEqual({ kind: "tool_call", id: "tc1", name: "search", input: { q: "x" }, sequence: 1 });
     });
 
     it("should convert tool_result event", () => {
-      const event: AcpTurnEvent = { type: "tool_result", id: "tc1", output: "result" } as unknown;
+      const event: AcpTurnEvent = { type: "tool_result", id: "tc1", output: "result" } as any;
       const result = toSessionUpdate(event, 1);
       expect(result).toEqual({ kind: "tool_result", id: "tc1", output: "result", sequence: 1 });
     });
 
     it("should convert done event", () => {
-      const event: AcpTurnEvent = { type: "done", finishReason: "stop" } as unknown;
+      const event: AcpTurnEvent = { type: "done", finishReason: "stop" } as any;
       const result = toSessionUpdate(event, 1);
       expect(result).toEqual({ kind: "done", finishReason: "stop", sequence: 1 });
     });
 
     it("should return null for unknown event type", () => {
-      const event: AcpTurnEvent = { type: "unknown" as unknown } as unknown;
+      const event: AcpTurnEvent = { type: "unknown" as any } as any;
       const result = toSessionUpdate(event, 1);
       expect(result).toBeNull();
     });

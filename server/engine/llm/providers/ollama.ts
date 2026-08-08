@@ -56,7 +56,7 @@ export const buildOllamaHeaders: ProviderHeaderBuilder = () => ({
 /** 构造 Ollama /api/chat 请求体。 */
 export const buildOllamaRequestBody: ProviderRequestBodyBuilder = (ctx) => {
   const { model, options } = ctx;
-  const body: Record<string, unknown> = {
+  const body: Record<string, any> = {
     model: model.id,
     messages: options.messages.map((m) => ({ role: m.role, content: m.content })),
     stream: true,
@@ -65,7 +65,7 @@ export const buildOllamaRequestBody: ProviderRequestBodyBuilder = (ctx) => {
     body.options = { temperature: options.temperature };
   }
   if (options.maxTokens !== undefined) {
-    body.options = { ...(body.options as Record<string, unknown>), num_predict: options.maxTokens };
+    body.options = { ...(body.options as Record<string, any>), num_predict: options.maxTokens };
   }
   if (options.tools && options.tools.length > 0) {
     body.tools = options.tools.map((t) => ({
@@ -77,7 +77,7 @@ export const buildOllamaRequestBody: ProviderRequestBodyBuilder = (ctx) => {
 };
 
 /** 构造 Ollama 嵌入请求体。 */
-export function buildOllamaEmbeddingBody(model: string, prompt: string): Record<string, unknown> {
+export function buildOllamaEmbeddingBody(model: string, prompt: string): Record<string, any> {
   return { model, prompt };
 }
 

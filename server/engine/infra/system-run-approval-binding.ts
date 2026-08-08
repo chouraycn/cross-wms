@@ -13,11 +13,11 @@ import { normalizeNonEmptyString, normalizeStringArray } from "./system-run-norm
 type NormalizedSystemRunEnvEntry = [key: string, value: string];
 
 function normalizeSystemRunApprovalFileOperand(
-  value: unknown,
+  value: any,
 ): SystemRunApprovalFileOperand | null | undefined {
   if (value === undefined) return undefined;
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
-  const candidate = value as Record<string, unknown>;
+  const candidate = value as Record<string, any>;
   const argvIndex =
     typeof candidate.argvIndex === "number" &&
     Number.isInteger(candidate.argvIndex) &&
@@ -30,9 +30,9 @@ function normalizeSystemRunApprovalFileOperand(
   return { argvIndex, path: filePath, sha256 };
 }
 
-export function normalizeSystemRunApprovalPlan(value: unknown): SystemRunApprovalPlan | null {
+export function normalizeSystemRunApprovalPlan(value: any): SystemRunApprovalPlan | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
-  const candidate = value as Record<string, unknown>;
+  const candidate = value as Record<string, any>;
   const argv = normalizeStringArray(candidate.argv);
   if (argv.length === 0) return null;
   const mutableFileOperand = normalizeSystemRunApprovalFileOperand(candidate.mutableFileOperand);
@@ -51,10 +51,10 @@ export function normalizeSystemRunApprovalPlan(value: unknown): SystemRunApprova
   };
 }
 
-function normalizeSystemRunEnvEntries(env: unknown): NormalizedSystemRunEnvEntry[] {
+function normalizeSystemRunEnvEntries(env: any): NormalizedSystemRunEnvEntry[] {
   if (!env || typeof env !== "object" || Array.isArray(env)) return [];
   const entries: NormalizedSystemRunEnvEntry[] = [];
-  for (const [rawKey, rawValue] of Object.entries(env as Record<string, unknown>)) {
+  for (const [rawKey, rawValue] of Object.entries(env as Record<string, any>)) {
     if (typeof rawValue !== "string") continue;
     const key = normalizeHostOverrideEnvVarKey(rawKey);
     if (!key) continue;
@@ -69,7 +69,7 @@ function hashSystemRunEnvEntries(entries: NormalizedSystemRunEnvEntry[]): string
   return crypto.createHash("sha256").update(JSON.stringify(entries)).digest("hex");
 }
 
-export function buildSystemRunApprovalEnvBinding(env: unknown): {
+export function buildSystemRunApprovalEnvBinding(env: any): {
   envHash: string | null;
   envKeys: string[];
 } {
@@ -81,11 +81,11 @@ export function buildSystemRunApprovalEnvBinding(env: unknown): {
 }
 
 export function buildSystemRunApprovalBinding(params: {
-  argv: unknown;
-  cwd?: unknown;
-  agentId?: unknown;
-  sessionKey?: unknown;
-  env?: unknown;
+  argv: any;
+  cwd?: any;
+  agentId?: any;
+  sessionKey?: any;
+  env?: any;
 }): { binding: SystemRunApprovalBinding; envKeys: string[] } {
   const envBinding = buildSystemRunApprovalEnvBinding(params.env);
   return {
@@ -114,14 +114,14 @@ export type SystemRunApprovalMatchResult =
       ok: false;
       code: "APPROVAL_REQUEST_MISMATCH" | "APPROVAL_ENV_BINDING_MISSING" | "APPROVAL_ENV_MISMATCH";
       message: string;
-      details?: Record<string, unknown>;
+      details?: Record<string, any>;
     };
 
 type SystemRunApprovalMismatch = Extract<SystemRunApprovalMatchResult, { ok: false }>;
 
 const APPROVAL_REQUEST_MISMATCH_MESSAGE = "approval id does not match request";
 
-function requestMismatch(details?: Record<string, unknown>): SystemRunApprovalMatchResult {
+function requestMismatch(details?: Record<string, any>): SystemRunApprovalMatchResult {
   return {
     ok: false,
     code: "APPROVAL_REQUEST_MISMATCH",
@@ -188,8 +188,8 @@ export function missingSystemRunApprovalBinding(params: {
 export function toSystemRunApprovalMismatchError(params: {
   runId: string;
   match: SystemRunApprovalMismatch;
-}): { ok: false; message: string; details: Record<string, unknown> } {
-  const details: Record<string, unknown> = { code: params.match.code, runId: params.runId };
+}): { ok: false; message: string; details: Record<string, any> } {
+  const details: Record<string, any> = { code: params.match.code, runId: params.runId };
   if (params.match.details) Object.assign(details, params.match.details);
   return { ok: false, message: params.match.message, details };
 }

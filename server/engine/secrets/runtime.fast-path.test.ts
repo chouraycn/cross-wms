@@ -26,7 +26,7 @@ const { resolveRuntimeWebToolsMock, runtimePrepareImportMock } = vi.hoisted(() =
 vi.mock("./runtime-prepare.runtime.js", () => {
   runtimePrepareImportMock();
   return {
-    createResolverContext: ({ sourceConfig, env }: { sourceConfig: unknown; env: unknown }) => ({
+    createResolverContext: ({ sourceConfig, env }: { sourceConfig: any; env: any }) => ({
       sourceConfig,
       env,
       cache: {},

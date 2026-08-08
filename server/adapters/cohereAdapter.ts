@@ -51,7 +51,7 @@ export class CohereAdapter implements IAiApiAdapter {
     }
 
     // Cohere v2 chat format
-    const body: Record<string, unknown> = {
+    const body: Record<string, any> = {
       model: modelId || COHERE_DEFAULT_MODEL_ID,
       messages,
       temperature,

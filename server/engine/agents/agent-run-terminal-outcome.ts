@@ -9,7 +9,7 @@ export type AgentRunTerminalOutcome = {
   reason?: string;
 };
 
-export function isStickyAgentRunTerminalOutcome(_outcome: unknown): boolean {
+export function isStickyAgentRunTerminalOutcome(_outcome: any): boolean {
   return false;
 }
 
@@ -20,7 +20,7 @@ export function buildAgentRunTerminalOutcome(params: { status?: string; reason?:
   };
 }
 
-export function buildAgentRunTerminalOutcomeFromWaitResult(_params: unknown): AgentRunTerminalOutcome {
+export function buildAgentRunTerminalOutcomeFromWaitResult(_params: any): AgentRunTerminalOutcome {
   return { status: "ok" };
 }
 

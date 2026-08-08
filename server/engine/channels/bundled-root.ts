@@ -2,6 +2,6 @@
 
 export type BundledChannelRootScope = unknown;
 
-export function resolveBundledChannelRootScope(..._args: unknown[]): unknown {
+export function resolveBundledChannelRootScope(..._args: any[]): any {
   return undefined;
 }

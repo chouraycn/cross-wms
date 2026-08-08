@@ -29,7 +29,7 @@ export type SecretAssignment = {
   ref: SecretRef;
   path: string;
   expected: "string" | "string-or-object";
-  apply: (value: unknown) => void;
+  apply: (value: any) => void;
 };
 
 export type ResolverContext = {
@@ -105,14 +105,14 @@ export function pushInactiveSurfaceWarning(params: {
  * Converts an inline SecretInput value into a deferred assignment when its surface is active.
  */
 export function collectSecretInputAssignment(params: {
-  value: unknown;
+  value: any;
   path: string;
   expected: SecretAssignment["expected"];
   defaults: SecretDefaults | undefined;
   context: ResolverContext;
   active?: boolean;
   inactiveReason?: string;
-  apply: (value: unknown) => void;
+  apply: (value: any) => void;
 }): void {
   const ref = coerceSecretRef(params.value, params.defaults);
   if (!ref) {
@@ -139,7 +139,7 @@ export function collectSecretInputAssignment(params: {
  */
 export function applyResolvedAssignments(params: {
   assignments: SecretAssignment[];
-  resolved: Map<string, unknown>;
+  resolved: Map<string, any>;
 }): void {
   for (const assignment of params.assignments) {
     const key = secretRefKey(assignment.ref);
@@ -162,14 +162,14 @@ export function applyResolvedAssignments(params: {
 /**
  * Own-property helper used by config collectors that receive unknown object shapes.
  */
-export function hasOwnProperty(record: Record<string, unknown>, key: string): boolean {
+export function hasOwnProperty(record: Record<string, any>, key: string): boolean {
   return Object.hasOwn(record, key);
 }
 
 /**
  * Treats missing or non-object enabled state as enabled by default.
  */
-export function isEnabledFlag(value: unknown): boolean {
+export function isEnabledFlag(value: any): boolean {
   if (!isRecord(value)) {
     return true;
   }
@@ -180,8 +180,8 @@ export function isEnabledFlag(value: unknown): boolean {
  * Returns whether both a channel and one account are enabled for secret resolution.
  */
 export function isChannelAccountEffectivelyEnabled(
-  channel: Record<string, unknown>,
-  account: Record<string, unknown>,
+  channel: Record<string, any>,
+  account: Record<string, any>,
 ): boolean {
   return isEnabledFlag(channel) && isEnabledFlag(account);
 }

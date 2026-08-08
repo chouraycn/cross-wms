@@ -15,7 +15,7 @@ type FixtureCase = {
   expected: {
     ok: false;
     message: string;
-    details: Record<string, unknown>;
+    details: Record<string, any>;
   };
 };
 

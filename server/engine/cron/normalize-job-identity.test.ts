@@ -4,7 +4,7 @@ import { normalizeCronJobIdentityFields } from "./normalize-job-identity.js";
 
 describe("normalizeCronJobIdentityFields", () => {
   it("copies trimmed jobId into id when id is missing", () => {
-    const raw: Record<string, unknown> = {
+    const raw: Record<string, any> = {
       jobId: "  stable-slug  ",
       name: "n",
     };
@@ -16,7 +16,7 @@ describe("normalizeCronJobIdentityFields", () => {
   });
 
   it("trims id without reporting a legacy jobId issue when jobId is absent", () => {
-    const raw: Record<string, unknown> = {
+    const raw: Record<string, any> = {
       id: "  trimmed-id  ",
       name: "n",
     };
@@ -27,7 +27,7 @@ describe("normalizeCronJobIdentityFields", () => {
   });
 
   it("removes redundant jobId while keeping canonical id", () => {
-    const raw: Record<string, unknown> = {
+    const raw: Record<string, any> = {
       id: "keep-me",
       jobId: "keep-me",
       name: "n",
@@ -40,7 +40,7 @@ describe("normalizeCronJobIdentityFields", () => {
   });
 
   it("ignores non-string jobId", () => {
-    const raw: Record<string, unknown> = {
+    const raw: Record<string, any> = {
       id: "x",
       jobId: 1,
       name: "n",

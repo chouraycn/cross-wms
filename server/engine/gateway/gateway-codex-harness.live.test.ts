@@ -86,7 +86,7 @@ const GATEWAY_CONNECT_TIMEOUT_MS = 60_000;
 
 type CapturedAgentEvent = {
   stream: string;
-  data?: Record<string, unknown>;
+  data?: Record<string, any>;
   sessionKey?: string;
 };
 
@@ -97,7 +97,7 @@ function resolveLiveTimeoutMs(raw: string | undefined, fallback: number): number
   return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : fallback;
 }
 
-function logCodexLiveStep(step: string, details?: Record<string, unknown>): void {
+function logCodexLiveStep(step: string, details?: Record<string, any>): void {
   if (!CODEX_HARNESS_DEBUG) {
     return;
   }
@@ -105,7 +105,7 @@ function logCodexLiveStep(step: string, details?: Record<string, unknown>): void
   console.error(`[gateway-codex-live] ${step}${suffix}`);
 }
 
-function isCodexAccountTokenError(error: unknown): boolean {
+function isCodexAccountTokenError(error: any): boolean {
   return error instanceof Error && error.message.includes("Failed to extract accountId from token");
 }
 
@@ -167,14 +167,14 @@ async function createLiveWorkspace(tempDir: string): Promise<string> {
 }
 
 async function removeLiveTempDir(dir: string): Promise<void> {
-  let lastError: unknown;
+  let lastError: any;
   for (let attempt = 0; attempt < 100; attempt += 1) {
     try {
       await fs.rm(dir, { recursive: true, force: true });
       return;
     } catch (error) {
       lastError = error;
-      const code = (error as { code?: unknown } | null)?.code;
+      const code = (error as { code?: any } | null)?.code;
       if (code !== "EBUSY" && code !== "ENOTEMPTY" && code !== "EPERM" && code !== "EACCES") {
         throw error;
       }
@@ -434,7 +434,7 @@ function extractChatFinalText(event: EventFrame, runId: string): string | undefi
   if (!payload || typeof payload !== "object") {
     return undefined;
   }
-  const record = payload as Record<string, unknown>;
+  const record = payload as Record<string, any>;
   if (record.runId !== runId || record.state !== "final") {
     return undefined;
   }
@@ -442,14 +442,14 @@ function extractChatFinalText(event: EventFrame, runId: string): string | undefi
   if (!message || typeof message !== "object") {
     return undefined;
   }
-  const messageRecord = message as Record<string, unknown>;
+  const messageRecord = message as Record<string, any>;
   if (typeof messageRecord.text === "string" && messageRecord.text.trim()) {
     return messageRecord.text;
   }
   const content = Array.isArray(messageRecord.content) ? messageRecord.content : [];
   return content
     .map((entry) =>
-      entry && typeof entry === "object" ? (entry as Record<string, unknown>).text : undefined,
+      entry && typeof entry === "object" ? (entry as Record<string, any>).text : undefined,
     )
     .filter((entry): entry is string => typeof entry === "string" && entry.trim().length > 0)
     .join("\n")
@@ -464,25 +464,25 @@ function readCodexAppServerPluginApprovalId(event: EventFrame): string | undefin
   if (!payload || typeof payload !== "object") {
     return undefined;
   }
-  const record = payload as Record<string, unknown>;
+  const record = payload as Record<string, any>;
   const request = record.request;
   if (!request || typeof request !== "object") {
     return undefined;
   }
-  const requestRecord = request as Record<string, unknown>;
+  const requestRecord = request as Record<string, any>;
   if (requestRecord.pluginId !== "openclaw-codex-app-server") {
     return undefined;
   }
   return typeof record.id === "string" && record.id ? record.id : undefined;
 }
 
-function extractAssistantTexts(messages: unknown[]): string[] {
+function extractAssistantTexts(messages: any[]): string[] {
   const texts: string[] = [];
   for (const entry of messages) {
     if (!entry || typeof entry !== "object") {
       continue;
     }
-    if ((entry as { role?: unknown }).role !== "assistant") {
+    if ((entry as { role?: any }).role !== "assistant") {
       continue;
     }
     const text = extractFirstTextBlock(entry);
@@ -510,7 +510,7 @@ async function waitForAssistantText(params: {
   const timeoutMs = params.timeoutMs ?? 60_000;
   const startedAt = Date.now();
   while (Date.now() - startedAt < timeoutMs) {
-    const history: { messages?: unknown[] } = await params.client.request("chat.history", {
+    const history: { messages?: any[] } = await params.client.request("chat.history", {
       sessionKey: params.sessionKey,
       limit: 24,
     });
@@ -528,7 +528,7 @@ async function waitForAssistantText(params: {
     await delay(500);
   }
 
-  const finalHistory: { messages?: unknown[] } = await params.client.request("chat.history", {
+  const finalHistory: { messages?: any[] } = await params.client.request("chat.history", {
     sessionKey: params.sessionKey,
     limit: 24,
   });
@@ -560,7 +560,7 @@ async function verifyCodexImageProbe(params: {
       data: event.data,
     });
   });
-  let payload: { status?: string; result?: unknown } | undefined;
+  let payload: { status?: string; result?: any } | undefined;
   try {
     payload = await params.client.request(
       "agent",
@@ -906,7 +906,7 @@ async function verifyCodexSubagentProbe(params: {
     }> = [];
     subagentSpawnTesting.setDepsForTest({
       resolveContextEngine: async () => noOpContextEngine,
-      callGateway: async <T = Record<string, unknown>>(opts: CallGatewayOptions): Promise<T> => {
+      callGateway: async <T = Record<string, any>>(opts: CallGatewayOptions): Promise<T> => {
         const startedAt = Date.now();
         try {
           const result = await params.client.request(opts.method, opts.params, {
@@ -1100,7 +1100,7 @@ describeLive("gateway live (Codex harness)", () => {
           .then(() => {
             logCodexLiveStep("guardian-plugin-approval:resolved", { approvalId, decision });
           })
-          .catch((error: unknown) => {
+          .catch((error: any) => {
             logCodexLiveStep("guardian-plugin-approval:resolve-failed", {
               approvalId,
               error: error instanceof Error ? error.message : String(error),

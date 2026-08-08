@@ -1,28 +1,28 @@
 // 移植自 openclaw/src/infra/message-action-params.ts
 
 export type AttachmentMediaPolicy = unknown;
-export function resolveExtraActionMediaSourceParamKeys(...args: unknown[]): unknown {
+export function resolveExtraActionMediaSourceParamKeys(...args: any[]): any {
   return undefined;
 }
-export function collectActionMediaSourceHints(...args: unknown[]): unknown {
+export function collectActionMediaSourceHints(...args: any[]): any {
   return [];
 }
-export function resolveAttachmentMediaPolicy(...args: unknown[]): unknown {
+export function resolveAttachmentMediaPolicy(...args: any[]): any {
   return undefined;
 }
-export function normalizeSandboxMediaParams(...args: unknown[]): unknown {
+export function normalizeSandboxMediaParams(...args: any[]): any {
   return undefined;
 }
-export function normalizeSandboxMediaList(...args: unknown[]): unknown {
+export function normalizeSandboxMediaList(...args: any[]): any {
   return undefined;
 }
-export function hydrateAttachmentParamsForAction(...args: unknown[]): unknown {
+export function hydrateAttachmentParamsForAction(...args: any[]): any {
   return undefined;
 }
-export function parseJsonMessageParam(...args: unknown[]): unknown {
+export function parseJsonMessageParam(...args: any[]): any {
   return undefined;
 }
-export function parseInteractiveParam(...args: unknown[]): unknown {
+export function parseInteractiveParam(...args: any[]): any {
   return undefined;
 }
-export const readBooleanParam: (...args: unknown[]) => unknown = undefined as unknown as (...args: unknown[]) => unknown;
+export const readBooleanParam: (...args: any[]) => unknown = undefined as unknown as (...args: any[]) => unknown;

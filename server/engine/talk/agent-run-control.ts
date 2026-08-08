@@ -9,7 +9,7 @@ import type { RealtimeVoiceTool } from "./provider-types.js";
 import type { TalkEvent } from "./talk-events.js";
 
 /** 规范化可选字符串。 */
-function normalizeOptionalString(value: unknown): string | undefined {
+function normalizeOptionalString(value: any): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }
@@ -18,7 +18,7 @@ function normalizeOptionalString(value: unknown): string | undefined {
 }
 
 /** 规范化可选小写字符串。 */
-function normalizeOptionalLowercaseString(value: unknown): string | undefined {
+function normalizeOptionalLowercaseString(value: any): string | undefined {
   const normalized = normalizeOptionalString(value);
   return normalized ? normalized.toLowerCase() : undefined;
 }
@@ -114,7 +114,7 @@ export type RealtimeVoiceAgentControlResult = {
 
 /** Normalize user/config/provider supplied control modes. */
 export function normalizeRealtimeVoiceAgentControlMode(
-  value: unknown,
+  value: any,
 ): RealtimeVoiceAgentControlMode | undefined {
   const normalized = normalizeOptionalLowercaseString(value);
   return REALTIME_VOICE_AGENT_CONTROL_MODES.includes(normalized as RealtimeVoiceAgentControlMode)
@@ -170,7 +170,7 @@ function hasNegatedCancelIntent(text: string): boolean {
 /** Classify raw spoken control text with conservative auto-control gating. */
 export function resolveRealtimeVoiceAgentControlIntent(params: {
   text: string;
-  mode?: unknown;
+  mode?: any;
 }): RealtimeVoiceAgentControlIntent {
   const explicitMode = normalizeRealtimeVoiceAgentControlMode(params.mode);
   if (explicitMode) {
@@ -250,27 +250,27 @@ export function shouldAutoControlRealtimeVoiceAgentText(text: string): boolean {
 }
 
 /** Parse provider-owned control tool args from JSON strings or object payloads. */
-export function parseRealtimeVoiceAgentControlToolArgs(args: unknown): {
+export function parseRealtimeVoiceAgentControlToolArgs(args: any): {
   text: string;
   mode: RealtimeVoiceAgentControlMode;
 } {
   const parsed = parseRealtimeVoiceAgentControlToolArgsRecord(args);
   const record = parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
   const text =
-    normalizeOptionalString((record as Record<string, unknown>).text) ??
-    normalizeOptionalString((record as Record<string, unknown>).message) ??
-    normalizeOptionalString((record as Record<string, unknown>).request) ??
-    normalizeOptionalString((record as Record<string, unknown>).query);
+    normalizeOptionalString((record as Record<string, any>).text) ??
+    normalizeOptionalString((record as Record<string, any>).message) ??
+    normalizeOptionalString((record as Record<string, any>).request) ??
+    normalizeOptionalString((record as Record<string, any>).query);
   if (!text) {
     throw new Error("text required");
   }
   const mode =
-    normalizeRealtimeVoiceAgentControlMode((record as Record<string, unknown>).mode) ??
+    normalizeRealtimeVoiceAgentControlMode((record as Record<string, any>).mode) ??
     resolveRealtimeVoiceAgentControlIntent({ text }).mode;
   return { text, mode };
 }
 
-function parseRealtimeVoiceAgentControlToolArgsRecord(args: unknown): unknown {
+function parseRealtimeVoiceAgentControlToolArgsRecord(args: any): any {
   if (typeof args !== "string") {
     return args;
   }
@@ -279,7 +279,7 @@ function parseRealtimeVoiceAgentControlToolArgsRecord(args: unknown): unknown {
     return {};
   }
   try {
-    return JSON.parse(trimmed) as unknown;
+    return JSON.parse(trimmed) as any;
   } catch {
     return { text: trimmed };
   }
@@ -337,7 +337,7 @@ function isRealtimeVoiceAgentControlToolEvent(event: TalkEvent): boolean {
   }
   const payload =
     event.payload && typeof event.payload === "object"
-      ? (event.payload as Record<string, unknown>)
+      ? (event.payload as Record<string, any>)
       : {};
   return normalizeOptionalString(payload.name) === REALTIME_VOICE_AGENT_CONTROL_TOOL_NAME;
 }
@@ -362,7 +362,7 @@ export function formatRealtimeVoiceAgentStatus(params: {
   if (toolEvent) {
     const payload =
       toolEvent.payload && typeof toolEvent.payload === "object"
-        ? (toolEvent.payload as Record<string, unknown>)
+        ? (toolEvent.payload as Record<string, any>)
         : {};
     const name = normalizeOptionalString(payload.name);
     const phase = normalizeOptionalString(payload.phase);
@@ -424,7 +424,7 @@ export async function controlRealtimeVoiceAgentRun(
   params: {
     sessionKey: string;
     text: string;
-    mode?: unknown;
+    mode?: any;
     recentEvents?: readonly TalkEvent[];
   },
   deps: RealtimeVoiceAgentControlDeps,

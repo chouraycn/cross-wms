@@ -14,6 +14,6 @@ export function createStubTool(name: string): AgentTool {
     label: name,
     description: "",
     parameters: Type.Object({}),
-    execute: async () => ({}) as AgentToolResult<unknown>,
+    execute: async () => ({}) as AgentToolResult<any>,
   };
 }

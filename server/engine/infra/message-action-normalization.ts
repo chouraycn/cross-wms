@@ -9,13 +9,13 @@ const TARGET_ACTIONS = new Set(["send", "sendMedia"]);
 /** Normalizes message-action args before target validation and dispatch. */
 export function normalizeMessageActionInput(params: {
   action: string;
-  args: Record<string, unknown>;
+  args: Record<string, any>;
   toolContext?: {
     currentChannelProvider?: string;
     currentChannelId?: string;
     currentMessagingTarget?: string;
   };
-}): Record<string, unknown> {
+}): Record<string, any> {
   const normalizedArgs = { ...params.args };
   const { action, toolContext } = params;
   const explicitChannel = normalizeOptionalString(normalizedArgs.channel) ?? "";

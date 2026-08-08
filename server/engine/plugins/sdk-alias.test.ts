@@ -88,7 +88,7 @@ function createPluginSdkAliasFixture(params?: {
   distFile?: string;
   srcBody?: string;
   distBody?: string;
-  packageExports?: Record<string, unknown>;
+  packageExports?: Record<string, any>;
   trustedRootIndicators?: boolean;
   trustedRootIndicatorMode?: "bin+marker" | "cli-entry-only" | "none";
 }) {
@@ -100,7 +100,7 @@ function createPluginSdkAliasFixture(params?: {
   const trustedRootIndicatorMode =
     params?.trustedRootIndicatorMode ??
     (params?.trustedRootIndicators === false ? "none" : "bin+marker");
-  const packageJson: Record<string, unknown> = {
+  const packageJson: Record<string, any> = {
     name: "openclaw",
     type: "module",
   };
@@ -110,7 +110,7 @@ function createPluginSdkAliasFixture(params?: {
     };
   }
   if (params?.packageExports || trustedRootIndicatorMode === "cli-entry-only") {
-    const trustedExports: Record<string, unknown> =
+    const trustedExports: Record<string, any> =
       trustedRootIndicatorMode === "cli-entry-only"
         ? { "./cli-entry": { default: "./dist/cli-entry.js" } }
         : {};
@@ -1351,13 +1351,13 @@ describe("plugin sdk alias helpers", () => {
       ...buildPluginLoaderJitiOptions(sourceAliases),
       tryNative: false,
     });
-    const loadedOllama = ollamaLoader(sourceOllamaEntry) as { loadedSsrFInternal?: unknown };
+    const loadedOllama = ollamaLoader(sourceOllamaEntry) as { loadedSsrFInternal?: any };
     expect(loadedOllama.loadedSsrFInternal).toBe(true);
     const browserLoader = createJiti(sourceLoaderBaseUrl, {
       ...buildPluginLoaderJitiOptions(sourceBrowserAliases),
       tryNative: false,
     });
-    const loadedBrowser = browserLoader(sourceBrowserEntry) as { loadedSsrFInternal?: unknown };
+    const loadedBrowser = browserLoader(sourceBrowserEntry) as { loadedSsrFInternal?: any };
     expect(loadedBrowser.loadedSsrFInternal).toBe(true);
 
     const distLoader = createJiti(sourceLoaderBaseUrl, {
@@ -1365,7 +1365,7 @@ describe("plugin sdk alias helpers", () => {
       tryNative: true,
     });
     const loadedDistOllama = distLoader(distOllamaEntry) as {
-      loadedSsrFInternal?: unknown;
+      loadedSsrFInternal?: any;
     };
     expect(loadedDistOllama.loadedSsrFInternal).toBe(true);
     const distBrowserLoader = createJiti(sourceLoaderBaseUrl, {
@@ -1373,7 +1373,7 @@ describe("plugin sdk alias helpers", () => {
       tryNative: true,
     });
     const loadedDistBrowser = distBrowserLoader(distBrowserEntry) as {
-      loadedSsrFInternal?: unknown;
+      loadedSsrFInternal?: any;
     };
     expect(loadedDistBrowser.loadedSsrFInternal).toBe(true);
 
@@ -1382,7 +1382,7 @@ describe("plugin sdk alias helpers", () => {
       tryNative: true,
     });
     const loadedDistRuntimeOllama = distRuntimeLoader(distRuntimeOllamaEntry) as {
-      loadedSsrFInternal?: unknown;
+      loadedSsrFInternal?: any;
     };
     expect(loadedDistRuntimeOllama.loadedSsrFInternal).toBe(true);
     const distRuntimeBrowserLoader = createJiti(sourceLoaderBaseUrl, {
@@ -1390,7 +1390,7 @@ describe("plugin sdk alias helpers", () => {
       tryNative: true,
     });
     const loadedDistRuntimeBrowser = distRuntimeBrowserLoader(distRuntimeBrowserEntry) as {
-      loadedSsrFInternal?: unknown;
+      loadedSsrFInternal?: any;
     };
     expect(loadedDistRuntimeBrowser.loadedSsrFInternal).toBe(true);
 
@@ -1398,7 +1398,7 @@ describe("plugin sdk alias helpers", () => {
       ...buildPluginLoaderJitiOptions(privateQaOtherAliases),
       tryNative: false,
     });
-    let otherLoadError: unknown;
+    let otherLoadError: any;
     try {
       otherLoader(sourceOtherPluginEntry);
     } catch (error) {
@@ -2229,7 +2229,7 @@ export const syntheticRuntimeMarker = {
       ...buildPluginLoaderJitiOptions({}),
       tryNative: false,
     });
-    let loadError: unknown;
+    let loadError: any;
     try {
       withoutAlias(copiedChannelRuntime);
     } catch (error) {
@@ -2246,7 +2246,7 @@ export const syntheticRuntimeMarker = {
       tryNative: false,
     });
     const loadedRuntime = withAlias(copiedChannelRuntime) as {
-      syntheticRuntimeMarker?: { resolveOutboundSendDep?: unknown };
+      syntheticRuntimeMarker?: { resolveOutboundSendDep?: any };
     };
     expect(typeof loadedRuntime.syntheticRuntimeMarker?.resolveOutboundSendDep).toBe("function");
   }, 240_000);
@@ -2695,7 +2695,7 @@ describe("buildPluginLoaderJitiOptions", () => {
     const second = buildPluginLoaderJitiOptions({ ...aliasMap }).alias as Record<string, string>;
 
     expect(second).toBe(first);
-    expect((first as Record<symbol, unknown>)[marker]).toBe(true);
+    expect((first as Record<symbol, any>)[marker]).toBe(true);
     expect(Object.prototype.propertyIsEnumerable.call(first, marker)).toBe(false);
   });
 

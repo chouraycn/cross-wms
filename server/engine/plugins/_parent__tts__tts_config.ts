@@ -4,11 +4,11 @@ export interface TtsConfig {
   rate?: number;
 }
 
-export function resolveEffectiveTtsConfig(config?: unknown): TtsConfig {
+export function resolveEffectiveTtsConfig(config?: any): TtsConfig {
   if (!config || typeof config !== 'object') {
     return {};
   }
-  const cfg = config as Record<string, unknown>;
+  const cfg = config as Record<string, any>;
   return {
     defaultProvider: cfg.defaultProvider as string | undefined,
     voice: cfg.voice as string | undefined,

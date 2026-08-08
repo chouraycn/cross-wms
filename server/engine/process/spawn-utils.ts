@@ -20,7 +20,7 @@ type SpawnWithFallbackParams = {
   fallbacks?: SpawnFallback[];
   spawnImpl?: typeof spawn;
   retryCodes?: string[];
-  onFallback?: (err: unknown, fallback: SpawnFallback) => void;
+  onFallback?: (err: any, fallback: SpawnFallback) => void;
 };
 
 const DEFAULT_RETRY_CODES = ["EBADF"];
@@ -33,9 +33,9 @@ export function resolveCommandStdio(params: {
   return [stdin, "pipe", "pipe"];
 }
 
-function shouldRetry(err: unknown, codes: string[]): boolean {
+function shouldRetry(err: any, codes: string[]): boolean {
   const code =
-    err && typeof err === "object" && "code" in err ? String((err as { code?: unknown }).code) : "";
+    err && typeof err === "object" && "code" in err ? String((err as { code?: any }).code) : "";
   return code.length > 0 && codes.includes(code);
 }
 
@@ -60,7 +60,7 @@ async function spawnAndWaitForSpawn(
       cleanup();
       resolve(child);
     };
-    const onError = (err: unknown) => {
+    const onError = (err: any) => {
       if (settled) {
         return;
       }
@@ -97,7 +97,7 @@ export async function spawnWithFallback(
     })),
   ];
 
-  let lastError: unknown;
+  let lastError: any;
   for (let index = 0; index < attempts.length; index += 1) {
     const attempt = attempts[index];
     try {

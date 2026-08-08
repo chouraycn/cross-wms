@@ -5,6 +5,6 @@ import { parseTcpPort } from "../../infra/tcp-port.js";
 export { MAX_TCP_PORT, parseTcpPort } from "../../infra/tcp-port.js";
 
 /** Parse a TCP port from unknown CLI/config input, returning null for invalid values. */
-export function parsePort(raw: unknown): number | null {
+export function parsePort(raw: any): number | null {
   return parseTcpPort(raw);
 }

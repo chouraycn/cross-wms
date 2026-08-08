@@ -13,10 +13,10 @@ import { loadGetReplyModuleForTest } from "./get-reply.test-loader.js";
 import "./get-reply.test-mocks.js";
 
 const mocks = vi.hoisted(() => ({
-  applyMediaUnderstanding: vi.fn(async (..._args: unknown[]) => undefined),
-  applyLinkUnderstanding: vi.fn(async (..._args: unknown[]) => undefined),
+  applyMediaUnderstanding: vi.fn(async (..._args: any[]) => undefined),
+  applyLinkUnderstanding: vi.fn(async (..._args: any[]) => undefined),
   createInternalHookEvent: vi.fn(),
-  triggerInternalHook: vi.fn(async (..._args: unknown[]) => undefined),
+  triggerInternalHook: vi.fn(async (..._args: any[]) => undefined),
   resolveReplyDirectives: vi.fn(),
   handleInlineActions: vi.fn(),
   initSessionState: vi.fn(),
@@ -77,12 +77,12 @@ function buildCtx(overrides: Partial<MsgContext> = {}): MsgContext {
   });
 }
 
-function hookEventCall(index: number): [string, string, string, Record<string, unknown>] {
+function hookEventCall(index: number): [string, string, string, Record<string, any>] {
   const call = mocks.createInternalHookEvent.mock.calls[index];
   if (!call) {
     throw new Error(`expected hook event call ${index + 1}`);
   }
-  return call as [string, string, string, Record<string, unknown>];
+  return call as [string, string, string, Record<string, any>];
 }
 
 function verboseMessages(): string[] {
@@ -104,7 +104,7 @@ async function resetMessageHookTestState() {
   vi.mocked(stageSandboxMediaMock).mockReset();
   vi.mocked(logVerbose).mockReset();
 
-  mocks.applyMediaUnderstanding.mockImplementation(async (...args: unknown[]) => {
+  mocks.applyMediaUnderstanding.mockImplementation(async (...args: any[]) => {
     const { ctx } = args[0] as { ctx: MsgContext };
     ctx.Transcript = "voice transcript";
     ctx.Body = "[Audio]\nTranscript:\nvoice transcript";
@@ -112,7 +112,7 @@ async function resetMessageHookTestState() {
   });
   mocks.applyLinkUnderstanding.mockResolvedValue(undefined);
   mocks.createInternalHookEvent.mockImplementation(
-    (type: string, action: string, sessionKey: string, context: Record<string, unknown>) => ({
+    (type: string, action: string, sessionKey: string, context: Record<string, any>) => ({
       type,
       action,
       sessionKey,
@@ -122,9 +122,9 @@ async function resetMessageHookTestState() {
     }),
   );
   mocks.triggerInternalHook.mockResolvedValue(undefined);
-  mocks.handleInlineActions.mockImplementation(async (...args: unknown[]) => {
+  mocks.handleInlineActions.mockImplementation(async (...args: any[]) => {
     const params = args[0] as {
-      directives?: unknown;
+      directives?: any;
       cleanedBody?: string;
       abortedLastRun?: boolean;
     };
@@ -201,7 +201,7 @@ describe("getReplyFromConfig message hooks", () => {
       defaultModel: "claude-opus-4-6",
       aliasIndex: emptyAliasIndex(),
     });
-    mocks.applyMediaUnderstanding.mockImplementationOnce(async (...args: unknown[]) => {
+    mocks.applyMediaUnderstanding.mockImplementationOnce(async (...args: any[]) => {
       const params = args[0] as {
         ctx: MsgContext;
         activeModel?: { provider: string; model: string };
@@ -320,7 +320,7 @@ describe("getReplyFromConfig message hooks", () => {
       params.sessionCtx.MediaUrls = [stagedPath];
       return { staged: new Map([[remotePath, stagedPath]]) };
     });
-    mocks.applyMediaUnderstanding.mockImplementationOnce(async (...args: unknown[]) => {
+    mocks.applyMediaUnderstanding.mockImplementationOnce(async (...args: any[]) => {
       order.push("understand");
       const { ctx } = args[0] as { ctx: MsgContext };
       expect(ctx.MediaPath).toBe(stagedPath);
@@ -368,7 +368,7 @@ describe("getReplyFromConfig message hooks", () => {
   });
 
   it("emits only preprocessed when no transcript is produced", async () => {
-    mocks.applyMediaUnderstanding.mockImplementationOnce(async (...args: unknown[]) => {
+    mocks.applyMediaUnderstanding.mockImplementationOnce(async (...args: any[]) => {
       const { ctx } = args[0] as { ctx: MsgContext };
       ctx.Transcript = undefined;
       ctx.Body = "<media:audio>";

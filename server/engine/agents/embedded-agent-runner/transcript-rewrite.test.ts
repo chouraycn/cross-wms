@@ -10,7 +10,7 @@ import { buildSessionWriteLockModuleMock } from "../../test-utils/session-write-
 
 const acquireSessionWriteLockReleaseMock = vi.hoisted(() => vi.fn(async () => {}));
 const acquireSessionWriteLockMock = vi.hoisted(() =>
-  vi.fn(async (_params?: unknown) => ({ release: acquireSessionWriteLockReleaseMock })),
+  vi.fn(async (_params?: any) => ({ release: acquireSessionWriteLockReleaseMock })),
 );
 
 vi.mock("../session-write-lock.js", () =>
@@ -27,7 +27,7 @@ let installSessionToolResultGuard: typeof import("../session-tool-result-guard.j
 
 type AppendMessage = Parameters<SessionManager["appendMessage"]>[0];
 
-function asAppendMessage(message: unknown): AppendMessage {
+function asAppendMessage(message: any): AppendMessage {
   return message as AppendMessage;
 }
 

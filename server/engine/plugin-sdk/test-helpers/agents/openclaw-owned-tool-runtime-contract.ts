@@ -19,8 +19,8 @@ import {
 
 export function textToolResult(
   text: string,
-  details: Record<string, unknown> = {},
-): AgentToolResult<unknown> {
+  details: Record<string, any> = {},
+): AgentToolResult<any> {
   return {
     content: [{ type: "text", text }],
     details,
@@ -31,7 +31,7 @@ export function mediaToolResult(
   text: string,
   mediaUrl: string,
   audioAsVoice = false,
-): AgentToolResult<unknown> {
+): AgentToolResult<any> {
   return textToolResult(text, {
     media: {
       mediaUrl,
@@ -42,8 +42,8 @@ export function mediaToolResult(
 
 export function createTerminalPresentationContractTool(params: {
   name: string;
-  result: AgentToolResult<unknown>;
-  format: (params: unknown, result: AgentToolResult<unknown>) => string | undefined;
+  result: AgentToolResult<any>;
+  format: (params: any, result: AgentToolResult<any>) => string | undefined;
 }): AnyAgentTool {
   return setToolTerminalPresentation(
     {
@@ -61,7 +61,7 @@ export function createTerminalPresentationContractTool(params: {
 }
 
 export function installOpenClawOwnedToolHooks(params?: {
-  adjustedParams?: Record<string, unknown>;
+  adjustedParams?: Record<string, any>;
   blockReason?: string;
 }) {
   const beforeToolCall = vi.fn(async () => {
@@ -88,7 +88,7 @@ export function installOpenClawOwnedToolHooks(params?: {
  * Pair with `installOpenClawOwnedToolHooks()` when a test asserts before/after hook behavior.
  */
 export function installCodexToolResultMiddleware(
-  handler: (event: AgentToolResultMiddlewareEvent) => AgentToolResult<unknown>,
+  handler: (event: AgentToolResultMiddlewareEvent) => AgentToolResult<any>,
 ) {
   const middleware = vi.fn(async (event: AgentToolResultMiddlewareEvent) => ({
     result: handler(event),

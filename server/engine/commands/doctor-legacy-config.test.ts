@@ -4,22 +4,22 @@ import { normalizeLegacyStreamingAliases } from "../config/channel-compat-normal
 import type { OpenClawConfig } from "../config/config.js";
 import { normalizeLegacyBrowserConfig } from "./doctor/shared/legacy-config-core-normalizers.js";
 
-function asLegacyConfig(value: unknown): OpenClawConfig {
+function asLegacyConfig(value: any): OpenClawConfig {
   return value as OpenClawConfig;
 }
 
-function getLegacyProperty(value: unknown, key: string): unknown {
+function getLegacyProperty(value: any, key: string): any {
   if (!value || typeof value !== "object") {
     return undefined;
   }
-  return (value as Record<string, unknown>)[key];
+  return (value as Record<string, any>)[key];
 }
 
 function normalizeStreaming(params: {
-  entry: Record<string, unknown>;
+  entry: Record<string, any>;
   pathPrefix: string;
   resolvedMode: string;
-  resolvedNativeTransport?: unknown;
+  resolvedNativeTransport?: any;
   offModeLegacyNotice?: (pathPrefix: string) => string;
 }) {
   const changes: string[] = [];

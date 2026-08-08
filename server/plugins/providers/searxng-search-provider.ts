@@ -16,28 +16,28 @@ import { registerWebSearchProvider } from "../web-search-providers.js";
 
 // ==================== 凭证辅助 ====================
 
-function getNestedValue(obj: Record<string, unknown> | undefined, path: string): unknown {
+function getNestedValue(obj: Record<string, any> | undefined, path: string): any {
   if (!obj) return undefined;
   const parts = path.split(".");
-  let current: unknown = obj;
+  let current: any = obj;
   for (const part of parts) {
     if (current === null || current === undefined || typeof current !== "object") {
       return undefined;
     }
-    current = (current as Record<string, unknown>)[part];
+    current = (current as Record<string, any>)[part];
   }
   return current;
 }
 
-function setNestedValue(obj: Record<string, unknown>, path: string, value: unknown): void {
+function setNestedValue(obj: Record<string, any>, path: string, value: any): void {
   const parts = path.split(".");
-  let current: Record<string, unknown> = obj;
+  let current: Record<string, any> = obj;
   for (let i = 0; i < parts.length - 1; i++) {
     const part = parts[i];
     if (!(part in current) || current[part] === null || typeof current[part] !== "object") {
       current[part] = {};
     }
-    current = current[part] as Record<string, unknown>;
+    current = current[part] as Record<string, any>;
   }
   current[parts[parts.length - 1]] = value;
 }
@@ -81,7 +81,7 @@ async function performSearch(
       throw new Error(`SearXNG 搜索请求失败: HTTP ${response.status} ${errorText}`);
     }
 
-    const data = (await response.json()) as unknown[];
+    const data = (await response.json()) as any[];
     const results = normalizeResults(data);
 
     const resultList: WebSearchResultList = {
@@ -106,7 +106,7 @@ async function performSearch(
   }
 }
 
-function normalizeResults(data: unknown[]): WebSearchResult[] {
+function normalizeResults(data: any[]): WebSearchResult[] {
   const results: WebSearchResult[] = [];
 
   if (!Array.isArray(data)) {
@@ -116,9 +116,9 @@ function normalizeResults(data: unknown[]): WebSearchResult[] {
   for (const item of data) {
     if (!item || typeof item !== "object") continue;
 
-    const title = String((item as Record<string, unknown>).title || "").trim();
-    const url = String((item as Record<string, unknown>).url || "").trim();
-    const snippet = String((item as Record<string, unknown>).content || "").trim();
+    const title = String((item as Record<string, any>).title || "").trim();
+    const url = String((item as Record<string, any>).url || "").trim();
+    const snippet = String((item as Record<string, any>).content || "").trim();
 
     if (title && url) {
       results.push({ title, url, snippet });
@@ -144,19 +144,19 @@ const plugin: WebSearchProviderPlugin = {
   credentialPath: "tools.web.search.providers.searxng.baseUrl",
   inactiveSecretPaths: [],
 
-  getCredentialValue(searchConfig?: Record<string, unknown>): unknown {
+  getCredentialValue(searchConfig?: Record<string, any>): any {
     return getNestedValue(searchConfig, "baseUrl");
   },
 
-  setCredentialValue(searchConfigTarget: Record<string, unknown>, value: unknown): void {
+  setCredentialValue(searchConfigTarget: Record<string, any>, value: any): void {
     setNestedValue(searchConfigTarget, "baseUrl", value);
   },
 
-  getConfiguredCredentialValue(config: Record<string, unknown>): unknown {
+  getConfiguredCredentialValue(config: Record<string, any>): any {
     return getNestedValue(config, this.credentialPath);
   },
 
-  setConfiguredCredentialValue(configTarget: Record<string, unknown>, value: unknown): void {
+  setConfiguredCredentialValue(configTarget: Record<string, any>, value: any): void {
     setNestedValue(configTarget, this.credentialPath, value);
   },
 
@@ -200,7 +200,7 @@ const plugin: WebSearchProviderPlugin = {
         required: ["query"],
       },
       async execute(
-        args: Record<string, unknown>,
+        args: Record<string, any>,
         context?: { signal?: AbortSignal },
       ): Promise<WebSearchResultList> {
         const query = String(args.query || "").trim();

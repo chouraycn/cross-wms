@@ -81,7 +81,7 @@ describe("doctor channel capabilities", () => {
     channelPluginMocks.getChannelPlugin.mockReturnValue({
       config: {
         listAccountIds: () => ["default", "Work"],
-        resolveAccount: (_cfg: unknown, accountId?: string | null) => ({
+        resolveAccount: (_cfg: any, accountId?: string | null) => ({
           accountId: accountId === "Work" ? "work" : accountId,
         }),
       },

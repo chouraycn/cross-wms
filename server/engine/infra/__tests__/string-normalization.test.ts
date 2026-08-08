@@ -36,7 +36,7 @@ describe("infra / string-normalization", () => {
 
     it("should handle undefined and null inputs", () => {
       expect(normalizeStringEntries(undefined)).toEqual([]);
-      expect(normalizeStringEntries(null as unknown)).toEqual([]);
+      expect(normalizeStringEntries(null as any)).toEqual([]);
     });
 
     it("should stringify non-string values and normalize", () => {

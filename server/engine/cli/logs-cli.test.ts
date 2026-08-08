@@ -7,7 +7,7 @@ import { formatLogTimestamp, registerLogsCli } from "./logs-cli.js";
 const { MockGatewayTransportError } = vi.hoisted(() => ({
   MockGatewayTransportError: class extends Error {
     readonly kind: string;
-    readonly connectionDetails: unknown;
+    readonly connectionDetails: any;
     readonly code?: number;
     readonly reason?: string;
     readonly timeoutMs?: number;
@@ -15,7 +15,7 @@ const { MockGatewayTransportError } = vi.hoisted(() => ({
     constructor(params: {
       kind: string;
       message: string;
-      connectionDetails: unknown;
+      connectionDetails: any;
       code?: number;
       reason?: string;
       timeoutMs?: number;
@@ -44,7 +44,7 @@ const execFileUtf8Tail = vi.fn();
 const buildGatewayConnectionDetails = vi.fn(
   (_options?: {
     configPath?: string;
-    config?: unknown;
+    config?: any;
     url?: string;
     urlSource?: "cli" | "env";
   }) => ({
@@ -59,7 +59,7 @@ vi.mock("../gateway/call.js", () => ({
   buildGatewayConnectionDetails: (
     ...args: Parameters<typeof import("../gateway/call.js").buildGatewayConnectionDetails>
   ) => buildGatewayConnectionDetails(...args),
-  isGatewayTransportError: (value: unknown) => value instanceof MockGatewayTransportError,
+  isGatewayTransportError: (value: any) => value instanceof MockGatewayTransportError,
 }));
 
 vi.mock("../logging/log-tail.js", () => ({
@@ -105,7 +105,7 @@ async function runLogsCli(argv: string[]) {
 
 function captureStdoutWrites() {
   const writes: string[] = [];
-  vi.spyOn(process.stdout, "write").mockImplementation((chunk: unknown) => {
+  vi.spyOn(process.stdout, "write").mockImplementation((chunk: any) => {
     writes.push(String(chunk));
     return true;
   });
@@ -114,7 +114,7 @@ function captureStdoutWrites() {
 
 function captureStderrWrites() {
   const writes: string[] = [];
-  vi.spyOn(process.stderr, "write").mockImplementation((chunk: unknown) => {
+  vi.spyOn(process.stderr, "write").mockImplementation((chunk: any) => {
     writes.push(String(chunk));
     return true;
   });

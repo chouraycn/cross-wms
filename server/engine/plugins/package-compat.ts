@@ -16,7 +16,7 @@ export type PackagePluginApiRangeResult =
 
 /** Resolves the plugin API compatibility range declared by package metadata. */
 export function resolvePackagePluginApiRange(
-  packageMetadata: unknown,
+  packageMetadata: any,
 ): PackagePluginApiRangeResult {
   if (packageMetadata === undefined || packageMetadata === null) {
     return { ok: true };

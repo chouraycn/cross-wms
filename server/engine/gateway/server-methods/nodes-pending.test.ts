@@ -31,11 +31,11 @@ type RespondCall = [
   {
     code?: number;
     message?: string;
-    details?: unknown;
+    details?: any;
   }?,
 ];
 
-function makeContext(overrides?: Partial<Record<string, unknown>>) {
+function makeContext(overrides?: Partial<Record<string, any>>) {
   return {
     nodeRegistry: {
       get: vi.fn(() => undefined),

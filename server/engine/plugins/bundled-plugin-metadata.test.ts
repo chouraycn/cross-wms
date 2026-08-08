@@ -251,7 +251,7 @@ function readPackageManifest(pluginDir: string): PackageManifest | undefined {
 
 function collectRootPackageExcludedExtensionDirsForTest(): readonly string[] {
   const packageJson = JSON.parse(fs.readFileSync(path.join(repoRoot, "package.json"), "utf8")) as {
-    files?: unknown;
+    files?: any;
   };
   if (!Array.isArray(packageJson.files)) {
     return [];
@@ -405,7 +405,7 @@ describe("bundled plugin metadata", () => {
     });
     expect(discord?.manifest.id).toBe("discord");
     const discordChannelConfig = collectRepoBundledChannelConfigsForTest("discord")?.discord as
-      | { schema?: { type?: unknown } }
+      | { schema?: { type?: any } }
       | undefined;
     expect(discordChannelConfig?.schema?.type).toBe("object");
   });
@@ -457,7 +457,7 @@ describe("bundled plugin metadata", () => {
 
   it("loads tlon channel config metadata from the lightweight schema surface", () => {
     const tlonChannelConfig = collectRepoBundledChannelConfigsForTest("tlon")?.tlon as
-      | { schema?: { type?: unknown } }
+      | { schema?: { type?: any } }
       | undefined;
     expect(tlonChannelConfig?.schema?.type).toBe("object");
   });
@@ -940,7 +940,7 @@ describe("bundled plugin metadata", () => {
     );
     const entries = listBundledPluginMetadata({ rootDir: tempRoot });
     const channelConfigs = entries[0]?.manifest.channelConfigs as
-      | Record<string, unknown>
+      | Record<string, any>
       | undefined;
     expect(channelConfigs?.alpha).toEqual({
       schema: {
@@ -1058,7 +1058,7 @@ describe("bundled plugin metadata", () => {
     );
     const entries = listBundledPluginMetadata({ rootDir: distRoot });
     const channelConfigs = entries[0]?.manifest.channelConfigs as
-      | Record<string, unknown>
+      | Record<string, any>
       | undefined;
     expect(channelConfigs?.alpha).toEqual({
       schema: {
@@ -1137,7 +1137,7 @@ describe("bundled plugin metadata", () => {
     );
     const entries = listBundledPluginMetadata({ rootDir: distRoot });
     const channelConfigs = entries[0]?.manifest.channelConfigs as
-      | Record<string, unknown>
+      | Record<string, any>
       | undefined;
     expect(channelConfigs?.alpha).toEqual({
       schema: {
@@ -1153,7 +1153,7 @@ describe("bundled plugin metadata", () => {
   });
 });
 
-function toLintErrorObject(value: unknown, fallbackMessage: string): Error {
+function toLintErrorObject(value: any, fallbackMessage: string): Error {
   if (value instanceof Error) {
     return value;
   }

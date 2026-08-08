@@ -14,7 +14,7 @@ import {
 
 const providerRuntimeMocks = vi.hoisted(() => ({
   useMockProviders: false,
-  resolvePluginProviders: vi.fn((_params?: unknown): ProviderPlugin[] => []),
+  resolvePluginProviders: vi.fn((_params?: any): ProviderPlugin[] => []),
 }));
 
 vi.mock("../plugins/providers.runtime.js", async () => {
@@ -54,7 +54,7 @@ describe("doctor command", () => {
     } = await arrangeLegacyStateMigrationTest();
 
     await (
-      doctorCommandValue as (runtime: unknown, opts: Record<string, unknown>) => Promise<void>
+      doctorCommandValue as (runtime: any, opts: Record<string, any>) => Promise<void>
     )(runtime, { yes: true });
 
     expect(runLegacyStateMigrations).toHaveBeenCalledTimes(1);
@@ -69,7 +69,7 @@ describe("doctor command", () => {
     } = await arrangeLegacyStateMigrationTest();
 
     await (
-      doctorCommandLocal as (runtime: unknown, opts: Record<string, unknown>) => Promise<void>
+      doctorCommandLocal as (runtime: any, opts: Record<string, any>) => Promise<void>
     )(runtime, { nonInteractive: true });
 
     expect(runLegacyStateMigrations).toHaveBeenCalledTimes(1);
@@ -178,18 +178,18 @@ describe("doctor command", () => {
     }
 
     const writtenCall = writeConfigFile.mock.calls.findLast((call) => {
-      const candidate = call[0] as Record<string, unknown>;
-      const auth = candidate.auth as { profiles?: unknown } | undefined;
+      const candidate = call[0] as Record<string, any>;
+      const auth = candidate.auth as { profiles?: any } | undefined;
       return Boolean(auth?.profiles);
     });
-    const written = writtenCall?.[0] as Record<string, unknown> | undefined;
+    const written = writtenCall?.[0] as Record<string, any> | undefined;
     if (!written) {
       throw new Error("Expected doctor to write migrated auth profiles");
     }
-    const profiles = (written.auth as { profiles: Record<string, unknown> }).profiles;
+    const profiles = (written.auth as { profiles: Record<string, any> }).profiles;
     expect(profiles).toHaveProperty("anthropic:me@example.com");
     const migratedProfile = profiles["anthropic:me@example.com"] as
-      | { provider?: unknown; mode?: unknown }
+      | { provider?: any; mode?: any }
       | undefined;
     expect(migratedProfile?.provider).toBe("anthropic");
     expect(migratedProfile?.mode).toBe("oauth");

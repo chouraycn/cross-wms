@@ -218,7 +218,7 @@ export class AgentOrchestrator {
       /** 超时 ms（默认 SUBTASK_TIMEOUT_MS） */
       timeoutMs?: number;
       /** SSE 事件透传 */
-      onSSEEvent?: (event: Record<string, unknown>) => void;
+      onSSEEvent?: (event: Record<string, any>) => void;
     },
   ): Promise<{
     instanceId: string;
@@ -329,7 +329,7 @@ export class AgentOrchestrator {
   /**
    * 为子任务分配合适的 Agent
    */
-  private assignAgents(decomposition: TaskDecomposition, onSSEEvent?: (event: Record<string, unknown>) => void): void {
+  private assignAgents(decomposition: TaskDecomposition, onSSEEvent?: (event: Record<string, any>) => void): void {
     for (const subTask of decomposition.subTasks) {
       // 已经有分配（LLM 返回的 requiredRole）则按角色查找
       let agent: AgentProfile | null = null;
@@ -383,7 +383,7 @@ export class AgentOrchestrator {
     decomposition: TaskDecomposition,
     modelConfig: ModelCallConfig,
     parentMessages: ApiMessage[],
-    onSSEEvent?: (event: Record<string, unknown>) => void,
+    onSSEEvent?: (event: Record<string, any>) => void,
     signal?: AbortSignal,
   ): Promise<{
     subTaskResults: OrchestratorResult['subTaskResults'];
@@ -430,7 +430,7 @@ export class AgentOrchestrator {
             description: subTask.description,
             status: 'completed',
             result: content,
-            agentId: subTask.assignedAgentId || 'unknown',
+            agentId: subTask.assignedAgentId || 'any',
             duration,
           });
 
@@ -458,7 +458,7 @@ export class AgentOrchestrator {
             description: subTask.description,
             status: 'failed',
             result: null,
-            agentId: subTask.assignedAgentId || 'unknown',
+            agentId: subTask.assignedAgentId || 'any',
             duration,
           });
 
@@ -491,15 +491,15 @@ export class AgentOrchestrator {
             subTaskId: subTask.id,
             description: subTask.description,
             status: isFulfilled ? 'completed' : 'failed',
-            agentId: subTask.assignedAgentId || 'unknown',
+            agentId: subTask.assignedAgentId || 'any',
             duration,
             resultSummary: isFulfilled ? result.value.content?.substring(0, 100) : undefined,
           });
 
           onSSEEvent({
             type: 'agent_end',
-            agentId: subTask.assignedAgentId || 'unknown',
-            agentRole: agent?.role || 'unknown',
+            agentId: subTask.assignedAgentId || 'any',
+            agentRole: agent?.role || 'any',
             status: isFulfilled ? 'success' : (result.reason instanceof Error && (result.reason.message.includes('超时') || result.reason.message.includes('timeout')) ? 'timeout' : 'failed'),
             duration,
             error: isFulfilled ? undefined : (result.reason instanceof Error ? result.reason.message : String(result.reason)),
@@ -530,8 +530,8 @@ export class AgentOrchestrator {
   private async executeSubTask(
     subTask: SubTask,
     modelConfig: ModelCallConfig,
-    parentMessages: Array<{ role: string; content: MessageContent; tool_calls?: unknown; tool_call_id?: string }>,
-    onSSEEvent?: (event: Record<string, unknown>) => void,
+    parentMessages: Array<{ role: string; content: MessageContent; tool_calls?: any; tool_call_id?: string }>,
+    onSSEEvent?: (event: Record<string, any>) => void,
     signal?: AbortSignal,
   ): Promise<{ content: string; toolCalls: ToolExecutionResult['toolCalls'] }> {
     subTask.status = 'running';
@@ -610,7 +610,7 @@ export class AgentOrchestrator {
               type: 'sub_task_progress',
               subTaskId: subTask.id,
               agentId: agentId || 'unknown',
-              reactPhase: (event as Record<string, unknown>).type,
+              reactPhase: (event as Record<string, any>).type,
             });
           }
         },

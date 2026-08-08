@@ -24,7 +24,7 @@ export type FileExtractionLimits = {
   allowedMimes?: readonly string[];
 };
 
-function positiveExtractionLimit(value: unknown): number | undefined {
+function positiveExtractionLimit(value: any): number | undefined {
   return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : undefined;
 }
 

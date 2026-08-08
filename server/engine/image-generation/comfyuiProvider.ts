@@ -37,7 +37,7 @@ const DEFAULT_MAX_OUTPUT_BYTES = 6 * 1024 * 1024;
 // ============================================================================
 
 /** ComfyUI workflow JSON 对象。 */
-type ComfyWorkflow = Record<string, unknown>;
+type ComfyWorkflow = Record<string, any>;
 
 /** ComfyUI /prompt 响应。 */
 interface ComfyPromptResponse {
@@ -94,7 +94,7 @@ function normalizeBaseUrl(url?: string): string {
   return trimmed || DEFAULT_BASE_URL;
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
@@ -103,7 +103,7 @@ function setWorkflowInput(
   workflow: ComfyWorkflow,
   nodeId: string,
   inputName: string,
-  value: unknown,
+  value: any,
 ): void {
   const node = workflow[nodeId];
   if (!isRecord(node)) {
@@ -378,22 +378,22 @@ export function createComfyuiProvider(
       const workflowCopy: ComfyWorkflow = structuredClone(wf);
 
       // 设置 prompt 文本
-      const pNodeId = (req.providerOptions?.comfyui as Record<string, unknown> | undefined)?.promptNodeId as string | undefined ?? promptNodeId;
+      const pNodeId = (req.providerOptions?.comfyui as Record<string, any> | undefined)?.promptNodeId as string | undefined ?? promptNodeId;
       if (!pNodeId) {
         throw new Error("ComfyUI promptNodeId is required");
       }
-      const pInputName = (req.providerOptions?.comfyui as Record<string, unknown> | undefined)?.promptInputName as string | undefined ?? promptInputName;
+      const pInputName = (req.providerOptions?.comfyui as Record<string, any> | undefined)?.promptInputName as string | undefined ?? promptInputName;
       setWorkflowInput(workflowCopy, pNodeId, pInputName, req.prompt);
 
       // 上传并设置输入图像（图生图）
       if (req.inputImages && req.inputImages.length > 0) {
-        const imgNodeId = (req.providerOptions?.comfyui as Record<string, unknown> | undefined)?.inputImageNodeId as string | undefined ?? inputImageNodeId;
+        const imgNodeId = (req.providerOptions?.comfyui as Record<string, any> | undefined)?.inputImageNodeId as string | undefined ?? inputImageNodeId;
         if (!imgNodeId) {
           throw new Error(
             "ComfyUI edit requests require inputImageNodeId to be configured",
           );
         }
-        const imgInputName = (req.providerOptions?.comfyui as Record<string, unknown> | undefined)?.inputImageInputName as string | undefined ?? inputImageInputName;
+        const imgInputName = (req.providerOptions?.comfyui as Record<string, any> | undefined)?.inputImageInputName as string | undefined ?? inputImageInputName;
         const inputImage = req.inputImages[0] as ImageGenerationSourceImage;
         const uploadedName = await uploadInputImage(base, inputImage, timeoutMs);
         setWorkflowInput(workflowCopy, imgNodeId, imgInputName, uploadedName);
@@ -410,7 +410,7 @@ export function createComfyuiProvider(
       const history = await pollHistory(base, promptId, timeoutMs, pollIntervalMs);
 
       // 收集输出文件
-      const outNodeId = (req.providerOptions?.comfyui as Record<string, unknown> | undefined)?.outputNodeId as string | undefined ?? outputNodeId;
+      const outNodeId = (req.providerOptions?.comfyui as Record<string, any> | undefined)?.outputNodeId as string | undefined ?? outputNodeId;
       const outputFiles = collectOutputFiles(history, outNodeId);
       if (outputFiles.length === 0) {
         throw new Error(`ComfyUI workflow ${promptId} completed without image outputs`);

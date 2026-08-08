@@ -64,7 +64,7 @@ vi.mock("./backup-rotation.js", async (importOriginal) => {
 function createSnapshot(params: {
   hash: string;
   path?: string;
-  parsed?: unknown;
+  parsed?: any;
   sourceConfig: OpenClawConfig;
   runtimeConfig?: OpenClawConfig;
 }): ConfigFileSnapshot {
@@ -682,7 +682,7 @@ describe("config mutate helpers", () => {
         snapshot: refreshedSnapshot,
         writeOptions: { expectedConfigPath: configPath },
       });
-    const notifications: unknown[] = [];
+    const notifications: any[] = [];
     const unregister = registerRuntimeConfigWriteListener((event) => {
       notifications.push(event);
     });
@@ -725,9 +725,9 @@ describe("config mutate helpers", () => {
     const [notification] = notifications as Array<{
       configPath?: string;
       persistedHash?: string;
-      sourceConfig?: unknown;
-      runtimeConfig?: unknown;
-      afterWrite?: unknown;
+      sourceConfig?: any;
+      runtimeConfig?: any;
+      afterWrite?: any;
     }>;
     expect(notification?.configPath).toBe(configPath);
     expect(notification?.persistedHash).toBe("hash-include-refreshed");
@@ -759,7 +759,7 @@ describe("config mutate helpers", () => {
     }
     const persistedPlugins = JSON.parse(await fs.readFile(pluginsPath, "utf-8")) as {
       entries?: Record<string, { config?: { token?: string } }>;
-      installs?: Record<string, unknown>;
+      installs?: Record<string, any>;
     };
     expect(persistedPlugins.entries?.old?.config?.token).toBe("${OPENCLAW_TEST_PLUGIN_TOKEN}");
     expect(persistedPlugins.entries?.demo).toEqual({ enabled: true });
@@ -1169,7 +1169,7 @@ describe("config mutate helpers", () => {
       '"$include": "./config/plugins.json5"',
     );
     const persistedPlugins = JSON.parse(await fs.readFile(pluginsPath, "utf-8")) as {
-      entries?: Record<string, unknown>;
+      entries?: Record<string, any>;
     };
     expect(persistedPlugins.entries?.["strict-plugin"]).toEqual({ enabled: true });
   });
@@ -2185,7 +2185,7 @@ describe("config mutate helpers", () => {
     expect(ioMocks.writeConfigFile).not.toHaveBeenCalled();
     expect(ioMocks.readConfigFileSnapshotForWrite).not.toHaveBeenCalled();
     const persistedPlugins = JSON.parse(await fs.readFile(pluginsPath, "utf-8")) as {
-      entries?: Record<string, unknown>;
+      entries?: Record<string, any>;
     };
     expect(persistedPlugins.entries).toEqual({ old: { enabled: true } });
   });

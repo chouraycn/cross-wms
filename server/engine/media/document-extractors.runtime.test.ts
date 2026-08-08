@@ -66,7 +66,7 @@ describe("extractDocumentContent", () => {
       },
     ]);
 
-    let extractionError: unknown;
+    let extractionError: any;
     try {
       await extractDocumentContent({
         buffer: Buffer.from("pdf"),

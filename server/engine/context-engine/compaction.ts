@@ -39,7 +39,7 @@ export interface MessageForCompaction {
   toolCallId?: string;
   toolName?: string;
   isError?: boolean;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
   importance?: number;
 }
 

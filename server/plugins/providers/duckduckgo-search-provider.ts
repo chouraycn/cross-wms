@@ -70,20 +70,20 @@ function setInCache(key: string, results: WebSearchResultList): void {
 
 // ==================== 凭证辅助 ====================
 
-function getNestedValue(obj: Record<string, unknown> | undefined, path: string): unknown {
+function getNestedValue(obj: Record<string, any> | undefined, path: string): any {
   if (!obj) return undefined;
   const parts = path.split(".");
-  let current: unknown = obj;
+  let current: any = obj;
   for (const part of parts) {
     if (current === null || current === undefined || typeof current !== "object") {
       return undefined;
     }
-    current = (current as Record<string, unknown>)[part];
+    current = (current as Record<string, any>)[part];
   }
   return current;
 }
 
-function setNestedValue(obj: Record<string, unknown>, path: string, value: unknown): void {
+function setNestedValue(obj: Record<string, any>, path: string, value: any): void {
   const parts = path.split(".");
   let current = obj;
   for (let i = 0; i < parts.length - 1; i++) {
@@ -91,7 +91,7 @@ function setNestedValue(obj: Record<string, unknown>, path: string, value: unkno
     if (!(part in current) || current[part] === null || typeof current[part] !== "object") {
       current[part] = {};
     }
-    current = current[part] as Record<string, unknown>;
+    current = current[part] as Record<string, any>;
   }
   current[parts[parts.length - 1]] = value;
 }
@@ -295,20 +295,20 @@ const plugin: WebSearchProviderPlugin = {
   credentialPath: "tools.web.search.providers.duckduckgo.apiKey",
   inactiveSecretPaths: [],
 
-  getCredentialValue(_searchConfig?: Record<string, unknown>): unknown {
+  getCredentialValue(_searchConfig?: Record<string, any>): any {
     // DuckDuckGo 不需要凭证
     return undefined;
   },
 
-  setCredentialValue(_searchConfigTarget: Record<string, unknown>, _value: unknown): void {
+  setCredentialValue(_searchConfigTarget: Record<string, any>, _value: any): void {
     // DuckDuckGo 不需要凭证，空操作
   },
 
-  getConfiguredCredentialValue(_config: Record<string, unknown>): unknown {
+  getConfiguredCredentialValue(_config: Record<string, any>): any {
     return undefined;
   },
 
-  setConfiguredCredentialValue(_configTarget: Record<string, unknown>, _value: unknown): void {
+  setConfiguredCredentialValue(_configTarget: Record<string, any>, _value: any): void {
     // DuckDuckGo 不需要凭证，空操作
   },
 
@@ -347,7 +347,7 @@ const plugin: WebSearchProviderPlugin = {
         additionalProperties: false,
       },
       async execute(
-        args: Record<string, unknown>,
+        args: Record<string, any>,
         context?: { signal?: AbortSignal },
       ): Promise<WebSearchResultList> {
         const query = String(args.query || "").trim();

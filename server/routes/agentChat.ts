@@ -56,7 +56,7 @@ function createAgentEventSender(res: Response, params: {
 
   const send = (
     stream: AgentEventStream,
-    data: Record<string, unknown>,
+    data: Record<string, any>,
     useStreamSeq: boolean = false,
   ) => {
     const seq = useStreamSeq
@@ -289,7 +289,7 @@ export async function handleAgentChat(req: Request, res: Response) {
       stream: 'error',
       ts: Date.now(),
       data: {
-        code: (error as unknown).code || 'SERVER_ERROR',
+        code: (error as any).code || 'SERVER_ERROR',
         message: (error as Error).message || '服务器内部错误',
       },
       sessionKey,

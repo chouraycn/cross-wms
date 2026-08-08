@@ -44,7 +44,7 @@ router.get('/', (req: Request, res: Response) => {
     let transitTrackingNo: string | undefined;
     if (item.transitOrderId) {
       const transit = getTransitOrderById(item.transitOrderId);
-      transitTrackingNo = transit ? (transit as Record<string, unknown>).trackingNo as string : undefined;
+      transitTrackingNo = transit ? (transit as Record<string, any>).trackingNo as string : undefined;
     }
     return {
       ...item,
@@ -70,7 +70,7 @@ router.get('/:id', (req: Request, res: Response) => {
   let transitTrackingNo: string | undefined;
   if (item.transitOrderId) {
     const transit = getTransitOrderById(item.transitOrderId);
-    transitTrackingNo = transit ? (transit as Record<string, unknown>).trackingNo as string : undefined;
+    transitTrackingNo = transit ? (transit as Record<string, any>).trackingNo as string : undefined;
   }
   res.json({
     code: 0,
@@ -244,7 +244,7 @@ router.put('/:id/bind-transit', (req: Request, res: Response) => {
     let transitTrackingNo = '';
     if (result.transitOrderId) {
       const transit = getTransitOrderById(result.transitOrderId);
-      transitTrackingNo = transit ? (transit as Record<string, unknown>).trackingNo as string : '';
+      transitTrackingNo = transit ? (transit as Record<string, any>).trackingNo as string : '';
     }
     res.json({
       code: 0,

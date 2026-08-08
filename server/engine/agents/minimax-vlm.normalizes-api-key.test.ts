@@ -232,7 +232,7 @@ describe("minimaxUnderstandImage apiKey normalization", () => {
       prompt: "hi",
       imageDataUrl: "data:image/png;base64,AAAA",
       apiHost: "https://api.minimax.io",
-    }).catch((caught: unknown) => caught);
+    }).catch((caught: any) => caught);
 
     if (!(error instanceof Error)) {
       throw new Error("expected MiniMax VLM request to throw an Error");

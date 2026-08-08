@@ -32,7 +32,7 @@ export interface SubmitResult {
 export interface RunOutcome {
   taskId: string;
   result: TaskResult;
-  output: unknown;
+  output: any;
 }
 
 export class TaskRuntime {
@@ -166,7 +166,7 @@ export class TaskRuntime {
       }
       await this.tick();
       const pending = [...this.runningPromises.values()];
-      if (pending.length > 0) await Promise.race([...pending, resolvedAfter(50)] as Promise<unknown>[]);
+      if (pending.length > 0) await Promise.race([...pending, resolvedAfter(50)] as Promise<any>[]);
       else await resolvedAfter(10);
     }
   }

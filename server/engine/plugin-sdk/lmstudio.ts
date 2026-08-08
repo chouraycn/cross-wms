@@ -54,7 +54,7 @@ import { loadBundledPluginPublicSurfaceModuleSync } from "./facade-runtime.js";
 type LmstudioInteractiveParams = {
   config: OpenClawConfig;
   prompter?: WizardPrompter;
-  secretInputMode?: unknown;
+  secretInputMode?: any;
   allowSecretRefPrompt?: boolean;
   promptText?: (params: {
     message: string;

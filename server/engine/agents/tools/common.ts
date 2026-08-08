@@ -14,13 +14,13 @@ import type { ToolDefinition } from '../agent-tools/types.js';
 export interface AgentToolExecutionContext {
   toolCallId: string;
   signal?: AbortSignal;
-  hookContext?: unknown;
+  hookContext?: any;
 }
 
 /**
  * 工具执行过程中的更新回调，用于向调用方推送进度等中间状态。
  */
-export type AgentToolUpdateCallback = (result: AgentToolResult<unknown>) => void;
+export type AgentToolUpdateCallback = (result: AgentToolResult<any>) => void;
 
 /**
  * 工具结果内容块：文本或图片。
@@ -58,7 +58,7 @@ export interface AgentToolResult<TResult> {
 export type AgentToolExecute<TResult> = (
   this: void,
   toolCallId: string,
-  params: unknown,
+  params: any,
   signal?: AbortSignal,
   onUpdate?: AgentToolUpdateCallback,
 ) => Promise<AgentToolResult<TResult>>;
@@ -77,14 +77,14 @@ export type AgentToolWithMeta<TResult = unknown> = ToolDefinition & {
   /** 执行函数 */
   execute: AgentToolExecute<TResult>;
   /** 在工具调用前对参数进行预处理（如注入默认值） */
-  prepareArguments?: (args: unknown) => unknown;
+  prepareArguments?: (args: any) => unknown;
   /** 在工具调用前对参数进行预处理（如注入默认值） */
   prepareBeforeToolCallParams?: (
-    params: unknown,
+    params: any,
     ctx: AgentToolExecutionContext,
   ) => unknown;
   /** 在工具调用完成后对参数进行收尾处理 */
-  finalizeBeforeToolCallParams?: (params: unknown, preparedParams: unknown) => unknown;
+  finalizeBeforeToolCallParams?: (params: any, preparedParams: any) => unknown;
 };
 
 /**
@@ -96,10 +96,10 @@ export type ErasedAgentToolExecute = {
   execute(
     this: void,
     toolCallId: string,
-    params: unknown,
+    params: any,
     signal?: AbortSignal,
     onUpdate?: AgentToolUpdateCallback,
-  ): Promise<AgentToolResult<unknown>>;
+  ): Promise<AgentToolResult<any>>;
 };
 
 /**
@@ -107,27 +107,27 @@ export type ErasedAgentToolExecute = {
  *
  * 参考 openclaw/src/agents/tools/common.ts 的 AnyAgentTool。
  */
-export type AnyAgentTool = Omit<AgentToolWithMeta<unknown>, 'execute'> &
+export type AnyAgentTool = Omit<AgentToolWithMeta<any>, 'execute'> &
   ErasedAgentToolExecute & {
     displaySummary?: string;
     label?: string;
-    prepareArguments?: AgentToolWithMeta<unknown>['prepareArguments'];
-    prepareBeforeToolCallParams?: AgentToolWithMeta<unknown>['prepareBeforeToolCallParams'];
-    finalizeBeforeToolCallParams?: AgentToolWithMeta<unknown>['finalizeBeforeToolCallParams'];
+    prepareArguments?: AgentToolWithMeta<any>['prepareArguments'];
+    prepareBeforeToolCallParams?: AgentToolWithMeta<any>['prepareBeforeToolCallParams'];
+    finalizeBeforeToolCallParams?: AgentToolWithMeta<any>['finalizeBeforeToolCallParams'];
   };
 
 /**
  * 参数读取器：从参数记录中按 key 读取并转换为指定类型。
  */
 export type ParamReader<T = unknown> = (
-  params: Record<string, unknown>,
+  params: Record<string, any>,
   key: string,
 ) => T | undefined;
 
 /**
  * JSON 工具结果：将 payload 序列化为文本内容块。
  */
-export type JsonResult = AgentToolResult<unknown> & {
+export type JsonResult = AgentToolResult<any> & {
   content: Array<{ type: 'text'; text: string }>;
 };
 
@@ -165,22 +165,22 @@ export function createActionGate<T extends Record<string, boolean | undefined>>(
   };
 }
 
-function readParamRaw(params: Record<string, unknown>, key: string): unknown {
+function readParamRaw(params: Record<string, any>, key: string): any {
   return params[key];
 }
 
 export function readStringParam(
-  params: Record<string, unknown>,
+  params: Record<string, any>,
   key: string,
   options: StringParamOptions & { required: true },
 ): string;
 export function readStringParam(
-  params: Record<string, unknown>,
+  params: Record<string, any>,
   key: string,
   options?: StringParamOptions,
 ): string | undefined;
 export function readStringParam(
-  params: Record<string, unknown>,
+  params: Record<string, any>,
   key: string,
   options: StringParamOptions = {},
 ): string | undefined {
@@ -203,7 +203,7 @@ export function readStringParam(
 }
 
 export function readNumberParam(
-  params: Record<string, unknown>,
+  params: Record<string, any>,
   key: string,
   options: {
     required?: boolean;
@@ -244,17 +244,17 @@ export function readNumberParam(
 }
 
 export function readStringArrayParam(
-  params: Record<string, unknown>,
+  params: Record<string, any>,
   key: string,
   options: StringParamOptions & { required: true },
 ): string[];
 export function readStringArrayParam(
-  params: Record<string, unknown>,
+  params: Record<string, any>,
   key: string,
   options?: StringParamOptions,
 ): string[] | undefined;
 export function readStringArrayParam(
-  params: Record<string, unknown>,
+  params: Record<string, any>,
   key: string,
   options: StringParamOptions = {},
 ): string[] | undefined {
@@ -284,7 +284,7 @@ export type ReactionParams = {
 };
 
 export function readReactionParams(
-  params: Record<string, unknown>,
+  params: Record<string, any>,
   options: {
     emojiKey?: string;
     removeKey?: string;
@@ -305,7 +305,7 @@ export function readReactionParams(
 }
 
 /** Builds a text result with an optional structured payload (openclaw compat alias). */
-export function jsonResult(payload: unknown): AgentToolResult<unknown> {
+export function jsonResult(payload: any): AgentToolResult<any> {
   return {
     content: [{ type: "text", text: JSON.stringify(payload, null, 2) }],
     details: payload,

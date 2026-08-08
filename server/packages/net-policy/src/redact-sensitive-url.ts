@@ -3,7 +3,7 @@ type ConfigUiHintTags = {
   tags?: string[];
 };
 
-function normalizeLowercaseStringOrEmpty(value: unknown): string {
+function normalizeLowercaseStringOrEmpty(value: any): string {
   return typeof value === "string" ? value.trim().toLowerCase() : "";
 }
 

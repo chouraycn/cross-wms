@@ -7,7 +7,7 @@
  */
 
 export class OpenClawStdioClientTransport {
-  constructor(..._args: unknown[]) {
+  constructor(..._args: any[]) {
     // Stub: not fully ported
   }
 }

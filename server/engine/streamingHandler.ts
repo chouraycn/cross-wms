@@ -25,10 +25,10 @@ export interface StreamEvent {
   id: string;
   type: StreamEventType;
   timestamp: number;
-  data: Record<string, unknown>;
+  data: Record<string, any>;
   runId?: string;
   sessionId?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface StreamMessage {
@@ -48,7 +48,7 @@ export interface StreamMessage {
   thinkingSignature?: string;
   /** 安全脱敏标记 */
   redacted?: boolean;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface StreamSession {
@@ -68,7 +68,7 @@ export interface StreamSession {
   toolCallBuffer: Map<string, { name: string; arguments: string }>;
   eventCount: number;
   errorMessage?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface StreamSubscriber {
@@ -96,7 +96,7 @@ class StreamingHandler {
 
   // ========== Session Management ==========
 
-  createSession(sessionId: string, runId?: string, metadata?: Record<string, unknown>): StreamSession {
+  createSession(sessionId: string, runId?: string, metadata?: Record<string, any>): StreamSession {
     const id = `stream_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     const now = Date.now();
 
@@ -183,7 +183,7 @@ class StreamingHandler {
 
   // ========== Event Sending ==========
 
-  sendEvent(streamId: string, type: StreamEventType, data: Record<string, unknown>): StreamEvent | null {
+  sendEvent(streamId: string, type: StreamEventType, data: Record<string, any>): StreamEvent | null {
     const session = this.sessions.get(streamId);
     if (!session) return null;
 
@@ -325,7 +325,7 @@ class StreamingHandler {
     return this.sendEvent(streamId, "turn.started", { model });
   }
 
-  sendTurnComplete(streamId: string, stats: Record<string, unknown>): StreamEvent | null {
+  sendTurnComplete(streamId: string, stats: Record<string, any>): StreamEvent | null {
     return this.sendEvent(streamId, "turn.completed", stats);
   }
 
@@ -484,7 +484,7 @@ export function getStreamingHandler(): StreamingHandler {
 export function createStreamSession(
   sessionId: string,
   runId?: string,
-  metadata?: Record<string, unknown>,
+  metadata?: Record<string, any>,
 ): StreamSession {
   return STREAMING_INSTANCE.createSession(sessionId, runId, metadata);
 }
@@ -492,7 +492,7 @@ export function createStreamSession(
 export function sendStreamEvent(
   streamId: string,
   type: StreamEventType,
-  data: Record<string, unknown>,
+  data: Record<string, any>,
 ): StreamEvent | null {
   return STREAMING_INSTANCE.sendEvent(streamId, type, data);
 }

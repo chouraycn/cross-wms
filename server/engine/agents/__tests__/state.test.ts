@@ -421,7 +421,7 @@ describe('state', () => {
     it('应先规范化输入状态', () => {
       const result = buildPersistedAuthProfileState({
         order: { '': [] },
-      } as unknown);
+      } as any);
       expect(result).toBeNull();
     });
   });
@@ -659,8 +659,8 @@ describe('state', () => {
       const input = {
         usageStats: {
           profile1: {
-            lastUsed: '1234567890' as unknown,
-            errorCount: '5' as unknown,
+            lastUsed: '1234567890' as any,
+            errorCount: '5' as any,
           },
         },
       };

@@ -18,13 +18,13 @@ function createHelpers(runMessageAction: MessageCliHelpers["runMessageAction"]):
   };
 }
 
-function firstMessageActionCall(runMessageAction: { mock: { calls: unknown[][] } }) {
-  return runMessageAction.mock.calls[0] as [string, Record<string, unknown>] | undefined;
+function firstMessageActionCall(runMessageAction: { mock: { calls: any[][] } }) {
+  return runMessageAction.mock.calls[0] as [string, Record<string, any>] | undefined;
 }
 
 describe("registerMessageThreadCommands", () => {
   const runMessageAction = vi.fn(
-    async (_action: string, _opts: Record<string, unknown>) => undefined,
+    async (_action: string, _opts: Record<string, any>) => undefined,
   );
 
   beforeEach(() => {
@@ -41,7 +41,7 @@ describe("registerMessageThreadCommands", () => {
                 args,
               }: {
                 action: string;
-                args: Record<string, unknown>;
+                args: Record<string, any>;
               }) => {
                 if (action !== "thread-create") {
                   return null;

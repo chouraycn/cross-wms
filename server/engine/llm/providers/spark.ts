@@ -83,7 +83,7 @@ export const buildSparkRequestBody: ProviderRequestBodyBuilder = (ctx) => {
   // 国内合规：传递 uid 用于审计
   const { options } = ctx;
   if (options.userId) {
-    (body as Record<string, unknown>).uid = options.userId;
+    (body as Record<string, any>).uid = options.userId;
   }
   return body;
 };

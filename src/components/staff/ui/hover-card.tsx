@@ -117,8 +117,8 @@ function HoverCardTrigger({
         ;(child.props as { onMouseLeave?: (e: React.MouseEvent<HTMLElement>) => void }).onMouseLeave?.(e)
         hide()
       },
-      ...(props as Record<string, unknown>),
-    } as Record<string, unknown>)
+      ...(props as Record<string, any>),
+    } as Record<string, any>)
   }
   return (
     <button
@@ -126,7 +126,7 @@ function HoverCardTrigger({
       data-slot="hover-card-trigger"
       onMouseEnter={(e) => show(e.currentTarget)}
       onMouseLeave={hide}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     >
       {children}
     </button>
@@ -167,9 +167,9 @@ function HoverCardContent({
           'data-slot': 'hover-card-content',
           className: cn('rounded-lg shadow-md', className),
           style: { overflow: 'visible' },
-        } as Record<string, unknown>,
+        } as Record<string, any>,
       }}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     >
       <Box sx={{ p: 0.5 }}>{children}</Box>
     </MuiPopover>

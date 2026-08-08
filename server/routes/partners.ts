@@ -144,7 +144,7 @@ router.put('/:id', (req: Request, res: Response) => {
   }
 
   // 构建更新对象（仅包含传入的非 undefined 字段）
-  const updates: Record<string, unknown> = {};
+  const updates: Record<string, any> = {};
   if (name !== undefined) updates.name = name.trim();
   if (type !== undefined) updates.type = type;
   if (contact !== undefined) updates.contact = contact;

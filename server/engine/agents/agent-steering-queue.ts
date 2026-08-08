@@ -6,21 +6,21 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function listPendingAgentSteeringItemsFromSubagentRuns(..._args: unknown[]): unknown {
+export function listPendingAgentSteeringItemsFromSubagentRuns(..._args: any[]): any {
   return [];
 }
-export function buildMergedAgentSteeringPrompt(..._args: unknown[]): unknown {
+export function buildMergedAgentSteeringPrompt(..._args: any[]): any {
   return undefined;
 }
-export function leasePendingAgentSteeringItemsFromSubagentRuns(..._args: unknown[]): unknown {
+export function leasePendingAgentSteeringItemsFromSubagentRuns(..._args: any[]): any {
   return undefined;
 }
-export function ackLeasedAgentSteeringItemsFromSubagentRuns(..._args: unknown[]): unknown {
+export function ackLeasedAgentSteeringItemsFromSubagentRuns(..._args: any[]): any {
   return undefined;
 }
-export function releaseLeasedAgentSteeringItemsFromSubagentRuns(..._args: unknown[]): unknown {
+export function releaseLeasedAgentSteeringItemsFromSubagentRuns(..._args: any[]): any {
   return undefined;
 }
-export function prependAgentSteeringPrompt(..._args: unknown[]): unknown {
+export function prependAgentSteeringPrompt(..._args: any[]): any {
   return undefined;
 }

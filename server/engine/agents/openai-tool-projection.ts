@@ -9,16 +9,16 @@
 import { projectRuntimeToolInputSchema } from "./tool-schema-json-projection.js";
 
 type OpenAIToolDescriptor = {
-  readonly name?: unknown;
-  readonly description?: unknown;
-  readonly parameters: unknown;
+  readonly name?: any;
+  readonly description?: any;
+  readonly parameters: any;
 };
 
 type OpenAIProjectedTool = {
   readonly toolIndex: number;
   readonly name: string;
   readonly description?: string;
-  readonly parameters: Record<string, unknown>;
+  readonly parameters: Record<string, any>;
 };
 
 type OpenAIToolProjectionDiagnostic = {
@@ -37,7 +37,7 @@ export type OpenAIToolProjection = {
 // 仅保留 projectOpenAITools/reconcileOpenAIResponsesToolChoice 实际访问的字段。
 type OpenAIResponsesToolChoiceLiteral = "auto" | "required" | "none";
 type OpenAIResponsesFunctionToolChoice = { type: "function"; name: string };
-type OpenAIResponsesAllowedToolChoiceTool = { type: "function"; name: string } | Record<string, unknown>;
+type OpenAIResponsesAllowedToolChoiceTool = { type: "function"; name: string } | Record<string, any>;
 type OpenAIResponsesAllowedToolChoice = {
   type: "allowed_tools";
   mode: "auto" | "required";
@@ -47,7 +47,7 @@ type OpenAIResponsesToolChoice =
   | OpenAIResponsesToolChoiceLiteral
   | OpenAIResponsesFunctionToolChoice
   | OpenAIResponsesAllowedToolChoice
-  | Record<string, unknown>;
+  | Record<string, any>;
 
 // 本地降级类型：替代 `openai` SDK 的 ChatCompletionCreateParamsStreaming["tool_choice"]。
 type OpenAICompletionsToolChoiceLiteral = "auto" | "required" | "none";
@@ -67,9 +67,9 @@ type OpenAICompletionsToolChoice =
   | OpenAICompletionsFunctionToolChoice
   | OpenAICompletionsAllowedToolChoice
   | { type: "custom" }
-  | Record<string, unknown>;
+  | Record<string, any>;
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
@@ -104,7 +104,7 @@ export function projectOpenAITools(tools: readonly OpenAIToolDescriptor[]): Open
       continue;
     }
 
-    let name: unknown;
+    let name: any;
     try {
       name = tool.name;
     } catch {
@@ -122,7 +122,7 @@ export function projectOpenAITools(tools: readonly OpenAIToolDescriptor[]): Open
       continue;
     }
 
-    let parameters: unknown;
+    let parameters: any;
     try {
       parameters = tool.parameters;
     } catch {
@@ -146,7 +146,7 @@ export function projectOpenAITools(tools: readonly OpenAIToolDescriptor[]): Open
       continue;
     }
 
-    let descriptionValue: unknown;
+    let descriptionValue: any;
     try {
       descriptionValue = tool.description;
     } catch {
@@ -222,7 +222,7 @@ export function reconcileOpenAIResponsesToolChoice(
       normalizedAllowedTools.push(tool);
       continue;
     }
-    const functionName = (tool as { name?: unknown }).name;
+    const functionName = (tool as { name?: any }).name;
     if (
       typeof functionName === "string" &&
       projection.tools.some((projectedTool) => projectedTool.name === functionName)

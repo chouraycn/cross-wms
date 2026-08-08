@@ -158,7 +158,7 @@ const SkillHealthDashboardPage: React.FC = () => {
                   key={f.key}
                   label={f.label}
                   size="small"
-                  onClick={() => setFilter(f.key as unknown)}
+                  onClick={() => setFilter(f.key as any)}
                   sx={{
                     cursor: 'pointer', fontSize: '0.75rem', height: 26,
                     backgroundColor: isActive ? f.color : 'transparent',

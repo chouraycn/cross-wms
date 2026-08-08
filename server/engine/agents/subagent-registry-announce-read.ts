@@ -7,6 +7,6 @@
 export function resolveRequesterForChildSession(): undefined { return undefined; }
 export function isSubagentSessionRunActive(): boolean { return false; }
 export function shouldIgnorePostCompletionAnnounceForSession(): boolean { return false; }
-export function listSubagentRunsForRequester(): unknown[] { return []; }
+export function listSubagentRunsForRequester(): any[] { return []; }
 export function countPendingDescendantRuns(): number { return 0; }
 export function countPendingDescendantRunsExcludingRun(): number { return 0; }

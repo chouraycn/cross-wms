@@ -1323,7 +1323,7 @@ describe("readTranscriptFileState", () => {
     const persisted = (await fs.readFile(sessionFile, "utf8"))
       .trim()
       .split(/\r?\n/)
-      .map((line) => JSON.parse(line) as Record<string, unknown>);
+      .map((line) => JSON.parse(line) as Record<string, any>);
 
     expect(state.getLeafId()).toBe(appended.id);
     expect(appended.parentId).toBe("plugin-metadata");

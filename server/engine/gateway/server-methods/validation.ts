@@ -10,13 +10,13 @@ import type { ValidationError } from "../../../packages/gateway-protocol/src/ind
 import type { RespondFn } from "./types.js";
 
 /** Type guard function shape produced by gateway-protocol validators. */
-export type Validator<T> = ((params: unknown) => params is T) & {
+export type Validator<T> = ((params: any) => params is T) & {
   errors?: ValidationError[] | null;
 };
 
 /** Validate params and emit the standard INVALID_REQUEST response on failure. */
 export function assertValidParams<T>(
-  params: unknown,
+  params: any,
   validate: Validator<T>,
   method: string,
   respond: RespondFn,

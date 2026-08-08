@@ -15,18 +15,18 @@ export type NodePendingWorkType = unknown;
 
 export type NodePendingWorkPriority = unknown;
 
-export function enqueueNodePendingWork(..._args: unknown[]): unknown {
+export function enqueueNodePendingWork(..._args: any[]): any {
   return undefined;
 }
 
-export function drainNodePendingWork(..._args: unknown[]): unknown {
+export function drainNodePendingWork(..._args: any[]): any {
   return undefined;
 }
 
-export function resetNodePendingWorkForTests(..._args: unknown[]): unknown {
+export function resetNodePendingWorkForTests(..._args: any[]): any {
   return undefined;
 }
 
-export function getNodePendingWorkStateCountForTests(..._args: unknown[]): unknown {
+export function getNodePendingWorkStateCountForTests(..._args: any[]): any {
   return undefined;
 }

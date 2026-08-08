@@ -24,7 +24,7 @@ export type Invocation = {
   timeoutMs?: number;
   stdin?: string;
   priority?: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
   createdAt: number;
   startedAt?: number;
   completedAt?: number;
@@ -56,8 +56,8 @@ export type ResourceUsage = {
 export type ToolDefinition = {
   name: string;
   description: string;
-  inputSchema?: Record<string, unknown>;
-  outputSchema?: Record<string, unknown>;
+  inputSchema?: Record<string, any>;
+  outputSchema?: Record<string, any>;
   permissions?: string[];
   timeoutMs?: number;
   category?: string;
@@ -65,27 +65,27 @@ export type ToolDefinition = {
 };
 
 export type ToolHandler = (
-  input: Record<string, unknown>,
+  input: Record<string, any>,
   context: ToolContext,
-) => Promise<Record<string, unknown>>;
+) => Promise<Record<string, any>>;
 
 export type ToolContext = {
   invocationId: string;
   nodeId: string;
   abortSignal?: AbortSignal;
   logger?: {
-    info: (...args: unknown[]) => void;
-    error: (...args: unknown[]) => void;
-    debug: (...args: unknown[]) => void;
+    info: (...args: any[]) => void;
+    error: (...args: any[]) => void;
+    debug: (...args: any[]) => void;
   };
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 export type Permission = {
   action: string;
   resource: string;
   effect: 'allow' | 'deny';
-  conditions?: Record<string, unknown>;
+  conditions?: Record<string, any>;
 };
 
 export type PermissionCheckResult = {
@@ -172,14 +172,14 @@ export type LoadedFunction = {
   name: string;
   sourcePath: string;
   loadedAt: number;
-  fn: (...args: unknown[]) => unknown;
-  metadata?: Record<string, unknown>;
+  fn: (...args: any[]) => unknown;
+  metadata?: Record<string, any>;
 };
 
 export type NodeHostError = {
   code: string;
   message: string;
-  details?: Record<string, unknown>;
+  details?: Record<string, any>;
   stack?: string;
   invocationId?: string;
   timestamp: number;

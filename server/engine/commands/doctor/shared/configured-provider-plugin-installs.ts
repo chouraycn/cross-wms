@@ -12,7 +12,7 @@ import { asObjectRecord } from "./object.js";
 
 function collectConfiguredProviderIds(cfg: OpenClawConfig): Set<string> {
   const ids = new Set<string>();
-  const add = (value: unknown) => {
+  const add = (value: any) => {
     const id = normalizeId(value);
     if (id) {
       ids.add(id.toLowerCase());
@@ -50,13 +50,13 @@ function collectConfiguredProviderIds(cfg: OpenClawConfig): Set<string> {
 
 function collectConfiguredMediaProviderIds(cfg: OpenClawConfig): Set<string> {
   const ids = new Set<string>();
-  const add = (value: unknown) => {
+  const add = (value: any) => {
     const id = normalizeId(value);
     if (id) {
       ids.add(id.toLowerCase());
     }
   };
-  const addModels = (value: unknown) => {
+  const addModels = (value: any) => {
     if (!Array.isArray(value)) {
       return;
     }

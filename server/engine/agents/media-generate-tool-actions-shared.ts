@@ -6,12 +6,12 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function createMediaGenerateProviderListActionResult(..._args: unknown[]): unknown {
+export function createMediaGenerateProviderListActionResult(..._args: any[]): any {
   return undefined;
 }
-export function createMediaGenerateTaskStatusActions(..._args: unknown[]): unknown {
+export function createMediaGenerateTaskStatusActions(..._args: any[]): any {
   return undefined;
 }
-export function createMediaGenerateDuplicateGuardResult(..._args: unknown[]): unknown {
+export function createMediaGenerateDuplicateGuardResult(..._args: any[]): any {
   return undefined;
 }

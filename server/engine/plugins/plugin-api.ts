@@ -48,11 +48,11 @@ export interface PluginApiContext {
   getRuntime?: () => {
     list(): Array<{ pluginId: string; manifest: PluginManifest; status: string; capabilities: PluginCapabilityKind[] }>;
     find(pluginId: string): { pluginId: string; manifest: PluginManifest; status: string; capabilities: PluginCapabilityKind[] } | undefined;
-    install(manifest: PluginManifest, config?: unknown): Promise<void>;
+    install(manifest: PluginManifest, config?: any): Promise<void>;
     activate(pluginId: string): Promise<void>;
     deactivate(pluginId: string): Promise<void>;
     uninstall(pluginId: string): Promise<void>;
-    getHealth(): Promise<{ total: number; healthy: number; unhealthy: number; details: unknown[] }>;
+    getHealth(): Promise<{ total: number; healthy: number; unhealthy: number; details: any[] }>;
   };
 }
 

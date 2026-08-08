@@ -39,7 +39,7 @@ function mockConfig(
 
 function writeSessionStoreSeed(
   storePath: string,
-  sessions: Record<string, Record<string, unknown>>,
+  sessions: Record<string, Record<string, any>>,
 ) {
   fs.mkdirSync(path.dirname(storePath), { recursive: true });
   fs.writeFileSync(storePath, JSON.stringify(sessions));

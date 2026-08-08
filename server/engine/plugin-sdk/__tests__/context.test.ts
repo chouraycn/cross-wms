@@ -76,7 +76,7 @@ describe('plugin-sdk/context', () => {
   describe('createPluginEventBus', () => {
     it('emit / on 工作', () => {
       const bus = createPluginEventBus('p1');
-      const received: unknown[] = [];
+      const received: any[] = [];
       bus.on('event1', (p) => received.push(p));
       bus.emit('event1', { x: 1 });
       expect(received).toEqual([{ x: 1 }]);
@@ -84,7 +84,7 @@ describe('plugin-sdk/context', () => {
 
     it('on 返回 unsubscribe 函数', () => {
       const bus = createPluginEventBus('p1');
-      const received: unknown[] = [];
+      const received: any[] = [];
       const off = bus.on('event1', (p) => received.push(p));
       off();
       bus.emit('event1', 'ignored');
@@ -93,8 +93,8 @@ describe('plugin-sdk/context', () => {
 
     it('off 取消订阅', () => {
       const bus = createPluginEventBus('p1');
-      const received: unknown[] = [];
-      const handler = (p: unknown) => received.push(p);
+      const received: any[] = [];
+      const handler = (p: any) => received.push(p);
       bus.on('event1', handler);
       bus.off('event1', handler);
       bus.emit('event1', 'ignored');
@@ -103,7 +103,7 @@ describe('plugin-sdk/context', () => {
 
     it('handler 抛错时不影响其他 handler', () => {
       const bus = createPluginEventBus('p1');
-      const received: unknown[] = [];
+      const received: any[] = [];
       bus.on('event1', () => {
         throw new Error('boom');
       });

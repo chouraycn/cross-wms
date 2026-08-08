@@ -9,7 +9,7 @@ import {
 } from "./legacy-config-record-shared.js";
 const DANGEROUS_RECORD_KEYS = new Set(["__proto__", "prototype", "constructor"]);
 
-function resolveLegacyFetchConfig(raw: unknown): JsonRecord | undefined {
+function resolveLegacyFetchConfig(raw: any): JsonRecord | undefined {
   if (!isRecord(raw)) {
     return undefined;
   }
@@ -28,7 +28,7 @@ function copyLegacyFirecrawlFetchConfig(fetch: JsonRecord): JsonRecord | undefin
   return next;
 }
 
-function hasMappedLegacyWebFetchConfig(raw: unknown): boolean {
+function hasMappedLegacyWebFetchConfig(raw: any): boolean {
   const fetch = resolveLegacyFetchConfig(raw);
   if (!fetch) {
     return false;

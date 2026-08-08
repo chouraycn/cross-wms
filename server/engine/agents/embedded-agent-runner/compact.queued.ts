@@ -107,7 +107,7 @@ async function deferOwningContextEngineBudgetCompaction(params: {
   contextEngineRuntimeSettings: ContextEngineRuntimeSettings;
 }): Promise<EmbeddedAgentCompactResult> {
   let deferredScheduled = false;
-  let deferredScheduleFailure: unknown;
+  let deferredScheduleFailure: any;
   try {
     await runContextEngineMaintenance({
       contextEngine: params.contextEngine,
@@ -160,16 +160,16 @@ async function deferOwningContextEngineBudgetCompaction(params: {
 }
 
 function mergeSecondaryNativeHarnessCompactionDetails(params: {
-  details: unknown;
+  details: any;
   nativeResult: EmbeddedAgentCompactResult | undefined;
   detailsKey: "codexNativeCompaction" | "nativeHarnessCompaction";
-}): unknown {
+}): any {
   if (!params.nativeResult) {
     return params.details;
   }
   if (params.details && typeof params.details === "object" && !Array.isArray(params.details)) {
     return {
-      ...(params.details as Record<string, unknown>),
+      ...(params.details as Record<string, any>),
       [params.detailsKey]: params.nativeResult,
     };
   }

@@ -165,12 +165,12 @@ export function createAccountScopedAllowlistNameResolver<ResolvedAccount>(params
 }
 
 function resolveAccountScopedWriteTarget(
-  parsed: Record<string, unknown>,
+  parsed: Record<string, any>,
   channelId: ChannelId,
   accountId?: string | null,
 ) {
-  const channels = (parsed.channels ??= {}) as Record<string, unknown>;
-  const channel = (channels[channelId] ??= {}) as Record<string, unknown>;
+  const channels = (parsed.channels ??= {}) as Record<string, any>;
+  const channel = (channels[channelId] ??= {}) as Record<string, any>;
   const normalizedAccountId = normalizeAccountId(accountId);
   if (isBlockedObjectKey(normalizedAccountId)) {
     return {
@@ -190,14 +190,14 @@ function resolveAccountScopedWriteTarget(
   }
   // Once an accounts map exists, even the default account writes through it so scoped
   // and unscoped config do not diverge inside the same channel stanza.
-  const accounts = (channel.accounts ??= {}) as Record<string, unknown>;
+  const accounts = (channel.accounts ??= {}) as Record<string, any>;
   const existingAccount = Object.hasOwn(accounts, normalizedAccountId)
     ? accounts[normalizedAccountId]
     : undefined;
   if (!existingAccount || typeof existingAccount !== "object") {
     accounts[normalizedAccountId] = {};
   }
-  const account = accounts[normalizedAccountId] as Record<string, unknown>;
+  const account = accounts[normalizedAccountId] as Record<string, any>;
   return {
     target: account,
     pathPrefix: `channels.${channelId}.accounts.${normalizedAccountId}`,
@@ -208,33 +208,33 @@ function resolveAccountScopedWriteTarget(
   };
 }
 
-function getNestedValue(root: Record<string, unknown>, path: string[]): unknown {
-  let current: unknown = root;
+function getNestedValue(root: Record<string, any>, path: string[]): any {
+  let current: any = root;
   for (const key of path) {
     if (!current || typeof current !== "object") {
       return undefined;
     }
-    current = (current as Record<string, unknown>)[key];
+    current = (current as Record<string, any>)[key];
   }
   return current;
 }
 
 function ensureNestedObject(
-  root: Record<string, unknown>,
+  root: Record<string, any>,
   path: string[],
-): Record<string, unknown> {
+): Record<string, any> {
   let current = root;
   for (const key of path) {
     const existing = current[key];
     if (!existing || typeof existing !== "object") {
       current[key] = {};
     }
-    current = current[key] as Record<string, unknown>;
+    current = current[key] as Record<string, any>;
   }
   return current;
 }
 
-function setNestedValue(root: Record<string, unknown>, path: string[], value: unknown) {
+function setNestedValue(root: Record<string, any>, path: string[], value: any) {
   if (path.length === 0) {
     return;
   }
@@ -246,7 +246,7 @@ function setNestedValue(root: Record<string, unknown>, path: string[], value: un
   parent[path[path.length - 1]] = value;
 }
 
-function deleteNestedValue(root: Record<string, unknown>, path: string[]) {
+function deleteNestedValue(root: Record<string, any>, path: string[]) {
   if (path.length === 0) {
     return;
   }
@@ -258,11 +258,11 @@ function deleteNestedValue(root: Record<string, unknown>, path: string[]) {
   if (!parent || typeof parent !== "object") {
     return;
   }
-  delete (parent as Record<string, unknown>)[path[path.length - 1]];
+  delete (parent as Record<string, any>)[path[path.length - 1]];
 }
 
 function applyAccountScopedAllowlistConfigEdit(params: {
-  parsedConfig: Record<string, unknown>;
+  parsedConfig: Record<string, any>;
   channelId: ChannelId;
   accountId?: string | null;
   action: "add" | "remove";

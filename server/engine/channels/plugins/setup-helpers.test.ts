@@ -15,29 +15,29 @@ import {
   prepareScopedSetupConfig,
 } from "./setup-helpers.js";
 
-function asConfig(value: unknown): OpenClawConfig {
+function asConfig(value: any): OpenClawConfig {
   return value as OpenClawConfig;
 }
 
-function requireRecord(value: unknown): Record<string, unknown> {
+function requireRecord(value: any): Record<string, any> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("Expected a non-array record");
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function channelRecord(cfg: OpenClawConfig, channelKey: string): Record<string, unknown> {
+function channelRecord(cfg: OpenClawConfig, channelKey: string): Record<string, any> {
   return requireRecord(cfg.channels?.[channelKey]);
 }
 
-function accountsRecord(channel: Record<string, unknown>): Record<string, unknown> {
+function accountsRecord(channel: Record<string, any>): Record<string, any> {
   return requireRecord(channel.accounts);
 }
 
 function accountRecord(
-  channel: Record<string, unknown>,
+  channel: Record<string, any>,
   accountId: string,
-): Record<string, unknown> {
+): Record<string, any> {
   return requireRecord(accountsRecord(channel)[accountId]);
 }
 
@@ -57,7 +57,7 @@ const matrixNamedAccountPromotionKeys = [
 ] as const;
 const telegramSingleAccountKeysToMove = ["streaming"] as const;
 
-function collectNamedAccountIds(accounts: Record<string, unknown>): string[] {
+function collectNamedAccountIds(accounts: Record<string, any>): string[] {
   const ids: string[] = [];
   for (const accountId of Object.keys(accounts)) {
     if (accountId) {
@@ -68,7 +68,7 @@ function collectNamedAccountIds(accounts: Record<string, unknown>): string[] {
 }
 
 function resolveMatrixSingleAccountPromotionTarget(params: {
-  channel: { defaultAccount?: string; accounts?: Record<string, unknown> };
+  channel: { defaultAccount?: string; accounts?: Record<string, any> };
 }): string {
   const accounts = params.channel.accounts ?? {};
   const normalizedDefaultAccount = params.channel.defaultAccount?.trim()

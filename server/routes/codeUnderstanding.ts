@@ -15,7 +15,7 @@ import { logger } from '../logger.js';
 const router = Router();
 const service = getCodeUnderstandingService();
 
-function ok(res: Response, data: unknown): void {
+function ok(res: Response, data: any): void {
   res.json({ success: true, data });
 }
 

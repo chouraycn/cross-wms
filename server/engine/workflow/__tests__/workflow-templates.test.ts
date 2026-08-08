@@ -25,7 +25,7 @@ vi.mock('../../../logger.js', () => ({
 // ===================== Mock Database =====================
 
 const { templateStore } = vi.hoisted(() => ({
-  templateStore: [] as Array<Record<string, unknown>>,
+  templateStore: [] as Array<Record<string, any>>,
 }));
 
 vi.mock('../../../db.js', () => {
@@ -35,10 +35,10 @@ vi.mock('../../../db.js', () => {
       const sqlLower = sql.toLowerCase();
 
       return {
-        run: vi.fn((...params: unknown[]) => {
+        run: vi.fn((...params: any[]) => {
           // INSERT INTO workflow_templates（使用命名参数对象）
           if (/insert\s+into\s+workflow_templates/i.test(sql)) {
-            const row = params[0] as Record<string, unknown>;
+            const row = params[0] as Record<string, any>;
             templateStore.push({ ...row });
             return { lastInsertRowid: templateStore.length, changes: 1 };
           }
@@ -64,7 +64,7 @@ vi.mock('../../../db.js', () => {
           }
           return { changes: 0, lastInsertRowid: 0 };
         }),
-        get: vi.fn((...params: unknown[]) => {
+        get: vi.fn((...params: any[]) => {
           // SELECT id FROM workflow_templates WHERE id = ?
           if (/select\s+id\s+from\s+workflow_templates\s+where\s+id/i.test(sql)) {
             return templateStore.find(r => r.id === params[0]) || undefined;
@@ -75,7 +75,7 @@ vi.mock('../../../db.js', () => {
           }
           return undefined;
         }),
-        all: vi.fn((...params: unknown[]) => {
+        all: vi.fn((...params: any[]) => {
           // SELECT * FROM workflow_templates [WHERE ...] ORDER BY ...
           if (/select\s+\*\s+from\s+workflow_templates/i.test(sql)) {
             let result = [...templateStore];

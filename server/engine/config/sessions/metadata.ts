@@ -91,7 +91,7 @@ export class SessionMetadataManager {
     });
   }
 
-  validate(metadata: unknown): metadata is SessionMetadata {
+  validate(metadata: any): metadata is SessionMetadata {
     const result = SessionMetadataSchema.safeParse(metadata);
     if (!result.success) {
       logger.warn('[SessionMetadata] 验证失败:', result.error.issues);
@@ -110,11 +110,11 @@ export class SessionMetadataManager {
     });
   }
 
-  toJSON(metadata: SessionMetadata): Record<string, unknown> {
+  toJSON(metadata: SessionMetadata): Record<string, any> {
     return JSON.parse(JSON.stringify(metadata));
   }
 
-  fromJSON(data: unknown): SessionMetadata | null {
+  fromJSON(data: any): SessionMetadata | null {
     const result = SessionMetadataSchema.safeParse(data);
     if (result.success) {
       return result.data;

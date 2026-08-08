@@ -28,15 +28,15 @@ type AssistantLikeMessage = {
     text?: string;
     id?: string;
     function?: {
-      strict?: unknown;
+      strict?: any;
     };
   }>;
 };
 
-function getToolFunction(tool: Record<string, unknown>): Record<string, unknown> | undefined {
+function getToolFunction(tool: Record<string, any>): Record<string, any> | undefined {
   const nested = tool.function;
   if (nested && typeof nested === "object" && !Array.isArray(nested)) {
-    return nested as Record<string, unknown>;
+    return nested as Record<string, any>;
   }
   if (tool.type === "function" && typeof tool.name === "string") {
     return tool;
@@ -136,7 +136,7 @@ describeLive("xai live", () => {
         parameters: Type.Object({}, { additionalProperties: false }),
       };
 
-      let capturedPayload: Record<string, unknown> | undefined;
+      let capturedPayload: Record<string, any> | undefined;
       const stream = agent.streamFn(
         model,
         {
@@ -149,7 +149,7 @@ describeLive("xai live", () => {
           apiKey: XAI_KEY,
           maxTokens: 128,
           onPayload: (payload) => {
-            capturedPayload = payload as Record<string, unknown>;
+            capturedPayload = payload as Record<string, any>;
           },
         },
       );
@@ -164,7 +164,7 @@ describeLive("xai live", () => {
       }
 
       const payloadTools = Array.isArray(payload.tools)
-        ? (payload.tools as Array<Record<string, unknown>>)
+        ? (payload.tools as Array<Record<string, any>>)
         : [];
       expect(payloadTools.length).toBeGreaterThan(0);
       const firstFunction = requireLiveValue(
@@ -205,7 +205,7 @@ describeLive("xai live", () => {
         provider?: string;
         content?: string;
         citations?: string[];
-        inlineCitations?: Array<unknown>;
+        inlineCitations?: Array<any>;
         error?: string;
         message?: string;
       };

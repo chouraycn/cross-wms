@@ -310,7 +310,7 @@ const gitService = new GitService();
 /**
  * Git Status 工具处理器
  */
-export const handleGitStatus: ToolHandler = async (args: Record<string, unknown>): Promise<string> => {
+export const handleGitStatus: ToolHandler = async (args: Record<string, any>): Promise<string> => {
   try {
     const path = String(args.path || '');
     if (!path) {
@@ -329,7 +329,7 @@ export const handleGitStatus: ToolHandler = async (args: Record<string, unknown>
 /**
  * Git Diff 工具处理器
  */
-export const handleGitDiff: ToolHandler = async (args: Record<string, unknown>): Promise<string> => {
+export const handleGitDiff: ToolHandler = async (args: Record<string, any>): Promise<string> => {
   try {
     const path = String(args.path || '');
     if (!path) {
@@ -355,7 +355,7 @@ export const handleGitDiff: ToolHandler = async (args: Record<string, unknown>):
 /**
  * Git Log 工具处理器
  */
-export const handleGitLog: ToolHandler = async (args: Record<string, unknown>): Promise<string> => {
+export const handleGitLog: ToolHandler = async (args: Record<string, any>): Promise<string> => {
   try {
     const path = String(args.path || '');
     if (!path) {
@@ -383,7 +383,7 @@ export const handleGitLog: ToolHandler = async (args: Record<string, unknown>): 
 /**
  * Git Commit 工具处理器
  */
-export const handleGitCommit: ToolHandler = async (args: Record<string, unknown>): Promise<string> => {
+export const handleGitCommit: ToolHandler = async (args: Record<string, any>): Promise<string> => {
   try {
     const path = String(args.path || '');
     const message = String(args.message || '');
@@ -410,7 +410,7 @@ export const handleGitCommit: ToolHandler = async (args: Record<string, unknown>
 /**
  * Git Branch 工具处理器
  */
-export const handleGitBranch: ToolHandler = async (args: Record<string, unknown>): Promise<string> => {
+export const handleGitBranch: ToolHandler = async (args: Record<string, any>): Promise<string> => {
   try {
     const path = String(args.path || '');
     if (!path) {

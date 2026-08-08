@@ -2,7 +2,7 @@
 import type { HookHandler } from "../../types.js";
 
 /** 从 hook context 中读取可选的数值型压缩元数据（不信任 context 形状） */
-function readOptionalNumber(context: Record<string, unknown>, key: string): number | undefined {
+function readOptionalNumber(context: Record<string, any>, key: string): number | undefined {
   const value = context[key];
   if (typeof value !== "number" || !Number.isFinite(value)) {
     return undefined;

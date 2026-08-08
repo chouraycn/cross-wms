@@ -42,17 +42,17 @@ export type ChannelRouteRef = {
 /** Loose route input accepted at SDK boundaries before normalization. */
 export type ChannelRouteRefInput = {
   /** Raw channel id; normalized to lowercase. */
-  channel?: unknown;
+  channel?: any;
   /** Raw account/profile id; normalized with account-id rules when string. */
-  accountId?: unknown;
+  accountId?: any;
   /** Raw destination id before trimming and route-key normalization. */
-  to?: unknown;
+  to?: any;
   /** Provider-specific target text retained when different from `to`. */
-  rawTo?: unknown;
+  rawTo?: any;
   /** Coarse destination shape supplied by channels that distinguish target kinds. */
   chatType?: ChannelRouteChatType;
   /** Raw provider thread/topic/root id before route-key normalization. */
-  threadId?: unknown;
+  threadId?: any;
   /** Provider-specific thread family carried with the normalized thread id. */
   threadKind?: ChannelRouteThreadKind;
   /** Runtime surface that supplied the thread id. */
@@ -85,12 +85,12 @@ export type ChannelRouteExplicitTargetParser = (
 ) => ChannelRouteExplicitTarget | null;
 
 /** Normalizes a route thread id while preserving provider string ids. */
-export function normalizeRouteThreadId(value: unknown): string | number | undefined {
+export function normalizeRouteThreadId(value: any): string | number | undefined {
   return normalizeOptionalThreadValue(value);
 }
 
 /** Stringifies a normalized thread id for stable route keys and comparisons. */
-export function stringifyRouteThreadId(value: unknown): string | undefined {
+export function stringifyRouteThreadId(value: any): string | undefined {
   const normalized = normalizeRouteThreadId(value);
   return normalized == null ? undefined : String(normalized);
 }

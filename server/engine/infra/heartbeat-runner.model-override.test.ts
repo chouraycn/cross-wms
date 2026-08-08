@@ -22,11 +22,11 @@ type SeedSessionInput = {
 type AgentDefaultsConfig = NonNullable<NonNullable<OpenClawConfig["agents"]>["defaults"]>;
 type HeartbeatConfig = NonNullable<AgentDefaultsConfig["heartbeat"]>;
 
-function expectReplyOptions(options: unknown, expected: Record<string, unknown>) {
+function expectReplyOptions(options: any, expected: Record<string, any>) {
   if (!options || typeof options !== "object") {
     throw new Error("expected reply options");
   }
-  const actual = options as Record<string, unknown>;
+  const actual = options as Record<string, any>;
   for (const [key, value] of Object.entries(expected)) {
     expect(actual[key]).toEqual(value);
   }
@@ -43,8 +43,8 @@ async function withHeartbeatFixture(
     storePath: string;
     replySpy: HeartbeatReplySpy;
     seedSession: (sessionKey: string, input: SeedSessionInput) => Promise<void>;
-  }) => Promise<unknown>,
-): Promise<unknown> {
+  }) => Promise<any>,
+): Promise<any> {
   return withTempHeartbeatSandbox(
     async ({ tmpDir, storePath, replySpy }) => {
       const seedSession = async (sessionKey: string, input: SeedSessionInput) => {
@@ -138,7 +138,7 @@ describe("runHeartbeatOnce – heartbeat model override", () => {
 
   async function expectPerAgentHeartbeatOverride(params: {
     defaultsHeartbeat: Partial<HeartbeatConfig>;
-    expectedOptions: Record<string, unknown>;
+    expectedOptions: Record<string, any>;
     heartbeat: Partial<HeartbeatConfig>;
   }): Promise<void> {
     await withHeartbeatFixture(async ({ tmpDir, storePath, replySpy, seedSession }) => {

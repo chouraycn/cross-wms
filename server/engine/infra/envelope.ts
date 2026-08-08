@@ -5,25 +5,25 @@ export type OutboundDeliveryJson = {
   ok: boolean;
   channel?: string;
   target?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 export type OutboundPayloadJson = {
   text?: string;
   mediaUrl?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 export type OutboundResultEnvelope = {
   payloads?: OutboundPayloadJson[];
-  meta?: unknown;
+  meta?: any;
   delivery?: OutboundDeliveryJson;
 };
 
 /** Builds the outbound result envelope, flattening plain delivery-only results by default. */
 export function buildOutboundResultEnvelope(params: {
   payloads?: readonly OutboundPayloadJson[];
-  meta?: unknown;
+  meta?: any;
   delivery?: OutboundDeliveryJson;
   flattenDelivery?: boolean;
 }): OutboundResultEnvelope | OutboundDeliveryJson {

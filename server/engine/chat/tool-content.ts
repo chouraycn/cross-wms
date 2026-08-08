@@ -16,7 +16,7 @@ const TOOL_USE_ID_FIELDS = [
 ] as const;
 type ToolUseIdField = (typeof TOOL_USE_ID_FIELDS)[number];
 
-function normalizeToolContentType(value: unknown): string {
+function normalizeToolContentType(value: any): string {
   return typeof value === 'string' ? value.toLowerCase() : '';
 }
 
@@ -24,7 +24,7 @@ function normalizeToolContentType(value: unknown): string {
  * 判断内容类型是否为工具调用类型。
  * 支持多种提供商 SDK 的命名。
  */
-export function isToolCallContentType(value: unknown): boolean {
+export function isToolCallContentType(value: any): boolean {
   const type = normalizeToolContentType(value);
   return type === 'toolcall' || type === 'tool_call' || type === 'tooluse' || type === 'tool_use';
 }
@@ -33,7 +33,7 @@ export function isToolCallContentType(value: unknown): boolean {
  * 判断内容类型是否为工具结果类型。
  * 支持多种提供商 SDK 的命名。
  */
-export function isToolResultContentType(value: unknown): boolean {
+export function isToolResultContentType(value: any): boolean {
   const type = normalizeToolContentType(value);
   return type === 'toolresult' || type === 'tool_result';
 }
@@ -56,11 +56,11 @@ export function isToolResultBlock(block: ToolContentBlock): boolean {
  * 从工具块中读取参数。
  * 支持多种提供商的字段命名。
  */
-export function resolveToolBlockArgs(block: ToolContentBlock): unknown {
+export function resolveToolBlockArgs(block: ToolContentBlock): any {
   return block.args ?? block.arguments ?? block.input;
 }
 
-function normalizeOptionalString(value: unknown): string | undefined {
+function normalizeOptionalString(value: any): string | undefined {
   if (typeof value !== 'string') {
     return undefined;
   }

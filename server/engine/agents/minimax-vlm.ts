@@ -84,7 +84,7 @@ function coerceApiHost(params: {
   }
 }
 
-function pickString(rec: Record<string, unknown>, key: string): string {
+function pickString(rec: Record<string, any>, key: string): string {
   const v = rec[key];
   return typeof v === "string" ? v : "";
 }
@@ -155,7 +155,7 @@ export async function minimaxUnderstandImage(params: {
     );
   }
 
-  const json = (await res.json().catch(() => null)) as unknown;
+  const json = (await res.json().catch(() => null)) as any;
   if (!isRecord(json)) {
     const trace = traceId ? ` Trace-Id: ${traceId}` : "";
     throw new Error(`MiniMax VLM response was not JSON.${trace}`);

@@ -24,11 +24,11 @@ export type ProviderAuthLookupMaps = {
 };
 
 export type ProviderEnvVarLookupParams = {
-  config?: unknown;
+  config?: any;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   includeUntrustedWorkspacePlugins?: boolean;
-  metadataSnapshot?: unknown;
+  metadataSnapshot?: any;
 };
 
 const CORE_PROVIDER_AUTH_ENV_VAR_CANDIDATES: Record<string, readonly string[]> = {

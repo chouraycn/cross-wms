@@ -33,11 +33,11 @@ afterEach(() => {
   testing.clearNativeHookRelaysForTests();
 });
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   // Relay bridge payloads cross a process boundary. Tests narrow unknown JSON
   // before making assertions so malformed bridge responses fail clearly.
   if (!isRecord(value)) {
@@ -46,7 +46,7 @@ function requireRecord(value: unknown, label: string): Record<string, unknown> {
   return value;
 }
 
-function readRecordField(record: Record<string, unknown>, key: string, label: string) {
+function readRecordField(record: Record<string, any>, key: string, label: string) {
   const value = record[key];
   if (!isRecord(value)) {
     throw new Error(`Expected ${label} to be an object`);
@@ -54,14 +54,14 @@ function readRecordField(record: Record<string, unknown>, key: string, label: st
   return value;
 }
 
-function expectRecordFields(record: Record<string, unknown>, fields: Record<string, unknown>) {
+function expectRecordFields(record: Record<string, any>, fields: Record<string, any>) {
   for (const [key, value] of Object.entries(fields)) {
     expect(record[key]).toEqual(value);
   }
 }
 
 function getMockCallArg(
-  mock: { mock: { calls: readonly (readonly unknown[])[] } },
+  mock: { mock: { calls: readonly (readonly any[])[] } },
   callIndex: number,
   argIndex: number,
   label: string,
@@ -77,13 +77,13 @@ function getOnlyNativeHookRelayInvocation() {
 
 async function waitForNativeHookRelayBridgeRecord(
   relayId: string,
-): Promise<Record<string, unknown>> {
-  let record: Record<string, unknown> | undefined;
+): Promise<Record<string, any>> {
+  let record: Record<string, any> | undefined;
   await vi.waitFor(() => {
     record = testing.getNativeHookRelayBridgeRecordForTests(relayId);
     expect(isRecord(record) ? record.relayId : undefined).toBe(relayId);
   });
-  return record as Record<string, unknown>;
+  return record as Record<string, any>;
 }
 
 async function writeForeignNativeHookRelayBridgeRecordForTests(
@@ -119,18 +119,18 @@ function uniqueNativeHookRelayIdForTests(prefix: string): string {
 }
 
 function openDeferredNativeHookRelayBridgeRequest(
-  record: Record<string, unknown>,
-  payload: Record<string, unknown>,
+  record: Record<string, any>,
+  payload: Record<string, any>,
 ): {
   connected: Promise<void>;
-  response: Promise<Record<string, unknown>>;
+  response: Promise<Record<string, any>>;
   sendBody: () => void;
 } {
   const body = JSON.stringify(payload);
   let settled = false;
-  let resolveResponse!: (value: Record<string, unknown>) => void;
-  let rejectResponse!: (error: unknown) => void;
-  const response = new Promise<Record<string, unknown>>((resolve, reject) => {
+  let resolveResponse!: (value: Record<string, any>) => void;
+  let rejectResponse!: (error: any) => void;
+  const response = new Promise<Record<string, any>>((resolve, reject) => {
     resolveResponse = resolve;
     rejectResponse = reject;
   });
@@ -187,12 +187,12 @@ function openDeferredNativeHookRelayBridgeRequest(
 }
 
 type NativeHookRelaySharedStateForTests = {
-  relays: Map<string, unknown>;
-  relayBridges: Map<string, unknown>;
-  invocations: unknown[];
-  pendingPermissionApprovals: Map<string, unknown>;
-  permissionApprovalWindows: Map<string, unknown[]>;
-  permissionAllowAlwaysApprovals: Map<string, unknown>;
+  relays: Map<string, any>;
+  relayBridges: Map<string, any>;
+  invocations: any[];
+  pendingPermissionApprovals: Map<string, any>;
+  permissionApprovalWindows: Map<string, any[]>;
+  permissionAllowAlwaysApprovals: Map<string, any>;
 };
 
 function getNativeHookRelaySharedStateForTests(): NativeHookRelaySharedStateForTests {
@@ -1469,7 +1469,7 @@ describe("native hook relay registry", () => {
       runId: "run-1",
       allowedEvents: ["pre_tool_use"],
     });
-    let rawPayload: Record<string, unknown> = {};
+    let rawPayload: Record<string, any> = {};
     for (let index = 0; index < 80; index += 1) {
       rawPayload = { child: rawPayload };
     }
@@ -1491,7 +1491,7 @@ describe("native hook relay registry", () => {
       runId: "run-1",
       allowedEvents: ["post_tool_use"],
     });
-    const rawPayload: Record<string, unknown> = {};
+    const rawPayload: Record<string, any> = {};
     for (let index = 0; index < 19_999; index += 1) {
       rawPayload[`k${index}`] = index;
     }
@@ -1731,7 +1731,7 @@ describe("native hook relay registry", () => {
   });
 
   it("prefers Codex exec_command cmd over a stale command field", async () => {
-    const beforeToolCall = vi.fn(async (event: unknown) => {
+    const beforeToolCall = vi.fn(async (event: any) => {
       const command = (event as { params?: { command?: string } }).params?.command;
       return command === "rm -rf dist"
         ? { block: true, blockReason: "destructive command blocked" }
@@ -1907,7 +1907,7 @@ describe("native hook relay registry", () => {
   });
 
   it("blocks Codex native pre-tool calls when policy mutates params in place", async () => {
-    const beforeToolCall = vi.fn(async (event: unknown) => {
+    const beforeToolCall = vi.fn(async (event: any) => {
       const params = requireRecord(
         requireRecord(event, "before tool call event").params,
         "before tool call params",
@@ -2019,11 +2019,11 @@ describe("native hook relay registry", () => {
     });
 
     let resolveApproval:
-      | ((value: { blocked: false; params: unknown; approvalResolution: "allow-once" }) => void)
+      | ((value: { blocked: false; params: any; approvalResolution: "allow-once" }) => void)
       | undefined;
     const approvalRequester = vi.fn(
       () =>
-        new Promise<{ blocked: false; params: unknown; approvalResolution: "allow-once" }>(
+        new Promise<{ blocked: false; params: any; approvalResolution: "allow-once" }>(
           (resolve) => {
             resolveApproval = resolve;
           },
@@ -2063,7 +2063,7 @@ describe("native hook relay registry", () => {
     const stateDir = await fs.mkdtemp(path.join(tmpdir(), "openclaw-native-relay-policy-"));
     const storePath = path.join(stateDir, "sessions.json");
     const config = { session: { store: storePath } };
-    const seen: unknown[] = [];
+    const seen: any[] = [];
     const registry = createEmptyPluginRegistry();
     registry.sessionExtensions = [
       {
@@ -2335,8 +2335,8 @@ describe("native hook relay registry", () => {
   });
 
   it("lets security-style plugins block native MCP calls by scanning tool params", async () => {
-    const beforeToolCall = vi.fn(async (event: unknown) => {
-      const hookEvent = event as { params?: unknown; toolName?: string };
+    const beforeToolCall = vi.fn(async (event: any) => {
+      const hookEvent = event as { params?: any; toolName?: string };
       const serializedParams = JSON.stringify(hookEvent.params ?? {});
       if (hookEvent.toolName?.startsWith("mcp__") && serializedParams.includes("rm -rf")) {
         return {
@@ -2973,7 +2973,7 @@ describe("native hook relay registry", () => {
     const pendingDecision = new Promise<"allow">((resolve) => {
       resolveDecision = resolve;
     });
-    const approvalRequester = vi.fn(async (request: { toolInput?: Record<string, unknown> }) => {
+    const approvalRequester = vi.fn(async (request: { toolInput?: Record<string, any> }) => {
       return request.toolInput?.command === "git status" ? pendingDecision : "deny";
     });
     testing.setNativeHookRelayPermissionApprovalRequesterForTests(approvalRequester);

@@ -39,7 +39,7 @@ type CreatedChatAbortOps = ChatAbortOps & {
     chatDeltaLastBroadcastLen: Map<string, number>;
     chatDeltaLastBroadcastText: Map<string, string>;
     agentDeltaSentAt: Map<string, number>;
-    bufferedAgentEvents: Map<string, unknown>;
+    bufferedAgentEvents: Map<string, any>;
   };
 };
 
@@ -72,7 +72,7 @@ function createOps(params: {
   const chatDeltaLastBroadcastLen = new Map([[runId, buffer?.length ?? 0]]);
   const chatDeltaLastBroadcastText = new Map(buffer !== undefined ? [[runId, buffer]] : []);
   const agentDeltaSentAt = new Map([[`${runId}:assistant`, Date.now()]]);
-  const bufferedAgentEvents = new Map<string, unknown>([
+  const bufferedAgentEvents = new Map<string, any>([
     [
       `${runId}:assistant`,
       {
@@ -138,7 +138,7 @@ function createAbortRunFixture(params: {
   return { runId, sessionKey, entry, ops };
 }
 
-function firstBroadcastPayload(ops: { broadcast: ReturnType<typeof vi.fn> }): unknown {
+function firstBroadcastPayload(ops: { broadcast: ReturnType<typeof vi.fn> }): any {
   const call = ops.broadcast.mock.calls[0];
   if (!call) {
     throw new Error("expected broadcast call");
@@ -351,7 +351,7 @@ describe("abortChatRunById", () => {
     const result = abortChatRunById(ops, { runId, sessionKey });
 
     expect(result).toEqual({ aborted: true });
-    const payload = firstBroadcastPayload(ops) as Record<string, unknown>;
+    const payload = firstBroadcastPayload(ops) as Record<string, any>;
     expect(payload.message).toBeUndefined();
   });
 

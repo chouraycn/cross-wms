@@ -5,7 +5,7 @@ export type TUIMessageStatus = 'pending' | 'streaming' | 'complete' | 'error';
 export interface TUIToolCall {
   id: string;
   name: string;
-  input?: Record<string, unknown>;
+  input?: Record<string, any>;
   output?: string;
   status: 'pending' | 'running' | 'success' | 'error';
   errorMessage?: string;
@@ -108,7 +108,7 @@ export type TUIEventType =
 
 export interface TUIEvent {
   type: TUIEventType;
-  data?: unknown;
+  data?: any;
 }
 
 export interface TUIRenderOptions {

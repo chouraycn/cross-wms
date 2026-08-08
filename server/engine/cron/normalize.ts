@@ -25,7 +25,7 @@ import {
 import { normalizeCronStaggerMs, resolveDefaultCronStaggerMs } from "./stagger.js";
 import type { CronJobCreate, CronJobPatch } from "./types.js";
 
-type UnknownRecord = Record<string, unknown>;
+type UnknownRecord = Record<string, any>;
 
 type NormalizeOptions = {
   applyDefaults?: boolean;
@@ -38,7 +38,7 @@ const DEFAULT_OPTIONS: NormalizeOptions = {
 };
 
 function normalizeTrimmedStringArray(
-  value: unknown,
+  value: any,
   options?: { allowNull?: boolean },
 ): string[] | null | undefined {
   if (Array.isArray(value)) {
@@ -54,7 +54,7 @@ function normalizeTrimmedStringArray(
   return undefined;
 }
 
-function normalizeTrimmedStringRecord(value: unknown): Record<string, string> | undefined {
+function normalizeTrimmedStringRecord(value: any): Record<string, string> | undefined {
   if (!isRecord(value)) {
     return undefined;
   }
@@ -70,7 +70,7 @@ function normalizeTrimmedStringRecord(value: unknown): Record<string, string> | 
   return Object.fromEntries(entries);
 }
 
-function normalizeCommandArgv(value: unknown): string[] | undefined {
+function normalizeCommandArgv(value: any): string[] | undefined {
   if (!Array.isArray(value) || value.length === 0) {
     return undefined;
   }
@@ -456,7 +456,7 @@ function coerceFailureDestination(value: UnknownRecord) {
   return next;
 }
 
-function normalizeSessionTarget(raw: unknown) {
+function normalizeSessionTarget(raw: any) {
   if (typeof raw !== "string") {
     return undefined;
   }
@@ -473,7 +473,7 @@ function normalizeSessionTarget(raw: unknown) {
   return undefined;
 }
 
-function normalizeWakeMode(raw: unknown) {
+function normalizeWakeMode(raw: any) {
   if (typeof raw !== "string") {
     return undefined;
   }
@@ -486,7 +486,7 @@ function normalizeWakeMode(raw: unknown) {
 
 /** Normalizes raw cron job input without deciding whether create-time defaults apply. */
 export function normalizeCronJobInput(
-  raw: unknown,
+  raw: any,
   options: NormalizeOptions = DEFAULT_OPTIONS,
 ): UnknownRecord | null {
   if (!isRecord(raw)) {
@@ -583,12 +583,12 @@ export function normalizeCronJobInput(
       isRecord(next.payload)
     ) {
       next.name = inferCronJobName({
-        schedule: next.schedule as { kind?: unknown; everyMs?: unknown; expr?: unknown },
+        schedule: next.schedule as { kind?: any; everyMs?: any; expr?: any },
         payload: next.payload as {
-          kind?: unknown;
-          text?: unknown;
-          message?: unknown;
-          argv?: unknown;
+          kind?: any;
+          text?: any;
+          message?: any;
+          argv?: any;
         },
       });
     } else if (typeof next.name === "string") {
@@ -663,7 +663,7 @@ export function normalizeCronJobInput(
 
 /** Normalizes a raw cron create request and applies create-time defaults. */
 export function normalizeCronJobCreate(
-  raw: unknown,
+  raw: any,
   options?: Omit<NormalizeOptions, "applyDefaults">,
 ): CronJobCreate | null {
   return normalizeCronJobInput(raw, {
@@ -674,7 +674,7 @@ export function normalizeCronJobCreate(
 
 /** Normalizes a raw cron patch request without filling omitted fields. */
 export function normalizeCronJobPatch(
-  raw: unknown,
+  raw: any,
   options?: NormalizeOptions,
 ): CronJobPatch | null {
   return normalizeCronJobInput(raw, {

@@ -20,7 +20,7 @@ const LEVELS = new Set<ReactionLevel>(["off", "ack", "minimal", "extensive"]);
 
 /** Parses a raw config value while preserving missing vs invalid for fallback policy. */
 function parseLevel(
-  value: unknown,
+  value: any,
 ): { kind: "missing" } | { kind: "invalid" } | { kind: "ok"; value: ReactionLevel } {
   if (value === undefined || value === null) {
     return { kind: "missing" };
@@ -40,7 +40,7 @@ function parseLevel(
 
 /** Resolves raw reaction config into ACK and agent-reaction runtime flags. */
 export function resolveReactionLevel(params: {
-  value: unknown;
+  value: any;
   defaultLevel: ReactionLevel;
   invalidFallback: "ack" | "minimal";
 }): ResolvedReactionLevel {

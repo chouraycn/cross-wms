@@ -5,16 +5,16 @@ import type { CronSchedule } from "../../cron/types.js";
 import { parseAt, parseCronStaggerMs, parseDurationMs } from "./shared.js";
 
 type ScheduleOptionInput = {
-  at?: unknown;
-  cron?: unknown;
-  every?: unknown;
-  exact?: unknown;
-  stagger?: unknown;
-  tz?: unknown;
+  at?: any;
+  cron?: any;
+  every?: any;
+  exact?: any;
+  stagger?: any;
+  tz?: any;
 };
 
 type PositionalScheduleInput = {
-  positionalSchedule?: unknown;
+  positionalSchedule?: any;
 };
 
 type NormalizedScheduleOptions = {

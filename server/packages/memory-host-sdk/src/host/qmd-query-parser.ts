@@ -87,7 +87,7 @@ function summarizeQmdStderr(raw: string): string {
 /** Parse and normalize a strict qmd JSON array payload. */
 function parseQmdQueryResultArray(raw: string): QmdQueryResult[] | null {
   try {
-    const parsed = JSON.parse(raw) as unknown;
+    const parsed = JSON.parse(raw) as any;
     if (!Array.isArray(parsed)) {
       return null;
     }
@@ -95,7 +95,7 @@ function parseQmdQueryResultArray(raw: string): QmdQueryResult[] | null {
       if (typeof item !== "object" || item === null) {
         return item as QmdQueryResult;
       }
-      const record = item as Record<string, unknown>;
+      const record = item as Record<string, any>;
       const docid = typeof record.docid === "string" ? record.docid : undefined;
       const score =
         typeof record.score === "number" && Number.isFinite(record.score)
@@ -122,7 +122,7 @@ function parseQmdQueryResultArray(raw: string): QmdQueryResult[] | null {
 }
 
 /** Normalize qmd line numbers, rejecting zero, negative, and non-integer values. */
-function parseQmdLineNumber(value: unknown): number | undefined {
+function parseQmdLineNumber(value: any): number | undefined {
   return typeof value === "number" && Number.isSafeInteger(value) && value > 0 ? value : undefined;
 }
 

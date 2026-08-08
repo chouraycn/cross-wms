@@ -87,7 +87,7 @@ describe("agent command registration", () => {
     agentsUnbindCommandMock.mockResolvedValue(undefined);
   });
 
-  function commandCall(mock: { mock: { calls: unknown[][] } }, index = 0): unknown[] {
+  function commandCall(mock: { mock: { calls: any[][] } }, index = 0): any[] {
     const call = mock.mock.calls[index];
     if (!call) {
       throw new Error(`expected command call ${index + 1}`);

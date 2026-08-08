@@ -7,6 +7,6 @@
  */
 
 export type ToolParameterSchemaOptions = unknown;
-export function normalizeToolParameterSchema(..._args: unknown[]): unknown {
+export function normalizeToolParameterSchema(..._args: any[]): any {
   return undefined;
 }

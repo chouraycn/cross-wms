@@ -71,11 +71,11 @@ const BindTransitDialog: React.FC<BindTransitDialogProps> = ({ open, transferOrd
           if (json.code === 0 && Array.isArray(json.data)) {
             // Filter transit orders that match from/to warehouses
             const matched = json.data.filter(
-              (t: Record<string, unknown>) =>
+              (t: Record<string, any>) =>
                 t.fromWarehouseId === transferOrder.fromWarehouseId &&
                 t.toWarehouseId === transferOrder.toWarehouseId
             );
-            setTransitOrders(matched.map((t: Record<string, unknown>) => ({
+            setTransitOrders(matched.map((t: Record<string, any>) => ({
               id: t.id as string,
               trackingNo: t.trackingNo as string,
               fromWarehouseId: t.fromWarehouseId as string,

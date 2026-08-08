@@ -304,7 +304,7 @@ function primeHookPackPathFallback(params: {
 
 type MockWithCalls = {
   mock: {
-    calls: readonly (readonly unknown[])[];
+    calls: readonly (readonly any[])[];
   };
 };
 
@@ -319,8 +319,8 @@ type PluginInstallCall = {
   extensionsDir?: string;
   inspection?: "package-kind";
   logger?: {
-    info?: unknown;
-    warn?: unknown;
+    info?: any;
+    warn?: any;
   };
   marketplace?: string;
   mode?: string;
@@ -330,9 +330,9 @@ type PluginInstallCall = {
   trustedSourceLinkedOfficialInstall?: boolean;
 };
 
-type PersistedInstallRecord = Record<string, unknown>;
+type PersistedInstallRecord = Record<string, any>;
 
-function mockCallArg(mock: MockWithCalls, callIndex = 0, argIndex = 0): unknown {
+function mockCallArg(mock: MockWithCalls, callIndex = 0, argIndex = 0): any {
   const call = mock.mock.calls[callIndex];
   if (!call) {
     throw new Error(`Expected mock call ${callIndex}`);
@@ -1755,7 +1755,7 @@ describe("plugins cli install", () => {
     const bundledPath = "/app/dist/extensions/discord";
 
     loadConfig.mockReturnValue(cfg);
-    findBundledPluginSourceMock.mockImplementation((params: unknown) => {
+    findBundledPluginSourceMock.mockImplementation((params: any) => {
       const { lookup } = params as {
         lookup: { kind: "pluginId" | "npmSpec"; value: string };
       };
@@ -2232,7 +2232,7 @@ describe("plugins cli install", () => {
     const enabledCfg = createEnabledPluginConfig("demo");
 
     loadConfig.mockReturnValue(cfg);
-    installPluginFromPath.mockImplementation(async (...args: unknown[]) => {
+    installPluginFromPath.mockImplementation(async (...args: any[]) => {
       const [params] = args as [
         {
           logger?: { warn?: (message: string) => void };

@@ -75,7 +75,7 @@ export function createMessageActionDiscoveryContext(
 function logMessageActionError(params: {
   pluginId: string;
   operation: "describeMessageTool";
-  error: unknown;
+  error: any;
 }) {
   const message = formatErrorMessage(params.error);
   const key = `${params.pluginId}:${params.operation}:${message}`;

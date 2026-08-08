@@ -32,7 +32,7 @@ function readMessages(sessionFile: string) {
     .trim()
     .split("\n")
     .filter(Boolean)
-    .map((line) => JSON.parse(line) as { type?: string; message?: unknown })
+    .map((line) => JSON.parse(line) as { type?: string; message?: any })
     .filter((r) => r.type === "message")
     .map((r) => r.message);
 }
@@ -425,7 +425,7 @@ describe("appendExactAssistantMessageToSessionTranscript - redaction", () => {
 
     const fakeApiKey = "sk-proj-FAKEKEYFORTESTINGONLY1234567890";
     const config: OpenClawConfig = { logging: { redactSensitive: "tools" } };
-    const updates: Array<{ message?: unknown }> = [];
+    const updates: Array<{ message?: any }> = [];
     const unsubscribe = onSessionTranscriptUpdate((update) => updates.push(update));
 
     try {

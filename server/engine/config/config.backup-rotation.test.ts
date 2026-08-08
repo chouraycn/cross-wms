@@ -21,11 +21,11 @@ async function expectRegularFile(filePath: string): Promise<void> {
 }
 
 async function expectPathMissing(filePath: string): Promise<void> {
-  let error: { code?: unknown } | undefined;
+  let error: { code?: any } | undefined;
   try {
     await fs.stat(filePath);
   } catch (err) {
-    error = err as { code?: unknown };
+    error = err as { code?: any };
   }
   expect(error?.code).toBe("ENOENT");
 }

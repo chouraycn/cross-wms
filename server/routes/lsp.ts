@@ -105,7 +105,7 @@ router.post('/start', async (req, res) => {
 
     // 如果提供了 projectRoot，重新初始化 registry
     const registry = projectRoot
-      ? new (getLspServerRegistry().constructor as unknown)(projectRoot)
+      ? new (getLspServerRegistry().constructor as any)(projectRoot)
       : getLspServerRegistry(projectRoot);
 
     // 检查配置是否存在
@@ -224,7 +224,7 @@ router.post('/hover', async (req, res) => {
     const hover = await client.getHover(uri, position);
 
     // 提取 Hover 内容
-    let hoverInfo: { content: string; range?: unknown } | null = null;
+    let hoverInfo: { content: string; range?: any } | null = null;
     if (hover) {
       let content = '';
       if (typeof hover.contents === 'string') {

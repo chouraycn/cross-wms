@@ -85,7 +85,7 @@ export type SearchCapabilityProvider = CapabilityProvider<SearchInvokeOptions, S
 export function registerSearchProvider(
   pluginId: string,
   provider: SearchCapabilityProvider,
-  metadata?: Record<string, unknown>,
+  metadata?: Record<string, any>,
 ): void {
   capabilityProviderRegistry.register(pluginId, provider, metadata);
 }

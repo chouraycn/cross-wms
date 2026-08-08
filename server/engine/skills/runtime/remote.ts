@@ -16,7 +16,7 @@ export interface RemoteSkill {
   nodeId: string;
   skillName: string;
   version: string;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
   syncStatus: RemoteSkillSyncStatus;
 }
 
@@ -75,7 +75,7 @@ function mockDelay(): Promise<void> {
 }
 
 function buildMockSkills(nodeId: string): RemoteSkill[] {
-  const mockPool: Array<{ name: string; version: string; metadata: Record<string, unknown> }> = [
+  const mockPool: Array<{ name: string; version: string; metadata: Record<string, any> }> = [
     { name: "remote-chat", version: "1.0.0", metadata: { category: "chat", author: "node-team" } },
     { name: "remote-search", version: "2.1.0", metadata: { category: "search", author: "node-team" } },
     { name: "remote-translate", version: "1.2.3", metadata: { category: "i18n", author: "lang-team" } },

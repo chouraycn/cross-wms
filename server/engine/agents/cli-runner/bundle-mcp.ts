@@ -35,10 +35,10 @@ function resolveBundleMcpMode(mode: CliBundleMcpMode | undefined): CliBundleMcpM
 }
 
 async function readExternalMcpConfig(configPath: string): Promise<BundleMcpConfig> {
-  return { mcpServers: extractMcpServerMap(await tryReadJson<unknown>(configPath)) };
+  return { mcpServers: extractMcpServerMap(await tryReadJson<any>(configPath)) };
 }
 
-function sortJsonValue(value: unknown): unknown {
+function sortJsonValue(value: any): any {
   if (Array.isArray(value)) {
     return value.map((entry) => sortJsonValue(entry));
   }
@@ -85,7 +85,7 @@ function canonicalizeBundleMcpConfigForResume(config: BundleMcpConfig): BundleMc
 
 const OPENCLAW_MCP_ENV_TEMPLATE_PATTERN = /\$\{(OPENCLAW_MCP_[A-Z0-9_]+)\}/g;
 
-function resolveOpenClawMcpEnvTemplates(value: unknown, env?: Record<string, string>): unknown {
+function resolveOpenClawMcpEnvTemplates(value: any, env?: Record<string, string>): any {
   if (!env) {
     return value;
   }

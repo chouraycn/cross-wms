@@ -227,7 +227,7 @@ router.post('/sessions/:id/ingest', async (req, res) => {
     const sessionId = req.params.id;
     const { messages, runtimeContext } = req.body as {
       messages?: AgentMessage[];
-      runtimeContext?: unknown;
+      runtimeContext?: any;
     };
 
     if (!Array.isArray(messages) || messages.length === 0) {
@@ -257,7 +257,7 @@ router.post('/sessions/:id/assemble', async (req, res) => {
       availableTools?: string[];
       model?: string;
       prompt?: string;
-      runtimeContext?: unknown;
+      runtimeContext?: any;
     };
 
     const result = await assembleContext(

@@ -48,7 +48,7 @@ export class ClaudeAdapter implements IAiApiAdapter {
 
     const thinkingBudget = compat?.thinking?.useBudget ? Math.floor(maxTokens * (compat.thinking.budgetRatio || 0.33)) : undefined;
 
-    const body: Record<string, unknown> = {
+    const body: Record<string, any> = {
       model: modelId,
       messages,
       temperature,

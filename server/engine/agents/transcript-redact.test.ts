@@ -8,8 +8,8 @@ import { redactTranscriptMessage } from "./transcript-redact.js";
 
 // AgentMessage includes custom message types without content; this accessor
 // keeps strict union checks local to the redaction fixtures.
-function msgContent(msg: AgentMessage): unknown {
-  return (msg as unknown as { content: unknown }).content;
+function msgContent(msg: AgentMessage): any {
+  return (msg as unknown as { content: any }).content;
 }
 
 function textMessage(text: string): AgentMessage {
@@ -125,11 +125,11 @@ describe("redactTranscriptMessage", () => {
       id: string;
       type: string;
       encrypted_content: string;
-      summary: unknown[];
-      content?: unknown[];
-      __openclaw_replay: Record<string, unknown>;
+      summary: any[];
+      content?: any[];
+      __openclaw_replay: Record<string, any>;
     };
-    const blockMetadata = (block as unknown as { openclawReasoningReplay: Record<string, unknown> })
+    const blockMetadata = (block as unknown as { openclawReasoningReplay: Record<string, any> })
       .openclawReasoningReplay;
     const rejectedSignature = (msgContent(result) as Array<{ thinkingSignature: string }>)[1]
       .thinkingSignature;
@@ -643,7 +643,7 @@ describe("redactTranscriptMessage", () => {
     } as unknown as AgentMessage;
 
     const result = redactTranscriptMessage(msg, cfg("tools"));
-    const block = (msgContent(result) as Array<{ arguments: unknown }>)[0];
+    const block = (msgContent(result) as Array<{ arguments: any }>)[0];
     const argumentsValue = block.arguments as {
       command: string;
       env: { nested: string[] };
@@ -656,7 +656,7 @@ describe("redactTranscriptMessage", () => {
     expect(argumentsValue.count).toBe(1);
     expect(serializedArguments).toContain("openclaw health");
     expect(block.arguments).not.toBe(
-      (msgContent(msg) as Array<{ arguments: unknown }>)[0].arguments,
+      (msgContent(msg) as Array<{ arguments: any }>)[0].arguments,
     );
   });
 
@@ -679,7 +679,7 @@ describe("redactTranscriptMessage", () => {
     } as unknown as AgentMessage;
 
     const result = redactTranscriptMessage(msg, cfg("tools"));
-    const block = (msgContent(result) as Array<{ arguments: unknown }>)[0];
+    const block = (msgContent(result) as Array<{ arguments: any }>)[0];
     const argumentsValue = block.arguments as {
       apiKey: string;
       password: string;
@@ -715,7 +715,7 @@ describe("redactTranscriptMessage", () => {
     } as unknown as AgentMessage;
 
     const result = redactTranscriptMessage(msg, cfg("tools"));
-    const block = (msgContent(result) as Array<{ input: unknown }>)[0];
+    const block = (msgContent(result) as Array<{ input: any }>)[0];
     const inputValue = block.input as {
       apiKey: string;
       nested: { accessToken: string[] };
@@ -749,7 +749,7 @@ describe("redactTranscriptMessage", () => {
     } as unknown as AgentMessage;
 
     const result = redactTranscriptMessage(msg, cfg("tools"));
-    const block = (msgContent(result) as Array<{ input: unknown }>)[0];
+    const block = (msgContent(result) as Array<{ input: any }>)[0];
     const inputValue = block.input as {
       password: string;
       nested: { accessToken: string[] };
@@ -782,7 +782,7 @@ describe("redactTranscriptMessage", () => {
     } as unknown as AgentMessage;
 
     const result = redactTranscriptMessage(msg, cfg("tools"));
-    const block = (msgContent(result) as Array<Record<string, unknown>>)[0];
+    const block = (msgContent(result) as Array<Record<string, any>>)[0];
     const serializedBlock = JSON.stringify(block);
     expect(serializedBlock).not.toContain("sk-abcdef1234567890xyz");
     expect(serializedBlock).not.toContain("plainsecretvalue123");
@@ -793,7 +793,7 @@ describe("redactTranscriptMessage", () => {
   it("redacts circular structured payloads without throwing", () => {
     // Redaction walks arbitrary tool payloads, so circular structures must be
     // replaced instead of recursing forever or throwing.
-    const details: Record<string, unknown> = {
+    const details: Record<string, any> = {
       apiKey: "plainsecretvalue123",
     };
     details.self = details;
@@ -808,7 +808,7 @@ describe("redactTranscriptMessage", () => {
     } as unknown as AgentMessage;
 
     const result = redactTranscriptMessage(msg, cfg("tools")) as unknown as {
-      details: Record<string, unknown>;
+      details: Record<string, any>;
     };
     expect(result.details.apiKey).toBe("plains…e123");
     expect(result.details.self).toBe("[Circular]");
@@ -832,7 +832,7 @@ describe("redactTranscriptMessage", () => {
 
     const result = redactTranscriptMessage(msg, cfg("tools")) as unknown as {
       content: Array<{ text: string }>;
-      details: unknown;
+      details: any;
     };
     const serializedDetails = JSON.stringify(result.details);
     const details = result.details as {
@@ -1117,7 +1117,7 @@ describe("redactTranscriptMessage", () => {
       isError: false,
       timestamp: Date.now(),
     } as unknown as AgentMessage;
-    const result = redactTranscriptMessage(msg, cfg("off")) as unknown as { details: unknown };
+    const result = redactTranscriptMessage(msg, cfg("off")) as unknown as { details: any };
     expect(result).toBe(msg);
     expect(JSON.stringify(result.details)).toContain("plainsecretvalue123");
     expect(JSON.stringify(result.details)).toContain("hunter2");

@@ -101,8 +101,8 @@ function setResolvedProviders(...providers: ProviderPlugin[]) {
 function expectSingleWizardChoice(params: {
   provider: ProviderPlugin;
   choice: string;
-  expectedOption: Record<string, unknown>;
-  expectedWizard: unknown;
+  expectedOption: Record<string, any>;
+  expectedWizard: any;
 }) {
   setResolvedProviders(params.provider);
   expect(resolveProviderWizardOptions({})).toEqual([params.expectedOption]);

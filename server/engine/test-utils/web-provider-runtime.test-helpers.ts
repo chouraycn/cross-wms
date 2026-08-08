@@ -12,7 +12,7 @@ type CommonWebProviderTestParams = {
   autoDetectOrder?: number;
   requiresCredential?: boolean;
   authProviderId?: string;
-  getCredentialValue?: (config?: Record<string, unknown>) => unknown;
+  getCredentialValue?: (config?: Record<string, any>) => unknown;
   getConfiguredCredentialValue?: (config?: OpenClawConfig) => unknown;
   getConfiguredCredentialFallback?:
     | PluginWebSearchProviderEntry["getConfiguredCredentialFallback"]
@@ -53,7 +53,7 @@ function createDefaultProviderTool(providerId: string) {
   return {
     description: providerId,
     parameters: {},
-    execute: async (args: Record<string, unknown>) => ({ ...args, provider: providerId }),
+    execute: async (args: Record<string, any>) => ({ ...args, provider: providerId }),
   };
 }
 

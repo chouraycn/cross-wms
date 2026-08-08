@@ -5,9 +5,9 @@ export function collectSkillBins(entries: SkillEntry[]): string[] {
 
   for (const entry of entries) {
     const metadata = entry.metadata || {};
-    const required = (metadata.requires as Record<string, unknown>)?.bins as string[] ?? [];
-    const anyBins = (metadata.requires as Record<string, unknown>)?.anyBins as string[] ?? [];
-    const install = metadata.install as Array<Record<string, unknown>> ?? [];
+    const required = (metadata.requires as Record<string, any>)?.bins as string[] ?? [];
+    const anyBins = (metadata.requires as Record<string, any>)?.anyBins as string[] ?? [];
+    const install = metadata.install as Array<Record<string, any>> ?? [];
 
     for (const bin of required) {
       const trimmed = bin.trim();

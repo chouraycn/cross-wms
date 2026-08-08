@@ -45,7 +45,7 @@ export async function preflightPluginGitInstallPolicyRuntime(_params: {
 }
 
 export async function evaluateSkillInstallPolicyRuntime(_params: {
-  spec: unknown;
+  spec: any;
 }): Promise<InstallSecurityScanResult> {
   return { ok: true, findings: [] };
 }

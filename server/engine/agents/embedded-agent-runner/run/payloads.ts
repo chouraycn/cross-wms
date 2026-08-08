@@ -270,7 +270,7 @@ export function buildEmbeddedRunPayloads(params: {
     replyToCurrent?: boolean;
     presentation?: ReplyPayload["presentation"];
     interactive?: ReplyPayload["interactive"];
-    channelData?: Record<string, unknown>;
+    channelData?: Record<string, any>;
     nonTerminalToolErrorWarning?: boolean;
     sourceReplyMirror?: {
       idempotencyKey?: string;

@@ -19,7 +19,7 @@ import type { GetReplyOptions, ReplyPayload } from "../types.js";
 export type MsgContext = {
   Body?: string;
   From?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 export type ReplySessionBinding = {

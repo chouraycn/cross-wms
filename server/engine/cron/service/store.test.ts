@@ -14,11 +14,11 @@ const { logger, makeStorePath } = setupCronServiceSuite({
 
 const STORE_TEST_NOW = Date.parse("2026-03-23T12:00:00.000Z");
 
-async function writeSingleJobStore(storePath: string, job: Record<string, unknown>) {
+async function writeSingleJobStore(storePath: string, job: Record<string, any>) {
   await writeJobStore(storePath, [job]);
 }
 
-async function writeJobStore(storePath: string, jobs: unknown[]) {
+async function writeJobStore(storePath: string, jobs: any[]) {
   await saveCronStore(storePath, {
     version: 1,
     jobs: jobs as CronJob[],
@@ -131,7 +131,7 @@ describe("cron service store seam coverage", () => {
 
     const job = findJobOrThrow(state, "repro-stable-id");
     expect(job.id).toBe("repro-stable-id");
-    expect((job as { jobId?: unknown }).jobId).toBeUndefined();
+    expect((job as { jobId?: any }).jobId).toBeUndefined();
     await expectPathMissing(`${storePath}.migrated`);
   });
 

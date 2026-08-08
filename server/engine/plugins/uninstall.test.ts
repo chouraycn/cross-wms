@@ -185,15 +185,15 @@ function createPluginConfig(params: {
 
 function expectRemainingChannels(
   channels: OpenClawConfig["channels"],
-  expected: Record<string, unknown> | undefined,
+  expected: Record<string, any> | undefined,
 ) {
-  expect(channels as Record<string, unknown> | undefined).toEqual(expected);
+  expect(channels as Record<string, any> | undefined).toEqual(expected);
 }
 
 function expectChannelCleanupResult(params: {
   config: OpenClawConfig;
   pluginId: string;
-  expectedChannels: Record<string, unknown> | undefined;
+  expectedChannels: Record<string, any> | undefined;
   expectedChanged: boolean;
   options?: { channelIds?: readonly string[] };
 }) {
@@ -241,7 +241,7 @@ async function expectPathAccessState(pathToCheck: string, expected: "exists" | "
   try {
     await fs.access(pathToCheck);
   } catch (error) {
-    expect((error as { code?: unknown }).code).toBe("ENOENT");
+    expect((error as { code?: any }).code).toBe("ENOENT");
     return;
   }
   throw new Error(`expected ${pathToCheck} to be missing`);
@@ -1197,7 +1197,7 @@ describe("uninstallPlugin", () => {
       path.join(runtimePeerDir, "package.json"),
       `${JSON.stringify({ name: "runtime-peer", version: "1.0.0" }, null, 2)}\n`,
     );
-    runCommandWithTimeoutMock.mockImplementation(async (argv: string[], options?: unknown) => {
+    runCommandWithTimeoutMock.mockImplementation(async (argv: string[], options?: any) => {
       if (argv[1] === "uninstall") {
         expect(argv).toContain("--legacy-peer-deps");
         await fs.rm(removedPluginDir, { recursive: true, force: true });

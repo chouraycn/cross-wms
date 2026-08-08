@@ -30,7 +30,7 @@ export async function waitForSessionsYieldAbortSettle(params: {
   const outcome = await Promise.race([
     params.settlePromise
       .then(() => "settled" as const)
-      .catch((err: unknown) => {
+      .catch((err: any) => {
         log.warn(
           `sessions_yield abort settle failed: runId=${params.runId} sessionId=${params.sessionId} err=${String(err)}`,
         );
@@ -56,7 +56,7 @@ export function createYieldAbortedResponse(model: {
   provider?: string;
   id?: string;
 }): {
-  [Symbol.asyncIterator]: () => AsyncGenerator<never, void, unknown>;
+  [Symbol.asyncIterator]: () => AsyncGenerator<never, void, any>;
   result: () => Promise<{
     role: "assistant";
     content: Array<{ type: "text"; text: string }>;
@@ -133,7 +133,7 @@ export async function persistSessionsYieldContextMessage(
         customType: string;
         content: string;
         display: boolean;
-        details?: Record<string, unknown>;
+        details?: Record<string, any>;
       },
       options?: { triggerTurn?: boolean },
     ) => Promise<void>;
@@ -155,7 +155,7 @@ export async function persistSessionsYieldContextMessage(
 export function stripSessionsYieldArtifacts(activeSession: {
   messages: AgentMessage[];
   agent: { state: { messages: AgentMessage[] } };
-  sessionManager?: unknown;
+  sessionManager?: any;
 }) {
   const strippedMessages = activeSession.messages.slice();
   while (strippedMessages.length > 0) {

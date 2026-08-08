@@ -1,11 +1,11 @@
 import type { MockTool } from './skill-test-runner.js';
 
 export interface ToolCallRecord {
-  args: unknown[];
+  args: any[];
   timestamp: number;
 }
 
-export function createMockTool(name: string, handler: (...args: unknown[]) => Promise<unknown>): MockTool {
+export function createMockTool(name: string, handler: (...args: any[]) => Promise<any>): MockTool {
   return {
     name,
     handler,
@@ -21,7 +21,7 @@ export function createMockCliTool(name: string, output: string, exitCode: number
   };
 }
 
-export function createMockApiTool(name: string, response: unknown, statusCode: number = 200): MockTool {
+export function createMockApiTool(name: string, response: any, statusCode: number = 200): MockTool {
   return {
     name,
     handler: async () => ({ response, statusCode }),
@@ -45,7 +45,7 @@ export function instrumentMockTool(mockTool: MockTool): MockTool {
   const originalHandler = mockTool.handler;
   return {
     ...mockTool,
-    handler: async (...args: unknown[]) => {
+    handler: async (...args: any[]) => {
       mockTool.calls.push({ args, timestamp: Date.now() });
       return originalHandler(...args);
     },

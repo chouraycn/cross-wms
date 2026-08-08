@@ -70,7 +70,7 @@ function readWriteOps(): CapturedWriteOperations {
   return mocks.writeOps;
 }
 
-async function expectMissingPath(operation: Promise<unknown>) {
+async function expectMissingPath(operation: Promise<any>) {
   let error: NodeJS.ErrnoException | undefined;
   try {
     await operation;

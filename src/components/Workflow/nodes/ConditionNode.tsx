@@ -59,7 +59,7 @@ const ConditionNode: React.FC<ConditionNodeProps> = memo(({ node, onUpdate }) =>
     });
   };
 
-  const handleUpdateCondition = (index: number, field: string, value: unknown) => {
+  const handleUpdateCondition = (index: number, field: string, value: any) => {
     const newConditions = [...config.conditions];
     newConditions[index] = { ...newConditions[index], [field]: value };
 

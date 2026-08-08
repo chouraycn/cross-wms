@@ -25,7 +25,7 @@ export interface DiscoveryContext {
     output?: number;
   };
   featureFlags?: string[];
-  customFilters?: Record<string, unknown>;
+  customFilters?: Record<string, any>;
 }
 
 export interface DiscoveryConstraints {

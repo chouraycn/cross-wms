@@ -39,7 +39,7 @@ describe("createHeartbeatTypingCallbacks", () => {
     await result?.onReplyStart?.();
     expect(sendTyping).toHaveBeenCalledTimes(1);
     // 应传入包含 to 与 accountId 的 target
-    const passedTarget = sendTyping.mock.calls[0]?.[0] as Record<string, unknown>;
+    const passedTarget = sendTyping.mock.calls[0]?.[0] as Record<string, any>;
     expect(passedTarget.to).toBe("user-1");
     expect(passedTarget.accountId).toBe("acc1");
   });
@@ -104,7 +104,7 @@ describe("createHeartbeatTypingCallbacks", () => {
       target: baseTarget,
       plugin: { heartbeat: { sendTyping } },
       typingIntervalSeconds: 10,
-    }) as Record<string, unknown>;
+    }) as Record<string, any>;
     expect(result.keepaliveIntervalMs).toBe(10_000);
   });
 
@@ -114,7 +114,7 @@ describe("createHeartbeatTypingCallbacks", () => {
       cfg: {},
       target: baseTarget,
       plugin: { heartbeat: { sendTyping } },
-    }) as Record<string, unknown>;
+    }) as Record<string, any>;
     expect(result.keepaliveIntervalMs).toBe(6_000);
   });
 });

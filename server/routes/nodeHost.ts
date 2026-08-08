@@ -47,7 +47,7 @@ interface DemoTool {
   invokeCount: number;
   averageDurationMs: number;
   permissions: string[];
-  inputSchema?: Record<string, unknown>;
+  inputSchema?: Record<string, any>;
 }
 
 const demoTools = new Map<string, DemoTool>();
@@ -257,13 +257,13 @@ router.get('/tools', (_req: Request, res: Response) => {
 /**
  * POST /api/node-host/tools/:name/invoke — 调用工具
  *
- * Body: { input: Record<string, unknown> }
+ * Body: { input: Record<string, any> }
  * 返回：NodeHostToolInvokeResult
  */
 router.post('/tools/:name/invoke', async (req: Request, res: Response) => {
   try {
     const name = req.params.name;
-    const input = (req.body?.input ?? {}) as Record<string, unknown>;
+    const input = (req.body?.input ?? {}) as Record<string, any>;
 
     // 检查工具是否存在（先看 demo，再看真实 registry）
     const demoTool = demoTools.get(name);
@@ -301,9 +301,9 @@ router.post('/tools/:name/invoke', async (req: Request, res: Response) => {
           invocationId,
           nodeId: NODE_ID,
           logger: {
-            info: (...args: unknown[]) => logger.info(`[NodeHost:${name}]`, ...args),
-            error: (...args: unknown[]) => logger.error(`[NodeHost:${name}]`, ...args),
-            debug: (...args: unknown[]) => logger.debug(`[NodeHost:${name}]`, ...args),
+            info: (...args: any[]) => logger.info(`[NodeHost:${name}]`, ...args),
+            error: (...args: any[]) => logger.error(`[NodeHost:${name}]`, ...args),
+            debug: (...args: any[]) => logger.debug(`[NodeHost:${name}]`, ...args),
           },
         });
         stdout = JSON.stringify(result, null, 2);

@@ -10,14 +10,14 @@ type GatewayCallRequest = {
   clientName?: string;
   method?: string;
   mode?: string;
-  params?: unknown;
-  scopes?: unknown;
+  params?: any;
+  scopes?: any;
   useStoredDeviceAuth?: boolean;
-  requiredStoredDeviceAuthScopes?: unknown;
+  requiredStoredDeviceAuthScopes?: any;
   requireLocalBackendSharedAuth?: boolean;
 };
 
-function formatRuntimeLogCallArg(value: unknown): string {
+function formatRuntimeLogCallArg(value: any): string {
   if (typeof value === "string") {
     return value;
   }
@@ -57,7 +57,7 @@ describe("cli program (nodes basics)", () => {
     return callGateway.mock.calls.map(([request]) => request as GatewayCallRequest);
   }
 
-  function writeJsonArgAt(index: number): unknown {
+  function writeJsonArgAt(index: number): any {
     const call =
       runtime.writeJson.mock.calls[index < 0 ? runtime.writeJson.mock.calls.length + index : index];
     if (!call) {
@@ -66,7 +66,7 @@ describe("cli program (nodes basics)", () => {
     return call[0];
   }
 
-  function expectGatewayRequest(method: string, params?: unknown): void {
+  function expectGatewayRequest(method: string, params?: any): void {
     const request = gatewayRequests().find((candidate) => candidate.method === method);
     expect(request?.method).toBe(method);
     if (arguments.length > 1) {
@@ -74,8 +74,8 @@ describe("cli program (nodes basics)", () => {
     }
   }
 
-  function mockGatewayWithIosNodeListAnd(method: "node.describe" | "node.invoke", result: unknown) {
-    callGateway.mockImplementation(async (...args: unknown[]) => {
+  function mockGatewayWithIosNodeListAnd(method: "node.describe" | "node.invoke", result: any) {
+    callGateway.mockImplementation(async (...args: any[]) => {
       const opts = (args[0] ?? {}) as { method?: string };
       if (opts.method === "node.list") {
         return createIosNodeListResponse();
@@ -95,7 +95,7 @@ describe("cli program (nodes basics)", () => {
 
   it("runs nodes list with the effective paired node view while preserving paired metadata", async () => {
     const now = Date.now();
-    callGateway.mockImplementation(async (...args: unknown[]) => {
+    callGateway.mockImplementation(async (...args: any[]) => {
       const opts = (args[0] ?? {}) as { method?: string };
       if (opts.method === "node.pair.list") {
         return {
@@ -155,8 +155,8 @@ describe("cli program (nodes basics)", () => {
     expectGatewayRequest("node.pair.list", {});
     expectGatewayRequest("node.list", {});
     const json = writeJsonArgAt(0) as {
-      pending?: unknown[];
-      paired?: Array<Record<string, unknown>>;
+      pending?: any[];
+      paired?: Array<Record<string, any>>;
     };
     expect(json.pending).toEqual([{ requestId: "r1", nodeId: "pending-node", ts: now - 10_000 }]);
     expect(
@@ -204,7 +204,7 @@ describe("cli program (nodes basics)", () => {
   });
 
   it("runs unfiltered nodes list with pairing data when node.list is unavailable", async () => {
-    callGateway.mockImplementation(async (...args: unknown[]) => {
+    callGateway.mockImplementation(async (...args: any[]) => {
       const opts = (args[0] ?? {}) as { method?: string };
       if (opts.method === "node.pair.list") {
         return {
@@ -233,7 +233,7 @@ describe("cli program (nodes basics)", () => {
 
   it("sanitizes untrusted nodes list table fields while preserving JSON values", async () => {
     const now = Date.now();
-    callGateway.mockImplementation(async (...args: unknown[]) => {
+    callGateway.mockImplementation(async (...args: any[]) => {
       const opts = (args[0] ?? {}) as { method?: string };
       if (opts.method === "node.pair.list") {
         return {
@@ -274,8 +274,8 @@ describe("cli program (nodes basics)", () => {
     await runProgram(["nodes", "list", "--json"]);
 
     const json = writeJsonArgAt(-1) as {
-      pending?: Array<Record<string, unknown>>;
-      paired?: Array<Record<string, unknown>>;
+      pending?: Array<Record<string, any>>;
+      paired?: Array<Record<string, any>>;
     };
     expect(json.pending?.[0]?.requestId).toBe("request\u001b[2K-1");
     expect(json.pending?.[0]?.displayName).toBe("Pending\u001b[1A\nNode");
@@ -286,7 +286,7 @@ describe("cli program (nodes basics)", () => {
 
   it("runs nodes list --connected and filters to connected nodes", async () => {
     const now = Date.now();
-    callGateway.mockImplementation(async (...args: unknown[]) => {
+    callGateway.mockImplementation(async (...args: any[]) => {
       const opts = (args[0] ?? {}) as { method?: string };
       if (opts.method === "node.pair.list") {
         return {
@@ -327,7 +327,7 @@ describe("cli program (nodes basics)", () => {
 
   it("runs nodes status --last-connected and filters by age", async () => {
     const now = Date.now();
-    callGateway.mockImplementation(async (...args: unknown[]) => {
+    callGateway.mockImplementation(async (...args: any[]) => {
       const opts = (args[0] ?? {}) as { method?: string };
       if (opts.method === "node.list") {
         return {
@@ -570,7 +570,7 @@ describe("cli program (nodes basics)", () => {
   });
 
   it("falls back to read-only node status when pairing diagnostics are unavailable", async () => {
-    callGateway.mockImplementation(async (...args: unknown[]) => {
+    callGateway.mockImplementation(async (...args: any[]) => {
       const opts = (args[0] ?? {}) as {
         method?: string;
         scopes?: string[];
@@ -624,7 +624,7 @@ describe("cli program (nodes basics)", () => {
   });
 
   it("keeps remote explicit diagnostic credentials on the read-only path", async () => {
-    callGateway.mockImplementation(async (...args: unknown[]) => {
+    callGateway.mockImplementation(async (...args: any[]) => {
       const opts = (args[0] ?? {}) as {
         method?: string;
         requireLocalBackendSharedAuth?: boolean;
@@ -687,7 +687,7 @@ describe("cli program (nodes basics)", () => {
   });
 
   it("falls back to configured auth after stored device auth is rejected", async () => {
-    callGateway.mockImplementation(async (...args: unknown[]) => {
+    callGateway.mockImplementation(async (...args: any[]) => {
       const opts = (args[0] ?? {}) as { method?: string; useStoredDeviceAuth?: boolean };
       if (opts.method === "node.list" && opts.useStoredDeviceAuth) {
         throw Object.assign(new Error("unauthorized: device token mismatch"), {
@@ -721,7 +721,7 @@ describe("cli program (nodes basics)", () => {
   });
 
   it("falls back to configured auth when stored device auth lacks read scope", async () => {
-    callGateway.mockImplementation(async (...args: unknown[]) => {
+    callGateway.mockImplementation(async (...args: any[]) => {
       const opts = (args[0] ?? {}) as {
         method?: string;
         scopes?: string[];
@@ -760,7 +760,7 @@ describe("cli program (nodes basics)", () => {
   });
 
   it("describes pending-only nodes through the pairing diagnostics view", async () => {
-    callGateway.mockImplementation(async (...args: unknown[]) => {
+    callGateway.mockImplementation(async (...args: any[]) => {
       const opts = (args[0] ?? {}) as {
         method?: string;
         params?: { nodeId?: string };
@@ -804,7 +804,7 @@ describe("cli program (nodes basics)", () => {
   });
 
   it("describes nodes through the paired-node fallback on older gateways", async () => {
-    callGateway.mockImplementation(async (...args: unknown[]) => {
+    callGateway.mockImplementation(async (...args: any[]) => {
       const opts = (args[0] ?? {}) as {
         method?: string;
         params?: { nodeId?: string };
@@ -858,7 +858,7 @@ describe("cli program (nodes basics)", () => {
   });
 
   it("runs nodes approve with the pending request approval scopes", async () => {
-    callGateway.mockImplementation(async (...args: unknown[]) => {
+    callGateway.mockImplementation(async (...args: any[]) => {
       const opts = (args[0] ?? {}) as { method?: string };
       if (opts.method === "node.pair.list") {
         return {
@@ -899,7 +899,7 @@ describe("cli program (nodes basics)", () => {
   });
 
   it("falls back to command-derived nodes approve scopes", async () => {
-    callGateway.mockImplementation(async (...args: unknown[]) => {
+    callGateway.mockImplementation(async (...args: any[]) => {
       const opts = (args[0] ?? {}) as { method?: string };
       if (opts.method === "node.pair.list") {
         return {
@@ -946,7 +946,7 @@ describe("cli program (nodes basics)", () => {
   });
 
   it("runs nodes remove and calls node.pair.remove", async () => {
-    callGateway.mockImplementation(async (...args: unknown[]) => {
+    callGateway.mockImplementation(async (...args: any[]) => {
       const opts = (args[0] ?? {}) as { method?: string };
       if (opts.method === "node.list") {
         return {

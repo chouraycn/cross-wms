@@ -26,7 +26,7 @@ type QaRuntimeSurface = {
       preferredLiveModel?: string;
     },
   ) => string;
-  startQaLiveLaneGateway: (...args: unknown[]) => Promise<unknown>;
+  startQaLiveLaneGateway: (...args: any[]) => Promise<any>;
 };
 
 /** Resolved QA runner CLI contribution declared by plugin manifest metadata. */
@@ -45,7 +45,7 @@ export type QaRunnerCliContribution =
       status: "blocked";
     };
 
-function isMissingQaRuntimeError(error: unknown) {
+function isMissingQaRuntimeError(error: any) {
   if (!(error instanceof Error)) {
     return false;
   }

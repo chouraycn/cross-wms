@@ -162,7 +162,7 @@ export function resolveEffectiveRuntimeModel(params: {
       : params.runtimeModel;
   const ctxGuard = evaluateContextWindowGuard({ info: ctxInfo });
   const runtimeBaseUrl =
-    typeof (params.runtimeModel as { baseUrl?: unknown }).baseUrl === "string"
+    typeof (params.runtimeModel as { baseUrl?: any }).baseUrl === "string"
       ? (params.runtimeModel as { baseUrl: string }).baseUrl
       : undefined;
   if (ctxGuard.shouldWarn) {
@@ -184,7 +184,7 @@ export function resolveEffectiveRuntimeModel(params: {
       `blocked model (context window too small): ${params.provider}/${params.modelId} ctx=${ctxGuard.tokens} (min=${ctxGuard.hardMinTokens}) source=${ctxGuard.source}; ${message}`,
     );
     throw new FailoverError(message, {
-      reason: "unknown",
+      reason: "any",
       provider: params.provider,
       model: params.modelId,
     });

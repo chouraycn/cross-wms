@@ -10,7 +10,7 @@ export { buildSubagentSystemPrompt } from "./subagent-system-prompt.js";
 export { captureSubagentCompletionReply } from "./subagent-announce-output.js";
 export type { SubagentRunOutcome } from "./subagent-announce-output.js";
 export type SubagentAnnounceType = unknown;
-export const testing: unknown = undefined;
-export async function runSubagentAnnounceFlow(..._args: unknown[]): Promise<unknown> {
+export const testing: any = undefined;
+export async function runSubagentAnnounceFlow(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }

@@ -12,17 +12,17 @@
 import { normalizeOptionalString } from "../infra/string-coerce.js";
 
 // ===== 内联降级：normalizeMessageChannel / isDeliverableMessageChannel =====
-function normalizeMessageChannel(value: unknown): string | undefined {
+function normalizeMessageChannel(value: any): string | undefined {
   return normalizeOptionalString(value);
 }
 
-function isDeliverableMessageChannel(value: unknown): boolean {
+function isDeliverableMessageChannel(value: any): boolean {
   return typeof value === "string" && value.trim().length > 0;
 }
 // ===== normalizeMessageChannel 结束 =====
 
 // ===== 内联降级：normalizeAccountId =====
-function normalizeAccountId(value: unknown): string | undefined {
+function normalizeAccountId(value: any): string | undefined {
   const trimmed = normalizeOptionalString(value);
   if (!trimmed) {
     return undefined;
@@ -31,7 +31,7 @@ function normalizeAccountId(value: unknown): string | undefined {
 }
 // ===== normalizeAccountId 结束 =====
 
-function resolveScopedChannelCandidate(value: unknown): string | undefined {
+function resolveScopedChannelCandidate(value: any): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }
@@ -42,7 +42,7 @@ function resolveScopedChannelCandidate(value: unknown): string | undefined {
   return normalized;
 }
 
-function resolveChannelFromTargetValue(target: unknown): string | undefined {
+function resolveChannelFromTargetValue(target: any): string | undefined {
   const trimmed = normalizeOptionalString(target);
   if (!trimmed) {
     return undefined;
@@ -54,7 +54,7 @@ function resolveChannelFromTargetValue(target: unknown): string | undefined {
   return resolveScopedChannelCandidate(trimmed.slice(0, separator));
 }
 
-function resolveChannelFromTargets(targets: unknown): string | undefined {
+function resolveChannelFromTargets(targets: any): string | undefined {
   if (!Array.isArray(targets)) {
     return undefined;
   }
@@ -71,7 +71,7 @@ function resolveChannelFromTargets(targets: unknown): string | undefined {
   return [...seen][0];
 }
 
-function resolveScopedAccountId(value: unknown): string | undefined {
+function resolveScopedAccountId(value: any): string | undefined {
   const trimmed = normalizeOptionalString(value);
   if (!trimmed) {
     return undefined;
@@ -81,11 +81,11 @@ function resolveScopedAccountId(value: unknown): string | undefined {
 
 /** Resolve the narrowest channel/account secret scope visible from message CLI inputs. */
 export function resolveMessageSecretScope(params: {
-  channel?: unknown;
-  target?: unknown;
-  targets?: unknown;
+  channel?: any;
+  target?: any;
+  targets?: any;
   fallbackChannel?: string | null;
-  accountId?: unknown;
+  accountId?: any;
   fallbackAccountId?: string | null;
 }): {
   channel?: string;

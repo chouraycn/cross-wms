@@ -89,7 +89,7 @@ export class ToolLoopDetector {
    */
   recordAndDetect(
     toolName: string,
-    args: Record<string, unknown>,
+    args: Record<string, any>,
   ): LoopDetectionResult {
     // 检测功能未启用 — 直接放行
     if (!this.config.enabled) {
@@ -233,7 +233,7 @@ export class ToolLoopDetector {
    * 计算参数的哈希值。
    * 使用 JSON.stringify + 简单散列（不需要加密强度）。
    */
-  private hashArgs(args: Record<string, unknown>): string {
+  private hashArgs(args: Record<string, any>): string {
     try {
       const json = JSON.stringify(args, Object.keys(args).sort());
       return this.simpleHash(json);

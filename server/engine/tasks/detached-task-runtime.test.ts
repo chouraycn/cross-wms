@@ -54,15 +54,15 @@ function createFakeTaskRecord(overrides?: Partial<TaskRecord>): TaskRecord {
   };
 }
 
-function findWarningPayload(message: string): Record<string, unknown> | undefined {
+function findWarningPayload(message: string): Record<string, any> | undefined {
   const payload = mockLogWarn.mock.calls.find(([entry]) => entry === message)?.[1];
-  return payload && typeof payload === "object" ? (payload as Record<string, unknown>) : undefined;
+  return payload && typeof payload === "object" ? (payload as Record<string, any>) : undefined;
 }
 
 function requireFirstCallArg(
-  mock: { mock: { calls: readonly unknown[][] } },
+  mock: { mock: { calls: readonly any[][] } },
   label: string,
-): Record<string, unknown> {
+): Record<string, any> {
   const [call] = mock.mock.calls;
   if (!call) {
     throw new Error(`expected ${label} call`);
@@ -71,7 +71,7 @@ function requireFirstCallArg(
   if (typeof arg !== "object" || arg === null || Array.isArray(arg)) {
     throw new Error(`expected ${label} params to be an object`);
   }
-  return arg as Record<string, unknown>;
+  return arg as Record<string, any>;
 }
 
 describe("detached-task-runtime", () => {

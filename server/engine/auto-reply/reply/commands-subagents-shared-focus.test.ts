@@ -7,7 +7,7 @@ const hoisted = vi.hoisted(() => ({
 }));
 
 vi.mock("../../gateway/call.js", () => ({
-  callGateway: (params: unknown) => hoisted.callGatewayMock(params),
+  callGateway: (params: any) => hoisted.callGatewayMock(params),
 }));
 
 describe("resolveFocusTargetSession", () => {

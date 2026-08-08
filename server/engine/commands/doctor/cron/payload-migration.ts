@@ -4,7 +4,7 @@ import {
   readStringValue as readString,
 } from "@openclaw-src/../packages/normalization-core/src/string-coerce.js";
 
-type UnknownRecord = Record<string, unknown>;
+type UnknownRecord = Record<string, any>;
 
 type LegacyAgentTurnCommandPayload = {
   command: string;
@@ -30,7 +30,7 @@ const LEGACY_DELIVERY_HINT_FIELDS = [
   "threadId",
 ] as const;
 
-function hasShellToolAccess(toolsAllow: unknown): boolean {
+function hasShellToolAccess(toolsAllow: any): boolean {
   if (toolsAllow === undefined) {
     return true;
   }
@@ -43,7 +43,7 @@ function hasShellToolAccess(toolsAllow: unknown): boolean {
   });
 }
 
-function toCanonicalOpenAIModelRef(value: unknown): string | undefined {
+function toCanonicalOpenAIModelRef(value: any): string | undefined {
   const raw = readString(value);
   if (typeof raw !== "string") {
     return undefined;
@@ -74,7 +74,7 @@ function parsePositiveInteger(value: string): number | undefined {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
 }
 
-function readPositiveInteger(value: unknown): number | undefined {
+function readPositiveInteger(value: any): number | undefined {
   return typeof value === "number" && Number.isFinite(value) && value > 0
     ? Math.floor(value)
     : undefined;

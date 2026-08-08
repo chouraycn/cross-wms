@@ -10,7 +10,7 @@
  * provider-specific environment variables.
  */
 export function resolveWebSearchProviderCredential(params: {
-  credentialValue: unknown;
+  credentialValue: any;
   path: string;
   envVars: string[];
 }): string | undefined {

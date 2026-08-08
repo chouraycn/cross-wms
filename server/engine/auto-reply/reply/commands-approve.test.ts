@@ -26,15 +26,15 @@ vi.mock("../../globals.js", () => ({
   logVerbose: vi.fn(),
 }));
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error(`expected ${label} to be an object`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 function approvalResolverRequest(callIndex = 0) {
-  const call = resolveApprovalOverGatewayMock.mock.calls[callIndex] as unknown[] | undefined;
+  const call = resolveApprovalOverGatewayMock.mock.calls[callIndex] as any[] | undefined;
   if (!call) {
     throw new Error(`expected approval resolver call ${callIndex}`);
   }

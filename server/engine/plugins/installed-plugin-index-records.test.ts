@@ -53,11 +53,11 @@ function createPluginCandidate(stateDir: string, pluginId: string): PluginCandid
   };
 }
 
-function expectRecordFields(record: unknown, expected: Record<string, unknown>) {
+function expectRecordFields(record: any, expected: Record<string, any>) {
   if (!record || typeof record !== "object") {
     throw new Error("Expected record");
   }
-  const actual = record as Record<string, unknown>;
+  const actual = record as Record<string, any>;
   for (const [key, value] of Object.entries(expected)) {
     expect(actual[key]).toEqual(value);
   }
@@ -480,7 +480,7 @@ describe("plugin index install records store", () => {
     const packagePath = path.join(codexDir, "package.json");
     const packageManifest = JSON.parse(fs.readFileSync(packagePath, "utf8")) as Record<
       string,
-      unknown
+      any
     >;
     fs.writeFileSync(
       packagePath,

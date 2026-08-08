@@ -1,13 +1,13 @@
 // 移植自 openclaw/src/infra/node-proxy-agent.ts
 
 export type CreateNodeProxyAgentOptions = unknown;
-export function resolveEnvNodeProxyUrlForTarget(...args: unknown[]): unknown {
+export function resolveEnvNodeProxyUrlForTarget(...args: any[]): any {
   return undefined;
 }
-export function createNodeProxyAgent(...args: unknown[]): unknown {
+export function createNodeProxyAgent(...args: any[]): any {
   return undefined;
 }
-export function createFixedNodeProxyAgentPair(...args: unknown[]): unknown {
+export function createFixedNodeProxyAgentPair(...args: any[]): any {
   return undefined;
 }
-export const UNSUPPORTED_PROXY_PROTOCOL_MESSAGE: unknown = undefined as unknown;
+export const UNSUPPORTED_PROXY_PROTOCOL_MESSAGE: any = undefined as any;

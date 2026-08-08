@@ -20,7 +20,7 @@ const queueEmbeddedAgentMessageWithOutcomeAsyncMock = vi.fn(
   async (
     sessionId: string,
     _text: string,
-    _options?: unknown,
+    _options?: any,
   ): Promise<EmbeddedAgentQueueMessageOutcome> => ({
     queued: false,
     sessionId,
@@ -41,12 +41,12 @@ vi.mock("../../agents/model-fallback.js", () => ({
   runWithModelFallback: (params: {
     provider: string;
     model: string;
-    run: (provider: string, model: string) => Promise<unknown>;
+    run: (provider: string, model: string) => Promise<any>;
   }) => runWithModelFallbackMock(params),
-  isFallbackSummaryError: (err: unknown) =>
+  isFallbackSummaryError: (err: any) =>
     err instanceof Error &&
     err.name === "FallbackSummaryError" &&
-    Array.isArray((err as { attempts?: unknown[] }).attempts),
+    Array.isArray((err as { attempts?: any[] }).attempts),
 }));
 
 vi.mock("../../agents/model-selection.js", async () => {
@@ -114,7 +114,7 @@ vi.mock("../../agents/embedded-agent-runner/runs.js", () => ({
 }));
 
 vi.mock("../../cli/command-secret-gateway.js", () => ({
-  resolveCommandSecretRefsViaGateway: (...args: unknown[]) =>
+  resolveCommandSecretRefsViaGateway: (...args: any[]) =>
     resolveCommandSecretRefsViaGatewayMock(...args),
 }));
 
@@ -225,8 +225,8 @@ vi.mock("./session-run-accounting.js", () => ({
 }));
 
 vi.mock("./agent-runner-memory.js", () => ({
-  runMemoryFlushIfNeeded: async ({ sessionEntry }: { sessionEntry?: unknown }) => sessionEntry,
-  runPreflightCompactionIfNeeded: async ({ sessionEntry }: { sessionEntry?: unknown }) =>
+  runMemoryFlushIfNeeded: async ({ sessionEntry }: { sessionEntry?: any }) => sessionEntry,
+  runPreflightCompactionIfNeeded: async ({ sessionEntry }: { sessionEntry?: any }) =>
     sessionEntry,
 }));
 
@@ -237,7 +237,7 @@ vi.mock("./queue.js", () => ({
 }));
 
 vi.mock("../../media/outbound-attachment.js", () => ({
-  resolveOutboundAttachmentFromUrl: (...args: unknown[]) =>
+  resolveOutboundAttachmentFromUrl: (...args: any[]) =>
     resolveOutboundAttachmentFromUrlMock(...args),
 }));
 
@@ -360,7 +360,7 @@ describe("runReplyAgent media path normalization", () => {
       }: {
         provider: string;
         model: string;
-        run: (...args: unknown[]) => Promise<unknown>;
+        run: (...args: any[]) => Promise<any>;
       }) => ({
         result: await run(provider, model),
         provider,

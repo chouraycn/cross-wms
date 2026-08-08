@@ -169,20 +169,20 @@ async function closeServer(server: HttpServer | http2.Http2SecureServer): Promis
   });
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (typeof value !== "object" || value === null) {
     throw new Error(`${label} was not an object`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function expectRecordFields(record: Record<string, unknown>, fields: Record<string, unknown>) {
+function expectRecordFields(record: Record<string, any>, fields: Record<string, any>) {
   for (const [key, value] of Object.entries(fields)) {
     expect(record[key]).toEqual(value);
   }
 }
 
-function expectNoProperties(record: Record<string, unknown>, keys: string[]) {
+function expectNoProperties(record: Record<string, any>, keys: string[]) {
   for (const key of keys) {
     expect(record).not.toHaveProperty(key);
   }
@@ -197,7 +197,7 @@ function requireSendRequest(send: ReturnType<typeof vi.fn>, label = "APNs send r
   return requireRecord(request, label);
 }
 
-function requirePayload(sendRequest: Record<string, unknown>) {
+function requirePayload(sendRequest: Record<string, any>) {
   return requireRecord(sendRequest.payload, "APNs payload");
 }
 

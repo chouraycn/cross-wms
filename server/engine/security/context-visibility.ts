@@ -103,7 +103,7 @@ export function redactSensitiveInfo(content: string): {
   return { redacted, foundPatterns, count };
 }
 
-export function sanitizeContextForRole<T extends Record<string, unknown>>(
+export function sanitizeContextForRole<T extends Record<string, any>>(
   context: T,
   options: {
     role: 'admin' | 'user' | 'guest' | 'system';
@@ -127,10 +127,10 @@ export function sanitizeContextForRole<T extends Record<string, unknown>>(
 
     if (isSensitive) {
       if (role === 'user' && redactValues) {
-        (sanitized as Record<string, unknown>)[key] = REDACTED;
+        (sanitized as Record<string, any>)[key] = REDACTED;
       }
     } else {
-      (sanitized as Record<string, unknown>)[key] = value;
+      (sanitized as Record<string, any>)[key] = value;
     }
   }
 

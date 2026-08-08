@@ -58,7 +58,7 @@ interface TwitchConnection {
 const twitchConnections = new Map<string, TwitchConnection>();
 
 /** 解析频道配置 */
-function parseChannels(channels: unknown): string[] {
+function parseChannels(channels: any): string[] {
   if (Array.isArray(channels)) {
     return channels
       .filter((c): c is string => typeof c === "string" && c.length > 0)
@@ -153,7 +153,7 @@ export function createTwitchChannelPlugin(): ChannelPlugin {
 
   const twitchConfig: ChannelConfigAdapter<TwitchAccountConfig> = {
     listAccountIds: (config: AppConfig): ChannelId[] => {
-      const twConfig = config.twitch as Record<string, unknown> | undefined;
+      const twConfig = config.twitch as Record<string, any> | undefined;
       if (twConfig && twConfig.accessToken && twConfig.username) {
         return [TWITCH_CHANNEL_ID];
       }
@@ -164,7 +164,7 @@ export function createTwitchChannelPlugin(): ChannelPlugin {
       accountId: ChannelId,
     ): TwitchAccountConfig | null => {
       if (accountId !== TWITCH_CHANNEL_ID) return null;
-      const twCfg = config.twitch as Record<string, unknown> | undefined;
+      const twCfg = config.twitch as Record<string, any> | undefined;
       if (twCfg && twCfg.accessToken && twCfg.username) {
         return {
           accessToken: String(twCfg.accessToken),
@@ -196,7 +196,7 @@ export function createTwitchChannelPlugin(): ChannelPlugin {
         try {
           const rendered = await ctx.render();
           const text = rendered.parts
-            .map((p: { content: unknown }) => String(p.content))
+            .map((p: { content: any }) => String(p.content))
             .join("\n");
 
           const target = ctx.to;

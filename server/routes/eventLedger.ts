@@ -17,12 +17,12 @@ const router = Router();
  * - 含敏感字段（api_key / token / secret / password 等）的 payload 将被脱敏。
  * 该函数为「死」模块 eventPolicy 接入实时事件查询路径，不改变既有查询语义。
  */
-function applyEventPolicy(events: unknown[]): unknown[] {
+function applyEventPolicy(events: any[]): any[] {
   const policy = getEventPolicy();
-  const out: unknown[] = [];
+  const out: any[] = [];
   for (const ev of events) {
     const type: string = ev?.type ?? ev?.eventType ?? '';
-    const payload: Record<string, unknown> = ev?.payload ?? ev?.data ?? {};
+    const payload: Record<string, any> = ev?.payload ?? ev?.data ?? {};
     const verdict = policy.checkEvent(type, payload);
     if (!verdict.allowed) continue; // 按策略过滤（黑名单 / 保留策略）
     const redactedPayload = verdict.redacted ? policy.redactPayload(payload) : payload;
@@ -43,7 +43,7 @@ router.get('/sessions/:sessionId/events', async (req, res) => {
     const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
     const reverse = req.query.reverse === 'true';
     const eventTypes = req.query.types
-      ? (req.query.types as string).split(',') as unknown[]
+      ? (req.query.types as string).split(',') as any[]
       : undefined;
 
     const events = await getEventLedger().getSessionEvents(sessionId, {
@@ -133,10 +133,10 @@ router.get('/sessions', async (req, res) => {
     const sortBy = (req.query.sortBy as string) || 'updated_at';
 
     const sessions = await getEventLedger().listSessions({
-      status: status as unknown,
+      status: status as any,
       limit,
       offset,
-      sortBy: sortBy as unknown,
+      sortBy: sortBy as any,
     });
 
     res.json({
@@ -252,7 +252,7 @@ router.post('/sessions/:sessionId/events', async (req, res) => {
     // 仅作用于事件账本的持久化，不影响聊天 SSE 路径。默认策略允许全部事件，
     // 仅对包含敏感字段名（api_key/secret/password/token 等）或敏感模式的 payload 做脱敏。
     const policy = getEventPolicy();
-    const decision = policy.checkEvent(type, (payload as Record<string, unknown>) || {});
+    const decision = policy.checkEvent(type, (payload as Record<string, any>) || {});
     if (!decision.allowed) {
       res.status(403).json({
         ok: false,
@@ -260,11 +260,11 @@ router.post('/sessions/:sessionId/events', async (req, res) => {
       });
       return;
     }
-    const safePayload: Record<string, unknown> = decision.redacted
-      ? policy.redactPayload((payload as Record<string, unknown>) || {})
-      : (payload as Record<string, unknown>) || {};
+    const safePayload: Record<string, any> = decision.redacted
+      ? policy.redactPayload((payload as Record<string, any>) || {})
+      : (payload as Record<string, any>) || {};
 
-    const event = await getEventLedger().recordEvent(sessionId, type as unknown, safePayload, {
+    const event = await getEventLedger().recordEvent(sessionId, type as any, safePayload, {
       runId,
       actor,
     });

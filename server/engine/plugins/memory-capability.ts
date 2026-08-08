@@ -18,7 +18,7 @@ export interface MemoryRecord {
   /** 内容 */
   content: string;
   /** 元数据 */
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
   /** 创建时间 */
   createdAt: number;
   /** 更新时间 */
@@ -55,7 +55,7 @@ export interface MemoryWriteOptions {
   /** 标签 */
   tags?: string[];
   /** 元数据 */
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 /** 记忆写入结果 */
@@ -108,7 +108,7 @@ export type MemoryCapabilityProvider = CapabilityProvider<MemoryCapabilityOption
 export function registerMemoryProvider(
   pluginId: string,
   provider: MemoryCapabilityProvider,
-  metadata?: Record<string, unknown>,
+  metadata?: Record<string, any>,
 ): void {
   capabilityProviderRegistry.register(pluginId, provider, metadata);
 }

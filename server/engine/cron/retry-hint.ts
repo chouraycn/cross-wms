@@ -60,7 +60,7 @@ const DEFAULT_CATEGORY_ORDER: CronErrorCategory[] = [
   "server_error",
 ];
 
-function toErrorString(error: unknown): string {
+function toErrorString(error: any): string {
   if (error === null || error === undefined) {
     return "";
   }
@@ -84,7 +84,7 @@ function toErrorString(error: unknown): string {
  * @param options.classifiedReason provider 给出的结构化分类（优先于正则）
  */
 export function classifyCronError(
-  error: unknown,
+  error: any,
   options: {
     retryOn?: readonly CronErrorCategory[];
     classifiedReason?: string | null;
@@ -122,7 +122,7 @@ export function classifyCronError(
  * @param options.classifiedReason 结构化分类提示
  */
 export function shouldRetryCronError(
-  error: unknown,
+  error: any,
   options: {
     retryOn?: readonly CronErrorCategory[];
     classifiedReason?: string | null;

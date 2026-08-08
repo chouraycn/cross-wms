@@ -20,7 +20,7 @@ function createAvailabilityUnavailableError(message: string): Error {
   return err;
 }
 
-function normalizeAvailabilityError(err: unknown): Error {
+function normalizeAvailabilityError(err: any): Error {
   if (shouldFallbackToAuthHeuristics(err) && err instanceof Error) {
     return err;
   }
@@ -29,7 +29,7 @@ function normalizeAvailabilityError(err: unknown): Error {
   );
 }
 
-function validateAvailableModels(availableModels: unknown): Model[] {
+function validateAvailableModels(availableModels: any): Model[] {
   if (!Array.isArray(availableModels)) {
     throw createAvailabilityUnavailableError(
       "Model availability unavailable: getAvailable() returned a non-array value.",
@@ -40,8 +40,8 @@ function validateAvailableModels(availableModels: unknown): Model[] {
     if (
       !model ||
       typeof model !== "object" ||
-      typeof (model as { provider?: unknown }).provider !== "string" ||
-      typeof (model as { id?: unknown }).id !== "string"
+      typeof (model as { provider?: any }).provider !== "string" ||
+      typeof (model as { id?: any }).id !== "string"
     ) {
       throw createAvailabilityUnavailableError(
         "Model availability unavailable: getAvailable() returned invalid model entries.",
@@ -57,7 +57,7 @@ function loadAvailableModels(
   cfg: OpenClawConfig,
   opts?: { runtimeSuppression?: boolean },
 ): Model[] {
-  let availableModels: unknown;
+  let availableModels: any;
   try {
     availableModels = registry.getAvailable();
   } catch (err) {

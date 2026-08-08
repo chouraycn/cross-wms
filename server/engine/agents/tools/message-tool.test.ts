@@ -40,7 +40,7 @@ function createTelegramPollExtraToolSchemas() {
 const mocks = vi.hoisted(() => ({
   runMessageAction: vi.fn(),
   getRuntimeConfig: vi.fn(() => ({})),
-  resolveCommandSecretRefsViaGateway: vi.fn(async ({ config }: { config: unknown }) => ({
+  resolveCommandSecretRefsViaGateway: vi.fn(async ({ config }: { config: any }) => ({
     resolvedConfig: config,
     diagnostics: [],
   })),
@@ -50,7 +50,7 @@ const mocks = vi.hoisted(() => ({
       channel,
       accountId,
     }: {
-      config?: { channels?: Record<string, unknown> };
+      config?: { channels?: Record<string, any> };
       channel?: string | null;
       accountId?: string | null;
     }) => {
@@ -60,17 +60,17 @@ const mocks = vi.hoisted(() => ({
       const scopedAccountId = accountId?.trim();
       const scopedConfig =
         scopedChannel && config?.channels && typeof config.channels[scopedChannel] === "object"
-          ? (config.channels[scopedChannel] as Record<string, unknown>)
+          ? (config.channels[scopedChannel] as Record<string, any>)
           : null;
       if (!scopedChannel || !scopedConfig) {
         return { targetIds };
       }
 
-      const maybeCollectSecretPath = (path: string, value: unknown) => {
+      const maybeCollectSecretPath = (path: string, value: any) => {
         if (!value || typeof value !== "object" || Array.isArray(value)) {
           return;
         }
-        const record = value as Record<string, unknown>;
+        const record = value as Record<string, any>;
         if (typeof record.source === "string" && typeof record.id === "string") {
           targetIds.add(path);
           allowedPaths.add(path);
@@ -85,10 +85,10 @@ const mocks = vi.hoisted(() => ({
           scopedConfig.accounts &&
           typeof scopedConfig.accounts === "object" &&
           !Array.isArray(scopedConfig.accounts) &&
-          typeof (scopedConfig.accounts as Record<string, unknown>)[scopedAccountId] === "object"
-            ? ((scopedConfig.accounts as Record<string, unknown>)[scopedAccountId] as Record<
+          typeof (scopedConfig.accounts as Record<string, any>)[scopedAccountId] === "object"
+            ? ((scopedConfig.accounts as Record<string, any>)[scopedAccountId] as Record<
                 string,
-                unknown
+                any
               >)
             : null;
         if (accountRecord) {
@@ -113,12 +113,12 @@ const mocks = vi.hoisted(() => ({
 
 type RunMessageActionInput = {
   agentId?: string;
-  cfg?: unknown;
+  cfg?: any;
   defaultAccountId?: string;
   gateway?: {
-    timeoutMs?: unknown;
+    timeoutMs?: any;
   };
-  params?: Record<string, unknown>;
+  params?: Record<string, any>;
   requesterSenderId?: string;
   sandboxRoot?: string;
   sessionKey?: string;
@@ -143,7 +143,7 @@ function lastRunMessageActionInput(): RunMessageActionInput | undefined {
 
 function latestSecretResolveCall(): {
   allowedPaths?: Set<string>;
-  config?: unknown;
+  config?: any;
   targetIds?: Set<string>;
 } {
   const calls = mocks.resolveCommandSecretRefsViaGateway.mock.calls;
@@ -155,7 +155,7 @@ function latestSecretResolveCall(): {
   // the exact target set to avoid broad credential reads.
   return call[0] as {
     allowedPaths?: Set<string>;
-    config?: unknown;
+    config?: any;
     targetIds?: Set<string>;
   };
 }
@@ -287,15 +287,15 @@ function mockSendResult(overrides: { channel?: string; to?: string } = {}) {
 }
 
 function getToolProperties(tool: ReturnType<CreateMessageTool>) {
-  return (tool.parameters as { properties?: Record<string, unknown> }).properties ?? {};
+  return (tool.parameters as { properties?: Record<string, any> }).properties ?? {};
 }
 
-function getActionEnum(properties: Record<string, unknown>) {
+function getActionEnum(properties: Record<string, any>) {
   return (properties.action as { enum?: string[] } | undefined)?.enum ?? [];
 }
 
 function expectStringSchema(
-  schema: unknown,
+  schema: any,
   expected?: {
     description?: string;
   },
@@ -303,7 +303,7 @@ function expectStringSchema(
   if (!schema || typeof schema !== "object") {
     throw new Error("Expected string schema");
   }
-  const record = schema as Record<string, unknown>;
+  const record = schema as Record<string, any>;
   expect(record.type).toBe("string");
   if (expected?.description) {
     expect(record.description).toBe(expected.description);
@@ -378,7 +378,7 @@ function createChannelPlugin(params: {
 }
 
 async function executeSend(params: {
-  action: Record<string, unknown>;
+  action: Record<string, any>;
   toolOptions?: Partial<Parameters<typeof createMessageTool>[0]>;
   toolCallId?: string;
 }) {
@@ -386,7 +386,7 @@ async function executeSend(params: {
 }
 
 async function executeSendWithResult(params: {
-  action: Record<string, unknown>;
+  action: Record<string, any>;
   toolOptions?: Partial<Parameters<typeof createMessageTool>[0]>;
   toolCallId?: string;
 }) {
@@ -1380,7 +1380,7 @@ describe("message tool loop detection action runner proof", () => {
       status: "blocked",
       deniedReason: "tool-loop",
     });
-    const blockedDetails = blocked.details as { reason?: unknown } | undefined;
+    const blockedDetails = blocked.details as { reason?: any } | undefined;
     expect(String(blockedDetails?.reason)).toContain("CRITICAL");
 
     const blockedAgain = await wrappedTool.execute(
@@ -1399,7 +1399,7 @@ describe("message tool path passthrough", () => {
   it("advertises canonical media params without compat aliases", () => {
     const properties = getToolProperties(createMessageTool());
     const attachments = properties.attachments as
-      | { items?: { properties?: Record<string, unknown> } }
+      | { items?: { properties?: Record<string, any> } }
       | undefined;
     const attachmentProperties = attachments?.items?.properties ?? {};
 
@@ -1769,7 +1769,7 @@ describe("message tool schema scoping", () => {
   });
 
   it("routes full discovery context into plugin action discovery", () => {
-    const seenContexts: Record<string, unknown>[] = [];
+    const seenContexts: Record<string, any>[] = [];
     const contextPlugin = createChannelPlugin({
       id: "discord",
       label: "Discord",
@@ -1816,7 +1816,7 @@ describe("message tool schema scoping", () => {
   });
 
   it("passes sender ownership into plugin action discovery", () => {
-    const seenContexts: Record<string, unknown>[] = [];
+    const seenContexts: Record<string, any>[] = [];
     const plugin = createChannelPlugin({
       id: "matrix",
       label: "Matrix",

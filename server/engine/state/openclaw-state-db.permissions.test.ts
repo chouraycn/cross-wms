@@ -17,13 +17,13 @@ const chmodFailHook = vi.hoisted(() => ({
 
 vi.mock("node:fs", async (importOriginal) => {
   const actual = await importOriginal<typeof import("node:fs")>();
-  const chmodSync: typeof actual.chmodSync = ((target: unknown, mode: unknown) => {
+  const chmodSync: typeof actual.chmodSync = ((target: any, mode: any) => {
     chmodFailHook.calls += 1;
     const isProbe = String(target).includes(".openclaw-chmod-probe-");
     if (chmodFailHook.error && (chmodFailHook.failProbe || !isProbe)) {
       throw chmodFailHook.error;
     }
-    return (actual.chmodSync as (...args: unknown[]) => unknown)(target, mode);
+    return (actual.chmodSync as (...args: any[]) => unknown)(target, mode);
   }) as typeof actual.chmodSync;
   return { ...actual, chmodSync, default: { ...actual, chmodSync } };
 });

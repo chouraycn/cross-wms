@@ -14,7 +14,7 @@ function normalizeOptionalPath(value: string | undefined): string | undefined {
   return trimmed ? trimmed : undefined;
 }
 
-function formatReadError(err: unknown): string {
+function formatReadError(err: any): string {
   return err instanceof Error ? err.message : String(err);
 }
 

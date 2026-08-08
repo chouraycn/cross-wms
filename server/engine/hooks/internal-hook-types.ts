@@ -9,7 +9,7 @@ export interface InternalHookEvent {
   /** The session key this event relates to */
   sessionKey: string;
   /** Additional context specific to the event */
-  context: Record<string, unknown>;
+  context: Record<string, any>;
   /** Timestamp when the event occurred */
   timestamp: Date;
   /** Messages to send back to the user (hooks can push to this array) */

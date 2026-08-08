@@ -387,7 +387,7 @@ function setTopLevelChannelEnabledInConfigSection<Config extends OpenClawConfig>
   sectionKey: string;
   enabled: boolean;
 }): Config {
-  const section = params.cfg.channels?.[params.sectionKey] as Record<string, unknown> | undefined;
+  const section = params.cfg.channels?.[params.sectionKey] as Record<string, any> | undefined;
   return {
     ...params.cfg,
     channels: {
@@ -404,7 +404,7 @@ function removeTopLevelChannelConfigSection<Config extends OpenClawConfig>(param
   cfg: Config;
   sectionKey: string;
 }): Config {
-  const nextChannels = { ...params.cfg.channels } as Record<string, unknown>;
+  const nextChannels = { ...params.cfg.channels } as Record<string, any>;
   delete nextChannels[params.sectionKey];
   const nextCfg = { ...params.cfg };
   if (Object.keys(nextChannels).length > 0) {
@@ -420,7 +420,7 @@ function clearTopLevelChannelConfigFields<Config extends OpenClawConfig>(params:
   sectionKey: string;
   clearBaseFields: string[];
 }): Config {
-  const section = params.cfg.channels?.[params.sectionKey] as Record<string, unknown> | undefined;
+  const section = params.cfg.channels?.[params.sectionKey] as Record<string, any> | undefined;
   if (!section) {
     return params.cfg;
   }

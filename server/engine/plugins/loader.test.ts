@@ -187,9 +187,9 @@ function simplePluginBody(id: string) {
   return `module.exports = { id: ${JSON.stringify(id)}, register() {} };`;
 }
 
-function updatePluginManifest(plugin: Pick<TempPlugin, "dir">, patch: Record<string, unknown>) {
+function updatePluginManifest(plugin: Pick<TempPlugin, "dir">, patch: Record<string, any>) {
   const manifestPath = path.join(plugin.dir, "openclaw.plugin.json");
-  const raw = JSON.parse(fs.readFileSync(manifestPath, "utf-8")) as Record<string, unknown>;
+  const raw = JSON.parse(fs.readFileSync(manifestPath, "utf-8")) as Record<string, any>;
   fs.writeFileSync(manifestPath, JSON.stringify({ ...raw, ...patch }, null, 2), "utf-8");
 }
 
@@ -199,7 +199,7 @@ function memoryPluginBody(id: string) {
 
 function setupBundledDreamingMemoryPlugins(params?: {
   selectedId?: string;
-  selectedKind?: unknown;
+  selectedKind?: any;
   coreBody?: string;
 }) {
   const selectedId = params?.selectedId ?? "memory-lancedb";
@@ -394,7 +394,7 @@ function expectTelegramLoaded(registry: ReturnType<typeof loadOpenClawPlugins>) 
 
 function loadRegistryFromSinglePlugin(params: {
   plugin: TempPlugin;
-  pluginConfig?: Record<string, unknown>;
+  pluginConfig?: Record<string, any>;
   includeWorkspaceDir?: boolean;
   options?: Omit<Parameters<typeof loadOpenClawPlugins>[0], "cache" | "workspaceDir" | "config">;
 }) {
@@ -448,7 +448,7 @@ function runSinglePluginRegistryScenarios<
     body: string;
     assert: (registry: PluginRegistry, scenario: T) => void;
   },
->(scenarios: readonly T[], resolvePluginConfig?: (scenario: T) => Record<string, unknown>) {
+>(scenarios: readonly T[], resolvePluginConfig?: (scenario: T) => Record<string, any>) {
   runRegistryScenarios(scenarios, (scenario) => {
     const plugin = writePlugin({
       id: scenario.pluginId,
@@ -1118,7 +1118,7 @@ describe("loadOpenClawPlugins", () => {
   },
 };`,
     });
-    const probe = globalThis as unknown as Record<string, unknown>;
+    const probe = globalThis as unknown as Record<string, any>;
     const entries = {
       "env-config-probe": { config: { apiKey: "${ENV_CONFIG_PROBE_SECRET}" } },
     };
@@ -1980,10 +1980,10 @@ describe("loadOpenClawPlugins", () => {
           },
         });
 
-        const responses: unknown[] = [];
+        const responses: any[] = [];
         await registry.gatewayHandlers["returned-gateway-method.status"]?.({
           params: {},
-          respond: (ok: boolean, payload: unknown, error?: unknown) =>
+          respond: (ok: boolean, payload: any, error?: any) =>
             responses.push({ ok, payload, error }),
         } as never);
 
@@ -2021,10 +2021,10 @@ describe("loadOpenClawPlugins", () => {
           },
         });
 
-        const responses: unknown[] = [];
+        const responses: any[] = [];
         await registry.gatewayHandlers["explicit-gateway-method.status"]?.({
           params: {},
-          respond: (ok: boolean, payload: unknown, error?: unknown) =>
+          respond: (ok: boolean, payload: any, error?: any) =>
             responses.push({ ok, payload, error }),
         } as never);
 
@@ -2487,7 +2487,7 @@ module.exports = { id: "throws-after-import", register() {} };`,
 
         try {
           const reentryError = Reflect.get(globalThis, marker) as
-            | { name?: unknown; message?: unknown }
+            | { name?: any; message?: any }
             | undefined;
           expect(reentryError?.name).toBe(PluginLoadReentryError.name);
           expect(String(reentryError?.message)).toContain("plugin load reentry detected");
@@ -3902,7 +3902,7 @@ module.exports = { id: "throws-after-import", register() {} };`,
       workspaceDir: plugin.dir,
       config,
     });
-    expect((globalThis as Record<string, unknown>)[marker]).toEqual(["discovery"]);
+    expect((globalThis as Record<string, any>)[marker]).toEqual(["discovery"]);
     expect(snapshot.providers.map((entry) => entry.provider.id)).toEqual(["discovery-provider"]);
     expect(snapshot.tools.flatMap((entry) => entry.names)).toContain("discovery_tool");
 
@@ -3911,8 +3911,8 @@ module.exports = { id: "throws-after-import", register() {} };`,
       workspaceDir: plugin.dir,
       config,
     });
-    expect((globalThis as Record<string, unknown>)[marker]).toEqual(["discovery", "full"]);
-    delete (globalThis as Record<string, unknown>)[marker];
+    expect((globalThis as Record<string, any>)[marker]).toEqual(["discovery", "full"]);
+    delete (globalThis as Record<string, any>)[marker];
   });
 
   it("rejects plugin tool registration without manifest tool ownership", () => {
@@ -4031,7 +4031,7 @@ module.exports = { id: "throws-after-import", register() {} };`,
     const second = loadOpenClawPlugins(options);
 
     expect(second).toBe(first);
-    expect((globalThis as Record<string, unknown>)[marker]).toBe(1);
+    expect((globalThis as Record<string, any>)[marker]).toBe(1);
     expect(first.commands.map((entry) => entry.command.name)).toEqual(["snapshot-command"]);
     expect(getPluginCommandSpecs()).toStrictEqual([]);
 
@@ -4041,7 +4041,7 @@ module.exports = { id: "throws-after-import", register() {} };`,
       onlyPluginIds: ["snapshot-cache"],
     });
     expect(active).not.toBe(first);
-    expect((globalThis as Record<string, unknown>)[marker]).toBe(2);
+    expect((globalThis as Record<string, any>)[marker]).toBe(2);
     expect(getPluginCommandSpecs()).toEqual([
       {
         name: "snapshot-command",
@@ -4049,7 +4049,7 @@ module.exports = { id: "throws-after-import", register() {} };`,
         acceptsArgs: false,
       },
     ]);
-    delete (globalThis as Record<string, unknown>)[marker];
+    delete (globalThis as Record<string, any>)[marker];
   });
 
   it("does not re-register non-bundled plugins after gateway-bindable boot loads", () => {
@@ -4088,8 +4088,8 @@ module.exports = { id: "throws-after-import", register() {} };`,
       config,
     });
 
-    expect((globalThis as Record<string, unknown>)[marker]).toBe(1);
-    delete (globalThis as Record<string, unknown>)[marker];
+    expect((globalThis as Record<string, any>)[marker]).toBe(1);
+    delete (globalThis as Record<string, any>)[marker];
   });
 
   it("reuses a gateway-bindable cache entry for later default-mode loads", () => {
@@ -4127,8 +4127,8 @@ module.exports = { id: "throws-after-import", register() {} };`,
     const defaultMode = loadOpenClawPlugins(options);
 
     expect(defaultMode).toBe(gatewayBindable);
-    expect((globalThis as Record<string, unknown>)[marker]).toBe(1);
-    delete (globalThis as Record<string, unknown>)[marker];
+    expect((globalThis as Record<string, any>)[marker]).toBe(1);
+    delete (globalThis as Record<string, any>)[marker];
   });
 
   it("re-initializes global hook runner when serving registry from cache", () => {
@@ -4714,7 +4714,7 @@ module.exports = { id: "throws-after-import", register() {} };`,
       pluginConfig: {
         entries: {
           configurable: {
-            config: "nope" as unknown as Record<string, unknown>,
+            config: "nope" as unknown as Record<string, any>,
           },
         },
       },
@@ -4792,7 +4792,7 @@ module.exports = { id: "throws-after-import", register() {} };`,
             entries: {
               configurable: {
                 enabled: true,
-                config: "nope" as unknown as Record<string, unknown>,
+                config: "nope" as unknown as Record<string, any>,
               },
             },
           },
@@ -9401,7 +9401,7 @@ module.exports = {
   it("supports legacy plugins subscribing to diagnostic events from the root sdk", async () => {
     useNoBundledPlugins();
     const seenKey = "__openclawLegacyRootDiagnosticSeen";
-    delete (globalThis as Record<string, unknown>)[seenKey];
+    delete (globalThis as Record<string, any>)[seenKey];
 
     const plugin = writePlugin({
       id: "legacy-root-diagnostic-listener",
@@ -9455,14 +9455,14 @@ module.exports = {
       });
       await waitForDiagnosticEventsDrained();
 
-      expect((globalThis as Record<string, unknown>)[seenKey]).toEqual([
+      expect((globalThis as Record<string, any>)[seenKey]).toEqual([
         {
           type: "model.usage",
           sessionKey: "agent:main:test:dm:peer",
         },
       ]);
     } finally {
-      delete (globalThis as Record<string, unknown>)[seenKey];
+      delete (globalThis as Record<string, any>)[seenKey];
     }
   });
 

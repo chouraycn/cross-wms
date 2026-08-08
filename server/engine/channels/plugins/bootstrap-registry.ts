@@ -32,9 +32,9 @@ function mergePluginSection<T>(
     // Setup artifacts can add lightweight setup/docs/secrets fields on top of
     // runtime artifacts; undefined setup values should not erase runtime data.
     const merged = {
-      ...(runtimeValue as Record<string, unknown>),
+      ...(runtimeValue as Record<string, any>),
     };
-    for (const [key, value] of Object.entries(setupValue as Record<string, unknown>)) {
+    for (const [key, value] of Object.entries(setupValue as Record<string, any>)) {
       if (value !== undefined) {
         merged[key] = value;
       }
@@ -107,8 +107,8 @@ export function getBootstrapChannelPlugin(id: ChannelId): ChannelPlugin | undefi
  * Loads bootstrap secret metadata from bundled runtime and setup artifacts.
  */
 export type BootstrapChannelSecrets = {
-  collectRuntimeConfigAssignments?: (params: unknown) => void;
-  [key: string]: unknown;
+  collectRuntimeConfigAssignments?: (params: any) => void;
+  [key: string]: any;
 };
 
 export function getBootstrapChannelSecrets(

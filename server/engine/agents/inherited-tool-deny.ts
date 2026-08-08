@@ -89,7 +89,7 @@ const ACP_REQUIRED_INHERITED_TOOL_ALLOW = [
   "write",
 ] as const;
 
-export function normalizeInheritedToolDenylist(value: unknown): string[] {
+export function normalizeInheritedToolDenylist(value: any): string[] {
   if (!Array.isArray(value)) {
     return [];
   }
@@ -101,21 +101,21 @@ export function normalizeInheritedToolDenylist(value: unknown): string[] {
   );
 }
 
-export function inheritedToolDenyPatch(value: unknown): { inheritedToolDeny?: string[] } {
+export function inheritedToolDenyPatch(value: any): { inheritedToolDeny?: string[] } {
   const inheritedToolDeny = normalizeInheritedToolDenylist(value);
   return inheritedToolDeny.length > 0 ? { inheritedToolDeny } : {};
 }
 
-export function normalizeInheritedToolAllowlist(value: unknown): string[] {
+export function normalizeInheritedToolAllowlist(value: any): string[] {
   return normalizeInheritedToolDenylist(value);
 }
 
-export function inheritedToolAllowPatch(value: unknown): { inheritedToolAllow?: string[] } {
+export function inheritedToolAllowPatch(value: any): { inheritedToolAllow?: string[] } {
   const inheritedToolAllow = normalizeInheritedToolAllowlist(value);
   return inheritedToolAllow.length > 0 ? { inheritedToolAllow } : {};
 }
 
-export function findAcpUnsupportedInheritedToolDeny(value: unknown): string | undefined {
+export function findAcpUnsupportedInheritedToolDeny(value: any): string | undefined {
   const inheritedToolDeny = normalizeInheritedToolDenylist(value);
   if (inheritedToolDeny.length === 0) {
     return undefined;
@@ -125,7 +125,7 @@ export function findAcpUnsupportedInheritedToolDeny(value: unknown): string | un
   );
 }
 
-export function findAcpUnsupportedInheritedToolAllow(value: unknown): string | undefined {
+export function findAcpUnsupportedInheritedToolAllow(value: any): string | undefined {
   const inheritedToolAllow = normalizeInheritedToolAllowlist(value);
   if (inheritedToolAllow.length === 0) {
     return undefined;

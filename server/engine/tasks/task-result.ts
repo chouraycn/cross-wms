@@ -9,7 +9,7 @@ import type { TaskResult, TaskStatus } from './types.js';
 
 /** 构造成功结果。 */
 export function okResult(
-  output: unknown,
+  output: any,
   startedAt: string,
   attempts = 1,
   completedAt: string = nowIso(),
@@ -45,7 +45,7 @@ export function errorResult(
 /** 部分完成：聚合多个子结果，若任一失败则标记为 partial。 */
 export interface AggregatedResult {
   status: 'completed' | 'partial' | 'failed';
-  outputs: unknown[];
+  outputs: any[];
   errors: string[];
   total: number;
   succeeded: number;
@@ -58,7 +58,7 @@ export interface AggregatedResult {
  * - 否则 -> partial
  */
 export function aggregateResults(results: TaskResult[]): AggregatedResult {
-  const outputs: unknown[] = [];
+  const outputs: any[] = [];
   const errors: string[] = [];
   let succeeded = 0;
   let failed = 0;

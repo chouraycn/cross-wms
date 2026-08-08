@@ -13,7 +13,7 @@ export type ChannelPlugin = {
   threading?: ChannelThreadingAdapter;
   messaging?: ChannelMessagingAdapter;
   commands?: { nativeCommandsAutoEnabled?: boolean };
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 export type ChannelId = string;
@@ -34,7 +34,7 @@ export type ChannelThreadingToolContext = {
 };
 
 export type ChannelMessageActionDiscoveryContext = {
-  cfg: unknown;
+  cfg: any;
   currentChannelId?: string | null;
   currentChannelProvider?: string | null;
   currentThreadTs?: string | null;
@@ -68,7 +68,7 @@ export type ChannelMessageActionAdapter = {
     params: ChannelMessageActionDiscoveryContext,
   ) => ChannelMessageToolDiscovery | null | undefined;
   supportsAction?: (params: { action: ChannelMessageActionName }) => boolean;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 export type ChannelThreadingAdapter = {
@@ -76,15 +76,15 @@ export type ChannelThreadingAdapter = {
     target: string;
     toolContext: ChannelThreadingToolContext;
   }) => boolean;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 export type ChannelMessagingAdapter = {
   buildCrossContextPresentation?: (params: {
     originLabel: string;
     message: string;
-    cfg: unknown;
+    cfg: any;
     accountId?: string | null;
   }) => unknown;
-  [key: string]: unknown;
+  [key: string]: any;
 };

@@ -14,12 +14,12 @@ import type {
 
 const now = (): number => Math.floor(Date.now() / 1000);
 
-function safeJsonObj(raw: string | null | undefined): Record<string, unknown> {
+function safeJsonObj(raw: string | null | undefined): Record<string, any> {
   if (!raw) return {};
   try {
     const parsed = JSON.parse(raw);
     return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
-      ? (parsed as Record<string, unknown>)
+      ? (parsed as Record<string, any>)
       : {};
   } catch {
     return {};
@@ -57,7 +57,7 @@ export function getKnowledgeBaseStats(
   const versionFilter = versionIds
     ? ` AND knowledge_base_version_id IN (${versionIds.map(() => '?').join(',')})`
     : '';
-  const params: unknown[] = versionIds ? [tenantId, ...versionIds] : [tenantId];
+  const params: any[] = versionIds ? [tenantId, ...versionIds] : [tenantId];
 
   const ensure = (kbId: string): KnowledgeBaseStats => {
     let entry = stats.get(kbId);
@@ -200,7 +200,7 @@ export function listKnowledgeBases(filter: KnowledgeBaseListFilter = {}): Knowle
   const db = initDb();
   const tenantId = filter.tenantId ?? DEFAULT_TENANT_ID;
   const conditions: string[] = ['tenant_id = ?'];
-  const params: unknown[] = [tenantId];
+  const params: any[] = [tenantId];
   if (filter.status) {
     conditions.push('status = ?');
     params.push(filter.status);
@@ -228,7 +228,7 @@ export interface KnowledgeBaseInput {
   name: string;
   description?: string | null;
   status?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export function createKnowledgeBase(input: KnowledgeBaseInput): KnowledgeBaseRow {
@@ -267,7 +267,7 @@ export interface KnowledgeBaseUpdateInput {
   name?: string;
   description?: string | null;
   status?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export function updateKnowledgeBase(
@@ -337,7 +337,7 @@ export interface KnowledgeBaseVersionInput {
   name: string;
   description?: string | null;
   status?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export function listKnowledgeBaseVersions(
@@ -445,7 +445,7 @@ export function rollbackKnowledgeBase(
 }
 
 // ===================== 分支版本化：sync / promote =====================
-function parseKbBranchContent(json?: string | null): Record<string, unknown> {
+function parseKbBranchContent(json?: string | null): Record<string, any> {
   if (!json) return {};
   try {
     return JSON.parse(json);
@@ -603,7 +603,7 @@ export interface AgentKnowledgeBranchInput {
   head_version?: string;
   status?: string;
   sync_state?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export function upsertAgentKnowledgeBranch(input: AgentKnowledgeBranchInput): AgentKnowledgeBranchRow {

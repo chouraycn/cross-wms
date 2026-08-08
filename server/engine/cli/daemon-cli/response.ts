@@ -148,7 +148,7 @@ export function createDaemonActionContext(params: { action: DaemonAction; json: 
   return { stdout, warnings, emit, fail };
 }
 
-async function buildInstallFailureHints(error: unknown): Promise<string[] | undefined> {
+async function buildInstallFailureHints(error: any): Promise<string[] | undefined> {
   const detail = String(error);
   if (process.platform !== "linux" || !isSystemdUnavailableDetail(detail)) {
     return undefined;

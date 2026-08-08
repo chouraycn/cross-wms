@@ -11,7 +11,7 @@
 
 type PluginManifestMetadataRecord = {
   pluginDir: string;
-  manifest: Record<string, unknown>;
+  manifest: Record<string, any>;
   origin?: string;
 };
 

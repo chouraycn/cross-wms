@@ -22,24 +22,24 @@ vi.mock("../infra/clawhub.js", async () => {
   const actual = await vi.importActual<typeof import("../infra/clawhub.js")>("../infra/clawhub.js");
   return {
     ...actual,
-    parseClawHubPluginSpec: (...args: unknown[]) => parseClawHubPluginSpecMock(...args),
-    fetchClawHubPackageDetail: (...args: unknown[]) => fetchClawHubPackageDetailMock(...args),
-    fetchClawHubPackageArtifact: (...args: unknown[]) => fetchClawHubPackageArtifactMock(...args),
-    fetchClawHubPackageVersion: (...args: unknown[]) => fetchClawHubPackageVersionMock(...args),
-    downloadClawHubPackageArchive: (...args: unknown[]) =>
+    parseClawHubPluginSpec: (...args: any[]) => parseClawHubPluginSpecMock(...args),
+    fetchClawHubPackageDetail: (...args: any[]) => fetchClawHubPackageDetailMock(...args),
+    fetchClawHubPackageArtifact: (...args: any[]) => fetchClawHubPackageArtifactMock(...args),
+    fetchClawHubPackageVersion: (...args: any[]) => fetchClawHubPackageVersionMock(...args),
+    downloadClawHubPackageArchive: (...args: any[]) =>
       downloadClawHubPackageArchiveMock(...args),
-    resolveLatestVersionFromPackage: (...args: unknown[]) =>
+    resolveLatestVersionFromPackage: (...args: any[]) =>
       resolveLatestVersionFromPackageMock(...args),
   };
 });
 
 vi.mock("../version.js", () => ({
-  resolveCompatibilityHostVersion: (...args: unknown[]) =>
+  resolveCompatibilityHostVersion: (...args: any[]) =>
     resolveCompatibilityHostVersionMock(...args),
 }));
 
 vi.mock("./install.js", () => ({
-  installPluginFromArchive: (...args: unknown[]) => installPluginFromArchiveMock(...args),
+  installPluginFromArchive: (...args: any[]) => installPluginFromArchiveMock(...args),
 }));
 
 vi.mock("../infra/archive.js", async () => {
@@ -122,7 +122,7 @@ function expectClawHubInstallFlow(params: {
   expect(archiveInstallCall().archivePath).toBe(params.archivePath);
 }
 
-function expectSuccessfulClawHubInstall(result: unknown) {
+function expectSuccessfulClawHubInstall(result: any) {
   const success = expectInstallSuccess(result);
   expect(success.pluginId).toBe("demo");
   expect(success.version).toBe("2026.3.22");
@@ -135,7 +135,7 @@ function expectSuccessfulClawHubInstall(result: unknown) {
 
 type MockWithCalls = {
   mock: {
-    calls: readonly (readonly unknown[])[];
+    calls: readonly (readonly any[])[];
   };
 };
 
@@ -158,7 +158,7 @@ type ArchiveInstallCall = {
 };
 
 type InstallSuccess = {
-  clawhub?: Record<string, unknown>;
+  clawhub?: Record<string, any>;
   ok: true;
   pluginId?: string;
   version?: string;
@@ -170,7 +170,7 @@ type InstallFailure = {
   ok: false;
 };
 
-function mockCallArg(mock: MockWithCalls, callIndex = 0, argIndex = 0): unknown {
+function mockCallArg(mock: MockWithCalls, callIndex = 0, argIndex = 0): any {
   const call = mock.mock.calls[callIndex];
   if (!call) {
     throw new Error(`Expected mock call ${callIndex}`);
@@ -201,18 +201,18 @@ function archiveInstallCall(callIndex = 0): ArchiveInstallCall {
   return mockCallArg(installPluginFromArchiveMock, callIndex) as ArchiveInstallCall;
 }
 
-function expectInstallSuccess(result: unknown): InstallSuccess {
-  expect((result as { ok?: unknown }).ok).toBe(true);
+function expectInstallSuccess(result: any): InstallSuccess {
+  expect((result as { ok?: any }).ok).toBe(true);
   return result as InstallSuccess;
 }
 
-function expectInstallFailure(result: unknown): InstallFailure {
-  expect((result as { ok?: unknown }).ok).toBe(false);
+function expectInstallFailure(result: any): InstallFailure {
+  expect((result as { ok?: any }).ok).toBe(false);
   return result as InstallFailure;
 }
 
 function expectInstallFailureFields(
-  result: unknown,
+  result: any,
   code: (typeof CLAWHUB_INSTALL_ERROR_CODE)[keyof typeof CLAWHUB_INSTALL_ERROR_CODE],
   error: string,
 ) {

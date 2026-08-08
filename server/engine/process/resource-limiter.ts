@@ -98,9 +98,9 @@ export class ResourceLimiter {
       }
       const cur = merged[key];
       if (cur === undefined) {
-        (merged[key] as unknown) = v;
+        (merged[key] as any) = v;
       } else {
-        (merged[key] as unknown) = Math.min(cur as number, v);
+        (merged[key] as any) = Math.min(cur as number, v);
       }
     }
     return new ResourceLimiter(merged);

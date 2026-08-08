@@ -242,7 +242,7 @@ describe("truncateToolResultMessage", () => {
     if (result.role !== "toolResult") {
       throw new Error("expected toolResult");
     }
-    const firstBlock = result.content[0] as unknown as { text?: unknown; content?: unknown };
+    const firstBlock = result.content[0] as unknown as { text?: any; content?: any };
     expect(typeof firstBlock.text).toBe("string");
     expect(firstBlock.text).toContain("[persist-truncated]");
     expect(String(firstBlock.text).length).toBeLessThan(oversized.length);

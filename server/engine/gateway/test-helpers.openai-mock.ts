@@ -4,13 +4,13 @@
 // OpenAI mock helpers provide deterministic fake Responses API streams for
 // gateway OpenAI-compatible HTTP tests.
 type OpenAIResponsesParams = {
-  input?: unknown[];
+  input?: any[];
 };
 
 type OpenAIResponseStreamEvent =
-  | { type: "response.output_item.added"; item: Record<string, unknown> }
+  | { type: "response.output_item.added"; item: Record<string, any> }
   | { type: "response.function_call_arguments.delta"; delta: string }
-  | { type: "response.output_item.done"; item: Record<string, unknown> }
+  | { type: "response.output_item.done"; item: Record<string, any> }
   | {
       type: "response.completed";
       response: {
@@ -24,9 +24,9 @@ type OpenAIResponseStreamEvent =
       };
     };
 
-function extractLastUserText(input: unknown[]): string {
+function extractLastUserText(input: any[]): string {
   for (let i = input.length - 1; i >= 0; i -= 1) {
-    const item = input[i] as Record<string, unknown> | undefined;
+    const item = input[i] as Record<string, any> | undefined;
     if (!item || item.role !== "user") {
       continue;
     }
@@ -37,8 +37,8 @@ function extractLastUserText(input: unknown[]): string {
           (c): c is { type: "input_text"; text: string } =>
             Boolean(c) &&
             typeof c === "object" &&
-            (c as { type?: unknown }).type === "input_text" &&
-            typeof (c as { text?: unknown }).text === "string",
+            (c as { type?: any }).type === "input_text" &&
+            typeof (c as { text?: any }).text === "string",
         )
         .map((c) => c.text)
         .join("\n")
@@ -51,9 +51,9 @@ function extractLastUserText(input: unknown[]): string {
   return "";
 }
 
-function extractToolOutput(input: unknown[]): string {
+function extractToolOutput(input: any[]): string {
   for (const itemRaw of input) {
-    const item = itemRaw as Record<string, unknown> | undefined;
+    const item = itemRaw as Record<string, any> | undefined;
     if (!item || item.type !== "function_call_output") {
       continue;
     }
@@ -138,7 +138,7 @@ async function* fakeOpenAIResponsesStream(
   };
 }
 
-function decodeBodyText(body: unknown): string {
+function decodeBodyText(body: any): string {
   if (!body) {
     return "";
   }
@@ -154,7 +154,7 @@ function decodeBodyText(body: unknown): string {
   return "";
 }
 
-function buildSseResponse(events: unknown[]): Response {
+function buildSseResponse(events: any[]): Response {
   const sse = `${events.map((e) => `data: ${JSON.stringify(e)}\n\n`).join("")}data: [DONE]\n\n`;
   const encoder = new TextEncoder();
   const body = new ReadableStream<Uint8Array>({
@@ -191,13 +191,13 @@ export function installOpenAiResponsesMock(params?: { baseUrl?: string }) {
 
     if (isResponsesRequest(url)) {
       const bodyText =
-        (init as { body?: unknown } | undefined)?.body !== undefined
-          ? decodeBodyText((init as { body?: unknown }).body)
+        (init as { body?: any } | undefined)?.body !== undefined
+          ? decodeBodyText((init as { body?: any }).body)
           : input instanceof Request
             ? await input.clone().text()
             : "";
 
-      const parsed = bodyText ? (JSON.parse(bodyText) as Record<string, unknown>) : {};
+      const parsed = bodyText ? (JSON.parse(bodyText) as Record<string, any>) : {};
       const inputItems = Array.isArray(parsed.input) ? parsed.input : [];
       return await buildOpenAIResponsesSse({ input: inputItems });
     }
@@ -210,11 +210,11 @@ export function installOpenAiResponsesMock(params?: { baseUrl?: string }) {
     }
     return await originalFetch(input, init);
   };
-  (globalThis as unknown as { fetch: unknown }).fetch = fetchImpl;
+  (globalThis as unknown as { fetch: any }).fetch = fetchImpl;
   return {
     baseUrl,
     restore: () => {
-      (globalThis as unknown as { fetch: unknown }).fetch = originalFetch;
+      (globalThis as unknown as { fetch: any }).fetch = originalFetch;
     },
   };
 }

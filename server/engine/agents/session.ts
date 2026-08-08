@@ -6,15 +6,15 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function buildExplicitSessionIdSessionKey(..._args: unknown[]): unknown {
+export function buildExplicitSessionIdSessionKey(..._args: any[]): any {
   return undefined;
 }
-export function resolveStoredSessionKeyForSessionId(..._args: unknown[]): unknown {
+export function resolveStoredSessionKeyForSessionId(..._args: any[]): any {
   return undefined;
 }
-export function resolveSessionKeyForRequest(..._args: unknown[]): unknown {
+export function resolveSessionKeyForRequest(..._args: any[]): any {
   return undefined;
 }
-export function resolveSession(..._args: unknown[]): unknown {
+export function resolveSession(..._args: any[]): any {
   return undefined;
 }

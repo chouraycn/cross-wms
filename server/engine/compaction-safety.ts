@@ -34,7 +34,7 @@ export interface SafetyTimeoutOptions {
 /**
  * 判断是否为 AbortError
  */
-export function isAbortError(err: unknown): boolean {
+export function isAbortError(err: any): boolean {
   if (err instanceof DOMException) {
     return err.name === 'AbortError';
   }
@@ -47,7 +47,7 @@ export function isAbortError(err: unknown): boolean {
 /**
  * 判断是否为超时错误
  */
-export function isTimeoutError(err: unknown): boolean {
+export function isTimeoutError(err: any): boolean {
   if (err instanceof Error) {
     return (
       err.name === 'TimeoutError' ||
@@ -61,11 +61,11 @@ export function isTimeoutError(err: unknown): boolean {
 /**
  * 创建 AbortError
  */
-export function createAbortError(reason?: unknown): Error {
+export function createAbortError(reason?: any): Error {
   const err = new Error('aborted');
   err.name = 'AbortError';
   if (reason instanceof Error) {
-    (err as Error & { cause?: unknown }).cause = reason;
+    (err as Error & { cause?: any }).cause = reason;
   } else if (reason !== undefined) {
     err.message = `aborted: ${reason}`;
   }
@@ -212,7 +212,7 @@ export async function retryAsync<T>(
   label: string = 'operation',
 ): Promise<T> {
   const fullConfig: RetryConfig = { ...DEFAULT_RETRY_CONFIG, ...config };
-  let lastError: unknown;
+  let lastError: any;
 
   for (let attempt = 0; attempt < fullConfig.attempts; attempt++) {
     try {
@@ -261,8 +261,8 @@ export class PartialSummaryError extends Error {
  * 当部分 chunk 摘要成功后，即使后续失败也能返回已生成的部分摘要
  */
 export async function retryWithPartialSummary(
-  chunks: unknown[],
-  summarizeFn: (chunk: unknown) => Promise<string>,
+  chunks: any[],
+  summarizeFn: (chunk: any) => Promise<string>,
   config: Partial<RetryConfig> = {},
 ): Promise<{ summary: string; completedChunks: number; totalChunks: number }> {
   const fullConfig: RetryConfig = { ...DEFAULT_RETRY_CONFIG, ...config };

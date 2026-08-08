@@ -16,9 +16,9 @@ const CLAUDE_ACP_BIN = "claude-agent-acp";
 const RUN_CONFIGURED_COMMAND_SENTINEL = "--openclaw-run-configured";
 
 type PackageManifest = {
-  name?: unknown;
-  bin?: unknown;
-  dependencies?: Record<string, unknown>;
+  name?: any;
+  bin?: any;
+  dependencies?: Record<string, any>;
 };
 
 function basename(value: string): string {
@@ -652,7 +652,7 @@ function buildClaudeAcpWrapperCommand(wrapperPath: string, configuredCommand?: s
 export async function prepareAcpxCodexAuthConfig(params: {
   pluginConfig: ResolvedAcpxPluginConfig;
   stateDir: string;
-  logger?: unknown;
+  logger?: any;
 }): Promise<ResolvedAcpxPluginConfig> {
   void params.logger;
   const codexBaseDir = path.join(params.stateDir, "acpx");

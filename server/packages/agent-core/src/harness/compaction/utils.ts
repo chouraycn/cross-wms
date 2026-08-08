@@ -41,7 +41,7 @@ export function extractFileOpsFromMessage(message: AgentMessage, fileOps: FileOp
       continue;
     }
 
-    const args = block.arguments as Record<string, unknown> | undefined;
+    const args = block.arguments as Record<string, any> | undefined;
     if (!args) {
       continue;
     }
@@ -93,7 +93,7 @@ export function formatFileOperations(readFiles: string[], modifiedFiles: string[
 
 const TOOL_RESULT_MAX_CHARS = 2000;
 
-function safeJsonStringify(value: unknown): string {
+function safeJsonStringify(value: any): string {
   try {
     return JSON.stringify(value) ?? "undefined";
   } catch {

@@ -24,7 +24,7 @@ export interface RunStateMachine {
   startedAt?: number;
   stoppedAt?: number;
   error?: string;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
 }
 
 type StateListener = (state: RunState, previousState?: RunState) => void;
@@ -67,7 +67,7 @@ export function transitionState(
   options?: {
     action?: string;
     error?: string;
-    metadata?: Record<string, unknown>;
+    metadata?: Record<string, any>;
   }
 ): { success: boolean; reason?: string } {
   const machine = stateMachines.get(id);

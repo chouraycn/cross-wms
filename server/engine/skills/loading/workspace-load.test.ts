@@ -78,7 +78,7 @@ function createWorkspacePluginRegistry(workspaceDir: string): PluginManifestRegi
       id?: string;
       enabledByDefault?: boolean;
       skills?: string[];
-      configSchema?: Record<string, unknown>;
+      configSchema?: Record<string, any>;
     };
     plugins.push({
       id: manifest.id ?? id,
@@ -174,7 +174,7 @@ function collectMatching<T>(items: readonly T[], predicate: (item: T) => boolean
 }
 
 async function expectMissingPath(pathToCheck: string) {
-  let thrown: unknown;
+  let thrown: any;
   try {
     await fs.lstat(pathToCheck);
   } catch (error) {

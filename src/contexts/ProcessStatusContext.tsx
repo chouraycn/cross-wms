@@ -10,7 +10,7 @@ export interface ProcessTask {
   startTime: number;
   endTime?: number;
   error?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 interface ProcessStatusContextValue {

@@ -15,7 +15,7 @@ type PackedVersion = {
   archive: Buffer;
   dependencies?: Record<string, string>;
   integrity: string;
-  openclaw?: Record<string, unknown>;
+  openclaw?: Record<string, any>;
   optionalDependencies?: Record<string, string>;
   peerDependencies?: Record<string, string>;
   peerDependenciesMeta?: Record<string, { optional?: boolean }>;
@@ -98,7 +98,7 @@ async function packPlugin(params: {
   dependencies?: Record<string, string>;
   packageName: string;
   optionalDependencies?: Record<string, string>;
-  openclaw?: Record<string, unknown>;
+  openclaw?: Record<string, any>;
   peerDependencies?: Record<string, string>;
   peerDependenciesMeta?: Record<string, { optional?: boolean }>;
   pluginId: string;
@@ -471,10 +471,10 @@ describe("installPluginFromNpmSpec e2e", () => {
     const rawLock = JSON.parse(
       await fs.readFile(path.join(rawNpmRoot, "package-lock.json"), "utf8"),
     ) as {
-      packages?: Record<string, unknown>;
+      packages?: Record<string, any>;
     };
     const rawOpenClawLockEntry = rawLock.packages?.["node_modules/openclaw"] as
-      | { peer?: unknown; version?: unknown }
+      | { peer?: any; version?: any }
       | undefined;
     expect(rawOpenClawLockEntry?.peer).toBe(true);
     expect(rawOpenClawLockEntry?.version).toBe("2026.0.0");
@@ -493,7 +493,7 @@ describe("installPluginFromNpmSpec e2e", () => {
     const lock = JSON.parse(
       await fs.readFile(path.join(projectRoot, "package-lock.json"), "utf8"),
     ) as {
-      packages?: Record<string, unknown>;
+      packages?: Record<string, any>;
     };
     expect(lock.packages?.["node_modules/openclaw"]).toBeUndefined();
     await expect(
@@ -1171,7 +1171,7 @@ describe("installPluginFromNpmSpec e2e", () => {
       const lock = JSON.parse(
         await fs.readFile(path.join(projectRoot, "package-lock.json"), "utf8"),
       ) as {
-        packages?: Record<string, unknown>;
+        packages?: Record<string, any>;
       };
       expect(lock.packages?.["node_modules/openclaw"]).toBeUndefined();
       await expect(
@@ -1252,7 +1252,7 @@ describe("installPluginFromNpmSpec e2e", () => {
     const lock = JSON.parse(
       await fs.readFile(path.join(peerProjectRoot, "package-lock.json"), "utf8"),
     ) as {
-      packages?: Record<string, unknown>;
+      packages?: Record<string, any>;
     };
     expect(lock.packages?.["node_modules/openclaw"]).toBeUndefined();
   });

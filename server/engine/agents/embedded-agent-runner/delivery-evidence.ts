@@ -10,62 +10,62 @@ import { hasAcceptedSessionSpawn } from "../accepted-session-spawn.js";
  * cron entries, or spawned sessions have already been delivered.
  */
 type AgentPayloadLike = {
-  text?: unknown;
-  mediaUrl?: unknown;
-  mediaUrls?: unknown;
-  presentation?: unknown;
-  interactive?: unknown;
-  channelData?: unknown;
-  attachments?: unknown;
-  isError?: unknown;
-  isReasoning?: unknown;
+  text?: any;
+  mediaUrl?: any;
+  mediaUrls?: any;
+  presentation?: any;
+  interactive?: any;
+  channelData?: any;
+  attachments?: any;
+  isError?: any;
+  isReasoning?: any;
 };
 
 type AgentDeliveryEvidence = {
-  payloads?: unknown;
+  payloads?: any;
   deliveryStatus?: {
-    status?: unknown;
-    errorMessage?: unknown;
+    status?: any;
+    errorMessage?: any;
   };
-  didSendViaMessagingTool?: unknown;
-  messagingToolSentTexts?: unknown;
-  messagingToolSentMediaUrls?: unknown;
-  messagingToolSentTargets?: unknown;
-  acceptedSessionSpawns?: unknown;
-  successfulCronAdds?: unknown;
+  didSendViaMessagingTool?: any;
+  messagingToolSentTexts?: any;
+  messagingToolSentMediaUrls?: any;
+  messagingToolSentTargets?: any;
+  acceptedSessionSpawns?: any;
+  successfulCronAdds?: any;
   meta?: {
     toolSummary?: {
-      calls?: unknown;
+      calls?: any;
     };
   };
 };
 
-function hasNonEmptyString(value: unknown): value is string {
+function hasNonEmptyString(value: any): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
 
-function hasNonEmptyArray(value: unknown): boolean {
+function hasNonEmptyArray(value: any): boolean {
   return Array.isArray(value) && value.length > 0;
 }
 
-function hasNonEmptyStringArray(value: unknown): boolean {
+function hasNonEmptyStringArray(value: any): boolean {
   return Array.isArray(value) && value.some(hasNonEmptyString);
 }
 
-function hasVisibleAttachmentReference(value: unknown): boolean {
+function hasVisibleAttachmentReference(value: any): boolean {
   if (!Array.isArray(value)) {
     return false;
   }
   const urls = new Set<string>();
   for (const attachment of value) {
     if (attachment && typeof attachment === "object" && !Array.isArray(attachment)) {
-      collectMediaUrlsFromRecord(attachment as Record<string, unknown>, urls);
+      collectMediaUrlsFromRecord(attachment as Record<string, any>, urls);
     }
   }
   return urls.size > 0;
 }
 
-function collectStringValues(value: unknown, output: Set<string>) {
+function collectStringValues(value: any, output: Set<string>) {
   if (typeof value === "string" && value.trim()) {
     output.add(value.trim());
     return;
@@ -80,7 +80,7 @@ function collectStringValues(value: unknown, output: Set<string>) {
   }
 }
 
-function collectMediaUrlsFromRecord(record: Record<string, unknown>, output: Set<string>) {
+function collectMediaUrlsFromRecord(record: Record<string, any>, output: Set<string>) {
   collectStringValues(record.mediaUrl, output);
   collectStringValues(record.mediaUrls, output);
   collectStringValues(record.path, output);
@@ -90,7 +90,7 @@ function collectMediaUrlsFromRecord(record: Record<string, unknown>, output: Set
   if (Array.isArray(attachments)) {
     for (const attachment of attachments) {
       if (attachment && typeof attachment === "object" && !Array.isArray(attachment)) {
-        collectMediaUrlsFromRecord(attachment as Record<string, unknown>, output);
+        collectMediaUrlsFromRecord(attachment as Record<string, any>, output);
       }
     }
   }
@@ -102,7 +102,7 @@ export function collectDeliveredMediaUrls(result: AgentDeliveryEvidence): string
   if (Array.isArray(result.payloads)) {
     for (const payload of result.payloads) {
       if (payload && typeof payload === "object" && !Array.isArray(payload)) {
-        collectMediaUrlsFromRecord(payload as Record<string, unknown>, urls);
+        collectMediaUrlsFromRecord(payload as Record<string, any>, urls);
       }
     }
   }
@@ -121,25 +121,25 @@ export function collectMessagingToolDeliveredMediaUrls(
   if (Array.isArray(result.messagingToolSentTargets)) {
     for (const target of result.messagingToolSentTargets) {
       if (target && typeof target === "object" && !Array.isArray(target)) {
-        collectMediaUrlsFromRecord(target as Record<string, unknown>, urls);
+        collectMediaUrlsFromRecord(target as Record<string, any>, urls);
       }
     }
   }
   return Array.from(urls);
 }
 
-function hasPositiveNumber(value: unknown): boolean {
+function hasPositiveNumber(value: any): boolean {
   return typeof value === "number" && Number.isFinite(value) && value > 0;
 }
 
 /** Extracts a gateway result payload when the response carries delivery evidence fields. */
-export function getGatewayAgentResult(response: unknown): AgentDeliveryEvidence | null {
+export function getGatewayAgentResult(response: any): AgentDeliveryEvidence | null {
   if (!response || typeof response !== "object") {
     return null;
   }
   const candidate = hasAgentDeliveryEvidenceShape(response)
     ? response
-    : (response as { result?: unknown }).result;
+    : (response as { result?: any }).result;
   if (!candidate || typeof candidate !== "object" || !hasAgentDeliveryEvidenceShape(candidate)) {
     return null;
   }

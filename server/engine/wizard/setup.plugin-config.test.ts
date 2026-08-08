@@ -32,7 +32,7 @@ vi.mock("../plugins/plugin-metadata-snapshot.js", () => ({
 function makeManifestPlugin(
   id: string,
   uiHints?: Record<string, PluginConfigUiHint>,
-  configSchema?: Record<string, unknown>,
+  configSchema?: Record<string, any>,
 ) {
   return {
     id,

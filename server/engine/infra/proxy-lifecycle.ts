@@ -126,7 +126,7 @@ export async function startProxy(config: ProxyConfig | undefined): Promise<Proxy
   if (config?.enabled !== true) return null;
   const proxyUrl = resolveProxyUrl(config);
   const loopbackMode = config.loopbackMode ?? "gateway-only";
-  const proxyCaFile = (config as Record<string, unknown>)?.caFile as string | undefined;
+  const proxyCaFile = (config as Record<string, any>)?.caFile as string | undefined;
   const activeUrl = getActiveManagedProxyUrl();
 
   if (activeUrl) {

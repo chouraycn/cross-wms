@@ -51,7 +51,7 @@ export interface AuditEntry {
   actor: string;
   actorType: 'user' | 'system' | 'agent' | 'plugin' | 'external';
   description: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface AuditQueryResult {

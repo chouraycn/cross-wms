@@ -27,7 +27,7 @@ vi.mock('../../storage/databaseManager.js', () => {
     exec: vi.fn(),
     pragma: vi.fn(),
     prepare: vi.fn((sql: string) => {
-      const mockRun = vi.fn((...params: unknown[]) => {
+      const mockRun = vi.fn((...params: any[]) => {
         if (sql.includes('INSERT INTO memory_entries')) {
           const id = mockState.nextId++;
           const text = params[0] as string;
@@ -125,7 +125,7 @@ vi.mock('../../storage/databaseManager.js', () => {
         all: mockAll,
       };
     }),
-    all: vi.fn((sql: string, params?: unknown[]) => {
+    all: vi.fn((sql: string, params?: any[]) => {
       if (sql.includes('SELECT id, text FROM memory_entries ORDER BY id')) {
         return mockState.entries.map(e => ({ id: e.id, text: e.text }));
       }
@@ -152,11 +152,11 @@ vi.mock('../../storage/databaseManager.js', () => {
       }
       return [];
     }),
-    run: vi.fn((sql: string, params?: unknown[]) => {
+    run: vi.fn((sql: string, params?: any[]) => {
       if (sql.includes('INSERT INTO memory_entries')) {
         const id = mockState.nextId++;
-        const text = (params as unknown[])[0] as string;
-        const metadata = (params as unknown[])[1] as string;
+        const text = (params as any[])[0] as string;
+        const metadata = (params as any[])[1] as string;
         mockState.entries.push({
           id,
           text,
@@ -166,8 +166,8 @@ vi.mock('../../storage/databaseManager.js', () => {
         return { changes: 1, lastInsertRowid: id };
       }
       if (sql.includes('INSERT INTO memory_vec_index')) {
-        const rowid = (params as unknown[])[0] as number;
-        const embedding = (params as unknown[])[1] as Buffer;
+        const rowid = (params as any[])[0] as number;
+        const embedding = (params as any[])[1] as Buffer;
         const floatArr = new Float32Array(
           embedding.buffer,
           embedding.byteOffset,
@@ -182,7 +182,7 @@ vi.mock('../../storage/databaseManager.js', () => {
         return { changes: size, lastInsertRowid: 0 };
       }
       if (sql.includes('DELETE FROM memory_entries WHERE id =')) {
-        const id = (params as unknown[])[0] as number;
+        const id = (params as any[])[0] as number;
         const idx = mockState.entries.findIndex(e => e.id === id);
         if (idx >= 0) {
           mockState.entries.splice(idx, 1);
@@ -199,7 +199,7 @@ vi.mock('../../storage/databaseManager.js', () => {
       }
       return { changes: 0, lastInsertRowid: 0 };
     }),
-    get: vi.fn((sql: string, params?: unknown[]) => {
+    get: vi.fn((sql: string, params?: any[]) => {
       if (sql.includes('COUNT(*) as total')) {
         return { total: mockState.entries.length, avg_length: 100 };
       }

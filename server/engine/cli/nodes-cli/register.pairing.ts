@@ -25,7 +25,7 @@ const NODE_PAIR_APPROVE_SCOPE_SET = new Set<OperatorScope>([
   "operator.admin",
 ]);
 
-function normalizeNodePairApproveScopes(scopes: unknown): OperatorScope[] {
+function normalizeNodePairApproveScopes(scopes: any): OperatorScope[] {
   const normalized = new Set<OperatorScope>(DEFAULT_NODE_PAIR_APPROVE_SCOPES);
   if (!Array.isArray(scopes)) {
     return [...normalized];

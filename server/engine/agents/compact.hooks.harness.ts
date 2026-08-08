@@ -6,42 +6,42 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function resetCompactSessionStateMocks(..._args: unknown[]): unknown {
+export function resetCompactSessionStateMocks(..._args: any[]): any {
   return undefined;
 }
-export function resetCompactHooksHarnessMocks(..._args: unknown[]): unknown {
+export function resetCompactHooksHarnessMocks(..._args: any[]): any {
   return undefined;
 }
-export function loadCompactHooksHarness(..._args: unknown[]): unknown {
+export function loadCompactHooksHarness(..._args: any[]): any {
   return undefined;
 }
-export const contextEngineCompactMock: unknown = undefined;
-export const hookRunner: unknown = undefined;
-export const ensureRuntimePluginsLoaded: unknown = undefined;
-export const resolveContextEngineMock: unknown = undefined;
-export const resolveModelMock: unknown = undefined;
-export const sessionCompactImpl: unknown = undefined;
-export const triggerInternalHook: unknown = undefined;
-export const getMemorySearchManagerMock: unknown = undefined;
-export const resolveMemorySearchConfigMock: unknown = undefined;
-export const resolveSessionAgentIdMock: unknown = undefined;
-export const resolveSessionAgentIdsMock: unknown = undefined;
-export const estimateTokensMock: unknown = undefined;
-export const resolveAgentHarnessPolicyMock: unknown = undefined;
-export const resolveContextWindowInfoMock: unknown = undefined;
-export const sessionMessages: unknown = undefined;
-export const sessionAbortCompactionMock: unknown = undefined;
-export const createAgentSessionMock: unknown = undefined;
-export const createOpenClawCodingToolsMock: unknown = undefined;
-export const guardSessionManagerMock: unknown = undefined;
-export const applyAgentCompactionSettingsFromConfigMock: unknown = undefined;
-export const createPreparedEmbeddedAgentSettingsManagerMock: unknown = undefined;
-export const listRegisteredPluginAgentPromptGuidanceMock: unknown = undefined;
-export const buildEmbeddedSystemPromptMock: unknown = undefined;
-export const resolveEmbeddedAgentStreamFnMock: unknown = undefined;
-export const registerProviderStreamForModelMock: unknown = undefined;
-export const applyExtraParamsToAgentMock: unknown = undefined;
-export const resolveSandboxContextMock: unknown = undefined;
-export const maybeCompactAgentHarnessSessionMock: unknown = undefined;
-export const rotateTranscriptAfterCompactionMock: unknown = undefined;
-export const enqueueCommandInLaneMock: unknown = undefined;
+export const contextEngineCompactMock: any = undefined;
+export const hookRunner: any = undefined;
+export const ensureRuntimePluginsLoaded: any = undefined;
+export const resolveContextEngineMock: any = undefined;
+export const resolveModelMock: any = undefined;
+export const sessionCompactImpl: any = undefined;
+export const triggerInternalHook: any = undefined;
+export const getMemorySearchManagerMock: any = undefined;
+export const resolveMemorySearchConfigMock: any = undefined;
+export const resolveSessionAgentIdMock: any = undefined;
+export const resolveSessionAgentIdsMock: any = undefined;
+export const estimateTokensMock: any = undefined;
+export const resolveAgentHarnessPolicyMock: any = undefined;
+export const resolveContextWindowInfoMock: any = undefined;
+export const sessionMessages: any = undefined;
+export const sessionAbortCompactionMock: any = undefined;
+export const createAgentSessionMock: any = undefined;
+export const createOpenClawCodingToolsMock: any = undefined;
+export const guardSessionManagerMock: any = undefined;
+export const applyAgentCompactionSettingsFromConfigMock: any = undefined;
+export const createPreparedEmbeddedAgentSettingsManagerMock: any = undefined;
+export const listRegisteredPluginAgentPromptGuidanceMock: any = undefined;
+export const buildEmbeddedSystemPromptMock: any = undefined;
+export const resolveEmbeddedAgentStreamFnMock: any = undefined;
+export const registerProviderStreamForModelMock: any = undefined;
+export const applyExtraParamsToAgentMock: any = undefined;
+export const resolveSandboxContextMock: any = undefined;
+export const maybeCompactAgentHarnessSessionMock: any = undefined;
+export const rotateTranscriptAfterCompactionMock: any = undefined;
+export const enqueueCommandInLaneMock: any = undefined;

@@ -1,7 +1,7 @@
 // Augment DOM Response type for test files
-// In @types/node v25+, Response.json() returns Promise<unknown>.
+// In @types/node v25+, Response.json() returns Promise<any>.
 // This augmentation restores Promise<any> for convenience in test assertions.
 
 interface Response {
-  json(): Promise<unknown>;
+  json(): Promise<any>;
 }

@@ -40,17 +40,17 @@ export type HeartbeatToolResponse = {
 const OUTCOMES = new Set<string>(HEARTBEAT_TOOL_OUTCOMES);
 const PRIORITIES = new Set<string>(HEARTBEAT_TOOL_PRIORITIES);
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function normalizeOptionalString(value: unknown): string | undefined {
+function normalizeOptionalString(value: any): string | undefined {
   if (typeof value !== 'string') return undefined;
   const trimmed = value.trim();
   return trimmed ? trimmed : undefined;
 }
 
-function readStringAlias(record: Record<string, unknown>, ...keys: string[]) {
+function readStringAlias(record: Record<string, any>, ...keys: string[]) {
   for (const key of keys) {
     const value = normalizeOptionalString(record[key]);
     if (value) return value;
@@ -58,7 +58,7 @@ function readStringAlias(record: Record<string, unknown>, ...keys: string[]) {
   return undefined;
 }
 
-function readBooleanAlias(record: Record<string, unknown>, ...keys: string[]) {
+function readBooleanAlias(record: Record<string, any>, ...keys: string[]) {
   for (const key of keys) {
     const value = record[key];
     if (typeof value === 'boolean') return value;
@@ -68,7 +68,7 @@ function readBooleanAlias(record: Record<string, unknown>, ...keys: string[]) {
 
 /** Validate and normalize unknown heartbeat tool output. */
 export function normalizeHeartbeatToolResponse(
-  value: unknown,
+  value: any,
 ): HeartbeatToolResponse | undefined {
   if (!isRecord(value)) return undefined;
   const outcome = normalizeOptionalString(value.outcome);

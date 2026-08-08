@@ -8,16 +8,16 @@ import { vi } from "vitest";
 export type StubTool = {
   name: string;
   description: string;
-  parameters: { type: "object"; properties: Record<string, unknown> };
+  parameters: { type: "object"; properties: Record<string, any> };
   // Keep the exported type portable: don't leak Vitest's mock types into .d.ts.
-  execute: (...args: unknown[]) => unknown;
+  execute: (...args: any[]) => unknown;
 };
 
 export const stubTool = (name: string): StubTool => ({
   name,
   description: `${name} stub`,
   parameters: { type: "object", properties: {} },
-  execute: vi.fn() as unknown as (...args: unknown[]) => unknown,
+  execute: vi.fn() as unknown as (...args: any[]) => unknown,
 });
 
 vi.mock("../tools/image-tool.js", () => ({
@@ -40,7 +40,7 @@ vi.mock("../tools/web-tools.js", () => ({
 vi.mock("../../plugins/tools.js", () => ({
   buildPluginToolMetadataKey: (pluginId: string, toolName: string) =>
     JSON.stringify([pluginId, toolName]),
-  copyPluginToolMeta: (_from: unknown, to: unknown) => to,
+  copyPluginToolMeta: (_from: any, to: any) => to,
   getPluginToolMeta: () => undefined,
   resolvePluginTools: () => [],
 }));

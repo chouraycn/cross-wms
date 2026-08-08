@@ -16,7 +16,7 @@ export type ProviderUsageSnapshot = {
   error?: string;
 };
 
-function parseFiniteNumber(value: unknown): number | undefined {
+function parseFiniteNumber(value: any): number | undefined {
   const n = Number(value);
   return Number.isFinite(n) ? n : undefined;
 }
@@ -62,8 +62,8 @@ export async function fetchMinimaxUsage(
 
     const data = await res.json() as {
       base_resp?: { status_code?: number; status_msg?: string };
-      data?: Record<string, unknown>;
-      [key: string]: unknown;
+      data?: Record<string, any>;
+      [key: string]: any;
     };
 
     if (data.base_resp?.status_code && data.base_resp.status_code !== 0) {
@@ -72,7 +72,7 @@ export async function fetchMinimaxUsage(
 
     const payload = data.data && typeof data.data === "object" ? data.data : data;
     // Simplified: try to find usage percent in the response
-    const usedPercent = deriveSimplifiedUsedPercent(payload as Record<string, unknown>);
+    const usedPercent = deriveSimplifiedUsedPercent(payload as Record<string, any>);
     if (usedPercent === null) {
       return { provider: "minimax", displayName: "MiniMax", windows: [], error: "Unsupported response shape" };
     }
@@ -84,7 +84,7 @@ export async function fetchMinimaxUsage(
   }
 }
 
-function deriveSimplifiedUsedPercent(record: Record<string, unknown>): number | null {
+function deriveSimplifiedUsedPercent(record: Record<string, any>): number | null {
   const percentKeys = ["used_percent", "usedPercent", "used_rate", "usage_rate"];
   for (const key of percentKeys) {
     const val = parseFiniteNumber(record[key]);

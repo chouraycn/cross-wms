@@ -4,7 +4,7 @@ import { sandboxExplainCommand } from "./sandbox-explain.js";
 
 const SANDBOX_EXPLAIN_TEST_TIMEOUT_MS = process.platform === "win32" ? 45_000 : 30_000;
 
-let mockCfg: unknown = {};
+let mockCfg: any = {};
 
 vi.mock("../config/config.js", async () => {
   const actual = await vi.importActual<typeof import("../config/config.js")>("../config/config.js");

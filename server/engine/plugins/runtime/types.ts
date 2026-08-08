@@ -6,25 +6,25 @@ export * from "../types.js";
 
 /** Trusted runtime logger surface (openclaw compat stub). */
 export type RuntimeLogger = {
-  debug?: (message: string, meta?: Record<string, unknown>) => void;
-  info: (message: string, meta?: Record<string, unknown>) => void;
-  warn: (message: string, meta?: Record<string, unknown>) => void;
-  error: (message: string, meta?: Record<string, unknown>) => void;
+  debug?: (message: string, meta?: Record<string, any>) => void;
+  info: (message: string, meta?: Record<string, any>) => void;
+  warn: (message: string, meta?: Record<string, any>) => void;
+  error: (message: string, meta?: Record<string, any>) => void;
 };
 
 /** Trusted in-process runtime surface injected into native plugins (openclaw compat stub). */
 export type PluginRuntime = {
   subagent?: {
-    run?: (params: unknown) => Promise<unknown>;
-    waitForRun?: (params: unknown) => Promise<unknown>;
-    getSessionMessages?: (params: unknown) => Promise<unknown>;
-    deleteSession?: (params: unknown) => Promise<void>;
+    run?: (params: any) => Promise<any>;
+    waitForRun?: (params: any) => Promise<any>;
+    getSessionMessages?: (params: any) => Promise<any>;
+    deleteSession?: (params: any) => Promise<void>;
   };
   nodes?: {
-    list?: (params?: unknown) => Promise<unknown>;
-    invoke?: (params: unknown) => Promise<unknown>;
+    list?: (params?: any) => Promise<any>;
+    invoke?: (params: any) => Promise<any>;
   };
-  channel?: unknown;
+  channel?: any;
   logger?: RuntimeLogger;
-  [key: string]: unknown;
+  [key: string]: any;
 };

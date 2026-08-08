@@ -174,7 +174,7 @@ export function validateConfigWithRegex(configContent: string): SecurityFinding[
 
 export function validateConfigValue(
   key: string,
-  value: unknown,
+  value: any,
 ): SecurityFinding[] {
   const findings: SecurityFinding[] = [];
   const stringValue = String(value);

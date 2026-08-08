@@ -12,7 +12,7 @@ import { isRecord } from "../shared/safe-record.js";
 
 export type ChannelAccountEntry = {
   accountId: string;
-  account: Record<string, unknown>;
+  account: Record<string, any>;
   enabled: boolean;
 };
 
@@ -28,9 +28,9 @@ export type ChannelAccountPredicate = (entry: ChannelAccountEntry) => boolean;
 
 /** Reads a channel config block when it exists as an object. */
 export function getChannelRecord(
-  config: { channels?: Record<string, unknown> },
+  config: { channels?: Record<string, any> },
   channelKey: string,
-): Record<string, unknown> | undefined {
+): Record<string, any> | undefined {
   const channels = config.channels;
   if (!isRecord(channels)) {
     return undefined;
@@ -41,9 +41,9 @@ export function getChannelRecord(
 
 /** Reads a channel config and its resolved account surface in one step. */
 export function getChannelSurface(
-  config: { channels?: Record<string, unknown> },
+  config: { channels?: Record<string, any> },
   channelKey: string,
-): { channel: Record<string, unknown>; surface: ChannelAccountSurface } | null {
+): { channel: Record<string, any>; surface: ChannelAccountSurface } | null {
   const channel = getChannelRecord(config, channelKey);
   if (!channel) {
     return null;
@@ -56,7 +56,7 @@ export function getChannelSurface(
 
 /** Resolves explicit channel accounts or creates a default account backed by the channel root. */
 export function resolveChannelAccountSurface(
-  channel: Record<string, unknown>,
+  channel: Record<string, any>,
 ): ChannelAccountSurface {
   const channelEnabled = isEnabledFlag(channel);
   const accounts = channel.accounts;
@@ -102,13 +102,13 @@ export function isBaseFieldActiveForChannelSurface(
 }
 
 /** Normalizes optional channel secret strings before deciding whether a value is configured. */
-export function normalizeSecretStringValue(value: unknown): string {
+export function normalizeSecretStringValue(value: any): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
 /** Returns true when a channel value contains plaintext or a SecretRef-compatible value. */
 export function hasConfiguredSecretInputValue(
-  value: unknown,
+  value: any,
   defaults: SecretDefaults | undefined,
 ): boolean {
   return normalizeSecretStringValue(value).length > 0 || coerceSecretRef(value, defaults) !== null;
@@ -119,7 +119,7 @@ export function hasConfiguredSecretInputValue(
 export function collectSimpleChannelFieldAssignments(params: {
   channelKey: string;
   field: string;
-  channel: Record<string, unknown>;
+  channel: Record<string, any>;
   surface: ChannelAccountSurface;
   defaults: SecretDefaults | undefined;
   context: ResolverContext;
@@ -178,7 +178,7 @@ function isConditionalTopLevelFieldActive(params: {
 export function collectConditionalChannelFieldAssignments(params: {
   channelKey: string;
   field: string;
-  channel: Record<string, unknown>;
+  channel: Record<string, any>;
   surface: ChannelAccountSurface;
   defaults: SecretDefaults | undefined;
   context: ResolverContext;
@@ -234,7 +234,7 @@ export function collectNestedChannelFieldAssignments(params: {
   channelKey: string;
   nestedKey: string;
   field: string;
-  channel: Record<string, unknown>;
+  channel: Record<string, any>;
   surface: ChannelAccountSurface;
   defaults: SecretDefaults | undefined;
   context: ResolverContext;

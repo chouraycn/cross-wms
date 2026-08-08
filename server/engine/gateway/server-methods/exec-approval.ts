@@ -165,7 +165,7 @@ export function createExecApprovalHandlers(
         commandArgv?: string[];
         env?: Record<string, string>;
         cwd?: string;
-        systemRunPlan?: unknown;
+        systemRunPlan?: any;
         nodeId?: string;
         host?: string;
         security?: string;
@@ -376,7 +376,7 @@ export function createExecApprovalHandlers(
           const deliveryTasks: Array<Promise<boolean>> = [];
           if (opts?.forwarder) {
             deliveryTasks.push(
-              opts.forwarder.handleRequested(requestEvent).catch((err: unknown) => {
+              opts.forwarder.handleRequested(requestEvent).catch((err: any) => {
                 context.logGateway?.error?.(
                   `exec approvals: forward request failed: ${String(err)}`,
                 );
@@ -400,7 +400,7 @@ export function createExecApprovalHandlers(
                       } as GatewayClient,
                     }),
                 })
-                .catch((err: unknown) => {
+                .catch((err: any) => {
                   context.logGateway?.error?.(
                     `exec approvals: iOS push request failed: ${String(err)}`,
                   );

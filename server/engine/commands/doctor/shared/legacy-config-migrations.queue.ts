@@ -8,17 +8,17 @@ import {
 
 const RETIRED_QUEUE_MODES = new Set(["queue", "steer-backlog", "steer+backlog"]);
 
-function isRetiredQueueMode(value: unknown): value is string {
+function isRetiredQueueMode(value: any): value is string {
   return typeof value === "string" && RETIRED_QUEUE_MODES.has(value);
 }
 
-function hasRetiredQueueModeByChannel(value: unknown): boolean {
+function hasRetiredQueueModeByChannel(value: any): boolean {
   const byChannel = getRecord(value);
   return Boolean(byChannel && Object.values(byChannel).some(isRetiredQueueMode));
 }
 
 function migrateQueueMode(params: {
-  owner: Record<string, unknown>;
+  owner: Record<string, any>;
   key: string;
   path: string;
   changes: string[];

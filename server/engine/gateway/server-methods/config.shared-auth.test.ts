@@ -32,7 +32,7 @@ vi.mock("../../config/config.js", async () => {
     ...actual,
     createConfigIO: () => ({ configPath: "/tmp/openclaw.json" }),
     writeConfigFile: writeConfigFileMock,
-    replaceConfigFile: async (params: { nextConfig: OpenClawConfig; writeOptions?: unknown }) => {
+    replaceConfigFile: async (params: { nextConfig: OpenClawConfig; writeOptions?: any }) => {
       await writeConfigFileMock(params.nextConfig, params.writeOptions);
       const persistedConfig = persistedConfigResultMock(params.nextConfig);
       return {
@@ -147,7 +147,7 @@ function mockPreviousConfig(config: OpenClawConfig): void {
 }
 
 async function runConfigPatch(
-  raw: unknown,
+  raw: any,
   params: { sessionKey?: string; restartDelayMs?: number; replacePaths?: string[] } = {},
 ) {
   const { options, disconnectClientsUsingSharedGatewayAuth } = createConfigHandlerHarness({

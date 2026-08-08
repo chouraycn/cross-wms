@@ -14,7 +14,7 @@ function formatTomlKey(key: string): string {
 }
 
 /** Serialize a supported value into TOML inline syntax. */
-export function serializeTomlInlineValue(value: unknown): string {
+export function serializeTomlInlineValue(value: any): string {
   if (typeof value === "string") {
     return `"${escapeTomlString(value)}"`;
   }
@@ -38,6 +38,6 @@ export function serializeTomlInlineValue(value: unknown): string {
 }
 
 /** Format one CLI config override as `key=value`. */
-export function formatTomlConfigOverride(key: string, value: unknown): string {
+export function formatTomlConfigOverride(key: string, value: any): string {
   return `${key}=${serializeTomlInlineValue(value)}`;
 }

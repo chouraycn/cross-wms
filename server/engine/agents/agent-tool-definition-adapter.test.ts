@@ -50,7 +50,7 @@ async function executeTool(tool: AgentTool, callId: string) {
 
 describe("agent tool definition adapter", () => {
   it("preserves argument preparation and execution mode contracts", () => {
-    const prepareArguments = vi.fn((args: unknown) => args as Record<string, never>);
+    const prepareArguments = vi.fn((args: any) => args as Record<string, never>);
     const tool = {
       name: "serial_tool",
       label: "Serial Tool",
@@ -136,7 +136,7 @@ describe("agent tool definition adapter", () => {
   });
 
   it("does not re-run hook preparation for an already wrapped tool", async () => {
-    const prepareBeforeToolCallParams = vi.fn((params: unknown) => params);
+    const prepareBeforeToolCallParams = vi.fn((params: any) => params);
     const execute = vi.fn(async () => ({
       content: [{ type: "text" as const, text: "done" }],
       details: {},
@@ -180,11 +180,11 @@ function makeClientTool(name: string): ClientToolDefinition {
   };
 }
 
-async function executeClientTool(params: unknown): Promise<{
-  calledWith: Record<string, unknown> | undefined;
+async function executeClientTool(params: any): Promise<{
+  calledWith: Record<string, any> | undefined;
   result: Awaited<ReturnType<ToolExecute>>;
 }> {
-  let captured: Record<string, unknown> | undefined;
+  let captured: Record<string, any> | undefined;
   const [def] = toClientToolDefinitions([makeClientTool("search")], (_name, p) => {
     captured = p;
   });
@@ -197,7 +197,7 @@ async function executeClientTool(params: unknown): Promise<{
 
 describe("toClientToolDefinitions – param coercion", () => {
   it("returns terminal pending results for each client tool in a batch", async () => {
-    const completed: Array<{ id: string; name: string; params: Record<string, unknown> }> = [];
+    const completed: Array<{ id: string; name: string; params: Record<string, any> }> = [];
     const defs = toClientToolDefinitions([makeClientTool("search"), makeClientTool("lookup")], {
       complete: (id, name, params) => {
         completed.push({ id, name, params });

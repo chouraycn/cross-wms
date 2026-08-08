@@ -25,7 +25,7 @@ type GatewayMethodRegistry = ReturnType<typeof getMethodRegistry>;
 
 // ========== Exec Approvals List ==========
 
-async function execApprovalsList(_params: unknown, _ctx: GatewayMethodContext) {
+async function execApprovalsList(_params: any, _ctx: GatewayMethodContext) {
   const pending = listPendingApprovals();
 
   return {
@@ -37,7 +37,7 @@ async function execApprovalsList(_params: unknown, _ctx: GatewayMethodContext) {
 
 // ========== Exec Approvals Approve ==========
 
-async function execApprovalsApprove(params: unknown, _ctx: GatewayMethodContext) {
+async function execApprovalsApprove(params: any, _ctx: GatewayMethodContext) {
   const { approvalId, resolvedBy } = params as {
     approvalId: string;
     resolvedBy?: string;
@@ -66,7 +66,7 @@ async function execApprovalsApprove(params: unknown, _ctx: GatewayMethodContext)
 
 // ========== Exec Approvals Deny ==========
 
-async function execApprovalsDeny(params: unknown, _ctx: GatewayMethodContext) {
+async function execApprovalsDeny(params: any, _ctx: GatewayMethodContext) {
   const { approvalId, resolvedBy } = params as {
     approvalId: string;
     resolvedBy?: string;
@@ -95,7 +95,7 @@ async function execApprovalsDeny(params: unknown, _ctx: GatewayMethodContext) {
 
 // ========== Exec Approvals Get Policy ==========
 
-async function execApprovalsGetPolicy(params: unknown, _ctx: GatewayMethodContext) {
+async function execApprovalsGetPolicy(params: any, _ctx: GatewayMethodContext) {
   const { action = 'get' } = params as {
     action?: 'get' | 'add' | 'remove';
     rule?: ExecApprovalRule;

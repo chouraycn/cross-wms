@@ -32,7 +32,7 @@ export function initSentry(): void {
 }
 
 /** Capture an error with optional context */
-export function captureException(error: Error, context?: Record<string, unknown>): void {
+export function captureException(error: Error, context?: Record<string, any>): void {
   if (!initialized) return;
   Sentry.captureException(error, { extra: context });
 }

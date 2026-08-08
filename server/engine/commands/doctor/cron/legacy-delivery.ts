@@ -7,7 +7,7 @@ import {
   parseOptionalField,
 } from "@openclaw-src/cron/delivery-field-schemas.js";
 
-function parseLegacyDeliveryHintsInput(payload: Record<string, unknown>) {
+function parseLegacyDeliveryHintsInput(payload: Record<string, any>) {
   return {
     deliver: parseOptionalField(z.boolean(), payload.deliver),
     bestEffortDeliver: parseOptionalField(z.boolean(), payload.bestEffortDeliver),
@@ -22,7 +22,7 @@ function parseLegacyDeliveryHintsInput(payload: Record<string, unknown>) {
 }
 
 /** Return true when a payload still carries legacy delivery hint fields. */
-export function hasLegacyDeliveryHints(payload: Record<string, unknown>) {
+export function hasLegacyDeliveryHints(payload: Record<string, any>) {
   const hints = parseLegacyDeliveryHintsInput(payload);
   return (
     hints.deliver !== undefined ||
@@ -36,11 +36,11 @@ export function hasLegacyDeliveryHints(payload: Record<string, unknown>) {
 
 /** Build a new delivery object from legacy top-level payload delivery fields. */
 export function buildDeliveryFromLegacyPayload(
-  payload: Record<string, unknown>,
-): Record<string, unknown> {
+  payload: Record<string, any>,
+): Record<string, any> {
   const hints = parseLegacyDeliveryHintsInput(payload);
   const mode = hints.deliver === false ? "none" : "announce";
-  const next: Record<string, unknown> = { mode };
+  const next: Record<string, any> = { mode };
   if (hints.channel ?? hints.provider) {
     next.channel = hints.channel ?? hints.provider;
   }
@@ -57,9 +57,9 @@ export function buildDeliveryFromLegacyPayload(
 }
 
 /** Build a partial delivery patch from legacy payload fields, or null when none exist. */
-export function buildDeliveryPatchFromLegacyPayload(payload: Record<string, unknown>) {
+export function buildDeliveryPatchFromLegacyPayload(payload: Record<string, any>) {
   const hints = parseLegacyDeliveryHintsInput(payload);
-  const next: Record<string, unknown> = {};
+  const next: Record<string, any> = {};
   let hasPatch = false;
 
   if (hints.deliver === false) {
@@ -98,8 +98,8 @@ export function buildDeliveryPatchFromLegacyPayload(payload: Record<string, unkn
 
 /** Merge legacy payload delivery hints into an existing delivery object. */
 export function mergeLegacyDeliveryInto(
-  delivery: Record<string, unknown>,
-  payload: Record<string, unknown>,
+  delivery: Record<string, any>,
+  payload: Record<string, any>,
 ) {
   const patch = buildDeliveryPatchFromLegacyPayload(payload);
   if (!patch) {
@@ -135,8 +135,8 @@ export function mergeLegacyDeliveryInto(
 
 /** Normalize delivery and strip consumed legacy delivery fields from the payload. */
 export function normalizeLegacyDeliveryInput(params: {
-  delivery?: Record<string, unknown> | null;
-  payload?: Record<string, unknown> | null;
+  delivery?: Record<string, any> | null;
+  payload?: Record<string, any> | null;
 }) {
   if (!params.payload || !hasLegacyDeliveryHints(params.payload)) {
     return {
@@ -158,7 +158,7 @@ export function normalizeLegacyDeliveryInput(params: {
   };
 }
 
-function stripLegacyDeliveryFields(payload: Record<string, unknown>) {
+function stripLegacyDeliveryFields(payload: Record<string, any>) {
   if ("deliver" in payload) {
     delete payload.deliver;
   }

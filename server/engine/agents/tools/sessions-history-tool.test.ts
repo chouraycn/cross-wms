@@ -12,7 +12,7 @@ let createSessionsHistoryTool: typeof import("./sessions-history-tool.js").creat
 let previousConfigPath: string | undefined;
 let tempDir: string | undefined;
 
-function useLoggingConfig(name: string, logging: Record<string, unknown>): void {
+function useLoggingConfig(name: string, logging: Record<string, any>): void {
   if (!tempDir) {
     throw new Error("tempDir not initialized");
   }
@@ -24,7 +24,7 @@ function useLoggingConfig(name: string, logging: Record<string, unknown>): void 
 function createHistoryToolWithMessage(content: string) {
   return createSessionsHistoryTool({
     config: {},
-    callGateway: async <T = Record<string, unknown>>(request: CallGatewayRequest): Promise<T> => {
+    callGateway: async <T = Record<string, any>>(request: CallGatewayRequest): Promise<T> => {
       if (request.method === "chat.history") {
         return {
           messages: [
@@ -70,7 +70,7 @@ describe("sessions_history redaction", () => {
 
     expect(serialized).not.toContain("sk-or-v1-abcdef0123456789");
     expect(serialized).toContain("OPENROUTER_API_KEY=");
-    expect((result.details as { contentRedacted?: unknown }).contentRedacted).toBe(true);
+    expect((result.details as { contentRedacted?: any }).contentRedacted).toBe(true);
   });
 
   it("applies custom redaction patterns to recalled session text", async () => {
@@ -85,7 +85,7 @@ describe("sessions_history redaction", () => {
 
     expect(serialized).not.toContain("internal-ticket-AbC12345");
     expect(serialized).toContain("intern");
-    expect((result.details as { contentRedacted?: unknown }).contentRedacted).toBe(true);
+    expect((result.details as { contentRedacted?: any }).contentRedacted).toBe(true);
   });
 
   it.each([0, 1.5])("rejects invalid limit value %s", async (limit) => {

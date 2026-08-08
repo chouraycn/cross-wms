@@ -283,7 +283,7 @@ function listCapabilityTriggerReasons(
         plugin.activation?.onCapabilities?.includes(capability)
           ? "activation-capability-hint"
           : null,
-        hasValues((plugin as typeof plugin & { hooks?: readonly unknown[] }).hooks) ? "manifest-hook-owner" : null,
+        hasValues((plugin as typeof plugin & { hooks?: readonly any[] }).hooks) ? "manifest-hook-owner" : null,
       ]);
   }
   const unreachableCapability: never = capability;
@@ -298,7 +298,7 @@ function listHasNormalizedValue(
   return values?.some((value) => normalize(value) === expected) ?? false;
 }
 
-function hasValues(values: readonly unknown[] | undefined): boolean {
+function hasValues(values: readonly any[] | undefined): boolean {
   return (values?.length ?? 0) > 0;
 }
 

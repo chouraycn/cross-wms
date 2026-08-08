@@ -107,8 +107,8 @@ type QueuedSessionRun = {
 const LIFECYCLE_ERROR_RETRY_GRACE_MS = 15_000;
 
 const silentRuntime = {
-  log: (..._args: unknown[]) => undefined,
-  error: (..._args: unknown[]) => undefined,
+  log: (..._args: any[]) => undefined,
+  error: (..._args: any[]) => undefined,
   exit: (code: number): never => {
     throw new Error(`embedded tui runtime exit ${String(code)}`);
   },
@@ -175,7 +175,7 @@ function resolveBtwQuestion(message: string): string | undefined {
   return question ? question : undefined;
 }
 
-function payloadText(parts: unknown): string {
+function payloadText(parts: any): string {
   if (!Array.isArray(parts)) {
     return "";
   }
@@ -184,7 +184,7 @@ function payloadText(parts: unknown): string {
       if (!part || typeof part !== "object") {
         return "";
       }
-      const payload = part as { text?: unknown };
+      const payload = part as { text?: any };
       return typeof payload.text === "string" ? payload.text.trim() : "";
     })
     .filter(Boolean)
@@ -841,7 +841,7 @@ export class EmbeddedTuiBackend implements TuiBackend {
     return this.seq;
   }
 
-  private emit(event: string, payload: unknown) {
+  private emit(event: string, payload: any) {
     this.onEvent?.({
       event,
       payload,

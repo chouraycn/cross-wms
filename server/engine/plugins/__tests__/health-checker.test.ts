@@ -114,9 +114,9 @@ describe('plugins/health-checker', () => {
 
     it('重复调用 start 不重启定时器', () => {
       startHealthCheckLoop({ intervalMs: 1000 });
-      const firstTimer = (runHealthCheck as unknown as { _timer?: unknown })._timer;
+      const firstTimer = (runHealthCheck as unknown as { _timer?: any })._timer;
       startHealthCheckLoop({ intervalMs: 1000 });
-      const secondTimer = (runHealthCheck as unknown as { _timer?: unknown })._timer;
+      const secondTimer = (runHealthCheck as unknown as { _timer?: any })._timer;
       // 没有公开 timer 字段，只能通过 stop 后不报错来验证
       stopHealthCheckLoop();
       expect(firstTimer).toBeUndefined();

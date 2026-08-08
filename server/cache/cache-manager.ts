@@ -26,7 +26,7 @@ export interface CacheManagerStats {
 }
 
 type CacheNamespace = {
-  cache: LRUCache<unknown>;
+  cache: LRUCache<any>;
   options: Required<CacheOptions>;
 };
 
@@ -49,7 +49,7 @@ class CacheManager {
       };
 
       namespace = {
-        cache: new LRUCache<T>(mergedOptions) as LRUCache<unknown>,
+        cache: new LRUCache<T>(mergedOptions) as LRUCache<any>,
         options: mergedOptions,
       };
 
@@ -161,28 +161,28 @@ export const CACHE_NAMESPACES = {
 export type CacheNamespaceName = typeof CACHE_NAMESPACES[keyof typeof CACHE_NAMESPACES];
 
 // 便捷方法
-export function getPluginCache(): LRUCache<unknown> {
+export function getPluginCache(): LRUCache<any> {
   return cacheManager.getCache(CACHE_NAMESPACES.PLUGINS, {
     maxSize: 500,
     defaultTTL: 10 * 60 * 1000,
   });
 }
 
-export function getModelCache(): LRUCache<unknown> {
+export function getModelCache(): LRUCache<any> {
   return cacheManager.getCache(CACHE_NAMESPACES.MODELS, {
     maxSize: 200,
     defaultTTL: 30 * 60 * 1000,
   });
 }
 
-export function getMemoryCache(): LRUCache<unknown> {
+export function getMemoryCache(): LRUCache<any> {
   return cacheManager.getCache(CACHE_NAMESPACES.MEMORY, {
     maxSize: 1000,
     defaultTTL: 5 * 60 * 1000,
   });
 }
 
-export function getEmbeddingCache(): LRUCache<unknown> {
+export function getEmbeddingCache(): LRUCache<any> {
   return cacheManager.getCache(CACHE_NAMESPACES.EMBEDDINGS, {
     maxSize: 10000,
     defaultTTL: 60 * 60 * 1000,

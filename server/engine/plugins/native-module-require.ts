@@ -34,7 +34,7 @@ export function isJavaScriptModulePath(modulePath: string): boolean {
 }
 
 function isMissingTargetModuleError(
-  error: { code?: unknown; message?: unknown },
+  error: { code?: any; message?: any },
   modulePath: string,
 ): boolean {
   if (error.code !== "MODULE_NOT_FOUND" || typeof error.message !== "string") {
@@ -44,11 +44,11 @@ function isMissingTargetModuleError(
   return firstLine.includes(`'${modulePath}'`) || firstLine.includes(`"${modulePath}"`);
 }
 
-function isSourceTransformFallbackError(error: unknown, modulePath: string): boolean {
+function isSourceTransformFallbackError(error: any, modulePath: string): boolean {
   if (!error || typeof error !== "object") {
     return false;
   }
-  const candidate = error as { code?: unknown; message?: unknown };
+  const candidate = error as { code?: any; message?: any };
   const code = candidate.code;
   return (
     code === "ERR_REQUIRE_ESM" ||
@@ -66,7 +66,7 @@ export function tryNativeRequireJavaScriptModule(
     fallbackOnMissingDependency?: boolean;
     fallbackOnNativeError?: boolean;
   } = {},
-): { ok: true; moduleExport: unknown } | { ok: false } {
+): { ok: true; moduleExport: any } | { ok: false } {
   if (process.platform === "win32" && options.allowWindows !== true) {
     return { ok: false };
   }
@@ -77,7 +77,7 @@ export function tryNativeRequireJavaScriptModule(
     return { ok: true, moduleExport: requireWithOptionalAliases(modulePath, options.aliasMap) };
   } catch (error) {
     const code =
-      error && typeof error === "object" ? (error as { code?: unknown }).code : undefined;
+      error && typeof error === "object" ? (error as { code?: any }).code : undefined;
     if (
       isSourceTransformFallbackError(error, modulePath) ||
       options.fallbackOnNativeError ||
@@ -146,7 +146,7 @@ function isPathInsideOrSame(root: string, target: string): boolean {
 function requireWithOptionalAliases(
   modulePath: string,
   aliasMap: Record<string, string> | undefined,
-): unknown {
+): any {
   return withNativeRequireAliases(aliasMap, () => nodeRequire(modulePath));
 }
 

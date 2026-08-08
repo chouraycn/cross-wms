@@ -67,7 +67,7 @@ export function createWeChatWorkChannelPlugin(): ChannelPlugin {
 
   const weChatWorkChannelConfig: ChannelConfigAdapter<WeChatWorkAccountConfig> = {
     listAccountIds: (config: AppConfig): ChannelId[] => {
-      const weChatWorkConfig = config.wechatwork as Record<string, unknown>;
+      const weChatWorkConfig = config.wechatwork as Record<string, any>;
       if (weChatWorkConfig && weChatWorkConfig.corpId && weChatWorkConfig.corpSecret) {
         return [WECHATWORK_CHANNEL_ID];
       }
@@ -75,7 +75,7 @@ export function createWeChatWorkChannelPlugin(): ChannelPlugin {
     },
     resolveAccount: (config: AppConfig, accountId: ChannelId): WeChatWorkAccountConfig | null => {
       if (accountId !== WECHATWORK_CHANNEL_ID) return null;
-      const weChatWorkConfig = config.wechatwork as Record<string, unknown>;
+      const weChatWorkConfig = config.wechatwork as Record<string, any>;
       if (weChatWorkConfig && weChatWorkConfig.corpId && weChatWorkConfig.corpSecret) {
         return {
           corpId: String(weChatWorkConfig.corpId),
@@ -110,7 +110,7 @@ export function createWeChatWorkChannelPlugin(): ChannelPlugin {
           const token = await getAccessToken(account);
           const rendered = await ctx.render();
           const text = rendered.parts
-            .map((p: { content: unknown }) => String(p.content))
+            .map((p: { content: any }) => String(p.content))
             .join("\n");
 
           const response = await fetch("https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=" + token, {

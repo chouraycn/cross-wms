@@ -126,12 +126,12 @@ function createLongRunningReadinessHarness(
 
 function readySnapshot(
   uptimeMs = FIVE_MIN_MS,
-  extra: Record<string, unknown> = {},
-): Record<string, unknown> {
+  extra: Record<string, any> = {},
+): Record<string, any> {
   return { ready: true, failing: [], uptimeMs, ...extra };
 }
 
-function failingSnapshot(failing: string[], uptimeMs = FIVE_MIN_MS): Record<string, unknown> {
+function failingSnapshot(failing: string[], uptimeMs = FIVE_MIN_MS): Record<string, any> {
   return { ready: false, failing, uptimeMs };
 }
 

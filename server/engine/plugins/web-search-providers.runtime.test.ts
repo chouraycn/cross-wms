@@ -58,7 +58,7 @@ const EXPECTED_BUNDLED_RUNTIME_WEB_SEARCH_PROVIDER_KEYS = [
 ] as const;
 
 function buildMockedWebSearchProviders(params?: {
-  config?: { plugins?: Record<string, unknown> };
+  config?: { plugins?: Record<string, any> };
 }) {
   const plugins = params?.config?.plugins as
     | {
@@ -121,7 +121,7 @@ function createWebSearchEnv(overrides?: Partial<NodeJS.ProcessEnv>) {
 }
 
 function createSnapshotParams(params?: {
-  config?: { plugins?: Record<string, unknown> };
+  config?: { plugins?: Record<string, any> };
   env?: NodeJS.ProcessEnv;
   workspaceDir?: string;
 }) {
@@ -209,17 +209,17 @@ function expectLoaderCallCount(count: number) {
   expect(loadOpenClawPluginsMock).toHaveBeenCalledTimes(count);
 }
 
-function requireRecord(value: unknown): Record<string, unknown> {
+function requireRecord(value: any): Record<string, any> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("Expected a non-array record");
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 function requireLastCallFirstArg(
-  mock: { mock: { calls: readonly (readonly unknown[])[] } },
+  mock: { mock: { calls: readonly (readonly any[])[] } },
   label: string,
-): Record<string, unknown> {
+): Record<string, any> {
   const calls = mock.mock.calls;
   const call = calls[calls.length - 1];
   if (!call) {
@@ -228,7 +228,7 @@ function requireLastCallFirstArg(
   return requireRecord(call[0]);
 }
 
-function requirePluginsConfig(params: Record<string, unknown>): Record<string, unknown> {
+function requirePluginsConfig(params: Record<string, any>): Record<string, any> {
   const config = requireRecord(params.config);
   return requireRecord(config.plugins);
 }
@@ -241,7 +241,7 @@ function expectScopedWebSearchCandidates(pluginIds: readonly string[]) {
 }
 
 function expectAutoEnabledWebSearchLoad(params: {
-  rawConfig: { plugins?: Record<string, unknown> };
+  rawConfig: { plugins?: Record<string, any> };
   expectedAllow: readonly string[];
 }) {
   expect(applyPluginAutoEnableSpy).toHaveBeenCalledWith({
@@ -254,7 +254,7 @@ function expectAutoEnabledWebSearchLoad(params: {
 }
 
 function expectSnapshotLoaderCalls(params: {
-  config: { plugins?: Record<string, unknown> };
+  config: { plugins?: Record<string, any> };
   env: NodeJS.ProcessEnv;
   mutate: () => void;
   expectedLoaderCalls: number;

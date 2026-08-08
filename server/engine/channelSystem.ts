@@ -21,7 +21,7 @@ export interface ChannelConfig {
   name: string;
   enabled: boolean;
   credentials: Record<string, string>;
-  options?: Record<string, unknown>;
+  options?: Record<string, any>;
 }
 
 /** 通道消息 */
@@ -32,7 +32,7 @@ export interface ChannelMessage {
   direction: 'inbound' | 'outbound';
   content: string;
   contentType?: 'text' | 'markdown' | 'json';
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
   timestamp: string;
 }
 

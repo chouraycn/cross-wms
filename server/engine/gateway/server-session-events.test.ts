@@ -10,10 +10,10 @@ const sessionRow = vi.hoisted(() => ({
 
 vi.mock("../config/io.js", () => ({ getRuntimeConfig: () => ({}) }));
 vi.mock("./chat-display-projection.js", () => ({
-  projectChatDisplayMessage: (message: unknown) => message,
+  projectChatDisplayMessage: (message: any) => message,
 }));
 vi.mock("./session-utils.js", () => ({
-  attachOpenClawTranscriptMeta: (message: unknown) => message,
+  attachOpenClawTranscriptMeta: (message: any) => message,
   loadGatewaySessionRow: () => sessionRow,
   loadSessionEntry: () => ({ entry: undefined, storePath: "" }),
   readSessionMessageCountAsync: vi.fn(),

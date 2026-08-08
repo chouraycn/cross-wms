@@ -1,12 +1,12 @@
 // 移植自 openclaw/src/config/redact-snapshot.ts
 
-export function redactConfigObject(...args: unknown[]): unknown {
+export function redactConfigObject(...args: any[]): any {
   return undefined;
 }
-export function redactConfigSnapshot(...args: unknown[]): unknown {
+export function redactConfigSnapshot(...args: any[]): any {
   return undefined;
 }
-export function restoreRedactedValues(...args: unknown[]): unknown {
+export function restoreRedactedValues(...args: any[]): any {
   return undefined;
 }
-export const REDACTED_SENTINEL: unknown = undefined as unknown;
+export const REDACTED_SENTINEL: any = undefined as any;

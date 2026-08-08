@@ -125,7 +125,7 @@ export function createStableAudioProvider(
       const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
       try {
-        const body: Record<string, unknown> = {
+        const body: Record<string, any> = {
           model,
           prompt: req.prompt,
           duration: durationSeconds,

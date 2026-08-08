@@ -50,7 +50,7 @@ const gpt54Model = {
 } as const;
 
 function expectExtraParams(
-  extraParams: Record<string, unknown> | undefined,
+  extraParams: Record<string, any> | undefined,
   expected: {
     parallelToolCalls: boolean;
     textVerbosity: string;
@@ -61,28 +61,28 @@ function expectExtraParams(
 }
 
 function latestFollowupRouteCall(): {
-  provider?: unknown;
-  runtimeHandle?: Record<string, unknown>;
-  context?: Record<string, unknown>;
+  provider?: any;
+  runtimeHandle?: Record<string, any>;
+  context?: Record<string, any>;
 } {
   const call = vi.mocked(resolveProviderFollowupFallbackRoute).mock.calls.at(-1)?.[0];
   if (!call || typeof call !== "object") {
     throw new Error("expected follow-up route call");
   }
   const record = call as {
-    provider?: unknown;
-    runtimeHandle?: unknown;
-    context?: unknown;
+    provider?: any;
+    runtimeHandle?: any;
+    context?: any;
   };
   return {
     provider: record.provider,
     runtimeHandle:
       record.runtimeHandle && typeof record.runtimeHandle === "object"
-        ? (record.runtimeHandle as Record<string, unknown>)
+        ? (record.runtimeHandle as Record<string, any>)
         : undefined,
     context:
       record.context && typeof record.context === "object"
-        ? (record.context as Record<string, unknown>)
+        ? (record.context as Record<string, any>)
         : undefined,
   };
 }

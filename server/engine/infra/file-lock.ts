@@ -42,7 +42,7 @@ export async function acquireFileLock(
           try { await unlink(lockPath); } catch { /* already released */ }
         },
       };
-    } catch (err: unknown) {
+    } catch (err: any) {
       if ((err as NodeJS.ErrnoException)?.code !== 'EEXIST') throw err;
     }
     await new Promise(resolve => setTimeout(resolve, pollIntervalMs));

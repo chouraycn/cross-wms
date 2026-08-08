@@ -13,9 +13,9 @@ export type YieldType = 'progress' | 'message' | 'artifact' | 'final';
 
 export interface YieldOutput {
   type: YieldType;
-  content: unknown;
+  content: any;
   timestamp: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface YieldOptions {
@@ -28,7 +28,7 @@ const yieldOutputs = new Map<string, YieldOutput[]>();
 export function yieldOutput(
   instanceId: string,
   type: YieldType,
-  content: unknown,
+  content: any,
   options: YieldOptions = {},
 ): boolean {
   const instance = getActiveSubagent(instanceId);
@@ -84,7 +84,7 @@ export function clearYieldOutputs(instanceId: string): void {
 
 export function completeWithYield(
   instanceId: string,
-  result: unknown,
+  result: any,
   options: YieldOptions = {},
 ): boolean {
   const instance = getActiveSubagent(instanceId);

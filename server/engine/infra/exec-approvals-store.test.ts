@@ -8,7 +8,7 @@ import { makeTempDir } from "./exec-approvals-test-helpers.js";
 const requestJsonlSocketMock = vi.hoisted(() => vi.fn());
 
 vi.mock("./jsonl-socket.js", () => ({
-  requestJsonlSocket: (...args: unknown[]) => requestJsonlSocketMock(...args),
+  requestJsonlSocket: (...args: any[]) => requestJsonlSocketMock(...args),
 }));
 
 import type { ExecApprovalsFile } from "./exec-approvals.js";
@@ -98,21 +98,21 @@ function listExecApprovalTempFiles(homeDir: string): string[] {
   return fs.readdirSync(dir).filter((name) => name.endsWith(".tmp"));
 }
 
-function requireRecord(value: unknown): Record<string, unknown> {
+function requireRecord(value: any): Record<string, any> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("Expected a non-array record");
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function allowlistEntries(homeDir: string, agentId: string): Record<string, unknown>[] {
+function allowlistEntries(homeDir: string, agentId: string): Record<string, any>[] {
   const file = readApprovalsFile(homeDir);
   return (file.agents?.[agentId]?.allowlist ?? []).map((entry) => requireRecord(entry));
 }
 
 function expectAllowlistEntryFields(
-  entry: Record<string, unknown>,
-  fields: Record<string, unknown>,
+  entry: Record<string, any>,
+  fields: Record<string, any>,
 ): void {
   for (const [key, value] of Object.entries(fields)) {
     expect(entry[key]).toEqual(value);

@@ -8,7 +8,7 @@ export type GatewayRole = 'operator' | 'node';
 
 export const GATEWAY_ROLES: GatewayRole[] = ['operator', 'node'];
 
-export function parseGatewayRole(roleRaw: unknown): GatewayRole | null {
+export function parseGatewayRole(roleRaw: any): GatewayRole | null {
   if (roleRaw === 'operator' || roleRaw === 'node') {
     return roleRaw;
   }

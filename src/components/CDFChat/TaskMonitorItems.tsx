@@ -82,7 +82,7 @@ const getEventSourceLabel = (source: string): string => {
 
 const getEventDescription = (evt: ApiTrajectoryEvent): string => {
   try {
-    const data = evt.data as Record<string, unknown> | null;
+    const data = evt.data as Record<string, any> | null;
     if (!data) return evt.type;
     if (evt.type === 'llm_request') {
       const model = (data.model as string) || evt.modelId || '未知模型';
@@ -118,7 +118,7 @@ const formatTime = (ts: string): string => {
 
 const formatDateTime = (ts: string): string => new Date(ts).toLocaleString('zh-CN');
 
-const formatJson = (value: unknown): string => {
+const formatJson = (value: any): string => {
   try {
     if (typeof value === 'string') {
       try { return JSON.stringify(JSON.parse(value), null, 2); } catch { return value; }
@@ -289,13 +289,13 @@ export const TodoItem: React.FC<TodoItemProps> = React.memo(({
         </Tooltip>
       )}
       <Checkbox
-        checked={doneStatuses.includes(todo.status as unknown)}
+        checked={doneStatuses.includes(todo.status as any)}
         onChange={(e) => { e.stopPropagation(); onToggleTodo(todo.id); }}
         size="small"
-        sx={{ padding: 0.25, color: doneStatuses.includes(todo.status as unknown) ? '#22c55e' : gs.textMuted, '& .MuiSvgIcon-root': { fontSize: 16 }, transition: 'transform 0.2s', transform: isCompleting ? 'scale(1.2)' : 'scale(1)' }}
+        sx={{ padding: 0.25, color: doneStatuses.includes(todo.status as any) ? '#22c55e' : gs.textMuted, '& .MuiSvgIcon-root': { fontSize: 16 }, transition: 'transform 0.2s', transform: isCompleting ? 'scale(1.2)' : 'scale(1)' }}
       />
       <Box sx={{ flex: 1, minWidth: 0 }}>
-        <Typography sx={{ fontSize: '0.7rem', lineHeight: 1.4, color: doneStatuses.includes(todo.status as unknown) ? gs.textMuted : gs.textPrimary, textDecoration: doneStatuses.includes(todo.status as unknown) ? 'line-through' : 'none', wordBreak: 'break-word', mt: 0.25, transition: 'all 0.2s' }}>
+        <Typography sx={{ fontSize: '0.7rem', lineHeight: 1.4, color: doneStatuses.includes(todo.status as any) ? gs.textMuted : gs.textPrimary, textDecoration: doneStatuses.includes(todo.status as any) ? 'line-through' : 'none', wordBreak: 'break-word', mt: 0.25, transition: 'all 0.2s' }}>
           {todo.text}
         </Typography>
         <Box sx={{ display: 'flex', gap: 0.25, mt: 0.25, flexWrap: 'wrap' }}>

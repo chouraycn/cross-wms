@@ -10,9 +10,9 @@ import type { CronStoreFile } from "../types.js";
 export type QuarantinedCronConfigJob = {
   sourceIndex: number;
   reason: string;
-  job?: Record<string, unknown>;
-  raw?: unknown;
-  state?: Record<string, unknown>;
+  job?: Record<string, any>;
+  raw?: any;
+  state?: Record<string, any>;
   updatedAtMs?: number;
   scheduleIdentity?: string;
 };
@@ -27,13 +27,13 @@ export type CronQuarantineFile = {
 export type CronConfigJobRuntimeEntry = {
   updatedAtMs?: number;
   scheduleIdentity?: string;
-  state?: Record<string, unknown>;
+  state?: Record<string, any>;
 };
 
 /** 组合的 cron 存储加载结果，包含规范任务和配置支持的元数据 */
 export type LoadedCronStore = {
   store: CronStoreFile;
-  configJobs: Array<Record<string, unknown>>;
+  configJobs: Array<Record<string, any>>;
   configJobIndexes: number[];
   configJobRuntimeEntries: CronConfigJobRuntimeEntry[];
   invalidConfigRows: QuarantinedCronConfigJob[];

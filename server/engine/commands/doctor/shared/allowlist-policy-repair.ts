@@ -24,7 +24,7 @@ export async function maybeRepairAllowlistPolicyAllowFrom(cfg: OpenClawConfig): 
   const changes: string[] = [];
 
   const applyRecoveredAllowFrom = (params: {
-    account: Record<string, unknown>;
+    account: Record<string, any>;
     allowFrom: string[];
     mode: AllowFromMode;
     prefix: string;
@@ -43,14 +43,14 @@ export async function maybeRepairAllowlistPolicyAllowFrom(cfg: OpenClawConfig): 
 
   const recoverAllowFromForAccount = async (params: {
     channelName: string;
-    account: Record<string, unknown>;
+    account: Record<string, any>;
     accountId?: string;
     prefix: string;
   }) => {
     const dmEntry = params.account.dm;
     const dm =
       dmEntry && typeof dmEntry === "object" && !Array.isArray(dmEntry)
-        ? (dmEntry as Record<string, unknown>)
+        ? (dmEntry as Record<string, any>)
         : undefined;
     const dmPolicy =
       (params.account.dmPolicy as string | undefined) ?? (dm?.policy as string | undefined);
@@ -89,7 +89,7 @@ export async function maybeRepairAllowlistPolicyAllowFrom(cfg: OpenClawConfig): 
     });
   };
 
-  const nextChannels = next.channels as Record<string, Record<string, unknown>>;
+  const nextChannels = next.channels as Record<string, Record<string, any>>;
   for (const [channelName, channelConfig] of Object.entries(nextChannels)) {
     if (!channelConfig || typeof channelConfig !== "object") {
       continue;
@@ -111,12 +111,12 @@ export async function maybeRepairAllowlistPolicyAllowFrom(cfg: OpenClawConfig): 
       if (!accountConfig || typeof accountConfig !== "object") {
         continue;
       }
-      if ((accountConfig as { enabled?: unknown }).enabled === false) {
+      if ((accountConfig as { enabled?: any }).enabled === false) {
         continue;
       }
       await recoverAllowFromForAccount({
         channelName,
-        account: accountConfig as Record<string, unknown>,
+        account: accountConfig as Record<string, any>,
         accountId,
         prefix: `channels.${channelName}.accounts.${accountId}`,
       });

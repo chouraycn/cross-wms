@@ -7,7 +7,7 @@ import { summarizeWithFallback } from "./compaction.js";
 
 const agentSessionMocks = vi.hoisted(() => ({
   generateSummary: vi.fn(),
-  estimateTokens: vi.fn((_message: unknown) => 100),
+  estimateTokens: vi.fn((_message: any) => 100),
 }));
 
 vi.mock("openclaw/plugin-sdk/agent-sessions", async () => {
@@ -76,9 +76,9 @@ describe("summarizeWithFallback", () => {
   it("still attempts partial summarization when oversized messages were excluded", async () => {
     // Oversized-message fallback tries the safe subset so a huge attachment or
     // tool output does not prevent summarizing the rest of the transcript.
-    agentSessionMocks.estimateTokens.mockImplementation((message: unknown) => {
+    agentSessionMocks.estimateTokens.mockImplementation((message: any) => {
       const content =
-        typeof (message as { content?: unknown }).content === "string"
+        typeof (message as { content?: any }).content === "string"
           ? (message as { content: string }).content
           : "";
       return content.length > 10_000 ? 500_000 : 100;

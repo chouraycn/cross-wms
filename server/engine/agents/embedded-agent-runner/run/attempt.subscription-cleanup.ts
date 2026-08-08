@@ -19,7 +19,7 @@ type ToolResultFlushManager = {
 };
 
 async function waitForEmbeddedAbortSettle(params: {
-  promise: Promise<unknown> | null | undefined;
+  promise: Promise<any> | null | undefined;
   runId: string;
   sessionId: string;
 }): Promise<void> {
@@ -33,7 +33,7 @@ async function waitForEmbeddedAbortSettle(params: {
   const outcome = await Promise.race([
     params.promise
       .then(() => "settled" as const)
-      .catch((err: unknown) => {
+      .catch((err: any) => {
         log.warn(
           `embedded abort settle failed: runId=${params.runId} sessionId=${params.sessionId} err=${String(err)}`,
         );
@@ -77,18 +77,18 @@ export async function cleanupEmbeddedAttemptResources(params: {
     sessionManager: ToolResultFlushManager | null | undefined;
     timeoutMs?: number;
   }) => Promise<void>;
-  session?: { agent?: unknown; dispose(): void };
-  sessionManager: unknown;
+  session?: { agent?: any; dispose(): void };
+  sessionManager: any;
   bundleMcpRuntime?: { dispose(): Promise<void> | void };
   bundleLspRuntime?: { dispose(): Promise<void> | void };
   sessionLock: { release(): Promise<void> | void };
   aborted?: boolean;
-  abortSettlePromise?: Promise<unknown> | null;
+  abortSettlePromise?: Promise<any> | null;
   skipSessionFlush?: boolean;
   runId?: string;
   sessionId?: string;
 }): Promise<void> {
-  let sessionLockReleaseError: unknown;
+  let sessionLockReleaseError: any;
   try {
     try {
       params.removeToolResultContextGuard?.();

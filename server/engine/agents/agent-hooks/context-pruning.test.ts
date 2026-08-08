@@ -145,12 +145,12 @@ type ContextHandler = (
 function createContextHandler(): ContextHandler {
   let handler: ContextHandler | undefined;
   const api = {
-    on: (name: string, fn: unknown) => {
+    on: (name: string, fn: any) => {
       if (name === "context") {
         handler = fn as ContextHandler;
       }
     },
-    appendEntry: (_type: string, _dataValue?: unknown) => {},
+    appendEntry: (_type: string, _dataValue?: any) => {},
   } as unknown as ExtensionAPI;
 
   contextPruningExtension(api);
@@ -163,7 +163,7 @@ function createContextHandler(): ContextHandler {
 function runContextHandler(
   handler: ContextHandler,
   messages: AgentMessage[],
-  sessionManager: unknown,
+  sessionManager: any,
 ) {
   return handler({ messages }, {
     model: undefined,

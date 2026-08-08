@@ -58,9 +58,9 @@ interface CreateModelConfigData {
   model: string;
   temperature?: number;
   max_output_tokens?: number;
-  extra_body?: Record<string, unknown>;
-  protocol_options?: Record<string, unknown>;
-  legacy_unmapped_options?: Record<string, unknown>;
+  extra_body?: Record<string, any>;
+  protocol_options?: Record<string, any>;
+  legacy_unmapped_options?: Record<string, any>;
   trust_status?: string;
   enabled?: boolean;
   is_default?: boolean;
@@ -110,9 +110,9 @@ interface UpdateModelConfigData {
   model?: string;
   temperature?: number;
   max_output_tokens?: number;
-  extra_body?: Record<string, unknown>;
-  protocol_options?: Record<string, unknown>;
-  legacy_unmapped_options?: Record<string, unknown>;
+  extra_body?: Record<string, any>;
+  protocol_options?: Record<string, any>;
+  legacy_unmapped_options?: Record<string, any>;
   trust_status?: string;
   verified_at?: number | null;
   verified_fingerprint?: string | null;
@@ -138,7 +138,7 @@ export function updateModelConfig(
   if (!existing) return undefined;
 
   const setClauses: string[] = ['updated_at = CAST(strftime(\'%s\',\'now\') AS INTEGER)'];
-  const params: unknown[] = [];
+  const params: any[] = [];
 
   if (updates.name !== undefined) { setClauses.push('name = ?'); params.push(updates.name); }
   if (updates.provider !== undefined) { setClauses.push('provider = ?'); params.push(updates.provider); }

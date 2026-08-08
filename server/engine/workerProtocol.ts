@@ -34,7 +34,7 @@ export interface WorkerRegisterParams {
   name: string;
   type: WorkerType;
   status?: WorkerStatus;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface WorkerProtocolEventMap {
@@ -124,7 +124,7 @@ class WorkerProtocolEngine {
     if (listeners) {
       for (const handler of listeners) {
         try {
-          (handler as (...args: unknown[]) => void)(...args);
+          (handler as (...args: any[]) => void)(...args);
         } catch (err) {
           logger.error(`[WorkerProtocol] Event handler error for ${event}:`, err);
         }
@@ -227,7 +227,7 @@ class WorkerProtocolEngine {
     return task;
   }
 
-  completeTask(taskId: string, result?: unknown): WorkboardTask | undefined {
+  completeTask(taskId: string, result?: any): WorkboardTask | undefined {
     const task = daoCompleteTask(taskId, result);
     if (task) {
       const worker = task.assignedTo ? findWorkerById(task.assignedTo) : undefined;

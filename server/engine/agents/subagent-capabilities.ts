@@ -20,13 +20,13 @@ const SUBAGENT_SESSION_ROLES: readonly SubagentSessionRole[] = [
 type SubagentControlScope = "children" | "none";
 
 type SessionCapabilityEntry = {
-  sessionId?: unknown;
-  spawnDepth?: unknown;
-  subagentRole?: unknown;
-  subagentControlScope?: unknown;
-  spawnedBy?: unknown;
-  inheritedToolAllow?: unknown;
-  inheritedToolDeny?: unknown;
+  sessionId?: any;
+  spawnDepth?: any;
+  subagentRole?: any;
+  subagentControlScope?: any;
+  spawnedBy?: any;
+  inheritedToolAllow?: any;
+  inheritedToolDeny?: any;
 };
 
 /** Minimal persisted session-store shape needed to resolve subagent capabilities. */
@@ -34,20 +34,20 @@ export type SessionCapabilityStore = Record<string, SessionCapabilityEntry>;
 
 const DEFAULT_SUBAGENT_MAX_SPAWN_DEPTH = 3;
 
-function normalizeOptionalString(value: unknown): string | undefined {
+function normalizeOptionalString(value: any): string | undefined {
   if (typeof value === "string" && value.trim()) {
     return value.trim();
   }
   return undefined;
 }
 
-function normalizeOptionalLowercaseString(value: unknown): string | undefined {
+function normalizeOptionalLowercaseString(value: any): string | undefined {
   const str = normalizeOptionalString(value);
   return str?.toLowerCase();
 }
 
 function resolveIntegerOption(
-  value: unknown,
+  value: any,
   fallback: number,
   options?: { min?: number },
 ): number {
@@ -57,17 +57,17 @@ function resolveIntegerOption(
   return truncated;
 }
 
-function resolveNonNegativeIntegerOption(value: unknown, fallback: number): number {
+function resolveNonNegativeIntegerOption(value: any, fallback: number): number {
   const resolved = resolveIntegerOption(value, fallback);
   return Math.max(0, resolved);
 }
 
-function normalizeSubagentRole(value: unknown): SubagentSessionRole | undefined {
+function normalizeSubagentRole(value: any): SubagentSessionRole | undefined {
   const trimmed = normalizeOptionalLowercaseString(value);
   return SUBAGENT_SESSION_ROLES.find((entry) => entry === trimmed);
 }
 
-function normalizeSubagentControlScope(value: unknown): SubagentControlScope | undefined {
+function normalizeSubagentControlScope(value: any): SubagentControlScope | undefined {
   const trimmed = normalizeOptionalLowercaseString(value);
   if (trimmed === "children" || trimmed === "none") return trimmed;
   return undefined;
@@ -177,7 +177,7 @@ function getSubagentDepthFromSessionKey(sessionKey: string): number {
   return 0;
 }
 
-function normalizeInheritedToolList(value: unknown): string[] {
+function normalizeInheritedToolList(value: any): string[] {
   if (!Array.isArray(value)) return [];
   return value
     .map((item) => (typeof item === "string" ? item.trim() : ""))

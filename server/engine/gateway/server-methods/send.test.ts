@@ -76,7 +76,7 @@ vi.mock("../../agents/agent-scope.js", () => ({
     sessionKey,
   }: {
     sessionKey?: string;
-    config?: unknown;
+    config?: any;
     agentId?: string;
   }) => resolveAgentIdFromSessionKeyForTests({ sessionKey }),
   resolveDefaultAgentId: () => "main",
@@ -84,7 +84,7 @@ vi.mock("../../agents/agent-scope.js", () => ({
 }));
 
 vi.mock("../../config/plugin-auto-enable.js", () => ({
-  applyPluginAutoEnable: ({ config, env }: { config: unknown; env?: unknown }) =>
+  applyPluginAutoEnable: ({ config, env }: { config: any; env?: any }) =>
     mocks.applyPluginAutoEnable({ config, env }),
 }));
 
@@ -148,12 +148,12 @@ const makeContext = (): GatewayRequestContext =>
     getRuntimeConfig: () => ({}),
   }) as unknown as GatewayRequestContext;
 
-async function runSend(params: Record<string, unknown>) {
+async function runSend(params: Record<string, any>) {
   return await runSendWithClient(params);
 }
 
 async function runSendWithClient(
-  params: Record<string, unknown>,
+  params: Record<string, any>,
   client?: { connect?: { scopes?: string[] } } | null,
 ) {
   const respond = vi.fn();
@@ -168,12 +168,12 @@ async function runSendWithClient(
   return { respond };
 }
 
-async function runPoll(params: Record<string, unknown>) {
+async function runPoll(params: Record<string, any>) {
   return await runPollWithClient(params);
 }
 
 async function runPollWithClient(
-  params: Record<string, unknown>,
+  params: Record<string, any>,
   client?: { connect?: { scopes?: string[] } } | null,
 ) {
   const respond = vi.fn();
@@ -190,7 +190,7 @@ async function runPollWithClient(
 
 function createDeferred<T>() {
   let resolve!: (value: T | PromiseLike<T>) => void;
-  let reject!: (reason?: unknown) => void;
+  let reject!: (reason?: any) => void;
   const promise = new Promise<T>((res, rej) => {
     resolve = res;
     reject = rej;
@@ -199,7 +199,7 @@ function createDeferred<T>() {
 }
 
 async function runMessageActionRequest(
-  params: Record<string, unknown>,
+  params: Record<string, any>,
   client?: { connect?: { scopes?: string[] } } | null,
 ) {
   const respond = vi.fn();
@@ -226,14 +226,14 @@ async function withTempOpenClawStateDir<T>(test: (stateDir: string) => Promise<T
   }
 }
 
-function deliveryCall(index = 0): Record<string, unknown> | undefined {
-  const calls = mocks.deliverOutboundPayloads.mock.calls as unknown as Array<[Record<string, unknown>]>;
+function deliveryCall(index = 0): Record<string, any> | undefined {
+  const calls = mocks.deliverOutboundPayloads.mock.calls as unknown as Array<[Record<string, any>]>;
   return calls[index]?.[0];
 }
 
-function appendTranscriptCall(index = 0): Record<string, unknown> | undefined {
+function appendTranscriptCall(index = 0): Record<string, any> | undefined {
   const calls = mocks.appendAssistantMessageToSessionTranscript.mock.calls as unknown as Array<
-    [Record<string, unknown>]
+    [Record<string, any>]
   >;
   return calls[index]?.[0];
 }
@@ -242,9 +242,9 @@ function firstRespondCall(respond: ReturnType<typeof vi.fn>) {
   const calls = respond.mock.calls as unknown as Array<
     [
       boolean,
-      Record<string, unknown> | undefined,
-      Record<string, unknown> | undefined,
-      Record<string, unknown> | undefined,
+      Record<string, any> | undefined,
+      Record<string, any> | undefined,
+      Record<string, any> | undefined,
     ]
   >;
   const call = calls[0];
@@ -254,15 +254,15 @@ function firstRespondCall(respond: ReturnType<typeof vi.fn>) {
   return call;
 }
 
-function lastDispatchChannelMessageActionCall(): Record<string, unknown> | undefined {
+function lastDispatchChannelMessageActionCall(): Record<string, any> | undefined {
   const calls = mocks.dispatchChannelMessageAction.mock.calls as unknown as Array<
-    [Record<string, unknown>]
+    [Record<string, any>]
   >;
   return calls.at(-1)?.[0];
 }
 
-function pollCall(index = 0): Record<string, unknown> {
-  const calls = mocks.sendPoll.mock.calls as unknown as Array<[Record<string, unknown>]>;
+function pollCall(index = 0): Record<string, any> {
+  const calls = mocks.sendPoll.mock.calls as unknown as Array<[Record<string, any>]>;
   const call = calls[index]?.[0];
   if (!call) {
     throw new Error(`Expected poll call at index ${index}`);
@@ -270,16 +270,16 @@ function pollCall(index = 0): Record<string, unknown> {
   return call;
 }
 
-function outboundRouteCall(index = 0): Record<string, unknown> | undefined {
+function outboundRouteCall(index = 0): Record<string, any> | undefined {
   const calls = mocks.resolveOutboundSessionRoute.mock.calls as unknown as Array<
-    [Record<string, unknown>]
+    [Record<string, any>]
   >;
   return calls[index]?.[0];
 }
 
-function ensureSessionEntryCall(index = 0): Record<string, unknown> | undefined {
+function ensureSessionEntryCall(index = 0): Record<string, any> | undefined {
   const calls = mocks.ensureOutboundSessionEntry.mock.calls as unknown as Array<
-    [Record<string, unknown>]
+    [Record<string, any>]
   >;
   return calls[index]?.[0];
 }

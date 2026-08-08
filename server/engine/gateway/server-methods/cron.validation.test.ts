@@ -104,7 +104,7 @@ type CronMethod = keyof typeof cronHandlers;
 
 async function invokeCron(
   method: CronMethod,
-  params: Record<string, unknown>,
+  params: Record<string, any>,
   options: { currentJob?: CronJob; context?: ReturnType<typeof createCronContext> } = {},
 ) {
   const context = options.context ?? createCronContext(options.currentJob);
@@ -120,20 +120,20 @@ async function invokeCron(
   return { context, respond };
 }
 
-async function invokeCronAdd(params: Record<string, unknown>) {
+async function invokeCronAdd(params: Record<string, any>) {
   return await invokeCron("cron.add", params);
 }
 
-async function invokeCronGet(params: Record<string, unknown>, currentJob?: CronJob) {
+async function invokeCronGet(params: Record<string, any>, currentJob?: CronJob) {
   return await invokeCron("cron.get", params, { currentJob });
 }
 
-async function invokeCronUpdate(params: Record<string, unknown>, currentJob?: CronJob) {
+async function invokeCronUpdate(params: Record<string, any>, currentJob?: CronJob) {
   return await invokeCron("cron.update", params, { currentJob });
 }
 
 async function invokeCronUpdateDelivery(
-  delivery: Record<string, unknown>,
+  delivery: Record<string, any>,
   currentJob = createCronJob(),
 ) {
   return await invokeCronUpdate(
@@ -146,7 +146,7 @@ async function invokeCronUpdateDelivery(
 }
 
 async function invokeCronRemove(
-  params: Record<string, unknown>,
+  params: Record<string, any>,
   options?: { removeResult?: { ok: boolean; removed: boolean } },
 ) {
   const context = createCronContext();
@@ -156,7 +156,7 @@ async function invokeCronRemove(
   return await invokeCron("cron.remove", params, { context });
 }
 
-async function invokeWake(params: Record<string, unknown>) {
+async function invokeWake(params: Record<string, any>) {
   return await invokeCron("wake", params);
 }
 
@@ -268,7 +268,7 @@ function slackConfig(params: { includeMainSession?: boolean } = {}): OpenClawCon
   } as OpenClawConfig;
 }
 
-function agentTurnCronParams(overrides: Record<string, unknown> = {}) {
+function agentTurnCronParams(overrides: Record<string, any> = {}) {
   return {
     name: "cron job",
     enabled: true,
@@ -284,33 +284,33 @@ function expectCronSuccess(respond: ReturnType<typeof vi.fn>): void {
   expect(respond).toHaveBeenCalledWith(true, { id: "cron-1" }, undefined);
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error(`expected ${label} to be an object`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 function requireCronAddPayload(
   context: ReturnType<typeof createCronContext>,
-): Record<string, unknown> {
+): Record<string, any> {
   const calls = context.cron.add.mock.calls as unknown as [unknown][];
   return requireRecord(calls[0]?.[0], "cron.add payload");
 }
 
 function requireCronUpdatePatch(
   context: ReturnType<typeof createCronContext>,
-): Record<string, unknown> {
+): Record<string, any> {
   const calls = context.cron.update.mock.calls as unknown as [unknown, unknown][];
   return requireRecord(calls[0]?.[1], "cron.update patch");
 }
 
-function requireCronUpdateId(context: ReturnType<typeof createCronContext>): unknown {
+function requireCronUpdateId(context: ReturnType<typeof createCronContext>): any {
   const calls = context.cron.update.mock.calls as unknown as [unknown, unknown][];
   return calls[0]?.[0];
 }
 
-function expectDeliveryFields(payload: Record<string, unknown>, expected: Record<string, unknown>) {
+function expectDeliveryFields(payload: Record<string, any>, expected: Record<string, any>) {
   const delivery = requireRecord(payload.delivery, "delivery");
   for (const [key, value] of Object.entries(expected)) {
     expect(delivery[key]).toBe(value);
@@ -319,7 +319,7 @@ function expectDeliveryFields(payload: Record<string, unknown>, expected: Record
 
 function expectCronUpdateDeliveryPatch(
   context: ReturnType<typeof createCronContext>,
-  expected: unknown,
+  expected: any,
 ) {
   expect(context.cron.update).toHaveBeenCalled();
   expect(requireCronUpdatePatch(context).delivery).toEqual(expected);

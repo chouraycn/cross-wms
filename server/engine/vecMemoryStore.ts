@@ -190,7 +190,7 @@ initSchema();
 export interface VecSearchResult {
   id: number;
   text: string;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
   similarity: number;
   /** 记忆分类 */
   category?: MemoryCategory;
@@ -209,7 +209,7 @@ export interface HybridSearchOptions {
   candidateMultiplier?: number;
   useMMR?: boolean;
   mmrLambda?: number;
-  filters?: Record<string, unknown>;
+  filters?: Record<string, any>;
   /** 是否启用时间衰减 */
   useTimeDecay?: boolean;
   /** 时间衰减配置 */
@@ -363,7 +363,7 @@ function mmrReRank(
  */
 export async function insertMemory(
   text: string,
-  metadata: Record<string, unknown> = {},
+  metadata: Record<string, any> = {},
   category?: string,
   importance?: number
 ): Promise<number> {
@@ -461,7 +461,7 @@ export async function backfillEmbeddings(): Promise<{ total: number; success: nu
 export async function searchMemory(
   query: string,
   topK: number = DEFAULT_TOP_K,
-  filters: Record<string, unknown> = {}
+  filters: Record<string, any> = {}
 ): Promise<VecSearchResult[]> {
   try {
     const db = getDb();
@@ -497,7 +497,7 @@ export async function searchMemory(
     // 应用过滤条件并反序列化
     const results: VecSearchResult[] = [];
     for (const row of rows) {
-      const metadata = JSON.parse(row.metadata || '{}') as Record<string, unknown>;
+      const metadata = JSON.parse(row.metadata || '{}') as Record<string, any>;
 
       // 应用过滤条件
       let match = true;
@@ -719,7 +719,7 @@ export async function hybridSearchMemory(
 function ftsSearchMemory(
   query: string,
   topK: number = DEFAULT_TOP_K,
-  filters: Record<string, unknown> = {}
+  filters: Record<string, any> = {}
 ): Promise<VecSearchResult[]> {
   return new Promise((resolve) => {
     try {
@@ -752,7 +752,7 @@ function ftsSearchMemory(
 
       const results: VecSearchResult[] = [];
       for (const row of rows) {
-        const metadata = JSON.parse(row.metadata || '{}') as Record<string, unknown>;
+        const metadata = JSON.parse(row.metadata || '{}') as Record<string, any>;
 
         let match = true;
         for (const [key, value] of Object.entries(filters)) {
@@ -791,7 +791,7 @@ function ftsSearchMemory(
  */
 export async function insertMemoryWithChunks(
   text: string,
-  metadata: Record<string, unknown> = {},
+  metadata: Record<string, any> = {},
   chunkOptions: ChunkOptions = {}
 ): Promise<number[]> {
   const chunks = chunkText(text, chunkOptions);
@@ -853,7 +853,7 @@ export function deleteMemory(id: number): boolean {
 export function getMemory(id: number): {
   id: number;
   text: string;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
   createdAt: string;
   category?: string;
   importance?: number;
@@ -880,7 +880,7 @@ export function getMemory(id: number): {
     return {
       id: row.id,
       text: row.text,
-      metadata: JSON.parse(row.metadata || '{}') as Record<string, unknown>,
+      metadata: JSON.parse(row.metadata || '{}') as Record<string, any>,
       createdAt: row.created_at,
       category: row.category ?? undefined,
       importance: typeof row.importance === 'number' ? row.importance : undefined,
@@ -902,7 +902,7 @@ export function updateMemory(
   id: number,
   updates: {
     text?: string;
-    metadata?: Record<string, unknown>;
+    metadata?: Record<string, any>;
     category?: string;
     importance?: number;
   }
@@ -913,7 +913,7 @@ export function updateMemory(
     if (!existing) return false;
 
     const sets: string[] = ['updated_at = datetime(\'now\')'];
-    const params: unknown[] = [];
+    const params: any[] = [];
     if (typeof updates.text === 'string') {
       sets.push('text = ?');
       params.push(updates.text);
@@ -988,11 +988,11 @@ export function batchUpdateCategory(ids: number[], category: string): number {
  */
 export function getRecentMemories(
   limit: number = 10,
-  filters: Record<string, unknown> = {}
+  filters: Record<string, any> = {}
 ): Array<{
   id: number;
   text: string;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
   createdAt: string;
 }> {
   try {
@@ -1018,7 +1018,7 @@ export function getRecentMemories(
       const results: Array<{
         id: number;
         text: string;
-        metadata: Record<string, unknown>;
+        metadata: Record<string, any>;
         createdAt: string;
         category?: string;
         importance?: number;
@@ -1028,7 +1028,7 @@ export function getRecentMemories(
       }> = [];
 
       for (const row of rows) {
-        const metadata = JSON.parse(row.metadata || '{}') as Record<string, unknown>;
+        const metadata = JSON.parse(row.metadata || '{}') as Record<string, any>;
 
         let match = true;
         for (const [key, value] of Object.entries(filters)) {
@@ -1077,7 +1077,7 @@ export function getRecentMemories(
     return rows.map((row) => ({
       id: row.id,
       text: row.text,
-      metadata: JSON.parse(row.metadata || '{}') as Record<string, unknown>,
+      metadata: JSON.parse(row.metadata || '{}') as Record<string, any>,
       createdAt: row.created_at,
       category: row.category ?? undefined,
       importance: typeof row.importance === 'number' ? row.importance : undefined,
@@ -1145,8 +1145,8 @@ export function getMemoryStats(): {
  *   writeMemory(text, metadata) 或 writeMemory({ userId, sessionId, category, content, keywords })
  */
 export async function writeMemory(
-  textOrObj: string | Record<string, unknown>,
-  metadata?: Record<string, unknown>
+  textOrObj: string | Record<string, any>,
+  metadata?: Record<string, any>
 ): Promise<number> {
   if (typeof textOrObj === 'string') {
     return insertMemory(textOrObj, metadata || {});
@@ -1154,7 +1154,7 @@ export async function writeMemory(
   // 对象形式：{ userId, sessionId, category, content, keywords }
   const obj = textOrObj;
   const text = (obj.content as string) || '';
-  const meta: Record<string, unknown> = {};
+  const meta: Record<string, any> = {};
   if (obj.userId) meta.userId = obj.userId;
   if (obj.sessionId) meta.sessionId = obj.sessionId;
   if (obj.category) meta.category = obj.category;
@@ -1171,12 +1171,12 @@ export async function writeMemory(
 export async function searchMemoryCompat(
   query: string,
   arg2?: string | number,
-  arg3?: number | Record<string, unknown>,
+  arg3?: number | Record<string, any>,
   arg4?: number,
   arg5?: string
 ): Promise<VecSearchResult[]> {
   let topK = DEFAULT_TOP_K;
-  let filters: Record<string, unknown> = {};
+  let filters: Record<string, any> = {};
 
   if (typeof arg2 === 'number') {
     topK = arg2;

@@ -70,7 +70,7 @@ export type GoogleChatAccountConfig = {
   /** Per-space configuration keyed by space id or name. */
   groups?: Record<string, GoogleChatGroupConfig>;
   /** Service account JSON (inline string, object, or secret reference). */
-  serviceAccount?: string | Record<string, unknown> | SecretRef;
+  serviceAccount?: string | Record<string, any> | SecretRef;
   /** Explicit secret reference for service account JSON. */
   serviceAccountRef?: SecretRef;
   /** Service account JSON file path. */

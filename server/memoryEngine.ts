@@ -37,7 +37,7 @@ export interface MemoryItem {
   /** 来源会话 ID */
   sourceSessionId?: string;
   /** 元数据 */
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 /** 记忆查询选项 */
@@ -173,7 +173,7 @@ class MemoryEngine {
       type?: MemoryItem['type'];
       importance?: number;
       tags?: string[];
-      metadata?: Record<string, unknown>;
+      metadata?: Record<string, any>;
     } = {},
   ): MemoryItem {
     const memories = this.loadSessionMemories(sessionId);
@@ -316,7 +316,7 @@ class MemoryEngine {
       importance?: number;
       tags?: string[];
       sourceSessionId?: string;
-      metadata?: Record<string, unknown>;
+      metadata?: Record<string, any>;
     } = {},
   ): MemoryItem {
     const item: MemoryItem = {

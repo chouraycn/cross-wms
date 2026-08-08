@@ -45,7 +45,7 @@ export class GoogleProvider extends BaseLlmProvider {
     const data = await response.json();
 
     const candidates = data.candidates?.[0];
-    const content = candidates?.content?.parts?.map((p: unknown) => (p as Record<string, unknown>).text).join('') ?? '';
+    const content = candidates?.content?.parts?.map((p: any) => (p as Record<string, any>).text).join('') ?? '';
 
     return {
       id: data.id ?? this.generateId(),

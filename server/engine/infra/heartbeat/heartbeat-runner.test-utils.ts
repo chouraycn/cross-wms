@@ -31,7 +31,7 @@ type HeartbeatSessionSeed = {
 };
 
 /** 心跳回复函数的 spy 类型（降级：使用简单函数类型） */
-export type HeartbeatReplySpy = ((...args: unknown[]) => Promise<{ text: string }>) & {
+export type HeartbeatReplySpy = ((...args: any[]) => Promise<{ text: string }>) & {
   mockResolvedValue: (value: { text: string }) => void;
   mockReset: () => void;
 };
@@ -55,9 +55,9 @@ export async function seedSessionStore(
   sessionKey: string,
   session: HeartbeatSessionSeed,
 ): Promise<void> {
-  let existingStore: Record<string, unknown>;
+  let existingStore: Record<string, any>;
   try {
-    existingStore = JSON.parse(await fs.readFile(storePath, "utf-8")) as Record<string, unknown>;
+    existingStore = JSON.parse(await fs.readFile(storePath, "utf-8")) as Record<string, any>;
   } catch {
     existingStore = {};
   }

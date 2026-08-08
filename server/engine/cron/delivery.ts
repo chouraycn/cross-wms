@@ -63,7 +63,7 @@ export interface CronDeliveryAdapter {
 /** 失败通知的超时时间（30 秒） */
 const FAILURE_NOTIFICATION_TIMEOUT_MS = 30_000;
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
@@ -80,7 +80,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  * @returns 失败通知目标，无可解析目标时返回 null
  */
 export function resolveFailureDestination(
-  jobDelivery: unknown,
+  jobDelivery: any,
   announceTarget: CronAnnounceTarget,
 ): CronAnnounceTarget | null {
   if (isRecord(jobDelivery) && isRecord(jobDelivery.failureDestination)) {

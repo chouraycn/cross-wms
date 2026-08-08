@@ -146,13 +146,13 @@ describe("resolveCommandSecretRefsViaGateway", () => {
     );
   }
 
-  function readPath(root: unknown, pathSegments: readonly string[]): unknown {
+  function readPath(root: any, pathSegments: readonly string[]): any {
     let cursor = root;
     for (const segment of pathSegments) {
       if (!cursor || typeof cursor !== "object") {
         return undefined;
       }
-      cursor = (cursor as Record<string, unknown>)[segment];
+      cursor = (cursor as Record<string, any>)[segment];
     }
     return cursor;
   }
@@ -780,7 +780,7 @@ describe("resolveCommandSecretRefsViaGateway", () => {
         });
 
         const googleWebSearchConfig = result.resolvedConfig.plugins?.entries?.google?.config as
-          | { webSearch?: { apiKey?: unknown } }
+          | { webSearch?: { apiKey?: any } }
           | undefined;
         expect(googleWebSearchConfig?.webSearch?.apiKey).toBe("gemini-local-fallback-key");
         expect(result.targetStatesByPath["plugins.entries.google.config.webSearch.apiKey"]).toBe(
@@ -825,7 +825,7 @@ describe("resolveCommandSecretRefsViaGateway", () => {
         });
 
         const firecrawlConfig = result.resolvedConfig.plugins?.entries?.firecrawl?.config as
-          | { webFetch?: { apiKey?: unknown } }
+          | { webFetch?: { apiKey?: any } }
           | undefined;
         expect(firecrawlConfig?.webFetch?.apiKey).toBe("firecrawl-local-fallback-key");
         expect(result.targetStatesByPath["plugins.entries.firecrawl.config.webFetch.apiKey"]).toBe(
@@ -860,7 +860,7 @@ describe("resolveCommandSecretRefsViaGateway", () => {
       });
 
       const fetchConfig = result.resolvedConfig.tools?.web?.fetch as
-        | { firecrawl?: { apiKey?: unknown } }
+        | { firecrawl?: { apiKey?: any } }
         | undefined;
       expect(fetchConfig?.firecrawl?.apiKey).toBe("firecrawl-legacy-local-fallback-key");
       expect(result.targetStatesByPath["tools.web.fetch.firecrawl.apiKey"]).toBe("resolved_local");
@@ -938,7 +938,7 @@ describe("resolveCommandSecretRefsViaGateway", () => {
         });
 
         const firecrawlConfig = result.resolvedConfig.plugins?.entries?.firecrawl?.config as
-          | { webSearch?: { apiKey?: unknown } }
+          | { webSearch?: { apiKey?: any } }
           | undefined;
         expect(firecrawlConfig?.webSearch?.apiKey).toBe("firecrawl-search-fallback-key");
         expect(result.targetStatesByPath["plugins.entries.firecrawl.config.webSearch.apiKey"]).toBe(
@@ -996,7 +996,7 @@ describe("resolveCommandSecretRefsViaGateway", () => {
         });
 
         const firecrawlConfig = result.resolvedConfig.plugins?.entries?.firecrawl?.config as
-          | { webSearch?: { apiKey?: unknown } }
+          | { webSearch?: { apiKey?: any } }
           | undefined;
         expect(firecrawlConfig?.webSearch?.apiKey).toBe("firecrawl-search-fallback-key");
         expect(result.targetStatesByPath["plugins.entries.firecrawl.config.webSearch.apiKey"]).toBe(

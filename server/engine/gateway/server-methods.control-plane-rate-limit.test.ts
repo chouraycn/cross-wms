@@ -90,7 +90,7 @@ describe("gateway control-plane write rate limit", () => {
     return call as [
       boolean,
       unknown,
-      { code?: string; details?: unknown; retryAfterMs?: number; retryable?: boolean }?,
+      { code?: string; details?: any; retryAfterMs?: number; retryable?: boolean }?,
     ];
   }
 

@@ -96,12 +96,12 @@ vi.mock("../../agents/model-fallback.js", () => ({
   runWithModelFallback: (params: {
     provider: string;
     model: string;
-    run: (provider: string, model: string) => Promise<unknown>;
+    run: (provider: string, model: string) => Promise<any>;
   }) => runWithModelFallbackMock(params),
-  isFallbackSummaryError: (err: unknown) =>
+  isFallbackSummaryError: (err: any) =>
     err instanceof Error &&
     err.name === "FallbackSummaryError" &&
-    Array.isArray((err as { attempts?: unknown[] }).attempts),
+    Array.isArray((err as { attempts?: any[] }).attempts),
 }));
 
 vi.mock("../../agents/model-auth.js", () => ({
@@ -111,10 +111,10 @@ vi.mock("../../agents/model-auth.js", () => ({
 
 vi.mock("../../agents/embedded-agent.js", () => {
   return {
-    compactEmbeddedAgentSession: (params: unknown) =>
+    compactEmbeddedAgentSession: (params: any) =>
       compactState.compactEmbeddedAgentSessionMock(params),
     queueEmbeddedAgentMessage: vi.fn().mockReturnValue(false),
-    runEmbeddedAgent: (params: unknown) => runEmbeddedAgentMock(params),
+    runEmbeddedAgent: (params: any) => runEmbeddedAgentMock(params),
     abortEmbeddedAgentRun: (sessionId: string) => {
       abortEmbeddedAgentRunMock(sessionId);
       return abortEmbeddedAgentRun(sessionId);
@@ -124,7 +124,7 @@ vi.mock("../../agents/embedded-agent.js", () => {
 });
 
 vi.mock("../../agents/cli-runner.js", () => ({
-  runCliAgent: (...args: unknown[]) => runCliAgentMock(...args),
+  runCliAgent: (...args: any[]) => runCliAgentMock(...args),
 }));
 
 vi.mock("../../agents/model-selection.js", async () => {
@@ -149,7 +149,7 @@ vi.mock("../../runtime.js", () => {
   return {
     defaultRuntime: {
       log: vi.fn(),
-      error: (...args: unknown[]) => runtimeErrorMock(...args),
+      error: (...args: any[]) => runtimeErrorMock(...args),
       exit: vi.fn(),
     },
   };
@@ -159,13 +159,13 @@ vi.mock("./queue.js", () => {
   return {
     enqueueFollowupRun: vi.fn(),
     scheduleFollowupDrain: vi.fn(),
-    clearSessionQueues: (...args: unknown[]) => clearSessionQueuesMock(...args),
-    refreshQueuedFollowupSession: (...args: unknown[]) => refreshQueuedFollowupSessionMock(...args),
+    clearSessionQueues: (...args: any[]) => clearSessionQueuesMock(...args),
+    refreshQueuedFollowupSession: (...args: any[]) => refreshQueuedFollowupSessionMock(...args),
   };
 });
 
 vi.mock("../../cli/command-secret-gateway.js", () => ({
-  resolveCommandSecretRefsViaGateway: async ({ config }: { config: unknown }) => ({
+  resolveCommandSecretRefsViaGateway: async ({ config }: { config: any }) => ({
     resolvedConfig: config,
     diagnostics: [],
   }),
@@ -180,8 +180,8 @@ const loadCronStoreMock = vi.fn();
 vi.mock("../../cron/store.js", () => {
   const resolveCronPath = (storePath?: string) => storePath ?? "/tmp/openclaw-cron-store.json";
   return {
-    loadCronJobsStore: (...args: unknown[]) => loadCronStoreMock(...args),
-    loadCronStore: (...args: unknown[]) => loadCronStoreMock(...args),
+    loadCronJobsStore: (...args: any[]) => loadCronStoreMock(...args),
+    loadCronStore: (...args: any[]) => loadCronStoreMock(...args),
     resolveCronJobsStorePath: resolveCronPath,
     resolveCronStorePath: resolveCronPath,
   };
@@ -213,21 +213,21 @@ import { runReplyAgent } from "./agent-runner.js";
 type RunWithModelFallbackParams = {
   provider: string;
   model: string;
-  run: (provider: string, model: string) => Promise<unknown>;
+  run: (provider: string, model: string) => Promise<any>;
 };
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     throw new Error(`expected ${label} to be an object`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 function expectRecordFields(
-  value: unknown,
-  expected: Record<string, unknown>,
+  value: any,
+  expected: Record<string, any>,
   label: string,
-): Record<string, unknown> {
+): Record<string, any> {
   const record = requireRecord(value, label);
   for (const [key, expectedValue] of Object.entries(expected)) {
     expect(record[key], `${label}.${key}`).toEqual(expectedValue);
@@ -235,17 +235,17 @@ function expectRecordFields(
   return record;
 }
 
-function expectReplyText(result: unknown, text: string): void {
+function expectReplyText(result: any, text: string): void {
   expectRecordFields(result, { text }, "reply result");
 }
 
 type MockCallSource = {
   mock: {
-    calls: ReadonlyArray<ReadonlyArray<unknown>>;
+    calls: ReadonlyArray<ReadonlyArray<any>>;
   };
 };
 
-function firstMockCallArg(mock: MockCallSource, label: string): unknown {
+function firstMockCallArg(mock: MockCallSource, label: string): any {
   const call = mock.mock.calls[0];
   if (!call) {
     throw new Error(`expected ${label} to have at least one call`);
@@ -306,7 +306,7 @@ describe("runReplyAgent auto-compaction token update", () => {
   async function seedSessionStore(params: {
     storePath: string;
     sessionKey: string;
-    entry: Record<string, unknown>;
+    entry: Record<string, any>;
   }) {
     await fs.mkdir(path.dirname(params.storePath), { recursive: true });
     await fs.writeFile(
@@ -318,8 +318,8 @@ describe("runReplyAgent auto-compaction token update", () => {
 
   function createBaseRun(params: {
     storePath: string;
-    sessionEntry: Record<string, unknown>;
-    config?: Record<string, unknown>;
+    sessionEntry: Record<string, any>;
+    config?: Record<string, any>;
     sessionFile?: string;
     workspaceDir?: string;
   }) {
@@ -360,7 +360,7 @@ describe("runReplyAgent auto-compaction token update", () => {
   }
 
   async function runBaseReplyWithAgentMeta(params: {
-    agentMeta: Record<string, unknown>;
+    agentMeta: Record<string, any>;
     collectDiagnostics?: boolean;
     config?: OpenClawConfig;
     tmpPrefix: string;
@@ -2689,7 +2689,7 @@ describe("runReplyAgent response usage footer", () => {
   function createRun(params: {
     responseUsage: "tokens" | "full";
     sessionKey: string;
-    config?: unknown;
+    config?: any;
     provider?: string;
     model?: string;
   }) {
@@ -3178,7 +3178,7 @@ describe("runReplyAgent mid-turn rate-limit fallback", () => {
 
 describe("runReplyAgent private message_tool_only final warning (#85714)", () => {
   async function runPrivateFinalCase(params: {
-    messagingToolSentTargets?: unknown[];
+    messagingToolSentTargets?: any[];
     finalAssistantText?: string;
     payloadText?: string;
     successfulCronAdds?: number;

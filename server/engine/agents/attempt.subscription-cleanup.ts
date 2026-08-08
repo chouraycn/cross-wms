@@ -8,12 +8,12 @@
 export const EMBEDDED_ABORT_SETTLE_TIMEOUT_MS = 5_000;
 
 /** Builds embedded subscription parameters. */
-export function buildEmbeddedSubscriptionParams(..._args: unknown[]): Record<string, unknown> {
+export function buildEmbeddedSubscriptionParams(..._args: any[]): Record<string, any> {
   // Cross-wms does not have embedded subscription parameters.
   return {};
 }
 
 /** Cleans up embedded attempt resources. */
-export function cleanupEmbeddedAttemptResources(..._args: unknown[]): void {
+export function cleanupEmbeddedAttemptResources(..._args: any[]): void {
   // Cross-wms does not have embedded attempt resource cleanup.
 }

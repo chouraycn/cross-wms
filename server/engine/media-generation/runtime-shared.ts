@@ -42,7 +42,7 @@ export type FallbackAttempt = {
 export const MAX_TIMER_TIMEOUT_MS = 2_147_000_000;
 
 /** 将值强制转换为有限数，无法转换时返回 undefined。 */
-function asFiniteNumber(value: unknown): number | undefined {
+function asFiniteNumber(value: any): number | undefined {
   if (typeof value === "number" && Number.isFinite(value)) {
     return value;
   }
@@ -50,7 +50,7 @@ function asFiniteNumber(value: unknown): number | undefined {
 }
 
 /** 将毫秒值钳制到 Node.js 定时器安全范围 [1, MAX_TIMER_TIMEOUT_MS]。 */
-export function clampTimerTimeoutMs(valueMs: unknown, minMs = 1): number | undefined {
+export function clampTimerTimeoutMs(valueMs: any, minMs = 1): number | undefined {
   const value = asFiniteNumber(valueMs);
   if (value === undefined) {
     return undefined;
@@ -60,7 +60,7 @@ export function clampTimerTimeoutMs(valueMs: unknown, minMs = 1): number | undef
 }
 
 /** 规范化可选字符串，非字符串返回空串。 */
-function normalizeOptionalString(value: unknown): string {
+function normalizeOptionalString(value: any): string {
   if (typeof value === "string") {
     return value.trim();
   }
@@ -68,7 +68,7 @@ function normalizeOptionalString(value: unknown): string {
 }
 
 /** 格式化错误消息。 */
-function formatErrorMessage(error: unknown): string {
+function formatErrorMessage(error: any): string {
   if (error instanceof Error) {
     return error.message;
   }
@@ -76,7 +76,7 @@ function formatErrorMessage(error: unknown): string {
 }
 
 /** 将错误转换为可序列化对象。 */
-function toErrorObject(error: unknown, fallback: string): unknown {
+function toErrorObject(error: any, fallback: string): any {
   if (error instanceof Error) {
     return { message: error.message, name: error.name, stack: error.stack };
   }
@@ -412,7 +412,7 @@ export function recordCapabilityCandidateFailure(params: {
   attempts: FallbackAttempt[];
   provider: string;
   model: string;
-  error: unknown;
+  error: any;
 }): void {
   params.attempts.push({
     provider: params.provider,
@@ -425,7 +425,7 @@ export function recordCapabilityCandidateFailure(params: {
 export function throwCapabilityGenerationFailure(params: {
   capabilityLabel: string;
   attempts: FallbackAttempt[];
-  lastError: unknown;
+  lastError: any;
 }): never {
   if (params.attempts.length <= 1 && params.lastError) {
     throw toErrorObject(params.lastError, "Non-Error thrown");
@@ -441,7 +441,7 @@ export function throwCapabilityGenerationFailure(params: {
 
 function formatCapabilityFailureAttempts(attempts: FallbackAttempt[]): string {
   if (attempts.length === 0) {
-    return "unknown";
+    return "any";
   }
 
   const abortedAttempts = attempts.filter(isAbortLikeFallbackAttempt);
@@ -500,8 +500,8 @@ export function buildMediaGenerationNormalizationMetadata(params: {
   normalization?: MediaGenerationNormalizationMetadataInput;
   requestedSizeForDerivedAspectRatio?: string;
   includeSupportedDurationSeconds?: boolean;
-}): Record<string, unknown> {
-  const metadata: Record<string, unknown> = {};
+}): Record<string, any> {
+  const metadata: Record<string, any> = {};
   const { normalization } = params;
   if (normalization?.size?.requested !== undefined && normalization.size.applied !== undefined) {
     metadata.requestedSize = normalization.size.requested;

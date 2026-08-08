@@ -75,7 +75,7 @@ export const wizardHandlers: GatewayRequestHandlers = {
     if (!session) {
       return;
     }
-    const answer = params.answer as { stepId?: string; value?: unknown } | undefined;
+    const answer = params.answer as { stepId?: string; value?: any } | undefined;
     if (answer) {
       if (session.getStatus() !== "running") {
         respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, "wizard not running"));

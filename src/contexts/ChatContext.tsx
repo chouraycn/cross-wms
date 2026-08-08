@@ -176,11 +176,11 @@ function loadSessionsFromCache(): Session[] {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) {
-        return (parsed.map((s: Record<string, unknown>) => ({
+        return (parsed.map((s: Record<string, any>) => ({
           ...s,
           // 缓存不保存消息内容，确保 messages 为空数组
           messages: [],
-        })) as unknown) as Session[];
+        })) as any) as Session[];
       }
     }
   } catch { /* 数据损坏时静默返回空数组 */ }
@@ -224,10 +224,10 @@ async function fetchSessionsFromAPI(retries = CHAT_INIT_MAX_RETRIES): Promise<Se
       const response = await chatFetchWithTimeout(`${API_BASE}/sessions`);
       const data = await response.json();
       if (data.sessions && Array.isArray(data.sessions)) {
-        return data.sessions.map((s: Record<string, unknown>) => ({
+        return data.sessions.map((s: Record<string, any>) => ({
           ...s,
           messages: [], // 列表不加载消息，按需懒加载
-          messageCount: (s as unknown).messageCount, // 后端返回值（undefined 表示未提供）
+          messageCount: (s as any).messageCount, // 后端返回值（undefined 表示未提供）
           createdAt: s.createdAt as string,       // 保持 string 类型，不做 Date 转换
           updatedAt: s.updatedAt as string,       // 保持 string 类型，不做 Date 转换
         })) as Session[];
@@ -251,10 +251,10 @@ async function fetchArchivedSessionsPaged(offset: number, limit: number = 10): P
   try {
     const response = await fetch(`${API_BASE}/sessions?status=archived&limit=${limit}&offset=${offset}`);
     const data = await response.json();
-    const sessions = (data.sessions || []).map((s: Record<string, unknown>) => ({
+    const sessions = (data.sessions || []).map((s: Record<string, any>) => ({
       ...s,
       messages: [],
-      messageCount: (s as unknown).messageCount,
+      messageCount: (s as any).messageCount,
       createdAt: s.createdAt as string,
       updatedAt: s.updatedAt as string,
     })) as Session[];
@@ -271,7 +271,7 @@ async function fetchSessionMessagesFromAPI(sessionId: string): Promise<{ message
     const data = await response.json();
     if (data.messages && Array.isArray(data.messages)) {
       return {
-        messages: data.messages.map((m: Record<string, unknown>) => ({
+        messages: data.messages.map((m: Record<string, any>) => ({
           ...m,
           timestamp: new Date(m.timestamp as string),
         })) as Message[],
@@ -292,7 +292,7 @@ async function fetchOlderMessagesFromAPI(sessionId: string, beforeIndex: number,
     const data = await response.json();
     if (data.messages && Array.isArray(data.messages)) {
       return {
-        messages: data.messages.map((m: Record<string, unknown>) => ({
+        messages: data.messages.map((m: Record<string, any>) => ({
           ...m,
           timestamp: new Date(m.timestamp as string),
         })) as Message[],

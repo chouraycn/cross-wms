@@ -712,7 +712,7 @@ describe("task-registry maintenance issue #60299", () => {
     expectMaintenanceCounts(result, { reconciled: 0, recovered: 1 });
     expectTaskStatus(currentTasks, task.taskId, "running");
     const hookCalls = recoveryHook.mock.calls as unknown as Array<
-      [params: { now?: unknown; runtime?: unknown; task?: { taskId?: string }; taskId?: string }]
+      [params: { now?: any; runtime?: any; task?: { taskId?: string }; taskId?: string }]
     >;
     expect(hookCalls).toHaveLength(1);
     const hookParams = hookCalls[0]?.[0];

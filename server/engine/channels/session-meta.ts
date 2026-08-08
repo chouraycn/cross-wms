@@ -17,7 +17,7 @@ export interface SessionMeta {
   messageCount: number;
   turnCount: number;
   tags: string[];
-  data: Record<string, unknown>;
+  data: Record<string, any>;
 }
 
 const sessionMetaStore = new Map<string, SessionMeta>();
@@ -32,7 +32,7 @@ export function createSessionMeta(params: {
   userName?: string;
   locale?: string;
   timezone?: string;
-  data?: Record<string, unknown>;
+  data?: Record<string, any>;
 }): SessionMeta {
   const now = Date.now();
   const meta: SessionMeta = {
@@ -115,7 +115,7 @@ export function hasSessionTag(sessionId: string, tag: string): boolean {
   return sessionMetaStore.get(sessionId)?.tags.includes(tag) ?? false;
 }
 
-export function setSessionData(sessionId: string, key: string, value: unknown): boolean {
+export function setSessionData(sessionId: string, key: string, value: any): boolean {
   const meta = sessionMetaStore.get(sessionId);
   if (!meta) return false;
   meta.data[key] = value;
@@ -123,7 +123,7 @@ export function setSessionData(sessionId: string, key: string, value: unknown): 
   return true;
 }
 
-export function getSessionData(sessionId: string, key: string): unknown {
+export function getSessionData(sessionId: string, key: string): any {
   return sessionMetaStore.get(sessionId)?.data[key];
 }
 

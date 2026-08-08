@@ -7,7 +7,7 @@ export interface ReplyPipelineContext {
   originalMessage: ChannelMessage;
   replyContent: string;
   replyParts: MessagePart[];
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
   aborted: boolean;
 }
 

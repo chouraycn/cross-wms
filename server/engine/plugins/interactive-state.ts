@@ -40,7 +40,7 @@ function createInteractiveState(): InteractiveState {
   };
 }
 
-function hydrateInteractiveState(value: unknown): InteractiveState {
+function hydrateInteractiveState(value: any): InteractiveState {
   const state =
     typeof value === "object" && value !== null
       ? (value as Partial<InteractiveState>)
@@ -60,7 +60,7 @@ function hydrateInteractiveState(value: unknown): InteractiveState {
 }
 
 function getState() {
-  const globalStore = globalThis as Record<PropertyKey, unknown>;
+  const globalStore = globalThis as Record<PropertyKey, any>;
   const existing = globalStore[PLUGIN_INTERACTIVE_STATE_KEY];
   if (existing !== undefined) {
     const hydrated = hydrateInteractiveState(existing);

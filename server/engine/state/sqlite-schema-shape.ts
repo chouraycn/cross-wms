@@ -10,7 +10,7 @@ interface TableInfoRow {
   name: string;
   type: string;
   notnull: number;
-  dflt_value: unknown;
+  dflt_value: any;
   pk: number;
 }
 

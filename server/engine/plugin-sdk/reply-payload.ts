@@ -107,7 +107,7 @@ export function isReasoningReplyPayload(payload: ReasoningReplyPayload): boolean
 
 /** Extract the supported outbound reply fields from loose tool or agent payload objects. */
 export function normalizeOutboundReplyPayload(
-  payload: Record<string, unknown>,
+  payload: Record<string, any>,
 ): OutboundReplyPayload {
   return normalizeCoreOutboundReplyPayload(payload);
 }
@@ -115,11 +115,11 @@ export function normalizeOutboundReplyPayload(
 /** Wrap a deliverer so callers can hand it arbitrary payloads while channels receive normalized data. */
 export function createNormalizedOutboundDeliverer(
   handler: (payload: OutboundReplyPayload) => Promise<void>,
-): (payload: unknown) => Promise<void> {
-  return async (payload: unknown) => {
+): (payload: any) => Promise<void> {
+  return async (payload: any) => {
     const normalized =
       payload && typeof payload === "object"
-        ? normalizeOutboundReplyPayload(payload as Record<string, unknown>)
+        ? normalizeOutboundReplyPayload(payload as Record<string, any>)
         : {};
     await handler(normalized);
   };
@@ -166,9 +166,9 @@ export function hasOutboundReplyContent(
     text?: string;
     mediaUrls?: string[];
     mediaUrl?: string;
-    presentation?: unknown;
-    interactive?: unknown;
-    channelData?: unknown;
+    presentation?: any;
+    interactive?: any;
+    channelData?: any;
   },
   options?: { trimText?: boolean },
 ): boolean {
@@ -420,7 +420,7 @@ export async function sendMediaWithLeadingCaption(params: {
   caption: string;
   send: (payload: { mediaUrl: string; caption?: string }) => Promise<void>;
   onError?: (params: {
-    error: unknown;
+    error: any;
     mediaUrl: string;
     caption?: string;
     index: number;
@@ -461,7 +461,7 @@ export async function deliverTextOrMediaReply(params: {
   sendText: (text: string) => Promise<void>;
   sendMedia: (payload: { mediaUrl: string; caption?: string }) => Promise<void>;
   onMediaError?: (params: {
-    error: unknown;
+    error: any;
     mediaUrl: string;
     caption?: string;
     index: number;

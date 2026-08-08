@@ -38,7 +38,7 @@ class TempDir {
     return fullPath;
   }
 
-  createJsonFile(filePath: string, data: unknown): string {
+  createJsonFile(filePath: string, data: any): string {
     return this.createFile(filePath, JSON.stringify(data, null, 2));
   }
 
@@ -52,7 +52,7 @@ class TempDir {
     return fs.readFileSync(this.join(filePath), 'utf-8');
   }
 
-  readJsonFile(filePath: string): unknown {
+  readJsonFile(filePath: string): any {
     return JSON.parse(this.readFile(filePath));
   }
 

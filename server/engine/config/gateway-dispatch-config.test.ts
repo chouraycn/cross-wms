@@ -74,7 +74,7 @@ describe("readGatewayDispatchConfig", () => {
       load: { paths: ["./plugins/vault"] },
     });
     expect(config.session?.mainKey).toBe("main");
-    expect((config as { models?: unknown }).models).toBeUndefined();
+    expect((config as { models?: any }).models).toBeUndefined();
     expect(shellEnvMocks.loadShellEnvFallback).not.toHaveBeenCalled();
   });
 

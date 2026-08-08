@@ -462,7 +462,7 @@ function getBuiltinThemes(): Record<string, ThemeJson> {
   return BUILTIN_THEMES;
 }
 
-function parseThemeJson(label: string, json: unknown): ThemeJson {
+function parseThemeJson(label: string, json: any): ThemeJson {
   if (!validateThemeJson.Check(json)) {
     const errors = Array.from(validateThemeJson.Errors(json));
     const missingColors = new Set<string>();
@@ -503,7 +503,7 @@ function parseThemeJson(label: string, json: unknown): ThemeJson {
 }
 
 function parseThemeJsonContent(label: string, content: string): ThemeJson {
-  let json: unknown;
+  let json: any;
   try {
     json = JSON.parse(content);
   } catch (error) {
@@ -591,7 +591,7 @@ export const theme: Theme = new Proxy({} as Theme, {
     if (!t) {
       throw new Error("Theme not initialized. Call setTheme() first.");
     }
-    return (t as unknown as Record<string | symbol, unknown>)[prop];
+    return (t as unknown as Record<string | symbol, any>)[prop];
   },
 });
 

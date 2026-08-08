@@ -15,7 +15,7 @@ type TypeBoxValidationError = {
   keyword?: string;
   instancePath?: string;
   schemaPath?: string;
-  params?: Record<string, unknown>;
+  params?: Record<string, any>;
   message?: string;
 };
 
@@ -60,14 +60,14 @@ function fingerprintSchema(schema: JsonSchemaValue): string {
   return JSON.stringify(schema);
 }
 
-function schemaHasDefaults(schema: unknown): boolean {
+function schemaHasDefaults(schema: any): boolean {
   if (!schema || typeof schema !== "object") {
     return false;
   }
   if (Array.isArray(schema)) {
     return schema.some((item) => schemaHasDefaults(item));
   }
-  const record = schema as Record<string, unknown>;
+  const record = schema as Record<string, any>;
   if (Object.hasOwn(record, "default")) {
     return true;
   }
@@ -129,7 +129,7 @@ function withPluginFormatSemantics<T>(callback: () => T): T {
   }
 }
 
-function checkSchema(validate: TypeBoxValidator, value: unknown): TypeBoxValidationError[] | null {
+function checkSchema(validate: TypeBoxValidator, value: any): TypeBoxValidationError[] | null {
   return withPluginFormatSemantics(() => {
     if (validate.Check(value)) {
       return null;
@@ -138,14 +138,14 @@ function checkSchema(validate: TypeBoxValidator, value: unknown): TypeBoxValidat
   });
 }
 
-function applyDefaultsWithPluginFormatSemantics(schema: JsonSchemaValue, value: unknown): unknown {
+function applyDefaultsWithPluginFormatSemantics(schema: JsonSchemaValue, value: any): any {
   return withPluginFormatSemantics(() => applyJsonSchemaDefaults(schema, value));
 }
 
 function isDefaultActivatedConditionalFailure(params: {
   schema: JsonSchemaValue;
-  originalValue: unknown;
-  defaultedValue: unknown;
+  originalValue: any;
+  defaultedValue: any;
 }): boolean {
   const relaxedConditionalValidator = compileSchema(
     relaxConditionalRequiredKeywords(params.schema),
@@ -186,7 +186,7 @@ function appendPathSegment(path: string, segment: string): string {
   return `${path}.${trimmed}`;
 }
 
-function firstStringParam(value: unknown): string | null {
+function firstStringParam(value: any): string | null {
   if (typeof value === "string" && value.trim()) {
     return value;
   }
@@ -223,7 +223,7 @@ function resolveValidationErrorPath(error: TypeBoxValidationError): string {
   return appendPathSegment(basePath, missingProperty);
 }
 
-function extractAllowedValues(error: TypeBoxValidationError): unknown[] | null {
+function extractAllowedValues(error: TypeBoxValidationError): any[] | null {
   if (error.keyword === "enum") {
     const allowedValues = error.params?.allowedValues;
     return Array.isArray(allowedValues) ? allowedValues : null;
@@ -333,10 +333,10 @@ function formatValidationErrors(
 export function validateJsonSchemaValue(params: {
   schema: JsonSchemaValue;
   cacheKey: string;
-  value: unknown;
+  value: any;
   applyDefaults?: boolean;
   cache?: boolean;
-}): { ok: true; value: unknown } | { ok: false; errors: JsonSchemaValidationError[] } {
+}): { ok: true; value: any } | { ok: false; errors: JsonSchemaValidationError[] } {
   const schemaError = findJsonSchemaShapeError(params.schema);
   if (schemaError) {
     throw new Error(sanitizeTerminalText(`invalid schema: ${schemaError}`));

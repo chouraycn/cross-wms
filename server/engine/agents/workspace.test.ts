@@ -89,7 +89,7 @@ async function readWorkspaceState(dir: string): Promise<{
   };
 }
 
-async function writeLegacyWorkspaceState(dir: string, state: unknown): Promise<void> {
+async function writeLegacyWorkspaceState(dir: string, state: any): Promise<void> {
   await fs.mkdir(path.join(dir, LEGACY_WORKSPACE_STATE_PATH_SEGMENTS[0]), { recursive: true });
   await fs.writeFile(
     path.join(dir, ...LEGACY_WORKSPACE_STATE_PATH_SEGMENTS),
@@ -108,7 +108,7 @@ async function expectPathMissing(filePath: string): Promise<void> {
 }
 
 async function expectWorkspaceVanished(
-  action: Promise<unknown>,
+  action: Promise<any>,
   expected?: { attestationPath?: string },
 ): Promise<void> {
   // Recently attested generated workspaces must not be silently recreated after

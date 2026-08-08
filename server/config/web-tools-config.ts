@@ -13,7 +13,7 @@ export interface WebSearchProviderConfig {
   maxResults?: number;
   timeoutMs?: number;
   userAgent?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 // ==================== 抓取配置 ====================
@@ -25,7 +25,7 @@ export interface WebFetchProviderConfig {
   userAgent?: string;
   renderJs?: boolean;
   defaultWaitUntil?: "domcontentloaded" | "networkidle" | "load";
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 // ==================== 内容提取配置 ====================

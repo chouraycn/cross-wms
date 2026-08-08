@@ -1,16 +1,16 @@
 // 递归移除目标 provider/tool 表面不支持的 schema 关键字
 export function stripUnsupportedSchemaKeywords(
-  schema: unknown,
+  schema: any,
   unsupportedKeywords: ReadonlySet<string>,
-): unknown {
+): any {
   if (!schema || typeof schema !== "object") {
     return schema;
   }
   if (Array.isArray(schema)) {
     return schema.map((entry) => stripUnsupportedSchemaKeywords(entry, unsupportedKeywords));
   }
-  const obj = schema as Record<string, unknown>;
-  const cleaned: Record<string, unknown> = {};
+  const obj = schema as Record<string, any>;
+  const cleaned: Record<string, any> = {};
   for (const [key, value] of Object.entries(obj)) {
     if (unsupportedKeywords.has(key)) {
       continue;
@@ -18,7 +18,7 @@ export function stripUnsupportedSchemaKeywords(
     // schema 容器在不同形状下持有嵌套 schema，递归每个已知容器同时保留无关元数据字段
     if (key === "properties" && value && typeof value === "object" && !Array.isArray(value)) {
       cleaned[key] = Object.fromEntries(
-        Object.entries(value as Record<string, unknown>).map(([childKey, childValue]) => [
+        Object.entries(value as Record<string, any>).map(([childKey, childValue]) => [
           childKey,
           stripUnsupportedSchemaKeywords(childValue, unsupportedKeywords),
         ]),

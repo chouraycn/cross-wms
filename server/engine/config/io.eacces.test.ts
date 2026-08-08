@@ -31,7 +31,7 @@ describe("config io EACCES handling", () => {
       configPath,
       fs: makeEaccesFs(configPath),
       logger: {
-        error: (msg: unknown) => errors.push(String(msg)),
+        error: (msg: any) => errors.push(String(msg)),
         warn: () => {},
       },
     });

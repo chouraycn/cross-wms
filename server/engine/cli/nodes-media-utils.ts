@@ -27,7 +27,7 @@ function resolvePreferredOpenClawTmpDir(): string {
 
 // ===== 内联降级：asFiniteNumber / asNumber =====
 /** Coerce an unknown value to a finite number, returning undefined when not finite. */
-export function asNumber(value: unknown): number | undefined {
+export function asNumber(value: any): number | undefined {
   if (typeof value === "number" && Number.isFinite(value)) {
     return value;
   }
@@ -43,7 +43,7 @@ export function asNumber(value: unknown): number | undefined {
 
 // ===== 内联降级：asString / readStringValue =====
 /** Coerce an unknown value to a trimmed string, returning undefined when not a string. */
-export function asString(value: unknown): string | undefined {
+export function asString(value: any): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }
@@ -53,10 +53,10 @@ export function asString(value: unknown): string | undefined {
 // ===== asString 结束 =====
 
 // ===== 内联降级：asRecord =====
-/** Coerce an unknown value to a Record<string, unknown>, returning {} otherwise. */
-export function asRecord(value: unknown): Record<string, unknown> {
+/** Coerce an unknown value to a Record<string, any>, returning {} otherwise. */
+export function asRecord(value: any): Record<string, any> {
   if (value && typeof value === "object" && !Array.isArray(value)) {
-    return value as Record<string, unknown>;
+    return value as Record<string, any>;
   }
   return {};
 }
@@ -64,7 +64,7 @@ export function asRecord(value: unknown): Record<string, unknown> {
 
 // ===== 内联降级：asBoolean =====
 /** Coerce an unknown value to a boolean, returning undefined when not a boolean. */
-export function asBoolean(value: unknown): boolean | undefined {
+export function asBoolean(value: any): boolean | undefined {
   if (typeof value === "boolean") {
     return value;
   }

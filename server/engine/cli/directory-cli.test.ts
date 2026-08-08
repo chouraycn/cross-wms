@@ -50,16 +50,16 @@ vi.mock("../runtime.js", () => ({
   defaultRuntime: runtimeState.defaultRuntime,
 }));
 
-function requireRecord(value: unknown): Record<string, unknown> {
+function requireRecord(value: any): Record<string, any> {
   if (!value) {
     throw new Error("expected record");
   }
   expect(typeof value).toBe("object");
   expect(Array.isArray(value)).toBe(false);
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function firstMockArg(mockFn: { mock: { calls: ReadonlyArray<ReadonlyArray<unknown>> } }): unknown {
+function firstMockArg(mockFn: { mock: { calls: ReadonlyArray<ReadonlyArray<any>> } }): any {
   const call = mockFn.mock.calls[0];
   if (!call) {
     throw new Error("expected mock to be called");
@@ -67,7 +67,7 @@ function firstMockArg(mockFn: { mock: { calls: ReadonlyArray<ReadonlyArray<unkno
   return call[0];
 }
 
-function firstRecordArg(mockFn: { mock: { calls: ReadonlyArray<ReadonlyArray<unknown>> } }) {
+function firstRecordArg(mockFn: { mock: { calls: ReadonlyArray<ReadonlyArray<any>> } }) {
   return requireRecord(firstMockArg(mockFn));
 }
 

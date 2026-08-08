@@ -5,7 +5,7 @@ import { parseConfigValue } from "./config-value.js";
 
 /** Parsed set/unset action or a user-facing parse error. */
 export type SetUnsetParseResult =
-  | { kind: "set"; path: string; value: unknown }
+  | { kind: "set"; path: string; value: any }
   | { kind: "unset"; path: string }
   | { kind: "error"; message: string };
 
@@ -47,7 +47,7 @@ export function parseSetUnsetCommandAction<T>(params: {
   slash: string;
   action: string;
   args: string;
-  onSet: (path: string, value: unknown) => T;
+  onSet: (path: string, value: any) => T;
   onUnset: (path: string) => T;
   onError: (message: string) => T;
 }): T | null {
@@ -74,7 +74,7 @@ export function parseSlashCommandWithSetUnset<T>(params: {
   invalidMessage: string;
   usageMessage: string;
   onKnownAction: (action: string, args: string) => T | undefined;
-  onSet: (path: string, value: unknown) => T;
+  onSet: (path: string, value: any) => T;
   onUnset: (path: string) => T;
   onError: (message: string) => T;
 }): T | null {

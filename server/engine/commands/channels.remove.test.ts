@@ -69,7 +69,7 @@ const runtime = createTestRuntime();
 
 function firstWrittenChannelsConfig() {
   return configMocks.writeConfigFile.mock.calls[0]?.[0] as
-    | { channels?: Record<string, unknown> }
+    | { channels?: Record<string, any> }
     | undefined;
 }
 
@@ -84,7 +84,7 @@ describe("channelsRemoveCommand", () => {
     configMocks.writeConfigFile.mockClear();
     configMocks.replaceConfigFile
       .mockReset()
-      .mockImplementation(async (params: { nextConfig: unknown }) => {
+      .mockImplementation(async (params: { nextConfig: any }) => {
         await configMocks.writeConfigFile(params.nextConfig);
       });
     runtime.log.mockClear();

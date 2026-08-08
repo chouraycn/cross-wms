@@ -43,7 +43,7 @@ const VISION_AGENT_MODEL = {
   input: ["text", "image"],
 };
 
-function expectChannels(call: Record<string, unknown>, channel: string) {
+function expectChannels(call: Record<string, any>, channel: string) {
   expect(call.channel).toBe(channel);
   expect(call.messageChannel).toBe(channel);
   const runContext = call.runContext as { messageChannel?: string } | undefined;
@@ -51,7 +51,7 @@ function expectChannels(call: Record<string, unknown>, channel: string) {
 }
 
 async function setTestSessionStore(params: {
-  entries: Record<string, Record<string, unknown>>;
+  entries: Record<string, Record<string, any>>;
   agentId?: string;
 }) {
   testState.sessionStorePath = gatewaySuite.sessionStorePath;
@@ -62,8 +62,8 @@ async function setTestSessionStore(params: {
 }
 
 async function runMainAgentDeliveryWithSession(params: {
-  entry: Record<string, unknown>;
-  request: Record<string, unknown>;
+  entry: Record<string, any>;
+  request: Record<string, any>;
   allowFrom?: string[];
 }) {
   setRegistry(defaultRegistry);
@@ -132,8 +132,8 @@ async function runAgentImageRequest(params: {
   return await waitForAgentCommandCall(params.idempotencyKey);
 }
 
-function expectBaseImageForwarded(images: unknown) {
-  const forwarded = images as Array<Record<string, unknown>> | undefined;
+function expectBaseImageForwarded(images: any) {
+  const forwarded = images as Array<Record<string, any>> | undefined;
   expect(forwarded, "agent command should include one forwarded image attachment").toHaveLength(1);
   expect(forwarded?.[0]?.type).toBe("image");
   expect(forwarded?.[0]?.mimeType).toBe("image/png");
@@ -143,14 +143,14 @@ function expectBaseImageForwarded(images: unknown) {
 const createStubChannelPlugin = (params: {
   id: ChannelPlugin["id"];
   label: string;
-  resolveAllowFrom?: (cfg: Record<string, unknown>) => string[];
+  resolveAllowFrom?: (cfg: Record<string, any>) => string[];
 }): ChannelPlugin => ({
   ...createChannelTestPluginBase({
     id: params.id,
     label: params.label,
     config: {
       resolveAllowFrom: params.resolveAllowFrom
-        ? ({ cfg }) => params.resolveAllowFrom?.(cfg as Record<string, unknown>) ?? []
+        ? ({ cfg }) => params.resolveAllowFrom?.(cfg as Record<string, any>) ?? []
         : undefined,
     },
   }),
@@ -188,8 +188,8 @@ const defaultRegistry = createRegistry([
       id: "whatsapp",
       label: "WhatsApp",
       resolveAllowFrom: (cfg) => {
-        const channels = cfg.channels as Record<string, unknown> | undefined;
-        const entry = channels?.whatsapp as Record<string, unknown> | undefined;
+        const channels = cfg.channels as Record<string, any> | undefined;
+        const entry = channels?.whatsapp as Record<string, any> | undefined;
         const allow = entry?.allowFrom;
         return Array.isArray(allow) ? allow.map((value) => String(value)) : [];
       },

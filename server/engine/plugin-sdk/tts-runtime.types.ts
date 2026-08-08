@@ -125,8 +125,8 @@ export type MaybeApplyTtsToPayloadParams = {
 
 /** Test-only helpers exported so plugin and channel tests share TTS policy decisions. */
 export type TtsTestFacade = {
-  parseTtsDirectives: (...args: unknown[]) => TtsDirectiveParseResult;
-  resolveModelOverridePolicy: (...args: unknown[]) => ResolvedTtsModelOverrides;
+  parseTtsDirectives: (...args: any[]) => TtsDirectiveParseResult;
+  resolveModelOverridePolicy: (...args: any[]) => ResolvedTtsModelOverrides;
   supportsNativeVoiceNoteTts: (channel: string | undefined) => boolean;
   supportsTranscodedVoiceNoteTts: (channel: string | undefined) => boolean;
   shouldDeliverTtsAsVoice: (params: {
@@ -136,14 +136,14 @@ export type TtsTestFacade = {
     fileExtension?: string;
     outputFormat?: string;
   }) => boolean;
-  summarizeText: (...args: unknown[]) => Promise<SummarizeResult>;
+  summarizeText: (...args: any[]) => Promise<SummarizeResult>;
   getResolvedSpeechProviderConfig: (
     config: ResolvedTtsConfig,
     providerId: string,
     cfg?: OpenClawConfig,
   ) => SpeechProviderConfig;
-  formatTtsProviderError: (provider: TtsProvider, err: unknown) => string;
-  sanitizeTtsErrorForLog: (err: unknown) => string;
+  formatTtsProviderError: (provider: TtsProvider, err: any) => string;
+  sanitizeTtsErrorForLog: (err: any) => string;
 };
 
 /** File-backed text-to-speech result returned by high-level runtime helpers. */

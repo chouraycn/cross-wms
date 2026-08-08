@@ -17,7 +17,7 @@
  * 规范化来自 config、env、setup 提示或 plugin SDK 调用方的原始密钥值。
  * 输入缺失/无效时返回空字符串，便于调用方保持布尔存在性检查。
  */
-export function normalizeSecretInput(value: unknown): string {
+export function normalizeSecretInput(value: any): string {
   if (typeof value !== "string") {
     return "";
   }
@@ -36,7 +36,7 @@ export function normalizeSecretInput(value: unknown): string {
  * 规范化原始密钥值，并将空的规范化输出转为 `undefined`。
  * 在 "未配置" 比空字符串更清晰的可选配置边界使用。
  */
-export function normalizeOptionalSecretInput(value: unknown): string | undefined {
+export function normalizeOptionalSecretInput(value: any): string | undefined {
   const normalized = normalizeSecretInput(value);
   return normalized || undefined;
 }

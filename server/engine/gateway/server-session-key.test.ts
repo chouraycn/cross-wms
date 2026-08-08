@@ -28,7 +28,7 @@ vi.mock("./session-utils.js", async () => {
 const { resolveSessionKeyForRun, resetResolvedSessionKeyForRunCacheForTest } =
   await import("./server-session-key.js");
 
-function mockCombinedSessionStore(cfg: OpenClawConfig, store: Record<string, unknown>) {
+function mockCombinedSessionStore(cfg: OpenClawConfig, store: Record<string, any>) {
   hoisted.loadConfigMock.mockReturnValue(cfg);
   hoisted.loadCombinedSessionStoreForGatewayMock.mockReturnValue({
     storePath: "(multiple)",

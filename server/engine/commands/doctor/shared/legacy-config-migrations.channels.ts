@@ -7,20 +7,20 @@ import {
   type LegacyConfigRule,
 } from "@openclaw-src/config/legacy.shared.js";
 
-function hasOwnKey(target: Record<string, unknown>, key: string): boolean {
+function hasOwnKey(target: Record<string, any>, key: string): boolean {
   return Object.hasOwn(target, key);
 }
 
-function cleanupEmptyRecord(parent: Record<string, unknown>, key: string): void {
+function cleanupEmptyRecord(parent: Record<string, any>, key: string): void {
   const value = getRecord(parent[key]);
   if (value && Object.keys(value).length === 0) {
     delete parent[key];
   }
 }
 
-function resolveCompatibleDefaultGroupEntry(section: Record<string, unknown>): {
-  groups: Record<string, unknown>;
-  entry: Record<string, unknown>;
+function resolveCompatibleDefaultGroupEntry(section: Record<string, any>): {
+  groups: Record<string, any>;
+  entry: Record<string, any>;
 } | null {
   const existingGroups = section.groups;
   if (existingGroups !== undefined && !getRecord(existingGroups)) {
@@ -37,10 +37,10 @@ function resolveCompatibleDefaultGroupEntry(section: Record<string, unknown>): {
 }
 
 function migrateChannelDefaultRequireMention(params: {
-  section: Record<string, unknown>;
+  section: Record<string, any>;
   channelId: string;
   legacyPath: string;
-  requireMention: unknown;
+  requireMention: any;
   changes: string[];
 }): boolean {
   const defaultGroupEntry = resolveCompatibleDefaultGroupEntry(params.section);
@@ -68,7 +68,7 @@ function migrateChannelDefaultRequireMention(params: {
   return false;
 }
 
-function migrateRoutingAllowFrom(raw: Record<string, unknown>, changes: string[]): void {
+function migrateRoutingAllowFrom(raw: Record<string, any>, changes: string[]): void {
   const routing = getRecord(raw.routing);
   if (!routing || routing.allowFrom === undefined) {
     return;
@@ -97,9 +97,9 @@ function migrateRoutingAllowFrom(raw: Record<string, unknown>, changes: string[]
 }
 
 function migrateRoutingGroupChatMessages(params: {
-  raw: Record<string, unknown>;
-  routing: Record<string, unknown>;
-  groupChat: Record<string, unknown>;
+  raw: Record<string, any>;
+  routing: Record<string, any>;
+  groupChat: Record<string, any>;
   changes: string[];
 }): void {
   const migrateMessageGroupField = (field: "historyLimit" | "mentionPatterns") => {
@@ -132,8 +132,8 @@ function migrateRoutingGroupChatMessages(params: {
 }
 
 function migrateRoutingGroupChatRequireMention(params: {
-  raw: Record<string, unknown>;
-  groupChat: Record<string, unknown>;
+  raw: Record<string, any>;
+  groupChat: Record<string, any>;
   changes: string[];
 }): void {
   const requireMention = params.groupChat.requireMention;
@@ -170,7 +170,7 @@ function migrateRoutingGroupChatRequireMention(params: {
   delete params.groupChat.requireMention;
 }
 
-function migrateRoutingGroupChat(raw: Record<string, unknown>, changes: string[]): void {
+function migrateRoutingGroupChat(raw: Record<string, any>, changes: string[]): void {
   const routing = getRecord(raw.routing);
   const groupChat = getRecord(routing?.groupChat);
   if (!routing || !groupChat) {
@@ -182,7 +182,7 @@ function migrateRoutingGroupChat(raw: Record<string, unknown>, changes: string[]
   cleanupEmptyRecord(raw, "routing");
 }
 
-function migrateTelegramRequireMention(raw: Record<string, unknown>, changes: string[]): void {
+function migrateTelegramRequireMention(raw: Record<string, any>, changes: string[]): void {
   const channels = getRecord(raw.channels);
   const telegram = getRecord(channels?.telegram);
   if (!channels || !telegram || telegram.requireMention === undefined) {
@@ -201,7 +201,7 @@ function migrateTelegramRequireMention(raw: Record<string, unknown>, changes: st
   raw.channels = channels;
 }
 
-function hasLegacyFeishuAccountBotName(value: unknown): boolean {
+function hasLegacyFeishuAccountBotName(value: any): boolean {
   const accounts = getRecord(value);
   if (!accounts) {
     return false;
@@ -212,7 +212,7 @@ function hasLegacyFeishuAccountBotName(value: unknown): boolean {
   });
 }
 
-function migrateFeishuAccountBotName(raw: Record<string, unknown>, changes: string[]): void {
+function migrateFeishuAccountBotName(raw: Record<string, any>, changes: string[]): void {
   const channels = getRecord(raw.channels);
   const feishu = getRecord(channels?.feishu);
   const accounts = getRecord(feishu?.accounts);
@@ -243,12 +243,12 @@ function migrateFeishuAccountBotName(raw: Record<string, unknown>, changes: stri
   raw.channels = channels;
 }
 
-function hasLegacyThreadBindingTtl(value: unknown): boolean {
+function hasLegacyThreadBindingTtl(value: any): boolean {
   const threadBindings = getRecord(value);
   return Boolean(threadBindings && hasOwnKey(threadBindings, "ttlHours"));
 }
 
-function hasLegacyThreadBindingSpawnSplit(value: unknown): boolean {
+function hasLegacyThreadBindingSpawnSplit(value: any): boolean {
   const threadBindings = getRecord(value);
   return Boolean(
     threadBindings &&
@@ -257,7 +257,7 @@ function hasLegacyThreadBindingSpawnSplit(value: unknown): boolean {
   );
 }
 
-function hasLegacyThreadBindingTtlInAccounts(value: unknown): boolean {
+function hasLegacyThreadBindingTtlInAccounts(value: any): boolean {
   const accounts = getRecord(value);
   if (!accounts) {
     return false;
@@ -267,7 +267,7 @@ function hasLegacyThreadBindingTtlInAccounts(value: unknown): boolean {
   );
 }
 
-function hasLegacyThreadBindingSpawnSplitInAccounts(value: unknown): boolean {
+function hasLegacyThreadBindingSpawnSplitInAccounts(value: any): boolean {
   const accounts = getRecord(value);
   if (!accounts) {
     return false;
@@ -278,7 +278,7 @@ function hasLegacyThreadBindingSpawnSplitInAccounts(value: unknown): boolean {
 }
 
 function migrateThreadBindingsTtlHoursForPath(params: {
-  owner: Record<string, unknown>;
+  owner: Record<string, any>;
   pathPrefix: string;
   changes: string[];
 }): boolean {
@@ -307,7 +307,7 @@ function migrateThreadBindingsTtlHoursForPath(params: {
 }
 
 function resolveMigratedSpawnSessions(
-  threadBindings: Record<string, unknown>,
+  threadBindings: Record<string, any>,
 ): boolean | undefined {
   const subagent = threadBindings.spawnSubagentSessions;
   const acp = threadBindings.spawnAcpSessions;
@@ -323,7 +323,7 @@ function resolveMigratedSpawnSessions(
 }
 
 function migrateThreadBindingsSpawnSessionsForPath(params: {
-  owner: Record<string, unknown>;
+  owner: Record<string, any>;
   pathPrefix: string;
   changes: string[];
 }): boolean {
@@ -363,7 +363,7 @@ function migrateThreadBindingsSpawnSessionsForPath(params: {
   return true;
 }
 
-function hasLegacyThreadBindingTtlInAnyChannel(value: unknown): boolean {
+function hasLegacyThreadBindingTtlInAnyChannel(value: any): boolean {
   const channels = getRecord(value);
   if (!channels) {
     return false;
@@ -380,7 +380,7 @@ function hasLegacyThreadBindingTtlInAnyChannel(value: unknown): boolean {
   });
 }
 
-function hasLegacyThreadBindingSpawnSplitInAnyChannel(value: unknown): boolean {
+function hasLegacyThreadBindingSpawnSplitInAnyChannel(value: any): boolean {
   const channels = getRecord(value);
   if (!channels) {
     return false;
@@ -468,7 +468,7 @@ const WEBCHAT_CHANNEL_RULES: LegacyConfigRule[] = [
   },
 ];
 
-function migrateRetiredWebchatChannelConfig(raw: Record<string, unknown>, changes: string[]): void {
+function migrateRetiredWebchatChannelConfig(raw: Record<string, any>, changes: string[]): void {
   const channels = getRecord(raw.channels);
   if (!channels || !hasOwnKey(channels, "webchat")) {
     return;

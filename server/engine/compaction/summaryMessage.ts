@@ -218,7 +218,7 @@ export function tryParseCompactionSummary(msg: CompactionMessage): CompactionSum
     return null;
   }
 
-  const meta = msg.metadata as Record<string, unknown>;
+  const meta = msg.metadata as Record<string, any>;
   const metadata: CompactionSummaryMetadata = {
     compactedAt: (meta.compactedAt as number) ?? Date.now(),
     originalMessageCount: (meta.originalMessageCount as number) ?? 0,

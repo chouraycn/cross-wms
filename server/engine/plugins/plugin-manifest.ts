@@ -46,7 +46,7 @@ export interface ManifestValidationResult {
 }
 
 /** 校验 manifest 字段完整性与合法性 */
-export function validatePluginManifest(manifest: unknown): ManifestValidationResult {
+export function validatePluginManifest(manifest: any): ManifestValidationResult {
   const violations: string[] = [];
   const warnings: string[] = [];
 
@@ -58,7 +58,7 @@ export function validatePluginManifest(manifest: unknown): ManifestValidationRes
     };
   }
 
-  const m = manifest as Record<string, unknown>;
+  const m = manifest as Record<string, any>;
 
   // 必需字段
   for (const field of REQUIRED_MANIFEST_FIELDS) {
@@ -129,7 +129,7 @@ export function validatePluginManifest(manifest: unknown): ManifestValidationRes
           violations.push(`tools[${idx}] 必须是对象`);
           return;
         }
-        const t = tool as Record<string, unknown>;
+        const t = tool as Record<string, any>;
         if (typeof t.name !== 'string' || t.name === '') {
           violations.push(`tools[${idx}].name 不能为空`);
         }
@@ -153,7 +153,7 @@ export function validatePluginManifest(manifest: unknown): ManifestValidationRes
           violations.push(`dependencies[${idx}] 必须是对象`);
           return;
         }
-        const d = dep as Record<string, unknown>;
+        const d = dep as Record<string, any>;
         if (typeof d.id !== 'string' || d.id === '') {
           violations.push(`dependencies[${idx}].id 不能为空`);
         }
@@ -177,7 +177,7 @@ export function validatePluginManifest(manifest: unknown): ManifestValidationRes
 }
 
 /** 校验 manifest，失败时抛出 PluginManifestError */
-export function assertValidManifest(manifest: unknown): asserts manifest is PluginManifest {
+export function assertValidManifest(manifest: any): asserts manifest is PluginManifest {
   const result = validatePluginManifest(manifest);
   if (!result.valid) {
     throw new PluginManifestError(
@@ -190,7 +190,7 @@ export function assertValidManifest(manifest: unknown): asserts manifest is Plug
 // ===================== Manifest 规范化 =====================
 
 /** 规范化 manifest（补全默认值、统一字段） */
-export function normalizePluginManifest(input: unknown): PluginManifest {
+export function normalizePluginManifest(input: any): PluginManifest {
   assertValidManifest(input);
   const m = { ...(input as PluginManifest) };
 
@@ -235,7 +235,7 @@ export function serializeManifest(manifest: PluginManifest): string {
 
 /** 从 JSON 字符串解析 manifest（带校验） */
 export function deserializeManifest(json: string): PluginManifest {
-  let parsed: unknown;
+  let parsed: any;
   try {
     parsed = JSON.parse(json);
   } catch (err) {

@@ -46,8 +46,8 @@ type AgentGatewayResult = {
     mediaUrl?: string | null;
     mediaUrls?: string[];
   }>;
-  deliveryStatus?: unknown;
-  meta?: unknown;
+  deliveryStatus?: any;
+  meta?: any;
 };
 
 type GatewayAgentResponse = {
@@ -55,7 +55,7 @@ type GatewayAgentResponse = {
   status?: string;
   summary?: string;
   result?: AgentGatewayResult;
-  deliveryStatus?: unknown;
+  deliveryStatus?: any;
 };
 
 const NO_GATEWAY_TIMEOUT_MS = 2_147_000_000;
@@ -95,8 +95,8 @@ type AgentDispatchOpts = Omit<AgentCliOpts, "messageFile"> & {
 
 type AgentCliSignal = "SIGINT" | "SIGTERM";
 type AgentCliProcessLike = {
-  on(signal: AgentCliSignal, handler: () => void): unknown;
-  off(signal: AgentCliSignal, handler: () => void): unknown;
+  on(signal: AgentCliSignal, handler: () => void): any;
+  off(signal: AgentCliSignal, handler: () => void): any;
 };
 type AgentCliDeps = CliDeps & {
   process?: AgentCliProcessLike;
@@ -186,9 +186,9 @@ function missingAgentMessageError(): Error {
   );
 }
 
-function formatMessageFileReadFailure(messageFile: string, err: unknown): string {
+function formatMessageFileReadFailure(messageFile: string, err: any): string {
   const code =
-    typeof (err as { code?: unknown })?.code === "string" ? (err as { code: string }).code : "";
+    typeof (err as { code?: any })?.code === "string" ? (err as { code: string }).code : "";
   if (code === "ENOENT") {
     return `Message file not found: ${messageFile}`;
   }
@@ -289,7 +289,7 @@ async function formatPayloadForLog(payload: {
   return lines.join("\n").trimEnd();
 }
 
-function isGatewayAgentTimeoutError(err: unknown): boolean {
+function isGatewayAgentTimeoutError(err: any): boolean {
   if (isGatewayTransportError(err)) {
     return err.kind === "timeout";
   }
@@ -304,7 +304,7 @@ function isSessionResetCommand(message: string): boolean {
   return /^\/(?:new|reset)(?:\s|$)/i.test(message.trim());
 }
 
-function shouldRetryGatewayDispatchWithShellEnvFallback(err: unknown): boolean {
+function shouldRetryGatewayDispatchWithShellEnvFallback(err: any): boolean {
   return (
     isGatewayCredentialsRequiredError(err) ||
     isGatewayExplicitAuthRequiredError(err) ||
@@ -312,11 +312,11 @@ function shouldRetryGatewayDispatchWithShellEnvFallback(err: unknown): boolean {
   );
 }
 
-function isGatewayAgentEmbeddedFallbackError(err: unknown): boolean {
+function isGatewayAgentEmbeddedFallbackError(err: any): boolean {
   return isGatewayTransportError(err);
 }
 
-function isTransientGatewayAgentConnectClose(err: unknown): boolean {
+function isTransientGatewayAgentConnectClose(err: any): boolean {
   if (!isGatewayTransportError(err) || err.kind !== "closed") {
     return false;
   }
@@ -389,20 +389,20 @@ async function normalizeSessionKeyOptsForDispatch(
   };
 }
 
-function isAbortError(err: unknown): boolean {
+function isAbortError(err: any): boolean {
   return err instanceof Error && err.name === "AbortError";
 }
 
-function readAcceptedRunContext(payload: unknown): {
+function readAcceptedRunContext(payload: any): {
   runId?: string;
   sessionKey?: string;
 } {
   if (!payload || typeof payload !== "object") {
     return {};
   }
-  const runId = (payload as { runId?: unknown }).runId;
-  const sessionKey = (payload as { sessionKey?: unknown }).sessionKey;
-  const status = (payload as { status?: unknown }).status;
+  const runId = (payload as { runId?: any }).runId;
+  const sessionKey = (payload as { sessionKey?: any }).sessionKey;
+  const status = (payload as { status?: any }).status;
   if (status !== "accepted") {
     return {};
   }
@@ -441,12 +441,12 @@ function createAgentCliSignalBridge(processLike: AgentCliProcessLike = process) 
   };
 }
 
-function isAgentCliProcessLike(value: unknown): value is AgentCliProcessLike {
+function isAgentCliProcessLike(value: any): value is AgentCliProcessLike {
   return (
     Boolean(value) &&
     typeof value === "object" &&
-    typeof (value as { on?: unknown }).on === "function" &&
-    typeof (value as { off?: unknown }).off === "function"
+    typeof (value as { on?: any }).on === "function" &&
+    typeof (value as { off?: any }).off === "function"
   );
 }
 
@@ -454,7 +454,7 @@ function resolveAgentCliProcessLike(deps: AgentCliDeps | undefined): AgentCliPro
   if (!deps || !Object.hasOwn(deps, "process")) {
     return process;
   }
-  const processLike = (deps as { process?: unknown }).process;
+  const processLike = (deps as { process?: any }).process;
   return isAgentCliProcessLike(processLike) ? processLike : process;
 }
 
@@ -482,11 +482,11 @@ function delayMs(ms: number, signal?: AbortSignal): Promise<void> {
   });
 }
 
-function isConfirmedChatAbortResponseForRun(value: unknown, runId: string): boolean {
+function isConfirmedChatAbortResponseForRun(value: any, runId: string): boolean {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return false;
   }
-  const response = value as { aborted?: unknown; runIds?: unknown };
+  const response = value as { aborted?: any; runIds?: any };
   if (response.aborted !== true) {
     return false;
   }
@@ -545,9 +545,9 @@ async function abortAcceptedGatewayAgentRunWithGatewayCall(params: {
   gatewayIdentity: AgentGatewayCallIdentity;
   config: OpenClawConfig;
 }): Promise<void> {
-  const request: GatewayRequestFunction = async <T = Record<string, unknown>>(
+  const request: GatewayRequestFunction = async <T = Record<string, any>>(
     method: string,
-    requestParams?: unknown,
+    requestParams?: any,
     opts?: Parameters<GatewayRequestFunction>[2],
   ): Promise<T> =>
     await callGateway<T>({

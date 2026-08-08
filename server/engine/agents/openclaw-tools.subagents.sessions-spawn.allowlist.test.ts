@@ -8,23 +8,23 @@ import {
 
 const hoisted = vi.hoisted(() => ({
   callGatewayMock: vi.fn(),
-  configOverride: {} as Record<string, unknown>,
+  configOverride: {} as Record<string, any>,
 }));
 
 let resetSubagentRegistryForTests: typeof import("./subagent-registry.js").resetSubagentRegistryForTests;
 let spawnSubagentDirect: typeof import("./subagent-spawn.js").spawnSubagentDirect;
 
-function resolveAgentConfigFromList(cfg: Record<string, unknown>, agentId: string) {
-  const agents = (cfg.agents as { list?: Array<Record<string, unknown>> } | undefined)?.list;
+function resolveAgentConfigFromList(cfg: Record<string, any>, agentId: string) {
+  const agents = (cfg.agents as { list?: Array<Record<string, any>> } | undefined)?.list;
   return agents?.find((entry) => entry.id === agentId);
 }
 
-function readSandboxMode(value: unknown) {
+function readSandboxMode(value: any) {
   return value && typeof value === "object" ? (value as { mode?: string }).mode : undefined;
 }
 
 function resolveSandboxRuntimeStatusFromConfig(params: {
-  cfg?: Record<string, unknown>;
+  cfg?: Record<string, any>;
   sessionKey?: string;
 }) {
   // Test-only sandbox resolver mirrors the per-agent/default precedence used by runtime.
@@ -36,17 +36,17 @@ function resolveSandboxRuntimeStatusFromConfig(params: {
   const targetAgentConfig =
     typeof agentId === "string" ? resolveAgentConfigFromList(cfg, agentId) : undefined;
   const explicitMode = readSandboxMode(
-    (targetAgentConfig as { sandbox?: unknown } | undefined)?.sandbox,
+    (targetAgentConfig as { sandbox?: any } | undefined)?.sandbox,
   );
   const defaultMode = readSandboxMode(
-    (cfg.agents as { defaults?: { sandbox?: unknown } } | undefined)?.defaults?.sandbox,
+    (cfg.agents as { defaults?: { sandbox?: any } } | undefined)?.defaults?.sandbox,
   );
   const sandboxed =
     explicitMode === "all" ? true : explicitMode === "off" ? false : defaultMode === "all";
   return { sandboxed };
 }
 
-function setConfig(next: Record<string, unknown>) {
+function setConfig(next: Record<string, any>) {
   hoisted.configOverride = createSubagentSpawnTestConfig(undefined, next);
 }
 
@@ -85,7 +85,7 @@ beforeAll(async () => {
     callGatewayMock: hoisted.callGatewayMock,
     getRuntimeConfig: () => hoisted.configOverride,
     resolveAgentConfig: (cfg, agentId) => resolveAgentConfigFromList(cfg, agentId),
-    resolveSandboxRuntimeStatus: (params: { cfg?: Record<string, unknown>; sessionKey?: string }) =>
+    resolveSandboxRuntimeStatus: (params: { cfg?: Record<string, any>; sessionKey?: string }) =>
       resolveSandboxRuntimeStatusFromConfig(params),
     resetModules: false,
     sessionStorePath: "/tmp/subagent-spawn-allowlist-session-store.json",

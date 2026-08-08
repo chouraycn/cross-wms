@@ -9,7 +9,7 @@ export interface ThreadBinding {
   parentMessageId?: string;
   conversationId?: string;
   boundAt: number;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
 }
 
 const threadBindings = new Map<string, ThreadBinding>();
@@ -23,7 +23,7 @@ export function bindThread(params: {
   externalThreadId?: string;
   parentMessageId?: string;
   conversationId?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }): ThreadBinding {
   const binding: ThreadBinding = {
     threadId: params.threadId,

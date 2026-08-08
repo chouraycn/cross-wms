@@ -7,7 +7,7 @@
  * 将字符串规范化为小写形式；非字符串或空值返回空字符串。
  * 本地降级实现，替代 `@openclaw/normalization-core/string-coerce` 的同名导出。
  */
-function normalizeLowercaseStringOrEmpty(value: unknown): string {
+function normalizeLowercaseStringOrEmpty(value: any): string {
   if (typeof value !== "string") {
     return "";
   }

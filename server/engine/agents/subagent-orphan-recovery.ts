@@ -6,9 +6,9 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export async function recoverOrphanedSubagentSessions(..._args: unknown[]): Promise<unknown> {
+export async function recoverOrphanedSubagentSessions(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
-export function scheduleOrphanRecovery(..._args: unknown[]): unknown {
+export function scheduleOrphanRecovery(..._args: any[]): any {
   return undefined;
 }

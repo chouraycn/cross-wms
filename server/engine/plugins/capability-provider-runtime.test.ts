@@ -5,8 +5,8 @@ import { resolveInstalledPluginIndexPolicyHash } from "./installed-plugin-index-
 import { createEmptyPluginRegistry } from "./registry.js";
 
 type MockManifestRegistry = {
-  plugins: Array<Record<string, unknown>>;
-  diagnostics: unknown[];
+  plugins: Array<Record<string, any>>;
+  diagnostics: any[];
 };
 
 function createEmptyMockManifestRegistry(): MockManifestRegistry {
@@ -28,16 +28,16 @@ const mocks = vi.hoisted(() => ({
     musicGenerationProviders: [],
   }),
   resolveRuntimePluginRegistry: vi.fn<
-    (params?: unknown) => ReturnType<typeof createEmptyPluginRegistry> | undefined
+    (params?: any) => ReturnType<typeof createEmptyPluginRegistry> | undefined
   >(() => undefined),
-  resolvePluginRegistryLoadCacheKey: vi.fn((options: unknown) => JSON.stringify(options)),
-  loadPluginManifestRegistry: vi.fn<(params?: Record<string, unknown>) => MockManifestRegistry>(
+  resolvePluginRegistryLoadCacheKey: vi.fn((options: any) => JSON.stringify(options)),
+  loadPluginManifestRegistry: vi.fn<(params?: Record<string, any>) => MockManifestRegistry>(
     () => createEmptyMockManifestRegistry(),
   ),
   resolveInstalledManifestRegistryIndexFingerprint: vi.fn(() => "test-installed-index"),
   loadBundledCapabilityRuntimeRegistry: vi.fn(),
   loadPluginRegistrySnapshot: vi.fn<
-    (_params?: unknown) => { plugins: Array<Record<string, unknown>> }
+    (_params?: any) => { plugins: Array<Record<string, any>> }
   >(() => ({
     plugins: [],
   })),
@@ -84,9 +84,9 @@ vi.mock("./plugin-registry.js", async (importOriginal) => {
   return {
     ...actual,
     loadPluginRegistrySnapshot: mocks.loadPluginRegistrySnapshot,
-    loadPluginRegistrySnapshotWithMetadata: (params?: { index?: unknown }) => {
+    loadPluginRegistrySnapshotWithMetadata: (params?: { index?: any }) => {
       const snapshot = (params?.index ?? mocks.loadPluginRegistrySnapshot(params)) as {
-        plugins?: Array<Record<string, unknown>>;
+        plugins?: Array<Record<string, any>>;
       };
       return {
         snapshot: {
@@ -110,7 +110,7 @@ vi.mock("./plugin-registry.js", async (importOriginal) => {
       ...args: Parameters<typeof mocks.loadPluginManifestRegistry>
     ) => {
       const [{ includeDisabled: _includeDisabled, ...params } = {}] = args as [
-        Record<string, unknown>?,
+        Record<string, any>?,
       ];
       return mocks.loadPluginManifestRegistry(params);
     },
@@ -147,9 +147,9 @@ function expectInitialRuntimeRegistryLookup() {
   expect(mocks.resolveRuntimePluginRegistry).toHaveBeenNthCalledWith(1);
 }
 
-function requireManifestRegistryLoadParams(index = 0): Record<string, unknown> {
+function requireManifestRegistryLoadParams(index = 0): Record<string, any> {
   const call = mocks.loadPluginManifestRegistry.mock.calls[index] as
-    | [Record<string, unknown>]
+    | [Record<string, any>]
     | undefined;
   if (!call) {
     throw new Error(`loadPluginManifestRegistry call ${index} missing`);
@@ -166,17 +166,17 @@ function expectManifestRegistryLoad(index: number, config: OpenClawConfig | Reco
 function requireRuntimeRegistryLookup(params: {
   activate?: boolean;
   onlyPluginIds?: string[];
-}): Record<string, unknown> {
+}): Record<string, any> {
   const lookup = mocks.resolveRuntimePluginRegistry.mock.calls
     .map(([options]) => options)
     .find(
-      (options): options is Record<string, unknown> =>
+      (options): options is Record<string, any> =>
         Boolean(options) &&
         typeof options === "object" &&
         (params.activate === undefined ||
-          (options as { activate?: unknown }).activate === params.activate) &&
+          (options as { activate?: any }).activate === params.activate) &&
         (params.onlyPluginIds === undefined ||
-          JSON.stringify((options as { onlyPluginIds?: unknown }).onlyPluginIds) ===
+          JSON.stringify((options as { onlyPluginIds?: any }).onlyPluginIds) ===
             JSON.stringify(params.onlyPluginIds)),
     );
   if (!lookup) {
@@ -192,8 +192,8 @@ function collectActiveRegistryLookups() {
       Boolean(
         options &&
         typeof options === "object" &&
-        Object.hasOwn(options as Record<string, unknown>, "onlyPluginIds") &&
-        !Object.hasOwn(options as Record<string, unknown>, "activate"),
+        Object.hasOwn(options as Record<string, any>, "onlyPluginIds") &&
+        !Object.hasOwn(options as Record<string, any>, "activate"),
       ),
     );
 }
@@ -303,7 +303,7 @@ describe("resolvePluginCapabilityProviders", () => {
     mocks.resolveRuntimePluginRegistry.mockReset();
     mocks.resolveRuntimePluginRegistry.mockReturnValue(undefined);
     mocks.resolvePluginRegistryLoadCacheKey.mockReset();
-    mocks.resolvePluginRegistryLoadCacheKey.mockImplementation((options: unknown) =>
+    mocks.resolvePluginRegistryLoadCacheKey.mockImplementation((options: any) =>
       JSON.stringify(options),
     );
     mocks.loadPluginRegistrySnapshot.mockReset();
@@ -481,7 +481,7 @@ describe("resolvePluginCapabilityProviders", () => {
       ],
       diagnostics: [],
     });
-    mocks.resolveRuntimePluginRegistry.mockImplementation((options?: unknown) =>
+    mocks.resolveRuntimePluginRegistry.mockImplementation((options?: any) =>
       options ? loaded : undefined,
     );
 
@@ -537,7 +537,7 @@ describe("resolvePluginCapabilityProviders", () => {
       ] as never,
       diagnostics: [],
     });
-    mocks.resolveRuntimePluginRegistry.mockImplementation((params?: unknown) =>
+    mocks.resolveRuntimePluginRegistry.mockImplementation((params?: any) =>
       params === undefined ? active : loaded,
     );
 
@@ -641,7 +641,7 @@ describe("resolvePluginCapabilityProviders", () => {
       ] as never,
       diagnostics: [],
     });
-    mocks.resolveRuntimePluginRegistry.mockImplementation((params?: unknown) =>
+    mocks.resolveRuntimePluginRegistry.mockImplementation((params?: any) =>
       params === undefined ? undefined : loaded,
     );
 
@@ -693,7 +693,7 @@ describe("resolvePluginCapabilityProviders", () => {
       ] as never,
       diagnostics: [],
     });
-    mocks.resolveRuntimePluginRegistry.mockImplementation((params?: unknown) =>
+    mocks.resolveRuntimePluginRegistry.mockImplementation((params?: any) =>
       params === undefined ? active : loaded,
     );
 
@@ -772,7 +772,7 @@ describe("resolvePluginCapabilityProviders", () => {
         ] as never,
         diagnostics: [],
       });
-      mocks.resolveRuntimePluginRegistry.mockImplementation((params?: unknown) =>
+      mocks.resolveRuntimePluginRegistry.mockImplementation((params?: any) =>
         params === undefined ? undefined : loaded,
       );
 
@@ -810,11 +810,11 @@ describe("resolvePluginCapabilityProviders", () => {
       ],
       diagnostics: [],
     });
-    mocks.resolveRuntimePluginRegistry.mockImplementation((options?: unknown) => {
+    mocks.resolveRuntimePluginRegistry.mockImplementation((options?: any) => {
       if (
         options &&
         typeof options === "object" &&
-        (options as { activate?: unknown }).activate === false
+        (options as { activate?: any }).activate === false
       ) {
         return loaded;
       }
@@ -916,7 +916,7 @@ describe("resolvePluginCapabilityProviders", () => {
       ] as never,
       diagnostics: [],
     });
-    mocks.resolveRuntimePluginRegistry.mockImplementation((params?: unknown) =>
+    mocks.resolveRuntimePluginRegistry.mockImplementation((params?: any) =>
       params === undefined ? active : loaded,
     );
 
@@ -1013,7 +1013,7 @@ describe("resolvePluginCapabilityProviders", () => {
         ([options]) =>
           Boolean(options) &&
           typeof options === "object" &&
-          Object.hasOwn(options as Record<string, unknown>, "config"),
+          Object.hasOwn(options as Record<string, any>, "config"),
       ),
     ).toBe(false);
   });
@@ -1064,7 +1064,7 @@ describe("resolvePluginCapabilityProviders", () => {
       ] as never,
       diagnostics: [],
     });
-    mocks.resolveRuntimePluginRegistry.mockImplementation((params?: unknown) =>
+    mocks.resolveRuntimePluginRegistry.mockImplementation((params?: any) =>
       params === undefined ? active : loaded,
     );
 
@@ -1131,7 +1131,7 @@ describe("resolvePluginCapabilityProviders", () => {
       ] as never,
       diagnostics: [],
     });
-    mocks.resolveRuntimePluginRegistry.mockImplementation((params?: unknown) =>
+    mocks.resolveRuntimePluginRegistry.mockImplementation((params?: any) =>
       params === undefined ? active : createEmptyPluginRegistry(),
     );
     mocks.loadBundledCapabilityRuntimeRegistry.mockReturnValue(captured);
@@ -1219,7 +1219,7 @@ describe("resolvePluginCapabilityProviders", () => {
       ] as never,
       diagnostics: [],
     });
-    mocks.resolveRuntimePluginRegistry.mockImplementation((params?: unknown) =>
+    mocks.resolveRuntimePluginRegistry.mockImplementation((params?: any) =>
       params === undefined ? active : loaded,
     );
     mocks.loadBundledCapabilityRuntimeRegistry.mockReturnValue(captured);
@@ -1264,7 +1264,7 @@ describe("resolvePluginCapabilityProviders", () => {
       ] as never,
       diagnostics: [],
     });
-    mocks.resolveRuntimePluginRegistry.mockImplementation((params?: unknown) =>
+    mocks.resolveRuntimePluginRegistry.mockImplementation((params?: any) =>
       params === undefined ? active : loaded,
     );
 
@@ -1347,7 +1347,7 @@ describe("resolvePluginCapabilityProviders", () => {
       ] as never,
       diagnostics: [],
     });
-    mocks.resolveRuntimePluginRegistry.mockImplementation((params?: unknown) =>
+    mocks.resolveRuntimePluginRegistry.mockImplementation((params?: any) =>
       params === undefined ? active : loaded,
     );
 
@@ -1412,7 +1412,7 @@ describe("resolvePluginCapabilityProviders", () => {
     setBundledCapabilityFixture("mediaUnderstandingProviders");
     mocks.withBundledPluginEnablementCompat.mockReturnValue(enablementCompat);
     mocks.withBundledPluginVitestCompat.mockReturnValue(enablementCompat);
-    mocks.resolveRuntimePluginRegistry.mockImplementation((params?: unknown) =>
+    mocks.resolveRuntimePluginRegistry.mockImplementation((params?: any) =>
       params === undefined ? undefined : loaded,
     );
 
@@ -1493,7 +1493,7 @@ describe("resolvePluginCapabilityProviders", () => {
     setBundledCapabilityFixture("mediaUnderstandingProviders", "google", "google");
     mocks.withBundledPluginEnablementCompat.mockReturnValue(compatConfig);
     mocks.withBundledPluginVitestCompat.mockReturnValue(compatConfig);
-    mocks.resolveRuntimePluginRegistry.mockImplementation((params?: unknown) =>
+    mocks.resolveRuntimePluginRegistry.mockImplementation((params?: any) =>
       params === undefined ? undefined : loaded,
     );
 
@@ -1595,7 +1595,7 @@ describe("resolvePluginCapabilityProviders", () => {
     });
     mocks.withBundledPluginEnablementCompat.mockReturnValue(compatConfig);
     mocks.withBundledPluginVitestCompat.mockReturnValue(compatConfig);
-    mocks.resolveRuntimePluginRegistry.mockImplementation((params?: unknown) =>
+    mocks.resolveRuntimePluginRegistry.mockImplementation((params?: any) =>
       params === undefined ? undefined : loaded,
     );
 
@@ -1728,7 +1728,7 @@ describe("resolvePluginCapabilityProviders", () => {
     });
     mocks.withBundledPluginEnablementCompat.mockReturnValue(enablementCompat);
     mocks.withBundledPluginVitestCompat.mockReturnValue(enablementCompat);
-    mocks.resolveRuntimePluginRegistry.mockImplementation((params?: unknown) =>
+    mocks.resolveRuntimePluginRegistry.mockImplementation((params?: any) =>
       params === undefined ? undefined : loaded,
     );
 
@@ -1773,7 +1773,7 @@ describe("resolvePluginCapabilityProviders", () => {
       ] as never,
       diagnostics: [],
     });
-    mocks.resolveRuntimePluginRegistry.mockImplementation((params?: unknown) =>
+    mocks.resolveRuntimePluginRegistry.mockImplementation((params?: any) =>
       params === undefined ? undefined : loaded,
     );
 
@@ -1834,7 +1834,7 @@ describe("resolvePluginCapabilityProviders", () => {
     });
     mocks.withBundledPluginEnablementCompat.mockReturnValue(enablementCompat);
     mocks.withBundledPluginVitestCompat.mockReturnValue(enablementCompat);
-    mocks.resolveRuntimePluginRegistry.mockImplementation((params?: unknown) =>
+    mocks.resolveRuntimePluginRegistry.mockImplementation((params?: any) =>
       params === undefined ? undefined : loaded,
     );
 

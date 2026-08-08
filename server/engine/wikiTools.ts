@@ -366,7 +366,7 @@ export function getWikiRecentToolDefinition(): ToolDefinition {
 /**
  * JSON 结果格式化
  */
-function jsonResult(data: unknown): string {
+function jsonResult(data: any): string {
   return JSON.stringify(data, null, 2);
 }
 
@@ -374,7 +374,7 @@ function jsonResult(data: unknown): string {
  * wiki_search 工具处理器
  */
 export function createWikiSearchToolHandler(): ToolHandler {
-  return async (args: Record<string, unknown>) => {
+  return async (args: Record<string, any>) => {
     try {
       const query = args.query as string;
       const topK = Math.min((args.topK as number) || 10, 50);
@@ -411,7 +411,7 @@ export function createWikiSearchToolHandler(): ToolHandler {
  * wiki_create 工具处理器
  */
 export function createWikiCreateToolHandler(): ToolHandler {
-  return async (args: Record<string, unknown>) => {
+  return async (args: Record<string, any>) => {
     try {
       const title = args.title as string;
       const content = args.content as string;
@@ -419,13 +419,13 @@ export function createWikiCreateToolHandler(): ToolHandler {
       const tags = args.tags as string[] | undefined;
       const source = (args.source as string) || 'manual';
       const sourcePath = args.sourcePath as string | undefined;
-      const metadata = args.metadata as Record<string, unknown> | undefined;
+      const metadata = args.metadata as Record<string, any> | undefined;
 
       const entry = await createEntry({
         title,
         content,
         summary,
-        source: source as unknown,
+        source: source as any,
         sourcePath,
         metadata,
         autoExtractTags: true,
@@ -460,13 +460,13 @@ export function createWikiCreateToolHandler(): ToolHandler {
  * wiki_update 工具处理器
  */
 export function createWikiUpdateToolHandler(): ToolHandler {
-  return async (args: Record<string, unknown>) => {
+  return async (args: Record<string, any>) => {
     try {
       const id = args.id as number;
       const title = args.title as string | undefined;
       const content = args.content as string | undefined;
       const summary = args.summary as string | undefined;
-      const metadata = args.metadata as Record<string, unknown> | undefined;
+      const metadata = args.metadata as Record<string, any> | undefined;
 
       const entry = await updateEntry({
         id,
@@ -504,7 +504,7 @@ export function createWikiUpdateToolHandler(): ToolHandler {
  * wiki_delete 工具处理器
  */
 export function createWikiDeleteToolHandler(): ToolHandler {
-  return async (args: Record<string, unknown>) => {
+  return async (args: Record<string, any>) => {
     try {
       const id = args.id as number;
 
@@ -527,7 +527,7 @@ export function createWikiDeleteToolHandler(): ToolHandler {
  * wiki_link 工具处理器
  */
 export function createWikiLinkToolHandler(): ToolHandler {
-  return async (args: Record<string, unknown>) => {
+  return async (args: Record<string, any>) => {
     try {
       const action = args.action as string;
       const sourceId = args.sourceId as number;
@@ -595,7 +595,7 @@ export function createWikiLinkToolHandler(): ToolHandler {
  * wiki_get 工具处理器
  */
 export function createWikiGetToolHandler(): ToolHandler {
-  return async (args: Record<string, unknown>) => {
+  return async (args: Record<string, any>) => {
     try {
       const id = args.id as number;
       const includeVersions = (args.includeVersions as boolean) ?? false;
@@ -610,7 +610,7 @@ export function createWikiGetToolHandler(): ToolHandler {
         });
       }
 
-      const result: Record<string, unknown> = {
+      const result: Record<string, any> = {
         entry,
       };
 
@@ -644,7 +644,7 @@ export function createWikiGetToolHandler(): ToolHandler {
  * wiki_stats 工具处理器
  */
 export function createWikiStatsToolHandler(): ToolHandler {
-  return async (_args: Record<string, unknown>) => {
+  return async (_args: Record<string, any>) => {
     try {
       const stats = getWikiStats();
 
@@ -665,7 +665,7 @@ export function createWikiStatsToolHandler(): ToolHandler {
  * wiki_import 工具处理器
  */
 export function createWikiImportToolHandler(): ToolHandler {
-  return async (args: Record<string, unknown>) => {
+  return async (args: Record<string, any>) => {
     try {
       const type = args.type as string;
       const path = args.path as string;
@@ -730,7 +730,7 @@ export function createWikiImportToolHandler(): ToolHandler {
  * wiki_recent 工具处理器
  */
 export function createWikiRecentToolHandler(): ToolHandler {
-  return async (args: Record<string, unknown>) => {
+  return async (args: Record<string, any>) => {
     try {
       const limit = Math.min((args.limit as number) || 10, 100);
 

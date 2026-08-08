@@ -20,9 +20,9 @@ describe("runHeartbeatOnce ack handling", () => {
   function createHeartbeatConfig(params: {
     tmpDir: string;
     storePath: string;
-    heartbeat: Record<string, unknown>;
-    channels: Record<string, unknown>;
-    messages?: Record<string, unknown>;
+    heartbeat: Record<string, any>;
+    channels: Record<string, any>;
+    messages?: Record<string, any>;
   }): OpenClawConfig {
     return {
       agents: {
@@ -47,7 +47,7 @@ describe("runHeartbeatOnce ack handling", () => {
     } = {},
   ) {
     return {
-      ...(params.sendWhatsApp ? { whatsapp: params.sendWhatsApp as unknown } : {}),
+      ...(params.sendWhatsApp ? { whatsapp: params.sendWhatsApp as any } : {}),
       getQueueSize: params.getQueueSize ?? (() => 0),
       nowMs: params.nowMs ?? (() => 0),
       webAuthExists: params.webAuthExists ?? (async () => true),
@@ -63,13 +63,13 @@ describe("runHeartbeatOnce ack handling", () => {
     } = {},
   ) {
     return {
-      ...(params.sendTelegram ? { telegram: params.sendTelegram as unknown } : {}),
+      ...(params.sendTelegram ? { telegram: params.sendTelegram as any } : {}),
       getQueueSize: params.getQueueSize ?? (() => 0),
       nowMs: params.nowMs ?? (() => 0),
     } satisfies HeartbeatDeps;
   }
 
-  function createMessageSendSpy(extra: Record<string, unknown> = {}) {
+  function createMessageSendSpy(extra: Record<string, any> = {}) {
     return vi.fn().mockResolvedValue({
       messageId: "m1",
       toJid: "jid",
@@ -129,8 +129,8 @@ describe("runHeartbeatOnce ack handling", () => {
     storePath: string;
     replySpy: HeartbeatReplySpy;
     replyText: string;
-    messages?: Record<string, unknown>;
-    telegramOverrides?: Record<string, unknown>;
+    messages?: Record<string, any>;
+    telegramOverrides?: Record<string, any>;
   }) {
     const cfg = createHeartbeatConfig({
       tmpDir: params.tmpDir,
@@ -168,8 +168,8 @@ describe("runHeartbeatOnce ack handling", () => {
   function createWhatsAppHeartbeatConfig(params: {
     tmpDir: string;
     storePath: string;
-    heartbeat?: Record<string, unknown>;
-    visibility?: Record<string, unknown>;
+    heartbeat?: Record<string, any>;
+    visibility?: Record<string, any>;
   }): OpenClawConfig {
     return createHeartbeatConfig({
       tmpDir: params.tmpDir,
@@ -191,8 +191,8 @@ describe("runHeartbeatOnce ack handling", () => {
   async function createSeededWhatsAppHeartbeatConfig(params: {
     tmpDir: string;
     storePath: string;
-    heartbeat?: Record<string, unknown>;
-    visibility?: Record<string, unknown>;
+    heartbeat?: Record<string, any>;
+    visibility?: Record<string, any>;
   }): Promise<OpenClawConfig> {
     const cfg = createWhatsAppHeartbeatConfig(params);
     await seedMainSessionStore(params.storePath, cfg, {
@@ -434,8 +434,8 @@ describe("runHeartbeatOnce ack handling", () => {
   });
 
   async function expectTelegramHeartbeatAccountId(params: {
-    heartbeat: Record<string, unknown>;
-    telegram: Record<string, unknown>;
+    heartbeat: Record<string, any>;
+    telegram: Record<string, any>;
     expectedAccountId: string | undefined;
   }): Promise<void> {
     await withTempTelegramHeartbeatSandbox(async ({ tmpDir, storePath, replySpy }) => {

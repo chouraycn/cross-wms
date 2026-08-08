@@ -3,7 +3,7 @@
 
 export type OutboundDeliveryCommitHook = {
   name: string;
-  run: (params: { result: unknown }) => Promise<void>;
+  run: (params: { result: any }) => Promise<void>;
 };
 
 const hooks: OutboundDeliveryCommitHook[] = [];
@@ -14,7 +14,7 @@ export function attachOutboundDeliveryCommitHook(hook: OutboundDeliveryCommitHoo
 }
 
 /** Runs all attached delivery commit hooks. */
-export async function runOutboundDeliveryCommitHooks(params: { result: unknown }): Promise<void> {
+export async function runOutboundDeliveryCommitHooks(params: { result: any }): Promise<void> {
   for (const hook of hooks) {
     try {
       await hook.run(params);
@@ -25,6 +25,6 @@ export async function runOutboundDeliveryCommitHooks(params: { result: unknown }
 }
 
 /** Checks if a value looks like an OutboundDeliveryResult array. */
-export function isOutboundDeliveryResultArray(value: unknown): value is unknown[] {
+export function isOutboundDeliveryResultArray(value: any): value is any[] {
   return Array.isArray(value);
 }

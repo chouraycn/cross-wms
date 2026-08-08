@@ -69,9 +69,9 @@ export type DiscoveredConfigSecretTarget = {
   refPath?: string;
   refPathSegments?: string[];
   /** Current value at `pathSegments`; may be plaintext, SecretInput, object, or unset. */
-  value: unknown;
+  value: any;
   /** Current value at `refPathSegments`, present only for sibling-ref entries. */
-  refValue?: unknown;
+  refValue?: any;
   providerId?: string;
   accountId?: string;
 };

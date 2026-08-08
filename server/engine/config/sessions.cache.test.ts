@@ -321,7 +321,7 @@ describe("Session Store Cache", () => {
   });
 
   it("preserves own __proto__ plugin JSON fields without changing clone prototypes", () => {
-    const pluginState: { [key: string]: unknown } = { ok: true };
+    const pluginState: { [key: string]: any } = { ok: true };
     Object.defineProperty(pluginState, "__proto__", {
       value: { polluted: true },
       enumerable: true,
@@ -342,7 +342,7 @@ describe("Session Store Cache", () => {
 
     const cached = readSessionStoreCache({ storePath });
     const cachedState = cached?.["session:1"].pluginExtensions?.demo?.pluginState as
-      | Record<string, unknown>
+      | Record<string, any>
       | undefined;
 
     expect(cachedState).toBeTruthy();
@@ -351,7 +351,7 @@ describe("Session Store Cache", () => {
       polluted: true,
     });
     expect(Object.getPrototypeOf(cachedState ?? {})).toBe(Object.prototype);
-    expect(({} as Record<string, unknown>).polluted).toBeUndefined();
+    expect(({} as Record<string, any>).polluted).toBeUndefined();
   });
 
   it("clones disk-loaded stores from the raw serialized JSON", () => {

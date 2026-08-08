@@ -19,7 +19,7 @@ type ReplayModelRef = {
   api?: string;
   modelId?: string;
   responseModelId?: string;
-  modelParams?: Record<string, unknown>;
+  modelParams?: Record<string, any>;
 };
 
 function normalizeModelId(modelId?: string): string {
@@ -44,7 +44,7 @@ function hasConcreteResponseModel(ref: ReplayModelRef): boolean {
 
 export function usesClaudeFable5MessagesContract(model: {
   id?: string;
-  params?: Record<string, unknown>;
+  params?: Record<string, any>;
   api?: string;
 }): boolean {
   return (
@@ -55,7 +55,7 @@ export function usesClaudeFable5MessagesContract(model: {
 
 export function requiresClaudeAdaptiveThinking(model: {
   id?: string;
-  params?: Record<string, unknown>;
+  params?: Record<string, any>;
   api?: string;
 }): boolean {
   if (normalizeApi(model.api) !== "anthropic-messages") {

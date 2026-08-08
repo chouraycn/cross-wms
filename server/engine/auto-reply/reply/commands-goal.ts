@@ -147,7 +147,7 @@ function goalContinuation(): CommandHandlerResult {
   return { shouldContinue: true };
 }
 
-function goalErrorReply(error: unknown): CommandHandlerResult {
+function goalErrorReply(error: any): CommandHandlerResult {
   const message = error instanceof Error ? error.message : String(error);
   return goalReply(`Goal error: ${message}`);
 }

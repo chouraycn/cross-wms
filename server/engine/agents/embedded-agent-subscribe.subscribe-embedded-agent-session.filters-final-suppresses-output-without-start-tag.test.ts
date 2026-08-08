@@ -298,7 +298,7 @@ describe("subscribeEmbeddedAgentSession", () => {
     });
 
     const streamedText = onPartialReply.mock.calls
-      .map((call) => (call[0] as { delta?: unknown }).delta)
+      .map((call) => (call[0] as { delta?: any }).delta)
       .filter((delta): delta is string => typeof delta === "string")
       .join("");
     expect(streamedText).toBe("Visible");
@@ -323,7 +323,7 @@ describe("subscribeEmbeddedAgentSession", () => {
     });
 
     const streamedText = onPartialReply.mock.calls
-      .map((call) => (call[0] as { delta?: unknown }).delta)
+      .map((call) => (call[0] as { delta?: any }).delta)
       .filter((delta): delta is string => typeof delta === "string")
       .join("");
     expect(streamedText).toBe("Visible");
@@ -347,7 +347,7 @@ describe("subscribeEmbeddedAgentSession", () => {
     }
 
     const streamedText = onPartialReply.mock.calls
-      .map((call) => (call[0] as { delta?: unknown }).delta)
+      .map((call) => (call[0] as { delta?: any }).delta)
       .filter((delta): delta is string => typeof delta === "string")
       .join("");
     expect(streamedText).toBe("Visible");
@@ -390,7 +390,7 @@ describe("subscribeEmbeddedAgentSession", () => {
     }
 
     const streamedText = onPartialReply.mock.calls
-      .map((call) => (call[0] as { delta?: unknown }).delta)
+      .map((call) => (call[0] as { delta?: any }).delta)
       .filter((delta): delta is string => typeof delta === "string")
       .join("");
     expect(streamedText).toBe("Visible content");

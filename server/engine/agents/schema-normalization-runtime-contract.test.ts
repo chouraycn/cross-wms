@@ -19,7 +19,7 @@ describe("OpenAI transport schema normalization runtime contract", () => {
       createNativeOpenAIResponsesModel() as never,
       { systemPrompt: "system", messages: [], tools } as never,
       undefined,
-    ) as { tools?: Array<{ strict?: boolean; parameters?: unknown }> };
+    ) as { tools?: Array<{ strict?: boolean; parameters?: any }> };
 
     expect(httpParams.tools?.map((tool) => tool.strict)).toEqual([false, false]);
   });
@@ -30,7 +30,7 @@ describe("OpenAI transport schema normalization runtime contract", () => {
       createNativeOpenAIResponsesModel() as never,
       { systemPrompt: "system", messages: [], tools } as never,
       undefined,
-    ) as { tools?: Array<{ strict?: boolean; parameters?: unknown }> };
+    ) as { tools?: Array<{ strict?: boolean; parameters?: any }> };
     const normalizedSchema = normalizedParameterFreeSchema();
 
     expect(httpParams.tools?.[0]?.strict).toBe(true);
@@ -49,7 +49,7 @@ describe("OpenAI transport schema normalization runtime contract", () => {
       createNativeOpenAIResponsesModel() as never,
       { systemPrompt: "system", messages: [], tools } as never,
       undefined,
-    ) as { tools?: Array<{ strict?: boolean; parameters?: unknown }> };
+    ) as { tools?: Array<{ strict?: boolean; parameters?: any }> };
     const normalizedSchema = normalizedParameterFreeSchema();
 
     expect(httpParams.tools?.[0]?.strict).toBe(true);
@@ -67,13 +67,13 @@ describe("OpenAI transport schema normalization runtime contract", () => {
     }) as never;
     const model = createNativeOpenAIResponsesModel() as never;
     let payload:
-      | { context_management?: unknown; tools?: Array<{ parameters?: unknown }> }
+      | { context_management?: any; tools?: Array<{ parameters?: any }> }
       | undefined;
     const baseStreamFn: StreamFn = (modelArg, contextArg, optionsArg) => {
       payload = buildOpenAIResponsesParams(
         modelArg,
         {
-          ...(contextArg as unknown as Record<string, unknown>),
+          ...(contextArg as unknown as Record<string, any>),
           systemPrompt: "system",
           messages: [],
           tools,

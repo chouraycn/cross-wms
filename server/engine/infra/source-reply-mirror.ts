@@ -3,15 +3,15 @@
 
 import { normalizeOptionalString, normalizeOptionalLowercaseString } from "./string-coerce.js";
 
-function asRecord(value: unknown): Record<string, unknown> | undefined {
+function asRecord(value: any): Record<string, any> | undefined {
   return value && typeof value === "object" && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
+    ? (value as Record<string, any>)
     : undefined;
 }
 
-function hasExplicitDeliveryFailure(payload: unknown): boolean {
+function hasExplicitDeliveryFailure(payload: any): boolean {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) return false;
-  const record = payload as Record<string, unknown>;
+  const record = payload as Record<string, any>;
   if (record.ok === false) return true;
   const status = normalizeOptionalLowercaseString(record.status);
   if (status === "failed" || status === "error") return true;
@@ -23,8 +23,8 @@ function hasExplicitDeliveryFailure(payload: unknown): boolean {
 export async function mirrorDeliveredSourceReplyToTranscript(params: {
   action: string;
   channel: string;
-  actionParams: Record<string, unknown>;
-  cfg?: unknown;
+  actionParams: Record<string, any>;
+  cfg?: any;
   sessionKey?: string;
   agentId?: string;
   toolContext?: {
@@ -34,7 +34,7 @@ export async function mirrorDeliveredSourceReplyToTranscript(params: {
     currentThreadTs?: string;
   };
   idempotencyKey?: string;
-  deliveredPayload?: unknown;
+  deliveredPayload?: any;
 }): Promise<boolean> {
   if (hasExplicitDeliveryFailure(params.deliveredPayload)) return false;
   if (params.action !== "send") return false;

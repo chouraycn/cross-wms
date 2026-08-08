@@ -26,18 +26,18 @@ const opsRegressionFixtures = setupCronRegressionFixtures({
   prefix: "cron-service-ops-regressions-",
 });
 
-function expectQueuedRunAck(result: unknown) {
-  const ack = result as { ok?: unknown; enqueued?: unknown; runId?: unknown };
+function expectQueuedRunAck(result: any) {
+  const ack = result as { ok?: any; enqueued?: any; runId?: any };
   expect(ack.ok).toBe(true);
   expect(ack.enqueued).toBe(true);
   expect(typeof ack.runId).toBe("string");
 }
 
 function requireMockCall(
-  mock: { mock: { calls: unknown[][] } },
+  mock: { mock: { calls: any[][] } },
   callIndex: number,
   label: string,
-): unknown[] {
+): any[] {
   const call = mock.mock.calls[callIndex];
   if (!call) {
     throw new Error(`expected ${label} call ${callIndex}`);
@@ -295,7 +295,7 @@ describe("cron service ops regressions", () => {
     expect(runResult).toEqual({ ok: true, ran: true });
     expect(runIsolatedAgentJob).toHaveBeenCalledOnce();
     const [params] = requireMockCall(runIsolatedAgentJob, 0, "runIsolatedAgentJob") as [
-      { message?: unknown }?,
+      { message?: any }?,
     ];
     expect(params?.message).toBe(marker);
   });
@@ -385,7 +385,7 @@ describe("cron service ops regressions", () => {
     expect(enqueueSystemEvent).toHaveBeenCalledTimes(1);
     const [text, options] = requireMockCall(enqueueSystemEvent, 0, "enqueueSystemEvent") as [
       string,
-      { agentId?: unknown }?,
+      { agentId?: any }?,
     ];
     expect(text).toBe("stale-running");
     expect(options?.agentId).toBeUndefined();

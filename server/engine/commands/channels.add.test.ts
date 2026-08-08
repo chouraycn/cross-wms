@@ -54,7 +54,7 @@ const channelWizardMocks = vi.hoisted(() => {
   };
   return {
     prompter,
-    setupChannels: vi.fn(async (...args: unknown[]) => args[0] as OpenClawConfig),
+    setupChannels: vi.fn(async (...args: any[]) => args[0] as OpenClawConfig),
   };
 });
 
@@ -108,12 +108,12 @@ const runtime = createTestRuntime();
 
 type MockCallSource = {
   mock: {
-    calls: ArrayLike<ReadonlyArray<unknown>>;
+    calls: ArrayLike<ReadonlyArray<any>>;
   };
 };
 
 function listConfiguredAccountIds(
-  channelConfig: { accounts?: Record<string, unknown>; token?: string } | undefined,
+  channelConfig: { accounts?: Record<string, any>; token?: string } | undefined,
 ): string[] {
   const accountIds = Object.keys(channelConfig?.accounts ?? {});
   if (accountIds.length > 0) {
@@ -125,11 +125,11 @@ function listConfiguredAccountIds(
   return [];
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object") {
     throw new Error(`expected ${label}`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 function mockArg(source: MockCallSource, callIndex: number, argIndex: number, label: string) {
@@ -262,7 +262,7 @@ function createLifecycleChatAddTestPlugin(): ChannelPlugin {
       listAccountIds: (cfg) =>
         listConfiguredAccountIds(
           cfg.channels?.["lifecycle-chat"] as
-            | { accounts?: Record<string, unknown>; token?: string }
+            | { accounts?: Record<string, any>; token?: string }
             | undefined,
         ),
       resolveAccount: resolveLifecycleChatAccount,
@@ -397,12 +397,12 @@ describe("channelsAddCommand", () => {
     configMocks.writeConfigFile.mockClear();
     configMocks.replaceConfigFile
       .mockReset()
-      .mockImplementation(async (params: { nextConfig: unknown }) => {
+      .mockImplementation(async (params: { nextConfig: any }) => {
         await configMocks.writeConfigFile(params.nextConfig);
       });
     pluginInstallRecordCommitMocks.commitConfigWithPendingPluginInstalls.mockReset();
     pluginInstallRecordCommitMocks.commitConfigWithPendingPluginInstalls.mockImplementation(
-      async (params: { nextConfig: unknown }) => {
+      async (params: { nextConfig: any }) => {
         await configMocks.writeConfigFile(params.nextConfig);
         return {
           config: params.nextConfig,
@@ -444,7 +444,7 @@ describe("channelsAddCommand", () => {
     channelWizardMocks.prompter.text.mockClear();
     channelWizardMocks.setupChannels.mockClear();
     channelWizardMocks.setupChannels.mockImplementation(
-      async (...args: unknown[]) => args[0] as OpenClawConfig,
+      async (...args: any[]) => args[0] as OpenClawConfig,
     );
     setMinimalChannelsAddRegistryForTests();
   });

@@ -90,7 +90,7 @@ describe("createAgentToolResultMiddlewareRunner", () => {
   });
 
   it("rejects cyclic middleware details", async () => {
-    const details: Record<string, unknown> = {};
+    const details: Record<string, any> = {};
     details.self = details;
     const runner = createAgentToolResultMiddlewareRunner({ runtime: "codex" }, [
       () => ({
@@ -115,8 +115,8 @@ describe("createAgentToolResultMiddlewareRunner", () => {
     // Without a middleware handler, the harness has no validator contract to
     // satisfy and must not penalize tool emitters that legitimately produce
     // dependency payloads (functions, cycles) on `details`.
-    const client: Record<string, unknown> = { type: "fake-channel-client" };
-    const cyclicDetails: Record<string, unknown> = {
+    const client: Record<string, any> = { type: "fake-channel-client" };
+    const cyclicDetails: Record<string, any> = {
       ok: true,
       messageId: "abc",
       delete: () => Promise.resolve(),
@@ -144,8 +144,8 @@ describe("createAgentToolResultMiddlewareRunner", () => {
     // that registers a tool-result middleware (e.g. bundled tokenjuice)
     // causes the harness to validate `event.result` against shape rules,
     // and tool emitters' raw channel-send payloads fail those rules.
-    const client: Record<string, unknown> = { type: "fake-channel-client" };
-    const payload: Record<string, unknown> = {
+    const client: Record<string, any> = { type: "fake-channel-client" };
+    const payload: Record<string, any> = {
       ok: true,
       messageId: "1501757759073419394",
       delete: () => Promise.resolve(),
@@ -223,12 +223,12 @@ describe("createAgentToolResultMiddlewareRunner", () => {
   });
 
   it("sanitizes incoming details before failing closed on uncoercible content", async () => {
-    const details: Record<string, unknown> = {
+    const details: Record<string, any> = {
       ok: true,
       callback: () => 1,
     };
     details.self = details;
-    let observedDetails: unknown;
+    let observedDetails: any;
     const runner = createAgentToolResultMiddlewareRunner({ runtime: "codex" }, [
       (event) => {
         observedDetails = event.result.details;
@@ -487,7 +487,7 @@ describe("createAgentToolResultMiddlewareRunner", () => {
   });
 
   it("fails closed instead of recursing forever on cyclic nested content", async () => {
-    const nested: Record<string, unknown> = {
+    const nested: Record<string, any> = {
       type: "toolResult",
       content: [],
     };

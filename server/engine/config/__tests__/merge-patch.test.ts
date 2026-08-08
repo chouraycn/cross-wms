@@ -47,14 +47,14 @@ describe('applyMergePatch', () => {
 
   it('拒绝 __proto__ 键防止原型链污染', () => {
     const malicious = JSON.parse('{"__proto__":{"polluted":"yes"}}');
-    const result = applyMergePatch({}, malicious) as Record<string, unknown>;
+    const result = applyMergePatch({}, malicious) as Record<string, any>;
     expect(Object.keys(result)).toEqual([]);
     expect(Object.prototype.hasOwnProperty.call(Object.prototype, 'polluted')).toBe(false);
   });
 
   it('拒绝 constructor 与 prototype 键', () => {
     const malicious = JSON.parse('{"constructor":{"prototype":{"polluted":"yes"}},"prototype":{"x":1}}');
-    const result = applyMergePatch({ keep: 1 }, malicious) as Record<string, unknown>;
+    const result = applyMergePatch({ keep: 1 }, malicious) as Record<string, any>;
     expect(Object.keys(result)).toEqual(['keep']);
   });
 

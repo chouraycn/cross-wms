@@ -41,16 +41,16 @@ function normalizePhoneAllowFromEntries(allowFrom: Array<string | number>): stri
 }
 
 function resolveChannelAllowFrom(
-  cfg: Record<string, unknown>,
+  cfg: Record<string, any>,
   channelId: string,
 ): Array<string | number> | undefined {
   const channels =
     cfg.channels && typeof cfg.channels === "object"
-      ? (cfg.channels as Record<string, unknown>)
+      ? (cfg.channels as Record<string, any>)
       : undefined;
   const channel =
     channels?.[channelId] && typeof channels[channelId] === "object"
-      ? (channels[channelId] as Record<string, unknown>)
+      ? (channels[channelId] as Record<string, any>)
       : undefined;
   const allowFrom = channel?.allowFrom;
   return Array.isArray(allowFrom) ? allowFrom : undefined;
@@ -64,7 +64,7 @@ const createCommandAuthRegistry = () =>
         ...createOutboundTestPlugin({ id: "discord", outbound: { deliveryMode: "direct" } }),
         config: {
           listAccountIds: () => [],
-          resolveAllowFrom: ({ cfg }: { cfg: Record<string, unknown> }) =>
+          resolveAllowFrom: ({ cfg }: { cfg: Record<string, any> }) =>
             resolveChannelAllowFrom(cfg, "discord"),
           formatAllowFrom: ({ allowFrom }: { allowFrom: Array<string | number> }) =>
             formatDiscordAllowFromEntries(allowFrom),
@@ -78,7 +78,7 @@ const createCommandAuthRegistry = () =>
         ...createOutboundTestPlugin({ id: "whatsapp", outbound: { deliveryMode: "direct" } }),
         config: {
           listAccountIds: () => [],
-          resolveAllowFrom: ({ cfg }: { cfg: Record<string, unknown> }) =>
+          resolveAllowFrom: ({ cfg }: { cfg: Record<string, any> }) =>
             resolveChannelAllowFrom(cfg, "whatsapp"),
           formatAllowFrom: ({ allowFrom }: { allowFrom: Array<string | number> }) =>
             normalizePhoneAllowFromEntries(allowFrom),

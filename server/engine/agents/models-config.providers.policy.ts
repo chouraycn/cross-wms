@@ -5,7 +5,7 @@
  * cross-wms 简化实现：提供基本的策略应用接口，默认为透传。
  */
 
-export type ProviderConfig = Record<string, unknown>;
+export type ProviderConfig = Record<string, any>;
 
 /** Applies native-streaming usage compatibility policy to the provider map. */
 export function applyNativeStreamingUsageCompat(

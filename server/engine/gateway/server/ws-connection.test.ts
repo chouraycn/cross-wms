@@ -34,7 +34,7 @@ async function waitForLazyMessageHandler() {
   await vi.dynamicImportSettled();
 }
 
-function firstAttachedHandlerParams(): unknown {
+function firstAttachedHandlerParams(): any {
   return attachGatewayWsMessageHandlerMock.mock.calls[0]?.[0];
 }
 
@@ -43,7 +43,7 @@ async function connectTestWs(
     host?: string;
     headers?: Record<string, string>;
     socket?: GatewayWsTestSocket;
-    clients?: Set<unknown>;
+    clients?: Set<any>;
     options?: Partial<Parameters<typeof attachGatewayWsConnectionHandler>[0]>;
   } = {},
 ) {
@@ -143,7 +143,7 @@ describe("attachGatewayWsConnectionHandler", () => {
     const clients = new Set();
     const { passed, socket } = await connectTestWs({ clients });
     const handlerParams = passed as {
-      setClient: (client: unknown) => boolean;
+      setClient: (client: any) => boolean;
     };
     socket.emit("close", 1001, Buffer.from("client left"));
 
@@ -163,7 +163,7 @@ describe("attachGatewayWsConnectionHandler", () => {
     const socket = createGatewayWsTestSocket({ ping: true });
     const { passed } = await connectTestWs({ socket });
     const handlerParams = passed as {
-      setClient: (client: unknown) => boolean;
+      setClient: (client: any) => boolean;
     };
     expect(
       handlerParams.setClient({
@@ -186,7 +186,7 @@ describe("attachGatewayWsConnectionHandler", () => {
     const socket = createGatewayWsTestSocket();
     const { passed } = await connectTestWs({ socket });
     const handlerParams = passed as {
-      send: (frame: unknown) => void;
+      send: (frame: any) => void;
     };
     socket.send.mockClear();
     socket.bufferedAmount = MAX_BUFFERED_BYTES + 1;
@@ -210,7 +210,7 @@ describe("attachGatewayWsConnectionHandler", () => {
     await waitForLazyMessageHandler();
 
     const passed = firstAttachedHandlerParams() as {
-      setClient: (client: unknown) => boolean;
+      setClient: (client: any) => boolean;
     };
     expect(
       passed.setClient({

@@ -16,20 +16,20 @@ const loadRuntimeConfig = vi.hoisted(() => vi.fn());
 const callGateway = vi.hoisted(() => vi.fn());
 const isGatewayCredentialsRequiredError = vi.hoisted(() =>
   vi.fn(
-    (value: unknown) => value instanceof Error && value.name === "GatewayCredentialsRequiredError",
+    (value: any) => value instanceof Error && value.name === "GatewayCredentialsRequiredError",
   ),
 );
 const isGatewayExplicitAuthRequiredError = vi.hoisted(() =>
   vi.fn(
-    (value: unknown) => value instanceof Error && value.name === "GatewayExplicitAuthRequiredError",
+    (value: any) => value instanceof Error && value.name === "GatewayExplicitAuthRequiredError",
   ),
 );
 const isGatewayTransportError = vi.hoisted(() =>
-  vi.fn((value: unknown) => {
+  vi.fn((value: any) => {
     if (!(value instanceof Error) || value.name !== "GatewayTransportError") {
       return false;
     }
-    const kind = (value as { kind?: unknown }).kind;
+    const kind = (value as { kind?: any }).kind;
     return kind === "closed" || kind === "timeout";
   }),
 );
@@ -107,7 +107,7 @@ function mockLocalAgentReply(text = "local") {
   });
 }
 
-function requireFirstCallArg(mock: { mock: { calls: unknown[][] } }, label: string): unknown {
+function requireFirstCallArg(mock: { mock: { calls: any[][] } }, label: string): any {
   const [call] = mock.mock.calls;
   if (!call) {
     throw new Error(`expected ${label} call`);
@@ -119,11 +119,11 @@ function requireFirstCallArg(mock: { mock: { calls: unknown[][] } }, label: stri
   return arg;
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error(`expected ${label} object`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 function createSignalProcess() {
@@ -162,8 +162,8 @@ async function waitForGatewayCall(expectedCalls = 1) {
   await vi.waitFor(() => expect(callGateway).toHaveBeenCalledTimes(expectedCalls));
 }
 
-function mockMessages(mock: unknown): string[] {
-  const calls = (mock as { mock?: { calls?: unknown[][] } }).mock?.calls ?? [];
+function mockMessages(mock: any): string[] {
+  const calls = (mock as { mock?: { calls?: any[][] } }).mock?.calls ?? [];
   return calls.map(([message]) => String(message));
 }
 
@@ -709,19 +709,19 @@ describe("agentCliCommand", () => {
       await withTempStore(async () => {
         const signals = createSignalProcess();
         let sameConnectionAbort:
-          | { method: string; params: unknown; opts?: { timeoutMs?: number | null } }
+          | { method: string; params: any; opts?: { timeoutMs?: number | null } }
           | undefined;
-        callGateway.mockImplementation(async (requestValue: unknown) => {
+        callGateway.mockImplementation(async (requestValue: any) => {
           const request = requireRecord(requestValue, "gateway request");
           if (request.method === "agent") {
-            const onAccepted = request.onAccepted as ((payload: unknown) => void) | undefined;
+            const onAccepted = request.onAccepted as ((payload: any) => void) | undefined;
             const onSignalAbort = request.onSignalAbort as
               | ((
                   request: (
                     method: string,
-                    params?: unknown,
+                    params?: any,
                     opts?: { timeoutMs?: number | null },
-                  ) => Promise<unknown>,
+                  ) => Promise<any>,
                 ) => Promise<void>)
               | undefined;
             const signal = request.signal as AbortSignal | undefined;
@@ -776,9 +776,9 @@ describe("agentCliCommand", () => {
     await withTempStore(async () => {
       const signals = createSignalProcess();
       let sameConnectionAbort:
-        | { method: string; params: unknown; opts?: { timeoutMs?: number | null } }
+        | { method: string; params: any; opts?: { timeoutMs?: number | null } }
         | undefined;
-      callGateway.mockImplementation(async (requestValue: unknown) => {
+      callGateway.mockImplementation(async (requestValue: any) => {
         const request = requireRecord(requestValue, "gateway request");
         if (request.method === "agent") {
           const params = requireRecord(request.params, "gateway agent params");
@@ -787,9 +787,9 @@ describe("agentCliCommand", () => {
             | ((
                 request: (
                   method: string,
-                  params?: unknown,
+                  params?: any,
                   opts?: { timeoutMs?: number | null },
-                ) => Promise<unknown>,
+                ) => Promise<any>,
               ) => Promise<void>)
             | undefined;
           const signal = request.signal as AbortSignal | undefined;
@@ -841,7 +841,7 @@ describe("agentCliCommand", () => {
   it("skips fallback abort when SIGTERM interrupts before the gateway request starts", async () => {
     await withTempStore(async () => {
       const signals = createSignalProcess();
-      callGateway.mockImplementation(async (requestValue: unknown) => {
+      callGateway.mockImplementation(async (requestValue: any) => {
         const request = requireRecord(requestValue, "gateway request");
         if (request.method === "agent") {
           const signal = request.signal as AbortSignal | undefined;
@@ -879,10 +879,10 @@ describe("agentCliCommand", () => {
       const signals = createSignalProcess();
       const sameConnectionAborts: Array<{
         method: string;
-        params: unknown;
+        params: any;
         opts?: { timeoutMs?: number | null };
       }> = [];
-      callGateway.mockImplementation(async (requestValue: unknown) => {
+      callGateway.mockImplementation(async (requestValue: any) => {
         const request = requireRecord(requestValue, "gateway request");
         if (request.method === "agent") {
           const params = requireRecord(request.params, "gateway agent params");
@@ -891,9 +891,9 @@ describe("agentCliCommand", () => {
             | ((
                 request: (
                   method: string,
-                  params?: unknown,
+                  params?: any,
                   opts?: { timeoutMs?: number | null },
-                ) => Promise<unknown>,
+                ) => Promise<any>,
               ) => Promise<void>)
             | undefined;
           const signal = request.signal as AbortSignal | undefined;
@@ -952,11 +952,11 @@ describe("agentCliCommand", () => {
       const signals = createSignalProcess();
       const sameConnectionAborts: Array<{
         method: string;
-        params: unknown;
+        params: any;
         opts?: { timeoutMs?: number | null };
       }> = [];
-      let fallbackAbort: Record<string, unknown> | undefined;
-      callGateway.mockImplementation(async (requestValue: unknown) => {
+      let fallbackAbort: Record<string, any> | undefined;
+      callGateway.mockImplementation(async (requestValue: any) => {
         const request = requireRecord(requestValue, "gateway request");
         if (request.method === "agent") {
           const params = requireRecord(request.params, "gateway agent params");
@@ -965,9 +965,9 @@ describe("agentCliCommand", () => {
             | ((
                 request: (
                   method: string,
-                  params?: unknown,
+                  params?: any,
                   opts?: { timeoutMs?: number | null },
-                ) => Promise<unknown>,
+                ) => Promise<any>,
               ) => Promise<void>)
             | undefined;
           const signal = request.signal as AbortSignal | undefined;
@@ -1034,22 +1034,22 @@ describe("agentCliCommand", () => {
     await withTempStore(async () => {
       const signals = createSignalProcess();
       let sameConnectionAbort:
-        | { method: string; params: unknown; opts?: { timeoutMs?: number | null } }
+        | { method: string; params: any; opts?: { timeoutMs?: number | null } }
         | undefined;
-      callGateway.mockImplementation(async (requestValue: unknown) => {
+      callGateway.mockImplementation(async (requestValue: any) => {
         const request = requireRecord(requestValue, "gateway request");
         if (request.method === "agent") {
           expect(request.clientName).toBe("gateway-client");
           expect(request.mode).toBe("backend");
           expect(request.scopes).toEqual(["operator.admin"]);
-          const onAccepted = request.onAccepted as ((payload: unknown) => void) | undefined;
+          const onAccepted = request.onAccepted as ((payload: any) => void) | undefined;
           const onSignalAbort = request.onSignalAbort as
             | ((
                 request: (
                   method: string,
-                  params?: unknown,
+                  params?: any,
                   opts?: { timeoutMs?: number | null },
-                ) => Promise<unknown>,
+                ) => Promise<any>,
               ) => Promise<void>)
             | undefined;
           const signal = request.signal as AbortSignal | undefined;
@@ -1104,24 +1104,24 @@ describe("agentCliCommand", () => {
       const signals = createSignalProcess();
       const sameConnectionAborts: Array<{
         method: string;
-        params: unknown;
+        params: any;
         opts?: { timeoutMs?: number | null };
       }> = [];
-      let fallbackAbort: Record<string, unknown> | undefined;
-      callGateway.mockImplementation(async (requestValue: unknown) => {
+      let fallbackAbort: Record<string, any> | undefined;
+      callGateway.mockImplementation(async (requestValue: any) => {
         const request = requireRecord(requestValue, "gateway request");
         if (request.method === "agent") {
           expect(request.clientName).toBe("gateway-client");
           expect(request.mode).toBe("backend");
           expect(request.scopes).toEqual(["operator.admin"]);
-          const onAccepted = request.onAccepted as ((payload: unknown) => void) | undefined;
+          const onAccepted = request.onAccepted as ((payload: any) => void) | undefined;
           const onSignalAbort = request.onSignalAbort as
             | ((
                 request: (
                   method: string,
-                  params?: unknown,
+                  params?: any,
                   opts?: { timeoutMs?: number | null },
-                ) => Promise<unknown>,
+                ) => Promise<any>,
               ) => Promise<void>)
             | undefined;
           const signal = request.signal as AbortSignal | undefined;
@@ -1488,7 +1488,7 @@ describe("agentCliCommand", () => {
 
         expect(callGateway).toHaveBeenCalledTimes(3);
         const idempotencyKeys = callGateway.mock.calls.map(
-          ([call]) => (call as { params?: { idempotencyKey?: unknown } }).params?.idempotencyKey,
+          ([call]) => (call as { params?: { idempotencyKey?: any } }).params?.idempotencyKey,
         );
         expect(new Set(idempotencyKeys).size).toBe(1);
         expect(agentCommand).not.toHaveBeenCalled();

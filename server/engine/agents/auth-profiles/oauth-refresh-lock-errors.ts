@@ -8,10 +8,10 @@
 import { FILE_LOCK_TIMEOUT_ERROR_CODE } from "../../infra/file-lock.js";
 
 /** Returns true when an error came from the global OAuth refresh lock. */
-export function isGlobalRefreshLockTimeoutError(error: unknown, lockPath: string): boolean {
+export function isGlobalRefreshLockTimeoutError(error: any, lockPath: string): boolean {
   const candidate =
     typeof error === "object" && error !== null
-      ? (error as { code?: unknown; lockPath?: unknown })
+      ? (error as { code?: any; lockPath?: any })
       : undefined;
   return (
     candidate?.code === FILE_LOCK_TIMEOUT_ERROR_CODE && candidate.lockPath === `${lockPath}.lock`
@@ -22,8 +22,8 @@ export function isGlobalRefreshLockTimeoutError(error: unknown, lockPath: string
 export function buildRefreshContentionError(params: {
   provider: string;
   profileId: string;
-  cause: unknown;
-}): Error & { code: "refresh_contention"; cause: unknown } {
+  cause: any;
+}): Error & { code: "refresh_contention"; cause: any } {
   return Object.assign(
     new Error(
       `OAuth refresh failed (refresh_contention): another process is already refreshing ${params.provider} for ${params.profileId}. Please wait for the in-flight refresh to finish and retry.`,

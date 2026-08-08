@@ -10,7 +10,7 @@ export function tryHandleRootVersionFastPath(
     moduleUrl?: string;
     output?: (message: string) => void;
     exit?: (code?: number) => void;
-    onError?: (error: unknown) => void;
+    onError?: (error: any) => void;
     resolveVersion?: () => Promise<{
       VERSION: string;
       resolveCommitHash: (params: { moduleUrl: string }) => string | null;
@@ -27,7 +27,7 @@ export function tryHandleRootVersionFastPath(
   const exit = deps.exit ?? ((code?: number) => process.exit(code));
   const onError =
     deps.onError ??
-    ((error: unknown) => {
+    ((error: any) => {
       console.error(
         "[openclaw] Failed to resolve version:",
         error instanceof Error ? (error.stack ?? error.message) : error,

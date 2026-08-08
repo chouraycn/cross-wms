@@ -64,7 +64,7 @@ const CRON_EVAL_CACHE_MAX = 512;
 const cronEvalCache = new Map<string, Cron>();
 
 /** 规范化可选字符串：非字符串或空白返回空串 */
-function normalizeOptionalString(value: unknown): string {
+function normalizeOptionalString(value: any): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
@@ -78,7 +78,7 @@ function resolveCronTimezone(tz?: string): string {
 }
 
 /** 把有限数从 unknown 中解析出来 */
-function coerceFiniteNumber(value: unknown): number | undefined {
+function coerceFiniteNumber(value: any): number | undefined {
   if (typeof value === "number") {
     return Number.isFinite(value) ? value : undefined;
   }
@@ -112,7 +112,7 @@ function resolveCachedCron(expr: string, timezone: string): Cron {
 }
 
 /** 从调度配置解析 Croner 实例 */
-function resolveCronFromSchedule(schedule: { tz?: string; expr?: unknown }): Cron | undefined {
+function resolveCronFromSchedule(schedule: { tz?: string; expr?: any }): Cron | undefined {
   if (typeof schedule.expr !== "string") {
     throw new Error("invalid cron schedule: expr is required");
   }
@@ -129,7 +129,7 @@ function resolveCronFromSchedule(schedule: { tz?: string; expr?: unknown }): Cro
  * - 否则按字段推断：有 at → at；有 everyMs → every；有 expr → cron
  * @returns 调度类型，无法推断时返回 undefined
  */
-export function parseScheduleType(schedule: CronScheduleInput | Record<string, unknown>): ScheduleType | undefined {
+export function parseScheduleType(schedule: CronScheduleInput | Record<string, any>): ScheduleType | undefined {
   const rawKind = normalizeOptionalString(schedule.kind).toLowerCase();
   if (rawKind === "at" || rawKind === "every" || rawKind === "cron") {
     return rawKind;
@@ -153,7 +153,7 @@ export function parseScheduleType(schedule: CronScheduleInput | Record<string, u
  * @returns 下次运行时间戳，或 undefined（不再触发）
  */
 export function scheduleNextRun(
-  schedule: CronScheduleInput | Record<string, unknown>,
+  schedule: CronScheduleInput | Record<string, any>,
   nowMs: number,
 ): number | undefined {
   const kind = parseScheduleType(schedule);
@@ -183,7 +183,7 @@ export function scheduleNextRun(
   }
 
   if (kind === "cron") {
-    const cron = resolveCronFromSchedule(schedule as { tz?: string; expr?: unknown });
+    const cron = resolveCronFromSchedule(schedule as { tz?: string; expr?: any });
     if (!cron) {
       return undefined;
     }
@@ -232,13 +232,13 @@ export function scheduleNextRun(
  * @returns 上一次运行时间戳，或 undefined
  */
 export function computePreviousRunAtMs(
-  schedule: CronScheduleInput | Record<string, unknown>,
+  schedule: CronScheduleInput | Record<string, any>,
   nowMs: number,
 ): number | undefined {
   if (parseScheduleType(schedule) !== "cron") {
     return undefined;
   }
-  const cron = resolveCronFromSchedule(schedule as { tz?: string; expr?: unknown });
+  const cron = resolveCronFromSchedule(schedule as { tz?: string; expr?: any });
   if (!cron) {
     return undefined;
   }

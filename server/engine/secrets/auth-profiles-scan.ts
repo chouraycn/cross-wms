@@ -23,13 +23,13 @@ type ApiKeyCredentialVisit = {
   profileId: string;
   provider: string;
   /** Original mutable profile record from auth-profiles.json. */
-  profile: Record<string, unknown>;
+  profile: Record<string, any>;
   /** Plaintext value field name derived from the secret target registry. */
   valueField: string;
   /** SecretRef sibling field name derived from the secret target registry. */
   refField: string;
-  value: unknown;
-  refValue: unknown;
+  value: any;
+  refValue: any;
 };
 
 type TokenCredentialVisit = {
@@ -37,20 +37,20 @@ type TokenCredentialVisit = {
   profileId: string;
   provider: string;
   /** Original mutable profile record from auth-profiles.json. */
-  profile: Record<string, unknown>;
+  profile: Record<string, any>;
   /** Plaintext value field name derived from the secret target registry. */
   valueField: string;
   /** SecretRef sibling field name derived from the secret target registry. */
   refField: string;
-  value: unknown;
-  refValue: unknown;
+  value: any;
+  refValue: any;
 };
 
 type OauthCredentialVisit = {
   kind: "oauth";
   profileId: string;
   provider: string;
-  profile: Record<string, unknown>;
+  profile: Record<string, any>;
   /** Whether the profile currently stores a materialized OAuth access token. */
   hasAccess: boolean;
   /** Whether the profile currently stores a materialized OAuth refresh token. */
@@ -110,7 +110,7 @@ function toSecretCredentialVisit(params: {
   kind: AuthProfileCredentialType;
   profileId: string;
   provider: string;
-  profile: Record<string, unknown>;
+  profile: Record<string, any>;
 }): ApiKeyCredentialVisit | TokenCredentialVisit {
   const spec = getAuthProfileFieldSpec(params.kind);
   return {
@@ -127,7 +127,7 @@ function toSecretCredentialVisit(params: {
 
 /** Iterates credential-bearing auth profiles with normalized field metadata for audit/apply. */
 export function* iterateAuthProfileCredentials(
-  profiles: Record<string, unknown>,
+  profiles: Record<string, any>,
 ): Iterable<AuthProfileCredentialVisit> {
   for (const [profileId, value] of Object.entries(profiles)) {
     if (!isRecord(value) || !isNonEmptyString(value.provider)) {

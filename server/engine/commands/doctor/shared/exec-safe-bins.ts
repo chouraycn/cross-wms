@@ -31,8 +31,8 @@ export type ExecSafeBinCoverageHit = {
 type ExecSafeBinScopeRef = {
   scopePath: string;
   safeBins: string[];
-  exec: Record<string, unknown>;
-  mergedProfiles: Record<string, unknown>;
+  exec: Record<string, any>;
+  mergedProfiles: Record<string, any>;
   trustedSafeBinDirs: ReadonlySet<string>;
 };
 
@@ -45,7 +45,7 @@ export type ExecSafeBinTrustedDirHintHit = {
   resolvedPath: string;
 };
 
-function normalizeConfiguredSafeBins(entries: unknown): string[] {
+function normalizeConfiguredSafeBins(entries: any): string[] {
   if (!Array.isArray(entries)) {
     return [];
   }
@@ -58,7 +58,7 @@ function normalizeConfiguredSafeBins(entries: unknown): string[] {
   ).toSorted();
 }
 
-function normalizeConfiguredTrustedSafeBinDirs(entries: unknown): string[] {
+function normalizeConfiguredTrustedSafeBinDirs(entries: any): string[] {
   if (!Array.isArray(entries)) {
     return [];
   }

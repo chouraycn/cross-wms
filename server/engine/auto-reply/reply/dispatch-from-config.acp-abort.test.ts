@@ -34,7 +34,7 @@ let getActiveReplyRunCount: typeof import("./reply-run-registry.js").getActiveRe
 let createReplyOperation: typeof import("./reply-run-registry.js").createReplyOperation;
 let replyRunTesting: typeof import("./reply-run-registry.js").__testing;
 
-function shouldUseAcpReplyDispatchHook(eventUnknown: unknown): boolean {
+function shouldUseAcpReplyDispatchHook(eventUnknown: any): boolean {
   const event = eventUnknown as {
     sessionKey?: string;
     isTailDispatch?: boolean;
@@ -85,7 +85,7 @@ function createMockAcpSessionManager() {
       const entry = acpMocks.readAcpSessionEntry({
         cfg: params.cfg,
         sessionKey: params.sessionKey,
-      }) as { acp?: Record<string, unknown> } | null;
+      }) as { acp?: Record<string, any> } | null;
       if (entry?.acp) {
         return {
           kind: "ready" as const,
@@ -112,11 +112,11 @@ function createMockAcpSessionManager() {
         cfg: OpenClawConfig;
         sessionKey: string;
         text?: string;
-        attachments?: unknown[];
+        attachments?: any[];
         mode: string;
         requestId: string;
         signal?: AbortSignal;
-        onEvent: (event: Record<string, unknown>) => Promise<void>;
+        onEvent: (event: Record<string, any>) => Promise<void>;
       }) => {
         const entry = acpMocks.readAcpSessionEntry({
           cfg: params.cfg,
@@ -177,7 +177,7 @@ describe("dispatchReplyFromConfig ACP abort", () => {
     hookMocks.runner.runBeforeDispatch.mockReset();
     hookMocks.runner.runBeforeDispatch.mockResolvedValue(undefined);
     hookMocks.runner.runReplyDispatch.mockReset();
-    hookMocks.runner.runReplyDispatch.mockImplementation(async (event: unknown, ctx: unknown) => {
+    hookMocks.runner.runReplyDispatch.mockImplementation(async (event: any, ctx: any) => {
       if (!shouldUseAcpReplyDispatchHook(event)) {
         return undefined;
       }
@@ -307,7 +307,7 @@ describe("dispatchReplyFromConfig ACP abort", () => {
   });
 
   it("completes the dispatch-owned operation when ACP tail dispatch handles the turn", async () => {
-    hookMocks.runner.runReplyDispatch.mockImplementation(async (eventUnknown: unknown) => {
+    hookMocks.runner.runReplyDispatch.mockImplementation(async (eventUnknown: any) => {
       const event = eventUnknown as {
         isTailDispatch?: boolean;
       };
@@ -358,7 +358,7 @@ describe("dispatchReplyFromConfig ACP abort", () => {
       tailDispatchStarted = resolve;
     });
     hookMocks.runner.runReplyDispatch.mockImplementation(
-      async (eventUnknown: unknown, hookCtxUnknown: unknown) => {
+      async (eventUnknown: any, hookCtxUnknown: any) => {
         const event = eventUnknown as {
           isTailDispatch?: boolean;
         };
@@ -424,7 +424,7 @@ describe("dispatchReplyFromConfig ACP abort", () => {
     const lateSendResults: boolean[] = [];
 
     hookMocks.runner.runReplyDispatch.mockImplementation(
-      async (_eventUnknown: unknown, hookCtxUnknown: unknown) => {
+      async (_eventUnknown: any, hookCtxUnknown: any) => {
         const hookCtx = hookCtxUnknown as {
           dispatcher: {
             sendToolResult: (payload: { text: string }) => boolean;
@@ -515,14 +515,14 @@ describe("dispatchReplyFromConfig ACP abort", () => {
     };
     sessionBindingMocks.resolveByConversation.mockReturnValue(boundConversation);
     sessionStoreMocks.loadSessionStore.mockReturnValue(sessionStore);
-    sessionStoreMocks.resolveSessionStoreEntry.mockImplementation((...args: unknown[]) => {
-      const params = args[0] as { store?: Record<string, unknown>; sessionKey?: string };
+    sessionStoreMocks.resolveSessionStoreEntry.mockImplementation((...args: any[]) => {
+      const params = args[0] as { store?: Record<string, any>; sessionKey?: string };
       const existing =
         params.store && params.sessionKey ? params.store[params.sessionKey] : undefined;
       return {
         existing:
           existing && typeof existing === "object"
-            ? (existing as Record<string, unknown>)
+            ? (existing as Record<string, any>)
             : undefined,
       };
     });
@@ -551,7 +551,7 @@ describe("dispatchReplyFromConfig ACP abort", () => {
       tailDispatchStarted = resolve;
     });
     hookMocks.runner.runReplyDispatch.mockImplementation(
-      async (eventUnknown: unknown, hookCtxUnknown: unknown) => {
+      async (eventUnknown: any, hookCtxUnknown: any) => {
         const event = eventUnknown as {
           sessionKey?: string;
           isTailDispatch?: boolean;
@@ -830,7 +830,7 @@ describe("dispatchReplyFromConfig ACP abort", () => {
     let hookAbortSignal: AbortSignal | undefined;
 
     hookMocks.runner.runReplyDispatch.mockImplementation(
-      async (_eventUnknown: unknown, hookCtxUnknown: unknown) => {
+      async (_eventUnknown: any, hookCtxUnknown: any) => {
         const hookCtx = hookCtxUnknown as {
           abortSignal?: AbortSignal;
           dispatcher: {

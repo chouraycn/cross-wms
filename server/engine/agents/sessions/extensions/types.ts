@@ -84,7 +84,7 @@ export type OAuthCredentials = {
   refresh: string;
   access: string;
   expires: number;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 export type OAuthPrompt = {
@@ -458,7 +458,7 @@ export interface ToolRenderResultOptions {
 }
 
 /** Context passed to tool renderers. */
-export interface ToolRenderContext<TState = unknown, TArgs = unknown> {
+export interface ToolRenderContext<TState = any, TArgs = any> {
   /** Current tool call arguments. Shared across call/result renders for the same tool call. */
   args: TArgs;
   /** Unique id for this tool execution. Stable across call/result renders for the same tool call. */
@@ -485,7 +485,7 @@ export interface ToolRenderContext<TState = unknown, TArgs = unknown> {
   isError: boolean;
 }
 
-type BivariantCallback<TArgs extends unknown[], TResult> = {
+type BivariantCallback<TArgs extends any[], TResult> = {
   bivarianceHack(...args: TArgs): TResult;
 }["bivarianceHack"];
 
@@ -494,8 +494,8 @@ type BivariantCallback<TArgs extends unknown[], TResult> = {
  */
 export interface ToolDefinition<
   TParams extends TSchema = TSchema,
-  TDetails = unknown,
-  TState = unknown,
+  TDetails = any,
+  TState = any,
 > {
   /** Tool name (used in LLM tool calls) */
   name: string;
@@ -513,7 +513,7 @@ export interface ToolDefinition<
   renderShell?: "default" | "self";
 
   /** Optional compatibility shim to prepare raw tool call arguments before schema validation. Must return an object conforming to TParams. */
-  prepareArguments?: (args: unknown) => Static<TParams>;
+  prepareArguments?: (args: any) => Static<TParams>;
 
   /**
    * Per-tool execution mode override.
@@ -560,7 +560,7 @@ type AnyToolDefinition = ToolDefinition;
  * as `customTools`, where contextual typing would otherwise widen params to
  * `unknown`.
  */
-export function defineTool<TParams extends TSchema, TDetails = unknown, TState = unknown>(
+export function defineTool<TParams extends TSchema, TDetails = any, TState = any>(
   tool: ToolDefinition<TParams, TDetails, TState>,
 ): ToolDefinition<TParams, TDetails, TState> & AnyToolDefinition {
   return tool as ToolDefinition<TParams, TDetails, TState> & AnyToolDefinition;
@@ -689,7 +689,7 @@ export interface ContextEvent {
 /** Fired before a provider request is sent. Can replace the payload. */
 export interface BeforeProviderRequestEvent {
   type: "before_provider_request";
-  payload: unknown;
+  payload: any;
 }
 
 /** Fired after a provider response is received and before the response stream is consumed. */
@@ -762,7 +762,7 @@ export interface ToolExecutionStartEvent {
   type: "tool_execution_start";
   toolCallId: string;
   toolName: string;
-  args: unknown;
+  args: any;
 }
 
 /** Fired during tool execution with partial/streaming output */
@@ -770,8 +770,8 @@ export interface ToolExecutionUpdateEvent {
   type: "tool_execution_update";
   toolCallId: string;
   toolName: string;
-  args: unknown;
-  partialResult: unknown;
+  args: any;
+  partialResult: any;
 }
 
 /** Fired when a tool finishes executing */
@@ -779,7 +779,7 @@ export interface ToolExecutionEndEvent {
   type: "tool_execution_end";
   toolCallId: string;
   toolName: string;
-  result: unknown;
+  result: any;
   isError: boolean;
 }
 
@@ -889,7 +889,7 @@ export interface LsToolCallEvent extends ToolCallEventBase {
 
 export interface CustomToolCallEvent extends ToolCallEventBase {
   toolName: string;
-  input: Record<string, unknown>;
+  input: Record<string, any>;
 }
 
 /**
@@ -911,7 +911,7 @@ export type ToolCallEvent =
 interface ToolResultEventBase {
   type: "tool_result";
   toolCallId: string;
-  input: Record<string, unknown>;
+  input: Record<string, any>;
   content: (TextContent | ImageContent)[];
   isError: boolean;
 }
@@ -953,7 +953,7 @@ export interface LsToolResultEvent extends ToolResultEventBase {
 
 export interface CustomToolResultEvent extends ToolResultEventBase {
   toolName: string;
-  details: unknown;
+  details: any;
 }
 
 /** Fired after a tool executes. Can modify result. */
@@ -1035,7 +1035,7 @@ export function isToolCallEventType(
   event: ToolCallEvent,
 ): event is FindToolCallEvent;
 export function isToolCallEventType(toolName: "ls", event: ToolCallEvent): event is LsToolCallEvent;
-export function isToolCallEventType<TName extends string, TInput extends Record<string, unknown>>(
+export function isToolCallEventType<TName extends string, TInput extends Record<string, any>>(
   toolName: TName,
   event: ToolCallEvent,
 ): event is ToolCallEvent & { toolName: TName; input: TInput };
@@ -1094,7 +1094,7 @@ export interface UserBashEventResult {
 
 export interface ToolResultEventResult {
   content?: (TextContent | ImageContent)[];
-  details?: unknown;
+  details?: any;
   isError?: boolean;
 }
 
@@ -1127,7 +1127,7 @@ export interface SessionBeforeTreeResult {
   cancel?: boolean;
   summary?: {
     summary: string;
-    details?: unknown;
+    details?: any;
   };
   /** Override custom instructions for summarization */
   customInstructions?: string;
@@ -1244,7 +1244,7 @@ export interface ExtensionAPI {
   // =========================================================================
 
   /** Register a tool that the LLM can call. */
-  registerTool<TParams extends TSchema = TSchema, TDetails = unknown, TState = unknown>(
+  registerTool<TParams extends TSchema = TSchema, TDetails = any, TState = any>(
     tool: ToolDefinition<TParams, TDetails, TState>,
   ): void;
 
@@ -1304,7 +1304,7 @@ export interface ExtensionAPI {
   ): void;
 
   /** Append a custom entry to the session for state persistence (not sent to LLM). */
-  appendEntry(customType: string, data?: unknown): void;
+  appendEntry(customType: string, data?: any): void;
 
   // =========================================================================
   // Session Metadata
@@ -1518,7 +1518,7 @@ export interface ExtensionShortcut {
   extensionPath: string;
 }
 
-type HandlerFn = (...args: unknown[]) => Promise<unknown>;
+type HandlerFn = (...args: any[]) => Promise<any>;
 
 export type SendMessageHandler = <T = unknown>(
   message: Pick<CustomMessage<T>, "customType" | "content" | "display" | "details">,
@@ -1530,7 +1530,7 @@ export type SendUserMessageHandler = (
   options?: { deliverAs?: "steer" | "followUp" },
 ) => void;
 
-export type AppendEntryHandler = (customType: string, data?: unknown) => void;
+export type AppendEntryHandler = (customType: string, data?: any) => void;
 
 export type SetSessionNameHandler = (name: string) => void;
 

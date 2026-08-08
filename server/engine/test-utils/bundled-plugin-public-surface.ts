@@ -36,7 +36,7 @@ function isSafeBundledPluginDirName(pluginId: string): boolean {
 function readPluginManifestId(pluginDir: string): string | undefined {
   try {
     const manifestPath = path.join(pluginDir, "openclaw.plugin.json");
-    const parsed = JSON.parse(fs.readFileSync(manifestPath, "utf-8")) as { id?: unknown };
+    const parsed = JSON.parse(fs.readFileSync(manifestPath, "utf-8")) as { id?: any };
     return typeof parsed.id === "string" ? parsed.id : undefined;
   } catch {
     return undefined;
@@ -78,7 +78,7 @@ function findBundledPluginMetadata(pluginId: string): BundledPluginPublicSurface
 function readPackageName(packageDir: string): string | undefined {
   try {
     const packageJsonPath = path.join(packageDir, "package.json");
-    const parsed = JSON.parse(fs.readFileSync(packageJsonPath, "utf-8")) as { name?: unknown };
+    const parsed = JSON.parse(fs.readFileSync(packageJsonPath, "utf-8")) as { name?: any };
     return typeof parsed.name === "string" ? parsed.name : undefined;
   } catch {
     return undefined;

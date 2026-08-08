@@ -6,14 +6,14 @@ import { createTtsTool } from "./tts-tool.js";
 
 let textToSpeechSpy: ReturnType<typeof vi.spyOn>;
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object") {
     throw new Error(`expected ${label}`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function latestTextToSpeechArgs(): Record<string, unknown> {
+function latestTextToSpeechArgs(): Record<string, any> {
   // Speech runtime args are the public handoff between the model-facing tool
   // and provider-specific synthesis backends.
   return requireRecord(textToSpeechSpy.mock.calls.at(-1)?.[0], "text-to-speech args");

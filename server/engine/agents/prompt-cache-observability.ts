@@ -8,15 +8,15 @@
 
 export type PromptCacheChange = unknown;
 export type PromptCacheBreak = unknown;
-export function collectPromptCacheToolNames(..._args: unknown[]): unknown {
+export function collectPromptCacheToolNames(..._args: any[]): any {
   return [];
 }
-export function beginPromptCacheObservation(..._args: unknown[]): unknown {
+export function beginPromptCacheObservation(..._args: any[]): any {
   return undefined;
 }
-export function completePromptCacheObservation(..._args: unknown[]): unknown {
+export function completePromptCacheObservation(..._args: any[]): any {
   return undefined;
 }
-export function resetPromptCacheObservabilityForTest(..._args: unknown[]): unknown {
+export function resetPromptCacheObservabilityForTest(..._args: any[]): any {
   return undefined;
 }

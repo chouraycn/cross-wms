@@ -9,7 +9,7 @@ import {
   streamOpenAICodexResponses,
 } from "./openai-chatgpt-responses.js";
 
-function createJwt(payload: Record<string, unknown>): string {
+function createJwt(payload: Record<string, any>): string {
   const header = Buffer.from(JSON.stringify({ alg: "none", typ: "JWT" })).toString("base64url");
   const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
   return `${header}.${body}.signature`;
@@ -155,8 +155,8 @@ describe("streamOpenAICodexResponses transport", () => {
   it("does not replay Responses item ids for store-disabled ChatGPT requests", async () => {
     let capturedPayload:
       | {
-          store?: unknown;
-          input?: Array<Record<string, unknown>>;
+          store?: any;
+          input?: Array<Record<string, any>>;
         }
       | undefined;
     const stream = streamOpenAICodexResponses(
@@ -248,7 +248,7 @@ describe("streamOpenAICodexResponses transport", () => {
   });
 
   it("omits ChatGPT tool controls when every tool schema is unreadable", async () => {
-    let capturedPayload: Record<string, unknown> | undefined;
+    let capturedPayload: Record<string, any> | undefined;
     const stream = streamOpenAICodexResponses(
       model,
       {
@@ -271,7 +271,7 @@ describe("streamOpenAICodexResponses transport", () => {
         }),
         transport: "sse",
         onPayload: (payload) => {
-          capturedPayload = payload as Record<string, unknown>;
+          capturedPayload = payload as Record<string, any>;
           throw new Error("stop after payload");
         },
       },
@@ -286,7 +286,7 @@ describe("streamOpenAICodexResponses transport", () => {
   });
 
   it("does not reread an unreadable ChatGPT tool inventory length", async () => {
-    let capturedPayload: Record<string, unknown> | undefined;
+    let capturedPayload: Record<string, any> | undefined;
     const tools = new Proxy([], {
       get(target, property, receiver) {
         if (property === "length") {
@@ -303,7 +303,7 @@ describe("streamOpenAICodexResponses transport", () => {
       }),
       transport: "sse",
       onPayload: (payload) => {
-        capturedPayload = payload as Record<string, unknown>;
+        capturedPayload = payload as Record<string, any>;
         throw new Error("stop after payload");
       },
     });
@@ -376,7 +376,7 @@ describe("streamOpenAICodexResponses transport", () => {
     class OpeningThenTimedOutWebSocket {
       send = sendMock;
       close = vi.fn();
-      addEventListener(type: string, listener: (event: unknown) => void): void {
+      addEventListener(type: string, listener: (event: any) => void): void {
         if (type === "open") {
           queueMicrotask(() => {
             listener({});
@@ -459,7 +459,7 @@ describe("streamOpenAICodexResponses transport", () => {
   });
 
   it("prefers promptCacheKey over sessionId for request cache affinity", async () => {
-    let payload: unknown;
+    let payload: any;
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => {

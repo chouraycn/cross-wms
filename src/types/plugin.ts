@@ -47,9 +47,9 @@ export interface PluginConfigSchemaField {
   type: 'string' | 'number' | 'boolean' | 'array' | 'object';
   label?: string;
   description?: string;
-  default?: unknown;
+  default?: any;
   required?: boolean;
-  enum?: unknown[];
+  enum?: any[];
   properties?: PluginConfigSchemaField[];
 }
 

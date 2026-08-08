@@ -6,7 +6,7 @@
 
 import fs from "node:fs/promises";
 
-function normalizeOptionalString(value: unknown): string | undefined {
+function normalizeOptionalString(value: any): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }
@@ -14,7 +14,7 @@ function normalizeOptionalString(value: unknown): string | undefined {
   return trimmed || undefined;
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
@@ -64,7 +64,7 @@ export async function writeClaudeMcpCaptureConfig(params: {
   mcpConfigPath: string;
   captureKey: string;
 }): Promise<void> {
-  const raw = JSON.parse(await fs.readFile(params.mcpConfigPath, "utf-8")) as unknown;
+  const raw = JSON.parse(await fs.readFile(params.mcpConfigPath, "utf-8")) as any;
   if (!isRecord(raw)) {
     throw new Error("Claude MCP capture requires an object config");
   }

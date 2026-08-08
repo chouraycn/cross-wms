@@ -7,11 +7,11 @@
 
 export type RuntimeExternalOAuthProfile = {
   profileId: string;
-  credential: Record<string, unknown>;
+  credential: Record<string, any>;
   persistence?: "runtime-only" | "persisted";
 };
 
-function normalizeIdentityToken(value: unknown): string | undefined {
+function normalizeIdentityToken(value: any): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }
@@ -20,8 +20,8 @@ function normalizeIdentityToken(value: unknown): string | undefined {
 }
 
 export function areOAuthCredentialsEquivalent(
-  a: Record<string, unknown> | undefined,
-  b: Record<string, unknown>,
+  a: Record<string, any> | undefined,
+  b: Record<string, any>,
 ): boolean {
   if (!a || a.type !== "oauth") {
     return false;
@@ -40,8 +40,8 @@ export function areOAuthCredentialsEquivalent(
 }
 
 function hasNewerStoredOAuthCredential(
-  existing: Record<string, unknown> | undefined,
-  incoming: Record<string, unknown>,
+  existing: Record<string, any> | undefined,
+  incoming: Record<string, any>,
 ): boolean {
   if (!existing || existing.provider !== incoming.provider) {
     return false;
@@ -55,8 +55,8 @@ function hasNewerStoredOAuthCredential(
 }
 
 export function shouldReplaceStoredOAuthCredential(
-  existing: Record<string, unknown> | undefined,
-  incoming: Record<string, unknown>,
+  existing: Record<string, any> | undefined,
+  incoming: Record<string, any>,
 ): boolean {
   if (!existing || existing.type !== "oauth") {
     return true;
@@ -68,7 +68,7 @@ export function shouldReplaceStoredOAuthCredential(
 }
 
 export function hasUsableOAuthCredential(
-  credential: Record<string, unknown> | undefined,
+  credential: Record<string, any> | undefined,
   now = Date.now(),
 ): boolean {
   if (!credential || credential.type !== "oauth") {
@@ -82,7 +82,7 @@ export function hasUsableOAuthCredential(
 }
 
 export function hasOAuthIdentity(
-  credential: Pick<Record<string, unknown>, "accountId" | "email">,
+  credential: Pick<Record<string, any>, "accountId" | "email">,
 ): boolean {
   return (
     normalizeIdentityToken(credential.accountId) !== undefined ||
@@ -91,8 +91,8 @@ export function hasOAuthIdentity(
 }
 
 export function hasMatchingOAuthIdentity(
-  existing: Pick<Record<string, unknown>, "accountId" | "email">,
-  incoming: Pick<Record<string, unknown>, "accountId" | "email">,
+  existing: Pick<Record<string, any>, "accountId" | "email">,
+  incoming: Pick<Record<string, any>, "accountId" | "email">,
 ): boolean {
   if (!hasOAuthIdentity(existing)) {
     return false;
@@ -111,8 +111,8 @@ export function hasMatchingOAuthIdentity(
 }
 
 function isSafeOAuthIdentityTransition(
-  existing: Record<string, unknown> | undefined,
-  incoming: Record<string, unknown>,
+  existing: Record<string, any> | undefined,
+  incoming: Record<string, any>,
   policy: { whenExistingCredentialMissing: boolean; whenExistingIdentityMissing: boolean },
 ): boolean {
   if (!existing || existing.type !== "oauth") {
@@ -124,18 +124,18 @@ function isSafeOAuthIdentityTransition(
   if (areOAuthCredentialsEquivalent(existing, incoming)) {
     return true;
   }
-  if (!hasOAuthIdentity(existing as Pick<Record<string, unknown>, "accountId" | "email">)) {
+  if (!hasOAuthIdentity(existing as Pick<Record<string, any>, "accountId" | "email">)) {
     return policy.whenExistingIdentityMissing;
   }
   return hasMatchingOAuthIdentity(
-    existing as Pick<Record<string, unknown>, "accountId" | "email">,
-    incoming as Pick<Record<string, unknown>, "accountId" | "email">,
+    existing as Pick<Record<string, any>, "accountId" | "email">,
+    incoming as Pick<Record<string, any>, "accountId" | "email">,
   );
 }
 
 export function isSafeToOverwriteStoredOAuthIdentity(
-  existing: Record<string, unknown> | undefined,
-  incoming: Record<string, unknown>,
+  existing: Record<string, any> | undefined,
+  incoming: Record<string, any>,
 ): boolean {
   return isSafeOAuthIdentityTransition(existing, incoming, {
     whenExistingCredentialMissing: true,
@@ -144,8 +144,8 @@ export function isSafeToOverwriteStoredOAuthIdentity(
 }
 
 export function isSafeToAdoptBootstrapOAuthIdentity(
-  existing: Record<string, unknown> | undefined,
-  incoming: Record<string, unknown>,
+  existing: Record<string, any> | undefined,
+  incoming: Record<string, any>,
 ): boolean {
   return isSafeOAuthIdentityTransition(existing, incoming, {
     whenExistingCredentialMissing: true,
@@ -154,8 +154,8 @@ export function isSafeToAdoptBootstrapOAuthIdentity(
 }
 
 export function isSafeToAdoptMainStoreOAuthIdentity(
-  existing: Record<string, unknown> | undefined,
-  incoming: Record<string, unknown>,
+  existing: Record<string, any> | undefined,
+  incoming: Record<string, any>,
 ): boolean {
   return isSafeOAuthIdentityTransition(existing, incoming, {
     whenExistingCredentialMissing: false,
@@ -164,8 +164,8 @@ export function isSafeToAdoptMainStoreOAuthIdentity(
 }
 
 export function shouldBootstrapFromExternalCliCredential(params: {
-  existing: Record<string, unknown> | undefined;
-  imported: Record<string, unknown>;
+  existing: Record<string, any> | undefined;
+  imported: Record<string, any>;
   now?: number;
 }): boolean {
   const now = params.now ?? Date.now();
@@ -176,14 +176,14 @@ export function shouldBootstrapFromExternalCliCredential(params: {
 }
 
 export function overlayRuntimeExternalOAuthProfiles(
-  store: Record<string, unknown>,
+  store: Record<string, any>,
   profiles: Iterable<RuntimeExternalOAuthProfile>,
   options?: { runtimeExternalProfileIdsAuthoritative?: boolean },
-): Record<string, unknown> {
+): Record<string, any> {
   const externalProfiles = Array.from(profiles);
-  const storeProfiles = (store.profiles ?? {}) as Record<string, unknown>;
-  const next: Record<string, unknown> = { ...store, profiles: { ...storeProfiles } };
-  const nextProfiles = next.profiles as Record<string, unknown>;
+  const storeProfiles = (store.profiles ?? {}) as Record<string, any>;
+  const next: Record<string, any> = { ...store, profiles: { ...storeProfiles } };
+  const nextProfiles = next.profiles as Record<string, any>;
   const overlaidProfileIds = new Set(externalProfiles.map((p) => p.profileId));
   for (const profile of externalProfiles) {
     nextProfiles[profile.profileId] = profile.credential;
@@ -208,7 +208,7 @@ export function overlayRuntimeExternalOAuthProfiles(
 
 export function shouldPersistRuntimeExternalOAuthProfile(params: {
   profileId: string;
-  credential: Record<string, unknown>;
+  credential: Record<string, any>;
   profiles: Iterable<RuntimeExternalOAuthProfile>;
 }): boolean {
   for (const profile of params.profiles) {

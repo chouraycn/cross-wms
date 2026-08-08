@@ -53,7 +53,7 @@ export type ChannelTargetProviderPrefix = {
 
 type PluginChannelRegistryLike = {
   channels?: Array<{
-    plugin: { id?: unknown; messaging?: { targetPrefixes?: unknown[] } };
+    plugin: { id?: any; messaging?: { targetPrefixes?: any[] } };
   }>;
 };
 
@@ -68,7 +68,7 @@ function resolvePluginTargetPrefix(prefix: string): string | undefined {
     if (
       channelId &&
       candidates.some(
-        (candidate: unknown) => normalizeOptionalLowercaseString(candidate) === normalizedPrefix,
+        (candidate: any) => normalizeOptionalLowercaseString(candidate) === normalizedPrefix,
       )
     ) {
       return channelId;

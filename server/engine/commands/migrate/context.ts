@@ -37,7 +37,7 @@ export function buildMigrationContext(params: {
   source?: string;
   includeSecrets?: boolean;
   overwrite?: boolean;
-  providerOptions?: Record<string, unknown>;
+  providerOptions?: Record<string, any>;
   backupPath?: string;
   configOverride?: OpenClawConfig;
   runtime: RuntimeEnv;

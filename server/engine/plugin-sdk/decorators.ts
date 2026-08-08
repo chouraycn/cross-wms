@@ -30,15 +30,15 @@ import type {
 const ReflectMeta = Reflect as unknown as {
   defineMetadata(
     metadataKey: symbol,
-    metadataValue: unknown,
-    target: unknown,
+    metadataValue: any,
+    target: any,
     propertyKey?: string | symbol,
   ): void;
   getMetadata(
     metadataKey: symbol,
-    target: unknown,
+    target: any,
     propertyKey?: string | symbol,
-  ): unknown;
+  ): any;
 };
 
 const PLUGIN_METADATA_KEY = Symbol('plugin-sdk:plugin');
@@ -48,7 +48,7 @@ const COMMAND_METADATA_KEY = Symbol('plugin-sdk:command');
 
 /** 类装饰器：声明一个插件 */
 export function plugin(options: { id: string; name: string; description?: string; version?: string }) {
-  return function <T extends new (...args: unknown[]) => unknown>(target: T): T {
+  return function <T extends new (...args: any[]) => unknown>(target: T): T {
     const meta: PluginDecoratorMetadata = {
       kind: 'plugin',
       name: options.id,
@@ -62,7 +62,7 @@ export function plugin(options: { id: string; name: string; description?: string
 
 /** 方法装饰器：声明一个 hook */
 export function hook(hookName: string, options: { priority?: number } = {}) {
-  return function (target: object, propertyKey: string, descriptor: TypedPropertyDescriptor<unknown>) {
+  return function (target: object, propertyKey: string, descriptor: TypedPropertyDescriptor<any>) {
     const meta: PluginDecoratorMetadata = {
       kind: 'hook',
       name: hookName,
@@ -75,7 +75,7 @@ export function hook(hookName: string, options: { priority?: number } = {}) {
 
 /** 方法装饰器：声明一个工具 */
 export function tool(name: string, description: string) {
-  return function (target: object, propertyKey: string, descriptor: TypedPropertyDescriptor<unknown>) {
+  return function (target: object, propertyKey: string, descriptor: TypedPropertyDescriptor<any>) {
     const meta: PluginDecoratorMetadata = {
       kind: 'tool',
       name,
@@ -88,7 +88,7 @@ export function tool(name: string, description: string) {
 
 /** 方法装饰器：声明一个命令 */
 export function command(name: string, description: string) {
-  return function (target: object, propertyKey: string, descriptor: TypedPropertyDescriptor<unknown>) {
+  return function (target: object, propertyKey: string, descriptor: TypedPropertyDescriptor<any>) {
     const meta: PluginDecoratorMetadata = {
       kind: 'command',
       name,
@@ -101,7 +101,7 @@ export function command(name: string, description: string) {
 
 // ===================== 元数据读取 =====================
 
-export function getPluginMetadata(target: unknown): PluginDecoratorMetadata | undefined {
+export function getPluginMetadata(target: any): PluginDecoratorMetadata | undefined {
   if (typeof target !== 'function' && typeof target !== 'object') return undefined;
   return ReflectMeta.getMetadata(PLUGIN_METADATA_KEY, target);
 }
@@ -167,9 +167,9 @@ export function defineCommand(options: PluginCommandDefinition): PluginCommandDe
  */
 export function defineHook(
   hookName: string,
-  handler: (payload: unknown) => unknown,
-  options: { priority?: number; metadata?: Record<string, unknown> } = {},
-): { hookName: string; handler: (payload: unknown) => unknown; priority: number; metadata?: Record<string, unknown> } {
+  handler: (payload: any) => unknown,
+  options: { priority?: number; metadata?: Record<string, any> } = {},
+): { hookName: string; handler: (payload: any) => unknown; priority: number; metadata?: Record<string, any> } {
   return {
     hookName,
     handler,

@@ -5,9 +5,9 @@ import type { SsrFPolicy } from "./ssrf-policy.js";
 // Fetches and validates OpenAI-compatible embedding responses.
 
 /** Narrow unknown JSON payloads to plain objects. */
-function asRecord(value: unknown): Record<string, unknown> | undefined {
+function asRecord(value: any): Record<string, any> | undefined {
   return typeof value === "object" && value !== null && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
+    ? (value as Record<string, any>)
     : undefined;
 }
 
@@ -17,7 +17,7 @@ function malformedEmbeddingResponse(errorPrefix: string): Error {
 }
 
 /** Validate and return one finite embedding vector. */
-function readEmbeddingVector(value: unknown, errorPrefix: string): number[] {
+function readEmbeddingVector(value: any, errorPrefix: string): number[] {
   if (!Array.isArray(value)) {
     throw malformedEmbeddingResponse(errorPrefix);
   }
@@ -30,7 +30,7 @@ function readEmbeddingVector(value: unknown, errorPrefix: string): number[] {
 }
 
 /** Resolve expected response count from the request body when input is an array. */
-function resolveExpectedEmbeddingCount(body: unknown): number | undefined {
+function resolveExpectedEmbeddingCount(body: any): number | undefined {
   const input = asRecord(body)?.input;
   return Array.isArray(input) ? input.length : undefined;
 }
@@ -42,7 +42,7 @@ export async function fetchRemoteEmbeddingVectors(params: {
   ssrfPolicy?: SsrFPolicy;
   fetchImpl?: typeof fetch;
   signal?: AbortSignal;
-  body: unknown;
+  body: any;
   errorPrefix: string;
 }): Promise<number[][]> {
   return await postJson({

@@ -9,7 +9,7 @@ export interface TransportLayer {
   isConnected(): boolean;
 
   sendRequest(request: TransportRequest): Promise<TransportResponse>;
-  sendMessage(message: unknown): Promise<void>;
+  sendMessage(message: any): Promise<void>;
 
   on(event: 'connect' | 'disconnect' | 'message' | 'error' | 'reconnect', handler: (event: TransportEvent) => void): void;
   off(event: 'connect' | 'disconnect' | 'message' | 'error' | 'reconnect', handler: (event: TransportEvent) => void): void;
@@ -44,7 +44,7 @@ export abstract class BaseTransportLayer implements TransportLayer {
   abstract connect(): Promise<void>;
   abstract disconnect(): void;
   abstract sendRequest(request: TransportRequest): Promise<TransportResponse>;
-  abstract sendMessage(message: unknown): Promise<void>;
+  abstract sendMessage(message: any): Promise<void>;
 
   isConnected(): boolean {
     return this.connected;

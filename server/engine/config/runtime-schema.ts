@@ -1,8 +1,8 @@
 // 移植自 openclaw/src/config/runtime-schema.ts
 
-export function loadGatewayRuntimeConfigSchema(...args: unknown[]): unknown {
+export function loadGatewayRuntimeConfigSchema(...args: any[]): any {
   return undefined;
 }
-export function readBestEffortRuntimeConfigSchema(...args: unknown[]): unknown {
+export function readBestEffortRuntimeConfigSchema(...args: any[]): any {
   return undefined;
 }

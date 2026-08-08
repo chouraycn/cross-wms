@@ -94,7 +94,7 @@ export function createFeishuChannelPlugin(): ChannelPlugin {
 
   const feishuChannelConfig: ChannelConfigAdapter<FeishuAccountConfig> = {
     listAccountIds: (config: AppConfig): ChannelId[] => {
-      const feishuConfig = config.feishu as Record<string, unknown>;
+      const feishuConfig = config.feishu as Record<string, any>;
       if (feishuConfig && feishuConfig.appId && feishuConfig.appSecret) {
         return [FEISHU_CHANNEL_ID];
       }
@@ -102,7 +102,7 @@ export function createFeishuChannelPlugin(): ChannelPlugin {
     },
     resolveAccount: (config: AppConfig, accountId: ChannelId): FeishuAccountConfig | null => {
       if (accountId !== FEISHU_CHANNEL_ID) return null;
-      const feishuConfig = config.feishu as Record<string, unknown>;
+      const feishuConfig = config.feishu as Record<string, any>;
       if (feishuConfig && feishuConfig.appId && feishuConfig.appSecret) {
         return {
           appId: String(feishuConfig.appId),
@@ -138,7 +138,7 @@ export function createFeishuChannelPlugin(): ChannelPlugin {
           const token = await getTenantAccessToken(account);
           const rendered = await ctx.render();
           const text = rendered.parts
-            .map((p: { content: unknown }) => String(p.content))
+            .map((p: { content: any }) => String(p.content))
             .join("\n");
 
           const response = await fetch("https://open.feishu.cn/open-apis/im/v1/messages", {
@@ -182,8 +182,8 @@ export function createFeishuChannelPlugin(): ChannelPlugin {
 /**
  * 解析飞书 webhook 事件（独立函数，供 webhook 路由调用）
  */
-export function parseFeishuWebhook(body: unknown, account: FeishuAccountConfig): FeishuWebhookResult {
-  const data = body as Record<string, unknown>;
+export function parseFeishuWebhook(body: any, account: FeishuAccountConfig): FeishuWebhookResult {
+  const data = body as Record<string, any>;
 
   // 验证 verificationToken
   if (account.verificationToken) {
@@ -199,12 +199,12 @@ export function parseFeishuWebhook(body: unknown, account: FeishuAccountConfig):
   }
 
   const type = String(data.type || "");
-  const event = data.event as Record<string, unknown>;
+  const event = data.event as Record<string, any>;
 
   if (type === "message" && event) {
-    const message = event.message as Record<string, unknown>;
-    const sender = event.sender as Record<string, unknown>;
-    const chat = event.chat as Record<string, unknown>;
+    const message = event.message as Record<string, any>;
+    const sender = event.sender as Record<string, any>;
+    const chat = event.chat as Record<string, any>;
 
     if (!message) return { success: false, error: "Missing message field" };
 
@@ -222,7 +222,7 @@ export function parseFeishuWebhook(body: unknown, account: FeishuAccountConfig):
       message: {
         chatId: String(chat?.chat_id || ""),
         userId: (() => {
-          const senderId = sender?.sender_id as Record<string, unknown> || {};
+          const senderId = sender?.sender_id as Record<string, any> || {};
           return String(senderId.user_id || senderId.open_id || "");
         })(),
         messageId: String(message.message_id || ""),

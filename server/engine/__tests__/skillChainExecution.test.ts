@@ -232,7 +232,7 @@ describe('技能链手动中止', () => {
     };
 
     // 注册 SSE 客户端
-    addClient('exec-abort-test', mockRes as unknown);
+    addClient('exec-abort-test', mockRes as any);
 
     // 触发中止
     abortExecution('exec-abort-test');
@@ -243,7 +243,7 @@ describe('技能链手动中止', () => {
     expect(written).toContain('chain-aborted');
 
     // 清理
-    removeClient('exec-abort-test', mockRes as unknown);
+    removeClient('exec-abort-test', mockRes as any);
   });
 
   it('addClient 和 removeClient 管理 SSE 客户端', async () => {
@@ -252,10 +252,10 @@ describe('技能链手动中止', () => {
     const res1 = { writable: true, write: vi.fn(), end: vi.fn() };
     const res2 = { writable: true, write: vi.fn(), end: vi.fn() };
 
-    addClient('exec-1', res1 as unknown);
-    addClient('exec-1', res2 as unknown);
+    addClient('exec-1', res1 as any);
+    addClient('exec-1', res2 as any);
 
-    removeClient('exec-1', res1 as unknown);
+    removeClient('exec-1', res1 as any);
 
     // 验证 res2 仍在，res1 已移除
     // 通过广播来判断 — 只 res2 收到

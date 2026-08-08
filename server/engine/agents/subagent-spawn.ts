@@ -13,7 +13,7 @@ export type { SpawnSubagentContextMode, SpawnSubagentMode, SpawnSubagentSandboxM
 export type SpawnSubagentParams = unknown;
 export type SpawnSubagentContext = unknown;
 export type SpawnSubagentResult = unknown;
-export const testing: unknown = undefined;
-export async function spawnSubagentDirect(..._args: unknown[]): Promise<unknown> {
+export const testing: any = undefined;
+export async function spawnSubagentDirect(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }

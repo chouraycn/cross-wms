@@ -44,7 +44,7 @@ export interface McpToolInfo {
   /** 工具描述 */
   description: string;
   /** 参数 JSON Schema */
-  inputSchema: Record<string, unknown>;
+  inputSchema: Record<string, any>;
 }
 
 /** MCP Server 运行状态 */

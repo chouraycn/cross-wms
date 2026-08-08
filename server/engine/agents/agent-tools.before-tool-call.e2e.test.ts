@@ -49,10 +49,10 @@ vi.mock("./tools/gateway.js", () => ({
 const mockGetGlobalHookRunner = vi.mocked(getGlobalHookRunner);
 const hookRunnerGlobalStateKey = Symbol.for("openclaw.plugins.hook-runner-global-state");
 
-function setGlobalHookRunnerForTest(hookRunner: unknown): void {
+function setGlobalHookRunnerForTest(hookRunner: any): void {
   const hookRunnerGlobalState = globalThis as Record<
     symbol,
-    { hookRunner: unknown; registry?: unknown } | undefined
+    { hookRunner: any; registry?: any } | undefined
   >;
   if (!hookRunnerGlobalState[hookRunnerGlobalStateKey]) {
     hookRunnerGlobalState[hookRunnerGlobalStateKey] = {
@@ -63,10 +63,10 @@ function setGlobalHookRunnerForTest(hookRunner: unknown): void {
   hookRunnerGlobalState[hookRunnerGlobalStateKey].hookRunner = hookRunner;
 }
 
-function getGlobalHookRunnerForTest(): unknown {
+function getGlobalHookRunnerForTest(): any {
   const hookRunnerGlobalState = globalThis as Record<
     symbol,
-    { hookRunner: unknown; registry?: unknown } | undefined
+    { hookRunner: any; registry?: any } | undefined
   >;
   return hookRunnerGlobalState[hookRunnerGlobalStateKey]?.hookRunner ?? null;
 }
@@ -103,7 +103,7 @@ describe("before_tool_call loop detection behavior", () => {
       hasHooks: vi.fn(),
       runBeforeToolCall: vi.fn(),
     };
-    mockGetGlobalHookRunner.mockReturnValue(hookRunner as unknown);
+    mockGetGlobalHookRunner.mockReturnValue(hookRunner as any);
     hookRunner.hasHooks.mockReturnValue(false);
   });
 
@@ -250,7 +250,7 @@ describe("before_tool_call loop detection behavior", () => {
     expect(loopEvent?.toolName).toBe(params.toolName);
   }
 
-  function expectToolLoopBlockedResult(result: unknown, expectedReason: string) {
+  function expectToolLoopBlockedResult(result: any, expectedReason: string) {
     const record = requireRecord(result, "tool result");
     const content = requireArray(record.content, "tool result content");
     const textContent = requireRecord(content[0], "tool result content item");
@@ -265,7 +265,7 @@ describe("before_tool_call loop detection behavior", () => {
   async function expectUnblockedToolExecution(
     tool: ReturnType<typeof createWrappedTool>,
     toolCallId: string,
-    params: unknown,
+    params: any,
   ) {
     const result = await tool.execute(toolCallId, params, undefined, undefined);
     const record = requireRecord(result, "tool result");
@@ -274,14 +274,14 @@ describe("before_tool_call loop detection behavior", () => {
     return result;
   }
 
-  function requireRecord(value: unknown, label: string): Record<string, unknown> {
+  function requireRecord(value: any, label: string): Record<string, any> {
     if (typeof value !== "object" || value === null) {
       throw new Error(`${label} was not an object`);
     }
-    return value as Record<string, unknown>;
+    return value as Record<string, any>;
   }
 
-  function requireArray(value: unknown, label: string): unknown[] {
+  function requireArray(value: any, label: string): any[] {
     expect(Array.isArray(value)).toBe(true);
     if (!Array.isArray(value)) {
       throw new Error(`${label} was not an array`);
@@ -291,8 +291,8 @@ describe("before_tool_call loop detection behavior", () => {
 
   function expectEventFields(
     event: DiagnosticEventPayload | DiagnosticToolLoopEvent | undefined,
-    fields: Record<string, unknown>,
-  ): Record<string, unknown> {
+    fields: Record<string, any>,
+  ): Record<string, any> {
     const record = requireRecord(event, "diagnostic event");
     for (const [key, value] of Object.entries(fields)) {
       expect(record[key]).toEqual(value);
@@ -343,7 +343,7 @@ describe("before_tool_call loop detection behavior", () => {
       content: [{ type: "text", text: "(no new output)\n\nProcess still running." }],
       details: { status: "running", aggregated: "steady" },
     });
-    const tool = wrapToolWithBeforeToolCallHook({ name: "process", execute } as unknown, {
+    const tool = wrapToolWithBeforeToolCallHook({ name: "process", execute } as any, {
       ...disabledLoopDetectionContext,
     });
     const params = { action: "poll", sessionId: "sess-off" };
@@ -393,11 +393,11 @@ describe("before_tool_call loop detection behavior", () => {
       details: { ok: true },
     });
     const params = { path: "/tmp/file" };
-    const firstRunTool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as unknown, {
+    const firstRunTool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as any, {
       ...enabledLoopDetectionContext,
       runId: "heartbeat-1",
     });
-    const secondRunTool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as unknown, {
+    const secondRunTool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as any, {
       ...enabledLoopDetectionContext,
       runId: "heartbeat-2",
     });
@@ -522,7 +522,7 @@ describe("before_tool_call loop detection behavior", () => {
     const execute = vi.fn().mockResolvedValue({
       content: [{ type: "text", text: "ok" }],
     });
-    const tool = wrapToolWithBeforeToolCallHook({ name: "bash", execute } as unknown, {
+    const tool = wrapToolWithBeforeToolCallHook({ name: "bash", execute } as any, {
       agentId: "main",
       sessionKey: "session-key",
       sessionId: "session-id",
@@ -604,7 +604,7 @@ describe("before_tool_call loop detection behavior", () => {
     const skillBaseDir = path.join(workspaceDir, ".agents", "skills", "demo-skill");
     const skillFilePath = path.join(skillBaseDir, "SKILL.md");
     const execute = vi.fn().mockResolvedValue({ content: [{ type: "text", text: "skill" }] });
-    const tool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as unknown, {
+    const tool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as any, {
       agentId: "main",
       sessionKey: "session-key",
       sessionId: "session-id",
@@ -661,7 +661,7 @@ describe("before_tool_call loop detection behavior", () => {
     const skillBaseDir = path.join(os.homedir(), ".openclaw", "skills", "home-skill");
     const skillFilePath = path.join(skillBaseDir, "SKILL.md");
     const execute = vi.fn().mockResolvedValue({ content: [{ type: "text", text: "skill" }] });
-    const tool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as unknown, {
+    const tool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as any, {
       agentId: "main",
       sessionKey: "session-key",
       workspaceDir: "/tmp/openclaw-workspace",
@@ -705,7 +705,7 @@ describe("before_tool_call loop detection behavior", () => {
     const workspaceDir = path.join("/tmp", "openclaw-skill-unused-param");
     const skillBaseDir = path.join(workspaceDir, ".agents", "skills", "demo-skill");
     const execute = vi.fn().mockResolvedValue({ content: [{ type: "text", text: "readme" }] });
-    const tool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as unknown, {
+    const tool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as any, {
       agentId: "main",
       sessionKey: "session-key",
       workspaceDir,
@@ -746,7 +746,7 @@ describe("before_tool_call loop detection behavior", () => {
 
   it("emits skill usage diagnostics for command-dispatched skill tools", async () => {
     const execute = vi.fn().mockResolvedValue({ content: [{ type: "text", text: "sent" }] });
-    const tool = wrapToolWithBeforeToolCallHook({ name: "message", execute } as unknown, {
+    const tool = wrapToolWithBeforeToolCallHook({ name: "message", execute } as any, {
       agentId: "main",
       sessionKey: "session-key",
       sessionId: "session-id",
@@ -789,7 +789,7 @@ describe("before_tool_call loop detection behavior", () => {
     const execute = vi
       .fn()
       .mockRejectedValue(new Error("failed with key sk-1234567890abcdef1234567890abcdef"));
-    const tool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as unknown, {
+    const tool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as any, {
       agentId: "main",
       sessionKey: "session-key",
       loopDetection: { enabled: false },
@@ -823,7 +823,7 @@ describe("before_tool_call loop detection behavior", () => {
       blockReason: "blocked by policy",
     });
     const execute = vi.fn().mockResolvedValue({ content: [{ type: "text", text: "nope" }] });
-    const tool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as unknown, {
+    const tool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as any, {
       agentId: "main",
       sessionKey: "session-key",
       loopDetection: { enabled: false },
@@ -860,7 +860,7 @@ describe("before_tool_call loop detection behavior", () => {
       blockReason: "blocked by policy",
     });
     const execute = vi.fn().mockResolvedValue({ content: [{ type: "text", text: "nope" }] });
-    const tool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as unknown, {
+    const tool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as any, {
       agentId: "main",
       sessionKey: "session-key",
       loopDetection: { enabled: false },
@@ -919,7 +919,7 @@ describe("before_tool_call loop detection behavior", () => {
       },
     );
     const execute = vi.fn().mockRejectedValue(hostileError);
-    const tool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as unknown, {
+    const tool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as any, {
       agentId: "main",
       sessionKey: "session-key",
       loopDetection: { enabled: false },
@@ -951,7 +951,7 @@ describe("before_tool_call loop detection behavior", () => {
       status: 429,
     });
     const execute = vi.fn().mockRejectedValue(error);
-    const tool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as unknown, {
+    const tool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as any, {
       agentId: "main",
       sessionKey: "session-key",
       loopDetection: { enabled: false },
@@ -973,7 +973,7 @@ describe("before_tool_call loop detection behavior", () => {
 
   it("summarizes hostile object params without enumerating keys", async () => {
     const execute = vi.fn().mockResolvedValue({ content: [{ type: "text", text: "ok" }] });
-    const tool = wrapToolWithBeforeToolCallHook({ name: "bash", execute } as unknown, {
+    const tool = wrapToolWithBeforeToolCallHook({ name: "bash", execute } as any, {
       agentId: "main",
       sessionKey: "session-key",
       loopDetection: { enabled: false },
@@ -1008,17 +1008,17 @@ describe("before_tool_call requireApproval handling", () => {
   };
   const mockCallGateway = vi.mocked(callGatewayTool);
 
-  function requireRecord(value: unknown, label: string): Record<string, unknown> {
+  function requireRecord(value: any, label: string): Record<string, any> {
     if (typeof value !== "object" || value === null) {
       throw new Error(`${label} was not an object`);
     }
-    return value as Record<string, unknown>;
+    return value as Record<string, any>;
   }
 
   function requireHookCall(
     index: number,
-  ): [event: Record<string, unknown>, context: Record<string, unknown>] {
-    const call = hookRunner.runBeforeToolCall.mock.calls[index] as unknown[] | undefined;
+  ): [event: Record<string, any>, context: Record<string, any>] {
+    const call = hookRunner.runBeforeToolCall.mock.calls[index] as any[] | undefined;
     if (!call) {
       throw new Error(`missing before_tool_call hook call ${index + 1}`);
     }
@@ -1028,15 +1028,15 @@ describe("before_tool_call requireApproval handling", () => {
     ];
   }
 
-  function requireGatewayCall(index: number): unknown[] {
-    const call = mockCallGateway.mock.calls[index] as unknown[] | undefined;
+  function requireGatewayCall(index: number): any[] {
+    const call = mockCallGateway.mock.calls[index] as any[] | undefined;
     if (!call) {
       throw new Error(`missing gateway call ${index + 1}`);
     }
     return call;
   }
 
-  function expectRecordFields(record: Record<string, unknown>, fields: Record<string, unknown>) {
+  function expectRecordFields(record: Record<string, any>, fields: Record<string, any>) {
     for (const [key, value] of Object.entries(fields)) {
       expect(record[key]).toEqual(value);
     }
@@ -1049,7 +1049,7 @@ describe("before_tool_call requireApproval handling", () => {
       hasHooks: vi.fn((hookName: string) => hookName === "before_tool_call"),
       runBeforeToolCall: vi.fn(),
     };
-    mockGetGlobalHookRunner.mockReturnValue(hookRunner as unknown);
+    mockGetGlobalHookRunner.mockReturnValue(hookRunner as any);
     // Keep the global singleton aligned as a fallback in case another setup path
     // preloads hook-runner-global before this test's module reset/mocks take effect.
     setGlobalHookRunnerForTest(hookRunner);
@@ -1058,7 +1058,7 @@ describe("before_tool_call requireApproval handling", () => {
   });
 
   async function runAbortDuringApprovalWait(options?: {
-    abortReason?: unknown;
+    abortReason?: any;
     onResolution?: ReturnType<typeof vi.fn>;
   }) {
     hookRunner.runBeforeToolCall.mockResolvedValue({
@@ -1292,7 +1292,7 @@ describe("before_tool_call requireApproval handling", () => {
   it("reports trusted policy diagnostics through guarded readers", () => {
     hookRunner.hasHooks.mockReturnValue(false);
     const registry = createEmptyPluginRegistry();
-    const unreadableIdPolicy: Record<string, unknown> = {
+    const unreadableIdPolicy: Record<string, any> = {
       description: "synthetic trusted policy",
       evaluate: () => undefined,
     };
@@ -1360,7 +1360,7 @@ describe("before_tool_call requireApproval handling", () => {
       "+x",
       "*** End Patch",
     ].join("\n");
-    const seenByLaterPolicy: unknown[] = [];
+    const seenByLaterPolicy: any[] = [];
     const registry = createEmptyPluginRegistry();
     registry.trustedToolPolicies = [
       {
@@ -1999,7 +1999,7 @@ describe("before_tool_call tool content private-data capture", () => {
 
   it("attaches tool input/output to private data when opted in", async () => {
     const execute = vi.fn().mockResolvedValue({ content: [{ type: "text", text: "file body" }] });
-    const tool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as unknown, {
+    const tool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as any, {
       agentId: "main",
       sessionKey: "session-key",
       runId: "run-1",
@@ -2024,7 +2024,7 @@ describe("before_tool_call tool content private-data capture", () => {
 
   it("omits tool content from private data when capture is not configured", async () => {
     const execute = vi.fn().mockResolvedValue({ content: [{ type: "text", text: "ok" }] });
-    const tool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as unknown, {
+    const tool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as any, {
       agentId: "main",
       sessionKey: "session-key",
       runId: "run-1",
@@ -2044,7 +2044,7 @@ describe("before_tool_call tool content private-data capture", () => {
   it("captures only opted-in fields and clones away from live params", async () => {
     const liveParams = { path: "/etc/secret" };
     const execute = vi.fn().mockResolvedValue({ content: [{ type: "text", text: "out" }] });
-    const tool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as unknown, {
+    const tool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as any, {
       agentId: "main",
       sessionKey: "session-key",
       runId: "run-1",
@@ -2066,7 +2066,7 @@ describe("before_tool_call tool content private-data capture", () => {
 
   it("attaches tool input but not output on execution errors", async () => {
     const execute = vi.fn().mockRejectedValue(new Error("boom"));
-    const tool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as unknown, {
+    const tool = wrapToolWithBeforeToolCallHook({ name: "read", execute } as any, {
       agentId: "main",
       sessionKey: "session-key",
       runId: "run-1",

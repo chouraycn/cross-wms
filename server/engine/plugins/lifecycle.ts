@@ -73,7 +73,7 @@ function setState(pluginId: string, state: LifecycleState): void {
   }
 }
 
-function recordEvent(pluginId: string, type: PluginEvent['type'], payload?: unknown): void {
+function recordEvent(pluginId: string, type: PluginEvent['type'], payload?: any): void {
   const event: PluginEvent = { type, pluginId, timestamp: Date.now(), payload };
   let list = events.get(pluginId);
   if (!list) {

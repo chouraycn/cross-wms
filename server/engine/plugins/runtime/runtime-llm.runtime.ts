@@ -168,15 +168,15 @@ function buildMessages(params: {
     );
 }
 
-function readFiniteNonNegativeNumber(value: unknown): number | undefined {
+function readFiniteNonNegativeNumber(value: any): number | undefined {
   return typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : undefined;
 }
 
-function readExplicitCostUsd(raw: unknown): number | undefined {
+function readExplicitCostUsd(raw: any): number | undefined {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
     return undefined;
   }
-  const cost = (raw as { cost?: unknown }).cost;
+  const cost = (raw as { cost?: any }).cost;
   if (typeof cost === "number") {
     return readFiniteNonNegativeNumber(cost);
   }
@@ -184,13 +184,13 @@ function readExplicitCostUsd(raw: unknown): number | undefined {
     return undefined;
   }
   return (
-    readFiniteNonNegativeNumber((cost as { total?: unknown; totalUsd?: unknown }).totalUsd) ??
-    readFiniteNonNegativeNumber((cost as { total?: unknown }).total)
+    readFiniteNonNegativeNumber((cost as { total?: any; totalUsd?: any }).totalUsd) ??
+    readFiniteNonNegativeNumber((cost as { total?: any }).total)
   );
 }
 
 function buildUsage(params: {
-  rawUsage: unknown;
+  rawUsage: any;
   normalized: NormalizedUsage | undefined;
   cfg: OpenClawConfig;
   provider: string;

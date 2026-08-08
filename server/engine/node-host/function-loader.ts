@@ -58,7 +58,7 @@ export class FunctionLoader {
     return loadedFn;
   }
 
-  private async loadModule(modulePath: string, exportName?: string): Promise<(...args: unknown[]) => unknown> {
+  private async loadModule(modulePath: string, exportName?: string): Promise<(...args: any[]) => unknown> {
     let code: string;
     try {
       code = fs.readFileSync(modulePath, 'utf-8');
@@ -66,7 +66,7 @@ export class FunctionLoader {
       throw new Error(`Cannot read module file: ${modulePath}`);
     }
 
-    const exports: Record<string, unknown> = {};
+    const exports: Record<string, any> = {};
     const moduleObj = { exports };
 
     const cjsCode = this.transformEsmToCjs(code);
@@ -93,11 +93,11 @@ export class FunctionLoader {
 
     const mod = moduleObj.exports;
 
-    let fn: unknown;
+    let fn: any;
 
     if (exportName) {
       if (typeof mod === 'object' && mod !== null) {
-        const modObj = mod as Record<string, unknown>;
+        const modObj = mod as Record<string, any>;
         fn = modObj[exportName];
         if (!fn) {
           throw new Error(`Export '${exportName}' not found in ${modulePath}`);
@@ -109,7 +109,7 @@ export class FunctionLoader {
       if (typeof mod === 'function') {
         fn = mod;
       } else if (typeof mod === 'object' && mod !== null) {
-        const modObj = mod as Record<string, unknown>;
+        const modObj = mod as Record<string, any>;
         fn = modObj.default ?? Object.values(modObj).find(v => typeof v === 'function');
         if (!fn) {
           throw new Error(`No function export found in ${modulePath}`);
@@ -123,7 +123,7 @@ export class FunctionLoader {
       throw new Error(`Export '${exportName ?? 'default'}' is not a function`);
     }
 
-    return fn as (...args: unknown[]) => unknown;
+    return fn as (...args: any[]) => unknown;
   }
 
   private transformEsmToCjs(code: string): string {

@@ -6,14 +6,14 @@
  * cross-wms 完整移植：所有逻辑为纯数学运算，无外部依赖。
  */
 
-function asDateTimestampMs(value: unknown): number | undefined {
+function asDateTimestampMs(value: any): number | undefined {
   if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
     return undefined;
   }
   return Math.floor(value);
 }
 
-function finiteSecondsToTimerSafeMilliseconds(seconds: unknown, options?: { floorSeconds?: boolean }): number | undefined {
+function finiteSecondsToTimerSafeMilliseconds(seconds: any, options?: { floorSeconds?: boolean }): number | undefined {
   if (typeof seconds !== "number" || !Number.isFinite(seconds) || seconds <= 0) {
     return undefined;
   }
@@ -26,12 +26,12 @@ function finiteSecondsToTimerSafeMilliseconds(seconds: unknown, options?: { floo
 }
 
 /** Convert subagent timeout seconds to a timer-safe delay. */
-export function resolveSubagentRunTimerDelayMs(timeoutSeconds: unknown): number | undefined {
+export function resolveSubagentRunTimerDelayMs(timeoutSeconds: any): number | undefined {
   return finiteSecondsToTimerSafeMilliseconds(timeoutSeconds, { floorSeconds: true });
 }
 
 /** Convert subagent timeout seconds to a finite millisecond duration. */
-export function resolveSubagentRunDurationMs(timeoutSeconds: unknown): number | undefined {
+export function resolveSubagentRunDurationMs(timeoutSeconds: any): number | undefined {
   if (
     typeof timeoutSeconds !== "number" ||
     !Number.isFinite(timeoutSeconds) ||

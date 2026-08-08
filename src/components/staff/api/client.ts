@@ -24,7 +24,7 @@ export class ApiError extends Error {
   }
 }
 
-export function isAuthError(error: unknown): boolean {
+export function isAuthError(error: any): boolean {
   return error instanceof ApiError && error.status === 401
 }
 
@@ -39,7 +39,7 @@ export function authHeader(): Record<string, string> {
  * （部分页面当裸数组、部分手动 .data 解包）导致列表渲染崩溃/恒空。
  * 非包裹结构（裸数组、SSE 之外的普通对象）原样返回。
  */
-function unwrapEnvelope<T>(payload: unknown): T {
+function unwrapEnvelope<T>(payload: any): T {
   if (
     payload &&
     typeof payload === 'object' &&
@@ -48,7 +48,7 @@ function unwrapEnvelope<T>(payload: unknown): T {
     'data' in payload &&
     'message' in payload
   ) {
-    return (payload as { data: unknown }).data as T
+    return (payload as { data: any }).data as T
   }
   return payload as T
 }
@@ -66,11 +66,11 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     const text = await response.text()
     throw new ApiError(response.status, text, response.statusText)
   }
-  const json = (await response.json()) as unknown
+  const json = (await response.json()) as any
   return unwrapEnvelope<T>(json)
 }
 
-async function keepalivePost<T>(path: string, body?: unknown): Promise<T> {
+async function keepalivePost<T>(path: string, body?: any): Promise<T> {
   const response = await fetch(`${API_BASE}${path}`, {
     method: 'POST',
     keepalive: true,
@@ -90,12 +90,12 @@ async function keepalivePost<T>(path: string, body?: unknown): Promise<T> {
 
 export const api = {
   get: <T>(path: string) => request<T>(path),
-  post: <T>(path: string, body?: unknown) =>
+  post: <T>(path: string, body?: any) =>
     request<T>(path, { method: 'POST', body: body === undefined ? undefined : JSON.stringify(body) }),
-  postWithSignal: <T>(path: string, body: unknown, signal?: AbortSignal) =>
+  postWithSignal: <T>(path: string, body: any, signal?: AbortSignal) =>
     request<T>(path, { method: 'POST', body: JSON.stringify(body), signal }),
-  postKeepalive: <T>(path: string, body?: unknown) => keepalivePost<T>(path, body),
-  put: <T>(path: string, body: unknown) => request<T>(path, { method: 'PUT', body: JSON.stringify(body) }),
+  postKeepalive: <T>(path: string, body?: any) => keepalivePost<T>(path, body),
+  put: <T>(path: string, body: any) => request<T>(path, { method: 'PUT', body: JSON.stringify(body) }),
   delete: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
   blob: async (path: string) => {
     const response = await fetch(`${API_BASE}${path}`, {
@@ -113,11 +113,11 @@ export const api = {
 
 export type StreamEvent = {
   event: string
-  data: Record<string, unknown>
+  data: Record<string, any>
 }
 
 export async function streamChatTurn(
-  body: Record<string, unknown>,
+  body: Record<string, any>,
   onEvent: (item: StreamEvent) => void,
   signal?: AbortSignal,
 ): Promise<void> {
@@ -126,7 +126,7 @@ export async function streamChatTurn(
 
 export async function streamPost(
   path: string,
-  body: Record<string, unknown>,
+  body: Record<string, any>,
   onEvent: (item: StreamEvent) => void,
   signal?: AbortSignal,
 ): Promise<void> {
@@ -173,7 +173,7 @@ async function pipeSseEvents(
     if (!ev.event) return
     const data =
       ev.data && typeof ev.data === 'object'
-        ? (ev.data as Record<string, unknown>)
+        ? (ev.data as Record<string, any>)
         : { raw: ev.data }
     onEvent({ event: ev.event, data })
   })
@@ -182,7 +182,7 @@ async function pipeSseEvents(
 function parseErrorMessage(text: string): string {
   if (!text) return ''
   try {
-    const payload = JSON.parse(text) as { detail?: unknown; message?: unknown; error?: unknown }
+    const payload = JSON.parse(text) as { detail?: any; message?: any; error?: any }
     const detail = payload.detail ?? payload.message ?? payload.error
     if (typeof detail === 'string') return detail
     if (Array.isArray(detail)) {
@@ -197,11 +197,11 @@ function parseErrorMessage(text: string): string {
   return text
 }
 
-function formatValidationDetail(item: unknown): string {
+function formatValidationDetail(item: any): string {
   if (typeof item === 'string') return item
   if (!item || typeof item !== 'object') return ''
 
-  const detail = item as { loc?: unknown; msg?: unknown }
+  const detail = item as { loc?: any; msg?: any }
   const message = typeof detail.msg === 'string' ? detail.msg : ''
   const location = Array.isArray(detail.loc)
     ? detail.loc.map((part) => String(part)).filter(Boolean).join('.')

@@ -9,7 +9,7 @@
 /** 消息内容块占位类型。 */
 type MessageContentBlock = {
   type?: string;
-  content?: unknown;
+  content?: any;
 };
 
 /** 对话消息占位类型（与 openclaw Message 兼容的最小子集）。 */
@@ -60,14 +60,14 @@ function inferCopilotInitiator(messages: Context["messages"]): "agent" | "user" 
   return last.role === "user" ? "user" : "agent";
 }
 
-function containsCopilotContentType(value: unknown, type: string): boolean {
+function containsCopilotContentType(value: any, type: string): boolean {
   if (Array.isArray(value)) {
     return value.some((item) => containsCopilotContentType(item, type));
   }
   if (!value || typeof value !== "object") {
     return false;
   }
-  const entry = value as { type?: unknown; content?: unknown };
+  const entry = value as { type?: any; content?: any };
   return entry.type === type || containsCopilotContentType(entry.content, type);
 }
 

@@ -28,7 +28,7 @@ import {
 } from "./clawhub.js";
 
 async function expectPathMissing(targetPath: string): Promise<void> {
-  let statError: unknown;
+  let statError: any;
   try {
     await fs.stat(targetPath);
   } catch (error) {
@@ -37,7 +37,7 @@ async function expectPathMissing(targetPath: string): Promise<void> {
   if (statError === undefined) {
     throw new Error(`Expected ${targetPath} to be missing`);
   }
-  expect((statError as { code?: unknown }).code).toBe("ENOENT");
+  expect((statError as { code?: any }).code).toBe("ENOENT");
 }
 
 function createStalledBodyResponse(params: {
@@ -879,7 +879,7 @@ describe("clawhub helpers", () => {
 
   it("bounds oversized ClawHub error bodies to a short collapsed snippet", async () => {
     const oversized = "boom ".repeat(64 * 1024); // ~320 KiB error body
-    let error: unknown;
+    let error: any;
     try {
       await searchClawHubSkills({
         query: "calendar",

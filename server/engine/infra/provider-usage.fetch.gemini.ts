@@ -1,5 +1,5 @@
 // 移植自 openclaw/src/infra/provider-usage.fetch.gemini.ts
 
-export function fetchGeminiUsage(...args: unknown[]): unknown {
+export function fetchGeminiUsage(...args: any[]): any {
   return undefined;
 }

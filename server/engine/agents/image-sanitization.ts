@@ -27,18 +27,18 @@ export function resolveImageSanitizationLimits(cfg?: OpenClawConfig): ImageSanit
 }
 
 // 降级访问 cfg.agents?.defaults?.imageMaxDimensionPx；OpenClawConfig 类型未本地化。
-function readConfiguredImageMaxDimensionPx(cfg: unknown): number | undefined {
+function readConfiguredImageMaxDimensionPx(cfg: any): number | undefined {
   if (!cfg || typeof cfg !== "object") {
     return undefined;
   }
-  const agents = (cfg as { agents?: unknown }).agents;
+  const agents = (cfg as { agents?: any }).agents;
   if (!agents || typeof agents !== "object") {
     return undefined;
   }
-  const defaults = (agents as { defaults?: unknown }).defaults;
+  const defaults = (agents as { defaults?: any }).defaults;
   if (!defaults || typeof defaults !== "object") {
     return undefined;
   }
-  const value = (defaults as { imageMaxDimensionPx?: unknown }).imageMaxDimensionPx;
+  const value = (defaults as { imageMaxDimensionPx?: any }).imageMaxDimensionPx;
   return typeof value === "number" ? value : undefined;
 }

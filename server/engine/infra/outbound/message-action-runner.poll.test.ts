@@ -13,9 +13,9 @@ const mocks = vi.hoisted(() => ({
 }));
 
 function firstMockArg(
-  mock: { mock: { calls: readonly unknown[][] } },
+  mock: { mock: { calls: readonly any[][] } },
   label: string,
-): Record<string, unknown> {
+): Record<string, any> {
   const [call] = mock.mock.calls;
   if (!call) {
     throw new Error(`expected ${label} call`);
@@ -24,7 +24,7 @@ function firstMockArg(
   if (typeof arg !== "object" || arg === null || Array.isArray(arg)) {
     throw new Error(`expected ${label} params to be an object`);
   }
-  return arg as Record<string, unknown>;
+  return arg as Record<string, any>;
 }
 
 vi.mock("./channel-resolution.js", () => ({
@@ -103,8 +103,8 @@ const pollerTestPlugin: ChannelPlugin = {
 
 async function runPollAction(params: {
   cfg: OpenClawConfig;
-  actionParams: Record<string, unknown>;
-  toolContext?: Record<string, unknown>;
+  actionParams: Record<string, any>;
+  toolContext?: Record<string, any>;
   inboundEventKind?: "user_request" | "room_event";
 }) {
   await runMessageAction({
@@ -120,7 +120,7 @@ async function runPollAction(params: {
       maxSelections?: number;
       threadId?: string;
     };
-    ctx?: { inboundEventKind?: string; params?: Record<string, unknown> };
+    ctx?: { inboundEventKind?: string; params?: Record<string, any> };
   };
   return {
     ...call.resolveCorePoll?.(),

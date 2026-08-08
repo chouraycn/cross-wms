@@ -203,15 +203,15 @@ function requireResolvePluginProvidersParams(index = 0): {
 }
 
 function requireDiscoveredProviderIdsParams(index = 0): {
-  registry?: unknown;
-  manifestRegistry?: unknown;
+  registry?: any;
+  manifestRegistry?: any;
 } {
   const params = (
     mocks.resolveDiscoveredProviderPluginIds.mock.calls[index] as [unknown] | undefined
   )?.[0] as
     | {
-        registry?: unknown;
-        manifestRegistry?: unknown;
+        registry?: any;
+        manifestRegistry?: any;
       }
     | undefined;
   if (!params) {
@@ -232,7 +232,7 @@ describe("resolvePluginDiscoveryProvidersRuntime", () => {
       },
     });
     mocks.resolvePluginMetadataSnapshot.mockImplementation(
-      (params?: { pluginMetadataSnapshot?: unknown }) =>
+      (params?: { pluginMetadataSnapshot?: any }) =>
         params?.pluginMetadataSnapshot ?? mocks.loadPluginMetadataSnapshot(params),
     );
   });
@@ -440,10 +440,10 @@ describe("resolvePluginDiscoveryProvidersRuntime", () => {
     ]);
 
     expect(mocks.getCachedPluginModuleLoader).toHaveBeenCalledOnce();
-    const calls = mocks.getCachedPluginModuleLoader.mock.calls as unknown[][];
+    const calls = mocks.getCachedPluginModuleLoader.mock.calls as any[][];
     const params = calls[0]?.[0] as
       | {
-          cache?: unknown;
+          cache?: any;
           modulePath?: string;
           importerUrl?: string;
           loaderFilename?: string;

@@ -7,16 +7,16 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vite
 
 const jitiCalls = vi.hoisted(() => ({
   imports: [] as string[],
-  options: [] as Array<Record<string, unknown>>,
+  options: [] as Array<Record<string, any>>,
 }));
 
 vi.mock("jiti/static", () => ({
-  createJiti: vi.fn((_url: string, options: Record<string, unknown>) => {
+  createJiti: vi.fn((_url: string, options: Record<string, any>) => {
     jitiCalls.options.push(options);
     return {
       import: vi.fn(async (target: string) => {
         jitiCalls.imports.push(target);
-        return async (api: { registerCommand: (id: string, command: unknown) => void }) => {
+        return async (api: { registerCommand: (id: string, command: any) => void }) => {
           api.registerCommand(`jiti-${jitiCalls.imports.length}`, {
             description: "probe",
             handler() {},

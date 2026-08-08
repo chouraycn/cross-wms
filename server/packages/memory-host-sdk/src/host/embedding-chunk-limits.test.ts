@@ -50,7 +50,7 @@ function expectChunksLineRange(chunks: EmbeddingChunks, startLine: number, endLi
 }
 
 function expectChunksHaveHashes(chunks: EmbeddingChunks) {
-  const invalidHashes: Array<{ index: number; hash: unknown }> = [];
+  const invalidHashes: Array<{ index: number; hash: any }> = [];
   for (const [index, chunk] of chunks.entries()) {
     if (typeof chunk.hash !== "string" || chunk.hash.length === 0) {
       invalidHashes.push({ index, hash: chunk.hash });

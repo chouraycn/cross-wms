@@ -20,11 +20,11 @@ afterEach(async () => {
 
 async function createRealtimeServer(params?: {
   closeOnConnection?: boolean;
-  initialEvent?: unknown;
+  initialEvent?: any;
   initialText?: string;
   onUpgrade?: (headers: Record<string, string | string[] | undefined>) => void;
   onBinary?: (payload: Buffer) => void;
-  onText?: (payload: unknown) => void;
+  onText?: (payload: any) => void;
 }) {
   const server = createServer();
   const wss = new WebSocketServer({ noServer: true, maxPayload: 1024 * 1024 });
@@ -130,7 +130,7 @@ describe("createRealtimeTranscriptionWebSocketSession", () => {
   });
 
   it("lets providers mark ready after a JSON handshake", async () => {
-    const frames: unknown[] = [];
+    const frames: any[] = [];
     const framesReady = createSignal();
     const server = await createRealtimeServer({
       initialEvent: { type: "session.created" },

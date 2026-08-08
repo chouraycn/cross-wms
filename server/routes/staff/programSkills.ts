@@ -26,7 +26,7 @@ function tenantOf(req: Request): string {
 /** 工具类型「程序技能」的目录分桶 */
 const PROGRAM_SKILL_BUCKET = '程序技能';
 
-function emptyObjectSchema(): Record<string, unknown> {
+function emptyObjectSchema(): Record<string, any> {
   return { type: 'object', properties: {}, required: [] };
 }
 
@@ -44,7 +44,7 @@ router.get('/', (_req: Request, res: Response) => {
       native: !!s.definition.native,
       enabled: s.state === 'enabled' || s.state === 'active' || s.state === 'idle',
       parameters:
-        (s.definition.parameters as Record<string, unknown> | undefined) ?? emptyObjectSchema(),
+        (s.definition.parameters as Record<string, any> | undefined) ?? emptyObjectSchema(),
     }));
     res.json({ code: 0, data, message: 'ok', implemented: true });
   } catch (err) {
@@ -77,7 +77,7 @@ router.post('/sync', async (req: Request, res: Response) => {
         auth: {},
         config: { skillId },
         input_schema:
-          (s.definition.parameters as Record<string, unknown> | undefined) ?? emptyObjectSchema(),
+          (s.definition.parameters as Record<string, any> | undefined) ?? emptyObjectSchema(),
         output_schema: {},
         allowed_skills: [],
         mcp_server_id: null,

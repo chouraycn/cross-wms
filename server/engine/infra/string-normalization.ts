@@ -6,14 +6,14 @@
 import { normalizeOptionalLowercaseString, normalizeOptionalString } from "./string-coerce.js";
 
 /** 将条目强制为字符串、去空白、丢弃空结果 */
-export function normalizeStringEntries(list?: ReadonlyArray<unknown>): string[] {
+export function normalizeStringEntries(list?: ReadonlyArray<any>): string[] {
   return (list ?? [])
     .map((entry) => normalizeOptionalString(String(entry)) ?? "")
     .filter(Boolean);
 }
 
 /** 规范化字符串条目并将每个保留值转为小写 */
-export function normalizeStringEntriesLower(list?: ReadonlyArray<unknown>): string[] {
+export function normalizeStringEntriesLower(list?: ReadonlyArray<any>): string[] {
   return normalizeStringEntries(list).map(
     (entry) => normalizeOptionalLowercaseString(entry) ?? "",
   );
@@ -37,24 +37,24 @@ export function sortUniqueStrings(values: Iterable<string>): string[] {
 }
 
 /** 规范化条目、去重、保留首次出现的顺序 */
-export function normalizeUniqueStringEntries(values?: Iterable<unknown>): string[] {
+export function normalizeUniqueStringEntries(values?: Iterable<any>): string[] {
   return uniqueStrings(normalizeStringEntries(values ? [...values] : undefined));
 }
 
 /** 小写、规范化、去空去重，保留首次出现的顺序 */
-export function normalizeUniqueStringEntriesLower(values?: Iterable<unknown>): string[] {
+export function normalizeUniqueStringEntriesLower(values?: Iterable<any>): string[] {
   return uniqueStrings(
     normalizeStringEntriesLower(values ? [...values] : undefined).filter(Boolean),
   );
 }
 
 /** 规范化条目、去重、并返回排序后的结果 */
-export function normalizeSortedUniqueStringEntries(values?: Iterable<unknown>): string[] {
+export function normalizeSortedUniqueStringEntries(values?: Iterable<any>): string[] {
   return sortUniqueStrings(normalizeUniqueStringEntries(values));
 }
 
 /** 规范化数组形式的字符串列表，非数组输入返回空数组 */
-export function normalizeTrimmedStringList(value: unknown): string[] {
+export function normalizeTrimmedStringList(value: any): string[] {
   if (!Array.isArray(value)) {
     return [];
   }
@@ -65,23 +65,23 @@ export function normalizeTrimmedStringList(value: unknown): string[] {
 }
 
 /** 规范化数组形式的字符串列表并去重 */
-export function normalizeUniqueTrimmedStringList(value: unknown): string[] {
+export function normalizeUniqueTrimmedStringList(value: any): string[] {
   return uniqueStrings(normalizeTrimmedStringList(value));
 }
 
 /** 规范化数组形式的字符串列表、去重并排序 */
-export function normalizeSortedUniqueTrimmedStringList(value: unknown): string[] {
+export function normalizeSortedUniqueTrimmedStringList(value: any): string[] {
   return sortUniqueStrings(normalizeTrimmedStringList(value));
 }
 
 /** 返回 undefined 替代空数组（用于可选字段） */
-export function normalizeOptionalTrimmedStringList(value: unknown): string[] | undefined {
+export function normalizeOptionalTrimmedStringList(value: any): string[] | undefined {
   const normalized = normalizeTrimmedStringList(value);
   return normalized.length > 0 ? normalized : undefined;
 }
 
 /** 非数组返回 undefined，但保留显式空数组 */
-export function normalizeArrayBackedTrimmedStringList(value: unknown): string[] | undefined {
+export function normalizeArrayBackedTrimmedStringList(value: any): string[] | undefined {
   if (!Array.isArray(value)) {
     return undefined;
   }
@@ -89,7 +89,7 @@ export function normalizeArrayBackedTrimmedStringList(value: unknown): string[] 
 }
 
 /** 规范化单个字符串值或数组形式的字符串列表 */
-export function normalizeSingleOrTrimmedStringList(value: unknown): string[] {
+export function normalizeSingleOrTrimmedStringList(value: any): string[] {
   if (Array.isArray(value)) {
     return normalizeTrimmedStringList(value);
   }
@@ -98,12 +98,12 @@ export function normalizeSingleOrTrimmedStringList(value: unknown): string[] {
 }
 
 /** 规范化单值或数组形式并去重 */
-export function normalizeUniqueSingleOrTrimmedStringList(value: unknown): string[] {
+export function normalizeUniqueSingleOrTrimmedStringList(value: any): string[] {
   return uniqueStrings(normalizeSingleOrTrimmedStringList(value));
 }
 
 /** 解析数组条目或逗号分隔字符串为去空白后的列表 */
-export function normalizeCsvOrLooseStringList(value: unknown): string[] {
+export function normalizeCsvOrLooseStringList(value: any): string[] {
   if (Array.isArray(value)) {
     return normalizeStringEntries(value);
   }

@@ -14,11 +14,11 @@ vi.mock("../../config/config.js", () => ({
 }));
 
 vi.mock("../../config/plugin-auto-enable.js", () => ({
-  applyPluginAutoEnable: (...args: unknown[]) => applyPluginAutoEnableMock(...args),
+  applyPluginAutoEnable: (...args: any[]) => applyPluginAutoEnableMock(...args),
 }));
 
 vi.mock("../loader.js", () => ({
-  loadOpenClawPlugins: (...args: unknown[]) => loadOpenClawPluginsMock(...args),
+  loadOpenClawPlugins: (...args: any[]) => loadOpenClawPluginsMock(...args),
 }));
 
 vi.mock("../../agents/agent-scope.js", () => ({
@@ -45,7 +45,7 @@ describe("loadPluginMetadataRegistrySnapshot", () => {
     applyPluginAutoEnableMock.mockReset();
     loadOpenClawPluginsMock.mockReset();
     loadConfigMock.mockReturnValue({ plugins: {} });
-    applyPluginAutoEnableMock.mockImplementation((params: { config: unknown }) => ({
+    applyPluginAutoEnableMock.mockImplementation((params: { config: any }) => ({
       config: params.config,
       changes: [],
       autoEnabledReasons: {},

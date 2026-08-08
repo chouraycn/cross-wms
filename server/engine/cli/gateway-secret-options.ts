@@ -8,7 +8,7 @@
 //  - 原模块依赖 ../runtime.js 的 defaultRuntime。降级内联实现。
 
 // ===== 内联 normalizeOptionalString stub =====
-function normalizeOptionalString(value: unknown): string | undefined {
+function normalizeOptionalString(value: any): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }
@@ -39,8 +39,8 @@ const defaultRuntime = {
 // ===== defaultRuntime 结束 =====
 
 function resolveGatewaySecretOption(params: {
-  direct?: unknown;
-  file?: unknown;
+  direct?: any;
+  file?: any;
   directFlag: string;
   fileFlag: string;
   label: string;
@@ -64,10 +64,10 @@ function warnGatewaySecretCliFlag(flag: "--token" | "--password"): void {
 
 /** Normalize gateway token/password options and reject ambiguous direct+file pairs. */
 export function resolveGatewayAuthOptions(opts: {
-  token?: unknown;
-  tokenFile?: unknown;
-  password?: unknown;
-  passwordFile?: unknown;
+  token?: any;
+  tokenFile?: any;
+  password?: any;
+  passwordFile?: any;
 }): {
   gatewayToken?: string;
   gatewayPassword?: string;

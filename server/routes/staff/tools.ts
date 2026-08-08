@@ -35,7 +35,7 @@ function parseJson<T>(value: string | null | undefined, fallback: T): T {
 }
 
 function toolRead(row: ToolRow): ToolRead {
-  const config = parseJson<Record<string, unknown>>(row.config_json, {});
+  const config = parseJson<Record<string, any>>(row.config_json, {});
   // 对齐原版 tools.py:76 —— mcp_config 为 config 剔除 execution 键后的剩余部分。
   const { execution: _execution, ...mcpConfig } = config;
   return {
@@ -254,14 +254,14 @@ router.delete('/:tool_id', (req: Request, res: Response) => {
 
 type ToolTestResult = {
   success: boolean;
-  output: unknown;
+  output: any;
   error: { code: string; message: string } | null;
 };
 
 async function runToolTest(
   tenantId: string,
   row: ToolRow,
-  args: Record<string, unknown>,
+  args: Record<string, any>,
 ): Promise<ToolTestResult> {
   // MCP 工具：复用员工隔离 MCP 客户端管理器
   if (row.mcp_server_id && row.mcp_tool_name) {
@@ -276,7 +276,7 @@ async function runToolTest(
     try {
       const fullName = makeMcpToolName(serverRow.name, row.mcp_tool_name);
       const raw = await manager.executeMcpTool(fullName, args);
-      let parsed: unknown = raw;
+      let parsed: any = raw;
       try {
         parsed = JSON.parse(raw as string);
       } catch {
@@ -345,7 +345,7 @@ router.post('/:tool_id/test', async (req: Request, res: Response) => {
     res.status(404).json({ code: 404, data: null, message: '工具不存在' });
     return;
   }
-  const args = ((req.body.arguments ?? req.body.args) || {}) as Record<string, unknown>;
+  const args = ((req.body.arguments ?? req.body.args) || {}) as Record<string, any>;
   try {
     const result = await runToolTest(tenantId, row, args);
     res.json({ code: 0, data: result, message: 'ok' });

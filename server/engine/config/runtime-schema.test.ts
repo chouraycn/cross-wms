@@ -27,26 +27,26 @@ vi.mock("./config.js", () => {
 });
 
 vi.mock("../plugins/manifest-registry.js", () => ({
-  loadPluginManifestRegistry: (...args: unknown[]) => mockLoadPluginManifestRegistry(...args),
+  loadPluginManifestRegistry: (...args: any[]) => mockLoadPluginManifestRegistry(...args),
 }));
 
 vi.mock("../plugins/plugin-registry.js", () => ({
-  loadPluginManifestRegistryForPluginRegistry: (...args: unknown[]) =>
+  loadPluginManifestRegistryForPluginRegistry: (...args: any[]) =>
     mockLoadPluginManifestRegistry(...args),
 }));
 
 vi.mock("../plugins/plugin-metadata-snapshot.js", () => ({
-  loadPluginMetadataSnapshot: (...args: unknown[]) => ({
+  loadPluginMetadataSnapshot: (...args: any[]) => ({
     manifestRegistry: mockLoadPluginManifestRegistry(...args),
   }),
-  resolvePluginMetadataSnapshot: (...args: unknown[]) =>
+  resolvePluginMetadataSnapshot: (...args: any[]) =>
     mockGetCurrentPluginMetadataSnapshot(...args) ?? {
       manifestRegistry: mockLoadPluginManifestRegistry(...args),
     },
 }));
 
 vi.mock("../plugins/current-plugin-metadata-snapshot.js", () => ({
-  getCurrentPluginMetadataSnapshot: (...args: unknown[]) =>
+  getCurrentPluginMetadataSnapshot: (...args: any[]) =>
     mockGetCurrentPluginMetadataSnapshot(...args),
 }));
 
@@ -160,24 +160,24 @@ function makeManifestRegistry() {
 
 async function readSchemaNodes() {
   const result = await readBestEffortRuntimeConfigSchema();
-  const schema = result.schema as { properties?: Record<string, unknown> };
-  const channelsNode = schema.properties?.channels as Record<string, unknown> | undefined;
-  const channelProps = channelsNode?.properties as Record<string, unknown> | undefined;
-  const pluginsNode = schema.properties?.plugins as Record<string, unknown> | undefined;
-  const pluginProps = pluginsNode?.properties as Record<string, unknown> | undefined;
-  const entriesNode = pluginProps?.entries as Record<string, unknown> | undefined;
-  const entryProps = entriesNode?.properties as Record<string, unknown> | undefined;
+  const schema = result.schema as { properties?: Record<string, any> };
+  const channelsNode = schema.properties?.channels as Record<string, any> | undefined;
+  const channelProps = channelsNode?.properties as Record<string, any> | undefined;
+  const pluginsNode = schema.properties?.plugins as Record<string, any> | undefined;
+  const pluginProps = pluginsNode?.properties as Record<string, any> | undefined;
+  const entriesNode = pluginProps?.entries as Record<string, any> | undefined;
+  const entryProps = entriesNode?.properties as Record<string, any> | undefined;
   return { channelProps, entryProps };
 }
 
-function getManifestRegistryLoadArg(index = 0): Record<string, unknown> | undefined {
+function getManifestRegistryLoadArg(index = 0): Record<string, any> | undefined {
   const arg = mockLoadPluginManifestRegistry.mock.calls[index]?.[0];
-  return arg && typeof arg === "object" ? (arg as Record<string, unknown>) : undefined;
+  return arg && typeof arg === "object" ? (arg as Record<string, any>) : undefined;
 }
 
-function getCurrentMetadataSnapshotArg(index = 0): Record<string, unknown> | undefined {
+function getCurrentMetadataSnapshotArg(index = 0): Record<string, any> | undefined {
   const arg = mockGetCurrentPluginMetadataSnapshot.mock.calls[index]?.[0];
-  return arg && typeof arg === "object" ? (arg as Record<string, unknown>) : undefined;
+  return arg && typeof arg === "object" ? (arg as Record<string, any>) : undefined;
 }
 
 beforeAll(async () => {
@@ -191,9 +191,9 @@ afterEach(() => {
 
 describe("readBestEffortRuntimeConfigSchema", () => {
   let validConfigSchemaCase: {
-    channelProps: Record<string, unknown> | undefined;
-    entryProps: Record<string, unknown> | undefined;
-    loadArg: Record<string, unknown> | undefined;
+    channelProps: Record<string, any> | undefined;
+    entryProps: Record<string, any> | undefined;
+    loadArg: Record<string, any> | undefined;
     manifestRegistryLoadCount: number;
   };
 
@@ -259,9 +259,9 @@ describe("loadGatewayRuntimeConfigSchema", () => {
 
   it("uses manifest metadata instead of booting plugin runtime", () => {
     const result = loadGatewayRuntimeConfigSchema();
-    const schema = result.schema as { properties?: Record<string, unknown> };
-    const channelsNode = schema.properties?.channels as Record<string, unknown> | undefined;
-    const channelProps = channelsNode?.properties as Record<string, unknown> | undefined;
+    const schema = result.schema as { properties?: Record<string, any> };
+    const channelsNode = schema.properties?.channels as Record<string, any> | undefined;
+    const channelProps = channelsNode?.properties as Record<string, any> | undefined;
 
     expect(mockLoadPluginManifestRegistry).toHaveBeenCalledTimes(1);
     const loadArg = getManifestRegistryLoadArg();
@@ -305,9 +305,9 @@ describe("loadGatewayRuntimeConfigSchema", () => {
     });
 
     const result = loadGatewayRuntimeConfigSchema();
-    const schema = result.schema as { properties?: Record<string, unknown> };
-    const channelsNode = schema.properties?.channels as Record<string, unknown> | undefined;
-    const channelProps = channelsNode?.properties as Record<string, unknown> | undefined;
+    const schema = result.schema as { properties?: Record<string, any> };
+    const channelsNode = schema.properties?.channels as Record<string, any> | undefined;
+    const channelProps = channelsNode?.properties as Record<string, any> | undefined;
 
     expect(mockGetCurrentPluginMetadataSnapshot).toHaveBeenCalledTimes(1);
     const metadataArg = getCurrentMetadataSnapshotArg();

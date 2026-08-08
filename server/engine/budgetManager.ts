@@ -196,7 +196,7 @@ export class BudgetManager {
    * @param level - 复杂度等级（simple / moderate / complex）
    * @param onSSEEvent - SSE 事件回调（可选）
    */
-  setAdaptiveMaxTurns(level: string, onSSEEvent?: (event: Record<string, unknown>) => void): void {
+  setAdaptiveMaxTurns(level: string, onSSEEvent?: (event: Record<string, any>) => void): void {
     if (this.explicitMaxTurns) return; // 显式传入时不覆盖
 
     const newMaxTurns = ADAPTIVE_MAX_TURNS[level];

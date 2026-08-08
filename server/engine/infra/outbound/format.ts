@@ -22,7 +22,7 @@ export type OutboundDeliveryJson = {
   conversationId?: string;
   timestamp?: number;
   toJid?: string;
-  meta?: Record<string, unknown>;
+  meta?: Record<string, any>;
 };
 
 const resolveChannelLabel = (channel: string) => {
@@ -46,7 +46,7 @@ export function formatOutboundDeliverySummary(
   result?: OutboundDeliveryResult,
 ): string {
   if (!result) {
-    return `✅ Sent via ${resolveChannelLabel(channel)}. Message ID: unknown`;
+    return `✅ Sent via ${resolveChannelLabel(channel)}. Message ID: any`;
   }
 
   const label = resolveChannelLabel(result.channel);

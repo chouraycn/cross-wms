@@ -91,7 +91,7 @@ const BUNDLED_LIVE_CONFIG_PROVIDER_GUARDS = {
     "resolvePluginConfigObject(",
     'const runtimePluginConfig = resolvePluginConfigObject(ctx.config, "openai");',
     "runtimePluginConfig ??",
-    "ctx.config ? undefined : (api.pluginConfig as Record<string, unknown>)",
+    "ctx.config ? undefined : (api.pluginConfig as Record<string, any>)",
   ],
 } as const satisfies Record<string, readonly string[]>;
 const BUNDLED_STARTUP_GATED_HOOK_FORBIDDEN_SNIPPETS = {

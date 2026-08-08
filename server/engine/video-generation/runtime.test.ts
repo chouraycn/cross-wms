@@ -43,7 +43,7 @@ function requireAttempt(
 function createProviderOptionsCaptureProvider(
   capabilities: VideoGenerationProvider["capabilities"],
 ): { provider: VideoGenerationProvider; getSeenProviderOptions: () => unknown } {
-  let seenProviderOptions: unknown;
+  let seenProviderOptions: any;
   return {
     provider: {
       id: "video-plugin",
@@ -66,12 +66,12 @@ describe("video-generation runtime", () => {
 
   it("generates videos through the active video-generation provider", async () => {
     const authStore = { version: 1, profiles: {} } as const;
-    let seenAuthStore: unknown;
+    let seenAuthStore: any;
     let seenTimeoutMs: number | undefined;
     const provider: VideoGenerationProvider = {
       id: "video-plugin",
       capabilities: {},
-      async generateVideo(req: { authStore?: unknown; timeoutMs?: number }) {
+      async generateVideo(req: { authStore?: any; timeoutMs?: number }) {
         seenAuthStore = req.authStore;
         seenTimeoutMs = req.timeoutMs;
         return {
@@ -413,7 +413,7 @@ describe("video-generation runtime", () => {
     let seenRequest:
       | {
           durationSeconds?: number;
-          providerOptions?: Record<string, unknown>;
+          providerOptions?: Record<string, any>;
           resolution?: string;
           audio?: boolean;
         }
@@ -703,9 +703,9 @@ describe("video-generation runtime", () => {
 
   it("forwards mixed image, video, and audio references when explicitly supported", async () => {
     const seenRequest: {
-      inputImages?: unknown;
-      inputVideos?: unknown;
-      inputAudios?: unknown;
+      inputImages?: any;
+      inputVideos?: any;
+      inputAudios?: any;
     } = {};
     providers = [
       {

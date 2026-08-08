@@ -2,6 +2,6 @@
 
 export type OutboundTargetResolution = unknown;
 export type ResolveOutboundTargetParams = unknown;
-export function resolveOutboundTargetWithPlugin(...args: unknown[]): unknown {
+export function resolveOutboundTargetWithPlugin(...args: any[]): any {
   return undefined;
 }

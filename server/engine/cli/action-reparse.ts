@@ -45,7 +45,7 @@ function findRootCommand(cmd: Command): Command {
 /** Rebuild argv from Commander action args and re-run parsing after lazy registration. */
 export async function reparseProgramFromActionArgs(
   program: Command,
-  actionArgs: unknown[],
+  actionArgs: any[],
 ): Promise<void> {
   const actionCommand = actionArgs.at(-1) as Command | undefined;
   const rootProgram = findRootCommand(actionCommand ?? program);

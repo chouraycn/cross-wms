@@ -1,17 +1,17 @@
 // 移植自 openclaw/src/config/mcp-config.ts
 
-export function listConfiguredMcpServers(...args: unknown[]): unknown {
+export function listConfiguredMcpServers(...args: any[]): any {
   return [];
 }
-export function updateConfiguredMcpServerTools(...args: unknown[]): unknown {
+export function updateConfiguredMcpServerTools(...args: any[]): any {
   return undefined;
 }
-export function updateConfiguredMcpServer(...args: unknown[]): unknown {
+export function updateConfiguredMcpServer(...args: any[]): any {
   return undefined;
 }
-export function setConfiguredMcpServer(...args: unknown[]): unknown {
+export function setConfiguredMcpServer(...args: any[]): any {
   return undefined;
 }
-export function unsetConfiguredMcpServer(...args: unknown[]): unknown {
+export function unsetConfiguredMcpServer(...args: any[]): any {
   return undefined;
 }

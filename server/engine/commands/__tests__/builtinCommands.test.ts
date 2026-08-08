@@ -157,7 +157,7 @@ describe("builtinCommands", () => {
     it("无 rawArgs 返回 currentAgent 与 availableAgents", () => {
       const { handler } = findHandler("agent");
       const res = handler(ctx({ rawArgs: "" }));
-      const data = res.data as { currentAgent: string; availableAgents: unknown[] };
+      const data = res.data as { currentAgent: string; availableAgents: any[] };
       expect(data.currentAgent).toBeTruthy();
       expect(data.availableAgents.length).toBeGreaterThan(0);
     });

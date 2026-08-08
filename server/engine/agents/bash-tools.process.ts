@@ -5,16 +5,16 @@
  * Cross-wms degradation: returns placeholder tool without process management.
  */
 
-export type ProcessToolDefaults = Record<string, unknown>;
+export type ProcessToolDefaults = Record<string, any>;
 
 /** Placeholder process tool. */
-export const processTool: Record<string, unknown> = {
+export const processTool: Record<string, any> = {
   name: "process",
   description: "Manage background bash processes (cross-wms placeholder).",
 };
 
 /** Creates a process tool instance. */
-export function createProcessTool(..._args: unknown[]): Record<string, unknown> {
+export function createProcessTool(..._args: any[]): Record<string, any> {
   return {
     name: "process",
     description: "Manage background bash processes (cross-wms placeholder).",

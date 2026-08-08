@@ -45,7 +45,7 @@ export type SystemEventType =
 export interface SystemEvent {
   type: SystemEventType | string;
   timestamp: number;
-  payload: Record<string, unknown>;
+  payload: Record<string, any>;
   source: 'system' | 'user' | 'external';
 }
 
@@ -55,7 +55,7 @@ export type FileChangeEvent = {
   timestamp: number;
 };
 
-export type EventCallback = (payload: Record<string, unknown>) => void | Promise<void>;
+export type EventCallback = (payload: Record<string, any>) => void | Promise<void>;
 export type FileChangeCallback = (event: FileChangeEvent) => void | Promise<void>;
 
 // ===================== 指标类型定义 =====================
@@ -129,7 +129,7 @@ class EventListener extends EventEmitter {
   /**
    * 发布系统事件
    */
-  emitSystemEvent(eventName: string, payload: Record<string, unknown>): void {
+  emitSystemEvent(eventName: string, payload: Record<string, any>): void {
     const event: SystemEvent = {
       type: eventName,
       timestamp: Date.now(),
@@ -165,7 +165,7 @@ class EventListener extends EventEmitter {
    */
   emitSystemEventWithFilter(
     eventName: string,
-    payload: Record<string, unknown>,
+    payload: Record<string, any>,
     condition?: TriggerConditionGroup
   ): void {
     // 条件过滤
@@ -474,7 +474,7 @@ class EventListener extends EventEmitter {
    */
   private evaluateCondition(
     conditionGroup: TriggerConditionGroup,
-    payload: Record<string, unknown>
+    payload: Record<string, any>
   ): boolean {
     const results = conditionGroup.conditions.map(cond => {
       // 如果是嵌套条件组

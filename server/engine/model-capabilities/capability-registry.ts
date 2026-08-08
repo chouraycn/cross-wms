@@ -11,7 +11,7 @@ export interface ModelCapability {
   /** 能力名称 */
   name: string;
   /** 能力值（如支持的布尔值、数值等） */
-  value: unknown;
+  value: any;
   /** 能力描述 */
   description?: string;
 }
@@ -131,7 +131,7 @@ export class ModelCapabilityRegistry {
    * @param capability 能力名称
    * @returns 能力值，如果不存在则返回 undefined
    */
-  getCapabilityValue(modelId: string, capability: string): unknown {
+  getCapabilityValue(modelId: string, capability: string): any {
     const capabilities = this.getCapabilities(modelId);
     const cap = capabilities.find((c) => c.name === capability);
     return cap?.value;

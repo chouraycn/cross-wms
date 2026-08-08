@@ -39,7 +39,7 @@ export interface FailoverErrorOptions {
   status?: number;
   code?: string;
   message: string;
-  originalError?: unknown;
+  originalError?: any;
   profileId?: string;
   authMode?: string;
 }
@@ -50,7 +50,7 @@ export class FailoverError extends Error {
   public readonly model?: string;
   public readonly status?: number;
   public readonly code?: string;
-  public readonly originalError?: unknown;
+  public readonly originalError?: any;
   public readonly profileId?: string;
   public readonly authMode?: string;
 
@@ -149,7 +149,7 @@ export class FailoverError extends Error {
 /**
  * Determine if an error should trigger model fallback.
  */
-export function shouldFallback(error: unknown): boolean {
+export function shouldFallback(error: any): boolean {
   if (error instanceof FailoverError) {
     // These reasons should NOT trigger fallback
     const noFallbackReasons = [
@@ -169,7 +169,7 @@ export function shouldFallback(error: unknown): boolean {
 /**
  * Determine if error should trigger auth profile rotation.
  */
-export function shouldRotateAuthProfile(error: unknown): boolean {
+export function shouldRotateAuthProfile(error: any): boolean {
   if (error instanceof FailoverError) {
     const authReasons = [
       FailoverReason.AUTH,
@@ -184,7 +184,7 @@ export function shouldRotateAuthProfile(error: unknown): boolean {
 /**
  * Check if error is a context overflow error.
  */
-export function isContextOverflowError(error: unknown): boolean {
+export function isContextOverflowError(error: any): boolean {
   if (error instanceof FailoverError) {
     return error.reason === FailoverReason.CONTEXT_OVERFLOW;
   }
@@ -198,7 +198,7 @@ export function isContextOverflowError(error: unknown): boolean {
 /**
  * Check if error is a terminal abort error.
  */
-export function isAbortError(error: unknown): boolean {
+export function isAbortError(error: any): boolean {
   if (error instanceof Error) {
     return error.name === 'AbortError' || error.name === 'CancelError';
   }

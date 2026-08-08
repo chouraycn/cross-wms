@@ -33,10 +33,10 @@ const GOOGLE_PROMPT_CACHE_SHORT_REFRESH_WINDOW_MS = 30_000;
 const GOOGLE_PROMPT_CACHE_LONG_REFRESH_WINDOW_MS = 5 * 60_000;
 
 type CacheRetention = "short" | "long";
-type CustomEntryLike = { type?: unknown; customType?: unknown; data?: unknown };
+type CustomEntryLike = { type?: any; customType?: any; data?: any };
 
 type GooglePromptCacheSessionManager = {
-  appendCustomEntry(customType: string, data?: unknown): void | Promise<void>;
+  appendCustomEntry(customType: string, data?: any): void | Promise<void>;
   getEntries(): CustomEntryLike[];
 };
 type GooglePromptCacheModel = Model & {
@@ -72,7 +72,7 @@ type GooglePromptCacheEntry = {
 
 type PrepareGooglePromptCacheStreamFnParams = {
   apiKey?: string;
-  extraParams?: Record<string, unknown>;
+  extraParams?: Record<string, any>;
   model: GooglePromptCacheModel;
   modelId: string;
   provider: string;
@@ -109,7 +109,7 @@ function resolveManagedSystemPrompt(systemPrompt: string | undefined): string | 
 }
 
 function resolveExplicitCachedContent(
-  extraParams: Record<string, unknown> | undefined,
+  extraParams: Record<string, any> | undefined,
 ): string | undefined {
   const raw =
     typeof extraParams?.cachedContent === "string"
@@ -132,7 +132,7 @@ function buildGooglePromptCacheMatchKey(params: {
   return stableStringify(params);
 }
 
-function stringifyGooglePromptCacheKeyPart(value: unknown): string {
+function stringifyGooglePromptCacheKeyPart(value: any): string {
   if (typeof value === "string") {
     return value;
   }
@@ -157,7 +157,7 @@ function readLatestGooglePromptCacheEntry(
       if (!data || typeof data !== "object") {
         continue;
       }
-      const cacheData = data as Record<string, unknown>;
+      const cacheData = data as Record<string, any>;
       const candidateKey = buildGooglePromptCacheMatchKey({
         provider: stringifyGooglePromptCacheKeyPart(cacheData.provider),
         modelId: stringifyGooglePromptCacheKeyPart(cacheData.modelId),
@@ -217,7 +217,7 @@ function convertManagedGoogleTools(tools: NonNullable<GooglePromptCacheContext["
 }
 
 function mapManagedGoogleToolChoice(
-  choice: unknown,
+  choice: any,
 ): { mode: "AUTO" | "NONE" | "ANY"; allowedFunctionNames?: string[] } | undefined {
   if (!choice) {
     return undefined;
@@ -225,9 +225,9 @@ function mapManagedGoogleToolChoice(
   if (
     typeof choice === "object" &&
     choice !== null &&
-    (choice as { type?: unknown }).type === "function"
+    (choice as { type?: any }).type === "function"
   ) {
-    const functionName = (choice as { function?: { name?: unknown } }).function?.name;
+    const functionName = (choice as { function?: { name?: any } }).function?.name;
     return typeof functionName === "string"
       ? { mode: "ANY", allowedFunctionNames: [functionName] }
       : { mode: "ANY" };
@@ -249,7 +249,7 @@ function buildManagedGooglePromptCacheConfig(
 ) {
   const tools = context.tools?.length ? convertManagedGoogleTools(context.tools) : undefined;
   const toolChoice = tools
-    ? mapManagedGoogleToolChoice((options as { toolChoice?: unknown } | undefined)?.toolChoice)
+    ? mapManagedGoogleToolChoice((options as { toolChoice?: any } | undefined)?.toolChoice)
     : undefined;
   const toolConfig = toolChoice ? { functionCallingConfig: toolChoice } : undefined;
   const cacheConfigDigest =
@@ -334,8 +334,8 @@ async function createGooglePromptCache(params: {
   modelId: string;
   signal?: AbortSignal;
   systemPrompt: string;
-  tools?: unknown;
-  toolConfig?: unknown;
+  tools?: any;
+  toolConfig?: any;
 }): Promise<{ cachedContent: string; expireTime?: string } | null> {
   let response: Response | undefined;
   try {
@@ -374,8 +374,8 @@ async function ensureGooglePromptCache(
     sessionManager: GooglePromptCacheSessionManager;
     signal?: AbortSignal;
     systemPrompt: string;
-    tools?: unknown;
-    toolConfig?: unknown;
+    tools?: any;
+    toolConfig?: any;
   },
   deps: GooglePromptCacheDeps,
 ): Promise<string | null> {

@@ -23,7 +23,7 @@ const mocks = vi.hoisted(() => ({
         runBeforeToolCall?: ReturnType<typeof vi.fn>;
       }
     | undefined,
-  beforeToolCallParams: [] as Array<Record<string, unknown>>,
+  beforeToolCallParams: [] as Array<Record<string, any>>,
   gatewayParams: [] as Array<{
     env: Record<string, string>;
     requestedEnv?: Record<string, string>;
@@ -278,7 +278,7 @@ describe("exec resolve_exec_env hook wiring", () => {
         (hookName: string) => hookName === "resolve_exec_env" || hookName === "before_tool_call",
       ),
       runResolveExecEnv: vi.fn(async () => ({ PLUGIN_SAFE: "yes" })),
-      runBeforeToolCall: vi.fn(async (event: { params: Record<string, unknown> }) => {
+      runBeforeToolCall: vi.fn(async (event: { params: Record<string, any> }) => {
         expect(Object.getOwnPropertySymbols(event.params)).toHaveLength(0);
         mocks.beforeToolCallParams.push({ ...event.params });
         return undefined;
@@ -327,7 +327,7 @@ describe("exec resolve_exec_env hook wiring", () => {
         (hookName: string) => hookName === "resolve_exec_env" || hookName === "before_tool_call",
       ),
       runResolveExecEnv: vi.fn(async () => ({ LAZY_PLUGIN_SAFE: "yes" })),
-      runBeforeToolCall: vi.fn(async (event: { params: Record<string, unknown> }) => {
+      runBeforeToolCall: vi.fn(async (event: { params: Record<string, any> }) => {
         expect(Object.getOwnPropertySymbols(event.params)).toHaveLength(0);
         mocks.beforeToolCallParams.push({ ...event.params });
         return undefined;
@@ -377,7 +377,7 @@ describe("exec resolve_exec_env hook wiring", () => {
       runResolveExecEnv: vi.fn(async (event: { host: "gateway" | "sandbox" | "node" }) =>
         event.host === "node" ? { NODE_PLUGIN_SAFE: "node" } : { GATEWAY_PLUGIN_SAFE: "gateway" },
       ),
-      runBeforeToolCall: vi.fn(async (event: { params: Record<string, unknown> }) => ({
+      runBeforeToolCall: vi.fn(async (event: { params: Record<string, any> }) => ({
         params: { ...event.params, host: "node" },
       })),
     };
@@ -426,7 +426,7 @@ describe("exec resolve_exec_env hook wiring", () => {
     mocks.hookRunner = {
       hasHooks: vi.fn((hookName: string) => hookName === "before_tool_call"),
       runResolveExecEnv: vi.fn(),
-      runBeforeToolCall: vi.fn(async (event: { params: Record<string, unknown> }) => ({
+      runBeforeToolCall: vi.fn(async (event: { params: Record<string, any> }) => ({
         params: { ...event.params, host: "gateway" },
       })),
     };
@@ -489,7 +489,7 @@ describe("exec resolve_exec_env hook wiring", () => {
         (hookName: string) => hookName === "resolve_exec_env" || hookName === "before_tool_call",
       ),
       runResolveExecEnv: vi.fn(async () => ({ PLUGIN_SAFE: "yes" })),
-      runBeforeToolCall: vi.fn(async (event: { params: Record<string, unknown> }) => {
+      runBeforeToolCall: vi.fn(async (event: { params: Record<string, any> }) => {
         mocks.beforeToolCallParams.push({ ...event.params });
         return {
           params: { ...event.params, command: "echo ok" },

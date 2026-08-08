@@ -17,10 +17,10 @@ async function loadSqliteVecModule(): Promise<SqliteVecModule> {
   return import(SQLITE_VEC_MODULE_ID) as Promise<SqliteVecModule>;
 }
 
-function isMissingSqliteVecPackageError(err: unknown): boolean {
+function isMissingSqliteVecPackageError(err: any): boolean {
   const message = formatErrorMessage(err);
   const code =
-    err && typeof err === "object" && "code" in err ? (err as { code?: unknown }).code : undefined;
+    err && typeof err === "object" && "code" in err ? (err as { code?: any }).code : undefined;
   const missingSqliteVec = /Cannot find (?:package|module) ['"]sqlite-vec['"]/u.test(message);
   return (
     missingSqliteVec &&
@@ -31,7 +31,7 @@ function isMissingSqliteVecPackageError(err: unknown): boolean {
 function assertSqliteVecAvailable(db: DatabaseSync, source: string): void {
   try {
     const row = db.prepare("SELECT vec_version() AS version").get() as
-      | { version?: unknown }
+      | { version?: any }
       | undefined;
     if (typeof row?.version !== "string" || row.version.trim().length === 0) {
       throw new Error("vec_version() did not return a version");

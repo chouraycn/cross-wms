@@ -12,7 +12,7 @@ export type FastModeAutoProgressState = {
 };
 
 type FastModeModelConfig = {
-  params?: Record<string, unknown>;
+  params?: Record<string, any>;
 };
 
 type FastModeConfig = {
@@ -53,7 +53,7 @@ export function resolveFastModeModelParams(params: {
   cfg: FastModeConfig | undefined;
   provider?: string;
   model?: string;
-}): Record<string, unknown> | undefined {
+}): Record<string, any> | undefined {
   const models = params.cfg?.agents?.defaults?.models;
   if (!models) {
     return undefined;
@@ -67,7 +67,7 @@ export function resolveFastModeModelParams(params: {
   return undefined;
 }
 
-export function normalizeFastModeAutoOnSeconds(value: unknown): number | undefined {
+export function normalizeFastModeAutoOnSeconds(value: any): number | undefined {
   return typeof value === "number" && Number.isInteger(value) && value > 0 ? value : undefined;
 }
 
@@ -151,7 +151,7 @@ export function formatFastModeCommandOptions(params?: { fastAutoOnSeconds?: numb
   })}, default, status`;
 }
 
-export function normalizeFastModeSource(value: unknown): FastModeSource | undefined {
+export function normalizeFastModeSource(value: any): FastModeSource | undefined {
   return value === "session" || value === "agent" || value === "config" || value === "default"
     ? value
     : undefined;

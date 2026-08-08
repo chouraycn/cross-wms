@@ -39,7 +39,7 @@ type PluginCandidate = {
   packageVersion?: string;
   packageManifest?: {
     install?: { npmSpec?: string };
-    [key: string]: unknown;
+    [key: string]: any;
   };
 };
 
@@ -51,7 +51,7 @@ type PluginCandidate = {
  */
 type PluginDiscoveryResult = {
   candidates: readonly PluginCandidate[];
-  diagnostics?: readonly unknown[];
+  diagnostics?: readonly any[];
 };
 
 /**
@@ -78,7 +78,7 @@ function discoverOpenClawPlugins(_params: {
  * 访问的字段（ok/manifest.id/version/configSchema）。
  */
 type PluginManifestLoadResult =
-  | { ok: true; manifest: { id: string; version?: string; configSchema?: unknown } }
+  | { ok: true; manifest: { id: string; version?: string; configSchema?: any } }
   | { ok: false };
 
 /**
@@ -101,7 +101,7 @@ export type BundledPluginSource = {
   localPath: string;
   npmSpec?: string;
   version?: string;
-  configSchema?: Record<string, unknown>;
+  configSchema?: Record<string, any>;
   requiresConfig?: boolean;
 };
 
@@ -168,7 +168,7 @@ export function resolveBundledPluginSources(params: {
       npmSpec,
       version,
       ...(isRecord(manifest.manifest.configSchema)
-        ? { configSchema: manifest.manifest.configSchema as Record<string, unknown> }
+        ? { configSchema: manifest.manifest.configSchema as Record<string, any> }
         : {}),
       requiresConfig: pluginConfigSchemaHasRequiredFields(manifest.manifest.configSchema),
     });
@@ -177,7 +177,7 @@ export function resolveBundledPluginSources(params: {
   return bundled;
 }
 
-function pluginConfigSchemaHasRequiredFields(schema: unknown): boolean {
+function pluginConfigSchemaHasRequiredFields(schema: any): boolean {
   if (!isRecord(schema)) {
     return false;
   }

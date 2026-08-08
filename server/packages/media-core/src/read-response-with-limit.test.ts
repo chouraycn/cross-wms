@@ -19,7 +19,7 @@ function makeStream(chunks: Uint8Array[], delayMs?: number) {
   });
 }
 
-function makeStallingStream(initialChunks: Uint8Array[], onCancel?: (reason?: unknown) => void) {
+function makeStallingStream(initialChunks: Uint8Array[], onCancel?: (reason?: any) => void) {
   return new ReadableStream<Uint8Array>({
     start(controller) {
       for (const chunk of initialChunks) {
@@ -31,7 +31,7 @@ function makeStallingStream(initialChunks: Uint8Array[], onCancel?: (reason?: un
 }
 
 async function expectIdleTimeout(
-  createReadPromise: () => Promise<unknown>,
+  createReadPromise: () => Promise<any>,
   expectedError: RegExp | string = /stalled/i,
 ) {
   vi.useFakeTimers();

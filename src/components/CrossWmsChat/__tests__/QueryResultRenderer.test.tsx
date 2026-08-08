@@ -102,7 +102,7 @@ describe('QueryResultRenderer', () => {
   // ---- Default to table for unknown chartType ----
 
   it('should default to table view for unknown chartType', async () => {
-    const queryResult = createMockQueryResult({ chartType: 'unknown' as unknown });
+    const queryResult = createMockQueryResult({ chartType: 'unknown' as any });
     render(<QueryResultRenderer queryResult={queryResult} />);
 
     // Should fall back to table — DataGrid headers should appear (mapped to Chinese)

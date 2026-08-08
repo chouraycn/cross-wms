@@ -33,7 +33,7 @@ function userTextMessage(text: string, seq: number) {
   };
 }
 
-function newState(rawMessages: Array<Record<string, unknown>>, options: RawStateOptions = {}) {
+function newState(rawMessages: Array<Record<string, any>>, options: RawStateOptions = {}) {
   return SessionHistorySseState.fromRawSnapshot({
     target: { sessionId: "sess-main", sessionKey: "agent:main:main" },
     rawMessages,
@@ -49,7 +49,7 @@ function expectOnlyAssistantText(snapshot: HistorySnapshot, text: string, seq: n
   expect(snapshot.history.messages).toEqual([assistantTextMessage(text, seq)]);
 }
 
-function messageToolCall(id: string, message: string, args: Record<string, unknown> = {}) {
+function messageToolCall(id: string, message: string, args: Record<string, any> = {}) {
   return {
     type: "toolCall" as const,
     id,
@@ -66,7 +66,7 @@ function messageToolResult(
   toolCallId: string,
   messageId: string,
   seq?: number,
-  content: Record<string, unknown> = {},
+  content: Record<string, any> = {},
 ) {
   return {
     role: "toolResult" as const,
@@ -178,13 +178,13 @@ describe("SessionHistorySseState", () => {
       (
         appended?.message as {
           content?: Array<{ text?: string }>;
-          openclawMessageToolMirror?: unknown;
+          openclawMessageToolMirror?: any;
         }
       )?.content?.[0]?.text,
     ).toBe("Still the current chat.");
     expect(
       Boolean(
-        (appended?.message as { openclawMessageToolMirror?: unknown } | undefined)
+        (appended?.message as { openclawMessageToolMirror?: any } | undefined)
           ?.openclawMessageToolMirror,
       ),
     ).toBe(true);
@@ -250,13 +250,13 @@ describe("SessionHistorySseState", () => {
       (
         appended?.message as {
           content?: Array<{ text?: string }>;
-          openclawMessageToolMirror?: unknown;
+          openclawMessageToolMirror?: any;
         }
       )?.content?.[0]?.text,
     ).toBe("Still visible after forwarded handoff.");
     expect(
       Boolean(
-        (appended?.message as { openclawMessageToolMirror?: unknown } | undefined)
+        (appended?.message as { openclawMessageToolMirror?: any } | undefined)
           ?.openclawMessageToolMirror,
       ),
     ).toBe(true);

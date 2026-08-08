@@ -15,56 +15,56 @@ export type ConfigurablePlugin = {
   id: string;
   name: string;
   uiHints: Record<string, PluginConfigUiHint>;
-  jsonSchema?: Record<string, unknown>;
+  jsonSchema?: Record<string, any>;
   enabled?: boolean;
 };
 
 type JsonSchemaProperty = {
   type?: string;
-  enum?: unknown[];
+  enum?: any[];
   description?: string;
 };
 
 function resolveJsonSchemaProperty(
-  jsonSchema: Record<string, unknown> | undefined,
+  jsonSchema: Record<string, any> | undefined,
   fieldKey: string,
 ): JsonSchemaProperty | undefined {
   if (!jsonSchema) {
     return undefined;
   }
-  let cursor: unknown = jsonSchema;
+  let cursor: any = jsonSchema;
   for (const segment of fieldKey.split(".")) {
     if (!cursor || typeof cursor !== "object") {
       return undefined;
     }
-    const properties = (cursor as Record<string, unknown>).properties;
+    const properties = (cursor as Record<string, any>).properties;
     if (!properties || typeof properties !== "object") {
       return undefined;
     }
-    cursor = (properties as Record<string, unknown>)[segment];
+    cursor = (properties as Record<string, any>)[segment];
   }
   return cursor && typeof cursor === "object" ? (cursor as JsonSchemaProperty) : undefined;
 }
 
-function getPath(obj: Record<string, unknown>, segments: string[]): unknown {
-  let cursor: unknown = obj;
+function getPath(obj: Record<string, any>, segments: string[]): any {
+  let cursor: any = obj;
   for (const segment of segments) {
     if (!cursor || typeof cursor !== "object") {
       return undefined;
     }
-    cursor = (cursor as Record<string, unknown>)[segment];
+    cursor = (cursor as Record<string, any>)[segment];
   }
   return cursor;
 }
 
-function setPath(obj: Record<string, unknown>, segments: string[], value: unknown): void {
+function setPath(obj: Record<string, any>, segments: string[], value: any): void {
   let cursor = obj;
   for (let i = 0; i < segments.length - 1; i++) {
     const segment = segments[i];
     if (!cursor[segment] || typeof cursor[segment] !== "object") {
       cursor[segment] = {};
     }
-    cursor = cursor[segment] as Record<string, unknown>;
+    cursor = cursor[segment] as Record<string, any>;
   }
   if (value === undefined) {
     delete cursor[segments[segments.length - 1]];
@@ -77,7 +77,7 @@ function toPathSegments(fieldKey: string): string[] {
   return fieldKey.split(".").filter(Boolean);
 }
 
-function formatCurrentValue(value: unknown): string {
+function formatCurrentValue(value: any): string {
   if (value === undefined || value === null) {
     return "";
   }
@@ -105,7 +105,7 @@ export function discoverConfigurablePlugins(params: {
     id: string;
     name?: string;
     configUiHints?: Record<string, PluginConfigUiHint>;
-    configSchema?: Record<string, unknown>;
+    configSchema?: Record<string, any>;
     enabled?: boolean;
   }>;
 }): ConfigurablePlugin[] {
@@ -139,10 +139,10 @@ export function discoverUnconfiguredPlugins(params: {
     id: string;
     name?: string;
     configUiHints?: Record<string, PluginConfigUiHint>;
-    configSchema?: Record<string, unknown>;
+    configSchema?: Record<string, any>;
     enabled?: boolean;
   }>;
-  existingConfigs: Record<string, Record<string, unknown>>;
+  existingConfigs: Record<string, Record<string, any>>;
 }): ConfigurablePlugin[] {
   const all = discoverConfigurablePlugins(params);
   return all.filter((plugin) => {
@@ -156,10 +156,10 @@ export function discoverUnconfiguredPlugins(params: {
 
 async function promptPluginFields(params: {
   plugin: ConfigurablePlugin;
-  existingConfig: Record<string, unknown>;
+  existingConfig: Record<string, any>;
   prompter: WizardPrompter;
   showConfigured?: boolean;
-}): Promise<Record<string, unknown>> {
+}): Promise<Record<string, any>> {
   const { plugin, existingConfig, prompter } = params;
   const updatedConfig = structuredClone(existingConfig);
   let changed = false;
@@ -228,7 +228,7 @@ async function promptPluginFields(params: {
 
     if (schemaProp?.type === "array") {
       const currentStr = Array.isArray(currentValue)
-        ? (currentValue as unknown[]).join(", ")
+        ? (currentValue as any[]).join(", ")
         : "";
       const input = await prompter.text({
         message: `${label}${t("wizard.plugins.arrayPromptSuffix")}${helpSuffix}`,
@@ -286,12 +286,12 @@ export async function setupPluginConfig(params: {
     id: string;
     name?: string;
     configUiHints?: Record<string, PluginConfigUiHint>;
-    configSchema?: Record<string, unknown>;
+    configSchema?: Record<string, any>;
     enabled?: boolean;
   }>;
-  existingConfigs: Record<string, Record<string, unknown>>;
+  existingConfigs: Record<string, Record<string, any>>;
   prompter: WizardPrompter;
-}): Promise<Record<string, Record<string, unknown>>> {
+}): Promise<Record<string, Record<string, any>>> {
   const unconfigured = discoverUnconfiguredPlugins({
     manifestPlugins: params.manifestPlugins,
     existingConfigs: params.existingConfigs,
@@ -347,12 +347,12 @@ export async function configurePluginConfig(params: {
     id: string;
     name?: string;
     configUiHints?: Record<string, PluginConfigUiHint>;
-    configSchema?: Record<string, unknown>;
+    configSchema?: Record<string, any>;
     enabled?: boolean;
   }>;
-  existingConfigs: Record<string, Record<string, unknown>>;
+  existingConfigs: Record<string, Record<string, any>>;
   prompter: WizardPrompter;
-}): Promise<Record<string, Record<string, unknown>>> {
+}): Promise<Record<string, Record<string, any>>> {
   const configurable = discoverConfigurablePlugins({
     manifestPlugins: params.manifestPlugins,
   });
@@ -412,7 +412,7 @@ export async function configurePluginConfig(params: {
 }
 
 export function pluginConfigsToPluginConfigArray(
-  configs: Record<string, Record<string, unknown>>,
+  configs: Record<string, Record<string, any>>,
   manifestPlugins: ReadonlyArray<{ id: string; name?: string; enabled?: boolean }>,
 ): PluginConfig[] {
   const result: PluginConfig[] = [];

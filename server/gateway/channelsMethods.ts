@@ -34,14 +34,14 @@ function runtimeKey(channel: string, accountId: string): string {
   return `${channel}:${accountId}`;
 }
 
-function resolveAccountId(params: { accountId?: unknown }, fallback: string): string {
+function resolveAccountId(params: { accountId?: any }, fallback: string): string {
   const raw = params.accountId;
   return typeof raw === 'string' && raw.length > 0 ? raw : fallback;
 }
 
 // ========== Channels Status ==========
 
-async function channelsStatus(params: unknown, _ctx: GatewayMethodContext) {
+async function channelsStatus(params: any, _ctx: GatewayMethodContext) {
   const { channel, probe = false } = params as {
     channel?: string;
     probe?: boolean;
@@ -60,8 +60,8 @@ async function channelsStatus(params: unknown, _ctx: GatewayMethodContext) {
   // 使用空配置列出账号（cross-wms 通道默认不依赖外部配置即可列出元数据）
   const emptyConfig = { channels: {} } as unknown as AppConfig;
 
-  const channels: Record<string, unknown> = {};
-  const channelAccounts: Record<string, unknown[]> = {};
+  const channels: Record<string, any> = {};
+  const channelAccounts: Record<string, any[]> = {};
   const channelDefaultAccountId: Record<string, string> = {};
 
   for (const plugin of plugins) {
@@ -102,7 +102,7 @@ async function channelsStatus(params: unknown, _ctx: GatewayMethodContext) {
 
 // ========== Channels Start ==========
 
-async function channelsStart(params: unknown, _ctx: GatewayMethodContext) {
+async function channelsStart(params: any, _ctx: GatewayMethodContext) {
   const { channel, accountId } = params as { channel?: string; accountId?: string };
 
   if (!channel) {
@@ -140,7 +140,7 @@ async function channelsStart(params: unknown, _ctx: GatewayMethodContext) {
 
 // ========== Channels Stop ==========
 
-async function channelsStop(params: unknown, _ctx: GatewayMethodContext) {
+async function channelsStop(params: any, _ctx: GatewayMethodContext) {
   const { channel, accountId } = params as { channel?: string; accountId?: string };
 
   if (!channel) {
@@ -183,7 +183,7 @@ async function channelsStop(params: unknown, _ctx: GatewayMethodContext) {
 
 // ========== Channels Logout ==========
 
-async function channelsLogout(params: unknown, _ctx: GatewayMethodContext) {
+async function channelsLogout(params: any, _ctx: GatewayMethodContext) {
   const { channel, accountId } = params as { channel?: string; accountId?: string };
 
   if (!channel) {

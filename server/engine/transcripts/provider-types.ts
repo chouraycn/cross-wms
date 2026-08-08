@@ -42,7 +42,7 @@ export type TranscriptUtterance = {
   speaker?: TranscriptParticipant;
   text: string;
   final?: boolean;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 /** Durable transcript session metadata. */
@@ -52,7 +52,7 @@ export type TranscriptSessionDescriptor = {
   source: TranscriptSourceLocator;
   startedAt: string;
   stoppedAt?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 /** Request passed to providers that can start live transcript capture. */

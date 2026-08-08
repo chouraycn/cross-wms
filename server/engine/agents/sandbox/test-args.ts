@@ -5,7 +5,7 @@
  * argument parsing utilities.
  */
 /** Finds the first mocked Docker call whose argv starts with the requested command. */
-export function findDockerArgsCall(calls: unknown[][], command: string): string[] | undefined {
+export function findDockerArgsCall(calls: any[][], command: string): string[] | undefined {
   return calls.find((call) => Array.isArray(call[0]) && call[0][0] === command)?.[0] as
     | string[]
     | undefined;

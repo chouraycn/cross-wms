@@ -37,7 +37,7 @@ function countNonEmptyLines(value: string): number {
   return count;
 }
 
-async function writeJsonFile(filePath: string, value: unknown): Promise<void> {
+async function writeJsonFile(filePath: string, value: any): Promise<void> {
   if (path.basename(filePath) === "openclaw-agent.sqlite") {
     saveAuthProfileStore(value as AuthProfileStore, path.dirname(filePath), {
       filterExternalAuthProfiles: false,
@@ -224,8 +224,8 @@ describe("secrets audit", () => {
 
   async function writeModelsProvider(
     overrides: Partial<{
-      apiKey: unknown;
-      headers: Record<string, unknown>;
+      apiKey: any;
+      headers: Record<string, any>;
     }> = {},
   ) {
     await writeJsonFile(fixture.modelsPath, {

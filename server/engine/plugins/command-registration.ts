@@ -154,7 +154,7 @@ export function validatePluginCommandDefinition(
     if (!Array.isArray(command.requiredScopes)) {
       return "Command requiredScopes must be an array of operator scopes";
     }
-    const unknownScope = (command.requiredScopes as readonly unknown[]).find(
+    const unknownScope = (command.requiredScopes as readonly any[]).find(
       (scope) => !isOperatorScope(scope),
     );
     if (unknownScope) {
@@ -173,7 +173,7 @@ export function validatePluginCommandDefinition(
     if (!Array.isArray(command.channels)) {
       return "Command channels must be an array of channel ids";
     }
-    for (const [index, channel] of (command.channels as readonly unknown[]).entries()) {
+    for (const [index, channel] of (command.channels as readonly any[]).entries()) {
       if (typeof channel !== "string") {
         return `Command channel ${index + 1} must be a string`;
       }

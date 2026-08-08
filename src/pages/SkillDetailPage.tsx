@@ -85,7 +85,7 @@ function updateRecentSkills(skillName: string) {
   let recentNames: string[] = [];
   try {
     const parsed = recentRaw ? JSON.parse(recentRaw) : [];
-    if (Array.isArray(parsed)) recentNames = parsed.filter((n: unknown) => typeof n === 'string');
+    if (Array.isArray(parsed)) recentNames = parsed.filter((n: any) => typeof n === 'string');
   } catch { /* ignore */ }
   const updated = [skillName, ...recentNames.filter((n) => n !== skillName)].slice(0, 6);
   try { localStorage.setItem('cdf-know-clow-recent-skills', JSON.stringify(updated)); } catch { /* ignore */ }

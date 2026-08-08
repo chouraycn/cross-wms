@@ -69,7 +69,7 @@ export const DEFAULT_CONTEXT_PRUNING_SETTINGS: EffectiveContextPruningSettings =
 };
 
 /** Computes effective pruning settings, returning null when pruning is disabled or invalid. */
-export function computeEffectiveSettings(raw: unknown): EffectiveContextPruningSettings | null {
+export function computeEffectiveSettings(raw: any): EffectiveContextPruningSettings | null {
   if (!raw || typeof raw !== "object") {
     return null;
   }

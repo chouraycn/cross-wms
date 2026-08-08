@@ -95,10 +95,10 @@ export function registerBasicTools(): void {
 
 export interface ExecuteBasicToolOptions {
   toolName: string;
-  input: Record<string, unknown>;
+  input: Record<string, any>;
 }
 
-export function executeBasicTool(options: ExecuteBasicToolOptions): unknown {
+export function executeBasicTool(options: ExecuteBasicToolOptions): any {
   const { toolName, input } = options;
 
   switch (toolName) {

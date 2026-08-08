@@ -139,7 +139,7 @@ function resolveSessionUsageFileOrRespond(
 }
 
 const parseDateParts = (
-  raw: unknown,
+  raw: any,
 ): { year: number; monthIndex: number; day: number } | undefined => {
   if (typeof raw !== "string" || !raw.trim()) {
     return undefined;
@@ -175,8 +175,8 @@ const parseDateParts = (
 // fall through to the default range and return a successful response for an unrelated range.
 // Return the offending field so handlers can reject it instead of querying the wrong window.
 const findInvalidExplicitDate = (params: {
-  startDate?: unknown;
-  endDate?: unknown;
+  startDate?: any;
+  endDate?: any;
 }): "startDate" | "endDate" | undefined => {
   for (const field of ["startDate", "endDate"] as const) {
     const raw = params[field];
@@ -194,7 +194,7 @@ const findInvalidExplicitDate = (params: {
  * Parse a UTC offset string in the format UTC+H, UTC-H, UTC+HH, UTC-HH, UTC+H:MM, UTC-HH:MM.
  * Returns the UTC offset in minutes (east-positive), or undefined if invalid.
  */
-const parseUtcOffsetToMinutes = (raw: unknown): number | undefined => {
+const parseUtcOffsetToMinutes = (raw: any): number | undefined => {
   if (typeof raw !== "string" || !raw.trim()) {
     return undefined;
   }
@@ -219,8 +219,8 @@ const parseUtcOffsetToMinutes = (raw: unknown): number | undefined => {
 };
 
 const resolveDateInterpretation = (params: {
-  mode?: unknown;
-  utcOffset?: unknown;
+  mode?: any;
+  utcOffset?: any;
 }): DateInterpretation => {
   if (params.mode === "gateway") {
     return { mode: "gateway" };
@@ -240,7 +240,7 @@ const resolveDateInterpretation = (params: {
  * Returns undefined if invalid.
  */
 const parseDateToMs = (
-  raw: unknown,
+  raw: any,
   interpretation: DateInterpretation = { mode: "utc" },
 ): number | undefined => {
   const parts = parseDateParts(raw);
@@ -274,7 +274,7 @@ const getTodayStartMs = (now: Date, interpretation: DateInterpretation): number 
   return Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
 };
 
-const parseDays = (raw: unknown): number | undefined => {
+const parseDays = (raw: any): number | undefined => {
   if (typeof raw === "number" && Number.isFinite(raw)) {
     return Math.floor(raw);
   }
@@ -287,7 +287,7 @@ const parseDays = (raw: unknown): number | undefined => {
   return undefined;
 };
 
-const resolveRangeDays = (raw: unknown): number | "all" | undefined => {
+const resolveRangeDays = (raw: any): number | "all" | undefined => {
   if (raw === "all") {
     return "all";
   }
@@ -311,12 +311,12 @@ const resolveRangeDays = (raw: unknown): number | "all" | undefined => {
  * Falls back to last 30 days if not provided.
  */
 const parseDateRange = (params: {
-  startDate?: unknown;
-  endDate?: unknown;
-  days?: unknown;
-  range?: unknown;
-  mode?: unknown;
-  utcOffset?: unknown;
+  startDate?: any;
+  endDate?: any;
+  days?: any;
+  range?: any;
+  mode?: any;
+  utcOffset?: any;
 }): DateRange => {
   const now = new Date();
   const interpretation = resolveDateInterpretation(params);
@@ -777,7 +777,7 @@ async function loadCostUsageSummaryCached(params: {
       });
       return summary;
     })
-    .catch((err: unknown) => {
+    .catch((err: any) => {
       if (entry.summary) {
         // Serve the stale summary if background refresh fails; callers asked for usage, not repair.
         return entry.summary;
@@ -1333,7 +1333,7 @@ export const usageHandlers: GatewayRequestHandlers = {
 
         if (usage.modelUsage) {
           for (const entry of usage.modelUsage) {
-            const modelKey = `${entry.provider ?? "unknown"}::${entry.model ?? "unknown"}`;
+            const modelKey = `${entry.provider ?? "any"}::${entry.model ?? "any"}`;
             const modelExisting =
               byModelMap.get(modelKey) ??
               ({
@@ -1346,7 +1346,7 @@ export const usageHandlers: GatewayRequestHandlers = {
             addCostUsageTotals(modelExisting.totals, entry.totals);
             byModelMap.set(modelKey, modelExisting);
 
-            const providerKey = entry.provider ?? "unknown";
+            const providerKey = entry.provider ?? "any";
             const providerExisting =
               byProviderMap.get(providerKey) ??
               ({
@@ -1366,7 +1366,7 @@ export const usageHandlers: GatewayRequestHandlers = {
 
         if (usage.dailyModelUsage) {
           for (const entry of usage.dailyModelUsage) {
-            const key = `${entry.date}::${entry.provider ?? "unknown"}::${entry.model ?? "unknown"}`;
+            const key = `${entry.date}::${entry.provider ?? "any"}::${entry.model ?? "any"}`;
             const existing =
               modelDailyMap.get(key) ??
               ({

@@ -12,7 +12,7 @@ function plannedArgv(plan: Awaited<ReturnType<typeof planShellAuthorization>>): 
 
 async function expectSingleShellCandidate(
   command: string,
-  candidate: Record<string, unknown>,
+  candidate: Record<string, any>,
 ): Promise<void> {
   const plan = await planShellAuthorization({ command });
 

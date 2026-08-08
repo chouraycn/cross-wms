@@ -57,7 +57,7 @@ function runWizard(nonInteractive: boolean): { applied: number; sections: Config
   return { applied, sections };
 }
 
-function formatJsonOutput(data: unknown): string {
+function formatJsonOutput(data: any): string {
   return JSON.stringify(data, null, 2);
 }
 

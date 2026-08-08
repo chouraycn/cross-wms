@@ -25,8 +25,8 @@ export type ProviderRuntimeModel = {
   reasoning?: boolean;
   compat?: ModelCompatConfig;
   contextTokens?: number;
-  params?: Record<string, unknown>;
+  params?: Record<string, any>;
   requestTimeoutMs?: number;
   mediaInput?: ModelMediaInputConfig;
-  [key: string]: unknown;
+  [key: string]: any;
 };

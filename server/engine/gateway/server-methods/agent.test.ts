@@ -50,7 +50,7 @@ const mocks = vi.hoisted(() => ({
   replaceSubagentRunAfterSteer: vi.fn(),
   resolveExplicitAgentSessionKey: vi.fn(),
   listAgentIds: vi.fn(() => ["main"]),
-  loadConfigReturn: {} as Record<string, unknown>,
+  loadConfigReturn: {} as Record<string, any>,
   loadVoiceWakeRoutingConfig: vi.fn(),
   resolveVoiceWakeRouteByTrigger: vi.fn(),
   getChannelPlugin: vi.fn(),
@@ -121,7 +121,7 @@ vi.mock("../../agents/agent-scope.js", () => ({
     sessionKey,
   }: {
     sessionKey?: string | null;
-    config?: Record<string, unknown>;
+    config?: Record<string, any>;
   }) => {
     const m = /^agent:([^:]+):/.exec((sessionKey ?? "").trim());
     return m?.[1] ?? "main";
@@ -169,12 +169,12 @@ vi.mock("../session-subagent-reactivation.runtime.js", () => ({
 }));
 
 vi.mock("../session-reset-service.js", () => ({
-  emitGatewaySessionEndPluginHook: (...args: unknown[]) =>
-    (mocks.emitGatewaySessionEndPluginHook as (...args: unknown[]) => unknown)(...args),
-  emitGatewaySessionStartPluginHook: (...args: unknown[]) =>
-    (mocks.emitGatewaySessionStartPluginHook as (...args: unknown[]) => unknown)(...args),
-  performGatewaySessionReset: (...args: unknown[]) =>
-    (mocks.performGatewaySessionReset as (...args: unknown[]) => unknown)(...args),
+  emitGatewaySessionEndPluginHook: (...args: any[]) =>
+    (mocks.emitGatewaySessionEndPluginHook as (...args: any[]) => unknown)(...args),
+  emitGatewaySessionStartPluginHook: (...args: any[]) =>
+    (mocks.emitGatewaySessionStartPluginHook as (...args: any[]) => unknown)(...args),
+  performGatewaySessionReset: (...args: any[]) =>
+    (mocks.performGatewaySessionReset as (...args: any[]) => unknown)(...args),
 }));
 
 vi.mock("../../infra/voicewake-routing.js", () => ({
@@ -183,8 +183,8 @@ vi.mock("../../infra/voicewake-routing.js", () => ({
 }));
 
 vi.mock("../../sessions/send-policy.js", () => ({
-  resolveSendPolicy: (...args: unknown[]) =>
-    (mocks.resolveSendPolicy as (...args: unknown[]) => unknown)(...args),
+  resolveSendPolicy: (...args: any[]) =>
+    (mocks.resolveSendPolicy as (...args: any[]) => unknown)(...args),
 }));
 
 vi.mock("../../channels/plugins/index.js", async () => {
@@ -254,7 +254,7 @@ const makeContext = (): GatewayRequestContext =>
 
 type AgentHandlerArgs = Parameters<typeof agentHandlers.agent>[0];
 type AgentParams = AgentHandlerArgs["params"];
-type AgentCommandCall = Record<string, unknown>;
+type AgentCommandCall = Record<string, any>;
 
 type AgentIdentityGetHandlerArgs = Parameters<(typeof agentHandlers)["agent.identity.get"]>[0];
 type AgentIdentityGetParams = AgentIdentityGetHandlerArgs["params"];
@@ -269,7 +269,7 @@ function waitForRealTimer(ms: number) {
 }
 
 async function waitForAssertion(assertion: () => void, timeoutMs = 2_000, stepMs = 5) {
-  let lastError: unknown;
+  let lastError: any;
   for (let elapsed = 0; elapsed <= timeoutMs; elapsed += stepMs) {
     try {
       assertion();
@@ -298,11 +298,11 @@ function requireValue<T>(value: T | null | undefined, message: string): T {
   return value;
 }
 
-function expectRecordFields(record: unknown, expected: Record<string, unknown>) {
+function expectRecordFields(record: any, expected: Record<string, any>) {
   if (!record || typeof record !== "object") {
     throw new Error("Expected record");
   }
-  const actual = record as Record<string, unknown>;
+  const actual = record as Record<string, any>;
   for (const [key, value] of Object.entries(expected)) {
     expect(actual[key]).toEqual(value);
   }
@@ -310,7 +310,7 @@ function expectRecordFields(record: unknown, expected: Record<string, unknown>) 
 }
 
 function expectStringFieldContains(
-  record: Record<string, unknown>,
+  record: Record<string, any>,
   field: string,
   expected: string,
 ) {
@@ -326,7 +326,7 @@ function mockCallArg(mock: ReturnType<typeof vi.fn>, callIndex = 0, argIndex = 0
   return call[argIndex];
 }
 
-function expectRespondError(mock: ReturnType<typeof vi.fn>, expected: Record<string, unknown>) {
+function expectRespondError(mock: ReturnType<typeof vi.fn>, expected: Record<string, any>) {
   expect(mockCallArg(mock)).toBe(false);
   expect(mockCallArg(mock, 0, 1)).toBeUndefined();
   return expectRecordFields(mockCallArg(mock, 0, 2), expected);
@@ -363,7 +363,7 @@ async function waitForAcceptedRunDispatch(respond: ReturnType<typeof vi.fn>) {
   }
 }
 
-function mockMainSessionEntry(entry: Record<string, unknown>, cfg: Record<string, unknown> = {}) {
+function mockMainSessionEntry(entry: Record<string, any>, cfg: Record<string, any> = {}) {
   mocks.loadSessionEntry.mockReturnValue({
     cfg,
     storePath: "/tmp/sessions.json",
@@ -376,7 +376,7 @@ function mockMainSessionEntry(entry: Record<string, unknown>, cfg: Record<string
   });
 }
 
-function buildExistingMainStoreEntry(overrides: Record<string, unknown> = {}) {
+function buildExistingMainStoreEntry(overrides: Record<string, any> = {}) {
   return {
     sessionId: "existing-session-id",
     updatedAt: Date.now(),
@@ -415,7 +415,7 @@ async function expectResetCall(expectedMessage: string) {
   return call;
 }
 
-function primeMainAgentRun(params?: { sessionId?: string; cfg?: Record<string, unknown> }) {
+function primeMainAgentRun(params?: { sessionId?: string; cfg?: Record<string, any> }) {
   mockMainSessionEntry(
     { sessionId: params?.sessionId ?? "existing-session-id" },
     params?.cfg ?? {},
@@ -445,13 +445,13 @@ async function runMainAgentAndCaptureEntry(idempotencyKey: string) {
   const loaded = mocks.loadSessionEntry();
   const canonicalKey = loaded?.canonicalKey ?? "agent:main:main";
   const existingEntry = structuredClone(loaded?.entry ?? buildExistingMainStoreEntry());
-  let capturedEntry: Record<string, unknown> | undefined;
+  let capturedEntry: Record<string, any> | undefined;
   mocks.updateSessionStore.mockImplementation(async (_path, updater) => {
-    const store: Record<string, unknown> = {
+    const store: Record<string, any> = {
       [canonicalKey]: existingEntry,
     };
     const result = await updater(store);
-    capturedEntry = result as Record<string, unknown>;
+    capturedEntry = result as Record<string, any>;
     return result;
   });
   mocks.agentCommand.mockResolvedValue({
@@ -623,12 +623,12 @@ describe("gateway agent handler", () => {
     mockMainSessionEntry({});
     let capturedOptions:
       | {
-          resolveSingleEntryPersistence?: (result: unknown) => unknown;
+          resolveSingleEntryPersistence?: (result: any) => unknown;
         }
       | undefined;
-    let persistedResult: unknown;
+    let persistedResult: any;
     mocks.updateSessionStore.mockImplementation(async (_path, updater, opts) => {
-      const store: Record<string, Record<string, unknown>> = {
+      const store: Record<string, Record<string, any>> = {
         "agent:main:main": buildExistingMainStoreEntry(),
       };
       persistedResult = await updater(store);
@@ -661,12 +661,12 @@ describe("gateway agent handler", () => {
     });
     let capturedOptions:
       | {
-          resolveSingleEntryPersistence?: (result: unknown) => unknown;
+          resolveSingleEntryPersistence?: (result: any) => unknown;
         }
       | undefined;
-    let persistedResult: unknown;
+    let persistedResult: any;
     mocks.updateSessionStore.mockImplementation(async (_path, updater, opts) => {
-      const store: Record<string, Record<string, unknown>> = {
+      const store: Record<string, Record<string, any>> = {
         "agent:main:work": buildExistingMainStoreEntry({ updatedAt: 100 }),
         "agent:main:main": buildExistingMainStoreEntry({ updatedAt: 50 }),
       };
@@ -698,13 +698,13 @@ describe("gateway agent handler", () => {
       acp: existingAcpMeta,
     });
 
-    let capturedEntry: Record<string, unknown> | undefined;
+    let capturedEntry: Record<string, any> | undefined;
     mocks.updateSessionStore.mockImplementation(async (_path, updater) => {
-      const store: Record<string, unknown> = {
+      const store: Record<string, any> = {
         "agent:main:main": buildExistingMainStoreEntry({ acp: existingAcpMeta }),
       };
       const result = await updater(store);
-      capturedEntry = store["agent:main:main"] as Record<string, unknown>;
+      capturedEntry = store["agent:main:main"] as Record<string, any>;
       return result;
     });
 
@@ -733,13 +733,13 @@ describe("gateway agent handler", () => {
     };
     mockMainSessionEntry(staleEntry);
 
-    let capturedEntry: Record<string, unknown> | undefined;
+    let capturedEntry: Record<string, any> | undefined;
     mocks.updateSessionStore.mockImplementation(async (_path, updater) => {
-      const store: Record<string, unknown> = {
+      const store: Record<string, any> = {
         "agent:main:main": { ...staleEntry },
       };
       const result = await updater(store);
-      capturedEntry = result as Record<string, unknown>;
+      capturedEntry = result as Record<string, any>;
       return result;
     });
     mocks.agentCommand.mockResolvedValue({
@@ -891,7 +891,7 @@ describe("gateway agent handler", () => {
         entry: staleEntry,
         canonicalKey: "agent:main:main",
       });
-      let capturedEntry: Record<string, unknown> | undefined;
+      let capturedEntry: Record<string, any> | undefined;
       mocks.updateSessionStore.mockImplementation(async (_path, updater) => {
         const store = {
           "agent:main:main": {
@@ -900,7 +900,7 @@ describe("gateway agent handler", () => {
           },
         };
         const result = await updater(store);
-        capturedEntry = result as Record<string, unknown>;
+        capturedEntry = result as Record<string, any>;
         return result;
       });
       mocks.agentCommand.mockResolvedValue({
@@ -957,13 +957,13 @@ describe("gateway agent handler", () => {
           entry: existingEntry,
           canonicalKey: "agent:main:main",
         });
-        let capturedEntry: Record<string, unknown> | undefined;
+        let capturedEntry: Record<string, any> | undefined;
         mocks.updateSessionStore.mockImplementation(async (_path, updater) => {
-          const store: Record<string, unknown> = {
+          const store: Record<string, any> = {
             "agent:main:main": { ...existingEntry },
           };
           const result = await updater(store);
-          capturedEntry = result as Record<string, unknown>;
+          capturedEntry = result as Record<string, any>;
           return result;
         });
         mocks.agentCommand.mockResolvedValue({
@@ -1030,13 +1030,13 @@ describe("gateway agent handler", () => {
             canonicalKey: "agent:main:main",
           });
 
-          let capturedEntry: Record<string, unknown> | undefined;
+          let capturedEntry: Record<string, any> | undefined;
           mocks.updateSessionStore.mockImplementation(async (_path, updater) => {
-            const store: Record<string, unknown> = {
+            const store: Record<string, any> = {
               "agent:main:main": { ...existingEntry },
             };
             const result = await updater(store);
-            capturedEntry = result as Record<string, unknown>;
+            capturedEntry = result as Record<string, any>;
             return result;
           });
           mocks.agentCommand.mockResolvedValue({
@@ -1174,13 +1174,13 @@ describe("gateway agent handler", () => {
       canonicalKey: sessionKey,
     });
 
-    let capturedEntry: Record<string, unknown> | undefined;
+    let capturedEntry: Record<string, any> | undefined;
     mocks.updateSessionStore.mockImplementation(async (_path, updater) => {
-      const store: Record<string, unknown> = {
+      const store: Record<string, any> = {
         [sessionKey]: { ...existingEntry },
       };
       const result = await updater(store);
-      capturedEntry = result as Record<string, unknown>;
+      capturedEntry = result as Record<string, any>;
       return result;
     });
 
@@ -1227,11 +1227,11 @@ describe("gateway agent handler", () => {
       canonicalKey: sessionKey,
     });
 
-    let capturedEntry: Record<string, unknown> | undefined;
+    let capturedEntry: Record<string, any> | undefined;
     mocks.updateSessionStore.mockImplementation(async (_path, updater) => {
-      const store: Record<string, unknown> = {};
+      const store: Record<string, any> = {};
       const result = await updater(store);
-      capturedEntry = result as Record<string, unknown>;
+      capturedEntry = result as Record<string, any>;
       return result;
     });
 
@@ -1278,11 +1278,11 @@ describe("gateway agent handler", () => {
       canonicalKey: sessionKey,
     });
 
-    let capturedEntry: Record<string, unknown> | undefined;
+    let capturedEntry: Record<string, any> | undefined;
     mocks.updateSessionStore.mockImplementation(async (_path, updater) => {
-      const store: Record<string, unknown> = {};
+      const store: Record<string, any> = {};
       const result = await updater(store);
-      capturedEntry = store[sessionKey] as Record<string, unknown>;
+      capturedEntry = store[sessionKey] as Record<string, any>;
       return result;
     });
 
@@ -1324,13 +1324,13 @@ describe("gateway agent handler", () => {
       canonicalKey: sessionKey,
     });
 
-    let capturedEntry: Record<string, unknown> | undefined;
+    let capturedEntry: Record<string, any> | undefined;
     mocks.updateSessionStore.mockImplementation(async (_path, updater) => {
-      const store: Record<string, unknown> = {
+      const store: Record<string, any> = {
         [sessionKey]: { ...existingEntry },
       };
       const result = await updater(store);
-      capturedEntry = store[sessionKey] as Record<string, unknown>;
+      capturedEntry = store[sessionKey] as Record<string, any>;
       return result;
     });
 
@@ -1562,9 +1562,9 @@ describe("gateway agent handler", () => {
       },
       canonicalKey: "agent:main:subagent:test-uuid",
     });
-    let capturedEntry: Record<string, unknown> | undefined;
+    let capturedEntry: Record<string, any> | undefined;
     mocks.updateSessionStore.mockImplementation(async (_path, updater) => {
-      const freshStore: Record<string, Record<string, unknown>> = {
+      const freshStore: Record<string, Record<string, any>> = {
         "agent:main:subagent:test-uuid": {
           sessionId: "subagent-session-id",
           updatedAt: Date.now(),
@@ -1636,9 +1636,9 @@ describe("gateway agent handler", () => {
       cliSessionBindings: { "claude-cli": { sessionId: "fresh-binding" } },
       claudeCliSessionId: "fresh-cli-id",
     };
-    let capturedEntry: Record<string, unknown> | undefined;
+    let capturedEntry: Record<string, any> | undefined;
     mocks.updateSessionStore.mockImplementation(async (_path, updater) => {
-      const freshStore: Record<string, Record<string, unknown>> = {
+      const freshStore: Record<string, Record<string, any>> = {
         "agent:main:subagent:test-broader": {
           sessionId: "subagent-session-id",
           updatedAt: Date.now(),
@@ -1678,9 +1678,9 @@ describe("gateway agent handler", () => {
       canonicalKey: "agent:main:subagent:test-policy",
     });
     const freshUpdatedAt = Date.now();
-    let capturedEntry: Record<string, unknown> | undefined;
+    let capturedEntry: Record<string, any> | undefined;
     mocks.updateSessionStore.mockImplementation(async (_path, updater) => {
-      const freshStore: Record<string, Record<string, unknown>> = {
+      const freshStore: Record<string, Record<string, any>> = {
         "agent:main:subagent:test-policy": {
           sessionId: "subagent-session-id",
           updatedAt: freshUpdatedAt,
@@ -1744,9 +1744,9 @@ describe("gateway agent handler", () => {
       },
       canonicalKey: "agent:main:subagent:test-rotation",
     });
-    let capturedEntry: Record<string, unknown> | undefined;
+    let capturedEntry: Record<string, any> | undefined;
     mocks.updateSessionStore.mockImplementation(async (_path, updater) => {
-      const freshStore: Record<string, Record<string, unknown>> = {
+      const freshStore: Record<string, Record<string, any>> = {
         "agent:main:subagent:test-rotation": {
           sessionId: "fresh-session-id",
           updatedAt: Date.now(),
@@ -1806,9 +1806,9 @@ describe("gateway agent handler", () => {
       sessionStartedAt: recoveredStartedAt,
       lastInteractionAt: undefined,
     });
-    let capturedEntry: Record<string, unknown> | undefined;
+    let capturedEntry: Record<string, any> | undefined;
     mocks.updateSessionStore.mockImplementation(async (_path, updater) => {
-      const freshStore: Record<string, Record<string, unknown>> = {
+      const freshStore: Record<string, Record<string, any>> = {
         "agent:main:subagent:legacy": {
           sessionId: "legacy-session-id",
           updatedAt: Date.now(),
@@ -1854,9 +1854,9 @@ describe("gateway agent handler", () => {
       sessionStartedAt: recoveredStartedAt,
       lastInteractionAt: undefined,
     });
-    let capturedEntry: Record<string, unknown> | undefined;
+    let capturedEntry: Record<string, any> | undefined;
     mocks.updateSessionStore.mockImplementation(async (_path, updater) => {
-      const freshStore: Record<string, Record<string, unknown>> = {
+      const freshStore: Record<string, Record<string, any>> = {
         "agent:main:subagent:concurrent": {
           sessionId: "legacy-session-id",
           updatedAt: Date.now(),
@@ -1911,7 +1911,7 @@ describe("gateway agent handler", () => {
       canonicalKey: childSessionKey,
     });
     mocks.updateSessionStore.mockImplementation(async (_path, updater) => {
-      const store: Record<string, unknown> = {
+      const store: Record<string, any> = {
         [childSessionKey]: {
           sessionId: "sess-followup",
           updatedAt,
@@ -1982,7 +1982,7 @@ describe("gateway agent handler", () => {
       lastThreadId: 42,
     });
     mocks.updateSessionStore.mockImplementation(async (_path, updater) => {
-      const store: Record<string, unknown> = {
+      const store: Record<string, any> = {
         "agent:main:main": buildExistingMainStoreEntry({
           sessionId: "sess-main",
           updatedAt,
@@ -2336,7 +2336,7 @@ describe("gateway agent handler", () => {
     expectStringFieldContains(error, "message", "attachment broken.png: invalid base64 content");
     const logError = context.logGateway.error as unknown as ReturnType<typeof vi.fn>;
     expect(mockCallArg(logError)).toBe("agent attachment parse failed");
-    const logMeta = mockCallArg(logError, 0, 1) as Record<string, unknown>;
+    const logMeta = mockCallArg(logError, 0, 1) as Record<string, any>;
     expectStringFieldContains(
       logMeta,
       "consoleMessage",
@@ -2472,13 +2472,13 @@ describe("gateway agent handler", () => {
 
     await waitForAgentCommandCall();
     const accepted = respond.mock.calls.find(
-      (call: unknown[]) =>
-        call[0] === true && (call[1] as Record<string, unknown>)?.status === "accepted",
+      (call: any[]) =>
+        call[0] === true && (call[1] as Record<string, any>)?.status === "accepted",
     );
     expectRecordFields(requireValue(accepted, "accepted response missing")[1], {
       status: "accepted",
     });
-    const rejected = respond.mock.calls.find((call: unknown[]) => call[0] === false);
+    const rejected = respond.mock.calls.find((call: any[]) => call[0] === false);
     expect(rejected).toBeUndefined();
     expect(logInfo).toHaveBeenCalledTimes(1);
     expect(mockCallArg(logInfo)).toContain(
@@ -2545,7 +2545,7 @@ describe("gateway agent handler", () => {
     );
 
     const rejection = respond.mock.calls.find(
-      (call: unknown[]) =>
+      (call: any[]) =>
         call[0] === false &&
         typeof (call[2] as { message?: string } | undefined)?.message === "string" &&
         (call[2] as { message: string }).message.includes("unknown channel"),
@@ -2632,7 +2632,7 @@ describe("gateway agent handler", () => {
     );
 
     await waitForAgentCommandCall();
-    const rejection = respond.mock.calls.find((call: unknown[]) => call[0] === false);
+    const rejection = respond.mock.calls.find((call: any[]) => call[0] === false);
     expect(rejection).toBeUndefined();
   });
 
@@ -2684,7 +2684,7 @@ describe("gateway agent handler", () => {
       spawnedWorkspaceDir: "/tmp/inherited",
     });
     mocks.updateSessionStore.mockImplementation(async (_path, updater) => {
-      const store: Record<string, unknown> = {
+      const store: Record<string, any> = {
         "agent:main:main": buildExistingMainStoreEntry({
           spawnedBy: "agent:main:subagent:parent",
           spawnedWorkspaceDir: "/tmp/inherited",
@@ -2714,7 +2714,7 @@ describe("gateway agent handler", () => {
       spawnedCwd: "/tmp/task-repo",
     });
     mocks.updateSessionStore.mockImplementation(async (_path, updater) => {
-      const store: Record<string, unknown> = {
+      const store: Record<string, any> = {
         "agent:main:main": buildExistingMainStoreEntry({
           spawnedBy: "agent:main:subagent:parent",
           spawnedWorkspaceDir: "/tmp/inherited",
@@ -2745,7 +2745,7 @@ describe("gateway agent handler", () => {
       lastTo: "12345",
     });
     mocks.updateSessionStore.mockImplementation(async (_path, updater) => {
-      const store: Record<string, unknown> = {
+      const store: Record<string, any> = {
         "agent:main:main": buildExistingMainStoreEntry({
           lastChannel: "telegram",
           lastTo: "12345",
@@ -2821,7 +2821,7 @@ describe("gateway agent handler", () => {
       { reqId: "exec-followup-elevated", client: backendGatewayClient() },
     );
 
-    const callArgs = await waitForAgentCommandCall<{ bashElevated?: unknown }>();
+    const callArgs = await waitForAgentCommandCall<{ bashElevated?: any }>();
     expect(callArgs.bashElevated).toEqual(bashElevated);
   });
 
@@ -3185,7 +3185,7 @@ describe("gateway agent handler", () => {
       { reqId: "exec-followup-forged", client: backendGatewayClient() },
     );
 
-    const callArgs = await waitForAgentCommandCall<{ bashElevated?: unknown }>();
+    const callArgs = await waitForAgentCommandCall<{ bashElevated?: any }>();
     expect(callArgs).not.toHaveProperty("bashElevated");
   });
 
@@ -3224,7 +3224,7 @@ describe("gateway agent handler", () => {
       { reqId: "exec-followup-idempotency-suffix", client: backendGatewayClient() },
     );
 
-    const callArgs = await waitForAgentCommandCall<{ bashElevated?: unknown }>();
+    const callArgs = await waitForAgentCommandCall<{ bashElevated?: any }>();
     expect(callArgs).not.toHaveProperty("bashElevated");
   });
 
@@ -3277,7 +3277,7 @@ describe("gateway agent handler", () => {
         canonicalKey: childSessionKey,
       });
       mocks.updateSessionStore.mockImplementation(async (_path, updater) => {
-        const store: Record<string, unknown> = {
+        const store: Record<string, any> = {
           [childSessionKey]: {
             sessionId: "plugin-subagent-session",
             updatedAt: Date.now(),
@@ -3400,7 +3400,7 @@ describe("gateway agent handler", () => {
           canonicalKey: childSessionKey,
         });
         mocks.updateSessionStore.mockImplementation(async (_path, updater) => {
-          const store: Record<string, unknown> = {
+          const store: Record<string, any> = {
             [childSessionKey]: {
               sessionId: "plugin-subagent-registry-fail-session",
               updatedAt: Date.now(),
@@ -3852,7 +3852,7 @@ describe("gateway agent handler", () => {
       canonicalKey: key,
     }));
     mocks.updateSessionStore.mockImplementation(async (_path, updater) => {
-      const store: Record<string, Record<string, unknown>> = {
+      const store: Record<string, Record<string, any>> = {
         "agent:main:main": { sessionId: "main-session-id", updatedAt: Date.now() },
         [sessionKey]: { sessionId: "wechat-session-id", updatedAt: Date.now() },
       };
@@ -3905,13 +3905,13 @@ describe("gateway agent handler", () => {
         },
       );
       const loaded = mocks.loadSessionEntry();
-      let capturedEntry: Record<string, unknown> | undefined;
+      let capturedEntry: Record<string, any> | undefined;
       mocks.updateSessionStore.mockImplementation(async (_path, updater) => {
-        const store: Record<string, unknown> = {
+        const store: Record<string, any> = {
           [loaded.canonicalKey]: structuredClone(loaded.entry),
         };
         const result = await updater(store);
-        capturedEntry = result as Record<string, unknown>;
+        capturedEntry = result as Record<string, any>;
         return result;
       });
       mocks.agentCommand.mockResolvedValue({
@@ -3947,7 +3947,7 @@ describe("gateway agent handler", () => {
       expect(capturedEntry?.lastInteractionAt).toBe(now);
       expect(mocks.emitGatewaySessionEndPluginHook).toHaveBeenCalledTimes(1);
       expectRecordFields(
-        mockCallArg(mocks.emitGatewaySessionEndPluginHook) as Record<string, unknown>,
+        mockCallArg(mocks.emitGatewaySessionEndPluginHook) as Record<string, any>,
         {
           sessionKey: "agent:main:main",
           sessionId: "stale-session-id",
@@ -3959,7 +3959,7 @@ describe("gateway agent handler", () => {
       );
       expect(mocks.emitGatewaySessionStartPluginHook).toHaveBeenCalledTimes(1);
       expectRecordFields(
-        mockCallArg(mocks.emitGatewaySessionStartPluginHook) as Record<string, unknown>,
+        mockCallArg(mocks.emitGatewaySessionStartPluginHook) as Record<string, any>,
         {
           sessionKey: "agent:main:main",
           sessionId: call.sessionId,
@@ -4000,7 +4000,7 @@ describe("gateway agent handler", () => {
       );
       const loaded = mocks.loadSessionEntry();
       mocks.updateSessionStore.mockImplementation(async (_path, updater) => {
-        const store: Record<string, unknown> = {
+        const store: Record<string, any> = {
           [loaded.canonicalKey]: structuredClone(loaded.entry),
         };
         return updater(store);
@@ -4027,7 +4027,7 @@ describe("gateway agent handler", () => {
       expect(call.sessionKey).toBe("agent:main:main");
       expect(call.sessionId).not.toBe("idle-session-id");
       expectRecordFields(
-        mockCallArg(mocks.emitGatewaySessionEndPluginHook) as Record<string, unknown>,
+        mockCallArg(mocks.emitGatewaySessionEndPluginHook) as Record<string, any>,
         {
           sessionKey: "agent:main:main",
           sessionId: "idle-session-id",
@@ -4037,7 +4037,7 @@ describe("gateway agent handler", () => {
         },
       );
       expectRecordFields(
-        mockCallArg(mocks.emitGatewaySessionStartPluginHook) as Record<string, unknown>,
+        mockCallArg(mocks.emitGatewaySessionStartPluginHook) as Record<string, any>,
         {
           sessionKey: "agent:main:main",
           sessionId: call.sessionId,
@@ -4073,7 +4073,7 @@ describe("gateway agent handler", () => {
       );
       const loaded = mocks.loadSessionEntry();
       mocks.updateSessionStore.mockImplementation(async (_path, updater) => {
-        const store: Record<string, unknown> = {
+        const store: Record<string, any> = {
           [loaded.canonicalKey]: structuredClone(loaded.entry),
         };
         return updater(store);
@@ -4103,7 +4103,7 @@ describe("gateway agent handler", () => {
       expectStringFieldContains(error, "message", "requires target");
       expect(mocks.emitGatewaySessionEndPluginHook).toHaveBeenCalledTimes(1);
       expectRecordFields(
-        mockCallArg(mocks.emitGatewaySessionEndPluginHook) as Record<string, unknown>,
+        mockCallArg(mocks.emitGatewaySessionEndPluginHook) as Record<string, any>,
         {
           sessionKey: "agent:main:main",
           sessionId: "stale-before-validation-id",
@@ -4112,7 +4112,7 @@ describe("gateway agent handler", () => {
       );
       expect(mocks.emitGatewaySessionStartPluginHook).toHaveBeenCalledTimes(1);
       expectRecordFields(
-        mockCallArg(mocks.emitGatewaySessionStartPluginHook) as Record<string, unknown>,
+        mockCallArg(mocks.emitGatewaySessionStartPluginHook) as Record<string, any>,
         {
           sessionKey: "agent:main:main",
           resumedFrom: "stale-before-validation-id",
@@ -4135,13 +4135,13 @@ describe("gateway agent handler", () => {
         lastInteractionAt: now,
       });
       const loaded = mocks.loadSessionEntry();
-      let capturedEntry: Record<string, unknown> | undefined;
+      let capturedEntry: Record<string, any> | undefined;
       mocks.updateSessionStore.mockImplementation(async (_path, updater) => {
-        const store: Record<string, unknown> = {
+        const store: Record<string, any> = {
           [loaded.canonicalKey]: structuredClone(loaded.entry),
         };
         const result = await updater(store);
-        capturedEntry = result as Record<string, unknown>;
+        capturedEntry = result as Record<string, any>;
         return result;
       });
       mocks.agentCommand.mockResolvedValue({
@@ -4178,7 +4178,7 @@ describe("gateway agent handler", () => {
       expect(capturedEntry?.sessionStartedAt).toBe(now);
       expect(mocks.emitGatewaySessionEndPluginHook).toHaveBeenCalledTimes(1);
       expectRecordFields(
-        mockCallArg(mocks.emitGatewaySessionEndPluginHook) as Record<string, unknown>,
+        mockCallArg(mocks.emitGatewaySessionEndPluginHook) as Record<string, any>,
         {
           sessionKey: "agent:main:main",
           sessionId: "current-session-id",
@@ -4190,7 +4190,7 @@ describe("gateway agent handler", () => {
       );
       expect(mocks.emitGatewaySessionStartPluginHook).toHaveBeenCalledTimes(1);
       expectRecordFields(
-        mockCallArg(mocks.emitGatewaySessionStartPluginHook) as Record<string, unknown>,
+        mockCallArg(mocks.emitGatewaySessionStartPluginHook) as Record<string, any>,
         {
           sessionKey: "agent:main:main",
           sessionId: "caller-selected-session-id",
@@ -4230,13 +4230,13 @@ describe("gateway agent handler", () => {
         },
       );
       const loaded = mocks.loadSessionEntry();
-      let capturedEntry: Record<string, unknown> | undefined;
+      let capturedEntry: Record<string, any> | undefined;
       mocks.updateSessionStore.mockImplementation(async (_path, updater) => {
-        const store: Record<string, unknown> = {
+        const store: Record<string, any> = {
           [loaded.canonicalKey]: structuredClone(loaded.entry),
         };
         const result = await updater(store);
-        capturedEntry = result as Record<string, unknown>;
+        capturedEntry = result as Record<string, any>;
         return result;
       });
       mocks.agentCommand.mockResolvedValue({
@@ -4281,7 +4281,7 @@ describe("gateway agent handler", () => {
       canonicalKey: "global",
     });
     mocks.updateSessionStore.mockImplementation(async (_path, updater) => {
-      const store: Record<string, unknown> = {
+      const store: Record<string, any> = {
         global: { sessionId: "global-session-id", updatedAt: Date.now() },
       };
       return await updater(store);
@@ -4324,7 +4324,7 @@ describe("gateway agent handler", () => {
       canonicalKey: "global",
     });
     mocks.updateSessionStore.mockImplementation(async (_path, updater) => {
-      const store: Record<string, unknown> = {
+      const store: Record<string, any> = {
         global: { sessionId: "global-work-session-id", updatedAt: Date.now() },
       };
       return await updater(store);
@@ -4378,7 +4378,7 @@ describe("gateway agent handler", () => {
       canonicalKey: "global",
     });
     mocks.updateSessionStore.mockImplementation(async (_path, updater) => {
-      const store: Record<string, unknown> = {
+      const store: Record<string, any> = {
         global: { sessionId: "global-ops-session-id", updatedAt: Date.now() },
       };
       return await updater(store);
@@ -4424,7 +4424,7 @@ describe("gateway agent handler", () => {
       canonicalKey: "global",
     });
     mocks.updateSessionStore.mockImplementation(async (_path, updater) => {
-      const store: Record<string, unknown> = {
+      const store: Record<string, any> = {
         global: { sessionId: "global-work-session-id", updatedAt: Date.now() },
       };
       return await updater(store);
@@ -4471,7 +4471,7 @@ describe("gateway agent handler", () => {
       canonicalKey: "global",
     });
     mocks.updateSessionStore.mockImplementation(async (_path, updater) => {
-      const store: Record<string, unknown> = {
+      const store: Record<string, any> = {
         global: { sessionId: "global-work-session-id", updatedAt: Date.now() },
       };
       return await updater(store);
@@ -4559,7 +4559,7 @@ describe("gateway agent handler", () => {
       canonicalKey: "global",
     });
     mocks.updateSessionStore.mockImplementation(async (_path, updater) => {
-      const store: Record<string, unknown> = {
+      const store: Record<string, any> = {
         global: { sessionId: "global-work-session-id", updatedAt: Date.now() },
       };
       return await updater(store);
@@ -4664,7 +4664,7 @@ describe("gateway agent handler", () => {
         sourceId: "task-registry-agent-seam",
       });
       expectStringFieldContains(
-        mockCallArg(createRunningTaskRunSpy) as Record<string, unknown>,
+        mockCallArg(createRunningTaskRunSpy) as Record<string, any>,
         "task",
         "background cli seam task",
       );
@@ -4853,7 +4853,7 @@ describe("gateway agent handler", () => {
     const callArgs = await waitForAgentCommandCall<{ sessionKey?: string }>();
     expect(callArgs.sessionKey).toBe("agent:main:voice");
     const routeCall = mocks.resolveVoiceWakeRouteByTrigger.mock.calls.find(([args]) => {
-      return (args as Record<string, unknown>).trigger === undefined;
+      return (args as Record<string, any>).trigger === undefined;
     });
     const routeArgs = expectRecordFields(requireValue(routeCall, "route call missing")[0], {
       trigger: undefined,
@@ -4905,7 +4905,7 @@ describe("gateway agent handler", () => {
     const callArgs = await waitForAgentCommandCall<{ sessionKey?: string }>();
     expect(callArgs.sessionKey).toBe("agent:main:voice");
     const routeCall = mocks.resolveVoiceWakeRouteByTrigger.mock.calls.find(([args]) => {
-      return (args as Record<string, unknown>).trigger === "robot wake";
+      return (args as Record<string, any>).trigger === "robot wake";
     });
     const routeArgs = expectRecordFields(requireValue(routeCall, "route call missing")[0], {
       trigger: "robot wake",
@@ -5077,9 +5077,9 @@ describe("gateway agent handler", () => {
       canonicalKey: "agent:main:work",
     });
 
-    let capturedStore: Record<string, unknown> | undefined;
+    let capturedStore: Record<string, any> | undefined;
     mocks.updateSessionStore.mockImplementation(async (_path, updater) => {
-      const store: Record<string, unknown> = {
+      const store: Record<string, any> = {
         "agent:main:work": { sessionId: "existing-session-id", updatedAt: 10 },
         "agent:main:main": { sessionId: "legacy-session-id", updatedAt: 5 },
       };
@@ -5555,9 +5555,9 @@ describe("gateway agent handler", () => {
 
     expect(mocks.resolveSendPolicy).not.toHaveBeenCalled();
     const rejection = respond.mock.calls.find(
-      (call: unknown[]) =>
+      (call: any[]) =>
         call[0] === false &&
-        (call[2] as Record<string, unknown> | undefined)?.message ===
+        (call[2] as Record<string, any> | undefined)?.message ===
           "send blocked by session policy",
     );
     expect(rejection).toBeUndefined();
@@ -5592,7 +5592,7 @@ describe("gateway agent handler", () => {
   describe("groupId session-entry persistence validation", () => {
     async function captureGroupEntryFields(
       sessionKey: string,
-      entry: Record<string, unknown>,
+      entry: Record<string, any>,
       requestGroupId?: string,
     ) {
       mocks.loadSessionEntry.mockReturnValue({
@@ -5601,13 +5601,13 @@ describe("gateway agent handler", () => {
         entry: { sessionId: "existing-session-id", updatedAt: Date.now(), ...entry },
         canonicalKey: sessionKey,
       });
-      let capturedEntry: Record<string, unknown> | undefined;
+      let capturedEntry: Record<string, any> | undefined;
       mocks.updateSessionStore.mockImplementation(async (_path, updater) => {
-        const store: Record<string, unknown> = {
+        const store: Record<string, any> = {
           [sessionKey]: { sessionId: "existing-session-id", ...entry },
         };
         await updater(store);
-        capturedEntry = store[sessionKey] as Record<string, unknown>;
+        capturedEntry = store[sessionKey] as Record<string, any>;
       });
       mocks.agentCommand.mockResolvedValue({ payloads: [{ text: "ok" }], meta: { durationMs: 1 } });
       await invokeAgent({
@@ -5690,7 +5690,7 @@ describe("gateway agent handler chat.abort integration", () => {
     resetIntegrationState();
   });
 
-  function prime(sessionId = "existing-session-id", cfg: Record<string, unknown> = {}) {
+  function prime(sessionId = "existing-session-id", cfg: Record<string, any> = {}) {
     mockMainSessionEntry({ sessionId }, cfg);
     mocks.updateSessionStore.mockResolvedValue(undefined);
   }
@@ -5889,7 +5889,7 @@ describe("gateway agent handler chat.abort integration", () => {
       providerStarted: false,
     });
     const finalResponse = respond.mock.calls.find(
-      (call: unknown[]) => (call[1] as { status?: unknown } | undefined)?.status === "timeout",
+      (call: any[]) => (call[1] as { status?: any } | undefined)?.status === "timeout",
     );
     expectRecordFields(requireValue(finalResponse, "terminal response missing")[1], {
       runId,
@@ -5954,7 +5954,7 @@ describe("gateway agent handler chat.abort integration", () => {
       stopReason: "stop",
     });
     const finalResponse = respond.mock.calls.find(
-      (call: unknown[]) => (call[1] as { status?: unknown } | undefined)?.status === "timeout",
+      (call: any[]) => (call[1] as { status?: any } | undefined)?.status === "timeout",
     );
     expectRecordFields(requireValue(finalResponse, "terminal response missing")[1], {
       runId,
@@ -6031,7 +6031,7 @@ describe("gateway agent handler chat.abort integration", () => {
     expect(mocks.agentCommand).not.toHaveBeenCalled();
     expect(context.chatAbortControllers.has(runId)).toBe(false);
     const finalResponse = respond.mock.calls.find(
-      (call: unknown[]) => (call[1] as { status?: unknown } | undefined)?.status === "timeout",
+      (call: any[]) => (call[1] as { status?: any } | undefined)?.status === "timeout",
     );
     expectRecordFields(requireValue(finalResponse, "terminal response missing")[1], {
       runId,
@@ -6126,7 +6126,7 @@ describe("gateway agent handler chat.abort integration", () => {
     expect(mocks.agentCommand).not.toHaveBeenCalled();
     expect(context.chatAbortControllers.has(runId)).toBe(false);
     const finalResponse = respond.mock.calls.find(
-      (call: unknown[]) => (call[1] as { status?: unknown } | undefined)?.status === "timeout",
+      (call: any[]) => (call[1] as { status?: any } | undefined)?.status === "timeout",
     );
     expectRecordFields(requireValue(finalResponse, "terminal response missing")[1], {
       runId,
@@ -6207,7 +6207,7 @@ describe("gateway agent handler chat.abort integration", () => {
     expect(mocks.agentCommand).not.toHaveBeenCalled();
     expect(context.chatAbortControllers.has(runId)).toBe(false);
     const finalResponse = respond.mock.calls.find(
-      (call: unknown[]) => (call[1] as { status?: unknown } | undefined)?.status === "timeout",
+      (call: any[]) => (call[1] as { status?: any } | undefined)?.status === "timeout",
     );
     expectRecordFields(requireValue(finalResponse, "terminal response missing")[1], {
       runId,
@@ -6278,7 +6278,7 @@ describe("gateway agent handler chat.abort integration", () => {
     expect(mocks.agentCommand).not.toHaveBeenCalled();
     expect(context.chatAbortControllers.has(runId)).toBe(false);
     const finalResponse = respond.mock.calls.find(
-      (call: unknown[]) => (call[1] as { status?: unknown } | undefined)?.status === "timeout",
+      (call: any[]) => (call[1] as { status?: any } | undefined)?.status === "timeout",
     );
     expectRecordFields(requireValue(finalResponse, "terminal response missing")[1], {
       runId,
@@ -6372,7 +6372,7 @@ describe("gateway agent handler chat.abort integration", () => {
     expect(mocks.agentCommand).not.toHaveBeenCalled();
     expect(context.chatAbortControllers.has(runId)).toBe(false);
     const finalResponse = respond.mock.calls.find(
-      (call: unknown[]) => (call[1] as { status?: unknown } | undefined)?.status === "timeout",
+      (call: any[]) => (call[1] as { status?: any } | undefined)?.status === "timeout",
     );
     expectRecordFields(requireValue(finalResponse, "terminal response missing")[1], {
       runId,
@@ -6480,7 +6480,7 @@ describe("gateway agent handler chat.abort integration", () => {
     expect(mocks.agentCommand).not.toHaveBeenCalled();
     expect(context.chatAbortControllers.has(runId)).toBe(false);
     const finalResponse = respond.mock.calls.find(
-      (call: unknown[]) => (call[1] as { status?: unknown } | undefined)?.status === "timeout",
+      (call: any[]) => (call[1] as { status?: any } | undefined)?.status === "timeout",
     );
     expectRecordFields(requireValue(finalResponse, "terminal response missing")[1], {
       runId,
@@ -6567,7 +6567,7 @@ describe("gateway agent handler chat.abort integration", () => {
     expect(mocks.agentCommand).not.toHaveBeenCalled();
     expect(context.chatAbortControllers.has(runId)).toBe(false);
     const finalResponse = respond.mock.calls.find(
-      (call: unknown[]) => (call[1] as { status?: unknown } | undefined)?.status === "timeout",
+      (call: any[]) => (call[1] as { status?: any } | undefined)?.status === "timeout",
     );
     expectRecordFields(requireValue(finalResponse, "terminal response missing")[1], {
       runId,
@@ -6726,7 +6726,7 @@ describe("gateway agent handler chat.abort integration", () => {
     });
     expect(
       respond.mock.calls.some(
-        (call: unknown[]) => (call[1] as { result?: unknown } | undefined)?.result !== undefined,
+        (call: any[]) => (call[1] as { result?: any } | undefined)?.result !== undefined,
       ),
     ).toBe(false);
   });
@@ -7457,7 +7457,7 @@ describe("gateway agent handler chat.abort integration", () => {
 
     expect(context.chatAbortControllers.has(runId)).toBe(false);
     expect(mocks.agentCommand).not.toHaveBeenCalled();
-    const errorCall = respond.mock.calls.find((call: unknown[]) => call[0] === false);
+    const errorCall = respond.mock.calls.find((call: any[]) => call[0] === false);
     const errorArgs = requireValue(errorCall, "error response missing");
     expectRecordFields(errorArgs[1], { runId, status: "error" });
     expectRecordFields(errorArgs[2], { code: "UNAVAILABLE" });
@@ -7559,7 +7559,7 @@ describe("gateway agent handler chat.abort integration", () => {
   });
 });
 
-function toLintErrorObject(value: unknown, fallbackMessage: string): Error {
+function toLintErrorObject(value: any, fallbackMessage: string): Error {
   if (value instanceof Error) {
     return value;
   }

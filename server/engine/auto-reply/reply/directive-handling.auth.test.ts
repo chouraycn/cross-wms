@@ -48,9 +48,9 @@ vi.mock("../../agents/auth-profiles.js", () => ({
 
 vi.mock("../../agents/model-selection.js", () => ({
   findNormalizedProviderValue: (
-    values: Record<string, unknown> | undefined,
+    values: Record<string, any> | undefined,
     provider: string,
-  ): unknown => {
+  ): any => {
     if (!values) {
       return undefined;
     }

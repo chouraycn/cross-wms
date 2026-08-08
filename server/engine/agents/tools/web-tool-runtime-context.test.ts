@@ -24,14 +24,14 @@ vi.mock("../../secrets/runtime-state.js", () => ({
   getActiveSecretsRuntimeConfigSnapshot: mocks.getActiveSecretsRuntimeConfigSnapshot,
 }));
 
-function latestOwnerLookupParams(): Record<string, unknown> {
+function latestOwnerLookupParams(): Record<string, any> {
   // Owner lookups are the evidence for whether runtime providers stay enabled
   // or a configured plugin takes over the tool call.
   const params = mocks.resolveManifestContractOwnerPluginId.mock.calls.at(-1)?.[0];
   if (!params || typeof params !== "object") {
     throw new Error("expected owner lookup params");
   }
-  return params as Record<string, unknown>;
+  return params as Record<string, any>;
 }
 
 describe("web tool runtime context", () => {

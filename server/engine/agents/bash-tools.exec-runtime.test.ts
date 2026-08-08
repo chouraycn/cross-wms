@@ -67,20 +67,20 @@ function expectExecTarget(
   expect(actual.effectiveHost).toBe(expected.effectiveHost);
 }
 
-function requireSystemEventCall(): [string, Record<string, unknown>] {
+function requireSystemEventCall(): [string, Record<string, any>] {
   const call = enqueueSystemEventMock.mock.calls[0];
   if (!call) {
     throw new Error("expected system event call");
   }
-  return call as [string, Record<string, unknown>];
+  return call as [string, Record<string, any>];
 }
 
-function requireHeartbeatCall(): Record<string, unknown> {
+function requireHeartbeatCall(): Record<string, any> {
   const call = requestHeartbeatMock.mock.calls[0];
   if (!call) {
     throw new Error("expected heartbeat call");
   }
-  return call[0] as Record<string, unknown>;
+  return call[0] as Record<string, any>;
 }
 
 describe("detectCursorKeyMode", () => {

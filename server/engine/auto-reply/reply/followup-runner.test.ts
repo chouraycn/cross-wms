@@ -79,17 +79,17 @@ function createTestUserTurnRecorder(message: PersistedUserTurnMessage) {
   });
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error(`expected ${label} to be an object`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 function requireMockCallArg(
-  mock: { mock: { calls: unknown[][] } },
+  mock: { mock: { calls: any[][] } },
   index: number,
-): Record<string, unknown> {
+): Record<string, any> {
   const call = mock.mock.calls[index];
   if (!call) {
     throw new Error(`expected mock call ${index}`);
@@ -98,9 +98,9 @@ function requireMockCallArg(
 }
 
 function requireLastMockCallArg(
-  mock: { mock: { calls: unknown[][] } },
+  mock: { mock: { calls: any[][] } },
   label: string,
-): Record<string, unknown> {
+): Record<string, any> {
   const calls = mock.mock.calls;
   const call = calls[calls.length - 1];
   if (!call) {
@@ -109,7 +109,7 @@ function requireLastMockCallArg(
   return requireRecord(call[0], `${label} mock call arg`);
 }
 
-function expectBlockReplyText(onBlockReply: { mock: { calls: unknown[][] } }, text: string): void {
+function expectBlockReplyText(onBlockReply: { mock: { calls: any[][] } }, text: string): void {
   expect(
     onBlockReply.mock.calls.some(
       (call) => requireRecord(call[0], "block reply payload").text === text,
@@ -118,7 +118,7 @@ function expectBlockReplyText(onBlockReply: { mock: { calls: unknown[][] } }, te
 }
 
 function expectNoBlockReplyText(
-  onBlockReply: { mock: { calls: unknown[][] } },
+  onBlockReply: { mock: { calls: any[][] } },
   text: string,
 ): void {
   expect(
@@ -129,7 +129,7 @@ function expectNoBlockReplyText(
 }
 
 function expectNoBlockReplyTextIncludes(
-  onBlockReply: { mock: { calls: unknown[][] } },
+  onBlockReply: { mock: { calls: any[][] } },
   fragment: string,
 ): void {
   expect(
@@ -355,7 +355,7 @@ async function loadFreshFollowupRunnerModuleForTest() {
   vi.resetModules();
   vi.doUnmock("../../config/config.js");
   vi.doMock("../../agents/model-fallback.js", () => ({
-    runWithModelFallback: (params: unknown) => runWithModelFallbackMock(params),
+    runWithModelFallback: (params: any) => runWithModelFallbackMock(params),
   }));
   vi.doMock("../../agents/session-write-lock.js", () => ({
     acquireSessionWriteLock: vi.fn(async () => ({
@@ -365,16 +365,16 @@ async function loadFreshFollowupRunnerModuleForTest() {
   }));
   vi.doMock("../../agents/embedded-agent.js", () => ({
     abortEmbeddedAgentRun: vi.fn(async () => false),
-    compactEmbeddedAgentSession: (params: unknown) => compactEmbeddedAgentSessionMock(params),
+    compactEmbeddedAgentSession: (params: any) => compactEmbeddedAgentSessionMock(params),
     isEmbeddedAgentRunActive: vi.fn(() => false),
     isEmbeddedAgentRunStreaming: vi.fn(() => false),
     queueEmbeddedAgentMessage: vi.fn(async () => undefined),
     resolveEmbeddedSessionLane: (key: string) => `session:${key.trim() || "main"}`,
-    runEmbeddedAgent: (params: unknown) => runEmbeddedAgentMock(params),
+    runEmbeddedAgent: (params: any) => runEmbeddedAgentMock(params),
     waitForEmbeddedAgentRunEnd: vi.fn(async () => undefined),
   }));
   vi.doMock("../../agents/cli-runner.js", () => ({
-    runCliAgent: (params: unknown) => runCliAgentMock(params),
+    runCliAgent: (params: any) => runCliAgentMock(params),
   }));
   vi.doMock("./queue.js", () => ({
     clearFollowupQueue: clearFollowupQueueForFollowupTest,
@@ -391,15 +391,15 @@ async function loadFreshFollowupRunnerModuleForTest() {
   }));
   vi.doMock("./agent-runner-memory.js", () => ({
     runMemoryFlushIfNeeded: async (params: { sessionEntry?: SessionEntry }) => params.sessionEntry,
-    runPreflightCompactionIfNeeded: (...args: unknown[]) =>
+    runPreflightCompactionIfNeeded: (...args: any[]) =>
       runPreflightCompactionIfNeededMock(...args),
   }));
   vi.doMock("./route-reply.js", () => ({
-    isRoutableChannel: (...args: unknown[]) => isRoutableChannelMock(...args),
-    routeReply: (...args: unknown[]) => routeReplyMock(...args),
+    isRoutableChannel: (...args: any[]) => isRoutableChannelMock(...args),
+    routeReply: (...args: any[]) => routeReplyMock(...args),
   }));
   vi.doMock("./reply-payload-sending-hook.js", () => ({
-    runReplyPayloadSendingHook: (...args: unknown[]) => runReplyPayloadSendingHookMock(...args),
+    runReplyPayloadSendingHook: (...args: any[]) => runReplyPayloadSendingHookMock(...args),
   }));
   vi.doMock("../../plugins/provider-runtime.js", async () => {
     const actual = await vi.importActual<typeof import("../../plugins/provider-runtime.js")>(
@@ -407,7 +407,7 @@ async function loadFreshFollowupRunnerModuleForTest() {
     );
     return {
       ...actual,
-      resolveProviderFollowupFallbackRoute: (...args: unknown[]) =>
+      resolveProviderFollowupFallbackRoute: (...args: any[]) =>
         resolveProviderFollowupFallbackRouteMock(...args),
     };
   });
@@ -427,7 +427,7 @@ async function loadFreshFollowupRunnerModuleForTest() {
     };
   });
   vi.doMock("../../cli/command-secret-gateway.js", () => ({
-    resolveCommandSecretRefsViaGateway: (...args: unknown[]) =>
+    resolveCommandSecretRefsViaGateway: (...args: any[]) =>
       resolveCommandSecretRefsViaGatewayMock(...args),
   }));
   vi.doMock("../../cli/command-secret-targets.js", () => ({
@@ -527,7 +527,7 @@ beforeEach(() => {
         provider: string,
         model: string,
         options?: { allowTransientCooldownProbe?: boolean },
-      ) => Promise<unknown>;
+      ) => Promise<any>;
     }) => ({
       result: await params.run(params.provider, params.model),
       provider: params.provider,
@@ -539,7 +539,7 @@ beforeEach(() => {
   resolveCommandSecretRefsViaGatewayMock.mockReset();
   runReplyPayloadSendingHookMock.mockReset();
   runReplyPayloadSendingHookMock.mockImplementation(
-    async (params: { payload: unknown }) => params.payload,
+    async (params: { payload: any }) => params.payload,
   );
   resolveQueuedReplyExecutionConfigMock.mockReset();
   resolveProviderFollowupFallbackRouteMock.mockReset();
@@ -586,8 +586,8 @@ afterEach(() => {
     return;
   }
   const processWithDebugHandles = process as NodeJS.Process & {
-    _getActiveHandles?: () => unknown[];
-    _getActiveRequests?: () => unknown[];
+    _getActiveHandles?: () => any[];
+    _getActiveRequests?: () => any[];
   };
   const handles = processWithDebugHandles["_getActiveHandles"]?.().map(
     (handle) => handle?.constructor?.name ?? typeof handle,
@@ -881,12 +881,12 @@ function mockCompactionRun(params: {
   willRetry: boolean;
   result: {
     payloads: Array<{ text: string }>;
-    meta: Record<string, unknown>;
+    meta: Record<string, any>;
   };
 }) {
   runEmbeddedAgentMock.mockImplementationOnce(
     async (args: {
-      onAgentEvent?: (evt: { stream: string; data: Record<string, unknown> }) => void;
+      onAgentEvent?: (evt: { stream: string; data: Record<string, any> }) => void;
     }) => {
       args.onAgentEvent?.({
         stream: "compaction",
@@ -1588,7 +1588,7 @@ describe("createFollowupRunner runtime config", () => {
       },
     };
     runWithModelFallbackMock.mockImplementationOnce(
-      async (params: { run: (provider: string, model: string) => Promise<unknown> }) => {
+      async (params: { run: (provider: string, model: string) => Promise<any> }) => {
         await expect(params.run("anthropic", "claude-opus-4-7")).rejects.toThrow("cli failed");
         return {
           result: await params.run("openai", "gpt-5.4"),
@@ -1602,7 +1602,7 @@ describe("createFollowupRunner runtime config", () => {
       async (params: {
         runId: string;
         deferTerminalLifecycle?: boolean;
-        onAgentEvent?: (evt: { stream: string; data: Record<string, unknown> }) => Promise<void>;
+        onAgentEvent?: (evt: { stream: string; data: Record<string, any> }) => Promise<void>;
       }) => {
         expect(params.deferTerminalLifecycle).toBe(true);
         const startedAt = Date.now();
@@ -1666,14 +1666,14 @@ describe("createFollowupRunner runtime config", () => {
     const realAgentEvents = await vi.importActual<typeof import("../../infra/agent-events.js")>(
       "../../infra/agent-events.js",
     );
-    const lifecycleEvents: Array<Record<string, unknown>> = [];
+    const lifecycleEvents: Array<Record<string, any>> = [];
     const unsubscribe = realAgentEvents.onAgentEvent((evt) => {
       if (evt.stream === "lifecycle") {
         lifecycleEvents.push(evt.data);
       }
     });
     runWithModelFallbackMock.mockImplementationOnce(
-      async (params: { run: (provider: string, model: string) => Promise<unknown> }) => ({
+      async (params: { run: (provider: string, model: string) => Promise<any> }) => ({
         outcome: "exhausted",
         result: await params.run("anthropic", "claude-opus-4-7"),
         provider: "anthropic",
@@ -1683,7 +1683,7 @@ describe("createFollowupRunner runtime config", () => {
     runEmbeddedAgentMock.mockImplementationOnce(
       async (params: {
         deferTerminalLifecycle?: boolean;
-        onAgentEvent?: (evt: { stream: string; data: Record<string, unknown> }) => Promise<void>;
+        onAgentEvent?: (evt: { stream: string; data: Record<string, any> }) => Promise<void>;
       }) => {
         expect(params.deferTerminalLifecycle).toBe(true);
         await params.onAgentEvent?.({
@@ -1762,14 +1762,14 @@ describe("createFollowupRunner runtime config", () => {
     const realAgentEvents = await vi.importActual<typeof import("../../infra/agent-events.js")>(
       "../../infra/agent-events.js",
     );
-    const lifecycleEvents: Array<Record<string, unknown>> = [];
+    const lifecycleEvents: Array<Record<string, any>> = [];
     const unsubscribe = realAgentEvents.onAgentEvent((evt) => {
       if (evt.stream === "lifecycle") {
         lifecycleEvents.push(evt.data);
       }
     });
     runWithModelFallbackMock.mockImplementationOnce(
-      async (params: { run: (provider: string, model: string) => Promise<unknown> }) => ({
+      async (params: { run: (provider: string, model: string) => Promise<any> }) => ({
         outcome: "completed",
         result: await params.run("anthropic", "claude-opus-4-7"),
         provider: "anthropic",
@@ -1778,7 +1778,7 @@ describe("createFollowupRunner runtime config", () => {
     );
     runEmbeddedAgentMock.mockImplementationOnce(
       async (params: {
-        onAgentEvent?: (evt: { stream: string; data: Record<string, unknown> }) => Promise<void>;
+        onAgentEvent?: (evt: { stream: string; data: Record<string, any> }) => Promise<void>;
       }) => {
         await params.onAgentEvent?.({
           stream: "lifecycle",
@@ -1865,7 +1865,7 @@ describe("createFollowupRunner runtime config", () => {
     const realAgentEvents = await vi.importActual<typeof import("../../infra/agent-events.js")>(
       "../../infra/agent-events.js",
     );
-    const lifecycleEvents: Array<Record<string, unknown>> = [];
+    const lifecycleEvents: Array<Record<string, any>> = [];
     const unsubscribe = realAgentEvents.onAgentEvent((evt) => {
       if (evt.stream === "lifecycle") {
         lifecycleEvents.push(evt.data);
@@ -2297,7 +2297,7 @@ describe("createFollowupRunner progress forwarding", () => {
 
     runEmbeddedAgentMock.mockImplementationOnce(
       async (args: {
-        onAgentEvent?: (evt: { stream: string; data: Record<string, unknown> }) => Promise<void>;
+        onAgentEvent?: (evt: { stream: string; data: Record<string, any> }) => Promise<void>;
         onToolResult?: (payload: { text: string }) => Promise<void>;
         shouldEmitToolResult?: () => boolean;
         shouldEmitToolOutput?: () => boolean;
@@ -2428,7 +2428,7 @@ describe("createFollowupRunner progress forwarding", () => {
 
     runEmbeddedAgentMock.mockImplementationOnce(
       async (args: {
-        onAgentEvent?: (evt: { stream: string; data: Record<string, unknown> }) => Promise<void>;
+        onAgentEvent?: (evt: { stream: string; data: Record<string, any> }) => Promise<void>;
         onToolResult?: (payload: { text: string }) => Promise<void>;
         shouldEmitToolResult?: () => boolean;
         shouldEmitToolOutput?: () => boolean;
@@ -2525,7 +2525,7 @@ describe("createFollowupRunner progress forwarding", () => {
 
     runEmbeddedAgentMock.mockImplementationOnce(
       async (args: {
-        onAgentEvent?: (evt: { stream: string; data: Record<string, unknown> }) => Promise<void>;
+        onAgentEvent?: (evt: { stream: string; data: Record<string, any> }) => Promise<void>;
       }) => {
         await args.onAgentEvent?.({
           stream: "tool",
@@ -2583,7 +2583,7 @@ describe("createFollowupRunner progress forwarding", () => {
 
     runEmbeddedAgentMock.mockImplementationOnce(
       async (args: {
-        onAgentEvent?: (evt: { stream: string; data: Record<string, unknown> }) => Promise<void>;
+        onAgentEvent?: (evt: { stream: string; data: Record<string, any> }) => Promise<void>;
       }) => {
         await args.onAgentEvent?.({
           stream: "tool",
@@ -2637,7 +2637,7 @@ describe("createFollowupRunner progress forwarding", () => {
 
     runEmbeddedAgentMock.mockImplementationOnce(
       async (args: {
-        onAgentEvent?: (evt: { stream: string; data: Record<string, unknown> }) => Promise<void>;
+        onAgentEvent?: (evt: { stream: string; data: Record<string, any> }) => Promise<void>;
       }) => {
         await args.onAgentEvent?.({
           stream: "tool",
@@ -2702,7 +2702,7 @@ describe("createFollowupRunner progress forwarding", () => {
 
     runEmbeddedAgentMock.mockImplementationOnce(
       async (args: {
-        onAgentEvent?: (evt: { stream: string; data: Record<string, unknown> }) => Promise<void>;
+        onAgentEvent?: (evt: { stream: string; data: Record<string, any> }) => Promise<void>;
         shouldEmitToolResult?: () => boolean;
         shouldEmitToolOutput?: () => boolean;
       }) => {
@@ -2764,7 +2764,7 @@ describe("createFollowupRunner progress forwarding", () => {
 
     runEmbeddedAgentMock.mockImplementationOnce(
       async (args: {
-        onAgentEvent?: (evt: { stream: string; data: Record<string, unknown> }) => Promise<void>;
+        onAgentEvent?: (evt: { stream: string; data: Record<string, any> }) => Promise<void>;
       }) => {
         await args.onAgentEvent?.({
           stream: "tool",
@@ -2820,7 +2820,7 @@ describe("createFollowupRunner progress forwarding", () => {
 
     runEmbeddedAgentMock.mockImplementationOnce(
       async (args: {
-        onAgentEvent?: (evt: { stream: string; data: Record<string, unknown> }) => Promise<void>;
+        onAgentEvent?: (evt: { stream: string; data: Record<string, any> }) => Promise<void>;
         onToolResult?: (payload: { text: string }) => Promise<void>;
         shouldEmitToolResult?: () => boolean;
         shouldEmitToolOutput?: () => boolean;
@@ -2868,7 +2868,7 @@ describe("createFollowupRunner progress forwarding", () => {
     runEmbeddedAgentMock
       .mockImplementationOnce(
         async (args: {
-          onAgentEvent?: (evt: { stream: string; data: Record<string, unknown> }) => Promise<void>;
+          onAgentEvent?: (evt: { stream: string; data: Record<string, any> }) => Promise<void>;
           suppressToolErrorWarnings?: boolean | (() => boolean | undefined);
         }) => {
           const shouldSuppress = args.suppressToolErrorWarnings as () => boolean | undefined;
@@ -2928,7 +2928,7 @@ describe("createFollowupRunner progress forwarding", () => {
 
     runEmbeddedAgentMock.mockImplementationOnce(
       async (args: {
-        onAgentEvent?: (evt: { stream: string; data: Record<string, unknown> }) => Promise<void>;
+        onAgentEvent?: (evt: { stream: string; data: Record<string, any> }) => Promise<void>;
         suppressToolErrorWarnings?: boolean | (() => boolean | undefined);
       }) => {
         const shouldSuppress = args.suppressToolErrorWarnings as () => boolean | undefined;
@@ -2970,7 +2970,7 @@ describe("createFollowupRunner progress forwarding", () => {
   it("keeps queued tool-error fallbacks when failed progress has no callback", async () => {
     runEmbeddedAgentMock.mockImplementationOnce(
       async (args: {
-        onAgentEvent?: (evt: { stream: string; data: Record<string, unknown> }) => Promise<void>;
+        onAgentEvent?: (evt: { stream: string; data: Record<string, any> }) => Promise<void>;
         suppressToolErrorWarnings?: boolean | (() => boolean | undefined);
       }) => {
         const shouldSuppress = args.suppressToolErrorWarnings as () => boolean | undefined;
@@ -3017,7 +3017,7 @@ describe("createFollowupRunner progress forwarding", () => {
 
     runEmbeddedAgentMock.mockImplementationOnce(
       async (args: {
-        onAgentEvent?: (evt: { stream: string; data: Record<string, unknown> }) => Promise<void>;
+        onAgentEvent?: (evt: { stream: string; data: Record<string, any> }) => Promise<void>;
         shouldEmitToolResult?: () => boolean;
       }) => {
         expect(args.shouldEmitToolResult?.()).toBe(false);
@@ -3654,7 +3654,7 @@ describe("createFollowupRunner bootstrap warning dedupe", () => {
 
 describe("createFollowupRunner messaging delivery and dedupe", () => {
   function createMessagingDedupeRunner(
-    onBlockReply: (payload: unknown) => Promise<void>,
+    onBlockReply: (payload: any) => Promise<void>,
     overrides: Partial<{
       sessionEntry: SessionEntry;
       sessionStore: Record<string, SessionEntry>;
@@ -3678,7 +3678,7 @@ describe("createFollowupRunner messaging delivery and dedupe", () => {
   }
 
   async function runMessagingCase(params: {
-    agentResult: Record<string, unknown>;
+    agentResult: Record<string, any>;
     queued?: FollowupRun;
     runnerOverrides?: Partial<{
       sessionEntry: SessionEntry;
@@ -3697,7 +3697,7 @@ describe("createFollowupRunner messaging delivery and dedupe", () => {
     return { onBlockReply };
   }
 
-  function makeTextReplyDedupeResult(overrides?: Record<string, unknown>) {
+  function makeTextReplyDedupeResult(overrides?: Record<string, any>) {
     return {
       payloads: [{ text: "hello world!" }],
       messagingToolSentTexts: ["different message"],
@@ -4305,7 +4305,7 @@ describe("createFollowupRunner messaging delivery and dedupe", () => {
   it("routes queued compaction hook messages alongside notifyUser notices (#90185)", async () => {
     runEmbeddedAgentMock.mockImplementationOnce(
       async (args: {
-        onAgentEvent?: (evt: { stream: string; data: Record<string, unknown> }) => Promise<void>;
+        onAgentEvent?: (evt: { stream: string; data: Record<string, any> }) => Promise<void>;
       }) => {
         await args.onAgentEvent?.({
           stream: "compaction",
@@ -4419,7 +4419,7 @@ describe("createFollowupRunner messaging delivery and dedupe", () => {
   it("plans queued compaction notices with the active fallback candidate", async () => {
     runWithModelFallbackMock.mockImplementationOnce(
       async (params: {
-        run: (provider: string, model: string) => Promise<{ payloads: unknown[]; meta: object }>;
+        run: (provider: string, model: string) => Promise<{ payloads: any[]; meta: object }>;
       }) => ({
         result: await params.run("google", "gemini-2.5-flash"),
         provider: "google",
@@ -4428,7 +4428,7 @@ describe("createFollowupRunner messaging delivery and dedupe", () => {
     );
     runEmbeddedAgentMock.mockImplementationOnce(
       async (args: {
-        onAgentEvent?: (evt: { stream: string; data: Record<string, unknown> }) => Promise<void>;
+        onAgentEvent?: (evt: { stream: string; data: Record<string, any> }) => Promise<void>;
       }) => {
         await args.onAgentEvent?.({ stream: "compaction", data: { phase: "start" } });
         return { payloads: [], meta: {} };
@@ -4467,7 +4467,7 @@ describe("createFollowupRunner messaging delivery and dedupe", () => {
   it("suppresses queued compaction completion notices while compaction will retry", async () => {
     runEmbeddedAgentMock.mockImplementationOnce(
       async (args: {
-        onAgentEvent?: (evt: { stream: string; data: Record<string, unknown> }) => Promise<void>;
+        onAgentEvent?: (evt: { stream: string; data: Record<string, any> }) => Promise<void>;
       }) => {
         await args.onAgentEvent?.({
           stream: "compaction",
@@ -4507,7 +4507,7 @@ describe("createFollowupRunner messaging delivery and dedupe", () => {
 });
 
 describe("createFollowupRunner typing cleanup", () => {
-  async function runTypingCase(agentResult: Record<string, unknown>) {
+  async function runTypingCase(agentResult: Record<string, any>) {
     const typing = createMockTypingController();
     runEmbeddedAgentMock.mockResolvedValueOnce({
       meta: {},
@@ -4614,7 +4614,7 @@ describe("createFollowupRunner queued user message idempotency across fallback",
     runEmbeddedAgentMock.mockClear();
     runWithModelFallbackMock.mockReset();
     runWithModelFallbackMock.mockImplementationOnce(
-      async (params: { run: (provider: string, model: string) => Promise<unknown> }) => {
+      async (params: { run: (provider: string, model: string) => Promise<any> }) => {
         await expect(params.run("anthropic", "claude-opus-4-7")).rejects.toThrow("upstream 500");
         return {
           result: await params.run("openai", "gpt-5.4"),
@@ -4669,7 +4669,7 @@ describe("createFollowupRunner queued user message idempotency across fallback",
     runEmbeddedAgentMock.mockClear();
     runWithModelFallbackMock.mockReset();
     runWithModelFallbackMock.mockImplementationOnce(
-      async (params: { run: (provider: string, model: string) => Promise<unknown> }) => {
+      async (params: { run: (provider: string, model: string) => Promise<any> }) => {
         await expect(params.run("anthropic", "claude-opus-4-7")).rejects.toThrow("upstream 500");
         await expect(params.run("anthropic", "claude-opus-4-6")).rejects.toThrow("upstream 500");
         return {
@@ -4729,7 +4729,7 @@ describe("createFollowupRunner queued user message idempotency across fallback",
     runEmbeddedAgentMock.mockClear();
     runWithModelFallbackMock.mockReset();
     runWithModelFallbackMock.mockImplementationOnce(
-      async (params: { run: (provider: string, model: string) => Promise<unknown> }) => {
+      async (params: { run: (provider: string, model: string) => Promise<any> }) => {
         await expect(params.run("anthropic", "claude-opus-4-7")).rejects.toThrow("upstream early");
         return {
           result: await params.run("openai", "gpt-5.4"),

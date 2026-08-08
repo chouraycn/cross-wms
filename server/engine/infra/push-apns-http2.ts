@@ -26,7 +26,7 @@ const APNS_HTTP2_MIN_TIMEOUT_MS = 1000;
 // ============================================================================
 
 /** 受管代理 TLS 选项（降级类型） */
-export type ManagedProxyTlsOptions = Record<string, unknown>;
+export type ManagedProxyTlsOptions = Record<string, any>;
 
 /** 活动受管代理 URL（降级类型） */
 export type ActiveManagedProxyUrl = URL;
@@ -114,7 +114,7 @@ export function createApnsResponseBodyCapture(): ApnsResponseBodyCapture {
 
 export function appendApnsResponseBodyCapture(
   capture: ApnsResponseBodyCapture,
-  chunk: unknown,
+  chunk: any,
   maxBytes = APNS_RESPONSE_BODY_MAX_BYTES,
 ): void {
   const buffer = Buffer.from(String(chunk));

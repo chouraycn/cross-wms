@@ -92,7 +92,7 @@ export function splitAnthropicSystemMessages(
 export const buildAnthropicRequestBody: ProviderRequestBodyBuilder = (ctx) => {
   const { model, options } = ctx;
   const { system, messages } = splitAnthropicSystemMessages(options.messages);
-  const body: Record<string, unknown> = {
+  const body: Record<string, any> = {
     model: model.id,
     max_tokens: options.maxTokens ?? model.maxOutputTokens ?? 4096,
     messages,

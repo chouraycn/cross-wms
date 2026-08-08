@@ -18,6 +18,6 @@ export type SessionStats = unknown;
 export class AgentSession {
   // Stub: not fully ported
 }
-export function parseSkillBlock(..._args: unknown[]): unknown {
+export function parseSkillBlock(..._args: any[]): any {
   return undefined;
 }

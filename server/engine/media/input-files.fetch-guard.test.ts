@@ -6,15 +6,15 @@ const convertHeicToJpegMock = vi.fn();
 const detectMimeMock = vi.fn();
 
 vi.mock("../infra/net/fetch-guard.js", () => ({
-  fetchWithSsrFGuard: (...args: unknown[]) => fetchWithSsrFGuardMock(...args),
+  fetchWithSsrFGuard: (...args: any[]) => fetchWithSsrFGuardMock(...args),
 }));
 
 vi.mock("./media-services.js", () => ({
-  convertHeicToJpeg: (...args: unknown[]) => convertHeicToJpegMock(...args),
+  convertHeicToJpeg: (...args: any[]) => convertHeicToJpegMock(...args),
 }));
 
 vi.mock("@openclaw/media-core/mime", () => ({
-  detectMime: (...args: unknown[]) => detectMimeMock(...args),
+  detectMime: (...args: any[]) => detectMimeMock(...args),
 }));
 
 async function waitForMicrotaskTurn(): Promise<void> {
@@ -473,7 +473,7 @@ describe("base64 size guards", () => {
     await expect(testCase.run(data)).rejects.toThrow(testCase.expectedError);
 
     // Regression check: oversize reject happens before Buffer.from(..., "base64") allocates.
-    const base64Calls = fromSpy.mock.calls.filter((args) => (args as unknown[])[1] === "base64");
+    const base64Calls = fromSpy.mock.calls.filter((args) => (args as any[])[1] === "base64");
     expect(base64Calls).toHaveLength(0);
     fromSpy.mockRestore();
   });

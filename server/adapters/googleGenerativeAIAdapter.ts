@@ -17,8 +17,8 @@ import { logger } from '../logger.js';
 interface GooglePart {
   text?: string;
   inlineData?: { mimeType: string; data: string };
-  functionCall?: { name: string; args: Record<string, unknown> };
-  functionResponse?: { name: string; response: Record<string, unknown> };
+  functionCall?: { name: string; args: Record<string, any> };
+  functionResponse?: { name: string; response: Record<string, any> };
 }
 
 interface GoogleContent {
@@ -131,7 +131,7 @@ function convertToolsToGoogle(tools: ToolDefinition[]): Array<{
   functionDeclarations: Array<{
     name: string;
     description: string;
-    parameters: Record<string, unknown>;
+    parameters: Record<string, any>;
   }>;
 }> {
   return [{
@@ -196,7 +196,7 @@ export class GoogleGenerativeAIAdapter implements IAiApiAdapter {
       Object.assign(headers, compat.extraHeaders);
     }
 
-    const body: Record<string, unknown> = {
+    const body: Record<string, any> = {
       contents,
       generationConfig: {
         temperature,
@@ -221,7 +221,7 @@ export class GoogleGenerativeAIAdapter implements IAiApiAdapter {
     const supportsReasoning = compat?.supportsReasoning ?? capabilities?.includes('reasoning');
     if (supportsReasoning && isThinkingEnabled(thinkingLevel)) {
       const level = thinkingLevel!.toLowerCase().trim();
-      let thinkingConfig: Record<string, unknown> = {};
+      let thinkingConfig: Record<string, any> = {};
 
       if (level.includes('max') || level.includes('xhigh')) {
         thinkingConfig = { thinkingBudget: 'extended' };
@@ -234,7 +234,7 @@ export class GoogleGenerativeAIAdapter implements IAiApiAdapter {
       }
 
       if (Object.keys(thinkingConfig).length > 0) {
-        (body.generationConfig as Record<string, unknown>).thinkingConfig = thinkingConfig;
+        (body.generationConfig as Record<string, any>).thinkingConfig = thinkingConfig;
       }
     }
 

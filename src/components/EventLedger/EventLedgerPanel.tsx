@@ -74,7 +74,7 @@ interface SessionListItem {
   eventCount: number;
   status: string;
   lastEventType?: string;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
 }
 
 /* ------------------------------------------------------------------ */

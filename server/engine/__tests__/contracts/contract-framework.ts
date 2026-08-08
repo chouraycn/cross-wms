@@ -12,8 +12,8 @@ export interface ContractInterface {
 
 export interface ContractMethod {
   name: string;
-  inputSchema: Record<string, unknown>;
-  outputSchema: Record<string, unknown>;
+  inputSchema: Record<string, any>;
+  outputSchema: Record<string, any>;
   errors?: ContractError[];
 }
 
@@ -33,7 +33,7 @@ export interface ContractTestError {
   interfaceName: string;
   methodName: string;
   error: string;
-  details?: Record<string, unknown>;
+  details?: Record<string, any>;
 }
 
 export class ContractValidator {
@@ -119,7 +119,7 @@ export class ContractValidator {
 
   validateImplementation(
     spec: ContractSpecification,
-    implementation: Record<string, unknown>,
+    implementation: Record<string, any>,
   ): ContractTestResult {
     const errors: ContractTestError[] = [];
     const warnings: string[] = [];
@@ -136,7 +136,7 @@ export class ContractValidator {
       }
 
       for (const method of iface.methods) {
-        const methodImpl = (ifaceImpl as Record<string, unknown>)[method.name];
+        const methodImpl = (ifaceImpl as Record<string, any>)[method.name];
         if (!methodImpl) {
           errors.push({
             interfaceName: iface.name,
@@ -180,7 +180,7 @@ export class ContractTestRunner {
 
   runImplementationTests(
     specs: ContractSpecification[],
-    implementations: Record<string, Record<string, unknown>>,
+    implementations: Record<string, Record<string, any>>,
   ): ContractTestResult[] {
     const results: ContractTestResult[] = [];
 
@@ -207,7 +207,7 @@ export class ContractTestRunner {
 
   runAllTests(
     specs: ContractSpecification[],
-    implementations: Record<string, Record<string, unknown>>,
+    implementations: Record<string, Record<string, any>>,
   ): { specResults: ContractTestResult[]; implResults: ContractTestResult[] } {
     return {
       specResults: this.runSpecificationTests(specs),
@@ -231,7 +231,7 @@ export function createInterface(name: string, methods: ContractMethod[]): Contra
   };
 }
 
-export function createMethod(name: string, inputSchema: Record<string, unknown>, outputSchema: Record<string, unknown>): ContractMethod {
+export function createMethod(name: string, inputSchema: Record<string, any>, outputSchema: Record<string, any>): ContractMethod {
   return {
     name,
     inputSchema,

@@ -142,10 +142,10 @@ function deepMergeSettings(base: Settings, overrides: Settings): Settings {
       baseValue !== null &&
       !Array.isArray(baseValue)
     ) {
-      (result as Record<string, unknown>)[key] = { ...baseValue, ...overrideValue };
+      (result as Record<string, any>)[key] = { ...baseValue, ...overrideValue };
     } else {
       // For primitives and arrays, override value wins
-      (result as Record<string, unknown>)[key] = overrideValue;
+      (result as Record<string, any>)[key] = overrideValue;
     }
   }
 
@@ -175,7 +175,7 @@ export class FileSettingsStorage implements SettingsStorage {
   private acquireLockSyncWithRetry(path: string): () => void {
     const maxAttempts = 10;
     const delayMs = 20;
-    let lastError: unknown;
+    let lastError: any;
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
@@ -183,7 +183,7 @@ export class FileSettingsStorage implements SettingsStorage {
       } catch (error) {
         const code =
           typeof error === "object" && error !== null && "code" in error
-            ? String((error as { code?: unknown }).code)
+            ? String((error as { code?: any }).code)
             : undefined;
         if (code !== "ELOCKED" || attempt === maxAttempts) {
           throw error;
@@ -310,7 +310,7 @@ export class SettingsManager {
   static inMemory(settings: Partial<Settings> = {}): SettingsManager {
     const storage = new InMemorySettingsStorage();
     const initialSettings = SettingsManager.migrateSettings(
-      structuredClone(settings) as Record<string, unknown>,
+      structuredClone(settings) as Record<string, any>,
     );
     storage.withLock("global", () => JSON.stringify(initialSettings, null, 2));
     return SettingsManager.fromStorage(storage);
@@ -342,7 +342,7 @@ export class SettingsManager {
   }
 
   /** Migrate old settings format to new format */
-  private static migrateSettings(settings: Record<string, unknown>): Settings {
+  private static migrateSettings(settings: Record<string, any>): Settings {
     // Migrate queueMode -> steeringMode
     if ("queueMode" in settings && !("steeringMode" in settings)) {
       settings.steeringMode = settings.queueMode;
@@ -364,7 +364,7 @@ export class SettingsManager {
     ) {
       const skillsSettings = settings.skills as {
         enableSkillCommands?: boolean;
-        customDirectories?: unknown;
+        customDirectories?: any;
       };
       if (
         skillsSettings.enableSkillCommands !== undefined &&
@@ -389,10 +389,10 @@ export class SettingsManager {
       settings.retry !== null &&
       !Array.isArray(settings.retry)
     ) {
-      const retrySettings = settings.retry as Record<string, unknown>;
+      const retrySettings = settings.retry as Record<string, any>;
       const providerSettings =
         typeof retrySettings.provider === "object" && retrySettings.provider !== null
-          ? (retrySettings.provider as Record<string, unknown>)
+          ? (retrySettings.provider as Record<string, any>)
           : undefined;
       if (
         typeof retrySettings.maxDelayMs === "number" &&
@@ -473,7 +473,7 @@ export class SettingsManager {
     }
   }
 
-  private recordError(scope: SettingsScope, error: unknown): void {
+  private recordError(scope: SettingsScope, error: any): void {
     const normalizedError = error instanceof Error ? error : new Error(String(error));
     this.errors.push({ scope, error: normalizedError });
   }
@@ -495,7 +495,7 @@ export class SettingsManager {
         task();
         this.clearModifiedScope(scope);
       })
-      .catch((error: unknown) => {
+      .catch((error: any) => {
         this.recordError(scope, error);
       });
   }
@@ -518,22 +518,22 @@ export class SettingsManager {
   ): void {
     this.storage.withLock(scope, (current) => {
       const currentFileSettings = current
-        ? SettingsManager.migrateSettings(JSON.parse(current) as Record<string, unknown>)
+        ? SettingsManager.migrateSettings(JSON.parse(current) as Record<string, any>)
         : {};
       const mergedSettings: Settings = { ...currentFileSettings };
       for (const field of modifiedFields) {
         const value = snapshotSettings[field];
         if (modifiedNestedFields.has(field) && typeof value === "object" && value !== null) {
           const nestedModified = modifiedNestedFields.get(field)!;
-          const baseNested = (currentFileSettings[field] as Record<string, unknown>) ?? {};
-          const inMemoryNested = value as Record<string, unknown>;
+          const baseNested = (currentFileSettings[field] as Record<string, any>) ?? {};
+          const inMemoryNested = value as Record<string, any>;
           const mergedNested = { ...baseNested };
           for (const nestedKey of nestedModified) {
             mergedNested[nestedKey] = inMemoryNested[nestedKey];
           }
-          (mergedSettings as Record<string, unknown>)[field] = mergedNested;
+          (mergedSettings as Record<string, any>)[field] = mergedNested;
         } else {
-          (mergedSettings as Record<string, unknown>)[field] = value;
+          (mergedSettings as Record<string, any>)[field] = value;
         }
       }
 

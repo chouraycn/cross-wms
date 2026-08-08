@@ -70,7 +70,7 @@ function logDebug(_message: string): void {
 
 /** Reads a string param from a params record. */
 function readStringParam(
-  params: Record<string, unknown>,
+  params: Record<string, any>,
   key: string,
   options?: { required?: boolean; trim?: boolean },
 ): string {
@@ -86,7 +86,7 @@ function readStringParam(
 
 /** Reads a positive integer param from a params record. */
 function readPositiveIntegerParam(
-  params: Record<string, unknown>,
+  params: Record<string, any>,
   key: string,
 ): number | undefined {
   const value = params[key];
@@ -98,7 +98,7 @@ function readPositiveIntegerParam(
 
 /** Schedules a tool progress callback after a delay; returns a clear function. */
 function scheduleToolProgress(
-  onUpdate: ((result: AgentToolResult<unknown>) => void) | undefined,
+  onUpdate: ((result: AgentToolResult<any>) => void) | undefined,
   progress: { text: string; id?: string },
   thresholdMs: number,
   options?: { signal?: AbortSignal },
@@ -137,7 +137,7 @@ function scheduleToolProgress(
 }
 
 /** Serializes a payload as a JSON text content block. */
-function jsonResult(payload: unknown): AgentToolResult<unknown> {
+function jsonResult(payload: any): AgentToolResult<any> {
   return {
     content: [
       {
@@ -156,7 +156,7 @@ type WebFetchProviderFallback = {
       url: string;
       extractMode: ExtractMode;
       maxChars: number;
-    }) => Promise<unknown>;
+    }) => Promise<any>;
   };
 } | null;
 
@@ -181,7 +181,7 @@ function resolveWebFetchDefinition(_params: {
 function resolveWebProviderConfig(
   _config: OpenClawConfig | undefined,
   _kind: "fetch" | "search",
-): Record<string, unknown> | undefined {
+): Record<string, any> | undefined {
   return undefined;
 }
 
@@ -199,7 +199,7 @@ const DEFAULT_ERROR_MAX_BYTES = 64_000;
 const DEFAULT_FETCH_USER_AGENT =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_7_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36";
 
-const FETCH_CACHE = new Map<string, CacheEntry<Record<string, unknown>>>();
+const FETCH_CACHE = new Map<string, CacheEntry<Record<string, any>>>();
 
 const WebFetchSchema = Type.Object({
   url: Type.String({ description: "HTTP(S) URL." }),
@@ -295,13 +295,13 @@ function resolveFetchMaxResponseBytes(fetch?: WebFetchConfig): number {
   return Math.min(FETCH_MAX_RESPONSE_BYTES_MAX, Math.max(FETCH_MAX_RESPONSE_BYTES_MIN, value));
 }
 
-function resolveMaxChars(value: unknown, fallback: number, cap: number): number {
+function resolveMaxChars(value: any, fallback: number, cap: number): number {
   const parsed = typeof value === "number" && Number.isFinite(value) ? value : fallback;
   const clamped = Math.max(100, Math.floor(parsed));
   return Math.min(clamped, cap);
 }
 
-function resolveMaxRedirects(value: unknown, fallback: number): number {
+function resolveMaxRedirects(value: any, fallback: number): number {
   const parsed = typeof value === "number" && Number.isFinite(value) ? value : fallback;
   return Math.max(0, Math.floor(parsed));
 }
@@ -350,7 +350,7 @@ const WEB_FETCH_WRAPPER_NO_WARNING_OVERHEAD = wrapExternalContent("", {
   includeWarning: false,
 }).length;
 
-function formatTerminalWebFetchOrigin(value: unknown): string | undefined {
+function formatTerminalWebFetchOrigin(value: any): string | undefined {
   if (typeof value !== "string" || !value.trim()) {
     return undefined;
   }
@@ -362,7 +362,7 @@ function formatTerminalWebFetchOrigin(value: unknown): string | undefined {
   }
 }
 
-function formatWebFetchTerminalPresentation(result: unknown): { text: string } | undefined {
+function formatWebFetchTerminalPresentation(result: any): { text: string } | undefined {
   if (!isRecord(result) || !isRecord(result.details)) {
     return undefined;
   }
@@ -475,7 +475,7 @@ type WebFetchRuntimeParams = {
   resolveProviderFallback: () => Promise<WebFetchProviderFallback>;
 };
 
-function normalizeProviderFinalUrl(value: unknown): string | undefined {
+function normalizeProviderFinalUrl(value: any): string | undefined {
   const trimmed = normalizeOptionalString(value);
   if (!trimmed) {
     return undefined;
@@ -526,12 +526,12 @@ export function sanitizeWebFetchUrl(raw: string): string {
 
 function normalizeProviderWebFetchPayload(params: {
   providerId: string;
-  payload: unknown;
+  payload: any;
   requestedUrl: string;
   extractMode: ExtractMode;
   maxChars: number;
   tookMs: number;
-}): Record<string, unknown> {
+}): Record<string, any> {
   const payload = isRecord(params.payload) ? params.payload : {};
   const rawText = typeof payload.text === "string" ? payload.text : "";
   const wrapped = wrapWebFetchContent(rawText, params.maxChars);
@@ -588,7 +588,7 @@ async function maybeFetchProviderWebFetchPayload(
     cacheKey: string;
     tookMs: number;
   },
-): Promise<Record<string, unknown> | null> {
+): Promise<Record<string, any> | null> {
   const providerFallback = await params.resolveProviderFallback();
   if (!providerFallback) {
     return null;
@@ -610,7 +610,7 @@ async function maybeFetchProviderWebFetchPayload(
   return payload;
 }
 
-async function runWebFetch(params: WebFetchRuntimeParams): Promise<Record<string, unknown>> {
+async function runWebFetch(params: WebFetchRuntimeParams): Promise<Record<string, any>> {
   const allowRfc2544BenchmarkRange = params.ssrfPolicy?.allowRfc2544BenchmarkRange === true;
   const allowIpv6UniqueLocalRange = params.ssrfPolicy?.allowIpv6UniqueLocalRange === true;
   const useTrustedEnvProxy = params.useTrustedEnvProxy;
@@ -754,7 +754,7 @@ async function runWebFetch(params: WebFetchRuntimeParams): Promise<Record<string
           title = readable.title;
           extractor = readable.extractor;
         } else {
-          let payload: Record<string, unknown> | null = null;
+          let payload: Record<string, any> | null = null;
           try {
             payload = await maybeFetchProviderWebFetchPayload({
               ...params,
@@ -865,13 +865,13 @@ export function createWebFetchTool(options?: {
         type: "string" | "number" | "boolean" | "object" | "any" | "array";
         description: string;
         required: boolean;
-        default?: unknown;
+        default?: any;
         enum?: string[];
         items?: { type: string };
-        properties?: Record<string, unknown>;
+        properties?: Record<string, any>;
       }
     >,
-    execute: async (_toolCallId: string, args: unknown, signal?: AbortSignal, onUpdate?: (result: AgentToolResult<unknown>) => void) => {
+    execute: async (_toolCallId: string, args: any, signal?: AbortSignal, onUpdate?: (result: AgentToolResult<any>) => void) => {
       const { config, preferRuntimeProviders, runtimeWebFetch } = resolveWebFetchToolRuntimeContext(
         {
           config: options?.config,
@@ -912,7 +912,7 @@ export function createWebFetchTool(options?: {
         }
         return providerFallbackCache;
       };
-      const params = args as Record<string, unknown>;
+      const params = args as Record<string, any>;
       const url = sanitizeWebFetchUrl(
         readStringParam(params, "url", { required: true, trim: false }),
       );

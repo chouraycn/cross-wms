@@ -10,9 +10,9 @@ export type AgentSessionRuntimeDiagnostic = unknown;
 export type CreateAgentSessionServicesOptions = unknown;
 export type CreateAgentSessionFromServicesOptions = unknown;
 export type AgentSessionServices = unknown;
-export function createAgentSessionServices(..._args: unknown[]): unknown {
+export function createAgentSessionServices(..._args: any[]): any {
   return undefined;
 }
-export function createAgentSessionFromServices(..._args: unknown[]): unknown {
+export function createAgentSessionFromServices(..._args: any[]): any {
   return undefined;
 }

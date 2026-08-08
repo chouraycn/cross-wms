@@ -10,12 +10,12 @@ import { logger } from '../logger.js';
  * 工具结果详情（需要脱敏）
  */
 interface _ToolResultDetails {
-  [key: string]: unknown;
+  [key: string]: any;
   // 常见敏感字段
-  data?: unknown;
-  response?: unknown;
-  result?: unknown;
-  content?: unknown;
+  data?: any;
+  response?: any;
+  result?: any;
+  content?: any;
 }
 
 /**
@@ -25,7 +25,7 @@ interface ToolCall {
   id?: string;
   type?: string;
   name?: string;
-  input?: Record<string, unknown>;
+  input?: Record<string, any>;
 }
 
 /**
@@ -67,8 +67,8 @@ export function stripToolResultDetails(messages: AgentMessage[]): AgentMessage[]
 
     // 清理 content 中的敏感字段
     if (typeof sanitized.content === 'object' && sanitized.content !== null) {
-      const content = sanitized.content as Record<string, unknown>;
-      const sanitizedContent: Record<string, unknown> = {};
+      const content = sanitized.content as Record<string, any>;
+      const sanitizedContent: Record<string, any> = {};
 
       for (const [key, value] of Object.entries(content)) {
         // 跳过敏感字段
@@ -129,7 +129,7 @@ function isRuntimeContextMessage(message: AgentMessage): boolean {
 
   // 检查 metadata 中的运行时标记
   if (message.metadata) {
-    const meta = message.metadata as Record<string, unknown>;
+    const meta = message.metadata as Record<string, any>;
     if (meta._runtimeContext || meta._internal) {
       return true;
     }

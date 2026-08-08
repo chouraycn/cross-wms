@@ -129,7 +129,7 @@ export interface AgentEventPayload {
   seq: number;
   stream: AgentEventStream;
   ts: number;
-  data: Record<string, unknown>;
+  data: Record<string, any>;
   sessionKey?: string;
   sessionId?: string;
   agentId?: string;
@@ -147,7 +147,7 @@ export interface AgentRunContext {
   verboseLevel?: 'minimal' | 'normal' | 'detailed';
   registeredAt?: number;
   lastActiveAt?: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 // ===================== 块缓冲配置 =====================
@@ -495,7 +495,7 @@ export function emitAgentTurnEvent(params: {
   runId: string;
   phase: 'turn_start' | 'turn_end';
   turnIndex: number;
-  data?: Record<string, unknown>;
+  data?: Record<string, any>;
   sessionKey?: string;
 }): void {
   emitAgentEvent({
@@ -518,7 +518,7 @@ export function emitAgentTurnEvent(params: {
 export function emitAgentLifecycleEvent(params: {
   runId: string;
   phase: 'start' | 'end' | 'error';
-  data: Record<string, unknown>;
+  data: Record<string, any>;
   sessionKey?: string;
 }): void {
   emitAgentEvent({
@@ -546,7 +546,7 @@ export function emitAgentItemEvent(params: {
   emitAgentEvent({
     runId: params.runId,
     stream: 'item',
-    data: params.data as unknown as Record<string, unknown>,
+    data: params.data as unknown as Record<string, any>,
     sessionKey: params.sessionKey,
   });
 }
@@ -559,7 +559,7 @@ export function emitAgentApprovalEvent(params: {
   emitAgentEvent({
     runId: params.runId,
     stream: 'approval',
-    data: params.data as unknown as Record<string, unknown>,
+    data: params.data as unknown as Record<string, any>,
     sessionKey: params.sessionKey,
   });
 }
@@ -572,7 +572,7 @@ export function emitAgentCommandOutputEvent(params: {
   emitAgentEvent({
     runId: params.runId,
     stream: 'command_output',
-    data: params.data as unknown as Record<string, unknown>,
+    data: params.data as unknown as Record<string, any>,
     sessionKey: params.sessionKey,
   });
 }
@@ -585,7 +585,7 @@ export function emitAgentPatchSummaryEvent(params: {
   emitAgentEvent({
     runId: params.runId,
     stream: 'patch',
-    data: params.data as unknown as Record<string, unknown>,
+    data: params.data as unknown as Record<string, any>,
     sessionKey: params.sessionKey,
   });
 }
@@ -655,7 +655,7 @@ export function emitAgentToolCallEvent(params: {
   runId: string;
   toolCallId: string;
   toolName: string;
-  toolArgs?: Record<string, unknown>;
+  toolArgs?: Record<string, any>;
   sessionKey?: string;
 }): void {
   flushAllBlockBuffers(params.runId);
@@ -677,7 +677,7 @@ export function emitAgentToolResultEvent(params: {
   runId: string;
   toolCallId: string;
   toolName: string;
-  result?: unknown;
+  result?: any;
   error?: string;
   sessionKey?: string;
 }): void {

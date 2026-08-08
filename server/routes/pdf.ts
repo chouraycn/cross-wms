@@ -193,13 +193,13 @@ router.post('/extract', async (req, res) => {
 
     const options: PdfExtractOptions = {
       path: resolvedPath,
-      mode: mode as unknown,
+      mode: mode as any,
       pages: pagesStr,
       maxChars: 20000,
       useOcr,
     };
 
-    let result: unknown;
+    let result: any;
 
     if (useOcr) {
       // 使用 OCR 提取
@@ -242,7 +242,7 @@ router.post('/extract', async (req, res) => {
       const tables = await extractPdfTables(resolvedPath);
       if (tables.length > 0) {
         for (const table of tables) {
-          const page = result.pages.find((p: unknown) => p.pageNumber === table.pageNumber);
+          const page = result.pages.find((p: any) => p.pageNumber === table.pageNumber);
           if (page) {
             page.tables = [table];
           }
@@ -252,7 +252,7 @@ router.post('/extract', async (req, res) => {
 
     // 构建返回内容
     const content = result.pages
-      .map((p: unknown) => `--- 第 ${p.pageNumber} 页 ---\n${p.text || ''}`)
+      .map((p: any) => `--- 第 ${p.pageNumber} 页 ---\n${p.text || ''}`)
       .join('\n\n');
 
     res.json({
@@ -335,12 +335,12 @@ router.post('/summarize', async (req, res) => {
     const summarizeResult = await provider.summarize(
       {
         text: fullText,
-        summaryType: summaryType as unknown,
+        summaryType: summaryType as any,
         customPrompt,
         metadata: extractResult.metadata,
       },
       {
-        type: aiProvider as unknown,
+        type: aiProvider as any,
         maxTokens: maxLength || 2000,
       }
     );
@@ -467,7 +467,7 @@ router.post('/split', async (req, res) => {
     const options: PdfSplitOptions = {
       path: resolvedPath,
       outputDir: resolvedOutputDir,
-      mode: mode as unknown,
+      mode: mode as any,
     };
 
     // 根据 mode 设置参数
@@ -566,7 +566,7 @@ router.post('/convert', async (req, res) => {
         path: resolvedPath,
         outputDir: resolvedOutputDir,
         format: 'images',
-        imageFormat: imageFormat as unknown,
+        imageFormat: imageFormat as any,
         imageQuality: Number(imageQuality),
         imageDpi: Number(imageDpi),
         pages: pagesStr,

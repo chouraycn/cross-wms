@@ -123,7 +123,7 @@ describe("v1 session migration id assignment", () => {
       readFileSync(file, "utf8")
         .trim()
         .split("\n")
-        .map((line) => JSON.parse(line) as unknown),
+        .map((line) => JSON.parse(line) as any),
     ).toContain(null);
   });
 });

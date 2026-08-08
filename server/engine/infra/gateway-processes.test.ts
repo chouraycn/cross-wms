@@ -23,22 +23,22 @@ vi.mock("node:child_process", async () => {
 
 vi.mock("node:fs", () => ({
   default: {
-    readFileSync: (...args: unknown[]) => readFileSyncMock(...args),
+    readFileSync: (...args: any[]) => readFileSyncMock(...args),
   },
-  readFileSync: (...args: unknown[]) => readFileSyncMock(...args),
+  readFileSync: (...args: any[]) => readFileSyncMock(...args),
 }));
 
 vi.mock("../daemon/cmd-argv.js", () => ({
-  parseCmdScriptCommandLine: (...args: unknown[]) => parseCmdScriptCommandLineMock(...args),
+  parseCmdScriptCommandLine: (...args: any[]) => parseCmdScriptCommandLineMock(...args),
 }));
 
 vi.mock("./gateway-process-argv.js", () => ({
-  parseProcCmdline: (...args: unknown[]) => parseProcCmdlineMock(...args),
-  isGatewayArgv: (...args: unknown[]) => isGatewayArgvMock(...args),
+  parseProcCmdline: (...args: any[]) => parseProcCmdlineMock(...args),
+  isGatewayArgv: (...args: any[]) => isGatewayArgvMock(...args),
 }));
 
 vi.mock("./restart-stale-pids.js", () => ({
-  findGatewayPidsOnPortSync: (...args: unknown[]) => findGatewayPidsOnPortSyncMock(...args),
+  findGatewayPidsOnPortSync: (...args: any[]) => findGatewayPidsOnPortSyncMock(...args),
 }));
 
 vi.mock("../logging/subsystem.js", () => ({

@@ -64,7 +64,7 @@ describe("media understanding attachments SSRF", () => {
     vi.restoreAllMocks();
   });
 
-  function requireFirstOpenCall(openSpy: ReturnType<typeof vi.spyOn>): unknown[] {
+  function requireFirstOpenCall(openSpy: ReturnType<typeof vi.spyOn>): any[] {
     const [call] = openSpy.mock.calls;
     if (!call) {
       throw new Error("expected fs.open call");

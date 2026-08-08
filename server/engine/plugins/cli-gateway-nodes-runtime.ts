@@ -26,7 +26,7 @@ type RuntimeNodeListResult = {
 type RuntimeNodeInvokeParams = {
   nodeId: string;
   command: string;
-  params?: unknown;
+  params?: any;
   timeoutMs?: number;
   idempotencyKey?: string;
 };
@@ -44,7 +44,7 @@ export function resolvePluginCliNodeInvokeGatewayTimeoutMs(
 export function createPluginCliGatewayNodesRuntime(): PluginRuntime["nodes"] {
   return {
     async list(params: RuntimeNodeListParams | undefined): Promise<RuntimeNodeListResult> {
-      const payload = await callGateway<{ nodes?: unknown[] }>({
+      const payload = await callGateway<{ nodes?: any[] }>({
         method: "node.list",
         params: {},
         clientName: GATEWAY_CLIENT_NAMES.CLI,
@@ -54,17 +54,17 @@ export function createPluginCliGatewayNodesRuntime(): PluginRuntime["nodes"] {
       const filteredNodes =
         params?.connected === true
           ? nodes.filter(
-              (node: unknown) =>
+              (node: any) =>
                 node !== null &&
                 typeof node === "object" &&
-                (node as { connected?: unknown }).connected === true,
+                (node as { connected?: any }).connected === true,
             )
           : nodes;
       return {
         nodes: filteredNodes as RuntimeNodeListResult["nodes"],
       };
     },
-    async invoke(params: RuntimeNodeInvokeParams): Promise<unknown> {
+    async invoke(params: RuntimeNodeInvokeParams): Promise<any> {
       return await callGateway({
         method: "node.invoke",
         params: {

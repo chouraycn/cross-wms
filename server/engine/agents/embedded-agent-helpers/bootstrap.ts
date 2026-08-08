@@ -12,15 +12,15 @@
 
 /**
  * 本地 AgentMessage 类型 — 仅描述此函数实际访问的字段。
- * 通过 role 字面量支持类型推断，并保留 [key: string]: unknown 以兼容历史数据。
+ * 通过 role 字面量支持类型推断，并保留 [key: string]: any 以兼容历史数据。
  */
-type AgentMessage = { role?: unknown; content?: unknown; [key: string]: unknown };
+type AgentMessage = { role?: any; content?: any; [key: string]: any };
 
 const GOOGLE_TURN_ORDER_BOOTSTRAP_TEXT = "(session bootstrap)";
 
 /** Add a synthetic user bootstrap when Google-style providers receive assistant-first turns. */
 function sanitizeGoogleAssistantFirstOrdering(messages: AgentMessage[]): AgentMessage[] {
-  const first = messages[0] as { role?: unknown; content?: unknown } | undefined;
+  const first = messages[0] as { role?: any; content?: any } | undefined;
   const role = first?.role;
   const content = first?.content;
   if (

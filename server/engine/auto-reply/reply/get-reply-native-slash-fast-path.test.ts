@@ -10,7 +10,7 @@ const { handleCommandsMock } = vi.hoisted(() => ({
 }));
 
 vi.mock("./commands.runtime.js", () => ({
-  handleCommands: (...args: unknown[]) => handleCommandsMock(...args),
+  handleCommands: (...args: any[]) => handleCommandsMock(...args),
 }));
 
 const { maybeResolveNativeSlashCommandFastReply } =

@@ -208,7 +208,7 @@ function refreshBaseToolsEffectiveInBackground(
   key: string,
   context: TrustedToolsEffectiveContext,
 ): void {
-  void scheduleBaseToolsEffectiveRefresh(key, context).catch((err: unknown) => {
+  void scheduleBaseToolsEffectiveRefresh(key, context).catch((err: any) => {
     logWarn(`tools-effective: background refresh failed: ${String(err)}`);
   });
 }
@@ -236,7 +236,7 @@ async function resolveCachedBaseToolsEffective(params: {
 }
 
 function resolveRequestedAgentIdOrRespondError(params: {
-  rawAgentId: unknown;
+  rawAgentId: any;
   cfg: OpenClawConfig;
   respond: RespondFn;
 }) {
@@ -249,7 +249,7 @@ function resolveRequestedAgentIdOrRespondError(params: {
     params.respond(
       false,
       undefined,
-      errorShape(ErrorCodes.INVALID_REQUEST, `unknown agent id "${requestedAgentId}"`),
+      errorShape(ErrorCodes.INVALID_REQUEST, `any agent id "${requestedAgentId}"`),
     );
     return null;
   }
@@ -537,7 +537,7 @@ function resolveTrustedToolsEffectiveContext(params: {
 }
 
 async function handleToolsEffectiveRequest(params: {
-  rawParams: unknown;
+  rawParams: any;
   respond: RespondFn;
   context: Parameters<GatewayRequestHandlers[string]>[0]["context"];
 }) {

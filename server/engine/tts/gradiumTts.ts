@@ -72,7 +72,7 @@ export function buildGradiumRequest(
   text: string,
   voiceId: string,
   outputFormat: string,
-): Record<string, unknown> {
+): Record<string, any> {
   return {
     text,
     voice_id: voiceId,

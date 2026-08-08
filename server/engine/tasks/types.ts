@@ -31,7 +31,7 @@ export const PRIORITY_WEIGHT: Record<TaskPriority, number> = {
 export const PRIORITY_ORDER: TaskPriority[] = ['critical', 'high', 'medium', 'low'];
 
 /** 将任意字符串解析为合法优先级，非法值降级为 medium。 */
-export function normalizePriority(p: unknown): TaskPriority {
+export function normalizePriority(p: any): TaskPriority {
   if (p === 'critical' || p === 'high' || p === 'medium' || p === 'low') return p;
   return 'medium';
 }
@@ -108,7 +108,7 @@ export interface TaskResult {
   /** 终态状态 */
   status: TaskStatus;
   /** 成功输出 */
-  output?: unknown;
+  output?: any;
   /** 失败原因 */
   error?: string;
   /** 执行耗时（ms） */
@@ -137,7 +137,7 @@ export interface Task {
   /** 前置任务 ID 列表（finish_to_start 语义） */
   dependencies: string[];
   /** 业务载荷 */
-  payload?: unknown;
+  payload?: any;
   /** 超时毫秒（0 = 不限制） */
   timeoutMs: number;
   /** 最大重试次数 */
@@ -147,7 +147,7 @@ export interface Task {
   /** 标签 */
   tags: string[];
   /** 自定义元数据 */
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
   /** 创建时间 ISO */
   createdAt: string;
   /** 排队时间 ISO */
@@ -171,11 +171,11 @@ export interface TaskOptions {
   description?: string;
   priority?: TaskPriority;
   dependencies?: string[];
-  payload?: unknown;
+  payload?: any;
   timeoutMs?: number;
   maxRetries?: number;
   tags?: string[];
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 // ===================== 事件 =====================
@@ -198,7 +198,7 @@ export interface TaskEvent {
   type: TaskEventType;
   taskId: string;
   timestamp: string;
-  data?: unknown;
+  data?: any;
 }
 
 // ===================== 执行上下文与处理器 =====================
@@ -218,7 +218,7 @@ export interface TaskExecutionContext {
 }
 
 /** 任务处理器：返回任意可序列化输出。 */
-export type TaskHandler = (task: Task, ctx: TaskExecutionContext) => Promise<unknown>;
+export type TaskHandler = (task: Task, ctx: TaskExecutionContext) => Promise<any>;
 
 export type TaskHandlerFactory = (task: Task) => TaskHandler | null;
 

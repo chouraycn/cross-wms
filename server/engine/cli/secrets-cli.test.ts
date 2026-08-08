@@ -39,7 +39,7 @@ const {
 
 vi.mock("./gateway-rpc.js", () => ({
   addGatewayClientOptions: (cmd: Command) => cmd,
-  callGatewayFromCli: (method: string, opts: unknown, params?: unknown, extra?: unknown) =>
+  callGatewayFromCli: (method: string, opts: any, params?: any, extra?: any) =>
     mocks.callGatewayFromCli(method, opts, params, extra),
 }));
 
@@ -48,22 +48,22 @@ vi.mock("../runtime.js", () => ({
 }));
 
 vi.mock("../secrets/audit.js", () => ({
-  runSecretsAudit: (options: unknown) => mocks.runSecretsAudit(options),
-  resolveSecretsAuditExitCode: (report: unknown, check: boolean) =>
+  runSecretsAudit: (options: any) => mocks.runSecretsAudit(options),
+  resolveSecretsAuditExitCode: (report: any, check: boolean) =>
     mocks.resolveSecretsAuditExitCode(report, check),
 }));
 
 vi.mock("../secrets/configure.js", () => ({
-  runSecretsConfigureInteractive: (options: unknown) =>
+  runSecretsConfigureInteractive: (options: any) =>
     mocks.runSecretsConfigureInteractive(options),
 }));
 
 vi.mock("../secrets/apply.js", () => ({
-  runSecretsApply: (options: unknown) => mocks.runSecretsApply(options),
+  runSecretsApply: (options: any) => mocks.runSecretsApply(options),
 }));
 
 vi.mock("@clack/prompts", () => ({
-  confirm: (options: unknown) => mocks.confirm(options),
+  confirm: (options: any) => mocks.confirm(options),
 }));
 
 function createManualSecretsPlan() {
@@ -77,7 +77,7 @@ function createManualSecretsPlan() {
 }
 
 function createConfigureInteractiveResult(options?: {
-  targets?: unknown[];
+  targets?: any[];
   changed?: boolean;
   resolvabilityComplete?: boolean;
 }) {
@@ -284,7 +284,7 @@ describe("secrets CLI", () => {
     if (!applyArgs.plan || typeof applyArgs.plan !== "object") {
       throw new Error("expected apply plan object");
     }
-    const applyPlan = applyArgs.plan as { targets?: unknown[] };
+    const applyPlan = applyArgs.plan as { targets?: any[] };
     expect(Array.isArray(applyPlan.targets)).toBe(true);
     const [target] = applyPlan.targets ?? [];
     expectObjectFields(target, {

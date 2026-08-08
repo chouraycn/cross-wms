@@ -44,7 +44,7 @@ export function resolveAgentDeliveryPlanWithSessionRoute(params: {
   to?: string;
   threadId?: string;
   accountId?: string;
-  sessionRoute?: unknown;
+  sessionRoute?: any;
 }): AgentDeliveryPlan {
   return resolveAgentDeliveryPlan(params);
 }

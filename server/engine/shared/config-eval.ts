@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 /** Normalizes primitive config values into the truthiness rules used by requirements checks. */
-export function isTruthy(value: unknown): boolean {
+export function isTruthy(value: any): boolean {
   if (value === undefined || value === null) {
     return false;
   }
@@ -20,21 +20,21 @@ export function isTruthy(value: unknown): boolean {
 }
 
 /** Resolves dotted config paths, tolerating extra dots and missing branches. */
-export function resolveConfigPath(config: unknown, pathStr: string): unknown {
+export function resolveConfigPath(config: any, pathStr: string): any {
   const parts = pathStr.split(".").filter(Boolean);
-  let current: unknown = config;
+  let current: any = config;
   for (const part of parts) {
     if (typeof current !== "object" || current === null) {
       return undefined;
     }
-    current = (current as Record<string, unknown>)[part];
+    current = (current as Record<string, any>)[part];
   }
   return current;
 }
 
 /** Checks a config path with fallback defaults only when the path is unresolved. */
 export function isConfigPathTruthyWithDefaults(
-  config: unknown,
+  config: any,
   pathStr: string,
   defaults: Record<string, boolean>,
 ): boolean {

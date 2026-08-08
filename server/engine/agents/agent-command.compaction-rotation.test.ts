@@ -124,7 +124,7 @@ vi.mock("./model-fallback.js", () => ({
   runWithModelFallback: async (params: {
     provider: string;
     model: string;
-    run: (provider: string, model: string) => Promise<unknown>;
+    run: (provider: string, model: string) => Promise<any>;
   }) => ({
     result: await params.run(params.provider, params.model),
     provider: params.provider,

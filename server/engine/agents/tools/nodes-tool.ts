@@ -58,7 +58,7 @@ const CAMERA_FACING = ["front", "back", "both"] as const;
 const LOCATION_ACCURACY = ["coarse", "balanced", "precise"] as const;
 type GatewayCallOptions = ReturnType<typeof readGatewayCallOptions>;
 
-function resolveApproveScopes(commands: unknown): OperatorScope[] {
+function resolveApproveScopes(commands: any): OperatorScope[] {
   return resolveNodePairApprovalScopes(commands) as OperatorScope[];
 }
 
@@ -69,8 +69,8 @@ async function resolveNodePairApproveScopes(
   const pairing: {
     pending?: Array<{
       requestId?: string;
-      commands?: unknown;
-      requiredApproveScopes?: unknown;
+      commands?: any;
+      requiredApproveScopes?: any;
     }>;
   } = await callGatewayTool("node.pair.list", gatewayOpts, {}, { scopes: ["operator.pairing"] });
   const pending = Array.isArray(pairing?.pending) ? pairing.pending : [];
@@ -151,7 +151,7 @@ export function createNodesTool(options?: {
       "Discover/control paired nodes: status, describe, pairing, notify, camera/photos/screen/location/notifications/invoke. Use file_fetch for files.",
     parameters: NodesToolSchema,
     execute: async (_toolCallId, args) => {
-      const params = args as Record<string, unknown>;
+      const params = args as Record<string, any>;
       const action = readStringParam(params, "action", { required: true });
       const gatewayOpts = readGatewayCallOptions(params);
 

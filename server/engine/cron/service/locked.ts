@@ -14,7 +14,7 @@ const storeLocks = new Map<string, Promise<void>>();
  * 将 Promise 链解析为 void，无论成功或失败
  * 用于保持锁链的连续性，即使前一个操作失败
  */
-const resolveChain = (promise: Promise<unknown>) =>
+const resolveChain = (promise: Promise<any>) =>
   promise.then(
     () => undefined,
     () => undefined,

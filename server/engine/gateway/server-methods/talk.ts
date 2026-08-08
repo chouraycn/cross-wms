@@ -72,7 +72,7 @@ function canReadTalkSecrets(client: { connect?: { scopes?: string[] } } | null):
   return scopes.includes(ADMIN_SCOPE) || scopes.includes(TALK_SECRETS_SCOPE);
 }
 
-function asStringRecord(value: unknown): Record<string, string> | undefined {
+function asStringRecord(value: any): Record<string, string> | undefined {
   const record = asOptionalRecord(value);
   if (!record) {
     return undefined;
@@ -111,8 +111,8 @@ function resolveTalkVoiceId(
 }
 
 function withTalkBaseTtsSpeakerSelectionCompat(
-  baseTts: Record<string, unknown>,
-): Record<string, unknown> {
+  baseTts: Record<string, any>,
+): Record<string, any> {
   const next = withSpeakerSelectionCompat(baseTts);
   const providers = asOptionalRecord(baseTts.providers);
   if (providers) {
@@ -164,7 +164,7 @@ function buildTalkTtsConfig(
   const resolvedProviderConfig =
     speechProvider.resolveTalkConfig?.({
       cfg: config,
-      baseTtsConfig: baseTts as Record<string, unknown>,
+      baseTtsConfig: baseTts as Record<string, any>,
       talkProviderConfig: providerConfig,
       timeoutMs: baseTts.timeoutMs ?? 30_000,
     }) ?? providerConfig;
@@ -209,7 +209,7 @@ function buildTalkCatalog(config: OpenClawConfig) {
     speech: {
       ...(activeSpeechProvider ? { activeProvider: activeSpeechProvider } : {}),
       providers: listSpeechProviders(config).map((provider) => {
-        const entry: Record<string, unknown> = {
+        const entry: Record<string, any> = {
           id: provider.id,
           label: provider.label,
           configured: configuredOrFalse(() =>
@@ -236,7 +236,7 @@ function buildTalkCatalog(config: OpenClawConfig) {
       providers: listRealtimeTranscriptionProviders(config).map((provider) => {
         const rawConfig = streamingConfig.providers?.[provider.id] ?? {};
         const providerConfig = provider.resolveConfig?.({ cfg: config, rawConfig }) ?? rawConfig;
-        const entry: Record<string, unknown> = {
+        const entry: Record<string, any> = {
           id: provider.id,
           label: provider.label,
           configured: configuredOrFalse(() =>
@@ -258,7 +258,7 @@ function buildTalkCatalog(config: OpenClawConfig) {
         const rawConfig = realtimeConfig.providers?.[provider.id] ?? {};
         const providerConfig = provider.resolveConfig?.({ cfg: config, rawConfig }) ?? rawConfig;
         const capabilities = provider.capabilities;
-        const entry: Record<string, unknown> = {
+        const entry: Record<string, any> = {
           id: provider.id,
           label: provider.label,
           configured: configuredOrFalse(() =>
@@ -473,8 +473,8 @@ function stripUnresolvedSecretApiKey(config: TalkProviderConfig): TalkProviderCo
 }
 
 function stripUnresolvedSecretApiKeysFromBaseTtsProviders(
-  base: Record<string, unknown>,
-): Record<string, unknown> {
+  base: Record<string, any>,
+): Record<string, any> {
   const providers = asOptionalRecord(base.providers);
   if (!providers) {
     return base;
@@ -485,7 +485,7 @@ function stripUnresolvedSecretApiKeysFromBaseTtsProviders(
   // dynamic `cleaned[providerId] = ...` assignment below. Provider-id keys
   // come from operator config and may be plain JSON, so we cannot assume
   // they're already validated upstream.
-  const cleaned: Record<string, unknown> = Object.create(null);
+  const cleaned: Record<string, any> = Object.create(null);
   for (const [providerId, providerConfig] of Object.entries(providers)) {
     const cfg = asOptionalRecord(providerConfig);
     if (!cfg) {
@@ -505,8 +505,8 @@ function stripUnresolvedSecretApiKeysFromBaseTtsProviders(
 }
 
 function stripUnresolvedSecretApiKeyFromRecord(
-  config: Record<string, unknown>,
-): Record<string, unknown> {
+  config: Record<string, any>,
+): Record<string, any> {
   if (config.apiKey === undefined || typeof config.apiKey === "string") {
     return config;
   }
@@ -563,7 +563,7 @@ export const talkHandlers: GatewayRequestHandlers = {
 
     const snapshot = await readConfigFileSnapshot();
     const runtimeConfig = context.getRuntimeConfig();
-    const configPayload: Record<string, unknown> = {};
+    const configPayload: Record<string, any> = {};
 
     const talk = resolveTalkResponseFromConfig({
       includeSecrets,

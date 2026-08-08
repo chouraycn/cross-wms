@@ -13,10 +13,10 @@
 
 export type IndexedTranscriptEntry = unknown;
 
-export function clearSessionTranscriptIndexCache(..._args: unknown[]): unknown {
+export function clearSessionTranscriptIndexCache(..._args: any[]): any {
   return undefined;
 }
 
-export async function readSessionTranscriptIndex(..._args: unknown[]): Promise<unknown> {
+export async function readSessionTranscriptIndex(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }

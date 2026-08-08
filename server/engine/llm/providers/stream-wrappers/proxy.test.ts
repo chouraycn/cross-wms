@@ -207,7 +207,7 @@ describe("proxy stream wrappers", () => {
     const payload = {
       messages: [{ role: "system", content: "system prompt" }],
     };
-    const calls: Array<{ cacheRetention?: unknown }> = [];
+    const calls: Array<{ cacheRetention?: any }> = [];
     const baseStreamFn: StreamFn = (resolvedModel, _context, options) => {
       calls.push({ cacheRetention: options?.cacheRetention });
       options?.onPayload?.(payload, resolvedModel);

@@ -23,7 +23,7 @@ export class OAuthRefreshFailureError extends Error {
   readonly provider: string;
   readonly reason: OAuthRefreshFailureReason | null;
 
-  constructor(params: { provider: string; message: string; cause?: unknown }) {
+  constructor(params: { provider: string; message: string; cause?: any }) {
     super(params.message, { cause: params.cause });
     this.name = "OAuthRefreshFailureError";
     this.provider = params.provider;
@@ -105,7 +105,7 @@ export function classifyOAuthRefreshFailure(message: string): OAuthRefreshFailur
 }
 
 /** Classify provider/reason from the structured OAuth refresh failure error. */
-export function classifyOAuthRefreshFailureError(err: unknown): OAuthRefreshFailure | null {
+export function classifyOAuthRefreshFailureError(err: any): OAuthRefreshFailure | null {
   if (!(err instanceof OAuthRefreshFailureError)) {
     return null;
   }

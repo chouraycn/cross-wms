@@ -100,14 +100,14 @@ export interface ToolExecutorOptions {
   /** v8.2: 子任务完成 */
   onSubtaskComplete?: (subTaskId: string, description: string, status: 'completed' | 'failed', agentId: string, duration?: number, resultSummary?: string) => void;
   /** 反思评估结果 */
-  onReflect?: (reflection: unknown) => void;
+  onReflect?: (reflection: any) => void;
   /** 执行计划生成 */
-  onPlan?: (plan: unknown) => void;
+  onPlan?: (plan: any) => void;
   /** v2.2.0: 模型能力标签，透传到 callAIModelStream */
   modelCapabilities?: string[];
   circuitBreaker?: CircuitBreaker;
   /** v1.5.116: SSE 事件回调（用于熔断告警推送） */
-  onSSEEvent?: (event: Record<string, unknown>) => void;
+  onSSEEvent?: (event: Record<string, any>) => void;
   /** v1.5.116: 速率限制回调 — 429 时切换备用 Key */
   onRateLimit?: OnRateLimitCallback;
   /** v9.1: Skill 权限配置（Skill 四层架构） */
@@ -117,7 +117,7 @@ export interface ToolExecutorOptions {
   /** 数字员工（per-call）物化技能定义列表 */
   extraSkills?: import('../types/skill-runtime.js').SkillDefinition[];
   /** 数字员工（per-call）物化技能执行器 */
-  extraSkillExecutor?: (id: string, params: Record<string, unknown>, ctx?: import('../types/skill-runtime.js').SkillContext) => Promise<import('../types/skill-runtime.js').SkillResult>;
+  extraSkillExecutor?: (id: string, params: Record<string, any>, ctx?: import('../types/skill-runtime.js').SkillContext) => Promise<import('../types/skill-runtime.js').SkillResult>;
   /** 会话 ID（用于审批流和插件钩子） */
   sessionId?: string;
   /** 助手消息 ID（用于关联工具调用到特定消息） */
@@ -272,8 +272,8 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
     // 调用 AI，传入 tools
     await pluginHooks.executeHooks('before_ai_call', {
       sessionId,
-      messages: currentMessages as Array<Record<string, unknown>>,
-      extra: { modelConfig: modelConfig as unknown as Record<string, unknown> },
+      messages: currentMessages as Array<Record<string, any>>,
+      extra: { modelConfig: modelConfig as unknown as Record<string, any> },
     });
 
     const response = await callAIModelStream(
@@ -295,8 +295,8 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
 
     await pluginHooks.executeHooks('after_ai_call', {
       sessionId,
-      messages: currentMessages as Array<Record<string, unknown>>,
-      aiResult: response as unknown as Record<string, unknown>,
+      messages: currentMessages as Array<Record<string, any>>,
+      aiResult: response as unknown as Record<string, any>,
     });
 
     // 上抛 thinking signature（多轮 tool call 取最近一次含签名的响应）
@@ -339,7 +339,7 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
       const graph = new ToolDependencyGraph();
       response.toolCalls.forEach((tc, i) => {
         const tcName = tc.function.name;
-        let tcArgs: Record<string, unknown> = {};
+        let tcArgs: Record<string, any> = {};
         try { tcArgs = JSON.parse(tc.function.arguments || '{}'); } catch (e) {
           logger.warn('[ToolExecutor] 工具调用参数解析失败:', (e as Error).message);
         }
@@ -424,7 +424,7 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
       }
 
       // ===================== 工具策略评估 + 审批流 =====================
-      let parsedArgs: Record<string, unknown> = {};
+      let parsedArgs: Record<string, any> = {};
       try {
         parsedArgs = JSON.parse(toolCall.function.arguments || '{}');
       } catch {
@@ -931,7 +931,7 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
     if (toolCallRecordId) {
       try {
         const success = middlewareResult.errorType === 'none';
-        let resultData: unknown = null;
+        let resultData: any = null;
         let errorMsg: string | undefined;
         if (success) {
           try {

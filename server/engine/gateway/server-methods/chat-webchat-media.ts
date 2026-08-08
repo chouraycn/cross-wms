@@ -47,12 +47,12 @@ type WebchatAssistantMediaOptions = WebchatAudioEmbeddingOptions;
 
 type LocalAudioContentBlock = {
   path: string;
-  block: Record<string, unknown>;
+  block: Record<string, any>;
 };
 
 type ReplyMediaAudioEmbedding = {
   url: string;
-  audioBlock?: Record<string, unknown>;
+  audioBlock?: Record<string, any>;
 };
 
 /** Map `mediaUrl` strings to an absolute filesystem path for local embedding (plain paths or `file:` URLs). */
@@ -233,9 +233,9 @@ function resolveReplyDirectivePrefix(payload: ReplyPayload): string {
 export async function buildWebchatAudioContentBlocksFromReplyPayloads(
   payloads: ReplyPayload[],
   options?: WebchatAudioEmbeddingOptions,
-): Promise<Array<Record<string, unknown>>> {
+): Promise<Array<Record<string, any>>> {
   const seen = new Set<string>();
-  const blocks: Array<Record<string, unknown>> = [];
+  const blocks: Array<Record<string, any>> = [];
   for (const payload of payloads) {
     if (payload.isReasoning === true) {
       continue;
@@ -255,8 +255,8 @@ export async function buildWebchatAudioContentBlocksFromReplyPayloads(
 export async function buildWebchatAssistantMessageFromReplyPayloads(
   payloads: ReplyPayload[],
   options?: WebchatAssistantMediaOptions,
-): Promise<{ content: Array<Record<string, unknown>>; transcriptText: string } | null> {
-  const content: Array<Record<string, unknown>> = [];
+): Promise<{ content: Array<Record<string, any>>; transcriptText: string } | null> {
+  const content: Array<Record<string, any>> = [];
   const transcriptTextParts: string[] = [];
   const seenAudio = new Set<string>();
   const seenImages = new Set<string>();
@@ -273,7 +273,7 @@ export async function buildWebchatAssistantMessageFromReplyPayloads(
     const replyDirectivePrefix = resolveReplyDirectivePrefix(payload);
     let payloadHasAudio = false;
     let payloadHasImage = false;
-    const payloadMediaBlocks: Array<Record<string, unknown>> = [];
+    const payloadMediaBlocks: Array<Record<string, any>> = [];
     const parts = resolveSendableOutboundReplyParts(payload);
     for (const raw of parts.mediaUrls) {
       const media = await resolveReplyMediaAudioEmbedding(payload, raw, seenAudio, options);

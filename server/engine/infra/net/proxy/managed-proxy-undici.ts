@@ -4,7 +4,7 @@
 import type { EnvHttpProxyAgent } from "undici";
 
 // Inline isRecord to avoid bundling @openclaw/normalization-core (not installed)
-function isProxyTlsRecord(value: unknown): value is Record<string, unknown> {
+function isProxyTlsRecord(value: any): value is Record<string, any> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 import { resolveEnvHttpProxyAgentOptions, resolveEnvHttpProxyUrl } from "../proxy-env.js";
@@ -17,7 +17,7 @@ import {
 
 type ManagedEnvHttpProxyAgentOptions = ConstructorParameters<typeof EnvHttpProxyAgent>[0];
 
-function readProxyTlsRecord(options: object | undefined): Record<string, unknown> | undefined {
+function readProxyTlsRecord(options: object | undefined): Record<string, any> | undefined {
   if (!options || !("proxyTls" in options)) {
     return undefined;
   }
@@ -29,12 +29,12 @@ function readProxyUrlFromOptions(options: object | undefined): string | undefine
     return undefined;
   }
   if ("uri" in options) {
-    const uri: unknown = Reflect.get(options, "uri");
+    const uri: any = Reflect.get(options, "uri");
     return uri instanceof URL ? uri.href : typeof uri === "string" ? uri : undefined;
   }
   if ("httpsProxy" in options || "httpProxy" in options) {
-    const httpsProxy: unknown = Reflect.get(options, "httpsProxy");
-    const httpProxy: unknown = Reflect.get(options, "httpProxy");
+    const httpsProxy: any = Reflect.get(options, "httpsProxy");
+    const httpProxy: any = Reflect.get(options, "httpProxy");
     return typeof httpsProxy === "string"
       ? httpsProxy
       : typeof httpProxy === "string"
@@ -116,13 +116,13 @@ export function addActiveManagedProxyTlsOptions(
 export function addActiveManagedProxyTlsOptions<TOptions extends object>(
   options: TOptions,
   params?: AddActiveManagedProxyTlsOptionsParams,
-): TOptions | (TOptions & { proxyTls: Record<string, unknown> });
+): TOptions | (TOptions & { proxyTls: Record<string, any> });
 export function addActiveManagedProxyTlsOptions<TOptions extends object>(
   options: TOptions | undefined,
   params?: AddActiveManagedProxyTlsOptionsParams,
 ):
   | TOptions
-  | (TOptions & { proxyTls: Record<string, unknown> })
+  | (TOptions & { proxyTls: Record<string, any> })
   | {
       proxyTls: ManagedProxyTlsOptions;
     }
@@ -132,7 +132,7 @@ export function addActiveManagedProxyTlsOptions<TOptions extends object>(
   params?: AddActiveManagedProxyTlsOptionsParams,
 ):
   | TOptions
-  | (TOptions & { proxyTls: Record<string, unknown> })
+  | (TOptions & { proxyTls: Record<string, any> })
   | { proxyTls: ManagedProxyTlsOptions }
   | undefined {
   const proxyTls = resolveActiveManagedProxyTlsOptions({

@@ -517,7 +517,7 @@ export function createHookRunner(
   const handleHookError = (params: {
     hookName: PluginHookName;
     pluginId: string;
-    error: unknown;
+    error: any;
   }): never | void => {
     const msg = `[hooks] ${params.hookName} handler from ${params.pluginId} failed: ${formatHookErrorForLog(params.error)}`;
     if (shouldCatchHookErrors(params.hookName)) {
@@ -527,17 +527,17 @@ export function createHookRunner(
     throw new Error(msg, { cause: params.error });
   };
 
-  const sanitizeHookError = (error: unknown): string => {
+  const sanitizeHookError = (error: any): string => {
     const raw = formatErrorMessage(error);
     const firstLine = raw.split("\n")[0]?.trim();
     return firstLine || "unknown error";
   };
 
-  const isPromiseLike = (value: unknown): value is PromiseLike<unknown> => {
+  const isPromiseLike = (value: any): value is PromiseLike<any> => {
     if ((typeof value !== "object" && typeof value !== "function") || value === null) {
       return false;
     }
-    return typeof (value as { then?: unknown }).then === "function";
+    return typeof (value as { then?: any }).then === "function";
   };
 
   const normalizePositiveTimeoutMs = (timeoutMs: number | undefined): number | undefined => {
@@ -593,9 +593,9 @@ export function createHookRunner(
     hook: PluginHookRegistration<K>,
     event: SyncHookEvent<K>,
     ctx: SyncHookContext<K>,
-  ): SyncHookResult<K> | PromiseLike<unknown> => {
+  ): SyncHookResult<K> | PromiseLike<any> => {
     const handler = hook.handler as SyncHookHandler<K>;
-    return handler(event, ctx) as SyncHookResult<K> | PromiseLike<unknown>;
+    return handler(event, ctx) as SyncHookResult<K> | PromiseLike<any>;
   };
 
   /**
@@ -618,7 +618,7 @@ export function createHookRunner(
     const promises = hooks.map(async (hook) => {
       try {
         const promise = Promise.resolve(
-          (hook.handler as (event: unknown, ctx: unknown) => Promise<void> | void)(event, ctx),
+          (hook.handler as (event: any, ctx: any) => Promise<void> | void)(event, ctx),
         );
         const timeoutMs = getVoidHookTimeoutMs(hookName, hook);
         if (timeoutMs) {
@@ -655,7 +655,7 @@ export function createHookRunner(
 
     for (const hook of hooks) {
       try {
-        const handler = hook.handler as (event: unknown, ctx: unknown) => Promise<TResult>;
+        const handler = hook.handler as (event: any, ctx: any) => Promise<TResult>;
         const promise = Promise.resolve(handler(event, ctx));
         const timeoutMs = getModifyingHookTimeoutMs(hookName, hook);
         const handlerResult = timeoutMs ? await withHookTimeout(promise, timeoutMs) : await promise;
@@ -737,7 +737,7 @@ export function createHookRunner(
     for (const hook of hooks) {
       try {
         const promise = Promise.resolve(
-          (hook.handler as (event: unknown, ctx: unknown) => Promise<TResult | void>)(event, ctx),
+          (hook.handler as (event: any, ctx: any) => Promise<TResult | void>)(event, ctx),
         );
         const timeoutMs = getClaimingHookTimeoutMs(hookName, hook);
         const handlerResult = timeoutMs ? await withHookTimeout(promise, timeoutMs) : await promise;
@@ -788,7 +788,7 @@ export function createHookRunner(
     for (const hook of hooks) {
       try {
         const promise = Promise.resolve(
-          (hook.handler as (event: unknown, ctx: unknown) => Promise<TResult | void>)(event, ctx),
+          (hook.handler as (event: any, ctx: any) => Promise<TResult | void>)(event, ctx),
         );
         const timeoutMs = getClaimingHookTimeoutMs(hookName, hook);
         const handlerResult = timeoutMs ? await withHookTimeout(promise, timeoutMs) : await promise;

@@ -57,7 +57,7 @@ function createCronConfig(storePath: string): OpenClawConfig {
   };
 }
 
-function createLegacyCronJob(overrides: Record<string, unknown> = {}) {
+function createLegacyCronJob(overrides: Record<string, any> = {}) {
   return {
     jobId: "legacy-job",
     name: "Legacy job",
@@ -74,7 +74,7 @@ function createLegacyCronJob(overrides: Record<string, unknown> = {}) {
   };
 }
 
-function createCurrentCronJob(overrides: Record<string, unknown> = {}) {
+function createCurrentCronJob(overrides: Record<string, any> = {}) {
   return {
     id: "sqlite-job",
     name: "SQLite job",
@@ -93,7 +93,7 @@ function createCurrentCronJob(overrides: Record<string, unknown> = {}) {
   };
 }
 
-async function writeCronStore(storePath: string, jobs: Array<Record<string, unknown>>) {
+async function writeCronStore(storePath: string, jobs: Array<Record<string, any>>) {
   await fs.mkdir(path.dirname(storePath), { recursive: true });
   await fs.writeFile(
     storePath,
@@ -109,7 +109,7 @@ async function writeCronStore(storePath: string, jobs: Array<Record<string, unkn
   );
 }
 
-async function writeCurrentCronStore(storePath: string, jobs: Array<Record<string, unknown>>) {
+async function writeCurrentCronStore(storePath: string, jobs: Array<Record<string, any>>) {
   await saveCronStore(storePath, {
     version: 1,
     jobs: jobs as never,
@@ -118,7 +118,7 @@ async function writeCurrentCronStore(storePath: string, jobs: Array<Record<strin
 
 function insertEarlySQLiteCronRow(
   storePath: string,
-  job: Record<string, unknown>,
+  job: Record<string, any>,
   options: { payloadMessage?: string | null } = {},
 ) {
   const schedule = requireRecord(job.schedule, "cron schedule");
@@ -153,16 +153,16 @@ function insertEarlySQLiteCronRow(
   });
 }
 
-async function writeLegacyCronArrayStore(storePath: string, jobs: Array<Record<string, unknown>>) {
+async function writeLegacyCronArrayStore(storePath: string, jobs: Array<Record<string, any>>) {
   await fs.mkdir(path.dirname(storePath), { recursive: true });
   await fs.writeFile(storePath, JSON.stringify(jobs, null, 2), "utf-8");
 }
 
-async function readPersistedJobs(storePath: string): Promise<Array<Record<string, unknown>>> {
-  return (await loadCronStore(storePath)).jobs as unknown as Array<Record<string, unknown>>;
+async function readPersistedJobs(storePath: string): Promise<Array<Record<string, any>>> {
+  return (await loadCronStore(storePath)).jobs as unknown as Array<Record<string, any>>;
 }
 
-function requirePersistedJob(jobs: Array<Record<string, unknown>>, index: number) {
+function requirePersistedJob(jobs: Array<Record<string, any>>, index: number) {
   const job = jobs[index];
   if (!job) {
     throw new Error(`expected persisted cron job ${index}`);
@@ -170,11 +170,11 @@ function requirePersistedJob(jobs: Array<Record<string, unknown>>, index: number
   return job;
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error(`expected ${label}`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 function expectNoteContaining(message: string, title: string): void {
@@ -602,7 +602,7 @@ describe("maybeRepairLegacyCronStore", () => {
 
   it("advises on isolated shell-prompt jobs without a non-actionable --fix repair note (#94655)", async () => {
     const storePath = await makeTempStorePath();
-    const shellPromptJobs: Array<Record<string, unknown>> = [
+    const shellPromptJobs: Array<Record<string, any>> = [
       createCurrentCronJob({
         id: "shell-prompt-job-1",
         name: "Shell prompt job 1",
@@ -842,7 +842,7 @@ describe("maybeRepairLegacyCronStore", () => {
 
     expect(await readPersistedJobs(storePath)).toEqual([]);
     const legacy = JSON.parse(await fs.readFile(storePath, "utf-8")) as {
-      jobs: Array<Record<string, unknown>>;
+      jobs: Array<Record<string, any>>;
     };
     const job = requirePersistedJob(legacy.jobs, 0);
     expect(prompter.confirm).toHaveBeenCalledWith({
@@ -981,7 +981,7 @@ describe("maybeRepairLegacyCronStore", () => {
     expect(job.notify).toBeUndefined();
     expect(job.delivery).toBeUndefined();
     const reloaded = await loadCronJobsStoreWithConfigJobs(storePath);
-    const persisted = reloaded.configJobs as unknown as Array<Record<string, unknown>>;
+    const persisted = reloaded.configJobs as unknown as Array<Record<string, any>>;
     expect(persisted[0]?.notify).toBe(true);
     expectNoteContaining(
       "cron.webhook is not a valid HTTP(S) URL so doctor cannot migrate it automatically",
@@ -1008,7 +1008,7 @@ describe("maybeRepairLegacyCronStore", () => {
     });
 
     const reloaded = await loadCronJobsStoreWithConfigJobs(storePath);
-    const persisted = reloaded.configJobs as unknown as Array<Record<string, unknown>>;
+    const persisted = reloaded.configJobs as unknown as Array<Record<string, any>>;
     expect(persisted).toHaveLength(1);
     expect(persisted[0]?.notify).toBeUndefined();
     expect(requireRecord(persisted[0]?.delivery, "cron delivery").mode).toBe("none");
@@ -1046,7 +1046,7 @@ describe("maybeRepairLegacyCronStore", () => {
     });
 
     const reloaded = await loadCronJobsStoreWithConfigJobs(storePath);
-    const persisted = reloaded.configJobs as unknown as Array<Record<string, unknown>>;
+    const persisted = reloaded.configJobs as unknown as Array<Record<string, any>>;
     expect(persisted).toHaveLength(1);
     expect(persisted[0]?.notify).toBeUndefined();
     const delivery = requireRecord(persisted[0]?.delivery, "cron delivery");

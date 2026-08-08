@@ -50,15 +50,15 @@ type SessionTurnSchedule = ScheduleSessionTurnRequest["schedule"];
 async function invokePluginGatewayHandler(params: {
   handler: GatewayRequestHandler;
   method: string;
-  params?: Record<string, unknown>;
-}): Promise<unknown> {
+  params?: Record<string, any>;
+}): Promise<any> {
   return await new Promise((resolve, reject) => {
     const handlerParams = params.params ?? {};
     const respond = (
       ok: boolean,
-      payload?: unknown,
+      payload?: any,
       error?: { message?: string },
-      meta?: Record<string, unknown>,
+      meta?: Record<string, any>,
     ) => {
       void meta;
       if (ok) {
@@ -142,7 +142,7 @@ function getCronAddBody() {
 }
 
 function expectSessionTurnHandle(
-  handle: unknown,
+  handle: any,
   id: string,
   pluginId = WORKFLOW_PLUGIN_ID,
   sessionKey = MAIN_SESSION_KEY,
@@ -270,9 +270,9 @@ describe("plugin scheduled turns", () => {
   it("builds payloads accepted by the real cron.add protocol validator", async () => {
     const { validateCronAddParams } =
       await import("../../../packages/gateway-protocol/src/index.js");
-    workflowMocks.cronAdd.mockImplementation(async (body: unknown) => {
+    workflowMocks.cronAdd.mockImplementation(async (body: any) => {
       expect(validateCronAddParams(body)).toBe(true);
-      expect((body as { delivery?: unknown }).delivery).toEqual({
+      expect((body as { delivery?: any }).delivery).toEqual({
         mode: "announce",
         channel: "last",
       });
@@ -289,9 +289,9 @@ describe("plugin scheduled turns", () => {
 
   it("pages through cron.list when unscheduling tagged turns", async () => {
     const removed: string[] = [];
-    const listRequests: unknown[] = [];
-    workflowMocks.cronListPage.mockImplementation(async (body: unknown) => {
-      const offset = (body as { offset?: unknown }).offset;
+    const listRequests: any[] = [];
+    workflowMocks.cronListPage.mockImplementation(async (body: any) => {
+      const offset = (body as { offset?: any }).offset;
       listRequests.push(body);
       if (offset === undefined) {
         return {
@@ -632,13 +632,13 @@ describe("plugin scheduled turns", () => {
   },
 };`,
     });
-    const addedJobs: Array<Record<string, unknown>> = [];
+    const addedJobs: Array<Record<string, any>> = [];
     const removedJobIds = new Set<string>();
     workflowMocks.cronAdd.mockImplementation(async (body: CronJobCreate) => {
       const id = `loader-scheduled-job-${addedJobs.length + 1}`;
       addedJobs.push({
         id,
-        ...(body as Record<string, unknown>),
+        ...(body as Record<string, any>),
       });
       return makeCronJob({ id, ...body });
     });
@@ -886,9 +886,9 @@ describe("plugin scheduled turns", () => {
 
   it("removes only matching plugin tag jobs in the requested session", async () => {
     const removed: string[] = [];
-    const listQueries: unknown[] = [];
-    workflowMocks.cronListPage.mockImplementation(async (body: unknown) => {
-      listQueries.push((body as { query?: unknown }).query);
+    const listQueries: any[] = [];
+    workflowMocks.cronListPage.mockImplementation(async (body: any) => {
+      listQueries.push((body as { query?: any }).query);
       return {
         jobs: [
           makeCronJob({

@@ -297,7 +297,7 @@ export function getGlobalQuarantineHealthStore(
   return globalStore;
 }
 
-export function isAbortError(err: unknown): boolean {
+export function isAbortError(err: any): boolean {
   if (err instanceof DOMException && err.name === 'AbortError') {
     return true;
   }

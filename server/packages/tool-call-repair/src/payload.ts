@@ -14,7 +14,7 @@ import {
 /** Parsed standalone plain-text tool call block with source offsets for repair. */
 export type PlainTextToolCallBlock = {
   /** Parsed JSON arguments object. */
-  arguments: Record<string, unknown>;
+  arguments: Record<string, any>;
   /** Exclusive end offset of the parsed block. */
   end: number;
   /** Tool name parsed from bracket, Harmony, or XML-ish syntax. */
@@ -134,7 +134,7 @@ function consumeJsonObject(
   text: string,
   start: number,
   maxPayloadBytes: number,
-): { end: number; value: Record<string, unknown> } | null {
+): { end: number; value: Record<string, any> } | null {
   const cursor = skipWhitespace(text, start);
   if (text[cursor] !== "{") {
     return null;
@@ -145,11 +145,11 @@ function consumeJsonObject(
   }
   const rawJson = text.slice(cursor, end);
   try {
-    const parsed = JSON.parse(rawJson) as unknown;
+    const parsed = JSON.parse(rawJson) as any;
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
       return null;
     }
-    return { end, value: parsed as Record<string, unknown> };
+    return { end, value: parsed as Record<string, any> };
   } catch {
     return null;
   }
@@ -336,7 +336,7 @@ function parseXmlishPlainTextToolCallBlockAt(
   }
 
   const maxPayloadBytes = options?.maxPayloadBytes ?? DEFAULT_MAX_PLAIN_TEXT_TOOL_PAYLOAD_BYTES;
-  const args: Record<string, unknown> = {};
+  const args: Record<string, any> = {};
   let cursor = opening.end;
   let parameterCount = 0;
   while (true) {

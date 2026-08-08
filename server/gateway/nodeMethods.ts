@@ -46,7 +46,7 @@ interface PairedNode {
   token: string;
   pairedAt: number;
   lastSeenAt?: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 // 内存存储
@@ -63,7 +63,7 @@ function generateToken(): string {
 
 // ========== Node Pair Request ==========
 
-async function nodePairRequest(params: unknown, _ctx: GatewayMethodContext) {
+async function nodePairRequest(params: any, _ctx: GatewayMethodContext) {
   const {
     nodeId,
     displayName,
@@ -126,7 +126,7 @@ async function nodePairRequest(params: unknown, _ctx: GatewayMethodContext) {
 
 // ========== Node List ==========
 
-async function nodeList(_params: unknown, _ctx: GatewayMethodContext) {
+async function nodeList(_params: any, _ctx: GatewayMethodContext) {
   const nodes = Array.from(pairedNodes.values()).sort((a, b) => b.pairedAt - a.pairedAt);
   const pending = Array.from(pairRequests.values()).filter((r) => r.status === 'pending');
 
@@ -151,7 +151,7 @@ async function nodeList(_params: unknown, _ctx: GatewayMethodContext) {
 
 // ========== Node Approve ==========
 
-async function nodeApprove(params: unknown, _ctx: GatewayMethodContext) {
+async function nodeApprove(params: any, _ctx: GatewayMethodContext) {
   const { requestId } = params as { requestId: string };
 
   if (!requestId) {
@@ -196,7 +196,7 @@ async function nodeApprove(params: unknown, _ctx: GatewayMethodContext) {
 
 // ========== Node Reject ==========
 
-async function nodeReject(params: unknown, _ctx: GatewayMethodContext) {
+async function nodeReject(params: any, _ctx: GatewayMethodContext) {
   const { requestId } = params as { requestId: string };
 
   if (!requestId) {
@@ -226,7 +226,7 @@ async function nodeReject(params: unknown, _ctx: GatewayMethodContext) {
 
 // ========== Node Remove ==========
 
-async function nodeRemove(params: unknown, _ctx: GatewayMethodContext) {
+async function nodeRemove(params: any, _ctx: GatewayMethodContext) {
   const { nodeId } = params as { nodeId: string };
 
   if (!nodeId) {
@@ -253,7 +253,7 @@ async function nodeRemove(params: unknown, _ctx: GatewayMethodContext) {
 
 // ========== Node Verify ==========
 
-async function nodeVerify(params: unknown, _ctx: GatewayMethodContext) {
+async function nodeVerify(params: any, _ctx: GatewayMethodContext) {
   const { nodeId, token } = params as { nodeId: string; token: string };
 
   if (!nodeId || !token) {
@@ -279,7 +279,7 @@ async function nodeVerify(params: unknown, _ctx: GatewayMethodContext) {
 
 // ========== Node Rename ==========
 
-async function nodeRename(params: unknown, _ctx: GatewayMethodContext) {
+async function nodeRename(params: any, _ctx: GatewayMethodContext) {
   const { nodeId, displayName } = params as { nodeId: string; displayName: string };
 
   if (!nodeId) {
@@ -306,7 +306,7 @@ async function nodeRename(params: unknown, _ctx: GatewayMethodContext) {
 
 // ========== Node Describe ==========
 
-async function nodeDescribe(params: unknown, _ctx: GatewayMethodContext) {
+async function nodeDescribe(params: any, _ctx: GatewayMethodContext) {
   const { nodeId } = params as { nodeId: string };
 
   if (!nodeId) {

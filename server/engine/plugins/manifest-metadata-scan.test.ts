@@ -14,7 +14,7 @@ function createTempRoot(): string {
   return root;
 }
 
-function writeJson(filePath: string, value: unknown): void {
+function writeJson(filePath: string, value: any): void {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, JSON.stringify(value, null, 2), "utf8");
 }

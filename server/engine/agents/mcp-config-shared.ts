@@ -46,14 +46,14 @@ function isDangerousMcpStdioEnvVarName(rawKey: string): boolean {
 }
 
 /** Returns whether a value is a plain MCP config record. */
-export function isMcpConfigRecord(value: unknown): value is Record<string, unknown> {
+export function isMcpConfigRecord(value: any): value is Record<string, any> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
 function toMcpFilteredStringRecord(
-  value: unknown,
+  value: any,
   options?: {
-    onDroppedEntry?: (key: string, value: unknown) => void;
+    onDroppedEntry?: (key: string, value: any) => void;
     preserveEmptyWhenKeysDropped?: boolean;
     shouldDropKey?: (key: string) => boolean;
   },
@@ -88,16 +88,16 @@ function toMcpFilteredStringRecord(
 
 /** Coerces string/number/boolean entries from a config object into strings. */
 export function toMcpStringRecord(
-  value: unknown,
-  options?: { onDroppedEntry?: (key: string, value: unknown) => void },
+  value: any,
+  options?: { onDroppedEntry?: (key: string, value: any) => void },
 ): Record<string, string> | undefined {
   return toMcpFilteredStringRecord(value, options);
 }
 
 /** Coerces MCP env config while dropping dangerous inherited host env names. */
 export function toMcpEnvRecord(
-  value: unknown,
-  options?: { onDroppedEntry?: (key: string, value: unknown) => void },
+  value: any,
+  options?: { onDroppedEntry?: (key: string, value: any) => void },
 ): Record<string, string> | undefined {
   return toMcpFilteredStringRecord(value, {
     ...options,
@@ -107,7 +107,7 @@ export function toMcpEnvRecord(
 }
 
 /** Coerces an MCP string-array config value, dropping non-string entries. */
-export function toMcpStringArray(value: unknown): string[] | undefined {
+export function toMcpStringArray(value: any): string[] | undefined {
   if (!Array.isArray(value)) {
     return undefined;
   }

@@ -129,7 +129,7 @@ vi.mock("../acp/control-plane/manager.js", () => ({
 }));
 
 vi.mock("../agents/subagent-control.js", () => ({
-  killSubagentRunAdmin: (params: unknown) => hoisted.killSubagentRunAdminMock(params),
+  killSubagentRunAdmin: (params: any) => hoisted.killSubagentRunAdminMock(params),
 }));
 
 vi.mock("../utils/message-channel.js", () => ({
@@ -291,11 +291,11 @@ async function flushAsyncWork(times = 4) {
   }
 }
 
-function expectRecordFields(record: unknown, expected: Record<string, unknown>) {
+function expectRecordFields(record: any, expected: Record<string, any>) {
   if (!record || typeof record !== "object") {
     throw new Error("Expected record");
   }
-  const actual = record as Record<string, unknown>;
+  const actual = record as Record<string, any>;
   for (const [key, value] of Object.entries(expected)) {
     expect(actual[key]).toEqual(value);
   }
@@ -318,18 +318,18 @@ function requireTaskById(taskId: string): TaskRecord {
   return task;
 }
 
-function sentMessageCall(callIndex = 0): Record<string, unknown> {
+function sentMessageCall(callIndex = 0): Record<string, any> {
   const call = hoisted.sendMessageMock.mock.calls[callIndex];
   if (!call) {
     throw new Error(`Expected sendMessage call ${callIndex}`);
   }
-  return call[0] as Record<string, unknown>;
+  return call[0] as Record<string, any>;
 }
 
 function firstMockArg(
-  mock: { mock: { calls: readonly unknown[][] } },
+  mock: { mock: { calls: readonly any[][] } },
   label: string,
-): Record<string, unknown> {
+): Record<string, any> {
   const [call] = mock.mock.calls;
   if (!call) {
     throw new Error(`Expected ${label} call`);
@@ -2995,8 +2995,8 @@ describe("task-registry", () => {
       vi.useFakeTimers();
       resetTaskRegistryMemoryForTest();
 
-      const unhandled: unknown[] = [];
-      const onUnhandledRejection = (reason: unknown) => {
+      const unhandled: any[] = [];
+      const onUnhandledRejection = (reason: any) => {
         unhandled.push(reason);
       };
       process.on("unhandledRejection", onUnhandledRejection);

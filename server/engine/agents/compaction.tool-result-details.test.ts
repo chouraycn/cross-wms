@@ -6,7 +6,7 @@ import { makeAgentAssistantMessage } from "./test-helpers/agent-message-fixtures
 
 const agentSessionMocks = vi.hoisted(() => ({
   generateSummary: vi.fn(async () => "summary"),
-  estimateTokens: vi.fn((_message: unknown) => 1),
+  estimateTokens: vi.fn((_message: any) => 1),
 }));
 
 vi.mock("./sessions/index.js", async () => {
@@ -57,7 +57,7 @@ describe("compaction toolResult details stripping", () => {
     agentSessionMocks.generateSummary.mockReset();
     agentSessionMocks.generateSummary.mockResolvedValue("summary");
     agentSessionMocks.estimateTokens.mockReset();
-    agentSessionMocks.estimateTokens.mockImplementation((_message: unknown) => 1);
+    agentSessionMocks.estimateTokens.mockImplementation((_message: any) => 1);
   });
 
   it("does not pass toolResult.details into generateSummary", async () => {
@@ -161,8 +161,8 @@ describe("compaction toolResult details stripping", () => {
   });
 
   it("ignores toolResult.details when evaluating oversized messages", () => {
-    agentSessionMocks.estimateTokens.mockImplementation((message: unknown) => {
-      const record = message as { details?: unknown };
+    agentSessionMocks.estimateTokens.mockImplementation((message: any) => {
+      const record = message as { details?: any };
       return record.details ? 10_000 : 10;
     });
 

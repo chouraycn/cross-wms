@@ -26,8 +26,8 @@ import {
   collectMissingExplicitDefaultAccountWarnings,
 } from "./doctor/shared/default-account-warnings.js";
 
-function hasLegacyInternalHookHandlers(raw: unknown): boolean {
-  const handlers = (raw as { hooks?: { internal?: { handlers?: unknown } } })?.hooks?.internal
+function hasLegacyInternalHookHandlers(raw: any): boolean {
+  const handlers = (raw as { hooks?: { internal?: { handlers?: any } } })?.hooks?.internal
     ?.handlers;
   return Array.isArray(handlers) && handlers.length > 0;
 }
@@ -154,7 +154,7 @@ export async function loadAndMaybeMigrateDoctorConfig(params: {
   let pendingChanges = false;
   let fixHints: string[] = [];
   const doctorFixCommand = formatCliCommand("openclaw doctor --fix");
-  const sourceMeta = (snapshot.sourceConfig as { meta?: { lastTouchedVersion?: unknown } })?.meta;
+  const sourceMeta = (snapshot.sourceConfig as { meta?: { lastTouchedVersion?: any } })?.meta;
   const sourceLastTouchedVersion =
     typeof sourceMeta?.lastTouchedVersion === "string" ? sourceMeta.lastTouchedVersion : undefined;
 

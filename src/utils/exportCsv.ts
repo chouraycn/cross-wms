@@ -86,7 +86,7 @@ export interface CsvMetadata {
  */
 export function exportCsvWithMetadata(
   columns: string[],
-  rows: Record<string, unknown>[],
+  rows: Record<string, any>[],
   metadata?: CsvMetadata,
   filename?: string,
 ): void {

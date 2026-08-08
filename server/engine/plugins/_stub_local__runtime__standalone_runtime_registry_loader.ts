@@ -9,6 +9,6 @@ export const ensureStandaloneRuntimePluginRegistryLoaded = (_params?: {
   forceLoad?: boolean;
   installRegistry?: boolean;
   requiredPluginIds?: readonly string[];
-  loadOptions?: unknown;
-  [key: string]: unknown;
+  loadOptions?: any;
+  [key: string]: any;
 }): undefined => undefined;

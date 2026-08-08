@@ -19,14 +19,14 @@ const convertMessagesForTest = convertMessages as unknown as (
 ) => ReturnType<typeof convertMessages>;
 
 function requireRecordProperty(
-  record: Record<string, unknown>,
+  record: Record<string, any>,
   key: string,
-): Record<string, unknown> {
+): Record<string, any> {
   const value = record[key];
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error(`expected object property ${key}`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 describe("google-shared convertTools", () => {

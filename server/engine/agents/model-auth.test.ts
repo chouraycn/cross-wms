@@ -76,7 +76,7 @@ vi.mock("../plugins/provider-runtime.js", async () => {
               enabled?: boolean;
               config?: {
                 webSearch?: {
-                  apiKey?: unknown;
+                  apiKey?: any;
                 };
               };
             }
@@ -86,14 +86,14 @@ vi.mock("../plugins/provider-runtime.js", async () => {
           web?: {
             search?: {
               grok?: {
-                apiKey?: unknown;
+                apiKey?: any;
               };
             };
           };
         };
       };
       modelApi?: string;
-      context: { providerConfig?: { api?: string; baseUrl?: string; models?: unknown[] } };
+      context: { providerConfig?: { api?: string; baseUrl?: string; models?: any[] } };
     }) => {
       if (params.provider === "plugin-web") {
         if (
@@ -441,7 +441,7 @@ describe("requireApiKey", () => {
   });
 
   it("throws typed missing auth errors with source metadata", () => {
-    let thrown: unknown;
+    let thrown: any;
     try {
       requireApiKey(
         {

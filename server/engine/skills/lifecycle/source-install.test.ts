@@ -415,7 +415,7 @@ describe("installSkillFromSource", () => {
       });
       const lock = JSON.parse(
         await fs.readFile(path.join(workspaceDir, ".clawhub", "lock.json"), "utf8"),
-      ) as { skills: Record<string, unknown> };
+      ) as { skills: Record<string, any> };
       expect(lock.skills["frontmatter-skill"]).toBeUndefined();
       await expect(
         fs.access(path.join(workspaceDir, "skills", "frontmatter-skill", ".clawhub")),

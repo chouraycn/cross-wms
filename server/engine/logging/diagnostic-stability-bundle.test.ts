@@ -46,7 +46,7 @@ describe("diagnostic stability bundles", () => {
     return JSON.parse(fs.readFileSync(file, "utf8")) as DiagnosticStabilityBundle;
   }
 
-  function createImportedBundle(): Record<string, unknown> {
+  function createImportedBundle(): Record<string, any> {
     return {
       version: 1,
       generatedAt: "2026-04-22T12:00:00.000Z",
@@ -261,14 +261,14 @@ describe("diagnostic stability bundles", () => {
         message: "OPENAI_API_KEY=sk-1234567890abcdef",
       },
     });
-    Object.assign(bundle.process as Record<string, unknown>, {
+    Object.assign(bundle.process as Record<string, any>, {
       command: "process-command-secret",
     });
-    Object.assign(bundle.host as Record<string, unknown>, {
+    Object.assign(bundle.host as Record<string, any>, {
       hostname: "private-hostname",
       fqdn: "host-extra-secret",
     });
-    const snapshot = bundle.snapshot as Record<string, unknown>;
+    const snapshot = bundle.snapshot as Record<string, any>;
     Object.assign(snapshot, {
       privateSnapshot: "snapshot-secret",
       events: [
@@ -361,7 +361,7 @@ describe("diagnostic stability bundles", () => {
 
   it("rejects malformed bundle snapshots before returning them", () => {
     const baseBundle = createImportedBundle();
-    const baseSnapshot = baseBundle.snapshot as Record<string, unknown>;
+    const baseSnapshot = baseBundle.snapshot as Record<string, any>;
     const cases = [
       {
         name: "malformed-event",

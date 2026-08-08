@@ -29,13 +29,13 @@ const VALID_PROVIDERS = new Set<SecretProvider>([
   'exec',
 ]);
 
-function isSecretProvider(value: unknown): value is SecretProvider {
+function isSecretProvider(value: any): value is SecretProvider {
   return typeof value === 'string' && VALID_PROVIDERS.has(value as SecretProvider);
 }
 
 // ========== Secrets List ==========
 
-async function secretsList(params: unknown, _ctx: GatewayMethodContext) {
+async function secretsList(params: any, _ctx: GatewayMethodContext) {
   const { provider, scope, scopeId, tag } = params as {
     provider?: SecretProvider;
     scope?: string;
@@ -66,7 +66,7 @@ async function secretsList(params: unknown, _ctx: GatewayMethodContext) {
 
 // ========== Secrets Get ==========
 
-async function secretsGet(params: unknown, _ctx: GatewayMethodContext) {
+async function secretsGet(params: any, _ctx: GatewayMethodContext) {
   const { id, provider, key, includeValue = false } = params as {
     id?: string;
     provider?: string;
@@ -98,7 +98,7 @@ async function secretsGet(params: unknown, _ctx: GatewayMethodContext) {
   }
 
   // 默认不返回明文值；仅在 includeValue=true 时返回（注意安全）
-  const result: Record<string, unknown> = { ...record };
+  const result: Record<string, any> = { ...record };
   if (includeValue && record.id) {
     result.value = secretsManager.getValue(record.id, 'gateway.secrets.get');
   }
@@ -111,7 +111,7 @@ async function secretsGet(params: unknown, _ctx: GatewayMethodContext) {
 
 // ========== Secrets Set ==========
 
-async function secretsSet(params: unknown, _ctx: GatewayMethodContext) {
+async function secretsSet(params: any, _ctx: GatewayMethodContext) {
   const {
     provider,
     key,

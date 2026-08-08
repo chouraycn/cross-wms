@@ -44,8 +44,8 @@ export async function gatewayStatusCommand(
     url?: string;
     token?: string;
     password?: string;
-    port?: unknown;
-    timeout?: unknown;
+    port?: any;
+    timeout?: any;
     json?: boolean;
     ssh?: string;
     sshIdentity?: string;

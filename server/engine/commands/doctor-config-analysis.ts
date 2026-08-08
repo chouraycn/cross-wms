@@ -40,8 +40,8 @@ export function formatConfigPath(parts: Array<string | number>): string {
 }
 
 /** Resolves a config path against a loose config tree, returning null for invalid traversal. */
-export function resolveConfigPathTarget(root: unknown, pathLocal: Array<string | number>): unknown {
-  let current: unknown = root;
+export function resolveConfigPathTarget(root: any, pathLocal: Array<string | number>): any {
+  let current: any = root;
   for (const part of pathLocal) {
     if (typeof part === "number") {
       if (!Array.isArray(current)) {
@@ -56,7 +56,7 @@ export function resolveConfigPathTarget(root: unknown, pathLocal: Array<string |
     if (!current || typeof current !== "object" || Array.isArray(current)) {
       return null;
     }
-    const record = current as Record<string, unknown>;
+    const record = current as Record<string, any>;
     if (!(part in record)) {
       return null;
     }
@@ -105,7 +105,7 @@ export function stripUnknownConfigKeys(config: OpenClawConfig): {
     if (!target || typeof target !== "object" || Array.isArray(target)) {
       continue;
     }
-    const record = target as Record<string, unknown>;
+    const record = target as Record<string, any>;
     const parentKey =
       issuePath.length === 1 && typeof issuePath[0] === "string" ? issuePath[0] : undefined;
     const protectedSet =
@@ -169,13 +169,13 @@ export function noteOpencodeProviderOverrides(cfg: OpenClawConfig): void {
   note(lines.join("\n"), "OpenCode");
 }
 
-function isImplicitFallbackClobber(model: unknown): boolean {
+function isImplicitFallbackClobber(model: any): boolean {
   const primary = resolvePrimaryStringValue(model);
   if (typeof model === "string") {
     return primary !== undefined;
   }
   if (model !== null && typeof model === "object" && !Array.isArray(model)) {
-    const obj = model as Record<string, unknown>;
+    const obj = model as Record<string, any>;
     // Object with primary but no fallbacks key — intent is ambiguous; warn.
     // Object with fallbacks: [] — explicit no-fallbacks; no warn.
     return (

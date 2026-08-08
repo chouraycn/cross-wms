@@ -236,15 +236,15 @@ export function adjustInventoryCount(id: number, adjustedBy?: string): Inventory
   wms.update<InventoryCountRow>('wms_inventory_counts', id, updatedRow);
 
   // 同步更新 inventory_items 中的库存数量
-  const items = wms.list<Record<string, unknown>>('inventory_items');
+  const items = wms.list<Record<string, any>>('inventory_items');
   const itemIndex = items.findIndex((item) => item.sku === model.sku && item.warehouseId === model.warehouseId);
   if (itemIndex !== -1) {
     items[itemIndex] = { ...items[itemIndex], quantity: model.actualQuantity };
-    wms.list<Record<string, unknown>>('inventory_items'); // trigger read to get file ref
+    wms.list<Record<string, any>>('inventory_items'); // trigger read to get file ref
     const fs2 = require('fs');
     const path2 = require('path');
     const filePath = path2.join(AppPaths.wmsDataDir, 'inventory_items.json');
-    const raw = JSON.parse(fs2.readFileSync(filePath, 'utf-8') || '{"items":[]}') as { items: Record<string, unknown>[]; lastId?: number };
+    const raw = JSON.parse(fs2.readFileSync(filePath, 'utf-8') || '{"items":[]}') as { items: Record<string, any>[]; lastId?: number };
     raw.items[itemIndex] = items[itemIndex];
     fs2.writeFileSync(filePath, JSON.stringify(raw, null, 2) + '\n', 'utf-8');
   }
@@ -253,7 +253,7 @@ export function adjustInventoryCount(id: number, adjustedBy?: string): Inventory
   const variance = model.actualQuantity - model.systemQuantity;
   if (variance !== 0) {
     const txId = wms.nextId('inventory_transactions');
-    wms.create<Record<string, unknown>>('inventory_transactions', txId, {
+    wms.create<Record<string, any>>('inventory_transactions', txId, {
       id: txId,
       sku: model.sku,
       type: 'adjustment',
@@ -429,7 +429,7 @@ export function checkAlerts(warehouseId?: string, lowStockThreshold: number = 10
   const now = new Date().toISOString();
 
   // 1. 低库存预警
-  let lowStockItems = wms.list<Record<string, unknown>>('inventory_items').filter((item) => (item.quantity as number) < lowStockThreshold);
+  let lowStockItems = wms.list<Record<string, any>>('inventory_items').filter((item) => (item.quantity as number) < lowStockThreshold);
   if (warehouseId) {
     lowStockItems = lowStockItems.filter((item) => item.warehouseId === warehouseId);
   }
@@ -486,7 +486,7 @@ export function createReplenishmentRule(rule: {
 }): number {
   const now = new Date().toISOString();
   const id = wms.nextId('wms_replenishment_rules');
-  const row: Record<string, unknown> = {
+  const row: Record<string, any> = {
     id,
     sku: rule.sku,
     warehouse_id: rule.warehouseId,
@@ -501,7 +501,7 @@ export function createReplenishmentRule(rule: {
     created_at: now,
     updated_at: now,
   };
-  wms.create<Record<string, unknown>>('wms_replenishment_rules', id, row);
+  wms.create<Record<string, any>>('wms_replenishment_rules', id, row);
   return id;
 }
 
@@ -510,8 +510,8 @@ export function getReplenishmentRules(filters?: {
   sku?: string;
   warehouseId?: string;
   status?: string;
-}): Array<Record<string, unknown>> {
-  let rows = wms.list<Record<string, unknown>>('wms_replenishment_rules');
+}): Array<Record<string, any>> {
+  let rows = wms.list<Record<string, any>>('wms_replenishment_rules');
   if (filters?.sku) {
     rows = rows.filter((r) => r.sku === filters.sku);
   }
@@ -526,18 +526,18 @@ export function getReplenishmentRules(filters?: {
 }
 
 /** 根据 ID 查询单条补货规则 */
-export function getReplenishmentRuleById(id: number): Record<string, unknown> | undefined {
-  return wms.get<Record<string, unknown>>('wms_replenishment_rules', id);
+export function getReplenishmentRuleById(id: number): Record<string, any> | undefined {
+  return wms.get<Record<string, any>>('wms_replenishment_rules', id);
 }
 
 /** 根据 sku + warehouseId 查询补货规则 */
-export function getReplenishmentRuleBySkuAndWarehouse(sku: string, warehouseId: string): Record<string, unknown> | undefined {
-  return wms.findOne<Record<string, unknown>>('wms_replenishment_rules', (r) => r.sku === sku && r.warehouse_id === warehouseId);
+export function getReplenishmentRuleBySkuAndWarehouse(sku: string, warehouseId: string): Record<string, any> | undefined {
+  return wms.findOne<Record<string, any>>('wms_replenishment_rules', (r) => r.sku === sku && r.warehouse_id === warehouseId);
 }
 
 /** 更新补货规则 */
-export function updateReplenishmentRule(id: number, updates: Record<string, unknown>): boolean {
-  const existing = wms.get<Record<string, unknown>>('wms_replenishment_rules', id);
+export function updateReplenishmentRule(id: number, updates: Record<string, any>): boolean {
+  const existing = wms.get<Record<string, any>>('wms_replenishment_rules', id);
   if (!existing) return false;
   const now = new Date().toISOString();
 
@@ -554,14 +554,14 @@ export function updateReplenishmentRule(id: number, updates: Record<string, unkn
     status: 'status',
   };
 
-  const merged: Record<string, unknown> = { ...existing };
+  const merged: Record<string, any> = { ...existing };
   for (const [key, col] of Object.entries(fieldMap)) {
     if (updates[key] !== undefined) {
       merged[col] = updates[key];
     }
   }
   merged.updated_at = now;
-  wms.update<Record<string, unknown>>('wms_replenishment_rules', id, merged);
+  wms.update<Record<string, any>>('wms_replenishment_rules', id, merged);
   return true;
 }
 
@@ -585,7 +585,7 @@ export function createDemandForecast(forecast: {
 }): number {
   const now = new Date().toISOString();
   const id = wms.nextId('wms_demand_forecasts');
-  const row: Record<string, unknown> = {
+  const row: Record<string, any> = {
     id,
     sku: forecast.sku,
     warehouse_id: forecast.warehouseId,
@@ -598,7 +598,7 @@ export function createDemandForecast(forecast: {
     created_at: now,
     updated_at: now,
   };
-  wms.create<Record<string, unknown>>('wms_demand_forecasts', id, row);
+  wms.create<Record<string, any>>('wms_demand_forecasts', id, row);
   return id;
 }
 
@@ -607,8 +607,8 @@ export function getDemandForecasts(filters?: {
   sku?: string;
   warehouseId?: string;
   status?: string;
-}): Array<Record<string, unknown>> {
-  let rows = wms.list<Record<string, unknown>>('wms_demand_forecasts');
+}): Array<Record<string, any>> {
+  let rows = wms.list<Record<string, any>>('wms_demand_forecasts');
   if (filters?.sku) {
     rows = rows.filter((r) => r.sku === filters.sku);
   }
@@ -623,16 +623,16 @@ export function getDemandForecasts(filters?: {
 }
 
 /** 根据 ID 查询单条需求预测 */
-export function getDemandForecastById(id: number): Record<string, unknown> | undefined {
-  return wms.get<Record<string, unknown>>('wms_demand_forecasts', id);
+export function getDemandForecastById(id: number): Record<string, any> | undefined {
+  return wms.get<Record<string, any>>('wms_demand_forecasts', id);
 }
 
 /** 更新预测状态 */
 export function updateDemandForecastStatus(id: number, status: string): boolean {
-  const existing = wms.get<Record<string, unknown>>('wms_demand_forecasts', id);
+  const existing = wms.get<Record<string, any>>('wms_demand_forecasts', id);
   if (!existing) return false;
   const now = new Date().toISOString();
-  wms.update<Record<string, unknown>>('wms_demand_forecasts', id, {
+  wms.update<Record<string, any>>('wms_demand_forecasts', id, {
     ...existing,
     status,
     updated_at: now,
@@ -687,14 +687,14 @@ export function queryInventoryReportData(filters?: {
   warehouseId?: string;
   startDate?: string;
   endDate?: string;
-}): Array<Record<string, unknown>> {
-  const warehouses = wms.list<Record<string, unknown>>('warehouses');
+}): Array<Record<string, any>> {
+  const warehouses = wms.list<Record<string, any>>('warehouses');
   const warehouseMap = new Map<string, string>();
   for (const w of warehouses) {
     warehouseMap.set(w.id as string, w.name as string);
   }
 
-  let items = wms.list<Record<string, unknown>>('inventory_items');
+  let items = wms.list<Record<string, any>>('inventory_items');
   if (filters?.warehouseId) {
     items = items.filter((i) => i.warehouseId === filters.warehouseId);
   }
@@ -732,13 +732,13 @@ export function queryInboundReportData(filters?: {
   warehouseId?: string;
   startDate?: string;
   endDate?: string;
-}): Array<Record<string, unknown>> {
-  const warehouses = wms.list<Record<string, unknown>>('warehouses');
+}): Array<Record<string, any>> {
+  const warehouses = wms.list<Record<string, any>>('warehouses');
   const warehouseMap = new Map<string, string>();
   for (const w of warehouses) {
     warehouseMap.set(w.id as string, w.name as string);
   }
-  const inventoryItems = wms.list<Record<string, unknown>>('inventory_items');
+  const inventoryItems = wms.list<Record<string, any>>('inventory_items');
   const itemNameMap = new Map<string, string>();
   for (const ii of inventoryItems) {
     if (!itemNameMap.has(ii.sku as string)) {
@@ -746,7 +746,7 @@ export function queryInboundReportData(filters?: {
     }
   }
 
-  let records = wms.list<Record<string, unknown>>('inbound_records');
+  let records = wms.list<Record<string, any>>('inbound_records');
   if (filters?.warehouseId) {
     records = records.filter((r) => r.warehouseId === filters.warehouseId);
   }
@@ -776,13 +776,13 @@ export function queryOutboundReportData(filters?: {
   warehouseId?: string;
   startDate?: string;
   endDate?: string;
-}): Array<Record<string, unknown>> {
-  const warehouses = wms.list<Record<string, unknown>>('warehouses');
+}): Array<Record<string, any>> {
+  const warehouses = wms.list<Record<string, any>>('warehouses');
   const warehouseMap = new Map<string, string>();
   for (const w of warehouses) {
     warehouseMap.set(w.id as string, w.name as string);
   }
-  const inventoryItems = wms.list<Record<string, unknown>>('inventory_items');
+  const inventoryItems = wms.list<Record<string, any>>('inventory_items');
   const itemNameMap = new Map<string, string>();
   for (const ii of inventoryItems) {
     if (!itemNameMap.has(ii.sku as string)) {
@@ -790,7 +790,7 @@ export function queryOutboundReportData(filters?: {
     }
   }
 
-  let records = wms.list<Record<string, unknown>>('outbound_records');
+  let records = wms.list<Record<string, any>>('outbound_records');
   if (filters?.warehouseId) {
     records = records.filter((r) => r.warehouseId === filters.warehouseId);
   }
@@ -827,7 +827,7 @@ export function createReplenishmentSuggestion(suggestion: {
 }): number {
   const now = new Date().toISOString();
   const id = wms.nextId('replenishment_suggestions');
-  const row: Record<string, unknown> = {
+  const row: Record<string, any> = {
     id,
     sku: suggestion.sku,
     warehouse_id: suggestion.warehouseId,
@@ -837,7 +837,7 @@ export function createReplenishmentSuggestion(suggestion: {
     created_at: now,
     updated_at: now,
   };
-  wms.create<Record<string, unknown>>('replenishment_suggestions', id, row);
+  wms.create<Record<string, any>>('replenishment_suggestions', id, row);
   return id;
 }
 
@@ -846,8 +846,8 @@ export function getReplenishmentSuggestions(filters?: {
   status?: string;
   warehouseId?: string;
   sku?: string;
-}): Array<Record<string, unknown>> {
-  let rows = wms.list<Record<string, unknown>>('replenishment_suggestions');
+}): Array<Record<string, any>> {
+  let rows = wms.list<Record<string, any>>('replenishment_suggestions');
   if (filters?.status) {
     rows = rows.filter((r) => r.status === filters.status);
   }
@@ -862,18 +862,18 @@ export function getReplenishmentSuggestions(filters?: {
 }
 
 /** 更新补货建议 */
-export function updateReplenishmentSuggestion(id: number, updates: Record<string, unknown>): boolean {
-  const existing = wms.get<Record<string, unknown>>('replenishment_suggestions', id);
+export function updateReplenishmentSuggestion(id: number, updates: Record<string, any>): boolean {
+  const existing = wms.get<Record<string, any>>('replenishment_suggestions', id);
   if (!existing) return false;
   const now = new Date().toISOString();
 
-  const merged: Record<string, unknown> = { ...existing };
+  const merged: Record<string, any> = { ...existing };
   if (updates.status !== undefined) merged.status = updates.status;
   if (updates.suggestedQty !== undefined) merged.suggested_qty = updates.suggestedQty;
   if (updates.reason !== undefined) merged.reason = updates.reason;
   merged.updated_at = now;
 
-  wms.update<Record<string, unknown>>('replenishment_suggestions', id, merged);
+  wms.update<Record<string, any>>('replenishment_suggestions', id, merged);
   return true;
 }
 
@@ -881,7 +881,7 @@ export function updateReplenishmentSuggestion(id: number, updates: Record<string
 
 /** 根据 ID 查询补货建议（精简字段，用于路由层校验） */
 export function getReplenishmentSuggestionById(id: number): { sku: string; warehouseId: string; suggestedQty: number; status: string } | undefined {
-  const row = wms.get<Record<string, unknown>>('replenishment_suggestions', id);
+  const row = wms.get<Record<string, any>>('replenishment_suggestions', id);
   if (!row) return undefined;
   return {
     sku: row.sku as string,
@@ -910,9 +910,9 @@ export function getPredictionDashboard(minHistoryDays: number): PredictionDashbo
     alerts.filter((a) => a.alert_type === 'predicted_shortage' && a.status === 'active' && a.sku != null).map((a) => a.sku!)
   ).size;
 
-  const totalSkus = wms.list<Record<string, unknown>>('inventory_items').filter((i) => (i.quantity as number) > 0).length;
+  const totalSkus = wms.list<Record<string, any>>('inventory_items').filter((i) => (i.quantity as number) > 0).length;
 
-  const transactions = wms.list<Record<string, unknown>>('inventory_transactions');
+  const transactions = wms.list<Record<string, any>>('inventory_transactions');
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
   const outboundTx = transactions.filter(
     (t) => (t.type === 'outbound' || t.type === 'transfer_out') && (t.createdAt as string) >= thirtyDaysAgo
@@ -1008,7 +1008,7 @@ export function generateInventoryReport(params?: {
   }
 
   // 查询库存数据
-  let items = wms.list<Record<string, unknown>>('inventory_items');
+  let items = wms.list<Record<string, any>>('inventory_items');
   if (params?.warehouseId) {
     items = items.filter((i) => i.warehouseId === params.warehouseId);
   }

@@ -67,7 +67,7 @@ async function runGatewayPrompt(params: {
   baseConfig?: OpenClawConfig;
   randomToken?: string;
   confirmResult?: boolean;
-  authConfigFactory?: (input: Record<string, unknown>) => Record<string, unknown>;
+  authConfigFactory?: (input: Record<string, any>) => Record<string, any>;
 }) {
   vi.clearAllMocks();
   mocks.resolveGatewayPort.mockReturnValue(18789);
@@ -83,7 +83,7 @@ async function runGatewayPrompt(params: {
   mocks.randomToken.mockReturnValue(params.randomToken ?? "generated-token");
   mocks.confirm.mockResolvedValue(params.confirmResult ?? true);
   mocks.buildGatewayAuthConfig.mockImplementation((input) =>
-    params.authConfigFactory ? params.authConfigFactory(input as Record<string, unknown>) : input,
+    params.authConfigFactory ? params.authConfigFactory(input as Record<string, any>) : input,
   );
 
   const result = await promptGatewayConfig(params.baseConfig ?? {}, makeRuntime());

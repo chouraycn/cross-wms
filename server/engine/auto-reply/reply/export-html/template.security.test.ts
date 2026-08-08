@@ -11,9 +11,9 @@ type SessionEntry = {
   parentId: string | null;
   timestamp: string;
   type: string;
-  message?: unknown;
+  message?: any;
   summary?: string;
-  content?: unknown;
+  content?: any;
   targetId?: string | null;
   appendParentId?: string | null;
   display?: boolean;
@@ -29,13 +29,13 @@ type SessionData = {
   leafId: string | null;
   hasLeafControl?: boolean;
   systemPrompt: string;
-  tools: unknown[];
+  tools: any[];
 };
 
 type ParsedHtml = {
   document: Document;
   window: {
-    HTMLElement?: unknown;
+    HTMLElement?: any;
   };
 };
 
@@ -114,11 +114,11 @@ async function renderTemplate(sessionData: SessionData) {
     installScrollIntoViewStub(document);
   }
 
-  const immediateTimeout = (fn: (...args: unknown[]) => void) => {
+  const immediateTimeout = (fn: (...args: any[]) => void) => {
     fn();
     return 0;
   };
-  const runtime: Record<string, unknown> = {
+  const runtime: Record<string, any> = {
     document,
     console,
     clearTimeout: () => {},

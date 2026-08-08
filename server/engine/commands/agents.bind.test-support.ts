@@ -9,11 +9,11 @@ type ReplaceConfigFileResult = Awaited<
   ReturnType<(typeof import("../config/config.js"))["replaceConfigFile"]>
 >;
 
-export const readConfigFileSnapshotMock: Mock<(...args: unknown[]) => Promise<unknown>> = vi.fn();
-export const writeConfigFileMock: Mock<(...args: unknown[]) => Promise<unknown>> = vi
+export const readConfigFileSnapshotMock: Mock<(...args: any[]) => Promise<any>> = vi.fn();
+export const writeConfigFileMock: Mock<(...args: any[]) => Promise<any>> = vi
   .fn()
   .mockResolvedValue(undefined);
-const replaceConfigFileMock: Mock<(...args: unknown[]) => Promise<unknown>> = vi.fn(
+const replaceConfigFileMock: Mock<(...args: any[]) => Promise<any>> = vi.fn(
   async (params: { nextConfig: OpenClawConfig }): Promise<ReplaceConfigFileResult> => {
     await writeConfigFileMock(params.nextConfig);
     return {
@@ -26,12 +26,12 @@ const replaceConfigFileMock: Mock<(...args: unknown[]) => Promise<unknown>> = vi
       followUp: { mode: "auto", requiresRestart: false },
     };
   },
-) as Mock<(...args: unknown[]) => Promise<unknown>>;
+) as Mock<(...args: any[]) => Promise<any>>;
 
 vi.mock("../config/config.js", () => ({
-  readConfigFileSnapshot: (...args: unknown[]) => readConfigFileSnapshotMock(...args),
-  writeConfigFile: (...args: unknown[]) => writeConfigFileMock(...args),
-  replaceConfigFile: (...args: unknown[]) => replaceConfigFileMock(...args),
+  readConfigFileSnapshot: (...args: any[]) => readConfigFileSnapshotMock(...args),
+  writeConfigFile: (...args: any[]) => writeConfigFileMock(...args),
+  replaceConfigFile: (...args: any[]) => replaceConfigFileMock(...args),
 }));
 
 vi.mock("./agents.command-shared.js", () => ({

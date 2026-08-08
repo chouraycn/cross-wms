@@ -19,9 +19,9 @@ vi.mock("./plugin-registry-contributions.js", () => ({
 }));
 
 vi.mock("./config-state.js", () => ({
-  hasExplicitPluginConfig: (plugins?: { entries?: Record<string, unknown> }) =>
+  hasExplicitPluginConfig: (plugins?: { entries?: Record<string, any> }) =>
     Boolean(plugins?.entries && Object.keys(plugins.entries).length > 0),
-  normalizePluginsConfig: (plugins?: unknown) => plugins,
+  normalizePluginsConfig: (plugins?: any) => plugins,
   resolveEffectivePluginActivationState: (params: {
     config?: { entries?: Record<string, { enabled?: boolean }> };
     id: string;

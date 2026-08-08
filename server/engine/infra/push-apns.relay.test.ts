@@ -61,7 +61,7 @@ function expectRelayConfig(
   expect(resolved.value.timeoutMs).toBe(expected.timeoutMs);
 }
 
-function firstMockCall<T extends unknown[]>(mock: { mock: { calls: T[] } }): T | undefined {
+function firstMockCall<T extends any[]>(mock: { mock: { calls: T[] } }): T | undefined {
   return mock.mock.calls[0];
 }
 
@@ -230,7 +230,7 @@ describe("push-apns.relay", () => {
             signedAtMs?: number;
             pushType?: string;
             priority?: string;
-            payload?: unknown;
+            payload?: any;
             bodyJson?: string;
             signature?: string;
           }
@@ -282,7 +282,7 @@ describe("push-apns.relay", () => {
       const result = await sendApnsRelayPush(createRelayPushParams());
 
       expect(fetchMock).toHaveBeenCalledTimes(1);
-      const fetchOptions = firstMockCall(fetchMock)?.[1] as { redirect?: unknown } | undefined;
+      const fetchOptions = firstMockCall(fetchMock)?.[1] as { redirect?: any } | undefined;
       expect(fetchOptions?.redirect).toBe("manual");
       expect(result.ok).toBe(false);
       expect(result.status).toBe(302);

@@ -15,7 +15,7 @@ export type DeviceAuthStoreAdapter = {
   writeStore: (store: DeviceAuthStore) => void;
 };
 
-function coerceDeviceAuthEntry(role: string, value: unknown): DeviceAuthEntry | null {
+function coerceDeviceAuthEntry(role: string, value: any): DeviceAuthEntry | null {
   if (!isRecord(value) || typeof value.token !== "string") {
     return null;
   }
@@ -32,7 +32,7 @@ function coerceDeviceAuthEntry(role: string, value: unknown): DeviceAuthEntry | 
 }
 
 function copyCanonicalDeviceAuthTokens(
-  tokens: Record<string, unknown>,
+  tokens: Record<string, any>,
 ): Record<string, DeviceAuthEntry> {
   const out: Record<string, DeviceAuthEntry> = {};
   for (const [rawRole, value] of Object.entries(tokens)) {
@@ -49,7 +49,7 @@ function copyCanonicalDeviceAuthTokens(
 }
 
 /** Coerces raw persisted device-auth JSON into the current canonical store shape. */
-export function coerceDeviceAuthStore(value: unknown): DeviceAuthStore | null {
+export function coerceDeviceAuthStore(value: any): DeviceAuthStore | null {
   if (!isRecord(value) || value.version !== 1 || typeof value.deviceId !== "string") {
     return null;
   }

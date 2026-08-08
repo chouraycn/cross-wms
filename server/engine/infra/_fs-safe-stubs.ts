@@ -124,21 +124,21 @@ export function safeStatSync(targetPath: string): fs.Stats | null {
 }
 
 /** 判断错误是否为 NotFound 类型的路径错误 */
-export function isNotFoundPathError(error: unknown): boolean {
+export function isNotFoundPathError(error: any): boolean {
   if (!error || typeof error !== "object") return false;
   const err = error as NodeJS.ErrnoException;
   return err.code === "ENOENT";
 }
 
 /** 判断 Node 错误是否具有指定 code */
-export function hasNodeErrorCode(error: unknown, code: string): boolean {
+export function hasNodeErrorCode(error: any, code: string): boolean {
   if (!error || typeof error !== "object") return false;
   const err = error as NodeJS.ErrnoException;
   return err.code === code;
 }
 
 /** 判断是否为 Node 错误（具有 code 属性） */
-export function isNodeError(error: unknown, code?: string): boolean {
+export function isNodeError(error: any, code?: string): boolean {
   if (!error || typeof error !== "object") return false;
   const err = error as NodeJS.ErrnoException;
   if (typeof err.code !== "string") return false;
@@ -146,7 +146,7 @@ export function isNodeError(error: unknown, code?: string): boolean {
 }
 
 /** 判断是否为符号链接打开错误 */
-export function isSymlinkOpenError(error: unknown): boolean {
+export function isSymlinkOpenError(error: any): boolean {
   return hasNodeErrorCode(error, "ELOOP") || hasNodeErrorCode(error, "EINVAL");
 }
 
@@ -386,7 +386,7 @@ export function canUseRootFileOpen(): boolean {
  * 匹配 root 文件打开失败。
  * 降级实现：返回 null，不进行 Python 模式错误匹配。
  */
-export function matchRootFileOpenFailure(_error: unknown): RootFileOpenFailure | null;
+export function matchRootFileOpenFailure(_error: any): RootFileOpenFailure | null;
 export function matchRootFileOpenFailure<T>(
   failure: RootFileOpenFailure | { ok: false; failure: RootFileOpenFailure },
   handlers: {
@@ -397,14 +397,14 @@ export function matchRootFileOpenFailure<T>(
   },
 ): T;
 export function matchRootFileOpenFailure(
-  error: unknown,
+  error: any,
   handlers?: {
     path: () => unknown;
     io?: () => unknown;
     validation?: () => unknown;
     fallback: (failure: RootFileOpenFailure) => unknown;
   },
-): unknown {
+): any {
   if (handlers !== undefined) {
     let failure: RootFileOpenFailure;
     if (error !== null && typeof error === "object" && "failure" in error) {
@@ -459,8 +459,8 @@ export async function openRootFile(
         skipLexicalRootCheck?: boolean;
       },
   rootDir?: string,
-  reader?: (path: string) => Promise<unknown>,
-): Promise<unknown> {
+  reader?: (path: string) => Promise<any>,
+): Promise<any> {
   if (typeof filePathOrParams === "object" && filePathOrParams !== null) {
     const absolutePath = filePathOrParams.absolutePath;
     const rootPath = filePathOrParams.rootPath;
@@ -528,7 +528,7 @@ export function openRootFileSync(
       },
   rootDir?: string,
   reader?: (p: string) => unknown,
-): unknown {
+): any {
   if (typeof filePathOrParams === "object" && filePathOrParams !== null) {
     const absolutePath = filePathOrParams.absolutePath;
     const rootPath = filePathOrParams.rootPath;
@@ -780,7 +780,7 @@ export class JsonFileReadError extends Error {
   constructor(
     public readonly filePath: string,
     public readonly operation: string,
-    public readonly cause?: unknown,
+    public readonly cause?: any,
   ) {
     super(`JSON file read failed: ${filePath} (${operation})`);
     this.name = "JsonFileReadError";
@@ -827,8 +827,8 @@ export function tryReadJsonSync<T>(filePath: string): T | null {
 }
 
 /** 读取根 JSON 对象（同步） */
-export function readRootJsonSync(filePath: string): Record<string, unknown> {
-  return readJsonSync<Record<string, unknown>>(filePath);
+export function readRootJsonSync(filePath: string): Record<string, any> {
+  return readJsonSync<Record<string, any>>(filePath);
 }
 
 /** 读取根 JSON 对象（同步，对象参数形式，带边界守卫） */
@@ -838,9 +838,9 @@ export function readRootJsonObjectSync(params: {
   boundaryLabel?: string;
   rejectHardlinks?: boolean;
   rootRealPath?: string;
-}): RootStructuredFileSyncResult<Record<string, unknown>>;
+}): RootStructuredFileSyncResult<Record<string, any>>;
 /** 读取根 JSON 对象（同步，字符串路径形式） */
-export function readRootJsonObjectSync(filePath: string): Record<string, unknown>;
+export function readRootJsonObjectSync(filePath: string): Record<string, any>;
 export function readRootJsonObjectSync(
   filePathOrParams: string | {
     rootDir: string;
@@ -849,7 +849,7 @@ export function readRootJsonObjectSync(
     rejectHardlinks?: boolean;
     rootRealPath?: string;
   },
-): unknown {
+): any {
   if (typeof filePathOrParams === "object" && filePathOrParams !== null) {
     const resolved = path.resolve(filePathOrParams.rootDir, filePathOrParams.relativePath);
     if (!isPathInside(resolved, filePathOrParams.rootDir)) {
@@ -863,7 +863,7 @@ export function readRootJsonObjectSync(
       };
     }
     try {
-      const value = readJsonSync<unknown>(resolved);
+      const value = readJsonSync<any>(resolved);
       if (!value || typeof value !== "object" || Array.isArray(value)) {
         return {
           ok: false,
@@ -871,7 +871,7 @@ export function readRootJsonObjectSync(
           error: `Root JSON value is not an object: ${resolved}`,
         };
       }
-      return { ok: true, value: value as Record<string, unknown> };
+      return { ok: true, value: value as Record<string, any> };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       const kind: RootFileOpenFailure["kind"] = isNotFoundPathError(error)
@@ -881,11 +881,11 @@ export function readRootJsonObjectSync(
     }
   }
   const filePath = filePathOrParams;
-  const value = readJsonSync<unknown>(filePath);
+  const value = readJsonSync<any>(filePath);
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new JsonFileReadError(filePath, "parse", new Error("Root JSON value is not an object"));
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 /** 读取根结构化文件（同步，字符串路径形式） */
@@ -908,9 +908,9 @@ export function readRootStructuredFileSync(
     boundaryLabel?: string;
     rejectHardlinks?: boolean;
     parse: (raw: string) => unknown;
-    validate?: (value: unknown) => boolean;
+    validate?: (value: any) => boolean;
   },
-): unknown {
+): any {
   if (typeof filePathOrParams === "string") {
     return fs.readFileSync(filePathOrParams, "utf-8");
   }
@@ -940,7 +940,7 @@ export function readRootStructuredFileSync(
       failure: { kind, message },
     };
   }
-  let parsed: unknown;
+  let parsed: any;
   try {
     parsed = params.parse(raw);
   } catch (error) {
@@ -969,7 +969,7 @@ export type RootStructuredFileSyncResult<T> =
 /** 写入 JSON 文件（原子） */
 export async function writeJson(
   filePath: string,
-  value: unknown,
+  value: any,
   options?: { mode?: number; durable?: boolean },
 ): Promise<void> {
   const content = JSON.stringify(value, null, 2);
@@ -985,7 +985,7 @@ export async function writeJson(
 /** 同步写入 JSON 文件（原子） */
 export function writeJsonSync(
   filePath: string,
-  value: unknown,
+  value: any,
   options?: { mode?: number },
 ): void {
   const content = JSON.stringify(value, null, 2);

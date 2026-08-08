@@ -571,7 +571,7 @@ function isManagedDreamingJob(
 
 async function resolveManagedDreamingCronStatus(params: {
   context: {
-    cron?: { list?: (opts?: { includeDisabled?: boolean }) => Promise<unknown[]> };
+    cron?: { list?: (opts?: { includeDisabled?: boolean }) => Promise<any[]> };
   };
   match: {
     name: string;
@@ -610,7 +610,7 @@ async function resolveManagedDreamingCronStatus(params: {
 }
 
 async function resolveAllManagedDreamingCronStatuses(context: {
-  cron?: { list?: (opts?: { includeDisabled?: boolean }) => Promise<unknown[]> };
+  cron?: { list?: (opts?: { includeDisabled?: boolean }) => Promise<any[]> };
 }): Promise<Record<"light" | "deep" | "rem", ManagedDreamingCronStatus>> {
   const sweepStatus = await resolveManagedDreamingCronStatus({
     context,
@@ -670,17 +670,17 @@ async function readDreamDiary(
   };
 }
 
-function shouldProbeMemoryEmbeddings(params: unknown): boolean {
+function shouldProbeMemoryEmbeddings(params: any): boolean {
   if (!params || typeof params !== "object") {
     return false;
   }
-  const record = params as Record<string, unknown>;
+  const record = params as Record<string, any>;
   return record.probe === true || record.deep === true;
 }
 
 function resolveDoctorMemoryTarget(
   context: GatewayRequestContext,
-  params: unknown,
+  params: any,
 ): {
   cfg: OpenClawConfig;
   agentId: string;
@@ -738,7 +738,7 @@ export const doctorHandlers: GatewayRequestHandlers = {
       }
       const nowMs = Date.now();
       const dreamingConfig = resolveDreamingConfig(cfg);
-      const workspaceDir = normalizeTrimmedString((status as Record<string, unknown>).workspaceDir);
+      const workspaceDir = normalizeTrimmedString((status as Record<string, any>).workspaceDir);
       const configuredWorkspaces = requestedAgentId
         ? workspaceDir
           ? [workspaceDir]

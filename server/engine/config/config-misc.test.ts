@@ -276,7 +276,7 @@ describe("legacy Canvas host config", () => {
 
     expect(result.ok).toBe(true);
     if (result.ok) {
-      expect((result.config as { canvasHost?: unknown }).canvasHost).toEqual({
+      expect((result.config as { canvasHost?: any }).canvasHost).toEqual({
         enabled: false,
         root: "~/canvas",
         port: 18790,
@@ -1186,7 +1186,7 @@ describe("config paths", () => {
   });
 
   it("sets, gets, and unsets nested values", () => {
-    const root: Record<string, unknown> = {};
+    const root: Record<string, any> = {};
     const parsed = parseConfigPath("foo.bar");
     if (!parsed.ok || !parsed.path) {
       throw new Error("path parse failed");
@@ -1249,7 +1249,7 @@ describe("config strict validation", () => {
       expect(snap.valid).toBe(false);
       expectSomeIssueMessageContains(snap.issues, '"memorySearch"');
       expect(issuePaths(snap.legacyIssues)).toContain("memorySearch");
-      expect((snap.sourceConfig as { memorySearch?: unknown }).memorySearch).toEqual({
+      expect((snap.sourceConfig as { memorySearch?: any }).memorySearch).toEqual({
         provider: "local",
         fallback: "none",
         query: { maxResults: 7 },
@@ -1272,7 +1272,7 @@ describe("config strict validation", () => {
       expect(snap.valid).toBe(false);
       expectSomeIssueMessageContains(snap.issues, '"heartbeat"');
       expect(issuePaths(snap.legacyIssues)).toContain("heartbeat");
-      expect((snap.sourceConfig as { heartbeat?: unknown }).heartbeat).toEqual({
+      expect((snap.sourceConfig as { heartbeat?: any }).heartbeat).toEqual({
         every: "30m",
         model: "anthropic/claude-3-5-haiku-20241022",
       });
@@ -1295,7 +1295,7 @@ describe("config strict validation", () => {
       expect(snap.valid).toBe(false);
       expectSomeIssueMessageContains(snap.issues, '"heartbeat"');
       expect(issuePaths(snap.legacyIssues)).toContain("heartbeat");
-      expect((snap.sourceConfig as { heartbeat?: unknown }).heartbeat).toEqual({
+      expect((snap.sourceConfig as { heartbeat?: any }).heartbeat).toEqual({
         showOk: true,
         showAlerts: false,
         useIndicator: true,

@@ -135,7 +135,7 @@ export function normalizeParts(parts: number, messageCount: number): number {
  * @param message - 消息对象
  * @returns 估算的 token 数
  */
-export function estimateMessageTokens(message: unknown): number {
+export function estimateMessageTokens(message: any): number {
   if (message === null || message === undefined) return 0;
   if (typeof message === 'string') {
     return Math.ceil(message.length / 4);
@@ -154,7 +154,7 @@ export function estimateMessageTokens(message: unknown): number {
  * @param messages - 消息数组
  * @returns 总 token 数
  */
-export function estimateMessagesTokens(messages: unknown[]): number {
+export function estimateMessagesTokens(messages: any[]): number {
   return messages.reduce((sum: number, msg) => sum + estimateMessageTokens(msg), 0);
 }
 
@@ -165,7 +165,7 @@ export function estimateMessagesTokens(messages: unknown[]): number {
  * @param maxTokens - 单条消息最大 token 数
  * @returns 是否超大
  */
-export function isOversizedMessage(message: unknown, maxTokens?: number): boolean {
+export function isOversizedMessage(message: any, maxTokens?: number): boolean {
   const limit = maxTokens ?? MAX_SINGLE_MESSAGE_TOKENS;
   return estimateMessageTokens(message) > limit;
 }
@@ -180,16 +180,16 @@ export function isOversizedMessage(message: unknown, maxTokens?: number): boolea
  * @returns 修剪后的消息
  */
 export function pruneHistoryForContextShare(
-  messages: unknown[],
+  messages: any[],
   maxHistoryTokens: number,
-): { pruned: unknown[]; removed: number; removedTokens: number } {
+): { pruned: any[]; removed: number; removedTokens: number } {
   const totalTokens = estimateMessagesTokens(messages);
   if (totalTokens <= maxHistoryTokens) {
     return { pruned: messages, removed: 0, removedTokens: 0 };
   }
 
   // 从最旧的消息开始移除
-  const pruned: unknown[] = [];
+  const pruned: any[] = [];
   let prunedTokens = 0;
   let removedCount = 0;
   let removedTokens = 0;

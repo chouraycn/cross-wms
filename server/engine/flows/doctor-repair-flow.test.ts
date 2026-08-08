@@ -21,7 +21,7 @@ function ctx(cfg: OpenClawConfig): HealthRepairContext {
 describe("runDoctorHealthRepairs", () => {
   it("repairs single-run checks and validates through lint mode", async () => {
     const runModes: string[] = [];
-    const scopes: unknown[] = [];
+    const scopes: any[] = [];
     const runnable: RunnableHealthCheck = {
       id: "test/run-repairable",
       kind: "core",
@@ -66,7 +66,7 @@ describe("runDoctorHealthRepairs", () => {
   });
 
   it("repairs modern checks and threads updated config", async () => {
-    const scopes: unknown[] = [];
+    const scopes: any[] = [];
     const checks: HealthCheck[] = [
       defineSplitHealthCheck({
         id: "test/repairable",

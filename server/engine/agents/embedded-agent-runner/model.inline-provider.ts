@@ -32,7 +32,7 @@ export type InlineProviderConfig = {
   contextTokens?: ModelProviderConfig["contextTokens"];
   maxTokens?: ModelProviderConfig["maxTokens"];
   params?: ModelProviderConfig["params"];
-  headers?: unknown;
+  headers?: any;
   authHeader?: boolean;
   timeoutSeconds?: ModelProviderConfig["timeoutSeconds"];
   request?: ModelProviderConfig["request"];
@@ -41,7 +41,7 @@ export type InlineProviderConfig = {
 
 /** Returns a supported transport API id from raw config values. */
 export function normalizeResolvedTransportApi(
-  api: unknown,
+  api: any,
 ): ModelDefinitionConfig["api"] | undefined {
   switch (api) {
     case "anthropic-messages":
@@ -62,7 +62,7 @@ export function normalizeResolvedTransportApi(
 
 /** Sanitizes configured provider/model headers before they enter runtime model metadata. */
 export function sanitizeModelHeaders(
-  headers: unknown,
+  headers: any,
   opts?: { stripSecretRefMarkers?: boolean },
 ): Record<string, string> | undefined {
   if (!headers || typeof headers !== "object" || Array.isArray(headers)) {
@@ -110,8 +110,8 @@ export function resolveProviderModelInput(params: {
   provider?: string;
   modelId?: string;
   modelName?: string;
-  input?: unknown;
-  fallbackInput?: unknown;
+  input?: any;
+  fallbackInput?: any;
 }): Array<"text" | "image"> {
   const resolvedInput = Array.isArray(params.input) ? params.input : params.fallbackInput;
   const normalizedInput = Array.isArray(resolvedInput)

@@ -8,7 +8,7 @@ import { redactTranscriptMessage } from "./transcript-redact.js";
 
 type AppendMessage = Parameters<SessionManager["appendMessage"]>[0];
 
-const asAppendMessage = (message: unknown) => message as AppendMessage;
+const asAppendMessage = (message: any) => message as AppendMessage;
 
 const toolCallMessage = asAppendMessage({
   role: "assistant",
@@ -481,7 +481,7 @@ describe("installSessionToolResultGuard", () => {
         }
         return {
           message: castAgentMessage({
-            ...(message as unknown as Record<string, unknown>),
+            ...(message as unknown as Record<string, any>),
             content: [{ type: "text", text: "rewritten by hook" }],
           }),
         };
@@ -565,7 +565,7 @@ describe("installSessionToolResultGuard", () => {
       transformMessageForPersistence: (message) =>
         (message as { role?: string }).role === "user"
           ? castAgentMessage({
-              ...(message as unknown as Record<string, unknown>),
+              ...(message as unknown as Record<string, any>),
               provenance: { kind: "inter_session", sourceTool: "sessions_send" },
             })
           : message,
@@ -580,7 +580,7 @@ describe("installSessionToolResultGuard", () => {
     );
 
     const persisted = sm.getEntries().find((e) => e.type === "message") as
-      | { message?: Record<string, unknown> }
+      | { message?: Record<string, any> }
       | undefined;
     expect(persisted?.message?.role).toBe("user");
     expect(persisted?.message?.provenance).toEqual({
@@ -612,7 +612,7 @@ describe("installSessionToolResultGuard", () => {
 
     const persisted = getPersistedMessages(sm);
     expect(persisted.map((message) => message.role)).toEqual(["user"]);
-    expect((persisted[0] as { content?: unknown } | undefined)?.content).toBe("second");
+    expect((persisted[0] as { content?: any } | undefined)?.content).toBe("second");
   });
 
   it("suppresses assistant error stubs when requested", () => {

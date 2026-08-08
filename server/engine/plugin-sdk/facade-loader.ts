@@ -16,7 +16,7 @@ import { resolveBundledFacadeModuleLocation } from "./facade-resolution-shared.j
 const CURRENT_MODULE_PATH = fileURLToPath(import.meta.url);
 
 const moduleLoaders: PluginModuleLoaderCache = new Map();
-const loadedFacadeModules = new Map<string, unknown>();
+const loadedFacadeModules = new Map<string, any>();
 const loadedFacadePluginIds = new Set<string>();
 let facadeLoaderSourceTransformFactory: PluginModuleLoaderFactory | undefined;
 let cachedOpenClawPackageRoot: string | undefined;
@@ -120,7 +120,7 @@ export function createLazyFacadeObjectValue<T extends object>(load: () => T): T 
 }
 
 /** Create an array proxy that loads the underlying facade only on first array access. */
-export function createLazyFacadeArrayValue<T extends readonly unknown[]>(load: () => T): T {
+export function createLazyFacadeArrayValue<T extends readonly any[]>(load: () => T): T {
   return createLazyFacadeProxyValue({ load, target: [] });
 }
 

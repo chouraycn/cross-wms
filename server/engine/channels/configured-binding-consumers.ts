@@ -4,14 +4,14 @@ export type ParsedConfiguredBindingSessionKey = unknown;
 
 export type ConfiguredBindingConsumer = unknown;
 
-export function listConfiguredBindingConsumers(..._args: unknown[]): unknown {
+export function listConfiguredBindingConsumers(..._args: any[]): any {
   return [];
 }
 
-export function resolveConfiguredBindingConsumer(..._args: unknown[]): unknown {
+export function resolveConfiguredBindingConsumer(..._args: any[]): any {
   return undefined;
 }
 
-export function registerConfiguredBindingConsumer(..._args: unknown[]): unknown {
+export function registerConfiguredBindingConsumer(..._args: any[]): any {
   return undefined;
 }

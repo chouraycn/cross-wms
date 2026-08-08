@@ -9,7 +9,7 @@ export type StatefulBindingTargetReadyResult = {
 export type StatefulBindingTargetSessionResult = {
   target: string;
   threadId?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 export type StatefulBindingTargetResetResult = {
@@ -19,9 +19,9 @@ export type StatefulBindingTargetResetResult = {
 
 export type StatefulBindingTargetDriver = {
   provider: string;
-  isReady: (params: unknown) => Promise<StatefulBindingTargetReadyResult>;
-  resolveSession: (params: unknown) => Promise<StatefulBindingTargetSessionResult | null>;
-  reset: (params: unknown) => Promise<StatefulBindingTargetResetResult>;
+  isReady: (params: any) => Promise<StatefulBindingTargetReadyResult>;
+  resolveSession: (params: any) => Promise<StatefulBindingTargetSessionResult | null>;
+  reset: (params: any) => Promise<StatefulBindingTargetResetResult>;
 };
 
 const drivers = new Map<string, StatefulBindingTargetDriver>();

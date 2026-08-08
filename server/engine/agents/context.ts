@@ -5,9 +5,9 @@ export interface AgentContext {
   sessionId: string;
   workspaceDir?: string;
   env?: Record<string, string>;
-  memory?: Record<string, unknown>;
+  memory?: Record<string, any>;
   startTime?: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export function createAgentContext(params: {

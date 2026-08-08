@@ -8,7 +8,7 @@ export class WebSocketTransport extends BaseTransportLayer {
   private messageId = 0;
   private pendingRequests = new Map<number | string, {
     resolve: (value: TransportResponse) => void;
-    reject: (reason: unknown) => void;
+    reject: (reason: any) => void;
     timeout?: ReturnType<typeof setTimeout>;
   }>();
   private reconnectAttempt = 0;
@@ -138,7 +138,7 @@ export class WebSocketTransport extends BaseTransportLayer {
     });
   }
 
-  async sendMessage(message: unknown): Promise<void> {
+  async sendMessage(message: any): Promise<void> {
     if (!this.ws || !this.connected) {
       throw new Error('Not connected');
     }

@@ -1,7 +1,7 @@
 // Output extractors for media-understanding provider CLI responses.
 
 /** Parse the last JSON object in a noisy provider output string. */
-function extractLastJsonObject(raw: string): unknown {
+function extractLastJsonObject(raw: string): any {
   const trimmed = raw.trim();
   const start = trimmed.lastIndexOf("{");
   if (start === -1) {
@@ -21,7 +21,7 @@ export function extractGeminiResponse(raw: string): string | null {
   if (!payload || typeof payload !== "object") {
     return null;
   }
-  const response = (payload as { response?: unknown }).response;
+  const response = (payload as { response?: any }).response;
   if (typeof response !== "string") {
     return null;
   }

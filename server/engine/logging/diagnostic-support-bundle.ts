@@ -24,7 +24,7 @@ function supportBundleByteLength(content: string): number {
 /** Creates a JSON support-bundle file with a safe relative path. */
 export function jsonSupportBundleFile(
   pathName: string,
-  value: unknown,
+  value: any,
 ): DiagnosticSupportBundleFile {
   return {
     path: assertSafeBundleRelativePath(pathName),

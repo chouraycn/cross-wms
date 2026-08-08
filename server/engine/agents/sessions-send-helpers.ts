@@ -15,4 +15,4 @@ export function resolveAnnounceTargetFromKey(): undefined { return undefined; }
 export function buildAgentToAgentMessageContext(): null { return null; }
 export function buildAgentToAgentReplyContext(): null { return null; }
 export function buildAgentToAgentAnnounceContext(): null { return null; }
-export function resolvePingPongTurns(): unknown[] { return []; }
+export function resolvePingPongTurns(): any[] { return []; }

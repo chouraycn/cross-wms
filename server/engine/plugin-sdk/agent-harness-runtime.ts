@@ -372,7 +372,7 @@ export type ToolProgressDetailMode = "explain" | "raw";
 /** Infer compact display metadata for one tool invocation from its name and arguments. */
 export function inferToolMetaFromArgs(
   toolName: string,
-  args: unknown,
+  args: any,
   options?: { detailMode?: ToolProgressDetailMode },
 ): string | undefined {
   const display = resolveToolDisplay({ name: toolName, args, detailMode: options?.detailMode });
@@ -403,7 +403,7 @@ export type AgentHarnessTerminalOutcomeInput = {
   assistantTexts: readonly string[];
   reasoningText?: string | null;
   planText?: string | null;
-  promptError?: unknown;
+  promptError?: any;
   turnCompleted: boolean;
 };
 

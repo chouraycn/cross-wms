@@ -45,7 +45,7 @@ async function makeTestState(): Promise<OpenClawTestState> {
 
 async function writeLegacyAuthProfilesJson(
   state: OpenClawTestState,
-  value: unknown,
+  value: any,
 ): Promise<string> {
   return await state.writeText(
     "agents/main/agent/auth-profiles.json",

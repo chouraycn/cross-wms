@@ -12,7 +12,7 @@ import {
 type SubagentModelPlan = ReturnType<typeof resolveSubagentModelAndThinkingPlan>;
 type OkSubagentModelPlan = Extract<SubagentModelPlan, { status: "ok" }>;
 
-function createConfig(overrides?: Record<string, unknown>): OpenClawConfig {
+function createConfig(overrides?: Record<string, any>): OpenClawConfig {
   return {
     session: { mainKey: "main", scope: "per-sender" },
     ...overrides,

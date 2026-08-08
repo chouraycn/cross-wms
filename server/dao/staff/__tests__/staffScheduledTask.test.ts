@@ -23,7 +23,7 @@ vi.mock('../../../db.js', () => ({
 
 // 可控的「数字员工引擎」mock：模拟流式吐字，最终返回确定内容
 vi.mock('../../../staff/staffChatExecutor.js', () => ({
-  runStaffChatTurn: vi.fn(async (_input: unknown, emit?: (e: { type: string; data?: { text?: string } }) => void) => {
+  runStaffChatTurn: vi.fn(async (_input: any, emit?: (e: { type: string; data?: { text?: string } }) => void) => {
     const parts = ['你好，', '这是定时任务', '的执行结果。'];
     if (emit) {
       for (const p of parts) emit({ type: 'text.delta', data: { text: p } });

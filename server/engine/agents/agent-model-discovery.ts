@@ -5,26 +5,26 @@
  */
 
 export type DiscoverAuthStorageOptions = {
-  config?: unknown;
+  config?: any;
   agentId?: string;
 };
 
-export function addEnvBackedAgentCredentials(_params: unknown): void {
+export function addEnvBackedAgentCredentials(_params: any): void {
   // no-op in cross-wms降级实现
 }
 
-export function resolveAgentCredentialsForDiscovery(_params: unknown): unknown {
+export function resolveAgentCredentialsForDiscovery(_params: any): any {
   return null;
 }
 
-export function normalizeDiscoveredAgentModel(model: unknown): unknown {
+export function normalizeDiscoveredAgentModel(model: any): any {
   return model;
 }
 
-export function discoverAuthStorage(_params: unknown): unknown {
+export function discoverAuthStorage(_params: any): any {
   return null;
 }
 
-export async function discoverModels(_params: unknown): Promise<unknown[]> {
+export async function discoverModels(_params: any): Promise<any[]> {
   return [];
 }

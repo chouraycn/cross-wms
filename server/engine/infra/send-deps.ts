@@ -6,7 +6,7 @@
  * Each outbound adapter resolves its own function from this record and
  * falls back to a direct import when the key is absent.
  */
-export type OutboundSendDeps = { [channelId: string]: unknown };
+export type OutboundSendDeps = { [channelId: string]: any };
 
 /**
  * Builds historical dependency keys for channel send functions.

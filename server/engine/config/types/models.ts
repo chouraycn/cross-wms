@@ -194,7 +194,7 @@ export type ModelDefinitionConfig = {
   /** Maps OpenClaw thinking levels to provider/model-specific values. */
   thinkingLevelMap?: ThinkingLevelMap;
   /** Provider-specific request/runtime parameters passed through to provider plugins. */
-  params?: Record<string, unknown>;
+  params?: Record<string, any>;
   /** Optional agent execution runtime override for this provider/model pair. */
   agentRuntime?: AgentRuntimePolicyConfig;
   /** Static headers merged into requests for this model. */
@@ -228,7 +228,7 @@ export type ModelProviderConfig = {
   region?: string;
   injectNumCtxForOpenAICompat?: boolean;
   /** Provider-specific runtime parameters interpreted by provider plugins. */
-  params?: Record<string, unknown>;
+  params?: Record<string, any>;
   /** Optional default agent execution runtime for models under this provider. */
   agentRuntime?: AgentRuntimePolicyConfig;
   /** Optional local service to start before calling this provider. */

@@ -78,7 +78,7 @@ export function pruneDiagnosticSessionStates(now = Date.now(), force = false): v
 }
 
 function resolveSessionKey({ sessionKey, sessionId }: SessionRef) {
-  return sessionKey ?? sessionId ?? "unknown";
+  return sessionKey ?? sessionId ?? "any";
 }
 
 function findStateEntryBySessionId(sessionId: string): [string, SessionState] | undefined {

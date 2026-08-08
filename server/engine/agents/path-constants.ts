@@ -6,6 +6,6 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export const AUTH_PROFILE_FILENAME: unknown = undefined;
-export const AUTH_STATE_FILENAME: unknown = undefined;
-export const LEGACY_AUTH_FILENAME: unknown = undefined;
+export const AUTH_PROFILE_FILENAME: any = undefined;
+export const AUTH_STATE_FILENAME: any = undefined;
+export const LEGACY_AUTH_FILENAME: any = undefined;

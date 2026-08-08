@@ -51,7 +51,7 @@ async function buildGitHubSkillZip(): Promise<Buffer> {
 describe("openclaw skills install ClawHub GitHub-backed E2E", () => {
   it("installs from the install resolver and reports install telemetry", async () => {
     const commit = "c".repeat(40);
-    const telemetryBodies: unknown[] = [];
+    const telemetryBodies: any[] = [];
     const requestLog: string[] = [];
     const githubZipBytes = await buildGitHubSkillZip();
     async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise<void> {
@@ -84,7 +84,7 @@ describe("openclaw skills install ClawHub GitHub-backed E2E", () => {
       }
 
       if (req.method === "POST" && url.pathname === "/api/cli/telemetry/install") {
-        telemetryBodies.push(JSON.parse(await readRequestBody(req)) as unknown);
+        telemetryBodies.push(JSON.parse(await readRequestBody(req)) as any);
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ ok: true }));
         return;
@@ -94,7 +94,7 @@ describe("openclaw skills install ClawHub GitHub-backed E2E", () => {
       res.end("not found");
     }
     const server = createServer((req, res) => {
-      void handleRequest(req, res).catch((error: unknown) => {
+      void handleRequest(req, res).catch((error: any) => {
         res.writeHead(500, { "Content-Type": "text/plain; charset=utf-8" });
         res.end(error instanceof Error ? error.message : String(error));
       });

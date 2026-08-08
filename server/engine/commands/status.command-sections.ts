@@ -412,7 +412,7 @@ export function buildStatusFooterLines(params: {
   updateHint: string | null;
   warn: (value: string) => string;
   formatCliCommand: (value: string) => string;
-  nodeOnlyGateway: unknown;
+  nodeOnlyGateway: any;
   gatewayReachable: boolean;
 }) {
   return [

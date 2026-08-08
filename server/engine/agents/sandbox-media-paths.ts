@@ -7,9 +7,9 @@
  */
 
 export type SandboxedBridgeMediaPathConfig = unknown;
-export function createSandboxBridgeReadFile(..._args: unknown[]): unknown {
+export function createSandboxBridgeReadFile(..._args: any[]): any {
   return undefined;
 }
-export async function resolveSandboxedBridgeMediaPath(..._args: unknown[]): Promise<unknown> {
+export async function resolveSandboxedBridgeMediaPath(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }

@@ -24,8 +24,8 @@ function createCoverageWebSearchProvider(params: {
   order: number;
 }): PluginWebSearchProviderEntry {
   const credentialPath = `plugins.entries.${params.pluginId}.config.webSearch.apiKey`;
-  const readConfiguredCredential = (config?: OpenClawConfig): unknown =>
-    (config?.plugins?.entries?.[params.pluginId]?.config as { webSearch?: { apiKey?: unknown } })
+  const readConfiguredCredential = (config?: OpenClawConfig): any =>
+    (config?.plugins?.entries?.[params.pluginId]?.config as { webSearch?: { apiKey?: any } })
       ?.webSearch?.apiKey;
   return {
     pluginId: params.pluginId,
@@ -58,8 +58,8 @@ function createCoverageWebFetchProvider(params: {
   envVar: string;
 }): PluginWebFetchProviderEntry {
   const credentialPath = `plugins.entries.${params.pluginId}.config.webFetch.apiKey`;
-  const readConfiguredCredential = (config?: OpenClawConfig): unknown =>
-    (config?.plugins?.entries?.[params.pluginId]?.config as { webFetch?: { apiKey?: unknown } })
+  const readConfiguredCredential = (config?: OpenClawConfig): any =>
+    (config?.plugins?.entries?.[params.pluginId]?.config as { webFetch?: { apiKey?: any } })
       ?.webFetch?.apiKey;
   return {
     pluginId: params.pluginId,

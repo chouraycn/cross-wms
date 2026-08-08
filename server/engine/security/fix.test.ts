@@ -62,13 +62,13 @@ describe("security fix", () => {
           return { config: cfg, changes: [] };
         }
         const next = structuredClone(cfg ?? {});
-        const whatsapp = next.channels?.whatsapp as Record<string, unknown> | undefined;
+        const whatsapp = next.channels?.whatsapp as Record<string, any> | undefined;
         if (!whatsapp || typeof whatsapp !== "object") {
           return { config: cfg, changes: [] };
         }
         const changes: string[] = [];
         let changed = false;
-        const maybeApply = (prefix: string, holder: Record<string, unknown>) => {
+        const maybeApply = (prefix: string, holder: Record<string, any>) => {
           if (holder.groupPolicy !== "allowlist") {
             return;
           }
@@ -91,7 +91,7 @@ describe("security fix", () => {
             }
             maybeApply(
               `channels.whatsapp.accounts.${accountId}.`,
-              value as Record<string, unknown>,
+              value as Record<string, any>,
             );
           }
         }
@@ -110,19 +110,19 @@ describe("security fix", () => {
   };
 
   const expectWhatsAppGroupPolicy = (
-    channels: Record<string, Record<string, unknown>>,
+    channels: Record<string, Record<string, any>>,
     expectedPolicy = "allowlist",
   ) => {
     expect(channels.whatsapp.groupPolicy).toBe(expectedPolicy);
   };
 
   const expectWhatsAppAccountGroupPolicy = (
-    channels: Record<string, Record<string, unknown>>,
+    channels: Record<string, Record<string, any>>,
     accountId: string,
     expectedPolicy = "allowlist",
   ) => {
     const whatsapp = channels.whatsapp;
-    const accounts = whatsapp.accounts as Record<string, Record<string, unknown>>;
+    const accounts = whatsapp.accounts as Record<string, Record<string, any>>;
     const account = accounts[accountId];
     if (!account) {
       throw new Error(`Expected WhatsApp account ${accountId}`);
@@ -132,7 +132,7 @@ describe("security fix", () => {
   };
 
   const fixWhatsAppConfigScenario = async (params: {
-    whatsapp: Record<string, unknown>;
+    whatsapp: Record<string, any>;
     allowFromStore: string[];
   }) => {
     const fixed = await applySecurityFixConfigMutations({
@@ -146,7 +146,7 @@ describe("security fix", () => {
     });
     return {
       res: { ok: true, changes: fixed.changes },
-      channels: fixed.cfg.channels as Record<string, Record<string, unknown>>,
+      channels: fixed.cfg.channels as Record<string, Record<string, any>>,
     };
   };
 
@@ -186,7 +186,7 @@ describe("security fix", () => {
       "channels.whatsapp.groupAllowFrom=pairing-store",
     ]);
 
-    const channels = fixed.cfg.channels as Record<string, Record<string, unknown>>;
+    const channels = fixed.cfg.channels as Record<string, Record<string, any>>;
     expect(channels.telegram.groupPolicy).toBe("allowlist");
     expect(channels.whatsapp.groupPolicy).toBe("allowlist");
     expect(channels.discord.groupPolicy).toBe("allowlist");

@@ -35,15 +35,15 @@ describe("user turn transcript persistence", () => {
     return dir;
   }
 
-  function readTranscriptMessages(transcriptPath: string): Array<Record<string, unknown>> {
+  function readTranscriptMessages(transcriptPath: string): Array<Record<string, any>> {
     return fs
       .readFileSync(transcriptPath, "utf-8")
       .split("\n")
       .filter(Boolean)
-      .map((line) => JSON.parse(line) as { message?: unknown })
+      .map((line) => JSON.parse(line) as { message?: any })
       .map((entry) => entry.message)
       .filter(
-        (message): message is Record<string, unknown> =>
+        (message): message is Record<string, any> =>
           typeof message === "object" && message !== null,
       );
   }
@@ -557,7 +557,7 @@ describe("user turn transcript persistence", () => {
     it("falls back to the admitted text message when lazy media resolution fails", async () => {
       const dir = createTempDir("openclaw-user-turn-recorder-lazy-failed-");
       const transcriptPath = path.join(dir, "session.jsonl");
-      const errors: unknown[] = [];
+      const errors: any[] = [];
       const recorder = createUserTurnTranscriptRecorder({
         input: {
           text: "keep the prompt",
@@ -730,8 +730,8 @@ describe("user turn transcript persistence", () => {
     it("fallback-persists when pending runtime persistence fails", async () => {
       const dir = createTempDir("openclaw-user-turn-recorder-pending-failed-");
       const transcriptPath = path.join(dir, "session.jsonl");
-      const errors: unknown[] = [];
-      let rejectRuntimePersistence!: (error: unknown) => void;
+      const errors: any[] = [];
+      let rejectRuntimePersistence!: (error: any) => void;
       const runtimePersistence = new Promise<void>((_, reject) => {
         rejectRuntimePersistence = reject;
       });

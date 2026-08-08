@@ -21,13 +21,13 @@ export const CLI_OUTBOUND_SEND_FACTORY: unique symbol = Symbol.for(
 
 type CliOutboundSendFactory = (channelId: string) => unknown;
 export type CliOutboundSendSource = {
-  [channelId: string]: unknown;
+  [channelId: string]: any;
   [CLI_OUTBOUND_SEND_FACTORY]?: CliOutboundSendFactory;
 };
 
 // ===== 内联降级：OutboundSendDeps =====
 /** Outbound send dependencies (degraded placeholder). */
-export type OutboundSendDeps = Record<string, unknown>;
+export type OutboundSendDeps = Record<string, any>;
 // ===== OutboundSendDeps 结束 =====
 
 // ===== 内联降级：resolveLegacyOutboundSendDepKeys =====

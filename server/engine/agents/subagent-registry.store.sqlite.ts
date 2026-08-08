@@ -7,11 +7,11 @@
  */
 
 /** Loads subagent runs from sqlite (returns empty map in cross-wms). */
-export function loadSubagentRegistryFromSqlite(): Map<string, unknown> {
+export function loadSubagentRegistryFromSqlite(): Map<string, any> {
   return new Map();
 }
 
 /** Saves the complete subagent run snapshot to sqlite (no-op in cross-wms). */
-export function saveSubagentRegistryToSqlite(_runs: Map<string, unknown>): void {
+export function saveSubagentRegistryToSqlite(_runs: Map<string, any>): void {
   // No-op: sqlite persistence not available in cross-wms.
 }

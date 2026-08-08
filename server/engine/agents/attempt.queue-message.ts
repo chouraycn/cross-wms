@@ -8,10 +8,10 @@
 
 /** Minimal active-session surface needed to steer a running attempt. */
 export type EmbeddedAgentActiveSessionSteerTarget = {
-  agent?: unknown;
+  agent?: any;
   getSteeringMessages?(): readonly string[];
   steer(text: string): Promise<void>;
-  subscribe(listener: (event: unknown) => void): () => void;
+  subscribe(listener: (event: any) => void): () => void;
 };
 
 /**

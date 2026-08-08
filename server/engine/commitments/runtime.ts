@@ -66,7 +66,7 @@ export type CommitmentCandidateResolver = (
 
 export type CompletionVerifier = (params: {
   commitment: CommitmentRecord;
-  context?: Record<string, unknown>;
+  context?: Record<string, any>;
 }) => Promise<boolean | { completed: boolean; reason?: string }> | boolean | { completed: boolean; reason?: string };
 
 export type CommitmentRuntimeHooks = {
@@ -112,7 +112,7 @@ export type CommitmentRuntime = {
   deleteCommitment: (id: string, storePath?: string) => Promise<boolean>;
   verifyAndComplete: (params: {
     id: string;
-    context?: Record<string, unknown>;
+    context?: Record<string, any>;
     storePath?: string;
     nowMs?: number;
   }) => Promise<{ completed: boolean; reason?: string }>;
@@ -159,7 +159,7 @@ function shouldDisableBackgroundExtractionForTests(
   return process.env.VITEST === "true" || process.env.NODE_ENV === "test";
 }
 
-function normalizeOptionalString(value: unknown): string | undefined {
+function normalizeOptionalString(value: any): string | undefined {
   if (typeof value !== "string") return undefined;
   const trimmed = value.trim();
   return trimmed ? trimmed : undefined;
@@ -169,7 +169,7 @@ function isUsefulText(value: string | undefined): boolean {
   return Boolean(value?.trim());
 }
 
-function isTerminalExtractionError(error: unknown): boolean {
+function isTerminalExtractionError(error: any): boolean {
   const message = error instanceof Error ? error.message : String(error);
   return (
     /\bNo API key found\b/i.test(message) ||
@@ -231,7 +231,7 @@ export function createCommitmentRuntime(
     (hooks.clearTimer ?? clearTimeout)(handle);
   }
 
-  function openTerminalFailureCooldown(agentId: string, error: unknown, nowMs: number): void {
+  function openTerminalFailureCooldown(agentId: string, error: any, nowMs: number): void {
     const cooldownUntil = nowMs + TERMINAL_EXTRACTION_FAILURE_COOLDOWN_MS;
     terminalFailureCooldownUntilByAgent.set(agentId, cooldownUntil);
     queue = queue.filter((item) => item.agentId !== agentId);
@@ -300,7 +300,7 @@ export function createCommitmentRuntime(
     if (!timer) {
       timer = setTimer(() => {
         timer = null;
-        void processExtractionBatch().catch((err: unknown) => {
+        void processExtractionBatch().catch((err: any) => {
           logger.warn("[commitments] 提取批次处理失败", { error: String(err) });
         });
       }, config.extraction.debounceMs);
@@ -488,7 +488,7 @@ export function createCommitmentRuntime(
 
   async function verifyAndComplete(params: {
     id: string;
-    context?: Record<string, unknown>;
+    context?: Record<string, any>;
     storePath?: string;
     nowMs?: number;
   }): Promise<{ completed: boolean; reason?: string }> {

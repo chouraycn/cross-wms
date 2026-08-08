@@ -14,7 +14,7 @@ vi.mock("./install-source-utils.js", async () => {
   );
   return {
     ...actual,
-    withTempDir: vi.fn(async (_prefix: string, fn: (tmpDir: string) => Promise<unknown>) => {
+    withTempDir: vi.fn(async (_prefix: string, fn: (tmpDir: string) => Promise<any>) => {
       return await fn("/tmp/openclaw-npm-pack-install-test");
     }),
     packNpmSpecToArchive: vi.fn(),
@@ -49,7 +49,7 @@ describe("installFromNpmSpecArchive", () => {
     warn?: (message: string) => void;
     installFromArchive: (params: {
       archivePath: string;
-    }) => Promise<{ ok: boolean; [k: string]: unknown }>;
+    }) => Promise<{ ok: boolean; [k: string]: any }>;
   }) =>
     await installFromNpmSpecArchive({
       tempDirPrefix: "openclaw-test-",
@@ -63,7 +63,7 @@ describe("installFromNpmSpecArchive", () => {
 
   const expectWrappedOkResult = (
     result: Awaited<ReturnType<typeof runInstall>>,
-    installResult: Record<string, unknown>,
+    installResult: Record<string, any>,
   ) => {
     expect(result.ok).toBe(true);
     if (!result.ok) {

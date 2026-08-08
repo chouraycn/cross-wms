@@ -196,7 +196,7 @@ function createInlineTextPairingAdapter(params: {
     normalizeAllowEntry: params.normalizeAllowEntry,
     notifyApproval: async (ctx) => {
       await params.notify({
-        ...((ctx ?? {}) as Record<string, unknown>),
+        ...((ctx ?? {}) as Record<string, any>),
         message: params.message,
       } as Parameters<NonNullable<ChannelPairingAdapter["notifyApproval"]>>[0] & {
         message: string;
@@ -477,7 +477,7 @@ function resolveThreadAwareOutboundCandidate(
 
 /** Options for a channel plugin entry that should register a channel capability. */
 type ChannelEntryConfigSchema<TPlugin> =
-  TPlugin extends ChannelPlugin<unknown>
+  TPlugin extends ChannelPlugin<any>
     ? NonNullable<TPlugin["configSchema"]>
     : ChannelConfigSchema;
 
@@ -728,7 +728,7 @@ function resolveChatChannelSecurity<TResolvedAccount extends { accountId?: strin
   }
   const dm = (security as ChatChannelSecurityOptions<TResolvedAccount>).dm;
   return {
-    resolveDmPolicy: ({ cfg, accountId, account }: { cfg: unknown; accountId: string; account: TResolvedAccount }) =>
+    resolveDmPolicy: ({ cfg, accountId, account }: { cfg: any; accountId: string; account: TResolvedAccount }) =>
       buildAccountScopedDmSecurityPolicy({
         cfg,
         channelKey: dm.channelKey,
@@ -787,7 +787,7 @@ function resolveChatChannelThreading<TResolvedAccount>(
   } else {
     resolveReplyToMode = createScopedAccountReplyToModeResolver<TResolvedAccount>(
       threadingOptions.scopedAccountReplyToMode as {
-        resolveAccount: (cfg: unknown, accountId?: string | null) => TResolvedAccount;
+        resolveAccount: (cfg: any, accountId?: string | null) => TResolvedAccount;
         resolveReplyToMode: (
           account: TResolvedAccount,
           chatType?: string | null,
@@ -825,8 +825,8 @@ function resolveChatChannelOutbound(
  */
 export function createChatChannelPlugin<
   TResolvedAccount extends { accountId?: string | null },
-  Probe = unknown,
-  Audit = unknown,
+  Probe = any,
+  Audit = any,
 >(params: {
   base: ChatChannelPluginBase<TResolvedAccount, Probe, Audit>;
   security?:
@@ -840,7 +840,7 @@ export function createChatChannelPlugin<
     ...params.base,
     conversationBindings: {
       supportsCurrentConversationBinding: true,
-      ...((params.base.conversationBindings ?? {}) as Record<string, unknown>),
+      ...((params.base.conversationBindings ?? {}) as Record<string, any>),
     },
     ...(params.security ? { security: resolveChatChannelSecurity(params.security) } : {}),
     ...(params.pairing ? { pairing: resolveChatChannelPairing(params.pairing) } : {}),

@@ -14,7 +14,7 @@ const MAX_SCAN_CHARS = 20_000;
 const MAX_JSON_CANDIDATES = 20;
 const MAX_JSON_CANDIDATE_CHARS = 8_000;
 
-function readToolName(record: Record<string, unknown>): string | undefined {
+function readToolName(record: Record<string, any>): string | undefined {
   return (
     readTrimmedString(record.name) ??
     readTrimmedString(record.tool_name) ??
@@ -23,11 +23,11 @@ function readToolName(record: Record<string, unknown>): string | undefined {
   );
 }
 
-function hasToolArgs(record: Record<string, unknown>): boolean {
+function hasToolArgs(record: Record<string, any>): boolean {
   return "arguments" in record || "args" in record || "input" in record || "parameters" in record;
 }
 
-function classifyJsonValue(value: unknown): ToolCallShapedTextDetection | null {
+function classifyJsonValue(value: any): ToolCallShapedTextDetection | null {
   if (Array.isArray(value)) {
     for (const item of value) {
       const detection = classifyJsonValue(item);

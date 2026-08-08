@@ -6,7 +6,7 @@
  * before routing them to any tool execution surface.
  */
 
-function normalizeLowercaseStringOrEmpty(value: unknown): string {
+function normalizeLowercaseStringOrEmpty(value: any): string {
   if (typeof value !== "string") {
     return "";
   }
@@ -37,7 +37,7 @@ export function normalizeAllowedToolNames(allowedToolNames?: Iterable<string>): 
 
 /** Return whether a model-supplied tool call name is syntactically and policy allowed. */
 export function isAllowedToolCallName(
-  name: unknown,
+  name: any,
   allowedToolNames: Set<string> | null,
 ): boolean {
   if (typeof name !== "string") {

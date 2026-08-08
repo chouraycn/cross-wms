@@ -24,7 +24,7 @@ interface SessionEntry {
     content: string;
     timestamp: Date;
   }>;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
 }
 
 interface SessionMemoryConfig {
@@ -317,7 +317,7 @@ export const sessionMemoryHook: HookHandler = async (event) => {
         lastSavedAt: new Date(0),
         commands: [],
         messages: [],
-        metadata: event.context as Record<string, unknown>,
+        metadata: event.context as Record<string, any>,
       });
       startAutoSaveTimer();
     } else if (event.action === 'end') {

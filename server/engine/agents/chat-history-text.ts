@@ -4,12 +4,12 @@
  */
 
 /** Removes tool messages from a message array. */
-export function stripToolMessages(messages: unknown[]): unknown[] {
+export function stripToolMessages(messages: any[]): any[] {
   return messages.filter((msg) => {
     if (!msg || typeof msg !== "object") {
       return true;
     }
-    const role = (msg as { role?: unknown }).role;
+    const role = (msg as { role?: any }).role;
     return role !== "toolResult" && role !== "tool";
   });
 }
@@ -25,14 +25,14 @@ export function sanitizeTextContent(text: string): string {
 }
 
 /** Extract assistant-visible text from a message object. */
-export function extractAssistantText(message: unknown): string | undefined {
+export function extractAssistantText(message: any): string | undefined {
   if (!message || typeof message !== "object") {
     return undefined;
   }
-  if ((message as { role?: unknown }).role !== "assistant") {
+  if ((message as { role?: any }).role !== "assistant") {
     return undefined;
   }
-  const content = (message as { content?: unknown }).content;
+  const content = (message as { content?: any }).content;
   if (typeof content === "string") {
     return sanitizeTextContent(content);
   }

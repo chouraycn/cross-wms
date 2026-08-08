@@ -36,7 +36,7 @@ const providerDiscoveryMocks = vi.hoisted(() => ({
   ),
   resolveRuntimePluginDiscoveryProviders: vi.fn<() => Promise<ProviderPlugin[]>>(),
   runProviderCatalog: vi.fn(
-    async ({ provider, ...ctx }: { provider: ProviderPlugin } & Record<string, unknown>) =>
+    async ({ provider, ...ctx }: { provider: ProviderPlugin } & Record<string, any>) =>
       provider.catalog?.run(ctx as never),
   ),
   normalizePluginDiscoveryResult: vi.fn(
@@ -46,8 +46,8 @@ const providerDiscoveryMocks = vi.hoisted(() => ({
     }: {
       provider: ProviderPlugin;
       result:
-        | { provider: { models?: unknown[] } }
-        | { providers: Record<string, { models?: unknown[] }> }
+        | { provider: { models?: any[] } }
+        | { providers: Record<string, { models?: any[] }> }
         | null
         | undefined;
     }) => {

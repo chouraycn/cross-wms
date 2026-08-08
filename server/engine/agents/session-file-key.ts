@@ -6,6 +6,6 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function resolveEmbeddedSessionFileKey(..._args: unknown[]): unknown {
+export function resolveEmbeddedSessionFileKey(..._args: any[]): any {
   return undefined;
 }

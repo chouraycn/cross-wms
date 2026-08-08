@@ -24,7 +24,7 @@ import {
   type WorkerStatus,
 } from '../dao/workboardDao.js';
 
-async function workboardTasksList(params: unknown, _ctx: GatewayMethodContext) {
+async function workboardTasksList(params: any, _ctx: GatewayMethodContext) {
   const { sessionId } = params as { sessionId: string };
   if (!sessionId) {
     throw new Error('sessionId is required');
@@ -33,7 +33,7 @@ async function workboardTasksList(params: unknown, _ctx: GatewayMethodContext) {
   return { tasks, total: tasks.length };
 }
 
-async function workboardTaskGet(params: unknown, _ctx: GatewayMethodContext) {
+async function workboardTaskGet(params: any, _ctx: GatewayMethodContext) {
   const { id } = params as { id: string };
   if (!id) {
     throw new Error('id is required');
@@ -45,7 +45,7 @@ async function workboardTaskGet(params: unknown, _ctx: GatewayMethodContext) {
   return task;
 }
 
-async function workboardTaskCreate(params: unknown, _ctx: GatewayMethodContext) {
+async function workboardTaskCreate(params: any, _ctx: GatewayMethodContext) {
   const data = params as {
     sessionId: string;
     title: string;
@@ -67,7 +67,7 @@ async function workboardTaskCreate(params: unknown, _ctx: GatewayMethodContext) 
   return task;
 }
 
-async function workboardTaskUpdate(params: unknown, _ctx: GatewayMethodContext) {
+async function workboardTaskUpdate(params: any, _ctx: GatewayMethodContext) {
   const { id, ...data } = params as {
     id: string;
     title?: string;
@@ -78,7 +78,7 @@ async function workboardTaskUpdate(params: unknown, _ctx: GatewayMethodContext) 
     parentTaskId?: string;
     assignedTo?: string;
     dependsOn?: string[];
-    result?: unknown;
+    result?: any;
     error?: string;
   };
   if (!id) {
@@ -91,7 +91,7 @@ async function workboardTaskUpdate(params: unknown, _ctx: GatewayMethodContext) 
   return task;
 }
 
-async function workboardTaskDelete(params: unknown, _ctx: GatewayMethodContext) {
+async function workboardTaskDelete(params: any, _ctx: GatewayMethodContext) {
   const { id } = params as { id: string };
   if (!id) {
     throw new Error('id is required');
@@ -100,7 +100,7 @@ async function workboardTaskDelete(params: unknown, _ctx: GatewayMethodContext) 
   return { success };
 }
 
-async function workboardTaskSubtasks(params: unknown, _ctx: GatewayMethodContext) {
+async function workboardTaskSubtasks(params: any, _ctx: GatewayMethodContext) {
   const { parentTaskId } = params as { parentTaskId: string };
   if (!parentTaskId) {
     throw new Error('parentTaskId is required');
@@ -109,7 +109,7 @@ async function workboardTaskSubtasks(params: unknown, _ctx: GatewayMethodContext
   return { subtasks, total: subtasks.length };
 }
 
-async function workboardTaskBlocking(params: unknown, _ctx: GatewayMethodContext) {
+async function workboardTaskBlocking(params: any, _ctx: GatewayMethodContext) {
   const { taskId } = params as { taskId: string };
   if (!taskId) {
     throw new Error('taskId is required');
@@ -118,7 +118,7 @@ async function workboardTaskBlocking(params: unknown, _ctx: GatewayMethodContext
   return { tasks, total: tasks.length };
 }
 
-async function workboardTaskBlockedBy(params: unknown, _ctx: GatewayMethodContext) {
+async function workboardTaskBlockedBy(params: any, _ctx: GatewayMethodContext) {
   const { taskId } = params as { taskId: string };
   if (!taskId) {
     throw new Error('taskId is required');
@@ -127,7 +127,7 @@ async function workboardTaskBlockedBy(params: unknown, _ctx: GatewayMethodContex
   return { tasks, total: tasks.length };
 }
 
-async function workboardTaskClaim(params: unknown, _ctx: GatewayMethodContext) {
+async function workboardTaskClaim(params: any, _ctx: GatewayMethodContext) {
   const { taskId, workerId } = params as { taskId: string; workerId: string };
   if (!taskId) {
     throw new Error('taskId is required');
@@ -143,7 +143,7 @@ async function workboardTaskClaim(params: unknown, _ctx: GatewayMethodContext) {
   return task;
 }
 
-async function workboardTaskRelease(params: unknown, _ctx: GatewayMethodContext) {
+async function workboardTaskRelease(params: any, _ctx: GatewayMethodContext) {
   const { taskId, workerId } = params as { taskId: string; workerId: string };
   if (!taskId) {
     throw new Error('taskId is required');
@@ -159,8 +159,8 @@ async function workboardTaskRelease(params: unknown, _ctx: GatewayMethodContext)
   return task;
 }
 
-async function workboardTaskComplete(params: unknown, _ctx: GatewayMethodContext) {
-  const { taskId, result } = params as { taskId: string; result?: unknown };
+async function workboardTaskComplete(params: any, _ctx: GatewayMethodContext) {
+  const { taskId, result } = params as { taskId: string; result?: any };
   if (!taskId) {
     throw new Error('taskId is required');
   }
@@ -172,7 +172,7 @@ async function workboardTaskComplete(params: unknown, _ctx: GatewayMethodContext
   return task;
 }
 
-async function workboardTaskFail(params: unknown, _ctx: GatewayMethodContext) {
+async function workboardTaskFail(params: any, _ctx: GatewayMethodContext) {
   const { taskId, error } = params as { taskId: string; error: string };
   if (!taskId) {
     throw new Error('taskId is required');
@@ -188,14 +188,14 @@ async function workboardTaskFail(params: unknown, _ctx: GatewayMethodContext) {
   return task;
 }
 
-async function workboardTasksAvailable(params: unknown, _ctx: GatewayMethodContext) {
+async function workboardTasksAvailable(params: any, _ctx: GatewayMethodContext) {
   const { workerType } = params as { workerType?: WorkerType };
   const engine = getWorkerProtocolEngine();
   const tasks = engine.getAvailableTasks(workerType);
   return { tasks, total: tasks.length };
 }
 
-async function workboardTaskAssign(params: unknown, _ctx: GatewayMethodContext) {
+async function workboardTaskAssign(params: any, _ctx: GatewayMethodContext) {
   const { taskId, workerType } = params as { taskId: string; workerType?: WorkerType };
   if (!taskId) {
     throw new Error('taskId is required');
@@ -208,7 +208,7 @@ async function workboardTaskAssign(params: unknown, _ctx: GatewayMethodContext) 
   return task;
 }
 
-async function workboardWorkersList(params: unknown, _ctx: GatewayMethodContext) {
+async function workboardWorkersList(params: any, _ctx: GatewayMethodContext) {
   const { type, status } = params as { type?: WorkerType; status?: WorkerStatus };
   let workers;
   if (type) {
@@ -221,7 +221,7 @@ async function workboardWorkersList(params: unknown, _ctx: GatewayMethodContext)
   return { workers, total: workers.length };
 }
 
-async function workboardWorkerGet(params: unknown, _ctx: GatewayMethodContext) {
+async function workboardWorkerGet(params: any, _ctx: GatewayMethodContext) {
   const { id } = params as { id: string };
   if (!id) {
     throw new Error('id is required');
@@ -233,7 +233,7 @@ async function workboardWorkerGet(params: unknown, _ctx: GatewayMethodContext) {
   return worker;
 }
 
-async function workboardWorkerRegister(params: unknown, _ctx: GatewayMethodContext) {
+async function workboardWorkerRegister(params: any, _ctx: GatewayMethodContext) {
   const data = params as WorkerRegisterParams;
   if (!data.name?.trim()) {
     throw new Error('name is required');
@@ -246,7 +246,7 @@ async function workboardWorkerRegister(params: unknown, _ctx: GatewayMethodConte
   return worker;
 }
 
-async function workboardWorkerUnregister(params: unknown, _ctx: GatewayMethodContext) {
+async function workboardWorkerUnregister(params: any, _ctx: GatewayMethodContext) {
   const { id } = params as { id: string };
   if (!id) {
     throw new Error('id is required');
@@ -256,7 +256,7 @@ async function workboardWorkerUnregister(params: unknown, _ctx: GatewayMethodCon
   return { success };
 }
 
-async function workboardWorkerHeartbeat(params: unknown, _ctx: GatewayMethodContext) {
+async function workboardWorkerHeartbeat(params: any, _ctx: GatewayMethodContext) {
   const { id } = params as { id: string };
   if (!id) {
     throw new Error('id is required');
@@ -269,7 +269,7 @@ async function workboardWorkerHeartbeat(params: unknown, _ctx: GatewayMethodCont
   return worker;
 }
 
-async function workboardWorkerTasks(params: unknown, _ctx: GatewayMethodContext) {
+async function workboardWorkerTasks(params: any, _ctx: GatewayMethodContext) {
   const { workerId, status } = params as { workerId: string; status?: TaskStatus };
   if (!workerId) {
     throw new Error('workerId is required');
@@ -279,7 +279,7 @@ async function workboardWorkerTasks(params: unknown, _ctx: GatewayMethodContext)
   return { tasks, total: tasks.length };
 }
 
-async function workboardWorkerAssignNext(params: unknown, _ctx: GatewayMethodContext) {
+async function workboardWorkerAssignNext(params: any, _ctx: GatewayMethodContext) {
   const { workerId } = params as { workerId: string };
   if (!workerId) {
     throw new Error('workerId is required');
@@ -292,12 +292,12 @@ async function workboardWorkerAssignNext(params: unknown, _ctx: GatewayMethodCon
   return task;
 }
 
-async function workboardStats(_params: unknown, _ctx: GatewayMethodContext) {
+async function workboardStats(_params: any, _ctx: GatewayMethodContext) {
   const engine = getWorkerProtocolEngine();
   return engine.getStats();
 }
 
-async function workboardConfigure(params: unknown, _ctx: GatewayMethodContext) {
+async function workboardConfigure(params: any, _ctx: GatewayMethodContext) {
   const options = params as {
     heartbeatTimeoutMs?: number;
     heartbeatCheckIntervalMs?: number;

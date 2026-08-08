@@ -1,14 +1,14 @@
 // 移植自 openclaw/src/infra/system-run-command.ts
 
-export function formatExecCommand(...args: unknown[]): unknown {
+export function formatExecCommand(...args: any[]): any {
   return "";
 }
-export function extractShellCommandFromArgv(...args: unknown[]): unknown {
+export function extractShellCommandFromArgv(...args: any[]): any {
   return undefined;
 }
-export function validateSystemRunCommandConsistency(...args: unknown[]): unknown {
+export function validateSystemRunCommandConsistency(...args: any[]): any {
   return undefined;
 }
-export function resolveSystemRunCommandRequest(...args: unknown[]): unknown {
+export function resolveSystemRunCommandRequest(...args: any[]): any {
   return undefined;
 }

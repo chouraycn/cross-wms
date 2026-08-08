@@ -9,7 +9,7 @@ import {
 const callGatewayMock = vi.fn();
 
 vi.mock("../gateway/call.js", () => ({
-  callGateway: (opts: unknown) => callGatewayMock(opts),
+  callGateway: (opts: any) => callGatewayMock(opts),
 }));
 
 describe("createPluginCliGatewayNodesRuntime", () => {

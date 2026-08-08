@@ -2,7 +2,7 @@
 const DOCTOR_CONFIG_TEST_INPUT = Symbol.for("openclaw.doctorConfigFlow.testInput");
 
 type DoctorConfigTestInput = {
-  config: Record<string, unknown>;
+  config: Record<string, any>;
   exists: boolean;
   path: string;
   preflightMode: "fast" | "issues" | "compat";
@@ -26,7 +26,7 @@ export function getDoctorConfigInputForTest(): DoctorConfigTestInput | null {
   return globalState[DOCTOR_CONFIG_TEST_INPUT] ?? null;
 }
 
-function shouldUseCompatPreflight(path: ReadonlyArray<string>, value: unknown): boolean {
+function shouldUseCompatPreflight(path: ReadonlyArray<string>, value: any): boolean {
   if (path.length === 0) {
     return false;
   }
@@ -97,8 +97,8 @@ function shouldUseCompatPreflight(path: ReadonlyArray<string>, value: unknown): 
   return false;
 }
 
-function hasCompatPreflightSignals(config: Record<string, unknown>): boolean {
-  const stack: Array<{ path: string[]; value: unknown }> = [{ path: [], value: config }];
+function hasCompatPreflightSignals(config: Record<string, any>): boolean {
+  const stack: Array<{ path: string[]; value: any }> = [{ path: [], value: config }];
   while (stack.length > 0) {
     const current = stack.pop();
     if (!current || !current.value || typeof current.value !== "object") {
@@ -127,7 +127,7 @@ function hasCompatPreflightSignals(config: Record<string, unknown>): boolean {
 }
 
 export async function runDoctorConfigWithInput<T>(params: {
-  config: Record<string, unknown>;
+  config: Record<string, any>;
   repair?: boolean;
   preflightMode?: "fast" | "issues" | "compat";
   run: (args: {

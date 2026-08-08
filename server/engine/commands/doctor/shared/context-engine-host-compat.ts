@@ -41,7 +41,7 @@ type ContextEngineInfoResult =
   | { info: ContextEngineInfo; warnings: [] }
   | { info?: undefined; warnings: string[] };
 
-function normalizeRuntimeId(value: unknown): string | undefined {
+function normalizeRuntimeId(value: any): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }
@@ -49,7 +49,7 @@ function normalizeRuntimeId(value: unknown): string | undefined {
   return normalized || undefined;
 }
 
-function parseModelRef(value: unknown): { provider: string; modelId: string } | undefined {
+function parseModelRef(value: any): { provider: string; modelId: string } | undefined {
   if (typeof value !== "string") {
     return undefined;
   }
@@ -64,7 +64,7 @@ function parseModelRef(value: unknown): { provider: string; modelId: string } | 
   };
 }
 
-function listModelRefs(value: unknown): string[] {
+function listModelRefs(value: any): string[] {
   if (typeof value === "string" && value.trim()) {
     return [value.trim()];
   }
@@ -89,7 +89,7 @@ function collectExplicitRuntimeRefs(
   cfg: OpenClawConfig,
 ): Array<{ runtimeId: string; path: string }> {
   const refs: Array<{ runtimeId: string; path: string }> = [];
-  const push = (runtime: unknown, path: string) => {
+  const push = (runtime: any, path: string) => {
     const runtimeId = normalizeRuntimeId(runtime);
     if (runtimeId && runtimeId !== "default") {
       refs.push({ runtimeId, path });
@@ -127,12 +127,12 @@ function collectSelectedModelRefs(
   cfg: OpenClawConfig,
 ): Array<{ modelRef: string; path: string; agentId?: string }> {
   const refs: Array<{ modelRef: string; path: string; agentId?: string }> = [];
-  const pushModel = (value: unknown, path: string, agentId?: string) => {
+  const pushModel = (value: any, path: string, agentId?: string) => {
     for (const modelRef of listModelRefs(value)) {
       refs.push({ modelRef, path, ...(agentId ? { agentId } : {}) });
     }
   };
-  const pushModelMap = (models: unknown, path: string, agentId?: string) => {
+  const pushModelMap = (models: any, path: string, agentId?: string) => {
     if (!isRecord(models)) {
       return;
     }

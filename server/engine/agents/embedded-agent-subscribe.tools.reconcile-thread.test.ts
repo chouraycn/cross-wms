@@ -9,16 +9,16 @@ import {
 
 const PARTIAL_RESULT_PROVIDER = "partialthreadprovider";
 
-function createPartialResultPlugin(): unknown {
+function createPartialResultPlugin(): any {
   return {
     ...createChannelTestPluginBase({ id: PARTIAL_RESULT_PROVIDER }),
     actions: {
-      extractToolSend: ({ args }: { args: Record<string, unknown> }) =>
+      extractToolSend: ({ args }: { args: Record<string, any> }) =>
         args.action === "send" && typeof args.to === "string"
           ? { to: args.to, threadImplicit: true }
           : null,
-      extractToolSendResult: ({ result }: { result: unknown }) => {
-        const toolSend = (result as { details?: { toolSend?: Record<string, unknown> } })?.details
+      extractToolSendResult: ({ result }: { result: any }) => {
+        const toolSend = (result as { details?: { toolSend?: Record<string, any> } })?.details
           ?.toolSend;
         const to = typeof toolSend?.to === "string" ? toolSend.to : undefined;
         if (!to) {

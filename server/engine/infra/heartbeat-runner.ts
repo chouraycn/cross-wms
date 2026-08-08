@@ -1084,7 +1084,7 @@ async function resolveHeartbeatPreflight(params: {
       tasks,
       heartbeatFileContent,
     };
-  } catch (err: unknown) {
+  } catch (err: any) {
     if (hasErrnoCode(err, "ENOENT")) {
       // Missing HEARTBEAT.md is intentional in some setups (for example, when
       // heartbeat instructions live outside the file), so keep the run active.
@@ -1512,7 +1512,7 @@ export async function runHeartbeatOnce(opts: {
   });
   const heartbeatAccountId = heartbeat?.accountId?.trim();
   if (delivery.reason === "unknown-account") {
-    log.warn("heartbeat: unknown accountId", {
+    log.warn("heartbeat: any accountId", {
       accountId: delivery.accountId ?? heartbeatAccountId ?? null,
       target: heartbeat?.target ?? "none",
     });

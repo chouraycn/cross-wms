@@ -22,19 +22,19 @@ import type {
 
 const now = (): number => Math.floor(Date.now() / 1000);
 
-function safeJsonObj(raw: string | null | undefined): Record<string, unknown> {
+function safeJsonObj(raw: string | null | undefined): Record<string, any> {
   if (!raw) return {};
   try {
     const parsed = JSON.parse(raw);
     return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
-      ? (parsed as Record<string, unknown>)
+      ? (parsed as Record<string, any>)
       : {};
   } catch {
     return {};
   }
 }
 
-function safeJsonArray(raw: string | null | undefined): unknown[] {
+function safeJsonArray(raw: string | null | undefined): any[] {
   if (!raw) return [];
   try {
     const parsed = JSON.parse(raw);
@@ -65,7 +65,7 @@ export function listDocuments(filter: DocumentListFilter = {}): KnowledgeDocumen
   const db = initDb();
   const tenantId = filter.tenantId ?? DEFAULT_TENANT_ID;
   const conditions: string[] = ['tenant_id = ?'];
-  const params: unknown[] = [tenantId];
+  const params: any[] = [tenantId];
   if (filter.knowledgeBaseId) {
     conditions.push('knowledge_base_id = ?');
     params.push(filter.knowledgeBaseId);
@@ -104,7 +104,7 @@ export interface DocumentInput {
   file_type: string;
   title?: string | null;
   status?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export function createDocument(input: DocumentInput): KnowledgeDocumentRow {
@@ -138,7 +138,7 @@ export interface DocumentUpdateInput {
   file_type?: string;
   title?: string | null;
   status?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
   error?: string | null;
 }
 
@@ -227,7 +227,7 @@ export interface BucketInput {
   title: string;
   summary: string;
   token_estimate?: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export function createBucket(input: BucketInput): KnowledgeBucketRow {
@@ -262,7 +262,7 @@ export interface BucketUpdateInput {
   title?: string;
   summary?: string;
   token_estimate?: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export function updateBucket(
@@ -333,7 +333,7 @@ export interface ChunkInput {
   summary?: string | null;
   source_ref?: string | null;
   embedding?: string | null;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export function createChunk(input: ChunkInput): KnowledgeChunkRow {
@@ -369,7 +369,7 @@ export interface ChunkUpdateInput {
   content?: string;
   summary?: string | null;
   source_ref?: string | null;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export function updateChunk(
@@ -420,7 +420,7 @@ export function listConcepts(filter: ConceptListFilter = {}): KnowledgeConceptRo
   const db = initDb();
   const tenantId = filter.tenantId ?? DEFAULT_TENANT_ID;
   const conditions: string[] = ['tenant_id = ?'];
-  const params: unknown[] = [tenantId];
+  const params: any[] = [tenantId];
   if (filter.knowledgeBaseId) {
     conditions.push('knowledge_base_id = ?');
     params.push(filter.knowledgeBaseId);
@@ -469,10 +469,10 @@ export interface ConceptInput {
   title: string;
   description?: string | null;
   content_md: string;
-  frontmatter?: Record<string, unknown>;
-  links?: unknown[];
-  citations?: unknown[];
-  source_refs?: unknown[];
+  frontmatter?: Record<string, any>;
+  links?: any[];
+  citations?: any[];
+  source_refs?: any[];
   status?: string;
 }
 
@@ -544,10 +544,10 @@ export interface ConceptUpdateInput {
   title?: string;
   description?: string | null;
   content_md?: string;
-  frontmatter?: Record<string, unknown>;
-  links?: unknown[];
-  citations?: unknown[];
-  source_refs?: unknown[];
+  frontmatter?: Record<string, any>;
+  links?: any[];
+  citations?: any[];
+  source_refs?: any[];
   status?: string;
 }
 
@@ -625,7 +625,7 @@ export function listDiscoveries(filter: DiscoveryListFilter = {}): KnowledgeDisc
   const db = initDb();
   const tenantId = filter.tenantId ?? DEFAULT_TENANT_ID;
   const conditions: string[] = ['tenant_id = ?'];
-  const params: unknown[] = [tenantId];
+  const params: any[] = [tenantId];
   if (filter.knowledgeBaseId) {
     conditions.push('knowledge_base_id = ?');
     params.push(filter.knowledgeBaseId);
@@ -665,8 +665,8 @@ export interface DiscoveryInput {
   bucket_id?: string | null;
   title: string;
   status?: string;
-  payload?: Record<string, unknown>;
-  source_refs?: unknown[];
+  payload?: Record<string, any>;
+  source_refs?: any[];
   reason?: string | null;
 }
 
@@ -729,7 +729,7 @@ export function listIngestJobs(filter: JobListFilter = {}): KnowledgeIngestJobRo
   const db = initDb();
   const tenantId = filter.tenantId ?? DEFAULT_TENANT_ID;
   const conditions: string[] = ['tenant_id = ?'];
-  const params: unknown[] = [tenantId];
+  const params: any[] = [tenantId];
   if (filter.knowledgeBaseId) {
     conditions.push('knowledge_base_id = ?');
     params.push(filter.knowledgeBaseId);
@@ -766,7 +766,7 @@ export interface IngestJobInput {
   stage?: string;
   progress?: number;
   error?: string | null;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
   started_at?: number | null;
   finished_at?: number | null;
 }
@@ -806,7 +806,7 @@ export interface IngestJobUpdateInput {
   stage?: string;
   progress?: number;
   error?: string | null;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
   started_at?: number | null;
   finished_at?: number | null;
 }
@@ -988,7 +988,7 @@ export async function searchKnowledge(input: KnowledgeSearchInput): Promise<Know
   if (!q) return [];
 
   const scopeConditions: string[] = ['tenant_id = ?'];
-  const scopeParams: unknown[] = [tenantId];
+  const scopeParams: any[] = [tenantId];
   if (input.knowledge_base_id) {
     scopeConditions.push('knowledge_base_id = ?');
     scopeParams.push(input.knowledge_base_id);

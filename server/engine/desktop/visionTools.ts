@@ -8,7 +8,7 @@ import { handleDesktopClick } from './inputTools.js';
 import { logger } from '../../logger.js';
 
 /** desktop_screenshot - Take a screenshot and return base64 */
-export async function handleDesktopScreenshot(args: Record<string, unknown>): Promise<string> {
+export async function handleDesktopScreenshot(args: Record<string, any>): Promise<string> {
   const { execSync } = await import('child_process');
   const fs = await import('fs');
 
@@ -50,13 +50,13 @@ export async function handleDesktopScreenshot(args: Record<string, unknown>): Pr
       image: dataUrl,
       message: 'Screenshot captured using native screencapture. Use this image to identify UI elements and click targets visually.',
     });
-  } catch (e: unknown) {
+  } catch (e: any) {
     return JSON.stringify({ success: false, error: (e as Error).message || 'Screenshot failed' });
   }
 }
 
 /** desktop_see - Take screenshot for visual analysis */
-export async function handleDesktopSee(args: Record<string, unknown>): Promise<string> {
+export async function handleDesktopSee(args: Record<string, any>): Promise<string> {
   const { execSync } = await import('child_process');
   const fs = await import('fs');
 
@@ -125,7 +125,7 @@ export async function handleDesktopSee(args: Record<string, unknown>): Promise<s
       message: 'Screenshot captured. Use this image to visually identify UI elements. You can provide normalized coordinates (nx, ny in 0.0~1.0 range) to desktop_click for resolution-independent clicking. Example: nx=0.5, ny=0.5 clicks the center of the screen.',
       instructions: `Analyze the screenshot and identify: 1) Clickable buttons, 2) Text input fields, 3) Menu items, 4) Any labels or text content. Screen resolution: ${screenWidth}x${screenHeight}. When clicking, use normalized coordinates (nx, ny in 0~1 range) for resolution independence, or call desktop_click_smart with a semantic description.`,
     });
-  } catch (e: unknown) {
+  } catch (e: any) {
     return JSON.stringify({ success: false, error: (e as Error).message || 'See analysis failed' });
   }
 }
@@ -217,7 +217,7 @@ export async function handleDesktopSnapshot(): Promise<string> {
       const ref = `d${i + 1}`;
       const elem: DesktopElement = {
         ref,
-        role: el.role || 'unknown',
+        role: el.role || 'any',
         name: el.name || '',
         bounds: {
           x: el.x || 0,
@@ -251,7 +251,7 @@ export async function handleDesktopSnapshot(): Promise<string> {
         ? `获取到 ${elements.length} 个 UI 元素（已达上限，部分元素被截断）。使用 ref (d1, d2, ...) 调用 desktop_click(ref) 或 desktop_type(ref) 操作元素。`
         : `获取到 ${elements.length} 个 UI 元素。使用 ref (d1, d2, ...) 调用 desktop_click(ref) 或 desktop_type(ref) 操作元素。`,
     });
-  } catch (e: unknown) {
+  } catch (e: any) {
     return JSON.stringify({
       success: false,
       error: `快照获取失败: ${(e as Error).message || e}。请确保已在「系统设置 → 隐私与安全 → 辅助功能」中授权相关应用。`,
@@ -260,7 +260,7 @@ export async function handleDesktopSnapshot(): Promise<string> {
 }
 
 /** desktop_find — 从缓存快照中按 role/name 搜索元素 */
-export async function handleDesktopFind(args: Record<string, unknown>): Promise<string> {
+export async function handleDesktopFind(args: Record<string, any>): Promise<string> {
   const role = args.role ? String(args.role).toLowerCase() : null;
   const name = args.name ? String(args.name).toLowerCase() : null;
 
@@ -308,7 +308,7 @@ export async function handleDesktopFind(args: Record<string, unknown>): Promise<
  * - 语义理解（"提交按钮" 能匹配 "Submit"）
  * - 无需记住 ref ID
  */
-export async function handleDesktopClickSmart(args: Record<string, unknown>): Promise<string> {
+export async function handleDesktopClickSmart(args: Record<string, any>): Promise<string> {
   const description = String(args.description || '').trim();
   const autoSnapshot = args.auto_snapshot !== false; // 默认 true
 
@@ -460,7 +460,7 @@ export async function handleDesktopClickSmart(args: Record<string, unknown>): Pr
       clickY,
       clickResult: JSON.parse(clickResult),
     });
-  } catch (e: unknown) {
+  } catch (e: any) {
     return JSON.stringify({ success: false, error: `语义点击失败: ${e instanceof Error ? e.message : String(e)}` });
   }
 }

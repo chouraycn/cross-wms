@@ -6,7 +6,7 @@
  * stripping (tool call XML, inbound metadata, internal runtime context).
  */
 
-function normalizeLowercaseStringOrEmpty(value: unknown): string {
+function normalizeLowercaseStringOrEmpty(value: any): string {
   if (typeof value === "string") {
     return value.trim().toLowerCase();
   }
@@ -319,7 +319,7 @@ function collapseConsecutiveDuplicateBlocks(text: string): string {
   return result.join("\n\n");
 }
 
-export function sanitizeUserFacingText(text: unknown, opts?: { errorContext?: boolean }): string {
+export function sanitizeUserFacingText(text: any, opts?: { errorContext?: boolean }): string {
   if (text === null || text === undefined) {
     return "";
   }
@@ -327,7 +327,7 @@ export function sanitizeUserFacingText(text: unknown, opts?: { errorContext?: bo
   if (typeof text === "string") {
     raw = text;
   } else if (typeof text === "object" && text !== null && "text" in text) {
-    const textProp = (text as { text?: unknown }).text;
+    const textProp = (text as { text?: any }).text;
     raw = typeof textProp === "string" ? textProp : String(text);
   } else {
     raw = String(text);

@@ -70,7 +70,7 @@ function stripInlineLeakedInternalContext(value: string): string {
   return value;
 }
 
-function sanitizeTaskStatusValue(value: unknown, errorContext: boolean): unknown {
+function sanitizeTaskStatusValue(value: any, errorContext: boolean): any {
   if (typeof value === "string") {
     const sanitized = sanitizeUserFacingText(stripInlineLeakedInternalContext(value), {
       errorContext,
@@ -86,7 +86,7 @@ function sanitizeTaskStatusValue(value: unknown, errorContext: boolean): unknown
     return next.length > 0 ? next : undefined;
   }
   if (value && typeof value === "object") {
-    const nextEntries = Object.entries(value as Record<string, unknown>)
+    const nextEntries = Object.entries(value as Record<string, any>)
       .map(([key, entry]) => [key, sanitizeTaskStatusValue(entry, errorContext)] as const)
       .filter(([, entry]) => entry !== undefined);
     if (nextEntries.length === 0) {
@@ -98,7 +98,7 @@ function sanitizeTaskStatusValue(value: unknown, errorContext: boolean): unknown
 }
 
 export function sanitizeTaskStatusText(
-  value: unknown,
+  value: any,
   opts?: { errorContext?: boolean; maxChars?: number },
 ): string {
   const errorContext = opts?.errorContext ?? false;
@@ -119,7 +119,7 @@ export function sanitizeTaskStatusText(
   return sanitized;
 }
 
-export function formatTaskStatusTitleText(value: unknown, fallback = "Background task"): string {
+export function formatTaskStatusTitleText(value: any, fallback = "Background task"): string {
   return sanitizeTaskStatusText(value, { maxChars: TASK_STATUS_TITLE_MAX_CHARS }) || fallback;
 }
 

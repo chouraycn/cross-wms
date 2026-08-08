@@ -562,7 +562,7 @@ describe("isContainerEnvironment", () => {
 
   it("returns true when /run/.containerenv exists", () => {
     const fs = require("node:fs");
-    vi.spyOn(fs, "accessSync").mockImplementation((filePath: unknown) => {
+    vi.spyOn(fs, "accessSync").mockImplementation((filePath: any) => {
       if (filePath === "/run/.containerenv") {
         return undefined;
       }

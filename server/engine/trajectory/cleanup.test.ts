@@ -33,7 +33,7 @@ function pointerFile(sessionId: string, runtimeFile: string): string {
 }
 
 async function expectPathMissing(targetPath: string): Promise<void> {
-  let statError: unknown;
+  let statError: any;
   try {
     await fs.stat(targetPath);
   } catch (error) {

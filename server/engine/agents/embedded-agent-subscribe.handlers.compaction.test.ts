@@ -24,7 +24,7 @@ function createCompactionContext(params: {
   sessionKey: string;
   agentId?: string;
   initialCount: number;
-  info?: (message: string, meta?: Record<string, unknown>) => void;
+  info?: (message: string, meta?: Record<string, any>) => void;
   messages?: AgentMessage[];
 }): EmbeddedAgentSubscribeContext {
   // Minimal context preserves only the compaction counters and callbacks the
@@ -113,13 +113,13 @@ function finishCompaction(ctx: EmbeddedAgentSubscribeContext): void {
   });
 }
 
-function loggedInfoMetaAt(info: ReturnType<typeof vi.fn>, index: number): Record<string, unknown> {
+function loggedInfoMetaAt(info: ReturnType<typeof vi.fn>, index: number): Record<string, any> {
   // Logging assertions need structured metadata, not just console strings.
   const [, meta] = info.mock.calls[index] ?? [];
   if (!meta || typeof meta !== "object" || Array.isArray(meta)) {
     throw new Error(`expected info metadata for call ${index + 1}`);
   }
-  return meta as Record<string, unknown>;
+  return meta as Record<string, any>;
 }
 
 function loggedInfoMessageAt(info: ReturnType<typeof vi.fn>, index: number): string {

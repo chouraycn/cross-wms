@@ -7,7 +7,7 @@ import { requireValidConfigSnapshot } from "./config-validation.js";
 const { readConfigFileSnapshot, buildPluginCompatibilitySnapshotNotices } = vi.hoisted(() => ({
   readConfigFileSnapshot: vi.fn(),
   buildPluginCompatibilitySnapshotNotices: vi.fn<
-    (_params?: unknown) => PluginCompatibilityNotice[]
+    (_params?: any) => PluginCompatibilityNotice[]
   >(() => []),
 }));
 

@@ -183,7 +183,7 @@ function resolveSelectedMusicGenerationProvider(params: {
   });
 }
 
-function resolveAction(args: Record<string, unknown>): "generate" | "list" | "status" {
+function resolveAction(args: Record<string, any>): "generate" | "list" | "status" {
   return resolveGenerateAction({
     args,
     allowed: ["generate", "status", "list"],
@@ -204,7 +204,7 @@ function normalizeOutputFormat(raw: string | undefined): MusicGenerationOutputFo
   throw new ToolInputError('format must be one of "mp3" or "wav"');
 }
 
-function normalizeReferenceImageInputs(args: Record<string, unknown>): string[] {
+function normalizeReferenceImageInputs(args: Record<string, any>): string[] {
   return normalizeMediaReferenceInputs({
     args,
     singularKey: "image",
@@ -412,7 +412,7 @@ type ExecutedMusicGeneration = {
   paths: string[];
   attachments: AgentGeneratedAttachment[];
   contentText: string;
-  details: Record<string, unknown>;
+  details: Record<string, any>;
   wakeResult: string;
 };
 
@@ -617,7 +617,7 @@ export function createMusicGenerateTool(options?: {
       'Create audio/music for song, jingle, beat, loop, soundtrack, anthem, instrumental requests. If user asks make/generate/create song/music, call music_generate; do not just write lyrics unless lyrics/text only. Prompt gets style/genre/mood/tempo/instruments/purpose. lyrics only exact sung words. Session chats: background task; do not call again for same request; wait completion, then report through the current visible-reply contract with generated media attached using structured media fields. "status" checks active task.',
     parameters: MusicGenerateToolSchema,
     execute: async (_toolCallId, rawArgs) => {
-      const args = rawArgs as Record<string, unknown>;
+      const args = rawArgs as Record<string, any>;
       const action = resolveAction(args);
 
       if (action === "list") {

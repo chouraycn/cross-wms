@@ -6,7 +6,7 @@ export type ChannelUiMetaEntry = {
   label?: string;
   description?: string;
   iconUrl?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 export type ChannelUiCatalog = {
@@ -26,7 +26,7 @@ export type ChannelPluginCatalogEntry = {
   install?: ChannelPluginCatalogInstall;
   bundled?: boolean;
   official?: boolean;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 /** Builds a channel UI catalog from available entries. */
@@ -42,12 +42,12 @@ export function buildChannelUiCatalog(entries?: ChannelPluginCatalogEntry[]): Ch
 }
 
 /** Lists raw channel plugin catalog entries. Simplified without plugin discovery. */
-export function listRawChannelPluginCatalogEntries(_params?: unknown): ChannelPluginCatalogEntry[] {
+export function listRawChannelPluginCatalogEntries(_params?: any): ChannelPluginCatalogEntry[] {
   return [];
 }
 
 /** Lists channel plugin catalog entries. Simplified without plugin discovery. */
-export function listChannelPluginCatalogEntries(_params?: unknown): ChannelPluginCatalogEntry[] {
+export function listChannelPluginCatalogEntries(_params?: any): ChannelPluginCatalogEntry[] {
   return [];
 }
 

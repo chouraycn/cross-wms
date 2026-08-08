@@ -6,22 +6,22 @@ export type AgentEventMap = {
   'agent:stop': { agentId: string; timestamp: number; reason?: string };
   'agent:error': { agentId: string; error: Error; timestamp: number };
   'task:start': { taskId: string; agentId: string; timestamp: number };
-  'task:complete': { taskId: string; agentId: string; timestamp: number; result?: unknown };
+  'task:complete': { taskId: string; agentId: string; timestamp: number; result?: any };
   'task:error': { taskId: string; agentId: string; error: Error; timestamp: number };
   'task:progress': { taskId: string; agentId: string; progress: number; message?: string; timestamp: number };
-  'tool:call': { toolName: string; input: unknown; timestamp: number };
-  'tool:result': { toolName: string; result: unknown; timestamp: number };
+  'tool:call': { toolName: string; input: any; timestamp: number };
+  'tool:result': { toolName: string; result: any; timestamp: number };
   'tool:error': { toolName: string; error: Error; timestamp: number };
   'message:sent': { messageId: string; role: string; timestamp: number };
   'message:received': { messageId: string; role: string; timestamp: number };
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 type EventKey = keyof AgentEventMap;
 
 export class AgentEventBus {
   private emitter: EventEmitter;
-  private eventLog: { type: string; data: unknown; timestamp: number }[] = [];
+  private eventLog: { type: string; data: any; timestamp: number }[] = [];
   private maxLogSize: number;
 
   constructor(maxLogSize = 1000) {
@@ -46,7 +46,7 @@ export class AgentEventBus {
 
   emit<K extends EventKey>(event: K, data: AgentEventMap[K]): void {
     const timestamp = Date.now();
-    const eventData = { ...(data as Record<string, unknown>), timestamp } as unknown as AgentEventMap[K];
+    const eventData = { ...(data as Record<string, any>), timestamp } as unknown as AgentEventMap[K];
     
     this.logEvent(event as string, eventData);
     
@@ -57,14 +57,14 @@ export class AgentEventBus {
     }
   }
 
-  private logEvent(type: string, data: unknown): void {
+  private logEvent(type: string, data: any): void {
     this.eventLog.push({ type, data, timestamp: Date.now() });
     if (this.eventLog.length > this.maxLogSize) {
       this.eventLog.shift();
     }
   }
 
-  getEventLog(): { type: string; data: unknown; timestamp: number }[] {
+  getEventLog(): { type: string; data: any; timestamp: number }[] {
     return [...this.eventLog];
   }
 
@@ -101,4 +101,4 @@ export class AgentEventBus {
 export const agentEventBus = new AgentEventBus();
 
 // Auto-generated stub exports (added by auto-fix-exports.mjs)
-export const emitAgentEvent: (...args: unknown[]) => unknown = undefined as unknown as (...args: unknown[]) => unknown;
+export const emitAgentEvent: (...args: any[]) => unknown = undefined as unknown as (...args: any[]) => unknown;

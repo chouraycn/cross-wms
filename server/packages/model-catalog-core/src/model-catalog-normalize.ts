@@ -37,7 +37,7 @@ const DEFAULT_MODEL_INPUT: ModelCatalogInput[] = ["text"];
 const DEFAULT_MODEL_STATUS: ModelCatalogStatus = "available";
 
 /** Narrow unknown catalog payloads to plain records. */
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
@@ -47,7 +47,7 @@ function isBlockedObjectKey(key: string): boolean {
 }
 
 /** Normalize optional catalog strings. */
-function normalizeOptionalString(value: unknown): string | undefined {
+function normalizeOptionalString(value: any): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }
@@ -56,7 +56,7 @@ function normalizeOptionalString(value: unknown): string | undefined {
 }
 
 /** Normalize arrays of trimmed strings, dropping invalid entries. */
-function normalizeTrimmedStringList(value: unknown): string[] {
+function normalizeTrimmedStringList(value: any): string[] {
   if (!Array.isArray(value)) {
     return [];
   }
@@ -66,12 +66,12 @@ function normalizeTrimmedStringList(value: unknown): string[] {
   });
 }
 
-function normalizeOptionalTrimmedStringList(value: unknown): string[] | undefined {
+function normalizeOptionalTrimmedStringList(value: any): string[] | undefined {
   const normalized = normalizeTrimmedStringList(value);
   return normalized.length > 0 ? normalized : undefined;
 }
 
-function normalizeSafeRecordKey(value: unknown): string {
+function normalizeSafeRecordKey(value: any): string {
   const key = normalizeOptionalString(value) ?? "";
   return key && !isBlockedObjectKey(key) ? key : "";
 }
@@ -87,7 +87,7 @@ function normalizeOwnedProviderSet(providers: ReadonlySet<string>): ReadonlySet<
   return normalized;
 }
 
-function normalizeStringMap(value: unknown): Record<string, string> | undefined {
+function normalizeStringMap(value: any): Record<string, string> | undefined {
   if (!isRecord(value)) {
     return undefined;
   }
@@ -112,39 +112,39 @@ function mergeStringMaps(
   return { ...base, ...override };
 }
 
-function normalizeModelCatalogApi(value: unknown): ModelCatalogApi | undefined {
+function normalizeModelCatalogApi(value: any): ModelCatalogApi | undefined {
   const api = normalizeOptionalString(value) ?? "";
   return MODEL_CATALOG_API_SET.has(api) ? (api as ModelCatalogApi) : undefined;
 }
 
-function normalizeModelCatalogInputs(value: unknown): ModelCatalogInput[] | undefined {
+function normalizeModelCatalogInputs(value: any): ModelCatalogInput[] | undefined {
   const inputs = normalizeTrimmedStringList(value).filter((input): input is ModelCatalogInput =>
     MODEL_CATALOG_INPUTS.has(input),
   );
   return inputs.length > 0 ? inputs : undefined;
 }
 
-function normalizeNonNegativeNumber(value: unknown): number | undefined {
+function normalizeNonNegativeNumber(value: any): number | undefined {
   return typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : undefined;
 }
 
-function normalizeFiniteNumber(value: unknown): number | undefined {
+function normalizeFiniteNumber(value: any): number | undefined {
   return typeof value === "number" && Number.isFinite(value) ? value : undefined;
 }
 
-function normalizeStringOrNumber(value: unknown): string | number | undefined {
+function normalizeStringOrNumber(value: any): string | number | undefined {
   return normalizeOptionalString(value) ?? normalizeFiniteNumber(value);
 }
 
-function normalizePositiveNumber(value: unknown): number | undefined {
+function normalizePositiveNumber(value: any): number | undefined {
   return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : undefined;
 }
 
-function normalizePositiveInteger(value: unknown): number | undefined {
+function normalizePositiveInteger(value: any): number | undefined {
   return typeof value === "number" && Number.isInteger(value) && value > 0 ? value : undefined;
 }
 
-function normalizeModelCatalogTieredCost(value: unknown): ModelCatalogTieredCost[] | undefined {
+function normalizeModelCatalogTieredCost(value: any): ModelCatalogTieredCost[] | undefined {
   if (!Array.isArray(value)) {
     return undefined;
   }
@@ -185,7 +185,7 @@ function normalizeModelCatalogTieredCost(value: unknown): ModelCatalogTieredCost
   return normalized.length > 0 ? normalized : undefined;
 }
 
-function normalizeModelCatalogCost(value: unknown): ModelCatalogCost | undefined {
+function normalizeModelCatalogCost(value: any): ModelCatalogCost | undefined {
   if (!isRecord(value)) {
     return undefined;
   }
@@ -204,7 +204,7 @@ function normalizeModelCatalogCost(value: unknown): ModelCatalogCost | undefined
   return Object.keys(cost).length > 0 ? cost : undefined;
 }
 
-function normalizeOpenRouterPrice(value: unknown): ModelCatalogOpenRouterRouting["max_price"] {
+function normalizeOpenRouterPrice(value: any): ModelCatalogOpenRouterRouting["max_price"] {
   if (!isRecord(value)) {
     return undefined;
   }
@@ -229,7 +229,7 @@ function normalizeOpenRouterPrice(value: unknown): ModelCatalogOpenRouterRouting
 }
 
 function normalizeOpenRouterPercentileCutoffs(
-  value: unknown,
+  value: any,
 ):
   | NonNullable<Exclude<ModelCatalogOpenRouterRouting["preferred_min_throughput"], number>>
   | undefined {
@@ -254,12 +254,12 @@ function normalizeOpenRouterPercentileCutoffs(
 }
 
 function normalizeOpenRouterMetricPreference(
-  value: unknown,
+  value: any,
 ): ModelCatalogOpenRouterRouting["preferred_min_throughput"] {
   return normalizeFiniteNumber(value) ?? normalizeOpenRouterPercentileCutoffs(value);
 }
 
-function normalizeOpenRouterSort(value: unknown): ModelCatalogOpenRouterRouting["sort"] {
+function normalizeOpenRouterSort(value: any): ModelCatalogOpenRouterRouting["sort"] {
   const sort = normalizeOptionalString(value);
   if (sort) {
     return sort;
@@ -277,7 +277,7 @@ function normalizeOpenRouterSort(value: unknown): ModelCatalogOpenRouterRouting[
   return Object.keys(normalized).length > 0 ? normalized : undefined;
 }
 
-function normalizeOpenRouterRouting(value: unknown): ModelCatalogOpenRouterRouting | undefined {
+function normalizeOpenRouterRouting(value: any): ModelCatalogOpenRouterRouting | undefined {
   if (!isRecord(value)) {
     return undefined;
   }
@@ -326,7 +326,7 @@ function normalizeOpenRouterRouting(value: unknown): ModelCatalogOpenRouterRouti
 }
 
 function normalizeVercelGatewayRouting(
-  value: unknown,
+  value: any,
 ): ModelCatalogVercelGatewayRouting | undefined {
   if (!isRecord(value)) {
     return undefined;
@@ -342,11 +342,11 @@ function normalizeVercelGatewayRouting(
   return Object.keys(routing).length > 0 ? routing : undefined;
 }
 
-function normalizeModelCatalogCompat(value: unknown): ModelCatalogCompatConfig | undefined {
+function normalizeModelCatalogCompat(value: any): ModelCatalogCompatConfig | undefined {
   if (!isRecord(value)) {
     return undefined;
   }
-  const compat: Record<string, unknown> = {};
+  const compat: Record<string, any> = {};
   const booleanFields = [
     "supportsStore",
     "supportsPromptCacheKey",
@@ -433,13 +433,13 @@ function normalizeModelCatalogCompat(value: unknown): ModelCatalogCompatConfig |
   return Object.keys(compat).length > 0 ? (compat as ModelCatalogCompatConfig) : undefined;
 }
 
-function normalizeModelCatalogStatus(value: unknown): ModelCatalogStatus | undefined {
+function normalizeModelCatalogStatus(value: any): ModelCatalogStatus | undefined {
   const status = normalizeOptionalString(value) ?? "";
   return MODEL_CATALOG_STATUSES.has(status) ? (status as ModelCatalogStatus) : undefined;
 }
 
 function normalizeModelCatalogImageTokenMode(
-  value: unknown,
+  value: any,
 ): ModelCatalogImageInputConfig["tokenMode"] {
   const tokenMode = normalizeOptionalString(value) ?? "";
   if (tokenMode === "tile" || tokenMode === "detail" || tokenMode === "provider") {
@@ -448,7 +448,7 @@ function normalizeModelCatalogImageTokenMode(
   return undefined;
 }
 
-function normalizeModelCatalogMediaInput(value: unknown): ModelCatalogMediaInputConfig | undefined {
+function normalizeModelCatalogMediaInput(value: any): ModelCatalogMediaInputConfig | undefined {
   if (!isRecord(value) || !isRecord(value.image)) {
     return undefined;
   }
@@ -467,7 +467,7 @@ function normalizeModelCatalogMediaInput(value: unknown): ModelCatalogMediaInput
   return Object.keys(normalizedImage).length > 0 ? { image: normalizedImage } : undefined;
 }
 
-function normalizeModelCatalogModel(value: unknown): ModelCatalogModel | undefined {
+function normalizeModelCatalogModel(value: any): ModelCatalogModel | undefined {
   if (!isRecord(value)) {
     return undefined;
   }
@@ -514,7 +514,7 @@ function normalizeModelCatalogModel(value: unknown): ModelCatalogModel | undefin
   };
 }
 
-function normalizeModelCatalogProvider(value: unknown): ModelCatalogProvider | undefined {
+function normalizeModelCatalogProvider(value: any): ModelCatalogProvider | undefined {
   if (!isRecord(value)) {
     return undefined;
   }
@@ -538,7 +538,7 @@ function normalizeModelCatalogProvider(value: unknown): ModelCatalogProvider | u
 }
 
 function normalizeModelCatalogProviders(
-  value: unknown,
+  value: any,
   ownedProviders: ReadonlySet<string>,
 ): Record<string, ModelCatalogProvider> | undefined {
   if (!isRecord(value)) {
@@ -559,7 +559,7 @@ function normalizeModelCatalogProviders(
 }
 
 function normalizeModelCatalogAliases(
-  value: unknown,
+  value: any,
   ownedProviders: ReadonlySet<string>,
 ): Record<string, ModelCatalogAlias> | undefined {
   if (!isRecord(value)) {
@@ -588,7 +588,7 @@ function normalizeModelCatalogAliases(
   return Object.keys(aliases).length > 0 ? aliases : undefined;
 }
 
-function normalizeModelCatalogSuppressions(value: unknown): ModelCatalogSuppression[] | undefined {
+function normalizeModelCatalogSuppressions(value: any): ModelCatalogSuppression[] | undefined {
   if (!Array.isArray(value)) {
     return undefined;
   }
@@ -628,7 +628,7 @@ function normalizeModelCatalogSuppressions(value: unknown): ModelCatalogSuppress
 }
 
 function normalizeModelCatalogDiscovery(
-  value: unknown,
+  value: any,
   ownedProviders: ReadonlySet<string>,
 ): Record<string, ModelCatalogDiscovery> | undefined {
   if (!isRecord(value)) {
@@ -647,7 +647,7 @@ function normalizeModelCatalogDiscovery(
 
 /** Normalize a raw model catalog object for the set of providers owned by a plugin/manifest. */
 export function normalizeModelCatalog(
-  value: unknown,
+  value: any,
   params: { ownedProviders: ReadonlySet<string> },
 ): ModelCatalog | undefined {
   if (!isRecord(value)) {

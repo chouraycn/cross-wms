@@ -55,7 +55,7 @@ export interface ProviderConfig {
   format?: AudioFormat;
   sampleRate?: number;
   enabled?: boolean;
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 /** TTS 运行时顶层配置。 */
@@ -97,7 +97,7 @@ export interface TTSRequest {
   stream?: boolean;
   maxLength?: number;
   useCache?: boolean;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
   /** 可注入的 fetch 实现，便于测试/自定义传输。 */
   fetchFn?: typeof fetch;
 }
@@ -111,7 +111,7 @@ export interface TTSResult {
   sampleRate?: number;
   durationMs?: number;
   cached?: boolean;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 /** 流式合成分块。 */
@@ -145,7 +145,7 @@ export interface SynthesizeResult {
   format: AudioFormat;
   sampleRate?: number;
   durationMs?: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 /** 列举声音请求。 */

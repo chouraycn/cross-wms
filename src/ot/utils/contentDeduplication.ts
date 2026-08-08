@@ -84,8 +84,8 @@ function areSignaturesEqual(
   // JSON 签名：解析后比较关键字段
   if (signature1.startsWith('{') && signature2.startsWith('{')) {
     try {
-      const parsed1 = JSON.parse(signature1) as Record<string, unknown>;
-      const parsed2 = JSON.parse(signature2) as Record<string, unknown>;
+      const parsed1 = JSON.parse(signature1) as Record<string, any>;
+      const parsed2 = JSON.parse(signature2) as Record<string, any>;
 
       // 比较 id 和 encrypted_content
       return (

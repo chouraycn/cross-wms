@@ -49,7 +49,7 @@ export interface NamespaceKeysResponse {
 
 export interface CacheEntry {
   key: string;
-  value: unknown;
+  value: any;
   createdAt: number;
   expiresAt: number;
   ttlRemaining: number;

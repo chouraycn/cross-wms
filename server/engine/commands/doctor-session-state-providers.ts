@@ -43,7 +43,7 @@ function normalizePrefixList(values: readonly string[] | undefined): string[] {
   return normalizeStringEntriesLower(values);
 }
 
-function ownsPrefixedValue(prefixes: readonly string[], value: unknown): boolean {
+function ownsPrefixedValue(prefixes: readonly string[], value: any): boolean {
   const normalized = normalizeString(value)?.toLowerCase();
   return normalized !== undefined && prefixes.some((prefix) => normalized.startsWith(prefix));
 }
@@ -107,7 +107,7 @@ function resolvePluginDoctorSessionRouteStateOwners(params: {
 }
 
 function entryMayContainPluginSessionRouteState(entry: SessionEntry): boolean {
-  const record = entry as unknown as Record<string, unknown>;
+  const record = entry as unknown as Record<string, any>;
   return (
     normalizeString(record.providerOverride) !== undefined ||
     normalizeString(record.modelOverride) !== undefined ||
@@ -159,8 +159,8 @@ type DoctorSessionRouteStateScan = {
 
 function resolvePersistedOverrideModelRef(params: {
   defaultProvider: string;
-  overrideProvider?: unknown;
-  overrideModel?: unknown;
+  overrideProvider?: any;
+  overrideModel?: any;
 }): { provider: string; model: string } | null {
   const overrideModel = normalizeString(params.overrideModel);
   if (!overrideModel) {
@@ -199,7 +199,7 @@ function routeAllowsOwnerState(params: {
 }
 
 function hasOwnedCliSession(params: {
-  entry: Record<string, unknown>;
+  entry: Record<string, any>;
   cliSessionKeys: readonly string[];
 }): boolean {
   const bindings = params.entry.cliSessionBindings;
@@ -210,11 +210,11 @@ function hasOwnedCliSession(params: {
       (bindings !== null &&
         typeof bindings === "object" &&
         normalized in bindings &&
-        (bindings as Record<string, unknown>)[normalized] !== undefined) ||
+        (bindings as Record<string, any>)[normalized] !== undefined) ||
       (ids !== null &&
         typeof ids === "object" &&
         normalized in ids &&
-        (ids as Record<string, unknown>)[normalized] !== undefined)
+        (ids as Record<string, any>)[normalized] !== undefined)
     );
   });
 }
@@ -225,7 +225,7 @@ function modelRefKey(provider: string, model: string): string {
 
 function scanEntryForOwner(params: {
   key: string;
-  entry: Record<string, unknown>;
+  entry: Record<string, any>;
   owner: DoctorSessionRouteStateOwner;
   route: DoctorSessionRouteState | undefined;
 }): {
@@ -335,7 +335,7 @@ function scanEntryForOwner(params: {
 /** Scans session entries for state owned by plugins that no longer match the configured route. */
 export function scanSessionRouteStateOwners(params: {
   owners: readonly DoctorSessionRouteStateOwner[];
-  store: Record<string, Record<string, unknown>>;
+  store: Record<string, Record<string, any>>;
   routes: Record<string, DoctorSessionRouteState>;
 }): DoctorSessionRouteStateScan {
   const repairs: DoctorSessionRouteStateRepair[] = [];
@@ -357,7 +357,7 @@ export function scanSessionRouteStateOwners(params: {
   return { repairs, manualReview };
 }
 
-function clearEntryKey(entry: Record<string, unknown>, key: string): boolean {
+function clearEntryKey(entry: Record<string, any>, key: string): boolean {
   if (entry[key] !== undefined) {
     delete entry[key];
     return true;
@@ -366,7 +366,7 @@ function clearEntryKey(entry: Record<string, unknown>, key: string): boolean {
 }
 
 function clearRecordKeys(
-  entry: Record<string, unknown>,
+  entry: Record<string, any>,
   recordKey: string,
   ownedKeys: readonly string[],
 ): boolean {
@@ -374,7 +374,7 @@ function clearRecordKeys(
   if (value === null || typeof value !== "object") {
     return false;
   }
-  const record = value as Record<string, unknown>;
+  const record = value as Record<string, any>;
   let changed = false;
   const next = { ...record };
   for (const key of ownedKeys) {
@@ -393,7 +393,7 @@ function clearRecordKeys(
 
 /** Clears stale plugin-owned routing fields from a session entry and refreshes updatedAt. */
 export function applySessionRouteStateRepair(params: {
-  entry: Record<string, unknown>;
+  entry: Record<string, any>;
   repair: DoctorSessionRouteStateRepair;
   now: number;
 }): boolean {
@@ -475,7 +475,7 @@ export async function runPluginSessionStateDoctorRepairs(params: {
   // pure function of agentId (sessionKey is only used to derive agentId), so we
   // memoize by agentId to avoid recomputing the same route for every session
   // belonging to the same agent.
-  const scanStore: Record<string, Record<string, unknown>> = {};
+  const scanStore: Record<string, Record<string, any>> = {};
   const routes: Record<string, DoctorSessionRouteState> = {};
   const routeByAgentId = new Map<string, DoctorSessionRouteState>();
   for (const [sessionKey, entry] of Object.entries(params.store)) {
@@ -485,7 +485,7 @@ export async function runPluginSessionStateDoctorRepairs(params: {
     if (!entryMayContainPluginSessionRouteState(entry)) {
       continue;
     }
-    scanStore[sessionKey] = entry as unknown as Record<string, unknown>;
+    scanStore[sessionKey] = entry as unknown as Record<string, any>;
     const agentId = resolveSessionAgentId(params.cfg, sessionKey);
     let route = routeByAgentId.get(agentId);
     if (!route) {
@@ -523,7 +523,7 @@ export async function runPluginSessionStateDoctorRepairs(params: {
         await updateSessionStore(params.absoluteStorePath, (currentStore) => {
           const currentMutableStore = currentStore as unknown as Record<
             string,
-            Record<string, unknown>
+            Record<string, any>
           >;
           for (const [key, repair] of repairsByKey) {
             const current = currentMutableStore[key];

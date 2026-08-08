@@ -63,7 +63,7 @@ describe("AcpSessionManager backend failover", () => {
       storeSessionKey: sessionKey,
       acp: currentMeta,
     }));
-    hoisted.upsertAcpSessionMetaMock.mockImplementation(async (paramsUnknown: unknown) => {
+    hoisted.upsertAcpSessionMetaMock.mockImplementation(async (paramsUnknown: any) => {
       const upsertParams = paramsUnknown as {
         mutate: (
           current: SessionAcpMeta | undefined,
@@ -236,7 +236,7 @@ describe("AcpSessionManager backend failover", () => {
       yield { type: "text_delta" as const, text: "partial" };
       throw new AcpRuntimeError("ACP_TURN_FAILED", "backend unavailable");
     });
-    const events: unknown[] = [];
+    const events: any[] = [];
 
     const manager = new AcpSessionManager();
     await expect(

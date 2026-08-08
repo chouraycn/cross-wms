@@ -51,7 +51,7 @@ type MockChild = EventEmitter & {
   killed?: boolean;
 };
 
-type SpawnCall = [string, string[], Record<string, unknown>];
+type SpawnCall = [string, string[], Record<string, any>];
 
 function requireSpawnCall(callIndex: number): SpawnCall {
   const call = spawnMock.mock.calls[callIndex];
@@ -98,7 +98,7 @@ function createMockChild(params?: {
 type ExecCall = [
   string,
   string[],
-  Record<string, unknown>,
+  Record<string, any>,
   (err: Error | null, stdout: string, stderr: string) => void,
 ];
 
@@ -158,7 +158,7 @@ describe("windows command wrapper behavior", () => {
     execFileMock.mockReset();
     execFilePromisifyMock.mockReset();
     execFilePromisifyMock.mockImplementation(
-      (command: string, args: string[], options: Record<string, unknown>) =>
+      (command: string, args: string[], options: Record<string, any>) =>
         new Promise((resolve, reject) => {
           execFileMock(
             command,
@@ -184,7 +184,7 @@ describe("windows command wrapper behavior", () => {
     const expectedComSpec = expectedTrustedCmdExe();
 
     spawnMock.mockImplementation(
-      (_command: string, _args: string[], _options: Record<string, unknown>) => createMockChild(),
+      (_command: string, _args: string[], _options: Record<string, any>) => createMockChild(),
     );
 
     await withMockedWindowsPlatform(async () => {
@@ -202,7 +202,7 @@ describe("windows command wrapper behavior", () => {
     process.env.SystemRoot = "C:\\Windows";
 
     spawnMock.mockImplementation(
-      (_command: string, _args: string[], _options: Record<string, unknown>) => createMockChild(),
+      (_command: string, _args: string[], _options: Record<string, any>) => createMockChild(),
     );
 
     try {
@@ -234,7 +234,7 @@ describe("windows command wrapper behavior", () => {
     const previousWindir = process.env.WINDIR;
 
     spawnMock.mockImplementation(
-      (_command: string, _args: string[], _options: Record<string, unknown>) => createMockChild(),
+      (_command: string, _args: string[], _options: Record<string, any>) => createMockChild(),
     );
 
     try {
@@ -281,7 +281,7 @@ describe("windows command wrapper behavior", () => {
     const expectedComSpec = expectedTrustedCmdExe();
 
     spawnMock.mockImplementation(
-      (_command: string, _args: string[], _options: Record<string, unknown>) => createMockChild(),
+      (_command: string, _args: string[], _options: Record<string, any>) => createMockChild(),
     );
 
     await withMockedWindowsPlatform(async () => {
@@ -298,7 +298,7 @@ describe("windows command wrapper behavior", () => {
 
   it("escapes caret arguments in Windows command wrappers", async () => {
     spawnMock.mockImplementation(
-      (_command: string, _args: string[], _options: Record<string, unknown>) => createMockChild(),
+      (_command: string, _args: string[], _options: Record<string, any>) => createMockChild(),
     );
 
     await withMockedWindowsPlatform(async () => {
@@ -353,7 +353,7 @@ describe("windows command wrapper behavior", () => {
     const expectedComSpec = expectedTrustedCmdExe();
 
     spawnMock.mockImplementation(
-      (_command: string, _args: string[], _options: Record<string, unknown>) => createMockChild(),
+      (_command: string, _args: string[], _options: Record<string, any>) => createMockChild(),
     );
 
     await withRestoredMocks([existsSpy], async () => {
@@ -402,7 +402,7 @@ describe("windows command wrapper behavior", () => {
       (
         _command: string,
         _args: string[],
-        _options: Record<string, unknown>,
+        _options: Record<string, any>,
         cb: (err: Error | null, stdout: string, stderr: string) => void,
       ) => {
         cb(null, "ok", "");
@@ -423,7 +423,7 @@ describe("windows command wrapper behavior", () => {
       (
         _command: string,
         _args: string[],
-        _options: Record<string, unknown>,
+        _options: Record<string, any>,
         cb: (err: Error | null, stdout: string, stderr: string) => void,
       ) => {
         cb(null, "ok", "");
@@ -450,7 +450,7 @@ describe("windows command wrapper behavior", () => {
       (
         _command: string,
         _args: string[],
-        _options: Record<string, unknown>,
+        _options: Record<string, any>,
         cb: (err: Error | null, stdout: string, stderr: string) => void,
       ) => {
         cb(null, "ok", "");
@@ -468,7 +468,7 @@ describe("windows command wrapper behavior", () => {
 
   it("sets windowsHide on direct runCommandWithTimeout invocations too", async () => {
     spawnMock.mockImplementation(
-      (_command: string, _args: string[], _options: Record<string, unknown>) => createMockChild(),
+      (_command: string, _args: string[], _options: Record<string, any>) => createMockChild(),
     );
 
     await withMockedWindowsPlatform(async () => {
@@ -522,7 +522,7 @@ describe("windows command wrapper behavior", () => {
       (
         _command: string,
         _args: string[],
-        _options: Record<string, unknown>,
+        _options: Record<string, any>,
         cb: (err: Error | null, stdout: Buffer, stderr: Buffer) => void,
       ) => {
         cb(null, stdout, stderr);
@@ -543,7 +543,7 @@ describe("windows command wrapper behavior", () => {
       (
         _command: string,
         _args: string[],
-        _options: Record<string, unknown>,
+        _options: Record<string, any>,
         cb: (err: Error | null, stdout: Buffer, stderr: Buffer) => void,
       ) => {
         cb(null, Buffer.from("测试", "utf8"), Buffer.alloc(0));

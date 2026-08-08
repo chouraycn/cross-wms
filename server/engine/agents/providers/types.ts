@@ -33,7 +33,7 @@ export interface ChatCompletionOptions {
     function: {
       name: string;
       description: string;
-      parameters: Record<string, unknown>;
+      parameters: Record<string, any>;
     };
   }>;
   toolChoice?: 'none' | 'auto' | { type: string; function: { name: string } };

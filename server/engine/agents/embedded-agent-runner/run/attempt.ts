@@ -680,11 +680,11 @@ export async function runEmbeddedAttempt(
   let idleTimedOut = false;
   let timedOutDuringCompaction = false;
   let timedOutDuringToolExecution = false;
-  let promptError: unknown = null;
+  let promptError: any = null;
   let emitDiagnosticRunCompleted:
     | ((
         outcome: "completed" | "aborted" | "blocked" | "error",
-        err?: unknown,
+        err?: any,
         extra?: { blockedBy?: string },
       ) => void)
     | undefined;
@@ -699,7 +699,7 @@ export async function runEmbeddedAttempt(
   let toolSearchCatalogApplied = false;
   const sessionCleanupOwnsEmbeddedResources = false;
   let abortActiveSessionForExternalSignal: (() => Promise<void>) | undefined;
-  let abortRunForExternalSignal: ((isTimeout?: boolean, reason?: unknown) => void) | undefined;
+  let abortRunForExternalSignal: ((isTimeout?: boolean, reason?: any) => void) | undefined;
   let isCompactionPendingForExternalSignal: (() => boolean) | undefined;
   let isCompactionInFlightForExternalSignal: (() => boolean) | undefined;
   let removeExternalAbortSignalListener: (() => void) | undefined;
@@ -711,8 +711,8 @@ export async function runEmbeddedAttempt(
     err.name = "AbortError";
     return err;
   };
-  const getAbortReason = (signal: AbortSignal): unknown =>
-    "reason" in signal ? (signal as { reason?: unknown }).reason : undefined;
+  const getAbortReason = (signal: AbortSignal): any =>
+    "reason" in signal ? (signal as { reason?: any }).reason : undefined;
   const makeTimeoutAbortReason = (): Error => {
     const err = new Error("request timed out");
     err.name = "TimeoutError";
@@ -2044,7 +2044,7 @@ export async function runEmbeddedAttempt(
       const clientToolCallSlots: Array<{
         toolCallId: string;
         name: string;
-        params?: Record<string, unknown>;
+        params?: Record<string, any>;
         completed: boolean;
       }> = [];
       const clientToolCallSlotIndexes = new Map<string, number>();
@@ -2753,7 +2753,7 @@ export async function runEmbeddedAttempt(
               preserveNativeAnthropicToolUseIds: transcriptPolicy.preserveNativeAnthropicToolUseIds,
               duplicateToolCallIdStyle: transcriptPolicy.duplicateToolCallIdStyle,
               preserveReplaySafeThinkingToolCallIds: shouldAllowProviderOwnedThinkingReplay({
-                modelApi: (model as { api?: unknown })?.api as string | null | undefined,
+                modelApi: (model as { api?: any })?.api as string | null | undefined,
                 provider: params.provider,
                 policy: transcriptPolicy,
               }),
@@ -2771,7 +2771,7 @@ export async function runEmbeddedAttempt(
 
       const innerStreamFn = activeSession.agent.streamFn;
       activeSession.agent.streamFn = (model, context, options) => {
-        const signal = runAbortController.signal as AbortSignal & { reason?: unknown };
+        const signal = runAbortController.signal as AbortSignal & { reason?: any };
         if (yieldDetected && signal.aborted && signal.reason === "sessions_yield") {
           return createYieldAbortedResponse(model) as unknown as Awaited<
             ReturnType<typeof innerStreamFn>
@@ -3097,7 +3097,7 @@ export async function runEmbeddedAttempt(
           }
         }
       };
-      const abortRun = (isTimeout = false, reason?: unknown) => {
+      const abortRun = (isTimeout = false, reason?: any) => {
         aborted = true;
         if (isTimeout) {
           timedOut = true;
@@ -3622,7 +3622,7 @@ export async function runEmbeddedAttempt(
             runIds: readonly string[];
           }
         | undefined;
-      const releaseLeasedSteering = (error?: unknown) => {
+      const releaseLeasedSteering = (error?: any) => {
         if (!leasedSteering) {
           return;
         }
@@ -3915,7 +3915,7 @@ export async function runEmbeddedAttempt(
                 `aggregateBudgetChars=${
                   promptToolResultMaxChars * PROMPT_TOOL_RESULT_AGGREGATE_CAP_MULTIPLIER
                 }) ` +
-                `sessionKey=${params.sessionKey ?? params.sessionId ?? "unknown"}`,
+                `sessionKey=${params.sessionKey ?? params.sessionId ?? "any"}`,
             );
           }
 
@@ -4290,7 +4290,7 @@ export async function runEmbeddedAttempt(
                   }),
                 },
               )
-              .catch((err: unknown) => {
+              .catch((err: any) => {
                 log.warn(`llm_input hook failed: ${String(err)}`);
               });
           }
@@ -5142,7 +5142,7 @@ export async function runEmbeddedAttempt(
               }),
             },
           )
-          .catch((err: unknown) => {
+          .catch((err: any) => {
             log.warn(`llm_output hook failed: ${String(err)}`);
           });
       }
@@ -5416,7 +5416,7 @@ export async function runEmbeddedAttempt(
       // flushPendingToolResults() fires while tools are still executing, inserting
       // synthetic "missing tool result" errors and causing silent agent failures.
       // See: https://github.com/openclaw/openclaw/issues/8643
-      let cleanupError: unknown;
+      let cleanupError: any;
       try {
         clearToolSearchCatalog({
           sessionId: params.sessionId,

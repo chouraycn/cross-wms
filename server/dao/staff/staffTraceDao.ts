@@ -13,7 +13,7 @@ import type { AgentEventRow, AgentEventRead } from '../../types/staff.js';
 
 /** row -> read（含 payload 反序列化） */
 export function toAgentEventRead(row: AgentEventRow): AgentEventRead {
-  let payload: Record<string, unknown> = {};
+  let payload: Record<string, any> = {};
   try {
     payload = row.payload_json ? JSON.parse(row.payload_json) : {};
   } catch {
@@ -61,7 +61,7 @@ export function createEvent(
   tenantId: string,
   sessionId: string,
   eventType: string,
-  payload: Record<string, unknown> = {},
+  payload: Record<string, any> = {},
 ): AgentEventRow {
   const db = initDb();
   const id = newStaffId(StaffIdPrefix.event);

@@ -13,7 +13,7 @@ import { buildMigrationProviderOptions } from "./providers.js";
 import { applyMigrationPluginSelection, applyMigrationSkillSelection } from "./selection.js";
 import type { MigrateApplyOptions } from "./types.js";
 
-function shouldTreatMissingBackupAsEmptyState(error: unknown): boolean {
+function shouldTreatMissingBackupAsEmptyState(error: any): boolean {
   const message = error instanceof Error ? error.message : String(error);
   return (
     message.includes("No local OpenClaw state was found to back up") ||

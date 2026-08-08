@@ -41,7 +41,7 @@ const FAKE_CHILD = {
   pid: 1234,
 } as unknown as import("node:child_process").ChildProcess;
 
-function firstMockCall(mock: { mock: { calls: unknown[][] } }, label: string): unknown[] {
+function firstMockCall(mock: { mock: { calls: any[][] } }, label: string): any[] {
   const call = mock.mock.calls[0];
   if (!call) {
     throw new Error(`Expected ${label} to be called`);

@@ -32,6 +32,6 @@ declare module "web-push" {
   export function sendNotification(
     subscription: PushSubscription,
     payload?: string | Buffer | null,
-    options?: Record<string, unknown>,
+    options?: Record<string, any>,
   ): Promise<SendResult>;
 }

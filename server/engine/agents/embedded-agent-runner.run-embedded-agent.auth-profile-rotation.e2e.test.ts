@@ -19,7 +19,7 @@ import {
   installEmbeddedRunnerFastRunE2eMocks,
 } from "./test-helpers/embedded-agent-runner-e2e-mocks.js";
 
-const runEmbeddedAttemptMock = vi.fn<(params: unknown) => Promise<EmbeddedRunAttemptResult>>();
+const runEmbeddedAttemptMock = vi.fn<(params: any) => Promise<EmbeddedRunAttemptResult>>();
 const resolveCopilotApiTokenMock = vi.fn();
 const { computeBackoffMock, sleepWithAbortMock } = vi.hoisted(() => ({
   computeBackoffMock: vi.fn(
@@ -533,17 +533,17 @@ async function withAgentWorkspace<T>(
   }
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error(`expected ${label} to be a record`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 function requireLogRecord(
-  records: ReadonlyArray<unknown>,
+  records: ReadonlyArray<any>,
   message: string,
-): Record<string, unknown> {
+): Record<string, any> {
   const record = records.find(
     (candidate) => requireRecord(candidate, "log record").message === message,
   );
@@ -554,7 +554,7 @@ function requireLogRecord(
 }
 
 async function expectFailoverError(
-  promise: Promise<unknown>,
+  promise: Promise<any>,
   expected: {
     name?: string;
     profileId?: string;
@@ -563,7 +563,7 @@ async function expectFailoverError(
     model?: string;
   },
 ) {
-  let thrown: unknown;
+  let thrown: any;
   try {
     await promise;
   } catch (error) {
@@ -1523,7 +1523,7 @@ describe("runEmbeddedAgent auth profile rotation", () => {
         model: "mock-rotated",
       });
 
-      let thrown: unknown;
+      let thrown: any;
       try {
         await runEmbeddedAgentInline({
           sessionId: "session:test",

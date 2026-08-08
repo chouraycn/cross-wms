@@ -26,7 +26,7 @@ const CONTEXT_WINDOW_RUNTIME_STATE_KEY = Symbol.for("openclaw.contextWindowRunti
  * 原模块仅导出 `ensureOpenClawModelsJson`，此处保留同名占位以兼容类型契约。
  */
 type ModelsConfigRuntimeModule = {
-  ensureOpenClawModelsJson: (...args: unknown[]) => unknown;
+  ensureOpenClawModelsJson: (...args: any[]) => unknown;
 };
 
 /**
@@ -68,7 +68,7 @@ export const CONTEXT_WINDOW_RUNTIME_STATE = (() => {
       modelsConfigRuntimeLoader: createLazyImportLoader(
         // 降级实现：cross-wms 没有 models-config.runtime 模块，返回占位对象。
         async (): Promise<ModelsConfigRuntimeModule> => ({
-          ensureOpenClawModelsJson: (..._args: unknown[]) => undefined,
+          ensureOpenClawModelsJson: (..._args: any[]) => undefined,
         }),
       ),
     };

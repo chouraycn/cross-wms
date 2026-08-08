@@ -8,15 +8,15 @@
 
 /** Options for discovering env-backed credentials during agent auth discovery. */
 export type AgentDiscoveryAuthLookupOptions = {
-  config?: unknown;
+  config?: any;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
 };
 
 /** Adds provider credentials resolvable from env/config (returns unchanged in cross-wms). */
 export function addEnvBackedAgentCredentials(
-  credentials: Record<string, unknown>,
+  credentials: Record<string, any>,
   _options: AgentDiscoveryAuthLookupOptions = {},
-): Record<string, unknown> {
+): Record<string, any> {
   return { ...credentials };
 }

@@ -97,7 +97,7 @@ function createPinnedAgent(
   const agentOptions = {
     lookup: (
       _host: string,
-      _options: unknown,
+      _options: any,
       callback: (err: Error | null, address: string, family: number) => void,
     ) => {
       const family = pinnedIp.includes(':') ? 6 : 4;
@@ -279,9 +279,9 @@ export async function fetchWithSsrFGuard(
             return buffer;
           };
         }
-        const value = (target as unknown as Record<string, unknown>)[prop as string];
+        const value = (target as unknown as Record<string, any>)[prop as string];
         if (typeof value === 'function') {
-          return (value as (...args: unknown[]) => unknown).bind(target);
+          return (value as (...args: any[]) => unknown).bind(target);
         }
         return value;
       },

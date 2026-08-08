@@ -13,8 +13,8 @@ import type { MCPTool, MCPToolCallResult } from './types.js';
 export type OpenClawTool = {
   name: string;
   description: string;
-  inputSchema: Record<string, unknown>;
-  handler: (args: unknown) => Promise<{ content: Array<{ type: string; text?: string }>; isError?: boolean }>;
+  inputSchema: Record<string, any>;
+  handler: (args: any) => Promise<{ content: Array<{ type: string; text?: string }>; isError?: boolean }>;
 };
 
 export type OpenClawToolsConfig = {
@@ -33,7 +33,7 @@ const BUILTIN_TOOLS: OpenClawTool[] = [
       },
     },
     handler: async (args) => {
-      const params = args as Record<string, unknown>;
+      const params = args as Record<string, any>;
       const channel = params.channel as string | undefined;
       const limit = (params.limit as number) ?? 50;
       logger.info(`[OpenClawTools] list_sessions: channel=${channel ?? 'all'}, limit=${limit}`);
@@ -54,7 +54,7 @@ const BUILTIN_TOOLS: OpenClawTool[] = [
       required: ['sessionKey', 'text'],
     },
     handler: async (args) => {
-      const params = args as Record<string, unknown>;
+      const params = args as Record<string, any>;
       const sessionKey = params.sessionKey as string;
       const text = params.text as string;
       logger.info(`[OpenClawTools] send_reply: sessionKey=${sessionKey}`);
@@ -75,7 +75,7 @@ const BUILTIN_TOOLS: OpenClawTool[] = [
       required: ['sessionKey'],
     },
     handler: async (args) => {
-      const params = args as Record<string, unknown>;
+      const params = args as Record<string, any>;
       const sessionKey = params.sessionKey as string;
       const limit = (params.limit as number) ?? 20;
       logger.info(`[OpenClawTools] read_history: sessionKey=${sessionKey}, limit=${limit}`);
@@ -97,7 +97,7 @@ const BUILTIN_TOOLS: OpenClawTool[] = [
       required: ['sessionKey'],
     },
     handler: async (args) => {
-      const params = args as Record<string, unknown>;
+      const params = args as Record<string, any>;
       const sessionKey = params.sessionKey as string;
       const timeoutMs = (params.timeoutMs as number) ?? 30000;
       logger.info(`[OpenClawTools] wait_for_event: sessionKey=${sessionKey}, timeout=${timeoutMs}ms`);
@@ -148,7 +148,7 @@ export class OpenClawToolsServer {
     return this.toolExecutor.listTools();
   }
 
-  async callTool(name: string, args: unknown): Promise<MCPToolCallResult> {
+  async callTool(name: string, args: any): Promise<MCPToolCallResult> {
     const result = await this.toolExecutor.execute(name, args);
     return {
       content: result.content as MCPToolCallResult['content'],

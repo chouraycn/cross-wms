@@ -70,24 +70,24 @@ export type ChannelOutboundSessionRoute = {
   threadId?: string | number | null;
   channel?: string;
   accountId?: string;
-  peer?: unknown;
+  peer?: any;
   chatType?: string;
   from?: string;
   to?: string;
-  route?: unknown;
+  route?: any;
   normalizeThreadId?: (value?: string | number | null) => string | undefined;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 export type ChannelThreadingAdapter = {
-  matchesToolContextTarget?: (params: unknown) => boolean;
+  matchesToolContextTarget?: (params: any) => boolean;
   resolveReplyToMode?: (params: {
-    cfg: unknown;
+    cfg: any;
     accountId?: string | null;
     chatType?: string | null;
   }) => "off" | "first" | "all" | "batched" | undefined;
   allowExplicitReplyTagsWhenOff?: boolean;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 export type ChannelThreadingContext = unknown;
@@ -95,8 +95,8 @@ export type ChannelThreadingContext = unknown;
 export type ChannelThreadingToolContext = unknown;
 
 export type ChannelMessagingAdapter = {
-  resolveOutboundSessionRoute?: (params: unknown) => ChannelOutboundSessionRoute | Promise<ChannelOutboundSessionRoute>;
-  [key: string]: unknown;
+  resolveOutboundSessionRoute?: (params: any) => ChannelOutboundSessionRoute | Promise<ChannelOutboundSessionRoute>;
+  [key: string]: any;
 };
 
 export type ChannelAgentPromptAdapter = unknown;

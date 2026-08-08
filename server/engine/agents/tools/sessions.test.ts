@@ -11,7 +11,7 @@ import { extractAssistantText, sanitizeTextContent } from "./chat-history-text.j
 
 const callGatewayMock = vi.fn();
 vi.mock("../../gateway/call.js", () => ({
-  callGateway: (opts: unknown) => callGatewayMock(opts),
+  callGateway: (opts: any) => callGatewayMock(opts),
 }));
 
 type SessionsToolTestConfig = {
@@ -60,18 +60,18 @@ type SessionsListResult = Awaited<
   ReturnType<ReturnType<typeof import("./sessions-list-tool.js").createSessionsListTool>["execute"]>
 >;
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error(`expected ${label}`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function requireDetails(result: { details?: unknown }, label = "result details") {
+function requireDetails(result: { details?: any }, label = "result details") {
   return requireRecord(result.details, label);
 }
 
-function requireSessions(details: Record<string, unknown>) {
+function requireSessions(details: Record<string, any>) {
   const sessions = details.sessions;
   if (!Array.isArray(sessions)) {
     throw new Error("expected details.sessions");
@@ -859,8 +859,8 @@ describe("sessions_send gating", () => {
         },
       } as never,
     });
-    callGatewayMock.mockImplementation(async (opts: unknown) => {
-      const request = opts as { method?: string; params?: Record<string, unknown> };
+    callGatewayMock.mockImplementation(async (opts: any) => {
+      const request = opts as { method?: string; params?: Record<string, any> };
       if (request.method === "sessions.resolve") {
         if (request.params?.key === "session-id-only") {
           throw new Error("not a session key");
@@ -998,8 +998,8 @@ describe("sessions_send gating", () => {
       timestamp: 20,
     };
 
-    callGatewayMock.mockImplementation(async (opts: unknown) => {
-      const request = opts as { method?: string; params?: Record<string, unknown> };
+    callGatewayMock.mockImplementation(async (opts: any) => {
+      const request = opts as { method?: string; params?: Record<string, any> };
       if (request.method === "sessions.list") {
         return {
           path: "/tmp/sessions.json",
@@ -1042,7 +1042,7 @@ describe("sessions_send gating", () => {
       timestamp: 20,
     };
 
-    callGatewayMock.mockImplementation(async (opts: unknown) => {
+    callGatewayMock.mockImplementation(async (opts: any) => {
       const request = opts as { method?: string };
       if (request.method === "sessions.list") {
         return {
@@ -1078,7 +1078,7 @@ describe("sessions_send gating", () => {
     vi.mocked(runSessionsSendA2AFlow).mockClear();
     const tool = createMainSessionsSendTool();
 
-    callGatewayMock.mockImplementation(async (opts: unknown) => {
+    callGatewayMock.mockImplementation(async (opts: any) => {
       const request = opts as { method?: string };
       if (request.method === "sessions.list") {
         return {
@@ -1111,10 +1111,10 @@ describe("sessions_send gating", () => {
 
   it("caps oversized timeoutSeconds before waiting for the target run", async () => {
     const tool = createMainSessionsSendTool();
-    const waitTimeouts: unknown[] = [];
+    const waitTimeouts: any[] = [];
 
-    callGatewayMock.mockImplementation(async (opts: unknown) => {
-      const request = opts as { method?: string; timeoutMs?: unknown };
+    callGatewayMock.mockImplementation(async (opts: any) => {
+      const request = opts as { method?: string; timeoutMs?: any };
       if (request.method === "sessions.list") {
         return {
           path: "/tmp/sessions.json",

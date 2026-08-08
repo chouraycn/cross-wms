@@ -64,7 +64,7 @@ class EventPolicyManager {
   /**
    * 检查事件是否允许被记录
    */
-  checkEvent(eventType: string, payload: Record<string, unknown>): EventPolicyResult {
+  checkEvent(eventType: string, payload: Record<string, any>): EventPolicyResult {
     // 检查类型白名单
     if (this.options.allowedEventTypes && !this.options.allowedEventTypes.includes(eventType)) {
       return { allowed: false, reason: "Event type not in allowlist" };
@@ -120,7 +120,7 @@ class EventPolicyManager {
   /**
    * 对事件 payload 进行脱敏处理
    */
-  redactPayload(payload: Record<string, unknown>): Record<string, unknown> {
+  redactPayload(payload: Record<string, any>): Record<string, any> {
     if (this.options.includeSensitiveData) {
       return payload;
     }
@@ -204,7 +204,7 @@ class EventPolicyManager {
     };
   }
 
-  private findSensitiveFields(obj: Record<string, unknown>, prefix = ""): string[] {
+  private findSensitiveFields(obj: Record<string, any>, prefix = ""): string[] {
     const sensitive: string[] = [];
 
     for (const [key, value] of Object.entries(obj)) {
@@ -218,7 +218,7 @@ class EventPolicyManager {
       // 递归检查嵌套对象
       if (value && typeof value === "object" && !Array.isArray(value)) {
         sensitive.push(
-          ...this.findSensitiveFields(value as Record<string, unknown>, fullKey),
+          ...this.findSensitiveFields(value as Record<string, any>, fullKey),
         );
       }
     }
@@ -226,8 +226,8 @@ class EventPolicyManager {
     return sensitive;
   }
 
-  private redactObject(obj: Record<string, unknown>): Record<string, unknown> {
-    const result: Record<string, unknown> = {};
+  private redactObject(obj: Record<string, any>): Record<string, any> {
+    const result: Record<string, any> = {};
 
     for (const [key, value] of Object.entries(obj)) {
       // 检查字段名是否敏感
@@ -248,7 +248,7 @@ class EventPolicyManager {
 
       // 递归处理嵌套对象
       if (value && typeof value === "object" && !Array.isArray(value)) {
-        result[key] = this.redactObject(value as Record<string, unknown>);
+        result[key] = this.redactObject(value as Record<string, any>);
         continue;
       }
 
@@ -256,7 +256,7 @@ class EventPolicyManager {
       if (Array.isArray(value)) {
         result[key] = value.map((item) => {
           if (item && typeof item === "object") {
-            return this.redactObject(item as Record<string, unknown>);
+            return this.redactObject(item as Record<string, any>);
           }
           if (typeof item === "string") {
             let redacted = item;

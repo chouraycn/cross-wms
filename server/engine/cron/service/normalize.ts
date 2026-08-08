@@ -53,7 +53,7 @@ function truncateText(input: string, maxLen: number): string {
  * @returns 修剪后的名称
  * @throws 当名称缺失或无效时抛出 Error
  */
-export function normalizeRequiredName(raw: unknown): string {
+export function normalizeRequiredName(raw: any): string {
   if (typeof raw !== "string") {
     throw new Error("cron job name is required");
   }
@@ -70,7 +70,7 @@ export function normalizeRequiredName(raw: unknown): string {
  * @param raw 原始输入
  * @returns 修剪后的 agent id，或 undefined
  */
-export function normalizeOptionalAgentId(raw: unknown): string | undefined {
+export function normalizeOptionalAgentId(raw: any): string | undefined {
   if (typeof raw !== "string") {
     return undefined;
   }
@@ -91,8 +91,8 @@ export function normalizeOptionalAgentId(raw: unknown): string | undefined {
  * @returns 推断的任务名称（最多 60 字符）
  */
 export function inferCronJobName(job: {
-  schedule?: { kind?: unknown; everyMs?: unknown; expr?: unknown };
-  payload?: { kind?: unknown; text?: unknown; message?: unknown; argv?: unknown };
+  schedule?: { kind?: any; everyMs?: any; expr?: any };
+  payload?: { kind?: any; text?: any; message?: any; argv?: any };
 }): string {
   const text =
     job?.payload?.kind === "systemEvent" && typeof job.payload.text === "string"

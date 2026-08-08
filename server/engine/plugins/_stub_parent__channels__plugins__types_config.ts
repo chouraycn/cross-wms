@@ -15,7 +15,7 @@ export type ChannelConfigUiHint = {
   advanced?: boolean;
   sensitive?: boolean;
   placeholder?: string;
-  itemTemplate?: unknown;
+  itemTemplate?: any;
 };
 
 /** Normalized validation issue emitted by a channel runtime parser. */
@@ -23,13 +23,13 @@ export type ChannelConfigRuntimeIssue = {
   path?: Array<string | number>;
   message?: string;
   code?: string;
-} & Record<string, unknown>;
+} & Record<string, any>;
 
 /** Minimal safeParse result shape accepted from channel-owned validators. */
 export type ChannelConfigRuntimeParseResult =
   | {
       success: true;
-      data: unknown;
+      data: any;
     }
   | {
       success: false;
@@ -38,7 +38,7 @@ export type ChannelConfigRuntimeParseResult =
 
 /** Runtime validator contract paired with the JSON Schema config surface. */
 export type ChannelConfigRuntimeSchema = {
-  safeParse: (value: unknown) => ChannelConfigRuntimeParseResult;
+  safeParse: (value: any) => ChannelConfigRuntimeParseResult;
 };
 
 /** Complete channel config schema description exposed to host tooling. */

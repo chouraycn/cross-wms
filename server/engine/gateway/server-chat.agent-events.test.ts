@@ -7,7 +7,7 @@ import { registerAgentRunContext, resetAgentRunContextForTest } from "../infra/a
 const persistGatewaySessionLifecycleEventMock = vi.fn();
 
 vi.mock("./server-chat.persist-session-lifecycle.runtime.js", () => ({
-  persistGatewaySessionLifecycleEvent: (...args: unknown[]) =>
+  persistGatewaySessionLifecycleEvent: (...args: any[]) =>
     persistGatewaySessionLifecycleEventMock(...args),
 }));
 
@@ -183,24 +183,24 @@ describe("agent event handler", () => {
     return call;
   }
 
-  function requireRecord(value: unknown, label: string): Record<string, unknown> {
+  function requireRecord(value: any, label: string): Record<string, any> {
     if (typeof value !== "object" || value === null) {
       throw new Error(`${label} was not an object`);
     }
-    return value as Record<string, unknown>;
+    return value as Record<string, any>;
   }
 
-  function expectRecordFields(record: Record<string, unknown>, fields: Record<string, unknown>) {
+  function expectRecordFields(record: Record<string, any>, fields: Record<string, any>) {
     for (const [key, value] of Object.entries(fields)) {
       expect(record[key]).toEqual(value);
     }
   }
 
-  function expectPayloadFields(value: unknown, fields: Record<string, unknown>) {
+  function expectPayloadFields(value: any, fields: Record<string, any>) {
     expectRecordFields(requireRecord(value, "event payload"), fields);
   }
 
-  function expectPayloadDataFields(value: unknown, fields: Record<string, unknown>) {
+  function expectPayloadDataFields(value: any, fields: Record<string, any>) {
     const payload = requireRecord(value, "event payload");
     expectRecordFields(requireRecord(payload.data, "event payload data"), fields);
   }
@@ -276,7 +276,7 @@ describe("agent event handler", () => {
       runId?: string;
       sessionKey?: string;
       stream?: string;
-      data?: Record<string, unknown>;
+      data?: Record<string, any>;
     };
   }
 
@@ -285,7 +285,7 @@ describe("agent event handler", () => {
     expect(chatCalls).toHaveLength(1);
     const payload = chatCalls[0]?.[1] as {
       state?: string;
-      message?: unknown;
+      message?: any;
     };
     expect(payload.state).toBe("final");
     return payload;
@@ -874,7 +874,7 @@ describe("agent event handler", () => {
       });
       emitLifecycleEnd(handler, "run-2");
 
-      const payload = expectSingleFinalChatPayload(broadcast) as { message?: unknown };
+      const payload = expectSingleFinalChatPayload(broadcast) as { message?: any };
       expect(payload.message).toBeUndefined();
       expect(sessionChatCalls(nodeSendToSession)).toHaveLength(1);
       nowSpy?.mockRestore();
@@ -898,7 +898,7 @@ describe("agent event handler", () => {
     }
     emitLifecycleEnd(handler, "run-3");
 
-    const payload = expectSingleFinalChatPayload(broadcast) as { message?: unknown };
+    const payload = expectSingleFinalChatPayload(broadcast) as { message?: any };
     expect(payload.message).toBeUndefined();
     expect(sessionChatCalls(nodeSendToSession)).toHaveLength(1);
     nowSpy?.mockRestore();
@@ -929,7 +929,7 @@ describe("agent event handler", () => {
       }
       emitLifecycleEnd(handler, "run-control");
 
-      const payload = expectSingleFinalChatPayload(broadcast) as { message?: unknown };
+      const payload = expectSingleFinalChatPayload(broadcast) as { message?: any };
       expect(payload.message).toBeUndefined();
       expect(sessionChatCalls(nodeSendToSession)).toHaveLength(1);
       nowSpy?.mockRestore();
@@ -1848,7 +1848,7 @@ describe("agent event handler", () => {
 
     const payload = requireMockArg(nodeSendToSession, 0, 2, "node tool-search payload") as {
       stream?: string;
-      data?: { name?: string; args?: Record<string, unknown> };
+      data?: { name?: string; args?: Record<string, any> };
     };
     expect(payload.stream).toBe("tool");
     expect(payload.data).toEqual({
@@ -3019,7 +3019,7 @@ describe("agent event handler", () => {
 
     expect(broadcastToConnIds).toHaveBeenCalledTimes(1);
     const payload = requireMockArg(broadcastToConnIds, 0, 1, "tool output payload") as {
-      data?: Record<string, unknown>;
+      data?: Record<string, any>;
     };
     expect(payload.data?.result).toEqual({ content: [{ type: "text", text: "secret" }] });
     expect(payload.data?.partialResult).toEqual({ content: [{ type: "text", text: "partial" }] });
@@ -3050,7 +3050,7 @@ describe("agent event handler", () => {
 
     expect(broadcastToConnIds).toHaveBeenCalledTimes(1);
     const payload = requireMockArg(broadcastToConnIds, 0, 1, "full tool output payload") as {
-      data?: Record<string, unknown>;
+      data?: Record<string, any>;
     };
     expect(payload.data?.result).toEqual(result);
     resetAgentRunContextForTest();
@@ -3271,7 +3271,7 @@ describe("agent event handler", () => {
     const agentCalls = broadcast.mock.calls.filter(([event]) => event === "agent");
     const fallbackPayload = agentCalls.at(-1)?.[1] as {
       runId?: string;
-      data?: Record<string, unknown>;
+      data?: Record<string, any>;
     };
     expect(fallbackPayload.runId).toBe("run-fallback-client");
     expect(fallbackPayload.data?.phase).toBe("fallback");
@@ -4010,7 +4010,7 @@ describe("agent event handler", () => {
 
     emitLifecycleEnd(handler, "run-heartbeat");
 
-    const finalPayload = expectSingleFinalChatPayload(broadcast) as { message?: unknown };
+    const finalPayload = expectSingleFinalChatPayload(broadcast) as { message?: any };
     expect(finalPayload.message).toBeUndefined();
     expect(sessionChatCalls(nodeSendToSession)).toHaveLength(1);
   });

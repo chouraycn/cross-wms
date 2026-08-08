@@ -8,8 +8,8 @@
 
 /** Materialized LSP tools plus session capabilities and cleanup handle. */
 export type BundleLspToolRuntime = {
-  tools: unknown[];
-  sessions: Array<{ serverName: string; capabilities: Record<string, unknown> }>;
+  tools: any[];
+  sessions: Array<{ serverName: string; capabilities: Record<string, any> }>;
   dispose: () => Promise<void>;
 };
 
@@ -17,7 +17,7 @@ export type BundleLspToolRuntime = {
  * Spawns one LSP server process. In cross-wms this returns undefined
  * since process spawning infrastructure is not available.
  */
-export function spawnLspServerProcess(_config: Record<string, unknown>): undefined {
+export function spawnLspServerProcess(_config: Record<string, any>): undefined {
   // cross-wms does not have the LSP process spawning infrastructure.
   return undefined;
 }
@@ -28,7 +28,7 @@ export function spawnLspServerProcess(_config: Record<string, unknown>): undefin
  */
 export async function createBundleLspToolRuntime(_params: {
   workspaceDir: string;
-  cfg?: unknown;
+  cfg?: any;
   reservedToolNames?: Iterable<string>;
 }): Promise<BundleLspToolRuntime> {
   // cross-wms lacks LSP config loading, process spawning, and tool registration.

@@ -5,9 +5,9 @@ import { printCronJson } from "./shared.js";
 
 describe("printCronJson cause display", () => {
   it("adds an additive cause without changing raw cron run errors", () => {
-    let written: unknown;
+    let written: any;
     const original = defaultRuntime.writeJson;
-    defaultRuntime.writeJson = (value: unknown) => {
+    defaultRuntime.writeJson = (value: any) => {
       written = value;
     };
     try {
@@ -27,16 +27,16 @@ describe("printCronJson cause display", () => {
       defaultRuntime.writeJson = original;
     }
 
-    const result = written as { entries: Array<Record<string, unknown>> };
+    const result = written as { entries: Array<Record<string, any>> };
     expect(result.entries[0]?.cause).toBe("timeout");
     expect(result.entries[0]?.error).toBe("cron: job execution timed out");
     expect(result.entries[0]?.errorReason).toBe("timeout");
   });
 
   it("does not add cause fields to non-run-log entries", () => {
-    let written: unknown;
+    let written: any;
     const original = defaultRuntime.writeJson;
-    defaultRuntime.writeJson = (value: unknown) => {
+    defaultRuntime.writeJson = (value: any) => {
       written = value;
     };
     try {
@@ -47,7 +47,7 @@ describe("printCronJson cause display", () => {
       defaultRuntime.writeJson = original;
     }
 
-    const result = written as { entries: Array<Record<string, unknown>> };
+    const result = written as { entries: Array<Record<string, any>> };
     expect(result.entries[0]?.cause).toBeUndefined();
   });
 });

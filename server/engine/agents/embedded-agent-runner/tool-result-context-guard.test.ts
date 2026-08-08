@@ -36,7 +36,7 @@ function makeToolResult(id: string, text: string, toolName = "grep"): AgentMessa
   });
 }
 
-function makeAssistant(text: string, extras: Record<string, unknown> = {}): AgentMessage {
+function makeAssistant(text: string, extras: Record<string, any> = {}): AgentMessage {
   return castAgentMessage({
     role: "assistant",
     content: text,
@@ -79,7 +79,7 @@ function makeToolResultWithDetails(id: string, text: string, detailText: string)
 }
 
 function getToolResultText(msg: AgentMessage): string {
-  const content = (msg as { content?: unknown }).content;
+  const content = (msg as { content?: any }).content;
   if (typeof content === "string") {
     return content;
   }
@@ -156,10 +156,10 @@ function expectOpenClawTruncation(text: string): void {
 }
 
 function mockCallArg(
-  mock: { mock: { calls: ReadonlyArray<ReadonlyArray<unknown>> } },
+  mock: { mock: { calls: ReadonlyArray<ReadonlyArray<any>> } },
   callIndex = 0,
   argIndex = 0,
-): unknown {
+): any {
   const call = mock.mock.calls[callIndex];
   if (!call) {
     throw new Error(`expected mock call ${callIndex + 1}`);
@@ -168,15 +168,15 @@ function mockCallArg(
 }
 
 function recordMockArg(
-  mock: { mock: { calls: ReadonlyArray<ReadonlyArray<unknown>> } },
+  mock: { mock: { calls: ReadonlyArray<ReadonlyArray<any>> } },
   callIndex = 0,
   argIndex = 0,
-): Record<string, unknown> {
+): Record<string, any> {
   const arg = mockCallArg(mock, callIndex, argIndex);
   if (!arg || typeof arg !== "object") {
     throw new Error("expected mock argument record");
   }
-  return arg as Record<string, unknown>;
+  return arg as Record<string, any>;
 }
 
 describe("formatContextLimitTruncationNotice", () => {
@@ -225,7 +225,7 @@ describe("installToolResultContextGuard", () => {
     const agent = makeGuardableAgent((messages) =>
       messages.map((msg) =>
         castAgentMessage({
-          ...(msg as unknown as Record<string, unknown>),
+          ...(msg as unknown as Record<string, any>),
         }),
       ),
     );
@@ -244,7 +244,7 @@ describe("installToolResultContextGuard", () => {
     const transformed = (await applyGuardToContext(agent, contextForNextCall)) as AgentMessage[];
     const newResultText = getToolResultText(transformed[0]);
 
-    expect(typeof (transformed[0] as { content?: unknown }).content).toBe("string");
+    expect(typeof (transformed[0] as { content?: any }).content).toBe("string");
     expectOpenClawTruncation(newResultText);
   });
 
@@ -255,12 +255,12 @@ describe("installToolResultContextGuard", () => {
     ];
 
     const transformed = (await applyGuardToContext(agent, contextForNextCall)) as AgentMessage[];
-    const result = transformed[0] as { details?: unknown };
+    const result = transformed[0] as { details?: any };
     const newResultText = getToolResultText(transformed[0]);
 
     expectOpenClawTruncation(newResultText);
     expect(result.details).toBeUndefined();
-    const originalDetails = (contextForNextCall[0] as { details?: { truncation?: unknown } })
+    const originalDetails = (contextForNextCall[0] as { details?: { truncation?: any } })
       .details;
     expect(originalDetails?.truncation).toEqual({
       truncated: true,
@@ -401,8 +401,8 @@ describe("installToolResultContextGuard", () => {
     expect(transformed).toBe(contextForNextCall);
     expect(getToolResultText(transformed[0])).toBe("x".repeat(100));
     expect(getToolResultText(transformed[1])).toBe("y".repeat(120));
-    expect((contextForNextCall[0] as { details?: unknown }).details).toBeDefined();
-    expect((contextForNextCall[1] as { details?: unknown }).details).toBeDefined();
+    expect((contextForNextCall[0] as { details?: any }).details).toBeDefined();
+    expect((contextForNextCall[1] as { details?: any }).details).toBeDefined();
   });
 
   it("ignores large tool-result details when deciding preemptive overflow", async () => {
@@ -509,7 +509,7 @@ describe("installContextEngineLoopHook", () => {
     getRuntimeContext?: (params: {
       messages: AgentMessage[];
       prePromptMessageCount: number;
-    }) => Record<string, unknown> | undefined,
+    }) => Record<string, any> | undefined,
     onAfterTurnCheckpoint?: (messageCount: number) => void,
     isHeartbeat?: boolean,
   ): () => void {
@@ -565,7 +565,7 @@ describe("installContextEngineLoopHook", () => {
   async function callAfterInitialToolResult(
     agent: ReturnType<typeof makeGuardableAgent>,
     options: { includeSecondUser?: boolean; firstResultText?: string } = {},
-  ): Promise<{ initial: AgentMessage[]; withNew: AgentMessage[]; transformed: unknown }> {
+  ): Promise<{ initial: AgentMessage[]; withNew: AgentMessage[]; transformed: any }> {
     const initial = [
       makeUser("first"),
       makeToolResult("call_1", options.firstResultText ?? "result"),

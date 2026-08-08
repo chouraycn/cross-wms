@@ -3,7 +3,7 @@ import type { AgentMessage } from "openclaw/plugin-sdk/agent-core";
 import { describe, expect, it, vi } from "vitest";
 
 const agentSessionMocks = vi.hoisted(() => ({
-  estimateTokens: vi.fn((_message: unknown) => 1),
+  estimateTokens: vi.fn((_message: any) => 1),
   generateSummary: vi.fn(async () => "summary"),
 }));
 
@@ -34,7 +34,7 @@ describe("compaction token accounting sanitization", () => {
         content: [{ type: "text", text: "ok" }],
         details: { raw: "x".repeat(50_000) },
         timestamp: 1,
-      } as unknown,
+      } as any,
       {
         role: "user",
         content: "next",
@@ -46,7 +46,7 @@ describe("compaction token accounting sanitization", () => {
     chunkMessagesByMaxTokens(messages, 16);
 
     const calledWithDetails = agentSessionMocks.estimateTokens.mock.calls.some((call) => {
-      const message = call[0] as { details?: unknown } | undefined;
+      const message = call[0] as { details?: any } | undefined;
       return Boolean(message?.details);
     });
 
@@ -65,13 +65,13 @@ describe("compaction token accounting sanitization", () => {
         content: [{ type: "text", text: "ok" }],
         details: { raw: "x".repeat(50_000) },
         timestamp: 1,
-      } as unknown,
+      } as any,
       {
         role: "custom",
         customType: "openclaw.runtime-context",
         content: "internal",
         timestamp: 2,
-      } as unknown,
+      } as any,
       {
         role: "user",
         content: "next",

@@ -53,7 +53,7 @@ export class RequestBodyLimitError extends Error {
 }
 
 export function isRequestBodyLimitError(
-  error: unknown,
+  error: any,
   code?: RequestBodyLimitErrorCode,
 ): error is RequestBodyLimitError {
   if (!(error instanceof RequestBodyLimitError)) {
@@ -227,7 +227,7 @@ export async function readRequestBodyWithLimit(
 }
 
 export type ReadJsonBodyResult =
-  | { ok: true; value: unknown }
+  | { ok: true; value: any }
   | { ok: false; error: string; code: RequestBodyLimitErrorCode | "INVALID_JSON" };
 
 export type ReadJsonBodyOptions = ReadRequestBodyOptions & {
@@ -249,7 +249,7 @@ export async function readJsonBodyWithLimit(
       return { ok: true, value: {} };
     }
     try {
-      return { ok: true, value: JSON.parse(trimmed) as unknown };
+      return { ok: true, value: JSON.parse(trimmed) as any };
     } catch (error) {
       return {
         ok: false,

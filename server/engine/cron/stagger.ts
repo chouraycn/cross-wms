@@ -62,7 +62,7 @@ export function isRecurringTopOfHourCronExpr(expr: string): boolean {
  * @param raw 原始值
  * @returns 规范化的毫秒值，或 undefined（如果无效）
  */
-export function normalizeCronStaggerMs(raw: unknown): number | undefined {
+export function normalizeCronStaggerMs(raw: any): number | undefined {
   let numeric: number;
 
   if (typeof raw === "number") {

@@ -10,7 +10,7 @@ export type MidTurnPrecheckRequest = unknown;
 export class MidTurnPrecheckSignal {
   // Stub: not fully ported
 }
-export function isMidTurnPrecheckSignal(..._args: unknown[]): unknown {
+export function isMidTurnPrecheckSignal(..._args: any[]): any {
   return false;
 }
-export const MID_TURN_PRECHECK_ERROR_MESSAGE: unknown = undefined;
+export const MID_TURN_PRECHECK_ERROR_MESSAGE: any = undefined;

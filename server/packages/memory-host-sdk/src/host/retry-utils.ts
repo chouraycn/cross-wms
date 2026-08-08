@@ -14,15 +14,15 @@ export type RetryInfo = {
   attempt: number;
   maxAttempts: number;
   delayMs: number;
-  err: unknown;
+  err: any;
   label?: string;
 };
 
 /** Retry options for retryAsync. */
 export type RetryOptions = RetryConfig & {
   label?: string;
-  shouldRetry?: (err: unknown, attempt: number) => boolean;
-  retryAfterMs?: (err: unknown) => number | undefined;
+  shouldRetry?: (err: any, attempt: number) => boolean;
+  retryAfterMs?: (err: any) => number | undefined;
   onRetry?: (info: RetryInfo) => void;
 };
 
@@ -39,14 +39,14 @@ function sleep(ms: number): Promise<void> {
   });
 }
 
-function asFiniteNumber(value: unknown): number | undefined {
+function asFiniteNumber(value: any): number | undefined {
   if (typeof value !== "number" || !Number.isFinite(value)) {
     return undefined;
   }
   return value;
 }
 
-function clampNumber(value: unknown, fallback: number, min?: number, max?: number): number {
+function clampNumber(value: any, fallback: number, min?: number, max?: number): number {
   const next = asFiniteNumber(value);
   if (next === undefined) {
     return fallback;
@@ -56,7 +56,7 @@ function clampNumber(value: unknown, fallback: number, min?: number, max?: numbe
   return Math.min(Math.max(next, floor), ceiling);
 }
 
-function resolveAttempts(value: unknown, fallback: number): number {
+function resolveAttempts(value: any, fallback: number): number {
   if (typeof value !== "number" || !Number.isSafeInteger(value)) {
     return fallback;
   }
@@ -100,7 +100,7 @@ export async function retryAsync<T>(
 ): Promise<T> {
   if (typeof attemptsOrOptions === "number") {
     const attempts = resolveAttempts(attemptsOrOptions, DEFAULT_RETRY_CONFIG.attempts);
-    let lastErr: unknown;
+    let lastErr: any;
     for (let i = 0; i < attempts; i += 1) {
       try {
         return await fn();
@@ -124,7 +124,7 @@ export async function retryAsync<T>(
       ? resolved.maxDelayMs
       : Number.POSITIVE_INFINITY;
   const shouldRetry = options.shouldRetry ?? (() => true);
-  let lastErr: unknown;
+  let lastErr: any;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     try {
@@ -160,7 +160,7 @@ export async function retryAsync<T>(
   throw toLintErrorObject(lastErr ?? new Error("Retry failed"), "Non-Error thrown");
 }
 
-function toLintErrorObject(value: unknown, fallbackMessage: string): Error {
+function toLintErrorObject(value: any, fallbackMessage: string): Error {
   if (value instanceof Error) {
     return value;
   }

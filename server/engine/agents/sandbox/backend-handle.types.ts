@@ -15,7 +15,7 @@ export type SandboxBackendExecSpec = {
   argv: string[];
   env: NodeJS.ProcessEnv;
   stdinMode: "pipe-open" | "pipe-closed";
-  finalizeToken?: unknown;
+  finalizeToken?: any;
 };
 
 /** Parameters for backend-managed shell commands used by fs bridges and probes. */
@@ -72,7 +72,7 @@ export type SandboxBackendHandle = {
     status: "completed" | "failed";
     exitCode: number | null;
     timedOut: boolean;
-    token?: unknown;
+    token?: any;
   }) => Promise<void>;
   runShellCommand(params: SandboxBackendCommandParams): Promise<SandboxBackendCommandResult>;
   createFsBridge?: (params: { sandbox: SandboxFsBridgeContext }) => SandboxFsBridge;

@@ -10,8 +10,8 @@
 export const TOOL_SEARCH_CONTROL_ALLOWLIST_NAMES: string[] = [];
 
 /** Build a tool search run plan (returns empty in cross-wms). */
-export function buildToolSearchRunPlan(..._args: unknown[]): {
-  tools: unknown[];
+export function buildToolSearchRunPlan(..._args: any[]): {
+  tools: any[];
   allowlist: string[];
 } {
   return {

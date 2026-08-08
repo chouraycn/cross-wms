@@ -40,7 +40,7 @@ function isGatewayCallTimeout(message: string): boolean {
   return /^gateway timeout after \d+ms(?:\n|$)/.test(message);
 }
 
-function isGatewayHealthAuthUnavailableError(error: unknown): boolean {
+function isGatewayHealthAuthUnavailableError(error: any): boolean {
   return isGatewayCredentialsRequiredError(error) || isGatewaySecretRefUnavailableError(error);
 }
 

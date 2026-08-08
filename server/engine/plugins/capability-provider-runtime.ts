@@ -223,7 +223,7 @@ function findProviderById<K extends CapabilityProviderRegistryKey>(
   providerId: string,
 ): CapabilityProviderForKey<K> | undefined {
   const providerEntries = entries as unknown as Array<{
-    provider: CapabilityProviderForKey<K> & { id?: unknown };
+    provider: CapabilityProviderForKey<K> & { id?: any };
   }>;
   for (const entry of providerEntries) {
     if (entry.provider.id === providerId) {
@@ -281,7 +281,7 @@ function mergeCapabilityProviderEntries<K extends CapabilityProviderRegistryKey>
   return [...merged.values(), ...unnamed] as PluginRegistry[K];
 }
 
-function addObjectKeys(target: Set<string>, value: unknown): void {
+function addObjectKeys(target: Set<string>, value: any): void {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     return;
   }
@@ -293,7 +293,7 @@ function addObjectKeys(target: Set<string>, value: unknown): void {
   }
 }
 
-function addStringValue(target: Set<string>, value: unknown): void {
+function addStringValue(target: Set<string>, value: any): void {
   if (typeof value !== "string") {
     return;
   }
@@ -303,7 +303,7 @@ function addStringValue(target: Set<string>, value: unknown): void {
   }
 }
 
-function addModelConfigProviderIds(target: Set<string>, value: unknown): void {
+function addModelConfigProviderIds(target: Set<string>, value: any): void {
   for (const ref of resolveVoiceModelRefs(value)) {
     addStringValue(target, ref.provider);
   }
@@ -316,7 +316,7 @@ function collectRequestedSpeechProviderIds(
   const requested = new Set<string>();
   const tts =
     typeof cfg?.messages?.tts === "object" && cfg.messages.tts !== null
-      ? (cfg.messages.tts as Record<string, unknown>)
+      ? (cfg.messages.tts as Record<string, any>)
       : undefined;
   addStringValue(requested, tts?.provider);
   addObjectKeys(requested, tts?.providers);
@@ -333,13 +333,13 @@ function collectRequestedVoiceModelProviderIds(cfg: OpenClawConfig | undefined):
   return requested;
 }
 
-function addMediaModelProviders(target: Set<string>, value: unknown): void {
+function addMediaModelProviders(target: Set<string>, value: any): void {
   if (!Array.isArray(value)) {
     return;
   }
   for (const entry of value) {
     if (typeof entry === "object" && entry !== null) {
-      addStringValue(target, (entry as { provider?: unknown }).provider);
+      addStringValue(target, (entry as { provider?: any }).provider);
     }
   }
 }
@@ -392,9 +392,9 @@ function shouldScopeCapabilityLoadToRequestedProviders(
   );
 }
 
-function removeActiveProviderIds(requested: Set<string>, entries: readonly unknown[]): void {
-  for (const entry of entries as Array<{ provider: { id?: unknown; aliases?: unknown } }>) {
-    const provider = entry.provider as { id?: unknown; aliases?: unknown };
+function removeActiveProviderIds(requested: Set<string>, entries: readonly any[]): void {
+  for (const entry of entries as Array<{ provider: { id?: any; aliases?: any } }>) {
+    const provider = entry.provider as { id?: any; aliases?: any };
     if (typeof provider.id === "string") {
       requested.delete(provider.id.toLowerCase());
     }
@@ -425,7 +425,7 @@ function filterLoadedProvidersForRequestedConfig<K extends CapabilityProviderReg
     return [] as unknown as PluginRegistry[K];
   }
   return params.entries.filter((entry) => {
-    const provider = entry.provider as { id?: unknown; aliases?: unknown };
+    const provider = entry.provider as { id?: any; aliases?: any };
     if (typeof provider.id === "string" && params.requested.has(provider.id.toLowerCase())) {
       return true;
     }

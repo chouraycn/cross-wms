@@ -7,7 +7,7 @@ import {
 
 function createHeadersWithSymbol(enumerable: boolean): HeadersInit {
   const headers = { "Content-Type": "application/json" } as Record<string, string> & {
-    [key: symbol]: unknown;
+    [key: symbol]: any;
   };
   Object.defineProperty(headers, Symbol("sensitiveHeaders"), {
     value: new Set(["content-type"]),

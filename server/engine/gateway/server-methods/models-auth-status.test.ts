@@ -13,7 +13,7 @@ const emptyUsageSummary = (): UsageSummary => ({ updatedAt: 0, providers: [] });
 const mocks = vi.hoisted(() => ({
   getRuntimeConfig: vi.fn(() => ({})),
   resolveDefaultAgentDir: vi.fn(() => "/tmp/agent"),
-  ensureAuthProfileStore: vi.fn((agentDir?: string, options?: unknown) => {
+  ensureAuthProfileStore: vi.fn((agentDir?: string, options?: any) => {
     void agentDir;
     void options;
     return { version: 1, profiles: {} };
@@ -32,7 +32,7 @@ const mocks = vi.hoisted(() => ({
   clearRuntimeAuthProfileStoreSnapshots: vi.fn(),
   refreshActiveSecretsRuntimeSnapshot: vi.fn(async () => false),
   clearCurrentProviderAuthState: vi.fn(),
-  warmCurrentProviderAuthStateOffMainThread: vi.fn(async (_cfg: unknown) => {}),
+  warmCurrentProviderAuthStateOffMainThread: vi.fn(async (_cfg: any) => {}),
   buildAuthHealthSummary: vi.fn(
     (): AuthHealthSummary => ({ now: 0, warnAfterMs: 0, profiles: [], providers: [] }),
   ),
@@ -95,7 +95,7 @@ import {
 } from "./models-auth-status.js";
 
 function createOptions(
-  params: Record<string, unknown> = {},
+  params: Record<string, any> = {},
 ): GatewayRequestHandlerOptions & { respond: ReturnType<typeof vi.fn> } {
   const respond = vi.fn();
   return {
@@ -104,7 +104,7 @@ function createOptions(
     client: null,
     isWebchatConnect: () => false,
     respond,
-    context: { getRuntimeConfig: mocks.getRuntimeConfig } as unknown,
+    context: { getRuntimeConfig: mocks.getRuntimeConfig } as any,
   } as unknown as GatewayRequestHandlerOptions & { respond: ReturnType<typeof vi.fn> };
 }
 
@@ -143,7 +143,7 @@ function createStaticApiKeyProvider(provider: string) {
 }
 
 function createLogoutOptions(
-  params: Record<string, unknown> = {},
+  params: Record<string, any> = {},
 ): GatewayRequestHandlerOptions & { respond: ReturnType<typeof vi.fn> } {
   const respond = vi.fn();
   const context = {
@@ -172,11 +172,11 @@ function createLogoutOptions(
   } as unknown as GatewayRequestHandlerOptions & { respond: ReturnType<typeof vi.fn> };
 }
 
-function requireRecord(value: unknown): Record<string, unknown> {
+function requireRecord(value: any): Record<string, any> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("Expected a non-array record");
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 function firstRespondCall(

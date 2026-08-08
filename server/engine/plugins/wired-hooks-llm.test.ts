@@ -9,11 +9,11 @@ const hookCtx = {
 
 async function expectLlmHookCall(params: {
   hookName: "model_call_started" | "model_call_ended" | "llm_input" | "llm_output";
-  event: Record<string, unknown>;
+  event: Record<string, any>;
 }) {
   const handler = vi.fn();
   const { runner } = createHookRunnerWithRegistry([{ hookName: params.hookName, handler }]);
-  let expectedEvent: Record<string, unknown> = params.event;
+  let expectedEvent: Record<string, any> = params.event;
 
   if (params.hookName === "model_call_started") {
     await runner.runModelCallStarted(
@@ -29,13 +29,13 @@ async function expectLlmHookCall(params: {
     await runner.runLlmInput(
       {
         ...params.event,
-        historyMessages: [...((params.event.historyMessages as unknown[] | undefined) ?? [])],
+        historyMessages: [...((params.event.historyMessages as any[] | undefined) ?? [])],
       } as Parameters<typeof runner.runLlmInput>[0],
       hookCtx,
     );
     expectedEvent = {
       ...params.event,
-      historyMessages: [...((params.event.historyMessages as unknown[] | undefined) ?? [])],
+      historyMessages: [...((params.event.historyMessages as any[] | undefined) ?? [])],
     };
   } else {
     await runner.runLlmOutput(

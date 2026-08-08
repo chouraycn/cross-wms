@@ -359,7 +359,7 @@ const plugin: WebFetchProviderPlugin = {
   credentialPath: "",
   inactiveSecretPaths: [],
 
-  getCredentialValue(): unknown {
+  getCredentialValue(): any {
     return undefined;
   },
 
@@ -451,7 +451,7 @@ const plugin: WebFetchProviderPlugin = {
         required: ["url"],
       },
       async execute(
-        args: Record<string, unknown>,
+        args: Record<string, any>,
         context?: { signal?: AbortSignal },
       ): Promise<WebFetchResult> {
         const url = String(args.url || "").trim();

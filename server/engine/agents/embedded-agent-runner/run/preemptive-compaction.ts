@@ -49,7 +49,7 @@ function estimateStringTokenPressure(text: string, charsPerToken = ESTIMATED_CHA
 }
 
 function estimateJsonPayloadTokenPressure(
-  value: unknown,
+  value: any,
   charsPerToken = JSON_PAYLOAD_CHARS_PER_TOKEN,
 ): number {
   try {
@@ -63,7 +63,7 @@ function estimateJsonPayloadTokenPressure(
 }
 
 function estimateIdentifierTokenPressure(
-  value: unknown,
+  value: any,
   charsPerToken = JSON_PAYLOAD_CHARS_PER_TOKEN,
 ): number {
   if (value == null) {
@@ -81,7 +81,7 @@ function estimateIdentifierTokenPressure(
 }
 
 function estimateContentBlockTokenPressure(
-  block: unknown,
+  block: any,
   charsPerToken = ESTIMATED_CHARS_PER_TOKEN,
 ): number {
   if (typeof block === "string") {
@@ -106,7 +106,7 @@ function estimateContentBlockTokenPressure(
   return CONTENT_BLOCK_OVERHEAD_TOKENS + estimateJsonPayloadTokenPressure(block, charsPerToken);
 }
 
-function estimateToolResultContentTokenPressure(content: unknown): number {
+function estimateToolResultContentTokenPressure(content: any): number {
   if (typeof content === "string") {
     return estimateStringTokenPressure(content, TOOL_RESULT_CHARS_PER_TOKEN);
   }
@@ -122,7 +122,7 @@ function estimateToolResultContentTokenPressure(content: unknown): number {
   return 0;
 }
 
-function estimateAssistantToolCallTokenPressure(block: Record<string, unknown>): number {
+function estimateAssistantToolCallTokenPressure(block: Record<string, any>): number {
   const args = block.arguments ?? block.input ?? block.args ?? {};
   return (
     CONTENT_BLOCK_OVERHEAD_TOKENS +
@@ -131,7 +131,7 @@ function estimateAssistantToolCallTokenPressure(block: Record<string, unknown>):
   );
 }
 
-function estimateContentTokenPressure(content: unknown): number {
+function estimateContentTokenPressure(content: any): number {
   if (typeof content === "string") {
     return estimateStringTokenPressure(content);
   }
@@ -145,12 +145,12 @@ function estimateContentTokenPressure(content: unknown): number {
 }
 
 function isToolResultMessage(message: AgentMessage): boolean {
-  const record = message as unknown as { role?: unknown; type?: unknown };
+  const record = message as unknown as { role?: any; type?: any };
   return record.role === "toolResult" || record.role === "tool" || record.type === "toolResult";
 }
 
 function estimateMessageTokenPressure(message: AgentMessage): number {
-  const record = message as unknown as Record<string, unknown>;
+  const record = message as unknown as Record<string, any>;
   let tokens = MESSAGE_BOUNDARY_OVERHEAD_TOKENS;
 
   if (isToolResultMessage(message)) {

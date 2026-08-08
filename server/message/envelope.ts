@@ -73,7 +73,7 @@ export interface ToolTraceEntry {
   name: string;
   success: boolean;
   duration: number;
-  input?: Record<string, unknown>;
+  input?: Record<string, any>;
   result?: string;
   error?: string;
 }
@@ -83,7 +83,7 @@ export interface ToolBlock {
   id: string;
   type: 'skill' | 'mcp';
   name: string;
-  input: Record<string, unknown>;
+  input: Record<string, any>;
   result?: string;
   error?: string;
   status: 'pending' | 'running' | 'done' | 'error';
@@ -149,7 +149,7 @@ export interface MessageEnvelope {
   isError?: boolean;
 
   /** 通道特定数据 */
-  channelData?: Record<string, unknown>;
+  channelData?: Record<string, any>;
 }
 
 
@@ -227,7 +227,7 @@ export function createAssistantEnvelope(
 export function createToolBlock(
   type: 'skill' | 'mcp',
   name: string,
-  input: Record<string, unknown>,
+  input: Record<string, any>,
 ): ToolBlock {
   return {
     id: `tool_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
@@ -441,11 +441,11 @@ export function createToolResultEnvelope(
 // ===================== 信封验证工具 =====================
 
 /** 验证信封是否为有效消息 */
-export function isValidEnvelope(envelope: unknown): envelope is MessageEnvelope {
+export function isValidEnvelope(envelope: any): envelope is MessageEnvelope {
   if (!envelope || typeof envelope !== 'object') {
     return false;
   }
-  const e = envelope as Record<string, unknown>;
+  const e = envelope as Record<string, any>;
   return (
     typeof e.id === 'string' &&
     typeof e.role === 'string' &&

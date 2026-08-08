@@ -86,12 +86,12 @@ function formatCompactionReason(reason?: string): string | undefined {
   }
 }
 
-function isCodexNativeCompactionStartedResult(result: { result?: { details?: unknown } }): boolean {
+function isCodexNativeCompactionStartedResult(result: { result?: { details?: any } }): boolean {
   const details = result.result?.details;
   if (!details || typeof details !== "object" || Array.isArray(details)) {
     return false;
   }
-  const record = details as Record<string, unknown>;
+  const record = details as Record<string, any>;
   return (
     record.backend === "codex-app-server" &&
     record.signal === "thread/compact/start" &&

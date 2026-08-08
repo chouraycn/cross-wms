@@ -4,14 +4,14 @@ export type ConfiguredBindingRouteResult = unknown;
 
 export type RuntimeConversationBindingRouteResult = unknown;
 
-export function resolveConfiguredBindingRoute(..._args: unknown[]): unknown {
+export function resolveConfiguredBindingRoute(..._args: any[]): any {
   return undefined;
 }
 
-export function resolveRuntimeConversationBindingRoute(..._args: unknown[]): unknown {
+export function resolveRuntimeConversationBindingRoute(..._args: any[]): any {
   return undefined;
 }
 
-export async function ensureConfiguredBindingRouteReady(..._args: unknown[]): Promise<unknown> {
+export async function ensureConfiguredBindingRouteReady(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }

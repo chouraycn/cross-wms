@@ -27,10 +27,10 @@ const RUNNING_FROM_BUILT_ARTIFACT =
   CURRENT_MODULE_PATH.includes(`${path.sep}dist-runtime${path.sep}`);
 
 type PluginDoctorContractModule = {
-  legacyConfigRules?: unknown;
-  normalizeCompatibilityConfig?: unknown;
-  sessionRouteStateOwners?: unknown;
-  stateMigrations?: unknown;
+  legacyConfigRules?: any;
+  normalizeCompatibilityConfig?: any;
+  sessionRouteStateOwners?: any;
+  stateMigrations?: any;
 };
 
 type PluginDoctorCompatibilityMutation = {
@@ -118,7 +118,7 @@ function resolveContractApiPath(rootDir: string): string | null {
   return null;
 }
 
-function coerceLegacyConfigRules(value: unknown): LegacyConfigRule[] {
+function coerceLegacyConfigRules(value: any): LegacyConfigRule[] {
   if (!Array.isArray(value)) {
     return [];
   }
@@ -126,28 +126,28 @@ function coerceLegacyConfigRules(value: unknown): LegacyConfigRule[] {
     if (!entry || typeof entry !== "object") {
       return false;
     }
-    const candidate = entry as { path?: unknown; message?: unknown };
+    const candidate = entry as { path?: any; message?: any };
     return Array.isArray(candidate.path) && typeof candidate.message === "string";
   }) as LegacyConfigRule[];
 }
 
 function coerceNormalizeCompatibilityConfig(
-  value: unknown,
+  value: any,
 ): PluginDoctorCompatibilityNormalizer | undefined {
   return typeof value === "function" ? (value as PluginDoctorCompatibilityNormalizer) : undefined;
 }
 
-function isDoctorSessionRouteStateOwner(value: unknown): value is DoctorSessionRouteStateOwner {
+function isDoctorSessionRouteStateOwner(value: any): value is DoctorSessionRouteStateOwner {
   if (!value || typeof value !== "object") {
     return false;
   }
   const candidate = value as {
-    id?: unknown;
-    label?: unknown;
-    providerIds?: unknown;
-    runtimeIds?: unknown;
-    cliSessionKeys?: unknown;
-    authProfilePrefixes?: unknown;
+    id?: any;
+    label?: any;
+    providerIds?: any;
+    runtimeIds?: any;
+    cliSessionKeys?: any;
+    authProfilePrefixes?: any;
   };
   return (
     typeof candidate.id === "string" &&
@@ -165,7 +165,7 @@ function isDoctorSessionRouteStateOwner(value: unknown): value is DoctorSessionR
   );
 }
 
-function coerceDoctorSessionRouteStateOwners(value: unknown): DoctorSessionRouteStateOwner[] {
+function coerceDoctorSessionRouteStateOwners(value: any): DoctorSessionRouteStateOwner[] {
   if (!Array.isArray(value)) {
     return [];
   }
@@ -179,15 +179,15 @@ function coerceDoctorSessionRouteStateOwners(value: unknown): DoctorSessionRoute
   }));
 }
 
-function isPluginDoctorStateMigration(value: unknown): value is PluginDoctorStateMigration {
+function isPluginDoctorStateMigration(value: any): value is PluginDoctorStateMigration {
   if (!value || typeof value !== "object") {
     return false;
   }
   const candidate = value as {
-    id?: unknown;
-    label?: unknown;
-    detectLegacyState?: unknown;
-    migrateLegacyState?: unknown;
+    id?: any;
+    label?: any;
+    detectLegacyState?: any;
+    migrateLegacyState?: any;
   };
   return (
     typeof candidate.id === "string" &&
@@ -199,7 +199,7 @@ function isPluginDoctorStateMigration(value: unknown): value is PluginDoctorStat
   );
 }
 
-function coercePluginDoctorStateMigrations(value: unknown): PluginDoctorStateMigration[] {
+function coercePluginDoctorStateMigrations(value: any): PluginDoctorStateMigration[] {
   if (!Array.isArray(value)) {
     return [];
   }
@@ -211,7 +211,7 @@ function coercePluginDoctorStateMigrations(value: unknown): PluginDoctorStateMig
   }));
 }
 
-function hasLegacyElevenLabsTalkFields(raw: unknown): boolean {
+function hasLegacyElevenLabsTalkFields(raw: any): boolean {
   const talk = asNullableRecord(asNullableRecord(raw)?.talk);
   if (!talk) {
     return false;
@@ -221,7 +221,7 @@ function hasLegacyElevenLabsTalkFields(raw: unknown): boolean {
   );
 }
 
-export function collectRelevantDoctorPluginIds(raw: unknown): string[] {
+export function collectRelevantDoctorPluginIds(raw: any): string[] {
   const ids = new Set<string>();
   const root = asNullableRecord(raw);
   if (!root) {
@@ -259,7 +259,7 @@ export function collectRelevantDoctorPluginIds(raw: unknown): string[] {
 }
 
 export function collectRelevantDoctorPluginIdsForTouchedPaths(params: {
-  raw: unknown;
+  raw: any;
   touchedPaths: ReadonlyArray<ReadonlyArray<string>>;
 }): string[] {
   const root = asNullableRecord(params.raw);

@@ -7,22 +7,22 @@ const DEFAULT_DUPLICATE_USER_MESSAGE_WINDOW_MS = 60_000;
 const MIN_DUPLICATE_USER_MESSAGE_CHARS = 24;
 
 type MessageLike = {
-  role?: unknown;
-  content?: unknown;
-  timestamp?: unknown;
+  role?: any;
+  content?: any;
+  timestamp?: any;
 };
 
 type EntryLike = {
-  id?: unknown;
-  type?: unknown;
-  message?: unknown;
+  id?: any;
+  type?: any;
+  message?: any;
 };
 
 type DuplicateUserMessageOptions = {
   windowMs?: number;
 };
 
-function normalizeUserMessageContent(content: unknown): string | undefined {
+function normalizeUserMessageContent(content: any): string | undefined {
   if (typeof content === "string") {
     return content.replace(/\s+/g, " ").trim();
   }
@@ -44,7 +44,7 @@ function normalizeUserMessageContent(content: unknown): string | undefined {
   return textParts.join("\n").replace(/\s+/g, " ").trim();
 }
 
-function duplicateSignature(message: unknown): { key: string; timestamp: number } | undefined {
+function duplicateSignature(message: any): { key: string; timestamp: number } | undefined {
   if (!isRecord(message) || message.role !== "user" || typeof message.timestamp !== "number") {
     return undefined;
   }

@@ -48,16 +48,16 @@ describe("cron tool", () => {
     });
   }
 
-  function readGatewayCall(index = 0): { method?: string; params?: Record<string, unknown> } {
+  function readGatewayCall(index = 0): { method?: string; params?: Record<string, any> } {
     return (
       (callGatewayMock.mock.calls[index]?.[0] as
-        | { method?: string; params?: Record<string, unknown> }
+        | { method?: string; params?: Record<string, any> }
         | undefined) ?? { method: undefined, params: undefined }
     );
   }
 
-  function readGatewayOpts(index = 0): Record<string, unknown> | undefined {
-    return callGatewayMock.mock.calls[index]?.[1] as Record<string, unknown> | undefined;
+  function readGatewayOpts(index = 0): Record<string, any> | undefined {
+    return callGatewayMock.mock.calls[index]?.[1] as Record<string, any> | undefined;
   }
 
   function readCronPayloadText(index = 0): string {
@@ -83,7 +83,7 @@ describe("cron tool", () => {
     expect(tool.description).toContain('"tz": "Asia/Shanghai"');
   });
 
-  function buildReminderAgentTurnJob(overrides: Record<string, unknown> = {}): {
+  function buildReminderAgentTurnJob(overrides: Record<string, any> = {}): {
     name: string;
     schedule: { at: string };
     payload: { kind: "agentTurn"; message: string };
@@ -143,9 +143,9 @@ describe("cron tool", () => {
   async function executeAddAndReadAgentId(params: {
     callId: string;
     agentSessionKey: string;
-    agentId?: unknown;
+    agentId?: any;
     includeAgentId?: boolean;
-  }): Promise<unknown> {
+  }): Promise<any> {
     const tool = createTestCronTool({ agentSessionKey: params.agentSessionKey });
     await tool.execute(params.callId, {
       action: "add",
@@ -841,7 +841,7 @@ describe("cron tool", () => {
     });
 
     const params = expectSingleGatewayCallMethod("cron.add") as
-      | { failureAlert?: unknown }
+      | { failureAlert?: any }
       | undefined;
     expect(params?.failureAlert).toBe(false);
   });
@@ -1752,7 +1752,7 @@ describe("cron tool", () => {
     });
 
     const params = expectSingleGatewayCallMethod("cron.update") as
-      | { id?: string; patch?: { delivery?: unknown } }
+      | { id?: string; patch?: { delivery?: any } }
       | undefined;
     expect(params).toEqual({
       id: "job-clear-delivery",
@@ -1802,7 +1802,7 @@ describe("cron tool", () => {
     });
 
     const params = expectSingleGatewayCallMethod("cron.update") as
-      | { id?: string; patch?: { failureAlert?: unknown } }
+      | { id?: string; patch?: { failureAlert?: any } }
       | undefined;
     expect(params?.id).toBe("job-4");
     expect(params?.patch?.failureAlert).toBe(false);
@@ -1973,7 +1973,7 @@ describe("cron tool", () => {
     const params = expectSingleGatewayCallMethod("cron.update") as
       | {
           id?: string;
-          patch?: { schedule?: { kind?: string; expr?: string }; scheduleKind?: unknown };
+          patch?: { schedule?: { kind?: string; expr?: string }; scheduleKind?: any };
         }
       | undefined;
     expect(params?.id).toBe("job-kind");

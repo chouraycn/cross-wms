@@ -29,13 +29,13 @@ import { testing as subagentAnnounceOutputTesting } from "./subagent-announce-ou
 
 type AgentCallRequest = {
   method?: string;
-  params?: Record<string, unknown> & {
+  params?: Record<string, any> & {
     internalEvents?: Array<{ type?: string; taskLabel?: string }>;
   };
 };
 type RequesterResolution = {
   requesterSessionKey: string;
-  requesterOrigin?: Record<string, unknown>;
+  requesterOrigin?: Record<string, any>;
 } | null;
 type SubagentDeliveryTargetResult = {
   origin?: {
@@ -78,7 +78,7 @@ function visibleAgentResponse(runId = "run-main") {
 }
 
 function expectInputProvenance(
-  params: Record<string, unknown> | undefined,
+  params: Record<string, any> | undefined,
   sourceSessionKey: string,
 ) {
   // Announce handoffs are inter-session messages; provenance lets the receiver
@@ -87,7 +87,7 @@ function expectInputProvenance(
   if (!inputProvenance || typeof inputProvenance !== "object") {
     throw new Error("Expected input provenance");
   }
-  const provenance = inputProvenance as Record<string, unknown>;
+  const provenance = inputProvenance as Record<string, any>;
   expect(provenance.kind).toBe("inter_session");
   expect(provenance.sourceSessionKey).toBe(sourceSessionKey);
   expect(provenance.sourceTool).toBe("subagent_announce");
@@ -184,8 +184,8 @@ const { subagentRegistryMock } = vi.hoisted(() => ({
 }));
 const subagentDeliveryTargetHookMock = vi.fn(
   async (
-    _eventValue?: unknown,
-    _ctx?: unknown,
+    _eventValue?: any,
+    _ctx?: any,
   ): Promise<SubagentDeliveryTargetResult | undefined> => undefined,
 );
 let hasSubagentDeliveryTargetHook = false;
@@ -200,7 +200,7 @@ const hookRunnerMock = {
   runSubagentDeliveryTarget: hookRunSubagentDeliveryTargetMock,
 } as unknown as HookRunner;
 const chatHistoryMock = vi.fn(async (_sessionKey?: string) => ({
-  messages: [] as Array<unknown>,
+  messages: [] as Array<any>,
 }));
 let sessionStore: SessionStoreFixture = {};
 let configOverride: OpenClawConfig = {
@@ -360,7 +360,7 @@ describe("subagent announce formatting", () => {
       .mockClear()
       .mockImplementation(async (_req: AgentCallRequest) => ({ runId: "send-main", status: "ok" }));
     sessionsDeleteSpy.mockClear().mockImplementation((_req: AgentCallRequest) => undefined);
-    callGatewaySpy.mockReset().mockImplementation(async (req: unknown) => {
+    callGatewaySpy.mockReset().mockImplementation(async (req: any) => {
       const typed = req as { method?: string; params?: { message?: string; sessionKey?: string } };
       if (typed.method === "agent") {
         return await agentSpy(typed);
@@ -384,7 +384,7 @@ describe("subagent announce formatting", () => {
       return {};
     });
     subagentAnnounceDeliveryTesting.setDepsForTest({
-      callGateway: async <T = Record<string, unknown>>(
+      callGateway: async <T = Record<string, any>>(
         req: Parameters<typeof gatewayCall.callGateway>[0],
       ) => (await callGatewaySpy(req)) as T,
       getRuntimeConfig: () => configOverride,
@@ -400,13 +400,13 @@ describe("subagent announce formatting", () => {
         embeddedRunMock.queueEmbeddedAgentMessageWithOutcome(sessionId, text, options),
     });
     subagentAnnounceTesting.setDepsForTest({
-      callGateway: async <T = Record<string, unknown>>(
+      callGateway: async <T = Record<string, any>>(
         req: Parameters<typeof gatewayCall.callGateway>[0],
       ) => (await callGatewaySpy(req)) as T,
       getRuntimeConfig: () => configOverride,
     });
     subagentAnnounceOutputTesting.setDepsForTest({
-      callGateway: async <T = Record<string, unknown>>(
+      callGateway: async <T = Record<string, any>>(
         req: Parameters<typeof gatewayCall.callGateway>[0],
       ) => (await callGatewaySpy(req)) as T,
       getRuntimeConfig: () => configOverride,
@@ -566,7 +566,7 @@ describe("subagent announce formatting", () => {
       { status: "timeout", startedAt: 10, endedAt: 20 },
       { status: "ok", startedAt: 10, endedAt: 30 },
     ];
-    callGatewaySpy.mockImplementation(async (req: unknown) => {
+    callGatewaySpy.mockImplementation(async (req: any) => {
       const typed = req as { method?: string; params?: { sessionKey?: string } };
       if (typed.method === "agent") {
         return await agentSpy(typed);
@@ -629,7 +629,7 @@ describe("subagent announce formatting", () => {
       ...defaultOutcomeAnnounce,
     });
 
-    const call = getAgentCall() as { params?: Record<string, unknown> };
+    const call = getAgentCall() as { params?: Record<string, any> };
     expect(call?.params?.idempotencyKey).toBe(
       "announce:v1:agent:main:subagent:worker:run-direct-idem",
     );
@@ -769,7 +769,7 @@ describe("subagent announce formatting", () => {
     expect(didAnnounce).toBe(true);
     expect(sendSpy).not.toHaveBeenCalled();
     expect(agentSpy).toHaveBeenCalledTimes(1);
-    const call = getAgentCall() as { params?: Record<string, unknown> };
+    const call = getAgentCall() as { params?: Record<string, any> };
     const rawMessage = call?.params?.message;
     const msg = typeof rawMessage === "string" ? rawMessage : "";
     expect(call?.params?.channel).toBe("discord");
@@ -794,7 +794,7 @@ describe("subagent announce formatting", () => {
     expect(didAnnounce).toBe(true);
     expect(sendSpy).not.toHaveBeenCalled();
     expect(agentSpy).toHaveBeenCalledTimes(1);
-    const call = getAgentCall() as { params?: Record<string, unknown> };
+    const call = getAgentCall() as { params?: Record<string, any> };
     expect(call?.params?.deliver).toBe(true);
     expect(call?.params?.channel).toBe("imessage");
     expect(call?.params?.to).toBe("+1234567890");
@@ -835,7 +835,7 @@ describe("subagent announce formatting", () => {
     expect(didAnnounce).toBe(true);
     expect(sendSpy).not.toHaveBeenCalled();
     expect(agentSpy).toHaveBeenCalledTimes(1);
-    const call = getAgentCall() as { params?: Record<string, unknown> };
+    const call = getAgentCall() as { params?: Record<string, any> };
     expect(call?.params?.deliver).toBe(false);
     expect(call?.params?.channel).toBe("discord");
     expect(call?.params?.to).toBe("channel:12345");
@@ -1029,7 +1029,7 @@ describe("subagent announce formatting", () => {
     expect(didAnnounce).toBe(true);
     expect(sendSpy).not.toHaveBeenCalled();
     expect(agentSpy).toHaveBeenCalledTimes(1);
-    const call = getAgentCall() as { params?: Record<string, unknown> };
+    const call = getAgentCall() as { params?: Record<string, any> };
     const rawMessage = call?.params?.message;
     const msg = typeof rawMessage === "string" ? rawMessage : "";
     expect(call?.params?.deliver).toBe(false);
@@ -1093,7 +1093,7 @@ describe("subagent announce formatting", () => {
     expect(didAnnounce).toBe(true);
     expect(sendSpy).not.toHaveBeenCalled();
     expect(agentSpy).toHaveBeenCalledTimes(1);
-    const call = getAgentCall() as { params?: Record<string, unknown> };
+    const call = getAgentCall() as { params?: Record<string, any> };
     expect(call?.params?.channel).toBe("discord");
     expect(call?.params?.to).toBe("channel:thread-bound-1");
   });
@@ -1148,7 +1148,7 @@ describe("subagent announce formatting", () => {
     expect(didAnnounce).toBe(true);
     expect(sendSpy).not.toHaveBeenCalled();
     expect(agentSpy).toHaveBeenCalledTimes(1);
-    const call = getAgentCall() as { params?: Record<string, unknown> };
+    const call = getAgentCall() as { params?: Record<string, any> };
     expect(call?.params?.deliver).toBe(false);
     expect(call?.params?.to).toBeUndefined();
     expect(call?.params?.threadId).toBeUndefined();
@@ -1309,7 +1309,7 @@ describe("subagent announce formatting", () => {
     expect(didAnnounce).toBe(true);
     expect(sendSpy).not.toHaveBeenCalled();
     expect(agentSpy).toHaveBeenCalledTimes(1);
-    const call = getAgentCall() as { params?: Record<string, unknown> };
+    const call = getAgentCall() as { params?: Record<string, any> };
     expect(call?.params?.channel).toBe("matrix");
     expect(call?.params?.to).toBe("room:!room:example");
     expect(call?.params?.threadId).toBe("$thread-bound-1");
@@ -1367,7 +1367,7 @@ describe("subagent announce formatting", () => {
       expect(didAnnounce).toBe(true);
       expect(sendSpy).not.toHaveBeenCalled();
       expect(agentSpy).toHaveBeenCalledTimes(1);
-      const call = getAgentCall() as { params?: Record<string, unknown> };
+      const call = getAgentCall() as { params?: Record<string, any> };
       const rawMessage = call?.params?.message;
       const msg = typeof rawMessage === "string" ? rawMessage : "";
       expect(msg).toContain(testCase.expectedStatus);
@@ -1434,7 +1434,7 @@ describe("subagent announce formatting", () => {
       expect(didAnnounce).toBe(true);
       expect(sendSpy).not.toHaveBeenCalled();
       expect(agentSpy).toHaveBeenCalledTimes(1);
-      const call = getAgentCall() as { params?: Record<string, unknown> };
+      const call = getAgentCall() as { params?: Record<string, any> };
       expect(call?.params?.channel).toBe("discord");
       expect(call?.params?.to).toBe("channel:12345");
       expect(call?.params?.threadId).toBe(testCase.expectedThreadId);
@@ -1496,7 +1496,7 @@ describe("subagent announce formatting", () => {
     expect(didAnnounce).toBe(true);
     expect(sendSpy).not.toHaveBeenCalled();
     expect(agentSpy).toHaveBeenCalledTimes(1);
-    const call = getAgentCall() as { params?: Record<string, unknown> };
+    const call = getAgentCall() as { params?: Record<string, any> };
     expect(call?.params?.channel).toBe("slack");
     expect(call?.params?.to).toBe("channel:C123");
     expect(call?.params?.threadId).toBeUndefined();
@@ -1559,7 +1559,7 @@ describe("subagent announce formatting", () => {
     expect(didAnnounce).toBe(true);
     expect(sendSpy).not.toHaveBeenCalled();
     expect(agentSpy).toHaveBeenCalledTimes(1);
-    const call = getAgentCall() as { params?: Record<string, unknown> };
+    const call = getAgentCall() as { params?: Record<string, any> };
     expect(call?.params?.channel).toBe("slack");
     expect(call?.params?.to).toBe("channel:C123");
     expect(call?.params?.threadId).toBe("1710000000.000100");
@@ -1600,7 +1600,7 @@ describe("subagent announce formatting", () => {
     expect(didAnnounce).toBe(true);
     expect(sendSpy).not.toHaveBeenCalled();
     expect(agentSpy).toHaveBeenCalledTimes(1);
-    const call = getAgentCall() as { params?: Record<string, unknown> };
+    const call = getAgentCall() as { params?: Record<string, any> };
     expect(call?.params?.channel).toBe("telegram");
     expect(call?.params?.to).toBe("123");
     expect(call?.params?.threadId).toBe("42");
@@ -1678,7 +1678,7 @@ describe("subagent announce formatting", () => {
       );
       expect(sendSpy).not.toHaveBeenCalled();
       expect(agentSpy).toHaveBeenCalledTimes(1);
-      const call = getAgentCall() as { params?: Record<string, unknown> };
+      const call = getAgentCall() as { params?: Record<string, any> };
       expect(call?.params?.channel).toBe("discord");
       expect(call?.params?.to).toBe("channel:777");
       expect(call?.params?.threadId).toBe("777");
@@ -1718,7 +1718,7 @@ describe("subagent announce formatting", () => {
     expect(didAnnounce).toBe(true);
     expect(sendSpy).not.toHaveBeenCalled();
     expect(agentSpy).toHaveBeenCalledTimes(1);
-    const call = getAgentCall() as { params?: Record<string, unknown> };
+    const call = getAgentCall() as { params?: Record<string, any> };
     expect(call?.params?.deliver).toBe(true);
     expect(call?.params?.channel).toBe("imessage");
     expect(call?.params?.to).toBe("+1234567890");
@@ -1763,7 +1763,7 @@ describe("subagent announce formatting", () => {
     expect(didAnnounce).toBe(true);
     expect(sendSpy).not.toHaveBeenCalled();
     expect(agentSpy).toHaveBeenCalledTimes(1);
-    const call = getAgentCall() as { params?: Record<string, unknown> };
+    const call = getAgentCall() as { params?: Record<string, any> };
     expect(call?.params?.channel).toBe("discord");
     expect(call?.params?.to).toBe("channel:12345");
     expect(call?.params?.threadId).toBeUndefined();
@@ -1846,7 +1846,7 @@ describe("subagent announce formatting", () => {
       expect(agentSpy).toHaveBeenCalledTimes(2);
     });
     const idempotencyKeys = agentSpy.mock.calls
-      .map((call) => (call[0] as { params?: Record<string, unknown> })?.params?.idempotencyKey)
+      .map((call) => (call[0] as { params?: Record<string, any> })?.params?.idempotencyKey)
       .filter((value): value is string => typeof value === "string");
     const firstKey = buildAnnounceIdempotencyKey(
       buildAnnounceIdFromChildRun({
@@ -2106,7 +2106,7 @@ describe("subagent announce formatting", () => {
     expect(didAnnounce).toBe(true);
     expect(agentSpy).toHaveBeenCalledTimes(1);
 
-    const call = getAgentCall() as { params?: Record<string, unknown> };
+    const call = getAgentCall() as { params?: Record<string, any> };
     expect(call?.params?.sessionKey).toBe("agent:main:subagent:orchestrator");
     expect(call?.params?.deliver).toBe(false);
     expect(call?.params?.channel).toBeUndefined();
@@ -2209,7 +2209,7 @@ describe("subagent announce formatting", () => {
 
     expect(didAnnounce).toBe(true);
     const call = getAgentCall() as {
-      params?: Record<string, unknown>;
+      params?: Record<string, any>;
       expectFinal?: boolean;
     };
     expect(call?.params?.channel).toBe(testCase.expectedChannel);
@@ -2234,7 +2234,7 @@ describe("subagent announce formatting", () => {
     expect(sendSpy).not.toHaveBeenCalled();
     expect(agentSpy).toHaveBeenCalledTimes(1);
     const call = getAgentCall() as {
-      params?: Record<string, unknown>;
+      params?: Record<string, any>;
       expectFinal?: boolean;
     };
     expect(call?.params?.deliver).toBe(true);
@@ -2258,12 +2258,12 @@ describe("subagent announce formatting", () => {
     });
 
     expect(didAnnounce).toBe(true);
-    const call = getAgentCall() as { params?: Record<string, unknown> };
+    const call = getAgentCall() as { params?: Record<string, any> };
     expect(call?.params?.sessionKey).toBe("agent:main:subagent:orchestrator");
     expect(call?.params?.deliver).toBe(false);
     expect(call?.params?.channel).toBeUndefined();
     expect(call?.params?.to).toBeUndefined();
-    expect((call?.params as { role?: unknown } | undefined)?.role).toBeUndefined();
+    expect((call?.params as { role?: any } | undefined)?.role).toBeUndefined();
     expectInputProvenance(call?.params, "agent:main:subagent:worker");
   });
 
@@ -2283,7 +2283,7 @@ describe("subagent announce formatting", () => {
 
     expect(didAnnounce).toBe(true);
     expect(sendSpy).not.toHaveBeenCalled();
-    const call = getAgentCall() as { params?: Record<string, unknown> };
+    const call = getAgentCall() as { params?: Record<string, any> };
     expect(call?.params?.sessionKey).toBe("agent:main:subagent:orchestrator");
     expect(call?.params?.deliver).toBe(false);
     expect(call?.params?.channel).toBeUndefined();
@@ -2950,7 +2950,7 @@ describe("subagent announce formatting", () => {
     });
 
     expect(didAnnounce).toBe(true);
-    const call = getAgentCall() as { params?: Record<string, unknown> };
+    const call = getAgentCall() as { params?: Record<string, any> };
     expect(call?.params?.sessionKey).toBe("agent:main:main");
     expect(call?.params?.deliver).toBe(true);
     expect(call?.params?.channel).toBe("whatsapp");
@@ -3048,7 +3048,7 @@ describe("subagent announce formatting", () => {
     expect(didAnnounce).toBe(true);
     expect(agentSpy).toHaveBeenCalledTimes(1);
 
-    const call = getAgentCall() as { params?: Record<string, unknown> };
+    const call = getAgentCall() as { params?: Record<string, any> };
     // The channel should match requesterOrigin, NOT the stale session entry.
     expect(call?.params?.channel).toBe("telegram");
     expect(call?.params?.to).toBe("telegram:123");
@@ -3085,7 +3085,7 @@ describe("subagent announce formatting", () => {
         requesterSessionKey: "agent:main:subagent:newton",
         requesterDisplayKey: "subagent:newton",
         sessionStoreFixture: {
-          "agent:main:subagent:newton": undefined as unknown as Record<string, unknown>,
+          "agent:main:subagent:newton": undefined as unknown as Record<string, any>,
           "agent:main:subagent:birdie": {
             sessionId: "birdie-session-id",
             inputTokens: 20,
@@ -3141,7 +3141,7 @@ describe("subagent announce formatting", () => {
       });
 
       expect(didAnnounce, testCase.name).toBe(true);
-      const call = getAgentCall() as { params?: Record<string, unknown> };
+      const call = getAgentCall() as { params?: Record<string, any> };
       expect(call?.params?.sessionKey, testCase.name).toBe(testCase.expectedSessionKey);
       expect(call?.params?.deliver, testCase.name).toBe(testCase.expectedDeliver);
       expect(call?.params?.channel, testCase.name).toBe(testCase.expectedChannel);

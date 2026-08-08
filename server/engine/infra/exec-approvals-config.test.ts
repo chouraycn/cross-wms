@@ -336,7 +336,7 @@ describe("normalizeExecApprovals handles string allowlist entries (#9790)", () =
     },
   ] satisfies ReadonlyArray<{
     name: string;
-    allowlist: unknown;
+    allowlist: any;
     expectedPatterns: string[] | undefined;
   }>)("$name", ({ allowlist, expectedPatterns }) => {
     const file = {

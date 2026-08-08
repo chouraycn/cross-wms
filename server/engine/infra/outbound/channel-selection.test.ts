@@ -67,14 +67,14 @@ function makePlugin(params: {
   id: string;
   accountIds?: string[];
   resolveAccount?: (accountId: string) => unknown;
-  isEnabled?: (account: unknown) => boolean;
-  isConfigured?: (account: unknown) => boolean | Promise<boolean>;
+  isEnabled?: (account: any) => boolean;
+  isConfigured?: (account: any) => boolean | Promise<boolean>;
 }) {
   return {
     id: params.id,
     config: {
       listAccountIds: () => params.accountIds ?? ["default"],
-      resolveAccount: (_cfg: unknown, accountId: string) =>
+      resolveAccount: (_cfg: any, accountId: string) =>
         params.resolveAccount ? params.resolveAccount(accountId) : {},
       ...(params.isEnabled ? { isEnabled: params.isEnabled } : {}),
       ...(params.isConfigured ? { isConfigured: params.isConfigured } : {}),

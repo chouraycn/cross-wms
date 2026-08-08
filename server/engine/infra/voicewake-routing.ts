@@ -111,11 +111,11 @@ export function normalizeVoiceWakeTriggerWord(value: string): string {
     .join(" ");
 }
 
-function normalizeRouteTarget(value: unknown): VoiceWakeRouteTarget | null {
+function normalizeRouteTarget(value: any): VoiceWakeRouteTarget | null {
   if (!value || typeof value !== "object") {
     return null;
   }
-  const rec = value as { mode?: unknown; agentId?: unknown; sessionKey?: unknown };
+  const rec = value as { mode?: any; agentId?: any; sessionKey?: any };
   const mode = normalizeOptionalString(rec.mode);
   if (mode === "current") {
     return { mode: "current" };
@@ -131,11 +131,11 @@ function normalizeRouteTarget(value: unknown): VoiceWakeRouteTarget | null {
   return null;
 }
 
-function normalizeRouteRule(value: unknown): VoiceWakeRouteRule | null {
+function normalizeRouteRule(value: any): VoiceWakeRouteRule | null {
   if (!value || typeof value !== "object") {
     return null;
   }
-  const rec = value as { trigger?: unknown; target?: unknown };
+  const rec = value as { trigger?: any; target?: any };
   const triggerRaw = normalizeOptionalString(rec.trigger);
   if (!triggerRaw) {
     return null;
@@ -160,13 +160,13 @@ function isCanonicalAgentSessionKey(value: string): boolean {
 }
 
 function validateRouteTargetInput(
-  value: unknown,
+  value: any,
   label: string,
 ): { ok: true } | { ok: false; message: string } {
   if (!isRecord(value)) {
     return { ok: false, message: `${label} must be an object` };
   }
-  const rec = value as { mode?: unknown; agentId?: unknown; sessionKey?: unknown };
+  const rec = value as { mode?: any; agentId?: any; sessionKey?: any };
   const mode = normalizeOptionalString(rec.mode);
   const agentId = normalizeOptionalString(rec.agentId);
   const sessionKey = normalizeOptionalString(rec.sessionKey);
@@ -217,14 +217,14 @@ function validateRouteTargetInput(
 
 /** 验证用户提供的语音唤醒路由配置。 */
 export function validateVoiceWakeRoutingConfigInput(
-  input: unknown,
+  input: any,
 ): { ok: true } | { ok: false; message: string } {
   if (!isRecord(input)) {
     return { ok: false, message: "config must be an object" };
   }
   const rec = input as {
-    defaultTarget?: unknown;
-    routes?: unknown;
+    defaultTarget?: any;
+    routes?: any;
   };
   if (rec.defaultTarget !== undefined) {
     const validatedDefaultTarget = validateRouteTargetInput(
@@ -285,15 +285,15 @@ export function validateVoiceWakeRoutingConfigInput(
 }
 
 /** 规范化持久化或用户提供的语音唤醒路由配置。 */
-export function normalizeVoiceWakeRoutingConfig(input: unknown): VoiceWakeRoutingConfig {
+export function normalizeVoiceWakeRoutingConfig(input: any): VoiceWakeRoutingConfig {
   if (!input || typeof input !== "object") {
     return { ...DEFAULT_ROUTING };
   }
   const rec = input as {
-    version?: unknown;
-    defaultTarget?: unknown;
-    routes?: unknown;
-    updatedAtMs?: unknown;
+    version?: any;
+    defaultTarget?: any;
+    routes?: any;
+    updatedAtMs?: any;
   };
   const defaultTarget = normalizeRouteTarget(rec.defaultTarget) ?? { mode: "current" as const };
   const routes = Array.isArray(rec.routes)
@@ -326,7 +326,7 @@ export async function loadVoiceWakeRoutingConfig(
 
 /** 持久化规范化的语音唤醒路由配置。 */
 export async function setVoiceWakeRoutingConfig(
-  config: unknown,
+  config: any,
   baseDir?: string,
 ): Promise<VoiceWakeRoutingConfig> {
   const normalized = normalizeVoiceWakeRoutingConfig(config);

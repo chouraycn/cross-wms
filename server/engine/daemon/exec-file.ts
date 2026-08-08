@@ -21,7 +21,7 @@ export async function execFileUtf8(
         return;
       }
 
-      const e = error as { code?: unknown; message?: unknown };
+      const e = error as { code?: any; message?: any };
       const stderrText = stderr ?? "";
       resolve({
         stdout: stdout ?? "",

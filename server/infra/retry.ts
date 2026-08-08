@@ -13,9 +13,9 @@ export interface RetryConfig {
   /** Jitter factor 0-1 (default: 0) */
   jitter?: number;
   /** Function to determine if an error is retryable */
-  shouldRetry?: (error: unknown, attempt: number) => boolean;
+  shouldRetry?: (error: any, attempt: number) => boolean;
   /** Called before each retry */
-  onRetry?: (error: unknown, attempt: number, nextDelayMs: number) => void;
+  onRetry?: (error: any, attempt: number, nextDelayMs: number) => void;
   /** Abort signal to cancel retry */
   signal?: AbortSignal;
 }
@@ -53,7 +53,7 @@ export function calculateBackoff(
 /**
  * Check if we should retry based on Retry-After header or error type.
  */
-export function getRetryAfterMs(error: unknown): number | null {
+export function getRetryAfterMs(error: any): number | null {
   if (error instanceof Error) {
     // Check for Retry-After header in error message (common pattern)
     const match = error.message.match(/retry-after[:\s]*(\d+)/i);
@@ -67,7 +67,7 @@ export function getRetryAfterMs(error: unknown): number | null {
 /**
  * Check if error is retryable based on common patterns.
  */
-export function isRetryableError(error: unknown): boolean {
+export function isRetryableError(error: any): boolean {
   if (error instanceof Error) {
     const message = error.message.toLowerCase();
 
@@ -89,8 +89,8 @@ export function isRetryableError(error: unknown): boolean {
     }
 
     // HTTP status codes that are retryable
-    if ('status' in error && typeof (error as unknown).status === 'number') {
-      const status = (error as unknown).status;
+    if ('status' in error && typeof (error as any).status === 'number') {
+      const status = (error as any).status;
       if (status === 408 || status === 429 || status === 500 || status === 502 || status === 503 || status === 504) {
         return true;
       }
@@ -125,7 +125,7 @@ export async function retry<T>(
   config: RetryConfig = {}
 ): Promise<T> {
   const cfg = { ...DEFAULT_RETRY_CONFIG, ...config };
-  let lastError: unknown;
+  let lastError: any;
 
   for (let attempt = 1; attempt <= cfg.attempts!; attempt++) {
     // Check abort signal
@@ -174,7 +174,7 @@ export async function retryStreaming<T>(
   config: RetryConfig = {}
 ): Promise<T> {
   const cfg = { ...DEFAULT_RETRY_CONFIG, ...config };
-  let lastError: unknown;
+  let lastError: any;
   const controller = new AbortController();
 
   // Link external signal
@@ -238,7 +238,7 @@ export function createChannelRetryConfig(): RetryConfig {
         return true;
       }
       if (typeof error === 'object' && error !== null) {
-        const status = (error as unknown).status || (error as unknown).statusCode;
+        const status = (error as any).status || (error as any).statusCode;
         if (typeof status === 'number' && (status === 429 || status === 502 || status === 503)) {
           return true;
         }

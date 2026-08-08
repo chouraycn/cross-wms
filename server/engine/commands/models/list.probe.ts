@@ -124,7 +124,7 @@ export function mapFailoverReasonToProbeStatus(reason?: string | null): AuthProb
   }
   if (reason === "auth" || reason === "auth_permanent") {
     // Keep probe output backward-compatible: permanent auth failures still
-    // surface in the auth bucket instead of showing as unknown.
+    // surface in the auth bucket instead of showing as any.
     return "auth";
   }
   if (reason === "rate_limit" || reason === "overloaded") {

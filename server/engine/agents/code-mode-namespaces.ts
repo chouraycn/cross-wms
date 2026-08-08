@@ -43,22 +43,22 @@ const CODE_MODE_NAMESPACE_REGISTRY_KEY = Symbol.for("openclaw.codeMode.namespace
 
 /** Runtime context passed to plugin code-mode namespace scope factories. */
 export type CodeModeNamespaceContext = {
-  config?: unknown;
-  runtimeConfig?: unknown;
+  config?: any;
+  runtimeConfig?: any;
   agentId?: string;
   sessionKey?: string;
   sessionId?: string;
   runId?: string;
-  catalogRef?: unknown;
+  catalogRef?: any;
   abortSignal?: AbortSignal;
-  executeTool?: unknown;
+  executeTool?: any;
 };
 
 /** Object installed into a code-mode namespace global. */
-export type CodeModeNamespaceScope = Record<string, unknown>;
+export type CodeModeNamespaceScope = Record<string, any>;
 
 /** Maps JavaScript namespace function arguments into a tool input payload. */
-export type CodeModeNamespaceToolInputMapper = (args: unknown[]) => unknown;
+export type CodeModeNamespaceToolInputMapper = (args: any[]) => unknown;
 
 /** Marker object used inside namespace scopes to represent a tool invocation. */
 export type CodeModeNamespaceToolCall = {
@@ -91,7 +91,7 @@ export type SerializedCodeModeNamespaceValue =
   | { kind: "array"; items: SerializedCodeModeNamespaceValue[] }
   | { kind: "function"; path: string[] }
   | { kind: "object"; entries: Array<[string, SerializedCodeModeNamespaceValue]> }
-  | { kind: "value"; value: unknown };
+  | { kind: "value"; value: any };
 
 /** Descriptor sent to code mode for one visible namespace. */
 export type CodeModeNamespaceDescriptor = {
@@ -114,7 +114,7 @@ type CodeModeNamespaceCatalogEntry = {
   name: string;
   sourceName?: string;
   description?: string;
-  parameters?: unknown;
+  parameters?: any;
   mcp?: {
     serverName: string;
     safeServerName: string;
@@ -129,16 +129,16 @@ export type CodeModeNamespaceRuntime = {
   invoke(
     namespaceId: string,
     path: string[],
-    args: unknown[],
+    args: any[],
     executeTool: (params: {
       pluginId: string;
       toolName: string;
       catalogId?: string;
-      input: unknown;
+      input: any;
       namespaceId: string;
       path: string[];
-    }) => Promise<unknown>,
-  ): Promise<unknown>;
+    }) => Promise<any>,
+  ): Promise<any>;
 };
 
 type CodeModeNamespaceRegistryState = {
@@ -231,8 +231,8 @@ function createCodeModeNamespaceLocalFunction(
   };
 }
 
-function isCodeModeNamespaceToolCall(value: unknown): value is CodeModeNamespaceToolCall {
-  const record = isRecord(value) ? (value as Record<PropertyKey, unknown>) : undefined;
+function isCodeModeNamespaceToolCall(value: any): value is CodeModeNamespaceToolCall {
+  const record = isRecord(value) ? (value as Record<PropertyKey, any>) : undefined;
   return (
     record?.[CODE_MODE_NAMESPACE_TOOL_CALL] === true &&
     typeof record.toolName === "string" &&
@@ -375,38 +375,38 @@ function uniqueIdentifier(base: string, used: Set<string>): string {
   return candidate;
 }
 
-function readSchemaRecord(schema: unknown): Record<string, unknown> | undefined {
+function readSchemaRecord(schema: any): Record<string, any> | undefined {
   return isRecord(schema) ? schema : undefined;
 }
 
-function readSchemaProperties(schema: unknown): Record<string, unknown> {
+function readSchemaProperties(schema: any): Record<string, any> {
   const record = readSchemaRecord(schema);
   return isRecord(record?.properties) ? record.properties : {};
 }
 
-function readSchemaString(schema: unknown, key: string): string | undefined {
+function readSchemaString(schema: any, key: string): string | undefined {
   const record = readSchemaRecord(schema);
   const value = record?.[key];
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }
 
-function readRequiredKeys(schema: unknown): string[] {
+function readRequiredKeys(schema: any): string[] {
   const record = readSchemaRecord(schema);
   return Array.isArray(record?.required)
     ? record.required.filter((entry): entry is string => typeof entry === "string")
     : [];
 }
 
-function orderedSchemaKeys(schema: unknown): string[] {
+function orderedSchemaKeys(schema: any): string[] {
   const required = readRequiredKeys(schema);
   const properties = Object.keys(readSchemaProperties(schema));
   return [...new Set([...required, ...properties])];
 }
 
 function applySchemaDefaults(
-  schema: unknown,
-  input: Record<string, unknown>,
-): Record<string, unknown> {
+  schema: any,
+  input: Record<string, any>,
+): Record<string, any> {
   const result = { ...input };
   for (const [key, descriptor] of Object.entries(readSchemaProperties(schema))) {
     if (!isRecord(descriptor) || !("default" in descriptor) || result[key] !== undefined) {
@@ -417,12 +417,12 @@ function applySchemaDefaults(
   return result;
 }
 
-function mapMcpNamespaceInput(schema: unknown, args: unknown[]): unknown {
+function mapMcpNamespaceInput(schema: any, args: any[]): any {
   if (args.length > 1) {
     throw new Error("MCP namespace tools accept one object argument.");
   }
   const firstArg = args[0];
-  const result: Record<string, unknown> =
+  const result: Record<string, any> =
     firstArg === undefined ? {} : isRecord(firstArg) ? { ...firstArg } : {};
   if (firstArg !== undefined && !isRecord(firstArg)) {
     throw new Error("MCP namespace tools accept one object argument.");
@@ -488,7 +488,7 @@ function collapseDocText(value: string | undefined): string {
   return normalizeDocLines(value).join(" ");
 }
 
-function schemaType(schema: unknown): string {
+function schemaType(schema: any): string {
   const record = readSchemaRecord(schema);
   if (!record) {
     return "unknown";
@@ -537,11 +537,11 @@ function tsPropertyName(name: string): string {
   return /^[A-Za-z_$][A-Za-z0-9_$]*$/u.test(name) ? name : JSON.stringify(name);
 }
 
-function renderInlineObjectType(schema: unknown): string {
+function renderInlineObjectType(schema: any): string {
   const properties = readSchemaProperties(schema);
   const keys = Object.keys(properties);
   if (keys.length === 0) {
-    return "Record<string, unknown>";
+    return "Record<string, any>";
   }
   const required = new Set(readRequiredKeys(schema));
   return `{ ${keys
@@ -557,7 +557,7 @@ type McpApiParamDoc = {
   required: boolean;
   type: string;
   description?: string;
-  defaultValue?: unknown;
+  defaultValue?: any;
 };
 
 type McpApiToolDoc = {
@@ -566,7 +566,7 @@ type McpApiToolDoc = {
   mcpTool: string;
   operation: NonNullable<CodeModeNamespaceCatalogEntry["mcp"]>["operation"];
   description?: string;
-  parameters: unknown;
+  parameters: any;
   params: McpApiParamDoc[];
 };
 
@@ -583,7 +583,7 @@ export type CodeModeApiVirtualFile = {
   content: string;
 };
 
-function buildMcpParamDocs(schema: unknown): McpApiParamDoc[] {
+function buildMcpParamDocs(schema: any): McpApiParamDoc[] {
   const required = new Set(readRequiredKeys(schema));
   return orderedSchemaKeys(schema).map((key) => {
     const descriptor = readSchemaProperties(schema)[key];
@@ -634,13 +634,13 @@ function renderMcpToolSignature(
 
 function renderMcpServerHeader(server: McpApiServerDoc, tools: readonly McpApiToolDoc[]): string {
   const lines = [
-    "type McpApiHeader = { header: string; tools?: unknown[]; schemas?: Record<string, unknown> };",
+    "type McpApiHeader = { header: string; tools?: any[]; schemas?: Record<string, any> };",
     "",
     "type McpToolResult = {",
-    "  content?: unknown[];",
-    "  structuredContent?: unknown;",
+    "  content?: any[];",
+    "  structuredContent?: any;",
     "  isError?: boolean;",
-    "  [key: string]: unknown;",
+    "  [key: string]: any;",
     "};",
     "",
     `declare namespace MCP.${server.identifier} {`,
@@ -675,7 +675,7 @@ function renderMcpServerHeader(server: McpApiServerDoc, tools: readonly McpApiTo
 
 function renderMcpRootHeader(servers: readonly McpApiServerDoc[]): string {
   return [
-    "type McpApiHeader = { header: string; servers?: unknown[] };",
+    "type McpApiHeader = { header: string; servers?: any[] };",
     "",
     "declare const MCP: {",
     "  /** List visible MCP servers and request server-specific headers. */",
@@ -695,7 +695,7 @@ function renderMcpRootFile(servers: readonly McpApiServerDoc[]): string {
 function buildMcpApiResponse(params: {
   servers: readonly McpApiServerDoc[];
   server?: McpApiServerDoc;
-  args: unknown[];
+  args: any[];
 }) {
   const [selector, options] = params.args;
   const includeSchema = isRecord(options) && options.schema === true;
@@ -988,7 +988,7 @@ function namespacePathKey(path: readonly string[]): string {
 }
 
 function serializeNamespaceScopeValue(
-  value: unknown,
+  value: any,
   path: string[] = [],
   stack = new WeakSet<object>(),
   callablePaths = new Set<string>(),
@@ -1019,7 +1019,7 @@ function serializeNamespaceScopeValue(
       };
     }
     const entries: Array<[string, SerializedCodeModeNamespaceValue]> = [];
-    for (const [key, child] of Object.entries(value as Record<string, unknown>)) {
+    for (const [key, child] of Object.entries(value as Record<string, any>)) {
       assertNamespacePathSegment(key);
       entries.push([
         key,
@@ -1036,23 +1036,23 @@ function resolveNamespacePath(
   scope: CodeModeNamespaceScope,
   path: readonly string[],
 ): {
-  target: unknown;
-  parent: unknown;
+  target: any;
+  parent: any;
 } {
-  let current: unknown = scope;
-  let parent: unknown = undefined;
+  let current: any = scope;
+  let parent: any = undefined;
   for (const segment of path) {
     assertNamespacePathSegment(segment);
     parent = current;
     if (!isRecord(current) && !Array.isArray(current)) {
       return { target: undefined, parent };
     }
-    current = (current as Record<string, unknown>)[segment];
+    current = (current as Record<string, any>)[segment];
   }
   return { target: current, parent };
 }
 
-function readScope(value: unknown, id: string): CodeModeNamespaceScope {
+function readScope(value: any, id: string): CodeModeNamespaceScope {
   if (!isRecord(value)) {
     throw new Error(`Code mode namespace "${id}" createScope must return an object.`);
   }

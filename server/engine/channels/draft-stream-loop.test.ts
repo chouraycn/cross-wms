@@ -14,7 +14,7 @@ const flushMacrotask = async () => {
 };
 
 async function waitForBackgroundFlushError(
-  onBackgroundFlushError: ReturnType<typeof vi.fn<(err: unknown) => void>>,
+  onBackgroundFlushError: ReturnType<typeof vi.fn<(err: any) => void>>,
 ) {
   for (let attempt = 0; attempt < 10; attempt += 1) {
     await flushMicrotasks();
@@ -25,11 +25,11 @@ async function waitForBackgroundFlushError(
 }
 
 async function captureUnhandledRejections(
-  run: (rejections: unknown[]) => Promise<void>,
+  run: (rejections: any[]) => Promise<void>,
   settle: () => Promise<void> = flushMacrotask,
 ) {
-  const rejections: unknown[] = [];
-  const onUnhandledRejection = (reason: unknown) => {
+  const rejections: any[] = [];
+  const onUnhandledRejection = (reason: any) => {
     rejections.push(reason);
   };
   process.on("unhandledRejection", onUnhandledRejection);
@@ -57,7 +57,7 @@ describe("createDraftStreamLoop", () => {
   it("contains immediate background flush rejections and preserves pending text", async () => {
     await captureUnhandledRejections(async (rejections) => {
       const error = new Error("send failed");
-      const onBackgroundFlushError = vi.fn<(err: unknown) => void>();
+      const onBackgroundFlushError = vi.fn<(err: any) => void>();
       const sendOrEditStreamMessage = vi
         .fn<(text: string) => Promise<boolean>>()
         .mockRejectedValueOnce(error)
@@ -88,7 +88,7 @@ describe("createDraftStreamLoop", () => {
       await captureUnhandledRejections(
         async (rejections) => {
           const error = new Error("send failed");
-          const onBackgroundFlushError = vi.fn<(err: unknown) => void>();
+          const onBackgroundFlushError = vi.fn<(err: any) => void>();
           const sendOrEditStreamMessage = vi
             .fn<(text: string) => Promise<boolean>>()
             .mockRejectedValueOnce(error)
@@ -150,7 +150,7 @@ describe("createDraftStreamLoop", () => {
   it("contains synchronous sender failures from background flushes", async () => {
     await captureUnhandledRejections(async (rejections) => {
       const error = new Error("send failed");
-      const onBackgroundFlushError = vi.fn<(err: unknown) => void>();
+      const onBackgroundFlushError = vi.fn<(err: any) => void>();
       const sendOrEditStreamMessage = vi
         .fn<(text: string) => Promise<boolean>>()
         .mockImplementationOnce(() => {
@@ -180,7 +180,7 @@ describe("createDraftStreamLoop", () => {
   it("contains background flush error reporter failures", async () => {
     await captureUnhandledRejections(async (rejections) => {
       const error = new Error("send failed");
-      const onBackgroundFlushError = vi.fn<(err: unknown) => void>(() => {
+      const onBackgroundFlushError = vi.fn<(err: any) => void>(() => {
         throw new Error("report failed");
       });
       const sendOrEditStreamMessage = vi

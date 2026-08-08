@@ -7,6 +7,6 @@
  */
 
 export type AgentRuntimeMetadata = unknown;
-export function applyAcpRuntimeOverlay(..._args: unknown[]): unknown {
+export function applyAcpRuntimeOverlay(..._args: any[]): any {
   return undefined;
 }

@@ -64,7 +64,7 @@ vi.mock("./get-reply-run.js", () => ({
 }));
 
 vi.mock("./inbound-context.js", () => ({
-  finalizeInboundContext: vi.fn((ctx: unknown) => ctx),
+  finalizeInboundContext: vi.fn((ctx: any) => ctx),
 }));
 
 vi.mock("./session-reset-model.runtime.js", () => ({

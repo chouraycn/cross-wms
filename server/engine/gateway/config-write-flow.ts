@@ -4,22 +4,22 @@ export type ConfigWriteSnapshot = unknown;
 
 export type ConfigWriteOptions = unknown;
 
-export function resolveGatewayConfigPath(...args: unknown[]): unknown {
+export function resolveGatewayConfigPath(...args: any[]): any {
   return undefined;
 }
 
-export function didSharedGatewayAuthChange(...args: unknown[]): unknown {
+export function didSharedGatewayAuthChange(...args: any[]): any {
   return undefined;
 }
 
-export function didActiveSharedGatewayAuthChange(...args: unknown[]): unknown {
+export function didActiveSharedGatewayAuthChange(...args: any[]): any {
   return undefined;
 }
 
-export async function commitGatewayConfigWrite(...args: unknown[]): Promise<unknown> {
+export async function commitGatewayConfigWrite(...args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
 
-export async function resolveGatewayConfigRestartWriteResult(...args: unknown[]): Promise<unknown> {
+export async function resolveGatewayConfigRestartWriteResult(...args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }

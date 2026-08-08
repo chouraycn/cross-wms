@@ -67,13 +67,13 @@ function createExecDeps(
     privateTargets?: Array<{ channel: string; to: string; accountId?: string | null }>;
   } = {},
 ) {
-  const execCalls: Array<{ defaults: unknown; params: unknown }> = [];
+  const execCalls: Array<{ defaults: any; params: any }> = [];
   const privateReplies: Array<{
     targets: Array<{ channel: string; to: string; accountId?: string | null }>;
     text?: string;
   }> = [];
-  const createExecTool = vi.fn((defaults: unknown) => ({
-    execute: vi.fn(async (_toolCallId: string, params: unknown) => {
+  const createExecTool = vi.fn((defaults: any) => ({
+    execute: vi.fn(async (_toolCallId: string, params: any) => {
       execCalls.push({ defaults, params });
       return {
         details: {
@@ -103,28 +103,28 @@ function createExecDeps(
   };
 }
 
-function readEncodedRequestFromCommand(command: string): Record<string, unknown> {
+function readEncodedRequestFromCommand(command: string): Record<string, any> {
   const match = command.match(/'?--request-json-base64'?\s+'?([A-Za-z0-9_-]+)'?/u);
   const encoded = match?.[1];
   if (encoded === undefined) {
     throw new Error("expected encoded export request");
   }
-  return JSON.parse(Buffer.from(encoded, "base64url").toString("utf8")) as Record<string, unknown>;
+  return JSON.parse(Buffer.from(encoded, "base64url").toString("utf8")) as Record<string, any>;
 }
 
-function requireRecord(value: unknown): Record<string, unknown> {
+function requireRecord(value: any): Record<string, any> {
   if (!value) {
     throw new Error("expected record");
   }
   expect(typeof value).toBe("object");
   expect(Array.isArray(value)).toBe(false);
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 function execCallRecord(
-  execCalls: Array<{ defaults: unknown; params: unknown }>,
+  execCalls: Array<{ defaults: any; params: any }>,
   index = 0,
-): { defaults: Record<string, unknown>; params: Record<string, unknown> } {
+): { defaults: Record<string, any>; params: Record<string, any> } {
   const call = execCalls[index];
   if (!call) {
     throw new Error(`expected exec call at index ${index}`);

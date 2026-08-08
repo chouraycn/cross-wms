@@ -58,7 +58,7 @@ export interface GuardedHttpRequestResult {
   /** 原始响应文本（已按 truncateChars 截断） */
   text: string;
   /** content-type 为 JSON 时的解析结果；否则等于 text */
-  data: unknown;
+  data: any;
   /** 是否发生截断 */
   truncated: boolean;
   /** 跟随重定向后的最终 URL */
@@ -118,7 +118,7 @@ export async function executeGuardedHttpRequest(
       truncated = true;
     }
 
-    let data: unknown = text;
+    let data: any = text;
     if (contentType.includes('application/json') || contentType.includes('+json')) {
       try {
         data = JSON.parse(rawText);
@@ -155,7 +155,7 @@ function hasHeader(headers: Record<string, string>, name: string): boolean {
   return Object.keys(headers).some((k) => k.toLowerCase() === lower);
 }
 
-function normalizeTransportError(err: unknown): string {
+function normalizeTransportError(err: any): string {
   if (err instanceof DOMException && err.name === 'AbortError') {
     return '请求超时';
   }

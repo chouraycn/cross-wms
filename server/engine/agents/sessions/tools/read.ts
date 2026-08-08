@@ -408,7 +408,7 @@ export function createReadToolDefinition(
             }
             signal?.removeEventListener("abort", onAbort);
             resolve({ content, details });
-          } catch (error: unknown) {
+          } catch (error: any) {
             signal?.removeEventListener("abort", onAbort);
             if (!aborted) {
               reject(toErrorObject(error, "Non-Error rejection"));

@@ -12,7 +12,7 @@ export async function postJsonWithRetry<T>(params: {
   ssrfPolicy?: SsrFPolicy;
   fetchImpl?: typeof fetch;
   retryImpl?: typeof retryAsync;
-  body: unknown;
+  body: any;
   errorPrefix: string;
 }): Promise<T> {
   const retry = params.retryImpl ?? retryAsync;

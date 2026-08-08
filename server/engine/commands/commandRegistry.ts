@@ -10,7 +10,7 @@ export interface CommandArgDefinition {
   description: string;
   type: "string" | "number" | "boolean" | "enum";
   required?: boolean;
-  defaultValue?: unknown;
+  defaultValue?: any;
   choices?: Array<{ value: string; label: string }>;
 }
 
@@ -38,7 +38,7 @@ export interface ChatCommandDefinition {
 }
 
 export interface CommandArgs {
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 export interface CommandExecutionContext {
@@ -53,11 +53,11 @@ export interface CommandExecutionContext {
 export interface CommandExecutionResult {
   ok: boolean;
   message?: string;
-  data?: unknown;
+  data?: any;
   error?: string;
   actions?: Array<{
     type: "navigate" | "open_modal" | "show_toast" | "set_model" | "clear_session";
-    payload?: unknown;
+    payload?: any;
   }>;
 }
 
@@ -271,7 +271,7 @@ class CommandRegistry {
     return tokens;
   }
 
-  private coerceArg(value: string, def: CommandArgDefinition): unknown {
+  private coerceArg(value: string, def: CommandArgDefinition): any {
     switch (def.type) {
       case "number":
         const num = Number(value);

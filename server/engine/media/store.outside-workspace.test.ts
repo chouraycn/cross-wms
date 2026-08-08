@@ -7,7 +7,7 @@ import { createTempHomeEnv, type TempHomeEnv } from "../test-utils/temp-home.js"
 const mocks = vi.hoisted(() => ({
   readLocalFileSafely: vi.fn(),
   isFsSafeError: vi.fn(
-    (error: unknown) => typeof error === "object" && error !== null && "code" in error,
+    (error: any) => typeof error === "object" && error !== null && "code" in error,
   ),
 }));
 
@@ -24,7 +24,7 @@ let SaveMediaSourceError: StoreModule["SaveMediaSourceError"];
 let saveMediaSource: StoreModule["saveMediaSource"];
 
 async function expectOutsideWorkspaceStoreFailure(sourcePath: string) {
-  let storeError: unknown;
+  let storeError: any;
   try {
     await saveMediaSource(sourcePath);
   } catch (error) {

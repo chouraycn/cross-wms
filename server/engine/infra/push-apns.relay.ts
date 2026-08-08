@@ -3,14 +3,14 @@
 export type ApnsRelayConfig = unknown;
 export type ApnsRelayPushResponse = unknown;
 export type ApnsRelayRequestSender = unknown;
-export function normalizeApnsRelayBaseUrl(...args: unknown[]): unknown {
+export function normalizeApnsRelayBaseUrl(...args: any[]): any {
   return undefined;
 }
-export function resolveApnsRelayConfigFromEnv(...args: unknown[]): unknown {
+export function resolveApnsRelayConfigFromEnv(...args: any[]): any {
   return undefined;
 }
-export function sendApnsRelayPush(...args: unknown[]): unknown {
+export function sendApnsRelayPush(...args: any[]): any {
   return undefined;
 }
-export const DEFAULT_APNS_RELAY_BASE_URL: unknown = undefined as unknown;
-export const DEFAULT_APNS_SANDBOX_RELAY_BASE_URL: unknown = undefined as unknown;
+export const DEFAULT_APNS_RELAY_BASE_URL: any = undefined as any;
+export const DEFAULT_APNS_SANDBOX_RELAY_BASE_URL: any = undefined as any;

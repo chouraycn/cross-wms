@@ -3,8 +3,8 @@
  */
 import { toErrorObject } from "../../../infra/errors.js";
 
-function getAbortReason(signal: AbortSignal): unknown {
-  return "reason" in signal ? (signal as { reason?: unknown }).reason : undefined;
+function getAbortReason(signal: AbortSignal): any {
+  return "reason" in signal ? (signal as { reason?: any }).reason : undefined;
 }
 
 function makeAbortError(signal: AbortSignal): Error {
@@ -39,7 +39,7 @@ export function abortable<T>(signal: AbortSignal, promise: Promise<T>): Promise<
         signal.removeEventListener("abort", onAbort);
         resolve(value);
       },
-      (err: unknown) => {
+      (err: any) => {
         signal.removeEventListener("abort", onAbort);
         reject(toErrorObject(err, "Non-Error rejection"));
       },

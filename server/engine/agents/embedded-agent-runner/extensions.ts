@@ -31,22 +31,22 @@ type AgentToolResultEvent = {
   turnId?: string;
   toolCallId?: string;
   toolName?: string;
-  input?: unknown;
-  content?: AgentToolResult<unknown>["content"];
-  details?: unknown;
+  input?: any;
+  content?: AgentToolResult<any>["content"];
+  details?: any;
   isError?: boolean;
 };
 
-function recordFromUnknown(value: unknown): Record<string, unknown> {
+function recordFromUnknown(value: any): Record<string, any> {
   return value && typeof value === "object" && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
+    ? (value as Record<string, any>)
     : {};
 }
 
-function snapshotToolSendReceipt(details: unknown): unknown {
+function snapshotToolSendReceipt(details: any): any {
   const toolSend = recordFromUnknown(details).toolSend;
   return toolSend && typeof toolSend === "object" && !Array.isArray(toolSend)
-    ? { ...(toolSend as Record<string, unknown>) }
+    ? { ...(toolSend as Record<string, any>) }
     : toolSend;
 }
 
@@ -56,7 +56,7 @@ function buildAgentToolResultMiddlewareFactory(
 ): ExtensionFactory {
   const runner = createAgentToolResultMiddlewareRunner({ runtime: "openclaw" });
   return (agent) => {
-    agent.on("tool_result", async (rawEvent: unknown, ctx: { cwd?: string }) => {
+    agent.on("tool_result", async (rawEvent: any, ctx: { cwd?: string }) => {
       const event = recordFromUnknown(rawEvent) as AgentToolResultEvent;
       if (!event.toolName) {
         return undefined;
@@ -70,7 +70,7 @@ function buildAgentToolResultMiddlewareFactory(
       const current = {
         content,
         details: event.details,
-      } satisfies AgentToolResult<unknown>;
+      } satisfies AgentToolResult<any>;
       const rawToolSend = snapshotToolSendReceipt(current.details);
       if (eventToolCallId && rawToolSend !== undefined) {
         // Routing evidence stays private so middleware may fully replace result details.

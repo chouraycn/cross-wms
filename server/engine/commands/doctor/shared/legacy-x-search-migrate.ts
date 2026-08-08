@@ -1,7 +1,7 @@
 // Legacy X search config migration from tools.web.x_search to the xAI plugin config.
 import { isRecord } from "./legacy-config-record-shared.js";
 
-type JsonRecord = Record<string, unknown>;
+type JsonRecord = Record<string, any>;
 
 const XAI_PLUGIN_ID = "xai";
 const X_SEARCH_LEGACY_PATH = "tools.web.x_search";
@@ -24,7 +24,7 @@ function ensureRecord(target: JsonRecord, key: string): JsonRecord {
   return next;
 }
 
-function resolveLegacyXSearchConfig(raw: unknown): JsonRecord | undefined {
+function resolveLegacyXSearchConfig(raw: any): JsonRecord | undefined {
   if (!isRecord(raw)) {
     return undefined;
   }
@@ -33,7 +33,7 @@ function resolveLegacyXSearchConfig(raw: unknown): JsonRecord | undefined {
   return isRecord(web?.x_search) ? web.x_search : undefined;
 }
 
-function resolveLegacyXSearchAuth(legacy: JsonRecord): unknown {
+function resolveLegacyXSearchAuth(legacy: JsonRecord): any {
   return legacy.apiKey;
 }
 

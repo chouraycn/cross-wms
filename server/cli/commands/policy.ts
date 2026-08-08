@@ -116,7 +116,7 @@ function applyPolicy(id: string, dryRun: boolean): { applied: boolean; policyId:
   return { applied: true, policyId: id };
 }
 
-function formatJsonOutput(data: unknown): string {
+function formatJsonOutput(data: any): string {
   return JSON.stringify(data, null, 2);
 }
 

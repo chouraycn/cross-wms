@@ -265,12 +265,12 @@ function sandboxScopeFromPerSession(perSession: boolean): "session" | "shared" {
   return perSession ? "session" : "shared";
 }
 
-function splitLegacyHeartbeat(legacyHeartbeat: Record<string, unknown>): {
-  agentHeartbeat: Record<string, unknown> | null;
-  channelHeartbeat: Record<string, unknown> | null;
+function splitLegacyHeartbeat(legacyHeartbeat: Record<string, any>): {
+  agentHeartbeat: Record<string, any> | null;
+  channelHeartbeat: Record<string, any> | null;
 } {
-  const agentHeartbeat: Record<string, unknown> = {};
-  const channelHeartbeat: Record<string, unknown> = {};
+  const agentHeartbeat: Record<string, any> = {};
+  const channelHeartbeat: Record<string, any> = {};
 
   for (const [key, value] of Object.entries(legacyHeartbeat)) {
     if (isBlockedObjectKey(key)) {
@@ -294,10 +294,10 @@ function splitLegacyHeartbeat(legacyHeartbeat: Record<string, unknown>): {
 }
 
 function mergeLegacyIntoDefaults(params: {
-  raw: Record<string, unknown>;
+  raw: Record<string, any>;
   rootKey: "agents" | "channels";
   fieldKey: string;
-  legacyValue: Record<string, unknown>;
+  legacyValue: Record<string, any>;
   changes: string[];
   movedMessage: string;
   mergedMessage: string;
@@ -319,52 +319,52 @@ function mergeLegacyIntoDefaults(params: {
   params.raw[params.rootKey] = root;
 }
 
-function hasLegacySandboxPerSession(value: unknown): boolean {
+function hasLegacySandboxPerSession(value: any): boolean {
   const sandbox = getRecord(value);
   return Boolean(sandbox && Object.hasOwn(sandbox, "perSession"));
 }
 
-function hasLegacyAgentListSandboxPerSession(value: unknown): boolean {
+function hasLegacyAgentListSandboxPerSession(value: any): boolean {
   if (!Array.isArray(value)) {
     return false;
   }
   return value.some((agent) => hasLegacySandboxPerSession(getRecord(agent)?.sandbox));
 }
 
-function hasLegacyAgentListEmbeddedHarness(value: unknown): boolean {
+function hasLegacyAgentListEmbeddedHarness(value: any): boolean {
   if (!Array.isArray(value)) {
     return false;
   }
   return value.some((agent) => getRecord(getRecord(agent)?.embeddedHarness) !== null);
 }
 
-function hasLegacyAgentListEmbeddedAgentKey(value: unknown): boolean {
+function hasLegacyAgentListEmbeddedAgentKey(value: any): boolean {
   if (!Array.isArray(value)) {
     return false;
   }
   return value.some((agent) => getRecord(getRecord(agent)?.embeddedPi) !== null);
 }
 
-function hasAgentListRuntimePolicy(value: unknown): boolean {
+function hasAgentListRuntimePolicy(value: any): boolean {
   if (!Array.isArray(value)) {
     return false;
   }
   return value.some((agent) => getRecord(getRecord(agent)?.agentRuntime) !== null);
 }
 
-function hasAgentListSystemPromptOverride(value: unknown): boolean {
+function hasAgentListSystemPromptOverride(value: any): boolean {
   if (!Array.isArray(value)) {
     return false;
   }
   return value.some((agent) => Object.hasOwn(getRecord(agent) ?? {}, "systemPromptOverride"));
 }
 
-function hasOwnTimeoutMs(value: unknown): boolean {
+function hasOwnTimeoutMs(value: any): boolean {
   const record = getRecord(value);
   return Boolean(record && Object.hasOwn(record, "timeoutMs"));
 }
 
-function hasAgentListModelTimeout(value: unknown): boolean {
+function hasAgentListModelTimeout(value: any): boolean {
   if (!Array.isArray(value)) {
     return false;
   }
@@ -378,7 +378,7 @@ function hasAgentListModelTimeout(value: unknown): boolean {
 }
 
 function migrateLegacyEmbeddedAgentKey(
-  container: Record<string, unknown>,
+  container: Record<string, any>,
   pathLabel: string,
   changes: string[],
 ): void {
@@ -401,11 +401,11 @@ function migrateLegacyEmbeddedAgentKey(
   delete container.embeddedPi;
 }
 
-function isLegacyMemorySearchAutoProvider(value: unknown): boolean {
+function isLegacyMemorySearchAutoProvider(value: any): boolean {
   return typeof value === "string" && value.trim().toLowerCase() === "auto";
 }
 
-function hasAgentListLegacyMemorySearchAutoProvider(value: unknown): boolean {
+function hasAgentListLegacyMemorySearchAutoProvider(value: any): boolean {
   if (!Array.isArray(value)) {
     return false;
   }
@@ -414,11 +414,11 @@ function hasAgentListLegacyMemorySearchAutoProvider(value: unknown): boolean {
   );
 }
 
-function hasMemorySearchStorePath(value: unknown): boolean {
+function hasMemorySearchStorePath(value: any): boolean {
   return typeof getRecord(getRecord(value)?.store)?.path === "string";
 }
 
-function hasAgentListMemorySearchStorePath(value: unknown): boolean {
+function hasAgentListMemorySearchStorePath(value: any): boolean {
   return (
     Array.isArray(value) &&
     value.some((agent) => hasMemorySearchStorePath(getRecord(agent)?.memorySearch))
@@ -426,7 +426,7 @@ function hasAgentListMemorySearchStorePath(value: unknown): boolean {
 }
 
 function removeLegacyMemorySearchStorePath(
-  memorySearch: Record<string, unknown> | null,
+  memorySearch: Record<string, any> | null,
   pathLabel: string,
   changes: string[],
 ): void {
@@ -439,7 +439,7 @@ function removeLegacyMemorySearchStorePath(
 }
 
 function rewriteLegacyMemorySearchAutoProvider(
-  memorySearch: Record<string, unknown> | null,
+  memorySearch: Record<string, any> | null,
   pathLabel: string,
   changes: string[],
 ): void {
@@ -451,7 +451,7 @@ function rewriteLegacyMemorySearchAutoProvider(
 }
 
 function migrateLegacySandboxPerSession(
-  sandbox: Record<string, unknown>,
+  sandbox: Record<string, any>,
   pathLabel: string,
   changes: string[],
 ): void {
@@ -472,7 +472,7 @@ function migrateLegacySandboxPerSession(
 }
 
 function removeLegacyAgentRuntimePolicy(
-  container: Record<string, unknown>,
+  container: Record<string, any>,
   pathLabel: string,
   changes: string[],
 ): void {
@@ -487,7 +487,7 @@ function removeLegacyAgentRuntimePolicy(
   }
 }
 
-function resolveLegacyAgentRuntimeIntent(raw: unknown): LegacyAgentRuntimeIntent | undefined {
+function resolveLegacyAgentRuntimeIntent(raw: any): LegacyAgentRuntimeIntent | undefined {
   const record = getRecord(raw);
   if (!record) {
     return undefined;
@@ -502,9 +502,9 @@ function resolveLegacyAgentRuntimeIntent(raw: unknown): LegacyAgentRuntimeIntent
   return alias ? { provider: alias.provider, runtime: alias.runtime } : undefined;
 }
 
-function selectedCanonicalModelRefsForRuntimePolicy(rawModel: unknown, provider: string): string[] {
+function selectedCanonicalModelRefsForRuntimePolicy(rawModel: any, provider: string): string[] {
   const refs: string[] = [];
-  const addRef = (rawRef: unknown) => {
+  const addRef = (rawRef: any) => {
     if (typeof rawRef !== "string") {
       return;
     }
@@ -537,13 +537,13 @@ function selectedCanonicalModelRefsForRuntimePolicy(rawModel: unknown, provider:
 }
 
 function modelEntryWithRuntimePolicy(
-  entry: unknown,
+  entry: any,
   runtime: string,
 ): {
   changed: boolean;
-  entry: Record<string, unknown>;
+  entry: Record<string, any>;
 } {
-  const base = getRecord(entry) ? { ...(entry as Record<string, unknown>) } : {};
+  const base = getRecord(entry) ? { ...(entry as Record<string, any>) } : {};
   const currentRuntime = getRecord(base.agentRuntime);
   const currentRuntimeId =
     typeof currentRuntime?.id === "string" ? currentRuntime.id.trim().toLowerCase() : "";
@@ -558,7 +558,7 @@ function modelEntryWithRuntimePolicy(
 }
 
 function preserveLegacyWholeAgentRuntimePolicy(
-  container: Record<string, unknown>,
+  container: Record<string, any>,
   pathLabel: string,
   changes: string[],
 ): void {
@@ -572,7 +572,7 @@ function preserveLegacyWholeAgentRuntimePolicy(
   }
 
   const currentModels = getRecord(container.models);
-  const nextModels: Record<string, unknown> = currentModels ? { ...currentModels } : {};
+  const nextModels: Record<string, any> = currentModels ? { ...currentModels } : {};
   let changed = false;
   for (const ref of selectedRefs) {
     const updated = modelEntryWithRuntimePolicy(nextModels[ref], intent.runtime);
@@ -592,7 +592,7 @@ function preserveLegacyWholeAgentRuntimePolicy(
 }
 
 function removeIgnoredAgentModelTimeout(
-  model: unknown,
+  model: any,
   pathLabel: string,
   changes: string[],
 ): void {
@@ -604,12 +604,12 @@ function removeIgnoredAgentModelTimeout(
   changes.push(`Removed ${pathLabel}.timeoutMs; agent model config only selects models.`);
 }
 
-function hasOwnRecordProperty(value: unknown, key: string): boolean {
+function hasOwnRecordProperty(value: any, key: string): boolean {
   const record = getRecord(value);
   return Boolean(record && Object.hasOwn(record, key));
 }
 
-function hasSurfaceSilentReplyRewrite(value: unknown): boolean {
+function hasSurfaceSilentReplyRewrite(value: any): boolean {
   const surfaces = getRecord(value);
   if (!surfaces) {
     return false;
@@ -620,7 +620,7 @@ function hasSurfaceSilentReplyRewrite(value: unknown): boolean {
   );
 }
 
-function hasSurfaceSilentReplyDirect(value: unknown): boolean {
+function hasSurfaceSilentReplyDirect(value: any): boolean {
   const surfaces = getRecord(value);
   if (!surfaces) {
     return false;
@@ -630,7 +630,7 @@ function hasSurfaceSilentReplyDirect(value: unknown): boolean {
   );
 }
 
-function removeLegacySilentReplyConfig(raw: Record<string, unknown>, changes: string[]): void {
+function removeLegacySilentReplyConfig(raw: Record<string, any>, changes: string[]): void {
   const defaults = getRecord(getRecord(raw.agents)?.defaults);
   const defaultSilentReply = getRecord(defaults?.silentReply);
   if (defaultSilentReply && Object.hasOwn(defaultSilentReply, "direct")) {
@@ -668,7 +668,7 @@ function removeLegacySilentReplyConfig(raw: Record<string, unknown>, changes: st
   }
 }
 
-function removeLegacySystemPromptOverride(raw: Record<string, unknown>, changes: string[]): void {
+function removeLegacySystemPromptOverride(raw: Record<string, any>, changes: string[]): void {
   const agents = getRecord(raw.agents);
   const defaults = getRecord(agents?.defaults);
   if (defaults && Object.hasOwn(defaults, "systemPromptOverride")) {
@@ -694,12 +694,12 @@ const CONFIGURED_TOOL_SECTION_GRANTS = [
   { key: "fs", grants: ["read", "write", "edit"] },
 ] as const;
 
-function readToolPolicyGrantList(value: unknown, key: "allow" | "alsoAllow"): string[] {
+function readToolPolicyGrantList(value: any, key: "allow" | "alsoAllow"): string[] {
   return readOwnToolPolicyGrantList(value, key) ?? [];
 }
 
 function readOwnToolPolicyGrantList(
-  value: unknown,
+  value: any,
   key: "allow" | "alsoAllow",
 ): string[] | undefined {
   const tools = getRecord(value);
@@ -709,14 +709,14 @@ function readOwnToolPolicyGrantList(
 }
 
 function resolveToolProfileForMigration(
-  tools: Record<string, unknown>,
+  tools: Record<string, any>,
   inheritedProfile?: string,
 ): string | undefined {
   return typeof tools.profile === "string" ? tools.profile : inheritedProfile;
 }
 
 function collectProfileConfiguredSectionRepairGrants(params: {
-  value: unknown;
+  value: any;
   inheritedProfile?: string;
   inheritedAlsoAllow?: string[];
   configuredGrants: string[];
@@ -754,11 +754,11 @@ function collectProfileConfiguredSectionRepairGrants(params: {
 }
 
 function toolProfileConfiguredSectionsNeedExplicitRepair(
-  value: unknown,
+  value: any,
   inheritedProfile?: string,
   inheritedAlsoAllow?: string[],
   configuredGrantsOverride?: string[],
-  inheritedByProvider?: Record<string, unknown> | null,
+  inheritedByProvider?: Record<string, any> | null,
 ): boolean {
   const tools = getRecord(value);
   if (!tools) {
@@ -781,7 +781,7 @@ function toolProfileConfiguredSectionsNeedExplicitRepair(
   );
 }
 
-function collectConfiguredToolSectionGrants(tools: Record<string, unknown>): string[] {
+function collectConfiguredToolSectionGrants(tools: Record<string, any>): string[] {
   const grants: string[] = [];
   for (const section of CONFIGURED_TOOL_SECTION_GRANTS) {
     if (getRecord(tools[section.key])) {
@@ -792,8 +792,8 @@ function collectConfiguredToolSectionGrants(tools: Record<string, unknown>): str
 }
 
 function collectEffectiveConfiguredToolSectionGrants(
-  inheritedTools: Record<string, unknown> | null | undefined,
-  tools: Record<string, unknown> | null | undefined,
+  inheritedTools: Record<string, any> | null | undefined,
+  tools: Record<string, any> | null | undefined,
 ): string[] {
   const includeInheritedSections = typeof tools?.profile !== "string";
   return uniqueStrings([
@@ -805,7 +805,7 @@ function collectEffectiveConfiguredToolSectionGrants(
 }
 
 function toolProfileAllowRequiresFull(params: {
-  value: unknown;
+  value: any;
   inheritedProfile?: string;
   inheritedAlsoAllow?: string[];
   configuredGrants: string[];
@@ -814,7 +814,7 @@ function toolProfileAllowRequiresFull(params: {
 }
 
 function resolveProfileBoundAllowGrants(params: {
-  tools: Record<string, unknown>;
+  tools: Record<string, any>;
   profile: string;
   allow: string[];
   inheritedAlsoAllow?: string[];
@@ -843,7 +843,7 @@ function resolveProfileBoundAllowGrants(params: {
 }
 
 function scopeToolProfileConfiguredSectionsNeedMigration(params: {
-  value: unknown;
+  value: any;
   inheritedProfile?: string;
   inheritedAlsoAllow?: string[];
   configuredGrants: string[];
@@ -852,10 +852,10 @@ function scopeToolProfileConfiguredSectionsNeedMigration(params: {
 }
 
 function byProviderToolProfilesNeedConfiguredSectionMigration(
-  tools: Record<string, unknown>,
+  tools: Record<string, any>,
   configuredGrants: string[],
   inheritedAlsoAllow?: string[],
-  inheritedByProvider?: Record<string, unknown> | null,
+  inheritedByProvider?: Record<string, any> | null,
 ): boolean {
   const byProvider = getRecord(tools.byProvider);
   const ownProviderNeedsMigration = Boolean(
@@ -906,7 +906,7 @@ function byProviderToolProfilesNeedConfiguredSectionMigration(
 }
 
 function addProfileConfiguredSectionGrants(
-  value: unknown,
+  value: any,
   pathLabel: string,
   changes: string[],
   inheritedProfile?: string,
@@ -954,12 +954,12 @@ function addProfileConfiguredSectionGrants(
 }
 
 function addByProviderProfileConfiguredSectionGrants(
-  value: unknown,
+  value: any,
   pathLabel: string,
   changes: string[],
   configuredGrantsOverride?: string[],
   inheritedProfile?: string,
-  inheritedByProvider?: Record<string, unknown> | null,
+  inheritedByProvider?: Record<string, any> | null,
 ): void {
   const tools = getRecord(value);
   if (!tools) {
@@ -1008,7 +1008,7 @@ function addByProviderProfileConfiguredSectionGrants(
     if (handledProviders.has(inheritedProvider.normalizedKey)) {
       continue;
     }
-    const providerPolicy: Record<string, unknown> = {};
+    const providerPolicy: Record<string, any> = {};
     const changeCount = changes.length;
     addProfileConfiguredSectionGrantsWithConfiguredGrants(
       providerPolicy,
@@ -1033,12 +1033,12 @@ function addHandledProviderPolicyKey(handledProviders: Set<string>, providerKey:
 }
 
 function buildInheritedProviderPolicyLookup(
-  inheritedByProvider: Record<string, unknown> | null | undefined,
+  inheritedByProvider: Record<string, any> | null | undefined,
 ): Map<
   string,
   {
     key: string;
-    policy: Record<string, unknown>;
+    policy: Record<string, any>;
     canonical: boolean;
   }
 > {
@@ -1046,7 +1046,7 @@ function buildInheritedProviderPolicyLookup(
     string,
     {
       key: string;
-      policy: Record<string, unknown>;
+      policy: Record<string, any>;
       canonical: boolean;
     }
   >();
@@ -1072,9 +1072,9 @@ function buildInheritedProviderPolicyLookup(
 }
 
 function resolveInheritedProviderPolicy(
-  inheritedByProvider: Record<string, unknown> | null | undefined,
+  inheritedByProvider: Record<string, any> | null | undefined,
   providerKey: string,
-): Record<string, unknown> | null {
+): Record<string, any> | null {
   const lookup = buildInheritedProviderPolicyLookup(inheritedByProvider);
   const normalized = normalizeToolProviderPolicyKey(providerKey);
   const slashIndex = normalized.indexOf("/");
@@ -1089,17 +1089,17 @@ function resolveInheritedProviderPolicy(
 }
 
 function listInheritedProviderPoliciesWithProfiles(
-  inheritedByProvider: Record<string, unknown> | null | undefined,
+  inheritedByProvider: Record<string, any> | null | undefined,
 ): Array<{
   key: string;
   normalizedKey: string;
-  policy: Record<string, unknown>;
+  policy: Record<string, any>;
   profile: string;
 }> {
   const entries: Array<{
     key: string;
     normalizedKey: string;
-    policy: Record<string, unknown>;
+    policy: Record<string, any>;
     profile: string;
   }> = [];
   for (const [normalizedKey, match] of buildInheritedProviderPolicyLookup(inheritedByProvider)) {
@@ -1117,7 +1117,7 @@ function listInheritedProviderPoliciesWithProfiles(
 }
 
 function addProfileConfiguredSectionGrantsWithConfiguredGrants(
-  value: unknown,
+  value: any,
   pathLabel: string,
   changes: string[],
   configuredGrants: string[],

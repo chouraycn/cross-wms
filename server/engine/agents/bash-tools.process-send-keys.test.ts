@@ -16,7 +16,7 @@ function createWritableStdinStub(): WritableStdin {
   };
 }
 
-function expectTextContent(content: unknown, text: string) {
+function expectTextContent(content: any, text: string) {
   const part = content as { type?: string; text?: string } | undefined;
   expect(part?.type).toBe("text");
   expect(part?.text).toContain(text);

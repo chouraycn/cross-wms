@@ -8,13 +8,13 @@ export type WebFetchProviderId = string;
 export type WebSearchProviderToolDefinition = {
   name: string;
   description?: string;
-  inputSchema?: unknown;
+  inputSchema?: any;
 };
 
 export type WebFetchProviderToolDefinition = {
   name: string;
   description?: string;
-  inputSchema?: unknown;
+  inputSchema?: any;
 };
 
 export type WebSearchProviderContext = {
@@ -50,7 +50,7 @@ export type WebFetchProviderConfiguredCredentialFallback = {
 export type WebSearchRuntimeMetadataContext = {
   providerId: WebSearchProviderId;
   env?: NodeJS.ProcessEnv;
-  config?: unknown;
+  config?: any;
 };
 
 export type WebSearchProviderSetupContext = {
@@ -63,13 +63,13 @@ export type WebFetchCredentialResolutionSource = "config" | "secretRef" | "env" 
 export type WebFetchRuntimeMetadataContext = {
   providerId: WebFetchProviderId;
   env?: NodeJS.ProcessEnv;
-  config?: unknown;
+  config?: any;
 };
 
 export type WebSearchProviderPlugin = {
   id: WebSearchProviderId;
   label?: string;
-  search(ctx: WebSearchProviderToolExecutionContext): Promise<unknown>;
+  search(ctx: WebSearchProviderToolExecutionContext): Promise<any>;
 };
 
 export type PluginWebSearchProviderEntry = WebSearchProviderPlugin & {
@@ -79,7 +79,7 @@ export type PluginWebSearchProviderEntry = WebSearchProviderPlugin & {
 export type WebFetchProviderPlugin = {
   id: WebFetchProviderId;
   label?: string;
-  fetch(ctx: WebFetchProviderContext & { signal?: AbortSignal }): Promise<unknown>;
+  fetch(ctx: WebFetchProviderContext & { signal?: AbortSignal }): Promise<any>;
 };
 
 export type PluginWebFetchProviderEntry = WebFetchProviderPlugin & {

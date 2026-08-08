@@ -6,7 +6,7 @@ const readCliBannerTaglineModeMock = vi.hoisted(() => vi.fn());
 const stdoutIsTtyDescriptor = Object.getOwnPropertyDescriptor(process.stdout, "isTTY");
 
 vi.mock("./banner-config-lite.js", () => ({
-  parseTaglineMode: (value: unknown) =>
+  parseTaglineMode: (value: any) =>
     value === "random" || value === "default" || value === "off" ? value : undefined,
   readCliBannerTaglineMode: readCliBannerTaglineModeMock,
 }));

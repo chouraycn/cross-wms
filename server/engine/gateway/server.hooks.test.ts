@@ -52,7 +52,7 @@ function buildHookJsonHeaders(options?: {
 async function postHook(
   port: number,
   pathLocal: string,
-  body: Record<string, unknown> | string,
+  body: Record<string, any> | string,
   options?: {
     token?: string | null;
     headers?: Record<string, string>;

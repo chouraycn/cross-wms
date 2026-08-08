@@ -8,7 +8,7 @@
 type SubagentHandle = {
   subagentId: string;
   status: "pending" | "running" | "completed" | "failed";
-  result?: unknown;
+  result?: any;
   error?: string;
 };
 
@@ -115,7 +115,7 @@ export async function waitForAllSubagentsComplete(
 /** Extract subagent results, returning only successfully completed handles. */
 export function extractCompletedSubagentResults(
   handles: SubagentHandle[],
-): Array<{ subagentId: string; result: unknown }> {
+): Array<{ subagentId: string; result: any }> {
   return handles
     .filter((h) => h.status === "completed" && h.result !== undefined)
     .map((h) => ({ subagentId: h.subagentId, result: h.result }));
@@ -129,16 +129,16 @@ export function extractCompletedSubagentResults(
 // ============================================================================
 
 /** Stub: never update run outcome in cross-wms. */
-export function shouldUpdateRunOutcome(_params?: unknown): boolean {
+export function shouldUpdateRunOutcome(_params?: any): boolean {
   return false;
 }
 
 /** Stub: no lifecycle outcome resolution in cross-wms. */
-export function resolveLifecycleOutcomeFromRunOutcome(_params?: unknown): unknown {
+export function resolveLifecycleOutcomeFromRunOutcome(_params?: any): any {
   return undefined;
 }
 
 /** Stub: no-op for subagent ended hook emission. */
-export function emitSubagentEndedHookOnce(_params?: unknown): void {
+export function emitSubagentEndedHookOnce(_params?: any): void {
   // no-op
 }

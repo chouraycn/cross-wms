@@ -4,7 +4,7 @@ export function createSessionManagerRuntimeRegistry<TValue>() {
   // The SessionManager instance must stay stable across set/get calls.
   const registry = new WeakMap<object, TValue>();
 
-  const set = (sessionManager: unknown, value: TValue | null): void => {
+  const set = (sessionManager: any, value: TValue | null): void => {
     if (!sessionManager || typeof sessionManager !== "object") {
       return;
     }
@@ -18,7 +18,7 @@ export function createSessionManagerRuntimeRegistry<TValue>() {
     registry.set(key, value);
   };
 
-  const get = (sessionManager: unknown): TValue | null => {
+  const get = (sessionManager: any): TValue | null => {
     if (!sessionManager || typeof sessionManager !== "object") {
       return null;
     }

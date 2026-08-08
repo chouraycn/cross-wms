@@ -248,7 +248,7 @@ export function subscribe<T = unknown>(
     if (!state.subscribers[t]) {
       state.subscribers[t] = [];
     }
-    state.subscribers[t].push({ handler: handler as EventHandler<unknown>, options });
+    state.subscribers[t].push({ handler: handler as EventHandler<any>, options });
   });
 
   logger.debug(`[Event] 订阅事件: ${types.join(', ')}`);

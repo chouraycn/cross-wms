@@ -215,8 +215,8 @@ function tryCreateLockFile(lockPath: string, payload: LockFilePayload): boolean 
       fs.closeSync(fd);
     }
     return true;
-  } catch (e: unknown) {
-    if (e.code === 'EEXIST') return false;
+  } catch (e: any) {
+    if ((e as NodeJS.ErrnoException).code === 'EEXIST') return false;
     throw e;
   }
 }

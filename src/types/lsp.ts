@@ -52,7 +52,7 @@ export interface LspServerConfig {
   /** 工作目录 */
   cwd?: string;
   /** 初始化选项 */
-  initializationOptions?: Record<string, unknown>;
+  initializationOptions?: Record<string, any>;
   /** 支持的能力 */
   capabilities?: string[];
   /** 文件扩展名 */
@@ -93,7 +93,7 @@ export interface LspServerInstance {
     version: string;
   };
   /** 服务器能力 */
-  capabilities?: Record<string, unknown>;
+  capabilities?: Record<string, any>;
 }
 
 // ===================== LSP 工具定义 =====================
@@ -238,7 +238,7 @@ export interface LspLogEntry {
   /** 服务器 ID */
   serverId?: string;
   /** 详情 */
-  details?: unknown;
+  details?: any;
 }
 
 // ===================== 项目检测 =====================

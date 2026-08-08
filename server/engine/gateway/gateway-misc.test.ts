@@ -45,11 +45,11 @@ function makeControlUiResponse() {
 
 const wsMockState = vi.hoisted(() => ({
   last: null as {
-    url: unknown;
-    opts: unknown;
-    noProxyDuringConstruction: unknown;
-    httpProxyDuringConstruction: unknown;
-    httpsProxyDuringConstruction: unknown;
+    url: any;
+    opts: any;
+    noProxyDuringConstruction: any;
+    httpProxyDuringConstruction: any;
+    httpsProxyDuringConstruction: any;
   } | null,
 }));
 
@@ -59,7 +59,7 @@ vi.mock("ws", () => ({
     close = vi.fn();
     send = vi.fn();
 
-    constructor(url: unknown, opts: unknown) {
+    constructor(url: any, opts: any) {
       wsMockState.last = {
         url,
         opts,
@@ -126,7 +126,7 @@ describe("GatewayClient", () => {
   }
 
   function expectNoGatewayClientAgent(params: { url: string; tlsFingerprint?: string }) {
-    const last = startGatewayClient(params) as { opts: { agent?: unknown } } | null;
+    const last = startGatewayClient(params) as { opts: { agent?: any } } | null;
     expect(last?.opts.agent).toBeUndefined();
   }
 
@@ -146,8 +146,8 @@ describe("GatewayClient", () => {
 
   test("uses a large maxPayload for node snapshots", () => {
     const last = startGatewayClient({ url: "ws://127.0.0.1:1" }) as {
-      url: unknown;
-      opts: unknown;
+      url: any;
+      opts: any;
     } | null;
     const opts = last?.opts as { maxPayload?: number } | undefined;
 
@@ -180,7 +180,7 @@ describe("GatewayClient", () => {
 
     try {
       const last = startGatewayClient({ url: "ws://127.0.0.1:18789" }) as {
-        noProxyDuringConstruction: unknown;
+        noProxyDuringConstruction: any;
       } | null;
 
       expect(last?.noProxyDuringConstruction).toBe("corp.example.com");
@@ -198,9 +198,9 @@ describe("GatewayClient", () => {
 
     try {
       const last = startGatewayClient({ url: "ws://[::1]:18789" }) as {
-        noProxyDuringConstruction: unknown;
-        httpProxyDuringConstruction: unknown;
-        httpsProxyDuringConstruction: unknown;
+        noProxyDuringConstruction: any;
+        httpProxyDuringConstruction: any;
+        httpsProxyDuringConstruction: any;
       } | null;
 
       expect(last?.noProxyDuringConstruction).toBe("corp.example.com");
@@ -267,7 +267,7 @@ type TestSocket = {
 type EventFrame = {
   type: "event";
   event: string;
-  payload?: unknown;
+  payload?: any;
   seq?: number;
 };
 
@@ -677,7 +677,7 @@ describe("late-arriving invoke results", () => {
 
       await handleNodeInvokeResult({
         req: { method: "node.invoke.result" } as unknown as RequestFrame,
-        params: { ...params, nodeId } as unknown as Record<string, unknown>,
+        params: { ...params, nodeId } as unknown as Record<string, any>,
         client,
         isWebchatConnect: () => false,
         respond,

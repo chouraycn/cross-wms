@@ -29,7 +29,7 @@ export function createAsyncTask(params: {
   agentId: string;
   type: string;
   total?: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }): AsyncTaskStatus {
   const taskId = params.taskId ?? `task-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
   const now = Date.now();
@@ -91,7 +91,7 @@ export function startAsyncTask(taskId: string): boolean {
   return true;
 }
 
-export function completeAsyncTask(taskId: string, result?: unknown, message?: string): boolean {
+export function completeAsyncTask(taskId: string, result?: any, message?: string): boolean {
   const task = taskStore.get(taskId);
   if (!task || task.status !== 'running') return false;
 

@@ -19,7 +19,7 @@ import {
   runNodeDaemonUninstall,
 } from "./daemon.js";
 
-function parsePortOption(value: unknown, fallback: number): number | null {
+function parsePortOption(value: any, fallback: number): number | null {
   // Undefined keeps config/default port; invalid explicit input returns null for CLI errors.
   if (value === undefined) {
     return fallback;

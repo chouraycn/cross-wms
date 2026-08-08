@@ -20,7 +20,7 @@ import {
 
 vi.mock("../config/config.js", () => ({
   getRuntimeConfig: () => ({}),
-  projectConfigOntoRuntimeSourceSnapshot: (config: unknown) => config,
+  projectConfigOntoRuntimeSourceSnapshot: (config: any) => config,
 }));
 
 function testModelContextWindow(id: string, contextWindow: number) {

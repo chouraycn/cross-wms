@@ -36,7 +36,7 @@ import {
 import type { TrajectoryEvent, TrajectoryToolDefinition } from "./types.js";
 
 // 降级：cross-wms 未提供 sanitizeDiagnosticPayload，使用 redactPayload 替代
-function sanitizeDiagnosticPayload(value: unknown): unknown {
+function sanitizeDiagnosticPayload(value: any): any {
   return redactPayload(value);
 }
 
@@ -63,7 +63,7 @@ type TrajectoryRuntimeInit = {
 type TrajectoryRuntimeRecorder = {
   enabled: true;
   filePath: string;
-  recordEvent: (type: string, data?: Record<string, unknown>) => void;
+  recordEvent: (type: string, data?: Record<string, any>) => void;
   flush: () => Promise<void>;
   describeFlushState: () => string | undefined;
 };
@@ -166,7 +166,7 @@ function truncateOversizedTrajectoryEvent(
   return undefined;
 }
 
-function truncatedTrajectoryValue(reason: string, details: Record<string, unknown> = {}): unknown {
+function truncatedTrajectoryValue(reason: string, details: Record<string, any> = {}): any {
   return {
     truncated: true,
     reason,
@@ -175,10 +175,10 @@ function truncatedTrajectoryValue(reason: string, details: Record<string, unknow
 }
 
 function limitTrajectoryPayloadValue(
-  value: unknown,
+  value: any,
   depth = 0,
   seen: WeakSet<object> = new WeakSet(),
-): unknown {
+): any {
   if (typeof value === "string") {
     if (value.length > TRAJECTORY_RUNTIME_DATA_STRING_MAX_CHARS) {
       return truncatedTrajectoryValue("trajectory-field-size-limit", {
@@ -215,9 +215,9 @@ function limitTrajectoryPayloadValue(
     seen.delete(value);
     return limited;
   }
-  const record = value as Record<string, unknown>;
+  const record = value as Record<string, any>;
   const keys = Object.keys(record);
-  const limited: Record<string, unknown> = {};
+  const limited: Record<string, any> = {};
   for (const key of keys.slice(0, TRAJECTORY_RUNTIME_DATA_OBJECT_MAX_KEYS)) {
     limited[key] = limitTrajectoryPayloadValue(record[key], depth + 1, seen);
   }
@@ -231,10 +231,10 @@ function limitTrajectoryPayloadValue(
   return limited;
 }
 
-function sanitizeTrajectoryPayload(data: Record<string, unknown>): Record<string, unknown> {
+function sanitizeTrajectoryPayload(data: Record<string, any>): Record<string, any> {
   return redactSecrets(sanitizeDiagnosticPayload(limitTrajectoryPayloadValue(data))) as Record<
     string,
-    unknown
+    any
   >;
 }
 
@@ -287,7 +287,7 @@ function compareTrajectoryWindowLines(left: string, right: string): number {
 
 function parseTrajectoryWindowLine(line: string): { ts: number; seq: number } {
   try {
-    const parsed = JSON.parse(line) as { ts?: unknown; sourceSeq?: unknown; seq?: unknown };
+    const parsed = JSON.parse(line) as { ts?: any; sourceSeq?: any; seq?: any };
     const ts = typeof parsed.ts === "string" ? Date.parse(parsed.ts) : Number.POSITIVE_INFINITY;
     const sourceSeq = typeof parsed.sourceSeq === "number" ? parsed.sourceSeq : undefined;
     const seq = typeof parsed.seq === "number" ? parsed.seq : undefined;
@@ -304,7 +304,7 @@ function readMaxTrajectorySourceSeq(filePath: string): number {
   return readTrajectoryWindowLines(filePath, TRAJECTORY_RUNTIME_FILE_MAX_BYTES).reduce(
     (max, line) => {
       try {
-        const parsed = JSON.parse(line) as { sourceSeq?: unknown; seq?: unknown };
+        const parsed = JSON.parse(line) as { sourceSeq?: any; seq?: any };
         const seq =
           typeof parsed.sourceSeq === "number"
             ? parsed.sourceSeq
@@ -388,7 +388,7 @@ function createTrajectoryWindowWriter(
   let queuedBytes = 0;
   let pendingWrites = 0;
   let activeOperation: TrajectoryRuntimeWriterDiagnostics["activeOperation"] = "idle";
-  let queue: Promise<unknown> = Promise.resolve();
+  let queue: Promise<any> = Promise.resolve();
   let sourceSeq = readMaxTrajectorySourceSeq(filePath);
 
   return {
@@ -458,7 +458,7 @@ function getTrajectoryWindowWriter(
 }
 
 export function toTrajectoryToolDefinitions(
-  tools: ReadonlyArray<{ name?: string; description?: string; parameters?: unknown }>,
+  tools: ReadonlyArray<{ name?: string; description?: string; parameters?: any }>,
 ): TrajectoryToolDefinition[] {
   return tools
     .flatMap((tool) => {
@@ -511,7 +511,7 @@ export function createTrajectoryRuntimeRecorder(
     writer.write(jsonlLine);
   };
 
-  const buildEventLine = (type: string, data?: Record<string, unknown>): string | undefined => {
+  const buildEventLine = (type: string, data?: Record<string, any>): string | undefined => {
     const nextSeq = seq + 1;
     const sourceSeq = writer.nextSourceSeq?.() ?? nextSeq;
     const event: TrajectoryEvent = {

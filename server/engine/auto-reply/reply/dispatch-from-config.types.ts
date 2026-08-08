@@ -32,13 +32,13 @@ export type SourceReplyDeliveryMode = "automatic" | "message_tool_only";
 export type FinalizedMsgContext = {
   Body?: string;
   From?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 /** Session metadata change emitted by command handlers（最小占位）。 */
 export type CommandSessionMetadataChange = {
   key: string;
-  value?: unknown;
+  value?: any;
   op?: "set" | "delete";
 };
 

@@ -40,7 +40,7 @@ export interface LspServerConfig {
   args?: string[];
   env?: Record<string, string>;
   cwd?: string;
-  initializationOptions?: Record<string, unknown>;
+  initializationOptions?: Record<string, any>;
   capabilities?: string[];
   fileExtensions: string[];
 }
@@ -61,8 +61,8 @@ export interface LspServerInstance {
     name: string;
     version: string;
   };
-  capabilities?: Record<string, unknown>;
-  metadata?: Record<string, unknown>;
+  capabilities?: Record<string, any>;
+  metadata?: Record<string, any>;
 }
 
 export interface LspDocument {
@@ -248,8 +248,8 @@ class LspManager {
     await new Promise((resolve) => setTimeout(resolve, 300));
   }
 
-  private buildCapabilities(config: LspServerConfig): Record<string, unknown> {
-    const caps: Record<string, unknown> = {};
+  private buildCapabilities(config: LspServerConfig): Record<string, any> {
+    const caps: Record<string, any> = {};
     for (const cap of config.capabilities ?? []) {
       caps[cap] = true;
     }

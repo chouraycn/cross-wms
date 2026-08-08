@@ -4,7 +4,7 @@ import { loadWorkspaceSkills } from "../loading/workspace.js";
 import type { SkillEligibilityContext, SkillEntry } from "../types.js";
 
 export interface SkillSnapshot {
-  resolvedSkills?: unknown;
+  resolvedSkills?: any;
 }
 
 export function resolveEmbeddedRunSkillEntries(params: {
@@ -19,12 +19,12 @@ export function resolveEmbeddedRunSkillEntries(params: {
   skillEntries: SkillEntry[];
 } {
   const shouldLoadSkillEntries = !params.skillsSnapshot || !params.skillsSnapshot.resolvedSkills;
-  const config = resolveSkillRuntimeConfig(params.config as unknown);
+  const config = resolveSkillRuntimeConfig(params.config as any);
 
   return {
     shouldLoadSkillEntries,
     skillEntries: shouldLoadSkillEntries
-      ? (loadWorkspaceSkills(params.workspaceDir) as unknown)
+      ? (loadWorkspaceSkills(params.workspaceDir) as any)
       : [],
   };
 }

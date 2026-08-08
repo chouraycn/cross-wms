@@ -7,31 +7,31 @@
  */
 
 export { getSubagentSessionRuntimeMs, getSubagentSessionStartedAt, resolveSubagentSessionStatus } from "./subagent-session-metrics.js";
-export const MIN_ANNOUNCE_RETRY_DELAY_MS: unknown = undefined;
-export const MAX_ANNOUNCE_RETRY_COUNT: unknown = undefined;
-export const ANNOUNCE_EXPIRY_MS: unknown = undefined;
-export const ANNOUNCE_COMPLETION_HARD_EXPIRY_MS: unknown = undefined;
-export function capFrozenResultText(..._args: unknown[]): unknown {
+export const MIN_ANNOUNCE_RETRY_DELAY_MS: any = undefined;
+export const MAX_ANNOUNCE_RETRY_COUNT: any = undefined;
+export const ANNOUNCE_EXPIRY_MS: any = undefined;
+export const ANNOUNCE_COMPLETION_HARD_EXPIRY_MS: any = undefined;
+export function capFrozenResultText(..._args: any[]): any {
   return undefined;
 }
-export function resolveAnnounceRetryDelayMs(..._args: unknown[]): unknown {
+export function resolveAnnounceRetryDelayMs(..._args: any[]): any {
   return undefined;
 }
-export function logAnnounceGiveUp(..._args: unknown[]): unknown {
+export function logAnnounceGiveUp(..._args: any[]): any {
   return undefined;
 }
-export async function persistSubagentSessionTiming(..._args: unknown[]): Promise<unknown> {
+export async function persistSubagentSessionTiming(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
-export async function safeRemoveAttachmentsDir(..._args: unknown[]): Promise<unknown> {
+export async function safeRemoveAttachmentsDir(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
-export function reconcileOrphanedRun(..._args: unknown[]): unknown {
+export function reconcileOrphanedRun(..._args: any[]): any {
   return undefined;
 }
-export function reconcileOrphanedRestoredRuns(..._args: unknown[]): unknown {
+export function reconcileOrphanedRestoredRuns(..._args: any[]): any {
   return undefined;
 }
-export function resolveArchiveAfterMs(..._args: unknown[]): unknown {
+export function resolveArchiveAfterMs(..._args: any[]): any {
   return undefined;
 }

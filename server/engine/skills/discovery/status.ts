@@ -84,7 +84,7 @@ export function computeSkillStatus(entries: readonly SkillEntry[]): SkillStatusS
     const disableModelInvocation = (metadata.disableModelInvocation as boolean) || false;
     const requiredOs = (metadata.os as string[]) ?? [];
     const platformOk = requiredOs.length === 0 || requiredOs.includes(process.platform);
-    const bins = (metadata.requires as Record<string, unknown>)?.bins as string[] ?? [];
+    const bins = (metadata.requires as Record<string, any>)?.bins as string[] ?? [];
 
     if (!isDisabled && platformOk) {
       eligible++;
@@ -219,7 +219,7 @@ export async function buildSkillStatusReport(params: {
     const requiredOs = (metadata.os as string[]) ?? [];
     const platformIncompatible = requiredOs.length > 0 && !requiredOs.includes(process.platform);
 
-    const bins = (metadata.requires as Record<string, unknown>)?.bins as string[] ?? [];
+    const bins = (metadata.requires as Record<string, any>)?.bins as string[] ?? [];
     const requirements = [...bins];
     const missing: string[] = [];
 
@@ -234,7 +234,7 @@ export async function buildSkillStatusReport(params: {
       }
     }
 
-    const installSpecs = metadata.install as Array<Record<string, unknown>> ?? [];
+    const installSpecs = metadata.install as Array<Record<string, any>> ?? [];
     const installOptions: SkillInstallOption[] = installSpecs.map((spec, index) => ({
       id: `${entry.skill.name}-${index}`,
       kind: spec.kind as string || "unknown",

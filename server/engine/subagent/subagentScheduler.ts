@@ -28,22 +28,22 @@ export interface SubagentTask {
   /** 任务名称（用于日志/调试） */
   name: string;
   /** 任务载荷 */
-  payload?: unknown;
+  payload?: any;
   /** 优先级：数字越小优先级越高，默认 100 */
   priority?: number;
   /** 任务执行器 */
-  execute: (task: SubagentTask) => Promise<unknown>;
+  execute: (task: SubagentTask) => Promise<any>;
   /** 失败时是否允许跳过（默认 false） */
   optional?: boolean;
   /** 任务元数据 */
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 /** 调度结果 */
 export interface SubagentScheduledResult {
   taskId: string;
   status: SubagentTaskStatus;
-  result?: unknown;
+  result?: any;
   error?: string;
   startedAt?: number;
   completedAt?: number;
@@ -64,7 +64,7 @@ interface QueueNode {
   task: SubagentTask;
   taskId: string;
   status: SubagentTaskStatus;
-  result?: unknown;
+  result?: any;
   error?: string;
   enqueuedAt: number;
   startedAt?: number;
@@ -352,8 +352,8 @@ export class SubagentScheduler {
   private executeWithTimeout(
     node: QueueNode,
     timeoutMs: number,
-  ): Promise<unknown> {
-    return new Promise<unknown>((resolve, reject) => {
+  ): Promise<any> {
+    return new Promise<any>((resolve, reject) => {
       const timer = setTimeout(() => {
         reject(new Error(`Subagent task ${node.taskId} timed out after ${timeoutMs}ms`));
       }, timeoutMs);
@@ -371,7 +371,7 @@ export class SubagentScheduler {
   }
 
   /** 标记任务完成 */
-  private completeNode(node: QueueNode, result: unknown): void {
+  private completeNode(node: QueueNode, result: any): void {
     if (node.cancelled) return;
     node.status = 'completed';
     node.result = result;

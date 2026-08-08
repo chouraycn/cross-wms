@@ -50,13 +50,13 @@ function makeGeminiAnalyzeParams(
 describe("native PDF provider API calls", () => {
   const priorFetch = global.fetch;
 
-  const mockFetchResponse = (response: unknown) => {
+  const mockFetchResponse = (response: any) => {
     const fetchMock = vi.fn().mockResolvedValue(response);
     global.fetch = Object.assign(fetchMock, { preconnect: vi.fn() }) as typeof global.fetch;
     return fetchMock;
   };
 
-  const firstFetchCall = (fetchMock: { mock: { calls: unknown[][] } }): unknown[] => {
+  const firstFetchCall = (fetchMock: { mock: { calls: any[][] } }): any[] => {
     const call = fetchMock.mock.calls.at(0);
     if (!call) {
       throw new Error("expected fetch to be called");
@@ -151,7 +151,7 @@ describe("native PDF provider API calls", () => {
 
     const error = await pdfNativeProviders
       .anthropicAnalyzePdf(makeAnthropicAnalyzeParams())
-      .catch((caught: unknown) => caught);
+      .catch((caught: any) => caught);
 
     if (!(error instanceof Error)) {
       throw new Error("expected Anthropic PDF request to throw an Error");
@@ -182,7 +182,7 @@ describe("native PDF provider API calls", () => {
     const error = await Promise.race([
       pdfNativeProviders
         .anthropicAnalyzePdf(makeAnthropicAnalyzeParams())
-        .catch((caught: unknown) => caught),
+        .catch((caught: any) => caught),
       new Promise<Error>((_resolve, reject) => {
         setTimeout(() => reject(new Error("timed out waiting for bounded error body")), 500);
       }),

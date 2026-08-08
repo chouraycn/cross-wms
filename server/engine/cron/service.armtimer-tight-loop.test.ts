@@ -40,10 +40,10 @@ function createStuckPastDueJob(params: { id: string; nowMs: number; pastDueMs: n
 
 describe("CronService - armTimer tight loop prevention", () => {
   function extractTimeoutDelays(timeoutSpy: ReturnType<typeof vi.spyOn>) {
-    const calls = timeoutSpy.mock.calls as Array<[unknown, unknown, ...unknown[]]>;
+    const calls = timeoutSpy.mock.calls as Array<[any, any, ...any[]]>;
     return calls
-      .map(([, delay]: [unknown, unknown, ...unknown[]]) => delay)
-      .filter((d: unknown): d is number => typeof d === "number");
+      .map(([, delay]: [unknown, unknown, ...any[]]) => delay)
+      .filter((d: any): d is number => typeof d === "number");
   }
 
   function latestTimeoutHandle(timeoutSpy: ReturnType<typeof vi.spyOn>) {

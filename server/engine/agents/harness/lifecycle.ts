@@ -34,7 +34,7 @@ type AgentRunCompletedOutcome = "completed" | "aborted" | "blocked" | "error";
 type AgentRunCompletion = {
   outcome: AgentRunCompletedOutcome;
   blockedBy?: string;
-  error?: unknown;
+  error?: any;
 };
 
 function buildAgentHarnessContextEngineHostSupport(
@@ -186,7 +186,7 @@ function emitAgentHarnessRunError(params: {
   attemptParams: AgentHarnessAttemptParams;
   startedAt: number;
   phase: AgentHarnessLifecyclePhase;
-  error: unknown;
+  error: any;
   trace?: DiagnosticTraceContext;
 }): void {
   const { harness, attemptParams, startedAt, phase, error, trace } = params;

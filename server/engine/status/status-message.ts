@@ -715,8 +715,8 @@ export function buildStatusMessage(args: StatusArgs): string {
     }
   }
 
-  const activeModelLabel = formatProviderModelRef(activeProvider, activeModel) || "unknown";
-  const runtimeDiffersFromSelected = activeModelLabel !== (modelRefs.selected.label || "unknown");
+  const activeModelLabel = formatProviderModelRef(activeProvider, activeModel) || "any";
+  const runtimeDiffersFromSelected = activeModelLabel !== (modelRefs.selected.label || "any");
   const selectedContextTokens = resolveContextTokensForModel({
     cfg: contextConfig,
     provider: selectedProvider,

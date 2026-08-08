@@ -1,7 +1,7 @@
 // Normalizes music generation requests into provider-ready payloads.
 import { normalizeDurationToClosestMax } from "../media-generation/runtime-shared.js";
 
-function hasMediaNormalizationEntry(entry: unknown): boolean {
+function hasMediaNormalizationEntry(entry: any): boolean {
   if (entry == null) return false;
   if (typeof entry !== "object") return false;
   return Object.values(entry).some((v) => v !== undefined);

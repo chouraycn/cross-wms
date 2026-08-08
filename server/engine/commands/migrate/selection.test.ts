@@ -152,14 +152,14 @@ function expectItemStatus(
   }
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (typeof value !== "object" || value === null) {
     throw new Error(`${label} was not an object`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function requireCodexPluginConfigPlugins(item: MigrationItem): Record<string, unknown> {
+function requireCodexPluginConfigPlugins(item: MigrationItem): Record<string, any> {
   const details = requireRecord(item.details, "config details");
   const value = requireRecord(details.value, "config value");
   const config = requireRecord(value.config, "config object");

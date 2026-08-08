@@ -68,7 +68,7 @@ function Tabs({
         data-orientation={orientation}
         className={cn('group/tabs flex gap-2', orientation === 'horizontal' ? 'flex-col' : 'flex-row', className)}
         sx={sx}
-        {...(props as Record<string, unknown>)}
+        {...(props as Record<string, any>)}
       >
         {children}
       </Box>
@@ -100,7 +100,7 @@ function TabsList({
         },
         sx,
       )}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     />
   )
 }
@@ -150,7 +150,7 @@ function TabsTrigger({
         },
         sx,
       )}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     >
       {children}
     </Box>
@@ -166,7 +166,7 @@ function TabsContent({ className, value, children, ...props }: React.ComponentPr
       data-slot="tabs-content"
       hidden={!active}
       className={cn('flex-1 text-sm outline-none', className)}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     >
       {children}
     </Box>

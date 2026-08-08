@@ -48,7 +48,7 @@ function matchCapabilities(query: string): Capability[] {
   return caps.filter((c) => c.name.includes(q) || c.description.toLowerCase().includes(q));
 }
 
-function formatJsonOutput(data: unknown): string {
+function formatJsonOutput(data: any): string {
   return JSON.stringify(data, null, 2);
 }
 

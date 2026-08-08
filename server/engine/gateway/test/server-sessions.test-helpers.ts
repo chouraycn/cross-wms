@@ -41,7 +41,7 @@ export async function getSessionsHandlers() {
 }
 
 export function createLinearSessionTranscript(sessionId: string, contents: string[]): string {
-  const records: Array<Record<string, unknown>> = [
+  const records: Array<Record<string, any>> = [
     {
       type: "session",
       version: 3,
@@ -64,7 +64,7 @@ export function createLinearSessionTranscript(sessionId: string, contents: strin
 
 export function createDeferred<T>() {
   let resolve!: (value: T | PromiseLike<T>) => void;
-  let reject!: (reason?: unknown) => void;
+  let reject!: (reason?: any) => void;
   const promise = new Promise<T>((res, rej) => {
     resolve = res;
     reject = rej;
@@ -92,7 +92,7 @@ const bootstrapCacheMocks = vi.hoisted(() => ({
 
 const sessionHookMocks = vi.hoisted(() => ({
   hasInternalHookListeners: vi.fn(() => true),
-  triggerInternalHook: vi.fn(async (_eventValue: unknown) => {}),
+  triggerInternalHook: vi.fn(async (_eventValue: any) => {}),
 }));
 
 const beforeResetHookMocks = vi.hoisted(() => ({
@@ -122,7 +122,7 @@ const subagentLifecycleHookState = vi.hoisted(() => ({
 }));
 
 const threadBindingMocks = vi.hoisted(() => ({
-  unbindThreadBindingsBySessionKey: vi.fn((_params?: unknown) => []),
+  unbindThreadBindingsBySessionKey: vi.fn((_params?: any) => []),
 }));
 const acpRuntimeMocks = vi.hoisted(() => ({
   cancel: vi.fn(async () => {}),
@@ -221,7 +221,7 @@ vi.mock("../../infra/outbound/session-binding-service.js", async () => {
     ...actual,
     getSessionBindingService: () => ({
       ...actual.getSessionBindingService(),
-      unbind: async (params: unknown) =>
+      unbind: async (params: any) =>
         threadBindingMocks.unbindThreadBindingsBySessionKey(params),
     }),
   };
@@ -622,12 +622,12 @@ type SessionsHandlers = Awaited<ReturnType<typeof getSessionsHandlers>>;
 
 export async function directSessionReq<TPayload = unknown>(
   method: keyof SessionsHandlers,
-  params: Record<string, unknown>,
+  params: Record<string, any>,
   opts?: {
-    context?: Record<string, unknown>;
+    context?: Record<string, any>;
     client?: Parameters<SessionsHandlers[keyof SessionsHandlers]>[0]["client"];
     isWebchatConnect?: Parameters<SessionsHandlers[keyof SessionsHandlers]>[0]["isWebchatConnect"];
-    coercePayload?: (payload: unknown) => TPayload;
+    coercePayload?: (payload: any) => TPayload;
   },
 ): Promise<{ ok: boolean; payload?: TPayload; error?: { code?: string; message?: string } }> {
   const sessionsHandlers = await getSessionsHandlers();
@@ -666,11 +666,11 @@ export async function directSessionReq<TPayload = unknown>(
   return result;
 }
 
-export function isInternalHookEvent(value: unknown): value is InternalHookEvent {
+export function isInternalHookEvent(value: any): value is InternalHookEvent {
   if (!value || typeof value !== "object") {
     return false;
   }
-  const candidate = value as Record<string, unknown>;
+  const candidate = value as Record<string, any>;
   return (
     typeof candidate.type === "string" &&
     typeof candidate.action === "string" &&

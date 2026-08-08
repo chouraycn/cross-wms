@@ -15,18 +15,18 @@ const DEFAULT_PRESENTATION_LIMITS: PresentationLimitConfig = {
 
 /** Adapts a message presentation for channel-specific limits. */
 export function adaptMessagePresentationForChannel(params: {
-  presentation?: unknown;
+  presentation?: any;
   channel?: string;
   limits?: PresentationLimitConfig;
-}): unknown {
+}): any {
   return params.presentation;
 }
 
 /** Applies presentation action limits, truncating if necessary. */
 export function applyPresentationActionLimits(params: {
-  presentation?: { blocks?: unknown[] };
+  presentation?: { blocks?: any[] };
   limits?: PresentationLimitConfig;
-}): { presentation: unknown; truncated: boolean } {
+}): { presentation: any; truncated: boolean } {
   const limits = { ...DEFAULT_PRESENTATION_LIMITS, ...params.limits };
   if (!params.presentation) return { presentation: undefined, truncated: false };
   const blocks = params.presentation.blocks ?? [];

@@ -21,7 +21,7 @@ function isSensitiveBundleKey(key: string): boolean {
   return SENSITIVE_BUNDLE_KEYS.some((sensitive) => lower.includes(sensitive));
 }
 
-function redactValue(value: unknown, key?: string): unknown {
+function redactValue(value: any, key?: string): any {
   if (key && isSensitiveBundleKey(key)) {
     return '<redacted>';
   }
@@ -36,11 +36,11 @@ function redactValue(value: unknown, key?: string): unknown {
   if (Array.isArray(value)) {
     return value.map((item, index) => redactValue(item, String(index)));
   }
-  return redactSupportBundleObject(value as Record<string, unknown>);
+  return redactSupportBundleObject(value as Record<string, any>);
 }
 
-function redactSupportBundleObject(obj: Record<string, unknown>): Record<string, unknown> {
-  const result: Record<string, unknown> = {};
+function redactSupportBundleObject(obj: Record<string, any>): Record<string, any> {
+  const result: Record<string, any> = {};
   for (const [key, value] of Object.entries(obj)) {
     result[key] = redactValue(value, key);
   }
@@ -78,6 +78,6 @@ export function redactError(error: Error | string): string {
   return redactSensitiveText(redactIdentifiers(message));
 }
 
-export function redactDiagnosticPayload<T extends Record<string, unknown>>(payload: T): T {
+export function redactDiagnosticPayload<T extends Record<string, any>>(payload: T): T {
   return redactSupportBundleObject(payload) as T;
 }

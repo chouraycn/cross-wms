@@ -82,7 +82,7 @@ function expectReply(
   return handled.reply;
 }
 
-function lastMockCall(mock: { mock: { calls: unknown[][] } }, label: string): unknown[] {
+function lastMockCall(mock: { mock: { calls: any[][] } }, label: string): any[] {
   const calls = mock.mock.calls;
   const call = calls[calls.length - 1];
   if (!call) {
@@ -175,9 +175,9 @@ describe("handleTtsCommands status fallback reporting", () => {
   });
 
   it("persists fallback metadata from /tts audio and renders it in /tts status", async () => {
-    let lastAttempt: Record<string, unknown> | undefined;
+    let lastAttempt: Record<string, any> | undefined;
     ttsMocks.getLastTtsAttempt.mockImplementation(() => lastAttempt);
-    ttsMocks.setLastTtsAttempt.mockImplementation((next: Record<string, unknown>) => {
+    ttsMocks.setLastTtsAttempt.mockImplementation((next: Record<string, any>) => {
       lastAttempt = next;
     });
     ttsMocks.textToSpeech.mockResolvedValue({

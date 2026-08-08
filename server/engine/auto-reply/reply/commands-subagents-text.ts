@@ -5,8 +5,8 @@ import { extractTextFromChatContent } from '@openclaw-src/shared/chat-content.js
 
 /** Minimal chat message shape used by subagent text extraction. */
 export type ChatMessage = {
-  role?: unknown;
-  content?: unknown;
+  role?: any;
+  content?: any;
 };
 
 /** Extracts sanitized display text from a subagent chat message. */

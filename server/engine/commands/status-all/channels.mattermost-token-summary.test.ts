@@ -8,7 +8,7 @@ import {
 } from "./channels-token-summary.js";
 
 function tokenRow(params: {
-  account: Record<string, unknown>;
+  account: Record<string, any>;
   snapshot?: Partial<ChannelAccountSnapshot>;
   enabled?: boolean;
 }): ChannelAccountTokenSummaryRow {

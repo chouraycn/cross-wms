@@ -18,7 +18,7 @@ export { copyChannelAgentToolMeta, getChannelAgentToolMeta } from "./channel-too
 type ChannelMessageActionName = string;
 
 type ChannelMessageActionDiscoveryParams = {
-  cfg?: Record<string, unknown>;
+  cfg?: Record<string, any>;
   currentChannelId?: string | null;
   currentThreadTs?: string | null;
   currentMessageId?: string | number | null;
@@ -55,19 +55,19 @@ export function listAllChannelSupportedActions(
 type ChannelAgentTool = {
   name: string;
   description: string;
-  parameters: Record<string, unknown>;
-  execute: (toolCallId: string, args: unknown, signal: AbortSignal) => Promise<unknown>;
+  parameters: Record<string, any>;
+  execute: (toolCallId: string, args: any, signal: AbortSignal) => Promise<any>;
 };
 
 /** List agent tools contributed by registered channel plugins. */
-export function listChannelAgentTools(_params: { cfg?: Record<string, unknown> }): ChannelAgentTool[] {
+export function listChannelAgentTools(_params: { cfg?: Record<string, any> }): ChannelAgentTool[] {
   // Channel plugin tool discovery not available in cross-wms.
   return [];
 }
 
 /** Resolve channel-specific message tool hints for system prompt assembly. */
 export function resolveChannelMessageToolHints(_params: {
-  cfg?: Record<string, unknown>;
+  cfg?: Record<string, any>;
   channel?: string | null;
   accountId?: string | null;
 }): string[] {
@@ -85,7 +85,7 @@ export function resolveChannelMessageToolHints(_params: {
 
 /** Resolve channel prompt capabilities, including native approval UI support. */
 export function resolveChannelPromptCapabilities(_params: {
-  cfg?: Record<string, unknown>;
+  cfg?: Record<string, any>;
   channel?: string | null;
   accountId?: string | null;
 }): string[] {
@@ -103,7 +103,7 @@ export function resolveChannelPromptCapabilities(_params: {
 
 /** Resolve optional channel reaction guidance for assistant replies. */
 export function resolveChannelReactionGuidance(_params: {
-  cfg?: Record<string, unknown>;
+  cfg?: Record<string, any>;
   channel?: string | null;
   accountId?: string | null;
 }): { level: "minimal" | "extensive"; channel: string } | undefined {

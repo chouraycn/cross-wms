@@ -20,13 +20,13 @@ const hoisted = vi.hoisted(() => ({
   dispatchGatewayMethodInProcessMock: vi.fn(),
   hasInProcessGatewayContextMock: vi.fn(),
   resolveAgentConfigMock: vi.fn(),
-  configOverride: {} as Record<string, unknown>,
+  configOverride: {} as Record<string, any>,
 }));
 
 let resetSubagentRegistryForTests: typeof import("./subagent-registry.js").resetSubagentRegistryForTests;
 let spawnSubagentDirect: typeof import("./subagent-spawn.js").spawnSubagentDirect;
 
-function createConfigOverride(overrides?: Record<string, unknown>) {
+function createConfigOverride(overrides?: Record<string, any>) {
   return createSubagentSpawnTestConfig(os.tmpdir(), {
     agents: {
       defaults: {
@@ -43,25 +43,25 @@ function createConfigOverride(overrides?: Record<string, unknown>) {
   });
 }
 
-function requireRecord(value: unknown): Record<string, unknown> {
+function requireRecord(value: any): Record<string, any> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("Expected a non-array record");
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function gatewayRequestRecords(): Record<string, unknown>[] {
+function gatewayRequestRecords(): Record<string, any>[] {
   // Gateway calls are the seam proof for spawn orchestration; assertions inspect
   // structured requests instead of matching rendered text.
   return hoisted.callGatewayMock.mock.calls.map((call) => requireRecord(call[0]));
 }
 
-function gatewayRequest(method: string): Record<string, unknown> {
+function gatewayRequest(method: string): Record<string, any> {
   const request = gatewayRequestRecords().find((entry) => entry.method === method);
   return requireRecord(request);
 }
 
-function firstRegisteredSubagentRun(): Record<string, unknown> {
+function firstRegisteredSubagentRun(): Record<string, any> {
   return requireRecord(hoisted.registerSubagentRunMock.mock.calls[0]?.[0]);
 }
 
@@ -106,9 +106,9 @@ describe("spawnSubagentDirect seam flow", () => {
     hoisted.updateSessionStoreMock.mockImplementation(
       async (
         _storePath: string,
-        mutator: (store: Record<string, Record<string, unknown>>) => unknown,
+        mutator: (store: Record<string, Record<string, any>>) => unknown,
       ) => {
-        const store: Record<string, Record<string, unknown>> = {};
+        const store: Record<string, Record<string, any>> = {};
         await mutator(store);
         return store;
       },
@@ -234,7 +234,7 @@ describe("spawnSubagentDirect seam flow", () => {
 
   it("accepts a spawned run across session patching, runtime-model persistence, registry registration, and lifecycle emission", async () => {
     const operations: string[] = [];
-    let persistedStore: Record<string, Record<string, unknown>> | undefined;
+    let persistedStore: Record<string, Record<string, any>> | undefined;
 
     hoisted.callGatewayMock.mockImplementation(async (request: { method?: string }) => {
       operations.push(`gateway:${request.method ?? "unknown"}`);
@@ -388,7 +388,7 @@ describe("spawnSubagentDirect seam flow", () => {
   });
 
   it("inherits requester thinking level when no spawn or subagent default is configured", async () => {
-    let persistedStore: Record<string, Record<string, unknown>> | undefined;
+    let persistedStore: Record<string, Record<string, any>> | undefined;
     hoisted.loadSessionStoreMock.mockReturnValue({
       "agent:main:main": { thinkingLevel: "high" },
     });
@@ -413,7 +413,7 @@ describe("spawnSubagentDirect seam flow", () => {
   });
 
   it("persists inherited requester thinking off", async () => {
-    let persistedStore: Record<string, Record<string, unknown>> | undefined;
+    let persistedStore: Record<string, Record<string, any>> | undefined;
     hoisted.loadSessionStoreMock.mockReturnValue({
       "agent:main:main": { thinkingLevel: "off" },
     });
@@ -438,7 +438,7 @@ describe("spawnSubagentDirect seam flow", () => {
   });
 
   it("inherits requester agent thinkingDefault when the caller session has no stored thinking", async () => {
-    let persistedStore: Record<string, Record<string, unknown>> | undefined;
+    let persistedStore: Record<string, Record<string, any>> | undefined;
     hoisted.configOverride = createConfigOverride({
       agents: {
         defaults: {
@@ -477,7 +477,7 @@ describe("spawnSubagentDirect seam flow", () => {
   });
 
   it("falls back to requester agent thinkingDefault when caller session store cannot be read", async () => {
-    let persistedStore: Record<string, Record<string, unknown>> | undefined;
+    let persistedStore: Record<string, Record<string, any>> | undefined;
     hoisted.configOverride = createConfigOverride({
       agents: {
         defaults: {
@@ -516,7 +516,7 @@ describe("spawnSubagentDirect seam flow", () => {
   });
 
   it("prefers requester agent thinkingDefault over selected-model thinking fallback", async () => {
-    let persistedStore: Record<string, Record<string, unknown>> | undefined;
+    let persistedStore: Record<string, Record<string, any>> | undefined;
     hoisted.configOverride = createConfigOverride({
       agents: {
         defaults: {
@@ -567,7 +567,7 @@ describe("spawnSubagentDirect seam flow", () => {
   });
 
   it("inherits requester selected-model thinking when caller session has no stored thinking or agent default", async () => {
-    let persistedStore: Record<string, Record<string, unknown>> | undefined;
+    let persistedStore: Record<string, Record<string, any>> | undefined;
     hoisted.configOverride = createConfigOverride({
       agents: {
         defaults: {
@@ -617,7 +617,7 @@ describe("spawnSubagentDirect seam flow", () => {
   });
 
   it("prefers requester agent thinkingDefault over runtime-model thinking fallback", async () => {
-    let persistedStore: Record<string, Record<string, unknown>> | undefined;
+    let persistedStore: Record<string, Record<string, any>> | undefined;
     hoisted.configOverride = createConfigOverride({
       agents: {
         defaults: {
@@ -666,7 +666,7 @@ describe("spawnSubagentDirect seam flow", () => {
   });
 
   it("inherits requester runtime-model thinking when caller session has no stored thinking or agent default", async () => {
-    let persistedStore: Record<string, Record<string, unknown>> | undefined;
+    let persistedStore: Record<string, Record<string, any>> | undefined;
     hoisted.configOverride = createConfigOverride({
       agents: {
         defaults: {
@@ -714,7 +714,7 @@ describe("spawnSubagentDirect seam flow", () => {
   });
 
   it("inherits global thinkingDefault when caller session and agent have no stored thinking", async () => {
-    let persistedStore: Record<string, Record<string, unknown>> | undefined;
+    let persistedStore: Record<string, Record<string, any>> | undefined;
     hoisted.configOverride = createConfigOverride({
       agents: {
         defaults: {
@@ -753,7 +753,7 @@ describe("spawnSubagentDirect seam flow", () => {
   });
 
   it("inherits provider/model thinking default when no caller-specific default exists", async () => {
-    let persistedStore: Record<string, Record<string, unknown>> | undefined;
+    let persistedStore: Record<string, Record<string, any>> | undefined;
     hoisted.configOverride = createConfigOverride({
       agents: {
         defaults: {
@@ -799,7 +799,7 @@ describe("spawnSubagentDirect seam flow", () => {
   });
 
   it("applies requester-agent subagent thinking before caller session thinking", async () => {
-    let persistedStore: Record<string, Record<string, unknown>> | undefined;
+    let persistedStore: Record<string, Record<string, any>> | undefined;
     hoisted.configOverride = createConfigOverride({
       agents: {
         defaults: {
@@ -860,7 +860,7 @@ describe("spawnSubagentDirect seam flow", () => {
   });
 
   it("keeps spawn cwd separate from inherited agent workspace", async () => {
-    let persistedStore: Record<string, Record<string, unknown>> | undefined;
+    let persistedStore: Record<string, Record<string, any>> | undefined;
     installSessionStoreCaptureMock(hoisted.updateSessionStoreMock, {
       onStore: (store) => {
         persistedStore = store;
@@ -970,9 +970,9 @@ describe("spawnSubagentDirect seam flow", () => {
   });
 
   it("forwards normalized thinking to the agent run", async () => {
-    const calls: Array<{ method?: string; params?: unknown }> = [];
+    const calls: Array<{ method?: string; params?: any }> = [];
     hoisted.callGatewayMock.mockImplementation(
-      async (request: { method?: string; params?: unknown }) => {
+      async (request: { method?: string; params?: any }) => {
         calls.push(request);
         if (request.method === "agent") {
           return { runId: "run-thinking", status: "accepted", acceptedAt: 1000 };
@@ -1003,9 +1003,9 @@ describe("spawnSubagentDirect seam flow", () => {
   });
 
   it("does not forward inherited requester thinking as an explicit agent override", async () => {
-    const calls: Array<{ method?: string; params?: unknown }> = [];
+    const calls: Array<{ method?: string; params?: any }> = [];
     hoisted.callGatewayMock.mockImplementation(
-      async (request: { method?: string; params?: unknown }) => {
+      async (request: { method?: string; params?: any }) => {
         calls.push(request);
         if (request.method === "agent") {
           return { runId: "run-inherited-thinking", status: "accepted", acceptedAt: 1000 };
@@ -1038,9 +1038,9 @@ describe("spawnSubagentDirect seam flow", () => {
   });
 
   it("does not duplicate long subagent task text in the initial user message (#72019)", async () => {
-    const calls: Array<{ method?: string; params?: unknown }> = [];
+    const calls: Array<{ method?: string; params?: any }> = [];
     hoisted.callGatewayMock.mockImplementation(
-      async (request: { method?: string; params?: unknown }) => {
+      async (request: { method?: string; params?: any }) => {
         calls.push(request);
         if (request.method === "agent") {
           return { runId: "run-no-dup", status: "accepted", acceptedAt: 1000 };
@@ -1076,7 +1076,7 @@ describe("spawnSubagentDirect seam flow", () => {
 
   it("returns an error when the initial child session patch is rejected", async () => {
     hoisted.callGatewayMock.mockImplementation(
-      async (request: { method?: string; params?: unknown }) => {
+      async (request: { method?: string; params?: any }) => {
         if (request.method === "agent") {
           return { runId: "run-1", status: "accepted", acceptedAt: 1000 };
         }

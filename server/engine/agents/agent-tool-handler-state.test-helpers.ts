@@ -9,7 +9,7 @@ import { createEmbeddedRunReplayState } from "./embedded-agent-runner/replay-sta
 export function createBaseToolHandlerState() {
   return {
     replayState: createEmbeddedRunReplayState(),
-    toolMetaById: new Map<string, unknown>(),
+    toolMetaById: new Map<string, any>(),
     toolMetas: [] as Array<{ toolName?: string; meta?: string; asyncStarted?: boolean }>,
     acceptedSessionSpawns: [],
     toolSummaryById: new Set<string>(),
@@ -18,7 +18,7 @@ export function createBaseToolHandlerState() {
     itemCompletedCount: 0,
     lastToolError: undefined,
     pendingMessagingTexts: new Map<string, string>(),
-    pendingMessagingTargets: new Map<string, unknown>(),
+    pendingMessagingTargets: new Map<string, any>(),
     pendingMessagingMediaUrls: new Map<string, string[]>(),
     pendingToolMediaUrls: [] as string[],
     pendingToolAudioAsVoice: false,
@@ -30,7 +30,7 @@ export function createBaseToolHandlerState() {
     messagingToolSentMediaUrls: [] as string[],
     messagingToolSourceReplyPayloads: [],
     messageToolOnlySourceReplyDelivered: false,
-    messagingToolSentTargets: [] as unknown[],
+    messagingToolSentTargets: [] as any[],
     deterministicApprovalPromptSent: false,
     blockBuffer: "",
   };

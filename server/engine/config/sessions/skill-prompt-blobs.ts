@@ -23,13 +23,13 @@ type SessionSkillPromptRef = {
 type SessionSkillSnapshot = {
   prompt?: string;
   promptRef?: SessionSkillPromptRef;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 /** SessionEntry 占位类型（仅包含本模块用到的字段）。 */
 type SessionEntry = {
   skillsSnapshot?: SessionSkillSnapshot;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 const PROMPT_BLOB_DIR = "skills-prompts";
@@ -281,7 +281,7 @@ export async function ensureSessionStorePromptBlobsForPersistence(params: {
   }
 }
 
-function parsePromptRef(value: unknown): SessionSkillPromptRef | null {
+function parsePromptRef(value: any): SessionSkillPromptRef | null {
   if (!value || typeof value !== "object") {
     return null;
   }
@@ -301,7 +301,7 @@ function parsePromptRef(value: unknown): SessionSkillPromptRef | null {
 
 export function hydrateSessionStoreSkillPromptRefs(params: {
   storePath: string;
-  store: Record<string, unknown>;
+  store: Record<string, any>;
 }): boolean {
   let changed = false;
   for (const [key, value] of Object.entries(params.store)) {
@@ -313,7 +313,7 @@ export function hydrateSessionStoreSkillPromptRefs(params: {
     if (!snapshot || typeof snapshot.prompt === "string") {
       continue;
     }
-    const promptRef = parsePromptRef((snapshot as { promptRef?: unknown }).promptRef);
+    const promptRef = parsePromptRef((snapshot as { promptRef?: any }).promptRef);
     const prompt = promptRef ? readValidPromptBlob(params.storePath, promptRef) : null;
     if (!prompt) {
       // Missing or invalid blob means the snapshot is no longer trustworthy; drop it instead of

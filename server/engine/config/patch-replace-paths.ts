@@ -11,7 +11,7 @@ export function normalizeConfigPatchReplacePath(value: string): string {
 }
 
 export function normalizeConfigPatchReplacePaths(
-  values: readonly unknown[] | undefined,
+  values: readonly any[] | undefined,
 ): Set<string> {
   if (!values) {
     return new Set();

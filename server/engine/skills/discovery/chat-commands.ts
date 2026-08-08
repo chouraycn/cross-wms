@@ -65,7 +65,7 @@ export interface CommandResult {
   /** 结果消息 */
   message: string;
   /** 详细数据 */
-  data?: unknown;
+  data?: any;
   /** 错误信息 */
   error?: string;
 }

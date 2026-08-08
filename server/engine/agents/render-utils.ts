@@ -6,27 +6,27 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function shortenPath(..._args: unknown[]): unknown {
+export function shortenPath(..._args: any[]): any {
   return undefined;
 }
-export function str(..._args: unknown[]): unknown {
+export function str(..._args: any[]): any {
   return undefined;
 }
-export function replaceTabs(..._args: unknown[]): unknown {
+export function replaceTabs(..._args: any[]): any {
   return undefined;
 }
-export function normalizeDisplayText(..._args: unknown[]): unknown {
+export function normalizeDisplayText(..._args: any[]): any {
   return undefined;
 }
-export function getTextOutput(..._args: unknown[]): unknown {
+export function getTextOutput(..._args: any[]): any {
   return undefined;
 }
-export function formatSessionToolOutput(..._args: unknown[]): unknown {
+export function formatSessionToolOutput(..._args: any[]): any {
   return "";
 }
-export function appendSessionToolTruncationWarning(..._args: unknown[]): unknown {
+export function appendSessionToolTruncationWarning(..._args: any[]): any {
   return undefined;
 }
-export function invalidArgText(..._args: unknown[]): unknown {
+export function invalidArgText(..._args: any[]): any {
   return undefined;
 }

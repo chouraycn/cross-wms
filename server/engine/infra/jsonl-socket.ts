@@ -23,7 +23,7 @@ export async function requestJsonlSocket<T>(params: {
   socketPath: string;
   requestLine: string;
   timeoutMs: number;
-  accept: (msg: unknown) => T | null | undefined;
+  accept: (msg: any) => T | null | undefined;
 }): Promise<T | null> {
   const { socketPath, requestLine, accept } = params;
   const timeoutMs = resolveJsonlSocketTimeoutMs(params.timeoutMs);
@@ -65,7 +65,7 @@ export async function requestJsonlSocket<T>(params: {
           continue;
         }
         try {
-          const msg = JSON.parse(line) as unknown;
+          const msg = JSON.parse(line) as any;
           const result = accept(msg);
           if (result === undefined) {
             continue;

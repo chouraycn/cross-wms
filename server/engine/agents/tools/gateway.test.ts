@@ -9,7 +9,7 @@ import { callGatewayTool, readGatewayCallOptions, resolveGatewayOptions } from "
 const mocks = vi.hoisted(() => ({
   callGateway: vi.fn(),
   configState: {
-    value: {} as Record<string, unknown>,
+    value: {} as Record<string, any>,
   },
   deviceIdentity: {
     deviceId: "agent-tool-device",
@@ -31,7 +31,7 @@ vi.mock("../../config/config.js", () => ({
   resolveGatewayPort: () => 18789,
 }));
 vi.mock("../../gateway/call.js", () => ({
-  callGateway: (...args: unknown[]) => mocks.callGateway(...args),
+  callGateway: (...args: any[]) => mocks.callGateway(...args),
 }));
 vi.mock("../../infra/device-identity.js", () => ({
   loadDeviceIdentityIfPresent: () =>

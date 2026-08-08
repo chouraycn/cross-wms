@@ -8,7 +8,7 @@ import {
 } from "./json-utf8-bytes.js";
 
 function createCircularValue() {
-  const circular: { self?: unknown } = {};
+  const circular: { self?: any } = {};
   circular.self = circular;
   return circular;
 }
@@ -73,7 +73,7 @@ describe("boundedJsonUtf8Bytes", () => {
     {
       name: "array holes and undefined",
       value: (() => {
-        const value = [undefined, () => undefined] as unknown[];
+        const value = [undefined, () => undefined] as any[];
         value.length = 3;
         return value;
       })(),
@@ -108,7 +108,7 @@ describe("boundedJsonUtf8Bytes", () => {
 describe("firstEnumerableOwnKeys", () => {
   it("returns only own enumerable keys up to the limit", () => {
     const inherited = { inherited: true };
-    const value = Object.create(inherited) as Record<string, unknown>;
+    const value = Object.create(inherited) as Record<string, any>;
     value.a = 1;
     value.b = 2;
     value.c = 3;

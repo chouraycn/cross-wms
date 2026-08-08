@@ -48,22 +48,22 @@ afterEach(() => {
   }
 });
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error(`expected ${label}`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function requireFirstMockCall(mock: unknown, label: string): unknown[] {
-  const call = (mock as { mock?: { calls?: unknown[][] } }).mock?.calls?.[0];
+function requireFirstMockCall(mock: any, label: string): any[] {
+  const call = (mock as { mock?: { calls?: any[][] } }).mock?.calls?.[0];
   if (!call) {
     throw new Error(`expected ${label}`);
   }
   return call;
 }
 
-function expectGatewayAgentFollowup(expected: Record<string, unknown>) {
+function expectGatewayAgentFollowup(expected: Record<string, any>) {
   const call = requireFirstMockCall(callGatewayTool, "callGatewayTool call");
   expect(call[0]).toBe("agent");
   requireRecord(call[1], "gateway tool context");
@@ -75,8 +75,8 @@ function expectGatewayAgentFollowup(expected: Record<string, unknown>) {
   return params;
 }
 
-function expectGatewayAgentWait(expected: Record<string, unknown>) {
-  const call = (callGatewayTool as { mock?: { calls?: unknown[][] } }).mock?.calls?.[1];
+function expectGatewayAgentWait(expected: Record<string, any>) {
+  const call = (callGatewayTool as { mock?: { calls?: any[][] } }).mock?.calls?.[1];
   if (!call) {
     throw new Error("expected agent.wait call");
   }
@@ -90,7 +90,7 @@ function expectGatewayAgentWait(expected: Record<string, unknown>) {
   return params;
 }
 
-function expectDirectSend(expected: Record<string, unknown>) {
+function expectDirectSend(expected: Record<string, any>) {
   const call = requireFirstMockCall(sendMessage, "sendMessage call");
   const params = requireRecord(call[0], "sendMessage params");
   for (const [key, value] of Object.entries(expected)) {

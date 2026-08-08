@@ -11,10 +11,10 @@
  * 完整实现见 openclaw 源码。
  */
 
-export function resolveGatewayUrlOverrideSource(..._args: unknown[]): unknown {
+export function resolveGatewayUrlOverrideSource(..._args: any[]): any {
   return undefined;
 }
 
-export async function resolveGatewayClientBootstrap(..._args: unknown[]): Promise<unknown> {
+export async function resolveGatewayClientBootstrap(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }

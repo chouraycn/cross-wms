@@ -1,5 +1,5 @@
 // 账户启用状态判定，缺少 enabled 字段视为已启用
-export function isAccountEnabled(account: unknown): boolean {
+export function isAccountEnabled(account: any): boolean {
   if (!account || typeof account !== "object") {
     return true;
   }

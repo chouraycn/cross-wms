@@ -13,7 +13,7 @@ import {
 } from "./provider-tools.js";
 
 describe("buildProviderToolCompatFamilyHooks", () => {
-  function normalizeOpenAIParameters(parameters: unknown): unknown {
+  function normalizeOpenAIParameters(parameters: any): any {
     const hooks = buildProviderToolCompatFamilyHooks("openai");
     const tools = [{ name: "demo", description: "", parameters }] as never;
     const normalized = hooks.normalizeToolSchemas({

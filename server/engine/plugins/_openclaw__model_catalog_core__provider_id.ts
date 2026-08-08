@@ -1,4 +1,4 @@
-export function normalizeProviderId(providerId: unknown): string {
+export function normalizeProviderId(providerId: any): string {
   if (providerId === null || providerId === undefined) return '';
   return String(providerId).trim().toLowerCase();
 }

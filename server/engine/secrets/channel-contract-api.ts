@@ -20,7 +20,7 @@ import type { SecretTargetRegistryEntry } from "./target-registry-types.js";
 
 type UnsupportedSecretRefConfigCandidate = {
   path: string;
-  value: unknown;
+  value: any;
 };
 
 type BundledChannelContractApi = {
@@ -32,7 +32,7 @@ type BundledChannelContractApi = {
   secretTargetRegistryEntries?: readonly SecretTargetRegistryEntry[];
   unsupportedSecretRefSurfacePatterns?: readonly string[];
   collectUnsupportedSecretRefConfigCandidates?: (
-    raw: Record<string, unknown>,
+    raw: Record<string, any>,
   ) => UnsupportedSecretRefConfigCandidate[];
 };
 

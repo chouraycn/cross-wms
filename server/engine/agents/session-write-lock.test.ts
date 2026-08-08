@@ -78,7 +78,7 @@ async function withTempSessionLockFile(
   }
 }
 
-async function writeCurrentProcessLock(lockPath: string, extra?: Record<string, unknown>) {
+async function writeCurrentProcessLock(lockPath: string, extra?: Record<string, any>) {
   await fs.writeFile(
     lockPath,
     JSON.stringify({
@@ -137,7 +137,7 @@ async function withSymlinkedSessionPaths(
 }
 
 async function expectActiveInProcessLockIsNotReclaimed(params?: {
-  legacyStarttime?: unknown;
+  legacyStarttime?: any;
   createdAt?: string;
 }): Promise<void> {
   await withTempSessionLockFile(async ({ sessionFile, lockPath }) => {
@@ -314,7 +314,7 @@ describe("acquireSessionWriteLock", () => {
         staleMs: 60_000,
       });
       const raw = await fs.readFile(lockPath, "utf8");
-      const payload = JSON.parse(raw) as { pid?: unknown };
+      const payload = JSON.parse(raw) as { pid?: any };
       expect(payload.pid).toBe(process.pid);
       await lock.release();
     });
@@ -333,7 +333,7 @@ describe("acquireSessionWriteLock", () => {
         staleMs: 60_000,
       });
       const raw = await fs.readFile(lockPath, "utf8");
-      const payload = JSON.parse(raw) as { pid?: unknown };
+      const payload = JSON.parse(raw) as { pid?: any };
       expect(payload.pid).toBe(process.pid);
       await lock.release();
     });

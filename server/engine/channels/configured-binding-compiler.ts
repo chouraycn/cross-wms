@@ -2,14 +2,14 @@
 
 export type CompiledConfiguredBindingRegistry = unknown;
 
-export function resolveCompiledBindingRegistry(..._args: unknown[]): unknown {
+export function resolveCompiledBindingRegistry(..._args: any[]): any {
   return undefined;
 }
 
-export function primeCompiledBindingRegistry(..._args: unknown[]): unknown {
+export function primeCompiledBindingRegistry(..._args: any[]): any {
   return undefined;
 }
 
-export function countCompiledBindingRegistry(..._args: unknown[]): unknown {
+export function countCompiledBindingRegistry(..._args: any[]): any {
   return undefined;
 }

@@ -70,9 +70,9 @@ export {
  * 插件安装记录信息（降级占位）。
  *
  * 降级原因：cross-wms 尚未移植 openclaw 的完整配置类型层级。
- * 这里使用 Record<string, unknown> 占位。
+ * 这里使用 Record<string, any> 占位。
  */
-type InstalledPluginInstallRecordInfo = Record<string, unknown>;
+type InstalledPluginInstallRecordInfo = Record<string, any>;
 
 // ============================================================================
 // 内联降级：../utils/zod-parse.js —— safeParseWithSchema
@@ -85,7 +85,7 @@ type InstalledPluginInstallRecordInfo = Record<string, unknown>;
  * zod 的 safeParse 并在失败时记录日志。这里降级为直接调用 schema.safeParse，
  * 成功时返回 data，失败时返回 null。
  */
-function safeParseWithSchema<T>(schema: z.ZodType<T>, value: unknown): T | null {
+function safeParseWithSchema<T>(schema: z.ZodType<T>, value: any): T | null {
   const result = schema.safeParse(value);
   return result.success ? result.data : null;
 }
@@ -112,7 +112,7 @@ type NormalizedPluginsConfig = {
   loadPaths: readonly string[];
 };
 
-function normalizePluginsConfig(_plugins: unknown): NormalizedPluginsConfig {
+function normalizePluginsConfig(_plugins: any): NormalizedPluginsConfig {
   return {
     enabled: true,
     entries: {},
@@ -131,7 +131,7 @@ function resolveEffectiveEnableState(_params: {
   id: string;
   origin: string;
   config: NormalizedPluginsConfig;
-  rootConfig?: unknown;
+  rootConfig?: any;
   enabledByDefault?: boolean;
 }): EffectiveEnableState {
   return { enabled: true };
@@ -266,7 +266,7 @@ function copySafeInstallRecords(
   return safeRecords;
 }
 
-export function parseInstalledPluginIndex(value: unknown): InstalledPluginIndex | null {
+export function parseInstalledPluginIndex(value: any): InstalledPluginIndex | null {
   const parsed = safeParseWithSchema(InstalledPluginIndexSchema, value) as
     | (Omit<InstalledPluginIndex, "installRecords"> & {
         installRecords?: InstalledPluginIndex["installRecords"];
@@ -300,11 +300,11 @@ function isExplicitLegacyJsonStorePath(options: InstalledPluginIndexStoreOptions
   return Boolean(options.filePath && options.filePath.endsWith(".json"));
 }
 
-function readLegacyRecordContainer(value: unknown): unknown {
+function readLegacyRecordContainer(value: any): any {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return undefined;
   }
-  const legacy = value as { installRecords?: unknown; records?: unknown };
+  const legacy = value as { installRecords?: any; records?: any };
   return legacy.installRecords ?? legacy.records;
 }
 
@@ -315,7 +315,7 @@ function readPersistedInstalledPluginIndexFromLegacyJson(
     return null;
   }
   try {
-    const parsed = JSON.parse(readFileSync(options.filePath, "utf8")) as unknown;
+    const parsed = JSON.parse(readFileSync(options.filePath, "utf8")) as any;
     const current = parseInstalledPluginIndex(parsed);
     if (current) {
       return current;
@@ -445,7 +445,7 @@ function refreshPersistedPolicyState(
   params: RefreshInstalledPluginIndexParams,
 ): InstalledPluginIndex {
   const normalizedConfig = normalizePluginsConfig(
-    (params.config as { plugins?: unknown } | undefined)?.plugins,
+    (params.config as { plugins?: any } | undefined)?.plugins,
   );
   return {
     ...persisted,

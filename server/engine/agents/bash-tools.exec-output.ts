@@ -6,9 +6,9 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function renderExecOutputText(..._args: unknown[]): unknown {
+export function renderExecOutputText(..._args: any[]): any {
   return "";
 }
-export function renderExecUpdateText(..._args: unknown[]): unknown {
+export function renderExecUpdateText(..._args: any[]): any {
   return "";
 }

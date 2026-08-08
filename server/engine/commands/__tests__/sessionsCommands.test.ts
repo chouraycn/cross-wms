@@ -175,7 +175,7 @@ describe("sessionsCommands", () => {
       expect(res.ok).toBe(true);
       expect(res.message).toContain("20 条");
       expect(res.message).toContain("chat:abc");
-      const data = res.data as { key: string; count: number; messages: unknown[] };
+      const data = res.data as { key: string; count: number; messages: any[] };
       expect(data.count).toBe(0);
       expect(data.messages).toEqual([]);
     });

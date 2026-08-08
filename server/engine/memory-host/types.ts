@@ -13,7 +13,7 @@ export interface MemoryEntry {
   sessionId: string;
   content: string;
   embedding?: Float32Array;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
   createdAt: number;
   updatedAt: number;
   accessCount: number;
@@ -28,7 +28,7 @@ export interface MemorySearchOptions {
   topK?: number;
   minScore?: number;
   includeEmbedding?: boolean;
-  filter?: Record<string, unknown>;
+  filter?: Record<string, any>;
   timeRange?: {
     from?: number;
     to?: number;
@@ -118,7 +118,7 @@ export abstract class BaseMemoryHost {
 }
 
 /** 记忆主机工厂 */
-export type MemoryHostFactory = (options?: Record<string, unknown>) => BaseMemoryHost;
+export type MemoryHostFactory = (options?: Record<string, any>) => BaseMemoryHost;
 
 /** 记忆主机注册信息 */
 export interface MemoryHostRegistration {

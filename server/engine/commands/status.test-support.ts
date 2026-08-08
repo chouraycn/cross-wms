@@ -201,7 +201,7 @@ const statusTestFormatting = {
   formatTokensCompact: () => "12k",
   formatPromptCacheCompact: () => "cache ok",
   formatHealthChannelLines: () => ["QuietChat: OK · ready"],
-  formatPluginCompatibilityNotice: (notice: { message?: unknown }) => String(notice.message),
+  formatPluginCompatibilityNotice: (notice: { message?: any }) => String(notice.message),
   formatUpdateAvailableHint: () => "update available",
 };
 

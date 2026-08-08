@@ -10,9 +10,9 @@ afterEach(() => {
 });
 
 function createGatewayRequestMock() {
-  return vi.fn(async (_method: string, _params: Record<string, unknown>) => ({
+  return vi.fn(async (_method: string, _params: Record<string, any>) => ({
     ok: true,
-  })) as unknown as (<T = unknown>(method: string, params: Record<string, unknown>) => Promise<T>) &
+  })) as unknown as (<T = unknown>(method: string, params: Record<string, any>) => Promise<T>) &
     ReturnType<typeof vi.fn>;
 }
 

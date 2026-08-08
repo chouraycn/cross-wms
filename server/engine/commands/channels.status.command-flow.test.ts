@@ -13,13 +13,13 @@ const mocks = vi.hoisted(() => ({
   readConfigFileSnapshot: vi.fn(async () => ({ path: "/tmp/openclaw.json" })),
   requireValidConfigSnapshot: vi.fn(),
   listChannelPlugins: vi.fn(),
-  listConfiguredAnnounceChannelIdsForConfig: vi.fn((_params: unknown) => ["discord"]),
+  listConfiguredAnnounceChannelIdsForConfig: vi.fn((_params: any) => ["discord"]),
   missingOfficialExternalChannels: new Set<string>(),
-  withProgress: vi.fn(async (_opts: unknown, run: () => Promise<unknown>) => await run()),
+  withProgress: vi.fn(async (_opts: any, run: () => Promise<any>) => await run()),
 }));
 
 vi.mock("../gateway/call.js", () => ({
-  callGateway: (opts: unknown) => mocks.callGateway(opts),
+  callGateway: (opts: any) => mocks.callGateway(opts),
 }));
 
 vi.mock("../cli/command-config-resolution.js", () => ({
@@ -39,9 +39,9 @@ vi.mock("../config/config.js", () => ({
 }));
 
 vi.mock("../plugins/channel-plugin-ids.js", () => ({
-  listExplicitConfiguredChannelIdsForConfig: (config: { channels?: Record<string, unknown> }) =>
+  listExplicitConfiguredChannelIdsForConfig: (config: { channels?: Record<string, any> }) =>
     Object.keys(config.channels ?? {}),
-  listConfiguredAnnounceChannelIdsForConfig: (params: unknown) =>
+  listConfiguredAnnounceChannelIdsForConfig: (params: any) =>
     mocks.listConfiguredAnnounceChannelIdsForConfig(params),
 }));
 
@@ -62,7 +62,7 @@ vi.mock("../plugins/official-external-plugin-repair-hints.js", () => ({
 }));
 
 vi.mock("./channels/shared.js", () => ({
-  requireValidConfigSnapshot: (runtime: unknown) => mocks.requireValidConfigSnapshot(runtime),
+  requireValidConfigSnapshot: (runtime: any) => mocks.requireValidConfigSnapshot(runtime),
   formatChannelAccountLabel: ({
     channel,
     accountId,
@@ -71,7 +71,7 @@ vi.mock("./channels/shared.js", () => ({
     accountId: string;
     name?: string;
   }) => `${channel} ${accountId}`,
-  appendEnabledConfiguredLinkedBits: (bits: string[], account: Record<string, unknown>) => {
+  appendEnabledConfiguredLinkedBits: (bits: string[], account: Record<string, any>) => {
     if (typeof account.enabled === "boolean") {
       bits.push(account.enabled ? "enabled" : "disabled");
     }
@@ -82,23 +82,23 @@ vi.mock("./channels/shared.js", () => ({
       }
     }
   },
-  appendModeBit: (bits: string[], account: Record<string, unknown>) => {
+  appendModeBit: (bits: string[], account: Record<string, any>) => {
     if (typeof account.mode === "string" && account.mode.length > 0) {
       bits.push(`mode:${account.mode}`);
     }
   },
-  appendTokenSourceBits: (bits: string[], account: Record<string, unknown>) => {
+  appendTokenSourceBits: (bits: string[], account: Record<string, any>) => {
     if (account.tokenSource === "config") {
       const unavailable = account.tokenStatus === "configured_unavailable" ? " (unavailable)" : "";
       bits.push(`token:config${unavailable}`);
     }
   },
-  appendBaseUrlBit: (bits: string[], account: Record<string, unknown>) => {
+  appendBaseUrlBit: (bits: string[], account: Record<string, any>) => {
     if (typeof account.baseUrl === "string" && account.baseUrl) {
       bits.push(`url:${account.baseUrl}`);
     }
   },
-  buildChannelAccountLine: (channel: string, account: Record<string, unknown>, bits: string[]) => {
+  buildChannelAccountLine: (channel: string, account: Record<string, any>, bits: string[]) => {
     const accountId = typeof account.accountId === "string" ? account.accountId : "default";
     return `- ${channel} ${accountId}: ${bits.join(", ")}`;
   },
@@ -117,9 +117,9 @@ vi.mock("../channels/plugins/read-only.js", () => ({
 }));
 
 vi.mock("../channels/account-snapshot-fields.js", () => ({
-  hasConfiguredUnavailableCredentialStatus: (account: Record<string, unknown>) =>
+  hasConfiguredUnavailableCredentialStatus: (account: Record<string, any>) =>
     Object.values(account).includes("configured_unavailable"),
-  hasResolvedCredentialValue: (account: Record<string, unknown>) =>
+  hasResolvedCredentialValue: (account: Record<string, any>) =>
     ["token", "botToken", "appToken", "signingSecret"].some(
       (key) => typeof account[key] === "string" && account[key].length > 0,
     ),
@@ -161,7 +161,7 @@ vi.mock("../infra/channels-status-issues.js", () => ({
 }));
 
 vi.mock("../cli/progress.js", () => ({
-  withProgress: (opts: unknown, run: () => Promise<unknown>) => mocks.withProgress(opts, run),
+  withProgress: (opts: any, run: () => Promise<any>) => mocks.withProgress(opts, run),
 }));
 
 function createTokenAccountSnapshot(cfg: { secretResolved?: boolean }) {
@@ -359,8 +359,8 @@ describe("channelsStatusCommand SecretRef fallback flow", () => {
     expect(mocks.listConfiguredAnnounceChannelIdsForConfig).toHaveBeenCalledOnce();
     const announceRequest = mocks.listConfiguredAnnounceChannelIdsForConfig.mock.calls[0]?.[0] as
       | {
-          config?: { secretResolved?: unknown };
-          activationSourceConfig?: { secretResolved?: unknown };
+          config?: { secretResolved?: any };
+          activationSourceConfig?: { secretResolved?: any };
         }
       | undefined;
     expect(announceRequest?.config?.secretResolved).toBe(true);

@@ -25,7 +25,7 @@ import type { TypingController } from "./typing.js";
 export type { ReplyDispatchKind, ReplyDispatcher } from "./reply-dispatcher.types.js";
 
 type ReplyDispatchErrorHandler = (
-  err: unknown,
+  err: any,
   info: ReplyDispatchRuntimeInfo,
 ) => Promise<void> | void;
 
@@ -42,7 +42,7 @@ type ReplyDispatchCancelHandler = (
 type ReplyDispatchDeliverer = (
   payload: ReplyPayload,
   info: ReplyDispatchRuntimeInfo,
-) => Promise<unknown>;
+) => Promise<any>;
 
 export type { ReplyDispatchBeforeDeliver };
 
@@ -247,10 +247,10 @@ export function createReplyDispatcher(options: ReplyDispatcherOptions): ReplyDis
         if (beforeDeliver) {
           try {
             deliverPayload = await beforeDeliver(normalized, dispatchInfo);
-          } catch (err: unknown) {
+          } catch (err: any) {
             try {
               await options.onBeforeDeliverCancelled?.(normalized, dispatchInfo);
-            } catch (cancelErr: unknown) {
+            } catch (cancelErr: any) {
               void options.onError?.(cancelErr, dispatchInfo);
             }
             throw err;
@@ -259,7 +259,7 @@ export function createReplyDispatcher(options: ReplyDispatcherOptions): ReplyDis
             cancelledCounts[kind] += 1;
             try {
               await options.onBeforeDeliverCancelled?.(normalized, dispatchInfo);
-            } catch (err: unknown) {
+            } catch (err: any) {
               void options.onError?.(err, dispatchInfo);
             }
             return;
@@ -268,7 +268,7 @@ export function createReplyDispatcher(options: ReplyDispatcherOptions): ReplyDis
         }
         await options.deliver(deliverPayload, dispatchInfo);
       })
-      .catch((err: unknown) => {
+      .catch((err: any) => {
         failedCounts[kind] += 1;
         void options.onError?.(err, buildReplyDispatchRuntimeInfo(normalized, kind));
       })
@@ -276,7 +276,7 @@ export function createReplyDispatcher(options: ReplyDispatcherOptions): ReplyDis
         const dispatchInfo = buildReplyDispatchRuntimeInfo(normalized, kind);
         try {
           options.onDeliverySettled?.(dispatchInfo);
-        } catch (err: unknown) {
+        } catch (err: any) {
           void options.onError?.(err, dispatchInfo);
         }
         pending -= 1;

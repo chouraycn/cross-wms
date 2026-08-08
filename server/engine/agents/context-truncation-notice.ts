@@ -4,7 +4,7 @@
  * 降级实现：提供上下文截断通知，不再抛出 stub 错误。
  */
 
-export function formatContextLimitTruncationNotice(_params?: unknown): string {
+export function formatContextLimitTruncationNotice(_params?: any): string {
   return "";
 }
 

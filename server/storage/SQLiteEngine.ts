@@ -105,17 +105,17 @@ export class SQLiteEngine implements IStorageEngine {
   prepare(sql: string): IPreparedStatement {
     const stmt = this.db!.prepare(sql);
     return {
-      run(...params: unknown[]): { changes: number; lastInsertRowid: number } {
+      run(...params: any[]): { changes: number; lastInsertRowid: number } {
         const result = stmt.run(...params);
         return {
           changes: result.changes,
           lastInsertRowid: Number(result.lastInsertRowid),
         };
       },
-      get<T>(...params: unknown[]): T | undefined {
+      get<T>(...params: any[]): T | undefined {
         return stmt.get(...params) as T | undefined;
       },
-      all<T>(...params: unknown[]): T[] {
+      all<T>(...params: any[]): T[] {
         return stmt.all(...params) as T[];
       },
     };
@@ -125,21 +125,21 @@ export class SQLiteEngine implements IStorageEngine {
     this.db!.exec(sql);
   }
 
-  pragma(sql: string, options?: Database.PragmaOptions): unknown {
+  pragma(sql: string, options?: Database.PragmaOptions): any {
     return this.db!.pragma(sql, options);
   }
 
-  get<T>(sql: string, params?: unknown[]): T | undefined {
+  get<T>(sql: string, params?: any[]): T | undefined {
     const stmt = this.db!.prepare(sql);
     return stmt.get(...(params ?? [])) as T | undefined;
   }
 
-  all<T>(sql: string, params?: unknown[]): T[] {
+  all<T>(sql: string, params?: any[]): T[] {
     const stmt = this.db!.prepare(sql);
     return stmt.all(...(params ?? [])) as T[];
   }
 
-  run(sql: string, params?: unknown[]): { changes: number; lastInsertRowid: number } {
+  run(sql: string, params?: any[]): { changes: number; lastInsertRowid: number } {
     const stmt = this.db!.prepare(sql);
     const result = stmt.run(...(params ?? []));
     return {

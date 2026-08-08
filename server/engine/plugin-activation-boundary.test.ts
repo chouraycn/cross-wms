@@ -73,7 +73,7 @@ const facadeMockHelpers = vi.hoisted(() => {
         },
       },
     ) as T;
-  const createLazyFacadeArrayValue = <T extends readonly unknown[]>(load: () => T): T =>
+  const createLazyFacadeArrayValue = <T extends readonly any[]>(load: () => T): T =>
     new Proxy([], {
       get(_target, property, receiver) {
         return Reflect.get(load(), property, receiver);

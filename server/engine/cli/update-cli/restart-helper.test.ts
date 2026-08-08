@@ -31,12 +31,12 @@ describe("restart-helper", () => {
   }
 
   async function cleanupScript(scriptPath: string) {
-    await fs.unlink(scriptPath).catch((error: unknown) => {
+    await fs.unlink(scriptPath).catch((error: any) => {
       if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
         throw error;
       }
     });
-    await fs.rmdir(path.dirname(scriptPath)).catch((error: unknown) => {
+    await fs.rmdir(path.dirname(scriptPath)).catch((error: any) => {
       if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
         throw error;
       }

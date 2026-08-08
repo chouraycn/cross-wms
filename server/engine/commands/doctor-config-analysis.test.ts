@@ -33,8 +33,8 @@ describe("doctor config analysis helpers", () => {
       unexpected: true,
     } as never);
     expect(result.removed).toContain("unexpected");
-    expect((result.config as Record<string, unknown>).unexpected).toBeUndefined();
-    expect((result.config as Record<string, unknown>).hooks).toStrictEqual({});
+    expect((result.config as Record<string, any>).unexpected).toBeUndefined();
+    expect((result.config as Record<string, any>).hooks).toStrictEqual({});
   });
 
   it("preserves user-authored model and agent metadata during unknown-key cleanup", () => {
@@ -142,7 +142,7 @@ describe("doctor config analysis helpers", () => {
       } as never);
       expect(result.removed).toContain("plugins.badKey");
       expect(result.removed).not.toContain("plugins.installs");
-      expect((result.config as Record<string, Record<string, unknown>>).plugins?.installs).toEqual([
+      expect((result.config as Record<string, Record<string, any>>).plugins?.installs).toEqual([
         "matrix",
       ]);
     });
@@ -150,7 +150,7 @@ describe("doctor config analysis helpers", () => {
 });
 
 describe("collectImplicitFallbackClobberWarnings", () => {
-  function buildConfig(overrides: { defaults?: unknown; list?: unknown[] }): OpenClawConfig {
+  function buildConfig(overrides: { defaults?: any; list?: any[] }): OpenClawConfig {
     return {
       agents: {
         defaults: { model: overrides.defaults },

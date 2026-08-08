@@ -722,10 +722,10 @@ describe("createBackupArchive", () => {
           const originalReaddir = fs.readdir.bind(fs);
           let createdLatePath = false;
           const readdirSpy = vi.spyOn(fs, "readdir").mockImplementation((async (
-            ...args: unknown[]
+            ...args: any[]
           ) => {
             const entries = await (
-              originalReaddir as (...readdirArgs: unknown[]) => Promise<unknown>
+              originalReaddir as (...readdirArgs: any[]) => Promise<any>
             )(...args);
             if (
               !createdLatePath &&

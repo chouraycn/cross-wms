@@ -89,7 +89,7 @@ describe("createCacheTrace", () => {
 
     trace?.recordStage("prompt:before", { prompt: "", system: "" });
 
-    const event = JSON.parse(lines[0]?.trim() ?? "{}") as Record<string, unknown>;
+    const event = JSON.parse(lines[0]?.trim() ?? "{}") as Record<string, any>;
     expect(event.prompt).toBe("");
     expect(event.system).toBe("");
   });
@@ -102,7 +102,7 @@ describe("createCacheTrace", () => {
       system: "",
     });
 
-    const event = JSON.parse(lines[0]?.trim() ?? "{}") as Record<string, unknown>;
+    const event = JSON.parse(lines[0]?.trim() ?? "{}") as Record<string, any>;
     expect(event.stage).toBe("session:raw-model-run");
     expect(event.system).toBe("");
   });
@@ -126,7 +126,7 @@ describe("createCacheTrace", () => {
       },
     });
 
-    const wrapped = trace?.wrapStreamFn(((model: unknown, context: unknown, options: unknown) => ({
+    const wrapped = trace?.wrapStreamFn(((model: any, context: any, options: any) => ({
       model,
       context,
       options,
@@ -145,7 +145,7 @@ describe("createCacheTrace", () => {
       {},
     );
 
-    const event = JSON.parse(lines[0]?.trim() ?? "{}") as Record<string, unknown>;
+    const event = JSON.parse(lines[0]?.trim() ?? "{}") as Record<string, any>;
     expect(event.stage).toBe("stream:context");
     expect(event.system).toBe("system prompt text");
     expect(event.systemDigest).toBeTypeOf("string");
@@ -213,7 +213,7 @@ describe("createCacheTrace", () => {
       ] as unknown as [],
     });
 
-    const event = JSON.parse(lines[0]?.trim() ?? "{}") as Record<string, unknown>;
+    const event = JSON.parse(lines[0]?.trim() ?? "{}") as Record<string, any>;
     expect(event.system).toEqual({
       provider: {
         baseUrl: "https://api.example.com",
@@ -240,8 +240,8 @@ describe("createCacheTrace", () => {
     });
 
     const optionsImages = (
-      ((event.options as { images?: unknown[] } | undefined)?.images ?? []) as Array<
-        Record<string, unknown>
+      ((event.options as { images?: any[] } | undefined)?.images ?? []) as Array<
+        Record<string, any>
       >
     )[0];
     expect(optionsImages?.data).toBe("<redacted>");
@@ -250,15 +250,15 @@ describe("createCacheTrace", () => {
       crypto.createHash("sha256").update("QUJDRA==").digest("hex"),
     );
 
-    const firstMessage = ((event.messages as Array<Record<string, unknown>> | undefined) ?? [])[0];
+    const firstMessage = ((event.messages as Array<Record<string, any>> | undefined) ?? [])[0];
     expect(firstMessage).not.toHaveProperty("token");
     expect(firstMessage).not.toHaveProperty("metadata.secretKey");
     expect(firstMessage?.role).toBe("user");
     expect(firstMessage?.metadata).toEqual({
       label: "preserve-me",
     });
-    const source = (((firstMessage?.content as Array<Record<string, unknown>> | undefined) ?? [])[0]
-      ?.source ?? {}) as Record<string, unknown>;
+    const source = (((firstMessage?.content as Array<Record<string, any>> | undefined) ?? [])[0]
+      ?.source ?? {}) as Record<string, any>;
     expect(source.data).toBe("<redacted>");
     expect(source.bytes).toBe(6);
     expect(source.sha256).toBe(crypto.createHash("sha256").update("U0VDUkVU").digest("hex"));
@@ -267,8 +267,8 @@ describe("createCacheTrace", () => {
   it("handles circular references in messages without stack overflow", () => {
     const { lines, trace } = createMemoryTraceForTest();
 
-    const parent: Record<string, unknown> = { role: "user", content: "hello" };
-    const child: Record<string, unknown> = { ref: parent };
+    const parent: Record<string, any> = { role: "user", content: "hello" };
+    const child: Record<string, any> = { ref: parent };
     // Cache tracing must fingerprint cyclic prompt payloads instead of recursing forever.
     parent.child = child;
 
@@ -281,7 +281,7 @@ describe("createCacheTrace", () => {
       .createHash("sha256")
       .update('{"child":{"ref":"[Circular]"},"content":"hello","role":"user"}')
       .digest("hex");
-    const event = JSON.parse(lines[0]?.trim() ?? "{}") as Record<string, unknown>;
+    const event = JSON.parse(lines[0]?.trim() ?? "{}") as Record<string, any>;
     expect(event).toStrictEqual({
       ts: expect.any(String),
       seq: 1,

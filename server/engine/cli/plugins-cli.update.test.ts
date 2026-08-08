@@ -54,7 +54,7 @@ function expectRestartNoticeLogged() {
 
 function expectSingleCallParams(mockFn: ReturnType<typeof vi.fn>) {
   expect(mockFn).toHaveBeenCalledTimes(1);
-  const params = mockFn.mock.calls[0]?.[0] as Record<string, unknown> | undefined;
+  const params = mockFn.mock.calls[0]?.[0] as Record<string, any> | undefined;
   if (params === undefined) {
     throw new Error("expected call params");
   }
@@ -65,7 +65,7 @@ function primeUpdateConfigSnapshot(params: {
   config: OpenClawConfig;
   configPath?: string;
   loadedConfig?: OpenClawConfig;
-  parsed?: Record<string, unknown>;
+  parsed?: Record<string, any>;
   runtimeConfig?: OpenClawConfig;
   sourceConfig?: OpenClawConfig;
   valid?: boolean;
@@ -73,7 +73,7 @@ function primeUpdateConfigSnapshot(params: {
   includeFileTargetsForWrite?: Record<string, string>;
 }): void {
   const configPath = params.configPath ?? path.join(process.cwd(), "openclaw.json5");
-  const parsed = params.parsed ?? (params.config as Record<string, unknown>);
+  const parsed = params.parsed ?? (params.config as Record<string, any>);
   const sourceConfig = params.sourceConfig ?? params.config;
   const runtimeConfig = params.runtimeConfig ?? params.config;
   loadConfig.mockReturnValue(params.loadedConfig ?? params.config);

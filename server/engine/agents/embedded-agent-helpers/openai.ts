@@ -6,14 +6,14 @@ import { createHash } from "node:crypto";
 import type { AgentMessage } from "../runtime/index.js";
 
 type OpenAIThinkingBlock = {
-  type?: unknown;
-  thinking?: unknown;
-  thinkingSignature?: unknown;
+  type?: any;
+  thinking?: any;
+  thinkingSignature?: any;
 };
 
 type OpenAIToolCallBlock = {
-  type?: unknown;
-  id?: unknown;
+  type?: any;
+  id?: any;
 };
 
 type OpenAIReasoningSignature = {
@@ -29,23 +29,23 @@ const OPENAI_RESPONSES_ID_MAX_LENGTH = 64;
 const OPENAI_RESPONSES_CALL_ID_RE = /^call_[A-Za-z0-9_-]{1,59}$/;
 const OPENAI_RESPONSES_FUNCTION_CALL_ITEM_ID_RE = /^fc_[A-Za-z0-9_-]{1,61}$/;
 
-function parseOpenAIReasoningSignature(value: unknown): OpenAIReasoningSignature | null {
+function parseOpenAIReasoningSignature(value: any): OpenAIReasoningSignature | null {
   if (!value) {
     return null;
   }
-  let candidate: { id?: unknown; type?: unknown } | null = null;
+  let candidate: { id?: any; type?: any } | null = null;
   if (typeof value === "string") {
     const trimmed = value.trim();
     if (!trimmed.startsWith("{") || !trimmed.endsWith("}")) {
       return null;
     }
     try {
-      candidate = JSON.parse(trimmed) as { id?: unknown; type?: unknown };
+      candidate = JSON.parse(trimmed) as { id?: any; type?: any };
     } catch {
       return null;
     }
   } else if (typeof value === "object") {
-    candidate = value as { id?: unknown; type?: unknown };
+    candidate = value as { id?: any; type?: any };
   }
   if (!candidate) {
     return null;
@@ -70,7 +70,7 @@ function hasFollowingNonThinkingBlock(
     if (!block || typeof block !== "object") {
       return true;
     }
-    if ((block as { type?: unknown }).type !== "thinking") {
+    if ((block as { type?: any }).type !== "thinking") {
       return true;
     }
   }
@@ -91,7 +91,7 @@ function splitOpenAIFunctionCallPairing(id: string): {
   };
 }
 
-function isOpenAIToolCallType(type: unknown): boolean {
+function isOpenAIToolCallType(type: any): boolean {
   return type === "toolCall" || type === "toolUse" || type === "functionCall";
 }
 
@@ -206,7 +206,7 @@ export function normalizeOpenAIResponsesToolCallIds(messages: AgentMessage[]): A
       continue;
     }
 
-    const role = (msg as { role?: unknown }).role;
+    const role = (msg as { role?: any }).role;
     if (role === "assistant") {
       const assistantMsg = msg as Extract<AgentMessage, { role: "assistant" }>;
       if (!Array.isArray(assistantMsg.content)) {
@@ -230,7 +230,7 @@ export function normalizeOpenAIResponsesToolCallIds(messages: AgentMessage[]): A
         }
         assistantChanged = true;
         return {
-          ...(block as unknown as Record<string, unknown>),
+          ...(block as unknown as Record<string, any>),
           id: nextId,
         } as typeof block;
       });
@@ -246,7 +246,7 @@ export function normalizeOpenAIResponsesToolCallIds(messages: AgentMessage[]): A
 
     if (role === "toolResult") {
       const toolResult = msg as Extract<AgentMessage, { role: "toolResult" }> & {
-        toolUseId?: unknown;
+        toolUseId?: any;
       };
       let toolResultChanged = false;
       const updates: Record<string, string> = {};
@@ -303,7 +303,7 @@ export function downgradeOpenAIFunctionCallReasoningPairs(
       continue;
     }
 
-    const role = (msg as { role?: unknown }).role;
+    const role = (msg as { role?: any }).role;
     if (role === "assistant") {
       const assistantMsg = msg as Extract<AgentMessage, { role: "assistant" }>;
       if (!Array.isArray(assistantMsg.content)) {
@@ -342,7 +342,7 @@ export function downgradeOpenAIFunctionCallReasoningPairs(
         assistantChanged = true;
         localRewrittenIds.set(toolCallBlock.id, pairing.callId);
         return {
-          ...(block as unknown as Record<string, unknown>),
+          ...(block as unknown as Record<string, any>),
           id: pairing.callId,
         } as typeof block;
       });
@@ -359,7 +359,7 @@ export function downgradeOpenAIFunctionCallReasoningPairs(
 
     if (role === "toolResult" && pendingRewrittenIds && pendingRewrittenIds.size > 0) {
       const toolResult = msg as Extract<AgentMessage, { role: "toolResult" }> & {
-        toolUseId?: unknown;
+        toolUseId?: any;
       };
       let toolResultChanged = false;
       const updates: Record<string, string> = {};
@@ -408,7 +408,7 @@ function extractTextSignaturePhase(signature: string): "commentary" | "final_ans
     return undefined;
   }
   try {
-    const parsed = JSON.parse(signature) as { v?: unknown; phase?: unknown };
+    const parsed = JSON.parse(signature) as { v?: any; phase?: any };
     if (parsed.v === 1 && (parsed.phase === "commentary" || parsed.phase === "final_answer")) {
       return parsed.phase;
     }
@@ -438,7 +438,7 @@ export function downgradeOpenAIReasoningBlocks(
       continue;
     }
 
-    const role = (msg as { role?: unknown }).role;
+    const role = (msg as { role?: any }).role;
     if (role !== "assistant") {
       out.push(msg);
       continue;

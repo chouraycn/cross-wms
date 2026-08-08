@@ -21,8 +21,8 @@ export type NodeCommandAction =
 /** Execute a node command action (unsupported in cross-wms). */
 export async function executeNodeCommandAction(params: {
   action: NodeCommandAction;
-  input: Record<string, unknown>;
-  gatewayOpts: unknown;
+  input: Record<string, any>;
+  gatewayOpts: any;
   allowMediaInvokeCommands?: boolean;
   mediaInvokeActions: Record<string, string>;
 }): Promise<never> {

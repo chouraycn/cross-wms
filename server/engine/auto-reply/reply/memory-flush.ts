@@ -39,13 +39,13 @@ function resolvePositiveTokenCount(value: number | undefined): number | undefine
     : undefined;
 }
 
-function asRecord(value: unknown): Record<string, unknown> | undefined {
+function asRecord(value: any): Record<string, any> | undefined {
   return value && typeof value === "object" && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
+    ? (value as Record<string, any>)
     : undefined;
 }
 
-function resolveBooleanParam(sources: Array<Record<string, unknown> | undefined>, key: string) {
+function resolveBooleanParam(sources: Array<Record<string, any> | undefined>, key: string) {
   for (const source of sources.toReversed()) {
     const value = source?.[key];
     if (typeof value === "boolean") {
@@ -56,7 +56,7 @@ function resolveBooleanParam(sources: Array<Record<string, unknown> | undefined>
 }
 
 function resolvePositiveIntegerParam(
-  sources: Array<Record<string, unknown> | undefined>,
+  sources: Array<Record<string, any> | undefined>,
   key: string,
 ): number | undefined {
   for (const source of sources.toReversed()) {

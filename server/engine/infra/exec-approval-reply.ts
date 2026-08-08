@@ -324,7 +324,7 @@ export function getExecApprovalReplyMetadata(
   if (!execApproval || typeof execApproval !== "object" || Array.isArray(execApproval)) {
     return null;
   }
-  const record = execApproval as Record<string, unknown>;
+  const record = execApproval as Record<string, any>;
   const approvalId = normalizeOptionalString(record.approvalId) ?? "";
   const approvalSlug = normalizeOptionalString(record.approvalSlug) ?? "";
   if (!approvalId || !approvalSlug) {

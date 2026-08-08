@@ -8,11 +8,11 @@
 
 /** Simplified config readiness check for cross-wms. Always succeeds. */
 export async function ensureConfigReady(_params: {
-  runtime?: unknown;
+  runtime?: any;
   commandPath?: string[];
   suppressDoctorStdout?: boolean;
   allowInvalid?: boolean;
-  beforeStateMigrations?: unknown;
+  beforeStateMigrations?: any;
 }): Promise<void> {
   // cross-wms 没有 OpenClaw 的配置系统，不做任何检查
 }

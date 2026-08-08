@@ -9,8 +9,8 @@ import {
 } from "./parse-finite-number.js";
 
 function expectParserCases<T>(
-  parse: (value: unknown) => T | undefined,
-  cases: Array<{ value: unknown; expected: T | undefined }>,
+  parse: (value: any) => T | undefined,
+  cases: Array<{ value: any; expected: T | undefined }>,
 ) {
   for (const { value, expected } of cases) {
     expect(parse(value)).toBe(expected);

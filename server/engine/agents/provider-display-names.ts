@@ -6,4 +6,4 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export const BUILT_IN_PROVIDER_DISPLAY_NAMES: unknown = undefined;
+export const BUILT_IN_PROVIDER_DISPLAY_NAMES: any = undefined;

@@ -476,7 +476,7 @@ export const handleAllowlistCommand: CommandHandler = async (params, allowTextCo
         reply: { text: "⚠️ Config file is invalid; fix it before using /allowlist." },
       };
     }
-    const parsedConfig = structuredClone(snapshot.parsed as Record<string, unknown>);
+    const parsedConfig = structuredClone(snapshot.parsed as Record<string, any>);
     const editResult = await plugin.allowlist.applyConfigEdit({
       cfg: params.cfg,
       parsedConfig,

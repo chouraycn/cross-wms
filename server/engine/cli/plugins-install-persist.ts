@@ -73,10 +73,10 @@ export type ConfigSnapshotForInstallPersist = {
   config: OpenClawConfig;
   baseHash: string | undefined;
   writeOptions: {
-    assertConfigPathForWrite?: unknown;
+    assertConfigPathForWrite?: any;
     expectedConfigPath?: string;
     ownedConfigPathForWrite?: string;
-    envSnapshotForRestore?: unknown;
+    envSnapshotForRestore?: any;
     includeFileHashesForWrite?: Record<string, string>;
     includeFileTargetsForWrite?: Record<string, string>;
   };
@@ -97,14 +97,14 @@ const CONFIG_MUTATION_ALLOWED = { mode: "allowed" } as const;
  * 降级实现：openclaw 使用 `@openclaw/normalization-core/record-coerce` 的 `isRecord`。
  * 这里使用本地实现，行为与 openclaw 一致。
  */
-export function containsConfigIncludeDirective(value: unknown): boolean {
+export function containsConfigIncludeDirective(value: any): boolean {
   if (Array.isArray(value)) {
     return value.some((entry) => containsConfigIncludeDirective(entry));
   }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     return false;
   }
-  const record = value as Record<string, unknown>;
+  const record = value as Record<string, any>;
   return (
     Object.hasOwn(record, "$include") ||
     Object.values(record).some((entry) => containsConfigIncludeDirective(entry))
@@ -117,14 +117,14 @@ export function containsConfigIncludeDirective(value: unknown): boolean {
  * 降级实现：openclaw 使用 `@openclaw/normalization-core/record-coerce` 的 `isRecord`。
  * 这里使用本地实现，行为与 openclaw 一致。
  */
-export function supportsInstallConfigSingleTopLevelIncludeShape(authoredSection: unknown): boolean {
+export function supportsInstallConfigSingleTopLevelIncludeShape(authoredSection: any): boolean {
   if (!containsConfigIncludeDirective(authoredSection)) {
     return true;
   }
   if (authoredSection === null || typeof authoredSection !== "object" || Array.isArray(authoredSection)) {
     return false;
   }
-  const record = authoredSection as Record<string, unknown>;
+  const record = authoredSection as Record<string, any>;
   return (
     Object.keys(record).length === 1 &&
     typeof record.$include === "string"
@@ -138,7 +138,7 @@ export function supportsInstallConfigSingleTopLevelIncludeShape(authoredSection:
  * 保留函数签名以便未来 cross-wms 移植相关模块后替换为正式实现。
  */
 export function resolveInstallConfigMutationPreflights(_params: {
-  parsed: Record<string, unknown>;
+  parsed: Record<string, any>;
   snapshotPath: string;
   writeOptions: ConfigSnapshotForInstallPersist["writeOptions"];
 }): {
@@ -157,7 +157,7 @@ export function resolveInstallConfigMutationPreflights(_params: {
  * 降级实现：与 `resolveInstallConfigMutationPreflights` 一致，始终返回 allowed。
  */
 export function resolveCombinedPluginAndHookConfigMutationPreflight(_params: {
-  parsed: Record<string, unknown>;
+  parsed: Record<string, any>;
   snapshotPath: string;
 }): ConfigMutationPreflight {
   return CONFIG_MUTATION_ALLOWED;
@@ -170,10 +170,10 @@ export function resolveCombinedPluginAndHookConfigMutationPreflight(_params: {
  * 类型未移植，这里使用结构兼容的子集。
  */
 export function selectInstallMutationWriteOptions(writeOptions: {
-  assertConfigPathForWrite?: unknown;
+  assertConfigPathForWrite?: any;
   expectedConfigPath?: string;
   ownedConfigPathForWrite?: string;
-  envSnapshotForRestore?: unknown;
+  envSnapshotForRestore?: any;
   includeFileHashesForWrite?: Record<string, string>;
   includeFileTargetsForWrite?: Record<string, string>;
 }): ConfigSnapshotForInstallPersist["writeOptions"] {

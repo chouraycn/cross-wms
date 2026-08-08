@@ -28,15 +28,15 @@ function tableHasExactColumns(
   tableName: string,
   expected: readonly string[],
 ): boolean {
-  const rows = db.prepare(`PRAGMA table_info(${tableName})`).all() as Array<{ name?: unknown }>;
+  const rows = db.prepare(`PRAGMA table_info(${tableName})`).all() as Array<{ name?: any }>;
   const columns = new Set(rows.flatMap((row) => (typeof row.name === "string" ? [row.name] : [])));
   return columns.size === expected.length && expected.every((column) => columns.has(column));
 }
 
 function tablePrimaryKeyColumns(db: DatabaseSync, tableName: string): string[] {
   const rows = db.prepare(`PRAGMA table_info(${tableName})`).all() as Array<{
-    name?: unknown;
-    pk?: unknown;
+    name?: any;
+    pk?: any;
   }>;
   return rows
     .flatMap((row) =>
@@ -61,7 +61,7 @@ function tableHasPrimaryKey(
 }
 
 function assertLegacyRowsCopied(db: DatabaseSync, query: string, tableName: string): void {
-  const row = db.prepare(query).get() as { missing?: unknown } | undefined;
+  const row = db.prepare(query).get() as { missing?: any } | undefined;
   if (Number(row?.missing ?? 0) > 0) {
     throw new Error(`legacy memory ${tableName} rows conflict with canonical memory index rows`);
   }

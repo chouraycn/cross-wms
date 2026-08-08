@@ -10,24 +10,24 @@ export type ClaudeCliCredential = unknown;
 export type CodexCliCredential = unknown;
 export type MiniMaxCliCredential = unknown;
 export type GeminiCliCredential = unknown;
-export function resetCliCredentialCachesForTest(..._args: unknown[]): unknown {
+export function resetCliCredentialCachesForTest(..._args: any[]): any {
   return undefined;
 }
-export function readClaudeCliCredentials(..._args: unknown[]): unknown {
+export function readClaudeCliCredentials(..._args: any[]): any {
   return undefined;
 }
-export function readClaudeCliCredentialsCached(..._args: unknown[]): unknown {
+export function readClaudeCliCredentialsCached(..._args: any[]): any {
   return undefined;
 }
-export function readCodexCliCredentials(..._args: unknown[]): unknown {
+export function readCodexCliCredentials(..._args: any[]): any {
   return undefined;
 }
-export function readCodexCliCredentialsCached(..._args: unknown[]): unknown {
+export function readCodexCliCredentialsCached(..._args: any[]): any {
   return undefined;
 }
-export function readMiniMaxCliCredentialsCached(..._args: unknown[]): unknown {
+export function readMiniMaxCliCredentialsCached(..._args: any[]): any {
   return undefined;
 }
-export function readGeminiCliCredentialsCached(..._args: unknown[]): unknown {
+export function readGeminiCliCredentialsCached(..._args: any[]): any {
   return undefined;
 }

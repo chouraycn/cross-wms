@@ -36,7 +36,7 @@ function setMockFetch(
   return fetchSpy;
 }
 
-function expectRawFetchSuccessDetails(details: unknown) {
+function expectRawFetchSuccessDetails(details: any) {
   const typedDetails = details as { status?: number; extractor?: string };
   expect(typedDetails.status).toBe(200);
   expect(typedDetails.extractor).toBe("raw");

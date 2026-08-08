@@ -2,17 +2,17 @@ import { logger } from '../../logger.js';
 import type { RuntimeConfig } from './server-runtime-config.js';
 import { getRuntimeConfig, updateRuntimeConfig } from './server-runtime-config.js';
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function hasOwnValue(record: Record<string, unknown>, key: string): boolean {
+function hasOwnValue(record: Record<string, any>, key: string): boolean {
   return Object.prototype.hasOwnProperty.call(record, key);
 }
 
 export function mergeChannelActivationSections(params: {
   runtimeConfig: RuntimeConfig;
-  activationConfig: Record<string, unknown>;
+  activationConfig: Record<string, any>;
 }): RuntimeConfig {
   const activationChannels = params.activationConfig.channels;
   if (!isRecord(activationChannels)) {
@@ -23,7 +23,7 @@ export function mergeChannelActivationSections(params: {
     ? params.runtimeConfig.extensions.channels
     : {};
 
-  let nextChannels: Record<string, unknown> | undefined;
+  let nextChannels: Record<string, any> | undefined;
 
   for (const [channelId, activationChannel] of Object.entries(activationChannels)) {
     if (!isRecord(activationChannel) || !hasOwnValue(activationChannel, 'enabled')) {
@@ -34,7 +34,7 @@ export function mergeChannelActivationSections(params: {
     nextChannels ??= { ...runtimeChannels };
     nextChannels[channelId] = {
       ...runtimeChannelRecord,
-      enabled: (activationChannel as { enabled: unknown }).enabled,
+      enabled: (activationChannel as { enabled: any }).enabled,
     };
   }
 
@@ -53,7 +53,7 @@ export function mergeChannelActivationSections(params: {
 
 export function mergePluginActivationSections(params: {
   runtimeConfig: RuntimeConfig;
-  activationConfig: Record<string, unknown>;
+  activationConfig: Record<string, any>;
 }): RuntimeConfig {
   const activationPlugins = params.activationConfig.plugins;
   if (!isRecord(activationPlugins)) {
@@ -64,7 +64,7 @@ export function mergePluginActivationSections(params: {
     ? params.runtimeConfig.extensions.plugins
     : {};
 
-  let nextPlugins: Record<string, unknown> | undefined;
+  let nextPlugins: Record<string, any> | undefined;
 
   if (Array.isArray(activationPlugins.allow)) {
     nextPlugins = {
@@ -76,7 +76,7 @@ export function mergePluginActivationSections(params: {
   const activationEntries = activationPlugins.entries;
   if (isRecord(activationEntries)) {
     const runtimeEntries = isRecord(runtimePlugins.entries) ? runtimePlugins.entries : {};
-    let nextEntries: Record<string, unknown> | undefined;
+    let nextEntries: Record<string, any> | undefined;
 
     for (const [pluginId, activationEntry] of Object.entries(activationEntries)) {
       if (!isRecord(activationEntry) || !hasOwnValue(activationEntry, 'enabled')) {
@@ -87,7 +87,7 @@ export function mergePluginActivationSections(params: {
       nextEntries ??= { ...runtimeEntries };
       nextEntries[pluginId] = {
         ...runtimeEntryRecord,
-        enabled: (activationEntry as { enabled: unknown }).enabled,
+        enabled: (activationEntry as { enabled: any }).enabled,
       };
     }
 
@@ -115,7 +115,7 @@ export function mergePluginActivationSections(params: {
 
 export function mergeActivationSectionsIntoRuntimeConfig(params: {
   runtimeConfig: RuntimeConfig;
-  activationConfig: Record<string, unknown>;
+  activationConfig: Record<string, any>;
 }): RuntimeConfig {
   const withChannels = mergeChannelActivationSections(params);
   return mergePluginActivationSections({
@@ -124,7 +124,7 @@ export function mergeActivationSectionsIntoRuntimeConfig(params: {
   });
 }
 
-export function applyActivationConfig(activationConfig: Record<string, unknown>): RuntimeConfig {
+export function applyActivationConfig(activationConfig: Record<string, any>): RuntimeConfig {
   const currentConfig = getRuntimeConfig();
   const mergedConfig = mergeActivationSectionsIntoRuntimeConfig({
     runtimeConfig: currentConfig,
@@ -144,7 +144,7 @@ export function getPluginActivationFromConfig(pluginId: string): boolean | undef
     return undefined;
   }
 
-  const entry = (plugins.entries as Record<string, unknown>)[pluginId];
+  const entry = (plugins.entries as Record<string, any>)[pluginId];
   if (!isRecord(entry) || !hasOwnValue(entry, 'enabled')) {
     return undefined;
   }

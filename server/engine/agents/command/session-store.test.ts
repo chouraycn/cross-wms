@@ -56,7 +56,7 @@ vi.mock("../../utils/usage-format.js", () => ({
     }
     return total / 1e6;
   },
-  resolveModelCostConfig: (params: { provider?: string; model?: string; config?: unknown }) => {
+  resolveModelCostConfig: (params: { provider?: string; model?: string; config?: any }) => {
     const providers = (params.config as MockUsageFormatConfig | undefined)?.models?.providers;
     if (!providers) {
       return undefined;
@@ -139,7 +139,7 @@ vi.mock("../../config/sessions.js", async () => {
       previousSessionId: string;
       nextSessionId: string;
     }) => params.sessionFile?.replace(params.previousSessionId, params.nextSessionId),
-    resolveSessionFilePathOptions: (params: unknown) => params,
+    resolveSessionFilePathOptions: (params: any) => params,
     resolveSessionFilePath: (sessionId: string, entry?: SessionEntry) =>
       entry?.sessionFile ?? pathLocal.join("/tmp", `${sessionId}.jsonl`),
   };

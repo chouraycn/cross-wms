@@ -27,7 +27,7 @@ import type { ErrorCategory } from './modelFailover.js';
  * @param error 任意错误对象
  * @returns ErrorCategory
  */
-export function classifyErrorFromObject(error: unknown): ErrorCategory {
+export function classifyErrorFromObject(error: any): ErrorCategory {
   const e = error as {
     category?: string;
     status?: number;

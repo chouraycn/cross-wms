@@ -47,7 +47,7 @@ function makeToolResultMessage(...texts: string[]): AgentMessage {
   } as AgentMessage;
 }
 
-function makeJsonToolResultMessage(payload: unknown): AgentMessage {
+function makeJsonToolResultMessage(payload: any): AgentMessage {
   // JSON tool results reach providers through rendered boundary payloads; this
   // fixture proves estimates count object payloads, not just text blocks.
   return {
@@ -60,7 +60,7 @@ function makeJsonToolResultMessage(payload: unknown): AgentMessage {
   } as unknown as AgentMessage;
 }
 
-function makeAssistantToolCall(args: unknown): AgentMessage {
+function makeAssistantToolCall(args: any): AgentMessage {
   return {
     role: "assistant",
     content: [

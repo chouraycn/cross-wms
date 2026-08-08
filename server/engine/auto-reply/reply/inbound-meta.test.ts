@@ -31,57 +31,57 @@ vi.mock("../../channels/registry.js", () => ({
   normalizeAnyChannelId: (channelId?: string) => channelId?.trim().toLowerCase(),
 }));
 
-function parseInboundMetaPayload(text: string): Record<string, unknown> {
+function parseInboundMetaPayload(text: string): Record<string, any> {
   const match = text.match(/```json\n([\s\S]*?)\n```/);
   if (!match?.[1]) {
     throw new Error("missing inbound meta json block");
   }
-  return JSON.parse(match[1]) as Record<string, unknown>;
+  return JSON.parse(match[1]) as Record<string, any>;
 }
 
-function parseUntrustedJsonBlock(text: string, label: string): unknown {
+function parseUntrustedJsonBlock(text: string, label: string): any {
   const escapedLabel = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const match = text.match(new RegExp(`${escapedLabel}\\n\`\`\`json\\n([\\s\\S]*?)\\n\`\`\``));
   if (!match?.[1]) {
     throw new Error(`missing ${label} json block`);
   }
-  return JSON.parse(match[1]) as unknown;
+  return JSON.parse(match[1]) as any;
 }
 
-function parseConversationInfoPayload(text: string): Record<string, unknown> {
+function parseConversationInfoPayload(text: string): Record<string, any> {
   return parseUntrustedJsonBlock(text, "Conversation info (untrusted metadata):") as Record<
     string,
-    unknown
+    any
   >;
 }
 
-function parseSenderInfoPayload(text: string): Record<string, unknown> {
-  return parseUntrustedJsonBlock(text, "Sender (untrusted metadata):") as Record<string, unknown>;
+function parseSenderInfoPayload(text: string): Record<string, any> {
+  return parseUntrustedJsonBlock(text, "Sender (untrusted metadata):") as Record<string, any>;
 }
 
-function parseReplyPayload(text: string): Record<string, unknown> {
+function parseReplyPayload(text: string): Record<string, any> {
   return parseUntrustedJsonBlock(
     text,
     "Reply target of current user message (untrusted, for context):",
-  ) as Record<string, unknown>;
+  ) as Record<string, any>;
 }
 
-function parseReplyChainPayload(text: string): Array<Record<string, unknown>> {
+function parseReplyChainPayload(text: string): Array<Record<string, any>> {
   return parseUntrustedJsonBlock(
     text,
     "Reply chain of current user message (untrusted, nearest first):",
-  ) as Array<Record<string, unknown>>;
+  ) as Array<Record<string, any>>;
 }
 
-function parseHistoryPayload(text: string): Array<Record<string, unknown>> {
+function parseHistoryPayload(text: string): Array<Record<string, any>> {
   return parseUntrustedJsonBlock(
     text,
     "Chat history since last reply (untrusted, for context):",
-  ) as Array<Record<string, unknown>>;
+  ) as Array<Record<string, any>>;
 }
 
-function parseLocationPayload(text: string): Record<string, unknown> {
-  return parseUntrustedJsonBlock(text, "Location (untrusted metadata):") as Record<string, unknown>;
+function parseLocationPayload(text: string): Record<string, any> {
+  return parseUntrustedJsonBlock(text, "Location (untrusted metadata):") as Record<string, any>;
 }
 
 describe("buildInboundMetaSystemPrompt", () => {
@@ -849,7 +849,7 @@ describe("buildInboundUserContextPrefix", () => {
     const structured = parseUntrustedJsonBlock(
       text,
       "WhatsApp contact (untrusted metadata):",
-    ) as Record<string, unknown>;
+    ) as Record<string, any>;
     expect(structured["source"]).toBe("whatsapp");
     expect(structured["type"]).toBe("contact");
     expect(structured["payload"]).toEqual({

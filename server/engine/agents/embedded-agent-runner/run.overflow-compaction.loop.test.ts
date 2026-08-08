@@ -24,17 +24,17 @@ import type { EmbeddedRunAttemptResult } from "./run/types.js";
 
 let runEmbeddedAgent: typeof import("./run.js").runEmbeddedAgent;
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error(`expected ${label} to be an object`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 function requireMockCallArg(
-  mock: { mock: { calls: unknown[][] } },
+  mock: { mock: { calls: any[][] } },
   index: number,
-): Record<string, unknown> {
+): Record<string, any> {
   // Compaction tests inspect positional mock params from the runner loop; fail
   // fast with a readable label when expected calls are missing.
   const call = mock.mock.calls[index];
@@ -44,11 +44,11 @@ function requireMockCallArg(
   return requireRecord(call[0], `mock call ${index} arg`);
 }
 
-function expectLogIncludes(mock: { mock: { calls: unknown[][] } }, fragment: string) {
+function expectLogIncludes(mock: { mock: { calls: any[][] } }, fragment: string) {
   expect(mock.mock.calls.map((call) => String(call[0])).join("\n")).toContain(fragment);
 }
 
-function expectLogExcludes(mock: { mock: { calls: unknown[][] } }, fragment: string) {
+function expectLogExcludes(mock: { mock: { calls: any[][] } }, fragment: string) {
   expect(mock.mock.calls.map((call) => String(call[0])).join("\n")).not.toContain(fragment);
 }
 

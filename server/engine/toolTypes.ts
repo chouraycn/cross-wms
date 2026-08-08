@@ -4,7 +4,7 @@
 
 import type { ToolDefinition } from '../aiClient.js';
 
-export type ToolHandler = (args: Record<string, unknown>) => Promise<string>;
+export type ToolHandler = (args: Record<string, any>) => Promise<string>;
 
 export interface RegisteredTool {
   definition: ToolDefinition;

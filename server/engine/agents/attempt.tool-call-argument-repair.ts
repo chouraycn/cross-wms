@@ -6,12 +6,12 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function wrapStreamFnRepairMalformedToolCallArguments(..._args: unknown[]): unknown {
+export function wrapStreamFnRepairMalformedToolCallArguments(..._args: any[]): any {
   return undefined;
 }
-export function shouldRepairMalformedToolCallArguments(..._args: unknown[]): unknown {
+export function shouldRepairMalformedToolCallArguments(..._args: any[]): any {
   return false;
 }
-export function wrapStreamFnDecodeXaiToolCallArguments(..._args: unknown[]): unknown {
+export function wrapStreamFnDecodeXaiToolCallArguments(..._args: any[]): any {
   return undefined;
 }

@@ -28,25 +28,25 @@ function buildReport(findings: PostUpgradeFinding[]): PostUpgradeReport {
   return { probesRun: [...POST_UPGRADE_PROBE_CODES], findings };
 }
 
-function isInstallsJson(value: unknown): value is InstallsJson {
+function isInstallsJson(value: any): value is InstallsJson {
   return (
     typeof value === "object" &&
     value !== null &&
-    Array.isArray((value as { plugins?: unknown }).plugins) &&
-    (value as { plugins: unknown[] }).plugins.every(isInstalledPluginRecord)
+    Array.isArray((value as { plugins?: any }).plugins) &&
+    (value as { plugins: any[] }).plugins.every(isInstalledPluginRecord)
   );
 }
 
-function isOptionalString(value: unknown): value is string | undefined {
+function isOptionalString(value: any): value is string | undefined {
   return value === undefined || typeof value === "string";
 }
 
-function isPackageJsonRef(value: unknown): value is InstalledPluginRecord["packageJson"] {
+function isPackageJsonRef(value: any): value is InstalledPluginRecord["packageJson"] {
   return (
     value === undefined ||
     (typeof value === "object" &&
       value !== null &&
-      typeof (value as { path?: unknown }).path === "string")
+      typeof (value as { path?: any }).path === "string")
   );
 }
 
@@ -77,7 +77,7 @@ function isBundledSourceCheckoutPluginRoot(pluginRootDir: string): boolean {
   }
 }
 
-function isInstalledPluginRecord(value: unknown): value is InstalledPluginRecord {
+function isInstalledPluginRecord(value: any): value is InstalledPluginRecord {
   if (typeof value !== "object" || value === null) {
     return false;
   }
@@ -96,7 +96,7 @@ function isInstalledPluginRecord(value: unknown): value is InstalledPluginRecord
 async function readInstallsJson(installsPath: string): Promise<InstallsJson | null> {
   try {
     const installsRaw = await fs.readFile(installsPath, "utf-8");
-    const installs = JSON.parse(installsRaw) as unknown;
+    const installs = JSON.parse(installsRaw) as any;
     return isInstallsJson(installs) ? installs : null;
   } catch {
     return null;

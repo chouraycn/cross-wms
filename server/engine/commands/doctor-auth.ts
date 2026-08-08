@@ -59,14 +59,14 @@ function hasStoredCodexOAuthProfile(): boolean {
   );
 }
 
-function normalizeCodexOverrideBaseUrl(baseUrl: unknown): string | undefined {
+function normalizeCodexOverrideBaseUrl(baseUrl: any): string | undefined {
   if (typeof baseUrl !== "string") {
     return undefined;
   }
   return baseUrl.trim().replace(/\/+$/, "");
 }
 
-function isLegacyCodexTransportShape(value: unknown, inheritedBaseUrl?: unknown): boolean {
+function isLegacyCodexTransportShape(value: any, inheritedBaseUrl?: any): boolean {
   if (!isRecord(value)) {
     return false;
   }
@@ -78,7 +78,7 @@ function isLegacyCodexTransportShape(value: unknown, inheritedBaseUrl?: unknown)
   return !baseUrl || baseUrl === OPENAI_BASE_URL;
 }
 
-function hasLegacyCodexTransportOverride(providerOverride: unknown): boolean {
+function hasLegacyCodexTransportOverride(providerOverride: any): boolean {
   if (!isRecord(providerOverride)) {
     return false;
   }
@@ -92,7 +92,7 @@ function hasLegacyCodexTransportOverride(providerOverride: unknown): boolean {
   return models.some((model) => isLegacyCodexTransportShape(model, providerOverride.baseUrl));
 }
 
-function buildCodexProviderOverrideWarning(providerOverride: unknown): string {
+function buildCodexProviderOverrideWarning(providerOverride: any): string {
   const lines = [
     `- models.providers.${LEGACY_CODEX_PROVIDER_ID} contains a legacy transport override while Codex OAuth is configured.`,
     "- Older OpenAI transport settings can shadow the built-in Codex OAuth provider path.",

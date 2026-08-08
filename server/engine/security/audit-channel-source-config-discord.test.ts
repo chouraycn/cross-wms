@@ -7,7 +7,7 @@ import { collectChannelSecurityFindings } from "./audit-channel.js";
 function stubDiscordPlugin(params: {
   resolveAccount: (cfg: OpenClawConfig, accountId: string | null | undefined) => unknown;
   inspectAccount?: (cfg: OpenClawConfig, accountId: string | null | undefined) => unknown;
-  isConfigured?: (account: unknown, cfg: OpenClawConfig) => boolean;
+  isConfigured?: (account: any, cfg: OpenClawConfig) => boolean;
 }) {
   return stubAuditChannelPlugin({
     id: "discord",
@@ -17,7 +17,7 @@ function stubDiscordPlugin(params: {
       nativeSkillsAutoEnabled: true,
     },
     collectAuditFindings: ({ account }) => {
-      const config = (account as { config?: { guilds?: unknown } }).config ?? {};
+      const config = (account as { config?: { guilds?: any } }).config ?? {};
       const guilds =
         config.guilds && typeof config.guilds === "object" && !Array.isArray(config.guilds)
           ? config.guilds

@@ -147,7 +147,7 @@ function createDiagnosticTraceScopeState(): DiagnosticTraceScopeState {
  * @param value - 待检查的值
  * @returns 是否有效
  */
-function isDiagnosticTraceScopeState(value: unknown): value is DiagnosticTraceScopeState {
+function isDiagnosticTraceScopeState(value: any): value is DiagnosticTraceScopeState {
   if (!value || typeof value !== 'object') {
     return false;
   }
@@ -166,7 +166,7 @@ function isDiagnosticTraceScopeState(value: unknown): value is DiagnosticTraceSc
  * @returns 诊断追踪范围状态
  */
 function getDiagnosticTraceScopeState(): DiagnosticTraceScopeState {
-  const globalRecord = globalThis as Record<PropertyKey, unknown>;
+  const globalRecord = globalThis as Record<PropertyKey, any>;
   const existing = globalRecord[DIAGNOSTIC_TRACE_SCOPE_STATE_KEY];
   if (isDiagnosticTraceScopeState(existing)) {
     return existing;
@@ -189,7 +189,7 @@ function getDiagnosticTraceScopeState(): DiagnosticTraceScopeState {
  * @param value - 待检查的值
  * @returns 是否为有效的非零 trace-id
  */
-export function isValidDiagnosticTraceId(value: unknown): value is string {
+export function isValidDiagnosticTraceId(value: any): value is string {
   return typeof value === 'string' && TRACE_ID_RE.test(value) && isNonZeroHex(value);
 }
 
@@ -199,7 +199,7 @@ export function isValidDiagnosticTraceId(value: unknown): value is string {
  * @param value - 待检查的值
  * @returns 是否为有效的非零 span-id
  */
-export function isValidDiagnosticSpanId(value: unknown): value is string {
+export function isValidDiagnosticSpanId(value: any): value is string {
   return typeof value === 'string' && SPAN_ID_RE.test(value) && isNonZeroHex(value);
 }
 
@@ -209,7 +209,7 @@ export function isValidDiagnosticSpanId(value: unknown): value is string {
  * @param value - 待检查的值
  * @returns 是否为有效的 trace-flags
  */
-export function isValidDiagnosticTraceFlags(value: unknown): value is string {
+export function isValidDiagnosticTraceFlags(value: any): value is string {
   return typeof value === 'string' && TRACE_FLAGS_RE.test(value);
 }
 
@@ -221,7 +221,7 @@ export function isValidDiagnosticTraceFlags(value: unknown): value is string {
  * @param value - 原始值
  * @returns 规范化后的 trace-id（如果有效）
  */
-function normalizeTraceId(value: unknown): string | undefined {
+function normalizeTraceId(value: any): string | undefined {
   if (typeof value !== 'string') {
     return undefined;
   }
@@ -235,7 +235,7 @@ function normalizeTraceId(value: unknown): string | undefined {
  * @param value - 原始值
  * @returns 规范化后的 span-id（如果有效）
  */
-function normalizeSpanId(value: unknown): string | undefined {
+function normalizeSpanId(value: any): string | undefined {
   if (typeof value !== 'string') {
     return undefined;
   }
@@ -249,7 +249,7 @@ function normalizeSpanId(value: unknown): string | undefined {
  * @param value - 原始值
  * @returns 规范化后的 trace-flags（如果有效）
  */
-function normalizeTraceFlags(value: unknown): string | undefined {
+function normalizeTraceFlags(value: any): string | undefined {
   if (typeof value !== 'string') {
     return undefined;
   }

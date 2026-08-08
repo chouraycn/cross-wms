@@ -78,7 +78,7 @@ interface RunRead {
   finished_at: number | null;
   result_summary: string | null;
   error: string | null;
-  trace: Record<string, unknown>;
+  trace: Record<string, any>;
   created_at: number;
   updated_at: number;
 }

@@ -36,18 +36,18 @@ const {
     readonly [Symbol.toStringTag] = "FormData";
     readonly entriesList: [string, unknown, string | undefined][] = [];
 
-    append(key: string, value: unknown, filename?: string): void {
+    append(key: string, value: any, filename?: string): void {
       this.entriesList.push([key, value, filename]);
     }
 
-    get(key: string): unknown {
+    get(key: string): any {
       return this.entriesList.find(([entryKey]) => entryKey === key)?.[1] ?? null;
     }
   }
   class ProxyAgent {
     static lastCreated: ProxyAgent | undefined;
     readonly proxyUrl: string | undefined;
-    constructor(public readonly options: { uri?: string; proxyTls?: unknown } | string) {
+    constructor(public readonly options: { uri?: string; proxyTls?: any } | string) {
       this.proxyUrl = typeof options === "string" ? options : options.uri;
       ProxyAgent.lastCreated = this;
       proxyAgentSpyLocal(options);
@@ -55,7 +55,7 @@ const {
   }
   class EnvHttpProxyAgentLocal {
     static lastCreated: EnvHttpProxyAgentLocal | undefined;
-    constructor(public readonly options?: Record<string, unknown>) {
+    constructor(public readonly options?: Record<string, any>) {
       EnvHttpProxyAgentLocal.lastCreated = this;
       envAgentSpyLocal(options);
     }
@@ -99,7 +99,7 @@ function requireProxyFetch(
   return fetchFn;
 }
 
-function requireUndiciFetchCall(index = 0): unknown[] {
+function requireUndiciFetchCall(index = 0): any[] {
   const call = undiciFetch.mock.calls[index];
   if (!call) {
     throw new Error(`expected undici fetch call at index ${index}`);
@@ -107,15 +107,15 @@ function requireUndiciFetchCall(index = 0): unknown[] {
   return call;
 }
 
-function requireUndiciFetchInit(index = 0): Record<string, unknown> {
+function requireUndiciFetchInit(index = 0): Record<string, any> {
   const init = requireUndiciFetchCall(index)[1];
   if (!init || typeof init !== "object" || Array.isArray(init)) {
     throw new Error(`expected undici fetch init at index ${index}`);
   }
-  return init as Record<string, unknown>;
+  return init as Record<string, any>;
 }
 
-function requireHeadersInit(value: unknown, label: string): HeadersInit {
+function requireHeadersInit(value: any, label: string): HeadersInit {
   if (value === undefined || value instanceof Headers || Array.isArray(value)) {
     return value as HeadersInit;
   }
@@ -253,7 +253,7 @@ describe("makeProxyFetch", () => {
 
     const proxyFetch = makeProxyFetch("http://proxy.test:8080");
     const headers = { "Content-Type": "application/json" } as Record<string, string> & {
-      [key: symbol]: unknown;
+      [key: symbol]: any;
     };
     Object.defineProperty(headers, Symbol("sensitiveHeaders"), {
       value: new Set(["content-type"]),

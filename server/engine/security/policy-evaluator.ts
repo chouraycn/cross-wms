@@ -10,14 +10,14 @@ import type {
 } from './policy-types.js';
 import { getActivePolicyRules } from './policy-store.js';
 
-function getFieldValue(context: PolicyEvaluationContext, field: string): unknown {
+function getFieldValue(context: PolicyEvaluationContext, field: string): any {
   const parts = field.split('.');
-  let value: unknown = context;
+  let value: any = context;
 
   for (const part of parts) {
     if (value === null || value === undefined) return undefined;
     if (typeof value === 'object' && part in value) {
-      value = (value as Record<string, unknown>)[part];
+      value = (value as Record<string, any>)[part];
     } else {
       return undefined;
     }
@@ -244,9 +244,9 @@ export function evaluatePolicy(
 export function evaluatePolicyWithDebug(
   context: PolicyEvaluationContext,
   rules?: PolicyRule[],
-): { result: PolicyEvaluationResult; debug: Record<string, unknown> } {
+): { result: PolicyEvaluationResult; debug: Record<string, any> } {
   const activeRules = rules ?? getActivePolicyRules();
-  const debugInfo: Record<string, unknown> = {
+  const debugInfo: Record<string, any> = {
     evaluatedRules: activeRules.length,
     context: { ...context },
     ruleEvaluations: [],
@@ -255,7 +255,7 @@ export function evaluatePolicyWithDebug(
   const matchedResults: { effect: PolicyEffect; priority: number; ruleId: string; actions: PolicyRule['actions'] }[] = [];
 
   for (const rule of activeRules) {
-    const ruleDebug: Record<string, unknown> = {
+    const ruleDebug: Record<string, any> = {
       ruleId: rule.id,
       ruleName: rule.name,
       priority: rule.priority,
@@ -266,14 +266,14 @@ export function evaluatePolicyWithDebug(
     };
 
     if (rule.status !== 'active') {
-      (ruleDebug.conditions as Record<string, unknown>[]).push({ skipped: 'rule is not active' });
-      (debugInfo.ruleEvaluations as Record<string, unknown>[]).push(ruleDebug);
+      (ruleDebug.conditions as Record<string, any>[]).push({ skipped: 'rule is not active' });
+      (debugInfo.ruleEvaluations as Record<string, any>[]).push(ruleDebug);
       continue;
     }
 
     const allConditionsMet = rule.conditions.every((condition, idx) => {
       const conditionMet = evaluateCondition(condition, context);
-      (ruleDebug.conditions as Record<string, unknown>[]).push({
+      (ruleDebug.conditions as Record<string, any>[]).push({
         index: idx,
         field: condition.field,
         operator: condition.operator,
@@ -295,7 +295,7 @@ export function evaluatePolicyWithDebug(
       });
     }
 
-    (debugInfo.ruleEvaluations as Record<string, unknown>[]).push(ruleDebug);
+    (debugInfo.ruleEvaluations as Record<string, any>[]).push(ruleDebug);
   }
 
   const conflictResult = resolveConflict(matchedResults, 'deny_overrides', 'deny');

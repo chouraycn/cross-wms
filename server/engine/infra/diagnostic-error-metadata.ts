@@ -23,11 +23,11 @@ type DiagnosticErrorFailureKind =
   | "terminated"
   | "timeout";
 
-function isObjectLike(value: unknown): value is object {
+function isObjectLike(value: any): value is object {
   return (typeof value === "object" || typeof value === "function") && value !== null;
 }
 
-function readOwnDataProperty(value: unknown, key: string): unknown {
+function readOwnDataProperty(value: any, key: string): any {
   if (!isObjectLike(value)) {
     return undefined;
   }
@@ -41,8 +41,8 @@ function readOwnDataProperty(value: unknown, key: string): unknown {
 }
 
 function findDiagnosticErrorProperty<T>(
-  err: unknown,
-  reader: (candidate: unknown) => T | undefined,
+  err: any,
+  reader: (candidate: any) => T | undefined,
   seen: Set<object> = new Set(),
 ): T | undefined {
   const direct = reader(err);
@@ -59,7 +59,7 @@ function findDiagnosticErrorProperty<T>(
   );
 }
 
-function isHttpStatusCode(value: unknown): value is number {
+function isHttpStatusCode(value: any): value is number {
   return (
     typeof value === "number" &&
     Number.isInteger(value) &&
@@ -68,7 +68,7 @@ function isHttpStatusCode(value: unknown): value is number {
   );
 }
 
-function normalizeProviderRequestId(value: unknown): string | undefined {
+function normalizeProviderRequestId(value: any): string | undefined {
   if (typeof value === "string") {
     const trimmed = value.trim();
     return PROVIDER_REQUEST_ID_RE.test(trimmed) ? trimmed : undefined;
@@ -92,7 +92,7 @@ function hashDiagnosticIdentifier(value: string): string {
     .slice(0, REQUEST_ID_HASH_PREFIX_LEN)}`;
 }
 
-function readDirectProviderRequestId(err: unknown): string | undefined {
+function readDirectProviderRequestId(err: any): string | undefined {
   for (const key of PROVIDER_REQUEST_ID_KEYS) {
     const normalized = normalizeProviderRequestId(readOwnDataProperty(err, key));
     if (normalized) {
@@ -102,7 +102,7 @@ function readDirectProviderRequestId(err: unknown): string | undefined {
   return undefined;
 }
 
-function readDirectMessage(err: unknown): string | undefined {
+function readDirectMessage(err: any): string | undefined {
   if (typeof err === "string") {
     return err;
   }
@@ -110,7 +110,7 @@ function readDirectMessage(err: unknown): string | undefined {
   return typeof message === "string" ? message : undefined;
 }
 
-function readDirectCode(err: unknown): string | undefined {
+function readDirectCode(err: any): string | undefined {
   const code = readOwnDataProperty(err, "code");
   return typeof code === "string" ? code : undefined;
 }
@@ -129,7 +129,7 @@ function extractProviderRequestIdFromText(text: string | undefined): string | un
 }
 
 /** 返回低基数错误类别，不信任可变的 `Error.name`。 */
-export function diagnosticErrorCategory(err: unknown): string {
+export function diagnosticErrorCategory(err: any): string {
   try {
     if (err instanceof TypeError) {
       return "TypeError";
@@ -153,7 +153,7 @@ export function diagnosticErrorCategory(err: unknown): string {
       return "Error";
     }
   } catch {
-    return "unknown";
+    return "any";
   }
   if (err === null) {
     return "null";
@@ -162,7 +162,7 @@ export function diagnosticErrorCategory(err: unknown): string {
 }
 
 /** 从自身 `status` 或 `statusCode` 数据属性中提取安全的 HTTP 状态码。 */
-export function diagnosticHttpStatusCode(err: unknown): string | undefined {
+export function diagnosticHttpStatusCode(err: any): string | undefined {
   const status = readOwnDataProperty(err, "status");
   if (isHttpStatusCode(status)) {
     return String(status);
@@ -175,7 +175,7 @@ export function diagnosticHttpStatusCode(err: unknown): string | undefined {
 }
 
 /** 分类传输风格失败，不暴露原始错误消息。 */
-export function diagnosticErrorFailureKind(err: unknown): DiagnosticErrorFailureKind | undefined {
+export function diagnosticErrorFailureKind(err: any): DiagnosticErrorFailureKind | undefined {
   const code = findDiagnosticErrorProperty(err, readDirectCode)?.trim().toUpperCase();
   switch (code) {
     case undefined:
@@ -217,7 +217,7 @@ export function diagnosticErrorFailureKind(err: unknown): DiagnosticErrorFailure
 }
 
 /** 提取并哈希有界 provider 请求 id，使诊断永不暴露原始 id。 */
-export function diagnosticProviderRequestIdHash(err: unknown): string | undefined {
+export function diagnosticProviderRequestIdHash(err: any): string | undefined {
   const fromProperty = findDiagnosticErrorProperty(err, readDirectProviderRequestId);
   if (fromProperty) {
     return hashDiagnosticIdentifier(fromProperty);

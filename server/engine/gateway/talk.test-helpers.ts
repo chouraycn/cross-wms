@@ -14,14 +14,14 @@ export type TalkSpeakTestPayload = {
 };
 
 /** Calls talk.speak without a WebSocket server and captures the handler response. */
-export async function invokeTalkSpeakDirect(params: Record<string, unknown>) {
+export async function invokeTalkSpeakDirect(params: Record<string, any>) {
   const { talkHandlers } = await import("./server-methods/talk.js");
   const { getRuntimeConfig } = await import("../config/config.js");
   let response:
     | {
         ok: boolean;
-        payload?: unknown;
-        error?: { code?: string; message?: string; details?: unknown };
+        payload?: any;
+        error?: { code?: string; message?: string; details?: any };
       }
     | undefined;
   await talkHandlers["talk.speak"]({

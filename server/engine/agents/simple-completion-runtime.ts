@@ -10,15 +10,15 @@ export type SimpleCompletionModelOptions = unknown;
 export type PreparedSimpleCompletionModel = unknown;
 export type AgentSimpleCompletionSelection = unknown;
 export type PreparedSimpleCompletionModelForAgent = unknown;
-export function resolveSimpleCompletionSelectionForAgent(..._args: unknown[]): unknown {
+export function resolveSimpleCompletionSelectionForAgent(..._args: any[]): any {
   return undefined;
 }
-export async function prepareSimpleCompletionModel(..._args: unknown[]): Promise<unknown> {
+export async function prepareSimpleCompletionModel(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
-export async function prepareSimpleCompletionModelForAgent(..._args: unknown[]): Promise<unknown> {
+export async function prepareSimpleCompletionModelForAgent(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
-export async function completeWithPreparedSimpleCompletionModel(..._args: unknown[]): Promise<unknown> {
+export async function completeWithPreparedSimpleCompletionModel(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }

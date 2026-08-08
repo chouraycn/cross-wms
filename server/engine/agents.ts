@@ -18,7 +18,7 @@ export interface AgentConfig {
     allow?: string[];
     deny?: string[];
   };
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
   createdAt?: number;
   updatedAt?: number;
 }
@@ -33,7 +33,7 @@ export interface AgentCreateParams {
     allow?: string[];
     deny?: string[];
   };
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface AgentUpdateParams {
@@ -47,7 +47,7 @@ export interface AgentUpdateParams {
     allow?: string[];
     deny?: string[];
   };
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface AgentListResult {

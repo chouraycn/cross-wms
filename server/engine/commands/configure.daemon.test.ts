@@ -66,7 +66,7 @@ vi.mock("../daemon/service.js", async () => {
 });
 
 vi.mock("./onboard-helpers.js", () => ({
-  guardCancel: (value: unknown) => value,
+  guardCancel: (value: any) => value,
 }));
 
 vi.mock("./systemd-linger.js", () => ({

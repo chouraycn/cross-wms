@@ -26,7 +26,7 @@ export async function readJsonFileWithFallback<T>(
 }
 
 /** Write JSON with secure file permissions and atomic replacement semantics. */
-export async function writeJsonFileAtomically(filePath: string, value: unknown): Promise<void> {
+export async function writeJsonFileAtomically(filePath: string, value: any): Promise<void> {
   await writeJson(filePath, value, {
     mode: 0o600,
     dirMode: 0o700,

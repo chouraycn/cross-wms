@@ -229,7 +229,7 @@ export function formatRoutedSkillsForPrompt(skills: RoutedSkill[]): string {
  * 仅取 user/assistant 角色、非空字符串内容，返回最近 limit 条。
  */
 export function extractContextTexts(
-  dbMessages: Array<{ role?: string; content?: unknown }> | undefined,
+  dbMessages: Array<{ role?: string; content?: any }> | undefined,
   limit = 6,
 ): string[] {
   if (!Array.isArray(dbMessages)) return [];

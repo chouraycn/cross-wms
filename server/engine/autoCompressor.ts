@@ -60,7 +60,7 @@ export interface CompressionPlan {
 export interface CompressionHookContext {
   compressor: AutoCompressor;
   plan: CompressionPlan;
-  messages: Array<{ role: string; content: unknown; tool_calls?: unknown[]; tool_call_id?: string }>;
+  messages: Array<{ role: string; content: any; tool_calls?: any[]; tool_call_id?: string }>;
   level: CompressionLevel;
 }
 
@@ -174,7 +174,7 @@ export class AutoCompressor {
    * @param estimatedTokens 预估的总 token 数（不传则自动估算）
    */
   trackTurn(
-    messages: Array<{ role: string; content: unknown; tool_calls?: unknown[]; tool_call_id?: string }>,
+    messages: Array<{ role: string; content: any; tool_calls?: any[]; tool_call_id?: string }>,
     estimatedTokens?: number,
   ): void {
     this.currentTurn++;
@@ -229,7 +229,7 @@ export class AutoCompressor {
   }
 
   getCompressionPlan(
-    messages: Array<{ role: string; content: unknown; tool_calls?: unknown[]; tool_call_id?: string }>,
+    messages: Array<{ role: string; content: any; tool_calls?: any[]; tool_call_id?: string }>,
     forcedLevel?: CompressionLevel,
   ): CompressionPlan {
     const totalTokens = estimateMessagesTokens(messages);
@@ -306,7 +306,7 @@ export class AutoCompressor {
   }
 
   async executeCompression(
-    messages: Array<{ role: string; content: unknown; tool_calls?: unknown[]; tool_call_id?: string }>,
+    messages: Array<{ role: string; content: any; tool_calls?: any[]; tool_call_id?: string }>,
     forcedLevel?: CompressionLevel,
   ): Promise<{ plan: CompressionPlan; shouldProceed: boolean }> {
     const plan = this.getCompressionPlan(messages, forcedLevel);
@@ -327,7 +327,7 @@ export class AutoCompressor {
           plan,
           shouldProceed: true,
           providerResult: result,
-        } as unknown;
+        } as any;
       } catch (err) {
         logger.warn(`[AutoCompressor] Provider compression failed, falling back to plan-only:`, err);
       }
@@ -351,7 +351,7 @@ export class AutoCompressor {
    * @returns 压缩结果
    */
   async useCompactionProvider(
-    messages: Array<{ role: string; content: unknown; tool_calls?: unknown[]; tool_call_id?: string }>,
+    messages: Array<{ role: string; content: any; tool_calls?: any[]; tool_call_id?: string }>,
     options: {
       previousSummary?: string;
       preserveRecent?: number;
@@ -384,7 +384,7 @@ export class AutoCompressor {
    */
   private async executeWithProvider(
     provider: CompactionProvider,
-    messages: Array<{ role: string; content: unknown; tool_calls?: unknown[]; tool_call_id?: string }>,
+    messages: Array<{ role: string; content: any; tool_calls?: any[]; tool_call_id?: string }>,
     options: { previousSummary?: string; preserveRecent?: number },
   ): Promise<{
     summary: string;
@@ -424,7 +424,7 @@ export class AutoCompressor {
   }
 
   async completeCompression(
-    messages: Array<{ role: string; content: unknown; tool_calls?: unknown[]; tool_call_id?: string }>,
+    messages: Array<{ role: string; content: any; tool_calls?: any[]; tool_call_id?: string }>,
     plan: CompressionPlan,
   ): Promise<void> {
     await this.executeHook('afterCompress', {
@@ -437,7 +437,7 @@ export class AutoCompressor {
   }
 
   private performSafetyCheck(
-    messages: Array<{ role: string; content: unknown; tool_calls?: unknown[]; tool_call_id?: string }>,
+    messages: Array<{ role: string; content: any; tool_calls?: any[]; tool_call_id?: string }>,
     items: CompressionPlanItem[],
     estimatedAfterTokens: number,
     totalTokens: number,
@@ -538,7 +538,7 @@ export class AutoCompressor {
    * 根据消息数量和 token 使用情况自动选择合适的压缩级别。
    */
   private calculateCompressionLevel(
-    messages: Array<{ role: string; content: unknown; tool_calls?: unknown[]; tool_call_id?: string }>,
+    messages: Array<{ role: string; content: any; tool_calls?: any[]; tool_call_id?: string }>,
     totalTokens: number,
   ): CompressionLevel {
     const contextWindow = this.config.contextWindow;
@@ -560,10 +560,10 @@ export class AutoCompressor {
    * 确定单条消息的压缩动作
    */
   private getMessageAction(
-    msg: { role: string; content: unknown; tool_calls?: unknown[]; tool_call_id?: string },
+    msg: { role: string; content: any; tool_calls?: any[]; tool_call_id?: string },
     level: CompressionLevel,
     index: number,
-    allMessages: Array<{ role: string; content: unknown; tool_calls?: unknown[]; tool_call_id?: string }>,
+    allMessages: Array<{ role: string; content: any; tool_calls?: any[]; tool_call_id?: string }>,
   ): CompressionPlanItem['action'] {
     const isTool = msg.role === 'tool';
     const hasToolCalls = msg.role === 'assistant' && Array.isArray(msg.tool_calls) && msg.tool_calls.length > 0;
@@ -655,7 +655,7 @@ export class AutoCompressor {
  * @returns 待压缩的消息数组（仅包含 role 和 content 字符串）
  */
 export function extractMessagesForCompression(
-  messages: Array<{ role: string; content: unknown; tool_calls?: unknown[]; tool_call_id?: string }>,
+  messages: Array<{ role: string; content: any; tool_calls?: any[]; tool_call_id?: string }>,
   plan: CompressionPlan,
 ): Array<{ role: string; content: string }> {
   const result: Array<{ role: string; content: string }> = [];
@@ -696,10 +696,10 @@ export function extractMessagesForCompression(
  * @returns 压缩后的消息数组
  */
 export function applyCompressionPlan(
-  messages: Array<{ role: string; content: unknown; tool_calls?: unknown[]; tool_call_id?: string }>,
+  messages: Array<{ role: string; content: any; tool_calls?: any[]; tool_call_id?: string }>,
   plan: CompressionPlan,
   summaryText: string,
-): Array<{ role: string; content: unknown; tool_calls?: unknown[]; tool_call_id?: string }> {
+): Array<{ role: string; content: any; tool_calls?: any[]; tool_call_id?: string }> {
   const result: typeof messages = [];
   const { start, end } = plan.compressRange;
 

@@ -6,46 +6,46 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function isIncompleteTerminalAssistantTurn(..._args: unknown[]): unknown {
+export function isIncompleteTerminalAssistantTurn(..._args: any[]): any {
   return false;
 }
-export function buildAttemptReplayMetadata(..._args: unknown[]): unknown {
+export function buildAttemptReplayMetadata(..._args: any[]): any {
   return undefined;
 }
-export function resolveAttemptReplayMetadata(..._args: unknown[]): unknown {
+export function resolveAttemptReplayMetadata(..._args: any[]): any {
   return undefined;
 }
-export function hasAttemptTerminalState(..._args: unknown[]): unknown {
+export function hasAttemptTerminalState(..._args: any[]): any {
   return false;
 }
-export function resolveIncompleteTurnPayloadText(..._args: unknown[]): unknown {
+export function resolveIncompleteTurnPayloadText(..._args: any[]): any {
   return undefined;
 }
-export function shouldRetryMissingAssistantTurn(..._args: unknown[]): unknown {
+export function shouldRetryMissingAssistantTurn(..._args: any[]): any {
   return false;
 }
-export function resolveSilentToolResultReplyPayload(..._args: unknown[]): unknown {
+export function resolveSilentToolResultReplyPayload(..._args: any[]): any {
   return undefined;
 }
-export function resolveReplayInvalidFlag(..._args: unknown[]): unknown {
+export function resolveReplayInvalidFlag(..._args: any[]): any {
   return undefined;
 }
-export function resolveRunLivenessState(..._args: unknown[]): unknown {
+export function resolveRunLivenessState(..._args: any[]): any {
   return undefined;
 }
-export function shouldRetrySilentErrorAssistantTurn(..._args: unknown[]): unknown {
+export function shouldRetrySilentErrorAssistantTurn(..._args: any[]): any {
   return false;
 }
-export function shouldTreatEmptyAssistantReplyAsSilent(..._args: unknown[]): unknown {
+export function shouldTreatEmptyAssistantReplyAsSilent(..._args: any[]): any {
   return false;
 }
-export function resolveReasoningOnlyRetryInstruction(..._args: unknown[]): unknown {
+export function resolveReasoningOnlyRetryInstruction(..._args: any[]): any {
   return undefined;
 }
-export function resolveEmptyResponseRetryInstruction(..._args: unknown[]): unknown {
+export function resolveEmptyResponseRetryInstruction(..._args: any[]): any {
   return undefined;
 }
-export const DEFAULT_REASONING_ONLY_RETRY_LIMIT: unknown = undefined;
-export const DEFAULT_EMPTY_RESPONSE_RETRY_LIMIT: unknown = undefined;
-export const REASONING_ONLY_RETRY_INSTRUCTION: unknown = undefined;
-export const EMPTY_RESPONSE_RETRY_INSTRUCTION: unknown = undefined;
+export const DEFAULT_REASONING_ONLY_RETRY_LIMIT: any = undefined;
+export const DEFAULT_EMPTY_RESPONSE_RETRY_LIMIT: any = undefined;
+export const REASONING_ONLY_RETRY_INSTRUCTION: any = undefined;
+export const EMPTY_RESPONSE_RETRY_INSTRUCTION: any = undefined;

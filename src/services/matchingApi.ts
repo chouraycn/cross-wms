@@ -93,7 +93,7 @@ export async function matchSkills(
     threshold?: number;
   },
 ): Promise<MatchResponse> {
-  const body: Record<string, unknown> = {
+  const body: Record<string, any> = {
     query: input,
     matchMode: options?.mode || 'hybrid',
   };
@@ -190,7 +190,7 @@ export async function updateMatchConfig(config: Partial<MatchEngineConfig>): Pro
   await request<MatchEngineRuntimeConfig>('PUT', '/api/matching/config', backendFields);
 
   // 前端扩展字段保存到 localStorage
-  const localFields: Record<string, unknown> = {};
+  const localFields: Record<string, any> = {};
   if (config.autoActivateThreshold !== undefined) localFields.autoActivateThreshold = config.autoActivateThreshold;
   if (config.candidateThreshold !== undefined) localFields.candidateThreshold = config.candidateThreshold;
   if (config.cloudEnhanced !== undefined) localFields.cloudEnhanced = config.cloudEnhanced;

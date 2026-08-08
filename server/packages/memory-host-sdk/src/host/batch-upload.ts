@@ -13,7 +13,7 @@ import { readResponseJsonWithLimit, readResponseTextSnippet } from "./response-s
 /** Upload embedding batch requests and return the provider file id. */
 export async function uploadBatchJsonlFile(params: {
   client: BatchHttpClientConfig;
-  requests: unknown[];
+  requests: any[];
   errorPrefix: string;
   maxResponseBytes?: number;
   signal?: AbortSignal;

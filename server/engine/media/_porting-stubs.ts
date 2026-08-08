@@ -36,7 +36,7 @@ import {
 // ============================================================================
 
 /** Opaque openclaw config placeholder. */
-export type OpenClawConfig = Record<string, unknown>;
+export type OpenClawConfig = Record<string, any>;
 
 // ============================================================================
 // openclaw/src/media/store.ts — media directory + buffer path resolution
@@ -108,14 +108,14 @@ export function resolveAgentWorkspaceDir(
   if (!cfg || !agentId) {
     return undefined;
   }
-  const agents = (cfg as Record<string, unknown>).agents as
-    | Record<string, unknown>
+  const agents = (cfg as Record<string, any>).agents as
+    | Record<string, any>
     | undefined;
   if (!agents) {
     return undefined;
   }
   // 查找指定 agent 的 workspace 配置
-  const list = agents.list as Array<Record<string, unknown>> | undefined;
+  const list = agents.list as Array<Record<string, any>> | undefined;
   if (Array.isArray(list)) {
     for (const entry of list) {
       const id = entry?.id;
@@ -129,7 +129,7 @@ export function resolveAgentWorkspaceDir(
     }
   }
   // 回退到 defaults.workspace
-  const defaults = agents.defaults as Record<string, unknown> | undefined;
+  const defaults = agents.defaults as Record<string, any> | undefined;
   const defaultWorkspace = defaults?.workspace;
   if (typeof defaultWorkspace === "string" && defaultWorkspace.trim()) {
     return defaultWorkspace.trim();
@@ -186,18 +186,18 @@ export function resolveGroupToolPolicy(params: {
     return undefined;
   }
   // 基础实现：从 config.tools.groups 按 groupId 查找工具策略
-  const tools = (params.config as Record<string, unknown>).tools as
-    | Record<string, unknown>
+  const tools = (params.config as Record<string, any>).tools as
+    | Record<string, any>
     | undefined;
   if (!tools) {
     return undefined;
   }
-  const groups = tools.groups as Record<string, unknown> | undefined;
+  const groups = tools.groups as Record<string, any> | undefined;
   if (!groups) {
     return undefined;
   }
   const groupPolicy = groups[params.groupId] as
-    | { allow?: unknown; deny?: unknown }
+    | { allow?: any; deny?: any }
     | undefined;
   if (!groupPolicy) {
     return undefined;
@@ -472,8 +472,8 @@ export type RastermillProcessor = {
 };
 
 export class RastermillUnavailableError extends Error {
-  readonly causes: unknown[] = [];
-  constructor(message?: string, causes: unknown[] = []) {
+  readonly causes: any[] = [];
+  constructor(message?: string, causes: any[] = []) {
     super(message ?? "Rastermill image backend is unavailable");
     this.name = "RastermillUnavailableError";
     this.causes = causes;
@@ -489,14 +489,14 @@ export class RastermillError extends Error {
 }
 
 /** Creates a rastermill processor. Cross-wms stub throws unavailable. */
-export function createRastermill(_options?: unknown): RastermillProcessor {
+export function createRastermill(_options?: any): RastermillProcessor {
   throw new RastermillUnavailableError(
     "rastermill npm package is not installed in cross-wms",
   );
 }
 
 /** Detects whether an error is a rastermill unavailable error. */
-export function isRastermillUnavailableError(err: unknown): boolean {
+export function isRastermillUnavailableError(err: any): boolean {
   return err instanceof RastermillUnavailableError;
 }
 

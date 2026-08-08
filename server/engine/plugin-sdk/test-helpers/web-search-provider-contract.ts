@@ -18,7 +18,7 @@ function resolveWebSearchCredentialValue(provider: {
   id: string;
   requiresCredential?: boolean;
   envVars: readonly string[];
-}): unknown {
+}): any {
   if (provider.requiresCredential === false) {
     return `${provider.id}-no-key-needed`;
   }

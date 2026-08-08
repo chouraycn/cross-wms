@@ -120,7 +120,7 @@ describe("doctor session state provider routes", () => {
 
   it("clears auto-created route state when current route no longer uses the owner", () => {
     const sessionKey = "agent:main:telegram:direct:1";
-    const entry: Record<string, unknown> = {
+    const entry: Record<string, any> = {
       sessionId: "sess-stale-codex",
       updatedAt: 1,
       providerOverride: "openai-codex",
@@ -202,7 +202,7 @@ describe("doctor session state provider routes", () => {
 
   it("leaves explicit user owner model choices for manual review", () => {
     const sessionKey = "agent:main:telegram:direct:2";
-    const entry: Record<string, unknown> = {
+    const entry: Record<string, any> = {
       sessionId: "sess-user-codex",
       updatedAt: 1,
       providerOverride: "openai-codex",
@@ -240,7 +240,7 @@ describe("doctor session state provider routes", () => {
 
   it("clears stale runtime pins while preserving configured owner model state", () => {
     const sessionKey = "agent:main:telegram:direct:3";
-    const entry: Record<string, unknown> = {
+    const entry: Record<string, any> = {
       sessionId: "sess-configured-codex",
       updatedAt: 1,
       providerOverride: "openai-codex",
@@ -292,7 +292,7 @@ describe("doctor session state provider routes", () => {
 
   it("keeps owner CLI state when owner runtime is still configured", () => {
     const sessionKey = "agent:main:telegram:direct:4";
-    const entry: Record<string, unknown> = {
+    const entry: Record<string, any> = {
       sessionId: "sess-codex-cli",
       updatedAt: 1,
       modelProvider: "codex-cli",
@@ -319,7 +319,7 @@ describe("doctor session state provider routes", () => {
 
   it("clears stale agentRuntimeOverride-only pins when current route no longer uses the owner", () => {
     const sessionKey = "agent:main:telegram:direct:5";
-    const entry: Record<string, unknown> = {
+    const entry: Record<string, any> = {
       sessionId: "sess-stale-claude-cli",
       updatedAt: 1,
       agentRuntimeOverride: "claude-cli",
@@ -366,7 +366,7 @@ describe("doctor session state provider routes", () => {
 
   it("keeps agentRuntimeOverride pins when owner runtime remains configured", () => {
     const sessionKey = "agent:main:telegram:direct:6";
-    const entry: Record<string, unknown> = {
+    const entry: Record<string, any> = {
       sessionId: "sess-active-claude-cli",
       updatedAt: 1,
       agentRuntimeOverride: "claude-cli",
@@ -398,7 +398,7 @@ describe("doctor session state provider routes", () => {
 
   it("clears stale owner runtime pins when owner provider remains configured", () => {
     const sessionKey = "agent:main:telegram:direct:7";
-    const entry: Record<string, unknown> = {
+    const entry: Record<string, any> = {
       sessionId: "sess-provider-active-runtime-stale",
       updatedAt: 1,
       agentRuntimeOverride: "claude-cli",
@@ -444,7 +444,7 @@ describe("doctor session state provider routes", () => {
 
   it("preserves non-owner runtime overrides when clearing owner harness pins", () => {
     const sessionKey = "agent:main:telegram:direct:8";
-    const entry: Record<string, unknown> = {
+    const entry: Record<string, any> = {
       sessionId: "sess-mixed-runtime-pins",
       updatedAt: 1,
       agentHarnessId: "codex-cli",
@@ -503,7 +503,7 @@ describe("doctor session state provider routes", () => {
     // state that the codex owner cares about; the rest are bare. The old
     // implementation resolved a route for all 200; the new one only resolves
     // for the 2 that matter, deduplicated by agentId.
-    const store: Record<string, Record<string, unknown>> = {};
+    const store: Record<string, Record<string, any>> = {};
     for (let i = 0; i < 198; i += 1) {
       store[`agent:main:bare-${i}`] = {
         sessionId: `sess-bare-${i}`,

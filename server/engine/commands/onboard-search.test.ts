@@ -10,7 +10,7 @@ type WebSearchConfigRecord = {
   plugins?: {
     entries?: Record<
       string,
-      { enabled?: boolean; config?: { webSearch?: Record<string, unknown> } }
+      { enabled?: boolean; config?: { webSearch?: Record<string, any> } }
     >;
   };
 };
@@ -57,7 +57,7 @@ function ensureWebSearchConfig(config: OpenClawConfig, pluginId: string) {
   const entries = ((config.plugins ??= {}).entries ??= {});
   const pluginEntry = (entries[pluginId] ??= {}) as {
     enabled?: boolean;
-    config?: { webSearch?: Record<string, unknown> };
+    config?: { webSearch?: Record<string, any> };
   };
   pluginEntry.config ??= {};
   pluginEntry.config.webSearch ??= {};
@@ -199,7 +199,7 @@ function createPrompter(params: {
   return { prompter, notes };
 }
 
-function mockCalls<T extends unknown[]>(fn: unknown): T[] {
+function mockCalls<T extends any[]>(fn: any): T[] {
   return (fn as { mock: { calls: T[] } }).mock.calls;
 }
 
@@ -227,10 +227,10 @@ function createPerplexityConfig(apiKey: string, enabled?: boolean): OpenClawConf
   };
 }
 
-function pluginWebSearchApiKey(config: OpenClawConfig, pluginId: string): unknown {
+function pluginWebSearchApiKey(config: OpenClawConfig, pluginId: string): any {
   const entry = (
     config.plugins?.entries as
-      | Record<string, { config?: { webSearch?: { apiKey?: unknown } } }>
+      | Record<string, { config?: { webSearch?: { apiKey?: any } } }>
       | undefined
   )?.[pluginId];
   return entry?.config?.webSearch?.apiKey;
@@ -354,7 +354,7 @@ describe("setupSearch", () => {
       expect(pluginWebSearchApiKey(result, entry.pluginId)).toBe(entry.key);
       expect(result.plugins?.entries?.[entry.pluginId]?.enabled).toBe(true);
       if (entry.textMessage) {
-        const textCall = mockCalls<[Record<string, unknown>]>(prompter.text).find(
+        const textCall = mockCalls<[Record<string, any>]>(prompter.text).find(
           ([options]) => options.message === entry.textMessage,
         );
         expect(textCall?.[0].sensitive).toBe(true);
@@ -534,7 +534,7 @@ describe("setupSearch", () => {
       textValue: "",
     });
     await setupSearch(cfg, runtime, prompter);
-    const textCall = mockCalls<[Record<string, unknown>]>(prompter.text).find(
+    const textCall = mockCalls<[Record<string, any>]>(prompter.text).find(
       ([options]) => options.message === "Moonshot / Kimi API key",
     );
     expect(textCall?.[0].message).toBe("Moonshot / Kimi API key");

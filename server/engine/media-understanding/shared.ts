@@ -125,7 +125,7 @@ export async function assertOkOrThrowHttpError(
 export async function readProviderJsonObjectResponse(
   response: Response,
   message: string,
-): Promise<Record<string, unknown>> {
+): Promise<Record<string, any>> {
   const contentType = response.headers.get("content-type") ?? "";
   if (!contentType.includes("application/json")) {
     const text = await response.text();
@@ -135,14 +135,14 @@ export async function readProviderJsonObjectResponse(
   if (typeof data !== "object" || data === null || Array.isArray(data)) {
     throw new Error(`${message}: expected JSON object response`);
   }
-  return data as Record<string, unknown>;
+  return data as Record<string, any>;
 }
 
 /** Reads and parses a JSON response from a provider (array or object). */
 export async function readProviderJsonResponse(
   response: Response,
   message: string,
-): Promise<unknown> {
+): Promise<any> {
   const contentType = response.headers.get("content-type") ?? "";
   if (!contentType.includes("application/json")) {
     const text = await response.text();
@@ -167,7 +167,7 @@ export function resolveProviderHttpRequestConfig(params: {
   baseUrl?: string;
   defaultBaseUrl: string;
   headers?: Record<string, string>;
-  request?: Record<string, unknown>;
+  request?: Record<string, any>;
   defaultHeaders?: Record<string, string>;
   provider?: string;
   api?: string;
@@ -177,7 +177,7 @@ export function resolveProviderHttpRequestConfig(params: {
   baseUrl: string;
   allowPrivateNetwork: boolean;
   headers: Record<string, string>;
-  dispatcherPolicy?: unknown;
+  dispatcherPolicy?: any;
 } {
   const baseUrl = normalizeBaseUrl(params.baseUrl) ?? params.defaultBaseUrl;
   const mergedHeaders: Record<string, string> = { ...params.defaultHeaders, ...params.headers };
@@ -203,7 +203,7 @@ export async function postTranscriptionRequest(params: {
   fetchFn?: typeof fetch;
   pinDns?: boolean;
   allowPrivateNetwork?: boolean;
-  dispatcherPolicy?: unknown;
+  dispatcherPolicy?: any;
 }): Promise<{ response: Response; release: () => Promise<void> }> {
   const fetchImpl = params.fetchFn ?? fetch;
   const controller = new AbortController();

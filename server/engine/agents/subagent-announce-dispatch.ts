@@ -8,9 +8,9 @@
 
 export type SubagentAnnounceDeliveryFailureReason = unknown;
 export type SubagentAnnounceDeliveryResult = unknown;
-export function mapSteerOutcomeToDeliveryResult(..._args: unknown[]): unknown {
+export function mapSteerOutcomeToDeliveryResult(..._args: any[]): any {
   return undefined;
 }
-export async function runSubagentAnnounceDispatch(..._args: unknown[]): Promise<unknown> {
+export async function runSubagentAnnounceDispatch(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }

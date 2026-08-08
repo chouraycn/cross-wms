@@ -3,17 +3,17 @@
  * 移植自 openclaw/src/plugins/web-fetch-providers.shared.ts。
  * 降级策略：返回空数组。
  */
-export function sortWebFetchProviders(providers: unknown[]): unknown[] {
+export function sortWebFetchProviders(providers: any[]): any[] {
   return providers;
 }
 
-export function sortWebFetchProvidersForAutoDetect(providers: unknown[]): unknown[] {
+export function sortWebFetchProvidersForAutoDetect(providers: any[]): any[] {
   return providers;
 }
 
 export function resolveBundledWebFetchResolutionConfig(params: {
   pluginDir: string;
-}): unknown {
+}): any {
   void params;
   return undefined;
 }

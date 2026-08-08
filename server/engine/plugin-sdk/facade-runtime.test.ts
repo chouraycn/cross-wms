@@ -34,7 +34,7 @@ const trustedBundledFixturesRoot = path.resolve("dist-runtime", "extensions");
 const trustedBundledFixtureDirs: string[] = [];
 type SnapshotPluginRecord = PluginMetadataSnapshot["manifestRegistry"]["plugins"][number];
 
-function writeJsonFile(filePath: string, value: unknown): void {
+function writeJsonFile(filePath: string, value: any): void {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, "utf8");
 }

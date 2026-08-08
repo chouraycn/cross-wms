@@ -84,7 +84,7 @@ function registerEntry(params: { name: string; kind: DirectoryEntry["kind"]; end
   return entry;
 }
 
-function formatJsonOutput(data: unknown): string {
+function formatJsonOutput(data: any): string {
   return JSON.stringify(data, null, 2);
 }
 

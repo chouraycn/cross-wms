@@ -9,7 +9,7 @@ export type ConversationRef = {
 export type SessionBindingRecord = {
   conversation: ConversationRef;
   status: string;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 export type BoundDeliveryRouterInput = {

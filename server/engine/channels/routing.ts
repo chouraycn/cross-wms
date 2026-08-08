@@ -8,7 +8,7 @@ export interface ChannelMessageRoute {
   targetSkillId?: string;
   priority: number;
   enabled: boolean;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 const routeStore = new Map<string, ChannelMessageRoute[]>();

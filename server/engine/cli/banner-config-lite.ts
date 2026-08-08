@@ -8,7 +8,7 @@
 import type { TaglineMode } from "./tagline.js";
 
 /** Parse a persisted CLI banner tagline mode. */
-export function parseTaglineMode(value: unknown): TaglineMode | undefined {
+export function parseTaglineMode(value: any): TaglineMode | undefined {
   if (value === "random" || value === "default" || value === "off") {
     return value;
   }

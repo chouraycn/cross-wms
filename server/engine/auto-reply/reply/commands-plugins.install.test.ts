@@ -90,11 +90,11 @@ function buildPluginsParams(
   return params;
 }
 
-function expectPersistedInstall(pluginId: string, expectedInstall: Record<string, unknown>): void {
+function expectPersistedInstall(pluginId: string, expectedInstall: Record<string, any>): void {
   const persisted = mockFirstObjectArg(persistPluginInstallMock);
   expect(persisted.pluginId).toBe(pluginId);
-  const snapshot = persisted.snapshot as Record<string, unknown>;
-  const writeOptions = snapshot.writeOptions as Record<string, unknown>;
+  const snapshot = persisted.snapshot as Record<string, any>;
+  const writeOptions = snapshot.writeOptions as Record<string, any>;
   expectObjectFields(persisted.snapshot, {
     writeOptions: expect.objectContaining({
       assertConfigPathForWrite: expect.any(Function),

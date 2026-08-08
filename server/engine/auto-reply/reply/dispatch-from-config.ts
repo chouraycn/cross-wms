@@ -200,7 +200,7 @@ class DispatchReplyOperationAbortedError extends Error {
 }
 
 function isDispatchReplyOperationAbortedError(
-  error: unknown,
+  error: any,
 ): error is DispatchReplyOperationAbortedError {
   return error instanceof DispatchReplyOperationAbortedError;
 }
@@ -940,7 +940,7 @@ function runWithDispatchAbortSignal<T>(
         settled = true;
         return value;
       },
-      (error: unknown) => {
+      (error: any) => {
         settled = true;
         if (shouldStopForAbort() && isAbortError(error)) {
           throw new DispatchReplyOperationAbortedError();
@@ -1522,7 +1522,7 @@ export async function dispatchReplyFromConfig(
       );
     }
   };
-  const failDispatchReplyOperation = (error: unknown) => {
+  const failDispatchReplyOperation = (error: any) => {
     if (!dispatchReplyOperation) {
       return;
     }
@@ -1771,7 +1771,7 @@ export async function dispatchReplyFromConfig(
           accountId:
             inboundClaimContext.accountId ??
             ((
-              cfg.channels as Record<string, { defaultAccount?: unknown } | undefined> | undefined
+              cfg.channels as Record<string, { defaultAccount?: any } | undefined> | undefined
             )?.[inboundClaimContext.channelId]?.defaultAccount as string | undefined) ??
             "default",
           conversationId: inboundClaimContext.conversationId,
@@ -2813,7 +2813,7 @@ export async function dispatchReplyFromConfig(
           options?.forwardWhenSourceDeliverySuppressed === true)
       );
     };
-    const wrapProgressCallback = <Args extends unknown[]>(
+    const wrapProgressCallback = <Args extends any[]>(
       callback: ((...args: Args) => Promise<void> | void) | undefined,
       options?: {
         allowWhenToolSummariesHidden?: boolean;

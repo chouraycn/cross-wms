@@ -24,7 +24,7 @@ vi.mock("../../infra/provider-usage.js", () => ({
 }));
 
 vi.mock("../group-activation.js", () => ({
-  normalizeGroupActivation: (value: unknown) => value,
+  normalizeGroupActivation: (value: any) => value,
 }));
 
 vi.mock("./queue.js", async () => {

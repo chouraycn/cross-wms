@@ -27,7 +27,7 @@ export const MALFORMED_STREAMING_FRAGMENT_ERROR_MESSAGE =
 const MALFORMED_STREAMING_FRAGMENT_USER_MESSAGE =
   "LLM streaming response contained a malformed fragment. Please try again.";
 
-type ErrorPayload = Record<string, unknown>;
+type ErrorPayload = Record<string, any>;
 
 type ApiErrorInfo = {
   httpCode?: string;
@@ -36,7 +36,7 @@ type ApiErrorInfo = {
   requestId?: string;
 };
 
-function isErrorPayloadObject(payload: unknown): payload is ErrorPayload {
+function isErrorPayloadObject(payload: any): payload is ErrorPayload {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
     return false;
   }
@@ -84,7 +84,7 @@ export function parseApiErrorPayload(raw?: string): ErrorPayload | null {
       continue;
     }
     try {
-      const parsed = JSON.parse(candidate) as unknown;
+      const parsed = JSON.parse(candidate) as any;
       if (isErrorPayloadObject(parsed)) {
         return parsed;
       }
@@ -182,7 +182,7 @@ export function parseApiErrorInfo(raw?: string): ApiErrorInfo | null {
   let errType: string | undefined;
   let errMessage: string | undefined;
   if (payload.error && typeof payload.error === "object" && !Array.isArray(payload.error)) {
-    const err = payload.error as Record<string, unknown>;
+    const err = payload.error as Record<string, any>;
     if (typeof err.type === "string") {
       errType = err.type;
     }

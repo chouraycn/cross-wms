@@ -40,7 +40,7 @@ export function runModelsCommand(action: () => Promise<void>) {
 
 export function resolveModelAgentOption(
   command: Command | undefined,
-  opts?: { agent?: unknown },
+  opts?: { agent?: any },
 ): string | undefined {
   return (
     resolveOptionFromCommand<string>(command, "agent") ??

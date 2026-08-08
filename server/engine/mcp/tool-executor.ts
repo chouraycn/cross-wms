@@ -16,9 +16,9 @@ import type {
 export type ToolDefinition = {
   name: string;
   description: string;
-  inputSchema: Record<string, unknown>;
-  outputSchema?: Record<string, unknown>;
-  handler: (args: unknown, context?: ToolExecutionContext) => Promise<ToolResult> | ToolResult;
+  inputSchema: Record<string, any>;
+  outputSchema?: Record<string, any>;
+  handler: (args: any, context?: ToolExecutionContext) => Promise<ToolResult> | ToolResult;
   annotations?: {
     readOnlyHint?: boolean;
     destructiveHint?: boolean;
@@ -28,7 +28,7 @@ export type ToolDefinition = {
 };
 
 export type ToolResult = {
-  content: Array<{ type: string; text?: string; data?: unknown }>;
+  content: Array<{ type: string; text?: string; data?: any }>;
   isError?: boolean;
 };
 
@@ -63,7 +63,7 @@ export class ToolExecutor {
   private activeExecutions: Map<string, ToolExecutionContext> = new Map();
   private queuedExecutions: Array<{
     toolName: string;
-    args: unknown;
+    args: any;
     context: ToolExecutionContext;
     resolve: (result: ToolResult) => void;
   }> = [];
@@ -120,7 +120,7 @@ export class ToolExecutor {
     logger.debug(`[ToolExecutor] Set timeout for tool ${toolName}: ${timeoutMs}ms`);
   }
 
-  validate(toolName: string, args: unknown): ValidationResult {
+  validate(toolName: string, args: any): ValidationResult {
     const config = this.tools.get(toolName);
     if (!config) {
       return {
@@ -133,7 +133,7 @@ export class ToolExecutor {
 
     if (schema.type === 'object' && schema.properties) {
       const errors: string[] = [];
-      const properties = schema.properties as Record<string, unknown>;
+      const properties = schema.properties as Record<string, any>;
       const required = schema.required as string[] | undefined;
 
       if (required && Array.isArray(required)) {
@@ -145,8 +145,8 @@ export class ToolExecutor {
       }
 
       if (args && typeof args === 'object') {
-        for (const [key, value] of Object.entries(args as Record<string, unknown>)) {
-          const propSchema = properties[key] as Record<string, unknown> | undefined;
+        for (const [key, value] of Object.entries(args as Record<string, any>)) {
+          const propSchema = properties[key] as Record<string, any> | undefined;
           if (propSchema) {
             const expectedType = propSchema.type as string | undefined;
             if (expectedType && !this.checkType(value, expectedType)) {
@@ -191,7 +191,7 @@ export class ToolExecutor {
     return { valid: true };
   }
 
-  async execute(toolName: string, args: unknown, options?: { sessionId?: string; requestId?: string | number }): Promise<ToolResult> {
+  async execute(toolName: string, args: any, options?: { sessionId?: string; requestId?: string | number }): Promise<ToolResult> {
     const config = this.tools.get(toolName);
     if (!config) {
       return {
@@ -217,7 +217,7 @@ export class ToolExecutor {
 
     const context: ToolExecutionContext = {
       toolName,
-      arguments: args as Record<string, unknown>,
+      arguments: args as Record<string, any>,
       sessionId: options?.sessionId,
       requestId: options?.requestId,
       startTime: Date.now(),
@@ -240,7 +240,7 @@ export class ToolExecutor {
     return this.doExecute(config, args, context);
   }
 
-  private async doExecute(config: ToolConfig, args: unknown, context: ToolExecutionContext): Promise<ToolResult> {
+  private async doExecute(config: ToolConfig, args: any, context: ToolExecutionContext): Promise<ToolResult> {
     const executionId = this.generateExecutionId();
     this.activeExecutions.set(executionId, context);
     context.state = 'running';
@@ -380,7 +380,7 @@ export class ToolExecutor {
     return true;
   }
 
-  private async executeWithTimeout(config: ToolConfig, args: unknown, context: ToolExecutionContext): Promise<ToolResult> {
+  private async executeWithTimeout(config: ToolConfig, args: any, context: ToolExecutionContext): Promise<ToolResult> {
     const { definition } = config;
     const timeoutMs = config.timeoutMs ?? this.config.defaultTimeoutMs;
 
@@ -405,14 +405,14 @@ export class ToolExecutor {
           clearTimeout(timeoutId);
           resolve(result);
         })
-        .catch((err: unknown) => {
+        .catch((err: any) => {
           clearTimeout(timeoutId);
           reject(err);
         });
     });
   }
 
-  private checkType(value: unknown, expectedType: string): boolean {
+  private checkType(value: any, expectedType: string): boolean {
     switch (expectedType) {
       case 'string':
         return typeof value === 'string';
@@ -453,10 +453,10 @@ export function registerTool(tool: ToolDefinition): void {
   toolExecutor.registerTool(tool);
 }
 
-export async function executeTool(toolName: string, args: unknown): Promise<ToolResult> {
+export async function executeTool(toolName: string, args: any): Promise<ToolResult> {
   return toolExecutor.execute(toolName, args);
 }
 
-export function validateTool(toolName: string, args: unknown): ValidationResult {
+export function validateTool(toolName: string, args: any): ValidationResult {
   return toolExecutor.validate(toolName, args);
 }

@@ -7,7 +7,7 @@ import {
   resolveGatewayDecisionFromPermissionOutcome,
 } from "./permission-relay.js";
 
-function buildOptionsForAllowedDecisions(allowedDecisions: unknown) {
+function buildOptionsForAllowedDecisions(allowedDecisions: any) {
   return buildAcpPermissionRequest({
     sessionId: "session-1",
     event: {
@@ -20,7 +20,7 @@ function buildOptionsForAllowedDecisions(allowedDecisions: unknown) {
 
 describe("ACP permission relay helpers", () => {
   it("filters unknown decisions and falls back to allow-once plus deny", () => {
-    const optionIds = (allowedDecisions: unknown) =>
+    const optionIds = (allowedDecisions: any) =>
       buildOptionsForAllowedDecisions(allowedDecisions).map((option) => option.optionId);
 
     expect(optionIds(["allow-once", "bogus", "deny"])).toEqual(["allow-once", "deny"]);

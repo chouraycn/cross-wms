@@ -58,7 +58,7 @@ export function buildStatusEventsValue(params: { queuedSystemEvents: string[] })
 
 /** Formats whether deep probe data was collected. */
 export function buildStatusProbesValue(params: {
-  health?: unknown;
+  health?: any;
   ok: (value: string) => string;
   muted: (value: string) => string;
 }) {

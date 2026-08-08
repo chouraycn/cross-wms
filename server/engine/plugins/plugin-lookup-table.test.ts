@@ -11,7 +11,7 @@ const listExplicitlyDisabledChannelIdsForConfig = vi.hoisted(() => vi.fn());
 const loadPluginManifestRegistryForInstalledIndex = vi.hoisted(() => vi.fn());
 
 vi.mock("../channels/config-presence.js", () => ({
-  hasMeaningfulChannelConfig: (value: unknown) =>
+  hasMeaningfulChannelConfig: (value: any) =>
     Boolean(
       value &&
       typeof value === "object" &&
@@ -31,7 +31,7 @@ vi.mock("./manifest-registry-installed.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./manifest-registry-installed.js")>();
   return {
     ...actual,
-    loadPluginManifestRegistryForInstalledIndex: (params: unknown) =>
+    loadPluginManifestRegistryForInstalledIndex: (params: any) =>
       loadPluginManifestRegistryForInstalledIndex(params),
   };
 });

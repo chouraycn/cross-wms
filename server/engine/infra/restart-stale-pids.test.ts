@@ -45,7 +45,7 @@ vi.mock("node:fs", async () => {
       // against the actual module's export so TS accepts it as a drop-in.
       // The test only exercises the string-returning overload (encoded /proc
       // reads); the cast is a precise retype, not `any`.
-      readFileSync: ((path: unknown, encoding?: unknown) =>
+      readFileSync: ((path: any, encoding?: any) =>
         mockReadFileSync(path, encoding)) as typeof actual.readFileSync,
     }),
   );
@@ -56,7 +56,7 @@ vi.mock("node:child_process", async () => {
   return mockNodeBuiltinModule(
     () => vi.importActual<typeof import("node:child_process")>("node:child_process"),
     {
-      spawnSync: (...args: unknown[]) => mockSpawnSync(...args),
+      spawnSync: (...args: any[]) => mockSpawnSync(...args),
       execFileSync: vi.fn(),
     },
   );
@@ -72,7 +72,7 @@ vi.mock("./ports-lsof.js", () => ({
 
 vi.mock("../logging/subsystem.js", () => ({
   createSubsystemLogger: vi.fn(() => ({
-    warn: (...args: unknown[]) => mockRestartWarn(...args),
+    warn: (...args: any[]) => mockRestartWarn(...args),
     info: vi.fn(),
     error: vi.fn(),
   })),
@@ -152,7 +152,7 @@ function installInitialBusyPoll(
   resolvePoll: (call: number) => MockLsofResult,
 ): () => number {
   let call = 0;
-  mockSpawnSync.mockImplementation((command: unknown) => {
+  mockSpawnSync.mockImplementation((command: any) => {
     if (command !== "lsof") {
       return createLsofResult();
     }
@@ -165,8 +165,8 @@ function installInitialBusyPoll(
   return () => call;
 }
 
-function mockCall(mock: ReturnType<typeof vi.fn>, callIndex = 0): unknown[] {
-  const call = mock.mock.calls[callIndex] as unknown[] | undefined;
+function mockCall(mock: ReturnType<typeof vi.fn>, callIndex = 0): any[] {
+  const call = mock.mock.calls[callIndex] as any[] | undefined;
   if (!call) {
     throw new Error(`expected mock call ${callIndex}`);
   }
@@ -178,12 +178,12 @@ function mockCallRecordArg(
   callIndex: number,
   argIndex: number,
   label: string,
-): Record<string, unknown> {
+): Record<string, any> {
   const value = mockCall(mock, callIndex)[argIndex];
   if (!value || typeof value !== "object") {
     throw new Error(`expected ${label} to be an object`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 function expectWarningContaining(text: string): void {
@@ -287,7 +287,7 @@ describe.skipIf(isWindows)("restart-stale-pids", () => {
 
     it("verifies argv when lsof reports the node process name instead of openclaw", () => {
       const stalePid = process.pid + 101;
-      mockSpawnSync.mockImplementation((command: unknown) => {
+      mockSpawnSync.mockImplementation((command: any) => {
         if (command === "ps") {
           return {
             error: null,
@@ -306,7 +306,7 @@ describe.skipIf(isWindows)("restart-stale-pids", () => {
 
       expect(findGatewayPidsOnPortSync(18789)).toEqual([stalePid]);
       const psCall = mockSpawnSync.mock.calls.find(
-        (call) => call[0] === "ps" && Array.isArray(call[1]) && (call[1] as unknown[])[0] === "-ww",
+        (call) => call[0] === "ps" && Array.isArray(call[1]) && (call[1] as any[])[0] === "-ww",
       );
       expect(psCall?.[1]).toEqual(["-ww", "-p", String(stalePid), "-o", "command="]);
       expect(psCall?.[2]).toEqual({ timeout: 2000, encoding: "utf8" });
@@ -355,7 +355,7 @@ describe.skipIf(isWindows)("restart-stale-pids", () => {
         const directParentPid = process.pid + 2003;
         const grandparentPid = process.pid + 2004;
         const benignStalePid = process.pid + 2005;
-        mockReadFileSync.mockImplementation((path: unknown): string => {
+        mockReadFileSync.mockImplementation((path: any): string => {
           if (path === `/proc/${directParentPid}/status`) {
             return `Name:\topenclaw-gateway\nPid:\t${directParentPid}\nPPid:\t${grandparentPid}\n`;
           }
@@ -455,7 +455,7 @@ describe.skipIf(isWindows)("restart-stale-pids", () => {
       const benignStalePid = process.pid + 3103;
       Object.defineProperty(process, "platform", { value: "darwin", configurable: true });
       try {
-        mockSpawnSync.mockImplementation((command: unknown, args: unknown) => {
+        mockSpawnSync.mockImplementation((command: any, args: any) => {
           if (command === "ps" && Array.isArray(args) && args[0] === "-o") {
             const targetPid = args[3];
             if (targetPid === String(toolHostPid)) {
@@ -514,7 +514,7 @@ describe.skipIf(isWindows)("restart-stale-pids", () => {
       const gatewayParentPid = process.pid + 3151;
       Object.defineProperty(process, "platform", { value: "darwin", configurable: true });
       try {
-        mockSpawnSync.mockImplementation((command: unknown, args: unknown) => {
+        mockSpawnSync.mockImplementation((command: any, args: any) => {
           if (command === "ps" && Array.isArray(args) && args[0] === "-o") {
             return { error: null, status: 0, stdout: "1\n", stderr: "" };
           }
@@ -529,7 +529,7 @@ describe.skipIf(isWindows)("restart-stale-pids", () => {
         withStubbedPpid(gatewayParentPid, () => findGatewayPidsOnPortSync(18789, 400));
         const ancestorPsCall = mockSpawnSync.mock.calls.find(
           (call) =>
-            call[0] === "ps" && Array.isArray(call[1]) && (call[1] as unknown[])[0] === "-o",
+            call[0] === "ps" && Array.isArray(call[1]) && (call[1] as any[])[0] === "-o",
         );
         expect(ancestorPsCall?.[2]).toEqual({ timeout: 400, encoding: "utf8" });
       } finally {
@@ -1328,7 +1328,7 @@ describe.skipIf(isWindows)("restart-stale-pids", () => {
       let lsofCall = 0;
       Object.defineProperty(process, "platform", { value: "darwin", configurable: true });
       try {
-        mockSpawnSync.mockImplementation((command: unknown, args: unknown) => {
+        mockSpawnSync.mockImplementation((command: any, args: any) => {
           if (command === "ps" && Array.isArray(args) && args[0] === "-o") {
             return { error: null, status: 0, stdout: "1\n", stderr: "" };
           }
@@ -1350,7 +1350,7 @@ describe.skipIf(isWindows)("restart-stale-pids", () => {
         const ancestorPsTimeouts = mockSpawnSync.mock.calls
           .filter(
             (call) =>
-              call[0] === "ps" && Array.isArray(call[1]) && (call[1] as unknown[])[0] === "-o",
+              call[0] === "ps" && Array.isArray(call[1]) && (call[1] as any[])[0] === "-o",
           )
           .map((call) => (call[2] as { timeout?: number } | undefined)?.timeout);
         expect(ancestorPsTimeouts).toContain(2000);

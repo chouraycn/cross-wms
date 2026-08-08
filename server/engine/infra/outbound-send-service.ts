@@ -2,9 +2,9 @@
 
 export type OutboundGatewayContext = unknown;
 export type OutboundSendContext = unknown;
-export function executeSendAction(...args: unknown[]): unknown {
+export function executeSendAction(...args: any[]): any {
   return undefined;
 }
-export function executePollAction(...args: unknown[]): unknown {
+export function executePollAction(...args: any[]): any {
   return undefined;
 }

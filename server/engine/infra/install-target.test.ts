@@ -9,12 +9,12 @@ const resolveSafeInstallDirMock = vi.hoisted(() => vi.fn());
 const assertCanonicalPathWithinBaseMock = vi.hoisted(() => vi.fn());
 
 vi.mock("./fs-safe.js", () => ({
-  pathExists: (...args: unknown[]) => pathExistsMock(...args),
+  pathExists: (...args: any[]) => pathExistsMock(...args),
 }));
 
 vi.mock("./install-safe-path.js", () => ({
-  resolveSafeInstallDir: (...args: unknown[]) => resolveSafeInstallDirMock(...args),
-  assertCanonicalPathWithinBase: (...args: unknown[]) => assertCanonicalPathWithinBaseMock(...args),
+  resolveSafeInstallDir: (...args: any[]) => resolveSafeInstallDirMock(...args),
+  assertCanonicalPathWithinBase: (...args: any[]) => assertCanonicalPathWithinBaseMock(...args),
 }));
 
 import { ensureInstallTargetAvailable, resolveCanonicalInstallTarget } from "./install-target.js";

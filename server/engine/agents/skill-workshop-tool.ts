@@ -7,6 +7,6 @@
  */
 
 export type SkillWorkshopToolOptions = unknown;
-export function createSkillWorkshopTool(..._args: unknown[]): unknown {
+export function createSkillWorkshopTool(..._args: any[]): any {
   return undefined;
 }

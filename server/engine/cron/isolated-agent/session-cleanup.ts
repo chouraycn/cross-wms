@@ -27,9 +27,9 @@ export async function cleanupCronRunSessionAfterRun(params: {
     const gatewayRuntime = (await loadGatewayCallRuntime()) as {
       callGateway: (params: {
         method: string;
-        params: Record<string, unknown>;
+        params: Record<string, any>;
         timeoutMs: number;
-      }) => Promise<unknown>;
+      }) => Promise<any>;
     };
     await gatewayRuntime.callGateway({
       method: "sessions.delete",

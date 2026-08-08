@@ -16,9 +16,9 @@ type AgentHarnessPromptBuildResult = {
 export async function resolveAgentHarnessBeforePromptBuildResult(params: {
   prompt: string;
   developerInstructions: string;
-  messages: unknown[];
-  ctx?: unknown;
-  beforeAgentStartResult?: unknown;
+  messages: any[];
+  ctx?: any;
+  beforeAgentStartResult?: any;
 }): Promise<AgentHarnessPromptBuildResult> {
   // Simplified: no plugin hooks in cross-wms, return inputs as-is
   return {
@@ -31,8 +31,8 @@ export async function resolveAgentHarnessBeforePromptBuildResult(params: {
 /** Runs best-effort before-compaction hooks for a harness session. */
 export async function runAgentHarnessBeforeCompactionHook(_params: {
   sessionFile: string;
-  messages?: unknown[];
-  ctx?: unknown;
+  messages?: any[];
+  ctx?: any;
 }): Promise<void> {
   // No-op: no plugin hooks in cross-wms
 }
@@ -40,8 +40,8 @@ export async function runAgentHarnessBeforeCompactionHook(_params: {
 /** Runs best-effort after-compaction hooks for a harness session. */
 export async function runAgentHarnessAfterCompactionHook(_params: {
   sessionFile: string;
-  messages?: unknown[];
-  ctx?: unknown;
+  messages?: any[];
+  ctx?: any;
   compactedCount: number;
 }): Promise<void> {
   // No-op: no plugin hooks in cross-wms

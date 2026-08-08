@@ -6,12 +6,12 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function resolveCliNoOutputTimeoutMs(..._args: unknown[]): unknown {
+export function resolveCliNoOutputTimeoutMs(..._args: any[]): any {
   return undefined;
 }
-export function resolveCliRunTimeoutOverrideMs(..._args: unknown[]): unknown {
+export function resolveCliRunTimeoutOverrideMs(..._args: any[]): any {
   return undefined;
 }
-export function buildCliSupervisorScopeKey(..._args: unknown[]): unknown {
+export function buildCliSupervisorScopeKey(..._args: any[]): any {
   return undefined;
 }

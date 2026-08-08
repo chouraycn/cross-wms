@@ -140,7 +140,7 @@ describe("sanitizeSessionMessagesImages", () => {
     ]);
 
     const out = await sanitizeSessionMessagesImages(input, "test");
-    const assistant = out[0] as { content?: Array<Record<string, unknown>> };
+    const assistant = out[0] as { content?: Array<Record<string, any>> };
     const toolCall = assistant.content?.find((b) => b.type === "toolCall");
     if (toolCall === undefined) {
       throw new Error("expected preserved tool call");
@@ -366,10 +366,10 @@ describe("sanitizeSessionMessagesImages", () => {
       const out = await sanitizeSessionMessagesImages(input, "test");
 
       expect(out).toHaveLength(1);
-      const content = (out[0] as { content?: unknown[] }).content;
+      const content = (out[0] as { content?: any[] }).content;
       expect(content).toHaveLength(2);
       expect("thought_signature" in ((content?.[0] ?? {}) as object)).toBe(false);
-      expect((content?.[1] as { thought_signature?: unknown })?.thought_signature).toBe("AQID");
+      expect((content?.[1] as { thought_signature?: any })?.thought_signature).toBe("AQID");
     });
 
     it("still strips signatures in images-only mode when replay policy requests it", async () => {
@@ -391,7 +391,7 @@ describe("sanitizeSessionMessagesImages", () => {
         },
       });
 
-      const content = (out[0] as { content?: Array<{ thought_signature?: unknown }> }).content;
+      const content = (out[0] as { content?: Array<{ thought_signature?: any }> }).content;
       expect(content).toHaveLength(2);
       expect(content?.[0]?.thought_signature).toBeUndefined();
     });

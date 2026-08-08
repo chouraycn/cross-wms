@@ -47,7 +47,7 @@ async function makeTestState(seed = "legacy-oauth-seed"): Promise<OpenClawTestSt
 
 function writeLegacyAuthProfiles(
   state: OpenClawTestState,
-  store: unknown,
+  store: any,
   agentId = "main",
 ): Promise<string> {
   return state.writeJson(path.join("agents", agentId, "agent", "auth-profiles.json"), store);

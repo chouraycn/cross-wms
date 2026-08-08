@@ -32,16 +32,16 @@ const THINKING_TAG_CLOSE_GLOBAL_RE = new RegExp(
 
 type AssistantMessage = {
   role: "assistant";
-  content: string | Array<{ type: string; text?: string; thinking?: string; thinkingSignature?: string; textSignature?: unknown; [key: string]: unknown }>;
+  content: string | Array<{ type: string; text?: string; thinking?: string; thinkingSignature?: string; textSignature?: any; [key: string]: any }>;
   stopReason?: string;
-  phase?: unknown;
-  [key: string]: unknown;
+  phase?: any;
+  [key: string]: any;
 };
 
 type AgentMessage = {
   role: string;
-  content?: unknown;
-  [key: string]: unknown;
+  content?: any;
+  [key: string]: any;
 };
 
 /** Narrow an agent message to an assistant message. */
@@ -298,7 +298,7 @@ export function extractThinkingFromTaggedStream(text: string): string {
 /** Infer compact display metadata for a tool call from its args. */
 export function inferToolMetaFromArgs(
   toolName: string,
-  args: unknown,
+  args: any,
   options?: { detailMode?: "explain" | "raw" },
 ): string | undefined {
   const name = toolName ?? "unknown";

@@ -15,7 +15,7 @@ import type { AgentTool } from "../runtime/index.js";
 import type { AnyAgentTool } from "../tools/common.js";
 import { log } from "./logger.js";
 
-type ProviderToolSchemaParams<TSchemaType extends TSchema = TSchema, TResult = unknown> = {
+type ProviderToolSchemaParams<TSchemaType extends TSchema = TSchema, TResult = any> = {
   tools: AgentTool<TSchemaType, TResult>[];
   provider: string;
   config?: OpenClawConfig;
@@ -28,7 +28,7 @@ type ProviderToolSchemaParams<TSchemaType extends TSchema = TSchema, TResult = u
   allowRuntimePluginLoad?: boolean;
 };
 
-function buildProviderToolSchemaContext<TSchemaType extends TSchema = TSchema, TResult = unknown>(
+function buildProviderToolSchemaContext<TSchemaType extends TSchema = TSchema, TResult = any>(
   params: ProviderToolSchemaParams<TSchemaType, TResult>,
   provider: string,
 ) {
@@ -50,7 +50,7 @@ function buildProviderToolSchemaContext<TSchemaType extends TSchema = TSchema, T
  */
 export function normalizeProviderToolSchemas<
   TSchemaType extends TSchema = TSchema,
-  TResult = unknown,
+  TResult = any,
 >(params: ProviderToolSchemaParams<TSchemaType, TResult>): AgentTool<TSchemaType, TResult>[] {
   const provider = params.provider.trim();
   const pluginNormalized = normalizeProviderToolSchemasWithPlugin({

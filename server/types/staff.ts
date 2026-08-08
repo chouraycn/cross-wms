@@ -4,7 +4,7 @@
  * 设计原则：
  * 1. 类型名与原 SQLModel 类名一一对应（如 AgentProfile → AgentProfileRow）
  * 2. 后缀 `Row` 表示数据库行结构，`Input` 表示创建输入，`Read` 表示对外输出
- * 3. JSON 字段使用 `Record<string, unknown>` 或 `unknown[]`，由应用层负责具体类型
+ * 3. JSON 字段使用 `Record<string, any>` 或 `any[]`，由应用层负责具体类型
  * 4. 时间字段统一使用 `number`（Unix 秒）
  * 5. 布尔字段使用 `0 | 1`（SQLite 兼容）— Read 类型可选 `boolean` 转换
  */
@@ -64,7 +64,7 @@ export interface AgentProfileRead {
   persona_prompt: string | null;
   is_overall: boolean;
   status: string;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
   /**
    * 该员工绑定的资源列表（SOP 技能 / 通用技能 / 知识库）。
    * 对齐原版 AgentProfileRead.resources；前端 EmployeeCard 依赖它统计
@@ -82,7 +82,7 @@ export interface AgentProfileInput {
   persona_prompt?: string | null;
   is_overall?: boolean;
   status?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 // ============================ Agent Usage / Bindings ============================
@@ -118,7 +118,7 @@ export interface AgentResourceBindingRead {
   resource_type: string;
   resource_id: string;
   status: string;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
   created_at: number;
   updated_at: number;
 }
@@ -160,7 +160,7 @@ export interface SkillBranchMeta {
   sync_state?: string;
   base_version?: string;
   head_version?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface SkillRead {
@@ -171,7 +171,7 @@ export interface SkillRead {
   name: string;
   business_domain: string | null;
   description: string | null;
-  content: Record<string, unknown>;
+  content: Record<string, any>;
   status: string;
   // —— 当前版本维度统计 ——
   call_count: number;
@@ -198,7 +198,7 @@ export interface SkillRead {
   branch_sync_state?: string;
   branch_base_version?: string;
   branch_head_version?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
   created_at: number;
   updated_at: number;
 }
@@ -262,11 +262,11 @@ export interface GeneralSkillRead {
   description: string | null;
   homepage: string | null;
   skill_markdown: string;
-  skill_files: unknown[];
-  metadata: Record<string, unknown>;
+  skill_files: any[];
+  metadata: Record<string, any>;
   status: string;
-  permissions: Record<string, unknown>;
-  runtime_config: Record<string, unknown>;
+  permissions: Record<string, any>;
+  runtime_config: Record<string, any>;
   created_at: number;
   updated_at: number;
 }
@@ -287,7 +287,7 @@ export interface KnowledgeBaseRead {
   name: string;
   description: string | null;
   status: string;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
   /**
    * 知识资产统计（对齐 StaffDeck 原版 knowledge_base_read）。
    * 前端 KnowledgePage/DashboardPage/OpenPlatformPage 依赖这三个字段展示
@@ -456,9 +456,9 @@ export interface ModelConfigRead {
   model: string;
   temperature: number;
   max_output_tokens: number;
-  extra_body: Record<string, unknown>;
-  protocol_options: Record<string, unknown>;
-  legacy_unmapped_options: Record<string, unknown>;
+  extra_body: Record<string, any>;
+  protocol_options: Record<string, any>;
+  legacy_unmapped_options: Record<string, any>;
   trust_status: string;
   verified_at: number | null;
   verified_fingerprint: string | null;
@@ -491,9 +491,9 @@ export interface ModelConfigInput {
   model: string;
   temperature?: number;
   max_output_tokens?: number;
-  extra_body?: Record<string, unknown>;
-  protocol_options?: Record<string, unknown>;
-  legacy_unmapped_options?: Record<string, unknown>;
+  extra_body?: Record<string, any>;
+  protocol_options?: Record<string, any>;
+  legacy_unmapped_options?: Record<string, any>;
   trust_status?: string;
   enabled?: boolean;
   is_default?: boolean;
@@ -531,17 +531,17 @@ export interface ToolRead {
   tool_type: string;
   method: string;
   url: string;
-  headers: Record<string, unknown>;
-  auth: Record<string, unknown>;
-  config: Record<string, unknown>;
+  headers: Record<string, any>;
+  auth: Record<string, any>;
+  config: Record<string, any>;
   /**
    * MCP 工具的连接配置（对齐原版 ToolRead.mcp_config）。
    * cross-wms 复用 sd_tools.config_json 存储，tool_type==='mcp' 时等价于 config。
    * 前端 ToolsPage/DistillPage 表单直接读写该字段。
    */
-  mcp_config: Record<string, unknown>;
-  input_schema: Record<string, unknown>;
-  output_schema: Record<string, unknown>;
+  mcp_config: Record<string, any>;
+  input_schema: Record<string, any>;
+  output_schema: Record<string, any>;
   allowed_skills: string[];
   mcp_server_id: string | null;
   mcp_tool_name: string | null;
@@ -594,12 +594,12 @@ export interface McpServerRead {
   connection: McpServerConnection;
   transport: string;
   url: string | null;
-  headers: Record<string, unknown>;
+  headers: Record<string, any>;
   command: string | null;
   args: string[];
-  env: Record<string, unknown>;
+  env: Record<string, any>;
   cwd: string | null;
-  discovered_tools: unknown[];
+  discovered_tools: any[];
   last_synced_at: number | null;
   enabled: boolean;
   /** 该 MCP 服务器已同步到 sd_tools 的工具数（对齐原版 tools.py::tool_count） */
@@ -645,7 +645,7 @@ export interface ScheduledTaskRead {
   prompt: string;
   description: string | null;
   schedule_type: string;
-  schedule: Record<string, unknown>;
+  schedule: Record<string, any>;
   timezone: string;
   rrule: string | null;
   status: string;
@@ -660,7 +660,7 @@ export interface ScheduledTaskRead {
   lease_owner: string | null;
   lease_until: number | null;
   source_session_id: string | null;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
   created_at: number;
   updated_at: number;
 }
@@ -709,13 +709,13 @@ export interface ChatSessionRead {
   title: string | null;
   active_skill_id: string | null;
   active_step_id: string | null;
-  slots: Record<string, unknown>;
-  skill_stack: unknown[];
-  pending_tasks: unknown[];
-  resume_after_answer: unknown | null;
-  awaiting_input: unknown | null;
-  knowledge_context: unknown[];
-  context_state: Record<string, unknown>;
+  slots: Record<string, any>;
+  skill_stack: any[];
+  pending_tasks: any[];
+  resume_after_answer: any | null;
+  awaiting_input: any | null;
+  knowledge_context: any[];
+  context_state: Record<string, any>;
   summary: string | null;
   last_agent_question: string | null;
   status: string;
@@ -739,7 +739,7 @@ export interface MessageRead {
   session_id: string;
   role: string;
   content: string;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
   created_at: number;
 }
 
@@ -808,7 +808,7 @@ export interface MemoryRecordRead {
   kind: string;
   content: string;
   importance: number;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
   created_at: number;
   updated_at: number;
 }
@@ -827,7 +827,7 @@ export interface AgentEventRead {
   tenant_id: string;
   session_id: string;
   event_type: string;
-  payload: Record<string, unknown>;
+  payload: Record<string, any>;
   created_at: number;
 }
 
@@ -929,7 +929,7 @@ export type StaffStreamEventType =
 
 export interface StaffStreamEvent {
   type: StaffStreamEventType;
-  data: Record<string, unknown>;
+  data: Record<string, any>;
 }
 
 // ============================ 鉴权与上下文类型 ============================

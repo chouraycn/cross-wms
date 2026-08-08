@@ -32,8 +32,8 @@ function pushViolation(
 }
 
 function hasSecretRefInput(params: {
-  value: unknown;
-  refValue?: unknown;
+  value: any;
+  refValue?: any;
   defaults: SecretDefaults | undefined;
 }): boolean {
   return (
@@ -56,7 +56,7 @@ function collectTypeOAuthSecretRefViolations(params: {
   }
   const reason =
     'SecretRef is not allowed for type="oauth" auth profiles (OAuth credentials are runtime-mutable).';
-  const record = params.credential as Record<string, unknown>;
+  const record = params.credential as Record<string, any>;
   for (const field of ["access", "refresh", "token", "tokenRef", "key", "keyRef"] as const) {
     if (coerceSecretRef(record[field], params.defaults) === null) {
       continue;

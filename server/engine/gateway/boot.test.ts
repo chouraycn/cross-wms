@@ -95,7 +95,7 @@ describe("runBootOnce", () => {
     if (!call || typeof call !== "object") {
       throw new Error("expected agent command call");
     }
-    return call as Record<string, unknown>;
+    return call as Record<string, any>;
   };
 
   const runBootAndReturnCall = async (
@@ -104,8 +104,8 @@ describe("runBootOnce", () => {
       cfg?: OpenClawConfig;
       agentId?: string;
     } = {},
-  ): Promise<Record<string, unknown>> => {
-    let call: Record<string, unknown> | undefined;
+  ): Promise<Record<string, any>> => {
+    let call: Record<string, any> | undefined;
     const cfg = params.cfg ?? {};
     await withBootWorkspace(
       { bootContent: params.content ?? "Check status." },

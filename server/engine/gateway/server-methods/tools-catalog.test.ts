@@ -58,9 +58,9 @@ type CatalogTool = {
   description?: string;
   pluginId?: string;
   optional?: boolean;
-  risk?: unknown;
-  tags?: unknown;
-  defaultProfiles?: unknown[];
+  risk?: any;
+  tags?: any;
+  defaultProfiles?: any[];
 };
 type CatalogGroup = {
   id?: string;
@@ -73,7 +73,7 @@ type CatalogPayload = {
   groups: CatalogGroup[];
 };
 
-function createInvokeParams(params: Record<string, unknown>) {
+function createInvokeParams(params: Record<string, any>) {
   const respond = vi.fn();
   return {
     respond,
@@ -89,7 +89,7 @@ function createInvokeParams(params: Record<string, unknown>) {
   };
 }
 
-function firstMockArg(mock: { mock: { calls: unknown[][] } }, label: string): unknown {
+function firstMockArg(mock: { mock: { calls: any[][] } }, label: string): any {
   const arg = mock.mock.calls[0]?.[0];
   if (arg === undefined) {
     throw new Error(`Expected ${label}`);

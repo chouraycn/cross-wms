@@ -234,7 +234,7 @@ function baseParams(
 function ownerParams(): Parameters<typeof runPreparedReply>[0] {
   const params = baseParams();
   params.command = {
-    ...(params.command as Record<string, unknown>),
+    ...(params.command as Record<string, any>),
     senderIsOwner: true,
   } as never;
   return params;
@@ -242,11 +242,11 @@ function ownerParams(): Parameters<typeof runPreparedReply>[0] {
 
 type MockCallSource = {
   mock: {
-    calls: ReadonlyArray<ReadonlyArray<unknown>>;
+    calls: ReadonlyArray<ReadonlyArray<any>>;
   };
 };
 
-function requireMockCallArg(mock: MockCallSource, label: string, index = 0): unknown {
+function requireMockCallArg(mock: MockCallSource, label: string, index = 0): any {
   const call = mock.mock.calls[index];
   if (!call) {
     throw new Error(`${label} call ${index} missing`);
@@ -629,7 +629,7 @@ describe("runPreparedReply media-only handling", () => {
       ChatType: "direct",
     } as never;
     params.command = {
-      ...(params.command as Record<string, unknown>),
+      ...(params.command as Record<string, any>),
       surface: channel,
       channel,
     } as never;
@@ -1229,7 +1229,7 @@ describe("runPreparedReply media-only handling", () => {
           CommandBody: "/new",
         },
         command: {
-          ...(baseParams().command as Record<string, unknown>),
+          ...(baseParams().command as Record<string, any>),
           commandBodyNormalized: "/new",
           rawBodyNormalized: "/new",
         } as never,
@@ -1257,7 +1257,7 @@ describe("runPreparedReply media-only handling", () => {
           Provider: "slack",
         },
         command: {
-          ...(baseParams().command as Record<string, unknown>),
+          ...(baseParams().command as Record<string, any>),
           commandBodyNormalized: "/reset soft re-read persona files",
           softResetTriggered: true,
           softResetTail: "re-read persona files",

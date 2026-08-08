@@ -11,12 +11,12 @@ const mockState = vi.hoisted(() => ({
 }));
 
 vi.mock("./connection-details.js", () => ({
-  buildGatewayConnectionDetailsWithResolvers: (...args: unknown[]) =>
+  buildGatewayConnectionDetailsWithResolvers: (...args: any[]) =>
     mockState.buildGatewayConnectionDetails(...args),
 }));
 
 vi.mock("./connection-auth.js", () => ({
-  resolveGatewayConnectionAuth: (...args: unknown[]) =>
+  resolveGatewayConnectionAuth: (...args: any[]) =>
     mockState.resolveGatewayConnectionAuth(...args),
 }));
 

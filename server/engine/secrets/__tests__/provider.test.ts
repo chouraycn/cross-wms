@@ -139,7 +139,7 @@ describe('Provider 模块', () => {
     });
 
     it('registerKmsAdapter 仅支持 aliyun-kms / tencent-kms', () => {
-      expect(() => registerKmsAdapter('env' as unknown, {} as KmsAdapter)).toThrow();
+      expect(() => registerKmsAdapter('env' as any, {} as KmsAdapter)).toThrow();
     });
 
     it('validate 在未注册 adapter 时应返回 false', () => {

@@ -58,7 +58,7 @@ type RegistryEntry = {
   containerName: string;
 };
 
-type RegistryEntryPayload = RegistryEntry & Record<string, unknown>;
+type RegistryEntryPayload = RegistryEntry & Record<string, any>;
 
 type RegistryFile = {
   entries: RegistryEntryPayload[];
@@ -114,7 +114,7 @@ function getSandboxRegistryKysely(db: import("node:sqlite").DatabaseSync) {
 
 function parseRegistryEntryJson(row: SandboxRegistryRow): RegistryEntryPayload | null {
   try {
-    const parsed = JSON.parse(row.entry_json) as unknown;
+    const parsed = JSON.parse(row.entry_json) as any;
     return parsed && typeof parsed === "object" && !Array.isArray(parsed)
       ? (parsed as RegistryEntryPayload)
       : null;
@@ -123,7 +123,7 @@ function parseRegistryEntryJson(row: SandboxRegistryRow): RegistryEntryPayload |
   }
 }
 
-function optionalPayloadString(value: unknown): string {
+function optionalPayloadString(value: any): string {
   return typeof value === "string" ? value : "";
 }
 
@@ -429,7 +429,7 @@ async function readShardedEntriesDetailed<T extends RegistryEntry>(
 
 async function quarantineLegacyRegistry(registryPath: string): Promise<string> {
   const quarantinePath = `${registryPath}.invalid-${Date.now()}`;
-  await fs.rename(registryPath, quarantinePath).catch(async (error: unknown) => {
+  await fs.rename(registryPath, quarantinePath).catch(async (error: any) => {
     const code = (error as { code?: string } | null)?.code;
     if (code !== "ENOENT") {
       await fs.rm(registryPath, { force: true });
@@ -447,7 +447,7 @@ async function quarantineInvalidShards(
   for (const invalidFile of invalidFiles) {
     await fs
       .rename(invalidFile, path.join(quarantineDir, path.basename(invalidFile)))
-      .catch(async (error: unknown) => {
+      .catch(async (error: any) => {
         const code = (error as { code?: string } | null)?.code;
         if (code !== "ENOENT") {
           throw error;

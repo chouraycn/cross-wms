@@ -8,7 +8,7 @@ import path from "node:path";
 
 export { REQUIRED_PARAM_GROUPS, assertRequiredParams, getToolParamsRecord, wrapToolParamValidation } from "./agent-tools.params.js";
 
-export function wrapToolWorkspaceRootGuard(tool: unknown, root: string): unknown {
+export function wrapToolWorkspaceRootGuard(tool: any, root: string): any {
   return wrapToolWorkspaceRootGuardWithOptions(tool, root);
 }
 
@@ -31,18 +31,18 @@ export function resolveToolPathAgainstWorkspaceRoot(params: {
 }
 
 export function wrapToolMemoryFlushAppendOnlyWrite(
-  tool: unknown,
-  options: { root: string; relativePath: string; containerWorkdir?: string; sandbox?: unknown },
-): unknown {
-  const t = tool as Record<string, unknown>;
+  tool: any,
+  options: { root: string; relativePath: string; containerWorkdir?: string; sandbox?: any },
+): any {
+  const t = tool as Record<string, any>;
   return {
     ...t,
     description: `${t.description} During memory flush, this tool may only append to ${options.relativePath}.`,
-    execute: async (toolCallId: string, args: Record<string, unknown>, signal?: AbortSignal) => {
+    execute: async (toolCallId: string, args: Record<string, any>, signal?: AbortSignal) => {
       const filePath = typeof args.path === "string" ? args.path : undefined;
       const content = typeof args.content === "string" ? args.content : undefined;
       if (!filePath || content === undefined) {
-        return (t.execute as (...args: unknown[]) => unknown)(toolCallId, args, signal);
+        return (t.execute as (...args: any[]) => unknown)(toolCallId, args, signal);
       }
       const allowedAbsolutePath = path.resolve(options.root, options.relativePath);
       const resolvedPath = resolveToolPathAgainstWorkspaceRoot({
@@ -64,7 +64,7 @@ export function wrapToolMemoryFlushAppendOnlyWrite(
 }
 
 export function wrapToolWorkspaceRootGuardWithOptions(
-  tool: unknown,
+  tool: any,
   root: string,
   options?: {
     additionalRoots?: readonly string[];
@@ -73,12 +73,12 @@ export function wrapToolWorkspaceRootGuardWithOptions(
     pathParamKeys?: readonly string[];
     normalizeGuardedPathParams?: boolean;
   },
-): unknown {
-  const t = tool as Record<string, unknown>;
+): any {
+  const t = tool as Record<string, any>;
   const pathParamKeys = options?.pathParamKeys && options.pathParamKeys.length > 0 ? options.pathParamKeys : ["path"];
   return {
     ...t,
-    execute: async (toolCallId: string, args: Record<string, unknown>, signal?: AbortSignal) => {
+    execute: async (toolCallId: string, args: Record<string, any>, signal?: AbortSignal) => {
       const record = args;
       for (const key of pathParamKeys) {
         const rawFilePath = record?.[key];
@@ -96,67 +96,67 @@ export function wrapToolWorkspaceRootGuardWithOptions(
           record[key] = resolvedPath;
         }
       }
-      return (t.execute as (...args: unknown[]) => unknown)(toolCallId, record ?? args, signal);
+      return (t.execute as (...args: any[]) => unknown)(toolCallId, record ?? args, signal);
     },
   };
 }
 
-export function createSandboxedReadTool(params: { root: string; bridge?: unknown; modelContextWindowTokens?: number; imageSanitization?: unknown }): unknown {
+export function createSandboxedReadTool(params: { root: string; bridge?: any; modelContextWindowTokens?: number; imageSanitization?: any }): any {
   // Return a minimal read tool stub
   return {
     name: "read",
     description: "Read file contents (sandboxed)",
-    execute: async (toolCallId: string, args: Record<string, unknown>) => {
+    execute: async (toolCallId: string, args: Record<string, any>) => {
       return { content: [{ type: "text", text: `Sandboxed read: ${args.path ?? "unknown"}` }] };
     },
   };
 }
 
-export function createSandboxedWriteTool(params: { root: string; bridge?: unknown; modelContextWindowTokens?: number; imageSanitization?: unknown }): unknown {
+export function createSandboxedWriteTool(params: { root: string; bridge?: any; modelContextWindowTokens?: number; imageSanitization?: any }): any {
   return {
     name: "write",
     description: "Write file contents (sandboxed)",
-    execute: async (toolCallId: string, args: Record<string, unknown>) => {
+    execute: async (toolCallId: string, args: Record<string, any>) => {
       return { content: [{ type: "text", text: `Sandboxed write: ${args.path ?? "unknown"}` }] };
     },
   };
 }
 
-export function createSandboxedEditTool(params: { root: string; bridge?: unknown; modelContextWindowTokens?: number; imageSanitization?: unknown }): unknown {
+export function createSandboxedEditTool(params: { root: string; bridge?: any; modelContextWindowTokens?: number; imageSanitization?: any }): any {
   return {
     name: "edit",
     description: "Edit file contents (sandboxed)",
-    execute: async (toolCallId: string, args: Record<string, unknown>) => {
+    execute: async (toolCallId: string, args: Record<string, any>) => {
       return { content: [{ type: "text", text: `Sandboxed edit: ${args.path ?? "unknown"}` }] };
     },
   };
 }
 
-export function createHostWorkspaceWriteTool(root: string, options?: { workspaceOnly?: boolean }): unknown {
+export function createHostWorkspaceWriteTool(root: string, options?: { workspaceOnly?: boolean }): any {
   return {
     name: "write",
     description: "Write file contents (host workspace)",
-    execute: async (toolCallId: string, args: Record<string, unknown>) => {
+    execute: async (toolCallId: string, args: Record<string, any>) => {
       return { content: [{ type: "text", text: `Host write: ${args.path ?? "unknown"}` }] };
     },
   };
 }
 
-export function createHostWorkspaceEditTool(root: string, options?: { workspaceOnly?: boolean }): unknown {
+export function createHostWorkspaceEditTool(root: string, options?: { workspaceOnly?: boolean }): any {
   return {
     name: "edit",
     description: "Edit file contents (host workspace)",
-    execute: async (toolCallId: string, args: Record<string, unknown>) => {
+    execute: async (toolCallId: string, args: Record<string, any>) => {
       return { content: [{ type: "text", text: `Host edit: ${args.path ?? "unknown"}` }] };
     },
   };
 }
 
-export function createOpenClawReadTool(base: unknown, options?: { modelContextWindowTokens?: number; imageSanitization?: unknown }): unknown {
-  const b = base as Record<string, unknown>;
+export function createOpenClawReadTool(base: any, options?: { modelContextWindowTokens?: number; imageSanitization?: any }): any {
+  const b = base as Record<string, any>;
   return {
     ...b,
-    execute: async (toolCallId: string, params: Record<string, unknown>, signal?: AbortSignal) => {
+    execute: async (toolCallId: string, params: Record<string, any>, signal?: AbortSignal) => {
       const filePath = typeof params.path === "string" ? params.path : "<unknown>";
       return {
         content: [{ type: "text", text: `Read: ${filePath}` }],

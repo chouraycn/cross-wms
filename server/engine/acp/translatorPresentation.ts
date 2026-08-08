@@ -51,7 +51,7 @@ type SessionPresentation = {
 type SessionMetadata = {
   title?: string | null;
   updatedAt?: string | null;
-  _meta?: Record<string, unknown>;
+  _meta?: Record<string, any>;
 };
 
 type SessionUsageSnapshot = {

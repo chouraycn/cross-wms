@@ -11,8 +11,8 @@ type DoctorFlowMode = "local" | "remote";
 
 export type DoctorHealthFlowContext = {
   runtime: {
-    log: (...args: unknown[]) => void;
-    error: (...args: unknown[]) => void;
+    log: (...args: any[]) => void;
+    error: (...args: any[]) => void;
     cwd: string;
     env?: NodeJS.ProcessEnv;
     platform?: string;
@@ -32,7 +32,7 @@ export type DoctorHealthFlowContext = {
     confirmAutoFix: (params: { message: string; initialValue?: boolean }) => Promise<boolean>;
   };
   configResult: {
-    cfg: Record<string, unknown>;
+    cfg: Record<string, any>;
     path?: string;
     shouldWriteConfig?: boolean;
     sourceConfigValid?: boolean;
@@ -40,8 +40,8 @@ export type DoctorHealthFlowContext = {
     skipPluginValidationOnWrite?: boolean;
     preservedLegacyRootKeys?: readonly string[];
   };
-  cfg: Record<string, unknown>;
-  cfgForPersistence: Record<string, unknown>;
+  cfg: Record<string, any>;
+  cfgForPersistence: Record<string, any>;
   sourceConfigValid: boolean;
   configPath: string;
   env?: NodeJS.ProcessEnv;
@@ -52,13 +52,13 @@ export type DoctorHealthFlowContext = {
   healthOk?: boolean;
   gatewayHealthAuthenticated?: boolean;
   gatewayHealthSkipped?: boolean;
-  gatewayStatus?: Record<string, unknown>;
+  gatewayStatus?: Record<string, any>;
   gatewayMemoryProbe?: {
     checked: boolean;
     ready: boolean;
     skipped: boolean;
   };
-  postInstallDoctorResult?: Record<string, unknown>;
+  postInstallDoctorResult?: Record<string, any>;
 };
 
 type DoctorHealthContribution = FlowContribution & {
@@ -81,8 +81,8 @@ type DoctorContributionHealthCheck =
       readonly source?: string;
     });
 
-function resolveDoctorMode(cfg: Record<string, unknown>): DoctorFlowMode {
-  const gateway = cfg.gateway as Record<string, unknown> | undefined;
+function resolveDoctorMode(cfg: Record<string, any>): DoctorFlowMode {
+  const gateway = cfg.gateway as Record<string, any> | undefined;
   return gateway?.mode === "remote" ? "remote" : "local";
 }
 
@@ -193,8 +193,8 @@ function normalizeContributionHealthCheck(params: {
   return {
     ...params.check,
     id,
-    kind: (params.check as unknown).kind ?? "core",
-    source: (params.check as unknown).source ?? "doctor",
+    kind: (params.check as any).kind ?? "core",
+    source: (params.check as any).source ?? "doctor",
   } as HealthCheckInput;
 }
 

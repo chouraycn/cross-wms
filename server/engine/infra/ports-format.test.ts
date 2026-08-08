@@ -119,7 +119,7 @@ describe("ports-format", () => {
       "pid 123 alice: ssh -N (::1)",
     ],
     [{ command: "ssh", address: "127.0.0.1:18789" }, "pid ?: ssh (127.0.0.1:18789)"],
-    [{}, "pid ?: unknown"],
+    [{}, "pid ?: any"],
   ] as const)("formats port listener %j", (listener, expected) => {
     expect(formatPortListener(listener)).toBe(expected);
   });

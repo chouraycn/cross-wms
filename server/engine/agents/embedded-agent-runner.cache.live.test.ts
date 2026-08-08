@@ -117,7 +117,7 @@ function buildRunnerSessionPaths(sessionId: string) {
 }
 
 function resolveProviderBaseUrl(model: LiveResolvedModel["model"]): string | undefined {
-  const candidate = (model as { baseUrl?: unknown }).baseUrl;
+  const candidate = (model as { baseUrl?: any }).baseUrl;
   return typeof candidate === "string" && candidate.trim().length > 0 ? candidate : undefined;
 }
 
@@ -165,10 +165,10 @@ function resolveDefaultProviderBaseUrl(model: LiveResolvedModel["model"]): strin
 function buildEmbeddedModelDefinition(model: LiveResolvedModel["model"]) {
   // Live model discovery can return partial metadata; embedded runner tests need
   // a complete config model definition.
-  const contextWindowCandidate = (model as { contextWindow?: unknown }).contextWindow;
-  const maxTokensCandidate = (model as { maxTokens?: unknown }).maxTokens;
-  const reasoningCandidate = (model as { reasoning?: unknown }).reasoning;
-  const inputCandidate = (model as { input?: unknown }).input;
+  const contextWindowCandidate = (model as { contextWindow?: any }).contextWindow;
+  const maxTokensCandidate = (model as { maxTokens?: any }).maxTokens;
+  const reasoningCandidate = (model as { reasoning?: any }).reasoning;
+  const inputCandidate = (model as { input?: any }).input;
   const contextWindow =
     typeof contextWindowCandidate === "number" && Number.isFinite(contextWindowCandidate)
       ? Math.max(1, Math.trunc(contextWindowCandidate))

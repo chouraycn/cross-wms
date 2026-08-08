@@ -12,8 +12,8 @@ type ActionCase = {
   label: string;
   key: string;
   action: "received" | "transcribed" | "preprocessed" | "sent";
-  context: Record<string, unknown>;
-  assertContext: (context: Record<string, unknown>) => void;
+  context: Record<string, any>;
+  assertContext: (context: Record<string, any>) => void;
 };
 
 const actionCases: ActionCase[] = [
@@ -163,7 +163,7 @@ describe("message hooks", () => {
 
       const lifecycleFixtures: Array<{
         action: "received" | "transcribed" | "preprocessed" | "sent";
-        context: Record<string, unknown>;
+        context: Record<string, any>;
       }> = [
         { action: "received", context: { content: "hi" } },
         { action: "transcribed", context: { transcript: "hello" } },

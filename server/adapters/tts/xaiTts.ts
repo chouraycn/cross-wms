@@ -80,7 +80,7 @@ export function createXaiTtsProvider(): ITTSProvider {
       const codec = formatToCodec(req.config.format);
       const format: AudioFormat = codec === 'wav' ? 'wav' : codec === 'pcm' ? 'pcm' : 'mp3';
 
-      const body: Record<string, unknown> = {
+      const body: Record<string, any> = {
         text: req.text,
         voice_id: voice,
         language,

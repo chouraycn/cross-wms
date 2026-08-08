@@ -6,9 +6,9 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function assertGatewayConfigMutationAllowedForTest(..._args: unknown[]): unknown {
+export function assertGatewayConfigMutationAllowedForTest(..._args: any[]): any {
   return undefined;
 }
-export function createGatewayTool(..._args: unknown[]): unknown {
+export function createGatewayTool(..._args: any[]): any {
   return undefined;
 }

@@ -6,12 +6,12 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function getTextContent(..._args: unknown[]): unknown {
+export function getTextContent(..._args: any[]): any {
   return undefined;
 }
-export function expectReadWriteEditTools(..._args: unknown[]): unknown {
+export function expectReadWriteEditTools(..._args: any[]): any {
   return undefined;
 }
-export function expectReadWriteTools(..._args: unknown[]): unknown {
+export function expectReadWriteTools(..._args: any[]): any {
   return undefined;
 }

@@ -56,7 +56,7 @@ type GatewayRequest = {
 
 let lifecycleHandler: ((evt: LifecycleEvent) => void) | undefined;
 let agentCallPlan: Array<"ok" | "throw"> = [];
-let chatHistoryBySessionKey = new Map<string, Array<Record<string, unknown>>>();
+let chatHistoryBySessionKey = new Map<string, Array<Record<string, any>>>();
 let sessionStore: Record<string, SessionStoreEntry> = {};
 
 const callGatewayMock = vi.fn(async (request: GatewayRequest) => {
@@ -323,7 +323,7 @@ describe("subagent registry lifecycle error grace", () => {
           return false;
         }
         return (
-          (inputProvenance as { sourceSessionKey?: unknown }).sourceSessionKey === childSessionKey
+          (inputProvenance as { sourceSessionKey?: any }).sourceSessionKey === childSessionKey
         );
       })
       .map((request) => {

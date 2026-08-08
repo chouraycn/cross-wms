@@ -27,7 +27,7 @@ function skillVersionOf(tenantId: string, skillId: string | null): string | null
 export interface SkillTransitionBefore {
   skillId: string | null;
   stepId: string | null;
-  stack: unknown[];
+  stack: any[];
 }
 
 export interface SkillTransitionAfter {
@@ -58,7 +58,7 @@ export function recordSkillTransition(
       (item) =>
         item === after.skillId ||
         (item && typeof item === 'object' &&
-          (item as Record<string, unknown>).skill_id === after.skillId),
+          (item as Record<string, any>).skill_id === after.skillId),
     );
     eventType = pending ? 'skill_resumed' : 'skill_started';
   } else if (skillChanged && !after.skillId) {
@@ -101,9 +101,9 @@ export function recordSkillCall(tenantId: string, sessionId: string, skillId: st
   }
   if (!beforeRow) return;
 
-  let stack: unknown[] = [];
+  let stack: any[] = [];
   try {
-    stack = (chatDao.toSessionRead(beforeRow).skill_stack as unknown[]) ?? [];
+    stack = (chatDao.toSessionRead(beforeRow).skill_stack as any[]) ?? [];
   } catch {
     stack = [];
   }

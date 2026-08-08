@@ -6,9 +6,9 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function isGooglePromptCacheEligible(..._args: unknown[]): unknown {
+export function isGooglePromptCacheEligible(..._args: any[]): any {
   return false;
 }
-export function resolveCacheRetention(..._args: unknown[]): unknown {
+export function resolveCacheRetention(..._args: any[]): any {
   return undefined;
 }

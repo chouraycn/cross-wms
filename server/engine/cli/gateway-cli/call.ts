@@ -32,7 +32,7 @@ export const gatewayCallOpts = (cmd: Command) =>
     .option("--expect-final", "Wait for final response (agent)", false)
     .option("--json", "Output JSON", false);
 
-export const callGatewayCli = async (method: string, opts: GatewayRpcOpts, params?: unknown) => {
+export const callGatewayCli = async (method: string, opts: GatewayRpcOpts, params?: any) => {
   const timeoutMs = parseTimeoutMsWithFallback(opts.timeout, DEFAULT_GATEWAY_RPC_TIMEOUT_MS, {
     invalidType: "error",
   });

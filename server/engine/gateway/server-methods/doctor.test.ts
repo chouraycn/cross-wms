@@ -61,7 +61,7 @@ const makeRuntimeContext = () => ({ getRuntimeConfig: () => getRuntimeConfig() }
 
 const invokeDoctorMemoryStatus = async (
   respond: ReturnType<typeof vi.fn>,
-  options?: { cron?: { list?: ReturnType<typeof vi.fn> }; params?: unknown },
+  options?: { cron?: { list?: ReturnType<typeof vi.fn> }; params?: any },
 ) => {
   const cronList =
     options?.cron?.list ??
@@ -85,7 +85,7 @@ const invokeDoctorMemoryStatus = async (
 
 const invokeDoctorMemoryDreamDiary = async (
   respond: ReturnType<typeof vi.fn>,
-  params: unknown = {},
+  params: any = {},
 ) => {
   await doctorHandlers["doctor.memory.dreamDiary"]({
     req: {} as never,
@@ -154,7 +154,7 @@ const invokeDoctorMemoryDedupeDreamDiary = async (respond: ReturnType<typeof vi.
 
 const invokeDoctorMemoryRemHarness = async (
   respond: ReturnType<typeof vi.fn>,
-  params: Record<string, unknown> = {},
+  params: Record<string, any> = {},
 ) => {
   await doctorHandlers["doctor.memory.remHarness"]({
     req: {} as never,
@@ -166,41 +166,41 @@ const invokeDoctorMemoryRemHarness = async (
   });
 };
 
-function expectRecordFields(record: unknown, expected: Record<string, unknown>) {
+function expectRecordFields(record: any, expected: Record<string, any>) {
   if (!record || typeof record !== "object") {
     throw new Error("Expected record");
   }
-  const actual = record as Record<string, unknown>;
+  const actual = record as Record<string, any>;
   for (const [key, value] of Object.entries(expected)) {
     expect(actual[key]).toEqual(value);
   }
   return actual;
 }
 
-function respondPayload(respond: ReturnType<typeof vi.fn>, callIndex = 0): Record<string, unknown> {
+function respondPayload(respond: ReturnType<typeof vi.fn>, callIndex = 0): Record<string, any> {
   const call = respond.mock.calls[callIndex];
   if (!call) {
     throw new Error(`Expected respond call ${callIndex}`);
   }
   expect(call[0]).toBe(true);
   expect(call[2]).toBeUndefined();
-  return call[1] as Record<string, unknown>;
+  return call[1] as Record<string, any>;
 }
 
-function mockCallArg(mock: ReturnType<typeof vi.fn>, callIndex = 0): Record<string, unknown> {
+function mockCallArg(mock: ReturnType<typeof vi.fn>, callIndex = 0): Record<string, any> {
   const call = mock.mock.calls[callIndex];
   if (!call) {
     throw new Error(`Expected mock call ${callIndex}`);
   }
-  return call[0] as Record<string, unknown>;
+  return call[0] as Record<string, any>;
 }
 
-function findRecordByField(items: unknown, key: string, value: unknown) {
+function findRecordByField(items: any, key: string, value: any) {
   expect(Array.isArray(items)).toBe(true);
-  return (items as Array<Record<string, unknown>>).find((item) => item[key] === value);
+  return (items as Array<Record<string, any>>).find((item) => item[key] === value);
 }
 
-function makeDreamingStats(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+function makeDreamingStats(overrides: Record<string, any> = {}): Record<string, any> {
   return {
     shortTermCount: 0,
     recallSignalCount: 0,
@@ -728,7 +728,7 @@ describe("doctor.memory.status", () => {
         promotedTotal: 3,
         promotedToday: 2,
       });
-      expectRecordFields((dreaming.shortTermEntries as unknown[])[0], {
+      expectRecordFields((dreaming.shortTermEntries as any[])[0], {
         path: "memory/2026-04-03-1503.md",
         snippet: "Emma prefers shorter, lower-pressure check-ins.",
         totalSignalCount: 3,
@@ -736,7 +736,7 @@ describe("doctor.memory.status", () => {
         remHits: 3,
         phaseHitCount: 5,
       });
-      expectRecordFields((dreaming.signalEntries as unknown[])[0], {
+      expectRecordFields((dreaming.signalEntries as any[])[0], {
         path: "memory/2026-04-03-1503.md",
         totalSignalCount: 3,
       });
@@ -864,7 +864,7 @@ describe("doctor.memory.status", () => {
         shortTermCount: 0,
         promotedTotal: 1,
       });
-      expectRecordFields((dreaming.promotedEntries as unknown[])[0], {
+      expectRecordFields((dreaming.promotedEntries as any[])[0], {
         snippet: "alpha agent memory",
       });
     } finally {
@@ -1295,7 +1295,7 @@ describe("doctor.memory.dreamDiary", () => {
         inputPaths: [path.join(workspaceDir, "memory", "2026-02-19.md")],
       });
       const writeInput = mockCallArg(writeBackfillDiaryEntries);
-      const entry = (writeInput.entries as Array<Record<string, unknown>>)[0];
+      const entry = (writeInput.entries as Array<Record<string, any>>)[0];
       expect(entry.bodyLines).toContain("What Happened");
       expect(entry.bodyLines).toContain("1. Bunji — partner");
       expectRecordFields(respondPayload(respond), {
@@ -1343,7 +1343,7 @@ describe("doctor.memory.dreamDiary", () => {
       });
       const writeInput = mockCallArg(writeBackfillDiaryEntries);
       expect(writeInput.workspaceDir).toBe(workspaceDir);
-      const entry = (writeInput.entries as Array<Record<string, unknown>>)[0];
+      const entry = (writeInput.entries as Array<Record<string, any>>)[0];
       expectRecordFields(entry, {
         isoDay: "2026-02-19",
         sourcePath,
@@ -1412,11 +1412,11 @@ describe("doctor.memory.remHarness", () => {
     overrides: Partial<{
       workspaceDir: string;
       remSkipped: boolean;
-      rem: Record<string, unknown>;
-      grounded: Record<string, unknown> | null;
-      deep: Record<string, unknown>;
-      remConfig: Record<string, unknown>;
-      deepConfig: Record<string, unknown>;
+      rem: Record<string, any>;
+      grounded: Record<string, any> | null;
+      deep: Record<string, any>;
+      remConfig: Record<string, any>;
+      deepConfig: Record<string, any>;
     }> = {},
   ) => ({
     workspaceDir: overrides.workspaceDir ?? "/tmp/openclaw",
@@ -1545,7 +1545,7 @@ describe("doctor.memory.remHarness", () => {
       candidateLimit: 25,
       truncated: false,
     });
-    expectRecordFields((deep.candidates as unknown[])[0], {
+    expectRecordFields((deep.candidates as any[])[0], {
       key: "memory/2026-04-14.md:12:16",
       path: "memory/2026-04-14.md",
       snippet: "durable fact",
@@ -1654,7 +1654,7 @@ describe("doctor.memory.remHarness", () => {
     expectRecordFields(mockCallArg(previewRemHarness), { candidateLimit: 25 });
     const payload = respondPayload(respond) as {
       ok: boolean;
-      deep: { candidateLimit: number; truncated: boolean; candidates: unknown[] };
+      deep: { candidateLimit: number; truncated: boolean; candidates: any[] };
     };
     expect(payload.ok).toBe(true);
     expect(payload.deep.candidateLimit).toBe(25);

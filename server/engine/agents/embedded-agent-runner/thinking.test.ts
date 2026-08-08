@@ -17,7 +17,7 @@ import {
 
 type AssistantMessage = Extract<AgentMessage, { role: "assistant" }>;
 
-function dropSingleAssistantContent(content: Array<Record<string, unknown>>) {
+function dropSingleAssistantContent(content: Array<Record<string, any>>) {
   // Single-assistant fixture exercises the "latest assistant turn" path where
   // reasoning blocks should remain available for continuation.
   const messages: AgentMessage[] = [
@@ -590,7 +590,7 @@ describe("wrapAnthropicStreamWithRecovery", () => {
         messages: originalMessages,
       } as never,
       {} as never,
-    )) as { result: () => Promise<unknown> } & AsyncIterable<unknown>;
+    )) as { result: () => Promise<any> } & AsyncIterable<any>;
     for await (const event of response) {
       void event;
       // Drain the retry stream before reading result().
@@ -674,7 +674,7 @@ describe("wrapAnthropicStreamWithRecovery", () => {
         ]),
       } as never,
       {} as never,
-    )) as { result: () => Promise<unknown> } & AsyncIterable<unknown>;
+    )) as { result: () => Promise<any> } & AsyncIterable<any>;
     for await (const event of response) {
       void event;
       // Drain the retry stream before reading result().
@@ -740,7 +740,7 @@ describe("wrapAnthropicStreamWithRecovery", () => {
     {
       name: "cyclic cause graph",
       createError: () => {
-        const root = new Error(genericizedProviderError) as Error & { cause?: unknown };
+        const root = new Error(genericizedProviderError) as Error & { cause?: any };
         const nested = { cause: root, message: terminalThinkingSignatureError };
         root.cause = nested;
         return root;
@@ -807,8 +807,8 @@ describe("wrapAnthropicStreamWithRecovery", () => {
         ]),
       } as never,
       {} as never,
-    ) as { result: () => Promise<unknown> } & AsyncIterable<unknown>;
-    const events: unknown[] = [];
+    ) as { result: () => Promise<any> } & AsyncIterable<any>;
+    const events: any[] = [];
     for await (const event of response) {
       events.push(event);
     }
@@ -846,9 +846,9 @@ describe("wrapAnthropicStreamWithRecovery", () => {
     );
 
     const response = wrapped({} as never, { messages: [] } as never, {} as never) as {
-      result: () => Promise<unknown>;
-    } & AsyncIterable<unknown>;
-    const events: unknown[] = [];
+      result: () => Promise<any>;
+    } & AsyncIterable<any>;
+    const events: any[] = [];
     for await (const event of response) {
       events.push(event);
     }
@@ -880,9 +880,9 @@ describe("wrapAnthropicStreamWithRecovery", () => {
     );
 
     const response = wrapped({} as never, { messages: [] } as never, {} as never) as {
-      result: () => Promise<unknown>;
-    } & AsyncIterable<unknown>;
-    const events: unknown[] = [];
+      result: () => Promise<any>;
+    } & AsyncIterable<any>;
+    const events: any[] = [];
     for await (const event of response) {
       events.push(event);
     }
@@ -908,10 +908,10 @@ describe("wrapAnthropicStreamWithRecovery", () => {
       { id: "test-session" },
     );
 
-    const chunks: unknown[] = [];
+    const chunks: any[] = [];
     const response = wrapped({} as never, { messages: [] } as never, {} as never) as {
-      result: () => Promise<unknown>;
-    } & AsyncIterable<unknown>;
+      result: () => Promise<any>;
+    } & AsyncIterable<any>;
     for await (const chunk of response) {
       chunks.push(chunk);
     }
@@ -999,9 +999,9 @@ describe("wrapAnthropicStreamWithRecovery", () => {
     );
 
     const response = wrapped({} as never, { messages: [] } as never, {} as never) as {
-      result: () => Promise<unknown>;
-    } & AsyncIterable<unknown>;
-    const events: unknown[] = [];
+      result: () => Promise<any>;
+    } & AsyncIterable<any>;
+    const events: any[] = [];
     for await (const event of response) {
       events.push(event);
     }
@@ -1164,7 +1164,7 @@ describe("stripStaleThinkingSignaturesForCompactionReplay", () => {
     expect(mid.content).toEqual([{ type: "thinking", thinking: "mid" }]);
     // after (timestamp 3000 > 2000): signature kept
     const after = result[3] as AssistantMessage;
-    expect((after.content[0] as unknown as Record<string, unknown>).thinkingSignature).toBe(
+    expect((after.content[0] as unknown as Record<string, any>).thinkingSignature).toBe(
       "sig_after",
     );
   });
@@ -1200,8 +1200,8 @@ describe("stripStaleThinkingSignaturesForCompactionReplay", () => {
     // Both messages have ts < 2000 so both should be stripped
     const a1 = result[1] as AssistantMessage;
     const a2 = result[3] as AssistantMessage;
-    expect((a1.content[0] as unknown as Record<string, unknown>).thinkingSignature).toBeUndefined();
-    expect((a2.content[0] as unknown as Record<string, unknown>).thinkingSignature).toBeUndefined();
+    expect((a1.content[0] as unknown as Record<string, any>).thinkingSignature).toBeUndefined();
+    expect((a2.content[0] as unknown as Record<string, any>).thinkingSignature).toBeUndefined();
   });
 
   it("preserves signatures on assistant messages at exactly the compaction timestamp", () => {

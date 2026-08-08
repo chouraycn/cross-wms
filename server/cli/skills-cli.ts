@@ -46,8 +46,8 @@ async function loadSkillStatusReport(options?: {
     const mod = await import("./commands/skills.js");
     const provider = new mod.RealSkillProvider();
     const skills = await provider.list();
-    const enabled = skills.filter((s: unknown) => s.enabled).length;
-    const eligible = skills.filter((s: unknown) => s.eligible ?? s.enabled).length;
+    const enabled = skills.filter((s: any) => s.enabled).length;
+    const eligible = skills.filter((s: any) => s.eligible ?? s.enabled).length;
     return {
       skills,
       total: skills.length,
@@ -87,7 +87,7 @@ function resolveAgentOption(
   if (command) {
     const parent = command.parent;
     if (parent) {
-      const agent = (parent as unknown).opts()?.agent;
+      const agent = (parent as any).opts()?.agent;
       if (agent) return agent;
     }
   }
@@ -215,7 +215,7 @@ export function registerSkillsCli(program: Command): void {
             skillRef,
           );
           let failed = false;
-          for (const result of results as unknown[]) {
+          for (const result of results as any[]) {
             if (!result.ok) {
               failed = true;
               console.error(result.error);
@@ -262,7 +262,7 @@ export function registerSkillsCli(program: Command): void {
             opts.version,
           );
           if (opts.card) {
-            const card = (result as unknown).card;
+            const card = (result as any).card;
             if (card) {
               process.stdout.write(JSON.stringify(card, null, 2) + "\n");
             } else {
@@ -354,7 +354,7 @@ export function registerSkillsCli(program: Command): void {
           process.stdout.write(JSON.stringify(manifest, null, 2) + "\n");
           return;
         }
-        const proposals = (manifest as unknown).proposals || [];
+        const proposals = (manifest as any).proposals || [];
         if (proposals.length === 0) {
           console.log("没有技能提案。");
           return;
@@ -389,14 +389,14 @@ export function registerSkillsCli(program: Command): void {
           process.stdout.write(JSON.stringify(proposal, null, 2) + "\n");
           return;
         }
-        const record = (proposal as unknown).record;
+        const record = (proposal as any).record;
         console.log(`ID: ${record.id}`);
         console.log(`状态: ${record.status}`);
         console.log(`类型: ${record.kind}`);
         console.log(`技能: ${record.target?.skillName}`);
         console.log(`目标: ${record.target?.skillFile}`);
         console.log("");
-        console.log((proposal as unknown).content);
+        console.log((proposal as any).content);
       } catch (err) {
         console.error(String(err));
         process.exit(1);
@@ -511,7 +511,7 @@ export function registerSkillsCli(program: Command): void {
             process.stdout.write(JSON.stringify(result, null, 2) + "\n");
             return;
           }
-          const record = (result as unknown).record;
+          const record = (result as any).record;
           console.log(`已修改 ${record.id} ${record.proposedVersion}`);
         } catch (err) {
           console.error(String(err));
@@ -545,7 +545,7 @@ export function registerSkillsCli(program: Command): void {
             return;
           }
           console.log(
-            `已应用 ${(applied as unknown).record.id} -> ${(applied as unknown).targetSkillFile}`,
+            `已应用 ${(applied as any).record.id} -> ${(applied as any).targetSkillFile}`,
           );
         } catch (err) {
           console.error(String(err));
@@ -580,7 +580,7 @@ export function registerSkillsCli(program: Command): void {
             process.stdout.write(JSON.stringify(record, null, 2) + "\n");
             return;
           }
-          console.log(`已拒绝 ${(record as unknown).id}`);
+          console.log(`已拒绝 ${(record as any).id}`);
         } catch (err) {
           console.error(String(err));
           process.exit(1);
@@ -615,7 +615,7 @@ export function registerSkillsCli(program: Command): void {
             process.stdout.write(JSON.stringify(record, null, 2) + "\n");
             return;
           }
-          console.log(`已隔离 ${(record as unknown).id}`);
+          console.log(`已隔离 ${(record as any).id}`);
         } catch (err) {
           console.error(String(err));
           process.exit(1);

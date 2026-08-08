@@ -6,8 +6,8 @@ export async function callGateway(params: {
   url?: string;
   token?: string;
   method: string;
-  params?: unknown;
-  deviceIdentity?: unknown;
+  params?: any;
+  deviceIdentity?: any;
   expectFinal?: boolean;
   scopes?: string[];
   timeoutMs: number;
@@ -16,7 +16,7 @@ export async function callGateway(params: {
   useStoredDeviceAuth?: boolean;
   requiredStoredDeviceAuthScopes?: string[];
   requireLocalBackendSharedAuth?: boolean;
-}): Promise<unknown> {
+}): Promise<any> {
   void params;
   console.error("Gateway RPC is not available in cross-wms");
   process.exit(1);

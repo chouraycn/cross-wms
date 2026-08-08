@@ -118,7 +118,7 @@ function makeVec(values: number[]): Float32Array {
 }
 
 /** Mock JXA snapshot result with UI elements */
-function mockSnapshotResult(elements: Array<Record<string, unknown>>): string {
+function mockSnapshotResult(elements: Array<Record<string, any>>): string {
   return JSON.stringify({
     app: 'TestApp',
     elements,

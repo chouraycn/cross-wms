@@ -1,6 +1,6 @@
 import type { ParsedLogLine } from './types.js';
 
-function extractMessage(value: Record<string, unknown>): string {
+function extractMessage(value: Record<string, any>): string {
   const parts: string[] = [];
   for (const key of Object.keys(value)) {
     if (!/^\d+$/.test(key)) {
@@ -16,12 +16,12 @@ function extractMessage(value: Record<string, unknown>): string {
   return parts.join(' ');
 }
 
-function parseMetaName(raw?: unknown): { subsystem?: string; module?: string } {
+function parseMetaName(raw?: any): { subsystem?: string; module?: string } {
   if (typeof raw !== 'string') {
     return {};
   }
   try {
-    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    const parsed = JSON.parse(raw) as Record<string, any>;
     return {
       subsystem: typeof parsed.subsystem === 'string' ? parsed.subsystem : undefined,
       module: typeof parsed.module === 'string' ? parsed.module : undefined,
@@ -37,8 +37,8 @@ export function parseLogLine(raw: string): ParsedLogLine | null {
     if (!trimmed) {
       return null;
     }
-    const parsed = JSON.parse(trimmed) as Record<string, unknown>;
-    const meta = parsed['_meta'] as Record<string, unknown> | undefined;
+    const parsed = JSON.parse(trimmed) as Record<string, any>;
+    const meta = parsed['_meta'] as Record<string, any> | undefined;
     const nameMeta = parseMetaName(meta?.name);
     const levelRaw = typeof meta?.logLevelName === 'string' ? meta.logLevelName : parsed.level;
     return {

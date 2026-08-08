@@ -7,6 +7,6 @@
  */
 
 /** Check if a value is a runner tool call block type (returns false in cross-wms). */
-export function isRunnerToolCallBlockType(..._args: unknown[]): false {
+export function isRunnerToolCallBlockType(..._args: any[]): false {
   return false;
 }

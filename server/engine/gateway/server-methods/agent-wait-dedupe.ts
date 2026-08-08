@@ -49,7 +49,7 @@ function parseRunIdFromDedupeKey(key: string): string | null {
   return null;
 }
 
-function asString(value: unknown): string | undefined {
+function asString(value: any): string | undefined {
   return typeof value === "string" && value.trim() ? value : undefined;
 }
 
@@ -61,8 +61,8 @@ function buildDedupeTerminalSnapshot(params: {
   stopReason?: string;
   livenessState?: string;
   yielded: boolean;
-  timeoutPhase: unknown;
-  providerStarted: unknown;
+  timeoutPhase: any;
+  providerStarted: any;
 }): AgentWaitTerminalSnapshot {
   const terminalOutcome = buildAgentRunTerminalOutcome({
     status: params.status,
@@ -139,17 +139,17 @@ function notifyWaiters(runId: string): void {
 function readTerminalSnapshotFromDedupeEntry(entry: DedupeEntry): AgentWaitTerminalSnapshot | null {
   const payload = entry.payload as
     | {
-        status?: unknown;
-        startedAt?: unknown;
-        endedAt?: unknown;
-        error?: unknown;
-        summary?: unknown;
-        stopReason?: unknown;
-        livenessState?: unknown;
-        yielded?: unknown;
-        timeoutPhase?: unknown;
-        providerStarted?: unknown;
-        result?: unknown;
+        status?: any;
+        startedAt?: any;
+        endedAt?: any;
+        error?: any;
+        summary?: any;
+        stopReason?: any;
+        livenessState?: any;
+        yielded?: any;
+        timeoutPhase?: any;
+        providerStarted?: any;
+        result?: any;
       }
     | undefined;
   const status = typeof payload?.status === "string" ? payload.status : undefined;

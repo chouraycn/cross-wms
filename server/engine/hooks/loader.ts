@@ -144,7 +144,7 @@ function maybeWarnTrustedHookSource(source: HookSource): void {
 
 /** 从模块命名空间解析导出函数（默认 default，或指定名称） */
 function resolveFunctionModuleExport(params: {
-  mod: Record<string, unknown>;
+  mod: Record<string, any>;
   exportName?: string;
 }): HookHandler | undefined {
   const explicit = params.exportName?.trim();
@@ -190,7 +190,7 @@ export async function loadHookHandler(entry: HookEntry): Promise<boolean> {
 
     // 仅对可变源（workspace/managed/plugin）做 mtime cache-bust
     const importUrl = buildImportUrl(safeHandlerPath, entry.hook.source);
-    const mod = (await import(importUrl)) as Record<string, unknown>;
+    const mod = (await import(importUrl)) as Record<string, any>;
 
     const exportName = entry.metadata?.export ?? 'default';
     const handler = resolveFunctionModuleExport({ mod, exportName });
@@ -293,7 +293,7 @@ export async function loadLegacyHookHandler(params: {
 
     // legacy handler 始终 workspace-relative，使用 mtime cache-bust
     const importUrl = buildImportUrl(safeModulePath, 'workspace');
-    const mod = (await import(importUrl)) as Record<string, unknown>;
+    const mod = (await import(importUrl)) as Record<string, any>;
     const exportName = params.exportName ?? 'default';
     const handler = resolveFunctionModuleExport({ mod, exportName });
     if (!handler) {

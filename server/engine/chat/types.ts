@@ -20,30 +20,30 @@ export type CanvasPreview = {
   style?: string;
 };
 
-export type ToolContentBlock = Record<string, unknown> & {
-  id?: unknown;
-  tool_call_id?: unknown;
-  toolCallId?: unknown;
-  tool_use_id?: unknown;
-  toolUseId?: unknown;
-  type?: unknown;
-  name?: unknown;
-  args?: unknown;
-  arguments?: unknown;
-  input?: unknown;
-  content?: unknown;
+export type ToolContentBlock = Record<string, any> & {
+  id?: any;
+  tool_call_id?: any;
+  toolCallId?: any;
+  tool_use_id?: any;
+  toolUseId?: any;
+  type?: any;
+  name?: any;
+  args?: any;
+  arguments?: any;
+  input?: any;
+  content?: any;
 };
 
 export type ToolCallContent = {
   id?: string;
   name?: string;
-  args?: unknown;
-  inputSchema?: Record<string, unknown>;
+  args?: any;
+  inputSchema?: Record<string, any>;
 };
 
 export type ToolResultContent = {
   toolCallId?: string;
-  content: unknown;
+  content: any;
   isError?: boolean;
 };
 

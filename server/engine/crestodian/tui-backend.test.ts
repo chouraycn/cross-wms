@@ -39,7 +39,7 @@ function createRuntime(): RuntimeEnv {
 describe("runCrestodianTui", () => {
   it("runs Crestodian inside the shared TUI shell", async () => {
     let runTuiCalls = 0;
-    let runTuiOptions: unknown;
+    let runTuiOptions: any;
 
     await runCrestodianTui(
       {
@@ -60,9 +60,9 @@ describe("runCrestodianTui", () => {
       local?: boolean;
       session?: string;
       historyLimit?: number;
-      config?: unknown;
+      config?: any;
       title?: string;
-      backend?: unknown;
+      backend?: any;
     };
     expect(options.local).toBe(true);
     expect(options.session).toBe("agent:crestodian:main");

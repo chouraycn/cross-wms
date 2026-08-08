@@ -8,7 +8,7 @@
 type MemoryEmbeddingProvider = { id: string };
 
 /** 占位：MemoryEmbeddingProviderAdapter。 */
-export type MemoryEmbeddingProviderAdapter = { id: string; [key: string]: unknown };
+export type MemoryEmbeddingProviderAdapter = { id: string; [key: string]: any };
 
 /** 占位：RegisteredMemoryEmbeddingProvider。 */
 type RegisteredMemoryEmbeddingProvider = {

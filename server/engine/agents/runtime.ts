@@ -6,5 +6,5 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export const setContextPruningRuntime: unknown = undefined;
-export const getContextPruningRuntime: unknown = undefined;
+export const setContextPruningRuntime: any = undefined;
+export const getContextPruningRuntime: any = undefined;

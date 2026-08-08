@@ -271,9 +271,9 @@ function resolveProviderOwnersFixture(params: { providerId: string }): readonly 
 }
 
 function getLastMockCallArg(
-  mock: { mock: { calls: ReadonlyArray<ReadonlyArray<unknown>> } },
+  mock: { mock: { calls: ReadonlyArray<ReadonlyArray<any>> } },
   label: string,
-): unknown {
+): any {
   const calls = mock.mock.calls;
   const call = calls[calls.length - 1];
   if (!call) {
@@ -282,18 +282,18 @@ function getLastMockCallArg(
   return call[0];
 }
 
-function getLastRuntimeRegistryCall(): Record<string, unknown> {
+function getLastRuntimeRegistryCall(): Record<string, any> {
   return getLastMockCallArg(resolveRuntimePluginRegistryMock, "runtime plugin registry") as Record<
     string,
-    unknown
+    any
   >;
 }
 
-function expectRecordFields(record: unknown, expected: Record<string, unknown>) {
+function expectRecordFields(record: any, expected: Record<string, any>) {
   if (!record || typeof record !== "object") {
     throw new Error("Expected record");
   }
-  const actual = record as Record<string, unknown>;
+  const actual = record as Record<string, any>;
   for (const [key, value] of Object.entries(expected)) {
     expect(actual[key]).toEqual(value);
   }
@@ -301,14 +301,14 @@ function expectRecordFields(record: unknown, expected: Record<string, unknown>) 
 }
 
 function expectPluginConfigState(
-  config: unknown,
+  config: any,
   expected: {
     enabled?: boolean;
     allow?: readonly string[];
     entries?: Record<string, { enabled?: boolean }>;
   },
 ) {
-  const plugins = expectRecordFields((config as { plugins?: unknown } | undefined)?.plugins, {});
+  const plugins = expectRecordFields((config as { plugins?: any } | undefined)?.plugins, {});
   if (expected.enabled !== undefined) {
     expect(plugins.enabled).toBe(expected.enabled);
   }
@@ -316,7 +316,7 @@ function expectPluginConfigState(
     expect(plugins.allow).toContain(pluginId);
   }
   for (const [pluginId, entry] of Object.entries(expected.entries ?? {})) {
-    expect((plugins.entries as Record<string, unknown> | undefined)?.[pluginId]).toEqual(entry);
+    expect((plugins.entries as Record<string, any> | undefined)?.[pluginId]).toEqual(entry);
   }
   return plugins;
 }
@@ -360,7 +360,7 @@ function expectLastSetupRegistryCall(params: {
   }
 }
 
-function expectResolvedProviders(providers: unknown, expected: unknown[]) {
+function expectResolvedProviders(providers: any, expected: any[]) {
   expect(providers).toEqual(expected);
 }
 
@@ -430,7 +430,7 @@ function createAutoEnabledProviderConfig() {
   return { rawConfig, autoEnabledConfig };
 }
 
-function expectAutoEnabledProviderLoad(params: { rawConfig: unknown; autoEnabledConfig: unknown }) {
+function expectAutoEnabledProviderLoad(params: { rawConfig: any; autoEnabledConfig: any }) {
   expect(applyPluginAutoEnableMock).toHaveBeenCalledWith({
     config: params.rawConfig,
     env: process.env,
@@ -445,7 +445,7 @@ function expectModelOwningPluginIds(model: string, expectedPluginIds?: readonly 
   expect(resolveOwningPluginIdsForModelRef({ model })).toEqual(expectedPluginIds);
 }
 
-function expectProviderRuntimeRegistryLoad(params?: { config?: unknown; env?: NodeJS.ProcessEnv }) {
+function expectProviderRuntimeRegistryLoad(params?: { config?: any; env?: NodeJS.ProcessEnv }) {
   expectRecordFields(getLastRuntimeRegistryCall(), {
     ...(params?.config ? { config: params.config } : {}),
     ...(params?.env ? { env: params.env } : {}),
@@ -495,7 +495,7 @@ describe("resolvePluginProviders", () => {
       };
     });
     vi.doMock("./current-plugin-metadata-snapshot.js", () => ({
-      getCurrentPluginMetadataSnapshot: (...args: unknown[]) =>
+      getCurrentPluginMetadataSnapshot: (...args: any[]) =>
         getCurrentPluginMetadataSnapshotMock(...args),
     }));
     vi.doMock("./plugin-registry.js", async () => {

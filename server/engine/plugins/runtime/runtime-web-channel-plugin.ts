@@ -33,11 +33,11 @@ type WebChannelConnectionWaitOptions =
 type WebChannelLightRuntimeModule = {
   getActiveWebListener: (accountId?: string | null) => unknown;
   getWebAuthAgeMs: (authDir?: string) => number | null;
-  logWebSelfId: (authDir?: string, runtime?: unknown, includeChannelPrefix?: boolean) => void;
+  logWebSelfId: (authDir?: string, runtime?: any, includeChannelPrefix?: boolean) => void;
   logoutWeb: (params: {
     authDir?: string;
     isLegacyAuthDir?: boolean;
-    runtime?: unknown;
+    runtime?: any;
   }) => Promise<boolean>;
   readWebSelfId: (authDir?: string) => {
     e164: string | null;
@@ -45,8 +45,8 @@ type WebChannelLightRuntimeModule = {
     lid: string | null;
   };
   webAuthExists: (authDir?: string) => Promise<boolean>;
-  formatError: (error: unknown) => string;
-  getStatusCode: (error: unknown) => number | undefined;
+  formatError: (error: any) => string;
+  getStatusCode: (error: any) => number | undefined;
   pickWebChannel: (pref: string, authDir?: string) => Promise<string>;
   resolveDefaultWebAuthDir?: () => string;
   WA_WEB_AUTH_DIR?: string;
@@ -55,17 +55,17 @@ type WebChannelLightRuntimeModule = {
 type WebChannelHeavyRuntimeModule = {
   loginWeb: (
     verbose: boolean,
-    waitForConnection?: (sock: unknown) => Promise<void>,
-    runtime?: unknown,
+    waitForConnection?: (sock: any) => Promise<void>,
+    runtime?: any,
     accountId?: string,
   ) => Promise<void>;
-  monitorWebChannel: (...args: unknown[]) => Promise<unknown>;
-  monitorWebInbox: (...args: unknown[]) => Promise<unknown>;
-  startWebLoginWithQr: (...args: unknown[]) => Promise<unknown>;
-  waitForWaConnection: (sock: unknown, options: WebChannelConnectionWaitOptions) => Promise<void>;
-  waitForWebLogin: (...args: unknown[]) => Promise<unknown>;
-  extractMediaPlaceholder: (...args: unknown[]) => unknown;
-  extractText: (...args: unknown[]) => unknown;
+  monitorWebChannel: (...args: any[]) => Promise<any>;
+  monitorWebInbox: (...args: any[]) => Promise<any>;
+  startWebLoginWithQr: (...args: any[]) => Promise<any>;
+  waitForWaConnection: (sock: any, options: WebChannelConnectionWaitOptions) => Promise<void>;
+  waitForWebLogin: (...args: any[]) => Promise<any>;
+  extractMediaPlaceholder: (...args: any[]) => unknown;
+  extractText: (...args: any[]) => unknown;
 };
 
 type WebChannelRuntimeModuleKind = "heavy" | "light";

@@ -63,7 +63,7 @@ export interface SearchProvider {
 export interface SearchProviderConstructorOptions {
   apiKey?: string;
   baseUrl?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 export type SearchProviderFactory = (

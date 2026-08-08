@@ -5,7 +5,7 @@ import { withEnvAsync } from "../test-utils/env.js";
 import { withFetchPreconnect } from "../test-utils/fetch-mock.js";
 import { scanOpenRouterModels } from "./model-scan.js";
 
-function createFetchFixture(payload: unknown): typeof fetch {
+function createFetchFixture(payload: any): typeof fetch {
   // scanOpenRouterModels accepts an injected fetch so tests stay offline while
   // exercising OpenRouter's catalog response shape.
   return withFetchPreconnect(

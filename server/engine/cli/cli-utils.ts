@@ -14,7 +14,7 @@ export async function withManager<T>(params: {
   onMissing: (error?: string) => void;
   run: (manager: T) => Promise<void>;
   close: (manager: T) => Promise<void>;
-  onCloseError?: (err: unknown) => void;
+  onCloseError?: (err: any) => void;
 }): Promise<void> {
   const { manager, error } = await params.getManager();
   if (!manager) {
@@ -32,7 +32,7 @@ export async function withManager<T>(params: {
   }
 }
 
-function formatCommandRuntimeError(err: unknown): string {
+function formatCommandRuntimeError(err: any): string {
   if (err instanceof Error) {
     return formatErrorMessage(new Error(String(err), { cause: err.cause }));
   }
@@ -42,7 +42,7 @@ function formatCommandRuntimeError(err: unknown): string {
 export async function runCommandWithRuntime(
   runtime: { error: (message: string) => void; exit: (code: number) => void },
   action: () => Promise<void>,
-  onError?: (error: unknown) => void,
+  onError?: (error: any) => void,
 ): Promise<void> {
   try {
     await action();

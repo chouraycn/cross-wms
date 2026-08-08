@@ -34,7 +34,7 @@ export type SecretFileReadResult =
       ok: false;
       message: string;
       resolvedPath?: string;
-      error?: unknown;
+      error?: any;
     };
 
 /** @deprecated 请使用 readSecretFileSync() 或 tryReadSecretFileSync()。 */

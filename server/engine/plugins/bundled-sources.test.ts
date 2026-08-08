@@ -17,11 +17,11 @@ const discoverOpenClawPluginsMock = vi.fn();
 const loadPluginManifestMock = vi.fn();
 
 vi.mock("./discovery.js", () => ({
-  discoverOpenClawPlugins: (...args: unknown[]) => discoverOpenClawPluginsMock(...args),
+  discoverOpenClawPlugins: (...args: any[]) => discoverOpenClawPluginsMock(...args),
 }));
 
 vi.mock("./manifest.js", () => ({
-  loadPluginManifest: (...args: unknown[]) => loadPluginManifestMock(...args),
+  loadPluginManifest: (...args: any[]) => loadPluginManifestMock(...args),
 }));
 
 function createBundledCandidate(params: {
@@ -42,7 +42,7 @@ function createBundledCandidate(params: {
   };
 }
 
-function setBundledDiscoveryCandidates(candidates: unknown[]) {
+function setBundledDiscoveryCandidates(candidates: any[]) {
   discoverOpenClawPluginsMock.mockReturnValue({
     candidates,
     diagnostics: [],
@@ -96,7 +96,7 @@ function createResolvedBundledSource(params: {
   pluginId: string;
   localPath: string;
   npmSpec?: string;
-  configSchema?: Record<string, unknown>;
+  configSchema?: Record<string, any>;
   requiresConfig?: boolean;
 }) {
   return {

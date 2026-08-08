@@ -17,7 +17,7 @@ import type {
 } from "./persistentBindingsTypes.js";
 
 /** 标准化字符串（去除空白） */
-export function normalizeText(value: unknown): string | undefined {
+export function normalizeText(value: any): string | undefined {
   if (typeof value === "string" && value.trim()) {
     return value.trim();
   }
@@ -25,7 +25,7 @@ export function normalizeText(value: unknown): string | undefined {
 }
 
 /** 标准化小写字符串 */
-export function normalizeLowercaseStringOrEmpty(value: unknown): string {
+export function normalizeLowercaseStringOrEmpty(value: any): string {
   if (typeof value === "string") {
     return value.toLowerCase().trim();
   }
@@ -33,7 +33,7 @@ export function normalizeLowercaseStringOrEmpty(value: unknown): string {
 }
 
 /** 标准化可选小写字符串 */
-export function normalizeOptionalLowercaseString(value: unknown): string | undefined {
+export function normalizeOptionalLowercaseString(value: any): string | undefined {
   const trimmed = normalizeText(value);
   return trimmed ? trimmed.toLowerCase() : undefined;
 }
@@ -49,13 +49,13 @@ export function sanitizeAgentId(agentId: string): string {
 }
 
 /** 标准化 binding 模式（默认为 persistent） */
-export function normalizeMode(value: unknown): AcpRuntimeSessionMode {
+export function normalizeMode(value: any): AcpRuntimeSessionMode {
   const raw = normalizeOptionalLowercaseString(value);
   return raw === "oneshot" ? "oneshot" : "persistent";
 }
 
 /** 提取支持的 ACP binding config keys */
-export function normalizeBindingConfig(raw: unknown): AcpBindingConfigShape {
+export function normalizeBindingConfig(raw: any): AcpBindingConfigShape {
   if (!raw || typeof raw !== "object") {
     return {};
   }

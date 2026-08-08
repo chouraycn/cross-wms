@@ -18,6 +18,6 @@ export class MissingAgentHarnessError extends Error {
 }
 
 /** Returns whether an error is a missing harness error. */
-export function isMissingAgentHarnessError(err: unknown): err is MissingAgentHarnessError {
+export function isMissingAgentHarnessError(err: any): err is MissingAgentHarnessError {
   return err instanceof MissingAgentHarnessError;
 }

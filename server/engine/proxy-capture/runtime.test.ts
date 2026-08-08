@@ -8,7 +8,7 @@ import {
   type DebugProxyCaptureRuntimeDeps,
 } from "./runtime.js";
 
-type StoreCall = { name: string; args: unknown[] };
+type StoreCall = { name: string; args: any[] };
 
 const settings: DebugProxySettings = {
   enabled: true,
@@ -25,16 +25,16 @@ const fetchTarget: typeof globalThis = {
   fetch: async () => new Response("{}", { status: 200 }),
 };
 
-const events: Record<string, unknown>[] = [];
+const events: Record<string, any>[] = [];
 const calls: StoreCall[] = [];
 const store = {
-  upsertSession: (...args: unknown[]) => {
+  upsertSession: (...args: any[]) => {
     calls.push({ name: "upsertSession", args });
   },
-  endSession: (...args: unknown[]) => {
+  endSession: (...args: any[]) => {
     calls.push({ name: "endSession", args });
   },
-  recordEvent: (event: Record<string, unknown>) => {
+  recordEvent: (event: Record<string, any>) => {
     events.push(event);
   },
 };
@@ -46,13 +46,13 @@ const deps: DebugProxyCaptureRuntimeDeps = {
     calls.push({ name: "closeStore", args: [] });
   },
   persistEventPayload: (
-    _store: unknown,
+    _store: any,
     payload: { data?: Buffer | string | null; contentType?: string },
   ) => ({
     contentType: payload.contentType,
     ...(typeof payload.data === "string" ? { dataText: payload.data } : {}),
   }),
-  safeJsonString: (value: unknown) => (value == null ? undefined : JSON.stringify(value)),
+  safeJsonString: (value: any) => (value == null ? undefined : JSON.stringify(value)),
 };
 
 describe("debug proxy runtime", () => {
@@ -88,7 +88,7 @@ describe("debug proxy runtime", () => {
       return new Response("{}", { status: 200 });
     };
     const headers = { "content-type": "application/json" } as Record<string, string> & {
-      [key: symbol]: unknown;
+      [key: symbol]: any;
     };
     Object.defineProperty(headers, "x-hidden", {
       value: "yes",

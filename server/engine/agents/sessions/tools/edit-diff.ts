@@ -441,7 +441,7 @@ export async function computeEditsDiff(
       } else {
         await access(absolutePath, constants.R_OK);
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       const errorMessage =
         error instanceof Error && "code" in error
           ? `Error code: ${String(error.code)}`

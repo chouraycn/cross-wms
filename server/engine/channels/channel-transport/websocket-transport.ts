@@ -108,7 +108,7 @@ export class WebSocketTransport implements ChannelTransport {
 
     const messages: TransportMessage[] = [];
 
-    const handler = (data: unknown) => {
+    const handler = (data: any) => {
       try {
         const dataStr = (data as Buffer | string).toString();
         const message = JSON.parse(dataStr) as TransportMessage;
@@ -246,7 +246,7 @@ export class WebSocketTransport implements ChannelTransport {
     }
   }
 
-  private emitEvent(type: TransportEvent["type"], data?: unknown): void {
+  private emitEvent(type: TransportEvent["type"], data?: any): void {
     const handlers = this.eventHandlers.get(type);
     if (!handlers) return;
 

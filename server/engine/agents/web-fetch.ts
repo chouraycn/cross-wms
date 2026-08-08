@@ -29,11 +29,11 @@ export function sanitizeWebFetchUrl(raw: string): string {
  * fallback) is not available.
  */
 export function createWebFetchTool(_options?: {
-  config?: unknown;
+  config?: any;
   sandboxed?: boolean;
-  runtimeWebFetch?: unknown;
+  runtimeWebFetch?: any;
   lateBindRuntimeConfig?: boolean;
-  lookupFn?: unknown;
+  lookupFn?: any;
 }): null {
   // cross-wms lacks SSRF guards, content extractors, caching, and provider fallback.
   return null;

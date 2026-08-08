@@ -355,7 +355,7 @@ describe("session store writer queue", () => {
   const writerFixtureRootTracker = createSuiteTempRootTracker({ prefix: "openclaw-writer-test-" });
 
   async function makeTmpStore(
-    initial: Record<string, unknown> = {},
+    initial: Record<string, any> = {},
   ): Promise<{ dir: string; storePath: string }> {
     const dir = await writerFixtureRootTracker.make("case");
     const storePath = path.join(dir, "sessions.json");
@@ -387,7 +387,7 @@ describe("session store writer queue", () => {
     await Promise.all(
       Array.from({ length: N }, (_, i) =>
         updateSessionStore(storePath, async (store) => {
-          const entry = store[key] as Record<string, unknown>;
+          const entry = store[key] as Record<string, any>;
           await Promise.resolve();
           entry.counter = (entry.counter as number) + 1;
           entry.tag = `writer-${i}`;
@@ -396,7 +396,7 @@ describe("session store writer queue", () => {
     );
 
     const store = loadSessionStore(storePath);
-    expect((store[key] as Record<string, unknown>).counter).toBe(N);
+    expect((store[key] as Record<string, any>).counter).toBe(N);
   });
 
   it("drops non-object persisted session entries on load", async () => {
@@ -729,7 +729,7 @@ describe("session store writer queue", () => {
     await updateSessionStore(
       storePath,
       async (store) => {
-        (store[key] as Record<string, unknown>).ephemeral = undefined;
+        (store[key] as Record<string, any>).ephemeral = undefined;
       },
       { skipMaintenance: true },
     );
@@ -809,7 +809,7 @@ describe("session store writer queue", () => {
     await updateSessionStore(
       storePath,
       async (store) => {
-        const entry = store[key] as Record<string, unknown>;
+        const entry = store[key] as Record<string, any>;
         entry.counter = 1;
       },
       { skipMaintenance: true },
@@ -863,7 +863,7 @@ describe("session store writer queue", () => {
       string,
       SessionEntry
     >;
-    expect((persisted[key] as Record<string, unknown> | undefined)?.counter).toBe(1);
+    expect((persisted[key] as Record<string, any> | undefined)?.counter).toBe(1);
     expect(persisted[otherKey]).toStrictEqual(beforeOtherEntry);
     expect(fs.existsSync(path.join(dir, "skills-prompts"))).toBe(true);
   });

@@ -9,7 +9,7 @@ import {
   withAcpRuntimeErrorBoundary,
 } from "./errors.js";
 
-async function expectRejectedAcpRuntimeError(promise: Promise<unknown>): Promise<AcpRuntimeError> {
+async function expectRejectedAcpRuntimeError(promise: Promise<any>): Promise<AcpRuntimeError> {
   try {
     await promise;
   } catch (error) {
@@ -97,7 +97,7 @@ describe("withAcpRuntimeErrorBoundary", () => {
     });
 
     expect(error.code).toBe("ACP_TURN_FAILED");
-    expect(error.message).toContain("Internal error: unknown config option: timeout");
+    expect(error.message).toContain("Internal error: any config option: timeout");
     expect(error.message).not.toContain(token);
     expect(error.cause).toBe(requestError);
   });

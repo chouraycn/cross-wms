@@ -9,7 +9,7 @@ import { parseInlineDirectives } from "./directive-handling.parse.js";
 
 const triggerInternalHookMock = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
 const routeReplyMock = vi.hoisted(() =>
-  vi.fn<(params: unknown) => Promise<{ ok: boolean }>>(async () => ({ ok: true })),
+  vi.fn<(params: any) => Promise<{ ok: boolean }>>(async () => ({ ok: true })),
 );
 const resetMocks = vi.hoisted(() => ({
   resetConfiguredBindingTargetInPlace: vi.fn().mockResolvedValue({ ok: true as const }),
@@ -21,7 +21,7 @@ vi.mock("../../hooks/internal-hooks.js", () => ({
     type: string,
     action: string,
     sessionKey: string,
-    context: Record<string, unknown>,
+    context: Record<string, any>,
   ) => ({
     type,
     action,
@@ -55,7 +55,7 @@ vi.mock("./commands-handlers.runtime.js", () => ({
 }));
 
 vi.mock("./route-reply.runtime.js", () => ({
-  routeReply: (params: unknown) => routeReplyMock(params),
+  routeReply: (params: any) => routeReplyMock(params),
 }));
 
 function buildResetParams(
@@ -106,8 +106,8 @@ function buildResetParams(
   };
 }
 
-function mockCall(mock: unknown, index = 0): Array<unknown> {
-  const calls = (mock as { mock?: { calls?: Array<Array<unknown>> } }).mock?.calls ?? [];
+function mockCall(mock: any, index = 0): Array<any> {
+  const calls = (mock as { mock?: { calls?: Array<Array<any>> } }).mock?.calls ?? [];
   const call = calls.at(index);
   if (!call) {
     throw new Error(`Expected mock call ${index + 1}`);
@@ -115,16 +115,16 @@ function mockCall(mock: unknown, index = 0): Array<unknown> {
   return call;
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object") {
     throw new Error(`expected ${label}`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 function expectObjectFields(
-  value: unknown,
-  expected: Record<string, unknown>,
+  value: any,
+  expected: Record<string, any>,
   label = "object",
 ): void {
   const record = requireRecord(value, label);
@@ -133,7 +133,7 @@ function expectObjectFields(
   }
 }
 
-function firstHookEvent(): Record<string, unknown> {
+function firstHookEvent(): Record<string, any> {
   return requireRecord(mockCall(triggerInternalHookMock)[0], "hook event");
 }
 

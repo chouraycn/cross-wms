@@ -252,7 +252,7 @@ function isTrackedPackageInstallRecord(record: PluginInstallRecord): boolean {
   );
 }
 
-function normalizePluginInstallRecordMap(value: unknown): Record<string, PluginInstallRecord> {
+function normalizePluginInstallRecordMap(value: any): Record<string, PluginInstallRecord> {
   if (!isRecord(value)) {
     return {};
   }
@@ -267,14 +267,14 @@ function normalizePluginInstallRecordMap(value: unknown): Record<string, PluginI
   return records;
 }
 
-function normalizeChannelConfigMap(value: unknown): Record<string, unknown> | null {
+function normalizeChannelConfigMap(value: any): Record<string, any> | null {
   if (!isRecord(value)) {
     return null;
   }
   return value;
 }
 
-function normalizeDirectAuthoredChannelConfigMap(value: unknown): Record<string, unknown> | null {
+function normalizeDirectAuthoredChannelConfigMap(value: any): Record<string, any> | null {
   const channels = normalizeChannelConfigMap(value);
   if (!channels || Object.hasOwn(channels, "$include")) {
     return null;
@@ -283,10 +283,10 @@ function normalizeDirectAuthoredChannelConfigMap(value: unknown): Record<string,
 }
 
 function restorePreUpdateChannelModelOverrides(params: {
-  channels: Record<string, unknown>;
-  preUpdateChannels: Record<string, unknown>;
+  channels: Record<string, any>;
+  preUpdateChannels: Record<string, any>;
   restoredChannelIds: string[];
-}): { channels: Record<string, unknown>; changed: boolean } {
+}): { channels: Record<string, any>; changed: boolean } {
   if (params.restoredChannelIds.length === 0) {
     return { channels: params.channels, changed: false };
   }
@@ -333,7 +333,7 @@ function restoreDroppedPreUpdateChannels(
 ): {
   snapshot: Awaited<ReturnType<typeof readConfigFileSnapshot>>;
   changed: boolean;
-  authoredChannels?: unknown;
+  authoredChannels?: any;
 } {
   if (!snapshot.valid || !preUpdateConfig) {
     return { snapshot, changed: false };
@@ -407,11 +407,11 @@ function hasRestorablePreUpdateChannels(
 }
 
 function resolveRestoredAuthoredChannels(params: {
-  currentChannels: unknown;
-  currentAuthoredChannels: unknown;
-  preUpdateAuthoredChannels: unknown;
+  currentChannels: any;
+  currentAuthoredChannels: any;
+  preUpdateAuthoredChannels: any;
   restoredChannelIds: string[];
-}): unknown {
+}): any {
   if (params.preUpdateAuthoredChannels === undefined) {
     return undefined;
   }
@@ -815,7 +815,7 @@ Gateway PID ${pid} is an ancestor of this process, so this updater cannot safely
 Run \`${replaceCliName(formatCliCommand("openclaw update"), CLI_NAME)}\` from a shell outside the gateway service, or stop the gateway service first and then update.`;
 }
 
-function parsePositivePid(value: unknown): number | null {
+function parsePositivePid(value: any): number | null {
   if (typeof value === "number" && Number.isFinite(value) && value > 0) {
     return Math.floor(value);
   }
@@ -840,7 +840,7 @@ function isInheritedGatewayRuntimePid(
 }
 
 function isGatewayAncestorPid(
-  pid: unknown,
+  pid: any,
   env: Record<string, string | undefined> = process.env,
 ): pid is number {
   const parsed = parsePositivePid(pid);
@@ -850,7 +850,7 @@ function isGatewayAncestorPid(
   return isInheritedGatewayRuntimePid(parsed, env) || getSelfAndAncestorPidsSync().has(parsed);
 }
 
-function gatewayAncestryBlockMessage(pid: unknown): string | undefined {
+function gatewayAncestryBlockMessage(pid: any): string | undefined {
   return isGatewayAncestorPid(pid) ? formatGatewayAncestryBlockMessage(pid) : undefined;
 }
 
@@ -1752,7 +1752,7 @@ export async function updatePluginsAfterCoreUpdate(params: {
   channel: "stable" | "beta" | "dev";
   configSnapshot: Awaited<ReturnType<typeof readConfigFileSnapshot>>;
   configChanged?: boolean;
-  restoredAuthoredChannels?: unknown;
+  restoredAuthoredChannels?: any;
   opts: UpdateCommandOptions;
   timeoutMs: number;
   pluginInstallRecords?: Record<string, PluginInstallRecord>;
@@ -2399,7 +2399,7 @@ async function runPostCorePluginUpdate(params: {
   channel: "stable" | "beta" | "dev";
   configSnapshot: Awaited<ReturnType<typeof readConfigFileSnapshot>>;
   configChanged?: boolean;
-  restoredAuthoredChannels?: unknown;
+  restoredAuthoredChannels?: any;
   opts: UpdateCommandOptions;
   timeoutMs: number;
   pluginInstallRecords?: Record<string, PluginInstallRecord>;
@@ -2679,7 +2679,7 @@ async function readPostCorePluginInstallRecordsFile(
     return undefined;
   }
   try {
-    const parsed = JSON.parse(await fs.readFile(filePath, "utf-8")) as unknown;
+    const parsed = JSON.parse(await fs.readFile(filePath, "utf-8")) as any;
     return normalizePluginInstallRecordMap(parsed);
   } catch {
     return undefined;
@@ -2705,7 +2705,7 @@ async function readPostCoreSourceConfigFile(
 }
 
 function normalizePreUpdateConfigRestoreInput(
-  parsed: Record<string, unknown>,
+  parsed: Record<string, any>,
   options?: { configPath?: string },
 ): PreUpdateConfigRestoreInput | undefined {
   const sourceConfig = parsed.sourceConfig;

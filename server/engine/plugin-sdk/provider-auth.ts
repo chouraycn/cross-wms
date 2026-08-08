@@ -24,19 +24,19 @@ export type ProviderAuthResult = {
 
 export type ProviderAuthContext = {
   provider: string;
-  cfg?: Record<string, unknown>;
+  cfg?: Record<string, any>;
   env?: NodeJS.ProcessEnv;
   agentDir?: string;
 };
 
 export type ProviderAuthDoctorHintContext = {
   provider: string;
-  cfg?: Record<string, unknown>;
+  cfg?: Record<string, any>;
 };
 
 export type ProviderAuthMethodNonInteractiveContext = {
   provider: string;
-  cfg?: Record<string, unknown>;
+  cfg?: Record<string, any>;
   env?: NodeJS.ProcessEnv;
 };
 
@@ -50,13 +50,13 @@ export type ProviderPreparedRuntimeAuth = {
 export type ProviderPrepareRuntimeAuthContext = {
   provider: string;
   model?: string;
-  cfg?: Record<string, unknown>;
+  cfg?: Record<string, any>;
   env?: NodeJS.ProcessEnv;
 };
 
 export type ProviderResolveUsageAuthContext = {
   provider: string;
-  cfg?: Record<string, unknown>;
+  cfg?: Record<string, any>;
 };
 
 export type ProviderResolvedUsageAuth = {

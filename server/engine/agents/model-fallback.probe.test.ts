@@ -33,7 +33,7 @@ vi.mock("./provider-model-normalization.runtime.js", () => ({
 const sessionSuspensionMocks = vi.hoisted(() => ({
   suspendSession: vi.fn().mockResolvedValue(undefined),
   runWithDeferredSessionSuspension: vi.fn(
-    (run: () => Promise<unknown>, onDeferred?: (params: SessionSuspensionParams) => void) => {
+    (run: () => Promise<any>, onDeferred?: (params: SessionSuspensionParams) => void) => {
       onDeferred?.({
         cfg: {},
         sessionId: "test-session",
@@ -167,10 +167,10 @@ async function loadModelFallbackProbeModules() {
 beforeAll(loadModelFallbackProbeModules);
 
 function expectPrimarySkippedForReason(
-  result: { result: unknown; attempts: Array<{ reason?: string }> },
+  result: { result: any; attempts: Array<{ reason?: string }> },
   run: {
-    (...args: unknown[]): unknown;
-    mock: { calls: unknown[][] };
+    (...args: any[]): any;
+    mock: { calls: any[][] };
   },
   reason: string,
 ) {
@@ -183,12 +183,12 @@ function expectPrimarySkippedForReason(
 }
 
 function expectPrimaryProbeSuccess(
-  result: { result: unknown },
+  result: { result: any },
   run: {
-    (...args: unknown[]): unknown;
-    mock: { calls: unknown[][] };
+    (...args: any[]): any;
+    mock: { calls: any[][] };
   },
-  expectedResult: unknown,
+  expectedResult: any,
 ) {
   expect(result.result).toBe(expectedResult);
   expect(run).toHaveBeenCalledTimes(1);
@@ -198,16 +198,16 @@ function expectPrimaryProbeSuccess(
   });
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object") {
     throw new Error(`expected ${label}`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 function expectRecordWithFields(
-  records: Array<Record<string, unknown>>,
-  expected: Record<string, unknown>,
+  records: Array<Record<string, any>>,
+  expected: Record<string, any>,
 ) {
   const matching = records.find((record) =>
     Object.entries(expected).every(([key, value]) => record[key] === value),
@@ -268,7 +268,7 @@ describe("runWithModelFallback – probe logic", () => {
 
   const runPrimaryCandidate = (
     cfg: OpenClawConfig,
-    run: (provider: string, model: string) => Promise<unknown>,
+    run: (provider: string, model: string) => Promise<any>,
   ) =>
     runWithModelFallback({
       cfg,

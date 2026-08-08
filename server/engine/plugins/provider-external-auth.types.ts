@@ -8,7 +8,7 @@
  */
 
 /** OpenClaw 配置（降级为 unknown 占位）。 */
-export type OpenClawConfig = Record<string, unknown>;
+export type OpenClawConfig = Record<string, any>;
 
 /** 认证 profile 存储（降级为 unknown 占位）。 */
 export type AuthProfileStore = unknown;

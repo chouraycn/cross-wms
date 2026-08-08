@@ -35,7 +35,7 @@ describe("agents_list", () => {
     });
   }
 
-  function readAgentList(result: unknown) {
+  function readAgentList(result: any) {
     // Tool results expose the machine-readable agent list in details.
     return (result as { details?: { agents?: Array<{ id: string; configured?: boolean }> } })
       .details?.agents;

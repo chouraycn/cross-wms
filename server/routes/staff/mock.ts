@@ -97,11 +97,11 @@ function nowIso(): string {
   return new Date().toISOString();
 }
 
-function orderHit(orderId: string, source: string, record: Record<string, unknown>): Record<string, unknown> {
+function orderHit(orderId: string, source: string, record: Record<string, any>): Record<string, any> {
   return { order_id: orderId, found: true, source, ...record };
 }
 
-function orderMiss(orderId: string, source: string): Record<string, unknown> {
+function orderMiss(orderId: string, source: string): Record<string, any> {
   return {
     order_id: orderId,
     found: false,
@@ -112,7 +112,7 @@ function orderMiss(orderId: string, source: string): Record<string, unknown> {
   };
 }
 
-function productMiss(productName: string): Record<string, unknown> {
+function productMiss(productName: string): Record<string, any> {
   return {
     product_name: productName,
     found: false,
@@ -122,10 +122,10 @@ function productMiss(productName: string): Record<string, unknown> {
   };
 }
 
-function findDynamicOrder(orderId: string): Record<string, unknown> | null {
+function findDynamicOrder(orderId: string): Record<string, any> | null {
   const row = getMockOrder(orderId);
   if (!row) return null;
-  let extra: Record<string, unknown> = {};
+  let extra: Record<string, any> = {};
   try {
     extra = row.metadata_json ? JSON.parse(row.metadata_json) : {};
   } catch {
@@ -160,7 +160,7 @@ function upsertDynamicOrder(input: {
   order_status?: string | null;
   total_amount: number;
   currency: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }): void {
   upsertMockOrder({
     order_id: input.order_id,
@@ -425,7 +425,7 @@ router.post('/fulfillment/reroute-plan', staffAuth, (req: Request, res: Response
   const highPriority = ['black', '黑金', 'vip_black', 'black_card'].includes(memberLevelRaw.trim().toLowerCase());
   const reroutable = Boolean(targetAddress || expectedDeliveryTime || highPriority);
 
-  const plans: Array<Record<string, unknown>> = [];
+  const plans: Array<Record<string, any>> = [];
   if (reroutable) {
     plans.push({
       plan_id: 'same_city_priority',

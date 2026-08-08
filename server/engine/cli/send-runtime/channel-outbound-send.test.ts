@@ -16,7 +16,7 @@ describe("createChannelOutboundRuntimeSend", () => {
 
   function expectSingleCallParams(mockFn: ReturnType<typeof vi.fn>) {
     expect(mockFn).toHaveBeenCalledTimes(1);
-    const params = mockFn.mock.calls[0]?.[0] as Record<string, unknown> | undefined;
+    const params = mockFn.mock.calls[0]?.[0] as Record<string, any> | undefined;
     if (params === undefined) {
       throw new Error("expected outbound send call params");
     }

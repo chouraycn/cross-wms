@@ -46,7 +46,7 @@ describe("describeBundledChannelLoadError", () => {
   });
 
   it("does not loop on a self-referential cause chain", () => {
-    const err = new Error("outer") as Error & { cause?: unknown };
+    const err = new Error("outer") as Error & { cause?: any };
     err.cause = err;
     expect(() => describeBundledChannelLoadError(err, "msteams")).not.toThrow();
   });

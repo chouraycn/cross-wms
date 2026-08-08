@@ -62,7 +62,7 @@ export interface STTProviderConfig {
   /** 识别结果回调的 Webhook URL。 */
   callbackUrl?: string;
   enabled?: boolean;
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 /** STT 运行时顶层配置。 */
@@ -101,7 +101,7 @@ export interface TranscribeRequest {
   timeoutMs?: number;
   /** 额外查询参数，透传给 Provider。 */
   query?: Record<string, string | number | boolean | undefined>;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
   /** 可注入的 fetch 实现，便于测试/自定义传输。 */
   fetchFn?: typeof fetch;
 }
@@ -122,7 +122,7 @@ export interface TranscribeResult {
   /** 说话人片段（diarization）。 */
   speakers?: TranscribeSpeaker[];
   /** 原始 Provider 元数据。 */
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 /** 逐句片段。 */
@@ -285,14 +285,14 @@ const FORMAT_TO_MIME: Record<SttAudioFormat, string> = {
 /** Deepgram API 响应结构。 */
 interface DeepgramResponse {
   metadata?: {
-    model_info?: Record<string, unknown>;
+    model_info?: Record<string, any>;
     model_uuid?: string;
     transaction_id?: string;
     sha256?: string;
     created?: string;
     duration?: number;
     channels?: number;
-    [key: string]: unknown;
+    [key: string]: any;
   };
   results?: {
     channels?: Array<{
@@ -306,7 +306,7 @@ interface DeepgramResponse {
           confidence?: number;
           speaker?: number;
         }>;
-        [key: string]: unknown;
+        [key: string]: any;
       }>;
       detected_language?: string;
       language?: string;
@@ -642,7 +642,7 @@ export function deepgramStreamTranscribe(
       cleanup();
       resolve();
     };
-    const onError = (err: unknown) => {
+    const onError = (err: any) => {
       cleanup();
       reject(err instanceof Error ? err : new Error("Deepgram WebSocket connection failed"));
     };

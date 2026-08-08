@@ -6,7 +6,7 @@ import {
 } from "../test-utils/secret-ref-test-vectors.js";
 import { validateConfigObjectRaw } from "./validation.js";
 
-function validateOpenAiApiKeyRef(apiKey: unknown) {
+function validateOpenAiApiKeyRef(apiKey: any) {
   return validateConfigObjectRaw({
     models: {
       providers: {

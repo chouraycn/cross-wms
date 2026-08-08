@@ -2,14 +2,14 @@
 
 export type PluginNodeCapabilityRoute = unknown;
 
-export function findMatchingPluginNodeCapabilityRoutes(...args: unknown[]): unknown {
+export function findMatchingPluginNodeCapabilityRoutes(...args: any[]): any {
   return [];
 }
 
-export function findMatchingPluginNodeCapabilityRoute(...args: unknown[]): unknown {
+export function findMatchingPluginNodeCapabilityRoute(...args: any[]): any {
   return [];
 }
 
-export function listPluginNodeCapabilities(...args: unknown[]): unknown {
+export function listPluginNodeCapabilities(...args: any[]): any {
   return [];
 }

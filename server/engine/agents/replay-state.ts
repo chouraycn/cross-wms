@@ -8,15 +8,15 @@
 
 export type EmbeddedRunReplayState = unknown;
 export type EmbeddedRunReplayMetadata = unknown;
-export function createEmbeddedRunReplayState(..._args: unknown[]): unknown {
+export function createEmbeddedRunReplayState(..._args: any[]): any {
   return undefined;
 }
-export function mergeEmbeddedRunReplayState(..._args: unknown[]): unknown {
+export function mergeEmbeddedRunReplayState(..._args: any[]): any {
   return undefined;
 }
-export function observeReplayMetadata(..._args: unknown[]): unknown {
+export function observeReplayMetadata(..._args: any[]): any {
   return undefined;
 }
-export function replayMetadataFromState(..._args: unknown[]): unknown {
+export function replayMetadataFromState(..._args: any[]): any {
   return undefined;
 }

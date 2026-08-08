@@ -145,7 +145,7 @@ function listManagedNpmPackageDirs(npmRoot: string): string[] {
 async function cleanupRetainedLegacyNpmPackages(params: {
   npmRoot: string;
   activeInstallPaths: string[];
-  onError?: (error: unknown, projectRoot: string) => void;
+  onError?: (error: any, projectRoot: string) => void;
 }): Promise<number> {
   let removed = 0;
   for (const packageDir of listManagedNpmPackageDirs(params.npmRoot)) {
@@ -171,7 +171,7 @@ export async function cleanupRetainedManagedNpmInstallGenerations(
     activeInstallPaths?: Iterable<string>;
     env?: NodeJS.ProcessEnv;
     npmDir?: string;
-    onError?: (error: unknown, projectRoot: string) => void;
+    onError?: (error: any, projectRoot: string) => void;
   } = {},
 ): Promise<number> {
   // Callers run this after the previous gateway server has closed and before

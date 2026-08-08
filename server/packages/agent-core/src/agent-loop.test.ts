@@ -169,7 +169,7 @@ describe("agentLoop streaming updates", () => {
 describe("runAgentLoop deferred tool hydration", () => {
   it("hydrates an authorized deferred tool for execution and the continuation", async () => {
     const execute = vi.fn(
-      async (): Promise<AgentToolResult<unknown>> => ({
+      async (): Promise<AgentToolResult<any>> => ({
         content: [{ type: "text", text: "hidden ok" }],
         details: { ok: true },
       }),
@@ -395,7 +395,7 @@ describe("runAgentLoop deferred tool hydration", () => {
 
   it("rejects deferred tools whose names differ from the requested call", async () => {
     const execute = vi.fn(
-      async (): Promise<AgentToolResult<unknown>> => ({
+      async (): Promise<AgentToolResult<any>> => ({
         content: [{ type: "text", text: "wrong tool ran" }],
         details: { ok: true },
       }),
@@ -484,7 +484,7 @@ describe("runAgentLoop deferred tool hydration", () => {
   it("hydrates sequential deferred tools before choosing the executor", async () => {
     let activeExecutions = 0;
     let maxActiveExecutions = 0;
-    const execute = vi.fn(async (): Promise<AgentToolResult<unknown>> => {
+    const execute = vi.fn(async (): Promise<AgentToolResult<any>> => {
       activeExecutions += 1;
       maxActiveExecutions = Math.max(maxActiveExecutions, activeExecutions);
       await new Promise<void>((resolve) => {

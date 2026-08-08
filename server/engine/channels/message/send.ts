@@ -85,7 +85,7 @@ export function createOutboundMessage(params: {
   parts?: MessagePart[];
   replyTo?: string;
   capabilities?: MessageCapabilities;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }): ChannelMessage {
   return {
     id: params.id,

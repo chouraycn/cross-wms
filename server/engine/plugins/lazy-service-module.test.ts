@@ -27,8 +27,8 @@ function createLazyModuleLifecycle() {
 async function expectLifecycleStarted(params: {
   overrideEnvVar?: string;
   validateOverrideSpecifier?: (specifier: string) => string;
-  loadDefaultModule?: () => Promise<Record<string, unknown>>;
-  loadOverrideModule?: (spec: string) => Promise<Record<string, unknown>>;
+  loadDefaultModule?: () => Promise<Record<string, any>>;
+  loadOverrideModule?: (spec: string) => Promise<Record<string, any>>;
   startExportNames: string[];
   stopExportNames?: string[];
 }) {

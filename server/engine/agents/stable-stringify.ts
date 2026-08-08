@@ -6,11 +6,11 @@
 import { Buffer } from "node:buffer";
 
 /** 以确定性方式序列化未知值，常用于缓存键与诊断输出。 */
-export function stableStringify(value: unknown): string {
+export function stableStringify(value: any): string {
   return stringifyStableValue(value, new WeakSet());
 }
 
-function stringifyStableValue(value: unknown, stack: WeakSet<object>): string {
+function stringifyStableValue(value: any, stack: WeakSet<object>): string {
   if (value === null || value === undefined) {
     return String(value);
   }
@@ -62,7 +62,7 @@ function stringifyObjectValue(value: object, stack: WeakSet<object>): string {
     }
     return `[${serializedEntries.join(",")}]`;
   }
-  const record = value as Record<string, unknown>;
+  const record = value as Record<string, any>;
   const serializedFields: string[] = [];
   for (const key of Object.keys(record).toSorted()) {
     serializedFields.push(`${JSON.stringify(key)}:${stringifyStableValue(record[key], stack)}`);

@@ -62,7 +62,7 @@ function createToolHandlerCtx(): ToolHandlerContext {
 function toolExecutionStartEvent(params: {
   toolName: string;
   toolCallId: string;
-  args: unknown;
+  args: any;
 }): ToolExecutionStartEvent {
   return {
     type: "tool_execution_start",
@@ -76,7 +76,7 @@ function toolExecutionEndEvent(params: {
   toolName: string;
   toolCallId: string;
   isError: boolean;
-  result: unknown;
+  result: any;
 }): ToolExecutionEndEvent {
   return {
     type: "tool_execution_end",
@@ -92,8 +92,8 @@ function createToolExtensionContext(): ExtensionContext {
 }
 
 async function waitForAfterToolCall(hooks: {
-  afterToolCall: { mock: { calls: unknown[][] } };
-}): Promise<[Record<string, unknown>, Record<string, unknown>]> {
+  afterToolCall: { mock: { calls: any[][] } };
+}): Promise<[Record<string, any>, Record<string, any>]> {
   // after_tool_call fires asynchronously after the execution-end event is processed.
   await vi.waitFor(() => {
     expect(hooks.afterToolCall).toHaveBeenCalledTimes(1);
@@ -102,7 +102,7 @@ async function waitForAfterToolCall(hooks: {
   if (!call) {
     throw new Error("Expected afterToolCall hook call");
   }
-  return call as [Record<string, unknown>, Record<string, unknown>];
+  return call as [Record<string, any>, Record<string, any>];
 }
 
 describe("OpenClaw-owned tool runtime contract - embedded agent adapter", () => {
@@ -208,7 +208,7 @@ describe("OpenClaw-owned tool runtime contract - embedded agent adapter", () => 
       undefined,
       createToolExtensionContext(),
     );
-    const resultDetails = (result as { details?: Record<string, unknown> }).details;
+    const resultDetails = (result as { details?: Record<string, any> }).details;
     expect(resultDetails?.status).toBe("error");
     expect(resultDetails?.error).toBe("tool failed");
     await handleToolExecutionEnd(
@@ -304,7 +304,7 @@ describe("OpenClaw-owned tool runtime contract - embedded agent adapter", () => 
     expect(afterPayload.toolName).toBe("message");
     expect(afterPayload.toolCallId).toBe(toolCallId);
     expect(afterPayload.params).toEqual(originalParams);
-    expect((afterPayload.result as { content?: unknown }).content).toEqual([
+    expect((afterPayload.result as { content?: any }).content).toEqual([
       { type: "text", text: "sent" },
     ]);
     expect(afterContext.runId).toBe("run-message");
@@ -349,7 +349,7 @@ describe("OpenClaw-owned tool runtime contract - embedded agent adapter", () => 
       undefined,
       createToolExtensionContext(),
     );
-    const resultDetails = (result as { details?: Record<string, unknown> }).details;
+    const resultDetails = (result as { details?: Record<string, any> }).details;
     expect(resultDetails?.status).toBe("blocked");
     expect(resultDetails?.deniedReason).toBe("plugin-before-tool-call");
     expect(resultDetails?.reason).toBe("blocked by policy");

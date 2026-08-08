@@ -19,7 +19,7 @@ export type GatewayClient = {
   deviceId?: string;
   clientId?: string;
   deviceTokenAuth?: boolean;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 /**
@@ -31,16 +31,16 @@ export type GatewayClient = {
  */
 function sanitizeSystemRunParamsForForwarding(opts: {
   nodeId: string;
-  rawParams: unknown;
+  rawParams: any;
   client: GatewayClient | null;
   execApprovalManager?: ExecApprovalManager;
 }):
-  | { ok: true; params: unknown }
-  | { ok: false; message: string; details?: Record<string, unknown> } {
+  | { ok: true; params: any }
+  | { ok: false; message: string; details?: Record<string, any> } {
   if (opts.rawParams == null || typeof opts.rawParams !== "object") {
     return { ok: true, params: opts.rawParams };
   }
-  const params = opts.rawParams as Record<string, unknown>;
+  const params = opts.rawParams as Record<string, any>;
   // 移除空 approval id，避免节点收到空字符串绑定。
   const approvalId = params["approvalId"];
   if (typeof approvalId === "string" && approvalId.trim() === "") {
@@ -58,12 +58,12 @@ function sanitizeSystemRunParamsForForwarding(opts: {
 export function sanitizeNodeInvokeParamsForForwarding(opts: {
   nodeId: string;
   command: string;
-  rawParams: unknown;
+  rawParams: any;
   client: GatewayClient | null;
   execApprovalManager?: ExecApprovalManager;
 }):
-  | { ok: true; params: unknown }
-  | { ok: false; message: string; details?: Record<string, unknown> } {
+  | { ok: true; params: any }
+  | { ok: false; message: string; details?: Record<string, any> } {
   if (opts.command === "system.run") {
     return sanitizeSystemRunParamsForForwarding({
       nodeId: opts.nodeId,

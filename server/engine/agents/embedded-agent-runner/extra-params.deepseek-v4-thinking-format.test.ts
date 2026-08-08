@@ -8,12 +8,12 @@ vi.mock("../../llm/stream.js", () => createLlmStreamSimpleMock());
 let runExtraParamsCase: typeof import("./extra-params.test-support.js").runExtraParamsCase;
 
 function runDeepSeekV4Case(params: {
-  messages?: Array<Record<string, unknown>>;
-  payloadExtras?: Record<string, unknown>;
+  messages?: Array<Record<string, any>>;
+  payloadExtras?: Record<string, any>;
   provider?: string;
   thinkingFormat?: ModelCompatConfig["thinkingFormat"];
   thinkingLevel?: "off" | "high";
-}): Record<string, unknown> {
+}): Record<string, any> {
   const provider = params.provider ?? "opencode";
   const compat = params.thinkingFormat ? { thinkingFormat: params.thinkingFormat } : undefined;
   return runExtraParamsCase({
@@ -32,7 +32,7 @@ function runDeepSeekV4Case(params: {
       messages: params.messages ?? [],
       ...params.payloadExtras,
     },
-  }).payload as Record<string, unknown>;
+  }).payload as Record<string, any>;
 }
 
 describe("extra-params: DeepSeek V4 OpenAI-compatible thinking fallback", () => {
@@ -66,7 +66,7 @@ describe("extra-params: DeepSeek V4 OpenAI-compatible thinking fallback", () => 
     });
     expect(payload).not.toHaveProperty("thinking");
     expect(payload).not.toHaveProperty("reasoning_effort");
-    expect((payload.messages as Array<Record<string, unknown>>)[1]).not.toHaveProperty(
+    expect((payload.messages as Array<Record<string, any>>)[1]).not.toHaveProperty(
       "reasoning_content",
     );
   });
@@ -86,7 +86,7 @@ describe("extra-params: DeepSeek V4 OpenAI-compatible thinking fallback", () => 
       thinkingFormat: "openai",
       thinkingLevel: "high",
     });
-    expect((payload.messages as Array<Record<string, unknown>>)[1]).not.toHaveProperty(
+    expect((payload.messages as Array<Record<string, any>>)[1]).not.toHaveProperty(
       "reasoning_content",
     );
   });
@@ -102,7 +102,7 @@ describe("extra-params: DeepSeek V4 OpenAI-compatible thinking fallback", () => 
       thinkingLevel: "high",
     });
     expect(payload.reasoning).toEqual({ effort: "high" });
-    expect((payload.messages as Array<Record<string, unknown>>)[1]).not.toHaveProperty(
+    expect((payload.messages as Array<Record<string, any>>)[1]).not.toHaveProperty(
       "reasoning_content",
     );
   });

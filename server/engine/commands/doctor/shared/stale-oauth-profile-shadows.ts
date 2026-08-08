@@ -30,16 +30,16 @@ type StaleOAuthProfileShadow = {
   profileId: string;
 };
 
-async function loadRawAuthProfileStore(authPath: string): Promise<Record<string, unknown> | null> {
+async function loadRawAuthProfileStore(authPath: string): Promise<Record<string, any> | null> {
   try {
-    const raw = JSON.parse(await fs.readFile(authPath, "utf8")) as unknown;
+    const raw = JSON.parse(await fs.readFile(authPath, "utf8")) as any;
     return isRecord(raw) ? raw : null;
   } catch {
     return null;
   }
 }
 
-function hasLegacyOAuthSidecarRef(raw: Record<string, unknown> | null, profileId: string): boolean {
+function hasLegacyOAuthSidecarRef(raw: Record<string, any> | null, profileId: string): boolean {
   if (!raw || !isRecord(raw.profiles)) {
     return false;
   }

@@ -14,7 +14,7 @@ export type OutputDestination = 'console' | 'log' | 'socket' | 'webhook' | 'file
 export interface OutputOptions {
   destinations?: OutputDestination[];
   format?: FormatOptions;
-  filter?: (announcement: unknown) => boolean;
+  filter?: (announcement: any) => boolean;
 }
 
 export interface OutputResult {
@@ -37,7 +37,7 @@ const outputHandlers = new Map<OutputDestination, (payload: string, options: Out
 export function outputAnnouncement(
   instanceId: string,
   type: string,
-  content: unknown,
+  content: any,
   options: OutputOptions = {},
 ): OutputResult {
   const instance = getActiveSubagent(instanceId);

@@ -34,7 +34,7 @@ function createTemplateModel(
 
 function expectClonedTemplateModel(
   params: Parameters<typeof cloneFirstTemplateModel>[0],
-  expected: Record<string, unknown> | undefined,
+  expected: Record<string, any> | undefined,
 ) {
   const model = cloneFirstTemplateModel(params);
   if (expected == null) {

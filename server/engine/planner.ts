@@ -747,7 +747,7 @@ ${CHINESE_ENV_CONSTRAINT_LITE}`;
       const plan: ExecutionPlan = {
         id: `${Date.now()}_${Math.random().toString(36).slice(2, 10)}`,
         intent: String(parsed.intent),
-        steps: limitedSteps.map((s: Record<string, unknown>, index: number) => ({
+        steps: limitedSteps.map((s: Record<string, any>, index: number) => ({
           step: index + 1,
           description: String(s.description),
           toolName: s.toolName ? String(s.toolName) : undefined,

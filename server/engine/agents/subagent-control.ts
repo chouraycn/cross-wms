@@ -10,7 +10,7 @@ export const MAX_RECENT_MINUTES = 60;
 export const testing = {};
 
 export function resolveSubagentController(): null { return null; }
-export function listControlledSubagentRuns(): unknown[] { return []; }
+export function listControlledSubagentRuns(): any[] { return []; }
 export async function killAllControlledSubagentRuns(): Promise<number> { return 0; }
 export async function killControlledSubagentRun(): Promise<boolean> { return false; }
 export async function killSubagentRunAdmin(): Promise<boolean> { return false; }

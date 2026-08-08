@@ -43,8 +43,8 @@ const shortHistoryLoopConfig: ToolLoopDetectionConfig = {
 function recordSuccessfulCall(
   state: SessionState,
   toolName: string,
-  params: unknown,
-  result: unknown,
+  params: any,
+  result: any,
   index: number,
 ): void {
   const toolCallId = `${toolName}-${index}`;
@@ -60,8 +60,8 @@ function recordSuccessfulCall(
 function recordFailedCall(
   state: SessionState,
   toolName: string,
-  params: unknown,
-  error: unknown,
+  params: any,
+  error: any,
   index: number,
 ): void {
   const toolCallId = `${toolName}-error-${index}`;
@@ -77,8 +77,8 @@ function recordFailedCall(
 function recordRepeatedSuccessfulCalls(params: {
   state: SessionState;
   toolName: string;
-  toolParams: unknown;
-  result: unknown;
+  toolParams: any;
+  result: any;
   count: number;
   startIndex?: number;
 }) {
@@ -125,8 +125,8 @@ function createPingPongFixture() {
 
 function detectLoopAfterRepeatedCalls(params: {
   toolName: string;
-  toolParams: unknown;
-  result: unknown;
+  toolParams: any;
+  result: any;
   count: number;
   config?: ToolLoopDetectionConfig;
 }) {
@@ -241,11 +241,11 @@ describe("tool-loop-detection", () => {
 
     it("hashes circular params without collapsing repeated references", () => {
       const shared = { id: "shared" };
-      const payload: Record<string, unknown> = { first: shared, second: shared };
+      const payload: Record<string, any> = { first: shared, second: shared };
       payload.self = payload;
 
       const equivalentShared = { id: "shared" };
-      const equivalentPayload: Record<string, unknown> = {
+      const equivalentPayload: Record<string, any> = {
         second: equivalentShared,
         first: equivalentShared,
       };
@@ -696,7 +696,7 @@ describe("tool-loop-detection", () => {
       }
     });
 
-    it("does not block repeated unknown-tool failures before the unknown-tool threshold", () => {
+    it("does not block repeated any-tool failures before the any-tool threshold", () => {
       const state = createState();
       const toolName = "exec";
       const unknownToolError = new Error("Tool exec not found");
@@ -715,7 +715,7 @@ describe("tool-loop-detection", () => {
       expect(loopResult.stuck).toBe(false);
     });
 
-    it("blocks repeated unknown-tool failures even when the args keep changing", () => {
+    it("blocks repeated any-tool failures even when the args keep changing", () => {
       const state = createState();
       const toolName = "exec";
       const unknownToolError = new Error("Tool exec not found");
@@ -927,7 +927,7 @@ describe("tool-loop-detection", () => {
   describe("message send loop detection (#89090)", () => {
     // Mirror jsonResult(payload): text is the stringified payload (so it carries the
     // volatile id too) and details is the payload — the shape a real send returns.
-    function sendResult(payload: Record<string, unknown>) {
+    function sendResult(payload: Record<string, any>) {
       return {
         content: [{ type: "text", text: JSON.stringify(payload, null, 2) }],
         details: payload,
@@ -937,8 +937,8 @@ describe("tool-loop-detection", () => {
     function recordSend(
       state: SessionState,
       toolName: string,
-      params: unknown,
-      payload: Record<string, unknown>,
+      params: any,
+      payload: Record<string, any>,
       index: number,
     ): void {
       const toolCallId = `${toolName}-${index}`;
@@ -952,7 +952,7 @@ describe("tool-loop-detection", () => {
       });
     }
 
-    function sendPayload(index: number): Record<string, unknown> {
+    function sendPayload(index: number): Record<string, any> {
       return {
         ok: true,
         channel: "feishu",

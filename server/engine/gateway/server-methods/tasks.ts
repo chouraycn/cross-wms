@@ -56,7 +56,7 @@ function taskUpdatedAt(task: TaskRecord): number {
 // Status text can originate from providers, shells, and subprocesses. Keep the
 // public task shape bounded before it reaches control-plane clients.
 function sanitizeOptionalTaskText(
-  value: unknown,
+  value: any,
   opts?: { errorContext?: boolean },
 ): string | undefined {
   const sanitized = sanitizeTaskStatusText(value, {

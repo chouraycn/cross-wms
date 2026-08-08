@@ -19,7 +19,7 @@ import { writeExecutable } from "./bundle-mcp-shared.test-harness.js";
 
 vi.mock("./embedded-agent-mcp.js", () => ({
   loadEmbeddedAgentMcpConfig: (params: {
-    cfg?: { mcp?: { servers?: Record<string, unknown> } };
+    cfg?: { mcp?: { servers?: Record<string, any> } };
   }) => ({
     diagnostics: [],
     mcpServers: params.cfg?.mcp?.servers ?? {},
@@ -38,9 +38,9 @@ async function writeListToolsMcpServer(params: {
   logPath: string;
   delayMs?: number;
   hang?: boolean;
-  inputSchema?: unknown;
-  tools?: Array<{ name: string; description?: string; inputSchema?: unknown }>;
-  capabilities?: Record<string, unknown>;
+  inputSchema?: any;
+  tools?: Array<{ name: string; description?: string; inputSchema?: any }>;
+  capabilities?: Record<string, any>;
   listToolsMethodNotFound?: boolean;
   callToolIsError?: boolean;
   callToolJsonRpcError?: boolean;
@@ -728,7 +728,7 @@ describe("session MCP runtime", () => {
     });
     const catalogResult = runtime.getCatalog().then(
       (catalog) => ({ status: "resolved" as const, catalog }),
-      (error: unknown) => ({ status: "rejected" as const, error }),
+      (error: any) => ({ status: "rejected" as const, error }),
     );
 
     try {
@@ -1531,7 +1531,7 @@ process.on("SIGINT", shutdown);`,
 
     const materializeResult = materializeBundleMcpToolsForRun({ runtime }).then(
       () => ({ status: "resolved" as const }),
-      (error: unknown) => ({ status: "rejected" as const, error }),
+      (error: any) => ({ status: "rejected" as const, error }),
     );
     await catalogStarted;
     await manager.disposeSession("session-d");

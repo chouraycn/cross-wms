@@ -20,7 +20,7 @@ export function createDraftStreamLoop(params: {
   throttleMs: number;
   isStopped: () => boolean;
   sendOrEditStreamMessage: (text: string) => Promise<void | boolean>;
-  onBackgroundFlushError?: (err: unknown) => void;
+  onBackgroundFlushError?: (err: any) => void;
 }): DraftStreamLoop {
   const throttleMs = resolveTimerTimeoutMs(params.throttleMs, 0, 0);
   let lastSentAt = 0;
@@ -75,7 +75,7 @@ export function createDraftStreamLoop(params: {
   };
 
   const startBackgroundFlush = () => {
-    void flush().catch((err: unknown) => {
+    void flush().catch((err: any) => {
       try {
         params.onBackgroundFlushError?.(err);
       } catch {

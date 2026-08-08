@@ -1,9 +1,9 @@
 // 移植自 openclaw/src/channels/plugins/contracts/test-helpers/runtime-artifacts.ts
 
-export function resolveBundledChannelContractArtifactUrl(..._args: unknown[]): unknown {
+export function resolveBundledChannelContractArtifactUrl(..._args: any[]): any {
   return undefined;
 }
 
-export async function importBundledChannelContractArtifact(..._args: unknown[]): Promise<unknown> {
+export async function importBundledChannelContractArtifact(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }

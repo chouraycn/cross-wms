@@ -123,9 +123,9 @@ export type DiagnosticStabilitySnapshot = {
 };
 
 type DiagnosticStabilityQueryInput = {
-  limit?: unknown;
-  type?: unknown;
-  sinceSeq?: unknown;
+  limit?: any;
+  type?: any;
+  sinceSeq?: any;
 };
 
 type NormalizedDiagnosticStabilityQuery = {
@@ -668,7 +668,7 @@ function selectRecords(
   };
 }
 
-function parseOptionalNonNegativeInteger(value: unknown, field: string): number | undefined {
+function parseOptionalNonNegativeInteger(value: any, field: string): number | undefined {
   if (value === undefined || value === null || value === "") {
     return undefined;
   }
@@ -680,7 +680,7 @@ function parseOptionalNonNegativeInteger(value: unknown, field: string): number 
   return parsed;
 }
 
-function parseOptionalType(value: unknown): string | undefined {
+function parseOptionalType(value: any): string | undefined {
   if (value === undefined || value === null || value === "") {
     return undefined;
   }
@@ -690,7 +690,7 @@ function parseOptionalType(value: unknown): string | undefined {
   return value.trim();
 }
 
-function normalizeLimit(limit: unknown, defaultLimit = DEFAULT_DIAGNOSTIC_STABILITY_LIMIT): number {
+function normalizeLimit(limit: any, defaultLimit = DEFAULT_DIAGNOSTIC_STABILITY_LIMIT): number {
   const parsed = parseOptionalNonNegativeInteger(limit, "limit");
   if (parsed === undefined) {
     return defaultLimit;

@@ -113,7 +113,7 @@ export function normalizeRateLimitClientIp(ip: string | undefined): string {
   ) {
     return ip;
   }
-  return resolveClientIp({ remoteAddr: ip }) ?? "unknown";
+  return resolveClientIp({ remoteAddr: ip }) ?? "any";
 }
 
 /** Build an opaque limiter identity that is not subject to loopback IP exemptions. */

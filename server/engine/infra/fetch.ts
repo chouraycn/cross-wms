@@ -10,7 +10,7 @@ export function wrapFetchWithAbortSignal(fetchImpl: typeof fetch): typeof fetch 
   const wrapped: typeof fetch = (input, init) => {
     const normalizedInit = init ?? {};
     if (normalizedInit.body && typeof normalizedInit.body === 'object' && 'stream' in normalizedInit.body) {
-      (normalizedInit as unknown as Record<string, unknown>).duplex = 'half';
+      (normalizedInit as unknown as Record<string, any>).duplex = 'half';
     }
     if (normalizedInit.signal) {
       const controller = new AbortController();

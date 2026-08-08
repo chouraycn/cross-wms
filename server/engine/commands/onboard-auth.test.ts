@@ -35,7 +35,7 @@ vi.mock("../config/paths.js", () => ({
 vi.mock("../agents/auth-profiles/profiles.js", async () => {
   const fsLocal = await import("node:fs");
   const pathLocal = await import("node:path");
-  const upsert = (params: { profileId: string; credential: unknown; agentDir?: string }) => {
+  const upsert = (params: { profileId: string; credential: any; agentDir?: string }) => {
     const stateDir = process.env.OPENCLAW_STATE_DIR ?? "/tmp/openclaw-state";
     const agentDir = params.agentDir ?? pathLocal.join(stateDir, "agents", "main", "agent");
     const file = pathLocal.join(agentDir, "auth-profiles.json");
@@ -44,7 +44,7 @@ vi.mock("../agents/auth-profiles/profiles.js", async () => {
       try {
         return JSON.parse(fsLocal.readFileSync(file, "utf8")) as {
           version?: number;
-          profiles?: Record<string, unknown>;
+          profiles?: Record<string, any>;
         };
       } catch {
         return { version: 1, profiles: {} };
@@ -69,7 +69,7 @@ vi.mock("../agents/auth-profiles/profiles.js", async () => {
     upsertAuthProfile: upsert,
     upsertAuthProfileWithLock: async (params: {
       profileId: string;
-      credential: unknown;
+      credential: any;
       agentDir?: string;
     }) => {
       upsert(params);
@@ -97,14 +97,14 @@ vi.mock("../secrets/provider-env-vars.js", () => ({
   }),
 }));
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object") {
     throw new Error(`expected ${label}`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function expectFields(value: unknown, expected: Record<string, unknown>, label = "record") {
+function expectFields(value: any, expected: Record<string, any>, label = "record") {
   const record = requireRecord(value, label);
   for (const [key, expectedValue] of Object.entries(expected)) {
     expect(record[key], key).toEqual(expectedValue);
@@ -112,7 +112,7 @@ function expectFields(value: unknown, expected: Record<string, unknown>, label =
   return record;
 }
 
-async function expectMissingFile(readPromise: Promise<unknown>) {
+async function expectMissingFile(readPromise: Promise<any>) {
   try {
     await readPromise;
   } catch (error) {
@@ -285,7 +285,7 @@ describe("upsertApiKeyProfile secret refs", () => {
     "OPENCODE_API_KEY",
   ]);
 
-  type AuthProfileEntry = { key?: string; keyRef?: unknown; metadata?: unknown };
+  type AuthProfileEntry = { key?: string; keyRef?: any; metadata?: any };
 
   afterEach(async () => {
     await lifecycle.cleanup();

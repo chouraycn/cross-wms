@@ -16,21 +16,21 @@ import { parseStrictPositiveInteger } from "../infra/parse-finite-number.js";
 import { supportsOpenAIReasoningEffort } from "./openai-reasoning-effort.js";
 
 // 内联降级实现：当输入本身就是字符串时返回它，否则返回 undefined。
-function readStringValue(value: unknown): string | undefined {
+function readStringValue(value: any): string | undefined {
   return typeof value === "string" ? value : undefined;
 }
 
 type OpenAIResponsesPayloadModel = {
-  api?: unknown;
-  baseUrl?: unknown;
-  id?: unknown;
-  provider?: unknown;
-  contextWindow?: unknown;
-  compat?: unknown;
+  api?: any;
+  baseUrl?: any;
+  id?: any;
+  provider?: any;
+  contextWindow?: any;
+  compat?: any;
 };
 
 type OpenAIResponsesPayloadPolicyOptions = {
-  extraParams?: Record<string, unknown>;
+  extraParams?: Record<string, any>;
   storeMode?: "provider-policy" | "disable" | "preserve";
   enablePromptCacheStripping?: boolean;
   enableServerCompaction?: boolean;
@@ -97,12 +97,12 @@ const MOONSHOT_NATIVE_BASE_URLS = new Set([
   "https://api.moonshot.cn/v1",
 ]);
 
-function normalizeLowercaseString(value: unknown): string | undefined {
+function normalizeLowercaseString(value: any): string | undefined {
   const stringValue = readStringValue(value)?.trim().toLowerCase();
   return stringValue ? stringValue : undefined;
 }
 
-function normalizeComparableBaseUrl(value: unknown): string | undefined {
+function normalizeComparableBaseUrl(value: any): string | undefined {
   const trimmed = readStringValue(value)?.trim();
   if (!trimmed) {
     return undefined;
@@ -123,7 +123,7 @@ function normalizeComparableBaseUrl(value: unknown): string | undefined {
   }
 }
 
-function resolveUrlHostname(value: unknown): string | undefined {
+function resolveUrlHostname(value: any): string | undefined {
   const trimmed = readStringValue(value)?.trim();
   if (!trimmed) {
     return undefined;
@@ -155,7 +155,7 @@ function isLocalEndpointHost(host: string): boolean {
 }
 
 function resolveBundledOpenAIResponsesEndpointClass(
-  baseUrl: unknown,
+  baseUrl: any,
 ): OpenAIResponsesEndpointClass {
   const trimmed = readStringValue(baseUrl)?.trim();
   if (!trimmed) {
@@ -226,13 +226,13 @@ function isOpenAIResponsesApi(api: string | undefined): boolean {
 }
 
 function readCompatPayloadBoolean(
-  compat: unknown,
+  compat: any,
   key: "supportsPromptCacheKey" | "supportsStore",
 ): boolean | undefined {
   if (!compat || typeof compat !== "object") {
     return undefined;
   }
-  return asBoolean((compat as Record<string, unknown>)[key]);
+  return asBoolean((compat as Record<string, any>)[key]);
 }
 
 function resolveOpenAIResponsesPayloadCapabilities(
@@ -283,7 +283,7 @@ function resolveOpenAIResponsesPayloadCapabilities(
   };
 }
 
-function parsePositiveInteger(value: unknown): number | undefined {
+function parsePositiveInteger(value: any): number | undefined {
   if (typeof value === "number" && Number.isFinite(value) && value > 0) {
     return Math.floor(value);
   }
@@ -293,7 +293,7 @@ function parsePositiveInteger(value: unknown): number | undefined {
   return undefined;
 }
 
-function resolveOpenAIResponsesCompactThreshold(model: { contextWindow?: unknown }): number {
+function resolveOpenAIResponsesCompactThreshold(model: { contextWindow?: any }): number {
   const contextWindow = parsePositiveInteger(model.contextWindow);
   if (contextWindow) {
     return Math.max(1_000, Math.floor(contextWindow * 0.7));
@@ -303,8 +303,8 @@ function resolveOpenAIResponsesCompactThreshold(model: { contextWindow?: unknown
 
 function shouldEnableOpenAIResponsesServerCompaction(
   explicitStore: boolean | undefined,
-  provider: unknown,
-  extraParams: Record<string, unknown> | undefined,
+  provider: any,
+  extraParams: Record<string, any> | undefined,
 ): boolean {
   const configured = extraParams?.responsesServerCompaction;
   if (configured === false) {
@@ -319,7 +319,7 @@ function shouldEnableOpenAIResponsesServerCompaction(
   return provider === "openai";
 }
 
-function stripDisabledOpenAIReasoningPayload(payloadObj: Record<string, unknown>): void {
+function stripDisabledOpenAIReasoningPayload(payloadObj: Record<string, any>): void {
   const reasoning = payloadObj.reasoning;
   if (reasoning === "none") {
     delete payloadObj.reasoning;
@@ -331,7 +331,7 @@ function stripDisabledOpenAIReasoningPayload(payloadObj: Record<string, unknown>
 
   // Some Responses models and OpenAI-compatible proxies reject
   // `reasoning.effort: "none"`. Treat unsupported disabled effort as omitted.
-  const reasoningObj = reasoning as Record<string, unknown>;
+  const reasoningObj = reasoning as Record<string, any>;
   if (reasoningObj.effort === "none") {
     delete payloadObj.reasoning;
   }
@@ -384,7 +384,7 @@ export function resolveOpenAIResponsesPayloadPolicy(
 
 /** Mutate a Responses request payload according to the resolved endpoint policy. */
 export function applyOpenAIResponsesPayloadPolicy(
-  payloadObj: Record<string, unknown>,
+  payloadObj: Record<string, any>,
   policy: OpenAIResponsesPayloadPolicy,
 ): void {
   if (policy.explicitStore !== undefined) {

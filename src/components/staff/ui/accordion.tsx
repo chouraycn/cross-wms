@@ -41,7 +41,7 @@ function Accordion({
   void collapsible
   return (
     <AccordionCtx.Provider value={{ type, value: current, setValue }}>
-      <div data-slot="accordion" {...(props as Record<string, unknown>)}>
+      <div data-slot="accordion" {...(props as Record<string, any>)}>
         {children}
       </div>
     </AccordionCtx.Provider>
@@ -78,7 +78,7 @@ function AccordionItem({
       elevation={0}
       className={cn('border-b last:border-b-0', className)}
       sx={{ '&:before': { display: 'none' }, bgcolor: 'transparent' }}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     >
       {children}
     </MuiAccordion>
@@ -94,7 +94,7 @@ function AccordionTrigger({ className, children, ...props }: React.ComponentProp
         'flex flex-1 items-start justify-between gap-4 rounded-md py-4 text-left text-sm font-medium outline-none transition-all hover:underline',
         className,
       )}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     >
       {children}
     </AccordionSummary>
@@ -106,7 +106,7 @@ function AccordionContent({ className, children, ...props }: React.ComponentProp
     <AccordionDetails
       data-slot="accordion-content"
       className={cn('pt-0 pb-4', className)}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     >
       {children}
     </AccordionDetails>

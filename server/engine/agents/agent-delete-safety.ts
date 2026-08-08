@@ -7,7 +7,7 @@
 
 /** Lists other agents whose workspaces overlap a candidate delete target. */
 export function findOverlappingWorkspaceAgentIds(
-  cfg: Record<string, unknown>,
+  cfg: Record<string, any>,
   agentId: string,
   workspaceDir: string,
 ): string[] {

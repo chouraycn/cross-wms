@@ -10,13 +10,13 @@ export type GatewayBroadcastOpts = {
 
 export type GatewayBroadcastFn = (
   event: string,
-  payload: unknown,
+  payload: any,
   opts?: GatewayBroadcastOpts,
 ) => void;
 
 export type GatewayBroadcastToConnIdsFn = (
   event: string,
-  payload: unknown,
+  payload: any,
   connIds: ReadonlySet<string>,
   opts?: GatewayBroadcastOpts,
 ) => void;

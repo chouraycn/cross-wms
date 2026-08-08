@@ -13,7 +13,7 @@ import {
 } from "./talk-transcription-relay.js";
 import { expectRecordFields, isRecord, requireRecord } from "./test-helpers.assertions.js";
 
-type BroadcastEvent = { event: string; payload: unknown; connIds: string[] };
+type BroadcastEvent = { event: string; payload: any; connIds: string[] };
 
 function createSttSessionMock(connect: () => Promise<void> = async () => {}) {
   return {
@@ -43,7 +43,7 @@ function createBroadcastContext() {
   const events: BroadcastEvent[] = [];
   const context = {
     getRuntimeConfig: () => ({}),
-    broadcastToConnIds: (event: string, payload: unknown, connIds: ReadonlySet<string>) => {
+    broadcastToConnIds: (event: string, payload: any, connIds: ReadonlySet<string>) => {
       events.push({ event, payload, connIds: [...connIds] });
     },
   } as never;
@@ -52,7 +52,7 @@ function createBroadcastContext() {
 
 async function createStartedRelaySession(
   sttSession: ReturnType<typeof createSttSessionMock>,
-  providerConfig: Record<string, unknown>,
+  providerConfig: Record<string, any>,
   onRequest?: (req: RealtimeTranscriptionSessionCreateRequest) => void,
 ) {
   const provider = createTranscriptionProvider(sttSession, onRequest);
@@ -67,7 +67,7 @@ async function createStartedRelaySession(
   return { provider, events, session };
 }
 
-function findPayloadByType(events: BroadcastEvent[], type: string): Record<string, unknown> {
+function findPayloadByType(events: BroadcastEvent[], type: string): Record<string, any> {
   const event = events.find((candidate) => {
     const payload = candidate.payload;
     return isRecord(payload) && payload.type === type;
@@ -82,7 +82,7 @@ function findPayloadByType(events: BroadcastEvent[], type: string): Record<strin
 function findPayloadByTalkEventType(
   events: BroadcastEvent[],
   type: string,
-): Record<string, unknown> {
+): Record<string, any> {
   const event = events.find((candidate) => {
     const payload = candidate.payload;
     return isRecord(payload) && isRecord(payload.talkEvent) && payload.talkEvent.type === type;
@@ -94,9 +94,9 @@ function findPayloadByTalkEventType(
 }
 
 function expectTalkEventFields(
-  payload: Record<string, unknown>,
-  expected: Record<string, unknown>,
-): Record<string, unknown> {
+  payload: Record<string, any>,
+  expected: Record<string, any>,
+): Record<string, any> {
   return expectRecordFields(payload.talkEvent, "talk event", expected);
 }
 

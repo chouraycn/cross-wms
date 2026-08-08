@@ -18,7 +18,7 @@ import { randomBytes, timingSafeEqual } from "node:crypto";
  * 降级原因：openclaw `@openclaw/normalization-core/number-coercion` 的同名函数
  * 还会处理字符串日期、Date 对象等。这里仅处理 number。
  */
-function asDateTimestampMs(value: unknown): number | undefined {
+function asDateTimestampMs(value: any): number | undefined {
   if (typeof value !== "number" || !Number.isFinite(value)) {
     return undefined;
   }
@@ -31,7 +31,7 @@ function asDateTimestampMs(value: unknown): number | undefined {
  * 降级原因：openclaw `@openclaw/normalization-core/number-coercion` 的同名函数
  * 还会处理字符串数字。这里仅处理 number。
  */
-function asPositiveSafeInteger(value: unknown): number | undefined {
+function asPositiveSafeInteger(value: any): number | undefined {
   if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
     return undefined;
   }
@@ -49,7 +49,7 @@ function asPositiveSafeInteger(value: unknown): number | undefined {
  * 还会处理字符串日期。这里仅处理 number。
  */
 function isFutureDateTimestampMs(
-  value: unknown,
+  value: any,
   options?: { nowMs?: number },
 ): boolean {
   const ts = asDateTimestampMs(value);

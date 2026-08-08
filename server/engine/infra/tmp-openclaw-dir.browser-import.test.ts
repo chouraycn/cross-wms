@@ -55,12 +55,12 @@ describe("tmp-openclaw-dir browser-safe import", () => {
     await import(`data:text/javascript;base64,${Buffer.from(bundledSource).toString("base64")}`);
 
     try {
-      expect((globalThis as Record<string, unknown>)[resultKey]).toEqual({
+      expect((globalThis as Record<string, any>)[resultKey]).toEqual({
         posixTmpDir: "/tmp/openclaw",
         resolverType: "function",
       });
     } finally {
-      delete (globalThis as Record<string, unknown>)[resultKey];
+      delete (globalThis as Record<string, any>)[resultKey];
     }
   });
 });

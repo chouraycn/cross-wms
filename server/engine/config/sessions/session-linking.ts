@@ -10,12 +10,12 @@ export interface SessionLink {
   targetSessionId: string;
   type: 'parent' | 'child' | 'related' | 'duplicate';
   createdAt: string;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
 }
 
 export interface LinkOptions {
   type?: SessionLink['type'];
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface LinkResult {

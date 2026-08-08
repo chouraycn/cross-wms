@@ -18,11 +18,11 @@ export async function hasCompletedBootstrapTurn(): Promise<boolean> {
   return false;
 }
 
-export function makeBootstrapWarn(): ((..._args: unknown[]) => void) {
+export function makeBootstrapWarn(): ((..._args: any[]) => void) {
   return () => {};
 }
 
-export async function resolveBootstrapFilesForRun(): Promise<unknown[]> {
+export async function resolveBootstrapFilesForRun(): Promise<any[]> {
   return [];
 }
 
@@ -30,6 +30,6 @@ export async function resolveBootstrapContextForRun(): Promise<string> {
   return "";
 }
 
-export function buildBootstrapContextForFiles(_params: { files: unknown[]; mode?: BootstrapContextMode }): string {
+export function buildBootstrapContextForFiles(_params: { files: any[]; mode?: BootstrapContextMode }): string {
   return "";
 }

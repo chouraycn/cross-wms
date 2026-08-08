@@ -9,7 +9,7 @@ const logger = {
   debug: vi.fn(),
 };
 
-function withActivatedPluginIdsForTest<T extends Record<string, unknown>>(
+function withActivatedPluginIdsForTest<T extends Record<string, any>>(
   config: T,
   pluginIds: string[],
 ): T & {
@@ -29,12 +29,12 @@ function withActivatedPluginIdsForTest<T extends Record<string, unknown>>(
 }
 
 function expectConfiguredChannelPluginIdsParams(expected: {
-  config: unknown;
+  config: any;
   workspaceDir?: string;
 }) {
   expect(mocks.resolveConfiguredChannelPluginIds).toHaveBeenCalledTimes(1);
   const params = mocks.resolveConfiguredChannelPluginIds.mock.calls[0]?.[0] as
-    | { config?: unknown; env?: NodeJS.ProcessEnv; workspaceDir?: string }
+    | { config?: any; env?: NodeJS.ProcessEnv; workspaceDir?: string }
     | undefined;
   expect(params?.config).toBe(expected.config);
   expect(params?.env).toBe(process.env);
@@ -44,9 +44,9 @@ function expectConfiguredChannelPluginIdsParams(expected: {
 function expectLoadOpenClawPluginsCall(
   callIndex: number,
   expected: {
-    config?: unknown;
-    activationSourceConfig?: unknown;
-    autoEnabledReasons?: unknown;
+    config?: any;
+    activationSourceConfig?: any;
+    autoEnabledReasons?: any;
     onlyPluginIds: string[];
     throwOnLoadError: boolean;
     workspaceDir?: string;
@@ -54,9 +54,9 @@ function expectLoadOpenClawPluginsCall(
 ) {
   const params = mocks.loadOpenClawPlugins.mock.calls[callIndex]?.[0] as
     | {
-        config?: unknown;
-        activationSourceConfig?: unknown;
-        autoEnabledReasons?: unknown;
+        config?: any;
+        activationSourceConfig?: any;
+        autoEnabledReasons?: any;
         onlyPluginIds?: string[];
         throwOnLoadError?: boolean;
         workspaceDir?: string;
@@ -139,14 +139,14 @@ vi.mock("../plugins/runtime/load-context.js", () => ({
   ) => mocks.resolvePluginRuntimeLoadContext(...args),
   buildPluginRuntimeLoadOptionsFromValues: (
     values: {
-      config: unknown;
-      activationSourceConfig: unknown;
+      config: any;
+      activationSourceConfig: any;
       autoEnabledReasons: Readonly<Record<string, string[]>>;
       workspaceDir: string | undefined;
       env: NodeJS.ProcessEnv;
       logger: typeof logger;
     },
-    overrides?: Record<string, unknown>,
+    overrides?: Record<string, any>,
   ) => ({
     config: values.config,
     activationSourceConfig: values.activationSourceConfig,
@@ -158,14 +158,14 @@ vi.mock("../plugins/runtime/load-context.js", () => ({
   }),
   buildPluginRuntimeLoadOptions: (
     context: {
-      config: unknown;
-      activationSourceConfig: unknown;
+      config: any;
+      activationSourceConfig: any;
       autoEnabledReasons: Readonly<Record<string, string[]>>;
       workspaceDir: string | undefined;
       env: NodeJS.ProcessEnv;
       logger: typeof logger;
     },
-    overrides?: Record<string, unknown>,
+    overrides?: Record<string, any>,
   ) => ({
     config: context.config,
     activationSourceConfig: context.activationSourceConfig,
@@ -202,13 +202,13 @@ describe("ensurePluginRegistryLoaded", () => {
     mocks.resolveDiscoverableScopedChannelPluginIds.mockReturnValue([]);
     mocks.resolveEffectivePluginIds.mockReturnValue(["demo"]);
     mocks.resolvePluginRuntimeLoadContext.mockImplementation((options) => {
-      const rawConfig = (options?.config ?? {}) as Record<string, unknown>;
+      const rawConfig = (options?.config ?? {}) as Record<string, any>;
       return {
         rawConfig,
         config: rawConfig,
         activationSourceConfig: (options?.activationSourceConfig ?? rawConfig) as Record<
           string,
-          unknown
+          any
         >,
         autoEnabledReasons: {},
         workspaceDir: "/tmp/workspace",

@@ -236,10 +236,10 @@ export type RunEmbeddedAgentParams = {
   onReasoningEnd?: () => void | Promise<void>;
   onToolResult?: (payload: ReplyPayload) => void | Promise<void>;
   /** Synchronous private observer for the sanitized per-tool result. */
-  onAgentToolResult?: (event: { toolName: string; result: unknown; isError: boolean }) => void;
+  onAgentToolResult?: (event: { toolName: string; result: any; isError: boolean }) => void;
   onAgentEvent?: (evt: {
     stream: string;
-    data: Record<string, unknown>;
+    data: Record<string, any>;
     sessionKey?: string;
   }) => void | Promise<void>;
   onToolStreamBoundary?: () => void | Promise<void>;

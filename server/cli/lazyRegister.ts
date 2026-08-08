@@ -56,7 +56,7 @@ function resolveCommandOptionArgs(command: Command): string[] {
   return out;
 }
 
-function appendOptionValue(out: string[], flag: string, value: unknown): void {
+function appendOptionValue(out: string[], flag: string, value: any): void {
   if (value === undefined) {
     return;
   }
@@ -76,7 +76,7 @@ function appendOptionValue(out: string[], flag: string, value: unknown): void {
   }
 }
 
-function stringifyOptionValue(value: unknown): string | undefined {
+function stringifyOptionValue(value: any): string | undefined {
   if (typeof value === "string") {
     return value;
   }
@@ -126,9 +126,9 @@ function findRootCommand(cmd: Command): Command {
  */
 async function reparseProgramFromActionArgs(
   program: Command,
-  actionArgs: unknown[],
+  actionArgs: any[],
 ): Promise<void> {
-  const actionArgsArray = actionArgs as unknown[];
+  const actionArgsArray = actionArgs as any[];
   const actionCommand = actionArgsArray[actionArgsArray.length - 1] as Command | undefined;
   const rootProgram = findRootCommand(actionCommand ?? program);
   const rawArgs = (rootProgram as Command & { rawArgs?: string[] }).rawArgs;

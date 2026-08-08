@@ -7,13 +7,13 @@
 import crypto from 'node:crypto';
 
 export class SchemaCache {
-  private cache = new Map<string, unknown>();
+  private cache = new Map<string, any>();
   private hashCache = new Map<string, string>();
 
   /**
    * 计算 schema 对象的稳定哈希（SHA-256）
    */
-  getSchemaHash(schema: unknown): string {
+  getSchemaHash(schema: any): string {
     const json = stableStringify(schema);
     return crypto.createHash('sha256').update(json).digest('hex');
   }
@@ -59,14 +59,14 @@ export class SchemaCache {
 /**
  * 稳定 JSON 序列化：键名按字母序排列，确保相同结构产生相同字符串
  */
-function stableStringify(value: unknown): string {
+function stableStringify(value: any): string {
   if (value === null || typeof value !== 'object') {
     return JSON.stringify(value);
   }
   if (Array.isArray(value)) {
     return '[' + value.map(stableStringify).join(',') + ']';
   }
-  const obj = value as Record<string, unknown>;
+  const obj = value as Record<string, any>;
   const keys = Object.keys(obj).sort();
   const pairs = keys.map((k) => `${JSON.stringify(k)}:${stableStringify(obj[k])}`);
   return '{' + pairs.join(',') + '}';

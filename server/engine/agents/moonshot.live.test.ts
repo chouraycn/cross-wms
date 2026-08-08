@@ -14,14 +14,14 @@ const LIVE = isLiveTestEnabled(["MOONSHOT_LIVE_TEST"]);
 
 const describeLive = LIVE && MOONSHOT_KEY ? describe : describe.skip;
 
-function forceMoonshotInstantMode(payload: unknown): void {
+function forceMoonshotInstantMode(payload: any): void {
   if (!payload || typeof payload !== "object") {
     return;
   }
   // Moonshot's official API exposes instant mode via thinking.type=disabled.
   // Without this, tiny smoke probes can spend the full token budget in hidden
   // reasoning_content and never emit visible assistant text.
-  (payload as Record<string, unknown>).thinking = { type: "disabled" };
+  (payload as Record<string, any>).thinking = { type: "disabled" };
 }
 
 describeLive("moonshot live", () => {
@@ -39,7 +39,7 @@ describeLive("moonshot live", () => {
       maxTokens: 8192,
     };
 
-    let lastContent: unknown = null;
+    let lastContent: any = null;
     let text = "";
     for (let attempt = 1; attempt <= 3; attempt += 1) {
       const res = await completeSimple(

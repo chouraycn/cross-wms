@@ -67,8 +67,8 @@ export function createExternalChatDeletePlugin(): ChannelPlugin {
         label: "External Chat",
         docsPath: "/channels/external-chat",
       }).config,
-      deleteAccount: vi.fn(({ cfg }: { cfg: Record<string, unknown> }) => {
-        const channels = (cfg.channels as Record<string, unknown> | undefined) ?? {};
+      deleteAccount: vi.fn(({ cfg }: { cfg: Record<string, any> }) => {
+        const channels = (cfg.channels as Record<string, any> | undefined) ?? {};
         const nextChannels = { ...channels };
         delete nextChannels["external-chat"];
         return {

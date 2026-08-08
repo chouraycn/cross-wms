@@ -64,13 +64,13 @@ type AwsSdkProfileMarker = {
 type AwsSdkAuthProfileMarkerStore = {
   agentDir?: string;
   authPath: string;
-  raw: Record<string, unknown>;
+  raw: Record<string, any>;
   profiles: AwsSdkProfileMarker[];
 };
 
 type RawAuthProfileImportStore = {
   version: number;
-  profiles: Record<string, Record<string, unknown>>;
+  profiles: Record<string, Record<string, any>>;
   order?: Record<string, string[]>;
 };
 
@@ -83,7 +83,7 @@ type LegacyFlatAuthProfileRepairResult = {
 
 const UNSAFE_LEGACY_AUTH_PROFILE_KEYS = new Set(["__proto__", "constructor", "prototype"]);
 
-function readNonEmptyString(value: unknown): string | undefined {
+function readNonEmptyString(value: any): string | undefined {
   return typeof value === "string" && value.trim() ? value : undefined;
 }
 
@@ -124,7 +124,7 @@ function collectLegacyConfigAuthProfileProviderHints(
       hints.set(profileId, provider);
     }
   };
-  const addModelHints = (models: unknown): void => {
+  const addModelHints = (models: any): void => {
     if (!isRecord(models)) {
       return;
     }
@@ -151,7 +151,7 @@ function collectLegacyConfigAuthProfileProviderHints(
     }
   }
 
-  const root: Record<string, unknown> = cfg;
+  const root: Record<string, any> = cfg;
   const auth = isRecord(root.auth) ? root.auth : null;
   const order = auth && isRecord(auth.order) ? auth.order : null;
   if (order) {
@@ -180,7 +180,7 @@ function collectLegacyConfigAuthProfileProviderHints(
 }
 
 function inferLegacyCredentialType(
-  record: Record<string, unknown>,
+  record: Record<string, any>,
 ): AuthProfileCredential["type"] | undefined {
   const explicit = readNonEmptyString(record.type) ?? readNonEmptyString(record.mode);
   if (explicit === "api_key" || explicit === "token" || explicit === "oauth") {
@@ -204,7 +204,7 @@ function inferLegacyCredentialType(
 
 function coerceLegacyFlatCredential(
   providerId: string,
-  raw: unknown,
+  raw: any,
 ): AuthProfileCredential | null {
   if (!isRecord(raw)) {
     return null;
@@ -255,7 +255,7 @@ function coerceLegacyFlatCredential(
   return null;
 }
 
-function coerceLegacyFlatAuthProfileStore(raw: unknown): AuthProfileStore | null {
+function coerceLegacyFlatAuthProfileStore(raw: any): AuthProfileStore | null {
   if (!isRecord(raw) || "profiles" in raw) {
     return null;
   }
@@ -345,7 +345,7 @@ function hasAuthProfileState(state: AuthProfileState): boolean {
   return Boolean(state.order || state.lastGood || state.usageStats);
 }
 
-function normalizeLegacyApiKeyAliasesForImport(raw: unknown): void {
+function normalizeLegacyApiKeyAliasesForImport(raw: any): void {
   if (!isRecord(raw) || !isRecord(raw.profiles)) {
     return;
   }
@@ -383,7 +383,7 @@ function collectAuthProfileStateProfileIds(state: AuthProfileState): string[] {
 }
 
 function inferLegacyConfigAuthProfileMode(
-  raw: Record<string, unknown>,
+  raw: Record<string, any>,
 ): AuthProfileCredential["type"] | undefined {
   const explicit = readNonEmptyString(raw.mode) ?? readNonEmptyString(raw.type);
   if (explicit === "api_key" || explicit === "token" || explicit === "oauth") {
@@ -418,7 +418,7 @@ function inferLegacyConfigAuthProfileMode(
 }
 
 function coerceLegacyConfigAuthProfileStore(cfg: OpenClawConfig): AuthProfileStore | null {
-  const cfgRecord: Record<string, unknown> = cfg;
+  const cfgRecord: Record<string, any> = cfg;
   const auth = isRecord(cfgRecord.auth) ? cfgRecord.auth : null;
   const profiles = auth && isRecord(auth.profiles) ? auth.profiles : null;
   if (!profiles) {
@@ -441,7 +441,7 @@ function coerceLegacyConfigAuthProfileStore(cfg: OpenClawConfig): AuthProfileSto
     if (!provider || !isSafeLegacyProviderKey(provider)) {
       continue;
     }
-    const next: Record<string, unknown> = { ...raw, provider, mode };
+    const next: Record<string, any> = { ...raw, provider, mode };
     if (mode === "api_key") {
       const keyRef =
         coerceSecretRef(raw.keyRef) ??
@@ -646,7 +646,7 @@ function formatMissingAuthProfileSqliteVerification(params: {
 }
 
 function filterRawAuthProfileState(
-  raw: Record<string, unknown>,
+  raw: Record<string, any>,
   shouldKeepProfileId: (profileId: string) => boolean,
 ): void {
   if (isRecord(raw.order)) {
@@ -690,7 +690,7 @@ function filterRawAuthProfileState(
   }
 }
 
-function pruneRawAuthProfileIds(raw: unknown, profileIds: ReadonlySet<string>): void {
+function pruneRawAuthProfileIds(raw: any, profileIds: ReadonlySet<string>): void {
   if (!isRecord(raw) || !isRecord(raw.profiles)) {
     return;
   }
@@ -701,9 +701,9 @@ function pruneRawAuthProfileIds(raw: unknown, profileIds: ReadonlySet<string>): 
 }
 
 function pickRawAuthProfileIds(
-  raw: unknown,
+  raw: any,
   profileIds: ReadonlySet<string>,
-): Record<string, unknown> | null {
+): Record<string, any> | null {
   if (!isRecord(raw) || !isRecord(raw.profiles)) {
     return null;
   }
@@ -719,7 +719,7 @@ function pickRawAuthProfileIds(
   return next;
 }
 
-function collectUnresolvedLegacyOAuthSidecarProfileIds(raw: unknown): string[] {
+function collectUnresolvedLegacyOAuthSidecarProfileIds(raw: any): string[] {
   if (!isRecord(raw) || !isRecord(raw.profiles)) {
     return [];
   }
@@ -767,7 +767,7 @@ function backupAndRemoveAuthProfileJson(
   return backupPath;
 }
 
-function writeJsonFile(pathname: string, value: unknown): void {
+function writeJsonFile(pathname: string, value: any): void {
   fs.writeFileSync(pathname, `${JSON.stringify(value, null, 2)}\n`, "utf8");
 }
 
@@ -1115,7 +1115,7 @@ function resolveAwsSdkAuthProfileMarkerStore(
 }
 
 function ensureConfigAuthProfiles(config: OpenClawConfig): Record<string, AuthProfileConfig> {
-  const root = config as Record<string, unknown>;
+  const root = config as Record<string, any>;
   const auth = isRecord(root.auth) ? root.auth : {};
   if (root.auth !== auth) {
     root.auth = auth;
@@ -1126,7 +1126,7 @@ function ensureConfigAuthProfiles(config: OpenClawConfig): Record<string, AuthPr
   return auth.profiles as Record<string, AuthProfileConfig>;
 }
 
-function removeAwsSdkProfileMarkers(raw: Record<string, unknown>, profileIds: string[]): void {
+function removeAwsSdkProfileMarkers(raw: Record<string, any>, profileIds: string[]): void {
   if (!isRecord(raw.profiles)) {
     return;
   }
@@ -1247,7 +1247,7 @@ export async function maybeRepairLegacyFlatAuthProfileStores(params: {
 
 type CanonicalApiKeyAliasRepair = {
   authPath: string;
-  raw: Record<string, unknown>;
+  raw: Record<string, any>;
   profileIds: string[];
 };
 
@@ -1333,7 +1333,7 @@ export async function maybeRepairCanonicalApiKeyFieldAlias(params: {
   for (const entry of repairs) {
     try {
       const backupPath = backupCanonicalApiKeyAlias(entry.authPath, now);
-      const profiles = entry.raw.profiles as Record<string, Record<string, unknown>>;
+      const profiles = entry.raw.profiles as Record<string, Record<string, any>>;
       for (const profileId of entry.profileIds) {
         const profile = profiles[profileId];
         if (!isRecord(profile)) {
@@ -1365,7 +1365,7 @@ export async function maybeRepairCanonicalApiKeyFieldAlias(params: {
 const LEGACY_OPENAI_CODEX_PROVIDER_ID = "openai-codex";
 const OPENAI_PROVIDER_ID = "openai";
 
-function isLegacyOpenAICodexProvider(value: unknown): boolean {
+function isLegacyOpenAICodexProvider(value: any): boolean {
   return (
     typeof value === "string" && value.trim().toLowerCase() === LEGACY_OPENAI_CODEX_PROVIDER_ID
   );
@@ -1401,7 +1401,7 @@ function allocateOpenAIProfileId(legacyProfileId: string, occupied: Set<string>)
 }
 
 function canonicalizeOpenAIProfileEntries(
-  profiles: Record<string, unknown>,
+  profiles: Record<string, any>,
   options?: { profileIdMap?: ReadonlyMap<string, string> },
 ): {
   profileIdMap: Map<string, string>;
@@ -1445,7 +1445,7 @@ function canonicalizeOpenAIProfileEntries(
   return { profileIdMap, changed };
 }
 
-function replaceMappedProfileId(value: unknown, profileIdMap: Map<string, string>): unknown {
+function replaceMappedProfileId(value: any, profileIdMap: Map<string, string>): any {
   if (typeof value === "string") {
     return profileIdMap.get(value) ?? value;
   }
@@ -1475,7 +1475,7 @@ function replaceMappedProfileId(value: unknown, profileIdMap: Map<string, string
 const AUTH_PROFILE_REF_KEYS = new Set(["authProfileId"]);
 
 function rewriteMappedAuthProfileRefs(
-  value: unknown,
+  value: any,
   profileIdMap: ReadonlyMap<string, string>,
 ): boolean {
   if (Array.isArray(value)) {
@@ -1504,7 +1504,7 @@ function rewriteMappedAuthProfileRefs(
 }
 
 function canonicalizeOpenAIAuthOrder(
-  auth: Record<string, unknown>,
+  auth: Record<string, any>,
   profileIdMap: Map<string, string>,
 ): boolean {
   if (!isRecord(auth.order)) {
@@ -1513,10 +1513,10 @@ function canonicalizeOpenAIAuthOrder(
   const order = auth.order;
   let changed = false;
   const existingCanonicalOrder = Array.isArray(order[OPENAI_PROVIDER_ID])
-    ? [...(order[OPENAI_PROVIDER_ID] as unknown[])]
+    ? [...(order[OPENAI_PROVIDER_ID] as any[])]
     : [];
   const legacyOrder = Array.isArray(order[LEGACY_OPENAI_CODEX_PROVIDER_ID])
-    ? (order[LEGACY_OPENAI_CODEX_PROVIDER_ID] as unknown[])
+    ? (order[LEGACY_OPENAI_CODEX_PROVIDER_ID] as any[])
     : [];
   const canonicalOrder = [...legacyOrder, ...existingCanonicalOrder];
   const occupiedProfileIds = new Set(
@@ -1561,7 +1561,7 @@ function canonicalizeOpenAIAuthOrder(
 }
 
 function renameMappedProfileIdKeys(
-  record: Record<string, unknown>,
+  record: Record<string, any>,
   profileIdMap: Map<string, string>,
 ): boolean {
   let changed = false;
@@ -1578,7 +1578,7 @@ function renameMappedProfileIdKeys(
 }
 
 function canonicalizeOpenAILastGood(
-  record: Record<string, unknown>,
+  record: Record<string, any>,
   profileIdMap: Map<string, string>,
 ): boolean {
   let changed = false;
@@ -1616,7 +1616,7 @@ export function maybeRepairOpenAICodexAuthConfig(
   warnings: string[];
 } {
   const config = structuredClone(cfg);
-  const root = config as Record<string, unknown>;
+  const root = config as Record<string, any>;
   const auth = isRecord(root.auth) ? root.auth : undefined;
   const profileIdMap = new Map<string, string>(options?.profileIdMap);
   let changed = false;
@@ -1646,7 +1646,7 @@ export function maybeRepairOpenAICodexAuthConfig(
 
 type OpenAICodexAuthStoreRepair = {
   authPath: string;
-  raw: Record<string, unknown>;
+  raw: Record<string, any>;
   profileIdMap: Map<string, string>;
   changed: boolean;
 };

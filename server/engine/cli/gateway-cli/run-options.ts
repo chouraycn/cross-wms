@@ -3,13 +3,13 @@ import type { Command } from "commander";
 import { inheritOptionFromParent } from "../command-options.js";
 
 export type GatewayRunOpts = {
-  port?: unknown;
-  bind?: unknown;
-  token?: unknown;
-  auth?: unknown;
-  password?: unknown;
-  passwordFile?: unknown;
-  tailscale?: unknown;
+  port?: any;
+  bind?: any;
+  token?: any;
+  auth?: any;
+  password?: any;
+  passwordFile?: any;
+  tailscale?: any;
   tailscaleResetOnExit?: boolean;
   allowUnconfigured?: boolean;
   force?: boolean;
@@ -17,10 +17,10 @@ export type GatewayRunOpts = {
   cliBackendLogs?: boolean;
   /** @deprecated Use cliBackendLogs. */
   claudeCliLogs?: boolean;
-  wsLog?: unknown;
+  wsLog?: any;
   compact?: boolean;
   rawStream?: boolean;
-  rawStreamPath?: unknown;
+  rawStreamPath?: any;
   dev?: boolean;
   reset?: boolean;
 };

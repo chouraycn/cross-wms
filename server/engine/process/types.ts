@@ -157,7 +157,7 @@ export interface SpawnAdapter {
   };
   onStdout: (listener: (chunk: string) => void) => void;
   onStderr: (listener: (chunk: string) => void) => void;
-  onIPCMessage?: (listener: (message: unknown) => void) => void;
+  onIPCMessage?: (listener: (message: any) => void) => void;
   wait: () => Promise<{ code: number | null; signal: NodeJS.Signals | null }>;
   kill: (signal?: NodeJS.Signals) => void;
   dispose: () => void;

@@ -76,7 +76,7 @@ describe('Channels 路由', () => {
       expect(res.body.data.types).toBeInstanceOf(Array);
       expect(res.body.data.types.length).toBe(6);
 
-      const types = res.body.data.types.map((t: unknown) => t.type);
+      const types = res.body.data.types.map((t: any) => t.type);
       expect(types).toContain('webhook');
       expect(types).toContain('feishu');
       expect(types).toContain('dingtalk');

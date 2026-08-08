@@ -34,7 +34,7 @@ export function formatAcpRuntimeErrorText(error: AcpRuntimeError): string {
 
 /** Normalizes unknown failures into ACP runtime error text for user-facing surfaces. */
 export function toAcpRuntimeErrorText(params: {
-  error: unknown;
+  error: any;
   fallbackCode: AcpRuntimeErrorCode;
   fallbackMessage: string;
 }): string {

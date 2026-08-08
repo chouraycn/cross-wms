@@ -23,7 +23,7 @@ function extractCliStreamJsonText(text: string): string | null {
   let resultText: string | null = null;
 
   for (const line of lines) {
-    let parsed: unknown;
+    let parsed: any;
     try {
       parsed = JSON.parse(line);
     } catch {
@@ -32,16 +32,16 @@ function extractCliStreamJsonText(text: string): string | null {
     if (!parsed || typeof parsed !== "object") {
       continue;
     }
-    const record = parsed as Record<string, unknown>;
+    const record = parsed as Record<string, any>;
     if (record.type === "assistant") {
       const message =
         record.message && typeof record.message === "object"
-          ? (record.message as Record<string, unknown>)
+          ? (record.message as Record<string, any>)
           : null;
       const content = Array.isArray(message?.content) ? message.content : [];
       const textParts = content
         .map((entry) =>
-          entry && typeof entry === "object" ? (entry as Record<string, unknown>).text : undefined,
+          entry && typeof entry === "object" ? (entry as Record<string, any>).text : undefined,
         )
         .filter((entry): entry is string => typeof entry === "string" && entry.trim().length > 0);
       if (textParts.length > 0) {
@@ -58,11 +58,11 @@ function extractCliStreamJsonText(text: string): string | null {
 }
 
 /** Extracts normalized assistant text from gateway agent result payloads. */
-export function extractPayloadText(result: unknown): string {
-  const record = result as Record<string, unknown>;
+export function extractPayloadText(result: any): string {
+  const record = result as Record<string, any>;
   const payloads = Array.isArray(record.payloads) ? record.payloads : [];
   const texts = payloads
-    .map((p) => (p && typeof p === "object" ? (p as Record<string, unknown>).text : undefined))
+    .map((p) => (p && typeof p === "object" ? (p as Record<string, any>).text : undefined))
     .filter((t): t is string => typeof t === "string" && t.trim().length > 0);
   const joined = texts.join("\n").trim();
   if (!joined) {
@@ -73,7 +73,7 @@ export function extractPayloadText(result: unknown): string {
 
 /** Builds a minimal assistant delta result payload. */
 export function buildAssistantDeltaResult(params: {
-  opts: unknown;
+  opts: any;
   emit: (event: AgentDeltaEvent) => void;
   deltas: string[];
   text: string;

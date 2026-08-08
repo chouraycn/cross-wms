@@ -3,9 +3,9 @@
 export type MessageActionRunnerGateway = unknown;
 export type RunMessageActionParams = unknown;
 export type MessageActionRunResult = unknown;
-export function getToolResult(...args: unknown[]): unknown {
+export function getToolResult(...args: any[]): any {
   return undefined;
 }
-export function runMessageAction(...args: unknown[]): unknown {
+export function runMessageAction(...args: any[]): any {
   return undefined;
 }

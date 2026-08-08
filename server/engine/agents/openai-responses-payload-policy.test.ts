@@ -46,7 +46,7 @@ describe("openai responses payload policy", () => {
       Model<"openai-responses">,
       "api" | "baseUrl" | "contextWindow" | "id" | "provider"
     >;
-    const payload = {} satisfies Record<string, unknown>;
+    const payload = {} satisfies Record<string, any>;
 
     applyOpenAIResponsesPayloadPolicy(
       payload,
@@ -70,13 +70,13 @@ describe("openai responses payload policy", () => {
       baseUrl: "https://api.openai.com/v1",
       contextWindow: "200000tokens",
     } satisfies {
-      api: unknown;
-      baseUrl: unknown;
-      contextWindow: unknown;
-      id: unknown;
-      provider: unknown;
+      api: any;
+      baseUrl: any;
+      contextWindow: any;
+      id: any;
+      provider: any;
     };
-    const payload = {} satisfies Record<string, unknown>;
+    const payload = {} satisfies Record<string, any>;
 
     applyOpenAIResponsesPayloadPolicy(
       payload,
@@ -93,7 +93,7 @@ describe("openai responses payload policy", () => {
   });
 
   it("accepts plus-signed responses compaction thresholds", () => {
-    const payload = {} satisfies Record<string, unknown>;
+    const payload = {} satisfies Record<string, any>;
 
     applyOpenAIResponsesPayloadPolicy(
       payload,
@@ -134,7 +134,7 @@ describe("openai responses payload policy", () => {
       store: false,
       prompt_cache_key: "session-123",
       prompt_cache_retention: "24h",
-    } satisfies Record<string, unknown>;
+    } satisfies Record<string, any>;
 
     applyOpenAIResponsesPayloadPolicy(payload, policy);
 
@@ -148,7 +148,7 @@ describe("openai responses payload policy", () => {
       reasoning: {
         effort: "none",
       },
-    } satisfies Record<string, unknown>;
+    } satisfies Record<string, any>;
 
     applyOpenAIResponsesPayloadPolicy(
       payload,
@@ -176,7 +176,7 @@ describe("openai responses payload policy", () => {
       reasoning: {
         effort: "none",
       },
-    } satisfies Record<string, unknown>;
+    } satisfies Record<string, any>;
 
     applyOpenAIResponsesPayloadPolicy(
       payload,
@@ -201,7 +201,7 @@ describe("openai responses payload policy", () => {
       reasoning: {
         effort: "none",
       },
-    } satisfies Record<string, unknown>;
+    } satisfies Record<string, any>;
 
     applyOpenAIResponsesPayloadPolicy(
       payload,

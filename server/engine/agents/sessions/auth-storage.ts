@@ -97,7 +97,7 @@ export class FileAuthStorageBackend implements AuthStorageBackend {
   private acquireLockSyncWithRetry(path: string): () => void {
     const maxAttempts = 10;
     const delayMs = 20;
-    let lastError: unknown;
+    let lastError: any;
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
@@ -105,7 +105,7 @@ export class FileAuthStorageBackend implements AuthStorageBackend {
       } catch (error) {
         const code =
           typeof error === "object" && error !== null && "code" in error
-            ? String((error as { code?: unknown }).code)
+            ? String((error as { code?: any }).code)
             : undefined;
         if (code !== "ELOCKED" || attempt === maxAttempts) {
           throw error;
@@ -266,7 +266,7 @@ export class AuthStorage {
     this.fallbackResolver = resolver;
   }
 
-  private recordError(error: unknown): void {
+  private recordError(error: any): void {
     const normalizedError = error instanceof Error ? error : new Error(String(error));
     this.errors.push(normalizedError);
   }

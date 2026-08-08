@@ -17,15 +17,15 @@ import { format } from "node:util";
  * 此处仅用于本模块的 logger-backed runtime 适配，不对外泄露。
  */
 type RuntimeEnv = {
-  log: (...args: unknown[]) => void;
-  error: (...args: unknown[]) => void;
+  log: (...args: any[]) => void;
+  error: (...args: any[]) => void;
   exit: (code: number) => void;
 };
 
 /** 输出运行时环境接口（本地降级定义，匹配 openclaw 原始结构）。 */
 type OutputRuntimeEnv = RuntimeEnv & {
   writeStdout: (value: string) => void;
-  writeJson: (value: unknown, space?: number) => void;
+  writeJson: (value: any, space?: number) => void;
 };
 
 /** Minimal logger contract accepted by runtime-adapter helpers. */

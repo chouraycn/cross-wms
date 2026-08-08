@@ -114,14 +114,14 @@ export class SkillSearch {
     // 应用高级过滤
     if (options.hasDependencies) {
       finalResults = finalResults.filter(r => {
-        const meta = r.skill.metadata as Record<string, unknown> | undefined;
+        const meta = r.skill.metadata as Record<string, any> | undefined;
         return !!meta?.dependencies || !!meta?.conflicts;
       });
     }
 
     if (options.healthFilter) {
       finalResults = finalResults.filter(r => {
-        const meta = r.skill.metadata as Record<string, unknown> | undefined;
+        const meta = r.skill.metadata as Record<string, any> | undefined;
         // 简单启发式：基于 description 长度和 metadata 完整性计算
         const hasDesc = r.skill.description.length >= 20;
         const hasMeta = !!meta?.name && !!meta?.description;

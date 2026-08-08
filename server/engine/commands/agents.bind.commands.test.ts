@@ -30,8 +30,8 @@ vi.mock("../agents/agent-scope.js", () => ({
 }));
 
 vi.mock("../config/bindings.js", () => ({
-  isRouteBinding: (binding: { match?: unknown }) => Boolean(binding.match),
-  listRouteBindings: (cfg: { bindings?: Array<{ match?: unknown }> }) =>
+  isRouteBinding: (binding: { match?: any }) => Boolean(binding.match),
+  listRouteBindings: (cfg: { bindings?: Array<{ match?: any }> }) =>
     (cfg.bindings ?? []).filter((binding) => Boolean(binding.match)),
 }));
 
@@ -145,12 +145,12 @@ describe("agents bind/unbind commands", () => {
     pluginRegistryMocks.listPluginContributionIds.mockClear();
   });
 
-  function firstWrittenConfig(): { bindings?: unknown } {
+  function firstWrittenConfig(): { bindings?: any } {
     const call = writeConfigFileMock.mock.calls[0];
     if (!call) {
       throw new Error("expected config write");
     }
-    return call[0] as { bindings?: unknown };
+    return call[0] as { bindings?: any };
   }
 
   it("lists all bindings by default", async () => {

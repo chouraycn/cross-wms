@@ -53,7 +53,7 @@ export function normalizeDeliveryContext(context?: DeliveryContext): DeliveryCon
 }
 
 /** Normalizes an unknown channel route payload from persisted session/plugin metadata. */
-export function normalizeDeliveryChannelRoute(route?: unknown): ChannelRouteRef | undefined {
+export function normalizeDeliveryChannelRoute(route?: any): ChannelRouteRef | undefined {
   if (!route || typeof route !== "object" || Array.isArray(route)) {
     return undefined;
   }

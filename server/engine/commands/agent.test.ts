@@ -80,7 +80,7 @@ vi.mock("../agents/command/session-store.runtime.js", () => {
 vi.mock("../agents/command/cli-compaction.js", () => {
   return {
     runCliTurnCompactionLifecycle: vi.fn(
-      async (params: { sessionEntry?: unknown }) => params.sessionEntry,
+      async (params: { sessionEntry?: any }) => params.sessionEntry,
     ),
   };
 });
@@ -93,17 +93,17 @@ vi.mock("../agents/command/attempt-execution.runtime.js", () => {
     emitAcpLifecycleEnd: vi.fn(),
     emitAcpLifecycleError: vi.fn(),
     emitAcpLifecycleStart: vi.fn(),
-    persistAcpTurnTranscript: vi.fn(async (params: { sessionEntry?: unknown }) => ({
+    persistAcpTurnTranscript: vi.fn(async (params: { sessionEntry?: any }) => ({
       kind: "persisted",
       sessionEntry: params.sessionEntry,
     })),
-    persistCliTurnTranscript: vi.fn(async (params: { sessionEntry?: unknown }) => ({
+    persistCliTurnTranscript: vi.fn(async (params: { sessionEntry?: any }) => ({
       kind: "persisted",
       sessionEntry: params.sessionEntry,
     })),
-    runAgentAttempt: vi.fn(async (params: Record<string, unknown>) => {
-      const opts = params.opts as Record<string, unknown>;
-      const runContext = params.runContext as Record<string, unknown>;
+    runAgentAttempt: vi.fn(async (params: Record<string, any>) => {
+      const opts = params.opts as Record<string, any>;
+      const runContext = params.runContext as Record<string, any>;
       const sessionEntry = params.sessionEntry as
         | {
             authProfileOverride?: string;
@@ -172,8 +172,8 @@ vi.mock("../agents/command/delivery.runtime.js", () => {
           sendMessageTelegram?: (
             to: string,
             text: string,
-            opts: Record<string, unknown>,
-          ) => Promise<unknown>;
+            opts: Record<string, any>,
+          ) => Promise<any>;
         };
         runtime: RuntimeEnv;
         opts: {
@@ -182,7 +182,7 @@ vi.mock("../agents/command/delivery.runtime.js", () => {
           json?: boolean;
           to?: string;
         };
-        result: { meta?: Record<string, unknown> };
+        result: { meta?: Record<string, any> };
         payloads?: Array<{ text?: string; mediaUrl?: string | null }>;
       }) => {
         const payloads = params.payloads ?? [];
@@ -303,14 +303,14 @@ function mockConfig(
 
 function writeSessionStoreSeed(
   storePath: string,
-  sessions: Record<string, Record<string, unknown>>,
+  sessions: Record<string, Record<string, any>>,
 ) {
   fs.mkdirSync(path.dirname(storePath), { recursive: true });
   fs.writeFileSync(storePath, JSON.stringify(sessions));
 }
 
 function createDefaultAgentResult(params?: {
-  payloads?: Array<Record<string, unknown>>;
+  payloads?: Array<Record<string, any>>;
   durationMs?: number;
 }) {
   return {
@@ -811,7 +811,7 @@ describe("agentCommand", () => {
         const data = { text: "hello", delta: "hello" };
         (
           params as {
-            onAgentEvent?: (evt: { stream: string; data: Record<string, unknown> }) => void;
+            onAgentEvent?: (evt: { stream: string; data: Record<string, any> }) => void;
           }
         ).onAgentEvent?.({ stream: "assistant", data });
         emitAgentEvent({ runId, stream: "assistant", data });
@@ -848,7 +848,7 @@ describe("agentCommand", () => {
       vi.mocked(runEmbeddedAgent).mockImplementationOnce(async (params) => {
         (
           params as {
-            onAgentEvent?: (evt: { stream: string; data: Record<string, unknown> }) => void;
+            onAgentEvent?: (evt: { stream: string; data: Record<string, any> }) => void;
           }
         ).onAgentEvent?.({
           stream: "codex_app_server.lifecycle",

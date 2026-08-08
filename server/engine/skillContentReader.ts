@@ -67,7 +67,7 @@ export interface SkillReadResult {
     name: string;
     description: string;
     group: string;
-    parameters?: Record<string, unknown>;
+    parameters?: Record<string, any>;
     version?: string;
     author?: string;
     tags: string[];
@@ -339,7 +339,7 @@ export class SkillContentReader {
     function: {
       name: string;
       description: string;
-      parameters: Record<string, unknown>;
+      parameters: Record<string, any>;
     };
   }> {
     return [

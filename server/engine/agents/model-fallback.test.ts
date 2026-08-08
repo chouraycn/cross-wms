@@ -38,7 +38,7 @@ import { makeModelFallbackCfg } from "./test-helpers/model-fallback-config-fixtu
 type ProviderModelNormalizationParams = { provider: string; context: { modelId: string } };
 
 vi.mock("../infra/file-lock.js", () => ({
-  withFileLock: async <T>(_filePath: string, _options: unknown, run: () => Promise<T>) => run(),
+  withFileLock: async <T>(_filePath: string, _options: any, run: () => Promise<T>) => run(),
 }));
 
 vi.mock("../plugins/provider-runtime.js", () => ({
@@ -69,7 +69,7 @@ const authRuntimeMock = vi.hoisted(() => {
   const stores = new Map<string, AuthProfileStore>();
   const keyFor = (agentDir?: string) => agentDir ?? "__main__";
   const now = () => Date.now();
-  const isActive = (value: unknown, ts = now()) =>
+  const isActive = (value: any, ts = now()) =>
     typeof value === "number" && Number.isFinite(value) && value > ts;
   const getStore = (agentDir?: string): AuthProfileStore =>
     stores.get(keyFor(agentDir)) ?? { version: 1, profiles: {} };
@@ -385,18 +385,18 @@ function setAuthRuntimeStore(agentDir: string | undefined, store: AuthProfileSto
   authRuntimeMock.setStore(agentDir, store);
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error(`expected ${label}`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 function requireMockCall(
-  mock: { mock: { calls: unknown[][] } },
+  mock: { mock: { calls: any[][] } },
   index: number,
   label: string,
-): unknown[] {
+): any[] {
   const call = mock.mock.calls[index];
   if (!call) {
     throw new Error(`expected ${label} mock call ${index}`);
@@ -404,7 +404,7 @@ function requireMockCall(
   return call;
 }
 
-async function captureRejection(promise: Promise<unknown>): Promise<unknown> {
+async function captureRejection(promise: Promise<any>): Promise<any> {
   try {
     await promise;
   } catch (error) {
@@ -413,7 +413,7 @@ async function captureRejection(promise: Promise<unknown>): Promise<unknown> {
   throw new Error("expected rejection");
 }
 
-function requireFallbackSummaryError(error: unknown): FallbackSummaryError {
+function requireFallbackSummaryError(error: any): FallbackSummaryError {
   expect(error).toBeInstanceOf(FallbackSummaryError);
   if (!(error instanceof FallbackSummaryError)) {
     throw error;
@@ -421,7 +421,7 @@ function requireFallbackSummaryError(error: unknown): FallbackSummaryError {
   return error;
 }
 
-function requireFailoverError(error: unknown): FailoverError {
+function requireFailoverError(error: any): FailoverError {
   expect(error).toBeInstanceOf(FailoverError);
   if (!(error instanceof FailoverError)) {
     throw error;
@@ -1570,7 +1570,7 @@ describe("runWithModelFallback", () => {
           model: "gpt-5.4",
           run,
           classifyResult: ({ result }) => {
-            const payloads = (result as { payloads?: unknown[] }).payloads;
+            const payloads = (result as { payloads?: any[] }).payloads;
             return Array.isArray(payloads) && payloads.length === 0
               ? {
                   message: "terminal result contained no visible assistant reply",
@@ -1790,7 +1790,7 @@ describe("runWithModelFallback", () => {
       model: "claude-sonnet-4-6",
       run,
       fallbacksOverride: [],
-    }).catch((e: unknown) => e);
+    }).catch((e: any) => e);
     expect(err).toBeInstanceOf(Error);
     // Should NOT be a LiveSessionModelSwitchError — the outer retry loop must
     // not restart with the conflicting model.

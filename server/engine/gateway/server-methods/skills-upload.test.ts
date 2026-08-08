@@ -65,7 +65,7 @@ let testStates: OpenClawTestState[] = [];
 
 type CallResult = {
   ok: boolean;
-  payload?: unknown;
+  payload?: any;
   error?: { code?: string; message?: string };
 };
 
@@ -88,7 +88,7 @@ async function makeHarness(): Promise<{
 }
 
 function makeContext(
-  config: Record<string, unknown> = {
+  config: Record<string, any> = {
     skills: { install: { allowUploadedArchives: true } },
   },
 ) {
@@ -106,8 +106,8 @@ function makeContext(
 async function call(
   handlers: GatewayRequestHandlers,
   method: string,
-  params: Record<string, unknown>,
-  options: { config?: Record<string, unknown> } = {},
+  params: Record<string, any>,
+  options: { config?: Record<string, any> } = {},
 ): Promise<CallResult> {
   const handler = handlers[method];
   if (!handler) {
@@ -148,7 +148,7 @@ function expectError(result: CallResult, code: string, message: string): void {
   expect(result.error?.message).toBe(message);
 }
 
-function firstCallArg<T>(mock: { mock: { calls: unknown[][] } }, _type?: (value: T) => T): T {
+function firstCallArg<T>(mock: { mock: { calls: any[][] } }, _type?: (value: T) => T): T {
   const callLocal = mock.mock.calls.at(0);
   if (!callLocal) {
     throw new Error("Expected first mock call");
@@ -293,9 +293,9 @@ describe("skill upload gateway handlers", () => {
     });
 
     expect(install.ok).toBe(true);
-    expect((install.payload as { ok?: unknown }).ok).toBe(true);
-    expect((install.payload as { slug?: unknown }).slug).toBe("uploaded-demo");
-    expect((install.payload as { sha256?: unknown }).sha256).toBe(digest);
+    expect((install.payload as { ok?: any }).ok).toBe(true);
+    expect((install.payload as { slug?: any }).slug).toBe("uploaded-demo");
+    expect((install.payload as { sha256?: any }).sha256).toBe(digest);
     await expect(
       fs.readFile(path.join(workspaceDir, "skills", "uploaded-demo", "SKILL.md"), "utf8"),
     ).resolves.toContain("Uploaded Demo");

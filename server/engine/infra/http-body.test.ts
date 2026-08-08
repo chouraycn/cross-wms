@@ -16,7 +16,7 @@ import {
 type MockIncomingMessage = IncomingMessage & {
   destroyed?: boolean;
   destroy: (error?: Error) => MockIncomingMessage;
-  __unhandledDestroyError?: unknown;
+  __unhandledDestroyError?: any;
 };
 
 async function waitForMicrotaskTurn(): Promise<void> {
@@ -26,7 +26,7 @@ async function waitForMicrotaskTurn(): Promise<void> {
 }
 
 async function expectRequestBodyLimitError(
-  promise: Promise<unknown>,
+  promise: Promise<any>,
   expected: {
     code: RequestBodyLimitErrorCode;
     message: string;

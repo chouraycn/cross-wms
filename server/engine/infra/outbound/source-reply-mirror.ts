@@ -19,13 +19,13 @@ import { createOutboundPayloadPlan, projectOutboundPayloadPlanForMirror } from "
 type SourceReplyTranscriptMirrorParams = {
   action: string;
   channel: string;
-  actionParams: Record<string, unknown>;
+  actionParams: Record<string, any>;
   cfg: OpenClawConfig;
   sessionKey?: string;
   agentId?: string;
   toolContext?: ChannelThreadingToolContext;
   idempotencyKey?: string;
-  deliveredPayload?: unknown;
+  deliveredPayload?: any;
 };
 
 type MirrorableSourceReplyTranscriptParams = SourceReplyTranscriptMirrorParams & {
@@ -35,18 +35,18 @@ type MirrorableSourceReplyTranscriptParams = SourceReplyTranscriptMirrorParams &
 type SourceReplyThreadPlacement = "match" | "mismatch" | "unknown";
 
 // Mirror only enough delivered payload detail to preserve transcript context.
-function readStringArray(value: unknown): string[] | undefined {
+function readStringArray(value: any): string[] | undefined {
   return normalizeOptionalTrimmedStringList(value);
 }
 
-function asRecord(value: unknown): Record<string, unknown> | undefined {
+function asRecord(value: any): Record<string, any> | undefined {
   return value && typeof value === "object" && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
+    ? (value as Record<string, any>)
     : undefined;
 }
 
 function readFirstString(
-  params: Record<string, unknown>,
+  params: Record<string, any>,
   keys: readonly string[],
 ): string | undefined {
   for (const key of keys) {
@@ -58,7 +58,7 @@ function readFirstString(
   return undefined;
 }
 
-function resolveSourceReplyTarget(params: Record<string, unknown>): string | undefined {
+function resolveSourceReplyTarget(params: Record<string, any>): string | undefined {
   return readFirstString(params, ["target", "to", "channelId", "chatId"]);
 }
 
@@ -128,11 +128,11 @@ function resolveThreadedSourceTarget(
   );
 }
 
-function hasExplicitDeliveryFailure(payload: unknown): boolean {
+function hasExplicitDeliveryFailure(payload: any): boolean {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
     return false;
   }
-  const record = payload as Record<string, unknown>;
+  const record = payload as Record<string, any>;
   if (record.ok === false) {
     return true;
   }

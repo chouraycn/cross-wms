@@ -3,7 +3,7 @@
 export function notifyListeners<T>(
   listeners: Iterable<(event: T) => void>,
   event: T,
-  onError?: (error: unknown) => void,
+  onError?: (error: any) => void,
 ): void {
   for (const listener of listeners) {
     try {

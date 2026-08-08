@@ -7,8 +7,8 @@ import type { GatewayClient, GatewayRequestContext, GatewayRequestHandlers } fro
 /** Captured JSON-RPC response tuple emitted by a gateway request handler. */
 type CapturedGatewayResponse = {
   ok: boolean | null;
-  response: unknown;
-  error: unknown;
+  response: any;
+  error: any;
 };
 
 function makeGatewayHandlerTestContext(): GatewayRequestContext {
@@ -22,15 +22,15 @@ function makeGatewayHandlerTestContext(): GatewayRequestContext {
 export async function callGatewayHandler(
   handlers: GatewayRequestHandlers,
   method: string,
-  params: Record<string, unknown>,
+  params: Record<string, any>,
   options: {
     client?: GatewayClient | null;
     context?: Partial<GatewayRequestContext>;
   } = {},
 ): Promise<CapturedGatewayResponse> {
   let ok: boolean | null = null;
-  let response: unknown;
-  let error: unknown;
+  let response: any;
+  let error: any;
   const handler = handlers[method];
 
   if (!handler) {

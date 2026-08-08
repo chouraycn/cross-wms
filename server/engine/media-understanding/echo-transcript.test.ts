@@ -7,17 +7,17 @@ import type { OpenClawConfig } from "../config/types.js";
 const mockDeliverOutboundPayloads = vi.hoisted(() => vi.fn());
 
 vi.mock("../infra/outbound/deliver-runtime.js", () => ({
-  deliverOutboundPayloads: (...args: unknown[]) => mockDeliverOutboundPayloads(...args),
-  deliverOutboundPayloadsInternal: (...args: unknown[]) => mockDeliverOutboundPayloads(...args),
+  deliverOutboundPayloads: (...args: any[]) => mockDeliverOutboundPayloads(...args),
+  deliverOutboundPayloadsInternal: (...args: any[]) => mockDeliverOutboundPayloads(...args),
 }));
 
 vi.mock("../infra/outbound/deliver.js", () => ({
-  deliverOutboundPayloads: (...args: unknown[]) => mockDeliverOutboundPayloads(...args),
-  deliverOutboundPayloadsInternal: (...args: unknown[]) => mockDeliverOutboundPayloads(...args),
+  deliverOutboundPayloads: (...args: any[]) => mockDeliverOutboundPayloads(...args),
+  deliverOutboundPayloadsInternal: (...args: any[]) => mockDeliverOutboundPayloads(...args),
 }));
 
 vi.mock("../channels/message/runtime.js", () => ({
-  sendDurableMessageBatch: (...args: unknown[]) => mockDeliverOutboundPayloads(...args),
+  sendDurableMessageBatch: (...args: any[]) => mockDeliverOutboundPayloads(...args),
 }));
 
 vi.mock("../utils/message-channel.js", () => ({

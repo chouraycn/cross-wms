@@ -13,6 +13,6 @@
 
 export type GatewayServerMutableState = unknown;
 
-export function createGatewayServerMutableState(..._args: unknown[]): unknown {
+export function createGatewayServerMutableState(..._args: any[]): any {
   return undefined;
 }

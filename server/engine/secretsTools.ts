@@ -15,7 +15,7 @@ import {
 } from './secretsManager.js';
 import type { SecretProvider } from './secretsTypes.js';
 
-function jsonResult(data: unknown): string {
+function jsonResult(data: any): string {
   return JSON.stringify(data, null, 2);
 }
 
@@ -53,7 +53,7 @@ export function getResolveSecretToolDefinition(): ToolDefinition {
 }
 
 export function createResolveSecretToolHandler(): ToolHandler {
-  return async (args: Record<string, unknown>) => {
+  return async (args: Record<string, any>) => {
     try {
       const provider = args.provider as SecretProvider;
       const key = args.key as string;
@@ -109,7 +109,7 @@ export function getSetSecretToolDefinition(): ToolDefinition {
 }
 
 export function createSetSecretToolHandler(): ToolHandler {
-  return async (args: Record<string, unknown>) => {
+  return async (args: Record<string, any>) => {
     try {
       const provider = args.provider as SecretProvider;
       const key = args.key as string;
@@ -153,7 +153,7 @@ export function getRemoveSecretToolDefinition(): ToolDefinition {
 }
 
 export function createRemoveSecretToolHandler(): ToolHandler {
-  return async (args: Record<string, unknown>) => {
+  return async (args: Record<string, any>) => {
     try {
       const provider = args.provider as SecretProvider;
       const key = args.key as string;
@@ -194,7 +194,7 @@ export function getValidateSecretToolDefinition(): ToolDefinition {
 }
 
 export function createValidateSecretToolHandler(): ToolHandler {
-  return async (args: Record<string, unknown>) => {
+  return async (args: Record<string, any>) => {
     try {
       const provider = args.provider as SecretProvider;
       const key = args.key as string;

@@ -1,7 +1,7 @@
 /** 在进程退出前传递给 fatal-error 钩子的上下文。 */
 type FatalErrorHookContext = {
   reason: string;
-  error?: unknown;
+  error?: any;
 };
 
 /** 可返回一条额外诊断行的 fatal-error 钩子。 */
@@ -9,7 +9,7 @@ type FatalErrorHook = (context: FatalErrorHookContext) => string | undefined | v
 
 const hooks = new Set<FatalErrorHook>();
 
-function formatHookFailure(error: unknown): string {
+function formatHookFailure(error: any): string {
   const name = error instanceof Error && error.name ? error.name : "unknown";
   return `fatal-error hook failed: ${name}`;
 }

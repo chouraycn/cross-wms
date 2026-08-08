@@ -21,7 +21,7 @@ beforeEach(() => {
           ...createChannelTestPluginBase({ id: "native-messaging" }),
           actions: {
             describeMessageTool: () => null,
-            isToolDeliveryAction: ({ args }: { args: Record<string, unknown> }) =>
+            isToolDeliveryAction: ({ args }: { args: Record<string, any> }) =>
               args.action === "editMessage" || args.action === "deleteMessage",
           },
         },

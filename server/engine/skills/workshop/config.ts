@@ -20,24 +20,24 @@ const DEFAULT_CONFIG: SkillWorkshopConfig = {
   maxSkillBytes: 40_000,
 };
 
-function asNullableRecord(value: unknown): Record<string, unknown> | null {
+function asNullableRecord(value: any): Record<string, any> | null {
   if (!value || typeof value !== "object") {
     return null;
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function readBoolean(value: unknown, fallback: boolean): boolean {
+function readBoolean(value: any, fallback: boolean): boolean {
   return typeof value === "boolean" ? value : fallback;
 }
 
-function readInteger(value: unknown, fallback: number, min: number, max: number): number {
+function readInteger(value: any, fallback: number, min: number, max: number): number {
   return typeof value === "number" && Number.isFinite(value)
     ? Math.min(Math.max(Math.trunc(value), min), max)
     : fallback;
 }
 
-function readApprovalPolicy(value: unknown, fallback: SkillWorkshopConfig["approvalPolicy"]) {
+function readApprovalPolicy(value: any, fallback: SkillWorkshopConfig["approvalPolicy"]) {
   return value === "auto" ? "auto" : fallback;
 }
 

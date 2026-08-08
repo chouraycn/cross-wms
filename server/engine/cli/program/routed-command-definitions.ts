@@ -21,7 +21,7 @@ import {
 
 type RouteArgParser<TArgs> = (argv: string[]) => TArgs | null;
 
-type ParsedRouteArgs<TParse extends RouteArgParser<unknown>> = Exclude<ReturnType<TParse>, null>;
+type ParsedRouteArgs<TParse extends RouteArgParser<any>> = Exclude<ReturnType<TParse>, null>;
 type AgentsListCommandModule = typeof import("../../commands/agents.commands.list.js");
 type ConfigCliModule = typeof import("../config-cli.js");
 type ModelsListCommandModule = typeof import("../../commands/models/list.list-command.js");
@@ -29,18 +29,18 @@ type ModelsStatusCommandModule = typeof import("../../commands/models/list.statu
 type TasksJsonCommandModule = typeof import("../../commands/tasks-json.js");
 
 /** Typed parsed route definition that binds one parser to its runner. */
-export type RoutedCommandDefinition<TParse extends RouteArgParser<unknown>> = {
+export type RoutedCommandDefinition<TParse extends RouteArgParser<any>> = {
   parseArgs: TParse;
   runParsedArgs: (args: ParsedRouteArgs<TParse>) => Promise<void>;
 };
 
 /** Erased routed-command definition map shape used by route-spec generation. */
 export type AnyRoutedCommandDefinition = {
-  parseArgs: RouteArgParser<unknown>;
+  parseArgs: RouteArgParser<any>;
   runParsedArgs: (args: never) => Promise<void>;
 };
 
-function defineRoutedCommand<TParse extends RouteArgParser<unknown>>(
+function defineRoutedCommand<TParse extends RouteArgParser<any>>(
   definition: RoutedCommandDefinition<TParse>,
 ): RoutedCommandDefinition<TParse> {
   return definition;

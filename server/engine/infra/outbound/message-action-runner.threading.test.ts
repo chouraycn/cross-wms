@@ -11,7 +11,7 @@ import {
 const ensureOutboundSessionEntry = vi.fn(async () => undefined);
 const resolveOutboundSessionRoute = vi.fn();
 
-function firstMockArg(mock: { mock: { calls: readonly unknown[][] } }): Record<string, unknown> {
+function firstMockArg(mock: { mock: { calls: readonly any[][] } }): Record<string, any> {
   const [call] = mock.mock.calls;
   if (!call) {
     throw new Error("expected mock call");
@@ -20,7 +20,7 @@ function firstMockArg(mock: { mock: { calls: readonly unknown[][] } }): Record<s
   if (typeof arg !== "object" || arg === null || Array.isArray(arg)) {
     throw new Error("expected mock call arg to be an object");
   }
-  return arg as Record<string, unknown>;
+  return arg as Record<string, any>;
 }
 
 const workspaceConfig = {
@@ -64,7 +64,7 @@ describe("message action threading helpers", () => {
       expectedSessionKey: "agent:main:workspace:channel:c123:thread:333.444",
     },
   ] as const)("prepares outbound routes for workspace using $name", async (testCase) => {
-    const actionParams: Record<string, unknown> = {
+    const actionParams: Record<string, any> = {
       channel: "workspace",
       target: testCase.target,
       message: "hi",
@@ -102,7 +102,7 @@ describe("message action threading helpers", () => {
   });
 
   it("prepares the outbound route with a canonicalized reply root", async () => {
-    const actionParams: Record<string, unknown> = {
+    const actionParams: Record<string, any> = {
       channel: "forum",
       target: "forum:123",
       message: "hi",
@@ -150,7 +150,7 @@ describe("message action threading helpers", () => {
       expectedThreadId: undefined,
     },
   ] as const)("forum auto-threading: $name", (testCase) => {
-    const actionParams: Record<string, unknown> = {
+    const actionParams: Record<string, any> = {
       channel: "forum",
       target: testCase.target,
       message: "hi",
@@ -169,7 +169,7 @@ describe("message action threading helpers", () => {
   });
 
   it("uses explicit forum threadId without rewriting replyTo", () => {
-    const actionParams: Record<string, unknown> = {
+    const actionParams: Record<string, any> = {
       channel: "forum",
       target: "forum:123",
       message: "hi",
@@ -192,7 +192,7 @@ describe("message action threading helpers", () => {
   });
 
   it("preserves an explicit reply target through Slack-style reply transport", () => {
-    const actionParams: Record<string, unknown> = {
+    const actionParams: Record<string, any> = {
       channel: "forum",
       target: "forum:123",
       message: "hi",
@@ -220,7 +220,7 @@ describe("message action threading helpers", () => {
   });
 
   it("canonicalizes an inherited reply target through a one-root transport", () => {
-    const actionParams: Record<string, unknown> = {
+    const actionParams: Record<string, any> = {
       channel: "forum",
       target: "forum:123",
       message: "hi",
@@ -248,7 +248,7 @@ describe("message action threading helpers", () => {
     { name: "topLevel true", params: { topLevel: true } },
   ] as const)("skips auto-threading for $name", (testCase) => {
     const resolveAutoThreadId = vi.fn(() => "42");
-    const actionParams: Record<string, unknown> = {
+    const actionParams: Record<string, any> = {
       channel: "forum",
       target: "forum:123",
       message: "hi",
@@ -268,7 +268,7 @@ describe("message action threading helpers", () => {
 
   it("preserves explicit replyTo when the provider keeps reply and thread distinct", () => {
     const resolveAutoThreadId = vi.fn((_params: { replyToId?: string | null }) => "thread-777");
-    const actionParams: Record<string, unknown> = {
+    const actionParams: Record<string, any> = {
       channel: "forum",
       target: "forum:123",
       message: "hi",
@@ -290,7 +290,7 @@ describe("message action threading helpers", () => {
   });
 
   it("canonicalizes replyTo when the provider maps reply and thread to one root", () => {
-    const actionParams: Record<string, unknown> = {
+    const actionParams: Record<string, any> = {
       channel: "forum",
       target: "forum:123",
       message: "hi",
@@ -313,7 +313,7 @@ describe("message action threading helpers", () => {
   });
 
   it("inherits currentMessageId for same-target sends when replyToMode=all", () => {
-    const actionParams: Record<string, unknown> = {
+    const actionParams: Record<string, any> = {
       channel: "workspace",
       target: "channel:C123",
       message: "hi",
@@ -333,7 +333,7 @@ describe("message action threading helpers", () => {
   });
 
   it("inherits currentMessageId for a routable alias of the native channel", () => {
-    const actionParams: Record<string, unknown> = {
+    const actionParams: Record<string, any> = {
       to: "user:U123",
     };
 
@@ -351,7 +351,7 @@ describe("message action threading helpers", () => {
   });
 
   it("skips inherited reply ids for explicit top-level sends", () => {
-    const actionParams: Record<string, unknown> = {
+    const actionParams: Record<string, any> = {
       channel: "workspace",
       target: "channel:C123",
       message: "hi",
@@ -372,7 +372,7 @@ describe("message action threading helpers", () => {
   });
 
   it("skips inherited reply threading for batched mode", () => {
-    const actionParams: Record<string, unknown> = {
+    const actionParams: Record<string, any> = {
       channel: "workspace",
       target: "channel:C123",
       message: "hi",
@@ -392,7 +392,7 @@ describe("message action threading helpers", () => {
   });
 
   it("consumes first-mode inherited reply threading only once", () => {
-    const actionParams: Record<string, unknown> = {
+    const actionParams: Record<string, any> = {
       channel: "workspace",
       target: "channel:C123",
       message: "hi",
@@ -516,7 +516,7 @@ describe("message action threading helpers", () => {
   });
 
   it("does not inherit reply threading across providers even when target ids match", () => {
-    const actionParams: Record<string, unknown> = {
+    const actionParams: Record<string, any> = {
       channel: "discord",
       target: "channel:C123",
       message: "hi",

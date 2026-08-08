@@ -6,7 +6,7 @@
  */
 
 /** Resolves the embedded abort settle timeout in milliseconds. */
-export function resolveEmbeddedAbortSettleTimeoutMs(..._args: unknown[]): number {
+export function resolveEmbeddedAbortSettleTimeoutMs(..._args: any[]): number {
   // Cross-wms does not have config-based timeout resolution.
   return 5_000;
 }

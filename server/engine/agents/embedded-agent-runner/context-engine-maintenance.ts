@@ -58,7 +58,7 @@ type DeferredTurnMaintenanceScheduleParams = {
   agentId?: string;
   config?: OpenClawConfig;
   disposeContextEngineAfterMaintenance?: boolean;
-  onScheduleFailure?: (error: unknown) => void;
+  onScheduleFailure?: (error: any) => void;
 };
 
 type DeferredTurnMaintenanceRunState = {
@@ -220,7 +220,7 @@ export async function waitForDeferredTurnMaintenanceForSession(sessionKey?: stri
 function markDeferredTurnMaintenanceTaskScheduleFailure(params: {
   sessionKey: string;
   taskId: string;
-  error: unknown;
+  error: any;
 }): void {
   const errorMessage = formatErrorMessage(params.error);
   log.warn(`failed to schedule deferred context engine maintenance: ${errorMessage}`);
@@ -646,7 +646,7 @@ function scheduleDeferredTurnMaintenance(
     }
   };
   const trackedPromise = runPromise
-    .catch((err: unknown) => {
+    .catch((err: any) => {
       params.onScheduleFailure?.(err);
       markDeferredTurnMaintenanceTaskScheduleFailure({
         sessionKey,
@@ -654,7 +654,7 @@ function scheduleDeferredTurnMaintenance(
         error: err,
       });
     })
-    .then(cleanupDeferredTurnMaintenance, async (err: unknown) => {
+    .then(cleanupDeferredTurnMaintenance, async (err: any) => {
       await cleanupDeferredTurnMaintenance();
       throw err;
     });
@@ -684,7 +684,7 @@ export async function runContextEngineMaintenance(params: {
   agentId?: string;
   executionMode?: "foreground" | "background";
   onDeferredMaintenance?: (promise: Promise<void>) => void;
-  onDeferredMaintenanceFailure?: (error: unknown) => void;
+  onDeferredMaintenanceFailure?: (error: any) => void;
   config?: OpenClawConfig;
   disposeDeferredContextEngineAfterMaintenance?: boolean;
 }): Promise<ContextEngineMaintenanceResult | undefined> {

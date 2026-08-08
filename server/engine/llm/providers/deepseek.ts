@@ -102,7 +102,7 @@ export const parseDeepSeekStreamChunk: ProviderStreamChunkParser = (chunk) => {
     // 工具调用
     if (delta?.tool_calls) {
       for (const call of delta.tool_calls) {
-        let args: Record<string, unknown> = {};
+        let args: Record<string, any> = {};
         try {
           args = call.function.arguments ? JSON.parse(call.function.arguments) : {};
         } catch {

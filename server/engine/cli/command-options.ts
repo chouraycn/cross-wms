@@ -37,7 +37,7 @@ export function inheritOptionFromParent<T = unknown>(
   while (ancestor && depth < MAX_INHERIT_DEPTH) {
     const source = getOptionSource(ancestor, name);
     if (source && source !== "default") {
-      return ancestor.opts<Record<string, unknown>>()[name] as T | undefined;
+      return ancestor.opts<Record<string, any>>()[name] as T | undefined;
     }
     depth += 1;
     ancestor = ancestor.parent;

@@ -25,7 +25,7 @@ import { isCapabilityProviderConfigured } from "../media-tool-shared.js";
 
 type MediaGenerateActionResult = {
   content: Array<{ type: "text"; text: string }>;
-  details: Record<string, unknown>;
+  details: Record<string, any>;
 };
 
 type TaskStatusTextBuilder<Task> = (task: Task, params?: { duplicateGuard?: boolean }) => string;
@@ -35,7 +35,7 @@ type MediaGenerateProvider = {
   label?: string;
   defaultModel?: string;
   models?: readonly string[];
-  capabilities: unknown;
+  capabilities: any;
   isConfigured?: (ctx: { cfg?: OpenClawConfig; agentDir?: string }) => boolean;
 };
 
@@ -138,7 +138,7 @@ export function createMediaGenerateTaskStatusActions<Task>(params: {
   inactiveText: string;
   findActiveTask: (sessionKey?: string) => Task | undefined;
   buildStatusText: TaskStatusTextBuilder<Task>;
-  buildStatusDetails: (task: Task) => Record<string, unknown>;
+  buildStatusDetails: (task: Task) => Record<string, any>;
 }) {
   return {
     createStatusActionResult(sessionKey?: string): MediaGenerateActionResult {
@@ -163,7 +163,7 @@ export function createMediaGenerateDuplicateGuardResult<Task>(params: {
     params?: { prompt?: string; requestKey?: string },
   ) => Task | undefined;
   buildStatusText: TaskStatusTextBuilder<Task>;
-  buildStatusDetails: (task: Task) => Record<string, unknown>;
+  buildStatusDetails: (task: Task) => Record<string, any>;
 }): MediaGenerateActionResult | undefined {
   const blockingTask = params.findDuplicateTask(params.sessionKey, {
     prompt: params.prompt,
@@ -192,7 +192,7 @@ function createMediaGenerateStatusActionResult<Task>(params: {
   inactiveText: string;
   findActiveTask: (sessionKey?: string) => Task | undefined;
   buildStatusText: TaskStatusTextBuilder<Task>;
-  buildStatusDetails: (task: Task) => Record<string, unknown>;
+  buildStatusDetails: (task: Task) => Record<string, any>;
 }): MediaGenerateActionResult {
   const activeTask = params.findActiveTask(params.sessionKey);
   if (!activeTask) {

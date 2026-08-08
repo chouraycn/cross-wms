@@ -120,7 +120,7 @@ export async function removeChannelConfigWizard(
       continue;
     }
 
-    const nextChannels: Record<string, unknown> = { ...next.channels };
+    const nextChannels: Record<string, any> = { ...next.channels };
     delete nextChannels[channel];
     if (Object.keys(nextChannels).length) {
       next.channels = nextChannels as OpenClawConfig["channels"];

@@ -5,10 +5,10 @@ import { runRegisteredCli } from "../test-utils/command-runner.js";
 import { registerUpdateCli } from "./update-cli.js";
 
 const mocks = vi.hoisted(() => ({
-  updateCommand: vi.fn(async (_opts: unknown) => {}),
-  updateFinalizeCommand: vi.fn(async (_opts: unknown) => {}),
-  updateStatusCommand: vi.fn(async (_opts: unknown) => {}),
-  updateWizardCommand: vi.fn(async (_opts: unknown) => {}),
+  updateCommand: vi.fn(async (_opts: any) => {}),
+  updateFinalizeCommand: vi.fn(async (_opts: any) => {}),
+  updateStatusCommand: vi.fn(async (_opts: any) => {}),
+  updateWizardCommand: vi.fn(async (_opts: any) => {}),
   defaultRuntime: {
     log: vi.fn(),
     error: vi.fn(),
@@ -27,23 +27,23 @@ const {
 } = mocks;
 
 vi.mock("./update-cli/update-command.js", () => ({
-  updateCommand: (opts: unknown) => mocks.updateCommand(opts),
-  updateFinalizeCommand: (opts: unknown) => mocks.updateFinalizeCommand(opts),
+  updateCommand: (opts: any) => mocks.updateCommand(opts),
+  updateFinalizeCommand: (opts: any) => mocks.updateFinalizeCommand(opts),
 }));
 
 vi.mock("./update-cli/status.js", () => ({
-  updateStatusCommand: (opts: unknown) => mocks.updateStatusCommand(opts),
+  updateStatusCommand: (opts: any) => mocks.updateStatusCommand(opts),
 }));
 
 vi.mock("./update-cli/wizard.js", () => ({
-  updateWizardCommand: (opts: unknown) => mocks.updateWizardCommand(opts),
+  updateWizardCommand: (opts: any) => mocks.updateWizardCommand(opts),
 }));
 
 vi.mock("../runtime.js", () => ({
   defaultRuntime: mocks.defaultRuntime,
 }));
 
-function firstCallOptions(mock: { mock: { calls: unknown[][] } }) {
+function firstCallOptions(mock: { mock: { calls: any[][] } }) {
   return mock.mock.calls[0]?.[0];
 }
 

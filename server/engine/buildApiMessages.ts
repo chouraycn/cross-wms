@@ -165,10 +165,10 @@ interface ParsedAttachment {
   fileName?: string;
   mimeType?: string;
   name?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
-function parseMessageAttachments(attachments: unknown): ParsedAttachment[] {
+function parseMessageAttachments(attachments: any): ParsedAttachment[] {
   if (!attachments) return [];
   if (Array.isArray(attachments)) return attachments as ParsedAttachment[];
   if (typeof attachments === 'string') {
@@ -182,7 +182,7 @@ function parseMessageAttachments(attachments: unknown): ParsedAttachment[] {
   return [];
 }
 
-function hasImageAttachment(attachments: unknown[] | undefined): boolean {
+function hasImageAttachment(attachments: any[] | undefined): boolean {
   return !!(attachments && Array.isArray(attachments) && attachments.some((att) => (att as { type: string }).type === 'image'));
 }
 
@@ -241,7 +241,7 @@ function rebuildToolCallsFromMessage(
   }
 }
 
-function validateToolCallsPairing<T extends Array<{ role: string; content: unknown; tool_calls?: Array<{ id?: string }>; tool_call_id?: string }>>(
+function validateToolCallsPairing<T extends Array<{ role: string; content: any; tool_calls?: Array<{ id?: string }>; tool_call_id?: string }>>(
   messages: T,
 ): T {
   const fixedMessages: T[number][] = [];
@@ -310,9 +310,9 @@ export interface BuildApiMessagesParams {
   modelConfig: ModelConfig;
   finalModelConfig: ModelCallConfig;
   dbMessages: ReturnType<typeof getSessionMessages>;
-  conversationHistory?: unknown[];
+  conversationHistory?: any[];
   skillContext?: string;
-  attachments?: unknown[];
+  attachments?: any[];
   referencedSessionIds?: string[];
   hasImage: boolean;
   /** 选中的文件夹上下文：原生场景为绝对路径（后端扫描读取）；Web 回退场景为 FOLDER_CONTENT_INLINE 前缀的内容字符串 */
@@ -410,7 +410,7 @@ export async function buildApiMessages(params: BuildApiMessagesParams): Promise<
               type: 'image_url',
               image_url: { url: `data:${att.mimeType};base64,${base64}`, detail: 'auto' },
             });
-          } catch (err: unknown) {
+          } catch (err: any) {
             if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
               logger.error(`[Chat API] 读取历史图片附件失败: ${att.fileName}`, err);
             }
@@ -460,7 +460,7 @@ export async function buildApiMessages(params: BuildApiMessagesParams): Promise<
               type: 'image_url',
               image_url: { url: `data:${attRecord.mimeType};base64,${base64}`, detail: 'auto' },
             });
-          } catch (err: unknown) {
+          } catch (err: any) {
             if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
               logger.error(`[Chat API] 读取图片附件失败: ${attRecord.fileName}`, err);
             }
@@ -472,7 +472,7 @@ export async function buildApiMessages(params: BuildApiMessagesParams): Promise<
           const ext = path.extname(attRecord.fileName || '').toLowerCase().replace('.', '');
           const fileContent = await extractFileContent(filePath, ext, attRecord.fileName || '');
           contentParts.push({ type: 'text', text: fileContent });
-        } catch (err: unknown) {
+        } catch (err: any) {
           if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
             logger.error(`[Chat API] 读取文件附件失败: ${attRecord.fileName}`, err);
             contentParts.push({ type: 'text', text: `\n---\n[附件: ${attRecord.fileName} - 读取失败]\n---\n` });

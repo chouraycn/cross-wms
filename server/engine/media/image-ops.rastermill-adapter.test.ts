@@ -10,7 +10,7 @@ describe("image ops Rastermill adapter", () => {
 
   it("configures Rastermill with OpenClaw limits, temp root, and command resolution", async () => {
     const encode = vi.fn(async () => ({ data: Buffer.from("jpeg") }));
-    const createRastermill = vi.fn((_options: unknown) => ({ encode }));
+    const createRastermill = vi.fn((_options: any) => ({ encode }));
     const resolveSystemBin = vi.fn(() => "/usr/bin/tool");
 
     vi.doMock("rastermill", () => ({
@@ -45,7 +45,7 @@ describe("image ops Rastermill adapter", () => {
     });
     const options = createRastermill.mock.calls[0]?.[0] as {
       commandResolver: (command: string) => string | null;
-      env?: unknown;
+      env?: any;
     };
     expect(options.env).toBeUndefined();
     expect(options.commandResolver("powershell")).toBe("/usr/bin/tool");
@@ -65,7 +65,7 @@ describe("image ops Rastermill adapter", () => {
     vi.doMock("rastermill", () => ({
       RastermillUnavailableError,
       createRastermill,
-      isRastermillUnavailableError: (error: unknown) => error instanceof RastermillUnavailableError,
+      isRastermillUnavailableError: (error: any) => error instanceof RastermillUnavailableError,
       readImageMetadataFromHeader: vi.fn(() => ({ width: 1, height: 1 })),
       readImageProbeFromHeader: vi.fn(() => ({ width: 1, height: 1, format: "png" })),
     }));
@@ -114,7 +114,7 @@ describe("image ops Rastermill adapter", () => {
     vi.doMock("rastermill", () => ({
       RastermillUnavailableError,
       createRastermill: vi.fn(() => ({ encode, probe })),
-      isRastermillUnavailableError: (error: unknown) => error instanceof RastermillUnavailableError,
+      isRastermillUnavailableError: (error: any) => error instanceof RastermillUnavailableError,
       readImageMetadataFromHeader: vi.fn(() => ({ width: 1, height: 1 })),
       readImageProbeFromHeader: vi.fn(() => ({ width: 1, height: 1, format: "jpeg" })),
     }));

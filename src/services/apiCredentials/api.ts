@@ -35,7 +35,7 @@ async function fetchWithTimeout(url: string, options?: RequestInit): Promise<Res
 }
 
 /** 将后端 snake_case 行映射为前端 camelCase */
-function mapRow(row: Record<string, unknown>): ApiCredential {
+function mapRow(row: Record<string, any>): ApiCredential {
   return {
     id: row.id as string,
     name: row.name as string,

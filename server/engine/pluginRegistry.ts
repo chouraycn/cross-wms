@@ -34,7 +34,7 @@ class PluginRegistry {
   private static instance: PluginRegistry;
 
   /** 已加载的插件模块（pluginId → module exports） */
-  private loadedModules: Map<string, unknown> = new Map();
+  private loadedModules: Map<string, any> = new Map();
 
   /** 插件错误记录 */
   private errors: PluginError[] = [];
@@ -196,7 +196,7 @@ class PluginRegistry {
       if (!sandboxResult.ok) {
         throw new Error(`沙箱执行失败: ${sandboxResult.error}`);
       }
-      const moduleExports = sandboxResult.value as Record<string, unknown>;
+      const moduleExports = sandboxResult.value as Record<string, any>;
       this.loadedModules.set(id, moduleExports);
 
       // 3. 注册每个工具
@@ -209,12 +209,12 @@ class PluginRegistry {
           function: {
             name: fullToolName,
             description: toolDef.description,
-            parameters: toolDef.parameters as Record<string, unknown>,
+            parameters: toolDef.parameters as Record<string, any>,
           },
         };
 
         // 创建 handler — 通过模块的 execute 函数路由
-        const handler = async (args: Record<string, unknown>): Promise<string> => {
+        const handler = async (args: Record<string, any>): Promise<string> => {
           return this.invokePluginTool(fullToolName, args);
         };
 
@@ -360,7 +360,7 @@ class PluginRegistry {
             function: {
               name: fullToolName,
               description: toolDef.description,
-              parameters: toolDef.parameters as Record<string, unknown>,
+              parameters: toolDef.parameters as Record<string, any>,
             },
           });
         }
@@ -419,7 +419,7 @@ class PluginRegistry {
    * @param args - 工具参数
    * @returns 工具执行结果（JSON 字符串）
    */
-  async invokePluginTool(toolName: string, args: Record<string, unknown>): Promise<string> {
+  async invokePluginTool(toolName: string, args: Record<string, any>): Promise<string> {
     // 1. 查找工具对应的插件
     const pluginId = this.toolToPluginMap.get(toolName);
     if (!pluginId) {
@@ -456,7 +456,7 @@ class PluginRegistry {
       const toolTimeoutMs = resolveToolTimeout(manifest);
 
       // 5. 调用模块的 execute 函数（带超时保护）
-      // 插件模块应导出 execute(toolName: string, args: Record<string, unknown>): Promise<string>
+      // 插件模块应导出 execute(toolName: string, args: Record<string, any>): Promise<string>
       if (typeof moduleExports.execute === 'function') {
         const result = await callWithTimeout(
           moduleExports.execute(shortToolName, args),
@@ -503,7 +503,7 @@ class PluginRegistry {
   private checkToolPermission(
     pluginId: string,
     toolName: string,
-    _args: Record<string, unknown>,
+    _args: Record<string, any>,
   ): { allowed: boolean; reason?: string } {
     const plugin = getPlugin(pluginId);
     if (!plugin) {

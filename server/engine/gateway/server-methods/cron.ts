@@ -267,10 +267,10 @@ function cronRunLogPageFilters(params: CronRunsRequestParams) {
   };
 }
 
-function isCronInvalidRequestError(err: unknown): boolean {
+function isCronInvalidRequestError(err: any): boolean {
   const message = formatErrorMessage(err);
   return (
-    message.startsWith("unknown cron job id:") ||
+    message.startsWith("any cron job id:") ||
     message.includes("cron job is missing sessionTarget") ||
     message.includes("invalid cron sessionTarget session id") ||
     message.includes('main cron jobs require payload.kind="systemEvent"') ||
@@ -441,12 +441,12 @@ export const cronHandlers: GatewayRequestHandlers = {
   },
   "cron.add": async ({ params, respond, context }) => {
     const sessionKey =
-      typeof (params as { sessionKey?: unknown } | null)?.sessionKey === "string"
+      typeof (params as { sessionKey?: any } | null)?.sessionKey === "string"
         ? (params as { sessionKey: string }).sessionKey
         : undefined;
-    let normalized: unknown;
+    let normalized: any;
     try {
-      assertCronDeliveryInputNonBlankFields((params as { delivery?: unknown } | null)?.delivery);
+      assertCronDeliveryInputNonBlankFields((params as { delivery?: any } | null)?.delivery);
       normalized =
         normalizeCronJobCreate(params, {
           sessionContext: { sessionKey },
@@ -524,10 +524,10 @@ export const cronHandlers: GatewayRequestHandlers = {
   "cron.update": async ({ params, respond, context }) => {
     let normalizedPatch: ReturnType<typeof normalizeCronJobPatch>;
     try {
-      const rawPatch = (params as { patch?: unknown } | null)?.patch;
+      const rawPatch = (params as { patch?: any } | null)?.patch;
       assertCronDeliveryInputNonBlankFields(
         rawPatch && typeof rawPatch === "object"
-          ? (rawPatch as { delivery?: unknown }).delivery
+          ? (rawPatch as { delivery?: any }).delivery
           : undefined,
       );
       normalizedPatch = normalizeCronJobPatch(rawPatch);
@@ -560,7 +560,7 @@ export const cronHandlers: GatewayRequestHandlers = {
     const p = candidate as {
       id?: string;
       jobId?: string;
-      patch: Record<string, unknown>;
+      patch: Record<string, any>;
     };
     const jobId = p.id ?? p.jobId;
     if (!jobId) {

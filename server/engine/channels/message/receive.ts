@@ -49,7 +49,7 @@ export async function receiveMessage(
 }
 
 export function convertEnvelopeToMessage(envelope: MessageEnvelope): ChannelMessage {
-  const payload = envelope.payload as Record<string, unknown>;
+  const payload = envelope.payload as Record<string, any>;
   return {
     id: envelope.messageId,
     channelId: envelope.channelId,
@@ -69,7 +69,7 @@ export function convertEnvelopeToMessage(envelope: MessageEnvelope): ChannelMess
     timestamp: envelope.timestamp,
     metadata: {
       ...envelope.metadata,
-      ...(payload.metadata as Record<string, unknown> | undefined),
+      ...(payload.metadata as Record<string, any> | undefined),
     },
   };
 }
@@ -80,7 +80,7 @@ export function createInboundMessage(params: {
   accountId?: AccountId;
   content: string;
   sender?: ChannelMessage["sender"];
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }): ChannelMessage {
   return {
     id: params.id,

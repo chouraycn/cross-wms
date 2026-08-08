@@ -17,8 +17,8 @@ const readConfigFileSnapshot = vi.hoisted(() =>
   vi.fn(async () => ({
     exists: true,
     valid: true,
-    config: { gateway: { mode: "local", port: 19091 } } as Record<string, unknown>,
-    sourceConfig: { gateway: { mode: "local", port: 19091 } } as Record<string, unknown>,
+    config: { gateway: { mode: "local", port: 19091 } } as Record<string, any>,
+    sourceConfig: { gateway: { mode: "local", port: 19091 } } as Record<string, any>,
     legacyIssues: [] as Array<{ path: string; message: string }>,
     warnings: [] as Array<{ path: string; message: string }>,
     issues: [] as Array<{ path: string; message: string }>,
@@ -52,7 +52,7 @@ describe("runDoctorConfigPreflight state migration", () => {
   });
 
   it("runs the startup guard immediately before the first state mutation", async () => {
-    const beforeStateMigrations = vi.fn<(_snapshot?: unknown) => Promise<boolean>>(
+    const beforeStateMigrations = vi.fn<(_snapshot?: any) => Promise<boolean>>(
       async () => true,
     );
 
@@ -91,7 +91,7 @@ describe("runDoctorConfigPreflight state migration", () => {
 
   it("skips config-dependent migrations when the fresh snapshot guard rejects", async () => {
     const beforeStateMigrations = vi
-      .fn<(snapshot?: Record<string, unknown>) => Promise<boolean>>()
+      .fn<(snapshot?: Record<string, any>) => Promise<boolean>>()
       .mockResolvedValueOnce(true)
       .mockResolvedValueOnce(false);
 

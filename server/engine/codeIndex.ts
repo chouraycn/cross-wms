@@ -1008,7 +1008,7 @@ export class CodeIndexEngine {
   ): SearchResult[] {
     const limit = options?.limit ?? 50;
     const conditions: string[] = [];
-    const params: unknown[] = [];
+    const params: any[] = [];
 
     // 构建查询条件
     if (query) {

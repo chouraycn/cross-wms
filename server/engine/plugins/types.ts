@@ -97,7 +97,7 @@ export interface PluginManifest {
   /** 能力声明 */
   capabilities?: PluginCapabilityKind[];
   /** 额外元数据 */
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
   /** 配置 schema（JSON Schema 子集） */
   configSchema?: PluginConfigSchema;
 }
@@ -132,8 +132,8 @@ export interface PluginConfigSchema {
 export interface PluginConfigProperty {
   type: 'string' | 'number' | 'boolean' | 'array' | 'object';
   description?: string;
-  default?: unknown;
-  enum?: unknown[];
+  default?: any;
+  enum?: any[];
   items?: PluginConfigProperty;
   properties?: Record<string, PluginConfigProperty>;
   required?: string[];
@@ -147,7 +147,7 @@ export interface PluginInstance {
   /** 来自 manifest */
   manifest: PluginManifest;
   /** 模块导出实例（来自 entry import） */
-  module?: unknown;
+  module?: any;
   /** 加载时间戳 */
   loadedAt: number;
   /** 当前运行状态 */
@@ -180,16 +180,16 @@ export interface PluginContext {
 
 /** 受限 logger */
 export interface PluginLogger {
-  debug(...args: unknown[]): void;
-  info(...args: unknown[]): void;
-  warn(...args: unknown[]): void;
-  error(...args: unknown[]): void;
+  debug(...args: any[]): void;
+  info(...args: any[]): void;
+  warn(...args: any[]): void;
+  error(...args: any[]): void;
 }
 
 /** 受限 KV 存储（按插件 ID 命名空间隔离） */
 export interface PluginStorage {
   get<T = unknown>(key: string): Promise<T | undefined>;
-  set(key: string, value: unknown): Promise<void>;
+  set(key: string, value: any): Promise<void>;
   delete(key: string): Promise<void>;
   keys(): Promise<string[]>;
 }
@@ -214,20 +214,20 @@ export interface PluginFetchResponse {
   statusText: string;
   headers: Record<string, string>;
   text(): Promise<string>;
-  json(): Promise<unknown>;
+  json(): Promise<any>;
 }
 
 /** 事件总线 */
 export interface PluginEventBus {
-  emit(event: string, payload?: unknown): void;
-  on(event: string, handler: (payload: unknown) => void): () => void;
-  off(event: string, handler: (payload: unknown) => void): void;
+  emit(event: string, payload?: any): void;
+  on(event: string, handler: (payload: any) => void): () => void;
+  off(event: string, handler: (payload: any) => void): void;
 }
 
 /** 配置访问器 */
 export interface PluginConfigAccessor {
   get<T = unknown>(key: string): T | undefined;
-  getAll(): Record<string, unknown>;
+  getAll(): Record<string, any>;
 }
 
 /** 插件生命周期接口（可选实现） */
@@ -263,7 +263,7 @@ export interface PluginEvent {
   type: 'load' | 'activate' | 'deactivate' | 'error' | 'uninstall' | 'update';
   pluginId: string;
   timestamp: number;
-  payload?: unknown;
+  payload?: any;
 }
 
 /** 插件健康指标 */
@@ -352,31 +352,31 @@ export const AGENT_PROMPT_SURFACE_KINDS: readonly string[] = [
 // cross-wms 暂未移植这些模块，以最小化结构占位保证 import 兼容。
 // ---------------------------------------------------------------------------
 
-export type AgentHarness = { id: string; [key: string]: unknown };
+export type AgentHarness = { id: string; [key: string]: any };
 export type AgentPromptGuidanceEntry = {
   text: string;
   surfaces?: readonly string[];
 };
 export type AgentPromptGuidance = string | AgentPromptGuidanceEntry;
-export type AnyAgentTool = { name: string; [key: string]: unknown };
-export type CliBackendPlugin = { id: string; [key: string]: unknown };
-export type ImageGenerationProviderPlugin = { id: string; [key: string]: unknown };
-export type MediaUnderstandingProviderPlugin = { id: string; [key: string]: unknown };
-export type MigrationProviderPlugin = { id: string; [key: string]: unknown };
-export type MusicGenerationProviderPlugin = { id: string; [key: string]: unknown };
+export type AnyAgentTool = { name: string; [key: string]: any };
+export type CliBackendPlugin = { id: string; [key: string]: any };
+export type ImageGenerationProviderPlugin = { id: string; [key: string]: any };
+export type MediaUnderstandingProviderPlugin = { id: string; [key: string]: any };
+export type MigrationProviderPlugin = { id: string; [key: string]: any };
+export type MusicGenerationProviderPlugin = { id: string; [key: string]: any };
 export type OpenClawPluginApi = {
   registrationMode?: "cli-metadata" | "tool-discovery" | "discovery" | "full";
-  runtime?: unknown;
-  registerChannel?: (params: { plugin: unknown }) => void;
+  runtime?: any;
+  registerChannel?: (params: { plugin: any }) => void;
   registerCliMetadata?: (api: OpenClawPluginApi) => void;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 export type OpenClawPluginCliCommandDescriptor = {
   name: string;
   description: string;
   hasSubcommands: boolean;
 };
-export type OpenClawPluginCliContext = { [key: string]: unknown };
+export type OpenClawPluginCliContext = { [key: string]: any };
 export type OpenClawPluginCliRegistrar = (ctx: OpenClawPluginCliContext) => void | Promise<void>;
 export type OpenClawPluginCommandDefinition = {
   name: string;
@@ -391,55 +391,55 @@ export type OpenClawPluginCommandDefinition = {
   requiredScopes?: readonly string[];
   exposeSenderIsOwner?: boolean;
   ownership?: "plugin" | "reserved";
-  handler: (...args: unknown[]) => unknown;
+  handler: (...args: any[]) => unknown;
 };
-export type OpenClawPluginDefinition = { [key: string]: unknown };
+export type OpenClawPluginDefinition = { [key: string]: any };
 export type OpenClawPluginHttpRouteAuth = "gateway" | "plugin";
 export type OpenClawPluginHttpRouteMatch = "exact" | "prefix";
-export type OpenClawPluginModule = { [key: string]: unknown };
-export type OpenClawPluginToolContext = { [key: string]: unknown };
-export type PluginCommandContext = { [key: string]: unknown };
-export type PluginCommandResult = { [key: string]: unknown };
-export type PluginConfigMigration = (config: unknown) =>
-  | { config: unknown; changes: string[] }
+export type OpenClawPluginModule = { [key: string]: any };
+export type OpenClawPluginToolContext = { [key: string]: any };
+export type PluginCommandContext = { [key: string]: any };
+export type PluginCommandResult = { [key: string]: any };
+export type PluginConfigMigration = (config: any) =>
+  | { config: any; changes: string[] }
   | null;
-export type PluginConversationBindingRequestParams = { [key: string]: unknown };
+export type PluginConversationBindingRequestParams = { [key: string]: any };
 export type PluginInteractiveHandlerResult = {
   handled?: boolean;
 } | void;
 export type PluginInteractiveHandlerRegistration = {
   channel: string;
   namespace: string;
-  handler: (ctx: unknown) => Promise<PluginInteractiveHandlerResult> | PluginInteractiveHandlerResult;
+  handler: (ctx: any) => Promise<PluginInteractiveHandlerResult> | PluginInteractiveHandlerResult;
 };
 export type PluginSetupAutoEnableProbe = (
-  ctx: { config: unknown; env: NodeJS.ProcessEnv },
+  ctx: { config: any; env: NodeJS.ProcessEnv },
 ) => string | string[] | null | undefined;
-export type PluginTextTransformRegistration = { [key: string]: unknown };
-export type PluginTextTransforms = { [key: string]: unknown };
-export type PluginWebFetchProviderEntry = { [key: string]: unknown };
-export type PluginWebSearchProviderEntry = { [key: string]: unknown };
-export type ProviderAuthContext = { [key: string]: unknown };
+export type PluginTextTransformRegistration = { [key: string]: any };
+export type PluginTextTransforms = { [key: string]: any };
+export type PluginWebFetchProviderEntry = { [key: string]: any };
+export type PluginWebSearchProviderEntry = { [key: string]: any };
+export type ProviderAuthContext = { [key: string]: any };
 export type ProviderAuthMethod = {
   id: string;
   run: (ctx: ProviderAuthContext) => Promise<ProviderAuthResult>;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 export type ProviderAuthMethodNonInteractiveContext = {
   authChoice: string;
   config: OpenClawConfig;
   baseConfig?: OpenClawConfig;
   opts: {
-    customBaseUrl?: unknown;
-    customModelId?: unknown;
-    customApiKey?: unknown;
+    customBaseUrl?: any;
+    customModelId?: any;
+    customApiKey?: any;
     token?: string;
     tokenProvider?: string;
-    [key: string]: unknown;
+    [key: string]: any;
   };
   runtime: {
-    log: (...args: unknown[]) => void;
-    error: (...args: unknown[]) => void;
+    log: (...args: any[]) => void;
+    error: (...args: any[]) => void;
     exit: (code: number) => void;
   };
   agentDir?: string;
@@ -493,7 +493,7 @@ export type ProviderNonInteractiveApiKeyResult = {
   envVarName?: string;
 };
 export type ProviderPluginCatalog = {
-  run: (ctx: unknown) => Promise<unknown>;
+  run: (ctx: any) => Promise<any>;
 };
 export type ProviderPlugin = {
   id: string;
@@ -503,13 +503,13 @@ export type ProviderPlugin = {
   auth: ProviderAuthMethod[];
   catalog?: ProviderPluginCatalog;
   staticCatalog?: ProviderPluginCatalog;
-  [key: string]: unknown;
+  [key: string]: any;
 };
-export type RealtimeTranscriptionProviderPlugin = { id: string; [key: string]: unknown };
-export type RealtimeVoiceProviderPlugin = { id: string; [key: string]: unknown };
-export type SpeechProviderPlugin = { id: string; [key: string]: unknown };
-export type TranscriptSourceProvider = { id: string; [key: string]: unknown };
-export type UnifiedModelCatalogProviderContext = { [key: string]: unknown };
+export type RealtimeTranscriptionProviderPlugin = { id: string; [key: string]: any };
+export type RealtimeVoiceProviderPlugin = { id: string; [key: string]: any };
+export type SpeechProviderPlugin = { id: string; [key: string]: any };
+export type TranscriptSourceProvider = { id: string; [key: string]: any };
+export type UnifiedModelCatalogProviderContext = { [key: string]: any };
 export type UnifiedModelCatalogProviderPlugin = {
   provider: string;
   kinds: readonly UnifiedModelCatalogKind[];
@@ -528,9 +528,9 @@ export type UnifiedModelCatalogProviderPlugin = {
     | null
     | undefined;
 };
-export type VideoGenerationProviderPlugin = { id: string; [key: string]: unknown };
-export type WebFetchProviderPlugin = { id: string; [key: string]: unknown };
-export type WebSearchProviderPlugin = { id: string; [key: string]: unknown };
+export type VideoGenerationProviderPlugin = { id: string; [key: string]: any };
+export type WebFetchProviderPlugin = { id: string; [key: string]: any };
+export type WebSearchProviderPlugin = { id: string; [key: string]: any };
 
 // Compat aliases for openclaw plugin-sdk migration
 export type OpenClawPluginConfigSchema = PluginConfigSchema;

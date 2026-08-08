@@ -36,7 +36,7 @@ function runtimeExtensionsLengthMismatchMessage(params: {
 
 function readPackageManifestStringList(params: {
   fieldName: string;
-  value: unknown;
+  value: any;
 }): PackageManifestStringList {
   if (!Array.isArray(params.value)) {
     return { ok: true, entries: [] };

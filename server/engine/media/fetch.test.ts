@@ -7,7 +7,7 @@ import { createTempHomeEnv, type TempHomeEnv } from "../test-utils/temp-home.js"
 const fetchWithSsrFGuardMock = vi.hoisted(() => vi.fn());
 
 vi.mock("../infra/net/fetch-guard.js", () => ({
-  fetchWithSsrFGuard: (...args: unknown[]) => fetchWithSsrFGuardMock(...args),
+  fetchWithSsrFGuard: (...args: any[]) => fetchWithSsrFGuardMock(...args),
   withStrictGuardedFetchMode: <T>(params: T) => params,
   withTrustedExplicitProxyGuardedFetchMode: <T>(params: T) => ({
     ...params,
@@ -69,7 +69,7 @@ function makeLookupFn(): LookupFn {
   return vi.fn(async () => ({ address: "149.154.167.220", family: 4 })) as unknown as LookupFn;
 }
 
-function requireFetchGuardRequest(): unknown {
+function requireFetchGuardRequest(): any {
   const [call] = fetchWithSsrFGuardMock.mock.calls;
   if (!call) {
     throw new Error("expected fetchWithSsrFGuard call");
@@ -106,7 +106,7 @@ async function expectRedactedBotTokenFetchError(params: {
       allowedHostnames: ["files.example.test"],
       allowRfc2544BenchmarkRange: true,
     },
-  }).catch((err: unknown) => err as Error);
+  }).catch((err: any) => err as Error);
 
   expect(error).toBeInstanceOf(Error);
   const errorText = error instanceof Error ? String(error) : "";
@@ -120,7 +120,7 @@ async function expectReadRemoteMediaBufferRejected(params: {
   maxBytes?: number;
   readIdleTimeoutMs?: number;
   lookupFn?: LookupFn;
-  expectedError: RegExp | string | Record<string, unknown>;
+  expectedError: RegExp | string | Record<string, any>;
 }) {
   const request = {
     url: params.url,
@@ -133,7 +133,7 @@ async function expectReadRemoteMediaBufferRejected(params: {
     await expect(readRemoteMediaBuffer(request)).rejects.toThrow(params.expectedError);
     return;
   }
-  let fetchError: unknown;
+  let fetchError: any;
   try {
     await readRemoteMediaBuffer(request);
   } catch (error) {
@@ -141,14 +141,14 @@ async function expectReadRemoteMediaBufferRejected(params: {
   }
   expect(fetchError).toBeInstanceOf(Error);
   for (const [key, value] of Object.entries(params.expectedError)) {
-    expect((fetchError as Record<string, unknown>)[key]).toStrictEqual(value);
+    expect((fetchError as Record<string, any>)[key]).toStrictEqual(value);
   }
 }
 
 async function expectReadRemoteMediaBufferResolvesToError(
   params: Parameters<typeof readRemoteMediaBuffer>[0],
 ): Promise<Error> {
-  const result = await readRemoteMediaBuffer(params).catch((err: unknown) => err);
+  const result = await readRemoteMediaBuffer(params).catch((err: any) => err);
   expect(result).toBeInstanceOf(Error);
   if (!(result instanceof Error)) {
     expect.unreachable("expected readRemoteMediaBuffer to reject");
@@ -160,7 +160,7 @@ async function expectReadRemoteMediaBufferIdleTimeoutCase(params: {
   lookupFn: LookupFn;
   fetchImpl: Parameters<typeof readRemoteMediaBuffer>[0]["fetchImpl"];
   readIdleTimeoutMs: number;
-  expectedError: Record<string, unknown>;
+  expectedError: Record<string, any>;
 }) {
   vi.useFakeTimers();
   try {
@@ -228,7 +228,7 @@ describe("readRemoteMediaBuffer", () => {
 
   beforeEach(() => {
     vi.useRealTimers();
-    fetchWithSsrFGuardMock.mockReset().mockImplementation(async (paramsUnknown: unknown) => {
+    fetchWithSsrFGuardMock.mockReset().mockImplementation(async (paramsUnknown: any) => {
       const params = paramsUnknown as {
         url: string;
         fetchImpl?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;

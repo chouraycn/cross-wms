@@ -72,7 +72,7 @@ function throwGatewayAuthResolutionError(reason: string): never {
 }
 
 function isRetryableStartupUnavailable(
-  err: unknown,
+  err: any,
   method: string,
 ): err is GatewayClientRequestError {
   if (!(err instanceof GatewayClientRequestError)) {
@@ -85,7 +85,7 @@ function isRetryableStartupUnavailable(
   if (!details || typeof details !== "object") {
     return true;
   }
-  const detailMethod = (details as { method?: unknown }).method;
+  const detailMethod = (details as { method?: any }).method;
   return typeof detailMethod !== "string" || detailMethod === method;
 }
 
@@ -101,7 +101,7 @@ function sleep(ms: number): Promise<void> {
   });
 }
 
-function nonEmptyString(value: unknown): string | undefined {
+function nonEmptyString(value: any): string | undefined {
   return typeof value === "string" && value.trim().length > 0 ? value.trim() : undefined;
 }
 
@@ -182,7 +182,7 @@ export class GatewayChatClient implements TuiBackend {
           this.onDisconnected?.("gateway event loop readiness timeout");
         }
       })
-      .catch((err: unknown) => {
+      .catch((err: any) => {
         this.onDisconnected?.(err instanceof Error ? err.message : String(err));
       });
   }
@@ -201,7 +201,7 @@ export class GatewayChatClient implements TuiBackend {
 
   async sendChat(opts: ChatSendOptions): Promise<TuiChatSendResult> {
     const runId = opts.runId ?? randomUUID();
-    const response = await this.client.request<{ runId?: unknown; status?: unknown }>("chat.send", {
+    const response = await this.client.request<{ runId?: any; status?: any }>("chat.send", {
       sessionKey: opts.sessionKey,
       ...(opts.agentId ? { agentId: opts.agentId } : {}),
       ...(opts.sessionId ? { sessionId: opts.sessionId } : {}),

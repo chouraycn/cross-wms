@@ -20,8 +20,8 @@ function createMockPlugin(id: ChannelId, enabled: boolean = true): ChannelPlugin
       isConfigured: () => true,
     },
     message: {
-      send: (_ctx: unknown) => Promise.resolve({ success: true }),
-    } as unknown,
+      send: (_ctx: any) => Promise.resolve({ success: true }),
+    } as any,
   };
 }
 

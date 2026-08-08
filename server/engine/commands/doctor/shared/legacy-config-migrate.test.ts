@@ -5,14 +5,14 @@ import type { OpenClawConfig } from "@openclaw-src/config/types.js";
 import { normalizeCompatibilityConfigValues } from "./legacy-config-core-migrate.js";
 import { LEGACY_CONFIG_MIGRATIONS } from "./legacy-config-migrations.js";
 
-function migrateLegacyConfigForTest(raw: unknown): {
+function migrateLegacyConfigForTest(raw: any): {
   config: OpenClawConfig | null;
   changes: string[];
 } {
   if (!raw || typeof raw !== "object") {
     return { config: null, changes: [] };
   }
-  const next = structuredClone(raw) as Record<string, unknown>;
+  const next = structuredClone(raw) as Record<string, any>;
   const changes: string[] = [];
   for (const migration of LEGACY_CONFIG_MIGRATIONS) {
     migration.apply(next, changes);
@@ -96,7 +96,7 @@ describe("legacy memory search config migrate", () => {
       },
     });
 
-    expect((res.config as Record<string, unknown> | undefined)?.memorySearch).toBeUndefined();
+    expect((res.config as Record<string, any> | undefined)?.memorySearch).toBeUndefined();
     expect(res.config?.agents?.defaults?.memorySearch?.store).toEqual({
       fts: { tokenizer: "trigram" },
       vector: { enabled: false },
@@ -196,7 +196,7 @@ describe("legacy memory search config migrate", () => {
 
     // Legacy codex model must be merged with legacy provider baseUrl stamped on it
     // so it routes to https://chatgpt.com/backend-api, not https://api.openai.com/v1.
-    const openai = res.config?.models?.providers?.openai as Record<string, unknown> | undefined;
+    const openai = res.config?.models?.providers?.openai as Record<string, any> | undefined;
     expect(openai?.models).toEqual([
       { id: "text-embedding-3-small" },
       {
@@ -230,9 +230,9 @@ describe("legacy memory search config migrate", () => {
       },
     });
 
-    const openai = res.config?.models?.providers?.openai as Record<string, unknown> | undefined;
+    const openai = res.config?.models?.providers?.openai as Record<string, any> | undefined;
     // gpt-5.5 already in canonical → skip; gpt-5.4 is new → merged with legacy provider baseUrl/api
-    expect((openai?.models as unknown[])?.length).toBe(2);
+    expect((openai?.models as any[])?.length).toBe(2);
     expect(openai?.models).toEqual(
       expect.arrayContaining([
         { id: "gpt-5.5" },
@@ -267,7 +267,7 @@ describe("legacy memory search config migrate", () => {
       },
     });
 
-    const openai = res.config?.models?.providers?.openai as Record<string, unknown> | undefined;
+    const openai = res.config?.models?.providers?.openai as Record<string, any> | undefined;
     expect(openai).toEqual({
       api: "openai-chatgpt-responses",
       baseUrl: "https://api.openai.com/v1",
@@ -311,7 +311,7 @@ describe("legacy memory search config migrate", () => {
       },
     });
 
-    const openai = res.config?.models?.providers?.openai as Record<string, unknown> | undefined;
+    const openai = res.config?.models?.providers?.openai as Record<string, any> | undefined;
     expect(openai?.models).toEqual([
       { id: "text-embedding-3-small" },
       {
@@ -355,7 +355,7 @@ describe("legacy memory search config migrate", () => {
       },
     });
 
-    const openai = res.config?.models?.providers?.openai as Record<string, unknown> | undefined;
+    const openai = res.config?.models?.providers?.openai as Record<string, any> | undefined;
     expect(openai?.models).toEqual([
       { id: "text-embedding-3-small" },
       {
@@ -400,7 +400,7 @@ describe("legacy memory search config migrate", () => {
       },
     });
 
-    const openai = res.config?.models?.providers?.openai as Record<string, unknown> | undefined;
+    const openai = res.config?.models?.providers?.openai as Record<string, any> | undefined;
     expect(openai?.models).toEqual([
       { id: "text-embedding-3-small" },
       {
@@ -547,7 +547,7 @@ describe("legacy memory search config migrate", () => {
       },
     });
 
-    const openai = res.config?.models?.providers?.openai as Record<string, unknown> | undefined;
+    const openai = res.config?.models?.providers?.openai as Record<string, any> | undefined;
     expect(openai?.models).toEqual([
       { id: "gpt-5.5-platform", name: "GPT-5.5" },
       {
@@ -581,7 +581,7 @@ describe("legacy memory search config migrate", () => {
       },
     });
 
-    const openai = res.config?.models?.providers?.openai as Record<string, unknown> | undefined;
+    const openai = res.config?.models?.providers?.openai as Record<string, any> | undefined;
     // All legacy models are already present; canonical provider unchanged
     expect(openai?.models).toEqual([{ id: "gpt-5.5" }, { id: "gpt-5.4" }]);
     expect(res.config?.models?.providers).not.toHaveProperty("openai-codex");
@@ -1076,13 +1076,13 @@ describe("legacy agent model timeout migrate", () => {
       },
     });
 
-    const root = res.config as Record<string, unknown> | null;
-    const agents = root?.agents as Record<string, unknown>;
-    const defaults = agents.defaults as Record<string, unknown>;
-    const defaultSubagents = defaults.subagents as Record<string, unknown>;
-    const list = agents.list as Array<Record<string, unknown>>;
+    const root = res.config as Record<string, any> | null;
+    const agents = root?.agents as Record<string, any>;
+    const defaults = agents.defaults as Record<string, any>;
+    const defaultSubagents = defaults.subagents as Record<string, any>;
+    const list = agents.list as Array<Record<string, any>>;
     const firstAgent = list[0];
-    const firstSubagents = firstAgent.subagents as Record<string, unknown>;
+    const firstSubagents = firstAgent.subagents as Record<string, any>;
 
     expect(defaults.model).toEqual({
       primary: "openai/gpt-5.5",
@@ -1327,7 +1327,7 @@ describe("legacy thread binding spawn migrate", () => {
     });
 
     expect(
-      res.config?.channels?.discord?.accounts?.work?.threadBindings as Record<string, unknown>,
+      res.config?.channels?.discord?.accounts?.work?.threadBindings as Record<string, any>,
     ).toEqual({
       spawnSessions: false,
     });
@@ -1514,7 +1514,7 @@ describe("legacy migrate mention routing", () => {
       },
     });
 
-    const migratedConfig = res.config as Record<string, unknown> | null;
+    const migratedConfig = res.config as Record<string, any> | null;
     expect(migratedConfig?.routing).toBeUndefined();
     expect(res.config?.channels?.whatsapp?.allowFrom).toEqual(["+15550001111"]);
     expect(res.config?.channels?.whatsapp?.groups).toEqual({
@@ -1549,7 +1549,7 @@ describe("legacy migrate mention routing", () => {
       },
     });
 
-    const migratedConfig = res.config as Record<string, unknown> | null;
+    const migratedConfig = res.config as Record<string, any> | null;
     expect(migratedConfig?.routing).toBeUndefined();
     expect(res.changes).toEqual([
       "Removed routing.groupChat.requireMention (no configured WhatsApp, Telegram, or iMessage channel found).",
@@ -1920,7 +1920,7 @@ describe("legacy migrate x_search auth", () => {
       },
     });
 
-    expect((res.config?.tools?.web as Record<string, unknown> | undefined)?.x_search).toEqual({
+    expect((res.config?.tools?.web as Record<string, any> | undefined)?.x_search).toEqual({
       enabled: true,
       model: "grok-4-1-fast",
     });
@@ -2011,7 +2011,7 @@ describe("legacy migrate heartbeat config", () => {
       model: "anthropic/claude-sonnet-4-6",
       every: "30m",
     });
-    expect((res.config as { heartbeat?: unknown } | null)?.heartbeat).toBeUndefined();
+    expect((res.config as { heartbeat?: any } | null)?.heartbeat).toBeUndefined();
   });
 
   it("moves top-level heartbeat visibility into channels.defaults.heartbeat", () => {
@@ -2031,7 +2031,7 @@ describe("legacy migrate heartbeat config", () => {
       showAlerts: false,
       useIndicator: false,
     });
-    expect((res.config as { heartbeat?: unknown } | null)?.heartbeat).toBeUndefined();
+    expect((res.config as { heartbeat?: any } | null)?.heartbeat).toBeUndefined();
   });
 
   it("keeps explicit agents.defaults.heartbeat values when merging top-level heartbeat", () => {
@@ -2059,7 +2059,7 @@ describe("legacy migrate heartbeat config", () => {
       target: "telegram",
       model: "anthropic/claude-sonnet-4-6",
     });
-    expect((res.config as { heartbeat?: unknown } | null)?.heartbeat).toBeUndefined();
+    expect((res.config as { heartbeat?: any } | null)?.heartbeat).toBeUndefined();
   });
 
   it("keeps explicit channels.defaults.heartbeat values when merging top-level heartbeat visibility", () => {
@@ -2086,7 +2086,7 @@ describe("legacy migrate heartbeat config", () => {
       showAlerts: true,
       useIndicator: false,
     });
-    expect((res.config as { heartbeat?: unknown } | null)?.heartbeat).toBeUndefined();
+    expect((res.config as { heartbeat?: any } | null)?.heartbeat).toBeUndefined();
   });
 
   it("preserves agents.defaults.heartbeat precedence over top-level heartbeat legacy key", () => {
@@ -2111,21 +2111,21 @@ describe("legacy migrate heartbeat config", () => {
       target: "telegram",
       model: "anthropic/claude-sonnet-4-6",
     });
-    expect((res.config as { heartbeat?: unknown } | null)?.heartbeat).toBeUndefined();
+    expect((res.config as { heartbeat?: any } | null)?.heartbeat).toBeUndefined();
   });
 
   it("drops blocked prototype keys when migrating top-level heartbeat", () => {
     const res = migrateLegacyConfigForTest(
       JSON.parse(
         '{"heartbeat":{"every":"30m","__proto__":{"polluted":true},"showOk":true}}',
-      ) as Record<string, unknown>,
+      ) as Record<string, any>,
     );
 
     const heartbeat = res.config?.agents?.defaults?.heartbeat as
-      | Record<string, unknown>
+      | Record<string, any>
       | undefined;
     expect(heartbeat?.every).toBe("30m");
-    expect((heartbeat as { polluted?: unknown } | undefined)?.polluted).toBeUndefined();
+    expect((heartbeat as { polluted?: any } | undefined)?.polluted).toBeUndefined();
     expect(Object.hasOwn(heartbeat ?? {}, "__proto__")).toBe(false);
     expect(res.config?.channels?.defaults?.heartbeat).toEqual({ showOk: true });
   });
@@ -2139,7 +2139,7 @@ describe("legacy migrate heartbeat config", () => {
     if (res.config === null) {
       throw new Error("Expected migrated config");
     }
-    expect((res.config as { heartbeat?: unknown }).heartbeat).toBeUndefined();
+    expect((res.config as { heartbeat?: any }).heartbeat).toBeUndefined();
   });
 });
 

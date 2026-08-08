@@ -18,13 +18,13 @@ type ResolveAutoThreadId = NonNullable<ChannelThreadingAdapter["resolveAutoThrea
 type ResolveReplyTransport = NonNullable<ChannelThreadingAdapter["resolveReplyTransport"]>;
 type MatchesToolContextTarget = NonNullable<ChannelThreadingAdapter["matchesToolContextTarget"]>;
 
-function suppressesImplicitThreading(actionParams: Record<string, unknown>): boolean {
+function suppressesImplicitThreading(actionParams: Record<string, any>): boolean {
   return actionParams.topLevel === true || actionParams.threadId === null;
 }
 
 /** Resolves and writes the outbound thread id used by message-action sends. */
 export function resolveAndApplyOutboundThreadId(
-  actionParams: Record<string, unknown>,
+  actionParams: Record<string, any>,
   context: {
     cfg: OpenClawConfig;
     to: string;
@@ -72,7 +72,7 @@ export function resolveAndApplyOutboundThreadId(
 }
 
 function isSameConversationTarget(
-  actionParams: Record<string, unknown>,
+  actionParams: Record<string, any>,
   channel: ChannelId,
   toolContext?: ChannelThreadingToolContext,
   matchesToolContextTarget?: MatchesToolContextTarget,
@@ -102,7 +102,7 @@ function isSameConversationTarget(
 
 /** Resolves and writes reply-to metadata for same-conversation message-action sends. */
 export function resolveAndApplyOutboundReplyToId(
-  actionParams: Record<string, unknown>,
+  actionParams: Record<string, any>,
   context: {
     channel: ChannelId;
     toolContext?: ChannelThreadingToolContext;
@@ -168,7 +168,7 @@ export async function prepareOutboundMirrorRoute(params: {
   cfg: OpenClawConfig;
   channel: ChannelId;
   to: string;
-  actionParams: Record<string, unknown>;
+  actionParams: Record<string, any>;
   accountId?: string | null;
   toolContext?: ChannelThreadingToolContext;
   agentId?: string;

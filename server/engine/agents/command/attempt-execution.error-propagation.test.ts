@@ -89,7 +89,7 @@ describe("emitAcpLifecycleError preserves AcpRuntimeError detail (regression: op
     emitAcpLifecycleError({ runId: "run-1", error: acpError });
 
     expect(captured).toHaveLength(1);
-    const data = captured[0]?.data as Record<string, unknown> | undefined;
+    const data = captured[0]?.data as Record<string, any> | undefined;
     expect(data?.phase).toBe("error");
     const text = data?.error as string;
     expect(text).toMatch(/ACP_TURN_FAILED/);
@@ -109,7 +109,7 @@ describe("emitAcpLifecycleError preserves AcpRuntimeError detail (regression: op
 
     emitAcpLifecycleError({ runId: "run-2", error: acpError });
 
-    const data = captured[0]?.data as Record<string, unknown> | undefined;
+    const data = captured[0]?.data as Record<string, any> | undefined;
     const text = data?.error as string;
 
     expect(text).toMatch(/ACP_TURN_FAILED/);
@@ -125,7 +125,7 @@ describe("emitAcpLifecycleError preserves AcpRuntimeError detail (regression: op
 
     emitAcpLifecycleError({ runId: "run-3", error: plain });
 
-    const data = captured[0]?.data as Record<string, unknown> | undefined;
+    const data = captured[0]?.data as Record<string, any> | undefined;
     expect(data?.phase).toBe("error");
     expect(data?.error).toBe("Error: something went wrong");
   });
@@ -142,7 +142,7 @@ describe("emitAcpLifecycleError preserves AcpRuntimeError detail (regression: op
   });
 
   it("caps cause-chain depth so a self-referential cause cannot loop", () => {
-    const e: Error & { cause?: unknown } = new Error("loop");
+    const e: Error & { cause?: any } = new Error("loop");
     e.cause = e;
 
     const text = formatAcpErrorChain(e);

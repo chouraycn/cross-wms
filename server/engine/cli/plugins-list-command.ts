@@ -63,7 +63,7 @@ const defaultRuntime = {
   exit(code: number) {
     process.exit(code);
   },
-  writeJson(value: unknown) {
+  writeJson(value: any) {
     // eslint-disable-next-line no-console -- CLI 运行时降级实现。
     console.log(JSON.stringify(value, null, 2));
   },
@@ -71,7 +71,7 @@ const defaultRuntime = {
 // ===== defaultRuntime 结束 =====
 
 // ===== 内联 writeRuntimeJson stub =====
-function writeRuntimeJson(_runtime: RuntimeEnv, value: unknown) {
+function writeRuntimeJson(_runtime: RuntimeEnv, value: any) {
   // eslint-disable-next-line no-console -- CLI 运行时降级实现。
   console.log(JSON.stringify(value, null, 2));
 }
@@ -126,9 +126,9 @@ type PluginListReportItem = {
 type PluginListReport = {
   workspaceDir?: string;
   registrySource?: string;
-  registryDiagnostics?: unknown[];
+  registryDiagnostics?: any[];
   plugins: PluginListReportItem[];
-  diagnostics?: unknown[];
+  diagnostics?: any[];
 };
 // ===== 类型占位结束 =====
 

@@ -16,7 +16,7 @@ export type ProviderUsageSnapshot = {
   error?: string;
 };
 
-function parseFiniteNumber(value: unknown): number | undefined {
+function parseFiniteNumber(value: any): number | undefined {
   const n = Number(value);
   return Number.isFinite(n) ? n : undefined;
 }

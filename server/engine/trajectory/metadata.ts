@@ -93,8 +93,8 @@ type BuildTrajectoryArtifactsParams = {
   promptError?: string;
   promptErrorSource?: string | null;
   terminalError?: string;
-  usage?: unknown;
-  promptCache?: unknown;
+  usage?: any;
+  promptCache?: any;
   compactionCount: number;
   assistantTexts: string[];
   finalPromptText?: string;
@@ -108,8 +108,8 @@ type BuildTrajectoryArtifactsParams = {
   successfulCronAdds: number;
   messagingToolSentTexts: string[];
   messagingToolSentMediaUrls: string[];
-  messagingToolSentTargets: unknown[];
-  lastToolError?: unknown;
+  messagingToolSentTargets: any[];
+  lastToolError?: any;
 };
 
 function toSortedUniqueStrings(values: readonly string[] | undefined): string[] | undefined {
@@ -131,10 +131,10 @@ type ManifestPluginEntry = {
   description?: string;
   origin: string;
   enabledByDefault?: boolean;
-  format?: unknown;
-  bundleFormat?: unknown;
+  format?: any;
+  bundleFormat?: any;
   bundleCapabilities?: string[];
-  kind?: unknown;
+  kind?: any;
   source?: string;
   rootDir: string;
   workspaceDir?: string;
@@ -246,7 +246,7 @@ type SkillWithSourceInfo = {
   filePath: string;
   baseDir: string;
   source: string;
-  sourceInfo?: unknown;
+  sourceInfo?: any;
   disableModelInvocation: boolean;
 };
 
@@ -305,7 +305,7 @@ function buildTrajectorySupportRedaction(env: NodeJS.ProcessEnv): SupportRedacti
 
 export function buildTrajectoryRunMetadata(
   params: BuildTrajectoryRunMetadataParams,
-): Record<string, unknown> {
+): Record<string, any> {
   const env = params.env ?? process.env;
   const redaction = buildTrajectorySupportRedaction(env);
   const os = resolveOsSummary();
@@ -390,7 +390,7 @@ export function buildTrajectoryRunMetadata(
 // Keep field names close to runtime event data to make bundle diffs readable.
 export function buildTrajectoryArtifacts(
   params: BuildTrajectoryArtifactsParams,
-): Record<string, unknown> {
+): Record<string, any> {
   return {
     capturedAt: new Date().toISOString(),
     finalStatus: params.status,

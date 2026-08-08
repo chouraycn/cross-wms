@@ -24,12 +24,12 @@ export class ExecApprovalChannelRuntimeTerminalStartError extends Error {
 }
 
 /** Checks if an error is a terminal start error. */
-export function isExecApprovalChannelRuntimeTerminalStartError(error: unknown): error is ExecApprovalChannelRuntimeTerminalStartError {
+export function isExecApprovalChannelRuntimeTerminalStartError(error: any): error is ExecApprovalChannelRuntimeTerminalStartError {
   return error instanceof ExecApprovalChannelRuntimeTerminalStartError;
 }
 
 /** Creates an exec approval channel runtime. Simplified without real channel integration. */
-export function createExecApprovalChannelRuntime(_params?: unknown): ExecApprovalChannelRuntime {
+export function createExecApprovalChannelRuntime(_params?: any): ExecApprovalChannelRuntime {
   return {
     adapter: null,
     eventKinds: ["approval-requested", "approval-resolved", "approval-expired"],

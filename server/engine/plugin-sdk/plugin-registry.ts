@@ -94,7 +94,7 @@ export class UnifiedPluginRegistry {
    */
   async registerDefinition(
     definition: PluginDefinition,
-    config: Record<string, unknown> = {},
+    config: Record<string, any> = {},
   ): Promise<boolean> {
     if (this.runtimes.has(definition.id)) {
       logger.warn(`[UnifiedPluginRegistry] Plugin ${definition.id} already registered, overriding`);
@@ -320,7 +320,7 @@ export class UnifiedPluginRegistry {
    */
   async invokeTool(
     fullToolName: string,
-    args: Record<string, unknown>,
+    args: Record<string, any>,
     ctx?: { sessionId?: string },
   ): Promise<string> {
     // 解析 pluginId 和 toolName
@@ -435,7 +435,7 @@ export class UnifiedPluginRegistry {
   /**
    * 触发 hook 事件 — 按 priority 顺序执行所有 handler
    */
-  async emitHook(event: string, payload: unknown, ctx?: { sessionId?: string }): Promise<unknown> {
+  async emitHook(event: string, payload: any, ctx?: { sessionId?: string }): Promise<any> {
     const hooks = this.getHooks(event);
     let currentPayload = payload;
     for (const hook of hooks) {
@@ -612,7 +612,7 @@ export class UnifiedPluginRegistry {
         runtime.lifecycle = lifecycle;
       },
 
-      getConfig: (): Record<string, unknown> => {
+      getConfig: (): Record<string, any> => {
         return runtime.config;
       },
 
@@ -662,7 +662,7 @@ export class UnifiedPluginRegistry {
         parameters: cap.parameters,
       },
     };
-    const handler = async (args: Record<string, unknown>): Promise<string> => {
+    const handler = async (args: Record<string, any>): Promise<string> => {
       return this.invokeTool(fullToolName, args);
     };
     registerPluginTool(fullToolName, definition, handler);

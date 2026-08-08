@@ -4,7 +4,7 @@ import { createProviderUsageFetch, makeResponse } from "../test-utils/provider-u
 import { fetchMinimaxUsage } from "./provider-usage.fetch.minimax.js";
 
 async function expectMinimaxUsageResult(params: {
-  payload: unknown;
+  payload: any;
   expected: {
     plan?: string;
     windows: Array<{ label: string; usedPercent: number; resetAt?: number }>;

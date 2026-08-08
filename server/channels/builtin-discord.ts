@@ -55,7 +55,7 @@ export function createDiscordChannelPlugin(): ChannelPlugin {
 
   const discordChannelConfig: ChannelConfigAdapter<DiscordAccountConfig> = {
     listAccountIds: (config: AppConfig): ChannelId[] => {
-      const discordConfig = config.discord as Record<string, unknown>;
+      const discordConfig = config.discord as Record<string, any>;
       if (discordConfig && (discordConfig.webhookUrl || discordConfig.token)) {
         return [DISCORD_CHANNEL_ID];
       }
@@ -63,7 +63,7 @@ export function createDiscordChannelPlugin(): ChannelPlugin {
     },
     resolveAccount: (config: AppConfig, accountId: ChannelId): DiscordAccountConfig | null => {
       if (accountId !== DISCORD_CHANNEL_ID) return null;
-      const discordConfig = config.discord as Record<string, unknown>;
+      const discordConfig = config.discord as Record<string, any>;
       if (discordConfig && (discordConfig.webhookUrl || discordConfig.token)) {
         return {
           webhookUrl: discordConfig.webhookUrl as string,
@@ -94,10 +94,10 @@ export function createDiscordChannelPlugin(): ChannelPlugin {
         try {
           const rendered = await ctx.render();
           const text = rendered.parts
-            .map((p: { content: unknown }) => String(p.content))
+            .map((p: { content: any }) => String(p.content))
             .join("\n");
 
-          const body: Record<string, unknown> = {
+          const body: Record<string, any> = {
             content: text.length > 2000 ? text.slice(0, 1997) + "..." : text,
           };
 
@@ -139,22 +139,22 @@ export function createDiscordChannelPlugin(): ChannelPlugin {
   });
 }
 
-export function parseDiscordWebhook(body: unknown): DiscordWebhookResult {
-  const data = body as Record<string, unknown>;
+export function parseDiscordWebhook(body: any): DiscordWebhookResult {
+  const data = body as Record<string, any>;
 
   if (!data.type || data.type !== 1) {
     return { success: false, error: "Unsupported webhook type" };
   }
 
-  const message = data as Record<string, unknown>;
-  const author = message.author as Record<string, unknown>;
+  const message = data as Record<string, any>;
+  const author = message.author as Record<string, any>;
 
   if (!message.content && !message.embeds) {
     return { success: false, error: "Missing content" };
   }
 
   let text = String(message.content || "");
-  const embeds = message.embeds as Array<Record<string, unknown>> || [];
+  const embeds = message.embeds as Array<Record<string, any>> || [];
   if (embeds.length > 0) {
     embeds.forEach(embed => {
       if (embed.description) text += "\n" + String(embed.description);

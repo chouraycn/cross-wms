@@ -11,7 +11,7 @@ import { deliverAgentCommandResult, normalizeAgentCommandReplyPayloads } from ".
 import type { AgentCommandOpts } from "./types.js";
 
 const deliverOutboundPayloadsMock = vi.hoisted(() =>
-  vi.fn(async (..._args: unknown[]) => [] as unknown[]),
+  vi.fn(async (..._args: any[]) => [] as any[]),
 );
 vi.mock("../../infra/outbound/deliver.js", () => ({
   deliverOutboundPayloads: deliverOutboundPayloadsMock,
@@ -20,7 +20,7 @@ vi.mock("../../infra/outbound/deliver.js", () => ({
 
 const createReplyMediaPathNormalizerMock = vi.hoisted(() =>
   vi.fn(
-    (..._args: unknown[]) =>
+    (..._args: any[]) =>
       (payload: ReplyPayload) =>
         Promise.resolve(payload),
   ),
@@ -32,12 +32,12 @@ vi.mock("../../auto-reply/reply/reply-media-paths.runtime.js", () => ({
 type NormalizeParams = Parameters<typeof normalizeAgentCommandReplyPayloads>[0];
 type RunResult = NormalizeParams["result"];
 type DeliverParams = Parameters<typeof deliverAgentCommandResult>[0];
-type TextPayloadLike = { text?: unknown };
+type TextPayloadLike = { text?: any };
 type MediaNormalizerOptions = {
-  sessionKey?: unknown;
-  agentId?: unknown;
-  workspaceDir?: unknown;
-  messageProvider?: unknown;
+  sessionKey?: any;
+  agentId?: any;
+  workspaceDir?: any;
+  messageProvider?: any;
 };
 
 const slackOutboundForTest: ChannelOutboundAdapter = {
@@ -89,7 +89,7 @@ function requirePayload(payloads: readonly ReplyPayload[], index: number): Reply
   return payload;
 }
 
-function lastMockArg(mock: { mock: { calls: Array<Array<unknown>> } }, label: string): unknown {
+function lastMockArg(mock: { mock: { calls: Array<Array<any>> } }, label: string): any {
   const calls = mock.mock.calls;
   const call = calls[calls.length - 1];
   if (!call) {
@@ -129,25 +129,25 @@ function latestOutboundDeliveryArgs(): {
 }
 
 type DeliveryStatusLike = {
-  requested?: unknown;
-  attempted?: unknown;
-  status?: unknown;
-  succeeded?: unknown;
-  reason?: unknown;
-  error?: unknown;
-  errorMessage?: unknown;
-  resultCount?: unknown;
-  sentBeforeError?: unknown;
-  payloadOutcomes?: Array<Record<string, unknown>>;
+  requested?: any;
+  attempted?: any;
+  status?: any;
+  succeeded?: any;
+  reason?: any;
+  error?: any;
+  errorMessage?: any;
+  resultCount?: any;
+  sentBeforeError?: any;
+  payloadOutcomes?: Array<Record<string, any>>;
 };
 
-function deliveryStatus(delivered: { deliveryStatus?: unknown }): DeliveryStatusLike {
+function deliveryStatus(delivered: { deliveryStatus?: any }): DeliveryStatusLike {
   return (delivered.deliveryStatus ?? {}) as DeliveryStatusLike;
 }
 
 function expectDeliveryStatusFields(
-  delivered: { deliveryStatus?: unknown },
-  expected: Record<string, unknown>,
+  delivered: { deliveryStatus?: any },
+  expected: Record<string, any>,
 ) {
   const status = deliveryStatus(delivered);
   for (const [key, value] of Object.entries(expected)) {
@@ -157,14 +157,14 @@ function expectDeliveryStatusFields(
 }
 
 function expectRuntimeErrorIncludes(
-  runtime: { error: { mock: { calls: Array<Array<unknown>> } } },
+  runtime: { error: { mock: { calls: Array<Array<any>> } } },
   text: string,
 ) {
   const errorOutput = runtime.error.mock.calls.map(([message]) => String(message)).join("\n");
   expect(errorOutput).toContain(text);
 }
 
-function latestJsonOutput(runtime: { writeJson: { mock: { calls: Array<Array<unknown>> } } }) {
+function latestJsonOutput(runtime: { writeJson: { mock: { calls: Array<Array<any>> } } }) {
   const output = lastMockArg(runtime.writeJson, "JSON output");
   if (!output || typeof output !== "object") {
     throw new Error("expected JSON output");
@@ -208,7 +208,7 @@ describe("normalizeAgentCommandReplyPayloads", () => {
     deliverOutboundPayloadsMock.mockResolvedValue([]);
     createReplyMediaPathNormalizerMock.mockReset();
     createReplyMediaPathNormalizerMock.mockImplementation(
-      (..._args: unknown[]) =>
+      (..._args: any[]) =>
         (payload: ReplyPayload) =>
           Promise.resolve(payload),
     );
@@ -243,7 +243,7 @@ describe("normalizeAgentCommandReplyPayloads", () => {
   it("rechecks delivery ownership after asynchronous payload preparation", async () => {
     let deliveryCurrent = true;
     createReplyMediaPathNormalizerMock.mockImplementationOnce(
-      (..._args: unknown[]) =>
+      (..._args: any[]) =>
         async (payload: ReplyPayload): Promise<ReplyPayload> => {
           deliveryCurrent = false;
           return payload;
@@ -315,7 +315,7 @@ describe("normalizeAgentCommandReplyPayloads", () => {
   it("cancels durable delivery when restart arrives before the durable intent", async () => {
     const controller = new AbortController();
     let deliverySignal: AbortSignal | undefined;
-    deliverOutboundPayloadsMock.mockImplementationOnce(async (params: unknown) => {
+    deliverOutboundPayloadsMock.mockImplementationOnce(async (params: any) => {
       deliverySignal = (params as { abortSignal?: AbortSignal }).abortSignal;
       controller.abort(createAgentRunRestartAbortError());
       expect(deliverySignal?.aborted).toBe(true);
@@ -334,7 +334,7 @@ describe("normalizeAgentCommandReplyPayloads", () => {
   it("finishes durable delivery when restart arrives after the durable intent", async () => {
     const controller = new AbortController();
     let deliverySignal: AbortSignal | undefined;
-    deliverOutboundPayloadsMock.mockImplementationOnce(async (params: unknown) => {
+    deliverOutboundPayloadsMock.mockImplementationOnce(async (params: any) => {
       const request = params as {
         abortSignal?: AbortSignal;
         onDeliveryIntent?: (intent: {
@@ -582,10 +582,10 @@ describe("normalizeAgentCommandReplyPayloads", () => {
   });
 
   it("does not report success when best-effort delivery records an error", async () => {
-    deliverOutboundPayloadsMock.mockImplementationOnce(async (params: unknown) => {
+    deliverOutboundPayloadsMock.mockImplementationOnce(async (params: any) => {
       (
         params as {
-          onError?: (err: unknown, payload: ReplyPayload) => void;
+          onError?: (err: any, payload: ReplyPayload) => void;
           onPayloadDeliveryOutcome?: (outcome: {
             index: number;
             payload: ReplyPayload;
@@ -837,7 +837,7 @@ describe("normalizeAgentCommandReplyPayloads", () => {
   });
 
   it("surfaces hook cancellation as a suppressed terminal deliveryStatus", async () => {
-    deliverOutboundPayloadsMock.mockImplementationOnce(async (params: unknown) => {
+    deliverOutboundPayloadsMock.mockImplementationOnce(async (params: any) => {
       (
         params as {
           onPayloadDeliveryOutcome?: (outcome: {
@@ -880,7 +880,7 @@ describe("normalizeAgentCommandReplyPayloads", () => {
   });
 
   it("surfaces durable partial failures without clearing delivery retry state", async () => {
-    deliverOutboundPayloadsMock.mockImplementationOnce(async (params: unknown) => {
+    deliverOutboundPayloadsMock.mockImplementationOnce(async (params: any) => {
       (
         params as {
           onPayloadDeliveryOutcome?: (outcome: {

@@ -20,11 +20,11 @@ import {
 
 const { createSessionStoreDir, seedActiveMainSession } = setupGatewaySessionsTestHarness();
 
-type HookEventRecord = Record<string, unknown> & {
-  context?: Record<string, unknown> & {
+type HookEventRecord = Record<string, any> & {
+  context?: Record<string, any> & {
     previousSessionEntry?: { sessionId?: string };
   };
-  messages?: Array<{ role?: string; content?: unknown }>;
+  messages?: Array<{ role?: string; content?: any }>;
 };
 
 type CommandNewHookEvent = {
@@ -40,11 +40,11 @@ type CommandNewHookEvent = {
 type SessionEntryWithCliBindings = {
   sessionId?: string;
   claudeCliSessionId?: string;
-  cliSessionBindings?: unknown;
-  cliSessionIds?: unknown;
+  cliSessionBindings?: any;
+  cliSessionIds?: any;
 };
 
-function firstHookCall(mock: { mock: { calls: unknown[][] } }): [HookEventRecord, HookEventRecord] {
+function firstHookCall(mock: { mock: { calls: any[][] } }): [HookEventRecord, HookEventRecord] {
   const call = mock.mock.calls.at(0);
   if (!call) {
     throw new Error("Expected hook call");
@@ -70,7 +70,7 @@ function expectMainHookContext(context: HookEventRecord, sessionId: string) {
   expect(context.sessionId).toBe(sessionId);
 }
 
-function expectStringValue(value: unknown, label: string): string {
+function expectStringValue(value: any, label: string): string {
   expect(typeof value, label).toBe("string");
   if (typeof value !== "string") {
     throw new Error(`${label} must be a string`);
@@ -78,7 +78,7 @@ function expectStringValue(value: unknown, label: string): string {
   return value;
 }
 
-function expectStringWithPrefix(value: unknown, prefix: string, label: string): string {
+function expectStringWithPrefix(value: any, prefix: string, label: string): string {
   const text = expectStringValue(value, label);
   expect(text.startsWith(prefix), label).toBe(true);
   expect(text.length, label).toBeGreaterThan(prefix.length);
@@ -235,12 +235,12 @@ function expectResetErrorMessage(
   expect(reset.error.message).toBe(message);
 }
 
-function isCommandNewHookEvent(event: unknown): event is CommandNewHookEvent {
+function isCommandNewHookEvent(event: any): event is CommandNewHookEvent {
   return (
     Boolean(event) &&
     typeof event === "object" &&
-    (event as { type?: unknown }).type === "command" &&
-    (event as { action?: unknown }).action === "new"
+    (event as { type?: any }).type === "command" &&
+    (event as { action?: any }).action === "new"
   );
 }
 

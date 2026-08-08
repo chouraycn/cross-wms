@@ -15,22 +15,22 @@ const VALID_STATUSES: ReadonlySet<string> = new Set([
 ]);
 
 /** 迁移单个任务对象。 */
-export function migrateTask(raw: unknown): Task {
-  const r = (raw ?? {}) as Record<string, unknown>;
+export function migrateTask(raw: any): Task {
+  const r = (raw ?? {}) as Record<string, any>;
   const id = typeof r.id === 'string' ? r.id : `migrated_${Math.random().toString(36).slice(2, 10)}`;
   const name = typeof r.name === 'string' ? r.name : (typeof r.title === 'string' ? r.title : 'unnamed');
 
   // 旧字段名映射
   const deps = Array.isArray(r.dependencies)
     ? (r.dependencies as string[])
-    : Array.isArray((r as Record<string, unknown>).deps)
-      ? ((r as Record<string, unknown>).deps as string[])
+    : Array.isArray((r as Record<string, any>).deps)
+      ? ((r as Record<string, any>).deps as string[])
       : [];
 
-  const maxRetriesRaw = r.maxRetries ?? (r as Record<string, unknown>).retries ?? 0;
+  const maxRetriesRaw = r.maxRetries ?? (r as Record<string, any>).retries ?? 0;
 
   const status = VALID_STATUSES.has(r.status as string) ? (r.status as TaskStatus) : 'pending';
-  const priority = normalizePriority(r.priority ?? (r as Record<string, unknown>).pri);
+  const priority = normalizePriority(r.priority ?? (r as Record<string, any>).pri);
 
   const task: Task = {
     id,
@@ -44,7 +44,7 @@ export function migrateTask(raw: unknown): Task {
     maxRetries: typeof maxRetriesRaw === 'number' && maxRetriesRaw >= 0 ? Math.floor(maxRetriesRaw) : 0,
     retryCount: typeof r.retryCount === 'number' ? r.retryCount : 0,
     tags: Array.isArray(r.tags) ? (r.tags as string[]) : [],
-    metadata: r.metadata && typeof r.metadata === 'object' ? (r.metadata as Record<string, unknown>) : {},
+    metadata: r.metadata && typeof r.metadata === 'object' ? (r.metadata as Record<string, any>) : {},
     createdAt: typeof r.createdAt === 'string' ? r.createdAt : new Date(0).toISOString(),
     queuedAt: typeof r.queuedAt === 'string' ? r.queuedAt : null,
     startedAt: typeof r.startedAt === 'string' ? r.startedAt : null,
@@ -57,14 +57,14 @@ export function migrateTask(raw: unknown): Task {
 }
 
 /** 批量迁移。 */
-export function migrateTasks(raws: unknown[]): Task[] {
+export function migrateTasks(raws: any[]): Task[] {
   return raws.map(migrateTask);
 }
 
 /** 是否需要迁移：检查是否存在旧字段或缺失新字段。 */
-export function needsMigration(raw: unknown): boolean {
+export function needsMigration(raw: any): boolean {
   if (!raw || typeof raw !== 'object') return true;
-  const r = raw as Record<string, unknown>;
+  const r = raw as Record<string, any>;
   if (typeof r.id !== 'string' || typeof r.name !== 'string') return true;
   if (!VALID_STATUSES.has(r.status as string)) return true;
   if ('deps' in r || 'retries' in r || 'pri' in r || 'timeout' in r || 'title' in r) return true;
@@ -72,6 +72,6 @@ export function needsMigration(raw: unknown): boolean {
 }
 
 /** 迁移并保证幂等：连续两次迁移结果一致。 */
-export function migrateIdempotent(raw: unknown): Task {
+export function migrateIdempotent(raw: any): Task {
   return migrateTask(migrateTask(raw));
 }

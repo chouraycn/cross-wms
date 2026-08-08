@@ -8,11 +8,11 @@
  */
 
 /** Check if a Claude CLI skill file is accessible (always false in cross-wms). */
-export function isClaudeCliSkillFileAccessible(..._args: unknown[]): false {
+export function isClaudeCliSkillFileAccessible(..._args: any[]): false {
   return false;
 }
 
 /** Prepare the Claude CLI skills plugin (returns null in cross-wms). */
-export function prepareClaudeCliSkillsPlugin(..._args: unknown[]): null {
+export function prepareClaudeCliSkillsPlugin(..._args: any[]): null {
   return null;
 }

@@ -6,7 +6,7 @@ import { createOpenRouterSystemCacheWrapper } from "../../llm/providers/stream-w
 type StreamPayload = {
   messages: Array<{
     role: string;
-    content: unknown;
+    content: any;
   }>;
 };
 
@@ -65,7 +65,7 @@ describe("extra-params: OpenRouter Anthropic cache_control", () => {
 
     runOpenRouterPayload(payload, "anthropic/claude-opus-4-6");
 
-    const content = payload.messages[0].content as Array<Record<string, unknown>>;
+    const content = payload.messages[0].content as Array<Record<string, any>>;
     expect(content[0]).toEqual({ type: "text", text: "Part 1" });
     expect(content[1]).toEqual({
       type: "text",

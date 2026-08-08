@@ -7,7 +7,7 @@ export interface ConfigValidationIssue {
   severity: ConfigValidationSeverity;
   message: string;
   path: string;
-  value?: unknown;
+  value?: any;
   fix?: string;
   lineNumber?: number;
 }
@@ -96,7 +96,7 @@ export class ConfigValidator {
     }
   }
 
-  validate(config: Record<string, unknown>): ConfigValidationResult {
+  validate(config: Record<string, any>): ConfigValidationResult {
     const issues: ConfigValidationIssue[] = [];
     this.validateSchema({ type: 'object', properties: this.schema.properties } as ConfigSchemaField, config, '', issues);
 
@@ -113,7 +113,7 @@ export class ConfigValidator {
 
   private validateSchema(
     schema: ConfigSchemaField,
-    value: unknown,
+    value: any,
     path: string,
     issues: ConfigValidationIssue[],
   ): void {
@@ -192,7 +192,7 @@ export class ConfigValidator {
     if (schema.properties && typeof value === 'object' && value !== null) {
       for (const [key, propSchema] of Object.entries(schema.properties)) {
         const propPath = path ? `${path}.${key}` : key;
-        this.validateSchema(propSchema, (value as Record<string, unknown>)[key], propPath, issues);
+        this.validateSchema(propSchema, (value as Record<string, any>)[key], propPath, issues);
       }
     }
 
@@ -205,7 +205,7 @@ export class ConfigValidator {
     this.validateSensitiveValue(path, value, issues);
   }
 
-  private validateSensitiveValue(path: string, value: unknown, issues: ConfigValidationIssue[]): void {
+  private validateSensitiveValue(path: string, value: any, issues: ConfigValidationIssue[]): void {
     if (this.sensitivePaths.has(path)) {
       if (typeof value === 'string' && value.length === 0) {
         issues.push({
@@ -383,7 +383,7 @@ export const defaultConfigSchema: ConfigSchema = {
 
 export const configValidator = new ConfigValidator(defaultConfigSchema);
 
-export function validateConfig(config: Record<string, unknown>): ConfigValidationResult {
+export function validateConfig(config: Record<string, any>): ConfigValidationResult {
   logger.debug('[ConfigValidator] Validating configuration');
   const result = configValidator.validate(config);
 

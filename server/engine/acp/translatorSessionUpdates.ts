@@ -28,8 +28,8 @@ export interface OpenAiDelta {
 export type SessionUpdateEvent =
   | { kind: "text"; text: string; sequence: number }
   | { kind: "thinking"; thinking: string; sequence: number }
-  | { kind: "tool_call"; id: string; name: string; input: unknown; sequence: number }
-  | { kind: "tool_result"; id: string; output: unknown; sequence: number }
+  | { kind: "tool_call"; id: string; name: string; input: any; sequence: number }
+  | { kind: "tool_result"; id: string; output: any; sequence: number }
   | { kind: "user_message"; content: string; sequence: number }
   | { kind: "done"; finishReason: string; sequence: number };
 
@@ -46,8 +46,8 @@ export function toSessionUpdate(event: AcpTurnEvent, sequence: number): SessionU
     content?: string;
     id?: string;
     name?: string;
-    input?: unknown;
-    output?: unknown;
+    input?: any;
+    output?: any;
     finishReason?: string;
   };
   switch (evt.type) {

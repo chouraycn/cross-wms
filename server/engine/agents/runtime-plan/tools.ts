@@ -23,7 +23,7 @@ import {
 import { copyToolTerminalPresentation } from "../tool-terminal-presentation.js";
 import type { AgentRuntimePlan } from "./types.js";
 
-type AgentRuntimeToolPolicyParams<TSchemaType extends TSchema = TSchema, TResult = unknown> = {
+type AgentRuntimeToolPolicyParams<TSchemaType extends TSchema = TSchema, TResult = any> = {
   runtimePlan?: AgentRuntimePlan;
   tools: AgentTool<TSchemaType, TResult>[];
   provider: string;
@@ -72,7 +72,7 @@ function copyRuntimeToolMetadata(source: AgentTool, target: AgentTool): void {
 
 // Duplicate names cannot be matched by map lookup alone, so same-index matches
 // take precedence and unique-name fallback covers cloned arrays.
-function preserveRuntimeToolMetadata<TSchemaType extends TSchema = TSchema, TResult = unknown>(
+function preserveRuntimeToolMetadata<TSchemaType extends TSchema = TSchema, TResult = any>(
   sourceTools: AgentTool<TSchemaType, TResult>[],
   normalizedTools: AgentTool<TSchemaType, TResult>[],
 ): AgentTool<TSchemaType, TResult>[] {
@@ -103,7 +103,7 @@ function preserveRuntimeToolMetadata<TSchemaType extends TSchema = TSchema, TRes
 /** Normalizes tool schemas through a runtime plan or provider fallback policy. */
 export function normalizeAgentRuntimeTools<
   TSchemaType extends TSchema = TSchema,
-  TResult = unknown,
+  TResult = any,
 >(params: AgentRuntimeToolPolicyParams<TSchemaType, TResult>): AgentTool<TSchemaType, TResult>[] {
   const planContext = runtimePlanToolContext(params);
   const normalizableToolProjection = filterProviderNormalizableTools(params.tools);

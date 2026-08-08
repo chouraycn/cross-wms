@@ -10,7 +10,7 @@
 /** 占位：PluginManifestRecord。 */
 type PluginManifestRecord = {
   id: string;
-  modelCatalog?: unknown;
+  modelCatalog?: any;
 };
 
 /** 占位：ModelSuppressionResolver。 */

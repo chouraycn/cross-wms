@@ -20,12 +20,12 @@ const WEB_FETCH_ARTIFACT_CANDIDATES = [
   "web-fetch.js",
 ] as const;
 
-function isStringArray(value: unknown): value is string[] {
+function isStringArray(value: any): value is string[] {
   return Array.isArray(value) && value.every((entry) => typeof entry === "string");
 }
 
 function isWebProviderPlugin(
-  value: unknown,
+  value: any,
 ): value is WebSearchProviderPlugin | WebFetchProviderPlugin {
   return (
     isRecord(value) &&
@@ -42,21 +42,21 @@ function isWebProviderPlugin(
   );
 }
 
-function isWebSearchProviderPlugin(value: unknown): value is WebSearchProviderPlugin {
+function isWebSearchProviderPlugin(value: any): value is WebSearchProviderPlugin {
   return isWebProviderPlugin(value);
 }
 
-function isWebFetchProviderPlugin(value: unknown): value is WebFetchProviderPlugin {
+function isWebFetchProviderPlugin(value: any): value is WebFetchProviderPlugin {
   return isWebProviderPlugin(value);
 }
 
 function collectProviderFactories<TProvider>(params: {
-  mod: Record<string, unknown>;
+  mod: Record<string, any>;
   suffix: string;
-  isProvider: (value: unknown) => value is TProvider;
-}): { providers: TProvider[]; errors: unknown[] } {
+  isProvider: (value: any) => value is TProvider;
+}): { providers: TProvider[]; errors: any[] } {
   const providers: TProvider[] = [];
-  const errors: unknown[] = [];
+  const errors: any[] = [];
   for (const [name, exported] of Object.entries(params.mod).toSorted(([left], [right]) =>
     left.localeCompare(right),
   )) {
@@ -68,7 +68,7 @@ function collectProviderFactories<TProvider>(params: {
     ) {
       continue;
     }
-    let candidate: unknown;
+    let candidate: any;
     try {
       candidate = exported();
     } catch (error) {
@@ -84,7 +84,7 @@ function collectProviderFactories<TProvider>(params: {
 
 function unableToInitializeProviderError(params: {
   pluginId: string;
-  errors: readonly unknown[];
+  errors: readonly any[];
 }): Error {
   return new Error(`Unable to initialize web providers for plugin ${params.pluginId}`, {
     cause: params.errors.length === 1 ? params.errors[0] : new AggregateError(params.errors),
@@ -100,9 +100,9 @@ function loadBundledProviderEntriesFromDir<TProvider extends object>(params: {
   pluginId: string;
   artifactCandidates: readonly string[];
   suffix: string;
-  isProvider: (value: unknown) => value is TProvider;
+  isProvider: (value: any) => value is TProvider;
 }): Array<TProvider & { pluginId: string }> | null {
-  const mod = loadBundledPluginPublicArtifactModuleFromCandidatesSync<Record<string, unknown>>({
+  const mod = loadBundledPluginPublicArtifactModuleFromCandidatesSync<Record<string, any>>({
     dirName: params.dirName,
     artifactCandidates: params.artifactCandidates,
   });

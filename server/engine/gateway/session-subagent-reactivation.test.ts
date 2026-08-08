@@ -12,13 +12,13 @@ vi.mock("../agents/subagent-registry-read.js", async () => {
   );
   return {
     ...actual,
-    getLatestSubagentRunByChildSessionKey: (...args: unknown[]) =>
+    getLatestSubagentRunByChildSessionKey: (...args: any[]) =>
       getLatestSubagentRunByChildSessionKeyMock(...args),
   };
 });
 
 vi.mock("./session-subagent-reactivation.runtime.js", () => ({
-  replaceSubagentRunAfterSteer: (...args: unknown[]) => replaceSubagentRunAfterSteerMock(...args),
+  replaceSubagentRunAfterSteer: (...args: any[]) => replaceSubagentRunAfterSteerMock(...args),
 }));
 
 import { reactivateCompletedSubagentSession } from "./session-subagent-reactivation.js";

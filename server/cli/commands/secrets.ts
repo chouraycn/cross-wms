@@ -171,7 +171,7 @@ function scrubSecrets(dryRun: boolean): { scrubbed: string[]; skipped: number } 
 }
 
 /** 格式化 JSON 输出 */
-function formatJsonOutput(data: unknown): string {
+function formatJsonOutput(data: any): string {
   return JSON.stringify(data, null, 2);
 }
 
@@ -255,7 +255,7 @@ export function registerSecretsCommand(program: Command): void {
     .action((options: SecretsOptions & { plan: string; dryRun?: boolean }) => {
       let items: SecretsApplyItem[] = [];
       try {
-        const parsed = JSON.parse(options.plan) as unknown;
+        const parsed = JSON.parse(options.plan) as any;
         if (Array.isArray(parsed)) {
           items = parsed as SecretsApplyItem[];
         } else {

@@ -6,6 +6,6 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export const SELF_HOSTED_DEFAULT_CONTEXT_WINDOW: unknown = undefined;
-export const SELF_HOSTED_DEFAULT_MAX_TOKENS: unknown = undefined;
-export const SELF_HOSTED_DEFAULT_COST: unknown = undefined;
+export const SELF_HOSTED_DEFAULT_CONTEXT_WINDOW: any = undefined;
+export const SELF_HOSTED_DEFAULT_MAX_TOKENS: any = undefined;
+export const SELF_HOSTED_DEFAULT_COST: any = undefined;

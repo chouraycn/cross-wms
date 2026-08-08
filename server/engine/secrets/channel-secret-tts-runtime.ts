@@ -13,7 +13,7 @@ export function collectNestedChannelTtsAssignments(params: {
   channelKey: string;
   /** Nested channel config field that owns the `tts` block, such as `outbound`. */
   nestedKey: string;
-  channel: Record<string, unknown>;
+  channel: Record<string, any>;
   surface: ChannelAccountSurface;
   defaults: SecretDefaults | undefined;
   context: ResolverContext;
@@ -26,7 +26,7 @@ export function collectNestedChannelTtsAssignments(params: {
     | string
     | ((entry: {
         accountId: string;
-        account: Record<string, unknown>;
+        account: Record<string, any>;
         enabled: boolean;
       }) => string);
 }): void {

@@ -6,9 +6,9 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function isRetiredModelPickerProvider(..._args: unknown[]): unknown {
+export function isRetiredModelPickerProvider(..._args: any[]): any {
   return false;
 }
-export function createModelPickerVisibleProviderPredicate(..._args: unknown[]): unknown {
+export function createModelPickerVisibleProviderPredicate(..._args: any[]): any {
   return undefined;
 }

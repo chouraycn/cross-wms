@@ -70,7 +70,7 @@ const TABLE_MAP: Array<[string, string]> = [
 
 // 数字员工随服务器启动即「上线」：把库中所有已 seed 的员工统一置为 active。
 // 不依赖 fixture 内部的具体 id（不同来源 seed 的 id 不固定）。
-function toUnixSeconds(value: unknown): number | null {
+function toUnixSeconds(value: any): number | null {
   if (value === null || value === undefined) return null;
   if (typeof value === 'number') return value;
   if (typeof value === 'string' && value.trim()) {
@@ -80,8 +80,8 @@ function toUnixSeconds(value: unknown): number | null {
   return null;
 }
 
-function normalizeMetadata(meta: unknown): Record<string, unknown> {
-  const m: Record<string, unknown> = (meta && typeof meta === 'object' ? { ...(meta as object) } : {}) as Record<string, unknown>;
+function normalizeMetadata(meta: any): Record<string, any> {
+  const m: Record<string, any> = (meta && typeof meta === 'object' ? { ...(meta as object) } : {}) as Record<string, any>;
   m.owner_user_id = OWNER_ID;
   m.owner_username = OWNER_NAME;
   m.owner_display_name = OWNER_NAME;
@@ -93,8 +93,8 @@ function normalizeMetadata(meta: unknown): Record<string, unknown> {
   return m;
 }
 
-function buildRow(dbCols: string[], row: Record<string, unknown>, tableName: string): Array<[string, unknown]> {
-  const entries: Array<[string, unknown]> = [];
+function buildRow(dbCols: string[], row: Record<string, any>, tableName: string): Array<[string, any]> {
+  const entries: Array<[string, any]> = [];
   for (const col of dbCols) {
     if (col === 'created_at' || col === 'updated_at') {
       const u = toUnixSeconds(row[col]);
@@ -125,8 +125,8 @@ function buildRow(dbCols: string[], row: Record<string, unknown>, tableName: str
   return entries;
 }
 
-function migrateTable(db: Database.Database, fixtureKey: string, tableName: string, rows: unknown[]): number {
-  const cols = db.prepare(`PRAGMA table_info(${tableName})`).all().map((c: unknown) => c.name);
+function migrateTable(db: Database.Database, fixtureKey: string, tableName: string, rows: any[]): number {
+  const cols = db.prepare(`PRAGMA table_info(${tableName})`).all().map((c: any) => c.name);
   if (cols.length === 0) {
     logger.warn(`[SeedStaffDeck] 表 ${tableName} 不存在，跳过 ${fixtureKey}`);
     return 0;
@@ -150,9 +150,9 @@ function migrateTable(db: Database.Database, fixtureKey: string, tableName: stri
   return inserted;
 }
 
-function migrateKnowledgeBranches(db: Database.Database, data: unknown): number {
+function migrateKnowledgeBranches(db: Database.Database, data: any): number {
   const bindRows = data.agent_resource_bindings || [];
-  const kbVersions = new Map<string, unknown[]>();
+  const kbVersions = new Map<string, any[]>();
   for (const v of data.knowledge_base_versions || []) {
     const kbId = String(v.knowledge_base_id || '');
     if (!kbVersions.has(kbId)) kbVersions.set(kbId, []);
@@ -162,7 +162,7 @@ function migrateKnowledgeBranches(db: Database.Database, data: unknown): number 
     const versions = kbVersions.get(kbId) || [];
     for (const v of versions) {
       const meta = v.metadata_json;
-      const owner = typeof meta === 'object' && meta ? (meta as unknown).owner_agent_id : undefined;
+      const owner = typeof meta === 'object' && meta ? (meta as any).owner_agent_id : undefined;
       if (owner === agentId) return String(v.version || '1.0.0');
     }
     for (const v of versions) {
@@ -173,7 +173,7 @@ function migrateKnowledgeBranches(db: Database.Database, data: unknown): number 
     return '1.0.0';
   };
 
-  const cols = db.prepare('PRAGMA table_info(sd_agent_knowledge_branches)').all().map((c: unknown) => c.name);
+  const cols = db.prepare('PRAGMA table_info(sd_agent_knowledge_branches)').all().map((c: any) => c.name);
   let inserted = 0;
   const tx = db.transaction(() => {
     for (const b of bindRows) {
@@ -380,7 +380,7 @@ export function seedStaffDeckOnBoot(): void {
   }
 
   const db = getDb();
-  let data: unknown;
+  let data: any;
   try {
     data = JSON.parse(readFileSync(fixturePath, 'utf-8'));
   } catch (err) {

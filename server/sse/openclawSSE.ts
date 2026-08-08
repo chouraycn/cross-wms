@@ -34,7 +34,7 @@ export interface ToolCall {
   type: 'toolCall';
   id: string;
   name: string;
-  arguments: Record<string, unknown>;
+  arguments: Record<string, any>;
   thoughtSignature?: string;
   executionMode?: 'sequential' | 'parallel';
 }
@@ -120,7 +120,7 @@ export class EventStream<T, R = T> implements AsyncIterable<T> {
     }
     while (this.waiting.length > 0) {
       const waiter = this.waiting.shift()!;
-      waiter({ value: undefined as unknown, done: true });
+      waiter({ value: undefined as any, done: true });
     }
   }
 
@@ -141,7 +141,7 @@ export class EventStream<T, R = T> implements AsyncIterable<T> {
     }
     while (this.waiting.length > 0) {
       const waiter = this.waiting.shift()!;
-      waiter({ value: undefined as unknown, done: true });
+      waiter({ value: undefined as any, done: true });
     }
   }
 
@@ -215,7 +215,7 @@ export async function pipeEventStreamToSSE(
     argsBuffer: string;
   } | null = null;
 
-  const sendPayload = (payload: Record<string, unknown>) => {
+  const sendPayload = (payload: Record<string, any>) => {
     if (res.writableEnded) return;
     try {
       res.write(`data: ${JSON.stringify(payload)}\n\n`);

@@ -276,7 +276,7 @@ interface UseCacheOptions<T> {
   cacheKey?: string;
 }
 
-const globalCache = new LRUCache<unknown>(200);
+const globalCache = new LRUCache<any>(200);
 
 export function useCache<T>(
   key: string,

@@ -20,8 +20,8 @@ const LEGACY_WEB_SEARCH_RULES: LegacyConfigRule[] = [
 ];
 
 function replaceRootRecord(
-  target: Record<string, unknown>,
-  replacement: Record<string, unknown>,
+  target: Record<string, any>,
+  replacement: Record<string, any>,
 ): void {
   for (const key of Object.keys(target)) {
     delete target[key];

@@ -213,7 +213,7 @@ export function requestStuckSessionRecoveryOutcome(
     });
     return outcome;
   };
-  const failRecovery = (err: unknown) => {
+  const failRecovery = (err: any) => {
     const outcome: StuckSessionRecoveryOutcome = {
       status: "failed",
       action: "none",

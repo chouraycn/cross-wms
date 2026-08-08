@@ -7,7 +7,7 @@ import { createOutboundTestPlugin, createTestRegistry } from "../../test-utils/c
 import { runMessageAction } from "./message-action-runner.js";
 
 const ttsMocks = vi.hoisted(() => ({
-  maybeApplyTtsToPayload: vi.fn(async (params: { payload: unknown }) => params.payload),
+  maybeApplyTtsToPayload: vi.fn(async (params: { payload: any }) => params.payload),
 }));
 
 vi.mock("../../tts/tts.runtime.js", () => ({
@@ -15,9 +15,9 @@ vi.mock("../../tts/tts.runtime.js", () => ({
 }));
 
 function firstMockArg(
-  mock: { mock: { calls: readonly unknown[][] } },
+  mock: { mock: { calls: readonly any[][] } },
   label: string,
-): Record<string, unknown> {
+): Record<string, any> {
   const [call] = mock.mock.calls;
   if (!call) {
     throw new Error(`expected ${label} call`);
@@ -26,7 +26,7 @@ function firstMockArg(
   if (typeof arg !== "object" || arg === null || Array.isArray(arg)) {
     throw new Error(`expected ${label} input to be an object`);
   }
-  return arg as Record<string, unknown>;
+  return arg as Record<string, any>;
 }
 
 const slackConfig = {
@@ -73,7 +73,7 @@ describe("runMessageAction core send routing", () => {
     setActivePluginRegistry(createTestRegistry([]));
     ttsMocks.maybeApplyTtsToPayload
       .mockReset()
-      .mockImplementation(async (params: { payload: unknown }) => params.payload);
+      .mockImplementation(async (params: { payload: any }) => params.payload);
   });
 
   it("promotes caption to message for media sends when message is empty", async () => {

@@ -12,11 +12,11 @@ const LEGACY_TTS_PROVIDER_KEYS = ["openai", "elevenlabs", "microsoft", "edge"] a
 const LEGACY_TTS_PLUGIN_IDS = new Set(["voice-call"]);
 const CHANNEL_ROOT_TTS_UNSUPPORTED_IDS = new Set(["discord"]);
 
-function isLegacyEdgeProviderId(value: unknown): boolean {
+function isLegacyEdgeProviderId(value: any): boolean {
   return typeof value === "string" && value.trim().toLowerCase() === "edge";
 }
 
-function hasLegacyTtsProviderKeys(value: unknown): boolean {
+function hasLegacyTtsProviderKeys(value: any): boolean {
   const tts = getRecord(value);
   if (!tts) {
     return false;
@@ -31,15 +31,15 @@ function hasLegacyTtsProviderKeys(value: unknown): boolean {
   return Boolean(providers && Object.hasOwn(providers, "edge"));
 }
 
-function hasLegacyPluginEntryTtsProviderKeys(value: unknown): boolean {
+function hasLegacyPluginEntryTtsProviderKeys(value: any): boolean {
   return hasLegacyTtsInPluginLocations(value, hasLegacyTtsProviderKeys);
 }
 
-function hasLegacyTtsEnabled(value: unknown): boolean {
+function hasLegacyTtsEnabled(value: any): boolean {
   return typeof getRecord(value)?.enabled === "boolean";
 }
 
-function hasLegacySpeakerSelectionKeys(value: unknown): boolean {
+function hasLegacySpeakerSelectionKeys(value: any): boolean {
   const config = getRecord(value);
   if (!config) {
     return false;
@@ -51,7 +51,7 @@ function hasLegacySpeakerSelectionKeys(value: unknown): boolean {
   );
 }
 
-function hasLegacyTtsSpeakerSelection(value: unknown): boolean {
+function hasLegacyTtsSpeakerSelection(value: any): boolean {
   const tts = getRecord(value);
   if (!tts) {
     return false;
@@ -67,7 +67,7 @@ function hasLegacyTtsSpeakerSelection(value: unknown): boolean {
   return hasLegacyTtsSpeakerSelectionInPersonas(tts.personas);
 }
 
-function hasLegacyTtsSpeakerSelectionInProviderMap(value: unknown): boolean {
+function hasLegacyTtsSpeakerSelectionInProviderMap(value: any): boolean {
   const providers = getRecord(value);
   return Boolean(
     providers &&
@@ -78,7 +78,7 @@ function hasLegacyTtsSpeakerSelectionInProviderMap(value: unknown): boolean {
   );
 }
 
-function hasLegacyTtsSpeakerSelectionInPersonas(value: unknown): boolean {
+function hasLegacyTtsSpeakerSelectionInPersonas(value: any): boolean {
   const personas = getRecord(value);
   if (!personas) {
     return false;
@@ -100,9 +100,9 @@ function hasLegacyTtsSpeakerSelectionInPersonas(value: unknown): boolean {
   });
 }
 
-type LegacyTtsMatcher = (value: unknown) => boolean;
+type LegacyTtsMatcher = (value: any) => boolean;
 
-function hasLegacyTtsInAgentLocations(value: unknown, matcher: LegacyTtsMatcher): boolean {
+function hasLegacyTtsInAgentLocations(value: any, matcher: LegacyTtsMatcher): boolean {
   const agents = getRecord(value);
   const agentList = Array.isArray(agents?.list) ? agents.list : [];
   return agentList.some((entry) => matcher(getRecord(getRecord(entry)?.tts)));
@@ -112,7 +112,7 @@ function supportsChannelRootTtsMigration(channelId: string): boolean {
   return !CHANNEL_ROOT_TTS_UNSUPPORTED_IDS.has(channelId.trim().toLowerCase());
 }
 
-function hasLegacyTtsInChannelLocations(value: unknown, matcher: LegacyTtsMatcher): boolean {
+function hasLegacyTtsInChannelLocations(value: any, matcher: LegacyTtsMatcher): boolean {
   const channels = getRecord(value);
   for (const [channelId, channelValue] of Object.entries(channels ?? {})) {
     if (isBlockedObjectKey(channelId)) {
@@ -143,7 +143,7 @@ function hasLegacyTtsInChannelLocations(value: unknown, matcher: LegacyTtsMatche
   return false;
 }
 
-function hasLegacyTtsInPluginLocations(value: unknown, matcher: LegacyTtsMatcher): boolean {
+function hasLegacyTtsInPluginLocations(value: any, matcher: LegacyTtsMatcher): boolean {
   const entries = getRecord(value);
   if (!entries) {
     return false;
@@ -158,38 +158,38 @@ function hasLegacyTtsInPluginLocations(value: unknown, matcher: LegacyTtsMatcher
   });
 }
 
-function hasLegacyTtsSpeakerSelectionInAgentLocations(value: unknown): boolean {
+function hasLegacyTtsSpeakerSelectionInAgentLocations(value: any): boolean {
   return hasLegacyTtsInAgentLocations(value, hasLegacyTtsSpeakerSelection);
 }
 
-function hasLegacyTtsSpeakerSelectionInChannelLocations(value: unknown): boolean {
+function hasLegacyTtsSpeakerSelectionInChannelLocations(value: any): boolean {
   return hasLegacyTtsInChannelLocations(value, hasLegacyTtsSpeakerSelection);
 }
 
-function hasLegacyTtsSpeakerSelectionInPluginLocations(value: unknown): boolean {
+function hasLegacyTtsSpeakerSelectionInPluginLocations(value: any): boolean {
   return hasLegacyTtsInPluginLocations(value, hasLegacyTtsSpeakerSelection);
 }
 
-function hasLegacyTtsEnabledInAgentLocations(value: unknown): boolean {
+function hasLegacyTtsEnabledInAgentLocations(value: any): boolean {
   return hasLegacyTtsInAgentLocations(value, hasLegacyTtsEnabled);
 }
 
-function hasLegacyTtsEnabledInChannelLocations(value: unknown): boolean {
+function hasLegacyTtsEnabledInChannelLocations(value: any): boolean {
   return hasLegacyTtsInChannelLocations(value, hasLegacyTtsEnabled);
 }
 
-function hasLegacyTtsEnabledInPluginLocations(value: unknown): boolean {
+function hasLegacyTtsEnabledInPluginLocations(value: any): boolean {
   return hasLegacyTtsInPluginLocations(value, hasLegacyTtsEnabled);
 }
 
-function getOrCreateTtsProviders(tts: Record<string, unknown>): Record<string, unknown> {
+function getOrCreateTtsProviders(tts: Record<string, any>): Record<string, any> {
   const providers = getRecord(tts.providers) ?? {};
   tts.providers = providers;
   return providers;
 }
 
 function mergeLegacyTtsProviderConfig(
-  tts: Record<string, unknown>,
+  tts: Record<string, any>,
   legacyKey: string,
   providerId: string,
 ): boolean {
@@ -207,7 +207,7 @@ function mergeLegacyTtsProviderConfig(
 }
 
 function mergeLegacyTtsProviderAliasConfig(
-  tts: Record<string, unknown>,
+  tts: Record<string, any>,
   aliasKey: string,
   providerId: string,
 ): boolean {
@@ -225,7 +225,7 @@ function mergeLegacyTtsProviderAliasConfig(
 }
 
 function migrateLegacyTtsConfig(
-  tts: Record<string, unknown> | null | undefined,
+  tts: Record<string, any> | null | undefined,
   pathLabel: string,
   changes: string[],
 ): void {
@@ -260,7 +260,7 @@ function migrateLegacyTtsConfig(
 }
 
 function migrateLegacyTtsEnabled(
-  tts: Record<string, unknown> | null | undefined,
+  tts: Record<string, any> | null | undefined,
   pathLabel: string,
   changes: string[],
 ): void {
@@ -278,7 +278,7 @@ function migrateLegacyTtsEnabled(
 }
 
 function migrateLegacySpeakerSelectionConfig(
-  providerConfig: Record<string, unknown>,
+  providerConfig: Record<string, any>,
   pathLabel: string,
   changes: string[],
 ): void {
@@ -316,7 +316,7 @@ function migrateLegacySpeakerSelectionConfig(
 }
 
 function migrateLegacyTtsSpeakerSelection(
-  tts: Record<string, unknown> | null | undefined,
+  tts: Record<string, any> | null | undefined,
   pathLabel: string,
   changes: string[],
 ): void {
@@ -360,7 +360,7 @@ function migrateLegacyTtsSpeakerSelection(
 }
 
 function migrateLegacySpeakerSelectionProviderMap(
-  value: unknown,
+  value: any,
   pathLabel: string,
   changes: string[],
 ): void {
@@ -381,8 +381,8 @@ function migrateLegacySpeakerSelectionProviderMap(
 }
 
 function visitKnownTtsConfigLocations(
-  raw: Record<string, unknown>,
-  visit: (tts: Record<string, unknown> | null | undefined, pathLabel: string) => void,
+  raw: Record<string, any>,
+  visit: (tts: Record<string, any> | null | undefined, pathLabel: string) => void,
 ): void {
   const messages = getRecord(raw.messages);
   visit(getRecord(messages?.tts), "messages.tts");

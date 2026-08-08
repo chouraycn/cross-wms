@@ -189,8 +189,8 @@ describeLive("OpenAI tool projection live", () => {
       reasoning: "low",
       toolChoice: { type: "function", name: "exec" },
       openclawCodeModeToolSurface: true,
-      onPayload(payload: unknown) {
-        const record = payload as Record<string, unknown>;
+      onPayload(payload: any) {
+        const record = payload as Record<string, any>;
         const tools = record.tools;
         if (!Array.isArray(tools) || tools.length !== 2) {
           throw new Error("Expected projected exec and wait tools");

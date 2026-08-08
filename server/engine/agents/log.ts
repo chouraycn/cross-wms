@@ -6,9 +6,9 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function formatCliBackendOutputDigest(..._args: unknown[]): unknown {
+export function formatCliBackendOutputDigest(..._args: any[]): any {
   return "";
 }
-export const cliBackendLog: unknown = undefined;
-export const CLI_BACKEND_LOG_OUTPUT_ENV: unknown = undefined;
-export const LEGACY_CLAUDE_CLI_LOG_OUTPUT_ENV: unknown = undefined;
+export const cliBackendLog: any = undefined;
+export const CLI_BACKEND_LOG_OUTPUT_ENV: any = undefined;
+export const LEGACY_CLAUDE_CLI_LOG_OUTPUT_ENV: any = undefined;

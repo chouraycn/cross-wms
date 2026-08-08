@@ -17,7 +17,7 @@ export interface RecoveryInfo {
   attemptCount: number;
   lastAttemptAt?: number;
   error?: string;
-  recoveryData?: unknown;
+  recoveryData?: any;
 }
 
 export interface RecoveryOptions {

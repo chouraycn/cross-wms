@@ -20,7 +20,7 @@ const DEFAULT_SOCKET_PATH = process.env.CROSSWMS_IPC_SOCKET
 
 interface IPCRequest {
   type: string;
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 interface IPCResponse {
@@ -219,7 +219,7 @@ class CDFKnowIPCClient {
     return response.ok;
   }
 
-  async getStatus(): Promise<Record<string, unknown> | null> {
+  async getStatus(): Promise<Record<string, any> | null> {
     const response = await this.sendRequest({
       type: 'status',
     });

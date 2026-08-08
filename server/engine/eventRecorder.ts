@@ -38,9 +38,9 @@ export async function recordMessageCreated(
   content: string,
   options?: {
     model?: string;
-    toolCalls?: unknown[];
+    toolCalls?: any[];
     thinking?: string;
-    attachments?: unknown[];
+    attachments?: any[];
     runId?: string;
   }
 ): Promise<LedgerEvent | null> {
@@ -179,7 +179,7 @@ export async function recordTurnFailed(
 export async function recordToolCallStarted(
   sessionId: string,
   toolName: string,
-  toolArgs: string | Record<string, unknown>,
+  toolArgs: string | Record<string, any>,
   options?: {
     toolCallId?: string;
     messageId?: string;
@@ -320,7 +320,7 @@ export async function recordSessionCreated(
     title?: string;
     model?: string;
     cwd?: string;
-    metadata?: Record<string, unknown>;
+    metadata?: Record<string, any>;
   }
 ): Promise<LedgerEvent | null> {
   try {
@@ -403,7 +403,7 @@ export async function recordBatchEvents(
   sessionId: string,
   events: Array<{
     type: EventType;
-    payload: Record<string, unknown>;
+    payload: Record<string, any>;
     runId?: string;
   }>
 ): Promise<LedgerEvent[]> {

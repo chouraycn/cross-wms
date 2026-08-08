@@ -67,15 +67,15 @@ const repairableToolCallContentTypes = new Set([
 
 const invalidJsonlSlotType = "__openclaw_invalid_jsonl_slot";
 
-function isString(value: unknown): value is string {
+function isString(value: any): value is string {
   return typeof value === "string" && value.trim() !== "";
 }
 
-function isOptionalString(value: unknown): boolean {
+function isOptionalString(value: any): boolean {
   return value === undefined || typeof value === "string";
 }
 
-function isTextContent(value: unknown): boolean {
+function isTextContent(value: any): boolean {
   return (
     isRecord(value) &&
     value.type === "text" &&
@@ -84,7 +84,7 @@ function isTextContent(value: unknown): boolean {
   );
 }
 
-function isThinkingContent(value: unknown): boolean {
+function isThinkingContent(value: any): boolean {
   return (
     isRecord(value) &&
     value.type === "thinking" &&
@@ -94,7 +94,7 @@ function isThinkingContent(value: unknown): boolean {
   );
 }
 
-function isImageContent(value: unknown): boolean {
+function isImageContent(value: any): boolean {
   return (
     isRecord(value) &&
     value.type === "image" &&
@@ -103,7 +103,7 @@ function isImageContent(value: unknown): boolean {
   );
 }
 
-function hasToolCallId(value: Record<string, unknown>): boolean {
+function hasToolCallId(value: Record<string, any>): boolean {
   return (
     isString(value.id) ||
     isString(value.call_id) ||
@@ -114,11 +114,11 @@ function hasToolCallId(value: Record<string, unknown>): boolean {
   );
 }
 
-function isToolCallPayload(value: unknown): boolean {
+function isToolCallPayload(value: any): boolean {
   return value === null || isRecord(value) || typeof value === "string";
 }
 
-function isToolCallContent(value: unknown): boolean {
+function isToolCallContent(value: any): boolean {
   return (
     isRecord(value) &&
     typeof value.type === "string" &&
@@ -131,7 +131,7 @@ function isToolCallContent(value: unknown): boolean {
   );
 }
 
-function isPersistedContentBlock(value: unknown): boolean {
+function isPersistedContentBlock(value: any): boolean {
   if (!isRecord(value) || !isString(value.type)) {
     return false;
   }
@@ -150,29 +150,29 @@ function isPersistedContentBlock(value: unknown): boolean {
   }
 }
 
-function isUserContent(value: unknown): boolean {
+function isUserContent(value: any): boolean {
   return (
     typeof value === "string" ||
     (Array.isArray(value) && value.every((item) => isPersistedContentBlock(item)))
   );
 }
 
-function isAssistantContent(value: unknown): boolean {
+function isAssistantContent(value: any): boolean {
   return (
     typeof value === "string" ||
     (Array.isArray(value) && value.every((item) => isPersistedContentBlock(item)))
   );
 }
 
-function isToolResultContent(value: unknown): boolean {
+function isToolResultContent(value: any): boolean {
   return Array.isArray(value) && value.every((item) => isPersistedContentBlock(item));
 }
 
-function isOptionalBoolean(value: unknown): boolean {
+function isOptionalBoolean(value: any): boolean {
   return value === undefined || typeof value === "boolean";
 }
 
-function isBashExecutionMessage(value: Record<string, unknown>): boolean {
+function isBashExecutionMessage(value: Record<string, any>): boolean {
   return (
     isString(value.command) &&
     typeof value.output === "string" &&
@@ -184,7 +184,7 @@ function isBashExecutionMessage(value: Record<string, unknown>): boolean {
   );
 }
 
-function isAgentMessage(value: unknown): boolean {
+function isAgentMessage(value: any): boolean {
   if (!isRecord(value)) {
     return false;
   }
@@ -211,9 +211,9 @@ function isAgentMessage(value: unknown): boolean {
 
 function hasSessionEntryBase(entry: FileEntry): boolean {
   const candidate = entry as {
-    id?: unknown;
-    parentId?: unknown;
-    timestamp?: unknown;
+    id?: any;
+    parentId?: any;
+    timestamp?: any;
   };
   return (
     isString(candidate.id) &&
@@ -234,14 +234,14 @@ function isSessionEntry(entry: FileEntry): entry is SessionEntry {
   }
   switch (entry.type) {
     case "branch_summary": {
-      const candidate = entry as { fromId?: unknown; summary?: unknown };
+      const candidate = entry as { fromId?: any; summary?: any };
       return isString(candidate.fromId) && typeof candidate.summary === "string";
     }
     case "compaction": {
       const candidate = entry as {
-        firstKeptEntryId?: unknown;
-        summary?: unknown;
-        tokensBefore?: unknown;
+        firstKeptEntryId?: any;
+        summary?: any;
+        tokensBefore?: any;
       };
       return (
         isString(candidate.firstKeptEntryId) &&
@@ -250,12 +250,12 @@ function isSessionEntry(entry: FileEntry): entry is SessionEntry {
       );
     }
     case "custom":
-      return isString((entry as { customType?: unknown }).customType);
+      return isString((entry as { customType?: any }).customType);
     case "custom_message": {
       const candidate = entry as {
-        content?: unknown;
-        customType?: unknown;
-        display?: unknown;
+        content?: any;
+        customType?: any;
+        display?: any;
       };
       return (
         isString(candidate.customType) &&
@@ -264,30 +264,30 @@ function isSessionEntry(entry: FileEntry): entry is SessionEntry {
       );
     }
     case "label": {
-      const candidate = entry as { label?: unknown; targetId?: unknown };
+      const candidate = entry as { label?: any; targetId?: any };
       return (
         isString(candidate.targetId) &&
         (candidate.label === undefined || typeof candidate.label === "string")
       );
     }
     case "message": {
-      return isAgentMessage((entry as { message?: unknown }).message);
+      return isAgentMessage((entry as { message?: any }).message);
     }
     case "model_change": {
-      const candidate = entry as { modelId?: unknown; provider?: unknown };
+      const candidate = entry as { modelId?: any; provider?: any };
       return isString(candidate.provider) && isString(candidate.modelId);
     }
     case "session_info": {
-      const candidate = entry as { name?: unknown };
+      const candidate = entry as { name?: any };
       return candidate.name === undefined || typeof candidate.name === "string";
     }
     case "thinking_level_change":
-      return isString((entry as { thinkingLevel?: unknown }).thinkingLevel);
+      return isString((entry as { thinkingLevel?: any }).thinkingLevel);
   }
   return false;
 }
 
-function parseLeafControlEntry(entry: unknown):
+function parseLeafControlEntry(entry: any):
   | {
       id: string;
       parentId: string | null;
@@ -300,12 +300,12 @@ function parseLeafControlEntry(entry: unknown):
     return undefined;
   }
   const candidate = entry as {
-    id?: unknown;
-    parentId?: unknown;
-    targetId?: unknown;
-    appendParentId?: unknown;
-    appendMode?: unknown;
-    timestamp?: unknown;
+    id?: any;
+    parentId?: any;
+    targetId?: any;
+    appendParentId?: any;
+    appendMode?: any;
+    timestamp?: any;
   };
   if (
     !isString(candidate.id) ||
@@ -452,7 +452,7 @@ function readableSessionState(fileEntries: FileEntry[]): ReadableSessionState {
     if (!isRecord(rawEntry)) {
       continue;
     }
-    const rawRecord = rawEntry as unknown as Record<string, unknown>;
+    const rawRecord = rawEntry as unknown as Record<string, any>;
     const entry = rawEntry as FileEntry;
     const id = rawRecord.id;
     const rawType = rawRecord.type;
@@ -564,11 +564,11 @@ function generateEntryId(byId: { has(id: string): boolean }): string {
   return randomUUID();
 }
 
-function serializeTranscriptFileEntries(entries: readonly unknown[]): string {
+function serializeTranscriptFileEntries(entries: readonly any[]): string {
   return `${entries.map((entry) => JSON.stringify(entry)).join("\n")}\n`;
 }
 
-function fileEntryOrMigrationSlot(value: unknown, index: number): FileEntry {
+function fileEntryOrMigrationSlot(value: any, index: number): FileEntry {
   if (isRecord(value)) {
     return value as unknown as FileEntry;
   }
@@ -776,7 +776,7 @@ export class TranscriptFileState {
     summary: string,
     firstKeptEntryId: string,
     tokensBefore: number,
-    details?: unknown,
+    details?: any,
     fromHook?: boolean,
   ): CompactionEntry {
     return this.appendEntry({
@@ -792,7 +792,7 @@ export class TranscriptFileState {
     });
   }
 
-  appendCustomEntry(customType: string, data?: unknown): CustomEntry {
+  appendCustomEntry(customType: string, data?: any): CustomEntry {
     return this.appendEntry({
       type: "custom",
       customType,
@@ -817,7 +817,7 @@ export class TranscriptFileState {
     customType: string,
     content: CustomMessageEntry["content"],
     display: boolean,
-    details?: unknown,
+    details?: any,
   ): CustomMessageEntry {
     return this.appendEntry({
       type: "custom_message",
@@ -848,7 +848,7 @@ export class TranscriptFileState {
   branchWithSummary(
     branchFromId: string | null,
     summary: string,
-    details?: unknown,
+    details?: any,
     fromHook?: boolean,
   ): BranchSummaryEntry {
     if (branchFromId !== null && !this.byId.has(branchFromId)) {
@@ -936,7 +936,7 @@ export class TranscriptFileState {
 /** Read a transcript file, migrate old rows, and drop only unrecoverable entries. */
 export async function readTranscriptFileState(sessionFile: string): Promise<TranscriptFileState> {
   const raw = await fs.readFile(sessionFile, "utf-8");
-  const fileEntries = (parseSessionEntries(raw) as unknown[]).map(fileEntryOrMigrationSlot);
+  const fileEntries = (parseSessionEntries(raw) as any[]).map(fileEntryOrMigrationSlot);
   const headerBeforeMigration =
     fileEntries.find((entry): entry is SessionHeader => entry.type === "session") ?? null;
   const headerVersionBeforeMigration = sessionHeaderVersion(headerBeforeMigration);

@@ -43,7 +43,7 @@ function sleep(ms: number): Promise<void> {
   });
 }
 
-function parseCronRunWaitDuration(raw: unknown, label: string): number {
+function parseCronRunWaitDuration(raw: any, label: string): number {
   const input =
     typeof raw === "string" || typeof raw === "number" || typeof raw === "bigint"
       ? String(raw)
@@ -55,7 +55,7 @@ function parseCronRunWaitDuration(raw: unknown, label: string): number {
   return resolveTimerTimeoutMs(durationMs, 0, 0);
 }
 
-function parseCronRunPollInterval(raw: unknown): number {
+function parseCronRunPollInterval(raw: any): number {
   const durationMs = parseCronRunWaitDuration(raw, "--poll-interval");
   if (durationMs <= 0) {
     throw new Error("invalid --poll-interval");

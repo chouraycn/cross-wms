@@ -192,7 +192,7 @@ async function restoreSupportFilesAfterFailedWrite(params: {
       if (params.mode === "update" && previous?.existed) {
         await fs.writeFile(filePath, previous.previousContent ?? "", "utf-8");
       } else {
-        await fs.unlink(filePath).catch((error: unknown) => {
+        await fs.unlink(filePath).catch((error: any) => {
           if ((error as { code?: string })?.code !== "ENOENT") {
             throw error;
           }

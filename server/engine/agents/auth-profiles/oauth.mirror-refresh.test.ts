@@ -36,12 +36,12 @@ const {
 
 function expectPersistedOpenAICodexProfile(
   credential: AuthProfileStore["profiles"][string],
-  metadata: Record<string, unknown> = {},
+  metadata: Record<string, any> = {},
 ): void {
   expect(credential?.type).toBe("oauth");
   expect(credential?.provider).toBe("openai");
   for (const [key, value] of Object.entries(metadata)) {
-    expect((credential as Record<string, unknown> | undefined)?.[key]).toEqual(value);
+    expect((credential as Record<string, any> | undefined)?.[key]).toEqual(value);
   }
 }
 
@@ -325,7 +325,7 @@ describe("resolveApiKeyForProfile OAuth refresh mirror-to-main (#26322)", () => 
     );
 
     refreshProviderOAuthCredentialWithPluginMock.mockImplementationOnce(
-      async (params?: { context?: unknown }) => {
+      async (params?: { context?: any }) => {
         const credential = params?.context as OAuthCredential | undefined;
         expect(credential?.refresh).toBe("main-owner-refresh");
         return {

@@ -1144,9 +1144,9 @@ describe("registerPluginCommand", () => {
 
   it("does not expose binding APIs to plugin commands on unsupported channels", async () => {
     const handler = async (ctx: {
-      requestConversationBinding: (params: { summary: string }) => Promise<unknown>;
-      getCurrentConversationBinding: () => Promise<unknown>;
-      detachConversationBinding: () => Promise<unknown>;
+      requestConversationBinding: (params: { summary: string }) => Promise<any>;
+      getCurrentConversationBinding: () => Promise<any>;
+      detachConversationBinding: () => Promise<any>;
     }) => {
       const requested = await ctx.requestConversationBinding({
         summary: "Bind this conversation.",
@@ -1233,7 +1233,7 @@ describe("registerPluginCommand", () => {
       | {
           runtimeContext?: {
             llm?: {
-              complete?: unknown;
+              complete?: any;
             };
           };
         }
@@ -1270,7 +1270,7 @@ describe("registerPluginCommand", () => {
         llm?: {
           complete: (params: {
             messages: Array<{ role: "user"; content: string }>;
-          }) => Promise<unknown>;
+          }) => Promise<any>;
         };
       };
     }) => {
@@ -1319,7 +1319,7 @@ describe("registerPluginCommand", () => {
         llm?: {
           complete: (params: {
             messages: Array<{ role: "user"; content: string }>;
-          }) => Promise<unknown>;
+          }) => Promise<any>;
         };
       };
     }) => {

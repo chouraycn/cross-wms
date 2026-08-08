@@ -10,7 +10,7 @@ vi.mock("../channels/plugins/index.js", async () => {
   );
   return {
     ...actual,
-    getChannelPlugin: (...args: unknown[]) => getChannelPluginMock(...args),
+    getChannelPlugin: (...args: any[]) => getChannelPluginMock(...args),
   };
 });
 

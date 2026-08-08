@@ -33,21 +33,21 @@ type HandleInlineActionsInput = Parameters<
 >[0];
 
 vi.mock("./commands.runtime.js", () => ({
-  handleCommands: (...args: unknown[]) => handleCommandsMock(...args),
-  buildStatusReply: (...args: unknown[]) => buildStatusReplyMock(...args),
+  handleCommands: (...args: any[]) => handleCommandsMock(...args),
+  buildStatusReply: (...args: any[]) => buildStatusReplyMock(...args),
 }));
 
 vi.mock("../../skills/discovery/chat-commands.runtime.js", () => ({
-  listSkillCommandsForWorkspace: (...args: unknown[]) => listSkillCommandsForWorkspaceMock(...args),
+  listSkillCommandsForWorkspace: (...args: any[]) => listSkillCommandsForWorkspaceMock(...args),
 }));
 
 vi.mock("../../agents/openclaw-tools.runtime.js", () => ({
-  createOpenClawTools: (...args: unknown[]) => createOpenClawToolsMock(...args),
+  createOpenClawTools: (...args: any[]) => createOpenClawToolsMock(...args),
 }));
 
 vi.mock("../../channels/plugins/index.js", () => ({
-  getChannelPlugin: (...args: unknown[]) => getChannelPluginMock(...args),
-  getLoadedChannelPlugin: (...args: unknown[]) => getChannelPluginMock(...args),
+  getChannelPlugin: (...args: any[]) => getChannelPluginMock(...args),
+  getLoadedChannelPlugin: (...args: any[]) => getChannelPluginMock(...args),
   listChannelPlugins: () => [],
   normalizeChannelId: (value?: string) => value?.trim().toLowerCase() || null,
 }));
@@ -66,7 +66,7 @@ const createTypingController = (): TypingController => ({
 async function writeSessionStore(
   storeTemplate: string,
   agentId: string,
-  entries: Record<string, unknown>,
+  entries: Record<string, any>,
 ) {
   const storePath = storeTemplate.replaceAll("{agentId}", agentId);
   await fs.mkdir(path.dirname(storePath), { recursive: true });
@@ -169,11 +169,11 @@ async function runInlineStatusAction(storePath?: string) {
   return { result, typing };
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error(`expected ${label} to be an object`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 function mockObjectArg(mock: ReturnType<typeof vi.fn>, label: string, callIndex = 0, argIndex = 0) {
@@ -184,8 +184,8 @@ function mockObjectArg(mock: ReturnType<typeof vi.fn>, label: string, callIndex 
   return requireRecord(call[argIndex], `${label} argument ${argIndex}`);
 }
 
-function mockCallArgs(mock: ReturnType<typeof vi.fn>, label: string, callIndex = 0): unknown[] {
-  const call = mock.mock.calls[callIndex] as unknown[] | undefined;
+function mockCallArgs(mock: ReturnType<typeof vi.fn>, label: string, callIndex = 0): any[] {
+  const call = mock.mock.calls[callIndex] as any[] | undefined;
   if (!call) {
     throw new Error(`expected ${label} mock call ${callIndex}`);
   }

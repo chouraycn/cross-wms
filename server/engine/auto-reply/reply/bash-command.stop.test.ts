@@ -62,7 +62,7 @@ function buildElevatedDeniedParams(commandBody: string) {
   };
 }
 
-function buildRunningSession(overrides?: Record<string, unknown>) {
+function buildRunningSession(overrides?: Record<string, any>) {
   return {
     id: "session-1",
     scopeKey: "chat:bash",

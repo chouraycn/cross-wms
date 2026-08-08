@@ -39,7 +39,7 @@ export type AgentModelEntryConfig = {
   /** Optional display/lookup alias for this provider/model entry. */
   alias?: string;
   /** Provider-specific API parameters (e.g., GLM-4.7 thinking mode). */
-  params?: Record<string, unknown>;
+  params?: Record<string, any>;
   /** Optional agent execution runtime for this specific provider/model entry. */
   agentRuntime?: AgentRuntimePolicyConfig;
   /** Enable streaming for this model (default: true, false for Ollama to avoid SDK issue #1205). */
@@ -221,7 +221,7 @@ export type CliBackendConfig = {
 
 export type AgentDefaultsConfig = {
   /** Global default provider params applied to all models before per-model and per-agent overrides. */
-  params?: Record<string, unknown>;
+  params?: Record<string, any>;
   /** Primary model and fallbacks (provider/model). Accepts string or {primary,fallbacks}. */
   model?: AgentModelConfig;
   /**

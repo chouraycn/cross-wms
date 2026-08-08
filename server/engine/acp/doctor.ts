@@ -3,9 +3,9 @@ import { getToolGroups, getGroupsForTool } from "./toolPolicyConformance.js";
 
 type DoctorChannelEntry = {
   id: string;
-  message?: { send?: unknown; receive?: unknown };
+  message?: { send?: any; receive?: any };
   capabilities?: object;
-  auth?: unknown;
+  auth?: any;
 };
 
 type DoctorChannelRegistry = {
@@ -292,7 +292,7 @@ export function checkChannels(params: {
       });
     }
 
-    const authRequired = (channel.capabilities as { authRequired?: unknown } | undefined)?.authRequired;
+    const authRequired = (channel.capabilities as { authRequired?: any } | undefined)?.authRequired;
     if (authRequired && !channel.auth) {
       findings.push({
         id: DOCTOR_CHECK_IDS.channels.channelAuthMissing,
@@ -310,7 +310,7 @@ export function checkChannels(params: {
 export function checkSandbox(params: {
   enabled?: boolean;
   dockerAvailable?: boolean;
-  config?: Record<string, unknown>;
+  config?: Record<string, any>;
 }): DoctorCheckResult {
   const findings: HealthFinding[] = [];
 
@@ -528,7 +528,7 @@ export async function runDoctorChecks(params: {
   sandbox?: {
     enabled?: boolean;
     dockerAvailable?: boolean;
-    config?: Record<string, unknown>;
+    config?: Record<string, any>;
   };
   gateway?: {
     mode?: string;

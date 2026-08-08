@@ -120,7 +120,7 @@ const PdfPanel: React.FC = () => {
   const [selectedFiles, setSelectedFiles] = useState<PdfFileInfo[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [result, setResult] = useState<unknown>(null);
+  const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
   // 隐藏的文件选择 input
@@ -180,7 +180,7 @@ const PdfPanel: React.FC = () => {
         continue;
       }
       // Electron 环境下 File 对象携带真实文件系统路径；其他环境回退到文件名
-      const filePath = (file as unknown).path || file.name;
+      const filePath = (file as any).path || file.name;
       newFiles.push({
         path: filePath,
         name: file.name,
@@ -234,7 +234,7 @@ const PdfPanel: React.FC = () => {
       }, 500);
 
       // Prepare request payload
-      let payload: unknown = {};
+      let payload: any = {};
       let endpoint = '';
 
       switch (activeTool) {
@@ -426,7 +426,7 @@ const PdfPanel: React.FC = () => {
                 onChange={(e) =>
                   setSummarizeParams({
                     ...summarizeParams,
-                    ai_provider: e.target.value as unknown,
+                    ai_provider: e.target.value as any,
                   })
                 }
               >
@@ -679,7 +679,7 @@ const PdfPanel: React.FC = () => {
                   )}
                   {result.data.outputFiles && result.data.outputFiles.length > 0 && (
                     <List dense>
-                      {result.data.outputFiles.map((file: unknown, idx: number) => (
+                      {result.data.outputFiles.map((file: any, idx: number) => (
                         <ListItem key={idx}>
                           <ListItemText primary={file.path} />
                         </ListItem>

@@ -88,7 +88,7 @@ describe("plugin config discovery", () => {
   });
 
   it("discovers unconfigured plugins", () => {
-    const existingConfigs: Record<string, Record<string, unknown>> = {
+    const existingConfigs: Record<string, Record<string, any>> = {
       "plugin-a": { setting1: "value" },
     };
 
@@ -104,7 +104,7 @@ describe("plugin config discovery", () => {
   });
 
   it("returns empty array when all plugins are configured", () => {
-    const existingConfigs: Record<string, Record<string, unknown>> = {
+    const existingConfigs: Record<string, Record<string, any>> = {
       "plugin-a": { setting1: "value" },
       "plugin-b": { enabled: true, items: ["a", "b"] },
       "plugin-c": { mode: "fast" },
@@ -131,7 +131,7 @@ describe("plugin config discovery", () => {
 
 describe("setupPluginConfig", () => {
   it("returns existing configs when no unconfigured plugins", async () => {
-    const existingConfigs: Record<string, Record<string, unknown>> = {
+    const existingConfigs: Record<string, Record<string, any>> = {
       "plugin-a": { setting1: "value" },
     };
 
@@ -146,7 +146,7 @@ describe("setupPluginConfig", () => {
   });
 
   it("skips plugin config when user selects skip", async () => {
-    const existingConfigs: Record<string, Record<string, unknown>> = {};
+    const existingConfigs: Record<string, Record<string, any>> = {};
 
     const prompter = createMockPrompter({
       multiselect: vi.fn(async () => ["__skip__"]),
@@ -162,7 +162,7 @@ describe("setupPluginConfig", () => {
   });
 
   it("configures selected plugins with text fields", async () => {
-    const existingConfigs: Record<string, Record<string, unknown>> = {};
+    const existingConfigs: Record<string, Record<string, any>> = {};
 
     const prompter = createMockPrompter({
       multiselect: vi.fn(async () => ["plugin-a"]),
@@ -180,7 +180,7 @@ describe("setupPluginConfig", () => {
   });
 
   it("handles enum fields with select", async () => {
-    const existingConfigs: Record<string, Record<string, unknown>> = {};
+    const existingConfigs: Record<string, Record<string, any>> = {};
 
     const prompter = createMockPrompter({
       multiselect: vi.fn(async () => ["plugin-c"]),
@@ -198,7 +198,7 @@ describe("setupPluginConfig", () => {
   });
 
   it("skips sensitive fields", async () => {
-    const existingConfigs: Record<string, Record<string, unknown>> = {};
+    const existingConfigs: Record<string, Record<string, any>> = {};
     const noteMock = vi.fn(async () => {});
 
     const prompter = createMockPrompter({

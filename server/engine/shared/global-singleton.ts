@@ -8,7 +8,7 @@
 
 /** 解析进程级单例，用于可容忍 helper lookup 的缓存和注册表 */
 export function resolveGlobalSingleton<T>(key: symbol, create: () => T): T {
-  const globalStore = globalThis as Record<PropertyKey, unknown>;
+  const globalStore = globalThis as Record<PropertyKey, any>;
   if (Object.hasOwn(globalStore, key)) {
     return globalStore[key] as T;
   }

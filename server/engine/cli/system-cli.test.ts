@@ -17,13 +17,13 @@ vi.mock("./gateway-rpc.js", () => ({
 vi.mock("../runtime.js", async () => ({
   ...(await vi.importActual<typeof import("../runtime.js")>("../runtime.js")),
   defaultRuntime,
-  writeRuntimeJson: (runtime: { log: (...args: unknown[]) => void }, value: unknown, space = 2) =>
+  writeRuntimeJson: (runtime: { log: (...args: any[]) => void }, value: any, space = 2) =>
     runtime.log(JSON.stringify(value, null, space > 0 ? space : undefined)),
 }));
 
 const { registerSystemCli } = await import("./system-cli.js");
 
-function gatewayCall(callIndex = 0): ReadonlyArray<unknown> {
+function gatewayCall(callIndex = 0): ReadonlyArray<any> {
   const call = callGatewayFromCli.mock.calls[callIndex];
   if (!call) {
     throw new Error(`expected gateway call ${callIndex + 1}`);

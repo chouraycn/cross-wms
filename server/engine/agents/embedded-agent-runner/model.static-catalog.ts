@@ -58,7 +58,7 @@ function staticModelIdMatches(params: {
 }
 
 function normalizeStaticCatalogInput(
-  input: readonly unknown[] | undefined,
+  input: readonly any[] | undefined,
 ): ProviderRuntimeModel["input"] {
   const normalizedInput = (input ?? []).filter(
     (item): item is "text" | "image" => item === "text" || item === "image",

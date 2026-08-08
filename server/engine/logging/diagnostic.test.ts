@@ -76,33 +76,33 @@ function countMatching<T>(items: readonly T[], predicate: (item: T) => boolean) 
   return count;
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (typeof value !== "object" || value === null) {
     throw new Error(`${label} was not an object`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function expectRecordFields(record: Record<string, unknown>, fields: Record<string, unknown>) {
+function expectRecordFields(record: Record<string, any>, fields: Record<string, any>) {
   for (const [key, value] of Object.entries(fields)) {
     expect(record[key]).toEqual(value);
   }
 }
 
-function expectNumberField(record: Record<string, unknown>, key: string) {
+function expectNumberField(record: Record<string, any>, key: string) {
   expect(typeof record[key]).toBe("number");
 }
 
 function requireMatchingRecord(
-  items: readonly unknown[],
-  fields: Record<string, unknown>,
+  items: readonly any[],
+  fields: Record<string, any>,
   label: string,
 ) {
   const found = items.find((item) => {
     if (typeof item !== "object" || item === null) {
       return false;
     }
-    const record = item as Record<string, unknown>;
+    const record = item as Record<string, any>;
     return Object.entries(fields).every(([key, value]) => Object.is(record[key], value));
   });
   if (!found) {
@@ -111,8 +111,8 @@ function requireMatchingRecord(
   return requireRecord(found, label);
 }
 
-function requireFirstMockCallArg(mock: unknown, label: string) {
-  const calls = (mock as { mock?: { calls?: unknown[][] } }).mock?.calls;
+function requireFirstMockCallArg(mock: any, label: string) {
+  const calls = (mock as { mock?: { calls?: any[][] } }).mock?.calls;
   const call = calls?.[0];
   if (!call) {
     throw new Error(`missing ${label} call`);
@@ -120,24 +120,24 @@ function requireFirstMockCallArg(mock: unknown, label: string) {
   return requireRecord(call[0], `${label} argument`);
 }
 
-function loggerMessages(spy: unknown): string[] {
-  const calls = (spy as { mock?: { calls?: unknown[][] } }).mock?.calls ?? [];
+function loggerMessages(spy: any): string[] {
+  const calls = (spy as { mock?: { calls?: any[][] } }).mock?.calls ?? [];
   return calls
     .map((call) => call[0])
     .filter((message): message is string => typeof message === "string");
 }
 
-function expectLoggerMessageContaining(spy: unknown, text: string): void {
+function expectLoggerMessageContaining(spy: any, text: string): void {
   expect(loggerMessages(spy).join("\n")).toContain(text);
 }
 
-function expectNoLoggerMessageContaining(spy: unknown, text: string): void {
+function expectNoLoggerMessageContaining(spy: any, text: string): void {
   expect(loggerMessages(spy).join("\n")).not.toContain(text);
 }
 
 function expectRecoveryCall(
-  recoverStuckSession: unknown,
-  fields: Record<string, unknown>,
+  recoverStuckSession: any,
+  fields: Record<string, any>,
   numberFields: readonly string[],
 ) {
   const params = requireFirstMockCallArg(recoverStuckSession, "recoverStuckSession");
@@ -1405,7 +1405,7 @@ describe("stuck session diagnostics threshold", () => {
     // Both sessions should get independent recovery calls.
     expect(recoverStuckSession).toHaveBeenCalledTimes(2);
     const calls = recoverStuckSession.mock.calls.map(
-      (c: unknown[]) => c[0] as Record<string, unknown>,
+      (c: any[]) => c[0] as Record<string, any>,
     );
     const s1Call = calls.find((c) => c.sessionId === "s1");
     const s2Call = calls.find((c) => c.sessionId === "s2");

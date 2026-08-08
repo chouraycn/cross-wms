@@ -23,7 +23,7 @@ export function listMemories(
 ): MemoryRecordRow[] {
   const db = initDb();
   const conditions: string[] = ['tenant_id = ?'];
-  const params: unknown[] = [tenantId];
+  const params: any[] = [tenantId];
 
   if (filter.user_id) {
     conditions.push('user_id = ?');
@@ -74,7 +74,7 @@ interface CreateMemoryData {
   kind?: string;
   content: string;
   importance?: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 /** 创建记忆记录 */

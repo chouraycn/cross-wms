@@ -4,21 +4,21 @@ import { mergeMissing } from "./legacy.shared.js";
 
 describe("mergeMissing prototype pollution guard", () => {
   afterEach(() => {
-    delete (Object.prototype as Record<string, unknown>).polluted;
+    delete (Object.prototype as Record<string, any>).polluted;
   });
 
   it("ignores __proto__ keys without polluting Object.prototype", () => {
-    const target = { safe: { keep: true } } as Record<string, unknown>;
+    const target = { safe: { keep: true } } as Record<string, any>;
     const source = JSON.parse('{"safe":{"next":1},"__proto__":{"polluted":true}}') as Record<
       string,
-      unknown
+      any
     >;
 
     mergeMissing(target, source);
 
-    expect((target.safe as Record<string, unknown>).keep).toBe(true);
-    expect((target.safe as Record<string, unknown>).next).toBe(1);
+    expect((target.safe as Record<string, any>).keep).toBe(true);
+    expect((target.safe as Record<string, any>).next).toBe(1);
     expect(target.polluted).toBeUndefined();
-    expect((Object.prototype as Record<string, unknown>).polluted).toBeUndefined();
+    expect((Object.prototype as Record<string, any>).polluted).toBeUndefined();
   });
 });

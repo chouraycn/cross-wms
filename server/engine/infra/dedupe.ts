@@ -1,7 +1,7 @@
 import { logger } from '../../logger.js';
 
 export interface DedupeOptions {
-  keyFn?: (item: unknown) => string;
+  keyFn?: (item: any) => string;
   keepFirst?: boolean;
   minLength?: number;
 }
@@ -12,7 +12,7 @@ export function deduplicate<T>(items: T[], options: DedupeOptions = {}): T[] {
   const seen = new Set<string>();
   const result: T[] = [];
   
-  const effectiveKeyFn = keyFn ?? ((item: unknown) => JSON.stringify(item));
+  const effectiveKeyFn = keyFn ?? ((item: any) => JSON.stringify(item));
   
   for (const item of items) {
     const key = effectiveKeyFn(item);
@@ -43,7 +43,7 @@ export function deduplicate<T>(items: T[], options: DedupeOptions = {}): T[] {
 
 export function deduplicateStrings(strings: string[], minLength: number = 1): string[] {
   return deduplicate(strings, {
-    keyFn: (s: unknown) => String(s),
+    keyFn: (s: any) => String(s),
     minLength,
   });
 }
@@ -53,7 +53,7 @@ export function deduplicateByProperty<T, K extends keyof T>(
   prop: K
 ): T[] {
   return deduplicate(items, {
-    keyFn: (item: unknown) => String((item as T)[prop]),
+    keyFn: (item: any) => String((item as T)[prop]),
   });
 }
 
@@ -63,7 +63,7 @@ export function createDedupeFilter<T>(
   const seen = new Set<string>();
   const { keyFn, minLength = 1 } = options;
   
-  const effectiveKeyFn = keyFn ?? ((item: unknown) => JSON.stringify(item));
+  const effectiveKeyFn = keyFn ?? ((item: any) => JSON.stringify(item));
   
   return (item: T) => {
     const key = effectiveKeyFn(item);
@@ -82,7 +82,7 @@ export function createDedupeFilter<T>(
 }
 
 // Auto-generated stub exports (added by auto-fix-exports.mjs)
-export const resolveGlobalDedupeCache: (...args: unknown[]) => unknown = undefined as unknown as (...args: unknown[]) => unknown;
+export const resolveGlobalDedupeCache: (...args: any[]) => unknown = undefined as unknown as (...args: any[]) => unknown;
 
 // openclaw compat: bounded in-memory dedupe cache with optional TTL expiry
 export interface DedupeCacheOptions {

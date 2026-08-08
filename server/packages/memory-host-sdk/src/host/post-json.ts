@@ -12,11 +12,11 @@ export async function postJson<T>(params: {
   ssrfPolicy?: SsrFPolicy;
   fetchImpl?: typeof fetch;
   signal?: AbortSignal;
-  body: unknown;
+  body: any;
   errorPrefix: string;
   attachStatus?: boolean;
   maxResponseBytes?: number;
-  parse: (payload: unknown) => T | Promise<T>;
+  parse: (payload: any) => T | Promise<T>;
 }): Promise<T> {
   return await withRemoteHttpResponse({
     url: params.url,

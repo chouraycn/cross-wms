@@ -16,11 +16,11 @@ type FastModeState = {
 
 /** Resolve the effective fast-mode setting and its source. */
 export function resolveFastModeState(params: {
-  cfg?: Record<string, unknown>;
+  cfg?: Record<string, any>;
   provider: string;
   model: string;
   agentId?: string;
-  sessionEntry?: Record<string, unknown>;
+  sessionEntry?: Record<string, any>;
 }): FastModeState {
   // Cross-wms does not have agent config resolution for fast-mode.
   // Check session entry for a fastMode override.

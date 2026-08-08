@@ -133,7 +133,7 @@ export async function discoverExtensionsFromApi(): Promise<void> {
 
 export async function enableExtensionAction(
   id: string,
-  config?: Record<string, unknown>,
+  config?: Record<string, any>,
 ): Promise<void> {
   actionLoading.add(id);
   error = null;

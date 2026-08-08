@@ -7,7 +7,7 @@
 const DEFAULT_HEARTBEAT_TYPING_INTERVAL_SECONDS = 6;
 
 export type HeartbeatTypingLogger = {
-  debug?: (message: string, meta?: Record<string, unknown>) => void;
+  debug?: (message: string, meta?: Record<string, any>) => void;
 };
 
 export type HeartbeatTypingTarget = {

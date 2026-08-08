@@ -11,10 +11,10 @@
  * 完整实现见 openclaw 源码。
  */
 
-export function computeInlineScriptHashes(..._args: unknown[]): unknown {
+export function computeInlineScriptHashes(..._args: any[]): any {
   return undefined;
 }
 
-export function buildControlUiCspHeader(..._args: unknown[]): unknown {
+export function buildControlUiCspHeader(..._args: any[]): any {
   return undefined;
 }

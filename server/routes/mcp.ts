@@ -91,7 +91,7 @@ router.put('/servers/:id', async (req: Request, res: Response) => {
     }
 
     // 白名单过滤，仅允许更新这些字段
-    const updates: Record<string, unknown> = {};
+    const updates: Record<string, any> = {};
     if (name !== undefined) updates.name = name;
     if (command !== undefined) updates.command = command;
     if (args !== undefined) updates.args = args;

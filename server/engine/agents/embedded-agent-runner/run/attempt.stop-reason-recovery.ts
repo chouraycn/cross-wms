@@ -15,7 +15,7 @@ function formatUnhandledStopReasonErrorMessage(stopReason: string): string {
   return `The model stopped because the provider returned an unhandled stop reason: ${stopReason}. Please rephrase and try again.`;
 }
 
-function normalizeUnhandledStopReasonMessage(message: unknown): string | undefined {
+function normalizeUnhandledStopReasonMessage(message: any): string | undefined {
   if (typeof message !== "string") {
     return undefined;
   }
@@ -27,12 +27,12 @@ function normalizeUnhandledStopReasonMessage(message: unknown): string | undefin
   return formatUnhandledStopReasonErrorMessage(stopReason);
 }
 
-function patchUnhandledStopReasonInAssistantMessage(message: unknown): void {
+function patchUnhandledStopReasonInAssistantMessage(message: any): void {
   if (!message || typeof message !== "object") {
     return;
   }
 
-  const assistant = message as { errorMessage?: unknown; stopReason?: unknown };
+  const assistant = message as { errorMessage?: any; stopReason?: any };
   const normalizedMessage = normalizeUnhandledStopReasonMessage(assistant.errorMessage);
   if (!normalizedMessage) {
     return;
@@ -106,7 +106,7 @@ function wrapStreamHandleUnhandledStopReason(
           try {
             const result = await streamIterator.next();
             if (!result.done && result.value && typeof result.value === "object") {
-              const event = result.value as { error?: unknown };
+              const event = result.value as { error?: any };
               patchUnhandledStopReasonInAssistantMessage(event.error);
             }
             return result;
@@ -154,7 +154,7 @@ export function wrapStreamFnHandleSensitiveStopReason(baseFn: StreamFn): StreamF
       if (maybeStream && typeof maybeStream === "object" && "then" in maybeStream) {
         return Promise.resolve(maybeStream).then(
           (stream) => wrapStreamHandleUnhandledStopReason(model, stream),
-          (err: unknown) => {
+          (err: any) => {
             const normalizedMessage = normalizeUnhandledStopReasonMessage(formatErrorMessage(err));
             if (!normalizedMessage) {
               throw err;

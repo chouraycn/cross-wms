@@ -52,7 +52,7 @@ export interface ApprovalRequest {
   id: string;
   toolName: string;
   toolDescription?: string;
-  parameters: Record<string, unknown>;
+  parameters: Record<string, any>;
   riskLevel: RiskLevel;
   reason?: string;
   timestamp: number;
@@ -137,7 +137,7 @@ const formatTime = (ts: number): string => {
   return d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 };
 
-const formatParams = (params: Record<string, unknown>): string => {
+const formatParams = (params: Record<string, any>): string => {
   try {
     return JSON.stringify(params, null, 2);
   } catch {

@@ -3,19 +3,19 @@ import { expect, vi } from "vitest";
 import type { VideoGenerationResult } from "../video-generation.js";
 
 type ClearableMock = {
-  mockClear(): unknown;
+  mockClear(): any;
 };
 
 type ResettableMock = {
-  mockReset(): unknown;
+  mockReset(): any;
 };
 
 type ResolvableMock = {
-  mockResolvedValue(value: unknown): unknown;
+  mockResolvedValue(value: any): any;
 };
 
 type ChainableResolvedValueMock = ResettableMock & {
-  mockResolvedValueOnce(value: unknown): ChainableResolvedValueMock;
+  mockResolvedValueOnce(value: any): ChainableResolvedValueMock;
 };
 
 export type DashscopeVideoProviderMocks = {

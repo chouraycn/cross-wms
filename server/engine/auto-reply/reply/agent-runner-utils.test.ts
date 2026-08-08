@@ -10,16 +10,16 @@ const hoisted = vi.hoisted(() => {
 });
 
 vi.mock("../../agents/agent-scope.js", () => ({
-  resolveEffectiveModelFallbacks: (...args: unknown[]) =>
+  resolveEffectiveModelFallbacks: (...args: any[]) =>
     hoisted.resolveEffectiveModelFallbacksMock(...args),
 }));
 
 vi.mock("../../channels/plugins/index.js", () => ({
-  getChannelPlugin: (...args: unknown[]) => hoisted.getChannelPluginMock(...args),
+  getChannelPlugin: (...args: any[]) => hoisted.getChannelPluginMock(...args),
 }));
 
 vi.mock("../../utils/provider-utils.js", () => ({
-  isReasoningTagProvider: (...args: unknown[]) => hoisted.isReasoningTagProviderMock(...args),
+  isReasoningTagProvider: (...args: any[]) => hoisted.isReasoningTagProviderMock(...args),
 }));
 
 const {

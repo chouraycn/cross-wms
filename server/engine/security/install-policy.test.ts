@@ -164,7 +164,7 @@ describe("runInstallPolicy", () => {
     });
 
     expect(result).toEqual({});
-    const captured = JSON.parse(await fs.readFile(capturePath, "utf8")) as Record<string, unknown>;
+    const captured = JSON.parse(await fs.readFile(capturePath, "utf8")) as Record<string, any>;
     expect(captured.protocolVersion).toBe(1);
     expect(captured.openclawVersion).toEqual(expect.any(String));
     expect(captured.targetType).toBe("skill");

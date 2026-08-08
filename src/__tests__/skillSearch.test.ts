@@ -3,10 +3,10 @@ import { describe, it, expect, vi } from "vitest";
 import type { SkillEntry } from '../utils/skillRegistry.js';
 
 const mockSkills: SkillEntry[] = [
-  { id: "skill-a", name: "入库规划", enabled: true, source: "builtin", metadata: { name: "入库规划", description: "入库规划技能", dependencies: ['core'] } as unknown, description: "这是入库规划技能的详细描述，包含多个关键词".repeat(2), filePath: '/skills/skill-a/SKILL.md', baseDir: '/skills/skill-a' },
-  { id: "skill-b", name: "出库优化", enabled: true, source: "builtin", metadata: {} as unknown, description: "出库优化描述".repeat(3), filePath: '/skills/skill-b/SKILL.md', baseDir: '/skills/skill-b' },
-  { id: "skill-c", name: "库存管理", enabled: false, source: "market", metadata: { name: "库存管理", description: "库存管理技能", dependencies: ['core'], conflicts: ['old'] } as unknown, description: "库存管理技能的详细描述".repeat(2), filePath: '/skills/skill-c/SKILL.md', baseDir: '/skills/skill-c' },
-  { id: "skill-d", name: "数据分析", enabled: true, source: "user", metadata: {} as unknown, description: "", filePath: '/skills/skill-d/SKILL.md', baseDir: '/skills/skill-d' },
+  { id: "skill-a", name: "入库规划", enabled: true, source: "builtin", metadata: { name: "入库规划", description: "入库规划技能", dependencies: ['core'] } as any, description: "这是入库规划技能的详细描述，包含多个关键词".repeat(2), filePath: '/skills/skill-a/SKILL.md', baseDir: '/skills/skill-a' },
+  { id: "skill-b", name: "出库优化", enabled: true, source: "builtin", metadata: {} as any, description: "出库优化描述".repeat(3), filePath: '/skills/skill-b/SKILL.md', baseDir: '/skills/skill-b' },
+  { id: "skill-c", name: "库存管理", enabled: false, source: "market", metadata: { name: "库存管理", description: "库存管理技能", dependencies: ['core'], conflicts: ['old'] } as any, description: "库存管理技能的详细描述".repeat(2), filePath: '/skills/skill-c/SKILL.md', baseDir: '/skills/skill-c' },
+  { id: "skill-d", name: "数据分析", enabled: true, source: "user", metadata: {} as any, description: "", filePath: '/skills/skill-d/SKILL.md', baseDir: '/skills/skill-d' },
 ];
 
 vi.mock("../utils/skillRegistry.js", () => ({

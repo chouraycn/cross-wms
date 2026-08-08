@@ -9,12 +9,12 @@ import type { EmbeddedAgentQueueMessageOptions } from "./embedded-agent-runner/r
 import type { EmbeddedAgentQueueMessageOutcome } from "./embedded-agent-runner/runs.js";
 
 type DeliveryRuntimeMockOptions = {
-  callGateway: (request: unknown) => Promise<unknown>;
+  callGateway: (request: any) => Promise<any>;
   getRuntimeConfig: () => OpenClawConfig;
   loadSessionStore: (storePath: string) => unknown;
   resolveAgentIdFromSessionKey: (sessionKey: string) => string;
-  resolveMainSessionKey: (cfg: unknown) => string;
-  resolveStorePath: (store: unknown, options: unknown) => string;
+  resolveMainSessionKey: (cfg: any) => string;
+  resolveStorePath: (store: any, options: any) => string;
   isEmbeddedAgentRunActive: (sessionId: string) => boolean;
   queueEmbeddedAgentMessageWithOutcome: (
     sessionId: string,
@@ -58,11 +58,11 @@ function resolveQueueSettings(params: {
 /** Create a mocked announce delivery runtime for focused subagent tests. */
 export function createSubagentAnnounceDeliveryRuntimeMock(options: DeliveryRuntimeMockOptions) {
   return {
-    callGateway: (async <T = Record<string, unknown>>(request: Parameters<typeof callGateway>[0]) =>
+    callGateway: (async <T = Record<string, any>>(request: Parameters<typeof callGateway>[0]) =>
       (await options.callGateway(request)) as T) as typeof callGateway,
-    dispatchGatewayMethodInProcess: (async <T = Record<string, unknown>>(
+    dispatchGatewayMethodInProcess: (async <T = Record<string, any>>(
       method: string,
-      params: Record<string, unknown>,
+      params: Record<string, any>,
       callOptions?: { expectFinal?: boolean; timeoutMs?: number },
     ) =>
       (await options.callGateway({

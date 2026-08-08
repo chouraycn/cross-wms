@@ -161,7 +161,7 @@ describe("memory embedding provider registry", () => {
     const alpha = createAdapter("alpha");
     registerMemoryEmbeddingProvider(alpha, { ownerPluginId: "memory-core" });
 
-    const globalRegistry = (globalThis as Record<PropertyKey, unknown>)[
+    const globalRegistry = (globalThis as Record<PropertyKey, any>)[
       MEMORY_EMBEDDING_PROVIDERS_KEY
     ] as Map<string, { adapter: MemoryEmbeddingProviderAdapter; ownerPluginId?: string }>;
 

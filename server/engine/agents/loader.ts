@@ -112,38 +112,38 @@ function discoverExtensionsInDir(dir: string): string[] {
 }
 
 export type ExtensionRuntime = {
-  sendMessage: (...args: unknown[]) => void;
-  sendUserMessage: (...args: unknown[]) => void;
-  appendEntry: (...args: unknown[]) => void;
+  sendMessage: (...args: any[]) => void;
+  sendUserMessage: (...args: any[]) => void;
+  appendEntry: (...args: any[]) => void;
   setSessionName: (name: string) => void;
   getSessionName: () => string | undefined;
   setLabel: (entryId: string, label: string | undefined) => void;
   getActiveTools: () => string[];
-  getAllTools: () => unknown[];
+  getAllTools: () => any[];
   setActiveTools: (toolNames: string[]) => void;
   refreshTools: () => void;
-  getCommands: () => unknown[];
+  getCommands: () => any[];
   setModel: (model: string) => Promise<void>;
   getThinkingLevel: () => unknown;
-  setThinkingLevel: (level: unknown) => void;
-  flagValues: Map<string, unknown>;
-  pendingProviderRegistrations: Array<{ name: string; config: unknown; extensionPath: string }>;
+  setThinkingLevel: (level: any) => void;
+  flagValues: Map<string, any>;
+  pendingProviderRegistrations: Array<{ name: string; config: any; extensionPath: string }>;
   assertActive: () => void;
   invalidate: (message?: string) => void;
-  registerProvider: (name: string, config: unknown, extensionPath?: string) => void;
+  registerProvider: (name: string, config: any, extensionPath?: string) => void;
   unregisterProvider: (name: string) => void;
 };
 
 export type Extension = {
   path: string;
   resolvedPath: string;
-  sourceInfo: unknown;
-  handlers: Map<string, Array<(...args: unknown[]) => Promise<unknown>>>;
-  tools: Map<string, unknown>;
-  messageRenderers: Map<string, unknown>;
-  commands: Map<string, unknown>;
-  flags: Map<string, unknown>;
-  shortcuts: Map<string, unknown>;
+  sourceInfo: any;
+  handlers: Map<string, Array<(...args: any[]) => Promise<any>>>;
+  tools: Map<string, any>;
+  messageRenderers: Map<string, any>;
+  commands: Map<string, any>;
+  flags: Map<string, any>;
+  shortcuts: Map<string, any>;
 };
 
 export type LoadExtensionsResult = {

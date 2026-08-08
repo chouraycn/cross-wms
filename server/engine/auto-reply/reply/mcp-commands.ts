@@ -4,7 +4,7 @@ import { parseStandardSetUnsetSlashCommand } from "./commands-setunset-standard.
 
 type McpCommand =
   | { action: "show"; name?: string }
-  | { action: "set"; name: string; value: unknown }
+  | { action: "set"; name: string; value: any }
   | { action: "unset"; name: string }
   | { action: "error"; message: string };
 

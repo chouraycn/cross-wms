@@ -243,7 +243,7 @@ export class RemoteSkillLoader {
     const data = await response.json();
     const results = Array.isArray(data) ? data : data.results ?? data.skills ?? [];
 
-    return results.map((item: Record<string, unknown>) => ({
+    return results.map((item: Record<string, any>) => ({
       id: item.id,
       name: item.name,
       description: (item.description as string) || '',
@@ -356,7 +356,7 @@ export class RemoteSkillLoader {
     const data = await response.json();
     const items = Array.isArray(data) ? data : data.results ?? data.skills ?? data.data ?? [];
 
-    return items.map((item: Record<string, unknown>) => ({
+    return items.map((item: Record<string, any>) => ({
       id: item.id,
       name: item.name,
       description: (item.description as string) || '',
@@ -393,13 +393,13 @@ export class RemoteSkillLoader {
     const data = await response.json();
     const objects = data.objects ?? [];
 
-    return objects.map((obj: Record<string, unknown>) => {
+    return objects.map((obj: Record<string, any>) => {
       const pkg = obj.package as {
         name: string;
         description?: string;
         version: string;
         author?: { name?: string };
-        keywords?: unknown;
+        keywords?: any;
         links?: { tarball?: string };
       };
       return {

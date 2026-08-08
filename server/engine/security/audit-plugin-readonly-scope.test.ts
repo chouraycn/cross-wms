@@ -7,20 +7,20 @@ const loadPluginMetadataRegistrySnapshotMock = vi.hoisted(() => vi.fn());
 const resolveConfiguredChannelPluginIdsMock = vi.hoisted(() => vi.fn());
 
 vi.mock("../config/plugin-auto-enable.js", () => ({
-  applyPluginAutoEnable: (...args: unknown[]) => applyPluginAutoEnableMock(...args),
+  applyPluginAutoEnable: (...args: any[]) => applyPluginAutoEnableMock(...args),
 }));
 
 vi.mock("../plugins/channel-plugin-ids.js", () => ({
-  resolveConfiguredChannelPluginIds: (...args: unknown[]) =>
+  resolveConfiguredChannelPluginIds: (...args: any[]) =>
     resolveConfiguredChannelPluginIdsMock(...args),
 }));
 
 vi.mock("../plugins/runtime.js", () => ({
-  getActivePluginRegistry: (...args: unknown[]) => getActivePluginRegistryMock(...args),
+  getActivePluginRegistry: (...args: any[]) => getActivePluginRegistryMock(...args),
 }));
 
 vi.mock("../plugins/runtime/metadata-registry-loader.js", () => ({
-  loadPluginMetadataRegistrySnapshot: (...args: unknown[]) =>
+  loadPluginMetadataRegistrySnapshot: (...args: any[]) =>
     loadPluginMetadataRegistrySnapshotMock(...args),
 }));
 
@@ -44,7 +44,7 @@ function createAuditContext(params: {
     plugins: params.plugins,
     loadPluginSecurityCollectors: true,
     configSnapshot: null,
-    codeSafetySummaryCache: new Map<string, Promise<unknown>>(),
+    codeSafetySummaryCache: new Map<string, Promise<any>>(),
   };
 }
 
@@ -64,7 +64,7 @@ describe("security audit read-only plugin scope", () => {
     loadPluginMetadataRegistrySnapshotMock.mockReset();
     resolveConfiguredChannelPluginIdsMock.mockReset();
     getActivePluginRegistryMock.mockReturnValue(null);
-    applyPluginAutoEnableMock.mockImplementation((params: { config: unknown }) => ({
+    applyPluginAutoEnableMock.mockImplementation((params: { config: any }) => ({
       config: params.config,
       changes: [],
       autoEnabledReasons: {},
@@ -102,9 +102,9 @@ describe("security audit read-only plugin scope", () => {
       resolveConfiguredChannelPluginIdsMock,
       "configured channel plugin ids",
     ) as {
-      config?: unknown;
-      activationSourceConfig?: unknown;
-      env?: unknown;
+      config?: any;
+      activationSourceConfig?: any;
+      env?: any;
     };
     expect(resolveConfiguredChannelPluginIdsParams.config).toBe(sourceConfig);
     expect(resolveConfiguredChannelPluginIdsParams.activationSourceConfig).toBe(sourceConfig);

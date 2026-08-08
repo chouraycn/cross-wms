@@ -6,7 +6,7 @@
  */
 
 /** Prepares the Google prompt cache stream function. */
-export function prepareGooglePromptCacheStreamFn(..._args: unknown[]): undefined {
+export function prepareGooglePromptCacheStreamFn(..._args: any[]): undefined {
   // Cross-wms does not have Google prompt cache integration.
   return undefined;
 }

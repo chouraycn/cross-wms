@@ -9,7 +9,7 @@ import type { PluginBundleFormat } from "./manifest-types.js";
 import { loadPluginManifestRegistryForPluginRegistry } from "./plugin-registry.js";
 
 type ReadBundleJsonResult =
-  | { ok: true; raw: Record<string, unknown> }
+  | { ok: true; raw: Record<string, any> }
   | { ok: false; error: string };
 
 export type BundleServerRuntimeSupport = {
@@ -60,7 +60,7 @@ export function resolveBundleJsonOpenFailure(params: {
 
 export function inspectBundleServerRuntimeSupport<TConfig>(params: {
   loaded: { config: TConfig; diagnostics: string[] };
-  resolveServers: (config: TConfig) => Record<string, Record<string, unknown>>;
+  resolveServers: (config: TConfig) => Record<string, Record<string, any>>;
 }): BundleServerRuntimeSupport {
   const supportedServerNames: string[] = [];
   const unsupportedServerNames: string[] = [];

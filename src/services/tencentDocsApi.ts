@@ -30,8 +30,8 @@ export interface TDocNode {
   type: string;
   children: TDocNode[];
   text?: string;
-  property?: Record<string, unknown>;
-  meta?: unknown;
+  property?: Record<string, any>;
+  meta?: any;
 }
 
 /** 文档内容响应 */
@@ -42,11 +42,11 @@ export interface TDocContent {
 
 /** Sheet 单元格 */
 export interface SheetCell {
-  cellFormat: unknown;
+  cellFormat: any;
   cellValue: {
     text?: string;
     location?: { name: string; latitude: string; longitude: string };
-    [key: string]: unknown;
+    [key: string]: any;
   };
   dataType: string;
 }
@@ -59,8 +59,8 @@ export interface SheetRow {
 /** Sheet 内容响应 */
 export interface SheetContent {
   gridData: {
-    columnMetadata: unknown[];
-    rowMetadata: unknown[];
+    columnMetadata: any[];
+    rowMetadata: any[];
     rows: SheetRow[];
     startColumn: number;
     startRow: number;
@@ -161,16 +161,16 @@ function waitForApi(timeout = 5000): Promise<PyWebViewApi> {
 /**
  * 调用 pywebview API 方法并解析 JSON 结果
  */
-export async function callApi<T>(method: keyof PyWebViewApi, ...args: unknown[]): Promise<T> {
+export async function callApi<T>(method: keyof PyWebViewApi, ...args: any[]): Promise<T> {
   const api = await waitForApi();
-  const fn = api[method] as (...a: unknown[]) => Promise<string>;
+  const fn = api[method] as (...a: any[]) => Promise<string>;
   let jsonStr: string;
   try {
     jsonStr = await fn(...args);
   } catch (e) {
     throw new Error(`pywebview API 调用失败: ${e instanceof Error ? e.message : String(e)}`);
   }
-  let result: Record<string, unknown>;
+  let result: Record<string, any>;
   try {
     result = JSON.parse(jsonStr);
   } catch {
@@ -222,8 +222,8 @@ export async function getSheetContent(
 }
 
 /** 获取表格子表信息 */
-export async function getSheetInfo(fileId: string): Promise<unknown> {
-  return callApi<unknown>('tdoc_sheet_info', fileId);
+export async function getSheetInfo(fileId: string): Promise<any> {
+  return callApi<any>('tdoc_sheet_info', fileId);
 }
 
 // ===================== 文档内容解析工具 =====================

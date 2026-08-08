@@ -54,7 +54,7 @@ export type GenerateImageRuntimeResult = {
     error?: string;
   }>;
   normalization?: ImageGenerationNormalization;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
   ignoredOverrides: ImageGenerationIgnoredOverride[];
 };
 
@@ -199,7 +199,7 @@ export async function generateImage(
     model: string;
     error?: string;
   }> = [];
-  let lastError: unknown;
+  let lastError: any;
 
   // Try each candidate in order
   for (const candidate of candidates) {

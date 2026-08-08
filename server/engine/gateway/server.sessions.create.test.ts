@@ -290,7 +290,7 @@ test("sessions.create rolls back the entry when transcript initialization fails"
     expect((created.error as { message?: string } | undefined)?.message ?? "").toContain(
       "failed to create session transcript:",
     );
-    const rawStore = JSON.parse(await fs.readFile(storePath, "utf-8")) as Record<string, unknown>;
+    const rawStore = JSON.parse(await fs.readFile(storePath, "utf-8")) as Record<string, any>;
     expect(rawStore["agent:ops:main"]).toBeUndefined();
   } finally {
     testState.agentsConfig = undefined;
@@ -339,7 +339,7 @@ test("sessions.create preserves global and unknown sentinel keys", async () => {
   expect(rawStore.global?.sessionId).toBe(globalCreated.payload?.sessionId);
   expect(rawStore.unknown?.sessionId).toBe(unknownCreated.payload?.sessionId);
   expect(rawStore["agent:longmemeval:global"]).toBeUndefined();
-  expect(rawStore["agent:longmemeval:unknown"]).toBeUndefined();
+  expect(rawStore["agent:longmemeval: any"]).toBeUndefined();
 });
 
 test("sessions.create stores selected global sessions in the requested agent store", async () => {
@@ -441,8 +441,8 @@ test("sessions.create loads selected global parent from the requested agent stor
         } =>
           Boolean(event) &&
           typeof event === "object" &&
-          (event as { type?: unknown }).type === "command" &&
-          (event as { action?: unknown }).action === "new",
+          (event as { type?: any }).type === "command" &&
+          (event as { action?: any }).action === "new",
       );
     expect(commandNewEvent?.context?.sessionEntry?.sessionId).toBe("sess-work-parent");
     const [endEvent] = sessionLifecycleHookMocks.runSessionEnd.mock.calls[0] as unknown as [
@@ -493,7 +493,7 @@ test("sessions.get reads selected global messages from the requested agent store
       },
     });
 
-    const result = await directSessionReq<{ messages?: unknown[] }>("sessions.get", {
+    const result = await directSessionReq<{ messages?: any[] }>("sessions.get", {
       key: "global",
       agentId: "work",
     });

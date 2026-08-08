@@ -74,7 +74,7 @@ export type PluginStateStoreErrorOptions = {
   code: PluginStateStoreErrorCode;
   operation: PluginStateStoreOperation;
   path?: string;
-  cause?: unknown;
+  cause?: any;
 };
 
 /** Typed error thrown for plugin-state validation and sqlite failures. */

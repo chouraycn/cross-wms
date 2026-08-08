@@ -1,6 +1,6 @@
 type ClaudeModelRef = {
   id?: string;
-  params?: Record<string, unknown>;
+  params?: Record<string, any>;
 };
 
 type ClaudeEffortModelRef = ClaudeModelRef & {

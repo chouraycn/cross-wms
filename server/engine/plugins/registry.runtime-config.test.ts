@@ -38,7 +38,7 @@ describe("plugin registry runtime config scope", () => {
     });
     const api = pluginRegistry.createApi(record, { config: {} as OpenClawConfig });
 
-    let thrown: unknown;
+    let thrown: any;
     try {
       void api.runtime.version;
     } catch (error) {

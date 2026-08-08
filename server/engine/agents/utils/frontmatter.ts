@@ -7,7 +7,7 @@
 import { parse } from "yaml";
 
 /** Parsed frontmatter metadata plus the remaining document body. */
-type ParsedFrontmatter<T extends Record<string, unknown>> = {
+type ParsedFrontmatter<T extends Record<string, any>> = {
   frontmatter: T;
   body: string;
 };
@@ -34,7 +34,7 @@ const extractFrontmatter = (content: string): { yamlString: string | null; body:
 };
 
 /** Parses optional YAML frontmatter from Markdown-like content. */
-export const parseFrontmatter = <T extends Record<string, unknown> = Record<string, unknown>>(
+export const parseFrontmatter = <T extends Record<string, any> = Record<string, any>>(
   content: string,
 ): ParsedFrontmatter<T> => {
   const { yamlString, body } = extractFrontmatter(content);

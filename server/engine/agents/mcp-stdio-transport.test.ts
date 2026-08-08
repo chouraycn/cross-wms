@@ -164,7 +164,7 @@ describe("OpenClawStdioClientTransport", () => {
   it("rejects send() with EPIPE when child stdin is closed (#75438)", async () => {
     const child = new MockChildProcess();
     const brokenStdin = new PassThrough();
-    brokenStdin.write = (_chunk: unknown, cbOrEncoding?: unknown, cb?: unknown) => {
+    brokenStdin.write = (_chunk: any, cbOrEncoding?: any, cb?: any) => {
       const callback =
         typeof cbOrEncoding === "function" ? cbOrEncoding : typeof cb === "function" ? cb : null;
       const err = Object.assign(new Error("write EPIPE"), { code: "EPIPE" });

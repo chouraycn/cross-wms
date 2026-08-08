@@ -82,7 +82,7 @@ export function writePlugin(params: {
   body: string;
   dir?: string;
   filename?: string;
-  configSchema?: Record<string, unknown>;
+  configSchema?: Record<string, any>;
 }): TempPlugin {
   const dir = params.dir ?? makeTempDir();
   const filename = params.filename ?? `${params.id}.cjs`;

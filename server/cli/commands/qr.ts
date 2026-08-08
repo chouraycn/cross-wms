@@ -42,7 +42,7 @@ function scanQr(path: string): { success: boolean; content?: string; message: st
   };
 }
 
-function formatJsonOutput(data: unknown): string {
+function formatJsonOutput(data: any): string {
   return JSON.stringify(data, null, 2);
 }
 

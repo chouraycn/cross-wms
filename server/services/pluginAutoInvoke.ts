@@ -24,7 +24,7 @@ export interface TriggerMatch {
   /** 完整工具名，含 plugin_ 前缀 */
   toolName: string;
   /** 传递给工具的参数 */
-  args: Record<string, unknown>;
+  args: Record<string, any>;
   /** 匹配到的关键词 */
   matchedKeyword?: string;
   /** 匹配到的模式（未来正则匹配时使用） */
@@ -91,7 +91,7 @@ async function refreshTriggerCache(): Promise<void> {
         newCache.push({
           pluginId: plugin.id,
           manifestName: manifest.name,
-          triggers: manifest.triggers.map((t: Record<string, unknown>) => ({
+          triggers: manifest.triggers.map((t: Record<string, any>) => ({
             keyword: String(t.keyword || ''),
             description: String(t.description || ''),
             toolName: String(t.toolName || ''),

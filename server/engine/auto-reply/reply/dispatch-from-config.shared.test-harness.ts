@@ -21,7 +21,7 @@ import { buildTestCtx } from "./test-ctx.js";
 type AbortResult = { handled: boolean; aborted: boolean; stoppedSubagents?: number };
 
 const mocks = vi.hoisted(() => ({
-  routeReply: vi.fn(async (_params: unknown) => ({ ok: true, messageId: "mock" })),
+  routeReply: vi.fn(async (_params: any) => ({ ok: true, messageId: "mock" })),
   tryFastAbortFromMessage: vi.fn<() => Promise<AbortResult>>(async () => ({
     handled: false,
     aborted: false,
@@ -55,10 +55,10 @@ const hookMocks = vi.hoisted(() => ({
     ),
     runMessageReceived: vi.fn(async () => {}),
     runBeforeDispatch: vi.fn<
-      (eventValue: unknown, _ctx: unknown) => Promise<PluginHookBeforeDispatchResult | undefined>
+      (eventValue: any, _ctx: any) => Promise<PluginHookBeforeDispatchResult | undefined>
     >(async () => undefined),
     runReplyDispatch: vi.fn<
-      (eventValue: unknown, _ctx: unknown) => Promise<PluginHookReplyDispatchResult | undefined>
+      (eventValue: any, _ctx: any) => Promise<PluginHookReplyDispatchResult | undefined>
     >(async () => undefined),
     runReplyPayloadSending: vi.fn(async () => undefined),
   },
@@ -81,10 +81,10 @@ const acpMocks = vi.hoisted(() => ({
       sessionKey: string;
       cfg?: OpenClawConfig;
       mutate: (
-        current: Record<string, unknown> | undefined,
-        entry: { acp?: Record<string, unknown> } | undefined,
-      ) => Record<string, unknown> | null | undefined;
-    }) => Promise<unknown>
+        current: Record<string, any> | undefined,
+        entry: { acp?: Record<string, any> } | undefined,
+      ) => Record<string, any> | null | undefined;
+    }) => Promise<any>
   >(async () => null),
   requireAcpRuntimeBackend: vi.fn<() => unknown>(),
 }));
@@ -104,14 +104,14 @@ const pluginConversationBindingMocks = vi.hoisted(() => ({
   shownFallbackNoticeBindingIds: new Set<string>(),
 }));
 const sessionStoreMocks = vi.hoisted(() => ({
-  currentEntry: undefined as Record<string, unknown> | undefined,
+  currentEntry: undefined as Record<string, any> | undefined,
   loadSessionStore: vi.fn(() => ({})),
   readSessionEntry: vi.fn(() => sessionStoreMocks.currentEntry),
   resolveStorePath: vi.fn(() => "/tmp/mock-sessions.json"),
   resolveSessionStoreEntry: vi.fn(() => ({ existing: sessionStoreMocks.currentEntry })),
   updateSessionStoreEntry: vi.fn(
     async (params: {
-      update: (entry: Record<string, unknown>) => Promise<Record<string, unknown> | null>;
+      update: (entry: Record<string, any>) => Promise<Record<string, any> | null>;
     }) => {
       if (!sessionStoreMocks.currentEntry) {
         return null;
@@ -130,19 +130,19 @@ const acpManagerRuntimeMocks = vi.hoisted(() => ({
 }));
 const agentEventMocks = vi.hoisted(() => ({
   emitAgentEvent: vi.fn(),
-  onAgentEvent: vi.fn<(listener: unknown) => () => void>(() => () => {}),
+  onAgentEvent: vi.fn<(listener: any) => () => void>(() => () => {}),
 }));
 const ttsMocks = vi.hoisted(() => ({
-  maybeApplyTtsToPayload: vi.fn(async (paramsUnknown: unknown) => {
+  maybeApplyTtsToPayload: vi.fn(async (paramsUnknown: any) => {
     const params = paramsUnknown as { payload: ReplyPayload };
     return params.payload;
   }),
-  normalizeTtsAutoMode: vi.fn((value: unknown) => (typeof value === "string" ? value : undefined)),
+  normalizeTtsAutoMode: vi.fn((value: any) => (typeof value === "string" ? value : undefined)),
   resolveTtsConfig: vi.fn((_cfg: OpenClawConfig) => ({ mode: "final" })),
 }));
 const replyMediaPathMocks = vi.hoisted(() => ({
   createReplyMediaPathNormalizer: vi.fn(
-    (_params?: unknown) => async (payload: ReplyPayload) => payload,
+    (_params?: any) => async (payload: ReplyPayload) => payload,
   ),
 }));
 const runtimePluginMocks = vi.hoisted(() => ({
@@ -278,14 +278,14 @@ vi.mock("../../infra/outbound/session-binding-service.js", () => ({
   }),
 }));
 vi.mock("../../infra/agent-events.js", () => ({
-  emitAgentEvent: (params: unknown) => agentEventMocks.emitAgentEvent(params),
-  onAgentEvent: (listener: unknown) => agentEventMocks.onAgentEvent(listener),
+  emitAgentEvent: (params: any) => agentEventMocks.emitAgentEvent(params),
+  onAgentEvent: (listener: any) => agentEventMocks.onAgentEvent(listener),
 }));
 vi.mock("../../plugins/runtime-plugins.runtime.js", () => ({
   ensureRuntimePluginsLoaded: runtimePluginMocks.ensureRuntimePluginsLoaded,
 }));
 vi.mock("./conversation-binding-input.js", () => {
-  const normalize = (value: unknown) =>
+  const normalize = (value: any) =>
     typeof value === "string" && value.trim() ? value.trim() : undefined;
   return {
     resolveConversationBindingContextFromMessage: (params: {
@@ -352,15 +352,15 @@ vi.mock("./dispatch-acp-manager.runtime.js", () => ({
   }),
 }));
 vi.mock("../../tts/tts.js", () => ({
-  maybeApplyTtsToPayload: (params: unknown) => ttsMocks.maybeApplyTtsToPayload(params),
-  normalizeTtsAutoMode: (value: unknown) => ttsMocks.normalizeTtsAutoMode(value),
+  maybeApplyTtsToPayload: (params: any) => ttsMocks.maybeApplyTtsToPayload(params),
+  normalizeTtsAutoMode: (value: any) => ttsMocks.normalizeTtsAutoMode(value),
   resolveTtsConfig: (cfg: OpenClawConfig) => ttsMocks.resolveTtsConfig(cfg),
 }));
 vi.mock("../../tts/tts.runtime.js", () => ({
-  maybeApplyTtsToPayload: (params: unknown) => ttsMocks.maybeApplyTtsToPayload(params),
+  maybeApplyTtsToPayload: (params: any) => ttsMocks.maybeApplyTtsToPayload(params),
 }));
 vi.mock("./reply-media-paths.runtime.js", () => ({
-  createReplyMediaPathNormalizer: (params: unknown) =>
+  createReplyMediaPathNormalizer: (params: any) =>
     replyMediaPathMocks.createReplyMediaPathNormalizer(params),
 }));
 vi.mock("../../tts/status-config.js", () => ({
@@ -372,14 +372,14 @@ vi.mock("../../tts/status-config.js", () => ({
   }),
 }));
 vi.mock("./dispatch-acp-tts.runtime.js", () => ({
-  maybeApplyTtsToPayload: (params: unknown) => ttsMocks.maybeApplyTtsToPayload(params),
+  maybeApplyTtsToPayload: (params: any) => ttsMocks.maybeApplyTtsToPayload(params),
 }));
 vi.mock("./dispatch-acp-session.runtime.js", () => ({
   readAcpSessionEntry: (params: { sessionKey: string; cfg?: OpenClawConfig }) =>
     acpMocks.readAcpSessionEntry(params),
 }));
 vi.mock("../../tts/tts-config.js", () => ({
-  normalizeTtsAutoMode: (value: unknown) => ttsMocks.normalizeTtsAutoMode(value),
+  normalizeTtsAutoMode: (value: any) => ttsMocks.normalizeTtsAutoMode(value),
   resolveConfiguredTtsMode: (cfg: OpenClawConfig) => ttsMocks.resolveTtsConfig(cfg).mode,
   shouldCleanTtsDirectiveText: () => true,
   shouldAttemptTtsPayload: () => true,
@@ -404,13 +404,13 @@ export function createDispatcher(): ReplyDispatcher {
 
 export function resetPluginTtsAndThreadMocks() {
   pluginConversationBindingMocks.shownFallbackNoticeBindingIds.clear();
-  ttsMocks.maybeApplyTtsToPayload.mockReset().mockImplementation(async (paramsUnknown: unknown) => {
+  ttsMocks.maybeApplyTtsToPayload.mockReset().mockImplementation(async (paramsUnknown: any) => {
     const params = paramsUnknown as { payload: ReplyPayload };
     return params.payload;
   });
   ttsMocks.normalizeTtsAutoMode
     .mockReset()
-    .mockImplementation((value: unknown) => (typeof value === "string" ? value : undefined));
+    .mockImplementation((value: any) => (typeof value === "string" ? value : undefined));
   ttsMocks.resolveTtsConfig.mockReset().mockReturnValue({ mode: "final" });
   replyMediaPathMocks.createReplyMediaPathNormalizer
     .mockReset()

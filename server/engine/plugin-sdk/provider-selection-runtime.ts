@@ -78,8 +78,8 @@ export function resolveProviderRawConfig(params: {
   /** Optional selected/alias provider id whose config overrides canonical values. */
   configuredProviderId?: string;
   /** Provider config map keyed by canonical and configured provider ids. */
-  providerConfigs?: Record<string, Record<string, unknown> | undefined>;
-}): Record<string, unknown> {
+  providerConfigs?: Record<string, Record<string, any> | undefined>;
+}): Record<string, any> {
   const canonicalProviderConfig = readProviderConfig(params.providerConfigs, params.providerId);
   const selectedProviderConfig = readProviderConfig(
     params.providerConfigs,
@@ -101,7 +101,7 @@ export function resolveConfiguredCapabilityProvider<
   /** Optional explicit provider id from config or user input. */
   configuredProviderId?: string;
   /** Provider config map used to merge canonical and selected provider settings. */
-  providerConfigs?: Record<string, Record<string, unknown> | undefined>;
+  providerConfigs?: Record<string, Record<string, any> | undefined>;
   /** Current full config used only for configured-state checks. */
   cfg: TFullConfig | undefined;
   /** Full config passed to provider config resolution. */
@@ -116,7 +116,7 @@ export function resolveConfiguredCapabilityProvider<
     /** Full config passed through for capability-specific config resolution. */
     cfg: TFullConfig;
     /** Merged raw provider config for canonical and selected provider ids. */
-    rawConfig: Record<string, unknown>;
+    rawConfig: Record<string, any>;
   }) => TConfig;
   isProviderConfigured: (params: {
     /** Candidate provider being checked. */
@@ -195,9 +195,9 @@ function selectFirstAutoProvider<TProvider extends AutoSelectableProvider>(
 }
 
 function readProviderConfig(
-  providerConfigs: Record<string, Record<string, unknown> | undefined> | undefined,
+  providerConfigs: Record<string, Record<string, any> | undefined> | undefined,
   providerId: string | undefined,
-): Record<string, unknown> | undefined {
+): Record<string, any> | undefined {
   if (!providerId) {
     return undefined;
   }
@@ -211,14 +211,14 @@ function resolveProviderCandidate<
   TProvider extends AutoSelectableProvider,
 >(params: {
   configuredProviderId?: string;
-  providerConfigs?: Record<string, Record<string, unknown> | undefined>;
+  providerConfigs?: Record<string, Record<string, any> | undefined>;
   cfg: TFullConfig | undefined;
   cfgForResolve: TFullConfig;
   provider: TProvider;
   resolveProviderConfig: (params: {
     provider: TProvider;
     cfg: TFullConfig;
-    rawConfig: Record<string, unknown>;
+    rawConfig: Record<string, any>;
   }) => TConfig;
   isProviderConfigured: (params: {
     provider: TProvider;

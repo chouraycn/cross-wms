@@ -19,7 +19,7 @@ export async function schedulePluginSessionTurn(params: {
   cron?: string;
   delayMs?: number;
   tag?: string;
-  payload?: unknown;
+  payload?: any;
 }): Promise<{ scheduled: boolean; jobId?: string }> {
   void params;
   return { scheduled: false };

@@ -11,14 +11,14 @@
  * 完整实现见 openclaw 源码。
  */
 
-export function prepareGatewayPluginLoad(..._args: unknown[]): unknown {
+export function prepareGatewayPluginLoad(..._args: any[]): any {
   return undefined;
 }
 
-export function loadGatewayStartupPlugins(..._args: unknown[]): unknown {
+export function loadGatewayStartupPlugins(..._args: any[]): any {
   return undefined;
 }
 
-export function reloadDeferredGatewayPlugins(..._args: unknown[]): unknown {
+export function reloadDeferredGatewayPlugins(..._args: any[]): any {
   return undefined;
 }

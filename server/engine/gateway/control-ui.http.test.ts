@@ -56,7 +56,7 @@ describe("handleControlUiHttpRequest", () => {
   }
 
   function responseJson(end: ReturnType<typeof makeMockHttpResponse>["end"]) {
-    return JSON.parse(responseBody(end)) as unknown;
+    return JSON.parse(responseBody(end)) as any;
   }
 
   function firstEndCallLength(end: ReturnType<typeof makeMockHttpResponse>["end"]) {

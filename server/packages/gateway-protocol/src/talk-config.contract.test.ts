@@ -24,7 +24,7 @@ type SelectionContractCase = {
   defaultProvider: string;
   payloadValid: boolean;
   expectedSelection: ExpectedSelection | null;
-  talk: Record<string, unknown>;
+  talk: Record<string, any>;
 };
 
 /** Fixture row that validates Talk silence-timeout normalization. */
@@ -32,7 +32,7 @@ type TimeoutContractCase = {
   id: string;
   fallback: number;
   expectedTimeoutMs: number;
-  talk: Record<string, unknown>;
+  talk: Record<string, any>;
 };
 
 /** JSON fixture file shape used by this contract test. */

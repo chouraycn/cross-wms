@@ -51,14 +51,14 @@ export type GatewayProbeResult = {
   url: string;
   connectLatencyMs: number | null;
   error: string | null;
-  connectErrorDetails?: unknown;
+  connectErrorDetails?: any;
   close: GatewayProbeClose | null;
   auth: GatewayProbeAuthSummary;
   server?: GatewayProbeServerSummary;
-  health: unknown;
-  status: unknown;
+  health: any;
+  status: any;
   presence: SystemPresence[] | null;
-  configSnapshot: unknown;
+  configSnapshot: any;
 };
 
 export const MIN_PROBE_TIMEOUT_MS = 250;
@@ -242,7 +242,7 @@ export async function probeGateway(opts: {
   const instanceId = randomUUID();
   let connectLatencyMs: number | null = null;
   let connectError: string | null = null;
-  let connectErrorDetails: unknown = null;
+  let connectErrorDetails: any = null;
   let close: GatewayProbeClose | null = null;
   let auth = emptyProbeAuth();
   let server = emptyProbeServer();
@@ -299,7 +299,7 @@ export async function probeGateway(opts: {
     };
     const settle = (
       result: Omit<GatewayProbeResult, "url" | "connectErrorDetails"> & {
-        connectErrorDetails?: unknown;
+        connectErrorDetails?: any;
       },
     ) => {
       if (settled) {
@@ -333,10 +333,10 @@ export async function probeGateway(opts: {
       ok: boolean;
       error: string | null;
       verifiedRead?: boolean;
-      health: unknown;
-      status: unknown;
+      health: any;
+      status: any;
       presence: SystemPresence[] | null;
-      configSnapshot: unknown;
+      configSnapshot: any;
     }) => {
       settle({
         ok: params.ok,
@@ -508,7 +508,7 @@ export async function probeGateway(opts: {
           configSnapshot: null,
         });
       })
-      .catch((err: unknown) => {
+      .catch((err: any) => {
         if (settled) {
           return;
         }

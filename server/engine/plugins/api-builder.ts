@@ -18,7 +18,7 @@ export type BuildPluginApiParams = {
   rootDir?: string;
   registrationMode: OpenClawPluginApi["registrationMode"];
   config: OpenClawConfig;
-  pluginConfig?: Record<string, unknown>;
+  pluginConfig?: Record<string, any>;
   runtime: PluginRuntime;
   logger: PluginLogger;
   resolvePath: (input: string) => string;
@@ -147,7 +147,7 @@ const noopRegisterAgentToolResultMiddleware: OpenClawPluginApi["registerAgentToo
   () => {};
 const noopRegisterSessionExtension: OpenClawPluginApi["registerSessionExtension"] = () => {};
 const noopEnqueueNextTurnInjection: OpenClawPluginApi["enqueueNextTurnInjection"] = async (
-  injection: unknown,
+  injection: any,
 ) => {
   const inj = injection as { sessionKey: string };
   return { enqueued: false, id: "", sessionKey: inj.sessionKey };
@@ -211,8 +211,8 @@ export function buildPluginApi(params: BuildPluginApiParams): OpenClawPluginApi 
     registerChannel: handlers.registerChannel ?? noopRegisterChannel,
     registerGatewayMethod: handlers.registerGatewayMethod ?? noopRegisterGatewayMethod,
     registerCli,
-    registerNodeCliFeature: (registrar: unknown, opts: unknown) => {
-      type RegisterCliFn = (registrar: unknown, opts: unknown) => unknown;
+    registerNodeCliFeature: (registrar: any, opts: any) => {
+      type RegisterCliFn = (registrar: any, opts: any) => unknown;
       return (registerCli as RegisterCliFn)(registrar, {
         ...(opts as object),
         parentPath: ["nodes"],

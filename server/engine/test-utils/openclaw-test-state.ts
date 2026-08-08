@@ -51,10 +51,10 @@ export type OpenClawTestState = {
   statePath: (...parts: string[]) => string;
   agentDir: (agentId?: string) => string;
   sessionsDir: (agentId?: string) => string;
-  writeConfig: (config: unknown) => Promise<string>;
-  writeJson: (relativePath: string, value: unknown) => Promise<string>;
+  writeConfig: (config: any) => Promise<string>;
+  writeJson: (relativePath: string, value: any) => Promise<string>;
   writeText: (relativePath: string, value: string) => Promise<string>;
-  writeAuthProfiles: (store: unknown, agentId?: string) => Promise<string>;
+  writeAuthProfiles: (store: any, agentId?: string) => Promise<string>;
   applyEnv: () => void;
   restoreEnv: () => void;
   cleanup: () => Promise<void>;
@@ -145,7 +145,7 @@ function resolveLayout(
   };
 }
 
-function scenarioConfig(options: OpenClawTestStateOptions): Record<string, unknown> | undefined {
+function scenarioConfig(options: OpenClawTestStateOptions): Record<string, any> | undefined {
   const scenario = options.scenario ?? "empty";
   if (scenario === "minimal" || scenario === "external-service") {
     return {};
@@ -259,7 +259,7 @@ function createSpawnEnv(envVars: Record<string, string | undefined>): NodeJS.Pro
   return nextEnv;
 }
 
-async function writeJsonFile(filePath: string, value: unknown): Promise<string> {
+async function writeJsonFile(filePath: string, value: any): Promise<string> {
   await fs.mkdir(path.dirname(filePath), { recursive: true });
   await fs.writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`, "utf8");
   return filePath;

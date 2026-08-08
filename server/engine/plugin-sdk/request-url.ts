@@ -8,7 +8,7 @@ export function resolveRequestUrl(input: RequestInfo | URL): string {
   }
   // Avoid `instanceof Request` so tests, fetch shims, and cross-realm Request
   // objects can still expose their URL through the structural `url` field.
-  if (typeof input === "object" && input && "url" in input && typeof (input as { url?: unknown }).url === "string") {
+  if (typeof input === "object" && input && "url" in input && typeof (input as { url?: any }).url === "string") {
     return (input as { url: string }).url;
   }
   return "";

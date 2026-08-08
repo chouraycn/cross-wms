@@ -118,7 +118,7 @@ if (isMain) {
     process.exit(1);
   });
 
-  void runLegacyCliEntry(process.argv).catch((err: unknown) => {
+  void runLegacyCliEntry(process.argv).catch((err: any) => {
     for (const line of formatCliFailureLines({
       title: "The CLI command failed.",
       error: err,

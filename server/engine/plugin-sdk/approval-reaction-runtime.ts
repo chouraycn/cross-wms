@@ -432,8 +432,8 @@ export function createApprovalReactionTargetStore<TTarget>(params: {
     maxEntries: number;
     defaultTtlMs: number;
   }) => KeyedStore<PersistedApprovalReactionTarget<TTarget>> | undefined;
-  logPersistentError?: (error: unknown) => void;
-  readPersistedTarget?: (target: unknown) => TTarget | null;
+  logPersistentError?: (error: any) => void;
+  readPersistedTarget?: (target: any) => TTarget | null;
   nowMs?: () => number;
 }): ApprovalReactionTargetStore<TTarget> {
   const nowMs = params.nowMs ?? Date.now;
@@ -441,7 +441,7 @@ export function createApprovalReactionTargetStore<TTarget>(params: {
   let persistentStore: KeyedStore<PersistedApprovalReactionTarget<TTarget>> | undefined;
   let persistentStoreDisabled = false;
 
-  const disablePersistentStore = (error: unknown) => {
+  const disablePersistentStore = (error: any) => {
     persistentStoreDisabled = true;
     persistentStore = undefined;
     params.logPersistentError?.(error);

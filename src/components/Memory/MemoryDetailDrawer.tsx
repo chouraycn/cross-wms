@@ -130,7 +130,7 @@ const MemoryDetailDrawer: React.FC<MemoryDetailDrawerProps> = memo(({
     setSaving(true);
     setError(null);
     try {
-      const metadata: Record<string, unknown> = {};
+      const metadata: Record<string, any> = {};
       editedTags.forEach(tag => {
         metadata[tag] = true;
       });

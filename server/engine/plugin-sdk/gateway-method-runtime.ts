@@ -10,7 +10,7 @@ export type GatewayMethodDispatchError = {
   /** Human-readable error summary safe to forward to the plugin caller. */
   message: string;
   /** Optional structured method-specific diagnostics. */
-  details?: unknown;
+  details?: any;
   /** Whether the caller can retry the same request without changing params. */
   retryable?: boolean;
   /** Suggested delay before retrying when the Gateway can estimate backoff. */
@@ -22,11 +22,11 @@ export type GatewayMethodDispatchResponse = {
   /** True when the Gateway method completed and `payload` contains its result. */
   ok: boolean;
   /** Method-specific result payload for successful responses. */
-  payload?: unknown;
+  payload?: any;
   /** Gateway error envelope for failed responses. */
   error?: GatewayMethodDispatchError;
   /** Optional response metadata that plugins may pass through unchanged. */
-  meta?: Record<string, unknown>;
+  meta?: Record<string, any>;
 };
 
 /** Dispatch controls for plugin-initiated Gateway method calls. */
@@ -44,7 +44,7 @@ export async function dispatchGatewayMethod(
   /** Gateway method name, validated by the Gateway method router. */
   method: string,
   /** Method-specific params forwarded without SDK-side normalization. */
-  params?: unknown,
+  params?: any,
   /** Dispatch behavior controls for response timing and timeout handling. */
   options?: GatewayMethodDispatchOptions,
 ): Promise<GatewayMethodDispatchResponse> {

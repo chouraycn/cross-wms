@@ -72,7 +72,7 @@ const ActionNode: React.FC<ActionNodeProps> = memo(({ node, onUpdate }) => {
         <Box sx={{ mt: 2 }}>
           <TextField
             label="AI 模型"
-            value={(config.params as unknown).model || ''}
+            value={(config.params as any).model || ''}
             onChange={(e) =>
               onUpdate({
                 ...node,
@@ -87,7 +87,7 @@ const ActionNode: React.FC<ActionNodeProps> = memo(({ node, onUpdate }) => {
           />
           <TextField
             label="提示词"
-            value={(config.params as unknown).prompt || ''}
+            value={(config.params as any).prompt || ''}
             onChange={(e) =>
               onUpdate({
                 ...node,
@@ -111,7 +111,7 @@ const ActionNode: React.FC<ActionNodeProps> = memo(({ node, onUpdate }) => {
           <FormControl fullWidth>
             <InputLabel>选择工具</InputLabel>
             <Select
-              value={(config.params as unknown).toolId || ''}
+              value={(config.params as any).toolId || ''}
               onChange={(e) =>
                 onUpdate({
                   ...node,
@@ -136,7 +136,7 @@ const ActionNode: React.FC<ActionNodeProps> = memo(({ node, onUpdate }) => {
           <FormControl fullWidth>
             <InputLabel>通知方式</InputLabel>
             <Select
-              value={(config.params as unknown).channel || ''}
+              value={(config.params as any).channel || ''}
               onChange={(e) =>
                 onUpdate({
                   ...node,
@@ -154,7 +154,7 @@ const ActionNode: React.FC<ActionNodeProps> = memo(({ node, onUpdate }) => {
           </FormControl>
           <TextField
             label="通知内容"
-            value={(config.params as unknown).message || ''}
+            value={(config.params as any).message || ''}
             onChange={(e) =>
               onUpdate({
                 ...node,
@@ -178,7 +178,7 @@ const ActionNode: React.FC<ActionNodeProps> = memo(({ node, onUpdate }) => {
           <FormControl fullWidth>
             <InputLabel>脚本语言</InputLabel>
             <Select
-              value={(config.params as unknown).language || 'javascript'}
+              value={(config.params as any).language || 'javascript'}
               onChange={(e) =>
                 onUpdate({
                   ...node,
@@ -196,7 +196,7 @@ const ActionNode: React.FC<ActionNodeProps> = memo(({ node, onUpdate }) => {
           </FormControl>
           <TextField
             label="脚本内容"
-            value={(config.params as unknown).script || ''}
+            value={(config.params as any).script || ''}
             onChange={(e) =>
               onUpdate({
                 ...node,

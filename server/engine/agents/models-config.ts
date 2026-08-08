@@ -43,7 +43,7 @@ export async function writeModelsFileAtomicForModelsJson(
  * Returns a stable string derived from config and file system state.
  */
 export async function buildModelsJsonSourceFingerprint(
-  _config?: unknown,
+  _config?: any,
   agentDirOverride?: string,
   _options?: {
     workspaceDir?: string;
@@ -63,9 +63,9 @@ export async function buildModelsJsonSourceFingerprint(
  * Returns a prepared source with fingerprint metadata.
  */
 export async function prepareOpenClawModelsJsonSource(
-  config?: unknown,
+  config?: any,
   agentDirOverride?: string,
-  options?: Record<string, unknown>,
+  options?: Record<string, any>,
 ): Promise<PreparedOpenClawModelsJsonSource> {
   const sourceFingerprint = await buildModelsJsonSourceFingerprint(
     config,
@@ -82,9 +82,9 @@ export async function prepareOpenClawModelsJsonSource(
 
 /** Ensures models.json and plugin catalog sidecars are current for an agent. */
 export async function ensureOpenClawModelsJson(
-  config?: unknown,
+  config?: any,
   agentDirOverride?: string,
-  options?: Record<string, unknown>,
+  options?: Record<string, any>,
 ): Promise<{ agentDir: string; wrote: boolean }> {
   const prepared = await prepareOpenClawModelsJsonSource(config, agentDirOverride, options);
   return { agentDir: prepared.agentDir, wrote: prepared.wrote };

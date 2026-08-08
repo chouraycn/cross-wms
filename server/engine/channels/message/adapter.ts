@@ -4,17 +4,17 @@ import type { ChannelMessage, MessagePart } from "./types.js";
 
 export interface MessageAdapter {
   toChannelMessage(
-    rawMessage: unknown,
+    rawMessage: any,
     channelId: ChannelId
   ): ChannelMessage;
 
-  fromChannelMessage(message: ChannelMessage): unknown;
+  fromChannelMessage(message: ChannelMessage): any;
 
   transformParts?(parts: MessagePart[], channelId: ChannelId): MessagePart[];
 
   normalizeContent?(content: string, channelId: ChannelId): string;
 
-  extractMetadata?(rawMessage: unknown, channelId: ChannelId): Record<string, unknown>;
+  extractMetadata?(rawMessage: any, channelId: ChannelId): Record<string, any>;
 }
 
 const adapters = new Map<ChannelId, MessageAdapter>();
@@ -33,7 +33,7 @@ export function getMessageAdapter(channelId: ChannelId): MessageAdapter | undefi
 }
 
 export function adaptInboundMessage(
-  rawMessage: unknown,
+  rawMessage: any,
   channelId: ChannelId
 ): ChannelMessage {
   const adapter = adapters.get(channelId);
@@ -45,7 +45,7 @@ export function adaptInboundMessage(
   return defaultToChannelMessage(rawMessage, channelId);
 }
 
-export function adaptOutboundMessage(message: ChannelMessage): unknown {
+export function adaptOutboundMessage(message: ChannelMessage): any {
   const adapter = adapters.get(message.channelId);
 
   if (adapter) {
@@ -55,8 +55,8 @@ export function adaptOutboundMessage(message: ChannelMessage): unknown {
   return defaultFromChannelMessage(message);
 }
 
-function defaultToChannelMessage(raw: unknown, channelId: ChannelId): ChannelMessage {
-  const data = raw as Record<string, unknown>;
+function defaultToChannelMessage(raw: any, channelId: ChannelId): ChannelMessage {
+  const data = raw as Record<string, any>;
   return {
     id: String(data.id ?? `${channelId}-${Date.now()}`),
     channelId,
@@ -65,11 +65,11 @@ function defaultToChannelMessage(raw: unknown, channelId: ChannelId): ChannelMes
     kind: (data.kind as ChannelMessage["kind"]) ?? "text",
     content: String(data.content ?? data.text ?? ""),
     timestamp: Number(data.timestamp ?? data.createdAt ?? Date.now()),
-    metadata: data.metadata as Record<string, unknown> | undefined,
+    metadata: data.metadata as Record<string, any> | undefined,
   };
 }
 
-function defaultFromChannelMessage(message: ChannelMessage): unknown {
+function defaultFromChannelMessage(message: ChannelMessage): any {
   return {
     id: message.id,
     content: message.content,

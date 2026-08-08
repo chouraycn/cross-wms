@@ -2,7 +2,7 @@
 import { describe, it, expect } from "vitest";
 import { ProxyConfigSchema } from "./zod-schema.proxy.js";
 
-function expectProxyConfigFailure(value: unknown) {
+function expectProxyConfigFailure(value: any) {
   const result = ProxyConfigSchema.safeParse(value);
   expect(result.success).toBe(false);
   if (result.success) {

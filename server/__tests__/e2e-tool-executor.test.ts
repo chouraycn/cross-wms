@@ -18,7 +18,7 @@ import {
   type ToolProfileId,
 } from '../engine/toolProfiles.js';
 
-function makeTool(name: string, desc: string, params: Record<string, unknown> = {}): unknown {
+function makeTool(name: string, desc: string, params: Record<string, any> = {}): any {
   return {
     function: {
       name,
@@ -238,7 +238,7 @@ describe('E2E: 工具执行系统', () => {
       ];
 
       toolProfileManager.setProfile('full');
-      const filtered = toolProfileManager.applyProfile(tools as unknown);
+      const filtered = toolProfileManager.applyProfile(tools as any);
       expect(filtered.length).toBe(tools.length);
     });
 
@@ -253,7 +253,7 @@ describe('E2E: 工具执行系统', () => {
       ];
 
       toolProfileManager.setProfile('minimal');
-      const filtered = toolProfileManager.applyProfile(tools as unknown);
+      const filtered = toolProfileManager.applyProfile(tools as any);
       const names = filtered.map(t => t.function.name);
       expect(names).toContain('system_info');
       expect(names).toContain('file_listDir');
@@ -276,7 +276,7 @@ describe('E2E: 工具执行系统', () => {
       ];
 
       toolProfileManager.setProfile('coding');
-      const filtered = toolProfileManager.applyProfile(tools as unknown);
+      const filtered = toolProfileManager.applyProfile(tools as any);
       const names = filtered.map(t => t.function.name);
       expect(names).toContain('system_info');
       expect(names).toContain('file_readFile');
@@ -297,7 +297,7 @@ describe('E2E: 工具执行系统', () => {
       ];
 
       toolProfileManager.setProfile('messaging');
-      const filtered = toolProfileManager.applyProfile(tools as unknown);
+      const filtered = toolProfileManager.applyProfile(tools as any);
       const names = filtered.map(t => t.function.name);
       expect(names).toContain('system_info');
       expect(names).toContain('web_search');
@@ -326,7 +326,7 @@ describe('E2E: 工具执行系统', () => {
         makeTool('web_search', ''),
         makeTool('desktop_click', ''),
       ];
-      const filtered = toolProfileManager.applyProfile(tools as unknown);
+      const filtered = toolProfileManager.applyProfile(tools as any);
       expect(filtered.length).toBe(2);
       expect(filtered.map(t => t.function.name)).toContain('web_search');
     });
@@ -353,13 +353,13 @@ describe('E2E: 工具执行系统', () => {
   describe('工具 Schema 投影', () => {
     it('应截断过长的工具描述', () => {
       const tool = makeTool('test_tool', 'A'.repeat(500));
-      const projected = projectToolSchema(tool as unknown, { maxDescriptionLength: 100 });
+      const projected = projectToolSchema(tool as any, { maxDescriptionLength: 100 });
       expect(projected.function.description.length).toBeLessThanOrEqual(100);
     });
 
     it('hideOptionalParams 应移除非 required 参数', () => {
       const tool = makeTool('test_tool', 'test');
-      const projected = projectToolSchema(tool as unknown, { hideOptionalParams: true });
+      const projected = projectToolSchema(tool as any, { hideOptionalParams: true });
       const props = projected.function.parameters.properties;
       expect(props.query).toBeDefined();
       expect(props.limit).toBeUndefined();
@@ -370,7 +370,7 @@ describe('E2E: 工具执行系统', () => {
 
     it('excludeParams 应排除指定参数', () => {
       const tool = makeTool('test_tool', 'test');
-      const projected = projectToolSchema(tool as unknown, {
+      const projected = projectToolSchema(tool as any, {
         excludeParams: ['verbose', 'offset'],
       });
       const props = projected.function.parameters.properties;
@@ -382,7 +382,7 @@ describe('E2E: 工具执行系统', () => {
 
     it('maxParams 应限制参数数量', () => {
       const tool = makeTool('test_tool', 'test');
-      const projected = projectToolSchema(tool as unknown, { maxParams: 2 });
+      const projected = projectToolSchema(tool as any, { maxParams: 2 });
       const props = projected.function.parameters.properties;
       const propCount = Object.keys(props).length;
       expect(propCount).toBeLessThanOrEqual(2);
@@ -393,7 +393,7 @@ describe('E2E: 工具执行系统', () => {
         makeTool('tool_a', 'A'.repeat(300)),
         makeTool('tool_b', 'B'.repeat(300)),
       ];
-      const projected = projectToolSchemas(tools as unknown, { maxDescriptionLength: 50 });
+      const projected = projectToolSchemas(tools as any, { maxDescriptionLength: 50 });
       expect(projected.length).toBe(2);
       expect(projected[0].function.description.length).toBeLessThanOrEqual(50);
       expect(projected[1].function.description.length).toBeLessThanOrEqual(50);
@@ -402,13 +402,13 @@ describe('E2E: 工具执行系统', () => {
     it('不应修改原始工具对象', () => {
       const original = makeTool('test_tool', 'A'.repeat(200));
       const originalDesc = original.function.description;
-      projectToolSchema(original as unknown, { maxDescriptionLength: 50 });
+      projectToolSchema(original as any, { maxDescriptionLength: 50 });
       expect(original.function.description).toBe(originalDesc); // 原始不应被修改
     });
 
     it('应重新计算 required 数组', () => {
       const tool = makeTool('test_tool', 'test');
-      const projected = projectToolSchema(tool as unknown, {
+      const projected = projectToolSchema(tool as any, {
         excludeParams: ['query'], // 排除 required 参数
       });
       expect(projected.function.parameters.required).not.toContain('query');
@@ -426,8 +426,8 @@ describe('E2E: 工具执行系统', () => {
       ];
 
       toolProfileManager.setProfile('coding');
-      const filtered = toolProfileManager.applyProfile(tools as unknown);
-      const projected = projectToolSchemas(filtered as unknown, {
+      const filtered = toolProfileManager.applyProfile(tools as any);
+      const projected = projectToolSchemas(filtered as any, {
         maxDescriptionLength: 50,
       });
 

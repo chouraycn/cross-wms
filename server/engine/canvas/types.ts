@@ -80,10 +80,10 @@ export type AnyAgentTool = {
   label?: string;
   name: string;
   description: string;
-  parameters?: unknown;
+  parameters?: any;
   execute?: (
     toolCallId: string,
-    args: unknown,
+    args: any,
     signal?: AbortSignal,
   ) => Promise<AgentToolResult>;
 };
@@ -93,7 +93,7 @@ export interface AgentToolResult {
     | { type: "text"; text: string }
     | { type: "image"; data: string; mimeType: string }
   >;
-  details?: Record<string, unknown>;
+  details?: Record<string, any>;
 }
 
 /** Canvas 工具选项 */
@@ -108,8 +108,8 @@ export interface CreateCanvasToolOptions {
   callGatewayTool?: (
     command: string,
     opts: CanvasGatewayOptions,
-    params: Record<string, unknown>,
-  ) => Promise<{ payload?: unknown }>;
+    params: Record<string, any>,
+  ) => Promise<{ payload?: any }>;
 }
 
 /** 规范化快照文件扩展名 */
@@ -121,14 +121,14 @@ export function normalizeCanvasSnapshotFileExtension(ext: string): string {
 }
 
 /** 解析节点快照载荷：支持 {base64, format} 与 {payload:{base64,format}} 两种结构 */
-export function parseCanvasSnapshotPayload(raw: unknown): CanvasSnapshotPayload {
+export function parseCanvasSnapshotPayload(raw: any): CanvasSnapshotPayload {
   if (!raw || typeof raw !== "object") {
     throw new Error("Invalid canvas snapshot payload");
   }
-  const record = raw as Record<string, unknown>;
+  const record = raw as Record<string, any>;
   const nested = record.payload;
   const source =
-    nested && typeof nested === "object" ? (nested as Record<string, unknown>) : record;
+    nested && typeof nested === "object" ? (nested as Record<string, any>) : record;
   const formatRaw = String(source.format ?? "png").toLowerCase();
   const format: CanvasSnapshotFormat = formatRaw === "jpeg" || formatRaw === "jpg" ? "jpeg" : "png";
   const base64 = String(source.base64 ?? "");

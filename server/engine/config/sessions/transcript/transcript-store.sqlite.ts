@@ -21,7 +21,7 @@ export class SQLiteTranscriptStore {
     }
 
     this.db = new Database(this.dbPath, {
-      verbose: (...args: unknown[]) => logger.debug('[SQLiteTranscript]', ...args),
+      verbose: (...args: any[]) => logger.debug('[SQLiteTranscript]', ...args),
     });
 
     this.createTables();
@@ -203,7 +203,7 @@ export class SQLiteTranscriptStore {
         LIMIT ? OFFSET ?
       `).all(sessionId, limit, offset);
 
-      return (rows as unknown[]).map((row) => this.rowToEntry(row as Record<string, unknown>));
+      return (rows as any[]).map((row) => this.rowToEntry(row as Record<string, any>));
     } catch (err) {
       logger.error('[SQLiteTranscript] 查询条目失败:', sessionId, err);
       return [];
@@ -215,7 +215,7 @@ export class SQLiteTranscriptStore {
 
     try {
       const row = this.db.prepare('SELECT * FROM transcript_entries WHERE id = ?').get(entryId);
-      return row ? this.rowToEntry(row as Record<string, unknown>) : null;
+      return row ? this.rowToEntry(row as Record<string, any>) : null;
     } catch (err) {
       logger.error('[SQLiteTranscript] 查询单条失败:', entryId, err);
       return null;
@@ -283,7 +283,7 @@ export class SQLiteTranscriptStore {
 
     try {
       let query = 'SELECT * FROM transcript_entries WHERE 1 = 1';
-      const params: unknown[] = [];
+      const params: any[] = [];
 
       if (options.sessionId) {
         query += ' AND session_id = ?';
@@ -323,7 +323,7 @@ export class SQLiteTranscriptStore {
       const rows = this.db.prepare(query).all(...params);
 
       return {
-        entries: (rows as unknown[]).map((row) => this.rowToEntry(row as Record<string, unknown>)),
+        entries: (rows as any[]).map((row) => this.rowToEntry(row as Record<string, any>)),
         total,
         hasMore: offset + limit < total,
       };
@@ -349,7 +349,7 @@ export class SQLiteTranscriptStore {
         FROM transcript_entries
       `;
 
-      const params: unknown[] = [];
+      const params: any[] = [];
 
       if (sessionId) {
         query += ' WHERE session_id = ?';
@@ -378,7 +378,7 @@ export class SQLiteTranscriptStore {
 
     try {
       let query = 'SELECT * FROM transcript_entries';
-      const params: unknown[] = [];
+      const params: any[] = [];
 
       if (options.sessionIds?.length) {
         query += ` WHERE session_id IN (${options.sessionIds.map(() => '?').join(', ')})`;
@@ -400,7 +400,7 @@ export class SQLiteTranscriptStore {
       query += ' ORDER BY session_id, timestamp ASC';
 
       const rows = this.db.prepare(query).all(...params);
-      const entries = (rows as unknown[]).map((row) => this.rowToEntry(row as Record<string, unknown>));
+      const entries = (rows as any[]).map((row) => this.rowToEntry(row as Record<string, any>));
 
       if (options.format === 'jsonl') {
         return entries.map(e => JSON.stringify(e)).join('\n') + '\n';
@@ -451,7 +451,7 @@ export class SQLiteTranscriptStore {
     }
   }
 
-  private rowToEntry(row: Record<string, unknown>): TranscriptEntry {
+  private rowToEntry(row: Record<string, any>): TranscriptEntry {
     return {
       id: String(row.id),
       sessionId: String(row.session_id),

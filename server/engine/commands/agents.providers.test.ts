@@ -6,7 +6,7 @@ import { buildProviderStatusIndex } from "./agents.providers.js";
 const mocks = vi.hoisted(() => ({
   listReadOnlyChannelPluginsForConfig: vi.fn(),
   getChannelPlugin: vi.fn(),
-  normalizeChannelId: vi.fn((value: unknown) =>
+  normalizeChannelId: vi.fn((value: any) =>
     typeof value === "string" && value.trim().length > 0 ? value : null,
   ),
   resolveChannelDefaultAccountId: vi.fn(() => "default"),

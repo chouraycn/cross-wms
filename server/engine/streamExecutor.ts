@@ -58,17 +58,17 @@ export interface ExecuteChatCallbacks {
   /** 工具调用回调 */
   onToolCall?: (toolCall: ToolCall, result: string) => void;
   /** SSE 事件回调（由策略内部触发的事件） */
-  onSSEEvent?: (event: Record<string, unknown>) => void;
+  onSSEEvent?: (event: Record<string, any>) => void;
   /** Agent 相关回调 */
   onAgentStart?: (agentId: string, agentRole: string, taskDescription: string, subTaskId?: string) => void;
   onAgentEnd?: (agentId: string, agentRole: string, status: 'success' | 'failed' | 'timeout', duration?: number, error?: string) => void;
   onSubtaskCreate?: (subTaskId: string, description: string, dependsOn?: string[], priority?: number) => void;
   onSubtaskAssign?: (subTaskId: string, agentId: string, agentRole: string) => void;
   onSubtaskComplete?: (subTaskId: string, description: string, status: 'completed' | 'failed', agentId: string, duration?: number, resultSummary?: string) => void;
-  onReflect?: (reflection: unknown) => void;
-  onPlan?: (plan: unknown) => void;
+  onReflect?: (reflection: any) => void;
+  onPlan?: (plan: any) => void;
   /** 通用事件回调（由策略内部触发的各类事件） */
-  onEvent?: (event: Record<string, unknown>) => void;
+  onEvent?: (event: Record<string, any>) => void;
   /** 速率限制回调 */
   onRateLimit?: () => Promise<{ apiKey: string; keyIndex: number } | null>;
 }
@@ -125,7 +125,7 @@ export interface ExecuteChatParams {
   /** 数字员工（per-call）物化技能定义列表 */
   extraSkills?: SkillDefinition[];
   /** 数字员工（per-call）物化技能执行器 */
-  extraSkillExecutor?: (id: string, params: Record<string, unknown>, ctx?: SkillContext) => Promise<SkillResult>;
+  extraSkillExecutor?: (id: string, params: Record<string, any>, ctx?: SkillContext) => Promise<SkillResult>;
   /** 数字员工（per-call）HTTP API 工具定义列表（sd_tools tool_type='http'） */
   staffHttpTools?: import('../aiClient.js').ToolDefinition[];
   /** 数字员工技能调用事件回调（写侧统计来源）。仅 staff 注入 */
@@ -169,9 +169,9 @@ export async function executeChatStream(params: Omit<ExecuteChatParams, 'res'> &
         id: toolCall.id,
         name: toolCall.function.name,
         arguments: JSON.parse(toolCall.function.arguments || '{}'),
-      } as unknown, partial: {} as AssistantMessage });
+      } as any, partial: {} as AssistantMessage });
     },
-    onSSEEvent: (event: Record<string, unknown>) => {
+    onSSEEvent: (event: Record<string, any>) => {
       const eventType = event.type as string;
       if (eventType === 'init') {
         const partial: AssistantMessage = {
@@ -228,7 +228,7 @@ export async function executeChatStream(params: Omit<ExecuteChatParams, 'res'> &
         stream.push({ type: 'error', reason: 'error', error: errorMsg });
       }
     },
-    onEvent: (event: Record<string, unknown>) => {
+    onEvent: (event: Record<string, any>) => {
       const eventType = event.type as string;
       if (eventType === 'text') {
         textProcessor.pushText(event.content as string);
@@ -313,7 +313,7 @@ export async function executeChat(params: ExecuteChatParams): Promise<ExecuteCha
       executionMode: params.executionMode,
       sessionId: params.sessionId,
       messageId: params.messageId,
-      onSSEEvent: (event: Record<string, unknown>) => {
+      onSSEEvent: (event: Record<string, any>) => {
         callbacks.onSSEEvent?.(event);
         callbacks.onEvent?.(event);
       },

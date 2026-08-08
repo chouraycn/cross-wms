@@ -29,7 +29,7 @@ export function getChannelConfig(
   config: AppConfig,
   channelId: ChannelId
 ): ChannelConfig {
-  const raw = config[channelId] as Record<string, unknown> | undefined;
+  const raw = config[channelId] as Record<string, any> | undefined;
   const parsed = ChannelConfigSchema.safeParse(raw ?? {});
 
   if (!parsed.success) {
@@ -60,9 +60,9 @@ export function getChannelAccountConfig(
   config: AppConfig,
   channelId: ChannelId,
   accountId: AccountId
-): Record<string, unknown> | undefined {
+): Record<string, any> | undefined {
   const channelConfig = getChannelConfig(config, channelId);
-  return channelConfig.accounts?.[accountId] as Record<string, unknown> | undefined;
+  return channelConfig.accounts?.[accountId] as Record<string, any> | undefined;
 }
 
 export function getDefaultAccountId(
@@ -78,7 +78,7 @@ export function getDefaultAccountId(
 }
 
 export function validateChannelConfig(
-  config: unknown,
+  config: any,
   channelId: ChannelId
 ): { valid: boolean; errors: string[] } {
   const result = ChannelConfigSchema.safeParse(config);

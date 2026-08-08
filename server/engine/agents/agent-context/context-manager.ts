@@ -8,7 +8,7 @@ export function createContext(params: {
   sessionId: string;
   workspaceDir?: string;
   env?: Record<string, string>;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
   requestId?: string;
   traceId?: string;
 }): AgentContext {
@@ -65,7 +65,7 @@ export function mergeContext(base: AgentContext, override: Partial<AgentContext>
   return merged;
 }
 
-export function updateContextValue(agentId: string, sessionId: string, key: string, value: unknown): AgentContext | undefined {
+export function updateContextValue(agentId: string, sessionId: string, key: string, value: any): AgentContext | undefined {
   const context = getContext(agentId, sessionId);
   if (!context) return undefined;
 
@@ -81,7 +81,7 @@ export function updateContextValue(agentId: string, sessionId: string, key: stri
     const metaKey = key.substring(9);
     updated.metadata = { ...context.metadata, [metaKey]: value };
   } else {
-    (updated as Record<string, unknown>)[key] = value;
+    (updated as Record<string, any>)[key] = value;
   }
 
   storeContext(updated);

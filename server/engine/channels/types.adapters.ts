@@ -2,11 +2,11 @@
 // 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
 export type ChannelOutboundAdapter = {
-  sendText?: (ctx: unknown) => unknown | Promise<unknown>;
-  sendMedia?: (ctx: unknown) => unknown | Promise<unknown>;
-  sendPoll?: (ctx: unknown) => unknown | Promise<unknown>;
-  resolveOutboundSessionRoute?: (params: unknown) => unknown;
-  [key: string]: unknown;
+  sendText?: (ctx: any) => unknown | Promise<any>;
+  sendMedia?: (ctx: any) => unknown | Promise<any>;
+  sendPoll?: (ctx: any) => unknown | Promise<any>;
+  resolveOutboundSessionRoute?: (params: any) => unknown;
+  [key: string]: any;
 };
 
 export type ChannelOutboundChunkContext = unknown;
@@ -26,8 +26,8 @@ export type ChannelDeliveryCapabilities = unknown;
 export type ChannelPairingAdapter = {
   idLabel?: string;
   normalizeAllowEntry?: (entry: string) => string | null | undefined;
-  notifyApproval?: (params: unknown) => void | Promise<void>;
-  [key: string]: unknown;
+  notifyApproval?: (params: any) => void | Promise<void>;
+  [key: string]: any;
 };
 
 export type ChannelApprovalKind = unknown;
@@ -131,7 +131,7 @@ export type ChannelCommandConversationContext = unknown;
 
 export type ChannelConfiguredBindingProvider = {
   matchInboundConversation: (params: {
-    binding: unknown;
+    binding: any;
     compiledBinding: ChannelConfiguredBindingConversationRef;
     conversationId: string;
     parentConversationId?: string;
@@ -142,31 +142,31 @@ export type ChannelConversationBindingSupport = unknown;
 
 export type ChannelSecurityAdapter<ResolvedAccount = unknown> = {
   normalizeAllowEntry?: (entry: string) => string | null | undefined;
-  notifyApproval?: (params: unknown) => void | Promise<void>;
-  notify?: (params: unknown) => void | Promise<void>;
+  notifyApproval?: (params: any) => void | Promise<void>;
+  notify?: (params: any) => void | Promise<void>;
   resolveReplyToMode?: (params: {
-    cfg: unknown;
+    cfg: any;
     accountId?: string | null;
     chatType?: string | null;
   }) => "off" | "first" | "all" | "batched" | undefined;
-  collectWarnings?: (params: unknown) => unknown;
-  collectAuditFindings?: (params: unknown) => unknown;
+  collectWarnings?: (params: any) => unknown;
+  collectAuditFindings?: (params: any) => unknown;
   dm?: {
     channelKey?: string;
     allowFrom?: string[];
     denyFrom?: string[];
     defaultAllow?: boolean;
-    defaultPolicy?: unknown;
+    defaultPolicy?: any;
     allowFromPathSuffix?: string;
     policyPathSuffix?: string;
     approveChannelId?: string;
     approveHint?: string;
     normalizeEntry?: (entry: string) => string | null | undefined;
-    resolveFallbackAccountId?: (account: unknown) => string | undefined;
-    resolvePolicy?: (account: unknown) => unknown;
-    resolveAllowFrom?: (account: unknown) => string[] | undefined;
+    resolveFallbackAccountId?: (account: any) => string | undefined;
+    resolvePolicy?: (account: any) => unknown;
+    resolveAllowFrom?: (account: any) => string[] | undefined;
     inheritSharedDefaultsFromDefaultAccount?: boolean;
-    [key: string]: unknown;
+    [key: string]: any;
   };
-  [key: string]: unknown;
+  [key: string]: any;
 };

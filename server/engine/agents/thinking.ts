@@ -4,20 +4,20 @@
  * Simplified: stream recovery and error graph collection replaced with no-op defaults.
  */
 
-type ContentBlock = Record<string, unknown>;
+type ContentBlock = Record<string, any>;
 
 type AgentMessage = {
   role: string;
   content: ContentBlock[];
   stopReason?: string;
-  timestamp?: unknown;
+  timestamp?: any;
 };
 
 type AssistantMessage = {
   role: "assistant";
   content: ContentBlock[];
   stopReason?: string;
-  timestamp?: unknown;
+  timestamp?: any;
 };
 
 type AssistantContentBlock = ContentBlock;
@@ -79,7 +79,7 @@ function buildOmittedAssistantReasoningContent(): AssistantContentBlock[] {
   return [{ type: "text", text: OMITTED_ASSISTANT_REASONING_TEXT } as unknown as AssistantContentBlock];
 }
 
-function parseTimestampMs(value: unknown): number | null {
+function parseTimestampMs(value: any): number | null {
   if (typeof value === "number" && Number.isFinite(value)) {
     return value;
   }
@@ -95,8 +95,8 @@ function parseTimestampMs(value: unknown): number | null {
 function stripSignatureFieldsFromThinkingBlock(
   block: AssistantContentBlock,
 ): AssistantContentBlock {
-  const record = block as unknown as Record<string, unknown>;
-  const stripped: Record<string, unknown> = {};
+  const record = block as unknown as Record<string, any>;
+  const stripped: Record<string, any> = {};
   for (const key of Object.keys(record)) {
     if (key === "thinkingSignature" || key === "signature" || key === "thought_signature") {
       continue;
@@ -463,9 +463,9 @@ export function assessLastAssistantMessage(message: AgentMessage): RecoveryAsses
 
 /** Wraps an Anthropic stream with thinking-block error recovery. */
 export function wrapAnthropicStreamWithRecovery(
-  innerStreamFn: (..._args: unknown[]) => unknown,
+  innerStreamFn: (..._args: any[]) => unknown,
   _sessionMeta: { id: string; recoveredAnthropicThinking?: boolean; onRecoveredAnthropicThinking?: () => void | Promise<void> },
-): (..._args: unknown[]) => unknown {
+): (..._args: any[]) => unknown {
   // Simplified: pass-through without recovery wrapping.
   return innerStreamFn;
 }

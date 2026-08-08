@@ -14,7 +14,7 @@ import { agentCommand } from "./agent.js";
 import { createThrowingTestRuntime } from "./test-runtime-config-helpers.js";
 
 const agentEventMocks = vi.hoisted(() => {
-  type AgentEvent = { stream: string; data?: Record<string, unknown>; runId?: string };
+  type AgentEvent = { stream: string; data?: Record<string, any>; runId?: string };
   const handlers = new Set<(event: AgentEvent) => void>();
   return {
     assertAgentRunLifecycleGenerationCurrent: vi.fn(),
@@ -41,7 +41,7 @@ const attemptExecutionMocks = vi.hoisted(() => ({
   emitAcpLifecycleError: vi.fn(),
   emitAcpPromptSubmitted: vi.fn(),
   emitAcpRuntimeEvent: vi.fn(),
-  persistAcpTurnTranscript: vi.fn(async ({ sessionEntry }: { sessionEntry?: unknown }) => ({
+  persistAcpTurnTranscript: vi.fn(async ({ sessionEntry }: { sessionEntry?: any }) => ({
     kind: "persisted",
     sessionEntry,
   })),
@@ -210,7 +210,7 @@ function resolveReadySession(
 }
 
 function mockAcpManager(params: {
-  runTurn: (params: unknown) => Promise<void>;
+  runTurn: (params: any) => Promise<void>;
   resolveSession?: (params: {
     cfg: OpenClawConfig;
     sessionKey: string;
@@ -247,7 +247,7 @@ async function withAcpSessionEnvInfo(
 }
 
 function createRunTurnFromTextDeltas(chunks: string[]) {
-  return vi.fn(async (paramsUnknown: unknown) => {
+  return vi.fn(async (paramsUnknown: any) => {
     const params = paramsUnknown as {
       onEvent?: (event: { type: string; text?: string; stopReason?: string }) => Promise<void>;
     };
@@ -277,7 +277,7 @@ async function runAcpTurnWithAssistantEvents(chunks: string[]) {
   const runTurn = createRunTurnFromTextDeltas(chunks);
 
   mockAcpManager({
-    runTurn: (params: unknown) => runTurn(params),
+    runTurn: (params: any) => runTurn(params),
   });
 
   try {
@@ -294,7 +294,7 @@ async function runAcpTurnWithAssistantEvents(chunks: string[]) {
 async function runAcpTurnWithTextDeltas(params: { message?: string; chunks: string[] }) {
   const runTurn = createRunTurnFromTextDeltas(params.chunks);
   mockAcpManager({
-    runTurn: (input: unknown) => runTurn(input),
+    runTurn: (input: any) => runTurn(input),
   });
   await agentCommand(
     {
@@ -315,7 +315,7 @@ function expectPersistedAcpTranscript(params: { userContent: string; assistantTe
   expect(transcript?.finalText).toBe(params.assistantText);
 }
 
-function firstRunTurnInput(runTurn: { mock: { calls: unknown[][] } }) {
+function firstRunTurnInput(runTurn: { mock: { calls: any[][] } }) {
   return runTurn.mock.calls[0]?.[0] as
     | { mode?: string; sessionKey?: string; text?: string }
     | undefined;
@@ -330,9 +330,9 @@ async function runAcpSessionWithPolicyOverridesAndExpectBlocked(params: {
     writeAcpSessionStore(storePath);
     mockConfigWithAcpOverrides(home, storePath, params.acpOverrides);
 
-    const runTurn = vi.fn(async (_params: unknown) => {});
+    const runTurn = vi.fn(async (_params: any) => {});
     mockAcpManager({
-      runTurn: (input: unknown) => runTurn(input),
+      runTurn: (input: any) => runTurn(input),
       ...(params.resolveSession ? { resolveSession: params.resolveSession } : {}),
     });
 
@@ -430,9 +430,9 @@ describe("agentCommand ACP runtime routing", () => {
       );
       mockConfig(home, storePath);
 
-      const runTurn = vi.fn(async (_params: unknown) => {});
+      const runTurn = vi.fn(async (_params: any) => {});
       mockAcpManager({
-        runTurn: (params: unknown) => runTurn(params),
+        runTurn: (params: any) => runTurn(params),
         resolveSession: ({ sessionKey }) => {
           return {
             kind: "stale",
@@ -472,9 +472,9 @@ describe("agentCommand ACP runtime routing", () => {
         allowedAgents: ["claude"],
       });
 
-      const runTurn = vi.fn(async (_params: unknown) => {});
+      const runTurn = vi.fn(async (_params: any) => {});
       mockAcpManager({
-        runTurn: (params: unknown) => runTurn(params),
+        runTurn: (params: any) => runTurn(params),
         resolveSession: ({ sessionKey }) => resolveReadySession(sessionKey, "codex"),
       });
 
@@ -496,9 +496,9 @@ describe("agentCommand ACP runtime routing", () => {
         allowedAgents: ["kimi"],
       });
 
-      const runTurn = vi.fn(async (_params: unknown) => {});
+      const runTurn = vi.fn(async (_params: any) => {});
       mockAcpManager({
-        runTurn: (params: unknown) => runTurn(params),
+        runTurn: (params: any) => runTurn(params),
         resolveSession: ({ sessionKey }) => resolveReadySession(sessionKey, "kimi"),
       });
 

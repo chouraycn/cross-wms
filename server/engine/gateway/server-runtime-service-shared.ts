@@ -13,6 +13,6 @@
 
 export type GatewayRuntimeServiceLogger = unknown;
 
-export function createNoopHeartbeatRunner(..._args: unknown[]): unknown {
+export function createNoopHeartbeatRunner(..._args: any[]): any {
   return undefined;
 }

@@ -13,7 +13,7 @@
 export interface MemoryEntry {
   id: number | string;
   text: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
   similarity?: number;
   embedding?: number[] | Float32Array;
   createdAt?: number | string;

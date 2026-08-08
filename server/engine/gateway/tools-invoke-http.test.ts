@@ -23,8 +23,8 @@ const hookMocks = vi.hoisted(() => ({
   ),
 }));
 
-let cfg: Record<string, unknown> = {};
-let lastCreateOpenClawToolsContext: Record<string, unknown> | undefined;
+let cfg: Record<string, any> = {};
+let lastCreateOpenClawToolsContext: Record<string, any> | undefined;
 
 // Perf: keep this suite pure unit. Mock heavyweight config/session modules.
 vi.mock("../config/config.js", () => ({
@@ -168,8 +168,8 @@ vi.mock("../agents/openclaw-tools.js", () => {
         required: ["mode"],
         additionalProperties: false,
       },
-      execute: async (_toolCallId: string, args: unknown) => {
-        const mode = (args as { mode?: unknown })?.mode;
+      execute: async (_toolCallId: string, args: any) => {
+        const mode = (args as { mode?: any })?.mode;
         if (mode === "input") {
           throw toolInputError("mode invalid");
         }
@@ -192,8 +192,8 @@ vi.mock("../agents/openclaw-tools.js", () => {
         },
         additionalProperties: false,
       },
-      execute: async (_toolCallId: string, args: unknown) => {
-        const input = (args ?? {}) as Record<string, unknown>;
+      execute: async (_toolCallId: string, args: any) => {
+        const input = (args ?? {}) as Record<string, any>;
         return {
           ok: true,
           observedFormat: input.format,
@@ -204,7 +204,7 @@ vi.mock("../agents/openclaw-tools.js", () => {
   ];
 
   return {
-    createOpenClawTools: (ctx: Record<string, unknown>) => {
+    createOpenClawTools: (ctx: Record<string, any>) => {
       lastCreateOpenClawToolsContext = ctx;
       return ctx.disablePluginTools ? tools.filter((tool) => tool.name !== "browser") : tools;
     },
@@ -244,7 +244,7 @@ beforeAll(async () => {
       }
       res.statusCode = 404;
       res.end("not found");
-    })().catch((err: unknown) => {
+    })().catch((err: any) => {
       res.statusCode = 500;
       res.end(String(err));
     });
@@ -314,7 +314,7 @@ const allowAgentsListForMain = () => {
 const postToolsInvoke = async (params: {
   port: number;
   headers?: Record<string, string>;
-  body: Record<string, unknown>;
+  body: Record<string, any>;
 }) =>
   await fetch(`http://127.0.0.1:${params.port}/tools/invoke`, {
     method: "POST",
@@ -322,7 +322,7 @@ const postToolsInvoke = async (params: {
     body: JSON.stringify(params.body),
   });
 
-const withOptionalSessionKey = (body: Record<string, unknown>, sessionKey?: string) => ({
+const withOptionalSessionKey = (body: Record<string, any>, sessionKey?: string) => ({
   ...body,
   ...(sessionKey ? { sessionKey } : {}),
 });
@@ -342,12 +342,12 @@ const invokeAgentsList = async (params: {
 const invokeTool = async (params: {
   port: number;
   tool: string;
-  args?: Record<string, unknown>;
+  args?: Record<string, any>;
   action?: string;
   headers?: Record<string, string>;
   sessionKey?: string;
 }) => {
-  const body: Record<string, unknown> = withOptionalSessionKey(
+  const body: Record<string, any> = withOptionalSessionKey(
     {
       tool: params.tool,
       args: params.args ?? {},
@@ -384,7 +384,7 @@ const invokeAgentsListBearer = async () =>
 
 const invokeToolAuthed = async (params: {
   tool: string;
-  args?: Record<string, unknown>;
+  args?: Record<string, any>;
   action?: string;
   sessionKey?: string;
 }) =>
@@ -398,7 +398,7 @@ const expectOkInvokeResponse = async (res: Response) => {
   expect(res.status).toBe(200);
   const body = await res.json();
   expect(body.ok).toBe(true);
-  return body as { ok: boolean; result?: Record<string, unknown> };
+  return body as { ok: boolean; result?: Record<string, any> };
 };
 
 const firstHookCallArg = () => {
@@ -409,7 +409,7 @@ const firstHookCallArg = () => {
   return call[0];
 };
 
-const invokeToolsRpc = async (params: Record<string, unknown>, scopes = ["operator.write"]) => {
+const invokeToolsRpc = async (params: Record<string, any>, scopes = ["operator.write"]) => {
   const respond = vi.fn();
   await toolsInvokeHandlers["tools.invoke"]({
     params,
@@ -420,7 +420,7 @@ const invokeToolsRpc = async (params: Record<string, unknown>, scopes = ["operat
     isWebchatConnect: () => false,
   });
   return respond.mock.calls[0] as
-    | [boolean, { ok?: boolean; toolName?: string; output?: unknown; error?: unknown }?, unknown?]
+    | [boolean, { ok?: boolean; toolName?: string; output?: any; error?: any }?, unknown?]
     | undefined;
 };
 
@@ -1055,7 +1055,7 @@ describe("tools.invoke Gateway RPC", () => {
     expect(call?.[1]?.ok).toBe(true);
     expect(call?.[1]?.toolName).toBe("agents_list");
     expect(call?.[1]?.output).toEqual({ ok: true, result: [] });
-    expect((call?.[1] as { source?: unknown } | undefined)?.source).toBe("core");
+    expect((call?.[1] as { source?: any } | undefined)?.source).toBe("core");
     expect(lastCreateOpenClawToolsContext?.allowGatewaySubagentBinding).toBe(true);
     const hookArg = firstHookCallArg();
     expect(hookArg.approvalMode).toBe("report");
@@ -1130,7 +1130,7 @@ describe("tools.invoke Gateway RPC", () => {
     expect(call?.[0]).toBe(true);
     expect(call?.[1]?.ok).toBe(false);
     expect(call?.[1]?.toolName).toBe("tools_invoke_test");
-    expect((call?.[1] as { requiresApproval?: unknown } | undefined)?.requiresApproval).toBe(true);
+    expect((call?.[1] as { requiresApproval?: any } | undefined)?.requiresApproval).toBe(true);
     const error = call?.[1]?.error as { code?: string; message?: string } | undefined;
     expect(error?.code).toBe("requires_approval");
     expect(error?.message).toBe("Plugin approval required");

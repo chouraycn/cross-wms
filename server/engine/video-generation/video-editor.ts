@@ -32,7 +32,7 @@ export type VideoEditResult = {
   width?: number;
   height?: number;
   mimeType: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 export function validateClips(clips: VideoClip[]): string[] {

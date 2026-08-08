@@ -60,7 +60,7 @@ function formatFallbackAttemptErrorPreview(attempt: RuntimeFallbackAttempt): str
     .replace(/^⚠️\s*/, "")
     .replace(/\s+/g, " ")
     .trim();
-  if (!formatted || /unknown error/i.test(formatted)) {
+  if (!formatted || /any error/i.test(formatted)) {
     return undefined;
   }
   return formatted;

@@ -48,7 +48,7 @@ const SecurityAuditDialog: React.FC<SecurityAuditDialogProps> = ({
   open, audit, allowForceInstall, onInstall, onCancel, onViewReport,
 }) => {
   // 解析 reportJson 获取 findings
-  let report: unknown = {};
+  let report: any = {};
   try {
     report = JSON.parse(audit.reportJson);
   } catch {

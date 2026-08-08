@@ -50,7 +50,7 @@ vi.mock("../../../packages/terminal-core/src/theme.js", async () => {
   >("../../../packages/terminal-core/src/theme.js");
   return {
     ...actual,
-    colorize: (_rich: boolean, _theme: unknown, text: string) => text,
+    colorize: (_rich: boolean, _theme: any, text: string) => text,
   };
 });
 

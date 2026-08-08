@@ -3,15 +3,15 @@ import { logger } from '../../logger.js';
 export interface ToolCallRecord {
   id: string;
   toolName: string;
-  arguments: Record<string, unknown>;
-  result?: unknown;
+  arguments: Record<string, any>;
+  result?: any;
   error?: string;
   status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
   startTime: number;
   endTime?: number;
   durationMs?: number;
   sessionId?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
   inputTokens?: number;
   outputTokens?: number;
   success?: boolean;
@@ -78,8 +78,8 @@ export class ToolContext {
 
   startToolCall(
     toolName: string,
-    args: Record<string, unknown>,
-    options: { id?: string; sessionId?: string; metadata?: Record<string, unknown> } = {}
+    args: Record<string, any>,
+    options: { id?: string; sessionId?: string; metadata?: Record<string, any> } = {}
   ): ToolCallRecord {
     const id = options.id || `tool_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
@@ -98,7 +98,7 @@ export class ToolContext {
     return record;
   }
 
-  completeToolCall(id: string, result: unknown): ToolCallRecord | null {
+  completeToolCall(id: string, result: any): ToolCallRecord | null {
     const record = this.activeCalls.get(id);
     if (!record) {
       logger.warn(`[ToolContext] 未找到活动工具调用: ${id}`);

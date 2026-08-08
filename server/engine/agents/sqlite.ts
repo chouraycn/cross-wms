@@ -35,12 +35,12 @@ function resolveAuthProfileDatabasePathInternal(agentDir?: string): string {
   return path.join(dir, "auth-profile.json");
 }
 
-function parseJsonCell(raw: string | null | undefined): unknown {
+function parseJsonCell(raw: string | null | undefined): any {
   if (!raw) return null;
   try { return JSON.parse(raw); } catch { return null; }
 }
 
-function readJsonFile(filePath: string): unknown {
+function readJsonFile(filePath: string): any {
   if (!fs.existsSync(filePath)) return null;
   try {
     return parseJsonCell(fs.readFileSync(filePath, "utf8"));
@@ -49,7 +49,7 @@ function readJsonFile(filePath: string): unknown {
   }
 }
 
-function writeJsonFile(filePath: string, data: unknown): void {
+function writeJsonFile(filePath: string, data: any): void {
   const dir = path.dirname(filePath);
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
@@ -68,25 +68,25 @@ export function resolveAuthProfileDatabaseFilePaths(agentDir?: string): string[]
 }
 
 /** Reads the raw persisted secrets-store payload. */
-export function readPersistedAuthProfileStoreRaw(agentDir?: string): unknown {
+export function readPersistedAuthProfileStoreRaw(agentDir?: string): any {
   const dbPath = resolveAuthProfileDatabasePathInternal(agentDir);
   const data = readJsonFile(dbPath);
   if (!data || typeof data !== "object") return null;
-  return (data as Record<string, unknown>)["store"] ?? null;
+  return (data as Record<string, any>)["store"] ?? null;
 }
 
 /** Reads the raw persisted runtime-state payload. */
-export function readPersistedAuthProfileStateRaw(agentDir?: string): unknown {
+export function readPersistedAuthProfileStateRaw(agentDir?: string): any {
   const dbPath = resolveAuthProfileDatabasePathInternal(agentDir);
   const data = readJsonFile(dbPath);
   if (!data || typeof data !== "object") return null;
-  return (data as Record<string, unknown>)["state"] ?? null;
+  return (data as Record<string, any>)["state"] ?? null;
 }
 
 /** Writes the raw persisted secrets-store payload. */
-export function writePersistedAuthProfileStoreRaw(payload: unknown, agentDir?: string): void {
+export function writePersistedAuthProfileStoreRaw(payload: any, agentDir?: string): void {
   const dbPath = resolveAuthProfileDatabasePathInternal(agentDir);
-  const existing = (readJsonFile(dbPath) as Record<string, unknown>) ?? {};
+  const existing = (readJsonFile(dbPath) as Record<string, any>) ?? {};
   existing["store"] = payload;
   existing["updatedAt"] = Date.now();
   writeJsonFile(dbPath, existing);
@@ -95,16 +95,16 @@ export function writePersistedAuthProfileStoreRaw(payload: unknown, agentDir?: s
 /** Deletes the persisted secrets-store row while leaving runtime state intact. */
 export function deletePersistedAuthProfileStoreRaw(agentDir?: string): void {
   const dbPath = resolveAuthProfileDatabasePathInternal(agentDir);
-  const existing = readJsonFile(dbPath) as Record<string, unknown> | null;
+  const existing = readJsonFile(dbPath) as Record<string, any> | null;
   if (!existing) return;
   delete existing["store"];
   writeJsonFile(dbPath, existing);
 }
 
 /** Writes or deletes the persisted runtime-state payload. */
-export function writePersistedAuthProfileStateRaw(payload: unknown, agentDir?: string): void {
+export function writePersistedAuthProfileStateRaw(payload: any, agentDir?: string): void {
   const dbPath = resolveAuthProfileDatabasePathInternal(agentDir);
-  const existing = (readJsonFile(dbPath) as Record<string, unknown>) ?? {};
+  const existing = (readJsonFile(dbPath) as Record<string, any>) ?? {};
   if (!payload) {
     delete existing["state"];
   } else {

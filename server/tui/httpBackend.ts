@@ -16,12 +16,12 @@ export class HttpBackend {
     this.timeoutMs = options.timeoutMs || 30000;
   }
 
-  async *sendChat(messages: Array<{ role: string; content: string }>): AsyncGenerator<Record<string, unknown>, void, unknown> {
+  async *sendChat(messages: Array<{ role: string; content: string }>): AsyncGenerator<Record<string, any>, void, unknown> {
     this.abortController = new AbortController();
     try {
       yield { type: 'error', error: 'Connection failed', message: `Cannot connect to ${this.baseUrl}` };
       yield { type: 'assistant_end' };
-    } catch (e: unknown) {
+    } catch (e: any) {
       yield { type: 'error', error: e?.message || 'Unknown error' };
       yield { type: 'assistant_end' };
     }

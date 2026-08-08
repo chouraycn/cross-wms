@@ -16,9 +16,9 @@ import { actionHasTarget, actionRequiresTarget } from "./message-action-spec.js"
 /** Normalizes message-action args before target validation and dispatch. */
 export function normalizeMessageActionInput(params: {
   action: ChannelMessageActionName;
-  args: Record<string, unknown>;
+  args: Record<string, any>;
   toolContext?: ChannelThreadingToolContext;
-}): Record<string, unknown> {
+}): Record<string, any> {
   const normalizedArgs = { ...params.args };
   const { action, toolContext } = params;
   const explicitChannel = normalizeOptionalString(normalizedArgs.channel) ?? "";

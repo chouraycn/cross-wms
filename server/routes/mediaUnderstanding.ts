@@ -111,7 +111,7 @@ async function resolveMediaInput(req: Request): Promise<MediaInput & { options?:
   return input;
 }
 
-function ok(res: Response, data: unknown): void {
+function ok(res: Response, data: any): void {
   res.json({ success: true, data });
 }
 
@@ -240,7 +240,7 @@ router.get('/capabilities', (_req: Request, res: Response) => {
   const registry = getRegistry();
   const kinds: MediaKind[] = registry.list();
   const capabilities = kinds.map((kind) => {
-    const info: Record<string, unknown> = { kind, supported: true };
+    const info: Record<string, any> = { kind, supported: true };
     if (kind === 'image') {
       info.features = ['description', 'tags', 'ocr', 'faceDetection', 'safetyDetection'];
     } else if (kind === 'audio') {

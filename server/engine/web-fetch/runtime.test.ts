@@ -11,7 +11,7 @@ import {
 
 type TestPluginWebFetchConfig = {
   webFetch?: {
-    apiKey?: unknown;
+    apiKey?: any;
   };
 };
 
@@ -27,7 +27,7 @@ vi.mock("../plugins/web-fetch-providers.runtime.js", () => ({
   resolveRuntimeWebFetchProviders: resolveRuntimeWebFetchProvidersMock,
 }));
 
-function getFirecrawlApiKey(config?: OpenClawConfig): unknown {
+function getFirecrawlApiKey(config?: OpenClawConfig): any {
   const pluginConfig = config?.plugins?.entries?.firecrawl?.config as
     | TestPluginWebFetchConfig
     | undefined;
@@ -56,7 +56,7 @@ function createThirdPartyFetchProvider(): PluginWebFetchProviderEntry {
   });
 }
 
-function createFirecrawlPluginConfig(apiKey: unknown): OpenClawConfig {
+function createFirecrawlPluginConfig(apiKey: any): OpenClawConfig {
   return {
     plugins: {
       entries: {
@@ -213,7 +213,7 @@ describe("web fetch runtime", () => {
     const provider = createFirecrawlProvider({
       getConfiguredCredentialFallback: (config) => {
         const pluginConfig = config?.plugins?.entries?.firecrawl?.config as
-          | { webSearch?: { apiKey?: unknown } }
+          | { webSearch?: { apiKey?: any } }
           | undefined;
         return pluginConfig?.webSearch?.apiKey === undefined
           ? undefined
@@ -249,7 +249,7 @@ describe("web fetch runtime", () => {
       getConfiguredCredentialValue: getFirecrawlApiKey,
       getConfiguredCredentialFallback: (config) => {
         const pluginConfig = config?.plugins?.entries?.firecrawl?.config as
-          | { webSearch?: { apiKey?: unknown } }
+          | { webSearch?: { apiKey?: any } }
           | undefined;
         return pluginConfig?.webSearch?.apiKey === undefined
           ? undefined

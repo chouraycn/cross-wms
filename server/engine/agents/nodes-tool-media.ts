@@ -28,11 +28,11 @@ export const POLICY_REDIRECT_INVOKE_COMMANDS: ReadonlySet<string> = new Set([
 /** Executes a node media action. Cross-wms degradation: returns error result. */
 export async function executeNodeMediaAction(input: {
   action: string;
-  params: Record<string, unknown>;
-  gatewayOpts?: Record<string, unknown>;
+  params: Record<string, any>;
+  gatewayOpts?: Record<string, any>;
   modelHasVision?: boolean;
-  imageSanitization?: Record<string, unknown>;
-}): Promise<Record<string, unknown>> {
+  imageSanitization?: Record<string, any>;
+}): Promise<Record<string, any>> {
   return {
     content: [{ type: "text", text: `Node media action "${input.action}" not available in cross-wms` }],
     details: {},

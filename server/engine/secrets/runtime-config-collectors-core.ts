@@ -18,22 +18,22 @@ import {
 import { isRecord } from "../shared/safe-record.js";
 
 type ProviderLike = {
-  apiKey?: unknown;
-  headers?: unknown;
-  request?: unknown;
-  enabled?: unknown;
+  apiKey?: any;
+  headers?: any;
+  request?: any;
+  enabled?: any;
 };
 
 type SkillEntryLike = {
-  apiKey?: unknown;
-  enabled?: unknown;
+  apiKey?: any;
+  enabled?: any;
 };
 
 type ProviderRequestLike = {
-  headers?: unknown;
-  auth?: unknown;
-  proxy?: unknown;
-  tls?: unknown;
+  headers?: any;
+  auth?: any;
+  proxy?: any;
+  tls?: any;
 };
 
 function collectModelProviderAssignments(params: {
@@ -114,7 +114,7 @@ function collectAgentMemorySearchAssignments(params: {
   defaults: SecretDefaults | undefined;
   context: ResolverContext;
 }): void {
-  const agents = params.config.agents as Record<string, unknown> | undefined;
+  const agents = params.config.agents as Record<string, any> | undefined;
   if (!isRecord(agents)) {
     return;
   }
@@ -199,7 +199,7 @@ function collectTalkAssignments(params: {
   defaults: SecretDefaults | undefined;
   context: ResolverContext;
 }): void {
-  const talk = params.config.talk as Record<string, unknown> | undefined;
+  const talk = params.config.talk as Record<string, any> | undefined;
   if (!isRecord(talk)) {
     return;
   }
@@ -229,7 +229,7 @@ function collectTalkAssignments(params: {
 }
 
 function collectTalkProviderApiKeyAssignments(params: {
-  providers: unknown;
+  providers: any;
   pathPrefix: string;
   defaults: SecretDefaults | undefined;
   context: ResolverContext;
@@ -259,7 +259,7 @@ function collectGatewayAssignments(params: {
   defaults: SecretDefaults | undefined;
   context: ResolverContext;
 }): void {
-  const gateway = params.config.gateway as Record<string, unknown> | undefined;
+  const gateway = params.config.gateway as Record<string, any> | undefined;
   if (!isRecord(gateway)) {
     return;
   }
@@ -379,7 +379,7 @@ function collectProviderRequestAssignments(params: {
     });
   }
 
-  const collectTlsAssignments = (tls: Record<string, unknown> | undefined, pathPrefix: string) => {
+  const collectTlsAssignments = (tls: Record<string, any> | undefined, pathPrefix: string) => {
     if (!tls) {
       return;
     }
@@ -435,9 +435,9 @@ function collectMediaRequestAssignments(params: {
     (isRecord(media[capability]) ? media[capability] : undefined)?.enabled !== false;
 
   const collectModelAssignments = (
-    models: unknown,
+    models: any,
     pathPrefix: string,
-    resolveActivity: (rawModel: Record<string, unknown>) => {
+    resolveActivity: (rawModel: Record<string, any>) => {
       active: boolean;
       inactiveReason: string;
     },
@@ -520,7 +520,7 @@ function collectMessagesTtsAssignments(params: {
   defaults: SecretDefaults | undefined;
   context: ResolverContext;
 }): void {
-  const messages = params.config.messages as Record<string, unknown> | undefined;
+  const messages = params.config.messages as Record<string, any> | undefined;
   if (!isRecord(messages) || !isRecord(messages.tts)) {
     return;
   }
@@ -537,7 +537,7 @@ function collectAgentTtsAssignments(params: {
   defaults: SecretDefaults | undefined;
   context: ResolverContext;
 }): void {
-  const agents = params.config.agents as Record<string, unknown> | undefined;
+  const agents = params.config.agents as Record<string, any> | undefined;
   const list = agents?.list;
   if (!Array.isArray(list)) {
     return;
@@ -560,7 +560,7 @@ function collectCronAssignments(params: {
   defaults: SecretDefaults | undefined;
   context: ResolverContext;
 }): void {
-  const cron = params.config.cron as Record<string, unknown> | undefined;
+  const cron = params.config.cron as Record<string, any> | undefined;
   if (!isRecord(cron)) {
     return;
   }
@@ -588,7 +588,7 @@ function collectSandboxSshAssignments(params: {
   const defaultsAgent = isRecord(agents.defaults) ? agents.defaults : undefined;
   const defaultsSandbox = isRecord(defaultsAgent?.sandbox) ? defaultsAgent.sandbox : undefined;
   const defaultsSsh = isRecord(defaultsSandbox?.ssh)
-    ? (defaultsSandbox.ssh as Record<string, unknown>)
+    ? (defaultsSandbox.ssh as Record<string, any>)
     : undefined;
   const defaultsBackend =
     typeof defaultsSandbox?.backend === "string" ? defaultsSandbox.backend : undefined;
@@ -602,7 +602,7 @@ function collectSandboxSshAssignments(params: {
 
   const list = Array.isArray(agents.list) ? agents.list : [];
   list.forEach((rawAgent, index) => {
-    const agentRecord = isRecord(rawAgent) ? (rawAgent as Record<string, unknown>) : null;
+    const agentRecord = isRecord(rawAgent) ? (rawAgent as Record<string, any>) : null;
     if (!agentRecord || agentRecord.enabled === false) {
       return;
     }

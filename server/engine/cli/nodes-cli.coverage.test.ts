@@ -8,7 +8,7 @@ type NodeInvokeCall = {
   params?: {
     idempotencyKey?: string;
     command?: string;
-    params?: unknown;
+    params?: any;
     timeoutMs?: number;
   };
 };
@@ -55,7 +55,7 @@ const mocks = await vi.hoisted(async () => {
 const { runtimeErrors, defaultRuntime } = mocks;
 
 vi.mock("../gateway/call.js", () => ({
-  callGateway: (opts: unknown) => callGateway(opts as NodeInvokeCall),
+  callGateway: (opts: any) => callGateway(opts as NodeInvokeCall),
   randomIdempotencyKey: () => randomIdempotencyKey(),
 }));
 
@@ -113,11 +113,11 @@ describe("nodes-cli coverage", () => {
 
   it("does not register the removed run wrapper", async () => {
     await withSuppressedStderr(async () => {
-      let error: { code?: unknown } | undefined;
+      let error: { code?: any } | undefined;
       try {
         await sharedProgram.parseAsync(["nodes", "run", "--node", "mac-1"], { from: "user" });
       } catch (err) {
-        error = err as { code?: unknown };
+        error = err as { code?: any };
       }
       expect(error?.code).toBe("commander.unknownCommand");
     });

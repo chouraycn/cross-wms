@@ -7,8 +7,8 @@ import { resolveTimerTimeoutMs } from "../../shared/number-coercion.js";
 
 /** 运行时环境的最小子集 — 仅需要 log 与 error 用于看门狗报告 */
 export type StallWatchdogRuntimeEnv = {
-  log?: (...args: unknown[]) => void;
-  error?: (...args: unknown[]) => void;
+  log?: (...args: any[]) => void;
+  error?: (...args: any[]) => void;
 };
 
 /** 看门狗超时元数据 */

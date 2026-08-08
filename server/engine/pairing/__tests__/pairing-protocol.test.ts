@@ -28,7 +28,7 @@ describe("PairingProtocol", () => {
       expect(message.type).toBe("hello");
       expect(message.sessionId).toBe(session.sessionId);
       expect(message.payload).toBeDefined();
-      expect((message.payload as unknown).deviceInfo).toBeDefined();
+      expect((message.payload as any).deviceInfo).toBeDefined();
     });
 
     it("should throw for non-existent session", () => {
@@ -52,7 +52,7 @@ describe("PairingProtocol", () => {
       const message = protocol.createChallengeMessage(session.sessionId);
 
       expect(message.type).toBe("challenge");
-      expect((message.payload as unknown).challenge).toBeTruthy();
+      expect((message.payload as any).challenge).toBeTruthy();
     });
   });
 
@@ -65,8 +65,8 @@ describe("PairingProtocol", () => {
       );
 
       expect(message.type).toBe("challenge-response");
-      expect((message.payload as unknown).signature).toBeTruthy();
-      expect((message.payload as unknown).publicKey).toBeTruthy();
+      expect((message.payload as any).signature).toBeTruthy();
+      expect((message.payload as any).publicKey).toBeTruthy();
     });
 
     it("should throw for non-existent session", () => {
@@ -82,7 +82,7 @@ describe("PairingProtocol", () => {
       const message = protocol.createKeyExchangeMessage(session.sessionId);
 
       expect(message.type).toBe("key-exchange");
-      expect((message.payload as unknown).publicKey).toBeTruthy();
+      expect((message.payload as any).publicKey).toBeTruthy();
     });
   });
 
@@ -92,7 +92,7 @@ describe("PairingProtocol", () => {
       const message = protocol.createKeyExchangeAckMessage(session.sessionId);
 
       expect(message.type).toBe("key-exchange-ack");
-      expect((message.payload as unknown).publicKey).toBeTruthy();
+      expect((message.payload as any).publicKey).toBeTruthy();
     });
   });
 
@@ -102,7 +102,7 @@ describe("PairingProtocol", () => {
       const message = protocol.createDeviceInfoMessage(session.sessionId);
 
       expect(message.type).toBe("device-info");
-      expect((message.payload as unknown).deviceInfo).toBeDefined();
+      expect((message.payload as any).deviceInfo).toBeDefined();
     });
   });
 
@@ -118,7 +118,7 @@ describe("PairingProtocol", () => {
     it("should create an error message", () => {
       const message = protocol.createErrorMessage("session-1", "test error");
       expect(message.type).toBe("error");
-      expect((message.payload as unknown).error).toBe("test error");
+      expect((message.payload as any).error).toBe("test error");
     });
   });
 

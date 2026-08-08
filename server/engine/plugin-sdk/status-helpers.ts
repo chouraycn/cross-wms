@@ -23,7 +23,7 @@ type RuntimeLifecycleSnapshot = {
   lastOutboundAt?: number | null;
 };
 
-type StatusSnapshotExtra = Record<string, unknown>;
+type StatusSnapshotExtra = Record<string, any>;
 
 type ComputedAccountStatusBase = {
   accountId: string;
@@ -50,7 +50,7 @@ export type {
   ChannelStatusIssue,
 };
 
-export function createDefaultChannelRuntimeState<T extends Record<string, unknown>>(
+export function createDefaultChannelRuntimeState<T extends Record<string, any>>(
   accountId: string,
   extra?: T,
 ): {
@@ -90,14 +90,14 @@ export function buildBaseChannelStatusSummary<TExtra extends StatusSnapshotExtra
   };
 }
 
-export function buildProbeChannelStatusSummary<TExtra extends Record<string, unknown>>(
+export function buildProbeChannelStatusSummary<TExtra extends Record<string, any>>(
   snapshot: {
     configured?: boolean | null;
     running?: boolean | null;
     lastStartAt?: number | null;
     lastStopAt?: number | null;
     lastError?: string | null;
-    probe?: unknown;
+    probe?: any;
     lastProbeAt?: number | null;
   },
   extra?: TExtra,
@@ -135,7 +135,7 @@ export function buildBaseAccountStatusSnapshot<TExtra extends StatusSnapshotExtr
       configured?: boolean;
     };
     runtime?: RuntimeLifecycleSnapshot | null;
-    probe?: unknown;
+    probe?: any;
   },
   extra?: TExtra,
 ) {
@@ -159,7 +159,7 @@ export function buildComputedAccountStatusSnapshot<TExtra extends StatusSnapshot
     enabled?: boolean;
     configured?: boolean;
     runtime?: RuntimeLifecycleSnapshot | null;
-    probe?: unknown;
+    probe?: any;
   },
   extra?: TExtra,
 ) {
@@ -182,7 +182,7 @@ export function buildComputedAccountStatusSnapshot<TExtra extends StatusSnapshot
 export function buildRuntimeAccountStatusSnapshot<TExtra extends StatusSnapshotExtra>(
   params: {
     runtime?: RuntimeLifecycleSnapshot | null;
-    probe?: unknown;
+    probe?: any;
   },
   extra?: TExtra,
 ) {
@@ -222,7 +222,7 @@ export function buildTokenChannelStatusSummary(
     lastStartAt?: number | null;
     lastStopAt?: number | null;
     lastError?: string | null;
-    probe?: unknown;
+    probe?: any;
     lastProbeAt?: number | null;
   },
   opts?: { includeMode?: boolean },
@@ -245,7 +245,7 @@ export function buildTokenChannelStatusSummary(
 type ConfigIssueAccount = {
   accountId?: string | null;
   configured?: boolean | null;
-} & Record<string, unknown>;
+} & Record<string, any>;
 
 function normalizeOptionalString(value: string | undefined | null): string | undefined {
   if (value === undefined || value === null) {
@@ -260,11 +260,11 @@ export function createDependentCredentialStatusIssueCollector(options: {
   dependencySourceKey: string;
   missingPrimaryMessage: string;
   missingDependentMessage: string;
-  isDependencyConfigured?: ((value: unknown) => boolean) | undefined;
+  isDependencyConfigured?: ((value: any) => boolean) | undefined;
 }) {
   const isDependencyConfigured =
     options.isDependencyConfigured ??
-    ((value: unknown) => {
+    ((value: any) => {
       const normalized = typeof value === "string" ? normalizeOptionalString(value) : undefined;
       return Boolean(normalized && normalized !== "none");
     });
@@ -289,7 +289,7 @@ export function createDependentCredentialStatusIssueCollector(options: {
 
 export function collectStatusIssuesFromLastError(
   channel: string,
-  accounts: Array<{ accountId: string; lastError?: unknown }>,
+  accounts: Array<{ accountId: string; lastError?: any }>,
 ): ChannelStatusIssue[] {
   return accounts.flatMap((account) => {
     const lastError = typeof account.lastError === "string" ? account.lastError.trim() : "";

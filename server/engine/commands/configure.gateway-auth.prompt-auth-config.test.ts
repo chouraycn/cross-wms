@@ -87,7 +87,7 @@ const mocks = vi.hoisted(() => ({
       }
       const aliasIndex = new Map<string, string>();
       for (const [key, value] of Object.entries(defaults?.models ?? {})) {
-        const alias = (value as { alias?: unknown }).alias;
+        const alias = (value as { alias?: any }).alias;
         if (typeof alias === "string" && alias.trim()) {
           aliasIndex.set(alias.trim(), key);
         }

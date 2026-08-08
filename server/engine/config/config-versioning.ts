@@ -25,7 +25,7 @@ const VERSION_HISTORY_FILE = '.config-versions.json';
 const SNAPSHOTS_DIR = 'config-snapshots';
 const DEFAULT_MAX_SNAPSHOTS = 10;
 
-async function createHash(config: unknown): Promise<string> {
+async function createHash(config: any): Promise<string> {
   const crypto = await import('node:crypto');
   return crypto.createHash('sha256').update(JSON.stringify(config)).digest('hex');
 }
@@ -72,7 +72,7 @@ export function writeVersionHistory(history: ConfigVersionHistory): void {
   writeFileSync(path, JSON.stringify(history, null, 2), 'utf-8');
 }
 
-export async function createSnapshot(config: unknown, version?: string): Promise<{ success: boolean; snapshot?: ConfigSnapshot }> {
+export async function createSnapshot(config: any, version?: string): Promise<{ success: boolean; snapshot?: ConfigSnapshot }> {
   const hash = await createHash(config);
   const timestamp = new Date().toISOString();
   const snapshotVersion = version ?? `v${Date.now()}`;
@@ -80,7 +80,7 @@ export async function createSnapshot(config: unknown, version?: string): Promise
   const snapshot: ConfigSnapshot = {
     version: snapshotVersion,
     timestamp,
-    config: config as Record<string, unknown>,
+    config: config as Record<string, any>,
     hash,
   };
 
@@ -140,7 +140,7 @@ export function listSnapshots(): ConfigSnapshot[] {
   return history.snapshots;
 }
 
-export async function restoreSnapshot(version: string): Promise<{ success: boolean; config?: unknown; message?: string }> {
+export async function restoreSnapshot(version: string): Promise<{ success: boolean; config?: any; message?: string }> {
   const snapshot = getSnapshot(version);
   if (!snapshot) {
     return { success: false, message: `快照不存在: ${version}` };
@@ -195,7 +195,7 @@ export function getVersionHistoryStats(): {
 
 export async function compareSnapshots(version1: string, version2: string): Promise<{
   success: boolean;
-  diff?: Record<string, { before: unknown; after: unknown }>;
+  diff?: Record<string, { before: any; after: any }>;
   message?: string;
 }> {
   const snapshot1 = getSnapshot(version1);
@@ -205,7 +205,7 @@ export async function compareSnapshots(version1: string, version2: string): Prom
     return { success: false, message: '快照不存在' };
   }
 
-  const diff: Record<string, { before: unknown; after: unknown }> = {};
+  const diff: Record<string, { before: any; after: any }> = {};
   const allKeys = new Set([...Object.keys(snapshot1.config), ...Object.keys(snapshot2.config)]);
 
   for (const key of allKeys) {

@@ -6,7 +6,7 @@ import {
   loadBundledWebSearchProviderEntriesFromDir,
 } from "./web-provider-public-artifacts.explicit.js";
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 

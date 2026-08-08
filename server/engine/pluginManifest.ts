@@ -17,7 +17,7 @@ export interface PluginManifest {
   dependencies?: Record<string, string>;
   capabilities?: string[];
   permissions?: string[];
-  configSchema?: Record<string, unknown>;
+  configSchema?: Record<string, any>;
   channel?: string;
   hooks?: {
     beforeAgentStart?: string;

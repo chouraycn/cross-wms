@@ -26,8 +26,8 @@ afterEach(async () => {
   await tempDirs.cleanup();
 });
 
-async function expectRejectCode(promise: Promise<unknown>, expected: string | RegExp) {
-  const err = await promise.catch((caught: unknown) => caught);
+async function expectRejectCode(promise: Promise<any>, expected: string | RegExp) {
+  const err = await promise.catch((caught: any) => caught);
   if (err === undefined) {
     throw new Error("Expected promise to reject");
   }
@@ -135,7 +135,7 @@ describe("fs-safe", () => {
   it("rejects directories", async () => {
     const dir = await tempDirs.make("openclaw-fs-safe-");
     await expectRejectCode(readLocalFileSafely({ filePath: dir }), "not-file");
-    const err = await readLocalFileSafely({ filePath: dir }).catch((e: unknown) => e);
+    const err = await readLocalFileSafely({ filePath: dir }).catch((e: any) => e);
     expect(err).toBeInstanceOf(FsSafeError);
     expect((err as FsSafeError).message).not.toMatch(/EISDIR/i);
   });
@@ -254,7 +254,7 @@ describe("fs-safe", () => {
     const rootFs = await openRoot(root);
     await expectRejectCode(rootFs.open("memory"), /invalid-path|not-file/);
 
-    const err = await rootFs.open("memory").catch((e: unknown) => e);
+    const err = await rootFs.open("memory").catch((e: any) => e);
     expect(err).toBeInstanceOf(FsSafeError);
     expect((err as FsSafeError).message).not.toMatch(/EISDIR/i);
   });

@@ -6,16 +6,16 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export const SYSTEM_PROMPT_CACHE_BOUNDARY: unknown = undefined;
-export function stripSystemPromptCacheBoundary(..._args: unknown[]): unknown {
+export const SYSTEM_PROMPT_CACHE_BOUNDARY: any = undefined;
+export function stripSystemPromptCacheBoundary(..._args: any[]): any {
   return undefined;
 }
-export function ensureSystemPromptCacheBoundary(..._args: unknown[]): unknown {
+export function ensureSystemPromptCacheBoundary(..._args: any[]): any {
   return undefined;
 }
-export function splitSystemPromptCacheBoundary(..._args: unknown[]): unknown {
+export function splitSystemPromptCacheBoundary(..._args: any[]): any {
   return undefined;
 }
-export function prependSystemPromptAdditionAfterCacheBoundary(..._args: unknown[]): unknown {
+export function prependSystemPromptAdditionAfterCacheBoundary(..._args: any[]): any {
   return undefined;
 }

@@ -106,7 +106,7 @@ const ChainExecutionPanel: React.FC<ChainExecutionPanelProps> = ({
 
     // 然后连接 SSE 获取实时更新
     const sse = connectChainExecutionEvents(executionId, (rawData) => {
-      let data: Record<string, unknown>;
+      let data: Record<string, any>;
       try {
         data = JSON.parse(rawData);
       } catch {

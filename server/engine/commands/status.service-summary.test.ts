@@ -18,7 +18,7 @@ function createService(overrides: Partial<GatewayService>): GatewayService {
   });
 }
 
-function requireMockArg(mock: { mock: { calls: unknown[][] } }, label: string): unknown {
+function requireMockArg(mock: { mock: { calls: any[][] } }, label: string): any {
   const call = mock.mock.calls[0];
   if (!call) {
     throw new Error(`expected ${label} call`);

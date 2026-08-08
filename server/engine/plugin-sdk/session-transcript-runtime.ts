@@ -82,7 +82,7 @@ export type SessionTranscriptAssistantMirrorAppendParams = SessionTranscriptRead
 };
 
 export type SessionTranscriptWriteLockParams = SessionTranscriptTargetParams & {
-  config?: TranscriptMessageAppendOptions<unknown>["config"];
+  config?: TranscriptMessageAppendOptions<any>["config"];
 };
 
 export type SessionTranscriptWriteLockContext = {

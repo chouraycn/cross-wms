@@ -25,7 +25,7 @@ type AuthProfileFailureCopyParams = {
    * short diagnostic suffix and to fall back to the original message when no
    * structured recovery copy applies.
    */
-  cause?: unknown;
+  cause?: any;
   config?: OpenClawConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
@@ -90,7 +90,7 @@ function shouldIncludeRecoveryHint(reason: FailoverReason): boolean {
   }
 }
 
-function diagnosticSuffix(cause: unknown, primary: string): string | null {
+function diagnosticSuffix(cause: any, primary: string): string | null {
   if (cause === undefined || cause === null) {
     return null;
   }

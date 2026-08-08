@@ -143,7 +143,7 @@ export async function tryHandleRootHelpFastPath(
     loadRootHelpRenderOptionsForConfigSensitivePlugins?: (
       env?: NodeJS.ProcessEnv,
     ) => Promise<RootHelpRenderOptions | null>;
-    onError?: (error: unknown) => void;
+    onError?: (error: any) => void;
     env?: NodeJS.ProcessEnv;
   } = {},
 ): Promise<boolean> {
@@ -155,7 +155,7 @@ export async function tryHandleRootHelpFastPath(
   }
   const handleError =
     deps.onError ??
-    ((error: unknown) => {
+    ((error: any) => {
       console.error(
         "[openclaw] Failed to display help:",
         error instanceof Error ? (error.stack ?? error.message) : error,

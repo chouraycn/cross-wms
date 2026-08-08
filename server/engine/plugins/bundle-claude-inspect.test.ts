@@ -21,12 +21,12 @@ describe("Claude bundle plugin inspect integration", () => {
     fs.writeFileSync(path.join(rootDir, relativePath), value, "utf-8");
   }
 
-  function writeFixtureJson(relativePath: string, value: unknown) {
+  function writeFixtureJson(relativePath: string, value: any) {
     writeFixtureText(relativePath, JSON.stringify(value));
   }
 
   function writeFixtureEntries(
-    entries: Readonly<Record<string, string | Record<string, unknown>>>,
+    entries: Readonly<Record<string, string | Record<string, any>>>,
   ) {
     Object.entries(entries).forEach(([relativePath, value]) => {
       if (typeof value === "string") {
@@ -109,7 +109,7 @@ describe("Claude bundle plugin inspect integration", () => {
     expect(values).toEqual([...params.expected]);
   }
 
-  function expectNoDiagnostics(diagnostics: unknown[]) {
+  function expectNoDiagnostics(diagnostics: any[]) {
     expect(diagnostics).toStrictEqual([]);
   }
 
@@ -117,8 +117,8 @@ describe("Claude bundle plugin inspect integration", () => {
     actual: {
       supportedServerNames: string[];
       unsupportedServerNames: string[];
-      diagnostics: unknown[];
-    } & Record<string, unknown>;
+      diagnostics: any[];
+    } & Record<string, any>;
     supportedServerNames: readonly string[];
     unsupportedServerNames: readonly string[];
     hasSupportedKey: "hasSupportedStdioServer" | "hasStdioServer";
@@ -132,7 +132,7 @@ describe("Claude bundle plugin inspect integration", () => {
   function inspectClaudeBundleRuntimeSupport(kind: "mcp" | "lsp"): {
     supportedServerNames: string[];
     unsupportedServerNames: string[];
-    diagnostics: unknown[];
+    diagnostics: any[];
     hasSupportedStdioServer?: boolean;
     hasStdioServer?: boolean;
   } {

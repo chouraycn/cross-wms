@@ -25,7 +25,7 @@ export function setMockSkillsHomeEnv(fakeHome: string): SkillsHomeEnvSnapshot {
 
   // 惰性尝试加载 vitest 的 spyOn（仅在测试环境可用）
   try {
-    const vi = (globalThis as Record<string, unknown>).__vitest_vi__ as
+    const vi = (globalThis as Record<string, any>).__vitest_vi__ as
       | { spyOn: (obj: typeof os, method: "homedir") => { mockReturnValue: (v: string) => { mockRestore: () => void } } }
       | undefined;
     if (vi) {
@@ -53,7 +53,7 @@ export async function restoreMockSkillsHomeEnv(
 ) {
   // 惰性恢复 vitest mock
   try {
-    const vi = (globalThis as Record<string, unknown>).__vitest_vi__ as
+    const vi = (globalThis as Record<string, any>).__vitest_vi__ as
       | { restoreAllMocks: () => void }
       | undefined;
     if (vi) {

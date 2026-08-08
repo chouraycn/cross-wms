@@ -6,9 +6,9 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function hasAnyAuthProfileStoreSource(..._args: unknown[]): unknown {
+export function hasAnyAuthProfileStoreSource(..._args: any[]): any {
   return false;
 }
-export function hasLocalAuthProfileStoreSource(..._args: unknown[]): unknown {
+export function hasLocalAuthProfileStoreSource(..._args: any[]): any {
   return false;
 }

@@ -151,7 +151,7 @@ describe("diagnostic log events", () => {
       }
     });
 
-    const structured = Object.create(null) as Record<string, unknown>;
+    const structured = Object.create(null) as Record<string, any>;
     structured.safe = "ok";
     structured[PROTO_KEY] = "pollute";
     structured["constructor"] = "pollute";

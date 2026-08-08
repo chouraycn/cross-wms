@@ -18,11 +18,11 @@ vi.mock("../media/fetch.js", async () => {
 });
 
 function requireReadRemoteMediaBufferInput(): {
-  url?: unknown;
-  timeoutMs?: unknown;
-  maxBytes?: unknown;
-  ssrfPolicy?: unknown;
-  retry?: unknown;
+  url?: any;
+  timeoutMs?: any;
+  maxBytes?: any;
+  ssrfPolicy?: any;
+  retry?: any;
 } {
   const [call] = readRemoteMediaBufferMock.mock.calls;
   if (!call) {

@@ -7,6 +7,6 @@
  */
 
 /** Build embedded run payloads (returns empty in cross-wms). */
-export function buildEmbeddedRunPayloads(..._args: unknown[]): Record<string, unknown> {
+export function buildEmbeddedRunPayloads(..._args: any[]): Record<string, any> {
   return {};
 }

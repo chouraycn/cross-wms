@@ -6,22 +6,22 @@ export type ProviderRuntimePluginLookupParams = {
   providerId?: string;
   pluginId?: string;
   provider?: string;
-  config?: unknown;
+  config?: any;
   workspaceDir?: string;
   env?: Record<string, string | undefined>;
   applyAutoEnable?: boolean;
   bundledProviderVitestCompat?: boolean;
 };
 export type ProviderRuntimePluginHandle = ProviderRuntimePluginLookupParams & {
-  plugin?: unknown;
+  plugin?: any;
 };
 export type ProviderRuntimePluginHandleParams = ProviderRuntimePluginLookupParams & {
-  config?: unknown;
+  config?: any;
 };
 export function clearProviderRuntimePluginCacheForTest(): void {
   // 降级
 }
-export function resolveProviderPluginsForHooks(params: unknown): unknown[] {
+export function resolveProviderPluginsForHooks(params: any): any[] {
   void params;
   return [];
 }
@@ -31,43 +31,43 @@ export function resolveProviderRuntimePlugin(
   void params;
   return undefined;
 }
-export function resolveLoadedProviderRuntimePlugin(params: unknown): ProviderPlugin | undefined {
+export function resolveLoadedProviderRuntimePlugin(params: any): ProviderPlugin | undefined {
   void params;
   return undefined;
 }
-export function resolveProviderHookPlugin(params: unknown): ProviderPlugin | undefined {
+export function resolveProviderHookPlugin(params: any): ProviderPlugin | undefined {
   void params;
   return undefined;
 }
-export function resolveProviderRuntimePluginHandle(params: unknown): ProviderRuntimePluginHandle | undefined {
+export function resolveProviderRuntimePluginHandle(params: any): ProviderRuntimePluginHandle | undefined {
   void params;
   return undefined;
 }
-export function ensureProviderRuntimePluginHandle(params: unknown): ProviderRuntimePluginHandle | undefined {
+export function ensureProviderRuntimePluginHandle(params: any): ProviderRuntimePluginHandle | undefined {
   void params;
   return undefined;
 }
-export function prepareProviderExtraParams(params: unknown): unknown {
+export function prepareProviderExtraParams(params: any): any {
   void params;
   return undefined;
 }
-export function resolveProviderExtraParamsForTransport(params: unknown): unknown {
+export function resolveProviderExtraParamsForTransport(params: any): any {
   void params;
   return undefined;
 }
-export function resolveProviderAuthProfileId(params: unknown): string | undefined {
+export function resolveProviderAuthProfileId(params: any): string | undefined {
   void params;
   return undefined;
 }
-export function resolveProviderFollowupFallbackRoute(params: unknown): unknown {
+export function resolveProviderFollowupFallbackRoute(params: any): any {
   void params;
   return undefined;
 }
-export function wrapProviderStreamFn(params: unknown): unknown {
+export function wrapProviderStreamFn(params: any): any {
   void params;
   return undefined;
 }
-export function wrapProviderSimpleCompletionStreamFn(params: unknown): unknown {
+export function wrapProviderSimpleCompletionStreamFn(params: any): any {
   void params;
   return undefined;
 }

@@ -266,9 +266,9 @@ export function useAgentChat(
                 metadata: {
                   ...msg.metadata,
                   error:
-                    (msg.metadata as unknown)?.error ||
+                    (msg.metadata as any)?.error ||
                     (msg.content && msg.content.trim() ? undefined : '请求已中断'),
-                  errorCode: (msg.metadata as unknown)?.errorCode || 'ABORTED',
+                  errorCode: (msg.metadata as any)?.errorCode || 'ABORTED',
                 },
               }
             : msg
@@ -784,7 +784,7 @@ export function useAgentChat(
 
           // 上限保护：超过 MAX_TOOLCALLS_PER_MESSAGE 时，将最早的项合并为摘要占位
           // 保留最近 MAX_TOOLCALLS_PER_MESSAGE - 1 条 + 1 个摘要位
-          let newToolCalls: unknown[];
+          let newToolCalls: any[];
           if (toolCalls.length + 1 > MAX_TOOLCALLS_PER_MESSAGE) {
             const keepCount = MAX_TOOLCALLS_PER_MESSAGE - 1;
             const dropped = toolCalls.length - keepCount + 1; // 包含本次新增
@@ -793,7 +793,7 @@ export function useAgentChat(
               id: `tc_summary_${Date.now()}`,
               name: '__summary__',
               arguments: '{}',
-              result: `[前 ${dropped} 次工具调用已折叠，包含: ${toolCalls.slice(0, dropped).map((tc: unknown) => tc?.name || 'unknown').join(', ')}]`,
+              result: `[前 ${dropped} 次工具调用已折叠，包含: ${toolCalls.slice(0, dropped).map((tc: any) => tc?.name || 'unknown').join(', ')}]`,
               status: 'completed' as const,
               _folded: true,
             };
@@ -1360,8 +1360,8 @@ export function useAgentChat(
   }, [initializeStreaming, handleTextContent, flushAllBuffers, startAssistantMessage, removePendingMessage, updatePendingMessage]);
 
   // 事件处理 — 通过 EventAdapter 将 SSE wire 格式转换为 OpenClaw ChatEvent
-  const handleAgentEvent = useCallback((event: { event?: string; data: unknown }) => {
-    const payload = (event.data as Record<string, unknown>) || {};
+  const handleAgentEvent = useCallback((event: { event?: string; data: any }) => {
+    const payload = (event.data as Record<string, any>) || {};
 
     // 使用 EventAdapter 转换 wire 格式到 OpenClaw 事件
     const wireEvent: SSEWireEvent = {
@@ -1369,7 +1369,7 @@ export function useAgentChat(
       seq: (payload.seq as number) || 0,
       stream: (payload.stream as string) || (event.event as string) || 'unknown',
       ts: (payload.ts as number) || Date.now(),
-      data: (payload.data as Record<string, unknown>) || {},
+      data: (payload.data as Record<string, any>) || {},
       sessionKey: payload.sessionKey as string,
       sessionId: payload.sessionId as string,
     };
@@ -1521,7 +1521,7 @@ export function useAgentChat(
             const errorData = JSON.parse(xhr.responseText || '{}');
             errMsg = errorData.error || errMsg;
           } catch { /* ignore parse error */ }
-          const err: unknown = new Error(errMsg);
+          const err: any = new Error(errMsg);
           err.status = xhr.status;
           reject(err);
         }
@@ -1532,7 +1532,7 @@ export function useAgentChat(
         settled = true;
         signal.removeEventListener('abort', onAbort);
         cleanup();
-        const err: unknown = new Error('网络请求失败');
+        const err: any = new Error('网络请求失败');
         reject(err);
       };
 
@@ -1547,7 +1547,7 @@ export function useAgentChat(
    * - 服务器临时不可用（502、503、504）
    * - 不包括：用户取消（AbortError）、业务错误（400、401、403、404）
    */
-  const isRetryableError = (err: unknown): boolean => {
+  const isRetryableError = (err: any): boolean => {
     if (err.name === 'AbortError') return false;
 
     // 1) HTTP 状态码具有权威性：仅 502/503/504 视为可重试的临时服务端错误。
@@ -1663,7 +1663,7 @@ export function useAgentChat(
 
           if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            const err: unknown = new Error((errorData as unknown).error || `请求失败 (${response.status})`);
+            const err: any = new Error((errorData as any).error || `请求失败 (${response.status})`);
             err.status = response.status;
             throw err;
           }
@@ -1689,7 +1689,7 @@ export function useAgentChat(
         thinkingCoalescerRef.current?.dispose();
         schedulerRef.current?.dispose();
 
-      } catch (err: unknown) {
+      } catch (err: any) {
         if (err.name === 'AbortError') {
           // console.log('[useAgentChat] 请求已取消');
           flushAllBuffers();
@@ -1782,7 +1782,7 @@ export function useAgentChat(
               metadata: {
                 ...msg.metadata,
                 error: err.message || '发送失败',
-                errorCode: (err as unknown).code || 'UNKNOWN_ERROR',
+                errorCode: (err as any).code || 'UNKNOWN_ERROR',
               },
             };
 
@@ -2008,7 +2008,7 @@ export function useAgentChat(
     if (lastAssistant.toolCalls && Array.isArray(lastAssistant.toolCalls)) {
       const executionStatus = lastAssistant.toolExecutionStatus || {};
       for (const tc of lastAssistant.toolCalls) {
-        if ((tc as unknown)._folded) continue;
+        if ((tc as any)._folded) continue;
         const tcId = tc.id || '';
         const statusEntry = executionStatus[tcId];
         let tcStatus: 'running' | 'completed' | 'failed' = 'completed';
@@ -2197,7 +2197,7 @@ export function useAgentChat(
 
       // 尝试触发 JS 引擎 GC（部分 WKWebView 配置暴露 window.gc）
       try {
-        const gc = (window as unknown).gc;
+        const gc = (window as any).gc;
         if (typeof gc === 'function') gc();
       } catch (e) { console.debug("[compat-swallowed]", e); }
     };

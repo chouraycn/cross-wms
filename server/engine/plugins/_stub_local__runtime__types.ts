@@ -8,6 +8,6 @@ export interface PluginRuntime {
   id: string;
   name?: string;
   version?: string;
-  nodes?: { [key: string]: unknown };
-  [key: string]: unknown;
+  nodes?: { [key: string]: any };
+  [key: string]: any;
 }

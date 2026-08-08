@@ -17,12 +17,12 @@ import { extractAssistantTextForPhase } from "../../shared/chat-message-content.
 import { sanitizeAssistantVisibleTextWithProfile } from "../../shared/text/assistant-visible-text.js";
 import { sanitizeUserFacingText } from "../sanitize-user-facing-text.js";
 
-export function stripToolMessages(messages: unknown[]): unknown[] {
+export function stripToolMessages(messages: any[]): any[] {
   return messages.filter((msg) => {
     if (!msg || typeof msg !== "object") {
       return true;
     }
-    const role = (msg as { role?: unknown }).role;
+    const role = (msg as { role?: any }).role;
     return role !== "toolResult" && role !== "tool";
   });
 }
@@ -35,11 +35,11 @@ export function sanitizeTextContent(text: string): string {
   return sanitizeAssistantVisibleTextWithProfile(text, "history");
 }
 
-export function extractAssistantText(message: unknown): string | undefined {
+export function extractAssistantText(message: any): string | undefined {
   if (!message || typeof message !== "object") {
     return undefined;
   }
-  if ((message as { role?: unknown }).role !== "assistant") {
+  if ((message as { role?: any }).role !== "assistant") {
     return undefined;
   }
   const joined =
@@ -52,7 +52,7 @@ export function extractAssistantText(message: unknown): string | undefined {
       sanitizeText: sanitizeTextContent,
       joinWith: "",
     });
-  const stopReason = (message as { stopReason?: unknown }).stopReason;
+  const stopReason = (message as { stopReason?: any }).stopReason;
   // Gate on stopReason only — a non-error response with a stale/background errorMessage
   // should not have its content rewritten with error templates (#13935).
   const errorContext = stopReason === "error";

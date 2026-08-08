@@ -6,8 +6,8 @@ import {
   setupAcceptedSubagentGatewayMock,
 } from "./subagent-spawn.test-helpers.js";
 
-type SessionStore = Record<string, Record<string, unknown>>;
-type GatewayRequest = { method?: string; params?: Record<string, unknown> };
+type SessionStore = Record<string, Record<string, any>>;
+type GatewayRequest = { method?: string; params?: Record<string, any> };
 
 describe("sessions_spawn context modes", () => {
   const storePath = "/tmp/subagent-context-session-store.json";
@@ -49,7 +49,7 @@ describe("sessions_spawn context modes", () => {
 
   function usePersistentStoreMock(store: SessionStore) {
     loadSessionStoreMock.mockReturnValue(store);
-    updateSessionStoreMock.mockImplementation(async (_storePath: unknown, mutator: unknown) => {
+    updateSessionStoreMock.mockImplementation(async (_storePath: any, mutator: any) => {
       if (typeof mutator !== "function") {
         throw new Error("missing session store mutator");
       }
@@ -58,14 +58,14 @@ describe("sessions_spawn context modes", () => {
     forkSessionEntryFromParentMock.mockImplementation(
       async (params: {
         agentId: string;
-        fallbackEntry?: Record<string, unknown>;
+        fallbackEntry?: Record<string, any>;
         parentStoreKeys?: string[];
         sessionKey: string;
         sessionsDir?: string;
       }) => {
         const parentEntry = params.parentStoreKeys
           ?.map((key) => store[key])
-          .find((entry): entry is Record<string, unknown> => Boolean(entry));
+          .find((entry): entry is Record<string, any> => Boolean(entry));
         const maxTokens = 100_000;
         const parentTokens = parentEntry?.totalTokens;
         if (
@@ -130,7 +130,7 @@ describe("sessions_spawn context modes", () => {
     return result;
   }
 
-  function requireStoreEntry(store: SessionStore, key: string): Record<string, unknown> {
+  function requireStoreEntry(store: SessionStore, key: string): Record<string, any> {
     const entry = store[key];
     if (!entry) {
       throw new Error(`expected session store entry ${key}`);
@@ -146,12 +146,12 @@ describe("sessions_spawn context modes", () => {
     return key;
   }
 
-  function requireFirstMockArg(mock: ReturnType<typeof vi.fn>): Record<string, unknown> {
+  function requireFirstMockArg(mock: ReturnType<typeof vi.fn>): Record<string, any> {
     const arg = mock.mock.calls.at(0)?.[0];
     if (!arg || typeof arg !== "object") {
       throw new Error("expected first mock argument object");
     }
-    return arg as Record<string, unknown>;
+    return arg as Record<string, any>;
   }
 
   function requireGatewayRequest(method: string): GatewayRequest {
@@ -367,7 +367,7 @@ describe("sessions_spawn context modes", () => {
     };
     usePersistentStoreMock(store);
     const rollback = vi.fn(async () => undefined);
-    callGatewayMock.mockImplementation(async (requestUnknown: unknown) => {
+    callGatewayMock.mockImplementation(async (requestUnknown: any) => {
       const request = requestUnknown as GatewayRequest;
       if (request.method === "agent") {
         throw new Error("agent start failed");

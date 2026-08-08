@@ -33,7 +33,7 @@ import { createEmbeddedRunAuthController } from "./auth-controller.js";
 function createDeferred<T>() {
   // Manual deferreds let refresh tests prove in-flight auth state and ordering.
   let resolve: ((value: T | PromiseLike<T>) => void) | undefined;
-  let reject: ((reason?: unknown) => void) | undefined;
+  let reject: ((reason?: any) => void) | undefined;
   const promise = new Promise<T>((res, rej) => {
     resolve = res;
     reject = rej;
@@ -71,7 +71,7 @@ function getRuntimeAuthSnapshot(
 type MutableAuthControllerHarness = {
   runtimeModel: Model;
   effectiveModel: Model;
-  apiKeyInfo: unknown;
+  apiKeyInfo: any;
   lastProfileId?: string;
   runtimeAuthState: RuntimeAuthState | null;
   profileIndex: number;
@@ -261,7 +261,7 @@ describe("createEmbeddedRunAuthController", () => {
       },
     });
 
-    const error = await controller.initializeAuthProfile().catch((err: unknown) => err);
+    const error = await controller.initializeAuthProfile().catch((err: any) => err);
 
     expect(error).toBeInstanceOf(FailoverError);
     expect(error).toMatchObject({

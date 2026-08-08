@@ -23,7 +23,7 @@ function writeSkillFile(skillPath: string, content: string): void {
   fs.writeFileSync(skillPath, content, 'utf-8');
 }
 
-export async function handleSkillCreateProposal(args: Record<string, unknown>): Promise<string> {
+export async function handleSkillCreateProposal(args: Record<string, any>): Promise<string> {
   try {
     const skillName = String(args.skillName || '').trim();
     const description = String(args.description || '').trim();

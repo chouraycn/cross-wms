@@ -6,9 +6,9 @@ const ZERO_DELAY_RETRY = { attempts: 3, minDelayMs: 0, maxDelayMs: 0, jitter: 0 
 
 async function runRetryCase(params: {
   runnerOptions: Parameters<typeof createChannelApiRetryRunner>[0];
-  fnSteps: Array<{ type: "reject" | "resolve"; value: unknown }>;
+  fnSteps: Array<{ type: "reject" | "resolve"; value: any }>;
   expectedCalls: number;
-  expectedValue?: unknown;
+  expectedValue?: any;
   expectedError?: string;
 }): Promise<void> {
   vi.useFakeTimers();
@@ -87,7 +87,7 @@ describe("createChannelApiRetryRunner", () => {
         name: "still retries when the strict predicate returns true",
         runnerOptions: {
           retry: { ...ZERO_DELAY_RETRY, attempts: 2 },
-          shouldRetry: (err: unknown) => (err as { code?: string }).code === "ECONNREFUSED",
+          shouldRetry: (err: any) => (err as { code?: string }).code === "ECONNREFUSED",
           strictShouldRetry: true,
         },
         fnSteps: [

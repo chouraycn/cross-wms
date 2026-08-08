@@ -13,7 +13,7 @@
 
 export interface SSEEvent {
   event?: string;
-  data: unknown;
+  data: any;
 }
 
 export class SSEStreamParser {
@@ -104,7 +104,7 @@ export class SSEStreamParser {
 
   private buildEvent(): SSEEvent {
     const dataStr = this.currentEvent.data.join('\n');
-    let parsed: unknown = dataStr;
+    let parsed: any = dataStr;
 
     try {
       parsed = JSON.parse(dataStr);

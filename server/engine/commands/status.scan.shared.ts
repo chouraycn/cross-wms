@@ -79,7 +79,7 @@ function hasBuiltInMemoryState(databasePath: string): boolean {
           .prepare(
             `SELECT name FROM sqlite_master WHERE type = 'table' AND name IN (${builtInMemoryTables.map(() => "?").join(", ")})`,
           )
-          .all(...builtInMemoryTables) as Array<{ name?: unknown }>
+          .all(...builtInMemoryTables) as Array<{ name?: any }>
       )
         .map((row) => row.name)
         .filter((name): name is string => typeof name === "string"),

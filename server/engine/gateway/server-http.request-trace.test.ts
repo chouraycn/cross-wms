@@ -93,7 +93,7 @@ describe("gateway HTTP request trace scope", () => {
         .readFileSync(logPath, "utf8")
         .trim()
         .split("\n")
-        .map((line) => JSON.parse(line) as Record<string, unknown>)
+        .map((line) => JSON.parse(line) as Record<string, any>)
         .find((record) => record.message === "handled request trace");
       expect(traceRecord?.traceId).toBe(activeTraceInHandler?.traceId);
       expect(traceRecord?.spanId).toBe(activeTraceInHandler?.spanId);

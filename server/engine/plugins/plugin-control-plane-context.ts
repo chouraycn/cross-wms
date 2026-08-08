@@ -17,9 +17,9 @@ import type { InstalledPluginIndex } from "./installed-plugin-index-types.js";
 type OpenClawConfig = {
   plugins?: {
     load?: { paths?: readonly string[] };
-    [key: string]: unknown;
+    [key: string]: any;
   };
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 /** 插件源根目录集合（本地降级占位）。 */

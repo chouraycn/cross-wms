@@ -18,19 +18,19 @@ export type TypingCallbacks = {
 };
 
 /** Channel 心跳依赖（降级类型） */
-export type ChannelHeartbeatDeps = Record<string, unknown>;
+export type ChannelHeartbeatDeps = Record<string, any>;
 
 /** Channel plugin 类型（降级，仅保留心跳用到的字段） */
 export type ChannelPlugin = {
   heartbeat?: {
-    sendTyping?: (target: unknown) => Promise<void>;
-    clearTyping?: (target: unknown) => Promise<void>;
-    checkReady?: (params: unknown) => Promise<{ ok: boolean; reason?: string }>;
+    sendTyping?: (target: any) => Promise<void>;
+    clearTyping?: (target: any) => Promise<void>;
+    checkReady?: (params: any) => Promise<{ ok: boolean; reason?: string }>;
   };
 };
 
 type HeartbeatTypingLogger = {
-  debug?: (message: string, meta?: Record<string, unknown>) => void;
+  debug?: (message: string, meta?: Record<string, any>) => void;
 };
 
 type HeartbeatTypingTarget = {

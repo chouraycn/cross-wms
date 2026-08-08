@@ -25,7 +25,7 @@ export type TokenExpiryState = "missing" | "valid" | "expiring" | "expired" | "i
 
 /** Classifies a token expiry timestamp for auth selection and refresh logic. */
 export function resolveTokenExpiryState(
-  expires: unknown,
+  expires: any,
   now = Date.now(),
   opts?: {
     expiringWithinMs?: number;
@@ -76,11 +76,11 @@ export function hasUsableOAuthCredential(
 
 // SecretRef and literal secret strings are both valid configured credentials;
 // unresolved refs are classified separately so callers can surface useful copy.
-function hasConfiguredSecretRef(value: unknown): boolean {
+function hasConfiguredSecretRef(value: any): boolean {
   return coerceSecretRef(value) !== null;
 }
 
-function hasConfiguredSecretString(value: unknown): boolean {
+function hasConfiguredSecretString(value: any): boolean {
   return normalizeSecretInputString(value) !== undefined;
 }
 

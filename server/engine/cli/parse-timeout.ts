@@ -19,7 +19,7 @@ function parseStrictPositiveInteger(value: string): number | undefined {
 }
 
 /** 解析正毫秒超时值，缺失或非法输入返回 undefined。 */
-export function parseTimeoutMs(raw: unknown): number | undefined {
+export function parseTimeoutMs(raw: any): number | undefined {
   if (raw === undefined || raw === null) {
     return undefined;
   }
@@ -47,7 +47,7 @@ function invalidTimeout(value?: string): Error {
 
 /** 解析正超时值，缺失时返回提供的 fallback。 */
 export function parseTimeoutMsWithFallback(
-  raw: unknown,
+  raw: any,
   fallbackMs: number,
   options: {
     invalidType?: "fallback" | "error";

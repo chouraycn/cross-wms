@@ -270,7 +270,7 @@ export function applyDefaultModelPrimaryUpdate(params: {
 
   const defaults = params.cfg.agents?.defaults ?? {};
   const existing = toAgentModelListLike(
-    (defaults as Record<string, unknown>)[params.field] as AgentModelConfig | undefined,
+    (defaults as Record<string, any>)[params.field] as AgentModelConfig | undefined,
   );
 
   return {

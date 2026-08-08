@@ -16,16 +16,16 @@ function readSource(path: string): string {
   return readFileSync(resolve(REPO_ROOT, path), "utf8");
 }
 
-function collectSchemaPaths(schema: unknown, prefix = ""): string[] {
+function collectSchemaPaths(schema: any, prefix = ""): string[] {
   if (!schema || typeof schema !== "object") {
     return [];
   }
 
   const out: string[] = [];
   const candidate = schema as {
-    properties?: Record<string, unknown>;
-    additionalProperties?: unknown;
-    items?: unknown;
+    properties?: Record<string, any>;
+    additionalProperties?: any;
+    items?: any;
   };
 
   if (candidate.properties && typeof candidate.properties === "object") {
@@ -53,12 +53,12 @@ function collectSchemaPaths(schema: unknown, prefix = ""): string[] {
   return out;
 }
 
-function asRecord(value: unknown): Record<string, unknown> {
+function asRecord(value: any): Record<string, any> {
   if (!value || typeof value !== "object") {
     throw new Error("expected record");
   }
   expect(Array.isArray(value)).toBe(false);
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 describe("config footprint guardrails", () => {

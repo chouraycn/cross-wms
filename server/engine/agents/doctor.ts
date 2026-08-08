@@ -7,8 +7,8 @@
 
 /** Formats provider-specific auth doctor guidance for a profile/store. */
 export async function formatAuthDoctorHint(params: {
-  cfg?: Record<string, unknown>;
-  store: Record<string, unknown>;
+  cfg?: Record<string, any>;
+  store: Record<string, any>;
   provider: string;
   profileId?: string;
 }): Promise<string> {

@@ -18,7 +18,7 @@ import type { DiscoveredConfigSecretTarget } from "./target-registry-types.js";
 export type CommandSecretAssignment = {
   path: string;
   pathSegments: string[];
-  value: unknown;
+  value: any;
 };
 
 /** Resolved command assignments plus non-fatal diagnostics. */

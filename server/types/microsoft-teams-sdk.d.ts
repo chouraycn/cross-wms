@@ -22,7 +22,7 @@ declare module "@microsoft/teams.api" {
 
     conversations: {
       activities: (conversationId: string) => {
-        create: (activity: Record<string, unknown>) => Promise<unknown>;
+        create: (activity: Record<string, any>) => Promise<any>;
       };
     };
   }

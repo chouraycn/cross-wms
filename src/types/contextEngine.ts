@@ -32,7 +32,7 @@ export interface ContextEngineInfo {
   isDefault: boolean;
   owner: string;
   health: ContextEngineHealth;
-  runtimeSettings?: Record<string, unknown>;
+  runtimeSettings?: Record<string, any>;
 }
 
 /** 上下文引擎统计 */

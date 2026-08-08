@@ -8,7 +8,7 @@ import { parseStrictNonNegativeInteger } from "../../infra/parse-finite-number.j
 export const DEFAULT_HTTP_IDLE_TIMEOUT_MS = 300_000;
 
 /** Parses idle timeout values, using `0` for the explicit disabled sentinel. */
-export function parseHttpIdleTimeoutMs(value: unknown): number | undefined {
+export function parseHttpIdleTimeoutMs(value: any): number | undefined {
   if (typeof value === "string") {
     const trimmed = value.trim();
     if (trimmed.toLowerCase() === "disabled") {

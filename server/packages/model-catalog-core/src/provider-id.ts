@@ -1,5 +1,5 @@
 // Model Catalog Core module implements provider id behavior.
-export function normalizeLowercaseStringOrEmpty(value: unknown): string {
+export function normalizeLowercaseStringOrEmpty(value: any): string {
   return typeof value === "string" ? value.trim().toLowerCase() : "";
 }
 
@@ -29,7 +29,7 @@ export function findNormalizedProviderValue<T>(
 }
 
 export function findNormalizedProviderKey(
-  entries: Record<string, unknown> | undefined,
+  entries: Record<string, any> | undefined,
   provider: string,
 ): string | undefined {
   if (!entries) {

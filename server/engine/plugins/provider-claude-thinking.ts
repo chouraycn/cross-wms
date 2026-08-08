@@ -5,7 +5,7 @@ export function isClaudeAdaptiveThinkingDefaultModelId(modelId: string | undefin
   return false;
 }
 
-export function resolveClaudeThinkingProfile(params: unknown): unknown {
+export function resolveClaudeThinkingProfile(params: any): any {
   void params;
   return undefined;
 }

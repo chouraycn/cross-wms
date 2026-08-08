@@ -10,7 +10,7 @@ import type { NlQueryRequest, NlQueryResponse, QueryResult } from '../../src/typ
 /** 安全查询结果（内部使用） */
 interface SafeQueryResult {
   columns: string[];
-  rows: Record<string, unknown>[];
+  rows: Record<string, any>[];
   rowCount: number;
   truncated: boolean;
 }
@@ -213,7 +213,7 @@ export class InventoryQueryService {
         throw new Error('执行被拒绝：仅允许只读查询');
       }
 
-      const rows = stmt.all() as Record<string, unknown>[];
+      const rows = stmt.all() as Record<string, any>[];
 
       // 推断列名
       const columns = rows.length > 0

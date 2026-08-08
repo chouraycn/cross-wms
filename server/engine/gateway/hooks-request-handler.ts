@@ -4,6 +4,6 @@ export type HookClientIpConfig = unknown;
 
 export type HooksRequestHandler = unknown;
 
-export function createHooksRequestHandler(...args: unknown[]): unknown {
+export function createHooksRequestHandler(...args: any[]): any {
   return undefined;
 }

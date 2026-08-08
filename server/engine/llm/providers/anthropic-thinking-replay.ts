@@ -1,12 +1,12 @@
 type ReplayMessage = {
-  role?: unknown;
-  content?: unknown;
-  toolCallId?: unknown;
+  role?: any;
+  content?: any;
+  toolCallId?: any;
 };
 
 export const ANTHROPIC_OMITTED_REASONING_TEXT = "[assistant reasoning omitted]";
 
-function asReplayMessage(value: unknown): ReplayMessage | undefined {
+function asReplayMessage(value: any): ReplayMessage | undefined {
   return value && typeof value === "object" ? (value as ReplayMessage) : undefined;
 }
 
@@ -14,7 +14,7 @@ function asReplayMessage(value: unknown): ReplayMessage | undefined {
  * Anthropic tool results continue the preceding assistant turn. Preserve that
  * turn's signed thinking even when the next request disables new thinking.
  */
-export function findActiveAnthropicToolTurnAssistantIndex(messages: readonly unknown[]): number {
+export function findActiveAnthropicToolTurnAssistantIndex(messages: readonly any[]): number {
   const toolResultIds = new Set<string>();
   let index = messages.length - 1;
 
@@ -43,7 +43,7 @@ export function findActiveAnthropicToolTurnAssistantIndex(messages: readonly unk
     if (!block || typeof block !== "object") {
       continue;
     }
-    const record = block as { type?: unknown; id?: unknown };
+    const record = block as { type?: any; id?: any };
     if (
       (record.type === "toolCall" ||
         record.type === "tool_use" ||

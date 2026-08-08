@@ -32,7 +32,7 @@ vi.mock("../utils/skillFavorites.js", () => ({
 vi.mock("../utils/skillChain.js", () => ({
   skillChainManager: {
     list: () => [{ steps: { a: {}, b: {} } }, { steps: { c: {} } }],
-    getRequiredSkills: (chain: { steps: Record<string, unknown> }) => Object.keys(chain.steps),
+    getRequiredSkills: (chain: { steps: Record<string, any> }) => Object.keys(chain.steps),
   },
 }));
 

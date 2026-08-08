@@ -82,15 +82,15 @@ export function createGatewayWsTestSocket(
 
 export function attachGatewayWsForTest(params: {
   attach: typeof attachGatewayWsConnectionHandler;
-  clients?: Set<unknown>;
+  clients?: Set<any>;
   headers?: Record<string, string>;
   host?: string;
   options?: Partial<AttachGatewayWsConnectionParams>;
   socket?: GatewayWsTestSocket;
 }) {
-  const listeners = new Map<string, (...args: unknown[]) => void>();
+  const listeners = new Map<string, (...args: any[]) => void>();
   const wss = {
-    on: vi.fn((event: string, handler: (...args: unknown[]) => void) => {
+    on: vi.fn((event: string, handler: (...args: any[]) => void) => {
       listeners.set(event, handler);
     }),
   } as unknown as WebSocketServer;
@@ -99,7 +99,7 @@ export function attachGatewayWsForTest(params: {
     headers: { host: params.host ?? "127.0.0.1:19001", ...params.headers },
     socket: { localAddress: "127.0.0.1" },
   };
-  const clients = params.clients ?? new Set<unknown>();
+  const clients = params.clients ?? new Set<any>();
 
   params.attach({
     wss,

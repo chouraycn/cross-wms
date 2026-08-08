@@ -77,7 +77,7 @@ function registerTempSessionStore(
   });
 }
 
-function writeTranscript(tmpDir: string, sessionId: string, lines: unknown[]): string {
+function writeTranscript(tmpDir: string, sessionId: string, lines: any[]): string {
   const transcriptPath = path.join(tmpDir, `${sessionId}.jsonl`);
   fs.writeFileSync(transcriptPath, lines.map((line) => JSON.stringify(line)).join("\n"), "utf-8");
   return transcriptPath;
@@ -87,7 +87,7 @@ function writeResetArchive(
   tmpDir: string,
   sessionId: string,
   timestamp: string,
-  lines: unknown[],
+  lines: any[],
 ): string {
   const archivePath = path.join(tmpDir, `${sessionId}.jsonl.reset.${timestamp}`);
   fs.writeFileSync(archivePath, lines.map((line) => JSON.stringify(line)).join("\n"), "utf-8");
@@ -134,7 +134,7 @@ function buildBasicSessionTranscript(
   sessionId: string,
   userText = "Hello world",
   assistantText = "Hi there",
-): unknown[] {
+): any[] {
   return [
     { type: "session", version: 1, id: sessionId },
     { message: { role: "user", content: userText } },
@@ -142,16 +142,16 @@ function buildBasicSessionTranscript(
   ];
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object") {
     throw new Error(`expected ${label}`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 function expectMessageFields(
-  message: unknown,
-  fields: { role?: string; content?: unknown; openclaw?: Record<string, unknown> },
+  message: any,
+  fields: { role?: string; content?: any; openclaw?: Record<string, any> },
 ) {
   const record = requireRecord(message, "message");
   if ("role" in fields) {
@@ -168,7 +168,7 @@ function expectMessageFields(
   }
 }
 
-function expectUsageFields(usage: unknown, fields: Record<string, unknown>) {
+function expectUsageFields(usage: any, fields: Record<string, any>) {
   const record = requireRecord(usage, "usage");
   for (const [key, value] of Object.entries(fields)) {
     expect(record[key]).toEqual(value);
@@ -860,7 +860,7 @@ describe("readSessionMessages", () => {
         mode: "full",
         reason: "test active branch selection",
       });
-      expect(messages.map((message) => (message as { content?: unknown }).content)).toEqual([
+      expect(messages.map((message) => (message as { content?: any }).content)).toEqual([
         "root",
         "active branch",
         "latest active",
@@ -868,7 +868,7 @@ describe("readSessionMessages", () => {
       const recentMessages = await readRecentSessionMessagesAsync(sessionId, storePath, undefined, {
         maxMessages: 10,
       });
-      expect(recentMessages.map((message) => (message as { content?: unknown }).content)).toEqual([
+      expect(recentMessages.map((message) => (message as { content?: any }).content)).toEqual([
         "root",
         "active branch",
         "latest active",
@@ -968,7 +968,7 @@ describe("readSessionMessages", () => {
       reason: "test parentless leaf selection",
     });
 
-    expect(messages.map((message) => (message as { content?: unknown }).content)).toEqual([
+    expect(messages.map((message) => (message as { content?: any }).content)).toEqual([
       "linear root",
       "linear answer",
     ]);
@@ -978,7 +978,7 @@ describe("readSessionMessages", () => {
         await readRecentSessionMessagesAsync(sessionId, storePath, undefined, {
           maxMessages: 10,
         })
-      ).map((message) => (message as { content?: unknown }).content),
+      ).map((message) => (message as { content?: any }).content),
     ).toEqual(["linear root", "linear answer"]);
   });
 
@@ -1000,7 +1000,7 @@ describe("readSessionMessages", () => {
       reason: "test reset archive fallback",
       allowResetArchiveFallback: true,
     });
-    expect(fullMessages.map((message) => (message as { content?: unknown }).content)).toEqual([
+    expect(fullMessages.map((message) => (message as { content?: any }).content)).toEqual([
       "restored prompt",
       "restored archive",
     ]);
@@ -1031,9 +1031,9 @@ describe("readSessionMessages", () => {
     const originalReaddir = fs.promises.readdir.bind(fs.promises);
     let wroteActiveTranscript = false;
     const readdirSpy = vi.spyOn(fs.promises, "readdir").mockImplementation((async (
-      ...args: unknown[]
+      ...args: any[]
     ) => {
-      const result = await (originalReaddir as (...readdirArgs: unknown[]) => Promise<unknown>)(
+      const result = await (originalReaddir as (...readdirArgs: any[]) => Promise<any>)(
         ...args,
       );
       if (!wroteActiveTranscript) {
@@ -1055,7 +1055,7 @@ describe("readSessionMessages", () => {
       });
 
       expect(readdirSpy).toHaveBeenCalled();
-      expect(fullMessages.map((message) => (message as { content?: unknown }).content)).toEqual([
+      expect(fullMessages.map((message) => (message as { content?: any }).content)).toEqual([
         "active transcript",
       ]);
     } finally {
@@ -1088,10 +1088,10 @@ describe("readSessionMessages", () => {
 
       expect(readdirCallsAfterFirstRead).toBeGreaterThan(0);
       expect(readdirSpy.mock.calls).toHaveLength(readdirCallsAfterFirstRead);
-      expect(firstMessages.map((message) => (message as { content?: unknown }).content)).toEqual([
+      expect(firstMessages.map((message) => (message as { content?: any }).content)).toEqual([
         "cached archive",
       ]);
-      expect(secondMessages.map((message) => (message as { content?: unknown }).content)).toEqual([
+      expect(secondMessages.map((message) => (message as { content?: any }).content)).toEqual([
         "cached archive",
       ]);
     } finally {
@@ -1119,7 +1119,7 @@ describe("readSessionMessages", () => {
         allowResetArchiveFallback: true,
       });
 
-      expect(fullMessages.map((message) => (message as { content?: unknown }).content)).toEqual([
+      expect(fullMessages.map((message) => (message as { content?: any }).content)).toEqual([
         "newer legacy archive",
       ]);
     });
@@ -1145,7 +1145,7 @@ describe("readSessionMessages", () => {
       allowResetArchiveFallback: true,
     });
 
-    expect(fullMessages.map((message) => (message as { content?: unknown }).content)).toEqual([
+    expect(fullMessages.map((message) => (message as { content?: any }).content)).toEqual([
       "current archive",
     ]);
   });
@@ -1166,7 +1166,7 @@ describe("readSessionMessages", () => {
       allowResetArchiveFallback: true,
     });
 
-    expect(fullMessages.map((message) => (message as { content?: unknown }).content)).toEqual([
+    expect(fullMessages.map((message) => (message as { content?: any }).content)).toEqual([
       "valid stale-name archive",
     ]);
   });
@@ -1190,7 +1190,7 @@ describe("readSessionMessages", () => {
       allowResetArchiveFallback: true,
     });
 
-    expect(fullMessages.map((message) => (message as { content?: unknown }).content)).toEqual([
+    expect(fullMessages.map((message) => (message as { content?: any }).content)).toEqual([
       "preferred topic archive",
     ]);
   });
@@ -1245,7 +1245,7 @@ describe("readSessionMessages", () => {
       allowResetArchiveFallback: true,
     });
 
-    expect(fullMessages.map((message) => (message as { content?: unknown }).content)).toEqual([
+    expect(fullMessages.map((message) => (message as { content?: any }).content)).toEqual([
       "older valid archive",
     ]);
   });
@@ -1279,7 +1279,7 @@ describe("readSessionMessages", () => {
       reason: "test imported partial tree selection",
     });
 
-    expect(messages.map((message) => (message as { content?: unknown }).content)).toEqual([
+    expect(messages.map((message) => (message as { content?: any }).content)).toEqual([
       "reachable orphan tail",
     ]);
     expectMessageFields(messages[0], { openclaw: { id: "orphan-tail", seq: 1 } });
@@ -1308,7 +1308,7 @@ describe("readSessionMessages", () => {
       reason: "test legacy parent active tree selection",
     });
 
-    expect(messages.map((message) => (message as { content?: unknown }).content)).toEqual([
+    expect(messages.map((message) => (message as { content?: any }).content)).toEqual([
       "legacy hello",
       "tree hello",
     ]);
@@ -1564,7 +1564,7 @@ describe("readSessionMessages", () => {
 
     const out = readSessionMessages(sessionId, storePath);
 
-    expect(out.map((message) => (message as { content?: unknown }).content)).toEqual([
+    expect(out.map((message) => (message as { content?: any }).content)).toEqual([
       "legacy hello",
       "tree hello",
     ]);
@@ -1643,7 +1643,7 @@ describe("readSessionMessages", () => {
     expect(
       out.map((message) => ({
         role: (message as { role?: string }).role,
-        content: (message as { content?: unknown }).content,
+        content: (message as { content?: any }).content,
       })),
     ).toEqual([
       { role: "user", content: [{ type: "text", text: visiblePrompt }] },
@@ -1698,7 +1698,7 @@ describe("readSessionMessages", () => {
     expect(
       out.map((message) => ({
         role: (message as { role?: string }).role,
-        content: (message as { content?: unknown }).content,
+        content: (message as { content?: any }).content,
         kind: (message as { __openclaw?: { kind?: string } })["__openclaw"]?.kind,
       })),
     ).toEqual([
@@ -2665,10 +2665,10 @@ describe("oversized transcript line guards", () => {
     // to the __openclaw metadata. Both must be correct for the record to
     // appear in the right position.
     expect(out).toHaveLength(2); // root-msg + oversized-child
-    const oversized = out[1] as Record<string, unknown>;
+    const oversized = out[1] as Record<string, any>;
     expect(oversized.role).toBe("assistant");
     // id is preserved in __openclaw transcript metadata
-    const meta = (oversized as Record<string, Record<string, unknown>>)["__openclaw"];
+    const meta = (oversized as Record<string, Record<string, any>>)["__openclaw"];
     expect(meta?.id).toBe("oversized-child");
     expect(meta?.recordTimestampMs).toBe(Date.parse(timestamp));
     // parentId extraction is proven by the record being included:

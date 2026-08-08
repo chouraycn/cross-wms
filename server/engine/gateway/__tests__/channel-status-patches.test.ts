@@ -57,7 +57,7 @@ describe('channel-status-patches', () => {
 
     it('不应包含 connected 字段', () => {
       const patch = createTransportActivityStatusPatch(100);
-      expect((patch as Record<string, unknown>).connected).toBeUndefined();
+      expect((patch as Record<string, any>).connected).toBeUndefined();
     });
   });
 });

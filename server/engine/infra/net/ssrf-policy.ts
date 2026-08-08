@@ -22,15 +22,15 @@ export type LookupFn = typeof dnsLookup;
 // ---------------------------------------------------------------------------
 
 /** Coerces an unknown value into a nullable record for safe property access. */
-function asNullableRecord(value: unknown): Record<string, unknown> | null {
+function asNullableRecord(value: any): Record<string, any> | null {
   if (value && typeof value === "object" && !Array.isArray(value)) {
-    return value as Record<string, unknown>;
+    return value as Record<string, any>;
   }
   return null;
 }
 
 /** Normalizes a value into a lowercase string, returning "" for non-strings. */
-function normalizeLowercaseStringOrEmpty(value: unknown): string {
+function normalizeLowercaseStringOrEmpty(value: any): string {
   if (typeof value === "string") {
     return value.trim().toLowerCase();
   }
@@ -38,7 +38,7 @@ function normalizeLowercaseStringOrEmpty(value: unknown): string {
 }
 
 /** Deduplicates and trims a list of string entries, dropping empties. */
-function normalizeUniqueStringEntries(values: readonly unknown[] | undefined): string[] {
+function normalizeUniqueStringEntries(values: readonly any[] | undefined): string[] {
   if (!values || values.length === 0) {
     return [];
   }
@@ -159,17 +159,17 @@ export function ssrfPolicyFromAllowPrivateNetwork(
 // ---------------------------------------------------------------------------
 
 /** Detects the retired flat `allowPrivateNetwork` key before doctor migration. */
-export function hasLegacyFlatAllowPrivateNetworkAlias(value: unknown): boolean {
+export function hasLegacyFlatAllowPrivateNetworkAlias(value: any): boolean {
   const entry = asNullableRecord(value);
   return Boolean(entry && Object.hasOwn(entry, "allowPrivateNetwork"));
 }
 
 /** Moves flat private-network config into `network.dangerouslyAllowPrivateNetwork`. */
 export function migrateLegacyFlatAllowPrivateNetworkAlias(params: {
-  entry: Record<string, unknown>;
+  entry: Record<string, any>;
   pathPrefix: string;
   changes: string[];
-}): { entry: Record<string, unknown>; changed: boolean } {
+}): { entry: Record<string, any>; changed: boolean } {
   if (!hasLegacyFlatAllowPrivateNetworkAlias(params.entry)) {
     return { entry: params.entry, changed: false };
   }
@@ -179,7 +179,7 @@ export function migrateLegacyFlatAllowPrivateNetworkAlias(params: {
   const currentNetwork = currentNetworkRecord ? { ...currentNetworkRecord } : {};
   const currentDangerousAllowPrivateNetwork = currentNetwork.dangerouslyAllowPrivateNetwork;
 
-  let resolvedDangerousAllowPrivateNetwork: unknown = currentDangerousAllowPrivateNetwork;
+  let resolvedDangerousAllowPrivateNetwork: any = currentDangerousAllowPrivateNetwork;
   if (typeof currentDangerousAllowPrivateNetwork === "boolean") {
     // The canonical key wins when both shapes are present.
     resolvedDangerousAllowPrivateNetwork = currentDangerousAllowPrivateNetwork;

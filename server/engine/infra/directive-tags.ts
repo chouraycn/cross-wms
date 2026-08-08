@@ -83,13 +83,13 @@ type StripInlineDirectiveTagsResult = {
 type MessageTextPart = {
   type: "text";
   text: string;
-} & Record<string, unknown>;
+} & Record<string, any>;
 
-type MessagePart = Record<string, unknown> | null | undefined;
+type MessagePart = Record<string, any> | null | undefined;
 
 export type DisplayMessageWithContent = {
-  content?: unknown;
-} & Record<string, unknown>;
+  content?: any;
+} & Record<string, any>;
 
 export function stripInlineDirectiveTagsForDisplay(text: string): StripInlineDirectiveTagsResult {
   if (!text) {
@@ -162,10 +162,10 @@ export function stripInlineDirectiveTagsFromMessageForDisplay(
   if (!Array.isArray(message.content)) {
     return message;
   }
-  let cleaned: unknown[] | undefined;
+  let cleaned: any[] | undefined;
   for (let i = 0; i < message.content.length; i++) {
     const part = message.content[i];
-    let next: unknown = part;
+    let next: any = part;
     if (part && typeof part === "object" && isMessageTextPart(part as MessagePart)) {
       const record = part as MessageTextPart;
       const stripped = stripInlineDirectiveTagsForDisplay(record.text);

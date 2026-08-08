@@ -30,7 +30,7 @@ export function isSupportedGatewaySecretInputPath(
 export function readGatewaySecretInputValue(
   config: OpenClawConfig,
   path: SupportedGatewaySecretInputPath,
-): unknown {
+): any {
   if (path === "gateway.auth.token") {
     return config.gateway?.auth?.token;
   }

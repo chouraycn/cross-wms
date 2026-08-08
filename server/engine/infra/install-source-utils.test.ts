@@ -23,7 +23,7 @@ vi.mock("node:child_process", async (importOriginal) => {
 });
 
 vi.mock("../process/exec.js", () => ({
-  runCommandWithTimeout: (...args: unknown[]) => runCommandWithTimeoutMock(...args),
+  runCommandWithTimeout: (...args: any[]) => runCommandWithTimeoutMock(...args),
 }));
 
 async function createTempDir(prefix: string) {
@@ -85,7 +85,7 @@ async function runPack(spec: string, cwd: string, timeoutMs = 1000) {
 
 async function expectPackFallsBackToDetectedArchive(params: {
   stdout: string;
-  expectedMetadata?: Record<string, unknown>;
+  expectedMetadata?: Record<string, any>;
 }) {
   const cwd = await createTempDir("openclaw-install-source-utils-");
   const archivePath = path.join(cwd, "openclaw-plugin-1.2.3.tgz");

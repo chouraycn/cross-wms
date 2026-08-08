@@ -11,6 +11,6 @@
  * 完整实现见 openclaw 源码。
  */
 
-export function mergeImportedChatHistoryMessages(..._args: unknown[]): unknown {
+export function mergeImportedChatHistoryMessages(..._args: any[]): any {
   return undefined;
 }

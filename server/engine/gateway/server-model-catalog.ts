@@ -13,14 +13,14 @@
 
 export type GatewayModelChoice = unknown;
 
-export function markGatewayModelCatalogStaleForReload(..._args: unknown[]): unknown {
+export function markGatewayModelCatalogStaleForReload(..._args: any[]): any {
   return undefined;
 }
 
-export async function resetModelCatalogCacheForTest(..._args: unknown[]): Promise<unknown> {
+export async function resetModelCatalogCacheForTest(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
 
-export async function loadGatewayModelCatalog(..._args: unknown[]): Promise<unknown> {
+export async function loadGatewayModelCatalog(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }

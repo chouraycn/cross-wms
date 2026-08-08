@@ -5,15 +5,15 @@ import { join } from "node:path";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 const jitiCalls = vi.hoisted(() => ({
-  options: [] as Array<Record<string, unknown>>,
+  options: [] as Array<Record<string, any>>,
 }));
 
 vi.mock("jiti/static", () => ({
-  createJiti: vi.fn((_url: string, options: Record<string, unknown>) => {
+  createJiti: vi.fn((_url: string, options: Record<string, any>) => {
     jitiCalls.options.push(options);
     return {
       import: vi.fn(
-        async () => async (api: { registerCommand: (id: string, command: unknown) => void }) => {
+        async () => async (api: { registerCommand: (id: string, command: any) => void }) => {
           api.registerCommand("bun-virtual-module-probe", {
             description: "probe",
             handler() {},
@@ -31,7 +31,7 @@ vi.mock("../../config.js", async (importOriginal) => {
 
 const tempDirs: string[] = [];
 let virtualModulesCase: {
-  errors: unknown[];
+  errors: any[];
   virtualModuleIds: string[];
 };
 
@@ -43,7 +43,7 @@ beforeAll(async () => {
   await writeFile(extensionPath, "export default function extension() {}\n");
 
   const result = await loadExtensions([extensionPath], dir);
-  const virtualModules = jitiCalls.options[0]?.virtualModules as Record<string, unknown>;
+  const virtualModules = jitiCalls.options[0]?.virtualModules as Record<string, any>;
   virtualModulesCase = {
     errors: result.errors,
     virtualModuleIds: Object.keys(virtualModules),

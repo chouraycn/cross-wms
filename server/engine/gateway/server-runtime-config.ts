@@ -36,7 +36,7 @@ export type RuntimeConfig = {
     maxAgeMs: number;
     compactionThreshold: number;
   };
-  extensions: Record<string, unknown>;
+  extensions: Record<string, any>;
 };
 
 const defaultConfig: RuntimeConfig = {
@@ -144,16 +144,16 @@ export function setRuntimeConfig(config: Partial<RuntimeConfig>): RuntimeConfig 
   return runtimeConfig;
 }
 
-export function updateRuntimeConfig(path: string, value: unknown): void {
+export function updateRuntimeConfig(path: string, value: any): void {
   const keys = path.split('.');
-  let current: Record<string, unknown> = runtimeConfig as Record<string, unknown>;
+  let current: Record<string, any> = runtimeConfig as Record<string, any>;
 
   for (let i = 0; i < keys.length - 1; i++) {
     const key = keys[i];
     if (!(key in current)) {
       current[key] = {};
     }
-    current = current[key] as Record<string, unknown>;
+    current = current[key] as Record<string, any>;
   }
 
   const lastKey = keys[keys.length - 1];
@@ -170,13 +170,13 @@ export function updateRuntimeConfig(path: string, value: unknown): void {
   }
 }
 
-export function getConfigValue(path: string): unknown {
+export function getConfigValue(path: string): any {
   const keys = path.split('.');
-  let current: unknown = runtimeConfig;
+  let current: any = runtimeConfig;
 
   for (const key of keys) {
-    if (current && typeof current === 'object' && key in (current as Record<string, unknown>)) {
-      current = (current as Record<string, unknown>)[key];
+    if (current && typeof current === 'object' && key in (current as Record<string, any>)) {
+      current = (current as Record<string, any>)[key];
     } else {
       return undefined;
     }

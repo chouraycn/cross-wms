@@ -137,7 +137,7 @@ describe("gateway tool restart continuation", () => {
 
     const parameters = tool.parameters as {
       properties?: {
-        continuationKind?: unknown;
+        continuationKind?: any;
       };
     };
     expect(parameters.properties?.continuationKind).toBeUndefined();

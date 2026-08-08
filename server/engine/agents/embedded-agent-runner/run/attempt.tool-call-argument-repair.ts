@@ -102,7 +102,7 @@ function shouldAttemptMalformedToolCallRepair(partialJson: string, delta: string
 }
 
 type ToolCallArgumentRepair = {
-  args: Record<string, unknown>;
+  args: Record<string, any>;
   kind: "preserved" | "repaired";
   leadingPrefix: string;
   trailingSuffix: string;
@@ -144,20 +144,20 @@ type ToolCallRepairStringToken = {
 };
 
 type ToolCallRepairJsonValue = {
-  value: unknown;
+  value: any;
   endIndex: number;
 };
 
 type ToolCallRepairParsedObject = {
-  args: Record<string, unknown>;
+  args: Record<string, any>;
   endIndex: number;
 };
 
-function parseUsableObjectJson(raw: string): Record<string, unknown> | undefined {
+function parseUsableObjectJson(raw: string): Record<string, any> | undefined {
   try {
-    const parsed = JSON.parse(raw) as unknown;
+    const parsed = JSON.parse(raw) as any;
     return parsed && typeof parsed === "object" && !Array.isArray(parsed)
-      ? (parsed as Record<string, unknown>)
+      ? (parsed as Record<string, any>)
       : undefined;
   } catch {
     return undefined;
@@ -188,7 +188,7 @@ function readAsciiQuotedString(
     return undefined;
   }
   try {
-    const parsed = JSON.parse(raw.slice(startIndex, endIndex + 1)) as unknown;
+    const parsed = JSON.parse(raw.slice(startIndex, endIndex + 1)) as any;
     return typeof parsed === "string" ? { value: parsed, endIndex: endIndex + 1 } : undefined;
   } catch {
     return undefined;
@@ -361,7 +361,7 @@ function parseJsonValuePrefix(
     return undefined;
   }
   try {
-    return { value: JSON.parse(json) as unknown, endIndex };
+    return { value: JSON.parse(json) as any, endIndex };
   } catch {
     return undefined;
   }
@@ -375,7 +375,7 @@ function readSmartQuotedEditArray(
     return undefined;
   }
 
-  const edits: Record<string, unknown>[] = [];
+  const edits: Record<string, any>[] = [];
   let index = skipWhitespace(raw, startIndex + 1);
   if (raw[index] === "]") {
     return { value: edits, endIndex: index + 1 };
@@ -429,7 +429,7 @@ function parseSmartQuotedToolCallObject(
   if (raw[startIndex] !== "{") {
     return undefined;
   }
-  const args: Record<string, unknown> = {};
+  const args: Record<string, any> = {};
   const seenKeys = new Set<string>();
   let index = skipWhitespace(raw, startIndex + 1);
   if (raw[index] === "}") {
@@ -563,11 +563,11 @@ function tryExtractUsableToolCallArguments(
   );
 }
 
-function readToolCallNameInMessage(message: unknown, contentIndex: number): string | undefined {
+function readToolCallNameInMessage(message: any, contentIndex: number): string | undefined {
   if (!message || typeof message !== "object") {
     return undefined;
   }
-  const content = (message as { content?: unknown }).content;
+  const content = (message as { content?: any }).content;
   if (!Array.isArray(content)) {
     return undefined;
   }
@@ -575,7 +575,7 @@ function readToolCallNameInMessage(message: unknown, contentIndex: number): stri
   if (!block || typeof block !== "object") {
     return undefined;
   }
-  const typedBlock = block as { type?: unknown; name?: unknown };
+  const typedBlock = block as { type?: any; name?: any };
   if (!isRunnerToolCallBlockType(typedBlock.type) || typeof typedBlock.name !== "string") {
     return undefined;
   }
@@ -583,14 +583,14 @@ function readToolCallNameInMessage(message: unknown, contentIndex: number): stri
 }
 
 function repairToolCallArgumentsInMessage(
-  message: unknown,
+  message: any,
   contentIndex: number,
-  repairedArgs: Record<string, unknown>,
+  repairedArgs: Record<string, any>,
 ): void {
   if (!message || typeof message !== "object") {
     return;
   }
-  const content = (message as { content?: unknown }).content;
+  const content = (message as { content?: any }).content;
   if (!Array.isArray(content)) {
     return;
   }
@@ -598,18 +598,18 @@ function repairToolCallArgumentsInMessage(
   if (!block || typeof block !== "object") {
     return;
   }
-  const typedBlock = block as { type?: unknown; arguments?: unknown };
+  const typedBlock = block as { type?: any; arguments?: any };
   if (!isRunnerToolCallBlockType(typedBlock.type)) {
     return;
   }
   typedBlock.arguments = repairedArgs;
 }
 
-function hasMeaningfulToolCallArgumentsInMessage(message: unknown, contentIndex: number): boolean {
+function hasMeaningfulToolCallArgumentsInMessage(message: any, contentIndex: number): boolean {
   if (!message || typeof message !== "object") {
     return false;
   }
-  const content = (message as { content?: unknown }).content;
+  const content = (message as { content?: any }).content;
   if (!Array.isArray(content)) {
     return false;
   }
@@ -617,7 +617,7 @@ function hasMeaningfulToolCallArgumentsInMessage(message: unknown, contentIndex:
   if (!block || typeof block !== "object") {
     return false;
   }
-  const typedBlock = block as { type?: unknown; arguments?: unknown };
+  const typedBlock = block as { type?: any; arguments?: any };
   if (!isRunnerToolCallBlockType(typedBlock.type)) {
     return false;
   }
@@ -625,15 +625,15 @@ function hasMeaningfulToolCallArgumentsInMessage(message: unknown, contentIndex:
     typedBlock.arguments !== null &&
     typeof typedBlock.arguments === "object" &&
     !Array.isArray(typedBlock.arguments) &&
-    Object.keys(typedBlock.arguments as Record<string, unknown>).length > 0
+    Object.keys(typedBlock.arguments as Record<string, any>).length > 0
   );
 }
 
-function clearToolCallArgumentsInMessage(message: unknown, contentIndex: number): void {
+function clearToolCallArgumentsInMessage(message: any, contentIndex: number): void {
   if (!message || typeof message !== "object") {
     return;
   }
-  const content = (message as { content?: unknown }).content;
+  const content = (message as { content?: any }).content;
   if (!Array.isArray(content)) {
     return;
   }
@@ -641,7 +641,7 @@ function clearToolCallArgumentsInMessage(message: unknown, contentIndex: number)
   if (!block || typeof block !== "object") {
     return;
   }
-  const typedBlock = block as { type?: unknown; arguments?: unknown };
+  const typedBlock = block as { type?: any; arguments?: any };
   if (!isRunnerToolCallBlockType(typedBlock.type)) {
     return;
   }
@@ -649,13 +649,13 @@ function clearToolCallArgumentsInMessage(message: unknown, contentIndex: number)
 }
 
 function repairMalformedToolCallArgumentsInMessage(
-  message: unknown,
-  repairedArgsByIndex: Map<number, Record<string, unknown>>,
+  message: any,
+  repairedArgsByIndex: Map<number, Record<string, any>>,
 ): void {
   if (!message || typeof message !== "object") {
     return;
   }
-  const content = (message as { content?: unknown }).content;
+  const content = (message as { content?: any }).content;
   if (!Array.isArray(content)) {
     return;
   }
@@ -668,7 +668,7 @@ function wrapStreamRepairMalformedToolCallArguments(
   stream: MutableAssistantMessageEventStream,
 ): MutableAssistantMessageEventStream {
   const partialJsonByIndex = new Map<number, string>();
-  const repairedArgsByIndex = new Map<number, Record<string, unknown>>();
+  const repairedArgsByIndex = new Map<number, Record<string, any>>();
   const hadPreexistingArgsByIndex = new Set<number>();
   const disabledIndices = new Set<number>();
   const loggedRepairIndices = new Set<number>();
@@ -752,7 +752,7 @@ function wrapStreamRepairMalformedToolCallArguments(
       const repairedArgs = repairedArgsByIndex.get(event.contentIndex);
       if (repairedArgs) {
         if (event.toolCall && typeof event.toolCall === "object") {
-          (event.toolCall as { arguments?: unknown }).arguments = repairedArgs;
+          (event.toolCall as { arguments?: any }).arguments = repairedArgs;
         }
         repairToolCallArgumentsInMessage(event.partial, event.contentIndex, repairedArgs);
         repairToolCallArgumentsInMessage(event.message, event.contentIndex, repairedArgs);

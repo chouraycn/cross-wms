@@ -6,39 +6,39 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function forgetPromptBuildDrainCacheForRun(..._args: unknown[]): unknown {
+export function forgetPromptBuildDrainCacheForRun(..._args: any[]): any {
   return undefined;
 }
-export function resolvePromptBuildHookResult(..._args: unknown[]): unknown {
+export function resolvePromptBuildHookResult(..._args: any[]): any {
   return undefined;
 }
-export function resolvePromptModeForSession(..._args: unknown[]): unknown {
+export function resolvePromptModeForSession(..._args: any[]): any {
   return undefined;
 }
-export function shouldInjectHeartbeatPrompt(..._args: unknown[]): unknown {
+export function shouldInjectHeartbeatPrompt(..._args: any[]): any {
   return false;
 }
-export function shouldWarnOnOrphanedUserRepair(..._args: unknown[]): unknown {
+export function shouldWarnOnOrphanedUserRepair(..._args: any[]): any {
   return false;
 }
-export function resolvePromptSubmissionSkipReason(..._args: unknown[]): unknown {
+export function resolvePromptSubmissionSkipReason(..._args: any[]): any {
   return undefined;
 }
-export function mergeOrphanedTrailingUserPrompt(..._args: unknown[]): unknown {
+export function mergeOrphanedTrailingUserPrompt(..._args: any[]): any {
   return undefined;
 }
-export function resolveAttemptFsWorkspaceOnly(..._args: unknown[]): unknown {
+export function resolveAttemptFsWorkspaceOnly(..._args: any[]): any {
   return undefined;
 }
-export function prependSystemPromptAddition(..._args: unknown[]): unknown {
+export function prependSystemPromptAddition(..._args: any[]): any {
   return undefined;
 }
-export function resolveAttemptMediaTaskSystemPromptAddition(..._args: unknown[]): unknown {
+export function resolveAttemptMediaTaskSystemPromptAddition(..._args: any[]): any {
   return undefined;
 }
-export function buildAfterTurnRuntimeContext(..._args: unknown[]): unknown {
+export function buildAfterTurnRuntimeContext(..._args: any[]): any {
   return undefined;
 }
-export function buildAfterTurnRuntimeContextFromUsage(..._args: unknown[]): unknown {
+export function buildAfterTurnRuntimeContextFromUsage(..._args: any[]): any {
   return undefined;
 }

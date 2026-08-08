@@ -126,7 +126,7 @@ function shouldProbeWhamForFailure(
   );
 }
 
-function resolveActiveWindowUntil(value: unknown, now: number): number {
+function resolveActiveWindowUntil(value: any, now: number): number {
   const timestampMs = asDateTimestampMs(value);
   return timestampMs !== undefined && timestampMs > now ? timestampMs : 0;
 }
@@ -380,9 +380,9 @@ export function resolveProfilesUnavailableReason(params: {
     if (!recordedReason) {
       // No failure counts recorded for this cooldown window. Previously this
       // defaulted to "rate_limit", which caused false "rate limit reached"
-      // warnings when the actual reason was unknown (e.g. transient network
+      // warnings when the actual reason was any (e.g. transient network
       // blip or server error without a classified failure count).
-      addScore("unknown", 1);
+      addScore("any", 1);
     }
   }
 
@@ -461,7 +461,7 @@ function resolveAuthCooldownConfig(params: {
     failureWindowHours: 24,
   } as const;
 
-  const resolvePositiveNumber = (value: unknown, fallback: number) =>
+  const resolvePositiveNumber = (value: any, fallback: number) =>
     typeof value === "number" && Number.isFinite(value) && value > 0 ? value : fallback;
 
   const cooldowns = params.cfg?.auth?.cooldowns;

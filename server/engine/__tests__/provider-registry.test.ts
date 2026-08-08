@@ -121,7 +121,7 @@ describe('Unified Provider Registry', () => {
       const factory = vi.fn();
       const desc = createDescriptor({
         id: 'adapter-test',
-        adapterFactory: factory as unknown,
+        adapterFactory: factory as any,
       });
       registry.register(desc);
 

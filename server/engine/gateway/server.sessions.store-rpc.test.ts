@@ -109,14 +109,14 @@ test("lists and patches session store via sessions.* RPC", async () => {
   } as never;
   async function directSessionReq<TPayload = unknown>(
     method: keyof typeof sessionsHandlers,
-    params: Record<string, unknown>,
-    coercePayload?: (payload: unknown) => TPayload,
-  ): Promise<{ ok: boolean; payload?: TPayload; error?: unknown }> {
+    params: Record<string, any>,
+    coercePayload?: (payload: any) => TPayload,
+  ): Promise<{ ok: boolean; payload?: TPayload; error?: any }> {
     let result:
       | {
           ok: boolean;
           payload?: TPayload;
-          error?: unknown;
+          error?: any;
         }
       | undefined;
     await sessionsHandlers[method]({
@@ -455,7 +455,7 @@ test("lists and patches session store via sessions.* RPC", async () => {
     thinkingLevel: "banana",
   });
   expect(badThinking.ok).toBe(false);
-  expect((badThinking.error as { message?: unknown } | undefined)?.message ?? "").toMatch(
+  expect((badThinking.error as { message?: any } | undefined)?.message ?? "").toMatch(
     /invalid thinkinglevel/i,
   );
 });

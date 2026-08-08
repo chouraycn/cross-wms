@@ -24,7 +24,7 @@ import { logger } from '../logger.js';
 /** 物化结果：技能定义列表 + 执行器（供 per-call 注入执行链路） */
 export interface MaterializedGeneralSkills {
   definitions: SkillDefinition[];
-  executor: (id: string, params: Record<string, unknown>, ctx?: SkillContext) => Promise<SkillResult>;
+  executor: (id: string, params: Record<string, any>, ctx?: SkillContext) => Promise<SkillResult>;
 }
 
 /** 从 markdown 提取指令块（简化：整体作为单条指令；非空才有效） */
@@ -33,11 +33,11 @@ function extractInstructionBlocks(markdown: string): string[] {
   return text ? [text] : [];
 }
 
-function safeParseJson(raw: string | null): Record<string, unknown> {
+function safeParseJson(raw: string | null): Record<string, any> {
   if (!raw) return {};
   try {
     const v = JSON.parse(raw);
-    return v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : {};
+    return v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, any>) : {};
   } catch {
     return {};
   }
@@ -60,7 +60,7 @@ function toSkillDefinition(row: GeneralSkillRow, tenantId: string): SkillDefinit
     source: 'user',
     skillMdContent: markdown,
     instructionBlocks: extractInstructionBlocks(markdown),
-    parameters: (runtimeConfig.parameters as Record<string, unknown>) ?? {
+    parameters: (runtimeConfig.parameters as Record<string, any>) ?? {
       type: 'object',
       properties: {},
       required: [],
@@ -71,7 +71,7 @@ function toSkillDefinition(row: GeneralSkillRow, tenantId: string): SkillDefinit
 }
 
 /** 声明式执行：默认把 markdown 指令作为 prompt 文本回传，由模型消费后使用其已有工具执行 */
-function runDeclarative(def: SkillDefinition, params: Record<string, unknown>): SkillResult {
+function runDeclarative(def: SkillDefinition, params: Record<string, any>): SkillResult {
   const instructions = def.instructionBlocks ?? [];
   if (instructions.length === 0) {
     return { success: false, error: '通用技能无指令内容', metadata: { durationMs: 0 } };
@@ -97,7 +97,7 @@ export function materializeGeneralSkills(tenantId: string): MaterializedGeneralS
 
   const executor = async (
     id: string,
-    params: Record<string, unknown>,
+    params: Record<string, any>,
     ctx?: SkillContext,
   ): Promise<SkillResult> => {
     const def = byId.get(id);

@@ -25,7 +25,7 @@ describe("mockNodeBuiltinModule", () => {
     const mocked = await mockNodeBuiltinModule<{
       tmpdir: () => string;
       homedir?: () => string;
-      default?: Record<string, unknown>;
+      default?: Record<string, any>;
     }>(async () => ({ tmpdir }), { homedir }, { mirrorToDefault: true });
 
     expect(mocked.default?.homedir).toBe(homedir);

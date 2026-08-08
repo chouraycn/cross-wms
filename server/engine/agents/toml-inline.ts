@@ -6,9 +6,9 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function serializeTomlInlineValue(..._args: unknown[]): unknown {
+export function serializeTomlInlineValue(..._args: any[]): any {
   return "";
 }
-export function formatTomlConfigOverride(..._args: unknown[]): unknown {
+export function formatTomlConfigOverride(..._args: any[]): any {
   return "";
 }

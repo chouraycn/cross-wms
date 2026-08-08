@@ -54,8 +54,8 @@ export async function scanPluginDirectory(pluginDir: string): Promise<InstalledP
     const packageJsonPath = path.join(pluginDir, 'package.json');
     const integrityPath = path.join(pluginDir, '.integrity');
 
-    let manifestContent: Record<string, unknown> | undefined;
-    let packageContent: Record<string, unknown> | undefined;
+    let manifestContent: Record<string, any> | undefined;
+    let packageContent: Record<string, any> | undefined;
 
     try {
       manifestContent = JSON.parse(await fs.readFile(manifestPath, 'utf8'));

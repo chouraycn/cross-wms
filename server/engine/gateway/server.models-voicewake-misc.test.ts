@@ -236,7 +236,7 @@ describe("gateway server models + voicewake", () => {
     await setAgentCatalog(buildAgentCatalogFixture());
   };
 
-  const withModelsConfig = async <T>(config: unknown, run: () => Promise<T>): Promise<T> => {
+  const withModelsConfig = async <T>(config: any, run: () => Promise<T>): Promise<T> => {
     const configPath = process.env.OPENCLAW_CONFIG_PATH;
     if (!configPath) {
       throw new Error("Missing OPENCLAW_CONFIG_PATH");
@@ -303,7 +303,7 @@ describe("gateway server models + voicewake", () => {
   type NodeGatewayEvent = {
     type: "event";
     event: string;
-    payload?: Record<string, unknown> | null;
+    payload?: Record<string, any> | null;
   };
 
   const withConnectedNodeEvent = async <T>(
@@ -368,9 +368,9 @@ describe("gateway server models + voicewake", () => {
         expect(setRes.ok).toBe(true);
         expect(setRes.payload?.triggers).toEqual(["hi", "there"]);
 
-        const changed = (await changedP) as { event?: string; payload?: unknown };
+        const changed = (await changedP) as { event?: string; payload?: any };
         expect(changed.event).toBe("voicewake.changed");
-        expect((changed.payload as { triggers?: unknown } | undefined)?.triggers).toEqual([
+        expect((changed.payload as { triggers?: any } | undefined)?.triggers).toEqual([
           "hi",
           "there",
         ]);
@@ -389,7 +389,7 @@ describe("gateway server models + voicewake", () => {
   test("pushes voicewake.changed to nodes on connect and on updates", async () => {
     await withConnectedNodeEvent("voicewake.changed", async (nodeWs, first) => {
       expect(first.event).toBe("voicewake.changed");
-      expect((first.payload as { triggers?: unknown } | undefined)?.triggers).toEqual([
+      expect((first.payload as { triggers?: any } | undefined)?.triggers).toEqual([
         "openclaw",
         "claude",
         "computer",
@@ -404,9 +404,9 @@ describe("gateway server models + voicewake", () => {
       });
       expect(setRes.ok).toBe(true);
 
-      const broadcast = (await broadcastP) as { event?: string; payload?: unknown };
+      const broadcast = (await broadcastP) as { event?: string; payload?: any };
       expect(broadcast.event).toBe("voicewake.changed");
-      expect((broadcast.payload as { triggers?: unknown } | undefined)?.triggers).toEqual([
+      expect((broadcast.payload as { triggers?: any } | undefined)?.triggers).toEqual([
         "openclaw",
         "computer",
       ]);
@@ -416,7 +416,7 @@ describe("gateway server models + voicewake", () => {
   test("voicewake.routing.get/set persists and broadcasts", { timeout: 60_000 }, async () => {
     await withTempHome(async (homeDir) => {
       const initial = await rpcReq<{
-        config?: { version?: number; defaultTarget?: unknown; routes?: unknown[] };
+        config?: { version?: number; defaultTarget?: any; routes?: any[] };
       }>(ws, "voicewake.routing.get");
       expect(initial.ok).toBe(true);
       expect(initial.payload?.config?.version).toBe(1);
@@ -426,11 +426,11 @@ describe("gateway server models + voicewake", () => {
       const changedP = onceMessage<{
         type: "event";
         event: string;
-        payload?: Record<string, unknown> | null;
+        payload?: Record<string, any> | null;
       }>(ws, (o) => o.type === "event" && o.event === "voicewake.routing.changed");
 
       const setRes = await rpcReq<{
-        config?: { routes?: Array<{ trigger?: string; target?: unknown }>; updatedAtMs?: number };
+        config?: { routes?: Array<{ trigger?: string; target?: any }>; updatedAtMs?: number };
       }>(ws, "voicewake.routing.set", {
         config: {
           defaultTarget: { mode: "current" },
@@ -446,11 +446,11 @@ describe("gateway server models + voicewake", () => {
       const changed = await changedP;
       expect(changed.event).toBe("voicewake.routing.changed");
       expect(
-        (changed.payload as { config?: { routes?: unknown } } | undefined)?.config?.routes,
+        (changed.payload as { config?: { routes?: any } } | undefined)?.config?.routes,
       ).toEqual([{ trigger: "robot wake", target: { agentId: "main" } }]);
 
       const after = await rpcReq<{
-        config?: { routes?: Array<{ trigger?: string; target?: unknown }> };
+        config?: { routes?: Array<{ trigger?: string; target?: any }> };
       }>(ws, "voicewake.routing.get");
       expect(after.ok).toBe(true);
       expect(after.payload?.config?.routes).toEqual([
@@ -506,7 +506,7 @@ describe("gateway server models + voicewake", () => {
       );
 
       const stillStored = await rpcReq<{
-        config?: { routes?: Array<{ trigger?: string; target?: unknown }> };
+        config?: { routes?: Array<{ trigger?: string; target?: any }> };
       }>(ws, "voicewake.routing.get");
       expect(stillStored.ok).toBe(true);
       expect(stillStored.payload?.config?.routes).toEqual([
@@ -519,13 +519,13 @@ describe("gateway server models + voicewake", () => {
     await withConnectedNodeEvent("voicewake.routing.changed", async (nodeWs, first) => {
       expect(first.event).toBe("voicewake.routing.changed");
       expect(
-        (first.payload as { config?: { routes?: unknown[] } } | undefined)?.config?.routes,
+        (first.payload as { config?: { routes?: any[] } } | undefined)?.config?.routes,
       ).toStrictEqual([]);
 
       const broadcastP = onceMessage<{
         type: "event";
         event: string;
-        payload?: Record<string, unknown> | null;
+        payload?: Record<string, any> | null;
       }>(nodeWs, (o) => o.type === "event" && o.event === "voicewake.routing.changed");
 
       const setRes = await rpcReq(ws, "voicewake.routing.set", {
@@ -539,7 +539,7 @@ describe("gateway server models + voicewake", () => {
       const broadcast = await broadcastP;
       expect(broadcast.event).toBe("voicewake.routing.changed");
       expect(
-        (broadcast.payload as { config?: { routes?: unknown } } | undefined)?.config?.routes,
+        (broadcast.payload as { config?: { routes?: any } } | undefined)?.config?.routes,
       ).toEqual([{ trigger: "hello", target: { sessionKey: "agent:main:main" } }]);
     });
   });

@@ -42,7 +42,7 @@ export function applyLocalSetupWorkspaceConfig(
 export function applySkipBootstrapConfig(cfg: OpenClawConfig): OpenClawConfig {
   const next = structuredClone(cfg);
   setConfigValueAtPath(
-    next as Record<string, unknown>,
+    next as Record<string, any>,
     ["agents", "defaults", "skipBootstrap"],
     true,
   );

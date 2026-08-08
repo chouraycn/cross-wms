@@ -60,7 +60,7 @@ const CONTEXT_MARKER_ACTIONS = new Set<ChannelMessageActionName>([
 
 function resolveContextGuardTarget(
   action: ChannelMessageActionName,
-  params: Record<string, unknown>,
+  params: Record<string, any>,
 ): string | undefined {
   if (!CONTEXT_GUARDED_ACTIONS.has(action)) {
     return undefined;
@@ -214,7 +214,7 @@ export function enforceMessageActionAllowlist(params: {
 export function enforceCrossContextPolicy(params: {
   channel: ChannelId;
   action: ChannelMessageActionName;
-  args: Record<string, unknown>;
+  args: Record<string, any>;
   toolContext?: ChannelThreadingToolContext;
   cfg: OpenClawConfig;
   agentId?: string | null;

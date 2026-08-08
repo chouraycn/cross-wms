@@ -9,7 +9,7 @@ describe("plugin lifecycle trace", () => {
   const originalTraceEnv = process.env.OPENCLAW_PLUGIN_LIFECYCLE_TRACE;
   let errorSpy: ReturnType<typeof vi.spyOn>;
 
-  function requireErrorMessage(index = 0): unknown {
+  function requireErrorMessage(index = 0): any {
     const call = errorSpy.mock.calls[index];
     if (!call) {
       throw new Error(`expected console.error call ${index}`);

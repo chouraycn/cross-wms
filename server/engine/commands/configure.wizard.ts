@@ -70,7 +70,7 @@ const setupPluginConfigModuleLoader = createLazyImportLoader<SetupPluginConfigMo
   () => import("@openclaw-src/wizard/setup.plugin-config.js"),
 );
 
-function validateGatewayPortInput(value: unknown): string | undefined {
+function validateGatewayPortInput(value: any): string | undefined {
   if (parsePort(value) === null) {
     return formatPortRangeHint();
   }
@@ -81,12 +81,12 @@ function loadSetupPluginConfigModule(): Promise<SetupPluginConfigModule> {
   return setupPluginConfigModuleLoader.load();
 }
 
-function mergeWizardConfigOntoLatest(current: unknown, base: unknown, next: unknown): unknown {
+function mergeWizardConfigOntoLatest(current: any, base: any, next: any): any {
   if (isDeepStrictEqual(next, base)) {
     return current;
   }
   if (isPlainObject(current) && isPlainObject(base) && isPlainObject(next)) {
-    const merged: Record<string, unknown> = { ...current };
+    const merged: Record<string, any> = { ...current };
     const keys = new Set([...Object.keys(current), ...Object.keys(base), ...Object.keys(next)]);
     for (const key of keys) {
       const mergedValue = mergeWizardConfigOntoLatest(current[key], base[key], next[key]);
@@ -103,7 +103,7 @@ function mergeWizardConfigOntoLatest(current: unknown, base: unknown, next: unkn
 
 async function resolveGatewaySecretInputForWizard(params: {
   cfg: OpenClawConfig;
-  value: unknown;
+  value: any;
   path: string;
 }): Promise<string | undefined> {
   try {
@@ -348,7 +348,7 @@ async function promptWebToolsConfig(
             selectedSearch?.enabled ?? (selectedSearch?.provider ? true : existingSearch?.enabled),
           openaiCodex: {
             ...existingSearch?.openaiCodex,
-            ...(nextSearch.openaiCodex as Record<string, unknown> | undefined),
+            ...(nextSearch.openaiCodex as Record<string, any> | undefined),
           },
         };
       }

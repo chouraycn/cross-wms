@@ -186,14 +186,14 @@ describe("loadWebMedia", () => {
   }
 
   async function expectWebMediaIdleTimeout(
-    createLoadPromise: () => Promise<unknown>,
+    createLoadPromise: () => Promise<any>,
     idleTimeoutMs: number,
   ) {
     vi.useFakeTimers();
     try {
       const outcome = createLoadPromise().then(
         () => ({ status: "resolved" as const }),
-        (error: unknown) => ({ status: "rejected" as const, error }),
+        (error: any) => ({ status: "rejected" as const, error }),
       );
       await vi.advanceTimersByTimeAsync(idleTimeoutMs + 5);
       await expect(
@@ -218,7 +218,7 @@ describe("loadWebMedia", () => {
 
   async function expectRejectedWebMedia(
     url: string,
-    expectedError: Record<string, unknown> | RegExp,
+    expectedError: Record<string, any> | RegExp,
     setup?: () => { restore?: () => void; mockRestore?: () => void } | undefined,
   ) {
     const restoreHandle = setup?.();
@@ -240,10 +240,10 @@ describe("loadWebMedia", () => {
   }
 
   async function expectLoadWebMediaErrorFields(
-    promise: Promise<unknown>,
-    expectedFields: Record<string, unknown>,
+    promise: Promise<any>,
+    expectedFields: Record<string, any>,
   ) {
-    let mediaError: unknown;
+    let mediaError: any;
     try {
       await promise;
     } catch (error) {
@@ -258,13 +258,13 @@ describe("loadWebMedia", () => {
     }
   }
 
-  async function expectLoadWebMediaErrorCode(promise: Promise<unknown>, code: string) {
+  async function expectLoadWebMediaErrorCode(promise: Promise<any>, code: string) {
     await expectLoadWebMediaErrorFields(promise, { code });
   }
 
   async function expectRejectedWebMediaWithoutFilesystemAccess(params: {
     url: string;
-    expectedError: Record<string, unknown> | RegExp;
+    expectedError: Record<string, any> | RegExp;
     setup?: () => { restore?: () => void; mockRestore?: () => void } | undefined;
   }) {
     const realpathSpy = vi.spyOn(fs, "realpath");

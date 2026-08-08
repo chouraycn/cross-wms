@@ -74,7 +74,7 @@ async function runSessionsListCli(opts: SessionsListCliOptions): Promise<void> {
   );
 }
 
-function parseTimeoutMs(timeout: unknown): number | null | undefined {
+function parseTimeoutMs(timeout: any): number | null | undefined {
   const parsed = parsePositiveIntOrUndefined(timeout);
   if (timeout !== undefined && parsed === undefined) {
     defaultRuntime.error("--timeout must be a positive integer (milliseconds)");
@@ -84,7 +84,7 @@ function parseTimeoutMs(timeout: unknown): number | null | undefined {
   return parsed;
 }
 
-function parseTasksAuditLimit(limit: unknown): number | null | undefined {
+function parseTasksAuditLimit(limit: any): number | null | undefined {
   const parsed = parseStrictPositiveIntOrUndefined(limit);
   if (limit !== undefined && parsed === undefined) {
     defaultRuntime.error("--limit must be a positive integer, for example --limit 25.");
@@ -95,7 +95,7 @@ function parseTasksAuditLimit(limit: unknown): number | null | undefined {
 }
 
 async function runWithVerboseAndTimeout(
-  opts: { verbose?: boolean; debug?: boolean; timeout?: unknown },
+  opts: { verbose?: boolean; debug?: boolean; timeout?: any },
   action: (params: { verbose: boolean; timeoutMs: number | undefined }) => Promise<void>,
 ): Promise<void> {
   const verbose = resolveVerbose(opts);

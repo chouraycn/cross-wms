@@ -11,10 +11,10 @@
  * 完整实现见 openclaw 源码。
  */
 
-export function createAssistantOutputItem(..._args: unknown[]): unknown {
+export function createAssistantOutputItem(..._args: any[]): any {
   return undefined;
 }
 
-export function createFunctionCallOutputItem(..._args: unknown[]): unknown {
+export function createFunctionCallOutputItem(..._args: any[]): any {
   return undefined;
 }

@@ -12,7 +12,7 @@ import type { McpCatalogTool } from "./agent-bundle-mcp-types.js";
 import type { McpToolCatalogDiagnostic } from "./agent-bundle-mcp-types.js";
 import type { SessionMcpRuntime } from "./agent-bundle-mcp-types.js";
 
-function expectTextContentBlock(block: unknown, text: string) {
+function expectTextContentBlock(block: any, text: string) {
   const content = block as { type?: string; text?: string } | undefined;
   expect(content?.type).toBe("text");
   expect(content?.text).toBe(text);

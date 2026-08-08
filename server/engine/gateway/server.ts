@@ -41,7 +41,7 @@ async function ensurePortAvailable(port: number, host: string): Promise<void> {
   });
 }
 
-function handlePortError(err: unknown, port: number, context: string): void {
+function handlePortError(err: any, port: number, context: string): void {
   logger.error(`[Gateway] Port ${port} not available for ${context}:`, err);
 }
 
@@ -89,10 +89,10 @@ export async function stopGatewayServer(): Promise<void> {
   }
 }
 
-async function publishEvent(event: string, data: Record<string, unknown>): Promise<void> {
+async function publishEvent(event: string, data: Record<string, any>): Promise<void> {
   try {
     const { publishEvent: pub } = await import('../events.js');
-    await pub(event as unknown, data);
+    await pub(event as any, data);
   } catch { /* events not available */ }
 }
 

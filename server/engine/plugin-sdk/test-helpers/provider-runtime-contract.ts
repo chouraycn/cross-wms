@@ -37,13 +37,13 @@ function createModel(overrides: Partial<ProviderRuntimeModel> & Pick<ProviderRun
   } satisfies ProviderRuntimeModel;
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   expect(value, label).toBeTypeOf("object");
   expect(value, label).not.toBeNull();
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function expectFields(value: unknown, fields: Record<string, unknown>) {
+function expectFields(value: any, fields: Record<string, any>) {
   const record = requireRecord(value, "record");
   for (const [key, expected] of Object.entries(fields)) {
     expect(record[key]).toEqual(expected);

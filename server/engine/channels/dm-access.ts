@@ -21,7 +21,7 @@ export type ChannelDmAccess = {
 /**
  * Mutable config record used while migrating channel account DM fields.
  */
-export type DmAccessRecord = Record<string, unknown>;
+export type DmAccessRecord = Record<string, any>;
 
 type DmFieldKind = "policy" | "allowFrom";
 
@@ -40,7 +40,7 @@ export type CompatMutationResult = {
 
 // --- helpers ---
 
-function asObjectRecord(value: unknown): DmAccessRecord | null {
+function asObjectRecord(value: any): DmAccessRecord | null {
   return value && typeof value === "object" && !Array.isArray(value)
     ? (value as DmAccessRecord)
     : null;
@@ -66,8 +66,8 @@ function resolveDmFieldPaths(mode: ChannelDmAllowFromMode, kind: DmFieldKind): D
   };
 }
 
-function readPath(entry: DmAccessRecord | null | undefined, path: readonly string[]): unknown {
-  let current: unknown = entry;
+function readPath(entry: DmAccessRecord | null | undefined, path: readonly string[]): any {
+  let current: any = entry;
   for (const segment of path) {
     const record = asObjectRecord(current);
     if (!record) {
@@ -99,7 +99,7 @@ function deletePath(entry: DmAccessRecord, path: readonly string[]): boolean {
   return true;
 }
 
-function writePath(entry: DmAccessRecord, path: readonly string[], value: unknown): void {
+function writePath(entry: DmAccessRecord, path: readonly string[], value: any): void {
   if (path.length === 1) {
     entry[path[0]] = value;
     return;
@@ -109,13 +109,13 @@ function writePath(entry: DmAccessRecord, path: readonly string[], value: unknow
   entry[path[0]] = parent;
 }
 
-function normalizeStringEntries(values: unknown[]): string[] {
+function normalizeStringEntries(values: any[]): string[] {
   return values
     .map((v) => (typeof v === "string" ? v.trim() : typeof v === "number" ? String(v) : ""))
     .filter((s) => s.length > 0);
 }
 
-function allowFromListsMatch(left: unknown, right: unknown): boolean {
+function allowFromListsMatch(left: any, right: any): boolean {
   if (!Array.isArray(left) || !Array.isArray(right)) {
     return false;
   }
@@ -135,7 +135,7 @@ function readCanonicalOrLegacy(
   entry: DmAccessRecord | null | undefined,
   mode: ChannelDmAllowFromMode,
   kind: DmFieldKind,
-): unknown {
+): any {
   const paths = resolveDmFieldPaths(mode, kind);
   return readPath(entry, paths.canonicalPath) ?? readPath(entry, paths.legacyPath);
 }

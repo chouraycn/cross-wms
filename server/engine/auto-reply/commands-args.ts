@@ -2,7 +2,7 @@ import type { CommandArgValues } from './commands-registry.js';
 
 type CommandArgsFormatter = (values: CommandArgValues) => string | undefined;
 
-function normalizeArgValue(value: unknown): string | undefined {
+function normalizeArgValue(value: any): string | undefined {
   if (value == null) return undefined;
   let text: string;
   if (typeof value === 'string') {

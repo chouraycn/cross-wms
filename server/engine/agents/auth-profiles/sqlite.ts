@@ -73,12 +73,12 @@ export function resolveAuthProfileDatabaseFilePaths(agentDir?: string): string[]
 
 // Read-only probes must tolerate old/corrupt/missing rows. Coercion happens
 // above this layer; this layer only returns raw JSON-ish payloads.
-function parseJsonCell(raw: string | null | undefined): unknown {
+function parseJsonCell(raw: string | null | undefined): any {
   if (!raw) {
     return null;
   }
   try {
-    return JSON.parse(raw) as unknown;
+    return JSON.parse(raw) as any;
   } catch {
     return null;
   }
@@ -88,7 +88,7 @@ function getAuthProfileKysely(db: DatabaseSync) {
   return getNodeSqliteKysely<AuthProfileDatabase>(db);
 }
 
-function readAuthProfileJsonCellReadOnly(pathname: string, target: "store" | "state"): unknown {
+function readAuthProfileJsonCellReadOnly(pathname: string, target: "store" | "state"): any {
   const sqlite = requireNodeSqlite();
   const db = new sqlite.DatabaseSync(pathname, { readOnly: true });
   try {
@@ -127,7 +127,7 @@ function readAuthProfileJsonCellReadOnly(pathname: string, target: "store" | "st
 export function readPersistedAuthProfileStoreRaw(
   agentDir?: string,
   database?: OpenClawAgentDatabase,
-): unknown {
+): any {
   if (database) {
     const db = getAuthProfileKysely(database.db);
     const row = executeSqliteQueryTakeFirstSync(
@@ -150,7 +150,7 @@ export function readPersistedAuthProfileStoreRaw(
 export function readPersistedAuthProfileStateRaw(
   agentDir?: string,
   database?: OpenClawAgentDatabase,
-): unknown {
+): any {
   if (database) {
     const db = getAuthProfileKysely(database.db);
     const row = executeSqliteQueryTakeFirstSync(
@@ -171,7 +171,7 @@ export function readPersistedAuthProfileStateRaw(
 
 /** Writes the raw persisted secrets-store payload inside the auth database. */
 export function writePersistedAuthProfileStoreRaw(
-  payload: unknown,
+  payload: any,
   agentDir?: string,
   database?: OpenClawAgentDatabase,
 ): void {
@@ -222,7 +222,7 @@ export function deletePersistedAuthProfileStoreRaw(
 
 /** Writes or deletes the persisted runtime-state payload. */
 export function writePersistedAuthProfileStateRaw(
-  payload: unknown,
+  payload: any,
   agentDir?: string,
   database?: OpenClawAgentDatabase,
 ): void {

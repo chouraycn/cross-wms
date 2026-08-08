@@ -91,7 +91,7 @@ describe('sanitizeToolMessages 多遍扫描', () => {
     expect(result[0].role).toBe('assistant');
     expect(result[0].content).toBe('Hello');
     // tool_calls 应被移除
-    expect((result[0] as { tool_calls?: unknown }).tool_calls).toBeUndefined();
+    expect((result[0] as { tool_calls?: any }).tool_calls).toBeUndefined();
   });
 
   it('Pass 1/2: 正确的配对全部保留', () => {
@@ -195,7 +195,7 @@ describe('validateToolMessages 发送前硬校验', () => {
     const mod = await import('../../aiClient.js');
 
     // 创建缺失 tool 响应的消息数组
-    const messages: Array<{ role: string; content?: unknown; tool_calls?: unknown[]; tool_call_id?: string }> = [
+    const messages: Array<{ role: string; content?: any; tool_calls?: any[]; tool_call_id?: string }> = [
       { role: 'assistant', content: "", tool_calls: [
         { id: 'call_1', type: 'function', function: { name: 'search', arguments: '{}' } },
         { id: 'call_2', type: 'function', function: { name: 'read_file', arguments: '{}' } },

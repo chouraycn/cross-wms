@@ -7,21 +7,21 @@ export interface SessionState {
   status: 'active' | 'idle' | 'closed';
   lastActiveAt: number;
   createdAt: number;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
   version: number;
 }
 
 export interface SessionSyncMessage {
   type: 'state' | 'event' | 'patch';
   sessionKey: string;
-  data?: unknown;
+  data?: any;
   version?: number;
   event?: string;
   sourceClientId?: string;
   timestamp: number;
 }
 
-type SessionEventHandler = (sessionKey: string, event: string, data: unknown, sourceClientId?: string) => void;
+type SessionEventHandler = (sessionKey: string, event: string, data: any, sourceClientId?: string) => void;
 type SessionStateChangeHandler = (sessionKey: string, state: SessionState, oldState?: SessionState) => void;
 
 class SessionSyncManager {
@@ -47,7 +47,7 @@ class SessionSyncManager {
     logger.info('[SessionSync] Session sync manager initialized');
   }
 
-  createSession(sessionKey: string, metadata?: Record<string, unknown>): SessionState {
+  createSession(sessionKey: string, metadata?: Record<string, any>): SessionState {
     const now = Date.now();
     const state: SessionState = {
       sessionKey,
@@ -103,11 +103,11 @@ class SessionSyncManager {
     return this.updateSession(sessionKey, { status });
   }
 
-  setSessionMetadata(sessionKey: string, metadata: Record<string, unknown>): SessionState | undefined {
+  setSessionMetadata(sessionKey: string, metadata: Record<string, any>): SessionState | undefined {
     return this.updateSession(sessionKey, { metadata });
   }
 
-  sendEvent(sessionKey: string, event: string, data?: unknown, sourceClientId?: string): number {
+  sendEvent(sessionKey: string, event: string, data?: any, sourceClientId?: string): number {
     const state = this.sessions.get(sessionKey);
     if (state) {
       state.lastActiveAt = Date.now();
@@ -124,7 +124,7 @@ class SessionSyncManager {
     return wsHub.sendSessionEvent(sessionKey, 'session:state', state, excludeClientId);
   }
 
-  private broadcastSessionEvent(sessionKey: string, event: string, data?: unknown, excludeClientId?: string): number {
+  private broadcastSessionEvent(sessionKey: string, event: string, data?: any, excludeClientId?: string): number {
     const wsHub = getWebSocketHub();
     return wsHub.sendSessionEvent(sessionKey, event, data, excludeClientId);
   }
@@ -155,7 +155,7 @@ class SessionSyncManager {
     this.stateChangeHandlers.delete(handler);
   }
 
-  private notifyEvent(sessionKey: string, event: string, data: unknown, sourceClientId?: string): void {
+  private notifyEvent(sessionKey: string, event: string, data: any, sourceClientId?: string): void {
     for (const handler of this.eventHandlers) {
       try {
         handler(sessionKey, event, data, sourceClientId);

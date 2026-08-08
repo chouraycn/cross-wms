@@ -14,19 +14,19 @@ const dispatchChannelMessageActionMock = vi.hoisted(() => vi.fn());
 const sendMessageMock = vi.hoisted(() => vi.fn());
 const sendPollMock = vi.hoisted(() => vi.fn());
 const getAgentScopedMediaLocalRootsForSourcesMock = vi.hoisted(() =>
-  vi.fn<(params: { cfg: unknown; agentId?: string; mediaSources?: readonly string[] }) => string[]>(
+  vi.fn<(params: { cfg: any; agentId?: string; mediaSources?: readonly string[] }) => string[]>(
     () => ["/tmp/agent-roots"],
   ),
 );
 const createAgentScopedHostMediaReadFileMock = vi.hoisted(() =>
-  vi.fn<(params: { cfg: unknown; agentId?: string }) => (filePath: string) => Promise<Buffer>>(
+  vi.fn<(params: { cfg: any; agentId?: string }) => (filePath: string) => Promise<Buffer>>(
     () => async () => Buffer.from("capability"),
   ),
 );
 const resolveAgentScopedOutboundMediaAccessMock = vi.hoisted(() =>
   vi.fn<
     (params: {
-      cfg: unknown;
+      cfg: any;
       agentId?: string;
       mediaSources?: readonly string[];
       accountId?: string;
@@ -113,22 +113,22 @@ let executePollAction: OutboundSendServiceModule["executePollAction"];
 let executeSendAction: OutboundSendServiceModule["executeSendAction"];
 
 type MockCalls = {
-  mock: { calls: unknown[][] };
+  mock: { calls: any[][] };
 };
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object") {
     throw new Error(`expected ${label}`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function requireArray(value: unknown, label: string): unknown[] {
+function requireArray(value: any, label: string): any[] {
   expect(Array.isArray(value), label).toBe(true);
-  return value as unknown[];
+  return value as any[];
 }
 
-function expectFields(record: Record<string, unknown>, expected: Record<string, unknown>) {
+function expectFields(record: Record<string, any>, expected: Record<string, any>) {
   for (const [key, value] of Object.entries(expected)) {
     expect(record[key], key).toEqual(value);
   }
@@ -137,7 +137,7 @@ function expectFields(record: Record<string, unknown>, expected: Record<string, 
 function expectSingleCallFirstArg(
   mock: MockCalls,
   label = "mock first argument",
-): Record<string, unknown> {
+): Record<string, any> {
   expect(mock.mock.calls).toHaveLength(1);
   const [firstArg] = mock.mock.calls[0] ?? [];
   return requireRecord(firstArg, label);
@@ -145,9 +145,9 @@ function expectSingleCallFirstArg(
 
 function expectSingleCallFields(
   mock: MockCalls,
-  expected: Record<string, unknown>,
+  expected: Record<string, any>,
   label?: string,
-): Record<string, unknown> {
+): Record<string, any> {
   const firstArg = expectSingleCallFirstArg(mock, label);
   expectFields(firstArg, expected);
   return firstArg;

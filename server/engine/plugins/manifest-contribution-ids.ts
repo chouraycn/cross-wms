@@ -48,10 +48,10 @@ export type PluginRegistrySnapshot = {
 
 /** 加载插件注册表快照的参数（降级占位）。 */
 export type LoadPluginRegistryParams = {
-  config?: unknown;
+  config?: any;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
-  candidates?: readonly unknown[];
+  candidates?: readonly any[];
   preferPersisted?: boolean;
 };
 
@@ -76,7 +76,7 @@ function loadPluginRegistrySnapshot(
 function listPluginContributionIds(params: {
   index: PluginRegistrySnapshot;
   contribution: PluginRegistryContributionKey;
-  config?: unknown;
+  config?: any;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   includeDisabled?: boolean;

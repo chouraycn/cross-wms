@@ -101,7 +101,7 @@ function createTestContext(): {
   return { ctx, warn, onBlockReplyFlush, onAgentEvent, onExecutionPhase, trace, isEnabled };
 }
 
-type CapturedAgentEvent = { stream?: string; data?: Record<string, unknown> };
+type CapturedAgentEvent = { stream?: string; data?: Record<string, any> };
 
 function requireEvent(
   events: CapturedAgentEvent[],
@@ -117,25 +117,25 @@ function requireEvent(
   return event;
 }
 
-function requireString(value: unknown, label: string): string {
+function requireString(value: any, label: string): string {
   if (typeof value !== "string") {
     throw new Error(`expected ${label}`);
   }
   return value;
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!isRecord(value)) {
     throw new Error(`expected ${label} to be an object`);
   }
   return value;
 }
 
-function expectRecordFields(value: unknown, label: string, expected: Record<string, unknown>) {
+function expectRecordFields(value: any, label: string, expected: Record<string, any>) {
   const record = requireRecord(value, label);
   for (const [key, expectedValue] of Object.entries(expected)) {
     expect(record[key]).toEqual(expectedValue);
@@ -146,7 +146,7 @@ function requireMockCallArg(mock: ReturnType<typeof vi.fn>, callIndex: number, l
   return requireRecord(mock.mock.calls[callIndex]?.[0], label);
 }
 
-function requireNestedRecord(value: unknown, label: string, path: string[]) {
+function requireNestedRecord(value: any, label: string, path: string[]) {
   let current = value;
   for (const key of path) {
     current = requireRecord(current, label)[key];
@@ -155,8 +155,8 @@ function requireNestedRecord(value: unknown, label: string, path: string[]) {
 }
 
 function expectInteractiveApprovalButtons(
-  result: Record<string, unknown>,
-  expectedButtons: readonly Record<string, unknown>[],
+  result: Record<string, any>,
+  expectedButtons: readonly Record<string, any>[],
 ) {
   const interactive = result.interactive;
   if (interactive === undefined) {
@@ -264,7 +264,7 @@ describe("handleToolExecutionStart read path checks", () => {
 
     expect(warn).toHaveBeenCalledTimes(1);
     const warnMessage = String(warn.mock.calls[0]?.[0] ?? "");
-    const warnMeta = warn.mock.calls[0]?.[1] as Record<string, unknown> | undefined;
+    const warnMeta = warn.mock.calls[0]?.[1] as Record<string, any> | undefined;
     expect(warnMessage).toContain("read tool called without path");
     expect(warnMeta).toBeTypeOf("object");
     expect(warnMeta?.event).toBe("embedded_read_tool_start_warning");
@@ -297,7 +297,7 @@ describe("handleToolExecutionStart read path checks", () => {
 
     await handleToolExecutionStart(ctx, evt);
 
-    const warnMeta = warn.mock.calls[0]?.[1] as Record<string, unknown> | undefined;
+    const warnMeta = warn.mock.calls[0]?.[1] as Record<string, any> | undefined;
     expect(warnMeta?.argsPreview).toBe(`${"x".repeat(200)}…`);
   });
 
@@ -1724,7 +1724,7 @@ describe("handleToolExecutionEnd exec approval prompts", () => {
 describe("handleToolExecutionEnd derived tool events", () => {
   it("surfaces typed public tool progress for any non-exec tool", () => {
     resetAgentEventsForTest();
-    const events: Array<{ stream?: string; data?: Record<string, unknown> }> = [];
+    const events: Array<{ stream?: string; data?: Record<string, any> }> = [];
     registerAgentEventListener((evt) => {
       events.push(evt as never);
     });
@@ -1776,7 +1776,7 @@ describe("handleToolExecutionEnd derived tool events", () => {
 
   it("does not promote untyped non-exec content into channel progress", () => {
     resetAgentEventsForTest();
-    const events: Array<{ stream?: string; data?: Record<string, unknown> }> = [];
+    const events: Array<{ stream?: string; data?: Record<string, any> }> = [];
     registerAgentEventListener((evt) => {
       events.push(evt as never);
     });
@@ -1898,7 +1898,7 @@ describe("handleToolExecutionEnd derived tool events", () => {
 
   it("caps and throttles exec update output before live events", async () => {
     resetAgentEventsForTest();
-    const events: Array<{ stream?: string; data?: Record<string, unknown> }> = [];
+    const events: Array<{ stream?: string; data?: Record<string, any> }> = [];
     registerAgentEventListener((evt) => {
       events.push(evt as never);
     });
@@ -1956,7 +1956,7 @@ describe("handleToolExecutionEnd derived tool events", () => {
 
     const commandOutputCalls = onAgentEvent.mock.calls
       .map((call) => call[0])
-      .filter((arg: unknown) => (arg as { stream?: string })?.stream === "command_output");
+      .filter((arg: any) => (arg as { stream?: string })?.stream === "command_output");
     expect(commandOutputCalls).toHaveLength(1);
     const output = (commandOutputCalls[0] as { data?: { output?: string } }).data?.output;
     expect(output).toContain("...(live output truncated)...");
@@ -1967,7 +1967,7 @@ describe("handleToolExecutionEnd derived tool events", () => {
 
   it("caps exec final output before result and command output events", async () => {
     resetAgentEventsForTest();
-    const events: Array<{ stream?: string; data?: Record<string, unknown> }> = [];
+    const events: Array<{ stream?: string; data?: Record<string, any> }> = [];
     registerAgentEventListener((evt) => {
       events.push(evt as never);
     });
@@ -2000,7 +2000,7 @@ describe("handleToolExecutionEnd derived tool events", () => {
 
     const commandOutputCalls = onAgentEvent.mock.calls
       .map((call) => call[0])
-      .filter((arg: unknown) => (arg as { stream?: string })?.stream === "command_output");
+      .filter((arg: any) => (arg as { stream?: string })?.stream === "command_output");
     const output = (commandOutputCalls.at(-1) as { data?: { output?: string } } | undefined)?.data
       ?.output;
     expect(output).toContain("...(live output truncated)...");
@@ -2237,14 +2237,14 @@ describe("messaging tool media URL tracking", () => {
           plugin: {
             ...createChannelTestPluginBase({ id: "mattermost" }),
             actions: {
-              extractToolSend: ({ args }: { args: Record<string, unknown> }) =>
+              extractToolSend: ({ args }: { args: Record<string, any> }) =>
                 args.action === "send" && typeof args.to === "string"
                   ? { to: args.to, threadImplicit: true }
                   : null,
-              extractToolSendResult: ({ result }: { result: unknown }) => {
+              extractToolSendResult: ({ result }: { result: any }) => {
                 const providerResult = result as {
                   status?: string;
-                  details?: { redacted?: boolean; toolSend?: unknown };
+                  details?: { redacted?: boolean; toolSend?: any };
                 };
                 if (providerResult.status !== "sent" || providerResult.details?.redacted !== true) {
                   return null;
@@ -2673,7 +2673,7 @@ describe("control UI credential redaction (issue #72283)", () => {
   });
 
   it("redacts secrets in args before emitting the tool start event", async () => {
-    const events: Array<{ stream?: string; data?: Record<string, unknown> }> = [];
+    const events: Array<{ stream?: string; data?: Record<string, any> }> = [];
     registerAgentEventListener((evt) => {
       events.push(evt as never);
     });
@@ -2698,7 +2698,7 @@ describe("control UI credential redaction (issue #72283)", () => {
       (evt) => evt.stream === "tool" && (evt.data as { phase?: string })?.phase === "start",
       "tool start",
     );
-    const emittedArgs = (startEvent.data as { args?: Record<string, unknown> })?.args ?? {};
+    const emittedArgs = (startEvent.data as { args?: Record<string, any> })?.args ?? {};
     const serialized = JSON.stringify(emittedArgs);
     expect(serialized).not.toContain("sk-1234567890abcdefXYZ");
     expect(serialized).not.toContain("abcdef0123456789QWERTY=");
@@ -2740,7 +2740,7 @@ describe("control UI credential redaction (issue #72283)", () => {
 
     const commandOutputCalls = onAgentEvent.mock.calls
       .map((call) => call[0])
-      .filter((arg: unknown) => (arg as { stream?: string })?.stream === "command_output");
+      .filter((arg: any) => (arg as { stream?: string })?.stream === "command_output");
     expect(commandOutputCalls).toHaveLength(1);
     const lastOutput = commandOutputCalls.at(-1) as { data?: { output?: string } } | undefined;
     const output = requireString(lastOutput?.data?.output, "command output");
@@ -2750,7 +2750,7 @@ describe("control UI credential redaction (issue #72283)", () => {
   });
 
   it("redacts details-only results before emitting the tool result event", async () => {
-    const events: Array<{ stream?: string; data?: Record<string, unknown> }> = [];
+    const events: Array<{ stream?: string; data?: Record<string, any> }> = [];
     registerAgentEventListener((evt) => {
       events.push(evt as never);
     });
@@ -2782,7 +2782,7 @@ describe("control UI credential redaction (issue #72283)", () => {
   });
 
   it("redacts primitive string results before emitting the tool result event", async () => {
-    const events: Array<{ stream?: string; data?: Record<string, unknown> }> = [];
+    const events: Array<{ stream?: string; data?: Record<string, any> }> = [];
     registerAgentEventListener((evt) => {
       events.push(evt as never);
     });

@@ -54,11 +54,11 @@ function isDreamingNarrativeSessionStoreKey(sessionKey: string): boolean {
   return sessionSegment.startsWith(DREAMING_NARRATIVE_RUN_PREFIX);
 }
 
-function isDreamingNarrativeSessionKeyLike(value: unknown): boolean {
+function isDreamingNarrativeSessionKeyLike(value: any): boolean {
   return typeof value === "string" && isDreamingNarrativeSessionStoreKey(value);
 }
 
-function hasCronRunSessionKey(value: unknown): boolean {
+function hasCronRunSessionKey(value: any): boolean {
   return typeof value === "string" && isCronRunSessionKey(value);
 }
 
@@ -110,7 +110,7 @@ function extractAgentIdFromSessionsDir(sessionsDir: string): string | null {
 function resolveSessionStoreTranscriptCorpusPath(
   agentId: string,
   sessionsDir: string,
-  entry: { sessionFile?: unknown; sessionId?: unknown } | undefined,
+  entry: { sessionFile?: any; sessionId?: any } | undefined,
 ): string | null {
   const sessionFile =
     typeof entry?.sessionFile === "string" && entry.sessionFile.trim().length > 0

@@ -26,7 +26,7 @@ export type PluginDependencyStatus = {
   optionalDependencies: PluginDependencyEntry[];
 };
 
-function normalizeDependencyMap(raw: unknown): PluginDependencySpecMap {
+function normalizeDependencyMap(raw: any): PluginDependencySpecMap {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
     return {};
   }
@@ -43,8 +43,8 @@ function normalizeDependencyMap(raw: unknown): PluginDependencySpecMap {
 
 /** Normalizes raw package dependency maps into sorted plugin dependency specs. */
 export function normalizePluginDependencySpecs(params: {
-  dependencies?: unknown;
-  optionalDependencies?: unknown;
+  dependencies?: any;
+  optionalDependencies?: any;
 }): {
   dependencies: PluginDependencySpecMap;
   optionalDependencies: PluginDependencySpecMap;

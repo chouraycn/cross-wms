@@ -52,10 +52,10 @@ async function withPluginStateTestState<T>(fn: () => Promise<T>): Promise<T> {
 }
 
 async function expectPluginStateStoreError(
-  promise: Promise<unknown>,
+  promise: Promise<any>,
   expected: { code: string; operation?: string },
 ): Promise<void> {
-  let storeError: unknown;
+  let storeError: any;
   try {
     await promise;
   } catch (error) {
@@ -596,10 +596,10 @@ describe("plugin state keyed store", () => {
       await expect(store.register("infinity", Number.POSITIVE_INFINITY)).rejects.toThrow(
         PluginStateStoreError,
       );
-      const circular: Record<string, unknown> = {};
+      const circular: Record<string, any> = {};
       circular.self = circular;
       await expect(store.register("circular", circular)).rejects.toThrow(PluginStateStoreError);
-      const sparse = [] as unknown[];
+      const sparse = [] as any[];
       sparse[1] = "hole";
       await expect(store.register("sparse", sparse)).rejects.toThrow(PluginStateStoreError);
       await expect(store.register("date", new Date())).rejects.toThrow(PluginStateStoreError);
@@ -626,7 +626,7 @@ describe("plugin state keyed store", () => {
       ).toThrow(PluginStateStoreError);
 
       // JSON depth limit (64 levels)
-      let deep: unknown = { leaf: true };
+      let deep: any = { leaf: true };
       for (let i = 0; i < 65; i += 1) {
         deep = { nested: deep };
       }

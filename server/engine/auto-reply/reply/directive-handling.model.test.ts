@@ -38,11 +38,11 @@ function normalizeProviderForAuthTest(provider: string) {
   return provider.trim().toLowerCase();
 }
 
-function hasAllowedPluginForAuthTest(cfg: unknown, pluginId: string): boolean {
+function hasAllowedPluginForAuthTest(cfg: any, pluginId: string): boolean {
   if (!cfg || typeof cfg !== "object" || !("plugins" in cfg)) {
     return false;
   }
-  const plugins = (cfg as { plugins?: { allow?: unknown } }).plugins;
+  const plugins = (cfg as { plugins?: { allow?: any } }).plugins;
   return Array.isArray(plugins?.allow) && plugins.allow.includes(pluginId);
 }
 
@@ -62,7 +62,7 @@ vi.mock("../../agents/auth-profiles.js", () => {
     ensureAuthProfileStore: store,
     ensureAuthProfileStoreWithoutExternalProfiles: store,
     isProfileInCooldown: () => false,
-    listProfilesForProvider: (_store: unknown, provider: string) =>
+    listProfilesForProvider: (_store: any, provider: string) =>
       Object.entries(authProfilesStoreMock.profiles)
         .filter(([, profile]) => profile.provider === provider)
         .map(([profileId, profile]) => ({ profileId, profile })),
@@ -102,10 +102,10 @@ vi.mock("./directive-handling.auth.js", () => ({
   },
   resolveAuthLabel: async (
     provider: string,
-    cfg: unknown,
+    cfg: any,
     _modelsPath: string,
     _agentDir?: string,
-    _mode?: unknown,
+    _mode?: any,
     workspaceDir?: string,
     options?: { acceptedProfileTypes?: readonly string[] },
   ) => {
@@ -344,7 +344,7 @@ vi.mock("../../infra/system-events.js", () => ({
 }));
 
 vi.mock("./queue.js", () => ({
-  refreshQueuedFollowupSession: (...args: unknown[]) =>
+  refreshQueuedFollowupSession: (...args: any[]) =>
     queueMocks.refreshQueuedFollowupSession(...args),
 }));
 

@@ -11,15 +11,15 @@ type AnthropicRefusalDetails = {
   explanation: string | null;
 };
 
-function readNullableString(value: unknown): string | null {
+function readNullableString(value: any): string | null {
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
-function readAnthropicRefusalDetails(value: unknown): AnthropicRefusalDetails {
+function readAnthropicRefusalDetails(value: any): AnthropicRefusalDetails {
   if (!value || typeof value !== "object") {
     return { category: null, explanation: null };
   }
-  const details = value as Record<string, unknown>;
+  const details = value as Record<string, any>;
   return {
     category: readNullableString(details.category),
     explanation: readNullableString(details.explanation),
@@ -34,7 +34,7 @@ function formatAnthropicRefusalMessage(details: AnthropicRefusalDetails): string
 
 export function applyAnthropicRefusal(
   output: AnthropicRefusalOutput,
-  stopDetails: unknown,
+  stopDetails: any,
   provider: string,
 ): void {
   const details = readAnthropicRefusalDetails(stopDetails);

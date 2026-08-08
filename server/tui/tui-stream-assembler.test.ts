@@ -6,7 +6,7 @@ const text = (value: string) => ({ type: "text", text: value }) as const;
 const thinking = (value: string) => ({ type: "thinking", thinking: value }) as const;
 const toolUse = () => ({ type: "tool_use", name: "search" }) as const;
 
-const messageWithContent = (content: readonly Record<string, unknown>[]) =>
+const messageWithContent = (content: readonly Record<string, any>[]) =>
   ({
     role: "assistant",
     content,
@@ -16,8 +16,8 @@ const TEXT_ONLY_TWO_BLOCKS = messageWithContent([text("Draft line 1"), text("Dra
 
 type FinalizeBoundaryCase = {
   name: string;
-  streamedContent: readonly Record<string, unknown>[];
-  finalContent: readonly Record<string, unknown>[];
+  streamedContent: readonly Record<string, any>[];
+  finalContent: readonly Record<string, any>[];
   expected: string;
 };
 

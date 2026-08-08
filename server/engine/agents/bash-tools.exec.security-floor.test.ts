@@ -31,7 +31,7 @@ function installAllowlistedGogFixture(root: string): string {
   return binDir;
 }
 
-function writeExecApprovalsFixture(root: string, file: Record<string, unknown>): void {
+function writeExecApprovalsFixture(root: string, file: Record<string, any>): void {
   const stateDir = process.env.OPENCLAW_STATE_DIR ?? path.join(root, "state");
   fs.mkdirSync(stateDir, { recursive: true });
   fs.writeFileSync(path.join(stateDir, "exec-approvals.json"), `${JSON.stringify(file)}\n`);

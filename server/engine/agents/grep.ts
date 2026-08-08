@@ -8,9 +8,9 @@
 
 export type GrepOperations = unknown;
 export type GrepToolOptions = unknown;
-export function createGrepToolDefinition(..._args: unknown[]): unknown {
+export function createGrepToolDefinition(..._args: any[]): any {
   return undefined;
 }
-export function createGrepTool(..._args: unknown[]): unknown {
+export function createGrepTool(..._args: any[]): any {
   return undefined;
 }

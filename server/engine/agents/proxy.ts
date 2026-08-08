@@ -8,6 +8,6 @@
 
 export type ProxyAssistantMessageEvent = unknown;
 export type ProxyStreamOptions = unknown;
-export function streamProxy(..._args: unknown[]): unknown {
+export function streamProxy(..._args: any[]): any {
   return undefined;
 }

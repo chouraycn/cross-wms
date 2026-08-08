@@ -9,8 +9,8 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("./plugin-registry.js", () => ({
-  loadPluginRegistrySnapshot: (...args: unknown[]) => mocks.loadPluginRegistrySnapshot(...args),
-  loadPluginManifestRegistryForPluginRegistry: (...args: unknown[]) =>
+  loadPluginRegistrySnapshot: (...args: any[]) => mocks.loadPluginRegistrySnapshot(...args),
+  loadPluginManifestRegistryForPluginRegistry: (...args: any[]) =>
     mocks.loadPluginManifestRegistryForInstalledIndex({
       ...(args[0] && typeof args[0] === "object" ? args[0] : {}),
       index: mocks.loadPluginRegistrySnapshot(...args),
@@ -18,13 +18,13 @@ vi.mock("./plugin-registry.js", () => ({
 }));
 
 vi.mock("./manifest-registry-installed.js", () => ({
-  loadPluginManifestRegistryForInstalledIndex: (...args: unknown[]) =>
+  loadPluginManifestRegistryForInstalledIndex: (...args: any[]) =>
     mocks.loadPluginManifestRegistryForInstalledIndex(...args),
 }));
 
 vi.mock("./plugin-metadata-snapshot.js", () => ({
-  loadPluginMetadataSnapshot: (...args: unknown[]) => mocks.loadPluginMetadataSnapshot(...args),
-  resolvePluginMetadataSnapshot: (...args: unknown[]) =>
+  loadPluginMetadataSnapshot: (...args: any[]) => mocks.loadPluginMetadataSnapshot(...args),
+  resolvePluginMetadataSnapshot: (...args: any[]) =>
     mocks.resolvePluginMetadataSnapshot(...args),
 }));
 
@@ -62,11 +62,11 @@ describe("resolveManifestDeclaredWebProviderCandidatePluginIds", () => {
       diagnostics: [],
     });
     mocks.loadPluginMetadataSnapshot.mockReset();
-    mocks.loadPluginMetadataSnapshot.mockImplementation((...args: unknown[]) => ({
+    mocks.loadPluginMetadataSnapshot.mockImplementation((...args: any[]) => ({
       plugins: mocks.loadPluginManifestRegistryForInstalledIndex(...args).plugins,
     }));
     mocks.resolvePluginMetadataSnapshot.mockReset();
-    mocks.resolvePluginMetadataSnapshot.mockImplementation((...args: unknown[]) => ({
+    mocks.resolvePluginMetadataSnapshot.mockImplementation((...args: any[]) => ({
       plugins: mocks.loadPluginManifestRegistryForInstalledIndex(...args).plugins,
     }));
   });

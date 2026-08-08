@@ -279,7 +279,7 @@ router.delete('/:slug', (req: Request, res: Response) => {
  * 物化并执行某个通用技能（指令型，确定性，无 LLM 调用）。
  * 仅 `published` 且 markdown 非空的技能会被物化；草稿/未发布无法运行。
  */
-async function runGeneralSkill(tenantId: string, slug: string, userQuery: string, params: Record<string, unknown>) {
+async function runGeneralSkill(tenantId: string, slug: string, userQuery: string, params: Record<string, any>) {
   const { definitions, executor } = materializeGeneralSkills(tenantId);
   const def = definitions.find((d) => d.id === `staff-${tenantId}-${slug}`);
   if (!def) {

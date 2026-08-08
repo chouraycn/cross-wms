@@ -30,7 +30,7 @@ function createIoForHome(home: string, env: NodeJS.ProcessEnv = {} as NodeJS.Pro
 }
 
 describe("config io paths", () => {
-  let whatsappSharedAccessDefaults: unknown;
+  let whatsappSharedAccessDefaults: any;
 
   beforeAll(() => {
     const migrated = normalizeCompatibilityConfigValues({

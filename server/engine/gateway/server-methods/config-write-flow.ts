@@ -169,7 +169,7 @@ function resolveConfigRestartRequirement(params: {
   return { requiresRestart: false, scheduleDirectRestart: false };
 }
 
-function resolveConfigRestartRequest(params: unknown): {
+function resolveConfigRestartRequest(params: any): {
   sessionKey: string | undefined;
   note: string | undefined;
   restartDelayMs: number | undefined;
@@ -267,7 +267,7 @@ export async function commitGatewayConfigWrite(params: {
 
 /** Builds restart sentinel/queue state for config.patch and config.apply writes. */
 export async function resolveGatewayConfigRestartWriteResult(params: {
-  requestParams: unknown;
+  requestParams: any;
   kind: RestartSentinelPayload["kind"];
   mode: "config.patch" | "config.apply";
   configPath: string;

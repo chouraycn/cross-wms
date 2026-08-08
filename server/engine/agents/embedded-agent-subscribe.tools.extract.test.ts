@@ -24,7 +24,7 @@ describe("extractMessagingToolSend", () => {
             ...createChannelTestPluginBase({ id: "telegram" }),
             messaging: { normalizeTarget: normalizeTelegramMessagingTargetForTest },
             actions: {
-              extractToolSend: ({ args }: { args: Record<string, unknown> }) =>
+              extractToolSend: ({ args }: { args: Record<string, any> }) =>
                 args.action === "sendMessage" && typeof args.to === "string"
                   ? { to: args.to }
                   : null,
@@ -53,7 +53,7 @@ describe("extractMessagingToolSend", () => {
                   deliveryTargetAliases: ["chatGuid"],
                 },
               },
-              extractToolSend: (params: { args: Record<string, unknown> }) => {
+              extractToolSend: (params: { args: Record<string, any> }) => {
                 const { args } = params;
                 if (
                   (args.action !== "sendMessage" &&
@@ -134,7 +134,7 @@ describe("extractMessagingToolSend", () => {
           plugin: {
             ...createChannelTestPluginBase({ id: "mattermost" }),
             actions: {
-              extractToolSend: ({ args }: { args: Record<string, unknown> }) => {
+              extractToolSend: ({ args }: { args: Record<string, any> }) => {
                 if (args.action !== "send" || typeof args.to !== "string") {
                   return null;
                 }

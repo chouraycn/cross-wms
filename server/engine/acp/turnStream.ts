@@ -169,7 +169,7 @@ export async function* mergeTurnStreams(
 export interface TurnStreamBuffer {
   mainBuffer: string;
   thinkingBuffer: string;
-  toolCalls: Map<string, { name: string; input: string; completed: boolean; result?: unknown }>;
+  toolCalls: Map<string, { name: string; input: string; completed: boolean; result?: any }>;
 }
 
 /**

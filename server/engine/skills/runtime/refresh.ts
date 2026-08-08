@@ -73,7 +73,7 @@ function resolveWatchTargets(workspaceDir: string, config?: OpenClawConfig): Wat
 
   const extraDirsRaw = config?.skills?.load?.extraDirs ?? [];
   const extraDirs = extraDirsRaw
-    .map((d: unknown) => String(d).trim())
+    .map((d: any) => String(d).trim())
     .filter(Boolean);
 
   const signature = JSON.stringify({

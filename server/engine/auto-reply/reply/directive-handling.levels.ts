@@ -6,21 +6,21 @@ import { normalizeFastMode, type FastMode } from "../thinking.js";
 /** Resolves current directive levels from session, agent, and config defaults. */
 export async function resolveCurrentDirectiveLevels(params: {
   sessionEntry?: {
-    thinkingLevel?: unknown;
-    fastMode?: unknown;
-    verboseLevel?: unknown;
-    reasoningLevel?: unknown;
-    elevatedLevel?: unknown;
+    thinkingLevel?: any;
+    fastMode?: any;
+    verboseLevel?: any;
+    reasoningLevel?: any;
+    elevatedLevel?: any;
   };
   agentEntry?: {
-    fastModeDefault?: unknown;
-    reasoningDefault?: unknown;
+    fastModeDefault?: any;
+    reasoningDefault?: any;
   };
   agentCfg?: {
-    thinkingDefault?: unknown;
-    verboseDefault?: unknown;
-    reasoningDefault?: unknown;
-    elevatedDefault?: unknown;
+    thinkingDefault?: any;
+    verboseDefault?: any;
+    reasoningDefault?: any;
+    elevatedDefault?: any;
   };
   resolveDefaultThinkingLevel: () => Promise<ThinkLevel | undefined>;
 }): Promise<{

@@ -72,9 +72,9 @@ export function getSkillStats(tenantId: string = DEFAULT_TENANT_ID): SkillStatsM
     .all(tenantId, ...STATS_CALL_EVENT_TYPES) as Array<{ payload_json: string | null }>;
 
   for (const row of eventRows) {
-    let payload: Record<string, unknown> = {};
+    let payload: Record<string, any> = {};
     try {
-      payload = row.payload_json ? (JSON.parse(row.payload_json) as Record<string, unknown>) : {};
+      payload = row.payload_json ? (JSON.parse(row.payload_json) as Record<string, any>) : {};
     } catch {
       continue;
     }
@@ -200,7 +200,7 @@ export interface SkillReadContext {
 // ===================== Skills =====================
 
 export function toSkillRead(row: SkillRow, ctx: SkillReadContext = {}): SkillRead {
-  let content: Record<string, unknown> = {};
+  let content: Record<string, any> = {};
   try {
     content = row.content_json ? JSON.parse(row.content_json) : {};
   } catch {
@@ -286,9 +286,9 @@ export function getAgentSkillBranchMeta(
 
   const result = new Map<string, SkillBranchMeta>();
   for (const row of rows) {
-    let metadata: Record<string, unknown> = {};
+    let metadata: Record<string, any> = {};
     try {
-      metadata = row.metadata_json ? (JSON.parse(row.metadata_json) as Record<string, unknown>) : {};
+      metadata = row.metadata_json ? (JSON.parse(row.metadata_json) as Record<string, any>) : {};
     } catch {
       metadata = {};
     }
@@ -318,7 +318,7 @@ export function listSkills(filter: SkillListFilter = {}): SkillRow[] {
   const db = initDb();
   const tenantId = filter.tenantId ?? DEFAULT_TENANT_ID;
   const conditions: string[] = ['tenant_id = ?'];
-  const params: unknown[] = [tenantId];
+  const params: any[] = [tenantId];
   if (filter.status) {
     conditions.push('status = ?');
     params.push(filter.status);
@@ -357,7 +357,7 @@ export interface SkillCreateInput {
   name: string;
   business_domain?: string | null;
   description?: string | null;
-  content?: Record<string, unknown>;
+  content?: Record<string, any>;
   status?: string;
 }
 
@@ -404,7 +404,7 @@ export interface SkillUpdateInput {
   name?: string;
   business_domain?: string | null;
   description?: string | null;
-  content?: Record<string, unknown>;
+  content?: Record<string, any>;
   status?: string;
   version?: string;
 }
@@ -462,7 +462,7 @@ export interface SkillVersionInput {
   name: string;
   business_domain?: string | null;
   description?: string | null;
-  content?: Record<string, unknown>;
+  content?: Record<string, any>;
   status?: string;
 }
 
@@ -599,10 +599,10 @@ export interface AgentSkillBranchInput {
   source_skill_id: string;
   base_version?: string;
   head_version?: string;
-  content?: Record<string, unknown>;
+  content?: Record<string, any>;
   status?: string;
   sync_state?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export function upsertAgentSkillBranch(input: AgentSkillBranchInput): AgentSkillBranchRow {
@@ -718,7 +718,7 @@ export function rollbackAgentSkillBranch(
 }
 
 // ===================== 分支版本化：sync / promote / versions =====================
-function parseBranchContent(json?: string | null): Record<string, unknown> {
+function parseBranchContent(json?: string | null): Record<string, any> {
   if (!json) return {};
   try {
     return JSON.parse(json);
@@ -739,7 +739,7 @@ export interface AgentSkillBranchVersionInput {
   source_skill_id?: string;
   version: string;
   base_version?: string;
-  content?: Record<string, unknown>;
+  content?: Record<string, any>;
   status?: string;
   sync_state?: string;
   change_summary?: string;

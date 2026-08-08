@@ -67,7 +67,7 @@ function listSessions(): BrowserSession[] {
   return Array.from(BROWSER_SESSIONS.values()).filter((s) => s.status === "active");
 }
 
-function formatJsonOutput(data: unknown): string {
+function formatJsonOutput(data: any): string {
   return JSON.stringify(data, null, 2);
 }
 

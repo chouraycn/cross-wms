@@ -27,7 +27,7 @@ vi.mock("../../channels/plugins/catalog.js", () => ({
 
 vi.mock("../../channels/plugins/index.js", () => ({
   getChannelPlugin: mocks.getChannelPlugin,
-  normalizeChannelId: (value: unknown) => (typeof value === "string" ? value.trim() || null : null),
+  normalizeChannelId: (value: any) => (typeof value === "string" ? value.trim() || null : null),
 }));
 
 vi.mock("./plugin-install.js", () => ({
@@ -68,7 +68,7 @@ function createPlugin(id: string): ChannelPlugin {
   return { id } as ChannelPlugin;
 }
 
-function firstMockArg(mock: { mock: { calls: ReadonlyArray<ReadonlyArray<unknown>> } }): unknown {
+function firstMockArg(mock: { mock: { calls: ReadonlyArray<ReadonlyArray<any>> } }): any {
   const call = mock.mock.calls[0];
   if (!call) {
     throw new Error("expected mock to have at least one call");

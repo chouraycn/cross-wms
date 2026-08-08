@@ -98,7 +98,7 @@ describe('i18n 多语言系统', () => {
   // 测试 10: 语言切换事件
   it('语言切换事件 - EventEmitter', async () => {
     let eventData: { previous: string; current: string } | null = null;
-    const handler = (data: unknown) => {
+    const handler = (data: any) => {
       eventData = data as { previous: string; current: string };
     };
 

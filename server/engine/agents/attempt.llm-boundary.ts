@@ -6,21 +6,21 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function normalizeMessagesForLlmBoundary(..._args: unknown[]): unknown {
+export function normalizeMessagesForLlmBoundary(..._args: any[]): any {
   return undefined;
 }
-export function normalizeMessagesForCurrentPromptBoundary(..._args: unknown[]): unknown {
+export function normalizeMessagesForCurrentPromptBoundary(..._args: any[]): any {
   return undefined;
 }
-export function normalizeCurrentPromptTextForLlmBoundary(..._args: unknown[]): unknown {
+export function normalizeCurrentPromptTextForLlmBoundary(..._args: any[]): any {
   return undefined;
 }
-export function installRuntimeContextMessageForPrompt(..._args: unknown[]): unknown {
+export function installRuntimeContextMessageForPrompt(..._args: any[]): any {
   return undefined;
 }
-export function insertRuntimeContextMessageForPrompt(..._args: unknown[]): unknown {
+export function insertRuntimeContextMessageForPrompt(..._args: any[]): any {
   return undefined;
 }
-export function installModelPromptTransform(..._args: unknown[]): unknown {
+export function installModelPromptTransform(..._args: any[]): any {
   return undefined;
 }

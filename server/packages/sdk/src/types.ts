@@ -1,6 +1,6 @@
 // Public SDK data contracts for Gateway transport, runs, sessions, tools,
 // artifacts, tasks, environments, and normalized event streams.
-export type JsonObject = Record<string, unknown>;
+export type JsonObject = Record<string, any>;
 
 /** Per-request options accepted by SDK transports. */
 export type GatewayRequestOptions = {
@@ -11,16 +11,16 @@ export type GatewayRequestOptions = {
 /** Raw event payload emitted by the Gateway transport. */
 export type GatewayEvent = {
   event: string;
-  payload?: unknown;
+  payload?: any;
   seq?: number;
-  stateVersion?: unknown;
+  stateVersion?: any;
 };
 
 /** Minimal transport interface consumed by the OpenClaw SDK client. */
 export type OpenClawTransport = {
   request<T = unknown>(
     method: string,
-    params?: unknown,
+    params?: any,
     options?: GatewayRequestOptions,
   ): Promise<T>;
   events(filter?: (event: GatewayEvent) => boolean): AsyncIterable<GatewayEvent>;
@@ -188,7 +188,7 @@ export type TasksCancelResult = {
 export type SDKError = {
   code?: string;
   message: string;
-  details?: unknown;
+  details?: any;
 };
 
 /** Parameters for direct tool invocation through the SDK. */
@@ -208,7 +208,7 @@ export type ToolInvokeParams = {
 export type ToolInvokeResult = {
   ok: boolean;
   toolName: string;
-  output?: unknown;
+  output?: any;
   requiresApproval?: boolean;
   approvalId?: string;
   source?: string;
@@ -236,7 +236,7 @@ export type RunResult = {
   };
   artifacts?: ArtifactSummary[];
   error?: SDKError;
-  raw?: unknown;
+  raw?: any;
 };
 
 /** Stable SDK event type taxonomy derived from raw Gateway events. */
@@ -294,7 +294,7 @@ export type AgentRunParams = {
   sessionId?: string;
   sessionKey?: string;
   deliver?: boolean;
-  attachments?: unknown[];
+  attachments?: any[];
   timeoutMs?: number;
   label?: string;
   runtime?: RuntimeSelection;
@@ -320,7 +320,7 @@ export type SessionSendParams = {
   key: string;
   message: string;
   thinking?: string;
-  attachments?: unknown[];
+  attachments?: any[];
   timeoutMs?: number;
   idempotencyKey?: string;
 };

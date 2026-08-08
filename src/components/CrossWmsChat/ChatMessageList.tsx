@@ -75,7 +75,7 @@ export interface ChatMessageListProps {
   /** 容器最大高度 */
   maxHeight?: string;
   /** 额外的 sx 样式 */
-  sx?: Record<string, unknown>;
+  sx?: Record<string, any>;
   /** v3.0: ChatItem 列表（可选，优先使用） */
   items?: ChatItem[];
   /** 上滚到顶部时加载更早消息 */

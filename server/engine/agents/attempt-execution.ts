@@ -6,33 +6,33 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function persistAcpTurnTranscript(..._args: unknown[]): unknown {
+export function persistAcpTurnTranscript(..._args: any[]): any {
   return undefined;
 }
-export function persistCliTurnTranscript(..._args: unknown[]): unknown {
+export function persistCliTurnTranscript(..._args: any[]): any {
   return undefined;
 }
-export function runAgentAttempt(..._args: unknown[]): unknown {
+export function runAgentAttempt(..._args: any[]): any {
   return undefined;
 }
-export function buildAcpResult(..._args: unknown[]): unknown {
+export function buildAcpResult(..._args: any[]): any {
   return undefined;
 }
-export function emitAcpLifecycleStart(..._args: unknown[]): unknown {
+export function emitAcpLifecycleStart(..._args: any[]): any {
   return undefined;
 }
-export function emitAcpPromptSubmitted(..._args: unknown[]): unknown {
+export function emitAcpPromptSubmitted(..._args: any[]): any {
   return undefined;
 }
-export function emitAcpRuntimeEvent(..._args: unknown[]): unknown {
+export function emitAcpRuntimeEvent(..._args: any[]): any {
   return undefined;
 }
-export function emitAcpLifecycleEnd(..._args: unknown[]): unknown {
+export function emitAcpLifecycleEnd(..._args: any[]): any {
   return undefined;
 }
-export function emitAcpLifecycleError(..._args: unknown[]): unknown {
+export function emitAcpLifecycleError(..._args: any[]): any {
   return undefined;
 }
-export function emitAcpAssistantDelta(..._args: unknown[]): unknown {
+export function emitAcpAssistantDelta(..._args: any[]): any {
   return undefined;
 }

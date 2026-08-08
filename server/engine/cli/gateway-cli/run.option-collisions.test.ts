@@ -10,13 +10,13 @@ import { withTempSecretFiles } from "../../test-utils/secret-file-fixture.js";
 import { createCliRuntimeCapture } from "../test-runtime-capture.js";
 import { installGatewayRunRuntimeHooks } from "./runtime-hooks.js";
 
-const startGatewayServer = vi.fn(async (_port: number, _opts?: unknown) => ({
+const startGatewayServer = vi.fn(async (_port: number, _opts?: any) => ({
   close: vi.fn(async () => {}),
 }));
 const setGatewayWsLogStyle = vi.fn((_style: string) => undefined);
 const setVerbose = vi.fn((_enabled: boolean) => undefined);
 const setConsoleSubsystemFilter = vi.fn((_filters: string[]) => undefined);
-const forceFreePortAndWait = vi.fn(async (_port: number, _opts: unknown) => ({
+const forceFreePortAndWait = vi.fn(async (_port: number, _opts: any) => ({
   killed: [],
   waitedMs: 0,
   escalatedToSigkill: false,
@@ -24,9 +24,9 @@ const forceFreePortAndWait = vi.fn(async (_port: number, _opts: unknown) => ({
 const cleanStaleGatewayProcessesSync = vi.fn(
   (_port?: number, _options?: { protectedPid?: number }) => [],
 );
-const waitForPortBindable = vi.fn(async (_port: number, _opts?: unknown) => 0);
-const ensureDevGatewayConfig = vi.fn(async (_opts?: unknown) => {});
-type GatewayLoopStart = (params?: { startupStartedAt?: number }) => Promise<unknown>;
+const waitForPortBindable = vi.fn(async (_port: number, _opts?: any) => 0);
+const ensureDevGatewayConfig = vi.fn(async (_opts?: any) => {});
+type GatewayLoopStart = (params?: { startupStartedAt?: number }) => Promise<any>;
 const runGatewayLoop = vi.fn(async ({ start }: { start: GatewayLoopStart }) => {
   await start();
 });
@@ -38,7 +38,7 @@ type RuntimeDotEnvLoadResult = {
   stateEnvAppliedKeys: string[];
 };
 const loadGlobalRuntimeDotEnvFiles = vi.fn<
-  (_opts?: unknown) => RuntimeDotEnvLoadResult | undefined
+  (_opts?: any) => RuntimeDotEnvLoadResult | undefined
 >(() => undefined);
 const beforeRun = vi.fn(async () => {
   callOrder.push("bootstrap");
@@ -47,7 +47,7 @@ const callOrder = vi.hoisted(() => [] as string[]);
 const refreshManagedProxy = vi.fn(async () => {
   callOrder.push("proxy");
 });
-const loadShellEnvFallback = vi.fn((_opts?: unknown) => {
+const loadShellEnvFallback = vi.fn((_opts?: any) => {
   callOrder.push("shell-env");
 });
 const clearShellEnvAppliedKeys = vi.fn((_keys: readonly string[]) => undefined);
@@ -57,8 +57,8 @@ const shouldDeferShellEnvFallback = vi.fn((_env?: NodeJS.ProcessEnv) => false);
 const shouldEnableShellEnvFallback = vi.fn((_env?: NodeJS.ProcessEnv) => false);
 const gatewayLogMessages = vi.hoisted(() => [] as string[]);
 const configState = vi.hoisted(() => ({
-  cfg: {} as Record<string, unknown>,
-  snapshot: { config: {}, exists: false, sourceConfig: {}, valid: true } as Record<string, unknown>,
+  cfg: {} as Record<string, any>,
+  snapshot: { config: {}, exists: false, sourceConfig: {}, valid: true } as Record<string, any>,
 }));
 const readBestEffortConfig = vi.fn(async () => configState.cfg);
 type ConfigSnapshotReadOptionsStub = {
@@ -66,8 +66,8 @@ type ConfigSnapshotReadOptionsStub = {
   lowerPrecedenceEnv?: Readonly<Record<string, string>>;
   recoverSuspicious?: boolean;
   allowSuspiciousRecovery?: (
-    candidate: Record<string, unknown>,
-    current: Record<string, unknown>,
+    candidate: Record<string, any>,
+    current: Record<string, any>,
   ) => boolean | Promise<boolean>;
 };
 const readConfigFileSnapshotWithPluginMetadata = vi.fn(
@@ -75,7 +75,7 @@ const readConfigFileSnapshotWithPluginMetadata = vi.fn(
     snapshot: configState.snapshot,
   }),
 );
-const writeDiagnosticStabilityBundleForFailureSync = vi.fn((_reason: string, _error: unknown) => ({
+const writeDiagnosticStabilityBundleForFailureSync = vi.fn((_reason: string, _error: any) => ({
   status: "written" as const,
   message: "wrote stability bundle: /tmp/openclaw-stability.json",
   path: "/tmp/openclaw-stability.json",
@@ -124,7 +124,7 @@ vi.mock("../../utils.js", async (importOriginal) => ({
 }));
 
 vi.mock("../../infra/dotenv-global.js", () => ({
-  loadGlobalRuntimeDotEnvFiles: (opts?: unknown) =>
+  loadGlobalRuntimeDotEnvFiles: (opts?: any) =>
     loadGlobalRuntimeDotEnvFiles(opts) ?? {
       gatewayEnvAppliedKeys: [],
       stateEnvAppliedKeys: [],
@@ -137,7 +137,7 @@ vi.mock("../../config/shell-env-expected-keys.js", () => ({
 
 vi.mock("../../infra/shell-env.js", () => ({
   clearShellEnvAppliedKeys: (keys: readonly string[]) => clearShellEnvAppliedKeys(keys),
-  loadShellEnvFallback: (opts?: unknown) => loadShellEnvFallback(opts),
+  loadShellEnvFallback: (opts?: any) => loadShellEnvFallback(opts),
   resolveShellEnvFallbackTimeoutMs: (env?: NodeJS.ProcessEnv) =>
     resolveShellEnvFallbackTimeoutMs(env),
   shouldDeferShellEnvFallback: (env?: NodeJS.ProcessEnv) => shouldDeferShellEnvFallback(env),
@@ -146,8 +146,8 @@ vi.mock("../../infra/shell-env.js", () => ({
 
 vi.mock("../../gateway/auth.js", () => ({
   resolveGatewayAuth: (params: {
-    authConfig?: { mode?: string; token?: unknown; password?: unknown };
-    authOverride?: { mode?: string; token?: unknown; password?: unknown };
+    authConfig?: { mode?: string; token?: any; password?: any };
+    authOverride?: { mode?: string; token?: any; password?: any };
     env?: NodeJS.ProcessEnv;
   }) => {
     const mode = params.authOverride?.mode ?? params.authConfig?.mode ?? "token";
@@ -205,7 +205,7 @@ vi.mock("../../infra/restart-stale-pids.js", () => ({
 }));
 
 vi.mock("../../gateway/server.js", () => ({
-  startGatewayServer: (port: number, opts?: unknown) => startGatewayServer(port, opts),
+  startGatewayServer: (port: number, opts?: any) => startGatewayServer(port, opts),
 }));
 
 vi.mock("../../infra/control-ui-assets.js", () => ({
@@ -243,7 +243,7 @@ vi.mock("../../logging/console.js", () => ({
 }));
 
 vi.mock("../../logging/diagnostic-stability-bundle.js", () => ({
-  writeDiagnosticStabilityBundleForFailureSync: (reason: string, error: unknown) =>
+  writeDiagnosticStabilityBundleForFailureSync: (reason: string, error: any) =>
     writeDiagnosticStabilityBundleForFailureSync(reason, error),
 }));
 
@@ -268,12 +268,12 @@ vi.mock("../command-format.js", () => ({
 }));
 
 vi.mock("../ports.js", () => ({
-  forceFreePortAndWait: (port: number, opts: unknown) => forceFreePortAndWait(port, opts),
-  waitForPortBindable: (port: number, opts?: unknown) => waitForPortBindable(port, opts),
+  forceFreePortAndWait: (port: number, opts: any) => forceFreePortAndWait(port, opts),
+  waitForPortBindable: (port: number, opts?: any) => waitForPortBindable(port, opts),
 }));
 
 vi.mock("./dev.js", () => ({
-  ensureDevGatewayConfig: (opts?: unknown) => ensureDevGatewayConfig(opts),
+  ensureDevGatewayConfig: (opts?: any) => ensureDevGatewayConfig(opts),
 }));
 
 vi.mock("./run-loop.js", () => ({
@@ -345,7 +345,7 @@ describe("gateway run option collisions", () => {
     return await prepareGatewayRunBootstrap({ opts: { reset: true }, runtime: defaultRuntime });
   }
 
-  function callArg(mock: { mock: { calls: unknown[][] } }, index = 0, argIndex = 0): unknown {
+  function callArg(mock: { mock: { calls: any[][] } }, index = 0, argIndex = 0): any {
     const call = mock.mock.calls[index];
     if (!call) {
       throw new Error(`Expected mock call ${index}`);
@@ -358,7 +358,7 @@ describe("gateway run option collisions", () => {
     return callArg(startGatewayServer, index, 1) as {
       auth?: { mode?: string; token?: string; password?: string };
       bind?: string;
-      startupConfigSnapshotRead?: { snapshot?: Record<string, unknown> };
+      startupConfigSnapshotRead?: { snapshot?: Record<string, any> };
       startupStartedAt?: number;
     };
   }
@@ -371,7 +371,7 @@ describe("gateway run option collisions", () => {
     normalizeStateDirEnv.mockImplementation((_env?: NodeJS.ProcessEnv) => {
       callOrder.push("normalize");
     });
-    startGatewayServer.mockImplementationOnce(async (_port: number, _opts?: unknown) => {
+    startGatewayServer.mockImplementationOnce(async (_port: number, _opts?: any) => {
       callOrder.push("start");
       return { close: vi.fn(async () => {}) };
     });
@@ -453,7 +453,7 @@ describe("gateway run option collisions", () => {
             },
           };
         });
-      loadShellEnvFallback.mockImplementationOnce((opts?: unknown) => {
+      loadShellEnvFallback.mockImplementationOnce((opts?: any) => {
         callOrder.push("shell-env");
         (opts as { env: NodeJS.ProcessEnv }).env.OPENCLAW_GATEWAY_TOKEN = "shell-token";
       });
@@ -513,7 +513,7 @@ describe("gateway run option collisions", () => {
       resolveShellEnvExpectedKeys
         .mockReturnValueOnce(["ZAI_API_KEY"])
         .mockReturnValueOnce(["ZAI_API_KEY"]);
-      loadShellEnvFallback.mockImplementationOnce((opts?: unknown) => {
+      loadShellEnvFallback.mockImplementationOnce((opts?: any) => {
         (opts as { env: NodeJS.ProcessEnv }).env.ZAI_API_KEY = "shell-key";
       });
 
@@ -534,7 +534,7 @@ describe("gateway run option collisions", () => {
       const disabledConfig = {
         gateway: { auth: { mode: "none" }, mode: "local" },
       };
-      const snapshot = (config: Record<string, unknown>) => ({
+      const snapshot = (config: Record<string, any>) => ({
         config,
         exists: true,
         parsed: config,
@@ -556,7 +556,7 @@ describe("gateway run option collisions", () => {
           expect(process.env.OPENCLAW_GATEWAY_TOKEN).toBeUndefined();
           return { snapshot: snapshot(disabledConfig) };
         });
-      loadShellEnvFallback.mockImplementationOnce((opts?: unknown) => {
+      loadShellEnvFallback.mockImplementationOnce((opts?: any) => {
         (opts as { env: NodeJS.ProcessEnv }).env.OPENCLAW_GATEWAY_TOKEN = "shell-token";
       });
 
@@ -796,7 +796,7 @@ describe("gateway run option collisions", () => {
     normalizeStateDirEnv.mockImplementation((_env?: NodeJS.ProcessEnv) => {
       callOrder.push("normalize");
     });
-    startGatewayServer.mockImplementationOnce(async (_port: number, _opts?: unknown) => {
+    startGatewayServer.mockImplementationOnce(async (_port: number, _opts?: any) => {
       callOrder.push("start");
       return { close: vi.fn(async () => {}) };
     });

@@ -90,7 +90,7 @@ describe("group policy warning builders", () => {
   it("projects account+cfg warning collector inputs", () => {
     const collect = projectAccountConfigWarningCollector<
       { accountId: string },
-      Record<string, unknown>,
+      Record<string, any>,
       { account: { accountId: string }; cfg: OpenClawConfig }
     >(
       (cfg: OpenClawConfig) => cfg.channels ?? {},
@@ -407,7 +407,7 @@ describe("group policy warning builders", () => {
       cfg: {
         channels?: {
           defaults?: { groupPolicy?: "open" | "allowlist" | "disabled" };
-          example?: Record<string, unknown>;
+          example?: Record<string, any>;
         };
       };
       channelLabel: string;
@@ -431,7 +431,7 @@ describe("group policy warning builders", () => {
   it("builds account-aware route-allowlist collectors", () => {
     const collectWarnings = createAllowlistProviderRouteAllowlistWarningCollector<{
       groupPolicy?: "open" | "allowlist" | "disabled";
-      groups?: Record<string, unknown>;
+      groups?: Record<string, any>;
     }>({
       providerConfigPresent: (cfg) => cfg.channels?.example !== undefined,
       resolveGroupPolicy: (account) => account.groupPolicy,
@@ -470,7 +470,7 @@ describe("group policy warning builders", () => {
   it("builds account-aware configured-route collectors", () => {
     const collectWarnings = createOpenProviderConfiguredRouteWarningCollector<{
       groupPolicy?: "open" | "allowlist" | "disabled";
-      channels?: Record<string, unknown>;
+      channels?: Record<string, any>;
     }>({
       providerConfigPresent: (cfg) => cfg.channels?.example !== undefined,
       resolveGroupPolicy: (account) => account.groupPolicy,
@@ -506,7 +506,7 @@ describe("group policy warning builders", () => {
 
   it("builds config-aware open-provider collectors", () => {
     const collectWarnings = createOpenProviderGroupPolicyWarningCollector<{
-      cfg: { channels?: { example?: Record<string, unknown> } };
+      cfg: { channels?: { example?: Record<string, any> } };
       configuredGroupPolicy?: "open" | "allowlist" | "disabled";
     }>({
       providerConfigPresent: (cfg) => cfg.channels?.example !== undefined,

@@ -18,7 +18,7 @@ vi.mock("../plugins/provider-hook-runtime.js", () => ({
 
 vi.mock("./codex-native-web-search.js", () => ({
   patchCodexNativeWebSearchPayload: (params: {
-    payload: unknown;
+    payload: any;
     config?: {
       tools?: {
         web?: {
@@ -35,7 +35,7 @@ vi.mock("./codex-native-web-search.js", () => ({
     if (!params.payload || typeof params.payload !== "object") {
       return { status: "payload_not_object" };
     }
-    const payload = params.payload as { tools?: Array<Record<string, unknown>> };
+    const payload = params.payload as { tools?: Array<Record<string, any>> };
     if (payload.tools?.some((tool) => tool.type === "web_search")) {
       return { status: "native_tool_already_present" };
     }
@@ -104,12 +104,12 @@ const XAI_FAST_MODEL_IDS = new Map<string, string>([
   ["grok-4-0709", "grok-4-fast"],
 ]);
 
-function firstTransportHookCall(mock: { mock: { calls: unknown[][] } }): Record<string, unknown> {
+function firstTransportHookCall(mock: { mock: { calls: any[][] } }): Record<string, any> {
   const call = mock.mock.calls[0]?.[0];
   if (!call || typeof call !== "object" || Array.isArray(call)) {
     throw new Error("expected provider transport hook call");
   }
-  return call as Record<string, unknown>;
+  return call as Record<string, any>;
 }
 
 function createTestXaiFastModeWrapper(
@@ -138,16 +138,16 @@ function createTestXaiFastModeWrapper(
   };
 }
 
-function stripTestXaiUnsupportedStrictFlag(tool: unknown): unknown {
+function stripTestXaiUnsupportedStrictFlag(tool: any): any {
   if (!tool || typeof tool !== "object") {
     return tool;
   }
-  const toolObj = tool as Record<string, unknown>;
+  const toolObj = tool as Record<string, any>;
   const fn = toolObj.function;
   if (!fn || typeof fn !== "object") {
     return tool;
   }
-  const fnObj = fn as Record<string, unknown>;
+  const fnObj = fn as Record<string, any>;
   if (typeof fnObj.strict !== "boolean") {
     return tool;
   }
@@ -170,7 +170,7 @@ function createTestXaiPayloadCompatibilityWrapper(baseStreamFn: StreamFn | undef
       ...options,
       onPayload: (payload) => {
         if (payload && typeof payload === "object") {
-          const payloadObj = payload as Record<string, unknown>;
+          const payloadObj = payload as Record<string, any>;
           if (Array.isArray(payloadObj.tools)) {
             payloadObj.tools = payloadObj.tools.map((tool) =>
               stripTestXaiUnsupportedStrictFlag(tool),
@@ -201,7 +201,7 @@ function createTestToolStreamWrapper(
       ...options,
       onPayload: (payload) => {
         if (enabled && payload && typeof payload === "object") {
-          (payload as Record<string, unknown>).tool_stream = true;
+          (payload as Record<string, any>).tool_stream = true;
         }
         return originalOnPayload?.(payload, model);
       },
@@ -210,7 +210,7 @@ function createTestToolStreamWrapper(
 }
 
 function resolveAnthropicBetas(
-  extraParams: Record<string, unknown> | undefined,
+  extraParams: Record<string, any> | undefined,
   _modelId: string,
 ): string[] {
   const configuredBetas = Array.isArray(extraParams?.anthropicBeta)
@@ -219,16 +219,16 @@ function resolveAnthropicBetas(
   return configuredBetas.filter((beta) => beta !== ANTHROPIC_CONTEXT_1M_BETA);
 }
 
-function resolveAnthropicServiceTier(extraParams: Record<string, unknown> | undefined) {
+function resolveAnthropicServiceTier(extraParams: Record<string, any> | undefined) {
   const serviceTier = extraParams?.service_tier ?? extraParams?.serviceTier;
   return serviceTier === "auto" || serviceTier === "standard_only" ? serviceTier : undefined;
 }
 
-function resolveAnthropicFastMode(extraParams: Record<string, unknown> | undefined) {
+function resolveAnthropicFastMode(extraParams: Record<string, any> | undefined) {
   return typeof extraParams?.fastMode === "boolean" ? extraParams.fastMode : undefined;
 }
 
-function isAnthropicOauthApiKey(apiKey: unknown): boolean {
+function isAnthropicOauthApiKey(apiKey: any): boolean {
   return typeof apiKey === "string" && apiKey.startsWith("sk-ant-oat");
 }
 
@@ -281,7 +281,7 @@ function createAnthropicServiceTierWrapper(
           isDirectAnthropicModel(model) &&
           !isAnthropicOauthApiKey(options?.apiKey)
         ) {
-          const payloadObj = payload as Record<string, unknown>;
+          const payloadObj = payload as Record<string, any>;
           payloadObj.service_tier ??= serviceTier;
         }
         return originalOnPayload?.(payload, model);
@@ -502,7 +502,7 @@ describe("applyExtraParamsToAgent", () => {
     };
   }
 
-  function buildModelConfig(modelKey: string, params: Record<string, unknown>) {
+  function buildModelConfig(modelKey: string, params: Record<string, any>) {
     return {
       agents: {
         defaults: {
@@ -624,9 +624,9 @@ describe("applyExtraParamsToAgent", () => {
       | Model<"openai-completions">
       | Model<"anthropic-messages">;
     options?: SimpleStreamOptions;
-    cfg?: Record<string, unknown>;
-    extraParamsOverride?: Record<string, unknown>;
-    payload?: Record<string, unknown>;
+    cfg?: Record<string, any>;
+    extraParamsOverride?: Record<string, any>;
+    payload?: Record<string, any>;
     thinkingLevel?: Parameters<typeof applyExtraParamsToAgent>[5];
   }) {
     // Mutates a caller-owned payload through onPayload, matching how the runtime
@@ -654,8 +654,8 @@ describe("applyExtraParamsToAgent", () => {
     applyProvider: string;
     applyModelId: string;
     model: Model<"anthropic-messages"> | Model<"openai-completions">;
-    cfg?: Record<string, unknown>;
-    extraParamsOverride?: Record<string, unknown>;
+    cfg?: Record<string, any>;
+    extraParamsOverride?: Record<string, any>;
   }): string {
     let resolvedModelId = params.model.id;
     const baseStreamFn: StreamFn = (model) => {
@@ -684,9 +684,9 @@ describe("applyExtraParamsToAgent", () => {
       | Model<"openai-chatgpt-responses">
       | Model<"azure-openai-responses">
       | Model<"anthropic-messages">;
-    cfg?: Record<string, unknown>;
-    extraParamsOverride?: Record<string, unknown>;
-    payload?: Record<string, unknown>;
+    cfg?: Record<string, any>;
+    extraParamsOverride?: Record<string, any>;
+    payload?: Record<string, any>;
   }) {
     // This bypasses provider wrappers so the test observes only core
     // parallel_tool_calls alias handling.
@@ -716,7 +716,7 @@ describe("applyExtraParamsToAgent", () => {
     model: Model<"openai-completions">;
   }) {
     const payload: {
-      tools: Array<{ function?: Record<string, unknown> }>;
+      tools: Array<{ function?: Record<string, any> }>;
     } = {
       tools: [
         {
@@ -730,7 +730,7 @@ describe("applyExtraParamsToAgent", () => {
       ],
     };
     const baseStreamFn: StreamFn = (model, _context, options) => {
-      options?.onPayload?.(payload as unknown as Record<string, unknown>, model);
+      options?.onPayload?.(payload as unknown as Record<string, any>, model);
       return {} as ReturnType<StreamFn>;
     };
     const agent = { streamFn: baseStreamFn };
@@ -741,7 +741,7 @@ describe("applyExtraParamsToAgent", () => {
   }
 
   function runAnthropicHeaderCase(params: {
-    cfg: Record<string, unknown>;
+    cfg: Record<string, any>;
     modelId: string;
     options?: SimpleStreamOptions;
   }) {
@@ -761,9 +761,9 @@ describe("applyExtraParamsToAgent", () => {
   }
 
   it("disables thinking for MiniMax anthropic-messages payloads", () => {
-    const payloads: Record<string, unknown>[] = [];
+    const payloads: Record<string, any>[] = [];
     const baseStreamFn: StreamFn = (_model, _context, options) => {
-      const payload: Record<string, unknown> = {};
+      const payload: Record<string, any> = {};
       options?.onPayload?.(payload, _model);
       payloads.push(payload);
       return {} as ReturnType<StreamFn>;
@@ -788,9 +788,9 @@ describe("applyExtraParamsToAgent", () => {
   });
 
   it("removes implicit disabled thinking for MiniMax-M3 anthropic-messages payloads", () => {
-    const payloads: Record<string, unknown>[] = [];
+    const payloads: Record<string, any>[] = [];
     const baseStreamFn: StreamFn = (_model, _context, options) => {
-      const payload: Record<string, unknown> = {
+      const payload: Record<string, any> = {
         thinking: { type: "disabled" },
       };
       options?.onPayload?.(payload, _model);
@@ -813,9 +813,9 @@ describe("applyExtraParamsToAgent", () => {
   });
 
   it("preserves explicit off thinking for MiniMax-M3 anthropic-messages payloads", () => {
-    const payloads: Record<string, unknown>[] = [];
+    const payloads: Record<string, any>[] = [];
     const baseStreamFn: StreamFn = (_model, _context, options) => {
-      const payload: Record<string, unknown> = {
+      const payload: Record<string, any> = {
         thinking: { type: "disabled" },
       };
       options?.onPayload?.(payload, _model);
@@ -842,9 +842,9 @@ describe("applyExtraParamsToAgent", () => {
   });
 
   it("rewrites MiniMax-M3 default budget thinking to adaptive", () => {
-    const payloads: Record<string, unknown>[] = [];
+    const payloads: Record<string, any>[] = [];
     const baseStreamFn: StreamFn = (_model, _context, options) => {
-      const payload: Record<string, unknown> = {
+      const payload: Record<string, any> = {
         thinking: { type: "enabled", budget_tokens: 1024 },
       };
       options?.onPayload?.(payload, _model);
@@ -871,9 +871,9 @@ describe("applyExtraParamsToAgent", () => {
   });
 
   it("restores explicit MiniMax-M3 maxTokens when rewriting budget thinking", () => {
-    const payloads: Record<string, unknown>[] = [];
+    const payloads: Record<string, any>[] = [];
     const baseStreamFn: StreamFn = (_model, _context, options) => {
-      const payload: Record<string, unknown> = {
+      const payload: Record<string, any> = {
         max_tokens: 8692,
         thinking: { type: "enabled", budget_tokens: 8192 },
       };
@@ -902,9 +902,9 @@ describe("applyExtraParamsToAgent", () => {
   });
 
   it("preserves downstream explicit MiniMax-M3 thinking overrides", () => {
-    const payloads: Record<string, unknown>[] = [];
+    const payloads: Record<string, any>[] = [];
     const baseStreamFn: StreamFn = (_model, _context, options) => {
-      const payload: Record<string, unknown> = {
+      const payload: Record<string, any> = {
         thinking: { type: "disabled" },
       };
       options?.onPayload?.(payload, _model);
@@ -923,7 +923,7 @@ describe("applyExtraParamsToAgent", () => {
     const context: Context = { messages: [] };
     void agent.streamFn?.(model, context, {
       onPayload: (payload) => {
-        (payload as Record<string, unknown>).thinking = { type: "disabled" };
+        (payload as Record<string, any>).thinking = { type: "disabled" };
       },
     });
 
@@ -953,7 +953,7 @@ describe("applyExtraParamsToAgent", () => {
       },
     });
 
-    const messages = payload.messages as Array<Record<string, unknown>>;
+    const messages = payload.messages as Array<Record<string, any>>;
     expect(payload.thinking).toEqual({ type: "enabled" });
     expect(payload.reasoning_effort).toBe("high");
     expect(messages[0]).not.toHaveProperty("reasoning_content");
@@ -1000,7 +1000,7 @@ describe("applyExtraParamsToAgent", () => {
       },
     });
 
-    const messages = payload.messages as Array<Record<string, unknown>>;
+    const messages = payload.messages as Array<Record<string, any>>;
     expect(payload.thinking).toEqual({ type: "enabled" });
     expect(payload.reasoning_effort).toBe("high");
     expect(messages[1]).toHaveProperty("reasoning_content", "");
@@ -1044,7 +1044,7 @@ describe("applyExtraParamsToAgent", () => {
     if (!stream) {
       throw new Error("expected stream function");
     }
-    const events: unknown[] = [];
+    const events: any[] = [];
     for await (const event of stream) {
       events.push(event);
     }
@@ -1088,9 +1088,9 @@ describe("applyExtraParamsToAgent", () => {
   });
 
   it("strips disabled reasoning payloads for native OpenAI responses models that do not support none", () => {
-    const payloads: Record<string, unknown>[] = [];
+    const payloads: Record<string, any>[] = [];
     const baseStreamFn: StreamFn = (_model, _context, options) => {
-      const payload: Record<string, unknown> = {
+      const payload: Record<string, any> = {
         reasoning: { effort: "none", summary: "auto" },
       };
       options?.onPayload?.(payload, _model);
@@ -1151,9 +1151,9 @@ describe("applyExtraParamsToAgent", () => {
   });
 
   it("strips disabled reasoning payloads for proxied OpenAI responses routes", () => {
-    const payloads: Record<string, unknown>[] = [];
+    const payloads: Record<string, any>[] = [];
     const baseStreamFn: StreamFn = (_model, _context, options) => {
-      const payload: Record<string, unknown> = {
+      const payload: Record<string, any> = {
         reasoning: { effort: "none", summary: "auto" },
       };
       options?.onPayload?.(payload, _model);
@@ -1454,7 +1454,7 @@ describe("applyExtraParamsToAgent", () => {
         maxTokens: 4096,
         compat: {
           requiresStringContent: true,
-        } as Record<string, unknown>,
+        } as Record<string, any>,
       } as unknown as Model<"openai-completions">,
       payload: {
         messages: [
@@ -1502,7 +1502,7 @@ describe("applyExtraParamsToAgent", () => {
         maxTokens: 4096,
         compat: {
           strictMessageKeys: true,
-        } as Record<string, unknown>,
+        } as Record<string, any>,
       } as unknown as Model<"openai-completions">,
       payload: {
         messages: [
@@ -1767,9 +1767,9 @@ describe("applyExtraParamsToAgent", () => {
   });
 
   it("normalizes thinking=off to null for SiliconFlow Pro models", () => {
-    const payloads: Record<string, unknown>[] = [];
+    const payloads: Record<string, any>[] = [];
     const baseStreamFn: StreamFn = (_model, _context, options) => {
-      const payload: Record<string, unknown> = { thinking: "off" };
+      const payload: Record<string, any> = { thinking: "off" };
       options?.onPayload?.(payload, _model);
       payloads.push(payload);
       return {} as ReturnType<StreamFn>;
@@ -1798,9 +1798,9 @@ describe("applyExtraParamsToAgent", () => {
   });
 
   it("keeps thinking=off unchanged for non-Pro SiliconFlow model IDs", () => {
-    const payloads: Record<string, unknown>[] = [];
+    const payloads: Record<string, any>[] = [];
     const baseStreamFn: StreamFn = (_model, _context, options) => {
-      const payload: Record<string, unknown> = { thinking: "off" };
+      const payload: Record<string, any> = { thinking: "off" };
       options?.onPayload?.(payload, _model);
       payloads.push(payload);
       return {} as ReturnType<StreamFn>;
@@ -1830,9 +1830,9 @@ describe("applyExtraParamsToAgent", () => {
 
   it("keeps anthropic tool payloads native for Kimi", () => {
     withMinimalProviderRuntimeDepsForTest(() => {
-      const payloads: Record<string, unknown>[] = [];
+      const payloads: Record<string, any>[] = [];
       const baseStreamFn: StreamFn = (_model, _context, options) => {
-        const payload: Record<string, unknown> = {
+        const payload: Record<string, any> = {
           tools: [
             {
               name: "read",
@@ -1881,9 +1881,9 @@ describe("applyExtraParamsToAgent", () => {
 
   it("does not rewrite anthropic tool schema for non-kimi endpoints", () => {
     withMinimalProviderRuntimeDepsForTest(() => {
-      const payloads: Record<string, unknown>[] = [];
+      const payloads: Record<string, any>[] = [];
       const baseStreamFn: StreamFn = (_model, _context, options) => {
-        const payload: Record<string, unknown> = {
+        const payload: Record<string, any> = {
           tools: [
             {
               name: "read",
@@ -1921,9 +1921,9 @@ describe("applyExtraParamsToAgent", () => {
   });
 
   it("uses explicit compat metadata for anthropic tool payload normalization", () => {
-    const payloads: Record<string, unknown>[] = [];
+    const payloads: Record<string, any>[] = [];
     const baseStreamFn: StreamFn = (_model, _context, options) => {
-      const payload: Record<string, unknown> = {
+      const payload: Record<string, any> = {
         tools: [
           {
             name: "read",
@@ -1963,9 +1963,9 @@ describe("applyExtraParamsToAgent", () => {
   });
 
   it("lets provider-owned wrappers normalize anthropic tool payloads", () => {
-    const payloads: Record<string, unknown>[] = [];
+    const payloads: Record<string, any>[] = [];
     const baseStreamFn: StreamFn = (_model, _context, options) => {
-      const payload: Record<string, unknown> = {
+      const payload: Record<string, any> = {
         tools: [
           {
             name: "read",
@@ -2013,9 +2013,9 @@ describe("applyExtraParamsToAgent", () => {
   });
 
   it("sanitizes invalid Atproxy Gemini negative thinking budgets", () => {
-    const payloads: Record<string, unknown>[] = [];
+    const payloads: Record<string, any>[] = [];
     const baseStreamFn: StreamFn = (_model, _context, options) => {
-      const payload: Record<string, unknown> = {
+      const payload: Record<string, any> = {
         contents: [
           {
             role: "user",
@@ -2055,7 +2055,7 @@ describe("applyExtraParamsToAgent", () => {
 
     expect(payloads).toHaveLength(1);
     const thinkingConfig = (
-      payloads[0]?.config as { thinkingConfig?: Record<string, unknown> } | undefined
+      payloads[0]?.config as { thinkingConfig?: Record<string, any> } | undefined
     )?.thinkingConfig;
     expect(thinkingConfig).toEqual({
       includeThoughts: true,
@@ -2074,9 +2074,9 @@ describe("applyExtraParamsToAgent", () => {
   });
 
   it("rewrites Gemini 3 thinkingBudget to thinkingLevel", () => {
-    const payloads: Record<string, unknown>[] = [];
+    const payloads: Record<string, any>[] = [];
     const baseStreamFn: StreamFn = (_model, _context, options) => {
-      const payload: Record<string, unknown> = {
+      const payload: Record<string, any> = {
         config: {
           thinkingConfig: {
             includeThoughts: true,
@@ -2110,9 +2110,9 @@ describe("applyExtraParamsToAgent", () => {
   });
 
   it("rewrites Gemma 4 thinkingBudget to a supported Google thinkingLevel", () => {
-    const payloads: Record<string, unknown>[] = [];
+    const payloads: Record<string, any>[] = [];
     const baseStreamFn: StreamFn = (_model, _context, options) => {
-      const payload: Record<string, unknown> = {
+      const payload: Record<string, any> = {
         config: {
           thinkingConfig: {
             includeThoughts: true,
@@ -2147,9 +2147,9 @@ describe("applyExtraParamsToAgent", () => {
   });
 
   it("preserves Gemma 4 thinking off instead of rewriting thinkingBudget=0 to MINIMAL", () => {
-    const payloads: Record<string, unknown>[] = [];
+    const payloads: Record<string, any>[] = [];
     const baseStreamFn: StreamFn = (_model, _context, options) => {
-      const payload: Record<string, unknown> = {
+      const payload: Record<string, any> = {
         config: {
           thinkingConfig: {
             thinkingBudget: 0,
@@ -2178,9 +2178,9 @@ describe("applyExtraParamsToAgent", () => {
   });
 
   it("preserves explicit Gemma 4 thinking level when thinkingBudget=0", () => {
-    const payloads: Record<string, unknown>[] = [];
+    const payloads: Record<string, any>[] = [];
     const baseStreamFn: StreamFn = (_model, _context, options) => {
-      const payload: Record<string, unknown> = {
+      const payload: Record<string, any> = {
         config: {
           thinkingConfig: {
             thinkingBudget: 0,
@@ -2619,7 +2619,7 @@ describe("applyExtraParamsToAgent", () => {
     const hookCall = firstTransportHookCall(resolveProviderExtraParamsForTransport);
     const hookContext = hookCall.context as
       | {
-          model?: unknown;
+          model?: any;
           transport?: string;
           agentDir?: string;
           workspaceDir?: string;
@@ -2636,10 +2636,10 @@ describe("applyExtraParamsToAgent", () => {
     const resolveProviderExtraParamsForTransport = vi.fn((params) => ({
       patch: {
         transportFamily: params.context.model?.api,
-        baseUrl: (params.context.model as Record<string, unknown> | undefined)?.baseUrl,
+        baseUrl: (params.context.model as Record<string, any> | undefined)?.baseUrl,
         headerAuth: (
-          (params.context.model as Record<string, unknown> | undefined)?.headers as
-            | Record<string, unknown>
+          (params.context.model as Record<string, any> | undefined)?.headers as
+            | Record<string, any>
             | undefined
         )?.["X-Test"],
       },

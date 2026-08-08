@@ -70,7 +70,7 @@ export type ExtractStructuredWithModelParams = {
   input: StructuredExtractionInput[];
   instructions: string;
   schemaName?: string;
-  jsonSchema?: unknown;
+  jsonSchema?: any;
   jsonMode?: boolean;
   cfg: OpenClawConfig;
   agentDir?: string;
@@ -78,7 +78,7 @@ export type ExtractStructuredWithModelParams = {
   model: string;
   profile?: string;
   preferredProfile?: string;
-  authStore?: unknown;
+  authStore?: any;
   timeoutMs?: number;
 };
 

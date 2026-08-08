@@ -77,7 +77,7 @@ function readTrajectoryPointerFile(
     return null;
   }
   try {
-    const parsed: unknown = JSON.parse(fs.readFileSync(pointerPath, "utf8"));
+    const parsed: any = JSON.parse(fs.readFileSync(pointerPath, "utf8"));
     if (!isRecord(parsed)) {
       return null;
     }
@@ -134,7 +134,7 @@ function runtimeFileStartsWithSessionEvent(filePath: string, sessionId: string):
     return false;
   }
   try {
-    const parsed: unknown = JSON.parse(firstLine);
+    const parsed: any = JSON.parse(firstLine);
     return (
       isRecord(parsed) &&
       parsed.traceSchema === "openclaw-trajectory" &&

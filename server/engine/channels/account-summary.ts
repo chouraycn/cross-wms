@@ -20,7 +20,7 @@ import { projectSafeChannelAccountSnapshotFields } from "./account-snapshot-fiel
  */
 export function buildChannelAccountSnapshot(params: {
   plugin: ChannelPlugin;
-  account: unknown;
+  account: any;
   cfg: OpenClawConfig;
   accountId: string;
   enabled: boolean;
@@ -60,7 +60,7 @@ export function formatChannelAllowFrom(params: {
  */
 export function resolveChannelAccountEnabled(params: {
   plugin: ChannelPlugin;
-  account: unknown;
+  account: any;
   cfg: OpenClawConfig;
 }): boolean {
   if (params.plugin.config.isEnabled) {
@@ -75,7 +75,7 @@ export function resolveChannelAccountEnabled(params: {
  */
 export async function resolveChannelAccountConfigured(params: {
   plugin: ChannelPlugin;
-  account: unknown;
+  account: any;
   cfg: OpenClawConfig;
   readAccountConfiguredField?: boolean;
 }): Promise<boolean> {

@@ -6,10 +6,10 @@
  */
 
 /** Runs the A2A sessions send flow. */
-export function runSessionsSendA2AFlow(..._args: unknown[]): Record<string, unknown> {
+export function runSessionsSendA2AFlow(..._args: any[]): Record<string, any> {
   // Cross-wms does not have A2A protocol support.
   return {};
 }
 
 /** Testing hook for A2A sessions send tool. */
-export const testing_sessions_send_tool_a2a: Record<string, unknown> = {};
+export const testing_sessions_send_tool_a2a: Record<string, any> = {};

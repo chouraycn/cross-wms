@@ -32,8 +32,8 @@ async function expectLoggedSingleMediaFile(params?: {
   return mediaPath;
 }
 
-function mockNodeGateway(command?: string, payload?: Record<string, unknown>) {
-  callGateway.mockImplementation(async (...args: unknown[]) => {
+function mockNodeGateway(command?: string, payload?: Record<string, any>) {
+  callGateway.mockImplementation(async (...args: any[]) => {
     const opts = (args[0] ?? {}) as { method?: string };
     if (opts.method === "node.list") {
       return createIosNodeListResponse();
@@ -51,16 +51,16 @@ function mockNodeGateway(command?: string, payload?: Record<string, unknown>) {
 }
 
 function nodeInvokeCalls(): Array<{
-  method?: unknown;
-  params: Record<string, unknown>;
-  commandParams: Record<string, unknown>;
+  method?: any;
+  params: Record<string, any>;
+  commandParams: Record<string, any>;
 }> {
   return callGateway.mock.calls
-    .map((call) => call[0] as { method?: unknown; params?: Record<string, unknown> })
+    .map((call) => call[0] as { method?: any; params?: Record<string, any> })
     .filter((call) => call.method === "node.invoke")
     .map((call) => {
       const params = call.params ?? {};
-      const commandParams = (params.params ?? {}) as Record<string, unknown>;
+      const commandParams = (params.params ?? {}) as Record<string, any>;
       return { method: call.method, params, commandParams };
     });
 }
@@ -73,7 +73,7 @@ function latestNodeInvokeCall() {
   return call;
 }
 
-function expectUuidString(value: unknown) {
+function expectUuidString(value: any) {
   expect(value).toEqual(
     expect.stringMatching(
       /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
@@ -110,7 +110,7 @@ describe("cli program (nodes media)", () => {
 
   async function runAndExpectUrlPayloadMediaFile(params: {
     command: "camera.snap" | "camera.clip";
-    payload: Record<string, unknown>;
+    payload: Record<string, any>;
     argv: string[];
     expectedPathPattern: RegExp;
   }) {

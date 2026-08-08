@@ -6,15 +6,15 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function fetchWithWebToolsNetworkGuard(..._args: unknown[]): unknown {
+export function fetchWithWebToolsNetworkGuard(..._args: any[]): any {
   return undefined;
 }
-export function withTrustedWebToolsEndpoint(..._args: unknown[]): unknown {
+export function withTrustedWebToolsEndpoint(..._args: any[]): any {
   return undefined;
 }
-export function withSelfHostedWebToolsEndpoint(..._args: unknown[]): unknown {
+export function withSelfHostedWebToolsEndpoint(..._args: any[]): any {
   return undefined;
 }
-export function withStrictWebToolsEndpoint(..._args: unknown[]): unknown {
+export function withStrictWebToolsEndpoint(..._args: any[]): any {
   return undefined;
 }

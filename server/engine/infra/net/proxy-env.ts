@@ -83,7 +83,7 @@ export function resolveEnvHttpProxyUrl(
 
 export function resolveEnvHttpProxyAgentOptions(
   env: NodeJS.ProcessEnv = process.env,
-): Record<string, unknown> | undefined {
+): Record<string, any> | undefined {
   const config = readProxyFromEnv(env);
   const proxyUrl = config.httpsProxy ?? config.httpProxy ?? config.allProxy;
   if (!proxyUrl) return undefined;

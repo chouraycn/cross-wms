@@ -50,10 +50,10 @@ type ResolveModelWithRegistryTestParams = {
 
 type AuthRequestCall = {
   profileId?: string;
-  store?: unknown;
+  store?: any;
 };
 
-function requireMockCallAt<const Calls extends readonly unknown[][]>(
+function requireMockCallAt<const Calls extends readonly any[][]>(
   mock: { mock: { calls: Calls } },
   index: number,
   label: string,
@@ -67,18 +67,18 @@ function requireMockCallAt<const Calls extends readonly unknown[][]>(
   return call as Calls[number];
 }
 
-function requireFirstMockCall<const Calls extends readonly unknown[][]>(
+function requireFirstMockCall<const Calls extends readonly any[][]>(
   mock: { mock: { calls: Calls } },
   label: string,
 ): Calls[number] {
   return requireMockCallAt(mock, 0, label);
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error(`Expected ${label}`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 vi.mock("../llm/stream.js", async () => {
@@ -171,7 +171,7 @@ describe("describeImageWithModel", () => {
         modelRegistry.find(provider, modelId),
     );
     resolveModelAsyncMock.mockImplementation(
-      async (provider: string, modelId: string, agentDir?: string, cfg?: unknown) => {
+      async (provider: string, modelId: string, agentDir?: string, cfg?: any) => {
         const authStorage = {
           setRuntimeApiKey: setRuntimeApiKeyMock,
         };
@@ -195,7 +195,7 @@ describe("describeImageWithModel", () => {
   });
 
   function getApiKeyForModelCall(index = 0): AuthRequestCall {
-    const call = (getApiKeyForModelMock.mock.calls as unknown[][]).at(index);
+    const call = (getApiKeyForModelMock.mock.calls as any[][]).at(index);
     if (!call) {
       throw new Error(`Expected getApiKeyForModel call ${index}`);
     }
@@ -1151,7 +1151,7 @@ describe("describeImageWithModel", () => {
       })),
     });
     resolveModelAsyncMock.mockImplementationOnce(
-      async (provider: string, modelId: string, agentDir?: string, cfg?: unknown) => {
+      async (provider: string, modelId: string, agentDir?: string, cfg?: any) => {
         await new Promise<void>((resolve) => {
           setTimeout(resolve, slowSetupMs);
         });
@@ -1359,7 +1359,7 @@ describe("describeImageWithModel", () => {
     expect(setRuntimeApiKeyMock).toHaveBeenCalledWith("github-copilot", "copilot-api-token");
     const [completionModel, context, options] = providerStreamFn.mock.calls[0] as unknown as [
       { baseUrl?: string },
-      { systemPrompt?: string; messages?: Array<{ role: string; content: unknown[] }> },
+      { systemPrompt?: string; messages?: Array<{ role: string; content: any[] }> },
       { apiKey?: string; headers?: Record<string, string> },
     ];
     expect(completionModel.baseUrl).toBe("https://api.githubcopilot.com");
@@ -1445,7 +1445,7 @@ describe("describeImageWithModel", () => {
     expect(completeMock).toHaveBeenCalledOnce();
     const [, context] = completeMock.mock.calls[0] as [
       unknown,
-      { systemPrompt?: string; messages?: Array<{ role: string; content: unknown[] }> },
+      { systemPrompt?: string; messages?: Array<{ role: string; content: any[] }> },
     ];
     // Non-Copilot providers keep prompt in system message, images in user message
     expect(context.systemPrompt).toBe("Describe the image.");

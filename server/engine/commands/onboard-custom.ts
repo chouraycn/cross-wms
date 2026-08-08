@@ -68,7 +68,7 @@ const COMPATIBILITY_OPTIONS: Array<{
   },
 ];
 
-function formatVerificationError(error: unknown): string {
+function formatVerificationError(error: any): string {
   if (!error) {
     return "unknown error";
   }
@@ -88,7 +88,7 @@ function formatVerificationError(error: unknown): string {
 type VerificationResult = {
   ok: boolean;
   status?: number;
-  error?: unknown;
+  error?: any;
 };
 
 function isJsonVerificationResponse(res: Response): boolean {
@@ -106,7 +106,7 @@ function isJsonVerificationResponse(res: Response): boolean {
 async function requestVerification(params: {
   endpoint: string;
   headers: Record<string, string>;
-  body: Record<string, unknown>;
+  body: Record<string, any>;
 }): Promise<VerificationResult> {
   let res: Response | undefined;
   try {

@@ -59,7 +59,7 @@ describe("hooks mapping", () => {
   async function expectBlockedPrototypeTraversal(params: {
     id: string;
     messageTemplate: string;
-    payload: Record<string, unknown>;
+    payload: Record<string, any>;
     expectedMessage: string;
   }) {
     const mappings = resolveHookMappings({
@@ -115,7 +115,7 @@ describe("hooks mapping", () => {
   async function applyGmailTransformSessionKey(params: {
     tempPrefix: string;
     transformLines: string[];
-    payload?: Record<string, unknown>;
+    payload?: Record<string, any>;
     sessionKey?: string;
   }) {
     const configDir = fs.mkdtempSync(path.join(os.tmpdir(), params.tempPrefix));
@@ -648,7 +648,7 @@ describe("hooks mapping", () => {
       await expectBlockedPrototypeTraversal({
         id: "proto-test",
         messageTemplate: "value: {{__proto__}}",
-        payload: { __proto__: { polluted: true } } as Record<string, unknown>,
+        payload: { __proto__: { polluted: true } } as Record<string, any>,
         expectedMessage: "value: ",
       });
     });
@@ -657,7 +657,7 @@ describe("hooks mapping", () => {
       await expectBlockedPrototypeTraversal({
         id: "constructor-test",
         messageTemplate: "type: {{constructor.name}}",
-        payload: { constructor: { name: "INJECTED" } } as Record<string, unknown>,
+        payload: { constructor: { name: "INJECTED" } } as Record<string, any>,
         expectedMessage: "type: ",
       });
     });
@@ -666,7 +666,7 @@ describe("hooks mapping", () => {
       await expectBlockedPrototypeTraversal({
         id: "prototype-test",
         messageTemplate: "val: {{prototype}}",
-        payload: { prototype: "leaked" } as Record<string, unknown>,
+        payload: { prototype: "leaked" } as Record<string, any>,
         expectedMessage: "val: ",
       });
     });

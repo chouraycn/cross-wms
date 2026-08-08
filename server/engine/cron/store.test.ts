@@ -71,11 +71,11 @@ async function expectPathMissing(targetPath: string): Promise<void> {
   throw new Error(`expected path to be missing: ${targetPath}`);
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error(`expected ${label}`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 describe("resolveCronStorePath", () => {
@@ -295,7 +295,7 @@ describe("cron store", () => {
     ).rejects.toThrow(/Unsupported cron quarantine file shape/);
 
     const preserved = JSON.parse(await fs.readFile(quarantinePath, "utf-8")) as {
-      jobs: Array<Record<string, unknown>>;
+      jobs: Array<Record<string, any>>;
     };
     expect(preserved.jobs[0]?.raw).toBe("keep-me");
   });

@@ -10,102 +10,102 @@ export const testing = {
   },
 };
 
-export function runProviderDynamicModel(params: unknown): unknown {
+export function runProviderDynamicModel(params: any): any {
   void params;
   return undefined;
 }
 
-export function resolveProviderSystemPromptContribution(params: unknown): unknown {
+export function resolveProviderSystemPromptContribution(params: any): any {
   void params;
   return undefined;
 }
 
-export function transformProviderSystemPrompt(params: unknown): string | undefined {
+export function transformProviderSystemPrompt(params: any): string | undefined {
   void params;
   return undefined;
 }
 
-export function resolveProviderTextTransforms(params: unknown): unknown[] {
+export function resolveProviderTextTransforms(params: any): any[] {
   void params;
   return [];
 }
 
-export async function prepareProviderDynamicModel(params: unknown): Promise<unknown> {
+export async function prepareProviderDynamicModel(params: any): Promise<any> {
   void params;
   return undefined;
 }
 
-export function shouldPreferProviderRuntimeResolvedModel(params: unknown): boolean {
+export function shouldPreferProviderRuntimeResolvedModel(params: any): boolean {
   void params;
   return false;
 }
 
-export function normalizeProviderResolvedModelWithPlugin(params: unknown): unknown {
+export function normalizeProviderResolvedModelWithPlugin(params: any): any {
   void params;
   return undefined;
 }
 
-export function applyProviderResolvedTransportWithPlugin(params: unknown): unknown {
+export function applyProviderResolvedTransportWithPlugin(params: any): any {
   void params;
   return undefined;
 }
 
-export function normalizeProviderModelIdWithPlugin(params: unknown): string | undefined {
+export function normalizeProviderModelIdWithPlugin(params: any): string | undefined {
   void params;
   return undefined;
 }
 
-export function normalizeProviderTransportWithPlugin(params: unknown): unknown {
+export function normalizeProviderTransportWithPlugin(params: any): any {
   void params;
   return undefined;
 }
 
-export function normalizeProviderConfigWithPlugin(params: unknown): unknown {
+export function normalizeProviderConfigWithPlugin(params: any): any {
   void params;
   return undefined;
 }
 
-export function applyProviderNativeStreamingUsageCompatWithPlugin(params: unknown): unknown {
+export function applyProviderNativeStreamingUsageCompatWithPlugin(params: any): any {
   void params;
   return undefined;
 }
 
-export function resolveProviderConfigApiKeyWithPlugin(params: unknown): string | undefined {
+export function resolveProviderConfigApiKeyWithPlugin(params: any): string | undefined {
   void params;
   return undefined;
 }
 
-export function resolveProviderReplayPolicyWithPlugin(params: unknown): unknown {
+export function resolveProviderReplayPolicyWithPlugin(params: any): any {
   void params;
   return undefined;
 }
 
-export async function sanitizeProviderReplayHistoryWithPlugin(params: unknown): Promise<unknown> {
+export async function sanitizeProviderReplayHistoryWithPlugin(params: any): Promise<any> {
   void params;
   return undefined;
 }
 
-export async function validateProviderReplayTurnsWithPlugin(params: unknown): Promise<unknown> {
+export async function validateProviderReplayTurnsWithPlugin(params: any): Promise<any> {
   void params;
   return undefined;
 }
 
-export function normalizeProviderToolSchemasWithPlugin(params: unknown): unknown {
+export function normalizeProviderToolSchemasWithPlugin(params: any): any {
   void params;
   return undefined;
 }
 
-export function inspectProviderToolSchemasWithPlugin(params: unknown): unknown {
+export function inspectProviderToolSchemasWithPlugin(params: any): any {
   void params;
   return undefined;
 }
 
-export function resolveProviderCacheTtlEligibility(params: unknown): unknown {
+export function resolveProviderCacheTtlEligibility(params: any): any {
   void params;
   return undefined;
 }
 
-export function prepareProviderRuntimeAuth(params: unknown): unknown {
+export function prepareProviderRuntimeAuth(params: any): any {
   void params;
   return undefined;
 }

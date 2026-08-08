@@ -7,8 +7,8 @@ export interface SkillChainNode {
   skillName: string;
   skillIcon?: string;
   dataPassMode: string;
-  selectedFields?: unknown;
-  customMapping?: unknown;
+  selectedFields?: any;
+  customMapping?: any;
   timeout?: number;
   retryCount?: number;
   nodeOrder: number;
@@ -29,7 +29,7 @@ export interface ChainExecution {
   chainId: string;
   chainName: string;
   status: 'running' | 'completed' | 'failed' | 'aborted';
-  steps: Array<Record<string, unknown>>;
+  steps: Array<Record<string, any>>;
   startedAt: string;
   completedAt?: string;
   duration?: number;
@@ -60,8 +60,8 @@ export async function deleteSkillChain(id: string): Promise<{ ok: boolean }> {
   return data;
 }
 
-export async function executeSkillChain(id: string): Promise<{ ok: boolean; executionId?: string; result?: unknown }> {
-  const { data } = await request<{ data: { ok: boolean; executionId?: string; result?: unknown } }>('POST', `/api/skill-chains/${id}/execute`);
+export async function executeSkillChain(id: string): Promise<{ ok: boolean; executionId?: string; result?: any }> {
+  const { data } = await request<{ data: { ok: boolean; executionId?: string; result?: any } }>('POST', `/api/skill-chains/${id}/execute`);
   return data;
 }
 

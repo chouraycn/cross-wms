@@ -14,7 +14,7 @@ export interface ChatMessage {
   content: string;
   timestamp: number;
   parentId?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface ChatSendParams {
@@ -24,7 +24,7 @@ export interface ChatSendParams {
   agentId?: string;
   model?: string;
   parentId?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface ChatHistoryParams {

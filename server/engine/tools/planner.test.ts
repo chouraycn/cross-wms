@@ -49,7 +49,7 @@ describe("buildToolPlan", () => {
   });
 
   it("fails deterministically on duplicate tool names", () => {
-    let error: unknown;
+    let error: any;
     try {
       buildToolPlan({
         descriptors: [descriptor("read"), descriptor("read")],
@@ -65,7 +65,7 @@ describe("buildToolPlan", () => {
   });
 
   it("fails closed when a visible descriptor has no executor", () => {
-    let error: unknown;
+    let error: any;
     try {
       buildToolPlan({
         descriptors: [descriptor("read", { executor: undefined })],

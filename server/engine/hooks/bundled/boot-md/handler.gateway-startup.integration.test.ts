@@ -28,7 +28,7 @@ function expectBootCall(
   expected: { cfg: OpenClawConfig; deps: CliDeps; workspaceDir: string; agentId: string },
 ) {
   const params = runBootOnce.mock.calls[index]?.[0] as
-    | { cfg?: unknown; deps?: unknown; workspaceDir?: unknown; agentId?: unknown }
+    | { cfg?: any; deps?: any; workspaceDir?: any; agentId?: any }
     | undefined;
   if (!params) {
     throw new Error(`missing boot call ${index}`);

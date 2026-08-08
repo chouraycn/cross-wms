@@ -1,5 +1,5 @@
 // Shared record helpers for legacy config migration modules.
-type JsonRecord = Record<string, unknown>;
+type JsonRecord = Record<string, any>;
 
 import { isRecord } from "@openclaw-src/utils.js";
 

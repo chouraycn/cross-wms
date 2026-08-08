@@ -13,20 +13,20 @@ const runtime = vi.hoisted(() => ({
     entry: { sessionId: "sess-main" },
   })),
   resolveSessionModelRef: vi.fn(() => ({ provider: "openai" })),
-  readSessionMessagesAsync: vi.fn(async (): Promise<unknown[]> => []),
+  readSessionMessagesAsync: vi.fn(async (): Promise<any[]> => []),
   augmentChatHistoryWithCliSessionImports: vi.fn(
-    ({ localMessages }: { localMessages?: unknown[] }) => localMessages ?? [],
+    ({ localMessages }: { localMessages?: any[] }) => localMessages ?? [],
   ),
   resolveEffectiveChatHistoryMaxChars: vi.fn(() => 100_000),
-  projectRecentChatDisplayMessages: vi.fn((messages: unknown[]): unknown[] => messages),
-  augmentChatHistoryWithCanvasBlocks: vi.fn((messages: unknown[]) => messages),
+  projectRecentChatDisplayMessages: vi.fn((messages: any[]): any[] => messages),
+  augmentChatHistoryWithCanvasBlocks: vi.fn((messages: any[]) => messages),
   getMaxChatHistoryMessagesBytes: vi.fn(() => 100_000),
   CHAT_HISTORY_MAX_SINGLE_MESSAGE_BYTES: 100_000,
-  replaceOversizedChatHistoryMessages: vi.fn(({ messages }: { messages: unknown[] }) => ({
+  replaceOversizedChatHistoryMessages: vi.fn(({ messages }: { messages: any[] }) => ({
     messages,
   })),
-  capArrayByJsonBytes: vi.fn((items: unknown[]) => ({ items })),
-  enforceChatHistoryFinalBudget: vi.fn(({ messages }: { messages: unknown[] }) => ({ messages })),
+  capArrayByJsonBytes: vi.fn((items: any[]) => ({ items })),
+  enforceChatHistoryFinalBudget: vi.fn(({ messages }: { messages: any[] }) => ({ messages })),
   loadCombinedSessionStoreForGateway: vi.fn(() => ({
     storePath: "/tmp/openclaw-sessions.json",
     store: {},
@@ -114,7 +114,7 @@ describe("embedded gateway stub", () => {
     runtime.projectRecentChatDisplayMessages.mockReturnValueOnce(projectedMessages);
 
     const callGateway = createEmbeddedCallGateway();
-    const result = await callGateway<{ messages: unknown[] }>({
+    const result = await callGateway<{ messages: any[] }>({
       method: "chat.history",
       params: { sessionKey: "agent:main:main" },
     });
@@ -143,7 +143,7 @@ describe("embedded gateway stub", () => {
 
   it("scopes embedded global chat history to the requested agent", async () => {
     const callGateway = createEmbeddedCallGateway();
-    await callGateway<{ messages: unknown[] }>({
+    await callGateway<{ messages: any[] }>({
       method: "chat.history",
       params: { sessionKey: "global", agentId: "work" },
     });
@@ -160,7 +160,7 @@ describe("embedded gateway stub", () => {
     // Agent-prefixed global aliases carry the target agent id even when the
     // caller does not pass agentId separately.
     const callGateway = createEmbeddedCallGateway();
-    await callGateway<{ messages: unknown[] }>({
+    await callGateway<{ messages: any[] }>({
       method: "chat.history",
       params: { sessionKey: "agent:work:main" },
     });
@@ -181,7 +181,7 @@ describe("embedded gateway stub", () => {
     runtime.readSessionMessagesAsync.mockResolvedValueOnce(rawMessages);
 
     const callGateway = createEmbeddedCallGateway();
-    await callGateway<{ messages: unknown[] }>({
+    await callGateway<{ messages: any[] }>({
       method: "chat.history",
       params: { sessionKey: "agent:main:main", limit: 1 },
     });
@@ -215,7 +215,7 @@ describe("embedded gateway stub", () => {
     runtime.readSessionMessagesAsync.mockResolvedValueOnce(rawMessages);
 
     const callGateway = createEmbeddedCallGateway();
-    await callGateway<{ messages: unknown[] }>({
+    await callGateway<{ messages: any[] }>({
       method: "chat.history",
       params: { sessionKey: "agent:main:main", limit: "2" },
     });

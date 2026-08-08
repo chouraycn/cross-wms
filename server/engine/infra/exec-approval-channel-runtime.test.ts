@@ -8,7 +8,7 @@ import type { PluginApprovalRequest, PluginApprovalResolved } from "./plugin-app
 const mockGatewayClientStarts = vi.hoisted(() => vi.fn());
 const mockGatewayClientStops = vi.hoisted(() => vi.fn());
 const mockGatewayClientRequests = vi.hoisted(() =>
-  vi.fn<(method: string, params?: Record<string, unknown>) => Promise<unknown>>(async () => ({
+  vi.fn<(method: string, params?: Record<string, any>) => Promise<any>>(async () => ({
     ok: true,
   })),
 );
@@ -34,12 +34,12 @@ vi.mock("../logging/subsystem.js", () => ({
 let createExecApprovalChannelRuntime: typeof import("./exec-approval-channel-runtime.js").createExecApprovalChannelRuntime;
 let ExecApprovalChannelRuntimeTerminalStartError: typeof import("./exec-approval-channel-runtime.js").ExecApprovalChannelRuntimeTerminalStartError;
 
-type GatewayEventClientParams = { onEvent?: (evt: { event: string; payload: unknown }) => void };
+type GatewayEventClientParams = { onEvent?: (evt: { event: string; payload: any }) => void };
 
 function firstMockCall(
-  mock: { mock: { calls: Array<readonly unknown[]> } },
+  mock: { mock: { calls: Array<readonly any[]> } },
   label: string,
-): readonly unknown[] {
+): readonly any[] {
   const call = mock.mock.calls[0];
   if (!call) {
     throw new Error(`expected ${label} call`);
@@ -104,7 +104,7 @@ function expectStartGatewayClientCall(preauthHandshakeTimeoutMs?: number) {
     mockStartGatewayClientWhenEventLoopReady,
     "gateway client start readiness",
   );
-  expect(typeof (client as { start?: unknown } | undefined)?.start).toBe("function");
+  expect(typeof (client as { start?: any } | undefined)?.start).toBe("function");
   expect(options).toEqual({
     clientOptions: { preauthHandshakeTimeoutMs },
   });
@@ -143,7 +143,7 @@ function expectFinalizedResolved(
 function expectDeliveredRequestId(deliverRequested: ReturnType<typeof vi.fn>, id: string) {
   expect(
     deliverRequested.mock.calls.some(
-      ([request]) => (request as { id?: unknown } | undefined)?.id === id,
+      ([request]) => (request as { id?: any } | undefined)?.id === id,
     ),
   ).toBe(true);
 }
@@ -466,8 +466,8 @@ describe("createExecApprovalChannelRuntime", () => {
       finalizeResolved: async () => undefined,
     });
 
-    let caught: unknown;
-    await runtime.start().catch((error: unknown) => {
+    let caught: any;
+    await runtime.start().catch((error: any) => {
       caught = error;
     });
 

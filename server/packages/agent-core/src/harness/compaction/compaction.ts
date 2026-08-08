@@ -47,7 +47,7 @@ export interface CompactionDetails {
   /** Files modified in the compacted history. */
   modifiedFiles: string[];
 }
-function safeJsonStringify(value: unknown): string {
+function safeJsonStringify(value: any): string {
   try {
     return JSON.stringify(value) ?? "undefined";
   } catch {

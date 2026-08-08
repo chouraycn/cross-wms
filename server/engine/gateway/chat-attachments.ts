@@ -17,24 +17,24 @@ export type ChatImageContent = unknown;
 
 export type OffloadedRef = unknown;
 
-export function resolveChatAttachmentMaxBytes(..._args: unknown[]): unknown {
+export function resolveChatAttachmentMaxBytes(..._args: any[]): any {
   return undefined;
 }
 
-export async function parseMessageWithAttachments(..._args: unknown[]): Promise<unknown> {
+export async function parseMessageWithAttachments(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
 
 export class UnsupportedAttachmentError {
-  constructor(..._args: unknown[]) {
+  constructor(..._args: any[]) {
     return Promise.resolve(undefined);
   }
 }
 
 export class MediaOffloadError {
-  constructor(..._args: unknown[]) {
+  constructor(..._args: any[]) {
     return Promise.resolve(undefined);
   }
 }
 
-export const DEFAULT_CHAT_ATTACHMENT_MAX_MB: unknown = undefined;
+export const DEFAULT_CHAT_ATTACHMENT_MAX_MB: any = undefined;

@@ -272,7 +272,7 @@ const KEYBINDING_NAME_MIGRATIONS = {
   deleteSessionNoninvasive: "app.session.deleteNoninvasive",
 } as const satisfies Record<string, Keybinding>;
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
@@ -280,7 +280,7 @@ function isLegacyKeybindingName(key: string): key is keyof typeof KEYBINDING_NAM
   return key in KEYBINDING_NAME_MIGRATIONS;
 }
 
-function toKeybindingsConfig(value: unknown): KeybindingsConfig {
+function toKeybindingsConfig(value: any): KeybindingsConfig {
   if (!isRecord(value)) {
     return {};
   }
@@ -299,11 +299,11 @@ function toKeybindingsConfig(value: unknown): KeybindingsConfig {
 }
 
 /** Migrates legacy keybinding names and orders known entries ahead of unknown extras. */
-export function migrateKeybindingsConfig(rawConfig: Record<string, unknown>): {
-  config: Record<string, unknown>;
+export function migrateKeybindingsConfig(rawConfig: Record<string, any>): {
+  config: Record<string, any>;
   migrated: boolean;
 } {
-  const config: Record<string, unknown> = {};
+  const config: Record<string, any> = {};
   let migrated = false;
 
   for (const [key, value] of Object.entries(rawConfig)) {
@@ -322,8 +322,8 @@ export function migrateKeybindingsConfig(rawConfig: Record<string, unknown>): {
   return { config: orderKeybindingsConfig(config), migrated };
 }
 
-function orderKeybindingsConfig(config: Record<string, unknown>): Record<string, unknown> {
-  const ordered: Record<string, unknown> = {};
+function orderKeybindingsConfig(config: Record<string, any>): Record<string, any> {
+  const ordered: Record<string, any> = {};
   for (const keybinding of Object.keys(KEYBINDINGS)) {
     if (Object.hasOwn(config, keybinding)) {
       ordered[keybinding] = config[keybinding];
@@ -340,12 +340,12 @@ function orderKeybindingsConfig(config: Record<string, unknown>): Record<string,
   return ordered;
 }
 
-function loadRawConfig(path: string): Record<string, unknown> | undefined {
+function loadRawConfig(path: string): Record<string, any> | undefined {
   if (!existsSync(path)) {
     return undefined;
   }
   try {
-    const parsed = JSON.parse(readFileSync(path, "utf-8")) as unknown;
+    const parsed = JSON.parse(readFileSync(path, "utf-8")) as any;
     return isRecord(parsed) ? parsed : undefined;
   } catch {
     return undefined;

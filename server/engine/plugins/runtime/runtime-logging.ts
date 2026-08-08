@@ -6,9 +6,9 @@ import { normalizeLogLevel } from "../../logging/levels.js";
 import type { PluginRuntime } from "./types.js";
 
 function writeRuntimeLog(
-  log: (...args: unknown[]) => void,
+  log: (...args: any[]) => void,
   message: string,
-  meta?: Record<string, unknown>,
+  meta?: Record<string, any>,
 ): void {
   if (meta && Object.keys(meta).length > 0) {
     log(meta, message);

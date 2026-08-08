@@ -9,7 +9,7 @@ export function textOrphanLeaf(text = "older active-turn message"): { content: s
   return { content: text };
 }
 
-export function structuredOrphanLeaf(): { content: unknown[] } {
+export function structuredOrphanLeaf(): { content: any[] } {
   return {
     content: [
       { type: "text", text: "please inspect this" },
@@ -19,7 +19,7 @@ export function structuredOrphanLeaf(): { content: unknown[] } {
   };
 }
 
-export function inlineDataUriOrphanLeaf(): { content: unknown[] } {
+export function inlineDataUriOrphanLeaf(): { content: any[] } {
   return {
     content: [
       { type: "text", text: "please inspect this inline image" },

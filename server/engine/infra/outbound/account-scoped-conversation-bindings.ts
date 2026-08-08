@@ -39,7 +39,7 @@ export type AccountScopedConversationBindingManager<TKind extends string = strin
     conversationId: string;
     targetKind: BindingTargetKind;
     targetSessionKey: string;
-    metadata?: Record<string, unknown>;
+    metadata?: Record<string, any>;
   }) => AccountScopedConversationBindingRecord<TKind> | null;
   touchConversation: (
     conversationId: string,
@@ -60,7 +60,7 @@ type AccountScopedConversationBindingsState<TKind extends string> = {
 function getState<TKind extends string>(
   stateKey: symbol,
 ): AccountScopedConversationBindingsState<TKind> {
-  const globalStore = globalThis as Record<PropertyKey, unknown>;
+  const globalStore = globalThis as Record<PropertyKey, any>;
   const existing = globalStore[stateKey] as
     | AccountScopedConversationBindingsState<TKind>
     | undefined;

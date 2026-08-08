@@ -48,7 +48,7 @@ export class ExaAdapter implements IAiApiAdapter {
       Object.assign(headers, compat.extraHeaders);
     }
 
-    const body: Record<string, unknown> = {
+    const body: Record<string, any> = {
       model: modelId || EXA_DEFAULT_MODEL_ID,
       messages,
       temperature,

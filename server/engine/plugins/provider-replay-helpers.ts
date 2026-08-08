@@ -5,11 +5,11 @@ type ProviderReplayPolicy = unknown;
 /** 占位：ProviderReasoningOutputMode。 */
 type ProviderReasoningOutputMode = unknown;
 
-export function buildOpenAICompatibleReplayPolicy(params: unknown): ProviderReplayPolicy {
+export function buildOpenAICompatibleReplayPolicy(params: any): ProviderReplayPolicy {
   void params;
   return undefined;
 }
-export function buildStrictAnthropicReplayPolicy(params: unknown): ProviderReplayPolicy {
+export function buildStrictAnthropicReplayPolicy(params: any): ProviderReplayPolicy {
   void params;
   return undefined;
 }
@@ -25,18 +25,18 @@ export function buildNativeAnthropicReplayPolicyForModel(modelId?: string): Prov
   void modelId;
   return undefined;
 }
-export function buildHybridAnthropicOrOpenAIReplayPolicy(params: unknown): ProviderReplayPolicy {
+export function buildHybridAnthropicOrOpenAIReplayPolicy(params: any): ProviderReplayPolicy {
   void params;
   return undefined;
 }
 export function buildGoogleGeminiReplayPolicy(): ProviderReplayPolicy {
   return undefined;
 }
-export function buildPassthroughGeminiSanitizingReplayPolicy(params: unknown): ProviderReplayPolicy {
+export function buildPassthroughGeminiSanitizingReplayPolicy(params: any): ProviderReplayPolicy {
   void params;
   return undefined;
 }
-export function sanitizeGoogleGeminiReplayHistory(params: unknown): unknown {
+export function sanitizeGoogleGeminiReplayHistory(params: any): any {
   void params;
   return undefined;
 }

@@ -29,7 +29,7 @@ export function startTraceSpan(params: {
   agentId?: string;
   sessionId?: string;
   message?: string;
-  data?: Record<string, unknown>;
+  data?: Record<string, any>;
   parentId?: string;
   tags?: string[];
 }): string {
@@ -59,7 +59,7 @@ export function endTraceSpan(
   spanId: string,
   status: 'success' | 'error' = 'success',
   message?: string,
-  data?: Record<string, unknown>,
+  data?: Record<string, any>,
 ): void {
   const span = activeSpans.get(spanId);
   if (!span) return;
@@ -81,7 +81,7 @@ export function recordTraceEvent(params: {
   sessionId?: string;
   status?: TraceEvent['status'];
   message?: string;
-  data?: Record<string, unknown>;
+  data?: Record<string, any>;
   tags?: string[];
 }): void {
   const event: TraceEvent = {
@@ -199,7 +199,7 @@ export async function withTrace<T>(
     agentId?: string;
     sessionId?: string;
     message?: string;
-    data?: Record<string, unknown>;
+    data?: Record<string, any>;
     tags?: string[];
   },
   fn: () => T | Promise<T>,

@@ -75,7 +75,7 @@ type PendingPluginBindingRequest = {
   requestedBySenderId?: string;
   summary?: string;
   detachHint?: string;
-  data?: Record<string, unknown>;
+  data?: Record<string, any>;
 };
 
 type PluginBindingApprovalAction = {
@@ -96,7 +96,7 @@ type PluginBindingMetadata = {
   pluginRoot: string;
   summary?: string;
   detachHint?: string;
-  data?: Record<string, unknown>;
+  data?: Record<string, any>;
 };
 
 type PluginBindingResolveResult =
@@ -134,7 +134,7 @@ type PluginConversationBindingState = {
         bindingId: string;
         conversation: ConversationRef;
         boundAt: number;
-        metadata?: Record<string, unknown>;
+        metadata?: Record<string, any>;
         targetSessionKey: string;
       }
     | null
@@ -175,11 +175,11 @@ function normalizeConversation(params: PluginBindingConversation): PluginBinding
   };
 }
 
-function normalizeBindingData(data: unknown): Record<string, unknown> | undefined {
+function normalizeBindingData(data: any): Record<string, any> | undefined {
   if (!data || typeof data !== "object" || Array.isArray(data)) {
     return undefined;
   }
-  return { ...(data as Record<string, unknown>) };
+  return { ...(data as Record<string, any>) };
 }
 
 function toConversationRef(params: PluginBindingConversation): ConversationRef {
@@ -286,7 +286,7 @@ function isLegacyPluginBindingRecord(params: {
   record:
     | {
         targetSessionKey: string;
-        metadata?: Record<string, unknown>;
+        metadata?: Record<string, any>;
       }
     | null
     | undefined;
@@ -458,7 +458,7 @@ function buildBindingMetadata(params: {
   pluginRoot: string;
   summary?: string;
   detachHint?: string;
-  data?: Record<string, unknown>;
+  data?: Record<string, any>;
 }): PluginBindingMetadata {
   return {
     pluginBindingOwner: PLUGIN_BINDING_OWNER,
@@ -471,11 +471,11 @@ function buildBindingMetadata(params: {
   };
 }
 
-export function isPluginOwnedBindingMetadata(metadata: unknown): metadata is PluginBindingMetadata {
+export function isPluginOwnedBindingMetadata(metadata: any): metadata is PluginBindingMetadata {
   if (!metadata || typeof metadata !== "object") {
     return false;
   }
-  const record = metadata as Record<string, unknown>;
+  const record = metadata as Record<string, any>;
   return (
     record.pluginBindingOwner === PLUGIN_BINDING_OWNER &&
     typeof record.pluginId === "string" &&
@@ -486,7 +486,7 @@ export function isPluginOwnedBindingMetadata(metadata: unknown): metadata is Plu
 export function isPluginOwnedSessionBindingRecord(
   record:
     | {
-        metadata?: Record<string, unknown>;
+        metadata?: Record<string, any>;
       }
     | null
     | undefined,
@@ -500,7 +500,7 @@ export function toPluginConversationBinding(
         bindingId: string;
         conversation: ConversationRef;
         boundAt: number;
-        metadata?: Record<string, unknown>;
+        metadata?: Record<string, any>;
       }
     | null
     | undefined,
@@ -568,7 +568,7 @@ function bindConversationFromIdentity(params: {
   conversation: PluginBindingConversation;
   summary?: string;
   detachHint?: string;
-  data?: Record<string, unknown>;
+  data?: Record<string, any>;
 }): Promise<PluginConversationBinding> {
   return bindConversationNow({
     identity: buildPluginBindingIdentity(params.identity),
@@ -616,7 +616,7 @@ async function bindConversationNow(params: {
   conversation: PluginBindingConversation;
   summary?: string;
   detachHint?: string;
-  data?: Record<string, unknown>;
+  data?: Record<string, any>;
 }): Promise<PluginConversationBinding> {
   const ref = toConversationRef(params.conversation);
   const targetSessionKey = buildPluginBindingSessionKey({
@@ -970,7 +970,7 @@ function dispatchPluginConversationBindingResolved(params: {
 }): void {
   // Keep platform interaction acks fast even if the plugin does slow post-bind work.
   queueMicrotask(() => {
-    void notifyPluginConversationBindingResolved(params).catch((error: unknown) => {
+    void notifyPluginConversationBindingResolved(params).catch((error: any) => {
       log.warn(`plugin binding resolved dispatch failed: ${String(error)}`);
     });
   });

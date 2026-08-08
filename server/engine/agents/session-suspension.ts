@@ -10,9 +10,9 @@ export type SessionSuspensionParams = { reason?: SessionSuspensionReason; resume
 
 export const DEFAULT_QUOTA_SUSPENSION_RESUME_MS = 60_000;
 
-export const testing: unknown = undefined;
+export const testing: any = undefined;
 
-export function resolveSessionSuspensionReason(_params: unknown): SessionSuspensionReason | null {
+export function resolveSessionSuspensionReason(_params: any): SessionSuspensionReason | null {
   return null;
 }
 
@@ -20,10 +20,10 @@ export async function runWithDeferredSessionSuspension<T>(fn: () => Promise<T>):
   return await fn();
 }
 
-export function resolveSessionSuspensionTarget(_params: unknown): SessionSuspensionTarget | null {
+export function resolveSessionSuspensionTarget(_params: any): SessionSuspensionTarget | null {
   return null;
 }
 
-export async function suspendSession(_params: unknown): Promise<void> {
+export async function suspendSession(_params: any): Promise<void> {
   // no-op in cross-wms降级实现
 }

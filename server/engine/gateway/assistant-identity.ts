@@ -110,7 +110,7 @@ function loadAgentIdentity(_workspaceDir: string): AgentIdentityFile | null {
  * 降级原因：openclaw `shared/assistant-identity-values` 的 coerceIdentityValue
  * 还会处理 NFC 规范化与控制字符过滤。这里仅做基础截断。
  */
-function coerceIdentityValue(value: unknown, maxLength: number): string | undefined {
+function coerceIdentityValue(value: any, maxLength: number): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }

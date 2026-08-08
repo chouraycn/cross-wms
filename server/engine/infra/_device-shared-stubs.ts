@@ -36,7 +36,7 @@ export function normalizeDeviceAuthRole(role: string): string {
 }
 
 /** 规范化 device-auth scopes：去重、排序，并包含隐含的 operator scopes */
-export function normalizeDeviceAuthScopes(scopes: readonly unknown[] | undefined): string[] {
+export function normalizeDeviceAuthScopes(scopes: readonly any[] | undefined): string[] {
   if (!Array.isArray(scopes)) {
     return [];
   }
@@ -70,7 +70,7 @@ export type DeviceAuthStoreAdapter = {
   writeStore: (store: DeviceAuthStore) => void;
 };
 
-function coerceDeviceAuthEntry(role: string, value: unknown): DeviceAuthEntry | null {
+function coerceDeviceAuthEntry(role: string, value: any): DeviceAuthEntry | null {
   if (!isRecord(value) || typeof value.token !== "string") {
     return null;
   }
@@ -87,7 +87,7 @@ function coerceDeviceAuthEntry(role: string, value: unknown): DeviceAuthEntry | 
 }
 
 function copyCanonicalDeviceAuthTokens(
-  tokens: Record<string, unknown>,
+  tokens: Record<string, any>,
 ): Record<string, DeviceAuthEntry> {
   const out: Record<string, DeviceAuthEntry> = {};
   for (const [rawRole, value] of Object.entries(tokens)) {
@@ -104,7 +104,7 @@ function copyCanonicalDeviceAuthTokens(
 }
 
 /** 将原始持久化的 device-auth JSON 强制转换为当前规范存储形状 */
-export function coerceDeviceAuthStore(value: unknown): DeviceAuthStore | null {
+export function coerceDeviceAuthStore(value: any): DeviceAuthStore | null {
   if (!isRecord(value) || value.version !== 1 || typeof value.deviceId !== "string") {
     return null;
   }
@@ -400,6 +400,6 @@ export function resolveScopeOutsideRequestedRoles(params: {
 // ============================================================================
 
 /** 判断值是否为普通记录对象 */
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }

@@ -94,7 +94,7 @@ describe('throttle', () => {
 describe('memoize', () => {
   it('应该缓存结果', () => {
     const fn = vi.fn((x: number) => x * 2);
-    const memoized = memoize(fn as unknown as (...args: unknown[]) => unknown);
+    const memoized = memoize(fn as unknown as (...args: any[]) => unknown);
 
     expect(memoized(2)).toBe(4);
     expect(memoized(2)).toBe(4);
@@ -103,7 +103,7 @@ describe('memoize', () => {
 
   it('应该限制缓存大小', () => {
     const fn = vi.fn((x: number) => x * 2);
-    const memoized = memoize(fn as unknown as (...args: unknown[]) => unknown, 2);
+    const memoized = memoize(fn as unknown as (...args: any[]) => unknown, 2);
 
     memoized(1);
     memoized(2);

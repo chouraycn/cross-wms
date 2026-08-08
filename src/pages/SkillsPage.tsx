@@ -184,7 +184,7 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [activeTab, setActiveTab] = useState<'market' | 'builtin' | 'installed' | 'manage' | 'openclaw'>(initialTab as unknown || 'market');
+  const [activeTab, setActiveTab] = useState<'market' | 'builtin' | 'installed' | 'manage' | 'openclaw'>(initialTab as any || 'market');
   const [manageSubTab, setManageSubTab] = useState<'plugins' | 'chains' | 'workshop' | 'hotreload'>('plugins');
   const [sortBy, setSortBy] = useState<'popular' | 'latest'>('popular');
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
@@ -1077,7 +1077,7 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
           ].map((tab) => (
             <Box
               key={tab.key}
-              onClick={() => setActiveTab(tab.key as unknown)}
+              onClick={() => setActiveTab(tab.key as any)}
               sx={{
                 py: 1.5,
                 fontSize: '0.9375rem',
@@ -1428,7 +1428,7 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
             ].map((tab) => (
               <Box
                 key={tab.key}
-                onClick={() => setManageSubTab(tab.key as unknown)}
+                onClick={() => setManageSubTab(tab.key as any)}
                 sx={{
                   py: 1.25,
                   fontSize: '0.875rem',

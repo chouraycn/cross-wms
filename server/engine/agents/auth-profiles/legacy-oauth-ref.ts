@@ -17,7 +17,7 @@ export type LegacyOAuthRef = {
 };
 
 /** Return true for the legacy OAuth reference shape persisted by older stores. */
-export function isLegacyOAuthRef(value: unknown): value is LegacyOAuthRef {
+export function isLegacyOAuthRef(value: any): value is LegacyOAuthRef {
   if (!isRecord(value)) {
     return false;
   }

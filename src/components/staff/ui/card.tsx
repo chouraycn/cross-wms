@@ -18,7 +18,7 @@ function Card({
       data-size={size}
       className={cn(className)}
       sx={{ borderRadius: 2, overflow: 'hidden', bgcolor: 'background.paper' }}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     />
   )
 }
@@ -28,7 +28,7 @@ function CardHeader({ className, ...props }: React.ComponentProps<'div'> & { sx?
     <Box
       data-slot="card-header"
       className={cn('flex flex-col gap-1 px-4 pt-4', className)}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     />
   )
 }
@@ -40,7 +40,7 @@ function CardTitle({ className, ...props }: React.ComponentProps<'div'> & { sx?:
       className={cn(className)}
       variant="subtitle1"
       sx={{ fontWeight: 600, lineHeight: 1.3 }}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     />
   )
 }
@@ -52,7 +52,7 @@ function CardDescription({ className, ...props }: React.ComponentProps<'div'> & 
       className={cn(className)}
       variant="body2"
       color="text.secondary"
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     />
   )
 }
@@ -62,7 +62,7 @@ function CardAction({ className, ...props }: React.ComponentProps<'div'> & { sx?
     <Box
       data-slot="card-action"
       className={cn('col-start-2 row-span-2 row-start-1 self-start justify-self-end', className)}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     />
   )
 }
@@ -72,7 +72,7 @@ function CardContent({ className, ...props }: React.ComponentProps<'div'> & { sx
     <Box
       data-slot="card-content"
       className={cn('px-4 py-3', className)}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     />
   )
 }
@@ -83,7 +83,7 @@ function CardFooter({ className, ...props }: React.ComponentProps<'div'> & { sx?
       data-slot="card-footer"
       className={cn('flex items-center gap-2 border-t px-4 py-3', className)}
       sx={{ borderColor: 'divider' }}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     />
   )
 }

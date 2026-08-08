@@ -2,7 +2,7 @@
 import type { InboundDebounceByProvider } from "../config/types.messages.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 
-const resolveMs = (value: unknown): number | undefined => {
+const resolveMs = (value: any): number | undefined => {
   if (typeof value !== "number" || !Number.isFinite(value)) {
     return undefined;
   }
@@ -25,7 +25,7 @@ export function resolveInboundDebounceMs(params: {
   channel: string;
   overrideMs?: number;
 }): number {
-  const inbound = (params.cfg as Record<string, unknown>).messages as Record<string, unknown> | undefined;
+  const inbound = (params.cfg as Record<string, any>).messages as Record<string, any> | undefined;
   const override = resolveMs(params.overrideMs);
   const byChannel = resolveChannelOverride({
     byChannel: inbound?.byChannel as InboundDebounceByProvider | undefined,
@@ -55,7 +55,7 @@ export type InboundDebounceCreateParams<T> = {
   resolveDebounceMs?: (item: T) => number | undefined;
   serializeImmediate?: boolean;
   onFlush: (items: T[]) => Promise<void>;
-  onError?: (err: unknown, items: T[]) => void;
+  onError?: (err: any, items: T[]) => void;
   onCancel?: (items: T[]) => void;
 };
 

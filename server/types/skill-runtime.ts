@@ -93,7 +93,7 @@ export interface SkillDefinition {
   /** 权限分组 */
   group: SkillPermissionGroup;
   /** 参数 JSON Schema（OpenAI function parameters 格式） */
-  parameters?: Record<string, unknown>;
+  parameters?: Record<string, any>;
   /** 依赖声明 */
   requires?: SkillRequires;
   /** 是否允许用户直接调用（默认 true） */
@@ -167,10 +167,10 @@ export interface SkillDefinition {
 
 /** Skill 日志接口（框架注入） */
 export interface SkillLogger {
-  info(msg: string, meta?: Record<string, unknown>): void;
-  warn(msg: string, meta?: Record<string, unknown>): void;
-  error(msg: string, meta?: Record<string, unknown>): void;
-  debug(msg: string, meta?: Record<string, unknown>): void;
+  info(msg: string, meta?: Record<string, any>): void;
+  warn(msg: string, meta?: Record<string, any>): void;
+  error(msg: string, meta?: Record<string, any>): void;
+  debug(msg: string, meta?: Record<string, any>): void;
 }
 
 /** Skill 沙箱接口（路径/网络/命令白名单校验） */
@@ -215,7 +215,7 @@ export interface SkillCredentials {
  */
 export interface SkillToolRunner {
   /** 调用内置工具（如 wms_inventory / file_generateFile / db_query），返回 handler 原始字符串结果 */
-  run(name: string, args?: Record<string, unknown>): Promise<string>;
+  run(name: string, args?: Record<string, any>): Promise<string>;
 }
 
 /**
@@ -254,7 +254,7 @@ export interface SkillResult {
   /** 是否执行成功 */
   success: boolean;
   /** 返回数据（成功时） */
-  data?: unknown;
+  data?: any;
   /** 错误信息（失败时） */
   error?: string;
   /** 执行元数据 */
@@ -278,7 +278,7 @@ export interface SkillResult {
  * @returns 执行结果
  */
 export type SkillHandler = (
-  params: Record<string, unknown>,
+  params: Record<string, any>,
   ctx: SkillContext,
 ) => Promise<SkillResult>;
 
@@ -291,11 +291,11 @@ export interface SkillLifecycle {
   /** 初始化钩子（注册时调用一次） */
   init?(ctx: SkillContext): Promise<void>;
   /** 执行前钩子（可修改参数，返回 null 则跳过执行） */
-  beforeExecute?(params: Record<string, unknown>, ctx: SkillContext): Promise<Record<string, unknown> | null>;
+  beforeExecute?(params: Record<string, any>, ctx: SkillContext): Promise<Record<string, any> | null>;
   /** 核心执行处理器（必须实现） */
   execute: SkillHandler;
   /** 执行后钩子（可修改结果） */
-  afterExecute?(result: SkillResult, params: Record<string, unknown>, ctx: SkillContext): Promise<SkillResult>;
+  afterExecute?(result: SkillResult, params: Record<string, any>, ctx: SkillContext): Promise<SkillResult>;
   /** 清理钩子（注销/关闭时调用） */
   cleanup?(ctx: SkillContext): Promise<void>;
 }

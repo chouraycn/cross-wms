@@ -37,7 +37,7 @@ export interface FilterMessage {
   role: string;
   content: string;
   timestamp?: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 const DEFAULT_CONFIG: MessageFilterConfig = {

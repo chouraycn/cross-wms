@@ -1,17 +1,17 @@
 // 移植自 openclaw/src/gateway/server/plugins-http/route-match.ts
 
-export function doesPluginRouteMatchPath(...args: unknown[]): unknown {
+export function doesPluginRouteMatchPath(...args: any[]): any {
   return undefined;
 }
 
-export function findMatchingPluginHttpRoutes(...args: unknown[]): unknown {
+export function findMatchingPluginHttpRoutes(...args: any[]): any {
   return [];
 }
 
-export function findRegisteredPluginHttpRoute(...args: unknown[]): unknown {
+export function findRegisteredPluginHttpRoute(...args: any[]): any {
   return [];
 }
 
-export function isRegisteredPluginHttpRoutePath(...args: unknown[]): unknown {
+export function isRegisteredPluginHttpRoutePath(...args: any[]): any {
   return false;
 }

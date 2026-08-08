@@ -76,7 +76,7 @@ function resolveSteerSessionId(params: {
 }
 
 function applySteerFallbackPrompt(ctx: HandleCommandsParams["ctx"], message: string): void {
-  const mutableCtx = ctx as Record<string, unknown>;
+  const mutableCtx = ctx as Record<string, any>;
   mutableCtx.Body = message;
   mutableCtx.RawBody = message;
   mutableCtx.CommandBody = message;
@@ -85,7 +85,7 @@ function applySteerFallbackPrompt(ctx: HandleCommandsParams["ctx"], message: str
   mutableCtx.BodyStripped = message;
 }
 
-function formatSteerError(err: unknown): string {
+function formatSteerError(err: any): string {
   return err instanceof Error ? err.message : String(err);
 }
 
@@ -144,7 +144,7 @@ export const handleSteerCommand: CommandHandler = async (params, allowTextComman
   const queueOutcome = await queueEmbeddedAgentMessageWithOutcomeAsync(sessionId, message, {
     steeringMode: "all",
     debounceMs: 0,
-  }).catch((err: unknown): CommandHandlerResult => {
+  }).catch((err: any): CommandHandlerResult => {
     return continueWithSteerFallback(
       params,
       message,

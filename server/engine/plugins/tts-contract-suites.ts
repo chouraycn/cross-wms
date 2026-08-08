@@ -1,14 +1,14 @@
 // 移植自 openclaw/src/plugins/tts-contract-suites.ts
 
-export function describeTtsConfigContract(...args: unknown[]): unknown {
+export function describeTtsConfigContract(...args: any[]): any {
   return "";
 }
-export function describeTtsSummarizationContract(...args: unknown[]): unknown {
+export function describeTtsSummarizationContract(...args: any[]): any {
   return "";
 }
-export function describeTtsProviderRuntimeContract(...args: unknown[]): unknown {
+export function describeTtsProviderRuntimeContract(...args: any[]): any {
   return "";
 }
-export function describeTtsAutoApplyContract(...args: unknown[]): unknown {
+export function describeTtsAutoApplyContract(...args: any[]): any {
   return "";
 }

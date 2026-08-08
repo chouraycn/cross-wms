@@ -13,7 +13,7 @@ export interface SecretItemMetadata {
   accessCount: number;
   lastAccessedAt?: number;
   description?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 /** 密钥条目（对应后端密钥记录） */

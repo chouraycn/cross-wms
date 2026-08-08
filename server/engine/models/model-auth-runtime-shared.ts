@@ -73,11 +73,11 @@ export class MissingProviderAuthError extends ProviderAuthError {
   }
 }
 
-export function isProviderAuthError(error: unknown): error is ProviderAuthError {
+export function isProviderAuthError(error: any): error is ProviderAuthError {
   return error instanceof ProviderAuthError;
 }
 
-export function isMissingProviderAuthError(error: unknown): error is MissingProviderAuthError {
+export function isMissingProviderAuthError(error: any): error is MissingProviderAuthError {
   return error instanceof MissingProviderAuthError;
 }
 

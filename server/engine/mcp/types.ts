@@ -12,24 +12,24 @@ export type JsonRpcRequest = {
   jsonrpc: JsonRpcVersion;
   id: string | number;
   method: string;
-  params?: Record<string, unknown>;
+  params?: Record<string, any>;
 };
 
 export type JsonRpcResponse = {
   jsonrpc: JsonRpcVersion;
   id: string | number | null;
-  result?: unknown;
+  result?: any;
   error?: {
     code: number;
     message: string;
-    data?: unknown;
+    data?: any;
   };
 };
 
 export type JsonRpcNotification = {
   jsonrpc: JsonRpcVersion;
   method: string;
-  params?: Record<string, unknown>;
+  params?: Record<string, any>;
 };
 
 // MCP 协议版本
@@ -89,8 +89,8 @@ export type MCPInitializeParams = {
 export type MCPTool = {
   name: string;
   description: string;
-  inputSchema: Record<string, unknown>;
-  outputSchema?: Record<string, unknown>;
+  inputSchema: Record<string, any>;
+  outputSchema?: Record<string, any>;
   annotations?: {
     title?: string;
     readOnlyHint?: boolean;
@@ -109,7 +109,7 @@ export type MCPToolsListResult = {
 // MCP 工具调用参数
 export type MCPToolCallParams = {
   name: string;
-  arguments?: Record<string, unknown>;
+  arguments?: Record<string, any>;
 };
 
 // MCP 工具调用结果
@@ -308,7 +308,7 @@ export type MCPSession = {
   createdAt: number;
   lastActivityAt: number;
   expiresAt?: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
   capabilities?: MCPClientCapabilities;
 };
 
@@ -328,7 +328,7 @@ export type MCPLogMessage = {
   level: MCPLogLevel;
   logger?: string;
   text: string;
-  data?: unknown;
+  data?: any;
 };
 
 // MCP 根目录
@@ -362,7 +362,7 @@ export type MCPCompletionParams = {
     | {
         type: 'tool/arguments';
         name: string;
-        arguments: Record<string, unknown>;
+        arguments: Record<string, any>;
         argument: string;
         value: string;
       };
@@ -421,7 +421,7 @@ export type ToolExecutionState = 'pending' | 'running' | 'completed' | 'cancelle
 // 工具执行上下文
 export type ToolExecutionContext = {
   toolName: string;
-  arguments: Record<string, unknown>;
+  arguments: Record<string, any>;
   sessionId?: string;
   requestId?: string | number;
   startTime: number;

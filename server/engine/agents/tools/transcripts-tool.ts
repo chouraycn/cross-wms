@@ -34,29 +34,29 @@ type TranscriptSessionDescriptor = {
   source: TranscriptSourceLocator;
   startedAt: string;
   stoppedAt?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 const activeSessions = new Map<string, { session: TranscriptSessionDescriptor; providerId: string }>();
 
-function asParamsRecord(params: unknown): Record<string, unknown> {
+function asParamsRecord(params: any): Record<string, any> {
   return params && typeof params === "object" && !Array.isArray(params)
-    ? (params as Record<string, unknown>)
+    ? (params as Record<string, any>)
     : {};
 }
 
 function readStringParam(
-  params: Record<string, unknown>,
+  params: Record<string, any>,
   key: string,
   options: { required: true; trim?: boolean },
 ): string;
 function readStringParam(
-  params: Record<string, unknown>,
+  params: Record<string, any>,
   key: string,
   options?: { required?: false; trim?: boolean },
 ): string | undefined;
 function readStringParam(
-  params: Record<string, unknown>,
+  params: Record<string, any>,
   key: string,
   options: { required?: boolean; trim?: boolean } = {},
 ): string | undefined {
@@ -96,14 +96,14 @@ function createSessionId(): string {
   return `transcript-${new Date().toISOString().replace(/[:.]/g, "-")}-${randomUUID().slice(0, 8)}`;
 }
 
-function toolText(text: string, details?: Record<string, unknown>) {
+function toolText(text: string, details?: Record<string, any>) {
   return {
     content: [{ type: "text" as const, text }],
     details: details ?? {},
   };
 }
 
-function sourceFromParams(params: Record<string, unknown>): TranscriptSourceLocator {
+function sourceFromParams(params: Record<string, any>): TranscriptSourceLocator {
   const providerId = readStringParam(params, "providerId", { trim: true }) ?? "manual-transcript";
   return {
     providerId,
@@ -182,7 +182,7 @@ function summarizeTranscript(utterances: TranscriptUtterance[]): string {
 }
 
 async function importTranscripts(params: {
-  rawParams: Record<string, unknown>;
+  rawParams: Record<string, any>;
 }) {
   const source = sourceFromParams(params.rawParams);
   const session: TranscriptSessionDescriptor = {
@@ -209,7 +209,7 @@ async function importTranscripts(params: {
 }
 
 async function summarizeExisting(params: {
-  rawParams: Record<string, unknown>;
+  rawParams: Record<string, any>;
 }) {
   const sessionId = readStringParam(params.rawParams, "sessionId", {
     required: true,
@@ -243,7 +243,7 @@ async function statusTranscripts() {
 }
 
 export function createTranscriptsTool(options?: {
-  config?: unknown;
+  config?: any;
   stateDir?: string;
   logger?: TranscriptsLogger;
 }): AnyAgentTool {
@@ -257,12 +257,12 @@ export function createTranscriptsTool(options?: {
       type: "string" | "number" | "boolean" | "object" | "any" | "array";
       description: string;
       required: boolean;
-      default?: unknown;
+      default?: any;
       enum?: string[] | undefined;
       items?: { type: string } | undefined;
-      properties?: Record<string, unknown> | undefined;
+      properties?: Record<string, any> | undefined;
     }>,
-    async execute(_toolCallId: string, rawParams: unknown) {
+    async execute(_toolCallId: string, rawParams: any) {
       const params = asParamsRecord(rawParams);
       const action = readStringParam(params, "action", { required: true, trim: true });
       switch (action) {
@@ -288,7 +288,7 @@ export function createTranscriptsTool(options?: {
 }
 
 export function createTranscriptsAutoStartService(_ctx: {
-  config?: unknown;
+  config?: any;
   stateDir?: string;
   logger?: TranscriptsLogger;
 }): {

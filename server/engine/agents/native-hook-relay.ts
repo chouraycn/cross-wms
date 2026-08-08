@@ -128,7 +128,7 @@ export function renderNativeHookRelayUnavailableResponse(
 }
 
 /** Returns whether an error is a stale registration error. */
-export function isNativeHookRelayBridgeStaleRegistrationError(_error: unknown): boolean {
+export function isNativeHookRelayBridgeStaleRegistrationError(_error: any): boolean {
   return false;
 }
 

@@ -6,30 +6,30 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function collectDeliveredMediaUrls(..._args: unknown[]): unknown {
+export function collectDeliveredMediaUrls(..._args: any[]): any {
   return [];
 }
-export function collectMessagingToolDeliveredMediaUrls(..._args: unknown[]): unknown {
+export function collectMessagingToolDeliveredMediaUrls(..._args: any[]): any {
   return [];
 }
-export function getGatewayAgentResult(..._args: unknown[]): unknown {
+export function getGatewayAgentResult(..._args: any[]): any {
   return undefined;
 }
-export function hasVisibleAgentPayload(..._args: unknown[]): unknown {
+export function hasVisibleAgentPayload(..._args: any[]): any {
   return false;
 }
-export function hasMessagingToolDeliveryEvidence(..._args: unknown[]): unknown {
+export function hasMessagingToolDeliveryEvidence(..._args: any[]): any {
   return false;
 }
-export function hasCommittedMessagingToolDeliveryEvidence(..._args: unknown[]): unknown {
+export function hasCommittedMessagingToolDeliveryEvidence(..._args: any[]): any {
   return false;
 }
-export function hasCommittedOutboundDeliveryEvidence(..._args: unknown[]): unknown {
+export function hasCommittedOutboundDeliveryEvidence(..._args: any[]): any {
   return false;
 }
-export function hasOutboundDeliveryEvidence(..._args: unknown[]): unknown {
+export function hasOutboundDeliveryEvidence(..._args: any[]): any {
   return false;
 }
-export function getAgentCommandDeliveryFailure(..._args: unknown[]): unknown {
+export function getAgentCommandDeliveryFailure(..._args: any[]): any {
   return undefined;
 }

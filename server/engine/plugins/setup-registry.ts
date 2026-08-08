@@ -397,7 +397,7 @@ function resolveCurrentSetupSnapshotCacheId(): string {
   return id;
 }
 
-function cloneSetupRegistryValue<T>(value: T, seen = new WeakMap<object, unknown>()): T {
+function cloneSetupRegistryValue<T>(value: T, seen = new WeakMap<object, any>()): T {
   if (!value || typeof value !== "object") {
     return value;
   }
@@ -417,13 +417,13 @@ function cloneSetupRegistryValue<T>(value: T, seen = new WeakMap<object, unknown
     return clone as T;
   }
   if (Array.isArray(value)) {
-    const clone: unknown[] = [];
+    const clone: any[] = [];
     seen.set(value, clone);
     clone.push(...value.map((entry) => cloneSetupRegistryValue(entry, seen)));
     return clone as T;
   }
   if (value instanceof Map) {
-    const clone = new Map<unknown, unknown>();
+    const clone = new Map<any, any>();
     seen.set(value, clone);
     for (const [key, entry] of value.entries()) {
       clone.set(cloneSetupRegistryValue(key, seen), cloneSetupRegistryValue(entry, seen));
@@ -431,7 +431,7 @@ function cloneSetupRegistryValue<T>(value: T, seen = new WeakMap<object, unknown
     return clone as T;
   }
   if (value instanceof Set) {
-    const clone = new Set<unknown>();
+    const clone = new Set<any>();
     seen.set(value, clone);
     for (const entry of value.values()) {
       clone.add(cloneSetupRegistryValue(entry, seen));
@@ -444,7 +444,7 @@ function cloneSetupRegistryValue<T>(value: T, seen = new WeakMap<object, unknown
     // treat them as immutable, or a caller mutation corrupts later cache hits.
     return value;
   }
-  const clone = Object.create(prototype) as Record<PropertyKey, unknown>;
+  const clone = Object.create(prototype) as Record<PropertyKey, any>;
   seen.set(value, clone);
   for (const key of Reflect.ownKeys(value)) {
     const descriptor = Object.getOwnPropertyDescriptor(value, key);

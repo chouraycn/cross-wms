@@ -9,8 +9,8 @@ const { resolveWebFetchDefinitionMock } = vi.hoisted(() => ({
   resolveWebFetchDefinitionMock: vi.fn(),
 }));
 const runtimeState = vi.hoisted(() => ({
-  activeSecretsRuntimeSnapshot: null as null | { config: unknown },
-  activeRuntimeWebToolsMetadata: null as null | Record<string, unknown>,
+  activeSecretsRuntimeSnapshot: null as null | { config: any },
+  activeRuntimeWebToolsMetadata: null as null | Record<string, any>,
 }));
 
 vi.mock("../../web-fetch/runtime.js", () => ({
@@ -87,7 +87,7 @@ describe("web_fetch provider fallback normalization", () => {
       warning?: string;
       truncated?: boolean;
       contentType?: string;
-      externalContent?: Record<string, unknown>;
+      externalContent?: Record<string, any>;
       extractor?: string;
     };
 
@@ -208,7 +208,7 @@ describe("web_fetch provider fallback normalization", () => {
     });
     const details = result?.details as {
       wrappedLength?: number;
-      externalContent?: Record<string, unknown>;
+      externalContent?: Record<string, any>;
     };
 
     expect(details.wrappedLength).toBeGreaterThan(200);

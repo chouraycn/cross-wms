@@ -22,11 +22,11 @@ function parseLegacyGatewaySelfText(text: string): Pick<GatewaySelfPresence, "ho
 }
 
 /** Picks host, ip, version, and platform from the gateway self presence record. */
-export function pickGatewaySelfPresence(presence: unknown): GatewaySelfPresence | null {
+export function pickGatewaySelfPresence(presence: any): GatewaySelfPresence | null {
   if (!Array.isArray(presence)) {
     return null;
   }
-  const entries = presence as Array<Record<string, unknown>>;
+  const entries = presence as Array<Record<string, any>>;
   const self =
     entries.find((e) => e.mode === "gateway" && e.reason === "self") ??
     // Back-compat: older presence payloads only included a `text` line.

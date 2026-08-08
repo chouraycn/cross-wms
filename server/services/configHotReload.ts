@@ -23,8 +23,8 @@ export interface ConfigChangeEvent {
   type: 'added' | 'changed' | 'removed' | 'error';
   file: string;
   key?: string;
-  previousValue?: unknown;
-  currentValue?: unknown;
+  previousValue?: any;
+  currentValue?: any;
   timestamp: number;
   error?: string;
 }
@@ -45,10 +45,10 @@ interface ConfigSnapshot {
 }
 
 /** 配置验证器 */
-export type ConfigValidator<T> = (value: unknown) => { valid: boolean; error?: string; parsed?: T };
+export type ConfigValidator<T> = (value: any) => { valid: boolean; error?: string; parsed?: T };
 
 /** 配置解析器 */
-export type ConfigParser = (content: string) => Record<string, unknown>;
+export type ConfigParser = (content: string) => Record<string, any>;
 
 // ===================== 默认解析器 =====================
 
@@ -56,10 +56,10 @@ const parsers: Record<string, ConfigParser> = {
   '.json': (content: string) => JSON.parse(content),
   '.yaml': (content: string) => {
     // 简单的 YAML 解析（支持基本结构）
-    const result: Record<string, unknown> = {};
+    const result: Record<string, any> = {};
     const lines = content.split('\n');
-    let currentSection: Record<string, unknown> = result;
-    const sectionStack: { key: string; parent: Record<string, unknown> }[] = [];
+    let currentSection: Record<string, any> = result;
+    const sectionStack: { key: string; parent: Record<string, any> }[] = [];
 
     for (const line of lines) {
       const trimmed = line.trim();
@@ -74,7 +74,7 @@ const parsers: Record<string, ConfigParser> = {
         sectionStack.pop();
         currentSection = result;
         for (const s of sectionStack) {
-          currentSection = currentSection[s.key] as Record<string, unknown>;
+          currentSection = currentSection[s.key] as Record<string, any>;
         }
       }
 
@@ -82,7 +82,7 @@ const parsers: Record<string, ConfigParser> = {
       const kvMatch = trimmed.match(/^([^:]+):\s*(.*)$/);
       if (kvMatch) {
         const key = kvMatch[1].trim();
-        let value: unknown = kvMatch[2].trim();
+        let value: any = kvMatch[2].trim();
         const valueStr = value as string;
 
         // 移除引号
@@ -105,7 +105,7 @@ const parsers: Record<string, ConfigParser> = {
         // 如果值是空的，后续行可能是子项
         if (!kvMatch[2].trim()) {
           sectionStack.push({ key, parent: currentSection });
-          currentSection = currentSection[key] as Record<string, unknown>;
+          currentSection = currentSection[key] as Record<string, any>;
         }
       }
     }
@@ -177,7 +177,7 @@ export class ConfigHotReload extends EventEmitter {
     write: (data: string) => void;
     destroy?: () => void;
   }> = new Set();
-  private validators: Map<string, ConfigValidator<unknown>> = new Map();
+  private validators: Map<string, ConfigValidator<any>> = new Map();
 
   constructor(configDir?: string) {
     super();
@@ -188,7 +188,7 @@ export class ConfigHotReload extends EventEmitter {
    * 注册配置验证器
    */
   registerValidator<T>(pattern: string, validator: ConfigValidator<T>): void {
-    this.validators.set(pattern, validator as ConfigValidator<unknown>);
+    this.validators.set(pattern, validator as ConfigValidator<any>);
     logger.info(`[ConfigHotReload] Registered validator for: ${pattern}`);
   }
 
@@ -298,7 +298,7 @@ export class ConfigHotReload extends EventEmitter {
             });
             return;
           }
-          validated = (result.parsed as Record<string, unknown>) || parsed;
+          validated = (result.parsed as Record<string, any>) || parsed;
         }
 
         // 保存快照（如果是变化）
@@ -419,8 +419,8 @@ export class ConfigHotReload extends EventEmitter {
   /**
    * 获取所有配置
    */
-  getAll(): Record<string, unknown> {
-    const result: Record<string, unknown> = {};
+  getAll(): Record<string, any> {
+    const result: Record<string, any> = {};
     for (const [key, entry] of this.entries) {
       result[key] = entry.value;
     }
@@ -491,7 +491,7 @@ export class ConfigHotReload extends EventEmitter {
   /**
    * 发送数据给单个客户端
    */
-  private emitToClient(client: { write: (data: string) => void; destroy?: () => void }, data: unknown): void {
+  private emitToClient(client: { write: (data: string) => void; destroy?: () => void }, data: any): void {
     try {
       client.write(`data: ${JSON.stringify(data)}\n\n`);
     } catch {
@@ -552,14 +552,14 @@ export class ConfigHotReload extends EventEmitter {
  * 创建带类型的配置验证器
  */
 export function createValidator<T>(
-  schema: Record<string, (v: unknown) => boolean>
+  schema: Record<string, (v: any) => boolean>
 ): ConfigValidator<T> {
-  return (value: unknown) => {
+  return (value: any) => {
     if (typeof value !== 'object' || value === null) {
       return { valid: false, error: 'Expected object' };
     }
 
-    const obj = value as Record<string, unknown>;
+    const obj = value as Record<string, any>;
     for (const [key, check] of Object.entries(schema)) {
       if (!check(obj[key])) {
         return { valid: false, error: `Invalid value for key: ${key}` };

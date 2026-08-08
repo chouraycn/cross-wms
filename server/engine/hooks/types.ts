@@ -120,7 +120,7 @@ export type HookEvent = {
   /** 关联的会话键 */
   sessionKey: string;
   /** 事件附带上下文 */
-  context: Record<string, unknown>;
+  context: Record<string, any>;
   /** 事件发生时间戳 */
   timestamp: Date;
   /** 钩子可向其中推送要返回给用户的消息 */
@@ -149,7 +149,7 @@ export interface InternalHookEvent {
   type: InternalHookEventType;
   action: string;
   sessionKey: string;
-  context: Record<string, unknown>;
+  context: Record<string, any>;
   timestamp: Date;
   messages: string[];
 }
@@ -164,7 +164,7 @@ export type InternalHookHandler = (event: InternalHookEvent) => Promise<void> | 
 export type AgentBootstrapHookContext = {
   workspaceDir: string;
   bootstrapFiles: Array<{ path: string; content: string }>;
-  cfg?: Record<string, unknown>;
+  cfg?: Record<string, any>;
   sessionKey?: string;
   sessionId?: string;
   agentId?: string;
@@ -181,8 +181,8 @@ export type AgentBootstrapHookEvent = InternalHookEvent & {
 // ============================================================================
 
 export type GatewayStartupHookContext = {
-  cfg?: Record<string, unknown>;
-  deps?: Record<string, unknown>;
+  cfg?: Record<string, any>;
+  deps?: Record<string, any>;
   workspaceDir?: string;
 };
 
@@ -204,7 +204,7 @@ export type MessageReceivedHookContext = {
   accountId?: string;
   conversationId?: string;
   messageId?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 export type MessageReceivedHookEvent = InternalHookEvent & {
@@ -289,9 +289,9 @@ export type MessagePreprocessedHookEvent = InternalHookEvent & {
 // ============================================================================
 
 export type SessionPatchHookContext = {
-  sessionEntry: Record<string, unknown>;
-  patch: Record<string, unknown>;
-  cfg: Record<string, unknown>;
+  sessionEntry: Record<string, any>;
+  patch: Record<string, any>;
+  cfg: Record<string, any>;
 };
 
 export type SessionPatchHookEvent = InternalHookEvent & {
@@ -306,7 +306,7 @@ export type SessionPatchHookEvent = InternalHookEvent & {
 
 export type ToolCallHookContext = {
   toolName: string;
-  arguments: Record<string, unknown>;
+  arguments: Record<string, any>;
   sessionKey: string;
   toolId?: string;
   pluginId?: string;
@@ -319,7 +319,7 @@ export type ToolCallHookEvent = InternalHookEvent & {
 };
 
 export type ToolResultHookContext = ToolCallHookContext & {
-  result: unknown;
+  result: any;
   success: boolean;
   error?: string;
   durationMs?: number;
@@ -418,7 +418,7 @@ export interface MailWatcherError {
   type: MailWatcherErrorType;
   message: string;
   timestamp: Date;
-  details?: Record<string, unknown>;
+  details?: Record<string, any>;
 }
 
 export interface MailWatcherStatus {

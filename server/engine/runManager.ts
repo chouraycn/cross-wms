@@ -66,11 +66,11 @@ export interface ActiveRunSnapshot {
   /** transcript 叶节点 ID */
   transcriptLeafId: string | null;
   /** 消息列表 */
-  messages?: unknown[];
+  messages?: any[];
   /** 飞行中的提示词 */
   inFlightPrompt?: string;
   /** 运行元数据 */
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 /**

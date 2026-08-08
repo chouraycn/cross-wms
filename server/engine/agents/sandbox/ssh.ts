@@ -645,7 +645,7 @@ export class SshSandboxTransport {
       ssh.stdout.on('data', (chunk) => sshStdout.push(Buffer.from(chunk)));
       ssh.stderr.on('data', (chunk) => sshStderr.push(Buffer.from(chunk)));
 
-      const fail = (error: unknown) => {
+      const fail = (error: any) => {
         tar.kill('SIGKILL');
         ssh.kill('SIGKILL');
         reject(toErrorObject(error, '上传过程中出现非 Error 异常'));

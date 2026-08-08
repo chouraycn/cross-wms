@@ -78,10 +78,10 @@ describe("prepareSecretsRuntimeSnapshot loadable plugin origins", () => {
       [
         {
           config: {
-            plugins?: unknown;
+            plugins?: any;
           };
-          workspaceDir: unknown;
-          env: Record<string, unknown>;
+          workspaceDir: any;
+          env: Record<string, any>;
         },
       ]
     >;

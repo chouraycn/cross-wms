@@ -89,9 +89,9 @@ export function initWebhookTables(db: Database.Database): void {
  */
 export function getAllWebhooks(): WebhookConfig[] {
   const db = getDb();
-  const rows = db.prepare('SELECT * FROM webhooks ORDER BY created_at DESC').all() as unknown[];
+  const rows = db.prepare('SELECT * FROM webhooks ORDER BY created_at DESC').all() as Array<Record<string, any>>;
 
-  return rows.map(row => ({
+  return rows.map((row: Record<string, any>) => ({
     id: row.id,
     name: row.name,
     url: row.url,
@@ -108,7 +108,7 @@ export function getAllWebhooks(): WebhookConfig[] {
  */
 export function getWebhookById(id: string): WebhookConfig | null {
   const db = getDb();
-  const row = db.prepare('SELECT * FROM webhooks WHERE id = ?').get(id) as unknown;
+  const row = db.prepare('SELECT * FROM webhooks WHERE id = ?').get(id) as Record<string, any> | undefined;
 
   if (!row) return null;
 
@@ -184,7 +184,7 @@ export function updateWebhook(
   if (!existing) return null;
 
   const updates: string[] = [];
-  const values: unknown[] = [];
+  const values: any[] = [];
 
   if (data.name !== undefined) {
     updates.push('name = ?');
@@ -243,17 +243,17 @@ export function getWebhookLogs(
   // 获取总数
   const countRow = db
     .prepare('SELECT COUNT(*) as count FROM webhook_logs WHERE webhook_id = ?')
-    .get(webhookId) as unknown;
-  const total = countRow.count;
+    .get(webhookId) as Record<string, any> | undefined;
+  const total = (countRow as Record<string, any>)?.count as number;
 
   // 获取日志列表
   const rows = db
     .prepare(
       'SELECT * FROM webhook_logs WHERE webhook_id = ? ORDER BY triggered_at DESC LIMIT ? OFFSET ?'
     )
-    .all(webhookId, limit, offset) as unknown[];
+    .all(webhookId, limit, offset) as Array<Record<string, any>>;
 
-  const logs: WebhookLog[] = rows.map(row => ({
+  const logs: WebhookLog[] = rows.map((row: Record<string, any>) => ({
     id: row.id,
     webhookId: row.webhook_id,
     eventType: row.event_type,
@@ -317,7 +317,7 @@ export function updateWebhookLog(
 ): void {
   const db = getDb();
   const updates: string[] = [];
-  const values: unknown[] = [];
+  const values: any[] = [];
 
   if (data.status !== undefined) {
     updates.push('status = ?');
@@ -360,23 +360,23 @@ export function getWebhookStats(): WebhookStats {
   const db = getDb();
 
   // 总数
-  const totalRow = db.prepare('SELECT COUNT(*) as count FROM webhooks').get() as unknown;
-  const total = totalRow.count;
+  const totalRow = db.prepare('SELECT COUNT(*) as count FROM webhooks').get() as Record<string, any> | undefined;
+  const total = (totalRow as Record<string, any>)?.count as number;
 
   // 启用数量
-  const activeRow = db.prepare('SELECT COUNT(*) as count FROM webhooks WHERE enabled = 1').get() as unknown;
-  const active = activeRow.count;
+  const activeRow = db.prepare('SELECT COUNT(*) as count FROM webhooks WHERE enabled = 1').get() as Record<string, any> | undefined;
+  const active = (activeRow as Record<string, any>)?.count as number;
 
   // 成功率
   const successRow = db
     .prepare(
       "SELECT COUNT(*) as count FROM webhook_logs WHERE status = 'success'"
     )
-    .get() as unknown;
-  const successCount = successRow.count;
+    .get() as Record<string, any> | undefined;
+  const successCount = (successRow as Record<string, any>)?.count as number;
 
-  const totalLogsRow = db.prepare('SELECT COUNT(*) as count FROM webhook_logs').get() as unknown;
-  const totalLogs = totalLogsRow.count;
+  const totalLogsRow = db.prepare('SELECT COUNT(*) as count FROM webhook_logs').get() as Record<string, any> | undefined;
+  const totalLogs = (totalLogsRow as Record<string, any>)?.count as number;
 
   const successRate = totalLogs > 0 ? (successCount / totalLogs) * 100 : 0;
 

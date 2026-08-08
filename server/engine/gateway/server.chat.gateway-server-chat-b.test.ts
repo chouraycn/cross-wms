@@ -43,7 +43,7 @@ const sendReq = (
   ws: { send: (payload: string) => void },
   id: string,
   method: string,
-  params: unknown,
+  params: any,
 ) => {
   ws.send(
     JSON.stringify({
@@ -106,7 +106,7 @@ function futureFixtureUpdatedAt(): number {
   return Date.now() + 60_000;
 }
 
-async function writeGatewayConfig(config: Record<string, unknown>) {
+async function writeGatewayConfig(config: Record<string, any>) {
   const configPath = process.env.OPENCLAW_CONFIG_PATH;
   if (!configPath) {
     throw new Error("OPENCLAW_CONFIG_PATH missing in gateway test environment");
@@ -128,13 +128,13 @@ async function removeTempDir(dir: string): Promise<void> {
   await fs.rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
 }
 
-async function readTimelineEvents(filePath: string): Promise<Array<Record<string, unknown>>> {
+async function readTimelineEvents(filePath: string): Promise<Array<Record<string, any>>> {
   const raw = await fs.readFile(filePath, "utf-8");
   return raw
     .trim()
     .split("\n")
     .filter(Boolean)
-    .map((line) => JSON.parse(line) as Record<string, unknown>);
+    .map((line) => JSON.parse(line) as Record<string, any>);
 }
 
 async function fetchHistoryMessages(
@@ -143,8 +143,8 @@ async function fetchHistoryMessages(
     limit?: number;
     maxChars?: number;
   },
-): Promise<unknown[]> {
-  const historyRes = await rpcReq<{ messages?: unknown[] }>(ws, "chat.history", {
+): Promise<any[]> {
+  const historyRes = await rpcReq<{ messages?: any[] }>(ws, "chat.history", {
     sessionKey: "main",
     limit: params?.limit ?? 1000,
     ...(typeof params?.maxChars === "number" ? { maxChars: params.maxChars } : {}),
@@ -163,12 +163,12 @@ async function fetchChatMessage(
   },
 ): Promise<{
   ok?: boolean;
-  message?: unknown;
+  message?: any;
   unavailableReason?: "not_found" | "oversized" | "not_visible";
 }> {
   const res = await rpcReq<{
     ok?: boolean;
-    message?: unknown;
+    message?: any;
     unavailableReason?: "not_found" | "oversized" | "not_visible";
   }>(ws, "chat.message.get", {
     sessionKey: params.sessionKey,
@@ -231,7 +231,7 @@ describe("gateway server chat", () => {
           },
         },
       });
-      const responses: Array<{ ok: boolean; payload?: unknown; error?: unknown }> = [];
+      const responses: Array<{ ok: boolean; payload?: any; error?: any }> = [];
       const context = {
         loadGatewayModelCatalog: vi
           .fn<GatewayRequestContext["loadGatewayModelCatalog"]>()
@@ -276,7 +276,7 @@ describe("gateway server chat", () => {
         | {
             sessionKey?: string;
             sessionId?: string;
-            messages?: unknown;
+            messages?: any;
             defaults?: {
               modelProvider?: string | null;
               thinkingLevels?: Array<{ id?: string }>;
@@ -441,7 +441,7 @@ describe("gateway server chat", () => {
           commands?: Array<{ name?: string; textAliases?: string[] }>;
           models?: Array<{ id?: string; provider?: string }>;
         };
-        messages?: unknown[];
+        messages?: any[];
         sessionInfo?: { key?: string; sessionId?: string };
       }>(ws, "chat.startup", { sessionKey: "main" });
 
@@ -489,7 +489,7 @@ describe("gateway server chat", () => {
       });
       const catalog =
         createDeferred<Awaited<ReturnType<GatewayRequestContext["loadGatewayModelCatalog"]>>>();
-      const responses: Array<{ ok: boolean; payload?: unknown; error?: unknown }> = [];
+      const responses: Array<{ ok: boolean; payload?: any; error?: any }> = [];
       const context = {
         loadGatewayModelCatalog: vi
           .fn<GatewayRequestContext["loadGatewayModelCatalog"]>()
@@ -528,7 +528,7 @@ describe("gateway server chat", () => {
       const payload = responses[0]?.payload as
         | {
             agentsList?: { agents?: Array<{ id?: string }> };
-            metadata?: unknown;
+            metadata?: any;
             sessionInfo?: { sessionId?: string };
           }
         | undefined;
@@ -564,7 +564,7 @@ describe("gateway server chat", () => {
       });
       await connectOk(ws);
 
-      const startup = await rpcReq<{ metadata?: unknown }>(ws, "chat.startup", {
+      const startup = await rpcReq<{ metadata?: any }>(ws, "chat.startup", {
         sessionKey: "main",
       });
 
@@ -622,7 +622,7 @@ describe("gateway server chat", () => {
         },
       };
       await writeGatewayConfig(config);
-      const responses: Array<{ ok: boolean; payload?: unknown; error?: unknown }> = [];
+      const responses: Array<{ ok: boolean; payload?: any; error?: any }> = [];
       const context = {
         loadGatewayModelCatalog: vi
           .fn<GatewayRequestContext["loadGatewayModelCatalog"]>()
@@ -785,7 +785,7 @@ describe("gateway server chat", () => {
 
       const firstCatalog =
         createDeferred<Awaited<ReturnType<GatewayRequestContext["loadGatewayModelCatalog"]>>>();
-      const responses: Array<{ id: string; ok: boolean; payload?: unknown; error?: unknown }> = [];
+      const responses: Array<{ id: string; ok: boolean; payload?: any; error?: any }> = [];
       const context = {
         loadGatewayModelCatalog: vi
           .fn<GatewayRequestContext["loadGatewayModelCatalog"]>()
@@ -926,10 +926,10 @@ describe("gateway server chat", () => {
       const sendResponses: Array<{
         id: string;
         ok: boolean;
-        payload?: unknown;
-        error?: unknown;
+        payload?: any;
+        error?: any;
       }> = [];
-      const abortResponses: Array<{ ok: boolean; payload?: unknown; error?: unknown }> = [];
+      const abortResponses: Array<{ ok: boolean; payload?: any; error?: any }> = [];
       const context = {
         loadGatewayModelCatalog: vi
           .fn<GatewayRequestContext["loadGatewayModelCatalog"]>()
@@ -1174,11 +1174,11 @@ describe("gateway server chat", () => {
         } as unknown as GatewayRequestContext;
         const pngB64 =
           "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/woAAn8B9FD5fHAAAAAASUVORK5CYII=";
-        let captured: { ctx?: Record<string, unknown>; replyOptions?: GetReplyOptions } | undefined;
-        dispatchInboundMessageMock.mockImplementationOnce(async (...args: unknown[]) => {
+        let captured: { ctx?: Record<string, any>; replyOptions?: GetReplyOptions } | undefined;
+        dispatchInboundMessageMock.mockImplementationOnce(async (...args: any[]) => {
           const [params] = args as [
             {
-              ctx: Record<string, unknown>;
+              ctx: Record<string, any>;
               replyOptions?: GetReplyOptions;
             },
           ];
@@ -1189,7 +1189,7 @@ describe("gateway server chat", () => {
         });
 
         const { chatHandlers } = await import("./server-methods/chat.js");
-        const responses: Array<{ ok: boolean; payload?: unknown; error?: unknown }> = [];
+        const responses: Array<{ ok: boolean; payload?: any; error?: any }> = [];
         await chatHandlers["chat.send"]({
           req: {
             type: "req",
@@ -1263,7 +1263,7 @@ describe("gateway server chat", () => {
         },
       });
 
-      const responses: Array<{ id: string; ok: boolean; payload?: unknown; error?: unknown }> = [];
+      const responses: Array<{ id: string; ok: boolean; payload?: any; error?: any }> = [];
       const context = {
         loadGatewayModelCatalog: vi.fn<GatewayRequestContext["loadGatewayModelCatalog"]>(),
         logGateway: {
@@ -1448,7 +1448,7 @@ describe("gateway server chat", () => {
         },
       });
 
-      const responses: Array<{ id: string; ok: boolean; payload?: unknown; error?: unknown }> = [];
+      const responses: Array<{ id: string; ok: boolean; payload?: any; error?: any }> = [];
       const context = {
         loadGatewayModelCatalog: vi.fn<GatewayRequestContext["loadGatewayModelCatalog"]>(),
         logGateway: {
@@ -1524,7 +1524,7 @@ describe("gateway server chat", () => {
       ]);
       expect(dispatchInboundMessageMock).toHaveBeenCalledTimes(1);
       const dispatchContext = (
-        dispatchInboundMessageMock.mock.calls[0]?.[0] as { ctx?: Record<string, unknown> }
+        dispatchInboundMessageMock.mock.calls[0]?.[0] as { ctx?: Record<string, any> }
       )?.ctx;
       expect(dispatchContext).toMatchObject({
         Body: "/reset examples",
@@ -1563,7 +1563,7 @@ describe("gateway server chat", () => {
         },
       });
 
-      const responses: Array<{ id: string; ok: boolean; payload?: unknown; error?: unknown }> = [];
+      const responses: Array<{ id: string; ok: boolean; payload?: any; error?: any }> = [];
       const context = {
         loadGatewayModelCatalog: vi.fn<GatewayRequestContext["loadGatewayModelCatalog"]>(),
         logGateway: {
@@ -1697,7 +1697,7 @@ describe("gateway server chat", () => {
         },
       });
 
-      const responses: Array<{ ok: boolean; payload?: unknown; error?: unknown }> = [];
+      const responses: Array<{ ok: boolean; payload?: any; error?: any }> = [];
       const broadcastToConnIds = vi.fn();
       const context = {
         loadGatewayModelCatalog: vi.fn<GatewayRequestContext["loadGatewayModelCatalog"]>(),
@@ -1725,7 +1725,7 @@ describe("gateway server chat", () => {
         registerToolEventRecipient: vi.fn(),
         dedupe: new Map(),
       } as unknown as GatewayRequestContext;
-      dispatchInboundMessageMock.mockImplementationOnce(async (args: unknown) => {
+      dispatchInboundMessageMock.mockImplementationOnce(async (args: any) => {
         const replyOptions = (args as { replyOptions?: GetReplyOptions }).replyOptions;
         replyOptions?.onModelSelected?.({
           provider: "openai",
@@ -1788,7 +1788,7 @@ describe("gateway server chat", () => {
         () => {
           const phases = broadcastToConnIds.mock.calls
             .filter(([event]) => event === "chat.send_timing")
-            .map(([, payload]) => (payload as { phase?: unknown }).phase);
+            .map(([, payload]) => (payload as { phase?: any }).phase);
           expect(phases).toEqual(
             expect.arrayContaining([
               "dispatch-started",
@@ -1848,7 +1848,7 @@ describe("gateway server chat", () => {
         },
       });
 
-      const responses: Array<{ ok: boolean; payload?: unknown; error?: unknown }> = [];
+      const responses: Array<{ ok: boolean; payload?: any; error?: any }> = [];
       const broadcast = vi.fn();
       const broadcastToConnIds = vi.fn();
       const context = {
@@ -1877,7 +1877,7 @@ describe("gateway server chat", () => {
         registerToolEventRecipient: vi.fn(),
         dedupe: new Map(),
       } as unknown as GatewayRequestContext;
-      dispatchInboundMessageMock.mockImplementationOnce(async (args: unknown) => {
+      dispatchInboundMessageMock.mockImplementationOnce(async (args: any) => {
         const dispatcher = (
           args as {
             dispatcher?: {
@@ -1973,7 +1973,7 @@ describe("gateway server chat", () => {
       const firstAssistantTimingCallIndex = broadcastToConnIds.mock.calls.findIndex(
         ([event, payload]) =>
           event === "chat.send_timing" &&
-          (payload as { phase?: unknown }).phase === "first-assistant-event",
+          (payload as { phase?: any }).phase === "first-assistant-event",
       );
       expect(firstAssistantTimingCallIndex).toBeGreaterThanOrEqual(0);
       expect(
@@ -2341,7 +2341,7 @@ describe("gateway server chat", () => {
               (event) =>
                 event.type === "mark" &&
                 event.name === "gateway.chat_send.ack_ready" &&
-                (event.attributes as Record<string, unknown> | undefined)?.runId ===
+                (event.attributes as Record<string, any> | undefined)?.runId ===
                   "idem-timeline",
             );
             expect(ackReady?.attributes).toMatchObject({
@@ -2355,7 +2355,7 @@ describe("gateway server chat", () => {
                 (event) =>
                   event.type === "span.end" &&
                   event.name === "gateway.chat_send.dispatch_inbound" &&
-                  (event.attributes as Record<string, unknown> | undefined)?.runId ===
+                  (event.attributes as Record<string, any> | undefined)?.runId ===
                     "idem-timeline",
               ),
             ).toBe(true);
@@ -2408,7 +2408,7 @@ describe("gateway server chat", () => {
           status: "started",
         });
         expect(
-          (sendRes.payload as { serverTiming?: unknown } | undefined)?.serverTiming,
+          (sendRes.payload as { serverTiming?: any } | undefined)?.serverTiming,
         ).toBeUndefined();
       },
       {

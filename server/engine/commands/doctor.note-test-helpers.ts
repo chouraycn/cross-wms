@@ -2,17 +2,17 @@
 import type { Mock } from "vitest";
 import { vi } from "vitest";
 
-export const terminalNoteMock: Mock<(...args: unknown[]) => unknown> = vi.fn();
+export const terminalNoteMock: Mock<(...args: any[]) => unknown> = vi.fn();
 
 vi.mock("@openclaw-src/packages/terminal-core/src/note.js", () => ({
-  note: (...args: unknown[]) => terminalNoteMock(...args),
+  note: (...args: any[]) => terminalNoteMock(...args),
 }));
 
 /** Loads doctorCommand after resetting modules and applying the terminal note mock. */
 export async function loadDoctorCommandForTest(params?: { unmockModules?: string[] }) {
   vi.resetModules();
   vi.doMock("@openclaw-src/packages/terminal-core/src/note.js", () => ({
-    note: (...args: unknown[]) => terminalNoteMock(...args),
+    note: (...args: any[]) => terminalNoteMock(...args),
   }));
   for (const modulePath of params?.unmockModules ?? []) {
     vi.doUnmock(modulePath);

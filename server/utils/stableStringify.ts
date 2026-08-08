@@ -16,12 +16,12 @@
 
 const MAX_DEPTH = 50;
 
-export function stableStringify(value: unknown): string {
+export function stableStringify(value: any): string {
   const seen = new WeakSet<object>();
   return stringify(value, seen, 0);
 }
 
-function stringify(value: unknown, seen: WeakSet<object>, depth: number): string {
+function stringify(value: any, seen: WeakSet<object>, depth: number): string {
   if (depth > MAX_DEPTH) {
     return '"[MaxDepthExceeded]"';
   }
@@ -112,10 +112,10 @@ function stringify(value: unknown, seen: WeakSet<object>, depth: number): string
       }
 
       // 普通对象：按 key 字母序
-      const keys = Object.keys(value as Record<string, unknown>).sort();
+      const keys = Object.keys(value as Record<string, any>).sort();
       const pairs: string[] = [];
       for (const key of keys) {
-        const val = (value as Record<string, unknown>)[key];
+        const val = (value as Record<string, any>)[key];
         pairs.push(`${JSON.stringify(key)}:${stringify(val, seen, depth + 1)}`);
       }
       return `{${pairs.join(',')}}`;
@@ -128,7 +128,7 @@ function stringify(value: unknown, seen: WeakSet<object>, depth: number): string
   return JSON.stringify(`[${type}]`);
 }
 
-function stableStringifyKey(value: unknown): string {
+function stableStringifyKey(value: any): string {
   try {
     return stableStringify(value);
   } catch {

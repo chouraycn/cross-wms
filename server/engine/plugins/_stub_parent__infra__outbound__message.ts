@@ -14,13 +14,13 @@ export type SendMessageParams = {
   channel: string;
   accountId?: string;
   threadId?: string | number;
-  replyTo?: unknown;
-  [key: string]: unknown;
+  replyTo?: any;
+  [key: string]: any;
 };
 
 export type SendMessageResult = {
   ok: boolean;
-  result?: unknown;
+  result?: any;
   channel?: string;
   messageId?: string;
   error?: string;

@@ -8,7 +8,7 @@ export const pluginTestRepoRoot = path.resolve(__dirname, "../..");
 
 const tempDirs: string[] = [];
 
-export function writeJson(filePath: string, value: unknown): void {
+export function writeJson(filePath: string, value: any): void {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, "utf8");
 }

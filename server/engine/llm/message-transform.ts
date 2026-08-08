@@ -37,7 +37,7 @@ export type AnthropicMessage = {
 };
 
 /** Gemini content 部件。 */
-export type GeminiPart = { text: string } | { functionResponse?: { name: string; response: unknown } };
+export type GeminiPart = { text: string } | { functionResponse?: { name: string; response: any } };
 
 /** Gemini contents 项。 */
 export type GeminiContent = {

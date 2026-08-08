@@ -13,7 +13,7 @@ import fs from "node:fs";
 
 const mocks = vi.hoisted(() => ({
   toDataURL: vi.fn(
-    async (text: string, opts?: Record<string, unknown>) =>
+    async (text: string, opts?: Record<string, any>) =>
       `data:image/png;base64,${Buffer.from(`${text}:${JSON.stringify(opts ?? {})}`).toString("base64")}`,
   ),
   toString: vi.fn(async (text: string) => text),
@@ -63,7 +63,7 @@ describe("media / qr-image", () => {
   it("renderQrPngBase64 默认参数应正常工作", async () => {
     await expect(renderQrPngBase64("hello")).resolves.toEqual(expect.any(String));
     expect(toDataURLMock).toHaveBeenCalledTimes(1);
-    const opts = toDataURLMock.mock.calls[0][1] as Record<string, unknown>;
+    const opts = toDataURLMock.mock.calls[0][1] as Record<string, any>;
     expect(opts.type).toBe("image/png");
     expect(opts.scale).toBe(6); // DEFAULT_QR_PNG_SCALE
     expect(opts.margin).toBe(4); // DEFAULT_QR_PNG_MARGIN_MODULES
@@ -71,7 +71,7 @@ describe("media / qr-image", () => {
 
   it("renderQrPngBase64 应接受范围内的自定义 scale/marginModules", async () => {
     await renderQrPngBase64("hi", { scale: 8, marginModules: 2 });
-    const opts = toDataURLMock.mock.calls[0][1] as Record<string, unknown>;
+    const opts = toDataURLMock.mock.calls[0][1] as Record<string, any>;
     expect(opts.scale).toBe(8);
     expect(opts.margin).toBe(2);
   });

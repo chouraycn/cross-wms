@@ -29,7 +29,7 @@ type CliRespawnPlan = {
 };
 
 type CliRespawnRuntime = RespawnChildRuntime & {
-  writeError: (message: string, error?: unknown) => void;
+  writeError: (message: string, error?: any) => void;
 };
 
 function pathModuleForPlatform(platform: NodeJS.Platform): typeof path.posix {

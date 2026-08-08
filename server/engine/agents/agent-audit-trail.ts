@@ -42,7 +42,7 @@ export interface AuditEvent {
   /** 简要描述 */
   message: string;
   /** 详细数据（任意 JSON 可序列化内容） */
-  payload?: Record<string, unknown>;
+  payload?: Record<string, any>;
   /** 关联的会话 ID（可选） */
   sessionId?: string;
   /** 关联的父 Agent ID（子 Agent 场景，可选） */
@@ -138,7 +138,7 @@ export class AgentAuditTrail {
     agentId: string,
     type: string,
     message: string,
-    payload?: Record<string, unknown>,
+    payload?: Record<string, any>,
     options?: { level?: AuditEventLevel; sessionId?: string },
   ): AuditEvent {
     return this.record({
@@ -157,7 +157,7 @@ export class AgentAuditTrail {
     agentId: string,
     toolName: string,
     phase: 'start' | 'end' | 'error',
-    payload?: Record<string, unknown>,
+    payload?: Record<string, any>,
     options?: { durationMs?: number; sessionId?: string; level?: AuditEventLevel; message?: string },
   ): AuditEvent {
     return this.record({
@@ -179,7 +179,7 @@ export class AgentAuditTrail {
     decision: 'allow' | 'deny' | 'approval',
     target: string,
     reason: string,
-    payload?: Record<string, unknown>,
+    payload?: Record<string, any>,
   ): AuditEvent {
     return this.record({
       agentId,
@@ -197,7 +197,7 @@ export class AgentAuditTrail {
     agentId: string,
     model: string,
     phase: 'start' | 'end' | 'error',
-    payload?: Record<string, unknown>,
+    payload?: Record<string, any>,
     options?: { durationMs?: number; sessionId?: string; level?: AuditEventLevel; message?: string },
   ): AuditEvent {
     return this.record({
@@ -218,7 +218,7 @@ export class AgentAuditTrail {
     parentAgentId: string,
     childAgentId: string,
     message: string,
-    payload?: Record<string, unknown>,
+    payload?: Record<string, any>,
   ): AuditEvent {
     return this.record({
       agentId: childAgentId,

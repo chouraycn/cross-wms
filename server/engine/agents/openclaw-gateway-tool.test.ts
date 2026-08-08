@@ -29,13 +29,13 @@ function requireGatewayTool(agentSessionKey?: string) {
   });
 }
 
-function collectActionValues(schema: unknown, values: Set<string>): void {
+function collectActionValues(schema: any, values: Set<string>): void {
   // Tool schemas can expose actions through const, enum, or anyOf variants.
   if (!schema || typeof schema !== "object") {
     return;
   }
 
-  const record = schema as Record<string, unknown>;
+  const record = schema as Record<string, any>;
   if (typeof record.const === "string") {
     values.add(record.const);
   }
@@ -53,7 +53,7 @@ function collectActionValues(schema: unknown, values: Set<string>): void {
   }
 }
 
-type GatewayCall = [method: string, options: unknown, params?: unknown];
+type GatewayCall = [method: string, options: any, params?: any];
 
 function gatewayCalls(): GatewayCall[] {
   return vi.mocked(callGatewayTool).mock.calls as GatewayCall[];
@@ -69,13 +69,13 @@ function gatewayCall(method: string): GatewayCall {
 
 function expectGatewayCallFields(
   method: string,
-  expectedParams: Record<string, unknown>,
-): Record<string, unknown> {
+  expectedParams: Record<string, any>,
+): Record<string, any> {
   const params = gatewayCall(method)[2];
   if (params === undefined) {
     throw new Error(`Expected gateway call params for ${method}`);
   }
-  const record = params as Record<string, unknown>;
+  const record = params as Record<string, any>;
   for (const [key, value] of Object.entries(expectedParams)) {
     expect(record[key]).toEqual(value);
   }
@@ -91,13 +91,13 @@ function expectGatewayMethodNotCalled(method: string): void {
 }
 
 function expectRecordFields(
-  record: unknown,
-  expected: Record<string, unknown>,
-): Record<string, unknown> {
+  record: any,
+  expected: Record<string, any>,
+): Record<string, any> {
   if (!record || typeof record !== "object") {
     throw new Error("Expected record");
   }
-  const actual = record as Record<string, unknown>;
+  const actual = record as Record<string, any>;
   for (const [key, value] of Object.entries(expected)) {
     expect(actual[key]).toEqual(value);
   }
@@ -107,7 +107,7 @@ function expectRecordFields(
 function expectConfigMutationCall(params: {
   callGatewayTool: {
     mock: {
-      calls: Array<readonly unknown[]>;
+      calls: Array<readonly any[]>;
     };
   };
   action: "config.apply" | "config.patch";
@@ -176,7 +176,7 @@ describe("gateway tool", () => {
   it("exposes restart and config actions in the gateway tool schema", () => {
     const tool = requireGatewayTool();
     const parameters = tool.parameters as {
-      properties?: Record<string, unknown>;
+      properties?: Record<string, any>;
     };
     const values = new Set<string>();
     collectActionValues(parameters.properties?.action, values);
@@ -881,7 +881,7 @@ describe("gateway tool", () => {
       path: "gateway.auth",
       hintPath: "gateway.auth",
     });
-    const children = lookupResult.children as Array<unknown>;
+    const children = lookupResult.children as Array<any>;
     expect(children).toHaveLength(1);
     expectRecordFields(children[0], {
       key: "token",
@@ -889,7 +889,7 @@ describe("gateway tool", () => {
       required: true,
       hintPath: "gateway.auth.token",
     });
-    const schema = (result.details as { result?: { schema?: { properties?: unknown } } }).result
+    const schema = (result.details as { result?: { schema?: { properties?: any } } }).result
       ?.schema;
     expect(schema?.properties).toBeUndefined();
   });

@@ -8,7 +8,7 @@ export interface RetryOptions {
 }
 
 export interface FallbackOptions {
-  fallbackMethod: () => Promise<unknown>;
+  fallbackMethod: () => Promise<any>;
 }
 
 export interface RecoveryPolicy {

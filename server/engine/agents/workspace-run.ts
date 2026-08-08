@@ -6,9 +6,9 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function redactRunIdentifier(..._args: unknown[]): unknown {
+export function redactRunIdentifier(..._args: any[]): any {
   return undefined;
 }
-export function resolveRunWorkspaceDir(..._args: unknown[]): unknown {
+export function resolveRunWorkspaceDir(..._args: any[]): any {
   return undefined;
 }

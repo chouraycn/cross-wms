@@ -8,7 +8,7 @@ export function matchesExactOrPrefix(id: string, values: readonly string[]): boo
   }
   return false;
 }
-export function cloneFirstTemplateModel(params: unknown): unknown {
+export function cloneFirstTemplateModel(params: any): any {
   void params;
   return undefined;
 }

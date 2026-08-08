@@ -163,7 +163,7 @@ export function createBlockReplyDeliveryHandler(params: {
     }
 
     if (blockPayload.text) {
-      void params.typingSignals.signalTextDelta(blockPayload.text).catch((err: unknown) => {
+      void params.typingSignals.signalTextDelta(blockPayload.text).catch((err: any) => {
         logVerbose(`block reply typing signal failed: ${String(err)}`);
       });
     }

@@ -40,7 +40,7 @@ export interface PluginManifest {
   providers?: string[];
   requiresPlugins?: string[];
   enabledByDefault?: boolean;
-  configSchema?: Record<string, unknown>;
+  configSchema?: Record<string, any>;
   entry: string;
   dependencies?: string[];
   permissions?: string[];
@@ -71,7 +71,7 @@ const REQUIRED_FIELDS: (keyof PluginManifest)[] = ['id', 'name', 'version', 'ent
 const ID_REGEX = /^[a-z0-9-]+$/;
 const VERSION_REGEX = /^\d+\.\d+\.\d+(-[a-zA-Z0-9]+)?$/;
 
-export function validateManifest(raw: unknown): PluginManifestValidationResult {
+export function validateManifest(raw: any): PluginManifestValidationResult {
   const errors: string[] = [];
   const warnings: string[] = [];
 

@@ -48,9 +48,9 @@ export interface SubagentInstance {
   completedAt?: number;
   lastActivityAt?: number;
   taskDescription?: string;
-  result?: unknown;
+  result?: any;
   error?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface SpawnSubagentParams {
@@ -58,8 +58,8 @@ export interface SpawnSubagentParams {
   taskDescription: string;
   sessionKey: string;
   parentSessionKey?: string;
-  input?: Record<string, unknown>;
-  metadata?: Record<string, unknown>;
+  input?: Record<string, any>;
+  metadata?: Record<string, any>;
   timeoutMs?: number;
 }
 
@@ -287,7 +287,7 @@ class SubagentRegistry {
     return true;
   }
 
-  complete(instanceId: string, result: unknown): boolean {
+  complete(instanceId: string, result: any): boolean {
     const instance = this.instances.get(instanceId);
     if (!instance) return false;
 

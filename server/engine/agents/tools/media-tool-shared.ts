@@ -122,7 +122,7 @@ export function applyMusicGenerationModelConfigDefaults(
 /**
  * Reads an optional generation timeout while preserving common tool parameter validation.
  */
-export function readGenerationTimeoutMs(args: Record<string, unknown>): number | undefined {
+export function readGenerationTimeoutMs(args: Record<string, any>): number | undefined {
   return readPositiveIntegerParam(args, "timeoutMs", {
     message: "timeoutMs must be a positive integer in milliseconds.",
   });
@@ -450,7 +450,7 @@ function formatQuotedList(values: readonly string[]): string {
  * Reads a constrained generation action and raises a tool-input error for invalid values.
  */
 export function resolveGenerateAction<TAction extends string>(params: {
-  args: Record<string, unknown>;
+  args: Record<string, any>;
   allowed: readonly TAction[];
   defaultAction: TAction;
 }): TAction {
@@ -469,7 +469,7 @@ export function resolveGenerateAction<TAction extends string>(params: {
  * Reads boolean tool parameters from either canonical or snake_case keys.
  */
 export function readBooleanToolParam(
-  params: Record<string, unknown>,
+  params: Record<string, any>,
   key: string,
 ): boolean | undefined {
   const raw = readSnakeCaseParamRaw(params, key);
@@ -492,7 +492,7 @@ export function readBooleanToolParam(
  * Normalizes singular/plural media reference parameters into a deduped, bounded list.
  */
 export function normalizeMediaReferenceInputs(params: {
-  args: Record<string, unknown>;
+  args: Record<string, any>;
   singularKey: string;
   pluralKey: string;
   maxCount: number;
@@ -529,7 +529,7 @@ export function buildMediaReferenceDetails<T extends MediaReferenceDetailEntry>(
   pluralKey: string;
   getResolvedInput: (entry: T) => string | undefined;
   singleRewriteKey?: string;
-}): Record<string, unknown> {
+}): Record<string, any> {
   if (params.entries.length === 1) {
     const entry = params.entries[0];
     if (!entry) {
@@ -557,7 +557,7 @@ export function buildMediaReferenceDetails<T extends MediaReferenceDetailEntry>(
  */
 export function buildTaskRunDetails(
   handle: TaskRunDetailHandle | null | undefined,
-): Record<string, unknown> {
+): Record<string, any> {
   return handle
     ? {
         task: {
@@ -616,7 +616,7 @@ export function resolveMediaToolInboundRoots(options?: {
  * Resolves the effective prompt and optional model override from common media tool args.
  */
 export function resolvePromptAndModelOverride(
-  args: Record<string, unknown>,
+  args: Record<string, any>,
   defaultPrompt: string,
 ): {
   prompt: string;
@@ -632,10 +632,10 @@ export function resolvePromptAndModelOverride(
  */
 export function buildTextToolResult(
   result: TextToolResult,
-  extraDetails: Record<string, unknown>,
+  extraDetails: Record<string, any>,
 ): {
   content: Array<{ type: "text"; text: string }>;
-  details: Record<string, unknown>;
+  details: Record<string, any>;
 } {
   return {
     content: [{ type: "text", text: result.text }],

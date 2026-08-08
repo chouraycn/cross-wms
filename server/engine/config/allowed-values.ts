@@ -7,7 +7,7 @@ export type AllowedValuesSummary = {
 };
 
 export function summarizeAllowedValues(
-  values: ReadonlyArray<unknown>,
+  values: ReadonlyArray<any>,
 ): AllowedValuesSummary | null {
   if (values.length === 0) {
     return null;

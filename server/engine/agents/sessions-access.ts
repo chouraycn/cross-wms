@@ -7,8 +7,8 @@
  */
 
 /** Resolve sandboxed session tool context (returns minimal default in cross-wms). */
-export function resolveSandboxedSessionToolContext(..._args: unknown[]): {
-  cfg: unknown;
+export function resolveSandboxedSessionToolContext(..._args: any[]): {
+  cfg: any;
   mainKey: string;
   alias: string | undefined;
   effectiveRequesterKey: string;

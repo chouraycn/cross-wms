@@ -50,10 +50,10 @@ function createDeferred(): { promise: Promise<void>; resolve: () => void } {
 }
 
 function mockCallArg(
-  mock: { mock: { calls: readonly unknown[][] } },
+  mock: { mock: { calls: readonly any[][] } },
   label: string,
   argIndex: number,
-): unknown {
+): any {
   const [call] = mock.mock.calls;
   if (!call) {
     throw new Error(`expected ${label} call`);
@@ -845,7 +845,7 @@ describe("command queue", () => {
     // must patch the missing field so resetAllLanes() and
     // notifyActiveTaskWaiters() do not throw.
     const key = Symbol.for("openclaw.commandQueueState");
-    const globalStore = globalThis as Record<PropertyKey, unknown>;
+    const globalStore = globalThis as Record<PropertyKey, any>;
     const original = globalStore[key];
 
     try {
@@ -876,7 +876,7 @@ describe("command queue", () => {
 
   it("migrates legacy queued entries missing priority and wait diagnostics", async () => {
     const key = Symbol.for("openclaw.commandQueueState");
-    const globalStore = globalThis as Record<PropertyKey, unknown>;
+    const globalStore = globalThis as Record<PropertyKey, any>;
     const original = globalStore[key];
     let queuedAhead: number | null = null;
     const legacyTask = new Promise<string>((resolve, reject) => {

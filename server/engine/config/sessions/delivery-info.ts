@@ -21,8 +21,8 @@
 
 /** OpenClawConfig 占位类型。 */
 type OpenClawConfig = {
-  session?: { store?: unknown };
-  [key: string]: unknown;
+  session?: { store?: any };
+  [key: string]: any;
 };
 
 /** SessionEntry 占位类型（仅包含本模块用到的字段）。 */
@@ -38,11 +38,11 @@ type SessionEntry = {
   lastTo?: string;
   lastAccountId?: string;
   lastThreadId?: string | number;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 /** 内联实现：将字符串归一化为小写，非字符串返回空字符串。 */
-function normalizeLowercaseStringOrEmpty(value: unknown): string {
+function normalizeLowercaseStringOrEmpty(value: any): string {
   return typeof value === "string" ? value.toLowerCase() : "";
 }
 
@@ -85,7 +85,7 @@ function getRuntimeConfig(): OpenClawConfig {
 }
 
 /** 降级：解析存储路径。 */
-function resolveStorePath(_storeConfig: unknown, _options: { agentId: string }): string {
+function resolveStorePath(_storeConfig: any, _options: { agentId: string }): string {
   return "";
 }
 
@@ -116,7 +116,7 @@ function isConfirmedLowercasedLegacyAlias(
 }
 
 /** 降级：读取会话存储快照。 */
-function readSessionStoreSnapshot(_storePath: string): Record<string, unknown> {
+function readSessionStoreSnapshot(_storePath: string): Record<string, any> {
   return {};
 }
 
@@ -212,12 +212,12 @@ function resolveDeliveryStorePaths(cfg: OpenClawConfig, agentId: string): string
   return [...paths];
 }
 
-function asSessionEntry(entry: unknown): SessionEntry | undefined {
+function asSessionEntry(entry: any): SessionEntry | undefined {
   return entry as SessionEntry | undefined;
 }
 
 function findSessionEntryInStore(
-  store: Record<string, unknown>,
+  store: Record<string, any>,
   keys: readonly string[],
 ) {
   let normalizedIndex: Map<string, SessionEntry> | undefined;
@@ -228,7 +228,7 @@ function findSessionEntryInStore(
   // Preference order: routable delivery context first; then Matrix/tail-preserved
   // exact keys over folded aliases; then freshness. Ordinary lowercase-canonical
   // channels keep the previous freshest-routable alias behavior.
-  const acceptCandidate = (candidate: unknown, isExact = false) => {
+  const acceptCandidate = (candidate: any, isExact = false) => {
     if (!candidate) {
       return;
     }
@@ -307,7 +307,7 @@ function findSessionEntryInStore(
 }
 
 function buildFreshestSessionEntryIndex(
-  store: Readonly<Record<string, unknown>>,
+  store: Readonly<Record<string, any>>,
 ): Map<string, SessionEntry> {
   const index = new Map<string, SessionEntry>();
   for (const [key, candidate] of Object.entries(store)) {

@@ -12,7 +12,7 @@ const XAI_UNSUPPORTED_SCHEMA_KEYWORDS = new Set([
   "maxContains",
 ]);
 
-function stripXaiUnsupportedKeywords(schema: unknown): unknown {
+function stripXaiUnsupportedKeywords(schema: any): any {
   return stripUnsupportedSchemaKeywords(schema, XAI_UNSUPPORTED_SCHEMA_KEYWORDS);
 }
 
@@ -25,7 +25,7 @@ describe("stripXaiUnsupportedKeywords", () => {
       },
     };
     const result = stripXaiUnsupportedKeywords(schema) as {
-      properties: { name: Record<string, unknown> };
+      properties: { name: Record<string, any> };
     };
     expect(result.properties.name.minLength).toBeUndefined();
     expect(result.properties.name.maxLength).toBeUndefined();
@@ -41,7 +41,7 @@ describe("stripXaiUnsupportedKeywords", () => {
       },
     };
     const result = stripXaiUnsupportedKeywords(schema) as {
-      properties: { items: Record<string, unknown> };
+      properties: { items: Record<string, any> };
     };
     expect(result.properties.items.minItems).toBeUndefined();
     expect(result.properties.items.maxItems).toBeUndefined();
@@ -55,7 +55,7 @@ describe("stripXaiUnsupportedKeywords", () => {
       maxContains: 5,
       contains: { type: "string" },
     };
-    const result = stripXaiUnsupportedKeywords(schema) as Record<string, unknown>;
+    const result = stripXaiUnsupportedKeywords(schema) as Record<string, any>;
     expect(result.minContains).toBeUndefined();
     expect(result.maxContains).toBeUndefined();
     expect(result.contains).toEqual({ type: "string" });
@@ -76,7 +76,7 @@ describe("stripXaiUnsupportedKeywords", () => {
       },
     };
     const result = stripXaiUnsupportedKeywords(schema) as {
-      properties: { attachment: { properties: { content: Record<string, unknown> } } };
+      properties: { attachment: { properties: { content: Record<string, any> } } };
     };
     expect(result.properties.attachment.properties.content.maxLength).toBeUndefined();
     expect(result.properties.attachment.properties.content.type).toBe("string");
@@ -87,7 +87,7 @@ describe("stripXaiUnsupportedKeywords", () => {
       anyOf: [{ type: "string", minLength: 1 }, { type: "null" }],
     };
     const result = stripXaiUnsupportedKeywords(schema) as {
-      anyOf: Array<Record<string, unknown>>;
+      anyOf: Array<Record<string, any>>;
     };
     expect(result.anyOf[0].minLength).toBeUndefined();
     expect(result.anyOf[0].type).toBe("string");
@@ -99,7 +99,7 @@ describe("stripXaiUnsupportedKeywords", () => {
       items: { type: "string", maxLength: 100 },
     };
     const result = stripXaiUnsupportedKeywords(schema) as {
-      items: Record<string, unknown>;
+      items: Record<string, any>;
     };
     expect(result.items.maxLength).toBeUndefined();
     expect(result.items.type).toBe("string");
@@ -115,7 +115,7 @@ describe("stripXaiUnsupportedKeywords", () => {
       },
       additionalProperties: false,
     };
-    const result = stripXaiUnsupportedKeywords(schema) as Record<string, unknown>;
+    const result = stripXaiUnsupportedKeywords(schema) as Record<string, any>;
     expect(result.type).toBe("object");
     expect(result.description).toBe("A tool schema");
     expect(result.required).toEqual(["name"]);

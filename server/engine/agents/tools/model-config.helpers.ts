@@ -55,7 +55,7 @@ export function coerceToolModelConfig(model?: AgentToolModelConfig): ToolModelCo
 
 type ModelConfig = {
   models?: {
-    providers?: Record<string, unknown>;
+    providers?: Record<string, any>;
   };
 };
 
@@ -74,7 +74,7 @@ export function buildToolModelConfigFromCandidates(params: {
   cfg?: ModelConfig;
   workspaceDir?: string;
   agentDir?: string;
-  authStore?: unknown;
+  authStore?: any;
   candidates: Array<string | null | undefined>;
   isProviderConfigured?: (provider: string) => boolean | undefined;
 }): ToolModelConfig | null {
@@ -113,7 +113,7 @@ export function buildToolModelConfigFromCandidates(params: {
 export function hasAuthForProvider(_params: {
   provider: string;
   agentDir?: string;
-  authStore?: unknown;
+  authStore?: any;
 }): boolean {
   return false;
 }
@@ -123,7 +123,7 @@ export function hasProviderAuthForTool(_params: {
   cfg?: ModelConfig;
   workspaceDir?: string;
   agentDir?: string;
-  authStore?: unknown;
+  authStore?: any;
 }): boolean {
   return false;
 }

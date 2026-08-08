@@ -74,10 +74,10 @@ type GatewayCaller = typeof callGateway;
 const SESSIONS_SEND_REPLY_HISTORY_LIMIT = 50;
 const SESSIONS_SEND_MESSAGE_ALIASES = ["SendMessage", "content", "text"] as const;
 
-function normalizeSessionsSendArguments(args: unknown): Record<string, unknown> {
+function normalizeSessionsSendArguments(args: any): Record<string, any> {
   const params =
     args && typeof args === "object" && !Array.isArray(args)
-      ? { ...(args as Record<string, unknown>) }
+      ? { ...(args as Record<string, any>) }
       : {};
 
   if (typeof params.message !== "string" || !params.message.trim()) {
@@ -172,7 +172,7 @@ type SessionsSendRouteEntry = Pick<SessionEntry, "acp" | "parentSessionKey" | "s
 
 function isRequesterParentOfNativeSubagentSession(params: {
   entry: SessionsSendRouteEntry | null | undefined;
-  acpMeta?: unknown;
+  acpMeta?: any;
   requesterSessionKey: string | null | undefined;
   targetSessionKey: string;
 }): boolean {
@@ -244,7 +244,7 @@ function shouldFallbackCronRunScopedActiveDelivery(
 async function startAgentRun(params: {
   callGateway: GatewayCaller;
   runId: string;
-  sendParams: Record<string, unknown>;
+  sendParams: Record<string, any>;
   sessionKey: string;
   deliveryTimeoutMs?: number;
   allowActiveRunQueueDelivery?: boolean;
@@ -422,7 +422,7 @@ export function createSessionsSendTool(opts?: {
           }
         }
 
-        const resolveParams: Record<string, unknown> = {
+        const resolveParams: Record<string, any> = {
           label: labelParam,
           ...(requestedAgentId ? { agentId: requestedAgentId } : {}),
           ...(restrictToSpawned ? { spawnedBy: effectiveRequesterKey } : {}),

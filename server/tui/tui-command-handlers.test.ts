@@ -36,10 +36,10 @@ function expectSendChatFields(
     throw new Error("expected gateway sendChat call");
   }
   const payload = call[0] as {
-    message?: unknown;
-    agentId?: unknown;
-    sessionId?: unknown;
-    sessionKey?: unknown;
+    message?: any;
+    agentId?: any;
+    sessionId?: any;
+    sessionKey?: any;
   };
   expect(payload.message).toBe(expected.message);
   if (expected.agentId !== undefined) {
@@ -53,7 +53,7 @@ function expectSendChatFields(
   }
 }
 
-type MockWithCalls = { mock: { calls: unknown[][] } };
+type MockWithCalls = { mock: { calls: any[][] } };
 
 function firstMockArg(mock: MockWithCalls, label: string) {
   const call = mock.mock.calls[0];

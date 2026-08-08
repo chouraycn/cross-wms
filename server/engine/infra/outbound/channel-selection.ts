@@ -79,11 +79,11 @@ export function isConfiguredChannel(cfg: OpenClawConfig, channelId: string): boo
   if (!channels || typeof channels !== "object" || Array.isArray(channels)) {
     return false;
   }
-  const entry = (channels as Record<string, unknown>)[channelId];
+  const entry = (channels as Record<string, any>)[channelId];
   if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
     return false;
   }
-  return (entry as { enabled?: unknown }).enabled !== false;
+  return (entry as { enabled?: any }).enabled !== false;
 }
 
 function listConfiguredOfficialExternalRepairHints(
@@ -140,7 +140,7 @@ function logChannelSelectionError(params: {
   pluginId: string;
   accountId: string;
   operation: "resolveAccount" | "isConfigured";
-  error: unknown;
+  error: any;
 }) {
   const message = formatErrorMessage(params.error);
   const key = `${params.pluginId}:${params.accountId}:${params.operation}:${message}`;
@@ -160,7 +160,7 @@ async function isPluginConfigured(plugin: ChannelPlugin, cfg: OpenClawConfig): P
   }
 
   for (const accountId of accountIds) {
-    let account: unknown;
+    let account: any;
     try {
       account = plugin.config.resolveAccount(cfg, accountId);
     } catch (error) {

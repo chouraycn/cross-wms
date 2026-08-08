@@ -9,7 +9,7 @@ type MinimalGatewayRequestFrame = {
   type?: string;
   id?: string;
   method?: string;
-  params?: Record<string, unknown> & {
+  params?: Record<string, any> & {
     auth?: { token?: string };
     device?: { nonce?: string };
   };
@@ -37,7 +37,7 @@ export function sendMinimalGatewayConnectChallenge(ws: WebSocket, nonce = "test-
 export function buildMinimalGatewayHelloOkPayload(params?: {
   connId?: string;
   methods?: string[];
-  snapshot?: Record<string, unknown>;
+  snapshot?: Record<string, any>;
   auth?: { role: string; scopes: string[] };
   policy?: {
     maxPayload: number;
@@ -61,7 +61,7 @@ export function buildMinimalGatewayHelloOkPayload(params?: {
 }
 
 /** Sends a successful response frame from a fake gateway server. */
-export function sendMinimalGatewayResponse(ws: WebSocket, id: string, payload: unknown): void {
+export function sendMinimalGatewayResponse(ws: WebSocket, id: string, payload: any): void {
   ws.send(JSON.stringify({ type: "res", id, ok: true, payload }));
 }
 

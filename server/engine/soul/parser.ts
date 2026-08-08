@@ -64,20 +64,20 @@ export function safeReadFileSync(filePath: string): string {
  *
  * 从 Markdown 内容中提取 YAML 元数据
  */
-export function parseFrontMatter(content: string): Record<string, unknown> {
+export function parseFrontMatter(content: string): Record<string, any> {
   const match = content.match(/^---\s*\n([\s\S]*?)\n---\s*\n/);
   if (!match) return {};
 
   try {
     // 简单 YAML 解析（不支持复杂结构）
     const yaml = match[1];
-    const result: Record<string, unknown> = {};
+    const result: Record<string, any> = {};
 
     yaml.split('\n').forEach(line => {
       const colonIndex = line.indexOf(':');
       if (colonIndex > 0) {
         const key = line.slice(0, colonIndex).trim();
-        let value: unknown = line.slice(colonIndex + 1).trim();
+        let value: any = line.slice(colonIndex + 1).trim();
 
         // 基本类型转换
         if (value === 'true') value = true;

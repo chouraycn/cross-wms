@@ -83,7 +83,7 @@ import {
   resolveChannelSetupSelectionContributions,
 } from "./channel-setup.status.js";
 
-function requireFirstMockCall<const Calls extends readonly unknown[][]>(
+function requireFirstMockCall<const Calls extends readonly any[][]>(
   calls: Calls,
   label: string,
 ): Calls[number] {
@@ -327,7 +327,7 @@ describe("resolveChannelSetupSelectionContributions", () => {
     expect(primerMeta?.blurb).toBe("Blurb\\nline");
     expect(note).toHaveBeenCalledWith(
       [
-        "Inbound DM safety defaults to pairing: unknown senders get a pairing code first.",
+        "Inbound DM safety defaults to pairing: any senders get a pairing code first.",
         "Approve with: openclaw pairing approve <channel> <code>",
         'Open/public DMs require dmPolicy="open" plus allowFrom=["*"].',
         'For multi-user DMs, isolate sessions with: openclaw config set session.dmScope "per-channel-peer" (or "per-account-channel-peer" for multi-account channels).',

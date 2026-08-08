@@ -13,7 +13,7 @@ const listExplicitlyDisabledChannelIdsForConfig = vi.hoisted(() =>
           Boolean(value) &&
           typeof value === "object" &&
           !Array.isArray(value) &&
-          (value as { enabled?: unknown }).enabled === false
+          (value as { enabled?: any }).enabled === false
         );
       })
       .map(([channelId]) => channelId.toLowerCase());
@@ -21,7 +21,7 @@ const listExplicitlyDisabledChannelIdsForConfig = vi.hoisted(() =>
 );
 const listPotentialConfiguredChannelPresenceSignals = vi.hoisted(() => vi.fn());
 const hasMeaningfulChannelConfig = vi.hoisted(() =>
-  vi.fn((value: unknown) => {
+  vi.fn((value: any) => {
     return (
       value !== null &&
       typeof value === "object" &&
@@ -52,7 +52,7 @@ vi.mock("./manifest-registry-installed.js", async (importOriginal) => {
 
 vi.mock("./plugin-registry-snapshot.js", () => ({
   loadPluginRegistrySnapshot,
-  loadPluginRegistrySnapshotWithMetadata: (params: unknown) => ({
+  loadPluginRegistrySnapshotWithMetadata: (params: any) => ({
     snapshot: loadPluginRegistrySnapshot(params),
     diagnostics: [],
   }),

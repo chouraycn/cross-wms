@@ -11,23 +11,23 @@ export type EmbeddedAgentQueueMessageOptions = unknown;
 export type ActiveEmbeddedRunSnapshot = unknown;
 export type EmbeddedRunWaiter = unknown;
 export type AbandonedEmbeddedRun = unknown;
-export function getActiveEmbeddedRunCount(..._args: unknown[]): unknown {
+export function getActiveEmbeddedRunCount(..._args: any[]): any {
   return undefined;
 }
-export function listActiveEmbeddedRunSessionKeys(..._args: unknown[]): unknown {
+export function listActiveEmbeddedRunSessionKeys(..._args: any[]): any {
   return [];
 }
-export function listActiveEmbeddedRunSessionIds(..._args: unknown[]): unknown {
+export function listActiveEmbeddedRunSessionIds(..._args: any[]): any {
   return [];
 }
-export function resolveActiveEmbeddedRunSessionId(..._args: unknown[]): unknown {
+export function resolveActiveEmbeddedRunSessionId(..._args: any[]): any {
   return undefined;
 }
-export const ACTIVE_EMBEDDED_RUNS: unknown = undefined;
-export const ACTIVE_EMBEDDED_RUN_SNAPSHOTS: unknown = undefined;
-export const ACTIVE_EMBEDDED_RUN_SESSION_IDS_BY_KEY: unknown = undefined;
-export const ACTIVE_EMBEDDED_RUN_SESSION_IDS_BY_FILE: unknown = undefined;
-export const ABANDONED_EMBEDDED_RUNS_BY_SESSION_ID: unknown = undefined;
-export const ABANDONED_EMBEDDED_RUN_SESSION_IDS_BY_KEY: unknown = undefined;
-export const ABANDONED_EMBEDDED_RUN_SESSION_IDS_BY_FILE: unknown = undefined;
-export const EMBEDDED_RUN_WAITERS: unknown = undefined;
+export const ACTIVE_EMBEDDED_RUNS: any = undefined;
+export const ACTIVE_EMBEDDED_RUN_SNAPSHOTS: any = undefined;
+export const ACTIVE_EMBEDDED_RUN_SESSION_IDS_BY_KEY: any = undefined;
+export const ACTIVE_EMBEDDED_RUN_SESSION_IDS_BY_FILE: any = undefined;
+export const ABANDONED_EMBEDDED_RUNS_BY_SESSION_ID: any = undefined;
+export const ABANDONED_EMBEDDED_RUN_SESSION_IDS_BY_KEY: any = undefined;
+export const ABANDONED_EMBEDDED_RUN_SESSION_IDS_BY_FILE: any = undefined;
+export const EMBEDDED_RUN_WAITERS: any = undefined;

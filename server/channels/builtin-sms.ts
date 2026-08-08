@@ -89,7 +89,7 @@ export function createSmsChannelPlugin(): ChannelPlugin {
 
   const smsConfig: ChannelConfigAdapter<SmsAccountConfig> = {
     listAccountIds: (config: AppConfig): ChannelId[] => {
-      const smsCfg = config.sms as Record<string, unknown> | undefined;
+      const smsCfg = config.sms as Record<string, any> | undefined;
       if (smsCfg && smsCfg.accountSid && smsCfg.authToken) {
         return [SMS_CHANNEL_ID];
       }
@@ -100,7 +100,7 @@ export function createSmsChannelPlugin(): ChannelPlugin {
       accountId: ChannelId,
     ): SmsAccountConfig | null => {
       if (accountId !== SMS_CHANNEL_ID) return null;
-      const smsCfg = config.sms as Record<string, unknown> | undefined;
+      const smsCfg = config.sms as Record<string, any> | undefined;
       if (smsCfg && smsCfg.accountSid && smsCfg.authToken) {
         return {
           accountSid: String(smsCfg.accountSid),
@@ -133,7 +133,7 @@ export function createSmsChannelPlugin(): ChannelPlugin {
         try {
           const rendered = await ctx.render();
           const text = rendered.parts
-            .map((p: { content: unknown }) => String(p.content))
+            .map((p: { content: any }) => String(p.content))
             .join("\n");
 
           const to = ctx.to;
@@ -213,8 +213,8 @@ export function createSmsChannelPlugin(): ChannelPlugin {
  * Twilio 在收到短信时会向配置的 Webhook URL POST form-encoded 数据。
  * 此函数接受已解析为对象的数据（键值对）。
  */
-export function parseSmsWebhook(body: unknown): SmsWebhookResult {
-  const data = body as Record<string, unknown>;
+export function parseSmsWebhook(body: any): SmsWebhookResult {
+  const data = body as Record<string, any>;
   if (!data || typeof data !== "object") {
     return { success: false, error: "Invalid SMS webhook payload" };
   }

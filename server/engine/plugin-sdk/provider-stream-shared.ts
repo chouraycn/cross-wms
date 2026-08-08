@@ -1,8 +1,8 @@
 
 type StreamFn = (
-  request: unknown,
-  context: unknown,
-) => AsyncIterable<unknown>;
+  request: any,
+  context: any,
+) => AsyncIterable<any>;
 
 /** Optional provider stream decorator factory used by shared provider wrappers. */
 export type ProviderStreamWrapperFactory =
@@ -28,7 +28,7 @@ export function buildProviderStreamCompatHooks(
   family: ProviderStreamCompatFamily,
 ): {
   wrapStream?: (streamFn: StreamFn | undefined) => StreamFn | undefined;
-  patchPayload?: (payload: Record<string, unknown>) => Record<string, unknown>;
+  patchPayload?: (payload: Record<string, any>) => Record<string, any>;
 } {
   switch (family) {
     case "openai":

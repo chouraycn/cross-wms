@@ -9,8 +9,8 @@ export interface SkillConfigMutation {
   skillName: string;
   type: 'create' | 'update' | 'delete';
   field: string;
-  oldValue?: unknown;
-  newValue?: unknown;
+  oldValue?: any;
+  newValue?: any;
   author?: string;
   reason?: string;
 }
@@ -33,7 +33,7 @@ export interface RollbackResult {
 }
 
 const mutationStore = new Map<string, MutationHistory>();
-const configStore = new Map<string, Record<string, unknown>>();
+const configStore = new Map<string, Record<string, any>>();
 
 function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
@@ -84,9 +84,9 @@ export function getRecentMutations(limit = 50): SkillConfigMutation[] {
 export function applyConfigChange(
   skillName: string,
   field: string,
-  value: unknown,
+  value: any,
   options: MutationApplyOptions = {},
-): { success: boolean; mutation?: SkillConfigMutation; previousValue?: unknown } {
+): { success: boolean; mutation?: SkillConfigMutation; previousValue?: any } {
   const config = configStore.get(skillName) ?? {};
   const previousValue = config[field];
 
@@ -132,7 +132,7 @@ export function rollbackToMutation(skillName: string, mutationId: string): Rollb
     return { success: false, error: 'Mutation not found' };
   }
 
-  const config: Record<string, unknown> = {};
+  const config: Record<string, any> = {};
   for (let i = 0; i < index; i++) {
     const m = history.mutations[i];
     if (m.type === 'delete') {
@@ -158,7 +158,7 @@ export function rollbackLastMutation(skillName: string, count = 1): RollbackResu
   const actualCount = Math.min(count, history.mutations.length);
   const targetIndex = history.mutations.length - actualCount - 1;
 
-  const config: Record<string, unknown> = {};
+  const config: Record<string, any> = {};
   if (targetIndex >= 0) {
     for (let i = 0; i <= targetIndex; i++) {
       const m = history.mutations[i];
@@ -176,14 +176,14 @@ export function rollbackLastMutation(skillName: string, count = 1): RollbackResu
   return { success: true, rolledBackCount: actualCount };
 }
 
-export function getCurrentConfig(skillName: string): Record<string, unknown> {
+export function getCurrentConfig(skillName: string): Record<string, any> {
   const config = configStore.get(skillName);
   return config ? { ...config } : {};
 }
 
 export function compareConfigs(
-  before: Record<string, unknown>,
-  after: Record<string, unknown>,
+  before: Record<string, any>,
+  after: Record<string, any>,
 ): import('./diff.js').DiffEntry[] {
   return deepDiff(before, after);
 }
@@ -246,7 +246,7 @@ export function loadMutationHistory(skillName: string, filePath: string): boolea
 
 export function patchSkillConfigEntry(
   skillName: string,
-  patch: Record<string, unknown>,
+  patch: Record<string, any>,
 ): void {
   const current = getCurrentConfig(skillName);
   const next = { ...current, ...patch };
@@ -257,14 +257,14 @@ export function patchSkillConfigEntry(
     recordMutation(skillName, {
       type: 'update',
       changes: diff,
-    } as unknown);
+    } as any);
   }
 }
 
 export function updateSkillConfigEntry(
   skillName: string,
   key: string,
-  value: unknown,
+  value: any,
 ): void {
   patchSkillConfigEntry(skillName, { [key]: value });
 }

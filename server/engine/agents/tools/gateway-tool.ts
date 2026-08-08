@@ -84,19 +84,19 @@ const ALLOWED_GATEWAY_CONFIG_PATHS = [
 /** @internal Exposed for regression tests only; do not import from runtime code. */
 export function assertGatewayConfigMutationAllowedForTest(params: {
   action: "config.apply" | "config.patch";
-  currentConfig: Record<string, unknown>;
+  currentConfig: Record<string, any>;
   raw: string;
   replacePaths?: string[];
 }): void {
   assertGatewayConfigMutationAllowed(params);
 }
 
-function resolveBaseHashFromSnapshot(snapshot: unknown): string | undefined {
+function resolveBaseHashFromSnapshot(snapshot: any): string | undefined {
   if (!snapshot || typeof snapshot !== "object") {
     return undefined;
   }
-  const hashValue = (snapshot as { hash?: unknown }).hash;
-  const rawValue = (snapshot as { raw?: unknown }).raw;
+  const hashValue = (snapshot as { hash?: any }).hash;
+  const rawValue = (snapshot as { raw?: any }).raw;
   const hash = resolveConfigSnapshotHash({
     hash: readStringValue(hashValue),
     raw: readStringValue(rawValue),
@@ -104,15 +104,15 @@ function resolveBaseHashFromSnapshot(snapshot: unknown): string | undefined {
   return hash ?? undefined;
 }
 
-function getSnapshotConfig(snapshot: unknown): Record<string, unknown> {
+function getSnapshotConfig(snapshot: any): Record<string, any> {
   if (!snapshot || typeof snapshot !== "object") {
     throw new Error("config.get response is not an object.");
   }
-  const config = (snapshot as { config?: unknown }).config;
+  const config = (snapshot as { config?: any }).config;
   if (!config || typeof config !== "object" || Array.isArray(config)) {
     throw new Error("config.get response is missing a config object.");
   }
-  return config as Record<string, unknown>;
+  return config as Record<string, any>;
 }
 
 function splitGatewayConfigGetPath(path: string): string[] {
@@ -123,12 +123,12 @@ function splitGatewayConfigGetPath(path: string): string[] {
     .filter(Boolean);
 }
 
-function resolveGatewayConfigGetPath(config: Record<string, unknown>, path: string): unknown {
+function resolveGatewayConfigGetPath(config: Record<string, any>, path: string): any {
   const parts = splitGatewayConfigGetPath(path);
   if (parts.length === 0) {
     return undefined;
   }
-  let current: unknown = config;
+  let current: any = config;
   for (const part of parts) {
     if (!current || typeof current !== "object") {
       return undefined;
@@ -144,12 +144,12 @@ function resolveGatewayConfigGetPath(config: Record<string, unknown>, path: stri
     if (!Object.hasOwn(current, part)) {
       return undefined;
     }
-    current = (current as Record<string, unknown>)[part];
+    current = (current as Record<string, any>)[part];
   }
   return current;
 }
 
-function selectGatewayConfigGetResult(snapshot: unknown, path: string | undefined): unknown {
+function selectGatewayConfigGetResult(snapshot: any, path: string | undefined): any {
   if (!path) {
     return snapshot;
   }
@@ -157,7 +157,7 @@ function selectGatewayConfigGetResult(snapshot: unknown, path: string | undefine
   if (value === undefined) {
     throw new ToolInputError(`config path not found: ${path}`);
   }
-  const hash = readStringValue((snapshot as { hash?: unknown }).hash);
+  const hash = readStringValue((snapshot as { hash?: any }).hash);
   return {
     ...(hash ? { hash } : {}),
     path,
@@ -165,7 +165,7 @@ function selectGatewayConfigGetResult(snapshot: unknown, path: string | undefine
   };
 }
 
-function createGatewayConfigGetToolResult(result: unknown) {
+function createGatewayConfigGetToolResult(result: any) {
   const text = JSON.stringify({ ok: true, result }, null, 2);
   if (text.length > MAX_GATEWAY_CONFIG_GET_TEXT_CHARS) {
     throw new ToolInputError(
@@ -177,7 +177,7 @@ function createGatewayConfigGetToolResult(result: unknown) {
 
 // Direct RPC callers need the validated config echoed after writes; the
 // agent-facing gateway tool does not, and replaying it bloats transcripts.
-function stripConfigWriteResultPayload(result: unknown): unknown {
+function stripConfigWriteResultPayload(result: any): any {
   if (!isPlainObject(result) || !Object.hasOwn(result, "config")) {
     return result;
   }
@@ -186,7 +186,7 @@ function stripConfigWriteResultPayload(result: unknown): unknown {
   return stripped;
 }
 
-function isConfigSchemaPathNotFoundError(error: unknown): boolean {
+function isConfigSchemaPathNotFoundError(error: any): boolean {
   return (
     error instanceof GatewayClientRequestError &&
     error.gatewayCode === "INVALID_REQUEST" &&
@@ -197,7 +197,7 @@ function isConfigSchemaPathNotFoundError(error: unknown): boolean {
 function parseGatewayConfigMutationRaw(
   raw: string,
   action: "config.apply" | "config.patch",
-): unknown {
+): any {
   const parsedRes = parseConfigJson5(raw);
   if (!parsedRes.ok) {
     throw new Error(parsedRes.error);
@@ -216,9 +216,9 @@ function normalizeGatewayConfigPath(path: string): string {
   return path.startsWith("tools.bash.") ? path.replace(/^tools\.bash\./, "tools.exec.") : path;
 }
 
-function readKeyedArrayEntries(list: unknown): {
+function readKeyedArrayEntries(list: any): {
   duplicateIds: boolean;
-  entries: Map<string, unknown>;
+  entries: Map<string, any>;
   hasUnkeyedEntries: boolean;
 } | null {
   if (!Array.isArray(list)) {
@@ -227,7 +227,7 @@ function readKeyedArrayEntries(list: unknown): {
 
   let duplicateIds = false;
   let hasUnkeyedEntries = false;
-  const entries = new Map<string, unknown>();
+  const entries = new Map<string, any>();
   for (const entry of list) {
     if (!isPlainObject(entry) || typeof entry.id !== "string" || entry.id.length === 0) {
       hasUnkeyedEntries = true;
@@ -242,7 +242,7 @@ function readKeyedArrayEntries(list: unknown): {
   return { duplicateIds, entries, hasUnkeyedEntries };
 }
 
-function collectConfigLeafPaths(value: unknown, basePath: string, out: Set<string>): void {
+function collectConfigLeafPaths(value: any, basePath: string, out: Set<string>): void {
   const canonicalPath = normalizeGatewayConfigPath(basePath);
   if (value === undefined) {
     if (canonicalPath) {
@@ -291,8 +291,8 @@ function collectConfigLeafPaths(value: unknown, basePath: string, out: Set<strin
 }
 
 function collectChangedConfigPaths(
-  currentValue: unknown,
-  nextValue: unknown,
+  currentValue: any,
+  nextValue: any,
   basePath = "",
   out = new Set<string>(),
 ): Set<string> {
@@ -377,18 +377,18 @@ function isAllowedGatewayConfigPath(path: string): boolean {
 
 function assertGatewayConfigMutationAllowed(params: {
   action: "config.apply" | "config.patch";
-  currentConfig: Record<string, unknown>;
+  currentConfig: Record<string, any>;
   raw: string;
   replacePaths?: string[];
 }): void {
   const parsed = parseGatewayConfigMutationRaw(params.raw, params.action);
   const nextConfig =
     params.action === "config.apply"
-      ? (parsed as Record<string, unknown>)
+      ? (parsed as Record<string, any>)
       : (applyMergePatch(params.currentConfig, parsed, {
           mergeObjectArraysById: true,
           replaceArrayPaths: new Set(params.replacePaths ?? []),
-        }) as Record<string, unknown>);
+        }) as Record<string, any>);
   const changedPaths = [...collectChangedConfigPaths(params.currentConfig, nextConfig)].toSorted();
   const disallowedPaths = changedPaths.filter((path) => !isAllowedGatewayConfigPath(path));
   if (disallowedPaths.length > 0) {
@@ -458,7 +458,7 @@ export function createGatewayTool(opts?: {
       "Gateway restart/config/update. Before config edits, use config.schema.lookup with targeted dot path. Prefer config.patch for partial merge; config.apply only full replace. For config.patch that intentionally removes array entries, pass replacePaths with the exact affected array path. Writes hot-reload or restart as needed. Always pass human `note` for post-restart delivery. If post-restart work must continue internally, pass one-shot `continuationMessage`; visible follow-up from that turn must use the message tool. Do not write restart sentinel files directly.",
     parameters: GatewayToolSchema,
     execute: async (_toolCallId, args) => {
-      const params = args as Record<string, unknown>;
+      const params = args as Record<string, any>;
       const action = readStringParam(params, "action", { required: true });
       if (action === "restart") {
         if (!isRestartEnabled(opts?.config)) {
@@ -538,7 +538,7 @@ export function createGatewayTool(opts?: {
       const resolveConfigWriteParams = async (): Promise<{
         raw: string;
         baseHash: string;
-        snapshotConfig: Record<string, unknown>;
+        snapshotConfig: Record<string, any>;
         sessionKey: string | undefined;
         note: string | undefined;
         restartDelayMs: number | undefined;

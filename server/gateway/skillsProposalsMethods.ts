@@ -49,7 +49,7 @@ function generateId(prefix: string): string {
 
 // ========== Skills Proposals List ==========
 
-async function skillsProposalsList(params: unknown, _ctx: GatewayMethodContext) {
+async function skillsProposalsList(params: any, _ctx: GatewayMethodContext) {
   const { status, skillId } = params as { status?: ProposalStatus; skillId?: string };
 
   let list = Array.from(proposals.values());
@@ -84,7 +84,7 @@ async function skillsProposalsList(params: unknown, _ctx: GatewayMethodContext) 
 
 // ========== Skills Proposals Inspect ==========
 
-async function skillsProposalsInspect(params: unknown, _ctx: GatewayMethodContext) {
+async function skillsProposalsInspect(params: any, _ctx: GatewayMethodContext) {
   const { id } = params as { id: string };
 
   if (!id) {
@@ -104,7 +104,7 @@ async function skillsProposalsInspect(params: unknown, _ctx: GatewayMethodContex
 
 // ========== Skills Proposals Create ==========
 
-async function skillsProposalsCreate(params: unknown, _ctx: GatewayMethodContext) {
+async function skillsProposalsCreate(params: any, _ctx: GatewayMethodContext) {
   const {
     title,
     description,
@@ -145,7 +145,7 @@ async function skillsProposalsCreate(params: unknown, _ctx: GatewayMethodContext
 
 // ========== Skills Proposals Update ==========
 
-async function skillsProposalsUpdate(params: unknown, _ctx: GatewayMethodContext) {
+async function skillsProposalsUpdate(params: any, _ctx: GatewayMethodContext) {
   const { id, title, description, changes } = params as {
     id: string;
     title?: string;
@@ -181,7 +181,7 @@ async function skillsProposalsUpdate(params: unknown, _ctx: GatewayMethodContext
 
 // ========== Skills Proposals Apply ==========
 
-async function skillsProposalsApply(params: unknown, _ctx: GatewayMethodContext) {
+async function skillsProposalsApply(params: any, _ctx: GatewayMethodContext) {
   const { id } = params as { id: string };
 
   if (!id) {
@@ -213,7 +213,7 @@ async function skillsProposalsApply(params: unknown, _ctx: GatewayMethodContext)
 
 // ========== Skills Proposals Reject ==========
 
-async function skillsProposalsReject(params: unknown, _ctx: GatewayMethodContext) {
+async function skillsProposalsReject(params: any, _ctx: GatewayMethodContext) {
   const { id, reason } = params as { id: string; reason?: string };
 
   if (!id) {

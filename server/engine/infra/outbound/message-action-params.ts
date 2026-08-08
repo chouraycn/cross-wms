@@ -51,7 +51,7 @@ const STRUCTURED_ATTACHMENT_FILE_SOURCE_PARAM_KEYS = new Set(["path", "filePath"
 const SEND_BUFFER_DRY_RUN_MEDIA_URL = "buffer://message-send/attachment";
 
 type StructuredAttachmentSource = {
-  attachment: Record<string, unknown>;
+  attachment: Record<string, any>;
   key: string;
   value: string;
   kind: "media" | "file";
@@ -61,16 +61,16 @@ type StructuredAttachmentSource = {
 
 type StructuredAttachmentMode = "selected" | "all";
 
-function readMediaParam(args: Record<string, unknown>, key: string): string | undefined {
+function readMediaParam(args: Record<string, any>, key: string): string | undefined {
   return readStringParam(args, key, { trim: false });
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }
 
 function resolveMediaParamEntry(
-  args: Record<string, unknown>,
+  args: Record<string, any>,
   key: string,
 ): { key: string; value: string } | undefined {
   const resolvedKey = resolveSnakeCaseParamKey(args, key);
@@ -88,7 +88,7 @@ function resolveMediaParamEntry(
 }
 
 function hasExplicitAttachmentPayload(
-  args: Record<string, unknown>,
+  args: Record<string, any>,
   extraParamKeys?: readonly string[],
 ): boolean {
   if (readStringParam(args, "buffer", { trim: false })) {
@@ -101,7 +101,7 @@ function hasExplicitAttachmentPayload(
 }
 
 function hasExplicitSendMediaSource(
-  args: Record<string, unknown>,
+  args: Record<string, any>,
   extraParamKeys?: readonly string[],
 ): boolean {
   if (
@@ -128,7 +128,7 @@ function hasExplicitSendMediaSource(
 }
 
 function collectStructuredAttachmentSources(
-  args: Record<string, unknown>,
+  args: Record<string, any>,
 ): StructuredAttachmentSource[] {
   const attachments = args.attachments;
   if (!Array.isArray(attachments)) {
@@ -160,7 +160,7 @@ function collectStructuredAttachmentSources(
 }
 
 function resolveStructuredAttachmentSource(
-  args: Record<string, unknown>,
+  args: Record<string, any>,
   extraParamKeys?: readonly string[],
 ): StructuredAttachmentSource | undefined {
   if (hasExplicitAttachmentPayload(args, extraParamKeys)) {
@@ -179,7 +179,7 @@ function buildActionMediaSourceParamKeys(extraParamKeys?: readonly string[]): st
 export function resolveExtraActionMediaSourceParamKeys(params: {
   cfg: OpenClawConfig;
   action?: ChannelMessageActionName;
-  args: Record<string, unknown>;
+  args: Record<string, any>;
   channel?: string;
   accountId?: string | null;
   sessionKey?: string | null;
@@ -207,7 +207,7 @@ export function resolveExtraActionMediaSourceParamKeys(params: {
 
 /** Collects candidate media source strings from message-action args. */
 export function collectActionMediaSourceHints(
-  args: Record<string, unknown>,
+  args: Record<string, any>,
   extraParamKeys?: readonly string[],
   options?: { structuredAttachments?: StructuredAttachmentMode },
 ): string[] {
@@ -234,11 +234,11 @@ export function collectActionMediaSourceHints(
   return sources;
 }
 
-function readAttachmentMediaHint(args: Record<string, unknown>): string | undefined {
+function readAttachmentMediaHint(args: Record<string, any>): string | undefined {
   return readMediaParam(args, "media") ?? readMediaParam(args, "mediaUrl");
 }
 
-function readAttachmentFileHint(args: Record<string, unknown>): string | undefined {
+function readAttachmentFileHint(args: Record<string, any>): string | undefined {
   return (
     readMediaParam(args, "path") ??
     readMediaParam(args, "filePath") ??
@@ -327,7 +327,7 @@ async function hydrateSendBufferMediaParams(params: {
   cfg: OpenClawConfig;
   channel: ChannelId;
   accountId?: string | null;
-  args: Record<string, unknown>;
+  args: Record<string, any>;
   dryRun?: boolean;
   preserveBuffer?: boolean;
   extraParamKeys?: readonly string[];
@@ -488,7 +488,7 @@ async function hydrateAttachmentPayload(params: {
   cfg: OpenClawConfig;
   channel: ChannelId;
   accountId?: string | null;
-  args: Record<string, unknown>;
+  args: Record<string, any>;
   dryRun?: boolean;
   contentTypeParam?: string | null;
   mediaHint?: string | null;
@@ -546,7 +546,7 @@ async function hydrateAttachmentPayload(params: {
 
 /** Rewrites action media params to sandbox-safe paths and rejects data URLs. */
 export async function normalizeSandboxMediaParams(params: {
-  args: Record<string, unknown>;
+  args: Record<string, any>;
   mediaPolicy: AttachmentMediaPolicy;
   extraParamKeys?: readonly string[];
   structuredAttachments?: StructuredAttachmentMode;
@@ -621,7 +621,7 @@ async function hydrateAttachmentActionPayload(params: {
   cfg: OpenClawConfig;
   channel: ChannelId;
   accountId?: string | null;
-  args: Record<string, unknown>;
+  args: Record<string, any>;
   dryRun?: boolean;
   /** If caption is missing, copy message -> caption. */
   allowMessageCaptionFallback?: boolean;
@@ -671,7 +671,7 @@ export async function hydrateAttachmentParamsForAction(params: {
   cfg: OpenClawConfig;
   channel: ChannelId;
   accountId?: string | null;
-  args: Record<string, unknown>;
+  args: Record<string, any>;
   action: ChannelMessageActionName;
   dryRun?: boolean;
   preserveSendBuffer?: boolean;
@@ -721,7 +721,7 @@ export async function hydrateAttachmentParamsForAction(params: {
 }
 
 /** Parses a named string param as JSON for structured message action fields. */
-export function parseJsonMessageParam(params: Record<string, unknown>, key: string): void {
+export function parseJsonMessageParam(params: Record<string, any>, key: string): void {
   const raw = params[key];
   if (typeof raw !== "string") {
     return;
@@ -732,14 +732,14 @@ export function parseJsonMessageParam(params: Record<string, unknown>, key: stri
     return;
   }
   try {
-    params[key] = JSON.parse(trimmed) as unknown;
+    params[key] = JSON.parse(trimmed) as any;
   } catch {
     throw new Error(`--${key} must be valid JSON`);
   }
 }
 
 /** Parses the interactive message action param as JSON when provided as a string. */
-export function parseInteractiveParam(params: Record<string, unknown>): void {
+export function parseInteractiveParam(params: Record<string, any>): void {
   const raw = params.interactive;
   if (typeof raw !== "string") {
     return;
@@ -750,7 +750,7 @@ export function parseInteractiveParam(params: Record<string, unknown>): void {
     return;
   }
   try {
-    params.interactive = JSON.parse(trimmed) as unknown;
+    params.interactive = JSON.parse(trimmed) as any;
   } catch {
     throw new Error("--interactive must be valid JSON");
   }

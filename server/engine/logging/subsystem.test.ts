@@ -21,7 +21,7 @@ function installConsoleMethodSpy(method: "log" | "warn" | "error") {
   return spy;
 }
 
-function firstMockArgAsString(mock: { mock: { calls: readonly unknown[][] } }): string {
+function firstMockArgAsString(mock: { mock: { calls: readonly any[][] } }): string {
   const [call] = mock.mock.calls;
   if (!call) {
     throw new Error("expected console mock call");

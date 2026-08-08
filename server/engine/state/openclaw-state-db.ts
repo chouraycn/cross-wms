@@ -149,7 +149,7 @@ export function getStateDatabaseSchemaManager(
   });
 }
 
-export function setStateConfig(key: string, value: unknown, options: StateDatabaseOptions = {}): void {
+export function setStateConfig(key: string, value: any, options: StateDatabaseOptions = {}): void {
   runStateWriteTransaction(({ db }) => {
     const now = Date.now();
     db.prepare(
@@ -173,7 +173,7 @@ export function getStateConfig<T = unknown>(
 
 export function setStateCache(
   key: string,
-  value: unknown,
+  value: any,
   expiresAt?: number,
   options: StateDatabaseOptions = {}
 ): void {
@@ -230,7 +230,7 @@ export function cleanupExpiredCache(options: StateDatabaseOptions = {}): number 
 export function enqueueItem(
   queueName: string,
   itemId: string,
-  payload: unknown,
+  payload: any,
   priority = 0,
   options: StateDatabaseOptions = {}
 ): void {
@@ -254,7 +254,7 @@ export function dequeueItem(
   queueName: string,
   claimedBy: string,
   options: StateDatabaseOptions = {}
-): { itemId: string; payload: unknown } | null {
+): { itemId: string; payload: any } | null {
   return runStateWriteTransaction(({ db }) => {
     const now = Date.now();
     const row = db

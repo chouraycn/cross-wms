@@ -31,9 +31,9 @@ function userMessage(content: string, timestamp = "2024-01-15T10:00:00.000Z") {
 
 function assistantMessage(
   content: string,
-  usage: Record<string, unknown>,
+  usage: Record<string, any>,
   timestamp = "2024-01-15T10:00:01.000Z",
-  extra: Record<string, unknown> = {},
+  extra: Record<string, any> = {},
 ) {
   return { timestamp, message: { role: "assistant", content, usage, ...extra } };
 }

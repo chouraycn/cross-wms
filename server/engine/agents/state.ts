@@ -65,18 +65,18 @@ const AUTH_FAILURE_REASONS = new Set<string>([
 const AUTH_BLOCKED_REASONS = new Set<string>(["subscription_limit"]);
 const AUTH_BLOCKED_SOURCES = new Set<string>(["codex_rate_limits", "wham"]);
 
-function asFiniteNumber(value: unknown): number | undefined {
+function asFiniteNumber(value: any): number | undefined {
   return typeof value === "number" && Number.isFinite(value) ? value : undefined;
 }
 
-function normalizeOptionalString(value: unknown): string | undefined {
+function normalizeOptionalString(value: any): string | undefined {
   if (typeof value === "string" && value.trim()) {
     return value.trim();
   }
   return undefined;
 }
 
-function normalizeTrimmedStringList(value: unknown): string[] {
+function normalizeTrimmedStringList(value: any): string[] {
   if (!Array.isArray(value)) return [];
   return value
     .map((item) => (typeof item === "string" ? item.trim() : ""))
@@ -87,16 +87,16 @@ function normalizeProviderId(provider: string): string {
   return provider.trim().toLowerCase();
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function normalizeEnumValue<T extends string>(value: unknown, allowed: Set<T>): T | undefined {
+function normalizeEnumValue<T extends string>(value: any, allowed: Set<T>): T | undefined {
   if (typeof value !== "string") return undefined;
   return allowed.has(value as T) ? (value as T) : undefined;
 }
 
-function normalizeFailureCounts(raw: unknown): ProfileUsageStats["failureCounts"] {
+function normalizeFailureCounts(raw: any): ProfileUsageStats["failureCounts"] {
   if (!isRecord(raw)) return undefined;
   const normalized: NonNullable<ProfileUsageStats["failureCounts"]> = {};
   for (const [reason, count] of Object.entries(raw)) {
@@ -107,7 +107,7 @@ function normalizeFailureCounts(raw: unknown): ProfileUsageStats["failureCounts"
   return Object.keys(normalized).length > 0 ? normalized : undefined;
 }
 
-function normalizeAuthProfileOrder(raw: unknown): AuthProfileState["order"] {
+function normalizeAuthProfileOrder(raw: any): AuthProfileState["order"] {
   if (!isRecord(raw)) return undefined;
   const normalized = Object.entries(raw).reduce<Record<string, string[]>>(
     (acc, [provider, value]) => {
@@ -125,7 +125,7 @@ function normalizeAuthProfileOrder(raw: unknown): AuthProfileState["order"] {
   return Object.keys(normalized).length > 0 ? normalized : undefined;
 }
 
-function normalizeLastGood(raw: unknown): AuthProfileState["lastGood"] {
+function normalizeLastGood(raw: any): AuthProfileState["lastGood"] {
   if (!isRecord(raw)) return undefined;
   const normalized: Record<string, string> = {};
   for (const [provider, profileId] of Object.entries(raw)) {
@@ -137,7 +137,7 @@ function normalizeLastGood(raw: unknown): AuthProfileState["lastGood"] {
   return Object.keys(normalized).length > 0 ? normalized : undefined;
 }
 
-function normalizeUsageStatsEntry(raw: unknown): ProfileUsageStats | undefined {
+function normalizeUsageStatsEntry(raw: any): ProfileUsageStats | undefined {
   if (!isRecord(raw)) return undefined;
   const stats: ProfileUsageStats = {
     lastUsed: asFiniteNumber(raw.lastUsed),
@@ -162,7 +162,7 @@ function normalizeUsageStatsEntry(raw: unknown): ProfileUsageStats | undefined {
   return Object.keys(stats).length > 0 ? stats : undefined;
 }
 
-function normalizeUsageStats(raw: unknown): AuthProfileState["usageStats"] {
+function normalizeUsageStats(raw: any): AuthProfileState["usageStats"] {
   if (!isRecord(raw)) return undefined;
   const normalized: Record<string, ProfileUsageStats> = {};
   for (const [profileId, value] of Object.entries(raw)) {
@@ -175,7 +175,7 @@ function normalizeUsageStats(raw: unknown): AuthProfileState["usageStats"] {
 }
 
 /** Coerces persisted auth profile runtime state into the current shape. */
-export function coerceAuthProfileState(raw: unknown): AuthProfileState {
+export function coerceAuthProfileState(raw: any): AuthProfileState {
   if (!isRecord(raw)) {
     return {};
   }
@@ -206,9 +206,9 @@ export function mergeAuthProfileState(
 }
 
 // In-memory state storage since cross-wms doesn't have SQLite persistence
-const inMemoryState = new Map<string, unknown>();
+const inMemoryState = new Map<string, any>();
 
-function readPersistedAuthProfileStateRaw(_agentDir?: string): unknown {
+function readPersistedAuthProfileStateRaw(_agentDir?: string): any {
   return inMemoryState.get("authProfileState") ?? {};
 }
 

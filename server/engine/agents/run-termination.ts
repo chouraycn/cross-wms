@@ -21,7 +21,7 @@ export function createAgentRunRestartAbortError(): Error {
   return error;
 }
 
-export function isAgentRunRestartAbortReason(value: unknown): boolean {
+export function isAgentRunRestartAbortReason(value: any): boolean {
   return (
     value instanceof Error && "code" in value && value.code === AGENT_RUN_RESTART_ABORT_ERROR_CODE
   );
@@ -53,7 +53,7 @@ export function resolveAgentRunAbortLifecycleFields(signal: AbortSignal | undefi
 
 /** Returns whether a stop reason is the stable aborted-run reason. */
 export function isAbortedAgentStopReason(
-  value: unknown,
+  value: any,
 ): value is typeof AGENT_RUN_ABORTED_STOP_REASON | typeof AGENT_RUN_RESTART_ABORT_STOP_REASON {
   return value === AGENT_RUN_ABORTED_STOP_REASON || value === AGENT_RUN_RESTART_ABORT_STOP_REASON;
 }

@@ -73,7 +73,7 @@ export function invalidateImportCache(handlerPath: string): void {
   const url = pathToFileURL(handlerPath).href;
   logger.debug(`[hooks:ImportUrl] Invalidating cache for: ${handlerPath}`);
   try {
-    delete (globalThis as unknown as { webpackModule?: unknown }).webpackModule;
+    delete (globalThis as unknown as { webpackModule?: any }).webpackModule;
   } catch {
     // Not in webpack context
   }

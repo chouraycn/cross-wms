@@ -33,11 +33,11 @@ function createRuntime(): { runtime: OutputRuntimeEnv; logs: string[]; stdout: s
     logs,
     stdout,
     runtime: {
-      log: (message: unknown) => logs.push(String(message)),
+      log: (message: any) => logs.push(String(message)),
       error: vi.fn(),
       exit: vi.fn(),
       writeStdout: (value: string) => stdout.push(value),
-      writeJson: (value: unknown, space = 2) =>
+      writeJson: (value: any, space = 2) =>
         stdout.push(JSON.stringify(value, null, space > 0 ? space : undefined)),
     },
   };

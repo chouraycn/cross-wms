@@ -7,7 +7,7 @@
 //    完整配置类型层级。这里定义本地宽松结构占位，与 installed-plugin-index-policy.ts
 //    中占位一致。
 //  - 原文件依赖 ../config/types.plugins.js 的 PluginInstallRecord。cross-wms 尚未
-//    移植该模块。这里降级为 Record<string, unknown> 占位（与
+//    移植该模块。这里降级为 Record<string, any> 占位（与
 //    installed-plugin-index-record-cache.ts 一致）。
 //  - 原文件依赖 ./installed-plugin-index-record-reader.js 的多个函数。cross-wms 已在
 //    本批移植中创建降级版，直接引用。
@@ -59,20 +59,20 @@ export {
 type OpenClawConfig = {
   plugins?: {
     entries?: Record<string, { enabled?: boolean }>;
-    installs?: Record<string, unknown>;
-    [key: string]: unknown;
+    installs?: Record<string, any>;
+    [key: string]: any;
   };
-  channels?: Record<string, unknown>;
-  [key: string]: unknown;
+  channels?: Record<string, any>;
+  [key: string]: any;
 };
 
 /**
  * 插件安装记录（降级占位）。
  *
  * 降级原因：cross-wms 尚未移植 openclaw 的 ../config/types.plugins.js。
- * 这里使用 Record<string, unknown> 占位（与 installed-plugin-index-record-cache.ts 一致）。
+ * 这里使用 Record<string, any> 占位（与 installed-plugin-index-record-cache.ts 一致）。
  */
-type PluginInstallRecord = Record<string, unknown>;
+type PluginInstallRecord = Record<string, any>;
 
 /**
  * 插件安装更新（降级占位）。
@@ -90,7 +90,7 @@ type PluginInstallUpdate = {
   resolvedName?: string;
   resolvedVersion?: string;
   installPath?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 // ============================================================================

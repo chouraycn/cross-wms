@@ -7,7 +7,7 @@
 import type { TalkTransport } from "./talk-events.js";
 
 /** 运行时配置的极简占位类型（替代 openclaw 的 OpenClawConfig）。 */
-export type TalkRuntimeConfig = Record<string, unknown>;
+export type TalkRuntimeConfig = Record<string, any>;
 
 export type RealtimeVoiceProviderId = string;
 
@@ -45,7 +45,7 @@ export type RealtimeVoiceTool = {
   description: string;
   parameters: {
     type: "object";
-    properties: Record<string, unknown>;
+    properties: Record<string, any>;
     required?: string[];
   };
 };
@@ -54,7 +54,7 @@ export type RealtimeVoiceToolCallEvent = {
   itemId: string;
   callId: string;
   name: string;
-  args: unknown;
+  args: any;
 };
 
 export type RealtimeVoiceToolResultOptions = {
@@ -86,7 +86,7 @@ export type RealtimeVoiceBridgeCallbacks = {
   onClose?: (reason: RealtimeVoiceCloseReason) => void;
 };
 
-export type RealtimeVoiceProviderConfig = Record<string, unknown>;
+export type RealtimeVoiceProviderConfig = Record<string, any>;
 
 export type RealtimeVoiceProviderCapabilities = {
   transports: TalkTransport[];
@@ -137,7 +137,7 @@ export type RealtimeVoiceBridge = {
   sendUserMessage?(text: string): void;
   triggerGreeting?(instructions?: string): void;
   handleBargeIn?(options?: RealtimeVoiceBargeInOptions): void;
-  submitToolResult(callId: string, result: unknown, options?: RealtimeVoiceToolResultOptions): void;
+  submitToolResult(callId: string, result: any, options?: RealtimeVoiceToolResultOptions): void;
   acknowledgeMark(): void;
   close(): void;
   isConnected(): boolean;

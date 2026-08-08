@@ -66,7 +66,7 @@ describe('engine/contextTruncate — estimateMessagesTokens', () => {
       role: 'user',
       content: [{ type: 'text', text: 'hello' }],
     }];
-    expect(estimateMessagesTokens(msgs as unknown)).toBeGreaterThan(4);
+    expect(estimateMessagesTokens(msgs as any)).toBeGreaterThan(4);
   });
 
   it('adds ~85 tokens per image_url part', () => {
@@ -74,7 +74,7 @@ describe('engine/contextTruncate — estimateMessagesTokens', () => {
       role: 'user',
       content: [{ type: 'image_url' }],
     }];
-    const tokens = estimateMessagesTokens(msgs as unknown);
+    const tokens = estimateMessagesTokens(msgs as any);
     expect(tokens).toBeGreaterThanOrEqual(85);
   });
 
@@ -85,16 +85,16 @@ describe('engine/contextTruncate — estimateMessagesTokens', () => {
       content: '',
       tool_calls: [{ id: 'tc1', type: 'function', function: { name: 'foo', arguments: '{}' } }],
     }];
-    expect(estimateMessagesTokens(withTools as unknown)).toBeGreaterThan(
-      estimateMessagesTokens(simple as unknown),
+    expect(estimateMessagesTokens(withTools as any)).toBeGreaterThan(
+      estimateMessagesTokens(simple as any),
     );
   });
 
   it('applies 1.3x weight to tool-role message content', () => {
     const user = [{ role: 'user', content: 'hello world test' }];
     const tool = [{ role: 'tool', content: 'hello world test', tool_call_id: 'tc1' }];
-    expect(estimateMessagesTokens(tool as unknown)).toBeGreaterThan(
-      estimateMessagesTokens(user as unknown),
+    expect(estimateMessagesTokens(tool as any)).toBeGreaterThan(
+      estimateMessagesTokens(user as any),
     );
   });
 
@@ -104,7 +104,7 @@ describe('engine/contextTruncate — estimateMessagesTokens', () => {
       content: '',
       reasoning_content: 'thinking deeply about the problem',
     }];
-    expect(estimateMessagesTokens(msgs as unknown)).toBeGreaterThan(4);
+    expect(estimateMessagesTokens(msgs as any)).toBeGreaterThan(4);
   });
 });
 
@@ -184,7 +184,7 @@ describe('engine/contextTruncate — sanitizeToolMessages', () => {
   it('normalizes null tool content to (no result)', () => {
     const msgs: ApiMessage[] = [
       { role: 'assistant', content: '', tool_calls: [{ id: 'tc1', type: 'function', function: { name: 'foo', arguments: '{}' } }] },
-      { role: 'tool', content: null as unknown, tool_call_id: 'tc1' },
+      { role: 'tool', content: null as any, tool_call_id: 'tc1' },
     ];
     const result = sanitizeToolMessages(msgs);
     const toolMsg = result.find(m => m.role === 'tool');
@@ -193,7 +193,7 @@ describe('engine/contextTruncate — sanitizeToolMessages', () => {
 
   it('normalizes null assistant content to empty string (no tool_calls)', () => {
     const msgs: ApiMessage[] = [
-      { role: 'assistant', content: null as unknown },
+      { role: 'assistant', content: null as any },
     ];
     const result = sanitizeToolMessages(msgs);
     expect(result[0].content).toBe('');
@@ -201,7 +201,7 @@ describe('engine/contextTruncate — sanitizeToolMessages', () => {
 
   it('removes empty tool_calls array from assistant message', () => {
     const msgs: ApiMessage[] = [
-      { role: 'assistant', content: 'hi', tool_calls: [] as unknown },
+      { role: 'assistant', content: 'hi', tool_calls: [] as any },
     ];
     const result = sanitizeToolMessages(msgs);
     expect(result[0].tool_calls).toBeUndefined();
@@ -289,7 +289,7 @@ describe('engine/contextTruncate — truncateContextForModel', () => {
     const wm = [
       { role: 'system', content: 'memory context' },
     ];
-    const result = truncateContextForModel(msgs, 100000, 1000, 0, wm as unknown);
+    const result = truncateContextForModel(msgs, 100000, 1000, 0, wm as any);
     // Working memory should be prepended
     expect(result.messages[0].role).toBe('system');
     expect(result.messages[0].content).toBe('memory context');

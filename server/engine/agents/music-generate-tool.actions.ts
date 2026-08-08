@@ -8,13 +8,13 @@
 type MusicGenerateActionResult = {
   kind: string;
   text: string;
-  actions?: unknown[];
+  actions?: any[];
 };
 
 /** Builds the music-generation provider listing result shown to the agent. */
 export function createMusicGenerateListActionResult(
-  _config?: unknown,
-  _options?: Record<string, unknown>,
+  _config?: any,
+  _options?: Record<string, any>,
 ): MusicGenerateActionResult {
   return {
     kind: "music_generation",
@@ -35,7 +35,7 @@ export function createMusicGenerateStatusActionResult(
 /** Returns duplicate-guard status output when a matching music task is already active. */
 export function createMusicGenerateDuplicateGuardResult(
   _sessionKey?: string,
-  _params?: Record<string, unknown>,
+  _params?: Record<string, any>,
 ): MusicGenerateActionResult | undefined {
   // No duplicate guard in cross-wms — no music generation infrastructure.
   return undefined;

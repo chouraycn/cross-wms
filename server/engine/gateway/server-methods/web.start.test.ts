@@ -35,7 +35,7 @@ function createRunningWhatsappSnapshot(): ChannelRuntimeSnapshot {
 }
 
 function createOptions(
-  params: Record<string, unknown>,
+  params: Record<string, any>,
   overrides?: Partial<GatewayRequestHandlerOptions>,
 ): GatewayRequestHandlerOptions {
   return {

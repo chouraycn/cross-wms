@@ -27,7 +27,7 @@ export interface LifecycleTransition {
   to: MessageLifecyclePhase;
   timestamp: number;
   reason?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface MessageLifecycleState {
@@ -41,7 +41,7 @@ export interface MessageLifecycleState {
   channelId: string;
   accountId: string;
   recipient: string;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
   lastError?: {
     message: string;
     stack?: string;
@@ -93,7 +93,7 @@ export class MessageLifecycleManager {
     accountId: string;
     recipient: string;
     maxAttempts?: number;
-    metadata?: Record<string, unknown>;
+    metadata?: Record<string, any>;
   }): MessageLifecycleState {
     const state: MessageLifecycleState = {
       messageId: params.messageId,
@@ -127,7 +127,7 @@ export class MessageLifecycleManager {
     messageId: string,
     toPhase: MessageLifecyclePhase,
     reason?: string,
-    metadata?: Record<string, unknown>,
+    metadata?: Record<string, any>,
   ): MessageLifecycleState | null {
     const state = this.states.get(messageId);
     if (!state) return null;
@@ -188,7 +188,7 @@ export class MessageLifecycleManager {
     return this.transition(messageId, 'sending', 'Sending message');
   }
 
-  markSent(messageId: string, receipt?: unknown): MessageLifecycleState | null {
+  markSent(messageId: string, receipt?: any): MessageLifecycleState | null {
     return this.transition(messageId, 'sent', 'Message sent successfully', { receipt });
   }
 

@@ -953,7 +953,7 @@ describe("markAuthProfileBlockedUntil", () => {
 });
 
 describe("markAuthProfileFailure — WHAM-aware Codex cooldowns", () => {
-  function mockWhamResponse(status: number, body?: unknown): void {
+  function mockWhamResponse(status: number, body?: any): void {
     fetchMock.mockResolvedValueOnce(
       new Response(body === undefined ? "{}" : JSON.stringify(body), {
         status,

@@ -118,7 +118,7 @@ function updateItem(id: string, updates: Partial<Pick<WorkboardItem, "status" | 
   return item;
 }
 
-function formatJsonOutput(data: unknown): string {
+function formatJsonOutput(data: any): string {
   return JSON.stringify(data, null, 2);
 }
 

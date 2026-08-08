@@ -7,12 +7,12 @@
  */
 
 export type ResolveImplicitProvidersForModelsJson = unknown;
-export async function resolveProvidersForModelsJsonWithDeps(..._args: unknown[]): Promise<unknown> {
+export async function resolveProvidersForModelsJsonWithDeps(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
-export async function planOpenClawModelsJsonWithDeps(..._args: unknown[]): Promise<unknown> {
+export async function planOpenClawModelsJsonWithDeps(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
-export async function planOpenClawModelsJson(..._args: unknown[]): Promise<unknown> {
+export async function planOpenClawModelsJson(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }

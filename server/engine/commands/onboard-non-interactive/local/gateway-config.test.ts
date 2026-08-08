@@ -10,7 +10,7 @@ import { applyNonInteractiveGatewayConfig } from "./gateway-config.js";
 // fresh token is generated vs. reused from the resolution chain.
 const randomToken = vi.hoisted(() => vi.fn(() => "generated-random-token"));
 vi.mock("../../onboard-helpers.js", () => ({
-  normalizeGatewayTokenInput: (value: unknown): string => {
+  normalizeGatewayTokenInput: (value: any): string => {
     if (typeof value !== "string") {
       return "";
     }
@@ -35,7 +35,7 @@ const SAMPLE_SECRET_REF = {
   id: "OPENCLAW_GATEWAY_TOKEN_REF",
 };
 
-function createTokenConfig(token: unknown): OpenClawConfig {
+function createTokenConfig(token: any): OpenClawConfig {
   return {
     gateway: { auth: { mode: "token", token } },
   } as unknown as OpenClawConfig;

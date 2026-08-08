@@ -29,7 +29,7 @@ export type GeneratedVideoAsset = {
   durationSeconds?: number;
   width?: number;
   height?: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 /** 视频源素材（图生视频/视频生视频用） */
@@ -39,7 +39,7 @@ export type VideoSourceAsset = {
   mimeType?: string;
   fileName?: string;
     role?: "first_frame" | "last_frame" | "reference_image" | "reference_video" | (string & {});
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 /** Provider 运行时请求 */
@@ -57,7 +57,7 @@ export type VideoRequest = {
   watermark?: boolean;
   inputImages?: VideoSourceAsset[];
   inputVideos?: VideoSourceAsset[];
-  providerOptions?: Record<string, unknown>;
+  providerOptions?: Record<string, any>;
   apiKey?: string;
   baseUrl?: string;
 };
@@ -66,7 +66,7 @@ export type VideoRequest = {
 export type VideoResult = {
   videos: GeneratedVideoAsset[];
   model?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 /** 视频生成模式 */
@@ -93,7 +93,7 @@ export type VideoModeCapabilities = {
   maxInputImagesByModel?: Record<string, number>;
   maxInputVideosByModel?: Record<string, number>;
   maxInputAudiosByModel?: Record<string, number>;
-  providerOptions?: Record<string, unknown>;
+  providerOptions?: Record<string, any>;
 };
 
 /** Provider 变换能力（图生视频/视频生视频） */
@@ -124,9 +124,9 @@ export type VideoGenerationProvider = {
   resolveModelCapabilities?: (params: {
     provider: string;
     model: string;
-    cfg: unknown;
+    cfg: any;
     agentDir?: string;
-    authStore?: unknown;
+    authStore?: any;
     timeoutMs?: number;
   }) => Promise<VideoGenerationProviderCapabilities | undefined | null>;
 };
@@ -150,7 +150,7 @@ export type VideoGenerationSourceAsset = VideoSourceAsset;
 /** 被忽略的覆盖项（用户传入但 Provider 不支持）。 */
 export type VideoGenerationIgnoredOverride = {
   key: string;
-  value: unknown;
+  value: any;
 };
 
 /** 归一化决策记录，描述用户请求值与最终应用值的差异。 */

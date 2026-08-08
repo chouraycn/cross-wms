@@ -10,7 +10,7 @@ const GATEWAY_ROLES = ["operator", "node"] as const;
 export type GatewayRole = (typeof GATEWAY_ROLES)[number];
 
 /** 将 connect params 中不可信的角色声明解析为封闭角色集合。 */
-export function parseGatewayRole(roleRaw: unknown): GatewayRole | null {
+export function parseGatewayRole(roleRaw: any): GatewayRole | null {
   if (roleRaw === "operator" || roleRaw === "node") {
     return roleRaw;
   }

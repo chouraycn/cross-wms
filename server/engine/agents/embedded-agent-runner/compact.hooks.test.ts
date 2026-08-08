@@ -51,13 +51,13 @@ type SessionHookEvent = {
   type?: string;
   action?: string;
   sessionKey?: string;
-  context?: Record<string, unknown>;
+  context?: Record<string, any>;
 };
 type PostCompactionSyncParams = {
   reason: string;
   sessionFiles: string[];
 };
-type PostCompactionSync = (params?: unknown) => Promise<void>;
+type PostCompactionSync = (params?: any) => Promise<void>;
 type Deferred<T> = {
   promise: Promise<T>;
   resolve: (value: T) => void;
@@ -76,11 +76,11 @@ function createDeferred<T>(): Deferred<T> {
   return { promise, resolve };
 }
 
-function expectRecordFields(record: unknown, expected: Record<string, unknown>) {
+function expectRecordFields(record: any, expected: Record<string, any>) {
   if (!record || typeof record !== "object") {
     throw new Error("Expected record");
   }
-  const actual = record as Record<string, unknown>;
+  const actual = record as Record<string, any>;
   for (const [key, value] of Object.entries(expected)) {
     expect(actual[key]).toEqual(value);
   }
@@ -95,7 +95,7 @@ function mockCallArg(mock: ReturnType<typeof vi.fn>, callIndex = 0, argIndex = 0
   return call[argIndex];
 }
 
-function findMockCall(mock: ReturnType<typeof vi.fn>, predicate: (arg: unknown[]) => boolean) {
+function findMockCall(mock: ReturnType<typeof vi.fn>, predicate: (arg: any[]) => boolean) {
   const call = mock.mock.calls.find((entry) => predicate(entry));
   if (!call) {
     throw new Error("Expected matching mock call");
@@ -125,7 +125,7 @@ function compactionConfig(mode: "await" | "off" | "async") {
   } as never;
 }
 
-function wrappedCompactionArgs(overrides: Record<string, unknown> = {}) {
+function wrappedCompactionArgs(overrides: Record<string, any> = {}) {
   return {
     sessionId: TEST_SESSION_ID,
     sessionKey: TEST_SESSION_KEY,
@@ -374,7 +374,7 @@ describe("compactEmbeddedAgentSessionDirect hooks", () => {
       } as never,
     });
 
-    const streamArg = mockCallArg(resolveEmbeddedAgentStreamFnMock) as Record<string, unknown>;
+    const streamArg = mockCallArg(resolveEmbeddedAgentStreamFnMock) as Record<string, any>;
     expect(streamArg.currentStreamFn).toBeTypeOf("function");
     expect(streamArg.sessionId).toBe("session-1");
     expect(streamArg.authProfileId).toBe("openai:profile-1");
@@ -1130,7 +1130,7 @@ describe("compactEmbeddedAgentSessionDirect hooks", () => {
 
   it("forwards internal compaction hook messages to the caller", async () => {
     const onHookMessages = vi.fn();
-    triggerInternalHook.mockImplementation((event: unknown) => {
+    triggerInternalHook.mockImplementation((event: any) => {
       const hookEvent = event as { action?: string; messages?: string[] };
       hookEvent.messages?.push(`${hookEvent.action} notice`);
     });
@@ -1244,7 +1244,7 @@ describe("compactEmbeddedAgentSessionDirect hooks", () => {
   });
 
   it("preserves tokensAfter when full-session context exceeds result.tokensBefore", () => {
-    estimateTokensMock.mockImplementation((message: unknown) => {
+    estimateTokensMock.mockImplementation((message: any) => {
       const role = (message as { role?: string }).role;
       if (role === "user") {
         return 30;
@@ -1264,7 +1264,7 @@ describe("compactEmbeddedAgentSessionDirect hooks", () => {
   });
 
   it("treats pre-compaction token estimation failures as a no-op sanity check", () => {
-    estimateTokensMock.mockImplementation((message: unknown) => {
+    estimateTokensMock.mockImplementation((message: any) => {
       const role = (message as { role?: string }).role;
       if (role === "assistant") {
         throw new Error("legacy message");
@@ -1308,7 +1308,7 @@ describe("compactEmbeddedAgentSessionDirect hooks", () => {
       sessionFile: TEST_SESSION_FILE,
     });
 
-    const resolveAgentArg = mockCallArg(resolveSessionAgentIdMock) as Record<string, unknown>;
+    const resolveAgentArg = mockCallArg(resolveSessionAgentIdMock) as Record<string, any>;
     expectRecordFields(resolveAgentArg, { sessionKey: TEST_SESSION_KEY });
     expect(resolveAgentArg.config).toBeTypeOf("object");
     expect(getMemorySearchManagerMock).not.toHaveBeenCalled();
@@ -1514,7 +1514,7 @@ describe("compactEmbeddedAgentSessionDirect hooks", () => {
     expect(result).toBe(streamFn);
     const streamRegistration = mockCallArg(registerProviderStreamForModelMock) as Record<
       string,
-      unknown
+      any
     >;
     expectRecordFields(streamRegistration, {
       agentDir: "/tmp",
@@ -1603,7 +1603,7 @@ describe("compactEmbeddedAgentSession hooks (ownsCompaction engine)", () => {
               complete?: (params: {
                 messages: Array<{ role: "user"; content: string }>;
                 agentId?: string;
-              }) => Promise<unknown>;
+              }) => Promise<any>;
             };
           };
         },
@@ -1718,7 +1718,7 @@ describe("compactEmbeddedAgentSession hooks (ownsCompaction engine)", () => {
   });
 
   it("runs maintain after successful compaction with a transcript rewrite helper", async () => {
-    const maintain = vi.fn(async (_params?: unknown) => ({
+    const maintain = vi.fn(async (_params?: any) => ({
       changed: false,
       bytesFreed: 0,
       rewrittenEntries: 0,
@@ -1735,7 +1735,7 @@ describe("compactEmbeddedAgentSession hooks (ownsCompaction engine)", () => {
 
     expect(result.ok).toBe(true);
     const runtimeContext = (
-      maintain.mock.calls.at(0)?.[0] as { runtimeContext?: Record<string, unknown> } | undefined
+      maintain.mock.calls.at(0)?.[0] as { runtimeContext?: Record<string, any> } | undefined
     )?.runtimeContext;
     expectRecordFields(mockCallArg(maintain), {
       sessionKey: TEST_SESSION_KEY,
@@ -1771,7 +1771,7 @@ describe("compactEmbeddedAgentSession hooks (ownsCompaction engine)", () => {
       throw new Error("Expected resolve-model options");
     }
     const compactArg = mockCallArg(contextEngineCompactMock) as {
-      runtimeContext?: Record<string, unknown>;
+      runtimeContext?: Record<string, any>;
     };
     expectRecordFields(compactArg.runtimeContext, {
       provider: "anthropic",
@@ -1801,7 +1801,7 @@ describe("compactEmbeddedAgentSession hooks (ownsCompaction engine)", () => {
     expect(maybeCompactAgentHarnessSessionMock).not.toHaveBeenCalled();
     const compactArg = mockCallArg(contextEngineCompactMock) as {
       tokenBudget?: number;
-      runtimeContext?: Record<string, unknown>;
+      runtimeContext?: Record<string, any>;
     };
     expect(compactArg.tokenBudget).toBe(32_000);
     expectRecordFields(compactArg.runtimeContext, {
@@ -1834,7 +1834,7 @@ describe("compactEmbeddedAgentSession hooks (ownsCompaction engine)", () => {
     expect(result.ok).toBe(true);
     expect(maybeCompactAgentHarnessSessionMock).not.toHaveBeenCalled();
     const compactArg = mockCallArg(contextEngineCompactMock) as {
-      runtimeContext?: Record<string, unknown>;
+      runtimeContext?: Record<string, any>;
     };
     expectRecordFields(compactArg.runtimeContext, {
       sessionKey: TEST_SESSION_KEY,
@@ -1876,7 +1876,7 @@ describe("compactEmbeddedAgentSession hooks (ownsCompaction engine)", () => {
     expect(result.ok).toBe(true);
     expect(maybeCompactAgentHarnessSessionMock).not.toHaveBeenCalled();
     const compactArg = mockCallArg(contextEngineCompactMock) as {
-      runtimeContext?: Record<string, unknown>;
+      runtimeContext?: Record<string, any>;
     };
     expectRecordFields(compactArg.runtimeContext, {
       provider: "openai",
@@ -1917,7 +1917,7 @@ describe("compactEmbeddedAgentSession hooks (ownsCompaction engine)", () => {
     expect(result.ok).toBe(true);
     expect(maybeCompactAgentHarnessSessionMock).not.toHaveBeenCalled();
     const compactArg = mockCallArg(contextEngineCompactMock) as {
-      runtimeContext?: Record<string, unknown>;
+      runtimeContext?: Record<string, any>;
     };
     expectRecordFields(compactArg.runtimeContext, {
       provider: "openai",
@@ -1959,7 +1959,7 @@ describe("compactEmbeddedAgentSession hooks (ownsCompaction engine)", () => {
     expect(result.ok).toBe(true);
     expect(maybeCompactAgentHarnessSessionMock).not.toHaveBeenCalled();
     const compactArg = mockCallArg(contextEngineCompactMock) as {
-      runtimeContext?: Record<string, unknown>;
+      runtimeContext?: Record<string, any>;
     };
     expectRecordFields(compactArg.runtimeContext, {
       provider: "openai",
@@ -2001,7 +2001,7 @@ describe("compactEmbeddedAgentSession hooks (ownsCompaction engine)", () => {
     expect(result.ok).toBe(true);
     expect(maybeCompactAgentHarnessSessionMock).not.toHaveBeenCalled();
     const compactArg = mockCallArg(contextEngineCompactMock) as {
-      runtimeContext?: Record<string, unknown>;
+      runtimeContext?: Record<string, any>;
     };
     expectRecordFields(compactArg.runtimeContext, {
       provider: "openai",
@@ -2039,7 +2039,7 @@ describe("compactEmbeddedAgentSession hooks (ownsCompaction engine)", () => {
     expect(result.ok).toBe(true);
     expect(maybeCompactAgentHarnessSessionMock).not.toHaveBeenCalled();
     const compactArg = mockCallArg(contextEngineCompactMock) as {
-      runtimeContext?: Record<string, unknown>;
+      runtimeContext?: Record<string, any>;
     };
     expectRecordFields(compactArg.runtimeContext, {
       provider: "openai",
@@ -2083,7 +2083,7 @@ describe("compactEmbeddedAgentSession hooks (ownsCompaction engine)", () => {
     });
     expect(maybeCompactAgentHarnessSessionMock).not.toHaveBeenCalled();
     const compactArg = mockCallArg(contextEngineCompactMock) as {
-      runtimeContext?: Record<string, unknown>;
+      runtimeContext?: Record<string, any>;
     };
     expectRecordFields(compactArg.runtimeContext, {
       provider: "openai",
@@ -2212,7 +2212,7 @@ describe("compactEmbeddedAgentSession hooks (ownsCompaction engine)", () => {
       maybeCompactAgentHarnessSessionMock.mock.invocationCallOrder[0],
     );
     const details = result.result?.details as
-      | { codexNativeCompaction?: Record<string, unknown> }
+      | { codexNativeCompaction?: Record<string, any> }
       | undefined;
     expect(details?.codexNativeCompaction).toMatchObject({
       ok: true,
@@ -2266,7 +2266,7 @@ describe("compactEmbeddedAgentSession hooks (ownsCompaction engine)", () => {
       { nativeCompactionRequest: "after_context_engine" },
     );
     const details = result.result?.details as
-      | { codexNativeCompaction?: Record<string, unknown> }
+      | { codexNativeCompaction?: Record<string, any> }
       | undefined;
     expect(details?.codexNativeCompaction).toMatchObject({
       ok: false,
@@ -2325,7 +2325,7 @@ describe("compactEmbeddedAgentSession hooks (ownsCompaction engine)", () => {
 
     expect(result.ok).toBe(true);
     const compactArg = mockCallArg(contextEngineCompactMock) as {
-      runtimeContext?: Record<string, unknown>;
+      runtimeContext?: Record<string, any>;
     };
     expectRecordFields(compactArg, {
       compactionTarget: "budget",
@@ -2342,7 +2342,7 @@ describe("compactEmbeddedAgentSession hooks (ownsCompaction engine)", () => {
 
     expect(result.ok).toBe(true);
     const compactArg = mockCallArg(contextEngineCompactMock) as {
-      runtimeContext?: Record<string, unknown>;
+      runtimeContext?: Record<string, any>;
     };
     expectRecordFields(compactArg, {
       compactionTarget: "threshold",
@@ -2391,7 +2391,7 @@ describe("compactEmbeddedAgentSession hooks (ownsCompaction engine)", () => {
   });
 
   it("reuses a delegated compaction successor transcript", async () => {
-    const maintain = vi.fn(async (_params?: unknown) => ({
+    const maintain = vi.fn(async (_params?: any) => ({
       changed: false,
       bytesFreed: 0,
       rewrittenEntries: 0,
@@ -2441,7 +2441,7 @@ describe("compactEmbeddedAgentSession hooks (ownsCompaction engine)", () => {
   });
 
   it("keeps a delegated result that echoes the current transcript on the active transcript", async () => {
-    const maintain = vi.fn(async (_params?: unknown) => ({
+    const maintain = vi.fn(async (_params?: any) => ({
       changed: false,
       bytesFreed: 0,
       rewrittenEntries: 0,

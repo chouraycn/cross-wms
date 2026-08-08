@@ -70,7 +70,7 @@ export type GatewayClientHostDeps = {
   normalizeTlsFingerprint?: (fingerprint: string | undefined) => string;
 };
 
-function normalizeOptionalString(value: unknown): string | undefined {
+function normalizeOptionalString(value: any): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }
@@ -78,19 +78,19 @@ function normalizeOptionalString(value: unknown): string | undefined {
   return trimmed || undefined;
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
-function isNonEmptyString(value: unknown): value is string {
+function isNonEmptyString(value: any): value is string {
   return typeof value === "string" && value.length > 0;
 }
 
-function isNonNegativeInteger(value: unknown): value is number {
+function isNonNegativeInteger(value: any): value is number {
   return typeof value === "number" && Number.isInteger(value) && value >= 0;
 }
 
-function isGatewayClientErrorShape(value: unknown): boolean {
+function isGatewayClientErrorShape(value: any): boolean {
   if (!isRecord(value)) {
     return false;
   }
@@ -106,14 +106,14 @@ function isGatewayClientErrorShape(value: unknown): boolean {
   return true;
 }
 
-function isGatewayEventFrame(value: unknown): value is EventFrame {
+function isGatewayEventFrame(value: any): value is EventFrame {
   if (!isRecord(value) || value.type !== "event" || !isNonEmptyString(value.event)) {
     return false;
   }
   return value.seq === undefined || isNonNegativeInteger(value.seq);
 }
 
-function isGatewayResponseFrame(value: unknown): value is ResponseFrame {
+function isGatewayResponseFrame(value: any): value is ResponseFrame {
   if (
     !isRecord(value) ||
     value.type !== "res" ||
@@ -135,11 +135,11 @@ function validateClientRequestFrame(frame: RequestFrame): string | null {
   return null;
 }
 
-function normalizeLowercaseStringOrEmpty(value: unknown): string {
+function normalizeLowercaseStringOrEmpty(value: any): string {
   return typeof value === "string" ? value.trim().toLowerCase() : "";
 }
 
-function rawDataToString(data: unknown): string {
+function rawDataToString(data: any): string {
   if (typeof data === "string") {
     return data;
   }
@@ -297,12 +297,12 @@ function isSecureWebSocketUrl(rawUrl: string, options?: { allowPrivateWs?: boole
 }
 
 type Pending = {
-  resolve: (value: unknown) => void;
-  reject: (err: unknown) => void;
+  resolve: (value: any) => void;
+  reject: (err: any) => void;
   expectFinal: boolean;
   timeout: NodeJS.Timeout | null;
   cleanup?: () => void;
-  onAccepted?: (payload: unknown) => void;
+  onAccepted?: (payload: any) => void;
   acceptedNotified?: boolean;
 };
 
@@ -311,13 +311,13 @@ export type GatewayClientRequestOptions = {
   timeoutMs?: number | null;
   signal?: AbortSignal;
   /** Called once for expectFinal requests after an accepted response, before the final result. */
-  onAccepted?: (payload: unknown) => void;
+  onAccepted?: (payload: any) => void;
 };
 
 type GatewayClientErrorShape = {
   code?: string;
   message?: string;
-  details?: unknown;
+  details?: any;
   retryable?: boolean;
   retryAfterMs?: number;
 };
@@ -370,7 +370,7 @@ export type GatewayClientCloseInfo = {
 
 export class GatewayClientRequestError extends Error {
   readonly gatewayCode: string;
-  readonly details?: unknown;
+  readonly details?: any;
   readonly retryable: boolean;
   readonly retryAfterMs?: number;
 
@@ -405,7 +405,7 @@ function markGatewayConnectAssemblyError(error: Error): Error {
   return error;
 }
 
-export function isGatewayConnectAssemblyError(value: unknown): value is Error {
+export function isGatewayConnectAssemblyError(value: any): value is Error {
   return (
     value instanceof Error &&
     (value as GatewayConnectAssemblyError)[GATEWAY_CONNECT_ASSEMBLY_ERROR] === true
@@ -484,12 +484,12 @@ function readConnectChallengeTimeoutOverride(
   return undefined;
 }
 
-function isGatewayClientStoppedError(err: unknown): boolean {
+function isGatewayClientStoppedError(err: any): boolean {
   const message = err instanceof Error ? err.message : String(err);
   return message === "gateway client stopped" || message === "Error: gateway client stopped";
 }
 
-function formatGatewayClientErrorForLog(err: unknown): string {
+function formatGatewayClientErrorForLog(err: any): string {
   const redactedUrlLikeString = String(err)
     .replace(/\/\/([^@/?#\s]+)@/g, "//***:***@")
     .replace(/(Authorization:\s*Bearer\s+)[^\s]+/giu, "$1***")
@@ -540,7 +540,7 @@ export class GatewayClient {
   private approvalRuntimeTokenRetryBudgetUsed = false;
   private pendingStartupReconnectDelayMs: number | null = null;
   private pendingConnectErrorDetailCode: string | null = null;
-  private pendingConnectErrorDetails: unknown = null;
+  private pendingConnectErrorDetails: any = null;
   // Track last tick to detect silent stalls.
   private lastTick: number | null = null;
   private tickIntervalMs = 30_000;
@@ -926,7 +926,7 @@ export class GatewayClient {
         this.startTickWatch();
         this.notifyHelloOk(helloOk);
       })
-      .catch((err: unknown) => {
+      .catch((err: any) => {
         if (err instanceof GatewayClientTransientPreHelloCloseError) {
           return;
         }
@@ -1111,7 +1111,7 @@ export class GatewayClient {
     };
   }
 
-  private handleConnectFailure(err: unknown) {
+  private handleConnectFailure(err: any) {
     const error = err instanceof Error ? err : new Error(String(err));
     this.clearConnectChallengeTimeout();
     this.closed = true;
@@ -1207,7 +1207,7 @@ export class GatewayClient {
 
   private shouldPauseReconnectAfterAuthFailure(params: {
     detailCode: string | null;
-    details?: unknown;
+    details?: any;
   }): boolean {
     const { detailCode, details } = params;
     if (!detailCode) {
@@ -1243,7 +1243,7 @@ export class GatewayClient {
   }
 
   private shouldRetryWithStoredDeviceToken(params: {
-    error: unknown;
+    error: any;
     explicitGatewayToken?: string;
     storedToken?: string;
     resolvedDeviceToken?: string;
@@ -1275,7 +1275,7 @@ export class GatewayClient {
   }
 
   private shouldRetryWithoutApprovalRuntimeToken(params: {
-    error: unknown;
+    error: any;
     authApprovalRuntimeToken?: string;
   }): boolean {
     if (this.approvalRuntimeTokenRetryBudgetUsed) {
@@ -1363,7 +1363,7 @@ export class GatewayClient {
   }
 
   private handleMessage(raw: string) {
-    let parsed: unknown;
+    let parsed: any;
     try {
       parsed = JSON.parse(raw);
     } catch (err) {
@@ -1374,7 +1374,7 @@ export class GatewayClient {
       this.lastTick = Date.now();
       const evt = parsed;
       if (evt.event === "connect.challenge") {
-        const payload = evt.payload as { nonce?: unknown } | undefined;
+        const payload = evt.payload as { nonce?: any } | undefined;
         const nonce = payload && typeof payload.nonce === "string" ? payload.nonce : null;
         if (!nonce || nonce.trim().length === 0) {
           this.notifyConnectError(new Error("gateway connect challenge missing nonce"));
@@ -1411,7 +1411,7 @@ export class GatewayClient {
         return;
       }
       // If the payload is an ack with status accepted, keep waiting for final.
-      const payload = parsed.payload as { status?: unknown } | undefined;
+      const payload = parsed.payload as { status?: any } | undefined;
       const status = payload?.status;
       if (pending.expectFinal && status === "accepted") {
         if (!pending.acceptedNotified) {
@@ -1578,9 +1578,9 @@ export class GatewayClient {
     return null;
   }
 
-  async request<T = Record<string, unknown>>(
+  async request<T = Record<string, any>>(
     method: string,
-    params?: unknown,
+    params?: any,
     opts?: GatewayClientRequestOptions,
   ): Promise<T> {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {

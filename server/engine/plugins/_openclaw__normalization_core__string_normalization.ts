@@ -6,7 +6,7 @@ export function sortUniqueStrings(values: Iterable<string>): string[] {
   return [...new Set(values)].sort();
 }
 
-export function normalizeTrimmedStringList(value: unknown): string[] {
+export function normalizeTrimmedStringList(value: any): string[] {
   if (!Array.isArray(value)) return [];
   return value
     .map(String)
@@ -14,23 +14,23 @@ export function normalizeTrimmedStringList(value: unknown): string[] {
     .filter(s => s.length > 0);
 }
 
-export function normalizeOptionalTrimmedStringList(value: unknown): string[] | undefined {
+export function normalizeOptionalTrimmedStringList(value: any): string[] | undefined {
   const result = normalizeTrimmedStringList(value);
   return result.length === 0 ? undefined : result;
 }
 
-export function normalizeArrayBackedTrimmedStringList(value: unknown): string[] {
+export function normalizeArrayBackedTrimmedStringList(value: any): string[] {
   return normalizeTrimmedStringList(value);
 }
 
-export function normalizeStringEntries(value: unknown): string[] {
+export function normalizeStringEntries(value: any): string[] {
   if (!Array.isArray(value)) return [];
   return value
     .map((item) => String(item).trim())
     .filter((s) => s.length > 0);
 }
 
-export function normalizeSortedUniqueStringEntries(value: unknown): string[] {
+export function normalizeSortedUniqueStringEntries(value: any): string[] {
   const entries = normalizeStringEntries(value);
   const seen = new Set<string>();
   return entries
@@ -42,7 +42,7 @@ export function normalizeSortedUniqueStringEntries(value: unknown): string[] {
     .sort((a, b) => a.localeCompare(b));
 }
 
-export function normalizeUniqueSingleOrTrimmedStringList(value: unknown): string[] {
+export function normalizeUniqueSingleOrTrimmedStringList(value: any): string[] {
   if (typeof value === 'string') {
     const trimmed = value.trim();
     return trimmed.length > 0 ? [trimmed] : [];
@@ -50,7 +50,7 @@ export function normalizeUniqueSingleOrTrimmedStringList(value: unknown): string
   return normalizeTrimmedStringList(value);
 }
 
-export function normalizeUniqueStringEntries(value: unknown): string[] {
+export function normalizeUniqueStringEntries(value: any): string[] {
   const entries = normalizeStringEntries(value);
   const seen = new Set<string>();
   return entries.filter((key) => {

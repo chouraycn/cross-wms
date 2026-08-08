@@ -121,7 +121,7 @@ type CompleteMediaGenerationTaskRunParams = {
 
 type FailMediaGenerationTaskRunParams = {
   handle: MediaGenerationTaskHandle | null;
-  error: unknown;
+  error: any;
 };
 
 type WakeMediaGenerationTaskCompletionParams = {
@@ -291,7 +291,7 @@ function completeMediaGenerationTaskRun(params: {
 
 function failMediaGenerationTaskRun(params: {
   handle: MediaGenerationTaskHandle | null;
-  error: unknown;
+  error: any;
   progressSummary: string;
 }) {
   if (!params.handle) {
@@ -336,11 +336,11 @@ function buildMediaGenerationReplyInstruction(params: {
 /** Creates the default microtask scheduler for detached media generation jobs. */
 export function createDefaultMediaGenerateBackgroundScheduler(params: {
   toolName: string;
-  onCrash: (message: string, meta?: Record<string, unknown>) => void;
+  onCrash: (message: string, meta?: Record<string, any>) => void;
 }): MediaGenerateBackgroundScheduler {
   return (work) => {
     queueMicrotask(() => {
-      void work().catch((error: unknown) => {
+      void work().catch((error: any) => {
         params.onCrash(`Detached ${params.toolName} job crashed`, { error });
       });
     });
@@ -353,7 +353,7 @@ export function buildMediaGenerationStartedToolResult(params: {
   generationLabel: string;
   completionLabel: string;
   taskHandle: MediaGenerationTaskHandle | null;
-  detailExtras?: Record<string, unknown>;
+  detailExtras?: Record<string, any>;
   messages?: Array<string | undefined>;
 }) {
   return {
@@ -392,7 +392,7 @@ export async function notifyMediaGenerationAsyncTaskStarted(params: {
   message: string;
   toolName: string;
   handle: MediaGenerationTaskHandle | null;
-  onFailure: (message: string, meta?: Record<string, unknown>) => void;
+  onFailure: (message: string, meta?: Record<string, any>) => void;
 }) {
   if (!params.callback) {
     return;
@@ -420,7 +420,7 @@ export function scheduleMediaGenerationTaskCompletion<
   config?: OpenClawConfig;
   toolName: string;
   run: () => Promise<T>;
-  onWakeFailure: (message: string, meta?: Record<string, unknown>) => void;
+  onWakeFailure: (message: string, meta?: Record<string, any>) => void;
 }) {
   params.scheduleBackgroundWork(async () => {
     let executed: T;

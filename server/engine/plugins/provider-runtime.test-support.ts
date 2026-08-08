@@ -60,7 +60,7 @@ export async function expectAugmentedCodexCatalog(
       env: NodeJS.ProcessEnv;
       entries: typeof openaiCodexCatalogEntries;
     };
-  }) => Promise<unknown>,
+  }) => Promise<any>,
   expectedEntries = expectedAugmentedOpenaiCodexCatalogEntries,
 ) {
   const result = (await augmentModelCatalogWithProviderPlugins({
@@ -69,7 +69,7 @@ export async function expectAugmentedCodexCatalog(
       env: process.env,
       entries: openaiCodexCatalogEntries,
     },
-  })) as Array<Record<string, unknown>>;
+  })) as Array<Record<string, any>>;
   expect(result).toHaveLength(expectedEntries.length);
   for (const entry of expectedEntries) {
     expect(result).toContainEqual(expect.objectContaining(entry));

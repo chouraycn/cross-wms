@@ -33,7 +33,7 @@ vi.mock("./agent-runner-utils.js", async () => {
     await vi.importActual<typeof import("./agent-runner-utils.js")>("./agent-runner-utils.js");
   return {
     ...actual,
-    resolveQueuedReplyExecutionConfig: (...args: unknown[]) =>
+    resolveQueuedReplyExecutionConfig: (...args: any[]) =>
       resolveQueuedReplyExecutionConfigMock(...args),
   };
 });
@@ -43,34 +43,34 @@ vi.mock("./reply-threading.js", async () => {
     await vi.importActual<typeof import("./reply-threading.js")>("./reply-threading.js");
   return {
     ...actual,
-    resolveReplyToMode: (...args: unknown[]) => resolveReplyToModeMock(...args),
-    createReplyToModeFilterForChannel: (...args: unknown[]) =>
+    resolveReplyToMode: (...args: any[]) => resolveReplyToModeMock(...args),
+    createReplyToModeFilterForChannel: (...args: any[]) =>
       createReplyToModeFilterForChannelMock(...args),
   };
 });
 
 vi.mock("./reply-media-paths.js", () => ({
-  createReplyMediaContext: (...args: unknown[]) => {
+  createReplyMediaContext: (...args: any[]) => {
     createReplyMediaContextMock(...args);
     return {
       normalizePayload: createReplyMediaPathNormalizerMock(...args),
     };
   },
-  createReplyMediaPathNormalizer: (...args: unknown[]) =>
+  createReplyMediaPathNormalizer: (...args: any[]) =>
     createReplyMediaPathNormalizerMock(...args),
 }));
 
 vi.mock("./agent-runner-memory.js", () => ({
-  runPreflightCompactionIfNeeded: (...args: unknown[]) =>
+  runPreflightCompactionIfNeeded: (...args: any[]) =>
     runPreflightCompactionIfNeededMock(...args),
-  runMemoryFlushIfNeeded: (...args: unknown[]) => runMemoryFlushIfNeededMock(...args),
+  runMemoryFlushIfNeeded: (...args: any[]) => runMemoryFlushIfNeededMock(...args),
 }));
 
 vi.mock("./queue.js", async () => {
   const actual = await vi.importActual<typeof import("./queue.js")>("./queue.js");
   return {
     ...actual,
-    enqueueFollowupRun: (...args: unknown[]) => enqueueFollowupRunMock(...args),
+    enqueueFollowupRun: (...args: any[]) => enqueueFollowupRunMock(...args),
   };
 });
 
@@ -144,15 +144,15 @@ function requireResolveQueuedReplyExecutionConfigCall(index = 0) {
 
 type MockCallSource = {
   mock: {
-    calls: unknown[][];
+    calls: any[][];
   };
 };
 
 function requireMaintenanceCall(mock: MockCallSource, name: string, index = 0) {
   const call = mock.mock.calls[index]?.[0] as
     | {
-        cfg?: unknown;
-        followupRun?: unknown;
+        cfg?: any;
+        followupRun?: any;
         sessionKey?: string;
         runtimePolicySessionKey?: string;
       }
@@ -176,8 +176,8 @@ describe("runReplyAgent runtime config", () => {
 
     resolveQueuedReplyExecutionConfigMock.mockResolvedValue(freshCfg);
     resolveReplyToModeMock.mockReturnValue("all");
-    createReplyToModeFilterForChannelMock.mockReturnValue((payload: unknown) => payload);
-    createReplyMediaPathNormalizerMock.mockReturnValue((payload: unknown) => payload);
+    createReplyToModeFilterForChannelMock.mockReturnValue((payload: any) => payload);
+    createReplyMediaPathNormalizerMock.mockReturnValue((payload: any) => payload);
     runPreflightCompactionIfNeededMock.mockRejectedValue(sentinelError);
     runMemoryFlushIfNeededMock.mockResolvedValue(undefined);
   });

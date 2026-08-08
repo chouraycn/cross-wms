@@ -5,8 +5,8 @@ export type SessionMigration = {
   name: string;
   description?: string;
   version: string;
-  apply: (sessions: Record<string, unknown>) => Promise<Record<string, unknown>>;
-  shouldRun?: (sessions: Record<string, unknown>) => boolean;
+  apply: (sessions: Record<string, any>) => Promise<Record<string, any>>;
+  shouldRun?: (sessions: Record<string, any>) => boolean;
 };
 
 export type MigrationResult = {
@@ -42,7 +42,7 @@ export function markMigrationApplied(id: string): void {
 }
 
 export function getPendingMigrations(
-  sessions: Record<string, unknown>,
+  sessions: Record<string, any>,
 ): SessionMigration[] {
   const pending: SessionMigration[] = [];
   for (const migration of migrations.values()) {
@@ -54,7 +54,7 @@ export function getPendingMigrations(
 }
 
 export async function runSessionMigrations(
-  sessions: Record<string, unknown>,
+  sessions: Record<string, any>,
 ): Promise<MigrationResult> {
   const startTime = Date.now();
   const appliedMigrationsList: string[] = [];

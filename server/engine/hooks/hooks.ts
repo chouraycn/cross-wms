@@ -53,7 +53,7 @@ export function createHookEvent(
   type: HookEventType,
   action: string,
   sessionKey: string,
-  context: Record<string, unknown> = {},
+  context: Record<string, any> = {},
 ): HookEvent {
   return {
     type,
@@ -70,7 +70,7 @@ export function isAgentBootstrapEvent(event: HookEvent): boolean {
   if (event.type !== 'agent' || event.action !== 'bootstrap') {
     return false;
   }
-  const ctx = event.context as { workspaceDir?: unknown; bootstrapFiles?: unknown } | null;
+  const ctx = event.context as { workspaceDir?: any; bootstrapFiles?: any } | null;
   if (!ctx || typeof ctx !== 'object') {
     return false;
   }
@@ -159,7 +159,7 @@ export async function runHooksAround<T>(
   type: HookEventType,
   action: string,
   sessionKey: string,
-  context: Record<string, unknown>,
+  context: Record<string, any>,
   operation: () => Promise<T>,
 ): Promise<T> {
   // 1. 前置钩子
@@ -222,12 +222,12 @@ export async function triggerBeforeToolCall(
   sessionKey: string,
   toolName: string,
   toolType: string,
-  args: Record<string, unknown>,
-): Promise<Record<string, unknown>> {
+  args: Record<string, any>,
+): Promise<Record<string, any>> {
   const event = await runHookModifiers(
     createHookEvent('tool', 'before-call', sessionKey, { toolName, toolType, arguments: args })
   );
-  return event.context.arguments as Record<string, unknown>;
+  return event.context.arguments as Record<string, any>;
 }
 
 /**
@@ -237,8 +237,8 @@ export async function triggerAfterToolCall(
   sessionKey: string,
   toolName: string,
   toolType: string,
-  args: Record<string, unknown>,
-  result: unknown,
+  args: Record<string, any>,
+  result: any,
   error?: string,
   durationMs?: number,
 ): Promise<void> {
@@ -259,7 +259,7 @@ export async function triggerAfterToolResult(
   sessionKey: string,
   toolName: string,
   toolType: string,
-  result: unknown,
+  result: any,
   isError: boolean,
 ): Promise<void> {
   await runHooks(createHookEvent('tool', 'after-result', sessionKey, { 

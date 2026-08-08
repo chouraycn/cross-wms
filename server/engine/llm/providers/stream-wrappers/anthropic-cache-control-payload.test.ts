@@ -15,7 +15,7 @@ describe("applyAnthropicEphemeralCacheControlMarkers", () => {
           ],
         },
       ],
-    } satisfies Record<string, unknown>;
+    } satisfies Record<string, any>;
 
     applyAnthropicEphemeralCacheControlMarkers(payload);
 

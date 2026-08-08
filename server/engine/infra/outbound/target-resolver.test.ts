@@ -23,13 +23,13 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("../../channels/plugins/index.js", () => ({
-  getLoadedChannelPlugin: (...args: unknown[]) => mocks.getLoadedChannelPlugin(...args),
-  getChannelPlugin: (...args: unknown[]) => mocks.getChannelPlugin(...args),
+  getLoadedChannelPlugin: (...args: any[]) => mocks.getLoadedChannelPlugin(...args),
+  getChannelPlugin: (...args: any[]) => mocks.getChannelPlugin(...args),
   normalizeChannelId: (value: string) => value,
 }));
 
 vi.mock("../../channels/plugins/registry-loaded-read.js", () => ({
-  getLoadedChannelPluginForRead: (...args: unknown[]) => mocks.getLoadedChannelPlugin(...args),
+  getLoadedChannelPluginForRead: (...args: any[]) => mocks.getLoadedChannelPlugin(...args),
 }));
 
 vi.mock("../../plugins/runtime.js", () => ({
@@ -51,7 +51,7 @@ beforeEach(() => {
   mocks.resolveTarget.mockReset();
   mocks.getChannelPlugin.mockReset();
   mocks.getLoadedChannelPlugin.mockReset();
-  mocks.getLoadedChannelPlugin.mockImplementation((...args: unknown[]) =>
+  mocks.getLoadedChannelPlugin.mockImplementation((...args: any[]) =>
     mocks.getChannelPlugin(...args),
   );
   mocks.getActivePluginChannelRegistryVersion.mockReset();
@@ -71,9 +71,9 @@ async function expectOkResolution(
 }
 
 function firstMockArg(
-  mock: { mock: { calls: readonly unknown[][] } },
+  mock: { mock: { calls: readonly any[][] } },
   label: string,
-): Record<string, unknown> {
+): Record<string, any> {
   const [call] = mock.mock.calls;
   if (!call) {
     throw new Error(`expected ${label} call`);
@@ -82,7 +82,7 @@ function firstMockArg(
   if (typeof arg !== "object" || arg === null || Array.isArray(arg)) {
     throw new Error(`expected ${label} input to be an object`);
   }
-  return arg as Record<string, unknown>;
+  return arg as Record<string, any>;
 }
 
 describe("resolveMessagingTarget (directory fallback)", () => {

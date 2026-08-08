@@ -65,7 +65,7 @@ function questionUntilClose(rl: ReadlineInterface, question: string): Promise<st
     rl.once("close", onClose);
     void rl.question(question).then(
       (answer) => finish(() => resolve(answer)),
-      (error: unknown) => finish(() => reject(toErrorObject(error, "Non-Error rejection"))),
+      (error: any) => finish(() => reject(toErrorObject(error, "Non-Error rejection"))),
     );
   });
 }

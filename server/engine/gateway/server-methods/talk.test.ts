@@ -105,7 +105,7 @@ vi.mock("../talk-transcription-relay.js", async (importOriginal) => {
   };
 });
 
-function createTalkConfig(apiKey: unknown): OpenClawConfig {
+function createTalkConfig(apiKey: any): OpenClawConfig {
   return {
     talk: {
       provider: "acme",
@@ -119,11 +119,11 @@ function createTalkConfig(apiKey: unknown): OpenClawConfig {
   } as OpenClawConfig;
 }
 
-function expectRecordFields(record: unknown, expected: Record<string, unknown>) {
+function expectRecordFields(record: any, expected: Record<string, any>) {
   if (!record || typeof record !== "object") {
     throw new Error("Expected record");
   }
-  const actual = record as Record<string, unknown>;
+  const actual = record as Record<string, any>;
   for (const [key, value] of Object.entries(expected)) {
     expect(actual[key]).toEqual(value);
   }
@@ -138,7 +138,7 @@ function mockCallArg(mock: ReturnType<typeof vi.fn>, callIndex = 0, argIndex = 0
   return call.at(argIndex);
 }
 
-function expectRespondOk(mock: ReturnType<typeof vi.fn>, expected?: Record<string, unknown>) {
+function expectRespondOk(mock: ReturnType<typeof vi.fn>, expected?: Record<string, any>) {
   expect(mockCallArg(mock)).toBe(true);
   const result = mockCallArg(mock, 0, 1);
   if (expected) {
@@ -148,7 +148,7 @@ function expectRespondOk(mock: ReturnType<typeof vi.fn>, expected?: Record<strin
   return result;
 }
 
-function expectRespondError(mock: ReturnType<typeof vi.fn>, expected: Record<string, unknown>) {
+function expectRespondError(mock: ReturnType<typeof vi.fn>, expected: Record<string, any>) {
   expect(mockCallArg(mock)).toBe(false);
   expect(mockCallArg(mock, 0, 1)).toBeUndefined();
   return expectRecordFields(mockCallArg(mock, 0, 2), expected);
@@ -354,8 +354,8 @@ describe("talk.speak handler", () => {
         baseTtsConfig,
         talkProviderConfig,
       }: {
-        baseTtsConfig: Record<string, unknown>;
-        talkProviderConfig: Record<string, unknown>;
+        baseTtsConfig: Record<string, any>;
+        talkProviderConfig: Record<string, any>;
       }) => {
         expectRecordFields(talkProviderConfig, {
           speakerVoice: "talk-speaker",
@@ -474,12 +474,12 @@ describe("talk.config handler", () => {
         talkProviderConfig,
         timeoutMs,
       }: {
-        baseTtsConfig: Record<string, unknown>;
-        talkProviderConfig: Record<string, unknown>;
+        baseTtsConfig: Record<string, any>;
+        talkProviderConfig: Record<string, any>;
         timeoutMs: number;
       }) => {
-        const providers = (baseTtsConfig.providers ?? {}) as Record<string, unknown>;
-        const providerConfig = (providers.acme ?? {}) as Record<string, unknown>;
+        const providers = (baseTtsConfig.providers ?? {}) as Record<string, any>;
+        const providerConfig = (providers.acme ?? {}) as Record<string, any>;
         const apiKey = normalizeResolvedSecretInputString({
           value: providerConfig.apiKey,
           path: "messages.tts.providers.acme.apiKey",
@@ -510,10 +510,10 @@ describe("talk.config handler", () => {
       context: { getRuntimeConfig: () => runtimeConfig } as never,
     });
 
-    const response = expectRespondOk(respond) as { config?: { talk?: Record<string, unknown> } };
+    const response = expectRespondOk(respond) as { config?: { talk?: Record<string, any> } };
     const talkConfig = response.config?.talk;
     expectRecordFields(talkConfig, { provider: "acme" });
-    const resolved = talkConfig?.resolved as Record<string, unknown> | undefined;
+    const resolved = talkConfig?.resolved as Record<string, any> | undefined;
     expectRecordFields(resolved, { provider: "acme" });
     expectRecordFields(resolved?.config, { apiKey: "__OPENCLAW_REDACTED__" });
   });
@@ -523,7 +523,7 @@ describe("talk.session unified handlers", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.resolveSessionKeyFromResolveParams.mockImplementation(async ({ p }) => {
-      const key = (p as { key?: unknown }).key;
+      const key = (p as { key?: any }).key;
       return {
         ok: true,
         key: typeof key === "string" ? key : "session:main",
@@ -625,7 +625,7 @@ describe("talk.session unified handlers", () => {
     });
     const relayCreateInput = mockCallArg(mocks.createTalkRealtimeRelaySession) as Record<
       string,
-      unknown
+      any
     >;
     expectRecordFields(relayCreateInput, { connId: "conn-1", provider });
     expectRecordFields(relayCreateInput.providerConfig, {
@@ -788,7 +788,7 @@ describe("talk.session unified handlers", () => {
       code: ErrorCodes.UNAVAILABLE,
       message: "Error: OpenAI API key rejected with 401",
     });
-    expectRecordFields((error.details as Record<string, unknown>).talkIssue, {
+    expectRecordFields((error.details as Record<string, any>).talkIssue, {
       code: "realtime_unavailable",
       message: "Error: OpenAI API key rejected with 401",
       phase: "request",
@@ -857,7 +857,7 @@ describe("talk.session unified handlers", () => {
     });
     const createInput = mockCallArg(mocks.createTalkTranscriptionRelaySession) as Record<
       string,
-      unknown
+      any
     >;
     expectRecordFields(createInput.providerConfig, {
       apiKey: "stt-key",
@@ -916,7 +916,7 @@ describe("talk.session unified handlers", () => {
     const createResult = expectRespondOk(createRespond, {
       transport: "managed-room",
       brain: "agent-consult",
-    }) as Record<string, unknown>;
+    }) as Record<string, any>;
     expect(createResult.sessionId).toBeTypeOf("string");
     expect(createResult.handoffId).toBeTypeOf("string");
     expect(createResult.roomId).toMatch(/^talk_/);
@@ -942,7 +942,7 @@ describe("talk.session unified handlers", () => {
       } as never,
     });
     const joinResult = expectRespondOk(joinRespond, { id: session.sessionId }) as {
-      room?: Record<string, unknown>;
+      room?: Record<string, any>;
     };
     expectRecordFields(joinResult.room, { activeClientId: "conn-1" });
     expect(mockCallArg(broadcastToConnIds)).toBe("talk.event");
@@ -967,7 +967,7 @@ describe("talk.session unified handlers", () => {
     });
 
     const startResult = expectRespondOk(startRespond, { ok: true, turnId: "turn-1" }) as {
-      events?: unknown[];
+      events?: any[];
     };
     expect(startResult.events).toHaveLength(1);
     expectRecordFields(startResult.events?.[0], { type: "turn.started", turnId: "turn-1" });
@@ -1272,7 +1272,7 @@ describe("talk.session unified handlers", () => {
     const createResult = expectRespondOk(createRespond, {
       transport: "managed-room",
       brain: "direct-tools",
-    }) as Record<string, unknown>;
+    }) as Record<string, any>;
     expect(createResult.sessionId).toBeTypeOf("string");
 
     await talkHandlers["talk.session.close"]({
@@ -1308,7 +1308,7 @@ describe("talk.client.toolCall handler", () => {
       async ({
         respond,
       }: {
-        respond: (ok: boolean, result?: unknown, error?: unknown) => void;
+        respond: (ok: boolean, result?: any, error?: any) => void;
       }) => {
         respond(true, { runId: "run-voice-1" }, undefined);
       },
@@ -1335,14 +1335,14 @@ describe("talk.client.toolCall handler", () => {
     });
 
     const chatInput = mockCallArg(mocks.chatSend) as {
-      req?: Record<string, unknown>;
-      params?: Record<string, unknown>;
+      req?: Record<string, any>;
+      params?: Record<string, any>;
     };
     expectRecordFields(chatInput.req, { method: "chat.send" });
     expectRecordFields(chatInput.params, { sessionKey: "main" });
     expect(chatInput.params?.message).toContain("What is in this repo?");
     expect(chatInput.params?.idempotencyKey).toMatch(/^talk-call-1-/);
-    const response = expectRespondOk(respond, { runId: "run-voice-1" }) as Record<string, unknown>;
+    const response = expectRespondOk(respond, { runId: "run-voice-1" }) as Record<string, any>;
     expect(response.idempotencyKey).toMatch(/^talk-call-1-/);
   });
 
@@ -1371,7 +1371,7 @@ describe("talk.client.toolCall handler", () => {
       } as never,
     });
 
-    const chatInput = mockCallArg(mocks.chatSend) as { params?: Record<string, unknown> };
+    const chatInput = mockCallArg(mocks.chatSend) as { params?: Record<string, any> };
     expectRecordFields(chatInput.params, {
       thinking: "low",
       fastMode: true,
@@ -1420,7 +1420,7 @@ describe("talk.client.toolCall handler", () => {
         async ({
           respond,
         }: {
-          respond: (ok: boolean, result?: unknown, error?: unknown) => void;
+          respond: (ok: boolean, result?: any, error?: any) => void;
         }) => {
           respond(true, { runId: `run-${status}`, status }, undefined);
         },
@@ -1590,7 +1590,7 @@ describe("talk.client.create handler", () => {
   });
 
   it("uses talk.realtime provider, model, voice, and instructions without reading speech provider config", async () => {
-    const createBrowserSession = vi.fn(async (_input: unknown) => ({
+    const createBrowserSession = vi.fn(async (_input: any) => ({
       provider: "openai",
       transport: "webrtc" as const,
       clientSecret: "secret",
@@ -1643,7 +1643,7 @@ describe("talk.client.create handler", () => {
       providerConfigs: { openai: { apiKey: "openai-key" } },
       defaultModel: "gpt-realtime",
     });
-    const createInput = mockCallArg(createBrowserSession) as Record<string, unknown>;
+    const createInput = mockCallArg(createBrowserSession) as Record<string, any>;
     expectRecordFields(createInput, {
       model: "gpt-realtime",
       voice: "alloy",
@@ -1662,7 +1662,7 @@ describe("talk.client.create handler", () => {
   });
 
   it("uses agents.defaults.voiceModel as the realtime default model", async () => {
-    const createBrowserSession = vi.fn(async (_input: unknown) => ({
+    const createBrowserSession = vi.fn(async (_input: any) => ({
       provider: "openai",
       transport: "webrtc" as const,
       clientSecret: "secret",
@@ -1722,7 +1722,7 @@ describe("talk.client.create handler", () => {
   });
 
   it("ignores voiceModel defaults that are not realtime voice models", async () => {
-    const createBrowserSession = vi.fn(async (_input: unknown) => ({
+    const createBrowserSession = vi.fn(async (_input: any) => ({
       provider: "openai",
       transport: "webrtc" as const,
       clientSecret: "secret",
@@ -1773,13 +1773,13 @@ describe("talk.client.create handler", () => {
       providerConfigs: { openai: { apiKey: "openai-key" } },
       defaultModel: undefined,
     });
-    const createInput = mockCallArg(createBrowserSession) as Record<string, unknown>;
+    const createInput = mockCallArg(createBrowserSession) as Record<string, any>;
     expect(createInput).not.toHaveProperty("model");
     expectRespondOk(respond, { provider: "openai", transport: "webrtc" });
   });
 
   it("uses the first configured realtime voiceModel fallback", async () => {
-    const createBrowserSession = vi.fn(async (_input: unknown) => ({
+    const createBrowserSession = vi.fn(async (_input: any) => ({
       provider: "openai",
       transport: "webrtc" as const,
       clientSecret: "secret",
@@ -1798,7 +1798,7 @@ describe("talk.client.create handler", () => {
       label: "OpenAI Realtime",
       defaultModel: "gpt-realtime-2",
       models: ["gpt-realtime-2"],
-      isConfigured: ({ providerConfig }: { providerConfig: Record<string, unknown> }) =>
+      isConfigured: ({ providerConfig }: { providerConfig: Record<string, any> }) =>
         providerConfig.apiKey === "openai-key",
       createBrowserSession,
       createBridge: vi.fn(),
@@ -1847,7 +1847,7 @@ describe("talk.client.create handler", () => {
   });
 
   it("ignores voiceModel providers that do not register realtime voice", async () => {
-    const createBrowserSession = vi.fn(async (_input: unknown) => ({
+    const createBrowserSession = vi.fn(async (_input: any) => ({
       provider: "openai",
       transport: "webrtc" as const,
       clientSecret: "secret",
@@ -1897,7 +1897,7 @@ describe("talk.client.create handler", () => {
   });
 
   it("keeps voice-call realtime provider ahead of unrelated voiceModel defaults", async () => {
-    const createBrowserSession = vi.fn(async (_input: unknown) => ({
+    const createBrowserSession = vi.fn(async (_input: any) => ({
       provider: "openai",
       transport: "webrtc" as const,
       clientSecret: "secret",
@@ -1956,7 +1956,7 @@ describe("talk.client.create handler", () => {
   });
 
   it("uses a single talk.realtime provider config ahead of unrelated voiceModel defaults", async () => {
-    const createBrowserSession = vi.fn(async (_input: unknown) => ({
+    const createBrowserSession = vi.fn(async (_input: any) => ({
       provider: "custom",
       transport: "webrtc" as const,
       clientSecret: "secret",

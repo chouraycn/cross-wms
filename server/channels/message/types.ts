@@ -21,19 +21,19 @@ export type RenderedMessagePartKind =
 /** One rendered part of a multi-part message. */
 export interface RenderedMessagePart {
   kind: RenderedMessagePartKind;
-  content: unknown;
-  metadata?: Record<string, unknown>;
+  content: any;
+  metadata?: Record<string, any>;
 }
 
 /** Rendered payload batch for outbound message sending. */
 export interface RenderedMessageBatch<TPayload = unknown> {
   parts: RenderedMessagePart[];
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
   payloads?: TPayload[];
 }
 
 /** Durable send context passed through render, preview, send, edit, commit, and failure steps. */
-export interface MessageSendContext<TPayload = unknown, TSendResult = unknown> {
+export interface MessageSendContext<TPayload = any, TSendResult = any> {
   id: string;
   channel: ChannelId;
   to: string;
@@ -41,15 +41,15 @@ export interface MessageSendContext<TPayload = unknown, TSendResult = unknown> {
   durability: MessageDurability;
   attempt: number;
   signal: AbortSignal;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 
   render(): Promise<RenderedMessageBatch<TPayload>>;
-  previewUpdate(rendered: RenderedMessageBatch<TPayload>): Promise<unknown>;
+  previewUpdate(rendered: RenderedMessageBatch<TPayload>): Promise<any>;
   send(rendered: RenderedMessageBatch<TPayload>): Promise<TSendResult>;
-  edit(receipt: unknown, rendered: RenderedMessageBatch<TPayload>): Promise<unknown>;
-  delete(receipt: unknown): Promise<void>;
-  commit(receipt: unknown): Promise<void>;
-  fail(error: unknown): Promise<void>;
+  edit(receipt: any, rendered: RenderedMessageBatch<TPayload>): Promise<any>;
+  delete(receipt: any): Promise<void>;
+  commit(receipt: any): Promise<void>;
+  fail(error: any): Promise<void>;
 }
 
 /** Receive acknowledgement timing policy for durable inbound message records. */
@@ -66,7 +66,7 @@ export type MessageReceiveAckState = "pending" | "acked" | "nacked";
 export interface LiveMessageState<TPayload = unknown> {
   phase: "idle" | "previewing" | "finalizing" | "finalized" | "cancelled";
   canFinalizeInPlace: boolean;
-  receipt?: unknown;
+  receipt?: any;
   lastRendered?: RenderedMessageBatch<TPayload>;
 }
 
@@ -82,12 +82,12 @@ export interface MessageReceiveContext<TMessage = unknown> {
   signal: AbortSignal;
 
   ack(): Promise<void>;
-  nack(error: unknown): Promise<void>;
+  nack(error: any): Promise<void>;
 }
 
 /** Adapter methods a message channel can implement for outbound sends. */
 export interface ChannelMessageSendAdapter {
-  send?(ctx: MessageSendContext): Promise<unknown>;
+  send?(ctx: MessageSendContext): Promise<any>;
 }
 
 /** Adapter methods a message channel can implement for inbound receives. */
@@ -110,7 +110,7 @@ export interface ChannelMessage {
   accountId?: AccountId;
   content: string;
   contentType?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
   createdAt?: number;
   conversationId?: string;
   senderId?: string;

@@ -53,7 +53,7 @@ type ProviderRuntimeFailureKind =
   | "server_error"
   | "timeout"
   | "format"
-  | "unknown";
+  | "any";
 
 function buildApiErrorObservationFields(rawError?: string): {
   rawErrorPreview?: string;
@@ -63,7 +63,7 @@ function buildApiErrorObservationFields(rawError?: string): {
     return {};
   }
   const lower = rawError.toLowerCase();
-  let kind: ProviderRuntimeFailureKind = "unknown";
+  let kind: ProviderRuntimeFailureKind = "any";
   if (lower.includes("auth") || lower.includes("unauthorized") || lower.includes("forbidden")) {
     kind = "auth";
   } else if (lower.includes("billing") || lower.includes("insufficient") || lower.includes("quota")) {
@@ -86,11 +86,11 @@ function buildApiErrorObservationFields(rawError?: string): {
 }
 
 function shouldSuppressRawErrorConsoleSuffix(kind?: ProviderRuntimeFailureKind): boolean {
-  return Boolean(kind && kind !== "unknown");
+  return Boolean(kind && kind !== "any");
 }
 
 const log = {
-  warn: (_message: string, _fields: Record<string, unknown>) => {},
+  warn: (_message: string, _fields: Record<string, any>) => {},
 };
 
 export function createFailoverDecisionLogger(

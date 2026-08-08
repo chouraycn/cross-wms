@@ -9,7 +9,7 @@
  * 将可选字符串规范化为小写形式；非字符串或空值返回 undefined。
  * 本地降级实现，替代 `@openclaw/normalization-core/string-coerce` 的 `normalizeOptionalLowercaseString`。
  */
-function normalizeOptionalLowercaseString(value: unknown): string | undefined {
+function normalizeOptionalLowercaseString(value: any): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }
@@ -24,9 +24,9 @@ function normalizeOptionalLowercaseString(value: unknown): string | undefined {
 type OpenClawConfig = {
   plugins?: {
     enabled?: boolean;
-    allow?: unknown[];
-    deny?: unknown[];
-    entries?: Record<string, unknown>;
+    allow?: any[];
+    deny?: any[];
+    entries?: Record<string, any>;
   };
 };
 
@@ -41,11 +41,11 @@ type PluginManifestRecord = {
 type PluginEntriesConfig = NonNullable<NonNullable<OpenClawConfig["plugins"]>["entries"]>;
 
 /** 规范化用于配置 allow/deny/entry 列表的插件 id。 */
-export function normalizePluginConfigId(id: unknown): string {
+export function normalizePluginConfigId(id: any): string {
   return normalizeOptionalLowercaseString(id) ?? "";
 }
 
-function hasPluginConfigId(list: unknown, pluginId: string): boolean {
+function hasPluginConfigId(list: any, pluginId: string): boolean {
   return Array.isArray(list) && list.some((entry) => normalizePluginConfigId(entry) === pluginId);
 }
 

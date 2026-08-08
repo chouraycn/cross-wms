@@ -323,7 +323,7 @@ describe("openclaw agent database", () => {
     });
     const row = reopenedStateDatabase.db
       .prepare("SELECT role, agent_id FROM schema_meta WHERE meta_key = 'primary'")
-      .get() as { agent_id?: unknown; role?: unknown } | undefined;
+      .get() as { agent_id?: any; role?: any } | undefined;
     expect(row).toEqual({ role: "global", agent_id: null });
   });
 

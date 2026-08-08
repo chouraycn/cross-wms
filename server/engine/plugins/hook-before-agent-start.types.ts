@@ -22,7 +22,7 @@ export type PluginHookBeforeModelResolveResult = {
 export type PluginHookBeforePromptBuildEvent = {
   prompt: string;
   /** Session messages prepared for this run. */
-  messages: unknown[];
+  messages: any[];
 };
 
 export type PluginHookBeforePromptBuildResult = {
@@ -67,7 +67,7 @@ export type PluginHookBeforeAgentStartEvent = {
   prompt: string;
   runId?: string;
   /** Optional because legacy hook can run in pre-session phase. */
-  messages?: unknown[];
+  messages?: any[];
 };
 
 /** @deprecated Use before_model_resolve and before_prompt_build result types. */

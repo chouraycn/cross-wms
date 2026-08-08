@@ -27,7 +27,7 @@ function makeMessages(count: number): TestMessage[] {
 function buildProjection(
   manager: ContextProjectionManager,
   sessionId: string,
-  messages: Array<{ role: string; content: unknown }>,
+  messages: Array<{ role: string; content: any }>,
   options: { type: ProjectionType; maxTokens?: number; includeSystem?: boolean; tags?: string[]; ttlMs?: number },
 ) {
   return manager.buildProjection(sessionId, messages, options);
@@ -424,7 +424,7 @@ describe('context-projection - MMR rerank', () => {
   });
 
   it('should handle empty items', () => {
-    const result = mmrRerank<{ content: unknown; embedding: number[] }>(
+    const result = mmrRerank<{ content: any; embedding: number[] }>(
       [],
       [1, 0, 0],
       (item) => item.embedding,

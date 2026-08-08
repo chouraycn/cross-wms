@@ -46,7 +46,7 @@ type SandboxBrowserHashInput = {
   readOnlyWorkspaceSkillMounts?: readonly string[];
 };
 
-function normalizeForHash(value: unknown): unknown {
+function normalizeForHash(value: any): any {
   if (value === undefined) {
     return undefined;
   }
@@ -56,7 +56,7 @@ function normalizeForHash(value: unknown): unknown {
   if (value && typeof value === "object") {
     // Sort object keys recursively so JSON serialization is deterministic.
     const entries = Object.entries(value).toSorted(([a], [b]) => a.localeCompare(b));
-    const normalized: Record<string, unknown> = {};
+    const normalized: Record<string, any> = {};
     for (const [key, entryValue] of entries) {
       const next = normalizeForHash(entryValue);
       if (next !== undefined) {
@@ -78,7 +78,7 @@ export function computeSandboxBrowserConfigHash(input: SandboxBrowserHashInput):
   return computeHash(input);
 }
 
-function computeHash(input: unknown): string {
+function computeHash(input: any): string {
   const payload = normalizeForHash(input);
   const raw = JSON.stringify(payload);
   return hashTextSha256(raw);

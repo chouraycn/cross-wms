@@ -14,7 +14,7 @@ type CapturedRequest = {
   method: string | undefined;
   url: string | undefined;
   headers: IncomingMessage["headers"];
-  body: Record<string, unknown>;
+  body: Record<string, any>;
 };
 
 type FixtureResponse = {
@@ -44,18 +44,18 @@ function createOptions(
   };
 }
 
-async function readJsonBody(req: IncomingMessage): Promise<Record<string, unknown>> {
+async function readJsonBody(req: IncomingMessage): Promise<Record<string, any>> {
   const chunks: Buffer[] = [];
   for await (const chunk of req) {
     chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
   }
   const text = Buffer.concat(chunks).toString("utf8");
-  return JSON.parse(text) as Record<string, unknown>;
+  return JSON.parse(text) as Record<string, any>;
 }
 
 async function startEmbeddingServer(params?: {
   token?: string;
-  respond?: (request: CapturedRequest) => FixtureResponse | Record<string, unknown>;
+  respond?: (request: CapturedRequest) => FixtureResponse | Record<string, any>;
   status?: number;
 }): Promise<{ baseUrl: string; requests: CapturedRequest[] }> {
   const requests: CapturedRequest[] = [];
@@ -309,7 +309,7 @@ describe("openai-compatible generic embedding provider", () => {
     const outcome = await Promise.race([
       provider.embed("hello").then(
         () => ({ type: "resolved" as const }),
-        (error: unknown) => ({ type: "rejected" as const, error }),
+        (error: any) => ({ type: "rejected" as const, error }),
       ),
       new Promise<{ type: "timed-out" }>((resolve) => {
         setTimeout(() => resolve({ type: "timed-out" }), 1_000);

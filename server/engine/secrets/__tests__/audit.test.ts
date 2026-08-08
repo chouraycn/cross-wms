@@ -131,7 +131,7 @@ describe('审计模块', () => {
         { code: 'EXPIRED_SECRET', severity: 'error', file: '', jsonPath: '', message: '' },
         { code: 'WEAK_SECRET', severity: 'warn', file: '', jsonPath: '', message: '' },
         { code: 'UNUSED_SECRET', severity: 'info', file: '', jsonPath: '', message: '' },
-      ] as unknown;
+      ] as any;
       expect(filterBySeverity(findings, 'error')).toHaveLength(1);
       expect(filterBySeverity(findings, 'warn')).toHaveLength(1);
       expect(filterBySeverity(findings, 'info')).toHaveLength(1);
@@ -141,7 +141,7 @@ describe('审计模块', () => {
       const findings = [
         { code: 'EXPIRED_SECRET', severity: 'error', file: '', jsonPath: '', message: '' },
         { code: 'WEAK_SECRET', severity: 'warn', file: '', jsonPath: '', message: '' },
-      ] as unknown;
+      ] as any;
       expect(filterByCode(findings, 'EXPIRED_SECRET')).toHaveLength(1);
       expect(filterByCode(findings, 'WEAK_SECRET')).toHaveLength(1);
     });
@@ -153,7 +153,7 @@ describe('审计模块', () => {
         { code: 'EXPIRED_SECRET', severity: 'error', file: '', jsonPath: '', message: '' },
         { code: 'WEAK_SECRET', severity: 'warn', file: '', jsonPath: '', message: '' },
         { code: 'UNUSED_SECRET', severity: 'info', file: '', jsonPath: '', message: '' },
-      ] as unknown;
+      ] as any;
       const result = countFindings(findings);
       expect(result.total).toBe(3);
       expect(result.bySeverity.error).toBe(1);
@@ -169,9 +169,9 @@ describe('审计模块', () => {
         version: 1,
         status: 'clean',
         filesScanned: [],
-        summary: {} as unknown,
+        summary: {} as any,
         findings: [],
-      } as unknown;
+      } as any;
       expect(isAuditPassed(report)).toBe(true);
     });
 
@@ -180,9 +180,9 @@ describe('审计模块', () => {
         version: 1,
         status: 'unresolved',
         filesScanned: [],
-        summary: {} as unknown,
+        summary: {} as any,
         findings: [],
-      } as unknown;
+      } as any;
       expect(isAuditPassed(report)).toBe(false);
     });
   });
@@ -193,7 +193,7 @@ describe('审计模块', () => {
       const list = listAllSecretsForAudit();
       expect(list.length).toBeGreaterThanOrEqual(1);
       for (const item of list) {
-        expect((item as unknown).valueEncrypted).toBeUndefined();
+        expect((item as any).valueEncrypted).toBeUndefined();
       }
     });
   });

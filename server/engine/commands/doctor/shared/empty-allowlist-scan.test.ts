@@ -14,7 +14,7 @@ vi.mock("../channel-capabilities.js", () => ({
     cfg: {
       channels?: Record<
         string,
-        { accounts?: Record<string, unknown>; appId?: string; baseUrl?: string }
+        { accounts?: Record<string, any>; appId?: string; baseUrl?: string }
       >;
     },
     configuredAccountIds: string[],

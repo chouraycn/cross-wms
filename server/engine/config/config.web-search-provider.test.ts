@@ -16,22 +16,22 @@ vi.mock("../plugin-sdk/telegram-command-config.js", () => ({
 }));
 
 const mockWebSearchProviders = vi.hoisted(() => {
-  const getScopedWebSearchCredential = (key: string) => (search?: Record<string, unknown>) =>
-    (search?.[key] as { apiKey?: unknown } | undefined)?.apiKey;
+  const getScopedWebSearchCredential = (key: string) => (search?: Record<string, any>) =>
+    (search?.[key] as { apiKey?: any } | undefined)?.apiKey;
   const getConfiguredPluginWebSearchConfig =
-    (pluginId: string) => (config?: Record<string, unknown>) =>
+    (pluginId: string) => (config?: Record<string, any>) =>
       (
         config?.plugins as
           | {
               entries?: Record<
                 string,
-                { config?: { webSearch?: { apiKey?: unknown; baseUrl?: unknown } } }
+                { config?: { webSearch?: { apiKey?: any; baseUrl?: any } } }
               >;
             }
           | undefined
       )?.entries?.[pluginId]?.config?.webSearch;
   const getConfiguredPluginWebSearchCredential =
-    (pluginId: string) => (config?: Record<string, unknown>) =>
+    (pluginId: string) => (config?: Record<string, any>) =>
       getConfiguredPluginWebSearchConfig(pluginId)(config)?.apiKey;
 
   return [
@@ -40,7 +40,7 @@ const mockWebSearchProviders = vi.hoisted(() => {
       pluginId: "brave",
       envVars: ["BRAVE_API_KEY"],
       credentialPath: "plugins.entries.brave.config.webSearch.apiKey",
-      getCredentialValue: (search?: Record<string, unknown>) => search?.apiKey,
+      getCredentialValue: (search?: Record<string, any>) => search?.apiKey,
       getConfiguredCredentialValue: getConfiguredPluginWebSearchCredential("brave"),
     },
     {
@@ -101,9 +101,9 @@ const mockWebSearchProviders = vi.hoisted(() => {
       pluginId: "searxng",
       envVars: ["SEARXNG_BASE_URL"],
       credentialPath: "plugins.entries.searxng.config.webSearch.baseUrl",
-      getCredentialValue: (search?: Record<string, unknown>) =>
-        (search?.searxng as { baseUrl?: unknown } | undefined)?.baseUrl,
-      getConfiguredCredentialValue: (config?: Record<string, unknown>) =>
+      getCredentialValue: (search?: Record<string, any>) =>
+        (search?.searxng as { baseUrl?: any } | undefined)?.baseUrl,
+      getConfiguredCredentialValue: (config?: Record<string, any>) =>
         getConfiguredPluginWebSearchConfig("searxng")(config)?.baseUrl,
     },
     {
@@ -246,7 +246,7 @@ const { resolveSearchProvider } = webSearchTesting;
 type ValidationMessage = {
   path?: string;
   message?: string;
-  allowedValues?: unknown;
+  allowedValues?: any;
 };
 
 function findValidationMessage(messages: ValidationMessage[], path: string): ValidationMessage {

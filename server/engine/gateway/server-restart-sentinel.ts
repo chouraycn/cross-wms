@@ -11,22 +11,22 @@
  * 完整实现见 openclaw 源码。
  */
 
-export async function recoverPendingRestartContinuationDeliveries(..._args: unknown[]): Promise<unknown> {
+export async function recoverPendingRestartContinuationDeliveries(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
 
-export async function scheduleRestartSentinelWake(..._args: unknown[]): Promise<unknown> {
+export async function scheduleRestartSentinelWake(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
 
-export async function refreshLatestUpdateRestartSentinel(..._args: unknown[]): Promise<unknown> {
+export async function refreshLatestUpdateRestartSentinel(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
 
-export function getLatestUpdateRestartSentinel(..._args: unknown[]): unknown {
+export function getLatestUpdateRestartSentinel(..._args: any[]): any {
   return undefined;
 }
 
-export function recordLatestUpdateRestartSentinel(..._args: unknown[]): unknown {
+export function recordLatestUpdateRestartSentinel(..._args: any[]): any {
   return undefined;
 }

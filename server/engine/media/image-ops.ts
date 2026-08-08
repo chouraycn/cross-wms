@@ -28,9 +28,9 @@ export type { ImageMetadata, ImageProbe };
 export class ImageProcessorUnavailableError extends Error {
   readonly code = "IMAGE_PROCESSOR_UNAVAILABLE";
   readonly operation: string;
-  readonly causes: unknown[];
+  readonly causes: any[];
 
-  constructor(operation: string, message?: string, causes: unknown[] = []) {
+  constructor(operation: string, message?: string, causes: any[] = []) {
     super(message ?? `Image processor unavailable for ${operation}`, {
       cause: causes.find((cause): cause is Error => cause instanceof Error),
     });
@@ -79,7 +79,7 @@ export function createImageProcessor() {
 }
 
 /** Detects either OpenClaw's wrapper error or Rastermill's native unavailable error. */
-export function isImageProcessorUnavailableError(err: unknown): boolean {
+export function isImageProcessorUnavailableError(err: any): boolean {
   return err instanceof ImageProcessorUnavailableError || isRastermillUnavailableError(err);
 }
 
@@ -101,7 +101,7 @@ export function readImageProbeFromHeader(buffer: Buffer): ImageProbe | null {
   return readRastermillImageProbeFromHeader(buffer);
 }
 
-function wrapRastermillUnavailable(operation: string, error: unknown): never {
+function wrapRastermillUnavailable(operation: string, error: any): never {
   if (error instanceof RastermillUnavailableError) {
     throw new ImageProcessorUnavailableError(operation, error.message, error.causes);
   }

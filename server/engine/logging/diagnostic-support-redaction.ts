@@ -57,12 +57,12 @@ type PathRedactionPrefix = {
 
 type SupportObjectEntry = {
   key: string;
-  value: unknown;
+  value: any;
 };
 
 type LimitedSupportArray = {
   count: number;
-  items: unknown[];
+  items: any[];
 };
 
 function isPrivateSupportField(key: string): boolean {
@@ -77,7 +77,7 @@ function isPrivateConfigField(key: string): boolean {
   return isPrivateSupportField(key) || CONFIG_PRIVATE_FIELD_RE.test(key);
 }
 
-function sanitizeSecretRefForSupport(value: Record<string, unknown>): Record<string, unknown> {
+function sanitizeSecretRefForSupport(value: Record<string, any>): Record<string, any> {
   const sanitized = createSupportRecord();
   if (typeof value.source === "string") {
     sanitized.source = value.source;
@@ -94,15 +94,15 @@ function privateMapEntryLabel(key: string): string {
   return normalized.endsWith("s") ? normalized.slice(0, -1) : normalized;
 }
 
-function createSupportRecord(): Record<string, unknown> {
-  return Object.create(null) as Record<string, unknown>;
+function createSupportRecord(): Record<string, any> {
+  return Object.create(null) as Record<string, any>;
 }
 
-function hasOwnRecordKey(record: Record<string, unknown>, key: string): boolean {
+function hasOwnRecordKey(record: Record<string, any>, key: string): boolean {
   return Object.hasOwn(record, key);
 }
 
-function countOwnObjectEntries(record: Record<string, unknown>): number {
+function countOwnObjectEntries(record: Record<string, any>): number {
   let count = 0;
   for (const key in record) {
     if (hasOwnRecordKey(record, key)) {
@@ -112,7 +112,7 @@ function countOwnObjectEntries(record: Record<string, unknown>): number {
   return count;
 }
 
-function limitedSupportObjectEntries(record: Record<string, unknown>): {
+function limitedSupportObjectEntries(record: Record<string, any>): {
   count: number;
   entries: SupportObjectEntry[];
 } {
@@ -132,14 +132,14 @@ function limitedSupportObjectEntries(record: Record<string, unknown>): {
   return { count, entries };
 }
 
-function limitedSupportArray(value: unknown[]): LimitedSupportArray {
+function limitedSupportArray(value: any[]): LimitedSupportArray {
   return {
     count: value.length,
     items: value.slice(0, MAX_SUPPORT_ARRAY_ITEMS),
   };
 }
 
-function addTruncationMetadata(sanitized: Record<string, unknown>, count: number): void {
+function addTruncationMetadata(sanitized: Record<string, any>, count: number): void {
   if (count > MAX_SUPPORT_OBJECT_ENTRIES) {
     sanitized[TRUNCATED_SUPPORT_FIELD] = {
       truncated: true,
@@ -149,7 +149,7 @@ function addTruncationMetadata(sanitized: Record<string, unknown>, count: number
   }
 }
 
-function supportArrayResult(items: unknown[], count: number): unknown[] | Record<string, unknown> {
+function supportArrayResult(items: any[], count: number): any[] | Record<string, any> {
   if (count <= MAX_SUPPORT_ARRAY_ITEMS) {
     return items;
   }
@@ -347,7 +347,7 @@ export function redactSupportString(
   return `${pathRedacted.slice(0, maxLength)}${truncationSuffix}`;
 }
 
-function sanitizeCommandArguments(args: unknown[], redaction: SupportRedactionContext): unknown[] {
+function sanitizeCommandArguments(args: any[], redaction: SupportRedactionContext): any[] {
   let redactNext = false;
   return args.map((arg) => {
     if (typeof arg !== "string") {
@@ -370,11 +370,11 @@ function sanitizeCommandArguments(args: unknown[], redaction: SupportRedactionCo
 
 /** Sanitizes general diagnostic snapshots while keeping bounded object/array structure. */
 export function sanitizeSupportSnapshotValue(
-  value: unknown,
+  value: any,
   redaction: SupportRedactionContext,
   key = "",
   depth = 0,
-): unknown {
+): any {
   if (value == null || typeof value === "boolean") {
     return value;
   }
@@ -418,11 +418,11 @@ export function sanitizeSupportSnapshotValue(
 
 /** Sanitizes config-shaped values with stricter private field handling. */
 export function sanitizeSupportConfigValue(
-  value: unknown,
+  value: any,
   redaction: SupportRedactionContext,
   key = "",
   depth = 0,
-): unknown {
+): any {
   if (value == null || typeof value === "boolean") {
     return value;
   }

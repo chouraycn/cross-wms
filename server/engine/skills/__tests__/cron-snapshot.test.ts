@@ -501,7 +501,7 @@ describe("cron-snapshot", () => {
 
   describe("并发保护", () => {
     it("上次刷新未完成时应该跳过", async () => {
-      let resolveRefresh: ((value: unknown) => void) | null = null;
+      let resolveRefresh: ((value: any) => void) | null = null;
       const refreshPromise = new Promise((resolve) => {
         resolveRefresh = resolve;
       });

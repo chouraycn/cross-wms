@@ -2,17 +2,17 @@
 // 降级：channel plugin 依赖简化
 
 export type RuntimeDirectoryLiveAdapter = {
-  resolveTarget: (params: unknown) => Promise<unknown>;
-  resolveTargets: (params: unknown) => Promise<unknown[]>;
+  resolveTarget: (params: any) => Promise<any>;
+  resolveTargets: (params: any) => Promise<any[]>;
 };
 
 export type RuntimeOutboundDelegates = {
-  deliverPayload: (params: unknown) => Promise<unknown>;
-  resolveTarget: (params: unknown) => Promise<unknown>;
+  deliverPayload: (params: any) => Promise<any>;
+  resolveTarget: (params: any) => Promise<any>;
 };
 
 /** Creates a runtime directory live adapter. Simplified without real directory. */
-export function createRuntimeDirectoryLiveAdapter(_params?: unknown): RuntimeDirectoryLiveAdapter {
+export function createRuntimeDirectoryLiveAdapter(_params?: any): RuntimeDirectoryLiveAdapter {
   return {
     resolveTarget: async () => null,
     resolveTargets: async () => [],
@@ -20,7 +20,7 @@ export function createRuntimeDirectoryLiveAdapter(_params?: unknown): RuntimeDir
 }
 
 /** Creates runtime outbound delegates. Simplified without real channel plugin. */
-export function createRuntimeOutboundDelegates(_params?: unknown): RuntimeOutboundDelegates {
+export function createRuntimeOutboundDelegates(_params?: any): RuntimeOutboundDelegates {
   return {
     deliverPayload: async () => null,
     resolveTarget: async () => null,

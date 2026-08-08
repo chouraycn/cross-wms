@@ -130,7 +130,7 @@ describe('Provider 注册表', () => {
 describe('OpenAI Provider', () => {
   it('Chat Completions 请求体包含 model 和 messages', () => {
     const ctx = makeCtx({ model: makeModel({ api: 'openai-completions', id: 'gpt-4o' }) });
-    const body = openaiProvider.buildRequestBody(ctx) as Record<string, unknown>;
+    const body = openaiProvider.buildRequestBody(ctx) as Record<string, any>;
     expect(body.model).toBe('gpt-4o');
     expect(body.messages).toEqual([{ role: 'user', content: 'hello' }]);
   });
@@ -144,7 +144,7 @@ describe('OpenAI Provider', () => {
         thinkingLevel: 'high',
       },
     });
-    const body = openaiProvider.buildRequestBody(ctx) as Record<string, unknown>;
+    const body = openaiProvider.buildRequestBody(ctx) as Record<string, any>;
     expect(body.input).toBeDefined();
     expect(body.reasoning).toEqual({ effort: 'high' });
   });
@@ -203,7 +203,7 @@ describe('Anthropic Provider', () => {
         ],
       },
     });
-    const body = anthropicProvider.buildRequestBody(ctx) as Record<string, unknown>;
+    const body = anthropicProvider.buildRequestBody(ctx) as Record<string, any>;
     expect(body.system).toBe('be nice');
     expect(body.messages).toEqual([{ role: 'user', content: 'hi' }]);
     expect(body.max_tokens).toBe(4096);
@@ -218,7 +218,7 @@ describe('Anthropic Provider', () => {
         thinkingLevel: 'high',
       },
     });
-    const body = anthropicProvider.buildRequestBody(ctx) as Record<string, unknown>;
+    const body = anthropicProvider.buildRequestBody(ctx) as Record<string, any>;
     expect(body.thinking).toEqual({ type: 'enabled', budget_tokens: 8192 });
   });
 
@@ -231,7 +231,7 @@ describe('Anthropic Provider', () => {
         thinkingLevel: 'high',
       },
     });
-    const body = anthropicProvider.buildRequestBody(ctx) as Record<string, unknown>;
+    const body = anthropicProvider.buildRequestBody(ctx) as Record<string, any>;
     expect(body.thinking).toBeUndefined();
   });
 
@@ -299,7 +299,7 @@ describe('Google Gemini Provider', () => {
         ],
       },
     });
-    const body = googleProvider.buildRequestBody(ctx) as Record<string, unknown>;
+    const body = googleProvider.buildRequestBody(ctx) as Record<string, any>;
     expect(body.systemInstruction).toEqual({ parts: [{ text: 'sys' }] });
     const contents = body.contents as Array<{ role: string }>;
     expect(contents[0].role).toBe('user');
@@ -379,7 +379,7 @@ describe('Bedrock Provider', () => {
         maxTokens: 1024,
       },
     });
-    const body = bedrockProvider.buildRequestBody(ctx) as Record<string, unknown>;
+    const body = bedrockProvider.buildRequestBody(ctx) as Record<string, any>;
     expect(body.anthropic_version).toBe('bedrock-2023-05-31');
     expect(body.system).toBe('sys');
     expect(body.max_tokens).toBe(1024);
@@ -393,7 +393,7 @@ describe('Bedrock Provider', () => {
         messages: [{ role: 'user', content: 'hi' }],
       },
     });
-    const body = bedrockProvider.buildRequestBody(ctx) as Record<string, unknown>;
+    const body = bedrockProvider.buildRequestBody(ctx) as Record<string, any>;
     expect(body.prompt).toContain('hi');
     expect(body.max_gen_len).toBeDefined();
   });
@@ -418,7 +418,7 @@ describe('Ollama Provider', () => {
     const ctx = makeCtx({
       model: makeModel({ api: 'ollama', id: 'llama3.1', provider: 'ollama' }),
     });
-    const body = ollamaProvider.buildRequestBody(ctx) as Record<string, unknown>;
+    const body = ollamaProvider.buildRequestBody(ctx) as Record<string, any>;
     expect(body.model).toBe('llama3.1');
     expect(body.stream).toBe(true);
     expect(body.messages).toEqual([{ role: 'user', content: 'hello' }]);
@@ -452,7 +452,7 @@ describe('国内 OpenAI 兼容 Provider', () => {
     const ctx = makeCtx({
       model: makeModel({ api: 'deepseek-chat', id: 'deepseek-chat', provider: 'deepseek' }),
     });
-    const body = deepseekProvider.buildRequestBody(ctx) as Record<string, unknown>;
+    const body = deepseekProvider.buildRequestBody(ctx) as Record<string, any>;
     expect(body.model).toBe('deepseek-chat');
     expect(body.messages).toEqual([{ role: 'user', content: 'hello' }]);
     expect(deepseekProvider.info.region).toBe('cn');
@@ -489,7 +489,7 @@ describe('国内 OpenAI 兼容 Provider', () => {
         maxTokens: 512,
       },
     });
-    const body = minimaxProvider.buildRequestBody(ctx) as Record<string, unknown>;
+    const body = minimaxProvider.buildRequestBody(ctx) as Record<string, any>;
     expect(body.model).toBe('abab6.5s-chat');
     expect(body.temperature).toBe(0.7);
     expect(body.max_tokens).toBe(512);
@@ -534,7 +534,7 @@ describe('百度文心 ERNIE Provider', () => {
         userId: 'user-001',
       },
     });
-    const body = ernieProvider.buildRequestBody(ctx) as Record<string, unknown>;
+    const body = ernieProvider.buildRequestBody(ctx) as Record<string, any>;
     expect(body.model).toBe('ernie-4.0-8k-latest');
     expect(body.messages).toEqual([{ role: 'user', content: 'hi' }]);
     expect(body.user_id).toBe('user-001');
@@ -544,7 +544,7 @@ describe('百度文心 ERNIE Provider', () => {
     const ctx = makeCtx({
       model: makeModel({ api: 'ernie-chat', provider: 'ernie' }),
     });
-    const body = ernieProvider.buildRequestBody(ctx) as Record<string, unknown>;
+    const body = ernieProvider.buildRequestBody(ctx) as Record<string, any>;
     expect(body.user_id).toBeUndefined();
   });
 
@@ -602,7 +602,7 @@ describe('讯飞星火 Spark Provider', () => {
         userId: 'user-002',
       },
     });
-    const body = sparkProvider.buildRequestBody(ctx) as Record<string, unknown>;
+    const body = sparkProvider.buildRequestBody(ctx) as Record<string, any>;
     expect(body.model).toBe('4.0Ultra');
     expect(body.messages).toEqual([{ role: 'user', content: 'hi' }]);
     expect(body.uid).toBe('user-002');
@@ -612,7 +612,7 @@ describe('讯飞星火 Spark Provider', () => {
     const ctx = makeCtx({
       model: makeModel({ api: 'spark-chat', provider: 'spark' }),
     });
-    const body = sparkProvider.buildRequestBody(ctx) as Record<string, unknown>;
+    const body = sparkProvider.buildRequestBody(ctx) as Record<string, any>;
     expect(body.uid).toBeUndefined();
   });
 });
@@ -638,7 +638,7 @@ describe('零一万物 Yi Provider', () => {
     const ctx = makeCtx({
       model: makeModel({ api: 'yi-chat', id: 'yi-lightning', provider: 'yi' }),
     });
-    const body = yiProvider.buildRequestBody(ctx) as Record<string, unknown>;
+    const body = yiProvider.buildRequestBody(ctx) as Record<string, any>;
     expect(body.model).toBe('yi-lightning');
     expect(body.messages).toEqual([{ role: 'user', content: 'hello' }]);
   });
@@ -705,7 +705,7 @@ describe('MiniMax 协议补全', () => {
         ],
       },
     });
-    const body = buildMinimaxRequestBody(ctx) as Record<string, unknown>;
+    const body = buildMinimaxRequestBody(ctx) as Record<string, any>;
     expect(body.bot_setting).toBeDefined();
     const botSetting = body.bot_setting as Array<{ bot_name: string; content: string }>;
     expect(botSetting).toHaveLength(1);
@@ -720,7 +720,7 @@ describe('MiniMax 协议补全', () => {
     const ctx = makeCtx({
       model: makeModel({ api: 'minimax-chat', provider: 'minimax' }),
     });
-    const body = buildMinimaxRequestBody(ctx) as Record<string, unknown>;
+    const body = buildMinimaxRequestBody(ctx) as Record<string, any>;
     expect(body.beams).toBe(1);
     expect(body.search_width).toBe(1);
   });
@@ -734,7 +734,7 @@ describe('MiniMax 协议补全', () => {
         userId: 'user-minimax',
       },
     });
-    const body = buildMinimaxRequestBody(ctx) as Record<string, unknown>;
+    const body = buildMinimaxRequestBody(ctx) as Record<string, any>;
     expect(body.user_id).toBe('user-minimax');
   });
 
@@ -753,7 +753,7 @@ describe('MiniMax 协议补全', () => {
         ],
       },
     });
-    const body = buildMinimaxRequestBody(ctx) as Record<string, unknown>;
+    const body = buildMinimaxRequestBody(ctx) as Record<string, any>;
     expect(body.tool_choice).toBe('auto');
     expect(body.tools).toBeDefined();
   });

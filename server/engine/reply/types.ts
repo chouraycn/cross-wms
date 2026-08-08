@@ -20,11 +20,11 @@ export interface ReplyPayload {
   toolCalls?: Array<{
     id: string;
     name: string;
-    input: unknown;
+    input: any;
   }>;
   toolResults?: Array<{
     id: string;
-    result: unknown;
+    result: any;
     isError?: boolean;
   }>;
 }
@@ -77,7 +77,7 @@ export interface ReplyCoalescedUpdate {
   toolCallId?: string;
   toolName?: string;
   toolInput?: string;
-  toolResult?: unknown;
+  toolResult?: any;
   isError?: boolean;
   timestamp: number;
 }
@@ -124,7 +124,7 @@ export interface BlockReplyToolEvent {
   toolCallId: string;
   toolName: string;
   toolInput?: string;
-  toolResult?: unknown;
+  toolResult?: any;
   isError?: boolean;
   timestamp: number;
 }
@@ -133,7 +133,7 @@ export interface BlockReplyFinalEvent {
   type: "block_reply_final";
   content: string;
   totalBlocks: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
   timestamp: number;
 }
 

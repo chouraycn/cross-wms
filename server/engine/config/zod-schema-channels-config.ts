@@ -18,7 +18,7 @@ export const ChannelBotLoopProtectionSchema = z
   .strict();
 
 function addLegacyChannelAcpBindingIssues(
-  value: unknown,
+  value: any,
   ctx: z.RefinementCtx,
   path: Array<string | number> = [],
 ) {
@@ -30,10 +30,10 @@ function addLegacyChannelAcpBindingIssues(
     return;
   }
 
-  const record = value as Record<string, unknown>;
+  const record = value as Record<string, any>;
   const bindings = record.bindings;
   if (bindings && typeof bindings === "object" && !Array.isArray(bindings)) {
-    const acp = (bindings as Record<string, unknown>).acp;
+    const acp = (bindings as Record<string, any>).acp;
     if (acp && typeof acp === "object") {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,

@@ -40,15 +40,15 @@ vi.mock("../logging.js", () => ({
 const { sendFailureNotificationAnnounce } = await import("./delivery.js");
 
 type DeliveryRequest = {
-  abortSignal?: unknown;
+  abortSignal?: any;
   accountId?: string;
   bestEffort?: boolean;
-  cfg?: unknown;
+  cfg?: any;
   channel?: string;
-  deps?: unknown;
-  identity?: unknown;
-  payloads?: unknown;
-  session?: unknown;
+  deps?: any;
+  identity?: any;
+  payloads?: any;
+  session?: any;
   threadId?: number;
   to?: string;
 };

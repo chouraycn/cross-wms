@@ -50,7 +50,7 @@ export interface DaemonProcess {
     level: 'info' | 'warn' | 'error' | 'debug';
     message: string;
   }>;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface DaemonStartOptions {
@@ -62,7 +62,7 @@ export interface DaemonStartOptions {
   autoRestart?: boolean;
   maxRestarts?: number;
   restartDelayMs?: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 class DaemonManager {

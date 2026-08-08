@@ -6,31 +6,31 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export const isBunBinary: unknown = undefined;
-export const APP_NAME: unknown = undefined;
-export const CONFIG_DIR_NAME: unknown = undefined;
-export const VERSION: unknown = undefined;
-export function getThemesDir(..._args: unknown[]): unknown {
+export const isBunBinary: any = undefined;
+export const APP_NAME: any = undefined;
+export const CONFIG_DIR_NAME: any = undefined;
+export const VERSION: any = undefined;
+export function getThemesDir(..._args: any[]): any {
   return undefined;
 }
-export function getReadmePath(..._args: unknown[]): unknown {
+export function getReadmePath(..._args: any[]): any {
   return undefined;
 }
-export function getDocsPath(..._args: unknown[]): unknown {
+export function getDocsPath(..._args: any[]): any {
   return undefined;
 }
-export function getExamplesPath(..._args: unknown[]): unknown {
+export function getExamplesPath(..._args: any[]): any {
   return undefined;
 }
-export function getAgentDir(..._args: unknown[]): unknown {
+export function getAgentDir(..._args: any[]): any {
   return undefined;
 }
-export function getCustomThemesDir(..._args: unknown[]): unknown {
+export function getCustomThemesDir(..._args: any[]): any {
   return undefined;
 }
-export function getBinDir(..._args: unknown[]): unknown {
+export function getBinDir(..._args: any[]): any {
   return undefined;
 }
-export function getSessionsDir(..._args: unknown[]): unknown {
+export function getSessionsDir(..._args: any[]): any {
   return undefined;
 }

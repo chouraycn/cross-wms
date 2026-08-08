@@ -43,7 +43,7 @@ export class FollowupRunDeferredError extends Error {
   }
 }
 
-export function isFollowupRunDeferredError(error: unknown): error is FollowupRunDeferredError {
+export function isFollowupRunDeferredError(error: any): error is FollowupRunDeferredError {
   return error instanceof FollowupRunDeferredError;
 }
 

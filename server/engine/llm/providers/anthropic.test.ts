@@ -4,7 +4,7 @@ import { SYSTEM_PROMPT_CACHE_BOUNDARY } from "../../agents/system-prompt-cache-b
 import type { Context, Model, Tool } from "../types.js";
 
 const anthropicMockState = vi.hoisted(() => ({
-  configs: [] as unknown[],
+  configs: [] as any[],
 }));
 
 vi.mock("@anthropic-ai/sdk", () => ({
@@ -15,7 +15,7 @@ vi.mock("@anthropic-ai/sdk", () => ({
       }),
     };
 
-    constructor(config: unknown) {
+    constructor(config: any) {
       anthropicMockState.configs.push(config);
     }
   },
@@ -23,7 +23,7 @@ vi.mock("@anthropic-ai/sdk", () => ({
 
 import { streamAnthropic, streamSimpleAnthropic } from "./anthropic.js";
 
-function createSseResponse(events: Record<string, unknown>[] = []): Response {
+function createSseResponse(events: Record<string, any>[] = []): Response {
   const body = events
     .map((event) => `event: ${String(event.type)}\ndata: ${JSON.stringify(event)}\n\n`)
     .join("");
@@ -142,7 +142,7 @@ describe("Anthropic provider", () => {
   it("preserves provider-signed Anthropic thinking and drops reasoning_content placeholders", async () => {
     const highSurrogate = String.fromCharCode(0xd83d);
     const signedThinking = `keep${highSurrogate}signed`;
-    let capturedPayload: unknown;
+    let capturedPayload: any;
     const client = {
       messages: {
         create: vi.fn(() => ({
@@ -224,7 +224,7 @@ describe("Anthropic provider", () => {
 
     const result = await stream.result();
 
-    const payload = capturedPayload as { messages: Array<{ role: string; content: unknown[] }> };
+    const payload = capturedPayload as { messages: Array<{ role: string; content: any[] }> };
     const assistantMessage = payload.messages.find((message) => message.role === "assistant");
     expect(JSON.stringify(assistantMessage?.content)).not.toContain("reasoning_content");
     expect(assistantMessage?.content).toEqual([
@@ -260,7 +260,7 @@ describe("Anthropic provider", () => {
   ])(
     "omits completed-turn thinking when thinking is $label",
     async ({ thinkingEnabled, expectedThinking, visibleText, expectedContent }) => {
-      let capturedPayload: unknown;
+      let capturedPayload: any;
       const stream = streamAnthropic(
         makeAnthropicModel(),
         {
@@ -312,8 +312,8 @@ describe("Anthropic provider", () => {
       await stream.result();
 
       const payload = capturedPayload as {
-        messages: Array<{ role: string; content: unknown[] }>;
-        thinking?: unknown;
+        messages: Array<{ role: string; content: any[] }>;
+        thinking?: any;
       };
       expect(payload.thinking).toEqual(expectedThinking);
       expect(payload.messages.find((message) => message.role === "assistant")?.content).toEqual(
@@ -323,7 +323,7 @@ describe("Anthropic provider", () => {
   );
 
   it("preserves signed thinking for an active tool turn when new thinking is disabled", async () => {
-    let capturedPayload: unknown;
+    let capturedPayload: any;
     const stream = streamAnthropic(
       makeAnthropicModel(),
       {
@@ -376,7 +376,7 @@ describe("Anthropic provider", () => {
     await stream.result();
 
     const payload = capturedPayload as {
-      messages: Array<{ role: string; content: unknown[] }>;
+      messages: Array<{ role: string; content: any[] }>;
     };
     expect(payload.messages.find((message) => message.role === "assistant")?.content).toEqual([
       { type: "thinking", thinking: "call lookup", signature: "sig_tool" },
@@ -559,7 +559,7 @@ describe("Anthropic provider", () => {
   });
 
   it("strips Fable thinking when replay targets Anthropic Vertex", async () => {
-    let capturedPayload: unknown;
+    let capturedPayload: any;
     const stream = streamAnthropic(
       makeAnthropicModel({
         provider: "anthropic-vertex",
@@ -598,7 +598,7 @@ describe("Anthropic provider", () => {
 
     await stream.result();
 
-    const payload = capturedPayload as { messages: Array<{ role: string; content: unknown[] }> };
+    const payload = capturedPayload as { messages: Array<{ role: string; content: any[] }> };
     const assistantMessage = payload.messages.find((message) => message.role === "assistant");
     expect(assistantMessage?.content).toEqual([{ type: "text", text: "visible answer" }]);
     expect(JSON.stringify(assistantMessage)).not.toContain("sig_model_bound");
@@ -608,7 +608,7 @@ describe("Anthropic provider", () => {
     { reasoning: "xhigh", expectedEffort: "high" },
     { reasoning: "max", expectedEffort: "max" },
   ] as const)("maps Claude 4.6 $reasoning effort", async ({ reasoning, expectedEffort }) => {
-    let capturedPayload: unknown;
+    let capturedPayload: any;
     const stream = streamSimpleAnthropic(
       makeAnthropicModel({
         id: "claude-sonnet-4-6",
@@ -628,7 +628,7 @@ describe("Anthropic provider", () => {
 
     await stream.result();
 
-    expect((capturedPayload as { output_config?: unknown }).output_config).toEqual({
+    expect((capturedPayload as { output_config?: any }).output_config).toEqual({
       effort: expectedEffort,
     });
   });
@@ -649,7 +649,7 @@ describe("Anthropic provider", () => {
   ] as const)(
     "honors proxy effort restrictions for $id",
     async ({ id, reasoning, thinkingLevelMap, expectedEffort }) => {
-      let capturedPayload: unknown;
+      let capturedPayload: any;
       const stream = streamSimpleAnthropic(
         makeAnthropicModel({
           id,
@@ -668,14 +668,14 @@ describe("Anthropic provider", () => {
 
       await stream.result();
 
-      expect((capturedPayload as { output_config?: unknown }).output_config).toEqual({
+      expect((capturedPayload as { output_config?: any }).output_config).toEqual({
         effort: expectedEffort,
       });
     },
   );
 
   it("uses always-on adaptive thinking for Claude Fable 5", async () => {
-    let capturedPayload: unknown;
+    let capturedPayload: any;
     const stream = streamSimpleAnthropic(
       makeAnthropicModel({
         id: "prod-primary",
@@ -707,7 +707,7 @@ describe("Anthropic provider", () => {
   });
 
   it("preserves native max effort for Claude Mythos Preview", async () => {
-    let capturedPayload: unknown;
+    let capturedPayload: any;
     const stream = streamSimpleAnthropic(
       makeAnthropicModel({
         id: "claude-mythos-preview",
@@ -731,13 +731,13 @@ describe("Anthropic provider", () => {
 
     await stream.result();
 
-    expect((capturedPayload as { output_config?: unknown }).output_config).toEqual({
+    expect((capturedPayload as { output_config?: any }).output_config).toEqual({
       effort: "max",
     });
   });
 
   it("uses mandatory adaptive thinking for Foundry Mythos Preview", async () => {
-    let capturedPayload: unknown;
+    let capturedPayload: any;
     const stream = streamSimpleAnthropic(
       makeAnthropicModel({
         id: "prod-mythos-preview",
@@ -767,7 +767,7 @@ describe("Anthropic provider", () => {
   });
 
   it("uses adaptive high effort for Foundry Mythos Preview without native max metadata", async () => {
-    let capturedPayload: unknown;
+    let capturedPayload: any;
     const stream = streamSimpleAnthropic(
       makeAnthropicModel({
         id: "prod-mythos-preview",
@@ -798,7 +798,7 @@ describe("Anthropic provider", () => {
   });
 
   it("does not infer adaptive thinking from forward-compatible effort maps", async () => {
-    let capturedPayload: unknown;
+    let capturedPayload: any;
     const stream = streamSimpleAnthropic(
       makeAnthropicModel({
         id: "claude-future",
@@ -825,7 +825,7 @@ describe("Anthropic provider", () => {
     expect(capturedPayload).toMatchObject({
       thinking: { type: "enabled" },
     });
-    expect((capturedPayload as { output_config?: unknown }).output_config).toBeUndefined();
+    expect((capturedPayload as { output_config?: any }).output_config).toBeUndefined();
   });
 
   it.each([
@@ -835,7 +835,7 @@ describe("Anthropic provider", () => {
       params: undefined,
     },
   ])("does not infer the Fable contract from noncanonical metadata", async (overrides) => {
-    let capturedPayload: unknown;
+    let capturedPayload: any;
     const stream = streamSimpleAnthropic(
       makeAnthropicModel({
         ...overrides,
@@ -858,7 +858,7 @@ describe("Anthropic provider", () => {
   });
 
   it("uses canonical Claude policy for deployment aliases", async () => {
-    let capturedPayload: unknown;
+    let capturedPayload: any;
     const stream = streamSimpleAnthropic(
       makeAnthropicModel({
         id: "production-claude",
@@ -894,7 +894,7 @@ describe("Anthropic provider", () => {
   ] as const)(
     "normalizes temperature for canonical $canonicalModelId aliases when thinking is off",
     async ({ canonicalModelId, expectedTemperature }) => {
-      let capturedPayload: unknown;
+      let capturedPayload: any;
       const stream = streamSimpleAnthropic(
         makeAnthropicModel({
           id: "production-claude",
@@ -919,7 +919,7 @@ describe("Anthropic provider", () => {
   );
 
   it("normalizes forced Fable tool choice to auto", async () => {
-    let capturedPayload: unknown;
+    let capturedPayload: any;
     const stream = streamAnthropic(
       makeAnthropicModel({
         id: "claude-fable-5",
@@ -958,7 +958,7 @@ describe("Anthropic provider", () => {
       { reasoning: "high", effort: "high" },
       { reasoning: "xhigh", effort: "xhigh" },
     ] as const) {
-      let capturedPayload: unknown;
+      let capturedPayload: any;
       const stream = streamSimpleAnthropic(
         model,
         {
@@ -967,7 +967,7 @@ describe("Anthropic provider", () => {
         {
           apiKey: "sk-ant-provider",
           reasoning: testCase.reasoning,
-          onPayload: (payload: unknown) => {
+          onPayload: (payload: any) => {
             capturedPayload = payload;
           },
         } as unknown as Parameters<typeof streamSimpleAnthropic>[2],
@@ -983,7 +983,7 @@ describe("Anthropic provider", () => {
   });
 
   it("honors provider effort restrictions for Claude Fable 5", async () => {
-    let capturedPayload: unknown;
+    let capturedPayload: any;
     const stream = streamSimpleAnthropic(
       makeAnthropicModel({
         id: "claude-fable-5",
@@ -1011,7 +1011,7 @@ describe("Anthropic provider", () => {
   });
 
   it("uses the Claude Fable 5 contract on Anthropic Vertex", async () => {
-    let capturedPayload: unknown;
+    let capturedPayload: any;
     const stream = streamSimpleAnthropic(
       makeAnthropicModel({
         id: "claude-fable-5",
@@ -1039,7 +1039,7 @@ describe("Anthropic provider", () => {
   });
 
   it("forwards simple stop sequences to Anthropic stop_sequences", async () => {
-    let capturedPayload: unknown;
+    let capturedPayload: any;
     const stream = streamSimpleAnthropic(
       makeAnthropicModel(),
       {
@@ -1058,11 +1058,11 @@ describe("Anthropic provider", () => {
     const result = await stream.result();
 
     expect(result.stopReason).toBe("error");
-    expect((capturedPayload as { stop_sequences?: unknown }).stop_sequences).toEqual(["STOP"]);
+    expect((capturedPayload as { stop_sequences?: any }).stop_sequences).toEqual(["STOP"]);
   });
 
   it("skips unreadable Anthropic provider tools while preserving healthy siblings", async () => {
-    let capturedPayload: unknown;
+    let capturedPayload: any;
     const unreadableTool = {
       name: "unreadable_plugin_tool",
       description: "unreadable schema",
@@ -1107,7 +1107,7 @@ describe("Anthropic provider", () => {
 
     const result = await stream.result();
     const payload = capturedPayload as {
-      tools?: Array<{ name?: string; input_schema?: unknown }>;
+      tools?: Array<{ name?: string; input_schema?: any }>;
     };
 
     expect(result.stopReason).toBe("error");
@@ -1157,7 +1157,7 @@ describe("Anthropic provider", () => {
   });
 
   it("splits the system prompt cache boundary into cached and uncached Anthropic blocks", async () => {
-    let capturedPayload: unknown;
+    let capturedPayload: any;
     const stream = streamSimpleAnthropic(
       makeAnthropicModel(),
       {
@@ -1176,7 +1176,7 @@ describe("Anthropic provider", () => {
     const result = await stream.result();
 
     expect(result.stopReason).toBe("error");
-    expect((capturedPayload as { system?: unknown }).system).toEqual([
+    expect((capturedPayload as { system?: any }).system).toEqual([
       {
         type: "text",
         text: "Stable prefix",
@@ -1279,7 +1279,7 @@ describe("Anthropic provider", () => {
   });
 
   it("strips the internal cache boundary when Anthropic cache control is disabled", async () => {
-    let capturedPayload: unknown;
+    let capturedPayload: any;
     const stream = streamSimpleAnthropic(
       makeAnthropicModel(),
       {
@@ -1299,7 +1299,7 @@ describe("Anthropic provider", () => {
     const result = await stream.result();
 
     expect(result.stopReason).toBe("error");
-    expect((capturedPayload as { system?: unknown }).system).toEqual([
+    expect((capturedPayload as { system?: any }).system).toEqual([
       {
         type: "text",
         text: "Stable prefix\nDynamic suffix",

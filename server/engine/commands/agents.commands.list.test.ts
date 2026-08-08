@@ -41,15 +41,15 @@ vi.mock("./agents.providers.js", () => ({
 
 const { agentsListCommand } = await import("./agents.commands.list.js");
 
-function createRuntime(): OutputRuntimeEnv & { json: unknown[] } {
-  const json: unknown[] = [];
+function createRuntime(): OutputRuntimeEnv & { json: any[] } {
+  const json: any[] = [];
   return {
     json,
     log: vi.fn(),
     error: vi.fn(),
     exit: vi.fn(),
     writeStdout: vi.fn(),
-    writeJson: vi.fn((value: unknown) => {
+    writeJson: vi.fn((value: any) => {
       json.push(value);
     }),
   };
@@ -80,7 +80,7 @@ describe("agentsListCommand", () => {
     await agentsListCommand({ json: true }, runtime);
 
     expect(buildProviderStatusIndexMock).not.toHaveBeenCalled();
-    const summary = (runtime.json[0] as Array<Record<string, unknown>>)[0];
+    const summary = (runtime.json[0] as Array<Record<string, any>>)[0];
     expect(summary?.id).toBe("main");
     expect(summary).not.toHaveProperty("routes");
     expect(summary).not.toHaveProperty("providers");
@@ -109,7 +109,7 @@ describe("agentsListCommand", () => {
       providerStatus,
       providerMetadata: providerSummaryMetadataMock,
     });
-    const [summary] = runtime.json[0] as Array<Record<string, unknown>>;
+    const [summary] = runtime.json[0] as Array<Record<string, any>>;
     expect(summary?.id).toBe("main");
     expect(summary?.routes).toEqual(["Telegram default"]);
     expect(summary?.providers).toEqual(["Telegram default: configured"]);

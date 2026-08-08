@@ -62,7 +62,7 @@ export class Transcript {
   write(
     sessionId: string,
     messages: TranscriptMessage[],
-    options: { format?: TranscriptFormat; header?: Record<string, unknown> } = {}
+    options: { format?: TranscriptFormat; header?: Record<string, any> } = {}
   ): boolean {
     if (!isValidSessionId(sessionId)) return false;
 
@@ -70,7 +70,7 @@ export class Transcript {
 
     switch (format) {
       case 'jsonl':
-        return writeTranscriptJSONL(this.baseDir, sessionId, messages, options.header as unknown);
+        return writeTranscriptJSONL(this.baseDir, sessionId, messages, options.header as any);
       default:
         logger.warn('[Transcript] 不支持的写入格式:', format);
         return false;
@@ -237,7 +237,7 @@ export interface TranscriptEntry {
   /** 父条目 ID，用于构建父子链结构 */
   parentId?: string | null;
   /** 附加元数据 */
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 /**

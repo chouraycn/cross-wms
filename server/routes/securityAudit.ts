@@ -26,7 +26,7 @@ router.post('/run', async (req: Request, res: Response) => {
     lastResult = result;
 
     res.json({ success: true, data: result });
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     logger.error('[SecurityAuditRoute] 运行时安全审计失败:', message);
     res.status(500).json({ error: message });
@@ -40,7 +40,7 @@ router.post('/run', async (req: Request, res: Response) => {
 router.get('/last', (_req: Request, res: Response) => {
   try {
     res.json({ success: true, data: lastResult });
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     logger.error('[SecurityAuditRoute] 获取最近审计结果失败:', message);
     res.status(500).json({ error: message });
@@ -61,7 +61,7 @@ router.get('/health', (_req: Request, res: Response) => {
         findingCount: lastResult?.findings.length ?? 0,
       },
     });
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     res.status(500).json({ error: message });
   }

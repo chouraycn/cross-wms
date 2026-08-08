@@ -31,38 +31,38 @@ export type SessionEventSubscriberRegistry = unknown;
 
 export type SessionMessageSubscriberRegistry = unknown;
 
-export function createChatRunEntry(..._args: unknown[]): unknown {
+export function createChatRunEntry(..._args: any[]): any {
   return undefined;
 }
 
-export function createChatAbortMarker(..._args: unknown[]): unknown {
+export function createChatAbortMarker(..._args: any[]): any {
   return undefined;
 }
 
-export function chatAbortMarkerTimestampMs(..._args: unknown[]): unknown {
+export function chatAbortMarkerTimestampMs(..._args: any[]): any {
   return undefined;
 }
 
-export function isChatAbortMarkerCurrent(..._args: unknown[]): unknown {
+export function isChatAbortMarkerCurrent(..._args: any[]): any {
   return false;
 }
 
-export function createChatRunRegistry(..._args: unknown[]): unknown {
+export function createChatRunRegistry(..._args: any[]): any {
   return undefined;
 }
 
-export function createChatRunState(..._args: unknown[]): unknown {
+export function createChatRunState(..._args: any[]): any {
   return undefined;
 }
 
-export function createSessionEventSubscriberRegistry(..._args: unknown[]): unknown {
+export function createSessionEventSubscriberRegistry(..._args: any[]): any {
   return undefined;
 }
 
-export function createSessionMessageSubscriberRegistry(..._args: unknown[]): unknown {
+export function createSessionMessageSubscriberRegistry(..._args: any[]): any {
   return undefined;
 }
 
-export function createToolEventRecipientRegistry(..._args: unknown[]): unknown {
+export function createToolEventRecipientRegistry(..._args: any[]): any {
   return undefined;
 }

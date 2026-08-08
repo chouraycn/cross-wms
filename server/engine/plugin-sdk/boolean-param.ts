@@ -14,7 +14,7 @@ import { normalizeOptionalLowercaseString } from '../infra/string-coerce.js';
  * 输入无法识别时返回 undefined，调用方自行决定默认行为。
  */
 export function readBooleanParam(
-  params: Record<string, unknown>,
+  params: Record<string, any>,
   key: string,
 ): boolean | undefined {
   const raw = params[key];

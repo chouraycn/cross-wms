@@ -5,7 +5,7 @@
 export function tryResolveLoadedOutboundTarget(params: {
   channel: string;
   target?: string;
-  cfg?: unknown;
+  cfg?: any;
 }): { channel: string; target: string } | null {
   if (!params.channel?.trim() || !params.target?.trim()) return null;
   return { channel: params.channel.trim(), target: params.target.trim() };

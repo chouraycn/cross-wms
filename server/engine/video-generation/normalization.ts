@@ -17,7 +17,7 @@ import type {
 } from "./types.js";
 
 /** Returns true when a normalization entry carries at least one meaningful field. */
-function hasMediaNormalizationEntry(entry: unknown): boolean {
+function hasMediaNormalizationEntry(entry: any): boolean {
   if (entry == null || typeof entry !== "object") {
     return false;
   }

@@ -176,7 +176,7 @@ describe("before_agent_finalize hook runner", () => {
     });
     expect(Object.getOwnPropertyDescriptor(result, "retryCandidates")?.enumerable).toBe(false);
     expect(
-      (Object.getOwnPropertyDescriptor(result, "retryCandidates")?.value as unknown[])?.map(
+      (Object.getOwnPropertyDescriptor(result, "retryCandidates")?.value as any[])?.map(
         (retry) => (retry as { idempotencyKey?: string }).idempotencyKey,
       ),
     ).toEqual(["artifacts", "tests"]);

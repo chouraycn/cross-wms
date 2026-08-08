@@ -12,20 +12,20 @@ import type {
 
 type MockFn = ReturnType<typeof vi.fn>;
 type HandlerChatLog = {
-  startTool: (...args: unknown[]) => void;
-  updateToolResult: (...args: unknown[]) => void;
-  addSystem: (...args: unknown[]) => void;
-  addPendingSystem: (...args: unknown[]) => void;
-  dismissPendingSystem: (...args: unknown[]) => void;
-  updateAssistant: (...args: unknown[]) => void;
-  finalizeAssistant: (...args: unknown[]) => void;
-  dropAssistant: (...args: unknown[]) => void;
+  startTool: (...args: any[]) => void;
+  updateToolResult: (...args: any[]) => void;
+  addSystem: (...args: any[]) => void;
+  addPendingSystem: (...args: any[]) => void;
+  dismissPendingSystem: (...args: any[]) => void;
+  updateAssistant: (...args: any[]) => void;
+  finalizeAssistant: (...args: any[]) => void;
+  dropAssistant: (...args: any[]) => void;
 };
 type HandlerBtwPresenter = {
-  showResult: (...args: unknown[]) => void;
-  clear: (...args: unknown[]) => void;
+  showResult: (...args: any[]) => void;
+  clear: (...args: any[]) => void;
 };
-type HandlerTui = { requestRender: (...args: unknown[]) => void };
+type HandlerTui = { requestRender: (...args: any[]) => void };
 type MockChatLog = {
   startTool: MockFn;
   updateToolResult: MockFn;

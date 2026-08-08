@@ -98,7 +98,7 @@ afterEach(() => {
   authProfileStoreMock.reset();
 });
 
-const makeConfiguredModel = (overrides: Record<string, unknown> = {}) => ({
+const makeConfiguredModel = (overrides: Record<string, any> = {}) => ({
   id: "gpt-5.4",
   name: "GPT-5.4",
   reasoning: true,

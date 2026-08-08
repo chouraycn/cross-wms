@@ -34,15 +34,15 @@ export type ConfigSchema = {
   type: string;
   properties?: Record<string, ConfigSchema>;
   required?: string[];
-  enum?: unknown[];
-  default?: unknown;
+  enum?: any[];
+  default?: any;
   description?: string;
   additionalProperties?: boolean | ConfigSchema;
   items?: ConfigSchema;
 };
 
 /** JSON Schema 节点（openclaw 风格，支持 composition） */
-type JsonSchemaNode = Record<string, unknown>;
+type JsonSchemaNode = Record<string, any>;
 
 type JsonSchemaObject = JsonSchemaNode & {
   type?: string | string[];
@@ -53,8 +53,8 @@ type JsonSchemaObject = JsonSchemaNode & {
   anyOf?: JsonSchemaObject[];
   oneOf?: JsonSchemaObject[];
   allOf?: JsonSchemaObject[];
-  enum?: unknown[];
-  default?: unknown;
+  enum?: any[];
+  default?: any;
   description?: string;
   minimum?: number;
   maximum?: number;
@@ -64,7 +64,7 @@ type JsonSchemaObject = JsonSchemaNode & {
   maxItems?: number;
 };
 
-const asJsonSchemaObject = (value: unknown): JsonSchemaObject | null =>
+const asJsonSchemaObject = (value: any): JsonSchemaObject | null =>
   asSchemaObject(value) as JsonSchemaObject | null;
 
 // ===================== UI Hint 类型（替换 unknown stub） =====================
@@ -240,17 +240,17 @@ export function resolveConfigSchema(): ConfigSchema {
  * - minimum / maximum / minLength / maxLength / minItems / maxItems
  */
 export function validateConfig(
-  config: unknown,
+  config: any,
   schema?: ConfigSchema | JsonSchemaObject,
 ): ConfigValidationError[] {
   const errors: ConfigValidationError[] = [];
   const resolvedSchema = schema ?? resolveConfigSchema();
 
-  function isPlainObject(v: unknown): v is Record<string, unknown> {
+  function isPlainObject(v: any): v is Record<string, any> {
     return typeof v === 'object' && v !== null && !Array.isArray(v);
   }
 
-  function validate(value: unknown, sch: ConfigSchema | JsonSchemaObject, path: string): void {
+  function validate(value: any, sch: ConfigSchema | JsonSchemaObject, path: string): void {
     const node = sch as JsonSchemaObject;
     const type = node.type;
 
@@ -428,7 +428,7 @@ export function validateConfig(
   }
 
   function validateCollect(
-    value: unknown,
+    value: any,
     sch: ConfigSchema | JsonSchemaObject,
     path: string,
     collect: ConfigValidationError[],

@@ -135,7 +135,7 @@ describe("buildEmbeddedAgentSettingsSnapshot", () => {
       policy: "sanitize",
     });
 
-    expect((snapshot as Record<string, unknown>).mcpServers).toEqual({
+    expect((snapshot as Record<string, any>).mcpServers).toEqual({
       bundleProbe: {
         command: "deno",
         args: ["/workspace/probe.ts"],

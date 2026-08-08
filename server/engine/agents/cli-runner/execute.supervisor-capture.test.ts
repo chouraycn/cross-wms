@@ -22,8 +22,8 @@ type SupervisorSpawnInput = Parameters<ProcessSupervisor["spawn"]>[0];
 function recordMcpLoopbackToolCallResult(params: {
   captureKey: string;
   toolName: string;
-  args: Record<string, unknown>;
-  result?: unknown;
+  args: Record<string, any>;
+  result?: any;
   isError: boolean;
 }): void {
   const captureHandle = markMcpLoopbackToolCallStarted(params);
@@ -104,7 +104,7 @@ describe("executePreparedCliRun supervisor output capture", () => {
   it("disables supervisor capture without parsing from the diagnostic stdout tail", async () => {
     const fullText = `start-${"x".repeat(80 * 1024)}-end`;
 
-    supervisorSpawnMock.mockImplementationOnce(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementationOnce(async (...args: any[]) => {
       const input = args[0] as SupervisorSpawnInput;
       input.onStdout?.(fullText);
       return createManagedRun({
@@ -130,7 +130,7 @@ describe("executePreparedCliRun supervisor output capture", () => {
     const noisyPrefix = "x".repeat(2 * 1024 * 1024);
     const finalText = "final answer";
 
-    supervisorSpawnMock.mockImplementationOnce(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementationOnce(async (...args: any[]) => {
       const input = args[0] as SupervisorSpawnInput;
       input.onStdout?.(noisyPrefix);
       input.onStdout?.(finalText);
@@ -170,7 +170,7 @@ describe("executePreparedCliRun supervisor output capture", () => {
       result: "final answer",
     })}\n`;
 
-    supervisorSpawnMock.mockImplementationOnce(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementationOnce(async (...args: any[]) => {
       const input = args[0] as SupervisorSpawnInput;
       input.onStdout?.(largeToolEvent);
       input.onStdout?.(resultEvent);
@@ -220,7 +220,7 @@ describe("executePreparedCliRun supervisor output capture", () => {
       sessionMode: "existing" as const,
     });
 
-    supervisorSpawnMock.mockImplementationOnce(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementationOnce(async (...args: any[]) => {
       const input = args[0] as SupervisorSpawnInput;
       input.onStdout?.(largeToolEvent);
       input.onStdout?.(resultEvent);
@@ -252,7 +252,7 @@ describe("executePreparedCliRun supervisor output capture", () => {
     })}\n`;
     const noisyTail = "x".repeat(80 * 1024);
 
-    supervisorSpawnMock.mockImplementationOnce(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementationOnce(async (...args: any[]) => {
       const input = args[0] as SupervisorSpawnInput;
       input.onStdout?.(errorPrefix);
       input.onStdout?.(noisyTail);
@@ -271,7 +271,7 @@ describe("executePreparedCliRun supervisor output capture", () => {
     try {
       await executePreparedCliRun(buildPreparedCliRunContext({ output: "text" }));
     } catch (error) {
-      const classified = error as { reason?: unknown; status?: unknown };
+      const classified = error as { reason?: any; status?: any };
       expect(classified.reason).toBe("rate_limit");
       expect(classified.status).toBe(429);
       return;
@@ -310,7 +310,7 @@ describe("executePreparedCliRun supervisor output capture", () => {
       })}\n`,
     ];
 
-    supervisorSpawnMock.mockImplementationOnce(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementationOnce(async (...args: any[]) => {
       const input = args[0] as SupervisorSpawnInput;
       for (const chunk of chunks) {
         input.onStdout?.(chunk);
@@ -372,7 +372,7 @@ describe("executePreparedCliRun supervisor output capture", () => {
       })}\n`,
       `${JSON.stringify({ type: "result", session_id: "session-jsonl", result: "done" })}\n`,
     ];
-    supervisorSpawnMock.mockImplementationOnce(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementationOnce(async (...args: any[]) => {
       const input = args[0] as SupervisorSpawnInput;
       recordMcpLoopbackToolCallResult({
         captureKey: input.env?.OPENCLAW_MCP_CLI_CAPTURE_KEY ?? "",
@@ -444,7 +444,7 @@ describe("executePreparedCliRun supervisor output capture", () => {
       })}\n`,
       `${JSON.stringify({ type: "result", session_id: "session-jsonl", result: "done" })}\n`,
     ];
-    supervisorSpawnMock.mockImplementationOnce(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementationOnce(async (...args: any[]) => {
       const input = args[0] as SupervisorSpawnInput;
       for (const chunk of chunks) {
         input.onStdout?.(chunk);
@@ -500,7 +500,7 @@ describe("executePreparedCliRun supervisor output capture", () => {
       })}\n`,
       `${JSON.stringify({ type: "result", session_id: "session-jsonl", result: "done" })}\n`,
     ];
-    supervisorSpawnMock.mockImplementationOnce(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementationOnce(async (...args: any[]) => {
       const input = args[0] as SupervisorSpawnInput;
       for (const chunk of chunks) {
         input.onStdout?.(chunk);
@@ -554,7 +554,7 @@ describe("executePreparedCliRun supervisor output capture", () => {
         },
       })}\n`,
     ];
-    supervisorSpawnMock.mockImplementationOnce(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementationOnce(async (...args: any[]) => {
       const input = args[0] as SupervisorSpawnInput;
       for (const chunk of chunks) {
         input.onStdout?.(chunk);
@@ -571,7 +571,7 @@ describe("executePreparedCliRun supervisor output capture", () => {
       });
     });
 
-    let thrown: unknown;
+    let thrown: any;
     try {
       await executePreparedCliRun(
         buildPreparedCliRunContext({ output: "jsonl", provider: "claude-cli" }),
@@ -603,7 +603,7 @@ describe("executePreparedCliRun supervisor output capture", () => {
         ],
       },
     })}\n`;
-    supervisorSpawnMock.mockImplementationOnce(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementationOnce(async (...args: any[]) => {
       const input = args[0] as SupervisorSpawnInput;
       input.onStdout?.(chunk);
       return createManagedRun({
@@ -618,7 +618,7 @@ describe("executePreparedCliRun supervisor output capture", () => {
       });
     });
 
-    let thrown: unknown;
+    let thrown: any;
     try {
       await executePreparedCliRun(
         buildPreparedCliRunContext({ output: "jsonl", provider: "claude-cli" }),
@@ -651,7 +651,7 @@ describe("executePreparedCliRun supervisor output capture", () => {
         ],
       },
     })}\n`;
-    supervisorSpawnMock.mockImplementationOnce(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementationOnce(async (...args: any[]) => {
       const input = args[0] as SupervisorSpawnInput;
       input.onStdout?.(chunk);
       return createManagedRun({
@@ -666,7 +666,7 @@ describe("executePreparedCliRun supervisor output capture", () => {
       });
     });
 
-    let thrown: unknown;
+    let thrown: any;
     try {
       await executePreparedCliRun(
         buildPreparedCliRunContext({ output: "jsonl", provider: "claude-cli" }),
@@ -681,7 +681,7 @@ describe("executePreparedCliRun supervisor output capture", () => {
   it("fails closed for suppressed non-streaming MCP message results", async () => {
     const context = buildPreparedCliRunContext({ output: "text", provider: "google-gemini-cli" });
     context.mcpDeliveryCapture = true;
-    supervisorSpawnMock.mockImplementationOnce(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementationOnce(async (...args: any[]) => {
       const input = args[0] as SupervisorSpawnInput;
       recordMcpLoopbackToolCallResult({
         captureKey: input.env?.OPENCLAW_MCP_CLI_CAPTURE_KEY ?? "",
@@ -717,7 +717,7 @@ describe("executePreparedCliRun supervisor output capture", () => {
   it("records sessions_yield through the serialized MCP capture", async () => {
     const context = buildPreparedCliRunContext({ output: "text", provider: "google-gemini-cli" });
     context.mcpDeliveryCapture = true;
-    supervisorSpawnMock.mockImplementationOnce(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementationOnce(async (...args: any[]) => {
       const input = args[0] as SupervisorSpawnInput;
       const captureHandle = markMcpLoopbackRequestStarted(input.env?.OPENCLAW_MCP_CLI_CAPTURE_KEY);
       await resolveMcpLoopbackYieldContext(captureHandle)?.onYield("waiting on subagents");
@@ -743,7 +743,7 @@ describe("executePreparedCliRun supervisor output capture", () => {
   it("keeps mutation delivery out of sent-reply dedupe evidence", async () => {
     const context = buildPreparedCliRunContext({ output: "text", provider: "google-gemini-cli" });
     context.mcpDeliveryCapture = true;
-    supervisorSpawnMock.mockImplementationOnce(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementationOnce(async (...args: any[]) => {
       const input = args[0] as SupervisorSpawnInput;
       recordMcpLoopbackToolCallResult({
         captureKey: input.env?.OPENCLAW_MCP_CLI_CAPTURE_KEY ?? "",
@@ -783,7 +783,7 @@ describe("executePreparedCliRun supervisor output capture", () => {
     context.params.messageChannel = "slack";
     context.params.currentChannelId = "C123";
     context.params.currentThreadTs = "1700000000.000100";
-    supervisorSpawnMock.mockImplementationOnce(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementationOnce(async (...args: any[]) => {
       const input = args[0] as SupervisorSpawnInput;
       recordMcpLoopbackToolCallResult({
         captureKey: input.env?.OPENCLAW_MCP_CLI_CAPTURE_KEY ?? "",
@@ -822,7 +822,7 @@ describe("executePreparedCliRun supervisor output capture", () => {
   it("preserves partial delivery evidence from failed MCP message calls", async () => {
     const context = buildPreparedCliRunContext({ output: "text", provider: "google-gemini-cli" });
     context.mcpDeliveryCapture = true;
-    supervisorSpawnMock.mockImplementationOnce(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementationOnce(async (...args: any[]) => {
       const input = args[0] as SupervisorSpawnInput;
       recordMcpLoopbackToolCallResult({
         captureKey: input.env?.OPENCLAW_MCP_CLI_CAPTURE_KEY ?? "",
@@ -867,7 +867,7 @@ describe("executePreparedCliRun supervisor output capture", () => {
   it("reports confirmed non-streaming MCP message results from the serialized capture", async () => {
     const context = buildPreparedCliRunContext({ output: "text", provider: "google-gemini-cli" });
     context.mcpDeliveryCapture = true;
-    supervisorSpawnMock.mockImplementationOnce(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementationOnce(async (...args: any[]) => {
       const input = args[0] as SupervisorSpawnInput;
       recordMcpLoopbackToolCallResult({
         captureKey: input.env?.OPENCLAW_MCP_CLI_CAPTURE_KEY ?? "",
@@ -910,7 +910,7 @@ describe("executePreparedCliRun supervisor output capture", () => {
   it("reports confirmed poll delivery from the serialized capture", async () => {
     const context = buildPreparedCliRunContext({ output: "text", provider: "google-gemini-cli" });
     context.mcpDeliveryCapture = true;
-    supervisorSpawnMock.mockImplementationOnce(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementationOnce(async (...args: any[]) => {
       const input = args[0] as SupervisorSpawnInput;
       recordMcpLoopbackToolCallResult({
         captureKey: input.env?.OPENCLAW_MCP_CLI_CAPTURE_KEY ?? "",
@@ -972,7 +972,7 @@ describe("executePreparedCliRun supervisor output capture", () => {
   ] as const)("records target evidence for confirmed $action delivery", async ({ args }) => {
     const context = buildPreparedCliRunContext({ output: "text", provider: "google-gemini-cli" });
     context.mcpDeliveryCapture = true;
-    supervisorSpawnMock.mockImplementationOnce(async (...spawnArgs: unknown[]) => {
+    supervisorSpawnMock.mockImplementationOnce(async (...spawnArgs: any[]) => {
       const input = spawnArgs[0] as SupervisorSpawnInput;
       recordMcpLoopbackToolCallResult({
         captureKey: input.env?.OPENCLAW_MCP_CLI_CAPTURE_KEY ?? "",
@@ -1011,7 +1011,7 @@ describe("executePreparedCliRun supervisor output capture", () => {
   it("records target evidence for confirmed conversation creation", async () => {
     const context = buildPreparedCliRunContext({ output: "text", provider: "google-gemini-cli" });
     context.mcpDeliveryCapture = true;
-    supervisorSpawnMock.mockImplementationOnce(async (...spawnArgs: unknown[]) => {
+    supervisorSpawnMock.mockImplementationOnce(async (...spawnArgs: any[]) => {
       const input = spawnArgs[0] as SupervisorSpawnInput;
       recordMcpLoopbackToolCallResult({
         captureKey: input.env?.OPENCLAW_MCP_CLI_CAPTURE_KEY ?? "",
@@ -1055,7 +1055,7 @@ describe("executePreparedCliRun supervisor output capture", () => {
     context.mcpDeliveryCapture = true;
     context.params.messageChannel = "telegram";
     context.params.currentChannelId = "chat123";
-    supervisorSpawnMock.mockImplementationOnce(async (...spawnArgs: unknown[]) => {
+    supervisorSpawnMock.mockImplementationOnce(async (...spawnArgs: any[]) => {
       const input = spawnArgs[0] as SupervisorSpawnInput;
       recordMcpLoopbackToolCallResult({
         captureKey: input.env?.OPENCLAW_MCP_CLI_CAPTURE_KEY ?? "",
@@ -1096,7 +1096,7 @@ describe("executePreparedCliRun supervisor output capture", () => {
     const context = buildPreparedCliRunContext({ output: "text", provider: "google-gemini-cli" });
     context.mcpDeliveryCapture = true;
     context.params.sourceReplyDeliveryMode = "message_tool_only";
-    supervisorSpawnMock.mockImplementationOnce(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementationOnce(async (...args: any[]) => {
       const input = args[0] as SupervisorSpawnInput;
       recordMcpLoopbackToolCallResult({
         captureKey: input.env?.OPENCLAW_MCP_CLI_CAPTURE_KEY ?? "",
@@ -1175,7 +1175,7 @@ describe("executePreparedCliRun supervisor output capture", () => {
   it("retains confirmed delivery for long non-streaming message calls", async () => {
     const context = buildPreparedCliRunContext({ output: "text", provider: "local-cli" });
     context.mcpDeliveryCapture = true;
-    supervisorSpawnMock.mockImplementationOnce(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementationOnce(async (...args: any[]) => {
       const input = args[0] as SupervisorSpawnInput;
       recordMcpLoopbackToolCallResult({
         captureKey: input.env?.OPENCLAW_MCP_CLI_CAPTURE_KEY ?? "",
@@ -1214,7 +1214,7 @@ describe("executePreparedCliRun supervisor output capture", () => {
     const context = buildPreparedCliRunContext({ output: "jsonl", provider: "local-cli" });
     context.mcpDeliveryCapture = true;
     const captureKeys: string[] = [];
-    supervisorSpawnMock.mockImplementation(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementation(async (...args: any[]) => {
       const input = args[0] as SupervisorSpawnInput;
       const captureKey = input.env?.OPENCLAW_MCP_CLI_CAPTURE_KEY ?? "";
       captureKeys.push(captureKey);

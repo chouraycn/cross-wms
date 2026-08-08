@@ -3,8 +3,8 @@ import { logger } from '../../../logger.js';
 import type { ToolDefinition, ToolParameter } from './types.js';
 import { ToolDefinitionSchema, ToolParameterSchema } from './types.js';
 
-export function generateJsonSchema(definition: ToolDefinition): Record<string, unknown> {
-  const properties: Record<string, unknown> = {};
+export function generateJsonSchema(definition: ToolDefinition): Record<string, any> {
+  const properties: Record<string, any> = {};
   const required: string[] = [];
 
   for (const [name, param] of Object.entries(definition.parameters)) {
@@ -23,7 +23,7 @@ export function generateJsonSchema(definition: ToolDefinition): Record<string, u
   };
 }
 
-export function parameterToJsonSchema(param: ToolParameter): Record<string, unknown> {
+export function parameterToJsonSchema(param: ToolParameter): Record<string, any> {
   const typeMap: Record<string, string> = {
     string: 'string',
     number: 'number',
@@ -33,7 +33,7 @@ export function parameterToJsonSchema(param: ToolParameter): Record<string, unkn
     any: 'string',
   };
 
-  const schema: Record<string, unknown> = {
+  const schema: Record<string, any> = {
     type: typeMap[param.type] ?? 'string',
   };
 
@@ -68,12 +68,12 @@ export function generateOpenApiSchema(definition: ToolDefinition): {
     name: string;
     in: 'query' | 'path' | 'body';
     required: boolean;
-    schema: Record<string, unknown>;
+    schema: Record<string, any>;
   }>;
   requestBody?: {
     content: {
       'application/json': {
-        schema: Record<string, unknown>;
+        schema: Record<string, any>;
       };
     };
   };
@@ -82,7 +82,7 @@ export function generateOpenApiSchema(definition: ToolDefinition): {
       description: string;
       content: {
         'application/json': {
-          schema: Record<string, unknown>;
+          schema: Record<string, any>;
         };
       };
     };
@@ -92,7 +92,7 @@ export function generateOpenApiSchema(definition: ToolDefinition): {
     name: string;
     in: 'query' | 'path' | 'body';
     required: boolean;
-    schema: Record<string, unknown>;
+    schema: Record<string, any>;
   }> = [];
 
   for (const [name, param] of Object.entries(definition.parameters)) {
@@ -125,7 +125,7 @@ export function generateOpenApiSchema(definition: ToolDefinition): {
   };
 }
 
-export function validateArguments(definition: ToolDefinition, args: Record<string, unknown>): {
+export function validateArguments(definition: ToolDefinition, args: Record<string, any>): {
   valid: boolean;
   errors?: string[];
 } {
@@ -152,7 +152,7 @@ export function validateArguments(definition: ToolDefinition, args: Record<strin
   return { valid: true };
 }
 
-function validateParameterValue(value: unknown, param: ToolParameter): boolean {
+function validateParameterValue(value: any, param: ToolParameter): boolean {
   switch (param.type) {
     case 'string':
       return typeof value === 'string';

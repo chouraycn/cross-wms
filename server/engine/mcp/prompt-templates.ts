@@ -19,7 +19,7 @@ export type PromptTemplate = {
     description?: string;
     required?: boolean;
     type?: 'string' | 'number' | 'boolean' | 'array' | 'object';
-    default?: unknown;
+    default?: any;
   }>;
 };
 
@@ -91,7 +91,7 @@ export class PromptTemplateManager {
     return this.templates.get(name);
   }
 
-  render(name: string, params: Record<string, unknown> = {}): string {
+  render(name: string, params: Record<string, any> = {}): string {
     const template = this.templates.get(name);
     if (!template) {
       throw new Error(`Template not found: ${name}`);
@@ -129,7 +129,7 @@ export class PromptTemplateManager {
     return result;
   }
 
-  private validateAndFillDefaults(template: PromptTemplate, params: Record<string, unknown>): Record<string, unknown> {
+  private validateAndFillDefaults(template: PromptTemplate, params: Record<string, any>): Record<string, any> {
     const result = { ...params };
 
     if (template.arguments) {
@@ -149,7 +149,7 @@ export class PromptTemplateManager {
     return result;
   }
 
-  private checkParamType(value: unknown, type: string): boolean {
+  private checkParamType(value: any, type: string): boolean {
     switch (type) {
       case 'string':
         return typeof value === 'string';
@@ -256,7 +256,7 @@ export class PromptTemplateManager {
     logger.debug('[PromptTemplateManager] Cache cleared');
   }
 
-  private processConditionals(template: string, params: Record<string, unknown>): string {
+  private processConditionals(template: string, params: Record<string, any>): string {
     const ifPattern = /\{\{#if\s+(\w+(?:\.\w+)*)\}\}([\s\S]*?)(?:\{\{else\}\}([\s\S]*?))?\{\{\/if\}\}/g;
 
     return template.replace(ifPattern, (_match, varPath: string, ifContent: string, elseContent: string = '') => {
@@ -266,7 +266,7 @@ export class PromptTemplateManager {
     });
   }
 
-  private processEach(template: string, params: Record<string, unknown>): string {
+  private processEach(template: string, params: Record<string, any>): string {
     const eachPattern = /\{\{#each\s+(\w+(?:\.\w+)*)\}\}([\s\S]*?)\{\{\/each\}\}/g;
 
     return template.replace(eachPattern, (_match, varPath: string, content: string) => {
@@ -280,7 +280,7 @@ export class PromptTemplateManager {
           let itemContent = content;
 
           if (typeof item === 'object' && item !== null) {
-            itemContent = this.processVariables(itemContent, item as Record<string, unknown>);
+            itemContent = this.processVariables(itemContent, item as Record<string, any>);
           } else {
             itemContent = itemContent.replace(/\{\{this\}\}/g, String(item));
           }
@@ -295,7 +295,7 @@ export class PromptTemplateManager {
     });
   }
 
-  private processVariables(template: string, params: Record<string, unknown>): string {
+  private processVariables(template: string, params: Record<string, any>): string {
     const varPattern = /\{\{(\w+(?:\.\w+)*)\}\}/g;
 
     return template.replace(varPattern, (_match, varPath: string) => {
@@ -311,7 +311,7 @@ export class PromptTemplateManager {
     });
   }
 
-  private processTripleBraces(template: string, params: Record<string, unknown>): string {
+  private processTripleBraces(template: string, params: Record<string, any>): string {
     const triplePattern = /\{\{\{(\w+(?:\.\w+)*)\}\}\}/g;
 
     return template.replace(triplePattern, (_match, varPath: string) => {
@@ -323,13 +323,13 @@ export class PromptTemplateManager {
     });
   }
 
-  private resolvePath(params: Record<string, unknown>, path: string): unknown {
+  private resolvePath(params: Record<string, any>, path: string): any {
     const parts = path.split('.');
-    let value: unknown = params;
+    let value: any = params;
 
     for (const part of parts) {
       if (value && typeof value === 'object' && part in value) {
-        value = (value as Record<string, unknown>)[part];
+        value = (value as Record<string, any>)[part];
       } else {
         return undefined;
       }
@@ -338,7 +338,7 @@ export class PromptTemplateManager {
     return value;
   }
 
-  private generateCacheKey(name: string, params: Record<string, unknown>): string {
+  private generateCacheKey(name: string, params: Record<string, any>): string {
     return `${name}:${JSON.stringify(params)}`;
   }
 
@@ -403,7 +403,7 @@ export function registerTemplate(template: PromptTemplate): void {
   promptTemplateManager.registerTemplate(template);
 }
 
-export function renderTemplate(name: string, params?: Record<string, unknown>): string {
+export function renderTemplate(name: string, params?: Record<string, any>): string {
   return promptTemplateManager.render(name, params);
 }
 

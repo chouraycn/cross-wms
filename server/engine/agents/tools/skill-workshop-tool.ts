@@ -321,7 +321,7 @@ function proposalResult(
   };
 }
 
-function readLifecycleProposalIdParam(params: Record<string, unknown>): string {
+function readLifecycleProposalIdParam(params: Record<string, any>): string {
   return readStringParam(params, "proposal_id", {
     required: true,
     label: "proposal_id",
@@ -329,7 +329,7 @@ function readLifecycleProposalIdParam(params: Record<string, unknown>): string {
 }
 
 async function readProposalForInspect(
-  params: Record<string, unknown>,
+  params: Record<string, any>,
   workspaceDir: string,
 ): Promise<SkillProposalReadResult> {
   const proposalId = readStringParam(params, "proposal_id", { label: "proposal_id" });
@@ -351,7 +351,7 @@ async function readProposalForInspect(
   return proposal;
 }
 
-function readProposalStatusParam(params: Record<string, unknown>): SkillProposalStatus | undefined {
+function readProposalStatusParam(params: Record<string, any>): SkillProposalStatus | undefined {
   const status = readStringParam(params, "status");
   if (!status) {
     return undefined;
@@ -362,7 +362,7 @@ function readProposalStatusParam(params: Record<string, unknown>): SkillProposal
   return status as SkillProposalStatus;
 }
 
-function readListLimitParam(params: Record<string, unknown>): number {
+function readListLimitParam(params: Record<string, any>): number {
   return (
     readNumberParam(params, "limit", {
       integer: true,
@@ -459,7 +459,7 @@ function formatProposalInspect(proposal: SkillProposalReadResult): string {
 }
 
 function readSupportFilesParam(
-  params: Record<string, unknown>,
+  params: Record<string, any>,
 ): SkillProposalSupportFileInput[] | undefined {
   const raw = params.support_files;
   if (raw === undefined) {
@@ -472,7 +472,7 @@ function readSupportFilesParam(
     if (!item || typeof item !== "object" || Array.isArray(item)) {
       throw new ToolInputError(`support_files[${index}] must be an object`);
     }
-    const file = item as Record<string, unknown>;
+    const file = item as Record<string, any>;
     if (typeof file.path !== "string" || !file.path.trim()) {
       throw new ToolInputError(`support_files[${index}].path required`);
     }

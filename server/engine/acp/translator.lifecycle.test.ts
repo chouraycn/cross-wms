@@ -241,7 +241,7 @@ describe("acp translator stable lifecycle handlers", () => {
 
   it("does not include sessions without workspace metadata in cwd-filtered lists", async () => {
     const allRows = [
-      createSessionRow({ key: "agent:main:unknown", title: "Unknown workspace" }),
+      createSessionRow({ key: "agent:main: any", title: "Unknown workspace" }),
       createSessionRow({ key: "agent:main:a1", cwd: "/work/a", title: "A1" }),
       createSessionRow({ key: "agent:main:b1", cwd: "/work/b", title: "B1" }),
     ];
@@ -419,7 +419,7 @@ describe("acp translator stable lifecycle handlers", () => {
   });
 
   it("resolves prompts when chat send returns a terminal timeout ack", async () => {
-    const request = vi.fn(async (method: string, params?: Record<string, unknown>) => {
+    const request = vi.fn(async (method: string, params?: Record<string, any>) => {
       if (method === "chat.send") {
         return { runId: params?.idempotencyKey, status: "timeout" };
       }
@@ -446,7 +446,7 @@ describe("acp translator stable lifecycle handlers", () => {
   });
 
   it("rejects prompts when chat send returns a terminal error ack", async () => {
-    const request = vi.fn(async (method: string, params?: Record<string, unknown>) => {
+    const request = vi.fn(async (method: string, params?: Record<string, any>) => {
       if (method === "chat.send") {
         return { runId: params?.idempotencyKey, status: "error" };
       }
@@ -468,7 +468,7 @@ describe("acp translator stable lifecycle handlers", () => {
   });
 
   it("resolves prompts when chat send returns a terminal ok ack", async () => {
-    const requestMock = vi.fn(async (method: string, params?: Record<string, unknown>) => {
+    const requestMock = vi.fn(async (method: string, params?: Record<string, any>) => {
       if (method === "chat.send") {
         return { runId: params?.idempotencyKey, status: "ok" };
       }
@@ -495,7 +495,7 @@ describe("acp translator stable lifecycle handlers", () => {
 
   it("closes sessions by aborting active work, resolving pending prompts, and deleting bridge state", async () => {
     const sentRunIds: string[] = [];
-    const request = vi.fn(async (method: string, params?: Record<string, unknown>) => {
+    const request = vi.fn(async (method: string, params?: Record<string, any>) => {
       if (method === "chat.send") {
         const runId = params?.idempotencyKey;
         if (typeof runId === "string") {

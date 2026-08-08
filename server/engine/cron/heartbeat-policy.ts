@@ -9,9 +9,9 @@ type HeartbeatDeliveryPayload = {
   text?: string;
   mediaUrl?: string;
   mediaUrls?: string[];
-  presentation?: unknown;
-  interactive?: unknown;
-  channelData?: unknown;
+  presentation?: any;
+  interactive?: any;
+  channelData?: any;
 };
 
 /**

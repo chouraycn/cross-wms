@@ -62,13 +62,13 @@ function mapCategoryToGroup(category?: string): SkillPermissionGroup {
   return mapping[lower] || 'custom';
 }
 
-function mapGateField(fm: Record<string, unknown>): SkillGate {
+function mapGateField(fm: Record<string, any>): SkillGate {
   const gate = fm.gate as string | undefined;
   if (gate === 'manual' || gate === 'ask') return gate;
   return 'auto';
 }
 
-function mapSandboxField(fm: Record<string, unknown>): SandboxScope {
+function mapSandboxField(fm: Record<string, any>): SandboxScope {
   const scope = fm.sandbox as string | undefined;
   if (scope === 'user' || scope === 'system' || scope === 'none') return scope;
   return 'workspace';
@@ -89,9 +89,9 @@ function extractInstructionBlocks(body: string): string[] {
   return blocks;
 }
 
-function buildParametersFromFrontmatter(fm: Record<string, unknown>): Record<string, unknown> {
+function buildParametersFromFrontmatter(fm: Record<string, any>): Record<string, any> {
   if (fm.parameters && typeof fm.parameters === 'object') {
-    return fm.parameters as Record<string, unknown>;
+    return fm.parameters as Record<string, any>;
   }
 
   return {
@@ -162,7 +162,7 @@ function createDeclarativeHandler(definition: SkillDefinition): SkillLifecycle['
         };
       }
 
-      const adapter = (definition.parameters as Record<string, unknown>)?.['__adapter'] as string | undefined;
+      const adapter = (definition.parameters as Record<string, any>)?.['__adapter'] as string | undefined;
 
       if (adapter === 'exec') {
         const command = instructions[0];
@@ -229,7 +229,7 @@ function createDeclarativeHandler(definition: SkillDefinition): SkillLifecycle['
         }
 
         const contentType = response.headers.get('content-type') ?? '';
-        let data: unknown;
+        let data: any;
         if (contentType.includes('application/json')) {
           data = await response.json();
         } else {
@@ -238,7 +238,7 @@ function createDeclarativeHandler(definition: SkillDefinition): SkillLifecycle['
 
         // T3: 扫描输出中的 FILE:|MEDIA: 标记，暴露落地文件路径供调度层 emit file 事件
         const markers = extractFilesFromMarkerText(typeof data === 'string' ? data : JSON.stringify(data));
-        const httpData: Record<string, unknown> =
+        const httpData: Record<string, any> =
           typeof data === 'object' && data !== null ? { ...(data as object) } : { text: data };
         httpData.generatedFilePaths = markers;
 
@@ -298,7 +298,7 @@ async function loadSkillFromDirectory(dirPath: string, source: 'builtin' | 'work
         // ESM 运行时（tsx/ESM，package.json type:module）下 require 不可用，
         // 改用动态 import() + pathToFileURL，并追加 ?v= 时间戳以破坏模块缓存实现热重载。
         const moduleUrl = `${pathToFileURL(entryPath).href}?v=${Date.now()}`;
-        const moduleExports = (await import(moduleUrl)) as Record<string, unknown>;
+        const moduleExports = (await import(moduleUrl)) as Record<string, any>;
 
         if (typeof moduleExports.execute !== 'function') {
           logger.warn(`[SkillLoader] Native skill '${definition.id}' missing execute function, using declarative fallback.`);

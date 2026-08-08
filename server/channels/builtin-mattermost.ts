@@ -74,7 +74,7 @@ export function createMattermostChannelPlugin(): ChannelPlugin {
 
   const mattermostChannelConfig: ChannelConfigAdapter<MattermostAccountConfig> = {
     listAccountIds: (config: AppConfig): ChannelId[] => {
-      const mattermostConfig = config.mattermost as Record<string, unknown>;
+      const mattermostConfig = config.mattermost as Record<string, any>;
       if (mattermostConfig && mattermostConfig.serverUrl && mattermostConfig.accessToken) {
         return [MATTERMOST_CHANNEL_ID];
       }
@@ -82,7 +82,7 @@ export function createMattermostChannelPlugin(): ChannelPlugin {
     },
     resolveAccount: (config: AppConfig, accountId: ChannelId): MattermostAccountConfig | null => {
       if (accountId !== MATTERMOST_CHANNEL_ID) return null;
-      const mattermostConfig = config.mattermost as Record<string, unknown>;
+      const mattermostConfig = config.mattermost as Record<string, any>;
       if (mattermostConfig && mattermostConfig.serverUrl && mattermostConfig.accessToken) {
         return {
           serverUrl: String(mattermostConfig.serverUrl),
@@ -114,7 +114,7 @@ export function createMattermostChannelPlugin(): ChannelPlugin {
         try {
           const rendered = await ctx.render();
           const text = rendered.parts
-            .map((p: { content: unknown }) => String(p.content))
+            .map((p: { content: any }) => String(p.content))
             .join("\n");
 
           const channelId = ctx.to;
@@ -122,7 +122,7 @@ export function createMattermostChannelPlugin(): ChannelPlugin {
             return { success: false, error: "Mattermost channel ID not provided" };
           }
 
-          const body: Record<string, unknown> = {
+          const body: Record<string, any> = {
             channel_id: channelId,
             message: text,
           };
@@ -161,8 +161,8 @@ export function createMattermostChannelPlugin(): ChannelPlugin {
   });
 }
 
-export function parseMattermostWebhook(body: unknown): MattermostWebhookResult {
-  const data = body as Record<string, unknown>;
+export function parseMattermostWebhook(body: any): MattermostWebhookResult {
+  const data = body as Record<string, any>;
 
   if (!data.channel_id || !data.text) {
     return { success: false, error: "Invalid Mattermost webhook format" };

@@ -20,11 +20,11 @@ vi.mock("../../agents/agent-scope.js", () => ({
 vi.mock("../../skills/lifecycle/clawhub.js", () => ({
   installSkillFromClawHub: vi.fn(),
   updateSkillsFromClawHub: vi.fn(),
-  searchSkillsFromClawHub: (...args: unknown[]) => searchSkillsFromClawHubMock(...args),
+  searchSkillsFromClawHub: (...args: any[]) => searchSkillsFromClawHubMock(...args),
 }));
 
 vi.mock("../../infra/clawhub.js", () => ({
-  fetchClawHubSkillDetail: (...args: unknown[]) => fetchClawHubSkillDetailMock(...args),
+  fetchClawHubSkillDetail: (...args: any[]) => fetchClawHubSkillDetailMock(...args),
   resolveClawHubBaseUrl: vi.fn(() => "https://clawhub.ai"),
   searchClawHubSkills: vi.fn(),
   downloadClawHubSkillArchive: vi.fn(),
@@ -36,17 +36,17 @@ vi.mock("../../skills/lifecycle/install.js", () => ({
 
 const { skillsHandlers } = await import("./skills.js");
 
-function callHandler(method: string, params: Record<string, unknown>) {
+function callHandler(method: string, params: Record<string, any>) {
   let ok: boolean | null = null;
-  let response: unknown;
-  let error: unknown;
+  let response: any;
+  let error: any;
   const result = skillsHandlers[method]({
     params,
     req: {} as never,
     client: null as never,
     isWebchatConnect: () => false,
     context: {} as never,
-    respond: (success: boolean, res: unknown, err: unknown) => {
+    respond: (success: boolean, res: any, err: any) => {
       ok = success;
       response = res;
       error = err;
@@ -55,8 +55,8 @@ function callHandler(method: string, params: Record<string, unknown>) {
   return Promise.resolve(result).then(() => ({ ok, response, error }));
 }
 
-function expectErrorField(error: unknown, field: "code" | "message", expected: string) {
-  expect((error as Record<string, unknown> | undefined)?.[field]).toBe(expected);
+function expectErrorField(error: any, field: "code" | "message", expected: string) {
+  expect((error as Record<string, any> | undefined)?.[field]).toBe(expected);
 }
 
 describe("skills.search handler", () => {

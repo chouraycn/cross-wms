@@ -65,7 +65,7 @@ type ApprovalResolveParams = {
 };
 
 type ApprovalResolveParamsValidator<TParams extends ApprovalResolveParams> = ((
-  params: unknown,
+  params: any,
 ) => params is TParams) & {
   errors?: ValidationError[] | null;
 };
@@ -250,7 +250,7 @@ export function buildRequestedApprovalEvent<TPayload extends ApprovalTurnSourceF
 
 /** Validates approval resolve params and narrows the decision to the supported enum. */
 export function resolveApprovalDecisionParams<TParams extends ApprovalResolveParams>(params: {
-  rawParams: unknown;
+  rawParams: any;
   validate: ApprovalResolveParamsValidator<TParams>;
   methodName: string;
   respond: RespondFn;
@@ -364,7 +364,7 @@ export function respondPendingApprovalLookupError(params: {
 /** Waits for an already-registered approval decision visible to the caller. */
 export async function handleApprovalWaitDecision<TPayload>(params: {
   manager: ExecApprovalManager<TPayload>;
-  inputId: unknown;
+  inputId: any;
   client?: GatewayClient | null;
   respond: RespondFn;
 }): Promise<void> {
@@ -543,7 +543,7 @@ export async function handleApprovalResolve<TPayload, TResolvedEvent extends obj
   validateDecision?: (snapshot: ExecApprovalRecord<TPayload>) =>
     | {
         message: string;
-        details?: Record<string, unknown>;
+        details?: Record<string, any>;
       }
     | null
     | undefined;

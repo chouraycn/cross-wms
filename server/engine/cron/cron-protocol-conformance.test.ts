@@ -11,8 +11,8 @@ import { MACOS_APP_SOURCES_DIR } from "../compat/legacy-names.js";
 
 type SchemaLike = {
   anyOf?: Array<SchemaLike>;
-  properties?: Record<string, unknown>;
-  const?: unknown;
+  properties?: Record<string, any>;
+  const?: any;
 };
 
 function extractDeliveryModes(schema: SchemaLike): string[] {

@@ -28,7 +28,7 @@ export interface WikiEntry {
   /** 更新时间 */
   updatedAt: string;
   /** 元数据（自定义字段） */
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 /**
@@ -46,7 +46,7 @@ export interface WikiEntryCreateParams {
   /** 条目路径 */
   sourcePath?: string;
   /** 元数据 */
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
   /** 自动提取标签 */
   autoExtractTags?: boolean;
 }
@@ -64,7 +64,7 @@ export interface WikiEntryUpdateParams {
   /** 新摘要 */
   summary?: string;
   /** 元数据 */
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 // ===================== Wiki 版本类型 =====================
@@ -229,7 +229,7 @@ export interface MarkdownImportOptions {
   /** 是否生成摘要 */
   generateSummary?: boolean;
   /** 元数据模板 */
-  metadataTemplate?: Record<string, unknown>;
+  metadataTemplate?: Record<string, any>;
 }
 
 /**

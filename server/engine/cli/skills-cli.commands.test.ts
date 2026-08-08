@@ -7,7 +7,7 @@ const mocks = vi.hoisted(() => {
   const runtimeLogs: string[] = [];
   const runtimeStdout: string[] = [];
   const runtimeErrors: string[] = [];
-  const stringifyArgs = (args: unknown[]) => args.map((value) => String(value)).join(" ");
+  const stringifyArgs = (args: any[]) => args.map((value) => String(value)).join(" ");
   const skillStatusReportFixture = {
     workspaceDir: "/tmp/workspace",
     managedSkillsDir: "/tmp/workspace/skills",
@@ -47,16 +47,16 @@ const mocks = vi.hoisted(() => {
     ],
   };
   const defaultRuntime = {
-    log: vi.fn((...args: unknown[]) => {
+    log: vi.fn((...args: any[]) => {
       runtimeLogs.push(stringifyArgs(args));
     }),
-    error: vi.fn((...args: unknown[]) => {
+    error: vi.fn((...args: any[]) => {
       runtimeErrors.push(stringifyArgs(args));
     }),
     writeStdout: vi.fn((value: string) => {
       runtimeStdout.push(value.endsWith("\n") ? value.slice(0, -1) : value);
     }),
-    writeJson: vi.fn((value: unknown, space = 2) => {
+    writeJson: vi.fn((value: any, space = 2) => {
       runtimeStdout.push(JSON.stringify(value, null, space > 0 ? space : undefined));
     }),
     exit: vi.fn((code: number) => {
@@ -66,7 +66,7 @@ const mocks = vi.hoisted(() => {
       throw new Error(`__exit__:${code}`);
     }),
   };
-  const buildWorkspaceSkillStatusMock = vi.fn((workspaceDir: string, options?: unknown) => {
+  const buildWorkspaceSkillStatusMock = vi.fn((workspaceDir: string, options?: any) => {
     void workspaceDir;
     void options;
     return skillStatusReportFixture;
@@ -74,12 +74,12 @@ const mocks = vi.hoisted(() => {
   return {
     callGatewayMock: vi.fn(),
     loadConfigMock: vi.fn(() => ({})),
-    resolveDefaultAgentIdMock: vi.fn((_configForTest: unknown) => "main"),
+    resolveDefaultAgentIdMock: vi.fn((_configForTest: any) => "main"),
     resolveAgentIdByWorkspacePathMock: vi.fn(
-      (_configForTest: unknown, _workspacePath: string): string | undefined => undefined,
+      (_configForTest: any, _workspacePath: string): string | undefined => undefined,
     ),
     resolveAgentWorkspaceDirMock: vi.fn(
-      (_configForTest: unknown, _agentId: string) => "/tmp/workspace",
+      (_configForTest: any, _agentId: string) => "/tmp/workspace",
     ),
     searchSkillsFromClawHubMock: vi.fn(),
     installSkillFromClawHubMock: vi.fn(),
@@ -88,7 +88,7 @@ const mocks = vi.hoisted(() => {
     readTrackedClawHubSkillSlugsMock: vi.fn(),
     readVerifiedClawHubSkillSourceUrlMock: vi.fn(),
     resolveClawHubSkillVerificationTargetMock: vi.fn(),
-    readClawHubSkillsLockfileStatusSyncMock: vi.fn((..._args: unknown[]) => ({ kind: "missing" })),
+    readClawHubSkillsLockfileStatusSyncMock: vi.fn((..._args: any[]) => ({ kind: "missing" })),
     resolveClawHubSkillStatusLinkSyncMock: vi.fn(),
     resolveLocalSkillCardStatusSyncMock: vi.fn(),
     fetchClawHubSkillVerificationMock: vi.fn(),
@@ -128,8 +128,8 @@ const {
   runtimeErrors,
 } = mocks;
 
-function mockCall(mock: unknown, index = 0): Array<unknown> {
-  const calls = (mock as { mock?: { calls?: Array<Array<unknown>> } }).mock?.calls ?? [];
+function mockCall(mock: any, index = 0): Array<any> {
+  const calls = (mock as { mock?: { calls?: Array<Array<any>> } }).mock?.calls ?? [];
   const call = calls.at(index);
   if (!call) {
     throw new Error(`Expected mock call ${index + 1}`);
@@ -137,25 +137,25 @@ function mockCall(mock: unknown, index = 0): Array<unknown> {
   return call;
 }
 
-function mockFirstObjectArg(mock: unknown): Record<string, unknown> {
+function mockFirstObjectArg(mock: any): Record<string, any> {
   const [arg] = mockCall(mock);
   if (!arg || typeof arg !== "object") {
     throw new Error("expected first mock argument object");
   }
-  return arg as Record<string, unknown>;
+  return arg as Record<string, any>;
 }
 
-function expectObjectFields(value: unknown, expected: Record<string, unknown>): void {
+function expectObjectFields(value: any, expected: Record<string, any>): void {
   if (!value || typeof value !== "object") {
     throw new Error("expected object fields");
   }
-  const record = value as Record<string, unknown>;
+  const record = value as Record<string, any>;
   for (const [key, expectedValue] of Object.entries(expected)) {
     expect(record[key], key).toEqual(expectedValue);
   }
 }
 
-function expectLogger(value: unknown): void {
+function expectLogger(value: any): void {
   if (!value || typeof value !== "object") {
     throw new Error("expected logger object");
   }
@@ -172,7 +172,7 @@ vi.mock("../runtime.js", () => ({
 }));
 
 vi.mock("../gateway/call.js", () => ({
-  callGateway: (...args: unknown[]) => mocks.callGatewayMock(...args),
+  callGateway: (...args: any[]) => mocks.callGatewayMock(...args),
 }));
 
 vi.mock("../utils.js", async (importOriginal) => ({
@@ -186,39 +186,39 @@ vi.mock("../config/config.js", () => ({
 }));
 
 vi.mock("../agents/agent-scope.js", () => ({
-  resolveAgentIdByWorkspacePath: (config: unknown, workspacePath: string) =>
+  resolveAgentIdByWorkspacePath: (config: any, workspacePath: string) =>
     mocks.resolveAgentIdByWorkspacePathMock(config, workspacePath),
-  resolveDefaultAgentId: (config: unknown) => mocks.resolveDefaultAgentIdMock(config),
-  resolveAgentWorkspaceDir: (config: unknown, agentId: string) =>
+  resolveDefaultAgentId: (config: any) => mocks.resolveDefaultAgentIdMock(config),
+  resolveAgentWorkspaceDir: (config: any, agentId: string) =>
     mocks.resolveAgentWorkspaceDirMock(config, agentId),
 }));
 
 vi.mock("../skills/lifecycle/clawhub.js", () => ({
-  searchSkillsFromClawHub: (...args: unknown[]) => mocks.searchSkillsFromClawHubMock(...args),
-  installSkillFromClawHub: (...args: unknown[]) => mocks.installSkillFromClawHubMock(...args),
-  updateSkillsFromClawHub: (...args: unknown[]) => mocks.updateSkillsFromClawHubMock(...args),
-  readTrackedClawHubSkillSlugs: (...args: unknown[]) =>
+  searchSkillsFromClawHub: (...args: any[]) => mocks.searchSkillsFromClawHubMock(...args),
+  installSkillFromClawHub: (...args: any[]) => mocks.installSkillFromClawHubMock(...args),
+  updateSkillsFromClawHub: (...args: any[]) => mocks.updateSkillsFromClawHubMock(...args),
+  readTrackedClawHubSkillSlugs: (...args: any[]) =>
     mocks.readTrackedClawHubSkillSlugsMock(...args),
-  readVerifiedClawHubSkillSourceUrl: (...args: unknown[]) =>
+  readVerifiedClawHubSkillSourceUrl: (...args: any[]) =>
     mocks.readVerifiedClawHubSkillSourceUrlMock(...args),
-  resolveClawHubSkillVerificationTarget: (...args: unknown[]) =>
+  resolveClawHubSkillVerificationTarget: (...args: any[]) =>
     mocks.resolveClawHubSkillVerificationTargetMock(...args),
-  readClawHubSkillsLockfileStatusSync: (...args: unknown[]) =>
+  readClawHubSkillsLockfileStatusSync: (...args: any[]) =>
     mocks.readClawHubSkillsLockfileStatusSyncMock(...args),
-  resolveClawHubSkillStatusLinkSync: (...args: unknown[]) =>
+  resolveClawHubSkillStatusLinkSync: (...args: any[]) =>
     mocks.resolveClawHubSkillStatusLinkSyncMock(...args),
-  resolveLocalSkillCardStatusSync: (...args: unknown[]) =>
+  resolveLocalSkillCardStatusSync: (...args: any[]) =>
     mocks.resolveLocalSkillCardStatusSyncMock(...args),
 }));
 
 vi.mock("../infra/clawhub.js", () => ({
-  fetchClawHubSkillVerification: (...args: unknown[]) =>
+  fetchClawHubSkillVerification: (...args: any[]) =>
     mocks.fetchClawHubSkillVerificationMock(...args),
-  fetchClawHubSkillCard: (...args: unknown[]) => mocks.fetchClawHubSkillCardMock(...args),
+  fetchClawHubSkillCard: (...args: any[]) => mocks.fetchClawHubSkillCardMock(...args),
 }));
 
 vi.mock("../skills/lifecycle/source-install.js", () => ({
-  installSkillFromSource: (...args: unknown[]) => mocks.installSkillFromSourceMock(...args),
+  installSkillFromSource: (...args: any[]) => mocks.installSkillFromSourceMock(...args),
   isSkillSourceInstallSpec: (raw: string) =>
     raw.startsWith("git:") ||
     raw.startsWith("./") ||
@@ -229,7 +229,7 @@ vi.mock("../skills/lifecycle/source-install.js", () => ({
 
 vi.mock("../skills/discovery/status.js", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../skills/discovery/status.js")>()),
-  buildWorkspaceSkillStatus: (workspaceDir: string, options?: unknown) =>
+  buildWorkspaceSkillStatus: (workspaceDir: string, options?: any) =>
     mocks.buildWorkspaceSkillStatusMock(workspaceDir, options),
 }));
 
@@ -349,7 +349,7 @@ describe("skills cli commands", () => {
 
   function routeWorkspaceByAgent() {
     resolveAgentWorkspaceDirMock.mockImplementation(
-      (configForTest: unknown, agentId: string) => `/tmp/workspace-${agentId}`,
+      (configForTest: any, agentId: string) => `/tmp/workspace-${agentId}`,
     );
   }
 
@@ -910,7 +910,7 @@ describe("skills cli commands", () => {
       baseUrl: "https://private.example.com/clawhub",
     });
     expect(defaultRuntime.writeJson).toHaveBeenCalledTimes(1);
-    const payload = JSON.parse(runtimeStdout.at(-1) ?? "{}") as Record<string, unknown>;
+    const payload = JSON.parse(runtimeStdout.at(-1) ?? "{}") as Record<string, any>;
     expect(payload.schema).toBe("clawhub.skill.verify.v1");
     expect(payload.ok).toBe(true);
     expect(payload.signature).toEqual({ status: "unsigned" });
@@ -1158,7 +1158,7 @@ describe("skills cli commands", () => {
 
     await expect(runCommand(["skills", "verify", "agentreceipt"])).rejects.toThrow("__exit__:1");
 
-    const payload = JSON.parse(runtimeStdout.at(-1) ?? "{}") as Record<string, unknown>;
+    const payload = JSON.parse(runtimeStdout.at(-1) ?? "{}") as Record<string, any>;
     expect(payload.ok).toBe(false);
     expect(runtimeErrors).toStrictEqual([]);
   });
@@ -1187,7 +1187,7 @@ describe("skills cli commands", () => {
 
     await expect(runCommand(["skills", "verify", "agentreceipt"])).rejects.toThrow("__exit__:1");
 
-    const payload = JSON.parse(runtimeStdout.at(-1) ?? "{}") as Record<string, unknown>;
+    const payload = JSON.parse(runtimeStdout.at(-1) ?? "{}") as Record<string, any>;
     expect(payload.ok).toBe(ok);
     expect(payload.decision).toBe(decision);
     expect(runtimeErrors).toStrictEqual([]);
@@ -1225,8 +1225,8 @@ describe("skills cli commands", () => {
     {
       label: "list",
       argv: ["skills", "list", "--json"],
-      assert: (payload: Record<string, unknown>) => {
-        const skills = payload.skills as Array<Record<string, unknown>>;
+      assert: (payload: Record<string, any>) => {
+        const skills = payload.skills as Array<Record<string, any>>;
         expect(skills).toHaveLength(1);
         expect(skills[0]?.name).toBe("calendar");
       },
@@ -1234,7 +1234,7 @@ describe("skills cli commands", () => {
     {
       label: "info",
       argv: ["skills", "info", "calendar", "--json"],
-      assert: (payload: Record<string, unknown>) => {
+      assert: (payload: Record<string, any>) => {
         expect(payload.name).toBe("calendar");
         expect(payload.primaryEnv).toBe("CALENDAR_API_KEY");
       },
@@ -1242,7 +1242,7 @@ describe("skills cli commands", () => {
     {
       label: "check",
       argv: ["skills", "check", "--json"],
-      assert: (payload: Record<string, unknown>) => {
+      assert: (payload: Record<string, any>) => {
         expectObjectFields(payload.summary, {
           total: 1,
           eligible: 1,
@@ -1260,7 +1260,7 @@ describe("skills cli commands", () => {
     expect(runtimeErrors).toStrictEqual([]);
     expect(runtimeStdout).toHaveLength(1);
 
-    const payload = JSON.parse(runtimeStdout.at(-1) ?? "{}") as Record<string, unknown>;
+    const payload = JSON.parse(runtimeStdout.at(-1) ?? "{}") as Record<string, any>;
     assert(payload);
   });
 

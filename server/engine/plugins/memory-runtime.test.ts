@@ -74,7 +74,7 @@ function createMemoryRuntimeFixture() {
 }
 
 function expectMemoryRuntimeLoaded(
-  config: unknown,
+  config: any,
   pluginIds: readonly string[] = ["memory-core"],
 ) {
   expect(getLoadedRuntimePluginRegistryMock).toHaveBeenCalledWith({
@@ -90,7 +90,7 @@ function expectMemoryRuntimeLoaded(
   });
 }
 
-function expectMemoryAutoEnableApplied(rawConfig: unknown, autoEnabledConfig: unknown) {
+function expectMemoryAutoEnableApplied(rawConfig: any, autoEnabledConfig: any) {
   expect(applyPluginAutoEnableMock).not.toHaveBeenCalled();
   expectMemoryRuntimeLoaded(rawConfig);
   expect(rawConfig).not.toBe(autoEnabledConfig);
@@ -119,8 +119,8 @@ function expectNoMemoryRuntimeBootstrap() {
 }
 
 async function expectAutoEnabledMemoryRuntimeCase(params: {
-  run: (rawConfig: unknown) => Promise<unknown>;
-  expectedResult: unknown;
+  run: (rawConfig: any) => Promise<any>;
+  expectedResult: any;
 }) {
   const { rawConfig, autoEnabledConfig } = setAutoEnabledMemoryRuntime();
   const result = await params.run(rawConfig);
@@ -132,7 +132,7 @@ async function expectAutoEnabledMemoryRuntimeCase(params: {
 }
 
 async function expectCloseMemoryRuntimeCase(params: {
-  config: unknown;
+  config: any;
   setup: () => { closeAllMemorySearchManagers: ReturnType<typeof vi.fn> } | undefined;
 }) {
   const runtime = params.setup();
@@ -171,7 +171,7 @@ describe("memory runtime auto-enable loading", () => {
   it.each([
     {
       name: "loads memory runtime from the auto-enabled config snapshot",
-      run: async (rawConfig: unknown) =>
+      run: async (rawConfig: any) =>
         getActiveMemorySearchManager({
           cfg: rawConfig as never,
           agentId: "main",
@@ -180,7 +180,7 @@ describe("memory runtime auto-enable loading", () => {
     },
     {
       name: "reuses the same auto-enabled load path for backend config resolution",
-      run: async (rawConfig: unknown) =>
+      run: async (rawConfig: any) =>
         resolveActiveMemoryBackendConfig({
           cfg: rawConfig as never,
           agentId: "main",

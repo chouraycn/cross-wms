@@ -101,7 +101,7 @@ function isArchivePathWithin(child: string, parent: string): boolean {
 }
 
 function parseManifest(raw: string): BackupManifest {
-  let parsed: unknown;
+  let parsed: any;
   try {
     parsed = JSON.parse(raw);
   } catch (err) {

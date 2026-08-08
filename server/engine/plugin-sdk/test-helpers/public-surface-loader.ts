@@ -5,7 +5,7 @@ import { pathToFileURL } from "node:url";
 
 const repoRoot = process.cwd();
 
-function readJson(filePath: string): unknown {
+function readJson(filePath: string): any {
   try {
     return JSON.parse(fs.readFileSync(filePath, "utf8"));
   } catch {
@@ -31,7 +31,7 @@ function resolveSourceArtifactPath(packageDir: string, artifactBasename: string)
 function resolveExtensionDirByManifestId(pluginId: string): string {
   const pluginDir = path.resolve(repoRoot, "extensions", pluginId);
   const manifest = readJson(path.join(pluginDir, "openclaw.plugin.json")) as
-    | { id?: unknown }
+    | { id?: any }
     | undefined;
   if (manifest?.id === pluginId) {
     return pluginDir;
@@ -48,7 +48,7 @@ function resolveWorkspacePackageDir(packageName: string): string {
       }
       const packageDir = path.join(rootDir, entry.name);
       const manifest = readJson(path.join(packageDir, "package.json")) as
-        | { name?: unknown }
+        | { name?: any }
         | undefined;
       if (manifest?.name === packageName) {
         return packageDir;

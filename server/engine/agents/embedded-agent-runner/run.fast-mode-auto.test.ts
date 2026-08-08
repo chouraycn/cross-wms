@@ -31,19 +31,19 @@ function successAttempt(provider: string, model: string): EmbeddedRunAttemptResu
 }
 
 type FastModeAttemptParams = {
-  fastMode?: unknown;
+  fastMode?: any;
   fastModeAutoProgressState?: {
     offAnnounced: boolean;
     resetAnnounced: boolean;
   };
-  onAgentEvent?: (event: { stream: string; data: Record<string, unknown> }) => unknown;
+  onAgentEvent?: (event: { stream: string; data: Record<string, any> }) => unknown;
   onRunProgress?: (payload: { reason: string }) => unknown;
   onToolStreamBoundary?: () => unknown;
-  onToolResult?: (payload: { text?: string; channelData?: Record<string, unknown> }) => unknown;
+  onToolResult?: (payload: { text?: string; channelData?: Record<string, any> }) => unknown;
 };
 
-function resolveAttemptFastMode(params: unknown): void {
-  const fastMode = (params as { fastMode?: unknown }).fastMode;
+function resolveAttemptFastMode(params: any): void {
+  const fastMode = (params as { fastMode?: any }).fastMode;
   if (typeof fastMode === "function") {
     fastMode();
   }
@@ -69,11 +69,11 @@ describe("runEmbeddedAgent fast auto progress", () => {
     vi.useFakeTimers();
 
     const events: Array<{
-      data?: { summary?: unknown };
+      data?: { summary?: any };
     }> = [];
     const toolResults: Array<{
       text?: string;
-      channelData?: Record<string, unknown>;
+      channelData?: Record<string, any>;
     }> = [];
     const globalSummaries: string[] = [];
     const stopGlobalCapture = onAgentEvent((event: AgentEventPayload) => {
@@ -175,11 +175,11 @@ describe("runEmbeddedAgent fast auto progress", () => {
     vi.useFakeTimers();
 
     const events: Array<{
-      data?: { summary?: unknown };
+      data?: { summary?: any };
     }> = [];
     const toolResults: Array<{
       text?: string;
-      channelData?: Record<string, unknown>;
+      channelData?: Record<string, any>;
     }> = [];
     let attemptParams: FastModeAttemptParams | undefined;
     let completeAttempt: (() => void) | undefined;
@@ -251,11 +251,11 @@ describe("runEmbeddedAgent fast auto progress", () => {
       vi.useFakeTimers();
 
       const events: Array<{
-        data?: { summary?: unknown };
+        data?: { summary?: any };
       }> = [];
       const toolResults: Array<{
         text?: string;
-        channelData?: Record<string, unknown>;
+        channelData?: Record<string, any>;
       }> = [];
       let attemptParams: FastModeAttemptParams | undefined;
       let completeAttempt: (() => void) | undefined;
@@ -326,11 +326,11 @@ describe("runEmbeddedAgent fast auto progress", () => {
       vi.useFakeTimers();
 
       const events: Array<{
-        data?: { summary?: unknown };
+        data?: { summary?: any };
       }> = [];
       const toolResults: Array<{
         text?: string;
-        channelData?: Record<string, unknown>;
+        channelData?: Record<string, any>;
       }> = [];
       let attemptParams: FastModeAttemptParams | undefined;
       let completeAttempt: (() => void) | undefined;

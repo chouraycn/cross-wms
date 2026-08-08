@@ -36,7 +36,7 @@ export type FsAuditEntry = {
   timestamp: number;
   success: boolean;
   actor?: string;
-  details?: Record<string, unknown>;
+  details?: Record<string, any>;
 };
 
 const auditLog: FsAuditEntry[] = [];

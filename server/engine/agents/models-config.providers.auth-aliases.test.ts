@@ -13,7 +13,7 @@ type MockManifestRegistry = {
     providerAuthEnvVars?: Record<string, string[]>;
     providerAuthAliases?: Record<string, string>;
   }>;
-  diagnostics: unknown[];
+  diagnostics: any[];
 };
 
 const createFixtureProviderRegistry = (): MockManifestRegistry => ({

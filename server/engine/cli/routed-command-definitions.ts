@@ -5,4 +5,4 @@
 export type RoutedCommandDefinition = unknown;
 export type AnyRoutedCommandDefinition = unknown;
 
-export const routedCommandDefinitions: unknown = undefined;
+export const routedCommandDefinitions: any = undefined;

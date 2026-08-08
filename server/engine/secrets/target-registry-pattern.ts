@@ -21,7 +21,7 @@ export type CompiledTargetRegistryEntry = SecretTargetRegistryEntry & {
 export type ExpandedPathMatch = {
   segments: string[];
   captures: string[];
-  value: unknown;
+  value: any;
 };
 
 function countDynamicPatternTokens(tokens: PathPatternToken[]): number {
@@ -153,10 +153,10 @@ export function materializePathTokens(
 /**
  * Expands a pattern across a config object and returns every matching value with captures.
  */
-export function expandPathTokens(root: unknown, tokens: PathPatternToken[]): ExpandedPathMatch[] {
+export function expandPathTokens(root: any, tokens: PathPatternToken[]): ExpandedPathMatch[] {
   const out: ExpandedPathMatch[] = [];
   const walk = (
-    node: unknown,
+    node: any,
     tokenIndex: number,
     segments: string[],
     captures: string[],

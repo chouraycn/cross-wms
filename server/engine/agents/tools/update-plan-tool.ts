@@ -42,7 +42,7 @@ type UpdatePlanStep = {
   status: (typeof PLAN_STEP_STATUSES)[number];
 };
 
-function readPlanSteps(params: Record<string, unknown>): UpdatePlanStep[] {
+function readPlanSteps(params: Record<string, any>): UpdatePlanStep[] {
   const rawPlan = params.plan;
   if (!Array.isArray(rawPlan) || rawPlan.length === 0) {
     throw new ToolInputError("plan required");
@@ -52,7 +52,7 @@ function readPlanSteps(params: Record<string, unknown>): UpdatePlanStep[] {
     if (!entry || typeof entry !== "object") {
       throw new ToolInputError(`plan[${index}] must be an object`);
     }
-    const stepParams = entry as Record<string, unknown>;
+    const stepParams = entry as Record<string, any>;
     const step = readStringParam(stepParams, "step", {
       required: true,
       label: `plan[${index}].step`,
@@ -89,7 +89,7 @@ export function createUpdatePlanTool(): AnyAgentTool {
     description: describeUpdatePlanTool(),
     parameters: UpdatePlanToolSchema,
     execute: async (_toolCallId, args) => {
-      const params = args as Record<string, unknown>;
+      const params = args as Record<string, any>;
       const explanation = readStringParam(params, "explanation");
       const plan = readPlanSteps(params);
       return {

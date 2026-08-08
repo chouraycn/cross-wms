@@ -319,13 +319,13 @@ export function shouldSuppressLocalNativeExecApprovalPrompt(params: {
   }) as boolean;
 }
 
-function isNativeApprovalTarget(value: unknown): value is NativeApprovalTarget {
+function isNativeApprovalTarget(value: any): value is NativeApprovalTarget {
   return Boolean(
-    value && typeof value === "object" && typeof (value as { to?: unknown }).to === "string",
+    value && typeof value === "object" && typeof (value as { to?: any }).to === "string",
   );
 }
 
-function nativeApprovalTargetMatcher(channel: string): (left: unknown, right: unknown) => boolean {
+function nativeApprovalTargetMatcher(channel: string): (left: any, right: any) => boolean {
   return (left, right) =>
     isNativeApprovalTarget(left) &&
     isNativeApprovalTarget(right) &&
@@ -855,7 +855,7 @@ function createOriginTargetResolver<TTarget>(
         normalizeTarget(params.resolveTurnSourceTarget(request)),
       resolveSessionTarget: (sessionTarget: ExecApprovalSessionTarget, request: ApprovalRequest) =>
         normalizeTarget(params.resolveSessionTarget(sessionTarget, request)),
-      targetsMatch: (left: unknown, right: unknown) => {
+      targetsMatch: (left: any, right: any) => {
         const normalizedLeft = normalizeTargetForMatch(left as TTarget);
         const normalizedRight = normalizeTargetForMatch(right as TTarget);
         return Boolean(

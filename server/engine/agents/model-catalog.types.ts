@@ -19,7 +19,7 @@ export type ModelCatalogEntry = {
   contextTokens?: number;
   reasoning?: boolean;
   input?: ModelInputType[];
-  params?: Record<string, unknown>;
+  params?: Record<string, any>;
   compat?: ModelCompatConfig;
   mediaInput?: ModelMediaInputConfig;
 };

@@ -46,7 +46,7 @@ const MODEL_RUNTIME_OVERRIDES: Record<string, HarnessRuntime> = {
 export function resolveHarnessPolicy(params: {
   provider?: string;
   modelId?: string;
-  config?: Record<string, unknown>;
+  config?: Record<string, any>;
   agentId?: string;
   sessionKey?: string;
 }): HarnessPolicy {
@@ -91,20 +91,20 @@ export function resolveHarnessPolicy(params: {
 }
 
 /** 从配置对象中解析运行时 */
-function resolveConfigRuntime(config?: Record<string, unknown>): HarnessRuntime | undefined {
+function resolveConfigRuntime(config?: Record<string, any>): HarnessRuntime | undefined {
   if (!config) return undefined;
 
   // 检查 agent.harness.runtime
-  const agentConfig = config.agent as Record<string, unknown> | undefined;
+  const agentConfig = config.agent as Record<string, any> | undefined;
   if (agentConfig?.harness && typeof agentConfig.harness === 'object') {
-    const harnessConfig = agentConfig.harness as Record<string, unknown>;
+    const harnessConfig = agentConfig.harness as Record<string, any>;
     if (typeof harnessConfig.runtime === 'string') {
       return normalizeRuntime(harnessConfig.runtime);
     }
   }
 
   // 检查顶层 harness.runtime
-  const harnessConfig = config.harness as Record<string, unknown> | undefined;
+  const harnessConfig = config.harness as Record<string, any> | undefined;
   if (harnessConfig && typeof harnessConfig.runtime === 'string') {
     return normalizeRuntime(harnessConfig.runtime);
   }

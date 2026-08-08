@@ -13,11 +13,11 @@ declare module "@modelcontextprotocol/sdk/server/streamableHttp.js" {
     get sessionId(): string | undefined;
     start(): Promise<void>;
     close(): Promise<void>;
-    send(message: unknown, options?: { relatedRequestId?: string | number }): Promise<void>;
+    send(message: any, options?: { relatedRequestId?: string | number }): Promise<void>;
     handleRequest(
-      req: IncomingMessage & { auth?: unknown },
+      req: IncomingMessage & { auth?: any },
       res: ServerResponse,
-      parsedBody?: unknown,
+      parsedBody?: any,
     ): Promise<void>;
   }
 }

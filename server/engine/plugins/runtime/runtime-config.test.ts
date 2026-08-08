@@ -12,12 +12,12 @@ vi.mock("../../config/config.js", () => ({
 }));
 
 vi.mock("../../config/mutate.js", () => ({
-  mutateConfigFile: (...args: unknown[]) => mutateConfigFileMock(...args),
-  replaceConfigFile: (...args: unknown[]) => replaceConfigFileMock(...args),
+  mutateConfigFile: (...args: any[]) => mutateConfigFileMock(...args),
+  replaceConfigFile: (...args: any[]) => replaceConfigFileMock(...args),
 }));
 
 vi.mock("../../logger.js", () => ({
-  logWarn: (...args: unknown[]) => logWarnMock(...args),
+  logWarn: (...args: any[]) => logWarnMock(...args),
 }));
 
 const { withPluginRuntimePluginScope } = await import("./gateway-request-scope.js");

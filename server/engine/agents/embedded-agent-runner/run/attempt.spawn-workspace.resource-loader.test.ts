@@ -27,7 +27,7 @@ describe("runEmbeddedAttempt resource loader wiring", () => {
     });
 
     expect(createAgentSession).toHaveBeenCalledOnce();
-    const calls = createAgentSession.mock.calls as unknown as Array<[{ resourceLoader?: unknown }]>;
+    const calls = createAgentSession.mock.calls as unknown as Array<[{ resourceLoader?: any }]>;
     const options = calls[0]?.[0];
     if (!options) {
       throw new Error("Expected createAgentSession options");

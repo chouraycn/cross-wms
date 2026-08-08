@@ -140,11 +140,11 @@ type InlineActionResult =
       cleanedBody: string;
     };
 
-function extractTextFromToolResult(result: unknown): string | null {
+function extractTextFromToolResult(result: any): string | null {
   if (!result || typeof result !== "object") {
     return null;
   }
-  const content = (result as { content?: unknown }).content;
+  const content = (result as { content?: any }).content;
   if (typeof content === "string") {
     const trimmed = content.trim();
     return trimmed ? trimmed : null;
@@ -155,19 +155,19 @@ function extractTextFromToolResult(result: unknown): string | null {
   return trimmed ? trimmed : null;
 }
 
-function extractBlockedToolReason(result: unknown): string | null {
+function extractBlockedToolReason(result: any): string | null {
   if (!result || typeof result !== "object") {
     return null;
   }
-  const details = (result as { details?: unknown }).details;
+  const details = (result as { details?: any }).details;
   if (!details || typeof details !== "object") {
     return null;
   }
-  const status = (details as { status?: unknown }).status;
+  const status = (details as { status?: any }).status;
   if (status !== "blocked") {
     return null;
   }
-  const reason = (details as { reason?: unknown }).reason;
+  const reason = (details as { reason?: any }).reason;
   return typeof reason === "string" && reason.trim() ? reason.trim() : null;
 }
 

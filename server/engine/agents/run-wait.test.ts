@@ -11,7 +11,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const callGatewayMock = vi.fn();
 vi.mock("../gateway/call.js", () => ({
-  callGateway: (opts: unknown) => callGatewayMock(opts),
+  callGateway: (opts: any) => callGatewayMock(opts),
 }));
 
 import {
@@ -28,12 +28,12 @@ type AgentWaitGatewayRequest = {
   method?: string;
   params?: {
     runId?: string;
-    timeoutMs?: unknown;
+    timeoutMs?: any;
   };
-  timeoutMs?: unknown;
+  timeoutMs?: any;
 };
 
-function expectNumber(value: unknown, label: string): number {
+function expectNumber(value: any, label: string): number {
   expect(typeof value).toBe("number");
   if (typeof value !== "number") {
     throw new Error(`expected ${label} to be a number`);

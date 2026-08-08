@@ -7,7 +7,7 @@
  */
 
 export type UsageAccumulator = unknown;
-export const createUsageAccumulator: unknown = undefined;
-export const mergeUsageIntoAccumulator: unknown = undefined;
-export const toNormalizedUsage: unknown = undefined;
-export const toLastCallUsage: unknown = undefined;
+export const createUsageAccumulator: any = undefined;
+export const mergeUsageIntoAccumulator: any = undefined;
+export const toNormalizedUsage: any = undefined;
+export const toLastCallUsage: any = undefined;

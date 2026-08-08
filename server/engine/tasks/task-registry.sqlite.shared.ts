@@ -18,7 +18,7 @@ function parseSqliteJsonValue<T>(raw: string | null): T | undefined {
 }
 
 export function parseDeliveryContextJson(raw: string | null): DeliveryContext | undefined {
-  const parsed = parseSqliteJsonValue<unknown>(raw);
+  const parsed = parseSqliteJsonValue<any>(raw);
   if (!isRecord(parsed)) {
     return undefined;
   }

@@ -19,7 +19,7 @@ export interface MessageAction {
   label?: string;
   emoji?: string;
   value?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface MessageActionContext {
@@ -69,7 +69,7 @@ export function createMessageAction(params: {
   label?: string;
   emoji?: string;
   value?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }): MessageAction {
   return {
     type: params.type,

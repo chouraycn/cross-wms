@@ -23,7 +23,7 @@ export interface AutomationData {
   scheduleLabel: string;
   prompt: string;
   taskType: string;
-  taskConfig: Record<string, unknown>;
+  taskConfig: Record<string, any>;
   validFrom: string | null;
   validUntil: string | null;
   createdAt: string;
@@ -32,10 +32,10 @@ export interface AutomationData {
   nextRunAt: string | null;
   runCount: number;
   triggerType: string;
-  eventTrigger: Record<string, unknown> | null;
-  webhookConfig: Record<string, unknown> | null;
-  executionPolicy: Record<string, unknown> | null;
-  notificationConfig: Record<string, unknown> | null;
+  eventTrigger: Record<string, any> | null;
+  webhookConfig: Record<string, any> | null;
+  executionPolicy: Record<string, any> | null;
+  notificationConfig: Record<string, any> | null;
 }
 
 export interface AutomationExecutionData {
@@ -47,16 +47,16 @@ export interface AutomationExecutionData {
   completedAt: string | null;
   duration: number | null;
   result: string | null;
-  steps: unknown[];
+  steps: any[];
   isRetry: boolean;
   triggerSource: string;
-  triggerDetail: unknown | null;
+  triggerDetail: any | null;
   retryCount: number;
 }
 
 // ===================== JSON Field Helpers =====================
 
-function serializeJson(value: unknown): string {
+function serializeJson(value: any): string {
   try {
     return JSON.stringify(value);
   } catch {
@@ -64,7 +64,7 @@ function serializeJson(value: unknown): string {
   }
 }
 
-function parseJson(value: string | null): Record<string, unknown> | null {
+function parseJson(value: string | null): Record<string, any> | null {
   if (!value) return null;
   try {
     return JSON.parse(value);
@@ -73,7 +73,7 @@ function parseJson(value: string | null): Record<string, unknown> | null {
   }
 }
 
-function parseJsonArray(value: string | null): unknown[] {
+function parseJsonArray(value: string | null): any[] {
   if (!value) return [];
   try {
     return JSON.parse(value);
@@ -201,7 +201,7 @@ export function updateAutomation(id: string, data: Partial<AutomationData>): Aut
 
   // Build SET clause dynamically from provided fields
   const setClauses: string[] = [];
-  const params: Record<string, unknown> = { id };
+  const params: Record<string, any> = { id };
 
   const fieldMap: Array<{
     dataKey: keyof AutomationData;
@@ -321,7 +321,7 @@ export function updateRun(id: string, data: Partial<AutomationExecutionData>): A
   if (!existing) return null;
 
   const setClauses: string[] = [];
-  const params: Record<string, unknown> = { id };
+  const params: Record<string, any> = { id };
 
   const fieldMap: Array<{
     dataKey: keyof AutomationExecutionData;
@@ -373,7 +373,7 @@ export function getRunsByAutomationId(
   ).get(automationId) as { total: number };
 
   let query = 'SELECT * FROM automation_runs WHERE automation_id = ? ORDER BY started_at DESC';
-  const params: unknown[] = [automationId];
+  const params: any[] = [automationId];
 
   if (limit !== undefined && limit > 0) {
     query += ' LIMIT ?';
@@ -401,7 +401,7 @@ export function getAllRuns(
   ).get() as { total: number };
 
   let query = 'SELECT * FROM automation_runs ORDER BY started_at DESC';
-  const params: unknown[] = [];
+  const params: any[] = [];
 
   if (limit !== undefined && limit > 0) {
     query += ' LIMIT ?';

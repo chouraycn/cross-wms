@@ -14,7 +14,7 @@ vi.mock("./shared.js", async () => {
   };
 });
 
-function requirePostTranscriptionRequest(): { pinDns?: unknown; body?: unknown } {
+function requirePostTranscriptionRequest(): { pinDns?: any; body?: any } {
   const [call] = postTranscriptionRequestMock.mock.calls;
   if (!call) {
     throw new Error("expected postTranscriptionRequest call");

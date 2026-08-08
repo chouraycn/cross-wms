@@ -2,6 +2,6 @@
 
 export type SessionChangedPayload = unknown;
 
-export function emitSessionsChanged(...args: unknown[]): unknown {
+export function emitSessionsChanged(...args: any[]): any {
   return undefined;
 }

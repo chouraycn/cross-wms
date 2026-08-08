@@ -81,7 +81,7 @@ function isValidIsoAbsolute(raw: string): boolean {
 }
 
 /** 判断字符串是否为合法的 ISO 8601 绝对时间 */
-export function isValidIso8601(raw: unknown): boolean {
+export function isValidIso8601(raw: any): boolean {
   if (typeof raw !== "string") {
     return false;
   }

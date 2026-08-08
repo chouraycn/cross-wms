@@ -24,9 +24,9 @@ export function getDefaultConfigPath(): string {
   return `${home}/.crosswms/tui-config.json`;
 }
 
-export function validateTuiConfig(config: unknown): config is TUIConfig {
+export function validateTuiConfig(config: any): config is TUIConfig {
   if (!config || typeof config !== 'object') return false;
-  const c = config as Record<string, unknown>;
+  const c = config as Record<string, any>;
   if (c.backend !== 'embedded' && c.backend !== 'http') return false;
   if (c.theme !== 'auto' && c.theme !== 'light' && c.theme !== 'dark') return false;
   if (typeof c.historyLimit !== 'number') return false;

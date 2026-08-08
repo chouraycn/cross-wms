@@ -5,11 +5,11 @@
 // 降级策略：
 //  - 原文件依赖 ../config/sessions/types.js 的 SessionEntry 类型，用于编译期
 //    断言所有 SessionEntry 键已被保留。cross-wms 尚未移植该模块。
-//    这里使用 Record<string, unknown> 作为最小占位类型，并删除依赖 keyof 的
+//    这里使用 Record<string, any> 作为最小占位类型，并删除依赖 keyof 的
 //    编译期断言（保留运行时检查）。
 
 /** SessionEntry 降级占位类型。 */
-type SessionEntry = Record<string, unknown>;
+type SessionEntry = Record<string, any>;
 
 const SESSION_ENTRY_RESERVED_SLOT_KEY_LIST = [
   "__proto__",
@@ -149,7 +149,7 @@ const OBJECT_PROTOTYPE_RESERVED_SLOT_KEYS = new Set<string>([
 const SESSION_ENTRY_SLOT_KEY_RE = /^[A-Za-z][A-Za-z0-9_]*$/u;
 
 export function normalizeSessionEntrySlotKey(
-  value: unknown,
+  value: any,
 ): { ok: true; key: string } | { ok: false; error: string } {
   if (typeof value !== "string") {
     return { ok: false, error: "sessionEntrySlotKey must be a string" };

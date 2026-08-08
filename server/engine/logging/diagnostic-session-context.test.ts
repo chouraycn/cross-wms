@@ -18,7 +18,7 @@ import {
 let tempDir: string | undefined;
 let testState: OpenClawTestState | undefined;
 
-function writeJsonl(filePath: string, rows: unknown[]) {
+function writeJsonl(filePath: string, rows: any[]) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, rows.map((row) => JSON.stringify(row)).join("\n") + "\n");
 }

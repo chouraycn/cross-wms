@@ -8,13 +8,13 @@
 type ToolDefinition = {
   name: string;
   description: string;
-  input_schema?: unknown;
+  input_schema?: any;
 };
 
 type ToolCall = {
   toolUseId: string;
   name: string;
-  input: Record<string, unknown>;
+  input: Record<string, any>;
 };
 
 type ToolResult = {
@@ -49,7 +49,7 @@ export function getTranscriptsToolDefinition(): ToolDefinition {
 /** Execute the transcripts tool and return formatted output. */
 export async function executeTranscriptsTool(
   _call: ToolCall,
-  _options?: { sessionManager?: unknown; workspaceDir?: string },
+  _options?: { sessionManager?: any; workspaceDir?: string },
 ): Promise<ToolResult> {
   // Full session infrastructure not available in cross-wms
   return {
@@ -61,7 +61,7 @@ export async function executeTranscriptsTool(
 
 /** List available session transcripts. */
 export async function listAvailableTranscripts(
-  _options?: { sessionManager?: unknown; workspaceDir?: string; limit?: number },
+  _options?: { sessionManager?: any; workspaceDir?: string; limit?: number },
 ): Promise<Array<{ sessionId: string; timestamp?: string; summary?: string }>> {
   // Full session infrastructure not available in cross-wms
   return [];

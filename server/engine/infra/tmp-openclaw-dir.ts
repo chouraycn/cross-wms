@@ -28,7 +28,7 @@ export type ResolvePreferredOpenClawTmpDirOptions = {
   warn?: (message: string) => void;
 };
 
-function isNodeErrorWithCode(err: unknown, code: string): err is MaybeNodeError {
+function isNodeErrorWithCode(err: any, code: string): err is MaybeNodeError {
   return (
     typeof err === "object" &&
     err !== null &&

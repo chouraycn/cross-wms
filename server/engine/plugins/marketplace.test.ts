@@ -32,7 +32,7 @@ let resolveMarketplaceInstallShortcut: typeof import("./marketplace.js").resolve
 const tempOutsideDirs: string[] = [];
 
 vi.mock("./install.js", () => ({
-  installPluginFromPath: (...args: unknown[]) => installPluginFromPathMock(...args),
+  installPluginFromPath: (...args: any[]) => installPluginFromPathMock(...args),
 }));
 
 vi.mock("../infra/net/fetch-guard.js", async (importOriginal) => {
@@ -45,7 +45,7 @@ vi.mock("../infra/net/fetch-guard.js", async (importOriginal) => {
 });
 
 vi.mock("../process/exec.js", () => ({
-  runCommandWithTimeout: (...args: unknown[]) => runCommandWithTimeoutMock(...args),
+  runCommandWithTimeout: (...args: any[]) => runCommandWithTimeoutMock(...args),
 }));
 
 beforeAll(async () => {
@@ -63,7 +63,7 @@ async function listMarketplaceDownloadTempDirs(): Promise<string[]> {
     .toSorted();
 }
 
-async function writeMarketplaceManifest(rootDir: string, manifest: unknown): Promise<string> {
+async function writeMarketplaceManifest(rootDir: string, manifest: any): Promise<string> {
   const manifestPath = path.join(rootDir, ".claude-plugin", "marketplace.json");
   await fs.mkdir(path.dirname(manifestPath), { recursive: true });
   await fs.writeFile(manifestPath, JSON.stringify(manifest));
@@ -72,7 +72,7 @@ async function writeMarketplaceManifest(rootDir: string, manifest: unknown): Pro
 
 async function writeRemoteMarketplaceFixture(params: {
   repoDir: string;
-  manifest: unknown;
+  manifest: any;
   pluginDir?: string;
   pluginFile?: string;
 }) {
@@ -93,7 +93,7 @@ async function writeRemoteMarketplaceFixture(params: {
 
 async function writeLocalMarketplaceFixture(params: {
   rootDir: string;
-  manifest: unknown;
+  manifest: any;
   pluginDir?: string;
 }) {
   if (params.pluginDir) {
@@ -103,7 +103,7 @@ async function writeLocalMarketplaceFixture(params: {
 }
 
 function mockRemoteMarketplaceClone(params: {
-  manifest: unknown;
+  manifest: any;
   pluginDir?: string;
   pluginFile?: string;
 }) {
@@ -121,7 +121,7 @@ function mockRemoteMarketplaceClone(params: {
 }
 
 function mockRemoteMarketplaceCloneWithOutsideSymlink(params: {
-  manifest: unknown;
+  manifest: any;
   symlinkPath: string;
 }) {
   runCommandWithTimeoutMock.mockImplementationOnce(async (argv: string[]) => {
@@ -143,7 +143,7 @@ function mockRemoteMarketplaceCloneWithOutsideSymlink(params: {
   });
 }
 
-async function expectRemoteMarketplaceError(params: { manifest: unknown; expectedError: string }) {
+async function expectRemoteMarketplaceError(params: { manifest: any; expectedError: string }) {
   mockRemoteMarketplaceClone({ manifest: params.manifest });
 
   const result = await listMarketplacePlugins({ marketplace: "owner/repo" });
@@ -155,24 +155,24 @@ async function expectRemoteMarketplaceError(params: { manifest: unknown; expecte
   expect(runCommandWithTimeoutMock).toHaveBeenCalledTimes(1);
 }
 
-function installPluginInput(callIndex = 0): Record<string, unknown> {
+function installPluginInput(callIndex = 0): Record<string, any> {
   const input = installPluginFromPathMock.mock.calls[callIndex]?.[0];
   if (!input || typeof input !== "object") {
     throw new Error(`expected install plugin input ${callIndex}`);
   }
-  return input as Record<string, unknown>;
+  return input as Record<string, any>;
 }
 
-function fetchGuardInput(callIndex = 0): Record<string, unknown> {
+function fetchGuardInput(callIndex = 0): Record<string, any> {
   const input = fetchWithSsrFGuardMock.mock.calls[callIndex]?.[0];
   if (!input || typeof input !== "object") {
     throw new Error(`expected fetch guard input ${callIndex}`);
   }
-  return input as Record<string, unknown>;
+  return input as Record<string, any>;
 }
 
 function expectMarketplaceInstallSuccess(
-  result: unknown,
+  result: any,
   params: {
     pluginId?: string;
     marketplacePlugin?: string;
@@ -182,7 +182,7 @@ function expectMarketplaceInstallSuccess(
   if (!result || typeof result !== "object") {
     throw new Error("expected marketplace install result");
   }
-  const record = result as Record<string, unknown>;
+  const record = result as Record<string, any>;
   expect(record.ok).toBe(true);
   expect(record.pluginId).toBe(params.pluginId ?? "frontend-design");
   if (params.marketplacePlugin) {
@@ -197,14 +197,14 @@ function expectRemoteCloneCommand() {
   expect(runCommandWithTimeoutMock).toHaveBeenCalledTimes(1);
   const [argv, options] = runCommandWithTimeoutMock.mock.calls[0] ?? [];
   expect(Array.isArray(argv)).toBe(true);
-  expect((argv as unknown[]).slice(0, 5)).toEqual([
+  expect((argv as any[]).slice(0, 5)).toEqual([
     "git",
     "clone",
     "--depth",
     "1",
     "https://github.com/owner/repo.git",
   ]);
-  expect(typeof (argv as unknown[])[5]).toBe("string");
+  expect(typeof (argv as any[])[5]).toBe("string");
   expect(options).toEqual({ timeoutMs: 120_000 });
 }
 
@@ -234,7 +234,7 @@ function cancelTrackedResponse(init?: ResponseInit): {
   };
 }
 
-function expectRemoteMarketplaceInstallResult(result: unknown) {
+function expectRemoteMarketplaceInstallResult(result: any) {
   expectRemoteCloneCommand();
   expect(String(installPluginInput().path)).toMatch(/[\\/]repo[\\/]plugins[\\/]frontend-design$/);
   expectMarketplaceInstallSuccess(result, {
@@ -266,7 +266,7 @@ function expectMarketplaceManifestListing(
 }
 
 function expectLocalMarketplaceInstallResult(params: {
-  result: unknown;
+  result: any;
   pluginDir: string;
   marketplaceSource: string;
 }) {
@@ -399,7 +399,7 @@ describe("marketplace plugins", () => {
       if (canonicalPluginDir !== pluginDir) {
         expect(
           installPluginFromPathMock.mock.calls.some(
-            ([input]) => (input as { path?: unknown } | undefined)?.path === canonicalPluginDir,
+            ([input]) => (input as { path?: any } | undefined)?.path === canonicalPluginDir,
           ),
         ).toBe(false);
       }

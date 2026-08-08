@@ -104,18 +104,18 @@ function prependPreviousSummaryForRedistill(params: {
 }
 
 type SessionBranchEntry = {
-  type?: unknown;
-  message?: unknown;
-  customType?: unknown;
-  content?: unknown;
-  display?: unknown;
-  details?: unknown;
-  timestamp?: unknown;
-  summary?: unknown;
-  fromId?: unknown;
+  type?: any;
+  message?: any;
+  customType?: any;
+  content?: any;
+  display?: any;
+  details?: any;
+  timestamp?: any;
+  summary?: any;
+  fromId?: any;
 };
 
-function coerceTimestamp(value: unknown): number {
+function coerceTimestamp(value: any): number {
   if (typeof value === "number" && Number.isFinite(value)) {
     return value;
   }
@@ -128,7 +128,7 @@ function coerceTimestamp(value: unknown): number {
   return 0;
 }
 
-function sessionBranchEntryToMessage(entry: SessionBranchEntry): unknown {
+function sessionBranchEntryToMessage(entry: SessionBranchEntry): any {
   if (entry.type === "message" && entry.message && typeof entry.message === "object") {
     return entry.message;
   }
@@ -153,12 +153,12 @@ function sessionBranchEntryToMessage(entry: SessionBranchEntry): unknown {
   return undefined;
 }
 
-function collectSessionBranchMessages(sessionManager: unknown): AgentMessage[] {
-  const getBranch = (sessionManager as { getBranch?: unknown })?.getBranch;
+function collectSessionBranchMessages(sessionManager: any): AgentMessage[] {
+  const getBranch = (sessionManager as { getBranch?: any })?.getBranch;
   if (typeof getBranch !== "function") {
     return [];
   }
-  let entries: unknown;
+  let entries: any;
   try {
     entries = getBranch.call(sessionManager);
   } catch {
@@ -190,7 +190,7 @@ function containsRealConversation(messages: AgentMessage[]): boolean {
 async function tryProviderSummarize(
   provider: CompactionProvider,
   params: {
-    messages: unknown[];
+    messages: any[];
     signal?: AbortSignal;
     customInstructions?: string;
     summarizationInstructions?: {
@@ -372,19 +372,19 @@ function buildCompactionSummaryHeaders(params: {
   };
 }
 
-function clampNonNegativeInt(value: unknown, fallback: number): number {
+function clampNonNegativeInt(value: any, fallback: number): number {
   const normalized = typeof value === "number" && Number.isFinite(value) ? value : fallback;
   return Math.max(0, Math.floor(normalized));
 }
 
-function resolveRecentTurnsPreserve(value: unknown): number {
+function resolveRecentTurnsPreserve(value: any): number {
   return Math.min(
     MAX_RECENT_TURNS_PRESERVE,
     clampNonNegativeInt(value, DEFAULT_RECENT_TURNS_PRESERVE),
   );
 }
 
-function resolveQualityGuardMaxRetries(value: unknown): number {
+function resolveQualityGuardMaxRetries(value: any): number {
   return Math.min(
     MAX_QUALITY_GUARD_MAX_RETRIES,
     clampNonNegativeInt(value, DEFAULT_QUALITY_GUARD_MAX_RETRIES),
@@ -402,11 +402,11 @@ function truncateFailureText(text: string, maxChars: number): string {
   return `${text.slice(0, Math.max(0, maxChars - 3))}...`;
 }
 
-function formatToolFailureMeta(details: unknown): string | undefined {
+function formatToolFailureMeta(details: any): string | undefined {
   if (!details || typeof details !== "object") {
     return undefined;
   }
-  const record = details as Record<string, unknown>;
+  const record = details as Record<string, any>;
   const status = typeof record.status === "string" ? record.status : undefined;
   const exitCode =
     typeof record.exitCode === "number" && Number.isFinite(record.exitCode)
@@ -422,7 +422,7 @@ function formatToolFailureMeta(details: unknown): string | undefined {
   return parts.length > 0 ? parts.join(" ") : undefined;
 }
 
-function extractToolResultText(content: unknown): string {
+function extractToolResultText(content: any): string {
   return collectTextContentBlocks(content).join("\n");
 }
 
@@ -434,16 +434,16 @@ function collectToolFailures(messages: AgentMessage[]): ToolFailure[] {
     if (!message || typeof message !== "object") {
       continue;
     }
-    const role = (message as { role?: unknown }).role;
+    const role = (message as { role?: any }).role;
     if (role !== "toolResult") {
       continue;
     }
     const toolResult = message as {
-      toolCallId?: unknown;
-      toolName?: unknown;
-      content?: unknown;
-      details?: unknown;
-      isError?: unknown;
+      toolCallId?: any;
+      toolName?: any;
+      content?: any;
+      details?: any;
+      isError?: any;
     };
     if (toolResult.isError !== true) {
       continue;
@@ -594,7 +594,7 @@ function resolveSummaryReserveTokens(
 }
 
 function extractMessageText(message: AgentMessage): string {
-  const content = (message as { content?: unknown }).content;
+  const content = (message as { content?: any }).content;
   if (typeof content === "string") {
     return content.trim();
   }
@@ -606,7 +606,7 @@ function extractMessageText(message: AgentMessage): string {
     if (!block || typeof block !== "object") {
       continue;
     }
-    const text = (block as { text?: unknown }).text;
+    const text = (block as { text?: any }).text;
     if (typeof text === "string" && text.trim().length > 0) {
       parts.push(text.trim());
     }
@@ -614,7 +614,7 @@ function extractMessageText(message: AgentMessage): string {
   return parts.join("\n").trim();
 }
 
-function formatNonTextPlaceholder(content: unknown): string | null {
+function formatNonTextPlaceholder(content: any): string | null {
   if (content === null || content === undefined) {
     return null;
   }
@@ -629,7 +629,7 @@ function formatNonTextPlaceholder(content: unknown): string | null {
     if (!block || typeof block !== "object") {
       continue;
     }
-    const typeRaw = (block as { type?: unknown }).type;
+    const typeRaw = (block as { type?: any }).type;
     const type = typeof typeRaw === "string" && typeRaw.trim().length > 0 ? typeRaw : "unknown";
     if (type === "text") {
       continue;
@@ -659,7 +659,7 @@ function splitPreservedRecentTurns(params: {
   const conversationIndexes: number[] = [];
   const userIndexes: number[] = [];
   for (let i = 0; i < params.messages.length; i += 1) {
-    const role = (params.messages[i] as { role?: unknown }).role;
+    const role = (params.messages[i] as { role?: any }).role;
     if (role === "user" || role === "assistant") {
       conversationIndexes.push(i);
       if (role === "user") {
@@ -742,7 +742,7 @@ function splitPreservedRecentTurns(params: {
   const preservedMessages = params.messages
     .filter((_, idx) => preservedIndexSet.has(idx))
     .filter((msg) => {
-      const role = (msg as { role?: unknown }).role;
+      const role = (msg as { role?: any }).role;
       return role === "user" || role === "assistant" || role === "toolResult";
     });
   return { summarizableMessages: repairedSummarizableMessages, preservedMessages };
@@ -757,7 +757,7 @@ function formatContextMessages(messages: AgentMessage[]): string[] {
       } else if (message.role === "user") {
         roleLabel = "User";
       } else if (message.role === "toolResult") {
-        const toolName = (message as { toolName?: unknown }).toolName;
+        const toolName = (message as { toolName?: any }).toolName;
         const safeToolName = typeof toolName === "string" && toolName.trim() ? toolName : "tool";
         roleLabel = `Tool result (${safeToolName})`;
       } else {
@@ -765,7 +765,7 @@ function formatContextMessages(messages: AgentMessage[]): string[] {
       }
       const text = extractMessageText(message);
       const nonTextPlaceholder = formatNonTextPlaceholder(
-        (message as { content?: unknown }).content,
+        (message as { content?: any }).content,
       );
       const rendered =
         text && nonTextPlaceholder ? `${text}\n${nonTextPlaceholder}` : text || nonTextPlaceholder;

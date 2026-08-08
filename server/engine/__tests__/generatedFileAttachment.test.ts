@@ -107,7 +107,7 @@ describe('extractGeneratedFileFromToolResult', () => {
       fileSize: 1,
       sessionId: 's',
       downloadUrl: '/api/file/generated/s/x.json',
-    } as Record<string, unknown>);
+    } as Record<string, any>);
     expect(result?.fileName).toBe('x.json');
   });
 

@@ -16,7 +16,7 @@ type PassiveChannelStatusSnapshot = {
   lastStartAt?: number | null;
   lastStopAt?: number | null;
   lastError?: string | null;
-  probe?: unknown;
+  probe?: any;
   lastProbeAt?: number | null;
 };
 
@@ -129,14 +129,14 @@ export function requireChannelOpenAllowFrom(params: {
 
 /** Extracts a fixed set of fields from unknown status issue payloads without trusting shape. */
 export function readStatusIssueFields<TField extends string>(
-  value: unknown,
+  value: any,
   fields: readonly TField[],
-): Record<TField, unknown> | null {
+): Record<TField, any> | null {
   if (!value || typeof value !== "object") {
     return null;
   }
-  const record = value as Record<string, unknown>;
-  const result = {} as Record<TField, unknown>;
+  const record = value as Record<string, any>;
+  const result = {} as Record<TField, any>;
   for (const field of fields) {
     result[field] = record[field];
   }
@@ -144,14 +144,14 @@ export function readStatusIssueFields<TField extends string>(
 }
 
 /** Converts string or numeric account identifiers from status issue payloads to strings. */
-export function coerceStatusIssueAccountId(value: unknown): string | undefined {
+export function coerceStatusIssueAccountId(value: any): string | undefined {
   return typeof value === "string" ? value : typeof value === "number" ? String(value) : undefined;
 }
 
 /** Creates a promise with externally controlled resolve/reject hooks for async handoff code. */
 export function createDeferred<T>() {
   let resolve!: (value: T | PromiseLike<T>) => void;
-  let reject!: (reason?: unknown) => void;
+  let reject!: (reason?: any) => void;
   const promise = new Promise<T>((res, rej) => {
     resolve = res;
     reject = rej;
@@ -199,7 +199,7 @@ export function formatPluginConfigIssue(
 
 /** Keeps only string/number path segments so config issue paths stay JSON-safe. */
 export function normalizePluginConfigIssuePath(
-  path: readonly unknown[],
+  path: readonly any[],
 ): PluginConfigIssuePathSegment[] {
   return path.filter((segment): segment is PluginConfigIssuePathSegment => {
     const kind = typeof segment;
@@ -243,7 +243,7 @@ export function readPluginPackageVersion(params: {
 }): string {
   for (const candidate of params.candidates ?? DEFAULT_PACKAGE_JSON_VERSION_CANDIDATES) {
     try {
-      const version = (params.require(candidate) as { version?: unknown }).version;
+      const version = (params.require(candidate) as { version?: any }).version;
       if (typeof version === "string" && version.trim().length > 0) {
         return version;
       }
@@ -260,7 +260,7 @@ export function readPluginPackageVersion(params: {
  * through `onError` and otherwise degrade to no agent.
  */
 export async function resolveAmbientNodeProxyAgent<TAgent>(params?: {
-  onError?: (error: unknown) => void;
+  onError?: (error: any) => void;
   onUsingProxy?: () => void;
   protocol?: "http" | "https";
 }): Promise<TAgent | undefined> {

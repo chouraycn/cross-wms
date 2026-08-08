@@ -68,7 +68,7 @@ export class ExecApprovalStore {
     approval.approver = approver;
     approval.reason = reason ?? approval.reason;
     
-    logger.info(`[ApprovalStore] Approved ${id} by ${approver ?? 'unknown'}`);
+    logger.info(`[ApprovalStore] Approved ${id} by ${approver ?? 'any'}`);
     return approval;
   }
 
@@ -81,7 +81,7 @@ export class ExecApprovalStore {
     approval.approver = approver;
     approval.reason = reason ?? approval.reason;
     
-    logger.info(`[ApprovalStore] Rejected ${id} by ${approver ?? 'unknown'}`);
+    logger.info(`[ApprovalStore] Rejected ${id} by ${approver ?? 'any'}`);
     return approval;
   }
 

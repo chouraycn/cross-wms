@@ -6,9 +6,9 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function hasOnlyAssistantReasoningContent(..._args: unknown[]): unknown {
+export function hasOnlyAssistantReasoningContent(..._args: any[]): any {
   return false;
 }
-export function isReasoningOnlyLengthAssistantTurn(..._args: unknown[]): unknown {
+export function isReasoningOnlyLengthAssistantTurn(..._args: any[]): any {
   return false;
 }

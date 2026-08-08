@@ -11,7 +11,7 @@ type MockRegistryToolEntry = {
   source: string;
   names: string[];
   declaredNames?: string[];
-  factory: (ctx: unknown) => unknown;
+  factory: (ctx: any) => unknown;
 };
 
 const loadOpenClawPluginsMock = vi.fn();
@@ -19,15 +19,15 @@ const resolveRuntimePluginRegistryMock = vi.fn();
 const applyPluginAutoEnableMock = vi.fn();
 
 vi.mock("./loader.js", () => ({
-  loadOpenClawPlugins: (params: unknown) => loadOpenClawPluginsMock(params),
-  resolveCompatibleRuntimePluginRegistry: (params: unknown) =>
+  loadOpenClawPlugins: (params: any) => loadOpenClawPluginsMock(params),
+  resolveCompatibleRuntimePluginRegistry: (params: any) =>
     resolveRuntimePluginRegistryMock(params),
-  resolvePluginRegistryLoadCacheKey: (params: unknown) => JSON.stringify(params),
-  resolveRuntimePluginRegistry: (params: unknown) => resolveRuntimePluginRegistryMock(params),
+  resolvePluginRegistryLoadCacheKey: (params: any) => JSON.stringify(params),
+  resolveRuntimePluginRegistry: (params: any) => resolveRuntimePluginRegistryMock(params),
 }));
 
 vi.mock("../config/plugin-auto-enable.js", () => ({
-  applyPluginAutoEnable: (params: unknown) => applyPluginAutoEnableMock(params),
+  applyPluginAutoEnable: (params: any) => applyPluginAutoEnableMock(params),
 }));
 
 let resolvePluginTools: typeof import("./tools.js").resolvePluginTools;
@@ -70,7 +70,7 @@ function createContext() {
 }
 
 function createResolveToolsParams(params?: {
-  context?: ReturnType<typeof createContext> & Record<string, unknown>;
+  context?: ReturnType<typeof createContext> & Record<string, any>;
   toolAllowlist?: readonly string[];
   toolDenylist?: readonly string[];
   existingToolNames?: Set<string>;
@@ -175,7 +175,7 @@ function installConsoleMethodSpy(method: "log" | "warn") {
   return spy;
 }
 
-function requireConsoleMessage(spy: { mock: { calls: unknown[][] } }, index = 0): string {
+function requireConsoleMessage(spy: { mock: { calls: any[][] } }, index = 0): string {
   const call = spy.mock.calls[index];
   if (!call) {
     throw new Error(`expected console call ${index}`);
@@ -218,7 +218,7 @@ function createAutoEnabledOptionalContext() {
   return { rawContext, autoEnabledConfig };
 }
 
-function expectAutoEnabledOptionalLoad(autoEnabledConfig: unknown) {
+function expectAutoEnabledOptionalLoad(autoEnabledConfig: any) {
   expectLoaderCall({ config: autoEnabledConfig });
 }
 
@@ -279,7 +279,7 @@ function installToolManifestSnapshot(params: {
   config: ReturnType<typeof createContext>["config"];
   compatibleConfigs?: ReturnType<typeof createContext>["config"][];
   env?: NodeJS.ProcessEnv;
-  plugin: Record<string, unknown>;
+  plugin: Record<string, any>;
 }) {
   installToolManifestSnapshots({
     config: params.config,
@@ -293,7 +293,7 @@ function installToolManifestSnapshots(params: {
   config: ReturnType<typeof createContext>["config"];
   compatibleConfigs?: ReturnType<typeof createContext>["config"][];
   env?: NodeJS.ProcessEnv;
-  plugins: Record<string, unknown>[];
+  plugins: Record<string, any>[];
 }) {
   const plugins = params.plugins;
   setCurrentPluginMetadataSnapshot(
@@ -421,20 +421,20 @@ function expectResolvedToolNames(
   expect(tools.map((tool) => tool.name)).toEqual(expectedToolNames);
 }
 
-function expectLoaderCall(overrides: Record<string, unknown>) {
+function expectLoaderCall(overrides: Record<string, any>) {
   void overrides;
   expect(loadOpenClawPluginsMock).not.toHaveBeenCalled();
 }
 
 function mockCallParams(
-  mock: { mock: { calls: unknown[][] } },
+  mock: { mock: { calls: any[][] } },
   index = 0,
-): Record<string, unknown> {
+): Record<string, any> {
   const call = mock.mock.calls[index];
   if (!call) {
     throw new Error(`expected mock call ${index}`);
   }
-  return call[0] as Record<string, unknown>;
+  return call[0] as Record<string, any>;
 }
 
 function expectLoaderSelectedOnlyPluginIds(expectedPluginIds: readonly string[]) {
@@ -497,7 +497,7 @@ describe("resolvePluginTools optional tools", () => {
       loadOpenClawPluginsMock(params),
     );
     applyPluginAutoEnableMock.mockReset();
-    applyPluginAutoEnableMock.mockImplementation(({ config }: { config: unknown }) => ({
+    applyPluginAutoEnableMock.mockImplementation(({ config }: { config: any }) => ({
       config,
       changes: [],
     }));
@@ -541,7 +541,7 @@ describe("resolvePluginTools optional tools", () => {
             name: `${pluginId}_tool`,
             description: `${pluginId} tool`,
             parameters: { type: "object", properties: {} },
-            prepareArguments(args: unknown) {
+            prepareArguments(args: any) {
               const prepareScope = getPluginRuntimeGatewayRequestScope();
               observed.push({
                 phase: "prepare",
@@ -685,7 +685,7 @@ describe("resolvePluginTools optional tools", () => {
         return this.#parameters;
       }
 
-      prepareArguments(args: unknown) {
+      prepareArguments(args: any) {
         observed.push({
           phase: "prepare",
           pluginId: getPluginRuntimeGatewayRequestScope()?.pluginId,
@@ -1075,10 +1075,10 @@ describe("resolvePluginTools optional tools", () => {
 
     expectResolvedToolNames(tools, ["other_tool", "optional_tool"]);
     const loaderParams = mockCallParams(loadOpenClawPluginsMock) as {
-      activate?: unknown;
-      cache?: unknown;
-      onlyPluginIds?: unknown;
-      toolDiscovery?: unknown;
+      activate?: any;
+      cache?: any;
+      onlyPluginIds?: any;
+      toolDiscovery?: any;
     };
     expect(loaderParams.activate).toBe(false);
     expect(loaderParams.cache).toBe(false);
@@ -2023,7 +2023,7 @@ describe("resolvePluginTools optional tools", () => {
   });
 
   it("caches plugin tool descriptors and uses the runtime only on execution", async () => {
-    const factory = vi.fn((rawCtx: unknown) => {
+    const factory = vi.fn((rawCtx: any) => {
       const ctx = rawCtx as { sessionId?: string };
       return {
         ...makeTool("cached_tool"),
@@ -2099,7 +2099,7 @@ describe("resolvePluginTools optional tools", () => {
   });
 
   it("reuses cached plugin tool descriptors across session identity changes", async () => {
-    const factory = vi.fn((rawCtx: unknown) => {
+    const factory = vi.fn((rawCtx: any) => {
       const ctx = rawCtx as { sessionId?: string };
       return {
         ...makeTool("cached_session_tool"),
@@ -2148,7 +2148,7 @@ describe("resolvePluginTools optional tools", () => {
   });
 
   it("does not reuse cached plugin tool descriptors across sandbox context changes", () => {
-    const factory = vi.fn((rawCtx: unknown) => {
+    const factory = vi.fn((rawCtx: any) => {
       const ctx = rawCtx as { sandboxed?: boolean };
       return ctx.sandboxed ? null : makeTool("sandbox_sensitive_tool");
     });
@@ -2345,8 +2345,8 @@ describe("resolvePluginTools optional tools", () => {
     const { rawContext, autoEnabledConfig, tools } = resolveAutoEnabledOptionalDemoTools();
 
     const autoEnableParams = mockCallParams(applyPluginAutoEnableMock) as {
-      config?: { plugins?: { allow?: unknown; load?: unknown } };
-      env?: unknown;
+      config?: { plugins?: { allow?: any; load?: any } };
+      env?: any;
     };
     expect(autoEnableParams.config?.plugins?.allow).toEqual(rawContext.config.plugins?.allow);
     expect(autoEnableParams.config?.plugins?.load).toEqual(rawContext.config.plugins?.load);
@@ -2648,9 +2648,9 @@ describe("resolvePluginTools optional tools", () => {
     expectResolvedToolNames(tools, ["memory_search", "memory_get"]);
     expect(memorySearchFactory).toHaveBeenCalledTimes(1);
     const loaderParams = mockCallParams(loadOpenClawPluginsMock) as {
-      activate?: unknown;
-      onlyPluginIds?: unknown;
-      toolDiscovery?: unknown;
+      activate?: any;
+      onlyPluginIds?: any;
+      toolDiscovery?: any;
     };
     expect(loaderParams.activate).toBe(false);
     expect(loaderParams.onlyPluginIds).toEqual(["memory-core"]);
@@ -2709,13 +2709,13 @@ describe("resolvePluginTools optional tools", () => {
     });
     const runtimeRegistryParams = mockCallParams(resolveRuntimePluginRegistryMock) as {
       onlyPluginIds?: string[];
-      toolDiscovery?: unknown;
+      toolDiscovery?: any;
     };
     expect(runtimeRegistryParams.onlyPluginIds).toContain("tavily");
     expect(runtimeRegistryParams.toolDiscovery).toBe(true);
     const loaderParams = mockCallParams(loadOpenClawPluginsMock) as {
       onlyPluginIds?: string[];
-      toolDiscovery?: unknown;
+      toolDiscovery?: any;
     };
     expect(loaderParams.onlyPluginIds).toContain("tavily");
     expect(loaderParams.toolDiscovery).toBe(true);

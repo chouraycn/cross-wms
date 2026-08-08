@@ -80,7 +80,7 @@ export interface SSEDoneEvent {
 /** debug 事件 — 可选调试事件（合并原 ReAct 内部事件） */
 export interface SSEDebugEvent {
   type: string; // 原始事件类型（如 react_phase, complexity_assessment 等）
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 /**
@@ -216,7 +216,7 @@ export function isToolStabilityEventType(type: string): boolean {
  * 通过 sendSSE 写入，前端可订阅这些事件类型以展示重试/超时/降级等反馈
  */
 export function sendToolStabilitySSE(res: Response, event: ToolStabilitySSEEvent): void {
-  sendSSE(res, event as unknown as Record<string, unknown>);
+  sendSSE(res, event as unknown as Record<string, any>);
 }
 
 /** 核心事件类型 */
@@ -237,7 +237,7 @@ export function isCoreEventType(type: string): boolean {
  *
  * 所有 SSE 写入必须使用此函数，禁止裸 res.write()。
  */
-export function sendSSE(res: Response, event: Record<string, unknown>): void {
+export function sendSSE(res: Response, event: Record<string, any>): void {
   if (!res.writableEnded) {
     try {
       res.write(`data: ${JSON.stringify(event)}\n\n`);
@@ -263,8 +263,8 @@ const LONG_DEBUG_FIELDS = new Set(['toolArgs', 'args', 'result', 'content', 'mes
  * 调试事件脱敏 — 防止密钥/Token/内部路径经 sendDebugSSE 泄露到前端 SSE。
  * 仅当字段名命中敏感词时整字段遮蔽；绝对路径打码；超长字段截断。
  */
-function sanitizeForDebug(event: Record<string, unknown>): Record<string, unknown> {
-  const out: Record<string, unknown> = {};
+function sanitizeForDebug(event: Record<string, any>): Record<string, any> {
+  const out: Record<string, any> = {};
   for (const [k, v] of Object.entries(event)) {
     if (typeof v === 'string') {
       if (SENSITIVE_KEY_RE.test(k)) {
@@ -288,7 +288,7 @@ function sanitizeForDebug(event: Record<string, unknown>): Record<string, unknow
   return out;
 }
 
-export function sendDebugSSE(res: Response, event: Record<string, unknown>, sessionId?: string): void {
+export function sendDebugSSE(res: Response, event: Record<string, any>, sessionId?: string): void {
   // LOG_DEBUG=1 时发送调试事件，否则静默跳过
   if (process.env.LOG_DEBUG !== '1') return;
   if (!res.writableEnded) {
@@ -314,7 +314,7 @@ export async function sendDoneAndEnd(
     errorCode?: string | null;
     errorMessage?: string | null;
     thinkingDuration?: number;
-    usage?: unknown;
+    usage?: any;
     fallbackModel?: string;
     fallbackReason?: string;
   } = {},
@@ -572,7 +572,7 @@ export function isKnownEventType(type: string): boolean {
  * 与 sendSSE 相同的写入逻辑，但带类型提示。
  */
 export function sendFineGrainedSSE(res: Response, event: FineGrainedSSEEvent): void {
-  sendSSE(res, event as unknown as Record<string, unknown>);
+  sendSSE(res, event as unknown as Record<string, any>);
 }
 
 /**

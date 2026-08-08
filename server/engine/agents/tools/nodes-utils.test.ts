@@ -6,7 +6,7 @@ const gatewayMocks = vi.hoisted(() => ({
   callGatewayTool: vi.fn(),
 }));
 vi.mock("./gateway.js", () => ({
-  callGatewayTool: (...args: unknown[]) => gatewayMocks.callGatewayTool(...args),
+  callGatewayTool: (...args: any[]) => gatewayMocks.callGatewayTool(...args),
 }));
 
 import type { NodeListNode } from "./nodes-utils.js";

@@ -11,7 +11,7 @@ export type InboundMessage = {
   timestamp?: number;
   chatType?: 'direct' | 'group' | 'channel';
   isFromMe?: boolean;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 export type InboundProcessOptions = {

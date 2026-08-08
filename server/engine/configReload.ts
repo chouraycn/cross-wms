@@ -30,18 +30,18 @@ export interface ConfigReloadResult {
 }
 
 export interface ConfigValidator {
-  validate(config: Record<string, unknown>): string | null;
+  validate(config: Record<string, any>): string | null;
   name: string;
 }
 
 const VALIDATORS: ConfigValidator[] = [];
 
-let currentConfig: Record<string, unknown> = {};
+let currentConfig: Record<string, any> = {};
 let reloadStatus: ConfigReloadStatus = 'idle';
 let configFilePath: string | undefined;
 let watcher: fs.FSWatcher | undefined;
 
-function calculateConfigDiff(oldConfig: Record<string, unknown>, newConfig: Record<string, unknown>): ConfigDiff {
+function calculateConfigDiff(oldConfig: Record<string, any>, newConfig: Record<string, any>): ConfigDiff {
   const oldKeys = new Set(Object.keys(oldConfig));
   const newKeys = new Set(Object.keys(newConfig));
 
@@ -70,7 +70,7 @@ function calculateConfigDiff(oldConfig: Record<string, unknown>, newConfig: Reco
   return { added, removed, changed };
 }
 
-function validateConfig(config: Record<string, unknown>): string | null {
+function validateConfig(config: Record<string, any>): string | null {
   for (const validator of VALIDATORS) {
     const error = validator.validate(config);
     if (error) {
@@ -80,10 +80,10 @@ function validateConfig(config: Record<string, unknown>): string | null {
   return null;
 }
 
-function loadConfigFile(filePath: string): Record<string, unknown> | null {
+function loadConfigFile(filePath: string): Record<string, any> | null {
   try {
     const content = fs.readFileSync(filePath, 'utf-8');
-    return JSON.parse(content) as Record<string, unknown>;
+    return JSON.parse(content) as Record<string, any>;
   } catch (err) {
     logger.error(`[ConfigReload] 加载配置文件失败: ${filePath}`, err);
     return null;
@@ -100,16 +100,16 @@ export function registerConfigValidator(validator: ConfigValidator): void {
   logger.debug(`[ConfigReload] 注册配置验证器: ${validator.name}`);
 }
 
-export function getCurrentConfig(): Record<string, unknown> {
+export function getCurrentConfig(): Record<string, any> {
   return { ...currentConfig };
 }
 
-export function setCurrentConfig(config: Record<string, unknown>): void {
+export function setCurrentConfig(config: Record<string, any>): void {
   currentConfig = config;
   logger.debug('[ConfigReload] 设置当前配置');
 }
 
-export async function reloadConfig(newConfig?: Record<string, unknown>): Promise<ConfigReloadResult> {
+export async function reloadConfig(newConfig?: Record<string, any>): Promise<ConfigReloadResult> {
   reloadStatus = 'pending';
 
   try {

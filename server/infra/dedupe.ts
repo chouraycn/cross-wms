@@ -195,7 +195,7 @@ const GLOBAL_DEDUPE_CACHE_KEY = Symbol.for('openclaw-dedupe-cache');
  * 全局去重缓存宿主类型：扩展 Global 以挂载缓存实例。
  */
 interface DedupeCacheGlobal {
-  [GLOBAL_DEDUPE_CACHE_KEY]?: DedupeCache<unknown>;
+  [GLOBAL_DEDUPE_CACHE_KEY]?: DedupeCache<any>;
 }
 
 /**
@@ -206,10 +206,10 @@ interface DedupeCacheGlobal {
  *
  * @returns 全局共享的去重缓存实例
  */
-export function resolveGlobalDedupeCache(): DedupeCache<unknown> {
+export function resolveGlobalDedupeCache(): DedupeCache<any> {
   const globalObj = globalThis as unknown as DedupeCacheGlobal;
   if (!globalObj[GLOBAL_DEDUPE_CACHE_KEY]) {
-    globalObj[GLOBAL_DEDUPE_CACHE_KEY] = createDedupeCache<unknown>();
+    globalObj[GLOBAL_DEDUPE_CACHE_KEY] = createDedupeCache<any>();
   }
   return globalObj[GLOBAL_DEDUPE_CACHE_KEY]!;
 }

@@ -251,12 +251,12 @@ describe("before_agent_run hook", () => {
   });
 
   it("receives the correct event payload", async () => {
-    let receivedEvent: unknown;
+    let receivedEvent: any;
     const registry = makeRegistry([
       {
         pluginId: "test",
         hookName: "before_agent_run",
-        handler: async (event: unknown) => {
+        handler: async (event: any) => {
           receivedEvent = event;
           return { outcome: "pass" as const };
         },
@@ -273,7 +273,7 @@ describe("before_agent_run hook", () => {
       },
       ctx,
     );
-    const event = receivedEvent as Record<string, unknown>;
+    const event = receivedEvent as Record<string, any>;
     expect(event.prompt).toBe("hello world");
     expect(event.channelId).toBe("discord");
     expect(event.senderId).toBe("user-123");
@@ -418,12 +418,12 @@ describe("before_agent_start hook default timeout (#48534)", () => {
 
 describe("before_tool_call channelId forwarding", () => {
   it("passes channelId through to before_tool_call handlers", async () => {
-    let receivedCtx: unknown;
+    let receivedCtx: any;
     const registry = makeRegistry([
       {
         pluginId: "test",
         hookName: "before_tool_call",
-        handler: async (eventValue: unknown, ctxLocal: unknown) => {
+        handler: async (eventValue: any, ctxLocal: any) => {
           receivedCtx = ctxLocal;
           return undefined;
         },

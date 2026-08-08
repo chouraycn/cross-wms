@@ -21,7 +21,7 @@ export interface MessageState {
   maxRetries: number;
   channel?: string;
   recipient?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 /** 生命周期统计 */
@@ -44,7 +44,7 @@ export interface StateTransition {
   timestamp: number;
   reason?: string;
   actor?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 /** 重试队列统计 */

@@ -10,7 +10,7 @@ export type ReadByteStreamWithLimitOptions = {
   onOverflow?: (params: ByteStreamLimitOverflow) => Error;
 };
 
-function normalizeByteChunk(chunk: unknown): Buffer {
+function normalizeByteChunk(chunk: any): Buffer {
   if (Buffer.isBuffer(chunk)) {
     return chunk;
   }
@@ -26,10 +26,10 @@ function normalizeByteChunk(chunk: unknown): Buffer {
   throw new TypeError(`Unsupported byte stream chunk: ${typeof chunk}`);
 }
 
-function destroyReadableOnOverflow(stream: unknown, err: Error): void {
+function destroyReadableOnOverflow(stream: any, err: Error): void {
   const readable = stream as {
     destroy?: (error?: Error) => unknown;
-    cancel?: (reason?: unknown) => unknown;
+    cancel?: (reason?: any) => unknown;
   };
   // Stop upstream producers immediately after overflow; otherwise large media
   // streams can continue buffering after the caller has already failed.
@@ -48,7 +48,7 @@ function destroyReadableOnOverflow(stream: unknown, err: Error): void {
 
 /** Reads and concatenates an async byte stream, throwing once the byte cap is exceeded. */
 export async function readByteStreamWithLimit(
-  stream: AsyncIterable<unknown>,
+  stream: AsyncIterable<any>,
   opts: ReadByteStreamWithLimitOptions,
 ): Promise<Buffer> {
   const { maxBytes } = opts;

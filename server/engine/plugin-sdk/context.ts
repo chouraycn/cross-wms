@@ -21,7 +21,7 @@ export interface CreatePluginContextOptions {
   /** 插件 manifest（用于权限检查、配置 schema） */
   manifest: import('../plugins/types.js').PluginManifest;
   /** 已合并的配置 */
-  config?: Record<string, unknown>;
+  config?: Record<string, any>;
   /** 权限检查回调（默认使用 plugins/permissions.ts 的 checkPluginPermission） */
   hasPermission?: (permission: import('../plugins/permissions.js').PluginPermission) => boolean;
   /** 自定义存储后端（默认使用内存 Map） */
@@ -49,13 +49,13 @@ export function createPluginLogger(pluginId: string): PluginLogger {
  * 创建按插件 ID 命名空间隔离的内存存储。
  */
 export function createPluginStorage(pluginId: string): PluginStorage {
-  const store = new Map<string, unknown>();
+  const store = new Map<string, any>();
   return {
     async get<T = unknown>(key: string): Promise<T | undefined> {
       const namespaced = `${pluginId}:${key}`;
       return store.get(namespaced) as T | undefined;
     },
-    async set(key: string, value: unknown): Promise<void> {
+    async set(key: string, value: any): Promise<void> {
       const namespaced = `${pluginId}:${key}`;
       store.set(namespaced, value);
     },
@@ -76,7 +76,7 @@ export function createPluginStorage(pluginId: string): PluginStorage {
  * 创建本地事件总线（不跨插件）。
  */
 export function createPluginEventBus(pluginId: string): PluginEventBus {
-  const listeners = new Map<string, Set<(payload: unknown) => void>>();
+  const listeners = new Map<string, Set<(payload: any) => void>>();
   return {
     emit(event, payload) {
       const set = listeners.get(event);
@@ -110,12 +110,12 @@ export function createPluginEventBus(pluginId: string): PluginEventBus {
 /**
  * 创建配置访问器（只读视图）。
  */
-export function createPluginConfigAccessor(config: Record<string, unknown>): PluginConfigAccessor {
+export function createPluginConfigAccessor(config: Record<string, any>): PluginConfigAccessor {
   return {
     get<T = unknown>(key: string): T | undefined {
       return config[key] as T | undefined;
     },
-    getAll(): Record<string, unknown> {
+    getAll(): Record<string, any> {
       return { ...config };
     },
   };
@@ -159,7 +159,7 @@ export function createNoopPluginContext(pluginId: string): PluginContext {
     logger: { debug: noop, info: noop, warn: noop, error: noop },
     storage: {
       get: noopAsync as <T = unknown>(key: string) => Promise<T | undefined>,
-      set: noopAsync as (key: string, value: unknown) => Promise<void>,
+      set: noopAsync as (key: string, value: any) => Promise<void>,
       delete: noopAsync as (key: string) => Promise<void>,
       keys: (async () => []) as () => Promise<string[]>,
     },

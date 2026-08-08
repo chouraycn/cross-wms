@@ -27,7 +27,7 @@ const { makeStorePath } = createCronStoreHarness({
   prefix: "openclaw-cron-runs-one-shot-",
 });
 
-function expectCronRunSessionKey(value: unknown, jobId: string) {
+function expectCronRunSessionKey(value: any, jobId: string) {
   expect(value).toMatch(new RegExp(`^agent:main:cron:${jobId}:run:\\d+$`));
 }
 
@@ -115,7 +115,7 @@ async function createCronHarness(options: CronHarnessOptions = {}) {
     ...(options.runHeartbeatOnce ? { runHeartbeatOnce: options.runHeartbeatOnce } : {}),
     runIsolatedAgentJob:
       options.runIsolatedAgentJob ??
-      (vi.fn(async (_params: { job: unknown; message: string }) => ({
+      (vi.fn(async (_params: { job: any; message: string }) => ({
         status: "ok",
       })) as unknown as CronServiceDeps["runIsolatedAgentJob"]),
     ...(events ? { onEvent: events.onEvent } : {}),
@@ -241,7 +241,7 @@ function expectMainSystemEventPosted(
   if (!matchingCall) {
     throw new Error(`missing system event ${params.text}`);
   }
-  const options = matchingCall[1] as Record<string, unknown>;
+  const options = matchingCall[1] as Record<string, any>;
   expect(options).toMatchObject({
     agentId: undefined,
     contextKey: `cron:${params.jobId}`,
@@ -253,7 +253,7 @@ function expectQueuedCronHeartbeat(
   requestHeartbeat: ReturnType<typeof vi.fn>,
   params: { jobId: string },
 ) {
-  const request = requestHeartbeat.mock.calls[0]?.[0] as Record<string, unknown> | undefined;
+  const request = requestHeartbeat.mock.calls[0]?.[0] as Record<string, any> | undefined;
   expect(request).toMatchObject({
     source: "cron",
     intent: "immediate",
@@ -669,7 +669,7 @@ describe("CronService", () => {
 
     const cron = createStartedCronService(
       store.storePath,
-      vi.fn(async (_params: { job: unknown; message: string }) => ({
+      vi.fn(async (_params: { job: any; message: string }) => ({
         status: "ok" as const,
       })) as unknown as CronServiceDeps["runIsolatedAgentJob"],
     );

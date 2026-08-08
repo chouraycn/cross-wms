@@ -22,7 +22,7 @@ function hashString(value: string): string {
 }
 
 /** Hashes JSON-serializable data with SHA-256. */
-export function hashJson(value: unknown): string {
+export function hashJson(value: any): string {
   return hashString(JSON.stringify(value));
 }
 

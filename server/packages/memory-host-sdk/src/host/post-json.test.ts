@@ -9,7 +9,7 @@ vi.mock("./remote-http.js", () => ({
 
 const remoteHttpMock = vi.mocked(withRemoteHttpResponse);
 
-function jsonResponse(payload: unknown, status = 200): Response {
+function jsonResponse(payload: any, status = 200): Response {
   return new Response(JSON.stringify(payload), { status });
 }
 
@@ -124,7 +124,7 @@ describe("postJson", () => {
       return await params.onResponse(textResponse("bad gateway", 502));
     });
 
-    let error: unknown;
+    let error: any;
     try {
       await postJson({
         url: "https://memory.example/v1/post",
@@ -140,7 +140,7 @@ describe("postJson", () => {
 
     expect(error).toBeInstanceOf(Error);
     expect((error as Error).message).toBe("post failed: 502 bad gateway");
-    expect((error as { status?: unknown }).status).toBe(502);
+    expect((error as { status?: any }).status).toBe(502);
   });
 
   it("bounds non-ok response bodies before formatting the error", async () => {

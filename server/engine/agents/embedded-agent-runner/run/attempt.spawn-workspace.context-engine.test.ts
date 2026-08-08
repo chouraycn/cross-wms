@@ -47,8 +47,8 @@ const doneMessage = { role: "assistant", content: "done", timestamp: 2 } as unkn
 beforeAll(async () => {
   await preloadRunEmbeddedAttemptForTests();
 });
-type AfterTurnPromptCacheCall = { runtimeContext?: { promptCache?: Record<string, unknown> } };
-type TrajectoryEvent = { type?: string; data?: Record<string, unknown> };
+type AfterTurnPromptCacheCall = { runtimeContext?: { promptCache?: Record<string, any> } };
+type TrajectoryEvent = { type?: string; data?: Record<string, any> };
 type ToolResultGuardInstallParams = {
   midTurnPrecheck?: {
     onMidTurnPrecheck?: (request: MidTurnPrecheckRequest) => void;
@@ -56,20 +56,20 @@ type ToolResultGuardInstallParams = {
 };
 type MockCallSource = {
   mock: {
-    calls: ArrayLike<ReadonlyArray<unknown>>;
+    calls: ArrayLike<ReadonlyArray<any>>;
   };
 };
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object") {
     throw new Error(`expected ${label}`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function requireRecords(value: unknown, label: string): Array<Record<string, unknown>> {
+function requireRecords(value: any, label: string): Array<Record<string, any>> {
   expect(value, label).toBeInstanceOf(Array);
-  return value as Array<Record<string, unknown>>;
+  return value as Array<Record<string, any>>;
 }
 
 function sumToolResultTextChars(messages: AgentMessage[]): number {
@@ -79,7 +79,7 @@ function sumToolResultTextChars(messages: AgentMessage[]): number {
     if (message.role !== "toolResult") {
       return sum;
     }
-    const content = (message as { content?: unknown }).content;
+    const content = (message as { content?: any }).content;
     if (!Array.isArray(content)) {
       return sum;
     }
@@ -89,8 +89,8 @@ function sumToolResultTextChars(messages: AgentMessage[]): number {
         if (
           block &&
           typeof block === "object" &&
-          (block as { type?: unknown }).type === "text" &&
-          typeof (block as { text?: unknown }).text === "string"
+          (block as { type?: any }).type === "text" &&
+          typeof (block as { text?: any }).text === "string"
         ) {
           return blockSum + (block as { text: string }).text.length;
         }
@@ -101,8 +101,8 @@ function sumToolResultTextChars(messages: AgentMessage[]): number {
 }
 
 function findRecord(
-  records: Array<Record<string, unknown>>,
-  predicate: (record: Record<string, unknown>) => boolean,
+  records: Array<Record<string, any>>,
+  predicate: (record: Record<string, any>) => boolean,
   label: string,
 ) {
   const record = records.find(predicate);
@@ -127,7 +127,7 @@ function mockParams(source: MockCallSource, callIndex: number, label: string) {
   return requireRecord(mockArg(source, callIndex, 0, label), label);
 }
 
-function expectFields(actual: Record<string, unknown>, expected: Record<string, unknown>) {
+function expectFields(actual: Record<string, any>, expected: Record<string, any>) {
   for (const [key, value] of Object.entries(expected)) {
     expect(actual[key], key).toEqual(value);
   }
@@ -236,7 +236,7 @@ async function finalizeTurn(
 describe("runEmbeddedAttempt context engine sessionKey forwarding", () => {
   const sessionKey = "agent:main:guildchat:channel:test-ctx-engine";
   const tempPaths: string[] = [];
-  let toolSearchControlsCase: Record<string, unknown>;
+  let toolSearchControlsCase: Record<string, any>;
 
   beforeAll(async () => {
     resetEmbeddedAttemptHarness();
@@ -496,8 +496,8 @@ describe("runEmbeddedAttempt context engine sessionKey forwarding", () => {
   });
 
   it("enforces code-mode payload surface from active-agent config during an embedded attempt", async () => {
-    const observedOptions: Array<Record<string, unknown>> = [];
-    const payloads: Array<Record<string, unknown>> = [];
+    const observedOptions: Array<Record<string, any>> = [];
+    const payloads: Array<Record<string, any>> = [];
 
     await createContextEngineAttemptRunner({
       contextEngine: createContextEngineBootstrapAndAssemble(),
@@ -525,8 +525,8 @@ describe("runEmbeddedAttempt context engine sessionKey forwarding", () => {
       createSession: () => {
         const session = createDefaultEmbeddedSession();
         session.agent.streamFn = async (_model, _context, options) => {
-          observedOptions.push(options as Record<string, unknown>);
-          const payload: Record<string, unknown> = {
+          observedOptions.push(options as Record<string, any>);
+          const payload: Record<string, any> = {
             tools: [
               { type: "function", name: "exec" },
               { type: "function", name: "wait" },
@@ -534,7 +534,7 @@ describe("runEmbeddedAttempt context engine sessionKey forwarding", () => {
             ],
           };
           (
-            options as { onPayload?: (payload: Record<string, unknown>) => void } | undefined
+            options as { onPayload?: (payload: Record<string, any>) => void } | undefined
           )?.onPayload?.(payload);
           payloads.push(structuredClone(payload));
           return {
@@ -667,7 +667,7 @@ describe("runEmbeddedAttempt context engine sessionKey forwarding", () => {
             resolveExtraParams: () => ({}),
           },
           tools: {
-            normalize: (tools: unknown[]) => tools,
+            normalize: (tools: any[]) => tools,
             logDiagnostics: () => {},
           },
           auth: {
@@ -762,7 +762,7 @@ describe("runEmbeddedAttempt context engine sessionKey forwarding", () => {
   });
 
   it("sends transcriptPrompt visibly and keeps runtime context out of transcript messages", async () => {
-    const seen: { prompt?: string; messages?: unknown[]; systemPrompt?: string } = {};
+    const seen: { prompt?: string; messages?: any[]; systemPrompt?: string } = {};
 
     const result = await createContextEngineAttemptRunner({
       contextEngine: createContextEngineBootstrapAndAssemble(),
@@ -1183,10 +1183,10 @@ describe("runEmbeddedAttempt context engine sessionKey forwarding", () => {
       runBeforeAgentStart: vi.fn(),
     });
     const seen: {
-      modelMessages?: unknown[];
-      preprocessedModelMessages?: unknown[];
+      modelMessages?: any[];
+      preprocessedModelMessages?: any[];
       prompt?: string;
-      messages?: unknown[];
+      messages?: any[];
       systemPrompt?: string;
     } = {};
 
@@ -1255,7 +1255,7 @@ describe("runEmbeddedAttempt context engine sessionKey forwarding", () => {
       type: "message",
       message: { role: "user", content: "orphaned ask", timestamp: 1 },
     });
-    const seen: { modelMessages?: unknown[]; prompt?: string; messages?: unknown[] } = {};
+    const seen: { modelMessages?: any[]; prompt?: string; messages?: any[] } = {};
 
     const result = await createContextEngineAttemptRunner({
       contextEngine: createContextEngineBootstrapAndAssemble(),
@@ -1302,7 +1302,7 @@ describe("runEmbeddedAttempt context engine sessionKey forwarding", () => {
       type: "message",
       message: { role: "user", content: "orphaned ask", timestamp: 1 },
     });
-    const seen: { prompt?: string; messages?: unknown[] } = {};
+    const seen: { prompt?: string; messages?: any[] } = {};
 
     const result = await createContextEngineAttemptRunner({
       contextEngine: createContextEngineBootstrapAndAssemble(),
@@ -1343,7 +1343,7 @@ describe("runEmbeddedAttempt context engine sessionKey forwarding", () => {
   });
 
   it("keeps bootstrap truncation warnings out of WebChat runtime context", async () => {
-    const seen: { prompt?: string; messages?: unknown[] } = {};
+    const seen: { prompt?: string; messages?: any[] } = {};
     hoisted.resolveBootstrapContextForRunMock.mockResolvedValueOnce({
       bootstrapFiles: [
         {
@@ -1390,7 +1390,7 @@ describe("runEmbeddedAttempt context engine sessionKey forwarding", () => {
   });
 
   it("preserves bootstrap system context in the assembled system prompt", async () => {
-    const seen: { prompt?: string; messages?: unknown[] } = {};
+    const seen: { prompt?: string; messages?: any[] } = {};
     hoisted.isWorkspaceBootstrapPendingMock.mockResolvedValueOnce(true);
     hoisted.createOpenClawCodingToolsMock.mockImplementationOnce(() => [
       { name: "read", execute: async () => "" },
@@ -1600,9 +1600,9 @@ describe("runEmbeddedAttempt context engine sessionKey forwarding", () => {
       runBeforeAgentStart: vi.fn(),
     });
     const seen: {
-      modelMessages?: unknown[];
+      modelMessages?: any[];
       prompt?: string;
-      messages?: unknown[];
+      messages?: any[];
       systemPrompt?: string;
     } = {};
 
@@ -1670,7 +1670,7 @@ describe("runEmbeddedAttempt context engine sessionKey forwarding", () => {
 
   it("submits runtime-only context through system prompt without visible prompt", async () => {
     let seenPrompt: string | undefined;
-    let seenModelMessages: unknown[] | undefined;
+    let seenModelMessages: any[] | undefined;
     const runBeforePromptBuild = vi.fn(async () => ({
       prependContext: "dynamic hook context",
       appendContext: "dynamic hook tail",
@@ -1735,7 +1735,7 @@ describe("runEmbeddedAttempt context engine sessionKey forwarding", () => {
 
   it("keeps runtime-only context hidden when orphan repair merges an empty transcript", async () => {
     let seenPrompt: string | undefined;
-    let seenMessages: unknown[] | undefined;
+    let seenMessages: any[] | undefined;
     hoisted.sessionManager.getLeafEntry.mockReturnValueOnce({
       id: "orphan-leaf",
       parentId: "parent-leaf",
@@ -1833,7 +1833,7 @@ describe("runEmbeddedAttempt context engine sessionKey forwarding", () => {
 
   it("submits suppressed room event context as the model prompt", async () => {
     let seenPrompt: string | undefined;
-    let seenModelMessages: unknown[] | undefined;
+    let seenModelMessages: any[] | undefined;
     const runBeforePromptBuild = vi.fn(async () => ({
       prependContext: "dynamic hook context",
       appendContext: "dynamic hook tail",
@@ -1937,7 +1937,7 @@ describe("runEmbeddedAttempt context engine sessionKey forwarding", () => {
       .map((line) => JSON.parse(line) as TrajectoryEvent);
     expect(trajectoryEvents.some((event) => event.type === "prompt.submitted")).toBe(false);
     const skipped = findRecord(
-      trajectoryEvents as Array<Record<string, unknown>>,
+      trajectoryEvents as Array<Record<string, any>>,
       (event) => event.type === "prompt.skipped",
       "prompt skipped event",
     );
@@ -1993,7 +1993,7 @@ describe("runEmbeddedAttempt context engine sessionKey forwarding", () => {
       sessionPrompt: async () => {
         throw providerError;
       },
-    }).catch((err: unknown) => err);
+    }).catch((err: any) => err);
 
     expect(error).toBeInstanceOf(Error);
     expect((error as Error).name).toBe("EmbeddedAttemptSessionTakeoverError");
@@ -2003,7 +2003,7 @@ describe("runEmbeddedAttempt context engine sessionKey forwarding", () => {
       throw new Error("expected cleanup lock reacquire");
     }
     expect(((error as Error).cause as Error).message).toContain(cleanupReacquireSessionFile);
-    expect((error as { promptError?: unknown }).promptError).toBe(providerError);
+    expect((error as { promptError?: any }).promptError).toBe(providerError);
     expect(hoisted.flushPendingToolResultsAfterIdleMock).not.toHaveBeenCalled();
   });
 
@@ -2184,7 +2184,7 @@ describe("runEmbeddedAttempt context engine sessionKey forwarding", () => {
     expect(unwindowed).toHaveLength(1);
     const [unwindowedMessage] = unwindowed ?? [];
     expect(unwindowedMessage).toMatchObject({ role: "user", timestamp: 1 });
-    const unwindowedContent = (unwindowedMessage as { content?: unknown } | undefined)?.content;
+    const unwindowedContent = (unwindowedMessage as { content?: any } | undefined)?.content;
     expect(unwindowedContent).toEqual(
       expect.stringMatching(/^\[[A-Za-z]{3} \d{4}-\d{2}-\d{2} \d{2}:\d{2} [^\]]+\] /),
     );
@@ -2232,7 +2232,7 @@ describe("runEmbeddedAttempt context engine sessionKey forwarding", () => {
       runBeforeAgentStart: vi.fn(async () => ({ prependContext: "legacy hook context" })),
       runLlmInput,
     });
-    const seen: { prompt?: string; messages?: unknown[]; systemPrompt?: string } = {};
+    const seen: { prompt?: string; messages?: any[]; systemPrompt?: string } = {};
 
     const result = await createContextEngineAttemptRunner({
       contextEngine: createTestContextEngine({
@@ -2650,7 +2650,7 @@ describe("runEmbeddedAttempt context engine sessionKey forwarding", () => {
     const afterTurnCall = afterTurn.mock.calls.at(0)?.[0];
     const runtimeContext = afterTurnCall?.runtimeContext;
     const observation = runtimeContext?.promptCache?.observation as
-      | { broke?: boolean; previousCacheRead?: number; cacheRead?: number; changes?: unknown[] }
+      | { broke?: boolean; previousCacheRead?: number; cacheRead?: number; changes?: any[] }
       | undefined;
 
     const observationRecord = requireRecord(observation, "prompt cache observation");
@@ -2753,7 +2753,7 @@ describe("runEmbeddedAttempt context engine mid-turn precheck integration", () =
   });
 
   it("recovers when the runtime persists the mid-turn precheck as an assistant error", async () => {
-    hoisted.installToolResultContextGuardMock.mockImplementation((...args: unknown[]) => {
+    hoisted.installToolResultContextGuardMock.mockImplementation((...args: any[]) => {
       const params = args[0] as ToolResultGuardInstallParams;
       params.midTurnPrecheck?.onMidTurnPrecheck?.({
         route: "compact_only",
@@ -2849,7 +2849,7 @@ describe("runEmbeddedAttempt tool-result guard budget wiring", () => {
         role: "assistant",
         content: [{ type: "toolCall", id: toolCallId, name: "process", input: {} }],
         timestamp: 2 + index * 2,
-      } as unknown as AgentMessage);
+      } as any as AgentMessage);
       sessionMessages.push({
         role: "toolResult",
         toolCallId,

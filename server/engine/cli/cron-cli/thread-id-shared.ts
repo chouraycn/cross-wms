@@ -5,7 +5,7 @@ import {
   normalizeOptionalString,
 } from "@openclaw/normalization-core/string-coerce";
 
-export function parseCronThreadIdOption(value: unknown): number | undefined {
+export function parseCronThreadIdOption(value: any): number | undefined {
   const raw = normalizeOptionalString(value);
   if (!raw) {
     return undefined;
@@ -20,7 +20,7 @@ export function parseCronThreadIdOption(value: unknown): number | undefined {
   return parsed;
 }
 
-export function normalizeCronSessionTargetOption(value: unknown): string | undefined {
+export function normalizeCronSessionTargetOption(value: any): string | undefined {
   // Preserve explicit session ids after `session:` while normalizing the mode prefix.
   const raw = normalizeOptionalString(value);
   if (!raw) {

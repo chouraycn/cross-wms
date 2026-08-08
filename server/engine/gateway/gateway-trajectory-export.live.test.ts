@@ -53,7 +53,7 @@ type TrajectoryExportSignal = {
   instructionText: string;
 };
 
-function logLiveStep(step: string, details?: Record<string, unknown>): void {
+function logLiveStep(step: string, details?: Record<string, any>): void {
   if (!CODEX_HARNESS_DEBUG) {
     return;
   }
@@ -70,14 +70,14 @@ function restoreEnv(snapshot: LiveEnvSnapshot): void {
 }
 
 async function removeLiveTempDir(dir: string): Promise<void> {
-  let lastError: unknown;
+  let lastError: any;
   for (let attempt = 0; attempt < 100; attempt += 1) {
     try {
       await fs.rm(dir, { recursive: true, force: true });
       return;
     } catch (error) {
       lastError = error;
-      const code = (error as { code?: unknown } | null)?.code;
+      const code = (error as { code?: any } | null)?.code;
       if (code !== "EBUSY" && code !== "ENOTEMPTY" && code !== "EPERM" && code !== "EACCES") {
         throw error;
       }
@@ -158,7 +158,7 @@ async function requestAgentExactReply(params: {
     { expectFinal: true, timeoutMs: AGENT_REQUEST_TIMEOUT_MS },
   )) as {
     status?: string;
-    result?: unknown;
+    result?: any;
   };
   if (payload?.status !== "ok") {
     throw new Error(`agent request failed: ${JSON.stringify(payload)}`);
@@ -199,13 +199,13 @@ function formatTextPreview(texts: string[], maxChars = 800): string {
   return combined.length > maxChars ? `${combined.slice(0, maxChars)}...` : combined;
 }
 
-function extractAssistantTexts(messages: unknown[]): string[] {
+function extractAssistantTexts(messages: any[]): string[] {
   const texts: string[] = [];
   for (const entry of messages) {
     if (!entry || typeof entry !== "object") {
       continue;
     }
-    if ((entry as { role?: unknown }).role !== "assistant") {
+    if ((entry as { role?: any }).role !== "assistant") {
       continue;
     }
     const text = extractVisibleMessageText(entry);
@@ -293,7 +293,7 @@ async function waitForTrajectoryExportSignal(params: {
             limit: 24,
           },
           { timeoutMs: 10_000 },
-        )) as { messages?: unknown[] };
+        )) as { messages?: any[] };
         assistantTexts = extractAssistantTexts(history.messages ?? []);
         const matchedHistoryText = assistantTexts.find((text) =>
           text.includes(params.expectedText),
@@ -346,14 +346,14 @@ function extractChatFinalText(event: EventFrame, runId: string): string | undefi
   if (!payload || typeof payload !== "object") {
     return undefined;
   }
-  const record = payload as Record<string, unknown>;
+  const record = payload as Record<string, any>;
   if (record.runId !== runId || record.state !== "final") {
     return undefined;
   }
   return extractChatFinalRecordText(record);
 }
 
-function extractChatFinalRecordText(record: Record<string, unknown>): string | undefined {
+function extractChatFinalRecordText(record: Record<string, any>): string | undefined {
   const message = record.message;
   if (!message || typeof message !== "object") {
     return undefined;
@@ -361,11 +361,11 @@ function extractChatFinalRecordText(record: Record<string, unknown>): string | u
   return extractVisibleMessageText(message);
 }
 
-function extractVisibleMessageText(message: unknown): string | undefined {
+function extractVisibleMessageText(message: any): string | undefined {
   if (!message || typeof message !== "object") {
     return undefined;
   }
-  const record = message as { text?: unknown; content?: unknown };
+  const record = message as { text?: any; content?: any };
   if (typeof record.text === "string" && record.text.trim()) {
     return record.text;
   }
@@ -380,7 +380,7 @@ function extractVisibleMessageText(message: unknown): string | undefined {
       if (!block || typeof block !== "object") {
         return "";
       }
-      const entry = block as { type?: unknown; text?: unknown };
+      const entry = block as { type?: any; text?: any };
       return entry.type === "text" && typeof entry.text === "string" ? entry.text : "";
     })
     .filter((value) => value.trim())
@@ -533,7 +533,7 @@ describeLive("gateway live trajectory export", () => {
           idempotencyKey: exportRunId,
         },
         { timeoutMs: 60_000 },
-      )) as { status?: string; message?: unknown };
+      )) as { status?: string; message?: any };
       logLiveStep("export:ack", { status: exportResponse?.status });
       expect(
         exportResponse?.status === "accepted" ||

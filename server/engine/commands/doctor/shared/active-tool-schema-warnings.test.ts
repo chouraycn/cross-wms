@@ -14,18 +14,18 @@ const toolState = vi.hoisted(() => ({
     provider: string;
     api: string;
     contextWindow?: number;
-    compat?: Record<string, unknown>;
+    compat?: Record<string, any>;
   } | null,
   resolveModelError: null as Error | null,
   resolveModel: vi.fn(),
   createTools: vi.fn<typeof createOpenClawCodingTools>(),
   normalizeTools: vi.fn(
-    (options: { tools: AnyAgentTool[]; modelApi?: string; model?: unknown }) => options.tools,
+    (options: { tools: AnyAgentTool[]; modelApi?: string; model?: any }) => options.tools,
   ),
 }));
 
 vi.mock("../../../agents/embedded-agent-runner/model.js", () => ({
-  resolveModel: (...args: unknown[]) => toolState.resolveModel(...args),
+  resolveModel: (...args: any[]) => toolState.resolveModel(...args),
 }));
 
 vi.mock("../../../agents/agent-tools.js", () => ({
@@ -53,7 +53,7 @@ vi.mock("../../../agents/runtime-plan/tools.js", () => ({
 const { collectActiveToolSchemaProjectionWarnings } =
   await import("./active-tool-schema-warnings.js");
 
-function tool(name: string, parameters: unknown): AnyAgentTool {
+function tool(name: string, parameters: any): AnyAgentTool {
   return {
     name,
     label: name,

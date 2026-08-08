@@ -6,24 +6,24 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function isTransportAwareApiSupported(..._args: unknown[]): unknown {
+export function isTransportAwareApiSupported(..._args: any[]): any {
   return false;
 }
-export function resolveTransportAwareSimpleApi(..._args: unknown[]): unknown {
+export function resolveTransportAwareSimpleApi(..._args: any[]): any {
   return undefined;
 }
-export function createTransportAwareStreamFnForModel(..._args: unknown[]): unknown {
+export function createTransportAwareStreamFnForModel(..._args: any[]): any {
   return undefined;
 }
-export function createOpenClawTransportStreamFnForModel(..._args: unknown[]): unknown {
+export function createOpenClawTransportStreamFnForModel(..._args: any[]): any {
   return undefined;
 }
-export function createBoundaryAwareStreamFnForModel(..._args: unknown[]): unknown {
+export function createBoundaryAwareStreamFnForModel(..._args: any[]): any {
   return undefined;
 }
-export function prepareTransportAwareSimpleModel(..._args: unknown[]): unknown {
+export function prepareTransportAwareSimpleModel(..._args: any[]): any {
   return undefined;
 }
-export function buildTransportAwareSimpleStreamFn(..._args: unknown[]): unknown {
+export function buildTransportAwareSimpleStreamFn(..._args: any[]): any {
   return undefined;
 }

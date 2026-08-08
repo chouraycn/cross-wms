@@ -107,7 +107,7 @@ describe("statusCommand", () => {
       expect(res.ok).toBe(true);
       expect(res.message).toContain("runtime:");
       expect(res.message).toContain("cron:");
-      const data = res.data as { runtime: unknown; cron: unknown; tasks: unknown };
+      const data = res.data as { runtime: any; cron: any; tasks: any };
       expect(data.runtime).toBeTruthy();
       expect(data.cron).toBeTruthy();
       expect(data.tasks).toBeTruthy();
@@ -174,11 +174,11 @@ describe("statusCommand", () => {
     const SERVER_START_KEY = Symbol.for("cross-wms.serverStartTime");
 
     afterEach(() => {
-      delete (globalThis as Record<symbol, unknown>)[SERVER_START_KEY];
+      delete (globalThis as Record<symbol, any>)[SERVER_START_KEY];
     });
 
     it("未设置 serverStartTime 时 uptimeMs=0", () => {
-      delete (globalThis as Record<symbol, unknown>)[SERVER_START_KEY];
+      delete (globalThis as Record<symbol, any>)[SERVER_START_KEY];
       const { handler } = findEntry("status");
       const res = handler(ctx());
       const snap = res.data as RuntimeStatusSnapshot;
@@ -186,7 +186,7 @@ describe("statusCommand", () => {
     });
 
     it("设置 serverStartTime 后 uptimeMs > 0", () => {
-      (globalThis as Record<symbol, unknown>)[SERVER_START_KEY] = Date.now() - 5000;
+      (globalThis as Record<symbol, any>)[SERVER_START_KEY] = Date.now() - 5000;
       const { handler } = findEntry("status");
       const res = handler(ctx());
       const snap = res.data as RuntimeStatusSnapshot;

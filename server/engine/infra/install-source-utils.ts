@@ -20,7 +20,7 @@ export type NpmSpecResolution = {
   integrity?: string;
   shasum?: string;
   resolvedAt?: string;
-  packageOpenClaw?: Record<string, unknown>;
+  packageOpenClaw?: Record<string, any>;
 };
 
 export type NpmResolutionFields = {
@@ -54,13 +54,13 @@ export function createNpmMetadataEnv(
   return env;
 }
 
-function normalizeNpmViewMetadata(value: unknown): NpmSpecResolution | null {
+function normalizeNpmViewMetadata(value: any): NpmSpecResolution | null {
   if (!value || typeof value !== "object") return null;
-  const rec = value as Record<string, unknown>;
+  const rec = value as Record<string, any>;
   const name = normalizeOptionalString(rec.name);
   const version = normalizeOptionalString(rec.version);
   const resolvedSpec = name && version ? `${name}@${version}` : undefined;
-  const dist = rec.dist && typeof rec.dist === "object" ? (rec.dist as Record<string, unknown>) : {};
+  const dist = rec.dist && typeof rec.dist === "object" ? (rec.dist as Record<string, any>) : {};
   return {
     name, version, resolvedSpec,
     integrity: normalizeOptionalString(rec["dist.integrity"]) ?? normalizeOptionalString(dist.integrity),
@@ -85,7 +85,7 @@ export async function resolveNpmSpecMetadata(params: { spec: string; timeoutMs?:
     return { ok: false, error: `npm view failed: ${raw}` };
   }
   try {
-    const parsed = JSON.parse(res.stdout.trim()) as unknown;
+    const parsed = JSON.parse(res.stdout.trim()) as any;
     const metadata = normalizeNpmViewMetadata(parsed);
     if (!metadata?.name || !metadata.version) {
       return { ok: false, error: "npm view produced incomplete package metadata" };
@@ -118,7 +118,7 @@ export async function resolveArchiveSourcePath(archivePath: string): Promise<
   return { ok: true, path: resolved };
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
@@ -130,9 +130,9 @@ function parseResolvedSpecFromId(id: string): string | undefined {
   return name && version ? `${name}@${version}` : undefined;
 }
 
-function normalizeNpmPackEntry(entry: unknown): { filename?: string; metadata: NpmSpecResolution } | null {
+function normalizeNpmPackEntry(entry: any): { filename?: string; metadata: NpmSpecResolution } | null {
   if (!entry || typeof entry !== "object") return null;
-  const rec = entry as Record<string, unknown>;
+  const rec = entry as Record<string, any>;
   const name = normalizeOptionalString(rec.name);
   const version = normalizeOptionalString(rec.version);
   const id = normalizeOptionalString(rec.id);
@@ -150,7 +150,7 @@ function parseNpmPackJsonOutput(raw: string): { filename?: string; metadata: Npm
   const arrayStart = trimmed.indexOf("[");
   if (arrayStart > 0) candidates.push(trimmed.slice(arrayStart));
   for (const candidate of candidates) {
-    let parsed: unknown;
+    let parsed: any;
     try { parsed = JSON.parse(candidate); } catch { continue; }
     const entries = Array.isArray(parsed) ? parsed : [parsed];
     let fallback: { filename?: string; metadata: NpmSpecResolution } | null = null;

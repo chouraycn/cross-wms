@@ -4,7 +4,7 @@
 import { expect } from "vitest";
 
 type MockCallSource = {
-  mock: { calls: ReadonlyArray<ReadonlyArray<unknown>> };
+  mock: { calls: ReadonlyArray<ReadonlyArray<any>> };
 };
 
 /** Verifies that a mocked respond callback emitted the expected gateway error. */

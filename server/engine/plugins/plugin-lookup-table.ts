@@ -39,8 +39,8 @@ export type PluginLookUpTable = PluginMetadataSnapshot & {
 };
 
 export type LoadPluginLookUpTableParams = {
-  config: unknown;
-  activationSourceConfig?: unknown;
+  config: any;
+  activationSourceConfig?: any;
   workspaceDir?: string;
   env: NodeJS.ProcessEnv;
   index?: PluginRegistrySnapshot;
@@ -58,8 +58,8 @@ export function clearPluginLookUpTableMemoForTest(): void {
 
 /** 占位：创建 gateway 启动元数据插件 id scope。 */
 function createGatewayStartupMetadataPluginIdScope(_params: {
-  config: unknown;
-  activationSourceConfig?: unknown;
+  config: any;
+  activationSourceConfig?: any;
   env: NodeJS.ProcessEnv;
 }): GatewayStartupMetadataPluginIdScope {
   return { key: "default" };
@@ -75,11 +75,11 @@ function isMetadataSnapshotScopedForGatewayStartup(_params: {
 
 /** 占位：从注册表解析 gateway 启动插件计划。 */
 function resolveGatewayStartupPluginPlanFromRegistry(_params: {
-  config: unknown;
-  activationSourceConfig?: unknown;
+  config: any;
+  activationSourceConfig?: any;
   env: NodeJS.ProcessEnv;
-  index: unknown;
-  manifestRegistry: unknown;
+  index: any;
+  manifestRegistry: any;
 }): GatewayStartupPluginPlan {
   return {
     pluginIds: [],

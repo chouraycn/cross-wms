@@ -81,7 +81,7 @@ export function createQQChannelPlugin(): ChannelPlugin {
 
   const qqChannelConfig: ChannelConfigAdapter<QQAccountConfig> = {
     listAccountIds: (config: AppConfig): ChannelId[] => {
-      const qqConfig = config.qq as Record<string, unknown>;
+      const qqConfig = config.qq as Record<string, any>;
       if (qqConfig && qqConfig.appId && qqConfig.appSecret) {
         return [QQ_CHANNEL_ID];
       }
@@ -89,7 +89,7 @@ export function createQQChannelPlugin(): ChannelPlugin {
     },
     resolveAccount: (config: AppConfig, accountId: ChannelId): QQAccountConfig | null => {
       if (accountId !== QQ_CHANNEL_ID) return null;
-      const qqConfig = config.qq as Record<string, unknown>;
+      const qqConfig = config.qq as Record<string, any>;
       if (qqConfig && qqConfig.appId && qqConfig.appSecret) {
         return {
           appId: String(qqConfig.appId),
@@ -124,7 +124,7 @@ export function createQQChannelPlugin(): ChannelPlugin {
           const token = await getBotToken(account);
           const rendered = await ctx.render();
           const text = rendered.parts
-            .map((p: { content: unknown }) => String(p.content))
+            .map((p: { content: any }) => String(p.content))
             .join("\n");
 
           const response = await fetch("https://api.sgroup.qq.com/users/@me/messages", {
@@ -177,8 +177,8 @@ export interface QQWebhookResult {
   error?: string;
 }
 
-export function parseQQWebhook(body: unknown, _account: QQAccountConfig): QQWebhookResult {
-  const data = body as Record<string, unknown>;
+export function parseQQWebhook(body: any, _account: QQAccountConfig): QQWebhookResult {
+  const data = body as Record<string, any>;
   const msgType = String(data.msg_type || data.type || "");
 
   if (msgType === "0" || msgType === "text") {
@@ -189,7 +189,7 @@ export function parseQQWebhook(body: unknown, _account: QQAccountConfig): QQWebh
       type: "message",
       message: {
         chatId: String(data.group_id || data.guild_id || data.channel_id || ""),
-        userId: String((data.author as Record<string, unknown>)?.id || data.user_id || ""),
+        userId: String((data.author as Record<string, any>)?.id || data.user_id || ""),
         messageId: String(data.id || data.msg_id || ""),
         text: String(data.content || ""),
         timestamp: Number(data.timestamp || Date.now()),

@@ -70,10 +70,10 @@ function embedFor(text: string): Float32Array {
 }
 
 beforeEach(() => {
-  generateBatchEmbeddingsMock.mockImplementation(async (texts: unknown) => ({
+  generateBatchEmbeddingsMock.mockImplementation(async (texts: any) => ({
     embeddings: (texts as string[]).map((t) => embedFor(t)),
   }));
-  generateEmbeddingMock.mockImplementation(async (text: unknown) => ({
+  generateEmbeddingMock.mockImplementation(async (text: any) => ({
     embedding: embedFor(text as string),
     model: 'mock',
     dimensions: 4,
@@ -189,7 +189,7 @@ const TEST_MODELS = {
     { id: 'm1', name: 'M1', enabled: true, provider: 'openai', apiKey: 'k', capabilities: ['general'] },
     { id: 'm2', name: 'M2', enabled: true, provider: 'openai', apiKey: 'k', capabilities: ['reasoning'] },
   ],
-} as unknown;
+} as any;
 
 describe('autoSelectModelAsync — 异步入口（端到端）', () => {
   it('复杂消息：语义分注入选型并回挂 semanticIntent，intentMethod=semantic-blend', async () => {

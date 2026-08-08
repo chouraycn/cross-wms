@@ -20,7 +20,7 @@ function createMockSkill(
       id,
       name,
       description: `${name} 的描述`,
-      group: group as unknown,
+      group: group as any,
       source: 'builtin',
       userInvocable: true,
       tags: [],

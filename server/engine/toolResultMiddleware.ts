@@ -36,14 +36,14 @@ function truncateResult(result: string, maxLength: number): { content: string; t
   
   try {
     if (result.startsWith('{') || result.startsWith('[')) {
-      let jsonResult: unknown;
+      let jsonResult: any;
       try {
         jsonResult = JSON.parse(result);
       } catch {
         return { content: truncated + '\n\n[结果已截断]', truncated: true };
       }
 
-      const truncateJson = (obj: unknown, depth: number, maxDepth: number): unknown => {
+      const truncateJson = (obj: any, depth: number, maxDepth: number): any => {
         if (depth > maxDepth) return '[深度限制]';
         if (typeof obj !== 'object' || obj === null) return obj;
         
@@ -53,14 +53,14 @@ function truncateResult(result: string, maxLength: number): { content: string; t
           );
         }
         
-        const truncatedObj: Record<string, unknown> = {};
+        const truncatedObj: Record<string, any> = {};
         let count = 0;
         for (const key of Object.keys(obj)) {
           if (count >= 30) {
             truncatedObj['[更多字段]'] = '[字段截断]';
             break;
           }
-          truncatedObj[key] = truncateJson((obj as Record<string, unknown>)[key], depth + 1, maxDepth);
+          truncatedObj[key] = truncateJson((obj as Record<string, any>)[key], depth + 1, maxDepth);
           count++;
         }
         return truncatedObj;

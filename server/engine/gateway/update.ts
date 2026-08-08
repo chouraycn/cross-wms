@@ -5,4 +5,4 @@
 const __filename_stub: string = typeof __filename !== "undefined" ? __filename : "";
 void __filename_stub;
 
-export const updateHandlers: unknown = undefined;
+export const updateHandlers: any = undefined;

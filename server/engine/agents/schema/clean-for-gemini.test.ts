@@ -8,7 +8,7 @@ describe("cleanSchemaForGemini", () => {
     const cleaned = cleanSchemaForGemini({
       type: "object",
       properties: null,
-    }) as { type?: unknown; properties?: unknown };
+    }) as { type?: any; properties?: any };
 
     expect(cleaned.type).toBe("object");
     expect(cleaned.properties).toStrictEqual({});
@@ -18,7 +18,7 @@ describe("cleanSchemaForGemini", () => {
     const cleaned = cleanSchemaForGemini({
       type: "object",
       properties: "invalid",
-    }) as { properties?: unknown };
+    }) as { properties?: any };
 
     expect(cleaned.properties).toStrictEqual({});
   });
@@ -27,7 +27,7 @@ describe("cleanSchemaForGemini", () => {
     const cleaned = cleanSchemaForGemini({
       type: "object",
       properties: [],
-    }) as { properties?: unknown };
+    }) as { properties?: any };
 
     expect(cleaned.properties).toStrictEqual({});
   });
@@ -131,8 +131,8 @@ describe("cleanSchemaForGemini", () => {
       },
     }) as {
       properties?: {
-        bad?: { properties?: unknown };
-        good?: { type?: unknown };
+        bad?: { properties?: any };
+        good?: { type?: any };
       };
     };
 
@@ -147,7 +147,7 @@ describe("cleanSchemaForGemini", () => {
         name: { type: "string" },
       },
       required: [],
-    }) as Record<string, unknown>;
+    }) as Record<string, any>;
 
     expect(cleaned).not.toHaveProperty("required");
     expect(cleaned.type).toBe("object");
@@ -160,7 +160,7 @@ describe("cleanSchemaForGemini", () => {
         name: { type: "string" },
       },
       required: ["name"],
-    }) as Record<string, unknown>;
+    }) as Record<string, any>;
 
     expect(cleaned.required).toEqual(["name"]);
   });
@@ -178,7 +178,7 @@ describe("cleanSchemaForGemini", () => {
         },
       },
       required: ["nested"],
-    }) as { properties?: { nested?: Record<string, unknown> }; required?: string[] };
+    }) as { properties?: { nested?: Record<string, any> }; required?: string[] };
 
     expect(cleaned.required).toEqual(["nested"]);
     expect(cleaned.properties?.nested).not.toHaveProperty("required");
@@ -193,7 +193,7 @@ describe("cleanSchemaForGemini", () => {
       properties: {
         name: { type: "string" },
       },
-    }) as Record<string, unknown>;
+    }) as Record<string, any>;
 
     expect(cleaned).not.toHaveProperty("not");
     expect(cleaned.type).toBe("object");
@@ -206,7 +206,7 @@ describe("cleanSchemaForGemini", () => {
     const cleaned = cleanSchemaForGemini({
       type: ["string", "null"],
       description: "nullable field",
-    }) as Record<string, unknown>;
+    }) as Record<string, any>;
 
     expect(cleaned.type).toBe("string");
     expect(cleaned.description).toBe("nullable field");
@@ -221,7 +221,7 @@ describe("cleanSchemaForGemini", () => {
           description: "Agent id",
         },
       },
-    }) as { properties?: { agentId?: Record<string, unknown> } };
+    }) as { properties?: { agentId?: Record<string, any> } };
 
     expect(cleaned.properties?.agentId?.type).toBe("string");
   });

@@ -11,7 +11,7 @@ export type AppKeybindings = unknown;
 export class KeybindingsManager {
   // Stub: not fully ported
 }
-export function migrateKeybindingsConfig(..._args: unknown[]): unknown {
+export function migrateKeybindingsConfig(..._args: any[]): any {
   return undefined;
 }
-export const KEYBINDINGS: unknown = undefined;
+export const KEYBINDINGS: any = undefined;

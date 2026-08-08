@@ -10,18 +10,18 @@ vi.mock("./doctor-bootstrap-size.js", () => ({
 }));
 
 vi.mock("./doctor-auth-flat-profiles.js", () => ({
-  maybeRepairCanonicalApiKeyFieldAlias: vi.fn(async (params: { cfg: unknown }) => params.cfg),
+  maybeRepairCanonicalApiKeyFieldAlias: vi.fn(async (params: { cfg: any }) => params.cfg),
   maybeMigrateAuthProfileJsonStoresToSqlite: vi.fn().mockResolvedValue({
     changes: [],
     warnings: [],
   }),
   maybeRepairLegacyFlatAuthProfileStores: vi.fn().mockResolvedValue(undefined),
-  maybeRepairOpenAICodexAuthConfig: vi.fn((cfg: unknown) => cfg),
+  maybeRepairOpenAICodexAuthConfig: vi.fn((cfg: any) => cfg),
   maybeRepairOpenAICodexAuthProfileStores: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock("./doctor-auth-legacy-oauth.js", () => ({
-  maybeRepairLegacyOAuthProfileIds: vi.fn(async (cfg: unknown) => cfg),
+  maybeRepairLegacyOAuthProfileIds: vi.fn(async (cfg: any) => cfg),
 }));
 
 vi.mock("./doctor-auth-oauth-sidecar.js", () => ({
@@ -81,7 +81,7 @@ vi.mock("./doctor-plugin-manifests.js", () => ({
 }));
 
 vi.mock("./doctor-plugin-registry.js", () => ({
-  maybeRepairPluginRegistryState: vi.fn(async ({ config }: { config: unknown }) => config),
+  maybeRepairPluginRegistryState: vi.fn(async ({ config }: { config: any }) => config),
 }));
 
 vi.mock("./doctor-platform-notes.js", () => ({
@@ -92,7 +92,7 @@ vi.mock("./doctor-platform-notes.js", () => ({
 }));
 
 vi.mock("./doctor-sandbox.js", () => ({
-  maybeRepairSandboxImages: vi.fn(async (cfg: unknown) => cfg),
+  maybeRepairSandboxImages: vi.fn(async (cfg: any) => cfg),
   maybeRepairSandboxRegistryFiles: vi.fn().mockResolvedValue(undefined),
   noteSandboxScopeWarnings: vi.fn(),
 }));
@@ -118,7 +118,7 @@ vi.mock("./doctor-session-snapshots.js", () => ({
 }));
 
 vi.mock("./doctor-skills.js", () => ({
-  maybeRepairSkillReadiness: vi.fn(async ({ cfg }: { cfg: unknown }) => cfg),
+  maybeRepairSkillReadiness: vi.fn(async ({ cfg }: { cfg: any }) => cfg),
 }));
 
 vi.mock("./doctor-state-integrity.js", () => ({

@@ -14,8 +14,8 @@ export interface PolicyEvaluationContext {
   toolName: string;
   agentId: string;
   sessionId?: string;
-  input?: Record<string, unknown>;
-  metadata?: Record<string, unknown>;
+  input?: Record<string, any>;
+  metadata?: Record<string, any>;
 }
 
 export interface PolicyEvaluationResult {

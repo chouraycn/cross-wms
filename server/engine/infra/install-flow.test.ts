@@ -20,7 +20,7 @@ async function runExtractedArchiveFailureCase(configureArchive: () => void) {
   });
 }
 
-function firstMockCall<T extends unknown[]>(mock: { mock: { calls: T[] } }): T | undefined {
+function firstMockCall<T extends any[]>(mock: { mock: { calls: T[] } }): T | undefined {
   return mock.mock.calls[0];
 }
 

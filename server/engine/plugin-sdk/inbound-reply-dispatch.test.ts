@@ -40,8 +40,8 @@ import {
   resolveInboundReplyDispatchCounts,
 } from "./inbound-reply-dispatch.js";
 
-function readFirstMockArg(fn: unknown): unknown {
-  return (fn as { mock: { calls: unknown[][] } }).mock.calls[0]?.[0];
+function readFirstMockArg(fn: any): any {
+  return (fn as { mock: { calls: any[][] } }).mock.calls[0]?.[0];
 }
 
 describe("recordInboundSessionAndDispatchReply", () => {
@@ -93,7 +93,7 @@ describe("recordInboundSessionAndDispatchReply", () => {
 
     expect(recordInboundSession).toHaveBeenCalledTimes(1);
     const recordParams = readFirstMockArg(recordInboundSession) as
-      | { ctx?: unknown; sessionKey?: string }
+      | { ctx?: any; sessionKey?: string }
       | undefined;
     expect(recordParams?.sessionKey).toBe("agent:main:test:peer");
     expect(recordParams?.ctx).toBe(ctxPayload);
@@ -208,8 +208,8 @@ describe("recordInboundSessionAndDispatchReply", () => {
           accountId?: string;
           agentId?: string;
           channel?: string;
-          ctxPayload?: unknown;
-          info?: unknown;
+          ctxPayload?: any;
+          info?: any;
           payload?: { text?: string };
           replyToMode?: string;
         }
@@ -235,7 +235,7 @@ describe("recordInboundSessionAndDispatchReply", () => {
     });
     const recordInboundSession = vi.fn(async () => undefined) as unknown as RecordInboundSession;
     const deliver = vi.fn(async () => undefined);
-    let deliveryResult: unknown;
+    let deliveryResult: any;
     const dispatchReplyWithBufferedBlockDispatcher = vi.fn(async (params) => {
       deliveryResult = await params.dispatcherOptions.deliver(
         { text: "cancelled durable" },

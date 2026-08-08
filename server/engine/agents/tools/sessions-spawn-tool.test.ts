@@ -16,18 +16,18 @@ const hoisted = vi.hoisted(() => {
 vi.mock("../subagent-spawn.js", () => ({
   SUBAGENT_SPAWN_CONTEXT_MODES: ["isolated", "fork"],
   SUBAGENT_SPAWN_MODES: ["run", "session"],
-  spawnSubagentDirect: (...args: unknown[]) => hoisted.spawnSubagentDirectMock(...args),
+  spawnSubagentDirect: (...args: any[]) => hoisted.spawnSubagentDirectMock(...args),
 }));
 
 vi.mock("../acp-spawn.js", () => ({
   ACP_SPAWN_MODES: ["run", "session"],
   ACP_SPAWN_STREAM_TARGETS: ["parent"],
   isSpawnAcpAcceptedResult: (result: { status?: string }) => result?.status === "accepted",
-  spawnAcpDirect: (...args: unknown[]) => hoisted.spawnAcpDirectMock(...args),
+  spawnAcpDirect: (...args: any[]) => hoisted.spawnAcpDirectMock(...args),
 }));
 
 vi.mock("../subagent-registry.js", () => ({
-  registerSubagentRun: (...args: unknown[]) => hoisted.registerSubagentRunMock(...args),
+  registerSubagentRun: (...args: any[]) => hoisted.registerSubagentRunMock(...args),
 }));
 
 let createSessionsSpawnTool: typeof import("./sessions-spawn-tool.js").createSessionsSpawnTool;
@@ -83,22 +83,22 @@ describe("sessions_spawn tool", () => {
     return property;
   }
 
-  function requireRecord(value: unknown, label: string): Record<string, unknown> {
+  function requireRecord(value: any, label: string): Record<string, any> {
     if (!value || typeof value !== "object" || Array.isArray(value)) {
       throw new Error(`expected ${label}`);
     }
-    return value as Record<string, unknown>;
+    return value as Record<string, any>;
   }
 
-  function expectDetailFields(details: unknown, expected: Record<string, unknown>) {
+  function expectDetailFields(details: any, expected: Record<string, any>) {
     const record = requireRecord(details, "result details");
     for (const [key, value] of Object.entries(expected)) {
       expect(record[key]).toBe(value);
     }
   }
 
-  function mockCallArg(mock: unknown, callIndex: number, argIndex: number, label: string) {
-    const calls = (mock as { mock?: { calls?: unknown[][] } }).mock?.calls;
+  function mockCallArg(mock: any, callIndex: number, argIndex: number, label: string) {
+    const calls = (mock as { mock?: { calls?: any[][] } }).mock?.calls;
     if (!Array.isArray(calls)) {
       throw new Error(`expected ${label} mock calls`);
     }
@@ -239,8 +239,8 @@ describe("sessions_spawn tool", () => {
     const tool = createSessionsSpawnTool();
     const schema = tool.parameters as {
       properties?: {
-        runTimeoutSeconds?: unknown;
-        timeoutSeconds?: unknown;
+        runTimeoutSeconds?: any;
+        timeoutSeconds?: any;
       };
     };
 

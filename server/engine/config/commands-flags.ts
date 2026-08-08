@@ -8,9 +8,9 @@ export type CommandFlagKey = {
 }[keyof CommandsConfig];
 
 function getOwnCommandFlagValue(
-  config: { commands?: unknown } | undefined,
+  config: { commands?: any } | undefined,
   key: CommandFlagKey,
-): unknown {
+): any {
   const { commands } = config ?? {};
   if (!isPlainObject(commands) || !Object.hasOwn(commands, key)) {
     return undefined;
@@ -20,13 +20,13 @@ function getOwnCommandFlagValue(
 
 /** Returns true only when a command flag is explicitly enabled. */
 export function isCommandFlagEnabled(
-  config: { commands?: unknown } | undefined,
+  config: { commands?: any } | undefined,
   key: CommandFlagKey,
 ): boolean {
   return getOwnCommandFlagValue(config, key) === true;
 }
 
 /** Returns the public restart command state; restart defaults on and is disabled only by false. */
-export function isRestartEnabled(config?: { commands?: unknown }): boolean {
+export function isRestartEnabled(config?: { commands?: any }): boolean {
   return getOwnCommandFlagValue(config, "restart") !== false;
 }

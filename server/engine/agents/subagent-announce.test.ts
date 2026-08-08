@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { EmbeddedAgentQueueMessageOutcome } from "./embedded-agent-runner/runs.js";
 import { createSubagentAnnounceDeliveryRuntimeMock } from "./subagent-announce.test-support.js";
 
-type AgentCallRequest = { method?: string; params?: Record<string, unknown> };
+type AgentCallRequest = { method?: string; params?: Record<string, any> };
 type AgentCallResponse = { runId?: string; status: string; error?: string };
 
 const agentSpy = vi.fn(
@@ -14,16 +14,16 @@ const agentSpy = vi.fn(
   }),
 );
 const sessionsDeleteSpy = vi.fn((_req: AgentCallRequest) => undefined);
-const callGatewayMock = vi.fn(async (_request: unknown) => ({}));
+const callGatewayMock = vi.fn(async (_request: any) => ({}));
 const loadSessionStoreMock = vi.fn((_storePath: string) => ({}));
 const resolveAgentIdFromSessionKeyMock = vi.fn((sessionKey: string) => {
   return sessionKey.match(/^agent:([^:]+)/)?.[1] ?? "main";
 });
-const resolveStorePathMock = vi.fn((_store: unknown, _options: unknown) => "/tmp/sessions.json");
-const resolveMainSessionKeyMock = vi.fn((_cfg: unknown) => "agent:main:main");
+const resolveStorePathMock = vi.fn((_store: any, _options: any) => "/tmp/sessions.json");
+const resolveMainSessionKeyMock = vi.fn((_cfg: any) => "agent:main:main");
 const isEmbeddedAgentRunActiveMock = vi.fn((_sessionId: string) => false);
 const queueEmbeddedAgentMessageWithOutcomeMock = vi.fn(
-  (sessionId: string, _text: string, _options?: unknown): EmbeddedAgentQueueMessageOutcome => ({
+  (sessionId: string, _text: string, _options?: any): EmbeddedAgentQueueMessageOutcome => ({
     queued: false,
     sessionId,
     reason: "not_streaming" as const,
@@ -54,10 +54,10 @@ const { subagentRegistryRuntimeMock } = vi.hoisted(() => ({
 }));
 
 vi.mock("./subagent-announce.runtime.js", () => ({
-  callGateway: (request: unknown) => callGatewayMock(request),
+  callGateway: (request: any) => callGatewayMock(request),
   dispatchGatewayMethodInProcess: (
     method: string,
-    params: Record<string, unknown>,
+    params: Record<string, any>,
     options?: { timeoutMs?: number },
   ) => callGatewayMock({ method, params, timeoutMs: options?.timeoutMs }),
   isEmbeddedAgentRunActive: (sessionId: string) => isEmbeddedAgentRunActiveMock(sessionId),
@@ -65,26 +65,26 @@ vi.mock("./subagent-announce.runtime.js", () => ({
   loadSessionStore: (storePath: string) => loadSessionStoreMock(storePath),
   readSessionMessagesAsync: vi.fn(async () => []),
   readSessionEntry: (storePath: string, sessionKey: string) =>
-    (loadSessionStoreMock(storePath) as Record<string, unknown>)[sessionKey],
+    (loadSessionStoreMock(storePath) as Record<string, any>)[sessionKey],
   resolveAgentIdFromSessionKey: (sessionKey: string) =>
     resolveAgentIdFromSessionKeyMock(sessionKey),
-  resolveMainSessionKey: (cfg: unknown) => resolveMainSessionKeyMock(cfg),
-  resolveStorePath: (store: unknown, options: unknown) => resolveStorePathMock(store, options),
+  resolveMainSessionKey: (cfg: any) => resolveMainSessionKeyMock(cfg),
+  resolveStorePath: (store: any, options: any) => resolveStorePathMock(store, options),
   waitForEmbeddedAgentRunEnd: (sessionId: string, timeoutMs?: number) =>
     waitForEmbeddedAgentRunEndMock(sessionId, timeoutMs),
 }));
 
 vi.mock("./subagent-announce-delivery.runtime.js", () =>
   createSubagentAnnounceDeliveryRuntimeMock({
-    callGateway: (request: unknown) => callGatewayMock(request),
+    callGateway: (request: any) => callGatewayMock(request),
     getRuntimeConfig: () => mockConfig,
     loadSessionStore: (storePath: string) => loadSessionStoreMock(storePath),
     resolveAgentIdFromSessionKey: (sessionKey: string) =>
       resolveAgentIdFromSessionKeyMock(sessionKey),
-    resolveMainSessionKey: (cfg: unknown) => resolveMainSessionKeyMock(cfg),
-    resolveStorePath: (store: unknown, options: unknown) => resolveStorePathMock(store, options),
+    resolveMainSessionKey: (cfg: any) => resolveMainSessionKeyMock(cfg),
+    resolveStorePath: (store: any, options: any) => resolveStorePathMock(store, options),
     isEmbeddedAgentRunActive: (sessionId: string) => isEmbeddedAgentRunActiveMock(sessionId),
-    queueEmbeddedAgentMessageWithOutcome: (sessionId: string, text: string, options?: unknown) =>
+    queueEmbeddedAgentMessageWithOutcome: (sessionId: string, text: string, options?: any) =>
       queueEmbeddedAgentMessageWithOutcomeMock(sessionId, text, options),
   }),
 );
@@ -107,7 +107,7 @@ vi.mock("./subagent-announce-delivery.js", () => ({
   }) => {
     // The delivery mock preserves the key branch: active Discord requester
     // sessions are steered in-process, while inactive/direct paths call agent.
-    const store = loadSessionStoreMock("/tmp/sessions.json") as Record<string, unknown>;
+    const store = loadSessionStoreMock("/tmp/sessions.json") as Record<string, any>;
     const requesterEntry = (store?.[params.targetRequesterSessionKey] ?? {}) as
       | { sessionId?: string; origin?: { provider?: string; channel?: string } }
       | undefined;
@@ -158,12 +158,12 @@ vi.mock("./subagent-announce-delivery.js", () => ({
     return { delivered: true, path: "direct" };
   },
   loadRequesterSessionEntry: (sessionKey: string) => {
-    const store = loadSessionStoreMock("/tmp/sessions.json") as Record<string, unknown>;
+    const store = loadSessionStoreMock("/tmp/sessions.json") as Record<string, any>;
     const entry = store?.[sessionKey];
     return { entry };
   },
   loadSessionEntryByKey: (sessionKey: string) => {
-    const store = loadSessionStoreMock("/tmp/sessions.json") as Record<string, unknown>;
+    const store = loadSessionStoreMock("/tmp/sessions.json") as Record<string, any>;
     return store?.[sessionKey] ?? { sessionId: sessionKey };
   },
   resolveAnnounceOrigin: (
@@ -187,7 +187,7 @@ vi.mock("./subagent-announce-delivery.js", () => ({
     accountId: requesterOrigin?.accountId ?? entry?.lastAccountId ?? entry?.origin?.accountId,
     threadId: requesterOrigin?.threadId ?? entry?.lastThreadId,
   }),
-  resolveSubagentCompletionOrigin: async (params: { requesterOrigin?: unknown }) =>
+  resolveSubagentCompletionOrigin: async (params: { requesterOrigin?: any }) =>
     params.requesterOrigin,
   resolveSubagentAnnounceTimeoutMs: () => 10_000,
   runAnnounceDeliveryWithRetry: async <T>(params: { run: () => Promise<T> }) => await params.run(),
@@ -243,7 +243,7 @@ describe("subagent announce seam flow", () => {
   beforeEach(() => {
     agentSpy.mockClear();
     sessionsDeleteSpy.mockClear();
-    callGatewayMock.mockReset().mockImplementation(async (req: unknown) => {
+    callGatewayMock.mockReset().mockImplementation(async (req: any) => {
       const typed = req as AgentCallRequest;
       if (typed.method === "agent") {
         return await agentSpy(typed);
@@ -252,7 +252,7 @@ describe("subagent announce seam flow", () => {
         return { status: "ok", startedAt: 10, endedAt: 20 };
       }
       if (typed.method === "chat.history") {
-        return { messages: [] as Array<unknown> };
+        return { messages: [] as Array<any> };
       }
       if (typed.method === "sessions.patch") {
         return {};

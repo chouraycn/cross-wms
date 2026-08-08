@@ -37,8 +37,8 @@ export interface SessionFingerprintConfig {
   messageToolPolicy?: string;
   promptToolNames?: string;
   cwd?: string;
-  mcpConfig?: Record<string, unknown>;
-  mcpResume?: Record<string, unknown>;
+  mcpConfig?: Record<string, any>;
+  mcpResume?: Record<string, any>;
 }
 
 export type SessionInvalidationReason =
@@ -72,7 +72,7 @@ export function hashString(value: string | undefined): string | undefined {
  * 对对象进行稳定哈希（先 JSON.stringify 再哈希）
  * 空对象或 undefined 返回 undefined
  */
-export function hashObject(value: Record<string, unknown> | undefined): string | undefined {
+export function hashObject(value: Record<string, any> | undefined): string | undefined {
   if (!value || Object.keys(value).length === 0) {
     return undefined;
   }

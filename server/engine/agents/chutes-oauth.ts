@@ -97,7 +97,7 @@ export function parseOAuthCallbackInput(
   return { code, state };
 }
 
-function resolveChutesExpiresAt(value: unknown, now: number): number | undefined {
+function resolveChutesExpiresAt(value: any, now: number): number | undefined {
   // openclaw uses resolveExpiresAtMsFromDurationSeconds; cross-wms only has
   // resolveExpiresAtMsFromDurationMs which expects milliseconds. Convert seconds → ms.
   const durationSeconds = typeof value === "number" && Number.isFinite(value) ? value : undefined;
@@ -128,7 +128,7 @@ async function fetchChutesUserInfo(params: {
     await cancelUnreadResponseBody(response);
     return null;
   }
-  const data = (await response.json()) as unknown;
+  const data = (await response.json()) as any;
   if (!data || typeof data !== "object") {
     return null;
   }

@@ -28,7 +28,7 @@ type HeartbeatReplyContext = {
   SessionKey?: string;
 };
 
-function replyCall(replySpy: { mock: { calls: unknown[][] } }, index = 0): HeartbeatReplyContext {
+function replyCall(replySpy: { mock: { calls: any[][] } }, index = 0): HeartbeatReplyContext {
   return (replySpy.mock.calls[index]?.at(0) ?? {}) as HeartbeatReplyContext;
 }
 
@@ -448,7 +448,7 @@ describe("runHeartbeatOnce – isolated session key stability (#59493)", () => {
       expect(result).toEqual({ status: "skipped", reason: "no-tasks-due" });
       expect(replySpy).not.toHaveBeenCalled();
 
-      const store = JSON.parse(await fs.readFile(storePath, "utf-8")) as Record<string, unknown>;
+      const store = JSON.parse(await fs.readFile(storePath, "utf-8")) as Record<string, any>;
       expect(store[isolatedSessionKey]).toBeUndefined();
     });
   });

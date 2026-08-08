@@ -11,7 +11,7 @@ export interface DiagnosticTraceContext {
   spanId: string;
   parentSpanId?: string;
   startTime: number;
-  attributes?: Record<string, unknown>;
+  attributes?: Record<string, any>;
 }
 
 export interface DiagnosticEvent {
@@ -20,7 +20,7 @@ export interface DiagnosticEvent {
   timestamp: number;
   traceId?: string;
   spanId?: string;
-  data?: Record<string, unknown>;
+  data?: Record<string, any>;
   level: 'debug' | 'info' | 'warning' | 'error' | 'critical';
 }
 
@@ -31,7 +31,7 @@ export interface TimingSpan {
   endTime?: number;
   durationMs?: number;
   traceId?: string;
-  attributes?: Record<string, unknown>;
+  attributes?: Record<string, any>;
 }
 
 const activeTraces = new Map<string, DiagnosticTraceContext>();
@@ -46,7 +46,7 @@ export function generateSpanId(): string {
   return Math.random().toString(36).substr(2, 9);
 }
 
-export function createTrace(attributes?: Record<string, unknown>): DiagnosticTraceContext {
+export function createTrace(attributes?: Record<string, any>): DiagnosticTraceContext {
   const traceId = generateTraceId();
   const spanId = generateSpanId();
 
@@ -96,7 +96,7 @@ export function startTimingSpan(name: string, traceId?: string): string {
   return spanId;
 }
 
-export function endTimingSpan(spanId: string, attributes?: Record<string, unknown>): TimingSpan | null {
+export function endTimingSpan(spanId: string, attributes?: Record<string, any>): TimingSpan | null {
   const span = pendingSpans.get(spanId);
   if (!span) {
     return null;
@@ -114,7 +114,7 @@ export function endTimingSpan(spanId: string, attributes?: Record<string, unknow
   return span;
 }
 
-export function emitDiagnosticEvent(type: string, data?: Record<string, unknown>, level: DiagnosticEvent['level'] = 'info'): void {
+export function emitDiagnosticEvent(type: string, data?: Record<string, any>, level: DiagnosticEvent['level'] = 'info'): void {
   const event: DiagnosticEvent = {
     id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     type,
@@ -162,7 +162,7 @@ export function clearDiagnosticEvents(): void {
 
 export async function runWithTrace<T>(
   fn: () => Promise<T>,
-  options?: { name?: string; attributes?: Record<string, unknown> },
+  options?: { name?: string; attributes?: Record<string, any> },
 ): Promise<{ result: T; traceId: string }> {
   const trace = createTrace(options?.attributes);
   const spanId = startTimingSpan(options?.name ?? 'operation', trace.traceId);

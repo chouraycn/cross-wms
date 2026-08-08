@@ -3,7 +3,7 @@
  * 参考 openclaw/src/utils/safe-json.ts
  */
 
-export function safeJsonStringify(value: unknown): string | null {
+export function safeJsonStringify(value: any): string | null {
   try {
     return JSON.stringify(value, (_key, val) => {
       if (typeof val === "bigint") {

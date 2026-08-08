@@ -8,7 +8,7 @@ export interface ChannelSession {
   userId?: string;
   startTime: number;
   lastActivityTime: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 const channelSessions = new Map<string, ChannelSession>();

@@ -137,7 +137,7 @@ export async function resolveControlUiDistIndexPath(
       if (controlUiFsRuntime.existsSync(pkgJsonPath)) {
         try {
           const raw = controlUiFsRuntime.readFileSync(pkgJsonPath, "utf-8");
-          const parsed = JSON.parse(raw) as { name?: unknown };
+          const parsed = JSON.parse(raw) as { name?: any };
           if (parsed.name === "openclaw") {
             return controlUiFsRuntime.existsSync(indexPath) ? indexPath : null;
           }

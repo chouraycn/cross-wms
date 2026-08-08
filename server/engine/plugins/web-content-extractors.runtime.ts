@@ -4,9 +4,9 @@
  * 降级策略：返回空。
  */
 export function resolvePluginWebContentExtractors(params?: {
-  config?: unknown;
+  config?: any;
   env?: NodeJS.ProcessEnv;
-}): unknown[] {
+}): any[] {
   void params;
   return [];
 }

@@ -11,13 +11,13 @@
  */
 export interface IPreparedStatement {
   /** 执行带参数的 SQL，返回影响行数与最后插入 ID */
-  run(...params: unknown[]): { changes: number; lastInsertRowid: number };
+  run(...params: any[]): { changes: number; lastInsertRowid: number };
 
   /** 查询单行 */
-  get<T>(...params: unknown[]): T | undefined;
+  get<T>(...params: any[]): T | undefined;
 
   /** 查询多行 */
-  all<T>(...params: unknown[]): T[];
+  all<T>(...params: any[]): T[];
 }
 
 /**
@@ -54,16 +54,16 @@ export interface IStorageEngine {
   exec(sql: string): void;
 
   /** 查询单行记录，返回泛型 T 或 undefined */
-  get<T>(sql: string, params?: unknown[]): T | undefined;
+  get<T>(sql: string, params?: any[]): T | undefined;
 
   /** 查询多行记录，返回泛型 T 数组 */
-  all<T>(sql: string, params?: unknown[]): T[];
+  all<T>(sql: string, params?: any[]): T[];
 
   /**
    * 执行写入操作（INSERT / UPDATE / DELETE）。
    * 返回影响行数及最后插入行的自增 ID。
    */
-  run(sql: string, params?: unknown[]): { changes: number; lastInsertRowid: number };
+  run(sql: string, params?: any[]): { changes: number; lastInsertRowid: number };
 
   // ==========================================================================
   // 事务

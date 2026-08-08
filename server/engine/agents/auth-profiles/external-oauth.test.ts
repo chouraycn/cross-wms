@@ -10,10 +10,10 @@ import { readExternalCliBootstrapCredential } from "./external-cli-sync.js";
 import type { AuthProfileStore, OAuthCredential } from "./types.js";
 
 const resolveExternalAuthProfilesWithPluginsMock = vi.fn<
-  (params: unknown) => ProviderExternalAuthProfile[]
+  (params: any) => ProviderExternalAuthProfile[]
 >(() => []);
 const readCodexCliCredentialsCachedMock = vi.hoisted(() =>
-  vi.fn<(_options?: unknown) => OAuthCredential | null>(() => null),
+  vi.fn<(_options?: any) => OAuthCredential | null>(() => null),
 );
 
 vi.mock("../cli-credentials.js", () => ({
@@ -42,14 +42,14 @@ function createUsableOAuthExpiry(): number {
   return Date.now() + 30 * 60 * 1000;
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object") {
     throw new Error(`expected ${label}`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function requireProfile(store: AuthProfileStore, profileId: string): Record<string, unknown> {
+function requireProfile(store: AuthProfileStore, profileId: string): Record<string, any> {
   return requireRecord(store.profiles[profileId], profileId);
 }
 

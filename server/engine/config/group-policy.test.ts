@@ -7,12 +7,12 @@ import {
   resolveToolsBySender,
 } from "./group-policy.js";
 
-function firstWarningCall(warningSpy: ReturnType<typeof vi.spyOn>): [unknown, { code?: unknown }?] {
+function firstWarningCall(warningSpy: ReturnType<typeof vi.spyOn>): [unknown, { code?: any }?] {
   const [call] = warningSpy.mock.calls;
   if (!call) {
     throw new Error("expected process.emitWarning call");
   }
-  return call as [unknown, { code?: unknown }?];
+  return call as [unknown, { code?: any }?];
 }
 
 describe("resolveChannelGroupPolicy", () => {

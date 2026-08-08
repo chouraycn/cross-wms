@@ -260,7 +260,7 @@ describe("AcpSessionManager runtime handles", () => {
       runtime: runtimeState.runtime,
     });
     const sessionKey = "agent:codex:acp:binding:demo-binding:default:deadbeef";
-    hoisted.readAcpSessionEntryMock.mockImplementation((paramsUnknown: unknown) => {
+    hoisted.readAcpSessionEntryMock.mockImplementation((paramsUnknown: any) => {
       const key = (paramsUnknown as { sessionKey?: string }).sessionKey ?? sessionKey;
       return {
         sessionKey: key,
@@ -301,7 +301,7 @@ describe("AcpSessionManager runtime handles", () => {
       runtime: runtimeState.runtime,
     });
     const sessionKey = "agent:gemini:acp:binding:discord:default:restart";
-    hoisted.readAcpSessionEntryMock.mockImplementation((paramsUnknown: unknown) => {
+    hoisted.readAcpSessionEntryMock.mockImplementation((paramsUnknown: any) => {
       const key = (paramsUnknown as { sessionKey?: string }).sessionKey ?? sessionKey;
       return {
         sessionKey: key,
@@ -344,7 +344,7 @@ describe("AcpSessionManager runtime handles", () => {
       runtime: runtimeState.runtime,
     });
     const sessionKey = "agent:codex:acp:binding:demo-binding:default:cwd-restart";
-    hoisted.readAcpSessionEntryMock.mockImplementation((paramsUnknown: unknown) => {
+    hoisted.readAcpSessionEntryMock.mockImplementation((paramsUnknown: any) => {
       const key = (paramsUnknown as { sessionKey?: string }).sessionKey ?? sessionKey;
       return {
         sessionKey: key,
@@ -381,7 +381,7 @@ describe("AcpSessionManager runtime handles", () => {
       runtime: runtimeState.runtime,
     });
     const sessionKey = "agent:codex:acp:binding:demo-binding:default:model-restart";
-    hoisted.readAcpSessionEntryMock.mockImplementation((paramsUnknown: unknown) => {
+    hoisted.readAcpSessionEntryMock.mockImplementation((paramsUnknown: any) => {
       const key = (paramsUnknown as { sessionKey?: string }).sessionKey ?? sessionKey;
       return {
         sessionKey: key,
@@ -417,7 +417,7 @@ describe("AcpSessionManager runtime handles", () => {
       runtime: runtimeState.runtime,
     });
     const sessionKey = "agent:codex:acp:binding:demo-binding:default:thinking-restart";
-    hoisted.readAcpSessionEntryMock.mockImplementation((paramsUnknown: unknown) => {
+    hoisted.readAcpSessionEntryMock.mockImplementation((paramsUnknown: any) => {
       const key = (paramsUnknown as { sessionKey?: string }).sessionKey ?? sessionKey;
       return {
         sessionKey: key,
@@ -453,7 +453,7 @@ describe("AcpSessionManager runtime handles", () => {
       runtime: runtimeState.runtime,
     });
     const sessionKey = "agent:codex:acp:binding:demo-binding:default:oneshot";
-    hoisted.readAcpSessionEntryMock.mockImplementation((paramsUnknown: unknown) => {
+    hoisted.readAcpSessionEntryMock.mockImplementation((paramsUnknown: any) => {
       const key = (paramsUnknown as { sessionKey?: string }).sessionKey ?? sessionKey;
       return {
         sessionKey: key,
@@ -493,7 +493,7 @@ describe("AcpSessionManager runtime handles", () => {
 
   it("falls back to a fresh ensure without reusing stale agent session ids", async () => {
     const runtimeState = createRuntime();
-    runtimeState.ensureSession.mockImplementation(async (inputUnknown: unknown) => {
+    runtimeState.ensureSession.mockImplementation(async (inputUnknown: any) => {
       const input = inputUnknown as {
         sessionKey: string;
         agent: string;
@@ -534,7 +534,7 @@ describe("AcpSessionManager runtime handles", () => {
         lastUpdatedAt: Date.now(),
       },
     };
-    hoisted.readAcpSessionEntryMock.mockImplementation((paramsUnknown: unknown) => {
+    hoisted.readAcpSessionEntryMock.mockImplementation((paramsUnknown: any) => {
       const key = (paramsUnknown as { sessionKey?: string }).sessionKey ?? sessionKey;
       return {
         sessionKey: key,
@@ -542,7 +542,7 @@ describe("AcpSessionManager runtime handles", () => {
         acp: currentMeta,
       };
     });
-    hoisted.upsertAcpSessionMetaMock.mockImplementation(async (paramsUnknown: unknown) => {
+    hoisted.upsertAcpSessionMetaMock.mockImplementation(async (paramsUnknown: any) => {
       const params = paramsUnknown as {
         mutate: (
           current: SessionAcpMeta | undefined,

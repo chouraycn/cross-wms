@@ -126,7 +126,7 @@ describe("handleSteerCommand", () => {
     });
     expect(params.ctx.Body).toBe("keep going");
     expect(params.ctx.BodyForAgent).toBe("keep going");
-    expect((params.ctx as Record<string, unknown>).BodyStripped).toBe("keep going");
+    expect((params.ctx as Record<string, any>).BodyStripped).toBe("keep going");
     expect(params.command.commandBodyNormalized).toBe("keep going");
     expect(steerRuntimeMocks.queueEmbeddedAgentMessageWithOutcomeAsync).not.toHaveBeenCalled();
   });

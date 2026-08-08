@@ -16,18 +16,18 @@ export const DEFAULT_CACHE_TTL_MINUTES = 15;
 const DEFAULT_CACHE_MAX_ENTRIES = 100;
 const MAX_TIMER_TIMEOUT_SECONDS = 2_147_483;
 
-export function resolveTimeoutSeconds(value: unknown, fallback: number): number {
+export function resolveTimeoutSeconds(value: any, fallback: number): number {
   const parsed = typeof value === "number" && Number.isFinite(value) ? value : fallback;
   return Math.min(MAX_TIMER_TIMEOUT_SECONDS, Math.max(1, Math.floor(parsed)));
 }
 
-export function resolvePositiveTimeoutSeconds(value: unknown, fallback: number): number {
+export function resolvePositiveTimeoutSeconds(value: any, fallback: number): number {
   const parsed =
     typeof value === "number" && Number.isFinite(value) && value > 0 ? value : fallback;
   return Math.min(MAX_TIMER_TIMEOUT_SECONDS, Math.max(1, Math.floor(parsed)));
 }
 
-export function resolveCacheTtlMs(value: unknown, fallbackMinutes: number): number {
+export function resolveCacheTtlMs(value: any, fallbackMinutes: number): number {
   const minutes =
     typeof value === "number" && Number.isFinite(value) ? Math.max(0, value) : fallbackMinutes;
   return Math.round(minutes * 60_000);
@@ -119,7 +119,7 @@ export async function readResponseText(
       ? Math.floor(maxBytesRaw)
       : undefined;
 
-  const body = (res as unknown as { body?: unknown }).body;
+  const body = (res as unknown as { body?: any }).body;
   if (
     maxBytes &&
     body &&

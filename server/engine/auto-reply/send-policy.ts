@@ -12,7 +12,7 @@ import {
 
 type SendPolicyOverride = 'allow' | 'deny';
 
-function normalizeOptionalLowercaseString(value: unknown): string | undefined {
+function normalizeOptionalLowercaseString(value: any): string | undefined {
   if (typeof value !== 'string') return undefined;
   const trimmed = value.trim();
   return trimmed ? trimmed.toLowerCase() : undefined;

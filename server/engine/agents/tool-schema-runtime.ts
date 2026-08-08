@@ -6,9 +6,9 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function normalizeProviderToolSchemas(..._args: unknown[]): unknown {
+export function normalizeProviderToolSchemas(..._args: any[]): any {
   return undefined;
 }
-export function logProviderToolSchemaDiagnostics(..._args: unknown[]): unknown {
+export function logProviderToolSchemaDiagnostics(..._args: any[]): any {
   return undefined;
 }

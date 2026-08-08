@@ -45,7 +45,7 @@ function expectRegisteredRouteShape(
   registry: ReturnType<typeof createEmptyPluginRegistry>,
   params: {
     path: string;
-    handler?: unknown;
+    handler?: any;
     auth: "plugin" | "gateway";
     match?: "exact" | "prefix";
     pluginId?: string;

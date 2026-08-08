@@ -41,7 +41,7 @@ export function _recordDiagnosticsResponseTime(ms: number): void {
 
 // ========== Diagnostics Health ==========
 
-async function diagnosticsHealth(_params: unknown, _ctx: GatewayMethodContext) {
+async function diagnosticsHealth(_params: any, _ctx: GatewayMethodContext) {
   const memoryUsage = process.memoryUsage();
   const uptimeMs = Date.now() - serverStartedAt;
 
@@ -70,7 +70,7 @@ async function diagnosticsHealth(_params: unknown, _ctx: GatewayMethodContext) {
 
 // ========== Diagnostics System ==========
 
-async function diagnosticsSystem(_params: unknown, _ctx: GatewayMethodContext) {
+async function diagnosticsSystem(_params: any, _ctx: GatewayMethodContext) {
   const memoryUsage = process.memoryUsage();
 
   return {
@@ -90,7 +90,7 @@ async function diagnosticsSystem(_params: unknown, _ctx: GatewayMethodContext) {
 
 // ========== Diagnostics Performance ==========
 
-async function diagnosticsPerformance(_params: unknown, _ctx: GatewayMethodContext) {
+async function diagnosticsPerformance(_params: any, _ctx: GatewayMethodContext) {
   const memoryUsage = process.memoryUsage();
   const uptimeMs = Date.now() - serverStartedAt;
 

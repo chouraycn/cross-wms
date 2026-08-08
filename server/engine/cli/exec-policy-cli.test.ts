@@ -30,37 +30,37 @@ function mockRollbackApprovalSnapshots(originalSnapshot: ExecApprovalsSnapshot) 
     .mockImplementationOnce(() => createCurrentApprovalsSnapshot(originalSnapshot.path));
 }
 
-function expectFields(value: unknown, expected: Record<string, unknown>): void {
+function expectFields(value: any, expected: Record<string, any>): void {
   if (!value || typeof value !== "object") {
     throw new Error("expected fields object");
   }
-  const record = value as Record<string, unknown>;
+  const record = value as Record<string, any>;
   for (const [key, expectedValue] of Object.entries(expected)) {
     expect(record[key], key).toEqual(expectedValue);
   }
 }
 
-function readLastJsonWrite(): Record<string, unknown> {
+function readLastJsonWrite(): Record<string, any> {
   const calls = mocks.defaultRuntime.writeJson.mock.calls;
   const [payload, space] = calls[calls.length - 1] ?? [];
   expect(space).toBe(0);
   if (!payload || typeof payload !== "object") {
     throw new Error("expected JSON write payload object");
   }
-  return payload as Record<string, unknown>;
+  return payload as Record<string, any>;
 }
 
-function readFirstPolicyScope(payload: Record<string, unknown>): Record<string, unknown> {
-  const effectivePolicy = payload.effectivePolicy as { scopes?: unknown[] } | undefined;
+function readFirstPolicyScope(payload: Record<string, any>): Record<string, any> {
+  const effectivePolicy = payload.effectivePolicy as { scopes?: any[] } | undefined;
   expect(Array.isArray(effectivePolicy?.scopes)).toBe(true);
   const scope = effectivePolicy?.scopes?.[0];
   if (!scope || typeof scope !== "object") {
     throw new Error("expected first policy scope object");
   }
-  return scope as Record<string, unknown>;
+  return scope as Record<string, any>;
 }
 
-function readFirstReplaceConfigArg(): Record<string, unknown> {
+function readFirstReplaceConfigArg(): Record<string, any> {
   const call = mocks.replaceConfigFile.mock.calls[0];
   if (!call) {
     throw new Error("expected replaceConfigFile call");
@@ -69,12 +69,12 @@ function readFirstReplaceConfigArg(): Record<string, unknown> {
   if (!arg || typeof arg !== "object") {
     throw new Error("expected replaceConfigFile argument");
   }
-  return arg as Record<string, unknown>;
+  return arg as Record<string, any>;
 }
 
 const mocks = vi.hoisted(() => {
   const runtimeErrors: string[] = [];
-  const stringifyArgs = (args: unknown[]) => args.map((value) => String(value)).join(" ");
+  const stringifyArgs = (args: any[]) => args.map((value) => String(value)).join(" ");
   let configState: OpenClawConfig = {
     tools: {
       exec: {
@@ -95,10 +95,10 @@ const mocks = vi.hoisted(() => {
   };
   const defaultRuntime = {
     log: vi.fn(),
-    error: vi.fn((...args: unknown[]) => {
+    error: vi.fn((...args: any[]) => {
       runtimeErrors.push(stringifyArgs(args));
     }),
-    writeJson: vi.fn((value: unknown, space = 2) => {
+    writeJson: vi.fn((value: any, space = 2) => {
       defaultRuntime.log(JSON.stringify(value, null, space > 0 ? space : undefined));
     }),
     exit: vi.fn((code: number) => {
@@ -317,7 +317,7 @@ describe("exec-policy CLI", () => {
 
     expect(mocks.defaultRuntime.writeJson).toHaveBeenCalledTimes(1);
     const payload = readLastJsonWrite();
-    const effectivePolicy = payload.effectivePolicy as { note?: unknown } | undefined;
+    const effectivePolicy = payload.effectivePolicy as { note?: any } | undefined;
     expect(String(effectivePolicy?.note)).toContain("host=node");
     const scope = readFirstPolicyScope(payload);
     expectFields(scope, {

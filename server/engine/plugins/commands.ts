@@ -156,7 +156,7 @@ function resolveBindingConversationFromCommand(params: {
 } | null {
   const channelPlugin = getActivePluginChannelRegistry()?.channels.find(
     (entry) => (entry.plugin as { id: string }).id === params.channel,
-  )?.plugin as { bindings?: { resolveCommandConversation?: unknown } } | undefined;
+  )?.plugin as { bindings?: { resolveCommandConversation?: any } } | undefined;
   if (!channelPlugin?.bindings?.resolveCommandConversation) {
     return null;
   }
@@ -173,7 +173,7 @@ function resolveBindingConversationFromCommand(params: {
   } as unknown as Parameters<typeof resolveConversationBindingContext>[0]);
 }
 
-type PluginCommandRuntimeLlm = { complete: (request: unknown) => Promise<unknown> } | undefined;
+type PluginCommandRuntimeLlm = { complete: (request: any) => Promise<any> } | undefined;
 type PluginCommandLlmCompleteParams = Parameters<
   NonNullable<PluginCommandRuntimeLlm>["complete"]
 >[0];
@@ -274,11 +274,11 @@ export async function executePluginCommand(params: {
     return { text: "⚠️ This command has invalid gateway scope configuration." };
   }
   const requiredScopes = command.requiredScopes ?? [];
-  const unknownScope = (requiredScopes as readonly unknown[]).find(
+  const unknownScope = (requiredScopes as readonly any[]).find(
     (scope) => !isOperatorScope(scope),
   );
   if (unknownScope) {
-    logVerbose(`Plugin command /${command.name} blocked: unknown gateway scope`);
+    logVerbose(`Plugin command /${command.name} blocked: any gateway scope`);
     return { text: "⚠️ This command has invalid gateway scope configuration." };
   }
   if (requiredScopes.length > 0) {

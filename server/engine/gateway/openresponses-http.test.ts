@@ -94,7 +94,7 @@ async function startTokenServer(port: number, opts?: { openResponsesEnabled?: bo
   );
 }
 
-async function writeGatewayConfig(config: Record<string, unknown>) {
+async function writeGatewayConfig(config: Record<string, any>) {
   const configPath = process.env.OPENCLAW_CONFIG_PATH;
   if (!configPath) {
     throw new Error("OPENCLAW_CONFIG_PATH is required for gateway config tests");
@@ -103,7 +103,7 @@ async function writeGatewayConfig(config: Record<string, unknown>) {
   await fs.writeFile(configPath, JSON.stringify(config, null, 2), "utf-8");
 }
 
-async function postResponses(port: number, body: unknown, headers?: Record<string, string>) {
+async function postResponses(port: number, body: any, headers?: Record<string, string>) {
   const res = await fetch(`http://127.0.0.1:${port}/v1/responses`, {
     method: "POST",
     headers: {
@@ -157,8 +157,8 @@ function findSseEvent(events: SseEvent[], eventName: string): SseEvent {
   return event;
 }
 
-function parseSseData(event: SseEvent): unknown {
-  return JSON.parse(event.data) as unknown;
+function parseSseData(event: SseEvent): any {
+  return JSON.parse(event.data) as any;
 }
 
 function requireSessionKey(value: string | undefined, label: string): string {
@@ -168,12 +168,12 @@ function requireSessionKey(value: string | undefined, label: string): string {
   return value;
 }
 
-function firstAgentOpts(callIndex = 0): Record<string, unknown> {
+function firstAgentOpts(callIndex = 0): Record<string, any> {
   const call = agentCommand.mock.calls[callIndex];
   if (!call) {
     throw new Error(`expected agentCommand call #${callIndex + 1}`);
   }
-  return call[0] as Record<string, unknown>;
+  return call[0] as Record<string, any>;
 }
 
 async function ensureResponseConsumed(res: Response) {
@@ -260,7 +260,7 @@ async function expectInvalidRequest(
 describe("OpenResponses HTTP API (e2e)", () => {
   it("handles OpenResponses request parsing and validation", async () => {
     const port = enabledPort;
-    const mockAgentOnce = (payloads: Array<{ text: string }>, meta?: unknown) => {
+    const mockAgentOnce = (payloads: Array<{ text: string }>, meta?: any) => {
       agentCommand.mockClear();
       agentCommand.mockResolvedValueOnce({ payloads, meta } as never);
     };
@@ -286,8 +286,8 @@ describe("OpenResponses HTTP API (e2e)", () => {
 
       const resMissingModel = await postResponses(port, { input: "hi" });
       expect(resMissingModel.status).toBe(400);
-      const missingModelJson = (await resMissingModel.json()) as Record<string, unknown>;
-      expect((missingModelJson.error as Record<string, unknown> | undefined)?.type).toBe(
+      const missingModelJson = (await resMissingModel.json()) as Record<string, any>;
+      expect((missingModelJson.error as Record<string, any> | undefined)?.type).toBe(
         "invalid_request_error",
       );
       await ensureResponseConsumed(resMissingModel);
@@ -683,7 +683,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
       expect(resToolNone.status).toBe(200);
       const optsToolNone = firstAgentOpts();
       expect(
-        (optsToolNone as { clientTools?: unknown[] } | undefined)?.clientTools,
+        (optsToolNone as { clientTools?: any[] } | undefined)?.clientTools,
       ).toBeUndefined();
       await ensureResponseConsumed(resToolNone);
 
@@ -839,7 +839,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
         input: "hi",
       });
       expect(resUsage.status).toBe(200);
-      const usageJson = (await resUsage.json()) as Record<string, unknown>;
+      const usageJson = (await resUsage.json()) as Record<string, any>;
       expect(usageJson.usage).toEqual({ input_tokens: 3, output_tokens: 5, total_tokens: 10 });
       await ensureResponseConsumed(resUsage);
 
@@ -850,19 +850,19 @@ describe("OpenResponses HTTP API (e2e)", () => {
         input: "hi",
       });
       expect(resShape.status).toBe(200);
-      const shapeJson = (await resShape.json()) as Record<string, unknown>;
+      const shapeJson = (await resShape.json()) as Record<string, any>;
       expect(shapeJson.object).toBe("response");
       expect(shapeJson.status).toBe("completed");
       expect(Array.isArray(shapeJson.output)).toBe(true);
 
-      const output = shapeJson.output as Array<Record<string, unknown>>;
+      const output = shapeJson.output as Array<Record<string, any>>;
       expect(output.length).toBe(1);
       const item = output[0] ?? {};
       expect(item.type).toBe("message");
       expect(item.role).toBe("assistant");
       expect(item.phase).toBe("final_answer");
 
-      const content = item.content as Array<Record<string, unknown>>;
+      const content = item.content as Array<Record<string, any>>;
       expect(content.length).toBe(1);
       expect(content[0]?.type).toBe("output_text");
       expect(content[0]?.text).toBe("hello");
@@ -873,8 +873,8 @@ describe("OpenResponses HTTP API (e2e)", () => {
         input: [{ type: "message", role: "system", content: "yo" }],
       });
       expect(resNoUser.status).toBe(400);
-      const noUserJson = (await resNoUser.json()) as Record<string, unknown>;
-      expect((noUserJson.error as Record<string, unknown> | undefined)?.type).toBe(
+      const noUserJson = (await resNoUser.json()) as Record<string, any>;
+      expect((noUserJson.error as Record<string, any> | undefined)?.type).toBe(
         "invalid_request_error",
       );
       await ensureResponseConsumed(resNoUser);
@@ -888,7 +888,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
     const port = enabledPort;
     try {
       agentCommand.mockClear();
-      agentCommand.mockImplementationOnce((async (opts: unknown) =>
+      agentCommand.mockImplementationOnce((async (opts: any) =>
         buildAssistantDeltaResult({
           opts,
           emit: emitAgentEvent,
@@ -930,7 +930,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
       const completedDeltaResponse = deltaEvents.find((e) => e.event === "response.completed");
       const completedDeltaOutput = (
         JSON.parse(completedDeltaResponse?.data ?? "{}") as {
-          response?: { output?: Array<Record<string, unknown>> };
+          response?: { output?: Array<Record<string, any>> };
         }
       ).response?.output;
       expect(completedDeltaOutput?.[0]?.phase).toBe("final_answer");
@@ -1033,7 +1033,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
     await ensureResponseConsumed(adminScopeResponse);
 
     agentCommand.mockClear();
-    agentCommand.mockImplementationOnce((async (opts: unknown) =>
+    agentCommand.mockImplementationOnce((async (opts: any) =>
       buildAssistantDeltaResult({
         opts,
         emit: emitAgentEvent,
@@ -1105,13 +1105,13 @@ describe("OpenResponses HTTP API (e2e)", () => {
     expect(res.status).toBe(200);
     const json = (await res.json()) as {
       status?: string;
-      output?: Array<Record<string, unknown>>;
+      output?: Array<Record<string, any>>;
     };
     expect(json.status).toBe("incomplete");
     expect(json.output?.map((item) => item.type)).toEqual(["message", "function_call"]);
     expect(json.output?.[0]?.phase).toBe("commentary");
     expect(
-      ((json.output?.[0]?.content as Array<Record<string, unknown>> | undefined)?.[0]?.text as
+      ((json.output?.[0]?.content as Array<Record<string, any>> | undefined)?.[0]?.text as
         | string
         | undefined) ?? "",
     ).toBe("Let me check that.");
@@ -1167,7 +1167,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
     expect(res.status).toBe(200);
     const json = (await res.json()) as {
       status?: string;
-      output?: Array<Record<string, unknown>>;
+      output?: Array<Record<string, any>>;
     };
     expect(json.status).toBe("incomplete");
     expect(json.output?.map((item) => item.type)).toEqual(["message", "function_call"]);
@@ -1249,7 +1249,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
   it("rejects an unsatisfied required tool_choice on the streaming path without leaking text", async () => {
     const port = enabledPort;
     agentCommand.mockClear();
-    agentCommand.mockImplementationOnce((async (opts: unknown) =>
+    agentCommand.mockImplementationOnce((async (opts: any) =>
       buildAssistantDeltaResult({
         opts,
         emit: emitAgentEvent,
@@ -1336,7 +1336,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
   it("emits the tool call when a streaming required tool_choice is satisfied", async () => {
     const port = enabledPort;
     agentCommand.mockClear();
-    agentCommand.mockImplementationOnce((async (opts: unknown) => {
+    agentCommand.mockImplementationOnce((async (opts: any) => {
       const runId = (opts as { runId?: string } | undefined)?.runId ?? "";
       emitAgentEvent({ runId, stream: "assistant", data: { delta: "Calling " } });
       emitAgentEvent({ runId, stream: "assistant", data: { delta: "the tool." } });
@@ -1364,7 +1364,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
     const completed = findSseEvent(events, "response.completed");
     const response = (
       parseSseData(completed) as {
-        response?: { status?: string; output?: Array<Record<string, unknown>> };
+        response?: { status?: string; output?: Array<Record<string, any>> };
       }
     ).response;
     expect(response?.status).toBe("incomplete");
@@ -1375,7 +1375,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
   it("buffers replaceable assistant events for streaming responses", async () => {
     const port = enabledPort;
     agentCommand.mockClear();
-    agentCommand.mockImplementationOnce((async (opts: unknown) => {
+    agentCommand.mockImplementationOnce((async (opts: any) => {
       const runId = (opts as { runId?: string } | undefined)?.runId ?? "";
       emitAgentEvent({
         runId,
@@ -1419,7 +1419,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
   it("prefers final result text over buffered replaceable response drafts", async () => {
     const port = enabledPort;
     agentCommand.mockClear();
-    agentCommand.mockImplementationOnce((async (opts: unknown) => {
+    agentCommand.mockImplementationOnce((async (opts: any) => {
       const runId = (opts as { runId?: string } | undefined)?.runId ?? "";
       emitAgentEvent({
         runId,
@@ -1482,14 +1482,14 @@ describe("OpenResponses HTTP API (e2e)", () => {
     const completed = findSseEvent(events, "response.completed");
     const response = (
       parseSseData(completed) as {
-        response?: { status?: string; output?: Array<Record<string, unknown>> };
+        response?: { status?: string; output?: Array<Record<string, any>> };
       }
     ).response;
     expect(response?.status).toBe("incomplete");
     expect(response?.output?.map((item) => item.type)).toEqual(["message", "function_call"]);
     expect(response?.output?.[0]?.phase).toBe("commentary");
     expect(
-      (((response?.output?.[0]?.content as Array<Record<string, unknown>> | undefined) ?? [])[0]
+      (((response?.output?.[0]?.content as Array<Record<string, any>> | undefined) ?? [])[0]
         ?.text as string | undefined) ?? "",
     ).toBe("Let me check that.");
     expect(response?.output?.[1]?.name).toBe("get_weather");
@@ -1531,7 +1531,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
     expect(res.status).toBe(200);
     const json = (await res.json()) as {
       status?: string;
-      output?: Array<Record<string, unknown>>;
+      output?: Array<Record<string, any>>;
     };
     expect(json.status).toBe("incomplete");
     expect(json.output?.map((item) => item.type)).toEqual([
@@ -1623,7 +1623,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
     const completed = findSseEvent(events, "response.completed");
     const response = (
       parseSseData(completed) as {
-        response?: { status?: string; output?: Array<Record<string, unknown>> };
+        response?: { status?: string; output?: Array<Record<string, any>> };
       }
     ).response;
     expect(response?.status).toBe("incomplete");
@@ -1850,7 +1850,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
     // Image-only turn carries a non-empty placeholder so the agent command runs,
     // with the real image attached via `images` (parity with /v1/chat/completions).
     expect((opts as { message?: string }).message ?? "").toBe(IMAGE_ONLY_USER_MESSAGE);
-    expect((opts as { images?: unknown[] }).images?.length).toBe(1);
+    expect((opts as { images?: any[] }).images?.length).toBe(1);
     await ensureResponseConsumed(res);
   });
 
@@ -1957,7 +1957,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
 
     agentCommand.mockClear();
     agentCommand.mockImplementationOnce(
-      (opts: unknown) =>
+      (opts: any) =>
         new Promise<undefined>((resolve) => {
           const signal = (opts as { abortSignal?: AbortSignal } | undefined)?.abortSignal;
           serverAbortSignal = signal;
@@ -2014,7 +2014,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
 
       agentCommand.mockClear();
       agentCommand.mockImplementationOnce(
-        (opts: unknown) =>
+        (opts: any) =>
           new Promise<undefined>((resolve) => {
             const signal = (opts as { abortSignal?: AbortSignal } | undefined)?.abortSignal;
             serverAbortSignal = signal;

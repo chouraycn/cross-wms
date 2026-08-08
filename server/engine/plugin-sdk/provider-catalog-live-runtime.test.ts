@@ -23,7 +23,7 @@ function buildModel(id: string): ModelDefinitionConfig {
   };
 }
 
-function buildFetchGuard(body: unknown): {
+function buildFetchGuard(body: any): {
   fetchGuard: LiveModelCatalogFetchGuard;
   fetchGuardMock: MockedFunction<LiveModelCatalogFetchGuard>;
   release: ReturnType<typeof vi.fn>;
@@ -156,8 +156,8 @@ describe("provider-catalog-live-runtime", () => {
       fetchGuard,
       ttlMs: 60_000,
       readRows: (body) =>
-        body && typeof body === "object" && Array.isArray((body as { models?: unknown }).models)
-          ? (body as { models: unknown[] }).models
+        body && typeof body === "object" && Array.isArray((body as { models?: any }).models)
+          ? (body as { models: any[] }).models
           : [],
     });
     const second = await getCachedLiveProviderModelRows({
@@ -166,8 +166,8 @@ describe("provider-catalog-live-runtime", () => {
       fetchGuard,
       ttlMs: 60_000,
       readRows: (body) =>
-        body && typeof body === "object" && Array.isArray((body as { models?: unknown }).models)
-          ? (body as { models: unknown[] }).models
+        body && typeof body === "object" && Array.isArray((body as { models?: any }).models)
+          ? (body as { models: any[] }).models
           : [],
     });
 
@@ -208,7 +208,7 @@ describe("provider-catalog-live-runtime", () => {
       providerId: "provider",
       endpoint: "https://provider.example.test/v1/models",
       fetchGuard: fetchGuardMock,
-    }).catch((err: unknown) => err);
+    }).catch((err: any) => err);
 
     expect(error).toBeInstanceOf(Error);
     expect((error as Error).message).toMatch(/Live model catalog response exceeded \d+ bytes/);
@@ -220,7 +220,7 @@ describe("provider-catalog-live-runtime", () => {
     vi.useFakeTimers();
     try {
       const encoder = new TextEncoder();
-      let cancelReason: unknown;
+      let cancelReason: any;
       const release = vi.fn(async () => undefined);
       const fetchGuardMock: MockedFunction<LiveModelCatalogFetchGuard> = vi.fn(async () => ({
         response: new Response(
@@ -244,7 +244,7 @@ describe("provider-catalog-live-runtime", () => {
         endpoint: "https://provider.example.test/v1/models",
         fetchGuard: fetchGuardMock,
         timeoutMs: 1234,
-      }).catch((err: unknown) => err);
+      }).catch((err: any) => err);
 
       await vi.advanceTimersByTimeAsync(0);
       await vi.advanceTimersByTimeAsync(1234);
@@ -275,7 +275,7 @@ describe("provider-catalog-live-runtime", () => {
       providerId: "provider",
       endpoint: "https://provider.example.test/v1/models",
       fetchGuard: fetchGuardMock,
-    }).catch((err: unknown) => err);
+    }).catch((err: any) => err);
 
     expect(error).toBeInstanceOf(LiveModelCatalogHttpError);
     expect(error).toMatchObject({ status: 401 });

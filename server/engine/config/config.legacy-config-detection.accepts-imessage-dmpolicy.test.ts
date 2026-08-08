@@ -8,9 +8,9 @@ import { AudioSchema, BindingsSchema } from "./zod-schema.agents.js";
 import { OpenClawSchema } from "./zod-schema.js";
 
 function expectOpenClawSchemaInvalidPreservesField(params: {
-  config: unknown;
-  readValue: (parsed: unknown) => unknown;
-  expectedValue: unknown;
+  config: any;
+  readValue: (parsed: any) => unknown;
+  expectedValue: any;
   expectedPath?: string;
   expectedMessageIncludes?: string;
 }) {
@@ -126,7 +126,7 @@ describe("legacy config detection", () => {
           parsed as {
             messages?: {
               queue?: {
-                byProvider?: Record<string, unknown>;
+                byProvider?: Record<string, any>;
               };
             };
           }
@@ -142,7 +142,7 @@ describe("legacy config detection", () => {
           parsed as {
             messages?: {
               queue?: {
-                mode?: unknown;
+                mode?: any;
               };
             };
           }

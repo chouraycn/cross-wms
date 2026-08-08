@@ -10,9 +10,9 @@ import {
 } from "../../test-utils/repo-files.js";
 
 type PluginManifestFile = {
-  id?: unknown;
+  id?: any;
   contracts?: {
-    tools?: unknown;
+    tools?: any;
   };
 };
 
@@ -261,7 +261,7 @@ function readManifest(manifestPath: string): PluginManifestFile {
   return JSON.parse(fs.readFileSync(manifestPath, "utf-8")) as PluginManifestFile;
 }
 
-function normalizeManifestTools(value: unknown): string[] {
+function normalizeManifestTools(value: any): string[] {
   if (!Array.isArray(value)) {
     return [];
   }

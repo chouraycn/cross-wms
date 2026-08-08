@@ -10,9 +10,9 @@ export type ExtraSyncAuditCheck = {
 };
 
 export type ExtraSyncAuditContext = {
-  config?: Record<string, unknown>;
+  config?: Record<string, any>;
   envVars?: Record<string, string>;
-  packageJson?: Record<string, unknown>;
+  packageJson?: Record<string, any>;
   files?: string[];
 };
 
@@ -83,14 +83,14 @@ const SYNC_AUDIT_CHECKS: ExtraSyncAuditCheck[] = [
       const strictChecks = [
         {
           path: 'security.strictMode',
-          check: (c: Record<string, unknown>) => !c['security'] || (c['security'] as Record<string, unknown>)['strictMode'] !== true,
+          check: (c: Record<string, any>) => !c['security'] || (c['security'] as Record<string, any>)['strictMode'] !== true,
           message: 'Security strict mode is not enabled',
           recommendation: 'Enable security.strictMode for enhanced security protections.',
         },
         {
           path: 'security.maxRetries',
-          check: (c: Record<string, unknown>) => {
-            const sec = c['security'] as Record<string, unknown> | undefined;
+          check: (c: Record<string, any>) => {
+            const sec = c['security'] as Record<string, any> | undefined;
             const maxRetries = sec?.['maxRetries'] as number | undefined;
             return maxRetries === undefined || maxRetries > 5;
           },
@@ -99,8 +99,8 @@ const SYNC_AUDIT_CHECKS: ExtraSyncAuditCheck[] = [
         },
         {
           path: 'security.timeout',
-          check: (c: Record<string, unknown>) => {
-            const sec = c['security'] as Record<string, unknown> | undefined;
+          check: (c: Record<string, any>) => {
+            const sec = c['security'] as Record<string, any> | undefined;
             const timeout = sec?.['timeout'] as number | undefined;
             return timeout === undefined || timeout > 30000;
           },

@@ -36,8 +36,8 @@ interface PdfLibModule {
 }
 interface PdfLibDocument {
   setTitle(title: string): void;
-  copyPages(src: PdfLibDocument, indices: number[]): Promise<unknown[]>;
-  addPage(page?: unknown): unknown;
+  copyPages(src: PdfLibDocument, indices: number[]): Promise<any[]>;
+  addPage(page?: any): any;
   getPageIndices(): number[];
   getPageCount(): number;
   save(): Promise<Uint8Array>;
@@ -49,7 +49,7 @@ interface PdfLibDocument {
  * 动态加载 pdf-parse 库
  * pdf-parse 用于提取 PDF 文本内容和元数据
  */
-async function loadPdfParse(): Promise<((data: Buffer) => Promise<{ numpages: number; text: string; info?: Record<string, unknown>; [key: string]: unknown }>) | null> {
+async function loadPdfParse(): Promise<((data: Buffer) => Promise<{ numpages: number; text: string; info?: Record<string, any>; [key: string]: any }>) | null> {
   try {
     return require('pdf-parse');
   } catch (err) {
@@ -63,7 +63,7 @@ async function loadPdfParse(): Promise<((data: Buffer) => Promise<{ numpages: nu
  * pdf-lib 用于 PDF 操作（合并、拆分、修改）
  * 注意：pdf-lib 是 ESM 模块，需要特殊处理
  */
-async function loadPdfLib(): Promise<unknown> {
+async function loadPdfLib(): Promise<any> {
   try {
     // pdf-lib 是 ESM 模块，使用动态 import
     // @ts-expect-error pdf-lib 类型声明不可用
@@ -368,7 +368,7 @@ export async function splitPdfFile(
           sourcePdf,
           Array.from({ length: endPage - startPage }, (_, j) => startPage + j)
         );
-        pages.forEach((page: unknown) => newPdf.addPage(page as never));
+        pages.forEach((page: any) => newPdf.addPage(page as never));
 
         const pdfBytes = await newPdf.save();
         const fileName = namingPattern
@@ -396,7 +396,7 @@ export async function splitPdfFile(
           sourcePdf,
           Array.from({ length: end - start + 1 }, (_, j) => start - 1 + j)
         );
-        pages.forEach((page: unknown) => newPdf.addPage(page as never));
+        pages.forEach((page: any) => newPdf.addPage(page as never));
 
         const pdfBytes = await newPdf.save();
         const fileName = namingPattern

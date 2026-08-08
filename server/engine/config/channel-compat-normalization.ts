@@ -2,19 +2,19 @@
 
 export type LegacyStreamingAliasOptions = unknown;
 export type NormalizeLegacyChannelAccountParams = unknown;
-export function asObjectRecord(...args: unknown[]): unknown {
+export function asObjectRecord(...args: any[]): any {
   return undefined;
 }
-export function hasLegacyAccountStreamingAliases(...args: unknown[]): unknown {
+export function hasLegacyAccountStreamingAliases(...args: any[]): any {
   return false;
 }
-export function normalizeLegacyStreamingAliases(...args: unknown[]): unknown {
+export function normalizeLegacyStreamingAliases(...args: any[]): any {
   return undefined;
 }
-export function normalizeLegacyChannelAliases(...args: unknown[]): unknown {
+export function normalizeLegacyChannelAliases(...args: any[]): any {
   return undefined;
 }
-export function hasLegacyStreamingAliases(...args: unknown[]): unknown {
+export function hasLegacyStreamingAliases(...args: any[]): any {
   return false;
 }
 export type normalizeLegacyDmAliases = unknown;

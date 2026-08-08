@@ -18,7 +18,7 @@ export function isGooglePromptCacheEligible(params: {
 }
 
 export function resolveCacheRetention(
-  extraParams: Record<string, unknown> | undefined,
+  extraParams: Record<string, any> | undefined,
   provider: string,
   modelApi?: string,
   modelId?: string,

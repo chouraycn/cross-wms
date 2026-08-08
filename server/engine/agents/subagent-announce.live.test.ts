@@ -33,7 +33,7 @@ const describeLive = LIVE ? describe : describe.skip;
 
 type AgentPayload = {
   status?: string;
-  result?: unknown;
+  result?: any;
 };
 
 type InProcessAgentDispatch =
@@ -218,7 +218,7 @@ function summarizeAgentEvents(events: AgentEventPayload[], runId: string): strin
   );
 }
 
-function isBashToolEventName(value: unknown): boolean {
+function isBashToolEventName(value: any): boolean {
   return value === "bash" || value === "exec";
 }
 
@@ -318,7 +318,7 @@ describeLive("subagent announce live", () => {
       });
       client = await createGatewayClient({ port, token });
 
-      let initialError: unknown;
+      let initialError: any;
       let parentObservedAt: number | undefined;
       let parentText: string | undefined;
       const initialRequest = client.request<AgentPayload>(
@@ -350,7 +350,7 @@ describeLive("subagent announce live", () => {
           parentObservedAt = Date.now();
           parentText = extractPayloadText(response.result);
         })
-        .catch((error: unknown) => {
+        .catch((error: any) => {
           initialError = error;
         });
 
@@ -450,7 +450,7 @@ describeLive("subagent announce live", () => {
       };
       const instrumentedDispatch: typeof realDispatchGatewayMethodInProcess = async <T>(
         method: string,
-        params: Record<string, unknown>,
+        params: Record<string, any>,
         options?: Parameters<typeof realDispatchGatewayMethodInProcess>[2],
       ): Promise<T> => {
         if (method === "agent") {
@@ -511,7 +511,7 @@ describeLive("subagent announce live", () => {
       });
       client = await createGatewayClient({ port, token });
 
-      let initialError: unknown;
+      let initialError: any;
       const initialRequest = client.request<AgentPayload>(
         "agent",
         {
@@ -536,7 +536,7 @@ describeLive("subagent announce live", () => {
         },
         { expectFinal: true, timeoutMs: REQUEST_TIMEOUT_MS },
       );
-      initialRequest.catch((error: unknown) => {
+      initialRequest.catch((error: any) => {
         initialError = error;
       });
 
@@ -565,7 +565,7 @@ describeLive("subagent announce live", () => {
             isBashToolEventName(event.data.name),
         );
         return sawBashStart ? currentRun : undefined;
-      }).catch((error: unknown) => {
+      }).catch((error: any) => {
         throw new Error(
           `timed out waiting for child bash start; runs=${summarizeSubagentRuns(
             listSteeredChildRuns(),
@@ -602,7 +602,7 @@ describeLive("subagent announce live", () => {
             run.completion?.resultText?.includes(childToken) === true &&
             run.outcome?.status === "ok",
         );
-      }).catch((error: unknown) => {
+      }).catch((error: any) => {
         throw new Error(
           `timed out waiting for steered child completion after steer ${JSON.stringify(
             steerResult,
@@ -634,7 +634,7 @@ describeLive("subagent announce live", () => {
             (entry) => entry.phase === "completed" && entry.resultText.includes(parentToken),
           );
         },
-      ).catch((error: unknown) => {
+      ).catch((error: any) => {
         throw new Error(
           `timed out waiting for parent token in completion dispatch; dispatches=${JSON.stringify(
             inProcessAgentDispatches,
@@ -728,7 +728,7 @@ describeLive("subagent announce live", () => {
       });
       client = await createGatewayClient({ port, token });
 
-      let initialError: unknown;
+      let initialError: any;
       const initialRequest = client.request<AgentPayload>(
         "agent",
         {
@@ -766,7 +766,7 @@ describeLive("subagent announce live", () => {
         },
         { expectFinal: true, timeoutMs: REQUEST_TIMEOUT_MS },
       );
-      initialRequest.catch((error: unknown) => {
+      initialRequest.catch((error: any) => {
         initialError = error;
       });
 
@@ -801,7 +801,7 @@ describeLive("subagent announce live", () => {
   );
 });
 
-function toLintErrorObject(value: unknown, fallbackMessage: string): Error {
+function toLintErrorObject(value: any, fallbackMessage: string): Error {
   if (value instanceof Error) {
     return value;
   }

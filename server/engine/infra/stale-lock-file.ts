@@ -11,7 +11,7 @@ export type LockFileOwnerPayload = {
 };
 
 export function readLockFileOwnerPayload(
-  payload: Record<string, unknown> | null,
+  payload: Record<string, any> | null,
 ): LockFileOwnerPayload | null {
   if (!payload) {
     return null;
@@ -24,7 +24,7 @@ export function readLockFileOwnerPayload(
 }
 
 export function shouldRemoveDeadOwnerOrExpiredLock(params: {
-  payload: Record<string, unknown> | null;
+  payload: Record<string, any> | null;
   staleMs: number;
   nowMs?: number;
   isPidDefinitelyDead?: (pid: number) => boolean;

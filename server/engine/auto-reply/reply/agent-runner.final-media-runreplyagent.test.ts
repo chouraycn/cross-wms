@@ -58,18 +58,18 @@ vi.mock("../../infra/diagnostics-timeline.js", async () => {
 });
 
 vi.mock("../../media/outbound-attachment.js", () => ({
-  resolveOutboundAttachmentFromUrl: (...args: unknown[]) =>
+  resolveOutboundAttachmentFromUrl: (...args: any[]) =>
     resolveOutboundAttachmentFromUrlMock(...args),
 }));
 
 vi.mock("./agent-runner-execution.js", () => ({
   buildKnownAgentRunFailureReplyPayload: vi.fn(() => undefined),
-  runAgentTurnWithFallback: (...args: unknown[]) => runAgentTurnWithFallbackMock(...args),
+  runAgentTurnWithFallback: (...args: any[]) => runAgentTurnWithFallbackMock(...args),
 }));
 
 vi.mock("./agent-runner-memory.js", () => ({
-  runMemoryFlushIfNeeded: async ({ sessionEntry }: { sessionEntry?: unknown }) => sessionEntry,
-  runPreflightCompactionIfNeeded: async ({ sessionEntry }: { sessionEntry?: unknown }) =>
+  runMemoryFlushIfNeeded: async ({ sessionEntry }: { sessionEntry?: any }) => sessionEntry,
+  runPreflightCompactionIfNeeded: async ({ sessionEntry }: { sessionEntry?: any }) =>
     sessionEntry,
 }));
 
@@ -78,7 +78,7 @@ vi.mock("./agent-runner-utils.js", async () => {
     await vi.importActual<typeof import("./agent-runner-utils.js")>("./agent-runner-utils.js");
   return {
     ...actual,
-    resolveQueuedReplyExecutionConfig: async (config: unknown) => config,
+    resolveQueuedReplyExecutionConfig: async (config: any) => config,
   };
 });
 
@@ -86,9 +86,9 @@ vi.mock("./queue.js", async () => {
   const actual = await vi.importActual<typeof import("./queue.js")>("./queue.js");
   return {
     ...actual,
-    enqueueFollowupRun: (...args: unknown[]) => enqueueFollowupRunMock(...args),
-    refreshQueuedFollowupSession: (...args: unknown[]) => refreshQueuedFollowupSessionMock(...args),
-    scheduleFollowupDrain: (...args: unknown[]) => scheduleFollowupDrainMock(...args),
+    enqueueFollowupRun: (...args: any[]) => enqueueFollowupRunMock(...args),
+    refreshQueuedFollowupSession: (...args: any[]) => refreshQueuedFollowupSessionMock(...args),
+    scheduleFollowupDrain: (...args: any[]) => scheduleFollowupDrainMock(...args),
   };
 });
 
@@ -163,7 +163,7 @@ describe("runReplyAgent final MEDIA replies", () => {
     refreshQueuedFollowupSessionMock.mockReset();
     scheduleFollowupDrainMock.mockReset();
 
-    runAgentTurnWithFallbackMock.mockImplementation(async (params: unknown) => {
+    runAgentTurnWithFallbackMock.mockImplementation(async (params: any) => {
       const { buildReplyPayloads } = await vi.importActual<
         typeof import("./agent-runner-payloads.js")
       >("./agent-runner-payloads.js");
@@ -237,7 +237,7 @@ describe("runReplyAgent final MEDIA replies", () => {
         path: path.join("/tmp/outbound-media", `${stagedIndex}-${path.basename(mediaUrl)}`),
       };
     });
-    runAgentTurnWithFallbackMock.mockImplementationOnce(async (params: unknown) => {
+    runAgentTurnWithFallbackMock.mockImplementationOnce(async (params: any) => {
       const { buildReplyPayloads } = await vi.importActual<
         typeof import("./agent-runner-payloads.js")
       >("./agent-runner-payloads.js");

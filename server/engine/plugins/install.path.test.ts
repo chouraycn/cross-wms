@@ -32,7 +32,7 @@ const setupDualFormatInstallFixture = createDualFormatInstallFixtureFactory(
 let dualFormatArchiveCase: {
   nodeModulesExists: boolean;
   result: Awaited<ReturnType<typeof installPluginFromPath>>;
-  runCalls: unknown[][];
+  runCalls: any[][];
 };
 
 function setupNativePluginInstallFixture() {

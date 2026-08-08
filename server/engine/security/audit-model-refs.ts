@@ -16,7 +16,7 @@ export type ModelReference = {
 
 export type ModelReferenceAuditContext = {
   models: ModelReference[];
-  config?: Record<string, unknown>;
+  config?: Record<string, any>;
   envVars?: Record<string, string>;
 };
 
@@ -154,9 +154,9 @@ export function auditModelReferences(context: ModelReferenceAuditContext): Secur
   return findings;
 }
 
-export function validateModelConfiguration(config: Record<string, unknown>): SecurityFinding[] {
+export function validateModelConfiguration(config: Record<string, any>): SecurityFinding[] {
   const findings: SecurityFinding[] = [];
-  const modelsConfig = config['models'] as Record<string, unknown> | undefined;
+  const modelsConfig = config['models'] as Record<string, any> | undefined;
 
   if (!modelsConfig) {
     findings.push({
@@ -185,7 +185,7 @@ export function validateModelConfiguration(config: Record<string, unknown>): Sec
   }
 
   const defaultModel = modelsConfig['default'] as string | undefined;
-  const modelList = modelsConfig['list'] as Record<string, unknown>[] | undefined;
+  const modelList = modelsConfig['list'] as Record<string, any>[] | undefined;
 
   if (defaultModel && (!modelList || !modelList.some((m) => m['id'] === defaultModel))) {
     findings.push({

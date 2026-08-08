@@ -51,7 +51,7 @@ export type DeliverFn = (
       skipQueue?: boolean;
       deferCommitHooks?: boolean;
     },
-) => Promise<unknown>;
+) => Promise<any>;
 
 export interface RecoveryLogger {
   info(msg: string): void;

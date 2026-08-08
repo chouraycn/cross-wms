@@ -8,7 +8,7 @@ type RuntimeLike = {
   log: (message: string) => void;
   error: (message: string) => void;
   exit: (code: number) => void;
-  writeJson: (value: unknown, indent?: number) => void;
+  writeJson: (value: any, indent?: number) => void;
 };
 
 let defaultRuntimeInstance: RuntimeLike | null = null;
@@ -19,7 +19,7 @@ function getDefaultRuntime(): RuntimeLike {
       log: (message: string) => console.log(message),
       error: (message: string) => console.error(message),
       exit: (code: number) => process.exit(code),
-      writeJson: (value: unknown, indent?: number) =>
+      writeJson: (value: any, indent?: number) =>
         console.log(JSON.stringify(value, null, indent ?? 2)),
     };
   }

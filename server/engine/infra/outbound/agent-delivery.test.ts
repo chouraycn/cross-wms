@@ -7,7 +7,7 @@ const mocks = vi.hoisted(() => ({
   resolveOutboundTarget: vi.fn<() => { ok: true; to: string } | { ok: false; error: Error }>(
     () => ({ ok: true, to: "+1999" }),
   ),
-  resolveOutboundSessionRoute: vi.fn<() => Promise<unknown>>(async () => null),
+  resolveOutboundSessionRoute: vi.fn<() => Promise<any>>(async () => null),
   resolveSessionDeliveryTarget: vi.fn(
     (params: {
       entry?: {
@@ -190,7 +190,7 @@ describe("agent delivery helpers", () => {
   ])("builds delivery plan for %j", ({ params, expected }) => {
     const plan = expectDeliveryPlan(params);
     for (const [key, value] of Object.entries(expected)) {
-      expect((plan as Record<string, unknown>)[key]).toEqual(value);
+      expect((plan as Record<string, any>)[key]).toEqual(value);
     }
   });
 

@@ -15,7 +15,7 @@ const deleteMediaBufferMock = vi.hoisted(() =>
 );
 
 vi.mock("../media/store.js", async (importOriginal) => {
-  const actual = (await importOriginal()) as Record<string, unknown>;
+  const actual = (await importOriginal()) as Record<string, any>;
   return {
     ...actual,
     saveMediaBuffer: saveMediaBufferMock,
@@ -111,7 +111,7 @@ async function expectUnsupportedAttachmentReason(
   opts: Parameters<typeof parseMessageWithAttachments>[2],
   reason: UnsupportedAttachmentError["reason"],
 ) {
-  let caught: unknown;
+  let caught: any;
   try {
     await parseMessageWithAttachments("x", attachments, {
       log: { warn: () => {} },
@@ -177,7 +177,7 @@ describe("parseMessageWithAttachments", () => {
       "base64",
     );
     const { parsed, logs } = await parseWithWarnings("take a look", [
-      { type: "file", fileName: "blob.dat", content: unknown },
+      { type: "file", fileName: "blob.dat", content: any },
     ]);
     expect(parsed.offloadedRefs).toHaveLength(1);
     expect(parsed.offloadedRefs[0]?.mimeType).toBe("application/octet-stream");
@@ -312,7 +312,7 @@ describe("parseMessageWithAttachments", () => {
 
 describe("parseMessageWithAttachments validation errors", () => {
   it("throws UnsupportedAttachmentError on empty payload", async () => {
-    let caught: unknown;
+    let caught: any;
     try {
       await parseMessageWithAttachments(
         "x",
@@ -466,7 +466,7 @@ describe("resolveChatAttachmentMaxBytes", () => {
   const MB = 1024 * 1024;
   const DEFAULT_BYTES = DEFAULT_CHAT_ATTACHMENT_MAX_MB * MB;
 
-  const cfgWithMediaMaxMb = (value: unknown): OpenClawConfig =>
+  const cfgWithMediaMaxMb = (value: any): OpenClawConfig =>
     ({ agents: { defaults: { mediaMaxMb: value } } }) as unknown as OpenClawConfig;
 
   it("honours a configured agents.defaults.mediaMaxMb", () => {
@@ -516,7 +516,7 @@ describe("attachment validation", () => {
       await expect(
         parseMessageWithAttachments("x", [att], { maxBytes: 16, log: { warn: () => {} } }),
       ).rejects.toThrow(/exceeds size limit/i);
-      const base64Calls = fromSpy.mock.calls.filter((args) => (args as unknown[])[1] === "base64");
+      const base64Calls = fromSpy.mock.calls.filter((args) => (args as any[])[1] === "base64");
       expect(base64Calls).toHaveLength(0);
     } finally {
       fromSpy.mockRestore();

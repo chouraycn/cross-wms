@@ -81,7 +81,7 @@ export function getHistoryLimitFromSessionKey(
       return undefined;
     }
     for (const [configuredProviderId, value] of Object.entries(
-      channels as Record<string, unknown>,
+      channels as Record<string, any>,
     )) {
       if (normalizeProviderId(configuredProviderId) !== providerId) {
         continue;

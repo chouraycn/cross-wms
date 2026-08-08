@@ -28,7 +28,7 @@ type EndpointPreflightResult =
   | { status: "available" }
   | {
       status: "unavailable";
-      error: unknown;
+      error: any;
     };
 
 type CachedEndpointPreflightResult = {
@@ -54,7 +54,7 @@ function resolveProviderConfig(
   return Object.entries(providers).find(([key]) => normalizeProviderId(key) === normalized)?.[1];
 }
 
-function normalizeBaseUrl(value: unknown): string | undefined {
+function normalizeBaseUrl(value: any): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }
@@ -128,7 +128,7 @@ function formatUnavailableReason(params: {
   provider: string;
   model: string;
   baseUrl: string;
-  error: unknown;
+  error: any;
 }): string {
   return [
     `Agent cron job uses ${params.provider}/${params.model} but the local provider endpoint is not reachable at ${params.baseUrl}.`,
@@ -141,7 +141,7 @@ function buildUnavailableResult(params: {
   provider: string;
   model: string;
   baseUrl: string;
-  error: unknown;
+  error: any;
 }): CronModelProviderPreflightResult {
   return {
     status: "unavailable",

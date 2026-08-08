@@ -39,7 +39,7 @@ function getFileSystemResultOrThrow<TValue>(
   return result.value;
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return typeof value === "object" && value !== null;
 }
 
@@ -65,7 +65,7 @@ function invalidEntry(
 }
 
 function parseHeaderLine(line: string, filePath: string): SessionHeader {
-  let parsed: unknown;
+  let parsed: any;
   try {
     parsed = JSON.parse(line);
   } catch (error) {
@@ -106,7 +106,7 @@ function parseHeaderLine(line: string, filePath: string): SessionHeader {
 }
 
 function parseEntryLine(line: string, filePath: string, lineNumber: number): SessionTreeEntry {
-  let parsed: unknown;
+  let parsed: any;
   try {
     parsed = JSON.parse(line);
   } catch (error) {

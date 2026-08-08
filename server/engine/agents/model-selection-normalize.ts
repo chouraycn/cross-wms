@@ -12,7 +12,7 @@ export type ModelRef = {
 };
 
 export type ModelManifestNormalizationContext = {
-  manifestPlugins?: readonly Record<string, unknown>[];
+  manifestPlugins?: readonly Record<string, any>[];
 };
 
 // Inlined provider normalization – mirrors normalizeProviderId from catalog-core.
@@ -83,7 +83,7 @@ export function findNormalizedProviderValue<T>(
 
 /** Find the original provider key matching a normalized provider ID. */
 export function findNormalizedProviderKey(
-  entries: Record<string, unknown> | undefined,
+  entries: Record<string, any> | undefined,
   provider: string,
 ): string | undefined {
   if (!entries) {

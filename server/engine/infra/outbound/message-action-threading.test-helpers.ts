@@ -7,7 +7,7 @@ type AutoThreadResolver = (params: {
   cfg: OpenClawConfig;
   accountId?: string | null;
   to: string;
-  toolContext?: Record<string, unknown>;
+  toolContext?: Record<string, any>;
   replyToId?: string;
 }) => string | undefined;
 
@@ -15,13 +15,13 @@ type OutboundThreadContext = {
   cfg: OpenClawConfig;
   to: string;
   accountId?: string | null;
-  toolContext?: Record<string, unknown>;
+  toolContext?: Record<string, any>;
   resolveAutoThreadId?: AutoThreadResolver;
 };
 
 // Mutate actionParams like the real outbound path so tests assert forwarded thread ids.
 function resolveOutboundThreadId(
-  actionParams: Record<string, unknown>,
+  actionParams: Record<string, any>,
   context: OutboundThreadContext,
 ): string | undefined {
   const explicit = typeof actionParams.threadId === "string" ? actionParams.threadId : undefined;
@@ -45,7 +45,7 @@ function resolveOutboundThreadId(
 export function createOutboundThreadingMock() {
   const resolveOutboundReplyToId = vi.fn(
     (
-      actionParams: Record<string, unknown>,
+      actionParams: Record<string, any>,
       context: {
         channel: string;
         toolContext?: {
@@ -130,11 +130,11 @@ export function createOutboundThreadingMock() {
         agentId,
         resolveAutoThreadId,
       }: {
-        actionParams: Record<string, unknown>;
+        actionParams: Record<string, any>;
         cfg: OpenClawConfig;
         to: string;
         accountId?: string | null;
-        toolContext?: Record<string, unknown>;
+        toolContext?: Record<string, any>;
         agentId?: string;
         resolveAutoThreadId?: AutoThreadResolver;
       }) => {

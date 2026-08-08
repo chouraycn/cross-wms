@@ -12,7 +12,7 @@ export type CommandDispatchContext = {
   sessionId?: string;
   workspaceDir?: string;
   userId?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 export type CommandDispatchResult = {

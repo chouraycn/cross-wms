@@ -55,7 +55,7 @@ function configureFastJsonStatus() {
   });
 }
 
-function firstCallArg(mock: { mock: { calls: unknown[][] } }, label: string): unknown {
+function firstCallArg(mock: { mock: { calls: any[][] } }, label: string): any {
   const arg = mock.mock.calls[0]?.[0];
   if (arg === undefined) {
     throw new Error(`expected ${label}`);
@@ -221,7 +221,7 @@ describe("scanStatusJsonFast", () => {
 
     expect(mocks.getStatusSummary).toHaveBeenCalledOnce();
     const summaryOptions = firstCallArg(mocks.getStatusSummary, "status summary options") as {
-      includeChannelSummary?: unknown;
+      includeChannelSummary?: any;
     };
     expect(summaryOptions.includeChannelSummary).toBe(false);
   });

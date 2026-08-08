@@ -62,7 +62,7 @@ type ResolvedArtifactSession = {
   agentId?: string;
 };
 
-function artifactError(type: string, message: string, details?: Record<string, unknown>) {
+function artifactError(type: string, message: string, details?: Record<string, any>) {
   return errorShape(ErrorCodes.INVALID_REQUEST, message, {
     details: {
       type,
@@ -242,7 +242,7 @@ function readArtifactBase64Payload(
   };
 }
 
-function mediaUrlValue(value: unknown): string | undefined {
+function mediaUrlValue(value: any): string | undefined {
   if (typeof value === "string") {
     return asNonEmptyString(value);
   }
@@ -283,18 +283,18 @@ function artifactId(parts: {
   return `artifact_${hash}`;
 }
 
-function resolveMessageSeq(message: Record<string, unknown>, fallback: number): number {
+function resolveMessageSeq(message: Record<string, any>, fallback: number): number {
   const meta = asOptionalRecord(message["__openclaw"]);
   const seq = meta?.seq;
   return typeof seq === "number" && Number.isInteger(seq) && seq > 0 ? seq : fallback;
 }
 
-function resolveMessageRunId(message: Record<string, unknown>): string | undefined {
+function resolveMessageRunId(message: Record<string, any>): string | undefined {
   const meta = asOptionalRecord(message["__openclaw"]);
   return asNonEmptyString(meta?.runId) ?? asNonEmptyString(message.runId);
 }
 
-function resolveMessageTaskId(message: Record<string, unknown>): string | undefined {
+function resolveMessageTaskId(message: Record<string, any>): string | undefined {
   const meta = asOptionalRecord(message["__openclaw"]);
   return (
     asNonEmptyString(meta?.messageTaskId) ??
@@ -305,7 +305,7 @@ function resolveMessageTaskId(message: Record<string, unknown>): string | undefi
 }
 
 function resolveBlockDownload(
-  block: Record<string, unknown>,
+  block: Record<string, any>,
   opts: { includeData: boolean },
 ): {
   mode: ArtifactDownloadMode;
@@ -362,7 +362,7 @@ function resolveBlockDownload(
   return { mode: "unsupported", mimeType, sizeBytes };
 }
 
-function isArtifactBlock(block: Record<string, unknown>): boolean {
+function isArtifactBlock(block: Record<string, any>): boolean {
   const type = asNonEmptyString(block.type)?.toLowerCase();
   if (
     type === "image" ||
@@ -381,7 +381,7 @@ function isArtifactBlock(block: Record<string, unknown>): boolean {
 }
 
 function collectArtifactsFromMessage(params: {
-  message: unknown;
+  message: any;
   messageFallbackSeq: number;
   artifacts: ArtifactRecord[];
   sessionKey: string;

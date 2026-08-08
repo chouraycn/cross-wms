@@ -49,7 +49,7 @@ function resolveAgentIdFromSessionKey(sessionKey: string): string | undefined {
 
 // ========== Agent Identity Get ==========
 
-async function agentIdentityGet(params: unknown, _ctx: GatewayMethodContext) {
+async function agentIdentityGet(params: any, _ctx: GatewayMethodContext) {
   const { agentId: agentIdRaw, sessionKey: sessionKeyRaw } = params as {
     agentId?: string;
     sessionKey?: string;

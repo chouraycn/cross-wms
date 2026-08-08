@@ -6,21 +6,21 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function resetClaudeLiveSessionsForTest(..._args: unknown[]): unknown {
+export function resetClaudeLiveSessionsForTest(..._args: any[]): any {
   return undefined;
 }
-export function closeClaudeLiveSessionForContext(..._args: unknown[]): unknown {
+export function closeClaudeLiveSessionForContext(..._args: any[]): any {
   return undefined;
 }
-export function rotateClaudeLiveMcpCaptureKeyForContext(..._args: unknown[]): unknown {
+export function rotateClaudeLiveMcpCaptureKeyForContext(..._args: any[]): any {
   return undefined;
 }
-export function shouldUseClaudeLiveSession(..._args: unknown[]): unknown {
+export function shouldUseClaudeLiveSession(..._args: any[]): any {
   return false;
 }
-export function buildClaudeLiveArgs(..._args: unknown[]): unknown {
+export function buildClaudeLiveArgs(..._args: any[]): any {
   return undefined;
 }
-export function runClaudeLiveSessionTurn(..._args: unknown[]): unknown {
+export function runClaudeLiveSessionTurn(..._args: any[]): any {
   return undefined;
 }

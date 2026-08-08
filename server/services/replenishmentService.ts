@@ -429,7 +429,7 @@ export function getSuggestions(filters?: {
  * 更新建议状态（兼容旧 API）
  * @deprecated DAO 层直接操作
  */
-export function updateSuggestionStatus(id: number, status: string): unknown | null {
+export function updateSuggestionStatus(id: number, status: string): any | null {
   const suggestion = getReplenishmentSuggestionById(id);
   if (!suggestion) return null;
   // 注意：原始 ReplenishmentSuggestion 类型没有 status 字段
@@ -444,7 +444,7 @@ export function updateSuggestionStatus(id: number, status: string): unknown | nu
 export function createTransferFromSuggestion(
   id: number,
   options: { fromWarehouseId: string; quantity: number }
-): unknown {
+): any {
   const suggestion = getReplenishmentSuggestionById(id);
   if (!suggestion) {
     throw new Error(`补货建议 ${id} 不存在`);

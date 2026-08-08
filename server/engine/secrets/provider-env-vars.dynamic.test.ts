@@ -39,11 +39,11 @@ type MockManifestRegistry = {
       }>;
     };
   }>;
-  diagnostics: unknown[];
+  diagnostics: any[];
 };
 
 const pluginRegistryMocks = vi.hoisted(() => {
-  const loadManifestRegistry = vi.fn<(...args: unknown[]) => MockManifestRegistry>(() => ({
+  const loadManifestRegistry = vi.fn<(...args: any[]) => MockManifestRegistry>(() => ({
     plugins: [],
     diagnostics: [],
   }));
@@ -52,7 +52,7 @@ const pluginRegistryMocks = vi.hoisted(() => {
     loadPluginManifestRegistryForInstalledIndex: loadManifestRegistry,
     loadPluginManifestRegistryForPluginRegistry: loadManifestRegistry,
     loadPluginRegistrySnapshot: vi.fn(() => ({ plugins: [] })),
-    loadPluginMetadataSnapshot: vi.fn((params: unknown) => {
+    loadPluginMetadataSnapshot: vi.fn((params: any) => {
       const registry = loadManifestRegistry(params) ?? { plugins: [], diagnostics: [] };
       return {
         index: {
@@ -69,7 +69,7 @@ const pluginRegistryMocks = vi.hoisted(() => {
   };
 });
 
-function requireLastMetadataSnapshotCall(): unknown[] {
+function requireLastMetadataSnapshotCall(): any[] {
   const calls = pluginRegistryMocks.loadPluginMetadataSnapshot.mock.calls;
   const call = calls[calls.length - 1];
   if (!call) {
@@ -278,7 +278,7 @@ describe("provider env vars dynamic manifest metadata", () => {
       ],
     };
     pluginRegistryMocks.getCurrentPluginMetadataSnapshot.mockImplementation(
-      (params: { config?: unknown; requireDefaultDiscoveryContext?: boolean }) => {
+      (params: { config?: any; requireDefaultDiscoveryContext?: boolean }) => {
         if (params.config || params.requireDefaultDiscoveryContext) {
           return undefined;
         }
@@ -734,7 +734,7 @@ describe("provider env vars dynamic manifest metadata", () => {
       ],
     };
     pluginRegistryMocks.getCurrentPluginMetadataSnapshot.mockImplementation(
-      (params: { config?: unknown; requireDefaultDiscoveryContext?: boolean }) => {
+      (params: { config?: any; requireDefaultDiscoveryContext?: boolean }) => {
         if (params.config || params.requireDefaultDiscoveryContext) {
           return undefined;
         }

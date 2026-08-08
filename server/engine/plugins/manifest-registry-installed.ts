@@ -49,7 +49,7 @@ export function clearInstalledManifestRegistryProcessCaches(): void {
 
 registerPluginMetadataProcessMemoLifecycleClear(clearInstalledManifestRegistryProcessCaches);
 
-function isDeepFrozenJsonLike(value: unknown, seen = new WeakSet<object>()): boolean {
+function isDeepFrozenJsonLike(value: any, seen = new WeakSet<object>()): boolean {
   if (!value || typeof value !== "object") {
     return true;
   }
@@ -277,7 +277,7 @@ function resolveFallbackPluginSource(record: InstalledPluginIndexRecord): string
 }
 
 function normalizePackageChannelExposure(
-  exposure: unknown,
+  exposure: any,
 ): PluginPackageChannel["exposure"] | undefined {
   if (!isRecord(exposure)) {
     return undefined;
@@ -295,7 +295,7 @@ function normalizePackageChannelExposure(
 }
 
 function normalizePackageChannelConfiguredState(
-  configuredState: unknown,
+  configuredState: any,
 ): PluginPackageChannel["configuredState"] | undefined {
   if (!isRecord(configuredState)) {
     return undefined;
@@ -322,7 +322,7 @@ function normalizePackageChannelConfiguredState(
 }
 
 function normalizePackageChannelPersistedAuthState(
-  persistedAuthState: unknown,
+  persistedAuthState: any,
 ): PluginPackageChannel["persistedAuthState"] | undefined {
   if (!isRecord(persistedAuthState)) {
     return undefined;
@@ -338,7 +338,7 @@ function normalizePackageChannelPersistedAuthState(
 }
 
 function normalizePackageChannelDoctorCapabilities(
-  doctorCapabilities: unknown,
+  doctorCapabilities: any,
 ): PluginPackageChannel["doctorCapabilities"] | undefined {
   if (!isRecord(doctorCapabilities)) {
     return undefined;
@@ -381,7 +381,7 @@ function normalizePackageChannelDoctorCapabilities(
 }
 
 function normalizePackageChannelCliOptions(
-  cliAddOptions: unknown,
+  cliAddOptions: any,
 ): PluginPackageChannel["cliAddOptions"] | undefined {
   if (!Array.isArray(cliAddOptions)) {
     return undefined;
@@ -410,7 +410,7 @@ function normalizePackageChannelCliOptions(
   return normalized.length > 0 ? normalized : undefined;
 }
 
-function normalizePersistedPackageChannel(value: unknown): PluginPackageChannel | undefined {
+function normalizePersistedPackageChannel(value: any): PluginPackageChannel | undefined {
   if (!isRecord(value)) {
     return undefined;
   }

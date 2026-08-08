@@ -8,6 +8,6 @@
 
 export type CreateAgentSessionOptions = unknown;
 export type CreateAgentSessionResult = unknown;
-export function createAgentSession(..._args: unknown[]): unknown {
+export function createAgentSession(..._args: any[]): any {
   return undefined;
 }

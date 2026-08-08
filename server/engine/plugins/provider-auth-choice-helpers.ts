@@ -57,7 +57,7 @@ export function pickAuthMethod(
 // arrives from a JSON-parsed source that preserves these keys.
 const BLOCKED_MERGE_KEYS = new Set(["__proto__", "prototype", "constructor"]);
 
-function sanitizeConfigPatchValue(value: unknown): unknown {
+function sanitizeConfigPatchValue(value: any): any {
   if (Array.isArray(value)) {
     return value.map((entry) => sanitizeConfigPatchValue(entry));
   }
@@ -65,7 +65,7 @@ function sanitizeConfigPatchValue(value: unknown): unknown {
     return value;
   }
 
-  const next: Record<string, unknown> = {};
+  const next: Record<string, any> = {};
   for (const [key, nestedValue] of Object.entries(value)) {
     if (BLOCKED_MERGE_KEYS.has(key)) {
       continue;
@@ -75,12 +75,12 @@ function sanitizeConfigPatchValue(value: unknown): unknown {
   return next;
 }
 
-function mergeConfigPatch<T>(base: T, patch: unknown): T {
+function mergeConfigPatch<T>(base: T, patch: any): T {
   if (!isPlainRecord(base) || !isPlainRecord(patch)) {
     return sanitizeConfigPatchValue(patch) as T;
   }
 
-  const next: Record<string, unknown> = { ...base };
+  const next: Record<string, any> = { ...base };
   for (const [key, value] of Object.entries(patch)) {
     if (BLOCKED_MERGE_KEYS.has(key)) {
       continue;
@@ -95,12 +95,12 @@ function mergeConfigPatch<T>(base: T, patch: unknown): T {
   return next as T;
 }
 
-function deleteUndefinedPatchLeaves<T>(target: T, patch: unknown): T {
+function deleteUndefinedPatchLeaves<T>(target: T, patch: any): T {
   if (!isPlainRecord(target) || !isPlainRecord(patch)) {
     return target;
   }
 
-  const targetRecord = target as Record<string, unknown>;
+  const targetRecord = target as Record<string, any>;
   for (const [key, value] of Object.entries(patch)) {
     if (value === undefined) {
       delete targetRecord[key];
@@ -111,7 +111,7 @@ function deleteUndefinedPatchLeaves<T>(target: T, patch: unknown): T {
   return target;
 }
 
-function normalizeAgentModelConfigForWrite(value: unknown): unknown {
+function normalizeAgentModelConfigForWrite(value: any): any {
   if (typeof value === "string") {
     return normalizeAgentModelRefForConfig(value);
   }
@@ -119,7 +119,7 @@ function normalizeAgentModelConfigForWrite(value: unknown): unknown {
     return value;
   }
 
-  const next: Record<string, unknown> = { ...value };
+  const next: Record<string, any> = { ...value };
   if (typeof next.primary === "string") {
     next.primary = normalizeAgentModelRefForConfig(next.primary);
   }
@@ -131,7 +131,7 @@ function normalizeAgentModelConfigForWrite(value: unknown): unknown {
   return next;
 }
 
-function normalizeAgentModelMapForWrite(value: unknown): unknown {
+function normalizeAgentModelMapForWrite(value: any): any {
   if (!isPlainRecord(value)) {
     return value;
   }
@@ -214,7 +214,7 @@ function normalizeModelProviderConfigsForWrite(cfg: OpenClawConfig): OpenClawCon
   };
 }
 
-function normalizeAgentListForWrite(value: unknown): unknown {
+function normalizeAgentListForWrite(value: any): any {
   if (!Array.isArray(value)) {
     return value;
   }
@@ -283,7 +283,7 @@ function normalizeConfigModelRefsForWrite(cfg: OpenClawConfig): OpenClawConfig {
 
 export function applyProviderAuthConfigPatch(
   cfg: OpenClawConfig,
-  patch: unknown,
+  patch: any,
   options?: { replaceDefaultModels?: boolean },
 ): OpenClawConfig {
   const merged = normalizeConfigModelRefsForWrite(
@@ -293,7 +293,7 @@ export function applyProviderAuthConfigPatch(
     return merged;
   }
 
-  const patchModels = (patch.agents as { defaults?: { models?: unknown } } | undefined)?.defaults
+  const patchModels = (patch.agents as { defaults?: { models?: any } } | undefined)?.defaults
     ?.models;
   if (!isPlainRecord(patchModels)) {
     return merged;

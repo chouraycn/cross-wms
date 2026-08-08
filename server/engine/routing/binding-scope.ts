@@ -26,7 +26,7 @@ export type NormalizedRouteBindingMatch = {
   channelId: string;
 };
 
-export function normalizeRouteBindingId(value: unknown): string {
+export function normalizeRouteBindingId(value: any): string {
   if (typeof value === "string") {
     return value.trim();
   }
@@ -90,7 +90,7 @@ function scopeIdMatches(params: {
 function hasRoleLookup(
   memberRoleIds: Iterable<string>,
 ): memberRoleIds is Iterable<string> & { has(roleId: string): boolean } {
-  return typeof (memberRoleIds as { has?: unknown }).has === "function";
+  return typeof (memberRoleIds as { has?: any }).has === "function";
 }
 
 function hasAnyRouteBindingRole(

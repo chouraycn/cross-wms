@@ -193,7 +193,7 @@ const plugin: WebSearchProviderPlugin = {
   credentialPath: "",
   inactiveSecretPaths: [],
 
-  getCredentialValue(): unknown {
+  getCredentialValue(): any {
     return undefined;
   },
 
@@ -230,7 +230,7 @@ const plugin: WebSearchProviderPlugin = {
         required: ["query"],
       },
       async execute(
-        args: Record<string, unknown>,
+        args: Record<string, any>,
         context?: { signal?: AbortSignal },
       ): Promise<WebSearchResultList> {
         const query = String(args.query || "").trim();

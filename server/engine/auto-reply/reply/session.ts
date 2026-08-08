@@ -99,7 +99,7 @@ function stripThreadFromSessionRoute(route: SessionEntry["route"]): SessionEntry
 
 type ReplySessionEndReason = Extract<
   PluginHookSessionEndReason,
-  "new" | "reset" | "idle" | "daily" | "unknown"
+  "new" | "reset" | "idle" | "daily" | "any"
 >;
 
 function stripThreadIdFromDeliveryContext(
@@ -142,7 +142,7 @@ function resolveSessionDefaultAccountId(params: {
   if (!channel) {
     return undefined;
   }
-  const channels = params.cfg.channels as Record<string, { defaultAccount?: unknown } | undefined>;
+  const channels = params.cfg.channels as Record<string, { defaultAccount?: any } | undefined>;
   const configuredDefault = channels?.[channel]?.defaultAccount;
   return normalizeOptionalString(configuredDefault);
 }

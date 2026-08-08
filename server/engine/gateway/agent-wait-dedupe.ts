@@ -2,18 +2,18 @@
 
 export type AgentWaitTerminalSnapshot = unknown;
 
-export function readTerminalSnapshotFromGatewayDedupe(...args: unknown[]): unknown {
+export function readTerminalSnapshotFromGatewayDedupe(...args: any[]): any {
   return undefined;
 }
 
-export async function waitForTerminalGatewayDedupe(...args: unknown[]): Promise<unknown> {
+export async function waitForTerminalGatewayDedupe(...args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
 
-export function setGatewayDedupeEntry(...args: unknown[]): unknown {
+export function setGatewayDedupeEntry(...args: any[]): any {
   return undefined;
 }
 
-export const testing_agent_wait_dedupe: unknown = undefined as unknown;
+export const testing_agent_wait_dedupe: any = undefined as any;
 
-export const __testing: unknown = undefined as unknown;
+export const __testing: any = undefined as any;

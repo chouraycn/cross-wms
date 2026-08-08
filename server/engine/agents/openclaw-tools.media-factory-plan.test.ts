@@ -100,7 +100,7 @@ function createInstalledPluginRecord(
   };
 }
 
-function legacyModelProviderConfig(provider: Record<string, unknown>): OpenClawConfig {
+function legacyModelProviderConfig(provider: Record<string, any>): OpenClawConfig {
   return {
     models: {
       providers: {

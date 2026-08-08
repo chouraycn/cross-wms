@@ -51,7 +51,7 @@ export function clearWebPushSubscriptionByEndpoint(endpoint: string): boolean {
 
 /** Broadcasts a web push notification. Simplified without web-push library. */
 export async function broadcastWebPush(params: {
-  payload: Record<string, unknown>;
+  payload: Record<string, any>;
   vapidKeys?: VapidKeys;
   agentId?: string;
 }): Promise<{ sent: number; failed: number }> {

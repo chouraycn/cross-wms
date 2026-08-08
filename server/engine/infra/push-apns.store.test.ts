@@ -20,7 +20,7 @@ async function registerDirectApnsRegistration(params: {
   nodeId: string;
   token: string;
   topic: string;
-  environment?: unknown;
+  environment?: any;
   baseDir?: string;
 }) {
   return await registerApnsRegistration({

@@ -12,7 +12,7 @@ const skillsMocks = vi.hoisted(() => ({
 }));
 
 vi.mock("../../process/exec.js", () => ({
-  runCommandWithTimeout: (...args: unknown[]) => runCommandWithTimeoutMock(...args),
+  runCommandWithTimeout: (...args: any[]) => runCommandWithTimeoutMock(...args),
 }));
 
 vi.mock("../../plugins/install-security-scan.js", () => ({

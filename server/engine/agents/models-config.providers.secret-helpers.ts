@@ -10,36 +10,36 @@ export type ProviderConfig = unknown;
 export type SecretDefaults = unknown;
 export type ProviderApiKeyResolver = unknown;
 export type ProviderAuthResolver = unknown;
-export function normalizeApiKeyConfig(..._args: unknown[]): unknown {
+export function normalizeApiKeyConfig(..._args: any[]): any {
   return undefined;
 }
-export function toDiscoveryApiKey(..._args: unknown[]): unknown {
+export function toDiscoveryApiKey(..._args: any[]): any {
   return undefined;
 }
-export function resolveEnvApiKeyVarName(..._args: unknown[]): unknown {
+export function resolveEnvApiKeyVarName(..._args: any[]): any {
   return undefined;
 }
-export function resolveAwsSdkApiKeyVarName(..._args: unknown[]): unknown {
+export function resolveAwsSdkApiKeyVarName(..._args: any[]): any {
   return undefined;
 }
-export function normalizeHeaderValues(..._args: unknown[]): unknown {
+export function normalizeHeaderValues(..._args: any[]): any {
   return undefined;
 }
-export function resolveApiKeyFromCredential(..._args: unknown[]): unknown {
+export function resolveApiKeyFromCredential(..._args: any[]): any {
   return undefined;
 }
-export function listAuthProfilesForProvider(..._args: unknown[]): unknown {
+export function listAuthProfilesForProvider(..._args: any[]): any {
   return [];
 }
-export function resolveApiKeyFromProfiles(..._args: unknown[]): unknown {
+export function resolveApiKeyFromProfiles(..._args: any[]): any {
   return undefined;
 }
-export function normalizeConfiguredProviderApiKey(..._args: unknown[]): unknown {
+export function normalizeConfiguredProviderApiKey(..._args: any[]): any {
   return undefined;
 }
-export function normalizeResolvedEnvApiKey(..._args: unknown[]): unknown {
+export function normalizeResolvedEnvApiKey(..._args: any[]): any {
   return undefined;
 }
-export function resolveMissingProviderApiKey(..._args: unknown[]): unknown {
+export function resolveMissingProviderApiKey(..._args: any[]): any {
   return undefined;
 }

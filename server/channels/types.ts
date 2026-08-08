@@ -36,7 +36,7 @@ export interface ChannelCapabilities {
 
 /** App configuration shape (platform-specific, injected by consumer). */
 export interface AppConfig {
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 /** Adapter for resolving and validating channel account configuration. */
@@ -84,7 +84,7 @@ export interface ChannelMessage {
   accountId?: AccountId;
   content: string;
   contentType?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
   createdAt?: number;
   conversationId?: string;
   senderId?: string;

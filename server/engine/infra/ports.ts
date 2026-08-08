@@ -33,7 +33,7 @@ export async function ensurePortAvailable(port: number, host?: string): Promise<
   });
 }
 
-export function handlePortError(err: unknown, port: number, context: string): void {
+export function handlePortError(err: any, port: number, context: string): void {
   if (err instanceof PortInUseError) {
     logger.error(`[Port] ${context}: port ${port} is already in use`);
   } else {

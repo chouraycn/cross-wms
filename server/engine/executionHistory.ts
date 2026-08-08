@@ -16,8 +16,8 @@ export interface ExecutionNode {
   status: 'success' | 'failed' | 'skipped';
   startTime: number;
   endTime: number;
-  input: Record<string, unknown>;
-  output: Record<string, unknown>;
+  input: Record<string, any>;
+  output: Record<string, any>;
 }
 
 export interface ExecutionRecord {
@@ -31,7 +31,7 @@ export interface ExecutionRecord {
   duration?: number;
   nodes?: ExecutionNode[];
   error?: string;
-  output?: Record<string, unknown>;
+  output?: Record<string, any>;
 }
 
 export interface ExecutionRecordRow {
@@ -68,7 +68,7 @@ export interface ExecutionHistoryStats {
 
 // ===================== JSON Helpers =====================
 
-function serializeJson(value: unknown): string | null {
+function serializeJson(value: any): string | null {
   if (!value) return null;
   try {
     return JSON.stringify(value);
@@ -77,7 +77,7 @@ function serializeJson(value: unknown): string | null {
   }
 }
 
-function parseJson(value: string | null): Record<string, unknown> | null {
+function parseJson(value: string | null): Record<string, any> | null {
   if (!value) return null;
   try {
     return JSON.parse(value);
@@ -204,7 +204,7 @@ export function updateExecutionRecord(
   if (!existing) return null;
 
   const setClauses: string[] = [];
-  const params: Record<string, unknown> = { id };
+  const params: Record<string, any> = { id };
 
   if (data.status !== undefined) {
     setClauses.push('status = @status');
@@ -260,7 +260,7 @@ export function getExecutionHistory(
   initExecutionHistoryTables();
 
   const conditions: string[] = [];
-  const params: unknown[] = [];
+  const params: any[] = [];
 
   if (filter?.status) {
     conditions.push('status = ?');
@@ -360,7 +360,7 @@ export function getExecutionHistoryStats(filter?: ExecutionHistoryFilter): Execu
   initExecutionHistoryTables();
 
   const conditions: string[] = [];
-  const params: unknown[] = [];
+  const params: any[] = [];
 
   if (filter?.status) {
     conditions.push('status = ?');

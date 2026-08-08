@@ -53,7 +53,7 @@ export function createOpenAiResponsesTextEvent(params: {
   signaturePhase?: OpenAiResponsesTextEventPhase;
   partialPhase?: OpenAiResponsesTextEventPhase;
   messagePhase?: OpenAiResponsesTextEventPhase;
-  content?: unknown[];
+  content?: any[];
   partial?: ReturnType<typeof createOpenAiResponsesPartial>;
 }) {
   const partial =

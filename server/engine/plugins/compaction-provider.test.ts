@@ -14,7 +14,7 @@ const REGISTRY_KEY = Symbol.for("openclaw.compactionProviderRegistryState");
 
 /** Reset the process-global registry between tests. */
 afterEach(() => {
-  const g = globalThis as Record<symbol, unknown>;
+  const g = globalThis as Record<symbol, any>;
   delete g[REGISTRY_KEY];
 });
 

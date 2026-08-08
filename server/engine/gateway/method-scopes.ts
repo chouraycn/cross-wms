@@ -83,12 +83,12 @@ export function resolveRequiredOperatorScopeForMethod(method: string): OperatorS
   return resolveScopedMethod(method);
 }
 
-function resolveSessionActionRegisteredScopes(params: unknown): OperatorScope[] | undefined {
+function resolveSessionActionRegisteredScopes(params: any): OperatorScope[] | undefined {
   if (!params || typeof params !== "object" || Array.isArray(params)) {
     return undefined;
   }
-  const pluginId = normalizeSessionActionParam((params as { pluginId?: unknown }).pluginId);
-  const actionId = normalizeSessionActionParam((params as { actionId?: unknown }).actionId);
+  const pluginId = normalizeSessionActionParam((params as { pluginId?: any }).pluginId);
+  const actionId = normalizeSessionActionParam((params as { actionId?: any }).actionId);
   if (!pluginId || !actionId) {
     return undefined;
   }
@@ -103,14 +103,14 @@ function resolveSessionActionRegisteredScopes(params: unknown): OperatorScope[] 
   return requiredScopes && requiredScopes.length > 0 ? [...requiredScopes] : [WRITE_SCOPE];
 }
 
-function resolveSessionActionLeastPrivilegeScopes(params: unknown): OperatorScope[] {
+function resolveSessionActionLeastPrivilegeScopes(params: any): OperatorScope[] {
   const registeredScopes = resolveSessionActionRegisteredScopes(params);
   if (registeredScopes) {
     return registeredScopes;
   }
   if (params && typeof params === "object" && !Array.isArray(params)) {
-    const pluginId = normalizeSessionActionParam((params as { pluginId?: unknown }).pluginId);
-    const actionId = normalizeSessionActionParam((params as { actionId?: unknown }).actionId);
+    const pluginId = normalizeSessionActionParam((params as { pluginId?: any }).pluginId);
+    const actionId = normalizeSessionActionParam((params as { actionId?: any }).actionId);
     if (pluginId && actionId) {
       // 一个独立的 CLI/tool 调用方可能在与一个本地进程不存在活动插件注册表的 gateway 通信。
       // 避免在无法本地确定确切要求时对有效的动态 action 欠授权。
@@ -122,7 +122,7 @@ function resolveSessionActionLeastPrivilegeScopes(params: unknown): OperatorScop
 
 function resolveDynamicLeastPrivilegeOperatorScopesForMethod(
   method: string,
-  params: unknown,
+  params: any,
 ): OperatorScope[] {
   // 动态方法从 params 与活动插件注册表派生鉴权，而非单一静态方法 scope。
   if (method === "plugins.sessionAction") {
@@ -134,7 +134,7 @@ function resolveDynamicLeastPrivilegeOperatorScopesForMethod(
 /** 返回调用一个 gateway 方法所需的最窄已知 operator scope。 */
 export function resolveLeastPrivilegeOperatorScopesForMethod(
   method: string,
-  params?: unknown,
+  params?: any,
 ): OperatorScope[] {
   if (isDynamicOperatorGatewayMethod(method)) {
     return resolveDynamicLeastPrivilegeOperatorScopesForMethod(method, params);
@@ -151,7 +151,7 @@ export function resolveLeastPrivilegeOperatorScopesForMethod(
 export function authorizeOperatorScopesForMethod(
   method: string,
   scopes: readonly string[],
-  params?: unknown,
+  params?: any,
 ): { allowed: true } | { allowed: false; missingScope: OperatorScope } {
   if (scopes.includes(ADMIN_SCOPE)) {
     return { allowed: true };
@@ -159,8 +159,8 @@ export function authorizeOperatorScopesForMethod(
   if (isDynamicOperatorGatewayMethod(method)) {
     const registeredScopes = resolveSessionActionRegisteredScopes(params);
     if (!registeredScopes && params && typeof params === "object" && !Array.isArray(params)) {
-      const pluginId = normalizeSessionActionParam((params as { pluginId?: unknown }).pluginId);
-      const actionId = normalizeSessionActionParam((params as { actionId?: unknown }).actionId);
+      const pluginId = normalizeSessionActionParam((params as { pluginId?: any }).pluginId);
+      const actionId = normalizeSessionActionParam((params as { actionId?: any }).actionId);
       if (!pluginId || !actionId) {
         // 畸形动态参数无法匹配到插件 action。任意有效 operator scope 可继续，
         // 以便 handler 返回精确的校验错误。

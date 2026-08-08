@@ -21,9 +21,9 @@ export type ConfigVersion = z.infer<typeof ConfigVersionSchema>;
 const CONFIG_VERSION_FILE = '.config-version.json';
 const CURRENT_CONFIG_VERSION = '1.0.0';
 
-const MIGRATIONS: Record<string, (config: unknown) => unknown> = {
-  '0.9.0_to_1.0.0': (config: unknown) => {
-    const obj = config as Record<string, unknown>;
+const MIGRATIONS: Record<string, (config: any) => unknown> = {
+  '0.9.0_to_1.0.0': (config: any) => {
+    const obj = config as Record<string, any>;
     if (!obj.gateway) {
       obj.gateway = {
         port: 3000,
@@ -99,7 +99,7 @@ export function runConfigMigration(): { success: boolean; message: string } {
 
   try {
     const configPath = join(resolveConfigDir(), 'config.json');
-    let config: unknown = {};
+    let config: any = {};
 
     if (existsSync(configPath)) {
       config = JSON.parse(readFileSync(configPath, 'utf-8'));

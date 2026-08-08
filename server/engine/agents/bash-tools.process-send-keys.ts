@@ -62,6 +62,6 @@ export type WritableStdin = {
 };
 
 /** Stub: process send-keys handling is provided by the bash executor in cross-wms. */
-export function handleProcessSendKeys(_params?: unknown): unknown {
+export function handleProcessSendKeys(_params?: any): any {
   return undefined;
 }

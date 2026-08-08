@@ -75,7 +75,7 @@ export function buildElevenLabsRequest(
     useSpeakerBoost: boolean;
     speed: number;
   },
-): Record<string, unknown> {
+): Record<string, any> {
   return {
     text,
     model_id: modelId,
@@ -121,7 +121,7 @@ export function createElevenLabsProvider(): TTSProviderPlugin {
         this.defaultFormat,
       ) as AudioFormat;
 
-      const voiceSettingsRaw = (req.config.voiceSettings as Record<string, unknown>) ?? {};
+      const voiceSettingsRaw = (req.config.voiceSettings as Record<string, any>) ?? {};
       const voiceSettings = {
         stability: typeof voiceSettingsRaw.stability === "number" ? voiceSettingsRaw.stability : 0.5,
         similarityBoost:

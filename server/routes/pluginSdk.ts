@@ -105,10 +105,10 @@ router.get('/plugins', (_req: Request, res: Response) => {
 router.post('/install', async (req: Request, res: Response) => {
   try {
     const { manifest, entryPath, activate, config } = req.body as {
-      manifest?: unknown;
+      manifest?: any;
       entryPath?: string;
       activate?: boolean;
-      config?: Record<string, unknown>;
+      config?: Record<string, any>;
     };
 
     if (manifest === undefined && !entryPath) {
@@ -157,9 +157,9 @@ router.post('/install', async (req: Request, res: Response) => {
     }
 
     // 4. 动态加载插件入口（默认导出应为 PluginDefinition）
-    let mod: { default?: PluginDefinition } & Record<string, unknown>;
+    let mod: { default?: PluginDefinition } & Record<string, any>;
     try {
-      mod = (await import(resolved)) as { default?: PluginDefinition } & Record<string, unknown>;
+      mod = (await import(resolved)) as { default?: PluginDefinition } & Record<string, any>;
     } catch (err) {
       res.status(400).json({
         success: false,
@@ -260,7 +260,7 @@ router.get('/slots', (req: Request, res: Response) => {
  */
 router.post('/validate-manifest', (req: Request, res: Response) => {
   try {
-    const { manifestPath, baseline } = req.body as { manifestPath?: string; baseline?: unknown };
+    const { manifestPath, baseline } = req.body as { manifestPath?: string; baseline?: any };
     if (!manifestPath || typeof manifestPath !== 'string') {
       res.status(400).json({ success: false, error: 'manifestPath is required' });
       return;

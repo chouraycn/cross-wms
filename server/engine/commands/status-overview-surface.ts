@@ -20,7 +20,7 @@ type StatusGatewayConnection = {
 type StatusGatewayProbe = {
   connectLatencyMs?: number | null;
   error?: string | null;
-  health?: unknown;
+  health?: any;
 } | null;
 
 type StatusGatewayAuth = {

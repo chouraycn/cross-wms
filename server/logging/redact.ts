@@ -138,15 +138,15 @@ export function redactSensitiveText(text: string): string {
  * @param obj 待脱敏对象
  * @param mode 脱敏模式，默认 'tools'
  */
-export function redactObject(obj: unknown, mode: RedactSensitiveMode = 'tools'): unknown {
+export function redactObject(obj: any, mode: RedactSensitiveMode = 'tools'): any {
   if (mode === 'off') return obj;
   if (obj === null) return obj;
   if (typeof obj === 'string') return redactSecrets(obj, mode);
   if (typeof obj !== 'object') return obj;
   if (Array.isArray(obj)) return obj.map(item => redactObject(item, mode));
 
-  const result: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
+  const result: Record<string, any> = {};
+  for (const [k, v] of Object.entries(obj as Record<string, any>)) {
     if (BODY_SECRET_KEYS.has(k.toLowerCase())) {
       // 敏感 key：原值脱敏（嵌套对象递归，原始值直接替换）
       result[k] = v !== null && typeof v === 'object' ? redactObject(v, mode) : '[REDACTED]';

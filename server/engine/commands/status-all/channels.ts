@@ -168,7 +168,7 @@ const buildAccountNotes = (params: {
   return notes;
 };
 
-function resolveLinkFields(summary: unknown): {
+function resolveLinkFields(summary: any): {
   statusState: string | null;
   linked: boolean | null;
   authAgeMs: number | null;
@@ -229,7 +229,7 @@ export async function buildChannelsTable(
     showSecrets?: boolean;
     sourceConfig?: OpenClawConfig;
     includeSetupFallbackPlugins?: boolean;
-    liveChannelStatus?: unknown;
+    liveChannelStatus?: any;
     credentialResolutionSkipped?: boolean;
   },
 ): Promise<{

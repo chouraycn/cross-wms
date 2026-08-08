@@ -8,7 +8,7 @@ interface PayloadItem {
   value: number | string;
   dataKey: string;
   color: string;
-  payload?: Record<string, unknown>;
+  payload?: Record<string, any>;
 }
 
 /** CustomTooltip 接收的 props */

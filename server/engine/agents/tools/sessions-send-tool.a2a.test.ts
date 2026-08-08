@@ -12,7 +12,7 @@ import { runSessionsSendA2AFlow, testing } from "./sessions-send-tool.a2a.js";
 const callGatewayMock = vi.hoisted(() => vi.fn());
 
 vi.mock("../../gateway/call.js", () => ({
-  callGateway: (opts: unknown) => callGatewayMock(opts),
+  callGateway: (opts: any) => callGatewayMock(opts),
 }));
 
 vi.mock("../run-wait.js", () => ({
@@ -28,14 +28,14 @@ vi.mock("./agent-step.js", () => ({
 }));
 
 function firstMockArg(
-  mock: { mock: { calls: unknown[][] } },
+  mock: { mock: { calls: any[][] } },
   label: string,
-): Record<string, unknown> {
+): Record<string, any> {
   const call = mock.mock.calls[0];
   if (!call) {
     throw new Error(`Expected ${label} to be called`);
   }
-  return call[0] as Record<string, unknown>;
+  return call[0] as Record<string, any>;
 }
 
 describe("runSessionsSendA2AFlow announce delivery", () => {
@@ -47,7 +47,7 @@ describe("runSessionsSendA2AFlow announce delivery", () => {
     gatewayCalls = [];
     sessionListRows = [];
     callGatewayMock.mockReset();
-    const callGateway = async <T = Record<string, unknown>>(opts: CallGatewayOptions) => {
+    const callGateway = async <T = Record<string, any>>(opts: CallGatewayOptions) => {
       gatewayCalls.push(opts);
       if (opts.method === "sessions.list") {
         return { sessions: sessionListRows } as T;
@@ -91,7 +91,7 @@ describe("runSessionsSendA2AFlow announce delivery", () => {
     });
 
     const sendCall = requireGatewayCall("send");
-    const sendParams = sendCall.params as Record<string, unknown>;
+    const sendParams = sendCall.params as Record<string, any>;
     expect(sendParams.to).toBe("-100123");
     expect(sendParams.channel).toBe("telegram");
     expect(sendParams.threadId).toBe("554");
@@ -108,7 +108,7 @@ describe("runSessionsSendA2AFlow announce delivery", () => {
     });
 
     const sendCall = requireGatewayCall("send");
-    const sendParams = sendCall.params as Record<string, unknown>;
+    const sendParams = sendCall.params as Record<string, any>;
     expect(sendParams.channel).toBe("discord");
     expect(sendParams.threadId).toBeUndefined();
   });
@@ -127,7 +127,7 @@ describe("runSessionsSendA2AFlow announce delivery", () => {
 
     expect(runAgentStep).not.toHaveBeenCalled();
     const sendCall = requireGatewayCall("send");
-    const sendParams = sendCall.params as Record<string, unknown>;
+    const sendParams = sendCall.params as Record<string, any>;
     expect(sendParams.channel).toBe("discord");
     expect(sendParams.to).toBe("channel:target-room");
     expect(sendParams.message).toBe("Substantive channel reply");
@@ -163,7 +163,7 @@ describe("runSessionsSendA2AFlow announce delivery", () => {
     ).toBe("agent:main:discord:channel:target-room");
     expect(runAgentStep).not.toHaveBeenCalled();
     const sendCall = requireGatewayCall("send");
-    const sendParams = sendCall.params as Record<string, unknown>;
+    const sendParams = sendCall.params as Record<string, any>;
     expect(sendParams.channel).toBe("discord");
     expect(sendParams.to).toBe("channel:target-room");
     expect(sendParams.message).toBe("Delayed channel reply");
@@ -284,7 +284,7 @@ describe("runSessionsSendA2AFlow announce delivery", () => {
 
     requireGatewayCall("sessions.list");
     const sendCall = requireGatewayCall("send");
-    const sendParams = sendCall.params as Record<string, unknown>;
+    const sendParams = sendCall.params as Record<string, any>;
     expect(sendParams.channel).toBe("discord");
     expect(sendParams.to).toBe("channel:target-room");
     expect(sendParams.accountId).toBe(accountId);

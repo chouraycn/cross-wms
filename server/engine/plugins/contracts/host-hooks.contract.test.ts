@@ -74,18 +74,18 @@ function joinContextFragments(...fragments: Array<string | undefined>): string {
   return present.join("\n\n");
 }
 
-function diagnosticSummaries(diagnostics: readonly unknown[]) {
+function diagnosticSummaries(diagnostics: readonly any[]) {
   return diagnostics.map((entry) => {
     const diagnostic = entry as { pluginId?: string; message?: string };
     return { pluginId: diagnostic.pluginId, message: diagnostic.message };
   });
 }
 
-function expectRecordFields(record: unknown, expected: Record<string, unknown>) {
+function expectRecordFields(record: any, expected: Record<string, any>) {
   if (!record || typeof record !== "object") {
     throw new Error("Expected record");
   }
-  const actual = record as Record<string, unknown>;
+  const actual = record as Record<string, any>;
   for (const [key, value] of Object.entries(expected)) {
     expect(actual[key]).toEqual(value);
   }
@@ -95,7 +95,7 @@ function expectRecordFields(record: unknown, expected: Record<string, unknown>) 
 type HostHookStateFixture = {
   stateDir: string;
   storePath: string;
-  tempConfig: { session: { store: string } } & Record<string, unknown>;
+  tempConfig: { session: { store: string } } & Record<string, any>;
 };
 
 async function withHostHookState(
@@ -812,7 +812,7 @@ describe("host-hook fixture plugin contract", () => {
   });
 
   it("passes adjusted trusted policy params to later trusted policies", async () => {
-    const seenParams: Record<string, unknown>[] = [];
+    const seenParams: Record<string, any>[] = [];
     const registry = createEmptyPluginRegistry();
     registry.trustedToolPolicies = [
       {
@@ -851,7 +851,7 @@ describe("host-hook fixture plugin contract", () => {
   });
 
   it("preserves trusted policy derived paths when params are unchanged", async () => {
-    const seenDerivedPaths: unknown[] = [];
+    const seenDerivedPaths: any[] = [];
     const registry = createEmptyPluginRegistry();
     registry.trustedToolPolicies = [
       {
@@ -884,7 +884,7 @@ describe("host-hook fixture plugin contract", () => {
   });
 
   it("ignores non-plain trusted policy params when re-deriving paths", async () => {
-    const seenParams: unknown[] = [];
+    const seenParams: any[] = [];
     const registry = createEmptyPluginRegistry();
     registry.trustedToolPolicies = [
       {
@@ -923,7 +923,7 @@ describe("host-hook fixture plugin contract", () => {
   });
 
   it("does not let trusted policies mutate derived paths for later policies", async () => {
-    const seenDerivedPaths: unknown[] = [];
+    const seenDerivedPaths: any[] = [];
     let mutationRejected = false;
     const registry = createEmptyPluginRegistry();
     registry.trustedToolPolicies = [
@@ -975,7 +975,7 @@ describe("host-hook fixture plugin contract", () => {
   });
 
   it("clears stale derived paths when trusted policy rewrites remove targets", async () => {
-    const seenDerivedPaths: unknown[] = [];
+    const seenDerivedPaths: any[] = [];
     const registry = createEmptyPluginRegistry();
     registry.trustedToolPolicies = [
       {
@@ -1023,7 +1023,7 @@ describe("host-hook fixture plugin contract", () => {
   });
 
   it("does not let derived param callbacks override core trusted policy event fields", async () => {
-    const seenEvents: Array<{ params: unknown; derivedPaths: unknown }> = [];
+    const seenEvents: Array<{ params: any; derivedPaths: any }> = [];
     const registry = createEmptyPluginRegistry();
     registry.trustedToolPolicies = [
       {
@@ -1176,7 +1176,7 @@ describe("host-hook fixture plugin contract", () => {
             if (!state || typeof state !== "object" || Array.isArray(state)) {
               return undefined;
             }
-            const workflowState = (state as { state?: unknown }).state;
+            const workflowState = (state as { state?: any }).state;
             return typeof workflowState === "string" ? { state: workflowState } : undefined;
           },
         });
@@ -1947,10 +1947,10 @@ describe("host-hook fixture plugin contract", () => {
     Object.assign(descriptorEntry.descriptor, { leakedRegistryField: true });
     setActivePluginRegistry(registry.registry);
 
-    const calls: Array<[boolean, unknown, unknown]> = [];
+    const calls: Array<[boolean, any, any]> = [];
     void pluginHostHookHandlers["plugins.uiDescriptors"]({
       params: {},
-      respond: (ok: boolean, payload: unknown, error: unknown) => {
+      respond: (ok: boolean, payload: any, error: any) => {
         calls.push([ok, payload, error]);
       },
     } as never);
@@ -2260,7 +2260,7 @@ describe("host-hook fixture plugin contract", () => {
 
   it("preserves run context until async terminal event subscriptions settle", async () => {
     let releaseTerminalHandler: (() => void) | undefined;
-    let terminalHandlerSawContext: unknown;
+    let terminalHandlerSawContext: any;
     const { config, registry } = createPluginRegistryFixture();
     registerTestPlugin({
       registry,

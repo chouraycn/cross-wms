@@ -6,17 +6,17 @@
  * gateway dependency.
  */
 
-let sessionsSpawnConfigOverride: unknown = undefined;
-let sessionsSpawnAnnounceFlowOverride: unknown = undefined;
-let sessionsSpawnHookRunnerOverride: unknown = undefined;
+let sessionsSpawnConfigOverride: any = undefined;
+let sessionsSpawnAnnounceFlowOverride: any = undefined;
+let sessionsSpawnHookRunnerOverride: any = undefined;
 
 /** Get a call-gateway mock suitable for sessions-spawn tests. */
 export function getCallGatewayMock(): {
-  calls: Array<{ method: string; params: Record<string, unknown> }>;
-  mockFn: (params: { method: string; params: Record<string, unknown> }) => Promise<unknown>;
+  calls: Array<{ method: string; params: Record<string, any> }>;
+  mockFn: (params: { method: string; params: Record<string, any> }) => Promise<any>;
 } {
-  const calls: Array<{ method: string; params: Record<string, unknown> }> = [];
-  const mockFn = async (params: { method: string; params: Record<string, unknown> }): Promise<unknown> => {
+  const calls: Array<{ method: string; params: Record<string, any> }> = [];
+  const mockFn = async (params: { method: string; params: Record<string, any> }): Promise<any> => {
     calls.push(params);
     return { ok: true };
   };
@@ -26,7 +26,7 @@ export function getCallGatewayMock(): {
 /** Wait for a sessions-spawn event to appear. */
 export async function waitForSessionsSpawnEvent(_params?: {
   timeoutMs?: number;
-  predicate?: (event: unknown) => boolean;
+  predicate?: (event: any) => boolean;
 }): Promise<unknown | undefined> {
   // Simplified: no event stream in cross-wms
   return undefined;
@@ -38,12 +38,12 @@ export function resetSessionsSpawnConfigOverride(): void {
 }
 
 /** Set a sessions-spawn config override for testing. */
-export function setSessionsSpawnConfigOverride(config: unknown): void {
+export function setSessionsSpawnConfigOverride(config: any): void {
   sessionsSpawnConfigOverride = config;
 }
 
 /** Get the current sessions-spawn config override. */
-export function getSessionsSpawnConfigOverride(): unknown {
+export function getSessionsSpawnConfigOverride(): any {
   return sessionsSpawnConfigOverride;
 }
 
@@ -53,12 +53,12 @@ export function resetSessionsSpawnAnnounceFlowOverride(): void {
 }
 
 /** Set a sessions-spawn announce flow override for testing. */
-export function setSessionsSpawnAnnounceFlowOverride(flow: unknown): void {
+export function setSessionsSpawnAnnounceFlowOverride(flow: any): void {
   sessionsSpawnAnnounceFlowOverride = flow;
 }
 
 /** Get the current sessions-spawn announce flow override. */
-export function getSessionsSpawnAnnounceFlowOverride(): unknown {
+export function getSessionsSpawnAnnounceFlowOverride(): any {
   return sessionsSpawnAnnounceFlowOverride;
 }
 
@@ -68,17 +68,17 @@ export function resetSessionsSpawnHookRunnerOverride(): void {
 }
 
 /** Set a sessions-spawn hook runner override for testing. */
-export function setSessionsSpawnHookRunnerOverride(runner: unknown): void {
+export function setSessionsSpawnHookRunnerOverride(runner: any): void {
   sessionsSpawnHookRunnerOverride = runner;
 }
 
 /** Get the current sessions-spawn hook runner override. */
-export function getSessionsSpawnHookRunnerOverride(): unknown {
+export function getSessionsSpawnHookRunnerOverride(): any {
   return sessionsSpawnHookRunnerOverride;
 }
 
 /** Get the sessions-spawn tool for testing. */
-export function getSessionsSpawnTool(): unknown {
+export function getSessionsSpawnTool(): any {
   return null;
 }
 

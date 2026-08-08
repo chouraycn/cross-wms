@@ -2,7 +2,7 @@
 const ERR_MESSAGE_MAX_LEN = 256;
 
 /** Removes control characters and caps error messages before doctor prints them. */
-export function scrubDoctorErrorMessage(err: unknown): string {
+export function scrubDoctorErrorMessage(err: any): string {
   const raw = err instanceof Error ? err.message : String(err);
   let stripped = "";
   for (let index = 0; index < raw.length; index++) {

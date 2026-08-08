@@ -81,7 +81,7 @@ export function defineImportedCommandGroupSpec<TRegisterArgs, TModule>(
 
 type AnyImportedProgramCommandGroupDefinition = {
   commandNames: readonly string[];
-  loadModule: () => Promise<Record<string, unknown>>;
+  loadModule: () => Promise<Record<string, any>>;
   exportName: string;
 };
 

@@ -49,7 +49,7 @@ export class MistralAdapter implements IAiApiAdapter {
       Object.assign(headers, compat.extraHeaders);
     }
 
-    const body: Record<string, unknown> = {
+    const body: Record<string, any> = {
       model: modelId || MISTRAL_DEFAULT_MODEL_ID,
       messages,
       temperature,

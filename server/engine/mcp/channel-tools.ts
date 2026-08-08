@@ -35,7 +35,7 @@ export class ChannelToolsManager {
   private tools: Map<string, ChannelToolEntry> = new Map();
   private callHandlers: Map<string, (
     toolName: string,
-    args: Record<string, unknown>,
+    args: Record<string, any>,
   ) => Promise<ChannelToolResult>> = new Map();
   private defaultTimeoutMs: number = 30000;
 
@@ -64,7 +64,7 @@ export class ChannelToolsManager {
 
   registerCallHandler(channel: string, handler: (
     toolName: string,
-    args: Record<string, unknown>,
+    args: Record<string, any>,
   ) => Promise<ChannelToolResult>): void {
     this.callHandlers.set(channel, handler);
     logger.debug(`[ChannelToolsManager] Registered call handler for channel: ${channel}`);
@@ -100,7 +100,7 @@ export class ChannelToolsManager {
     return entry?.config.channel;
   }
 
-  async callTool(name: string, args: Record<string, unknown>): Promise<ChannelToolResult> {
+  async callTool(name: string, args: Record<string, any>): Promise<ChannelToolResult> {
     const entry = this.tools.get(name);
     if (!entry) {
       return {
@@ -216,7 +216,7 @@ export class ChannelToolsManager {
     });
   }
 
-  validateToolArgs(name: string, args: Record<string, unknown>): { valid: boolean; error?: string } {
+  validateToolArgs(name: string, args: Record<string, any>): { valid: boolean; error?: string } {
     const entry = this.tools.get(name);
     if (!entry) {
       return { valid: false, error: `Tool not found: ${name}` };
@@ -228,7 +228,7 @@ export class ChannelToolsManager {
     }
 
     const required = (schema as { required?: string[] }).required ?? [];
-    const properties = schema.properties as Record<string, { type?: string; enum?: unknown[] }>;
+    const properties = schema.properties as Record<string, { type?: string; enum?: any[] }>;
 
     for (const req of required) {
       if (args[req] === undefined) {
@@ -253,7 +253,7 @@ export class ChannelToolsManager {
     return { valid: true };
   }
 
-  private checkArgType(value: unknown, type?: string): { valid: boolean; error?: string } {
+  private checkArgType(value: any, type?: string): { valid: boolean; error?: string } {
     if (!type) {
       return { valid: true };
     }
@@ -298,7 +298,7 @@ export function registerChannelTool(config: ChannelToolConfig): void {
   channelToolsManager.registerTool(config);
 }
 
-export function callChannelTool(name: string, args: Record<string, unknown>): Promise<ChannelToolResult> {
+export function callChannelTool(name: string, args: Record<string, any>): Promise<ChannelToolResult> {
   return channelToolsManager.callTool(name, args);
 }
 

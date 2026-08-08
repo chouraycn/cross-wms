@@ -166,30 +166,30 @@ function createPersistableIndex(pluginId: string): InstalledPluginIndex {
   };
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object") {
     throw new Error(`expected ${label}`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function requireArray(value: unknown, label: string): Array<unknown> {
+function requireArray(value: any, label: string): Array<any> {
   expect(Array.isArray(value), label).toBe(true);
-  return value as Array<unknown>;
+  return value as Array<any>;
 }
 
-function expectFields(record: Record<string, unknown>, expected: Record<string, unknown>) {
+function expectFields(record: Record<string, any>, expected: Record<string, any>) {
   for (const [key, value] of Object.entries(expected)) {
     expect(record[key], key).toEqual(value);
   }
 }
 
-function expectPluginRecordFields(record: unknown, expected: Record<string, unknown>) {
+function expectPluginRecordFields(record: any, expected: Record<string, any>) {
   expectFields(requireRecord(record, "plugin record"), expected);
 }
 
-function expectDiagnosticCodes(diagnostics: unknown, expectedCodes: string[]) {
-  const codes: Array<unknown> = [];
+function expectDiagnosticCodes(diagnostics: any, expectedCodes: string[]) {
+  const codes: Array<any> = [];
   for (const diagnostic of requireArray(diagnostics, "diagnostics")) {
     codes.push(requireRecord(diagnostic, "diagnostic").code);
   }
@@ -197,9 +197,9 @@ function expectDiagnosticCodes(diagnostics: unknown, expectedCodes: string[]) {
 }
 
 function expectInstallRecord(
-  installRecords: unknown,
+  installRecords: any,
   pluginId: string,
-  expected: Record<string, unknown>,
+  expected: Record<string, any>,
 ) {
   const records = requireRecord(installRecords, "install records");
   expectFields(requireRecord(records[pluginId], `${pluginId} install record`), expected);

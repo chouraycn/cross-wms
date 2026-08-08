@@ -7,7 +7,7 @@ import { baseConfigSnapshot, createTestRuntime } from "./test-runtime-config-hel
 
 const mocks = vi.hoisted(() => ({
   readConfigFileSnapshot: vi.fn(),
-  resolveCommandConfigWithSecrets: vi.fn(async ({ config }: { config: unknown }) => ({
+  resolveCommandConfigWithSecrets: vi.fn(async ({ config }: { config: any }) => ({
     resolvedConfig: config,
     effectiveConfig: config,
     diagnostics: [],
@@ -142,7 +142,7 @@ describe("channels list", () => {
 
     await channelsListCommand({ json: true }, runtime);
 
-    const payload = JSON.parse(loggedText(runtime)) as Record<string, unknown>;
+    const payload = JSON.parse(loggedText(runtime)) as Record<string, any>;
     expect(payload.auth).toBeUndefined();
     expect(payload).toHaveProperty("chat");
   });
@@ -192,7 +192,7 @@ describe("channels list", () => {
     await channelsListCommand({ json: true }, runtime);
 
     const payload = JSON.parse(loggedText(runtime)) as {
-      usage?: unknown;
+      usage?: any;
     };
     expect(payload.usage).toBeUndefined();
     expect(runtime.error).not.toHaveBeenCalled();

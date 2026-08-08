@@ -39,11 +39,11 @@ export type ClawHubSkillVerificationResponse = {
   ok: boolean;
   decision: "trusted" | "warn" | "rejected";
   reasons: string[];
-  card?: unknown;
-  artifact?: unknown;
-  provenance?: unknown;
-  security?: unknown;
-  signature?: unknown;
+  card?: any;
+  artifact?: any;
+  provenance?: any;
+  security?: any;
+  signature?: any;
 };
 
 export type ClawHubSkillOrigin = {

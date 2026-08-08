@@ -235,13 +235,13 @@ describe("bootstrap prompt warnings", () => {
     // Signatures carry only stable truncation inputs so once-mode warnings dedupe
     // without tying prompt cache bytes to volatile warning prose.
     const signature = JSON.parse(first.signature ?? "{}") as {
-      bootstrapMaxChars?: unknown;
-      bootstrapTotalMaxChars?: unknown;
+      bootstrapMaxChars?: any;
+      bootstrapTotalMaxChars?: any;
       files?: Array<{
-        path?: unknown;
-        rawChars?: unknown;
-        injectedChars?: unknown;
-        causes?: unknown;
+        path?: any;
+        rawChars?: any;
+        injectedChars?: any;
+        causes?: any;
       }>;
     };
     expect(signature.bootstrapMaxChars).toBe(120);

@@ -23,12 +23,12 @@ export class AcpRuntimeError extends Error {
    * the human-readable message.
    */
   readonly detailCode?: string;
-  override readonly cause?: unknown;
+  override readonly cause?: any;
 
   constructor(
     code: AcpRuntimeErrorCode,
     message: string,
-    options?: { cause?: unknown; detailCode?: string },
+    options?: { cause?: any; detailCode?: string },
   ) {
     super(message);
     this.name = "AcpRuntimeError";
@@ -38,14 +38,14 @@ export class AcpRuntimeError extends Error {
   }
 }
 
-function getForeignAcpRuntimeError(value: unknown): {
+function getForeignAcpRuntimeError(value: any): {
   code: AcpRuntimeErrorCode;
   message: string;
 } | null {
   if (!(value instanceof Error)) {
     return null;
   }
-  const code = (value as { code?: unknown }).code;
+  const code = (value as { code?: any }).code;
   if (typeof code !== "string" || !ACP_ERROR_CODE_SET.has(code as AcpRuntimeErrorCode)) {
     return null;
   }
@@ -56,15 +56,15 @@ function getForeignAcpRuntimeError(value: unknown): {
 }
 
 function readAcpRequestErrorDetails(value: Error): string | undefined {
-  const code = (value as { code?: unknown }).code;
+  const code = (value as { code?: any }).code;
   if (typeof code !== "number") {
     return undefined;
   }
-  const data = (value as { data?: unknown }).data;
+  const data = (value as { data?: any }).data;
   if (!data || typeof data !== "object") {
     return undefined;
   }
-  const details = (data as { details?: unknown }).details;
+  const details = (data as { details?: any }).details;
   if (details === undefined || details === null) {
     return undefined;
   }
@@ -81,13 +81,13 @@ function messageWithAcpRequestErrorDetails(error: Error): string {
 }
 
 /** Recognizes local and cross-realm ACP runtime errors by their stable error code. */
-export function isAcpRuntimeError(value: unknown): value is AcpRuntimeError {
+export function isAcpRuntimeError(value: any): value is AcpRuntimeError {
   return value instanceof AcpRuntimeError || getForeignAcpRuntimeError(value) !== null;
 }
 
 /** Converts arbitrary thrown values into ACP runtime errors with redacted request details. */
 export function toAcpRuntimeError(params: {
-  error: unknown;
+  error: any;
   fallbackCode: AcpRuntimeErrorCode;
   fallbackMessage: string;
 }): AcpRuntimeError {
@@ -123,17 +123,17 @@ export function toAcpRuntimeError(params: {
  *
  * Depth is capped to defend against self-referential `.cause` cycles.
  */
-export function formatAcpErrorChain(error: unknown): string {
+export function formatAcpErrorChain(error: any): string {
   if (!(error instanceof Error)) {
     return redactSensitiveText(String(error));
   }
   const segments: string[] = [renderSingleError(error)];
-  let current: unknown = (error as unknown as { cause?: unknown }).cause;
+  let current: any = (error as any as { cause?: any }).cause;
   let depth = 0;
   while (current !== undefined && current !== null && depth < 8) {
     if (current instanceof Error) {
       segments.push(renderSingleError(current));
-      current = (current as unknown as { cause?: unknown }).cause;
+      current = (current as any as { cause?: any }).cause;
     } else {
       segments.push(stringifyNonErrorCause(current));
       current = undefined;
@@ -144,7 +144,7 @@ export function formatAcpErrorChain(error: unknown): string {
 }
 
 function renderSingleError(error: Error): string {
-  const codeValue = (error as unknown as { code?: unknown }).code;
+  const codeValue = (error as any as { code?: any }).code;
   const codeSuffix =
     typeof codeValue === "string" || typeof codeValue === "number" ? ` [${codeValue}]` : "";
   return `${error.name}${codeSuffix}: ${error.message}`;

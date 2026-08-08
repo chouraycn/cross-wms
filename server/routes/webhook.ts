@@ -29,7 +29,7 @@ router.get('/', (_req: Request, res: Response) => {
   try {
     const webhooks = getAllWebhooks();
     res.json({ ok: true, webhooks });
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     logger.error('[Webhook API] 获取所有 Webhook 失败:', err);
     res.status(500).json({ ok: false, error: message });
@@ -42,7 +42,7 @@ router.get('/stats', (_req: Request, res: Response) => {
   try {
     const stats = getWebhookStats();
     res.json({ ok: true, stats });
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     logger.error('[Webhook API] 获取统计信息失败:', err);
     res.status(500).json({ ok: false, error: message });
@@ -62,7 +62,7 @@ router.get('/:id', (req: Request, res: Response) => {
     }
 
     res.json({ ok: true, webhook });
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     logger.error('[Webhook API] 获取单个 Webhook 失败:', err);
     res.status(500).json({ ok: false, error: message });
@@ -106,7 +106,7 @@ router.post('/', (req: Request, res: Response) => {
 
     logger.info('[Webhook API] 创建 Webhook 成功:', webhook.id);
     res.json({ ok: true, webhook });
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     logger.error('[Webhook API] 创建 Webhook 失败:', err);
     res.status(500).json({ ok: false, error: message });
@@ -163,7 +163,7 @@ router.put('/:id', (req: Request, res: Response) => {
 
     logger.info('[Webhook API] 更新 Webhook 成功:', id);
     res.json({ ok: true, webhook });
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     logger.error('[Webhook API] 更新 Webhook 失败:', err);
     res.status(500).json({ ok: false, error: message });
@@ -184,7 +184,7 @@ router.delete('/:id', (req: Request, res: Response) => {
 
     logger.info('[Webhook API] 删除 Webhook 成功:', id);
     res.json({ ok: true });
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     logger.error('[Webhook API] 删除 Webhook 失败:', err);
     res.status(500).json({ ok: false, error: message });
@@ -265,7 +265,7 @@ router.post('/:id/test', async (req: Request, res: Response) => {
           body: responseBody,
         },
       });
-    } catch (fetchErr: unknown) {
+    } catch (fetchErr: any) {
       const duration = Date.now() - startTime;
       const completedAt = new Date().toISOString();
       errorMessage = fetchErr instanceof Error ? fetchErr.message : 'Unknown error';
@@ -289,7 +289,7 @@ router.post('/:id/test', async (req: Request, res: Response) => {
         },
       });
     }
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     logger.error('[Webhook API] 测试 Webhook 失败:', err);
     res.status(500).json({ ok: false, error: message });
@@ -314,7 +314,7 @@ router.get('/:id/logs', (req: Request, res: Response) => {
     const { logs, total } = getWebhookLogs(id, limit, offset);
 
     res.json({ ok: true, logs, total });
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     logger.error('[Webhook API] 获取执行日志失败:', err);
     res.status(500).json({ ok: false, error: message });

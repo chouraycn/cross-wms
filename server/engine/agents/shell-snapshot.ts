@@ -6,12 +6,12 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export async function maybeWrapCommandWithShellSnapshot(..._args: unknown[]): Promise<unknown> {
+export async function maybeWrapCommandWithShellSnapshot(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
-export function resetShellSnapshotCacheForTests(..._args: unknown[]): unknown {
+export function resetShellSnapshotCacheForTests(..._args: any[]): any {
   return undefined;
 }
-export function resolveShellSnapshotDir(..._args: unknown[]): unknown {
+export function resolveShellSnapshotDir(..._args: any[]): any {
   return undefined;
 }

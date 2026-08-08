@@ -44,7 +44,7 @@ author: Test Author
 
     fs.writeFileSync(path.join(skillDir, 'index.ts'), `import { logger } from '../../logger.js';
 
-export function testFunction(params: Record<string, unknown>): Record<string, unknown> {
+export function testFunction(params: Record<string, any>): Record<string, any> {
   logger.debug('[test-skill] testFunction called');
   return { success: true };
 }
@@ -56,7 +56,7 @@ export default {
     {
       name: 'test_tool',
       description: '测试工具',
-      handler: (args: Record<string, unknown>) => testFunction(args),
+      handler: (args: Record<string, any>) => testFunction(args),
     },
   ],
 };

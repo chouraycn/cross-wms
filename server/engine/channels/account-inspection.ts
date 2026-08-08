@@ -29,7 +29,7 @@ export async function inspectChannelAccount(params: {
   plugin: ChannelPlugin;
   cfg: OpenClawConfig;
   accountId: string;
-}): Promise<unknown> {
+}): Promise<any> {
   return (
     params.plugin.config.inspectAccount?.(params.cfg, params.accountId) ??
     (await inspectReadOnlyChannelAccount({
@@ -49,7 +49,7 @@ export async function resolveInspectedChannelAccount(params: {
   sourceConfig: OpenClawConfig;
   accountId: string;
 }): Promise<{
-  account: unknown;
+  account: any;
   enabled: boolean;
   configured: boolean;
 }> {

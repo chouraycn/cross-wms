@@ -3,7 +3,7 @@ export interface BackfillSource {
   path?: string;
   connectionString?: string;
   url?: string;
-  data?: unknown[];
+  data?: any[];
 }
 
 export interface BackfillOptions {

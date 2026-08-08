@@ -28,9 +28,9 @@ const mockUpdateInventoryCount = vi.fn();
 const mockFetchInventoryCountById = vi.fn();
 
 vi.mock('@/api/wmsInventoryApi', () => ({
-  createInventoryCount: (...args: unknown[]) => mockCreateInventoryCount(...args),
-  updateInventoryCount: (...args: unknown[]) => mockUpdateInventoryCount(...args),
-  fetchInventoryCountById: (...args: unknown[]) => mockFetchInventoryCountById(...args),
+  createInventoryCount: (...args: any[]) => mockCreateInventoryCount(...args),
+  updateInventoryCount: (...args: any[]) => mockUpdateInventoryCount(...args),
+  fetchInventoryCountById: (...args: any[]) => mockFetchInventoryCountById(...args),
 }));
 
 // ===================== 测试辅助 =====================

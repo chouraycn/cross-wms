@@ -28,7 +28,7 @@ type ToolExecute = ReturnType<
 >[number]["execute"];
 const extensionContext = {} as Parameters<ToolExecute>[4];
 
-function firstLogErrorMessage(): unknown {
+function firstLogErrorMessage(): any {
   return vi.mocked(logError).mock.calls[0]?.[0];
 }
 
@@ -333,7 +333,7 @@ describe("agent tool definition adapter logging", () => {
     const controller = new AbortController();
     controller.abort();
 
-    let thrown: unknown;
+    let thrown: any;
     try {
       await def.execute(
         "call-web-search-agent-abort",
@@ -352,7 +352,7 @@ describe("agent tool definition adapter logging", () => {
   });
 
   it("accepts nested edits arrays for the current edit schema", async () => {
-    const execute = vi.fn(async (_toolCallId: string, params: unknown) => ({
+    const execute = vi.fn(async (_toolCallId: string, params: any) => ({
       content: [{ type: "text" as const, text: JSON.stringify(params) }],
       details: { ok: true },
     }));

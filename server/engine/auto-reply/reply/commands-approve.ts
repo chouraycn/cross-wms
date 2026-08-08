@@ -81,7 +81,7 @@ function buildResolvedByLabel(params: Parameters<CommandHandler>[0]): string {
   return `${channel}:${sender}`;
 }
 
-function formatApprovalSubmitError(error: unknown): string {
+function formatApprovalSubmitError(error: any): string {
   return formatErrorMessage(error);
 }
 

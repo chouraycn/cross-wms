@@ -41,7 +41,7 @@ export interface LlmInvokeResult {
     totalTokens: number;
   };
   /** 模型返回的元数据 */
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 /** LLM 流式响应块 */
@@ -68,7 +68,7 @@ export type LlmCapabilityProvider = CapabilityProvider<LlmInvokeOptions, LlmInvo
 export function registerLlmProvider(
   pluginId: string,
   provider: LlmCapabilityProvider,
-  metadata?: Record<string, unknown>,
+  metadata?: Record<string, any>,
 ): void {
   capabilityProviderRegistry.register(pluginId, provider, metadata);
 }

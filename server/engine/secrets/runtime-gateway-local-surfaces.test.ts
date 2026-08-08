@@ -14,7 +14,7 @@ function expectWarningPaths(
   }
 }
 
-async function expectInactiveGatewayPassword(config: unknown): Promise<void> {
+async function expectInactiveGatewayPassword(config: any): Promise<void> {
   const snapshot = await prepareSecretsRuntimeSnapshot({
     config: asConfig(config),
     env: {},
@@ -30,7 +30,7 @@ async function expectInactiveGatewayPassword(config: unknown): Promise<void> {
   expect(snapshot.warnings.map((warning) => warning.path)).toContain("gateway.auth.password");
 }
 
-async function expectActiveGatewayPassword(config: unknown): Promise<void> {
+async function expectActiveGatewayPassword(config: any): Promise<void> {
   const snapshot = await prepareSecretsRuntimeSnapshot({
     config: asConfig(config),
     env: {

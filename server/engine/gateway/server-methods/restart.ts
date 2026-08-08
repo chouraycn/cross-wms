@@ -7,17 +7,17 @@ import {
 } from "../../infra/restart-coordinator.js";
 import type { GatewayRequestHandlers } from "./types.js";
 
-function isRestartRequestParams(value: unknown): value is Record<string, unknown> {
+function isRestartRequestParams(value: any): value is Record<string, any> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function normalizeReason(value: unknown): string | undefined {
+function normalizeReason(value: any): string | undefined {
   // Restart reasons are operator-visible log context, not payload storage.
   // Trim and cap them before passing through to the coordinator.
   return typeof value === "string" && value.trim() ? value.trim().slice(0, 200) : undefined;
 }
 
-function normalizeSkipDeferral(value: unknown): boolean {
+function normalizeSkipDeferral(value: any): boolean {
   // Only an explicit boolean may bypass deferral; truthy strings from loose
   // clients must not skip the safe-restart preflight queue.
   return value === true;

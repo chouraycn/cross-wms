@@ -6,7 +6,7 @@ import {
   type LegacyConfigRule,
 } from "@openclaw-src/config/legacy.shared.js";
 
-function isLegacyMemoryPressureBundleConfig(value: unknown): boolean {
+function isLegacyMemoryPressureBundleConfig(value: any): boolean {
   return typeof value === "boolean" || getRecord(value) !== null;
 }
 

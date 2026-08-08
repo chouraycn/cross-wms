@@ -45,7 +45,7 @@ vi.mock("./tools/agents-list-tool.js", () => ({
 }));
 
 vi.mock("./tools/cron-tool.js", () => ({
-  createCronTool: (options: unknown) => {
+  createCronTool: (options: any) => {
     mocks.createCronToolOptions(options);
     return mocks.stubTool("cron");
   },
@@ -56,7 +56,7 @@ vi.mock("./tools/gateway-tool.js", () => ({
 }));
 
 vi.mock("./tools/image-generate-tool.js", () => ({
-  createImageGenerateTool: (options: unknown) => {
+  createImageGenerateTool: (options: any) => {
     mocks.createImageGenerateToolOptions(options);
     return mocks.stubTool("image_generate");
   },
@@ -71,7 +71,7 @@ vi.mock("./tools/message-tool.js", () => ({
 }));
 
 vi.mock("./tools/music-generate-tool.js", () => ({
-  createMusicGenerateTool: (options: unknown) => {
+  createMusicGenerateTool: (options: any) => {
     mocks.createMusicGenerateToolOptions(options);
     return mocks.stubTool("music_generate");
   },
@@ -86,7 +86,7 @@ vi.mock("./tools/pdf-tool.js", () => ({
 }));
 
 vi.mock("./tools/session-status-tool.js", () => ({
-  createSessionStatusTool: (options: unknown) => {
+  createSessionStatusTool: (options: any) => {
     mocks.createSessionStatusToolOptions(options);
     return mocks.stubTool("session_status");
   },
@@ -121,7 +121,7 @@ vi.mock("./tools/update-plan-tool.js", () => ({
 }));
 
 vi.mock("./tools/video-generate-tool.js", () => ({
-  createVideoGenerateTool: (options: unknown) => {
+  createVideoGenerateTool: (options: any) => {
     mocks.createVideoGenerateToolOptions(options);
     return mocks.stubTool("video_generate");
   },
@@ -138,7 +138,7 @@ vi.mock("../tts/tts.js", () => ({
 
 function getTextToSpeechParams() {
   // The mocked TTS runtime exposes the exact invocation payload for assertions.
-  const calls = (mocks.textToSpeech as unknown as { mock: { calls: unknown[][] } }).mock.calls;
+  const calls = (mocks.textToSpeech as unknown as { mock: { calls: any[][] } }).mock.calls;
   return calls[0]?.[0] as
     | {
         text?: string;

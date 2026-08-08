@@ -9,7 +9,7 @@ export { isRecord } from "../shared/safe-record.js";
 /**
  * Narrows to strings that contain non-whitespace content.
  */
-export function isNonEmptyString(value: unknown): value is string {
+export function isNonEmptyString(value: any): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
 
@@ -30,7 +30,7 @@ export function parseEnvValue(raw: string): string {
 /**
  * Normalizes numeric config to a positive integer, falling back when the input is not finite.
  */
-export function normalizePositiveInt(value: unknown, fallback: number): number {
+export function normalizePositiveInt(value: any, fallback: number): number {
   if (typeof value === "number" && Number.isFinite(value)) {
     return Math.max(1, Math.floor(value));
   }
@@ -40,7 +40,7 @@ export function normalizePositiveInt(value: unknown, fallback: number): number {
 /**
  * Normalizes timer values with the shared timeout coercion rules used by secret providers.
  */
-export function normalizePositiveTimerMs(value: unknown, fallback: number): number {
+export function normalizePositiveTimerMs(value: any, fallback: number): number {
   return resolvePositiveTimerTimeoutMs(value, fallback);
 }
 
@@ -71,7 +71,7 @@ export function ensureDirForFile(filePath: string): void {
 /**
  * Writes a JSON file through the private file store so new files get secret-safe permissions.
  */
-export function writeJsonFileSecure(pathname: string, value: unknown): void {
+export function writeJsonFileSecure(pathname: string, value: any): void {
   privateFileStoreSync(path.dirname(pathname)).writeJson(path.basename(pathname), value, {
     trailingNewline: true,
   });

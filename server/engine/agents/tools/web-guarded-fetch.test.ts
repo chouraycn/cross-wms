@@ -17,23 +17,23 @@ vi.mock("../../infra/net/fetch-guard.js", () => {
   return {
     GUARDED_FETCH_MODE: GUARDED_FETCH_MODELocal,
     fetchWithSsrFGuard: vi.fn(),
-    withStrictGuardedFetchMode: (params: Record<string, unknown>) => ({
+    withStrictGuardedFetchMode: (params: Record<string, any>) => ({
       ...params,
       mode: GUARDED_FETCH_MODELocal.STRICT,
     }),
-    withTrustedEnvProxyGuardedFetchMode: (params: Record<string, unknown>) => ({
+    withTrustedEnvProxyGuardedFetchMode: (params: Record<string, any>) => ({
       ...params,
       mode: GUARDED_FETCH_MODELocal.TRUSTED_ENV_PROXY,
     }),
   };
 });
 
-function firstFetchCall(): Record<string, unknown> {
+function firstFetchCall(): Record<string, any> {
   const call = vi.mocked(fetchWithSsrFGuard).mock.calls[0]?.[0];
   if (!call || typeof call !== "object") {
     throw new Error("Expected guarded fetch call");
   }
-  return call as Record<string, unknown>;
+  return call as Record<string, any>;
 }
 
 describe("web-guarded-fetch", () => {
@@ -75,7 +75,7 @@ describe("web-guarded-fetch", () => {
 
     const call = firstFetchCall();
     expect(call?.url).toBe("http://127.0.0.1:8080");
-    const policy = call.policy as Record<string, unknown> | undefined;
+    const policy = call.policy as Record<string, any> | undefined;
     expect(policy?.dangerouslyAllowPrivateNetwork).toBe(true);
     expect(policy?.allowRfc2544BenchmarkRange).toBe(true);
     expect(policy?.allowIpv6UniqueLocalRange).toBe(true);

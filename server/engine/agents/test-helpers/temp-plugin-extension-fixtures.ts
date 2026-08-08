@@ -29,7 +29,7 @@ export function writeTempPlugin(params: {
   dir: string;
   id: string;
   body: string;
-  manifest?: Record<string, unknown>;
+  manifest?: Record<string, any>;
   filename?: string;
 }): string {
   const pluginDir = path.join(params.dir, params.id);

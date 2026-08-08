@@ -47,7 +47,7 @@ export interface SkillExposure {
 
 export interface ParsedSkillMd {
   frontmatter: ParsedSkillFrontmatter;
-  structuredMetadata: unknown;
+  structuredMetadata: any;
   body: string;
   name: string;
   description: string;
@@ -103,16 +103,16 @@ export function parseFrontmatterBlock(content: string): ParsedSkillFrontmatter {
   return merged;
 }
 
-export function getStructuredFrontmatterValue(content: string, key: string): unknown {
+export function getStructuredFrontmatterValue(content: string, key: string): any {
   const block = extractFrontmatterBlock(content);
   if (!block) return undefined;
 
   try {
-    const parsed = YAML.parse(block, { schema: 'core' }) as unknown;
+    const parsed = YAML.parse(block, { schema: 'core' }) as any;
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
       return undefined;
     }
-    const value = (parsed as Record<string, unknown>)[key];
+    const value = (parsed as Record<string, any>)[key];
     if (value === undefined) return undefined;
     if (value === null) return null;
     if (typeof value !== 'object') return undefined;
@@ -124,7 +124,7 @@ export function getStructuredFrontmatterValue(content: string, key: string): unk
 
 export function parseFrontmatterWithStructuredMetadata(content: string): {
   frontmatter: ParsedSkillFrontmatter;
-  structuredMetadata: unknown;
+  structuredMetadata: any;
 } {
   const frontmatter = parseFrontmatterBlock(content);
   const structuredMetadata = getStructuredFrontmatterValue(content, 'metadata');
@@ -184,7 +184,7 @@ function stripQuotes(value: string): string {
   return value;
 }
 
-function coerceYamlFrontmatterValue(value: unknown): ParsedYamlValue | undefined {
+function coerceYamlFrontmatterValue(value: any): ParsedYamlValue | undefined {
   if (value === null || value === undefined) return undefined;
   if (typeof value === 'string') {
     return { value: value.trim(), kind: 'scalar' };
@@ -204,12 +204,12 @@ function coerceYamlFrontmatterValue(value: unknown): ParsedYamlValue | undefined
 
 function parseYamlFrontmatter(block: string): Record<string, ParsedYamlValue> | null {
   try {
-    const parsed = YAML.parse(block, { schema: 'core' }) as unknown;
+    const parsed = YAML.parse(block, { schema: 'core' }) as any;
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
       return null;
     }
     const result: Record<string, ParsedYamlValue> = {};
-    for (const [rawKey, value] of Object.entries(parsed as Record<string, unknown>)) {
+    for (const [rawKey, value] of Object.entries(parsed as Record<string, any>)) {
       const key = rawKey.trim();
       if (!key) continue;
       const coerced = coerceYamlFrontmatterValue(value);
@@ -307,7 +307,7 @@ function shouldPreferInlineLineValue(params: {
   return lineEntry.value.includes(':');
 }
 
-function normalizeStringList(raw: unknown): string[] {
+function normalizeStringList(raw: any): string[] {
   if (!raw) return [];
   if (Array.isArray(raw)) {
     return raw.filter((v): v is string => typeof v === 'string').map(s => s.trim()).filter(Boolean);
@@ -322,7 +322,7 @@ const BREW_FORMULA_PATTERN = /^[A-Za-z0-9][A-Za-z0-9@+._/-]*$/;
 const GO_MODULE_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._~+\-/]*(?:@[A-Za-z0-9][A-Za-z0-9._~+\-/]*)?$/;
 const UV_PACKAGE_PATTERN = /^[a-z0-9][a-z0-9._-]*(\[[a-z0-9,._-]+\])?(([><=!~]=?|===?)[a-z0-9.*_-]+)?$/i;
 
-function normalizeSafeBrewFormula(raw: unknown): string | undefined {
+function normalizeSafeBrewFormula(raw: any): string | undefined {
   if (typeof raw !== 'string') return undefined;
   const formula = raw.trim();
   if (!formula || formula.startsWith('-') || formula.includes('\\') || formula.includes('..')) {
@@ -332,14 +332,14 @@ function normalizeSafeBrewFormula(raw: unknown): string | undefined {
   return formula;
 }
 
-function normalizeSafeNpmSpec(raw: unknown): string | undefined {
+function normalizeSafeNpmSpec(raw: any): string | undefined {
   if (typeof raw !== 'string') return undefined;
   const spec = raw.trim();
   if (!spec || spec.startsWith('-')) return undefined;
   return spec;
 }
 
-function normalizeSafeGoModule(raw: unknown): string | undefined {
+function normalizeSafeGoModule(raw: any): string | undefined {
   if (typeof raw !== 'string') return undefined;
   const moduleSpec = raw.trim();
   if (!moduleSpec || moduleSpec.startsWith('-') || moduleSpec.includes('\\') || moduleSpec.includes('://')) {
@@ -349,7 +349,7 @@ function normalizeSafeGoModule(raw: unknown): string | undefined {
   return moduleSpec;
 }
 
-function normalizeSafeUvPackage(raw: unknown): string | undefined {
+function normalizeSafeUvPackage(raw: any): string | undefined {
   if (typeof raw !== 'string') return undefined;
   const pkg = raw.trim();
   if (!pkg || pkg.startsWith('-') || pkg.includes('\\') || pkg.includes('://')) {
@@ -359,7 +359,7 @@ function normalizeSafeUvPackage(raw: unknown): string | undefined {
   return pkg;
 }
 
-function normalizeSafeDownloadUrl(raw: unknown): string | undefined {
+function normalizeSafeDownloadUrl(raw: any): string | undefined {
   if (typeof raw !== 'string') return undefined;
   const value = raw.trim();
   if (!value || /\s/.test(value)) return undefined;
@@ -374,10 +374,10 @@ function normalizeSafeDownloadUrl(raw: unknown): string | undefined {
   }
 }
 
-function parseInstallSpec(input: unknown): SkillInstallSpec | undefined {
+function parseInstallSpec(input: any): SkillInstallSpec | undefined {
   if (!input || typeof input !== 'object') return undefined;
 
-  const raw = input as Record<string, unknown>;
+  const raw = input as Record<string, any>;
   const kind = raw.kind as SkillInstallSpec['kind'];
 
   if (!kind || !['brew', 'node', 'go', 'uv', 'download'].includes(kind)) {
@@ -451,7 +451,7 @@ export function resolveSkillExposure(frontmatter: ParsedSkillFrontmatter): Skill
 
 export function resolveOpenClawMetadata(
   frontmatter: ParsedSkillFrontmatter,
-  structuredMetadata?: unknown,
+  structuredMetadata?: any,
 ): OpenClawSkillMetadata | undefined {
   const metadataObj = (() => {
     if (structuredMetadata && typeof structuredMetadata === 'object') {
@@ -469,15 +469,15 @@ export function resolveOpenClawMetadata(
 
   if (!metadataObj) return undefined;
 
-  const m = metadataObj as Record<string, unknown>;
-  const openclaw = m.openclaw as Record<string, unknown> | undefined;
+  const m = metadataObj as Record<string, any>;
+  const openclaw = m.openclaw as Record<string, any> | undefined;
 
   if (!openclaw) return undefined;
 
   const requires = (() => {
     const req = openclaw.requires;
     if (!req || typeof req !== 'object') return undefined;
-    const r = req as Record<string, unknown>;
+    const r = req as Record<string, any>;
     const bins = normalizeStringList(r.bins);
     const anyBins = normalizeStringList(r.anyBins);
     const env = normalizeStringList(r.env);

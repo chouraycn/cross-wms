@@ -132,11 +132,11 @@ test("sessions.resolve and mutators clean legacy main-alias ghost keys", async (
     "utf-8",
   );
 
-  const writeRawStore = async (store: Record<string, unknown>) => {
+  const writeRawStore = async (store: Record<string, any>) => {
     await fs.writeFile(storePath, `${JSON.stringify(store, null, 2)}\n`, "utf-8");
   };
   const readStore = async () =>
-    JSON.parse(await fs.readFile(storePath, "utf-8")) as Record<string, Record<string, unknown>>;
+    JSON.parse(await fs.readFile(storePath, "utf-8")) as Record<string, Record<string, any>>;
 
   await writeRawStore({
     "agent:ops:main": { sessionId, updatedAt: Date.now() - 1_000 },

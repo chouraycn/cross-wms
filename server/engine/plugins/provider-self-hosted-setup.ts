@@ -43,16 +43,16 @@ type OpenAICompatModelsResponse = {
   data?: Array<{
     id?: string;
     meta?: {
-      n_ctx_train?: unknown;
+      n_ctx_train?: any;
     };
   }>;
 };
 
 type LlamaCppPropsResponse = {
   default_generation_settings?: {
-    n_ctx?: unknown;
+    n_ctx?: any;
   };
-  n_ctx?: unknown;
+  n_ctx?: any;
 };
 
 function isReasoningModelHeuristic(modelId: string): boolean {
@@ -79,7 +79,7 @@ function buildSelfHostedBaseUrlSsrFPolicy(baseUrl: string): SsrFPolicy | undefin
   }
 }
 
-function readPositiveInteger(value: unknown): number | undefined {
+function readPositiveInteger(value: any): number | undefined {
   if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
     return undefined;
   }
@@ -406,7 +406,7 @@ export async function promptAndConfigureOpenAICompatibleSelfHostedProviderAuth(
 }
 
 export async function discoverOpenAICompatibleSelfHostedProvider<
-  T extends Record<string, unknown>,
+  T extends Record<string, any>,
 >(params: {
   ctx: ProviderDiscoveryContext;
   providerId: string;

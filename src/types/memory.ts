@@ -9,7 +9,7 @@ export type MemoryCategory = 'fact' | 'experience' | 'preference' | 'project';
 export interface MemoryEntry {
   id: number;
   text: string;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
   createdAt: string;
   updatedAt?: string;
   category?: MemoryCategory;
@@ -49,7 +49,7 @@ export interface SearchResultItem {
   timeWeight?: number;
   mmrProcessed?: boolean;
   createdAt?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 /** 搜索配置 */
@@ -121,7 +121,7 @@ export interface FilterConfig {
 export interface MemoryDetail {
   id: number;
   text: string;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
   createdAt: string;
   updatedAt?: string;
   category?: MemoryCategory;

@@ -110,7 +110,7 @@ export function authorizeRequest(
 }
 
 export function createAuthMiddleware(options: AuthorizeRequestOptions) {
-  return (req: HttpRequestLike, _res: unknown, _params: Record<string, string>) => {
+  return (req: HttpRequestLike, _res: any, _params: Record<string, string>) => {
     const result = authorizeRequest(req, options);
     if (!result.authorized) {
       const error = new Error(result.reason ?? 'Unauthorized') as Error & { status?: number };

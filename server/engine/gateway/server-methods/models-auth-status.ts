@@ -131,7 +131,7 @@ async function refreshModelAuthStatusRuntimeState(): Promise<void> {
   clearRuntimeAuthProfileStoreSnapshots();
 }
 
-function readProviderParam(params: Record<string, unknown>): string | null {
+function readProviderParam(params: Record<string, any>): string | null {
   const raw = params.provider;
   if (typeof raw !== "string") {
     return null;
@@ -434,7 +434,7 @@ export const modelsAuthStatusHandlers: GatewayRequestHandlers = {
       invalidateModelAuthStatusCache();
       clearCurrentProviderAuthState();
       void warmCurrentProviderAuthStateOffMainThread(context.getRuntimeConfig()).catch(
-        (err: unknown) => {
+        (err: any) => {
           log.warn(`provider auth state rewarm after logout failed: ${formatForLog(err)}`);
         },
       );

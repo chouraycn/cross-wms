@@ -66,7 +66,7 @@ export interface ModelCallConfig {
     reasoningField?: string;
     apiVersion?: string;
     extraHeaders?: Record<string, string>;
-    extraBodyParams?: Record<string, unknown>;
+    extraBodyParams?: Record<string, any>;
     roleMap?: Record<string, string>;
     supportsSystemMessage?: boolean;
     systemMessageFallback?: 'merge-to-first-user' | 'ignore';
@@ -112,7 +112,7 @@ export interface ToolDefinition {
   function: {
     name: string;
     description: string;
-    parameters: Record<string, unknown>;
+    parameters: Record<string, any>;
     /** Anthropic cache_control 标记 */
     cache_control?: { type: 'ephemeral' };
   };
@@ -174,7 +174,7 @@ const RETRY_CONFIG = {
 };
 
 /** 判断错误是否可重试 */
-function isRetryableError(error: unknown): boolean {
+function isRetryableError(error: any): boolean {
   if (error instanceof AIAPIError) {
     // v2.x: 上下文溢出不重试（直接换大模型），认证错误不重试
     if (['context_overflow', 'auth', 'model_not_supported'].includes(error.category)) {
@@ -248,7 +248,7 @@ export function classifyError(statusCode: number, responseBody: string): AIAPIEr
 // v1.5.187: 发请求前硬校验 tool_calls/tool 消息配对
 // 如果 sanitizeToolMessages 仍有遗漏，此处最后一次检查并自动修复
 // v1.5.188: 增强 — 不仅移除无匹配的 tool_calls，还补齐缺失的 tool 消息
-function validateToolMessages(messages: Array<{ role: string; content?: unknown; tool_calls?: Array<{ id?: string }> | unknown[]; tool_call_id?: string }>): void {
+function validateToolMessages(messages: Array<{ role: string; content?: any; tool_calls?: Array<{ id?: string }> | any[]; tool_call_id?: string }>): void {
   for (let i = 0; i < messages.length; i++) {
     const msg = messages[i];
     if (msg.role === 'assistant' && Array.isArray(msg.tool_calls) && msg.tool_calls.length > 0) {
@@ -379,7 +379,7 @@ export async function callOpenAICompatibleStream(
     }
   }
 
-  const body: Record<string, unknown> = {
+  const body: Record<string, any> = {
     model: modelId,
     messages,
     temperature,
@@ -434,7 +434,7 @@ export async function callOpenAICompatibleStream(
     if (response.status === 400) {
       const toolMsgs = messages.filter(m => m.role === 'tool');
       const assistantWithCalls = messages.filter(
-        m => m.role === 'assistant' && Array.isArray((m as { tool_calls?: unknown[] }).tool_calls),
+        m => m.role === 'assistant' && Array.isArray((m as { tool_calls?: any[] }).tool_calls),
       );
       logger.error(`[AIClient] 400 错误诊断: ${toolMsgs.length} 条 tool 消息, ${assistantWithCalls.length} 条 assistant(tool_calls)`);
       for (const m of messages) {
@@ -626,7 +626,7 @@ interface AnthropicContentBlock {
   text?: string;
   id?: string;
   name?: string;
-  input?: Record<string, unknown>;
+  input?: Record<string, any>;
   tool_use_id?: string;
   content?: string;
   thinking?: string;
@@ -648,7 +648,7 @@ interface AnthropicMessage {
 interface AnthropicToolDefinition {
   name: string;
   description: string;
-  input_schema: Record<string, unknown>;
+  input_schema: Record<string, any>;
 }
 
 /** OpenAI Vision 格式的 content 项 */
@@ -804,7 +804,7 @@ export async function callAnthropicStream(
 
   const { systemPrompt, anthropicMessages } = convertMessagesToAnthropic(messages);
 
-  const body: Record<string, unknown> = {
+  const body: Record<string, any> = {
     model: modelId,
     messages: anthropicMessages,
     temperature,
@@ -1079,11 +1079,11 @@ export async function callAIModelStreamWithAdapter(
     );
   }
 
-  let lastError: unknown;
+  let lastError: any;
 
   for (let attempt = 0; attempt <= RETRY_CONFIG.maxRetries; attempt++) {
     if (signal?.aborted) {
-      throw new AIAPIError('请求已取消', 'unknown');
+      throw new AIAPIError('请求已取消', 'any');
     }
 
     try {
@@ -1143,8 +1143,8 @@ export async function callAIModelStreamWithAdapter(
         const strippedMessages = messages.map(m => {
           if (m.role === 'assistant' && m.tool_calls) {
             const rest = { ...m };
-            delete (rest as Record<string, unknown>).tool_calls;
-            delete (rest as Record<string, unknown>).reasoning_content;
+            delete (rest as Record<string, any>).tool_calls;
+            delete (rest as Record<string, any>).reasoning_content;
             return { ...rest, content: m.content || '(tool calls stripped)' };
           }
           return m;
@@ -1272,11 +1272,11 @@ export async function callAIModelStream(
     }
     touchService(modelId);
   }
-  let lastError: unknown;
+  let lastError: any;
 
   for (let attempt = 0; attempt <= RETRY_CONFIG.maxRetries; attempt++) {
     if (signal?.aborted) {
-      throw new AIAPIError('请求已取消', 'unknown');
+      throw new AIAPIError('请求已取消', 'any');
     }
 
     try {
@@ -1363,8 +1363,8 @@ export async function callAIModelStream(
         const strippedMessages = messages.map(m => {
           if (m.role === 'assistant' && m.tool_calls) {
             const rest = { ...m };
-            delete (rest as Record<string, unknown>).tool_calls;
-            delete (rest as Record<string, unknown>).reasoning_content;
+            delete (rest as Record<string, any>).tool_calls;
+            delete (rest as Record<string, any>).reasoning_content;
             return { ...rest, content: m.content || '(tool calls stripped)' };
           }
           return m;
@@ -1509,12 +1509,12 @@ export async function callAIModelWithFailover(
       );
       failoverManager.recordSuccess(currentModel.id || '');
       return response;
-    } catch (e: unknown) {
+    } catch (e: any) {
       lastError = e instanceof Error ? e : new Error(String(e));
       const errMessage = e instanceof Error ? e.message : String(e);
       // 优先从 AIAPIError 获取分类，降级为 unknown
       // 注意：非 AIAPIError 的 e.category 字段类型未知，保留原行为（透传字符串到 recordFailure）
-      const fallbackCategory = (e as { category?: unknown })?.category;
+      const fallbackCategory = (e as { category?: any })?.category;
       const fallbackStr = typeof fallbackCategory === 'string' ? fallbackCategory : '';
       const errorCategory: AIAPIError['category'] =
         (e instanceof AIAPIError && e.category) ||

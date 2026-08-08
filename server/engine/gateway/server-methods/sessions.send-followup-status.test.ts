@@ -16,9 +16,9 @@ vi.mock("../session-utils.js", async () => {
   const actual = await vi.importActual<typeof import("../session-utils.js")>("../session-utils.js");
   return {
     ...actual,
-    loadSessionEntry: (...args: unknown[]) => loadSessionEntryMock(...args),
-    readSessionMessages: (...args: unknown[]) => readSessionMessagesMock(...args),
-    loadGatewaySessionRow: (...args: unknown[]) => loadGatewaySessionRowMock(...args),
+    loadSessionEntry: (...args: any[]) => loadSessionEntryMock(...args),
+    readSessionMessages: (...args: any[]) => readSessionMessagesMock(...args),
+    loadGatewaySessionRow: (...args: any[]) => loadGatewaySessionRowMock(...args),
   };
 });
 
@@ -28,18 +28,18 @@ vi.mock("../../agents/subagent-registry-read.js", async () => {
   );
   return {
     ...actual,
-    getLatestSubagentRunByChildSessionKey: (...args: unknown[]) =>
+    getLatestSubagentRunByChildSessionKey: (...args: any[]) =>
       getLatestSubagentRunByChildSessionKeyMock(...args),
   };
 });
 
 vi.mock("../session-subagent-reactivation.runtime.js", () => ({
-  replaceSubagentRunAfterSteer: (...args: unknown[]) => replaceSubagentRunAfterSteerMock(...args),
+  replaceSubagentRunAfterSteer: (...args: any[]) => replaceSubagentRunAfterSteerMock(...args),
 }));
 
 vi.mock("./chat.js", () => ({
   chatHandlers: {
-    "chat.send": (...args: unknown[]) => chatSendMock(...args),
+    "chat.send": (...args: any[]) => chatSendMock(...args),
   },
 }));
 
@@ -170,7 +170,7 @@ describe("sessions.send completed subagent follow-up status", () => {
 
       expect(loadSessionEntryMock).toHaveBeenCalledWith("global", { agentId: "work" });
       const chatSendCall = chatSendMock.mock.calls.at(0)?.[0] as
-        | { params?: Record<string, unknown> }
+        | { params?: Record<string, any> }
         | undefined;
       expect(chatSendCall?.params).toMatchObject({
         sessionKey: "global",

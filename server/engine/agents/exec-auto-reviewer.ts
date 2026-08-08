@@ -7,12 +7,12 @@
  */
 
 export type ExecReviewerConfig = unknown;
-export function parseExecAutoReviewResponse(..._args: unknown[]): unknown {
+export function parseExecAutoReviewResponse(..._args: any[]): any {
   return undefined;
 }
-export function resolveExecReviewerTimeoutMs(..._args: unknown[]): unknown {
+export function resolveExecReviewerTimeoutMs(..._args: any[]): any {
   return undefined;
 }
-export function createModelExecAutoReviewer(..._args: unknown[]): unknown {
+export function createModelExecAutoReviewer(..._args: any[]): any {
   return undefined;
 }

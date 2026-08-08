@@ -56,7 +56,7 @@ async function writeStore(sessionsDir: string, store: Record<string, SessionEntr
 async function writeTranscript(
   sessionsDir: string,
   sessionId: string,
-  messages: unknown[],
+  messages: any[],
 ): Promise<void> {
   const lines = messages.map((message) => JSON.stringify({ message })).join("\n");
   await fs.writeFile(path.join(sessionsDir, `${sessionId}.jsonl`), `${lines}\n`);
@@ -81,7 +81,7 @@ function cleanedLock(sessionsDir: string, sessionId: string): SessionLockInspect
   return cleanedLockForPath(path.join(sessionsDir, `${sessionId}.jsonl.lock`));
 }
 
-function firstGatewayParams(): Record<string, unknown> {
+function firstGatewayParams(): Record<string, any> {
   // Recovery resumes through the gateway. Narrow the first mock call so tests
   // assert request payloads without depending on the gateway return type.
   const call = vi.mocked(callGateway).mock.calls[0];
@@ -92,7 +92,7 @@ function firstGatewayParams(): Record<string, unknown> {
   if (!params || typeof params !== "object" || Array.isArray(params)) {
     throw new Error("expected gateway params");
   }
-  return params as Record<string, unknown>;
+  return params as Record<string, any>;
 }
 
 describe("main-session-restart-recovery", () => {
@@ -1329,7 +1329,7 @@ describe("main-session-restart-recovery", () => {
     expect(result).toEqual({ recovered: 0, failed: 1, skipped: 0 });
     expect(callGateway).toHaveBeenCalledOnce();
     const gatewayCall = vi.mocked(callGateway).mock.calls[0]?.[0] as
-      | { method?: string; params?: Record<string, unknown> }
+      | { method?: string; params?: Record<string, any> }
       | undefined;
     expect(gatewayCall?.method).toBe("message.action");
     expect(gatewayCall?.params).toMatchObject({
@@ -1344,7 +1344,7 @@ describe("main-session-restart-recovery", () => {
       threadId: "thread-1",
       bestEffort: true,
     });
-    expect(String((gatewayCall?.params?.params as Record<string, unknown>)?.message)).toContain(
+    expect(String((gatewayCall?.params?.params as Record<string, any>)?.message)).toContain(
       "couldn't safely resume",
     );
 

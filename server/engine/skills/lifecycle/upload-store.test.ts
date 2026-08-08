@@ -32,7 +32,7 @@ function deferred() {
 }
 
 async function expectUploadError(
-  promise: Promise<unknown>,
+  promise: Promise<any>,
   message: string | RegExp,
 ): Promise<void> {
   try {
@@ -54,14 +54,14 @@ async function expectMissingPath(targetPath: string): Promise<void> {
   try {
     await fs.stat(targetPath);
   } catch (err) {
-    expect((err as { code?: unknown }).code).toBe("ENOENT");
+    expect((err as { code?: any }).code).toBe("ENOENT");
     return;
   }
   throw new Error(`expected missing path: ${targetPath}`);
 }
 
 describe("skill upload store", () => {
-  let activeUploadLimitError: unknown;
+  let activeUploadLimitError: any;
 
   beforeAll(async () => {
     const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-skill-upload-store-"));
@@ -270,7 +270,7 @@ describe("skill upload store", () => {
     });
     await store.commit({ uploadId: begin.uploadId });
     const metadataPath = path.join(rootDir, begin.uploadId, "metadata.json");
-    const metadata = JSON.parse(await fs.readFile(metadataPath, "utf8")) as Record<string, unknown>;
+    const metadata = JSON.parse(await fs.readFile(metadataPath, "utf8")) as Record<string, any>;
     delete metadata.actualSha256;
     await fs.writeFile(metadataPath, `${JSON.stringify(metadata, null, 2)}\n`, "utf8");
 
@@ -326,7 +326,7 @@ describe("skill upload store", () => {
       idempotencyKey: "invalid-expiry",
     });
     const metadataPath = path.join(rootDir, begin.uploadId, "metadata.json");
-    const metadata = JSON.parse(await fs.readFile(metadataPath, "utf8")) as Record<string, unknown>;
+    const metadata = JSON.parse(await fs.readFile(metadataPath, "utf8")) as Record<string, any>;
     metadata.expiresAt = null;
     await fs.writeFile(metadataPath, `${JSON.stringify(metadata, null, 2)}\n`, "utf8");
 
@@ -522,7 +522,7 @@ describe("skill upload store", () => {
   });
 });
 
-function toLintErrorObject(value: unknown, fallbackMessage: string): Error {
+function toLintErrorObject(value: any, fallbackMessage: string): Error {
   if (value instanceof Error) {
     return value;
   }

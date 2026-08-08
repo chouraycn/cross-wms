@@ -2,18 +2,18 @@ import type { Tool } from '../extended-types.js';
 
 export interface ConvertResponsesToolsOptions {
   strict?: boolean | null;
-  model?: unknown;
+  model?: any;
   supportsStrictMode?: boolean;
 }
 
 export type ConvertedResponsesTools = {
-  tools: Array<{ type: "function"; name: string; description?: string; parameters: Record<string, unknown>; strict?: boolean | null }>;
+  tools: Array<{ type: "function"; name: string; description?: string; parameters: Record<string, any>; strict?: boolean | null }>;
 };
 
 export function convertResponsesTools(
   tools: Tool[],
   options?: ConvertResponsesToolsOptions,
-): Array<{ type: "function"; name: string; description?: string; parameters: Record<string, unknown>; strict?: boolean | null }> {
+): Array<{ type: "function"; name: string; description?: string; parameters: Record<string, any>; strict?: boolean | null }> {
   return convertResponsesToolPayload(tools, options).tools;
 }
 
@@ -23,11 +23,11 @@ export function convertResponsesToolPayload(
 ): ConvertedResponsesTools {
   const strict = options?.strict ?? false;
   const convertedTools = sortResponsesToolsByName(tools).map((tool) => {
-    const result: { type: "function"; name: string; description?: string; parameters: Record<string, unknown>; strict?: boolean | null } = {
+    const result: { type: "function"; name: string; description?: string; parameters: Record<string, any>; strict?: boolean | null } = {
       type: "function",
       name: tool.name,
       description: tool.description,
-      parameters: tool.parameters as Record<string, unknown>,
+      parameters: tool.parameters as Record<string, any>,
     };
     if (strict !== undefined) {
       result.strict = strict;

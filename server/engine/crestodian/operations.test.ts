@@ -7,48 +7,48 @@ import type { RuntimeEnv } from "../runtime.js";
 import { createCrestodianTestRuntime } from "./crestodian.test-helpers.js";
 import { executeCrestodianOperation, parseCrestodianOperation } from "./operations.js";
 
-type TestConfig = Record<string, unknown>;
+type TestConfig = Record<string, any>;
 
-function parseLastJsonLine(raw: string): unknown {
+function parseLastJsonLine(raw: string): any {
   const lastLine = raw.trim().split("\n").at(-1);
   if (!lastLine) {
     throw new Error("Expected audit log to contain at least one JSON line");
   }
-  return JSON.parse(lastLine) as unknown;
+  return JSON.parse(lastLine) as any;
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (typeof value !== "object" || value === null) {
     throw new Error(`${label} was not an object`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function expectRecordFields(record: Record<string, unknown>, fields: Record<string, unknown>) {
+function expectRecordFields(record: Record<string, any>, fields: Record<string, any>) {
   for (const [key, value] of Object.entries(fields)) {
     expect(record[key]).toEqual(value);
   }
 }
 
 function expectAuditRecord(
-  audit: unknown,
-  fields: Record<string, unknown>,
-  detailFields: Record<string, unknown>,
+  audit: any,
+  fields: Record<string, any>,
+  detailFields: Record<string, any>,
 ) {
   const auditRecord = requireRecord(audit, "audit record");
   expectRecordFields(auditRecord, fields);
   expectRecordFields(requireRecord(auditRecord.details, "audit details"), detailFields);
 }
 
-function requireFirstMockCall(mock: unknown, label: string): unknown[] {
-  const call = (mock as { mock?: { calls?: unknown[][] } }).mock?.calls?.[0];
+function requireFirstMockCall(mock: any, label: string): any[] {
+  const call = (mock as { mock?: { calls?: any[][] } }).mock?.calls?.[0];
   if (!call) {
     throw new Error(`missing ${label} call`);
   }
   return call;
 }
 
-function expectRuntimeArg(value: unknown) {
+function expectRuntimeArg(value: any) {
   const runtime = requireRecord(value, "runtime argument");
   expect(typeof runtime.log).toBe("function");
 }
@@ -301,7 +301,7 @@ describe("parseCrestodianOperation", () => {
       deps: { runGatewayRestart },
     });
 
-    expectRecordFields(result as unknown as Record<string, unknown>, {
+    expectRecordFields(result as unknown as Record<string, any>, {
       applied: false,
       message: "Plan: restart the Gateway. Say yes to apply.",
     });
@@ -446,7 +446,7 @@ describe("parseCrestodianOperation", () => {
       runtime,
       { deps: { runPluginInstall } },
     );
-    expectRecordFields(plan as unknown as Record<string, unknown>, {
+    expectRecordFields(plan as unknown as Record<string, any>, {
       applied: false,
       message: "Plan: install plugin clawhub:openclaw-demo. Say yes to apply.",
     });
@@ -492,7 +492,7 @@ describe("parseCrestodianOperation", () => {
       runtime,
       { deps: { runPluginUninstall } },
     );
-    expectRecordFields(plan as unknown as Record<string, unknown>, {
+    expectRecordFields(plan as unknown as Record<string, any>, {
       applied: false,
       message: "Plan: uninstall plugin openclaw-demo. Say yes to apply.",
     });
@@ -535,7 +535,7 @@ describe("parseCrestodianOperation", () => {
       { kind: "setup", workspace: "/tmp/work" },
       runtime,
     );
-    expectRecordFields(plan as unknown as Record<string, unknown>, {
+    expectRecordFields(plan as unknown as Record<string, any>, {
       applied: false,
     });
     expect(lines.join("\n")).toContain("Model choice: openai/gpt-5.5 (OPENAI_API_KEY).");
@@ -583,7 +583,7 @@ describe("parseCrestodianOperation", () => {
     const plan = await executeCrestodianOperation({ kind: "doctor-fix" }, runtime, {
       deps: { runDoctor },
     });
-    expectRecordFields(plan as unknown as Record<string, unknown>, {
+    expectRecordFields(plan as unknown as Record<string, any>, {
       applied: false,
       message: "Plan: run doctor repairs. Say yes to apply.",
     });
@@ -632,7 +632,7 @@ describe("parseCrestodianOperation", () => {
       deliver: false,
       historyLimit: 200,
     });
-    expectRecordFields(result as unknown as Record<string, unknown>, {
+    expectRecordFields(result as unknown as Record<string, any>, {
       applied: false,
       nextInput: "restart gateway",
     });

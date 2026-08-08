@@ -22,25 +22,25 @@ export function gatewayStartupUnavailableDetails(): GatewayStartupUnavailableDet
 }
 
 function isGatewayStartupUnavailableDetails(
-  details: unknown,
+  details: any,
 ): details is GatewayStartupUnavailableDetails {
   return (
     typeof details === "object" &&
     details !== null &&
-    (details as { reason?: unknown }).reason === GATEWAY_STARTUP_UNAVAILABLE_REASON
+    (details as { reason?: any }).reason === GATEWAY_STARTUP_UNAVAILABLE_REASON
   );
 }
 
 /** Detects the structured retryable error emitted while startup sidecars are pending. */
-export function isRetryableGatewayStartupUnavailableError(error: unknown): boolean {
+export function isRetryableGatewayStartupUnavailableError(error: any): boolean {
   if (!error || typeof error !== "object") {
     return false;
   }
   const shaped = error as {
-    code?: unknown;
-    gatewayCode?: unknown;
-    retryable?: unknown;
-    details?: unknown;
+    code?: any;
+    gatewayCode?: any;
+    retryable?: any;
+    details?: any;
   };
   const code = shaped.gatewayCode ?? shaped.code;
   return (
@@ -51,11 +51,11 @@ export function isRetryableGatewayStartupUnavailableError(error: unknown): boole
 }
 
 /** Resolves a bounded retry-after delay from a startup-unavailable error. */
-export function resolveGatewayStartupRetryAfterMs(error: unknown): number | null {
+export function resolveGatewayStartupRetryAfterMs(error: any): number | null {
   if (!isRetryableGatewayStartupUnavailableError(error)) {
     return null;
   }
-  const retryAfterMs = (error as { retryAfterMs?: unknown }).retryAfterMs;
+  const retryAfterMs = (error as { retryAfterMs?: any }).retryAfterMs;
   const raw =
     typeof retryAfterMs === "number" && Number.isFinite(retryAfterMs)
       ? retryAfterMs

@@ -51,8 +51,8 @@ export function buildCompactionSummarizationInstructions(
 
 /** Summarize with progressive fallback — simplified in cross-wms. */
 export async function summarizeWithFallback(params: {
-  messages: unknown[];
-  model?: unknown;
+  messages: any[];
+  model?: any;
   apiKey?: string;
   headers?: Record<string, string>;
   signal?: AbortSignal;
@@ -71,8 +71,8 @@ export async function summarizeWithFallback(params: {
 
 /** Summarizes history in multiple stages — simplified in cross-wms. */
 export async function summarizeInStages(params: {
-  messages: unknown[];
-  model?: unknown;
+  messages: any[];
+  model?: any;
   apiKey?: string;
   headers?: Record<string, string>;
   signal?: AbortSignal;
@@ -89,8 +89,8 @@ export async function summarizeInStages(params: {
 }
 
 /** Resolves a positive context-window token count from model metadata. */
-export function resolveContextWindowTokens(model?: unknown): number {
-  const m = model as Record<string, unknown> | undefined;
+export function resolveContextWindowTokens(model?: any): number {
+  const m = model as Record<string, any> | undefined;
   const effective = m?.contextTokens ?? m?.contextWindow;
   return Math.max(1, Math.floor((typeof effective === "number" ? effective : DEFAULT_CONTEXT_TOKENS)));
 }

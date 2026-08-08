@@ -43,7 +43,7 @@ const ModelManager: React.FC<ModelManagerProps> = (props) => {
   const [showDiscoverDialog, setShowDiscoverDialog] = useState(false);
 
   // 构建健康状态和延迟映射（供 ModelList 使用）
-  const healthStatuses: Record<string, ReturnType<typeof getModelStatus>> = {};
+  const healthStatuses: Record<string, ReturnType<typeof getModelStatus>> = {} as any;
   const healthLatencies: Record<string, number> = {};
   for (const model of models) {
     healthStatuses[model.id] = getModelStatus(model.id);
@@ -136,7 +136,7 @@ const ModelManager: React.FC<ModelManagerProps> = (props) => {
           selectedModelIds={state.selectedModelIds}
           searchQuery={state.searchQuery}
           selectedCapabilities={state.selectedCapabilities}
-          healthStatuses={healthStatuses}
+          healthStatuses={healthStatuses as any}
           healthLatencies={healthLatencies}
         />
       </Box>

@@ -15,7 +15,7 @@ export interface ToolInvokeOptions {
   /** 工具名 */
   name: string;
   /** 调用参数 */
-  args: Record<string, unknown>;
+  args: Record<string, any>;
   /** 调用上下文 */
   context?: {
     sessionId?: string;
@@ -29,7 +29,7 @@ export interface ToolInvokeResult {
   /** 是否成功 */
   ok: boolean;
   /** 结果数据 */
-  data?: unknown;
+  data?: any;
   /** 错误信息 */
   error?: string;
   /** 执行时长（毫秒） */
@@ -48,7 +48,7 @@ export type ToolCapabilityProvider = CapabilityProvider<ToolInvokeOptions, ToolI
 export function registerToolProvider(
   pluginId: string,
   provider: ToolCapabilityProvider,
-  metadata?: Record<string, unknown>,
+  metadata?: Record<string, any>,
 ): void {
   capabilityProviderRegistry.register(pluginId, provider, metadata);
 }

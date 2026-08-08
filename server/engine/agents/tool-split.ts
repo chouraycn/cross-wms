@@ -7,11 +7,11 @@
  */
 
 export function splitSdkTools(_options: {
-  tools?: unknown[];
+  tools?: any[];
   sandboxEnabled?: boolean;
-  toolHookContext?: unknown;
+  toolHookContext?: any;
 }): {
-  customTools: unknown[];
+  customTools: any[];
 } {
   return {
     customTools: [],

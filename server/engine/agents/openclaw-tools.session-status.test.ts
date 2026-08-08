@@ -15,15 +15,15 @@ const updateSessionStoreMock = vi.fn();
 const callGatewayMock = vi.fn();
 const loadCombinedSessionStoreForGatewayMock = vi.fn();
 const buildStatusMessageMock = vi.hoisted(() =>
-  vi.fn((_params?: unknown) => "OpenClaw\n🧠 Model: GPT-5.4"),
+  vi.fn((_params?: any) => "OpenClaw\n🧠 Model: GPT-5.4"),
 );
 const resolveQueueSettingsMock = vi.hoisted(() =>
-  vi.fn((_params?: unknown) => ({ mode: "interrupt" })),
+  vi.fn((_params?: any) => ({ mode: "interrupt" })),
 );
 const listTasksForRelatedSessionKeyForOwnerMock = vi.hoisted(() =>
   vi.fn(
     (_: { relatedSessionKey: string; callerOwnerKey: string }) =>
-      [] as Array<Record<string, unknown>>,
+      [] as Array<Record<string, any>>,
   ),
 );
 const resolveEnvApiKeyMock = vi.hoisted(() =>
@@ -51,12 +51,12 @@ const createMockConfig = () => ({
   },
 });
 
-let mockConfig: Record<string, unknown> = createMockConfig();
+let mockConfig: Record<string, any> = createMockConfig();
 const TASK_STATUS_SNAPSHOT_NOW = 1_000_000_000_000;
 
 function createScopedSessionStores() {
   // Two stores simulate per-agent session files merged by gateway status paths.
-  return new Map<string, Record<string, unknown>>([
+  return new Map<string, Record<string, any>>([
     [
       "/tmp/main/sessions.json",
       {
@@ -86,7 +86,7 @@ function installScopedSessionStores(syncUpdates = false) {
   });
   if (syncUpdates) {
     updateSessionStoreMock.mockImplementation(
-      (storePath: string, store: Record<string, unknown>) => {
+      (storePath: string, store: Record<string, any>) => {
         if (storePath) {
           stores.set(storePath, store);
         }
@@ -104,9 +104,9 @@ async function createSessionsModuleMock() {
     loadSessionStore: (storePath: string) => loadSessionStoreMock(storePath),
     updateSessionStore: async (
       storePath: string,
-      mutator: (store: Record<string, unknown>) => Promise<void> | void,
+      mutator: (store: Record<string, any>) => Promise<void> | void,
     ) => {
-      const store = loadSessionStoreMock(storePath) as Record<string, unknown>;
+      const store = loadSessionStoreMock(storePath) as Record<string, any>;
       await mutator(store);
       updateSessionStoreMock(storePath, store);
       return store;
@@ -118,7 +118,7 @@ async function createSessionsModuleMock() {
 
 function createGatewayCallModuleMock() {
   return {
-    callGateway: (opts: unknown) => callGatewayMock(opts),
+    callGateway: (opts: any) => callGatewayMock(opts),
   };
 }
 
@@ -128,7 +128,7 @@ async function createGatewaySessionUtilsModuleMock() {
   );
   return {
     ...actual,
-    loadCombinedSessionStoreForGateway: (cfg: unknown) =>
+    loadCombinedSessionStoreForGateway: (cfg: any) =>
       loadCombinedSessionStoreForGatewayMock(cfg),
   };
 }
@@ -220,9 +220,9 @@ function createCommandsStatusRuntimeModuleMock() {
       const parsed = params.sessionKey.startsWith("agent:") ? params.sessionKey.split(":") : null;
       const agentId = parsed?.[1] || "main";
       const configuredAgent = Array.isArray(
-        (mockConfig as { agents?: { list?: Array<Record<string, unknown>> } }).agents?.list,
+        (mockConfig as { agents?: { list?: Array<Record<string, any>> } }).agents?.list,
       )
-        ? (mockConfig as { agents?: { list?: Array<Record<string, unknown>> } }).agents?.list?.find(
+        ? (mockConfig as { agents?: { list?: Array<Record<string, any>> } }).agents?.list?.find(
             (entry) => entry.id === agentId,
           )
         : undefined;
@@ -277,7 +277,7 @@ vi.mock("../agents/model-auth.js", createModelAuthModuleMock);
 vi.mock("../infra/provider-usage.js", createProviderUsageModuleMock);
 vi.mock("./tools/session-status.runtime.js", createCommandsStatusRuntimeModuleMock);
 vi.mock("../auto-reply/group-activation.js", () => ({
-  normalizeGroupActivation: (value: unknown) => value ?? "always",
+  normalizeGroupActivation: (value: any) => value ?? "always",
 }));
 vi.mock("../auto-reply/reply/queue.js", () => ({
   getFollowupQueueDepth: () => 0,
@@ -325,8 +325,8 @@ function resetSessionStore(store: Record<string, SessionEntry>) {
     storePath: "(multiple)",
     store,
   });
-  callGatewayMock.mockImplementation(async (opts: unknown) => {
-    const request = opts as { method?: string; params?: Record<string, unknown> };
+  callGatewayMock.mockImplementation(async (opts: any) => {
+    const request = opts as { method?: string; params?: Record<string, any> };
     if (request.method === "sessions.resolve") {
       const key = typeof request.params?.key === "string" ? request.params.key.trim() : "";
       if (key && store[key]) {
@@ -375,10 +375,10 @@ function installSandboxedSessionStatusConfig() {
 }
 
 function mockSpawnedSessionList(
-  resolveSessions: (spawnedBy: string | undefined) => Array<Record<string, unknown>>,
+  resolveSessions: (spawnedBy: string | undefined) => Array<Record<string, any>>,
 ) {
-  callGatewayMock.mockImplementation(async (opts: unknown) => {
-    const request = opts as { method?: string; params?: Record<string, unknown> };
+  callGatewayMock.mockImplementation(async (opts: any) => {
+    const request = opts as { method?: string; params?: Record<string, any> };
     if (request.method === "sessions.list") {
       return { sessions: resolveSessions(request.params?.spawnedBy as string | undefined) };
     }
@@ -400,11 +400,11 @@ function expectSpawnedSessionLookupCalls(spawnedBy: string) {
   expect(callGatewayMock).toHaveBeenNthCalledWith(2, expectedCall);
 }
 
-function expectRecordFields(record: unknown, expected: Record<string, unknown>) {
+function expectRecordFields(record: any, expected: Record<string, any>) {
   if (!record || typeof record !== "object") {
     throw new Error("Expected record");
   }
-  const actual = record as Record<string, unknown>;
+  const actual = record as Record<string, any>;
   for (const [key, value] of Object.entries(expected)) {
     expect(actual[key]).toEqual(value);
   }
@@ -566,7 +566,7 @@ describe("session_status tool", () => {
     expect(details.ok).toBe(true);
     expect(details.sessionKey).toBe("agent:admin:main");
 
-    const statusArg = mockCallArg(buildStatusMessageMock) as Record<string, unknown>;
+    const statusArg = mockCallArg(buildStatusMessageMock) as Record<string, any>;
     expectRecordFields(statusArg.sessionEntry, {
       sessionId: "s-admin-main",
       thinkingLevel: "low",
@@ -603,7 +603,7 @@ describe("session_status tool", () => {
     expect(details.ok).toBe(true);
     expect(details.sessionKey).toBe("agent:admin:main");
 
-    const statusArg = mockCallArg(buildStatusMessageMock) as Record<string, unknown>;
+    const statusArg = mockCallArg(buildStatusMessageMock) as Record<string, any>;
     expectRecordFields(statusArg.sessionEntry, {
       sessionId: "s-admin-main",
       thinkingLevel: "low",
@@ -658,7 +658,7 @@ describe("session_status tool", () => {
     expect(details.ok).toBe(true);
     expect(details.sessionKey).toBe("agent:main:main");
 
-    const statusArg = mockCallArg(buildStatusMessageMock) as Record<string, unknown>;
+    const statusArg = mockCallArg(buildStatusMessageMock) as Record<string, any>;
     const sessionEntry = statusArg.sessionEntry as SessionEntry;
     expect(sessionEntry.thinkingLevel).toBe("high");
   });
@@ -1010,13 +1010,13 @@ describe("session_status tool", () => {
     expect(details.ok).toBe(true);
     expect(details.sessionKey).toBe("agent:main:current");
 
-    const statusArg = mockCallArg(buildStatusMessageMock) as Record<string, unknown>;
+    const statusArg = mockCallArg(buildStatusMessageMock) as Record<string, any>;
     expectRecordFields(statusArg.sessionEntry, {
       providerOverride: "anthropic",
       modelOverride: "claude-sonnet-4-6",
     });
-    const agent = statusArg.agent as Record<string, unknown>;
-    const model = agent.model as Record<string, unknown>;
+    const agent = statusArg.agent as Record<string, any>;
+    const model = agent.model as Record<string, any>;
     expect(model.primary).not.toBe("openai/gpt-5.2");
   });
 
@@ -1084,8 +1084,8 @@ describe("session_status tool", () => {
 
     await tool.execute("call-current-active-model", { sessionKey: "current" });
 
-    const statusArg = mockCallArg(buildStatusMessageMock) as Record<string, unknown>;
-    const agent = statusArg.agent as Record<string, unknown>;
+    const statusArg = mockCallArg(buildStatusMessageMock) as Record<string, any>;
+    const agent = statusArg.agent as Record<string, any>;
     expectRecordFields(agent.model, { primary: "openai/gpt-5.2" });
   });
 
@@ -1104,8 +1104,8 @@ describe("session_status tool", () => {
 
     await tool.execute("call-implicit-current-active-model", {});
 
-    const statusArg = mockCallArg(buildStatusMessageMock) as Record<string, unknown>;
-    const agent = statusArg.agent as Record<string, unknown>;
+    const statusArg = mockCallArg(buildStatusMessageMock) as Record<string, any>;
+    const agent = statusArg.agent as Record<string, any>;
     expectRecordFields(agent.model, { primary: "openai/gpt-5.2" });
   });
 
@@ -1126,11 +1126,11 @@ describe("session_status tool", () => {
 
     await tool.execute("call-current-active-model-with-override", { sessionKey: "current" });
 
-    const statusArg = mockCallArg(buildStatusMessageMock) as Record<string, unknown>;
-    const sessionEntry = statusArg.sessionEntry as Record<string, unknown>;
+    const statusArg = mockCallArg(buildStatusMessageMock) as Record<string, any>;
+    const sessionEntry = statusArg.sessionEntry as Record<string, any>;
     expect(sessionEntry.providerOverride).toBeUndefined();
     expect(sessionEntry.modelOverride).toBeUndefined();
-    const agent = statusArg.agent as Record<string, unknown>;
+    const agent = statusArg.agent as Record<string, any>;
     expectRecordFields(agent.model, { primary: "openai/gpt-5.2" });
   });
 
@@ -1154,8 +1154,8 @@ describe("session_status tool", () => {
       model: "default",
     });
 
-    const statusArg = mockCallArg(buildStatusMessageMock) as Record<string, unknown>;
-    const agent = statusArg.agent as Record<string, unknown>;
+    const statusArg = mockCallArg(buildStatusMessageMock) as Record<string, any>;
+    const agent = statusArg.agent as Record<string, any>;
     expectRecordFields(agent.model, { primary: "openai/gpt-5.4" });
   });
 
@@ -1504,7 +1504,7 @@ describe("session_status tool", () => {
     expect(details.ok).toBe(true);
     expect(details.sessionKey).toBe("agent:main:subagent:child");
     expect(mockCallArg(updateSessionStoreMock)).toBe("/tmp/main/sessions.json");
-    const savedStore = mockCallArg(updateSessionStoreMock, 0, 1) as Record<string, unknown>;
+    const savedStore = mockCallArg(updateSessionStoreMock, 0, 1) as Record<string, any>;
     expectRecordFields(savedStore["agent:main:subagent:child"], {
       liveModelSwitchPending: true,
       modelOverride: "claude-sonnet-4-6",
@@ -1525,8 +1525,8 @@ describe("session_status tool", () => {
 
     await tool.execute("call-runtime-model", {});
 
-    const statusArg = mockCallArg(buildStatusMessageMock) as Record<string, unknown>;
-    const agent = statusArg.agent as Record<string, unknown>;
+    const statusArg = mockCallArg(buildStatusMessageMock) as Record<string, any>;
+    const agent = statusArg.agent as Record<string, any>;
     expectRecordFields(agent.model, { primary: "anthropic/claude-opus-4-6" });
   });
 
@@ -1566,8 +1566,8 @@ describe("session_status tool", () => {
 
     await tool.execute("call-runtime-custom-provider", {});
 
-    const statusArg = mockCallArg(buildStatusMessageMock) as Record<string, unknown>;
-    const agent = statusArg.agent as Record<string, unknown>;
+    const statusArg = mockCallArg(buildStatusMessageMock) as Record<string, any>;
+    const agent = statusArg.agent as Record<string, any>;
     expectRecordFields(agent.model, { primary: "qwen-dashscope/qwen-max" });
     expect(statusArg.modelAuth).toBe("api-key (models.json)");
   });
@@ -1585,8 +1585,8 @@ describe("session_status tool", () => {
 
     await tool.execute("call-legacy-runtime-model", {});
 
-    const statusArg = mockCallArg(buildStatusMessageMock) as Record<string, unknown>;
-    const agent = statusArg.agent as Record<string, unknown>;
+    const statusArg = mockCallArg(buildStatusMessageMock) as Record<string, any>;
+    const agent = statusArg.agent as Record<string, any>;
     expectRecordFields(agent.model, { primary: "legacy-runtime-model" });
     expectRecordFields(statusArg.sessionEntry, {
       model: "legacy-runtime-model",
@@ -1628,7 +1628,7 @@ describe("session_status tool", () => {
 
       await tool.execute("call-agent-thinking", {});
 
-      const statusArg = mockCallArg(buildStatusMessageMock) as Record<string, unknown>;
+      const statusArg = mockCallArg(buildStatusMessageMock) as Record<string, any>;
       expect(statusArg.agentId).toBe("kira");
       expectRecordFields(statusArg.agent, { thinkingDefault: "xhigh" });
     } finally {
@@ -1668,7 +1668,7 @@ describe("session_status tool", () => {
 
       await tool.execute("call-agent-thinking-implicit", {});
 
-      const statusArg = mockCallArg(buildStatusMessageMock) as Record<string, unknown>;
+      const statusArg = mockCallArg(buildStatusMessageMock) as Record<string, any>;
       expect(statusArg.agentId).toBe("kira");
       expectRecordFields(statusArg.agent, { thinkingDefault: "medium" });
     } finally {
@@ -1716,7 +1716,7 @@ describe("session_status tool", () => {
 
       await tool.execute("call-agent-thinking-runtime-hydration", {});
 
-      const statusArg = mockCallArg(buildStatusMessageMock) as Record<string, unknown>;
+      const statusArg = mockCallArg(buildStatusMessageMock) as Record<string, any>;
       expect(statusArg.agentId).toBe("kira");
       expectRecordFields(statusArg.agent, { thinkingDefault: "medium" });
     } finally {
@@ -1737,7 +1737,7 @@ describe("session_status tool", () => {
 
     await tool.execute("call-origin-provider", {});
 
-    const queueArg = mockCallArg(resolveQueueSettingsMock) as Record<string, unknown>;
+    const queueArg = mockCallArg(resolveQueueSettingsMock) as Record<string, any>;
     expect(queueArg.channel).toBe("quietchat");
     expectRecordFields(queueArg.sessionEntry, { origin: { provider: "quietchat" } });
   });
@@ -2027,8 +2027,8 @@ describe("session_status tool", () => {
         },
       },
     };
-    callGatewayMock.mockImplementation(async (opts: unknown) => {
-      const request = opts as { method?: string; params?: Record<string, unknown> };
+    callGatewayMock.mockImplementation(async (opts: any) => {
+      const request = opts as { method?: string; params?: Record<string, any> };
       if (request.method === "sessions.resolve") {
         if (request.params?.sessionId === "s-parent") {
           return { key: "agent:main:main" };
@@ -2308,8 +2308,8 @@ describe("session_status tool", () => {
     const details = result.details as { modelOverride?: string | null };
     expect(details.modelOverride).toBeNull();
     expect(updateSessionStoreMock).toHaveBeenCalledTimes(1);
-    const savedStore = latestMockCallArg(updateSessionStoreMock, 1) as Record<string, unknown>;
-    const saved = savedStore.main as Record<string, unknown>;
+    const savedStore = latestMockCallArg(updateSessionStoreMock, 1) as Record<string, any>;
+    const saved = savedStore.main as Record<string, any>;
     expect(saved.providerOverride).toBeUndefined();
     expect(saved.modelOverride).toBeUndefined();
     expect(saved.authProfileOverride).toBeUndefined();

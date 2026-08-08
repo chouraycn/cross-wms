@@ -232,7 +232,7 @@ export async function validateExecFilesystemPath(
   }
 }
 
-export function buildExecFilesystemPolicyFromConfig(config: Record<string, unknown>): ExecFilesystemPolicy {
+export function buildExecFilesystemPolicyFromConfig(config: Record<string, any>): ExecFilesystemPolicy {
   const policy: ExecFilesystemPolicy = {
     id: config['id'] as string || 'custom-exec-fs-policy',
     name: config['name'] as string || 'Custom Exec Filesystem Policy',
@@ -241,7 +241,7 @@ export function buildExecFilesystemPolicyFromConfig(config: Record<string, unkno
     defaultAction: (config['defaultAction'] as 'allow' | 'deny') || 'deny',
   };
 
-  const rulesConfig = config['rules'] as Record<string, unknown>[] || [];
+  const rulesConfig = config['rules'] as Record<string, any>[] || [];
   for (const ruleConfig of rulesConfig) {
     const ruleId = ruleConfig['id'] as string || `rule-${policy.rules.length}`;
     const rule: ExecFilesystemPolicyRule = {

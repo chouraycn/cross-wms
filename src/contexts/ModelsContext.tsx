@@ -111,14 +111,14 @@ export const ModelsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     try {
       setIsLoading(true);
       setError(null);
-      let lastError: unknown = null;
+      let lastError: any = null;
       for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
         try {
           const data = await api.getModelsConfig();
           if (data && Array.isArray(data.models)) {
             // 过滤无效模型
             const validModels = data.models.filter(
-              (m: unknown) => m && typeof m === 'object' && typeof m.id === 'string' && m.id.trim() && typeof m.name === 'string'
+              (m: any) => m && typeof m === 'object' && typeof m.id === 'string' && m.id.trim() && typeof m.name === 'string'
             );
             setModels(validModels);
             const dmid = data.defaultModelId || validModels[0]?.id || '';

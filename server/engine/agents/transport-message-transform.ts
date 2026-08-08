@@ -6,6 +6,6 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function transformTransportMessages(..._args: unknown[]): unknown {
+export function transformTransportMessages(..._args: any[]): any {
   return undefined;
 }

@@ -41,7 +41,7 @@ export type GeneratedMusicAsset = {
   mimeType: string;
   fileName?: string;
   durationSeconds?: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 /** 音乐生成的源参考素材（例如参考音频/图片） */
@@ -50,7 +50,7 @@ export type MusicSourceAsset = {
   buffer?: Buffer;
   mimeType?: string;
   fileName?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 /** Provider 运行时请求 */
@@ -68,7 +68,7 @@ export type MusicRequest = {
   tempo?: MusicTempo;
   instruments?: string[];
   inputAssets?: MusicSourceAsset[];
-  providerOptions?: Record<string, unknown>;
+  providerOptions?: Record<string, any>;
   apiKey?: string;
   baseUrl?: string;
 };
@@ -78,7 +78,7 @@ export type MusicResult = {
   tracks: GeneratedMusicAsset[];
   model?: string;
   lyrics?: string[];
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 /** Provider 生成模式能力 */
@@ -146,7 +146,7 @@ export type MusicGenerationEditCapabilities = MusicModeCapabilities & {
 /** 被忽略的覆盖项（openclaw 命名） */
 export type MusicGenerationIgnoredOverride = {
   key: string;
-  value: unknown;
+  value: any;
 };
 
 /** 归一化记录（openclaw 命名） */

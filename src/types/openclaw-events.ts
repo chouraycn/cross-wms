@@ -23,7 +23,7 @@ export interface ContentBlock {
   thinking?: string;
   id?: string;
   name?: string;
-  arguments?: Record<string, unknown>;
+  arguments?: Record<string, any>;
 }
 
 /** 助手消息快照 — 流式过程中的部分/最终消息状态 */
@@ -39,7 +39,7 @@ export interface AssistantMessageSnapshot {
 export interface ToolCallInfo {
   id: string;
   name: string;
-  arguments: Record<string, unknown>;
+  arguments: Record<string, any>;
   result?: string;
   error?: string;
 }
@@ -116,7 +116,7 @@ export type AssistantMessageEvent =
       message: AssistantMessageSnapshot;
       // cross-wms 生命周期扩展字段
       thinkingDuration?: number;
-      usage?: Record<string, unknown>;
+      usage?: Record<string, any>;
       fallbackModel?: string;
       fallbackReason?: 'key_rotation' | 'model_downgrade' | 'model_not_supported' | 'request_failed';
       errorMessage?: string;
@@ -154,7 +154,7 @@ export type SystemEvent =
   | {
       type: 'approval_request';
       toolName: string;
-      toolArgs: Record<string, unknown>;
+      toolArgs: Record<string, any>;
       approvalId: string;
       description?: string;
       riskLevel?: string;

@@ -1,20 +1,20 @@
 // 移植自 openclaw/src/config/config-env-vars.ts
 
-export function isConfigRuntimeEnvVarAllowed(...args: unknown[]): unknown {
+export function isConfigRuntimeEnvVarAllowed(...args: any[]): any {
   return false;
 }
-export function cloneEnvWithPlatformSemantics(...args: unknown[]): unknown {
+export function cloneEnvWithPlatformSemantics(...args: any[]): any {
   return undefined;
 }
-export function collectConfigRuntimeEnvVars(...args: unknown[]): unknown {
+export function collectConfigRuntimeEnvVars(...args: any[]): any {
   return [];
 }
-export function collectConfigServiceEnvVars(...args: unknown[]): unknown {
+export function collectConfigServiceEnvVars(...args: any[]): any {
   return [];
 }
-export function createConfigRuntimeEnv(...args: unknown[]): unknown {
+export function createConfigRuntimeEnv(...args: any[]): any {
   return undefined;
 }
-export function applyConfigEnvVars(...args: unknown[]): unknown {
+export function applyConfigEnvVars(...args: any[]): any {
   return undefined;
 }

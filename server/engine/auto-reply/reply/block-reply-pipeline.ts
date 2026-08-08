@@ -196,7 +196,7 @@ export function createBlockReplyPipeline(params: {
           didStream = true;
         }
       })
-      .catch((err: unknown) => {
+      .catch((err: any) => {
         if (err === timeoutError) {
           abortController.abort();
           aborted = true;

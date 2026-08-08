@@ -8,11 +8,11 @@
 
 type AgentMessage = {
   role: string;
-  content?: unknown;
-  stopReason?: unknown;
-  toolCallId?: unknown;
-  toolName?: unknown;
-  [key: string]: unknown;
+  content?: any;
+  stopReason?: any;
+  toolCallId?: any;
+  toolName?: any;
+  [key: string]: any;
 };
 
 /** Default share of context window targeted for compaction chunks. */
@@ -61,7 +61,7 @@ function estimateTokens(message: AgentMessage): number {
   if (Array.isArray(content)) {
     let total = 0;
     for (const block of content) {
-      if (block && typeof block === "object" && "text" in block && typeof (block as { text?: unknown }).text === "string") {
+      if (block && typeof block === "object" && "text" in block && typeof (block as { text?: any }).text === "string") {
         total += Math.ceil(((block as { text: string }).text.length) / 4);
       } else {
         total += 1;
@@ -84,7 +84,7 @@ function stripRuntimeContextCustomMessages(messages: AgentMessage[]): AgentMessa
 function stripToolResultDetails(messages: AgentMessage[]): AgentMessage[] {
   return messages.map((msg) => {
     if (msg.role === "toolResult" && msg.content && typeof msg.content === "object") {
-      const { details, ...rest } = msg as Record<string, unknown>;
+      const { details, ...rest } = msg as Record<string, any>;
       void details;
       return rest as AgentMessage;
     }

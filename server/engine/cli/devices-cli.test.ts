@@ -21,7 +21,7 @@ const mocks = vi.hoisted(() => ({
   listDevicePairing: vi.fn(),
   approveDevicePairing: vi.fn(),
   summarizeDeviceTokens: vi.fn(),
-  withProgress: vi.fn(async (_opts: unknown, fn: () => Promise<unknown>) => await fn()),
+  withProgress: vi.fn(async (_opts: any, fn: () => Promise<any>) => await fn()),
 }));
 
 const {
@@ -53,8 +53,8 @@ vi.mock("../infra/device-pairing.js", () => ({
 vi.mock("../runtime.js", () => ({
   defaultRuntime: mocks.runtime,
   writeRuntimeJson: (
-    targetRuntime: { log: (...args: unknown[]) => void },
-    value: unknown,
+    targetRuntime: { log: (...args: any[]) => void },
+    value: any,
     space = 2,
   ) => targetRuntime.log(JSON.stringify(value, null, space > 0 ? space : undefined)),
 }));
@@ -69,7 +69,7 @@ async function runDevicesCommand(argv: string[]) {
   await program.parseAsync(["devices", ...argv], { from: "user" });
 }
 
-function readRuntimeCallText(call: unknown[] | undefined): string {
+function readRuntimeCallText(call: any[] | undefined): string {
   const value = call?.[0];
   return typeof value === "string" ? value : "";
 }
@@ -82,7 +82,7 @@ function readRuntimeErrorOutput(): string {
   return runtime.error.mock.calls.map((entry) => readRuntimeCallText(entry)).join("\n");
 }
 
-function pendingDevice(overrides: Record<string, unknown> = {}) {
+function pendingDevice(overrides: Record<string, any> = {}) {
   return {
     requestId: "req-1",
     deviceId: "device-1",
@@ -94,7 +94,7 @@ function pendingDevice(overrides: Record<string, unknown> = {}) {
   };
 }
 
-function pairedDevice(overrides: Record<string, unknown> = {}) {
+function pairedDevice(overrides: Record<string, any> = {}) {
   return {
     deviceId: "device-1",
     displayName: "Device One",
@@ -105,8 +105,8 @@ function pairedDevice(overrides: Record<string, unknown> = {}) {
 }
 
 function mockGatewayPairingList(
-  pendingOverrides: Record<string, unknown> = {},
-  pairedOverrides: Record<string, unknown> = {},
+  pendingOverrides: Record<string, any> = {},
+  pairedOverrides: Record<string, any> = {},
 ) {
   callGateway.mockResolvedValueOnce({
     pending: [pendingDevice(pendingOverrides)],
@@ -127,30 +127,30 @@ function mockLocalPairingFallback(message?: string) {
   summarizeDeviceTokens.mockReturnValue(undefined);
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (typeof value !== "object" || value === null) {
     throw new Error(`${label} was not an object`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function expectRecordFields(record: Record<string, unknown>, fields: Record<string, unknown>) {
+function expectRecordFields(record: Record<string, any>, fields: Record<string, any>) {
   for (const [key, value] of Object.entries(fields)) {
     expect(record[key]).toEqual(value);
   }
 }
 
-function requireGatewayCall(index: number): Record<string, unknown> {
-  const call = (callGateway.mock.calls as unknown[][])[index]?.[0];
+function requireGatewayCall(index: number): Record<string, any> {
+  const call = (callGateway.mock.calls as any[][])[index]?.[0];
   return requireRecord(call, `gateway call ${index + 1}`);
 }
 
-function expectGatewayCall(index: number, fields: Record<string, unknown>) {
+function expectGatewayCall(index: number, fields: Record<string, any>) {
   expectRecordFields(requireGatewayCall(index), fields);
 }
 
 function hasGatewayMethod(method: string): boolean {
-  return (callGateway.mock.calls as unknown[][]).some((call) => {
+  return (callGateway.mock.calls as any[][]).some((call) => {
     const params = call[0];
     return (
       typeof params === "object" &&

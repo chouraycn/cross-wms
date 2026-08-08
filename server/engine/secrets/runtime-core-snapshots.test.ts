@@ -195,7 +195,7 @@ describe("secrets runtime snapshot core lanes", () => {
     });
 
     expect(snapshot.config.agents?.defaults?.memorySearch?.remote?.apiKey).toBe("mem-ref-key");
-    expect((snapshot.config.talk as { apiKey?: unknown } | undefined)?.apiKey).toBeUndefined();
+    expect((snapshot.config.talk as { apiKey?: any } | undefined)?.apiKey).toBeUndefined();
     expect(snapshot.config.talk?.providers?.["acme-speech"]?.apiKey).toBe("talk-provider-ref-key");
     expect(snapshot.config.gateway?.remote?.token).toBe("remote-token-ref");
     expect(snapshot.config.gateway?.remote?.password).toBe("remote-password-ref");
@@ -233,12 +233,12 @@ describe("secrets runtime snapshot core lanes", () => {
       "/tmp/openclaw-agent-main.auth-profiles.github-copilot:default.token",
     );
     const openAiProfile = snapshot.authStores[0]?.store.profiles["openai:default"] as
-      | Record<string, unknown>
+      | Record<string, any>
       | undefined;
     expect(openAiProfile?.type).toBe("api_key");
     expect(openAiProfile?.key).toBe("sk-env-openai");
     const copilotProfile = snapshot.authStores[0]?.store.profiles["github-copilot:default"] as
-      | Record<string, unknown>
+      | Record<string, any>
       | undefined;
     expect(copilotProfile?.type).toBe("token");
     expect(copilotProfile?.token).toBe("ghp-env-token");
@@ -263,7 +263,7 @@ describe("secrets runtime snapshot core lanes", () => {
     });
 
     const inlineProfile = snapshot.authStores[0]?.store.profiles["openai:inline"] as
-      | Record<string, unknown>
+      | Record<string, any>
       | undefined;
     expect(inlineProfile?.type).toBe("api_key");
     expect(inlineProfile?.key).toBe("sk-env-openai");
@@ -287,7 +287,7 @@ describe("secrets runtime snapshot core lanes", () => {
 
     const runtimeProfile = ensureAuthProfileStore("/tmp/openclaw-agent-main").profiles[
       "openai:default"
-    ] as Record<string, unknown> | undefined;
+    ] as Record<string, any> | undefined;
     expect(runtimeProfile?.type).toBe("api_key");
     expect(runtimeProfile?.key).toBe("sk-runtime");
   });

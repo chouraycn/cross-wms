@@ -13,9 +13,9 @@ const describeLive = LIVE ? describe : describe.skip;
 describeLive("OpenAI-compatible Anthropic tool payload wrapper live", () => {
   it("sends a healthy pinned tool after quarantining an unreadable sibling", async () => {
     const liveModelId = process.env.OPENCLAW_LIVE_OPENAI_CHAT_TOOL_MODEL || "gpt-5.5";
-    let projectedPayload: Record<string, unknown> | undefined;
+    let projectedPayload: Record<string, any> | undefined;
     const baseStreamFn: StreamFn = (model, context, options) => {
-      const payload: Record<string, unknown> = {
+      const payload: Record<string, any> = {
         model: liveModelId,
         messages: [
           {

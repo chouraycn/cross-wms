@@ -1,12 +1,12 @@
 // 移植自 openclaw/src/plugins/gateway-bindings.ts
 
-export function setGatewaySubagentRuntime(...args: unknown[]): unknown {
+export function setGatewaySubagentRuntime(...args: any[]): any {
   return undefined;
 }
-export function setGatewayNodesRuntime(...args: unknown[]): unknown {
+export function setGatewayNodesRuntime(...args: any[]): any {
   return undefined;
 }
-export function clearGatewaySubagentRuntime(...args: unknown[]): unknown {
+export function clearGatewaySubagentRuntime(...args: any[]): any {
   return undefined;
 }
-export const gatewaySubagentState: (...args: unknown[]) => unknown = undefined as unknown as (...args: unknown[]) => unknown;
+export const gatewaySubagentState: (...args: any[]) => unknown = undefined as unknown as (...args: any[]) => unknown;

@@ -7,9 +7,9 @@
 
 /** Resolves attempt workspace bootstrap routing. */
 export function resolveAttemptWorkspaceBootstrapRouting(params: {
-  cfg?: Record<string, unknown>;
+  cfg?: Record<string, any>;
   agentId?: string;
-}): Record<string, unknown> {
+}): Record<string, any> {
   // Cross-wms does not have agent-specific bootstrap routing.
   return {};
 }

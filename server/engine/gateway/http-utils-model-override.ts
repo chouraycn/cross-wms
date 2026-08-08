@@ -75,13 +75,13 @@ export function extractModelOverrideFromQuery(
   return override;
 }
 
-export function extractModelOverrideFromBody(body: unknown): ModelOverride {
+export function extractModelOverrideFromBody(body: any): ModelOverride {
   if (!body || typeof body !== 'object') {
     return {};
   }
 
   const override: ModelOverride = {};
-  const bodyObj = body as Record<string, unknown>;
+  const bodyObj = body as Record<string, any>;
 
   if (typeof bodyObj.model === 'string') {
     override.model = bodyObj.model;
@@ -184,9 +184,9 @@ export function validateModelOverride(
 }
 
 export function applyModelOverride(
-  baseConfig: Record<string, unknown>,
+  baseConfig: Record<string, any>,
   override: ModelOverride,
-): Record<string, unknown> {
+): Record<string, any> {
   const result = { ...baseConfig };
 
   if (override.model) {

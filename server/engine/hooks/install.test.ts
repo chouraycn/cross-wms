@@ -22,12 +22,12 @@ const scanPackageInstallSourceMock = vi.fn();
 const scanInstalledPackageDependencyTreeMock = vi.fn();
 
 vi.mock("../process/exec.js", () => ({
-  runCommandWithTimeout: (...args: unknown[]) => runCommandWithTimeoutMock(...args),
+  runCommandWithTimeout: (...args: any[]) => runCommandWithTimeoutMock(...args),
 }));
 
 vi.mock("../plugins/install-security-scan.js", () => ({
-  scanPackageInstallSource: (...args: unknown[]) => scanPackageInstallSourceMock(...args),
-  scanInstalledPackageDependencyTree: (...args: unknown[]) =>
+  scanPackageInstallSource: (...args: any[]) => scanPackageInstallSourceMock(...args),
+  scanInstalledPackageDependencyTree: (...args: any[]) =>
     scanInstalledPackageDependencyTreeMock(...args),
 }));
 
@@ -176,7 +176,7 @@ function writeHookPackFiles(params: {
   fs.writeFileSync(path.join(hookDir, "handler.ts"), "export default async () => {};\n", "utf-8");
 
   const manifestPath = path.join(params.pkgDir, "package.json");
-  const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf-8")) as Record<string, unknown>;
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf-8")) as Record<string, any>;
   manifest.name = params.packageName;
   fs.writeFileSync(manifestPath, JSON.stringify(manifest), "utf-8");
 }
@@ -730,7 +730,7 @@ describe("installHooksFromPath", () => {
       heading: "One Hook",
     });
     const manifestPath = path.join(pkgDir, "package.json");
-    const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8")) as Record<string, unknown>;
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8")) as Record<string, any>;
     manifest.dependencies = { "blocked-transitive": "1.0.0" };
     fs.writeFileSync(manifestPath, JSON.stringify(manifest), "utf8");
     runCommandWithTimeoutMock.mockResolvedValue({
@@ -836,7 +836,7 @@ describe("installHooksFromNpmSpec", () => {
           params: Parameters<typeof hookInstallRuntime.installFromValidatedNpmSpecArchive>[0],
         ) => {
           expect(
-            (params.archiveInstallParams as Record<string, unknown>).dangerouslyForceUnsafeInstall,
+            (params.archiveInstallParams as Record<string, any>).dangerouslyForceUnsafeInstall,
           ).toBeUndefined();
           expect(params.archiveInstallParams).toEqual(
             expect.objectContaining({
@@ -925,7 +925,7 @@ describe("installHooksFromNpmSpec", () => {
     expect(fs.existsSync(path.join(result.targetDir, "hooks", "one-hook", "HOOK.md"))).toBe(true);
 
     expectSingleNpmPackIgnoreScriptsCall({
-      calls: run.mock.calls as Array<[unknown, unknown]>,
+      calls: run.mock.calls as Array<[any, any]>,
       expectedSpec: "@openclaw/test-hooks@0.0.1",
     });
 

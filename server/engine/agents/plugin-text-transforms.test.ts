@@ -108,7 +108,7 @@ describe("plugin text transforms", () => {
 
     const context = capturedContext as unknown as {
       systemPrompt: string;
-      messages: Array<{ content: unknown[] }>;
+      messages: Array<{ content: any[] }>;
     };
 
     expect(context.systemPrompt).toBe("Use pine mailbox inside north tower");

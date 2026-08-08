@@ -24,7 +24,7 @@ vi.mock("./channel-resolution.js", () => ({
   resolveOutboundChannelMessageAdapter: resolveOutboundChannelMessageAdapterMock,
 }));
 
-function mockCallArg(mock: { mock: { calls: unknown[][] } }, index = 0): unknown {
+function mockCallArg(mock: { mock: { calls: any[][] } }, index = 0): any {
   const call = mock.mock.calls[index];
   if (!call) {
     throw new Error(`Expected mock call ${index}`);
@@ -32,7 +32,7 @@ function mockCallArg(mock: { mock: { calls: unknown[][] } }, index = 0): unknown
   return call[0];
 }
 
-function expectMockMessageContaining(mock: { mock: { calls: unknown[][] } }, expected: string) {
+function expectMockMessageContaining(mock: { mock: { calls: any[][] } }, expected: string) {
   const messages = mock.mock.calls.map((call) => (typeof call[0] === "string" ? call[0] : ""));
   expect(messages.join("\n")).toContain(expected);
 }
@@ -286,12 +286,12 @@ describe("delivery-queue recovery", () => {
       deferredBackoff: 0,
     });
     const reconcileInput = mockCallArg(reconcileUnknownSend) as {
-      cfg?: unknown;
+      cfg?: any;
       queueId?: string;
       channel?: string;
       to?: string;
       accountId?: string;
-      payloads?: unknown;
+      payloads?: any;
       replyToId?: string;
       threadId?: string;
       silent?: boolean;
@@ -582,10 +582,10 @@ describe("delivery-queue recovery", () => {
       silent?: boolean;
       replyToId?: string;
       replyToMode?: string;
-      formatting?: unknown;
+      formatting?: any;
       gatewayClientScopes?: string[];
-      mirror?: unknown;
-      session?: unknown;
+      mirror?: any;
+      session?: any;
     };
     expect(deliverInput.bestEffort).toBe(true);
     expect(deliverInput.gifPlayback).toBe(true);

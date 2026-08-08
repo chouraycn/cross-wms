@@ -117,7 +117,7 @@ function expectArrayContainsAll(values: readonly string[], expected: readonly st
   });
 }
 
-function expectObjectHasKeys(value: Record<string, unknown>, keys: readonly string[]) {
+function expectObjectHasKeys(value: Record<string, any>, keys: readonly string[]) {
   keys.forEach((key) => {
     expect(value).toHaveProperty(key);
   });

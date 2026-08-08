@@ -29,30 +29,30 @@ export function createActiveRun(
   };
 }
 
-type ChatAbortTestContext = Record<string, unknown> & {
+type ChatAbortTestContext = Record<string, any> & {
   chatAbortControllers: Map<string, ReturnType<typeof createActiveRun>>;
   chatRunBuffers: Map<string, string>;
   chatDeltaSentAt: Map<string, number>;
   chatDeltaLastBroadcastLen: Map<string, number>;
   chatDeltaLastBroadcastText: Map<string, string>;
-  dedupe: Map<string, unknown>;
+  dedupe: Map<string, any>;
   agentDeltaSentAt: Map<string, number>;
-  bufferedAgentEvents: Map<string, unknown>;
+  bufferedAgentEvents: Map<string, any>;
   chatAbortedRuns: Map<string, ChatAbortMarker>;
   clearChatRunState: (runId: string) => void;
   removeChatRun: (
-    ...args: unknown[]
+    ...args: any[]
   ) => { sessionKey: string; agentId?: string; clientRunId: string } | undefined;
   agentRunSeq: Map<string, number>;
-  broadcast: (...args: unknown[]) => void;
-  nodeSendToSession: (...args: unknown[]) => void;
-  logGateway: { warn: (...args: unknown[]) => void };
+  broadcast: (...args: any[]) => void;
+  nodeSendToSession: (...args: any[]) => void;
+  logGateway: { warn: (...args: any[]) => void };
 };
 
 type ChatAbortRespondMock = Mock<RespondFn>;
 
 export function createChatAbortContext(
-  overrides: Record<string, unknown> = {},
+  overrides: Record<string, any> = {},
 ): ChatAbortTestContext {
   const context = {
     chatAbortControllers: new Map(),

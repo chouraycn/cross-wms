@@ -8,7 +8,7 @@ import type { OAuthCredential } from "./types.js";
 
 const oauthProviderRuntimeMocks = vi.hoisted(() => ({
   refreshProviderOAuthCredentialWithPluginMock: vi.fn(
-    async (_params?: { context?: unknown }) => undefined,
+    async (_params?: { context?: any }) => undefined,
   ),
   formatProviderAuthProfileApiKeyWithPluginMock: vi.fn(() => undefined),
 }));
@@ -38,7 +38,7 @@ vi.mock("./doctor.js", () => ({
 }));
 
 vi.mock("./external-cli-sync.js", () => ({
-  areOAuthCredentialsEquivalent: (a: unknown, b: unknown) => a === b,
+  areOAuthCredentialsEquivalent: (a: any, b: any) => a === b,
   hasUsableOAuthCredential: (credential: OAuthCredential | undefined, now = Date.now()) =>
     credential?.type === "oauth" &&
     credential.access.trim().length > 0 &&
@@ -48,6 +48,6 @@ vi.mock("./external-cli-sync.js", () => ({
   readExternalCliBootstrapCredential: () => null,
   resolveExternalCliAuthProfiles: () => [],
   shouldBootstrapFromExternalCliCredential: () => false,
-  shouldReplaceStoredOAuthCredential: (existing: unknown, incoming: unknown) =>
+  shouldReplaceStoredOAuthCredential: (existing: any, incoming: any) =>
     existing !== incoming,
 }));

@@ -2,27 +2,27 @@
 
 export type SessionSkillPromptBlobProjection = unknown;
 export type SessionStorePersistenceProjection = unknown;
-export function clearSessionSkillPromptRefCache(...args: unknown[]): unknown {
+export function clearSessionSkillPromptRefCache(...args: any[]): any {
   return undefined;
 }
-export function getSessionSkillPromptRefCacheStatsForTest(...args: unknown[]): unknown {
+export function getSessionSkillPromptRefCacheStatsForTest(...args: any[]): any {
   return undefined;
 }
-export function getValidSessionSkillPromptBlobCacheStatsForTest(...args: unknown[]): unknown {
+export function getValidSessionSkillPromptBlobCacheStatsForTest(...args: any[]): any {
   return undefined;
 }
-export function resolveSessionSkillPromptBlobPath(...args: unknown[]): unknown {
+export function resolveSessionSkillPromptBlobPath(...args: any[]): any {
   return undefined;
 }
-export function isSessionSkillPromptBlobReadable(...args: unknown[]): unknown {
+export function isSessionSkillPromptBlobReadable(...args: any[]): any {
   return false;
 }
-export function projectSessionStoreForPersistence(...args: unknown[]): unknown {
+export function projectSessionStoreForPersistence(...args: any[]): any {
   return undefined;
 }
-export function ensureSessionStorePromptBlobsForPersistence(...args: unknown[]): unknown {
+export function ensureSessionStorePromptBlobsForPersistence(...args: any[]): any {
   return undefined;
 }
-export function hydrateSessionStoreSkillPromptRefs(...args: unknown[]): unknown {
+export function hydrateSessionStoreSkillPromptRefs(...args: any[]): any {
   return undefined;
 }

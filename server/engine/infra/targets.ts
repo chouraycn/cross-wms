@@ -5,14 +5,14 @@ export type OutboundChannel = {
   provider: string;
   accountId?: string;
   channelId?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 export type HeartbeatTarget = {
   channel: string;
   target: string;
   threadId?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 export type OutboundTarget = {
@@ -20,14 +20,14 @@ export type OutboundTarget = {
   to: string;
   threadId?: string;
   accountId?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 export type HeartbeatSenderContext = {
   agentId?: string;
   sessionKey?: string;
   channels?: OutboundChannel[];
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 export type OutboundTargetResolution = {
@@ -81,7 +81,7 @@ export function resolveHeartbeatDeliveryTargetWithSessionRoute(params: {
   channel?: string;
   target?: string;
   threadId?: string;
-  sessionRoute?: unknown;
+  sessionRoute?: any;
 }): HeartbeatTarget | null {
   return resolveHeartbeatDeliveryTarget(params);
 }
@@ -90,7 +90,7 @@ export function resolveHeartbeatDeliveryTargetWithSessionRoute(params: {
 export function resolveHeartbeatSenderContext(params: {
   agentId?: string;
   sessionKey?: string;
-  cfg?: unknown;
+  cfg?: any;
 }): HeartbeatSenderContext {
   return { agentId: params.agentId, sessionKey: params.sessionKey };
 }

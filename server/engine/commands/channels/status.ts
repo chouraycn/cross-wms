@@ -42,15 +42,15 @@ function redactGatewayUrlSecretsInText(text: string): string {
   });
 }
 
-function formatChannelsStatusError(err: unknown): string {
+function formatChannelsStatusError(err: any): string {
   return redactGatewayUrlSecretsInText(formatErrorMessage(err));
 }
 
-function formatEventLoopBits(value: unknown): string | null {
+function formatEventLoopBits(value: any): string | null {
   if (!value || typeof value !== "object") {
     return null;
   }
-  const record = value as Record<string, unknown>;
+  const record = value as Record<string, any>;
   if (record.degraded !== true) {
     return null;
   }
@@ -80,7 +80,7 @@ function formatEventLoopBits(value: unknown): string | null {
 }
 
 /** Render gateway channel status payloads into terminal-friendly lines. */
-export function formatGatewayChannelsStatusLines(payload: Record<string, unknown>): string[] {
+export function formatGatewayChannelsStatusLines(payload: Record<string, any>): string[] {
   const lines: string[] = [];
   lines.push(theme.success("Gateway reachable."));
   const eventLoopLine = formatEventLoopBits(payload.eventLoop);
@@ -89,9 +89,9 @@ export function formatGatewayChannelsStatusLines(payload: Record<string, unknown
   }
   const channelLabels =
     payload.channelLabels && typeof payload.channelLabels === "object"
-      ? (payload.channelLabels as Record<string, unknown>)
+      ? (payload.channelLabels as Record<string, any>)
       : {};
-  const accountLines = (provider: ChatChannel, accounts: Array<Record<string, unknown>>) =>
+  const accountLines = (provider: ChatChannel, accounts: Array<Record<string, any>>) =>
     accounts.map((account) => {
       const bits: string[] = [];
       appendEnabledConfiguredLinkedBits(bits, account);
@@ -182,12 +182,12 @@ export function formatGatewayChannelsStatusLines(payload: Record<string, unknown
       });
     });
 
-  const accountsByChannel = payload.channelAccounts as Record<string, unknown> | undefined;
-  const accountPayloads: Partial<Record<string, Array<Record<string, unknown>>>> = {};
+  const accountsByChannel = payload.channelAccounts as Record<string, any> | undefined;
+  const accountPayloads: Partial<Record<string, Array<Record<string, any>>>> = {};
   for (const channelId of Object.keys(accountsByChannel ?? {}).toSorted()) {
     const raw = accountsByChannel?.[channelId];
     if (Array.isArray(raw)) {
-      accountPayloads[channelId] = raw as Array<Record<string, unknown>>;
+      accountPayloads[channelId] = raw as Array<Record<string, any>>;
     }
   }
 

@@ -8,7 +8,7 @@ import {
 import type { Context, Model, SimpleStreamOptions } from "../../llm/types.js";
 import { captureEnv } from "../../test-utils/env.js";
 
-type ExtraParamsCapture<TPayload extends Record<string, unknown>> = {
+type ExtraParamsCapture<TPayload extends Record<string, any>> = {
   headers?: Record<string, string>;
   payload: TPayload;
 };
@@ -20,7 +20,7 @@ function applyAndCapture(params: {
 }) {
   // Capture headers after wrapper composition so caller-provided headers and
   // environment defaults can be compared against the final transport options.
-  const captured: ExtraParamsCapture<Record<string, unknown>> = { payload: {} };
+  const captured: ExtraParamsCapture<Record<string, any>> = { payload: {} };
   const baseStreamFn: StreamFn = (model, _context, options) => {
     captured.headers = options?.headers;
     options?.onPayload?.(captured.payload, model);
@@ -49,12 +49,12 @@ function applyAndCapture(params: {
 
 function applyAndCaptureReasoning(params: {
   modelId: string;
-  initialPayload?: Record<string, unknown>;
+  initialPayload?: Record<string, any>;
   thinkingLevel?: "minimal" | "low" | "medium" | "high";
 }) {
   // Reasoning is injected by the proxy wrapper before payload dispatch, so tests
   // inspect the captured request body rather than mock provider responses.
-  const captured: ExtraParamsCapture<Record<string, unknown>> = {
+  const captured: ExtraParamsCapture<Record<string, any>> = {
     payload: { ...params.initialPayload },
   };
   const baseStreamFn: StreamFn = (model, _context, options) => {

@@ -8,7 +8,7 @@ import { migrateLegacyConfig } from "./shared/legacy-config-migrate.js";
 type ConfigSnapshot = Awaited<ReturnType<typeof readConfigFileSnapshot>>;
 
 /** Return true when a config tree uses authored includes that doctor must not flatten. */
-function containsAuthoredInclude(value: unknown): boolean {
+function containsAuthoredInclude(value: any): boolean {
   if (!isRecord(value)) {
     return false;
   }

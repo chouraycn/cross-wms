@@ -39,7 +39,7 @@ describe("media store", () => {
   }
 
   async function expectPathMissing(targetPath: string): Promise<void> {
-    let statError: unknown;
+    let statError: any;
     try {
       await fs.stat(targetPath);
     } catch (error) {
@@ -143,7 +143,7 @@ describe("media store", () => {
       );
       await withTempStore(async (_store) => {
         const mediaDir = await storeWithMock.ensureMediaDir();
-        let saveError: unknown;
+        let saveError: any;
         try {
           await storeWithMock.saveMediaBuffer(Buffer.from("voice"), "audio/ogg", "failed-buffer");
         } catch (error) {
@@ -269,7 +269,7 @@ describe("media store", () => {
   async function expectRejectedSourceCase(params: {
     relativeSourcePath?: string;
     setupSource?: (home: string) => Promise<string>;
-    expectedError: string | Record<string, unknown>;
+    expectedError: string | Record<string, any>;
   }) {
     await withTempStore(async (storeLocal19, homeLocal6) => {
       const sourcePath =
@@ -281,7 +281,7 @@ describe("media store", () => {
         await rejection.toThrow(params.expectedError);
         return;
       }
-      let sourceError: unknown;
+      let sourceError: any;
       try {
         await storeLocal19.saveMediaSource(sourcePath);
       } catch (error) {
@@ -289,7 +289,7 @@ describe("media store", () => {
       }
       expect(sourceError).toBeInstanceOf(Error);
       for (const [key, value] of Object.entries(params.expectedError)) {
-        expect((sourceError as Record<string, unknown>)[key]).toStrictEqual(value);
+        expect((sourceError as Record<string, any>)[key]).toStrictEqual(value);
       }
     });
   }

@@ -21,19 +21,19 @@ export function formatContextLimitTruncationNotice(omittedChars: number): string
   return CONTEXT_LIMIT_TRUNCATION_NOTICE(omittedChars);
 }
 
-function isToolResultMessage(message: unknown): boolean {
+function isToolResultMessage(message: any): boolean {
   if (typeof message !== "object" || message === null) {
     return false;
   }
-  const msg = message as Record<string, unknown>;
+  const msg = message as Record<string, any>;
   return msg.role === "tool" || msg.role === "tool_result";
 }
 
-function getToolResultText(message: unknown): string | undefined {
+function getToolResultText(message: any): string | undefined {
   if (!isToolResultMessage(message)) {
     return undefined;
   }
-  const msg = message as Record<string, unknown>;
+  const msg = message as Record<string, any>;
   if (typeof msg.content === "string") {
     return msg.content;
   }
@@ -43,10 +43,10 @@ function getToolResultText(message: unknown): string | undefined {
       if (
         typeof block === "object" &&
         block !== null &&
-        (block as Record<string, unknown>).type === "text" &&
-        typeof (block as Record<string, unknown>).text === "string"
+        (block as Record<string, any>).type === "text" &&
+        typeof (block as Record<string, any>).text === "string"
       ) {
-        textParts.push((block as Record<string, unknown>).text as string);
+        textParts.push((block as Record<string, any>).text as string);
       }
     }
     return textParts.length > 0 ? textParts.join("\n") : undefined;
@@ -54,7 +54,7 @@ function getToolResultText(message: unknown): string | undefined {
   return undefined;
 }
 
-function estimateMessageChars(message: unknown): number {
+function estimateMessageChars(message: any): number {
   if (!message || typeof message !== "object") {
     return 0;
   }
@@ -62,7 +62,7 @@ function estimateMessageChars(message: unknown): number {
   if (text) {
     return text.length / TOOL_RESULT_CHARS_PER_TOKEN_ESTIMATE;
   }
-  const msg = message as Record<string, unknown>;
+  const msg = message as Record<string, any>;
   const content = msg.content;
   if (typeof content === "string") {
     return content.length / CHARS_PER_TOKEN_ESTIMATE;
@@ -84,9 +84,9 @@ function truncateTextToBudget(text: string, maxChars: number): string {
 }
 
 function truncateToolResultToChars(
-  msg: Record<string, unknown>,
+  msg: Record<string, any>,
   maxChars: number,
-): Record<string, unknown> {
+): Record<string, any> {
   if (!isToolResultMessage(msg)) {
     return msg;
   }
@@ -110,7 +110,7 @@ function truncateToolResultToChars(
 
 /** Install a context guard on an agent that truncates oversized tool results. */
 export function installToolResultContextGuard(params: {
-  agent: { transformContext?: unknown };
+  agent: { transformContext?: any };
   contextWindowTokens: number;
 }): () => void {
   const contextWindowTokens = Math.max(1, Math.floor(params.contextWindowTokens));
@@ -125,10 +125,10 @@ export function installToolResultContextGuard(params: {
     ),
   );
 
-  const mutableAgent = params.agent as Record<string, unknown>;
+  const mutableAgent = params.agent as Record<string, any>;
   const originalTransformContext = mutableAgent.transformContext;
 
-  mutableAgent.transformContext = async (messages: unknown[], _signal?: AbortSignal) => {
+  mutableAgent.transformContext = async (messages: any[], _signal?: AbortSignal) => {
     const sourceMessages = Array.isArray(messages) ? messages : [];
     let needsTruncation = false;
     for (const message of sourceMessages) {
@@ -142,7 +142,7 @@ export function installToolResultContextGuard(params: {
     if (needsTruncation) {
       contextMessages = sourceMessages.map((msg) => {
         if (isToolResultMessage(msg) && estimateMessageChars(msg) > maxSingleToolResultChars) {
-          return truncateToolResultToChars(msg as Record<string, unknown>, maxSingleToolResultChars);
+          return truncateToolResultToChars(msg as Record<string, any>, maxSingleToolResultChars);
         }
         return msg;
       });
@@ -167,8 +167,8 @@ export function installToolResultContextGuard(params: {
 
 /** Install a context engine loop hook for per-iteration compaction. */
 export function installContextEngineLoopHook(params: {
-  agent: { transformContext?: unknown };
-  contextEngine?: unknown;
+  agent: { transformContext?: any };
+  contextEngine?: any;
   sessionId: string;
   sessionKey?: string;
   sessionFile: string;
@@ -180,6 +180,6 @@ export function installContextEngineLoopHook(params: {
 }
 
 /** Mark the transcript prompt text on a message. */
-export function markTranscriptPromptText(_message: unknown, _text: string): void {
+export function markTranscriptPromptText(_message: any, _text: string): void {
   // No-op in cross-wms: transcript prompt text tracking not supported
 }

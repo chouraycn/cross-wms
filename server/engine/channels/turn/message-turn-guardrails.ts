@@ -77,7 +77,7 @@ export function validateTurnRate(conversationId: string): GuardrailViolation[] {
 
 export function validateTurnOutput(
   content: string,
-  metadata?: Record<string, unknown>
+  metadata?: Record<string, any>
 ): GuardrailViolation[] {
   const violations: GuardrailViolation[] = [];
 

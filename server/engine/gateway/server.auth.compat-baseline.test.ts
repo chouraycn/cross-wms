@@ -24,7 +24,7 @@ import {
 installGatewayTestHooks({ scope: "suite" });
 
 function expectAuthErrorDetails(params: {
-  details: unknown;
+  details: any;
   expectedCode: string;
   canRetryWithDeviceToken?: boolean;
   recommendedNextStep?: string;
@@ -83,7 +83,7 @@ async function expectLocalBackendGatewayClientScopesPreserved(
     const helloOk = res.payload as
       | {
           auth?: {
-            scopes?: unknown;
+            scopes?: any;
           };
         }
       | undefined;
@@ -376,7 +376,7 @@ describe("gateway auth compatibility baseline", () => {
         const helloOk = res.payload as
           | {
               auth?: {
-                deviceToken?: unknown;
+                deviceToken?: any;
               };
             }
           | undefined;
@@ -433,7 +433,7 @@ describe("gateway auth compatibility baseline", () => {
         const helloOk = res.payload as
           | {
               auth?: {
-                deviceToken?: unknown;
+                deviceToken?: any;
               };
             }
           | undefined;

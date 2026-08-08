@@ -34,7 +34,7 @@ function mockTemplateModel(
   discoverModelsMock: DiscoverModelsMock,
   provider: string,
   modelId: string,
-  templateModel: unknown,
+  templateModel: any,
 ): void {
   mockDiscoveredModel(discoverModelsMock, {
     provider,
@@ -103,7 +103,7 @@ export function mockDiscoveredModel(
   params: {
     provider: string;
     modelId: string;
-    templateModel: unknown;
+    templateModel: any;
   },
 ): void {
   // Discovery mock returns exactly one template row so fallback tests cannot

@@ -253,8 +253,8 @@ type ApproveNodePairingResult = ApprovedNodePairingResult | ForbiddenNodePairing
 async function loadState(baseDir?: string): Promise<NodePairingStateFile> {
   const { pendingPath, pairedPath } = resolvePairingPaths(baseDir, "nodes");
   const [pending, paired] = await Promise.all([
-    readJsonIfExists<unknown>(pendingPath),
-    readJsonIfExists<unknown>(pairedPath),
+    readJsonIfExists<any>(pendingPath),
+    readJsonIfExists<any>(pairedPath),
   ]);
   const state: NodePairingStateFile = {
     pendingById: coercePairingStateRecord<NodePairingPendingRecord>(pending),

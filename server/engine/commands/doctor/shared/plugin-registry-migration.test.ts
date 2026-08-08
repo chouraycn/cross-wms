@@ -44,7 +44,7 @@ function createCandidate(
   rootDir: string,
   id = "demo",
   origin: PluginCandidate["origin"] = "global",
-  options: { enabledByDefault?: boolean; manifest?: Record<string, unknown> } = {},
+  options: { enabledByDefault?: boolean; manifest?: Record<string, any> } = {},
 ): PluginCandidate {
   fs.writeFileSync(
     path.join(rootDir, "index.ts"),
@@ -85,23 +85,23 @@ function createCurrentIndex(): InstalledPluginIndex {
   };
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!isRecord(value)) {
     throw new Error(`Expected ${label} to be an object`);
   }
   return value;
 }
-function expectRecordFields(record: Record<string, unknown>, fields: Record<string, unknown>) {
+function expectRecordFields(record: Record<string, any>, fields: Record<string, any>) {
   for (const [key, value] of Object.entries(fields)) {
     expect(record[key]).toEqual(value);
   }
 }
 
-function expectSha256(value: unknown) {
+function expectSha256(value: any) {
   expect(typeof value).toBe("string");
   expect(value).toMatch(/^[a-f0-9]{64}$/u);
 }
@@ -186,7 +186,7 @@ describe("plugin registry install migration", () => {
 
     const persisted = await readPersistedInstalledPluginIndex({ stateDir });
     expect(persisted?.migrationVersion).toBe(1);
-    expectRecordFields(requirePlugin(persisted, "demo") as unknown as Record<string, unknown>, {
+    expectRecordFields(requirePlugin(persisted, "demo") as unknown as Record<string, any>, {
       pluginId: "demo",
     });
   });

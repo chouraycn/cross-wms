@@ -25,7 +25,7 @@ export type ChannelBridgeMessage = {
   to?: string;
   content: string;
   timestamp: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
   messageType?: ChannelMessageType;
 };
 
@@ -45,7 +45,7 @@ export type ChannelBridgeConfig = {
 export type BufferedMessage = {
   message: ChannelBridgeMessage;
   resolve: (value: boolean) => void;
-  reject: (reason?: unknown) => void;
+  reject: (reason?: any) => void;
 };
 
 export class McpChannelBridge {
@@ -344,7 +344,7 @@ export function createMcpChannelBridge(config: ChannelBridgeConfig): McpChannelB
 
 export function bridgeToolsFromChannel(
   serverName: string,
-  channelTools: Array<{ name: string; description: string; inputSchema: Record<string, unknown> }>,
+  channelTools: Array<{ name: string; description: string; inputSchema: Record<string, any> }>,
 ): McpToolInfo[] {
   return channelTools.map((tool) => ({
     name: tool.name,

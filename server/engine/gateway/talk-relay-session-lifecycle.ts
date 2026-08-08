@@ -11,10 +11,10 @@
  * 完整实现见 openclaw 源码。
  */
 
-export function closeExpiredTalkRelaySessions(..._args: unknown[]): unknown {
+export function closeExpiredTalkRelaySessions(..._args: any[]): any {
   return undefined;
 }
 
-export function requireActiveTalkRelaySession(..._args: unknown[]): unknown {
+export function requireActiveTalkRelaySession(..._args: any[]): any {
   return undefined;
 }

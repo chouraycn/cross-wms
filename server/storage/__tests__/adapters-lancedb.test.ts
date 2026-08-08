@@ -71,7 +71,7 @@ function createMockVectorSearch(): MockVectorSearch {
 }
 
 const { mockRequire, mockConnect } = vi.hoisted(() => {
-  let currentClient: unknown = null;
+  let currentClient: any = null;
   const connectFn = vi.fn().mockImplementation(async () => currentClient);
   const mockReq = vi.fn((id: string) => {
     if (id === 'lancedb') {
@@ -82,7 +82,7 @@ const { mockRequire, mockConnect } = vi.hoisted(() => {
   return {
     mockRequire: mockReq,
     mockConnect: Object.assign(connectFn, {
-      _setClient: (c: unknown) => { currentClient = c; },
+      _setClient: (c: any) => { currentClient = c; },
     }),
   };
 });
@@ -109,7 +109,7 @@ describe('LanceDBAdapter', () => {
       dropTable: vi.fn().mockResolvedValue(undefined),
       tableNames: vi.fn().mockResolvedValue(['test']),
     };
-    (mockConnect as unknown as { _setClient: (c: unknown) => void })._setClient(mockClient);
+    (mockConnect as unknown as { _setClient: (c: any) => void })._setClient(mockClient);
     adapter = new LanceDBAdapter({ uri: '/tmp/lancedb-test' });
   });
 

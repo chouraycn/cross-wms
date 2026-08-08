@@ -34,7 +34,7 @@ export type OpenAiCompatibleImageProviderOptions = {
     req: ImageGenerationRequest;
     model: string;
     count: number;
-  }) => Record<string, unknown>;
+  }) => Record<string, any>;
   /**
    * Optional: validate that the request is supported before sending.
    * Return an error string if not supported, or undefined if OK.
@@ -162,7 +162,7 @@ export function createOpenAiCompatibleImageProvider(
           );
         }
 
-        const data = await response.json() as Record<string, unknown>;
+        const data = await response.json() as Record<string, any>;
         const images = parseOpenAiCompatibleImageResponse(
           data as Parameters<typeof parseOpenAiCompatibleImageResponse>[0],
         );

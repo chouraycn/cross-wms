@@ -40,7 +40,7 @@ function expectIssueMessageIncludes(
 
 function expectSuccessfulValidationValue(params: {
   input: Parameters<typeof validateJsonSchemaValue>[0];
-  expectedValue: unknown;
+  expectedValue: any;
 }) {
   const result = validateJsonSchemaValue(params.input);
   expect(result.ok).toBe(true);

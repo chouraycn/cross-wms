@@ -11,7 +11,7 @@
 import type { RealtimeVoiceTool } from "./provider-types.js";
 
 /** 规范化可选字符串：去空白后返回，空串返回 undefined。 */
-function normalizeOptionalString(value: unknown): string | undefined {
+function normalizeOptionalString(value: any): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }
@@ -20,7 +20,7 @@ function normalizeOptionalString(value: unknown): string | undefined {
 }
 
 /** 规范化可选小写字符串。 */
-function normalizeOptionalLowercaseString(value: unknown): string | undefined {
+function normalizeOptionalLowercaseString(value: any): string | undefined {
   const normalized = normalizeOptionalString(value);
   return normalized ? normalized.toLowerCase() : undefined;
 }
@@ -77,7 +77,7 @@ export const REALTIME_VOICE_AGENT_CONSULT_TOOL: RealtimeVoiceTool = {
 /** Build the interim spoken instruction while the delegated agent turn runs. */
 export function buildRealtimeVoiceAgentConsultWorkingResponse(
   audienceLabel = "person",
-): Record<string, unknown> {
+): Record<string, any> {
   return {
     status: "working",
     tool: REALTIME_VOICE_AGENT_CONSULT_TOOL_NAME,
@@ -97,7 +97,7 @@ const SAFE_READ_ONLY_TOOLS = [
 
 /** Type guard for user/config supplied consult tool policies. */
 export function isRealtimeVoiceAgentConsultToolPolicy(
-  value: unknown,
+  value: any,
 ): value is RealtimeVoiceAgentConsultToolPolicy {
   return (
     typeof value === "string" &&
@@ -109,7 +109,7 @@ export function isRealtimeVoiceAgentConsultToolPolicy(
 
 /** Normalize a configured consult tool policy with a caller-owned fallback. */
 export function resolveRealtimeVoiceAgentConsultToolPolicy(
-  value: unknown,
+  value: any,
   fallback: RealtimeVoiceAgentConsultToolPolicy,
 ): RealtimeVoiceAgentConsultToolPolicy {
   const normalized = normalizeOptionalLowercaseString(value);
@@ -173,7 +173,7 @@ export function buildRealtimeVoiceAgentConsultPolicyInstructions(config: {
 }
 
 /** Parse provider-owned consult tool arguments into the normalized contract. */
-export function parseRealtimeVoiceAgentConsultArgs(args: unknown): RealtimeVoiceAgentConsultArgs {
+export function parseRealtimeVoiceAgentConsultArgs(args: any): RealtimeVoiceAgentConsultArgs {
   const question =
     readConsultStringArg(args, "question") ??
     readConsultStringArg(args, "prompt") ??
@@ -190,7 +190,7 @@ export function parseRealtimeVoiceAgentConsultArgs(args: unknown): RealtimeVoice
 }
 
 /** Build the plain chat message used by browser/chat forwarding paths. */
-export function buildRealtimeVoiceAgentConsultChatMessage(args: unknown): string {
+export function buildRealtimeVoiceAgentConsultChatMessage(args: any): string {
   const parsed = parseRealtimeVoiceAgentConsultArgs(args);
   return [
     parsed.question,
@@ -203,7 +203,7 @@ export function buildRealtimeVoiceAgentConsultChatMessage(args: unknown): string
 
 /** Build the delegated agent prompt for a live voice consult. */
 export function buildRealtimeVoiceAgentConsultPrompt(params: {
-  args: unknown;
+  args: any;
   transcript: RealtimeVoiceAgentConsultTranscriptEntry[];
   surface: string;
   userLabel: string;
@@ -237,7 +237,7 @@ export function buildRealtimeVoiceAgentConsultPrompt(params: {
 
 /** Collect only visible answer text from streamed delegated-agent payloads. */
 export function collectRealtimeVoiceAgentConsultVisibleText(
-  payloads: Array<{ text?: unknown; isError?: boolean; isReasoning?: boolean }>,
+  payloads: Array<{ text?: any; isError?: boolean; isReasoning?: boolean }>,
 ): string | null {
   const chunks: string[] = [];
   for (const payload of payloads) {
@@ -253,9 +253,9 @@ export function collectRealtimeVoiceAgentConsultVisibleText(
   return chunks.length > 0 ? chunks.join("\n\n").trim() : null;
 }
 
-function readConsultStringArg(args: unknown, key: string): string | undefined {
+function readConsultStringArg(args: any, key: string): string | undefined {
   if (!args || typeof args !== "object" || Array.isArray(args)) {
     return undefined;
   }
-  return normalizeOptionalString((args as Record<string, unknown>)[key]);
+  return normalizeOptionalString((args as Record<string, any>)[key]);
 }

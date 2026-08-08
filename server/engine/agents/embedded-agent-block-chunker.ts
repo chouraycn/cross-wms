@@ -8,7 +8,7 @@
 
 export type BlockReplyChunking = unknown;
 export class EmbeddedBlockChunker {
-  constructor(..._args: unknown[]) {
+  constructor(..._args: any[]) {
     // Stub: not fully ported
   }
 }

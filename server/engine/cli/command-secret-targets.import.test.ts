@@ -3,7 +3,7 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 describe("command secret targets module import", () => {
   let lazyImportProbe: {
-    channelsError: unknown;
+    channelsError: any;
     listSecretTargetRegistryEntries: ReturnType<typeof vi.fn>;
     modelsHasApiKey: boolean;
     qrRemoteHasToken: boolean;
@@ -20,7 +20,7 @@ describe("command secret targets module import", () => {
     }));
 
     const mod = await import("./command-secret-targets.js");
-    let channelsError: unknown;
+    let channelsError: any;
     try {
       mod.getChannelsCommandSecretTargetIds();
     } catch (error) {

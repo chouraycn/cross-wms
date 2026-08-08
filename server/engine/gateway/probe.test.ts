@@ -3,7 +3,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const gatewayClientState = vi.hoisted(() => ({
-  options: null as Record<string, unknown> | null,
+  options: null as Record<string, any> | null,
   requests: [] as string[],
   startCalls: 0,
   startMode: "hello" as "hello" | "close" | "connect-error-close" | "startup-retry-then-hello",
@@ -23,7 +23,7 @@ const gatewayClientState = vi.hoisted(() => ({
     code: "PAIRING_REQUIRED",
     reason: "scope-upgrade",
     requestId: "req-123",
-  } as Record<string, unknown> | null,
+  } as Record<string, any> | null,
   stopCalls: 0,
   stopAndWaitCalls: [] as Array<{ timeoutMs?: number } | undefined>,
   stopAndWaitMode: "resolve" as "resolve" | "defer" | "reject",
@@ -31,16 +31,16 @@ const gatewayClientState = vi.hoisted(() => ({
 }));
 
 const deviceIdentityState = vi.hoisted(() => ({
-  value: { deviceId: "test-device-identity" } as Record<string, unknown>,
+  value: { deviceId: "test-device-identity" } as Record<string, any>,
   throwOnLoad: false,
   cachedToken: {
     token: "cached-operator-token",
     role: "operator",
     scopes: ["operator.read"],
     updatedAtMs: 1,
-  } as Record<string, unknown> | null,
-  identityPaths: [] as unknown[],
-  tokenParams: [] as unknown[],
+  } as Record<string, any> | null,
+  identityPaths: [] as any[],
+  tokenParams: [] as any[],
 }));
 
 const eventLoopReadyState = vi.hoisted(() => ({
@@ -55,18 +55,18 @@ const eventLoopReadyState = vi.hoisted(() => ({
 }));
 
 class MockGatewayClientRequestError extends Error {
-  readonly details?: unknown;
+  readonly details?: any;
 
-  constructor(error: { message?: string; details?: unknown }) {
+  constructor(error: { message?: string; details?: any }) {
     super(error.message ?? "gateway request failed");
     this.details = error.details;
   }
 }
 
 class MockGatewayClient {
-  private readonly opts: Record<string, unknown>;
+  private readonly opts: Record<string, any>;
 
-  constructor(opts: Record<string, unknown>) {
+  constructor(opts: Record<string, any>) {
     this.opts = opts;
     gatewayClientState.options = opts;
     gatewayClientState.requests = [];
@@ -141,7 +141,7 @@ class MockGatewayClient {
     }
   }
 
-  async request(method: string): Promise<unknown> {
+  async request(method: string): Promise<any> {
     gatewayClientState.requests.push(method);
     if (method === "system-presence") {
       return [];
@@ -162,7 +162,7 @@ vi.mock("../infra/device-identity.js", () => ({
     }
     return deviceIdentityState.value;
   },
-  loadDeviceIdentityIfPresent: (filePath: unknown) => {
+  loadDeviceIdentityIfPresent: (filePath: any) => {
     deviceIdentityState.identityPaths.push(filePath);
     if (deviceIdentityState.throwOnLoad) {
       throw new Error("read-only identity dir");
@@ -172,7 +172,7 @@ vi.mock("../infra/device-identity.js", () => ({
 }));
 
 vi.mock("../infra/device-auth-store.js", () => ({
-  loadDeviceAuthToken: (params: unknown) => {
+  loadDeviceAuthToken: (params: any) => {
     deviceIdentityState.tokenParams.push(params);
     return deviceIdentityState.cachedToken;
   },
@@ -220,7 +220,7 @@ function setDeviceRequiredProbeMode(): void {
   gatewayClientState.close = { code: 1008, reason: "device identity required" };
 }
 
-function lastGatewayClientOptions(): Record<string, unknown> | null {
+function lastGatewayClientOptions(): Record<string, any> | null {
   return gatewayClientState.options;
 }
 
@@ -669,7 +669,7 @@ describe("probeGateway", () => {
     expectProbeAuthFields(result, {
       role: null,
       scopes: [],
-      capability: "unknown",
+      capability: "any",
     });
     expect(gatewayClientState.startCalls).toBe(startCalls);
     expect(lastGatewayClientOptions()).toBeNull();

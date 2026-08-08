@@ -26,7 +26,7 @@ type DeliveryIntentCallbackParams = {
 
 type DeliveryRequest = DeliveryIntentCallbackParams & {
   abortSignal?: AbortSignal;
-  payloads?: unknown;
+  payloads?: any;
   queuePolicy?: string;
   replyToId?: string;
   threadId?: string | number;
@@ -35,10 +35,10 @@ type DeliveryRequest = DeliveryIntentCallbackParams & {
 const cfg = {} as OpenClawConfig;
 
 function requireMockCall(
-  mock: { mock: { calls: unknown[][] } },
+  mock: { mock: { calls: any[][] } },
   callIndex: number,
   label: string,
-): unknown[] {
+): any[] {
   const resolvedIndex = callIndex < 0 ? mock.mock.calls.length + callIndex : callIndex;
   const call = mock.mock.calls[resolvedIndex];
   if (!call) {
@@ -137,7 +137,7 @@ describe("withDurableMessageSendContext", () => {
       });
       return [{ channel: "telegram", messageId: "media-1" }];
     });
-    let intent: unknown;
+    let intent: any;
 
     await withDurableMessageSendContext(
       {
@@ -311,7 +311,7 @@ describe("withDurableMessageSendContext", () => {
     expect(onEditReceipt).toHaveBeenCalledTimes(1);
     const [editReceiptArg, renderedArg] = requireMockCall(onEditReceipt, 0, "edit receipt") as [
       unknown,
-      { payloads?: unknown },
+      { payloads?: any },
     ];
     expect(editReceiptArg).toBe(receipt);
     expect(renderedArg.payloads).toEqual([{ text: "final" }]);
@@ -370,7 +370,7 @@ describe("withDurableMessageSendContext", () => {
     expect(result.deliveryIntent?.id).toBe("intent-2");
     expect(onCommitReceipt).toHaveBeenCalledTimes(1);
     const [receiptArg] = requireMockCall(onCommitReceipt, 0, "commit receipt") as [
-      { platformMessageIds?: unknown },
+      { platformMessageIds?: any },
     ];
     expect(receiptArg.platformMessageIds).toEqual([]);
   });
@@ -405,7 +405,7 @@ describe("withDurableMessageSendContext", () => {
     });
     expect(onCommitReceipt).toHaveBeenCalledTimes(1);
     const [receiptArg] = requireMockCall(onCommitReceipt, 0, "commit receipt") as [
-      { platformMessageIds?: unknown },
+      { platformMessageIds?: any },
     ];
     expect(receiptArg.platformMessageIds).toEqual([]);
   });

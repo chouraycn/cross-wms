@@ -26,7 +26,7 @@ export interface NodeInfo {
   capabilities: string[];
   lastSeenAt: number;
   createdAt: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface DiscoveryResult {

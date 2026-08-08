@@ -6,6 +6,6 @@
  */
 
 /** Cleans up bundle MCP test harness resources. */
-export function cleanupBundleMcpHarness(..._args: unknown[]): void {
+export function cleanupBundleMcpHarness(..._args: any[]): void {
   // Cross-wms does not have MCP test harness state.
 }

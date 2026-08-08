@@ -2,10 +2,10 @@
 // 降级：channel plugin / config 依赖简化
 
 export type ExecApprovalForwarder = {
-  handleRequested: (request: { id: string; expiresAtMs: number; request?: Record<string, unknown> }) => Promise<boolean>;
+  handleRequested: (request: { id: string; expiresAtMs: number; request?: Record<string, any> }) => Promise<boolean>;
   handleResolved: (resolved: { id: string; decision?: string; resolvedBy?: string }) => Promise<void>;
-  handlePluginApprovalRequested?: (request: unknown) => Promise<boolean>;
-  handlePluginApprovalResolved?: (resolved: unknown) => Promise<void>;
+  handlePluginApprovalRequested?: (request: any) => Promise<boolean>;
+  handlePluginApprovalResolved?: (resolved: any) => Promise<void>;
   stop: () => void;
 };
 
@@ -39,9 +39,9 @@ export function buildExecApprovalRequestMessage(request: {
 /** Creates an exec approval forwarder. Simplified without channel plugin delivery. */
 export function createExecApprovalForwarder(_deps?: {
   getConfig?: () => unknown;
-  deliver?: unknown;
+  deliver?: any;
   nowMs?: () => number;
-  resolveSessionTarget?: unknown;
+  resolveSessionTarget?: any;
 }): ExecApprovalForwarder {
   const pending = new Map<string, { timeoutId: NodeJS.Timeout | null }>();
 

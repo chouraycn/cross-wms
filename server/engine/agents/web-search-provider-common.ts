@@ -7,64 +7,64 @@
  */
 
 export type SearchConfigRecord = unknown;
-export function resolveSearchTimeoutSeconds(..._args: unknown[]): unknown {
+export function resolveSearchTimeoutSeconds(..._args: any[]): any {
   return undefined;
 }
-export function resolveSearchCacheTtlMs(..._args: unknown[]): unknown {
+export function resolveSearchCacheTtlMs(..._args: any[]): any {
   return undefined;
 }
-export function resolveSearchCount(..._args: unknown[]): unknown {
+export function resolveSearchCount(..._args: any[]): any {
   return undefined;
 }
-export function readConfiguredSecretString(..._args: unknown[]): unknown {
+export function readConfiguredSecretString(..._args: any[]): any {
   return undefined;
 }
-export function readProviderEnvValue(..._args: unknown[]): unknown {
+export function readProviderEnvValue(..._args: any[]): any {
   return undefined;
 }
-export function withTrustedWebSearchEndpoint(..._args: unknown[]): unknown {
+export function withTrustedWebSearchEndpoint(..._args: any[]): any {
   return undefined;
 }
-export function withSelfHostedWebSearchEndpoint(..._args: unknown[]): unknown {
+export function withSelfHostedWebSearchEndpoint(..._args: any[]): any {
   return undefined;
 }
-export function postTrustedWebToolsJson(..._args: unknown[]): unknown {
+export function postTrustedWebToolsJson(..._args: any[]): any {
   return undefined;
 }
-export function throwWebSearchApiError(..._args: unknown[]): unknown {
+export function throwWebSearchApiError(..._args: any[]): any {
   return undefined;
 }
-export function resolveSiteName(..._args: unknown[]): unknown {
+export function resolveSiteName(..._args: any[]): any {
   return undefined;
 }
-export function isoToPerplexityDate(..._args: unknown[]): unknown {
+export function isoToPerplexityDate(..._args: any[]): any {
   return false;
 }
-export function normalizeToIsoDate(..._args: unknown[]): unknown {
+export function normalizeToIsoDate(..._args: any[]): any {
   return undefined;
 }
-export function parseIsoDateRange(..._args: unknown[]): unknown {
+export function parseIsoDateRange(..._args: any[]): any {
   return undefined;
 }
-export function normalizeFreshness(..._args: unknown[]): unknown {
+export function normalizeFreshness(..._args: any[]): any {
   return undefined;
 }
-export function parseWebSearchTimeFilters(..._args: unknown[]): unknown {
+export function parseWebSearchTimeFilters(..._args: any[]): any {
   return undefined;
 }
-export function readCachedSearchPayload(..._args: unknown[]): unknown {
+export function readCachedSearchPayload(..._args: any[]): any {
   return undefined;
 }
-export function buildSearchCacheKey(..._args: unknown[]): unknown {
+export function buildSearchCacheKey(..._args: any[]): any {
   return undefined;
 }
-export function writeCachedSearchPayload(..._args: unknown[]): unknown {
+export function writeCachedSearchPayload(..._args: any[]): any {
   return undefined;
 }
-export function buildUnsupportedSearchFilterResponse(..._args: unknown[]): unknown {
+export function buildUnsupportedSearchFilterResponse(..._args: any[]): any {
   return undefined;
 }
-export const DEFAULT_SEARCH_COUNT: unknown = undefined;
-export const MAX_SEARCH_COUNT: unknown = undefined;
-export const SEARCH_CACHE: unknown = undefined;
-export const FRESHNESS_TO_RECENCY: unknown = undefined;
+export const DEFAULT_SEARCH_COUNT: any = undefined;
+export const MAX_SEARCH_COUNT: any = undefined;
+export const SEARCH_CACHE: any = undefined;
+export const FRESHNESS_TO_RECENCY: any = undefined;

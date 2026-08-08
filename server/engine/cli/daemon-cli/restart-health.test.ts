@@ -6,33 +6,33 @@ import type { PortListenerKind, PortUsage } from "../../infra/ports.js";
 const inspectPortUsage = vi.hoisted(() => vi.fn<(port: number) => Promise<PortUsage>>());
 const sleep = vi.hoisted(() => vi.fn(async (_ms: number) => {}));
 const classifyPortListener = vi.hoisted(() =>
-  vi.fn<(_listener: unknown, _port: number) => PortListenerKind>(() => "gateway"),
+  vi.fn<(_listener: any, _port: number) => PortListenerKind>(() => "gateway"),
 );
 const probeGateway = vi.hoisted(() => vi.fn());
 const createConfigIO = vi.hoisted(() => vi.fn());
 const readBestEffortConfig = vi.hoisted(() => vi.fn(async () => ({})));
 const resolveGatewayProbeAuthSafeWithSecretInputs = vi.hoisted(() =>
-  vi.fn<(_opts: unknown) => Promise<{ auth: { token?: string; password?: string } }>>(async () => ({
+  vi.fn<(_opts: any) => Promise<{ auth: { token?: string; password?: string } }>>(async () => ({
     auth: {},
   })),
 );
 
 vi.mock("../../infra/ports.js", () => ({
-  classifyPortListener: (listener: unknown, port: number) => classifyPortListener(listener, port),
+  classifyPortListener: (listener: any, port: number) => classifyPortListener(listener, port),
   formatPortDiagnostics: vi.fn(() => []),
   inspectPortUsage: (port: number) => inspectPortUsage(port),
 }));
 
 vi.mock("../../gateway/probe.js", () => ({
-  probeGateway: (opts: unknown) => probeGateway(opts),
+  probeGateway: (opts: any) => probeGateway(opts),
 }));
 
 vi.mock("../../config/io.js", () => ({
-  createConfigIO: (opts: unknown) => createConfigIO(opts),
+  createConfigIO: (opts: any) => createConfigIO(opts),
 }));
 
 vi.mock("../../gateway/probe-auth.js", () => ({
-  resolveGatewayProbeAuthSafeWithSecretInputs: (opts: unknown) =>
+  resolveGatewayProbeAuthSafeWithSecretInputs: (opts: any) =>
     resolveGatewayProbeAuthSafeWithSecretInputs(opts),
 }));
 
@@ -54,7 +54,7 @@ function makeGatewayService(
   } as unknown as GatewayService;
 }
 
-function firstCallArg(mock: { mock: { calls: unknown[][] } }): unknown {
+function firstCallArg(mock: { mock: { calls: any[][] } }): any {
   const call = mock.mock.calls[0];
   if (!call) {
     throw new Error("Expected first mock call");

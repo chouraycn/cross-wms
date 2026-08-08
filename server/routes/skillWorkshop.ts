@@ -31,7 +31,7 @@ function asyncHandler<T>(
   };
 }
 
-function validateRequired(value: unknown, field: string): asserts value is string {
+function validateRequired(value: any, field: string): asserts value is string {
   if (typeof value !== 'string' || value.trim() === '') {
     throw new Error(`Missing or invalid field: ${field}`);
   }

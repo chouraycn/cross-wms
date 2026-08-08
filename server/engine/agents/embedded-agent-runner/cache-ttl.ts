@@ -13,7 +13,7 @@ import {
 import { resolveProviderCacheTtlEligibility } from "../../plugins/provider-runtime.js";
 import { isGooglePromptCacheEligible } from "./prompt-cache-retention.js";
 
-type CustomEntryLike = { type?: unknown; customType?: unknown; data?: unknown };
+type CustomEntryLike = { type?: any; customType?: any; data?: any };
 
 const CACHE_TTL_CUSTOM_TYPE = "openclaw.cache-ttl";
 
@@ -82,7 +82,7 @@ function matchesCacheTtlContext(
 
 /** Reads the most recent cache-TTL marker that matches the optional provider/model context. */
 export function readLastCacheTtlTimestamp(
-  sessionManager: unknown,
+  sessionManager: any,
   context?: CacheTtlContext,
 ): number | null {
   const sm = sessionManager as { getEntries?: () => CustomEntryLike[] };

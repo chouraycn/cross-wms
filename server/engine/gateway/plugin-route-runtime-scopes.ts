@@ -2,6 +2,6 @@
 
 export type PluginRouteRuntimeScopeSurface = unknown;
 
-export function resolvePluginRouteRuntimeOperatorScopes(...args: unknown[]): unknown {
+export function resolvePluginRouteRuntimeOperatorScopes(...args: any[]): any {
   return undefined;
 }

@@ -442,8 +442,8 @@ describe("skills-cli", () => {
         output: formatSkillsList(createMockReport([createMockSkill({ name: "json-skill" })]), {
           json: true,
         }),
-        assert: (parsed: Record<string, unknown>) => {
-          const skills = parsed.skills as Array<Record<string, unknown>>;
+        assert: (parsed: Record<string, any>) => {
+          const skills = parsed.skills as Array<Record<string, any>>;
           expect(skills).toHaveLength(1);
           expect(skills[0]?.name).toBe("json-skill");
         },
@@ -455,7 +455,7 @@ describe("skills-cli", () => {
           "info-skill",
           { json: true },
         ),
-        assert: (parsed: Record<string, unknown>) => {
+        assert: (parsed: Record<string, any>) => {
           expect(parsed.name).toBe("info-skill");
         },
       },
@@ -468,15 +468,15 @@ describe("skills-cli", () => {
           ]),
           { json: true },
         ),
-        assert: (parsed: Record<string, unknown>) => {
-          const summary = parsed.summary as Record<string, unknown>;
+        assert: (parsed: Record<string, any>) => {
+          const summary = parsed.summary as Record<string, any>;
           expect(summary.eligible).toBe(1);
           expect(summary.modelVisible).toBe(1);
           expect(summary.total).toBe(2);
         },
       },
     ])("outputs JSON with --json flag for $formatter", ({ output, assert }) => {
-      const parsed = JSON.parse(output) as Record<string, unknown>;
+      const parsed = JSON.parse(output) as Record<string, any>;
       assert(parsed);
     });
 

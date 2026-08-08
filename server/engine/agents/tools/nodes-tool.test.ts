@@ -221,7 +221,7 @@ describe("createNodesTool screen_record duration guardrails", () => {
 
     expect(gatewayMocks.callGatewayTool).toHaveBeenCalledTimes(1);
     const call = gatewayMocks.callGatewayTool.mock.calls[0] as
-      | [string, unknown, { params?: { durationMs?: unknown } }]
+      | [string, unknown, { params?: { durationMs?: any } }]
       | undefined;
     if (!call) {
       throw new Error("expected callGatewayTool to be called");
@@ -249,7 +249,7 @@ describe("createNodesTool screen_record duration guardrails", () => {
     });
 
     const call = gatewayMocks.callGatewayTool.mock.calls[0] as
-      | [string, unknown, { params?: { durationMs?: unknown } }]
+      | [string, unknown, { params?: { durationMs?: any } }]
       | undefined;
     expect(call?.[0]).toBe("node.invoke");
     expect(call?.[2].params?.durationMs).toBe(300_000);
@@ -289,7 +289,7 @@ describe("createNodesTool screen_record duration guardrails", () => {
       | [
           string,
           unknown,
-          { command?: string; params?: { screenIndex?: unknown; maxWidth?: unknown } },
+          { command?: string; params?: { screenIndex?: any; maxWidth?: any } },
         ]
       | undefined;
     expect(call?.[0]).toBe("node.invoke");
@@ -451,7 +451,7 @@ describe("createNodesTool screen_record duration guardrails", () => {
     });
 
     const call = gatewayMocks.callGatewayTool.mock.calls[0] as
-      | [string, unknown, { params?: { limit?: unknown } }]
+      | [string, unknown, { params?: { limit?: any } }]
       | undefined;
     expect(call?.[0]).toBe("node.invoke");
     expect(call?.[2].params?.limit).toBe(20);
@@ -494,7 +494,7 @@ describe("createNodesTool screen_record duration guardrails", () => {
     });
 
     const call = gatewayMocks.callGatewayTool.mock.calls[0] as
-      | [string, unknown, { params?: { maxWidth?: unknown; quality?: unknown; delayMs?: unknown } }]
+      | [string, unknown, { params?: { maxWidth?: any; quality?: any; delayMs?: any } }]
       | undefined;
     expect(call?.[0]).toBe("node.invoke");
     expect(call?.[2].params).toMatchObject({
@@ -537,7 +537,7 @@ describe("createNodesTool screen_record duration guardrails", () => {
     });
 
     const call = gatewayMocks.callGatewayTool.mock.calls[0] as
-      | [string, unknown, { params?: { maxAgeMs?: unknown; timeoutMs?: unknown } }]
+      | [string, unknown, { params?: { maxAgeMs?: any; timeoutMs?: any } }]
       | undefined;
     expect(call?.[0]).toBe("node.invoke");
     expect(call?.[2].params).toMatchObject({

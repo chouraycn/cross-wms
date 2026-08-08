@@ -3,7 +3,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vite
 
 const emitCliBannerMock = vi.hoisted(() => vi.fn());
 const ensureConfigReadyMock = vi.hoisted(() =>
-  vi.fn(async (_params: { runtime?: unknown; commandPath?: unknown }) => {}),
+  vi.fn(async (_params: { runtime?: any; commandPath?: any }) => {}),
 );
 const ensurePluginRegistryLoadedMock = vi.hoisted(() => vi.fn());
 const findRoutedCommandMock = vi.hoisted(() => vi.fn());
@@ -37,7 +37,7 @@ vi.mock("../runtime.js", () => ({
 
 function firstConfigReadyCall() {
   return ensureConfigReadyMock.mock.calls[0]?.[0] as
-    | { runtime?: unknown; commandPath?: unknown }
+    | { runtime?: any; commandPath?: any }
     | undefined;
 }
 

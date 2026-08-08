@@ -1,12 +1,12 @@
 // Holds current plugin metadata snapshots for process-scoped consumers.
-let currentPluginMetadataSnapshot: unknown;
+let currentPluginMetadataSnapshot: any;
 let currentPluginMetadataSnapshotConfigFingerprint: string | undefined;
 let currentPluginMetadataSnapshotCompatiblePolicyHashes: readonly string[] | undefined;
 let currentPluginMetadataSnapshotCompatibleConfigFingerprints: readonly string[] | undefined;
 
 /** Stores the process-current plugin metadata snapshot and compatible config fingerprints. */
 export function setCurrentPluginMetadataSnapshotState(
-  snapshot: unknown,
+  snapshot: any,
   configFingerprint: string | undefined,
   compatiblePolicyHashes?: readonly string[],
   compatibleConfigFingerprints?: readonly string[],
@@ -31,7 +31,7 @@ export function clearCurrentPluginMetadataSnapshotState(): void {
 
 /** Returns the process-current plugin metadata snapshot state. */
 export function getCurrentPluginMetadataSnapshotState(): {
-  snapshot: unknown;
+  snapshot: any;
   configFingerprint: string | undefined;
   compatiblePolicyHashes: readonly string[] | undefined;
   compatibleConfigFingerprints: readonly string[] | undefined;

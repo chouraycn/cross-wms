@@ -42,9 +42,9 @@ export class PluginManifestError extends PluginSdkError {
 /** 加载失败（找不到入口、动态导入抛错等） */
 export class PluginLoadError extends PluginSdkError {
   readonly entryPath?: string;
-  readonly cause?: unknown;
+  readonly cause?: any;
 
-  constructor(message: string, pluginId?: string, entryPath?: string, cause?: unknown) {
+  constructor(message: string, pluginId?: string, entryPath?: string, cause?: any) {
     super(message, 'PLUGIN_LOAD_ERROR', pluginId);
     this.name = 'PluginLoadError';
     if (entryPath !== undefined) {
@@ -170,7 +170,7 @@ export class PluginChannelError extends PluginSdkError {
 }
 
 /** 将任意 unknown 错误转换为 PluginSdkError */
-export function toPluginSdkError(error: unknown, pluginId?: string): PluginSdkError {
+export function toPluginSdkError(error: any, pluginId?: string): PluginSdkError {
   if (error instanceof PluginSdkError) {
     return error;
   }
@@ -179,7 +179,7 @@ export function toPluginSdkError(error: unknown, pluginId?: string): PluginSdkEr
 }
 
 /** 判断是否为可恢复错误（非致命） */
-export function isRecoverableError(error: unknown): boolean {
+export function isRecoverableError(error: any): boolean {
   if (error instanceof PluginSdkError) {
     return (
       error.code === 'PLUGIN_SANDBOX_TIMEOUT' ||

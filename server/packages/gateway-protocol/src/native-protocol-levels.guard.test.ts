@@ -68,11 +68,11 @@ function assertPattern(
   throw new Error(`${relativePath}: ${message}`);
 }
 
-function stringLiteralUnionValues(schema: unknown): string[] | undefined {
+function stringLiteralUnionValues(schema: any): string[] | undefined {
   if (!schema || typeof schema !== "object") {
     return undefined;
   }
-  const candidate = schema as { anyOf?: unknown; oneOf?: unknown };
+  const candidate = schema as { anyOf?: any; oneOf?: any };
   const branches = candidate.oneOf ?? candidate.anyOf;
   if (!Array.isArray(branches) || branches.length < 2) {
     return undefined;

@@ -19,8 +19,8 @@ type ResolveAgentIdFromSessionKey =
 type ResolveStorePath = typeof import("./subagent-announce.runtime.js").resolveStorePath;
 
 function installOutputDeps(params: {
-  messages: Array<unknown>;
-  transcriptMessages?: Array<unknown>;
+  messages: Array<any>;
+  transcriptMessages?: Array<any>;
 }) {
   const callGateway = vi.fn(async () => ({ messages: params.messages }));
   const readSessionMessagesAsync = vi.fn(async () => params.transcriptMessages ?? []);

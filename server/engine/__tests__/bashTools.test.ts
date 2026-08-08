@@ -433,7 +433,7 @@ describe('bashTools handlers', () => {
     it('应该拒绝无效参数', async () => {
       const result = await handleExecCommand({
         // 缺少 command
-      } as Record<string, unknown>);
+      } as Record<string, any>);
       const parsed = JSON.parse(result);
       expect(parsed.error).toBeDefined();
     });

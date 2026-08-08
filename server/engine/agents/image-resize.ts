@@ -6,9 +6,9 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function resizeImage(..._args: unknown[]): unknown {
+export function resizeImage(..._args: any[]): any {
   return undefined;
 }
-export function formatDimensionNote(..._args: unknown[]): unknown {
+export function formatDimensionNote(..._args: any[]): any {
   return "";
 }

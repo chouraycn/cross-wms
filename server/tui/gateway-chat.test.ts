@@ -517,13 +517,13 @@ describe("GatewayChatClient", () => {
   });
 
   it("identifies the TUI as a tui client and skips device identity on insecure local ui paths", async () => {
-    const constructedOptions: Array<Record<string, unknown>> = [];
+    const constructedOptions: Array<Record<string, any>> = [];
 
     vi.resetModules();
     vi.doMock("../engine/gateway/client.js", async (importOriginal) => {
       const actual = await importOriginal<typeof import("../engine/gateway/client.js")>();
       class CapturingGatewayClient {
-        constructor(opts: Record<string, unknown>) {
+        constructor(opts: Record<string, any>) {
           constructedOptions.push(opts);
         }
         start() {}

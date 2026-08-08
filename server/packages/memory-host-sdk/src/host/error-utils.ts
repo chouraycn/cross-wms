@@ -57,12 +57,12 @@ function redactSensitiveText(text: string): string {
 }
 
 /** Format unknown errors with causes while redacting likely secrets. */
-export function formatErrorMessage(err: unknown): string {
+export function formatErrorMessage(err: any): string {
   let formatted: string;
   if (err instanceof Error) {
     formatted = err.message || err.name || "Error";
-    let cause: unknown = err.cause;
-    const seen = new Set<unknown>([err]);
+    let cause: any = err.cause;
+    const seen = new Set<any>([err]);
     while (cause && !seen.has(cause)) {
       seen.add(cause);
       if (cause instanceof Error) {

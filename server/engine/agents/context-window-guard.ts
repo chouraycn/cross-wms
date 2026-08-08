@@ -76,7 +76,7 @@ type OpenClawConfigLike = {
   } | undefined;
 };
 
-function normalizePositiveInt(value: unknown): number | null {
+function normalizePositiveInt(value: any): number | null {
   if (typeof value !== "number" || !Number.isFinite(value)) {
     return null;
   }

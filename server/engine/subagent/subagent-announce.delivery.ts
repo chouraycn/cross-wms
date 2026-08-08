@@ -36,7 +36,7 @@ const DEFAULT_RETRY_DELAY_MS = 1000;
 
 export function deliverAnnouncement(
   instanceId: string,
-  announcement: unknown,
+  announcement: any,
   targets: DeliveryTarget[],
   options: DeliveryOptions = {},
 ): DeliveryResult {
@@ -95,7 +95,7 @@ export function deliverAnnouncement(
   };
 }
 
-function deliverSync(target: DeliveryTarget, announcement: unknown, timeoutMs: number): boolean {
+function deliverSync(target: DeliveryTarget, announcement: any, timeoutMs: number): boolean {
   const timeout = new Promise<boolean>((resolve) => {
     setTimeout(() => resolve(false), timeoutMs);
   });
@@ -109,7 +109,7 @@ function deliverSync(target: DeliveryTarget, announcement: unknown, timeoutMs: n
   return Promise.race([delivery, timeout]) as unknown as boolean;
 }
 
-function deliverAsync(target: DeliveryTarget, announcement: unknown): boolean {
+function deliverAsync(target: DeliveryTarget, announcement: any): boolean {
   logger.debug(`[SubagentAnnounceDelivery] Queuing async delivery to ${target.id}`);
   return true;
 }
@@ -123,7 +123,7 @@ function sleep(ms: number): void {
 
 export function broadcastAnnouncement(
   instanceId: string,
-  announcement: unknown,
+  announcement: any,
   options: DeliveryOptions = {},
 ): DeliveryResult {
   const instance = getActiveSubagent(instanceId);

@@ -231,7 +231,7 @@ async function withSuppressedGatewayLiveWarnings<T>(run: () => Promise<T>): Prom
     return await run();
   }
   const originalWarn = console.warn;
-  console.warn = (...args: unknown[]) => {
+  console.warn = (...args: any[]) => {
     if (args.some((arg) => typeof arg === "string" && isOllamaUnavailableErrorMessage(arg))) {
       return;
     }
@@ -2112,13 +2112,13 @@ describe("sanitizeAuthProfileStoreForLiveGateway", () => {
     }
   });
 });
-function extractTranscriptMessageText(message: unknown): string {
+function extractTranscriptMessageText(message: any): string {
   if (!message || typeof message !== "object") {
     return "";
   }
   const record = message as {
-    text?: unknown;
-    content?: unknown;
+    text?: any;
+    content?: any;
   };
   if (typeof record.text === "string" && record.text.trim()) {
     return record.text.trim();
@@ -2132,7 +2132,7 @@ function extractTranscriptMessageText(message: unknown): string {
   const textParts: string[] = [];
   for (const entry of record.content) {
     if (entry && typeof entry === "object") {
-      const text = (entry as { text?: unknown }).text;
+      const text = (entry as { text?: any }).text;
       const trimmed = typeof text === "string" ? text.trim() : "";
       if (trimmed.length > 0) {
         textParts.push(trimmed);
@@ -2164,7 +2164,7 @@ async function readSessionAssistantTexts(sessionKey: string, modelKey?: string):
     if (!message || typeof message !== "object") {
       continue;
     }
-    const role = (message as { role?: unknown }).role;
+    const role = (message as { role?: any }).role;
     if (role !== "assistant") {
       continue;
     }
@@ -2216,15 +2216,15 @@ async function waitForSessionAssistantText(params: {
 function formatGatewayLiveAgentWaitFailure(params: {
   context: string;
   runId: string;
-  result: unknown;
+  result: any;
 }): Error {
   const result = params.result as
     | {
-        status?: unknown;
-        error?: unknown;
-        stopReason?: unknown;
-        timeoutPhase?: unknown;
-        providerStarted?: unknown;
+        status?: any;
+        error?: any;
+        stopReason?: any;
+        timeoutPhase?: any;
+        providerStarted?: any;
       }
     | null
     | undefined;
@@ -2261,7 +2261,7 @@ async function waitForGatewayAgentRun(params: {
       timeoutMs: timeoutMs + 5_000,
     },
   );
-  if ((result as { status?: unknown } | undefined)?.status === "ok") {
+  if ((result as { status?: any } | undefined)?.status === "ok") {
     return;
   }
   throw formatGatewayLiveAgentWaitFailure({
@@ -2319,7 +2319,7 @@ async function requestGatewayAgentText(params: {
     timeoutMs: GATEWAY_LIVE_AGENT_WAIT_TIMEOUT_MS,
   }).then(
     () => ({ kind: "agent-ok" as const }),
-    (error: unknown) => ({ kind: "agent-error" as const, error }),
+    (error: any) => ({ kind: "agent-error" as const, error }),
   );
   const first = await Promise.race([transcriptPromise, agentWaitPromise]);
   if (first.kind === "transcript") {
@@ -2679,7 +2679,7 @@ function getProviderThinkingModelCompat(model: Model): ProviderThinkingModelComp
   if (!compat || typeof compat !== "object") {
     return undefined;
   }
-  const record = compat as Record<string, unknown>;
+  const record = compat as Record<string, any>;
   const thinkingFormat =
     typeof record.thinkingFormat === "string" ? record.thinkingFormat : undefined;
   const supportedReasoningEfforts =

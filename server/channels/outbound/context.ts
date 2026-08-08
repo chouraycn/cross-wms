@@ -10,7 +10,7 @@ import type { MessageReceipt } from "./result.js";
 /**
  * Durable message send context passed through render, preview, send, edit, commit, and failure steps.
  */
-export interface DurableMessageSendContext<TPayload = unknown, TSendResult = unknown> {
+export interface DurableMessageSendContext<TPayload = any, TSendResult = any> {
   /** Unique identifier for this send context. */
   id: string;
 
@@ -127,7 +127,7 @@ export interface DurableMessageSendContextParams<TPayload = unknown> {
   onCommitReceipt?: (receipt: MessageReceipt) => Promise<void> | void;
 
   /** Callback when send fails. */
-  onSendFailure?: (error: unknown) => Promise<void> | void;
+  onSendFailure?: (error: any) => Promise<void> | void;
 }
 
 /**

@@ -122,8 +122,8 @@ describe('SecretStore', () => {
     expect(meta.tags).toEqual(['t']);
     expect(meta.version).toBe(1);
     // SecretEntry 类型本身不应有 value 字段
-    expect((meta as unknown as Record<string, unknown>).value).toBeUndefined();
-    expect((meta as unknown as Record<string, unknown>).ciphertext).toBeUndefined();
+    expect((meta as unknown as Record<string, any>).value).toBeUndefined();
+    expect((meta as unknown as Record<string, any>).ciphertext).toBeUndefined();
   });
 
   // 12

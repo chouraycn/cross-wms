@@ -116,7 +116,7 @@ function logMigrationHint(runtime: RuntimeEnv, candidate: ResolvedProviderCandid
 
 function applyMigrationConfigPatches(
   config: OpenClawConfig,
-  result: { items?: readonly unknown[] } | undefined,
+  result: { items?: readonly any[] } | undefined,
 ): OpenClawConfig {
   const items = result?.items ?? [];
   const patches = items
@@ -142,7 +142,7 @@ function applyMigrationConfigPatches(
   }
   const nextConfig = structuredClone(config);
   for (const patch of patches) {
-    writeMigrationConfigPath(nextConfig as Record<string, unknown>, patch.path, patch.value);
+    writeMigrationConfigPath(nextConfig as Record<string, any>, patch.path, patch.value);
   }
   return nextConfig;
 }

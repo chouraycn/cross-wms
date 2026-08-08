@@ -350,7 +350,7 @@ const pdfConvertDef: ToolDefinition = {
  * 处理 pdf_extract 工具调用
  */
 const handlePdfExtract: ToolHandler = async (
-  args: Record<string, unknown>
+  args: Record<string, any>
 ): Promise<string> => {
   const filePath = String(args.path || '');
   const mode = String(args.mode || 'text');
@@ -443,7 +443,7 @@ const handlePdfExtract: ToolHandler = async (
  * 处理 pdf_summarize 工具调用
  */
 const handlePdfSummarize: ToolHandler = async (
-  args: Record<string, unknown>
+  args: Record<string, any>
 ): Promise<string> => {
   const filePath = String(args.path || '');
   const summaryType = String(args.summary_type || 'brief');
@@ -490,7 +490,7 @@ const handlePdfSummarize: ToolHandler = async (
     const summarizeResult = await provider.summarize(
       {
         text: fullText,
-        summaryType: summaryType as unknown,
+        summaryType: summaryType as any,
         customPrompt,
         metadata: extractResult.metadata,
       },
@@ -524,7 +524,7 @@ const handlePdfSummarize: ToolHandler = async (
  * 处理 pdf_merge 工具调用
  */
 const handlePdfMerge: ToolHandler = async (
-  args: Record<string, unknown>
+  args: Record<string, any>
 ): Promise<string> => {
   const paths = (args.paths as string[]) || [];
   const outputPath = String(args.output_path || '');
@@ -578,7 +578,7 @@ const handlePdfMerge: ToolHandler = async (
  * 处理 pdf_split 工具调用
  */
 const handlePdfSplit: ToolHandler = async (
-  args: Record<string, unknown>
+  args: Record<string, any>
 ): Promise<string> => {
   const filePath = String(args.path || '');
   const outputDir = String(args.output_dir || '');
@@ -628,7 +628,7 @@ const handlePdfSplit: ToolHandler = async (
  * 处理 pdf_convert 工具调用
  */
 const handlePdfConvert: ToolHandler = async (
-  args: Record<string, unknown>
+  args: Record<string, any>
 ): Promise<string> => {
   const filePath = String(args.path || '');
   const outputDir = String(args.output_dir || '');

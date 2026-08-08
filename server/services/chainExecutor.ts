@@ -30,11 +30,11 @@ import { logger } from '../logger.js';
  */
 export interface ChainExecutorHooks {
   /** Called when a node starts reasoning (before AI call) */
-  onReasoning?: (node: SkillChainNodeRow, input: Record<string, unknown>) => void;
+  onReasoning?: (node: SkillChainNodeRow, input: Record<string, any>) => void;
   /** Called before a node executes its tool/AI call */
-  onToolCall?: (node: SkillChainNodeRow, input: Record<string, unknown>) => void;
+  onToolCall?: (node: SkillChainNodeRow, input: Record<string, any>) => void;
   /** Called after a node completes (success or failure) */
-  onResult?: (node: SkillChainNodeRow, result: { success: boolean; output?: unknown; error?: string; duration: number }) => void;
+  onResult?: (node: SkillChainNodeRow, result: { success: boolean; output?: any; error?: string; duration: number }) => void;
 }
 
 // ===================== Module-Level State =====================
@@ -50,7 +50,7 @@ const abortSignals = new Map<string, boolean>();
 /**
  * Broadcast an SSE event to all clients watching a specific execution.
  */
-function broadcast(execId: string, event: Record<string, unknown>): void {
+function broadcast(execId: string, event: Record<string, any>): void {
   const clients = sseClients.get(execId);
   if (!clients || clients.size === 0) {
     return;
@@ -112,10 +112,10 @@ export function abortExecution(execId: string): void {
  * and the node's dataPassMode setting.
  */
 function buildNodeInput(
-  context: Record<string, unknown>,
+  context: Record<string, any>,
   node: SkillChainNodeRow,
-  previousOutput: unknown
-): Record<string, unknown> {
+  previousOutput: any
+): Record<string, any> {
   const dataPassMode = node.data_pass_mode || 'full';
 
   if (dataPassMode === 'full') {
@@ -134,9 +134,9 @@ function buildNodeInput(
     if (selectedFields.length === 0) {
       return { ...context };
     }
-    const filteredOutput: Record<string, unknown> = {};
+    const filteredOutput: Record<string, any> = {};
     if (previousOutput && typeof previousOutput === 'object' && !Array.isArray(previousOutput)) {
-      const prevObj = previousOutput as Record<string, unknown>;
+      const prevObj = previousOutput as Record<string, any>;
       for (const field of selectedFields) {
         if (field in prevObj) {
           filteredOutput[field] = prevObj[field];
@@ -154,9 +154,9 @@ function buildNodeInput(
     } catch {
       customMapping = {};
     }
-    const mappedOutput: Record<string, unknown> = {};
+    const mappedOutput: Record<string, any> = {};
     if (previousOutput && typeof previousOutput === 'object' && !Array.isArray(previousOutput)) {
-      const prevObj = previousOutput as Record<string, unknown>;
+      const prevObj = previousOutput as Record<string, any>;
       for (const [targetKey, sourceKey] of Object.entries(customMapping)) {
         if (sourceKey in prevObj) {
           mappedOutput[targetKey] = prevObj[sourceKey];
@@ -175,13 +175,13 @@ function buildNodeInput(
 /**
  * 从嵌套对象中按路径取值（如 "previousOutput.status"）
  */
-function getValueByPath(obj: unknown, path: string): unknown {
+function getValueByPath(obj: any, path: string): any {
   if (!obj || typeof obj !== 'object') return undefined;
   const parts = path.split('.');
-  let current: unknown = obj;
+  let current: any = obj;
   for (const part of parts) {
     if (current && typeof current === 'object' && part in current) {
-      current = (current as Record<string, unknown>)[part];
+      current = (current as Record<string, any>)[part];
     } else {
       return undefined;
     }
@@ -193,7 +193,7 @@ function getValueByPath(obj: unknown, path: string): unknown {
  * 评估条件表达式
  */
 function evaluateCondition(
-  context: Record<string, unknown>,
+  context: Record<string, any>,
   condition: { field: string; operator: string; value: string }
 ): boolean {
   const fieldValue = getValueByPath(context, condition.field);
@@ -227,9 +227,9 @@ function evaluateCondition(
  */
 async function executeNodeWithTimeout(
   node: SkillChainNodeRow,
-  input: Record<string, unknown>,
+  input: Record<string, any>,
   hooks?: ChainExecutorHooks
-): Promise<{ success: boolean; output?: unknown; error?: string }> {
+): Promise<{ success: boolean; output?: any; error?: string }> {
   const nodeType = node.node_type || 'skill';
 
   // ===================== 条件分支节点 =====================
@@ -275,7 +275,7 @@ async function executeNodeWithTimeout(
     }, timeoutMs);
   });
 
-  const executePromise = (async (): Promise<{ success: boolean; output?: unknown; error?: string }> => {
+  const executePromise = (async (): Promise<{ success: boolean; output?: any; error?: string }> => {
     // Read skill's promptTemplate from user_skills (via DAO)
     const skillRow = getUserSkillById(node.skill_id);
     const promptTemplate = (skillRow as { promptTemplate?: string } | undefined)?.promptTemplate ?? null;
@@ -421,14 +421,14 @@ export async function executeChain(chainId: string, hooks?: ChainExecutorHooks):
   });
 
   // 5. Initialize execution context
-  const context: Record<string, unknown> = {};
+  const context: Record<string, any> = {};
 
   // 6. Execute nodes with condition/parallel support
-  const steps: Array<Record<string, unknown>> = [];
-  const nodeResults: Array<Record<string, unknown>> = [];
+  const steps: Array<Record<string, any>> = [];
+  const nodeResults: Array<Record<string, any>> = [];
   let chainFailed = false;
   let chainAborted = false;
-  let previousOutput: unknown = null;
+  let previousOutput: any = null;
 
   // 构建节点 order → 索引映射，支持条件跳转
   const orderToIndex = new Map<number, number>();
@@ -517,7 +517,7 @@ export async function executeChain(chainId: string, hooks?: ChainExecutorHooks):
         })
       );
 
-      const parallelOutputs: unknown[] = [];
+      const parallelOutputs: any[] = [];
       let allSuccess = true;
 
       for (let p = 0; p < parallelResults.length; p++) {
@@ -587,7 +587,7 @@ export async function executeChain(chainId: string, hooks?: ChainExecutorHooks):
     });
 
     // Execute with retry logic
-    let nodeResult: { success: boolean; output?: unknown; error?: string } = { success: false };
+    let nodeResult: { success: boolean; output?: any; error?: string } = { success: false };
     const maxRetries = node.retry_count || 0;
 
     // v3.0: onReasoning hook — notify plugins before node starts reasoning
@@ -822,7 +822,7 @@ export async function executeChain(chainId: string, hooks?: ChainExecutorHooks):
   const failedCount = nodeResults.filter((r) => r.status === 'failed').length;
   const skippedCount = nodeResults.filter((r) => r.status === 'skipped').length;
 
-  const resultSummary: Record<string, unknown> = {
+  const resultSummary: Record<string, any> = {
     totalNodes: nodes.length,
     succeeded: succeededCount,
     failed: failedCount,

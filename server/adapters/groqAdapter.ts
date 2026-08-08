@@ -36,7 +36,7 @@ function resolveGroqReasoningEffort(modelId: string, thinkingLevel?: string | nu
   }
   if (GROQ_GPT_OSS_REASONING_IDS.has(normalized)) {
     const normalizedLevel = thinkingLevel?.toLowerCase().trim();
-    if (GROQ_GPT_OSS_REASONING_EFFORTS.includes(normalizedLevel as unknown)) {
+    if (GROQ_GPT_OSS_REASONING_EFFORTS.includes(normalizedLevel as any)) {
       return normalizedLevel;
     }
     return "medium";
@@ -87,7 +87,7 @@ export class GroqAdapter implements IAiApiAdapter {
       Object.assign(headers, compat.extraHeaders);
     }
 
-    const body: Record<string, unknown> = {
+    const body: Record<string, any> = {
       model: modelId,
       messages,
       temperature,

@@ -10,7 +10,7 @@ import { resolveDefaultChannelAccountContext } from "./channel-account-context.j
 type LinkChannelContext = {
   linked: boolean;
   authAgeMs: number | null;
-  account?: unknown;
+  account?: any;
   accountId?: string;
   plugin: ChannelPlugin;
 };

@@ -146,7 +146,7 @@ function matchPattern(pattern: string, skillId: string, group: string): boolean 
  */
 export async function checkSandboxAccess(
   skill: SkillDefinition,
-  params: Record<string, unknown>,
+  params: Record<string, any>,
   ctx: SkillContext,
 ): Promise<SecurityCheckDetail> {
   // 沙箱范围 none 表示不限制
@@ -221,16 +221,16 @@ export async function checkSandboxAccess(
  * 仅遍历一层嵌套（params 和 params.options 等常见嵌套）。
  */
 function collectValuesByCategory(
-  params: Record<string, unknown>,
+  params: Record<string, any>,
   pathFieldNames: string[],
   networkFieldNames: string[],
   commandFieldNames: string[],
-): { paths: unknown[]; networks: unknown[]; commands: unknown[] } {
-  const paths: unknown[] = [];
-  const networks: unknown[] = [];
-  const commands: unknown[] = [];
+): { paths: any[]; networks: any[]; commands: any[] } {
+  const paths: any[] = [];
+  const networks: any[] = [];
+  const commands: any[] = [];
 
-  function traverse(obj: unknown, depth: number): void {
+  function traverse(obj: any, depth: number): void {
     if (depth > 3) return; // 最多遍历 3 层，防止深层递归
     if (obj === null || obj === undefined) return;
 
@@ -242,7 +242,7 @@ function collectValuesByCategory(
     }
 
     if (typeof obj === 'object') {
-      for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
+      for (const [key, value] of Object.entries(obj as Record<string, any>)) {
         const lowerKey = key.toLowerCase();
 
         if (pathFieldNames.includes(lowerKey)) {
@@ -281,8 +281,8 @@ function collectValuesByCategory(
  * @returns 校验结果
  */
 export function checkParamsSafety(
-  params: Record<string, unknown>,
-  schema?: Record<string, unknown>,
+  params: Record<string, any>,
+  schema?: Record<string, any>,
 ): SecurityCheckDetail {
   // 1. 检查参数总大小
   const serialized = JSON.stringify(params);
@@ -322,10 +322,10 @@ export function checkParamsSafety(
 /**
  * 检查 prototype pollution 风险
  */
-function checkPrototypePollution(params: Record<string, unknown>): SecurityCheckDetail {
+function checkPrototypePollution(params: Record<string, any>): SecurityCheckDetail {
   const dangerousKeys = ['__proto__', 'constructor', 'prototype'];
 
-  function traverse(obj: unknown, depth: number): SecurityCheckDetail | null {
+  function traverse(obj: any, depth: number): SecurityCheckDetail | null {
     if (depth > MAX_NESTING_DEPTH) {
       return {
         passed: false,
@@ -354,7 +354,7 @@ function checkPrototypePollution(params: Record<string, unknown>): SecurityCheck
         };
       }
 
-      const result = traverse((obj as Record<string, unknown>)[key], depth + 1);
+      const result = traverse((obj as Record<string, any>)[key], depth + 1);
       if (result) return result;
     }
 
@@ -368,7 +368,7 @@ function checkPrototypePollution(params: Record<string, unknown>): SecurityCheck
 /**
  * 递归检查字段长度限制
  */
-function checkFieldLimits(value: unknown, depth: number): SecurityCheckDetail {
+function checkFieldLimits(value: any, depth: number): SecurityCheckDetail {
   if (depth > MAX_NESTING_DEPTH) {
     return {
       passed: false,
@@ -395,7 +395,7 @@ function checkFieldLimits(value: unknown, depth: number): SecurityCheckDetail {
   }
 
   if (typeof value === 'object' && value !== null) {
-    for (const v of Object.values(value as Record<string, unknown>)) {
+    for (const v of Object.values(value as Record<string, any>)) {
       const result = checkFieldLimits(v, depth + 1);
       if (!result.passed) return result;
     }
@@ -413,8 +413,8 @@ function checkFieldLimits(value: unknown, depth: number): SecurityCheckDetail {
  * （完整的 Schema 校验在 SkillHandler 内部进行）。
  */
 function checkAgainstSchema(
-  params: Record<string, unknown>,
-  schema: Record<string, unknown>,
+  params: Record<string, any>,
+  schema: Record<string, any>,
 ): SecurityCheckDetail {
   const required = schema.required as string[] | undefined;
   if (!Array.isArray(required)) {
@@ -449,7 +449,7 @@ function checkAgainstSchema(
  */
 export async function performSecurityChecks(
   skill: SkillDefinition,
-  params: Record<string, unknown>,
+  params: Record<string, any>,
   config: SkillPermissionConfig,
   ctx: SkillContext,
 ): Promise<SecurityCheckResult> {

@@ -45,7 +45,7 @@ export type GenerateWithPresetsResult = {
     model: string;
     error?: string;
   }>;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
   historyId?: string;
 };
 

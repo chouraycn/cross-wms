@@ -16,7 +16,7 @@ type MockLoggingConfig = {
 };
 
 const wsInstances = vi.hoisted((): MockWebSocket[] => []);
-const wsConstructorObservers = vi.hoisted((): Array<(url: string, options: unknown) => void> => []);
+const wsConstructorObservers = vi.hoisted((): Array<(url: string, options: any) => void> => []);
 const clearDeviceAuthTokenMock = vi.hoisted(() => vi.fn());
 const loadDeviceAuthTokenMock = vi.hoisted(() => vi.fn());
 const storeDeviceAuthTokenMock = vi.hoisted(() => vi.fn());
@@ -57,7 +57,7 @@ type WsEventHandlers = {
   open: () => void;
   message: (data: string | Buffer) => void;
   close: (code: number, reason: Buffer) => void;
-  error: (err: unknown) => void;
+  error: (err: any) => void;
 };
 
 class MockWebSocket {
@@ -75,10 +75,10 @@ class MockWebSocket {
   terminateCalls = 0;
   autoCloseOnClose = true;
   readyState = MockWebSocket.CONNECTING;
-  readonly options: unknown;
+  readonly options: any;
   _socket?: { getPeerCertificate: () => { fingerprint256?: string } };
 
-  constructor(_url: string, options?: unknown) {
+  constructor(_url: string, options?: any) {
     this.options = options;
     wsInstances.push(this);
     for (const observer of wsConstructorObservers) {
@@ -151,7 +151,7 @@ class MockWebSocket {
     }
   }
 
-  emitError(error: unknown): void {
+  emitError(error: any): void {
     for (const handler of this.errorHandlers) {
       handler(error);
     }
@@ -172,9 +172,9 @@ vi.mock("../infra/device-auth-store.js", async () => {
   );
   return {
     ...actual,
-    loadDeviceAuthToken: (...args: unknown[]) => loadDeviceAuthTokenMock(...args),
-    storeDeviceAuthToken: (...args: unknown[]) => storeDeviceAuthTokenMock(...args),
-    clearDeviceAuthToken: (...args: unknown[]) => clearDeviceAuthTokenMock(...args),
+    loadDeviceAuthToken: (...args: any[]) => loadDeviceAuthTokenMock(...args),
+    storeDeviceAuthToken: (...args: any[]) => storeDeviceAuthTokenMock(...args),
+    clearDeviceAuthToken: (...args: any[]) => clearDeviceAuthTokenMock(...args),
   };
 });
 
@@ -182,8 +182,8 @@ vi.mock("../logger.js", async () => {
   const actual = await vi.importActual<typeof import("../logger.js")>("../logger.js");
   return {
     ...actual,
-    logDebug: (...args: unknown[]) => logDebugMock(...args),
-    logError: (...args: unknown[]) => logErrorMock(...args),
+    logDebug: (...args: any[]) => logDebugMock(...args),
+    logError: (...args: any[]) => logErrorMock(...args),
   };
 });
 
@@ -215,18 +215,18 @@ function getLatestWs(): MockWebSocket {
   return ws;
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     throw new Error(`expected ${label} to be an object`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 function expectRecordFields(
-  value: unknown,
-  expected: Record<string, unknown>,
+  value: any,
+  expected: Record<string, any>,
   label: string,
-): Record<string, unknown> {
+): Record<string, any> {
   const record = requireRecord(value, label);
   for (const [key, expectedValue] of Object.entries(expected)) {
     expect(record[key], `${label}.${key}`).toEqual(expectedValue);
@@ -234,7 +234,7 @@ function expectRecordFields(
   return record;
 }
 
-function firstMockArg(mock: ReturnType<typeof vi.fn>, label: string): unknown {
+function firstMockArg(mock: ReturnType<typeof vi.fn>, label: string): any {
   const [arg] = mock.mock.calls[0] ?? [];
   if (arg === undefined) {
     throw new Error(`expected ${label}`);
@@ -1342,7 +1342,7 @@ describe("GatewayClient connect auth payload", () => {
   function emitConnectFailure(
     ws: MockWebSocket,
     connectId: string | undefined,
-    details: Record<string, unknown>,
+    details: Record<string, any>,
     message = "unauthorized",
   ) {
     ws.emitMessage(
@@ -1376,7 +1376,7 @@ describe("GatewayClient connect auth payload", () => {
   async function expectRetriedConnectAuth(params: {
     firstWs: MockWebSocket;
     connectId: string | undefined;
-    failureDetails: Record<string, unknown>;
+    failureDetails: Record<string, any>;
     failureMessage?: string;
   }) {
     emitConnectFailure(
@@ -1396,7 +1396,7 @@ describe("GatewayClient connect auth payload", () => {
     client: GatewayClientInstance;
     firstWs: MockWebSocket;
     connectId: string | undefined;
-    failureDetails: Record<string, unknown>;
+    failureDetails: Record<string, any>;
     failureMessage?: string;
   }) {
     vi.useFakeTimers();

@@ -2,10 +2,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const hoisted = vi.hoisted(() => ({
-  resolveRuntimeConfigCacheKey: vi.fn((value: unknown) => {
+  resolveRuntimeConfigCacheKey: vi.fn((value: any) => {
     const id =
       value && typeof value === "object" && "id" in value
-        ? String((value as { id?: unknown }).id)
+        ? String((value as { id?: any }).id)
         : "config";
     return `config:${id}:${JSON.stringify(value)}`;
   }),

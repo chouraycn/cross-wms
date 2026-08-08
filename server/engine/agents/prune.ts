@@ -7,6 +7,6 @@
  */
 
 /** Prune expired sandboxes (no-op in cross-wms). */
-export function maybePruneSandboxes(..._args: unknown[]): void {
+export function maybePruneSandboxes(..._args: any[]): void {
   // No-op: sandbox pruning not available in cross-wms.
 }

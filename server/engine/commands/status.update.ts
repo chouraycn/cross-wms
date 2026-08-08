@@ -112,7 +112,7 @@ export function formatUpdateOneLiner(update: UpdateCheckResult): string {
       return;
     }
     if (update.registry?.error) {
-      parts.push(`${registryLabel} unknown`);
+      parts.push(`${registryLabel} any`);
     }
   };
 

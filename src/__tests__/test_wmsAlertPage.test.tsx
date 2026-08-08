@@ -41,7 +41,7 @@ vi.mock('@/components/Common/PageHeader', () => ({
 }));
 
 vi.mock('@/components/wms/WmsAlertList', () => ({
-  default: (props: unknown) => (
+  default: (props: any) => (
     <div data-testid="alert-list">
       <span data-testid="alert-count">{props.alerts?.length ?? 0}</span>
       <span data-testid="alert-loading">{String(props.loading)}</span>
@@ -55,7 +55,7 @@ vi.mock('@/components/wms/WmsAlertList', () => ({
 }));
 
 vi.mock('@/components/wms/WmsPredictionDashboard', () => ({
-  default: (props: unknown) => (
+  default: (props: any) => (
     <div data-testid="prediction-dashboard">
       <span data-testid="prediction-loading">{String(props.loading)}</span>
       <span data-testid="prediction-data">{props.data ? 'has-data' : 'no-data'}</span>
@@ -67,7 +67,7 @@ vi.mock('@/components/wms/WmsPredictionDashboard', () => ({
 }));
 
 vi.mock('@/components/wms/WmsPredictionDetail', () => ({
-  default: (props: unknown) => (
+  default: (props: any) => (
     <div data-testid="prediction-detail">
       <span data-testid="detail-open">{String(props.open)}</span>
       <span data-testid="detail-sku">{props.sku}</span>

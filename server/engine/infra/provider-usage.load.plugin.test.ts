@@ -9,7 +9,7 @@ const { EnvHttpProxyAgent, envAgentSpy, loadUndiciRuntimeDeps, undiciFetch } = v
   class EnvHttpProxyAgentLocal {
     static lastCreated: EnvHttpProxyAgentLocal | undefined;
 
-    constructor(public readonly options?: Record<string, unknown>) {
+    constructor(public readonly options?: Record<string, any>) {
       EnvHttpProxyAgentLocal.lastCreated = this;
       envAgentSpyLocal(options);
     }
@@ -42,7 +42,7 @@ vi.mock("../plugins/provider-runtime.js", async () => {
   );
   return {
     ...actual,
-    resolveProviderUsageSnapshotWithPlugin: (...args: unknown[]) =>
+    resolveProviderUsageSnapshotWithPlugin: (...args: any[]) =>
       resolveProviderUsageSnapshotWithPluginMock(...args),
   };
 });
@@ -52,13 +52,13 @@ let loadProviderUsageSummary: typeof import("./provider-usage.load.js").loadProv
 const usageNow = Date.UTC(2026, 0, 7, 0, 0, 0);
 
 function requireFirstPluginUsageCall(): {
-  provider?: unknown;
+  provider?: any;
   context?: {
-    provider?: unknown;
-    token?: unknown;
-    authProfileId?: unknown;
-    timeoutMs?: unknown;
-    fetchFn?: unknown;
+    provider?: any;
+    token?: any;
+    authProfileId?: any;
+    timeoutMs?: any;
+    fetchFn?: any;
   };
 } {
   const [call] = resolveProviderUsageSnapshotWithPluginMock.mock.calls;
@@ -70,30 +70,30 @@ function requireFirstPluginUsageCall(): {
     throw new Error("expected provider usage plugin call");
   }
   return pluginCall as {
-    provider?: unknown;
+    provider?: any;
     context?: {
-      provider?: unknown;
-      token?: unknown;
-      authProfileId?: unknown;
-      timeoutMs?: unknown;
-      fetchFn?: unknown;
+      provider?: any;
+      token?: any;
+      authProfileId?: any;
+      timeoutMs?: any;
+      fetchFn?: any;
     };
   };
 }
 
-function requireFetchFn(value: unknown): typeof fetch {
+function requireFetchFn(value: any): typeof fetch {
   if (typeof value !== "function") {
     throw new Error("expected provider usage context fetch");
   }
   return value as typeof fetch;
 }
 
-function requireUndiciFetchInit(): Record<string, unknown> {
+function requireUndiciFetchInit(): Record<string, any> {
   const init = undiciFetch.mock.calls[0]?.[1];
   if (!init || typeof init !== "object" || Array.isArray(init)) {
     throw new Error("expected undici fetch init");
   }
-  return init as Record<string, unknown>;
+  return init as Record<string, any>;
 }
 
 describe("provider-usage.load plugin boundary", () => {
@@ -187,11 +187,11 @@ describe("provider-usage.load plugin boundary", () => {
 
   it("passes an env proxy fetch into plugin usage context when no explicit fetch is supplied", async () => {
     undiciFetch.mockResolvedValueOnce(new Response("{}", { status: 200 }));
-    resolveProviderUsageSnapshotWithPluginMock.mockImplementationOnce(async (params: unknown) => {
+    resolveProviderUsageSnapshotWithPluginMock.mockImplementationOnce(async (params: any) => {
       if (!params || typeof params !== "object" || Array.isArray(params)) {
         throw new Error("expected plugin params");
       }
-      const context = (params as { context?: { fetchFn?: unknown } }).context;
+      const context = (params as { context?: { fetchFn?: any } }).context;
       await requireFetchFn(context?.fetchFn)("https://chatgpt.com/backend-api/wham/usage");
       return {
         provider: "openai",
@@ -229,11 +229,11 @@ describe("provider-usage.load plugin boundary", () => {
 
   it("keeps an explicit fetch ahead of proxy env for plugin usage context", async () => {
     const explicitFetch = vi.fn(async () => new Response("{}", { status: 200 }));
-    resolveProviderUsageSnapshotWithPluginMock.mockImplementationOnce(async (params: unknown) => {
+    resolveProviderUsageSnapshotWithPluginMock.mockImplementationOnce(async (params: any) => {
       if (!params || typeof params !== "object" || Array.isArray(params)) {
         throw new Error("expected plugin params");
       }
-      const context = (params as { context?: { fetchFn?: unknown } }).context;
+      const context = (params as { context?: { fetchFn?: any } }).context;
       await requireFetchFn(context?.fetchFn)("https://chatgpt.com/backend-api/wham/usage");
       return {
         provider: "openai",

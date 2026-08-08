@@ -25,7 +25,7 @@ export type MediaExecOptions = {
 };
 
 /** Normalizes a non-Error rejection into an Error, preserving useful props. */
-function toErrorObject(value: unknown, fallbackMessage: string): Error {
+function toErrorObject(value: any, fallbackMessage: string): Error {
   if (value instanceof Error) {
     return value;
   }

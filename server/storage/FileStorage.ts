@@ -426,15 +426,15 @@ export class FileStorage {
     if (lines.length === 0) return { messages: [], hasMore: false, totalCount: 0 };
 
     // 第 0 行包含 session header + 初始消息
-    const firstLine = lines[0] as unknown;
-    const initialMessages: object[] = firstLine.messages || [];
+    const firstLine = lines[0] as Record<string, any>;
+    const initialMessages: object[] = (firstLine.messages as object[]) || [];
 
     // 后续行是追加的消息
     const subsequentMessages: object[] = [];
     for (let i = 1; i < lines.length; i++) {
-      const line = lines[i] as unknown;
+      const line = lines[i] as Record<string, any>;
       if (line.message) {
-        subsequentMessages.push(line.message);
+        subsequentMessages.push(line.message as object);
       }
     }
 

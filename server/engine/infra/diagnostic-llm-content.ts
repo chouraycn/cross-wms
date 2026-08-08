@@ -26,19 +26,19 @@ const NO_MODEL_CONTENT_CAPTURE: DiagnosticModelContentCapturePolicy = Object.fre
   anyModelContent: false,
 });
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
 // 克隆捕获的内容，使私有诊断负载永不别名调用者持续修改的
 // 实时运行时对象（工具参数/结果、模型消息）。
-export function cloneDiagnosticContentValue(value: unknown): unknown {
+export function cloneDiagnosticContentValue(value: any): any {
   try {
     return structuredClone(value);
   } catch {
     try {
       const serialized = JSON.stringify(value);
-      return serialized === undefined ? null : (JSON.parse(serialized) as unknown);
+      return serialized === undefined ? null : (JSON.parse(serialized) as any);
     } catch {
       return String(value);
     }
@@ -60,7 +60,7 @@ function withDerivedFields(
 
 /** 从配置解析模型内容诊断捕获，默认不捕获内容。 */
 export function resolveDiagnosticModelContentCapturePolicy(
-  config: unknown,
+  config: any,
 ): DiagnosticModelContentCapturePolicy {
   if (!isRecord(config)) {
     return NO_MODEL_CONTENT_CAPTURE;

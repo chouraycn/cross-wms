@@ -26,12 +26,12 @@ export const BizCode = {
 export type BizCodeValue = (typeof BizCode)[keyof typeof BizCode];
 
 /** 成功：{ code: 0, data, message } */
-export function ok(res: Response, data: unknown, message = 'ok') {
+export function ok(res: Response, data: any, message = 'ok') {
   return res.json({ code: 0, data, message });
 }
 
 /** 创建成功（201）：{ code: 0, data, message }，HTTP 201 */
-export function created(res: Response, data: unknown, message = 'ok') {
+export function created(res: Response, data: any, message = 'ok') {
   return res.status(201).json({ code: 0, data, message });
 }
 

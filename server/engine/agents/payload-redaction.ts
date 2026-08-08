@@ -34,7 +34,7 @@ export interface RedactionOptions {
   deep?: boolean;
 }
 
-export function redactValue(value: unknown, options: RedactionOptions = {}): unknown {
+export function redactValue(value: any, options: RedactionOptions = {}): any {
   const fields = (options.fields ?? DEFAULT_SENSITIVE_FIELDS).map(f => f.toLowerCase());
   const replacement = options.replacement ?? DEFAULT_REPLACEMENT;
   const deep = options.deep ?? true;
@@ -58,7 +58,7 @@ export function redactValue(value: unknown, options: RedactionOptions = {}): unk
 
   if (typeof value === 'object') {
     if (!deep) return value;
-    return redactObject(value as Record<string, unknown>, fields, replacement, options);
+    return redactObject(value as Record<string, any>, fields, replacement, options);
   }
 
   return value;
@@ -88,12 +88,12 @@ function redactString(str: string, fields: string[], replacement: string): strin
 }
 
 function redactObject(
-  obj: Record<string, unknown>,
+  obj: Record<string, any>,
   fields: string[],
   replacement: string,
   options: RedactionOptions,
-): Record<string, unknown> {
-  const result: Record<string, unknown> = {};
+): Record<string, any> {
+  const result: Record<string, any> = {};
 
   for (const [key, value] of Object.entries(obj)) {
     const keyLower = key.toLowerCase();
@@ -113,7 +113,7 @@ function redactObject(
   return result;
 }
 
-export function redactPayload(payload: unknown, options?: RedactionOptions): unknown {
+export function redactPayload(payload: any, options?: RedactionOptions): any {
   return redactValue(payload, options);
 }
 
@@ -155,7 +155,7 @@ export function createRedactor(options?: RedactionOptions) {
   };
 
   return {
-    redact: (value: unknown) => redactValue(value, mergedOptions),
+    redact: (value: any) => redactValue(value, mergedOptions),
     redactHeaders: (headers: Record<string, string>) => redactHeaders(headers, mergedOptions),
     isSensitive: (fieldName: string) => isSensitiveField(fieldName, mergedOptions),
     options: mergedOptions,

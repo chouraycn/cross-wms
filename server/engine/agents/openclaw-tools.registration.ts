@@ -6,9 +6,9 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function collectPresentOpenClawTools(..._args: unknown[]): unknown {
+export function collectPresentOpenClawTools(..._args: any[]): any {
   return [];
 }
-export function shouldIncludeUpdatePlanToolForOpenClawTools(..._args: unknown[]): unknown {
+export function shouldIncludeUpdatePlanToolForOpenClawTools(..._args: any[]): any {
   return false;
 }

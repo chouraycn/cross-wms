@@ -11,11 +11,11 @@ function normalizeProviderId(provider: string): string {
 }
 
 export type ProviderAuthAliasLookupParams = {
-  config?: unknown;
+  config?: any;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   includeUntrustedWorkspacePlugins?: boolean;
-  metadataSnapshot?: unknown;
+  metadataSnapshot?: any;
 };
 
 /** Clear provider auth alias cache for tests. */

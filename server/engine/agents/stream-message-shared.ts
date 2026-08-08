@@ -17,7 +17,7 @@ type AssistantContentBlock = {
   thinkingSignature?: string;
   id?: string;
   name?: string;
-  arguments?: unknown;
+  arguments?: any;
   textSignature?: string;
 };
 

@@ -30,12 +30,12 @@ const STAGGER_OFFSET_CACHE_MAX = 4096;
 const staggerOffsetCache = new Map<string, number>();
 
 /** 判断是否为有限时间戳 */
-function isFiniteTimestamp(value: unknown): value is number {
+function isFiniteTimestamp(value: any): value is number {
   return typeof value === "number" && Number.isFinite(value);
 }
 
 /** 判断存储的 next-run 时间戳是否有效且可调度 */
-export function hasScheduledNextRunAtMs(value: unknown): value is number {
+export function hasScheduledNextRunAtMs(value: any): value is number {
   return isFiniteTimestamp(value) && value > 0;
 }
 
@@ -247,8 +247,8 @@ export function computeJobPreviousRunAtMs(job: CronJob, nowMs: number): number |
  */
 export function recordScheduleComputeError(params: {
   job: CronJob;
-  err: unknown;
-  log?: { warn: (...args: unknown[]) => void; error: (...args: unknown[]) => void };
+  err: any;
+  log?: { warn: (...args: any[]) => void; error: (...args: any[]) => void };
 }): boolean {
   const { job, err, log } = params;
   const errorCount = (job.state.scheduleErrorCount ?? 0) + 1;
@@ -285,7 +285,7 @@ export function recordScheduleComputeError(params: {
 export function normalizeJobTickState(params: {
   job: CronJob;
   nowMs: number;
-  log?: { warn: (...args: unknown[]) => void };
+  log?: { warn: (...args: any[]) => void };
 }): { changed: boolean; skip: boolean } {
   const { job, nowMs, log } = params;
   let changed = false;
@@ -341,7 +341,7 @@ export function recomputeJobNextRunAtMs(params: {
   job: CronJob;
   nowMs: number;
   backoffScheduleMs?: number[];
-  log?: { warn: (...args: unknown[]) => void; error: (...args: unknown[]) => void };
+  log?: { warn: (...args: any[]) => void; error: (...args: any[]) => void };
 }): boolean {
   let changed = false;
   try {
@@ -383,7 +383,7 @@ export function recomputeNextRuns(params: {
   jobs: CronJob[];
   nowMs: number;
   backoffScheduleMs?: number[];
-  log?: { warn: (...args: unknown[]) => void; error: (...args: unknown[]) => void };
+  log?: { warn: (...args: any[]) => void; error: (...args: any[]) => void };
 }): boolean {
   let changed = false;
   for (const job of params.jobs) {
@@ -428,7 +428,7 @@ export function nextWakeAtMs(jobs: CronJob[]): number | undefined {
 /**
  * 规范化可选字符串
  */
-function normalizeOptionalString(value: unknown): string | undefined {
+function normalizeOptionalString(value: any): string | undefined {
   if (typeof value !== "string") return undefined;
   const trimmed = value.trim();
   return trimmed ? trimmed : undefined;
@@ -437,7 +437,7 @@ function normalizeOptionalString(value: unknown): string | undefined {
 /**
  * 规范化必填名称
  */
-function normalizeRequiredName(value: unknown): string {
+function normalizeRequiredName(value: any): string {
   if (typeof value !== "string") {
     throw new Error("cron job name is required");
   }
@@ -561,10 +561,10 @@ export function applyJobPatch(
     job.state = { ...job.state, ...patch.state };
   }
   if ("agentId" in patch) {
-    job.agentId = normalizeOptionalString((patch as { agentId?: unknown }).agentId);
+    job.agentId = normalizeOptionalString((patch as { agentId?: any }).agentId);
   }
   if ("sessionKey" in patch) {
-    job.sessionKey = normalizeOptionalString((patch as { sessionKey?: unknown }).sessionKey);
+    job.sessionKey = normalizeOptionalString((patch as { sessionKey?: any }).sessionKey);
   }
 
   const now = opts?.scheduleValidationNowMs;

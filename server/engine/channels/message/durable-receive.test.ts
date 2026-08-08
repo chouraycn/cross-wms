@@ -16,7 +16,7 @@ type TestPayload = { body: string };
 type TestMetadata = { source: string };
 type TestCompletedMetadata = { delivered: boolean };
 
-function assertNoUndefinedFields(value: unknown): void {
+function assertNoUndefinedFields(value: any): void {
   if (value === undefined) {
     throw new Error("undefined field");
   }

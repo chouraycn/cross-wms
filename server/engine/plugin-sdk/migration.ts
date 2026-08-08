@@ -15,7 +15,7 @@ export type MigrationItem = {
   reason?: string;
   message: string;
   sensitive?: boolean;
-  details?: Record<string, unknown>;
+  details?: Record<string, any>;
 };
 
 export type MigrationPlan = {
@@ -24,15 +24,15 @@ export type MigrationPlan = {
 };
 
 export type MigrationProviderContext = {
-  config: Record<string, unknown>;
+  config: Record<string, any>;
   overwrite?: boolean;
   runtime?: {
     config?: {
-      current?: () => Record<string, unknown>;
+      current?: () => Record<string, any>;
       mutateConfigFile?: (params: {
         base?: string;
         afterWrite?: { mode?: string };
-        mutate: (draft: Record<string, unknown>) => void;
+        mutate: (draft: Record<string, any>) => void;
       }) => Promise<void>;
     };
   };
@@ -135,7 +135,7 @@ function isSecretKey(key: string): boolean {
 
 export type MigrationConfigPatchDetails = {
   path: string[];
-  value: unknown;
+  value: any;
 };
 
 class MigrationConfigPatchConflictError extends Error {
@@ -146,10 +146,10 @@ class MigrationConfigPatchConflictError extends Error {
 }
 
 export function readMigrationConfigPath(
-  root: Record<string, unknown>,
+  root: Record<string, any>,
   path: readonly string[],
-): unknown {
-  let current: unknown = root;
+): any {
+  let current: any = root;
   for (const segment of path) {
     if (!isRecord(current)) {
       return undefined;
@@ -159,11 +159,11 @@ export function readMigrationConfigPath(
   return current;
 }
 
-export function mergeMigrationConfigValue(left: unknown, right: unknown): unknown {
+export function mergeMigrationConfigValue(left: any, right: any): any {
   if (!isRecord(left) || !isRecord(right)) {
     return structuredClone(right);
   }
-  const next: Record<string, unknown> = { ...left };
+  const next: Record<string, any> = { ...left };
   for (const [key, value] of Object.entries(right)) {
     next[key] = mergeMigrationConfigValue(next[key], value);
   }
@@ -171,9 +171,9 @@ export function mergeMigrationConfigValue(left: unknown, right: unknown): unknow
 }
 
 export function writeMigrationConfigPath(
-  root: Record<string, unknown>,
+  root: Record<string, any>,
   path: readonly string[],
-  value: unknown,
+  value: any,
 ): void {
   let current = root;
   for (const segment of path.slice(0, -1)) {
@@ -181,7 +181,7 @@ export function writeMigrationConfigPath(
     if (!isRecord(existing)) {
       current[segment] = {};
     }
-    current = current[segment] as Record<string, unknown>;
+    current = current[segment] as Record<string, any>;
   }
   const leaf = path.at(-1);
   if (!leaf) {
@@ -191,9 +191,9 @@ export function writeMigrationConfigPath(
 }
 
 export function hasMigrationConfigPatchConflict(
-  config: Record<string, unknown>,
+  config: Record<string, any>,
   path: readonly string[],
-  value: unknown,
+  value: any,
 ): boolean {
   if (!isRecord(value)) {
     return readMigrationConfigPath(config, path) !== undefined;
@@ -209,12 +209,12 @@ export function createMigrationConfigPatchItem(params: {
   id: string;
   target: string;
   path: string[];
-  value: unknown;
+  value: any;
   message: string;
   conflict?: boolean;
   reason?: string;
   source?: string;
-  details?: Record<string, unknown>;
+  details?: Record<string, any>;
 }): MigrationItem {
   return createMigrationItem({
     id: params.id,
@@ -307,7 +307,7 @@ export function applyMigrationManualItem(item: MigrationItem): MigrationItem {
   return markMigrationItemSkipped(item, item.reason ?? "manual follow-up required");
 }
 
-function isSecretReferenceLike(value: unknown): boolean {
+function isSecretReferenceLike(value: any): boolean {
   if (!isRecord(value)) {
     return false;
   }
@@ -326,7 +326,7 @@ function redactString(value: string): string {
   return next;
 }
 
-function redactMigrationValueInternal(value: unknown, seen: WeakSet<object>): unknown {
+function redactMigrationValueInternal(value: any, seen: WeakSet<object>): any {
   if (typeof value === "string") {
     return redactString(value);
   }
@@ -340,7 +340,7 @@ function redactMigrationValueInternal(value: unknown, seen: WeakSet<object>): un
     return REDACTED_MIGRATION_VALUE;
   }
   seen.add(value);
-  const next: Record<string, unknown> = {};
+  const next: Record<string, any> = {};
   for (const [key, entry] of Object.entries(value)) {
     if (isSecretKey(key) && !isSecretReferenceLike(entry)) {
       next[key] = REDACTED_MIGRATION_VALUE;
@@ -351,7 +351,7 @@ function redactMigrationValueInternal(value: unknown, seen: WeakSet<object>): un
   return next;
 }
 
-export function redactMigrationValue(value: unknown): unknown {
+export function redactMigrationValue(value: any): any {
   return redactMigrationValueInternal(value, new WeakSet<object>());
 }
 

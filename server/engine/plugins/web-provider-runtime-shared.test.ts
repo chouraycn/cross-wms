@@ -6,12 +6,12 @@ const mocks = vi.hoisted(() => ({
   loadOpenClawPlugins: vi.fn(),
   resolveCompatibleRuntimePluginRegistry: vi.fn(),
   getLoadedRuntimePluginRegistry: vi.fn(),
-  resolvePluginRegistryLoadCacheKey: vi.fn((options: unknown) => JSON.stringify(options)),
+  resolvePluginRegistryLoadCacheKey: vi.fn((options: any) => JSON.stringify(options)),
   resolveRuntimePluginRegistry: vi.fn(),
-  getActivePluginRegistry: vi.fn<() => Record<string, unknown> | null>(() => null),
+  getActivePluginRegistry: vi.fn<() => Record<string, any> | null>(() => null),
   getActivePluginRegistryWorkspaceDir: vi.fn(() => undefined),
   buildPluginRuntimeLoadOptionsFromValues: vi.fn(
-    (_values: unknown, overrides?: Record<string, unknown>) => ({
+    (_values: any, overrides?: Record<string, any>) => ({
       ...overrides,
     }),
   ),
@@ -48,14 +48,14 @@ vi.mock("./runtime/load-context.js", () => ({
 let resolvePluginWebProviders: typeof import("./web-provider-runtime-shared.js").resolvePluginWebProviders;
 let resolveRuntimeWebProviders: typeof import("./web-provider-runtime-shared.js").resolveRuntimeWebProviders;
 
-function requireRecord(value: unknown): Record<string, unknown> {
+function requireRecord(value: any): Record<string, any> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("Expected a non-array record");
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function mockArg(mock: ReturnType<typeof vi.fn>, callIndex = 0): Record<string, unknown> {
+function mockArg(mock: ReturnType<typeof vi.fn>, callIndex = 0): Record<string, any> {
   return requireRecord(mock.mock.calls[callIndex]?.[0]);
 }
 
@@ -73,7 +73,7 @@ describe("web-provider-runtime-shared", () => {
     mocks.getLoadedRuntimePluginRegistry.mockReset();
     mocks.getLoadedRuntimePluginRegistry.mockReturnValue(undefined);
     mocks.resolvePluginRegistryLoadCacheKey.mockReset();
-    mocks.resolvePluginRegistryLoadCacheKey.mockImplementation((options: unknown) =>
+    mocks.resolvePluginRegistryLoadCacheKey.mockImplementation((options: any) =>
       JSON.stringify(options),
     );
     mocks.resolveRuntimePluginRegistry.mockReset();
@@ -83,7 +83,7 @@ describe("web-provider-runtime-shared", () => {
     mocks.getActivePluginRegistryWorkspaceDir.mockReturnValue(undefined);
     mocks.buildPluginRuntimeLoadOptionsFromValues.mockReset();
     mocks.buildPluginRuntimeLoadOptionsFromValues.mockImplementation(
-      (_values: unknown, overrides?: Record<string, unknown>) => ({
+      (_values: any, overrides?: Record<string, any>) => ({
         ...overrides,
       }),
     );
@@ -370,7 +370,7 @@ describe("web-provider-runtime-shared", () => {
     const mapRegistryProviders = vi.fn(({ registry }) =>
       registry === fallbackRegistry ? ["brave"] : [],
     );
-    mocks.getLoadedRuntimePluginRegistry.mockImplementation((args: unknown) => {
+    mocks.getLoadedRuntimePluginRegistry.mockImplementation((args: any) => {
       const requiredPluginIds = (args as { requiredPluginIds?: readonly string[] })
         ?.requiredPluginIds;
       if (requiredPluginIds === undefined) {

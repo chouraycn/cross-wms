@@ -16,7 +16,7 @@ export interface ApiKeyLabel {
   createdAt: number;
   lastUsedAt?: number;
   usageCount: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface KeyLabelManagerOptions {

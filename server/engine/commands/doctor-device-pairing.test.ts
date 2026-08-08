@@ -20,18 +20,18 @@ const callGatewayMock = vi.hoisted(() => vi.fn());
 const noteMock = vi.hoisted(() => vi.fn());
 
 vi.mock("../gateway/call.js", () => ({
-  callGateway: (...args: unknown[]) => callGatewayMock(...args),
+  callGateway: (...args: any[]) => callGatewayMock(...args),
 }));
 
 vi.mock("../../packages/terminal-core/src/note.js", () => ({
-  note: (...args: unknown[]) => noteMock(...args),
+  note: (...args: any[]) => noteMock(...args),
 }));
 
 function requireMockCall(
-  mock: { mock: { calls: unknown[][] } },
+  mock: { mock: { calls: any[][] } },
   callIndex: number,
   label: string,
-): unknown[] {
+): any[] {
   const call = mock.mock.calls[callIndex];
   if (!call) {
     throw new Error(`expected ${label} call ${callIndex}`);
@@ -47,16 +47,16 @@ function requireNoteMessage(callIndex = 0): string {
   return message;
 }
 
-function requireNoteTitle(callIndex = 0): unknown {
+function requireNoteTitle(callIndex = 0): any {
   const [, title] = requireMockCall(noteMock, callIndex, "doctor note");
   return title;
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object") {
     throw new Error(`expected ${label} record`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 describe("noteDevicePairingHealth", () => {

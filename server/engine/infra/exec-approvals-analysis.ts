@@ -41,15 +41,15 @@ export type ShellChainOperator = string;
 
 export type ExecArgvToken = unknown;
 
-export function resolvePlannedSegmentArgv(...args: unknown[]): unknown {
+export function resolvePlannedSegmentArgv(...args: any[]): any {
   return undefined;
 }
 
-export function buildEnforcedShellCommand(...args: unknown[]): unknown {
+export function buildEnforcedShellCommand(...args: any[]): any {
   return undefined;
 }
 
-export function analyzeArgvCommand(...args: unknown[]): unknown {
+export function analyzeArgvCommand(...args: any[]): any {
   return undefined;
 }
 
@@ -62,23 +62,23 @@ export function matchAllowlist(
   return null;
 }
 
-export function parseExecArgvToken(...args: unknown[]): unknown {
+export function parseExecArgvToken(...args: any[]): any {
   return undefined;
 }
 
-export function resolveAllowlistCandidatePath(...args: unknown[]): unknown {
+export function resolveAllowlistCandidatePath(...args: any[]): any {
   return undefined;
 }
 
-export function resolveApprovalAuditCandidatePath(...args: unknown[]): unknown {
+export function resolveApprovalAuditCandidatePath(...args: any[]): any {
   return undefined;
 }
 
-export function resolveApprovalAuditTrustPath(...args: unknown[]): unknown {
+export function resolveApprovalAuditTrustPath(...args: any[]): any {
   return undefined;
 }
 
-export function resolveCommandResolution(...args: unknown[]): unknown {
+export function resolveCommandResolution(...args: any[]): any {
   return undefined;
 }
 
@@ -111,7 +111,7 @@ export function resolveExecutionTargetTrustPath(
   return undefined;
 }
 
-export function resolvePolicyAllowlistCandidatePath(...args: unknown[]): unknown {
+export function resolvePolicyAllowlistCandidatePath(...args: any[]): any {
   return undefined;
 }
 
@@ -145,14 +145,14 @@ export function isWindowsPlatform(_platform?: string | null): boolean {
   return false;
 }
 
-export function analyzeWindowsShellCommand(...args: unknown[]): unknown {
+export function analyzeWindowsShellCommand(...args: any[]): any {
   return undefined;
 }
 
-export function tokenizeWindowsSegment(...args: unknown[]): unknown {
+export function tokenizeWindowsSegment(...args: any[]): any {
   return undefined;
 }
 
-export function windowsEscapeArg(...args: unknown[]): unknown {
+export function windowsEscapeArg(...args: any[]): any {
   return undefined;
 }

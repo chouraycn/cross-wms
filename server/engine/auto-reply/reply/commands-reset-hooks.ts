@@ -18,8 +18,8 @@ function loadRouteReplyRuntime() {
 
 export type ResetCommandAction = "new" | "reset";
 
-function parseTranscriptMessages(content: string): unknown[] {
-  const entries: unknown[] = [];
+function parseTranscriptMessages(content: string): any[] {
+  const entries: any[] = [];
   for (const line of content.split("\n")) {
     if (!line.trim()) {
       continue;
@@ -37,10 +37,10 @@ function parseTranscriptMessages(content: string): unknown[] {
       entry &&
       typeof entry === "object" &&
       !Array.isArray(entry) &&
-      (entry as { type?: unknown }).type === "message" &&
-      (entry as { message?: unknown }).message
+      (entry as { type?: any }).type === "message" &&
+      (entry as { message?: any }).message
     ) {
-      return [(entry as { message: unknown }).message];
+      return [(entry as { message: any }).message];
     }
     return [];
   });
@@ -63,7 +63,7 @@ async function findLatestArchivedTranscript(sessionFile: string): Promise<string
 
 async function loadBeforeResetTranscript(params: {
   sessionFile?: string;
-}): Promise<{ sessionFile?: string; messages: unknown[] }> {
+}): Promise<{ sessionFile?: string; messages: any[] }> {
   const sessionFile = params.sessionFile;
   if (!sessionFile) {
     logVerbose("before_reset: no session file available, firing hook with empty messages");
@@ -75,8 +75,8 @@ async function loadBeforeResetTranscript(params: {
       sessionFile,
       messages: parseTranscriptMessages(await fs.readFile(sessionFile, "utf-8")),
     };
-  } catch (err: unknown) {
-    if ((err as { code?: unknown })?.code !== "ENOENT") {
+  } catch (err: any) {
+    if ((err as { code?: any })?.code !== "ENOENT") {
       logVerbose(
         `before_reset: failed to read session file ${sessionFile}; firing hook with empty messages (${String(err)})`,
       );
@@ -97,7 +97,7 @@ async function loadBeforeResetTranscript(params: {
       sessionFile: archivedSessionFile,
       messages: parseTranscriptMessages(await fs.readFile(archivedSessionFile, "utf-8")),
     };
-  } catch (err: unknown) {
+  } catch (err: any) {
     logVerbose(
       `before_reset: failed to read archived session file ${archivedSessionFile}; firing hook with empty messages (${String(err)})`,
     );
@@ -171,7 +171,7 @@ export async function emitResetCommandHooks(params: {
             workspaceDir: params.workspaceDir,
           },
         );
-      } catch (err: unknown) {
+      } catch (err: any) {
         logVerbose(`before_reset hook failed: ${String(err)}`);
       }
     })();

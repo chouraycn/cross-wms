@@ -24,12 +24,12 @@ export type OrchestrationStrategy = 'sequential' | 'parallel' | 'dag';
 export interface OrchestratorTask {
   id?: string;
   name: string;
-  payload?: unknown;
+  payload?: any;
   priority?: number;
   dependsOn?: string[];
-  execute: (task: OrchestratorTask) => Promise<unknown>;
+  execute: (task: OrchestratorTask) => Promise<any>;
   optional?: boolean;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 /** 编排结果 */
@@ -37,7 +37,7 @@ export interface SubagentResult {
   taskId: string;
   name: string;
   status: 'completed' | 'failed' | 'cancelled' | 'skipped';
-  result?: unknown;
+  result?: any;
   error?: string;
   durationMs?: number;
   startedAt?: number;

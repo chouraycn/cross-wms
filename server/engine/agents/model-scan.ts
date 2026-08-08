@@ -26,7 +26,7 @@ const modelStore = new Map<string, ModelInfo>();
 const providerIndex = new Map<string, Set<string>>();
 const typeIndex = new Map<string, Set<string>>();
 
-export function registerModel(model: Omit<ModelInfo, 'tags' | 'metadata'> & { tags?: string[]; metadata?: Record<string, unknown> }): void {
+export function registerModel(model: Omit<ModelInfo, 'tags' | 'metadata'> & { tags?: string[]; metadata?: Record<string, any> }): void {
   const fullModel: ModelInfo = {
     ...model,
     tags: model.tags ?? [],

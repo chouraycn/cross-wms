@@ -64,7 +64,7 @@ function getTranscript(id: string): TranscriptEntry | undefined {
   return TRANSCRIPT_STORE.get(id);
 }
 
-function formatJsonOutput(data: unknown): string {
+function formatJsonOutput(data: any): string {
   return JSON.stringify(data, null, 2);
 }
 

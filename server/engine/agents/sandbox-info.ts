@@ -89,11 +89,11 @@ export function resolveEmbeddedFullAccessState(params: {
 
 /** Resolves the effective exec policy for sandbox-info reporting. */
 export function resolveEmbeddedSandboxInfoExecPolicy(params: {
-  config?: unknown;
+  config?: any;
   agentId?: string;
   sessionKey?: string;
   sandboxAvailable?: boolean;
-  execOverrides?: Record<string, unknown>;
+  execOverrides?: Record<string, any>;
 }): EmbeddedFullAccessExecPolicy {
   // cross-wms defaults: full access mode unless sandbox constrains it.
   return {

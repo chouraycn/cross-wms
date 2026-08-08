@@ -78,7 +78,7 @@ export function getCleanupStats(dbInstance?: Database): {
   };
 }
 
-export function scheduleCleanup(cronScheduler: unknown, schedule: string = '0 3 * * *'): void {
+export function scheduleCleanup(cronScheduler: any, schedule: string = '0 3 * * *'): void {
   if (cronScheduler && typeof cronScheduler.schedule === 'function') {
     cronScheduler.schedule(schedule, () => {
       console.log('[Cleanup] Starting scheduled cleanup...');

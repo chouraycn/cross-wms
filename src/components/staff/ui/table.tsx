@@ -19,7 +19,7 @@ function Table({ className, sx, ...props }: React.ComponentProps<'table'> & { sx
         data-slot="table"
         className={cn('w-full caption-bottom text-sm', className)}
         sx={mergeSx({ width: '100%', captionSide: 'bottom', fontSize: '0.875rem' }, sx)}
-        {...(props as Record<string, unknown>)}
+        {...(props as Record<string, any>)}
       />
     </Box>
   )
@@ -32,7 +32,7 @@ function TableHeader({ className, sx, ...props }: React.ComponentProps<'thead'> 
       data-slot="table-header"
       className={cn('[&_tr]:border-b', className)}
       sx={mergeSx({ '& tr': { borderBottom: '1px solid', borderColor: 'divider' } }, sx)}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     />
   )
 }
@@ -44,7 +44,7 @@ function TableBody({ className, sx, ...props }: React.ComponentProps<'tbody'> & 
       data-slot="table-body"
       className={cn('[&_tr:last-child]:border-0', className)}
       sx={mergeSx({ '& tr:last-child': { borderBottom: 0 } }, sx)}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     />
   )
 }
@@ -59,7 +59,7 @@ function TableFooter({ className, sx, ...props }: React.ComponentProps<'tfoot'> 
         { borderTop: '1px solid', borderColor: 'divider', bgcolor: 'action.hover', fontWeight: 500, '& tr:last-child': { borderBottom: 0 } },
         sx,
       )}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     />
   )
 }
@@ -80,7 +80,7 @@ function TableRow({ className, sx, ...props }: React.ComponentProps<'tr'> & { sx
         },
         sx,
       )}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     />
   )
 }
@@ -92,7 +92,7 @@ function TableHead({ className, sx, ...props }: React.ComponentProps<'th'> & { s
       data-slot="table-head"
       className={cn('h-10 px-2 text-left align-middle font-medium', className)}
       sx={mergeSx({ height: 40, px: 2, textAlign: 'left', verticalAlign: 'middle', fontWeight: 500, color: 'text.primary' }, sx)}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     />
   )
 }
@@ -104,7 +104,7 @@ function TableCell({ className, sx, ...props }: React.ComponentProps<'td'> & { s
       data-slot="table-cell"
       className={cn('p-2 align-middle', className)}
       sx={mergeSx({ p: 2, verticalAlign: 'middle' }, sx)}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     />
   )
 }
@@ -116,7 +116,7 @@ function TableCaption({ className, sx, ...props }: React.ComponentProps<'caption
       data-slot="table-caption"
       className={cn('mt-4 text-sm', className)}
       sx={mergeSx({ mt: 4, fontSize: '0.875rem', color: 'text.secondary' }, sx)}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     />
   )
 }

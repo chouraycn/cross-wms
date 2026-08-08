@@ -4,7 +4,7 @@ import { normalizeLowercaseStringOrEmpty } from "./string-utils.js";
 // Adapter helpers shared by remote embedding provider implementations.
 
 /** Detect missing API key errors from provider auth resolution. */
-export function isMissingEmbeddingApiKeyError(err: unknown): boolean {
+export function isMissingEmbeddingApiKeyError(err: any): boolean {
   return err instanceof Error && err.message.includes("No API key found for provider");
 }
 

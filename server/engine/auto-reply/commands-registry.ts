@@ -3,7 +3,7 @@ export type CommandArgDefinition = {
   description?: string;
   required?: boolean;
   captureRemaining?: boolean;
-  choices?: string[] | ((ctx: unknown) => string[]);
+  choices?: string[] | ((ctx: any) => string[]);
 };
 
 export type CommandArgValues = Record<string, string | undefined>;
@@ -23,7 +23,7 @@ export type ChatCommandDefinition = {
   args?: CommandArgDefinition[];
   argsParsing?: 'positional' | 'none';
   formatArgs?: (values: CommandArgValues) => string | undefined;
-  handler?: (ctx: unknown, args?: CommandArgs) => Promise<unknown> | unknown;
+  handler?: (ctx: any, args?: CommandArgs) => Promise<any> | unknown;
 };
 
 export type CommandDetection = {

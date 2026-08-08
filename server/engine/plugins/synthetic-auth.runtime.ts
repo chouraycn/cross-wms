@@ -40,7 +40,7 @@ function resolveManifestSyntheticAuthProviderRefState(
 
 type SyntheticAuthProviderRefParams = LoadPluginRegistryParams & {
   index?: PluginRegistrySnapshot;
-  registryDiagnostics?: readonly unknown[];
+  registryDiagnostics?: readonly any[];
 };
 
 function resolveManifestExternalAuthProviderRefs(

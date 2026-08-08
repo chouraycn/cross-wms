@@ -12,7 +12,7 @@
 import { normalizeSessionEntrySlotKey } from "../../plugins/session-entry-slot-keys.js";
 
 /** 内联实现：将字符串归一化为小写，非字符串返回空字符串。 */
-function normalizeLowercaseStringOrEmpty(value: unknown): string {
+function normalizeLowercaseStringOrEmpty(value: any): string {
   return typeof value === "string" ? value.toLowerCase() : "";
 }
 
@@ -21,10 +21,10 @@ type SessionEntry = {
   sessionId?: string;
   sessionFile?: string;
   updatedAt?: number;
-  pluginExtensions?: Record<string, unknown>;
+  pluginExtensions?: Record<string, any>;
   pluginExtensionSlotKeys?: Record<string, Record<string, string>>;
-  pluginNextTurnInjections?: Record<string, unknown>;
-  [key: string]: unknown;
+  pluginNextTurnInjections?: Record<string, any>;
+  [key: string]: any;
 };
 
 /** 降级版 updateSessionStore：不进行持久化，仅执行 mutator 并返回结果。 */
@@ -105,7 +105,7 @@ function clearPromotedSessionEntrySlots(
     options.includeStoredSlotKeys === false && sessionEntrySlotKeys
       ? new Set(sessionEntrySlotKeys)
       : collectPromotedSessionEntrySlotKeys(entry, pluginId, sessionEntrySlotKeys);
-  const entryRecord = entry as Record<string, unknown>;
+  const entryRecord = entry as Record<string, any>;
   for (const slotKey of slotKeys) {
     delete entryRecord[slotKey];
   }
@@ -186,7 +186,7 @@ function hasPromotedSessionEntrySlot(
   if (slotKeys.size === 0) {
     return false;
   }
-  const entryRecord = entry as Record<string, unknown>;
+  const entryRecord = entry as Record<string, any>;
   for (const slotKey of slotKeys) {
     if (Object.hasOwn(entryRecord, slotKey)) {
       return true;

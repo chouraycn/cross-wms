@@ -78,7 +78,7 @@ export interface StaffChatTurnOutput {
 
 export interface StaffChatEvent {
   type: string;
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 // ===================== Abort 注册表（支持取消） =====================
@@ -105,12 +105,12 @@ interface SkillSop {
 }
 
 /** 把技能 content（蒸馏草稿 / 节点）转成可读文本 */
-function skillContentToText(content: unknown): string {
+function skillContentToText(content: any): string {
   if (!content || typeof content !== 'object') return '';
-  const c = content as Record<string, unknown>;
+  const c = content as Record<string, any>;
   const parts: string[] = [];
   if (typeof c.description === 'string' && c.description.trim()) parts.push(c.description.trim());
-  const nodes = Array.isArray(c.nodes) ? (c.nodes as Array<Record<string, unknown>>) : [];
+  const nodes = Array.isArray(c.nodes) ? (c.nodes as Array<Record<string, any>>) : [];
   for (const n of nodes) {
     const desc = typeof n.description === 'string' ? n.description : '';
     const type = typeof n.type === 'string' ? n.type : 'step';
@@ -128,7 +128,7 @@ function collectBoundSkills(tenantId: string, agentId: string): SkillSop[] {
   for (const b of bindings) {
     const row = skillDao.getSkillBySkillId(tenantId, b.resource_id);
     if (!row) continue;
-    let content: Record<string, unknown> = {};
+    let content: Record<string, any> = {};
     try {
       content = row.content_json ? JSON.parse(row.content_json) : {};
     } catch {
@@ -376,7 +376,7 @@ export async function runStaffChatTurn(
         onChunk: (chunk: string) => emitText(chunk),
         onThinking: (t: string) => emitThinking(t),
         onToolCall: (tc, res) => emitTool(tc.function.name, tc.function.arguments, typeof res === 'string' ? res : String(res ?? '')),
-        onEvent: (e: Record<string, unknown>) => {
+        onEvent: (e: Record<string, any>) => {
           const t = e.type as string;
           if (t === 'thinking.complete') emitThinkingEnd();
           else if (t === 'done') emitTextEnd();

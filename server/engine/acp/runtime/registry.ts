@@ -18,7 +18,7 @@ type AcpRuntimeRegistryGlobalState = {
 const ACP_RUNTIME_REGISTRY_STATE_KEY = Symbol.for("openclaw.acpRuntimeRegistryState");
 
 function resolveAcpRuntimeRegistryGlobalState(): AcpRuntimeRegistryGlobalState {
-  const processStore = process as NodeJS.Process & Record<PropertyKey, unknown>;
+  const processStore = process as NodeJS.Process & Record<PropertyKey, any>;
   const existing = processStore[ACP_RUNTIME_REGISTRY_STATE_KEY];
   if (existing) {
     return existing as AcpRuntimeRegistryGlobalState;

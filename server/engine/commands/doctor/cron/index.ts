@@ -55,7 +55,7 @@ function formatRunLogMigrationNote(importedFiles: number): string {
     : "";
 }
 
-function errorMessage(err: unknown): string {
+function errorMessage(err: any): string {
   return err instanceof Error ? err.message : String(err);
 }
 
@@ -66,7 +66,7 @@ type LegacyCronRepairState = {
   legacyRunLogDetected: boolean;
   legacyImportCount: number;
   sqliteProjectionBackfillCount: number;
-  rawJobs: Array<Record<string, unknown>>;
+  rawJobs: Array<Record<string, any>>;
 };
 
 export type LegacyCronRepairResult = {
@@ -95,7 +95,7 @@ async function loadLegacyCronRepairState(params: {
             runtimeEntry: loaded.configJobRuntimeEntries[index],
           }),
         )
-      : (loaded.store.jobs as unknown as Array<Record<string, unknown>>);
+      : (loaded.store.jobs as unknown as Array<Record<string, any>>);
   const sqliteProjectionBackfillCount =
     loaded.configJobs.length > 0
       ? currentJobs.filter((job, index) =>
@@ -111,7 +111,7 @@ async function loadLegacyCronRepairState(params: {
     const legacyStore = (await loadLegacyCronStoreForMigration(storePath)).store;
     const merged = mergeLegacyCronJobs({
       currentJobs: rawJobs,
-      legacyJobs: legacyStore.jobs as unknown as Array<Record<string, unknown>>,
+      legacyJobs: legacyStore.jobs as unknown as Array<Record<string, any>>,
     });
     rawJobs = merged.jobs;
     legacyImportCount = merged.importedCount;

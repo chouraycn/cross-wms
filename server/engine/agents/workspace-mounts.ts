@@ -7,22 +7,22 @@
  */
 
 export type ReadOnlyWorkspaceSkillMount = unknown;
-export function resolveMaterializedSandboxSkillsWorkspaceDir(..._args: unknown[]): unknown {
+export function resolveMaterializedSandboxSkillsWorkspaceDir(..._args: any[]): any {
   return undefined;
 }
-export function isExistingWorkspaceSkillMountSource(..._args: unknown[]): unknown {
+export function isExistingWorkspaceSkillMountSource(..._args: any[]): any {
   return false;
 }
-export function resolveReadOnlyWorkspaceSkillMounts(..._args: unknown[]): unknown {
+export function resolveReadOnlyWorkspaceSkillMounts(..._args: any[]): any {
   return undefined;
 }
-export function formatReadOnlyWorkspaceSkillMountHashState(..._args: unknown[]): unknown {
+export function formatReadOnlyWorkspaceSkillMountHashState(..._args: any[]): any {
   return "";
 }
-export function appendReadOnlyWorkspaceSkillMountArgs(..._args: unknown[]): unknown {
+export function appendReadOnlyWorkspaceSkillMountArgs(..._args: any[]): any {
   return undefined;
 }
-export function appendWorkspaceMountArgs(..._args: unknown[]): unknown {
+export function appendWorkspaceMountArgs(..._args: any[]): any {
   return undefined;
 }
-export const SANDBOX_MOUNT_FORMAT_VERSION: unknown = undefined;
+export const SANDBOX_MOUNT_FORMAT_VERSION: any = undefined;

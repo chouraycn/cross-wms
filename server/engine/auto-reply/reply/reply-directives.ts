@@ -55,9 +55,9 @@ function parseReactionDirective(text: string, currentMessageId?: string) {
 }
 
 export function mergeReactionDirectiveChannelData(
-  channelData: Record<string, unknown> | undefined,
+  channelData: Record<string, any> | undefined,
   reaction: ReplyDirectiveParseResult["reaction"] | undefined,
-): Record<string, unknown> | undefined {
+): Record<string, any> | undefined {
   if (!reaction) {
     return channelData;
   }
@@ -65,7 +65,7 @@ export function mergeReactionDirectiveChannelData(
     channelData?.telegram &&
     typeof channelData.telegram === "object" &&
     !Array.isArray(channelData.telegram)
-      ? (channelData.telegram as Record<string, unknown>)
+      ? (channelData.telegram as Record<string, any>)
       : {};
   if ("reaction" in telegramData) {
     return channelData;

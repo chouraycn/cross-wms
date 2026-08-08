@@ -30,7 +30,7 @@ export type ParsedUsageEntry = {
 };
 
 export type ParsedTranscriptEntry = {
-  message: Record<string, unknown>;
+  message: Record<string, any>;
   role?: "user" | "assistant";
   timestamp?: Date;
   durationMs?: number;

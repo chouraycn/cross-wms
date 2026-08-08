@@ -273,7 +273,7 @@ function createDiscordBinding(params: {
   agentId: string;
   conversationId: string;
   accountId?: string;
-  acp?: Record<string, unknown>;
+  acp?: Record<string, any>;
 }): ConfiguredBinding {
   return {
     type: "acp",
@@ -290,7 +290,7 @@ function createDiscordBinding(params: {
 function createTelegramGroupBinding(params: {
   agentId: string;
   conversationId: string;
-  acp?: Record<string, unknown>;
+  acp?: Record<string, any>;
 }): ConfiguredBinding {
   return {
     type: "acp",
@@ -308,7 +308,7 @@ function createFeishuBinding(params: {
   agentId: string;
   conversationId: string;
   accountId?: string;
-  acp?: Record<string, unknown>;
+  acp?: Record<string, any>;
 }): ConfiguredBinding {
   return {
     type: "acp",

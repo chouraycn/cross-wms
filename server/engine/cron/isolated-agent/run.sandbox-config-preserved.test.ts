@@ -28,7 +28,7 @@ function makeCfg() {
   };
 }
 
-function buildRunCfg(agentId: string, agentConfigOverride?: Record<string, unknown>) {
+function buildRunCfg(agentId: string, agentConfigOverride?: Record<string, any>) {
   const cfg = makeCfg();
   const agentDefaults = buildCronAgentDefaultsConfig({
     defaults: cfg.agents.defaults,
@@ -47,7 +47,7 @@ function buildRunCfg(agentId: string, agentConfigOverride?: Record<string, unkno
 function expectDefaultSandboxPreserved(
   runCfg:
     | {
-        agents?: { defaults?: { sandbox?: unknown } };
+        agents?: { defaults?: { sandbox?: any } };
       }
     | undefined,
 ) {

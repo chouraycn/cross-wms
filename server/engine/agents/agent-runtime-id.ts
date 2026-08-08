@@ -23,7 +23,7 @@ export function normalizeEmbeddedAgentRuntime(raw: string | undefined): Embedded
 }
 
 /** Normalizes an optional unknown runtime id value, returning undefined when absent/invalid. */
-export function normalizeOptionalAgentRuntimeId(raw: unknown): EmbeddedAgentRuntime | undefined {
+export function normalizeOptionalAgentRuntimeId(raw: any): EmbeddedAgentRuntime | undefined {
   if (typeof raw !== "string") {
     return undefined;
   }

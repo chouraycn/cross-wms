@@ -51,14 +51,14 @@ async function isAllowedAdditionalDirectoryPath(
 }
 
 /** Return true when a file vanished after path validation but before content read. */
-function isFileDisappearedDuringReadError(err: unknown): boolean {
+function isFileDisappearedDuringReadError(err: any): boolean {
   return (
     isFileMissingError(err) ||
     Boolean(
       err &&
       typeof err === "object" &&
       "code" in err &&
-      (err as { code?: unknown }).code === "path-mismatch",
+      (err as { code?: any }).code === "path-mismatch",
     )
   );
 }

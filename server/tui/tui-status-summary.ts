@@ -13,7 +13,7 @@ export function formatStatusSummary(summary: GatewayStatusSummary) {
   }
 
   if (!summary.linkChannel) {
-    lines.push("Link channel: unknown");
+    lines.push("Link channel: any");
   } else {
     const linkLabel = summary.linkChannel.label ?? "Link channel";
     const linked = summary.linkChannel.linked === true;

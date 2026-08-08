@@ -82,7 +82,7 @@ describe("Ghost reminder bug (issue #13317)", () => {
   const writeTelegramSessionStore = async (
     storePath: string,
     sessionKey: string,
-    overrides: Record<string, unknown>,
+    overrides: Record<string, any>,
   ): Promise<void> => {
     await fs.writeFile(
       storePath,
@@ -115,10 +115,10 @@ describe("Ghost reminder bug (issue #13317)", () => {
   };
 
   const mockCallAt = (
-    mock: { mock: { calls: Array<readonly unknown[]> } },
+    mock: { mock: { calls: Array<readonly any[]> } },
     index: number,
     label: string,
-  ): readonly unknown[] => {
+  ): readonly any[] => {
     const call = mock.mock.calls[index];
     if (!call) {
       throw new Error(`expected ${label} call`);

@@ -64,14 +64,14 @@ export {
 
 const log = createSubsystemLogger("agents/agent-command");
 
-function shouldClearReusedCliSessionAfterError(err: unknown): boolean {
+function shouldClearReusedCliSessionAfterError(err: any): boolean {
   if (readErrorName(err) === "AbortError") {
     return true;
   }
   return err instanceof FailoverError;
 }
 
-function resolveClearedCliSessionReason(err: unknown): string {
+function resolveClearedCliSessionReason(err: any): string {
   if (err instanceof FailoverError) {
     return err.reason;
   }
@@ -323,7 +323,7 @@ async function persistTextTurnTranscript(
     messages.push({
       message: userMessage,
       idempotencyLookup: "scan" as const,
-      prepareMessageAfterIdempotencyCheck: (message: unknown) =>
+      prepareMessageAfterIdempotencyCheck: (message: any) =>
         preparePersistedUserTurnMessageForTranscriptWrite(message as PersistedUserTurnMessage, {
           agentId: params.sessionAgentId,
           sessionKey: params.sessionKey,
@@ -500,7 +500,7 @@ export function runAgentAttempt(params: {
   agentDir: string;
   onAgentEvent: (evt: {
     stream: string;
-    data?: Record<string, unknown>;
+    data?: Record<string, any>;
     sessionKey?: string;
   }) => void;
   deferTerminalLifecycle?: boolean;
@@ -905,7 +905,7 @@ function sanitizeAcpDiagnosticText(value: string): string {
   return redactSensitiveText(value).replace(/\s+/g, " ").trim().slice(0, 240);
 }
 
-function acpRuntimeEventDiagnostics(event: AcpRuntimeEvent): Record<string, unknown> {
+function acpRuntimeEventDiagnostics(event: AcpRuntimeEvent): Record<string, any> {
   if (event.type === "status") {
     return {
       eventType: event.type,
@@ -991,7 +991,7 @@ export function emitAcpLifecycleEnd(params: {
 
 export function emitAcpLifecycleError(params: {
   runId: string;
-  error: unknown;
+  error: any;
   sessionKey?: string;
   lifecycleGeneration?: string;
   abortSignal?: AbortSignal;

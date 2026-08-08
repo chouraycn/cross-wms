@@ -1,11 +1,11 @@
 // 移植自 openclaw/src/config/logging.ts
 
-export function formatConfigPath(...args: unknown[]): unknown {
+export function formatConfigPath(...args: any[]): any {
   return "";
 }
-export function formatConfigUpdatedMessage(...args: unknown[]): unknown {
+export function formatConfigUpdatedMessage(...args: any[]): any {
   return "";
 }
-export function logConfigUpdated(...args: unknown[]): unknown {
+export function logConfigUpdated(...args: any[]): any {
   return undefined;
 }

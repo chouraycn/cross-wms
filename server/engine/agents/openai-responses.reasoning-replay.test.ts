@@ -31,25 +31,25 @@ function buildStorelessCustomModel(): Model<"openai-responses"> {
   };
 }
 
-function extractInput(payload: Record<string, unknown> | undefined) {
+function extractInput(payload: Record<string, any> | undefined) {
   return Array.isArray(payload?.input) ? payload.input : [];
 }
 
-function extractInputTypes(input: unknown[]) {
+function extractInputTypes(input: any[]) {
   return input
     .map((item) =>
-      item && typeof item === "object" ? (item as Record<string, unknown>).type : undefined,
+      item && typeof item === "object" ? (item as Record<string, any>).type : undefined,
     )
     .filter((t): t is string => typeof t === "string");
 }
 
-function extractInputMessages(input: unknown[]) {
+function extractInputMessages(input: any[]) {
   return input.filter(
-    (item): item is Record<string, unknown> =>
+    (item): item is Record<string, any> =>
       Boolean(item) &&
       typeof item === "object" &&
-      (item as Record<string, unknown>).type === "message" &&
-      (item as Record<string, unknown>).role === "assistant",
+      (item as Record<string, any>).type === "message" &&
+      (item as Record<string, any>).role === "assistant",
   );
 }
 
@@ -106,7 +106,7 @@ async function runAbortedOpenAIResponsesStream(params: {
   // Abort after payload capture so tests inspect serialization without network I/O.
   const controller = new AbortController();
   controller.abort();
-  let payload: Record<string, unknown> | undefined;
+  let payload: Record<string, any> | undefined;
 
   const responseStream = stream(
     params.model ?? buildModel(),
@@ -121,8 +121,8 @@ async function runAbortedOpenAIResponsesStream(params: {
         ? {}
         : { replayResponsesItemIds: params.replayResponsesItemIds ?? true }),
       signal: controller.signal,
-      onPayload: (nextPayload: unknown) => {
-        payload = nextPayload as Record<string, unknown>;
+      onPayload: (nextPayload: any) => {
+        payload = nextPayload as Record<string, any>;
       },
     } as never,
   );
@@ -187,13 +187,13 @@ describe("openai-responses reasoning replay", () => {
     expect(types).toContain("function_call_output");
 
     const replayedItemIds = input.filter(
-      (item): item is Record<string, unknown> =>
+      (item): item is Record<string, any> =>
         Boolean(item) &&
         typeof item === "object" &&
         ["reasoning", "message", "function_call"].includes(
-          String((item as Record<string, unknown>).type),
+          String((item as Record<string, any>).type),
         ) &&
-        typeof (item as Record<string, unknown>).id === "string",
+        typeof (item as Record<string, any>).id === "string",
     );
     expect(replayedItemIds).toEqual([]);
 
@@ -201,14 +201,14 @@ describe("openai-responses reasoning replay", () => {
       (item) =>
         item &&
         typeof item === "object" &&
-        (item as Record<string, unknown>).type === "function_call",
-    ) as Record<string, unknown> | undefined;
+        (item as Record<string, any>).type === "function_call",
+    ) as Record<string, any> | undefined;
     const functionCallOutput = input.find(
       (item) =>
         item &&
         typeof item === "object" &&
-        (item as Record<string, unknown>).type === "function_call_output",
-    ) as Record<string, unknown> | undefined;
+        (item as Record<string, any>).type === "function_call_output",
+    ) as Record<string, any> | undefined;
     expect(functionCall?.call_id).toBeTruthy();
     expect(functionCallOutput?.call_id).toBe(functionCall?.call_id);
   });
@@ -268,8 +268,8 @@ describe("openai-responses reasoning replay", () => {
       (item) =>
         item &&
         typeof item === "object" &&
-        (item as Record<string, unknown>).type === "function_call",
-    ) as Record<string, unknown> | undefined;
+        (item as Record<string, any>).type === "function_call",
+    ) as Record<string, any> | undefined;
     expect(functionCall?.call_id).toBe("call_123");
     expect(functionCall?.id).toBe("fc_123");
   });

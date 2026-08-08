@@ -45,7 +45,7 @@ export class QianfanAdapter implements IAiApiAdapter {
       Object.assign(headers, compat.extraHeaders);
     }
 
-    const body: Record<string, unknown> = {
+    const body: Record<string, any> = {
       messages,
       temperature,
       max_tokens: maxTokens,

@@ -42,7 +42,7 @@ async function fetchWithTimeout(url: string, options?: RequestInit): Promise<Res
 }
 
 /** 将后端 snake_case 行映射为前端 camelCase */
-function mapRow(row: Record<string, unknown>): ApiTemplateInfo {
+function mapRow(row: Record<string, any>): ApiTemplateInfo {
   return {
     id: row.id as string,
     name: row.name as string,
@@ -107,7 +107,7 @@ export async function fetchTemplate(id: string): Promise<ApiTemplateInfo> {
 /** 创建新模板 */
 export async function createTemplate(data: Partial<ApiTemplateInfo>): Promise<ApiTemplateInfo> {
   // 将 camelCase 转为后端 snake_case
-  const body: Record<string, unknown> = {
+  const body: Record<string, any> = {
     name: data.name,
     description: data.description,
     domain: data.domain,
@@ -137,7 +137,7 @@ export async function createTemplate(data: Partial<ApiTemplateInfo>): Promise<Ap
 
 /** 更新模板 */
 export async function updateTemplate(id: string, data: Partial<ApiTemplateInfo>): Promise<ApiTemplateInfo> {
-  const body: Record<string, unknown> = {
+  const body: Record<string, any> = {
     name: data.name,
     description: data.description,
     domain: data.domain,
@@ -180,7 +180,7 @@ export async function testTemplate(
   id: string,
   variables?: Record<string, string>,
   extraHeaders?: Record<string, string>,
-): Promise<unknown> {
+): Promise<any> {
   const res = await fetchWithTimeout(`${BASE}/${id}/test`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

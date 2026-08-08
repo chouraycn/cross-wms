@@ -64,16 +64,16 @@ export interface SkillContextOptions {
 function createSkillLogger(skillId: string): SkillLogger {
   const prefix = `[Skill:${skillId}]`;
   return {
-    info(msg: string, meta?: Record<string, unknown>): void {
+    info(msg: string, meta?: Record<string, any>): void {
       logger.info(prefix, msg, meta ?? '');
     },
-    warn(msg: string, meta?: Record<string, unknown>): void {
+    warn(msg: string, meta?: Record<string, any>): void {
       logger.warn(prefix, msg, meta ?? '');
     },
-    error(msg: string, meta?: Record<string, unknown>): void {
+    error(msg: string, meta?: Record<string, any>): void {
       logger.error(prefix, msg, meta ?? '');
     },
-    debug(msg: string, meta?: Record<string, unknown>): void {
+    debug(msg: string, meta?: Record<string, any>): void {
       logger.debug(prefix, msg, meta ?? '');
     },
   };
@@ -209,7 +209,7 @@ function resolveAllowedRoots(workspace: string, scope: SandboxScope): string[] {
  * Skill 之间缓存隔离。
  */
 function createSkillCache(): SkillCache {
-  const store = new Map<string, CacheEntry<unknown>>();
+  const store = new Map<string, CacheEntry<any>>();
 
   return {
     get<T>(key: string): T | undefined {
@@ -416,7 +416,7 @@ function createSkillCredentials(skillId: string): SkillCredentials {
  */
 function createSkillToolRunner(): SkillToolRunner {
   return {
-    async run(name: string, args: Record<string, unknown> = {}): Promise<string> {
+    async run(name: string, args: Record<string, any> = {}): Promise<string> {
       if (!name || typeof name !== 'string') {
         return JSON.stringify({ error: 'SkillToolRunner: 工具名不能为空' });
       }

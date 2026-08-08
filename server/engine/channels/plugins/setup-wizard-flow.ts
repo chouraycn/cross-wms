@@ -10,7 +10,7 @@ export interface WizardField {
   placeholder?: string;
   required?: boolean;
   options?: { value: string; label: string }[];
-  defaultValue?: unknown;
+  defaultValue?: any;
   helpText?: string;
 }
 
@@ -23,7 +23,7 @@ export interface WizardStep {
   nextLabel?: string;
   prevLabel?: string;
   skipable?: boolean;
-  validate?: (values: Record<string, unknown>) => string | null;
+  validate?: (values: Record<string, any>) => string | null;
 }
 
 export interface WizardFlow {
@@ -33,7 +33,7 @@ export interface WizardFlow {
   description?: string;
   steps: WizardStep[];
   currentStepIndex: number;
-  values: Record<string, unknown>;
+  values: Record<string, any>;
   completed: boolean;
   createdAt: number;
   updatedAt: number;
@@ -41,7 +41,7 @@ export interface WizardFlow {
 
 export interface WizardFlowResult {
   success: boolean;
-  values: Record<string, unknown>;
+  values: Record<string, any>;
   errors?: string[];
 }
 
@@ -59,7 +59,7 @@ export function getWizardSteps(channelId: ChannelId): WizardStep[] {
 
 export function startWizardFlow(params: {
   channelId: ChannelId;
-  initialValues?: Record<string, unknown>;
+  initialValues?: Record<string, any>;
 }): WizardFlow {
   const steps = wizardDefinitions.get(params.channelId) ?? [];
   const now = Date.now();
@@ -94,7 +94,7 @@ export function getCurrentStep(flowId: string): WizardStep | null {
 
 export function advanceWizardStep(
   flowId: string,
-  values: Record<string, unknown>
+  values: Record<string, any>
 ): {
   ok: boolean;
   error?: string;

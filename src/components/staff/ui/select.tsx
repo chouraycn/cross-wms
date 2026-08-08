@@ -8,8 +8,8 @@ import { staffTokens } from '../lib/staffTokens.js'
 // 统一到 MUI：Select 映射为 MUI Select（context 受控）。
 // SelectContent 将其 items 注册到 context，SelectTrigger 渲染 MUI Select + renderValue 显示选中标签。
 type SelectCtxValue = {
-  value: unknown
-  setValue: (v: unknown) => void
+  value: any
+  setValue: (v: any) => void
   items: React.ReactNode
   setItems: (n: React.ReactNode) => void
   placeholder: React.ReactNode
@@ -18,7 +18,7 @@ type SelectCtxValue = {
 }
 const SelectCtx = React.createContext<SelectCtxValue | null>(null)
 
-function renderDisplay(val: unknown, items: React.ReactNode, placeholder: React.ReactNode) {
+function renderDisplay(val: any, items: React.ReactNode, placeholder: React.ReactNode) {
   if (val == null || val === '') return <span style={{ color: 'var(--muted-foreground, #6d726e)' }}>{placeholder}</span>
   const arr = React.Children.toArray(items) as React.ReactElement[]
   const found = arr.find((it) => (it as React.ReactElement)?.props?.value === val)
@@ -35,7 +35,7 @@ function Select({ value, defaultValue, onValueChange, disabled, children }: {
   const [internal, setInternal] = React.useState<string | undefined>(defaultValue)
   const current = value !== undefined ? value : internal
   const setValue = React.useCallback(
-    (v: unknown) => {
+    (v: any) => {
       if (value === undefined) setInternal(v as string)
       onValueChange?.(v as string)
     },
@@ -52,7 +52,7 @@ function Select({ value, defaultValue, onValueChange, disabled, children }: {
 
 function SelectGroup({ className, children, ...props }: React.ComponentProps<'div'>) {
   return (
-    <Box component="div" data-slot="select-group" className={className} sx={{ scrollMargin: '4px', p: '4px' }} {...(props as Record<string, unknown>)}>
+    <Box component="div" data-slot="select-group" className={className} sx={{ scrollMargin: '4px', p: '4px' }} {...(props as Record<string, any>)}>
       {children}
     </Box>
   )
@@ -83,7 +83,7 @@ function SelectTrigger({ className, size = 'default', children, ...props }: { si
         sx={staffTokens.selectTrigger}
         className={className}
         renderValue={(v) => renderDisplay(v, ctx.items, ctx.placeholder)}
-        {...(props as Record<string, unknown>)}
+        {...(props as Record<string, any>)}
       >
         {ctx.items}
       </MuiSelect>
@@ -104,7 +104,7 @@ function SelectContent({ children, ...props }: React.ComponentProps<'div'>) {
 
 function SelectLabel({ className, children, ...props }: React.ComponentProps<'div'>) {
   return (
-    <MuiMenuItem disabled data-slot="select-label" className={className} sx={{ px: '6px', py: '4px', fontSize: '12px', color: 'var(--muted-foreground, #6d726e)' }} {...(props as Record<string, unknown>)}>
+    <MuiMenuItem disabled data-slot="select-label" className={className} sx={{ px: '6px', py: '4px', fontSize: '12px', color: 'var(--muted-foreground, #6d726e)' }} {...(props as Record<string, any>)}>
       {children}
     </MuiMenuItem>
   )
@@ -131,7 +131,7 @@ function SelectItem({ className, children, value, ...props }: { value: string } 
         pl: '6px',
         fontSize: '14px',
       }}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     >
       <Box
         component="span"
@@ -156,7 +156,7 @@ function SelectItem({ className, children, value, ...props }: { value: string } 
 }
 
 function SelectSeparator({ className, ...props }: React.ComponentProps<'div'>) {
-  return <MuiDivider data-slot="select-separator" className={className} {...(props as Record<string, unknown>)} />
+  return <MuiDivider data-slot="select-separator" className={className} {...(props as Record<string, any>)} />
 }
 
 function SelectScrollUpButton({ className, ...props }: React.ComponentProps<'button'>) {

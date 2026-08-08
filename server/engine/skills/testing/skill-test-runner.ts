@@ -33,8 +33,8 @@ export type TestHandler = (context: TestContext) => Promise<TestResult>;
 
 export interface MockTool {
   name: string;
-  handler: (...args: unknown[]) => Promise<unknown>;
-  calls: Array<{ args: unknown[]; timestamp: number }>;
+  handler: (...args: any[]) => Promise<any>;
+  calls: Array<{ args: any[]; timestamp: number }>;
 }
 
 export function defineTest(name: string, handler: TestHandler): SkillTest {

@@ -216,10 +216,10 @@ export function resolveMissingPluginCommandMessage(
   pluginId: string,
   _config?: OpenClawConfig,
   _options?: {
-    registry?: unknown;
-    resolveCommandAliasOwner?: (params: unknown) => unknown;
-    resolveToolOwner?: (params: unknown) => unknown;
-    resolveCliCommandSurfaceOwner?: (params: unknown) => unknown;
+    registry?: any;
+    resolveCommandAliasOwner?: (params: any) => unknown;
+    resolveToolOwner?: (params: any) => unknown;
+    resolveCliCommandSurfaceOwner?: (params: any) => unknown;
   },
 ): string | null {
   const normalizedPluginId = normalizeLowercaseStringOrEmpty(pluginId);

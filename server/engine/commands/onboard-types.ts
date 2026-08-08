@@ -34,7 +34,7 @@ type OnboardDynamicProviderOptions = {
    * Provider-specific non-interactive auth flags are plugin-owned and keyed by
    * manifest `providerAuthChoices[].optionKey` values.
    */
-  [optionKey: string]: unknown;
+  [optionKey: string]: any;
 };
 
 /** Parsed options accepted by `openclaw onboard`. */

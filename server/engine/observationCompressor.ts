@@ -122,7 +122,7 @@ export class ObservationCompressor {
           entries.push(`${key}: null`);
         } else if (typeof value === 'object') {
           // 嵌套对象：只记录 keys
-          const subKeys = Object.keys(value as Record<string, unknown>);
+          const subKeys = Object.keys(value as Record<string, any>);
           entries.push(`${key}: {${subKeys.length} keys: ${subKeys.slice(0, 5).join(', ')}}`);
         }
       }

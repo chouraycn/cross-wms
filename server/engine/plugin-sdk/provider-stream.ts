@@ -66,7 +66,7 @@ export type ProviderStreamFamily =
 
 type ProviderStreamFamilyHooks = Pick<ProviderPlugin, "wrapStreamFn">;
 
-function hasFastModeParam(extraParams: Record<string, unknown> | undefined): boolean {
+function hasFastModeParam(extraParams: Record<string, any> | undefined): boolean {
   return Boolean(
     extraParams &&
     (Object.hasOwn(extraParams, "fastMode") || Object.hasOwn(extraParams, "fast_mode")),
@@ -74,7 +74,7 @@ function hasFastModeParam(extraParams: Record<string, unknown> | undefined): boo
 }
 
 function resolveBooleanFastMode(
-  extraParams: Record<string, unknown> | undefined,
+  extraParams: Record<string, any> | undefined,
 ): boolean | undefined {
   const raw = extraParams?.fastMode ?? extraParams?.fast_mode;
   if (typeof raw === "function") {

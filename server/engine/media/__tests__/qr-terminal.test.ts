@@ -12,7 +12,7 @@ const mocks = vi.hoisted(() => ({
     async (text: string) => `data:image/png;base64,${Buffer.from(text).toString("base64")}`,
   ),
   toString: vi.fn(
-    async (text: string, opts?: Record<string, unknown>) =>
+    async (text: string, opts?: Record<string, any>) =>
       `terminal:${text}:${opts?.type ?? ""}`,
   ),
   create: vi.fn((text: string) => ({
@@ -51,7 +51,7 @@ describe("media / qr-terminal", () => {
   it("默认选项（small 未设置）应使用 toString 路径", async () => {
     const out = await renderQrTerminal("world");
     expect(toStringMock).toHaveBeenCalledTimes(1);
-    const opts = toStringMock.mock.calls[0][1] as Record<string, unknown>;
+    const opts = toStringMock.mock.calls[0][1] as Record<string, any>;
     expect(opts.type).toBe("terminal");
     expect(opts.small).toBe(false);
     expect(out).toContain("world");

@@ -34,7 +34,7 @@ type ExecApprovalFollowupRuntimeHandoffEntry = ExecApprovalFollowupRuntimeHandof
 
 const handoffs = new Map<string, ExecApprovalFollowupRuntimeHandoffEntry>();
 
-function normalizeOptionalString(value: unknown): string | undefined {
+function normalizeOptionalString(value: any): string | undefined {
   if (typeof value === "string") {
     const trimmed = value.trim();
     return trimmed || undefined;

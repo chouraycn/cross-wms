@@ -28,11 +28,11 @@ const mockGrokProvider = vi.hoisted(() => ({
   onboardingScopes: ["text-inference"],
   credentialPath: "plugins.entries.xai.config.webSearch.apiKey",
   credentialNote: "Configure Grok web search prerequisites before entering the credential.",
-  getCredentialValue: (search?: Record<string, unknown>) => search?.apiKey,
-  setCredentialValue: (searchConfigTarget: Record<string, unknown>, value: unknown) => {
+  getCredentialValue: (search?: Record<string, any>) => search?.apiKey,
+  setCredentialValue: (searchConfigTarget: Record<string, any>, value: any) => {
     searchConfigTarget.apiKey = value;
   },
-  getConfiguredCredentialValue: (config?: Record<string, unknown>) =>
+  getConfiguredCredentialValue: (config?: Record<string, any>) =>
     (
       config?.plugins as
         | {
@@ -40,27 +40,27 @@ const mockGrokProvider = vi.hoisted(() => ({
               string,
               {
                 config?: {
-                  webSearch?: { apiKey?: unknown };
+                  webSearch?: { apiKey?: any };
                 };
               }
             >;
           }
         | undefined
     )?.entries?.xai?.config?.webSearch?.apiKey,
-  setConfiguredCredentialValue: (configTarget: Record<string, unknown>, value: unknown) => {
-    const plugins = (configTarget.plugins ??= {}) as Record<string, unknown>;
-    const entries = (plugins.entries ??= {}) as Record<string, unknown>;
-    const xaiEntry = (entries.xai ??= {}) as Record<string, unknown>;
-    const xaiConfig = (xaiEntry.config ??= {}) as Record<string, unknown>;
-    const webSearch = (xaiConfig.webSearch ??= {}) as Record<string, unknown>;
+  setConfiguredCredentialValue: (configTarget: Record<string, any>, value: any) => {
+    const plugins = (configTarget.plugins ??= {}) as Record<string, any>;
+    const entries = (plugins.entries ??= {}) as Record<string, any>;
+    const xaiEntry = (entries.xai ??= {}) as Record<string, any>;
+    const xaiConfig = (xaiEntry.config ??= {}) as Record<string, any>;
+    const webSearch = (xaiConfig.webSearch ??= {}) as Record<string, any>;
     webSearch.apiKey = value;
   },
   runSetup: async ({
     config,
     prompter,
   }: {
-    config: Record<string, unknown>;
-    prompter: { select: (params: Record<string, unknown>) => Promise<string> };
+    config: Record<string, any>;
+    prompter: { select: (params: Record<string, any>) => Promise<string> };
   }) => {
     const enableXSearch = await prompter.select({
       message: "Enable x_search",
@@ -76,16 +76,16 @@ const mockGrokProvider = vi.hoisted(() => ({
       message: "Grok model",
       options: [{ value: "grok-4-1-fast", label: "grok-4-1-fast" }],
     });
-    const pluginEntries = (config.plugins as { entries?: Record<string, unknown> } | undefined)
+    const pluginEntries = (config.plugins as { entries?: Record<string, any> } | undefined)
       ?.entries;
-    const existingXaiEntry = pluginEntries?.xai as Record<string, unknown> | undefined;
+    const existingXaiEntry = pluginEntries?.xai as Record<string, any> | undefined;
     const existingXaiConfig = (
-      pluginEntries?.xai as { config?: Record<string, unknown> } | undefined
+      pluginEntries?.xai as { config?: Record<string, any> } | undefined
     )?.config;
     return {
       ...config,
       plugins: {
-        ...(config.plugins as Record<string, unknown> | undefined),
+        ...(config.plugins as Record<string, any> | undefined),
         entries: {
           ...pluginEntries,
           xai: {
@@ -114,7 +114,7 @@ const ensureOnboardingPluginInstalled = vi.hoisted(() =>
       cfg,
       entry,
     }: {
-      cfg: { plugins?: { installs?: Record<string, unknown> } };
+      cfg: { plugins?: { installs?: Record<string, any> } };
       entry: { pluginId: string; install: { npmSpec?: string } };
     }) => ({
       cfg: {

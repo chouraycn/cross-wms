@@ -29,7 +29,7 @@ router.get('/', (_req: Request, res: Response) => {
   try {
     const automations = getAllAutomations();
     res.json({ data: automations, total: automations.length });
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     res.status(500).json({ error: message });
   }
@@ -48,7 +48,7 @@ router.get('/executions', (req: Request, res: Response) => {
 
     const result = getAllRuns(limit, offset);
     res.json({ data: result.data, total: result.total });
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     res.status(500).json({ error: message });
   }
@@ -62,7 +62,7 @@ router.delete('/executions', (_req: Request, res: Response) => {
   try {
     const count = clearAllExecutions();
     res.json({ success: true, deleted: count });
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     res.status(500).json({ error: message });
   }
@@ -118,7 +118,7 @@ router.post('/events/trigger', async (req: Request, res: Response) => {
 
     const successCount = results.filter((r) => r.status === 'fulfilled' && r.value).length;
     res.json({ triggered: automations.length, success: successCount, total: automations.length });
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     res.status(500).json({ error: message });
   }
@@ -136,7 +136,7 @@ router.get('/:id', (req: Request, res: Response) => {
       return;
     }
     res.json(automation);
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     res.status(500).json({ error: message });
   }
@@ -175,7 +175,7 @@ router.post('/', (req: Request, res: Response) => {
     });
 
     res.status(201).json(automation);
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     res.status(500).json({ error: message });
   }
@@ -216,7 +216,7 @@ router.put('/:id', (req: Request, res: Response) => {
       runCount: 'runCount',
     };
 
-    const updateData: Record<string, unknown> = {};
+    const updateData: Record<string, any> = {};
     for (const [bodyKey, dataKey] of Object.entries(allowedFields)) {
       if (bodyKey in req.body && req.body[bodyKey] !== undefined) {
         updateData[dataKey] = req.body[bodyKey];
@@ -235,7 +235,7 @@ router.put('/:id', (req: Request, res: Response) => {
     }
 
     res.json(updated);
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     res.status(500).json({ error: message });
   }
@@ -260,7 +260,7 @@ router.delete('/:id', (req: Request, res: Response) => {
       return;
     }
     res.json({ success: true });
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     res.status(500).json({ error: message });
   }
@@ -293,7 +293,7 @@ router.post('/:id/trigger', async (req: Request, res: Response) => {
     }
 
     res.json({ acknowledged: true, result });
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     res.status(500).json({ error: message });
   }
@@ -318,7 +318,7 @@ router.get('/:id/executions', (req: Request, res: Response) => {
 
     const result = getRunsByAutomationId(req.params.id, limit, offset);
     res.json(result);
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     res.status(500).json({ error: message });
   }
@@ -338,13 +338,13 @@ router.get('/:id/webhook-config', (req: Request, res: Response) => {
       return;
     }
 
-    const cfg = automation.webhookConfig as Record<string, unknown> | null;
+    const cfg = automation.webhookConfig as Record<string, any> | null;
     res.json({
       enabled: cfg?.enabled ?? false,
       hasSecret: !!cfg?.secretEncrypted,
       // 不返回 secretEncrypted 明文
     });
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     res.status(500).json({ error: message });
   }
@@ -364,7 +364,7 @@ router.put('/:id/webhook-config', (req: Request, res: Response) => {
       return;
     }
 
-    const currentCfg = (automation.webhookConfig ?? {}) as Record<string, unknown>;
+    const currentCfg = (automation.webhookConfig ?? {}) as Record<string, any>;
     const secret = typeof req.body.secret === 'string' ? req.body.secret : '';
 
     if (secret) {
@@ -382,7 +382,7 @@ router.put('/:id/webhook-config', (req: Request, res: Response) => {
 
     const updated = getAutomationById(req.params.id);
     res.json(updated?.webhookConfig ?? { enabled: false, hasSecret: false });
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     res.status(500).json({ error: message });
   }
@@ -408,7 +408,7 @@ router.post('/webhook/:id', async (req: Request, res: Response) => {
     }
 
     // 提取 webhook 配置中的加密 secret
-    const webhookConfig = (automation.webhookConfig ?? {}) as Record<string, unknown>;
+    const webhookConfig = (automation.webhookConfig ?? {}) as Record<string, any>;
     const secretEncrypted = webhookConfig.secretEncrypted as string | undefined;
     if (!secretEncrypted) {
       res.status(400).json({ error: 'Webhook secret not configured' });
@@ -453,7 +453,7 @@ router.post('/webhook/:id', async (req: Request, res: Response) => {
     });
 
     res.json({ acknowledged: true, automationId });
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     res.status(500).json({ error: message });
   }

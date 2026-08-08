@@ -119,7 +119,7 @@ function makeFinishChunk(
 
 describe("OpenAI-compatible completions params", () => {
   it("skips unreadable schemas while preserving healthy official OpenAI tools", async () => {
-    let capturedPayload: Record<string, unknown> | undefined;
+    let capturedPayload: Record<string, any> | undefined;
     const stream = streamOpenAICompletions(
       model,
       {
@@ -146,7 +146,7 @@ describe("OpenAI-compatible completions params", () => {
         apiKey: "sk-test",
         toolChoice: { type: "function", function: { name: "lookup" } },
         onPayload(payload) {
-          capturedPayload = payload as Record<string, unknown>;
+          capturedPayload = payload as Record<string, any>;
           throw new Error("stop before network");
         },
       },
@@ -200,7 +200,7 @@ describe("OpenAI-compatible completions params", () => {
   });
 
   it("preserves the empty tools marker for tool history after quarantining every schema", async () => {
-    let capturedPayload: Record<string, unknown> | undefined;
+    let capturedPayload: Record<string, any> | undefined;
     const stream = streamOpenAICompletions(
       model,
       {
@@ -236,7 +236,7 @@ describe("OpenAI-compatible completions params", () => {
       {
         apiKey: "sk-test",
         onPayload(payload) {
-          capturedPayload = payload as Record<string, unknown>;
+          capturedPayload = payload as Record<string, any>;
           throw new Error("stop before network");
         },
       },
@@ -249,7 +249,7 @@ describe("OpenAI-compatible completions params", () => {
   });
 
   it("does not reread an unreadable tool inventory length", async () => {
-    let capturedPayload: Record<string, unknown> | undefined;
+    let capturedPayload: Record<string, any> | undefined;
     const tools = new Proxy([], {
       get(target, property, receiver) {
         if (property === "length") {
@@ -261,7 +261,7 @@ describe("OpenAI-compatible completions params", () => {
     const stream = streamOpenAICompletions(model, { ...context, tools } as never, {
       apiKey: "sk-test",
       onPayload(payload) {
-        capturedPayload = payload as Record<string, unknown>;
+        capturedPayload = payload as Record<string, any>;
         throw new Error("stop before network");
       },
     });
@@ -273,12 +273,12 @@ describe("OpenAI-compatible completions params", () => {
   });
 
   it("clamps requested max tokens to the model output cap", async () => {
-    let capturedMaxTokens: unknown;
+    let capturedMaxTokens: any;
     const stream = streamOpenAICompletions(createModel(32_000), context, {
       apiKey: "sk-test",
       maxTokens: 200_000,
       onPayload(payload) {
-        capturedMaxTokens = (payload as { max_completion_tokens?: unknown }).max_completion_tokens;
+        capturedMaxTokens = (payload as { max_completion_tokens?: any }).max_completion_tokens;
         throw new Error("stop before network");
       },
     });
@@ -290,12 +290,12 @@ describe("OpenAI-compatible completions params", () => {
   });
 
   it("forwards simple stop sequences to request params", async () => {
-    let capturedStop: unknown;
+    let capturedStop: any;
     const stream = streamSimpleOpenAICompletions(createModel(32_000), context, {
       apiKey: "sk-test",
       stop: ["STOP"],
       onPayload(payload) {
-        capturedStop = (payload as { stop?: unknown }).stop;
+        capturedStop = (payload as { stop?: any }).stop;
         throw new Error("stop before network");
       },
     });
@@ -307,8 +307,8 @@ describe("OpenAI-compatible completions params", () => {
   });
 
   it("keeps prompt cache keys when long retention is disabled", async () => {
-    let capturedCacheKey: unknown;
-    let capturedRetention: unknown;
+    let capturedCacheKey: any;
+    let capturedRetention: any;
     const stream = streamOpenAICompletions(
       {
         ...createModel(32_000),
@@ -323,8 +323,8 @@ describe("OpenAI-compatible completions params", () => {
         sessionId: "session-123",
         cacheRetention: "long",
         onPayload(payload) {
-          capturedCacheKey = (payload as { prompt_cache_key?: unknown }).prompt_cache_key;
-          capturedRetention = (payload as { prompt_cache_retention?: unknown })
+          capturedCacheKey = (payload as { prompt_cache_key?: any }).prompt_cache_key;
+          capturedRetention = (payload as { prompt_cache_retention?: any })
             .prompt_cache_retention;
           throw new Error("stop before network");
         },
@@ -339,15 +339,15 @@ describe("OpenAI-compatible completions params", () => {
   });
 
   it("omits prompt cache retention when third-party models have not opted into cache keys", async () => {
-    let capturedCacheKey: unknown;
-    let capturedRetention: unknown;
+    let capturedCacheKey: any;
+    let capturedRetention: any;
     const stream = streamOpenAICompletions(createModel(32_000), context, {
       apiKey: "sk-test",
       sessionId: "session-123",
       cacheRetention: "long",
       onPayload(payload) {
-        capturedCacheKey = (payload as { prompt_cache_key?: unknown }).prompt_cache_key;
-        capturedRetention = (payload as { prompt_cache_retention?: unknown })
+        capturedCacheKey = (payload as { prompt_cache_key?: any }).prompt_cache_key;
+        capturedRetention = (payload as { prompt_cache_retention?: any })
           .prompt_cache_retention;
         throw new Error("stop before network");
       },
@@ -361,14 +361,14 @@ describe("OpenAI-compatible completions params", () => {
   });
 
   it("keeps OpenAI long retention even when no cache key is available", async () => {
-    let capturedCacheKey: unknown;
-    let capturedRetention: unknown;
+    let capturedCacheKey: any;
+    let capturedRetention: any;
     const stream = streamOpenAICompletions(model, context, {
       apiKey: "sk-test",
       cacheRetention: "long",
       onPayload(payload) {
-        capturedCacheKey = (payload as { prompt_cache_key?: unknown }).prompt_cache_key;
-        capturedRetention = (payload as { prompt_cache_retention?: unknown })
+        capturedCacheKey = (payload as { prompt_cache_key?: any }).prompt_cache_key;
+        capturedRetention = (payload as { prompt_cache_retention?: any })
           .prompt_cache_retention;
         throw new Error("stop before network");
       },
@@ -382,7 +382,7 @@ describe("OpenAI-compatible completions params", () => {
   });
 
   it("strips the internal cache boundary from OpenAI-compatible system prompts", async () => {
-    let capturedMessages: unknown;
+    let capturedMessages: any;
     const stream = streamOpenAICompletions(
       createModel(32_000),
       {
@@ -392,7 +392,7 @@ describe("OpenAI-compatible completions params", () => {
       {
         apiKey: "sk-test",
         onPayload(payload) {
-          capturedMessages = (payload as { messages?: unknown }).messages;
+          capturedMessages = (payload as { messages?: any }).messages;
           throw new Error("stop before network");
         },
       },
@@ -401,7 +401,7 @@ describe("OpenAI-compatible completions params", () => {
     const result = await stream.result();
 
     expect(result.stopReason).toBe("error");
-    const messages = capturedMessages as Array<{ role: string; content: unknown }>;
+    const messages = capturedMessages as Array<{ role: string; content: any }>;
     expect(messages[0]).toEqual({
       role: "system",
       content: "Stable prefix\nDynamic suffix",
@@ -409,7 +409,7 @@ describe("OpenAI-compatible completions params", () => {
   });
 
   it("splits the cache boundary before applying Anthropic cache control for OpenRouter Anthropic models", async () => {
-    let capturedMessages: unknown;
+    let capturedMessages: any;
     const stream = streamOpenAICompletions(
       {
         ...createModel(32_000),
@@ -424,7 +424,7 @@ describe("OpenAI-compatible completions params", () => {
       {
         apiKey: "sk-test",
         onPayload(payload) {
-          capturedMessages = (payload as { messages?: unknown }).messages;
+          capturedMessages = (payload as { messages?: any }).messages;
           throw new Error("stop before network");
         },
       },
@@ -433,7 +433,7 @@ describe("OpenAI-compatible completions params", () => {
     const result = await stream.result();
 
     expect(result.stopReason).toBe("error");
-    const messages = capturedMessages as Array<{ role: string; content: unknown }>;
+    const messages = capturedMessages as Array<{ role: string; content: any }>;
     expect(messages[0]).toEqual({
       role: "system",
       content: [
@@ -451,7 +451,7 @@ describe("OpenAI-compatible completions params", () => {
   });
 
   it("adds reasoning_content replay fields for Xiaomi MiMo assistant tool history", async () => {
-    let capturedMessages: unknown;
+    let capturedMessages: any;
     const stream = streamOpenAICompletions(
       {
         ...createModel(32_000),
@@ -510,7 +510,7 @@ describe("OpenAI-compatible completions params", () => {
       {
         apiKey: "sk-test",
         onPayload(payload) {
-          capturedMessages = (payload as { messages?: unknown }).messages;
+          capturedMessages = (payload as { messages?: any }).messages;
           throw new Error("stop before network");
         },
       },
@@ -519,7 +519,7 @@ describe("OpenAI-compatible completions params", () => {
     const result = await stream.result();
 
     expect(result.stopReason).toBe("error");
-    const messages = capturedMessages as Array<Record<string, unknown>>;
+    const messages = capturedMessages as Array<Record<string, any>>;
     expect(messages.find((message) => message.role === "assistant")).toMatchObject({
       role: "assistant",
       reasoning_content: "",

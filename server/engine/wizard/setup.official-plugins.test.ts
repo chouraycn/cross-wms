@@ -5,7 +5,7 @@ import { createNonExitingRuntime } from "../runtime.js";
 import type { WizardMultiSelectParams, WizardPrompter } from "./prompts.js";
 
 const ensureOnboardingPluginInstalled = vi.hoisted(() =>
-  vi.fn(async ({ cfg }: { cfg: Record<string, unknown> }) => ({
+  vi.fn(async ({ cfg }: { cfg: Record<string, any> }) => ({
     cfg,
     installed: true,
     status: "installed",

@@ -11,15 +11,15 @@
 // 降级类型：AssistantMessage 的最小占位（openclaw 的 ../llm/types.js 中定义）
 export type AssistantMessage = {
   role?: string;
-  content?: unknown;
-  [key: string]: unknown;
+  content?: any;
+  [key: string]: any;
 };
 
 // 降级类型：AssistantMessageEvent 的最小占位（openclaw 的 ../llm/types.js 中定义）
 export type AssistantMessageEvent = {
   type?: string;
-  delta?: unknown;
-  [key: string]: unknown;
+  delta?: any;
+  [key: string]: any;
 };
 
 export interface MutableAssistantMessageEventStream extends AsyncIterable<AssistantMessageEvent> {

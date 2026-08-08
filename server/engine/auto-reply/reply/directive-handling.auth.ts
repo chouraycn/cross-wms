@@ -26,8 +26,8 @@ import { maskApiKey } from '@openclaw-src/utils/mask-api-key.js';
 export type ModelAuthDetailMode = "compact" | "verbose";
 
 function resolveStoredCredentialLabel(params: {
-  value: unknown;
-  refValue: unknown;
+  value: any;
+  refValue: any;
   mode: ModelAuthDetailMode;
 }): string {
   const masked = maskApiKey(typeof params.value === "string" ? params.value : "");
@@ -41,7 +41,7 @@ function resolveStoredCredentialLabel(params: {
 }
 
 function formatExpirationLabel(
-  expires: unknown,
+  expires: any,
   now: number,
   formatUntil: (timestampMs: number) => string,
   compactExpiredPrefix = " expired",
@@ -57,7 +57,7 @@ function formatFlagsSuffix(flags: string[]) {
   return flags.length > 0 ? ` (${flags.join(", ")})` : "";
 }
 
-function isStoredAuthProfileType(value: unknown): value is AuthProfileCredential["type"] {
+function isStoredAuthProfileType(value: any): value is AuthProfileCredential["type"] {
   return value === "api_key" || value === "oauth" || value === "token";
 }
 

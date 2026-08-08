@@ -5,11 +5,11 @@
  * 类型定义保留形状供下游引用。
  */
 
-export const OPENAI_COMPATIBLE_EMBEDDING_PROVIDER_ID: unknown = undefined;
+export const OPENAI_COMPATIBLE_EMBEDDING_PROVIDER_ID: any = undefined;
 
 export type OpenAICompatibleEmbeddingClient = unknown;
 
 
 
-export const openAICompatibleEmbeddingProviderAdapter: unknown = undefined;
+export const openAICompatibleEmbeddingProviderAdapter: any = undefined;
 

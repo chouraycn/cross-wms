@@ -198,14 +198,14 @@ export type ReplyPayloadDelivery = {
   pin?: boolean | ReplyPayloadDeliveryPin;
 };
 
-function normalizeButtonStyle(value: unknown): InteractiveButtonStyle | undefined {
+function normalizeButtonStyle(value: any): InteractiveButtonStyle | undefined {
   const style = normalizeOptionalLowercaseString(value);
   return style === "primary" || style === "secondary" || style === "success" || style === "danger"
     ? style
     : undefined;
 }
 
-function normalizePresentationTone(value: unknown): MessagePresentationTone | undefined {
+function normalizePresentationTone(value: any): MessagePresentationTone | undefined {
   const tone = normalizeOptionalLowercaseString(value);
   return tone === "info" ||
     tone === "success" ||
@@ -216,7 +216,7 @@ function normalizePresentationTone(value: unknown): MessagePresentationTone | un
     : undefined;
 }
 
-function normalizePresentationAction(raw: unknown): MessagePresentationAction | undefined {
+function normalizePresentationAction(raw: any): MessagePresentationAction | undefined {
   const record = toRecord(raw);
   if (!record) {
     return undefined;
@@ -233,7 +233,7 @@ function normalizePresentationAction(raw: unknown): MessagePresentationAction | 
   return undefined;
 }
 
-function normalizeButton(raw: unknown): InteractiveReplyButton | undefined {
+function normalizeButton(raw: any): InteractiveReplyButton | undefined {
   const record = toRecord(raw);
   if (!record) {
     return undefined;
@@ -267,7 +267,7 @@ function normalizeButton(raw: unknown): InteractiveReplyButton | undefined {
   };
 }
 
-function normalizeOption(raw: unknown): InteractiveReplyOption | undefined {
+function normalizeOption(raw: any): InteractiveReplyOption | undefined {
   const record = toRecord(raw);
   if (!record) {
     return undefined;
@@ -282,13 +282,13 @@ function normalizeOption(raw: unknown): InteractiveReplyOption | undefined {
   return { label, ...(action ? { action } : {}), value };
 }
 
-function normalizeList<T>(value: unknown, normalizeEntry: (entry: unknown) => T | undefined): T[] {
+function normalizeList<T>(value: any, normalizeEntry: (entry: any) => T | undefined): T[] {
   return Array.isArray(value)
     ? value.map((entry) => normalizeEntry(entry)).filter((entry): entry is T => Boolean(entry))
     : [];
 }
 
-function normalizeInteractiveBlock(raw: unknown): InteractiveReplyBlock | undefined {
+function normalizeInteractiveBlock(raw: any): InteractiveReplyBlock | undefined {
   const record = toRecord(raw);
   if (!record) {
     return undefined;
@@ -318,7 +318,7 @@ function normalizeInteractiveBlock(raw: unknown): InteractiveReplyBlock | undefi
 /**
  * @deprecated Use normalizeMessagePresentation.
  */
-export function normalizeInteractiveReply(raw: unknown): InteractiveReply | undefined {
+export function normalizeInteractiveReply(raw: any): InteractiveReply | undefined {
   const record = toRecord(raw);
   if (!record) {
     return undefined;
@@ -327,7 +327,7 @@ export function normalizeInteractiveReply(raw: unknown): InteractiveReply | unde
   return blocks.length > 0 ? { blocks } : undefined;
 }
 
-function normalizePresentationBlock(raw: unknown): MessagePresentationBlock | undefined {
+function normalizePresentationBlock(raw: any): MessagePresentationBlock | undefined {
   const record = toRecord(raw);
   if (!record) {
     return undefined;
@@ -357,7 +357,7 @@ function normalizePresentationBlock(raw: unknown): MessagePresentationBlock | un
   return undefined;
 }
 
-export function normalizeMessagePresentation(raw: unknown): MessagePresentation | undefined {
+export function normalizeMessagePresentation(raw: any): MessagePresentation | undefined {
   const record = toRecord(raw);
   if (!record) {
     return undefined;
@@ -377,11 +377,11 @@ export function normalizeMessagePresentation(raw: unknown): MessagePresentation 
 /**
  * @deprecated Use hasMessagePresentationBlocks.
  */
-export function hasInteractiveReplyBlocks(value: unknown): value is InteractiveReply {
+export function hasInteractiveReplyBlocks(value: any): value is InteractiveReply {
   return Boolean(normalizeInteractiveReply(value));
 }
 
-export function hasMessagePresentationBlocks(value: unknown): value is MessagePresentation {
+export function hasMessagePresentationBlocks(value: any): value is MessagePresentation {
   return Boolean(normalizeMessagePresentation(value));
 }
 
@@ -549,7 +549,7 @@ export function renderMessagePresentationFallbackText(params: {
   return rendered || normalizeOptionalString(params.emptyFallback) || "";
 }
 
-export function hasReplyChannelData(value: unknown): value is Record<string, unknown> {
+export function hasReplyChannelData(value: any): value is Record<string, any> {
   return Boolean(
     value && typeof value === "object" && !Array.isArray(value) && Object.keys(value).length > 0,
   );
@@ -559,8 +559,8 @@ export function hasReplyContent(params: {
   text?: string | null;
   mediaUrl?: string | null;
   mediaUrls?: ReadonlyArray<string | null | undefined>;
-  interactive?: unknown;
-  presentation?: unknown;
+  interactive?: any;
+  presentation?: any;
   hasChannelData?: boolean;
   extraContent?: boolean;
 }): boolean {
@@ -582,9 +582,9 @@ export function hasReplyPayloadContent(
     text?: string | null;
     mediaUrl?: string | null;
     mediaUrls?: ReadonlyArray<string | null | undefined>;
-    interactive?: unknown;
-    presentation?: unknown;
-    channelData?: unknown;
+    interactive?: any;
+    presentation?: any;
+    channelData?: any;
   },
   options?: {
     trimText?: boolean;

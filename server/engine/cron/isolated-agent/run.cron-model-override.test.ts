@@ -20,7 +20,7 @@ const runCronIsolatedAgentTurn = await loadRunCronIsolatedAgentTurn();
 
 // ---------- helpers ----------
 
-function makeJob(overrides?: Record<string, unknown>) {
+function makeJob(overrides?: Record<string, any>) {
   return {
     id: "digest-job",
     name: "Daily Digest",
@@ -35,7 +35,7 @@ function makeJob(overrides?: Record<string, unknown>) {
   } as never;
 }
 
-function makeParams(overrides?: Record<string, unknown>) {
+function makeParams(overrides?: Record<string, any>) {
   return {
     cfg: {},
     deps: {} as never,
@@ -46,7 +46,7 @@ function makeParams(overrides?: Record<string, unknown>) {
   };
 }
 
-function makeFreshSessionEntry(overrides?: Record<string, unknown>) {
+function makeFreshSessionEntry(overrides?: Record<string, any>) {
   return {
     ...makeCronSessionEntry(),
     // Crucially: no model or modelProvider — simulates a brand-new session
@@ -56,7 +56,7 @@ function makeFreshSessionEntry(overrides?: Record<string, unknown>) {
   };
 }
 
-function makeSuccessfulRunResult(overrides?: Record<string, unknown>) {
+function makeSuccessfulRunResult(overrides?: Record<string, any>) {
   return {
     result: {
       payloads: [{ text: "digest complete" }],
@@ -141,8 +141,8 @@ describe("runCronIsolatedAgentTurn — cron model override (#21057)", () => {
       systemSent?: boolean;
     }> = [];
     updateSessionStoreMock.mockImplementation(
-      async (_path: string, cb: (s: Record<string, unknown>) => void) => {
-        const store: Record<string, unknown> = {};
+      async (_path: string, cb: (s: Record<string, any>) => void) => {
+        const store: Record<string, any> = {};
         cb(store);
         const entry = Object.values(store)[0] as
           | { model?: string; modelProvider?: string; systemSent?: boolean }

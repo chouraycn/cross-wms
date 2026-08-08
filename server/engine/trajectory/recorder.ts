@@ -42,7 +42,7 @@ export type TrajectoryRecorderInstance = {
   enabled: true;
   filePath: string;
   recorder: TrajectoryRecorder;
-  recordEvent: (type: string, data?: Record<string, unknown>) => void;
+  recordEvent: (type: string, data?: Record<string, any>) => void;
   flush: () => Promise<void>;
   describeFlushState: () => string | undefined;
 };
@@ -52,7 +52,7 @@ export type TrajectoryRecorderInstance = {
  * 参考 openclaw toTrajectoryToolDefinitions。
  */
 export function toTrajectoryToolDefinitions(
-  tools: ReadonlyArray<{ name?: string; description?: string; parameters?: unknown }>,
+  tools: ReadonlyArray<{ name?: string; description?: string; parameters?: any }>,
 ): TrajectoryToolDefinition[] {
   return tools
     .flatMap((tool) => {

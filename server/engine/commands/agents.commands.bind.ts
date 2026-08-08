@@ -137,7 +137,7 @@ async function resolveParsedBindingsOrExit(params: {
 function emitJsonPayload(params: {
   runtime: RuntimeEnv;
   json: boolean | undefined;
-  payload: unknown;
+  payload: any;
   conflictCount?: number;
 }): boolean {
   if (!params.json) {

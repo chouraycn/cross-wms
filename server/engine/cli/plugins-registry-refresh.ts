@@ -59,7 +59,7 @@ export async function refreshPluginRegistryAfterConfigMutation(params: {
   reason: InstalledPluginIndexRefreshReason;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
-  installRecords?: Record<string, unknown>;
+  installRecords?: Record<string, any>;
   invalidateRuntimeCache?: boolean;
   policyPluginIds?: readonly string[];
   traceCommand?: string;

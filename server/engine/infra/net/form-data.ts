@@ -1,9 +1,9 @@
 // @ts-nocheck
-export function isFormDataLike(value: unknown): value is FormData {
+export function isFormDataLike(value: any): value is FormData {
   return (
     typeof value === "object" &&
     value !== null &&
     typeof (value as FormData).entries === "function" &&
-    (value as { [Symbol.toStringTag]?: unknown })[Symbol.toStringTag] === "FormData"
+    (value as { [Symbol.toStringTag]?: any })[Symbol.toStringTag] === "FormData"
   );
 }

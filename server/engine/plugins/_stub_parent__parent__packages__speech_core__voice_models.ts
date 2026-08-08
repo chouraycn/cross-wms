@@ -9,11 +9,11 @@
 //
 // 类型导出保留了合理的占位定义，使调用方仍可使用相关类型断言。
 
-export const resolveVoiceModelRefs = (_value: unknown): Array<{ provider: string }> => [];
+export const resolveVoiceModelRefs = (_value: any): Array<{ provider: string }> => [];
 
 // Auto-generated stub exports (added by auto-fix-exports.mjs)
-export const synthesizeVoiceModelCatalogEntries = (_params: unknown): never[] => [];
+export const synthesizeVoiceModelCatalogEntries = (_params: any): never[] => [];
 
 // Type exports for voice model contracts.
-export type VoiceModelCapabilities = { [key: string]: unknown };
-export type VoiceModelProvider = { id: string; [key: string]: unknown };
+export type VoiceModelCapabilities = { [key: string]: any };
+export type VoiceModelProvider = { id: string; [key: string]: any };

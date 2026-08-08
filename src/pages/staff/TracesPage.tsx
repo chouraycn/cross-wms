@@ -29,7 +29,7 @@ const truncateCellSx = {
 
 export default function TracesPage() {
   const [rows, setRows] = useState<TraceSummary[]>([]);
-  const [detail, setDetail] = useState<Record<string, unknown> | null>(null);
+  const [detail, setDetail] = useState<Record<string, any> | null>(null);
   const [page, setPage] = useState(1);
 
   const load = () =>
@@ -49,7 +49,7 @@ export default function TracesPage() {
   );
 
   async function openDetail(row: TraceSummary) {
-    const result = await api.get<Record<string, unknown>>(`/traces/${row.session_id}?tenant_id=${TENANT_ID}`);
+    const result = await api.get<Record<string, any>>(`/traces/${row.session_id}?tenant_id=${TENANT_ID}`);
     setDetail(result);
   }
 

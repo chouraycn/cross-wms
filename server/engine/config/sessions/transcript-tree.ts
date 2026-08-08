@@ -1,5 +1,5 @@
 // Transcript tree helpers keep append-only leaf controls consistent across readers.
-type TranscriptRecord = Record<string, unknown>;
+type TranscriptRecord = Record<string, any>;
 
 export type SessionTranscriptTreeEntry = {
   id: string;
@@ -25,15 +25,15 @@ export type SessionTranscriptTree<T> = {
   hasInvalidLeafControl: boolean;
 };
 
-function isRecord(value: unknown): value is TranscriptRecord {
+function isRecord(value: any): value is TranscriptRecord {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function readNonEmptyString(value: unknown): string | undefined {
+function readNonEmptyString(value: any): string | undefined {
   return typeof value === "string" && value.trim().length > 0 ? value : undefined;
 }
 
-function isCanonicalSessionEntryType(value: unknown): boolean {
+function isCanonicalSessionEntryType(value: any): boolean {
   switch (value) {
     case "message":
     case "thinking_level_change":
@@ -51,17 +51,17 @@ function isCanonicalSessionEntryType(value: unknown): boolean {
 }
 
 export function isCanonicalSessionTranscriptEntry(
-  record: unknown,
+  record: any,
 ): record is TranscriptRecord & { type: string } {
   return isRecord(record) && isCanonicalSessionEntryType(record.type);
 }
 
-export function isSessionTranscriptSideAppendEntry(record: unknown): boolean {
+export function isSessionTranscriptSideAppendEntry(record: any): boolean {
   return isCanonicalSessionTranscriptEntry(record) && record.appendMode === "side";
 }
 
 export function isSessionTranscriptLeafControl(
-  record: unknown,
+  record: any,
 ): record is TranscriptRecord & { type: "leaf" } {
   return (
     isRecord(record) &&
@@ -77,7 +77,7 @@ export function isSessionTranscriptLeafControl(
  * and descendants that reference the marker continue through that same target.
  */
 export function parseSessionTranscriptTreeEntry(
-  record: unknown,
+  record: any,
 ): SessionTranscriptTreeEntry | undefined {
   if (!isRecord(record) || record.type === "session" || !Object.hasOwn(record, "parentId")) {
     return undefined;
@@ -120,7 +120,7 @@ export function parseSessionTranscriptTreeEntry(
 }
 
 function parseParentlessCanonicalEntry(
-  record: unknown,
+  record: any,
   parentId: string | null,
 ): SessionTranscriptTreeEntry | undefined {
   if (!isCanonicalSessionTranscriptEntry(record) || Object.hasOwn(record, "parentId")) {

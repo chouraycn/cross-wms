@@ -13,10 +13,10 @@ import { createMessageReceiveContext, shouldAckMessageAfterStage } from "./recei
 import { classifyDurableSendRecoveryState, createDurableMessageStateRecord } from "./state.js";
 
 function requireMockCall(
-  mock: { mock: { calls: unknown[][] } },
+  mock: { mock: { calls: any[][] } },
   callIndex: number,
   label: string,
-): unknown[] {
+): any[] {
   const resolvedIndex = callIndex < 0 ? mock.mock.calls.length + callIndex : callIndex;
   const call = mock.mock.calls[resolvedIndex];
   if (!call) {
@@ -291,7 +291,7 @@ describe("message lifecycle primitives", () => {
     expect(deliverNormally).not.toHaveBeenCalled();
     expect(handlePreviewEditError).toHaveBeenCalledTimes(1);
     const [editErrorContext] = requireMockCall(handlePreviewEditError, 0, "preview edit error") as [
-      { error: unknown; id?: string; edit?: unknown; payload?: unknown },
+      { error: any; id?: string; edit?: any; payload?: any },
     ];
     expect(editErrorContext.error).toBe(editError);
     expect(editErrorContext.id).toBe("preview-maybe-final");

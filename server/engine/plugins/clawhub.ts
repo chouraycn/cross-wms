@@ -67,8 +67,8 @@ type ClawHubInstallFailure = {
 };
 
 type ClawHubFileEntryLike = {
-  path?: unknown;
-  sha256?: unknown;
+  path?: any;
+  sha256?: any;
 };
 
 type ClawHubFileVerificationEntry = {
@@ -252,7 +252,7 @@ function readArtifactResolverVersion(
 }
 
 function isClawHubPackageFamily(
-  value: unknown,
+  value: any,
 ): value is NonNullable<ClawHubPackageVersion["package"]>["family"] {
   return value === "code-plugin" || value === "bundle-plugin" || value === "skill";
 }
@@ -321,18 +321,18 @@ function buildClawHubInstallFailure(
   return { ok: false, error, code };
 }
 
-function isClawHubInstallFailure(value: unknown): value is ClawHubInstallFailure {
+function isClawHubInstallFailure(value: any): value is ClawHubInstallFailure {
   return Boolean(
     value &&
     typeof value === "object" &&
     "ok" in value &&
-    Object.is((value as { ok?: unknown }).ok, false) &&
+    Object.is((value as { ok?: any }).ok, false) &&
     "error" in value,
   );
 }
 
 function mapClawHubRequestError(
-  error: unknown,
+  error: any,
   context: { stage: "package" | "version"; name: string; version?: string },
 ): ClawHubInstallFailure {
   if (error instanceof ClawHubRequestError && (error as ClawHubRequestErrorInstance).status === 404) {
@@ -350,7 +350,7 @@ function mapClawHubRequestError(
   return buildClawHubInstallFailure(formatErrorMessage(error));
 }
 
-function isMissingArtifactResolverRoute(error: unknown): boolean {
+function isMissingArtifactResolverRoute(error: any): boolean {
   const instance = error as ClawHubRequestErrorInstance;
   return (
     error instanceof ClawHubRequestError &&
@@ -384,7 +384,7 @@ function buildArtifactResolverResponseFromVersion(params: {
 }
 
 function formatClawHubClawPackDownloadError(params: {
-  error: unknown;
+  error: any;
   packageName: string;
   version: string;
 }): string {
@@ -412,11 +412,11 @@ function resolveRequestedVersion(params: {
   return resolveLatestVersionFromPackage(params.detail);
 }
 
-function readTrimmedString(value: unknown): string | null {
+function readTrimmedString(value: any): string | null {
   return normalizeOptionalString(value) ?? null;
 }
 
-function normalizeClawHubRelativePath(value: unknown): string | null {
+function normalizeClawHubRelativePath(value: any): string | null {
   if (typeof value !== "string" || value.length === 0) {
     return null;
   }
@@ -433,7 +433,7 @@ function normalizeClawHubRelativePath(value: unknown): string | null {
   return value;
 }
 
-function describeInvalidClawHubRelativePath(value: unknown): string {
+function describeInvalidClawHubRelativePath(value: any): string {
   if (typeof value !== "string") {
     return `non-string value of type ${typeof value}`;
   }
@@ -459,7 +459,7 @@ function describeInvalidClawHubRelativePath(value: unknown): string {
   return `path "${value}" failed validation for an unknown reason`;
 }
 
-function describeInvalidClawHubSha256(value: unknown): string {
+function describeInvalidClawHubSha256(value: any): string {
   if (typeof value !== "string") {
     return `non-string value of type ${typeof value}`;
   }
@@ -620,7 +620,7 @@ async function readLimitedClawHubArchiveEntry<T>(
       settled = true;
       resolve(handlers.onEnd());
     });
-    stream.once("error", (error: unknown) => {
+    stream.once("error", (error: any) => {
       if (settled) {
         return;
       }
@@ -670,7 +670,7 @@ function validateClawHubArchiveMetaJson(params: {
   version: string;
   bytes: Buffer;
 }): ClawHubInstallFailure | null {
-  let parsed: unknown;
+  let parsed: any;
   try {
     parsed = JSON.parse(params.bytes.toString("utf8"));
   } catch {
@@ -685,7 +685,7 @@ function validateClawHubArchiveMetaJson(params: {
       CLAWHUB_INSTALL_ERROR_CODE.ARCHIVE_INTEGRITY_MISMATCH,
     );
   }
-  const record = parsed as { slug?: unknown; version?: unknown };
+  const record = parsed as { slug?: any; version?: any };
   if (record.slug !== params.packageName) {
     return buildClawHubInstallFailure(
       `ClawHub archive contents do not match files[] metadata for "${params.packageName}@${params.version}": _meta.json slug does not match the package name.`,
@@ -701,7 +701,7 @@ function validateClawHubArchiveMetaJson(params: {
   return null;
 }
 
-function mapClawHubArchiveReadFailure(error: unknown): ClawHubInstallFailure {
+function mapClawHubArchiveReadFailure(error: any): ClawHubInstallFailure {
   if (error instanceof ArchiveLimitError) {
     const instance = error as ArchiveLimitErrorInstance;
     if (instance.code === ARCHIVE_LIMIT_ERROR_CODE.ENTRY_COUNT_EXCEEDS_LIMIT) {

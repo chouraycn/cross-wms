@@ -165,14 +165,14 @@ function parseDigSrv(stdout: string): { host: string; port: number } | null {
 }
 
 function parseTailscaleStatusIPv4s(stdout: string): string[] {
-  const parsed = stdout ? (JSON.parse(stdout) as Record<string, unknown>) : {};
+  const parsed = stdout ? (JSON.parse(stdout) as Record<string, any>) : {};
   const out: string[] = [];
 
-  const addIps = (value: unknown) => {
+  const addIps = (value: any) => {
     if (!value || typeof value !== "object") {
       return;
     }
-    const ips = (value as { TailscaleIPs?: unknown }).TailscaleIPs;
+    const ips = (value as { TailscaleIPs?: any }).TailscaleIPs;
     if (!Array.isArray(ips)) {
       return;
     }
@@ -187,11 +187,11 @@ function parseTailscaleStatusIPv4s(stdout: string): string[] {
     }
   };
 
-  addIps((parsed as { Self?: unknown }).Self);
+  addIps((parsed as { Self?: any }).Self);
 
-  const peerObj = (parsed as { Peer?: unknown }).Peer;
+  const peerObj = (parsed as { Peer?: any }).Peer;
   if (peerObj && typeof peerObj === "object") {
-    for (const peer of Object.values(peerObj as Record<string, unknown>)) {
+    for (const peer of Object.values(peerObj as Record<string, any>)) {
       addIps(peer);
     }
   }

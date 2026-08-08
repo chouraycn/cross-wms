@@ -32,7 +32,7 @@ function writePluginSourcePackage(repoRoot: string, pluginId: string) {
 function writeNodePackage(
   repoRoot: string,
   packageName: string,
-  packageJson: Record<string, unknown> = {},
+  packageJson: Record<string, any> = {},
 ) {
   const packageDir = path.join(repoRoot, "node_modules", ...packageName.split("/"));
   fs.mkdirSync(packageDir, { recursive: true });

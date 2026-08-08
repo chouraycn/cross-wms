@@ -87,11 +87,11 @@ type UsageLike = {
   totalTokens?: number;
 };
 
-function normalizeUsage(raw: unknown): NormalizedUsage | null {
+function normalizeUsage(raw: any): NormalizedUsage | null {
   if (!raw || typeof raw !== "object") {
     return null;
   }
-  const r = raw as Record<string, unknown>;
+  const r = raw as Record<string, any>;
   return {
     input: asFiniteNumber(r.input ?? r.inputTokens) ?? undefined,
     output: asFiniteNumber(r.output ?? r.outputTokens) ?? undefined,
@@ -156,7 +156,7 @@ function resolveSessionTranscriptsDirForAgent(agentId?: string): string {
 
 function resolveSessionFilePath(
   sessionId: string,
-  _sessionEntry?: unknown,
+  _sessionEntry?: any,
   _options?: { agentId?: string },
 ): string | undefined {
   if (!sessionId?.trim()) {
@@ -186,7 +186,7 @@ function stripMessageIdHints(text: string): string {
 // 内联降级：config/sessions/types.js — SessionEntry
 // ============================================================================
 
-type SessionEntry = Record<string, unknown>;
+type SessionEntry = Record<string, any>;
 
 // ============================================================================
 // 主逻辑
@@ -285,7 +285,7 @@ function resolveUsageCostCacheLockPath(cachePath: string): string {
 }
 
 function parseUsageCostCacheLock(raw: string): UsageCostCacheLock | null {
-  const parsed = JSON.parse(raw) as unknown;
+  const parsed = JSON.parse(raw) as any;
   if (!parsed || typeof parsed !== "object") {
     return null;
   }
@@ -415,11 +415,11 @@ async function acquireUsageCostCacheRefreshLock(cachePath: string): Promise<{
   }
 }
 
-function normalizeUsageCostCache(raw: unknown): UsageCostCacheFile {
+function normalizeUsageCostCache(raw: any): UsageCostCacheFile {
   if (!raw || typeof raw !== "object") {
     return { version: USAGE_COST_CACHE_VERSION, updatedAt: 0, files: {} };
   }
-  const record = raw as Record<string, unknown>;
+  const record = raw as Record<string, any>;
   if (
     record.version !== USAGE_COST_CACHE_VERSION ||
     !record.files ||
@@ -692,8 +692,8 @@ const extractCostBreakdown = (usageRaw?: UsageLike | null): CostBreakdown | unde
   if (!usageRaw || typeof usageRaw !== "object") {
     return undefined;
   }
-  const record = usageRaw as Record<string, unknown>;
-  const cost = record.cost as Record<string, unknown> | undefined;
+  const record = usageRaw as Record<string, any>;
+  const cost = record.cost as Record<string, any> | undefined;
   if (!cost) {
     return undefined;
   }
@@ -710,7 +710,7 @@ const extractCostBreakdown = (usageRaw?: UsageLike | null): CostBreakdown | unde
   };
 };
 
-const parseTimestamp = (entry: Record<string, unknown>): Date | undefined => {
+const parseTimestamp = (entry: Record<string, any>): Date | undefined => {
   const raw = entry.timestamp;
   if (typeof raw === "string") {
     const parsed = new Date(raw);
@@ -718,7 +718,7 @@ const parseTimestamp = (entry: Record<string, unknown>): Date | undefined => {
       return parsed;
     }
   }
-  const message = entry.message as Record<string, unknown> | undefined;
+  const message = entry.message as Record<string, any> | undefined;
   const messageTimestamp = asFiniteNumber(message?.timestamp);
   if (messageTimestamp !== undefined) {
     const parsed = new Date(messageTimestamp);
@@ -729,8 +729,8 @@ const parseTimestamp = (entry: Record<string, unknown>): Date | undefined => {
   return undefined;
 };
 
-const parseTranscriptEntry = (entry: Record<string, unknown>): ParsedTranscriptEntry | null => {
-  const message = entry.message as Record<string, unknown> | undefined;
+const parseTranscriptEntry = (entry: Record<string, any>): ParsedTranscriptEntry | null => {
+  const message = entry.message as Record<string, any> | undefined;
   if (!message || typeof message !== "object") {
     return null;
   }
@@ -788,7 +788,7 @@ async function* readJsonlRecords(
   filePath: string,
   startOffset = 0,
   endOffset?: number,
-): AsyncGenerator<Record<string, unknown>> {
+): AsyncGenerator<Record<string, any>> {
   if (endOffset !== undefined && endOffset <= startOffset) {
     return;
   }
@@ -808,11 +808,11 @@ async function* readJsonlRecords(
         continue;
       }
       try {
-        const parsed = JSON.parse(trimmed) as unknown;
+        const parsed = JSON.parse(trimmed) as any;
         if (!parsed || typeof parsed !== "object") {
           continue;
         }
-        yield parsed as Record<string, unknown>;
+        yield parsed as Record<string, any>;
       } catch {
         // Ignore malformed lines
       }
@@ -1708,14 +1708,14 @@ export async function discoverAllSessions(params?: {
       try {
         for await (const parsed of readJsonlRecords(filePath)) {
           try {
-            const message = parsed.message as Record<string, unknown> | undefined;
+            const message = parsed.message as Record<string, any> | undefined;
             if (message?.role === "user") {
               const content = message.content;
               if (typeof content === "string") { firstUserMessage = content.slice(0, 100); }
               else if (Array.isArray(content)) {
                 for (const block of content) {
-                  if (typeof block === "object" && block && (block as Record<string, unknown>).type === "text") {
-                    const text = (block as Record<string, unknown>).text;
+                  if (typeof block === "object" && block && (block as Record<string, any>).type === "text") {
+                    const text = (block as Record<string, any>).text;
                     if (typeof text === "string") { firstUserMessage = text.slice(0, 100); }
                     break;
                   }
@@ -1935,7 +1935,7 @@ export async function loadSessionLogs(params: {
 
   for await (const parsed of readJsonlRecords(sessionFile)) {
     try {
-      const message = parsed.message as Record<string, unknown> | undefined;
+      const message = parsed.message as Record<string, any> | undefined;
       if (!message) continue;
       const role = message.role as string | undefined;
       if (role !== "user" && role !== "assistant" && role !== "tool" && role !== "toolResult") continue;
@@ -1949,9 +1949,9 @@ export async function loadSessionLogs(params: {
       const rawContent = message.content;
       if (typeof rawContent === "string") { contentParts.push(rawContent); }
       else if (Array.isArray(rawContent)) {
-        const contentText = rawContent.map((block: unknown) => {
+        const contentText = rawContent.map((block: any) => {
           if (typeof block === "string") return block;
-          const b = block as Record<string, unknown>;
+          const b = block as Record<string, any>;
           if (b.type === "text" && typeof b.text === "string") return b.text;
           if (b.type === "tool_use") { const name = typeof b.name === "string" ? b.name : "unknown"; return `[Tool: ${name}]`; }
           if (b.type === "tool_result") return `[Tool Result]`;
@@ -1963,9 +1963,9 @@ export async function loadSessionLogs(params: {
       const toolCalls = Array.isArray(rawToolCalls) ? rawToolCalls : rawToolCalls ? [rawToolCalls] : [];
       if (toolCalls.length > 0) {
         for (const call of toolCalls) {
-          const callObj = call as Record<string, unknown>;
+          const callObj = call as Record<string, any>;
           const directName = typeof callObj.name === "string" ? callObj.name : undefined;
-          const fn = callObj.function as Record<string, unknown> | undefined;
+          const fn = callObj.function as Record<string, any> | undefined;
           const fnName = typeof fn?.name === "string" ? fn.name : undefined;
           contentParts.push(`[Tool: ${directName ?? fnName ?? "unknown"}]`);
         }
@@ -1983,7 +1983,7 @@ export async function loadSessionLogs(params: {
       let tokens: number | undefined;
       let cost: number | undefined;
       if (role === "assistant") {
-        const usageRaw = message.usage as Record<string, unknown> | undefined;
+        const usageRaw = message.usage as Record<string, any> | undefined;
         const usage = normalizeUsage(usageRaw);
         if (usage) {
           tokens = usage.total ?? (usage.input ?? 0) + (usage.output ?? 0) + (usage.cacheRead ?? 0) + (usage.cacheWrite ?? 0);

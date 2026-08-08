@@ -113,7 +113,7 @@ export function recordPluginError(params: {
   pluginId: string;
   origin: PluginRecord["origin"];
   phase: PluginRecord["failurePhase"];
-  error: unknown;
+  error: any;
   logPrefix: string;
   diagnosticMessagePrefix: string;
   diagnosticCode?: PluginDiagnosticCode;
@@ -167,9 +167,9 @@ function isPluginLoadDebugEnabled(env: NodeJS.ProcessEnv): boolean {
 }
 
 function describePluginModuleExportShape(
-  value: unknown,
+  value: any,
   label = "export",
-  seen: Set<unknown> = new Set(),
+  seen: Set<any> = new Set(),
 ): string[] {
   if (value === null) {
     return [`${label}:null`];
@@ -182,7 +182,7 @@ function describePluginModuleExportShape(
   }
   seen.add(value);
 
-  const record = value as Record<string, unknown>;
+  const record = value as Record<string, any>;
   const keys = Object.keys(record).toSorted();
   const visibleKeys = keys.slice(0, 8);
   const extraCount = keys.length - visibleKeys.length;
@@ -201,7 +201,7 @@ function describePluginModuleExportShape(
 }
 
 export function formatMissingPluginRegisterError(
-  moduleExport: unknown,
+  moduleExport: any,
   env: NodeJS.ProcessEnv,
 ): string {
   const message = "plugin export missing register/activate";

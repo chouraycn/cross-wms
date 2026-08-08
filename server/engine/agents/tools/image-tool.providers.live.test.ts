@@ -108,11 +108,11 @@ function readJpegDimensions(buffer: Buffer): { width: number; height: number } {
   throw new Error("JPEG dimensions not found");
 }
 
-function formatLiveError(error: unknown): string {
+function formatLiveError(error: any): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-function isSkippableLiveError(error: unknown): boolean {
+function isSkippableLiveError(error: any): boolean {
   const message = formatLiveError(error);
   return (
     isBillingErrorMessage(message) ||
@@ -226,7 +226,7 @@ async function runLiveDownscaleCase(testCase: LiveProviderCase) {
       throw new Error("expected image tool");
     }
 
-    let result: unknown;
+    let result: any;
     try {
       result = await tool.execute(`live-${testCase.provider}-large-image`, {
         prompt:

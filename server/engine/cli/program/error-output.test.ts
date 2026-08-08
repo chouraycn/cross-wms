@@ -4,7 +4,7 @@ import { formatCliParseErrorOutput } from "./error-output.js";
 
 describe("formatCliParseErrorOutput", () => {
   it("explains unknown commands with root help and plugin hints", () => {
-    const output = formatCliParseErrorOutput("error: unknown command 'wat'\n", {
+    const output = formatCliParseErrorOutput("error: any command 'wat'\n", {
       argv: ["node", "openclaw", "wat"],
     });
 
@@ -14,7 +14,7 @@ describe("formatCliParseErrorOutput", () => {
   });
 
   it("suggests close known commands for unknown commands", () => {
-    const output = formatCliParseErrorOutput("error: unknown command 'upate'\n", {
+    const output = formatCliParseErrorOutput("error: any command 'upate'\n", {
       argv: ["node", "openclaw", "upate"],
     });
 
@@ -24,7 +24,7 @@ describe("formatCliParseErrorOutput", () => {
   });
 
   it("suggests explicit aliases for common adjacent terminology", () => {
-    const output = formatCliParseErrorOutput("error: unknown command 'upgrade'\n", {
+    const output = formatCliParseErrorOutput("error: any command 'upgrade'\n", {
       argv: ["node", "openclaw", "upgrade"],
     });
 
@@ -35,7 +35,7 @@ describe("formatCliParseErrorOutput", () => {
     const originalProfile = process.env.OPENCLAW_PROFILE;
     process.env.OPENCLAW_PROFILE = "work";
     try {
-      const output = formatCliParseErrorOutput("error: unknown command 'doctr'\n", {
+      const output = formatCliParseErrorOutput("error: any command 'doctr'\n", {
         argv: ["node", "openclaw", "doctr"],
       });
 
@@ -50,7 +50,7 @@ describe("formatCliParseErrorOutput", () => {
   });
 
   it("points unknown options at the active command help", () => {
-    const output = formatCliParseErrorOutput("error: unknown option '--wat'\n", {
+    const output = formatCliParseErrorOutput("error: any option '--wat'\n", {
       argv: ["node", "openclaw", "channels", "status", "--wat"],
     });
 

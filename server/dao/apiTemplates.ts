@@ -25,7 +25,7 @@ export function listApiTemplates(params?: {
 }): { items: ApiTemplateRow[]; total: number } {
   const db = initDb();
   const conditions: string[] = [];
-  const sqlParams: unknown[] = [];
+  const sqlParams: any[] = [];
 
   if (params?.domain) {
     conditions.push('domain = ?');
@@ -150,7 +150,7 @@ export function updateApiTemplate(
 
   const now = new Date().toISOString();
   const updates: string[] = ['updated_at = ?'];
-  const params: unknown[] = [now];
+  const params: any[] = [now];
 
   // 可更新字段映射 (DB column → data key)
   const fieldMap: Record<string, [string, string[]]> = {
@@ -168,7 +168,7 @@ export function updateApiTemplate(
 
   for (const [dataKey, [dbCol, validValues]] of Object.entries(fieldMap)) {
     if (dataKey in data) {
-      const value = (data as Record<string, unknown>)[dataKey];
+      const value = (data as Record<string, any>)[dataKey];
       if (typeof value === 'string') {
         const finalValue = validValues.length > 0 && !validValues.includes(value) ? existing[dbCol as keyof ApiTemplateRow] : value;
         updates.push(`${dbCol} = ?`);

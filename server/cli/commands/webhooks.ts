@@ -94,7 +94,7 @@ function testWebhook(id: string): { success: boolean; statusCode: number; messag
   return { success: true, statusCode: 200, message: `Webhook test delivered to ${entry.url}` };
 }
 
-function formatJsonOutput(data: unknown): string {
+function formatJsonOutput(data: any): string {
   return JSON.stringify(data, null, 2);
 }
 

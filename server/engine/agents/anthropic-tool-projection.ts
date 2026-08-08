@@ -8,12 +8,12 @@
 
 export type AnthropicToolProjection = unknown;
 export type AnthropicProjectedToolChoice = unknown;
-export function projectAnthropicTools(..._args: unknown[]): unknown {
+export function projectAnthropicTools(..._args: any[]): any {
   return undefined;
 }
-export function reconcileAnthropicToolChoice(..._args: unknown[]): unknown {
+export function reconcileAnthropicToolChoice(..._args: any[]): any {
   return undefined;
 }
-export function resolveOriginalAnthropicToolName(..._args: unknown[]): unknown {
+export function resolveOriginalAnthropicToolName(..._args: any[]): any {
   return undefined;
 }

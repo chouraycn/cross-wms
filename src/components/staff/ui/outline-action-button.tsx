@@ -24,7 +24,7 @@ export const OutlineActionButton = React.forwardRef<HTMLButtonElement, OutlineAc
         color="inherit"
         className={className}
         sx={[token, ...(sx ? [sx] : [])] as SxProps}
-        {...(props as Record<string, unknown>)}
+        {...(props as Record<string, any>)}
       >
         {children}
       </MuiButton>

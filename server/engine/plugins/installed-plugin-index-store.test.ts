@@ -103,7 +103,7 @@ function expectPluginIds(index: InstalledPluginIndex, expected: string[]) {
 function expectPluginFields(
   index: InstalledPluginIndex,
   pluginId: string,
-  expected: Record<string, unknown>,
+  expected: Record<string, any>,
 ) {
   const plugin = index.plugins.find((candidate) => candidate.pluginId === pluginId);
   if (!plugin) {
@@ -117,7 +117,7 @@ function expectPluginFields(
 function expectInstallRecord(
   index: InstalledPluginIndex,
   pluginId: string,
-  expected: Record<string, unknown>,
+  expected: Record<string, any>,
 ) {
   const record = index.installRecords[pluginId];
   if (!record) {
@@ -148,7 +148,7 @@ async function expectPersistedIndex(
   expected: {
     refreshReason?: string;
     pluginIds?: string[];
-    installRecords?: Record<string, Record<string, unknown>>;
+    installRecords?: Record<string, Record<string, any>>;
   },
 ) {
   const persisted = requirePersisted(await readPersistedInstalledPluginIndex({ stateDir }));
@@ -378,7 +378,7 @@ describe("installed plugin index persistence", () => {
     expectInstallRecord(persistedIndex, "demo", { source: "npm" });
     expect(Object.hasOwn(persisted as object, "__proto__")).toBe(false);
     expect(Object.hasOwn(persisted?.installRecords ?? {}, "__proto__")).toBe(false);
-    expect(({} as Record<string, unknown>).polluted).toBeUndefined();
+    expect(({} as Record<string, any>).polluted).toBeUndefined();
   });
 
   it("returns null for missing or invalid persisted indexes", async () => {

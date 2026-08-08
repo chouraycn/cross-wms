@@ -93,7 +93,7 @@ vi.mock("../plugins/provider-runtime.js", async () => {
         context: {
           messages: AgentMessage[];
           sessionState?: {
-            appendCustomEntry(customType: string, data: unknown): void;
+            appendCustomEntry(customType: string, data: any): void;
           };
         };
       }) => {
@@ -118,8 +118,8 @@ vi.mock("../plugins/provider-runtime.js", async () => {
             (message) =>
               message.role !== "toolResult" ||
               !(
-                (message as { isError?: unknown }).isError === true &&
-                JSON.stringify((message as { content?: unknown }).content).includes("aborted")
+                (message as { isError?: any }).isError === true &&
+                JSON.stringify((message as { content?: any }).content).includes("aborted")
               ),
           );
         }
@@ -285,18 +285,18 @@ describe("sanitizeSessionHistory", () => {
 
   const getAssistantMessages = (messages: AgentMessage[]) =>
     messages.filter((message) => message.role === "assistant") as Array<
-      AgentMessage & { usage?: unknown; content?: unknown }
+      AgentMessage & { usage?: any; content?: any }
     >;
 
   const getSingleAssistantUsage = async (messages: AgentMessage[]) => {
     vi.mocked(mockedHelpers.isGoogleModelApi).mockReturnValue(false);
     const result = await sanitizeOpenAIHistory(messages);
     return result.find((message) => message.role === "assistant") as
-      | (AgentMessage & { usage?: unknown })
+      | (AgentMessage & { usage?: any })
       | undefined;
   };
 
-  const expectAssistantUsageSnapshot = (assistant: unknown) => {
+  const expectAssistantUsageSnapshot = (assistant: any) => {
     const usage = (assistant as { usage?: Usage } | undefined)?.usage;
     expect(typeof usage?.input).toBe("number");
     expect(typeof usage?.output).toBe("number");
@@ -340,7 +340,7 @@ describe("sanitizeSessionHistory", () => {
 
   it("lets Google provider hooks prepend a bootstrap turn and persist a marker", async () => {
     vi.mocked(mockedHelpers.isGoogleModelApi).mockReturnValue(true);
-    const sessionEntries: Array<{ type: string; customType: string; data: unknown }> = [];
+    const sessionEntries: Array<{ type: string; customType: string; data: any }> = [];
     const sessionManager = makeInMemorySessionManager(sessionEntries);
 
     const result = await sanitizeSessionHistory({
@@ -357,7 +357,7 @@ describe("sanitizeSessionHistory", () => {
     });
 
     expect(result[0]?.role).toBe("user");
-    expect((result[0] as { content?: unknown } | undefined)?.content).toBe("(session bootstrap)");
+    expect((result[0] as { content?: any } | undefined)?.content).toBe("(session bootstrap)");
     expect(
       sessionEntries.some((entry) => entry.customType === "google-turn-ordering-bootstrap"),
     ).toBe(true);
@@ -438,7 +438,7 @@ describe("sanitizeSessionHistory", () => {
 
   it("prepends a bootstrap user turn for strict OpenAI-compatible assistant-first history", async () => {
     setNonGoogleModelApi();
-    const sessionEntries: Array<{ type: string; customType: string; data: unknown }> = [];
+    const sessionEntries: Array<{ type: string; customType: string; data: any }> = [];
     const sessionManager = makeInMemorySessionManager(sessionEntries);
     const messages = castAgentMessages([
       {
@@ -457,7 +457,7 @@ describe("sanitizeSessionHistory", () => {
     });
 
     expect(result[0]?.role).toBe("user");
-    expect((result[0] as { content?: unknown } | undefined)?.content).toBe("(session bootstrap)");
+    expect((result[0] as { content?: any } | undefined)?.content).toBe("(session bootstrap)");
     expect(result[1]?.role).toBe("assistant");
     expect(
       sessionEntries.some((entry) => entry.customType === "google-turn-ordering-bootstrap"),
@@ -511,7 +511,7 @@ describe("sanitizeSessionHistory", () => {
     const result = await sanitizeOpenAIHistory(messages);
 
     const staleAssistant = result.find((message) => message.role === "assistant") as
-      | (AgentMessage & { usage?: unknown })
+      | (AgentMessage & { usage?: any })
       | undefined;
     expect(staleAssistant?.usage).toEqual(makeZeroUsageSnapshot());
   });
@@ -642,7 +642,7 @@ describe("sanitizeSessionHistory", () => {
       cacheWrite: 4,
       totalTokens: 10,
     });
-    expect((assistant?.usage as { cost?: unknown } | undefined)?.cost).toBeUndefined();
+    expect((assistant?.usage as { cost?: any } | undefined)?.cost).toBeUndefined();
   });
 
   it("drops stale usage when compaction summary appears before kept assistant messages", async () => {
@@ -661,7 +661,7 @@ describe("sanitizeSessionHistory", () => {
     const result = await sanitizeOpenAIHistory(messages);
 
     const assistant = result.find((message) => message.role === "assistant") as
-      | (AgentMessage & { usage?: unknown })
+      | (AgentMessage & { usage?: any })
       | undefined;
     expect(assistant?.usage).toEqual(makeZeroUsageSnapshot());
   });
@@ -1338,7 +1338,7 @@ describe("sanitizeSessionHistory", () => {
 
     expect(result).toEqual([
       {
-        ...(messages[0] as unknown as Record<string, unknown>),
+        ...(messages[0] as unknown as Record<string, any>),
         usage: makeZeroUsageSnapshot(),
       },
     ]);
@@ -1544,7 +1544,7 @@ describe("sanitizeSessionHistory", () => {
       { type: "text", text: "First" },
       { type: "text", text: "Second" },
     ]);
-    expect(typeof (validated[0] as { timestamp?: unknown }).timestamp).toBe("number");
+    expect(typeof (validated[0] as { timestamp?: any }).timestamp).toBe("number");
   });
 
   it("strips prior assistant reasoning for Qwen-style OpenAI-compatible replay", async () => {
@@ -2081,7 +2081,7 @@ describe("sanitizeSessionHistory", () => {
 
     expect(result).toHaveLength(1);
     expect(result[0]?.role).toBe("user");
-    expect((result[0] as { content?: unknown } | undefined)?.content).toBe("retry");
+    expect((result[0] as { content?: any } | undefined)?.content).toBe("retry");
   });
 
   it("uses immutable thinking replay for amazon-bedrock claude providers when policy preserves signatures", async () => {
@@ -2107,7 +2107,7 @@ describe("sanitizeSessionHistory", () => {
 
     expect(result).toHaveLength(1);
     expect(result[0]?.role).toBe("user");
-    expect((result[0] as { content?: unknown } | undefined)?.content).toBe("retry");
+    expect((result[0] as { content?: any } | undefined)?.content).toBe("retry");
   });
 
   it.each([

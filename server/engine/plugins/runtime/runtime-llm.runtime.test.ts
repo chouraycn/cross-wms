@@ -62,22 +62,22 @@ function createLogger(): RuntimeLogger {
 }
 
 type MockCalls = {
-  mock: { calls: unknown[][] };
+  mock: { calls: any[][] };
 };
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object") {
     throw new Error(`expected ${label}`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function requireArray(value: unknown, label: string): unknown[] {
+function requireArray(value: any, label: string): any[] {
   expect(Array.isArray(value), label).toBe(true);
-  return value as unknown[];
+  return value as any[];
 }
 
-function expectFields(record: Record<string, unknown>, expected: Record<string, unknown>) {
+function expectFields(record: Record<string, any>, expected: Record<string, any>) {
   for (const [key, value] of Object.entries(expected)) {
     expect(record[key], key).toEqual(value);
   }
@@ -85,9 +85,9 @@ function expectFields(record: Record<string, unknown>, expected: Record<string, 
 
 function expectSingleCallFirstArg(
   mock: MockCalls,
-  expected: Record<string, unknown>,
+  expected: Record<string, any>,
   label = "mock first argument",
-): Record<string, unknown> {
+): Record<string, any> {
   expect(mock.mock.calls).toHaveLength(1);
   const [firstArg] = mock.mock.calls[0] ?? [];
   const record = requireRecord(firstArg, label);
@@ -98,8 +98,8 @@ function expectSingleCallFirstArg(
 function expectSingleLogPayload(
   loggerMethod: MockCalls,
   message: string,
-  expected: Record<string, unknown>,
-): Record<string, unknown> {
+  expected: Record<string, any>,
+): Record<string, any> {
   expect(loggerMethod.mock.calls).toHaveLength(1);
   const [actualMessage, payload] = loggerMethod.mock.calls[0] ?? [];
   expect(actualMessage).toBe(message);
@@ -402,7 +402,7 @@ describe("runtime.llm.complete", () => {
       }),
     );
 
-    let caught: unknown;
+    let caught: any;
     try {
       await runtimeContext.llm!.complete({
         model: "openrouter/gpt-5.5",
@@ -443,7 +443,7 @@ describe("runtime.llm.complete", () => {
         messages: [{ role: "user", content: "summarize" }],
         caller: { kind: "plugin", id: "spoofed-plugin" },
       } as Parameters<NonNullable<typeof runtimeContext.llm>["complete"]>[0] & {
-        caller: unknown;
+        caller: any;
       }),
     );
 
@@ -631,7 +631,7 @@ describe("runtime.llm.complete", () => {
         messages: [{ role: "user", content: "Ping" }],
         purpose: "identity-test",
         caller: { kind: "plugin", id: "spoofed-plugin" },
-      } as Parameters<typeof llm.complete>[0] & { caller: unknown }),
+      } as Parameters<typeof llm.complete>[0] & { caller: any }),
     );
 
     expect(result.audit.caller).toEqual({ kind: "plugin", id: "trusted-plugin" });

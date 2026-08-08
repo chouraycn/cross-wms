@@ -11,7 +11,7 @@ export type PluginApprovalResolution =
   (typeof PluginApprovalResolutions)[keyof typeof PluginApprovalResolutions];
 
 export type PluginHookBeforeToolCallResult = {
-  params?: Record<string, unknown>;
+  params?: Record<string, any>;
   block?: boolean;
   blockReason?: string;
   requireApproval?: {

@@ -10,7 +10,7 @@ type ContentBlock = {
   text?: string;
   resource?: { text?: string };
   resource_link?: { title?: string; uri?: string };
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 type ToolCallLocation = {
@@ -141,7 +141,7 @@ function normalizeToolLocationPath(value: string): string | undefined {
   return trimmed;
 }
 
-function normalizeToolLocationLine(value: unknown): number | undefined {
+function normalizeToolLocationLine(value: any): number | undefined {
   if (typeof value !== "number" || !Number.isFinite(value)) {
     return undefined;
   }
@@ -149,7 +149,7 @@ function normalizeToolLocationLine(value: unknown): number | undefined {
   return line > 0 ? line : undefined;
 }
 
-function extractToolLocationLine(record: Record<string, unknown>): number | undefined {
+function extractToolLocationLine(record: Record<string, any>): number | undefined {
   for (const key of TOOL_LOCATION_LINE_KEYS) {
     const line = normalizeToolLocationLine(record[key]);
     if (line !== undefined) {
@@ -199,7 +199,7 @@ function collectLocationsFromTextMarkers(
 }
 
 function collectToolLocations(
-  value: unknown,
+  value: any,
   locations: Map<string, ToolCallLocation>,
   state: { visited: number },
   depth: number,
@@ -226,7 +226,7 @@ function collectToolLocations(
     return;
   }
 
-  const record = value as Record<string, unknown>;
+  const record = value as Record<string, any>;
   const line = extractToolLocationLine(record);
   for (const key of TOOL_LOCATION_PATH_KEYS) {
     const rawPath = record[key];
@@ -238,7 +238,7 @@ function collectToolLocations(
   const content = Array.isArray(record.content) ? record.content : undefined;
   if (content) {
     for (const block of content) {
-      const entry = block as Record<string, unknown>;
+      const entry = block as Record<string, any>;
       if (entry?.type === "text" && typeof entry.text === "string") {
         collectLocationsFromTextMarkers(entry.text, locations);
       }
@@ -308,7 +308,7 @@ export function extractAttachmentsFromPrompt(prompt: ContentBlock[]): GatewayAtt
 
 export function formatToolTitle(
   name: string | undefined,
-  args: Record<string, unknown> | undefined,
+  args: Record<string, any> | undefined,
 ): string {
   const base = name ?? "tool";
   if (!args || Object.keys(args).length === 0) {
@@ -351,7 +351,7 @@ export function inferToolKind(name?: string): ToolKind {
   return "other";
 }
 
-export function extractToolCallContent(value: unknown): ToolCallContent[] | undefined {
+export function extractToolCallContent(value: any): ToolCallContent[] | undefined {
   if (typeof value === "string" && value.trim()) {
     return [
       {
@@ -364,7 +364,7 @@ export function extractToolCallContent(value: unknown): ToolCallContent[] | unde
     ];
   }
 
-  const record = value as Record<string, unknown> | undefined;
+  const record = value as Record<string, any> | undefined;
   if (!record || typeof record !== "object") {
     return undefined;
   }
@@ -372,7 +372,7 @@ export function extractToolCallContent(value: unknown): ToolCallContent[] | unde
   const contents: ToolCallContent[] = [];
   const blocks = Array.isArray(record.content) ? record.content : [];
   for (const block of blocks) {
-    const entry = block as Record<string, unknown>;
+    const entry = block as Record<string, any>;
     if (entry?.type === "text" && typeof entry.text === "string" && entry.text.trim()) {
       contents.push({
         type: "content",
@@ -408,7 +408,7 @@ export function extractToolCallContent(value: unknown): ToolCallContent[] | unde
   return undefined;
 }
 
-export function extractToolCallLocations(...values: unknown[]): ToolCallLocation[] | undefined {
+export function extractToolCallLocations(...values: any[]): ToolCallLocation[] | undefined {
   const locations = new Map<string, ToolCallLocation>();
   for (const value of values) {
     collectToolLocations(value, locations, { visited: 0 }, 0);

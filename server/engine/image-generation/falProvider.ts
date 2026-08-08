@@ -76,30 +76,30 @@ const DEFAULT_MAX_IMAGE_BYTES = 6 * 1024 * 1024;
 
 /** Fal 图像条目 */
 type FalImageEntry = {
-  url?: unknown;
-  content_type?: unknown;
-  base64?: unknown;
+  url?: any;
+  content_type?: any;
+  base64?: any;
 };
 
 /** Fal 同步响应 */
 type FalImageResponse = {
-  images?: unknown;
-  prompt?: unknown;
+  images?: any;
+  prompt?: any;
 };
 
 /** Fal 队列提交响应 */
 type FalQueueSubmitResponse = {
-  request_id?: unknown;
-  status_url?: unknown;
-  response_url?: unknown;
-  cancel_url?: unknown;
+  request_id?: any;
+  status_url?: any;
+  response_url?: any;
+  cancel_url?: any;
 };
 
 /** Fal 队列状态 */
 type FalQueueStatus = {
-  status?: unknown;
-  logs?: unknown;
-  metrics?: unknown;
+  status?: any;
+  logs?: any;
+  metrics?: any;
 };
 
 /** Fal Provider 选项 */
@@ -140,7 +140,7 @@ const falCapabilities: ImageGenerationProviderCapabilities = {
   },
 };
 
-function normalizeString(value: unknown): string | undefined {
+function normalizeString(value: any): string | undefined {
   if (typeof value !== "string") return undefined;
   const trimmed = value.trim();
   return trimmed || undefined;
@@ -206,7 +206,7 @@ function resolveFalImageSize(params: {
   resolution?: "1K" | "2K" | "4K";
   aspectRatio?: string;
   hasInputImages: boolean;
-}): Record<string, unknown> | undefined {
+}): Record<string, any> | undefined {
   const parsed = parseSize(params.size);
   if (parsed) {
     return { image_size: parsed };
@@ -327,7 +327,7 @@ async function submitAndPollQueue(params: {
   queueBaseUrl: string;
   model: string;
   headers: Record<string, string>;
-  body: Record<string, unknown>;
+  body: Record<string, any>;
   timeoutMs: number;
 }): Promise<FalImageResponse> {
   const { queueBaseUrl, model, headers, body, timeoutMs } = params;
@@ -460,7 +460,7 @@ export function createFalProvider(
       };
 
       // 构建请求体
-      const requestBody: Record<string, unknown> = {
+      const requestBody: Record<string, any> = {
         prompt: req.prompt,
         num_images: count,
         output_format: outputFormat,
@@ -492,7 +492,7 @@ export function createFalProvider(
       );
 
       // 优先使用异步队列模式（更可靠，支持长耗时模型）
-      const useQueue = (req.providerOptions?.fal as Record<string, unknown> | undefined)?.sync !== true;
+      const useQueue = (req.providerOptions?.fal as Record<string, any> | undefined)?.sync !== true;
 
       let payload: FalImageResponse;
       if (useQueue) {

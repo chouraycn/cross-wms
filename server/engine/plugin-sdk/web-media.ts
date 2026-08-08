@@ -23,7 +23,7 @@ export type WebMediaResult = {
  */
 export async function loadWebMedia(
   _mediaUrl: string,
-  _options?: unknown,
+  _options?: any,
 ): Promise<WebMediaResult> {
   throw new Error(
     "loadWebMedia: not implemented in cross-wms (media/web-media.ts not ported)",
@@ -36,7 +36,7 @@ export async function loadWebMedia(
  */
 export async function loadWebMediaRaw(
   _mediaUrl: string,
-  _options?: unknown,
+  _options?: any,
 ): Promise<WebMediaResult> {
   throw new Error(
     "loadWebMediaRaw: not implemented in cross-wms (media/web-media.ts not ported)",
@@ -59,7 +59,7 @@ export class LocalMediaAccessError extends Error {
 /** @deprecated cross-wms 降级 stub：未移植 media/web-media.ts。 */
 export async function optimizeImageToJpeg(
   _buffer: Buffer,
-  _options?: unknown,
+  _options?: any,
 ): Promise<Buffer> {
   throw new Error(
     "optimizeImageToJpeg: not implemented in cross-wms (media/web-media.ts not ported)",
@@ -69,7 +69,7 @@ export async function optimizeImageToJpeg(
 /** @deprecated cross-wms 降级 stub：未移植 media/web-media.ts。 */
 export async function optimizeImageToPng(
   _buffer: Buffer,
-  _options?: unknown,
+  _options?: any,
 ): Promise<Buffer> {
   throw new Error(
     "optimizeImageToPng: not implemented in cross-wms (media/web-media.ts not ported)",

@@ -62,7 +62,7 @@ function nodeToJson(node: SkillChainNodeRow) {
   };
 }
 
-function safeJsonParse(val: unknown): unknown {
+function safeJsonParse(val: any): any {
   if (typeof val !== 'string') return val;
   try { return JSON.parse(val); } catch { return val; }
 }
@@ -106,7 +106,7 @@ router.post('/', (req, res) => {
     const now = new Date().toISOString();
 
     const nodeList = Array.isArray(nodes)
-      ? nodes.map((node: unknown, i: number) => ({
+      ? nodes.map((node: any, i: number) => ({
           id: `node-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
           chainId: chainId,
           skillId: node.skillId || '',
@@ -148,7 +148,7 @@ router.put('/:id', (req, res) => {
     const now = new Date().toISOString();
 
     const nodeList = Array.isArray(nodes)
-      ? nodes.map((node: unknown, i: number) => ({
+      ? nodes.map((node: any, i: number) => ({
           id: `node-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
           chainId: req.params.id,
           skillId: node.skillId || '',
@@ -258,7 +258,7 @@ router.get('/:execId', (req, res) => {
     const chainName = getSkillChainNameById(execution.chain_id);
 
     // Parse steps from JSON
-    let steps: Array<Record<string, unknown>> = [];
+    let steps: Array<Record<string, any>> = [];
     try {
       steps = JSON.parse(execution.steps || '[]');
     } catch {

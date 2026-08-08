@@ -20,7 +20,7 @@ export function ensureGlobalUndiciStreamTimeouts(timeoutMs?: number): void {
 }
 
 /** Ensures the global undici dispatcher has stream timeout configuration. */
-export function ensureGlobalUndiciDispatcherStreamTimeouts(_dispatcher?: unknown, _timeoutMs?: number): void {
+export function ensureGlobalUndiciDispatcherStreamTimeouts(_dispatcher?: any, _timeoutMs?: number): void {
   // Simplified: undici dispatcher not available
 }
 

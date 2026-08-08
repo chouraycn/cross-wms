@@ -151,7 +151,7 @@ test("process poll aborts while waiting for completion", async () => {
     await vi.advanceTimersByTimeAsync(500);
     controller.abort();
 
-    let err: unknown;
+    let err: any;
     try {
       await pollPromise;
     } catch (caught) {

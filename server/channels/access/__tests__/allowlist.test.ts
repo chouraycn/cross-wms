@@ -152,7 +152,7 @@ describe('channels/access/allowlist — loadFromConfig', () => {
           },
         },
       },
-    } as unknown;
+    } as any;
 
     mgr.loadFromConfig(config, 'webhook');
 
@@ -170,7 +170,7 @@ describe('channels/access/allowlist — loadFromConfig', () => {
           },
         },
       },
-    } as unknown;
+    } as any;
 
     mgr.loadFromConfig(config, 'webhook');
 
@@ -186,7 +186,7 @@ describe('channels/access/allowlist — loadFromConfig', () => {
           },
         },
       },
-    } as unknown;
+    } as any;
 
     mgr.loadFromConfig(config, 'webhook');
 
@@ -204,7 +204,7 @@ describe('channels/access/allowlist — loadFromConfig', () => {
           },
         },
       },
-    } as unknown;
+    } as any;
 
     mgr.loadFromConfig(config, 'webhook');
 
@@ -213,7 +213,7 @@ describe('channels/access/allowlist — loadFromConfig', () => {
   });
 
   it('handles missing channel config gracefully', () => {
-    const config = { channels: {} } as unknown;
+    const config = { channels: {} } as any;
     expect(() => mgr.loadFromConfig(config, 'webhook')).not.toThrow();
     expect(mgr.getEntries('dm').length).toBe(0);
   });
@@ -223,7 +223,7 @@ describe('channels/access/allowlist — loadFromConfig', () => {
       channels: {
         webhook: { /* no allowlist */ },
       },
-    } as unknown;
+    } as any;
     expect(() => mgr.loadFromConfig(config, 'webhook')).not.toThrow();
     expect(mgr.getEntries('dm').length).toBe(0);
   });
@@ -238,7 +238,7 @@ describe('channels/access/allowlist — loadFromConfig', () => {
           },
         },
       },
-    } as unknown;
+    } as any;
     expect(() => mgr.loadFromConfig(config, 'webhook')).not.toThrow();
     expect(mgr.getEntries('dm').length).toBe(0);
   });

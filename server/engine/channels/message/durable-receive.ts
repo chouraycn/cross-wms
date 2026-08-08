@@ -8,7 +8,7 @@ export interface DurableMessageRecord {
   id: string;
   channelId: ChannelId;
   accountId?: AccountId;
-  payload: unknown;
+  payload: any;
   status: DurableReceiveStatus;
   receivedAt: number;
   processedAt?: number;
@@ -16,7 +16,7 @@ export interface DurableMessageRecord {
   retries: number;
   maxRetries: number;
   lastError?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 const durableStore = new Map<string, DurableMessageRecord>();

@@ -83,7 +83,7 @@ type ProviderRuntimeHooks = {
 type StaticCatalogFallbackModel = Model & {
   compat?: ModelCompatConfig;
   contextTokens?: number;
-  params?: Record<string, unknown>;
+  params?: Record<string, any>;
   mediaInput?: ModelMediaInputConfig;
 };
 
@@ -226,7 +226,7 @@ function normalizeResolvedModel(params: {
   workspaceDir?: string;
   runtimeHooks?: ProviderRuntimeHooks;
 }): Model {
-  const normalizeModelCost = (cost: unknown): Model["cost"] => {
+  const normalizeModelCost = (cost: any): Model["cost"] => {
     if (!cost || typeof cost !== "object" || Array.isArray(cost)) {
       return { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 };
     }
@@ -268,7 +268,7 @@ function normalizeResolvedModel(params: {
       modelName: params.model.name,
       input: params.model.input,
     }),
-    cost: normalizeModelCost((params.model as { cost?: unknown }).cost),
+    cost: normalizeModelCost((params.model as { cost?: any }).cost),
   } as Model;
   const runtimeHooks = params.runtimeHooks ?? DEFAULT_PROVIDER_RUNTIME_HOOKS;
   const pluginNormalized = runtimeHooks.normalizeProviderResolvedModelWithPlugin({
@@ -376,7 +376,7 @@ function resolveConfiguredProviderDefaultApi(params: {
   return normalized.api ?? "openai-completions";
 }
 
-function normalizeTransportBaseUrl(baseUrl: unknown): string | undefined {
+function normalizeTransportBaseUrl(baseUrl: any): string | undefined {
   if (typeof baseUrl !== "string") {
     return undefined;
   }
@@ -384,7 +384,7 @@ function normalizeTransportBaseUrl(baseUrl: unknown): string | undefined {
   return trimmed ? trimmed : undefined;
 }
 
-function resolveProviderRequestTimeoutMs(timeoutSeconds: unknown): number | undefined {
+function resolveProviderRequestTimeoutMs(timeoutSeconds: any): number | undefined {
   return finiteSecondsToTimerSafeMilliseconds(timeoutSeconds, { floorSeconds: true });
 }
 
@@ -475,7 +475,7 @@ function isModelsAddMetadataModel(params: {
   model: NonNullable<InlineProviderConfig["models"]>[number] | undefined;
 }) {
   return (
-    (params.model as { metadataSource?: unknown } | undefined)?.metadataSource === "models-add"
+    (params.model as { metadataSource?: any } | undefined)?.metadataSource === "models-add"
   );
 }
 
@@ -535,16 +535,16 @@ function hasConfiguredFallbackSurface(params: {
   return Boolean(baseUrl);
 }
 
-function readModelParams(value: unknown): Record<string, unknown> | undefined {
+function readModelParams(value: any): Record<string, any> | undefined {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return undefined;
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 function mergeModelParams(
-  ...entries: Array<Record<string, unknown> | undefined>
-): Record<string, unknown> | undefined {
+  ...entries: Array<Record<string, any> | undefined>
+): Record<string, any> | undefined {
   const merged = Object.assign({}, ...entries.filter(Boolean));
   return Object.keys(merged).length > 0 ? merged : undefined;
 }
@@ -553,7 +553,7 @@ function findConfiguredAgentModelParams(params: {
   cfg?: OpenClawConfig;
   provider: string;
   modelId: string;
-}): Record<string, unknown> | undefined {
+}): Record<string, any> | undefined {
   const configuredModels = params.cfg?.agents?.defaults?.models;
   if (!configuredModels) {
     return undefined;
@@ -595,10 +595,10 @@ function mergeConfiguredRuntimeModelParams(params: {
   cfg?: OpenClawConfig;
   provider: string;
   modelId: string;
-  discoveredParams?: unknown;
-  providerParams?: unknown;
-  configuredParams?: unknown;
-}): Record<string, unknown> | undefined {
+  discoveredParams?: any;
+  providerParams?: any;
+  configuredParams?: any;
+}): Record<string, any> | undefined {
   return mergeModelParams(
     readModelParams(params.discoveredParams),
     readModelParams(params.providerParams),
@@ -970,7 +970,7 @@ function resolveExplicitModelWithRegistry(params: {
     const configuredBaseUrl =
       typeof providerConfig?.baseUrl === "string" ? providerConfig.baseUrl : undefined;
     const discoveredBaseUrl =
-      typeof (model as { baseUrl?: unknown }).baseUrl === "string"
+      typeof (model as { baseUrl?: any }).baseUrl === "string"
         ? (model as { baseUrl: string }).baseUrl
         : undefined;
     const effectiveBaseUrl = configuredBaseUrl ?? discoveredBaseUrl;
@@ -1415,7 +1415,7 @@ function shouldCompareProviderRuntimeResolvedModel(params: {
 
 function resolveConfiguredFallbackReasoning(params: {
   provider: string;
-  compat?: unknown;
+  compat?: any;
   reasoning?: boolean;
 }): boolean {
   return resolveConfiguredModelReasoning(params) ?? false;
@@ -1423,7 +1423,7 @@ function resolveConfiguredFallbackReasoning(params: {
 
 function resolveConfiguredModelReasoning(params: {
   provider: string;
-  compat?: unknown;
+  compat?: any;
   reasoning?: boolean;
 }): boolean | undefined {
   if (params.reasoning !== undefined) {
@@ -1434,8 +1434,8 @@ function resolveConfiguredModelReasoning(params: {
 
 function resolveMergedConfiguredModelReasoning(params: {
   provider: string;
-  configuredCompat?: unknown;
-  resolvedCompat?: unknown;
+  configuredCompat?: any;
+  resolvedCompat?: any;
   configuredReasoning?: boolean;
   discoveredReasoning?: boolean;
 }): boolean {
@@ -1454,7 +1454,7 @@ function resolveMergedConfiguredModelReasoning(params: {
   );
 }
 
-function isVllmQwenThinkingCompat(params: { provider: string; compat?: unknown }): boolean {
+function isVllmQwenThinkingCompat(params: { provider: string; compat?: any }): boolean {
   const thinkingFormat = readCompatThinkingFormat(params.compat);
   return (
     normalizeProviderId(params.provider) === "vllm" &&
@@ -1462,11 +1462,11 @@ function isVllmQwenThinkingCompat(params: { provider: string; compat?: unknown }
   );
 }
 
-function readCompatThinkingFormat(compat: unknown): string | undefined {
+function readCompatThinkingFormat(compat: any): string | undefined {
   if (!compat || typeof compat !== "object" || Array.isArray(compat)) {
     return undefined;
   }
-  const thinkingFormat = (compat as { thinkingFormat?: unknown }).thinkingFormat;
+  const thinkingFormat = (compat as { thinkingFormat?: any }).thinkingFormat;
   return typeof thinkingFormat === "string" ? thinkingFormat : undefined;
 }
 
@@ -1923,13 +1923,13 @@ function buildMissingProviderModelRegistrationHint(params: {
   const providerConfig = findNormalizedProviderValue(
     params.cfg?.models?.providers,
     params.provider,
-  ) as { models?: unknown } | undefined;
+  ) as { models?: any } | undefined;
   const providerModels = Array.isArray(providerConfig?.models) ? providerConfig.models : [];
   const hasProviderModel = providerModels.some((entry) => {
     if (!entry || typeof entry !== "object" || !("id" in entry)) {
       return false;
     }
-    const id = (entry as { id?: unknown }).id;
+    const id = (entry as { id?: any }).id;
     return typeof id === "string" && id === params.modelId;
   });
   if (hasProviderModel) {

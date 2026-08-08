@@ -28,7 +28,7 @@ export const PROVIDER_INTERNAL_ERROR_USER_MESSAGE =
 
 /** Classifies provider request failures that are actionable for users. */
 export function classifyProviderRequestError(
-  err: unknown,
+  err: any,
 ): ProviderRequestErrorClassification | undefined {
   const technicalMessage = formatErrorMessage(err);
   if (
@@ -92,21 +92,21 @@ function isProviderInternalErrorMessage(message: string): boolean {
   );
 }
 
-function hasHttp429Evidence(err: unknown, message: string): boolean {
+function hasHttp429Evidence(err: any, message: string): boolean {
   return (
     readHttp429Status(err) ||
     /\b(?:http\s*)?429\b|["'](?:status|code)["']\s*:\s*429\b/iu.test(message)
   );
 }
 
-function readHttp429Status(err: unknown, seen = new Set<unknown>()): boolean {
+function readHttp429Status(err: any, seen = new Set<any>()): boolean {
   if (!err || typeof err !== "object" || seen.has(err)) {
     return false;
   }
   seen.add(err);
   const candidate =
-    (err as { status?: unknown; statusCode?: unknown }).status ??
-    (err as { statusCode?: unknown }).statusCode;
+    (err as { status?: any; statusCode?: any }).status ??
+    (err as { statusCode?: any }).statusCode;
   if (typeof candidate === "number" && Number.isFinite(candidate)) {
     if (candidate === 429) {
       return true;
@@ -114,7 +114,7 @@ function readHttp429Status(err: unknown, seen = new Set<unknown>()): boolean {
   } else if (typeof candidate === "string" && Number(candidate.trim()) === 429) {
     return true;
   }
-  const nested = err as { cause?: unknown; error?: unknown; response?: unknown };
+  const nested = err as { cause?: any; error?: any; response?: any };
   return (
     readHttp429Status(nested.response, seen) ||
     readHttp429Status(nested.error, seen) ||

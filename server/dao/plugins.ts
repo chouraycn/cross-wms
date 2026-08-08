@@ -21,7 +21,7 @@ export function listPlugins(
 ): { items: PluginRow[]; total: number } {
   const db = initDb();
   const conditions: string[] = [];
-  const params: unknown[] = [];
+  const params: any[] = [];
 
   if (status) {
     conditions.push('status = ?');
@@ -120,7 +120,7 @@ export function updatePlugin(
   if (!existing) return undefined;
 
   const sets: string[] = [];
-  const params: unknown[] = [];
+  const params: any[] = [];
 
   if (updates.display_name !== undefined) { sets.push('display_name = ?'); params.push(updates.display_name); }
   if (updates.status !== undefined) { sets.push('status = ?'); params.push(updates.status); }
@@ -152,7 +152,7 @@ export function setPluginStatus(id: string, status: string): PluginRow | undefin
 }
 
 /** 获取插件配置（从 metadata 中解析） */
-export function getPluginConfig(id: string): Record<string, unknown> {
+export function getPluginConfig(id: string): Record<string, any> {
   const plugin = getPlugin(id);
   if (!plugin) return {};
   try {
@@ -164,7 +164,7 @@ export function getPluginConfig(id: string): Record<string, unknown> {
 }
 
 /** 更新插件配置（保存到 metadata 中） */
-export function setPluginConfig(id: string, config: Record<string, unknown>): PluginRow | undefined {
+export function setPluginConfig(id: string, config: Record<string, any>): PluginRow | undefined {
   const plugin = getPlugin(id);
   if (!plugin) return undefined;
   try {
@@ -182,7 +182,7 @@ export function setPluginConfig(id: string, config: Record<string, unknown>): Pl
 /**
  * 获取插件配置（从 config_json 列读取）
  */
-export function getPluginConfigJson(id: string): Record<string, unknown> {
+export function getPluginConfigJson(id: string): Record<string, any> {
   const plugin = getPlugin(id);
   if (!plugin) return {};
   try {
@@ -195,7 +195,7 @@ export function getPluginConfigJson(id: string): Record<string, unknown> {
 /**
  * 更新插件配置（写入 config_json 列）
  */
-export function setPluginConfigJson(id: string, config: Record<string, unknown>): PluginRow | undefined {
+export function setPluginConfigJson(id: string, config: Record<string, any>): PluginRow | undefined {
   const db = initDb();
   const existing = getPlugin(id);
   if (!existing) return undefined;

@@ -107,13 +107,13 @@ function normalizeAcpAgent(raw: string | undefined): LiveAcpAgent {
   return "claude";
 }
 
-function extractAssistantTexts(messages: unknown[]): string[] {
+function extractAssistantTexts(messages: any[]): string[] {
   const texts: string[] = [];
   for (const entry of messages) {
     if (!entry || typeof entry !== "object") {
       continue;
     }
-    const role = (entry as { role?: unknown }).role;
+    const role = (entry as { role?: any }).role;
     if (role !== "assistant") {
       continue;
     }
@@ -187,9 +187,9 @@ function resolveLiveParentModel(): string {
   );
 }
 
-function resolveModelObject(value: unknown): Record<string, unknown> {
+function resolveModelObject(value: any): Record<string, any> {
   return value && typeof value === "object" && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
+    ? (value as Record<string, any>)
     : {};
 }
 
@@ -206,7 +206,7 @@ async function prepareCodexHomeForLiveBindTest(tempRoot: string): Promise<void> 
       () => {
         hasAuthFile = true;
       },
-      (error: unknown) => {
+      (error: any) => {
         if ((error as NodeJS.ErrnoException)?.code !== "ENOENT") {
           throw error;
         }
@@ -362,7 +362,7 @@ async function bindConversationAndWait(params: {
         logLiveStep(`acpx backend became healthy before bind attempt ${attempt}`);
       } else {
         if (runtime?.doctor && (attempt === 1 || attempt % 6 === 0)) {
-          const report = await runtime.doctor().catch((error: unknown) => ({
+          const report = await runtime.doctor().catch((error: any) => ({
             message: error instanceof Error ? error.message : String(error),
             details: [],
           }));
@@ -388,7 +388,7 @@ async function bindConversationAndWait(params: {
       originatingAccountId: params.originatingAccountId,
     });
 
-    const mainHistory: { messages?: unknown[] } = await params.client.request("chat.history", {
+    const mainHistory: { messages?: any[] } = await params.client.request("chat.history", {
       sessionKey: params.sessionKey,
       limit: 16,
     });
@@ -467,12 +467,12 @@ async function waitForAssistantText(params: {
   contains: string;
   minAssistantCount?: number;
   timeoutMs?: number;
-}): Promise<{ messages: unknown[]; lastAssistantText: string; matchedAssistantText: string }> {
+}): Promise<{ messages: any[]; lastAssistantText: string; matchedAssistantText: string }> {
   const timeoutMs = params.timeoutMs ?? 30_000;
   const startedAt = Date.now();
 
   while (Date.now() - startedAt < timeoutMs) {
-    const history: { messages?: unknown[] } = await params.client.request("chat.history", {
+    const history: { messages?: any[] } = await params.client.request("chat.history", {
       sessionKey: params.sessionKey,
       limit: 16,
     });
@@ -489,7 +489,7 @@ async function waitForAssistantText(params: {
     await sleep(500);
   }
 
-  const finalHistory: { messages?: unknown[] } = await params.client.request("chat.history", {
+  const finalHistory: { messages?: any[] } = await params.client.request("chat.history", {
     sessionKey: params.sessionKey,
     limit: 16,
   });
@@ -505,12 +505,12 @@ async function waitForAssistantTurn(params: {
   sessionKey: string;
   minAssistantCount: number;
   timeoutMs?: number;
-}): Promise<{ messages: unknown[]; lastAssistantText: string }> {
+}): Promise<{ messages: any[]; lastAssistantText: string }> {
   const timeoutMs = params.timeoutMs ?? 30_000;
   const startedAt = Date.now();
 
   while (Date.now() - startedAt < timeoutMs) {
-    const history: { messages?: unknown[] } = await params.client.request("chat.history", {
+    const history: { messages?: any[] } = await params.client.request("chat.history", {
       sessionKey: params.sessionKey,
       limit: 16,
     });
@@ -523,7 +523,7 @@ async function waitForAssistantTurn(params: {
     await sleep(500);
   }
 
-  const finalHistory: { messages?: unknown[] } = await params.client.request("chat.history", {
+  const finalHistory: { messages?: any[] } = await params.client.request("chat.history", {
     sessionKey: params.sessionKey,
     limit: 16,
   });

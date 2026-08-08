@@ -7,7 +7,7 @@
  */
 
 /** Resolve the transcript policy for an attempt (returns permissive default in cross-wms). */
-export function resolveAttemptTranscriptPolicy(..._args: unknown[]): {
+export function resolveAttemptTranscriptPolicy(..._args: any[]): {
   includeToolResults: boolean;
   includeAssistantMessages: boolean;
   includeUserMessages: boolean;

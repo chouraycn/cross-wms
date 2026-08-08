@@ -33,7 +33,7 @@ import {
 type GatewayAuthChoice = "token" | "password" | "trusted-proxy";
 type GatewayTokenInputMode = "plaintext" | "ref";
 
-function validateGatewayPortInput(value: unknown): string | undefined {
+function validateGatewayPortInput(value: any): string | undefined {
   if (parsePort(value) === null) {
     return formatPortRangeHint();
   }

@@ -51,11 +51,11 @@ export type LegacyStateDetection = {
   };
   channelPlans: {
     hasLegacy: boolean;
-    plans: unknown[];
+    plans: any[];
   };
   pluginPlans?: {
     hasLegacy: boolean;
-    plans: unknown[];
+    plans: any[];
   };
   pluginStateSidecar: {
     sourcePath: string;
@@ -121,7 +121,7 @@ const DEFAULT_AGENT_ID = "default";
 const DEFAULT_MAIN_KEY = "main";
 
 /** 将字符串规范化为小写或空字符串（来自 normalization-core/string-coerce） */
-function normalizeLowercaseStringOrEmpty(value: unknown): string {
+function normalizeLowercaseStringOrEmpty(value: any): string {
   if (typeof value !== "string") {
     return "";
   }
@@ -145,7 +145,7 @@ function listTopLevelSessionStoreKeys(raw: string): string[] | null {
   try {
     const parsed = JSON.parse(raw);
     if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-      return Object.keys(parsed as Record<string, unknown>);
+      return Object.keys(parsed as Record<string, any>);
     }
   } catch {
     return null;
@@ -154,7 +154,7 @@ function listTopLevelSessionStoreKeys(raw: string): string[] | null {
 }
 
 /** 规范化 agent id（降级：trim + lowercase） */
-function normalizeAgentId(value: unknown): string {
+function normalizeAgentId(value: any): string {
   if (typeof value !== "string") {
     return DEFAULT_AGENT_ID;
   }

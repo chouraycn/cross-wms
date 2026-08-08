@@ -11,7 +11,7 @@ import {
 import * as discovery from "./discovery.js";
 import * as manifest from "./manifest.js";
 
-function normalizeVoiceCallEntry(entry: Record<string, unknown>) {
+function normalizeVoiceCallEntry(entry: Record<string, any>) {
   return normalizePluginsConfig({
     entries: {
       "voice-call": entry,
@@ -29,7 +29,7 @@ function expectResolvedEnableState(
 function expectNormalizedEnableState(params: {
   id: string;
   origin: "bundled" | "workspace";
-  config: Record<string, unknown>;
+  config: Record<string, any>;
   manifestEnabledByDefault?: boolean;
   expected: ReturnType<typeof resolveEnableState>;
 }) {

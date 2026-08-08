@@ -180,7 +180,7 @@ export type DiscordVoiceRealtimeConfig = {
   /** Debounce window before buffered transcripts are sent to the OpenClaw agent. */
   debounceMs?: number;
   /** Provider-specific realtime voice config keyed by provider id. */
-  providers?: Record<string, Record<string, unknown> | undefined>;
+  providers?: Record<string, Record<string, any> | undefined>;
 };
 
 export type DiscordVoiceAgentSessionConfig = {

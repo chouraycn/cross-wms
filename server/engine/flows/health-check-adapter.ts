@@ -78,7 +78,7 @@ export function normalizeHealthCheck(check: HealthCheckInput): RegisteredHealthC
       kind: 'core' | 'plugin';
       description: string;
       source?: string;
-      run(ctx: unknown, scope?: unknown): Promise<HealthCheckRunResult>;
+      run(ctx: any, scope?: any): Promise<HealthCheckRunResult>;
     };
     return {
       id: runnable.id,

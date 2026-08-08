@@ -142,7 +142,7 @@ async function hasBoundConversationForSession(params: {
     return false;
   }
   const accountId = normalizeOptionalLowercaseString(params.accountIdRaw) ?? "";
-  const channels = params.cfg.channels as Record<string, { defaultAccount?: unknown } | undefined>;
+  const channels = params.cfg.channels as Record<string, { defaultAccount?: any } | undefined>;
   const configuredDefaultAccountId = channels?.[channel]?.defaultAccount;
   const normalizedAccountId =
     accountId || normalizeOptionalLowercaseString(configuredDefaultAccountId) || "default";
@@ -477,7 +477,7 @@ export async function tryDispatchAcpReply(params: {
   );
   const explicitDispatchAccountId = normalizeOptionalString(params.ctx.AccountId);
   const dispatchChannels = params.cfg.channels as
-    | Record<string, { defaultAccount?: unknown } | undefined>
+    | Record<string, { defaultAccount?: any } | undefined>
     | undefined;
   const defaultDispatchAccount =
     normalizedDispatchChannel == null

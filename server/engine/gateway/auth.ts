@@ -663,8 +663,8 @@ export function createSkillAccessMiddleware(params: {
   skillName: string;
   action: string;
   userRole?: string;
-}): (context: unknown) => { allowed: boolean; reason?: string } {
-  return (context: unknown) => {
+}): (context: any) => { allowed: boolean; reason?: string } {
+  return (context: any) => {
     void context;
     const role = params.userRole ?? "user";
     return checkSkillAccess(params.skillName, params.action, role);

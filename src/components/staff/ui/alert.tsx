@@ -48,7 +48,7 @@ function Alert({
       data-slot="alert"
       className={cn(alertVariants({ variant }), className)}
       sx={VARIANT_SX[variant ?? 'default']}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     />
   )
 }
@@ -63,7 +63,7 @@ function AlertTitle({ className, ...props }: React.ComponentProps<'div'>) {
         className,
       )}
       sx={{ fontWeight: 500 }}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     />
   )
 }
@@ -78,7 +78,7 @@ function AlertDescription({ className, ...props }: React.ComponentProps<'div'>) 
         className,
       )}
       sx={{ fontSize: '0.875rem', color: 'text.secondary' }}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     />
   )
 }
@@ -89,7 +89,7 @@ function AlertAction({ className, ...props }: React.ComponentProps<'div'>) {
       component="div"
       data-slot="alert-action"
       className={cn('absolute top-2 right-2', className)}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     />
   )
 }

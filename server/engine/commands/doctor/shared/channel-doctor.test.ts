@@ -51,13 +51,13 @@ function createMatrixEnabledConfig() {
 }
 
 function createNormalizeCompatibilityConfig(change = "matrix") {
-  return vi.fn(({ cfg }: { cfg: unknown }) => ({
+  return vi.fn(({ cfg }: { cfg: any }) => ({
     config: cfg,
     changes: [change],
   }));
 }
 
-function mockReadOnlyMatrixPlugin(doctor?: Record<string, unknown>) {
+function mockReadOnlyMatrixPlugin(doctor?: Record<string, any>) {
   mocks.resolveReadOnlyChannelPluginsForConfig.mockReturnValue({
     plugins: [
       {
@@ -68,7 +68,7 @@ function mockReadOnlyMatrixPlugin(doctor?: Record<string, unknown>) {
   });
 }
 
-function mockBundledMatrixSetupPlugin(doctor?: Record<string, unknown>) {
+function mockBundledMatrixSetupPlugin(doctor?: Record<string, any>) {
   mocks.getBundledChannelSetupPlugin.mockImplementation((id: string) =>
     id === "matrix"
       ? {
@@ -79,7 +79,7 @@ function mockBundledMatrixSetupPlugin(doctor?: Record<string, unknown>) {
   );
 }
 
-function mockBundledMatrixRuntimePlugin(doctor?: Record<string, unknown>) {
+function mockBundledMatrixRuntimePlugin(doctor?: Record<string, any>) {
   mocks.getBundledChannelPlugin.mockImplementation((id: string) =>
     id === "matrix"
       ? {
@@ -90,7 +90,7 @@ function mockBundledMatrixRuntimePlugin(doctor?: Record<string, unknown>) {
   );
 }
 
-function expectMatrixDoctorLookupCalls(cfg?: unknown) {
+function expectMatrixDoctorLookupCalls(cfg?: any) {
   if (cfg) {
     expect(mocks.resolveReadOnlyChannelPluginsForConfig).toHaveBeenCalledWith(
       cfg,
@@ -103,7 +103,7 @@ function expectMatrixDoctorLookupCalls(cfg?: unknown) {
 }
 
 async function expectRuntimeWarningFallback(params: {
-  cfg: unknown;
+  cfg: any;
   normalizeCompatibilityConfig: ReturnType<typeof vi.fn>;
   collectMutableAllowlistWarnings: ReturnType<typeof vi.fn>;
 }) {
@@ -151,11 +151,11 @@ describe("channel doctor compatibility mutations", () => {
   });
 
   it("limits stale config cleanup to requested channel ids", async () => {
-    const matrixCleanup = vi.fn(({ cfg }: { cfg: unknown }) => ({
+    const matrixCleanup = vi.fn(({ cfg }: { cfg: any }) => ({
       config: cfg,
       changes: ["matrix cleanup"],
     }));
-    const discordCleanup = vi.fn(({ cfg }: { cfg: unknown }) => ({
+    const discordCleanup = vi.fn(({ cfg }: { cfg: any }) => ({
       config: cfg,
       changes: ["discord cleanup"],
     }));

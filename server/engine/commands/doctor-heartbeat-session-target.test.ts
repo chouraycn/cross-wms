@@ -59,7 +59,7 @@ describe("describeHeartbeatSessionTargetIssues", () => {
     } as OpenClawConfig;
   }
 
-  function writeStore(cfg: OpenClawConfig, entries: Record<string, unknown>) {
+  function writeStore(cfg: OpenClawConfig, entries: Record<string, any>) {
     const storePath = resolveStorePath(cfg.session?.store, { agentId: "ops" });
     fs.mkdirSync(path.dirname(storePath), { recursive: true });
     fs.writeFileSync(storePath, JSON.stringify(entries, null, 2));

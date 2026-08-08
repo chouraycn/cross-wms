@@ -44,7 +44,7 @@ type EmployeeAgentLike = {
   id?: string
   name?: string
   is_overall?: boolean
-  metadata?: Record<string, unknown>
+  metadata?: Record<string, any>
 }
 
 export const EMPLOYEE_AVATAR_PRESETS: EmployeeAvatarPreset[] = [
@@ -265,16 +265,16 @@ export function openGalleryImportSourceOptions(
   return agentId ? [{ value: agentId, label }] : []
 }
 
-function asStringArray(value: unknown): string[] {
+function asStringArray(value: any): string[] {
   return Array.isArray(value) ? value.map(String).filter(Boolean) : []
 }
 
-function stringFromMeta(metadata: Record<string, unknown>, key: string): string {
+function stringFromMeta(metadata: Record<string, any>, key: string): string {
   const value = metadata[key]
   return typeof value === 'string' ? value : ''
 }
 
-function firstString(...values: unknown[]): string {
+function firstString(...values: any[]): string {
   for (const value of values) {
     if (typeof value === 'string' && value.trim()) return value.trim()
   }
@@ -282,7 +282,7 @@ function firstString(...values: unknown[]): string {
 }
 
 export function creatorNameFromMetadata(
-  metadata?: Record<string, unknown> | null,
+  metadata?: Record<string, any> | null,
   fallback = '',
 ): string {
   const meta = metadata || {}
@@ -352,13 +352,13 @@ export function employeeDisplayNameWithCreator(agent?: AgentProfileRead | null):
   return displayNameWithCreator(employeeDisplayName(agent), employeeCreatorName(agent))
 }
 
-export function resourceCreatorName(resource?: { metadata?: Record<string, unknown> } | null): string {
+export function resourceCreatorName(resource?: { metadata?: Record<string, any> } | null): string {
   return creatorNameFromMetadata(resource?.metadata)
 }
 
 export function resourceDisplayNameWithCreator(
   name: string,
-  resource?: { metadata?: Record<string, unknown> } | null,
+  resource?: { metadata?: Record<string, any> } | null,
 ): string {
   return displayNameWithCreator(name, resourceCreatorName(resource))
 }
@@ -391,7 +391,7 @@ export function activeResourceCount(resources: AgentResourceBindingRead[] | unde
   return (resources || []).filter((item) => item.status === 'active').length
 }
 
-export function employeeMetadataFromTemplate(templateKey: string, currentMetadata: Record<string, unknown> = {}): Record<string, unknown> {
+export function employeeMetadataFromTemplate(templateKey: string, currentMetadata: Record<string, any> = {}): Record<string, any> {
   const template = EMPLOYEE_TEMPLATES.find((item) => item.key === templateKey) || EMPLOYEE_TEMPLATES[0]
   return {
     ...currentMetadata,
@@ -408,7 +408,7 @@ export function employeeMetadataFromTemplate(templateKey: string, currentMetadat
   }
 }
 
-export function employeeBlankMetadata(currentMetadata: Record<string, unknown> = {}): Record<string, unknown> {
+export function employeeBlankMetadata(currentMetadata: Record<string, any> = {}): Record<string, any> {
   return {
     ...currentMetadata,
     blank_onboarding: true,

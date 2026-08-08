@@ -22,14 +22,14 @@ const resolveAwsSdkEnvVarName = vi.fn().mockReturnValue(undefined);
 const hasUsableCustomProviderApiKey = vi.fn().mockReturnValue(false);
 const hasSyntheticLocalProviderAuthConfig = vi.fn().mockReturnValue(false);
 const loadModelCatalog = vi.fn(async () => []);
-const loadProviderCatalogModelsForList = vi.fn<() => Promise<Array<Record<string, unknown>>>>(
+const loadProviderCatalogModelsForList = vi.fn<() => Promise<Array<Record<string, any>>>>(
   async () => [],
 );
-const loadStaticManifestCatalogRowsForList = vi.fn<() => Array<Record<string, unknown>>>(() => []);
-const loadSupplementalManifestCatalogRowsForList = vi.fn<() => Array<Record<string, unknown>>>(
+const loadStaticManifestCatalogRowsForList = vi.fn<() => Array<Record<string, any>>>(() => []);
+const loadSupplementalManifestCatalogRowsForList = vi.fn<() => Array<Record<string, any>>>(
   () => [],
 );
-const loadProviderIndexCatalogRowsForList = vi.fn<() => Array<Record<string, unknown>>>(() => []);
+const loadProviderIndexCatalogRowsForList = vi.fn<() => Array<Record<string, any>>>(() => []);
 const hasProviderStaticCatalogForFilter = vi.fn().mockResolvedValue(false);
 const shouldSuppressBuiltInModel = vi.fn().mockReturnValue(false);
 const shouldSuppressBuiltInModelFromManifest = vi.fn().mockReturnValue(false);
@@ -47,11 +47,11 @@ const normalizeProviderResolvedModelWithPlugin = vi.hoisted(() =>
   }),
 );
 const modelRegistryState = {
-  models: [] as Array<Record<string, unknown>>,
-  available: [] as Array<Record<string, unknown>>,
-  getAllError: undefined as unknown,
-  getAvailableError: undefined as unknown,
-  findError: undefined as unknown,
+  models: [] as Array<Record<string, any>>,
+  available: [] as Array<Record<string, any>>,
+  getAllError: undefined as any,
+  getAvailableError: undefined as any,
+  findError: undefined as any,
 };
 let previousExitCode: typeof process.exitCode;
 
@@ -133,8 +133,8 @@ vi.mock("../agents/agent-model-discovery.js", () => {
   }
 
   return {
-    discoverAuthStorage: () => ({}) as unknown,
-    discoverModels: () => new MockModelRegistry() as unknown,
+    discoverAuthStorage: () => ({}) as any,
+    discoverModels: () => new MockModelRegistry() as any,
   };
 });
 
@@ -181,7 +181,7 @@ function makeRuntime() {
   };
 }
 
-function firstMockArg(mockFn: ReturnType<typeof vi.fn>, label: string): unknown {
+function firstMockArg(mockFn: ReturnType<typeof vi.fn>, label: string): any {
   const call = mockFn.mock.calls[0];
   if (!call) {
     throw new Error(`Expected ${label} call`);
@@ -217,7 +217,7 @@ function expectModelRegistryUnavailable(
   expect(process.exitCode).toBe(1);
 }
 
-async function loadSourceConfigSnapshotForTest(fallback: unknown): Promise<unknown> {
+async function loadSourceConfigSnapshotForTest(fallback: any): Promise<any> {
   try {
     const { snapshot } = await readConfigFileSnapshotForWrite();
     if (snapshot.valid) {
@@ -351,9 +351,9 @@ describe("models list/status", () => {
   }
 
   function enableGoogleAntigravityAuthProfile() {
-    listProfilesForProvider.mockImplementation((_: unknown, provider: string) =>
+    listProfilesForProvider.mockImplementation((_: any, provider: string) =>
       provider === "google-antigravity"
-        ? ([{ id: "profile-1" }] as Array<Record<string, unknown>>)
+        ? ([{ id: "profile-1" }] as Array<Record<string, any>>)
         : [],
     );
   }
@@ -771,7 +771,7 @@ describe("models list/status", () => {
   });
 });
 
-function toLintErrorObject(value: unknown, fallbackMessage: string): Error {
+function toLintErrorObject(value: any, fallbackMessage: string): Error {
   if (value instanceof Error) {
     return value;
   }

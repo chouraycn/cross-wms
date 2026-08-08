@@ -40,7 +40,7 @@ const policyMocks = vi.hoisted(() => ({
 
 const routeMocks = vi.hoisted(() => ({
   routeReply: vi.fn<
-    (_params: unknown) => Promise<{ ok: true; messageId: string } | { ok: false; error: string }>
+    (_params: any) => Promise<{ ok: true; messageId: string } | { ok: false; error: string }>
   >(async () => ({ ok: true, messageId: "mock" })),
 }));
 
@@ -68,19 +68,19 @@ const channelPluginMocks = vi.hoisted(() => ({
 }));
 
 const messageActionMocks = vi.hoisted(() => ({
-  runMessageAction: vi.fn(async (_params: unknown) => ({ ok: true as const })),
+  runMessageAction: vi.fn(async (_params: any) => ({ ok: true as const })),
 }));
 
 const ttsMocks = vi.hoisted(() => ({
-  maybeApplyTtsToPayload: vi.fn(async (paramsUnknown: unknown) => {
-    const params = paramsUnknown as { payload: unknown };
+  maybeApplyTtsToPayload: vi.fn(async (paramsUnknown: any) => {
+    const params = paramsUnknown as { payload: any };
     return params.payload;
   }),
   resolveTtsConfig: vi.fn((_cfg: OpenClawConfig) => ({ mode: "final" })),
 }));
 
 const mediaUnderstandingMocks = vi.hoisted(() => ({
-  applyMediaUnderstanding: vi.fn(async (_params: unknown) => undefined),
+  applyMediaUnderstanding: vi.fn(async (_params: any) => undefined),
 }));
 
 const acpAttachmentBuffers = vi.hoisted(() => new Map<string, Buffer>());
@@ -96,12 +96,12 @@ const sessionMetaMocks = vi.hoisted(() => ({
 }));
 
 const transcriptMocks = vi.hoisted(() => ({
-  persistAcpDispatchTranscript: vi.fn(async (_params: unknown) => undefined),
+  persistAcpDispatchTranscript: vi.fn(async (_params: any) => undefined),
 }));
 
 const bindingServiceMocks = vi.hoisted(() => ({
   listBySession: vi.fn<(sessionKey: string) => SessionBindingRecord[]>(() => []),
-  unbind: vi.fn<(input: unknown) => Promise<SessionBindingRecord[]>>(async () => []),
+  unbind: vi.fn<(input: any) => Promise<SessionBindingRecord[]>>(async () => []),
 }));
 
 vi.mock("./dispatch-acp-manager.runtime.js", () => ({
@@ -109,7 +109,7 @@ vi.mock("./dispatch-acp-manager.runtime.js", () => ({
   getSessionBindingService: () => ({
     listBySession: (targetSessionKey: string) =>
       bindingServiceMocks.listBySession(targetSessionKey),
-    unbind: (input: unknown) => bindingServiceMocks.unbind(input),
+    unbind: (input: any) => bindingServiceMocks.unbind(input),
   }),
 }));
 
@@ -121,7 +121,7 @@ vi.mock("../../acp/policy.js", () => ({
 }));
 
 vi.mock("./route-reply.runtime.js", () => ({
-  routeReply: (params: unknown) => routeMocks.routeReply(params),
+  routeReply: (params: any) => routeMocks.routeReply(params),
 }));
 
 vi.mock("../../channels/plugins/index.js", () => ({
@@ -131,11 +131,11 @@ vi.mock("../../channels/plugins/index.js", () => ({
 }));
 
 vi.mock("../../infra/outbound/message-action-runner.js", () => ({
-  runMessageAction: (params: unknown) => messageActionMocks.runMessageAction(params),
+  runMessageAction: (params: any) => messageActionMocks.runMessageAction(params),
 }));
 
 vi.mock("./dispatch-acp-tts.runtime.js", () => ({
-  maybeApplyTtsToPayload: (params: unknown) => ttsMocks.maybeApplyTtsToPayload(params),
+  maybeApplyTtsToPayload: (params: any) => ttsMocks.maybeApplyTtsToPayload(params),
 }));
 
 vi.mock("../../tts/status-config.js", () => ({
@@ -148,9 +148,9 @@ vi.mock("../../tts/status-config.js", () => ({
 }));
 
 vi.mock("./dispatch-acp-media.runtime.js", () => ({
-  applyMediaUnderstanding: (params: unknown) =>
+  applyMediaUnderstanding: (params: any) =>
     mediaUnderstandingMocks.applyMediaUnderstanding(params),
-  isMediaUnderstandingSkipError: (error: unknown): error is MediaUnderstandingSkipError =>
+  isMediaUnderstandingSkipError: (error: any): error is MediaUnderstandingSkipError =>
     error instanceof Error && error.name === "MediaUnderstandingSkipError",
   normalizeAttachments: (ctx: { MediaPath?: string; MediaType?: string }) =>
     ctx.MediaPath
@@ -205,20 +205,20 @@ vi.mock("../../logging/diagnostic.js", () => ({
 }));
 
 vi.mock("./dispatch-acp-transcript.runtime.js", () => ({
-  persistAcpDispatchTranscript: (params: unknown) =>
+  persistAcpDispatchTranscript: (params: any) =>
     transcriptMocks.persistAcpDispatchTranscript(params),
 }));
 
 const sessionKey = "agent:codex-acp:session-1";
 const originalFetch = globalThis.fetch;
 type MockTtsReply = Awaited<ReturnType<typeof ttsMocks.maybeApplyTtsToPayload>>;
-type MockCallSource = { mock: { calls: Array<Array<unknown>> } };
+type MockCallSource = { mock: { calls: Array<Array<any>> } };
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object") {
     throw new Error(`expected ${label}`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 function mockArg(source: MockCallSource, callIndex: number, argIndex: number, _label: string) {
@@ -308,7 +308,7 @@ async function runDispatch(params: {
   originatingTo?: string;
   onReplyStart?: () => void;
   images?: Array<{ data: string; mimeType: string }>;
-  ctxOverrides?: Record<string, unknown>;
+  ctxOverrides?: Record<string, any>;
   sessionKeyOverride?: string;
   suppressUserDelivery?: boolean;
   suppressReplyLifecycle?: boolean;
@@ -349,7 +349,7 @@ async function runDispatch(params: {
 }
 
 async function emitToolLifecycleEvents(
-  onEvent: (event: unknown) => Promise<void>,
+  onEvent: (event: any) => Promise<void>,
   toolCallId: string,
 ) {
   await onEvent({
@@ -373,7 +373,7 @@ async function emitToolLifecycleEvents(
 
 function mockToolLifecycleTurn(toolCallId: string) {
   managerMocks.runTurn.mockImplementation(
-    async ({ onEvent }: { onEvent: (event: unknown) => Promise<void> }) => {
+    async ({ onEvent }: { onEvent: (event: any) => Promise<void> }) => {
       await emitToolLifecycleEvents(onEvent, toolCallId);
     },
   );
@@ -381,7 +381,7 @@ function mockToolLifecycleTurn(toolCallId: string) {
 
 function mockVisibleTextTurn(text = "visible") {
   managerMocks.runTurn.mockImplementationOnce(
-    async ({ onEvent }: { onEvent: (event: unknown) => Promise<void> }) => {
+    async ({ onEvent }: { onEvent: (event: any) => Promise<void> }) => {
       await onEvent({ type: "text_delta", text, tag: "agent_message_chunk" });
       await onEvent({ type: "done" });
     },
@@ -390,7 +390,7 @@ function mockVisibleTextTurn(text = "visible") {
 
 function mockRoutedTextTurn(text: string) {
   managerMocks.runTurn.mockImplementation(
-    async ({ onEvent }: { onEvent: (event: unknown) => Promise<void> }) => {
+    async ({ onEvent }: { onEvent: (event: any) => Promise<void> }) => {
       await onEvent({ type: "text_delta", text, tag: "agent_message_chunk" });
       await onEvent({ type: "done" });
     },
@@ -424,7 +424,7 @@ async function runRoutedAcpTextTurn(text: string) {
 
 function expectRoutedPayload(callIndex: number, payload: Partial<MockTtsReply>) {
   const routedPayload = routePayload(callIndex - 1);
-  for (const [key, value] of Object.entries(payload as Record<string, unknown>)) {
+  for (const [key, value] of Object.entries(payload as Record<string, any>)) {
     expect(routedPayload[key]).toEqual(value);
   }
 }
@@ -434,7 +434,7 @@ describe("tryDispatchAcpReply", () => {
     managerMocks.resolveSession.mockReset();
     managerMocks.runTurn.mockReset();
     managerMocks.runTurn.mockImplementation(
-      async ({ onEvent }: { onEvent?: (event: unknown) => Promise<void> }) => {
+      async ({ onEvent }: { onEvent?: (event: any) => Promise<void> }) => {
         await onEvent?.({ type: "done" });
       },
     );
@@ -453,8 +453,8 @@ describe("tryDispatchAcpReply", () => {
     messageActionMocks.runMessageAction.mockReset();
     messageActionMocks.runMessageAction.mockResolvedValue({ ok: true as const });
     ttsMocks.maybeApplyTtsToPayload.mockReset();
-    ttsMocks.maybeApplyTtsToPayload.mockImplementation(async (paramsUnknown: unknown) => {
-      const params = paramsUnknown as { payload: unknown };
+    ttsMocks.maybeApplyTtsToPayload.mockImplementation(async (paramsUnknown: any) => {
+      const params = paramsUnknown as { payload: any };
       return params.payload;
     });
     ttsMocks.resolveTtsConfig.mockReset();
@@ -621,7 +621,7 @@ describe("tryDispatchAcpReply", () => {
     const { dispatcher } = createDispatcher();
 
     managerMocks.runTurn.mockImplementationOnce(
-      async ({ onEvent }: { onEvent: (event: unknown) => Promise<void> }) => {
+      async ({ onEvent }: { onEvent: (event: any) => Promise<void> }) => {
         await onEvent({
           type: "status",
           tag: "usage_update",
@@ -894,7 +894,7 @@ describe("tryDispatchAcpReply", () => {
               };
             }
           } as unknown as typeof import("./dispatch-acp-media.runtime.js").MediaAttachmentCache,
-          isMediaUnderstandingSkipError: (_error: unknown): _error is MediaUnderstandingSkipError =>
+          isMediaUnderstandingSkipError: (_error: any): _error is MediaUnderstandingSkipError =>
             false,
           normalizeAttachments: () => [],
           resolveMediaAttachmentLocalRoots: () => [tempDir],
@@ -936,7 +936,7 @@ describe("tryDispatchAcpReply", () => {
         MediaAttachmentCache: class {
           readonly __mock = true;
         } as unknown as typeof import("./dispatch-acp-media.runtime.js").MediaAttachmentCache,
-        isMediaUnderstandingSkipError: (_error: unknown): _error is MediaUnderstandingSkipError =>
+        isMediaUnderstandingSkipError: (_error: any): _error is MediaUnderstandingSkipError =>
           false,
         normalizeAttachments,
         resolveMediaAttachmentLocalRoots: () => [],
@@ -982,7 +982,7 @@ describe("tryDispatchAcpReply", () => {
               };
             }
           } as unknown as typeof import("./dispatch-acp-media.runtime.js").MediaAttachmentCache,
-          isMediaUnderstandingSkipError: (_error: unknown): _error is MediaUnderstandingSkipError =>
+          isMediaUnderstandingSkipError: (_error: any): _error is MediaUnderstandingSkipError =>
             false,
           normalizeAttachments: (ctx) => [{ path: ctx.MediaPath, mime: ctx.MediaType, index: 0 }],
           resolveMediaAttachmentLocalRoots: () => [tempDir],
@@ -1036,7 +1036,7 @@ describe("tryDispatchAcpReply", () => {
               };
             }
           } as unknown as typeof import("./dispatch-acp-media.runtime.js").MediaAttachmentCache,
-          isMediaUnderstandingSkipError: (_error: unknown): _error is MediaUnderstandingSkipError =>
+          isMediaUnderstandingSkipError: (_error: any): _error is MediaUnderstandingSkipError =>
             false,
           normalizeAttachments: (ctx) => [{ path: ctx.MediaPath, mime: ctx.MediaType, index: 1 }],
           resolveMediaAttachmentLocalRoots: () => [tempDir],
@@ -1088,7 +1088,7 @@ describe("tryDispatchAcpReply", () => {
               return getBuffer(params);
             }
           } as unknown as typeof import("./dispatch-acp-media.runtime.js").MediaAttachmentCache,
-          isMediaUnderstandingSkipError: (_error: unknown): _error is MediaUnderstandingSkipError =>
+          isMediaUnderstandingSkipError: (_error: any): _error is MediaUnderstandingSkipError =>
             false,
           normalizeAttachments: (ctx) => [{ path: ctx.MediaPath, mime: ctx.MediaType, index: 0 }],
           resolveMediaAttachmentLocalRoots: () => [tempDir],
@@ -1138,7 +1138,7 @@ describe("tryDispatchAcpReply", () => {
               };
             }
           } as unknown as typeof import("./dispatch-acp-media.runtime.js").MediaAttachmentCache,
-          isMediaUnderstandingSkipError: (_error: unknown): _error is MediaUnderstandingSkipError =>
+          isMediaUnderstandingSkipError: (_error: any): _error is MediaUnderstandingSkipError =>
             false,
           normalizeAttachments: (ctx) => [{ url: ctx.MediaUrl, mime: ctx.MediaType, index: 0 }],
           resolveMediaAttachmentLocalRoots: () => [tempDir],
@@ -1923,7 +1923,7 @@ describe("tryDispatchAcpReply", () => {
       },
     });
     managerMocks.runTurn.mockImplementation(
-      async ({ onEvent }: { onEvent: (event: unknown) => Promise<void> }) => {
+      async ({ onEvent }: { onEvent: (event: any) => Promise<void> }) => {
         await onEvent({ type: "text_delta", text: "First chunk. ", tag: "agent_message_chunk" });
         await onEvent({ type: "text_delta", text: "Second chunk.", tag: "agent_message_chunk" });
         await onEvent({ type: "done" });
@@ -1971,7 +1971,7 @@ describe("tryDispatchAcpReply", () => {
       },
     });
     managerMocks.runTurn.mockImplementation(
-      async ({ onEvent }: { onEvent: (event: unknown) => Promise<void> }) => {
+      async ({ onEvent }: { onEvent: (event: any) => Promise<void> }) => {
         await onEvent({ type: "text_delta", text: "abcdef", tag: "agent_message_chunk" });
         await onEvent({ type: "done" });
       },
@@ -2024,7 +2024,7 @@ describe("tryDispatchAcpReply", () => {
     ttsMocks.resolveTtsConfig.mockReturnValue({ mode: "final" });
 
     managerMocks.runTurn.mockImplementation(
-      async ({ onEvent }: { onEvent: (event: unknown) => Promise<void> }) => {
+      async ({ onEvent }: { onEvent: (event: any) => Promise<void> }) => {
         await onEvent({ type: "done" });
       },
     );

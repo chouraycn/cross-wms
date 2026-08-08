@@ -5,14 +5,14 @@
  */
 export function resolveBundledWebSearchProvidersFromPublicArtifacts(params: {
   pluginDir: string;
-}): unknown[] {
+}): any[] {
   void params;
   return [];
 }
 
 export function resolveBundledWebFetchProvidersFromPublicArtifacts(params: {
   pluginDir: string;
-}): unknown[] {
+}): any[] {
   void params;
   return [];
 }

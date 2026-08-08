@@ -70,8 +70,8 @@ async function withIsolatedAgentDir<T>(run: (agentDir: string) => Promise<T>): P
 function createAudioCfg(params: {
   provider: string;
   model: string;
-  providerConfig?: Record<string, unknown>;
-  entry?: Record<string, unknown>;
+  providerConfig?: Record<string, any>;
+  entry?: Record<string, any>;
 }): OpenClawConfig {
   return {
     ...(params.providerConfig

@@ -44,7 +44,7 @@ vi.mock("./random-token.js", () => ({
   randomToken: randomTokenMock,
 }));
 
-function firstReplaceConfigRequest(): unknown {
+function firstReplaceConfigRequest(): any {
   const [call] = replaceConfigFileMock.mock.calls;
   if (!call) {
     throw new Error("expected config replace call");

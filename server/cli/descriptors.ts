@@ -468,7 +468,7 @@ export function addCommandDescriptorsToProgram(
   program: {
     command(name: string): {
       description(desc: string): {
-        aliases(aliases: readonly string[]): unknown;
+        aliases(aliases: readonly string[]): any;
       };
     };
   },

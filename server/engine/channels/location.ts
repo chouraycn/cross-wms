@@ -30,7 +30,7 @@ export interface ChannelLocation {
   isPublic?: boolean;
   isPrivate?: boolean;
   isArchived?: boolean;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface LocationResolutionResult {
@@ -63,7 +63,7 @@ export function getChannelLocation(params: {
 
 export function resolveLocation(params: {
   channelId: ChannelId;
-  rawLocation: Record<string, unknown>;
+  rawLocation: Record<string, any>;
 }): LocationResolutionResult {
   const { channelId, rawLocation } = params;
 
@@ -81,7 +81,7 @@ export function resolveLocation(params: {
     isPublic: rawLocation.isPublic as boolean | undefined,
     isPrivate: rawLocation.isPrivate as boolean | undefined,
     isArchived: rawLocation.isArchived as boolean | undefined,
-    metadata: rawLocation.metadata as Record<string, unknown> | undefined,
+    metadata: rawLocation.metadata as Record<string, any> | undefined,
   };
 
   cacheChannelLocation(location);

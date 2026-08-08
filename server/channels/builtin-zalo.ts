@@ -90,7 +90,7 @@ export interface ZaloWebhookResult {
 export async function callZaloApi<T = unknown>(
   method: string,
   botToken: string,
-  body?: Record<string, unknown>,
+  body?: Record<string, any>,
   options?: { apiRoot?: string; timeoutMs?: number },
 ): Promise<ZaloApiResponse<T>> {
   const apiRoot = options?.apiRoot || ZALO_API_BASE;
@@ -249,7 +249,7 @@ export function createZaloChannelPlugin(): ChannelPlugin {
 
   const zaloConfig: ChannelConfigAdapter<ZaloAccountConfig> = {
     listAccountIds: (config: AppConfig): ChannelId[] => {
-      const zaloConfig = config.zalo as Record<string, unknown>;
+      const zaloConfig = config.zalo as Record<string, any>;
       if (zaloConfig && zaloConfig.botToken) {
         return [ZALO_CHANNEL_ID];
       }
@@ -260,7 +260,7 @@ export function createZaloChannelPlugin(): ChannelPlugin {
       accountId: ChannelId,
     ): ZaloAccountConfig | null => {
       if (accountId !== ZALO_CHANNEL_ID) return null;
-      const zaloConfig = config.zalo as Record<string, unknown>;
+      const zaloConfig = config.zalo as Record<string, any>;
       if (zaloConfig && zaloConfig.botToken) {
         return {
           botToken: String(zaloConfig.botToken),
@@ -292,7 +292,7 @@ export function createZaloChannelPlugin(): ChannelPlugin {
         try {
           const rendered = await ctx.render();
           const text = rendered.parts
-            .map((p: { content: unknown }) => String(p.content))
+            .map((p: { content: any }) => String(p.content))
             .join("\n");
 
           if (!ctx.to) {
@@ -333,8 +333,8 @@ export function createZaloChannelPlugin(): ChannelPlugin {
  * Zalo 通过 webhook POST 事件到指定 URL，格式为：
  * { event_name: "message.text.received", message: { ... } }
  */
-export function parseZaloWebhook(body: unknown): ZaloWebhookResult {
-  const data = body as Record<string, unknown>;
+export function parseZaloWebhook(body: any): ZaloWebhookResult {
+  const data = body as Record<string, any>;
 
   if (!data || typeof data !== "object") {
     return { success: false, error: "Invalid Zalo webhook payload" };
@@ -354,7 +354,7 @@ export function parseZaloWebhook(body: unknown): ZaloWebhookResult {
     return { success: false, error: `Unsupported event: ${eventName}` };
   }
 
-  const message = data.message as Record<string, unknown> | undefined;
+  const message = data.message as Record<string, any> | undefined;
   if (!message) {
     return { success: false, error: "No message in webhook payload" };
   }
@@ -365,8 +365,8 @@ export function parseZaloWebhook(body: unknown): ZaloWebhookResult {
     return { success: false, error: "Empty message text" };
   }
 
-  const from = message.from as Record<string, unknown> | undefined;
-  const chat = message.chat as Record<string, unknown> | undefined;
+  const from = message.from as Record<string, any> | undefined;
+  const chat = message.chat as Record<string, any> | undefined;
   const chatType = String(chat?.chat_type || "PRIVATE");
 
   return {

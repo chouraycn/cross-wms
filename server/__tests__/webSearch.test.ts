@@ -35,7 +35,7 @@ vi.mock('../plugins/web-search-providers.js', () => ({
           },
           required: ['query'],
         },
-        execute: async (args: Record<string, unknown>) => ({
+        execute: async (args: Record<string, any>) => ({
           query: String(args.query || ''),
           results: [
             { title: 'Mock Result 1', url: 'https://mock1.com', snippet: 'Snippet 1' },

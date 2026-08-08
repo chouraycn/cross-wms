@@ -7,6 +7,6 @@
  */
 
 /** Ensure the selected agent harness plugin is loaded (no-op in cross-wms). */
-export function ensureSelectedAgentHarnessPlugin(..._args: unknown[]): void {
+export function ensureSelectedAgentHarnessPlugin(..._args: any[]): void {
   // No-op: harness plugin setup not available in cross-wms.
 }

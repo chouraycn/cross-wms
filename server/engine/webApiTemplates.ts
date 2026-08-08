@@ -48,7 +48,7 @@ export function renderTemplate(template: string, params: Record<string, string>)
 export type ResponseExtractor = 'none' | 'jsonpath' | 'css' | 'regex';
 
 export interface ExtractionResult {
-  extracted: unknown;
+  extracted: any;
   extractorType: ResponseExtractor;
   matchCount: number;
 }
@@ -145,7 +145,7 @@ export interface ExecuteTemplateResult {
   statusText: string | null;
   contentType: string | null;
   durationMs: number;
-  extracted: unknown;
+  extracted: any;
   extractorType: ResponseExtractor;
   matchCount: number;
   error?: string;

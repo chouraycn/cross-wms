@@ -1,36 +1,36 @@
 /** Provider discovery. 移植自 openclaw/src/plugins/provider-discovery.ts。
  * 降级策略：返回空/默认值。 */
 export type ResolveRuntimePluginDiscoveryProvidersParams = {
-  config?: unknown;
+  config?: any;
   env?: NodeJS.ProcessEnv;
   workspaceDir?: string;
 };
 export type ResolveInstalledPluginProviderContributionIdsParams = unknown;
-export function resolveInstalledPluginProviderContributionIds(params: unknown): string[] {
+export function resolveInstalledPluginProviderContributionIds(params: any): string[] {
   void params;
   return [];
 }
-export async function resolveRuntimePluginDiscoveryProviders(params: unknown): Promise<unknown[]> {
+export async function resolveRuntimePluginDiscoveryProviders(params: any): Promise<any[]> {
   void params;
   return [];
 }
-export function groupPluginDiscoveryProvidersByOrder(params: unknown): unknown {
+export function groupPluginDiscoveryProvidersByOrder(params: any): any {
   void params;
   return {};
 }
-export function providerMatchesFilter(params: unknown): boolean {
+export function providerMatchesFilter(params: any): boolean {
   void params;
   return false;
 }
-export function normalizePluginDiscoveryResult(params: unknown): unknown {
+export function normalizePluginDiscoveryResult(params: any): any {
   void params;
   return undefined;
 }
-export function runProviderCatalog(params: unknown): unknown {
+export function runProviderCatalog(params: any): any {
   void params;
   return undefined;
 }
-export function runProviderStaticCatalog(params: unknown): unknown {
+export function runProviderStaticCatalog(params: any): any {
   void params;
   return undefined;
 }

@@ -148,7 +148,7 @@ router.get('/lanes', (_req, res) => {
 // GET /api/agents/lanes/:lane — 获取指定车道状态
 router.get('/lanes/:lane', (req, res) => {
   try {
-    const status = laneManager.getLaneStatus(req.params.lane as unknown);
+    const status = laneManager.getLaneStatus(req.params.lane as any);
     return ok(res, status);
   } catch (e) {
     logger.error('[Agents API] 获取车道状态失败:', e);

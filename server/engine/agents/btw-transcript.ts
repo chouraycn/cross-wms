@@ -6,9 +6,9 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function resolveBtwSessionTranscriptPath(..._args: unknown[]): unknown {
+export function resolveBtwSessionTranscriptPath(..._args: any[]): any {
   return undefined;
 }
-export async function readBtwTranscriptMessages(..._args: unknown[]): Promise<unknown> {
+export async function readBtwTranscriptMessages(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }

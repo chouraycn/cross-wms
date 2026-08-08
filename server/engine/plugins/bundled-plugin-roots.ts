@@ -1,11 +1,11 @@
 // 移植自 openclaw/src/plugins/bundled-plugin-roots.ts
 
-export function getBundledPluginRoots(...args: unknown[]): unknown {
+export function getBundledPluginRoots(...args: any[]): any {
   return undefined;
 }
-export function resolveBundledPluginFile(...args: unknown[]): unknown {
+export function resolveBundledPluginFile(...args: any[]): any {
   return undefined;
 }
-export function bundledPluginFile(...args: unknown[]): unknown {
+export function bundledPluginFile(...args: any[]): any {
   return undefined;
 }

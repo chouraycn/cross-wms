@@ -13,7 +13,7 @@ import { ModelRegistry } from "./model-registry.js";
 
 const tempDirs: string[] = [];
 
-function writeModelsJson(contents: unknown): string {
+function writeModelsJson(contents: any): string {
   const dir = mkdtempSync(join(tmpdir(), "openclaw-model-registry-"));
   tempDirs.push(dir);
   const file = join(dir, "models.json");
@@ -22,9 +22,9 @@ function writeModelsJson(contents: unknown): string {
 }
 
 function writeModelsJsonWithPluginCatalog(params: {
-  root: unknown;
+  root: any;
   pluginRelativePath: string;
-  pluginCatalog: unknown;
+  pluginCatalog: any;
 }): string {
   return writeModelsJsonWithPluginCatalogs({
     root: params.root,
@@ -38,10 +38,10 @@ function writeModelsJsonWithPluginCatalog(params: {
 }
 
 function writeModelsJsonWithPluginCatalogs(params: {
-  root: unknown;
+  root: any;
   pluginCatalogs: Array<{
     pluginRelativePath: string;
-    pluginCatalog: unknown;
+    pluginCatalog: any;
   }>;
 }): string {
   const dir = mkdtempSync(join(tmpdir(), "openclaw-model-registry-"));

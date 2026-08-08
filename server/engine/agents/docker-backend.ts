@@ -7,12 +7,12 @@
  */
 
 /** Create a Docker sandbox backend (unsupported in cross-wms). */
-export function createDockerSandboxBackend(..._args: unknown[]): never {
+export function createDockerSandboxBackend(..._args: any[]): never {
   throw new Error("Docker sandbox backend is not supported in cross-wms");
 }
 
 /** Run a Docker sandbox shell command (unsupported in cross-wms). */
-export function runDockerSandboxShellCommand(..._args: unknown[]): never {
+export function runDockerSandboxShellCommand(..._args: any[]): never {
   throw new Error("Docker sandbox shell commands are not supported in cross-wms");
 }
 

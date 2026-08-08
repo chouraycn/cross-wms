@@ -6,18 +6,18 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function getCurrentCapabilityMetadataSnapshot(..._args: unknown[]): unknown {
+export function getCurrentCapabilityMetadataSnapshot(..._args: any[]): any {
   return undefined;
 }
-export function loadCapabilityMetadataSnapshot(..._args: unknown[]): unknown {
+export function loadCapabilityMetadataSnapshot(..._args: any[]): any {
   return undefined;
 }
-export function hasSnapshotCapabilityAvailability(..._args: unknown[]): unknown {
+export function hasSnapshotCapabilityAvailability(..._args: any[]): any {
   return false;
 }
-export function hasSnapshotProviderEnvAvailability(..._args: unknown[]): unknown {
+export function hasSnapshotProviderEnvAvailability(..._args: any[]): any {
   return false;
 }
-export function hasSnapshotCapabilityProviderAvailability(..._args: unknown[]): unknown {
+export function hasSnapshotCapabilityProviderAvailability(..._args: any[]): any {
   return false;
 }

@@ -11,7 +11,7 @@ import { processMediaAttachments } from "./media.js";
 export interface EventCreationOptions {
   classify?: boolean;
   processMedia?: boolean;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 const eventStore = new Map<string, InboundEventContext>();
@@ -21,7 +21,7 @@ export function createInboundEvent(params: {
   accountId?: AccountId;
   type: InboundEventType;
   source?: InboundEventSource;
-  raw: unknown;
+  raw: any;
   sender?: InboundEventContext["sender"];
   conversationId?: string;
   threadId?: string;
@@ -30,7 +30,7 @@ export function createInboundEvent(params: {
   media?: InboundEventContext["media"];
   attachments?: InboundEventContext["attachments"];
   mentions?: string[];
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }): InboundEventContext {
   const eventId = `evt-${params.channelId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
@@ -97,7 +97,7 @@ export function updateEventContext(
 export function setEventMetadata(
   eventId: string,
   key: string,
-  value: unknown
+  value: any
 ): boolean {
   const event = eventStore.get(eventId);
   if (!event) return false;
@@ -107,7 +107,7 @@ export function setEventMetadata(
   return true;
 }
 
-export function getEventMetadata(eventId: string, key: string): unknown {
+export function getEventMetadata(eventId: string, key: string): any {
   return eventStore.get(eventId)?.metadata[key];
 }
 

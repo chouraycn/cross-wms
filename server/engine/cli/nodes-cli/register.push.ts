@@ -17,7 +17,7 @@ type NodesPushOpts = NodesRpcOpts & {
   environment?: string;
 };
 
-function normalizeEnvironment(value: unknown): "sandbox" | "production" | null {
+function normalizeEnvironment(value: any): "sandbox" | "production" | null {
   if (typeof value !== "string") {
     return null;
   }
@@ -48,7 +48,7 @@ export function registerNodesPushCommand(nodes: Command) {
             throw new Error("invalid --environment (use sandbox|production)");
           }
 
-          const params: Record<string, unknown> = {
+          const params: Record<string, any> = {
             nodeId,
             title,
             body,
@@ -66,10 +66,10 @@ export function registerNodesPushCommand(nodes: Command) {
           const parsed =
             typeof result === "object" && result !== null
               ? (result as {
-                  ok?: unknown;
-                  status?: unknown;
-                  reason?: unknown;
-                  environment?: unknown;
+                  ok?: any;
+                  status?: any;
+                  reason?: any;
+                  environment?: any;
                 })
               : {};
           const ok = parsed.ok === true;

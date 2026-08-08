@@ -10,7 +10,7 @@
 /** 全局 hook runner 注册表存储的旧版 hook 注册项。 */
 export type PluginLegacyHookRegistration = {
   pluginId: string;
-  entry: unknown;
+  entry: any;
   events: string[];
   source: string;
   rootDir?: string;

@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { buildStatusCommandReportLines } from "./status.command-report.ts";
 
 function createRenderTable() {
-  return ({ columns, rows }: { columns: Array<Record<string, unknown>>; rows: unknown[] }) =>
+  return ({ columns, rows }: { columns: Array<Record<string, any>>; rows: any[] }) =>
     `table:${String(columns[0]?.header)}:${rows.length}`;
 }
 

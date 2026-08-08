@@ -48,8 +48,8 @@ export async function executeInSandbox<T>(
 }
 
 export function createContextSanitizer(allowedGlobals: string[] = []) {
-  return (context: Record<string, unknown>): Record<string, unknown> => {
-    const sanitized: Record<string, unknown> = {};
+  return (context: Record<string, any>): Record<string, any> => {
+    const sanitized: Record<string, any> = {};
     const allowed = new Set([...DEFAULT_OPTIONS.allowedGlobals!, ...allowedGlobals]);
 
     for (const [key, value] of Object.entries(context)) {
@@ -65,7 +65,7 @@ export function createContextSanitizer(allowedGlobals: string[] = []) {
 }
 
 export function createModuleLoader(allowedModules: string[] = []) {
-  return (moduleName: string): unknown => {
+  return (moduleName: string): any => {
     if (!allowedModules.includes(moduleName)) {
       throw new Error(`Module not allowed: ${moduleName}`);
     }

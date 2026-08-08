@@ -24,7 +24,7 @@ import { resolveRepoSkillsDir } from './cli/commands/skills.js';
 import { EventEmitter } from 'events';
 
 // v1.5.88: 全局异常兜底 — Node.js v15+ 未处理 rejection 默认崩溃进程
-process.on('unhandledRejection', (reason: unknown, _promise: Promise<unknown>) => {
+process.on('unhandledRejection', (reason: any, _promise: Promise<any>) => {
   const msg = reason instanceof Error ? reason.stack || reason.message : String(reason);
   logger.error('[Process] ⚠️ unhandledRejection:', msg);
   // 不调用 process.exit()，桌面应用保持运行比崩溃更合理
@@ -396,9 +396,9 @@ app.use((req, res, next) => {
   if (typeof req.url !== 'string' || !req.url.startsWith(STAFFDECK_ENVELOPE_PREFIX)) {
     return next();
   }
-  const originalJson = res.json.bind(res) as (body: unknown) => unknown;
+  const originalJson = res.json.bind(res) as (body: any) => unknown;
   let patched = false;
-  res.json = ((body: unknown) => {
+  res.json = ((body: any) => {
     if (
       !patched &&
       body &&
@@ -406,10 +406,10 @@ app.use((req, res, next) => {
       !Array.isArray(body) &&
       'code' in body &&
       'data' in body &&
-      (body as { code?: unknown }).code === 0
+      (body as { code?: any }).code === 0
     ) {
       patched = true;
-      return originalJson((body as { data: unknown }).data);
+      return originalJson((body as { data: any }).data);
     }
     patched = true;
     return originalJson(body);

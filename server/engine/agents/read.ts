@@ -5,11 +5,11 @@
  * Cross-wms degradation: returns placeholder tool without file reading.
  */
 
-export type ReadOperations = Record<string, unknown>;
-export type ReadToolOptions = Record<string, unknown>;
+export type ReadOperations = Record<string, any>;
+export type ReadToolOptions = Record<string, any>;
 
 /** Creates a read tool definition. */
-export function createReadToolDefinition(..._args: unknown[]): Record<string, unknown> {
+export function createReadToolDefinition(..._args: any[]): Record<string, any> {
   return {
     name: "read",
     description: "Read file contents.",
@@ -23,7 +23,7 @@ export function createReadToolDefinition(..._args: unknown[]): Record<string, un
 }
 
 /** Creates a read tool instance. */
-export function createReadTool(..._args: unknown[]): Record<string, unknown> {
+export function createReadTool(..._args: any[]): Record<string, any> {
   return {
     ...createReadToolDefinition(),
     execute: async () => ({ output: "Read tool not available in cross-wms" }),

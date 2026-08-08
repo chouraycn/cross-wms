@@ -102,11 +102,11 @@ function requireValue<T>(value: T | null | undefined, message: string): T {
   return value;
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function requireRecord(value: unknown, message: string): Record<string, unknown> {
+function requireRecord(value: any, message: string): Record<string, any> {
   if (!isRecord(value)) {
     throw new Error(message);
   }
@@ -114,10 +114,10 @@ function requireRecord(value: unknown, message: string): Record<string, unknown>
 }
 
 function expectRecordFields(
-  value: unknown,
+  value: any,
   message: string,
-  expected: Record<string, unknown>,
-): Record<string, unknown> {
+  expected: Record<string, any>,
+): Record<string, any> {
   const record = requireRecord(value, message);
   for (const [key, expectedValue] of Object.entries(expected)) {
     expect(record[key], `${message}.${key}`).toEqual(expectedValue);
@@ -125,10 +125,10 @@ function expectRecordFields(
   return record;
 }
 
-function expectArrayIncludesAll(value: unknown, expected: readonly unknown[], message: string) {
+function expectArrayIncludesAll(value: any, expected: readonly any[], message: string) {
   expect(Array.isArray(value), `${message} must be an array`).toBe(true);
   for (const expectedValue of expected) {
-    expect(value as unknown[], `${message} must include ${String(expectedValue)}`).toContain(
+    expect(value as any[], `${message} must include ${String(expectedValue)}`).toContain(
       expectedValue,
     );
   }

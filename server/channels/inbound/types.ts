@@ -81,7 +81,7 @@ export interface PresencePayload {
 export interface ErrorPayload {
   code: string;
   message: string;
-  details?: unknown;
+  details?: any;
 }
 
 /**

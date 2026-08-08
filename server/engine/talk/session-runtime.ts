@@ -43,7 +43,7 @@ export type RealtimeVoiceBridgeSession = {
   sendUserMessage(text: string): void;
   handleBargeIn(options?: RealtimeVoiceBargeInOptions): void;
   setMediaTimestamp(ts: number): void;
-  submitToolResult(callId: string, result: unknown, options?: RealtimeVoiceToolResultOptions): void;
+  submitToolResult(callId: string, result: any, options?: RealtimeVoiceToolResultOptions): void;
   triggerGreeting(instructions?: string): void;
 };
 

@@ -92,15 +92,15 @@ const startWatchRun = ({
   return { watcher, createWatcher, fakeProcess, runPromise };
 };
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object") {
     throw new Error(`expected ${label} to be an object`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function requireMockCall(mock: ReturnType<typeof vi.fn>, callIndex: number): unknown[] {
-  const call = mock.mock.calls[callIndex] as unknown[] | undefined;
+function requireMockCall(mock: ReturnType<typeof vi.fn>, callIndex: number): any[] {
+  const call = mock.mock.calls[callIndex] as any[] | undefined;
   if (!call) {
     throw new Error(`expected mock call ${callIndex}`);
   }

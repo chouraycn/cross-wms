@@ -249,7 +249,7 @@ export class CommitmentsFullChain {
 
   async verifyAndComplete(params: {
     id: string;
-    context?: Record<string, unknown>;
+    context?: Record<string, any>;
     nowMs?: number;
   }): Promise<{ completed: boolean; reason?: string }> {
     if (this.isShutdown) return { completed: false, reason: 'shutdown' };

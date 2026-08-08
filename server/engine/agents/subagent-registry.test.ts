@@ -15,18 +15,18 @@ const noop = () => {};
 const waitForFast = <T>(callback: () => T | Promise<T>) =>
   vi.waitFor(callback, { timeout: 1_000, interval: 1 });
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     throw new Error(`expected ${label} to be an object`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 function expectRecordFields(
-  value: unknown,
-  expected: Record<string, unknown>,
+  value: any,
+  expected: Record<string, any>,
   label: string,
-): Record<string, unknown> {
+): Record<string, any> {
   const record = requireRecord(value, label);
   for (const [key, expectedValue] of Object.entries(expected)) {
     expect(record[key], `${label}.${key}`).toEqual(expectedValue);
@@ -39,8 +39,8 @@ function getMockCallArg(
   callIndex: number,
   argIndex: number,
   label: string,
-): unknown {
-  const call = (mock.mock.calls as unknown[][])[callIndex];
+): any {
+  const call = (mock.mock.calls as any[][])[callIndex];
   if (!call) {
     throw new Error(`expected ${label} call ${callIndex}`);
   }
@@ -51,14 +51,14 @@ function findRecordCallArg(
   mock: ReturnType<typeof vi.fn>,
   argIndex: number,
   label: string,
-  predicate: (record: Record<string, unknown>) => boolean,
-): Record<string, unknown> {
-  for (const call of mock.mock.calls as unknown[][]) {
+  predicate: (record: Record<string, any>) => boolean,
+): Record<string, any> {
+  for (const call of mock.mock.calls as any[][]) {
     const value = call[argIndex];
     if (typeof value !== "object" || value === null || Array.isArray(value)) {
       continue;
     }
-    const record = value as Record<string, unknown>;
+    const record = value as Record<string, any>;
     if (predicate(record)) {
       return record;
     }
@@ -560,7 +560,7 @@ describe("subagent registry seam flow", () => {
     const lastOnAgentEventCall = mocks.onAgentEvent.mock.calls[
       mocks.onAgentEvent.mock.calls.length - 1
     ] as unknown as
-      | [(evt: { runId: string; stream: string; data: Record<string, unknown> }) => void]
+      | [(evt: { runId: string; stream: string; data: Record<string, any> }) => void]
       | undefined;
     const lifecycleHandler = lastOnAgentEventCall?.[0];
     expect(lifecycleHandler).toBeTypeOf("function");
@@ -633,7 +633,7 @@ describe("subagent registry seam flow", () => {
     const lastOnAgentEventCall = mocks.onAgentEvent.mock.calls[
       mocks.onAgentEvent.mock.calls.length - 1
     ] as unknown as
-      | [(evt: { runId: string; stream: string; data: Record<string, unknown> }) => void]
+      | [(evt: { runId: string; stream: string; data: Record<string, any> }) => void]
       | undefined;
     const lifecycleHandler = lastOnAgentEventCall?.[0];
     expect(lifecycleHandler).toBeTypeOf("function");
@@ -690,7 +690,7 @@ describe("subagent registry seam flow", () => {
     const lastOnAgentEventCall = mocks.onAgentEvent.mock.calls[
       mocks.onAgentEvent.mock.calls.length - 1
     ] as unknown as
-      | [(evt: { runId: string; stream: string; data: Record<string, unknown> }) => void]
+      | [(evt: { runId: string; stream: string; data: Record<string, any> }) => void]
       | undefined;
     const lifecycleHandler = lastOnAgentEventCall?.[0];
     expect(lifecycleHandler).toBeTypeOf("function");
@@ -750,7 +750,7 @@ describe("subagent registry seam flow", () => {
     const lastOnAgentEventCall = mocks.onAgentEvent.mock.calls[
       mocks.onAgentEvent.mock.calls.length - 1
     ] as unknown as
-      | [(evt: { runId: string; stream: string; data: Record<string, unknown> }) => void]
+      | [(evt: { runId: string; stream: string; data: Record<string, any> }) => void]
       | undefined;
     const lifecycleHandler = lastOnAgentEventCall?.[0];
     expect(lifecycleHandler).toBeTypeOf("function");
@@ -816,7 +816,7 @@ describe("subagent registry seam flow", () => {
     const lastOnAgentEventCall = mocks.onAgentEvent.mock.calls[
       mocks.onAgentEvent.mock.calls.length - 1
     ] as unknown as
-      | [(evt: { runId: string; stream: string; data: Record<string, unknown> }) => void]
+      | [(evt: { runId: string; stream: string; data: Record<string, any> }) => void]
       | undefined;
     const lifecycleHandler = lastOnAgentEventCall?.[0];
     expect(lifecycleHandler).toBeTypeOf("function");
@@ -898,7 +898,7 @@ describe("subagent registry seam flow", () => {
     const lastOnAgentEventCall = mocks.onAgentEvent.mock.calls[
       mocks.onAgentEvent.mock.calls.length - 1
     ] as unknown as
-      | [(evt: { runId: string; stream: string; data: Record<string, unknown> }) => void]
+      | [(evt: { runId: string; stream: string; data: Record<string, any> }) => void]
       | undefined;
     const lifecycleHandler = lastOnAgentEventCall?.[0];
     expect(lifecycleHandler).toBeTypeOf("function");
@@ -965,7 +965,7 @@ describe("subagent registry seam flow", () => {
     const lastOnAgentEventCall = mocks.onAgentEvent.mock.calls[
       mocks.onAgentEvent.mock.calls.length - 1
     ] as unknown as
-      | [(evt: { runId: string; stream: string; data: Record<string, unknown> }) => void]
+      | [(evt: { runId: string; stream: string; data: Record<string, any> }) => void]
       | undefined;
     const lifecycleHandler = lastOnAgentEventCall?.[0];
     expect(lifecycleHandler).toBeTypeOf("function");
@@ -1031,7 +1031,7 @@ describe("subagent registry seam flow", () => {
     const lastOnAgentEventCall = mocks.onAgentEvent.mock.calls[
       mocks.onAgentEvent.mock.calls.length - 1
     ] as unknown as
-      | [(evt: { runId: string; stream: string; data: Record<string, unknown> }) => void]
+      | [(evt: { runId: string; stream: string; data: Record<string, any> }) => void]
       | undefined;
     const lifecycleHandler = lastOnAgentEventCall?.[0];
     expect(lifecycleHandler).toBeTypeOf("function");
@@ -1086,7 +1086,7 @@ describe("subagent registry seam flow", () => {
     const lastOnAgentEventCall = mocks.onAgentEvent.mock.calls[
       mocks.onAgentEvent.mock.calls.length - 1
     ] as unknown as
-      | [(evt: { runId: string; stream: string; data: Record<string, unknown> }) => void]
+      | [(evt: { runId: string; stream: string; data: Record<string, any> }) => void]
       | undefined;
     const lifecycleHandler = lastOnAgentEventCall?.[0];
     expect(lifecycleHandler).toBeTypeOf("function");
@@ -1160,7 +1160,7 @@ describe("subagent registry seam flow", () => {
     const lastOnAgentEventCall = mocks.onAgentEvent.mock.calls[
       mocks.onAgentEvent.mock.calls.length - 1
     ] as unknown as
-      | [(evt: { runId: string; stream: string; data: Record<string, unknown> }) => void]
+      | [(evt: { runId: string; stream: string; data: Record<string, any> }) => void]
       | undefined;
     const lifecycleHandler = lastOnAgentEventCall?.[0];
     expect(lifecycleHandler).toBeTypeOf("function");
@@ -1250,7 +1250,7 @@ describe("subagent registry seam flow", () => {
     vi.setSystemTime(startedAt + 61_000);
     mocks.resolveAgentTimeoutMs.mockReturnValue(60_000);
     mocks.restoreSubagentRunsFromDisk.mockImplementation(((params: {
-      runs: Map<string, unknown>;
+      runs: Map<string, any>;
       mergeOnly?: boolean;
     }) => {
       params.runs.set("run-resumed-late-success", {
@@ -1305,7 +1305,7 @@ describe("subagent registry seam flow", () => {
     vi.setSystemTime(createdAt + 65_000);
     mocks.resolveAgentTimeoutMs.mockReturnValue(60_000);
     mocks.restoreSubagentRunsFromDisk.mockImplementation(((params: {
-      runs: Map<string, unknown>;
+      runs: Map<string, any>;
       mergeOnly?: boolean;
     }) => {
       params.runs.set("run-resumed-observed-start", {
@@ -1747,7 +1747,7 @@ describe("subagent registry seam flow", () => {
     vi.setSystemTime(startedAt + 59_000);
     mocks.resolveAgentTimeoutMs.mockReturnValue(60_000);
     mocks.restoreSubagentRunsFromDisk.mockImplementation(((params: {
-      runs: Map<string, unknown>;
+      runs: Map<string, any>;
       mergeOnly?: boolean;
     }) => {
       params.runs.set("run-resumed-near-deadline", {
@@ -1764,9 +1764,9 @@ describe("subagent registry seam flow", () => {
       });
       return 1;
     }) as never);
-    const waitTimeouts: unknown[] = [];
+    const waitTimeouts: any[] = [];
     mocks.callGateway.mockImplementation(
-      async (request: { method?: string; params?: Record<string, unknown> }) => {
+      async (request: { method?: string; params?: Record<string, any> }) => {
         if (request.method === "agent.wait") {
           waitTimeouts.push(request.params?.timeoutMs);
           vi.setSystemTime(startedAt + 60_000);
@@ -2082,7 +2082,7 @@ describe("subagent registry seam flow", () => {
       const lastOnAgentEventCall = mocks.onAgentEvent.mock.calls[
         mocks.onAgentEvent.mock.calls.length - 1
       ] as unknown as
-        | [(evt: { runId: string; stream: string; data: Record<string, unknown> }) => void]
+        | [(evt: { runId: string; stream: string; data: Record<string, any> }) => void]
         | undefined;
       const lifecycleHandler = lastOnAgentEventCall?.[0];
       expect(lifecycleHandler).toBeTypeOf("function");
@@ -2134,7 +2134,7 @@ describe("subagent registry seam flow", () => {
     const lastOnAgentEventCall = mocks.onAgentEvent.mock.calls[
       mocks.onAgentEvent.mock.calls.length - 1
     ] as unknown as
-      | [(evt: { runId: string; stream: string; data: Record<string, unknown> }) => void]
+      | [(evt: { runId: string; stream: string; data: Record<string, any> }) => void]
       | undefined;
     const lifecycleHandler = lastOnAgentEventCall?.[0];
     expect(lifecycleHandler).toBeTypeOf("function");
@@ -2203,7 +2203,7 @@ describe("subagent registry seam flow", () => {
     const lastOnAgentEventCall = mocks.onAgentEvent.mock.calls[
       mocks.onAgentEvent.mock.calls.length - 1
     ] as unknown as
-      | [(evt: { runId: string; stream: string; data: Record<string, unknown> }) => void]
+      | [(evt: { runId: string; stream: string; data: Record<string, any> }) => void]
       | undefined;
     const lifecycleHandler = lastOnAgentEventCall?.[0];
     expect(lifecycleHandler).toBeTypeOf("function");
@@ -2598,7 +2598,7 @@ describe("subagent registry seam flow", () => {
     );
 
     const updateStore = mocks.updateSessionStore.mock.calls.at(0)?.[1] as
-      | ((store: Record<string, Record<string, unknown>>) => void)
+      | ((store: Record<string, Record<string, any>>) => void)
       | undefined;
     expect(updateStore).toBeTypeOf("function");
     const store = {
@@ -2700,7 +2700,7 @@ describe("subagent registry seam flow", () => {
     const lastOnAgentEventCall = mocks.onAgentEvent.mock.calls[
       mocks.onAgentEvent.mock.calls.length - 1
     ] as unknown as
-      | [(evt: { runId: string; stream: string; data: Record<string, unknown> }) => void]
+      | [(evt: { runId: string; stream: string; data: Record<string, any> }) => void]
       | undefined;
     const lifecycleHandler = lastOnAgentEventCall?.[0];
     expect(lifecycleHandler).toBeTypeOf("function");
@@ -2773,7 +2773,7 @@ describe("subagent registry seam flow", () => {
     const lastOnAgentEventCall = mocks.onAgentEvent.mock.calls[
       mocks.onAgentEvent.mock.calls.length - 1
     ] as unknown as
-      | [(evt: { runId: string; stream: string; data: Record<string, unknown> }) => void]
+      | [(evt: { runId: string; stream: string; data: Record<string, any> }) => void]
       | undefined;
     const lifecycleHandler = lastOnAgentEventCall?.[0];
     expect(lifecycleHandler).toBeTypeOf("function");
@@ -2850,7 +2850,7 @@ describe("subagent registry seam flow", () => {
     const lastOnAgentEventCall = mocks.onAgentEvent.mock.calls[
       mocks.onAgentEvent.mock.calls.length - 1
     ] as unknown as
-      | [(evt: { runId: string; stream: string; data: Record<string, unknown> }) => void]
+      | [(evt: { runId: string; stream: string; data: Record<string, any> }) => void]
       | undefined;
     const lifecycleHandler = lastOnAgentEventCall?.[0];
     lifecycleHandler?.({
@@ -2897,7 +2897,7 @@ describe("subagent registry seam flow", () => {
     const lastOnAgentEventCall = mocks.onAgentEvent.mock.calls[
       mocks.onAgentEvent.mock.calls.length - 1
     ] as unknown as
-      | [(evt: { runId: string; stream: string; data: Record<string, unknown> }) => void]
+      | [(evt: { runId: string; stream: string; data: Record<string, any> }) => void]
       | undefined;
     const lifecycleHandler = lastOnAgentEventCall?.[0];
     lifecycleHandler?.({
@@ -2948,7 +2948,7 @@ describe("subagent registry seam flow", () => {
     const lastOnAgentEventCall = mocks.onAgentEvent.mock.calls[
       mocks.onAgentEvent.mock.calls.length - 1
     ] as unknown as
-      | [(evt: { runId: string; stream: string; data: Record<string, unknown> }) => void]
+      | [(evt: { runId: string; stream: string; data: Record<string, any> }) => void]
       | undefined;
     const lifecycleHandler = lastOnAgentEventCall?.[0];
     expect(lifecycleHandler).toBeTypeOf("function");
@@ -3053,7 +3053,7 @@ describe("subagent registry seam flow", () => {
     const lastOnAgentEventCall = mocks.onAgentEvent.mock.calls[
       mocks.onAgentEvent.mock.calls.length - 1
     ] as unknown as
-      | [(evt: { runId: string; stream: string; data: Record<string, unknown> }) => void]
+      | [(evt: { runId: string; stream: string; data: Record<string, any> }) => void]
       | undefined;
     const lifecycleHandler = lastOnAgentEventCall?.[0];
     expect(lifecycleHandler).toBeTypeOf("function");
@@ -3149,7 +3149,7 @@ describe("subagent registry seam flow", () => {
     };
     mocks.getGlobalHookRunner.mockReturnValue(endedHookRunner as never);
     mocks.restoreSubagentRunsFromDisk.mockImplementation(((params: {
-      runs: Map<string, unknown>;
+      runs: Map<string, any>;
       mergeOnly?: boolean;
     }) => {
       params.runs.set("run-resume-delete", {
@@ -3196,7 +3196,7 @@ describe("subagent registry seam flow", () => {
 
   it("suspends retry-budgeted successful keep-mode completion deliveries during resume", async () => {
     mocks.restoreSubagentRunsFromDisk.mockImplementation(((params: {
-      runs: Map<string, unknown>;
+      runs: Map<string, any>;
       mergeOnly?: boolean;
     }) => {
       params.runs.set("run-resume-keep", {

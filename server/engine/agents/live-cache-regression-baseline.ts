@@ -7,4 +7,4 @@
  */
 
 export type LiveCacheFloor = unknown;
-export const LIVE_CACHE_REGRESSION_BASELINE: unknown = undefined;
+export const LIVE_CACHE_REGRESSION_BASELINE: any = undefined;

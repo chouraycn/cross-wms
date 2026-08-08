@@ -43,7 +43,7 @@ export const getCompactionSafeguardRuntime = registry.get;
 
 /** Stores a human-readable compaction cancel reason on the session runtime state. */
 export function setCompactionSafeguardCancelReason(
-  sessionManager: unknown,
+  sessionManager: any,
   reason: string | undefined,
 ): void {
   const current = getCompactionSafeguardRuntime(sessionManager);
@@ -67,7 +67,7 @@ export function setCompactionSafeguardCancelReason(
 }
 
 /** Reads and clears the pending compaction cancel reason for one session manager. */
-export function consumeCompactionSafeguardCancelReason(sessionManager: unknown): string | null {
+export function consumeCompactionSafeguardCancelReason(sessionManager: any): string | null {
   const current = getCompactionSafeguardRuntime(sessionManager);
   const reason = current?.cancelReason?.trim();
   if (!reason) {

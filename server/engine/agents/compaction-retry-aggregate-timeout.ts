@@ -4,10 +4,10 @@
  * 降级实现：提供 compaction retry 超时管理，不再抛出 stub 错误。
  */
 
-export function hasActiveCompactionRetryWork(_params: unknown): boolean {
+export function hasActiveCompactionRetryWork(_params: any): boolean {
   return false;
 }
 
-export async function waitForCompactionRetryWithAggregateTimeout(_params: unknown): Promise<void> {
+export async function waitForCompactionRetryWithAggregateTimeout(_params: any): Promise<void> {
   // no-op in cross-wms降级实现
 }

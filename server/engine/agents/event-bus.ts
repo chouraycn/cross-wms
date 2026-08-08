@@ -8,6 +8,6 @@
 
 export type EventBus = unknown;
 export type EventBusController = unknown;
-export function createEventBus(..._args: unknown[]): unknown {
+export function createEventBus(..._args: any[]): any {
   return undefined;
 }

@@ -5,16 +5,16 @@
  * Cross-wms simplified: uses minimal mock implementations instead of vitest deep mocking.
  */
 
-type SessionEntry = { type: string; customType: string; data: unknown };
+type SessionEntry = { type: string; customType: string; data: any };
 
 export type AgentMessage = {
   role: string;
-  content: unknown;
+  content: any;
 };
 
 export type SessionManager = {
   getEntries: () => SessionEntry[];
-  appendCustomEntry: (customType: string, data: unknown) => void;
+  appendCustomEntry: (customType: string, data: any) => void;
 };
 
 export type SanitizeSessionHistoryFn = (params: {
@@ -53,7 +53,7 @@ export function makeModelSnapshotEntry(data: {
 export function makeInMemorySessionManager(entries: SessionEntry[]): SessionManager {
   return {
     getEntries: () => entries,
-    appendCustomEntry: (customType: string, data: unknown) => {
+    appendCustomEntry: (customType: string, data: any) => {
       entries.push({ type: "custom", customType, data });
     },
   };
@@ -74,11 +74,11 @@ export function makeReasoningAssistantMessages(opts?: {
   thinkingSignature?: "object" | "json";
   includeText?: boolean;
 }): AgentMessage[] {
-  const thinkingSignature: unknown =
+  const thinkingSignature: any =
     opts?.thinkingSignature === "json"
       ? JSON.stringify({ id: "rs_test", type: "reasoning" })
       : { id: "rs_test", type: "reasoning" };
-  const content: Array<Record<string, unknown>> = [
+  const content: Array<Record<string, any>> = [
     {
       type: "thinking",
       thinking: "reasoning",

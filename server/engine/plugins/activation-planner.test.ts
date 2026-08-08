@@ -6,7 +6,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("./plugin-registry-contributions.js", () => ({
-  loadPluginManifestRegistryForPluginRegistry: (...args: unknown[]) =>
+  loadPluginManifestRegistryForPluginRegistry: (...args: any[]) =>
     mocks.loadPluginManifestRegistryForPluginRegistry(...args),
 }));
 

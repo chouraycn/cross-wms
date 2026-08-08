@@ -148,15 +148,15 @@ function applyExpectedVersion(
   };
 }
 
-function readActivatedPluginErrors(health: unknown): PluginHealthErrorSummary[] {
+function readActivatedPluginErrors(health: any): PluginHealthErrorSummary[] {
   if (!health || typeof health !== "object") {
     return [];
   }
-  const plugins = (health as { plugins?: unknown }).plugins;
+  const plugins = (health as { plugins?: any }).plugins;
   if (!plugins || typeof plugins !== "object") {
     return [];
   }
-  const errors = (plugins as { errors?: unknown }).errors;
+  const errors = (plugins as { errors?: any }).errors;
   if (!Array.isArray(errors)) {
     return [];
   }
@@ -192,11 +192,11 @@ function readActivatedPluginErrors(health: unknown): PluginHealthErrorSummary[] 
     });
 }
 
-function readChannelProbeErrors(health: unknown): Array<{ id: string; error: string }> {
+function readChannelProbeErrors(health: any): Array<{ id: string; error: string }> {
   if (!health || typeof health !== "object") {
     return [];
   }
-  const channels = (health as { channels?: unknown }).channels;
+  const channels = (health as { channels?: any }).channels;
   if (!channels || typeof channels !== "object" || Array.isArray(channels)) {
     return [];
   }
@@ -205,15 +205,15 @@ function readChannelProbeErrors(health: unknown): Array<{ id: string; error: str
     if (!summary || typeof summary !== "object") {
       continue;
     }
-    const probe = (summary as { probe?: unknown }).probe;
+    const probe = (summary as { probe?: any }).probe;
     if (!probe || typeof probe !== "object") {
       continue;
     }
-    const ok = (probe as { ok?: unknown }).ok;
+    const ok = (probe as { ok?: any }).ok;
     if (ok !== false) {
       continue;
     }
-    const error = (probe as { error?: unknown }).error;
+    const error = (probe as { error?: any }).error;
     errors.push({
       id,
       error: typeof error === "string" && error.trim() ? error : "probe failed",

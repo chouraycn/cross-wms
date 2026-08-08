@@ -33,11 +33,11 @@ const mocks = vi.hoisted(() => ({
 let ensurePluginRegistryLoaded: typeof import("./runtime-registry-loader.js").ensurePluginRegistryLoaded;
 let resetPluginRegistryLoadedForTests: typeof import("./runtime-registry-loader.js").testing.resetPluginRegistryLoadedForTests;
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object") {
     throw new Error(`expected ${label}`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 function loadOptions(index = 0) {
@@ -58,11 +58,11 @@ function scopedChannelOptions(index = 0) {
   );
 }
 
-function pluginsConfig(config: Record<string, unknown>) {
+function pluginsConfig(config: Record<string, any>) {
   return requireRecord(config.plugins, "plugins config");
 }
 
-function pluginEntries(config: Record<string, unknown>) {
+function pluginEntries(config: Record<string, any>) {
   return requireRecord(pluginsConfig(config).entries, "plugin entries");
 }
 

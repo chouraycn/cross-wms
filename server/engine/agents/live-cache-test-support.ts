@@ -8,42 +8,42 @@
 
 export type LiveResolvedModel = unknown;
 export type LiveResolvedModelPool = unknown;
-export const LIVE_CACHE_TEST_ENABLED: unknown = undefined;
+export const LIVE_CACHE_TEST_ENABLED: any = undefined;
 export class LiveCachePrerequisiteSkip {
-  constructor(..._args: unknown[]) {
+  constructor(..._args: any[]) {
     // Stub: not fully ported
   }
 }
-export function isLiveCachePrerequisiteSkip(..._args: unknown[]): unknown {
+export function isLiveCachePrerequisiteSkip(..._args: any[]): any {
   return false;
 }
-export function toLiveCachePrerequisiteSkip(..._args: unknown[]): unknown {
+export function toLiveCachePrerequisiteSkip(..._args: any[]): any {
   return undefined;
 }
-export function logLiveCache(..._args: unknown[]): unknown {
+export function logLiveCache(..._args: any[]): any {
   return undefined;
 }
-export async function withLiveCacheHeartbeat(..._args: unknown[]): Promise<unknown> {
+export async function withLiveCacheHeartbeat(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
-export async function completeSimpleWithLiveTimeout(..._args: unknown[]): Promise<unknown> {
+export async function completeSimpleWithLiveTimeout(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
-export function buildStableCachePrefix(..._args: unknown[]): unknown {
+export function buildStableCachePrefix(..._args: any[]): any {
   return undefined;
 }
-export function buildAssistantHistoryTurn(..._args: unknown[]): unknown {
+export function buildAssistantHistoryTurn(..._args: any[]): any {
   return undefined;
 }
-export function computeCacheHitRate(..._args: unknown[]): unknown {
+export function computeCacheHitRate(..._args: any[]): any {
   return undefined;
 }
-export async function resolveLiveDirectModelPool(..._args: unknown[]): Promise<unknown> {
+export async function resolveLiveDirectModelPool(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
-export async function resolveLiveDirectModel(..._args: unknown[]): Promise<unknown> {
+export async function resolveLiveDirectModel(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
-export function withLiveDirectModelApiKey(..._args: unknown[]): unknown {
+export function withLiveDirectModelApiKey(..._args: any[]): any {
   return undefined;
 }

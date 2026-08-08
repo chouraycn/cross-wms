@@ -7,6 +7,6 @@
  */
 
 export type BootstrapMode = unknown;
-export function resolveBootstrapMode(..._args: unknown[]): unknown {
+export function resolveBootstrapMode(..._args: any[]): any {
   return undefined;
 }

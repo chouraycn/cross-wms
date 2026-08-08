@@ -1,7 +1,7 @@
 /**
  * Shared assertions for import-time side effect detection.
  */
-function formatImportSideEffectCall(args: readonly unknown[]): string {
+function formatImportSideEffectCall(args: readonly any[]): string {
   if (args.length === 0) {
     return "(no args)";
   }
@@ -19,7 +19,7 @@ function formatImportSideEffectCall(args: readonly unknown[]): string {
 export function assertNoImportTimeSideEffects(params: {
   moduleId: string;
   forbiddenSeam: string;
-  calls: readonly (readonly unknown[])[];
+  calls: readonly (readonly any[])[];
   why: string;
   fixHint: string;
 }) {

@@ -13,7 +13,7 @@ export interface RecordedEntry {
   kind: 'event' | 'final';
   type: TaskEventType | 'final';
   timestamp: string;
-  data?: unknown;
+  data?: any;
 }
 
 export class TaskRecorder {

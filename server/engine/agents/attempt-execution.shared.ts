@@ -7,13 +7,13 @@
 
 /** Persists one session entry — simplified in cross-wms. */
 export async function persistSessionEntry(params: {
-  sessionStore: Record<string, unknown>;
+  sessionStore: Record<string, any>;
   sessionKey: string;
   storePath: string;
-  entry: unknown;
+  entry: any;
   clearedFields?: string[];
   preserveTranscriptMarkerUpdatedAt?: boolean;
-  shouldPersist?: (entry: unknown | undefined) => boolean;
+  shouldPersist?: (entry: any | undefined) => boolean;
 }): Promise<unknown | undefined> {
   if (params.sessionStore) {
     params.sessionStore[params.sessionKey] = params.entry;
@@ -24,7 +24,7 @@ export async function persistSessionEntry(params: {
 /** Prepends hidden internal event context unless the body already carries it. */
 export function prependInternalEventContext(
   body: string,
-  events: unknown[] | undefined,
+  events: any[] | undefined,
 ): string {
   if (!events || !Array.isArray(events) || events.length === 0) {
     return body;
@@ -36,7 +36,7 @@ export function prependInternalEventContext(
 /** Resolves the prompt body submitted to ACP runtimes. */
 export function resolveAcpPromptBody(
   body: string,
-  events: unknown[] | undefined,
+  events: any[] | undefined,
 ): string {
   if (!events || !Array.isArray(events) || events.length === 0) {
     return body;
@@ -47,7 +47,7 @@ export function resolveAcpPromptBody(
 /** Resolves the body stored in transcripts after internal event rendering. */
 export function resolveInternalEventTranscriptBody(
   body: string,
-  events: unknown[] | undefined,
+  events: any[] | undefined,
 ): string {
   return body;
 }

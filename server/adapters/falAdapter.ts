@@ -21,7 +21,7 @@ export class FalAdapter implements IMediaGenAdapter {
 
   /** 图像生成 */
   async generateImage(config: MediaGenAdapterConfig, input: ImageGenInput): Promise<MediaGenResponse> {
-    const body: Record<string, unknown> = {
+    const body: Record<string, any> = {
       prompt: input.prompt,
     };
     if (input.negativePrompt) body['negative_prompt'] = input.negativePrompt;
@@ -39,7 +39,7 @@ export class FalAdapter implements IMediaGenAdapter {
 
   /** 视频生成 */
   async generateVideo(config: MediaGenAdapterConfig, input: VideoGenInput): Promise<MediaGenResponse> {
-    const body: Record<string, unknown> = {
+    const body: Record<string, any> = {
       prompt: input.prompt,
     };
     if (input.negativePrompt) body['negative_prompt'] = input.negativePrompt;
@@ -58,7 +58,7 @@ export class FalAdapter implements IMediaGenAdapter {
   /** 提交生成请求并解析产物 URL */
   private async submit(
     config: MediaGenAdapterConfig,
-    body: Record<string, unknown>,
+    body: Record<string, any>,
   ): Promise<MediaGenResponse> {
     const { apiEndpoint, apiKey, modelId, signal } = config;
 
@@ -105,7 +105,7 @@ export class FalAdapter implements IMediaGenAdapter {
 
     // Fal 异步队列端点返回 status；同步端点通常直接返回结果
     const status = typeof raw === 'object' && raw !== null && 'status' in raw
-      ? String((raw as Record<string, unknown>).status)
+      ? String((raw as Record<string, any>).status)
       : 'succeeded';
 
     return {
@@ -117,9 +117,9 @@ export class FalAdapter implements IMediaGenAdapter {
 }
 
 /** 从响应中递归提取所有 http(s) URL（图像 / 视频产物） */
-function extractMediaUrls(node: unknown): string[] {
+function extractMediaUrls(node: any): string[] {
   const urls: string[] = [];
-  const visit = (n: unknown) => {
+  const visit = (n: any) => {
     if (typeof n === 'string') {
       if (/^https?:\/\//i.test(n)) urls.push(n);
       return;
@@ -129,7 +129,7 @@ function extractMediaUrls(node: unknown): string[] {
       return;
     }
     if (n && typeof n === 'object') {
-      for (const v of Object.values(n as Record<string, unknown>)) visit(v);
+      for (const v of Object.values(n as Record<string, any>)) visit(v);
     }
   };
   visit(node);

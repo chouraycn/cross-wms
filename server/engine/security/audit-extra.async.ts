@@ -12,7 +12,7 @@ export type ExtraAsyncAuditCheck = {
 };
 
 export type ExtraAsyncAuditContext = {
-  config?: Record<string, unknown>;
+  config?: Record<string, any>;
   rootDir?: string;
   packageJsonPath?: string;
   envFilePath?: string;

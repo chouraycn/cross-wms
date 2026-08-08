@@ -73,17 +73,17 @@ describe("config observe recovery", () => {
     );
   }
 
-  async function seedConfig(configPath: string, config: Record<string, unknown>): Promise<void> {
+  async function seedConfig(configPath: string, config: Record<string, any>): Promise<void> {
     await fsp.mkdir(path.dirname(configPath), { recursive: true });
     await fsp.writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`, "utf-8");
   }
 
-  async function seedConfigBackup(configPath: string, config: Record<string, unknown>) {
+  async function seedConfigBackup(configPath: string, config: Record<string, any>) {
     await seedConfig(configPath, config);
     await fsp.copyFile(configPath, `${configPath}.bak`);
   }
 
-  async function writeConfigRaw(configPath: string, config: Record<string, unknown>) {
+  async function writeConfigRaw(configPath: string, config: Record<string, any>) {
     const raw = `${JSON.stringify(config, null, 2)}\n`;
     await fsp.writeFile(configPath, raw, "utf-8");
     return { raw, parsed: config };
@@ -97,13 +97,13 @@ describe("config observe recovery", () => {
     };
   }
 
-  async function readObserveEvents(auditPath: string): Promise<Record<string, unknown>[]> {
-    const events: Record<string, unknown>[] = [];
+  async function readObserveEvents(auditPath: string): Promise<Record<string, any>[]> {
+    const events: Record<string, any>[] = [];
     for (const line of (await fsp.readFile(auditPath, "utf-8")).trim().split("\n")) {
       if (!line) {
         continue;
       }
-      const parsed = JSON.parse(line) as Record<string, unknown>;
+      const parsed = JSON.parse(line) as Record<string, any>;
       if (parsed.event === "config.observe") {
         events.push(parsed);
       }
@@ -144,26 +144,26 @@ describe("config observe recovery", () => {
     expect(warnMessages(warn).join("\n")).not.toContain(expected);
   }
 
-  function observeSuspicious(observe: Record<string, unknown> | undefined): string[] {
+  function observeSuspicious(observe: Record<string, any> | undefined): string[] {
     const suspicious = observe?.suspicious;
     expect(Array.isArray(suspicious)).toBe(true);
     return suspicious as string[];
   }
 
   function expectSuspiciousIncludes(
-    observe: Record<string, unknown> | undefined,
+    observe: Record<string, any> | undefined,
     expected: string,
   ) {
     expect(observeSuspicious(observe)).toContain(expected);
   }
 
-  function expectSuspiciousMatching(observe: Record<string, unknown> | undefined, pattern: RegExp) {
+  function expectSuspiciousMatching(observe: Record<string, any> | undefined, pattern: RegExp) {
     expect(observeSuspicious(observe).some((entry) => pattern.test(entry))).toBe(true);
   }
 
   async function readLastObserveEvent(
     auditPath: string,
-  ): Promise<Record<string, unknown> | undefined> {
+  ): Promise<Record<string, any> | undefined> {
     return (await readObserveEvents(auditPath)).at(-1);
   }
 
@@ -206,7 +206,7 @@ describe("config observe recovery", () => {
     deps: ObserveRecoveryDeps;
     configPath: string;
     raw: string;
-    parsed: unknown;
+    parsed: any;
   }) {
     return await maybeRecoverSuspiciousConfigRead({
       deps: params.deps,
@@ -228,7 +228,7 @@ describe("config observe recovery", () => {
     });
   }
 
-  async function makeSnapshot(configPath: string, config: Record<string, unknown>) {
+  async function makeSnapshot(configPath: string, config: Record<string, any>) {
     const raw = `${JSON.stringify(config, null, 2)}\n`;
     await fsp.mkdir(path.dirname(configPath), { recursive: true });
     await fsp.writeFile(configPath, raw, "utf-8");
@@ -309,7 +309,7 @@ describe("config observe recovery", () => {
 
       const recovered = await recoverSuspiciousConfigRead({ deps, configPath, ...clobbered });
 
-      expect((recovered.parsed as { meta?: unknown }).meta).toEqual(recoverableTelegramConfig.meta);
+      expect((recovered.parsed as { meta?: any }).meta).toEqual(recoverableTelegramConfig.meta);
       const observe = await readLastObserveEvent(auditPath);
       expect(observe?.restoredFromBackup).toBe(true);
       expectSuspiciousIncludes(observe, "missing-meta-vs-last-good");
@@ -575,7 +575,7 @@ describe("config observe recovery", () => {
       });
       const clobbered = await writeConfigRaw(configPath, {});
       let candidateVersion: string | undefined;
-      let currentConfig: Record<string, unknown> | undefined;
+      let currentConfig: Record<string, any> | undefined;
 
       await io.readConfigFileSnapshot({
         recoverSuspicious: true,

@@ -15,10 +15,10 @@ import { baseConfigSnapshot, createTestRuntime } from "./test-runtime-config-hel
 const readConfigFileSnapshotMock = vi.hoisted(() => vi.fn());
 const writeConfigFileMock = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
 const replaceConfigFileMock = vi.hoisted(() =>
-  vi.fn(async (params: { nextConfig: unknown }) => await writeConfigFileMock(params.nextConfig)),
+  vi.fn(async (params: { nextConfig: any }) => await writeConfigFileMock(params.nextConfig)),
 );
 const commitConfigWithPendingPluginInstallsMock = vi.hoisted(() =>
-  vi.fn(async (params: { nextConfig: Record<string, unknown> }) => {
+  vi.fn(async (params: { nextConfig: Record<string, any> }) => {
     await writeConfigFileMock(params.nextConfig);
     return { config: params.nextConfig };
   }),
@@ -27,21 +27,21 @@ const transformConfigWithPendingPluginInstallsMock = vi.hoisted(() =>
   vi.fn(
     async (params: {
       transform: (
-        config: Record<string, unknown>,
+        config: Record<string, any>,
         context: {
-          snapshot: Record<string, unknown>;
+          snapshot: Record<string, any>;
           previousHash: string | null;
           attempt: number;
         },
       ) =>
-        | Promise<{ nextConfig: unknown; result?: unknown }>
-        | { nextConfig: unknown; result?: unknown };
+        | Promise<{ nextConfig: any; result?: any }>
+        | { nextConfig: any; result?: any };
     }) => {
       const snapshot = (await readConfigFileSnapshotMock()) as {
         path?: string;
         hash?: string;
-        config?: Record<string, unknown>;
-        sourceConfig?: Record<string, unknown>;
+        config?: Record<string, any>;
+        sourceConfig?: Record<string, any>;
       };
       const transformed = await params.transform(snapshot.sourceConfig ?? snapshot.config ?? {}, {
         snapshot,
@@ -72,7 +72,7 @@ const authChoiceMocks = vi.hoisted(() => ({
   warnIfModelConfigLooksOff: vi.fn(async () => {}),
 }));
 const onboardChannelsMocks = vi.hoisted(() => ({
-  setupChannels: vi.fn(async (config: Record<string, unknown>) => config),
+  setupChannels: vi.fn(async (config: Record<string, any>) => config),
 }));
 const onboardHelpersMocks = vi.hoisted(() => ({
   ensureWorkspaceAndSessions: vi.fn(async () => {}),

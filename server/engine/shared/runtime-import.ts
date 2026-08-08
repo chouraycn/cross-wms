@@ -23,7 +23,7 @@ export function resolveRuntimeImportSpecifier(baseUrl: string, parts: readonly s
 export async function importRuntimeModule<T>(
   baseUrl: string,
   parts: readonly string[],
-  importModule: (specifier: string) => Promise<unknown> = (specifier) => import(specifier),
+  importModule: (specifier: string) => Promise<any> = (specifier) => import(specifier),
 ): Promise<T> {
   return (await importModule(resolveRuntimeImportSpecifier(baseUrl, parts))) as T;
 }

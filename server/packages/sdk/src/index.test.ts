@@ -10,13 +10,13 @@ import type {
 
 type RequestCall = {
   method: string;
-  params?: unknown;
+  params?: any;
   options?: GatewayRequestOptions;
 };
 
-type FakeResponseValue = null | boolean | number | string | Record<string, unknown> | unknown[];
+type FakeResponseValue = null | boolean | number | string | Record<string, any> | any[];
 type FakeResponseHandler = (
-  params: unknown,
+  params: any,
   options: GatewayRequestOptions | undefined,
   transport: FakeTransport,
 ) => Promise<FakeResponseValue> | FakeResponseValue;
@@ -30,7 +30,7 @@ class FakeTransport implements OpenClawTransport {
 
   async request<T = unknown>(
     method: string,
-    params?: unknown,
+    params?: any,
     options?: GatewayRequestOptions,
   ): Promise<T> {
     this.calls.push({ method, params, options });
@@ -722,7 +722,7 @@ describe("OpenClaw SDK", () => {
   });
 
   it("preserves explicit null params for Gateway list validation", async () => {
-    type ListMethod = (this: unknown, params: unknown) => Promise<unknown>;
+    type ListMethod = (this: any, params: any) => Promise<any>;
     const transport = new FakeTransport({
       "agents.list": { agents: [] },
       "sessions.list": { sessions: [] },
@@ -754,7 +754,7 @@ describe("OpenClaw SDK", () => {
   });
 
   it("rejects tools.effective without a session key before RPC", async () => {
-    type EffectiveMethod = (this: unknown, params?: unknown) => Promise<unknown>;
+    type EffectiveMethod = (this: any, params?: any) => Promise<any>;
     const transport = new FakeTransport({
       "tools.effective": { tools: [] },
     });
@@ -863,7 +863,7 @@ describe("OpenClaw SDK", () => {
     const ts = 1_777_000_000_000;
     const transport = new FakeTransport({
       agent: (
-        _params: unknown,
+        _params: any,
         _options: GatewayRequestOptions | undefined,
         fake: FakeTransport,
       ) => {
@@ -996,7 +996,7 @@ describe("OpenClaw SDK", () => {
     const ts = 1_777_000_000_100;
     const transport = new FakeTransport({
       agent: (
-        _params: unknown,
+        _params: any,
         _options: GatewayRequestOptions | undefined,
         fake: FakeTransport,
       ) => {
@@ -1094,7 +1094,7 @@ describe("OpenClaw SDK", () => {
     const ts = 1_777_000_000_200;
     const transport = new FakeTransport({
       agent: (
-        _params: unknown,
+        _params: any,
         _options: GatewayRequestOptions | undefined,
         fake: FakeTransport,
       ) => {
@@ -1224,7 +1224,7 @@ describe("OpenClaw SDK", () => {
     const ts = 1_777_000_000_300;
     const transport = new FakeTransport({
       agent: (
-        _params: unknown,
+        _params: any,
         _options: GatewayRequestOptions | undefined,
         fake: FakeTransport,
       ) => {

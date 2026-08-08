@@ -158,7 +158,7 @@ describe("skill archive install", () => {
     expect(result.ok).toBe(true);
     expect(handler).toHaveBeenCalledTimes(1);
     const payload = handler.mock.calls[0]?.[0] as
-      | { builtinScan?: { status?: string; scannedFiles?: number; findings?: unknown[] } }
+      | { builtinScan?: { status?: string; scannedFiles?: number; findings?: any[] } }
       | undefined;
     expect(payload?.builtinScan).toMatchObject({
       status: "ok",
@@ -204,7 +204,7 @@ describe("skill archive install", () => {
     const extractedRoot = path.join(root, "extracted");
     await fs.mkdir(extractedRoot, { recursive: true });
     await fs.writeFile(path.join(extractedRoot, "SKILL.md"), skillFileContent("Forced Missing"));
-    const handler = vi.fn((payload: unknown) => {
+    const handler = vi.fn((payload: any) => {
       const event = payload as { request?: { mode?: string } };
       if (event.request?.mode === "install") {
         return { block: true, blockReason: "fresh skill installs are disabled by policy" };

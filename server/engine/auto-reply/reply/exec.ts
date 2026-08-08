@@ -40,7 +40,7 @@ export type ExecDirectiveContext = {
   sessionId?: string;
   workspaceDir?: string;
   userId?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 // exec 指令处理结果

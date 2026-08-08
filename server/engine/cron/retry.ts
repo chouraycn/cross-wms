@@ -18,7 +18,7 @@ export interface RetryConfig {
   /** 最大抖动比例（0-1），默认 0.1 */
   jitterRatio?: number;
   /** 重试条件函数，返回 true 时重试 */
-  shouldRetry?: (error: unknown, attempt: number) => boolean;
+  shouldRetry?: (error: any, attempt: number) => boolean;
 }
 
 /** 重试状态 */
@@ -116,7 +116,7 @@ export async function withRetry<T>(
   const startTime = Date.now();
 
   let currentState = createInitialRetryState();
-  let lastError: unknown;
+  let lastError: any;
 
   while (currentState.attempt <= resolvedConfig.maxRetries) {
     const attemptStartTime = Date.now();
@@ -219,7 +219,7 @@ export class RetryTracker {
   }
 
   /** 检查是否应该重试 */
-  shouldRetry(error: unknown): boolean {
+  shouldRetry(error: any): boolean {
     if (this.currentState.exhausted) {
       return false;
     }
@@ -230,7 +230,7 @@ export class RetryTracker {
   }
 
   /** 记录失败并获取下次延迟 */
-  recordFailure(error: unknown): number {
+  recordFailure(error: any): number {
     this.states.push({ ...this.currentState });
 
     this.currentState = {
@@ -340,7 +340,7 @@ export const RETRY_CONFIGS = {
     exponentialBase: 2,
     jitter: true,
     jitterRatio: 0.1,
-    shouldRetry: (error: unknown) => {
+    shouldRetry: (error: any) => {
       if (error instanceof Error) {
         const message = error.message.toLowerCase();
         return (

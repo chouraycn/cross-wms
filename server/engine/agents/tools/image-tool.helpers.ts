@@ -21,12 +21,12 @@ const MAX_IMAGE_REASONING_SIGNATURE_PARSE_CHARS = 2_048;
 const MAX_IMAGE_REASONING_SIGNATURE_SCAN_CHARS = 65_536;
 
 type AssistantMessage = {
-  content?: unknown;
+  content?: any;
   stopReason?: string;
   errorMessage?: string;
 };
 
-function normalizeLowercaseStringOrEmpty(value: unknown): string {
+function normalizeLowercaseStringOrEmpty(value: any): string {
   if (typeof value !== "string") {
     return "";
   }
@@ -44,7 +44,7 @@ function hasResponsesReasoningSignatureMarkers(value: string): boolean {
   return /"id"\s*:\s*"rs_/.test(scanned) && /"type"\s*:\s*"reasoning(?:[."])/.test(scanned);
 }
 
-function isImageReasoningFallbackSignature(value: unknown): boolean {
+function isImageReasoningFallbackSignature(value: any): boolean {
   if (!value) {
     return false;
   }
@@ -68,7 +68,7 @@ function isImageReasoningFallbackSignature(value: unknown): boolean {
   if (typeof value !== "object") {
     return false;
   }
-  const record = value as { id?: unknown; type?: unknown };
+  const record = value as { id?: any; type?: any };
   const id = typeof record.id === "string" ? record.id : "";
   const type = typeof record.type === "string" ? record.type : "";
   return id.startsWith("rs_") && (type === "reasoning" || type.startsWith("reasoning."));
@@ -87,7 +87,7 @@ export function hasImageReasoningOnlyResponse(message: AssistantMessage): boolea
     if (!block || typeof block !== "object") {
       continue;
     }
-    const record = block as { type?: unknown; thinking?: unknown; thinkingSignature?: unknown };
+    const record = block as { type?: any; thinking?: any; thinkingSignature?: any };
     if (
       record.type === "thinking" &&
       typeof record.thinking === "string" &&
@@ -136,7 +136,7 @@ function extractAssistantText(message: AssistantMessage): string {
     const parts: string[] = [];
     for (const block of content) {
       if (block && typeof block === "object" && "text" in block) {
-        const text = (block as { text?: unknown }).text;
+        const text = (block as { text?: any }).text;
         if (typeof text === "string") {
           parts.push(text);
         }
@@ -175,7 +175,7 @@ export function coerceImageModelConfig(cfg?: { agents?: { defaults?: { imageMode
   return coerceToolModelConfig(cfg?.agents?.defaults?.imageModel);
 }
 
-function normalizeProviderId(value: unknown): string {
+function normalizeProviderId(value: any): string {
   if (typeof value !== "string") {
     return "";
   }

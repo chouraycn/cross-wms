@@ -145,7 +145,7 @@ function hasTimestampPrefix(value: string): boolean {
   );
 }
 
-function isEpipeError(err: unknown): boolean {
+function isEpipeError(err: any): boolean {
   const code = (err as { code?: string })?.code;
   return code === 'EPIPE' || code === 'EIO';
 }
@@ -186,8 +186,8 @@ export function enableConsoleCapture(): void {
   };
 
   const forward =
-    (level: LogLevel, orig: (...args: unknown[]) => void) =>
-    (...args: unknown[]) => {
+    (level: LogLevel, orig: (...args: any[]) => void) =>
+    (...args: any[]) => {
       const formatted = util.format(...args);
       const trimmed = formatted.trimStart();
       const shouldPrefixTimestamp =

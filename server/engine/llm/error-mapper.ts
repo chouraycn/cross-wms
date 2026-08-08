@@ -65,7 +65,7 @@ export type ErrorClassification = {
   retryable: boolean;
   message: string;
   /** 原始错误（如果有）。 */
-  cause?: unknown;
+  cause?: any;
   /** 建议的 Retry-After（毫秒）。 */
   retryAfterMs?: number;
 };
@@ -76,7 +76,7 @@ export class LLMError extends Error {
   readonly retryable: boolean;
   readonly retryAfterMs?: number;
   readonly statusCode?: number;
-  readonly cause?: unknown;
+  readonly cause?: any;
 
   constructor(classification: ErrorClassification, statusCode?: number) {
     super(classification.message);
@@ -112,19 +112,19 @@ export function isRetryableCode(code: LLMErrorCode): boolean {
 }
 
 /** 检测是否为国内厂商的内容安全错误。 */
-export function isContentFilterError(error: unknown): boolean {
+export function isContentFilterError(error: any): boolean {
   const msg = extractErrorMessage(error)?.toLowerCase() ?? '';
   return CN_CONTENT_FILTER_KEYWORDS.some((kw) => msg.includes(kw));
 }
 
 /** 检测是否为国内厂商的合规错误。 */
-export function isComplianceError(error: unknown): boolean {
+export function isComplianceError(error: any): boolean {
   const msg = extractErrorMessage(error)?.toLowerCase() ?? '';
   return CN_COMPLIANCE_KEYWORDS.some((kw) => msg.includes(kw));
 }
 
 /** 从任意错误中提取分类。 */
-export function classifyError(error: unknown): ErrorClassification {
+export function classifyError(error: any): ErrorClassification {
   if (!error) {
     return { code: 'unknown', retryable: false, message: 'Unknown error' };
   }
@@ -207,7 +207,7 @@ export function classifyError(error: unknown): ErrorClassification {
 }
 
 /** 将任意错误包装为 LLMError。 */
-export function toLLMError(error: unknown): LLMError {
+export function toLLMError(error: any): LLMError {
   const classification = classifyError(error);
   const statusCode = extractStatusCode(error);
   return new LLMError(classification, statusCode);
@@ -215,7 +215,7 @@ export function toLLMError(error: unknown): LLMError {
 
 /** 从 Provider 错误响应体解析分类。 */
 export function classifyProviderError(
-  body: unknown,
+  body: any,
   statusCode: number,
 ): ErrorClassification {
   const code = classifyHttpStatus(statusCode);
@@ -226,7 +226,7 @@ export function classifyProviderError(
 }
 
 /** 提取 Provider 错误响应中的 message 字段。 */
-export function extractProviderErrorMessage(body: unknown): string | undefined {
+export function extractProviderErrorMessage(body: any): string | undefined {
   if (!body || typeof body !== 'object') return undefined;
   const b = body as {
     error?: { message?: string; type?: string };
@@ -241,14 +241,14 @@ export function extractProviderErrorMessage(body: unknown): string | undefined {
 
 // ====== 内部辅助 ======
 
-function isAbortError(error: unknown): boolean {
+function isAbortError(error: any): boolean {
   if (error instanceof Error) {
     return error.name === 'AbortError';
   }
   return false;
 }
 
-function extractStatusCode(error: unknown): number | undefined {
+function extractStatusCode(error: any): number | undefined {
   if (!error || typeof error !== 'object') return undefined;
   const e = error as { statusCode?: number; status?: number; code?: string | number };
   if (typeof e.statusCode === 'number') return e.statusCode;
@@ -256,7 +256,7 @@ function extractStatusCode(error: unknown): number | undefined {
   return undefined;
 }
 
-function extractErrorMessage(error: unknown): string | undefined {
+function extractErrorMessage(error: any): string | undefined {
   if (typeof error === 'string') return error;
   if (error instanceof Error) return error.message;
   if (error && typeof error === 'object') {
@@ -266,7 +266,7 @@ function extractErrorMessage(error: unknown): string | undefined {
   return undefined;
 }
 
-function extractRetryAfterFromHeaders(error: unknown): number | undefined {
+function extractRetryAfterFromHeaders(error: any): number | undefined {
   if (!error || typeof error !== 'object') return undefined;
   const e = error as { headers?: { get?: (k: string) => string | null } };
   const headers = e.headers;
@@ -280,7 +280,7 @@ function extractRetryAfterFromHeaders(error: unknown): number | undefined {
   return undefined;
 }
 
-function extractRetryAfterFromBody(body: unknown): number | undefined {
+function extractRetryAfterFromBody(body: any): number | undefined {
   if (!body || typeof body !== 'object') return undefined;
   const b = body as { retry_after?: number; retryAfter?: number };
   if (typeof b.retry_after === 'number') return b.retry_after * 1000;
@@ -289,7 +289,7 @@ function extractRetryAfterFromBody(body: unknown): number | undefined {
 }
 
 /** 记录错误到日志。 */
-export function logLLMError(error: unknown, context?: string): void {
+export function logLLMError(error: any, context?: string): void {
   const classification = classifyError(error);
   const ctx = context ? `[${context}]` : '';
   if (classification.retryable) {

@@ -129,7 +129,7 @@ describe("gateway server health/presence", () => {
       const evt = await presenceEventP;
       expect(typeof evt.seq).toBe("number");
       expect(evt.stateVersion?.presence).toBeGreaterThan(0);
-      const evtPayload = evt.payload as { presence?: unknown } | undefined;
+      const evtPayload = evt.payload as { presence?: any } | undefined;
       expect(Array.isArray(evtPayload?.presence)).toBe(true);
 
       ws.close();
@@ -150,10 +150,10 @@ describe("gateway server health/presence", () => {
     );
     emitAgentEvent({ runId, stream: "lifecycle", data: { msg: "hi" } });
     const evt = await evtPromise;
-    const payload = evt.payload as Record<string, unknown> | undefined;
+    const payload = evt.payload as Record<string, any> | undefined;
     expect(payload?.runId).toBe(runId);
     expect(typeof evt.seq).toBe("number");
-    const data = payload?.data as Record<string, unknown> | undefined;
+    const data = payload?.data as Record<string, any> | undefined;
     expect(data?.msg).toBe("hi");
 
     ws.close();
@@ -169,7 +169,7 @@ describe("gateway server health/presence", () => {
     );
     await localHarness.close();
     const evt = await shutdownP;
-    const evtPayload = evt.payload as { reason?: unknown } | undefined;
+    const evtPayload = evt.payload as { reason?: any } | undefined;
     expect(evtPayload?.reason).toBe("gateway stopping");
   });
 
@@ -195,7 +195,7 @@ describe("gateway server health/presence", () => {
       );
       const events = await Promise.all(waits);
       for (const evt of events) {
-        const evtPayload = evt.payload as { presence?: unknown[] } | undefined;
+        const evtPayload = evt.payload as { presence?: any[] } | undefined;
         expect(evtPayload?.presence?.length).toBeGreaterThan(0);
         expect(typeof evt.seq).toBe("number");
       }
@@ -235,13 +235,13 @@ describe("gateway server health/presence", () => {
       }),
     );
 
-    const presenceRes = (await presenceP) as { ok?: boolean; payload?: unknown };
+    const presenceRes = (await presenceP) as { ok?: boolean; payload?: any };
     expect(presenceRes.ok).toBe(true);
     const presencePayload = presenceRes.payload;
     const entries = Array.isArray(presencePayload)
       ? presencePayload
-      : Array.isArray((presencePayload as { presence?: unknown } | undefined)?.presence)
-        ? ((presencePayload as { presence: Array<Record<string, unknown>> }).presence ?? [])
+      : Array.isArray((presencePayload as { presence?: any } | undefined)?.presence)
+        ? ((presencePayload as { presence: Array<Record<string, any>> }).presence ?? [])
         : [];
     const clientEntry = entries.find(
       (e) => e.host === GATEWAY_CLIENT_NAMES.FINGERPRINT && e.version === "9.9.9",
@@ -281,7 +281,7 @@ describe("gateway server health/presence", () => {
     );
 
     const presenceRes = await presenceP;
-    const entries = (presenceRes.payload ?? []) as Array<Record<string, unknown>>;
+    const entries = (presenceRes.payload ?? []) as Array<Record<string, any>>;
     expect(entries.map((entry) => entry.instanceId)).not.toContain(cliId);
 
     ws.close();

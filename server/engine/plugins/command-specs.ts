@@ -98,7 +98,7 @@ export function getPluginCommandEntrySpecsFromRegistrations(
   const providerName = normalizeOptionalLowercaseString(provider);
   const nativeCommandsEnabled = pluginNativeCommandsEnabled(providerName, options);
   return commands
-    .map((entry: unknown) =>
+    .map((entry: any) =>
       serializePluginCommandEntrySpec(entry as OpenClawPluginCommandDefinition, providerName, nativeCommandsEnabled),
     )
     .filter((spec): spec is PluginCommandEntrySpec => spec !== null);

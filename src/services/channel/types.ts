@@ -21,7 +21,7 @@ export interface ChannelConfig {
   type: ChannelType;
   enabled: boolean;
   credentials: Record<string, string>;
-  settings?: Record<string, unknown>;
+  settings?: Record<string, any>;
   description?: string;
 }
 

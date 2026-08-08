@@ -21,8 +21,8 @@ export async function runAgentHarnessAfterToolCallHook(params: {
   sessionId?: string;
   sessionKey?: string;
   channelId?: string;
-  startArgs: Record<string, unknown>;
-  result?: unknown;
+  startArgs: Record<string, any>;
+  result?: any;
   error?: string;
   startedAt?: number;
 }): Promise<void> {
@@ -30,7 +30,7 @@ export async function runAgentHarnessAfterToolCallHook(params: {
   // Hooks should see adjusted tool params when before_tool_call rewrote them.
   const resolvedArgs =
     adjustedArgs && typeof adjustedArgs === "object"
-      ? (adjustedArgs as Record<string, unknown>)
+      ? (adjustedArgs as Record<string, any>)
       : params.startArgs;
   const eventArgs = structuredClone(resolvedArgs);
   const hookRunner = getGlobalHookRunner();

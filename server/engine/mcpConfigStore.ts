@@ -268,7 +268,7 @@ setTimeout(() => {
 
 // ===================== 序列化/反序列化 =====================
 
-function rowToConfig(row: Record<string, unknown>): McpServerConfig {
+function rowToConfig(row: Record<string, any>): McpServerConfig {
   const envRaw = row.env as string;
   let env: Record<string, string> = {};
   if (envRaw) {
@@ -324,8 +324,8 @@ function rowToConfig(row: Record<string, unknown>): McpServerConfig {
   };
 }
 
-function configToRow(config: Partial<McpServerConfig>): Record<string, unknown> {
-  const row: Record<string, unknown> = {};
+function configToRow(config: Partial<McpServerConfig>): Record<string, any> {
+  const row: Record<string, any> = {};
   if (config.name !== undefined) row.name = config.name;
   if (config.command !== undefined) row.command = config.command;
   if (config.args !== undefined) row.args = JSON.stringify(config.args);
@@ -387,11 +387,11 @@ export function getServer(idOrName: string): McpServerConfig | undefined {
   const db = getDb();
 
   // 先尝试按 ID 查询（仅全局租户，避免命中数字员工租户 server）
-  let row = db.prepare('SELECT * FROM mcp_servers WHERE id = ? AND tenant_id IS NULL').get(idOrName) as Record<string, unknown> | undefined;
+  let row = db.prepare('SELECT * FROM mcp_servers WHERE id = ? AND tenant_id IS NULL').get(idOrName) as Record<string, any> | undefined;
 
   // 再尝试按 name 查询（仅全局租户）
   if (!row) {
-    row = db.prepare('SELECT * FROM mcp_servers WHERE name = ? AND tenant_id IS NULL').get(idOrName) as Record<string, unknown> | undefined;
+    row = db.prepare('SELECT * FROM mcp_servers WHERE name = ? AND tenant_id IS NULL').get(idOrName) as Record<string, any> | undefined;
   }
 
   return row ? rowToConfig(row) : undefined;
@@ -402,7 +402,7 @@ export function updateServer(id: string, updates: Partial<Omit<McpServerConfig, 
   const db = getDb();
 
   const sets: string[] = [];
-  const params: unknown[] = [];
+  const params: any[] = [];
 
   if (updates.name !== undefined) {
     sets.push('name = ?');
@@ -469,13 +469,13 @@ export function deleteServer(id: string): boolean {
 export function listServers(enabledOnly: boolean = false, tenantId: string | null = null): McpServerConfig[] {
   const db = getDb();
   const where = tenantId === null ? 'tenant_id IS NULL' : 'tenant_id = ?';
-  const params: unknown[] = tenantId === null ? [] : [tenantId];
+  const params: any[] = tenantId === null ? [] : [tenantId];
 
-  let rows: Record<string, unknown>[];
+  let rows: Record<string, any>[];
   if (enabledOnly) {
-    rows = db.prepare(`SELECT * FROM mcp_servers WHERE ${where} AND enabled = 1 ORDER BY created_at DESC`).all(...params) as Record<string, unknown>[];
+    rows = db.prepare(`SELECT * FROM mcp_servers WHERE ${where} AND enabled = 1 ORDER BY created_at DESC`).all(...params) as Record<string, any>[];
   } else {
-    rows = db.prepare(`SELECT * FROM mcp_servers WHERE ${where} ORDER BY created_at DESC`).all(...params) as Record<string, unknown>[];
+    rows = db.prepare(`SELECT * FROM mcp_servers WHERE ${where} ORDER BY created_at DESC`).all(...params) as Record<string, any>[];
   }
   return rows.map(rowToConfig);
 }
@@ -487,11 +487,11 @@ export function listTools(serverId?: string): Array<{
   serverId: string;
   name: string;
   description?: string;
-  inputSchema?: Record<string, unknown>;
+  inputSchema?: Record<string, any>;
 }> {
   const db = getDb();
   if (serverId !== undefined) {
-    const rows = db.prepare('SELECT * FROM mcp_server_tools WHERE server_id = ? ORDER BY name').all(serverId) as Record<string, unknown>[];
+    const rows = db.prepare('SELECT * FROM mcp_server_tools WHERE server_id = ? ORDER BY name').all(serverId) as Record<string, any>[];
     return rows.map((row) => ({
       id: row.id as number,
       serverId: row.server_id as string,
@@ -500,7 +500,7 @@ export function listTools(serverId?: string): Array<{
       inputSchema: row.input_schema ? JSON.parse(row.input_schema as string) : undefined,
     }));
   }
-  const rows = db.prepare('SELECT * FROM mcp_server_tools ORDER BY name').all() as Record<string, unknown>[];
+  const rows = db.prepare('SELECT * FROM mcp_server_tools ORDER BY name').all() as Record<string, any>[];
   return rows.map((row) => ({
     id: row.id as number,
     serverId: row.server_id as string,
@@ -514,7 +514,7 @@ export function createTool(config: {
   serverId: string;
   name: string;
   description?: string;
-  inputSchema?: Record<string, unknown>;
+  inputSchema?: Record<string, any>;
 }): number {
   const db = getDb();
   const result = db.prepare(
@@ -544,7 +544,7 @@ export function deleteTool(id: number): boolean {
 // 以最小化调用方改动。
 
 /** 将核心 mcp_servers 行映射为数字员工历史 McpServerRow（时间由毫秒转秒以贴合 API 契约） */
-function rowToMcpServerRow(row: Record<string, unknown>): McpServerRow {
+function rowToMcpServerRow(row: Record<string, any>): McpServerRow {
   return {
     id: row.id as string,
     tenant_id: (row.tenant_id as string) ?? DEFAULT_TENANT_ID,
@@ -572,7 +572,7 @@ export function listMcpServers(tenantId: string = DEFAULT_TENANT_ID): McpServerR
   const db = getDb();
   const rows = db
     .prepare('SELECT * FROM mcp_servers WHERE tenant_id = ? ORDER BY name ASC')
-    .all(tenantId) as Record<string, unknown>[];
+    .all(tenantId) as Record<string, any>[];
   return rows.map(rowToMcpServerRow);
 }
 
@@ -584,7 +584,7 @@ export function getMcpServerById(
   const db = getDb();
   const row = db
     .prepare('SELECT * FROM mcp_servers WHERE tenant_id = ? AND id = ?')
-    .get(tenantId, serverId) as Record<string, unknown> | undefined;
+    .get(tenantId, serverId) as Record<string, any> | undefined;
   return row ? rowToMcpServerRow(row) : undefined;
 }
 
@@ -596,10 +596,10 @@ interface CreateMcpServerData {
   bucket?: string;
   transport?: string;
   url?: string | null;
-  headers?: Record<string, unknown>;
+  headers?: Record<string, any>;
   command?: string | null;
   args?: string[];
-  env?: Record<string, unknown>;
+  env?: Record<string, any>;
   cwd?: string | null;
   enabled?: boolean;
 }
@@ -645,12 +645,12 @@ interface UpdateMcpServerData {
   bucket?: string;
   transport?: string;
   url?: string | null;
-  headers?: Record<string, unknown>;
+  headers?: Record<string, any>;
   command?: string | null;
   args?: string[];
-  env?: Record<string, unknown>;
+  env?: Record<string, any>;
   cwd?: string | null;
-  discovered_tools?: unknown[];
+  discovered_tools?: any[];
   last_synced_at?: number | null;
   enabled?: boolean;
 }
@@ -666,7 +666,7 @@ export function updateMcpServer(
   if (!existing) return undefined;
 
   const setClauses: string[] = ['updated_at = ?'];
-  const params: unknown[] = [Date.now()];
+  const params: any[] = [Date.now()];
 
   if (updates.name !== undefined) {
     setClauses.push('name = ?');

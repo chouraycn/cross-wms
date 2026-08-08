@@ -2,6 +2,6 @@
 // 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
 export type callGatewayLeastPrivilege = unknown;
-export const callGatewayLeastPrivilege: unknown = undefined;
+export const callGatewayLeastPrivilege: any = undefined;
 export type randomIdempotencyKey = unknown;
-export const randomIdempotencyKey: unknown = undefined;
+export const randomIdempotencyKey: any = undefined;

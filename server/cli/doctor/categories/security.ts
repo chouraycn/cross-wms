@@ -126,9 +126,9 @@ async function checkSandboxConfig(
 ): Promise<DoctorCheckResult> {
   const findings: DoctorFinding[] = [];
   const sandboxConfigPath = join(context.configDir, "sandbox.json");
-  let sandboxConfig: Record<string, unknown> | null = null;
+  let sandboxConfig: Record<string, any> | null = null;
   let sandboxEnabled = false;
-  let sandboxEngine: unknown = null;
+  let sandboxEngine: any = null;
 
   if (!existsSync(sandboxConfigPath)) {
     findings.push({

@@ -42,7 +42,7 @@ vi.mock("../model-suppression.js", () => {
     }
   }
 
-  function resolveConfiguredQwenBaseUrl(config: unknown): string | undefined {
+  function resolveConfiguredQwenBaseUrl(config: any): string | undefined {
     const providers = (config as { models?: { providers?: Record<string, { baseUrl?: string }> } })
       ?.models?.providers;
     if (!providers) {
@@ -75,7 +75,7 @@ vi.mock("../model-suppression.js", () => {
       provider?: string;
       id?: string;
       baseUrl?: string;
-      config?: unknown;
+      config?: any;
     }) => {
       if (
         (provider === "openai" || provider === "azure-openai-responses" || provider === "openai") &&
@@ -108,7 +108,7 @@ vi.mock("../model-suppression.js", () => {
     }: {
       provider?: string;
       id?: string;
-      config?: unknown;
+      config?: any;
     }) => {
       if (
         (provider === "qwen" || provider === "modelstudio") &&
@@ -264,23 +264,23 @@ function expectResolvedModel(result: ResolveModelForTestResult) {
   return result.model;
 }
 
-function expectRecordFields(record: unknown, expected: Record<string, unknown>) {
+function expectRecordFields(record: any, expected: Record<string, any>) {
   if (!record || typeof record !== "object") {
     throw new Error("Expected record");
   }
-  const actual = record as Record<string, unknown>;
+  const actual = record as Record<string, any>;
   for (const [key, value] of Object.entries(expected)) {
     expect(actual[key]).toEqual(value);
   }
   return actual;
 }
 
-function mockCallArg(mock: ReturnType<typeof vi.fn>, callIndex = 0): Record<string, unknown> {
+function mockCallArg(mock: ReturnType<typeof vi.fn>, callIndex = 0): Record<string, any> {
   const call = mock.mock.calls[callIndex];
   if (!call) {
     throw new Error(`Expected mock call ${callIndex}`);
   }
-  return call[0] as Record<string, unknown>;
+  return call[0] as Record<string, any>;
 }
 
 describe("resolveModel", () => {
@@ -999,7 +999,7 @@ describe("resolveModel", () => {
       skipAgentDiscovery: true,
     });
 
-    expect((expectResolvedModel(result) as { mediaInput?: unknown }).mediaInput).toEqual({
+    expect((expectResolvedModel(result) as { mediaInput?: any }).mediaInput).toEqual({
       image: { maxSidePx: 6000, preferredSidePx: 2048, tokenMode: "detail" },
     });
     expect(resolveBundledStaticCatalogModelMock).toHaveBeenCalledWith({
@@ -1048,7 +1048,7 @@ describe("resolveModel", () => {
       },
     } as unknown as OpenClawConfig);
 
-    expect((expectResolvedModel(result) as { mediaInput?: unknown }).mediaInput).toEqual({
+    expect((expectResolvedModel(result) as { mediaInput?: any }).mediaInput).toEqual({
       image: { maxBytes: 1, maxSidePx: 2048, preferredSidePx: 1536, tokenMode: "provider" },
     });
   });
@@ -1448,7 +1448,7 @@ describe("resolveModel", () => {
         maxTokensField: "max_tokens",
       }),
     );
-    expect((model as { thinkingLevelMap?: unknown }).thinkingLevelMap).toEqual({ off: null });
+    expect((model as { thinkingLevelMap?: any }).thinkingLevelMap).toEqual({ off: null });
   });
 
   it("keeps provider runtime transport ahead of bundled static fallback metadata", async () => {
@@ -2207,7 +2207,7 @@ describe("resolveModel", () => {
     const result = resolveModelForTest("ollama", "qwen3:32b", "/tmp/agent", cfg);
 
     expect(result.error).toBeUndefined();
-    expect((result.model as { params?: Record<string, unknown> } | undefined)?.params).toEqual({
+    expect((result.model as { params?: Record<string, any> } | undefined)?.params).toEqual({
       num_ctx: 16384,
       keep_alive: "1m",
       thinking: "low",
@@ -2239,7 +2239,7 @@ describe("resolveModel", () => {
     const result = resolveModelForTest("ollama", "qwen3:32b", "/tmp/agent", cfg);
 
     expect(result.error).toBeUndefined();
-    expect((result.model as { params?: Record<string, unknown> } | undefined)?.params).toEqual({
+    expect((result.model as { params?: Record<string, any> } | undefined)?.params).toEqual({
       keep_alive: "1m",
       num_ctx: 65536,
       top_p: 0.9,
@@ -2434,7 +2434,7 @@ describe("resolveModel", () => {
     const result = resolveModelForTest("ollama", "llama3.2", "/tmp/agent", cfg);
 
     expect(result.error).toBeUndefined();
-    expect((result.model as { params?: Record<string, unknown> } | undefined)?.params).toEqual({
+    expect((result.model as { params?: Record<string, any> } | undefined)?.params).toEqual({
       num_ctx: 32768,
     });
   });

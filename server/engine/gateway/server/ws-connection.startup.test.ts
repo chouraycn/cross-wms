@@ -24,7 +24,7 @@ import {
 
 describe("attachGatewayWsConnectionHandler startup readiness", () => {
   it("returns a retryable startup-unavailable connect response while sidecars are pending", async () => {
-    const sent: unknown[] = [];
+    const sent: any[] = [];
     const socket = createGatewayWsTestSocket({
       closeEmits: true,
       onSend: (data) => {
@@ -71,8 +71,8 @@ describe("attachGatewayWsConnectionHandler startup readiness", () => {
           (frame) =>
             typeof frame === "object" &&
             frame !== null &&
-            (frame as { type?: unknown; id?: unknown; ok?: unknown }).type === "res" &&
-            (frame as { id?: unknown }).id === "connect-1",
+            (frame as { type?: any; id?: any; ok?: any }).type === "res" &&
+            (frame as { id?: any }).id === "connect-1",
         ),
       ).toBe(true);
     });
@@ -81,18 +81,18 @@ describe("attachGatewayWsConnectionHandler startup readiness", () => {
       (frame) =>
         typeof frame === "object" &&
         frame !== null &&
-        (frame as { type?: unknown; id?: unknown }).type === "res" &&
-        (frame as { id?: unknown }).id === "connect-1",
+        (frame as { type?: any; id?: any }).type === "res" &&
+        (frame as { id?: any }).id === "connect-1",
     ) as
       | {
-          type?: unknown;
-          id?: unknown;
-          ok?: unknown;
+          type?: any;
+          id?: any;
+          ok?: any;
           error?: {
-            code?: unknown;
-            retryable?: unknown;
-            retryAfterMs?: unknown;
-            details?: unknown;
+            code?: any;
+            retryable?: any;
+            retryAfterMs?: any;
+            details?: any;
           };
         }
       | undefined;

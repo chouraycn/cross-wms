@@ -325,7 +325,7 @@ function firstHeaderValue(value: string | string[] | undefined): string | undefi
 }
 
 function resolvePairedAccessScopes(
-  device: { approvedScopes?: unknown; scopes?: unknown } | null | undefined,
+  device: { approvedScopes?: any; scopes?: any } | null | undefined,
 ): string[] {
   const scopes = Array.isArray(device?.approvedScopes)
     ? device.approvedScopes
@@ -481,14 +481,14 @@ export type GatewayWsMessageHandlerParams = {
   getMethodRegistry?: () => GatewayMethodRegistry;
   buildRequestContext: () => GatewayRequestContext;
   refreshHealthSnapshot: GatewayRequestContext["refreshHealthSnapshot"];
-  send: (obj: unknown) => void;
+  send: (obj: any) => void;
   close: (code?: number, reason?: string) => void;
   isClosed: () => boolean;
   clearHandshakeTimer: () => void;
   getClient: () => GatewayWsClient | null;
   setClient: (next: GatewayWsClient) => boolean;
   setHandshakeState: (state: "pending" | "connected" | "failed") => void;
-  setCloseCause: (cause: string, meta?: Record<string, unknown>) => void;
+  setCloseCause: (cause: string, meta?: Record<string, any>) => void;
   setLastFrameMeta: (meta: { type?: string; method?: string; id?: string }) => void;
   originCheckMetrics: WsOriginCheckMetrics;
   logGateway: SubsystemLogger;
@@ -541,7 +541,7 @@ export function attachGatewayWsMessageHandler(params: GatewayWsMessageHandlerPar
     logWsControl,
   } = params;
 
-  const sendFrame = async (obj: unknown): Promise<void> =>
+  const sendFrame = async (obj: any): Promise<void> =>
     await new Promise<void>((resolve, reject) => {
       socket.send(JSON.stringify(obj), (err) => {
         if (err) {
@@ -692,20 +692,20 @@ export function attachGatewayWsMessageHandler(params: GatewayWsMessageHandlerPar
       const parsed = JSON.parse(text);
       const frameType =
         parsed && typeof parsed === "object" && "type" in parsed
-          ? typeof (parsed as { type?: unknown }).type === "string"
-            ? String((parsed as { type?: unknown }).type)
+          ? typeof (parsed as { type?: any }).type === "string"
+            ? String((parsed as { type?: any }).type)
             : undefined
           : undefined;
       const frameMethod =
         parsed && typeof parsed === "object" && "method" in parsed
-          ? typeof (parsed as { method?: unknown }).method === "string"
-            ? String((parsed as { method?: unknown }).method)
+          ? typeof (parsed as { method?: any }).method === "string"
+            ? String((parsed as { method?: any }).method)
             : undefined
           : undefined;
       const frameId =
         parsed && typeof parsed === "object" && "id" in parsed
-          ? typeof (parsed as { id?: unknown }).id === "string"
-            ? String((parsed as { id?: unknown }).id)
+          ? typeof (parsed as { id?: any }).id === "string"
+            ? String((parsed as { id?: any }).id)
             : undefined
           : undefined;
       if (frameType || frameMethod || frameId) {
@@ -770,7 +770,7 @@ export function attachGatewayWsMessageHandler(params: GatewayWsMessageHandlerPar
           modelIdentifier: connectParams.client.modelIdentifier,
           instanceId: connectParams.client.instanceId,
         };
-        const markHandshakeFailure = (cause: string, meta?: Record<string, unknown>) => {
+        const markHandshakeFailure = (cause: string, meta?: Record<string, any>) => {
           setHandshakeState("failed");
           setCloseCause(cause, { ...meta, ...clientMeta });
         };
@@ -1984,7 +1984,7 @@ export function attachGatewayWsMessageHandler(params: GatewayWsMessageHandlerPar
           for (const nodeId of nodeIdsForPairing) {
             void updatePairedNodeMetadata(nodeId, {
               lastConnectedAtMs: nodeSession.connectedAtMs,
-            }).catch((err: unknown) =>
+            }).catch((err: any) =>
               logGateway.warn(`failed to record last connect for ${nodeId}: ${formatForLog(err)}`),
             );
           }
@@ -2002,7 +2002,7 @@ export function attachGatewayWsMessageHandler(params: GatewayWsMessageHandlerPar
             deviceFamily: nodeSession.deviceFamily,
             commands: nodeSession.commands,
             cfg: getRuntimeConfig(),
-          }).catch((err: unknown) =>
+          }).catch((err: any) =>
             logGateway.warn(
               `remote bin probe failed for ${nodeSession.nodeId}: ${formatForLog(err)}`,
             ),
@@ -2013,7 +2013,7 @@ export function attachGatewayWsMessageHandler(params: GatewayWsMessageHandlerPar
                 triggers: cfg.triggers,
               });
             })
-            .catch((err: unknown) =>
+            .catch((err: any) =>
               logGateway.warn(
                 `voicewake snapshot failed for ${nodeSession.nodeId}: ${formatForLog(err)}`,
               ),
@@ -2024,7 +2024,7 @@ export function attachGatewayWsMessageHandler(params: GatewayWsMessageHandlerPar
                 config: routing,
               });
             })
-            .catch((err: unknown) =>
+            .catch((err: any) =>
               logGateway.warn(
                 `voicewake routing snapshot failed for ${nodeSession.nodeId}: ${formatForLog(err)}`,
               ),
@@ -2173,7 +2173,7 @@ export function attachGatewayWsMessageHandler(params: GatewayWsMessageHandlerPar
         // Post-connect refresh only needs a cached/config snapshot for UI state;
         // live channel probes here pulled slow Discord/Telegram HTTP checks into
         // reply-adjacent websocket handshakes.
-        void refreshHealthSnapshot({ probe: false }).catch((err: unknown) =>
+        void refreshHealthSnapshot({ probe: false }).catch((err: any) =>
           logHealth.error(`post-connect health refresh failed: ${formatError(err)}`),
         );
         return;
@@ -2183,7 +2183,7 @@ export function attachGatewayWsMessageHandler(params: GatewayWsMessageHandlerPar
       if (!validateRequestFrame(parsed)) {
         send({
           type: "res",
-          id: (parsed as { id?: unknown })?.id ?? "invalid",
+          id: (parsed as { id?: any })?.id ?? "invalid",
           ok: false,
           error: errorShape(
             ErrorCodes.INVALID_REQUEST,
@@ -2224,9 +2224,9 @@ export function attachGatewayWsMessageHandler(params: GatewayWsMessageHandlerPar
       }
       const respond = (
         ok: boolean,
-        payload?: unknown,
+        payload?: any,
         error?: ErrorShape,
-        meta?: Record<string, unknown>,
+        meta?: Record<string, any>,
       ) => {
         send({ type: "res", id: req.id, ok, payload, error });
         const unauthorizedRoleError = isUnauthorizedRoleError(error);
@@ -2278,7 +2278,7 @@ export function attachGatewayWsMessageHandler(params: GatewayWsMessageHandlerPar
           methodRegistry: getMethodRegistry?.(),
           context: buildRequestContext(),
         });
-      })().catch((err: unknown) => {
+      })().catch((err: any) => {
         logGateway.error(`request handler failed: ${formatForLog(err)}`);
         respond(false, undefined, errorShape(ErrorCodes.UNAVAILABLE, formatForLog(err)));
       });
@@ -2306,7 +2306,7 @@ export function attachGatewayWsMessageHandler(params: GatewayWsMessageHandlerPar
   });
 }
 
-function getRawDataByteLength(data: unknown): number {
+function getRawDataByteLength(data: any): number {
   if (Buffer.isBuffer(data)) {
     return data.byteLength;
   }

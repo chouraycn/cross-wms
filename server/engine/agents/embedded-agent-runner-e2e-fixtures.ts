@@ -33,7 +33,7 @@ export async function cleanupEmbeddedAgentRunnerTestWorkspace(
   await fs.rm(workspace.tempRoot, { recursive: true, force: true });
 }
 
-export function createEmbeddedAgentRunnerOpenAiConfig(modelIds: string[]): Record<string, unknown> {
+export function createEmbeddedAgentRunnerOpenAiConfig(modelIds: string[]): Record<string, any> {
   return {
     models: {
       providers: {
@@ -80,8 +80,8 @@ export function createMockUsage(input: number, output: number) {
 const baseUsage = createMockUsage(0, 0);
 
 export function buildEmbeddedRunnerAssistant(
-  overrides: Record<string, unknown>,
-): Record<string, unknown> {
+  overrides: Record<string, any>,
+): Record<string, any> {
   return {
     role: "assistant",
     content: [],
@@ -96,8 +96,8 @@ export function buildEmbeddedRunnerAssistant(
 }
 
 export function makeEmbeddedRunnerAttempt(
-  overrides: Record<string, unknown>,
-): Record<string, unknown> {
+  overrides: Record<string, any>,
+): Record<string, any> {
   return {
     aborted: false,
     externalAbort: false,

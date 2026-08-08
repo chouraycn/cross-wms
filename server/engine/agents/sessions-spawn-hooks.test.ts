@@ -5,7 +5,7 @@ import {
   loadSubagentSpawnModuleForTest,
 } from "./subagent-spawn.test-helpers.js";
 
-type GatewayRequest = { method?: string; params?: Record<string, unknown> };
+type GatewayRequest = { method?: string; params?: Record<string, any> };
 type TestBindingRequest = {
   targetSessionKey: string;
   targetKind?: string;
@@ -16,12 +16,12 @@ type TestBindingRequest = {
     parentConversationId?: string;
   };
   placement: "current" | "child";
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 const hoisted = vi.hoisted(() => ({
   callGatewayMock: vi.fn(),
-  configOverride: {} as Record<string, unknown>,
+  configOverride: {} as Record<string, any>,
   updateSessionStoreMock: vi.fn(),
 }));
 
@@ -70,28 +70,28 @@ function findGatewayRequest(method: string): GatewayRequest | undefined {
   return getGatewayRequests().find((request) => request.method === method);
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object") {
     throw new Error(`expected ${label}`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function expectFields(value: unknown, expected: Record<string, unknown>, label = "object"): void {
+function expectFields(value: any, expected: Record<string, any>, label = "object"): void {
   const record = requireRecord(value, label);
   for (const [key, expectedValue] of Object.entries(expected)) {
     expect(record[key], `${label}.${key}`).toEqual(expectedValue);
   }
 }
 
-function expectSubagentSessionKey(value: unknown, label: string): string {
+function expectSubagentSessionKey(value: any, label: string): string {
   expect(value, label).toBeTypeOf("string");
   const sessionKey = value as string;
   expect(sessionKey.startsWith("agent:main:subagent:")).toBe(true);
   return sessionKey;
 }
 
-function setConfig(next: Record<string, unknown>) {
+function setConfig(next: Record<string, any>) {
   hoisted.configOverride = createSubagentSpawnTestConfig(undefined, next);
 }
 
@@ -139,7 +139,7 @@ function expectSessionsDeleteWithoutAgentStart() {
 }
 
 function mockAgentStartFailure() {
-  hoisted.callGatewayMock.mockImplementation(async (opts: unknown) => {
+  hoisted.callGatewayMock.mockImplementation(async (opts: any) => {
     const request = opts as { method?: string };
     if (request.method === "agent") {
       throw new Error("spawn failed");
@@ -148,21 +148,21 @@ function mockAgentStartFailure() {
   });
 }
 
-function requireSpawnedHookCall(): [Record<string, unknown>, Record<string, unknown>] {
-  const call = hookRunnerMocks.runSubagentSpawned.mock.calls[0] as readonly unknown[] | undefined;
+function requireSpawnedHookCall(): [Record<string, any>, Record<string, any>] {
+  const call = hookRunnerMocks.runSubagentSpawned.mock.calls[0] as readonly any[] | undefined;
   if (!call) {
     throw new Error("expected spawned hook call");
   }
   return [requireRecord(call[0], "spawned event"), requireRecord(call[1], "spawned context")];
 }
 
-function getSpawnedEventCall(): Record<string, unknown> {
+function getSpawnedEventCall(): Record<string, any> {
   const [event] = requireSpawnedHookCall();
   return event;
 }
 
-function requireEndedHookEvent(): Record<string, unknown> {
-  const call = hookRunnerMocks.runSubagentEnded.mock.calls[0] as readonly unknown[] | undefined;
+function requireEndedHookEvent(): Record<string, any> {
+  const call = hookRunnerMocks.runSubagentEnded.mock.calls[0] as readonly any[] | undefined;
   if (!call) {
     throw new Error("expected ended hook call");
   }
@@ -253,9 +253,9 @@ describe("sessions_spawn subagent lifecycle hooks", () => {
         },
       },
     });
-    const store: Record<string, Record<string, unknown>> = {};
+    const store: Record<string, Record<string, any>> = {};
     hoisted.updateSessionStoreMock.mockImplementation(
-      async (_storePath: unknown, mutator: unknown) => {
+      async (_storePath: any, mutator: any) => {
         if (typeof mutator !== "function") {
           throw new Error("missing session store mutator");
         }
@@ -263,7 +263,7 @@ describe("sessions_spawn subagent lifecycle hooks", () => {
         return store;
       },
     );
-    hoisted.callGatewayMock.mockImplementation(async (opts: unknown) => {
+    hoisted.callGatewayMock.mockImplementation(async (opts: any) => {
       const request = opts as { method?: string };
       if (request.method === "sessions.patch") {
         return { ok: true };
@@ -559,9 +559,9 @@ describe("sessions_spawn subagent lifecycle hooks", () => {
   });
 
   it("cleans up the provisional session when lineage patching fails after thread binding", async () => {
-    const store: Record<string, Record<string, unknown>> = {};
+    const store: Record<string, Record<string, any>> = {};
     hoisted.updateSessionStoreMock.mockImplementation(
-      async (_storePath: unknown, mutator: unknown) => {
+      async (_storePath: any, mutator: any) => {
         if (typeof mutator !== "function") {
           throw new Error("missing session store mutator");
         }
@@ -572,8 +572,8 @@ describe("sessions_spawn subagent lifecycle hooks", () => {
         return store;
       },
     );
-    hoisted.callGatewayMock.mockImplementation(async (opts: unknown) => {
-      const request = opts as { method?: string; params?: Record<string, unknown> };
+    hoisted.callGatewayMock.mockImplementation(async (opts: any) => {
+      const request = opts as { method?: string; params?: Record<string, any> };
       if (request.method === "sessions.delete") {
         return { ok: true };
       }

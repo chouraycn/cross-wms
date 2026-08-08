@@ -8,7 +8,7 @@ export function resolveHookModelSelection(params: { model?: string; defaultModel
   return params.model ?? params.defaultModel ?? "";
 }
 
-export function buildBeforeModelResolveAttachments(_params: unknown): unknown[] {
+export function buildBeforeModelResolveAttachments(_params: any): any[] {
   return [];
 }
 

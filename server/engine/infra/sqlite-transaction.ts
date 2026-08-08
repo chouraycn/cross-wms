@@ -13,11 +13,11 @@ function nextSavepointName(): string {
   return `openclaw_tx_${nextSavepointId}`;
 }
 
-function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
-  return Boolean(value && typeof (value as { then?: unknown }).then === "function");
+function isPromiseLike(value: any): value is PromiseLike<any> {
+  return Boolean(value && typeof (value as { then?: any }).then === "function");
 }
 
-function assertSyncTransactionResult(value: unknown): void {
+function assertSyncTransactionResult(value: any): void {
   if (isPromiseLike(value)) {
     throw new Error(
       "SQLite 写事务必须是同步的；不支持 Promise 返回值。",
@@ -25,8 +25,8 @@ function assertSyncTransactionResult(value: unknown): void {
   }
 }
 
-function isRetryableCommitError(error: unknown): boolean {
-  const code = error && typeof error === "object" ? (error as { code?: unknown }).code : undefined;
+function isRetryableCommitError(error: any): boolean {
+  const code = error && typeof error === "object" ? (error as { code?: any }).code : undefined;
   return typeof code === "string" && RETRYABLE_COMMIT_ERROR_CODES.has(code);
 }
 

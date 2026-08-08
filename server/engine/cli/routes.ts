@@ -1,4 +1,4 @@
 
-export function findRoutedCommand(..._args: unknown[]): unknown {
+export function findRoutedCommand(..._args: any[]): any {
   console.warn('findRoutedCommand is not available in cross-wms'); return undefined;
 }

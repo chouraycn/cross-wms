@@ -52,7 +52,7 @@ export function registerNodesLocationCommands(nodes: Command) {
             "--invoke-timeout",
           );
 
-          const invokeParams: Record<string, unknown> = {
+          const invokeParams: Record<string, any> = {
             nodeId,
             command: "location.get",
             params: {
@@ -67,10 +67,10 @@ export function registerNodesLocationCommands(nodes: Command) {
           }
 
           const raw = await callGatewayCli("node.invoke", opts, invokeParams);
-          const res = typeof raw === "object" && raw !== null ? (raw as { payload?: unknown }) : {};
+          const res = typeof raw === "object" && raw !== null ? (raw as { payload?: any }) : {};
           const payload =
             res.payload && typeof res.payload === "object"
-              ? (res.payload as Record<string, unknown>)
+              ? (res.payload as Record<string, any>)
               : {};
 
           if (opts.json) {

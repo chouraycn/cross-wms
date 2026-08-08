@@ -10,7 +10,7 @@ import {
 
 function createAdapter(initialStore: ReturnType<DeviceAuthStoreAdapter["readStore"]> = null) {
   let store = initialStore;
-  const writes: unknown[] = [];
+  const writes: any[] = [];
   const adapter: DeviceAuthStoreAdapter = {
     readStore: () => store,
     writeStore: (next) => {

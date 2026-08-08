@@ -5,8 +5,8 @@
  */
 
 export type OAuthManagerAdapter = {
-  refresh: (credential: unknown) => Promise<unknown>;
-  getAccessToken: (credential: unknown) => string;
+  refresh: (credential: any) => Promise<any>;
+  getAccessToken: (credential: any) => string;
 };
 
 export type ResolvedOAuthAccess = {
@@ -15,16 +15,16 @@ export type ResolvedOAuthAccess = {
 };
 
 export class OAuthManagerRefreshError extends Error {
-  constructor(message: string, options?: { cause?: unknown }) {
+  constructor(message: string, options?: { cause?: any }) {
     super(message, options);
     this.name = "OAuthManagerRefreshError";
   }
 }
 
-export function resolveEffectiveOAuthCredential(_params: unknown): ResolvedOAuthAccess {
+export function resolveEffectiveOAuthCredential(_params: any): ResolvedOAuthAccess {
   return { needsRefresh: false };
 }
 
-export function createOAuthManager(_params?: unknown): null {
+export function createOAuthManager(_params?: any): null {
   return null;
 }

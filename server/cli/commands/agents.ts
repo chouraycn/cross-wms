@@ -7,7 +7,7 @@ export type AgentsOptions = {
   json?: boolean;
 };
 
-function formatJsonOutput(data: unknown): string {
+function formatJsonOutput(data: any): string {
   return JSON.stringify(data, null, 2);
 }
 

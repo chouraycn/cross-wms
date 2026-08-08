@@ -22,7 +22,7 @@ vi.mock("../process/supervisor/index.js", () => ({
 }));
 
 vi.mock("../process/kill-tree.js", () => ({
-  killProcessTree: (...args: unknown[]) => killProcessTreeMock(...args),
+  killProcessTree: (...args: any[]) => killProcessTreeMock(...args),
 }));
 
 let addSession: typeof import("./bash-process-registry.js").addSession;
@@ -41,11 +41,11 @@ function createBackgroundSession(id: string, pid?: number) {
   });
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object") {
     throw new Error(`expected ${label}`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 function expectSessionState(sessionId: string, expected: { exited?: boolean }) {
@@ -68,7 +68,7 @@ function expectFinishedSessionState(
   }
 }
 
-function expectTextContent(value: unknown, text: string) {
+function expectTextContent(value: any, text: string) {
   const content = requireRecord(value, "tool content");
   expect(content.type).toBe("text");
   expect(content.text).toBe(text);

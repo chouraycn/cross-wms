@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { OpenClawConfig } from "../config/config.js";
 
 const note = vi.hoisted(() => vi.fn());
-const pluginRegistry = vi.hoisted(() => ({ list: [] as unknown[] }));
+const pluginRegistry = vi.hoisted(() => ({ list: [] as any[] }));
 const listReadOnlyChannelPluginsForConfigMock = vi.hoisted(() => vi.fn());
 
 vi.mock("../../packages/terminal-core/src/note.js", () => ({
@@ -69,7 +69,7 @@ describe("noteSecurityWarnings gateway exposure", () => {
   const lastMessage = () => String(note.mock.calls[note.mock.calls.length - 1]?.[0] ?? "");
 
   async function withExecApprovalsFile(
-    file: Record<string, unknown>,
+    file: Record<string, any>,
     run: () => Promise<void>,
   ): Promise<void> {
     const home = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-doctor-security-"));

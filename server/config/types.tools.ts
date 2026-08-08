@@ -357,7 +357,7 @@ export type ToolsConfig = {
           timezone?: string;
         };
       };
-    } & Record<string, unknown>;
+    } & Record<string, any>;
     x_search?: {
       enabled?: boolean;
       model?: string;

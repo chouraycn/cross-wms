@@ -1,32 +1,32 @@
 // 移植自 openclaw/src/config/defaults.ts
 
-export function resolveNormalizedProviderModelMaxTokens(...args: unknown[]): unknown {
+export function resolveNormalizedProviderModelMaxTokens(...args: any[]): any {
   return undefined;
 }
-export function applyMessageDefaults(...args: unknown[]): unknown {
+export function applyMessageDefaults(...args: any[]): any {
   return undefined;
 }
-export function applySessionDefaults(...args: unknown[]): unknown {
+export function applySessionDefaults(...args: any[]): any {
   return undefined;
 }
-export function applyTalkConfigNormalization(...args: unknown[]): unknown {
+export function applyTalkConfigNormalization(...args: any[]): any {
   return undefined;
 }
-export function applyModelDefaults(...args: unknown[]): unknown {
+export function applyModelDefaults(...args: any[]): any {
   return undefined;
 }
-export function applyAgentDefaults(...args: unknown[]): unknown {
+export function applyAgentDefaults(...args: any[]): any {
   return undefined;
 }
-export function applyCronDefaults(...args: unknown[]): unknown {
+export function applyCronDefaults(...args: any[]): any {
   return undefined;
 }
-export function applyLoggingDefaults(...args: unknown[]): unknown {
+export function applyLoggingDefaults(...args: any[]): any {
   return undefined;
 }
-export function applyContextPruningDefaults(...args: unknown[]): unknown {
+export function applyContextPruningDefaults(...args: any[]): any {
   return undefined;
 }
-export function applyCompactionDefaults(...args: unknown[]): unknown {
+export function applyCompactionDefaults(...args: any[]): any {
   return undefined;
 }

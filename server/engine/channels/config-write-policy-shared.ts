@@ -10,13 +10,13 @@ function normalizeAccountId(accountId?: string | null): string {
 }
 
 function resolveAccountEntry(
-  accounts: Record<string, unknown> | undefined,
+  accounts: Record<string, any> | undefined,
   accountId: string,
-): Record<string, unknown> | undefined {
+): Record<string, any> | undefined {
   if (!accounts) return undefined;
   const entry = accounts[accountId];
   return entry != null && typeof entry === "object" && !Array.isArray(entry)
-    ? (entry as Record<string, unknown>)
+    ? (entry as Record<string, any>)
     : undefined;
 }
 
@@ -30,7 +30,7 @@ type ChannelConfigWithAccounts = {
 };
 
 export type ConfigWritePolicyConfig = {
-  channels?: Record<string, unknown>;
+  channels?: Record<string, any>;
 };
 
 /**

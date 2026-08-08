@@ -8,7 +8,7 @@ import { createHash } from 'node:crypto';
 import { resolve } from 'node:path';
 
 // Helper: 生成测试 skill 内容
-function makeTestSkill(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+function makeTestSkill(overrides: Record<string, any> = {}): Record<string, any> {
   return {
     skill_id: 'test-skill-001',
     name: 'Test Skill',

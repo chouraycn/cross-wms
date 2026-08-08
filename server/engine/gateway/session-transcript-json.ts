@@ -2,7 +2,7 @@ function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-export function normalizeOptionalString(value: unknown): string | undefined {
+export function normalizeOptionalString(value: any): string | undefined {
   return typeof value === 'string' && value.trim().length > 0 ? value : undefined;
 }
 
@@ -12,7 +12,7 @@ export function extractJsonStringFieldPrefix(prefix: string, field: string): str
     return undefined;
   }
   try {
-    const decoded = JSON.parse(`"${match[1]}"`) as unknown;
+    const decoded = JSON.parse(`"${match[1]}"`) as any;
     return normalizeOptionalString(decoded);
   } catch {
     return undefined;

@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-function normalizeOptionalString(value: unknown): string | undefined {
+function normalizeOptionalString(value: any): string | undefined {
   return typeof value === 'string' && value.trim().length > 0 ? value : undefined;
 }
 

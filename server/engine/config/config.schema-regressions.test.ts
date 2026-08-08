@@ -363,7 +363,7 @@ describe("config schema regressions", () => {
   it("rejects browser.extraArgs with non-array value", () => {
     const res = validateConfigObject({
       browser: {
-        extraArgs: "--proxy-server=http://127.0.0.1:7890" as unknown,
+        extraArgs: "--proxy-server=http://127.0.0.1:7890" as any,
       },
     });
 
@@ -401,7 +401,7 @@ describe("config schema regressions", () => {
     const res = validateConfigObject({
       browser: {
         tabCleanup: {
-          unknownKey: true as unknown,
+          unknownKey: true as any,
         },
       },
     });

@@ -3,7 +3,7 @@
 export function clearProviderDiscoveryModuleLoaders(): void {
   // 降级
 }
-export function resolvePluginDiscoveryProvidersRuntime(params: unknown): unknown[] {
+export function resolvePluginDiscoveryProvidersRuntime(params: any): any[] {
   void params;
   return [];
 }

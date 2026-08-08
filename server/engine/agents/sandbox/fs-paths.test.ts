@@ -188,7 +188,7 @@ describe("resolveSandboxFsPathWithMounts", () => {
       agentWorkspaceDir: workspaceDir,
     });
     const mounts = buildSandboxFsMounts(sandbox);
-    let thrown: unknown;
+    let thrown: any;
     try {
       resolveSandboxFsPathWithMounts({
         filePath: "/tmp/outside",

@@ -51,7 +51,7 @@ export class OpenRouterAdapter implements IAiApiAdapter {
       Object.assign(headers, compat.extraHeaders);
     }
 
-    const body: Record<string, unknown> = {
+    const body: Record<string, any> = {
       model: modelId || OPENROUTER_DEFAULT_MODEL_ID,
       messages,
       temperature,

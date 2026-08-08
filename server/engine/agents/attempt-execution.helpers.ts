@@ -8,7 +8,7 @@ export function sessionFileHasContent(): boolean { return false; }
 export function claudeCliSessionTranscriptPath(sessionKey: string): string { return sessionKey; }
 export function claudeCliSessionTranscriptHasContent(): boolean { return false; }
 export function claudeCliSessionTranscriptHasOrphanedToolUse(): boolean { return false; }
-export function resolveFallbackRetryPrompt(error: unknown): string { return String(error ?? ""); }
+export function resolveFallbackRetryPrompt(error: any): string { return String(error ?? ""); }
 export function formatClaudeCliFallbackPrelude(): string { return ""; }
 export function buildClaudeCliFallbackContextPrelude(): string { return ""; }
 export function createAcpVisibleTextAccumulator(): { addText: (text: string) => void; getText: () => string } {

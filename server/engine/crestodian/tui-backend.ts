@@ -238,7 +238,7 @@ class CrestodianTuiBackend implements TuiBackend {
     return this.seq;
   }
 
-  private emit(event: string, payload: unknown): void {
+  private emit(event: string, payload: any): void {
     this.onEvent?.({
       event,
       payload,
@@ -260,7 +260,7 @@ class CrestodianTuiBackend implements TuiBackend {
     });
   }
 
-  private emitError(runId: string, sessionKey: string, error: unknown): void {
+  private emitError(runId: string, sessionKey: string, error: any): void {
     const errorMessage = error instanceof Error ? error.message : String(error);
     this.emit("chat", {
       runId,

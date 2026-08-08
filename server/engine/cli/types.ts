@@ -101,7 +101,7 @@ export type PendingRequest = {
 };
 
 export type GatewayRpcOpts = {
-  config?: unknown;
+  config?: any;
   url?: string;
   token?: string;
   password?: string;

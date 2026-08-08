@@ -40,7 +40,7 @@ const bundleTestDeps = await vi.hoisted(async () => {
   };
   const loadEmbeddedAgentMcpConfig = (params: {
     workspaceDir: string;
-    cfg?: { mcp?: { servers?: Record<string, unknown> } };
+    cfg?: { mcp?: { servers?: Record<string, any> } };
   }) => {
     const pluginRoot = pathModule.join(
       params.workspaceDir,
@@ -49,7 +49,7 @@ const bundleTestDeps = await vi.hoisted(async () => {
       "claude-bundle",
     );
     const mcpPath = pathModule.join(pluginRoot, ".mcp.json");
-    let bundleServers: Record<string, unknown> = {};
+    let bundleServers: Record<string, any> = {};
     if (fsSync.existsSync(mcpPath)) {
       const raw = JSON.parse(fsSync.readFileSync(mcpPath, "utf-8")) as {
         mcpServers?: Record<string, { args?: string[]; command?: string }>;
@@ -338,7 +338,7 @@ describe("loadEnabledBundleAgentSettingsSnapshot", () => {
       normalizePluginId: (id: string) => id.trim(),
     };
     pluginMetadataSnapshotMocks.getCurrentPluginMetadataSnapshot.mockImplementation(
-      (params: { config?: unknown; requireDefaultDiscoveryContext?: boolean }) => {
+      (params: { config?: any; requireDefaultDiscoveryContext?: boolean }) => {
         if (params.config || params.requireDefaultDiscoveryContext) {
           return undefined;
         }
@@ -415,7 +415,7 @@ describe("loadEnabledBundleAgentSettingsSnapshot", () => {
     expect(snapshot.hideThinkingBlock).toBe(true);
     expect(snapshot.shellPath).toBeUndefined();
     expect(snapshot.compaction?.keepRecentTokens).toBe(64_000);
-    expect((snapshot as Record<string, unknown>).mcpServers).toEqual({
+    expect((snapshot as Record<string, any>).mcpServers).toEqual({
       bundleProbe: {
         command: "node",
         args: [path.join(resolvedServerPath, "probe.mjs")],
@@ -446,7 +446,7 @@ describe("loadEnabledBundleAgentSettingsSnapshot", () => {
       },
     });
 
-    expect((overridden as Record<string, unknown>).mcpServers).toEqual({
+    expect((overridden as Record<string, any>).mcpServers).toEqual({
       bundleProbe: {
         command: "node",
         args: [path.join(resolvedServerPath, "probe.mjs")],

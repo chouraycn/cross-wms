@@ -96,7 +96,7 @@ export function buildInworldRequest(
   audioEncoding: InworldAudioEncoding,
   sampleRateHertz?: number,
   temperature?: number,
-): Record<string, unknown> {
+): Record<string, any> {
   return {
     text,
     voiceId,

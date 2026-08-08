@@ -10,25 +10,25 @@ export type ProviderModelPickerEntry = {
   label?: string;
   providerId?: string;
 };
-export function setProviderWizardProvidersResolverForTest(_resolver: unknown): void {
+export function setProviderWizardProvidersResolverForTest(_resolver: any): void {
   // 降级
 }
 export function buildProviderPluginMethodChoice(providerId: string, methodId: string): string {
   return `${providerId}:${methodId}`;
 }
-export function resolveProviderWizardOptions(params: unknown): ProviderWizardOption[] {
+export function resolveProviderWizardOptions(params: any): ProviderWizardOption[] {
   void params;
   return [];
 }
-export function resolveProviderModelPickerEntries(params: unknown): ProviderModelPickerEntry[] {
+export function resolveProviderModelPickerEntries(params: any): ProviderModelPickerEntry[] {
   void params;
   return [];
 }
-export function resolveProviderPluginChoice(params: unknown): string | undefined {
+export function resolveProviderPluginChoice(params: any): string | undefined {
   void params;
   return undefined;
 }
-export async function runProviderModelSelectedHook(params: unknown): Promise<unknown> {
+export async function runProviderModelSelectedHook(params: any): Promise<any> {
   void params;
   return undefined;
 }

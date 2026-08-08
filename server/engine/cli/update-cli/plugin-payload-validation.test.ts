@@ -17,7 +17,7 @@ describe("runPluginPayloadSmokeCheck", () => {
 
   async function writePackage(
     dir: string,
-    manifest: Record<string, unknown>,
+    manifest: Record<string, any>,
     mainContent?: string,
   ) {
     await fs.mkdir(dir, { recursive: true });

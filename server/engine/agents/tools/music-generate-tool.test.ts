@@ -144,7 +144,7 @@ vi.mock("./music-generate-background.js", () => musicGenerateBackgroundMocks);
 vi.mock("../../tasks/runtime-internal.js", () => taskRuntimeInternalMocks);
 vi.mock("../../tasks/detached-task-runtime.js", () => taskExecutorMocks);
 
-function asConfig(value: unknown): OpenClawConfig {
+function asConfig(value: any): OpenClawConfig {
   return value as OpenClawConfig;
 }
 
@@ -182,40 +182,40 @@ function resetMusicGenerateMocks() {
   );
 }
 
-function detailsOf(result: { details?: unknown }): Record<string, unknown> {
+function detailsOf(result: { details?: any }): Record<string, any> {
   if (!result.details || typeof result.details !== "object") {
     throw new Error("expected result details object");
   }
-  return result.details as Record<string, unknown>;
+  return result.details as Record<string, any>;
 }
 
 function generateMusicOptions(
   callIndex = musicGenerationRuntimeMocks.generateMusic.mock.calls.length - 1,
-): Record<string, unknown> {
+): Record<string, any> {
   const options = musicGenerationRuntimeMocks.generateMusic.mock.calls[callIndex]?.[0];
   if (!options || typeof options !== "object") {
     throw new Error(`expected generateMusic options ${callIndex}`);
   }
-  return options as Record<string, unknown>;
+  return options as Record<string, any>;
 }
 
-function taskProgressCall(callIndex = 0): Record<string, unknown> {
+function taskProgressCall(callIndex = 0): Record<string, any> {
   const call = taskExecutorMocks.recordTaskRunProgressByRunId.mock.calls[callIndex]?.[0];
   if (!call || typeof call !== "object") {
     throw new Error(`expected task progress call ${callIndex}`);
   }
-  return call as Record<string, unknown>;
+  return call as Record<string, any>;
 }
 
-function taskCompleteCall(callIndex = 0): Record<string, unknown> {
+function taskCompleteCall(callIndex = 0): Record<string, any> {
   const call = taskExecutorMocks.completeTaskRunByRunId.mock.calls[callIndex]?.[0];
   if (!call || typeof call !== "object") {
     throw new Error(`expected task complete call ${callIndex}`);
   }
-  return call as Record<string, unknown>;
+  return call as Record<string, any>;
 }
 
-function wakeCompletionCall(callIndex = 0): Record<string, unknown> {
+function wakeCompletionCall(callIndex = 0): Record<string, any> {
   const call =
     musicGenerateBackgroundMocks.musicGenerationTaskLifecycle.wakeTaskCompletion.mock.calls[
       callIndex
@@ -223,7 +223,7 @@ function wakeCompletionCall(callIndex = 0): Record<string, unknown> {
   if (!call || typeof call !== "object") {
     throw new Error(`expected wake completion call ${callIndex}`);
   }
-  return call as Record<string, unknown>;
+  return call as Record<string, any>;
 }
 
 describe("createMusicGenerateTool", () => {
@@ -421,10 +421,10 @@ describe("createMusicGenerateTool", () => {
     expect(details.lyrics).toEqual(["wake the city up"]);
     expect(details.timeoutMs).toBe(300_000);
     expect(generateMusicOptions().timeoutMs).toBe(300_000);
-    expect((details.media as { mediaUrls?: unknown }).mediaUrls).toEqual([
+    expect((details.media as { mediaUrls?: any }).mediaUrls).toEqual([
       "/tmp/generated-night-drive.mp3",
     ]);
-    expect((details.media as { attachments?: unknown }).attachments).toEqual([
+    expect((details.media as { attachments?: any }).attachments).toEqual([
       {
         type: "audio",
         path: "/tmp/generated-night-drive.mp3",
@@ -625,7 +625,7 @@ describe("createMusicGenerateTool", () => {
     const details = detailsOf(result);
     expect(details.async).toBe(true);
     expect(details.status).toBe("started");
-    expect((details.task as { taskId?: unknown }).taskId).toBe("task-123");
+    expect((details.task as { taskId?: any }).taskId).toBe("task-123");
     expect(details.instrumental).toBe(true);
     expect(details.timeoutMs).toBe(120_000);
     expect(details.requestedTimeoutMs).toBe(1000);
@@ -647,7 +647,7 @@ describe("createMusicGenerateTool", () => {
     expect(String(taskCompleteCall().runId)).toMatch(/^tool:music_generate:/);
     expect(wakeSpy).toHaveBeenCalledTimes(1);
     const wake = wakeCompletionCall();
-    expect((wake.handle as { taskId?: unknown }).taskId).toBe("task-123");
+    expect((wake.handle as { taskId?: any }).taskId).toBe("task-123");
     expect(wake.status).toBe("ok");
     expect(wake.result).toContain('path="/tmp/generated-night-drive.mp3"');
     expect(wake.result).not.toContain("MEDIA:");
@@ -1144,8 +1144,8 @@ describe("createMusicGenerateTool", () => {
     }
     expect(loadCall[0]).toBe("http://198.18.0.153/reference.png");
     const loadOptions = loadCall[1] as {
-      requestInit?: { signal?: unknown };
-      ssrfPolicy?: unknown;
+      requestInit?: { signal?: any };
+      ssrfPolicy?: any;
     };
     expect(loadOptions.requestInit?.signal).toBeInstanceOf(AbortSignal);
     expect(loadOptions.ssrfPolicy).toEqual({ allowRfc2544BenchmarkRange: true });

@@ -121,9 +121,9 @@ function buildCostTotals(overrides: Partial<CostUsageTotals> = {}): CostUsageTot
   };
 }
 
-function expectSessionCostArgs(): Record<string, unknown> {
+function expectSessionCostArgs(): Record<string, any> {
   expect(loadSessionCostSummaryMock).toHaveBeenCalledTimes(1);
-  const call = loadSessionCostSummaryMock.mock.calls[0] as unknown[] | undefined;
+  const call = loadSessionCostSummaryMock.mock.calls[0] as any[] | undefined;
   if (!call) {
     throw new Error("expected loadSessionCostSummary call");
   }
@@ -131,12 +131,12 @@ function expectSessionCostArgs(): Record<string, unknown> {
   if (!args || typeof args !== "object") {
     throw new Error("expected loadSessionCostSummary args");
   }
-  return args as Record<string, unknown>;
+  return args as Record<string, any>;
 }
 
-function expectFastModeArgs(): Record<string, unknown> {
+function expectFastModeArgs(): Record<string, any> {
   expect(resolveFastModeStateMock).toHaveBeenCalledTimes(1);
-  const call = resolveFastModeStateMock.mock.calls[0] as unknown[] | undefined;
+  const call = resolveFastModeStateMock.mock.calls[0] as any[] | undefined;
   if (!call) {
     throw new Error("expected resolveFastModeState call");
   }
@@ -144,7 +144,7 @@ function expectFastModeArgs(): Record<string, unknown> {
   if (!args || typeof args !== "object") {
     throw new Error("expected resolveFastModeState args");
   }
-  return args as Record<string, unknown>;
+  return args as Record<string, any>;
 }
 
 describe("handleUsageCommand", () => {
@@ -320,7 +320,7 @@ describe("handleFastCommand", () => {
     await handleFastCommand(params, true);
 
     const args = expectFastModeArgs();
-    const sessionEntry = args.sessionEntry as Record<string, unknown> | undefined;
+    const sessionEntry = args.sessionEntry as Record<string, any> | undefined;
     expect(sessionEntry?.sessionId).toBe("target-session");
     expect(sessionEntry?.fastMode).toBe(true);
   });

@@ -28,7 +28,7 @@ export async function waitForCompactionRetryWithAggregateTimeout(params: {
   // without masking failures that settle before the timeout path wins.
   const waitPromise = params.waitForCompactionRetry().then(
     () => ({ kind: "done" as const }),
-    (error: unknown) => ({ kind: "rejected" as const, error }),
+    (error: any) => ({ kind: "rejected" as const, error }),
   );
 
   while (true) {

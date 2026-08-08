@@ -28,13 +28,13 @@ const REGISTRY_IDS = [
   "tools.web.search.*.apiKey",
 ] as const;
 
-function readPath(source: unknown, path: string): unknown {
+function readPath(source: any, path: string): any {
   let current = source;
   for (const segment of path.split(".")) {
     if (!current || typeof current !== "object" || Array.isArray(current)) {
       return undefined;
     }
-    current = (current as Record<string, unknown>)[segment];
+    current = (current as Record<string, any>)[segment];
   }
   return current;
 }
@@ -46,7 +46,7 @@ vi.mock("../secrets/target-registry.js", () => ({
       pathPattern: id,
     })),
   ),
-  discoverConfigSecretTargetsByIds: vi.fn((config: unknown, targetIds?: Iterable<string>) => {
+  discoverConfigSecretTargetsByIds: vi.fn((config: any, targetIds?: Iterable<string>) => {
     const allowed = targetIds ? new Set(targetIds) : null;
     const out: Array<{ entry: { id: string }; path: string; pathSegments: string[] }> = [];
     const matches = (pattern: string, path: string): boolean => {
@@ -59,7 +59,7 @@ vi.mock("../secrets/target-registry.js", () => ({
         (segment, index) => segment === "*" || segment === pathSegments[index],
       );
     };
-    const collectPaths = (node: unknown, segments: string[], prefix: string[] = []): string[] => {
+    const collectPaths = (node: any, segments: string[], prefix: string[] = []): string[] => {
       const [segment, ...rest] = segments;
       if (!segment) {
         return node === undefined ? [] : [prefix.join(".")];
@@ -72,7 +72,7 @@ vi.mock("../secrets/target-registry.js", () => ({
           collectPaths(value, rest, [...prefix, key]),
         );
       }
-      return collectPaths((node as Record<string, unknown>)[segment], rest, [...prefix, segment]);
+      return collectPaths((node as Record<string, any>)[segment], rest, [...prefix, segment]);
     };
     const record = (targetId: string, path: string) => {
       if (allowed && !allowed.has(targetId)) {
@@ -98,7 +98,7 @@ vi.mock("../secrets/target-registry.js", () => ({
 }));
 
 vi.mock("../plugins/web-fetch-providers.runtime.js", () => ({
-  resolvePluginWebFetchProviders: vi.fn((params: { config?: Record<string, unknown> }) => [
+  resolvePluginWebFetchProviders: vi.fn((params: { config?: Record<string, any> }) => [
     {
       pluginId: "firecrawl",
       id: "firecrawl",
@@ -107,7 +107,7 @@ vi.mock("../plugins/web-fetch-providers.runtime.js", () => ({
       getConfiguredCredentialValue: (config?: {
         plugins?: {
           entries?: {
-            firecrawl?: { config?: { webFetch?: { apiKey?: unknown } } };
+            firecrawl?: { config?: { webFetch?: { apiKey?: any } } };
           };
         };
       }) => config?.plugins?.entries?.firecrawl?.config?.webFetch?.apiKey,
@@ -117,13 +117,13 @@ vi.mock("../plugins/web-fetch-providers.runtime.js", () => ({
           params.config as {
             plugins?: {
               entries?: {
-                firecrawl?: { config?: { webSearch?: { apiKey?: unknown } } };
+                firecrawl?: { config?: { webSearch?: { apiKey?: any } } };
               };
             };
           }
         )?.plugins?.entries?.firecrawl?.config?.webSearch?.apiKey,
       }),
-      getCredentialValue: (fetchConfig?: { firecrawl?: { apiKey?: unknown } }) =>
+      getCredentialValue: (fetchConfig?: { firecrawl?: { apiKey?: any } }) =>
         fetchConfig?.firecrawl?.apiKey,
     },
     {
@@ -134,7 +134,7 @@ vi.mock("../plugins/web-fetch-providers.runtime.js", () => ({
       getConfiguredCredentialValue: (config?: {
         plugins?: {
           entries?: {
-            "other-fetch"?: { config?: { webFetch?: { apiKey?: unknown } } };
+            "other-fetch"?: { config?: { webFetch?: { apiKey?: any } } };
           };
         };
       }) => config?.plugins?.entries?.["other-fetch"]?.config?.webFetch?.apiKey,
@@ -155,17 +155,17 @@ vi.mock("../plugins/web-search-providers.runtime.js", () => ({
       autoDetectOrder: 10,
       credentialPath: "plugins.entries.brave.config.webSearch.apiKey",
       getConfiguredCredentialValue: (config?: {
-        tools?: { web?: { search?: { apiKey?: unknown } } };
+        tools?: { web?: { search?: { apiKey?: any } } };
         plugins?: {
           entries?: {
-            brave?: { config?: { webSearch?: { apiKey?: unknown } } };
+            brave?: { config?: { webSearch?: { apiKey?: any } } };
           };
         };
       }) =>
         config?.plugins?.entries?.brave?.config?.webSearch?.apiKey ??
         config?.tools?.web?.search?.apiKey,
       getConfiguredCredentialFallback: (): undefined => undefined,
-      getCredentialValue: (searchConfig?: { apiKey?: unknown }) => searchConfig?.apiKey,
+      getCredentialValue: (searchConfig?: { apiKey?: any }) => searchConfig?.apiKey,
     },
     {
       pluginId: "firecrawl",
@@ -176,7 +176,7 @@ vi.mock("../plugins/web-search-providers.runtime.js", () => ({
         plugins?: {
           entries?: {
             firecrawl?: {
-              config?: { webFetch?: { apiKey?: unknown }; webSearch?: { apiKey?: unknown } };
+              config?: { webFetch?: { apiKey?: any }; webSearch?: { apiKey?: any } };
             };
           };
         };
@@ -184,7 +184,7 @@ vi.mock("../plugins/web-search-providers.runtime.js", () => ({
       getConfiguredCredentialFallback: (config?: {
         plugins?: {
           entries?: {
-            firecrawl?: { config?: { webFetch?: { apiKey?: unknown } } };
+            firecrawl?: { config?: { webFetch?: { apiKey?: any } } };
           };
         };
       }) => {
@@ -206,12 +206,12 @@ vi.mock("../plugins/web-search-providers.runtime.js", () => ({
       getConfiguredCredentialValue: (config?: {
         plugins?: {
           entries?: {
-            exa?: { config?: { webSearch?: { apiKey?: unknown } } };
+            exa?: { config?: { webSearch?: { apiKey?: any } } };
           };
         };
       }) => config?.plugins?.entries?.exa?.config?.webSearch?.apiKey,
       getConfiguredCredentialFallback: (): undefined => undefined,
-      getCredentialValue: (searchConfig?: { exa?: { apiKey?: unknown } }) =>
+      getCredentialValue: (searchConfig?: { exa?: { apiKey?: any } }) =>
         searchConfig?.exa?.apiKey,
     },
     {
@@ -221,7 +221,7 @@ vi.mock("../plugins/web-search-providers.runtime.js", () => ({
       credentialPath: "plugins.entries.gemini.config.webSearch.apiKey",
       getConfiguredCredentialValue: (): undefined => undefined,
       getConfiguredCredentialFallback: (config?: {
-        models?: { providers?: { google?: { apiKey?: unknown } } };
+        models?: { providers?: { google?: { apiKey?: any } } };
       }) => ({
         path: "models.providers.google.apiKey",
         value: config?.models?.providers?.google?.apiKey,
@@ -394,7 +394,7 @@ describe("command secret target ids", () => {
                 getConfiguredCredentialValue: (config?: {
                   plugins?: {
                     entries?: {
-                      firecrawl?: { config?: { webSearch?: { apiKey?: unknown } } };
+                      firecrawl?: { config?: { webSearch?: { apiKey?: any } } };
                     };
                   };
                 }) => config?.plugins?.entries?.firecrawl?.config?.webSearch?.apiKey,
@@ -410,7 +410,7 @@ describe("command secret target ids", () => {
                 getConfiguredCredentialValue: (config?: {
                   plugins?: {
                     entries?: {
-                      exa?: { config?: { webSearch?: { apiKey?: unknown } } };
+                      exa?: { config?: { webSearch?: { apiKey?: any } } };
                     };
                   };
                 }) => config?.plugins?.entries?.exa?.config?.webSearch?.apiKey,

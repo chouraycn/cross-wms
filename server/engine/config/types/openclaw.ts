@@ -280,7 +280,7 @@ export type ConfigFileSnapshot = {
   /** Raw file contents before parsing; null when missing. */
   raw: string | null;
   /** Parsed JSON/JSONC/YAML value before schema normalization. */
-  parsed: unknown;
+  parsed: any;
   /**
    * Config authored on disk after $include resolution and ${ENV} substitution,
    * but BEFORE runtime defaults are applied.

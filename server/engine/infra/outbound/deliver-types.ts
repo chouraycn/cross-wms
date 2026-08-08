@@ -17,7 +17,7 @@ export type OutboundDeliveryResult = {
   pollId?: string;
   receipt?: MessageReceipt;
   // Channel docking: stash channel-specific fields here to avoid core type churn.
-  meta?: Record<string, unknown>;
+  meta?: Record<string, any>;
 };
 
 /** Reason a payload was intentionally not sent after normalization or hooks. */
@@ -45,13 +45,13 @@ export type OutboundPayloadDeliveryOutcome =
       reason: OutboundPayloadDeliverySuppressionReason;
       hookEffect?: {
         cancelReason?: string;
-        metadata?: Record<string, unknown>;
+        metadata?: Record<string, any>;
       };
     }
   | {
       index: number;
       status: "failed";
-      error: unknown;
+      error: any;
       sentBeforeError: boolean;
       stage: OutboundDeliveryFailureStage;
     };
@@ -66,7 +66,7 @@ export class OutboundDeliveryError extends Error {
   constructor(
     message: string,
     options: {
-      cause: unknown;
+      cause: any;
       results?: readonly OutboundDeliveryResult[];
       payloadOutcomes?: readonly OutboundPayloadDeliveryOutcome[];
       stage?: OutboundDeliveryFailureStage;
@@ -82,6 +82,6 @@ export class OutboundDeliveryError extends Error {
 }
 
 /** Narrows unknown failures to outbound delivery errors with partial-send metadata. */
-export function isOutboundDeliveryError(error: unknown): error is OutboundDeliveryError {
+export function isOutboundDeliveryError(error: any): error is OutboundDeliveryError {
   return error instanceof OutboundDeliveryError;
 }

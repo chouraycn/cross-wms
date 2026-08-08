@@ -68,7 +68,7 @@ async function createStorePath(prefix: string): Promise<string> {
 
 async function writeStore(
   storePath: string,
-  store: Record<string, SessionEntry | Record<string, unknown>>,
+  store: Record<string, SessionEntry | Record<string, any>>,
 ): Promise<void> {
   await fs.mkdir(path.dirname(storePath), { recursive: true });
   await fs.writeFile(storePath, JSON.stringify(store), "utf-8");
@@ -136,11 +136,11 @@ async function initStoredSessionState(params: {
   });
 }
 
-function expectFields(value: unknown, expected: Record<string, unknown>): void {
+function expectFields(value: any, expected: Record<string, any>): void {
   if (!value || typeof value !== "object") {
     throw new Error("expected fields object");
   }
-  const record = value as Record<string, unknown>;
+  const record = value as Record<string, any>;
   for (const [key, expectedValue] of Object.entries(expected)) {
     expect(record[key], key).toEqual(expectedValue);
   }
@@ -149,7 +149,7 @@ function expectFields(value: unknown, expected: Record<string, unknown>): void {
 function requireHookCall(
   mock: ReturnType<typeof vi.fn>,
   label: string,
-): readonly [Record<string, unknown>, Record<string, unknown> | undefined] {
+): readonly [Record<string, any>, Record<string, any> | undefined] {
   const call = mock.mock.calls[0];
   if (!call) {
     throw new Error(`expected ${label} hook call`);
@@ -161,7 +161,7 @@ function requireHookCall(
   if (context !== undefined && (!context || typeof context !== "object")) {
     throw new Error(`expected ${label} hook context`);
   }
-  return [event as Record<string, unknown>, context as Record<string, unknown> | undefined];
+  return [event as Record<string, any>, context as Record<string, any> | undefined];
 }
 
 describe("session hook context wiring", () => {

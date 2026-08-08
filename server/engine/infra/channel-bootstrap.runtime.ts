@@ -1,7 +1,7 @@
 // 移植自 openclaw/src/infra/channel-bootstrap.runtime.ts
 // 降级：channel plugin 运行时依赖简化
 
-const testBootstrapState = new Map<string, unknown>();
+const testBootstrapState = new Map<string, any>();
 
 /** Resets outbound channel bootstrap state (for tests). */
 export function resetOutboundChannelBootstrapStateForTests(): void {
@@ -11,7 +11,7 @@ export function resetOutboundChannelBootstrapStateForTests(): void {
 /** Bootstraps an outbound channel plugin. Simplified without real plugin loading. */
 export async function bootstrapOutboundChannelPlugin(params: {
   channel: string;
-  cfg?: unknown;
+  cfg?: any;
   accountId?: string;
 }): Promise<{ ok: boolean; error?: string }> {
   if (!params.channel?.trim()) {

@@ -19,11 +19,11 @@ import { runMessageAction } from "./message-action-runner.js";
 
 type ChannelActionHandler = NonNullable<NonNullable<ChannelPlugin["actions"]>["handleAction"]>;
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return typeof value === "object" && value !== null;
 }
 
-function readFirstPluginCall(mock: { mock: { calls: unknown[][] } }): Record<string, unknown> {
+function readFirstPluginCall(mock: { mock: { calls: any[][] } }): Record<string, any> {
   const [mockCall] = mock.mock.calls;
   const call = mockCall?.[0];
   if (!isRecord(call)) {
@@ -33,9 +33,9 @@ function readFirstPluginCall(mock: { mock: { calls: unknown[][] } }): Record<str
 }
 
 function readPluginCall(
-  mock: { mock: { calls: unknown[][] } },
+  mock: { mock: { calls: any[][] } },
   callIndex: number,
-): Record<string, unknown> {
+): Record<string, any> {
   const mockCall = mock.mock.calls[callIndex];
   const call = mockCall?.[0];
   if (!isRecord(call)) {
@@ -44,16 +44,16 @@ function readPluginCall(
   return call;
 }
 
-function readLastPluginCall(mock: { mock: { calls: unknown[][] } }): Record<string, unknown> {
+function readLastPluginCall(mock: { mock: { calls: any[][] } }): Record<string, any> {
   return readPluginCall(mock, mock.mock.calls.length - 1);
 }
 
 function readMockCallArg(
-  mock: { mock: { calls: unknown[][] } },
+  mock: { mock: { calls: any[][] } },
   label: string,
   callIndex = 0,
   argIndex = 0,
-): Record<string, unknown> {
+): Record<string, any> {
   const mockCall = mock.mock.calls[callIndex];
   const value = mockCall?.[argIndex];
   if (!isRecord(value)) {
@@ -62,14 +62,14 @@ function readMockCallArg(
   return value;
 }
 
-function readMediaAccess(call: Record<string, unknown>): Record<string, unknown> {
+function readMediaAccess(call: Record<string, any>): Record<string, any> {
   if (!isRecord(call.mediaAccess)) {
     throw new Error("expected plugin mediaAccess");
   }
   return call.mediaAccess;
 }
 
-function readRecordField(record: Record<string, unknown>, key: string, label: string) {
+function readRecordField(record: Record<string, any>, key: string, label: string) {
   const value = record[key];
   if (!isRecord(value)) {
     throw new Error(`expected ${label}`);
@@ -78,8 +78,8 @@ function readRecordField(record: Record<string, unknown>, key: string, label: st
 }
 
 function expectRecordFields(
-  record: Record<string, unknown>,
-  expected: Record<string, unknown>,
+  record: Record<string, any>,
+  expected: Record<string, any>,
   label: string,
 ) {
   for (const [key, value] of Object.entries(expected)) {
@@ -93,7 +93,7 @@ const mocks = vi.hoisted(() => ({
   executePollAction: vi.fn(),
   callGatewayLeastPrivilege: vi.fn(),
   randomIdempotencyKey: vi.fn(() => "idem-gateway-action"),
-  maybeApplyTtsToPayload: vi.fn(async (params: { payload: unknown }) => params.payload),
+  maybeApplyTtsToPayload: vi.fn(async (params: { payload: any }) => params.payload),
 }));
 
 vi.mock("./channel-resolution.js", () => ({
@@ -141,7 +141,7 @@ vi.mock("./message-action-threading.js", async () => {
   return createOutboundThreadingMock();
 });
 
-function createAlwaysConfiguredPluginConfig(account: Record<string, unknown> = { enabled: true }) {
+function createAlwaysConfiguredPluginConfig(account: Record<string, any> = { enabled: true }) {
   return {
     listAccountIds: () => ["default"],
     resolveAccount: () => account,
@@ -278,12 +278,12 @@ describe("runMessageAction plugin dispatch", () => {
     mocks.randomIdempotencyKey.mockClear();
     mocks.maybeApplyTtsToPayload.mockReset();
     mocks.maybeApplyTtsToPayload.mockImplementation(
-      async (params: { payload: unknown }) => params.payload,
+      async (params: { payload: any }) => params.payload,
     );
   });
 
   describe("alias-based plugin action dispatch", () => {
-    const handleAction = vi.fn(async ({ params }: { params: Record<string, unknown> }) =>
+    const handleAction = vi.fn(async ({ params }: { params: Record<string, any> }) =>
       jsonResult({
         ok: true,
         params,
@@ -432,7 +432,7 @@ describe("runMessageAction plugin dispatch", () => {
           "plugin action call",
         );
         expect(Array.isArray(call.mediaLocalRoots)).toBe(true);
-        expect((call.mediaLocalRoots as unknown[]).includes(expectedWorkspaceRoot)).toBe(true);
+        expect((call.mediaLocalRoots as any[]).includes(expectedWorkspaceRoot)).toBe(true);
         expectRecordFields(
           readRecordField(call, "toolContext", "plugin tool context"),
           {
@@ -1174,7 +1174,7 @@ describe("runMessageAction plugin dispatch", () => {
     });
 
     it("applies TTS before local plugin send fallback dispatch", async () => {
-      const handleActionValue = vi.fn(async ({ params }: { params: Record<string, unknown> }) =>
+      const handleActionValue = vi.fn(async ({ params }: { params: Record<string, any> }) =>
         jsonResult({ ok: true, params }),
       );
       const localPlugin = createGatewayActionPlugin({
@@ -1571,7 +1571,7 @@ describe("runMessageAction plugin dispatch", () => {
   });
 
   describe("presentation-only send behavior", () => {
-    const handleAction = vi.fn(async ({ params }: { params: Record<string, unknown> }) =>
+    const handleAction = vi.fn(async ({ params }: { params: Record<string, any> }) =>
       jsonResult({
         ok: true,
         presentation: params.presentation ?? null,
@@ -1654,7 +1654,7 @@ describe("runMessageAction plugin dispatch", () => {
   });
 
   describe("poll plugin forwarding", () => {
-    const handleAction = vi.fn(async ({ params }: { params: Record<string, unknown> }) =>
+    const handleAction = vi.fn(async ({ params }: { params: Record<string, any> }) =>
       jsonResult({
         ok: true,
         forwarded: {
@@ -1853,7 +1853,7 @@ describe("runMessageAction plugin dispatch", () => {
   });
 
   describe("plugin-owned poll semantics", () => {
-    const handleAction = vi.fn(async ({ params }: { params: Record<string, unknown> }) =>
+    const handleAction = vi.fn(async ({ params }: { params: Record<string, any> }) =>
       jsonResult({
         ok: true,
         forwarded: {
@@ -1938,7 +1938,7 @@ describe("runMessageAction plugin dispatch", () => {
   });
 
   describe("presentation parsing", () => {
-    const handleAction = vi.fn(async ({ params }: { params: Record<string, unknown> }) =>
+    const handleAction = vi.fn(async ({ params }: { params: Record<string, any> }) =>
       jsonResult({
         ok: true,
         presentation: params.presentation ?? null,
@@ -2136,7 +2136,7 @@ describe("runMessageAction plugin dispatch", () => {
       const ctx = (handleAction.mock.calls as unknown as Array<[unknown]>)[0]?.[0] as
         | {
             accountId?: string | null;
-            params: Record<string, unknown>;
+            params: Record<string, any>;
           }
         | undefined;
       if (!ctx) {

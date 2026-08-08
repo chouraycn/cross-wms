@@ -16,10 +16,10 @@ const callGatewayMock = vi.hoisted(() => vi.fn());
 const runDoctorRepairSequenceMock = vi.hoisted(() => vi.fn());
 const collectDoctorPreviewNotesParamsMock = vi.hoisted(() => vi.fn());
 const collectImplicitFallbackClobberWarningsMock = vi.hoisted(() =>
-  vi.fn<(cfg: unknown) => string[]>(() => []),
+  vi.fn<(cfg: any) => string[]>(() => []),
 );
 const noteImplicitFallbackClobberWarningsMock = vi.hoisted(() =>
-  vi.fn<(cfg: unknown) => void>((cfg) => {
+  vi.fn<(cfg: any) => void>((cfg) => {
     const warnings = collectImplicitFallbackClobberWarningsMock(cfg);
     if (warnings.length > 0) {
       terminalNoteMock(warnings.join("\n"), "Doctor warnings");
@@ -27,23 +27,23 @@ const noteImplicitFallbackClobberWarningsMock = vi.hoisted(() =>
   }),
 );
 const legacyConfigMigrationForTest = vi.hoisted(() => {
-  function asRecord(value: unknown): Record<string, unknown> | null {
+  function asRecord(value: any): Record<string, any> | null {
     return value && typeof value === "object" && !Array.isArray(value)
-      ? (value as Record<string, unknown>)
+      ? (value as Record<string, any>)
       : null;
   }
 
-  function ensureRecord(parent: Record<string, unknown>, key: string): Record<string, unknown> {
+  function ensureRecord(parent: Record<string, any>, key: string): Record<string, any> {
     const current = asRecord(parent[key]);
     if (current) {
       return current;
     }
-    const next: Record<string, unknown> = {};
+    const next: Record<string, any> = {};
     parent[key] = next;
     return next;
   }
 
-  function migrateThreadBinding(value: unknown, changes: string[], pathLabel: string): void {
+  function migrateThreadBinding(value: any, changes: string[], pathLabel: string): void {
     const record = asRecord(value);
     const bindings = asRecord(record?.threadBindings);
     if (!bindings || !("ttlHours" in bindings)) {
@@ -56,7 +56,7 @@ const legacyConfigMigrationForTest = vi.hoisted(() => {
     changes.push(`Moved ${pathLabel}.threadBindings.ttlHours to idleHours.`);
   }
 
-  function migrateStreamingAlias(channel: Record<string, unknown>, channelId: string): boolean {
+  function migrateStreamingAlias(channel: Record<string, any>, channelId: string): boolean {
     if (
       !("streamMode" in channel) &&
       typeof channel.streaming !== "boolean" &&
@@ -82,7 +82,7 @@ const legacyConfigMigrationForTest = vi.hoisted(() => {
     return true;
   }
 
-  function migrateNestedAllowAliases(channel: Record<string, unknown>, channelId: string): boolean {
+  function migrateNestedAllowAliases(channel: Record<string, any>, channelId: string): boolean {
     let changed = false;
     if (channelId === "slack") {
       for (const room of Object.values(asRecord(channel.channels) ?? {})) {
@@ -119,7 +119,7 @@ const legacyConfigMigrationForTest = vi.hoisted(() => {
     return changed;
   }
 
-  function migrate(raw: unknown): { next: Record<string, unknown> | null; changes: string[] } {
+  function migrate(raw: any): { next: Record<string, any> | null; changes: string[] } {
     const root = asRecord(raw);
     if (!root) {
       return { next: null, changes: [] };
@@ -133,8 +133,8 @@ const legacyConfigMigrationForTest = vi.hoisted(() => {
       const agentDefaults = ensureRecord(agents, "defaults");
       const channels = ensureRecord(next, "channels");
       const channelDefaults = ensureRecord(channels, "defaults");
-      const agentHeartbeat: Record<string, unknown> = {};
-      const channelHeartbeat: Record<string, unknown> = {};
+      const agentHeartbeat: Record<string, any> = {};
+      const channelHeartbeat: Record<string, any> = {};
       for (const key of ["model", "every"]) {
         if (key in heartbeat) {
           agentHeartbeat[key] = heartbeat[key];
@@ -215,7 +215,7 @@ const legacyConfigMigrationForTest = vi.hoisted(() => {
 
   return {
     migrate,
-    migrateLegacyConfig: (raw: unknown) => {
+    migrateLegacyConfig: (raw: any) => {
       const { next, changes } = migrate(raw);
       const partiallyValid = partiallyValidOverride;
       return { config: next, changes, ...(partiallyValid ? { partiallyValid } : {}) };
@@ -231,7 +231,7 @@ vi.mock("../../packages/terminal-core/src/note.js", () => ({
 }));
 
 vi.mock("../gateway/call.js", () => ({
-  callGateway: (opts: unknown) => callGatewayMock(opts),
+  callGateway: (opts: any) => callGatewayMock(opts),
 }));
 
 vi.mock("./doctor/repair-sequencing.js", async () => {
@@ -240,7 +240,7 @@ vi.mock("./doctor/repair-sequencing.js", async () => {
   );
   return {
     ...actual,
-    runDoctorRepairSequence: (params: unknown) => {
+    runDoctorRepairSequence: (params: any) => {
       if (runDoctorRepairSequenceMock.getMockImplementation()) {
         return runDoctorRepairSequenceMock(params);
       }
@@ -257,7 +257,7 @@ vi.mock("../config/plugin-auto-enable.js", () => ({
       config,
     }: {
       config: {
-        plugins?: { allow?: string[]; entries?: Record<string, unknown> };
+        plugins?: { allow?: string[]; entries?: Record<string, any> };
         tools?: { alsoAllow?: string[] };
       };
     }) => {
@@ -277,7 +277,7 @@ vi.mock("../config/plugin-auto-enable.js", () => ({
             entries: {
               ...config.plugins?.entries,
               browser: {
-                ...(config.plugins?.entries?.browser as Record<string, unknown> | undefined),
+                ...(config.plugins?.entries?.browser as Record<string, any> | undefined),
                 enabled: true,
               },
             },
@@ -291,25 +291,25 @@ vi.mock("../config/plugin-auto-enable.js", () => ({
 }));
 
 vi.mock("../config/validation.js", () => ({
-  validateConfigObjectWithPlugins: vi.fn((config: unknown) => ({ ok: true, config })),
+  validateConfigObjectWithPlugins: vi.fn((config: any) => ({ ok: true, config })),
 }));
 
 vi.mock("../config/legacy.js", () => {
   type LegacyRule = {
     path: string[];
     message: string;
-    match?: (value: unknown, root: Record<string, unknown>) => boolean;
+    match?: (value: any, root: Record<string, any>) => boolean;
     requireSourceLiteral?: boolean;
   };
 
-  function asRecord(value: unknown): Record<string, unknown> | null {
+  function asRecord(value: any): Record<string, any> | null {
     return value && typeof value === "object" && !Array.isArray(value)
-      ? (value as Record<string, unknown>)
+      ? (value as Record<string, any>)
       : null;
   }
 
-  function getPathValue(root: Record<string, unknown>, pathParts: readonly string[]): unknown {
-    let cursor: unknown = root;
+  function getPathValue(root: Record<string, any>, pathParts: readonly string[]): any {
+    let cursor: any = root;
     for (const part of pathParts) {
       const record = asRecord(cursor);
       if (!record) {
@@ -328,7 +328,7 @@ vi.mock("../config/legacy.js", () => {
     issues.push({ path: pathParts.join("."), message });
   }
 
-  function hasLegacyStreamingAlias(channel: Record<string, unknown>): boolean {
+  function hasLegacyStreamingAlias(channel: Record<string, any>): boolean {
     return (
       "streamMode" in channel ||
       "chunkMode" in channel ||
@@ -342,7 +342,7 @@ vi.mock("../config/legacy.js", () => {
   }
 
   return {
-    findLegacyConfigIssues: (raw: unknown, sourceRaw?: unknown, extraRules: LegacyRule[] = []) => {
+    findLegacyConfigIssues: (raw: any, sourceRaw?: any, extraRules: LegacyRule[] = []) => {
       const root = asRecord(raw);
       if (!root) {
         return [];
@@ -508,7 +508,7 @@ vi.mock("../channels/plugins/bootstrap-registry.js", () => ({
         normalizeCompatibilityConfig: ({
           cfg,
         }: {
-          cfg: { channels?: { discord?: Record<string, unknown> } };
+          cfg: { channels?: { discord?: Record<string, any> } };
         }) => {
           const discord = cfg.channels?.discord;
           if (!discord) {
@@ -528,7 +528,7 @@ vi.mock("../channels/plugins/bootstrap-registry.js", () => ({
           }
           const nextStreaming =
             nextDiscord.streaming && typeof nextDiscord.streaming === "object"
-              ? { ...(nextDiscord.streaming as Record<string, unknown>) }
+              ? { ...(nextDiscord.streaming as Record<string, any>) }
               : {};
           if (!("mode" in nextStreaming)) {
             nextStreaming.mode =
@@ -600,11 +600,11 @@ vi.mock("../channels/plugins/setup-promotion-helpers.js", () => {
       channel,
     }: {
       channelKey: string;
-      channel: Record<string, unknown>;
+      channel: Record<string, any>;
     }) => {
       const accounts =
         channel.accounts && typeof channel.accounts === "object" && !Array.isArray(channel.accounts)
-          ? (channel.accounts as Record<string, unknown>)
+          ? (channel.accounts as Record<string, any>)
           : {};
       const hasNamedAccounts = Object.keys(accounts).some(Boolean);
       const allowedNamedKeys = namedAccountPromotionKeys[channelKey];
@@ -630,25 +630,25 @@ vi.mock("../channels/plugins/setup-promotion-helpers.js", () => {
 });
 
 vi.mock("./doctor/shared/channel-legacy-config-migrate.js", () => ({
-  applyChannelDoctorCompatibilityMigrations: (cfg: Record<string, unknown>) => ({
+  applyChannelDoctorCompatibilityMigrations: (cfg: Record<string, any>) => ({
     next: cfg,
     changes: [],
   }),
 }));
 
 vi.mock("./doctor/shared/legacy-config-migrate.js", () => ({
-  migrateLegacyConfig: (raw: unknown) => legacyConfigMigrationForTest.migrateLegacyConfig(raw),
+  migrateLegacyConfig: (raw: any) => legacyConfigMigrationForTest.migrateLegacyConfig(raw),
 }));
 
 vi.mock("./doctor/shared/bundled-plugin-load-paths.js", () => ({
-  maybeRepairBundledPluginLoadPaths: vi.fn((cfg: Record<string, unknown>) => ({
+  maybeRepairBundledPluginLoadPaths: vi.fn((cfg: Record<string, any>) => ({
     config: cfg,
     changes: [],
   })),
 }));
 
 vi.mock("./doctor/shared/exec-safe-bins.js", () => ({
-  maybeRepairExecSafeBinProfiles: vi.fn((cfg: Record<string, unknown>) => ({
+  maybeRepairExecSafeBinProfiles: vi.fn((cfg: Record<string, any>) => ({
     config: cfg,
     changes: [],
     warnings: [],
@@ -656,7 +656,7 @@ vi.mock("./doctor/shared/exec-safe-bins.js", () => ({
 }));
 
 vi.mock("./doctor/shared/stale-plugin-config.js", () => ({
-  maybeRepairStalePluginConfig: vi.fn((cfg: Record<string, unknown>) => ({
+  maybeRepairStalePluginConfig: vi.fn((cfg: Record<string, any>) => ({
     config: cfg,
     changes: [],
   })),
@@ -757,13 +757,13 @@ vi.mock("./doctor/channel-capabilities.js", () => {
 });
 
 vi.mock("../plugins/doctor-contract-registry.js", () => {
-  function asRecord(value: unknown): Record<string, unknown> | null {
+  function asRecord(value: any): Record<string, any> | null {
     return value && typeof value === "object" && !Array.isArray(value)
-      ? (value as Record<string, unknown>)
+      ? (value as Record<string, any>)
       : null;
   }
 
-  function hasLegacyTalkFields(value: unknown): boolean {
+  function hasLegacyTalkFields(value: any): boolean {
     const talk = asRecord(value);
     return Boolean(
       talk &&
@@ -773,7 +773,7 @@ vi.mock("../plugins/doctor-contract-registry.js", () => {
     );
   }
 
-  function resolveDiscordStreamMode(entry: Record<string, unknown>): string {
+  function resolveDiscordStreamMode(entry: Record<string, any>): string {
     if (
       entry.streamMode === "block" ||
       entry.streamMode === "partial" ||
@@ -791,7 +791,7 @@ vi.mock("../plugins/doctor-contract-registry.js", () => {
   }
 
   function normalizeDiscordStreamingEntry(
-    entry: Record<string, unknown>,
+    entry: Record<string, any>,
     pathPrefix: string,
     changes: string[],
   ): boolean {
@@ -861,8 +861,8 @@ vi.mock("../plugins/doctor-contract-registry.js", () => {
     return changed;
   }
 
-  function normalizeDiscordStreamingAliasesForTest(cfg: unknown): {
-    config: unknown;
+  function normalizeDiscordStreamingAliasesForTest(cfg: any): {
+    config: any;
     changes: string[];
   } {
     const root = asRecord(cfg);
@@ -890,7 +890,7 @@ vi.mock("../plugins/doctor-contract-registry.js", () => {
   }
 
   return {
-    collectRelevantDoctorPluginIds: (raw: unknown): string[] => {
+    collectRelevantDoctorPluginIds: (raw: any): string[] => {
       const ids = new Set<string>();
       const root = asRecord(raw);
       const channels = asRecord(root?.channels);
@@ -930,7 +930,7 @@ vi.mock("./doctor/shared/legacy-config-issues.js", async () => {
   const { findLegacyConfigIssues }: typeof import("../config/legacy.js") =
     await import("../config/legacy.js");
   return {
-    findDoctorLegacyConfigIssues: (raw: unknown, sourceRaw?: unknown) =>
+    findDoctorLegacyConfigIssues: (raw: any, sourceRaw?: any) =>
       findLegacyConfigIssues(
         raw,
         sourceRaw,
@@ -951,24 +951,24 @@ vi.mock("../plugins/setup-registry.js", () => ({
     diagnostics: [],
   })),
   resolvePluginSetupAutoEnableReasons: vi.fn(() => []),
-  runPluginSetupConfigMigrations: vi.fn(({ config }: { config: unknown }) => ({
+  runPluginSetupConfigMigrations: vi.fn(({ config }: { config: any }) => ({
     config,
     changes: [],
   })),
 }));
 
 vi.mock("./doctor/shared/channel-doctor.js", () => {
-  function asRecord(value: unknown): Record<string, unknown> | null {
+  function asRecord(value: any): Record<string, any> | null {
     return value && typeof value === "object" && !Array.isArray(value)
-      ? (value as Record<string, unknown>)
+      ? (value as Record<string, any>)
       : null;
   }
 
-  function hasOwnStringArray(value: unknown): boolean {
+  function hasOwnStringArray(value: any): boolean {
     return Array.isArray(value) && value.some((entry) => typeof entry === "string" && entry);
   }
 
-  function stringifySelectedArrays(root: Record<string, unknown>): boolean {
+  function stringifySelectedArrays(root: Record<string, any>): boolean {
     let changed = false;
     const keysToNormalize = new Set([
       "allowFrom",
@@ -978,7 +978,7 @@ vi.mock("./doctor/shared/channel-doctor.js", () => {
       "users",
       "roles",
     ]);
-    const visit = (value: unknown) => {
+    const visit = (value: any) => {
       const record = asRecord(value);
       if (!record) {
         return;
@@ -1003,7 +1003,7 @@ vi.mock("./doctor/shared/channel-doctor.js", () => {
     return changed;
   }
 
-  function collectCompatibilityMutations(cfg: { channels?: Record<string, unknown> }) {
+  function collectCompatibilityMutations(cfg: { channels?: Record<string, any> }) {
     const next = structuredClone(cfg);
     const changes: string[] = [];
     const telegram = asRecord(next.channels?.telegram);
@@ -1023,7 +1023,7 @@ vi.mock("./doctor/shared/channel-doctor.js", () => {
     return changes.length > 0 ? [{ config: next, changes }] : [];
   }
 
-  function collectInactiveTelegramWarnings(cfg: { channels?: Record<string, unknown> }): string[] {
+  function collectInactiveTelegramWarnings(cfg: { channels?: Record<string, any> }): string[] {
     const telegram = asRecord(cfg.channels?.telegram);
     if (!telegram) {
       return [];
@@ -1050,8 +1050,8 @@ vi.mock("./doctor/shared/channel-doctor.js", () => {
   }
 
   function isTelegramFirstTimeAccount(params: {
-    account: Record<string, unknown>;
-    parent?: Record<string, unknown>;
+    account: Record<string, any>;
+    parent?: Record<string, any>;
   }): boolean {
     const groupPolicy =
       typeof params.account.groupPolicy === "string"
@@ -1072,9 +1072,9 @@ vi.mock("./doctor/shared/channel-doctor.js", () => {
   }
 
   function collectTelegramFirstTimeExtraWarnings(params: {
-    account: Record<string, unknown>;
+    account: Record<string, any>;
     channelName: string;
-    parent?: Record<string, unknown>;
+    parent?: Record<string, any>;
     prefix: string;
   }): string[] {
     if (
@@ -1092,7 +1092,7 @@ vi.mock("./doctor/shared/channel-doctor.js", () => {
     collectChannelDoctorCompatibilityMutations: vi.fn(collectCompatibilityMutations),
     collectChannelDoctorEmptyAllowlistExtraWarnings: vi.fn(collectTelegramFirstTimeExtraWarnings),
     collectChannelDoctorMutableAllowlistWarnings: vi.fn(
-      ({ cfg }: { cfg: { channels?: Record<string, unknown> } }) => {
+      ({ cfg }: { cfg: { channels?: Record<string, any> } }) => {
         const zalouser = asRecord(cfg.channels?.zalouser);
         if (!zalouser || zalouser.dangerouslyAllowNameMatching === true) {
           return [];
@@ -1112,8 +1112,8 @@ vi.mock("./doctor/shared/channel-doctor.js", () => {
     ),
     collectChannelDoctorPreviewWarnings: vi.fn(async () => []),
     collectChannelDoctorRepairMutations: vi.fn(
-      async ({ cfg }: { cfg: { channels?: Record<string, unknown> } }) => {
-        const mutations: Array<{ config: unknown; changes: string[]; warnings?: string[] }> = [];
+      async ({ cfg }: { cfg: { channels?: Record<string, any> } }) => {
+        const mutations: Array<{ config: any; changes: string[]; warnings?: string[] }> = [];
         const discord = asRecord(cfg.channels?.discord);
         if (discord) {
           const next = structuredClone(cfg);
@@ -1147,19 +1147,19 @@ vi.mock("./doctor/shared/channel-doctor.js", () => {
 });
 
 vi.mock("./doctor/shared/preview-warnings.js", () => {
-  function asRecord(value: unknown): Record<string, unknown> | null {
+  function asRecord(value: any): Record<string, any> | null {
     return value && typeof value === "object" && !Array.isArray(value)
-      ? (value as Record<string, unknown>)
+      ? (value as Record<string, any>)
       : null;
   }
 
-  function hasStringEntries(value: unknown): boolean {
+  function hasStringEntries(value: any): boolean {
     return Array.isArray(value) && value.some((entry) => typeof entry === "string" && entry);
   }
 
   function telegramFirstTimeWarnings(params: {
-    account: Record<string, unknown>;
-    parent?: Record<string, unknown>;
+    account: Record<string, any>;
+    parent?: Record<string, any>;
     prefix: string;
   }): string[] {
     const groupPolicy =
@@ -1187,7 +1187,7 @@ vi.mock("./doctor/shared/preview-warnings.js", () => {
     cfg,
   }: {
     cfg: {
-      channels?: Record<string, unknown>;
+      channels?: Record<string, any>;
       plugins?: { enabled?: boolean; entries?: Record<string, { enabled?: boolean }> };
     };
     doctorFixCommand: string;
@@ -1263,14 +1263,14 @@ vi.mock("./doctor-config-preflight.js", async () => {
     return process.env.OPENCLAW_CONFIG_PATH || pathLocal.join(stateDir, "openclaw.json");
   }
 
-  function normalizeDiscordStreamingCompat(cfg: Record<string, unknown>): Record<string, unknown> {
+  function normalizeDiscordStreamingCompat(cfg: Record<string, any>): Record<string, any> {
     const channels =
       cfg.channels && typeof cfg.channels === "object" && !Array.isArray(cfg.channels)
-        ? (cfg.channels as Record<string, unknown>)
+        ? (cfg.channels as Record<string, any>)
         : null;
     const discord =
       channels?.discord && typeof channels.discord === "object" && !Array.isArray(channels.discord)
-        ? (channels.discord as Record<string, unknown>)
+        ? (channels.discord as Record<string, any>)
         : null;
     if (
       !discord ||
@@ -1281,11 +1281,11 @@ vi.mock("./doctor-config-preflight.js", async () => {
       return cfg;
     }
     const next = structuredClone(cfg);
-    const nextDiscord = ((next.channels as Record<string, unknown> | undefined)?.discord ??
-      {}) as Record<string, unknown>;
+    const nextDiscord = ((next.channels as Record<string, any> | undefined)?.discord ??
+      {}) as Record<string, any>;
     const nextStreaming =
       nextDiscord.streaming && typeof nextDiscord.streaming === "object"
-        ? { ...(nextDiscord.streaming as Record<string, unknown>) }
+        ? { ...(nextDiscord.streaming as Record<string, any>) }
         : {};
     if (!("mode" in nextStreaming)) {
       nextStreaming.mode =
@@ -1304,7 +1304,7 @@ vi.mock("./doctor-config-preflight.js", async () => {
     runDoctorConfigPreflight: vi.fn(async () => {
       const injected = getDoctorConfigInputForTest();
       const configPath = injected?.path ?? resolveConfigPath();
-      let parsed: Record<string, unknown> = injected?.config
+      let parsed: Record<string, any> = injected?.config
         ? structuredClone(injected.config)
         : {};
       let exists = injected?.exists ?? false;
@@ -1312,7 +1312,7 @@ vi.mock("./doctor-config-preflight.js", async () => {
         try {
           parsed = JSON.parse(await fsLocal.readFile(configPath, "utf-8")) as Record<
             string,
-            unknown
+            any
           >;
           exists = true;
         } catch {
@@ -1398,8 +1398,8 @@ vi.mock("./doctor-config-analysis.js", () => {
     return out || "<root>";
   }
 
-  function resolveConfigPathTarget(root: unknown, pathParts: Array<string | number>): unknown {
-    let current: unknown = root;
+  function resolveConfigPathTarget(root: any, pathParts: Array<string | number>): any {
+    let current: any = root;
     for (const part of pathParts) {
       if (typeof part === "number") {
         if (!Array.isArray(current)) {
@@ -1411,7 +1411,7 @@ vi.mock("./doctor-config-analysis.js", () => {
       if (!current || typeof current !== "object" || Array.isArray(current)) {
         return null;
       }
-      current = (current as Record<string, unknown>)[part];
+      current = (current as Record<string, any>)[part];
     }
     return current;
   }
@@ -1423,7 +1423,7 @@ vi.mock("./doctor-config-analysis.js", () => {
     noteIncludeConfinementWarning: vi.fn(),
     noteOpencodeProviderOverrides: vi.fn(),
     resolveConfigPathTarget,
-    stripUnknownConfigKeys: vi.fn((config: Record<string, unknown>) => {
+    stripUnknownConfigKeys: vi.fn((config: Record<string, any>) => {
       const next = structuredClone(config);
       const removed: string[] = [];
       if ("bridge" in next) {
@@ -1437,7 +1437,7 @@ vi.mock("./doctor-config-analysis.js", () => {
         !Array.isArray(gatewayAuth) &&
         "extra" in gatewayAuth
       ) {
-        delete (gatewayAuth as Record<string, unknown>).extra;
+        delete (gatewayAuth as Record<string, any>).extra;
         removed.push("gateway.auth.extra");
       }
       return { config: next, removed };
@@ -1456,7 +1456,7 @@ function resetTerminalNoteMock() {
   return terminalNoteMock;
 }
 
-async function collectDoctorWarnings(config: Record<string, unknown>): Promise<string[]> {
+async function collectDoctorWarnings(config: Record<string, any>): Promise<string[]> {
   const noteSpy = resetTerminalNoteMock();
   await runDoctorConfigWithInput({
     config,
@@ -1524,7 +1524,7 @@ describe("doctor config flow", () => {
       run: loadAndMaybeMigrateDoctorConfig,
     });
 
-    expect((result.cfg as Record<string, unknown>).gateway).toEqual({
+    expect((result.cfg as Record<string, any>).gateway).toEqual({
       auth: { mode: "token", token: 123 },
     });
   });
@@ -1559,7 +1559,7 @@ describe("doctor config flow", () => {
   });
 
   it("reloads gateway secrets and refreshes auth status after auth profile repairs", async () => {
-    runDoctorRepairSequenceMock.mockImplementation(async (params: { state: unknown }) => ({
+    runDoctorRepairSequenceMock.mockImplementation(async (params: { state: any }) => ({
       state: params.state,
       changeNotes: ["Migrated 1 sidecar-backed Codex OAuth profile."],
       warningNotes: [],
@@ -1586,7 +1586,7 @@ describe("doctor config flow", () => {
 
   it("keeps doctor repair silent when gateway secrets reload fails", async () => {
     callGatewayMock.mockRejectedValueOnce(new Error("gateway unavailable"));
-    runDoctorRepairSequenceMock.mockImplementation(async (params: { state: unknown }) => ({
+    runDoctorRepairSequenceMock.mockImplementation(async (params: { state: any }) => ({
       state: params.state,
       changeNotes: ["Removed stale OAuth auth profile shadow openai-codex."],
       warningNotes: [],
@@ -1700,7 +1700,7 @@ describe("doctor config flow", () => {
 
     expect(noteImplicitFallbackClobberWarningsMock).toHaveBeenCalledTimes(1);
     const [[warningParams]] = noteImplicitFallbackClobberWarningsMock.mock
-      .calls as unknown as Array<[{ agents?: unknown }]>;
+      .calls as unknown as Array<[{ agents?: any }]>;
     expect(warningParams.agents).toStrictEqual(config.agents);
     const doctorWarnings = terminalNoteMock.mock.calls
       .filter(([, title]) => title === "Doctor warnings")
@@ -1979,13 +1979,13 @@ describe("doctor config flow", () => {
       run: loadAndMaybeMigrateDoctorConfig,
     });
 
-    const cfg = result.cfg as Record<string, unknown>;
+    const cfg = result.cfg as Record<string, any>;
     expect(cfg.bridge).toBeUndefined();
-    expect((cfg.gateway as Record<string, unknown>)?.auth).toEqual({
+    expect((cfg.gateway as Record<string, any>)?.auth).toEqual({
       mode: "token",
       token: "ok",
     });
-    const browser = (result.cfg as { browser?: Record<string, unknown> }).browser ?? {};
+    const browser = (result.cfg as { browser?: Record<string, any> }).browser ?? {};
     expect(browser.relayBindHost).toBeUndefined();
     expect(
       ((browser.profiles as Record<string, { driver?: string }>)?.chromeLive ?? {}).driver,
@@ -2045,7 +2045,7 @@ describe("doctor config flow", () => {
                 mode?: string;
               }
             | boolean;
-          lifecycle?: unknown;
+          lifecycle?: any;
         };
       };
     };
@@ -2147,9 +2147,9 @@ describe("doctor config flow", () => {
         const persisted = JSON.parse(await fs.readFile(configPath, "utf-8")) as {
           channels?: {
             discord?: {
-              streaming?: unknown;
-              chunkMode?: unknown;
-              blockStreaming?: unknown;
+              streaming?: any;
+              chunkMode?: any;
+              blockStreaming?: any;
             };
           };
         };
@@ -2185,9 +2185,9 @@ describe("doctor config flow", () => {
       channels: {
         googlechat: {
           accounts?: {
-            work?: Record<string, unknown>;
+            work?: Record<string, any>;
           };
-        } & Record<string, unknown>;
+        } & Record<string, any>;
       };
     };
     expect(cfg.channels.googlechat.streamMode).toBeUndefined();
@@ -2715,13 +2715,13 @@ describe("doctor config flow", () => {
     });
 
     const cfg = result.cfg as {
-      heartbeat?: unknown;
+      heartbeat?: any;
       gateway?: {
         bind?: string;
       };
       session?: {
         maintenance?: {
-          rotateBytes?: unknown;
+          rotateBytes?: any;
         };
         threadBindings?: {
           idleHours?: number;

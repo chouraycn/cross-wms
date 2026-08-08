@@ -6,7 +6,7 @@ import type { Context, Model, SimpleStreamOptions } from "../../llm/types.js";
 import type { StreamFn } from "../runtime/index.js";
 import { testing as extraParamsTesting, applyExtraParamsToAgent } from "./extra-params.js";
 
-type ExtraParamsCapture<TPayload extends Record<string, unknown>> = {
+type ExtraParamsCapture<TPayload extends Record<string, any>> = {
   headers?: Record<string, string>;
   options?: SimpleStreamOptions;
   payload: TPayload;
@@ -28,7 +28,7 @@ function createMockStream(): ReturnType<StreamFn> {
 
 type RunExtraParamsCaseParams<
   TApi extends "openai-completions" | "openai-responses" | "azure-openai-responses",
-  TPayload extends Record<string, unknown>,
+  TPayload extends Record<string, any>,
 > = {
   applyModelId?: string;
   applyProvider?: string;
@@ -43,7 +43,7 @@ type RunExtraParamsCaseParams<
 
 export function runExtraParamsCase<
   TApi extends "openai-completions" | "openai-responses" | "azure-openai-responses",
-  TPayload extends Record<string, unknown>,
+  TPayload extends Record<string, any>,
 >(params: RunExtraParamsCaseParams<TApi, TPayload>): ExtraParamsCapture<TPayload> {
   // Capture both transport options and payload mutation, which are the two
   // public effects of applyExtraParamsToAgent.

@@ -51,7 +51,7 @@ export interface TableColumn {
   name: string;
   type: string;
   notNull: boolean;
-  defaultValue: unknown;
+  defaultValue: any;
   primaryKey: boolean;
 }
 

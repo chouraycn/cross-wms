@@ -115,11 +115,11 @@ export type DiagnosticStabilityBundle = {
 type WriteDiagnosticStabilityBundleResult =
   | { status: "written"; path: string; bundle: DiagnosticStabilityBundle }
   | { status: "skipped"; reason: "empty" }
-  | { status: "failed"; error: unknown };
+  | { status: "failed"; error: any };
 
 type WriteDiagnosticStabilityBundleOptions = {
   reason: string;
-  error?: unknown;
+  error?: any;
   includeEmpty?: boolean;
   limit?: number;
   now?: Date;
@@ -142,11 +142,11 @@ type DiagnosticStabilityBundleFile = {
 export type ReadDiagnosticStabilityBundleResult =
   | { status: "found"; path: string; mtimeMs: number; bundle: DiagnosticStabilityBundle }
   | { status: "missing"; dir: string }
-  | { status: "failed"; path?: string; error: unknown };
+  | { status: "failed"; path?: string; error: any };
 
 type DiagnosticStabilityBundleFailureWriteOutcome =
   | { status: "written"; message: string; path: string }
-  | { status: "failed"; message: string; error: unknown }
+  | { status: "failed"; message: string; error: any }
   | { status: "skipped"; reason: "empty" };
 
 type WriteDiagnosticStabilityBundleForFailureOptions = Omit<
@@ -179,11 +179,11 @@ function formatBundleTimestamp(now: Date): string {
   return now.toISOString().replace(/[:.]/g, "-");
 }
 
-function readErrorCode(error: unknown): string | undefined {
+function readErrorCode(error: any): string | undefined {
   if (!error || typeof error !== "object" || !("code" in error)) {
     return undefined;
   }
-  const code = (error as { code?: unknown }).code;
+  const code = (error as { code?: any }).code;
   if (typeof code === "string" && SAFE_REASON_CODE.test(code)) {
     return code;
   }
@@ -193,19 +193,19 @@ function readErrorCode(error: unknown): string | undefined {
   return undefined;
 }
 
-function readErrorName(error: unknown): string | undefined {
+function readErrorName(error: any): string | undefined {
   if (!error || typeof error !== "object" || !("name" in error)) {
     return undefined;
   }
-  const name = (error as { name?: unknown }).name;
+  const name = (error as { name?: any }).name;
   return typeof name === "string" && SAFE_REASON_CODE.test(name) ? name : undefined;
 }
 
-function readErrorMessage(error: unknown): string | undefined {
+function readErrorMessage(error: any): string | undefined {
   if (!error || typeof error !== "object" || !("message" in error)) {
     return undefined;
   }
-  const message = (error as { message?: unknown }).message;
+  const message = (error as { message?: any }).message;
   if (typeof message !== "string") {
     return undefined;
   }
@@ -218,7 +218,7 @@ function readErrorMessage(error: unknown): string | undefined {
     : sanitized;
 }
 
-function readSafeErrorMetadata(error: unknown): DiagnosticStabilityBundle["error"] | undefined {
+function readSafeErrorMetadata(error: any): DiagnosticStabilityBundle["error"] | undefined {
   const name = readErrorName(error);
   const code = readErrorCode(error);
   const message = readErrorMessage(error);
@@ -253,30 +253,30 @@ function isBundleFile(name: string): boolean {
   return name.startsWith(BUNDLE_PREFIX) && name.endsWith(BUNDLE_SUFFIX);
 }
 
-function isMissingFileError(error: unknown): boolean {
+function isMissingFileError(error: any): boolean {
   return (
     typeof error === "object" &&
     error !== null &&
     "code" in error &&
-    (error as { code?: unknown }).code === "ENOENT"
+    (error as { code?: any }).code === "ENOENT"
   );
 }
 
-function readObject(value: unknown, label: string): Record<string, unknown> {
+function readObject(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error(`Invalid stability bundle: ${label} must be an object`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function readNumber(value: unknown, label: string): number {
+function readNumber(value: any, label: string): number {
   if (typeof value !== "number" || !Number.isFinite(value)) {
     throw new Error(`Invalid stability bundle: ${label} must be a finite number`);
   }
   return value;
 }
 
-function readOptionalPositiveInteger(value: unknown, label: string): number | undefined {
+function readOptionalPositiveInteger(value: any, label: string): number | undefined {
   if (value === undefined) {
     return undefined;
   }
@@ -284,7 +284,7 @@ function readOptionalPositiveInteger(value: unknown, label: string): number | un
   return parsed >= 0 ? Math.floor(parsed) : undefined;
 }
 
-function readTimestampMs(value: unknown, label: string): number {
+function readTimestampMs(value: any, label: string): number {
   const timestamp = readNumber(value, label);
   if (Number.isNaN(new Date(timestamp).getTime())) {
     throw new Error(`Invalid stability bundle: ${label} must be a valid timestamp`);
@@ -292,21 +292,21 @@ function readTimestampMs(value: unknown, label: string): number {
   return timestamp;
 }
 
-function readOptionalNumber(value: unknown, label: string): number | undefined {
+function readOptionalNumber(value: any, label: string): number | undefined {
   if (value === undefined) {
     return undefined;
   }
   return readNumber(value, label);
 }
 
-function readString(value: unknown, label: string): string {
+function readString(value: any, label: string): string {
   if (typeof value !== "string") {
     throw new Error(`Invalid stability bundle: ${label} must be a string`);
   }
   return value;
 }
 
-function readTimestampString(value: unknown, label: string): string {
+function readTimestampString(value: any, label: string): string {
   const timestamp = readString(value, label);
   if (Number.isNaN(new Date(timestamp).getTime())) {
     throw new Error(`Invalid stability bundle: ${label} must be a valid timestamp`);
@@ -314,7 +314,7 @@ function readTimestampString(value: unknown, label: string): string {
   return timestamp;
 }
 
-function readCodeString(value: unknown, label: string): string {
+function readCodeString(value: any, label: string): string {
   const code = readString(value, label);
   if (!SAFE_REASON_CODE.test(code)) {
     throw new Error(`Invalid stability bundle: ${label} must be a safe diagnostic code`);
@@ -322,7 +322,7 @@ function readCodeString(value: unknown, label: string): string {
   return code;
 }
 
-function readOptionalCodeString(value: unknown, label: string): string | undefined {
+function readOptionalCodeString(value: any, label: string): string | undefined {
   if (value === undefined) {
     return undefined;
   }
@@ -330,38 +330,38 @@ function readOptionalCodeString(value: unknown, label: string): string | undefin
   return SAFE_REASON_CODE.test(code) ? code : undefined;
 }
 
-function assignOptionalNumber(target: object, key: string, value: unknown, label: string): void {
+function assignOptionalNumber(target: object, key: string, value: any, label: string): void {
   const parsed = readOptionalNumber(value, label);
   if (parsed !== undefined) {
-    (target as Record<string, unknown>)[key] = parsed;
+    (target as Record<string, any>)[key] = parsed;
   }
 }
 
 function assignOptionalPositiveInteger(
   target: object,
   key: string,
-  value: unknown,
+  value: any,
   label: string,
 ): void {
   const parsed = readOptionalPositiveInteger(value, label);
   if (parsed !== undefined) {
-    (target as Record<string, unknown>)[key] = parsed;
+    (target as Record<string, any>)[key] = parsed;
   }
 }
 
 function assignOptionalCodeString(
   target: object,
   key: string,
-  value: unknown,
+  value: any,
   label: string,
 ): void {
   const parsed = readOptionalCodeString(value, label);
   if (parsed !== undefined) {
-    (target as Record<string, unknown>)[key] = parsed;
+    (target as Record<string, any>)[key] = parsed;
   }
 }
 
-function readMemoryUsage(value: unknown, label: string): DiagnosticMemoryUsage {
+function readMemoryUsage(value: any, label: string): DiagnosticMemoryUsage {
   const memory = readObject(value, label);
   return {
     rssBytes: readNumber(memory.rssBytes, `${label}.rssBytes`),
@@ -372,7 +372,7 @@ function readMemoryUsage(value: unknown, label: string): DiagnosticMemoryUsage {
   } as DiagnosticMemoryUsage;
 }
 
-function readHeapStatistics(value: unknown): DiagnosticHeapStatisticsSummary | undefined {
+function readHeapStatistics(value: any): DiagnosticHeapStatisticsSummary | undefined {
   if (value === undefined) {
     return undefined;
   }
@@ -429,7 +429,7 @@ function readHeapStatistics(value: unknown): DiagnosticHeapStatisticsSummary | u
   return Object.keys(result).length > 0 ? result : undefined;
 }
 
-function readHeapSpaces(value: unknown): DiagnosticHeapSpaceSummary[] | undefined {
+function readHeapSpaces(value: any): DiagnosticHeapSpaceSummary[] | undefined {
   if (value === undefined) {
     return undefined;
   }
@@ -475,7 +475,7 @@ function readHeapSpaces(value: unknown): DiagnosticHeapSpaceSummary[] | undefine
   return spaces.length > 0 ? spaces : undefined;
 }
 
-function readCgroupMemorySummary(value: unknown): DiagnosticCgroupMemorySummary | undefined {
+function readCgroupMemorySummary(value: any): DiagnosticCgroupMemorySummary | undefined {
   if (value === undefined) {
     return undefined;
   }
@@ -507,7 +507,7 @@ function readCgroupMemorySummary(value: unknown): DiagnosticCgroupMemorySummary 
   };
 }
 
-function readActiveResources(value: unknown): DiagnosticActiveResourceSummary | undefined {
+function readActiveResources(value: any): DiagnosticActiveResourceSummary | undefined {
   if (value === undefined) {
     return undefined;
   }
@@ -520,7 +520,7 @@ function readActiveResources(value: unknown): DiagnosticActiveResourceSummary | 
   };
 }
 
-function readSessionFiles(value: unknown): DiagnosticSessionFileSummary[] | undefined {
+function readSessionFiles(value: any): DiagnosticSessionFileSummary[] | undefined {
   if (value === undefined) {
     return undefined;
   }
@@ -562,7 +562,7 @@ function readSessionFiles(value: unknown): DiagnosticSessionFileSummary[] | unde
 }
 
 function readMemoryPressureEvidence(
-  value: unknown,
+  value: any,
 ): DiagnosticMemoryPressureBundleEvidence | undefined {
   if (value === undefined) {
     return undefined;
@@ -615,7 +615,7 @@ function readMemoryPressureEvidence(
   };
 }
 
-function readBundleEvidence(value: unknown): DiagnosticStabilityBundleEvidence | undefined {
+function readBundleEvidence(value: any): DiagnosticStabilityBundleEvidence | undefined {
   if (value === undefined) {
     return undefined;
   }
@@ -624,7 +624,7 @@ function readBundleEvidence(value: unknown): DiagnosticStabilityBundleEvidence |
   return memoryPressure ? { memoryPressure } : undefined;
 }
 
-function readNumberMap(value: unknown, label: string): Record<string, number> {
+function readNumberMap(value: any, label: string): Record<string, number> {
   const source = readObject(value, label);
   const result: Record<string, number> = {};
   for (const [key, entry] of Object.entries(source)) {
@@ -644,7 +644,7 @@ type MemorySummary = {
 };
 
 function readOptionalMemorySummary(
-  value: unknown,
+  value: any,
 ): MemorySummary | undefined {
   if (value === undefined) {
     return undefined;
@@ -680,7 +680,7 @@ type PayloadLargeSummary = {
 };
 
 function readOptionalPayloadLargeSummary(
-  value: unknown,
+  value: any,
 ): PayloadLargeSummary | undefined {
   if (value === undefined) {
     return undefined;
@@ -696,7 +696,7 @@ function readOptionalPayloadLargeSummary(
 }
 
 function readStabilityEventRecord(
-  value: unknown,
+  value: any,
   label: string,
 ): DiagnosticStabilitySnapshot["events"][number] {
   const record = readObject(value, label);
@@ -850,7 +850,7 @@ function readStabilityEventRecord(
   return sanitized;
 }
 
-function readStabilitySnapshot(value: unknown): DiagnosticStabilitySnapshot {
+function readStabilitySnapshot(value: any): DiagnosticStabilitySnapshot {
   const snapshot = readObject(value, "snapshot");
   const generatedAt = readTimestampString(snapshot.generatedAt, "snapshot.generatedAt");
   const capacity = readNumber(snapshot.capacity, "snapshot.capacity");
@@ -885,7 +885,7 @@ function readStabilitySnapshot(value: unknown): DiagnosticStabilitySnapshot {
   } as DiagnosticStabilitySnapshot;
 }
 
-function parseDiagnosticStabilityBundle(value: unknown): DiagnosticStabilityBundle {
+function parseDiagnosticStabilityBundle(value: any): DiagnosticStabilityBundle {
   const bundle = readObject(value, "bundle");
   if (bundle.version !== DIAGNOSTIC_STABILITY_BUNDLE_VERSION) {
     throw new Error(`Unsupported stability bundle version: ${String(bundle.version)}`);
@@ -1394,7 +1394,7 @@ export function writeDiagnosticMemoryPressureBundleSync(
 
 export function writeDiagnosticStabilityBundleForFailureSync(
   reason: string,
-  error?: unknown,
+  error?: any,
   options: WriteDiagnosticStabilityBundleForFailureOptions = {},
 ): DiagnosticStabilityBundleFailureWriteOutcome {
   const result = writeDiagnosticStabilityBundleSync({

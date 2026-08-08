@@ -5,7 +5,7 @@
  */
 
 function makeAbortError(signal: AbortSignal): Error {
-  const reason = "reason" in signal ? (signal as { reason?: unknown }).reason : undefined;
+  const reason = "reason" in signal ? (signal as { reason?: any }).reason : undefined;
   if (reason instanceof Error) {
     const err = new Error(reason.message, { cause: reason });
     err.name = "AbortError";
@@ -36,7 +36,7 @@ export function abortable<T>(signal: AbortSignal, promise: Promise<T>): Promise<
         signal.removeEventListener("abort", onAbort);
         resolve(value);
       },
-      (err: unknown) => {
+      (err: any) => {
         signal.removeEventListener("abort", onAbort);
         reject(err instanceof Error ? err : new Error(String(err), { cause: err }));
       },

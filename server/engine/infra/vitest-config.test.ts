@@ -8,7 +8,7 @@ import baseConfig, {
   resolveLocalVitestScheduling,
 } from "../../vitest.config.ts";
 
-function normalizeConfigPath(value: unknown): string {
+function normalizeConfigPath(value: any): string {
   return String(value).replaceAll("\\", "/");
 }
 

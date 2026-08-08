@@ -1,5 +1,5 @@
 /** Normalizes an optional control-plane identity field without creating empty keys. */
-export function normalizeControlPlaneIdentityPart(value: unknown, fallback: string): string {
+export function normalizeControlPlaneIdentityPart(value: any, fallback: string): string {
   if (typeof value !== "string") {
     return fallback;
   }

@@ -20,7 +20,7 @@ import { QueueTimeoutError, QueueCancelledError } from '../errors/toolErrors.js'
 export interface QueuedToolCall {
   id: string;
   toolName: string;
-  args: Record<string, unknown>;
+  args: Record<string, any>;
   priority: 'high' | 'normal' | 'low';
   sessionId?: string;
   enqueuedAt: number;
@@ -461,7 +461,7 @@ export const toolExecutionQueue = new ToolExecutionQueueManager();
  */
 export async function executeViaQueue<T>(
   toolName: string,
-  args: Record<string, unknown>,
+  args: Record<string, any>,
   executor: (signal: AbortSignal) => Promise<T>,
   options: {
     priority?: 'high' | 'normal' | 'low';

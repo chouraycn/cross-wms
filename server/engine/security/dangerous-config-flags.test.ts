@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { OpenClawConfig } from "../config/config.js";
 import { collectEnabledInsecureOrDangerousFlagsFromContracts } from "./dangerous-config-flags-core.js";
 
-function asConfig(value: unknown): OpenClawConfig {
+function asConfig(value: any): OpenClawConfig {
   return value as OpenClawConfig;
 }
 

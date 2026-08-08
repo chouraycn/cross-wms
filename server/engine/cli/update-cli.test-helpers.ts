@@ -6,7 +6,7 @@ function isPathInsideRoot(candidate: string, root: string): boolean {
   return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
 }
 
-export function isOwningNpmCommand(value: unknown, owningPrefix: string): boolean {
+export function isOwningNpmCommand(value: any, owningPrefix: string): boolean {
   if (typeof value !== "string" || !path.isAbsolute(value)) {
     return false;
   }

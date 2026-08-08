@@ -82,7 +82,7 @@ type ModelCallObservationState = {
   responseStreamBytes: number;
   timeToFirstByteMs?: number;
   modelContent?: DiagnosticModelCallContent;
-  outputMessages?: unknown[];
+  outputMessages?: any[];
   contentCapture?: DiagnosticModelContentCapturePolicy;
   lastStreamProgressAt?: number;
   terminalEventEmitted?: boolean;
@@ -94,7 +94,7 @@ const MODEL_CALL_STREAM_RETURN_TIMEOUT_MS = 1000;
 const TRACEPARENT_HEADER_NAME = "traceparent";
 type ModelCallStreamOptions = Parameters<StreamFn>[2];
 
-function utf8JsonByteLength(value: unknown): number | undefined {
+function utf8JsonByteLength(value: any): number | undefined {
   try {
     return Buffer.byteLength(JSON.stringify(value), "utf8");
   } catch {
@@ -102,7 +102,7 @@ function utf8JsonByteLength(value: unknown): number | undefined {
   }
 }
 
-function assignRequestPayloadBytes(state: ModelCallObservationState, payload: unknown): void {
+function assignRequestPayloadBytes(state: ModelCallObservationState, payload: any): void {
   const bytes = utf8JsonByteLength(payload);
   if (bytes !== undefined) {
     state.requestPayloadBytes = bytes;
@@ -113,7 +113,7 @@ function utf8StringByteLength(value: string): number {
   return Buffer.byteLength(value, "utf8");
 }
 
-function streamDeltaByteLength(chunk: Record<string, unknown>): number | undefined {
+function streamDeltaByteLength(chunk: Record<string, any>): number | undefined {
   const type = chunk.type;
   if (
     (type === "text_delta" || type === "thinking_delta" || type === "toolcall_delta") &&
@@ -124,7 +124,7 @@ function streamDeltaByteLength(chunk: Record<string, unknown>): number | undefin
   return undefined;
 }
 
-function responseStreamChunkByteLengthUnchecked(chunk: unknown): number | undefined {
+function responseStreamChunkByteLengthUnchecked(chunk: any): number | undefined {
   if (!isRecord(chunk)) {
     return utf8JsonByteLength(chunk);
   }
@@ -141,7 +141,7 @@ function responseStreamChunkByteLengthUnchecked(chunk: unknown): number | undefi
   return utf8JsonByteLength(snapshotlessChunk);
 }
 
-function responseStreamChunkByteLength(chunk: unknown): number | undefined {
+function responseStreamChunkByteLength(chunk: any): number | undefined {
   try {
     return responseStreamChunkByteLengthUnchecked(chunk);
   } catch {
@@ -151,7 +151,7 @@ function responseStreamChunkByteLength(chunk: unknown): number | undefined {
 
 function streamContextModelContentFields(
   policy: DiagnosticModelContentCapturePolicy | undefined,
-  streamContext: unknown,
+  streamContext: any,
 ): DiagnosticModelCallContent | undefined {
   if (!policy?.anyModelContent || !isRecord(streamContext)) {
     return undefined;
@@ -170,7 +170,7 @@ function streamContextModelContentFields(
   return Object.keys(content).length > 0 ? content : undefined;
 }
 
-function observeOutputMessageContent(state: ModelCallObservationState, chunk: unknown): void {
+function observeOutputMessageContent(state: ModelCallObservationState, chunk: any): void {
   if (!state.contentCapture?.outputMessages || !isRecord(chunk)) {
     return;
   }
@@ -184,7 +184,7 @@ function observeOutputMessageContent(state: ModelCallObservationState, chunk: un
 function observeResultMessageContent(
   state: ModelCallObservationState,
   startedAt: number,
-  result: unknown,
+  result: any,
 ): void {
   state.timeToFirstByteMs ??= Math.max(0, Date.now() - startedAt);
   if (state.contentCapture?.outputMessages && state.outputMessages === undefined) {
@@ -201,7 +201,7 @@ function observeResultMessageContent(
 function observeResponseChunk(
   state: ModelCallObservationState,
   startedAt: number,
-  chunk: unknown,
+  chunk: any,
 ): void {
   state.timeToFirstByteMs ??= Math.max(0, Date.now() - startedAt);
   observeOutputMessageContent(state, chunk);
@@ -256,27 +256,27 @@ function modelCallSizeTimingFields(state: ModelCallObservationState): ModelCallS
   };
 }
 
-function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
+function isPromiseLike(value: any): value is PromiseLike<any> {
   if (value === null || (typeof value !== "object" && typeof value !== "function")) {
     return false;
   }
   try {
-    return typeof (value as { then?: unknown }).then === "function";
+    return typeof (value as { then?: any }).then === "function";
   } catch {
     return false;
   }
 }
 
-function asyncIteratorFactory(value: unknown): (() => AsyncIterator<unknown>) | undefined {
+function asyncIteratorFactory(value: any): (() => AsyncIterator<any>) | undefined {
   if (value === null || typeof value !== "object") {
     return undefined;
   }
   try {
-    const asyncIterator = (value as { [Symbol.asyncIterator]?: unknown })[Symbol.asyncIterator];
+    const asyncIterator = (value as { [Symbol.asyncIterator]?: any })[Symbol.asyncIterator];
     if (typeof asyncIterator !== "function") {
       return undefined;
     }
-    return () => asyncIterator.call(value) as AsyncIterator<unknown>;
+    return () => asyncIterator.call(value) as AsyncIterator<any>;
   } catch {
     return undefined;
   }
@@ -319,7 +319,7 @@ function modelCallCompletedContent(state: ModelCallObservationState) {
   };
 }
 
-function modelCallErrorFields(err: unknown): ModelCallErrorFields {
+function modelCallErrorFields(err: any): ModelCallErrorFields {
   const upstreamRequestIdHash = diagnosticProviderRequestIdHash(err);
   const failureKind = diagnosticErrorFailureKind(err);
   return {
@@ -530,8 +530,8 @@ function withDiagnosticTraceparentHeader(
   };
 }
 
-async function safeReturnIterator(iterator: AsyncIterator<unknown>): Promise<void> {
-  let returnResult: unknown;
+async function safeReturnIterator(iterator: AsyncIterator<any>): Promise<void> {
+  let returnResult: any;
   try {
     returnResult = iterator.return?.();
   } catch {
@@ -615,22 +615,22 @@ function observeModelCallFinalResult<T>(
 }
 
 function createObservedResultFunction(
-  stream: unknown,
+  stream: any,
   eventBase: ModelCallEventBase,
   startedAt: number,
   state: ModelCallObservationState,
-): ((...args: unknown[]) => unknown) | undefined {
+): ((...args: any[]) => unknown) | undefined {
   if (!isRecord(stream) || typeof stream.result !== "function") {
     return undefined;
   }
   const resultFn = stream.result;
-  return (...args: unknown[]) => {
+  return (...args: any[]) => {
     try {
       const result = resultFn.apply(stream, args);
       if (isPromiseLike(result)) {
         return result.then(
           (resolved) => observeModelCallFinalResult(resolved, eventBase, startedAt, state),
-          (err: unknown) => {
+          (err: any) => {
             emitModelCallError(eventBase, startedAt, state, modelCallErrorFields(err));
             throw err;
           },
@@ -644,9 +644,9 @@ function createObservedResultFunction(
   };
 }
 
-function observeModelCallStream<T extends AsyncIterable<unknown>>(
+function observeModelCallStream<T extends AsyncIterable<any>>(
   stream: T,
-  createIterator: () => AsyncIterator<unknown>,
+  createIterator: () => AsyncIterator<any>,
   eventBase: ModelCallEventBase,
   startedAt: number,
   state: ModelCallObservationState,
@@ -682,15 +682,15 @@ function observeModelCallStream<T extends AsyncIterable<unknown>>(
 }
 
 function observeModelCallResult(
-  result: unknown,
+  result: any,
   eventBase: ModelCallEventBase,
   startedAt: number,
   state: ModelCallObservationState,
-): unknown {
+): any {
   const createIterator = asyncIteratorFactory(result);
   if (createIterator) {
     return observeModelCallStream(
-      result as AsyncIterable<unknown>,
+      result as AsyncIterable<any>,
       createIterator,
       eventBase,
       startedAt,
@@ -730,7 +730,7 @@ export function wrapStreamFnWithDiagnosticModelCallEvents(
       if (isPromiseLike(result)) {
         return result.then(
           (resolved) => observeModelCallResult(resolved, eventBase, startedAt, state),
-          (err: unknown) => {
+          (err: any) => {
             emitModelCallError(eventBase, startedAt, state, modelCallErrorFields(err));
             throw err;
           },

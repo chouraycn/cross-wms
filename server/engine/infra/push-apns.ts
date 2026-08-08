@@ -3,40 +3,40 @@
 export type ApnsRegistration = unknown;
 export type ApnsAuthConfig = unknown;
 export type ApnsPushResult = unknown;
-export function normalizeApnsEnvironment(...args: unknown[]): unknown {
+export function normalizeApnsEnvironment(...args: any[]): any {
   return undefined;
 }
-export function registerApnsRegistration(...args: unknown[]): unknown {
+export function registerApnsRegistration(...args: any[]): any {
   return undefined;
 }
-export function loadApnsRegistration(...args: unknown[]): unknown {
+export function loadApnsRegistration(...args: any[]): any {
   return undefined;
 }
-export function loadApnsRegistrations(...args: unknown[]): unknown {
+export function loadApnsRegistrations(...args: any[]): any {
   return undefined;
 }
-export function clearApnsRegistrationIfCurrent(...args: unknown[]): unknown {
+export function clearApnsRegistrationIfCurrent(...args: any[]): any {
   return undefined;
 }
-export function shouldInvalidateApnsRegistration(...args: unknown[]): unknown {
+export function shouldInvalidateApnsRegistration(...args: any[]): any {
   return false;
 }
-export function shouldClearStoredApnsRegistration(...args: unknown[]): unknown {
+export function shouldClearStoredApnsRegistration(...args: any[]): any {
   return false;
 }
-export function resolveApnsAuthConfigFromEnv(...args: unknown[]): unknown {
+export function resolveApnsAuthConfigFromEnv(...args: any[]): any {
   return undefined;
 }
-export function sendApnsAlert(...args: unknown[]): unknown {
+export function sendApnsAlert(...args: any[]): any {
   return undefined;
 }
-export function sendApnsBackgroundWake(...args: unknown[]): unknown {
+export function sendApnsBackgroundWake(...args: any[]): any {
   return undefined;
 }
-export function sendApnsExecApprovalAlert(...args: unknown[]): unknown {
+export function sendApnsExecApprovalAlert(...args: any[]): any {
   return undefined;
 }
-export function sendApnsExecApprovalResolvedWake(...args: unknown[]): unknown {
+export function sendApnsExecApprovalResolvedWake(...args: any[]): any {
   return undefined;
 }
 export type ApnsRelayConfig = unknown;

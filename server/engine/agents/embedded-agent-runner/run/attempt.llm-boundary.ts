@@ -74,7 +74,7 @@ export function normalizeCurrentPromptTextForLlmBoundary(params: {
 }): string {
   const { message, options } = buildCurrentPromptBoundaryInput(params);
   const [normalized] = normalizeMessagesForLlmBoundary([message], options);
-  const content = (normalized as { content?: unknown } | undefined)?.content;
+  const content = (normalized as { content?: any } | undefined)?.content;
   return typeof content === "string" ? content : params.prompt;
 }
 
@@ -138,7 +138,7 @@ export function installRuntimeContextMessageForPrompt(params: {
   };
   installBeforePrompt();
   const agent = session.agent;
-  const originalContinue = Reflect.get(agent, "continue", agent) as unknown;
+  const originalContinue = Reflect.get(agent, "continue", agent) as any;
   if (typeof originalContinue === "function") {
     const continueWithAgent = originalContinue.bind(agent) as () => Promise<void>;
     agent.continue = function continueWithRuntimeContext(this: typeof agent): Promise<void> {
@@ -205,7 +205,7 @@ function replaceLastUserTextPrompt(params: {
   if (params.shouldCapture && !params.shouldCapture(message)) {
     return params.messages;
   }
-  const content = (message as { content?: unknown }).content;
+  const content = (message as { content?: any }).content;
   if (typeof content === "string") {
     const replacement = params.replace(content);
     if (replacement === undefined) {
@@ -226,7 +226,7 @@ function replaceLastUserTextPrompt(params: {
     if (replaced || !block || typeof block !== "object") {
       return block;
     }
-    const textBlock = block as { type?: unknown; text?: unknown };
+    const textBlock = block as { type?: any; text?: any };
     if (textBlock.type !== "text" || typeof textBlock.text !== "string") {
       return block;
     }
@@ -291,7 +291,7 @@ export function installModelPromptTransform(params: {
       messages,
       transcriptText: params.transcriptPrompt,
       shouldCapture: (message) => {
-        const timestamp = (message as { timestamp?: unknown }).timestamp;
+        const timestamp = (message as { timestamp?: any }).timestamp;
         if (targetPromptTimestamp !== undefined) {
           return timestamp === targetPromptTimestamp;
         }
@@ -344,7 +344,7 @@ export function installModelPromptTransform(params: {
  *
  * @see https://github.com/openclaw/openclaw/issues/3658
  */
-function canonicalizeTextOnlyUserContent(content: unknown): unknown {
+function canonicalizeTextOnlyUserContent(content: any): any {
   if (!Array.isArray(content)) {
     return content;
   }
@@ -356,7 +356,7 @@ function canonicalizeTextOnlyUserContent(content: unknown): unknown {
   if (!block || typeof block !== "object") {
     return content;
   }
-  const textBlock = block as { type?: unknown; text?: unknown };
+  const textBlock = block as { type?: any; text?: any };
   if (textBlock.type !== "text" || typeof textBlock.text !== "string") {
     return content;
   }
@@ -385,7 +385,7 @@ function canonicalizeTextOnlyUserContent(content: unknown): unknown {
  */
 function stampUserTextWithMessageTimestamp(
   text: string,
-  timestamp: unknown,
+  timestamp: any,
   timezone: string | undefined,
   includeTimestamp: boolean | undefined,
 ): string {
@@ -419,7 +419,7 @@ function stampUserTextWithMessageTimestamp(
 }
 
 function messageContentMatchesCurrentUserText(
-  content: unknown,
+  content: any,
   override: NonNullable<LlmBoundaryOptions["currentUserTimestampOverride"]>,
 ): boolean {
   const matchesText = (text: string): boolean =>
@@ -430,18 +430,18 @@ function messageContentMatchesCurrentUserText(
   if (!Array.isArray(content)) {
     return false;
   }
-  const firstTextBlock = content.find((block): block is { text: string; type?: unknown } => {
+  const firstTextBlock = content.find((block): block is { text: string; type?: any } => {
     if (!block || typeof block !== "object") {
       return false;
     }
-    const typedBlock = block as { type?: unknown; text?: unknown };
+    const typedBlock = block as { type?: any; text?: any };
     return typedBlock.type === "text" && typeof typedBlock.text === "string";
   });
   return firstTextBlock ? matchesText(firstTextBlock.text) : false;
 }
 
 function messageRuntimeTimestampMatchesCurrentUserOverride(
-  runtimeTimestamp: unknown,
+  runtimeTimestamp: any,
   override: NonNullable<LlmBoundaryOptions["currentUserTimestampOverride"]>,
 ): boolean {
   if (typeof override.runtimeTimestamp === "number") {
@@ -463,10 +463,10 @@ function stripHistoricalInboundMetadataFromUserMessages(
     if (message.role !== "user") {
       return message;
     }
-    const content = (message as { content?: unknown }).content;
+    const content = (message as { content?: any }).content;
     const isActive = index === activeUserMessageIndex;
     const override = options?.currentUserTimestampOverride;
-    const runtimeTimestamp = (message as { timestamp?: unknown }).timestamp;
+    const runtimeTimestamp = (message as { timestamp?: any }).timestamp;
     const useCurrentUserTimestampOverride =
       isActive &&
       override !== undefined &&
@@ -542,7 +542,7 @@ function stripHistoricalInboundMetadataFromUserMessages(
       if (!block || typeof block !== "object") {
         return block;
       }
-      const textBlock = block as { type?: unknown; text?: unknown };
+      const textBlock = block as { type?: any; text?: any };
       if (textBlock.type !== "text" || typeof textBlock.text !== "string") {
         return block;
       }
@@ -571,17 +571,17 @@ function stripHistoricalInboundMetadataFromUserMessages(
 function stripUnsafeBlockedRunMetadata(messages: AgentMessage[]): AgentMessage[] {
   let changed = false;
   const nextMessages = messages.map((message) => {
-    const openclaw = (message as unknown as Record<string, unknown>)["__openclaw"];
+    const openclaw = (message as unknown as Record<string, any>)["__openclaw"];
     if (!openclaw || typeof openclaw !== "object") {
       return message;
     }
-    const beforeAgentRunBlocked = (openclaw as { beforeAgentRunBlocked?: unknown })
+    const beforeAgentRunBlocked = (openclaw as { beforeAgentRunBlocked?: any })
       .beforeAgentRunBlocked;
     if (!beforeAgentRunBlocked || typeof beforeAgentRunBlocked !== "object") {
       return message;
     }
-    const blocked = beforeAgentRunBlocked as Record<string, unknown>;
-    const safeBlocked: Record<string, unknown> = {};
+    const blocked = beforeAgentRunBlocked as Record<string, any>;
+    const safeBlocked: Record<string, any> = {};
     if (typeof blocked.blockedBy === "string") {
       safeBlocked.blockedBy = blocked.blockedBy;
     }
@@ -589,12 +589,12 @@ function stripUnsafeBlockedRunMetadata(messages: AgentMessage[]): AgentMessage[]
       safeBlocked.blockedAt = blocked.blockedAt;
     }
     const nextOpenClaw = {
-      ...(openclaw as Record<string, unknown>),
+      ...(openclaw as Record<string, any>),
       beforeAgentRunBlocked: safeBlocked,
     };
     changed = true;
     return {
-      ...(message as unknown as Record<string, unknown>),
+      ...(message as unknown as Record<string, any>),
       __openclaw: nextOpenClaw,
     } as unknown as AgentMessage;
   });
@@ -624,7 +624,7 @@ function isToolCallAssistantMessage(message: AgentMessage): boolean {
   if (message.role !== "assistant") {
     return false;
   }
-  const content = (message as { content?: unknown }).content;
+  const content = (message as { content?: any }).content;
   if (!Array.isArray(content)) {
     return false;
   }
@@ -632,7 +632,7 @@ function isToolCallAssistantMessage(message: AgentMessage): boolean {
     if (!block || typeof block !== "object") {
       return false;
     }
-    const type = (block as { type?: unknown }).type;
+    const type = (block as { type?: any }).type;
     return isRunnerToolCallBlockType(type);
   });
 }

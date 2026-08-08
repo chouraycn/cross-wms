@@ -7,20 +7,20 @@
 // 时将抛出 "not implemented" 错误。
 
 export type GetReplyFromConfigFn = (
-  ctx: Record<string, unknown>,
-  opts: Record<string, unknown>,
-  cfg: unknown,
-) => Promise<unknown>;
+  ctx: Record<string, any>,
+  opts: Record<string, any>,
+  cfg: any,
+) => Promise<any>;
 
 /**
  * 从配置获取回复。
  * 降级实现：抛出错误，cross-wms 未移植 ../auto-reply/reply.js。
  */
 export async function getReplyFromConfig(
-  _ctx: Record<string, unknown>,
-  _opts: Record<string, unknown>,
-  _cfg: unknown,
-): Promise<unknown> {
+  _ctx: Record<string, any>,
+  _opts: Record<string, any>,
+  _cfg: any,
+): Promise<any> {
   throw new Error(
     "getReplyFromConfig stub: heartbeat-runner.runtime not ported (auto-reply/reply.js missing)",
   );

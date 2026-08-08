@@ -4,11 +4,11 @@
 import type { NodeListNode, PairedNode, PendingRequest } from "./types.js";
 
 /** Format node permission maps as a stable `[permission=yes|no]` label. */
-export function formatPermissions(raw: unknown): string | null {
+export function formatPermissions(raw: any): string | null {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
     return null;
   }
-  const entries = Object.entries(raw as Record<string, unknown>)
+  const entries = Object.entries(raw as Record<string, any>)
     .map(([key, value]) => [key ?? "", value === true] as const)
     .filter(([key]) => key.length > 0)
     .sort((a, b) => a[0].localeCompare(b[0]));
@@ -20,11 +20,11 @@ export function formatPermissions(raw: unknown): string | null {
 }
 
 /** Parse a node.list response into normalized NodeListNode objects. */
-export function parseNodeList(result: unknown): NodeListNode[] {
-  const obj = typeof result === "object" && result !== null ? (result as Record<string, unknown>) : {};
+export function parseNodeList(result: any): NodeListNode[] {
+  const obj = typeof result === "object" && result !== null ? (result as Record<string, any>) : {};
   const nodes = Array.isArray(obj.nodes) ? obj.nodes : [];
   return nodes
-    .filter((n): n is Record<string, unknown> => typeof n === "object" && n !== null)
+    .filter((n): n is Record<string, any> => typeof n === "object" && n !== null)
     .map((n): NodeListNode => ({
       nodeId: String(n.nodeId ?? ""),
       displayName: typeof n.displayName === "string" ? n.displayName : undefined,
@@ -64,16 +64,16 @@ export function parseNodeList(result: unknown): NodeListNode[] {
 }
 
 /** Parse a node.pair.list response into normalized pending/paired lists. */
-export function parsePairingList(result: unknown): {
+export function parsePairingList(result: any): {
   pending: PendingRequest[];
   paired: PairedNode[];
 } {
-  const obj = typeof result === "object" && result !== null ? (result as Record<string, unknown>) : {};
+  const obj = typeof result === "object" && result !== null ? (result as Record<string, any>) : {};
   const pending = Array.isArray(obj.pending) ? obj.pending : [];
   const paired = Array.isArray(obj.paired) ? obj.paired : [];
   return {
     pending: pending
-      .filter((r): r is Record<string, unknown> => typeof r === "object" && r !== null)
+      .filter((r): r is Record<string, any> => typeof r === "object" && r !== null)
       .map((r): PendingRequest => ({
         requestId: String(r.requestId ?? ""),
         nodeId: typeof r.nodeId === "string" ? r.nodeId : undefined,
@@ -88,7 +88,7 @@ export function parsePairingList(result: unknown): {
         createdAtMs: typeof r.createdAtMs === "number" ? r.createdAtMs : undefined,
       })),
     paired: paired
-      .filter((p): p is Record<string, unknown> => typeof p === "object" && p !== null)
+      .filter((p): p is Record<string, any> => typeof p === "object" && p !== null)
       .map((p): PairedNode => ({
         nodeId: String(p.nodeId ?? ""),
         displayName: typeof p.displayName === "string" ? p.displayName : undefined,

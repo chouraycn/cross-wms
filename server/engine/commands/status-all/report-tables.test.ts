@@ -52,7 +52,7 @@ describe("status-all report tables", () => {
   });
 
   it("builds colored detail table sections", () => {
-    const renderTable = ({ rows }: { rows: unknown[] }) => `rows:${rows.length}`;
+    const renderTable = ({ rows }: { rows: any[] }) => `rows:${rows.length}`;
     const [section] = buildStatusChannelDetailSections({
       details: [
         {

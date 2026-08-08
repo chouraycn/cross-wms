@@ -213,7 +213,7 @@ function firstCacheKeyInput(): {
     envFingerprint?: string;
     sourceFingerprint?: string;
   };
-  metadataSnapshot?: unknown;
+  metadataSnapshot?: any;
 } {
   const call = providerDiscoveryMocks.buildAgentModelCatalogCacheKey.mock.calls[0];
   if (!call) {
@@ -224,7 +224,7 @@ function firstCacheKeyInput(): {
       envFingerprint?: string;
       sourceFingerprint?: string;
     };
-    metadataSnapshot?: unknown;
+    metadataSnapshot?: any;
   };
 }
 

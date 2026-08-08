@@ -606,10 +606,10 @@ describe("collectCodexRouteWarnings", () => {
 
     expect(result.warnings).toStrictEqual([]);
     expect(
-      (result.cfg.agents?.list?.[0] as Record<string, unknown> | undefined)?.compaction,
+      (result.cfg.agents?.list?.[0] as Record<string, any> | undefined)?.compaction,
     ).toBeUndefined();
     expect(
-      (result.cfg.agents?.list?.[1] as Record<string, unknown> | undefined)?.compaction,
+      (result.cfg.agents?.list?.[1] as Record<string, any> | undefined)?.compaction,
     ).toBeUndefined();
     expect(result.cfg.plugins?.entries?.["lossless-claw"]?.config).toEqual({
       summaryModel: "openai/gpt-5.4-mini",
@@ -646,13 +646,13 @@ describe("collectCodexRouteWarnings", () => {
     expect(result.changes).toStrictEqual([]);
     expect(result.cfg.plugins).toBeUndefined();
     expect(
-      (result.cfg.agents?.list?.[0] as Record<string, unknown> | undefined)?.compaction,
+      (result.cfg.agents?.list?.[0] as Record<string, any> | undefined)?.compaction,
     ).toEqual({
       model: "openai/gpt-5.4-mini",
       provider: "lossless-claw",
     });
     expect(
-      (result.cfg.agents?.list?.[1] as Record<string, unknown> | undefined)?.compaction,
+      (result.cfg.agents?.list?.[1] as Record<string, any> | undefined)?.compaction,
     ).toEqual({
       model: "openai/gpt-5.5",
       provider: "lossless-claw",
@@ -762,7 +762,7 @@ describe("collectCodexRouteWarnings", () => {
       provider: "lossless-claw",
     });
     expect(
-      (result.cfg.agents?.list?.[0] as Record<string, unknown> | undefined)?.compaction,
+      (result.cfg.agents?.list?.[0] as Record<string, any> | undefined)?.compaction,
     ).toEqual({
       model: "openai/gpt-5.4-mini",
     });
@@ -955,7 +955,7 @@ describe("collectCodexRouteWarnings", () => {
       model: "openai/gpt-5.4-mini",
     });
     expect(
-      (result.cfg.agents?.list?.[0] as Record<string, unknown> | undefined)?.compaction,
+      (result.cfg.agents?.list?.[0] as Record<string, any> | undefined)?.compaction,
     ).toEqual({
       provider: "lossless-claw",
     });
@@ -1331,7 +1331,7 @@ describe("collectCodexRouteWarnings", () => {
       model: "openai/gpt-5.4",
       provider: "lossless-claw",
     });
-    expect((result.cfg.agents!.list![0] as Record<string, unknown>).compaction).toEqual({
+    expect((result.cfg.agents!.list![0] as Record<string, any>).compaction).toEqual({
       provider: "custom-summary",
     });
     expect(result.warnings).toStrictEqual([
@@ -1443,7 +1443,7 @@ describe("collectCodexRouteWarnings", () => {
                 compaction: {
                   model: "anthropic/claude-haiku-4-6",
                 },
-              } as Record<string, unknown>),
+              } as Record<string, any>),
             },
           ],
         },

@@ -17,14 +17,14 @@ const ACCOUNT_GROUP_ALLOW_FROM_PATH = [
   "groupAllowFrom",
 ] as const;
 
-type ChannelRecord = Record<string, unknown>;
+type ChannelRecord = Record<string, any>;
 type SchemaPath = readonly string[];
 
 function isDisabled(record: ChannelRecord): boolean {
   return record.enabled === false;
 }
 
-function normalizeAllowFrom(raw: unknown): string[] {
+function normalizeAllowFrom(raw: any): string[] {
   return normalizeUniqueStringEntries(Array.isArray(raw) ? raw : []);
 }
 
@@ -57,14 +57,14 @@ function readOwnDmAllowFrom(params: { channelName: string; account: ChannelRecor
 
 function findGeneratedChannelConfigSchema(
   channelName: string,
-): Record<string, unknown> | undefined {
+): Record<string, any> | undefined {
   const normalizedChannelId = normalizeAnyChannelId(channelName);
   return GENERATED_BUNDLED_CHANNEL_CONFIG_METADATA.find(
     (entry) => entry.channelId === channelName || entry.channelId === normalizedChannelId,
   )?.schema;
 }
 
-function schemaAllowsConfigPath(schema: unknown, path: SchemaPath): boolean {
+function schemaAllowsConfigPath(schema: any, path: SchemaPath): boolean {
   if (path.length === 0) {
     return true;
   }

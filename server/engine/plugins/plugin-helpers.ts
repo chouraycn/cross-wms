@@ -294,7 +294,7 @@ export function canSafelyUninstall(pluginId: string): { safe: boolean; dependent
 }
 
 /** 错误处理辅助：将错误转换为用户可读消息 */
-export function formatPluginError(error: unknown): string {
+export function formatPluginError(error: any): string {
   if (error instanceof PluginSdkError) {
     const parts: string[] = [error.message];
     if (error.pluginId) {

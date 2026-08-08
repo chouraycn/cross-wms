@@ -980,7 +980,7 @@ function migrateSdMcpServersToCore(db: Database.Database): void {
       if (!cols.includes(col)) db.exec(`ALTER TABLE mcp_servers ADD COLUMN ${col} ${typ}`);
     }
 
-    const rows = db.prepare('SELECT * FROM sd_mcp_servers').all() as Record<string, unknown>[];
+    const rows = db.prepare('SELECT * FROM sd_mcp_servers').all() as Record<string, any>[];
     const insert = db.prepare(
       `INSERT OR IGNORE INTO mcp_servers (
         id, tenant_id, name, command, args, env, enabled, transport_type, url, headers,

@@ -22,7 +22,7 @@ export function buildApprovalPendingReplyPayload(params: {
   agentId?: string | null;
   allowedDecisions?: readonly ExecApprovalReplyDecision[];
   sessionKey?: string | null;
-  channelData?: Record<string, unknown>;
+  channelData?: Record<string, any>;
 }): ReplyPayload {
   const allowedDecisions = params.allowedDecisions ?? DEFAULT_ALLOWED_DECISIONS;
   return {
@@ -50,7 +50,7 @@ export function buildApprovalResolvedReplyPayload(params: {
   approvalId: string;
   approvalSlug: string;
   text: string;
-  channelData?: Record<string, unknown>;
+  channelData?: Record<string, any>;
 }): ReplyPayload {
   return {
     text: params.text,
@@ -71,7 +71,7 @@ export function buildPluginApprovalPendingReplyPayload(params: {
   text?: string;
   approvalSlug?: string;
   allowedDecisions?: readonly ExecApprovalReplyDecision[];
-  channelData?: Record<string, unknown>;
+  channelData?: Record<string, any>;
 }): ReplyPayload {
   return buildApprovalPendingReplyPayload({
     approvalKind: "plugin",
@@ -89,7 +89,7 @@ export function buildPluginApprovalResolvedReplyPayload(params: {
   resolved: PluginApprovalResolved;
   text?: string;
   approvalSlug?: string;
-  channelData?: Record<string, unknown>;
+  channelData?: Record<string, any>;
 }): ReplyPayload {
   return buildApprovalResolvedReplyPayload({
     approvalId: params.resolved.id,

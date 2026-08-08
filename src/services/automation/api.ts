@@ -54,7 +54,7 @@ export async function createAutomationApi(data: {
   rrule?: string;
   scheduledAt?: string | null;
   scheduleLabel?: string;
-  taskConfig?: unknown;
+  taskConfig?: any;
   validFrom?: string | null;
   validUntil?: string | null;
   triggerType?: TriggerType;
@@ -95,8 +95,8 @@ export async function triggerAutomationApi(id: string): Promise<{
   result: {
     success: boolean;
     message: string;
-    steps?: unknown[];
-    data?: unknown;
+    steps?: any[];
+    data?: any;
   };
 }> {
   return request(`/api/automation/${encodeURIComponent(id)}/trigger`, { method: 'POST' });
@@ -164,7 +164,7 @@ export async function fetchAvailableEvents(): Promise<{
 /** 手动触发事件（调试用） */
 export async function triggerEventApi(
   eventName: string,
-  payload?: Record<string, unknown>,
+  payload?: Record<string, any>,
 ): Promise<{ triggered: number; success: number; total: number }> {
   return request('/api/automation/events/trigger', {
     method: 'POST',

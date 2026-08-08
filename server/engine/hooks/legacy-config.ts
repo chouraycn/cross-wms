@@ -14,7 +14,7 @@ type LegacyInternalHooksCarrier = {
 };
 
 /** Read legacy hooks.internal.handlers entries for backward-compatible config detection. */
-export function getLegacyInternalHookHandlers(config: unknown): LegacyInternalHookHandler[] {
+export function getLegacyInternalHookHandlers(config: any): LegacyInternalHookHandler[] {
   const handlers = (config as LegacyInternalHooksCarrier)?.hooks?.internal?.handlers;
   return Array.isArray(handlers) ? handlers : [];
 }

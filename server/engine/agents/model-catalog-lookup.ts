@@ -6,12 +6,12 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function modelSupportsInput(..._args: unknown[]): unknown {
+export function modelSupportsInput(..._args: any[]): any {
   return undefined;
 }
-export function findModelInCatalog(..._args: unknown[]): unknown {
+export function findModelInCatalog(..._args: any[]): any {
   return [];
 }
-export function findModelCatalogEntry(..._args: unknown[]): unknown {
+export function findModelCatalogEntry(..._args: any[]): any {
   return [];
 }

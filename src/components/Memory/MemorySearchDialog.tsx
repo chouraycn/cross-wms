@@ -45,7 +45,7 @@ import { getGrayScale } from '../../constants/theme';
 interface SearchResult {
   id: number;
   text: string;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
   similarity: number;
 }
 

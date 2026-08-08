@@ -56,7 +56,7 @@ function createRenameAuditRecord(home: string) {
   });
 }
 
-function readAuditLog(home: string): unknown[] {
+function readAuditLog(home: string): any[] {
   const auditPath = path.join(home, ".openclaw", "logs", "config-audit.jsonl");
   return fs
     .readFileSync(auditPath, "utf-8")
@@ -65,11 +65,11 @@ function readAuditLog(home: string): unknown[] {
     .map((line) => JSON.parse(line));
 }
 
-function requireAuditRecord(value: unknown): Record<string, unknown> {
+function requireAuditRecord(value: any): Record<string, any> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("Expected audit JSONL record");
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 describe("config io audit helpers", () => {

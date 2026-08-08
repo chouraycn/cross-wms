@@ -4,14 +4,14 @@
  * 降级实现：提供视频生成工具动作，不再抛出 stub 错误。
  */
 
-export function createVideoGenerateListActionResult(_params: unknown): unknown {
+export function createVideoGenerateListActionResult(_params: any): any {
   return { status: "unavailable", videos: [] };
 }
 
-export function createVideoGenerateStatusActionResult(_params: unknown): unknown {
+export function createVideoGenerateStatusActionResult(_params: any): any {
   return { status: "unavailable" };
 }
 
-export function createVideoGenerateDuplicateGuardResult(_params: unknown): unknown {
+export function createVideoGenerateDuplicateGuardResult(_params: any): any {
   return { status: "ok" };
 }

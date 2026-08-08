@@ -69,7 +69,7 @@ export class AcpSessionManager {
   /**
    * 解析会话状态
    */
-  resolveSession(params: { cfg: unknown; sessionKey: string }): AcpSessionResolution {
+  resolveSession(params: { cfg: any; sessionKey: string }): AcpSessionResolution {
     const sessionKey = canonicalizeSessionKey(params.sessionKey);
     if (!sessionKey) {
       return {
@@ -107,7 +107,7 @@ export class AcpSessionManager {
   /**
    * 获取可观测性快照
    */
-  getObservabilitySnapshot(_cfg: unknown): AcpManagerObservabilitySnapshot {
+  getObservabilitySnapshot(_cfg: any): AcpManagerObservabilitySnapshot {
     const completedTurns = this.turnLatencyStats.completed + this.turnLatencyStats.failed;
     const averageLatencyMs =
       completedTurns > 0 ? Math.round(this.turnLatencyStats.totalMs / completedTurns) : 0;
@@ -196,7 +196,7 @@ export class AcpSessionManager {
    * 取消会话
    */
   async cancelSession(params: {
-    cfg: unknown;
+    cfg: any;
     sessionKey: string;
     reason?: string;
   }): Promise<void> {
@@ -275,7 +275,7 @@ export class AcpSessionManager {
    * 更新会话运行时选项
    */
   async updateSessionRuntimeOptions(params: {
-    cfg: unknown;
+    cfg: any;
     sessionKey: string;
     patch: Partial<AcpSessionRuntimeOptions>;
   }): Promise<AcpSessionRuntimeOptions> {
@@ -324,7 +324,7 @@ export class AcpSessionManager {
   }
 
   private async ensureRuntimeHandle(params: {
-    cfg: unknown;
+    cfg: any;
     sessionKey: string;
     meta: SessionAcpMeta;
   }): Promise<{ runtime: AcpRuntime; handle: AcpRuntimeHandle; meta: SessionAcpMeta }> {
@@ -365,7 +365,7 @@ export class AcpSessionManager {
     return { runtime, handle, meta: params.meta };
   }
 
-  private enforceConcurrentSessionLimit(params: { cfg: unknown; sessionKey: string }): void {
+  private enforceConcurrentSessionLimit(params: { cfg: any; sessionKey: string }): void {
     const configuredLimit = (params.cfg as { acp?: { maxConcurrentSessions?: number } })?.acp?.maxConcurrentSessions;
     if (typeof configuredLimit !== "number" || !Number.isFinite(configuredLimit)) {
       return;
@@ -422,7 +422,7 @@ export class AcpSessionManager {
   }
 
   private async setSessionState(params: {
-    cfg: unknown;
+    cfg: any;
     sessionKey: string;
     state: SessionAcpMeta["state"];
     lastError?: string;
@@ -451,7 +451,7 @@ export class AcpSessionManager {
   }
 
   private async reconcileRuntimeSessionIdentifiers(params: {
-    cfg: unknown;
+    cfg: any;
     sessionKey: string;
     runtime: AcpRuntime;
     handle: AcpRuntimeHandle;
@@ -462,7 +462,7 @@ export class AcpSessionManager {
     return { handle: params.handle, meta: params.meta };
   }
 
-  private async evictIdleRuntimeHandles(cfg: unknown): Promise<void> {
+  private async evictIdleRuntimeHandles(cfg: any): Promise<void> {
     const maxIdleMs = ((cfg as { acp?: { maxIdleMs?: number } })?.acp?.maxIdleMs ?? 5 * 60 * 1000);
     await this.runtimeHandles.evictIdle({
       cfg,
@@ -473,7 +473,7 @@ export class AcpSessionManager {
   }
 
   private async writeSessionMeta(params: {
-    cfg: unknown;
+    cfg: any;
     sessionKey: string;
     mutate: (
       current: SessionAcpMeta | undefined,
@@ -497,9 +497,9 @@ export class AcpSessionManager {
     sessionKey: string;
     deps: AcpSessionManagerDeps;
     runtimeHandles: RuntimeHandleCache;
-    enforceConcurrentSessionLimit: (params: { cfg: unknown; sessionKey: string }) => void;
+    enforceConcurrentSessionLimit: (params: { cfg: any; sessionKey: string }) => void;
     writeSessionMeta: (params: {
-      cfg: unknown;
+      cfg: any;
       sessionKey: string;
       mutate: (
         current: SessionAcpMeta | undefined,
@@ -602,7 +602,7 @@ export class AcpSessionManager {
         cleanup();
         resolve(value);
       };
-      const settleError = (error: unknown) => {
+      const settleError = (error: any) => {
         if (settled) {
           return;
         }

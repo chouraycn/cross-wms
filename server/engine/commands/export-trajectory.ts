@@ -29,16 +29,16 @@ type ExportTrajectoryCommandOptions = {
 };
 
 type EncodedExportTrajectoryRequest = {
-  sessionKey?: unknown;
-  output?: unknown;
-  store?: unknown;
-  agent?: unknown;
-  workspace?: unknown;
+  sessionKey?: any;
+  output?: any;
+  store?: any;
+  agent?: any;
+  workspace?: any;
 };
 
 const ENCODED_EXPORT_REQUEST_RE = /^[A-Za-z0-9_-]{1,65536}$/u;
 
-function readOptionalString(value: unknown): string | undefined {
+function readOptionalString(value: any): string | undefined {
   return typeof value === "string" && value.trim().length > 0 ? value : undefined;
 }
 
@@ -47,9 +47,9 @@ function decodeExportTrajectoryRequest(encoded: string): Partial<ExportTrajector
   if (!ENCODED_EXPORT_REQUEST_RE.test(trimmed)) {
     throw new Error("Encoded trajectory export request is invalid");
   }
-  let decoded: unknown;
+  let decoded: any;
   try {
-    decoded = JSON.parse(Buffer.from(trimmed, "base64url").toString("utf8")) as unknown;
+    decoded = JSON.parse(Buffer.from(trimmed, "base64url").toString("utf8")) as any;
   } catch {
     throw new Error("Encoded trajectory export request is invalid JSON");
   }

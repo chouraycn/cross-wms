@@ -15,14 +15,14 @@ type InboundMetadataParams = {
 const mocks = vi.hoisted(() => ({
   recordSessionMetaFromInbound: vi.fn(async (_params: InboundMetadataParams) => ({ ok: true })),
   resolveStorePath: vi.fn(
-    (_store: unknown, params?: { agentId?: string }) => `/stores/${params?.agentId ?? "main"}.json`,
+    (_store: any, params?: { agentId?: string }) => `/stores/${params?.agentId ?? "main"}.json`,
   ),
 }));
 
 function firstMockArg(
-  mock: { mock: { calls: readonly unknown[][] } },
+  mock: { mock: { calls: readonly any[][] } },
   label: string,
-): Record<string, unknown> {
+): Record<string, any> {
   const [call] = mock.mock.calls;
   if (!call) {
     throw new Error(`expected ${label} call`);
@@ -31,7 +31,7 @@ function firstMockArg(
   if (typeof arg !== "object" || arg === null || Array.isArray(arg)) {
     throw new Error(`expected ${label} params to be an object`);
   }
-  return arg as Record<string, unknown>;
+  return arg as Record<string, any>;
 }
 
 vi.mock("../../config/sessions/inbound.runtime.js", () => ({
@@ -526,7 +526,7 @@ describe("resolveOutboundSessionRoute", () => {
     });
 
     for (const [key, value] of Object.entries(expected)) {
-      expect((route as Record<string, unknown>)[key]).toEqual(value);
+      expect((route as Record<string, any>)[key]).toEqual(value);
     }
   });
 

@@ -8,8 +8,8 @@ import {
 } from "./config-schema.js";
 
 function expectSafeParseCases(
-  safeParse: ((value: unknown) => unknown) | undefined,
-  cases: ReadonlyArray<readonly [unknown, unknown]>,
+  safeParse: ((value: any) => unknown) | undefined,
+  cases: ReadonlyArray<readonly [any, any]>,
 ) {
   if (safeParse === undefined) {
     throw new Error("expected config schema safeParse function");
@@ -19,7 +19,7 @@ function expectSafeParseCases(
 
 function expectJsonSchema(
   result: ReturnType<typeof buildPluginConfigSchema>,
-  expected: Record<string, unknown>,
+  expected: Record<string, any>,
 ) {
   expect(result.jsonSchema).toEqual(expected);
 }

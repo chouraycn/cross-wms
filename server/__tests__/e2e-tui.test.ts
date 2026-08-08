@@ -109,7 +109,7 @@ describe('E2E: TUI 终端界面', () => {
 
       // 获取一个流式迭代器并检查第一个事件
       const messages = [{ role: 'user', content: 'hello' }];
-      const stream = backend.sendChat(messages as unknown);
+      const stream = backend.sendChat(messages as any);
 
       // 读取第一个事件
       const firstEvent = await stream.next();
@@ -209,7 +209,7 @@ describe('E2E: TUI 终端界面', () => {
       const { executeCommand } = await import('../tui/commands.js');
 
       const output: string[] = [];
-      const ctx: unknown = {
+      const ctx: any = {
         backend: new MockTuiBackend(),
         sessionId: null,
         setSessionId: vi.fn(),
@@ -227,8 +227,8 @@ describe('E2E: TUI 终端界面', () => {
     it('executeCommand 应能创建新会话', async () => {
       const { executeCommand } = await import('../tui/commands.js');
 
-      const backend = new MockTuiBackend() as unknown;
-      const ctx: unknown = {
+      const backend = new MockTuiBackend() as any;
+      const ctx: any = {
         backend,
         sessionId: null,
         setSessionId: vi.fn((id: string) => { ctx.sessionId = id; }),
@@ -249,12 +249,12 @@ describe('E2E: TUI 终端界面', () => {
     it('executeCommand 应能列出会话', async () => {
       const { executeCommand } = await import('../tui/commands.js');
 
-      const backend = new MockTuiBackend() as unknown;
+      const backend = new MockTuiBackend() as any;
       await backend.createSession('会话A');
       await backend.createSession('会话B');
 
       const output: string[] = [];
-      const ctx: unknown = {
+      const ctx: any = {
         backend,
         sessionId: null,
         setSessionId: vi.fn(),
@@ -273,7 +273,7 @@ describe('E2E: TUI 终端界面', () => {
       const { executeCommand } = await import('../tui/commands.js');
 
       const errors: string[] = [];
-      const ctx: unknown = {
+      const ctx: any = {
         backend: new MockTuiBackend(),
         sessionId: null,
         setSessionId: vi.fn(),
@@ -290,7 +290,7 @@ describe('E2E: TUI 终端界面', () => {
     it('非命令输入应返回 false', async () => {
       const { executeCommand } = await import('../tui/commands.js');
 
-      const ctx: unknown = {
+      const ctx: any = {
         backend: new MockTuiBackend(),
         sessionId: null,
         setSessionId: vi.fn(),
@@ -307,8 +307,8 @@ describe('E2E: TUI 终端界面', () => {
   // ==================== 4. EmbeddedBackend（使用 Mock 后端） ====================
   describe('EmbeddedBackend 后端', () => {
     it('应能创建会话', () => {
-      const backend = new MockTuiBackend() as unknown;
-      return backend.createSession('测试会话').then((session: unknown) => {
+      const backend = new MockTuiBackend() as any;
+      return backend.createSession('测试会话').then((session: any) => {
         expect(session.id).toBeDefined();
         expect(session.title).toBe('测试会话');
         expect(session.messageCount).toBe(0);
@@ -316,29 +316,29 @@ describe('E2E: TUI 终端界面', () => {
     });
 
     it('应能列出会话', () => {
-      const backend = new MockTuiBackend() as unknown;
+      const backend = new MockTuiBackend() as any;
       return Promise.all([
         backend.createSession('会话1'),
         backend.createSession('会话2'),
-      ]).then(() => backend.listSessions()).then((sessions: unknown[]) => {
+      ]).then(() => backend.listSessions()).then((sessions: any[]) => {
         expect(sessions.length).toBe(2);
       });
     });
 
     it('会话列表应按更新时间倒序', () => {
-      const backend = new MockTuiBackend() as unknown;
+      const backend = new MockTuiBackend() as any;
       return backend.createSession('旧会话')
-        .then((s1: unknown) => {
-          return new Promise<unknown>((resolve) => {
+        .then((s1: any) => {
+          return new Promise<any>((resolve) => {
             setTimeout(() => {
-              backend.createSession('新会话').then((s2: unknown) => {
+              backend.createSession('新会话').then((s2: any) => {
                 resolve({ s1, s2 });
               });
             }, 10);
           });
         })
-        .then(({ s1, s2 }: unknown) => {
-          return backend.listSessions().then((sessions: unknown[]) => {
+        .then(({ s1, s2 }: any) => {
+          return backend.listSessions().then((sessions: any[]) => {
             expect(sessions[0].id).toBe(s2.id);
             expect(sessions[1].id).toBe(s1.id);
           });
@@ -346,37 +346,37 @@ describe('E2E: TUI 终端界面', () => {
     });
 
     it('应能删除会话', () => {
-      const backend = new MockTuiBackend() as unknown;
+      const backend = new MockTuiBackend() as any;
       return backend.createSession('待删除')
-        .then((s: unknown) => backend.listSessions().then((sessions: unknown[]) => {
+        .then((s: any) => backend.listSessions().then((sessions: any[]) => {
           expect(sessions.length).toBe(1);
           return s;
         }))
-        .then((s: unknown) => backend.deleteSession(s.id))
+        .then((s: any) => backend.deleteSession(s.id))
         .then(() => backend.listSessions())
-        .then((sessions: unknown[]) => {
+        .then((sessions: any[]) => {
           expect(sessions.length).toBe(0);
         });
     });
 
     it('新会话历史应为空', () => {
-      const backend = new MockTuiBackend() as unknown;
+      const backend = new MockTuiBackend() as any;
       return backend.createSession('新会话')
-        .then((s: unknown) => backend.loadHistory(s.id))
-        .then((history: unknown[]) => {
+        .then((s: any) => backend.loadHistory(s.id))
+        .then((history: any[]) => {
           expect(history.length).toBe(0);
         });
     });
 
     it('sendChat 应返回流式响应', () => {
-      const backend = new MockTuiBackend() as unknown;
+      const backend = new MockTuiBackend() as any;
       const messages = [{ role: 'user', content: '你好' }];
       const stream = backend.sendChat(messages);
 
-      const events: unknown[] = [];
+      const events: any[] = [];
       const iterator = stream[Symbol.asyncIterator]();
-      const collect = (): Promise<unknown> => {
-        return iterator.next().then((result: unknown) => {
+      const collect = (): Promise<any> => {
+        return iterator.next().then((result: any) => {
           if (!result.done) {
             events.push(result.value);
             return collect();
@@ -385,23 +385,23 @@ describe('E2E: TUI 终端界面', () => {
         });
       };
 
-      return collect().then((events: unknown[]) => {
+      return collect().then((events: any[]) => {
         expect(events.length).toBeGreaterThan(0);
         expect(events[0].type).toBe('assistant_start');
-        expect(events.some((e: unknown) => e.type === 'assistant_chunk')).toBe(true);
+        expect(events.some((e: any) => e.type === 'assistant_chunk')).toBe(true);
         expect(events[events.length - 1].type).toBe('assistant_end');
       });
     });
 
     it('流式响应应包含完整文本', () => {
-      const backend = new MockTuiBackend() as unknown;
+      const backend = new MockTuiBackend() as any;
       const messages = [{ role: 'user', content: '测试消息' }];
       const stream = backend.sendChat(messages);
 
       let fullText = '';
       const iterator = stream[Symbol.asyncIterator]();
-      const collect = (): Promise<unknown> => {
-        return iterator.next().then((result: unknown) => {
+      const collect = (): Promise<any> => {
+        return iterator.next().then((result: any) => {
           if (!result.done) {
             if (result.value.type === 'assistant_chunk') {
               fullText += result.value.content || '';
@@ -419,14 +419,14 @@ describe('E2E: TUI 终端界面', () => {
     });
 
     it('saveMessage 应保存到历史记录', () => {
-      const backend = new MockTuiBackend() as unknown;
+      const backend = new MockTuiBackend() as any;
       return backend.createSession('测试')
-        .then((s: unknown) => {
+        .then((s: any) => {
           backend.saveMessage(s.id, 'user', '用户消息');
           backend.saveMessage(s.id, 'assistant', '助手回复');
           return backend.loadHistory(s.id);
         })
-        .then((history: unknown[]) => {
+        .then((history: any[]) => {
           expect(history.length).toBe(2);
           expect(history[0].role).toBe('user');
           expect(history[1].role).toBe('assistant');

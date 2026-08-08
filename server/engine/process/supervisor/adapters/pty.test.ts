@@ -12,11 +12,11 @@ const { spawnMock, ptyKillMock, signalProcessTreeMock } = vi.hoisted(() => ({
 }));
 
 vi.mock("@lydell/node-pty", () => ({
-  spawn: (...args: unknown[]) => spawnMock(...args),
+  spawn: (...args: any[]) => spawnMock(...args),
 }));
 
 vi.mock("../../kill-tree.js", () => ({
-  signalProcessTree: (...args: unknown[]) => signalProcessTreeMock(...args),
+  signalProcessTree: (...args: any[]) => signalProcessTreeMock(...args),
 }));
 
 function createStubPty(pid = 1234) {
@@ -59,7 +59,7 @@ function expectSpawnArgs() {
   return firstSpawnCall()[1] as string[];
 }
 
-function firstSpawnCall(): unknown[] {
+function firstSpawnCall(): any[] {
   const [call] = spawnMock.mock.calls;
   if (!call) {
     throw new Error("expected spawn call");

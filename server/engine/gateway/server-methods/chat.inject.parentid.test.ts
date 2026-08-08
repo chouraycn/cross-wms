@@ -31,10 +31,10 @@ async function appendHelloAndRequireId(transcriptPath: string): Promise<string> 
   return messageId;
 }
 
-function readLastTranscriptRecord(transcriptPath: string): Record<string, unknown> {
+function readLastTranscriptRecord(transcriptPath: string): Record<string, any> {
   const lines = readTranscriptLines(transcriptPath);
   expect(lines.length).toBeGreaterThanOrEqual(2);
-  return JSON.parse(lines.at(-1) as string) as Record<string, unknown>;
+  return JSON.parse(lines.at(-1) as string) as Record<string, any>;
 }
 
 // Guardrail: Gateway-injected assistant transcript messages must attach to the
@@ -98,7 +98,7 @@ describe("gateway chat.inject transcript writes", () => {
       sessionId: "sess-redact",
     });
     const fakeApiKey = "sk-proj-FAKEKEYFORTESTINGONLY1234567890";
-    const updates: Array<{ message?: unknown; sessionKey?: string; agentId?: string }> = [];
+    const updates: Array<{ message?: any; sessionKey?: string; agentId?: string }> = [];
     const unsubscribe = onSessionTranscriptUpdate((update) => updates.push(update));
 
     try {
@@ -116,7 +116,7 @@ describe("gateway chat.inject transcript writes", () => {
       expect(updates[0]).toMatchObject({ sessionKey: "global", agentId: "work" });
 
       const lines = readTranscriptLines(transcriptPath);
-      const last = JSON.parse(lines.at(-1) as string) as { message?: unknown };
+      const last = JSON.parse(lines.at(-1) as string) as { message?: any };
       expect(JSON.stringify(last.message)).not.toContain(fakeApiKey);
       expect(updates[0]?.message).toEqual(last.message);
       expect(JSON.stringify(updates[0]?.message)).not.toContain(fakeApiKey);

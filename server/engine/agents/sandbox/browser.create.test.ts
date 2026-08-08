@@ -17,7 +17,7 @@ import { collectDockerFlagValues, findDockerArgsCall } from "./test-args.js";
 import type { SandboxConfig } from "./types.js";
 import { SANDBOX_MOUNT_FORMAT_VERSION } from "./workspace-mounts.js";
 
-let BROWSER_BRIDGES: Map<string, unknown>;
+let BROWSER_BRIDGES: Map<string, any>;
 let ensureSandboxBrowser: typeof import("./browser.js").ensureSandboxBrowser;
 let resetNoVncObserverTokensForTests: typeof import("./novnc-auth.js").resetNoVncObserverTokensForTests;
 
@@ -75,7 +75,7 @@ vi.mock("../../plugin-sdk/browser-profiles.js", () => ({
   DEFAULT_OPENCLAW_BROWSER_COLOR: "#FF4500",
   DEFAULT_OPENCLAW_BROWSER_PROFILE_NAME: "openclaw",
   resolveProfile: (
-    resolved: { cdpHost: string; cdpIsLoopback: boolean; profiles?: Record<string, unknown> },
+    resolved: { cdpHost: string; cdpIsLoopback: boolean; profiles?: Record<string, any> },
     profileName: string,
   ) => {
     const profile = resolved.profiles?.[profileName] as {
@@ -178,7 +178,7 @@ function requireValue<T>(value: T | null | undefined, label: string): T {
   return value;
 }
 
-function latestBridgeResolved(): Record<string, unknown> {
+function latestBridgeResolved(): Record<string, any> {
   const params = bridgeMocks.startBrowserBridgeServer.mock.calls.at(-1)?.[0];
   if (!params || typeof params !== "object") {
     throw new Error("expected browser bridge start params");

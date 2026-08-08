@@ -13,8 +13,8 @@ import { logger } from './logger.js';
 const WORKER_COUNT = Math.min(Math.max(os.cpus().length > 4 ? 2 : 1, 2), 4);
 
 interface PendingRequest {
-  resolve: (value: unknown) => void;
-  reject: (reason: unknown) => void;
+  resolve: (value: any) => void;
+  reject: (reason: any) => void;
   timer: ReturnType<typeof setTimeout>;
 }
 
@@ -22,7 +22,7 @@ interface WorkerWrapper {
   worker: Worker;
   pending: Map<number, PendingRequest>;
   nextId: number;
-  queue: Array<{ msg: Record<string, unknown>; resolve: (v: unknown) => void; reject: (r: unknown) => void }>;
+  queue: Array<{ msg: Record<string, any>; resolve: (v: any) => void; reject: (r: any) => void }>;
   busy: boolean;
 }
 
@@ -56,7 +56,7 @@ export class DbWorkerPool {
         busy: false,
       };
 
-      worker.on('message', (msg: { id: number; result: unknown; error: string | null }) => {
+      worker.on('message', (msg: { id: number; result: any; error: string | null }) => {
         const pending = wrapper.pending.get(msg.id);
         if (pending) {
           clearTimeout(pending.timer);
@@ -82,7 +82,7 @@ export class DbWorkerPool {
   }
 
   /** 分配请求到下一个 Worker（轮询） */
-  private dispatch(msg: Record<string, unknown>): Promise<unknown> {
+  private dispatch(msg: Record<string, any>): Promise<any> {
     return new Promise((resolve, reject) => {
       const wrapper = this.workers[this.workerIndex];
       this.workerIndex = (this.workerIndex + 1) % this.workers.length;
@@ -125,17 +125,17 @@ export class DbWorkerPool {
   }
 
   /** 异步执行 prepare().all() */
-  async all<T = unknown>(sql: string, ...params: unknown[]): Promise<T[]> {
+  async all<T = unknown>(sql: string, ...params: any[]): Promise<T[]> {
     return this.dispatch({ type: 'prepare', sql, params, method: 'all' }) as Promise<T[]>;
   }
 
   /** 异步执行 prepare().get() */
-  async get<T = unknown>(sql: string, ...params: unknown[]): Promise<T | undefined> {
+  async get<T = unknown>(sql: string, ...params: any[]): Promise<T | undefined> {
     return this.dispatch({ type: 'prepare', sql, params, method: 'get' }) as Promise<T | undefined>;
   }
 
   /** 异步执行 prepare().run() */
-  async run(sql: string, ...params: unknown[]): Promise<unknown> {
+  async run(sql: string, ...params: any[]): Promise<any> {
     return this.dispatch({ type: 'prepare', sql, params, method: 'run' });
   }
 
@@ -145,12 +145,12 @@ export class DbWorkerPool {
   }
 
   /** 异步执行 pragma() */
-  async pragma(sql: string): Promise<unknown> {
+  async pragma(sql: string): Promise<any> {
     return this.dispatch({ type: 'pragma', sql });
   }
 
   /** 异步事务 */
-  async transaction(ops: Array<{ sql: string; params?: unknown[] }>): Promise<void> {
+  async transaction(ops: Array<{ sql: string; params?: any[] }>): Promise<void> {
     return this.dispatch({ type: 'transaction', params: ops }) as Promise<void>;
   }
 

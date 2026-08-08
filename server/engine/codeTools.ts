@@ -153,7 +153,7 @@ interface FileSearchArgs {
 /**
  * 执行代码
  */
-async function handleCodeExecute(args: Record<string, unknown>): Promise<string> {
+async function handleCodeExecute(args: Record<string, any>): Promise<string> {
   const { language, code, timeout = 10000, workingDir } = args as unknown as CodeExecArgs;
 
   try {
@@ -187,7 +187,7 @@ async function handleCodeExecute(args: Record<string, unknown>): Promise<string>
       exitCode: 0,
       durationMs: 0, // execAsync 不返回时间，简化
     });
-  } catch (e: unknown) {
+  } catch (e: any) {
     const err = e as { killed?: boolean; signal?: string; message?: string; stdout?: string; stderr?: string; code?: number };
     const isTimeout = err.killed || err.signal === 'SIGTERM';
     return JSON.stringify({
@@ -204,7 +204,7 @@ async function handleCodeExecute(args: Record<string, unknown>): Promise<string>
 /**
  * 进程管理
  */
-async function handleProcessManage(args: Record<string, unknown>): Promise<string> {
+async function handleProcessManage(args: Record<string, any>): Promise<string> {
   const { action, pid, signal = 'SIGTERM', filter } = args as unknown as ProcessManageArgs;
 
   try {
@@ -268,7 +268,7 @@ async function handleProcessManage(args: Record<string, unknown>): Promise<strin
       default:
         return JSON.stringify({ success: false, error: `未知操作: ${action}` });
     }
-  } catch (e: unknown) {
+  } catch (e: any) {
     return JSON.stringify({ success: false, error: e instanceof Error ? e.message : String(e) });
   }
 }
@@ -276,7 +276,7 @@ async function handleProcessManage(args: Record<string, unknown>): Promise<strin
 /**
  * 文件搜索
  */
-async function handleFileSearch(args: Record<string, unknown>): Promise<string> {
+async function handleFileSearch(args: Record<string, any>): Promise<string> {
   const { action, path: searchPath, pattern, includeContent = false, maxResults = 50 } = args as unknown as FileSearchArgs;
 
   try {
@@ -320,7 +320,7 @@ async function handleFileSearch(args: Record<string, unknown>): Promise<string> 
       default:
         return JSON.stringify({ success: false, error: `未知搜索类型: ${action}` });
     }
-  } catch (e: unknown) {
+  } catch (e: any) {
     return JSON.stringify({ success: false, error: e instanceof Error ? e.message : String(e) });
   }
 }

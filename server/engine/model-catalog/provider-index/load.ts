@@ -2,7 +2,7 @@ import { normalizeProviderIndex } from './normalize';
 import type { ProviderIndex } from './types';
 import { logger } from '../../../logger.js';
 
-const BUILTIN_PROVIDER_INDEX: unknown = {
+const BUILTIN_PROVIDER_INDEX: any = {
   version: 1,
   providers: {
     anthropic: {
@@ -129,7 +129,7 @@ const BUILTIN_PROVIDER_INDEX: unknown = {
   },
 };
 
-export function loadProviderIndex(source: unknown = BUILTIN_PROVIDER_INDEX): ProviderIndex {
+export function loadProviderIndex(source: any = BUILTIN_PROVIDER_INDEX): ProviderIndex {
   const normalized = normalizeProviderIndex(source);
   if (normalized) {
     logger.debug(`[ProviderIndex] 成功加载索引，包含 ${Object.keys(normalized.providers).length} 个 provider`);

@@ -7,7 +7,7 @@ export type ChannelsOptions = {
   json?: boolean;
 };
 
-function formatJsonOutput(data: unknown): string {
+function formatJsonOutput(data: any): string {
   return JSON.stringify(data, null, 2);
 }
 
@@ -283,7 +283,7 @@ export function registerChannelsCommand(program: Command): void {
     .option("--json", "JSON 输出格式")
     .action(async (name: string, options: ChannelsOptions & { content?: string; type?: string }) => {
       const cm = getChannelManager();
-      const success = await cm.sendMessage(name, options.content || "测试消息", options.type as unknown);
+      const success = await cm.sendMessage(name, options.content || "测试消息", options.type as any);
 
       if (options.json) {
         logger.info(formatJsonOutput({ name, success, content: options.content }));

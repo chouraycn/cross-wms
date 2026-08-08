@@ -7,10 +7,10 @@
  */
 
 // 原 re-export from ./session-archive.fs.js
-export const archiveSessionTranscriptsDetailed: unknown = undefined;
+export const archiveSessionTranscriptsDetailed: any = undefined;
 // 原 re-export from ./session-archive.fs.js
-export const archiveSessionTranscripts: unknown = undefined;
+export const archiveSessionTranscripts: any = undefined;
 // 原 re-export from ./session-archive.fs.js
-export const cleanupArchivedSessionTranscripts: unknown = undefined;
+export const cleanupArchivedSessionTranscripts: any = undefined;
 // 原 re-export from ./session-archive.fs.js
-export const resolveStableSessionEndTranscript: unknown = undefined;
+export const resolveStableSessionEndTranscript: any = undefined;

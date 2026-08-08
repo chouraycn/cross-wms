@@ -1,1 +1,1 @@
-export const resolvePolicy = (..._args: unknown[]): unknown => undefined;
+export const resolvePolicy = (..._args: any[]): any => undefined;

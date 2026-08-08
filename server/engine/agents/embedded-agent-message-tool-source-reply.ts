@@ -6,12 +6,12 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function hasMessagingDeliveryReceipt(..._args: unknown[]): unknown {
+export function hasMessagingDeliveryReceipt(..._args: any[]): any {
   return false;
 }
-export function isDeliveredMessagingToolResult(..._args: unknown[]): unknown {
+export function isDeliveredMessagingToolResult(..._args: any[]): any {
   return false;
 }
-export function isDeliveredMessageToolOnlySourceReplyResult(..._args: unknown[]): unknown {
+export function isDeliveredMessageToolOnlySourceReplyResult(..._args: any[]): any {
   return false;
 }

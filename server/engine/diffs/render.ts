@@ -33,7 +33,7 @@ function escapeCssString(value: string): string {
   return value.replaceAll("\\", "\\\\").replaceAll('"', '\\"');
 }
 
-function escapeJsonScript(value: unknown): string {
+function escapeJsonScript(value: any): string {
   return JSON.stringify(value).replaceAll("<", "\\u003c");
 }
 

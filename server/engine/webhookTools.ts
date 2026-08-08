@@ -84,7 +84,7 @@ const webhookStopDef: ToolDefinition = {
 
 // ===================== Tool Handlers =====================
 
-async function handleWebhookListen(args: Record<string, unknown>): Promise<string> {
+async function handleWebhookListen(args: Record<string, any>): Promise<string> {
   try {
     const port = typeof args.port === 'number' ? args.port : 0;
     const path = typeof args.path === 'string' ? args.path : '/webhook';
@@ -110,7 +110,7 @@ async function handleWebhookListen(args: Record<string, unknown>): Promise<strin
   }
 }
 
-async function handleWebhookPoll(args: Record<string, unknown>): Promise<string> {
+async function handleWebhookPoll(args: Record<string, any>): Promise<string> {
   try {
     const id = String(args.id || '').trim();
     if (!id) {
@@ -139,7 +139,7 @@ async function handleWebhookPoll(args: Record<string, unknown>): Promise<string>
   }
 }
 
-async function handleWebhookStop(args: Record<string, unknown>): Promise<string> {
+async function handleWebhookStop(args: Record<string, any>): Promise<string> {
   try {
     const id = String(args.id || '').trim();
     if (!id) {

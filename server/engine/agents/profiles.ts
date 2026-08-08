@@ -105,7 +105,7 @@ function ensureAuthProfileStoreForLocalUpdate(agentDir?: string): AuthProfileSto
 }
 
 function findProviderAuthStateKey(
-  entries: Record<string, unknown> | undefined,
+  entries: Record<string, any> | undefined,
   providerKey: string,
 ): string | undefined {
   if (!entries) return undefined;

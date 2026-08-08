@@ -30,7 +30,7 @@ vi.mock("../infra/shell-env.js", async () => {
 });
 
 type ToolWithExecute = {
-  execute: (toolCallId: string, args: unknown, signal?: AbortSignal) => Promise<unknown>;
+  execute: (toolCallId: string, args: any, signal?: AbortSignal) => Promise<any>;
 };
 type UnsafeMountedSandboxHarness = Parameters<typeof withUnsafeMountedSandboxHarness>[0] extends (
   harness: infer THarness,
@@ -135,7 +135,7 @@ describe("tools.fs.workspaceOnly", () => {
       ).rejects.toThrow(/Path escapes sandbox root/i);
       const missingOwnedFile = await fs
         .stat(path.join(agentRoot, "owned.txt"))
-        .catch((error: unknown) => error);
+        .catch((error: any) => error);
       expect((missingOwnedFile as NodeJS.ErrnoException).code).toBe("ENOENT");
 
       await expect(
@@ -161,7 +161,7 @@ describe("tools.fs.workspaceOnly", () => {
         ).rejects.toThrow(/Path escapes sandbox root/i);
         const missingOwnedFile = await fs
           .stat(path.join(agentRoot, "owned.txt"))
-          .catch((error: unknown) => error);
+          .catch((error: any) => error);
         expect((missingOwnedFile as NodeJS.ErrnoException).code).toBe("ENOENT");
 
         await expect(
@@ -239,7 +239,7 @@ describe("tools.fs.workspaceOnly", () => {
       );
       const missingPatchedFile = await fs
         .stat(path.join(agentRoot, "pwned.txt"))
-        .catch((error: unknown) => error);
+        .catch((error: any) => error);
       expect((missingPatchedFile as NodeJS.ErrnoException).code).toBe("ENOENT");
     });
   });

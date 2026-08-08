@@ -13,10 +13,10 @@ const {
   resolveSessionAgentIdMock,
   resolveAgentIdFromSessionKeyMock,
 } = vi.hoisted(() => ({
-  buildWorkspaceSkillSnapshotMock: vi.fn((..._args: unknown[]) => ({
+  buildWorkspaceSkillSnapshotMock: vi.fn((..._args: any[]) => ({
     prompt: "",
-    skills: [] as unknown[],
-    resolvedSkills: [] as unknown[],
+    skills: [] as any[],
+    resolvedSkills: [] as any[],
   })),
   ensureSkillsWatcherMock: vi.fn(),
   getSkillsSnapshotVersionMock: vi.fn(() => 0),

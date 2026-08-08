@@ -44,10 +44,10 @@ vi.mock("../server-session-key.js", async () => {
 });
 
 function createResponder() {
-  const calls: Array<{ ok: boolean; payload?: unknown; error?: unknown }> = [];
+  const calls: Array<{ ok: boolean; payload?: any; error?: any }> = [];
   return {
     calls,
-    respond: (ok: boolean, payload?: unknown, error?: unknown) => {
+    respond: (ok: boolean, payload?: any, error?: any) => {
       calls.push({ ok, payload, error });
     },
   };
@@ -55,12 +55,12 @@ function createResponder() {
 
 type ArtifactMethod = "artifacts.list" | "artifacts.get" | "artifacts.download";
 type ResponderCalls = ReturnType<typeof createResponder>["calls"];
-type ArtifactListPayload = { artifacts?: Array<Record<string, unknown>> };
+type ArtifactListPayload = { artifacts?: Array<Record<string, any>> };
 
 async function invokeArtifactHandler(
   method: ArtifactMethod,
-  params: Record<string, unknown>,
-  options: { id?: string; context?: unknown } = {},
+  params: Record<string, any>,
+  options: { id?: string; context?: any } = {},
 ) {
   const responder = createResponder();
   await artifactsHandlers[method]?.({
@@ -75,31 +75,31 @@ async function invokeArtifactHandler(
 }
 
 async function listArtifacts(
-  params: Record<string, unknown>,
-  options: { id?: string; context?: unknown } = {},
+  params: Record<string, any>,
+  options: { id?: string; context?: any } = {},
 ) {
   return await invokeArtifactHandler("artifacts.list", params, options);
 }
 
 async function getArtifact(
-  params: Record<string, unknown>,
-  options: { id?: string; context?: unknown } = {},
+  params: Record<string, any>,
+  options: { id?: string; context?: any } = {},
 ) {
   return await invokeArtifactHandler("artifacts.get", params, options);
 }
 
 async function downloadArtifact(
-  params: Record<string, unknown>,
-  options: { id?: string; context?: unknown } = {},
+  params: Record<string, any>,
+  options: { id?: string; context?: any } = {},
 ) {
   return await invokeArtifactHandler("artifacts.download", params, options);
 }
 
-function runtimeContext(config: Record<string, unknown>) {
+function runtimeContext(config: Record<string, any>) {
   return { getRuntimeConfig: () => config };
 }
 
-function expectOkPayload(calls: ResponderCalls): unknown {
+function expectOkPayload(calls: ResponderCalls): any {
   expect(calls[0]?.ok).toBe(true);
   return calls[0]?.payload;
 }
@@ -108,14 +108,14 @@ function expectArtifactList(calls: ResponderCalls): ArtifactListPayload {
   return expectOkPayload(calls) as ArtifactListPayload;
 }
 
-function expectFirstArtifact(calls: ResponderCalls): Record<string, unknown> | undefined {
+function expectFirstArtifact(calls: ResponderCalls): Record<string, any> | undefined {
   const payload = expectArtifactList(calls);
   return payload.artifacts?.[0];
 }
 
-function expectErrorDetails(calls: ResponderCalls): Record<string, unknown> | undefined {
+function expectErrorDetails(calls: ResponderCalls): Record<string, any> | undefined {
   expect(calls[0]?.ok).toBe(false);
-  const error = calls[0]?.error as { details?: Record<string, unknown> };
+  const error = calls[0]?.error as { details?: Record<string, any> };
   return error.details;
 }
 
@@ -178,14 +178,14 @@ function resultImageMessage() {
   };
 }
 
-function requireNonEmptyString(value: unknown, message: string): string {
+function requireNonEmptyString(value: any, message: string): string {
   if (typeof value !== "string" || value.length === 0) {
     throw new Error(message);
   }
   return value;
 }
 
-function expectFields(value: unknown, expected: Record<string, unknown>): void {
+function expectFields(value: any, expected: Record<string, any>): void {
   expectRecordFields(value, "fields", expected);
 }
 
@@ -215,7 +215,7 @@ describe("artifacts RPC handlers", () => {
     mockedMessages([resultImageMessage()]);
   });
 
-  function mockedMessages(messages: unknown[]) {
+  function mockedMessages(messages: any[]) {
     hoisted.visitSessionMessagesAsync.mockImplementation(async (_scope, visit) => {
       messages.forEach((message, index) => visit(message, index + 1));
       return messages.length;
@@ -338,7 +338,7 @@ describe("artifacts RPC handlers", () => {
       { sessionKey: "agent:main:main", artifactId: artifactIdString },
       { id: "2" },
     );
-    const getPayload = expectOkPayload(get.calls) as { artifact?: Record<string, unknown> };
+    const getPayload = expectOkPayload(get.calls) as { artifact?: Record<string, any> };
     expectFields(getPayload.artifact, { id: artifactId });
     expectFields(getPayload.artifact?.download, { mode: "bytes" });
 
@@ -347,7 +347,7 @@ describe("artifacts RPC handlers", () => {
       { id: "3" },
     );
     const downloadPayload = expectOkPayload(download.calls) as {
-      artifact?: Record<string, unknown>;
+      artifact?: Record<string, any>;
     };
     expectFields(downloadPayload, {
       encoding: "base64",
@@ -421,7 +421,7 @@ describe("artifacts RPC handlers", () => {
       artifactId: secondArtifactId,
     });
     const downloadPayload = expectOkPayload(download.calls) as {
-      artifact?: Record<string, unknown>;
+      artifact?: Record<string, any>;
       data?: string;
     };
 
@@ -508,7 +508,7 @@ describe("artifacts RPC handlers", () => {
     expect(hoisted.getTaskSessionLookupByIdForStatus).toHaveBeenCalledWith("task-1");
     expect(hoisted.resolveSessionKeyForRun).not.toHaveBeenCalled();
     expect(hoisted.loadSessionEntry).toHaveBeenCalledWith("agent:main:main");
-    const listPayload = list.calls[0]?.payload as { artifacts?: Array<Record<string, unknown>> };
+    const listPayload = list.calls[0]?.payload as { artifacts?: Array<Record<string, any>> };
     expect(listPayload.artifacts).toHaveLength(1);
     expectFields(listPayload.artifacts?.[0], {
       taskId: "task-1",
@@ -522,7 +522,7 @@ describe("artifacts RPC handlers", () => {
       { taskId: "task-1", artifactId: artifactIdString },
       { id: "task-get" },
     );
-    const getPayload = expectOkPayload(get.calls) as { artifact?: Record<string, unknown> };
+    const getPayload = expectOkPayload(get.calls) as { artifact?: Record<string, any> };
     expectFields(getPayload.artifact, {
       id: artifactId,
       taskId: "task-1",
@@ -534,7 +534,7 @@ describe("artifacts RPC handlers", () => {
       { id: "task-download" },
     );
     const downloadPayload = expectOkPayload(download.calls) as {
-      artifact?: Record<string, unknown>;
+      artifact?: Record<string, any>;
     };
     expectFields(downloadPayload, {
       encoding: "base64",
@@ -809,7 +809,7 @@ describe("artifacts RPC handlers", () => {
       sessionKey: "agent:main:main",
       artifactId,
     });
-    const downloadPayload = expectOkPayload(download.calls) as Record<string, unknown>;
+    const downloadPayload = expectOkPayload(download.calls) as Record<string, any>;
     expectFields(downloadPayload, {
       encoding: "base64",
       data: "JVBERi0=",
@@ -870,7 +870,7 @@ describe("artifacts RPC handlers", () => {
       sessionKey: "agent:main:main",
       artifactId,
     });
-    const downloadPayload = expectOkPayload(download.calls) as Record<string, unknown>;
+    const downloadPayload = expectOkPayload(download.calls) as Record<string, any>;
     expectFields(downloadPayload, {
       encoding: "base64",
       data: "R0lGOD==",

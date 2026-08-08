@@ -159,7 +159,7 @@ function createOutput(model: Model<"openai-completions">): AssistantMessage {
   };
 }
 
-function formatOpenAIError(error: unknown): string {
+function formatOpenAIError(error: any): string {
   if (error instanceof Error) {
     return error.message;
   }
@@ -227,10 +227,10 @@ export function buildOpenAIChatMessages(
   model: Model<"openai-completions">,
   context: Context,
   options?: OpenAICompletionsOptions,
-): Array<Record<string, unknown>> {
+): Array<Record<string, any>> {
   const modelInput = (model as unknown as { input?: string[] }).input || [];
   const transformedMessages = transformMessages(context.messages, model);
-  const result: Array<Record<string, unknown>> = [];
+  const result: Array<Record<string, any>> = [];
 
   if (context.systemPrompt) {
     result.push({
@@ -257,7 +257,7 @@ export function buildOpenAIChatMessages(
       }
     } else if (msg.role === "assistant") {
       const contentParts: Array<{ type: string; text?: string }> = [];
-      const toolCalls: Array<Record<string, unknown>> = [];
+      const toolCalls: Array<Record<string, any>> = [];
 
       for (const block of msg.content) {
         if (block.type === "text") {
@@ -280,7 +280,7 @@ export function buildOpenAIChatMessages(
         }
       }
 
-      const assistantMsg: Record<string, unknown> = { role: "assistant" };
+      const assistantMsg: Record<string, any> = { role: "assistant" };
       if (contentParts.length > 0) {
         assistantMsg.content = contentParts.length === 1 ? contentParts[0].text : contentParts;
       }
@@ -306,13 +306,13 @@ export function buildOpenAIChatMessages(
   return result;
 }
 
-export function buildOpenAITools(tools: Tool[]): Array<{ type: "function"; function: { name: string; description: string; parameters: Record<string, unknown> } }> {
+export function buildOpenAITools(tools: Tool[]): Array<{ type: "function"; function: { name: string; description: string; parameters: Record<string, any> } }> {
   return tools.map((tool) => ({
     type: "function",
     function: {
       name: tool.name,
       description: tool.description,
-      parameters: tool.parameters as Record<string, unknown>,
+      parameters: tool.parameters as Record<string, any>,
     },
   }));
 }

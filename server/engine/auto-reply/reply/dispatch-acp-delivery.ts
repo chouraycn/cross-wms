@@ -296,7 +296,7 @@ export function createAcpDispatchDeliveryCoordinator(params: {
     if (params.suppressReplyLifecycle) {
       return;
     }
-    void Promise.resolve(params.onReplyStart?.()).catch((error: unknown) => {
+    void Promise.resolve(params.onReplyStart?.()).catch((error: any) => {
       logVerbose(
         `dispatch-acp: reply lifecycle start failed: ${error instanceof Error ? error.message : String(error)}`,
       );

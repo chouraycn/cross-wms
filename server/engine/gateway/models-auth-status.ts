@@ -10,12 +10,12 @@ export type ModelAuthStatusResult = unknown;
 
 export type ModelAuthLogoutResult = unknown;
 
-export function invalidateModelAuthStatusCache(...args: unknown[]): unknown {
+export function invalidateModelAuthStatusCache(...args: any[]): any {
   return undefined;
 }
 
-export function aggregateOAuthStatus(...args: unknown[]): unknown {
+export function aggregateOAuthStatus(...args: any[]): any {
   return undefined;
 }
 
-export const modelsAuthStatusHandlers: (...args: unknown[]) => unknown = undefined as unknown as (...args: unknown[]) => unknown;
+export const modelsAuthStatusHandlers: (...args: any[]) => unknown = undefined as unknown as (...args: any[]) => unknown;

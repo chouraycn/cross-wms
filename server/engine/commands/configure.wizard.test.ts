@@ -19,7 +19,7 @@ const mocks = vi.hoisted(() => {
     writeConfigFile,
     replaceConfigFile: vi.fn(
       async (params: {
-        nextConfig: unknown;
+        nextConfig: any;
         writeOptions?: { assertConfigPathForWrite?: () => void };
       }) => {
         params.writeOptions?.assertConfigPathForWrite?.();
@@ -185,11 +185,11 @@ function createRuntime() {
   };
 }
 
-function createSearchProviderOption(overrides: Record<string, unknown>) {
+function createSearchProviderOption(overrides: Record<string, any>) {
   return overrides;
 }
 
-function createEnabledWebSearchConfig(provider: string, pluginEntry: Record<string, unknown>) {
+function createEnabledWebSearchConfig(provider: string, pluginEntry: Record<string, any>) {
   return (cfg: OpenClawConfig) => ({
     ...cfg,
     tools: {
@@ -233,18 +233,18 @@ function setupBaseWizardState(config: OpenClawConfig = {}) {
   });
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object") {
     throw new Error(`expected ${label}`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 function mockCallArg(
-  mock: { mock: { calls: ReadonlyArray<ReadonlyArray<unknown>> } },
+  mock: { mock: { calls: ReadonlyArray<ReadonlyArray<any>> } },
   label: string,
   callIndex = 0,
-): unknown {
+): any {
   const call = mock.mock.calls[callIndex];
   if (!call) {
     throw new Error(`Expected ${label} call ${callIndex}`);
@@ -259,17 +259,17 @@ function requireWriteConfig(callIndex = 0) {
   );
 }
 
-function getGateway(config: Record<string, unknown>) {
+function getGateway(config: Record<string, any>) {
   return requireRecord(config.gateway, "gateway config");
 }
 
-function getWebSearch(config: Record<string, unknown>) {
+function getWebSearch(config: Record<string, any>) {
   const tools = requireRecord(config.tools, "tools config");
   const web = requireRecord(tools.web, "web config");
   return requireRecord(web.search, "web search config");
 }
 
-function getPluginEntry(config: Record<string, unknown>, pluginId: string) {
+function getPluginEntry(config: Record<string, any>, pluginId: string) {
   const plugins = requireRecord(config.plugins, "plugins config");
   const entries = requireRecord(plugins.entries, "plugin entries");
   return requireRecord(entries[pluginId], `${pluginId} entry`);
@@ -555,7 +555,7 @@ describe("runConfigureWizard", () => {
 
     await runConfigureWizard({ command: "configure", sections: ["channels"] }, createRuntime());
 
-    const setupChannelsCall = mocks.setupChannels.mock.calls[0] as Array<unknown> | undefined;
+    const setupChannelsCall = mocks.setupChannels.mock.calls[0] as Array<any> | undefined;
     const setupChannelsConfig = requireRecord(setupChannelsCall?.[0], "setupChannels config");
     expect(setupChannelsConfig.gateway).toBeUndefined();
     const setupChannelsOptions = requireRecord(setupChannelsCall?.[3], "setupChannels options");
@@ -684,7 +684,7 @@ describe("runConfigureWizard", () => {
     const finalHashAfterWrite = "hash-after-wizard-write";
 
     mocks.replaceConfigFile.mockImplementation(
-      async (params: { nextConfig: unknown; baseHash?: string }) => {
+      async (params: { nextConfig: any; baseHash?: string }) => {
         callCount++;
         if (callCount === 1) {
           // First call: simulate plugin mutating config during promptAuthConfig
@@ -754,7 +754,7 @@ describe("runConfigureWizard", () => {
 
     // Verify plugin-written nested config survived the retry merge.
     const retryCall = mockCallArg(mocks.replaceConfigFile, "replaceConfigFile", 1) as {
-      nextConfig: Record<string, unknown>;
+      nextConfig: Record<string, any>;
     };
     const agents = requireRecord(retryCall.nextConfig.agents, "agents config");
     const defaults = requireRecord(agents.defaults, "agent defaults");
@@ -780,7 +780,7 @@ describe("runConfigureWizard", () => {
     });
     mocks.replaceConfigFile.mockImplementation(
       async (params: {
-        nextConfig: unknown;
+        nextConfig: any;
         writeOptions?: { assertConfigPathForWrite?: () => void };
       }) => {
         params.writeOptions?.assertConfigPathForWrite?.();

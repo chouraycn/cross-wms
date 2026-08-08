@@ -2,10 +2,10 @@
 
 export type ConnectAuthState = unknown;
 
-export async function resolveConnectAuthState(...args: unknown[]): Promise<unknown> {
+export async function resolveConnectAuthState(...args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
 
-export async function resolveConnectAuthDecision(...args: unknown[]): Promise<unknown> {
+export async function resolveConnectAuthDecision(...args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }

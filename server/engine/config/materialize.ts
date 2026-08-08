@@ -20,7 +20,7 @@ export interface MaterializeOptions {
   /** 物化模式，默认为 'load' */
   mode?: MaterializationMode;
   /** 自定义环境变量覆盖映射（覆盖默认的 env-vars 绑定） */
-  envOverrides?: Record<string, unknown>;
+  envOverrides?: Record<string, any>;
   /** 是否跳过环境变量覆盖 */
   skipEnvVars?: boolean;
 }
@@ -73,8 +73,8 @@ function extractSchemaDefaults<T>(schema: z.ZodType<T>): Partial<T> | null {
  * env-vars.ts 返回的是扁平的 dot-path → value 映射，
  * 需要转换为嵌套对象才能用 applyMergePatch 合并。
  */
-function envOverridesToPatch(envOverrides: Record<string, unknown>): Record<string, unknown> {
-  const patch: Record<string, unknown> = {};
+function envOverridesToPatch(envOverrides: Record<string, any>): Record<string, any> {
+  const patch: Record<string, any> = {};
   for (const [dotPath, value] of Object.entries(envOverrides)) {
     if (value === undefined || value === null) {
       continue;
@@ -85,9 +85,9 @@ function envOverridesToPatch(envOverrides: Record<string, unknown>): Record<stri
 }
 
 /** 按 dot-path 在对象中设置嵌套值 */
-function setNestedValue(obj: Record<string, unknown>, dotPath: string, value: unknown): void {
+function setNestedValue(obj: Record<string, any>, dotPath: string, value: any): void {
   const segments = dotPath.split('.');
-  let current: Record<string, unknown> = obj;
+  let current: Record<string, any> = obj;
   for (let i = 0; i < segments.length - 1; i++) {
     const segment = segments[i];
     if (current[segment] === undefined || current[segment] === null) {
@@ -96,7 +96,7 @@ function setNestedValue(obj: Record<string, unknown>, dotPath: string, value: un
       // 遇到非对象值，覆盖为对象
       current[segment] = {};
     }
-    current = current[segment] as Record<string, unknown>;
+    current = current[segment] as Record<string, any>;
   }
   current[segments[segments.length - 1]] = value;
 }
@@ -116,7 +116,7 @@ function setNestedValue(obj: Record<string, unknown>, dotPath: string, value: un
  * @returns 物化结果，包含最终配置和降级信息
  */
 export function materializeConfig<T>(
-  input: unknown,
+  input: any,
   schema: z.ZodType<T>,
   options: MaterializeOptions = {},
 ): MaterializeResult<T> {
@@ -126,7 +126,7 @@ export function materializeConfig<T>(
   let degradationReason: string | undefined;
 
   // 1) 提取默认值
-  let base: unknown = {};
+  let base: any = {};
   if (profile.includeDefaults) {
     const defaults = extractSchemaDefaults(schema);
     if (defaults) {
@@ -182,11 +182,11 @@ export function materializeConfig<T>(
  *
  * 封装 env-vars.ts 的 resolveEnvVars，便于测试时 mock。
  */
-function resolveEnvVarOverrides(): Record<string, unknown> {
+function resolveEnvVarOverrides(): Record<string, any> {
   try {
     const envVars = resolveEnvVars();
-    // resolveEnvVars 返回 Record<string, string | undefined>，转换为 Record<string, unknown>
-    const result: Record<string, unknown> = {};
+    // resolveEnvVars 返回 Record<string, string | undefined>，转换为 Record<string, any>
+    const result: Record<string, any> = {};
     for (const [key, value] of Object.entries(envVars)) {
       if (value !== undefined) {
         result[key] = value;
@@ -215,7 +215,7 @@ export class MaterializeError extends Error {
  * 适用于不需要关注降级状态的场景。
  */
 export function materializeConfigOrThrow<T>(
-  input: unknown,
+  input: any,
   schema: z.ZodType<T>,
   options?: MaterializeOptions,
 ): T {

@@ -81,7 +81,7 @@ export interface AuditRecord {
   /** 用户 ID（可选） */
   userId?: string;
   /** 调用参数（脱敏后） */
-  params: Record<string, unknown>;
+  params: Record<string, any>;
   /** 执行结果 */
   result: 'success' | 'failure' | 'blocked';
   /** 错误信息（失败时） */
@@ -825,7 +825,7 @@ export class SkillSecurityScanner {
     this.ensureAuditTable();
     try {
       const conditions: string[] = [];
-      const params: unknown[] = [];
+      const params: any[] = [];
 
       if (options.skillId) {
         conditions.push('skill_id = ?');
@@ -854,7 +854,7 @@ export class SkillSecurityScanner {
       const rows = getDb().prepare(`
         SELECT * FROM skill_audit_records${whereClause}
         ORDER BY timestamp DESC${limitClause}
-      `).all(...params) as unknown[];
+      `).all(...params) as any[];
 
       return rows.map((row) => ({
         id: row.id,

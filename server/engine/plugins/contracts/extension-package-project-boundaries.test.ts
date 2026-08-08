@@ -24,24 +24,24 @@ const EXTENSION_PACKAGE_BOUNDARY_BASE_CONFIG =
 const trackedCodeFilesByRoot = new Map<string, readonly string[] | null>();
 
 type TsConfigJson = {
-  extends?: unknown;
+  extends?: any;
   compilerOptions?: {
-    paths?: unknown;
-    rootDir?: unknown;
-    outDir?: unknown;
-    declaration?: unknown;
-    emitDeclarationOnly?: unknown;
+    paths?: any;
+    rootDir?: any;
+    outDir?: any;
+    declaration?: any;
+    emitDeclarationOnly?: any;
   };
-  include?: unknown;
-  exclude?: unknown;
+  include?: any;
+  exclude?: any;
 };
 
 type PackageJson = {
-  name?: unknown;
-  version?: unknown;
-  private?: unknown;
-  type?: unknown;
-  exports?: Record<string, { types?: unknown; default?: unknown }>;
+  name?: any;
+  version?: any;
+  private?: any;
+  type?: any;
+  exports?: Record<string, { types?: any; default?: any }>;
   devDependencies?: Record<string, string>;
 };
 const MEMORY_HOST_SDK_EXPORTS = [

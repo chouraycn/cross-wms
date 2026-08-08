@@ -151,11 +151,11 @@ export type NativeHookRelayCommandForEventOptions = {
 };
 
 export type InvokeNativeHookRelayParams = {
-  provider: unknown;
-  relayId: unknown;
-  generation?: unknown;
-  event: unknown;
-  rawPayload: unknown;
+  provider: any;
+  relayId: any;
+  generation?: any;
+  event: any;
+  rawPayload: any;
   requireGeneration?: boolean;
 };
 
@@ -745,7 +745,7 @@ export async function invokeNativeHookRelayBridge(
   const timeoutMs = normalizePositiveInteger(params.timeoutMs, DEFAULT_RELAY_TIMEOUT_MS);
   const registrationTimeoutMs = normalizePositiveInteger(params.registrationTimeoutMs, timeoutMs);
   const startedAt = Date.now();
-  let lastError: unknown = new Error("native hook relay bridge not found");
+  let lastError: any = new Error("native hook relay bridge not found");
   while (Date.now() - startedAt < timeoutMs) {
     try {
       const record = readNativeHookRelayBridgeRecord(relayId);
@@ -789,9 +789,9 @@ export async function invokeNativeHookRelayBridge(
 }
 
 export function renderNativeHookRelayUnavailableResponse(params: {
-  provider: unknown;
-  event: unknown;
-  preToolUseUnavailable?: unknown;
+  provider: any;
+  event: any;
+  preToolUseUnavailable?: any;
   message?: string;
 }): NativeHookRelayProcessResponse {
   const provider = readNativeHookRelayProvider(params.provider);
@@ -813,7 +813,7 @@ export function renderNativeHookRelayUnavailableResponse(params: {
   return adapter.renderNoopResponse(event);
 }
 
-export function isNativeHookRelayBridgeStaleRegistrationError(error: unknown): boolean {
+export function isNativeHookRelayBridgeStaleRegistrationError(error: any): boolean {
   return (
     error instanceof Error && error.message === NATIVE_HOOK_RELAY_BRIDGE_STALE_REGISTRATION_ERROR
   );
@@ -1123,7 +1123,7 @@ async function readNativeHookRelayBridgeBody(req: NodeJS.ReadableStream): Promis
   return Buffer.concat(chunks, total).toString("utf8");
 }
 
-function readNativeHookRelayBridgePayload(value: unknown): InvokeNativeHookRelayParams {
+function readNativeHookRelayBridgePayload(value: any): InvokeNativeHookRelayParams {
   if (!isJsonObject(value)) {
     throw new Error("native hook relay bridge payload must be an object");
   }
@@ -1139,7 +1139,7 @@ function readNativeHookRelayBridgePayload(value: unknown): InvokeNativeHookRelay
 function writeNativeHookRelayBridgeJson(
   res: ServerResponse,
   statusCode: number,
-  payload: unknown,
+  payload: any,
 ): void {
   const body = JSON.stringify(payload);
   res.writeHead(statusCode, {
@@ -1162,7 +1162,7 @@ function readNativeHookRelayBridgeRecordIfExists(
 ): NativeHookRelayBridgeRecord | undefined {
   const registryPath = nativeHookRelayBridgeRegistryPath(relayId);
   try {
-    const parsed: unknown = JSON.parse(readFileSync(registryPath, "utf8"));
+    const parsed: any = JSON.parse(readFileSync(registryPath, "utf8"));
     if (isNativeHookRelayBridgeRecord(parsed, relayId)) {
       return parsed;
     }
@@ -1175,7 +1175,7 @@ function readNativeHookRelayBridgeRecordIfExists(
 }
 
 function isNativeHookRelayBridgeRecord(
-  value: unknown,
+  value: any,
   relayId: string,
 ): value is NativeHookRelayBridgeRecord {
   return (
@@ -1201,7 +1201,7 @@ async function invokeNativeHookRelayBridgeRecord(params: {
   payload: InvokeNativeHookRelayParams;
 }): Promise<NativeHookRelayProcessResponse> {
   const startedAt = Date.now();
-  let lastError: unknown;
+  let lastError: any;
   while (Date.now() - startedAt < params.timeoutMs) {
     try {
       return await postNativeHookRelayBridgeRecord({
@@ -1235,7 +1235,7 @@ function postNativeHookRelayBridgeRecord(params: {
         resolve(value);
       }
     };
-    const rejectOnce = (error: unknown) => {
+    const rejectOnce = (error: any) => {
       if (!settled) {
         settled = true;
         reject(toErrorObject(error, "Non-Error rejection"));
@@ -1296,7 +1296,7 @@ function postNativeHookRelayBridgeRecord(params: {
   });
 }
 
-function isRetryableNativeHookRelayBridgeError(error: unknown): boolean {
+function isRetryableNativeHookRelayBridgeError(error: any): boolean {
   const code = (error as NodeJS.ErrnoException).code;
   return (
     code === "ENOENT" ||
@@ -1307,7 +1307,7 @@ function isRetryableNativeHookRelayBridgeError(error: unknown): boolean {
 }
 
 function isRetryableNativeHookRelayBridgeLookupError(params: {
-  error: unknown;
+  error: any;
   elapsedMs: number;
 }): boolean {
   return (
@@ -1620,7 +1620,7 @@ function permissionRequestFallbackKey(request: NativeHookRelayPermissionApproval
   return `${request.toolName}:keys:${permissionRequestToolInputKeyFingerprint(request.toolInput)}`;
 }
 
-function permissionRequestToolInputKeyFingerprint(toolInput: Record<string, unknown>): string {
+function permissionRequestToolInputKeyFingerprint(toolInput: Record<string, any>): string {
   let fingerprint = "";
   const { keys, truncated } = readBoundedOwnKeys(toolInput, MAX_PERMISSION_FALLBACK_KEYS);
   for (const key of keys) {
@@ -1704,7 +1704,7 @@ function updateJsonHash(hash: ReturnType<typeof createHash>, value: JsonValue): 
 }
 
 function readBoundedOwnKeys(
-  value: Record<string, unknown>,
+  value: Record<string, any>,
   maxKeys: number,
 ): { keys: string[]; truncated: boolean } {
   const keys: string[] = [];
@@ -1961,7 +1961,7 @@ function normalizeCodexCommand(value: JsonValue | undefined): string | undefined
 
 function nativeHookRelayParamsWereRewritten(
   originalFingerprint: string,
-  candidate: unknown,
+  candidate: any,
 ): boolean {
   if (candidate === undefined) {
     return false;
@@ -1969,7 +1969,7 @@ function nativeHookRelayParamsWereRewritten(
   return stableStringify(candidate) !== originalFingerprint;
 }
 
-function readCodexToolResponse(rawPayload: JsonValue): unknown {
+function readCodexToolResponse(rawPayload: JsonValue): any {
   const payload = isJsonObject(rawPayload) ? rawPayload : {};
   return payload.tool_response;
 }
@@ -2090,7 +2090,7 @@ function formatPermissionApprovalDescription(
   return lines.join("\n");
 }
 
-function formatToolInputPreview(toolInput: Record<string, unknown>): string | undefined {
+function formatToolInputPreview(toolInput: Record<string, any>): string | undefined {
   const command = readOptionalString(toolInput.command);
   if (command) {
     return `Command: ${truncateText(sanitizeApprovalText(command), 240)}`;
@@ -2205,14 +2205,14 @@ function shellQuoteArg(value: string, platform: NodeJS.Platform): string {
   return `'${value.replaceAll("'", "'\\''")}'`;
 }
 
-function readNativeHookRelayProvider(value: unknown): NativeHookRelayProvider {
+function readNativeHookRelayProvider(value: any): NativeHookRelayProvider {
   if (value === "codex") {
     return value;
   }
   throw new Error("unsupported native hook relay provider");
 }
 
-function readNativeHookRelayEvent(value: unknown): NativeHookRelayEvent {
+function readNativeHookRelayEvent(value: any): NativeHookRelayEvent {
   if (
     value === "pre_tool_use" ||
     value === "post_tool_use" ||
@@ -2224,23 +2224,23 @@ function readNativeHookRelayEvent(value: unknown): NativeHookRelayEvent {
   throw new Error("unsupported native hook relay event");
 }
 
-function readNonEmptyString(value: unknown, name: string): string {
+function readNonEmptyString(value: any, name: string): string {
   if (typeof value === "string" && value.trim()) {
     return value.trim();
   }
   throw new Error(`native hook relay ${name} is required`);
 }
 
-function readOptionalString(value: unknown): string | undefined {
+function readOptionalString(value: any): string | undefined {
   return typeof value === "string" && value.length > 0 ? value : undefined;
 }
 
-function readOptionalBoolean(value: unknown): boolean | undefined {
+function readOptionalBoolean(value: any): boolean | undefined {
   return typeof value === "boolean" ? value : undefined;
 }
 
-function isJsonValue(value: unknown): value is JsonValue {
-  const stack: Array<{ value: unknown; depth: number }> = [{ value, depth: 0 }];
+function isJsonValue(value: any): value is JsonValue {
+  const stack: Array<{ value: any; depth: number }> = [{ value, depth: 0 }];
   let nodes = 0;
   let totalStringLength = 0;
   while (stack.length) {
@@ -2310,7 +2310,7 @@ function isJsonValue(value: unknown): value is JsonValue {
   return true;
 }
 
-function isJsonObject(value: unknown): value is Record<string, unknown> {
+function isJsonObject(value: any): value is Record<string, any> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return false;
   }
@@ -2351,11 +2351,11 @@ export const testing = {
   getNativeHookRelayBridgeRegistryPathForTests(relayId: string): string {
     return nativeHookRelayBridgeRegistryPath(relayId);
   },
-  getNativeHookRelayBridgeRecordForTests(relayId: string): Record<string, unknown> | undefined {
+  getNativeHookRelayBridgeRecordForTests(relayId: string): Record<string, any> | undefined {
     const record = readNativeHookRelayBridgeRecordIfExists(relayId);
     return record ? { ...record } : undefined;
   },
-  isNativeHookRelayBridgeLookupRetryableForTests(error: unknown, elapsedMs = 0): boolean {
+  isNativeHookRelayBridgeLookupRetryableForTests(error: any, elapsedMs = 0): boolean {
     return isRetryableNativeHookRelayBridgeLookupError({ error, elapsedMs });
   },
   formatPermissionApprovalDescriptionForTests(
@@ -2368,7 +2368,7 @@ export const testing = {
   ): string {
     return permissionRequestContentFingerprint(request);
   },
-  permissionRequestToolInputKeyFingerprintForTests(toolInput: Record<string, unknown>): string {
+  permissionRequestToolInputKeyFingerprintForTests(toolInput: Record<string, any>): string {
     return permissionRequestToolInputKeyFingerprint(toolInput);
   },
   setNativeHookRelayPermissionApprovalRequesterForTests(

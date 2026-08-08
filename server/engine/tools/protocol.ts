@@ -16,14 +16,14 @@ export interface ToolProtocolMessage {
   type: ToolProtocolMessageType;
   toolName: string;
   timestamp: number;
-  payload?: unknown;
-  metadata?: Record<string, unknown>;
+  payload?: any;
+  metadata?: Record<string, any>;
 }
 
 export interface ToolProtocolError {
   code: string;
   message: string;
-  details?: Record<string, unknown>;
+  details?: Record<string, any>;
 }
 
 export class ToolProtocol {
@@ -43,7 +43,7 @@ export class ToolProtocol {
     }
   }
 
-  static createToolCall(toolName: string, args: Record<string, unknown>): ToolProtocolMessage {
+  static createToolCall(toolName: string, args: Record<string, any>): ToolProtocolMessage {
     return {
       id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       type: 'tool_call',
@@ -53,7 +53,7 @@ export class ToolProtocol {
     };
   }
 
-  static createToolResult(toolName: string, result: unknown, messageId: string): ToolProtocolMessage {
+  static createToolResult(toolName: string, result: any, messageId: string): ToolProtocolMessage {
     return {
       id: messageId,
       type: 'tool_result',

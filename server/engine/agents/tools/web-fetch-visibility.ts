@@ -4,14 +4,14 @@
  * Removes hidden or invisible content before readable-text extraction.
  */
 
-function normalizeLowercaseStringOrEmpty(value: unknown): string {
+function normalizeLowercaseStringOrEmpty(value: any): string {
   if (typeof value !== "string") {
     return "";
   }
   return value.trim().toLowerCase();
 }
 
-function normalizeOptionalLowercaseString(value: unknown): string | undefined {
+function normalizeOptionalLowercaseString(value: any): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }

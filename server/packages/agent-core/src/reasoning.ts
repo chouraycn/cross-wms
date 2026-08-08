@@ -16,7 +16,7 @@ const ENABLED_THINKING_LEVELS = new Set<EnabledThinkingLevel>([
   "max",
 ]);
 
-function isEnabledThinkingLevel(value: unknown): value is EnabledThinkingLevel {
+function isEnabledThinkingLevel(value: any): value is EnabledThinkingLevel {
   return ENABLED_THINKING_LEVELS.has(value as EnabledThinkingLevel);
 }
 

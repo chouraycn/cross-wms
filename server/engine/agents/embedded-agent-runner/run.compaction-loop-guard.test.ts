@@ -47,8 +47,8 @@ const HISTORY_TRIM_CAP = 30;
 function recordToolOutcome(
   state: SessionState,
   toolName: string,
-  toolParams: unknown,
-  result: unknown,
+  toolParams: any,
+  result: any,
   runId?: string,
 ): void {
   // Seed diagnostic history directly for cases that inspect persisted loop
@@ -72,11 +72,11 @@ let liveToolCallSeq = 0;
 
 async function executeWrappedToolOutcome(
   toolName: string,
-  toolParams: unknown,
-  result: unknown,
+  toolParams: any,
+  result: any,
   onToolOutcome?: ToolOutcomeObserver,
   runId = baseParams.runId,
-): Promise<unknown> {
+): Promise<any> {
   // Exercise the live before_tool_call wrapper so the guard sees the same
   // outcome observer path used by real embedded tools.
   const tool = wrapToolWithBeforeToolCallHook(
@@ -137,7 +137,7 @@ describe("post-compaction loop guard wired into runEmbeddedAgent", () => {
     const overflowError = makeOverflowError();
     let attemptReturned = false;
     let attemptSignalAborted = false;
-    let attemptSignalReason: unknown;
+    let attemptSignalReason: any;
 
     // Attempt 1: overflow triggers compaction.
     mockedRunEmbeddedAttempt.mockImplementationOnce(async () =>
@@ -146,7 +146,7 @@ describe("post-compaction loop guard wired into runEmbeddedAgent", () => {
     // Attempt 2: live wrapped-tool outcomes repeat while the prompt is running.
     // The guard aborts the attempt signal, then the runner raises the loop error
     // after the attempt unwinds.
-    mockedRunEmbeddedAttempt.mockImplementationOnce(async (attemptParams: unknown) => {
+    mockedRunEmbeddedAttempt.mockImplementationOnce(async (attemptParams: any) => {
       const { abortSignal, onToolOutcome } = attemptParams as {
         abortSignal?: AbortSignal;
         onToolOutcome?: ToolOutcomeObserver;
@@ -200,7 +200,7 @@ describe("post-compaction loop guard wired into runEmbeddedAgent", () => {
       mockedRunEmbeddedAttempt.mockResolvedValueOnce(
         makeAttemptResult({ promptError: overflowError }),
       );
-      mockedRunEmbeddedAttempt.mockImplementationOnce(async (attemptParams: unknown) => {
+      mockedRunEmbeddedAttempt.mockImplementationOnce(async (attemptParams: any) => {
         const { abortSignal, onToolOutcome } = attemptParams as {
           abortSignal?: AbortSignal;
           onToolOutcome?: ToolOutcomeObserver;
@@ -259,7 +259,7 @@ describe("post-compaction loop guard wired into runEmbeddedAgent", () => {
       resolveAttemptStarted = resolve;
     });
     try {
-      mockedRunEmbeddedAttempt.mockImplementationOnce(async (attemptParams: unknown) => {
+      mockedRunEmbeddedAttempt.mockImplementationOnce(async (attemptParams: any) => {
         const { onAttemptTimeoutArmed } = attemptParams as {
           onAttemptTimeoutArmed?: () => void;
         };
@@ -303,7 +303,7 @@ describe("post-compaction loop guard wired into runEmbeddedAgent", () => {
       resolveAttemptStarted = resolve;
     });
     try {
-      mockedRunEmbeddedAttempt.mockImplementationOnce(async (attemptParams: unknown) => {
+      mockedRunEmbeddedAttempt.mockImplementationOnce(async (attemptParams: any) => {
         const { onAttemptTimeoutArmed, onAttemptTimeout } = attemptParams as {
           onAttemptTimeoutArmed?: () => void;
           onAttemptTimeout?: (reason: Error) => void;
@@ -349,7 +349,7 @@ describe("post-compaction loop guard wired into runEmbeddedAgent", () => {
       resolveAttemptStarted = resolve;
     });
     try {
-      mockedRunEmbeddedAttempt.mockImplementationOnce(async (attemptParams: unknown) => {
+      mockedRunEmbeddedAttempt.mockImplementationOnce(async (attemptParams: any) => {
         const { onAttemptTimeoutArmed, onAttemptAbort } = attemptParams as {
           onAttemptTimeoutArmed?: () => void;
           onAttemptAbort?: () => void;
@@ -396,7 +396,7 @@ describe("post-compaction loop guard wired into runEmbeddedAgent", () => {
     // Attempt 2 (post-compaction): identical args, but DIFFERENT result hash
     // each time. This fills the window without triggering the persisted-loop
     // abort because the tool is making progress.
-    mockedRunEmbeddedAttempt.mockImplementationOnce(async (attemptParams: unknown) => {
+    mockedRunEmbeddedAttempt.mockImplementationOnce(async (attemptParams: any) => {
       const onToolOutcome = (attemptParams as { onToolOutcome?: ToolOutcomeObserver })
         .onToolOutcome;
       for (let i = 0; i < 3; i += 1) {
@@ -438,7 +438,7 @@ describe("post-compaction loop guard wired into runEmbeddedAgent", () => {
     // Attempt 2 (post-compaction): two distinct records → window full,
     // guard disarms with no abort. We then append more identical records
     // afterwards in this test to confirm they are not observed by the guard.
-    mockedRunEmbeddedAttempt.mockImplementationOnce(async (attemptParams: unknown) => {
+    mockedRunEmbeddedAttempt.mockImplementationOnce(async (attemptParams: any) => {
       const onToolOutcome = (attemptParams as { onToolOutcome?: ToolOutcomeObserver })
         .onToolOutcome;
       await executeWrappedToolOutcome("read", { path: "/a" }, "ra", onToolOutcome);
@@ -479,7 +479,7 @@ describe("post-compaction loop guard wired into runEmbeddedAgent", () => {
     mockedRunEmbeddedAttempt.mockImplementationOnce(async () =>
       makeAttemptResult({ promptError: overflowError }),
     );
-    mockedRunEmbeddedAttempt.mockImplementationOnce(async (attemptParams: unknown) => {
+    mockedRunEmbeddedAttempt.mockImplementationOnce(async (attemptParams: any) => {
       const onToolOutcome = (attemptParams as { onToolOutcome?: ToolOutcomeObserver })
         .onToolOutcome;
       for (let i = 0; i < 3; i += 1) {
@@ -539,7 +539,7 @@ describe("post-compaction loop guard wired into runEmbeddedAgent", () => {
     mockedRunEmbeddedAttempt.mockImplementationOnce(async () =>
       makeAttemptResult({ promptError: overflowError }),
     );
-    mockedRunEmbeddedAttempt.mockImplementationOnce(async (attemptParams: unknown) => {
+    mockedRunEmbeddedAttempt.mockImplementationOnce(async (attemptParams: any) => {
       const onToolOutcome = (attemptParams as { onToolOutcome?: ToolOutcomeObserver })
         .onToolOutcome;
       for (let i = 0; i < 3; i += 1) {
@@ -606,7 +606,7 @@ describe("post-compaction loop guard wired into runEmbeddedAgent", () => {
     // Attempt 2 (post-compaction): three identical live tool outcomes while
     // history is already at the cap. The guard aborts on the third result
     // before the mocked attempt can return.
-    mockedRunEmbeddedAttempt.mockImplementationOnce(async (attemptParams: unknown) => {
+    mockedRunEmbeddedAttempt.mockImplementationOnce(async (attemptParams: any) => {
       const onToolOutcome = (attemptParams as { onToolOutcome?: ToolOutcomeObserver })
         .onToolOutcome;
       for (let i = 0; i < 3; i += 1) {

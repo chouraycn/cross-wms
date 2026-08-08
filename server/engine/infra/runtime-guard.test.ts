@@ -136,7 +136,7 @@ describe("runtime-guard", () => {
     expect(runtime.error).toHaveBeenCalledWith(
       [
         "openclaw requires Node >=22.19.0.",
-        "Detected: unknown runtime (exec: unknown).",
+        "Detected: any runtime (exec: any).",
         "PATH searched: (not set)",
         "Install Node: https://nodejs.org/en/download",
         "Upgrade Node and re-run openclaw.",

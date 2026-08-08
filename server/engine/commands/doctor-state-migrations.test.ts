@@ -40,7 +40,7 @@ import {
 let tempRoots: string[] = [];
 
 const mockedChannelMigrationPlans = vi.hoisted(() => ({
-  plans: [] as Array<Record<string, unknown>>,
+  plans: [] as Array<Record<string, any>>,
 }));
 
 vi.mock("../channels/plugins/bundled.js", async () => {
@@ -140,7 +140,7 @@ vi.mock("../channels/plugins/bundled.js", async () => {
 });
 
 vi.mock("../config/sessions.js", () => ({
-  saveSessionStore: async (storePath: string, store: Record<string, unknown>) => {
+  saveSessionStore: async (storePath: string, store: Record<string, any>) => {
     await fs.promises.mkdir(path.dirname(storePath), { recursive: true });
     await fs.promises.writeFile(storePath, `${JSON.stringify(store, null, 2)}\n`, "utf-8");
   },
@@ -222,15 +222,15 @@ afterEach(async () => {
   tempRoots = [];
 });
 
-function writeJson5(filePath: string, value: unknown) {
+function writeJson5(filePath: string, value: any) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, JSON.stringify(value, null, 2), "utf-8");
 }
 
 function readPrimaryKeyColumns(db: DatabaseSync, tableName: string): string[] {
   const rows = db.prepare(`PRAGMA table_info(${tableName})`).all() as Array<{
-    name?: unknown;
-    pk?: unknown;
+    name?: any;
+    pk?: any;
   }>;
   return rows
     .filter((row) => Number(row.pk ?? 0) > 0 && typeof row.name === "string")
@@ -274,7 +274,7 @@ function createLegacyAgentDatabaseRegistry(stateDir: string): string {
 
 function writeLegacySessionsFixture(params: {
   root: string;
-  sessions: Record<string, Record<string, unknown> & { sessionId: string; updatedAt: number }>;
+  sessions: Record<string, Record<string, any> & { sessionId: string; updatedAt: number }>;
   transcripts?: Record<string, string>;
 }) {
   const legacySessionsDir = path.join(params.root, "sessions");
@@ -822,7 +822,7 @@ describe("doctor legacy state migrations", () => {
     expect(store["+1555"]).toBeUndefined();
     expect(store["+1666"]).toBeUndefined();
     expect(store["agent:main:slack:channel:c123"]?.sessionId).toBe("c");
-    expect(store["agent:main:unknown:group:abc"]?.sessionId).toBe("d");
+    expect(store["agent:main: any:group:abc"]?.sessionId).toBe("d");
     expect(store["agent:main:subagent:xyz"]?.sessionId).toBe("e");
   });
 
@@ -1099,7 +1099,7 @@ describe("doctor legacy state migrations", () => {
     });
 
     expect(store["agent:main:whatsapp:group:123@g.us"]?.sessionId).toBe("wa");
-    expect(store["agent:main:unknown:group:abc"]?.sessionId).toBe("generic");
+    expect(store["agent:main: any:group:abc"]?.sessionId).toBe("generic");
   });
 
   it("migrates legacy agent dir with conflict fallback", async () => {
@@ -1433,7 +1433,7 @@ describe("doctor legacy state migrations", () => {
         scopeKey: "",
         cleanupSource: "rename",
         readEntries: () => [{ key: "existing", value: { offset: 20 } }],
-        shouldReplaceExistingEntry: (params: { existingValue: unknown; incomingValue: unknown }) =>
+        shouldReplaceExistingEntry: (params: { existingValue: any; incomingValue: any }) =>
           (params.incomingValue as { offset: number }).offset >
           (params.existingValue as { offset: number }).offset,
       },
@@ -2422,8 +2422,8 @@ describe("doctor legacy state migrations", () => {
     expect(fs.existsSync(`${sourcePath}.migrated`)).toBe(true);
     const migrated = JSON.parse(fs.readFileSync(targetPath, "utf8")) as {
       socket?: { path?: string; token?: string };
-      defaults?: Record<string, unknown>;
-      agents?: Record<string, { allowlist?: Array<Record<string, unknown>> }>;
+      defaults?: Record<string, any>;
+      agents?: Record<string, { allowlist?: Array<Record<string, any>> }>;
     };
     expect(migrated.socket?.path).toBe(targetSocketPath);
     expect(migrated.socket?.token).toBe("legacy-token");
@@ -2471,7 +2471,7 @@ describe("doctor legacy state migrations", () => {
     expect(result.changes).not.toContain(`Migrated exec approvals → ${targetPath}`);
     const current = JSON.parse(fs.readFileSync(targetPath, "utf8")) as {
       socket?: { token?: string };
-      defaults?: Record<string, unknown>;
+      defaults?: Record<string, any>;
     };
     expect(current.socket?.token).toBe("current-token");
     expect(current.defaults).toEqual({
@@ -2508,7 +2508,7 @@ describe("doctor legacy state migrations", () => {
     expect(fs.existsSync(`${sourcePath}.migrated`)).toBe(true);
     const migrated = JSON.parse(fs.readFileSync(targetPath, "utf8")) as {
       socket?: { token?: string };
-      defaults?: Record<string, unknown>;
+      defaults?: Record<string, any>;
     };
     expect(migrated.socket?.token).toBe("legacy-token");
     expect(migrated.defaults).toEqual({

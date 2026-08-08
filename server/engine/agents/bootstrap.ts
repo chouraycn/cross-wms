@@ -102,7 +102,7 @@ export function stripThoughtSignatures<T>(content: T): T {
     if (!block || typeof block !== "object") {
       return block;
     }
-    const rec = block as Record<string, unknown>;
+    const rec = block as Record<string, any>;
     if (typeof rec.thought_signature === "string" && rec.thought_signature.startsWith("msg_")) {
       const next = { ...rec };
       delete next.thought_signature;

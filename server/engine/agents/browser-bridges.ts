@@ -6,4 +6,4 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export const BROWSER_BRIDGES: unknown = undefined;
+export const BROWSER_BRIDGES: any = undefined;

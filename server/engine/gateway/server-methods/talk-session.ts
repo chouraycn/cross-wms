@@ -144,7 +144,7 @@ function respondInvalidRequest(respond: RespondFn, message: string) {
   respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, message));
 }
 
-function respondUnavailable(respond: RespondFn, err: unknown) {
+function respondUnavailable(respond: RespondFn, err: any) {
   const message = formatForLog(err);
   respond(
     false,
@@ -161,7 +161,7 @@ function respondUnavailable(respond: RespondFn, err: unknown) {
   );
 }
 
-function respondOk(respond: RespondFn, payload: unknown = { ok: true }) {
+function respondOk(respond: RespondFn, payload: any = { ok: true }) {
   respond(true, payload, undefined);
 }
 

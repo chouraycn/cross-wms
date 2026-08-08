@@ -8,10 +8,10 @@
 /** Discovers auth/model stores, reusing file-backed snapshots until their inputs change. */
 export function discoverCachedAgentStores(options: {
   agentDir: string;
-  config?: unknown;
+  config?: any;
   inheritedAuthDir?: string;
   workspaceDir?: string;
-}): { authStorage: unknown; modelRegistry: unknown } {
+}): { authStorage: any; modelRegistry: any } {
   // Full discovery not available in cross-wms; return empty defaults
   return { authStorage: null, modelRegistry: null };
 }

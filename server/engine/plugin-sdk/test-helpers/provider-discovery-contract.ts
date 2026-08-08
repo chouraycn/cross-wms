@@ -114,13 +114,13 @@ function runCatalog(
   });
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   expect(value, label).toBeTypeOf("object");
   expect(value, label).not.toBeNull();
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function expectProviderFields(result: unknown, fields: Record<string, unknown>) {
+function expectProviderFields(result: any, fields: Record<string, any>) {
   const provider = requireRecord(requireRecord(result, "catalog result").provider, "provider");
   for (const [key, expected] of Object.entries(fields)) {
     expect(provider[key]).toEqual(expected);
@@ -128,10 +128,10 @@ function expectProviderFields(result: unknown, fields: Record<string, unknown>) 
   return provider;
 }
 
-function providerModelIds(provider: Record<string, unknown>): Array<unknown> {
+function providerModelIds(provider: Record<string, any>): Array<any> {
   const models = provider.models;
   expect(Array.isArray(models), "provider models").toBe(true);
-  return (models as Array<{ id?: unknown }>).map((model) => model.id);
+  return (models as Array<{ id?: any }>).map((model) => model.id);
 }
 
 function installDiscoveryHooks(state: DiscoveryState, options: DiscoveryContractOptions) {
@@ -150,8 +150,8 @@ function installDiscoveryHooks(state: DiscoveryState, options: DiscoveryContract
         applyAuthProfileConfig: (config: OpenClawConfig) => config,
         buildApiKeyCredential: (
           provider: string,
-          key: unknown,
-          metadata?: Record<string, unknown>,
+          key: any,
+          metadata?: Record<string, any>,
         ) => ({
           type: "api_key",
           provider,
@@ -163,17 +163,17 @@ function installDiscoveryHooks(state: DiscoveryState, options: DiscoveryContract
           "Editor-Version": "vscode/1.96.2",
           "User-Agent": "GitHubCopilotChat/0.26.7",
         })),
-        coerceSecretRef: (value: unknown) =>
+        coerceSecretRef: (value: any) =>
           value && typeof value === "object" && !Array.isArray(value)
-            ? (value as Record<string, unknown>)
+            ? (value as Record<string, any>)
             : null,
         ensureApiKeyFromOptionEnvOrPrompt: vi.fn(),
         ensureAuthProfileStore: ensureAuthProfileStoreMock,
         listProfilesForProvider: listProfilesForProviderMock,
-        normalizeApiKeyInput: (value: unknown) => (typeof value === "string" ? value.trim() : ""),
-        normalizeOptionalSecretInput: (value: unknown) =>
+        normalizeApiKeyInput: (value: any) => (typeof value === "string" ? value.trim() : ""),
+        normalizeOptionalSecretInput: (value: any) =>
           typeof value === "string" && value.trim() ? value.trim() : undefined,
-        resolveNonEnvSecretRefApiKeyMarker: (source: unknown) =>
+        resolveNonEnvSecretRefApiKeyMarker: (source: any) =>
           typeof source === "string" ? source : "",
         upsertAuthProfile: vi.fn(),
         validateApiKeyInput: () => undefined,
@@ -195,7 +195,7 @@ function installDiscoveryHooks(state: DiscoveryState, options: DiscoveryContract
           VLLM_DEFAULT_BASE_URL: "http://127.0.0.1:8000/v1",
           VLLM_MODEL_PLACEHOLDER: "meta-llama/Meta-Llama-3-8B-Instruct",
           VLLM_PROVIDER_LABEL: "vLLM",
-          buildVllmProvider: (...args: unknown[]) => buildVllmProviderMock(...args),
+          buildVllmProvider: (...args: any[]) => buildVllmProviderMock(...args),
         };
       });
     }
@@ -206,7 +206,7 @@ function installDiscoveryHooks(state: DiscoveryState, options: DiscoveryContract
           SGLANG_DEFAULT_BASE_URL: "http://127.0.0.1:30000/v1",
           SGLANG_MODEL_PLACEHOLDER: "Qwen/Qwen3-8B",
           SGLANG_PROVIDER_LABEL: "SGLang",
-          buildSglangProvider: (...args: unknown[]) => buildSglangProviderMock(...args),
+          buildSglangProvider: (...args: any[]) => buildSglangProviderMock(...args),
         };
       });
     }

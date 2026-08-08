@@ -21,7 +21,7 @@ export interface PermissionConfig {
 export interface ApprovalRequest {
   readonly toolName: string;
   readonly toolOwner: ToolOwnerRef['kind'];
-  readonly args?: unknown;
+  readonly args?: any;
   readonly requiredLevel: PermissionLevel;
   readonly reason: string;
 }
@@ -32,7 +32,7 @@ export interface AuditRecord {
   readonly toolName: string;
   readonly action: 'allow' | 'deny' | 'ask' | 'approved' | 'rejected';
   readonly requiredLevel: PermissionLevel;
-  readonly args?: unknown;
+  readonly args?: any;
   readonly result?: 'success' | 'failure';
   readonly durationMs?: number;
   readonly sessionId?: string;
@@ -88,7 +88,7 @@ export class ToolPermissionManager {
   async checkPermission(
     toolName: string,
     toolOwner: ToolOwnerRef['kind'],
-    args?: unknown,
+    args?: any,
   ): Promise<PermissionResult> {
     this.totalChecks++;
     const level = this.getToolPermissionLevel(toolName, toolOwner);

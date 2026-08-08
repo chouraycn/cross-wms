@@ -13,7 +13,7 @@ import { setupIsolatedAgentTurnMocks } from "./isolated-agent.test-setup.js";
 import { resetCompletedDirectCronDeliveriesForTests } from "./isolated-agent/delivery-dispatch.js";
 
 async function writeDefaultAgentSessionStoreEntries(
-  entries: Record<string, Record<string, unknown>>,
+  entries: Record<string, Record<string, any>>,
 ): Promise<string> {
   const storePath = resolveDefaultSessionStorePath("main");
   await fs.mkdir(path.dirname(storePath), { recursive: true });

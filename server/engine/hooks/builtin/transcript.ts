@@ -36,7 +36,7 @@ export function sanitizeSessionMemoryTranscriptText(text: string): string | null
   return withoutArtifacts || null;
 }
 
-function extractTextMessageContent(content: unknown): string | undefined {
+function extractTextMessageContent(content: any): string | undefined {
   if (typeof content === 'string') {
     return content;
   }
@@ -47,7 +47,7 @@ function extractTextMessageContent(content: unknown): string | undefined {
     if (!block || typeof block !== 'object') {
       continue;
     }
-    const candidate = block as { type?: unknown; text?: unknown };
+    const candidate = block as { type?: any; text?: any };
     if (candidate.type === 'text' && typeof candidate.text === 'string') {
       return candidate.text;
     }
@@ -112,7 +112,7 @@ export async function getRecentSessionContentWithResetFallback(
       try {
         const entry = JSON.parse(line);
         if (entry.message) {
-          const msg = entry.message as { role?: unknown; content?: unknown };
+          const msg = entry.message as { role?: any; content?: any };
           const role = msg.role;
           if ((role === 'user' || role === 'assistant') && msg.content) {
             const text = extractTextMessageContent(msg.content);

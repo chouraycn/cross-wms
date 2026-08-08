@@ -24,7 +24,7 @@ export interface AutomationEventPayload {
   taskType: string;
   status: string;
   timestamp: string;
-  data?: unknown;
+  data?: any;
   error?: string;
 }
 

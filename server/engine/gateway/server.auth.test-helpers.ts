@@ -74,9 +74,9 @@ const readConnectChallengeNonce = async (ws: WebSocket) => {
   const challenge: {
     type?: string;
     event?: string;
-    payload?: Record<string, unknown> | null;
+    payload?: Record<string, any> | null;
   } = await onceMessage(ws, (o) => o.type === "event" && o.event === "connect.challenge");
-  const nonce = (challenge.payload as { nonce?: unknown } | undefined)?.nonce;
+  const nonce = (challenge.payload as { nonce?: any } | undefined)?.nonce;
   expect(typeof nonce).toBe("string");
   return String(nonce);
 };
@@ -158,7 +158,7 @@ async function expectHelloOkServerVersion(port: number, expectedVersion: string)
     expect(res.ok).toBe(true);
     const payload = res.payload as
       | {
-          type?: unknown;
+          type?: any;
           server?: { version?: string };
         }
       | undefined;
@@ -210,7 +210,7 @@ async function createSignedDevice(params: {
 
 function resolveGatewayTokenOrEnv(): string {
   const token =
-    typeof (testState.gatewayAuth as { token?: unknown } | undefined)?.token === "string"
+    typeof (testState.gatewayAuth as { token?: any } | undefined)?.token === "string"
       ? ((testState.gatewayAuth as { token?: string }).token ?? undefined)
       : process.env.OPENCLAW_GATEWAY_TOKEN;
   if (typeof token !== "string") {
@@ -276,11 +276,11 @@ async function writeTrustedProxyControlUiConfig(params?: { allowInsecureAuth?: b
 }
 
 function isConnectResMessage(id: string) {
-  return (o: unknown) => {
+  return (o: any) => {
     if (!o || typeof o !== "object" || Array.isArray(o)) {
       return false;
     }
-    const rec = o as Record<string, unknown>;
+    const rec = o as Record<string, any>;
     return rec.type === "res" && rec.id === id;
   };
 }
@@ -313,7 +313,7 @@ async function sendRawConnectReq(
     type?: string;
     id?: string;
     ok?: boolean;
-    payload?: Record<string, unknown> | null;
+    payload?: Record<string, any> | null;
     error?: {
       message?: string;
       details?: {
@@ -347,7 +347,7 @@ async function startRateLimitedTokenServerWithPairedDeviceToken() {
     mode: "token",
     token: "secret",
     rateLimit: { maxAttempts: 1, windowMs: 60_000, lockoutMs: 60_000, exemptLoopback: false },
-  } satisfies Record<string, unknown>;
+  } satisfies Record<string, any>;
 
   const { server, ws, port, prevToken } = await startServerWithClient(undefined, {
     controlUiEnabled: true,

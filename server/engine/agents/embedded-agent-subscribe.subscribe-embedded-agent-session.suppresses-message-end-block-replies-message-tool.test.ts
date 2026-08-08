@@ -43,12 +43,12 @@ function createBlockReplyHarness(
 }
 
 async function emitMessageToolLifecycle(params: {
-  emit: (evt: unknown) => void;
+  emit: (evt: any) => void;
   toolCallId: string;
   message: string;
   media?: string;
   to?: string | null;
-  result: unknown;
+  result: any;
 }) {
   // Message tool sends are modeled as normal tool start/end events because the
   // subscription records pending send text at start and delivery at end.
@@ -75,7 +75,7 @@ async function emitMessageToolLifecycle(params: {
 }
 
 function emitAssistantMessageEnd(
-  emit: (evt: unknown) => void,
+  emit: (evt: any) => void,
   text: string,
   overrides?: Partial<AssistantMessage>,
 ) {
@@ -87,7 +87,7 @@ function emitAssistantMessageEnd(
   emit({ type: "message_end", message: assistantMessage });
 }
 
-function emitAssistantTextEndBlock(emit: (evt: unknown) => void, text: string) {
+function emitAssistantTextEndBlock(emit: (evt: any) => void, text: string) {
   emit({ type: "message_start", message: { role: "assistant" } });
   emitAssistantTextDelta({ emit, delta: text });
   emitAssistantTextEnd({ emit });

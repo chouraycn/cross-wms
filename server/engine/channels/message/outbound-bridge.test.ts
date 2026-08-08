@@ -12,8 +12,8 @@ import type {
 const cfg = {} as OpenClawConfig;
 
 function requireFirstCallArg(mock: {
-  mock: { calls: readonly unknown[][] };
-}): Record<string, unknown> {
+  mock: { calls: readonly any[][] };
+}): Record<string, any> {
   const [call] = mock.mock.calls;
   if (!call) {
     throw new Error("expected first mock call");
@@ -22,7 +22,7 @@ function requireFirstCallArg(mock: {
   if (typeof arg !== "object" || arg === null || Array.isArray(arg)) {
     throw new Error("expected first mock call argument to be an object");
   }
-  return arg as Record<string, unknown>;
+  return arg as Record<string, any>;
 }
 
 describe("createChannelMessageAdapterFromOutbound", () => {

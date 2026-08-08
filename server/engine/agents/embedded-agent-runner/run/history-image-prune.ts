@@ -119,7 +119,7 @@ export function pruneProcessedHistoryImages(messages: AgentMessage[]): AgentMess
         continue;
       }
       const blockType = (block as { type?: string }).type;
-      if (blockType === "text" && typeof (block as { text?: unknown }).text === "string") {
+      if (blockType === "text" && typeof (block as { text?: any }).text === "string") {
         const text = (block as { text: string }).text;
         const prunedText = pruneHistoryMediaReferenceText(text);
         if (prunedText !== text) {

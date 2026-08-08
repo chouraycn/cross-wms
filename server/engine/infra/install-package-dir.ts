@@ -69,7 +69,7 @@ export async function installPackageDirWithManifestDeps(params: {
   logger?: { info?: (message: string) => void; warn?: (message: string) => void };
   copyErrorPrefix: string;
   depsLogMessage: string;
-  manifestDependencies?: Record<string, unknown>;
+  manifestDependencies?: Record<string, any>;
   afterCopy?: (installedDir: string) => void | Promise<void>;
   afterInstall?: (installedDir: string) => Promise<{ ok: true } | { ok: false; error: string; code?: string }>;
 }): Promise<{ ok: true } | { ok: false; error: string; code?: string }> {

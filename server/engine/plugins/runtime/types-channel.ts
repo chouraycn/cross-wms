@@ -53,13 +53,13 @@ export type PluginRuntimeChannelContextEvent = {
     accountId?: string;
     capability: string;
   };
-  context?: unknown;
+  context?: any;
 };
 
 export type PluginRuntimeChannelContextRegistry = {
   register: (
     params: PluginRuntimeChannelContextKey & {
-      context: unknown;
+      context: any;
       abortSignal?: AbortSignal;
     },
   ) => { dispose: () => void };

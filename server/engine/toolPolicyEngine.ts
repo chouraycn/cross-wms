@@ -556,7 +556,7 @@ export class ToolPolicyEngine {
    */
   evaluateTool(
     toolName: string,
-    toolArgs: Record<string, unknown>,
+    toolArgs: Record<string, any>,
     context: ToolPolicyEvaluationContext = {},
   ): ToolPolicyEvaluationResult {
     const matchedRule = this.findMatchingRule(toolName);
@@ -642,7 +642,7 @@ export class ToolPolicyEngine {
    */
   private matchesConditions(
     rule: ToolPolicyRule,
-    toolArgs: Record<string, unknown>,
+    toolArgs: Record<string, any>,
     context: ToolPolicyEvaluationContext,
   ): boolean {
     const conditions = rule.conditions;
@@ -851,7 +851,7 @@ export class ToolPolicyEngine {
    * 参数黑白名单校验
    */
   private checkParams(
-    toolArgs: Record<string, unknown>,
+    toolArgs: Record<string, any>,
     rule: ToolPolicyRule,
   ): { allowed: boolean; reason?: string; deniedParams?: string[] } {
     const paramNames = Object.keys(toolArgs);

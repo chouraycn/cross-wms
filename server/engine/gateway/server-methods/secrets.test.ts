@@ -27,10 +27,10 @@ async function invokeSecretsReload(params: {
 async function invokeSecretsResolve(params: {
   handlers: ReturnType<typeof createSecretsHandlers>;
   respond: ReturnType<typeof vi.fn>;
-  commandName: unknown;
-  targetIds: unknown;
-  allowedPaths?: unknown;
-  forcedActivePaths?: unknown;
+  commandName: any;
+  targetIds: any;
+  allowedPaths?: any;
+  forcedActivePaths?: any;
 }) {
   await params.handlers["secrets.resolve"]({
     req: { type: "req", id: "1", method: "secrets.resolve" },
@@ -62,7 +62,7 @@ function expectRespondError(
   if (!error || typeof error !== "object" || Array.isArray(error)) {
     throw new Error("Expected a non-array error record");
   }
-  const errorRecord = error as Record<string, unknown>;
+  const errorRecord = error as Record<string, any>;
   expect(errorRecord.code).toBe(expected.code);
   if (expected.message !== undefined) {
     expect(errorRecord.message).toBe(expected.message);
@@ -101,7 +101,7 @@ describe("secrets handlers", () => {
       allowedPaths?: string[];
       forcedActivePaths?: string[];
     }) => Promise<{
-      assignments: Array<{ path: string; pathSegments: string[]; value: unknown }>;
+      assignments: Array<{ path: string; pathSegments: string[]; value: any }>;
       diagnostics: string[];
       inactiveRefPaths: string[];
     }>;
@@ -230,7 +230,7 @@ describe("secrets handlers", () => {
     expect(resolveSecrets).not.toHaveBeenCalled();
     expectRespondError(respond, {
       code: "INVALID_REQUEST",
-      message: 'invalid secrets.resolve params: unknown target id "unknown.target"',
+      message: 'invalid secrets.resolve params: any target id "unknown.target"',
     });
   });
 

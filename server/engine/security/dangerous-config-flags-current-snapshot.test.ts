@@ -21,7 +21,7 @@ vi.mock("../plugins/config-contracts.js", async () => {
   };
 });
 
-function asConfig(value: unknown): OpenClawConfig {
+function asConfig(value: any): OpenClawConfig {
   return value as OpenClawConfig;
 }
 

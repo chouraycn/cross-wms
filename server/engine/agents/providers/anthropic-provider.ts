@@ -55,12 +55,12 @@ export class AnthropicProvider extends BaseLlmProvider {
           content: typeof data.content === 'string' ? data.content : JSON.stringify(data.content),
         },
         finishReason: data.stop_reason ?? 'end_turn',
-        toolCalls: data.tool_calls?.map((tc: unknown) => ({
-          id: (tc as Record<string, unknown>).id as string,
+        toolCalls: data.tool_calls?.map((tc: any) => ({
+          id: (tc as Record<string, any>).id as string,
           type: 'function',
           function: {
-            name: (tc as Record<string, unknown>).name as string,
-            arguments: JSON.stringify((tc as Record<string, unknown>).input as Record<string, unknown>),
+            name: (tc as Record<string, any>).name as string,
+            arguments: JSON.stringify((tc as Record<string, any>).input as Record<string, any>),
           },
         })),
       }],
@@ -127,7 +127,7 @@ export class AnthropicProvider extends BaseLlmProvider {
                 index: 0,
                 message: {
                   role: 'assistant' as const,
-                  content: (event.delta as Record<string, unknown>).text as string ?? '',
+                  content: (event.delta as Record<string, any>).text as string ?? '',
                 },
                 finishReason: '',
               }],

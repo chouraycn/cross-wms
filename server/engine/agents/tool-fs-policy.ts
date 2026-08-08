@@ -7,15 +7,15 @@
  */
 
 export type { ToolFsPolicy } from "./tool-fs-policy.types.js";
-export function createToolFsPolicy(..._args: unknown[]): unknown {
+export function createToolFsPolicy(..._args: any[]): any {
   return undefined;
 }
-export function resolveToolFsConfig(..._args: unknown[]): unknown {
+export function resolveToolFsConfig(..._args: any[]): any {
   return undefined;
 }
-export function resolveEffectiveToolFsWorkspaceOnly(..._args: unknown[]): unknown {
+export function resolveEffectiveToolFsWorkspaceOnly(..._args: any[]): any {
   return undefined;
 }
-export function resolveEffectiveToolFsRootExpansionAllowed(..._args: unknown[]): unknown {
+export function resolveEffectiveToolFsRootExpansionAllowed(..._args: any[]): any {
   return undefined;
 }

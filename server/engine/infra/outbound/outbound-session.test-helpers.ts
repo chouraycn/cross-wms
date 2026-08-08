@@ -180,13 +180,13 @@ function resolveWorkspaceOutboundSessionRouteForTest(params: ChannelOutboundSess
   const normalizedId = normalizeLowercaseStringOrEmpty(rawId);
   const isDm = lower.startsWith("user:") || lower.startsWith("workspace:") || /^u/i.test(rawId);
   const workspaceConfig = params.cfg.channels?.workspace as
-    | { dm?: { groupChannels?: unknown[] } }
+    | { dm?: { groupChannels?: any[] } }
     | undefined;
   const isGroupChannel =
     /^g/i.test(rawId) &&
     Array.isArray(workspaceConfig?.dm?.groupChannels) &&
     workspaceConfig.dm.groupChannels.some(
-      (candidate: unknown) => normalizeLowercaseStringOrEmpty(String(candidate)) === normalizedId,
+      (candidate: any) => normalizeLowercaseStringOrEmpty(String(candidate)) === normalizedId,
     );
   const peerKind: RoutePeer["kind"] = isDm ? "direct" : isGroupChannel ? "group" : "channel";
   return buildThreadedChannelRoute({

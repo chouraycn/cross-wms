@@ -14,7 +14,7 @@ vi.mock("../../config/sessions/session-accessor.js", async () => {
   );
   return {
     ...actual,
-    loadSessionEntry: (...args: unknown[]) => hoisted.loadSessionEntryMock(...args),
+    loadSessionEntry: (...args: any[]) => hoisted.loadSessionEntryMock(...args),
   };
 });
 

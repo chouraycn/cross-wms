@@ -78,8 +78,8 @@ const runDoctorHealthContributions = vi.fn(
 const maybeRepairMemoryRecallHealth = vi.fn().mockResolvedValue(undefined) as unknown as MockFn;
 const noteMemorySearchHealth = vi.fn().mockResolvedValue(undefined) as unknown as MockFn;
 const noteMemoryRecallHealth = vi.fn().mockResolvedValue(undefined) as unknown as MockFn;
-const migrateLegacyConfig = vi.fn((raw: unknown) => ({
-  config: raw as Record<string, unknown>,
+const migrateLegacyConfig = vi.fn((raw: any) => ({
+  config: raw as Record<string, any>,
   changes: ["Moved routing.allowFrom → channels.whatsapp.allowFrom."],
 })) as unknown as MockFn;
 
@@ -156,7 +156,7 @@ const runChannelPluginStartupMaintenance = vi
   .mockResolvedValue(undefined) as unknown as MockFn;
 
 function defaultRunDoctorHealthContributions(ctx: {
-  cfg: Record<string, unknown>;
+  cfg: Record<string, any>;
   runtime: { log: (message: string) => void; error: (message: string) => void };
   prompter?: { shouldRepair?: boolean };
 }) {
@@ -170,7 +170,7 @@ function defaultRunDoctorHealthContributions(ctx: {
             if (!value || typeof value !== "object" || Array.isArray(value)) {
               return [channelId, value];
             }
-            const channelConfig = { ...(value as Record<string, unknown>) };
+            const channelConfig = { ...(value as Record<string, any>) };
             if (channelConfig.enabled === true) {
               delete channelConfig.enabled;
             }
@@ -427,7 +427,7 @@ vi.mock("./doctor-memory-search.js", () => ({
 }));
 
 vi.mock("@openclaw-src/plugins/doctor-contract-registry.js", () => ({
-  applyPluginDoctorCompatibilityMigrations: (config: unknown) => ({
+  applyPluginDoctorCompatibilityMigrations: (config: any) => ({
     config,
     changes: [],
   }),
@@ -507,9 +507,9 @@ vi.mock("./health.js", () => ({
 }));
 
 vi.mock("./onboard-helpers.js", () => ({
-  applyWizardMetadata: (cfg: Record<string, unknown>) => cfg,
+  applyWizardMetadata: (cfg: Record<string, any>) => cfg,
   DEFAULT_WORKSPACE: "/tmp",
-  guardCancel: (value: unknown) => value,
+  guardCancel: (value: any) => value,
   printWizardHeader: vi.fn(),
   randomToken: vi.fn(() => "test-gateway-token"),
 }));
@@ -529,8 +529,8 @@ vi.mock("@openclaw-src/channels/plugins/lifecycle-startup.js", () => ({
 /** Configures the mocked doctor config snapshot with a partial snapshot override. */
 export function mockDoctorConfigSnapshot(
   params: {
-    config?: Record<string, unknown>;
-    parsed?: Record<string, unknown>;
+    config?: Record<string, any>;
+    parsed?: Record<string, any>;
     valid?: boolean;
     issues?: Array<{ path: string; message: string }>;
     legacyIssues?: Array<{ path: string; message: string }>;
@@ -557,7 +557,7 @@ export function createDoctorRuntime() {
 
 /** Sets up temporary legacy state paths and mocked config for migration tests. */
 export async function arrangeLegacyStateMigrationTest(): Promise<{
-  doctorCommand: unknown;
+  doctorCommand: any;
   runtime: { log: MockFn; error: MockFn; exit: MockFn };
   detectLegacyStateMigrations: MockFn;
   runLegacyStateMigrations: MockFn;
@@ -611,8 +611,8 @@ beforeEach(() => {
   runExec.mockReset().mockResolvedValue({ stdout: "", stderr: "" });
   runCommandWithTimeout.mockReset().mockResolvedValue(createCommandWithTimeoutResult());
   ensureAuthProfileStore.mockReset().mockReturnValue({ version: 1, profiles: {} });
-  migrateLegacyConfig.mockReset().mockImplementation((raw: unknown) => ({
-    config: raw as Record<string, unknown>,
+  migrateLegacyConfig.mockReset().mockImplementation((raw: any) => ({
+    config: raw as Record<string, any>,
     changes: ["Moved routing.allowFrom → channels.whatsapp.allowFrom."],
   }));
   findLegacyGatewayServices.mockReset().mockResolvedValue([]);

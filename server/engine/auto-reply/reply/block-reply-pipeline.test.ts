@@ -179,7 +179,7 @@ describe("createBlockReplyPipeline dedup with threading", () => {
   });
 
   it("keeps separate deliveries for distinct rich-only payloads", async () => {
-    const sent: Array<{ presentation?: unknown }> = [];
+    const sent: Array<{ presentation?: any }> = [];
     const pipeline = createBlockReplyPipeline({
       onBlockReply: async (payload) => {
         sent.push({ presentation: payload.presentation });
@@ -203,7 +203,7 @@ describe("createBlockReplyPipeline dedup with threading", () => {
   });
 
   it("bypasses text coalescing for rich-only payloads", async () => {
-    const sent: Array<{ presentation?: unknown }> = [];
+    const sent: Array<{ presentation?: any }> = [];
     const pipeline = createBlockReplyPipeline({
       onBlockReply: async (payload) => {
         sent.push({ presentation: payload.presentation });

@@ -7,6 +7,6 @@
  */
 
 export type OpenClawPluginToolOptions = unknown;
-export function resolveOpenClawPluginToolInputs(..._args: unknown[]): unknown {
+export function resolveOpenClawPluginToolInputs(..._args: any[]): any {
   return undefined;
 }

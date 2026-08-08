@@ -3,7 +3,7 @@
 // ported media module are provided here.
 
 /** Trims string input and returns undefined for non-strings or empty strings. */
-export function normalizeOptionalString(value: unknown): string | undefined {
+export function normalizeOptionalString(value: any): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }
@@ -12,11 +12,11 @@ export function normalizeOptionalString(value: unknown): string | undefined {
 }
 
 /** Lowercases a normalized optional string. */
-export function normalizeOptionalLowercaseString(value: unknown): string | undefined {
+export function normalizeOptionalLowercaseString(value: any): string | undefined {
   return normalizeOptionalString(value)?.toLowerCase();
 }
 
 /** Lowercases a normalized string or returns an empty string when absent. */
-export function normalizeLowercaseStringOrEmpty(value: unknown): string {
+export function normalizeLowercaseStringOrEmpty(value: any): string {
   return normalizeOptionalLowercaseString(value) ?? "";
 }

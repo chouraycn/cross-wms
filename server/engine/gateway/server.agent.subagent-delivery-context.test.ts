@@ -89,7 +89,7 @@ async function readStoredSessionEntry(key: string): Promise<StoredEntry> {
   return readStoredEntry(stored, key);
 }
 
-async function sendAgentRequest(params: Record<string, unknown>): Promise<void> {
+async function sendAgentRequest(params: Record<string, any>): Promise<void> {
   const res = await rpcReq(gatewaySuite.ws, "agent", {
     deliver: false,
     ...params,
@@ -97,7 +97,7 @@ async function sendAgentRequest(params: Record<string, unknown>): Promise<void> 
   expect(res.ok).toBe(true);
 }
 
-function expectDeliveryContextFields(entry: StoredEntry, expected: Record<string, unknown>): void {
+function expectDeliveryContextFields(entry: StoredEntry, expected: Record<string, any>): void {
   const deliveryContext = readDeliveryContext(entry);
   for (const [key, value] of Object.entries(expected)) {
     expect(deliveryContext[key as keyof typeof deliveryContext]).toBe(value);

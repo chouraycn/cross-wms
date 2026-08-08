@@ -156,7 +156,7 @@ const NodeHostPage: React.FC = () => {
   const handleInvoke = async () => {
     if (!invokeTool) return;
     // 校验 JSON
-    let parsed: Record<string, unknown>;
+    let parsed: Record<string, any>;
     try {
       parsed = JSON.parse(invokeParams);
       setParamsError(null);
@@ -625,12 +625,12 @@ const ResourceBar: React.FC<{
 function generateDefaultParams(tool: NodeHostTool): string {
   const schema = tool.inputSchema;
   if (!schema || typeof schema !== 'object') return '{}';
-  const props = (schema as { properties?: Record<string, unknown> }).properties;
+  const props = (schema as { properties?: Record<string, any> }).properties;
   if (!props || typeof props !== 'object') return '{}';
-  const result: Record<string, unknown> = {};
+  const result: Record<string, any> = {};
   for (const [key, def] of Object.entries(props)) {
     if (def && typeof def === 'object') {
-      const d = def as { type?: string; default?: unknown; description?: string };
+      const d = def as { type?: string; default?: any; description?: string };
       if (d.default !== undefined) {
         result[key] = d.default;
       } else if (d.type === 'string') {

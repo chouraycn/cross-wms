@@ -100,7 +100,7 @@ export function createTelegramChannelPlugin(): ChannelPlugin {
 
   const telegramConfig: ChannelConfigAdapter<TelegramAccountConfig> = {
     listAccountIds: (config: AppConfig): ChannelId[] => {
-      const tgConfig = config.telegram as Record<string, unknown> | undefined;
+      const tgConfig = config.telegram as Record<string, any> | undefined;
       if (tgConfig && tgConfig.botToken) {
         return [TELEGRAM_CHANNEL_ID];
       }
@@ -111,7 +111,7 @@ export function createTelegramChannelPlugin(): ChannelPlugin {
       accountId: ChannelId,
     ): TelegramAccountConfig | null => {
       if (accountId !== TELEGRAM_CHANNEL_ID) return null;
-      const tgConfig = config.telegram as Record<string, unknown> | undefined;
+      const tgConfig = config.telegram as Record<string, any> | undefined;
       if (tgConfig && tgConfig.botToken) {
         return {
           botToken: String(tgConfig.botToken),
@@ -142,7 +142,7 @@ export function createTelegramChannelPlugin(): ChannelPlugin {
         try {
           const rendered = await ctx.render();
           const text = rendered.parts
-            .map((p: { content: unknown }) => String(p.content))
+            .map((p: { content: any }) => String(p.content))
             .join("\n");
 
           const chatId = ctx.to;
@@ -154,7 +154,7 @@ export function createTelegramChannelPlugin(): ChannelPlugin {
           let lastMessageId = "";
 
           for (const chunk of chunks) {
-            const body: Record<string, unknown> = {
+            const body: Record<string, any> = {
               chat_id: chatId,
               text: chunk,
             };
@@ -229,17 +229,17 @@ export function createTelegramChannelPlugin(): ChannelPlugin {
  *
  * 支持 message、channel_post、edited_message 等更新类型。
  */
-export function parseTelegramUpdate(body: unknown): TelegramWebhookResult {
-  const data = body as Record<string, unknown>;
+export function parseTelegramUpdate(body: any): TelegramWebhookResult {
+  const data = body as Record<string, any>;
   if (!data || typeof data !== "object") {
     return { success: false, error: "Invalid Telegram update payload" };
   }
 
   const updateId = data.update_id;
   const message =
-    (data.message as Record<string, unknown> | undefined) ??
-    (data.channel_post as Record<string, unknown> | undefined) ??
-    (data.edited_message as Record<string, unknown> | undefined);
+    (data.message as Record<string, any> | undefined) ??
+    (data.channel_post as Record<string, any> | undefined) ??
+    (data.edited_message as Record<string, any> | undefined);
 
   if (!message) {
     return { success: false, error: "No message in Telegram update" };
@@ -250,8 +250,8 @@ export function parseTelegramUpdate(body: unknown): TelegramWebhookResult {
     return { success: false, error: "Empty message text" };
   }
 
-  const chat = message.chat as Record<string, unknown> | undefined;
-  const from = message.from as Record<string, unknown> | undefined;
+  const chat = message.chat as Record<string, any> | undefined;
+  const from = message.from as Record<string, any> | undefined;
   const chatType = String(chat?.type || "");
 
   return {
@@ -280,7 +280,7 @@ export async function getTelegramUpdates(
   account: TelegramAccountConfig,
   offset?: number,
   timeout = 30,
-): Promise<unknown[]> {
+): Promise<any[]> {
   const params = new URLSearchParams({
     timeout: String(timeout),
     allowed_updates: JSON.stringify(["message", "channel_post", "edited_message"]),
@@ -297,7 +297,7 @@ export async function getTelegramUpdates(
     throw new Error(`Telegram getUpdates failed (HTTP ${response.status})`);
   }
 
-  const data = (await response.json()) as { ok: boolean; result?: unknown[] };
+  const data = (await response.json()) as { ok: boolean; result?: any[] };
   return data.result ?? [];
 }
 
@@ -307,7 +307,7 @@ export async function setTelegramWebhook(
   webhookUrl: string,
   secret?: string,
 ): Promise<boolean> {
-  const body: Record<string, unknown> = { url: webhookUrl };
+  const body: Record<string, any> = { url: webhookUrl };
   if (secret) {
     body.secret_token = secret;
   }

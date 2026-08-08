@@ -163,11 +163,11 @@ export function buildConfigureCandidatesForScope(params: {
   );
 }
 
-function hasPath(root: unknown, segments: string[]): boolean {
+function hasPath(root: any, segments: string[]): boolean {
   if (segments.length === 0) {
     return false;
   }
-  let cursor: unknown = root;
+  let cursor: any = root;
   for (let index = 0; index < segments.length; index += 1) {
     const segment = segments[index] ?? "";
     if (Array.isArray(cursor)) {

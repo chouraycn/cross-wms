@@ -10,8 +10,8 @@ import {
 } from "./facade-runtime.js";
 
 type LmstudioReasoningCapabilityWire = {
-  allowed_options?: unknown;
-  default?: unknown;
+  allowed_options?: any;
+  default?: any;
 };
 
 /** Raw model entry returned by LM Studio's local model catalog endpoints. */
@@ -55,7 +55,7 @@ export type FetchLmstudioModelsResult = {
   reachable: boolean;
   status?: number;
   models: LmstudioModelWire[];
-  error?: unknown;
+  error?: any;
 };
 
 type FacadeModule = {
@@ -78,7 +78,7 @@ type FacadeModule = {
     baseUrl?: string;
     apiKey?: string;
     headers?: Record<string, string>;
-    ssrfPolicy?: unknown;
+    ssrfPolicy?: any;
     timeoutMs?: number;
     fetchImpl?: typeof fetch;
   }) => Promise<FetchLmstudioModelsResult>;
@@ -89,7 +89,7 @@ type FacadeModule = {
     apiKey?: string;
     headers?: Record<string, string>;
   }) => Promise<ModelDefinitionConfig[]>;
-  ensureLmstudioModelLoaded: (params: Record<string, unknown>) => Promise<unknown>;
+  ensureLmstudioModelLoaded: (params: Record<string, any>) => Promise<any>;
   buildLmstudioAuthHeaders: (params: {
     apiKey?: string;
     json?: boolean;
@@ -103,14 +103,14 @@ type FacadeModule = {
   resolveLmstudioProviderHeaders: (params: {
     config?: OpenClawConfig;
     env?: NodeJS.ProcessEnv;
-    headers?: unknown;
+    headers?: any;
     path?: string;
   }) => Promise<Record<string, string> | undefined>;
   resolveLmstudioRequestContext: (params: {
     config?: OpenClawConfig;
     env?: NodeJS.ProcessEnv;
-    headers?: unknown;
-    providerHeaders?: unknown;
+    headers?: any;
+    providerHeaders?: any;
     path?: string;
   }) => Promise<{
     apiKey?: string;
@@ -120,7 +120,7 @@ type FacadeModule = {
     config?: OpenClawConfig;
     agentDir?: string;
     env?: NodeJS.ProcessEnv;
-    headers?: unknown;
+    headers?: any;
   }) => Promise<string | undefined>;
 };
 

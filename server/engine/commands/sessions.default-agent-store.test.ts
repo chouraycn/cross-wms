@@ -10,7 +10,7 @@ const resolveStorePathMock = vi.hoisted(() =>
   }),
 );
 const listSessionEntriesMock = vi.hoisted(() =>
-  vi.fn<() => Array<{ sessionKey: string; entry: Record<string, unknown> }>>(() => []),
+  vi.fn<() => Array<{ sessionKey: string; entry: Record<string, any> }>>(() => []),
 );
 
 vi.mock("../config/config.js", async () => {
@@ -49,7 +49,7 @@ vi.mock("../config/sessions/session-accessor.js", () => ({
 
 import { sessionsCommand } from "./sessions.js";
 
-function toSessionEntrySummaries(store: Record<string, Record<string, unknown>>) {
+function toSessionEntrySummaries(store: Record<string, Record<string, any>>) {
   return Object.entries(store).map(([sessionKey, entry]) => ({ sessionKey, entry }));
 }
 
@@ -74,7 +74,7 @@ function createRuntime(): { runtime: RuntimeEnv; logs: string[] } {
   const logs: string[] = [];
   return {
     runtime: {
-      log: (msg: unknown) => logs.push(String(msg)),
+      log: (msg: any) => logs.push(String(msg)),
       error: vi.fn(),
       exit: vi.fn(),
     },

@@ -23,7 +23,7 @@ type SystemRunPolicyDecision = {
 );
 
 /** Normalizes raw approval decisions from node-host payloads. */
-export function resolveExecApprovalDecision(value: unknown): ExecApprovalDecision {
+export function resolveExecApprovalDecision(value: any): ExecApprovalDecision {
   if (value === "allow-once" || value === "allow-always") {
     return value;
   }

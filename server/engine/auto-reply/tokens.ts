@@ -70,7 +70,7 @@ export function isSilentReplyText(
   return getSilentExactRegex(token).test(text);
 }
 
-type SilentReplyActionEnvelope = { action?: unknown };
+type SilentReplyActionEnvelope = { action?: any };
 
 function isSilentReplyJsonStringText(
   text: string | undefined,
@@ -80,7 +80,7 @@ function isSilentReplyJsonStringText(
   const trimmed = text.trim();
   if (!trimmed.startsWith('"') || !trimmed.endsWith('"') || !trimmed.includes(token)) return false;
   try {
-    const parsed = JSON.parse(trimmed) as unknown;
+    const parsed = JSON.parse(trimmed) as any;
     return typeof parsed === 'string' && parsed.trim() === token;
   } catch {
     return false;

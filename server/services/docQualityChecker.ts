@@ -62,14 +62,14 @@ function calcLevel(score: number): DocQualityResult['level'] {
 // ===================== 解析工具 =====================
 
 interface ParsedSkillMd {
-  frontmatter: Record<string, unknown>;
+  frontmatter: Record<string, any>;
   body: string;
   bodyLines: string[];
 }
 
 function parseSkillMd(content: string): ParsedSkillMd {
   const trimmed = content.trimStart();
-  let frontmatter: Record<string, unknown> = {};
+  let frontmatter: Record<string, any> = {};
   let body = content;
 
   if (trimmed.startsWith('---')) {
@@ -80,7 +80,7 @@ function parseSkillMd(content: string): ParsedSkillMd {
       try {
         const parsed = yaml.load(yamlText);
         if (parsed && typeof parsed === 'object') {
-          frontmatter = parsed as Record<string, unknown>;
+          frontmatter = parsed as Record<string, any>;
         }
       } catch {
         // ignore
@@ -93,7 +93,7 @@ function parseSkillMd(content: string): ParsedSkillMd {
 
 // ===================== 各维度检查器 =====================
 
-function checkStructure(frontmatter: Record<string, unknown>): DocQualityCheck {
+function checkStructure(frontmatter: Record<string, any>): DocQualityCheck {
   const issues: DocQualityIssue[] = [];
   const suggestions: string[] = [];
   const requiredFields = ['name', 'description', 'version'];
@@ -118,16 +118,16 @@ function checkStructure(frontmatter: Record<string, unknown>): DocQualityCheck {
     }
   }
 
-  const metadata = frontmatter.metadata as Record<string, unknown> | undefined;
+  const metadata = frontmatter.metadata as Record<string, any> | undefined;
   if (!metadata) {
     suggestions.push('建议添加 metadata 区块以声明 OpenClaw 兼容性');
   } else {
-    const openclaw = metadata.openclaw as Record<string, unknown> | undefined;
+    const openclaw = metadata.openclaw as Record<string, any> | undefined;
     if (!openclaw) {
       suggestions.push('建议添加 metadata.openclaw 配置');
     } else {
-      const inputs = openclaw.inputs as unknown[] | undefined;
-      const outputs = openclaw.outputs as unknown[] | undefined;
+      const inputs = openclaw.inputs as any[] | undefined;
+      const outputs = openclaw.outputs as any[] | undefined;
       if (!inputs) {
         suggestions.push('建议在 metadata.openclaw.inputs 中声明输入参数');
       }
@@ -160,7 +160,7 @@ function checkStructure(frontmatter: Record<string, unknown>): DocQualityCheck {
   };
 }
 
-function checkReadability(body: string, frontmatter: Record<string, unknown>): DocQualityCheck {
+function checkReadability(body: string, frontmatter: Record<string, any>): DocQualityCheck {
   const issues: DocQualityIssue[] = [];
   const suggestions: string[] = [];
 
@@ -290,7 +290,7 @@ function checkExamples(body: string): DocQualityCheck {
   };
 }
 
-function checkParameters(body: string, frontmatter: Record<string, unknown>): DocQualityCheck {
+function checkParameters(body: string, frontmatter: Record<string, any>): DocQualityCheck {
   const issues: DocQualityIssue[] = [];
   const suggestions: string[] = [];
 
@@ -310,13 +310,13 @@ function checkParameters(body: string, frontmatter: Record<string, unknown>): Do
     });
   }
 
-  const metadata = frontmatter.metadata as Record<string, unknown> | undefined;
-  const openclaw = metadata?.openclaw as Record<string, unknown> | undefined;
-  const inputs = openclaw?.inputs as unknown[] | undefined;
+  const metadata = frontmatter.metadata as Record<string, any> | undefined;
+  const openclaw = metadata?.openclaw as Record<string, any> | undefined;
+  const inputs = openclaw?.inputs as any[] | undefined;
   if (!inputs || inputs.length === 0) {
     suggestions.push('建议在 metadata.openclaw.inputs 中声明输入参数');
   } else {
-    const inputsWithNoDesc = inputs.filter((i: unknown) => !i.description || String(i.description).trim() === '');
+    const inputsWithNoDesc = inputs.filter((i: any) => !i.description || String(i.description).trim() === '');
     if (inputsWithNoDesc.length > 0) {
       issues.push({
         code: 'PARAMS_MISSING_DESC',
@@ -326,7 +326,7 @@ function checkParameters(body: string, frontmatter: Record<string, unknown>): Do
       });
     }
 
-    const inputsWithNoType = inputs.filter((i: unknown) => !i.type);
+    const inputsWithNoType = inputs.filter((i: any) => !i.type);
     if (inputsWithNoType.length > 0) {
       issues.push({
         code: 'PARAMS_MISSING_TYPE',

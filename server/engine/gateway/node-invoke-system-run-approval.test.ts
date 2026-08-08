@@ -52,7 +52,7 @@ describe("sanitizeSystemRunParamsForForwarding", () => {
     runId?: string;
   };
 
-  function approvedRunParams(overrides: ApprovedRunParamOverrides): Record<string, unknown> {
+  function approvedRunParams(overrides: ApprovedRunParamOverrides): Record<string, any> {
     return {
       runId: "approval-1",
       approved: true,
@@ -144,7 +144,7 @@ describe("sanitizeSystemRunParamsForForwarding", () => {
     if (!result.ok) {
       throw new Error("unreachable");
     }
-    const params = result.params as Record<string, unknown>;
+    const params = result.params as Record<string, any>;
     expect(params.approved).toBe(true);
     expect(params.approvalDecision).toBe("allow-once");
     return params;

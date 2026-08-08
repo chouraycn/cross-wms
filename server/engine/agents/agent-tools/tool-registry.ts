@@ -5,7 +5,7 @@ import { ToolDefinitionSchema } from './types.js';
 
 export interface ToolImplementation {
   definition: ToolDefinition;
-  execute: (args: Record<string, unknown>) => Promise<unknown>;
+  execute: (args: Record<string, any>) => Promise<any>;
 }
 
 const toolStore = new Map<string, ToolImplementation>();

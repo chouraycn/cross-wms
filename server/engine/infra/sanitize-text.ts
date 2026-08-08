@@ -1,8 +1,8 @@
 // 移植自 openclaw/src/infra/sanitize-text.ts
 
-export function stripInternalRuntimeScaffolding(...args: unknown[]): unknown {
+export function stripInternalRuntimeScaffolding(...args: any[]): any {
   return undefined;
 }
-export function sanitizeForPlainText(...args: unknown[]): unknown {
+export function sanitizeForPlainText(...args: any[]): any {
   return undefined;
 }

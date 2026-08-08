@@ -7,7 +7,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { vi } from "vitest";
 
-type SessionStore = Record<string, Record<string, unknown>>;
+type SessionStore = Record<string, Record<string, any>>;
 
 function resolveSubagentSessionStorePath(stateDir: string, agentId: string): string {
   return path.join(stateDir, "agents", agentId, "sessions", "sessions.json");
@@ -17,7 +17,7 @@ function resolveSubagentSessionStorePath(stateDir: string, agentId: string): str
 export async function readSubagentSessionStore(storePath: string): Promise<SessionStore> {
   try {
     const raw = await fs.readFile(storePath, "utf8");
-    const parsed = JSON.parse(raw) as unknown;
+    const parsed = JSON.parse(raw) as any;
     if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
       return parsed as SessionStore;
     }
@@ -68,8 +68,8 @@ export async function removeSubagentSessionEntry(params: {
 
 /** Builds default dependency mocks used by subagent registry persistence tests. */
 export function createSubagentRegistryTestDeps(
-  extra: Record<string, unknown> = {},
-): Record<string, unknown> {
+  extra: Record<string, any> = {},
+): Record<string, any> {
   return {
     cleanupBrowserSessionsForLifecycleEnd: vi.fn(async () => {}),
     captureSubagentCompletionReply: vi.fn(async () => undefined),

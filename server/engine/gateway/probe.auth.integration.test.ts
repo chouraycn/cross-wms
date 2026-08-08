@@ -27,7 +27,7 @@ afterAll(async () => {
 
 function requireGatewayToken(): string {
   const token =
-    typeof (testState.gatewayAuth as { token?: unknown } | undefined)?.token === "string"
+    typeof (testState.gatewayAuth as { token?: any } | undefined)?.token === "string"
       ? ((testState.gatewayAuth as { token?: string }).token ?? "")
       : "";
   if (!token) {
@@ -44,11 +44,11 @@ function statePath(...parts: string[]): string {
   return path.join(stateDir, ...parts);
 }
 
-function expectRecord(value: unknown, label: string): Record<string, unknown> {
+function expectRecord(value: any, label: string): Record<string, any> {
   if (typeof value !== "object" || value === null) {
     throw new Error(`expected ${label}`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 async function seedCachedOperatorToken(scopes: string[]): Promise<void> {

@@ -311,7 +311,7 @@ export function resolveRequesterForChildSessionFromRuns(
   childSessionKey: string,
 ): {
   requesterSessionKey: string;
-  requesterOrigin?: unknown;
+  requesterOrigin?: any;
 } | null {
   const latest = findLatestRunForChildSession(runs, childSessionKey);
   if (!latest) {

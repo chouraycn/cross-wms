@@ -14,10 +14,10 @@ vi.mock("../../commands/health.js", () => ({
 function healthSnapshotCallArg(index = 0) {
   return getHealthSnapshotMock.mock.calls.at(index)?.at(0) as
     | {
-        eventLoop?: unknown;
+        eventLoop?: any;
         includeSensitive?: boolean;
         probe?: boolean;
-        runtimeSnapshot?: unknown;
+        runtimeSnapshot?: any;
       }
     | undefined;
 }

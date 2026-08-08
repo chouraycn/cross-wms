@@ -29,13 +29,13 @@ export type TaskRecord = {
   progressSummary?: string;
 };
 
-function normalizeOptionalString(value: unknown): string | undefined {
+function normalizeOptionalString(value: any): string | undefined {
   if (typeof value !== "string") return undefined;
   const trimmed = value.trim();
   return trimmed || undefined;
 }
 
-function normalizeLowercaseStringOrEmpty(value: unknown): string {
+function normalizeLowercaseStringOrEmpty(value: any): string {
   if (typeof value !== "string") return "";
   return value.trim().toLowerCase();
 }
@@ -53,7 +53,7 @@ const recentMediaGenerationTaskStarts = new Map<string, RecentMediaGenerationTas
 const RECENT_MEDIA_GENERATION_TASK_START_CACHE_MS = 2 * 60_000;
 
 /** Builds a stable request key for media generation duplicate detection. */
-export function buildMediaGenerationRequestKey(value: Record<string, unknown>): string {
+export function buildMediaGenerationRequestKey(value: Record<string, any>): string {
   return stableStringify(value);
 }
 
@@ -367,7 +367,7 @@ export function findDuplicateGuardMediaGenerationTaskForSession(params: {
   );
 }
 
-function buildSessionAsyncTaskStatusDetails(task: TaskRecord): Record<string, unknown> {
+function buildSessionAsyncTaskStatusDetails(task: TaskRecord): Record<string, any> {
   return {
     taskId: task.taskId,
     status: task.status,
@@ -381,7 +381,7 @@ function buildSessionAsyncTaskStatusDetails(task: TaskRecord): Record<string, un
 export function buildMediaGenerationTaskStatusDetails(params: {
   task: TaskRecord;
   sourcePrefix: string;
-}): Record<string, unknown> {
+}): Record<string, any> {
   const provider = getMediaGenerationTaskProviderId(params.task, params.sourcePrefix);
   return {
     ...buildSessionAsyncTaskStatusDetails(params.task),
@@ -394,7 +394,7 @@ export function buildMediaGenerationTaskStatusDetails(params: {
 export function buildMediaGenerationTaskStatusListDetails(params: {
   tasks: TaskRecord[];
   sourcePrefix: string;
-}): Record<string, unknown> {
+}): Record<string, any> {
   return {
     async: true,
     active: true,

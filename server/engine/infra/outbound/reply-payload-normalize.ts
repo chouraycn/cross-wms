@@ -21,13 +21,13 @@ export type OutboundReplyPayload = {
   replyToId?: string;
 };
 
-function readObjectValue(value: unknown): object | undefined {
+function readObjectValue(value: any): object | undefined {
   return value && typeof value === "object" && !Array.isArray(value) ? value : undefined;
 }
 
 /** Extract the supported outbound reply fields from loose tool or agent payload objects. */
 export function normalizeOutboundReplyPayload(
-  payload: Record<string, unknown>,
+  payload: Record<string, any>,
 ): OutboundReplyPayload {
   const text = readStringValue(payload.text);
   const mediaUrls = Array.isArray(payload.mediaUrls)

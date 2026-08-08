@@ -5,7 +5,7 @@
  * Simplified for cross-wms: no plugin hook runner, no memory search sync.
  */
 
-type AgentMessage = Record<string, unknown>;
+type AgentMessage = Record<string, any>;
 
 /** Emits post-compaction transcript side effects. */
 export async function runPostCompactionSideEffects(_params: {
@@ -18,7 +18,7 @@ export async function runPostCompactionSideEffects(_params: {
 
 /** Convert a hook runner into the compaction-specific hook shape. */
 export function asCompactionHookRunner(
-  _hookRunner: unknown,
+  _hookRunner: any,
 ): {
   hasHooks?: (hookName?: string) => boolean;
   runBeforeCompaction?: () => Promise<void> | void;

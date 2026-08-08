@@ -12,7 +12,7 @@ type LegacyNotifyMigrationOutcome = {
 
 /** Migrate legacy notify fallback flags into explicit delivery destinations when possible. */
 export function migrateLegacyNotifyFallback(params: {
-  jobs: Array<Record<string, unknown>>;
+  jobs: Array<Record<string, any>>;
   legacyWebhook?: string;
 }): LegacyNotifyMigrationOutcome {
   let changed = false;
@@ -38,7 +38,7 @@ export function migrateLegacyNotifyFallback(params: {
 
     const delivery =
       raw.delivery && typeof raw.delivery === "object" && !Array.isArray(raw.delivery)
-        ? (raw.delivery as Record<string, unknown>)
+        ? (raw.delivery as Record<string, any>)
         : null;
     const mode = normalizeOptionalLowercaseString(delivery?.mode);
     const to = normalizeOptionalString(delivery?.to);
@@ -53,7 +53,7 @@ export function migrateLegacyNotifyFallback(params: {
       delivery?.completionDestination &&
       typeof delivery.completionDestination === "object" &&
       !Array.isArray(delivery.completionDestination)
-        ? (delivery.completionDestination as Record<string, unknown>)
+        ? (delivery.completionDestination as Record<string, any>)
         : null;
     const completionMode = normalizeOptionalLowercaseString(completionDestination?.mode);
     const completionTo = normalizeOptionalString(completionDestination?.to);

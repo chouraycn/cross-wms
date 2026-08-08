@@ -821,8 +821,8 @@ describe("startGatewayConfigReloader", () => {
     onRestart.mockRejectedValueOnce(new Error("restart-check failed"));
     onRestart.mockResolvedValueOnce(undefined);
 
-    const unhandled: unknown[] = [];
-    const onUnhandled = (reason: unknown) => {
+    const unhandled: any[] = [];
+    const onUnhandled = (reason: any) => {
       unhandled.push(reason);
     };
     process.on("unhandledRejection", onUnhandled);

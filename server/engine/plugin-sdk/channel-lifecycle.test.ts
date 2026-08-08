@@ -25,7 +25,7 @@ function createFakeServer(): FakeServer {
   return server;
 }
 
-async function expectTaskPending(task: Promise<unknown>) {
+async function expectTaskPending(task: Promise<any>) {
   let settled = false;
   void task.finally(() => {
     settled = true;

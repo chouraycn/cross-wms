@@ -38,7 +38,7 @@ export async function checkAndMigrate(): Promise<boolean> {
   }
 
   // 收集 localStorage 数据
-  const payload: Record<string, unknown> = {};
+  const payload: Record<string, any> = {};
   let hasData = false;
 
   for (const { lsKey, field } of KEY_MAPPINGS) {

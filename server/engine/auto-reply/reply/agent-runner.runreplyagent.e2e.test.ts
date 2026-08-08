@@ -34,7 +34,7 @@ type AgentRunParams = {
   onToolResult?: (payload: ReplyPayload) => Promise<void> | void;
   shouldEmitToolResult?: () => boolean;
   shouldEmitToolOutput?: () => boolean;
-  onAgentEvent?: (evt: { stream: string; data: Record<string, unknown> }) => void;
+  onAgentEvent?: (evt: { stream: string; data: Record<string, any> }) => void;
   silentExpected?: boolean;
 };
 
@@ -54,15 +54,15 @@ function countMatching<T>(items: readonly T[], predicate: (item: T) => boolean):
   return count;
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error(`expected ${label} to be an object`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function mockCallArgs(mock: ReturnType<typeof vi.fn>, label: string, callIndex = 0): unknown[] {
-  const call = mock.mock.calls[callIndex] as unknown[] | undefined;
+function mockCallArgs(mock: ReturnType<typeof vi.fn>, label: string, callIndex = 0): any[] {
+  const call = mock.mock.calls[callIndex] as any[] | undefined;
   if (!call) {
     throw new Error(`expected ${label} mock call ${callIndex}`);
   }
@@ -99,7 +99,7 @@ vi.mock("../../agents/model-fallback.js", () => ({
   }: {
     provider: string;
     model: string;
-    run: (provider: string, model: string) => Promise<unknown>;
+    run: (provider: string, model: string) => Promise<any>;
   }) => ({
     outcome: "completed" as const,
     result: await run(provider, model),
@@ -107,20 +107,20 @@ vi.mock("../../agents/model-fallback.js", () => ({
     model,
     attempts: [],
   }),
-  isFallbackSummaryError: (err: unknown) =>
+  isFallbackSummaryError: (err: any) =>
     err instanceof Error &&
     err.name === "FallbackSummaryError" &&
-    Array.isArray((err as { attempts?: unknown[] }).attempts),
+    Array.isArray((err as { attempts?: any[] }).attempts),
 }));
 
 vi.mock("../../agents/embedded-agent.js", () => ({
-  compactEmbeddedAgentSession: (params: unknown) => state.compactEmbeddedAgentSessionMock(params),
+  compactEmbeddedAgentSession: (params: any) => state.compactEmbeddedAgentSessionMock(params),
   queueEmbeddedAgentMessage: vi.fn().mockReturnValue(false),
-  runEmbeddedAgent: (params: unknown) => state.runEmbeddedAgentMock(params),
+  runEmbeddedAgent: (params: any) => state.runEmbeddedAgentMock(params),
 }));
 
 vi.mock("../../agents/embedded-agent-runner/runs.js", () => ({
-  queueEmbeddedAgentMessage: (sessionId: string, prompt: string, options: unknown) =>
+  queueEmbeddedAgentMessage: (sessionId: string, prompt: string, options: any) =>
     state.queueEmbeddedAgentMessageMock(sessionId, prompt, options),
 }));
 
@@ -1507,7 +1507,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
     const fallbackSpy = vi
       .spyOn(modelFallbackModule, "runWithModelFallback")
       .mockImplementationOnce(
-        async ({ run }: { run: (provider: string, model: string) => Promise<unknown> }) => ({
+        async ({ run }: { run: (provider: string, model: string) => Promise<any> }) => ({
           outcome: "completed" as const,
           result: await run("deepinfra", "moonshotai/Kimi-K2.5"),
           provider: "deepinfra",
@@ -1556,7 +1556,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
     const fallbackSpy = vi
       .spyOn(modelFallbackModule, "runWithModelFallback")
       .mockImplementationOnce(
-        async ({ run }: { run: (provider: string, model: string) => Promise<unknown> }) => ({
+        async ({ run }: { run: (provider: string, model: string) => Promise<any> }) => ({
           outcome: "completed" as const,
           result: await run("deepinfra", "moonshotai/Kimi-K2.5"),
           provider: "deepinfra",
@@ -1607,7 +1607,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
     const fallbackSpy = vi
       .spyOn(modelFallbackModule, "runWithModelFallback")
       .mockImplementationOnce(
-        async ({ run }: { run: (provider: string, model: string) => Promise<unknown> }) => ({
+        async ({ run }: { run: (provider: string, model: string) => Promise<any> }) => ({
           outcome: "completed" as const,
           result: await run("openai", "gpt-5.5"),
           provider: "openai",
@@ -1655,7 +1655,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
     const fallbackSpy = vi
       .spyOn(modelFallbackModule, "runWithModelFallback")
       .mockImplementationOnce(
-        async ({ run }: { run: (provider: string, model: string) => Promise<unknown> }) => ({
+        async ({ run }: { run: (provider: string, model: string) => Promise<any> }) => ({
           outcome: "completed" as const,
           result: await run("openai", "gpt-5.5"),
           provider: "openai",
@@ -1743,7 +1743,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
     const fallbackSpy = vi
       .spyOn(modelFallbackModule, "runWithModelFallback")
       .mockImplementationOnce(
-        async ({ run }: { run: (provider: string, model: string) => Promise<unknown> }) => ({
+        async ({ run }: { run: (provider: string, model: string) => Promise<any> }) => ({
           outcome: "completed" as const,
           result: await run("openai", "gpt-5.5"),
           provider: "openai",
@@ -1795,7 +1795,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
     const fallbackSpy = vi
       .spyOn(modelFallbackModule, "runWithModelFallback")
       .mockImplementationOnce(
-        async ({ run }: { run: (provider: string, model: string) => Promise<unknown> }) => ({
+        async ({ run }: { run: (provider: string, model: string) => Promise<any> }) => ({
           outcome: "completed" as const,
           result: await run("openai", "gpt-5.5"),
           provider: "openai",
@@ -1848,7 +1848,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
     const fallbackSpy = vi
       .spyOn(modelFallbackModule, "runWithModelFallback")
       .mockImplementationOnce(
-        async ({ run }: { run: (provider: string, model: string) => Promise<unknown> }) => ({
+        async ({ run }: { run: (provider: string, model: string) => Promise<any> }) => ({
           outcome: "completed" as const,
           result: await run("openai", "gpt-5.5"),
           provider: "openai",
@@ -1899,7 +1899,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
     const fallbackSpy = vi
       .spyOn(modelFallbackModule, "runWithModelFallback")
       .mockImplementationOnce(
-        async ({ run }: { run: (provider: string, model: string) => Promise<unknown> }) => ({
+        async ({ run }: { run: (provider: string, model: string) => Promise<any> }) => ({
           outcome: "completed" as const,
           result: await run("openai", "gpt-5.5"),
           provider: "openai",
@@ -1951,7 +1951,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
     const fallbackSpy = vi
       .spyOn(modelFallbackModule, "runWithModelFallback")
       .mockImplementationOnce(
-        async ({ run }: { run: (provider: string, model: string) => Promise<unknown> }) => ({
+        async ({ run }: { run: (provider: string, model: string) => Promise<any> }) => ({
           outcome: "completed" as const,
           result: await run("openai", "gpt-5.5"),
           provider: "openai",
@@ -2003,7 +2003,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
     const fallbackSpy = vi
       .spyOn(modelFallbackModule, "runWithModelFallback")
       .mockImplementationOnce(
-        async ({ run }: { run: (provider: string, model: string) => Promise<unknown> }) => ({
+        async ({ run }: { run: (provider: string, model: string) => Promise<any> }) => ({
           outcome: "completed" as const,
           result: await run("openai", "gpt-5.5"),
           provider: "openai",
@@ -2051,7 +2051,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
     const fallbackSpy = vi
       .spyOn(modelFallbackModule, "runWithModelFallback")
       .mockImplementationOnce(
-        async ({ run }: { run: (provider: string, model: string) => Promise<unknown> }) => ({
+        async ({ run }: { run: (provider: string, model: string) => Promise<any> }) => ({
           outcome: "completed" as const,
           result: await run("openai", "gpt-5.5"),
           provider: "openai",
@@ -2104,7 +2104,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
     const fallbackSpy = vi
       .spyOn(modelFallbackModule, "runWithModelFallback")
       .mockImplementation(
-        async ({ run }: { run: (provider: string, model: string) => Promise<unknown> }) => ({
+        async ({ run }: { run: (provider: string, model: string) => Promise<any> }) => ({
           outcome: "completed" as const,
           result: await run("deepinfra", "moonshotai/Kimi-K2.5"),
           provider: "deepinfra",
@@ -2126,7 +2126,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
         sessionStore,
         sessionKey: "main",
       });
-      const fallbackEvents: Array<Record<string, unknown>> = [];
+      const fallbackEvents: Array<Record<string, any>> = [];
       const off = onAgentEvent((evt) => {
         if (evt.stream === "lifecycle" && evt.data?.phase === "fallback") {
           fallbackEvents.push(evt.data);
@@ -2168,7 +2168,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
         }: {
           provider: string;
           model: string;
-          run: (provider: string, model: string) => Promise<unknown>;
+          run: (provider: string, model: string) => Promise<any>;
         }) => {
           callCount += 1;
           if (callCount === 2) {
@@ -2240,7 +2240,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
         }: {
           provider: string;
           model: string;
-          run: (provider: string, model: string) => Promise<unknown>;
+          run: (provider: string, model: string) => Promise<any>;
         }) => {
           callCount += 1;
           if (callCount === 1) {
@@ -2322,7 +2322,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
         }: {
           provider: string;
           model: string;
-          run: (provider: string, model: string) => Promise<unknown>;
+          run: (provider: string, model: string) => Promise<any>;
         }) => {
           callCount += 1;
           if (callCount === 1) {
@@ -2417,7 +2417,7 @@ describe("runReplyAgent typing (heartbeat)", () => {
       const fallbackSpy = vi
         .spyOn(modelFallbackModule, "runWithModelFallback")
         .mockImplementation(
-          async ({ run }: { run: (provider: string, model: string) => Promise<unknown> }) => ({
+          async ({ run }: { run: (provider: string, model: string) => Promise<any> }) => ({
             outcome: "completed" as const,
             result: await run("deepinfra", "moonshotai/Kimi-K2.5"),
             provider: "deepinfra",

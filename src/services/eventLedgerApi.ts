@@ -11,7 +11,7 @@ export interface LedgerEvent {
   seq: number;
   sessionId: string;
   type: string;
-  payload: Record<string, unknown>;
+  payload: Record<string, any>;
   timestamp: number;
   runId?: string;
   actor?: string;
@@ -26,7 +26,7 @@ export interface SessionMeta {
   eventCount: number;
   status: 'active' | 'archived' | 'incomplete' | 'deleted';
   lastEventType?: string;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
 }
 
 export interface ReconstructedSession {
@@ -37,12 +37,12 @@ export interface ReconstructedSession {
     role: string;
     content: string;
     timestamp: number;
-    toolCalls?: unknown[];
+    toolCalls?: any[];
     toolResults?: Array<{ toolCallId: string; content: string }>;
     thinking?: string;
-    metadata: Record<string, unknown>;
+    metadata: Record<string, any>;
   }>;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
   status: string;
   eventCount: number;
   lastUpdated: number;
@@ -155,7 +155,7 @@ export const eventLedgerApi = {
   async recordEvent(
     sessionId: string,
     type: string,
-    payload?: Record<string, unknown>,
+    payload?: Record<string, any>,
     runId?: string,
     actor?: string
   ): Promise<{ ok: boolean; data?: LedgerEvent; error?: string }> {

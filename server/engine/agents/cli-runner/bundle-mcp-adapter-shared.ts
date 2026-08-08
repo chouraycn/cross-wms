@@ -7,14 +7,14 @@ import type { BundleMcpServerConfig } from "../../plugins/bundle-mcp.js";
 /** Re-exported record guard for adapter modules that share loose JSON inputs. */
 export { isRecord } from "../../../packages/normalization-core/src/record-coerce.js";
 
-function normalizeStringArray(value: unknown): string[] | undefined {
+function normalizeStringArray(value: any): string[] | undefined {
   return Array.isArray(value) && value.every((entry) => typeof entry === "string")
     ? [...value]
     : undefined;
 }
 
 /** Normalize a string-valued record, dropping non-string entries. */
-export function normalizeStringRecord(value: unknown): Record<string, string> | undefined {
+export function normalizeStringRecord(value: any): Record<string, string> | undefined {
   if (!isRecord(value)) {
     return undefined;
   }
@@ -41,7 +41,7 @@ export function decodeHeaderEnvPlaceholder(
 
 /** Copy common MCP server config fields into a CLI adapter config object. */
 export function applyCommonServerConfig(
-  next: Record<string, unknown>,
+  next: Record<string, any>,
   server: BundleMcpServerConfig,
 ): void {
   if (typeof server.command === "string") {

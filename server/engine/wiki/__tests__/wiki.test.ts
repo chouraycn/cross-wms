@@ -87,7 +87,7 @@ const { wikiMock } = vi.hoisted(() => {
       const sqlLower = sql.toLowerCase();
 
       return {
-        run: vi.fn((...params: unknown[]) => {
+        run: vi.fn((...params: any[]) => {
           // INSERT INTO wiki_entries
           if (/insert\s+into\s+wiki_entries/i.test(sql) && !/wiki_entry_tags/i.test(sql)) {
             const entry = {
@@ -207,7 +207,7 @@ const { wikiMock } = vi.hoisted(() => {
           return { changes: 0, lastInsertRowid: 0 };
         }),
 
-        get: vi.fn((...params: unknown[]) => {
+        get: vi.fn((...params: any[]) => {
           // SELECT * FROM wiki_entries WHERE id = ?
           if (/select\s+\*\s+from\s+wiki_entries\s+where\s+id/i.test(sql)) {
             return entries.find(e => e.id === params[0]) || undefined;
@@ -257,7 +257,7 @@ const { wikiMock } = vi.hoisted(() => {
           return undefined;
         }),
 
-        all: vi.fn((...params: unknown[]) => {
+        all: vi.fn((...params: any[]) => {
           // SELECT * FROM wiki_versions WHERE entry_id = ? ORDER BY version DESC
           if (/select\s+\*\s+from\s+wiki_versions/i.test(sql)) {
             const entryId = params[0] as number;

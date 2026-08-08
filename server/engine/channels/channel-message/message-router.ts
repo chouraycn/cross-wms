@@ -7,7 +7,7 @@ export type RouteCondition =
   | { type: "account"; accountId: AccountId }
   | { type: "kind"; kind: string }
   | { type: "content"; pattern: RegExp }
-  | { type: "metadata"; key: string; value: unknown }
+  | { type: "metadata"; key: string; value: any }
   | { type: "custom"; predicate: (message: ChannelMessage) => boolean };
 
 export interface MessageRoute {

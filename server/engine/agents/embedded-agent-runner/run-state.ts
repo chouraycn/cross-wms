@@ -37,7 +37,7 @@ export type EmbeddedAgentQueueMessageOptions = {
 
 export type ActiveEmbeddedRunSnapshot = {
   transcriptLeafId: string | null;
-  messages?: unknown[];
+  messages?: any[];
   inFlightPrompt?: string;
 };
 

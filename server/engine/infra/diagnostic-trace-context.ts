@@ -62,7 +62,7 @@ function createDiagnosticTraceScopeState(): DiagnosticTraceScopeState {
   };
 }
 
-function isDiagnosticTraceScopeState(value: unknown): value is DiagnosticTraceScopeState {
+function isDiagnosticTraceScopeState(value: any): value is DiagnosticTraceScopeState {
   if (!value || typeof value !== "object") {
     return false;
   }
@@ -74,7 +74,7 @@ function isDiagnosticTraceScopeState(value: unknown): value is DiagnosticTraceSc
 }
 
 function getDiagnosticTraceScopeState(): DiagnosticTraceScopeState {
-  const globalRecord = globalThis as Record<PropertyKey, unknown>;
+  const globalRecord = globalThis as Record<PropertyKey, any>;
   const existing = globalRecord[DIAGNOSTIC_TRACE_SCOPE_STATE_KEY];
   if (isDiagnosticTraceScopeState(existing)) {
     return existing;
@@ -90,21 +90,21 @@ function getDiagnosticTraceScopeState(): DiagnosticTraceScopeState {
 }
 
 /** 返回值是否为非零 W3C trace id。 */
-export function isValidDiagnosticTraceId(value: unknown): value is string {
+export function isValidDiagnosticTraceId(value: any): value is string {
   return typeof value === "string" && TRACE_ID_RE.test(value) && isNonZeroHex(value);
 }
 
 /** 返回值是否为非零 W3C span id。 */
-export function isValidDiagnosticSpanId(value: unknown): value is string {
+export function isValidDiagnosticSpanId(value: any): value is string {
   return typeof value === "string" && SPAN_ID_RE.test(value) && isNonZeroHex(value);
 }
 
 /** 返回值是否为有效的 W3C trace-flags 字节。 */
-export function isValidDiagnosticTraceFlags(value: unknown): value is string {
+export function isValidDiagnosticTraceFlags(value: any): value is string {
   return typeof value === "string" && TRACE_FLAGS_RE.test(value);
 }
 
-function normalizeTraceId(value: unknown): string | undefined {
+function normalizeTraceId(value: any): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }
@@ -112,7 +112,7 @@ function normalizeTraceId(value: unknown): string | undefined {
   return isValidDiagnosticTraceId(normalized) ? normalized : undefined;
 }
 
-function normalizeSpanId(value: unknown): string | undefined {
+function normalizeSpanId(value: any): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }
@@ -120,7 +120,7 @@ function normalizeSpanId(value: unknown): string | undefined {
   return isValidDiagnosticSpanId(normalized) ? normalized : undefined;
 }
 
-function normalizeTraceFlags(value: unknown): string | undefined {
+function normalizeTraceFlags(value: any): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }

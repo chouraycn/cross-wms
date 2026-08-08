@@ -10,10 +10,10 @@ export type AuthProfileHealthStatus = unknown;
 export type AuthProviderHealthStatus = unknown;
 export type AuthProviderHealth = unknown;
 export type AuthHealthSummary = unknown;
-export const DEFAULT_OAUTH_WARN_MS: unknown = undefined;
-export function formatRemainingShort(..._args: unknown[]): unknown {
+export const DEFAULT_OAUTH_WARN_MS: any = undefined;
+export function formatRemainingShort(..._args: any[]): any {
   return "";
 }
-export function buildAuthHealthSummary(..._args: unknown[]): unknown {
+export function buildAuthHealthSummary(..._args: any[]): any {
   return undefined;
 }

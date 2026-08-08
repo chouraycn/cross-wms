@@ -6,21 +6,21 @@
  */
 import { normalizeOptionalLowercaseString } from "../infra/string-coerce.js";
 
-export function readToolResultDetails(result: unknown): Record<string, unknown> | undefined {
+export function readToolResultDetails(result: any): Record<string, any> | undefined {
   if (!result || typeof result !== "object") {
     return undefined;
   }
-  const record = result as Record<string, unknown>;
+  const record = result as Record<string, any>;
   return record.details && typeof record.details === "object" && !Array.isArray(record.details)
-    ? (record.details as Record<string, unknown>)
+    ? (record.details as Record<string, any>)
     : undefined;
 }
 
-export function readToolResultStatus(result: unknown): string | undefined {
+export function readToolResultStatus(result: any): string | undefined {
   return normalizeOptionalLowercaseString(readToolResultDetails(result)?.status);
 }
 
-export function isToolResultError(result: unknown): boolean {
+export function isToolResultError(result: any): boolean {
   const details = readToolResultDetails(result);
   const normalized = readToolResultStatus(result);
   const explicitlySuccessful = details?.ok === true || details?.success === true;

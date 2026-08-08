@@ -12,7 +12,7 @@ import { extractCrestodianRescueMessage, runCrestodianRescueMessage } from "./re
 let tempRoot = "";
 let tempDirId = 0;
 
-type TestConfig = Record<string, unknown>;
+type TestConfig = Record<string, any>;
 
 const mockConfig = vi.hoisted(() => {
   const state = {

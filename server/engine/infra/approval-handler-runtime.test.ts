@@ -97,7 +97,7 @@ function expectApprovalRuntime(
   return runtime;
 }
 
-function firstCallArg(mock: ReturnType<typeof vi.fn>): unknown {
+function firstCallArg(mock: ReturnType<typeof vi.fn>): any {
   return mock.mock.calls[0]?.[0];
 }
 
@@ -160,7 +160,7 @@ describe("createChannelApprovalHandlerFromCapability", () => {
 
     expect(unbindPending).toHaveBeenCalledOnce();
     const stopUnbind = firstCallArg(unbindPending) as
-      | { request?: unknown; approvalKind?: string }
+      | { request?: any; approvalKind?: string }
       | undefined;
     expect(stopUnbind?.request).toBe(request);
     expect(stopUnbind?.approvalKind).toBe("plugin");
@@ -191,7 +191,7 @@ describe("createChannelApprovalHandlerFromCapability", () => {
 
     expect(unbindPending).toHaveBeenCalledTimes(1);
     const unbind = firstCallArg(unbindPending) as
-      | { entry?: unknown; binding?: unknown; request?: unknown }
+      | { entry?: any; binding?: any; request?: any }
       | undefined;
     expect(unbind?.entry).toEqual({ messageId: "1" });
     expect(unbind?.binding).toEqual({ bindingId: "bound-1" });
@@ -235,7 +235,7 @@ describe("createChannelApprovalHandlerFromCapability", () => {
 
     expect(unbindPending).toHaveBeenCalledTimes(2);
     expect(buildResolvedResult).toHaveBeenCalledTimes(1);
-    const resolvedPayload = firstCallArg(buildResolvedResult) as { entry?: unknown } | undefined;
+    const resolvedPayload = firstCallArg(buildResolvedResult) as { entry?: any } | undefined;
     expect(resolvedPayload?.entry).toEqual({ messageId: "2" });
   });
 
@@ -405,7 +405,7 @@ describe("createLazyChannelApprovalNativeRuntimeAdapter", () => {
 
     expect(unbindPending).toHaveBeenCalledTimes(1);
     const unbind = firstCallArg(unbindPending) as
-      | { entry?: unknown; binding?: unknown; request?: unknown }
+      | { entry?: any; binding?: any; request?: any }
       | undefined;
     expect(unbind?.entry).toEqual({ messageId: "in-flight" });
     expect(unbind?.binding).toEqual({ bindingId: "bound-in-flight" });
@@ -456,7 +456,7 @@ describe("createLazyChannelApprovalNativeRuntimeAdapter", () => {
     expect(unbindPending).not.toHaveBeenCalled();
     expect(cancelDelivered).toHaveBeenCalledTimes(1);
     const cancel = firstCallArg(cancelDelivered) as
-      | { entry?: unknown; request?: unknown; approvalKind?: string }
+      | { entry?: any; request?: any; approvalKind?: string }
       | undefined;
     expect(cancel?.entry).toBe(deliveredEntry);
     expect(cancel?.request).toBe(request);
@@ -506,7 +506,7 @@ describe("createLazyChannelApprovalNativeRuntimeAdapter", () => {
     expect(unbindPending).not.toHaveBeenCalled();
     expect(cancelDelivered).toHaveBeenCalledTimes(1);
     const cancel = firstCallArg(cancelDelivered) as
-      | { entry?: unknown; request?: unknown }
+      | { entry?: any; request?: any }
       | undefined;
     expect(cancel?.entry).toBe(deliveredEntry);
     expect(cancel?.request).toBe(request);

@@ -165,7 +165,7 @@ describe("server-channels approval bootstrap", () => {
       [
         {
           plugin: ChannelPlugin;
-          cfg: unknown;
+          cfg: any;
           accountId?: string;
           channelRuntime?: PluginRuntime["channel"];
         },

@@ -29,6 +29,6 @@ export class OutboundDeliveryError extends Error {
 }
 
 /** Checks if an error is an OutboundDeliveryError. */
-export function isOutboundDeliveryError(error: unknown): error is OutboundDeliveryError {
+export function isOutboundDeliveryError(error: any): error is OutboundDeliveryError {
   return error instanceof OutboundDeliveryError;
 }

@@ -31,7 +31,7 @@ function configWithPluginLoadPath(pluginRoot: string): OpenClawConfig {
   };
 }
 
-function writeManifest(dir: string, manifest: Record<string, unknown>) {
+function writeManifest(dir: string, manifest: Record<string, any>) {
   fs.writeFileSync(
     path.join(dir, "openclaw.plugin.json"),
     `${JSON.stringify(manifest, null, 2)}\n`,

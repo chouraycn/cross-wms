@@ -3,14 +3,14 @@ import { clearActiveProgressLine } from "../../packages/terminal-core/src/progre
 import { restoreTerminalState } from "../../packages/terminal-core/src/restore.js";
 
 export type RuntimeEnv = {
-  log: (...args: unknown[]) => void;
-  error: (...args: unknown[]) => void;
+  log: (...args: any[]) => void;
+  error: (...args: any[]) => void;
   exit: (code: number) => void;
 };
 
 export type OutputRuntimeEnv = RuntimeEnv & {
   writeStdout: (value: string) => void;
-  writeJson: (value: unknown, space?: number) => void;
+  writeJson: (value: any, space?: number) => void;
 };
 
 function shouldEmitRuntimeLog(env: NodeJS.ProcessEnv = process.env): boolean {
@@ -20,7 +20,7 @@ function shouldEmitRuntimeLog(env: NodeJS.ProcessEnv = process.env): boolean {
   if (env.OPENCLAW_TEST_RUNTIME_LOG === "1") {
     return true;
   }
-  const maybeMockedLog = console.log as unknown as { mock?: unknown };
+  const maybeMockedLog = console.log as unknown as { mock?: any };
   return typeof maybeMockedLog.mock === "object";
 }
 
@@ -33,13 +33,13 @@ function shouldEmitRuntimeStdout(env: NodeJS.ProcessEnv = process.env): boolean 
   }
   const stdout = process.stdout as NodeJS.WriteStream & {
     write: {
-      mock?: unknown;
+      mock?: any;
     };
   };
   return typeof stdout.write.mock === "object";
 }
 
-function isPipeClosedError(err: unknown): boolean {
+function isPipeClosedError(err: any): boolean {
   const code = (err as { code?: string })?.code;
   return code === "EPIPE" || code === "EIO";
 }
@@ -80,7 +80,7 @@ function createRuntimeIo(): Pick<OutputRuntimeEnv, "log" | "error" | "writeStdou
       console.error(...args);
     },
     writeStdout,
-    writeJson: (value: unknown, space = 2) => {
+    writeJson: (value: any, space = 2) => {
       writeStdout(JSON.stringify(value, null, space > 0 ? space : undefined));
     },
   };
@@ -106,7 +106,7 @@ export function createNonExitingRuntime(): OutputRuntimeEnv {
 
 export function writeRuntimeJson(
   runtime: RuntimeEnv | OutputRuntimeEnv,
-  value: unknown,
+  value: any,
   space = 2,
 ): void {
   if (hasRuntimeOutputWriter(runtime)) {

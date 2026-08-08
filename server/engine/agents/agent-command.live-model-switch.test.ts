@@ -17,9 +17,9 @@ const state = vi.hoisted(() => ({
       },
     },
   },
-  runtimeConfigMock: undefined as unknown,
-  acpResolveSessionMock: vi.fn((..._args: unknown[]): unknown => null),
-  acpRunTurnMock: vi.fn((..._args: unknown[]): unknown => undefined),
+  runtimeConfigMock: undefined as any,
+  acpResolveSessionMock: vi.fn((..._args: any[]): any => null),
+  acpRunTurnMock: vi.fn((..._args: any[]): any => undefined),
   buildAcpResultMock: vi.fn(),
   createAcpVisibleTextAccumulatorMock: vi.fn(),
   emitAcpLifecycleEndMock: vi.fn(),
@@ -33,12 +33,12 @@ const state = vi.hoisted(() => ({
   runWithModelFallbackMock: vi.fn(),
   runAgentAttemptMock: vi.fn(),
   resolveAgentSkillsFilterMock: vi.fn(
-    (_cfg?: unknown, _agentId?: string): string[] | undefined => undefined,
+    (_cfg?: any, _agentId?: string): string[] | undefined => undefined,
   ),
   resolveEffectiveModelFallbacksMock: vi.fn().mockReturnValue(undefined),
-  hasLegacyAutoFallbackWithoutOriginMock: vi.fn((_entry: unknown) => false),
-  resolveAutoFallbackPrimaryProbeMock: vi.fn((_params: unknown) => undefined as unknown),
-  resolveChannelModelOverrideMock: vi.fn((_params: unknown) => null as unknown),
+  hasLegacyAutoFallbackWithoutOriginMock: vi.fn((_entry: any) => false),
+  resolveAutoFallbackPrimaryProbeMock: vi.fn((_params: any) => undefined as any),
+  resolveChannelModelOverrideMock: vi.fn((_params: any) => null as any),
   assertLifecycleCurrentMock: vi.fn(),
   emitAgentEventMock: vi.fn(),
   registerAgentRunContextMock: vi.fn(),
@@ -50,13 +50,13 @@ const state = vi.hoisted(() => ({
   resolveMessageChannelSelectionMock: vi.fn(),
   trajectoryRecordEventMock: vi.fn(),
   trajectoryFlushMock: vi.fn(async () => undefined),
-  persistSessionEntryMock: vi.fn(async (..._args: unknown[]): Promise<unknown> => undefined),
+  persistSessionEntryMock: vi.fn(async (..._args: any[]): Promise<any> => undefined),
   clearSessionAuthProfileOverrideMock: vi.fn(),
-  isThinkingLevelSupportedMock: vi.fn((_args: unknown) => true),
+  isThinkingLevelSupportedMock: vi.fn((_args: any) => true),
   resolveSupportedThinkingLevelMock: vi.fn(({ level }: { level?: string }) => level),
-  resolveThinkingDefaultMock: vi.fn((_args: unknown) => "low"),
+  resolveThinkingDefaultMock: vi.fn((_args: any) => "low"),
   loadManifestModelCatalogMock: vi.fn(() => []),
-  buildWorkspaceSkillSnapshotMock: vi.fn((..._args: unknown[]): unknown => ({
+  buildWorkspaceSkillSnapshotMock: vi.fn((..._args: any[]): any => ({
     prompt: "",
     skills: [],
     resolvedSkills: [],
@@ -64,30 +64,30 @@ const state = vi.hoisted(() => ({
   })),
   prepareInternalSessionEffectsTranscriptMock: vi.fn(),
   removeInternalSessionEffectsTranscriptMock: vi.fn(),
-  authProfileStoreMock: { profiles: {} } as { profiles: Record<string, unknown> },
+  authProfileStoreMock: { profiles: {} } as { profiles: Record<string, any> },
   sessionEntryMock: undefined as SessionEntry | undefined,
-  sessionStoreMock: undefined as unknown,
+  sessionStoreMock: undefined as any,
   storePathMock: undefined as string | undefined,
   resolvedSessionKeyMock: undefined as string | undefined,
 }));
 
 vi.mock("./model-fallback.js", () => ({
-  runWithModelFallback: (params: unknown) => state.runWithModelFallbackMock(params),
+  runWithModelFallback: (params: any) => state.runWithModelFallbackMock(params),
 }));
 
 vi.mock("./command/attempt-execution.runtime.js", () => ({
-  buildAcpResult: (...args: unknown[]) => state.buildAcpResultMock(...args),
+  buildAcpResult: (...args: any[]) => state.buildAcpResultMock(...args),
   createAcpVisibleTextAccumulator: () => state.createAcpVisibleTextAccumulatorMock(),
   emitAcpAssistantDelta: vi.fn(),
-  emitAcpLifecycleEnd: (...args: unknown[]) => state.emitAcpLifecycleEndMock(...args),
-  emitAcpLifecycleError: (...args: unknown[]) => state.emitAcpLifecycleErrorMock(...args),
+  emitAcpLifecycleEnd: (...args: any[]) => state.emitAcpLifecycleEndMock(...args),
+  emitAcpLifecycleError: (...args: any[]) => state.emitAcpLifecycleErrorMock(...args),
   emitAcpLifecycleStart: vi.fn(),
   emitAcpRuntimeEvent: vi.fn(),
-  persistCliTurnTranscript: (...args: unknown[]) => state.persistCliTurnTranscriptMock(...args),
-  persistAcpTurnTranscript: (...args: unknown[]) => state.persistAcpTurnTranscriptMock(...args),
+  persistCliTurnTranscript: (...args: any[]) => state.persistCliTurnTranscriptMock(...args),
+  persistAcpTurnTranscript: (...args: any[]) => state.persistAcpTurnTranscriptMock(...args),
   persistSessionEntry: vi.fn(),
   prependInternalEventContext: (body: string) => body,
-  runAgentAttempt: (...args: unknown[]) => state.runAgentAttemptMock(...args),
+  runAgentAttempt: (...args: any[]) => state.runAgentAttemptMock(...args),
   sessionFileHasContent: vi.fn(async () => false),
 }));
 
@@ -97,16 +97,16 @@ vi.mock("./command/attempt-execution.shared.js", async () => {
   );
   return {
     ...actual,
-    persistSessionEntry: (...args: unknown[]) => state.persistSessionEntryMock(...args),
+    persistSessionEntry: (...args: any[]) => state.persistSessionEntryMock(...args),
   };
 });
 
 vi.mock("./command/delivery.runtime.js", () => ({
-  deliverAgentCommandResult: (...args: unknown[]) => state.deliverAgentCommandResultMock(...args),
+  deliverAgentCommandResult: (...args: any[]) => state.deliverAgentCommandResultMock(...args),
 }));
 
 vi.mock("./command/cli-compaction.js", () => ({
-  runCliTurnCompactionLifecycle: (...args: unknown[]) =>
+  runCliTurnCompactionLifecycle: (...args: any[]) =>
     state.runCliTurnCompactionLifecycleMock(...args),
 }));
 
@@ -148,7 +148,7 @@ vi.mock("./command/run-context.js", () => ({
 }));
 
 vi.mock("./command/session-store.runtime.js", () => ({
-  updateSessionStoreAfterAgentRun: (...args: unknown[]) =>
+  updateSessionStoreAfterAgentRun: (...args: any[]) =>
     state.updateSessionStoreAfterAgentRunMock(...args),
 }));
 
@@ -181,15 +181,15 @@ vi.mock("./harness/runtime-plugin.js", () => ({
 
 vi.mock("../acp/policy.js", () => ({
   isAcpEnabledByPolicy: () => true,
-  resolveAcpAgentPolicyError: (...args: unknown[]) => state.resolveAcpAgentPolicyErrorMock(...args),
-  resolveAcpDispatchPolicyError: (...args: unknown[]) =>
+  resolveAcpAgentPolicyError: (...args: any[]) => state.resolveAcpAgentPolicyErrorMock(...args),
+  resolveAcpDispatchPolicyError: (...args: any[]) =>
     state.resolveAcpDispatchPolicyErrorMock(...args),
-  resolveAcpExplicitTurnPolicyError: (...args: unknown[]) =>
+  resolveAcpExplicitTurnPolicyError: (...args: any[]) =>
     state.resolveAcpExplicitTurnPolicyErrorMock(...args),
 }));
 
 vi.mock("../acp/runtime/errors.js", () => ({
-  toAcpRuntimeError: ({ error }: { error: unknown }) =>
+  toAcpRuntimeError: ({ error }: { error: any }) =>
     error instanceof Error ? error : new Error(String(error)),
 }));
 
@@ -201,7 +201,7 @@ vi.mock("../auto-reply/thinking.js", () => ({
   formatThinkingLevels: () => "low, medium, high",
   normalizeThinkLevel: (v?: string) => v || undefined,
   normalizeVerboseLevel: (v?: string) => v || undefined,
-  isThinkingLevelSupported: (args: unknown) => state.isThinkingLevelSupportedMock(args),
+  isThinkingLevelSupported: (args: any) => state.isThinkingLevelSupportedMock(args),
   resolveSupportedThinkingLevel: (args: { level?: string }) =>
     state.resolveSupportedThinkingLevelMock(args),
   supportsXHighThinking: () => false,
@@ -212,7 +212,7 @@ vi.mock("../cli/command-format.js", () => ({
 }));
 
 vi.mock("../cli/command-secret-gateway.js", () => ({
-  resolveCommandSecretRefsViaGateway: async (params: { config: unknown }) => ({
+  resolveCommandSecretRefsViaGateway: async (params: { config: any }) => ({
     resolvedConfig: params.config,
     diagnostics: [],
   }),
@@ -249,10 +249,10 @@ vi.mock("../config/runtime-snapshot.js", () => ({
 
 vi.mock("../config/sessions.js", () => ({
   resolveAgentIdFromSessionKey: () => "default",
-  mergeSessionEntry: (a: unknown, b: unknown) => ({ ...(a as object), ...(b as object) }),
+  mergeSessionEntry: (a: any, b: any) => ({ ...(a as object), ...(b as object) }),
   updateSessionStore: vi.fn(
-    async (_path: string, fn: (store: Record<string, unknown>) => unknown) => {
-      const store: Record<string, unknown> = {};
+    async (_path: string, fn: (store: Record<string, any>) => unknown) => {
+      const store: Record<string, any> = {};
       return fn(store);
     },
   ),
@@ -266,21 +266,21 @@ vi.mock("../config/sessions/transcript-resolve.runtime.js", () => ({
 }));
 
 vi.mock("./internal-session-effects.js", () => ({
-  prepareInternalSessionEffectsTranscript: (...args: unknown[]) =>
+  prepareInternalSessionEffectsTranscript: (...args: any[]) =>
     state.prepareInternalSessionEffectsTranscriptMock(...args),
-  removeInternalSessionEffectsTranscript: (...args: unknown[]) =>
+  removeInternalSessionEffectsTranscript: (...args: any[]) =>
     state.removeInternalSessionEffectsTranscriptMock(...args),
 }));
 
 vi.mock("../infra/agent-events.js", () => ({
-  assertAgentRunLifecycleGenerationCurrent: (...args: unknown[]) =>
+  assertAgentRunLifecycleGenerationCurrent: (...args: any[]) =>
     state.assertLifecycleCurrentMock(...args),
   captureAgentRunLifecycleGeneration: () => "test-generation",
-  clearAgentRunContext: (...args: unknown[]) => state.clearAgentRunContextMock(...args),
-  emitAgentEvent: (...args: unknown[]) => state.emitAgentEventMock(...args),
+  clearAgentRunContext: (...args: any[]) => state.clearAgentRunContextMock(...args),
+  emitAgentEvent: (...args: any[]) => state.emitAgentEventMock(...args),
   getAgentEventLifecycleGeneration: () => "test-generation",
   onAgentEvent: vi.fn(),
-  registerAgentRunContext: (...args: unknown[]) => state.registerAgentRunContextMock(...args),
+  registerAgentRunContext: (...args: any[]) => state.registerAgentRunContextMock(...args),
   withAgentRunLifecycleGeneration: (_generation: string, run: () => unknown) => run(),
 }));
 
@@ -289,12 +289,12 @@ vi.mock("../infra/outbound/session-context.js", () => ({
 }));
 
 vi.mock("../infra/outbound/agent-delivery.js", () => ({
-  resolveAgentDeliveryPlan: (...args: unknown[]) => state.resolveAgentDeliveryPlanMock(...args),
-  resolveAgentOutboundTarget: (...args: unknown[]) => state.resolveAgentOutboundTargetMock(...args),
+  resolveAgentDeliveryPlan: (...args: any[]) => state.resolveAgentDeliveryPlanMock(...args),
+  resolveAgentOutboundTarget: (...args: any[]) => state.resolveAgentOutboundTargetMock(...args),
 }));
 
 vi.mock("../infra/outbound/channel-selection.js", () => ({
-  resolveMessageChannelSelection: (...args: unknown[]) =>
+  resolveMessageChannelSelection: (...args: any[]) =>
     state.resolveMessageChannelSelectionMock(...args),
 }));
 
@@ -318,7 +318,7 @@ vi.mock("../logging/subsystem.js", () => ({
 }));
 
 vi.mock("../channels/model-overrides.js", () => ({
-  resolveChannelModelOverride: (params: unknown) => state.resolveChannelModelOverrideMock(params),
+  resolveChannelModelOverride: (params: any) => state.resolveChannelModelOverrideMock(params),
 }));
 
 vi.mock("../routing/session-key.js", async () => {
@@ -360,7 +360,7 @@ vi.mock("../trajectory/runtime.js", () => ({
   createTrajectoryRuntimeRecorder: () => ({
     enabled: true,
     filePath: "/tmp/session.trajectory.jsonl",
-    recordEvent: (...args: unknown[]) => state.trajectoryRecordEventMock(...args),
+    recordEvent: (...args: any[]) => state.trajectoryRecordEventMock(...args),
     flush: () => state.trajectoryFlushMock(),
   }),
 }));
@@ -379,13 +379,13 @@ vi.mock("../utils/message-channel.js", () => ({
 vi.mock("./agent-scope.js", () => ({
   clearAutoFallbackPrimaryProbeSelection: vi.fn(),
   entryMatchesAutoFallbackPrimaryProbe: () => true,
-  hasLegacyAutoFallbackWithoutOrigin: (entry: unknown) =>
+  hasLegacyAutoFallbackWithoutOrigin: (entry: any) =>
     state.hasLegacyAutoFallbackWithoutOriginMock(entry),
   hasSessionAutoModelFallbackProvenance: () => false,
   listAgentEntries: () => [],
   listAgentIds: () => ["default"],
   markAutoFallbackPrimaryProbe: vi.fn(),
-  resolveAutoFallbackPrimaryProbe: (params: unknown) =>
+  resolveAutoFallbackPrimaryProbe: (params: any) =>
     state.resolveAutoFallbackPrimaryProbeMock(params),
   resolveAgentConfig: () => undefined,
   resolveAgentDir: () => "/tmp/agent",
@@ -406,7 +406,7 @@ vi.mock("./auth-profiles/store.js", () => ({
 }));
 
 vi.mock("./auth-profiles/session-override.js", () => ({
-  clearSessionAuthProfileOverride: (...args: unknown[]) =>
+  clearSessionAuthProfileOverride: (...args: any[]) =>
     state.clearSessionAuthProfileOverrideMock(...args),
 }));
 
@@ -431,25 +431,25 @@ vi.mock("./model-selection.js", () => {
     defaultProvider,
     defaultModel,
   }: {
-    cfg?: unknown;
+    cfg?: any;
     catalog?: Array<{ provider: string; id: string }>;
     defaultProvider: string;
     defaultModel?: string;
   }) => {
     const modelMap =
-      (cfg as { agents?: { defaults?: { models?: Record<string, unknown> } } } | undefined)?.agents
+      (cfg as { agents?: { defaults?: { models?: Record<string, any> } } } | undefined)?.agents
         ?.defaults?.models ?? {};
     const configuredCatalog = (
-      (cfg as { models?: { providers?: Record<string, { models?: unknown[] }> } } | undefined)
+      (cfg as { models?: { providers?: Record<string, { models?: any[] }> } } | undefined)
         ?.models?.providers
         ? Object.entries(
-            (cfg as { models?: { providers?: Record<string, { models?: unknown[] }> } }).models!
+            (cfg as { models?: { providers?: Record<string, { models?: any[] }> } }).models!
               .providers!,
           ).flatMap(([provider, entry]) =>
             Array.isArray(entry?.models)
               ? entry.models
                   .filter(
-                    (model): model is Record<string, unknown> =>
+                    (model): model is Record<string, any> =>
                       Boolean(model) && typeof model === "object",
                   )
                   .map((model) => {
@@ -495,7 +495,7 @@ vi.mock("./model-selection.js", () => {
   return {
     buildAllowedModelSet,
     createModelVisibilityPolicy: (params: {
-      cfg?: unknown;
+      cfg?: any;
       catalog?: Array<{ provider: string; id: string }>;
       defaultProvider: string;
       defaultModel?: string;
@@ -529,8 +529,8 @@ vi.mock("./model-selection.js", () => {
           catalog,
       };
     },
-    buildConfiguredModelCatalog: ({ cfg }: { cfg?: unknown }) => {
-      const providers = (cfg as { models?: { providers?: Record<string, { models?: unknown[] }> } })
+    buildConfiguredModelCatalog: ({ cfg }: { cfg?: any }) => {
+      const providers = (cfg as { models?: { providers?: Record<string, { models?: any[] }> } })
         ?.models?.providers;
       if (!providers) {
         return [];
@@ -539,7 +539,7 @@ vi.mock("./model-selection.js", () => {
         Array.isArray(entry?.models)
           ? entry.models
               .filter(
-                (model): model is Record<string, unknown> =>
+                (model): model is Record<string, any> =>
                   Boolean(model) && typeof model === "object",
               )
               .map((model) => {
@@ -642,21 +642,21 @@ vi.mock("./model-selection.js", () => {
             : { provider: defaultProvider, model: raw },
       };
     },
-    resolveConfiguredModelRef: ({ cfg }: { cfg?: unknown }) => {
+    resolveConfiguredModelRef: ({ cfg }: { cfg?: any }) => {
       const raw = (cfg as { agents?: { defaults?: { model?: string | { primary?: string } } } })
         ?.agents?.defaults?.model;
       const primary = typeof raw === "string" ? raw : raw?.primary;
       const [provider, ...modelParts] = (primary ?? "anthropic/claude").split("/");
       return { provider, model: modelParts.join("/") || "claude" };
     },
-    resolveDefaultModelForAgent: ({ cfg }: { cfg?: unknown }) => {
+    resolveDefaultModelForAgent: ({ cfg }: { cfg?: any }) => {
       const raw = (cfg as { agents?: { defaults?: { model?: string | { primary?: string } } } })
         ?.agents?.defaults?.model;
       const primary = typeof raw === "string" ? raw : raw?.primary;
       const [provider, ...modelParts] = (primary ?? "anthropic/claude").split("/");
       return { provider, model: modelParts.join("/") || "claude" };
     },
-    resolveThinkingDefault: (args: unknown) => state.resolveThinkingDefaultMock(args),
+    resolveThinkingDefault: (args: any) => state.resolveThinkingDefaultMock(args),
   };
 });
 
@@ -667,13 +667,13 @@ vi.mock("./model-visibility-policy.js", () => ({
     defaultProvider,
     defaultModel,
   }: {
-    cfg?: unknown;
+    cfg?: any;
     catalog?: Array<{ provider: string; id: string }>;
     defaultProvider: string;
     defaultModel?: string;
   }) => {
     const modelMap =
-      (cfg as { agents?: { defaults?: { models?: Record<string, unknown> } } } | undefined)?.agents
+      (cfg as { agents?: { defaults?: { models?: Record<string, any> } } } | undefined)?.agents
         ?.defaults?.models ?? {};
     const allowedKeys = new Set<string>(
       Object.keys(modelMap).map((ref) => {
@@ -730,7 +730,7 @@ vi.mock("./provider-auth-aliases.js", () => ({
 }));
 
 vi.mock("../skills/discovery/agent-filter.js", () => ({
-  resolveEffectiveAgentSkillFilter: (_cfg: unknown, agentId: string) =>
+  resolveEffectiveAgentSkillFilter: (_cfg: any, agentId: string) =>
     state.resolveAgentSkillsFilterMock(_cfg, agentId),
 }));
 
@@ -741,7 +741,7 @@ vi.mock("../skills/runtime/remote.js", () => ({
 vi.mock("../skills/runtime/session-snapshot.js", () => ({
   resolveReusableWorkspaceSkillSnapshot: (params: {
     workspaceDir: string;
-    existingSnapshot?: { resolvedSkills?: unknown };
+    existingSnapshot?: { resolvedSkills?: any };
     skillFilter?: string[];
   }) => {
     if (params.skillFilter !== undefined && params.skillFilter.length === 0) {
@@ -765,7 +765,7 @@ vi.mock("../skills/runtime/session-snapshot.js", () => ({
       };
     }
     const rebuilt = state.buildWorkspaceSkillSnapshotMock(params.workspaceDir, params) as {
-      resolvedSkills?: unknown;
+      resolvedSkills?: any;
     };
     return {
       snapshot: params.existingSnapshot
@@ -778,7 +778,7 @@ vi.mock("../skills/runtime/session-snapshot.js", () => ({
 }));
 
 vi.mock("./spawned-context.js", () => ({
-  normalizeSpawnedRunMetadata: (meta: unknown) => meta ?? {},
+  normalizeSpawnedRunMetadata: (meta: any) => meta ?? {},
 }));
 
 vi.mock("./timeout.js", () => ({
@@ -796,8 +796,8 @@ vi.mock("./workspace.js", () => ({
 
 vi.mock("../acp/control-plane/manager.js", () => ({
   getAcpSessionManager: () => ({
-    resolveSession: (...args: unknown[]) => state.acpResolveSessionMock(...args),
-    runTurn: (...args: unknown[]) => state.acpRunTurnMock(...args),
+    resolveSession: (...args: any[]) => state.acpResolveSessionMock(...args),
+    runTurn: (...args: any[]) => state.acpRunTurnMock(...args),
   }),
 }));
 
@@ -814,12 +814,12 @@ type FallbackRunnerParams = {
   provider: string;
   model: string;
   sessionId?: string;
-  run: (provider: string, model: string) => Promise<unknown>;
-  onFallbackStep?: (step: Record<string, unknown>) => void | Promise<void>;
+  run: (provider: string, model: string) => Promise<any>;
+  onFallbackStep?: (step: Record<string, any>) => void | Promise<void>;
   classifyResult?: (params: {
     provider: string;
     model: string;
-    result: unknown;
+    result: any;
     attempt: number;
     total: number;
   }) => unknown;
@@ -881,29 +881,29 @@ function setupSingleAttemptFallback() {
   });
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object") {
     throw new Error(`expected ${label} to be an object`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function requireArray(value: unknown, label: string): unknown[] {
+function requireArray(value: any, label: string): any[] {
   if (!Array.isArray(value)) {
     throw new Error(`expected ${label} to be an array`);
   }
   return value;
 }
 
-function mockCallArg(mock: ReturnType<typeof vi.fn>, callIndex = 0, argIndex = 0): unknown {
-  const call = mock.mock.calls[callIndex] as unknown[] | undefined;
+function mockCallArg(mock: ReturnType<typeof vi.fn>, callIndex = 0, argIndex = 0): any {
+  const call = mock.mock.calls[callIndex] as any[] | undefined;
   if (!call) {
     throw new Error(`expected mock call ${callIndex}`);
   }
   return call[argIndex];
 }
 
-function expectRecordFields(value: unknown, expected: Record<string, unknown>): void {
+function expectRecordFields(value: any, expected: Record<string, any>): void {
   const actual = requireRecord(value, "record");
   for (const [key, expectedValue] of Object.entries(expected)) {
     expect(actual[key]).toEqual(expectedValue);
@@ -946,7 +946,7 @@ describe("agentCommand – LiveSessionModelSwitchError retry", () => {
     state.resolveAcpDispatchPolicyErrorMock.mockReturnValue(null);
     state.resolveAcpExplicitTurnPolicyErrorMock.mockReturnValue(null);
     state.runtimeConfigMock = undefined;
-    delete (state.defaultRuntimeConfig.agents as { list?: unknown }).list;
+    delete (state.defaultRuntimeConfig.agents as { list?: any }).list;
     state.isThinkingLevelSupportedMock.mockReturnValue(true);
     state.resolveSupportedThinkingLevelMock.mockImplementation(
       ({ level }: { level?: string }) => level,
@@ -956,7 +956,7 @@ describe("agentCommand – LiveSessionModelSwitchError retry", () => {
     state.loadManifestModelCatalogMock.mockReturnValue([]);
     state.hasLegacyAutoFallbackWithoutOriginMock.mockReturnValue(false);
     state.resolveAutoFallbackPrimaryProbeMock.mockReturnValue(undefined);
-    state.resolveChannelModelOverrideMock.mockImplementation((params: unknown) => {
+    state.resolveChannelModelOverrideMock.mockImplementation((params: any) => {
       const input = params as {
         cfg?: { channels?: { modelByChannel?: Record<string, Record<string, string>> } };
         channel?: string;
@@ -976,8 +976,8 @@ describe("agentCommand – LiveSessionModelSwitchError retry", () => {
       const parent = parentChannel ? entries[parentChannel] : undefined;
       return parent ? { channel, model: parent, matchKey: parentChannel } : null;
     });
-    state.acpRunTurnMock.mockImplementation(async (params: unknown) => {
-      const onEvent = (params as { onEvent?: (event: unknown) => void }).onEvent;
+    state.acpRunTurnMock.mockImplementation(async (params: any) => {
+      const onEvent = (params as { onEvent?: (event: any) => void }).onEvent;
       onEvent?.({ type: "text_delta", stream: "output", text: "done" });
       onEvent?.({ type: "done", stopReason: "end_turn" });
     });
@@ -997,31 +997,31 @@ describe("agentCommand – LiveSessionModelSwitchError retry", () => {
       meta: { durationMs: 0, stopReason: "end_turn" },
     }));
     state.persistCliTurnTranscriptMock.mockImplementation(
-      async (params: { sessionEntry?: unknown }) => ({
+      async (params: { sessionEntry?: any }) => ({
         kind: "persisted",
         sessionEntry: params.sessionEntry,
       }),
     );
     state.persistAcpTurnTranscriptMock.mockImplementation(
-      async (params: { sessionEntry?: unknown }) => ({
+      async (params: { sessionEntry?: any }) => ({
         kind: "persisted",
         sessionEntry: params.sessionEntry,
       }),
     );
     state.runCliTurnCompactionLifecycleMock.mockImplementation(
-      async (params: { sessionEntry?: unknown }) => params.sessionEntry,
+      async (params: { sessionEntry?: any }) => params.sessionEntry,
     );
     state.authProfileStoreMock = { profiles: {} };
     state.sessionEntryMock = undefined;
     state.sessionStoreMock = undefined;
     state.storePathMock = undefined;
     state.resolvedSessionKeyMock = undefined;
-    state.persistSessionEntryMock.mockImplementation(async (...args: unknown[]) => {
+    state.persistSessionEntryMock.mockImplementation(async (...args: any[]) => {
       const params = args[0] as {
-        sessionStore?: Record<string, unknown>;
+        sessionStore?: Record<string, any>;
         sessionKey?: string;
-        entry?: unknown;
-        shouldPersist?: (entry: unknown) => boolean;
+        entry?: any;
+        shouldPersist?: (entry: any) => boolean;
       };
       const current =
         params.sessionStore && params.sessionKey
@@ -1112,13 +1112,13 @@ describe("agentCommand – LiveSessionModelSwitchError retry", () => {
     expect(secondCall.model).toBe("gpt-5.4");
     expect(secondCall.sessionId).toBe("session-1");
 
-    const lifecycleEndCalls = state.emitAgentEventMock.mock.calls.filter((call: unknown[]) => {
+    const lifecycleEndCalls = state.emitAgentEventMock.mock.calls.filter((call: any[]) => {
       const arg = call[0] as { stream?: string; data?: { phase?: string } };
       return arg?.stream === "lifecycle" && arg?.data?.phase === "end";
     });
     expect(lifecycleEndCalls.length).toBeGreaterThanOrEqual(1);
     const lifecycleFinishingCalls = state.emitAgentEventMock.mock.calls.filter(
-      (call: unknown[]) => {
+      (call: any[]) => {
         const arg = call[0] as { stream?: string; data?: { phase?: string } };
         return arg?.stream === "lifecycle" && arg?.data?.phase === "finishing";
       },
@@ -1127,11 +1127,11 @@ describe("agentCommand – LiveSessionModelSwitchError retry", () => {
     expectRecordFields(mockCallArg(state.runAgentAttemptMock), {
       deferTerminalLifecycle: true,
     });
-    const firstFinishingIndex = state.emitAgentEventMock.mock.calls.findIndex((call: unknown[]) => {
+    const firstFinishingIndex = state.emitAgentEventMock.mock.calls.findIndex((call: any[]) => {
       const arg = call[0] as { stream?: string; data?: { phase?: string } };
       return arg?.stream === "lifecycle" && arg?.data?.phase === "finishing";
     });
-    const lastEndIndex = state.emitAgentEventMock.mock.calls.findLastIndex((call: unknown[]) => {
+    const lastEndIndex = state.emitAgentEventMock.mock.calls.findLastIndex((call: any[]) => {
       const arg = call[0] as { stream?: string; data?: { phase?: string } };
       return arg?.stream === "lifecycle" && arg?.data?.phase === "end";
     });
@@ -1178,7 +1178,7 @@ describe("agentCommand – LiveSessionModelSwitchError retry", () => {
 
   it("uses an embedded queue rebound generation for terminal lifecycle and cleanup", async () => {
     setupSingleAttemptFallback();
-    state.runAgentAttemptMock.mockImplementation(async (attemptParams: unknown) => {
+    state.runAgentAttemptMock.mockImplementation(async (attemptParams: any) => {
       (
         attemptParams as {
           onLifecycleGenerationChanged?: (lifecycleGeneration: string) => void;
@@ -1229,7 +1229,7 @@ describe("agentCommand – LiveSessionModelSwitchError retry", () => {
     ).rejects.toThrow("agent run aborted for restart");
 
     const lifecycleEvents = state.emitAgentEventMock.mock.calls
-      .map((call) => call[0] as { stream?: string; data?: Record<string, unknown> })
+      .map((call) => call[0] as { stream?: string; data?: Record<string, any> })
       .filter((event) => event.stream === "lifecycle");
     expect(lifecycleEvents).toEqual(
       expect.arrayContaining([
@@ -1278,7 +1278,7 @@ describe("agentCommand – LiveSessionModelSwitchError retry", () => {
     });
     const controller = new AbortController();
     state.persistAcpTurnTranscriptMock.mockImplementation(
-      async (params: { sessionEntry?: unknown }) => {
+      async (params: { sessionEntry?: any }) => {
         controller.abort(createAgentRunRestartAbortError());
         return { kind: "persisted", sessionEntry: params.sessionEntry };
       },
@@ -1336,7 +1336,7 @@ describe("agentCommand – LiveSessionModelSwitchError retry", () => {
     await runBasicAgentCommand();
 
     const touchWrites = state.persistSessionEntryMock.mock.calls.filter((call) => {
-      const entry = (call[0] as { entry?: Record<string, unknown> } | undefined)?.entry;
+      const entry = (call[0] as { entry?: Record<string, any> } | undefined)?.entry;
       return entry?.lastInteractionAt !== undefined;
     });
     expect(touchWrites).toHaveLength(1);
@@ -1456,7 +1456,7 @@ describe("agentCommand – LiveSessionModelSwitchError retry", () => {
     });
 
     const touchWrites = state.persistSessionEntryMock.mock.calls.filter((call) => {
-      const entry = (call[0] as { entry?: Record<string, unknown> } | undefined)?.entry;
+      const entry = (call[0] as { entry?: Record<string, any> } | undefined)?.entry;
       return entry?.lastInteractionAt !== undefined;
     });
     expect(touchWrites).toHaveLength(0);
@@ -1810,7 +1810,7 @@ describe("agentCommand – LiveSessionModelSwitchError retry", () => {
     const result = makeSuccessResult("openai", "gpt-5.4") as ReturnType<
       typeof makeSuccessResult
     > & {
-      meta: Record<string, unknown> & { agentMeta: Record<string, unknown> };
+      meta: Record<string, any> & { agentMeta: Record<string, any> };
     };
     result.meta.executionTrace = {
       runner: "embedded",
@@ -1858,7 +1858,7 @@ describe("agentCommand – LiveSessionModelSwitchError retry", () => {
     const result = makeSuccessResult("openai", "gpt-5.4") as ReturnType<
       typeof makeSuccessResult
     > & {
-      meta: Record<string, unknown> & { executionTrace: Record<string, unknown> };
+      meta: Record<string, any> & { executionTrace: Record<string, any> };
     };
     result.meta.executionTrace = {
       runner: "cli",
@@ -1885,7 +1885,7 @@ describe("agentCommand – LiveSessionModelSwitchError retry", () => {
     const result = makeSuccessResult("openai", "gpt-5.4") as ReturnType<
       typeof makeSuccessResult
     > & {
-      meta: Record<string, unknown> & { agentMeta: Record<string, unknown> };
+      meta: Record<string, any> & { agentMeta: Record<string, any> };
     };
     result.meta.agentMeta = {
       ...result.meta.agentMeta,
@@ -1933,9 +1933,9 @@ describe("agentCommand – LiveSessionModelSwitchError retry", () => {
     });
 
     const touchWrite = state.persistSessionEntryMock.mock.calls.find((call) => {
-      const entry = (call[0] as { entry?: Record<string, unknown> } | undefined)?.entry;
+      const entry = (call[0] as { entry?: Record<string, any> } | undefined)?.entry;
       return entry?.thinkingLevel === "medium";
-    })?.[0] as { entry?: Record<string, unknown> } | undefined;
+    })?.[0] as { entry?: Record<string, any> } | undefined;
     expect(touchWrite?.entry?.lastInteractionAt).toBeDefined();
     expect(state.updateSessionStoreAfterAgentRunMock).toHaveBeenCalledTimes(1);
   });
@@ -2506,13 +2506,13 @@ describe("agentCommand – LiveSessionModelSwitchError retry", () => {
       provider: "openai",
       model: "gpt-5.4",
     });
-    state.runAgentAttemptMock.mockImplementation(async (attemptParams: unknown) => {
+    state.runAgentAttemptMock.mockImplementation(async (attemptParams: any) => {
       state.emitAgentEventMock({
         runId: "run-live-switch",
         stream: "lifecycle",
         data: { phase: "finishing" },
       });
-      (attemptParams as { onAgentEvent?: (evt: unknown) => void }).onAgentEvent?.({
+      (attemptParams as { onAgentEvent?: (evt: any) => void }).onAgentEvent?.({
         stream: "lifecycle",
         data: { phase: "finishing" },
       });
@@ -2522,7 +2522,7 @@ describe("agentCommand – LiveSessionModelSwitchError retry", () => {
     await runBasicAgentCommand();
 
     const lifecycleFinishingCalls = state.emitAgentEventMock.mock.calls.filter(
-      (call: unknown[]) => {
+      (call: any[]) => {
         const arg = call[0] as { stream?: string; data?: { phase?: string } };
         return arg?.stream === "lifecycle" && arg?.data?.phase === "finishing";
       },
@@ -2818,7 +2818,7 @@ describe("agentCommand – LiveSessionModelSwitchError retry", () => {
 
     expect(state.runWithModelFallbackMock).toHaveBeenCalledTimes(1);
 
-    const lifecycleErrorCalls = state.emitAgentEventMock.mock.calls.filter((call: unknown[]) => {
+    const lifecycleErrorCalls = state.emitAgentEventMock.mock.calls.filter((call: any[]) => {
       const arg = call[0] as { stream?: string; data?: { phase?: string } };
       return arg?.stream === "lifecycle" && arg?.data?.phase === "error";
     });
@@ -2862,7 +2862,7 @@ describe("agentCommand – LiveSessionModelSwitchError retry", () => {
       authProfileIdSource: "user",
     });
 
-    state.runAgentAttemptMock.mockImplementation(async (...args: unknown[]) => {
+    state.runAgentAttemptMock.mockImplementation(async (...args: any[]) => {
       const attemptParams = args[0] as { authProfileProvider?: string } | undefined;
       capturedAuthProfileProvider = attemptParams?.authProfileProvider;
       return makeSuccessResult("openai", "gpt-5.4");
@@ -2900,7 +2900,7 @@ describe("agentCommand – LiveSessionModelSwitchError retry", () => {
     await runBasicAgentCommand();
 
     const autoPinnedSwitchWrites = state.persistSessionEntryMock.mock.calls.filter((call) => {
-      const entry = (call[0] as { entry?: Record<string, unknown> } | undefined)?.entry;
+      const entry = (call[0] as { entry?: Record<string, any> } | undefined)?.entry;
       return (
         entry?.providerOverride === "openai" &&
         entry?.modelOverride === "gpt-5.4" &&
@@ -2997,7 +2997,7 @@ describe("agentCommand – LiveSessionModelSwitchError retry", () => {
         attempts: [],
       };
     });
-    state.runAgentAttemptMock.mockImplementation(async (...args: unknown[]) => {
+    state.runAgentAttemptMock.mockImplementation(async (...args: any[]) => {
       const attemptParams = args[0] as { authProfileProvider?: string } | undefined;
       capturedAuthProfileProvider = attemptParams?.authProfileProvider;
       return makeSuccessResult("codex-cli", "gpt-5.4");
@@ -3050,7 +3050,7 @@ describe("agentCommand – LiveSessionModelSwitchError retry", () => {
     await runBasicAgentCommand();
 
     const attemptParams = mockCallArg(state.runAgentAttemptMock) as {
-      skillsSnapshot?: Record<string, unknown>;
+      skillsSnapshot?: Record<string, any>;
     };
     expectRecordFields(attemptParams?.skillsSnapshot, {
       prompt: "persisted prompt",
@@ -3063,7 +3063,7 @@ describe("agentCommand – LiveSessionModelSwitchError retry", () => {
   });
 
   it("classifies empty embedded run results before model fallback accepts them", async () => {
-    let observedClassification: unknown;
+    let observedClassification: any;
     state.runWithModelFallbackMock.mockImplementation(async (params: FallbackRunnerParams) => {
       const primaryResult = await params.run(params.provider, params.model);
       observedClassification = await params.classifyResult?.({
@@ -3136,10 +3136,10 @@ describe("agentCommand – LiveSessionModelSwitchError retry", () => {
         agentMeta: { provider: "anthropic", model: "claude" },
       },
     };
-    state.runAgentAttemptMock.mockImplementationOnce(async (attemptParams: unknown) => {
+    state.runAgentAttemptMock.mockImplementationOnce(async (attemptParams: any) => {
       const params = attemptParams as {
         deferTerminalLifecycle?: boolean;
-        onAgentEvent?: (event: { stream: string; data: Record<string, unknown> }) => void;
+        onAgentEvent?: (event: { stream: string; data: Record<string, any> }) => void;
       };
       expect(params.deferTerminalLifecycle).toBe(true);
       params.onAgentEvent?.({
@@ -3170,7 +3170,7 @@ describe("agentCommand – LiveSessionModelSwitchError retry", () => {
 
     expect(state.deliverAgentCommandResultMock).toHaveBeenCalledTimes(1);
     const lifecycleEvents = state.emitAgentEventMock.mock.calls
-      .map((call) => call[0] as { stream?: string; data?: Record<string, unknown> })
+      .map((call) => call[0] as { stream?: string; data?: Record<string, any> })
       .filter((event) => event.stream === "lifecycle");
     expect(lifecycleEvents.some((event) => event.data?.phase === "finishing")).toBe(false);
     expect(lifecycleEvents.some((event) => event.data?.phase === "end")).toBe(false);
@@ -3203,9 +3203,9 @@ describe("agentCommand – LiveSessionModelSwitchError retry", () => {
         agentMeta: { provider: "anthropic", model: "claude" },
       },
     };
-    state.runAgentAttemptMock.mockImplementationOnce(async (attemptParams: unknown) => {
+    state.runAgentAttemptMock.mockImplementationOnce(async (attemptParams: any) => {
       const params = attemptParams as {
-        onAgentEvent?: (event: { stream: string; data: Record<string, unknown> }) => void;
+        onAgentEvent?: (event: { stream: string; data: Record<string, any> }) => void;
       };
       params.onAgentEvent?.({
         stream: "lifecycle",
@@ -3229,7 +3229,7 @@ describe("agentCommand – LiveSessionModelSwitchError retry", () => {
 
     expect(state.deliverAgentCommandResultMock).toHaveBeenCalledTimes(1);
     const lifecycleEvents = state.emitAgentEventMock.mock.calls
-      .map((call) => call[0] as { stream?: string; data?: Record<string, unknown> })
+      .map((call) => call[0] as { stream?: string; data?: Record<string, any> })
       .filter((event) => event.stream === "lifecycle");
     expect(lifecycleEvents).toEqual(
       expect.arrayContaining([

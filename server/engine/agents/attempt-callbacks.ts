@@ -14,10 +14,10 @@ export type AgentAttemptLifecycleState = {
 };
 
 /** Create agent attempt lifecycle callbacks (returns no-op callbacks in cross-wms). */
-export function createAgentAttemptLifecycleCallbacks(..._args: unknown[]): {
+export function createAgentAttemptLifecycleCallbacks(..._args: any[]): {
   onStart: () => void;
   onComplete: () => void;
-  onError: (_error: unknown) => void;
+  onError: (_error: any) => void;
 } {
   return {
     onStart: () => {},

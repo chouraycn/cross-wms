@@ -59,28 +59,28 @@ function supportsStrictMode(model: Model): boolean | undefined {
 
 function expectSupportsDeveloperRoleForcedOff(overrides?: Partial<Model>): void {
   const model = { ...baseModel(), ...overrides };
-  delete (model as { compat?: unknown }).compat;
+  delete (model as { compat?: any }).compat;
   const normalized = normalizeModelCompat(model as Model);
   expect(supportsDeveloperRole(normalized)).toBe(false);
 }
 
 function expectSupportsUsageInStreamingForcedOff(overrides?: Partial<Model>): void {
   const model = { ...baseModel(), ...overrides };
-  delete (model as { compat?: unknown }).compat;
+  delete (model as { compat?: any }).compat;
   const normalized = normalizeModelCompat(model as Model);
   expect(supportsUsageInStreaming(normalized)).toBe(false);
 }
 
 function expectSupportsStrictModeForcedOff(overrides?: Partial<Model>): void {
   const model = { ...baseModel(), ...overrides };
-  delete (model as { compat?: unknown }).compat;
+  delete (model as { compat?: any }).compat;
   const normalized = normalizeModelCompat(model as Model);
   expect(supportsStrictMode(normalized)).toBe(false);
 }
 
 function expectNativeStreamingSupported(overrides: Partial<Model>): void {
   const model = { ...baseModel(), ...overrides };
-  delete (model as { compat?: unknown }).compat;
+  delete (model as { compat?: any }).compat;
   const normalized = normalizeModelCompat(model as Model);
   expect(supportsDeveloperRole(normalized)).toBe(false);
   expect(supportsUsageInStreaming(normalized)).toBe(true);
@@ -225,7 +225,7 @@ describe("normalizeModelCompat", () => {
       provider: "openai",
       baseUrl: "https://api.openai.com/v1",
     };
-    delete (model as { compat?: unknown }).compat;
+    delete (model as { compat?: any }).compat;
     const normalized = normalizeModelCompat(model);
     expect(normalized.compat).toBeUndefined();
   });
@@ -255,8 +255,8 @@ describe("normalizeModelCompat", () => {
       ...baseModel(),
       provider: "openai",
     };
-    delete (model as { baseUrl?: unknown }).baseUrl;
-    delete (model as { compat?: unknown }).compat;
+    delete (model as { baseUrl?: any }).baseUrl;
+    delete (model as { compat?: any }).compat;
     const normalized = normalizeModelCompat(model as Model);
     expect(normalized.compat).toBeUndefined();
   });
@@ -300,7 +300,7 @@ describe("normalizeModelCompat", () => {
       provider: "custom-cpa",
       baseUrl: "https://proxy.example.com/v1",
     };
-    delete (model as { compat?: unknown }).compat;
+    delete (model as { compat?: any }).compat;
     const normalized = normalizeModelCompat(model);
     expect(supportsDeveloperRole(normalized)).toBe(false);
     expect(supportsUsageInStreaming(normalized)).toBe(false);
@@ -324,7 +324,7 @@ describe("normalizeModelCompat", () => {
       provider: "custom-cpa",
       baseUrl: "https://proxy.example.com/v1",
     };
-    delete (model as { compat?: unknown }).compat;
+    delete (model as { compat?: any }).compat;
     const normalized = normalizeModelCompat(model);
     expect(normalized).not.toBe(model);
     expect(supportsDeveloperRole(model)).toBeUndefined();

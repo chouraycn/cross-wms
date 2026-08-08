@@ -6,17 +6,17 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function buildPinnedWritePlan(..._args: unknown[]): unknown {
+export function buildPinnedWritePlan(..._args: any[]): any {
   return undefined;
 }
-export function buildPinnedMkdirpPlan(..._args: unknown[]): unknown {
+export function buildPinnedMkdirpPlan(..._args: any[]): any {
   return undefined;
 }
-export function buildPinnedRemovePlan(..._args: unknown[]): unknown {
+export function buildPinnedRemovePlan(..._args: any[]): any {
   return undefined;
 }
-export function buildPinnedRenamePlan(..._args: unknown[]): unknown {
+export function buildPinnedRenamePlan(..._args: any[]): any {
   return undefined;
 }
-export const SANDBOX_PINNED_MUTATION_PYTHON_CANDIDATES: unknown = undefined;
-export const SANDBOX_PINNED_MUTATION_PYTHON: unknown = undefined;
+export const SANDBOX_PINNED_MUTATION_PYTHON_CANDIDATES: any = undefined;
+export const SANDBOX_PINNED_MUTATION_PYTHON: any = undefined;

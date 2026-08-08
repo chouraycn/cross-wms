@@ -49,10 +49,10 @@ export function makeRegistry(
     providers?: string[];
     cliBackends?: string[];
     origin?: PluginOrigin;
-    configSchema?: Record<string, unknown>;
+    configSchema?: Record<string, any>;
     channelConfigs?: Record<
       string,
-      { schema: Record<string, unknown>; label?: string; preferOver?: string[] }
+      { schema: Record<string, any>; label?: string; preferOver?: string[] }
     >;
   }>,
 ): PluginManifestRegistry {

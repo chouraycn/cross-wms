@@ -34,7 +34,7 @@ export interface ComplexityResult {
 /** 增强结果 */
 export interface EnhancementResult {
   /** 压缩后的消息列表（如果压缩成功） */
-  compressedMessages?: Array<{ role: string; content: MessageContent; tool_calls?: unknown[]; tool_call_id?: string }>;
+  compressedMessages?: Array<{ role: string; content: MessageContent; tool_calls?: any[]; tool_call_id?: string }>;
   /** 是否发生了压缩 */
   compressed?: boolean;
   /** 语义记忆检索结果 */
@@ -46,7 +46,7 @@ export interface EnhancementResult {
 /** 后台增强参数 */
 export interface EnhanceParams {
   /** 待增强的消息列表 */
-  messages: Array<{ role: string; content: MessageContent; tool_calls?: unknown[]; tool_call_id?: string }>;
+  messages: Array<{ role: string; content: MessageContent; tool_calls?: any[]; tool_call_id?: string }>;
   /** 模型配置（用于压缩调用的 LLM） */
   modelConfig: ModelCallConfig;
   /** 上下文窗口大小 */
@@ -139,7 +139,7 @@ export async function enhanceInBackground(params: EnhanceParams): Promise<Enhanc
   ]);
 
   if (compressResult) {
-    result.compressedMessages = compressResult.messages as Array<{ role: string; content: MessageContent; tool_calls?: unknown[]; tool_call_id?: string }>;
+    result.compressedMessages = compressResult.messages as Array<{ role: string; content: MessageContent; tool_calls?: any[]; tool_call_id?: string }>;
     result.compressed = compressResult.compressed || compressResult.truncated;
   }
 
@@ -161,7 +161,7 @@ export async function enhanceInBackground(params: EnhanceParams): Promise<Enhanc
  */
 async function compressInBackground(
   params: EnhanceParams,
-): Promise<{ messages: unknown[]; compressed?: boolean; truncated?: boolean }> {
+): Promise<{ messages: any[]; compressed?: boolean; truncated?: boolean }> {
   try {
     const compressResult = await compressContextWithSummary(
       params.messages as Parameters<typeof compressContextWithSummary>[0],

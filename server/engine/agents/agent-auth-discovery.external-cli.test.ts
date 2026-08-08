@@ -15,7 +15,7 @@ const credentialMocks = vi.hoisted(() => ({
 }));
 
 const discoveryCoreMocks = vi.hoisted(() => ({
-  addEnvBackedAgentCredentials: vi.fn((credentials: unknown) => credentials),
+  addEnvBackedAgentCredentials: vi.fn((credentials: any) => credentials),
 }));
 
 const syntheticAuthMocks = vi.hoisted(() => ({

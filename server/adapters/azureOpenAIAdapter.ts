@@ -112,7 +112,7 @@ export class AzureOpenAIAdapter implements IAiApiAdapter {
     }
 
     // 构建请求体
-    const body: Record<string, unknown> = {
+    const body: Record<string, any> = {
       messages: processedMessages,
       temperature,
       max_tokens: maxTokens,
@@ -282,7 +282,7 @@ export class AzureOpenAIAdapter implements IAiApiAdapter {
     }
 
     // 构建请求体
-    const body: Record<string, unknown> = {
+    const body: Record<string, any> = {
       messages: processedMessages,
       temperature,
       max_tokens: maxTokens,

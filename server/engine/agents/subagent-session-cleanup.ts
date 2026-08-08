@@ -6,6 +6,6 @@
  */
 
 /** Deletes subagent session data for cleanup. */
-export async function deleteSubagentSessionForCleanup(..._args: unknown[]): Promise<void> {
+export async function deleteSubagentSessionForCleanup(..._args: any[]): Promise<void> {
   // Cross-wms does not have subagent session file management.
 }

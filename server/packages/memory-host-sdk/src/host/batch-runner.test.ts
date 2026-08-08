@@ -5,7 +5,7 @@ import { buildEmbeddingBatchGroupOptions, runEmbeddingBatchGroups } from "./batc
 
 const jsonlEncoder = new TextEncoder();
 
-function jsonlLineBytes(value: unknown): number {
+function jsonlLineBytes(value: any): number {
   return jsonlEncoder.encode(JSON.stringify(value)).byteLength;
 }
 

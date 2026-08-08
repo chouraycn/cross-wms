@@ -157,7 +157,7 @@ describe('zodToJsonSchema', () => {
   });
 
   it('空 schema 应返回空对象', () => {
-    const json = zodToJsonSchema(null as unknown);
+    const json = zodToJsonSchema(null as any);
     expect(json).toEqual({});
   });
 });

@@ -34,7 +34,7 @@ describe("prepareCliBundleMcpConfig", () => {
     // Even empty overlays force Claude to ignore user/global MCP servers.
     const generatedConfigPath = requireMcpConfigPath(prepared.backend.args);
     const raw = JSON.parse(await fs.readFile(generatedConfigPath, "utf-8")) as {
-      mcpServers?: Record<string, unknown>;
+      mcpServers?: Record<string, any>;
     };
     expect(raw.mcpServers).toStrictEqual({});
 

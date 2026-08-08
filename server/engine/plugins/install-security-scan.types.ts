@@ -6,7 +6,7 @@
  */
 
 /** OpenClaw 配置（降级为 unknown 占位）。 */
-export type OpenClawConfig = Record<string, unknown>;
+export type OpenClawConfig = Record<string, any>;
 
 /** 为受信任/操作员路径有意放宽安装安全策略的覆盖项。 */
 export type InstallSafetyOverrides = {

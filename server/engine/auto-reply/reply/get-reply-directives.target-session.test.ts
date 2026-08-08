@@ -114,7 +114,7 @@ function parseInlineDirectivesForTest(body: string) {
   };
 }
 
-function mockCallInput(mock: { mock: { calls: unknown[][] } }, index = 0): Record<string, unknown> {
+function mockCallInput(mock: { mock: { calls: any[][] } }, index = 0): Record<string, any> {
   const call = mock.mock.calls[index];
   if (!call) {
     throw new Error(`Expected mock call ${index}`);
@@ -123,12 +123,12 @@ function mockCallInput(mock: { mock: { calls: unknown[][] } }, index = 0): Recor
   if (!input || typeof input !== "object") {
     throw new Error(`expected mock input ${index}`);
   }
-  return input as Record<string, unknown>;
+  return input as Record<string, any>;
 }
 
 function expectContinueResult(
   value: Awaited<ReturnType<typeof resolveReplyDirectives>>,
-  fields: Record<string, unknown>,
+  fields: Record<string, any>,
 ) {
   expect(value.kind).toBe("continue");
   if (value.kind !== "continue") {
@@ -218,7 +218,7 @@ vi.mock("../../agents/defaults.js", () => ({
 }));
 
 vi.mock("../../agents/fast-mode.js", () => ({
-  resolveFastModeState: (...args: unknown[]) => mocks.resolveFastModeState(...args),
+  resolveFastModeState: (...args: any[]) => mocks.resolveFastModeState(...args),
 }));
 
 vi.mock("../../agents/sandbox/runtime-status.js", () => ({
@@ -260,12 +260,12 @@ vi.mock("./get-reply-directive-aliases.js", () => ({
 }));
 
 vi.mock("./get-reply-directives-apply.js", () => ({
-  applyInlineDirectiveOverrides: (...args: unknown[]) =>
+  applyInlineDirectiveOverrides: (...args: any[]) =>
     mocks.applyInlineDirectiveOverrides(...args),
 }));
 
 vi.mock("./get-reply-exec-overrides.js", () => ({
-  resolveReplyExecOverrides: (...args: unknown[]) => mocks.resolveReplyExecOverrides(...args),
+  resolveReplyExecOverrides: (...args: any[]) => mocks.resolveReplyExecOverrides(...args),
 }));
 
 vi.mock("./get-reply-fast-path.js", () => ({
@@ -279,7 +279,7 @@ vi.mock("./groups.js", () => ({
 
 vi.mock("./model-selection.js", () => ({
   createFastTestModelSelectionState: vi.fn(),
-  createModelSelectionState: (...args: unknown[]) => mocks.createModelSelectionState(...args),
+  createModelSelectionState: (...args: any[]) => mocks.createModelSelectionState(...args),
   resolveContextTokens: vi.fn(() => 4096),
 }));
 

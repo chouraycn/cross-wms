@@ -10,7 +10,7 @@ export type GatewayRuntimeState = {
   httpServer: HttpServer | null;
   httpServers: HttpServer[];
   httpBindHosts: string[];
-  clients: Set<unknown>;
+  clients: Set<any>;
   broadcast: GatewayBroadcastFn;
   broadcastToConnIds: GatewayBroadcastToConnIdsFn;
   agentRunSeq: Map<string, number>;
@@ -25,7 +25,7 @@ export type GatewayRuntimeState = {
 };
 
 export type DedupeEntry = {
-  value: unknown;
+  value: any;
   expiresAt: number;
 };
 
@@ -36,13 +36,13 @@ export type ChatAbortControllerEntry = {
 };
 
 function createNoopBroadcast(): GatewayBroadcastFn {
-  return (_event: string, _payload: unknown, _opts?) => {
+  return (_event: string, _payload: any, _opts?) => {
     // noop
   };
 }
 
 function createNoopBroadcastToConnIds(): GatewayBroadcastToConnIdsFn {
-  return (_event: string, _payload: unknown, _connIds: ReadonlySet<string>, _opts?) => {
+  return (_event: string, _payload: any, _connIds: ReadonlySet<string>, _opts?) => {
     // noop
   };
 }
@@ -107,7 +107,7 @@ export function getNextAgentRunSeq(sessionId: string): number {
   return next;
 }
 
-export function setDedupeEntry(key: string, value: unknown, ttlMs: number): void {
+export function setDedupeEntry(key: string, value: any, ttlMs: number): void {
   if (!runtimeState) return;
   runtimeState.dedupe.set(key, {
     value,
@@ -115,7 +115,7 @@ export function setDedupeEntry(key: string, value: unknown, ttlMs: number): void
   });
 }
 
-export function getDedupeEntry(key: string): unknown | undefined {
+export function getDedupeEntry(key: string): any | undefined {
   if (!runtimeState) return undefined;
   const entry = runtimeState.dedupe.get(key);
   if (!entry) return undefined;

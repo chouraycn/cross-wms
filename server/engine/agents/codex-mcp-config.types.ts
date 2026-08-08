@@ -7,7 +7,7 @@ import type { OpenClawConfig } from "../infra/_runtime-stubs.js";
 import type { BundleMcpDiagnostic } from "../plugins/bundle-mcp.js";
 
 /** Codex app-server `mcp_servers` config map. */
-export type CodexMcpServersConfig = Record<string, Record<string, unknown>>;
+export type CodexMcpServersConfig = Record<string, Record<string, any>>;
 
 /** Loaded Codex thread-config patch plus diagnostics and cache metadata. */
 export type CodexBundleMcpThreadConfig = {

@@ -2,11 +2,11 @@
 import { formatExecCommand } from "../infra/system-run-command.js";
 
 type SystemRunPrepareInput = {
-  command?: unknown;
-  rawCommand?: unknown;
-  cwd?: unknown;
-  agentId?: unknown;
-  sessionKey?: unknown;
+  command?: any;
+  rawCommand?: any;
+  cwd?: any;
+  agentId?: any;
+  sessionKey?: any;
 };
 
 /** Builds the normalized system-run prepare payload used by approval tests. */

@@ -505,10 +505,10 @@ function inferCapturedNoteSeverity(text: string): HealthFinding["severity"] {
 
 function createNoteCollector(checkId: string): {
   readonly findings: readonly HealthFinding[];
-  readonly noteFn: (message: unknown) => void;
+  readonly noteFn: (message: any) => void;
 } {
   const findings: HealthFinding[] = [];
-  const noteFn = (message: unknown): void => {
+  const noteFn = (message: any): void => {
     const text = noteMessageToText(message);
     if (!text.trim()) {
       return;
@@ -531,7 +531,7 @@ function createNoteCollector(checkId: string): {
   };
 }
 
-function noteMessageToText(message: unknown): string {
+function noteMessageToText(message: any): string {
   if (message instanceof Error) {
     return message.message;
   }

@@ -12,7 +12,7 @@ export async function resolveDmAllowAuditState(params: {
   channel: string;
   senderId?: string;
   recipientId?: string;
-  cfg?: unknown;
+  cfg?: any;
 }): Promise<DmAllowAuditState> {
   if (!params.channel?.trim()) {
     return { allowed: false, reason: "missing-channel", source: "denied" };

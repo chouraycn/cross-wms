@@ -21,7 +21,7 @@ interface ApiKeyRecord {
   createdAt: number;
   lastUsedAt?: number;
   rateLimitPerMinute: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 const apiKeys = new Map<string, ApiKeyRecord>();

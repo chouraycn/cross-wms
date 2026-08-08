@@ -7,6 +7,6 @@
  */
 
 /** Compact an embedded agent session (no-op in cross-wms). */
-export function compactEmbeddedAgentSession(..._args: unknown[]): undefined {
+export function compactEmbeddedAgentSession(..._args: any[]): undefined {
   return undefined;
 }

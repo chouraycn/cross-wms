@@ -4,11 +4,11 @@ import { logger } from '../../logger.js';
 export type NodeInvokePolicyContext = {
   nodeId: string;
   command: string;
-  params: unknown;
+  params: any;
   timeoutMs?: number;
   idempotencyKey?: string;
-  config?: Record<string, unknown>;
-  pluginConfig?: Record<string, unknown>;
+  config?: Record<string, any>;
+  pluginConfig?: Record<string, any>;
 };
 
 export type NodeInvokePolicyResult = {
@@ -16,7 +16,7 @@ export type NodeInvokePolicyResult = {
   decision: 'allow' | 'deny' | 'review';
   reason?: string;
   code?: string;
-  modifiedParams?: unknown;
+  modifiedParams?: any;
   modifiedTimeoutMs?: number;
 };
 
@@ -127,10 +127,10 @@ function findMatchingPolicies(command: string): NodeInvokePolicyRegistration[] {
 export async function applyPluginNodeInvokePolicy(params: {
   nodeId: string;
   command: string;
-  params: unknown;
+  params: any;
   timeoutMs?: number;
   idempotencyKey?: string;
-  config?: Record<string, unknown>;
+  config?: Record<string, any>;
 }): Promise<NodeInvokePolicyResult | null> {
   const matchingPolicies = findMatchingPolicies(params.command);
 

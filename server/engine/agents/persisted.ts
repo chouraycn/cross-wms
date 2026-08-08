@@ -14,41 +14,41 @@ import {
 
 type AuthProfileSecretsStore = {
   version: number;
-  providers: Record<string, unknown>;
+  providers: Record<string, any>;
   updatedAt?: number;
 };
 
 type AuthProfileStore = {
   secrets: AuthProfileSecretsStore;
-  legacy?: Record<string, unknown>;
+  legacy?: Record<string, any>;
 };
 
-function normalizeOptionalString(value: unknown): string | undefined {
+function normalizeOptionalString(value: any): string | undefined {
   if (typeof value !== "string") return undefined;
   const trimmed = value.trim();
   return trimmed || undefined;
 }
 
 /** Coerces a raw persisted payload into a well-typed auth profile store. */
-export function coercePersistedAuthProfileStore(raw: unknown): AuthProfileStore {
+export function coercePersistedAuthProfileStore(raw: any): AuthProfileStore {
   if (!raw || typeof raw !== "object") {
     return { secrets: { version: 1, providers: {} } };
   }
-  const obj = raw as Record<string, unknown>;
+  const obj = raw as Record<string, any>;
   const secrets = obj.secrets;
   if (!secrets || typeof secrets !== "object") {
-    return { secrets: { version: 1, providers: {} }, ...(obj.legacy ? { legacy: obj.legacy as Record<string, unknown> } : {}) };
+    return { secrets: { version: 1, providers: {} }, ...(obj.legacy ? { legacy: obj.legacy as Record<string, any> } : {}) };
   }
-  const secretsObj = secrets as Record<string, unknown>;
+  const secretsObj = secrets as Record<string, any>;
   return {
     secrets: {
       version: typeof secretsObj.version === "number" ? secretsObj.version : 1,
       providers: (secretsObj.providers && typeof secretsObj.providers === "object")
-        ? secretsObj.providers as Record<string, unknown>
+        ? secretsObj.providers as Record<string, any>
         : {},
       updatedAt: typeof secretsObj.updatedAt === "number" ? secretsObj.updatedAt : undefined,
     },
-    ...(obj.legacy ? { legacy: obj.legacy as Record<string, unknown> } : {}),
+    ...(obj.legacy ? { legacy: obj.legacy as Record<string, any> } : {}),
   };
 }
 
@@ -93,7 +93,7 @@ export function applyLegacyAuthStore(store: AuthProfileStore): AuthProfileStore 
 export function mergeOAuthFileIntoStore(
   store: AuthProfileStore,
   provider: string,
-  oauthData: unknown,
+  oauthData: any,
 ): AuthProfileStore {
   const providers = { ...store.secrets.providers };
   providers[provider] = oauthData;

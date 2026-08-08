@@ -23,7 +23,7 @@ export async function resolvePreparedReplyQueueState(params: {
   sessionKey: string | undefined;
   sessionId: string;
   abortActiveRun: (sessionId: string) => boolean;
-  waitForActiveRunEnd: (sessionId: string) => Promise<unknown>;
+  waitForActiveRunEnd: (sessionId: string) => Promise<any>;
   refreshPreparedState: () => Promise<void>;
   resolveBusyState: () => ReplyRunQueueBusyState;
 }): Promise<

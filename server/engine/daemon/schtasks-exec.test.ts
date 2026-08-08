@@ -5,7 +5,7 @@ import { execSchtasks } from "./schtasks-exec.js";
 const runCommandWithTimeout = vi.hoisted(() => vi.fn());
 
 vi.mock("../process/exec.js", () => ({
-  runCommandWithTimeout: (...args: unknown[]) => runCommandWithTimeout(...args),
+  runCommandWithTimeout: (...args: any[]) => runCommandWithTimeout(...args),
 }));
 
 beforeEach(() => {

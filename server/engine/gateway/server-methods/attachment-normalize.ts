@@ -4,14 +4,14 @@ import type { ChatAttachment } from "../chat-attachments.js";
 
 /** RPC attachment payload shape accepted by chat-like gateway methods. */
 export type RpcAttachmentInput = {
-  type?: unknown;
-  mimeType?: unknown;
-  fileName?: unknown;
-  content?: unknown;
-  source?: unknown;
+  type?: any;
+  mimeType?: any;
+  fileName?: any;
+  content?: any;
+  source?: any;
 };
 
-function normalizeAttachmentContent(content: unknown): string | undefined {
+function normalizeAttachmentContent(content: any): string | undefined {
   // RPC callers may send browser ArrayBuffers, typed-array slices, or base64
   // strings. Normalize all accepted forms to the chat attachment wire shape.
   if (typeof content === "string") {
@@ -37,7 +37,7 @@ export function normalizeRpcAttachmentsToChatAttachments(
       ?.map((a) => {
         const source = a?.source && typeof a.source === "object" ? a.source : undefined;
         const sourceRecord = source as
-          | { type?: unknown; media_type?: unknown; data?: unknown }
+          | { type?: any; media_type?: any; data?: any }
           | undefined;
         const sourceType = typeof sourceRecord?.type === "string" ? sourceRecord.type : undefined;
         const sourceMimeType =

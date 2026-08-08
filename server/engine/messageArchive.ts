@@ -205,7 +205,7 @@ export function startArchiveScheduler(
   const timer = setTimeout(() => {
     // 初始化归档表
     try {
-      const db = getDb();
+      const db = getDb() as Database.Database;
       initArchiveTables(db);
       runArchive(db, config);
     } catch (err) {
@@ -215,7 +215,7 @@ export function startArchiveScheduler(
     // 之后定期执行
     const periodicTimer = setInterval(() => {
       try {
-        const db = getDb();
+        const db = getDb() as Database.Database;
         runArchive(db, config);
       } catch (err) {
         logger.error('[Archive] 定期归档失败:', err);

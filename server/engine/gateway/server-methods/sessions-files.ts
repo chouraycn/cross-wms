@@ -53,7 +53,7 @@ const SEARCH_SKIP_DIRS = new Set([
   "node_modules",
 ]);
 
-function sessionFilesError(type: string, message: string, details?: Record<string, unknown>) {
+function sessionFilesError(type: string, message: string, details?: Record<string, any>) {
   return errorShape(ErrorCodes.INVALID_REQUEST, message, {
     details: {
       type,
@@ -62,7 +62,7 @@ function sessionFilesError(type: string, message: string, details?: Record<strin
   });
 }
 
-function normalizePathValue(value: unknown): string | undefined {
+function normalizePathValue(value: any): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }
@@ -70,7 +70,7 @@ function normalizePathValue(value: unknown): string | undefined {
   return trimmed || undefined;
 }
 
-function readPathArg(args: Record<string, unknown>): string | undefined {
+function readPathArg(args: Record<string, any>): string | undefined {
   return (
     normalizePathValue(args.path) ??
     normalizePathValue(args.file_path) ??
@@ -94,7 +94,7 @@ function addTouchedFile(
   files.set(filePath, { path: filePath, kind });
 }
 
-function addRawPatchFiles(files: Map<string, TouchedFile>, input: unknown) {
+function addRawPatchFiles(files: Map<string, TouchedFile>, input: any) {
   if (typeof input !== "string") {
     return;
   }
@@ -108,7 +108,7 @@ function addRawPatchFiles(files: Map<string, TouchedFile>, input: unknown) {
   }
 }
 
-function addStructuredPatchFiles(files: Map<string, TouchedFile>, changes: unknown) {
+function addStructuredPatchFiles(files: Map<string, TouchedFile>, changes: any) {
   if (!Array.isArray(changes)) {
     return;
   }
@@ -124,12 +124,12 @@ function addStructuredPatchFiles(files: Map<string, TouchedFile>, changes: unkno
   }
 }
 
-function addPatchFiles(files: Map<string, TouchedFile>, args: Record<string, unknown>) {
+function addPatchFiles(files: Map<string, TouchedFile>, args: Record<string, any>) {
   addRawPatchFiles(files, args.input);
   addStructuredPatchFiles(files, args.changes);
 }
 
-function isToolCallBlockType(value: unknown): boolean {
+function isToolCallBlockType(value: any): boolean {
   if (typeof value !== "string") {
     return false;
   }
@@ -137,7 +137,7 @@ function isToolCallBlockType(value: unknown): boolean {
   return normalized === "toolcall" || normalized === "tooluse";
 }
 
-function collectTouchedFilesFromMessage(message: unknown, files: Map<string, TouchedFile>) {
+function collectTouchedFilesFromMessage(message: any, files: Map<string, TouchedFile>) {
   const record = asOptionalObjectRecord(message);
   if (record?.role !== "assistant" || !Array.isArray(record.content)) {
     return;
@@ -369,7 +369,7 @@ function toUpdatedAtMs(mtimeMs: number): number {
 }
 
 function workspaceStatKind(stat: WorkspacePathStat): "file" | "directory" | "symlink" | undefined {
-  const kind = (stat as { kind?: unknown }).kind;
+  const kind = (stat as { kind?: any }).kind;
   if (kind === "file" || kind === "directory" || kind === "symlink") {
     return kind;
   }

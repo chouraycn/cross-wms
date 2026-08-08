@@ -208,7 +208,7 @@ describe("before_agent_start hook merger", () => {
       registry: registryLocal,
       pluginId: "ctx-spy",
       hookName: "before_agent_start",
-      handler: ((eventValue: unknown, ctx: typeof stubCtx) => {
+      handler: ((eventValue: any, ctx: typeof stubCtx) => {
         capturedCtx = ctx;
         return {};
       }) as PluginHookRegistration["handler"],

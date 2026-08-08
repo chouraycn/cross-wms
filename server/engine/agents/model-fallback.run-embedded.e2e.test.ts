@@ -20,7 +20,7 @@ import {
   installEmbeddedRunnerFastRunE2eMocks,
 } from "./test-helpers/embedded-agent-runner-e2e-mocks.js";
 
-const runEmbeddedAttemptMock = vi.fn<(params: unknown) => Promise<EmbeddedRunAttemptResult>>();
+const runEmbeddedAttemptMock = vi.fn<(params: any) => Promise<EmbeddedRunAttemptResult>>();
 const suspendSessionMock = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
 const { computeBackoffMock, sleepWithAbortMock } = vi.hoisted(() => ({
   computeBackoffMock: vi.fn(
@@ -193,12 +193,12 @@ async function readUsageStats(agentDir: string) {
 }
 
 function expectFailureCount(
-  usageStats: Record<string, Record<string, unknown> | undefined>,
+  usageStats: Record<string, Record<string, any> | undefined>,
   profileId: string,
   reason: AuthProfileFailureReason,
   expected: number,
 ) {
-  const failureCounts = usageStats[profileId]?.failureCounts as Record<string, unknown> | undefined;
+  const failureCounts = usageStats[profileId]?.failureCounts as Record<string, any> | undefined;
   expect(failureCounts?.[reason]).toBe(expected);
 }
 
@@ -288,7 +288,7 @@ function mockPrimaryFailureThenFallbackSuccess(
     attemptParams: EmbeddedAttemptParams,
   ) => EmbeddedRunAttemptResult | Promise<EmbeddedRunAttemptResult>,
 ) {
-  runEmbeddedAttemptMock.mockImplementation(async (params: unknown) => {
+  runEmbeddedAttemptMock.mockImplementation(async (params: any) => {
     const attemptParams = params as EmbeddedAttemptParams;
     if (attemptParams.provider === "openai") {
       return await makePrimaryAttempt(attemptParams);
@@ -368,7 +368,7 @@ function expectOpenAiThenGroqAttemptOrder(params?: { expectOpenAiAuthProfileId?:
 }
 
 function mockAllProvidersOverloaded() {
-  runEmbeddedAttemptMock.mockImplementation(async (params: unknown) => {
+  runEmbeddedAttemptMock.mockImplementation(async (params: any) => {
     const attemptParams = params as { provider: string; modelId: string; authProfileId?: string };
     if (attemptParams.provider === "openai" || attemptParams.provider === "groq") {
       return makeEmbeddedRunnerAttempt({
@@ -643,7 +643,7 @@ describe("runWithModelFallback + runEmbeddedAgent failover behavior", () => {
       await writeAuthStore(agentDir);
       mockAllProvidersOverloaded();
 
-      let thrown: unknown;
+      let thrown: any;
       try {
         await runEmbeddedFallback({
           agentDir,
@@ -763,7 +763,7 @@ describe("runWithModelFallback + runEmbeddedAgent failover behavior", () => {
         throw new Error("aborted");
       });
 
-      let thrown: unknown;
+      let thrown: any;
       try {
         await runEmbeddedFallback({
           agentDir,

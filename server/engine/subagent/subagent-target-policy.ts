@@ -12,7 +12,7 @@ export type TargetPolicyType = 'round-robin' | 'least-loaded' | 'random' | 'stic
 
 export interface TargetPolicy {
   type: TargetPolicyType;
-  options?: Record<string, unknown>;
+  options?: Record<string, any>;
 }
 
 export interface TargetNode {

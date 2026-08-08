@@ -8,7 +8,7 @@ import {
   setPathExistingStrict,
 } from "./path-utils.js";
 
-function asConfig(value: unknown): OpenClawConfig {
+function asConfig(value: any): OpenClawConfig {
   return value as OpenClawConfig;
 }
 
@@ -97,7 +97,7 @@ describe("secrets path utils", () => {
   });
 
   it("setPathCreateStrict works on nested config sub-objects", () => {
-    const pluginConfig: Record<string, unknown> = {};
+    const pluginConfig: Record<string, any> = {};
     const changed = setPathCreateStrict(pluginConfig, ["webSearch", "mode"], "llm-context");
     expect(changed).toBe(true);
     expect(pluginConfig).toEqual({

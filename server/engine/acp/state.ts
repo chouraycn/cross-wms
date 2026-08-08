@@ -13,12 +13,12 @@ export type AcpxGatewayInstanceRecord = {
 };
 
 export function normalizeAcpxGatewayInstanceRecord(
-  value: unknown,
+  value: any,
 ): AcpxGatewayInstanceRecord | undefined {
   if (typeof value !== "object" || value === null) {
     return undefined;
   }
-  const record = value as Record<string, unknown>;
+  const record = value as Record<string, any>;
   if (typeof record.instanceId !== "string" || !record.instanceId.trim()) {
     return undefined;
   }

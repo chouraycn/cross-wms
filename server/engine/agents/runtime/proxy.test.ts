@@ -99,8 +99,8 @@ describe("streamProxy", () => {
     const rawBody = fetchMock.mock.calls[0]?.[1]?.body;
     expect(typeof rawBody).toBe("string");
     const body = JSON.parse(rawBody as string) as {
-      model?: { headers?: unknown };
-      options?: { headers?: unknown; promptCacheKey?: string };
+      model?: { headers?: any };
+      options?: { headers?: any; promptCacheKey?: string };
     };
     expect(body.options).not.toHaveProperty("headers");
     expect(body.options?.promptCacheKey).toBeUndefined();

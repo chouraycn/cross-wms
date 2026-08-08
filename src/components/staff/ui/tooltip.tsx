@@ -87,7 +87,7 @@ function TooltipTrigger({
         disableInteractive
         arrow={false}
       >
-        {React.cloneElement(child, { 'data-slot': 'tooltip-trigger', ...(props as Record<string, unknown>) } as Record<string, unknown>)}
+        {React.cloneElement(child, { 'data-slot': 'tooltip-trigger', ...(props as Record<string, any>) } as Record<string, any>)}
       </MuiTooltip>
     )
   }
@@ -100,7 +100,7 @@ function TooltipTrigger({
       disableInteractive
       arrow={false}
     >
-      <button type="button" data-slot="tooltip-trigger" {...(props as Record<string, unknown>)}>
+      <button type="button" data-slot="tooltip-trigger" {...(props as Record<string, any>)}>
         {children}
       </button>
     </MuiTooltip>

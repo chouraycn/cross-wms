@@ -49,7 +49,7 @@ describe("realredactConfigSnapshot_real", () => {
     });
 
     const result = redactConfigSnapshot(snapshot, hints);
-    const channels = result.config.channels as Record<string, Record<string, unknown>>;
+    const channels = result.config.channels as Record<string, Record<string, any>>;
     expect(channels.nostr.privateKey).toBe(REDACTED_SENTINEL);
 
     const restored = restoreRedactedValues(result.config, snapshot.config, hints);

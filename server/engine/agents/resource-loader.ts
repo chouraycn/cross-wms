@@ -8,11 +8,11 @@
  */
 
 /** Discovery options for embedded agent resource loading (empty in cross-wms). */
-export const EMBEDDED_AGENT_RESOURCE_LOADER_DISCOVERY_OPTIONS: Record<string, unknown> = {};
+export const EMBEDDED_AGENT_RESOURCE_LOADER_DISCOVERY_OPTIONS: Record<string, any> = {};
 
 /** Create an embedded agent resource loader (returns no-op in cross-wms). */
-export function createEmbeddedAgentResourceLoader(..._args: unknown[]): {
-  load: () => Promise<unknown[]>;
+export function createEmbeddedAgentResourceLoader(..._args: any[]): {
+  load: () => Promise<any[]>;
 } {
   return {
     load: async () => [],

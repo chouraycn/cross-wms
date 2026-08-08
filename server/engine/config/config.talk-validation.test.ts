@@ -29,11 +29,11 @@ describe("talk config validation fail-closed behavior", () => {
     });
   });
 
-  async function expectInvalidTalkConfig(config: unknown, messagePattern: RegExp) {
+  async function expectInvalidTalkConfig(config: any, messagePattern: RegExp) {
     await withTempHomeConfig(config, async () => {
       const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
-      let thrown: unknown;
+      let thrown: any;
       try {
         getRuntimeConfig();
       } catch (error) {

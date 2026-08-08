@@ -60,7 +60,7 @@ export interface MsTeamsOAuthToken {
 export interface MsTeamsAttachment {
   contentType: string;
   contentUrl?: string;
-  content?: Record<string, unknown>;
+  content?: Record<string, any>;
 }
 
 /** MS Teams webhook 入站解析结果 */
@@ -181,7 +181,7 @@ function resolveMessageEndpoint(
  */
 export async function sendMsTeamsMessage(
   account: MsTeamsAccountConfig,
-  body: Record<string, unknown>,
+  body: Record<string, any>,
   to?: string,
 ): Promise<{ messageId: string; endpoint: string }> {
   const { endpoint } = resolveMessageEndpoint(account, to);
@@ -217,7 +217,7 @@ export async function replyMsTeamsThread(
   teamId: string,
   channelId: string,
   parentMessageId: string,
-  body: Record<string, unknown>,
+  body: Record<string, any>,
 ): Promise<{ messageId: string }> {
   const endpoint = `${GRAPH_BASE_URL}/teams/${teamId}/channels/${channelId}/messages/${parentMessageId}/replies`;
   const headers = await buildGraphHeaders(account);
@@ -247,7 +247,7 @@ export async function replyMsTeamsThread(
  */
 export async function sendMsTeamsAdaptiveCard(
   account: MsTeamsAccountConfig,
-  card: Record<string, unknown>,
+  card: Record<string, any>,
   to?: string,
 ): Promise<{ messageId: string }> {
   const attachment: MsTeamsAttachment = {
@@ -262,7 +262,7 @@ export async function sendMsTeamsAdaptiveCard(
 }
 
 /** 构建 Graph 消息体 */
-function buildGraphMessageBody(text: string): Record<string, unknown> {
+function buildGraphMessageBody(text: string): Record<string, any> {
   return {
     body: {
       contentType: "text",
@@ -272,7 +272,7 @@ function buildGraphMessageBody(text: string): Record<string, unknown> {
 }
 
 /** 从渲染上下文提取文本 */
-function extractTextFromRendered(parts: { content: unknown }[]): string {
+function extractTextFromRendered(parts: { content: any }[]): string {
   const text = parts.map((p) => String(p.content)).join("\n");
   // Teams 单条消息较长，截断保护
   return text.length > 4000 ? text.slice(0, 3997) + "..." : text;
@@ -303,7 +303,7 @@ export function createMsTeamsChannelPlugin(): ChannelPlugin {
 
   const msteamsConfig: ChannelConfigAdapter<MsTeamsAccountConfig> = {
     listAccountIds: (config: AppConfig): ChannelId[] => {
-      const teamsConfig = config.msteams as Record<string, unknown> | undefined;
+      const teamsConfig = config.msteams as Record<string, any> | undefined;
       if (
         teamsConfig &&
         teamsConfig.tenantId &&
@@ -319,7 +319,7 @@ export function createMsTeamsChannelPlugin(): ChannelPlugin {
       accountId: ChannelId,
     ): MsTeamsAccountConfig | null => {
       if (accountId !== MSTEAMS_CHANNEL_ID) return null;
-      const teamsConfig = config.msteams as Record<string, unknown> | undefined;
+      const teamsConfig = config.msteams as Record<string, any> | undefined;
       if (
         teamsConfig &&
         teamsConfig.tenantId &&
@@ -381,7 +381,7 @@ export function createMsTeamsChannelPlugin(): ChannelPlugin {
 
           // Adaptive Card：当 metadata 中存在 adaptiveCard 时发送卡片
           const adaptiveCard = ctx.metadata?.adaptiveCard as
-            | Record<string, unknown>
+            | Record<string, any>
             | undefined;
           if (adaptiveCard) {
             const result = await sendMsTeamsAdaptiveCard(account, adaptiveCard, ctx.to);
@@ -418,8 +418,8 @@ export function createMsTeamsChannelPlugin(): ChannelPlugin {
  *
  * Teams 频道可通过 "Outgoing Webhook" 将消息以 JSON 形式 POST 到指定端点。
  */
-export function parseMsTeamsWebhook(body: unknown): MsTeamsWebhookResult {
-  const data = body as Record<string, unknown>;
+export function parseMsTeamsWebhook(body: any): MsTeamsWebhookResult {
+  const data = body as Record<string, any>;
   if (!data || typeof data !== "object") {
     return { success: false, error: "Invalid MS Teams webhook payload" };
   }
@@ -429,9 +429,9 @@ export function parseMsTeamsWebhook(body: unknown): MsTeamsWebhookResult {
     return { success: false, error: "Empty message text" };
   }
 
-  const conversation = data.conversation as Record<string, unknown> | undefined;
-  const channel = data.channel as Record<string, unknown> | undefined;
-  const from = data.from as Record<string, unknown> | undefined;
+  const conversation = data.conversation as Record<string, any> | undefined;
+  const channel = data.channel as Record<string, any> | undefined;
+  const from = data.from as Record<string, any> | undefined;
   const isGroup =
     String(conversation?.conversationType || data.conversationType || "") === "channel";
 

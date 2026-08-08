@@ -10,7 +10,7 @@ export type RequiredParamGroup = {
   keys: readonly string[];
   allowEmpty?: boolean;
   label?: string;
-  validator?: (record: Record<string, unknown>) => boolean;
+  validator?: (record: Record<string, any>) => boolean;
 };
 
 const RETRY_GUIDANCE_SUFFIX = " Supply correct parameters before retrying.";
@@ -27,7 +27,7 @@ function parameterValidationError(message: string): Error {
   return new Error(`${message}.${RETRY_GUIDANCE_SUFFIX}`);
 }
 
-function describeReceivedParamValue(value: unknown, allowEmpty = false): string | undefined {
+function describeReceivedParamValue(value: any, allowEmpty = false): string | undefined {
   if (value === undefined || value === null) {
     return undefined;
   }
@@ -44,7 +44,7 @@ function describeReceivedParamValue(value: unknown, allowEmpty = false): string 
 }
 
 function formatReceivedParamHint(
-  record: Record<string, unknown>,
+  record: Record<string, any>,
   groups: readonly RequiredParamGroup[],
 ): string {
   // 仅包含已存在的字段，使错误能区分缺失参数与错误形状/空值，而不回显完整内容。
@@ -72,11 +72,11 @@ type EditReplacement = {
   newText: string;
 };
 
-function isValidEditReplacement(value: unknown): value is EditReplacement {
+function isValidEditReplacement(value: any): value is EditReplacement {
   if (!value || typeof value !== "object") {
     return false;
   }
-  const record = value as Record<string, unknown>;
+  const record = value as Record<string, any>;
   return (
     typeof record.oldText === "string" &&
     record.oldText.trim().length > 0 &&
@@ -84,7 +84,7 @@ function isValidEditReplacement(value: unknown): value is EditReplacement {
   );
 }
 
-function hasValidEditReplacements(record: Record<string, unknown>): boolean {
+function hasValidEditReplacements(record: Record<string, any>): boolean {
   const edits = record.edits;
   return (
     Array.isArray(edits) &&
@@ -107,8 +107,8 @@ export const REQUIRED_PARAM_GROUPS = {
 } as const;
 
 /** 返回模型提供 tool 参数的 record 视图（如可能）。 */
-export function getToolParamsRecord(params: unknown): Record<string, unknown> | undefined {
-  return params && typeof params === "object" ? (params as Record<string, unknown>) : undefined;
+export function getToolParamsRecord(params: any): Record<string, any> | undefined {
+  return params && typeof params === "object" ? (params as Record<string, any>) : undefined;
 }
 
 /** 剥离 XML arg_value path 参数末尾偶尔出现的多余闭合标记。 */
@@ -129,7 +129,7 @@ export function normalizeFileToolPathParam(value: string): string {
 }
 
 /** 从选定字符串字段剥离格式错误的 XML 后缀，不修改输入。 */
-export function stripMalformedXmlArgValueSuffixFromKeys<T extends Record<string, unknown>>(
+export function stripMalformedXmlArgValueSuffixFromKeys<T extends Record<string, any>>(
   record: T,
   keys: readonly string[],
 ): T {
@@ -149,7 +149,7 @@ export function stripMalformedXmlArgValueSuffixFromKeys<T extends Record<string,
 }
 
 /** 规范化选定的 file-tool path 字段，不修改输入。 */
-export function normalizeFileToolPathParamsFromKeys<T extends Record<string, unknown>>(
+export function normalizeFileToolPathParamsFromKeys<T extends Record<string, any>>(
   record: T,
   keys: readonly string[],
 ): T {
@@ -182,7 +182,7 @@ function resolveFileToolPathParamKeys(groups: readonly RequiredParamGroup[] | un
 
 /** 当必需的 tool 参数缺失时抛出可操作的重试引导。 */
 export function assertRequiredParams(
-  record: Record<string, unknown> | undefined,
+  record: Record<string, any> | undefined,
   groups: readonly RequiredParamGroup[],
   toolName: string,
 ): void {

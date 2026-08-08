@@ -38,7 +38,7 @@ let mockMulti: {
 };
 
 const { mockRequire, mockRedisCtor } = vi.hoisted(() => {
-  let currentClient: unknown = null;
+  let currentClient: any = null;
   const ctor = vi.fn().mockImplementation(() => currentClient);
   const mockReq = vi.fn((id: string) => {
     if (id === 'ioredis') {
@@ -49,7 +49,7 @@ const { mockRequire, mockRedisCtor } = vi.hoisted(() => {
   return {
     mockRequire: mockReq,
     mockRedisCtor: Object.assign(ctor, {
-      _setClient: (c: unknown) => { currentClient = c; },
+      _setClient: (c: any) => { currentClient = c; },
     }),
   };
 });
@@ -105,7 +105,7 @@ describe('RedisAdapter', () => {
     _resetRedisDriverCache();
     mockClient = createMockClient();
     mockMulti = createMockMulti();
-    (mockRedisCtor as unknown as { _setClient: (c: unknown) => void })._setClient(mockClient);
+    (mockRedisCtor as unknown as { _setClient: (c: any) => void })._setClient(mockClient);
     adapter = new RedisAdapter({ url: 'redis://localhost:6379' });
   });
 

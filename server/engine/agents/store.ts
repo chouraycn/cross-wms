@@ -8,7 +8,7 @@
 
 export type AuthProfileCredential = {
   type: string;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 export type AuthProfileStore = {
@@ -16,7 +16,7 @@ export type AuthProfileStore = {
   profiles: Record<string, AuthProfileCredential>;
   order?: Record<string, string[]>;
   lastGood?: Record<string, string>;
-  usageStats?: Record<string, unknown>;
+  usageStats?: Record<string, any>;
   runtimePersistedProfileIds?: string[];
   runtimeExternalProfileIds?: string[];
   runtimeExternalProfileIdsAuthoritative?: boolean;
@@ -96,7 +96,7 @@ export function loadAuthProfileStore(): AuthProfileStore {
 /** Loads the effective runtime store for an agent, including inherited main profiles. */
 export function loadAuthProfileStoreForRuntime(
   agentDir?: string,
-  _options?: unknown,
+  _options?: any,
 ): AuthProfileStore {
   if (!agentDir) {
     return loadAuthProfileStore();
@@ -109,7 +109,7 @@ export function loadAuthProfileStoreForRuntime(
 /** Load auth profiles for secret resolution without prompts or writes. */
 export function loadAuthProfileStoreForSecretsRuntime(
   agentDir?: string,
-  options?: unknown,
+  options?: any,
 ): AuthProfileStore {
   return loadAuthProfileStoreForRuntime(agentDir, options);
 }
@@ -117,7 +117,7 @@ export function loadAuthProfileStoreForSecretsRuntime(
 /** Load auth profiles with runtime external profiles removed from the result. */
 export function loadAuthProfileStoreWithoutExternalProfiles(
   agentDir?: string,
-  _options?: unknown,
+  _options?: any,
 ): AuthProfileStore {
   const store = cloneStore(getOrCreateStore(agentDir));
   delete store.runtimeExternalProfileIds;
@@ -128,7 +128,7 @@ export function loadAuthProfileStoreWithoutExternalProfiles(
 /** Ensure an auth store is available, including runtime/external profile overlays. */
 export function ensureAuthProfileStore(
   agentDir?: string,
-  _options?: unknown,
+  _options?: any,
 ): AuthProfileStore {
   return loadAuthProfileStoreForRuntime(agentDir);
 }
@@ -136,7 +136,7 @@ export function ensureAuthProfileStore(
 /** Ensure an auth store is available without external profile overlays. */
 export function ensureAuthProfileStoreWithoutExternalProfiles(
   agentDir?: string,
-  options?: unknown,
+  options?: any,
 ): AuthProfileStore {
   return loadAuthProfileStoreWithoutExternalProfiles(agentDir, options);
 }
@@ -207,8 +207,8 @@ export function clearRuntimeAuthProfileStoreSnapshots(): void {
 export function saveAuthProfileStore(
   store: AuthProfileStore,
   agentDir?: string,
-  _options?: unknown,
-  _database?: unknown,
+  _options?: any,
+  _database?: any,
 ): void {
   stores.set(agentDir, cloneStore(store));
 }

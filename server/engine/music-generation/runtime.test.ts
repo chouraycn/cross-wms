@@ -35,12 +35,12 @@ describe("music-generation runtime", () => {
 
   it("generates tracks through the active music-generation provider", async () => {
     const authStore = { version: 1, profiles: {} } as const;
-    let seenAuthStore: unknown;
+    let seenAuthStore: any;
     let seenTimeoutMs: number | undefined;
     const provider: MusicGenerationProvider = {
       id: "music-plugin",
       capabilities: {},
-      async generateMusic(req: { authStore?: unknown; timeoutMs?: number }) {
+      async generateMusic(req: { authStore?: any; timeoutMs?: number }) {
         seenAuthStore = req.authStore;
         seenTimeoutMs = req.timeoutMs;
         return {

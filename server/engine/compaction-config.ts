@@ -195,7 +195,7 @@ export function createConfigOverrides(
 /**
  * 编译配置为常量对象（用于热更新）
  */
-export function compileConfigConstants(config: CompactionConfig): Record<string, unknown> {
+export function compileConfigConstants(config: CompactionConfig): Record<string, any> {
   return {
     COMPACTION_ENABLED: config.enabled,
     COMPACTION_TIMEOUT_MS: config.timeoutMs,

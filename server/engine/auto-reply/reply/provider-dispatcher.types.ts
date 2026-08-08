@@ -20,17 +20,17 @@ import type { GetReplyFromConfig } from "./get-reply.types.js";
 export type MsgContext = {
   Body?: string;
   From?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 /** Reply dispatcher options（最小占位）。 */
 export type ReplyDispatcherOptions = {
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 /** Reply dispatcher options with typing lifecycle（最小占位）。 */
 export type ReplyDispatcherWithTypingOptions = ReplyDispatcherOptions & {
-  typing?: unknown;
+  typing?: any;
 };
 
 type DispatchReplyContext = MsgContext | FinalizedMsgContext;

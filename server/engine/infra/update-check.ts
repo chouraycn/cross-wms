@@ -157,7 +157,7 @@ async function runCommandWithTimeout(
   });
 }
 
-function toOptionalTrimmedString(value: unknown): string | null {
+function toOptionalTrimmedString(value: any): string | null {
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
@@ -165,15 +165,15 @@ function parseNpmPackageTargetMetadata(raw: string): {
   version: string | null;
   nodeEngine: string | null;
 } {
-  const parsed = JSON.parse(raw.trim()) as unknown;
+  const parsed = JSON.parse(raw.trim()) as any;
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
     return { version: null, nodeEngine: null };
   }
-  const rec = parsed as Record<string, unknown>;
+  const rec = parsed as Record<string, any>;
   const engines = rec.engines && typeof rec.engines === "object" ? rec.engines : null;
   const nodeEngine =
     toOptionalTrimmedString(rec["engines.node"]) ??
-    (engines ? toOptionalTrimmedString((engines as Record<string, unknown>).node) : null);
+    (engines ? toOptionalTrimmedString((engines as Record<string, any>).node) : null);
   return {
     version: toOptionalTrimmedString(rec.version),
     nodeEngine,
@@ -210,8 +210,8 @@ async function fetchPublicNpmPackageTargetStatus(params: {
       };
     }
     const json = (await res.json()) as {
-      version?: unknown;
-      engines?: { node?: unknown };
+      version?: any;
+      engines?: { node?: any };
     };
     return {
       target: params.target,

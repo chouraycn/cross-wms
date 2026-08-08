@@ -37,7 +37,7 @@ export function buildEdgeRequest(
   rate?: number,
   pitch?: number,
   volume?: number,
-): Record<string, unknown> {
+): Record<string, any> {
   const ratePct = rate ? `${Math.round((rate - 1) * 100)}%` : '+0%';
   const pitchPct = pitch ? `${Math.round(pitch * 50)}%` : '+0%';
   const volPct = volume ? `${Math.round((volume - 50) * 2)}%` : '+0%';

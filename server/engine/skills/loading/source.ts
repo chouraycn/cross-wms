@@ -18,7 +18,7 @@ export function resolveSkillSource(skill: Skill): string {
   return legacy || "unknown";
 }
 
-export function resolveSkillTelemetrySourceValue(value: unknown): SkillTelemetrySource {
+export function resolveSkillTelemetrySourceValue(value: any): SkillTelemetrySource {
   const source = String(value ?? "").trim();
   if (source === "bundled" || source === "openclaw-bundled") {
     return "bundled";

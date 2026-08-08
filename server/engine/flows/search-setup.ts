@@ -40,9 +40,9 @@ export type SearchSetupContribution = FlowContribution & {
 /** buildSearchSetupOptions 的可选参数。 */
 export interface BuildSearchSetupOptionsParams {
   /** 应用配置（用于凭证解析）。 */
-  config?: Record<string, unknown>;
+  config?: Record<string, any>;
   /** 搜索工具配置（如 tools.web.search）。 */
-  searchConfig?: Record<string, unknown>;
+  searchConfig?: Record<string, any>;
   /** 环境变量来源，默认 process.env。 */
   env?: NodeJS.ProcessEnv;
   /** 仅展示凭证已就绪的 provider。 */

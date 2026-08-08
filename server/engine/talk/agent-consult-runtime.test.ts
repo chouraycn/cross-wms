@@ -13,7 +13,7 @@ import {
 } from "./agent-consult-runtime.js";
 import { REALTIME_VOICE_AGENT_CONSULT_TOOL } from "./agent-consult-tool.js";
 
-function createAgentRuntime(payloads: unknown[] = [{ text: "Speak this." }]) {
+function createAgentRuntime(payloads: any[] = [{ text: "Speak this." }]) {
   const sessionStore: Record<
     string,
     {
@@ -53,10 +53,10 @@ function createAgentRuntime(payloads: unknown[] = [{ text: "Speak this." }]) {
   const patchSessionEntry = vi.fn(
     async (params: {
       sessionKey: string;
-      fallbackEntry?: Record<string, unknown>;
+      fallbackEntry?: Record<string, any>;
       update: (
-        entry: Record<string, unknown>,
-      ) => Promise<Record<string, unknown> | null> | Record<string, unknown> | null;
+        entry: Record<string, any>,
+      ) => Promise<Record<string, any> | null> | Record<string, any> | null;
     }) => {
       const existing = sessionStore[params.sessionKey] ?? params.fallbackEntry;
       if (!existing) {
@@ -72,7 +72,7 @@ function createAgentRuntime(payloads: unknown[] = [{ text: "Speak this." }]) {
     },
   );
   const upsertSessionEntry = vi.fn(
-    async (params: { sessionKey: string; entry: Record<string, unknown> }) => {
+    async (params: { sessionKey: string; entry: Record<string, any> }) => {
       sessionStore[params.sessionKey] = { ...params.entry };
     },
   );
@@ -103,7 +103,7 @@ function createAgentRuntime(payloads: unknown[] = [{ text: "Speak this." }]) {
 }
 
 function requireEmbeddedAgentCall(runEmbeddedAgent: {
-  mock: { calls: unknown[][] };
+  mock: { calls: any[][] };
 }): RunEmbeddedAgentParams {
   const [call] = runEmbeddedAgent.mock.calls;
   if (!call) {
@@ -116,12 +116,12 @@ function requireEmbeddedAgentCall(runEmbeddedAgent: {
   return params as RunEmbeddedAgentParams;
 }
 
-function expectPositiveTimestamp(value: unknown) {
+function expectPositiveTimestamp(value: any) {
   expect(typeof value).toBe("number");
   expect(value as number).toBeGreaterThan(0);
 }
 
-function expectNonEmptyString(value: unknown) {
+function expectNonEmptyString(value: any) {
   expect(typeof value).toBe("string");
   expect((value as string).trim()).not.toBe("");
 }

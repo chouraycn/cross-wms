@@ -9,7 +9,7 @@
 export function resolveAvailableAgentHarnessPolicy(_params: {
   provider?: string;
   modelId?: string;
-  config?: unknown;
+  config?: any;
   agentId?: string;
   sessionKey?: string;
   env?: NodeJS.ProcessEnv;
@@ -21,7 +21,7 @@ export function resolveAvailableAgentHarnessPolicy(_params: {
 export function selectAgentHarness(_params: {
   provider: string;
   modelId?: string;
-  config?: unknown;
+  config?: any;
   agentId?: string;
   sessionKey?: string;
   agentHarnessId?: string;
@@ -31,11 +31,11 @@ export function selectAgentHarness(_params: {
 }
 
 /** Runs an agent harness attempt — delegates to openclaw harness. */
-export async function runAgentHarnessAttempt(_params: unknown): Promise<unknown> {
+export async function runAgentHarnessAttempt(_params: any): Promise<any> {
   throw new Error("runAgentHarnessAttempt requires full openclaw runtime");
 }
 
 /** Resolves plugin harness policy tools allow — returns undefined (no restriction) in cross-wms. */
-export function resolvePluginHarnessPolicyToolsAllow(_params: unknown): [] | undefined {
+export function resolvePluginHarnessPolicyToolsAllow(_params: any): [] | undefined {
   return undefined;
 }

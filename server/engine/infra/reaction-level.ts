@@ -15,7 +15,7 @@ export type ResolvedReactionLevel = {
 const LEVELS = new Set<ReactionLevel>(["off", "ack", "minimal", "extensive"]);
 
 function parseLevel(
-  value: unknown,
+  value: any,
 ): { kind: "missing" } | { kind: "invalid" } | { kind: "ok"; value: ReactionLevel } {
   if (value === undefined || value === null) {
     return { kind: "missing" };
@@ -34,7 +34,7 @@ function parseLevel(
 }
 
 export function resolveReactionLevel(params: {
-  value: unknown;
+  value: any;
   defaultLevel: ReactionLevel;
   invalidFallback: "ack" | "minimal";
 }): ResolvedReactionLevel {

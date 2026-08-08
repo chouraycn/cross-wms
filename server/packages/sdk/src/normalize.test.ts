@@ -3,7 +3,7 @@ import { normalizeGatewayEvent } from "./normalize.js";
 
 // Terminal tool/item events are emitted with phase:"end" plus the real status
 // (running|completed|failed|blocked), so failed/blocked must not collapse to completed.
-function agentItemEvent(data: Record<string, unknown>) {
+function agentItemEvent(data: Record<string, any>) {
   return { event: "agent", payload: { runId: "r1", stream: "item", data } };
 }
 

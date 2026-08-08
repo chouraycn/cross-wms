@@ -67,11 +67,11 @@ import type {
 } from "./types.js";
 import { assertValidParams, type Validator } from "./validation.js";
 
-function resolveSkillsAgentWorkspace(params: unknown, context: GatewayRequestContext) {
+function resolveSkillsAgentWorkspace(params: any, context: GatewayRequestContext) {
   const cfg = context.getRuntimeConfig();
   const agentIdRaw =
     params && typeof params === "object" && "agentId" in params
-      ? normalizeOptionalString((params as { agentId?: unknown }).agentId)
+      ? normalizeOptionalString((params as { agentId?: any }).agentId)
       : undefined;
   const agentId = agentIdRaw ? normalizeAgentId(agentIdRaw) : resolveDefaultAgentId(cfg);
   if (agentIdRaw) {
@@ -115,7 +115,7 @@ function buildRemoteAwareWorkspaceSkillStatus(resolved: ResolvedSkillsWorkspace)
   });
 }
 
-function respondSkillWorkshopError(respond: RespondFn, err: unknown) {
+function respondSkillWorkshopError(respond: RespondFn, err: any) {
   respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, formatErrorMessage(err)));
 }
 
@@ -137,7 +137,7 @@ const SKILL_PROPOSAL_RESPONSE_HANDLED = Symbol("skill proposal response handled"
 
 async function runSkillsProposalWorkspaceHandler<TParams, TResult>(params: {
   method: string;
-  rawParams: unknown;
+  rawParams: any;
   respond: RespondFn;
   context: GatewayRequestContext;
   validate: Validator<TParams>;

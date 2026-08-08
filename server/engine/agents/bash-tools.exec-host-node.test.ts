@@ -27,12 +27,12 @@ type MockAllowlistSegment = {
   argv: string[];
 };
 type MockAllowlistResult = {
-  allowlistMatches: unknown[];
+  allowlistMatches: any[];
   analysisOk: boolean;
   allowlistSatisfied: boolean;
   segments: MockAllowlistSegment[];
-  segmentAllowlistEntries: unknown[];
-  segmentSatisfiedBy?: unknown[];
+  segmentAllowlistEntries: any[];
+  segmentSatisfiedBy?: any[];
 };
 type MockExecAllowlistEntry = {
   pattern: string;
@@ -42,7 +42,7 @@ type MockExecAllowlistEntry = {
 };
 type MockExecApprovalsResolved = {
   allowlist: MockExecAllowlistEntry[];
-  file: { version: 1; agents: Record<string, unknown> };
+  file: { version: 1; agents: Record<string, any> };
   agent: {
     security: ExecSecurity;
     ask: ExecAsk;
@@ -52,7 +52,7 @@ type MockExecApprovalsResolved = {
 };
 type ShellAllowlistMockParams = {
   command?: string;
-  allowlist?: unknown[];
+  allowlist?: any[];
   env?: NodeJS.ProcessEnv;
 };
 type RequiresExecApprovalMockParams = {
@@ -104,14 +104,14 @@ const evaluateShellAllowlistMock = vi.hoisted(() =>
   ),
 );
 const hasNodeCommandAllowAlwaysMarkerMock = vi.hoisted(() =>
-  vi.fn((raw: unknown): boolean =>
+  vi.fn((raw: any): boolean =>
     ((raw as { allowlist?: Array<{ pattern?: string }> }).allowlist ?? []).some(
       (entry) => entry.pattern === "=node-command:test",
     ),
   ),
 );
 const resolveAllowAlwaysPatternCoverageMock = vi.hoisted(() =>
-  vi.fn((_raw: unknown): unknown => ({
+  vi.fn((_raw: any): any => ({
     complete: true,
     patterns: [{ pattern: "/trusted/bin/tool" }],
   })),
@@ -312,14 +312,14 @@ let executeNodeHostCommand: typeof import("./bash-tools.exec-host-node.js").exec
 
 type MockNodeInvokeParams = {
   command?: string;
-  params?: Record<string, unknown>;
+  params?: Record<string, any>;
 };
 
 type GatewayToolCall = {
   method: string;
   options: { timeoutMs?: number };
   params?: MockNodeInvokeParams;
-  callOptions?: unknown;
+  callOptions?: any;
 };
 
 function requireGatewayCall(index: number): GatewayToolCall {
@@ -353,7 +353,7 @@ function requireGatewayCommand(command: string): GatewayToolCall {
   return { method, options, params, callOptions };
 }
 
-function requireRunParams(call: GatewayToolCall): Record<string, unknown> {
+function requireRunParams(call: GatewayToolCall): Record<string, any> {
   expect(call.method).toBe("node.invoke");
   expect(call.params?.command).toBe("system.run");
   const params = call.params?.params;
@@ -363,9 +363,9 @@ function requireRunParams(call: GatewayToolCall): Record<string, unknown> {
   return params;
 }
 
-function requireRegisteredApprovalRequest(): Record<string, unknown> {
+function requireRegisteredApprovalRequest(): Record<string, any> {
   const calls = registerExecApprovalRequestForHostOrThrowMock.mock.calls as unknown as [
-    Record<string, unknown>,
+    Record<string, any>,
   ][];
   const firstCall = calls[0];
   if (!firstCall) {
@@ -380,9 +380,9 @@ function expectSystemRunInvoke(params: { invokeTimeoutMs: number; runTimeoutMs: 
   expect(requireRunParams(call).timeoutMs).toBe(params.runTimeoutMs);
 }
 
-function mockGatewayInvokesWithNodeApprovals(file: Record<string, unknown>) {
+function mockGatewayInvokesWithNodeApprovals(file: Record<string, any>) {
   callGatewayToolMock.mockImplementation(
-    async (method: string, _options: unknown, params: MockNodeInvokeParams | undefined) => {
+    async (method: string, _options: any, params: MockNodeInvokeParams | undefined) => {
       if (method === "exec.approvals.node.get") {
         return { file };
       }
@@ -409,7 +409,7 @@ function mockGatewayInvokesWithNodeApprovals(file: Record<string, unknown>) {
 }
 
 function usePolicyApprovalRequirementMock() {
-  requiresExecApprovalMock.mockImplementation((raw: unknown) => {
+  requiresExecApprovalMock.mockImplementation((raw: any) => {
     const params = raw as {
       ask: string;
       security: string;
@@ -455,7 +455,7 @@ describe("executeNodeHostCommand", () => {
   beforeEach(() => {
     callGatewayToolMock.mockReset();
     callGatewayToolMock.mockImplementation(
-      async (method: string, _options: unknown, params: MockNodeInvokeParams | undefined) => {
+      async (method: string, _options: any, params: MockNodeInvokeParams | undefined) => {
         if (method === "exec.approvals.node.get") {
           return { file: { version: 1, agents: {} } };
         }
@@ -543,7 +543,7 @@ describe("executeNodeHostCommand", () => {
       askFallback: "deny",
     });
     createAndRegisterDefaultExecApprovalRequestMock.mockReset();
-    createAndRegisterDefaultExecApprovalRequestMock.mockImplementation(async (args?: unknown) => {
+    createAndRegisterDefaultExecApprovalRequestMock.mockImplementation(async (args?: any) => {
       const register =
         args && typeof args === "object" && "register" in args
           ? (args as { register?: (approvalId: string) => Promise<void> }).register
@@ -712,7 +712,7 @@ describe("executeNodeHostCommand", () => {
       },
     });
     evaluateShellAllowlistMock.mockImplementation(
-      (params?: { command?: string; allowlist?: unknown[] }) => {
+      (params?: { command?: string; allowlist?: any[] }) => {
         const command = params?.command ?? "";
         const hasNodeAllowlist = Array.isArray(params?.allowlist) && params.allowlist.length > 0;
         const previewMatch = command === "./scripts/check_mail.sh --limit 5";
@@ -821,7 +821,7 @@ describe("executeNodeHostCommand", () => {
       },
     });
     evaluateShellAllowlistMock.mockImplementation(
-      (params?: { command?: string; allowlist?: unknown[] }) => {
+      (params?: { command?: string; allowlist?: any[] }) => {
         const command = params?.command ?? "";
         const hasNodeAllowlist = Array.isArray(params?.allowlist) && params.allowlist.length > 0;
         const semanticMatch = command === "./scripts/check_mail.sh --limit 5";
@@ -911,7 +911,7 @@ describe("executeNodeHostCommand", () => {
       },
     });
     evaluateShellAllowlistMock.mockImplementation(
-      (params?: { command?: string; allowlist?: unknown[] }) => {
+      (params?: { command?: string; allowlist?: any[] }) => {
         const command = params?.command ?? "";
         const hasNodeAllowlist = Array.isArray(params?.allowlist) && params.allowlist.length > 0;
         const wrapperMatch = command.startsWith("/bin/sh") && hasNodeAllowlist;
@@ -941,7 +941,7 @@ describe("executeNodeHostCommand", () => {
         params?.allowlistSatisfied !== true && params?.durableApprovalSatisfied !== true,
     );
     hasDurableExecApprovalMock.mockImplementation(
-      (params?: { segmentAllowlistEntries?: unknown[] }) =>
+      (params?: { segmentAllowlistEntries?: any[] }) =>
         Array.isArray(params?.segmentAllowlistEntries) && params.segmentAllowlistEntries.length > 0,
     );
     const autoReviewer = vi.fn<ExecAutoReviewer>(async () => ({
@@ -1090,7 +1090,7 @@ describe("executeNodeHostCommand", () => {
       },
     });
     evaluateShellAllowlistMock.mockImplementation(
-      (params?: { command?: string; allowlist?: unknown[] }) => {
+      (params?: { command?: string; allowlist?: any[] }) => {
         const command = params?.command ?? "";
         const hasNodeAllowlist = Array.isArray(params?.allowlist) && params.allowlist.length > 0;
         const semanticMatch = command === "./scripts/check_mail.sh --limit 5";
@@ -1370,7 +1370,7 @@ describe("executeNodeHostCommand", () => {
         },
       });
       callGatewayToolMock.mockImplementation(
-        async (method: string, _options: unknown, params: MockNodeInvokeParams | undefined) => {
+        async (method: string, _options: any, params: MockNodeInvokeParams | undefined) => {
           if (method === "exec.approvals.node.get") {
             return { file: { version: 1, agents: {} } };
           }
@@ -1440,7 +1440,7 @@ describe("executeNodeHostCommand", () => {
       askFallback: "deny",
     });
     callGatewayToolMock.mockImplementation(
-      async (method: string, _options: unknown, params: MockNodeInvokeParams | undefined) => {
+      async (method: string, _options: any, params: MockNodeInvokeParams | undefined) => {
         if (method === "exec.approvals.node.get") {
           throw new Error("node approvals unavailable");
         }
@@ -1504,7 +1504,7 @@ describe("executeNodeHostCommand", () => {
       askFallback: "full",
     });
     callGatewayToolMock.mockImplementation(
-      async (method: string, _options: unknown, params: MockNodeInvokeParams | undefined) => {
+      async (method: string, _options: any, params: MockNodeInvokeParams | undefined) => {
         if (method === "exec.approvals.node.get") {
           throw new Error("node approvals unavailable");
         }
@@ -1593,7 +1593,7 @@ describe("executeNodeHostCommand", () => {
       risk: "low",
       rationale: "safe inline eval",
     }));
-    detectInterpreterInlineEvalArgvMock.mockImplementation((argv?: unknown) =>
+    detectInterpreterInlineEvalArgvMock.mockImplementation((argv?: any) =>
       Array.isArray(argv) && argv[0] === "python3" ? INLINE_EVAL_HIT : null,
     );
     evaluateShellAllowlistMock.mockImplementation((params?: { command?: string }) => {
@@ -2096,7 +2096,7 @@ describe("executeNodeHostCommand", () => {
       allowlist: [allowlistEntry],
       file: { version: 1, agents: {} },
     });
-    evaluateShellAllowlistMock.mockImplementation((raw: unknown) => {
+    evaluateShellAllowlistMock.mockImplementation((raw: any) => {
       const params = raw as ShellAllowlistMockParams;
       const hasNodeAllowlist = (params.allowlist ?? []).length > 0;
       const gatewayPathWouldMatch = params.env?.PATH?.includes("/trusted/bin") === true;
@@ -2152,7 +2152,7 @@ describe("executeNodeHostCommand", () => {
       allowlist: [commandMarker, allowlistEntry],
       file: { version: 1, agents: {} },
     });
-    evaluateShellAllowlistMock.mockImplementation((raw: unknown) => {
+    evaluateShellAllowlistMock.mockImplementation((raw: any) => {
       const params = raw as ShellAllowlistMockParams;
       expect(params.env?.PATH).toBe("");
       expect(params.env?.Path).toBe("");
@@ -2164,7 +2164,7 @@ describe("executeNodeHostCommand", () => {
         segmentAllowlistEntries: [null],
       };
     });
-    resolveAllowAlwaysPatternCoverageMock.mockImplementation((raw: unknown) => {
+    resolveAllowAlwaysPatternCoverageMock.mockImplementation((raw: any) => {
       const params = raw as { segments?: MockAllowlistSegment[]; env?: NodeJS.ProcessEnv };
       expect(params.env?.PATH).toBe("");
       expect(params.env?.Path).toBe("");
@@ -2671,7 +2671,7 @@ describe("executeNodeHostCommand", () => {
       allowlist: [allowlistEntry],
       file: { version: 1, agents: {} },
     });
-    evaluateShellAllowlistMock.mockImplementation((raw: unknown) => {
+    evaluateShellAllowlistMock.mockImplementation((raw: any) => {
       const params = raw as ShellAllowlistMockParams;
       const hasNodeAllowlist = (params.allowlist ?? []).length > 0;
       return buildAllowlistEvalResult({
@@ -2783,7 +2783,7 @@ describe("executeNodeHostCommand", () => {
 
   it("returns a non-empty placeholder for silent node exec results", async () => {
     callGatewayToolMock.mockImplementationOnce(
-      async (method: string, _options: unknown, params: MockNodeInvokeParams | undefined) => {
+      async (method: string, _options: any, params: MockNodeInvokeParams | undefined) => {
         if (method === "node.invoke" && params?.command === "system.run") {
           return {
             payload: {

@@ -13,42 +13,42 @@
 
 export type GatewayMethodDispatchResponse = unknown;
 
-export function setFallbackGatewayContext(..._args: unknown[]): unknown {
+export function setFallbackGatewayContext(..._args: any[]): any {
   return undefined;
 }
 
-export function setFallbackGatewayContextResolver(..._args: unknown[]): unknown {
+export function setFallbackGatewayContextResolver(..._args: any[]): any {
   return undefined;
 }
 
-export function clearFallbackGatewayContext(..._args: unknown[]): unknown {
+export function clearFallbackGatewayContext(..._args: any[]): any {
   return undefined;
 }
 
-export function hasInProcessGatewayContext(..._args: unknown[]): unknown {
+export function hasInProcessGatewayContext(..._args: any[]): any {
   return false;
 }
 
-export function setPluginSubagentOverridePolicies(..._args: unknown[]): unknown {
+export function setPluginSubagentOverridePolicies(..._args: any[]): any {
   return undefined;
 }
 
-export async function dispatchGatewayMethodInProcessRaw(..._args: unknown[]): Promise<unknown> {
+export async function dispatchGatewayMethodInProcessRaw(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
 
-export async function dispatchGatewayMethodInProcess(..._args: unknown[]): Promise<unknown> {
+export async function dispatchGatewayMethodInProcess(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
 
-export function createGatewaySubagentRuntime(..._args: unknown[]): unknown {
+export function createGatewaySubagentRuntime(..._args: any[]): any {
   return undefined;
 }
 
-export function createGatewayNodesRuntime(..._args: unknown[]): unknown {
+export function createGatewayNodesRuntime(..._args: any[]): any {
   return undefined;
 }
 
-export function loadGatewayPlugins(..._args: unknown[]): unknown {
+export function loadGatewayPlugins(..._args: any[]): any {
   return undefined;
 }

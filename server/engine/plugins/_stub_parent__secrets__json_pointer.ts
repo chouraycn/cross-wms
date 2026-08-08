@@ -6,7 +6,7 @@
 
 import { parseConfigPathArrayIndex } from "../shared/path-array-index.js";
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
@@ -37,10 +37,10 @@ export function decodeJsonPointerToken(token: string): string {
  * Missing segments throw by default; `onMissing: "undefined"` is for optional probes.
  */
 export function readJsonPointer(
-  root: unknown,
+  root: any,
   pointer: string,
   options: { onMissing?: "throw" | "undefined" } = {},
-): unknown {
+): any {
   const onMissing = options.onMissing ?? "throw";
   if (pointer === "") return root;
   if (!pointer.startsWith("/")) {
@@ -56,7 +56,7 @@ export function readJsonPointer(
     .split("/")
     .map((token) => decodeJsonPointerToken(token));
 
-  let current: unknown = root;
+  let current: any = root;
   for (const token of tokens) {
     if (Array.isArray(current)) {
       const index = parseConfigPathArrayIndex(token);

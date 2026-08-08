@@ -2,19 +2,19 @@
 import type { GatewayEvent, JsonObject, OpenClawEvent, OpenClawEventType } from "./types.js";
 
 // Normalize raw Gateway events into stable SDK event types and common metadata.
-function asRecord(value: unknown): JsonObject {
+function asRecord(value: any): JsonObject {
   return typeof value === "object" && value !== null ? (value as JsonObject) : {};
 }
 
-function readString(value: unknown): string | undefined {
+function readString(value: any): string | undefined {
   return typeof value === "string" && value.length > 0 ? value : undefined;
 }
 
-function readNumber(value: unknown): number | undefined {
+function readNumber(value: any): number | undefined {
   return typeof value === "number" && Number.isFinite(value) ? value : undefined;
 }
 
-function readLowerString(value: unknown): string | undefined {
+function readLowerString(value: any): string | undefined {
   return readString(value)?.toLowerCase();
 }
 

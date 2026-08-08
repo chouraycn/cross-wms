@@ -6,8 +6,8 @@ const TEST_KEY = Symbol("global-singleton:test");
 const TEST_MAP_KEY = Symbol("global-singleton:test-map");
 
 afterEach(() => {
-  delete (globalThis as Record<PropertyKey, unknown>)[TEST_KEY];
-  delete (globalThis as Record<PropertyKey, unknown>)[TEST_MAP_KEY];
+  delete (globalThis as Record<PropertyKey, any>)[TEST_KEY];
+  delete (globalThis as Record<PropertyKey, any>)[TEST_MAP_KEY];
 });
 
 describe("resolveGlobalSingleton", () => {
@@ -32,7 +32,7 @@ describe("resolveGlobalSingleton", () => {
   it("reuses a prepopulated global value without calling the factory", () => {
     const existing = { value: 7 };
     const create = vi.fn(() => ({ value: 1 }));
-    (globalThis as Record<PropertyKey, unknown>)[TEST_KEY] = existing;
+    (globalThis as Record<PropertyKey, any>)[TEST_KEY] = existing;
 
     expect(resolveGlobalSingleton(TEST_KEY, create)).toBe(existing);
     expect(create).not.toHaveBeenCalled();
@@ -56,7 +56,7 @@ describe("resolveGlobalMap", () => {
 
   it("reuses a prepopulated global map without creating a new one", () => {
     const existing = new Map<string, number>([["a", 1]]);
-    (globalThis as Record<PropertyKey, unknown>)[TEST_MAP_KEY] = existing;
+    (globalThis as Record<PropertyKey, any>)[TEST_MAP_KEY] = existing;
 
     const resolved = resolveGlobalMap<string, number>(TEST_MAP_KEY);
 

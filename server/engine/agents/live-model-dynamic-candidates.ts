@@ -7,8 +7,8 @@
 
 /** Appends prioritized dynamic live models to a candidate list. */
 export async function appendPrioritizedDynamicLiveModels(
-  candidates: unknown[],
-): Promise<unknown[]> {
+  candidates: any[],
+): Promise<any[]> {
   // Cross-wms does not have dynamic live model discovery.
   return candidates;
 }

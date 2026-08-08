@@ -44,8 +44,8 @@ const pinoInstance = pino({
 });
 
 /** Format arguments for pino: extract Error stack/message, pass everything else through. */
-function formatArgs(...args: unknown[]): [Record<string, unknown>, ...string[]] {
-  const merged: Record<string, unknown> = {};
+function formatArgs(...args: any[]): [Record<string, any>, ...string[]] {
+  const merged: Record<string, any> = {};
   const rest: string[] = [];
 
   for (const arg of args) {
@@ -60,32 +60,32 @@ function formatArgs(...args: unknown[]): [Record<string, unknown>, ...string[]] 
 }
 
 export interface Logger {
-  error(...args: unknown[]): void;
-  warn(...args: unknown[]): void;
-  info(...args: unknown[]): void;
-  debug(...args: unknown[]): void;
+  error(...args: any[]): void;
+  warn(...args: any[]): void;
+  info(...args: any[]): void;
+  debug(...args: any[]): void;
   /** Check if a given level would produce output (useful for expensive formatting). */
   isLevelEnabled(level: LogLevel): boolean;
   /** Create a child logger with persistent bindings (e.g. sessionId, requestId) for request-scoped tracing. */
-  child(bindings: Record<string, unknown>): Logger;
+  child(bindings: Record<string, any>): Logger;
 }
 
 /** Build a Logger facade over a (possibly child) pino instance. */
 function makeLogger(pinoLogger: pino.Logger): Logger {
   return {
-    error(...args: unknown[]): void {
+    error(...args: any[]): void {
       const [merged, ...rest] = formatArgs(...args);
       pinoLogger.error(merged, ...rest);
     },
-    warn(...args: unknown[]): void {
+    warn(...args: any[]): void {
       const [merged, ...rest] = formatArgs(...args);
       pinoLogger.warn(merged, ...rest);
     },
-    info(...args: unknown[]): void {
+    info(...args: any[]): void {
       const [merged, ...rest] = formatArgs(...args);
       pinoLogger.info(merged, ...rest);
     },
-    debug(...args: unknown[]): void {
+    debug(...args: any[]): void {
       const [merged, ...rest] = formatArgs(...args);
       pinoLogger.debug(merged, ...rest);
     },
@@ -94,7 +94,7 @@ function makeLogger(pinoLogger: pino.Logger): Logger {
       const current = pinoLogger.levels.values[pinoLogger.level as string];
       return typeof target === 'number' && typeof current === 'number' && current >= target;
     },
-    child(bindings: Record<string, unknown>): Logger {
+    child(bindings: Record<string, any>): Logger {
       return makeLogger(pinoLogger.child(bindings));
     },
   };

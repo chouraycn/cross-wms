@@ -6,37 +6,37 @@ import { normalizeToolParameterSchema } from "../agent-tools-parameter-schema.js
 import { createCronToolSchema } from "./cron-tool.js";
 
 /** Walk a TypeBox schema by dot-separated property path and return sorted keys. */
-function keysAt(schema: Record<string, unknown>, path: string): string[] {
-  let cursor: Record<string, unknown> | undefined = schema;
+function keysAt(schema: Record<string, any>, path: string): string[] {
+  let cursor: Record<string, any> | undefined = schema;
   for (const segment of path.split(".")) {
-    const props = cursor?.["properties"] as Record<string, Record<string, unknown>> | undefined;
+    const props = cursor?.["properties"] as Record<string, Record<string, any>> | undefined;
     cursor = props?.[segment];
   }
-  const leaf = cursor?.["properties"] as Record<string, unknown> | undefined;
+  const leaf = cursor?.["properties"] as Record<string, any> | undefined;
   return leaf ? Object.keys(leaf).toSorted() : [];
 }
 
 function propertyAt(
-  schema: Record<string, unknown>,
+  schema: Record<string, any>,
   path: string,
-): Record<string, unknown> | undefined {
-  let cursor: Record<string, unknown> | undefined = schema;
+): Record<string, any> | undefined {
+  let cursor: Record<string, any> | undefined = schema;
   for (const segment of path.split(".")) {
-    const props = cursor?.["properties"] as Record<string, Record<string, unknown>> | undefined;
+    const props = cursor?.["properties"] as Record<string, Record<string, any>> | undefined;
     cursor = props?.[segment];
   }
   return cursor;
 }
 
 describe("createCronToolSchema", () => {
-  const schemaRecord = createCronToolSchema() as unknown as Record<string, unknown>;
+  const schemaRecord = createCronToolSchema() as unknown as Record<string, any>;
   const providerSchemaRecord = normalizeToolParameterSchema(createCronToolSchema(), {
     modelProvider: "gemini",
-  }) as unknown as Record<string, unknown>;
+  }) as unknown as Record<string, any>;
   const jjccGeminiSchemaRecord = normalizeToolParameterSchema(createCronToolSchema(), {
     modelProvider: "jjcc",
     modelId: "gemini-3.1-pro-preview",
-  }) as unknown as Record<string, unknown>;
+  }) as unknown as Record<string, any>;
 
   // Regression: models like GPT-5.4 rely on these fields to populate job/patch.
   // If a field is removed from this list the test must be updated intentionally.
@@ -197,10 +197,10 @@ describe("createCronToolSchema", () => {
 
   it("job.failureAlert uses plain object type for OpenAPI 3.0 compat", () => {
     const root = schemaRecord.properties as
-      | Record<string, { properties?: Record<string, unknown>; type?: unknown }>
+      | Record<string, { properties?: Record<string, any>; type?: any }>
       | undefined;
     const jobProps = root?.job?.properties as
-      | Record<string, { type?: unknown; description?: string }>
+      | Record<string, { type?: any; description?: string }>
       | undefined;
     const schema = jobProps?.failureAlert;
     // Must be a plain "object" type — not a type array — so providers that
@@ -228,10 +228,10 @@ describe("createCronToolSchema", () => {
 
   it("job.agentId and job.sessionKey project to plain string type for OpenAPI 3.0 compat", () => {
     const root = providerSchemaRecord.properties as
-      | Record<string, { properties?: Record<string, unknown> }>
+      | Record<string, { properties?: Record<string, any> }>
       | undefined;
     const jobProps = root?.job?.properties as
-      | Record<string, { type?: unknown; description?: string }>
+      | Record<string, { type?: any; description?: string }>
       | undefined;
 
     // Provider projection must be plain "string" rather than a nullable union.
@@ -244,10 +244,10 @@ describe("createCronToolSchema", () => {
 
   it("patch.payload.toolsAllow projects to plain array type for OpenAPI 3.0 compat", () => {
     const root = providerSchemaRecord.properties as
-      | Record<string, { properties?: Record<string, unknown> }>
+      | Record<string, { properties?: Record<string, any> }>
       | undefined;
     const patchProps = root?.patch?.properties as
-      | Record<string, { properties?: Record<string, { type?: unknown; description?: string }> }>
+      | Record<string, { properties?: Record<string, { type?: any; description?: string }> }>
       | undefined;
 
     // Provider-facing schemas must be plain "array" rather than JSON Schema

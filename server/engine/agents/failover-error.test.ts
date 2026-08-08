@@ -202,8 +202,8 @@ describe("failover-error", () => {
   });
 
   it("stops on cyclic cause chains", () => {
-    const first: { cause?: unknown } = {};
-    const second: { cause?: unknown } = { cause: first };
+    const first: { cause?: any } = {};
+    const second: { cause?: any } = { cause: first };
     first.cause = second;
 
     expect(resolveFailoverReasonFromError(first)).toBeNull();

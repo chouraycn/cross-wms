@@ -29,7 +29,7 @@ describe('MethodRegistry 模块单元测试', () => {
 
   describe('方法调用', () => {
     it('应该能够调用已注册的方法', async () => {
-      const handler = async (params: unknown) => ({ received: params });
+      const handler = async (params: any) => ({ received: params });
       registerGatewayMethod('test.invoke', handler);
 
       const result = await getMethodRegistry().invoke('test.invoke', { foo: 'bar' }, { requestId: 'test', timestamp: Date.now() });

@@ -110,7 +110,7 @@ function getCheck(checks: readonly HealthCheck[], id: string): HealthCheck {
 describe("CORE_HEALTH_CHECKS", () => {
   let tmp: string | undefined;
   let hooksModelCatalogCase: {
-    calls: unknown[][];
+    calls: any[][];
   };
 
   beforeAll(async () => {

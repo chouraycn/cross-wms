@@ -36,7 +36,7 @@ export function getSupportedLocales(): string[] {
   return [...i18nConfig.supportedLocales];
 }
 
-export function formatI18nKey(key: string, params?: Record<string, unknown>): string {
+export function formatI18nKey(key: string, params?: Record<string, any>): string {
   if (!params) return key;
 
   return Object.entries(params).reduce((acc, [k, v]) => {

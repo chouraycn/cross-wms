@@ -10,16 +10,16 @@ const hoisted = vi.hoisted(() => ({
 }));
 
 vi.mock("../plugins/tools.js", () => ({
-  resolvePluginTools: (...args: unknown[]) => hoisted.resolvePluginTools(...args),
+  resolvePluginTools: (...args: any[]) => hoisted.resolvePluginTools(...args),
 }));
 
-function firstResolvePluginToolsParams(): Record<string, unknown> {
+function firstResolvePluginToolsParams(): Record<string, any> {
   // Captures the plugin runtime contract passed from OpenClaw tool resolution.
   const call = hoisted.resolvePluginTools.mock.calls[0];
   if (!call) {
     throw new Error("Expected plugin tool resolution");
   }
-  return call[0] as Record<string, unknown>;
+  return call[0] as Record<string, any>;
 }
 
 describe("createOpenClawTools browser plugin integration", () => {
@@ -84,7 +84,7 @@ describe("createOpenClawTools browser plugin integration", () => {
 
   it("forwards fsPolicy into plugin tool context", async () => {
     let capturedContext: { fsPolicy?: { workspaceOnly: boolean } } | undefined;
-    hoisted.resolvePluginTools.mockImplementation((params: unknown) => {
+    hoisted.resolvePluginTools.mockImplementation((params: any) => {
       const resolvedParams = params as { context?: { fsPolicy?: { workspaceOnly: boolean } } };
       capturedContext = resolvedParams.context;
       return [
@@ -158,7 +158,7 @@ describe("createOpenClawTools browser plugin integration", () => {
           };
         }
       | undefined;
-    hoisted.resolvePluginTools.mockImplementation((params: unknown) => {
+    hoisted.resolvePluginTools.mockImplementation((params: any) => {
       capturedParams = params as typeof capturedParams;
       return [];
     });
@@ -248,7 +248,7 @@ describe("createOpenClawTools browser plugin integration", () => {
       },
     } as OpenClawConfig;
     let capturedRuntimeConfig: OpenClawConfig | undefined;
-    hoisted.resolvePluginTools.mockImplementation((params: unknown) => {
+    hoisted.resolvePluginTools.mockImplementation((params: any) => {
       capturedRuntimeConfig = (params as { context?: { runtimeConfig?: OpenClawConfig } }).context
         ?.runtimeConfig;
       return [];
@@ -297,7 +297,7 @@ describe("createOpenClawTools browser plugin integration", () => {
     } as OpenClawConfig;
     let capturedRuntimeConfig: OpenClawConfig | undefined;
     let getRuntimeConfig: (() => OpenClawConfig | undefined) | undefined;
-    hoisted.resolvePluginTools.mockImplementation((params: unknown) => {
+    hoisted.resolvePluginTools.mockImplementation((params: any) => {
       const context = (
         params as {
           context?: {
@@ -340,7 +340,7 @@ describe("createOpenClawTools browser plugin integration", () => {
       },
     } as OpenClawConfig;
     let getRuntimeConfig: (() => OpenClawConfig | undefined) | undefined;
-    hoisted.resolvePluginTools.mockImplementation((params: unknown) => {
+    hoisted.resolvePluginTools.mockImplementation((params: any) => {
       getRuntimeConfig = (
         params as { context?: { getRuntimeConfig?: () => OpenClawConfig | undefined } }
       ).context?.getRuntimeConfig;

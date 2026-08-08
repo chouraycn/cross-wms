@@ -22,7 +22,7 @@ type CurrentAttemptAssistantWithError = NonNullable<
   EmbeddedRunAttemptResult["currentAttemptAssistant"]
 > & { errorMessage: string };
 
-function isCurrentAttemptAssistant(value: unknown): value is CurrentAttemptAssistantWithError {
+function isCurrentAttemptAssistant(value: any): value is CurrentAttemptAssistantWithError {
   return (
     typeof value === "object" &&
     value !== null &&
@@ -36,11 +36,11 @@ function isCurrentAttemptAssistant(value: unknown): value is CurrentAttemptAssis
 function setupDeepseekFallbackErrorMatchers() {
   // DeepSeek matchers prove failover classification uses the current candidate
   // assistant instead of stale history from the previous provider.
-  mockedIsFailoverAssistantError.mockImplementation((...args: unknown[]) => {
+  mockedIsFailoverAssistantError.mockImplementation((...args: any[]) => {
     const assistant = args[0];
     return isCurrentAttemptAssistant(assistant) && assistant.provider === "deepseek";
   });
-  mockedIsRateLimitAssistantError.mockImplementation((...args: unknown[]) => {
+  mockedIsRateLimitAssistantError.mockImplementation((...args: any[]) => {
     const assistant = args[0];
     return isCurrentAttemptAssistant(assistant) && assistant.provider === "deepseek";
   });
@@ -49,8 +49,8 @@ function setupDeepseekFallbackErrorMatchers() {
 function captureFormattedAssistant() {
   // Capture the assistant passed to formatting so tests can inspect which
   // provider/model error object drove the final failover message.
-  let lastFormattedAssistant: unknown;
-  mockedFormatAssistantErrorText.mockImplementation((...args: unknown[]) => {
+  let lastFormattedAssistant: any;
+  mockedFormatAssistantErrorText.mockImplementation((...args: any[]) => {
     lastFormattedAssistant = args[0];
     if (!isCurrentAttemptAssistant(lastFormattedAssistant)) {
       return String(lastFormattedAssistant);
@@ -60,7 +60,7 @@ function captureFormattedAssistant() {
   return () => lastFormattedAssistant;
 }
 
-function expectDeepseekAssistant(value: unknown) {
+function expectDeepseekAssistant(value: any) {
   if (!isCurrentAttemptAssistant(value)) {
     throw new Error(`Expected DeepSeek assistant, got ${String(value)}`);
   }
@@ -83,13 +83,13 @@ function makeCrossProviderFallbackConfig() {
 }
 
 async function expectDeepseekFallbackError(
-  promise: Promise<unknown>,
+  promise: Promise<any>,
   getLastFormattedAssistant: () => unknown,
 ) {
   await expect(promise).rejects.toBeInstanceOf(MockedFailoverError);
   await expect(promise).rejects.toThrow(`deepseek/deepseek-chat: ${DEEPSEEK_ERROR_MESSAGE}`);
   expect(mockedIsRateLimitAssistantError).toHaveBeenCalledTimes(1);
-  const rateLimitCalls = mockedIsRateLimitAssistantError.mock.calls as unknown[][];
+  const rateLimitCalls = mockedIsRateLimitAssistantError.mock.calls as any[][];
   expectDeepseekAssistant(rateLimitCalls.at(-1)?.[0]);
   expectDeepseekAssistant(getLastFormattedAssistant());
 }
@@ -143,11 +143,11 @@ describe("runEmbeddedAgent cross-provider fallback error handling", () => {
   it("falls back to the session assistant when compaction removes the current attempt slice", async () => {
     const getLastFormattedAssistant = captureFormattedAssistant();
     const sameCandidateErrorMessage = "429 current candidate rate limit";
-    mockedIsFailoverAssistantError.mockImplementation((...args: unknown[]) => {
+    mockedIsFailoverAssistantError.mockImplementation((...args: any[]) => {
       const assistant = args[0];
       return isCurrentAttemptAssistant(assistant) && assistant.provider === "anthropic";
     });
-    mockedIsRateLimitAssistantError.mockImplementation((...args: unknown[]) => {
+    mockedIsRateLimitAssistantError.mockImplementation((...args: any[]) => {
       const assistant = args[0];
       return isCurrentAttemptAssistant(assistant) && assistant.provider === "anthropic";
     });
@@ -221,7 +221,7 @@ describe("runEmbeddedAgent cross-provider fallback error handling", () => {
   });
 
   it("does not reuse a prior provider session assistant for non-timeout failover", async () => {
-    mockedIsFailoverAssistantError.mockImplementation((...args: unknown[]) => {
+    mockedIsFailoverAssistantError.mockImplementation((...args: any[]) => {
       const assistant = args[0];
       return isCurrentAttemptAssistant(assistant) && assistant.errorMessage.includes("quota");
     });

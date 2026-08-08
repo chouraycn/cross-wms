@@ -9,13 +9,13 @@ export { normalizeApiKeyConfig, resolveMissingProviderApiKey } from "./models-co
 export type { ProviderApiKeyResolver, ProviderAuthResolver, ProviderConfig, SecretDefaults } from "./models-config.providers.secret-helpers.js";
 
 /** Creates a provider API key resolver. */
-export function createProviderApiKeyResolver(..._args: unknown[]): Record<string, unknown> {
+export function createProviderApiKeyResolver(..._args: any[]): Record<string, any> {
   // Cross-wms does not have provider API key resolution.
   return { resolve: () => undefined };
 }
 
 /** Creates a provider auth resolver. */
-export function createProviderAuthResolver(..._args: unknown[]): Record<string, unknown> {
+export function createProviderAuthResolver(..._args: any[]): Record<string, any> {
   // Cross-wms does not have provider auth resolution.
   return { resolve: () => undefined };
 }

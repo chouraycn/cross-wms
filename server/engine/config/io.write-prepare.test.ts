@@ -29,7 +29,7 @@ describe("config io write prepare", () => {
           auth: { mode: "token" },
         },
       },
-    }) as Record<string, unknown>;
+    }) as Record<string, any>;
 
     expect(persisted.gateway).toEqual({
       port: 18789,
@@ -80,7 +80,7 @@ describe("config io write prepare", () => {
       [["plugins", "installs"]],
     ) as {
       plugins?: {
-        installs?: Record<string, Record<string, unknown>>;
+        installs?: Record<string, Record<string, any>>;
       };
     };
 
@@ -502,7 +502,7 @@ describe("config io write prepare", () => {
         },
         gateway: { mode: "local", port: 18789 },
       },
-    }) as Record<string, unknown>;
+    }) as Record<string, any>;
 
     expect(persisted.agents).toEqual({ $include: "./config/agents.json" });
     expect(persisted.gateway).toEqual({ mode: "local", port: 18789 });
@@ -522,7 +522,7 @@ describe("config io write prepare", () => {
       nextConfig: {
         gateway: { mode: "local" },
       },
-    }) as Record<string, unknown>;
+    }) as Record<string, any>;
 
     expect(persisted.gateway).toEqual({ $include: "./config/gateway.json" });
   });
@@ -553,7 +553,7 @@ describe("config io write prepare", () => {
           auth: { mode: "none", token: "new", strategy: "strict" },
         },
       },
-    }) as Record<string, unknown>;
+    }) as Record<string, any>;
 
     expect(persisted.gateway).toEqual({
       $include: "./config/gateway.json",
@@ -584,7 +584,7 @@ describe("config io write prepare", () => {
           tls: { certPath: "~/cert.pem", enabled: true },
         },
       },
-    }) as Record<string, unknown>;
+    }) as Record<string, any>;
 
     expect(persisted.gateway).toEqual({
       $include: "./config/gateway.json",
@@ -631,7 +631,7 @@ describe("config io write prepare", () => {
         agents: sourceAgents,
         gateway: { mode: "local", port: 18789 },
       },
-    }) as Record<string, unknown>;
+    }) as Record<string, any>;
 
     expect(persisted.agents).toEqual({
       list: [{ $include: "./config/main-agent.json" }],
@@ -662,7 +662,7 @@ describe("config io write prepare", () => {
           ],
         },
       },
-    }) as Record<string, unknown>;
+    }) as Record<string, any>;
 
     expect(persisted.agents).toEqual({
       list: [
@@ -718,7 +718,7 @@ describe("config io write prepare", () => {
         },
       },
       nextConfig: { plugins: { load: { paths: ["/same", "/same"] } } },
-    }) as Record<string, unknown>;
+    }) as Record<string, any>;
 
     expect(persisted).toEqual({
       plugins: {
@@ -1133,7 +1133,7 @@ describe("config io write prepare", () => {
         },
       },
     } satisfies OpenClawConfig;
-    (runtimeConfig.channels!.imessage as Record<string, unknown>).runtimeOnlyDefault = true;
+    (runtimeConfig.channels!.imessage as Record<string, any>).runtimeOnlyDefault = true;
 
     const nextConfig: OpenClawConfig = structuredClone(runtimeConfig);
     nextConfig.gateway = {
@@ -1145,13 +1145,13 @@ describe("config io write prepare", () => {
       runtimeConfig,
       sourceConfig,
       nextConfig,
-    }) as Record<string, unknown>;
+    }) as Record<string, any>;
 
     expect(persisted.gateway).toEqual({
       port: 18789,
       auth: { mode: "token" },
     });
-    const channels = persisted.channels as Record<string, Record<string, unknown>> | undefined;
+    const channels = persisted.channels as Record<string, Record<string, any>> | undefined;
     expect(channels?.imessage?.cliPath).toBe("/usr/local/bin/imsg");
     expect(channels?.imessage).not.toHaveProperty("runtimeOnlyDefault");
   });
@@ -1183,8 +1183,8 @@ describe("config io write prepare", () => {
       nextConfig,
     }) as {
       channels?: {
-        discord?: { dm?: Record<string, unknown>; dmPolicy?: unknown };
-        slack?: { dm?: Record<string, unknown>; dmPolicy?: unknown };
+        discord?: { dm?: Record<string, any>; dmPolicy?: any };
+        slack?: { dm?: Record<string, any>; dmPolicy?: any };
       };
     };
 
@@ -1238,13 +1238,13 @@ describe("config io write prepare", () => {
       nextConfig,
     }) as {
       channels?: {
-        slack?: { channels?: Record<string, Record<string, unknown>> };
-        googlechat?: { groups?: Record<string, Record<string, unknown>> };
+        slack?: { channels?: Record<string, Record<string, any>> };
+        googlechat?: { groups?: Record<string, Record<string, any>> };
         discord?: {
-          guilds?: Record<string, { channels?: Record<string, Record<string, unknown>> }>;
+          guilds?: Record<string, { channels?: Record<string, Record<string, any>> }>;
         };
       };
-      gateway?: Record<string, unknown>;
+      gateway?: Record<string, any>;
     };
 
     expect(persisted.gateway).toEqual({
@@ -1309,7 +1309,7 @@ describe("config io write prepare", () => {
         $schema: null,
         gateway: { mode: "local", port: 18789 },
       },
-    }) as Record<string, unknown>;
+    }) as Record<string, any>;
 
     expect(persisted).not.toHaveProperty("$schema");
     expect(persisted.gateway).toEqual({ mode: "local", port: 18789 });
@@ -1328,7 +1328,7 @@ describe("config io write prepare", () => {
         $schema: 123,
         gateway: { mode: "local", port: 18789 },
       },
-    }) as Record<string, unknown>;
+    }) as Record<string, any>;
 
     expect(persisted.$schema).toBe(123);
     expect(persisted.gateway).toEqual({ mode: "local", port: 18789 });
@@ -1363,7 +1363,7 @@ describe("config io write prepare", () => {
         ["channels", "telegram", "dmPolicy"],
         ["channels", "telegram", "groupPolicy"],
       ],
-    }) as { channels?: { telegram?: Record<string, unknown> } };
+    }) as { channels?: { telegram?: Record<string, any> } };
 
     expect(persisted.channels?.telegram?.dmPolicy).toBe("pairing");
     expect(persisted.channels?.telegram?.groupPolicy).toBe("allowlist");
@@ -1394,7 +1394,7 @@ describe("config io write prepare", () => {
       nextConfig: sourceConfig,
       explicitSetValueSource: runtimeConfig,
       explicitSetPaths: [["channels", "telegram"]],
-    }) as { channels?: { telegram?: Record<string, unknown> } };
+    }) as { channels?: { telegram?: Record<string, any> } };
 
     expect(persisted.channels?.telegram).toEqual({
       botToken: "tok-abc",
@@ -1429,7 +1429,7 @@ describe("config io write prepare", () => {
       nextConfig: sourceConfig,
       explicitSetValueSource: runtimeConfig,
       explicitSetPaths: [["models", "providers", "openai", "models", "0", "contextWindow"]],
-    }) as { models?: { providers?: { openai?: { models?: Array<Record<string, unknown>> } } } };
+    }) as { models?: { providers?: { openai?: { models?: Array<Record<string, any>> } } } };
 
     expect(persisted.models?.providers?.openai?.models?.[0]).toEqual({
       id: "gpt-5.5",
@@ -1468,7 +1468,7 @@ describe("config io write prepare", () => {
         ["models", "providers", "openai", "models", "9007199254740993", "contextWindow"],
         ["models", "providers", "openai", "models", "4294967294", "contextWindow"],
       ],
-    }) as { models?: { providers?: { openai?: { models?: Array<Record<string, unknown>> } } } };
+    }) as { models?: { providers?: { openai?: { models?: Array<Record<string, any>> } } } };
 
     expect(persisted.models?.providers?.openai?.models).toEqual([{ id: "gpt-5.5" }]);
   });

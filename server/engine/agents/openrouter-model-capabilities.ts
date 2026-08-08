@@ -5,13 +5,13 @@
  * Cross-wms degradation: returns empty capabilities without API fetching.
  */
 
-export type OpenRouterModelCapabilities = Record<string, unknown>;
+export type OpenRouterModelCapabilities = Record<string, any>;
 
 let cachedCapabilities: OpenRouterModelCapabilities | undefined;
 
 /** Loads OpenRouter model capabilities from the API. */
 export async function loadOpenRouterModelCapabilities(
-  _params?: Record<string, unknown>,
+  _params?: Record<string, any>,
 ): Promise<OpenRouterModelCapabilities> {
   // Cross-wms does not have OpenRouter API access; return empty.
   cachedCapabilities = {};

@@ -84,7 +84,7 @@ export function getQueuedFileWriter(
 
   const dir = path.dirname(filePath);
   const ready = fs.mkdir(dir, { recursive: true, mode: 0o700 }).catch(() => undefined);
-  let queue: Promise<unknown> = Promise.resolve();
+  let queue: Promise<any> = Promise.resolve();
   let pendingWrites = 0;
   let queuedBytes = 0;
   let activeOperation: QueuedFileWriterDiagnostics["activeOperation"] = "idle";

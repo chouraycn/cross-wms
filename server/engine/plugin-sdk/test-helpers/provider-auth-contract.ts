@@ -11,7 +11,7 @@ import type {
 } from "../setup.js";
 import { registerProviders, requireProvider } from "./contracts-testkit.js";
 
-type LoginOpenAICodexOAuth = (params: unknown) => Promise<{
+type LoginOpenAICodexOAuth = (params: any) => Promise<{
   access: string;
   refresh: string;
   expires: number;
@@ -69,7 +69,7 @@ function buildAuthContext() {
   };
 }
 
-function createJwt(payload: Record<string, unknown>): string {
+function createJwt(payload: Record<string, any>): string {
   const header = Buffer.from(JSON.stringify({ alg: "none", typ: "JWT" })).toString("base64url");
   const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
   return `${header}.${body}.signature`;
@@ -350,7 +350,7 @@ export function describeGithubCopilotProviderAuthContract(load: ProviderAuthCont
     function stubGitHubDeviceFlowFetch(
       outcome: { accessToken: string } | { error: "access_denied" | "expired_token" },
     ) {
-      const fetchMock = vi.fn(async (input: unknown) => {
+      const fetchMock = vi.fn(async (input: any) => {
         const target =
           typeof input === "string"
             ? input

@@ -20,12 +20,12 @@ function Input({ className, type, ...props }: React.ComponentProps<'input'> & { 
         borderColor: 'divider',
         '&:focus': {
           borderColor: 'primary.main',
-          boxShadow: (theme: unknown) =>
+          boxShadow: (theme: any) =>
             `0 0 0 2px ${(theme as { palette: { primary: { main: string } } }).palette.primary.main}33`,
         },
         '&:disabled': { bgcolor: 'action.disabledBackground' },
       }}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     />
   )
 }

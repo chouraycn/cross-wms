@@ -48,7 +48,7 @@ const DEVICE_PAIR_APPROVAL_DENIED_MESSAGE = "device pairing approval denied";
 const DEVICE_PAIR_REJECTION_DENIED_MESSAGE = "device pairing rejection denied";
 
 function redactPairedDevice(
-  device: { tokens?: Record<string, DeviceAuthToken> } & Record<string, unknown>,
+  device: { tokens?: Record<string, DeviceAuthToken> } & Record<string, any>,
 ) {
   // Pairing lists are visible to operators; expose token lifecycle metadata
   // without returning raw token material or the internal approved-scope set.

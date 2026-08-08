@@ -31,7 +31,7 @@ function invalidateStaleNextRunOnScheduleChange(params: {
 
 function warnInvalidPersistedCronJob(params: {
   state: CronServiceState;
-  raw: Record<string, unknown>;
+  raw: Record<string, any>;
   index: number;
   reason: string;
 }) {
@@ -107,7 +107,7 @@ export async function ensureLoaded(
   const loaded = await loadCronJobsStoreWithConfigJobs(state.deps.storePath);
   // Persisted cron rows are validated lazily, so treat them as raw records at the
   // store boundary and only trust the CronJob shape after validation below.
-  const loadedJobs = (loaded.store.jobs ?? []) as unknown as Record<string, unknown>[];
+  const loadedJobs = (loaded.store.jobs ?? []) as unknown as Record<string, any>[];
   const jobs: CronJob[] = [];
   const quarantinedConfigJobs: QuarantinedCronConfigJob[] = [...loaded.invalidConfigRows];
   for (const [index, raw] of loadedJobs.entries()) {
@@ -117,7 +117,7 @@ export async function ensureLoaded(
     // Accept old `jobId` rows at the raw boundary only; the in-memory store
     // uses canonical `id` before validation and scheduling.
     normalizeCronJobIdentityFields(raw);
-    let normalized: Record<string, unknown> | null;
+    let normalized: Record<string, any> | null;
     try {
       normalized = normalizeCronJobInput(raw);
     } catch (error) {
@@ -142,7 +142,7 @@ export async function ensureLoaded(
       if (runtimeState && typeof runtimeState === "object" && !Array.isArray(runtimeState)) {
         // Preserve runtime state with the quarantined config so doctor can
         // repair shape without losing last/next run information.
-        quarantineEntry.state = structuredClone(runtimeState as Record<string, unknown>);
+        quarantineEntry.state = structuredClone(runtimeState as Record<string, any>);
       }
       const updatedAtMs = runtimeEntry?.updatedAtMs ?? raw.updatedAtMs;
       if (typeof updatedAtMs === "number" && Number.isFinite(updatedAtMs)) {

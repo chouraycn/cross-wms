@@ -47,7 +47,7 @@ import { assertValidParams } from "./validation.js";
 
 const SYSTEMD_HANDOFF_RESTART_GRACE_MS = 2000;
 
-function formatUpdateRunErrorMessage(err: unknown): string {
+function formatUpdateRunErrorMessage(err: any): string {
   if (err instanceof Error) {
     return err.message || err.name;
   }
@@ -155,7 +155,7 @@ export const updateHandlers: GatewayRequestHandlers = {
       extractDeliveryInfo(sessionKey);
     const deliveryContext = requestedDeliveryContext ?? sessionDeliveryContext;
     const threadId = requestedThreadId ?? sessionThreadId;
-    const timeoutMsRaw = (params as { timeoutMs?: unknown }).timeoutMs;
+    const timeoutMsRaw = (params as { timeoutMs?: any }).timeoutMs;
     const timeoutMs =
       typeof timeoutMsRaw === "number" && Number.isFinite(timeoutMsRaw)
         ? Math.max(1000, Math.floor(timeoutMsRaw))
@@ -297,7 +297,7 @@ export const updateHandlers: GatewayRequestHandlers = {
       } else {
         const preUpdateConfig =
           installSurface.kind === "git"
-            ? await readPreUpdateConfigForPostCoreFinalize().catch((err: unknown) => {
+            ? await readPreUpdateConfigForPostCoreFinalize().catch((err: any) => {
                 context?.logGateway?.warn(
                   `update.run could not capture pre-update config ${formatControlPlaneActor(actor)} error=${formatUpdateRunErrorMessage(err)}`,
                 );

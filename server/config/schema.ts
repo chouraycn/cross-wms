@@ -183,7 +183,7 @@ function getDefaultConfig(): CDFKnowConfig {
 
 interface LegacyConfig {
   source: 'env' | 'settings-json' | 'app-config';
-  raw: Record<string, unknown>;
+  raw: Record<string, any>;
 }
 
 /**
@@ -191,7 +191,7 @@ interface LegacyConfig {
  * 按优先级合并：env > settings.json > defaults
  */
 export function loadLegacyConfig(): LegacyConfig {
-  const raw: Record<string, unknown> = {};
+  const raw: Record<string, any> = {};
 
   // 1) process.env（CDF_DATA_DIR / PORT / ...）
   if (process.env.PORT) {
@@ -329,13 +329,13 @@ export function updateConfig(patch: Partial<CDFKnowConfig>): CDFKnowConfig {
 }
 
 /** 简单深合并（对象层级） */
-function deepMerge<T extends Record<string, unknown>>(target: T, patch: Partial<T>): T {
-  const out: Record<string, unknown> = { ...target };
-  for (const [k, v] of Object.entries(patch as Record<string, unknown>)) {
+function deepMerge<T extends Record<string, any>>(target: T, patch: Partial<T>): T {
+  const out: Record<string, any> = { ...target };
+  for (const [k, v] of Object.entries(patch as Record<string, any>)) {
     if (v === undefined) continue;
     const existing = out[k];
     if (v && typeof v === 'object' && !Array.isArray(v) && existing && typeof existing === 'object' && !Array.isArray(existing)) {
-      out[k] = deepMerge(existing as Record<string, unknown>, v as Record<string, unknown>);
+      out[k] = deepMerge(existing as Record<string, any>, v as Record<string, any>);
     } else {
       out[k] = v;
     }

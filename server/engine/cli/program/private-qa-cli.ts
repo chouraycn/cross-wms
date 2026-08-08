@@ -51,8 +51,8 @@ function resolvePrivateQaSourceModuleSpecifier(params?: {
 
 async function dynamicImportPrivateQaCliModule(
   specifier: string,
-): Promise<Record<string, unknown>> {
-  return (await import(specifier)) as Record<string, unknown>;
+): Promise<Record<string, any>> {
+  return (await import(specifier)) as Record<string, any>;
 }
 
 /** Load the private QA module from a source checkout or throw a user-facing availability error. */
@@ -63,8 +63,8 @@ export function loadPrivateQaCliModule(params?: {
   moduleUrl?: string;
   resolvePackageRootSync?: typeof resolveOpenClawPackageRootSync;
   existsSync?: typeof fs.existsSync;
-  importModule?: (specifier: string) => Promise<Record<string, unknown>>;
-}): Promise<Record<string, unknown>> {
+  importModule?: (specifier: string) => Promise<Record<string, any>>;
+}): Promise<Record<string, any>> {
   const specifier = resolvePrivateQaSourceModuleSpecifier(params);
   if (!specifier) {
     throw new Error("Private QA CLI is only available from an OpenClaw source checkout.");

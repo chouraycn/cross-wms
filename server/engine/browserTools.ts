@@ -397,7 +397,7 @@ const browserScreenshotBase64Def: ToolDefinition = {
 /**
  * browser_navigate handler
  */
-async function handleBrowserNavigate(args: Record<string, unknown>): Promise<string> {
+async function handleBrowserNavigate(args: Record<string, any>): Promise<string> {
   const response = await sendCommand('browser_navigate', args);
   if (!response.ok) {
     return JSON.stringify({ error: response.error || 'Navigation failed' });
@@ -417,7 +417,7 @@ interface BrowserSnapshotElement {
   href?: string;
 }
 
-async function handleBrowserSnapshot(_args: Record<string, unknown>): Promise<string> {
+async function handleBrowserSnapshot(_args: Record<string, any>): Promise<string> {
   const response = await sendCommand('browser_snapshot');
   if (!response.ok) {
     return JSON.stringify({ error: response.error || 'Snapshot failed' });
@@ -458,7 +458,7 @@ async function handleBrowserSnapshot(_args: Record<string, unknown>): Promise<st
  * browser_click handler
  * 当使用 ref 点击失败且错误暗示 ref 无效时，添加友好提示
  */
-async function handleBrowserClick(args: Record<string, unknown>): Promise<string> {
+async function handleBrowserClick(args: Record<string, any>): Promise<string> {
   const response = await sendCommand('browser_click', args);
   if (!response.ok) {
     let errorMsg = response.error || 'Click failed';
@@ -480,7 +480,7 @@ async function handleBrowserClick(args: Record<string, unknown>): Promise<string
  * browser_type handler
  * 当使用 ref 输入失败且错误暗示 ref 无效时，添加友好提示
  */
-async function handleBrowserType(args: Record<string, unknown>): Promise<string> {
+async function handleBrowserType(args: Record<string, any>): Promise<string> {
   const response = await sendCommand('browser_type', args);
   if (!response.ok) {
     let errorMsg = response.error || 'Type failed';
@@ -501,7 +501,7 @@ async function handleBrowserType(args: Record<string, unknown>): Promise<string>
 /**
  * browser_screenshot handler
  */
-async function handleBrowserScreenshot(args: Record<string, unknown>): Promise<string> {
+async function handleBrowserScreenshot(args: Record<string, any>): Promise<string> {
   const response = await sendCommand('browser_screenshot', args);
   if (!response.ok) {
     return JSON.stringify({ error: response.error || 'Screenshot failed' });
@@ -521,7 +521,7 @@ async function handleBrowserScreenshot(args: Record<string, unknown>): Promise<s
  * browser_execute_js handler
  * v1.5.131: 在当前页面上执行 JavaScript
  */
-async function handleBrowserExecuteJs(args: Record<string, unknown>): Promise<string> {
+async function handleBrowserExecuteJs(args: Record<string, any>): Promise<string> {
   const { executeJs } = await import('../services/browserHostClient.js');
   const result = await executeJs({
     script: String(args.script || ''),
@@ -542,7 +542,7 @@ async function handleBrowserExecuteJs(args: Record<string, unknown>): Promise<st
  * browser_tab_list handler
  * v3.1: 列出所有打开的标签页
  */
-async function handleBrowserTabList(_args: Record<string, unknown>): Promise<string> {
+async function handleBrowserTabList(_args: Record<string, any>): Promise<string> {
   const response = await sendCommand('browser_tab_list');
   if (!response.ok) {
     return JSON.stringify({ error: response.error || 'Tab list failed' });
@@ -554,7 +554,7 @@ async function handleBrowserTabList(_args: Record<string, unknown>): Promise<str
  * browser_tab_new handler
  * v3.1: 新建标签页并可选导航到 URL
  */
-async function handleBrowserTabNew(args: Record<string, unknown>): Promise<string> {
+async function handleBrowserTabNew(args: Record<string, any>): Promise<string> {
   const response = await sendCommand('browser_tab_new', args);
   if (!response.ok) {
     return JSON.stringify({ error: response.error || 'Tab new failed' });
@@ -566,7 +566,7 @@ async function handleBrowserTabNew(args: Record<string, unknown>): Promise<strin
  * browser_tab_switch handler
  * v3.1: 切换到指定索引的标签页
  */
-async function handleBrowserTabSwitch(args: Record<string, unknown>): Promise<string> {
+async function handleBrowserTabSwitch(args: Record<string, any>): Promise<string> {
   if (args.index === undefined || args.index === null || typeof args.index !== 'number') {
     return JSON.stringify({ error: 'index parameter is required (must be a number)' });
   }
@@ -581,7 +581,7 @@ async function handleBrowserTabSwitch(args: Record<string, unknown>): Promise<st
  * browser_tab_close handler
  * v3.1: 关闭指定标签页（默认关闭当前活跃标签页）
  */
-async function handleBrowserTabClose(args: Record<string, unknown>): Promise<string> {
+async function handleBrowserTabClose(args: Record<string, any>): Promise<string> {
   const response = await sendCommand('browser_tab_close', args);
   if (!response.ok) {
     return JSON.stringify({ error: response.error || 'Tab close failed' });
@@ -593,7 +593,7 @@ async function handleBrowserTabClose(args: Record<string, unknown>): Promise<str
  * browser_wait_for handler
  * v3.1: 等待元素出现、文本匹配或简单超时
  */
-async function handleBrowserWaitFor(args: Record<string, unknown>): Promise<string> {
+async function handleBrowserWaitFor(args: Record<string, any>): Promise<string> {
   const type = String(args.type || '');
   if (!type) {
     return JSON.stringify({ error: 'type parameter is required (selector | text | timeout)' });
@@ -616,7 +616,7 @@ async function handleBrowserWaitFor(args: Record<string, unknown>): Promise<stri
  * browser_cookies handler
  * v3.2: 获取/设置/删除 Cookie
  */
-async function handleBrowserCookies(args: Record<string, unknown>): Promise<string> {
+async function handleBrowserCookies(args: Record<string, any>): Promise<string> {
   const action = String(args.action || '');
   if (!action) {
     return JSON.stringify({ error: 'action parameter is required (get | set | delete)' });
@@ -654,7 +654,7 @@ async function handleBrowserCookies(args: Record<string, unknown>): Promise<stri
  * browser_local_storage handler
  * v3.2: 操作 localStorage
  */
-async function handleBrowserLocalStorage(args: Record<string, unknown>): Promise<string> {
+async function handleBrowserLocalStorage(args: Record<string, any>): Promise<string> {
   const action = String(args.action || '');
   if (!action) {
     return JSON.stringify({ error: 'action parameter is required (get | set | delete | clear)' });
@@ -687,7 +687,7 @@ async function handleBrowserLocalStorage(args: Record<string, unknown>): Promise
  * browser_file_upload handler
  * v3.2: 上传文件到 input[type=file]
  */
-async function handleBrowserFileUpload(args: Record<string, unknown>): Promise<string> {
+async function handleBrowserFileUpload(args: Record<string, any>): Promise<string> {
   const ref = args.ref;
   const filePath = args.filePath;
   if (!ref || typeof ref !== 'string') {
@@ -714,7 +714,7 @@ async function handleBrowserFileUpload(args: Record<string, unknown>): Promise<s
  * browser_download handler
  * v3.2: 下载文件到本地路径
  */
-async function handleBrowserDownload(args: Record<string, unknown>): Promise<string> {
+async function handleBrowserDownload(args: Record<string, any>): Promise<string> {
   const url = args.url;
   const savePath = args.savePath;
   if (!url || typeof url !== 'string') {
@@ -738,7 +738,7 @@ async function handleBrowserDownload(args: Record<string, unknown>): Promise<str
  * browser_screenshot_base64 handler
  * v3.2: 截图并返回 base64（用于多模态 AI 分析）
  */
-async function handleBrowserScreenshotBase64(args: Record<string, unknown>): Promise<string> {
+async function handleBrowserScreenshotBase64(args: Record<string, any>): Promise<string> {
   const response = await sendCommand('browser_screenshot_base64', {
     fullPage: args.fullPage === true,
     maxWidth: typeof args.maxWidth === 'number' ? args.maxWidth : 1280,

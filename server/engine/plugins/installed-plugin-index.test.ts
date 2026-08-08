@@ -35,11 +35,11 @@ function makeTempDir() {
   return makeTrackedTempDir("openclaw-installed-plugin-index", tempDirs);
 }
 
-function writePluginManifest(rootDir: string, manifest: Record<string, unknown>) {
+function writePluginManifest(rootDir: string, manifest: Record<string, any>) {
   fs.writeFileSync(path.join(rootDir, "openclaw.plugin.json"), JSON.stringify(manifest), "utf-8");
 }
 
-function writePackageJson(rootDir: string, packageJson: Record<string, unknown>) {
+function writePackageJson(rootDir: string, packageJson: Record<string, any>) {
   fs.writeFileSync(path.join(rootDir, "package.json"), JSON.stringify(packageJson), "utf-8");
 }
 
@@ -51,18 +51,18 @@ function writeRuntimeEntry(rootDir: string) {
   );
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!isRecord(value)) {
     throw new Error(`Expected ${label} to be an object`);
   }
   return value;
 }
 
-function readRecordField(record: Record<string, unknown>, key: string, label: string) {
+function readRecordField(record: Record<string, any>, key: string, label: string) {
   const value = record[key];
   if (!isRecord(value)) {
     throw new Error(`Expected ${label} to be an object`);
@@ -70,13 +70,13 @@ function readRecordField(record: Record<string, unknown>, key: string, label: st
   return value;
 }
 
-function expectRecordFields(record: Record<string, unknown>, fields: Record<string, unknown>) {
+function expectRecordFields(record: Record<string, any>, fields: Record<string, any>) {
   for (const [key, value] of Object.entries(fields)) {
     expect(record[key]).toEqual(value);
   }
 }
 
-function expectSha256(value: unknown) {
+function expectSha256(value: any) {
   expect(typeof value).toBe("string");
   expect(value).toMatch(/^[a-f0-9]{64}$/u);
 }
@@ -227,7 +227,7 @@ describe("installed plugin index", () => {
       now: () => new Date("2026-04-25T12:00:00.000Z"),
     });
 
-    expectRecordFields(index as unknown as Record<string, unknown>, {
+    expectRecordFields(index as unknown as Record<string, any>, {
       version: 1,
       migrationVersion: 1,
       generatedAtMs: 1777118400000,

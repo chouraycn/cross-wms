@@ -85,7 +85,7 @@ describe("deliverAgentCommandResult", () => {
   }
 
   async function runDelivery(params: {
-    opts: Record<string, unknown>;
+    opts: Record<string, any>;
     outboundSession?: { key?: string; agentId?: string };
     sessionEntry?: SessionEntry;
     runtime?: RuntimeEnv;

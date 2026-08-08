@@ -24,9 +24,9 @@ describe("subagent hook runner methods", () => {
       | "subagent_spawned"
       | "subagent_delivery_target"
       | "subagent_ended";
-    event: Record<string, unknown>;
-    ctx: Record<string, unknown>;
-    handlerResult?: unknown;
+    event: Record<string, any>;
+    ctx: Record<string, any>;
+    handlerResult?: any;
   }) {
     const handler = vi.fn(async () => ({ status: "ok", threadBindingReady: true as const }));
     if (params.handlerResult !== undefined) {

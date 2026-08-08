@@ -22,10 +22,10 @@
 type OpenClawConfig = {
   plugins?: {
     entries?: Record<string, { enabled?: boolean }>;
-    [key: string]: unknown;
+    [key: string]: any;
   };
-  channels?: Record<string, unknown>;
-  [key: string]: unknown;
+  channels?: Record<string, any>;
+  [key: string]: any;
 };
 
 // ============================================================================
@@ -72,11 +72,11 @@ export function setPluginEnabledInConfig(
     return next;
   }
 
-  const channels = config.channels as Record<string, unknown> | undefined;
+  const channels = config.channels as Record<string, any> | undefined;
   const existing = channels?.[builtInChannelId];
   const existingRecord =
     existing && typeof existing === "object" && !Array.isArray(existing)
-      ? (existing as Record<string, unknown>)
+      ? (existing as Record<string, any>)
       : {};
 
   return {

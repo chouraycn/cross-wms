@@ -40,8 +40,8 @@ const state = vi.hoisted(() => ({
   runEmbeddedAgentMock: vi.fn(),
   runCliAgentMock: vi.fn(),
   runWithModelFallbackMock: vi.fn(),
-  isCliProviderMock: vi.fn((_: unknown) => false),
-  isInternalMessageChannelMock: vi.fn((_: unknown) => false),
+  isCliProviderMock: vi.fn((_: any) => false),
+  isInternalMessageChannelMock: vi.fn((_: any) => false),
   createBlockReplyDeliveryHandlerMock: vi.fn(),
   isCompactionFailureErrorMock: vi.fn((_: string | undefined) => false),
   isContextOverflowErrorMock: vi.fn((_: string | undefined) => false),
@@ -124,19 +124,19 @@ function makeTestModel(id: string, contextTokens: number): ModelDefinitionConfig
 }
 
 vi.mock("../../agents/embedded-agent.js", () => ({
-  runEmbeddedAgent: (params: unknown) => state.runEmbeddedAgentMock(params),
+  runEmbeddedAgent: (params: any) => state.runEmbeddedAgentMock(params),
 }));
 
 vi.mock("../../agents/cli-runner.js", () => ({
-  runCliAgent: (params: unknown) => state.runCliAgentMock(params),
+  runCliAgent: (params: any) => state.runCliAgentMock(params),
 }));
 
 vi.mock("../../agents/model-fallback.js", () => ({
-  runWithModelFallback: (params: unknown) => state.runWithModelFallbackMock(params),
-  isFallbackSummaryError: (err: unknown) =>
+  runWithModelFallback: (params: any) => state.runWithModelFallbackMock(params),
+  isFallbackSummaryError: (err: any) =>
     err instanceof Error &&
     err.name === "FallbackSummaryError" &&
-    Array.isArray((err as { attempts?: unknown[] }).attempts),
+    Array.isArray((err as { attempts?: any[] }).attempts),
 }));
 
 vi.mock("../../agents/model-selection.js", async () => {
@@ -145,7 +145,7 @@ vi.mock("../../agents/model-selection.js", async () => {
   );
   return {
     ...actual,
-    isCliProvider: (provider: unknown) => state.isCliProviderMock(provider),
+    isCliProvider: (provider: any) => state.isCliProviderMock(provider),
   };
 });
 
@@ -219,7 +219,7 @@ vi.mock("../../runtime.js", () => ({
 vi.mock("../../utils/message-channel.js", () => ({
   isMarkdownCapableMessageChannel: () => true,
   resolveMessageChannel: () => "whatsapp",
-  isInternalMessageChannel: (value: unknown) => state.isInternalMessageChannelMock(value),
+  isInternalMessageChannel: (value: any) => state.isInternalMessageChannelMock(value),
 }));
 
 vi.mock("../heartbeat.js", () => ({
@@ -231,7 +231,7 @@ vi.mock("../heartbeat.js", () => ({
 }));
 
 vi.mock("./current-turn-images.js", () => ({
-  resolveCurrentTurnImages: (params: unknown) => state.resolveCurrentTurnImagesMock(params),
+  resolveCurrentTurnImages: (params: any) => state.resolveCurrentTurnImagesMock(params),
 }));
 
 vi.mock("./agent-runner-utils.js", () => ({
@@ -274,7 +274,7 @@ vi.mock("./agent-runner-utils.js", () => ({
   }),
   resolveQueuedReplyRuntimeConfig: <T>(config: T) => config,
   resolveModelFallbackOptions: vi.fn(
-    (run: { provider?: string; model?: string; config?: unknown; agentDir?: string }) => ({
+    (run: { provider?: string; model?: string; config?: any; agentDir?: string }) => ({
       provider: run.provider,
       model: run.model,
       cfg: run.config,
@@ -282,7 +282,7 @@ vi.mock("./agent-runner-utils.js", () => ({
     }),
   ),
   resolveRunFastModeForFallbackCandidate: (params: {
-    run: { fastMode?: unknown; fastModeAutoOnSeconds?: unknown };
+    run: { fastMode?: any; fastModeAutoOnSeconds?: any };
   }) => ({
     fastMode: params.run.fastMode,
     fastModeAutoOnSeconds: params.run.fastModeAutoOnSeconds,
@@ -290,15 +290,15 @@ vi.mock("./agent-runner-utils.js", () => ({
 }));
 
 vi.mock("./reply-delivery.js", () => ({
-  createBlockReplyDeliveryHandler: (params: unknown) =>
+  createBlockReplyDeliveryHandler: (params: any) =>
     state.createBlockReplyDeliveryHandlerMock(params),
 }));
 
 vi.mock("./reply-media-paths.runtime.js", () => ({
   createReplyMediaContext: () => ({
-    normalizePayload: (payload: unknown) => payload,
+    normalizePayload: (payload: any) => payload,
   }),
-  createReplyMediaPathNormalizer: () => (payload: unknown) => payload,
+  createReplyMediaPathNormalizer: () => (payload: any) => payload,
 }));
 
 async function getRunAgentTurnWithFallback() {
@@ -314,14 +314,14 @@ type FallbackRunnerParams = {
   model: string;
   sessionId?: string;
   abortSignal?: AbortSignal;
-  run: (provider: string, model: string) => Promise<unknown>;
+  run: (provider: string, model: string) => Promise<any>;
   classifyResult?: (params: {
     result: { payloads?: Array<{ text?: string; isError?: boolean; isReasoning?: boolean }> };
     provider: string;
     model: string;
     attempt: number;
     total: number;
-  }) => Promise<unknown>;
+  }) => Promise<any>;
 };
 
 type EmbeddedAgentParams = {
@@ -344,7 +344,7 @@ type EmbeddedAgentParams = {
   }) => Promise<void> | void;
   onAgentEvent?: (payload: {
     stream: string;
-    data: Record<string, unknown>;
+    data: Record<string, any>;
     sessionKey?: string;
   }) => Promise<void> | void;
 };
@@ -438,21 +438,21 @@ function createMockReplyOperation(): {
   };
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (typeof value !== "object" || value === null) {
     throw new Error(`${label} was not an object`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function expectRecordFields(record: Record<string, unknown>, fields: Record<string, unknown>) {
+function expectRecordFields(record: Record<string, any>, fields: Record<string, any>) {
   for (const [key, value] of Object.entries(fields)) {
     expect(record[key]).toEqual(value);
   }
 }
 
-function requireMockCall(mock: unknown, index: number, label: string): unknown[] {
-  const call = (mock as { mock?: { calls?: unknown[][] } }).mock?.calls?.[index];
+function requireMockCall(mock: any, index: number, label: string): any[] {
+  const call = (mock as { mock?: { calls?: any[][] } }).mock?.calls?.[index];
   if (!call) {
     throw new Error(`missing ${label} call ${index + 1}`);
   }
@@ -460,40 +460,40 @@ function requireMockCall(mock: unknown, index: number, label: string): unknown[]
 }
 
 function expectMockCallArgFields(
-  mock: unknown,
+  mock: any,
   index: number,
   label: string,
-  fields: Record<string, unknown>,
+  fields: Record<string, any>,
 ) {
   expectRecordFields(requireRecord(requireMockCall(mock, index, label)[0], label), fields);
 }
 
-function expectNoMockCallWithFields(mock: unknown, fields: Record<string, unknown>) {
-  const calls = (mock as { mock?: { calls?: unknown[][] } }).mock?.calls ?? [];
+function expectNoMockCallWithFields(mock: any, fields: Record<string, any>) {
+  const calls = (mock as { mock?: { calls?: any[][] } }).mock?.calls ?? [];
   const hasMatchingCall = calls.some((call) => {
     const value = call[0];
     if (typeof value !== "object" || value === null) {
       return false;
     }
-    const record = value as Record<string, unknown>;
+    const record = value as Record<string, any>;
     return Object.entries(fields).every(([key, expected]) => record[key] === expected);
   });
   expect(hasMatchingCall).toBe(false);
 }
 
 function requireMockCallArgWithFields(
-  mock: unknown,
-  fields: Record<string, unknown>,
+  mock: any,
+  fields: Record<string, any>,
   label: string,
 ) {
-  const calls = (mock as { mock?: { calls?: unknown[][] } }).mock?.calls ?? [];
+  const calls = (mock as { mock?: { calls?: any[][] } }).mock?.calls ?? [];
   const found = calls
     .map((call) => call[0])
     .find((value) => {
       if (typeof value !== "object" || value === null) {
         return false;
       }
-      const record = value as Record<string, unknown>;
+      const record = value as Record<string, any>;
       return Object.entries(fields).every(([key, expected]) => record[key] === expected);
     });
   if (!found) {
@@ -503,9 +503,9 @@ function requireMockCallArgWithFields(
 }
 
 function expectBlockReplyCall(
-  onBlockReply: unknown,
+  onBlockReply: any,
   index: number,
-  fields: Record<string, unknown>,
+  fields: Record<string, any>,
 ) {
   expectMockCallArgFields(onBlockReply, index, "block reply payload", fields);
 }
@@ -1254,7 +1254,7 @@ describe("runAgentTurnWithFallback", () => {
     state.updateSessionStoreMock.mockReset();
     state.resolveCurrentTurnImagesMock.mockReset();
     state.resolveCurrentTurnImagesMock.mockImplementation(
-      async (params: { images?: unknown[]; imageOrder?: unknown[] }) => ({
+      async (params: { images?: any[]; imageOrder?: any[] }) => ({
         images: params.images,
         imageOrder: params.imageOrder,
       }),
@@ -1534,7 +1534,7 @@ describe("runAgentTurnWithFallback", () => {
       getActiveSessionEntry: () => staleAutoEntry,
     });
 
-    expectRecordFields(followupRun.run as unknown as Record<string, unknown>, {
+    expectRecordFields(followupRun.run as unknown as Record<string, any>, {
       provider: "openai",
       model: "gpt-5.4",
       authProfileId: "openai:work",
@@ -1542,7 +1542,7 @@ describe("runAgentTurnWithFallback", () => {
       modelOverrideSource: "user",
     });
     expect(followupRun.run.autoFallbackPrimaryProbe).toBeUndefined();
-    expectRecordFields(activeSessionStore[sessionKey] as unknown as Record<string, unknown>, {
+    expectRecordFields(activeSessionStore[sessionKey] as unknown as Record<string, any>, {
       providerOverride: "openai",
       modelOverride: "gpt-5.4",
       modelOverrideSource: "user",
@@ -1918,7 +1918,7 @@ describe("runAgentTurnWithFallback", () => {
       authProfileId: "openai:fallback",
       authProfileIdSource: "auto",
     });
-    expectRecordFields(sessionEntry as unknown as Record<string, unknown>, {
+    expectRecordFields(sessionEntry as unknown as Record<string, any>, {
       providerOverride: "openai",
       modelOverride: "gpt-5.5",
       modelOverrideSource: "auto",
@@ -1980,7 +1980,7 @@ describe("runAgentTurnWithFallback", () => {
       getActiveSessionEntry: () => activeSessionStore[sessionKey],
     });
 
-    expectRecordFields(activeSessionStore[sessionKey] as unknown as Record<string, unknown>, {
+    expectRecordFields(activeSessionStore[sessionKey] as unknown as Record<string, any>, {
       providerOverride: "openai",
       modelOverride: "gpt-5.5",
       modelOverrideSource: "auto",
@@ -2042,7 +2042,7 @@ describe("runAgentTurnWithFallback", () => {
       getActiveSessionEntry: () => activeSessionStore[sessionKey],
     });
 
-    expectRecordFields(activeSessionStore[sessionKey] as unknown as Record<string, unknown>, {
+    expectRecordFields(activeSessionStore[sessionKey] as unknown as Record<string, any>, {
       providerOverride: "azure",
       modelOverride: "gpt-5.5",
       modelOverrideSource: "auto",
@@ -2155,7 +2155,7 @@ describe("runAgentTurnWithFallback", () => {
       getActiveSessionEntry: () => staleAutoEntry,
     });
 
-    expectRecordFields(activeSessionStore[sessionKey] as unknown as Record<string, unknown>, {
+    expectRecordFields(activeSessionStore[sessionKey] as unknown as Record<string, any>, {
       providerOverride: "openai",
       modelOverride: "gpt-5.4",
       modelOverrideSource: "user",
@@ -3385,7 +3385,7 @@ describe("runAgentTurnWithFallback", () => {
   });
 
   it("does not pass CLI runtime overrides as embedded harness ids for fallback providers", async () => {
-    state.isCliProviderMock.mockImplementation((provider: unknown) => provider === "claude-cli");
+    state.isCliProviderMock.mockImplementation((provider: any) => provider === "claude-cli");
     state.runWithModelFallbackMock.mockImplementationOnce(async (params: FallbackRunnerParams) => ({
       result: await params.run("openai", "gpt-5.4"),
       provider: "openai",
@@ -3466,7 +3466,7 @@ describe("runAgentTurnWithFallback", () => {
   });
 
   it("honors agent session runtime overrides before CLI runtime aliases", async () => {
-    state.isCliProviderMock.mockImplementation((provider: unknown) => provider === "claude-cli");
+    state.isCliProviderMock.mockImplementation((provider: any) => provider === "claude-cli");
     state.runWithModelFallbackMock.mockImplementationOnce(async (params: FallbackRunnerParams) => ({
       result: await params.run("openai", "gpt-5.4"),
       provider: "openai",
@@ -6147,10 +6147,10 @@ describe("runAgentTurnWithFallback", () => {
         if (!event || typeof event !== "object") {
           return false;
         }
-        const data = (event as { data?: Record<string, unknown> }).data;
+        const data = (event as { data?: Record<string, any> }).data;
         return (
-          (event as { runId?: unknown }).runId === "run-provider-failure" &&
-          (event as { stream?: unknown }).stream === "lifecycle" &&
+          (event as { runId?: any }).runId === "run-provider-failure" &&
+          (event as { stream?: any }).stream === "lifecycle" &&
           data?.phase === "error" &&
           data.fallbackExhaustedFailure === true
         );
@@ -7241,7 +7241,7 @@ describe("runAgentTurnWithFallback", () => {
   it("restarts the active prompt when a live model switch is requested", async () => {
     let fallbackInvocation = 0;
     state.runWithModelFallbackMock.mockImplementation(
-      async (params: { run: (provider: string, model: string) => Promise<unknown> }) => ({
+      async (params: { run: (provider: string, model: string) => Promise<any> }) => ({
         result: await params.run(
           fallbackInvocation === 0 ? "anthropic" : "openai",
           fallbackInvocation === 0 ? "claude" : "gpt-5.4",
@@ -7308,7 +7308,7 @@ describe("runAgentTurnWithFallback", () => {
     // The outer loop must be bounded to prevent a session death loop.
     let switchCallCount = 0;
     state.runWithModelFallbackMock.mockImplementation(
-      async (params: { run: (provider: string, model: string) => Promise<unknown> }) => {
+      async (params: { run: (provider: string, model: string) => Promise<any> }) => {
         switchCallCount++;
         return {
           result: await params.run("anthropic", "claude"),
@@ -7360,7 +7360,7 @@ describe("runAgentTurnWithFallback", () => {
   it("propagates auth profile state on bounded live model switch retries (#58348)", async () => {
     let invocation = 0;
     state.runWithModelFallbackMock.mockImplementation(
-      async (params: { run: (provider: string, model: string) => Promise<unknown> }) => {
+      async (params: { run: (provider: string, model: string) => Promise<any> }) => {
         invocation++;
         if (invocation <= 2) {
           return {
@@ -7445,7 +7445,7 @@ describe("runAgentTurnWithFallback", () => {
 
   it("does not roll back newer override changes after a failed fallback candidate", async () => {
     state.runWithModelFallbackMock.mockImplementation(
-      async (params: { run: (provider: string, model: string) => Promise<unknown> }) => {
+      async (params: { run: (provider: string, model: string) => Promise<any> }) => {
         await expect(params.run("openai", "gpt-5.4")).rejects.toThrow("fallback failed");
         throw new Error("fallback failed");
       },
@@ -7503,7 +7503,7 @@ describe("runAgentTurnWithFallback", () => {
 
   it("drops authProfileId when fallback switches providers", async () => {
     state.runWithModelFallbackMock.mockImplementation(
-      async (params: { run: (provider: string, model: string) => Promise<unknown> }) => ({
+      async (params: { run: (provider: string, model: string) => Promise<any> }) => ({
         result: await params.run("openai", "gpt-5.4"),
         provider: "openai",
         model: "gpt-5.4",
@@ -7577,7 +7577,7 @@ describe("runAgentTurnWithFallback", () => {
     // fallback overwrite, matching the backward-compat treatment in
     // session-reset-service.
     state.runWithModelFallbackMock.mockImplementation(
-      async (params: { run: (provider: string, model: string) => Promise<unknown> }) => ({
+      async (params: { run: (provider: string, model: string) => Promise<any> }) => ({
         result: await params.run("openai", "gpt-5.4"),
         provider: "openai",
         model: "gpt-5.4",
@@ -7639,7 +7639,7 @@ describe("runAgentTurnWithFallback", () => {
 
   it("persists fallback selection for recovered auto overrides without modelOverrideSource", async () => {
     state.runWithModelFallbackMock.mockImplementation(
-      async (params: { run: (provider: string, model: string) => Promise<unknown> }) => ({
+      async (params: { run: (provider: string, model: string) => Promise<any> }) => ({
         result: await params.run("openai", "gpt-5.4"),
         provider: "openai",
         model: "gpt-5.4",
@@ -7706,7 +7706,7 @@ describe("runAgentTurnWithFallback", () => {
     // selections.  When the user explicitly picked a model, the fallback
     // should NOT clobber it even when the primary model fails.
     state.runWithModelFallbackMock.mockImplementation(
-      async (params: { run: (provider: string, model: string) => Promise<unknown> }) => ({
+      async (params: { run: (provider: string, model: string) => Promise<any> }) => ({
         result: await params.run("openai", "gpt-5.4"),
         provider: "openai",
         model: "gpt-5.4",
@@ -7790,7 +7790,7 @@ describe("runAgentTurnWithFallback", () => {
     });
 
     expect(updated).toBe(true);
-    expectRecordFields(entry as unknown as Record<string, unknown>, {
+    expectRecordFields(entry as unknown as Record<string, any>, {
       updatedAt: 123,
       providerOverride: "anthropic",
       modelOverride: "claude-sonnet",
@@ -7827,7 +7827,7 @@ describe("runAgentTurnWithFallback", () => {
     });
 
     expect(updated).toBe(true);
-    expectRecordFields(entry as unknown as Record<string, unknown>, {
+    expectRecordFields(entry as unknown as Record<string, any>, {
       updatedAt: 123,
       providerOverride: "openrouter",
       modelOverride: "fallback-c",
@@ -7886,7 +7886,7 @@ describe("runAgentTurnWithFallback", () => {
   });
 
   it("does not suppress the first embedded assistant error after a CLI fallback failure", async () => {
-    state.isCliProviderMock.mockImplementation((provider: unknown) => provider === "anthropic");
+    state.isCliProviderMock.mockImplementation((provider: any) => provider === "anthropic");
     state.runWithModelFallbackMock.mockImplementationOnce(async (params: FallbackRunnerParams) => {
       await params.run("anthropic", "claude-opus-4-7").catch(() => undefined);
       return {

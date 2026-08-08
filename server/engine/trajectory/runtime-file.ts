@@ -10,7 +10,7 @@ import {
 
 // Runtime trajectory file discovery for exporters. Pointer files are treated as
 // advisory only and must resolve to regular non-symlink files before use.
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
@@ -36,7 +36,7 @@ async function readRuntimePointerFile(
     return undefined;
   }
   try {
-    const parsed = JSON.parse(await fsp.readFile(pointerPath, "utf8")) as unknown;
+    const parsed = JSON.parse(await fsp.readFile(pointerPath, "utf8")) as any;
     if (!isRecord(parsed)) {
       return undefined;
     }

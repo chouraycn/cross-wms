@@ -28,7 +28,7 @@ vi.mock("../../secrets/runtime-state.js", () => ({
 }));
 
 type RunWebSearchParams = {
-  config?: unknown;
+  config?: any;
   preferRuntimeProviders?: boolean;
   runtimeWebSearch?: {
     selectedProvider?: string;

@@ -28,9 +28,9 @@ export interface SkillMetadata {
   /** 触发词 */
   triggers?: string[];
   /** 输入参数 schema */
-  inputSchema?: Record<string, unknown>;
+  inputSchema?: Record<string, any>;
   /** 输出 schema */
-  outputSchema?: Record<string, unknown>;
+  outputSchema?: Record<string, any>;
   /** 是否需要确认 */
   requiresConfirmation?: boolean;
   /** 风险等级 */
@@ -42,7 +42,7 @@ export interface SkillInvokeOptions {
   /** 技能 ID */
   skillId: string;
   /** 输入参数 */
-  input: Record<string, unknown>;
+  input: Record<string, any>;
   /** 会话 ID */
   sessionId?: string;
   /** 用户 ID */
@@ -58,7 +58,7 @@ export interface SkillInvokeResult {
   /** 是否成功 */
   ok: boolean;
   /** 输出数据 */
-  output?: unknown;
+  output?: any;
   /** 错误信息 */
   error?: string;
   /** 执行的步骤 */
@@ -76,7 +76,7 @@ export type SkillCapabilityProvider = CapabilityProvider<SkillInvokeOptions, Ski
   /** 获取技能元数据 */
   getSkill?(skillId: string): SkillMetadata | undefined;
   /** 校验技能输入 */
-  validateInput?(skillId: string, input: Record<string, unknown>): { valid: boolean; errors?: string[] };
+  validateInput?(skillId: string, input: Record<string, any>): { valid: boolean; errors?: string[] };
 };
 
 // ===================== 注册与调用 =====================
@@ -85,7 +85,7 @@ export type SkillCapabilityProvider = CapabilityProvider<SkillInvokeOptions, Ski
 export function registerSkillProvider(
   pluginId: string,
   provider: SkillCapabilityProvider,
-  metadata?: Record<string, unknown>,
+  metadata?: Record<string, any>,
 ): void {
   capabilityProviderRegistry.register(pluginId, provider, metadata);
 }
@@ -145,7 +145,7 @@ export function getSkillMetadata(providerId: string, skillId: string): SkillMeta
 export function validateSkillInput(
   providerId: string,
   skillId: string,
-  input: Record<string, unknown>,
+  input: Record<string, any>,
 ): { valid: boolean; errors?: string[] } {
   const entry = capabilityProviderRegistry.find<SkillInvokeOptions, SkillInvokeResult>('skill', providerId);
   if (!entry) {
@@ -187,7 +187,7 @@ export function createSkillProvider(
     description?: string;
     listSkills?: () => SkillMetadata[];
     getSkill?: (skillId: string) => SkillMetadata | undefined;
-    validateInput?: (skillId: string, input: Record<string, unknown>) => { valid: boolean; errors?: string[] };
+    validateInput?: (skillId: string, input: Record<string, any>) => { valid: boolean; errors?: string[] };
     healthCheck?: () => Promise<{ ok: boolean; error?: string }>;
   } = {},
 ): SkillCapabilityProvider {

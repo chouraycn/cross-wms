@@ -77,7 +77,7 @@ function createDeclarativeHandler(
   definition: SkillDefinition,
 ): SkillHandler {
   return async (
-    params: Record<string, unknown>,
+    params: Record<string, any>,
     ctx: SkillContext,
   ): Promise<SkillResult> => {
     const startTime = Date.now();
@@ -94,7 +94,7 @@ function createDeclarativeHandler(
       }
 
       // 检查是否声明了适配器类型
-      const adapter = (definition.parameters as Record<string, unknown>)?.['__adapter'] as string | undefined;
+      const adapter = (definition.parameters as Record<string, any>)?.['__adapter'] as string | undefined;
 
       if (adapter === 'exec') {
         // exec 适配器：将第一个 instruction 作为命令执行
@@ -161,7 +161,7 @@ function createDeclarativeHandler(
         }
 
         const contentType = response.headers.get('content-type') ?? '';
-        let data: unknown;
+        let data: any;
         if (contentType.includes('application/json')) {
           data = await response.json();
         } else {
@@ -182,15 +182,15 @@ function createDeclarativeHandler(
         const functionCode = `async (params, ctx) => {\n${code}\n}`;
 
         const vm = await import('vm');
-        const sandbox: Record<string, unknown> = {
+        const sandbox: Record<string, any> = {
           params,
           ctx,
           console: {
-            log: (...args: unknown[]) => logger.info('[skill:js]', ...args),
-            warn: (...args: unknown[]) => logger.warn('[skill:js]', ...args),
-            error: (...args: unknown[]) => logger.error('[skill:js]', ...args),
-            info: (...args: unknown[]) => logger.info('[skill:js]', ...args),
-            debug: (...args: unknown[]) => logger.debug('[skill:js]', ...args),
+            log: (...args: any[]) => logger.info('[skill:js]', ...args),
+            warn: (...args: any[]) => logger.warn('[skill:js]', ...args),
+            error: (...args: any[]) => logger.error('[skill:js]', ...args),
+            info: (...args: any[]) => logger.info('[skill:js]', ...args),
+            debug: (...args: any[]) => logger.debug('[skill:js]', ...args),
           },
           JSON,
           Math,
@@ -219,7 +219,7 @@ function createDeclarativeHandler(
           const func = vm.runInContext(functionCode, context, {
             timeout: 30_000,
             filename: `skill-${definition.id}.js`,
-          }) as (p: Record<string, unknown>, c: SkillContext) => Promise<unknown>;
+          }) as (p: Record<string, any>, c: SkillContext) => Promise<any>;
 
           if (typeof func !== 'function') {
             return {
@@ -268,7 +268,7 @@ function createDeclarativeHandler(
             env,
           });
 
-          let data: unknown;
+          let data: any;
           const trimmed = stdout.trim();
           if (trimmed) {
             try {
@@ -433,7 +433,7 @@ function mapCategoryToGroup(category?: string): SkillPermissionGroup {
 /**
  * 解析 gate 字段
  */
-function mapGateField(fm: Record<string, unknown>): SkillGate {
+function mapGateField(fm: Record<string, any>): SkillGate {
   const gate = fm.gate as string | undefined;
   if (gate === 'manual' || gate === 'ask') return gate;
   return 'auto';
@@ -442,7 +442,7 @@ function mapGateField(fm: Record<string, unknown>): SkillGate {
 /**
  * 解析 sandbox scope 字段
  */
-function mapSandboxField(fm: Record<string, unknown>): SandboxScope {
+function mapSandboxField(fm: Record<string, any>): SandboxScope {
   const scope = fm.sandbox as string | undefined;
   if (scope === 'user' || scope === 'system' || scope === 'none') return scope;
   return 'workspace';
@@ -451,10 +451,10 @@ function mapSandboxField(fm: Record<string, unknown>): SandboxScope {
 /**
  * 从 frontmatter 构建 parameters JSON Schema
  */
-function buildParametersFromFrontmatter(fm: Record<string, unknown>): Record<string, unknown> {
+function buildParametersFromFrontmatter(fm: Record<string, any>): Record<string, any> {
   // 如果 frontmatter 中有 parameters 字段，直接使用
   if (fm.parameters && typeof fm.parameters === 'object') {
-    return fm.parameters as Record<string, unknown>;
+    return fm.parameters as Record<string, any>;
   }
 
   // 否则构建默认的空参数 schema
@@ -504,7 +504,7 @@ class SkillRegistry {
   private initialized = false;
 
   /** 动态加载的模块缓存（skillId → module exports），用于热重载时清除 */
-  private loadedModules = new Map<string, unknown>();
+  private loadedModules = new Map<string, any>();
 
   private constructor() {}
 
@@ -670,7 +670,7 @@ class SkillRegistry {
 
     try {
       const moduleUrl = `${pathToFileURL(entryPath).href}?v=${Date.now()}`;
-      const moduleExports = (await import(moduleUrl)) as Record<string, unknown>;
+      const moduleExports = (await import(moduleUrl)) as Record<string, any>;
       this.loadedModules.set(definition.id, moduleExports);
 
       // 验证导出的 lifecycle 结构
@@ -858,7 +858,7 @@ class SkillRegistry {
    */
   async executeSkill(
     id: string,
-    params: Record<string, unknown>,
+    params: Record<string, any>,
     ctx?: SkillContext,
   ): Promise<SkillResult> {
     const skill = this.registry.get(id);

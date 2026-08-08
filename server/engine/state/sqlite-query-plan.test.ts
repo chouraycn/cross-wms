@@ -23,7 +23,7 @@ function explainQueryPlan(
   params: readonly (number | string | null)[] = [],
 ): string {
   const rows = db.prepare(`EXPLAIN QUERY PLAN ${sql}`).all(...params) as Array<{
-    detail?: unknown;
+    detail?: any;
   }>;
   return rows
     .map((row) => (typeof row.detail === "string" ? row.detail : JSON.stringify(row.detail ?? "")))

@@ -71,7 +71,7 @@ function createRemoteContexts(remotePath: string) {
 }
 
 async function expectPathMissing(targetPath: string): Promise<void> {
-  let statError: unknown;
+  let statError: any;
   try {
     await fs.stat(targetPath);
   } catch (error) {
@@ -80,7 +80,7 @@ async function expectPathMissing(targetPath: string): Promise<void> {
   expect((statError as NodeJS.ErrnoException | undefined)?.code).toBe("ENOENT");
 }
 
-function requireFirstMockCall(mock: { mock: { calls: unknown[][] } }, label: string): unknown[] {
+function requireFirstMockCall(mock: { mock: { calls: any[][] } }, label: string): any[] {
   const call = mock.mock.calls[0];
   if (!call) {
     throw new Error(`expected ${label} call`);

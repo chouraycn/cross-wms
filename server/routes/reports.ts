@@ -44,7 +44,7 @@ router.get('/', (_req: Request, res: Response) => {
   try {
     const reports = getReportList();
     return ok(res, { data: reports, total: reports.length });
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     logger.error('[ReportsRoute] 获取报表列表失败:', message);
     return serverError(res, message);
@@ -77,7 +77,7 @@ router.post('/', (req: Request, res: Response) => {
         generatedAt: new Date().toISOString(),
       },
     });
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     logger.error('[ReportsRoute] 生成报表失败:', message);
     return serverError(res, message);
@@ -103,7 +103,7 @@ router.get('/:id', (req: Request, res: Response) => {
     }
 
     return ok(res, { data: report });
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     logger.error('[ReportsRoute] 获取报表详情失败:', message);
     return serverError(res, message);
@@ -127,7 +127,7 @@ router.delete('/:id', (req: Request, res: Response) => {
     }
 
     return ok(res, { success: true });
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     logger.error('[ReportsRoute] 删除报表失败:', message);
     return serverError(res, message);

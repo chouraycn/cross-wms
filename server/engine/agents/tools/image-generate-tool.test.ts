@@ -146,14 +146,14 @@ function requireImageGenerateTool(tool: ReturnType<typeof createImageGenerateToo
   return tool;
 }
 
-type UnknownMock = { mock: { calls: unknown[][] } };
+type UnknownMock = { mock: { calls: any[][] } };
 
 function mockCallArg(
-  mock: unknown,
+  mock: any,
   index: number,
   label: string,
   argIndex = 0,
-): Record<string, unknown> {
+): Record<string, any> {
   const calls = (mock as UnknownMock).mock?.calls;
   if (!Array.isArray(calls)) {
     throw new Error(`Expected ${label} to be a mock`);
@@ -162,20 +162,20 @@ function mockCallArg(
   if (!call) {
     throw new Error(`Expected ${label} call ${index + 1}`);
   }
-  return call[argIndex] as Record<string, unknown>;
+  return call[argIndex] as Record<string, any>;
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object") {
     throw new Error(`Expected ${label}`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 type ImageGenerateTool = NonNullable<ReturnType<typeof createImageGenerateTool>>;
 type ToolResult = Awaited<ReturnType<ImageGenerateTool["execute"]>>;
 
-function resultDetails(result: ToolResult): Record<string, unknown> {
+function resultDetails(result: ToolResult): Record<string, any> {
   return requireRecord(result.details, "tool result details");
 }
 
@@ -1064,7 +1064,7 @@ describe("createImageGenerateTool", () => {
     expect(details.action).toBe("status");
     expect(details.active).toBe(true);
     expect(details.taskCount).toBe(2);
-    const tasks = details.tasks as Array<Record<string, unknown>>;
+    const tasks = details.tasks as Array<Record<string, any>>;
     expect(tasks).toHaveLength(2);
     expect(requireRecord(tasks[0]?.task, "first status task").taskId).toBe("task-first-image");
     expect(tasks[0]?.progressSummary).toBe("Generating first image");
@@ -2253,7 +2253,7 @@ describe("createImageGenerateTool", () => {
     expect(text).toContain("editing up to 5 refs");
     expect(text).toContain("aspect ratios 1:1, 16:9");
     const details = resultDetails(result);
-    const providers = details.providers as Array<Record<string, unknown>>;
+    const providers = details.providers as Array<Record<string, any>>;
     const googleProvider = providers.find((provider) => provider.id === "google");
     const openaiProvider = providers.find((provider) => provider.id === "openai");
     if (!googleProvider || !openaiProvider) {
@@ -2316,7 +2316,7 @@ describe("createImageGenerateTool", () => {
     expect(text).toContain("__proto__ (default proto-v1)");
     expect(text).not.toContain("auth: set");
     const details = resultDetails(result);
-    const providers = details.providers as Array<Record<string, unknown>>;
+    const providers = details.providers as Array<Record<string, any>>;
     expect(providers).toHaveLength(1);
     expect(providers[0]?.id).toBe("__proto__");
     expect(providers[0]?.authEnvVars).toEqual([]);

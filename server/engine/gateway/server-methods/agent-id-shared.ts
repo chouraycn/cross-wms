@@ -10,10 +10,10 @@ import type { RespondFn } from "./types.js";
  * Shared agent-id resolver for request handlers that accept optional agent ids.
  */
 export function resolveAgentIdOrRespondError(params: {
-  rawAgentId: unknown;
+  rawAgentId: any;
   respond: RespondFn;
   cfg: OpenClawConfig;
-  normalize: (rawAgentId: unknown) => string | undefined;
+  normalize: (rawAgentId: any) => string | undefined;
 }) {
   const knownAgents = listAgentIds(params.cfg);
   const requestedAgentId = params.normalize(params.rawAgentId) ?? "";

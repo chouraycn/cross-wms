@@ -20,7 +20,7 @@ describe("plugins runtime boundary config", () => {
       io: "input",
       reused: "ref",
     }) as {
-      properties?: Record<string, { properties?: Record<string, unknown> }>;
+      properties?: Record<string, { properties?: Record<string, any> }>;
     };
     const pluginsProperties = schema.properties?.plugins?.properties ?? {};
     expect("runtime" in pluginsProperties).toBe(false);

@@ -34,7 +34,7 @@ export class AgentLifecycleManager {
     agentId: string,
     next: AgentLifecycleState,
     reason?: string,
-    metadata?: Record<string, unknown>,
+    metadata?: Record<string, any>,
   ): boolean {
     const entry = this.entries.get(agentId);
     const current = entry?.state ?? 'created';

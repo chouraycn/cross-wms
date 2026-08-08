@@ -70,9 +70,9 @@ const workspaceConfig = {
 } as OpenClawConfig;
 
 function firstMockArg(
-  mock: { mock: { calls: readonly unknown[][] } },
+  mock: { mock: { calls: readonly any[][] } },
   label: string,
-): Record<string, unknown> {
+): Record<string, any> {
   const [call] = mock.mock.calls;
   if (!call) {
     throw new Error(`expected ${label} call`);
@@ -108,7 +108,7 @@ async function withTempOpenClawStateDir<T>(test: (stateDir: string) => Promise<T
 
 const runDrySend = (params: {
   cfg: OpenClawConfig;
-  actionParams: Record<string, unknown>;
+  actionParams: Record<string, any>;
   sandboxRoot?: string;
 }) =>
   runMessageAction({
@@ -119,16 +119,16 @@ const runDrySend = (params: {
     sandboxRoot: params.sandboxRoot,
   });
 
-function requireRecord(value: unknown): Record<string, unknown> {
+function requireRecord(value: any): Record<string, any> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("Expected a non-array record");
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 function requireActionPayload(
   result: Awaited<ReturnType<typeof runMessageAction>>,
-): Record<string, unknown> {
+): Record<string, any> {
   expect(result.kind).toBe("action");
   if (result.kind !== "action") {
     throw new Error("expected action result");
@@ -136,12 +136,12 @@ function requireActionPayload(
   return requireRecord(result.payload);
 }
 
-function requireLoadWebMediaOptions(): Record<string, unknown> {
+function requireLoadWebMediaOptions(): Record<string, any> {
   const call = requireLoadWebMediaCall();
   return requireRecord(call[1]);
 }
 
-function requireLoadWebMediaCall(): readonly unknown[] {
+function requireLoadWebMediaCall(): readonly any[] {
   const call = vi.mocked(loadWebMedia).mock.calls[0];
   if (!call) {
     throw new Error("Expected loadWebMedia to be called");
@@ -215,9 +215,9 @@ const workspacePlugin: ChannelPlugin = {
       listAccountIds: () => ["default"],
       resolveAccount: (cfg) => cfg.channels?.workspace ?? {},
       isConfigured: async (account) =>
-        typeof (account as { botToken?: unknown }).botToken === "string" &&
+        typeof (account as { botToken?: any }).botToken === "string" &&
         (account as { botToken?: string }).botToken!.trim() !== "" &&
-        typeof (account as { appToken?: unknown }).appToken === "string" &&
+        typeof (account as { appToken?: any }).appToken === "string" &&
         (account as { appToken?: string }).appToken!.trim() !== "",
     },
   }),
@@ -649,7 +649,7 @@ describe("runMessageAction media behavior", () => {
         const outsidePath = path.join(tempDir, "secret.txt");
         await fs.writeFile(outsidePath, "secret", "utf8");
 
-        const actionParams: Record<string, unknown> = {
+        const actionParams: Record<string, any> = {
           channel: "attachmentchat",
           target: params.target,
           [params.mediaField ?? "media"]: outsidePath,

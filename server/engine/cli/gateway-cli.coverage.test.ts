@@ -12,29 +12,29 @@ type DiscoveredBeacon = Awaited<
   ReturnType<typeof import("../infra/bonjour-discovery.js").discoverGatewayBeacons>
 >[number];
 
-const callGateway = vi.fn<(opts: unknown) => Promise<{ ok: true }>>(async () => ({ ok: true }));
+const callGateway = vi.fn<(opts: any) => Promise<{ ok: true }>>(async () => ({ ok: true }));
 const formatGatewayClientRequestErrorJson = vi.fn();
 const formatGatewayTransportErrorJson = vi.fn();
 const startGatewayServer = vi.fn<
-  (port: number, opts?: unknown) => Promise<{ close: () => Promise<void> }>
+  (port: number, opts?: any) => Promise<{ close: () => Promise<void> }>
 >(async () => ({
   close: vi.fn(async () => {}),
 }));
 const setVerbose = vi.fn();
 const forceFreePortAndWait = vi.fn<
-  (port: number) => Promise<{ killed: unknown[]; waitedMs: number; escalatedToSigkill: boolean }>
+  (port: number) => Promise<{ killed: any[]; waitedMs: number; escalatedToSigkill: boolean }>
 >(async () => ({
   killed: [],
   waitedMs: 0,
   escalatedToSigkill: false,
 }));
 const serviceIsLoaded = vi.fn().mockResolvedValue(true);
-const discoverGatewayBeacons = vi.fn<(opts: unknown) => Promise<DiscoveredBeacon[]>>(
+const discoverGatewayBeacons = vi.fn<(opts: any) => Promise<DiscoveredBeacon[]>>(
   async () => [],
 );
-const gatewayStatusCommand = vi.fn<(opts: unknown) => Promise<void>>(async () => {});
+const gatewayStatusCommand = vi.fn<(opts: any) => Promise<void>>(async () => {});
 const inspectPortUsage = vi.fn(async (_port: number) => ({ status: "free" as const }));
-const formatPortDiagnostics = vi.fn((_diagnostics: unknown) => [] as string[]);
+const formatPortDiagnostics = vi.fn((_diagnostics: any) => [] as string[]);
 
 const mocks = await vi.hoisted(async () => {
   const { createCliRuntimeMock } = await import("./test-runtime-mock.js");
@@ -55,17 +55,17 @@ vi.mock(
       tlsFingerprint: undefined,
       url: "ws://127.0.0.1:18789",
     }),
-    callGateway: (opts: unknown) => callGateway(opts),
-    formatGatewayClientRequestErrorJson: (error: unknown) =>
+    callGateway: (opts: any) => callGateway(opts),
+    formatGatewayClientRequestErrorJson: (error: any) =>
       formatGatewayClientRequestErrorJson(error),
-    formatGatewayTransportErrorJson: (error: unknown) => formatGatewayTransportErrorJson(error),
+    formatGatewayTransportErrorJson: (error: any) => formatGatewayTransportErrorJson(error),
     isGatewayCredentialsRequiredError: () => false,
     randomIdempotencyKey: () => "rk_test",
   }),
 );
 
 vi.mock("../gateway/server.js", () => ({
-  startGatewayServer: (port: number, opts?: unknown) => startGatewayServer(port, opts),
+  startGatewayServer: (port: number, opts?: any) => startGatewayServer(port, opts),
 }));
 
 vi.mock("../globals.js", () => ({
@@ -109,16 +109,16 @@ vi.mock("../infra/bonjour-discovery.js", async () => ({
   ...(await vi.importActual<typeof import("../infra/bonjour-discovery.js")>(
     "../infra/bonjour-discovery.js",
   )),
-  discoverGatewayBeacons: (opts: unknown) => discoverGatewayBeacons(opts),
+  discoverGatewayBeacons: (opts: any) => discoverGatewayBeacons(opts),
 }));
 
 vi.mock("../commands/gateway-status.js", () => ({
-  gatewayStatusCommand: (opts: unknown) => gatewayStatusCommand(opts),
+  gatewayStatusCommand: (opts: any) => gatewayStatusCommand(opts),
 }));
 
 vi.mock("../infra/ports.js", () => ({
   inspectPortUsage: (port: number) => inspectPortUsage(port),
-  formatPortDiagnostics: (diagnostics: unknown) => formatPortDiagnostics(diagnostics),
+  formatPortDiagnostics: (diagnostics: any) => formatPortDiagnostics(diagnostics),
 }));
 
 let gatewayProgram: Command;
@@ -138,7 +138,7 @@ async function expectGatewayExit(args: string[]) {
   await expect(runGatewayCommand(args)).rejects.toThrow("__exit__:1");
 }
 
-function firstMockArg(mock: { mock: { calls: ReadonlyArray<ReadonlyArray<unknown>> } }): unknown {
+function firstMockArg(mock: { mock: { calls: ReadonlyArray<ReadonlyArray<any>> } }): any {
   const call = mock.mock.calls[0];
   if (!call) {
     throw new Error("expected mock to have at least one call");
@@ -205,7 +205,7 @@ describe("gateway-cli coverage", () => {
     ]);
 
     expect(callGateway).toHaveBeenCalledTimes(1);
-    const stabilityCall = firstMockArg(callGateway) as { method?: string; params?: unknown };
+    const stabilityCall = firstMockArg(callGateway) as { method?: string; params?: any };
     expect(stabilityCall?.method).toBe("diagnostics.stability");
     expect(stabilityCall?.params).toEqual({
       limit: 5,
@@ -219,7 +219,7 @@ describe("gateway-cli coverage", () => {
     await runGatewayCommand(["gateway", "usage-cost", "--agent", "alpha", "--days", "7", "--json"]);
 
     expect(callGateway).toHaveBeenCalledTimes(1);
-    const costCall = firstMockArg(callGateway) as { method?: string; params?: unknown };
+    const costCall = firstMockArg(callGateway) as { method?: string; params?: any };
     expect(costCall?.method).toBe("usage.cost");
     expect(costCall?.params).toEqual({ days: 7, agentId: "alpha" });
   });
@@ -230,7 +230,7 @@ describe("gateway-cli coverage", () => {
     await runGatewayCommand(["gateway", "usage-cost", "--agent", "  ", "--days", "7", "--json"]);
 
     expect(callGateway).toHaveBeenCalledTimes(1);
-    const costCall = firstMockArg(callGateway) as { method?: string; params?: unknown };
+    const costCall = firstMockArg(callGateway) as { method?: string; params?: any };
     expect(costCall?.method).toBe("usage.cost");
     expect(costCall?.params).toEqual({ days: 7 });
   });
@@ -241,7 +241,7 @@ describe("gateway-cli coverage", () => {
     await runGatewayCommand(["gateway", "usage-cost", "--all-agents", "--days", "7", "--json"]);
 
     expect(callGateway).toHaveBeenCalledTimes(1);
-    const costCall = firstMockArg(callGateway) as { method?: string; params?: unknown };
+    const costCall = firstMockArg(callGateway) as { method?: string; params?: any };
     expect(costCall?.method).toBe("usage.cost");
     expect(costCall?.params).toEqual({ days: 7, agentScope: "all" });
   });

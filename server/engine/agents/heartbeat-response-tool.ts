@@ -6,7 +6,7 @@
  */
 
 /** Creates the one-shot heartbeat response recording tool for an auto-reply turn. */
-export function createHeartbeatResponseTool(): Record<string, unknown> {
+export function createHeartbeatResponseTool(): Record<string, any> {
   let recorded = false;
   return {
     label: "Heartbeat",
@@ -28,7 +28,7 @@ export function createHeartbeatResponseTool(): Record<string, unknown> {
       required: ["outcome", "notify", "summary"],
       additionalProperties: false,
     },
-    execute: async (_toolCallId: string, args: Record<string, unknown>) => {
+    execute: async (_toolCallId: string, args: Record<string, any>) => {
       if (!args || typeof args !== "object") {
         return { isError: true, text: "Heartbeat response arguments required" };
       }

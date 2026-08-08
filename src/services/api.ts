@@ -44,7 +44,7 @@ async function fetchWithTimeout(url: string, options: RequestInit = {}): Promise
 
 // ===================== Generic Request =====================
 
-export async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+export async function request<T>(method: string, path: string, body?: any): Promise<T> {
   const headers: Record<string, string> = {};
   if (body !== undefined) {
     headers['Content-Type'] = 'application/json';
@@ -227,16 +227,16 @@ export async function updateAppSettings(settings: AppSettings): Promise<void> {
 // ===================== Migration =====================
 
 export interface MigratePayload {
-  warehouses?: unknown[];
-  inventoryItems?: unknown[];
-  transitOrders?: unknown[];
-  userSkills?: unknown[];
+  warehouses?: any[];
+  inventoryItems?: any[];
+  transitOrders?: any[];
+  userSkills?: any[];
   builtinStatusPatches?: Record<string, string>;
-  appSettings?: unknown;
+  appSettings?: any;
 }
 
-export async function migrate(payload: MigratePayload): Promise<unknown> {
-  return request<unknown>('POST', '/api/migrate', payload);
+export async function migrate(payload: MigratePayload): Promise<any> {
+  return request<any>('POST', '/api/migrate', payload);
 }
 
 // ===================== Inbound / Outbound Operations =====================
@@ -1019,8 +1019,8 @@ export async function updateSession(id: string, data: Partial<Session>): Promise
   return request<Session>('PUT', `/api/sessions/${id}`, data);
 }
 
-export async function getSessionMessages(id: string): Promise<unknown[]> {
-  const res = await request<{ messages: unknown[] }>('GET', `/api/sessions/${id}`);
+export async function getSessionMessages(id: string): Promise<any[]> {
+  const res = await request<{ messages: any[] }>('GET', `/api/sessions/${id}`);
   return res.messages;
 }
 
@@ -1029,10 +1029,10 @@ export async function getSessionMessagesPaged(
   id: string,
   limit: number = 50,
   before?: number,
-): Promise<{ messages: unknown[]; hasMore: boolean; totalCount: number }> {
+): Promise<{ messages: any[]; hasMore: boolean; totalCount: number }> {
   const params = new URLSearchParams({ limit: String(limit) });
   if (before !== undefined) params.set('before', String(before));
-  const res = await request<{ messages: unknown[]; hasMore: boolean; totalCount: number }>(
+  const res = await request<{ messages: any[]; hasMore: boolean; totalCount: number }>(
     'GET', `/api/sessions/${id}/messages?${params}`,
   );
   return res;
@@ -1112,7 +1112,7 @@ export function connectSkillInstallSSE(
   spec: SkillInstallSpec,
   handlers: {
     onProgress?: (progress: SkillInstallProgress) => void;
-    onResult?: (result: unknown) => void;
+    onResult?: (result: any) => void;
     onError?: (error: string) => void;
   }
 ): SSEConnection {
@@ -1257,7 +1257,7 @@ export async function fetchContextEngineStats(): Promise<ContextEngineStats> {
 export interface MemoryItem {
   id: number;
   text: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
   createdAt: number;
   updatedAt?: number;
   embedding?: number[];
@@ -1274,7 +1274,7 @@ export interface MemorySearchResult {
   id: number;
   text: string;
   score: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 /** 获取记忆列表 */
@@ -1295,7 +1295,7 @@ export async function fetchMemoryStats(): Promise<MemoryStats> {
 }
 
 /** 添加记忆 */
-export async function addMemory(text: string, metadata?: Record<string, unknown>): Promise<{ id: string; success: boolean }> {
+export async function addMemory(text: string, metadata?: Record<string, any>): Promise<{ id: string; success: boolean }> {
   return request<{ id: string; success: boolean }>('POST', '/api/memory/add', { text, metadata });
 }
 
@@ -1361,8 +1361,8 @@ export interface SoulFile {
   lastModified: number;
 }
 
-export async function fetchSoulCurrent(): Promise<{ profile: SoulProfile | null; systemMessage: string; strategyPreferences: Record<string, unknown> }> {
-  return request<{ profile: SoulProfile | null; systemMessage: string; strategyPreferences: Record<string, unknown> }>('GET', '/api/soul/current');
+export async function fetchSoulCurrent(): Promise<{ profile: SoulProfile | null; systemMessage: string; strategyPreferences: Record<string, any> }> {
+  return request<{ profile: SoulProfile | null; systemMessage: string; strategyPreferences: Record<string, any> }>('GET', '/api/soul/current');
 }
 
 export async function fetchSoulFiles(): Promise<SoulFile[]> {
@@ -1548,8 +1548,8 @@ export interface OpenClawSkillEntry {
   featured?: boolean;
   userInvocable?: boolean;
   hasMd?: boolean;
-  metadata?: Record<string, unknown>;
-  openclaw?: Record<string, unknown>;
+  metadata?: Record<string, any>;
+  openclaw?: Record<string, any>;
   author?: string;
   sourcePath?: string;
   requires?: string[];

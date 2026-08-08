@@ -54,12 +54,12 @@ type PluginRegistryDoctorNoteLogger = {
   warn: (message: string) => void;
 };
 
-function readJsonObject(filePath: string): Record<string, unknown> | null {
+function readJsonObject(filePath: string): Record<string, any> | null {
   const parsed = tryReadJsonSync(filePath);
   return isRecord(parsed) ? parsed : null;
 }
 
-function readStringMap(value: unknown): Record<string, string> {
+function readStringMap(value: any): Record<string, string> {
   if (!isRecord(value)) {
     return {};
   }
@@ -82,7 +82,7 @@ function listManagedPluginNpmRoots(params: PluginRegistryDoctorRepairParams): st
   return listManagedPluginNpmRootsSync(resolveManagedPluginNpmRoot(params));
 }
 
-function deleteObjectKey(record: Record<string, unknown>, key: string): boolean {
+function deleteObjectKey(record: Record<string, any>, key: string): boolean {
   if (!Object.hasOwn(record, key)) {
     return false;
   }

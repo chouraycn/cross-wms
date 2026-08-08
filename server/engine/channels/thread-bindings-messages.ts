@@ -13,7 +13,7 @@ import { prefixSystemMessage } from "../infra/system-message.js";
 const DEFAULT_THREAD_BINDING_FAREWELL_TEXT =
   "Session ended. Messages here will no longer be routed.";
 
-function normalizeThreadBindingDurationMs(raw: unknown): number {
+function normalizeThreadBindingDurationMs(raw: any): number {
   if (typeof raw !== "number" || !Number.isFinite(raw)) {
     return 0;
   }

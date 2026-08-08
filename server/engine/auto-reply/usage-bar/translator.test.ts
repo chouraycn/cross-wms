@@ -9,7 +9,7 @@ const SCALES = {
   plants: ["🪾", "🍂", "🌱", "☘️", "🍀", "🌿"],
 };
 
-function tpl(pieces: unknown[]): UsageBarTemplate {
+function tpl(pieces: any[]): UsageBarTemplate {
   return {
     scales: SCALES,
     aliases: { models: { "claude-opus-4-6": "opus46" }, reasoning: { medium: "med" } },
@@ -17,7 +17,7 @@ function tpl(pieces: unknown[]): UsageBarTemplate {
   };
 }
 
-function render(pieces: unknown[], contract: Record<string, unknown>): string {
+function render(pieces: any[], contract: Record<string, any>): string {
   return renderUsageBar(tpl(pieces), { surface: "discord", ...contract });
 }
 

@@ -9,7 +9,7 @@
  */
 
 // 内联降级实现：返回 lower-case 后的字符串，非字符串或空串返回 ""。
-function normalizeLowercaseStringOrEmpty(value: unknown): string {
+function normalizeLowercaseStringOrEmpty(value: any): string {
   if (typeof value !== "string") {
     return "";
   }
@@ -21,7 +21,7 @@ function normalizeLowercaseStringOrEmpty(value: unknown): string {
 type OpenAIReasoningCompatModel = {
   provider?: string | null;
   id?: string | null;
-  compat?: unknown;
+  compat?: any;
 };
 
 // These OpenAI models reject minimal/low reasoning but accept medium. Map lower
@@ -30,11 +30,11 @@ const OPENAI_MEDIUM_ONLY_REASONING_MODEL_IDS = new Set(["gpt-5.1-codex-mini"]);
 
 // Provider metadata can remap reasoning effort names. Keep only string pairs so
 // malformed compat data cannot poison request parameters.
-function readCompatReasoningEffortMap(compat: unknown): Record<string, string> {
+function readCompatReasoningEffortMap(compat: any): Record<string, string> {
   if (!compat || typeof compat !== "object") {
     return {};
   }
-  const rawMap = (compat as { reasoningEffortMap?: unknown }).reasoningEffortMap;
+  const rawMap = (compat as { reasoningEffortMap?: any }).reasoningEffortMap;
   if (!rawMap || typeof rawMap !== "object") {
     return {};
   }

@@ -12,7 +12,7 @@ vi.mock("./commands.js", () => ({
 
 function createLoadSessionRequest(
   sessionId: string,
-  meta: Record<string, unknown> = {},
+  meta: Record<string, any> = {},
 ): LoadSessionRequest {
   return {
     sessionId,

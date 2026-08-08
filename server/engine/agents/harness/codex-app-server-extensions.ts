@@ -41,7 +41,7 @@ export function createCodexAppServerToolResultExtensionRunner(
   return {
     async applyToolResultExtensions(
       event: CodexAppServerToolResultEvent,
-    ): Promise<AgentToolResult<unknown>> {
+    ): Promise<AgentToolResult<any>> {
       await initPromise;
       let current = event.result;
       for (const handler of handlers) {

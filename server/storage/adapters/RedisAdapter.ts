@@ -49,7 +49,7 @@ interface RedisMulti {
   sadd(key: string, member: string): RedisMulti;
   srem(key: string, member: string): RedisMulti;
   incr(key: string): RedisMulti;
-  exec(): Promise<unknown[]>;
+  exec(): Promise<any[]>;
 }
 
 // ---------------------------------------------------------------------------
@@ -143,17 +143,17 @@ export class RedisAdapter implements IStorageEngine {
     const parsed = this.parseSql(sql);
 
     return {
-      run(...params: unknown[]): { changes: number; lastInsertRowid: number } {
+      run(...params: any[]): { changes: number; lastInsertRowid: number } {
         throw new Error(
           'RedisAdapter.prepare.run 为异步操作，请使用异步形式调用',
         );
       },
-      get<T>(...params: unknown[]): T | undefined {
+      get<T>(...params: any[]): T | undefined {
         throw new Error(
           'RedisAdapter.prepare.get 为异步操作，请使用异步形式调用',
         );
       },
-      all<T>(...params: unknown[]): T[] {
+      all<T>(...params: any[]): T[] {
         throw new Error(
           'RedisAdapter.prepare.all 为异步操作，请使用异步形式调用',
         );
@@ -173,21 +173,21 @@ export class RedisAdapter implements IStorageEngine {
     throw new Error(`RedisAdapter.exec 不支持的 SQL: ${sql.slice(0, 100)}`);
   }
 
-  get<T>(sql: string, params?: unknown[]): T | undefined {
+  get<T>(sql: string, params?: any[]): T | undefined {
     if (!this.client) throw new Error('RedisAdapter: 未连接');
     throw new Error(
       'RedisAdapter.get 为异步操作，请使用 getAsync 方法',
     );
   }
 
-  all<T>(sql: string, params?: unknown[]): T[] {
+  all<T>(sql: string, params?: any[]): T[] {
     if (!this.client) throw new Error('RedisAdapter: 未连接');
     throw new Error(
       'RedisAdapter.all 为异步操作，请使用 allAsync 方法',
     );
   }
 
-  run(sql: string, params?: unknown[]): { changes: number; lastInsertRowid: number } {
+  run(sql: string, params?: any[]): { changes: number; lastInsertRowid: number } {
     if (!this.client) throw new Error('RedisAdapter: 未连接');
     throw new Error(
       'RedisAdapter.run 为异步操作，请使用 runAsync 方法',
@@ -202,7 +202,7 @@ export class RedisAdapter implements IStorageEngine {
    * 异步执行查询并获取单行。
    * 支持 SELECT ... FROM {table} WHERE pk = ? 形式的简单查询。
    */
-  async getAsync<T extends Record<string, unknown>>(
+  async getAsync<T extends Record<string, any>>(
     table: string,
     primaryKey: string | number,
   ): Promise<T | undefined> {
@@ -218,7 +218,7 @@ export class RedisAdapter implements IStorageEngine {
   }
 
   /** 异步获取表中所有行 */
-  async allAsync<T extends Record<string, unknown>>(table: string): Promise<T[]> {
+  async allAsync<T extends Record<string, any>>(table: string): Promise<T[]> {
     if (!this.client) throw new Error('RedisAdapter: 未连接');
     const indexKey = this.tableIndexKey(table);
     const members = await this.client.smembers(indexKey);
@@ -246,7 +246,7 @@ export class RedisAdapter implements IStorageEngine {
   async runAsync(
     table: string,
     primaryKey: string | number,
-    data: Record<string, unknown>,
+    data: Record<string, any>,
     ttlSeconds?: number,
   ): Promise<{ changes: number; lastInsertRowid: number }> {
     if (!this.client) throw new Error('RedisAdapter: 未连接');

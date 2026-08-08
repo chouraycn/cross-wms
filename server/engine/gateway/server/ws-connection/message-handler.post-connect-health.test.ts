@@ -78,10 +78,10 @@ import { testing, attachGatewayWsMessageHandler } from "./message-handler.js";
 const DEVICE_TOKEN_MUTATION_PARAMS = {
   deviceId: "device-1",
   role: "operator",
-} as const satisfies Record<string, unknown>;
+} as const satisfies Record<string, any>;
 const NODE_PAIR_REMOVE_PARAMS = {
   nodeId: "device-1",
-} as const satisfies Record<string, unknown>;
+} as const satisfies Record<string, any>;
 
 function createLogger() {
   return {
@@ -129,7 +129,7 @@ type ConnectedTestClient = {
 };
 
 type CloseGatewayConnection = (code?: number, reason?: string) => void;
-type SetCloseCause = (cause: string, meta?: Record<string, unknown>) => void;
+type SetCloseCause = (cause: string, meta?: Record<string, any>) => void;
 
 function createConnectedTestClient(params: {
   connId: string;
@@ -184,7 +184,7 @@ function attachGatewayHarness(options: {
   remoteAddr?: string;
   localAddr?: string;
   resolvedAuth?: ResolvedGatewayAuth;
-  client?: unknown;
+  client?: any;
   close?: CloseGatewayConnection;
   isClosed?: () => boolean;
   setCloseCause?: SetCloseCause;
@@ -204,7 +204,7 @@ function attachGatewayHarness(options: {
     }),
   } as unknown as WebSocket;
   const send = vi.fn();
-  let client: unknown = options.client ?? null;
+  let client: any = options.client ?? null;
   const requestHost = options.requestHost ?? "127.0.0.1:19001";
   const remoteAddr = options.remoteAddr ?? "127.0.0.1";
   const localAddr = options.localAddr ?? "127.0.0.1";
@@ -257,7 +257,7 @@ function attachGatewayHarness(options: {
   const sendMessage = onMessage;
   return {
     socketSend,
-    sendRequest: (id: string, method: string, params: Record<string, unknown> = {}) => {
+    sendRequest: (id: string, method: string, params: Record<string, any> = {}) => {
       sendMessage(
         JSON.stringify({
           type: "req",
@@ -267,7 +267,7 @@ function attachGatewayHarness(options: {
         }),
       );
     },
-    sendConnect: (id: string, params: Record<string, unknown>) => {
+    sendConnect: (id: string, params: Record<string, any>) => {
       sendMessage(
         JSON.stringify({
           type: "req",

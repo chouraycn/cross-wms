@@ -5,19 +5,19 @@ export type DeliverFn = unknown;
 export type ActiveDeliveryClaimResult = unknown;
 export interface RecoveryLogger {}
 export interface PendingDeliveryDrainDecision {}
-export function withActiveDeliveryClaim(...args: unknown[]): unknown {
+export function withActiveDeliveryClaim(...args: any[]): any {
   return undefined;
 }
-export function isEntryEligibleForRecoveryRetry(...args: unknown[]): unknown {
+export function isEntryEligibleForRecoveryRetry(...args: any[]): any {
   return false;
 }
-export function isPermanentDeliveryError(...args: unknown[]): unknown {
+export function isPermanentDeliveryError(...args: any[]): any {
   return false;
 }
-export function drainPendingDeliveries(...args: unknown[]): unknown {
+export function drainPendingDeliveries(...args: any[]): any {
   return undefined;
 }
-export function recoverPendingDeliveries(...args: unknown[]): unknown {
+export function recoverPendingDeliveries(...args: any[]): any {
   return undefined;
 }
 export type computeBackoffMs = unknown;

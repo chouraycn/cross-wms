@@ -162,7 +162,7 @@ function createCircularPluginFixture(prefix: string): TrustedBundledPluginFixtur
   return { bundledPluginsDir, pluginId, pluginRoot };
 }
 
-function writeJsonFile(filePath: string, value: unknown): void {
+function writeJsonFile(filePath: string, value: any): void {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, "utf8");
 }
@@ -174,7 +174,7 @@ afterEach(() => {
   for (const dir of trustedBundledPluginFixtureRoots.splice(0)) {
     fs.rmSync(dir, { recursive: true, force: true });
   }
-  delete (globalThis as typeof globalThis & Record<string, unknown>)[FACADE_LOADER_GLOBAL];
+  delete (globalThis as typeof globalThis & Record<string, any>)[FACADE_LOADER_GLOBAL];
   if (originalBundledPluginsDir === undefined) {
     delete process.env.OPENCLAW_BUNDLED_PLUGINS_DIR;
   } else {
@@ -303,7 +303,7 @@ describe("plugin-sdk facade loader", () => {
   it("breaks circular facade re-entry during module evaluation", () => {
     const fixture = createCircularPluginFixture("openclaw-facade-loader-circular-");
     process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = fixture.bundledPluginsDir;
-    (globalThis as typeof globalThis & Record<string, unknown>)[FACADE_LOADER_GLOBAL] =
+    (globalThis as typeof globalThis & Record<string, any>)[FACADE_LOADER_GLOBAL] =
       loadBundledPluginPublicSurfaceModuleSync;
 
     const loaded = loadBundledPluginPublicSurfaceModuleSync<{ marker: string }>({

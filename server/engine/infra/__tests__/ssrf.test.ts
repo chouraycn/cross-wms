@@ -204,7 +204,7 @@ describe("ssrf resolvePinnedHostname", () => {
       { address: "93.184.216.34", family: 4 },
       { address: "2606:2800:220:1:248:1893:25c8:1946", family: 6 },
     ]);
-    const addresses = await resolvePinnedHostname("example.com", fakeLookup as unknown);
+    const addresses = await resolvePinnedHostname("example.com", fakeLookup as any);
     expect(addresses).toEqual([
       "93.184.216.34",
       "2606:2800:220:1:248:1893:25c8:1946",
@@ -215,10 +215,10 @@ describe("ssrf resolvePinnedHostname", () => {
   it("DNS 解析失败应该抛出 SsrFBlockedError", async () => {
     const fakeLookup = vi.fn().mockRejectedValue(new Error("ENOTFOUND"));
     await expect(
-      resolvePinnedHostname("nonexistent.invalid", fakeLookup as unknown),
+      resolvePinnedHostname("nonexistent.invalid", fakeLookup as any),
     ).rejects.toThrow(SsrFBlockedError);
     await expect(
-      resolvePinnedHostname("nonexistent.invalid", fakeLookup as unknown),
+      resolvePinnedHostname("nonexistent.invalid", fakeLookup as any),
     ).rejects.toThrow(/DNS lookup failed/);
   });
 });

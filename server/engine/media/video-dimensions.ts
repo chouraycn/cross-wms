@@ -8,7 +8,7 @@ export type VideoDimensions = {
   height: number;
 };
 
-function parsePositiveDimension(value: unknown): number | undefined {
+function parsePositiveDimension(value: any): number | undefined {
   if (typeof value !== "number" || !Number.isInteger(value) || value <= 0) {
     return undefined;
   }
@@ -17,14 +17,14 @@ function parsePositiveDimension(value: unknown): number | undefined {
 
 /** Parses ffprobe JSON output, accepting only positive integer first-stream dimensions. */
 export function parseFfprobeVideoDimensions(stdout: string): VideoDimensions | undefined {
-  const parsed = JSON.parse(stdout) as { streams?: Array<{ width?: unknown; height?: unknown }> };
+  const parsed = JSON.parse(stdout) as { streams?: Array<{ width?: any; height?: any }> };
   const stream = parsed.streams?.[0];
   const width = parsePositiveDimension(stream?.width);
   const height = parsePositiveDimension(stream?.height);
   return width && height ? { width, height } : undefined;
 }
 
-/** Probes a video buffer through ffprobe stdin and treats probe failures as unknown dimensions. */
+/** Probes a video buffer through ffprobe stdin and treats probe failures as any dimensions. */
 export async function probeVideoDimensions(buffer: Buffer): Promise<VideoDimensions | undefined> {
   try {
     const stdout = await runFfprobe(

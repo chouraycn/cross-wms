@@ -99,14 +99,14 @@ function DropdownMenuTrigger({
         ;(props as { onClick?: (e: React.MouseEvent<HTMLElement>) => void }).onClick?.(e)
         open(e.currentTarget)
       },
-    } as Record<string, unknown>)
+    } as Record<string, any>)
   }
   return (
     <button
       type="button"
       data-slot="dropdown-menu-trigger"
       onClick={(e) => open(e.currentTarget)}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     >
       {children}
     </button>
@@ -145,9 +145,9 @@ function DropdownMenuContent({
           className,
           sx: [staffTokens.menuContent, ...(Array.isArray(sx) ? sx : sx ? [sx] : [])] as SxProps<Theme>,
           style: { overflow: 'visible' },
-        } as Record<string, unknown>,
+        } as Record<string, any>,
       }}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     >
       {children}
     </MuiMenu>
@@ -156,7 +156,7 @@ function DropdownMenuContent({
 
 function DropdownMenuGroup({ children, ...props }: React.ComponentProps<'div'>) {
   return (
-    <Box component="div" data-slot="dropdown-menu-group" {...(props as Record<string, unknown>)}>
+    <Box component="div" data-slot="dropdown-menu-group" {...(props as Record<string, any>)}>
       {children}
     </Box>
   )
@@ -193,7 +193,7 @@ function DropdownMenuItem({
         onClick?.(e)
         setOpen(false)
       }}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     >
       <span className="pointer-events-none absolute right-2 flex size-4 items-center justify-center" data-slot="dropdown-menu-item-indicator" />
       {children}
@@ -227,7 +227,7 @@ function DropdownMenuCheckboxItem({
         onClick?.(e)
         setOpen(false)
       }}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     >
       <span className="pointer-events-none absolute right-2 flex size-4 items-center justify-center" data-slot="dropdown-menu-checkbox-item-indicator">
         {checked ? <CheckIcon /> : null}
@@ -271,7 +271,7 @@ function DropdownMenuRadioItem({
       className={className}
       sx={staffTokens.menuItem}
       onClick={() => onValueChange?.(value)}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     >
       <span className="pointer-events-none absolute right-2 flex size-4 items-center justify-center" data-slot="dropdown-menu-radio-item-indicator">
         {selected ? <CheckIcon /> : null}
@@ -288,13 +288,13 @@ function DropdownMenuLabel({ className, inset, ...props }: React.ComponentProps<
       data-slot="dropdown-menu-label"
       data-inset={inset}
       className={cn('px-1.5 py-1 text-xs font-medium text-muted-foreground', className)}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     />
   )
 }
 
 function DropdownMenuSeparator({ className, ...props }: React.ComponentProps<'div'> & { sx?: SxProps<Theme> }) {
-  return <MuiDivider data-slot="dropdown-menu-separator" className={cn(className)} {...(props as Record<string, unknown>)} />
+  return <MuiDivider data-slot="dropdown-menu-separator" className={cn(className)} {...(props as Record<string, any>)} />
 }
 
 function DropdownMenuShortcut({ className, ...props }: React.ComponentProps<'span'>) {
@@ -302,7 +302,7 @@ function DropdownMenuShortcut({ className, ...props }: React.ComponentProps<'spa
     <span
       data-slot="dropdown-menu-shortcut"
       className={cn('ml-auto text-xs tracking-widest text-muted-foreground', className)}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     />
   )
 }
@@ -326,7 +326,7 @@ function DropdownMenuSubTrigger({
       className={className}
       sx={staffTokens.menuItem}
       onMouseEnter={(e) => setAnchorEl(e.currentTarget)}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     >
       {children}
       <ChevronRightIcon className="ml-auto" />
@@ -349,9 +349,9 @@ function DropdownMenuSubContent({ className, sx, children, ...props }: React.Com
           className,
           sx: [staffTokens.menuContent, ...(Array.isArray(sx) ? sx : sx ? [sx] : [])] as SxProps<Theme>,
           style: { overflow: 'visible' },
-        } as Record<string, unknown>,
+        } as Record<string, any>,
       }}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     >
       {children}
     </MuiMenu>

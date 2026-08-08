@@ -4,30 +4,30 @@
 type ModelCompatConfig = unknown;
 /** 占位：Model。 */
 type Model = unknown;
-export function extractModelCompat(params: unknown): ModelCompatConfig {
+export function extractModelCompat(params: any): ModelCompatConfig {
   void params;
   return undefined;
 }
-export function applyModelCompatPatch<T extends { compat?: ModelCompatConfig }>(model: T, _patch: unknown): T {
+export function applyModelCompatPatch<T extends { compat?: ModelCompatConfig }>(model: T, _patch: any): T {
   return model;
 }
-export function hasToolSchemaProfile(params: unknown): boolean {
+export function hasToolSchemaProfile(params: any): boolean {
   void params;
   return false;
 }
-export function hasNativeWebSearchTool(params: unknown): boolean {
+export function hasNativeWebSearchTool(params: any): boolean {
   void params;
   return false;
 }
-export function resolveToolCallArgumentsEncoding(params: unknown): unknown {
+export function resolveToolCallArgumentsEncoding(params: any): any {
   void params;
   return undefined;
 }
-export function resolveUnsupportedToolSchemaKeywords(params: unknown): string[] {
+export function resolveUnsupportedToolSchemaKeywords(params: any): string[] {
   void params;
   return [];
 }
-export function shouldOmitEmptyArrayItems(params: unknown): boolean {
+export function shouldOmitEmptyArrayItems(params: any): boolean {
   void params;
   return false;
 }

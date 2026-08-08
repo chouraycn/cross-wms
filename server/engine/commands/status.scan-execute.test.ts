@@ -51,10 +51,10 @@ describe("executeStatusScanFromOverview", () => {
     } as unknown as StatusScanOverviewResult;
     const resolveMemory = vi.fn<
       (args: {
-        cfg: unknown;
-        agentStatus: unknown;
-        memoryPlugin: unknown;
-        runtime?: unknown;
+        cfg: any;
+        agentStatus: any;
+        memoryPlugin: any;
+        runtime?: any;
       }) => Promise<MemoryStatusSnapshot>
     >(async () => ({
       agentId: "main",

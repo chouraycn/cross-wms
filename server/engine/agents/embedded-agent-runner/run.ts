@@ -2219,7 +2219,7 @@ async function runEmbeddedAgentInternal(
             onUserMessagePersisted,
             onAssistantErrorMessagePersisted: params.onAssistantErrorMessagePersisted,
           })
-            .catch((err: unknown): never => {
+            .catch((err: any): never => {
               throw postCompactionAbortError ?? err;
             })
             .finally(() => {
@@ -2632,7 +2632,7 @@ async function runEmbeddedAgentInternal(
               if (log.isEnabled("debug")) {
                 log.debug(
                   `[compaction-diag] decision diagId=${overflowDiagId} branch=compact ` +
-                    `isCompactionFailure=${isCompactionFailure} hasOversizedToolResults=unknown ` +
+                    `isCompactionFailure=${isCompactionFailure} hasOversizedToolResults=any ` +
                     `attempt=${overflowCompactionAttempts + 1} maxAttempts=${MAX_OVERFLOW_COMPACTION_ATTEMPTS}`,
                 );
               }
@@ -3159,7 +3159,7 @@ async function runEmbeddedAgentInternal(
                   profileId: failedPromptProfileId,
                   reason: promptProfileFailureReason,
                   modelId,
-                }).catch((err: unknown) => {
+                }).catch((err: any) => {
                   log.warn(`prompt profile failure mark failed: ${String(err)}`);
                 });
               }
@@ -4166,7 +4166,7 @@ async function runEmbeddedAgentInternal(
             step: "bundle-mcp-retire",
             log,
             cleanup: async () => {
-              const onError = (errorLocal: unknown, sessionId: string) => {
+              const onError = (errorLocal: any, sessionId: string) => {
                 log.warn(
                   `bundle-mcp cleanup failed after run for ${sessionId}: ${formatErrorMessage(errorLocal)}`,
                 );

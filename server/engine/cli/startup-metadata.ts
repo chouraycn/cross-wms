@@ -8,7 +8,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 const STARTUP_METADATA_FILE = "cli-startup-metadata.json";
-const startupMetadataByPath = new Map<string, Record<string, unknown> | null>();
+const startupMetadataByPath = new Map<string, Record<string, any> | null>();
 
 function resolveStartupMetadataPathCandidates(moduleFilePath: string): string[] {
   const moduleDir = path.dirname(moduleFilePath);
@@ -22,7 +22,7 @@ function resolveStartupMetadataPathCandidates(moduleFilePath: string): string[] 
  * 读取 CLI 启动元数据。
  * @param moduleFilePath 调用方模块的文件路径（commonjs 下即 `__filename`）。
  */
-export function readCliStartupMetadata(moduleFilePath: string): Record<string, unknown> | null {
+export function readCliStartupMetadata(moduleFilePath: string): Record<string, any> | null {
   // 同时检查源码和 bundle 两种布局；缓存未命中结果以使重复 help 保持低成本。
   for (const metadataPath of resolveStartupMetadataPathCandidates(moduleFilePath)) {
     const cached = startupMetadataByPath.get(metadataPath);
@@ -33,7 +33,7 @@ export function readCliStartupMetadata(moduleFilePath: string): Record<string, u
       continue;
     }
     try {
-      const parsed = JSON.parse(fs.readFileSync(metadataPath, "utf8")) as Record<string, unknown>;
+      const parsed = JSON.parse(fs.readFileSync(metadataPath, "utf8")) as Record<string, any>;
       startupMetadataByPath.set(metadataPath, parsed);
       return parsed;
     } catch {

@@ -4,22 +4,22 @@ import { normalizeOptionalString } from "@openclaw/normalization-core/string-coe
 
 /** Minimal inbound media fields used by media/audio detection. */
 export type InboundMediaContext = {
-  Body?: unknown;
-  BodyForCommands?: unknown;
-  CommandBody?: unknown;
-  MediaType?: unknown;
-  StickerMediaIncluded?: unknown;
-  SkipStickerMediaUnderstanding?: unknown;
-  Sticker?: unknown;
-  MediaPath?: unknown;
-  MediaUrl?: unknown;
-  MediaPaths?: readonly unknown[];
-  MediaUrls?: readonly unknown[];
-  MediaTypes?: readonly unknown[];
-  RawBody?: unknown;
+  Body?: any;
+  BodyForCommands?: any;
+  CommandBody?: any;
+  MediaType?: any;
+  StickerMediaIncluded?: any;
+  SkipStickerMediaUnderstanding?: any;
+  Sticker?: any;
+  MediaPath?: any;
+  MediaUrl?: any;
+  MediaPaths?: readonly any[];
+  MediaUrls?: readonly any[];
+  MediaTypes?: readonly any[];
+  RawBody?: any;
 };
 
-function hasNormalizedStringEntry(values: readonly unknown[] | undefined): boolean {
+function hasNormalizedStringEntry(values: readonly any[] | undefined): boolean {
   return Array.isArray(values) && values.some((value) => normalizeOptionalString(value));
 }
 
@@ -49,7 +49,7 @@ export function hasInboundMediaForUnderstanding(ctx: InboundMediaContext): boole
 const AUDIO_PLACEHOLDER_RE = /^<media:audio>(\s*\([^)]*\))?$/i;
 const AUDIO_HEADER_RE = /^\[Audio\b/i;
 
-function normalizeMediaType(value: unknown): string | undefined {
+function normalizeMediaType(value: any): string | undefined {
   const normalized = normalizeOptionalString(value);
   return normalized?.split(";", 1)[0]?.toLowerCase();
 }

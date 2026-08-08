@@ -350,15 +350,15 @@ function resolveTtsRuntimeConfig(cfg: OpenClawConfig): OpenClawConfig {
   );
 }
 
-function asProviderConfig(value: unknown): SpeechProviderConfig {
+function asProviderConfig(value: any): SpeechProviderConfig {
   return typeof value === "object" && value !== null && !Array.isArray(value)
     ? (value as SpeechProviderConfig)
     : {};
 }
 
-function asProviderConfigMap(value: unknown): Record<string, unknown> {
+function asProviderConfigMap(value: any): Record<string, any> {
   return typeof value === "object" && value !== null && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
+    ? (value as Record<string, any>)
     : {};
 }
 
@@ -367,7 +367,7 @@ function hasOwnProperty(value: object, key: string): boolean {
 }
 
 function normalizeProviderConfigMap(
-  value: unknown,
+  value: any,
 ): Record<string, SpeechProviderConfig> | undefined {
   const rawMap = asProviderConfigMap(value);
   if (Object.keys(rawMap).length === 0) {
@@ -451,7 +451,7 @@ function resolveRawProviderConfig(
     return {};
   }
   const rawProviders = asProviderConfigMap(raw.providers);
-  const direct = rawProviders[providerId] ?? (raw as Record<string, unknown>)[providerId];
+  const direct = rawProviders[providerId] ?? (raw as Record<string, any>)[providerId];
   return withSpeakerSelectionCompat(asProviderConfig(direct));
 }
 
@@ -469,7 +469,7 @@ function resolveLazyProviderConfig(
     return existing;
   }
   const rawConfig = resolveRawProviderConfig(config.rawConfig, canonical);
-  const rawBaseConfig = config.rawConfig as Record<string, unknown> | undefined;
+  const rawBaseConfig = config.rawConfig as Record<string, any> | undefined;
   const rawProviders = asProviderConfigMap(config.rawConfig?.providers);
   const resolvedProvider = getSpeechProvider(canonical, effectiveCfg);
   let hasRawProviderConfig =
@@ -555,7 +555,7 @@ function collectDirectProviderConfigEntries(raw: TtsConfig): Record<string, Spee
     "summaryModel",
     "timeoutMs",
   ]);
-  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+  for (const [key, value] of Object.entries(raw as Record<string, any>)) {
     if (reservedKeys.has(key)) {
       continue;
     }
@@ -1063,7 +1063,7 @@ export function isTtsProviderConfigured(
   );
 }
 
-function formatTtsProviderError(provider: TtsProvider, err: unknown): string {
+function formatTtsProviderError(provider: TtsProvider, err: any): string {
   const error = err instanceof Error ? err : new Error(String(err));
   if (error.name === "AbortError") {
     return `${provider}: request timed out`;
@@ -1071,7 +1071,7 @@ function formatTtsProviderError(provider: TtsProvider, err: unknown): string {
   return `${provider}: ${redactSensitiveText(error.message)}`;
 }
 
-function sanitizeTtsErrorForLog(err: unknown): string {
+function sanitizeTtsErrorForLog(err: any): string {
   const raw = formatErrorMessage(err);
   return redactSensitiveText(raw).replace(/\r/g, "\\r").replace(/\n/g, "\\n").replace(/\t/g, "\\t");
 }
@@ -1271,7 +1271,7 @@ function resolveTtsRequestSetup(params: {
   };
 }
 
-function readTtsResultString(value: unknown): string | undefined {
+function readTtsResultString(value: any): string | undefined {
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }
 
@@ -2111,7 +2111,7 @@ export async function maybeApplyTtsToPayload(params: {
   };
 
   const latency = Date.now() - ttsStart;
-  logVerbose(`TTS: conversion failed after ${latency}ms (${result.error ?? "unknown"}).`);
+  logVerbose(`TTS: conversion failed after ${latency}ms (${result.error ?? "any"}).`);
   return nextPayload;
 }
 

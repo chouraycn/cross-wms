@@ -386,7 +386,7 @@ describe("bundled channel entry shape guards", () => {
 
       bundled.setBundledChannelRuntime("alpha", { marker: "ok" } as never);
       const testGlobal = globalThis as typeof globalThis & {
-        __bundledOverrideRuntime?: unknown;
+        __bundledOverrideRuntime?: any;
       };
 
       expect(metadataRootDir).toBe(tempRoot);
@@ -396,7 +396,7 @@ describe("bundled channel entry shape guards", () => {
     } finally {
       restoreBundledPluginsDir(previousBundledPluginsDir);
       fs.rmSync(tempRoot, { recursive: true, force: true });
-      delete (globalThis as { __bundledOverrideRuntime?: unknown })["__bundledOverrideRuntime"];
+      delete (globalThis as { __bundledOverrideRuntime?: any })["__bundledOverrideRuntime"];
     }
   });
 
@@ -581,7 +581,7 @@ describe("bundled channel entry shape guards", () => {
 
       bundled.setBundledChannelRuntime("alpha", { marker: "ok" } as never);
       const testGlobal = globalThis as typeof globalThis & {
-        __bundledOverrideRuntime?: unknown;
+        __bundledOverrideRuntime?: any;
       };
 
       expect(metadataScanDir).toBe(pluginsRoot);
@@ -592,7 +592,7 @@ describe("bundled channel entry shape guards", () => {
     } finally {
       restoreBundledPluginsDir(previousBundledPluginsDir);
       fs.rmSync(tempRoot, { recursive: true, force: true });
-      delete (globalThis as { __bundledOverrideRuntime?: unknown })["__bundledOverrideRuntime"];
+      delete (globalThis as { __bundledOverrideRuntime?: any })["__bundledOverrideRuntime"];
     }
   });
 
@@ -601,7 +601,7 @@ describe("bundled channel entry shape guards", () => {
     const rootB = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-bundled-root-b-"));
     const previousBundledPluginsDir = process.env.OPENCLAW_BUNDLED_PLUGINS_DIR;
     const testGlobal = globalThis as typeof globalThis & {
-      __bundledRootRuntime?: unknown;
+      __bundledRootRuntime?: any;
     };
 
     const writeBundledRoot = (rootDir: string, label: string) => {

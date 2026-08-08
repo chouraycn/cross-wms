@@ -27,12 +27,12 @@ function requireEmbeddedAgentCall(index: number): { prompt?: string } {
 
 function requireDeliveryRequest(): {
   skipHeartbeatDelivery?: boolean;
-  deliveryPayloads?: unknown;
+  deliveryPayloads?: any;
 } {
   const request = dispatchCronDeliveryMock.mock.calls[0]?.[0] as
     | {
         skipHeartbeatDelivery?: boolean;
-        deliveryPayloads?: unknown;
+        deliveryPayloads?: any;
       }
     | undefined;
   if (!request) {

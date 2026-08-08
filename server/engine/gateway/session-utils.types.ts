@@ -74,7 +74,7 @@ export type GatewaySessionRow = {
   pluginExtensions?: Array<{
     pluginId: string;
     extensionId: string;
-    data: Record<string, unknown>;
+    data: Record<string, any>;
   }>;
 };
 
@@ -116,7 +116,7 @@ export type SessionsListResult = SessionsListResultBase;
 
 export type SessionsPatchResult = {
   ok: boolean;
-  entry?: Record<string, unknown>;
+  entry?: Record<string, any>;
   resolved?: {
     modelProvider?: string;
     model?: string;

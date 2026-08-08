@@ -47,7 +47,7 @@ const sessionBindingState = vi.hoisted(() => {
         targetSessionKey: string;
         targetKind: "session" | "subagent";
         conversation: ConversationRef;
-        metadata?: Record<string, unknown>;
+        metadata?: Record<string, any>;
       }) => {
         const normalized = normalizeRef(input.conversation);
         const record: SessionBindingRecord = {
@@ -233,7 +233,7 @@ function createCodexBindRequest(params: {
   parentConversationId?: string;
   threadId?: string;
   detachHint?: string;
-  data?: Record<string, unknown>;
+  data?: Record<string, any>;
 }) {
   return {
     pluginId: params.pluginId ?? "codex",
@@ -320,7 +320,7 @@ function createDeferredVoid(): { promise: Promise<void>; resolve: () => void } {
   return { promise, resolve };
 }
 
-function requireMockCallArg(mock: ReturnType<typeof vi.fn>, index = 0): unknown {
+function requireMockCallArg(mock: ReturnType<typeof vi.fn>, index = 0): any {
   const call = mock.mock.calls[index] as [unknown] | undefined;
   if (!call) {
     throw new Error(`mock call ${index} missing`);
@@ -330,7 +330,7 @@ function requireMockCallArg(mock: ReturnType<typeof vi.fn>, index = 0): unknown 
 
 function createResolvedHandlerRegistry(params: {
   pluginRoot: string;
-  handler: (input: unknown) => Promise<void>;
+  handler: (input: any) => Promise<void>;
 }) {
   const registry = createEmptyPluginRegistry();
   registry.conversationBindingResolvedHandlers.push({
@@ -349,7 +349,7 @@ async function expectResolutionCallback(params: {
   requestInput: PluginBindingRequestInput;
   decision: PluginBindingDecision;
   expectedStatus: "approved" | "denied";
-  expectCallback: (payload: unknown) => void;
+  expectCallback: (payload: any) => void;
 }) {
   const onResolved = vi.fn(async () => undefined);
   createResolvedHandlerRegistry({
@@ -784,7 +784,7 @@ describe("plugin conversation binding approvals", () => {
       },
       decision: "allow-once" as const,
       expectedStatus: "approved" as const,
-      expectCallback: (payload: unknown) => {
+      expectCallback: (payload: any) => {
         const callback = payload as {
           status: string;
           binding?: {
@@ -836,10 +836,10 @@ describe("plugin conversation binding approvals", () => {
       },
       decision: "deny" as const,
       expectedStatus: "denied" as const,
-      expectCallback: (payload: unknown) => {
+      expectCallback: (payload: any) => {
         const callback = payload as {
           status: string;
-          binding?: unknown;
+          binding?: any;
           decision: string;
           request: {
             summary: string;

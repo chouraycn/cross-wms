@@ -103,7 +103,7 @@ export interface ExecuteSingleToolResult {
 /** 分发执行器：给定 toolCall + 已解析参数 + 上下文，返回工具输出字符串 */
 export type ToolDispatcher = (
   toolCall: ToolCall,
-  args: Record<string, unknown>,
+  args: Record<string, any>,
   context: ExecuteSingleToolContext,
   timeoutMs: number,
 ) => Promise<string>;
@@ -120,7 +120,7 @@ export interface ExecuteSingleToolOverrides {
    */
   waitForApproval?: (
     toolName: string,
-    args: Record<string, unknown>,
+    args: Record<string, any>,
     riskLevel: ApprovalRiskLevel,
     reason: string,
     context: ExecuteSingleToolContext,
@@ -215,10 +215,10 @@ export async function executeSingleTool(
   const toolName = toolCall.function.name;
 
   // ---- 参数解析 ----
-  let args: Record<string, unknown> = {};
+  let args: Record<string, any> = {};
   try {
     args = toolCall.function.arguments
-      ? (JSON.parse(toolCall.function.arguments) as Record<string, unknown>)
+      ? (JSON.parse(toolCall.function.arguments) as Record<string, any>)
       : {};
   } catch {
     const reason = `工具参数解析失败: ${toolCall.function.arguments}`;
@@ -366,7 +366,7 @@ function looksLikeError(result: string): boolean {
   const trimmed = result.trimStart();
   if (!trimmed.startsWith('{')) return false;
   try {
-    const parsed = JSON.parse(result) as Record<string, unknown>;
+    const parsed = JSON.parse(result) as Record<string, any>;
     return typeof parsed.error === 'string' && parsed.error.length > 0;
   } catch {
     return false;
@@ -376,7 +376,7 @@ function looksLikeError(result: string): boolean {
 /** 统一写审计（截断结果 + 兜底不抛错） */
 function audit(
   toolName: string,
-  args: Record<string, unknown>,
+  args: Record<string, any>,
   result: string,
   success: boolean,
   durationMs: number,

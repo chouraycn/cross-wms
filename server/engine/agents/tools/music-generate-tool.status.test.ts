@@ -84,15 +84,15 @@ describe("createMusicGenerateTool status actions", () => {
     expect(text).toContain("Do not call music_generate again for this request.");
     const details = result?.details as
       | {
-          action?: unknown;
-          duplicateGuard?: unknown;
-          active?: unknown;
-          existingTask?: unknown;
-          status?: unknown;
-          taskKind?: unknown;
-          provider?: unknown;
-          task?: { taskId?: unknown; runId?: unknown };
-          progressSummary?: unknown;
+          action?: any;
+          duplicateGuard?: any;
+          active?: any;
+          existingTask?: any;
+          status?: any;
+          taskKind?: any;
+          provider?: any;
+          task?: { taskId?: any; runId?: any };
+          progressSummary?: any;
         }
       | undefined;
     expect(details?.action).toBe("status");
@@ -132,14 +132,14 @@ describe("createMusicGenerateTool status actions", () => {
 
     expect(text).toContain("Music generation task task-active is already queued with minimax.");
     const details = result.details as {
-      action?: unknown;
-      active?: unknown;
-      existingTask?: unknown;
-      status?: unknown;
-      taskKind?: unknown;
-      provider?: unknown;
-      task?: { taskId?: unknown };
-      progressSummary?: unknown;
+      action?: any;
+      active?: any;
+      existingTask?: any;
+      status?: any;
+      taskKind?: any;
+      provider?: any;
+      task?: { taskId?: any };
+      progressSummary?: any;
     };
     expect(details.action).toBe("status");
     expect(details.active).toBe(true);

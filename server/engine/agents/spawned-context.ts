@@ -5,7 +5,7 @@
  * Projects tool runtime context into persisted lineage, group routing, workspace, and inherited policy metadata.
  */
 
-function normalizeOptionalString(value: unknown): string | undefined {
+function normalizeOptionalString(value: any): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }
@@ -66,7 +66,7 @@ export function mapToolContextToSpawnedRunMetadata(
 
 /** Resolve which workspace a spawned run should inherit. */
 export function resolveSpawnedWorkspaceInheritance(params: {
-  config?: unknown;
+  config?: any;
   targetAgentId?: string;
   requesterSessionKey?: string;
   explicitWorkspaceDir?: string | null;

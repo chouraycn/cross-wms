@@ -52,14 +52,14 @@ describe("createAnthropicPayloadLogger", () => {
     }
     await wrapped({ api: "anthropic-messages" } as never, { messages: [] } as never, {});
 
-    const event = JSON.parse(lines[0]?.trim() ?? "{}") as Record<string, unknown>;
-    const sanitizedPayload = (event.payload ?? {}) as Record<string, unknown>;
-    const message = ((sanitizedPayload.messages as unknown[] | undefined) ?? []) as Array<
-      Record<string, unknown>
+    const event = JSON.parse(lines[0]?.trim() ?? "{}") as Record<string, any>;
+    const sanitizedPayload = (event.payload ?? {}) as Record<string, any>;
+    const message = ((sanitizedPayload.messages as any[] | undefined) ?? []) as Array<
+      Record<string, any>
     >;
-    const source = (((message[0]?.content as Array<Record<string, unknown>> | undefined) ?? [])[0]
-      ?.source ?? {}) as Record<string, unknown>;
-    const metadata = (sanitizedPayload.metadata ?? {}) as Record<string, unknown>;
+    const source = (((message[0]?.content as Array<Record<string, any>> | undefined) ?? [])[0]
+      ?.source ?? {}) as Record<string, any>;
+    const metadata = (sanitizedPayload.metadata ?? {}) as Record<string, any>;
     expect(message[0]).not.toHaveProperty("authorization");
     expect(metadata).not.toHaveProperty("api_key");
     expect(metadata).not.toHaveProperty("nestedToken");
@@ -95,7 +95,7 @@ describe("createAnthropicPayloadLogger", () => {
       new Error("failed with Bearer sk-secret"), // pragma: allowlist secret
     );
 
-    const event = JSON.parse(lines[0]?.trim() ?? "{}") as Record<string, unknown>;
+    const event = JSON.parse(lines[0]?.trim() ?? "{}") as Record<string, any>;
     expect(event.error).toBe("failed with Bearer <redacted>");
     expect(event.usage).toEqual({ input: 1 });
   });

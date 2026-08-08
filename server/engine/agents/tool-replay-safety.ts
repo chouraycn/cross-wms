@@ -8,16 +8,16 @@
  */
 
 /** Check if an agent tool is replay-safe (always false in cross-wms). */
-export function isAgentToolReplaySafe(..._args: unknown[]): false {
+export function isAgentToolReplaySafe(..._args: any[]): false {
   return false;
 }
 
 /** Collect the names of replay-safe tools (returns empty in cross-wms). */
-export function collectReplaySafeToolNames(..._args: unknown[]): string[] {
+export function collectReplaySafeToolNames(..._args: any[]): string[] {
   return [];
 }
 
 /** Check if a core tool name is replay-safe (always false in cross-wms). */
-export function isCoreToolNameReplaySafe(..._args: unknown[]): false {
+export function isCoreToolNameReplaySafe(..._args: any[]): false {
   return false;
 }

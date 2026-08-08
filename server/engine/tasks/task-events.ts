@@ -50,8 +50,8 @@ export class TaskEventBus {
 
   /** 发布事件。返回实际派发到的订阅数。 */
   emit(event: TaskEvent): number;
-  emit(type: TaskEventType, taskId: string, data?: unknown): number;
-  emit(arg1: TaskEvent | TaskEventType, taskId?: string, data?: unknown): number {
+  emit(type: TaskEventType, taskId: string, data?: any): number;
+  emit(arg1: TaskEvent | TaskEventType, taskId?: string, data?: any): number {
     const event: TaskEvent =
       typeof arg1 === 'string'
         ? { type: arg1, taskId: taskId as string, timestamp: nowIso(), data }

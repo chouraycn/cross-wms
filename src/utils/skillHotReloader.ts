@@ -12,7 +12,7 @@ async function loadNodeModules(): Promise<{
   path: typeof import('path');
   util: typeof import('util');
 } | null> {
-  if (typeof window !== 'undefined' && !(window as unknown).process?.versions?.node) {
+  if (typeof window !== 'undefined' && !(window as any).process?.versions?.node) {
     return null;
   }
   if (!_fs) {

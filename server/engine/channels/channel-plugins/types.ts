@@ -31,12 +31,12 @@ export interface PluginMetadata {
 
 export interface PluginConfig {
   enabled?: boolean;
-  settings?: Record<string, unknown>;
+  settings?: Record<string, any>;
 }
 
 export interface PluginContext {
   logger: typeof import("../../../logger.js").logger;
-  config: Record<string, unknown>;
+  config: Record<string, any>;
   channelId: string;
   accountId?: string;
 }
@@ -44,7 +44,7 @@ export interface PluginContext {
 export interface PluginHookContext {
   pluginId: PluginId;
   hookType: PluginHookType;
-  data?: unknown;
+  data?: any;
   context: PluginContext;
 }
 
@@ -100,7 +100,7 @@ export interface RegisteredPlugin {
   status: PluginStatus;
   config: PluginConfig;
   context: PluginContext;
-  instance?: unknown;
+  instance?: any;
   error?: string;
 }
 

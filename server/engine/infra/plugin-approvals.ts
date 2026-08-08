@@ -66,7 +66,7 @@ export const DEFAULT_PLUGIN_APPROVAL_DECISIONS = [
 ] as const satisfies readonly ExecApprovalDecision[];
 
 /** 将插件审批超时限制到支持的运行时范围 */
-export function resolvePluginApprovalTimeoutMs(value: unknown): number {
+export function resolvePluginApprovalTimeoutMs(value: any): number {
   const candidate =
     typeof value === "number" && Number.isFinite(value)
       ? value

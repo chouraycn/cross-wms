@@ -9,7 +9,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 type OpenClawPackageJson = {
-  exports?: Record<string, unknown>;
+  exports?: Record<string, any>;
 };
 
 const PRIVATE_LOCAL_ONLY_PLUGIN_SDK_DIST_FILE_NAME_FALLBACK = [
@@ -34,7 +34,7 @@ function tryReadJsonSync<T = unknown>(filePath: string): T | undefined {
 }
 
 /** 占位：写入 JSON（infra/json-files.ts 未移植）。 */
-function writeJsonSync(filePath: string, value: unknown): void {
+function writeJsonSync(filePath: string, value: any): void {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, JSON.stringify(value, null, 2), "utf8");
 }
@@ -154,7 +154,7 @@ function removeStalePrivatePluginSdkAliasFiles(
   }
 }
 
-function writeRuntimeJsonFile(targetPath: string, value: unknown): void {
+function writeRuntimeJsonFile(targetPath: string, value: any): void {
   writeJsonSync(targetPath, value);
 }
 

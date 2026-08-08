@@ -6,18 +6,18 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function resolveEmbeddedAttemptSessionWriteLockOptions(..._args: unknown[]): unknown {
+export function resolveEmbeddedAttemptSessionWriteLockOptions(..._args: any[]): any {
   return undefined;
 }
-export function resolveAttemptStreamAuthProfileId(..._args: unknown[]): unknown {
+export function resolveAttemptStreamAuthProfileId(..._args: any[]): any {
   return undefined;
 }
-export function resolveUnknownToolGuardThreshold(..._args: unknown[]): unknown {
+export function resolveUnknownToolGuardThreshold(..._args: any[]): any {
   return undefined;
 }
-export function shouldRunLlmOutputHooksForAttempt(..._args: unknown[]): unknown {
+export function shouldRunLlmOutputHooksForAttempt(..._args: any[]): any {
   return false;
 }
-export function resolveAttemptToolPolicyMessageProvider(..._args: unknown[]): unknown {
+export function resolveAttemptToolPolicyMessageProvider(..._args: any[]): any {
   return undefined;
 }

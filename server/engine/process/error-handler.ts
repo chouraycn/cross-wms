@@ -23,7 +23,7 @@ export type ErrorCategory =
 export interface ClassifiedError {
   category: ErrorCategory;
   message: string;
-  cause?: unknown;
+  cause?: any;
   exitCode?: number | null;
   signal?: NodeJS.Signals | null;
   /** 建议的终止原因 */
@@ -46,7 +46,7 @@ export interface HandleResult {
 export class ProcessErrorHandler {
   /** 主分类入口 */
   classify(params: {
-    error?: unknown;
+    error?: any;
     exitCode?: number | null;
     signal?: NodeJS.Signals | null;
     timeoutMs?: number;
@@ -145,7 +145,7 @@ export class ProcessErrorHandler {
     }
 
     return {
-      category: 'unknown',
+      category: 'any',
       message: 'process ended with no error and zero exit code',
       exitCode: exitCode ?? 0,
       suggestedReason: 'exit',

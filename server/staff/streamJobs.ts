@@ -17,7 +17,7 @@ export type StreamJobStatus = 'queued' | 'running' | 'completed' | 'failed' | 'c
 export type StreamJobEvent = {
   seq: number;
   event: string;
-  data: unknown;
+  data: any;
 };
 
 type StreamJob = {
@@ -28,7 +28,7 @@ type StreamJob = {
   created_at: number;
   finished_at: number | null;
   error: string | null;
-  meta: Record<string, unknown>;
+  meta: Record<string, any>;
   events: StreamJobEvent[];
   cancelled: boolean;
 };
@@ -65,7 +65,7 @@ function persist(job: StreamJob): void {
   }
 }
 
-export function createJob(kind: string, meta: Record<string, unknown> = {}): string {
+export function createJob(kind: string, meta: Record<string, any> = {}): string {
   const jobId = genId(kind);
   const now = Math.floor(Date.now());
   const job: StreamJob = {
@@ -89,7 +89,7 @@ export function createJob(kind: string, meta: Record<string, unknown> = {}): str
   return jobId;
 }
 
-export function append(jobId: string, event: string, data: unknown): void {
+export function append(jobId: string, event: string, data: any): void {
   const job = jobs.get(jobId);
   if (!job) return;
   const wasQueued = job.status === 'queued';
@@ -191,11 +191,11 @@ export function hydrateStreamJobs(): void {
   }
 }
 
-function safeParseMeta(s: string | null): Record<string, unknown> {
+function safeParseMeta(s: string | null): Record<string, any> {
   if (!s) return {};
   try {
     const v = JSON.parse(s);
-    return typeof v === 'object' && v !== null ? (v as Record<string, unknown>) : {};
+    return typeof v === 'object' && v !== null ? (v as Record<string, any>) : {};
   } catch {
     return {};
   }

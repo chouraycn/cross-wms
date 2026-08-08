@@ -38,7 +38,7 @@ export interface ObservationAssessment {
 /** 单次观察结果 */
 export interface Observation {
   /** 工具调用信息 */
-  toolCall: { name: string; arguments: Record<string, unknown> };
+  toolCall: { name: string; arguments: Record<string, any> };
   /** 工具执行结果文本 */
   result: string;
   /** 评估结果 */
@@ -48,7 +48,7 @@ export interface Observation {
   /** 置信度评分 (1-10)（可选，v5.0 新增） */
   confidenceScore?: number;
   /** 元数据（可选，v5.1 新增：压缩信息等） */
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 /** 观察者事件（用于 SSE 推送） */
@@ -211,7 +211,7 @@ export class Observer {
    * 错误容忍：Observer 内部错误 → logger.error + 视为 success
    */
   observe(
-    toolCall: { name: string; arguments: Record<string, unknown> },
+    toolCall: { name: string; arguments: Record<string, any> },
     result: string,
   ): Observation {
     try {

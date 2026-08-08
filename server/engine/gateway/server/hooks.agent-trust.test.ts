@@ -35,10 +35,10 @@ vi.mock("../../config/io.js", () => ({
   getRuntimeConfig: loadConfigMock,
 }));
 
-let capturedDispatchAgentHook: ((...args: unknown[]) => unknown) | undefined;
+let capturedDispatchAgentHook: ((...args: any[]) => unknown) | undefined;
 
 vi.mock("./hooks-request-handler.js", () => ({
-  createHooksRequestHandler: vi.fn((opts: Record<string, unknown>) => {
+  createHooksRequestHandler: vi.fn((opts: Record<string, any>) => {
     capturedDispatchAgentHook = opts.dispatchAgentHook as typeof capturedDispatchAgentHook;
     return vi.fn();
   }),
@@ -82,7 +82,7 @@ function buildAgentPayload(name: string, agentId?: string) {
   };
 }
 
-function dispatchAgentHook(payload: unknown): unknown {
+function dispatchAgentHook(payload: any): any {
   if (!capturedDispatchAgentHook) {
     throw new Error("dispatchAgentHook missing");
   }

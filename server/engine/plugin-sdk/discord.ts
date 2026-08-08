@@ -56,15 +56,15 @@ export type DiscordComponentMessageSpec = {
     accentColor?: string | number;
     spoiler?: boolean;
   };
-  blocks?: unknown[];
-  modal?: unknown;
+  blocks?: any[];
+  modal?: any;
 };
 
 /** Built Discord component payload plus registration metadata. */
 export type DiscordComponentBuildResult = {
-  components: unknown[];
-  entries: unknown[];
-  modals: unknown[];
+  components: any[];
+  entries: any[];
+  modals: any[];
 };
 
 /** Send/edit options for Discord component messages. */
@@ -72,14 +72,14 @@ export type DiscordComponentSendOpts = {
   cfg: OpenClawConfig;
   accountId?: string;
   replyTo?: string;
-  files?: unknown;
+  files?: any;
   mediaReadFile?: (filePath: string) => Promise<Buffer>;
   filename?: string;
   textLimit?: number;
   maxLinesPerMessage?: number;
-  tableMode?: unknown;
-  chunkMode?: unknown;
-  [key: string]: unknown;
+  tableMode?: any;
+  chunkMode?: any;
+  [key: string]: any;
 };
 
 /** Normalized Discord message result returned by component send/edit helpers. */
@@ -114,7 +114,7 @@ export type ThreadBindingRecord = {
   channelId?: string;
   targetKind: ThreadBindingTargetKind;
   targetSessionKey: string;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 type DirectoryConfigParams = {
@@ -150,10 +150,10 @@ type DiscordApiFacadeModule = {
   listDiscordAccountIds: (cfg: OpenClawConfig) => string[];
   listDiscordDirectoryGroupsFromConfig: (
     params: DirectoryConfigParams,
-  ) => unknown[] | Promise<unknown[]>;
+  ) => any[] | Promise<any[]>;
   listDiscordDirectoryPeersFromConfig: (
     params: DirectoryConfigParams,
-  ) => unknown[] | Promise<unknown[]>;
+  ) => any[] | Promise<any[]>;
   looksLikeDiscordTargetId: (raw: string) => boolean;
   normalizeDiscordMessagingTarget: (raw: string) => string | undefined;
   normalizeDiscordOutboundTarget: (to?: string) => DiscordOutboundTargetResolution;
@@ -240,7 +240,7 @@ export const buildDiscordComponentMessage: DiscordApiFacadeModule["buildDiscordC
 export function inspectDiscordAccount(params: {
   cfg: OpenClawConfig;
   accountId?: string | null;
-}): unknown {
+}): any {
   return loadDiscordApiFacadeModule().inspectDiscordAccount(params);
 }
 
@@ -252,14 +252,14 @@ export function listDiscordAccountIds(cfg: OpenClawConfig): string[] {
 /** List Discord directory group records from static config. */
 export function listDiscordDirectoryGroupsFromConfig(
   params: DirectoryConfigParams,
-): unknown[] | Promise<unknown[]> {
+): any[] | Promise<any[]> {
   return loadDiscordApiFacadeModule().listDiscordDirectoryGroupsFromConfig(params);
 }
 
 /** List Discord directory peer records from static config. */
 export function listDiscordDirectoryPeersFromConfig(
   params: DirectoryConfigParams,
-): unknown[] | Promise<unknown[]> {
+): any[] | Promise<any[]> {
   return loadDiscordApiFacadeModule().listDiscordDirectoryPeersFromConfig(params);
 }
 
@@ -299,7 +299,7 @@ export function resolveDiscordGroupRequireMention(
 }
 
 /** Resolve group tool policy for a Discord channel context. */
-export function resolveDiscordGroupToolPolicy(params: ChannelGroupContext): unknown {
+export function resolveDiscordGroupToolPolicy(params: ChannelGroupContext): any {
   return loadDiscordApiFacadeModule().resolveDiscordGroupToolPolicy(params);
 }
 
@@ -307,7 +307,7 @@ export function resolveDiscordGroupToolPolicy(params: ChannelGroupContext): unkn
 export function collectDiscordAuditChannelIds(params: {
   cfg: OpenClawConfig;
   accountId?: string | null;
-}): unknown {
+}): any {
   return loadDiscordRuntimeFacadeModule().collectDiscordAuditChannelIds(params);
 }
 

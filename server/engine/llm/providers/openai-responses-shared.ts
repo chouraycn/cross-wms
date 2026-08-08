@@ -32,14 +32,14 @@ type ResponsesTextContentPart = { type: string; text?: string };
 
 export type OpenAIResponsesStreamEvent = {
   type: string;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 function normalizeResponsesReasoningReplayItem(params: {
   item: ReplayableResponseReasoningItem;
   replayResponsesItemIds: boolean;
 }): ReplayableResponseReasoningItem {
-  const next = { ...(params.item as ReplayableResponseReasoningItem & Record<string, unknown>) };
+  const next = { ...(params.item as ReplayableResponseReasoningItem & Record<string, any>) };
   if (!Array.isArray(next.summary)) {
     next.summary = [];
   }
@@ -126,8 +126,8 @@ type ResponsesCommonParamsOptions = Pick<StreamOptions, "maxTokens" | "temperatu
 export function buildResponsesCommonParams<TApi extends Api>(
   model: Model<TApi>,
   options: ResponsesCommonParamsOptions,
-): Record<string, unknown> {
-  const params: Record<string, unknown> = {};
+): Record<string, any> {
+  const params: Record<string, any> = {};
 
   if (options.temperature !== undefined) {
     params.temperature = options.temperature;
@@ -137,7 +137,7 @@ export function buildResponsesCommonParams<TApi extends Api>(
   }
 
   if (options.reasoningEffort || options.reasoningSummary) {
-    const reasoning: Record<string, unknown> = {};
+    const reasoning: Record<string, any> = {};
     if (options.reasoningEffort) {
       reasoning.effort = options.reasoningEffort;
     }
@@ -153,21 +153,21 @@ export function buildResponsesCommonParams<TApi extends Api>(
 }
 
 export function convertResponsesMessages<TApi extends Api>(
-  messages: unknown[],
+  messages: any[],
   model: Model<TApi>,
   options?: ConvertResponsesMessagesOptions,
-): unknown[] {
+): any[] {
   const includeSystemPrompt = options?.includeSystemPrompt ?? true;
   const normalizedMessages = transformMessages(
     messages as Parameters<typeof transformMessages>[0],
     model,
   );
 
-  const result: unknown[] = [];
+  const result: any[] = [];
   let systemText = "";
 
   for (const msg of normalizedMessages) {
-    const m = msg as { role: string; content: unknown };
+    const m = msg as { role: string; content: any };
     if (m.role === "system" && includeSystemPrompt) {
       if (typeof m.content === "string") {
         systemText += (systemText ? "\n\n" : "") + m.content;
@@ -203,7 +203,7 @@ export function convertResponsesMessages<TApi extends Api>(
 
     if (m.role === "assistant") {
       const assistantMsg = msg as AssistantMessage;
-      const contentItems: unknown[] = [];
+      const contentItems: any[] = [];
       for (const block of assistantMsg.content) {
         if (block.type === "text") {
           contentItems.push({ type: "output_text", text: sanitizeSurrogates(block.text) });

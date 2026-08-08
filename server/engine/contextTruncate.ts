@@ -61,7 +61,7 @@ export function estimateTokens(text: string): number {
  * - tool 结果内容通常含 JSON/代码，额外 1.3x
  */
 export function estimateMessagesTokens(
-  messages: Array<{ role: string; content: unknown; tool_calls?: unknown[]; tool_call_id?: string; reasoning_content?: unknown }>,
+  messages: Array<{ role: string; content: any; tool_calls?: any[]; tool_call_id?: string; reasoning_content?: any }>,
 ): number {
   let total = 0;
   for (const msg of messages) {
@@ -98,7 +98,7 @@ export type ApiMessage = {
   content: MessageContent;
   tool_calls?: ToolCall[];
   tool_call_id?: string;
-  reasoning_content?: unknown;
+  reasoning_content?: any;
 };
 
 // ===================== sanitizeToolMessages 安全网 =====================
@@ -167,8 +167,8 @@ export function sanitizeToolMessages(messages: ApiMessage[]): ApiMessage[] {
         }
         continue;
       }
-      if (validCalls.length < (msg.tool_calls as unknown[]).length) {
-        logger.warn(`[sanitizeToolMessages] Pass0 过滤 ${(msg.tool_calls as unknown[]).length - validCalls.length} 个无效 id 的 tool_calls`);
+      if (validCalls.length < (msg.tool_calls as any[]).length) {
+        logger.warn(`[sanitizeToolMessages] Pass0 过滤 ${(msg.tool_calls as any[]).length - validCalls.length} 个无效 id 的 tool_calls`);
       }
       preprocessed.push(normalizeContent({ ...msg, tool_calls: validCalls as ApiMessage['tool_calls'] }));
       continue;

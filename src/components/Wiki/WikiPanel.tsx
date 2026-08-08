@@ -72,7 +72,7 @@ interface WikiEntry {
   createdAt: string;
   updatedAt: string;
   tags?: string[];
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 interface WikiSearchResult {
@@ -626,7 +626,7 @@ const WikiPanel: React.FC = () => {
   }, [importPath, showToast, loadRecentEntries, loadStats, loadAllTags]);
 
   // Pagination handlers
-  const handleChangePage = (_: unknown, newPage: number) => {
+  const handleChangePage = (_: any, newPage: number) => {
     setPage(newPage);
   };
 
@@ -1150,7 +1150,7 @@ const WikiPanel: React.FC = () => {
                 <Select
                   value={editingEntry.source || 'manual'}
                   label="来源"
-                  onChange={(e) => setEditingEntry({ ...editingEntry, source: e.target.value as unknown })}
+                  onChange={(e) => setEditingEntry({ ...editingEntry, source: e.target.value as any })}
                 >
                   <MenuItem value="manual">手动创建</MenuItem>
                   <MenuItem value="markdown">Markdown 导入</MenuItem>

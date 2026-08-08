@@ -51,7 +51,7 @@ describe("AcpSessionManager startup identity reconcile", () => {
         acp: currentMeta,
       },
     ]);
-    hoisted.readAcpSessionEntryMock.mockImplementation((paramsUnknown: unknown) => {
+    hoisted.readAcpSessionEntryMock.mockImplementation((paramsUnknown: any) => {
       const key = (paramsUnknown as { sessionKey?: string }).sessionKey ?? sessionKey;
       return {
         sessionKey: key,
@@ -59,7 +59,7 @@ describe("AcpSessionManager startup identity reconcile", () => {
         acp: currentMeta,
       };
     });
-    hoisted.upsertAcpSessionMetaMock.mockImplementation(async (paramsUnknown: unknown) => {
+    hoisted.upsertAcpSessionMetaMock.mockImplementation(async (paramsUnknown: any) => {
       const params = paramsUnknown as {
         mutate: (
           current: SessionAcpMeta | undefined,

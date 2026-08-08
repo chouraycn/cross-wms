@@ -11,11 +11,11 @@ import { resolveStatusRuntimeSnapshot } from "./status-runtime-shared.ts";
 type StatusJsonScanLike = {
   cfg: OpenClawConfig;
   sourceConfig: OpenClawConfig;
-  summary: Record<string, unknown>;
+  summary: Record<string, any>;
   update: UpdateCheckResult;
-  osSummary: unknown;
-  memory: unknown;
-  memoryPlugin: unknown;
+  osSummary: any;
+  memory: any;
+  memoryPlugin: any;
   gatewayMode: "local" | "remote";
   gatewayConnection: {
     url: string;
@@ -47,9 +47,9 @@ type StatusJsonScanLike = {
     | null
     | undefined;
   gatewayProbeAuthWarning?: string | null;
-  agentStatus: unknown;
+  agentStatus: any;
   secretDiagnostics: string[];
-  pluginCompatibility?: Array<Record<string, unknown>> | null | undefined;
+  pluginCompatibility?: Array<Record<string, any>> | null | undefined;
 };
 
 /** Builds the status JSON object from a completed scan plus optional runtime/deep probes. */

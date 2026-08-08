@@ -11,7 +11,7 @@ export type ApplyProviderAuthChoiceResult = unknown;
 
 export type PluginProviderAuthChoiceOptions = unknown;
 
-export const testing: unknown = undefined;
+export const testing: any = undefined;
 
 
 

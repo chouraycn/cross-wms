@@ -45,7 +45,7 @@ import type {
 } from "./types.js";
 
 /** Modules available to extensions via virtualModules (for compiled Bun binary) */
-const VIRTUAL_MODULES: Record<string, unknown> = {
+const VIRTUAL_MODULES: Record<string, any> = {
   typebox: bundledTypebox,
   "typebox/compile": bundledTypeboxCompile,
   "typebox/format": bundledTypeboxFormat,
@@ -148,7 +148,7 @@ function resolvePath(extPath: string, cwd: string): string {
   return path.resolve(cwd, expanded);
 }
 
-type HandlerFn = (...args: unknown[]) => Promise<unknown>;
+type HandlerFn = (...args: any[]) => Promise<any>;
 
 /**
  * Create a runtime with throwing stubs for action methods.
@@ -291,7 +291,7 @@ function createExtensionAPI(
       runtime.sendUserMessage(content, options);
     },
 
-    appendEntry(customType: string, data?: unknown): void {
+    appendEntry(customType: string, data?: any): void {
       runtime.assertActive();
       runtime.appendEntry(customType, data);
     },
@@ -367,17 +367,17 @@ function createExtensionAPI(
   return api;
 }
 
-function resolveExtensionFactory(module: unknown): ExtensionFactory | undefined {
+function resolveExtensionFactory(module: any): ExtensionFactory | undefined {
   const candidate =
     typeof module === "object" && module !== null && "default" in module
-      ? (module as { default?: unknown }).default
+      ? (module as { default?: any }).default
       : module;
   if (typeof candidate === "function") {
     return candidate as ExtensionFactory;
   }
   const nestedCandidate =
     typeof candidate === "object" && candidate !== null && "default" in candidate
-      ? (candidate as { default?: unknown }).default
+      ? (candidate as { default?: any }).default
       : undefined;
   return typeof nestedCandidate === "function" ? (nestedCandidate as ExtensionFactory) : undefined;
 }

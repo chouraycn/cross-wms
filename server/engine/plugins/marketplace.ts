@@ -23,7 +23,7 @@ export interface MarketplaceClient {
 export type MarketplaceFetch = (
   url: string,
   init?: { method?: string; headers?: Record<string, string>; body?: string },
-) => Promise<{ ok: boolean; status: number; json(): Promise<unknown> }>;
+) => Promise<{ ok: boolean; status: number; json(): Promise<any> }>;
 
 const DEFAULT_ENDPOINT = 'https://marketplace.local/api';
 

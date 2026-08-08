@@ -420,7 +420,7 @@ describe('config-mutations', () => {
         { path: 'c', op: 'add' as const, newValue: 4 },
       ];
 
-      const result = applyPatch(obj, patches) as Record<string, unknown>;
+      const result = applyPatch(obj, patches) as Record<string, any>;
       expect(result.a).toBe(1);
       expect(result.b).toBe(3);
       expect(result.c).toBe(4);
@@ -438,8 +438,8 @@ describe('config-mutations', () => {
       const obj = { a: { b: 1 } };
       const patches = [{ path: 'a.c', op: 'add' as const, newValue: 2 }];
 
-      const result = applyPatch(obj, patches) as Record<string, unknown>;
-      expect((result.a as Record<string, unknown>).c).toBe(2);
+      const result = applyPatch(obj, patches) as Record<string, any>;
+      expect((result.a as Record<string, any>).c).toBe(2);
     });
   });
 

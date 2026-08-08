@@ -19,7 +19,7 @@ export function createDeliveryResult(params: {
   status: DeliveryStatus;
   attempt?: number;
   error?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }): DeliveryResult {
   return {
     turnId: params.turnId,

@@ -78,11 +78,11 @@ async function createHarness(
   params: {
     allowedDecisions?: string[];
     requestPermission?: ReturnType<typeof vi.fn>;
-    resolveApproval?: (requestParams?: Record<string, unknown>) => unknown;
+    resolveApproval?: (requestParams?: Record<string, any>) => unknown;
   } = {},
 ): Promise<Harness> {
   let runId: string | undefined;
-  const request = vi.fn(async (method: string, requestParams?: Record<string, unknown>) => {
+  const request = vi.fn(async (method: string, requestParams?: Record<string, any>) => {
     if (method === "chat.send") {
       runId = requestParams?.idempotencyKey as string | undefined;
       return { status: "started", runId };
@@ -143,22 +143,22 @@ function approvalResolveCalls(request: ReturnType<typeof vi.fn>) {
 function hasApprovalRelay(agent: AcpGatewayAgent, approvalId: string): boolean {
   const relayMap = (
     agent as unknown as {
-      approvalRelays: Map<string, unknown>;
+      approvalRelays: Map<string, any>;
     }
   ).approvalRelays;
   return relayMap.has(approvalId);
 }
 
-function requireRecord(value: unknown): Record<string, unknown> {
+function requireRecord(value: any): Record<string, any> {
   if (!value) {
     throw new Error("expected record");
   }
   expect(typeof value).toBe("object");
   expect(Array.isArray(value)).toBe(false);
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function firstCallArg(mock: ReturnType<typeof vi.fn>): Record<string, unknown> {
+function firstCallArg(mock: ReturnType<typeof vi.fn>): Record<string, any> {
   const call = mock.mock.calls[0];
   if (!call) {
     throw new Error("expected mock call");
@@ -167,9 +167,9 @@ function firstCallArg(mock: ReturnType<typeof vi.fn>): Record<string, unknown> {
 }
 
 function requestPermissionPayload(mock: ReturnType<typeof vi.fn>): {
-  payload: Record<string, unknown>;
-  toolCall: Record<string, unknown>;
-  rawInput: Record<string, unknown>;
+  payload: Record<string, any>;
+  toolCall: Record<string, any>;
+  rawInput: Record<string, any>;
 } {
   const payload = firstCallArg(mock);
   const toolCall = requireRecord(payload.toolCall);
@@ -257,7 +257,7 @@ describe("ACP translator permission relay", () => {
 
   it("does not bind session-only approval events when multiple prompts share the session key", async () => {
     const runIds: string[] = [];
-    const request = vi.fn(async (method: string, requestParams?: Record<string, unknown>) => {
+    const request = vi.fn(async (method: string, requestParams?: Record<string, any>) => {
       if (method === "chat.send") {
         const runId = requestParams?.idempotencyKey as string;
         runIds.push(runId);
@@ -411,7 +411,7 @@ describe("ACP translator permission relay", () => {
   });
 
   it("does not allow execution when the prompt is cancelled during client permission UI", async () => {
-    let resolvePermission!: (value: unknown) => void;
+    let resolvePermission!: (value: any) => void;
     const harness = await createHarness({
       requestPermission: vi.fn(
         () =>

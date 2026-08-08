@@ -8,7 +8,7 @@
  */
 
 /** Overrides CLI compaction dependencies for focused tests — no-op in cross-wms. */
-export function setCliCompactionTestDeps(_overrides?: Record<string, unknown>): void {
+export function setCliCompactionTestDeps(_overrides?: Record<string, any>): void {
   // No-op: cross-wms does not have the full compaction dependency graph.
 }
 
@@ -23,10 +23,10 @@ export function resetCliCompactionTestDeps(): void {
  * infrastructure is not available.
  */
 export async function runCliTurnCompactionLifecycle(params: {
-  sessionEntry?: unknown;
-  [key: string]: unknown;
-}): Promise<unknown> {
+  sessionEntry?: any;
+  [key: string]: any;
+}): Promise<any> {
   // cross-wms lacks context engines, harness plugins, session managers, etc.
   // Return the session entry unchanged.
-  return (params as { sessionEntry?: unknown }).sessionEntry;
+  return (params as { sessionEntry?: any }).sessionEntry;
 }

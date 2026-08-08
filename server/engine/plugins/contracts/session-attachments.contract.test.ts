@@ -40,7 +40,7 @@ type SessionAttachmentRequest = Parameters<typeof sendPluginSessionAttachment>[0
 type TestSessionEntry = {
   sessionId?: string;
   updatedAt?: number;
-  deliveryContext?: Record<string, unknown>;
+  deliveryContext?: Record<string, any>;
 };
 
 vi.mock("../../channels/plugins/index.js", () => ({
@@ -102,7 +102,7 @@ async function writeSessionEntry(
 }
 
 function mockSuccessfulAttachmentDelivery(messageId = "attachment-1") {
-  workflowMocks.sendMessage.mockImplementation(async (params: Record<string, unknown>) => ({
+  workflowMocks.sendMessage.mockImplementation(async (params: Record<string, any>) => ({
     channel: params.channel,
     to: params.to,
     via: "direct" as const,
@@ -122,8 +122,8 @@ async function sendBundledSessionAttachment(
   });
 }
 
-function expectTelegramAttachmentResult(result: unknown, count: number) {
-  const response = result as { ok?: unknown; channel?: unknown; count?: unknown };
+function expectTelegramAttachmentResult(result: any, count: number) {
+  const response = result as { ok?: any; channel?: any; count?: any };
   expect(response.ok).toBe(true);
   expect(response.channel).toBe("telegram");
   expect(response.count).toBe(count);
@@ -131,7 +131,7 @@ function expectTelegramAttachmentResult(result: unknown, count: number) {
 
 function requireFirstSendMessageParams() {
   const params = workflowMocks.sendMessage.mock.calls[0]?.[0] as
-    | Record<string, unknown>
+    | Record<string, any>
     | undefined;
   if (!params) {
     throw new Error("expected sendMessage call");
@@ -146,7 +146,7 @@ describe("plugin session attachments", () => {
     setActivePluginRegistry(createEmptyPluginRegistry());
     clearPluginLoaderCache();
     delete (globalThis as { proofAttachmentApi?: OpenClawPluginApi }).proofAttachmentApi;
-    delete (globalThis as { proofAttachmentLog?: unknown[] }).proofAttachmentLog;
+    delete (globalThis as { proofAttachmentLog?: any[] }).proofAttachmentLog;
   });
 
   it("resolves channel hint precedence for attachment delivery", () => {

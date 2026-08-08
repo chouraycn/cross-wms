@@ -93,7 +93,7 @@ export class BackfillEngine {
       let totalSize = 0;
 
       for (const item of data) {
-        const messages = (item as { messages?: unknown[] }).messages || [];
+        const messages = (item as { messages?: any[] }).messages || [];
         totalMessages += messages.length;
 
         for (const msg of messages) {
@@ -111,7 +111,7 @@ export class BackfillEngine {
     return stats;
   }
 
-  private async loadSourceData(source: BackfillSource): Promise<unknown[]> {
+  private async loadSourceData(source: BackfillSource): Promise<any[]> {
     switch (source.type) {
       case 'file':
         return this.loadFromFile(source.path!);
@@ -126,7 +126,7 @@ export class BackfillEngine {
     }
   }
 
-  private async loadFromFile(filePath: string): Promise<unknown[]> {
+  private async loadFromFile(filePath: string): Promise<any[]> {
     logger.info('[BackfillEngine] 从文件加载数据:', filePath);
 
     if (!fs.existsSync(filePath)) {
@@ -147,18 +147,18 @@ export class BackfillEngine {
     }
   }
 
-  private async loadFromDatabase(_connectionString: string): Promise<unknown[]> {
+  private async loadFromDatabase(_connectionString: string): Promise<any[]> {
     logger.warn('[BackfillEngine] 数据库数据源尚未实现');
     return [];
   }
 
-  private async loadFromApi(_url: string): Promise<unknown[]> {
+  private async loadFromApi(_url: string): Promise<any[]> {
     logger.warn('[BackfillEngine] API 数据源尚未实现');
     return [];
   }
 
   private async processItem(
-    item: unknown,
+    item: any,
     opts: BackfillOptions
   ): Promise<{ created: boolean; updated: boolean; skipped: boolean }> {
     const data = item as { id?: string; metadata?: Partial<SessionMetadata>; messages?: TranscriptMessage[] };

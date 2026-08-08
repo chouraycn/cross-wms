@@ -38,8 +38,8 @@ function isThinkingBlock(block: AssistantContentBlock): boolean {
   return (
     Boolean(block) &&
     typeof block === "object" &&
-    ((block as { type?: unknown }).type === "thinking" ||
-      (block as { type?: unknown }).type === "redacted_thinking")
+    ((block as { type?: any }).type === "thinking" ||
+      (block as { type?: any }).type === "redacted_thinking")
   );
 }
 
@@ -47,7 +47,7 @@ function isToolCallBlock(block: AssistantContentBlock): boolean {
   if (!block || typeof block !== "object") {
     return false;
   }
-  const type = (block as { type?: unknown }).type;
+  const type = (block as { type?: any }).type;
   return type === "toolCall" || type === "tool_use" || type === "function_call";
 }
 
@@ -59,7 +59,7 @@ function isToolResultMessage(message: AgentMessage): boolean {
   return (
     Boolean(message) &&
     typeof message === "object" &&
-    (message as { role?: unknown }).role === "toolResult"
+    (message as { role?: any }).role === "toolResult"
   );
 }
 
@@ -68,10 +68,10 @@ function isSignedThinkingBlock(block: AssistantContentBlock): boolean {
     return false;
   }
   const record = block as {
-    type?: unknown;
-    signature?: unknown;
-    thinkingSignature?: unknown;
-    thought_signature?: unknown;
+    type?: any;
+    signature?: any;
+    thinkingSignature?: any;
+    thought_signature?: any;
   };
   return (
     record.type === "redacted_thinking" ||
@@ -82,10 +82,10 @@ function isSignedThinkingBlock(block: AssistantContentBlock): boolean {
 }
 
 function hasMeaningfulText(block: AssistantContentBlock): boolean {
-  if (!block || typeof block !== "object" || (block as { type?: unknown }).type !== "text") {
+  if (!block || typeof block !== "object" || (block as { type?: any }).type !== "text") {
     return false;
   }
-  return typeof (block as { text?: unknown }).text === "string"
+  return typeof (block as { text?: any }).text === "string"
     ? (block as { text: string }).text.trim().length > 0
     : false;
 }
@@ -95,7 +95,7 @@ function buildOmittedAssistantReasoningContent(): AssistantContentBlock[] {
   return [{ type: "text", text: OMITTED_ASSISTANT_REASONING_TEXT } as AssistantContentBlock];
 }
 
-function parseTimestampMs(value: unknown): number | null {
+function parseTimestampMs(value: any): number | null {
   if (typeof value === "number" && Number.isFinite(value)) {
     return value;
   }
@@ -111,8 +111,8 @@ function parseTimestampMs(value: unknown): number | null {
 function stripSignatureFieldsFromThinkingBlock(
   block: AssistantContentBlock,
 ): AssistantContentBlock {
-  const record = block as unknown as Record<string, unknown>;
-  const stripped: Record<string, unknown> = {};
+  const record = block as unknown as Record<string, any>;
+  const stripped: Record<string, any> = {};
   for (const key of Object.keys(record)) {
     if (key === "thinkingSignature" || key === "signature" || key === "thought_signature") {
       continue;
@@ -147,7 +147,7 @@ export function stripThinkingSignaturesFromMessage(message: AgentMessage): Agent
       newContent.push(block);
       continue;
     }
-    const record = block as unknown as Record<string, unknown>;
+    const record = block as unknown as Record<string, any>;
     const hasSignature =
       record.thinkingSignature != null ||
       record.signature != null ||
@@ -188,10 +188,10 @@ export function stripStaleThinkingSignaturesForCompactionReplay(
 ): AgentMessage[] {
   let latestCompactionTimestamp: number | null = null;
   for (const message of messages) {
-    if ((message as { role?: unknown }).role !== "compactionSummary") {
+    if ((message as { role?: any }).role !== "compactionSummary") {
       continue;
     }
-    const ts = parseTimestampMs((message as { timestamp?: unknown }).timestamp);
+    const ts = parseTimestampMs((message as { timestamp?: any }).timestamp);
     if (ts !== null) {
       latestCompactionTimestamp =
         latestCompactionTimestamp === null ? ts : Math.max(latestCompactionTimestamp, ts);
@@ -208,7 +208,7 @@ export function stripStaleThinkingSignaturesForCompactionReplay(
       out.push(message);
       continue;
     }
-    const ts = parseTimestampMs((message as { timestamp?: unknown }).timestamp);
+    const ts = parseTimestampMs((message as { timestamp?: any }).timestamp);
     if (ts === null || ts >= latestCompactionTimestamp) {
       out.push(message);
       continue;
@@ -227,13 +227,13 @@ function hasReplayableThinkingSignature(block: AssistantContentBlock): boolean {
     return false;
   }
   const record = block as {
-    data?: unknown;
-    signature?: unknown;
-    thinkingSignature?: unknown;
-    thought_signature?: unknown;
+    data?: any;
+    signature?: any;
+    thinkingSignature?: any;
+    thought_signature?: any;
   };
   const candidates =
-    (block as { type?: unknown }).type === "redacted_thinking"
+    (block as { type?: any }).type === "redacted_thinking"
       ? [record.data, record.signature, record.thinkingSignature, record.thought_signature]
       : [record.signature, record.thinkingSignature, record.thought_signature];
   return candidates.some((signature) => {
@@ -378,7 +378,7 @@ function shouldPreserveCurrentToolTurnReasoning(
   }
 
   for (let i = index - 1; i >= 0; i -= 1) {
-    const role = (messages[i] as { role?: unknown })?.role;
+    const role = (messages[i] as { role?: any })?.role;
     if (role === "user") {
       break;
     }
@@ -389,7 +389,7 @@ function shouldPreserveCurrentToolTurnReasoning(
 
   for (let i = index + 1; i < messages.length; i += 1) {
     const next = messages[i];
-    const role = (next as { role?: unknown })?.role;
+    const role = (next as { role?: any })?.role;
     if (isToolResultMessage(next)) {
       return true;
     }
@@ -418,7 +418,7 @@ export function shouldPreserveLatestAssistantThinking(messages: AgentMessage[]):
 
   let latestUserIndex = -1;
   for (let index = messages.length - 1; index >= 0; index -= 1) {
-    if ((messages[index] as { role?: unknown })?.role === "user") {
+    if ((messages[index] as { role?: any })?.role === "user") {
       latestUserIndex = index;
       break;
     }
@@ -458,7 +458,7 @@ function stripAllThinkingBlocks(messages: AgentMessage[]): AgentMessage[] {
 export function dropReasoningFromHistory(messages: AgentMessage[]): AgentMessage[] {
   let latestUserIndex = -1;
   for (let index = messages.length - 1; index >= 0; index -= 1) {
-    if ((messages[index] as { role?: unknown })?.role === "user") {
+    if ((messages[index] as { role?: any })?.role === "user") {
       latestUserIndex = index;
       break;
     }
@@ -518,7 +518,7 @@ export function assessLastAssistantMessage(message: AgentMessage): RecoveryAsses
       continue;
     }
     hasNonThinkingContent = true;
-    if ((block as { type?: unknown }).type === "text" && !hasMeaningfulText(block)) {
+    if ((block as { type?: any }).type === "text" && !hasMeaningfulText(block)) {
       hasEmptyTextBlock = true;
     }
   }
@@ -536,7 +536,7 @@ export function assessLastAssistantMessage(message: AgentMessage): RecoveryAsses
 }
 
 function shouldRecoverAnthropicThinkingError(
-  error: unknown,
+  error: any,
   sessionMeta: RecoverySessionMeta,
 ): boolean {
   // Provider detail survives genericization in different carriers across the
@@ -576,10 +576,10 @@ function shouldRecoverAnthropicThinkingErrorMessage(
 }
 
 function isAssistantMessageErrorEvent(
-  event: unknown,
+  event: any,
 ): event is Extract<AssistantMessageEvent, { type: "error" }> {
   return (
-    Boolean(event) && typeof event === "object" && (event as { type?: unknown }).type === "error"
+    Boolean(event) && typeof event === "object" && (event as { type?: any }).type === "error"
   );
 }
 
@@ -589,7 +589,7 @@ async function notifyRecoveredAnthropicThinking(
 ): Promise<void> {
   try {
     await sessionMeta.onRecoveredAnthropicThinking?.(recovery);
-  } catch (error: unknown) {
+  } catch (error: any) {
     log.warn(
       `[session-recovery] Anthropic thinking transcript repair hook failed: sessionId=${sessionMeta.id} error=${formatErrorMessage(error)}`,
     );
@@ -638,7 +638,7 @@ async function retryStreamWithoutThinking(
 ): Promise<AssistantMessage> {
   const retryStream = retry();
   const resolvedRetry = retryStream instanceof Promise ? await retryStream : retryStream;
-  for await (const chunk of resolvedRetry as AsyncIterable<unknown>) {
+  for await (const chunk of resolvedRetry as AsyncIterable<any>) {
     outer.push(chunk as Parameters<typeof outer.push>[0]);
   }
   const result = await (resolvedRetry as { result?: () => Promise<AssistantMessage> }).result?.();
@@ -658,7 +658,7 @@ async function pumpStreamWithRecovery(
   let yieldedOutput = false;
   try {
     const resolved = stream instanceof Promise ? await stream : stream;
-    for await (const chunk of resolved as AsyncIterable<unknown>) {
+    for await (const chunk of resolved as AsyncIterable<any>) {
       if (isAssistantMessageErrorEvent(chunk)) {
         if (shouldRecoverAnthropicThinkingError(chunk.error, sessionMeta)) {
           if (yieldedOutput) {
@@ -680,7 +680,7 @@ async function pumpStreamWithRecovery(
     }
     const result = await (resolved as { result?: () => Promise<AssistantMessage> }).result?.();
     return result as AssistantMessage;
-  } catch (error: unknown) {
+  } catch (error: any) {
     if (!shouldRecoverAnthropicThinkingError(error, sessionMeta)) {
       throw error;
     }
@@ -707,14 +707,14 @@ export function wrapAnthropicStreamWithRecovery(
       id: sessionMeta.id,
       onRecoveredAnthropicThinking: sessionMeta.onRecoveredAnthropicThinking,
     };
-    const contextRecord = context as unknown as { messages?: unknown };
+    const contextRecord = context as unknown as { messages?: any };
     const originalMessages = Array.isArray(contextRecord.messages)
       ? (contextRecord.messages as AgentMessage[])
       : [];
     const retry = () => {
       const cleanedMessages = stripAllThinkingBlocks(originalMessages);
       const nextContext = {
-        ...(context as unknown as Record<string, unknown>),
+        ...(context as unknown as Record<string, any>),
         messages: cleanedMessages,
       } as typeof context;
       return innerStreamFn(model, nextContext, options);
@@ -727,7 +727,7 @@ export function wrapAnthropicStreamWithRecovery(
 
     const stream = innerStreamFn(model, context, options);
     if (stream instanceof Promise) {
-      return stream.catch((error: unknown) => {
+      return stream.catch((error: any) => {
         if (!shouldRecoverAnthropicThinkingError(error, requestMeta)) {
           throw error;
         }

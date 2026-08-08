@@ -10,7 +10,7 @@ export type GatewayDiscoverOpts = {
   json?: boolean;
 };
 
-export function parseDiscoverTimeoutMs(raw: unknown, fallbackMs: number): number {
+export function parseDiscoverTimeoutMs(raw: any, fallbackMs: number): number {
   return parseTimeoutMsWithFallback(raw, fallbackMs, { invalidType: "error" });
 }
 

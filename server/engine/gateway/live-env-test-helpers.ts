@@ -3,10 +3,10 @@
 
 export type LiveEnvSnapshot = unknown;
 
-export function snapshotLiveEnv(...args: unknown[]): unknown {
+export function snapshotLiveEnv(...args: any[]): any {
   return undefined;
 }
 
-export function restoreLiveEnv(...args: unknown[]): unknown {
+export function restoreLiveEnv(...args: any[]): any {
   return undefined;
 }

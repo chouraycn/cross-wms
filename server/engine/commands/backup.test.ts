@@ -396,7 +396,7 @@ describe("backup commands", () => {
         throw new Error("backup test expected JSON string output");
       }
       expect(payload).not.toContain("Backup skipped");
-      const parsedPayload = JSON.parse(payload) as { skippedVolatileCount?: unknown };
+      const parsedPayload = JSON.parse(payload) as { skippedVolatileCount?: any };
       expect(parsedPayload.skippedVolatileCount).toBe(1);
     } finally {
       await fs.rm(backupDir, { recursive: true, force: true });

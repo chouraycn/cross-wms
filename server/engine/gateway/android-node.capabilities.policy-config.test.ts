@@ -4,8 +4,8 @@
 import { describe, expect, it } from "vitest";
 import { unwrapRemoteConfigSnapshot } from "../../test/helpers/gateway/android-node-capabilities-policy-config.js";
 
-function asRecord(value: unknown): Record<string, unknown> {
-  return typeof value === "object" && value !== null ? (value as Record<string, unknown>) : {};
+function asRecord(value: any): Record<string, any> {
+  return typeof value === "object" && value !== null ? (value as Record<string, any>) : {};
 }
 
 describe("unwrapRemoteConfigSnapshot", () => {

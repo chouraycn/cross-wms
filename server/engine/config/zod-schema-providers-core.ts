@@ -1083,7 +1083,7 @@ export const SlackConfigSchema = SlackAccountSchema.safeExtend({
   });
 
   const requireRelayConfig = (
-    relay: { url?: unknown; authToken?: unknown; gatewayId?: unknown } | undefined,
+    relay: { url?: any; authToken?: any; gatewayId?: any } | undefined,
     path: (string | number)[],
   ) => {
     if (typeof relay?.url !== "string" || !relay.url.trim()) {

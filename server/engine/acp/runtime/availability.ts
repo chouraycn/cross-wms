@@ -1,1 +1,1 @@
-export const resolveAcpRuntimeAvailability = (..._args: unknown[]): unknown => undefined;
+export const resolveAcpRuntimeAvailability = (..._args: any[]): any => undefined;

@@ -7,9 +7,9 @@ type LiveCatalogCacheEntry<T> = {
 };
 
 const LIVE_CATALOG_CACHE_MAX_ENTRIES = 100;
-const liveCatalogCache = new Map<string, LiveCatalogCacheEntry<unknown>>();
+const liveCatalogCache = new Map<string, LiveCatalogCacheEntry<any>>();
 
-function buildLiveCatalogCacheKey(parts: readonly unknown[]): string {
+function buildLiveCatalogCacheKey(parts: readonly any[]): string {
   return createHash("sha256").update(JSON.stringify(parts)).digest("hex");
 }
 
@@ -30,7 +30,7 @@ function resolveExpiresAtMsFromDurationMs(
 }
 
 export async function getCachedLiveCatalogValue<T>(params: {
-  keyParts: readonly unknown[];
+  keyParts: readonly any[];
   load: () => Promise<T>;
   shouldCache?: (value: T) => boolean;
   ttlMs?: number;
@@ -91,37 +91,37 @@ type ModelDefinitionConfig = {
   api?: string;
   baseUrl?: string;
   reasoning?: boolean;
-  input?: unknown;
-  cost?: unknown;
+  input?: any;
+  cost?: any;
   contextWindow?: number;
   contextTokens?: number;
   maxTokens?: number;
-  headers?: Record<string, unknown>;
-  compat?: Record<string, unknown>;
-  mediaInput?: unknown;
-  [key: string]: unknown;
+  headers?: Record<string, any>;
+  compat?: Record<string, any>;
+  mediaInput?: any;
+  [key: string]: any;
 };
 
 type ModelProviderConfig = {
   baseUrl?: string;
   api?: string;
-  headers?: Record<string, unknown>;
+  headers?: Record<string, any>;
   models?: ModelDefinitionConfig[];
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 export type { ModelProviderConfig, ModelDefinitionConfig };
 
-function countRawManifestCatalogModels(catalog: unknown): number | undefined {
+function countRawManifestCatalogModels(catalog: any): number | undefined {
   if (!catalog || typeof catalog !== "object") {
     return undefined;
   }
-  const models = (catalog as { models?: unknown }).models;
+  const models = (catalog as { models?: any }).models;
   return Array.isArray(models) ? models.length : undefined;
 }
 
 function normalizeConfiguredCatalogModelInput(
-  input: unknown,
+  input: any,
 ): ConfiguredProviderCatalogEntry["input"] | undefined {
   if (!Array.isArray(input)) {
     return undefined;
@@ -146,7 +146,7 @@ function normalizeConfiguredProviderCatalogModelId(
 }
 
 function findNormalizedProviderKey(
-  providers: Record<string, unknown> | undefined,
+  providers: Record<string, any> | undefined,
   providerId: string,
 ): string | undefined {
   if (!providers) {
@@ -165,7 +165,7 @@ type OpenClawConfig = {
   models?: {
     providers?: Record<string, ModelProviderConfig>;
   };
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 function resolveConfiguredProviderModels(

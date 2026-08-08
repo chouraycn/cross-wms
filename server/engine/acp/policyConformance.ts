@@ -30,7 +30,7 @@ export type PolicyConformanceReport = {
 
 type PolicyDocument = {
   readonly displayName: string;
-  readonly value: unknown;
+  readonly value: any;
 };
 
 type PolicyDocumentReadResult =
@@ -50,7 +50,7 @@ type PolicyRuleClaim = {
   readonly propertyPath: string;
 };
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
@@ -61,7 +61,7 @@ function ocPathSegment(value: string): string {
   return JSON.stringify(value);
 }
 
-function getPolicyPath(value: unknown, path: readonly string[]): unknown {
+function getPolicyPath(value: any, path: readonly string[]): any {
   let current = value;
   for (const part of path) {
     if (!isRecord(current)) {

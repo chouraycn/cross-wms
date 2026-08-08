@@ -70,9 +70,9 @@ describe("subscribeEmbeddedAgentSession", () => {
   }
 
   function emitAssistantTextDelta(
-    emit: (evt: unknown) => void,
+    emit: (evt: any) => void,
     delta: string,
-    message: Record<string, unknown> = { role: "assistant" },
+    message: Record<string, any> = { role: "assistant" },
   ) {
     emit({
       type: "message_update",
@@ -85,9 +85,9 @@ describe("subscribeEmbeddedAgentSession", () => {
   }
 
   function emitAssistantTextEnd(
-    emit: (evt: unknown) => void,
+    emit: (evt: any) => void,
     content: string,
-    message: Record<string, unknown> = { role: "assistant" },
+    message: Record<string, any> = { role: "assistant" },
   ) {
     emit({
       type: "message_update",
@@ -118,12 +118,12 @@ describe("subscribeEmbeddedAgentSession", () => {
   }
 
   function emitToolRun(params: {
-    emit: (evt: unknown) => void;
+    emit: (evt: any) => void;
     toolName: string;
     toolCallId: string;
-    args?: Record<string, unknown>;
+    args?: Record<string, any>;
     isError: boolean;
-    result: unknown;
+    result: any;
   }): void {
     params.emit({
       type: "tool_execution_start",
@@ -182,15 +182,15 @@ describe("subscribeEmbeddedAgentSession", () => {
   }
 
   function findBlockReplyPayload(
-    onBlockReply: { mock: { calls: unknown[][] } },
+    onBlockReply: { mock: { calls: any[][] } },
     text: string,
-  ): { mediaUrls?: unknown } | undefined {
+  ): { mediaUrls?: any } | undefined {
     return onBlockReply.mock.calls
-      .map((call) => call[0] as { text?: unknown; mediaUrls?: unknown })
+      .map((call) => call[0] as { text?: any; mediaUrls?: any })
       .find((payload) => payload.text === text);
   }
 
-  function mockCallArg(mock: { mock: { calls: unknown[][] } }, callIndex = 0): unknown {
+  function mockCallArg(mock: { mock: { calls: any[][] } }, callIndex = 0): any {
     const call = mock.mock.calls[callIndex];
     if (!call) {
       throw new Error(`expected mock call ${callIndex + 1}`);
@@ -198,12 +198,12 @@ describe("subscribeEmbeddedAgentSession", () => {
     return call[0];
   }
 
-  function latestMockCallArg(mock: { mock: { calls: unknown[][] } }): unknown {
+  function latestMockCallArg(mock: { mock: { calls: any[][] } }): any {
     return mockCallArg(mock, mock.mock.calls.length - 1);
   }
 
   function expectBlockReplyPayload(
-    onBlockReply: { mock: { calls: unknown[][] } },
+    onBlockReply: { mock: { calls: any[][] } },
     expected: { text: string; mediaUrls?: string[] },
   ): void {
     const payload = findBlockReplyPayload(onBlockReply, expected.text);
@@ -216,7 +216,7 @@ describe("subscribeEmbeddedAgentSession", () => {
   }
 
   function expectLifecyclePayload(
-    payloads: Array<Record<string, unknown>>,
+    payloads: Array<Record<string, any>>,
     expected: { phase: string; livenessState: string; replayInvalid: boolean },
   ): void {
     const payload = payloads.find(
@@ -1319,7 +1319,7 @@ describe("subscribeEmbeddedAgentSession", () => {
     if (!lifecycleError) {
       throw new Error("Expected lifecycle error event");
     }
-    const error = (lifecycleError.data as { error?: unknown } | undefined)?.error;
+    const error = (lifecycleError.data as { error?: any } | undefined)?.error;
     expect(typeof error).toBe("string");
     expect(error).toContain("API rate limit reached");
   });

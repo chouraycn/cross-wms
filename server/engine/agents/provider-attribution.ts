@@ -16,24 +16,24 @@ export type ProviderRequestPolicyResolution = unknown;
 export type ProviderRequestCapabilitiesInput = unknown;
 export type ProviderRequestCompatibilityFamily = unknown;
 export type ProviderRequestCapabilities = unknown;
-export function resolveProviderEndpoint(..._args: unknown[]): unknown {
+export function resolveProviderEndpoint(..._args: any[]): any {
   return undefined;
 }
-export function resolveProviderAttributionIdentity(..._args: unknown[]): unknown {
+export function resolveProviderAttributionIdentity(..._args: any[]): any {
   return undefined;
 }
-export function listProviderAttributionPolicies(..._args: unknown[]): unknown {
+export function listProviderAttributionPolicies(..._args: any[]): any {
   return [];
 }
-export function resolveProviderAttributionPolicy(..._args: unknown[]): unknown {
+export function resolveProviderAttributionPolicy(..._args: any[]): any {
   return undefined;
 }
-export function resolveProviderRequestPolicy(..._args: unknown[]): unknown {
+export function resolveProviderRequestPolicy(..._args: any[]): any {
   return undefined;
 }
-export function resolveProviderRequestCapabilities(..._args: unknown[]): unknown {
+export function resolveProviderRequestCapabilities(..._args: any[]): any {
   return undefined;
 }
-export function describeProviderRequestRoutingSummary(..._args: unknown[]): unknown {
+export function describeProviderRequestRoutingSummary(..._args: any[]): any {
   return "";
 }

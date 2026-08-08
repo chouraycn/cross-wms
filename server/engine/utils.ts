@@ -45,10 +45,10 @@ export function safeParseJson<T>(raw: string): T | null {
 export { isPlainObject };
 
 /**
- * Type guard for Record<string, unknown> (less strict than isPlainObject).
+ * Type guard for Record<string, any> (less strict than isPlainObject).
  * Accepts any non-null object that isn't an array.
  */
-export function isRecord(value: unknown): value is Record<string, unknown> {
+export function isRecord(value: any): value is Record<string, any> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 

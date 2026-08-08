@@ -18,8 +18,8 @@ export type IdentifierPolicy = 'strict' | 'off' | 'custom';
 /** 压缩消息类型 */
 export interface CompactionMessage {
   role: string;
-  content: unknown;
-  tool_calls?: unknown[];
+  content: any;
+  tool_calls?: any[];
   tool_call_id?: string;
 }
 
@@ -340,7 +340,7 @@ export class BuiltinSummarizeProvider implements CompactionProvider {
   /**
    * 从消息内容中提取文本。
    */
-  private extractText(content: unknown): string {
+  private extractText(content: any): string {
     if (typeof content === 'string') return content;
     if (Array.isArray(content)) {
       return (content as Array<{ text?: string }>)

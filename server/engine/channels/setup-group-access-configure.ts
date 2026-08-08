@@ -5,7 +5,7 @@
 export async function configureChannelAccessWithAllowlist(params: {
   channel: string;
   allowlist?: string[];
-  cfg?: unknown;
+  cfg?: any;
 }): Promise<{ ok: boolean; error?: string }> {
   if (!params.channel?.trim()) {
     return { ok: false, error: "missing channel" };

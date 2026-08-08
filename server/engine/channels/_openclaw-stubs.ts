@@ -85,7 +85,7 @@ export type AccessGroupConfig = {
   members?: Array<string | number>;
   /** 动态成员来源描述（平台特定解析）。 */
   source?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 // ============================================================================
@@ -135,7 +135,7 @@ export type ChannelAccountSnapshot = {
   cliPath?: string;
   dbPath?: string;
   port?: number;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 /** 通道元数据（与 openclaw plugins/types.core ChannelMeta 一致的最小结构）。 */
@@ -148,7 +148,7 @@ export type ChannelMeta = {
   blurb?: string;
   detailLabel?: string;
   systemImage?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 // ============================================================================
@@ -158,17 +158,17 @@ export type ChannelMeta = {
 /** 通道插件配置子结构（与 openclaw plugins/types.plugin 一致的最小契约）。 */
 export type ChannelPluginConfig = {
   id: string;
-  resolveAccount: (cfg: unknown, accountId: string) => unknown;
-  inspectAccount?: (cfg: unknown, accountId: string) => Promise<unknown> | unknown;
-  describeAccount?: (account: unknown, cfg: unknown) => Record<string, unknown> | undefined;
+  resolveAccount: (cfg: any, accountId: string) => unknown;
+  inspectAccount?: (cfg: any, accountId: string) => Promise<any> | unknown;
+  describeAccount?: (account: any, cfg: any) => Record<string, any> | undefined;
   formatAllowFrom?: (params: {
-    cfg: unknown;
+    cfg: any;
     accountId?: string | null;
     allowFrom: Array<string | number>;
   }) => string[];
-  isEnabled?: (account: unknown, cfg: unknown) => boolean;
-  isConfigured?: (account: unknown, cfg: unknown) => Promise<boolean> | boolean;
-  [key: string]: unknown;
+  isEnabled?: (account: any, cfg: any) => boolean;
+  isConfigured?: (account: any, cfg: any) => Promise<boolean> | boolean;
+  [key: string]: any;
 };
 
 /** 通道插件（与 openclaw plugins/types.plugin 一致的最小契约）。 */
@@ -188,7 +188,7 @@ export type ChannelPlugin = {
     aliases?: readonly string[];
     markdownCapable?: boolean;
   } | null;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 // ============================================================================
@@ -217,7 +217,7 @@ export type PluginPackageChannel = {
   systemImage?: string;
   aliases?: string[];
   order?: number;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 // ============================================================================
@@ -269,13 +269,13 @@ export function normalizeChannelId(raw?: string | null): string | undefined {
  */
 export function getBundledChannelAccountInspector(
   channelId: string,
-): ((cfg: unknown, accountId?: string | null) => Promise<unknown> | unknown) | undefined {
+): ((cfg: any, accountId?: string | null) => Promise<any> | unknown) | undefined {
   const plugin = getLoadedChannelPlugin(channelId);
   const inspectAccount = plugin?.config?.inspectAccount;
   if (typeof inspectAccount !== "function") {
     return undefined;
   }
-  return inspectAccount as (cfg: unknown, accountId?: string | null) => Promise<unknown> | unknown;
+  return inspectAccount as (cfg: any, accountId?: string | null) => Promise<any> | unknown;
 }
 
 /**
@@ -300,7 +300,7 @@ export function resolveBundledChannelThreadBindingDefaultPlacement(
  */
 export function listBundledChannelIds(
   env?: NodeJS.ProcessEnv,
-  discovery?: unknown,
+  discovery?: any,
 ): readonly string[] {
   try {
     // 延迟导入以避免循环依赖
@@ -309,7 +309,7 @@ export function listBundledChannelIds(
       listChannelCatalogEntries: (params: {
         origin?: string;
         env?: NodeJS.ProcessEnv;
-        discovery?: unknown;
+        discovery?: any;
       }) => Array<{ channel?: { id?: string } }>;
     };
     return listChannelCatalogEntries({
@@ -336,7 +336,7 @@ export function listBundledChannelIds(
  * cross-wms 降级为：检查已加载通道插件是否声明了 token 相关配置来源
  * （tokenSource / botTokenSource / appTokenSource / signingSecretSource）。
  */
-export function listBundledChannelIdsWithPersistedAuthState(_discovery?: unknown): readonly string[] {
+export function listBundledChannelIdsWithPersistedAuthState(_discovery?: any): readonly string[] {
   const result: string[] = [];
   for (const channelId of CHAT_CHANNEL_ORDER) {
     const plugin = getLoadedChannelPlugin(channelId);
@@ -364,9 +364,9 @@ export function listBundledChannelIdsWithPersistedAuthState(_discovery?: unknown
  */
 export function hasBundledChannelPersistedAuthState(params: {
   channelId: string;
-  cfg: unknown;
+  cfg: any;
   env?: NodeJS.ProcessEnv;
-  discovery?: unknown;
+  discovery?: any;
 }): boolean {
   const channelId = params.channelId?.trim().toLowerCase();
   if (!channelId) {
@@ -451,7 +451,7 @@ export type StreamingCompatEntry = {
   previewToolProgress?: boolean;
   commentaryProgress?: boolean;
   suppressDefaultToolProgressMessages?: boolean;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 /** 流式模式（与 openclaw streaming 一致）。 */
@@ -468,24 +468,24 @@ export type ChannelProgressDraftLine = {
   status?: string;
   toolName?: string;
   prefix?: boolean;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 /** 解析通道流式预览块大小（移植自 openclaw channels/streaming.ts）。 */
 export function resolveChannelStreamingPreviewChunk(
-  entry: unknown,
+  entry: any,
 ): StreamingCompatEntry | undefined {
   if (!entry || typeof entry !== "object") {
     return undefined;
   }
-  const record = entry as Record<string, unknown>;
+  const record = entry as Record<string, any>;
   const streaming =
     record.streaming && typeof record.streaming === "object"
-      ? (record.streaming as Record<string, unknown>)
+      ? (record.streaming as Record<string, any>)
       : null;
   const configChunk =
     streaming && streaming.preview && typeof streaming.preview === "object"
-      ? (streaming.preview as Record<string, unknown>).chunk
+      ? (streaming.preview as Record<string, any>).chunk
       : undefined;
   const draftChunk = record.draftChunk;
   const chunk = configChunk ?? draftChunk;
@@ -537,7 +537,7 @@ export function createChannelProgressDraftGate(params: {
           startPromise = undefined;
         }
       })
-      .catch((error: unknown) => {
+      .catch((error: any) => {
         if (startPromise === nextStart) {
           startPromise = undefined;
         }
@@ -554,7 +554,7 @@ export function createChannelProgressDraftGate(params: {
     }
     timer = setTimeout(() => {
       timer = undefined;
-      void start().catch((error: unknown) => {
+      void start().catch((error: any) => {
         // 定时器启动失败没有等待的调用方，在此 SDK 边界报告
         console.warn(`[progress-draft] channel progress draft failed to start: ${String(error)}`);
       });
@@ -689,7 +689,7 @@ export function mergeChannelProgressDraftLine<TLine>(
 
 /** 规范化进度草稿行身份（移植自 openclaw channels/streaming.ts）。 */
 export function normalizeChannelProgressDraftLineIdentity(
-  line: unknown,
+  line: any,
 ): string | undefined {
   if (!line) {
     return undefined;
@@ -708,19 +708,19 @@ export function normalizeChannelProgressDraftLineIdentity(
 }
 
 /** 解析进度草稿最大行字符数（移植自 openclaw channels/streaming.ts）。 */
-export function resolveChannelProgressDraftMaxLineChars(entry: unknown): number {
+export function resolveChannelProgressDraftMaxLineChars(entry: any): number {
   const defaultChars = 120;
   if (!entry || typeof entry !== "object") {
     return defaultChars;
   }
-  const record = entry as Record<string, unknown>;
+  const record = entry as Record<string, any>;
   const streaming =
     record.streaming && typeof record.streaming === "object"
-      ? (record.streaming as Record<string, unknown>)
+      ? (record.streaming as Record<string, any>)
       : null;
   const progress =
     streaming && streaming.progress && typeof streaming.progress === "object"
-      ? (streaming.progress as Record<string, unknown>)
+      ? (streaming.progress as Record<string, any>)
       : null;
   const configured = progress?.maxLineChars;
   return typeof configured === "number" && Number.isInteger(configured) && configured > 0
@@ -729,19 +729,19 @@ export function resolveChannelProgressDraftMaxLineChars(entry: unknown): number 
 }
 
 /** 解析进度草稿最大行数（移植自 openclaw channels/streaming.ts）。 */
-export function resolveChannelProgressDraftMaxLines(entry: unknown): number {
+export function resolveChannelProgressDraftMaxLines(entry: any): number {
   const defaultLines = 8;
   if (!entry || typeof entry !== "object") {
     return defaultLines;
   }
-  const record = entry as Record<string, unknown>;
+  const record = entry as Record<string, any>;
   const streaming =
     record.streaming && typeof record.streaming === "object"
-      ? (record.streaming as Record<string, unknown>)
+      ? (record.streaming as Record<string, any>)
       : null;
   const progress =
     streaming && streaming.progress && typeof streaming.progress === "object"
-      ? (streaming.progress as Record<string, unknown>)
+      ? (streaming.progress as Record<string, any>)
       : null;
   const configured = progress?.maxLines;
   return typeof configured === "number" && Number.isInteger(configured) && configured > 0
@@ -750,14 +750,14 @@ export function resolveChannelProgressDraftMaxLines(entry: unknown): number {
 }
 
 /** 解析通道流式进度评论开关（移植自 openclaw channels/streaming.ts）。 */
-export function resolveChannelStreamingProgressCommentary(entry: unknown): boolean {
+export function resolveChannelStreamingProgressCommentary(entry: any): boolean {
   if (!entry || typeof entry !== "object") {
     return false;
   }
-  const record = entry as Record<string, unknown>;
+  const record = entry as Record<string, any>;
   const streaming =
     record.streaming && typeof record.streaming === "object"
-      ? (record.streaming as Record<string, unknown>)
+      ? (record.streaming as Record<string, any>)
       : null;
   // 仅 progress 模式下才可能开启评论
   const mode = streaming?.mode ?? record.streamMode;
@@ -766,7 +766,7 @@ export function resolveChannelStreamingProgressCommentary(entry: unknown): boole
   }
   const progress =
     streaming && streaming.progress && typeof streaming.progress === "object"
-      ? (streaming.progress as Record<string, unknown>)
+      ? (streaming.progress as Record<string, any>)
       : null;
   const commentary = progress?.commentary;
   if (typeof commentary === "boolean") {
@@ -776,18 +776,18 @@ export function resolveChannelStreamingProgressCommentary(entry: unknown): boole
 }
 
 /** 解析通道流式预览工具进度开关（移植自 openclaw channels/streaming.ts）。 */
-export function resolveChannelStreamingPreviewToolProgress(entry: unknown): boolean {
+export function resolveChannelStreamingPreviewToolProgress(entry: any): boolean {
   if (!entry || typeof entry !== "object") {
     return true;
   }
-  const record = entry as Record<string, unknown>;
+  const record = entry as Record<string, any>;
   const streaming =
     record.streaming && typeof record.streaming === "object"
-      ? (record.streaming as Record<string, unknown>)
+      ? (record.streaming as Record<string, any>)
       : null;
   const preview =
     streaming && streaming.preview && typeof streaming.preview === "object"
-      ? (streaming.preview as Record<string, unknown>)
+      ? (streaming.preview as Record<string, any>)
       : null;
   const toolProgress = preview?.toolProgress;
   return typeof toolProgress === "boolean" ? toolProgress : true;
@@ -795,7 +795,7 @@ export function resolveChannelStreamingPreviewToolProgress(entry: unknown): bool
 
 /** 解析通道流式抑制默认工具进度消息（移植自 openclaw channels/streaming.ts）。 */
 export function resolveChannelStreamingSuppressDefaultToolProgressMessages(
-  entry: unknown,
+  entry: any,
   options?: { draftStreamActive?: boolean; previewToolProgressEnabled?: boolean },
 ): boolean {
   if (options?.draftStreamActive === false) {
@@ -804,10 +804,10 @@ export function resolveChannelStreamingSuppressDefaultToolProgressMessages(
   if (!entry || typeof entry !== "object") {
     return false;
   }
-  const record = entry as Record<string, unknown>;
+  const record = entry as Record<string, any>;
   const streaming =
     record.streaming && typeof record.streaming === "object"
-      ? (record.streaming as Record<string, unknown>)
+      ? (record.streaming as Record<string, any>)
       : null;
   const mode = streaming?.mode ?? record.streamMode;
   if (mode === "off" || !mode) {
@@ -859,7 +859,7 @@ export async function deliverFinalizableLivePreview<TPayload, TId, TEdit>(params
   deliverNormally: (payload: TPayload) => Promise<boolean | void>;
   onPreviewFinalized?: (id: TId) => Promise<void> | void;
   onNormalDelivered?: () => Promise<void> | void;
-  logPreviewEditFailure?: (error: unknown) => void;
+  logPreviewEditFailure?: (error: any) => void;
 }): Promise<{ kind: LivePreviewFinalizerResultKind }> {
   // 非 final 或无 draft 时直接正常投递
   if (params.kind !== "final" || !params.draft) {
@@ -953,7 +953,7 @@ export function buildManifestChannelMeta(params: {
 
 /** 访问组成员关系解析器（降级占位，与 openclaw plugin-sdk/access-groups 兼容）。 */
 export type AccessGroupMembershipResolver = (params: {
-  cfg: unknown;
+  cfg: any;
   channel: string;
   accountId: string;
   senderId: string;
@@ -968,7 +968,7 @@ export type AccessGroupMembershipResolver = (params: {
  * 具体发送者条目。延迟 require 避免循环依赖。
  */
 export async function expandAllowFromWithAccessGroups(params: {
-  cfg: unknown;
+  cfg: any;
   allowFrom?: Array<string | number> | null;
   channel: string;
   accountId: string;
@@ -980,14 +980,14 @@ export async function expandAllowFromWithAccessGroups(params: {
      
     const { expandAllowFromWithAccessGroups: expandImpl } = require("../plugin-sdk/access-groups.js") as {
       expandAllowFromWithAccessGroups: (params: {
-        cfg?: unknown;
+        cfg?: any;
         allowFrom?: Array<string | number> | null;
         channel: string;
         accountId: string;
         senderId: string;
         senderAllowEntry?: string;
         isSenderAllowed?: (senderId: string, allowFrom: string[]) => boolean;
-        resolveMembership?: unknown;
+        resolveMembership?: any;
       }) => Promise<string[]>;
     };
     return await expandImpl({
@@ -1245,7 +1245,7 @@ export type ChannelRouteRef = {
   to?: string;
   threadId?: string | number;
   threadSource?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 /** 规范化通道路由引用（降级：返回原值）。 */
@@ -1267,13 +1267,13 @@ export type ConversationRef = {
   conversationId?: string;
   parentConversationId?: string;
   threadId?: string | number;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 /** 会话绑定记录（与 openclaw infra/outbound/session-binding-service 一致的最小结构）。 */
 export type SessionBindingRecord = {
   conversation?: ConversationRef | null;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 // ============================================================================
@@ -1288,15 +1288,15 @@ export type ActivePluginChannelRegistration = {
       aliases?: readonly string[];
       markdownCapable?: boolean;
     } | null;
-    [key: string]: unknown;
+    [key: string]: any;
   };
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 /** 活动插件通道注册表（与 PluginRegistry 结构兼容）。 */
 export type ActivePluginChannelRegistry = {
   channels?: ActivePluginChannelRegistration[];
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 /** 取活动插件通道注册表快照（复用真实实现）。 */
@@ -1320,7 +1320,7 @@ export function getActivePluginChannelRegistrySnapshotFromState(): {
  * 复用 cross-wms 已有的真实实现（auto-reply/envelope.ts），
  * 该文件已完整移植自 openclaw。延迟 require 避免循环依赖。
  */
-export function resolveEnvelopeFormatOptions(cfg: unknown): Record<string, unknown> {
+export function resolveEnvelopeFormatOptions(cfg: any): Record<string, any> {
   try {
      
     const { resolveEnvelopeFormatOptions: resolveImpl } = require("../auto-reply/envelope.js") as {
@@ -1329,10 +1329,10 @@ export function resolveEnvelopeFormatOptions(cfg: unknown): Record<string, unkno
         envelopeTimestamp?: string;
         envelopeElapsed?: string;
         userTimezone?: string;
-      }) => Record<string, unknown>;
+      }) => Record<string, any>;
     };
     // cross-wms 的 agents.defaults 子结构包含 envelope 相关字段
-    const defaults = (cfg as { agents?: { defaults?: Record<string, unknown> } })?.agents?.defaults;
+    const defaults = (cfg as { agents?: { defaults?: Record<string, any> } })?.agents?.defaults;
     return resolveImpl(
       defaults as Parameters<typeof resolveImpl>[0],
     );
@@ -1366,7 +1366,7 @@ export function readSessionUpdatedAt(params: {
 
 /** 解析 store 路径（移植自 openclaw config/sessions/paths.ts，最小实现）。 */
 export function resolveStorePath(
-  storeCfg: unknown,
+  storeCfg: any,
   opts?: { agentId?: string },
 ): string | undefined {
   if (typeof storeCfg === "string" && storeCfg.trim()) {
@@ -1379,7 +1379,7 @@ export function resolveStorePath(
 
 /** 解析文本块大小限制（移植自 openclaw auto-reply/chunk.ts）。 */
 export function resolveTextChunkLimit(
-  cfg: unknown,
+  cfg: any,
   channelId: string,
   accountId: string | null | undefined,
   opts: { fallbackLimit: number },
@@ -1391,15 +1391,15 @@ export function resolveTextChunkLimit(
   if (!cfg || typeof cfg !== "object" || !channelId) {
     return fallback;
   }
-  const cfgRecord = cfg as Record<string, unknown>;
-  const channelsConfig = cfgRecord.channels as Record<string, unknown> | undefined;
-  const providerConfig = channelsConfig?.[channelId] as Record<string, unknown> | undefined;
+  const cfgRecord = cfg as Record<string, any>;
+  const channelsConfig = cfgRecord.channels as Record<string, any> | undefined;
+  const providerConfig = channelsConfig?.[channelId] as Record<string, any> | undefined;
   if (!providerConfig) {
     return fallback;
   }
   // 检查 account 级别覆盖
   if (accountId) {
-    const accounts = providerConfig.accounts as Record<string, Record<string, unknown>> | undefined;
+    const accounts = providerConfig.accounts as Record<string, Record<string, any>> | undefined;
     const accountCfg = accounts?.[accountId];
     const accountLimit = accountCfg?.chunkLimit ?? accountCfg?.textChunkLimit;
     if (typeof accountLimit === "number" && accountLimit > 0) {
@@ -1431,7 +1431,7 @@ import {
 
 /** 解析入站去抖动毫秒（复用真实实现）。 */
 export function resolveInboundDebounceMs(params: {
-  cfg: unknown;
+  cfg: any;
   channel: string;
   overrideMs?: number;
 }): number {
@@ -1440,7 +1440,7 @@ export function resolveInboundDebounceMs(params: {
 
 /** 入站去抖动创建参数（保留索引签名以兼容调用方解构）。 */
 export type InboundDebounceCreateParams<T> = InboundDebounceCreateParamsImpl<T> & {
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 /** 入站去抖动器（与 openclaw 真实实现一致）。 */
@@ -1467,7 +1467,7 @@ export type CommandNormalizeOptions = {
  */
 export function isControlCommandMessage(
   text: string,
-  cfg: unknown,
+  cfg: any,
   options?: CommandNormalizeOptions,
 ): boolean {
   try {
@@ -1475,7 +1475,7 @@ export function isControlCommandMessage(
     const { isControlCommandMessage: detectImpl } = require("../auto-reply/command-detection.js") as {
       isControlCommandMessage: (
         text?: string,
-        cfg?: unknown,
+        cfg?: any,
         options?: { botUsername?: string },
       ) => boolean;
     };
@@ -1505,9 +1505,9 @@ export function normalizeAccountId(value?: string | null): string {
  * 延迟 require 避免循环依赖。
  */
 export function resolveAccountEntry(
-  accounts?: Record<string, unknown>,
+  accounts?: Record<string, any>,
   accountId?: string,
-): unknown {
+): any {
   if (!accounts || typeof accounts !== "object" || !accountId) {
     return undefined;
   }
@@ -1549,7 +1549,7 @@ export type ThreadBindingLifecycleRecord = {
   idleTimeoutMs?: number;
   /** 可选的最大存活时间覆盖（毫秒）；0 表示禁用最大存活过期。 */
   maxAgeMs?: number;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 /**
@@ -1669,12 +1669,12 @@ export function formatReasoningMessage(text: string): string {
 // ============================================================================
 
 /** 判断值是否为 record 对象（与 openclaw utils.js 中 isRecord 一致）。 */
-export function isRecord(value: unknown): value is Record<string, unknown> {
+export function isRecord(value: any): value is Record<string, any> {
   return value != null && typeof value === "object" && !Array.isArray(value);
 }
 
 /** 判断值是否非空字符串。 */
-export function hasNonEmptyString(value: unknown): value is string {
+export function hasNonEmptyString(value: any): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
 
@@ -1683,7 +1683,7 @@ export function hasNonEmptyString(value: unknown): value is string {
 // ============================================================================
 
 /** 强制转换为 boolean（与 openclaw utils/boolean 一致）。 */
-export function asBoolean(value: unknown): boolean | undefined {
+export function asBoolean(value: any): boolean | undefined {
   if (typeof value === "boolean") {
     return value;
   }
@@ -1766,7 +1766,7 @@ function readPackageNameSync(dir: string): string | null {
       return null;
     }
     const content = fs.readFileSync(packageJsonPath, "utf-8");
-    const parsed = JSON.parse(content) as { name?: unknown };
+    const parsed = JSON.parse(content) as { name?: any };
     return typeof parsed.name === "string" ? parsed.name : null;
   } catch {
     return null;

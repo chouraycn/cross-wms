@@ -28,8 +28,8 @@ type WebLoginProvider = NonNullable<ReturnType<typeof resolveWebLoginProvider>>;
 type WebLoginGateway = NonNullable<WebLoginProvider["gateway"]>;
 type WebLoginGatewayMethod = "loginWithQrStart" | "loginWithQrWait";
 
-function resolveAccountId(params: unknown): string | undefined {
-  return typeof (params as { accountId?: unknown }).accountId === "string"
+function resolveAccountId(params: any): string | undefined {
+  return typeof (params as { accountId?: any }).accountId === "string"
     ? (params as { accountId?: string }).accountId
     : undefined;
 }
@@ -50,13 +50,13 @@ function respondProviderUnsupported(respond: RespondFn, providerId: string) {
   );
 }
 
-function respondWebLoginUnavailable(respond: RespondFn, err: unknown) {
+function respondWebLoginUnavailable(respond: RespondFn, err: any) {
   respond(false, undefined, errorShape(ErrorCodes.UNAVAILABLE, formatForLog(err)));
 }
 
 /** Resolves a concrete provider gateway login method or sends the public error. */
 function resolveWebLoginRequest<TMethod extends WebLoginGatewayMethod>(params: {
-  rawParams: unknown;
+  rawParams: any;
   respond: RespondFn;
   gatewayMethod: TMethod;
 }): {

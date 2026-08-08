@@ -129,13 +129,13 @@ function createGoogleChatSecretContractApi() {
     },
   ];
   const collectRuntimeConfigAssignments = (params: {
-    config: { channels?: { googlechat?: Record<string, unknown> } };
+    config: { channels?: { googlechat?: Record<string, any> } };
     context: {
       assignments: Array<{
-        ref: unknown;
+        ref: any;
         path: string;
         expected: "string-or-object";
-        apply: (value: unknown) => void;
+        apply: (value: any) => void;
       }>;
       warnings: Array<{ code: string; path: string; message: string }>;
     };
@@ -144,7 +144,7 @@ function createGoogleChatSecretContractApi() {
     if (!googlechat) {
       return;
     }
-    const collect = (target: Record<string, unknown>, pathKey: string, active: boolean) => {
+    const collect = (target: Record<string, any>, pathKey: string, active: boolean) => {
       const refValue = target.serviceAccountRef;
       if (!refValue) {
         return;
@@ -169,7 +169,7 @@ function createGoogleChatSecretContractApi() {
     };
 
     collect(googlechat, "channels.googlechat", googlechat.enabled !== false);
-    const accounts = googlechat.accounts as Record<string, Record<string, unknown>> | undefined;
+    const accounts = googlechat.accounts as Record<string, Record<string, any>> | undefined;
     for (const [accountId, account] of Object.entries(accounts ?? {})) {
       collect(account, `channels.googlechat.accounts.${accountId}`, account.enabled !== false);
     }
@@ -203,7 +203,7 @@ function expectMetadataBackedContractsWereUsed(
   }
 }
 
-function expectResolvedPaths(config: OpenClawConfig, expected: Record<string, unknown>) {
+function expectResolvedPaths(config: OpenClawConfig, expected: Record<string, any>) {
   for (const [pathKey, expectedValue] of Object.entries(expected)) {
     expect(getPath(config, pathKey.split(".")), pathKey).toBe(expectedValue);
   }
@@ -326,8 +326,8 @@ describe("secrets runtime externalized channel SecretRef audit", () => {
           },
         },
       });
-      const channels = (config as { channels: Record<string, unknown> }).channels;
-      (config as { channels: Record<string, unknown> }).channels = {
+      const channels = (config as { channels: Record<string, any> }).channels;
+      (config as { channels: Record<string, any> }).channels = {
         [channelId]: channels[channelId],
       };
 

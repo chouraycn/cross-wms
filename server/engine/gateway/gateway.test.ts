@@ -420,8 +420,8 @@ module.exports = {
           .poll(
             async () => {
               const parsed = JSON.parse(await fs.readFile(configPath, "utf8"));
-              const token = (parsed as Record<string, unknown>)?.gateway as
-                | Record<string, unknown>
+              const token = (parsed as Record<string, any>)?.gateway as
+                | Record<string, any>
                 | undefined;
               return (token?.auth as { token?: string } | undefined)?.token;
             },
@@ -506,7 +506,7 @@ module.exports = {
 
       try {
         const parsed = JSON.parse(await fs.readFile(configPath, "utf8")) as {
-          channels?: Record<string, unknown>;
+          channels?: Record<string, any>;
           plugins?: { entries?: Record<string, { enabled?: boolean }> };
         };
         expect(parsed.plugins?.entries?.discord).toBeUndefined();

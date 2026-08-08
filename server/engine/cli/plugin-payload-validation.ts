@@ -1,5 +1,5 @@
 
-export async function runPluginPayloadSmokeCheck(..._args: unknown[]): Promise<void> {
+export async function runPluginPayloadSmokeCheck(..._args: any[]): Promise<void> {
   console.warn('runPluginPayloadSmokeCheck is not available in cross-wms');
 }
 

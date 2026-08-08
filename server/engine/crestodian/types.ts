@@ -24,7 +24,7 @@ export interface CrestodianProbeResult {
   name: string;
   status: CrestodianStatus;
   message: string;
-  details?: Record<string, unknown>;
+  details?: Record<string, any>;
   durationMs: number;
   timestamp: string;
 }
@@ -55,7 +55,7 @@ export interface CrestodianAuditEntry {
   initiator: 'system' | 'user' | 'automatic';
   message: string;
   durationMs?: number;
-  details?: Record<string, unknown>;
+  details?: Record<string, any>;
   error?: string;
 }
 
@@ -88,7 +88,7 @@ export interface CrestodianDialogueMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
   timestamp: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface CrestodianAssistantPlan {
@@ -105,7 +105,7 @@ export interface CrestodianOperationResult {
   operation: CrestodianOperationType;
   message: string;
   durationMs: number;
-  details?: Record<string, unknown>;
+  details?: Record<string, any>;
   error?: string;
 }
 

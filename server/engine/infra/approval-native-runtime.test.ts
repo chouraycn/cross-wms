@@ -10,7 +10,7 @@ import {
 const hoisted = vi.hoisted(() => ({
   callGatewayLeastPrivilege: vi.fn(async () => ({ ok: true })),
   createOperatorApprovalsGatewayClient: vi.fn(
-    async (params: { onHelloOk?: (hello: unknown) => void }) => {
+    async (params: { onHelloOk?: (hello: any) => void }) => {
       queueMicrotask(() => params.onHelloOk?.({ type: "hello-ok" }));
       return {
         request: vi.fn(async () => ({ ok: true })),
@@ -53,14 +53,14 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-function requireRecord(value: unknown): Record<string, unknown> {
+function requireRecord(value: any): Record<string, any> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("Expected a non-array record");
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function mockCallArg(mock: ReturnType<typeof vi.fn>, index = 0): Record<string, unknown> {
+function mockCallArg(mock: ReturnType<typeof vi.fn>, index = 0): Record<string, any> {
   const arg = mock.mock.calls[index]?.[0];
   return requireRecord(arg);
 }

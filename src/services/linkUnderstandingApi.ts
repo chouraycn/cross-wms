@@ -26,7 +26,7 @@ export interface LinkInfo {
 export interface LinkMetadata {
   openGraph?: Record<string, string>;
   twitter?: Record<string, string>;
-  jsonLd?: unknown[];
+  jsonLd?: any[];
   standard?: Record<string, string>;
 }
 

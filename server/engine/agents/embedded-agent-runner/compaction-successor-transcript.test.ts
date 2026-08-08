@@ -603,7 +603,7 @@ describe("rotateTranscriptAfterCompaction — thinking signature stripping", () 
     );
 
     const entries = successor.getEntries();
-    function getThinkingSignatureForTimestamp(ts: number): unknown {
+    function getThinkingSignatureForTimestamp(ts: number): any {
       for (const entry of entries) {
         if (entry.type !== "message" || entry.message.role !== "assistant") {
           continue;
@@ -611,10 +611,10 @@ describe("rotateTranscriptAfterCompaction — thinking signature stripping", () 
         if ((entry.message as { timestamp?: number }).timestamp !== ts) {
           continue;
         }
-        const content = (entry.message as { content?: unknown[] }).content ?? [];
+        const content = (entry.message as { content?: any[] }).content ?? [];
         for (const block of content) {
-          if ((block as { type?: unknown }).type === "thinking") {
-            return (block as { thinkingSignature?: unknown }).thinkingSignature;
+          if ((block as { type?: any }).type === "thinking") {
+            return (block as { thinkingSignature?: any }).thinkingSignature;
           }
         }
       }

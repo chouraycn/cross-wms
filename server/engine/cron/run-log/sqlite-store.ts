@@ -113,7 +113,7 @@ export class SqliteCronRunLogStore {
     const sortDir = options.sortDir === "asc" ? "ASC" : "DESC";
 
     let whereClause = "";
-    const params: unknown[] = [];
+    const params: any[] = [];
 
     if (options.jobId) {
       whereClause += ` AND jobId = ?`;
@@ -151,7 +151,7 @@ export class SqliteCronRunLogStore {
     const queryStmt = this.db.prepare(`${baseQuery} ORDER BY startTime ${sortDir} LIMIT ? OFFSET ?`);
     params.push(limit, offset);
 
-    const rows = queryStmt.all(...params) as Record<string, unknown>[];
+    const rows = queryStmt.all(...params) as Record<string, any>[];
     const entries = rows.map((row) => decodeCronRunLogEntry(row)).filter((e): e is CronRunLogEntry => e !== null);
 
     const boundedOffset = Math.min(total, offset);
@@ -169,7 +169,7 @@ export class SqliteCronRunLogStore {
 
   getEntry(runId: string): CronRunLogEntry | undefined {
     const stmt = this.db.prepare("SELECT * FROM cron_run_log WHERE runId = ?");
-    const row = stmt.get(runId) as Record<string, unknown> | undefined;
+    const row = stmt.get(runId) as Record<string, any> | undefined;
 
     if (!row) {
       return undefined;

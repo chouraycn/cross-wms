@@ -10,7 +10,7 @@ export type GeneratedImageAsset = {
   mimeType: string;
   fileName?: string;
   revisedPrompt?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 export type ImageGenerationResolution = "1K" | "2K" | "4K";
@@ -32,7 +32,7 @@ export type ImageGenerationOpenAIOptions = {
   user?: string;
 };
 
-export type ImageGenerationProviderOptions = Record<string, unknown> & {
+export type ImageGenerationProviderOptions = Record<string, any> & {
   openai?: ImageGenerationOpenAIOptions;
 };
 
@@ -53,7 +53,7 @@ export type ImageGenerationSourceImage = {
   buffer: Buffer;
   mimeType: string;
   fileName?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 /** Runtime request passed to an image-generation provider implementation. */
@@ -78,7 +78,7 @@ export type ImageGenerationRequest = {
 export type ImageGenerationResult = {
   images: GeneratedImageAsset[];
   model?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 type ImageGenerationModeCapabilities = {

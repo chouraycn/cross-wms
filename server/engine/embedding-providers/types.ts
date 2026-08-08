@@ -40,7 +40,7 @@ export abstract class BaseEmbeddingProvider {
   abstract dispose(): Promise<void>;
 }
 
-export type EmbeddingProviderFactory = (options?: Record<string, unknown>) => BaseEmbeddingProvider;
+export type EmbeddingProviderFactory = (options?: Record<string, any>) => BaseEmbeddingProvider;
 
 export interface EmbeddingProviderRegistration {
   id: string;

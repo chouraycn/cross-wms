@@ -19,7 +19,7 @@ export type AgentToolResultMiddlewareEvent = {
   turnId?: string;
   toolCallId: string;
   toolName: string;
-  args: Record<string, unknown>;
+  args: Record<string, any>;
   cwd?: string;
   isError?: boolean;
   result: OpenClawAgentToolResult;

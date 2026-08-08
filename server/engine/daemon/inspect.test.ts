@@ -10,7 +10,7 @@ const { execSchtasksMock } = vi.hoisted(() => ({
 }));
 
 vi.mock("./schtasks-exec.js", () => ({
-  execSchtasks: (...args: unknown[]) => execSchtasksMock(...args),
+  execSchtasks: (...args: any[]) => execSchtasksMock(...args),
 }));
 
 // Real content from the openclaw-gateway.service unit file (the canonical gateway unit).

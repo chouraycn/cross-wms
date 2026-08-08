@@ -7,7 +7,7 @@ import { migrateLegacyCronRunLogsToSqlite } from "../commands/doctor/cron/legacy
 import { appendCronRunLog, readCronRunLogEntriesPage, type CronRunLogEntry } from "./run-log.js";
 
 async function writeLegacyRunLogAndMigrate(
-  entries: Array<Record<string, unknown>>,
+  entries: Array<Record<string, any>>,
 ): Promise<string> {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), "cron-run-log-"));
   const storePath = path.join(dir, "cron", "jobs.json");

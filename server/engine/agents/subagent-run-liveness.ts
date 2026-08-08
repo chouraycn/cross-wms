@@ -6,18 +6,18 @@
 
 export const RECENT_ENDED_SUBAGENT_CHILD_SESSION_MS = 60_000;
 
-export function hasSubagentRunEnded(_params: unknown): boolean {
+export function hasSubagentRunEnded(_params: any): boolean {
   return false;
 }
 
-export function isStaleUnendedSubagentRun(_params: unknown): boolean {
+export function isStaleUnendedSubagentRun(_params: any): boolean {
   return false;
 }
 
-export function isLiveUnendedSubagentRun(_params: unknown): boolean {
+export function isLiveUnendedSubagentRun(_params: any): boolean {
   return false;
 }
 
-export function shouldKeepSubagentRunChildLink(_params: unknown): boolean {
+export function shouldKeepSubagentRunChildLink(_params: any): boolean {
   return true;
 }

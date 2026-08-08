@@ -13,7 +13,7 @@ export interface ChannelDirectoryEntry {
 }
 
 export interface DirectoryConfigParams {
-  cfg: unknown;
+  cfg: any;
   accountId?: string | null;
   query?: string | null;
   limit?: number | null;
@@ -69,21 +69,21 @@ export function toDirectoryEntries(kind: "user" | "group", ids: string[]): Chann
 }
 
 function collectDirectoryIdsFromEntries(params: {
-  entries?: readonly unknown[];
+  entries?: readonly any[];
   normalizeId?: (entry: string) => string | null | undefined;
 }): string[] {
   return collectDirectoryIds(params.entries ?? [], params.normalizeId);
 }
 
 function collectDirectoryIdsFromMapKeys(params: {
-  groups?: Record<string, unknown>;
+  groups?: Record<string, any>;
   normalizeId?: (entry: string) => string | null | undefined;
 }): string[] {
   return collectDirectoryIds(Object.keys(params.groups ?? {}), params.normalizeId);
 }
 
 function collectDirectoryIds(
-  values: Iterable<unknown>,
+  values: Iterable<any>,
   normalizeId?: (entry: string) => string | null | undefined,
 ): string[] {
   const ids: string[] = [];
@@ -109,7 +109,7 @@ function dedupeDirectoryIds(ids: string[]): string[] {
  * Collects unique normalized ids from multiple raw config sources.
  */
 export function collectNormalizedDirectoryIds(params: {
-  sources: Iterable<unknown>[];
+  sources: Iterable<any>[];
   normalizeId: (entry: string) => string | null | undefined;
 }): string[] {
   const ids = new Set<string>();
@@ -134,7 +134,7 @@ export function collectNormalizedDirectoryIds(params: {
  */
 export function listDirectoryEntriesFromSources(params: {
   kind: "user" | "group";
-  sources: Iterable<unknown>[];
+  sources: Iterable<any>[];
   query?: string | null;
   limit?: number | null;
   normalizeId: (entry: string) => string | null | undefined;
@@ -153,10 +153,10 @@ export function listInspectedDirectoryEntriesFromSources<InspectedAccount>(
   params: DirectoryConfigParams & {
     kind: "user" | "group";
     inspectAccount: (
-      cfg: unknown,
+      cfg: any,
       accountId?: string | null,
     ) => InspectedAccount | null | undefined;
-    resolveSources: (account: InspectedAccount) => Iterable<unknown>[];
+    resolveSources: (account: InspectedAccount) => Iterable<any>[];
     normalizeId: (entry: string) => string | null | undefined;
   },
 ): ChannelDirectoryEntry[] {
@@ -179,10 +179,10 @@ export function listInspectedDirectoryEntriesFromSources<InspectedAccount>(
 export function createInspectedDirectoryEntriesLister<InspectedAccount>(params: {
   kind: "user" | "group";
   inspectAccount: (
-    cfg: unknown,
+    cfg: any,
     accountId?: string | null,
   ) => InspectedAccount | null | undefined;
-  resolveSources: (account: InspectedAccount) => Iterable<unknown>[];
+  resolveSources: (account: InspectedAccount) => Iterable<any>[];
   normalizeId: (entry: string) => string | null | undefined;
 }) {
   return async (configParams: DirectoryConfigParams): Promise<ChannelDirectoryEntry[]> =>
@@ -198,8 +198,8 @@ export function createInspectedDirectoryEntriesLister<InspectedAccount>(params: 
 export function listResolvedDirectoryEntriesFromSources<ResolvedAccount>(
   params: DirectoryConfigParams & {
     kind: "user" | "group";
-    resolveAccount: (cfg: unknown, accountId?: string | null) => ResolvedAccount;
-    resolveSources: (account: ResolvedAccount) => Iterable<unknown>[];
+    resolveAccount: (cfg: any, accountId?: string | null) => ResolvedAccount;
+    resolveSources: (account: ResolvedAccount) => Iterable<any>[];
     normalizeId: (entry: string) => string | null | undefined;
   },
 ): ChannelDirectoryEntry[] {
@@ -218,8 +218,8 @@ export function listResolvedDirectoryEntriesFromSources<ResolvedAccount>(
  */
 export function createResolvedDirectoryEntriesLister<ResolvedAccount>(params: {
   kind: "user" | "group";
-  resolveAccount: (cfg: unknown, accountId?: string | null) => ResolvedAccount;
-  resolveSources: (account: ResolvedAccount) => Iterable<unknown>[];
+  resolveAccount: (cfg: any, accountId?: string | null) => ResolvedAccount;
+  resolveSources: (account: ResolvedAccount) => Iterable<any>[];
   normalizeId: (entry: string) => string | null | undefined;
 }) {
   return async (configParams: DirectoryConfigParams): Promise<ChannelDirectoryEntry[]> =>
@@ -233,7 +233,7 @@ export function createResolvedDirectoryEntriesLister<ResolvedAccount>(params: {
  * Lists user directory entries from an allowlist-style config array.
  */
 export function listDirectoryUserEntriesFromAllowFrom(params: {
-  allowFrom?: readonly unknown[];
+  allowFrom?: readonly any[];
   query?: string | null;
   limit?: number | null;
   normalizeId?: (entry: string) => string | null | undefined;
@@ -251,8 +251,8 @@ export function listDirectoryUserEntriesFromAllowFrom(params: {
  * Lists user entries from both direct allowlists and map-key config.
  */
 export function listDirectoryUserEntriesFromAllowFromAndMapKeys(params: {
-  allowFrom?: readonly unknown[];
-  map?: Record<string, unknown>;
+  allowFrom?: readonly any[];
+  map?: Record<string, any>;
   query?: string | null;
   limit?: number | null;
   normalizeAllowFromId?: (entry: string) => string | null | undefined;
@@ -275,7 +275,7 @@ export function listDirectoryUserEntriesFromAllowFromAndMapKeys(params: {
  * Lists group directory entries from map-key config.
  */
 export function listDirectoryGroupEntriesFromMapKeys(params: {
-  groups?: Record<string, unknown>;
+  groups?: Record<string, any>;
   query?: string | null;
   limit?: number | null;
   normalizeId?: (entry: string) => string | null | undefined;
@@ -293,8 +293,8 @@ export function listDirectoryGroupEntriesFromMapKeys(params: {
  * Lists group entries from both map-key config and allowlist values.
  */
 export function listDirectoryGroupEntriesFromMapKeysAndAllowFrom(params: {
-  groups?: Record<string, unknown>;
-  allowFrom?: readonly unknown[];
+  groups?: Record<string, any>;
+  allowFrom?: readonly any[];
   query?: string | null;
   limit?: number | null;
   normalizeMapKeyId?: (entry: string) => string | null | undefined;
@@ -318,8 +318,8 @@ export function listDirectoryGroupEntriesFromMapKeysAndAllowFrom(params: {
  */
 export function listResolvedDirectoryUserEntriesFromAllowFrom<ResolvedAccount>(
   params: DirectoryConfigParams & {
-    resolveAccount: (cfg: unknown, accountId?: string | null) => ResolvedAccount;
-    resolveAllowFrom: (account: ResolvedAccount) => readonly unknown[] | undefined;
+    resolveAccount: (cfg: any, accountId?: string | null) => ResolvedAccount;
+    resolveAllowFrom: (account: ResolvedAccount) => readonly any[] | undefined;
     normalizeId?: (entry: string) => string | null | undefined;
   },
 ): ChannelDirectoryEntry[] {
@@ -337,8 +337,8 @@ export function listResolvedDirectoryUserEntriesFromAllowFrom<ResolvedAccount>(
  */
 export function listResolvedDirectoryGroupEntriesFromMapKeys<ResolvedAccount>(
   params: DirectoryConfigParams & {
-    resolveAccount: (cfg: unknown, accountId?: string | null) => ResolvedAccount;
-    resolveGroups: (account: ResolvedAccount) => Record<string, unknown> | undefined;
+    resolveAccount: (cfg: any, accountId?: string | null) => ResolvedAccount;
+    resolveGroups: (account: ResolvedAccount) => Record<string, any> | undefined;
     normalizeId?: (entry: string) => string | null | undefined;
   },
 ): ChannelDirectoryEntry[] {

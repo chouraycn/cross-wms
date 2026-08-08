@@ -7,7 +7,7 @@
 export interface ReplyPayload {
   role?: string;
   content?: string;
-  interactive?: { [key: string]: unknown };
+  interactive?: { [key: string]: any };
   text?: string;
   trustedLocalMedia?: boolean;
   mediaUrl?: string;

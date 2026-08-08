@@ -7,7 +7,7 @@ import {
   parseOptionalDelimitedEntries,
 } from "./helpers.js";
 
-function cfgWithChannel(channelKey: string, accounts?: Record<string, unknown>): OpenClawConfig {
+function cfgWithChannel(channelKey: string, accounts?: Record<string, any>): OpenClawConfig {
   return {
     channels: {
       [channelKey]: accounts ? { accounts } : {},

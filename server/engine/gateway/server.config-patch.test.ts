@@ -31,11 +31,11 @@ function requireWs(): Awaited<ReturnType<typeof startServerWithClient>>["ws"] {
   return startedServer.ws;
 }
 
-function requireConfigObject(value: unknown, label: string): Record<string, unknown> {
+function requireConfigObject(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error(`expected ${label}`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 beforeAll(async () => {
@@ -61,7 +61,7 @@ async function resetTempDir(name: string): Promise<string> {
   return dir;
 }
 
-async function writeJsonFile(filePath: string, value: unknown) {
+async function writeJsonFile(filePath: string, value: any) {
   await fs.mkdir(path.dirname(filePath), { recursive: true });
   await fs.writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`, "utf-8");
 }
@@ -75,7 +75,7 @@ async function getConfigHash() {
   return String(current.payload?.hash);
 }
 
-async function sendConfigApply(params: { raw: unknown; baseHash?: string }, timeoutMs?: number) {
+async function sendConfigApply(params: { raw: any; baseHash?: string }, timeoutMs?: number) {
   return await rpcReq(requireWs(), "config.apply", params, timeoutMs);
 }
 
@@ -83,16 +83,16 @@ async function sendConfigSet(params: { raw: string; baseHash?: string }, timeout
   return await rpcReq(requireWs(), "config.set", params, timeoutMs);
 }
 
-function configRawPayload(config: unknown, baseHash?: string) {
+function configRawPayload(config: any, baseHash?: string) {
   return {
     raw: JSON.stringify(config, null, 2),
     baseHash,
   };
 }
 
-function configWithGatewayTokenSecretRef(config: Record<string, unknown>, envVar: string) {
+function configWithGatewayTokenSecretRef(config: Record<string, any>, envVar: string) {
   const nextConfig = structuredClone(config);
-  const gateway = (nextConfig.gateway ??= {}) as Record<string, unknown>;
+  const gateway = (nextConfig.gateway ??= {}) as Record<string, any>;
   gateway.auth = {
     mode: "token",
     token: { source: "env", provider: "default", id: envVar },
@@ -105,7 +105,7 @@ async function getCurrentConfigObject() {
     raw?: string | null;
     hash?: string;
     path?: string;
-    config?: Record<string, unknown>;
+    config?: Record<string, any>;
   }>(requireWs(), "config.get", {});
   expect(current.ok).toBe(true);
   expect(typeof current.payload?.hash).toBe("string");
@@ -137,11 +137,11 @@ function makeRouteBinding(index: number) {
   };
 }
 
-function makeAgentEntry(id: string, extra: Record<string, unknown> = {}) {
+function makeAgentEntry(id: string, extra: Record<string, any> = {}) {
   return { id, ...extra };
 }
 
-async function expectSchemaLookupInvalid(pathValue: unknown) {
+async function expectSchemaLookupInvalid(pathValue: any) {
   const res = await rpcReq<{ ok?: boolean }>(requireWs(), "config.schema.lookup", { pathValue });
   expect(res.ok).toBe(false);
   expect(res.error?.message ?? "").toContain("invalid config.schema.lookup params");
@@ -199,7 +199,7 @@ describe("gateway config methods", () => {
     const res = await rpcReq<{
       ok?: boolean;
       path?: string;
-      config?: Record<string, unknown>;
+      config?: Record<string, any>;
     }>(requireWs(), "config.set", {
       ...configRawPayload(current.config, current.hash),
     });
@@ -214,12 +214,12 @@ describe("gateway config methods", () => {
     const nextConfig = structuredClone(current.config);
     delete nextConfig.meta;
 
-    const gateway = (nextConfig.gateway ??= {}) as Record<string, unknown>;
+    const gateway = (nextConfig.gateway ??= {}) as Record<string, any>;
     gateway.port = 19001;
 
     const res = await rpcReq<{
       ok?: boolean;
-      config?: Record<string, unknown>;
+      config?: Record<string, any>;
     }>(requireWs(), "config.set", {
       ...configRawPayload(nextConfig, current.hash),
     });
@@ -227,7 +227,7 @@ describe("gateway config methods", () => {
     expect(res.ok).toBe(true);
 
     const after = await rpcReq<{
-      config?: Record<string, unknown>;
+      config?: Record<string, any>;
     }>(requireWs(), "config.get", {});
     expect(after.ok).toBe(true);
     expect(res.payload?.config).toEqual(after.payload?.config);
@@ -251,15 +251,15 @@ describe("gateway config methods", () => {
 
       const current = await getCurrentConfigObject();
       const nextConfig = structuredClone(current.config);
-      const providers = ((nextConfig.models as Record<string, unknown>).providers ?? {}) as Record<
+      const providers = ((nextConfig.models as Record<string, any>).providers ?? {}) as Record<
         string,
-        Record<string, unknown>
+        Record<string, any>
       >;
       providers.openai ??= {};
       providers.openai.baseUrl = "";
       providers.openai.models = [];
 
-      const gateway = (nextConfig.gateway ??= {}) as Record<string, unknown>;
+      const gateway = (nextConfig.gateway ??= {}) as Record<string, any>;
       gateway.port = 19002;
 
       const res = await rpcReq<{
@@ -374,7 +374,7 @@ describe("gateway config methods", () => {
       path: string;
       hintPath?: string;
       children?: Array<{ key: string; path: string; required: boolean; hintPath?: string }>;
-      schema?: { properties?: unknown };
+      schema?: { properties?: any };
     }>(requireWs(), "config.schema.lookup", {
       path: "gateway.auth",
     });
@@ -427,7 +427,7 @@ describe("gateway config methods", () => {
 
   it("returns noop for config.patch when config is unchanged", async () => {
     const current = await rpcReq<{
-      config?: Record<string, unknown>;
+      config?: Record<string, any>;
       hash?: string;
     }>(requireWs(), "config.get", {});
     expect(current.ok).toBe(true);
@@ -436,7 +436,7 @@ describe("gateway config methods", () => {
     const res = await rpcReq<{
       ok?: boolean;
       noop?: boolean;
-      config?: Record<string, unknown>;
+      config?: Record<string, any>;
     }>(requireWs(), "config.patch", {
       raw: JSON.stringify(current.payload?.config ?? {}),
       baseHash: current.payload?.hash,
@@ -563,10 +563,10 @@ describe("gateway config methods", () => {
       original.config.channels &&
       typeof original.config.channels === "object" &&
       !Array.isArray(original.config.channels)
-        ? (original.config.channels as Record<string, unknown>)
+        ? (original.config.channels as Record<string, any>)
         : {};
     const discord = {
-      ...(channels.discord as Record<string, unknown> | undefined),
+      ...(channels.discord as Record<string, any> | undefined),
       allowFrom: ["*"],
       guilds: {
         "123": {
@@ -603,7 +603,7 @@ describe("gateway config methods", () => {
       expect(
         (
           afterChannels.discord as {
-            guilds?: { "123"?: { channels?: { general?: { users?: unknown[] } } } };
+            guilds?: { "123"?: { channels?: { general?: { users?: any[] } } } };
           }
         ).guilds?.["123"]?.channels?.general?.users,
       ).toEqual(["111"]);
@@ -615,7 +615,7 @@ describe("gateway config methods", () => {
   it("uses replacePaths to replace id-keyed arrays instead of merging by id", async () => {
     const original = await getCurrentConfigObject();
     const agents = {
-      ...(original.config.agents as Record<string, unknown> | undefined),
+      ...(original.config.agents as Record<string, any> | undefined),
       list: [makeAgentEntry("main", { default: true }), makeAgentEntry("worker")],
     };
     const seed = await sendConfigApply(
@@ -634,7 +634,7 @@ describe("gateway config methods", () => {
 
       expect(res.ok).toBe(true);
       const after = await getCurrentConfigObject();
-      expect((after.config.agents as { list?: unknown[] }).list).toEqual(replacement);
+      expect((after.config.agents as { list?: any[] }).list).toEqual(replacement);
     } finally {
       await restoreConfigFileForTest(original);
     }
@@ -643,7 +643,7 @@ describe("gateway config methods", () => {
   it("rejects nested destructive array patches inside id-keyed arrays without replacePaths", async () => {
     const original = await getCurrentConfigObject();
     const agents = {
-      ...(original.config.agents as Record<string, unknown> | undefined),
+      ...(original.config.agents as Record<string, any> | undefined),
       list: [
         makeAgentEntry("main", { default: true, skills: ["alpha", "beta"] }),
         makeAgentEntry("worker", { skills: ["gamma"] }),
@@ -667,7 +667,7 @@ describe("gateway config methods", () => {
       );
       const after = await getCurrentConfigObject();
       expect(after.hash).toBe(before.hash);
-      expect((after.config.agents as { list?: unknown[] }).list).toEqual(agents.list);
+      expect((after.config.agents as { list?: any[] }).list).toEqual(agents.list);
     } finally {
       await restoreConfigFileForTest(original);
     }
@@ -676,7 +676,7 @@ describe("gateway config methods", () => {
   it("rejects nested destructive array patches when replacePaths names only a parent object", async () => {
     const original = await getCurrentConfigObject();
     const agents = {
-      ...(original.config.agents as Record<string, unknown> | undefined),
+      ...(original.config.agents as Record<string, any> | undefined),
       list: [
         makeAgentEntry("main", { default: true, skills: ["alpha", "beta"] }),
         makeAgentEntry("worker", { skills: ["gamma"] }),
@@ -701,7 +701,7 @@ describe("gateway config methods", () => {
       );
       const after = await getCurrentConfigObject();
       expect(after.hash).toBe(before.hash);
-      expect((after.config.agents as { list?: unknown[] }).list).toEqual(agents.list);
+      expect((after.config.agents as { list?: any[] }).list).toEqual(agents.list);
     } finally {
       await restoreConfigFileForTest(original);
     }
@@ -710,7 +710,7 @@ describe("gateway config methods", () => {
   it("rejects deleting a parent object that contains arrays without replacePaths", async () => {
     const original = await getCurrentConfigObject();
     const agents = {
-      ...(original.config.agents as Record<string, unknown> | undefined),
+      ...(original.config.agents as Record<string, any> | undefined),
       list: [makeAgentEntry("main", { default: true }), makeAgentEntry("worker")],
     };
     const seed = await sendConfigApply(
@@ -739,7 +739,7 @@ describe("gateway config methods", () => {
   it("rejects deleting a nested parent object inside id-keyed arrays without replacePaths", async () => {
     const original = await getCurrentConfigObject();
     const agents = {
-      ...(original.config.agents as Record<string, unknown> | undefined),
+      ...(original.config.agents as Record<string, any> | undefined),
       list: [
         makeAgentEntry("main", {
           default: true,
@@ -774,7 +774,7 @@ describe("gateway config methods", () => {
   it("allows nested destructive array patches inside id-keyed arrays with replacePaths", async () => {
     const original = await getCurrentConfigObject();
     const agents = {
-      ...(original.config.agents as Record<string, unknown> | undefined),
+      ...(original.config.agents as Record<string, any> | undefined),
       list: [
         makeAgentEntry("main", { default: true, skills: ["alpha", "beta"] }),
         makeAgentEntry("worker", { skills: ["gamma"] }),
@@ -795,7 +795,7 @@ describe("gateway config methods", () => {
 
       expect(res.ok).toBe(true);
       const after = await getCurrentConfigObject();
-      expect((after.config.agents as { list?: unknown[] }).list).toEqual([
+      expect((after.config.agents as { list?: any[] }).list).toEqual([
         makeAgentEntry("main", { default: true, skills: ["alpha"] }),
         makeAgentEntry("worker", { skills: ["gamma"] }),
       ]);

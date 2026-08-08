@@ -5,7 +5,7 @@ import { getTool } from './tool-registry.js';
 export class ToolExecutor {
   private callId = 0;
 
-  async execute(toolName: string, args: Record<string, unknown>, options?: ToolExecutorOptions): Promise<ToolResult> {
+  async execute(toolName: string, args: Record<string, any>, options?: ToolExecutorOptions): Promise<ToolResult> {
     const startTime = Date.now();
     const id = `${toolName}-${++this.callId}-${Date.now()}`;
 
@@ -73,14 +73,14 @@ export class ToolExecutor {
     };
   }
 
-  async executeBatch(calls: Array<{ toolName: string; args: Record<string, unknown> }>, options?: ToolExecutorOptions): Promise<ToolResult[]> {
+  async executeBatch(calls: Array<{ toolName: string; args: Record<string, any> }>, options?: ToolExecutorOptions): Promise<ToolResult[]> {
     const results = await Promise.all(
       calls.map(call => this.execute(call.toolName, call.args, options)),
     );
     return results;
   }
 
-  async executeSequence(calls: Array<{ toolName: string; args: Record<string, unknown> }>, options?: ToolExecutorOptions): Promise<ToolResult[]> {
+  async executeSequence(calls: Array<{ toolName: string; args: Record<string, any> }>, options?: ToolExecutorOptions): Promise<ToolResult[]> {
     const results: ToolResult[] = [];
 
     for (const call of calls) {

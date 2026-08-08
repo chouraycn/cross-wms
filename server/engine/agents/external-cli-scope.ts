@@ -13,13 +13,13 @@ export type ExternalCliAuthScope = {
 
 /** Resolves external CLI auth discovery scope from configured auth/model surfaces. */
 export function resolveExternalCliAuthScopeFromConfig(
-  cfg: Record<string, unknown>,
+  cfg: Record<string, any>,
 ): ExternalCliAuthScope | undefined {
   const providerIds = new Set<string>();
   const profileIds = new Set<string>();
 
-  const models = cfg.models as Record<string, unknown> | undefined;
-  const providers = models?.providers as Record<string, unknown> | undefined;
+  const models = cfg.models as Record<string, any> | undefined;
+  const providers = models?.providers as Record<string, any> | undefined;
   if (providers) {
     for (const id of Object.keys(providers)) {
       const raw = id.trim();
@@ -27,14 +27,14 @@ export function resolveExternalCliAuthScopeFromConfig(
     }
   }
 
-  const auth = cfg.auth as Record<string, unknown> | undefined;
-  const profiles = auth?.profiles as Record<string, unknown> | undefined;
+  const auth = cfg.auth as Record<string, any> | undefined;
+  const profiles = auth?.profiles as Record<string, any> | undefined;
   if (profiles) {
     for (const [profileId, profile] of Object.entries(profiles)) {
       const normalizedProfileId = profileId.trim();
       if (normalizedProfileId) profileIds.add(normalizedProfileId);
       if (profile && typeof profile === "object") {
-        const p = profile as Record<string, unknown>;
+        const p = profile as Record<string, any>;
         if (typeof p.provider === "string" && p.provider.trim()) {
           providerIds.add(p.provider.trim());
         }

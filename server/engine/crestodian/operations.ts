@@ -540,7 +540,7 @@ export async function executeCrestodianOperation(
   opts: {
     approved?: boolean;
     deps?: CrestodianCommandDeps;
-    auditDetails?: Record<string, unknown>;
+    auditDetails?: Record<string, any>;
   } = {},
 ): Promise<CrestodianOperationResult> {
   if (operation.kind === "none") {

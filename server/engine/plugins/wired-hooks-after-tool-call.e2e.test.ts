@@ -29,7 +29,7 @@ function createToolHandlerCtx(params: {
   sessionKey?: string;
   sessionId?: string;
   agentId?: string;
-  onBlockReplyFlush?: unknown;
+  onBlockReplyFlush?: any;
 }) {
   return {
     params: {
@@ -60,9 +60,9 @@ function getAfterToolCallCall(index = 0) {
     event: call?.[0] as
       | {
           toolName?: string;
-          params?: unknown;
-          error?: unknown;
-          durationMs?: unknown;
+          params?: any;
+          error?: any;
+          durationMs?: any;
           runId?: string;
           toolCallId?: string;
         }
@@ -90,8 +90,8 @@ function requireAfterToolCallCall(index = 0) {
 
 function expectAfterToolCallPayload(params: {
   index?: number;
-  expectedEvent: Record<string, unknown>;
-  expectedContext: Record<string, unknown>;
+  expectedEvent: Record<string, any>;
+  expectedContext: Record<string, any>;
 }) {
   const { event, context } = requireAfterToolCallCall(params.index);
   const { durationMs, ...stableEvent } = event;

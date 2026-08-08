@@ -201,7 +201,7 @@ import type {
 type TranscriptAppendResult = {
   ok: boolean;
   messageId?: string;
-  message?: Record<string, unknown>;
+  message?: Record<string, any>;
   error?: string;
 };
 
@@ -222,14 +222,14 @@ type ChatAbortRequester = {
 };
 
 type PreRegisteredAgentDedupePayload = {
-  agentId?: unknown;
-  controlUiVisible?: unknown;
-  dedupeKeys?: unknown;
-  ownerConnId?: unknown;
-  ownerDeviceId?: unknown;
-  runId?: unknown;
-  sessionKey?: unknown;
-  status?: unknown;
+  agentId?: any;
+  controlUiVisible?: any;
+  dedupeKeys?: any;
+  ownerConnId?: any;
+  ownerDeviceId?: any;
+  runId?: any;
+  sessionKey?: any;
+  status?: any;
 };
 
 type PreRegisteredAgentRun = {
@@ -241,8 +241,8 @@ type PreRegisteredAgentRun = {
 type ChatHistoryMethod = "chat.history" | "chat.startup";
 
 type ChatMetadataResult = {
-  commands?: unknown[];
-  models?: unknown[];
+  commands?: any[];
+  models?: any[];
 };
 
 type ChatSendAckServerTiming = {
@@ -288,13 +288,13 @@ function shouldIncludeChatSendAckServerTiming(client?: {
 const CONTROL_UI_RECONNECT_RESUME_PARAM = "__controlUiReconnectResume";
 
 function resolveControlUiReconnectResumeParams(
-  params: unknown,
+  params: any,
   clientInfo?: { id?: string | null; mode?: string | null },
-): { params: unknown; resumeRequested: boolean } {
+): { params: any; resumeRequested: boolean } {
   if (!params || typeof params !== "object" || Array.isArray(params)) {
     return { params, resumeRequested: false };
   }
-  const record = params as Record<string, unknown>;
+  const record = params as Record<string, any>;
   const resumeRequested =
     record[CONTROL_UI_RECONNECT_RESUME_PARAM] === true && isOperatorUiClient(clientInfo);
   if (!resumeRequested) {
@@ -447,7 +447,7 @@ async function buildChatStartupMetadataResult(params: {
   }
 }
 
-function normalizeUnknownText(value: unknown): string | undefined {
+function normalizeUnknownText(value: any): string | undefined {
   return typeof value === "string" ? normalizeOptionalText(value) : undefined;
 }
 
@@ -540,7 +540,7 @@ async function buildWebchatAssistantMediaMessage(
     localRoots?: readonly string[];
     onLocalAudioAccessDenied?: (message: string) => void;
   },
-): Promise<{ content: Array<Record<string, unknown>>; transcriptText: string } | null> {
+): Promise<{ content: Array<Record<string, any>>; transcriptText: string } | null> {
   return buildWebchatAssistantMessageFromReplyPayloads(payloads, {
     localRoots: options?.localRoots,
     onLocalAudioAccessDenied: (err) => {
@@ -569,7 +569,7 @@ const CHAT_HISTORY_UNAVAILABLE_SENTINEL =
  * of an empty array guarantees the dashboard never renders a blank transcript,
  * which otherwise reads to the operator as total history loss.
  */
-function buildChatHistoryUnavailableSentinel(): Record<string, unknown> {
+function buildChatHistoryUnavailableSentinel(): Record<string, any> {
   return {
     role: "assistant",
     timestamp: Date.now(),
@@ -624,11 +624,11 @@ type ChatSendOriginatingRoute = {
 
 const ACTIVE_CHAT_SEND_DEDUPE_PREFIX = "chat:active-send";
 
-function resolveActiveChatSendRunId(value: unknown): string | null {
+function resolveActiveChatSendRunId(value: any): string | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return null;
   }
-  const runId = (value as { runId?: unknown }).runId;
+  const runId = (value as { runId?: any }).runId;
   return typeof runId === "string" && runId.trim() ? runId : null;
 }
 
@@ -766,7 +766,7 @@ type ChatSendExplicitOrigin = {
   messageThreadId?: string;
 };
 
-function formatAttachmentFailureForLog(err: unknown): string {
+function formatAttachmentFailureForLog(err: any): string {
   const primary = formatUncaughtError(err);
   const cause = err instanceof Error ? err.cause : undefined;
   if (cause === undefined) {
@@ -782,7 +782,7 @@ function formatAttachmentFailureForLog(err: unknown): string {
 function logAttachmentFailure(
   logGateway: Pick<GatewayRequestContext["logGateway"], "error">,
   label: string,
-  err: unknown,
+  err: any,
 ): void {
   logGateway.error(label, {
     error: formatAttachmentFailureForLog(err),
@@ -853,7 +853,7 @@ function hasSensitiveMediaPayload(payloads: ReplyPayload[]): boolean {
   );
 }
 
-type AssistantDisplayContentBlock = Record<string, unknown>;
+type AssistantDisplayContentBlock = Record<string, any>;
 
 function sanitizeAssistantDisplayText(value?: string | null): string | undefined {
   if (!value) {
@@ -953,7 +953,7 @@ async function buildAssistantDisplayContentFromReplyPayloads(params: {
 
 function replaceAssistantContentTextBlocks(
   content: readonly AssistantDisplayContentBlock[] | undefined,
-  transcriptMediaMessage: { content: Array<Record<string, unknown>> } | null,
+  transcriptMediaMessage: { content: Array<Record<string, any>> } | null,
 ): AssistantDisplayContentBlock[] | undefined {
   const transcriptTextBlocks = (transcriptMediaMessage?.content ?? []).filter(
     (block): block is AssistantDisplayContentBlock =>
@@ -987,7 +987,7 @@ function replaceAssistantContentTextBlocks(
   return merged;
 }
 
-function isManagedOutgoingImageUrl(value: unknown): boolean {
+function isManagedOutgoingImageUrl(value: any): boolean {
   if (typeof value !== "string" || !value.trim()) {
     return false;
   }
@@ -1034,7 +1034,7 @@ function hasAssistantDisplayMediaContent(
   return Boolean(content?.some((block) => block?.type !== "text"));
 }
 
-function hasVisibleAssistantFinalMessage(message: Record<string, unknown> | undefined): boolean {
+function hasVisibleAssistantFinalMessage(message: Record<string, any> | undefined): boolean {
   if (!message) {
     return false;
   }
@@ -1046,7 +1046,7 @@ function hasVisibleAssistantFinalMessage(message: Record<string, unknown> | unde
     if (!block || typeof block !== "object") {
       return false;
     }
-    const record = block as Record<string, unknown>;
+    const record = block as Record<string, any>;
     if (record.type === "text") {
       return typeof record.text === "string" && record.text.trim().length > 0;
     }
@@ -1083,7 +1083,7 @@ function scheduleChatHistoryManagedImageCleanup(params: {
     ...(params.sessionKey === "global" && params.agentId ? { agentId: params.agentId } : {}),
   })
     .then(() => undefined)
-    .catch((error: unknown) => {
+    .catch((error: any) => {
       params.context.logGateway.debug(
         `chat.history managed image cleanup skipped sessionKey=${JSON.stringify(params.sessionKey)} error=${formatForLog(error)}`,
       );
@@ -1248,7 +1248,7 @@ function explicitOriginTargetsPluginBinding(origin: ChatSendExplicitOrigin | und
 }
 
 function normalizeOptionalChatSystemReceipt(
-  value: unknown,
+  value: any,
 ): { ok: true; receipt?: string } | { ok: false; error: string } {
   if (value == null) {
     return { ok: true };
@@ -1618,26 +1618,26 @@ function buildChatSendUserTurnMedia(savedMedia: SavedMedia[]): NonNullable<UserT
   }));
 }
 
-export function buildOversizedHistoryPlaceholder(message?: unknown): Record<string, unknown> {
+export function buildOversizedHistoryPlaceholder(message?: any): Record<string, any> {
   const role =
     message &&
     typeof message === "object" &&
-    typeof (message as { role?: unknown }).role === "string"
+    typeof (message as { role?: any }).role === "string"
       ? (message as { role: string }).role
       : "assistant";
   const timestamp =
     message &&
     typeof message === "object" &&
-    typeof (message as { timestamp?: unknown }).timestamp === "number"
+    typeof (message as { timestamp?: any }).timestamp === "number"
       ? (message as { timestamp: number }).timestamp
       : Date.now();
   const rawMetadata =
     message && typeof message === "object"
-      ? (message as Record<string, unknown>)["__openclaw"]
+      ? (message as Record<string, any>)["__openclaw"]
       : undefined;
   const metadata =
     rawMetadata && typeof rawMetadata === "object" && !Array.isArray(rawMetadata)
-      ? (rawMetadata as Record<string, unknown>)
+      ? (rawMetadata as Record<string, any>)
       : {};
   const metadataId = typeof metadata.id === "string" ? metadata.id : undefined;
   const metadataSeq = typeof metadata.seq === "number" ? metadata.seq : undefined;
@@ -1655,9 +1655,9 @@ export function buildOversizedHistoryPlaceholder(message?: unknown): Record<stri
 }
 
 export function replaceOversizedChatHistoryMessages(params: {
-  messages: unknown[];
+  messages: any[];
   maxSingleMessageBytes: number;
-}): { messages: unknown[]; replacedCount: number } {
+}): { messages: any[]; replacedCount: number } {
   const { messages, maxSingleMessageBytes } = params;
   if (messages.length === 0) {
     return { messages, replacedCount: 0 };
@@ -1673,8 +1673,8 @@ export function replaceOversizedChatHistoryMessages(params: {
   return { messages: replacedCount > 0 ? next : messages, replacedCount };
 }
 
-export function enforceChatHistoryFinalBudget(params: { messages: unknown[]; maxBytes: number }): {
-  messages: unknown[];
+export function enforceChatHistoryFinalBudget(params: { messages: any[]; maxBytes: number }): {
+  messages: any[];
   placeholderCount: number;
 } {
   const { messages, maxBytes } = params;
@@ -1750,17 +1750,17 @@ function ensureTranscriptFile(params: { transcriptPath: string; sessionId: strin
 async function findAssistantTranscriptMessageByIdempotencyKey(
   transcriptPath: string,
   idempotencyKey: string,
-): Promise<{ messageId: string; message: Record<string, unknown> } | null> {
+): Promise<{ messageId: string; message: Record<string, any> } | null> {
   const trimmedIdempotencyKey = idempotencyKey.trim();
   if (!trimmedIdempotencyKey) {
     return null;
   }
   const index = await readSessionTranscriptIndex(transcriptPath, { view: "all" });
   const target = index?.entries.toReversed().find((entry) => {
-    const message = entry.record.message as Record<string, unknown> | undefined;
+    const message = entry.record.message as Record<string, any> | undefined;
     return message?.role === "assistant" && message.idempotencyKey === trimmedIdempotencyKey;
   });
-  const message = target?.record.message as Record<string, unknown> | undefined;
+  const message = target?.record.message as Record<string, any> | undefined;
   if (!target || !message) {
     return null;
   }
@@ -1770,7 +1770,7 @@ async function findAssistantTranscriptMessageByIdempotencyKey(
 async function findSourceReplyTranscriptMirrorByIdempotencyKey(
   transcriptPath: string,
   idempotencyKey: string,
-): Promise<{ messageId: string; message: Record<string, unknown> } | null> {
+): Promise<{ messageId: string; message: Record<string, any> } | null> {
   const found = await findAssistantTranscriptMessageByIdempotencyKey(
     transcriptPath,
     idempotencyKey,
@@ -1781,7 +1781,7 @@ async function findSourceReplyTranscriptMirrorByIdempotencyKey(
   return found;
 }
 
-function extractAssistantTranscriptText(message: Record<string, unknown>): string | undefined {
+function extractAssistantTranscriptText(message: Record<string, any>): string | undefined {
   const content = message.content;
   if (!Array.isArray(content)) {
     return undefined;
@@ -1790,8 +1790,8 @@ function extractAssistantTranscriptText(message: Record<string, unknown>): strin
     .map((block) =>
       block &&
       typeof block === "object" &&
-      (block as { type?: unknown }).type === "text" &&
-      typeof (block as { text?: unknown }).text === "string"
+      (block as { type?: any }).type === "text" &&
+      typeof (block as { text?: any }).text === "string"
         ? ((block as { text: string }).text.trim() ?? "")
         : "",
     )
@@ -1805,7 +1805,7 @@ async function findSourceReplyTranscriptMirrorByMetadata(params: {
   transcriptPath: string;
   idempotencyKey: string;
   metadata: NonNullable<ReturnType<typeof getReplyPayloadMetadata>>["sourceReplyTranscriptMirror"];
-}): Promise<{ messageId: string; message: Record<string, unknown> } | null> {
+}): Promise<{ messageId: string; message: Record<string, any> } | null> {
   const byIdempotencyKey = await findSourceReplyTranscriptMirrorByIdempotencyKey(
     params.transcriptPath,
     params.idempotencyKey,
@@ -1822,7 +1822,7 @@ async function findSourceReplyTranscriptMirrorByMetadata(params: {
   }
   const index = await readSessionTranscriptIndex(params.transcriptPath, { view: "all" });
   const target = index?.entries.toReversed().find((entry) => {
-    const message = entry.record.message as Record<string, unknown> | undefined;
+    const message = entry.record.message as Record<string, any> | undefined;
     return (
       typeof entry.id === "string" &&
       entry.id.trim().length > 0 &&
@@ -1832,7 +1832,7 @@ async function findSourceReplyTranscriptMirrorByMetadata(params: {
       extractAssistantTranscriptText(message) === expectedText
     );
   });
-  const message = target?.record.message as Record<string, unknown> | undefined;
+  const message = target?.record.message as Record<string, any> | undefined;
   if (!target?.id || !message) {
     return null;
   }
@@ -1843,7 +1843,7 @@ async function appendAssistantTranscriptMessage(params: {
   sessionKey: string;
   message: string;
   label?: string;
-  content?: Array<Record<string, unknown>>;
+  content?: Array<Record<string, any>>;
   sessionId: string;
   storePath: string | undefined;
   sessionFile?: string;
@@ -2422,7 +2422,7 @@ function broadcastChatFinal(params: {
   runId: string;
   sessionKey: string;
   agentId?: string;
-  message?: Record<string, unknown>;
+  message?: Record<string, any>;
 }) {
   const seq = nextChatSeq({ agentRunSeq: params.context.agentRunSeq }, params.runId);
   const payloadAgentId = params.sessionKey === "global" ? params.agentId : undefined;
@@ -2533,7 +2533,7 @@ function sendGlobalAwareNodeChatPayload(params: {
   sessionKey: string;
   agentId?: string;
   event: string;
-  payload: unknown;
+  payload: any;
 }) {
   const deliveryKeys = resolveGlobalAwareNodeChatDeliveryKeys({
     cfg: params.context.getRuntimeConfig?.() ?? ({} as OpenClawConfig),
@@ -2566,7 +2566,7 @@ function isSourceReplyTranscriptMirrorPayload(payload: ReplyPayload | undefined)
   return Boolean(payload && getReplyPayloadMetadata(payload)?.sourceReplyTranscriptMirror);
 }
 
-function readChatHistoryMessageId(message: unknown): string | undefined {
+function readChatHistoryMessageId(message: any): string | undefined {
   const metadata = asOptionalRecord(asOptionalRecord(message)?.["__openclaw"]);
   return typeof metadata?.id === "string" ? metadata.id : undefined;
 }
@@ -2604,9 +2604,9 @@ async function isChatMessageIdVisibleAfterHistoryFilters(params: {
 }
 
 function dropLocalHistoryOverreadContextMessage(
-  messages: unknown[],
-  contextMessage: unknown,
-): unknown[] {
+  messages: any[],
+  contextMessage: any,
+): any[] {
   if (contextMessage === undefined) {
     return messages;
   }
@@ -3162,7 +3162,7 @@ export const chatHandlers: GatewayRequestHandlers = {
         type?: string;
         mimeType?: string;
         fileName?: string;
-        content?: unknown;
+        content?: any;
       }>;
       timeoutMs?: number;
       systemInputProvenance?: InputProvenance;
@@ -4498,7 +4498,7 @@ export const chatHandlers: GatewayRequestHandlers = {
                     mediaMessage?.transcriptText ||
                     buildTranscriptReplyText(finalPayloads) ||
                     transcriptDisplayReply;
-                  let message: Record<string, unknown> | undefined;
+                  let message: Record<string, any> | undefined;
                   const shouldAppendAssistantTranscript = Boolean(
                     transcriptReply || persistedContentForAppend?.length,
                   );
@@ -4789,7 +4789,7 @@ export const chatHandlers: GatewayRequestHandlers = {
                       const rewriteTargets: Array<{
                         request: (typeof sourceReplyPersistenceRequests)[number];
                         messageId: string;
-                        message: Record<string, unknown>;
+                        message: Record<string, any>;
                       }> = [];
                       for (const request of sourceReplyPersistenceRequests) {
                         const target = await findSourceReplyTranscriptMirrorByMetadata({
@@ -4966,13 +4966,13 @@ export const chatHandlers: GatewayRequestHandlers = {
             dispatchStartedAtMs,
           );
         })
-        .catch(async (err: unknown) => {
+        .catch(async (err: any) => {
           const errorMessage = String(err);
           const emitAfterError =
             userTurnRecorder.hasPersisted() || userTurnRecorder.isBlocked()
               ? Promise.resolve()
               : persistGatewayUserTurnTranscript();
-          await emitAfterError.catch((transcriptErr: unknown) => {
+          await emitAfterError.catch((transcriptErr: any) => {
             context.logGateway.warn(
               `webchat user transcript update failed after error: ${formatForLog(transcriptErr)}`,
             );
@@ -5057,7 +5057,7 @@ export const chatHandlers: GatewayRequestHandlers = {
                 ...(agentId ? { agentId } : {}),
                 reason: "chat.dispatch-error",
               });
-            } catch (persistErr: unknown) {
+            } catch (persistErr: any) {
               context.logGateway.warn(
                 `webchat session lifecycle persist failed after error: ${formatForLog(persistErr)}`,
               );

@@ -124,19 +124,19 @@ export function quoteUnsafeIntegerLiterals(input: string): string {
 }
 
 /** Parses JSON while preserving unsafe integer literals as strings. */
-export function parseJsonPreservingUnsafeIntegers(input: string): unknown {
-  return JSON.parse(quoteUnsafeIntegerLiterals(input)) as unknown;
+export function parseJsonPreservingUnsafeIntegers(input: string): any {
+  return JSON.parse(quoteUnsafeIntegerLiterals(input)) as any;
 }
 
 /** Parses or accepts an object while preserving unsafe integer literals in string input. */
 export function parseJsonObjectPreservingUnsafeIntegers(
-  value: unknown,
-): Record<string, unknown> | null {
+  value: any,
+): Record<string, any> | null {
   if (typeof value === "string") {
     try {
       const parsed = parseJsonPreservingUnsafeIntegers(value);
       if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-        return parsed as Record<string, unknown>;
+        return parsed as Record<string, any>;
       }
     } catch {
       return null;
@@ -144,7 +144,7 @@ export function parseJsonObjectPreservingUnsafeIntegers(
     return null;
   }
   if (value && typeof value === "object" && !Array.isArray(value)) {
-    return value as Record<string, unknown>;
+    return value as Record<string, any>;
   }
   return null;
 }

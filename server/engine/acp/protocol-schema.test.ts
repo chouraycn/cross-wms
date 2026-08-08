@@ -15,10 +15,10 @@ import { describe, expect, it } from "vitest";
 type SchemaFixture = {
   name: string;
   schema: {
-    safeParse: (input: unknown) => { success: boolean };
+    safeParse: (input: any) => { success: boolean };
   };
-  valid: unknown;
-  invalid: unknown;
+  valid: any;
+  invalid: any;
 };
 
 const fixtures: SchemaFixture[] = [

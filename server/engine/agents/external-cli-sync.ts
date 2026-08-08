@@ -8,15 +8,15 @@
 
 export type ExternalCliResolvedProfile = unknown;
 export type ExternalCliAuthProfileOptions = unknown;
-export function isSafeToUseExternalCliCredential(..._args: unknown[]): unknown {
+export function isSafeToUseExternalCliCredential(..._args: any[]): any {
   return false;
 }
-export function readExternalCliBootstrapCredential(..._args: unknown[]): unknown {
+export function readExternalCliBootstrapCredential(..._args: any[]): any {
   return undefined;
 }
-export function readExternalCliFallbackCredential(..._args: unknown[]): unknown {
+export function readExternalCliFallbackCredential(..._args: any[]): any {
   return undefined;
 }
-export function resolveExternalCliAuthProfiles(..._args: unknown[]): unknown {
+export function resolveExternalCliAuthProfiles(..._args: any[]): any {
   return undefined;
 }

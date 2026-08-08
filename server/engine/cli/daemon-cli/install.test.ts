@@ -12,10 +12,10 @@ const resolveGatewayPortMock = vi.hoisted(() => vi.fn(() => 18789));
 const replaceConfigFileMock = vi.hoisted(() => vi.fn());
 const resolveIsNixModeMock = vi.hoisted(() => vi.fn(() => false));
 const resolveSecretInputRefMock = vi.hoisted(() =>
-  vi.fn((_value?: unknown): { ref: unknown } => ({ ref: undefined })),
+  vi.fn((_value?: any): { ref: any } => ({ ref: undefined })),
 );
 const hasConfiguredSecretInputMock = vi.hoisted(() =>
-  vi.fn((value: unknown): boolean => {
+  vi.fn((value: any): boolean => {
     if (typeof value === "string" && value.trim()) {
       return true;
     }
@@ -58,7 +58,7 @@ const createInstallPlanFixture = vi.hoisted(() => {
 const buildGatewayInstallPlanMock = vi.hoisted(() => vi.fn(createInstallPlanFixture));
 const parsePortMock = vi.hoisted(() => vi.fn(() => null));
 const isGatewayDaemonRuntimeMock = vi.hoisted(() => vi.fn(() => true));
-const installDaemonServiceAndEmitMock = vi.hoisted(() => vi.fn(async (_params?: unknown) => {}));
+const installDaemonServiceAndEmitMock = vi.hoisted(() => vi.fn(async (_params?: any) => {}));
 
 const actionState = vi.hoisted(() => ({
   warnings: [] as string[],
@@ -138,7 +138,7 @@ vi.mock("../../daemon/program-args.js", () => ({
 
 vi.mock("./shared.js", () => ({
   parsePort: parsePortMock,
-  createDaemonInstallActionContext: (jsonFlag: unknown) => {
+  createDaemonInstallActionContext: (jsonFlag: any) => {
     const json = Boolean(jsonFlag);
     return {
       json,
@@ -184,22 +184,22 @@ function expectFirstInstallPlanCallOmitsToken() {
   expect("token" in firstArg).toBe(false);
 }
 
-function expectFields(value: unknown, expected: Record<string, unknown>): void {
+function expectFields(value: any, expected: Record<string, any>): void {
   if (!value || typeof value !== "object") {
     throw new Error("expected fields object");
   }
-  const record = value as Record<string, unknown>;
+  const record = value as Record<string, any>;
   for (const [key, expectedValue] of Object.entries(expected)) {
     expect(record[key], key).toEqual(expectedValue);
   }
 }
 
-function readFirstInstallPlanArg(): Record<string, unknown> {
+function readFirstInstallPlanArg(): Record<string, any> {
   const [firstArg] = buildGatewayInstallPlanMock.mock.calls[0] ?? [];
   if (!firstArg) {
     throw new Error("Expected gateway install plan arg");
   }
-  return firstArg as Record<string, unknown>;
+  return firstArg as Record<string, any>;
 }
 
 function readFirstConfigWriteParams(): {
@@ -212,12 +212,12 @@ function readFirstConfigWriteParams(): {
   return params as { nextConfig?: { gateway?: { mode?: string; auth?: { token?: string } } } };
 }
 
-function readFirstNodeStartupTlsEnvironmentArg(): Record<string, unknown> {
+function readFirstNodeStartupTlsEnvironmentArg(): Record<string, any> {
   const [params] = resolveNodeStartupTlsEnvironmentMock.mock.calls[0] ?? [];
   if (!params || typeof params !== "object") {
     throw new Error("expected node startup TLS environment params");
   }
-  return params as Record<string, unknown>;
+  return params as Record<string, any>;
 }
 
 function expectLastEmittedResult(result: string): void {
@@ -360,7 +360,7 @@ describe("runDaemonInstall", () => {
         OPENROUTER_API_KEY: "file",
       },
     });
-    installDaemonServiceAndEmitMock.mockImplementationOnce(async (params?: unknown) => {
+    installDaemonServiceAndEmitMock.mockImplementationOnce(async (params?: any) => {
       await (params as { install: () => Promise<void> }).install();
     });
 
@@ -389,10 +389,10 @@ describe("runDaemonInstall", () => {
   });
 
   it("captures service install warnings in json install output", async () => {
-    installDaemonServiceAndEmitMock.mockImplementationOnce(async (params?: unknown) => {
+    installDaemonServiceAndEmitMock.mockImplementationOnce(async (params?: any) => {
       await (params as { install: () => Promise<void> }).install();
     });
-    service.install.mockImplementationOnce(async (args?: unknown) => {
+    service.install.mockImplementationOnce(async (args?: any) => {
       (args as { warn?: (message: string) => void }).warn?.(
         "Existing generated LaunchAgent env wrapper contains custom behavior and will be overwritten.",
       );
@@ -473,7 +473,7 @@ describe("runDaemonInstall", () => {
     expect(actionState.warnings).toContain(
       "No gateway.mode found. Set gateway.mode=local for managed gateway install.",
     );
-    expectFields(readFirstInstallPlanArg().config as Record<string, unknown>, {
+    expectFields(readFirstInstallPlanArg().config as Record<string, any>, {
       gateway: {
         mode: "local",
         auth: { mode: "token", token: "durable-token" },

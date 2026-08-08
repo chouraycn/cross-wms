@@ -57,12 +57,12 @@ type GatewayReloadLog = {
 };
 
 type GatewayReloadHandlerParams = {
-  deps: unknown;
-  broadcast: (event: string, payload: unknown, opts?: { dropIfSlow?: boolean }) => void;
+  deps: any;
+  broadcast: (event: string, payload: any, opts?: { dropIfSlow?: boolean }) => void;
   getState: () => unknown;
-  setState: (state: unknown) => void;
+  setState: (state: any) => void;
   startChannel: (channel: string) => Promise<void>;
-  stopChannel: (channel: string, timeout?: unknown, opts?: unknown) => Promise<void>;
+  stopChannel: (channel: string, timeout?: any, opts?: any) => Promise<void>;
   stopPostReadySidecars?: () => Promise<void> | void;
   reloadPlugins: (params: {
     nextConfig: OpenClawConfig;
@@ -106,7 +106,7 @@ export function createGatewayReloadHandlers(_params: GatewayReloadHandlerParams)
   return { applyHotReload, requestGatewayRestart };
 }
 
-type ManagedGatewayConfigReloaderParams = Record<string, unknown> & {
+type ManagedGatewayConfigReloaderParams = Record<string, any> & {
   minimalTestGateway?: boolean;
 };
 

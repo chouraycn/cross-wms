@@ -123,9 +123,9 @@ export function generateSmartSummary(messages: CompactMessage[]): string {
  *
  * 注意：此函数不修改原数组，返回新数组。
  */
-export function sanitizeKeptMessages(messages: Array<Record<string, unknown>>): Array<Record<string, unknown>> {
+export function sanitizeKeptMessages(messages: Array<Record<string, any>>): Array<Record<string, any>> {
   return messages.map((msg) => {
-    const next: Record<string, unknown> = { ...msg };
+    const next: Record<string, any> = { ...msg };
 
     // 净化 toolCalls
     const toolCallsRaw = next.toolCalls;
@@ -133,14 +133,14 @@ export function sanitizeKeptMessages(messages: Array<Record<string, unknown>>): 
       try {
         const arr = JSON.parse(toolCallsRaw);
         if (Array.isArray(arr)) {
-          const sanitized: unknown[] = [];
+          const sanitized: any[] = [];
           for (const tc of arr) {
             if (!tc || typeof tc !== 'object') continue;
-            const entry = tc as Record<string, unknown>;
+            const entry = tc as Record<string, any>;
             // 修复孤儿条目：必须有 name 字段才算有效
             if (!entry.name || typeof entry.name !== 'string') continue;
 
-            const cleaned: Record<string, unknown> = { ...entry };
+            const cleaned: Record<string, any> = { ...entry };
             // 移除 details 字段
             delete cleaned.details;
 
@@ -239,7 +239,7 @@ export async function compactSession(
   };
 
   // 安全净化保留消息
-  const sanitizedKept = sanitizeKeptMessages(toKeep as unknown as Array<Record<string, unknown>>);
+  const sanitizedKept = sanitizeKeptMessages(toKeep as unknown as Array<Record<string, any>>);
   const newMessages = [summaryMessage, ...sanitizedKept];
 
   // 重写会话文件
@@ -252,8 +252,8 @@ export async function compactSession(
         reason: '会话不存在',
       };
     }
-    const firstLine = lines[0] as Record<string, unknown>;
-    const session = firstLine.session as Record<string, unknown> | undefined;
+    const firstLine = lines[0] as Record<string, any>;
+    const session = firstLine.session as Record<string, any> | undefined;
     if (session) {
       session.updatedAt = new Date().toISOString();
     }
@@ -298,10 +298,10 @@ export async function compactSession(
  * - compactEmbeddedAgentSessionDirect（直调）或 compactEmbeddedAgentSession（队列）
  * - 适配 EmbeddedAgentCompactResult → CompactResult
  */
-export function compactEmbeddedAgentSessionDirect(..._args: unknown[]): unknown {
+export function compactEmbeddedAgentSessionDirect(..._args: any[]): any {
   // 降级 stub：LLM 压缩引擎未启用
   // 当前使用 compactSession 的规则摘要作为替代
   return undefined;
 }
 
-export const testing_compact: unknown = undefined;
+export const testing_compact: any = undefined;

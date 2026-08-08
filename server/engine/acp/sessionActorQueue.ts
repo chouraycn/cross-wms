@@ -7,9 +7,9 @@ type ActorOperation<T> = () => Promise<T>;
 
 interface QueuedActor {
   key: string;
-  operation: ActorOperation<unknown>;
-  resolve: (value: unknown) => void;
-  reject: (error: unknown) => void;
+  operation: ActorOperation<any>;
+  resolve: (value: any) => void;
+  reject: (error: any) => void;
 }
 
 export class SessionActorQueue {
@@ -23,8 +23,8 @@ export class SessionActorQueue {
     return new Promise<T>((resolve, reject) => {
       const queued: QueuedActor = {
         key: actorKey,
-        operation: operation as ActorOperation<unknown>,
-        resolve: resolve as (value: unknown) => void,
+        operation: operation as ActorOperation<any>,
+        resolve: resolve as (value: any) => void,
         reject: reject,
       };
 

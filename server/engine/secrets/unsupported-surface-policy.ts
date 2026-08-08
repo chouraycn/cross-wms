@@ -27,7 +27,7 @@ const bundledChannelMetadata = (
   Array.isArray(GENERATED_BUNDLED_CHANNEL_CONFIG_METADATA)
     ? GENERATED_BUNDLED_CHANNEL_CONFIG_METADATA
     : []
-) as Array<Record<string, unknown>>;
+) as Array<Record<string, any>>;
 
 const bundledChannelUnsupportedSecretRefSurfacePatterns = [
   ...new Set(
@@ -81,7 +81,7 @@ function parseUnsupportedSecretRefSurfacePattern(pattern: string): PatternToken[
 }
 
 function collectPatternCandidates(params: {
-  current: unknown;
+  current: any;
   tokens: readonly PatternToken[];
   tokenIndex: number;
   pathSegments: string[];
@@ -175,14 +175,14 @@ export function getUnsupportedSecretRefSurfacePatterns(): string[] {
  */
 export type UnsupportedSecretRefConfigCandidate = {
   path: string;
-  value: unknown;
+  value: any;
 };
 
 /**
  * Finds configured openclaw.json values whose surfaces currently reject SecretRef objects.
  */
 export function collectUnsupportedSecretRefConfigCandidates(
-  raw: unknown,
+  raw: any,
 ): UnsupportedSecretRefConfigCandidate[] {
   if (!isRecord(raw)) {
     return [];

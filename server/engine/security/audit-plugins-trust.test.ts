@@ -146,12 +146,12 @@ vi.mock("../agents/sandbox/tool-policy.js", () => ({
 }));
 
 vi.mock("../agents/tool-policy-match.js", () => ({
-  isToolAllowedByPolicies: (_tool: string, policies: unknown[]) =>
+  isToolAllowedByPolicies: (_tool: string, policies: any[]) =>
     policies.every((policy) => policy == null),
 }));
 
 vi.mock("../agents/tool-policy.js", () => ({
-  resolveToolProfilePolicy: (profile: unknown) =>
+  resolveToolProfilePolicy: (profile: any) =>
     profile === "coding" || profile === "minimal" ? {} : undefined,
 }));
 

@@ -13,7 +13,7 @@ export interface ChannelPairing {
   createdAt: number;
   updatedAt: number;
   expiresAt?: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface PairingRequest {
@@ -21,7 +21,7 @@ export interface PairingRequest {
   accountId?: AccountId;
   externalUserId: string;
   code?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface PairingAdapter {

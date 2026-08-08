@@ -6,7 +6,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vite
 import type { SkillsChangeEvent } from "./refresh.js";
 
 type WatchEvent = "add" | "addDir" | "change" | "unlink" | "unlinkDir" | "raw" | "error";
-type WatchCallback = (...args: unknown[]) => void;
+type WatchCallback = (...args: any[]) => void;
 
 function createMockWatcher() {
   const handlers = new Map<WatchEvent, WatchCallback[]>();
@@ -16,7 +16,7 @@ function createMockWatcher() {
       return watcher;
     }),
     close: vi.fn(async () => undefined),
-    emit: (event: WatchEvent, ...args: unknown[]) => {
+    emit: (event: WatchEvent, ...args: any[]) => {
       for (const callback of handlers.get(event) ?? []) {
         callback(...args);
       }
@@ -64,7 +64,7 @@ describe("ensureSkillsWatcher", () => {
 
       // Each unique directory gets its own watcher (one path argument per call).
       const calls = watchMock.mock.calls as unknown as Array<
-        [string, { depth?: number; followSymlinks?: boolean; ignored?: unknown }]
+        [string, { depth?: number; followSymlinks?: boolean; ignored?: any }]
       >;
       expect(calls.length).toBeGreaterThan(0);
       const targets = calls.map((call) => call[0]);
@@ -196,7 +196,7 @@ describe("ensureSkillsWatcher", () => {
       });
 
       const calls = watchMock.mock.calls as unknown as Array<
-        [string, { depth?: number; ignored?: unknown }]
+        [string, { depth?: number; ignored?: any }]
       >;
       const workspaceSkillsRoot = path.join(workspaceDir, "skills").replaceAll("\\", "/");
       const firstIndex = calls.findIndex(([p]) => p.replaceAll("\\", "/") === workspaceSkillsRoot);

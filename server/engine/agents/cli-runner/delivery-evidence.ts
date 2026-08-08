@@ -44,9 +44,9 @@ function snapshotCliMessagingDeliveryEvidence(
 
 /** Attaches confirmed delivery evidence so caller retries cannot duplicate a visible send. */
 export function attachCliMessagingDeliveryEvidence(
-  error: unknown,
+  error: any,
   output: CliMessagingDeliveryEvidence,
-): unknown {
+): any {
   const evidence = snapshotCliMessagingDeliveryEvidence(output);
   if (!evidence) {
     return error;
@@ -68,12 +68,12 @@ export function attachCliMessagingDeliveryEvidence(
 
 /** Reads confirmed delivery evidence from a failed CLI attempt. */
 export function getCliMessagingDeliveryEvidence(
-  error: unknown,
+  error: any,
 ): CliMessagingDeliveryEvidence | undefined {
   if (!error || typeof error !== "object") {
     return undefined;
   }
-  const evidence = (error as Record<string, unknown>)[CLI_MESSAGING_DELIVERY_EVIDENCE_KEY];
+  const evidence = (error as Record<string, any>)[CLI_MESSAGING_DELIVERY_EVIDENCE_KEY];
   return evidence && typeof evidence === "object"
     ? snapshotCliMessagingDeliveryEvidence(evidence as CliMessagingDeliveryEvidence)
     : undefined;

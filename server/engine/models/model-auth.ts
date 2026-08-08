@@ -67,7 +67,7 @@ function doResolveModelAuth(
   if (!model) {
     return {
       modelId,
-      providerId: 'unknown',
+      providerId: 'any',
       status: 'error',
       source: 'none',
       lastCheckedAt: Date.now(),

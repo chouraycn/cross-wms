@@ -34,7 +34,7 @@ export type LocalEmbeddingProviderRuntimeOptions = {
 async function disposeResources(
   resources: Array<DisposableResource | null | undefined>,
 ): Promise<void> {
-  let firstError: unknown;
+  let firstError: any;
   for (const resource of resources) {
     try {
       await resource?.dispose?.();
@@ -197,7 +197,7 @@ export async function createLocalEmbeddingProviderInProcess(
   };
 }
 
-function toLintErrorObject(value: unknown, fallbackMessage: string): Error {
+function toLintErrorObject(value: any, fallbackMessage: string): Error {
   if (value instanceof Error) {
     return value;
   }

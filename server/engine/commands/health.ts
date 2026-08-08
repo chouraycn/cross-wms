@@ -65,18 +65,18 @@ export type { HealthSummary } from "./health.types.js";
 
 const DEFAULT_TIMEOUT_MS = 10_000;
 
-const debugHealth = (...args: unknown[]) => {
+const debugHealth = (...args: any[]) => {
   if (isTruthyEnvValue(process.env.OPENCLAW_DEBUG_HEALTH)) {
     console.warn("[health:debug]", ...args);
   }
 };
 
-function isGatewayHealthAuthUnavailableError(error: unknown): boolean {
+function isGatewayHealthAuthUnavailableError(error: any): boolean {
   return isGatewayCredentialsRequiredError(error) || isGatewaySecretRefUnavailableError(error);
 }
 
 export async function emitReachableGatewayAuthDiagnostic(params: {
-  error: unknown;
+  error: any;
   config: OpenClawConfig;
   runtime: RuntimeEnv;
   timeoutMs?: number;
@@ -137,8 +137,8 @@ const redactIMessageProbeErrorMessage = (message: string): string => {
 
 const buildNonSensitiveProbeFailure = (
   channelId: string,
-  probe: unknown,
-): Record<string, unknown> | undefined => {
+  probe: any,
+): Record<string, any> | undefined => {
   const record = asNullableRecord(probe);
   if (channelId !== "imessage" || !record || record.ok !== false) {
     return undefined;
@@ -335,7 +335,7 @@ function buildPluginHealthSummary(): PluginHealthSummary | undefined {
   return { loaded, errors };
 }
 
-function readBooleanField(value: unknown, key: string): boolean | undefined {
+function readBooleanField(value: any, key: string): boolean | undefined {
   const record = asNullableRecord(value);
   if (!record) {
     return undefined;
@@ -343,13 +343,13 @@ function readBooleanField(value: unknown, key: string): boolean | undefined {
   return typeof record[key] === "boolean" ? record[key] : undefined;
 }
 
-const hasAccountValue = (account: unknown): boolean => account !== null && account !== undefined;
+const hasAccountValue = (account: any): boolean => account !== null && account !== undefined;
 
 function resolveProbeAccountEnabled(params: {
   plugin: ChannelPlugin;
   cfg: OpenClawConfig;
   accountId: string;
-  account: unknown;
+  account: any;
   diagnostics: string[];
 }): boolean {
   const fallback = readBooleanField(params.account, "enabled") ?? true;
@@ -371,7 +371,7 @@ async function resolveProbeAccountConfigured(params: {
   plugin: ChannelPlugin;
   cfg: OpenClawConfig;
   accountId: string;
-  account: unknown;
+  account: any;
   diagnostics: string[];
 }): Promise<boolean> {
   const fallback = readBooleanField(params.account, "configured") ?? true;
@@ -395,14 +395,14 @@ async function resolveHealthAccountContext(params: {
   cfg: OpenClawConfig;
   accountId: string;
 }): Promise<{
-  probeAccount: unknown;
-  snapshotAccount: unknown;
+  probeAccount: any;
+  snapshotAccount: any;
   enabled: boolean;
   configured: boolean;
   diagnostics: string[];
 }> {
   const diagnostics: string[] = [];
-  let account: unknown;
+  let account: any;
   try {
     account = params.plugin.config.resolveAccount(params.cfg, params.accountId);
   } catch (error) {
@@ -410,7 +410,7 @@ async function resolveHealthAccountContext(params: {
       `${params.plugin.id}:${params.accountId}: failed to resolve account (${formatErrorMessage(error)}).`,
     );
   }
-  let inspectedAccount: unknown;
+  let inspectedAccount: any;
   try {
     inspectedAccount = await inspectChannelAccount(params);
   } catch (error) {
@@ -552,7 +552,7 @@ export async function getHealthSnapshot(params?: {
         debugHealth("account.diagnostics", { channel: plugin.id, accountId, diagnostics });
       }
 
-      let probe: unknown;
+      let probe: any;
       let lastProbeAt: number | null = null;
       if (enabled && configured && doProbe && plugin.status?.probeAccount) {
         try {
@@ -569,7 +569,7 @@ export async function getHealthSnapshot(params?: {
       }
 
       const probeRecord =
-        probe && typeof probe === "object" ? (probe as Record<string, unknown>) : null;
+        probe && typeof probe === "object" ? (probe as Record<string, any>) : null;
       const bot =
         probeRecord && typeof probeRecord.bot === "object"
           ? (probeRecord.bot as { username?: string | null })

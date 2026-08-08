@@ -36,7 +36,7 @@ interface FileStats {
 interface ApiResponse<T = unknown> {
   ok: boolean;
   error?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 // ========== 安全检查工具函数 ==========

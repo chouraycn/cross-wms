@@ -11,34 +11,34 @@
  * 完整实现见 openclaw 源码。
  */
 
-export function createTalkRealtimeRelaySession(..._args: unknown[]): unknown {
+export function createTalkRealtimeRelaySession(..._args: any[]): any {
   return undefined;
 }
 
-export function sendTalkRealtimeRelayAudio(..._args: unknown[]): unknown {
+export function sendTalkRealtimeRelayAudio(..._args: any[]): any {
   return undefined;
 }
 
-export function submitTalkRealtimeRelayToolResult(..._args: unknown[]): unknown {
+export function submitTalkRealtimeRelayToolResult(..._args: any[]): any {
   return undefined;
 }
 
-export function registerTalkRealtimeRelayAgentRun(..._args: unknown[]): unknown {
+export function registerTalkRealtimeRelayAgentRun(..._args: any[]): any {
   return undefined;
 }
 
-export async function steerTalkRealtimeRelayAgentRun(..._args: unknown[]): Promise<unknown> {
+export async function steerTalkRealtimeRelayAgentRun(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
 
-export function cancelTalkRealtimeRelayTurn(..._args: unknown[]): unknown {
+export function cancelTalkRealtimeRelayTurn(..._args: any[]): any {
   return false;
 }
 
-export function stopTalkRealtimeRelaySession(..._args: unknown[]): unknown {
+export function stopTalkRealtimeRelaySession(..._args: any[]): any {
   return undefined;
 }
 
-export function clearTalkRealtimeRelaySessionsForTest(..._args: unknown[]): unknown {
+export function clearTalkRealtimeRelaySessionsForTest(..._args: any[]): any {
   return undefined;
 }

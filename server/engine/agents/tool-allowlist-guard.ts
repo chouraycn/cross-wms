@@ -6,7 +6,7 @@
  */
 
 /** Collects explicit tool allowlist sources from config. */
-export function collectExplicitToolAllowlistSources(..._args: unknown[]): string[] {
+export function collectExplicitToolAllowlistSources(..._args: any[]): string[] {
   // Cross-wms does not have agent config resolution for tool allowlists.
   return [];
 }

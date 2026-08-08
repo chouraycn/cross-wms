@@ -14,55 +14,55 @@ export type RegisteredExecApprovalRequestContext = unknown;
 export type ExecApprovalFollowupTarget = unknown;
 export type ExecApprovalFollowupResultDeps = unknown;
 export type DefaultExecApprovalRequestArgs = unknown;
-export const MAX_EXEC_APPROVAL_FOLLOWUP_FAILURE_LOG_KEYS: unknown = undefined;
-export function createExecApprovalPendingState(..._args: unknown[]): unknown {
+export const MAX_EXEC_APPROVAL_FOLLOWUP_FAILURE_LOG_KEYS: any = undefined;
+export function createExecApprovalPendingState(..._args: any[]): any {
   return undefined;
 }
-export function createExecApprovalRequestState(..._args: unknown[]): unknown {
+export function createExecApprovalRequestState(..._args: any[]): any {
   return undefined;
 }
-export function createExecApprovalRequestContext(..._args: unknown[]): unknown {
+export function createExecApprovalRequestContext(..._args: any[]): any {
   return undefined;
 }
-export function createDefaultExecApprovalRequestContext(..._args: unknown[]): unknown {
+export function createDefaultExecApprovalRequestContext(..._args: any[]): any {
   return undefined;
 }
-export function resolveBaseExecApprovalDecision(..._args: unknown[]): unknown {
+export function resolveBaseExecApprovalDecision(..._args: any[]): any {
   return undefined;
 }
-export function resolveExecHostApprovalContext(..._args: unknown[]): unknown {
+export function resolveExecHostApprovalContext(..._args: any[]): any {
   return undefined;
 }
-export async function resolveApprovalDecisionOrUndefined(..._args: unknown[]): Promise<unknown> {
+export async function resolveApprovalDecisionOrUndefined(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
-export function resolveExecApprovalUnavailableState(..._args: unknown[]): unknown {
+export function resolveExecApprovalUnavailableState(..._args: any[]): any {
   return undefined;
 }
-export async function createAndRegisterDefaultExecApprovalRequest(..._args: unknown[]): Promise<unknown> {
+export async function createAndRegisterDefaultExecApprovalRequest(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
-export function buildDefaultExecApprovalRequestArgs(..._args: unknown[]): unknown {
+export function buildDefaultExecApprovalRequestArgs(..._args: any[]): any {
   return undefined;
 }
-export function buildExecApprovalFollowupTarget(..._args: unknown[]): unknown {
+export function buildExecApprovalFollowupTarget(..._args: any[]): any {
   return undefined;
 }
-export function createExecApprovalDecisionState(..._args: unknown[]): unknown {
+export function createExecApprovalDecisionState(..._args: any[]): any {
   return undefined;
 }
-export function enforceStrictInlineEvalApprovalBoundary(..._args: unknown[]): unknown {
+export function enforceStrictInlineEvalApprovalBoundary(..._args: any[]): any {
   return undefined;
 }
-export function shouldResolveExecApprovalUnavailableInline(..._args: unknown[]): unknown {
+export function shouldResolveExecApprovalUnavailableInline(..._args: any[]): any {
   return false;
 }
-export function buildHeadlessExecApprovalDeniedMessage(..._args: unknown[]): unknown {
+export function buildHeadlessExecApprovalDeniedMessage(..._args: any[]): any {
   return undefined;
 }
-export async function sendExecApprovalFollowupResult(..._args: unknown[]): Promise<unknown> {
+export async function sendExecApprovalFollowupResult(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
-export function buildExecApprovalPendingToolResult(..._args: unknown[]): unknown {
+export function buildExecApprovalPendingToolResult(..._args: any[]): any {
   return undefined;
 }

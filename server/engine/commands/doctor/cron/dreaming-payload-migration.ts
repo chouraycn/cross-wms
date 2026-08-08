@@ -9,7 +9,7 @@ import {
   MEMORY_DREAMING_SYSTEM_EVENT_TEXT,
 } from "@openclaw-src/memory-host-sdk/dreaming.js";
 
-type UnknownRecord = Record<string, unknown>;
+type UnknownRecord = Record<string, any>;
 
 function isManagedDreamingJob(raw: UnknownRecord): boolean {
   const description = normalizeOptionalString(raw.description);

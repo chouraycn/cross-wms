@@ -48,9 +48,9 @@ const PHOTOS_LATEST_PAYLOAD = {
   ],
 } as const;
 
-type GatewayCall = { method: string; params?: unknown };
+type GatewayCall = { method: string; params?: any };
 
-function unexpectedGatewayMethod(method: unknown): never {
+function unexpectedGatewayMethod(method: any): never {
   throw new Error(`unexpected method: ${String(method)}`);
 }
 
@@ -65,28 +65,28 @@ function getNodesTool(options?: { modelHasVision?: boolean; allowMediaInvokeComm
 }
 
 async function executeNodes(
-  input: Record<string, unknown>,
+  input: Record<string, any>,
   options?: { modelHasVision?: boolean; allowMediaInvokeCommands?: boolean },
 ) {
   return getNodesTool(options).execute("call1", input as never);
 }
 
 type NodesToolResult = Awaited<ReturnType<typeof executeNodes>>;
-type GatewayMockResult = Record<string, unknown> | null | undefined;
+type GatewayMockResult = Record<string, any> | null | undefined;
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error(`expected ${label}`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 function expectInvokeParams(
-  invokeParams: unknown,
+  invokeParams: any,
   expected: {
     command: string;
     nodeId?: string;
-    params?: Record<string, unknown>;
+    params?: Record<string, any>;
   },
 ) {
   // Node command payloads are nested under the gateway node.invoke params object.
@@ -143,7 +143,7 @@ function expectFirstTextContains(result: NodesToolResult, expectedText: string) 
   expect(text).toContain(expectedText);
 }
 
-function parseFirstTextJson(result: NodesToolResult): unknown {
+function parseFirstTextJson(result: NodesToolResult): any {
   const first = result.content?.[0];
   expect(first?.type).toBe("text");
   const text = first?.type === "text" ? first.text : "";
@@ -153,8 +153,8 @@ function parseFirstTextJson(result: NodesToolResult): unknown {
 function setupNodeInvokeMock(params: {
   commands?: string[];
   remoteIp?: string;
-  onInvoke?: (invokeParams: unknown) => GatewayMockResult | Promise<GatewayMockResult>;
-  invokePayload?: unknown;
+  onInvoke?: (invokeParams: any) => GatewayMockResult | Promise<GatewayMockResult>;
+  invokePayload?: any;
 }) {
   // Most camera tests need node.list followed by one node.invoke command.
   callGateway.mockImplementation(async ({ method, params: invokeParams }: GatewayCall) => {
@@ -419,7 +419,7 @@ describe("nodes photos_latest", () => {
     expectNoImages(result);
     expect(result.content ?? []).toStrictEqual([]);
     const details =
-      (result.details as { photos?: Array<Record<string, unknown>> } | undefined)?.photos ?? [];
+      (result.details as { photos?: Array<Record<string, any>> } | undefined)?.photos ?? [];
     expect(details[0]?.width).toBe(1);
     expect(details[0]?.height).toBe(1);
     expect(details[0]?.createdAt).toBe("2026-03-04T00:00:00Z");

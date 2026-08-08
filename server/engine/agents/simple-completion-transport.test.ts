@@ -15,7 +15,7 @@ const createOpenClawTransportStreamFnForModel = vi.fn();
 const createTransportAwareStreamFnForModel = vi.fn();
 const prepareTransportAwareSimpleModel = vi.fn();
 const resolveTransportAwareSimpleApi = vi.fn();
-const prepareGoogleSimpleCompletionModel = vi.fn((model: unknown) => model);
+const prepareGoogleSimpleCompletionModel = vi.fn((model: any) => model);
 
 vi.mock("./anthropic-vertex-stream.js", () => ({
   createAnthropicVertexStreamFnForModel,
@@ -174,9 +174,9 @@ describe("prepareModelForSimpleCompletion", () => {
     expect(resolveProviderStreamFn).toHaveBeenCalledTimes(1);
     const [request] = resolveProviderStreamFn.mock.calls.at(0) as [
       {
-        provider?: unknown;
-        config?: unknown;
-        context?: { provider?: unknown; modelId?: unknown; model?: unknown };
+        provider?: any;
+        config?: any;
+        context?: { provider?: any; modelId?: any; model?: any };
       },
     ];
     expect(request.provider).toBe("ollama");
@@ -266,7 +266,7 @@ describe("prepareModelForSimpleCompletion", () => {
       maxTokens: 8192,
       headers: {},
     };
-    prepareGoogleSimpleCompletionModel.mockImplementationOnce((m: unknown) => ({
+    prepareGoogleSimpleCompletionModel.mockImplementationOnce((m: any) => ({
       ...(m as Model<"google-generative-ai">),
       api: "openclaw-google-generative-ai-simple",
     }));

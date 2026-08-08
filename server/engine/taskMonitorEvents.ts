@@ -1,6 +1,6 @@
 import { getWebSocketHub, type TaskMonitorEvent, type TaskMonitorEventType } from '../gateway/webSocketHub.js';
 
-export function publishTaskMonitorEvent(sessionId: string, type: TaskMonitorEventType, payload: unknown): void {
+export function publishTaskMonitorEvent(sessionId: string, type: TaskMonitorEventType, payload: any): void {
   const hub = getWebSocketHub();
   if (!hub) return;
 
@@ -14,58 +14,58 @@ export function publishTaskMonitorEvent(sessionId: string, type: TaskMonitorEven
   hub.publishTaskMonitorEvent(event);
 }
 
-export function publishTodoCreated(sessionId: string, payload: unknown): void {
+export function publishTodoCreated(sessionId: string, payload: any): void {
   publishTaskMonitorEvent(sessionId, 'todo_created', payload);
 }
 
-export function publishTodoUpdated(sessionId: string, payload: unknown): void {
+export function publishTodoUpdated(sessionId: string, payload: any): void {
   publishTaskMonitorEvent(sessionId, 'todo_updated', payload);
 }
 
-export function publishTodoDeleted(sessionId: string, payload: unknown): void {
+export function publishTodoDeleted(sessionId: string, payload: any): void {
   publishTaskMonitorEvent(sessionId, 'todo_deleted', payload);
 }
 
-export function publishArtifactCreated(sessionId: string, payload: unknown): void {
+export function publishArtifactCreated(sessionId: string, payload: any): void {
   publishTaskMonitorEvent(sessionId, 'artifact_created', payload);
 }
 
-export function publishArtifactDeleted(sessionId: string, payload: unknown): void {
+export function publishArtifactDeleted(sessionId: string, payload: any): void {
   publishTaskMonitorEvent(sessionId, 'artifact_deleted', payload);
 }
 
-export function publishToolCallCreated(sessionId: string, payload: unknown): void {
+export function publishToolCallCreated(sessionId: string, payload: any): void {
   publishTaskMonitorEvent(sessionId, 'tool_call_created', payload);
 }
 
-export function publishToolCallUpdated(sessionId: string, payload: unknown): void {
+export function publishToolCallUpdated(sessionId: string, payload: any): void {
   publishTaskMonitorEvent(sessionId, 'tool_call_updated', payload);
 }
 
-export function publishTrajectoryEventCreated(sessionId: string, payload: unknown): void {
+export function publishTrajectoryEventCreated(sessionId: string, payload: any): void {
   publishTaskMonitorEvent(sessionId, 'trajectory_event_created', payload);
 }
 
-export function publishPlanCreated(sessionId: string, payload: unknown): void {
+export function publishPlanCreated(sessionId: string, payload: any): void {
   publishTaskMonitorEvent(sessionId, 'plan_created', payload);
 }
 
-export function publishPlanUpdated(sessionId: string, payload: unknown): void {
+export function publishPlanUpdated(sessionId: string, payload: any): void {
   publishTaskMonitorEvent(sessionId, 'plan_updated', payload);
 }
 
-export function publishPlanRevised(sessionId: string, payload: unknown): void {
+export function publishPlanRevised(sessionId: string, payload: any): void {
   publishTaskMonitorEvent(sessionId, 'plan_revised', payload);
 }
 
-export function publishTaskFlowCreated(sessionId: string, payload: unknown): void {
+export function publishTaskFlowCreated(sessionId: string, payload: any): void {
   publishTaskMonitorEvent(sessionId, 'task_flow_created', payload);
 }
 
-export function publishTaskFlowUpdated(sessionId: string, payload: unknown): void {
+export function publishTaskFlowUpdated(sessionId: string, payload: any): void {
   publishTaskMonitorEvent(sessionId, 'task_flow_updated', payload);
 }
 
-export function publishInstanceUpdated(sessionId: string, payload: unknown): void {
+export function publishInstanceUpdated(sessionId: string, payload: any): void {
   publishTaskMonitorEvent(sessionId, 'instance_updated', payload);
 }

@@ -6,7 +6,7 @@ export interface DeliveryValidationResult {
   errors?: string[];
 }
 
-export function validateDelivery(delivery: unknown): DeliveryValidationResult {
+export function validateDelivery(delivery: any): DeliveryValidationResult {
   try {
     deliverySchema.parse(delivery);
     return { valid: true };
@@ -17,7 +17,7 @@ export function validateDelivery(delivery: unknown): DeliveryValidationResult {
   }
 }
 
-export function validateDeliveryPatch(patch: unknown): DeliveryValidationResult {
+export function validateDeliveryPatch(patch: any): DeliveryValidationResult {
   try {
     deliveryPatchSchema.parse(patch);
     return { valid: true };

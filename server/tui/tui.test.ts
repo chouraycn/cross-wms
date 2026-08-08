@@ -549,12 +549,12 @@ describe("TUI shutdown safety", () => {
 
   it("requests exit once when the TUI terminal closes", () => {
     const stdin = new EventEmitter() as EventEmitter & {
-      on(event: "close" | "end", listener: () => void): unknown;
-      off(event: "close" | "end", listener: () => void): unknown;
+      on(event: "close" | "end", listener: () => void): any;
+      off(event: "close" | "end", listener: () => void): any;
     };
     const stdout = new EventEmitter() as EventEmitter & {
-      on(event: "close" | "end", listener: () => void): unknown;
-      off(event: "close" | "end", listener: () => void): unknown;
+      on(event: "close" | "end", listener: () => void): any;
+      off(event: "close" | "end", listener: () => void): any;
     };
     const requestExit = vi.fn();
 

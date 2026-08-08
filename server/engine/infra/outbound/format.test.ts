@@ -25,12 +25,12 @@ describe("formatOutboundDeliverySummary", () => {
     {
       channel: "alpha" as const,
       result: undefined,
-      expected: "✅ Sent via Alpha. Message ID: unknown",
+      expected: "✅ Sent via Alpha. Message ID: any",
     },
     {
       channel: "localchat" as const,
       result: undefined,
-      expected: "✅ Sent via Local Chat. Message ID: unknown",
+      expected: "✅ Sent via Local Chat. Message ID: any",
     },
     {
       channel: "alpha" as const,
@@ -85,7 +85,7 @@ describe("formatGatewaySummary", () => {
     },
     {
       input: {},
-      expected: "✅ Sent via gateway. Message ID: unknown",
+      expected: "✅ Sent via gateway. Message ID: any",
     },
   ])("formats gateway summary for %j", ({ input, expected }) => {
     expect(formatGatewaySummary(input)).toBe(expected);

@@ -944,7 +944,7 @@ export class ExtensionRunner {
     return currentMessages;
   }
 
-  async emitBeforeProviderRequest(payload: unknown): Promise<unknown> {
+  async emitBeforeProviderRequest(payload: any): Promise<any> {
     const ctx = this.createContext();
     let currentPayload = payload;
 

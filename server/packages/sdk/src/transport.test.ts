@@ -5,7 +5,7 @@ import { GatewayClientTransport } from "./transport.js";
 type MockGatewayClientInstance = {
   opts: {
     onConnectError?: (error: Error) => void;
-    onHelloOk?: (hello: unknown) => void;
+    onHelloOk?: (hello: any) => void;
   };
   request: ReturnType<typeof vi.fn>;
   start: ReturnType<typeof vi.fn>;

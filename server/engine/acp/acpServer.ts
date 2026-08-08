@@ -27,17 +27,17 @@ export interface AcpRequestEnvelope {
   jsonrpc: "2.0";
   id: string | number;
   method: AcpMethod | string;
-  params?: Record<string, unknown>;
+  params?: Record<string, any>;
 }
 
 export interface AcpResponseEnvelope {
   jsonrpc: "2.0";
   id: string | number;
-  result?: unknown;
+  result?: any;
   error?: {
     code: number;
     message: string;
-    data?: unknown;
+    data?: any;
   };
 }
 
@@ -46,7 +46,7 @@ export interface AcpSession {
   name?: string;
   createdAt: number;
   updatedAt: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface AcpTurn {
@@ -56,13 +56,13 @@ export interface AcpTurn {
   startedAt?: number;
   completedAt?: number;
   error?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 type AcpHandler = (
-  params: Record<string, unknown>,
+  params: Record<string, any>,
   context: AcpServerContext,
-) => Promise<unknown>;
+) => Promise<any>;
 
 export interface AcpServerContext {
   requestId: string;
@@ -242,7 +242,7 @@ class AcpServer {
   }
 
   // Turn management
-  createTurn(sessionId: string, metadata?: Record<string, unknown>): AcpTurn {
+  createTurn(sessionId: string, metadata?: Record<string, any>): AcpTurn {
     const id = `turn_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     const turn: AcpTurn = {
       id,

@@ -31,7 +31,7 @@ export interface OpenAiChatCompletionRequest {
     function: {
       name: string;
       description?: string;
-      parameters: Record<string, unknown>;
+      parameters: Record<string, any>;
     };
   }>;
   tool_choice?: "none" | "auto" | { type: "function"; function: { name: string } };
@@ -102,7 +102,7 @@ export class AcpTranslator {
       inputSchema: t.function.parameters,
     }));
 
-    let toolChoice: string | Record<string, unknown> | undefined;
+    let toolChoice: string | Record<string, any> | undefined;
     if (request.tool_choice === "none") {
       toolChoice = "none";
     } else if (request.tool_choice === "auto") {
@@ -159,7 +159,7 @@ export class AcpTranslator {
     };
 
     if (toolCalls.length > 0) {
-      (message as OpenAiChatMessage & { tool_calls?: unknown }).tool_calls = toolCalls;
+      (message as OpenAiChatMessage & { tool_calls?: any }).tool_calls = toolCalls;
     }
 
     return {
@@ -354,7 +354,7 @@ export class AcpTranslator {
     sessionId: string;
     sessionKey: string;
     runId: string;
-    prompt: readonly { type: string; text?: string; [key: string]: unknown }[];
+    prompt: readonly { type: string; text?: string; [key: string]: any }[];
   }): Promise<void> {
     await this.eventLedger.recordUserPrompt({
       sessionId: params.sessionId,
@@ -368,13 +368,13 @@ export class AcpTranslator {
     sessionId: string;
     sessionKey: string;
     runId?: string;
-    update: { sessionUpdate: string; [key: string]: unknown };
+    update: { sessionUpdate: string; [key: string]: any };
   }): Promise<void> {
     await this.eventLedger.recordUpdate({
       sessionId: params.sessionId,
       sessionKey: params.sessionKey,
       runId: params.runId,
-      update: params.update as unknown,
+      update: params.update as any,
     });
   }
 

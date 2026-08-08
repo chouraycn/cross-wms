@@ -95,10 +95,10 @@ function safeRealpathSync(
 type OpenClawConfig = {
   plugins?: {
     entries?: Record<string, { enabled?: boolean }>;
-    [key: string]: unknown;
+    [key: string]: any;
   };
-  channels?: Record<string, unknown>;
-  [key: string]: unknown;
+  channels?: Record<string, any>;
+  [key: string]: any;
 };
 
 /** 插件兼容性代码（降级 string 别名占位）。 */
@@ -121,10 +121,10 @@ type PluginManifestRecord = {
   version?: string;
   format?: string;
   bundleFormat?: string;
-  bundleCapabilities?: readonly unknown[];
-  skills?: readonly unknown[];
-  settingsFiles?: readonly unknown[];
-  hooks?: readonly unknown[];
+  bundleCapabilities?: readonly any[];
+  skills?: readonly any[];
+  settingsFiles?: readonly any[];
+  hooks?: readonly any[];
   source?: string;
   rootDir: string;
   manifestPath: string;
@@ -137,7 +137,7 @@ type PluginManifestRecord = {
     providers?: ReadonlyArray<{ id: string; envVars?: readonly string[] }>;
   };
   providerAuthEnvVars?: Record<string, readonly string[]>;
-  channelEnvVars?: Record<string, readonly unknown[]>;
+  channelEnvVars?: Record<string, readonly any[]>;
   activation?: {
     onStartup?: boolean;
     onAgentHarnesses?: readonly string[];
@@ -150,13 +150,13 @@ type PluginManifestRecord = {
   };
   cliBackends?: readonly string[];
   startupDeferConfiguredChannelFullLoadUntilAfterListen?: boolean;
-  kind?: unknown;
+  kind?: any;
   channels?: readonly string[];
-  channelConfigs?: Record<string, unknown>;
+  channelConfigs?: Record<string, any>;
   providers?: readonly string[];
   modelCatalog?: {
-    providers?: Record<string, unknown>;
-    aliases?: Record<string, unknown>;
+    providers?: Record<string, any>;
+    aliases?: Record<string, any>;
     suppressions?: ReadonlyArray<{ provider: string }>;
   };
   modelSupport?: {
@@ -187,7 +187,7 @@ type PluginManifestRegistry = {
 type PluginPackageChannel = {
   id?: string;
   label?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 /** 候选项的最小结构占位（用于访问 packageDir/rootDir/packageName/packageVersion/packageManifest）。 */
@@ -221,7 +221,7 @@ type NormalizedPluginsConfig = {
  * 解析 entries/allow/deny/loadPaths。这里降级为始终返回空规范化结构，使所有插件
  * 默认通过 base policy（enabled=true, 无 deny, 无 allowlist 限制）。
  */
-function normalizePluginsConfig(_plugins: unknown): NormalizedPluginsConfig {
+function normalizePluginsConfig(_plugins: any): NormalizedPluginsConfig {
   return {
     enabled: true,
     entries: {},
@@ -263,7 +263,7 @@ function resolveEffectiveEnableState(_params: {
  * 降级说明：cross-wms 的 slots.js 尚未移植。openclaw 原版从 plugin.kind 字段
  * 解析能力集合。这里降级为始终返回 false，使 startup.memory 字段始终为 false。
  */
-function hasKind(_kind: unknown, _capability: string): boolean {
+function hasKind(_kind: any, _capability: string): boolean {
   return false;
 }
 
@@ -425,7 +425,7 @@ function describePackageInstallSource(
   });
 }
 
-function normalizeStringField(value: unknown): string | undefined {
+function normalizeStringField(value: any): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }

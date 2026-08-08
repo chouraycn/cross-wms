@@ -23,7 +23,7 @@ const SoulPage: React.FC = () => {
 
   const [currentProfile, setCurrentProfile] = useState<SoulProfile | null>(null);
   const [systemMessage, setSystemMessage] = useState('');
-  const [strategyPrefs, setStrategyPrefs] = useState<Record<string, unknown>>({});
+  const [strategyPrefs, setStrategyPrefs] = useState<Record<string, any>>({});
   const [files, setFiles] = useState<SoulFile[]>([]);
   const [loading, setLoading] = useState(false);
   const [reloading, setReloading] = useState(false);

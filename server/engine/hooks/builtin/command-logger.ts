@@ -4,7 +4,7 @@ import type { HookHandler } from '../types.js';
 export const commandLoggerHook: HookHandler = async (event) => {
   if (event.type === 'command') {
     const command = event.context.command as string | undefined;
-    const args = event.context.args as Record<string, unknown> | undefined;
+    const args = event.context.args as Record<string, any> | undefined;
     const sessionKey = event.sessionKey;
 
     logger.info(`[command-logger] [${sessionKey}] Command: ${command}`, {

@@ -3,48 +3,48 @@
 export type ExecutableResolution = unknown;
 export type CommandResolution = unknown;
 export type ExecArgvToken = unknown;
-export function resolveCommandResolution(...args: unknown[]): unknown {
+export function resolveCommandResolution(...args: any[]): any {
   return undefined;
 }
-export function resolveCommandResolutionFromArgv(...args: unknown[]): unknown {
+export function resolveCommandResolutionFromArgv(...args: any[]): any {
   return undefined;
 }
-export function resolveExecutableTrustPath(...args: unknown[]): unknown {
+export function resolveExecutableTrustPath(...args: any[]): any {
   return undefined;
 }
-export function resolveExecutionTargetResolution(...args: unknown[]): unknown {
+export function resolveExecutionTargetResolution(...args: any[]): any {
   return undefined;
 }
-export function resolvePolicyTargetResolution(...args: unknown[]): unknown {
+export function resolvePolicyTargetResolution(...args: any[]): any {
   return undefined;
 }
-export function resolveExecutionTargetCandidatePath(...args: unknown[]): unknown {
+export function resolveExecutionTargetCandidatePath(...args: any[]): any {
   return undefined;
 }
-export function resolveExecutionTargetTrustPath(...args: unknown[]): unknown {
+export function resolveExecutionTargetTrustPath(...args: any[]): any {
   return undefined;
 }
-export function resolvePolicyTargetCandidatePath(...args: unknown[]): unknown {
+export function resolvePolicyTargetCandidatePath(...args: any[]): any {
   return undefined;
 }
-export function resolvePolicyTargetTrustPath(...args: unknown[]): unknown {
+export function resolvePolicyTargetTrustPath(...args: any[]): any {
   return undefined;
 }
-export function resolveApprovalAuditCandidatePath(...args: unknown[]): unknown {
+export function resolveApprovalAuditCandidatePath(...args: any[]): any {
   return undefined;
 }
-export function resolveApprovalAuditTrustPath(...args: unknown[]): unknown {
+export function resolveApprovalAuditTrustPath(...args: any[]): any {
   return undefined;
 }
-export function resolveAllowlistCandidatePath(...args: unknown[]): unknown {
+export function resolveAllowlistCandidatePath(...args: any[]): any {
   return undefined;
 }
-export function resolvePolicyAllowlistCandidatePath(...args: unknown[]): unknown {
+export function resolvePolicyAllowlistCandidatePath(...args: any[]): any {
   return undefined;
 }
-export function matchAllowlist(...args: unknown[]): unknown {
+export function matchAllowlist(...args: any[]): any {
   return undefined;
 }
-export function parseExecArgvToken(...args: unknown[]): unknown {
+export function parseExecArgvToken(...args: any[]): any {
   return undefined;
 }

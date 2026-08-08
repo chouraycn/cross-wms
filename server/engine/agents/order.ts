@@ -7,15 +7,15 @@
  */
 
 export type AuthProfileEligibilityReasonCode = unknown;
-export function isStoredCredentialCompatibleWithAuthProvider(..._args: unknown[]): unknown {
+export function isStoredCredentialCompatibleWithAuthProvider(..._args: any[]): any {
   return false;
 }
-export function isConfiguredAwsSdkAuthProfileForProvider(..._args: unknown[]): unknown {
+export function isConfiguredAwsSdkAuthProfileForProvider(..._args: any[]): any {
   return false;
 }
-export function resolveAuthProfileEligibility(..._args: unknown[]): unknown {
+export function resolveAuthProfileEligibility(..._args: any[]): any {
   return undefined;
 }
-export function resolveAuthProfileOrder(..._args: unknown[]): unknown {
+export function resolveAuthProfileOrder(..._args: any[]): any {
   return undefined;
 }

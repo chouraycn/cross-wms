@@ -25,6 +25,6 @@ export const DEFAULT_CONTEXT_PRUNING_SETTINGS: EffectiveContextPruningSettings =
 };
 
 /** Compute effective context pruning settings (returns disabled default in cross-wms). */
-export function computeEffectiveSettings(..._args: unknown[]): EffectiveContextPruningSettings {
+export function computeEffectiveSettings(..._args: any[]): EffectiveContextPruningSettings {
   return DEFAULT_CONTEXT_PRUNING_SETTINGS;
 }

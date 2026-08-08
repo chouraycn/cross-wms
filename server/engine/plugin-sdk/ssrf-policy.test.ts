@@ -23,7 +23,7 @@ import {
 } from "./ssrf-policy.js";
 
 function createLookupFn(addresses: Array<{ address: string; family: number }>): LookupFn {
-  return vi.fn(async (_hostname: string, options?: unknown) => {
+  return vi.fn(async (_hostname: string, options?: any) => {
     if (typeof options === "number" || !options || !(options as { all?: boolean }).all) {
       return addresses[0];
     }

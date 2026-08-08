@@ -15,7 +15,7 @@ import { createWebSearchTool } from "./web-search.js";
 describe("web_search tool schema", () => {
   it("marks query as required for model tool-call schemas", () => {
     const tool = createWebSearchTool();
-    const parameters = tool?.parameters as { required?: unknown } | undefined;
+    const parameters = tool?.parameters as { required?: any } | undefined;
 
     expect(parameters?.required).toEqual(["query"]);
   });
@@ -23,7 +23,7 @@ describe("web_search tool schema", () => {
   it("advertises the shared runtime count limit", () => {
     const tool = createWebSearchTool();
     const parameters = tool?.parameters as
-      | { properties?: { count?: { maximum?: unknown } } }
+      | { properties?: { count?: { maximum?: any } } }
       | undefined;
 
     expect(parameters?.properties?.count?.maximum).toBe(MAX_SEARCH_COUNT);

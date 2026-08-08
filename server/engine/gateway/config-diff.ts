@@ -6,7 +6,7 @@ import { isDeepStrictEqual } from "node:util";
 import { isPlainObject } from "../infra/plain-object.js";
 
 /** Return dotted config paths whose values differ between two config snapshots. */
-export function diffConfigPaths(prev: unknown, next: unknown, prefix = ""): string[] {
+export function diffConfigPaths(prev: any, next: any, prefix = ""): string[] {
   if (prev === next) {
     return [];
   }

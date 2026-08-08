@@ -5,7 +5,7 @@ import path from "node:path";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 const resolveProviderUsageAuthWithPluginMock = vi.fn(
-  async (..._args: unknown[]): Promise<unknown> => null,
+  async (..._args: any[]): Promise<any> => null,
 );
 const hasAnyAuthProfileStoreSourceMock = vi.fn(() => false);
 const ensureAuthProfileStoreMock = vi.fn(() => ({
@@ -14,7 +14,7 @@ const ensureAuthProfileStoreMock = vi.fn(() => ({
 const ensureAuthProfileStoreWithoutExternalProfilesMock = vi.fn(() => ({
   profiles: {},
 }));
-const resolveAuthProfileOrderMock = vi.fn((_params: unknown): string[] => []);
+const resolveAuthProfileOrderMock = vi.fn((_params: any): string[] => []);
 
 vi.mock("../agents/auth-profiles.js", () => ({
   dedupeProfileIds: (profileIds: string[]) => [...new Set(profileIds)],
@@ -24,7 +24,7 @@ vi.mock("../agents/auth-profiles.js", () => ({
   hasAnyAuthProfileStoreSource: () => hasAnyAuthProfileStoreSourceMock(),
   listProfilesForProvider: () => [],
   resolveApiKeyForProfile: async () => null,
-  resolveAuthProfileOrder: (params: unknown) => resolveAuthProfileOrderMock(params),
+  resolveAuthProfileOrder: (params: any) => resolveAuthProfileOrderMock(params),
 }));
 
 vi.mock("../plugins/provider-runtime.js", async () => {
@@ -85,10 +85,10 @@ async function withTempHome<T>(fn: (homeDir: string) => Promise<T>): Promise<T> 
   }
 }
 
-function providerCalls(mockFn: { mock: { calls: unknown[][] } }): unknown[] {
+function providerCalls(mockFn: { mock: { calls: any[][] } }): any[] {
   return mockFn.mock.calls.map(([params]) =>
     params && typeof params === "object" && "provider" in params
-      ? (params as { provider?: unknown }).provider
+      ? (params as { provider?: any }).provider
       : undefined,
   );
 }
@@ -168,10 +168,10 @@ describe("resolveProviderAuths plugin boundary", () => {
         },
       },
     });
-    resolveAuthProfileOrderMock.mockImplementation((params: unknown) => {
+    resolveAuthProfileOrderMock.mockImplementation((params: any) => {
       const provider =
         params && typeof params === "object" && "provider" in params
-          ? (params as { provider?: unknown }).provider
+          ? (params as { provider?: any }).provider
           : undefined;
       return provider === "anthropic" ? ["anthropic:default"] : [];
     });
@@ -210,10 +210,10 @@ describe("resolveProviderAuths plugin boundary", () => {
         },
       },
     });
-    resolveAuthProfileOrderMock.mockImplementation((params: unknown) => {
+    resolveAuthProfileOrderMock.mockImplementation((params: any) => {
       const provider =
         params && typeof params === "object" && "provider" in params
-          ? (params as { provider?: unknown }).provider
+          ? (params as { provider?: any }).provider
           : undefined;
       return provider === "minimax-portal" ? ["minimax-portal:default"] : [];
     });

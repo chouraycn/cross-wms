@@ -4,7 +4,7 @@
 export type NpmSpecResolution = {
   resolvedSpec?: string;
   integrity?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 export type NpmIntegrityDrift = {

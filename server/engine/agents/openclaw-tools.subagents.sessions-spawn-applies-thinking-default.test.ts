@@ -10,8 +10,8 @@ function expectResolvedThinkingPlan(input: {
   expectedOverride?: ThinkingLevel | null;
   thinkingOverrideRaw?: string;
   callerThinkingRaw?: string;
-  requesterAgentConfig?: unknown;
-  targetAgentConfig?: unknown;
+  requesterAgentConfig?: any;
+  targetAgentConfig?: any;
   cfg?: OpenClawConfig;
 }) {
   // Assert both the effective override and initial session patch in one place.

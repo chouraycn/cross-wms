@@ -8,12 +8,12 @@
 
 export type SubagentInlineAttachment = unknown;
 export type SubagentAttachmentReceiptFile = unknown;
-export function decodeStrictBase64(..._args: unknown[]): unknown {
+export function decodeStrictBase64(..._args: any[]): any {
   return undefined;
 }
-export function resolveAcpSessionsSpawnImageAttachments(..._args: unknown[]): unknown {
+export function resolveAcpSessionsSpawnImageAttachments(..._args: any[]): any {
   return undefined;
 }
-export async function materializeSubagentAttachments(..._args: unknown[]): Promise<unknown> {
+export async function materializeSubagentAttachments(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }

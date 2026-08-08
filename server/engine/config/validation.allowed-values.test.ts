@@ -12,15 +12,15 @@ function requireIssue<T extends { path: string }>(issues: T[], path: string): T 
 }
 
 function mapFirstIssue(
-  schema: { safeParse: (value: unknown) => { success: true } | { success: false; error: unknown } },
-  value: unknown,
+  schema: { safeParse: (value: any) => { success: true } | { success: false; error: any } },
+  value: any,
 ) {
   const result = schema.safeParse(value);
   expect(result.success).toBe(false);
   if (result.success) {
     throw new Error("expected schema parse failure");
   }
-  const issue = (result.error as { issues?: unknown[] }).issues?.[0];
+  const issue = (result.error as { issues?: any[] }).issues?.[0];
   if (!issue) {
     throw new Error("expected first zod issue");
   }

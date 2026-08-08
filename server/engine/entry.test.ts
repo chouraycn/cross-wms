@@ -36,7 +36,7 @@ describe("entry root help fast path", () => {
 
   it("renders live root help when plugin config changes command descriptors", async () => {
     let outputPrecomputedRootHelpTextCalls = 0;
-    const outputRootHelpOptions: unknown[] = [];
+    const outputRootHelpOptions: any[] = [];
     const liveOptions = {
       config: {
         plugins: {

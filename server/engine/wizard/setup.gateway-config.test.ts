@@ -29,7 +29,7 @@ describe("configureGatewayForSetup", () => {
   function createPrompter(params: { selectQueue: string[]; textQueue: Array<string | undefined> }) {
     const selectQueue = [...params.selectQueue];
     const textQueue = [...params.textQueue];
-    const select = vi.fn(async (paramsLocal: WizardSelectParams<unknown>) => {
+    const select = vi.fn(async (paramsLocal: WizardSelectParams<any>) => {
       const next = selectQueue.shift();
       if (next !== undefined) {
         return next;
@@ -71,7 +71,7 @@ describe("configureGatewayForSetup", () => {
     authChoice?: "token" | "password";
     tailscaleChoice?: "off" | "serve";
     textQueue?: Array<string | undefined>;
-    nextConfig?: Record<string, unknown>;
+    nextConfig?: Record<string, any>;
   }) {
     const authChoice = params?.authChoice ?? "token";
     const prompter = createPrompter({
@@ -130,7 +130,7 @@ describe("configureGatewayForSetup", () => {
 
     try {
       const selectQueue = ["loopback", "token", "off"];
-      const select = vi.fn(async (params: WizardSelectParams<unknown>) => {
+      const select = vi.fn(async (params: WizardSelectParams<any>) => {
         const next = selectQueue.shift();
         if (next !== undefined) {
           return next;

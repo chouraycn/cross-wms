@@ -12,7 +12,7 @@ import type { PluginRegistry } from "../plugins/registry.js";
 /** Registry entry shape used by channel tests without loading real plugins. */
 export type TestChannelRegistration = {
   pluginId: string;
-  plugin: unknown;
+  plugin: any;
   source: string;
 };
 

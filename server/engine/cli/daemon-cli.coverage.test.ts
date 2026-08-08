@@ -7,8 +7,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { captureEnv } from "../test-utils/env.js";
 import { registerDaemonCli } from "./daemon-cli/register.js";
 
-const probeGatewayStatus = vi.fn(async (..._args: unknown[]) => ({ ok: true }));
-const resolveGatewayProgramArguments = vi.fn(async (_opts?: unknown) => ({
+const probeGatewayStatus = vi.fn(async (..._args: any[]) => ({ ok: true }));
+const resolveGatewayProgramArguments = vi.fn(async (_opts?: any) => ({
   programArguments: ["/bin/node", "cli", "gateway", "--port", "18789"],
 }));
 const serviceInstall = vi.fn().mockResolvedValue(undefined);
@@ -19,10 +19,10 @@ const serviceRestart = vi.fn().mockResolvedValue({ outcome: "completed" });
 const serviceIsLoaded = vi.fn().mockResolvedValue(false);
 const serviceReadCommand = vi.fn().mockResolvedValue(null);
 const serviceReadRuntime = vi.fn().mockResolvedValue({ status: "running" });
-const resolveGatewayProbeAuthSafeWithSecretInputs = vi.fn(async (_opts?: unknown) => ({
+const resolveGatewayProbeAuthSafeWithSecretInputs = vi.fn(async (_opts?: any) => ({
   auth: {},
 }));
-const findExtraGatewayServices = vi.fn(async (_env: unknown, _opts?: unknown) => []);
+const findExtraGatewayServices = vi.fn(async (_env: any, _opts?: any) => []);
 const inspectPortUsage = vi.fn(async (port: number) => ({
   port,
   status: "free",
@@ -74,17 +74,17 @@ const mocks = await vi.hoisted(async () => {
 const { runtimeLogs } = mocks;
 
 vi.mock("./daemon-cli/probe.js", () => ({
-  probeGatewayStatus: (opts: unknown) => probeGatewayStatus(opts),
+  probeGatewayStatus: (opts: any) => probeGatewayStatus(opts),
 }));
 
 vi.mock("../gateway/probe-auth.js", () => ({
-  resolveGatewayProbeAuthSafeWithSecretInputs: (opts: unknown) =>
+  resolveGatewayProbeAuthSafeWithSecretInputs: (opts: any) =>
     resolveGatewayProbeAuthSafeWithSecretInputs(opts),
 }));
 
 vi.mock("../daemon/program-args.js", () => ({
   OPENCLAW_WRAPPER_ENV_KEY: "OPENCLAW_WRAPPER",
-  resolveGatewayProgramArguments: (opts: unknown) => resolveGatewayProgramArguments(opts),
+  resolveGatewayProgramArguments: (opts: any) => resolveGatewayProgramArguments(opts),
   resolveOpenClawWrapperPath: async (value: string | undefined) => value?.trim() || undefined,
 }));
 
@@ -114,7 +114,7 @@ vi.mock("../daemon/legacy.js", () => ({
 }));
 
 vi.mock("../daemon/inspect.js", () => ({
-  findExtraGatewayServices: (env: unknown, opts?: unknown) => findExtraGatewayServices(env, opts),
+  findExtraGatewayServices: (env: any, opts?: any) => findExtraGatewayServices(env, opts),
   renderGatewayServiceCleanupHints: () => [],
 }));
 
@@ -144,7 +144,7 @@ vi.mock("./deps.js", () => ({
 }));
 
 vi.mock("./progress.js", () => ({
-  withProgress: async (_opts: unknown, fn: () => Promise<unknown>) => await fn(),
+  withProgress: async (_opts: any, fn: () => Promise<any>) => await fn(),
 }));
 
 let daemonProgram: Command;
@@ -161,11 +161,11 @@ async function runDaemonCommand(args: string[]) {
 }
 
 function requireMockCallArg(
-  mockFn: { mock: { calls: unknown[][] } },
+  mockFn: { mock: { calls: any[][] } },
   label: string,
   index = 0,
-): Record<string, unknown> {
-  const arg = mockFn.mock.calls[index]?.[0] as Record<string, unknown> | undefined;
+): Record<string, any> {
+  const arg = mockFn.mock.calls[index]?.[0] as Record<string, any> | undefined;
   if (!arg) {
     throw new Error(`expected ${label} call #${index + 1}`);
   }

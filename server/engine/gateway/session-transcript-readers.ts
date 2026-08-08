@@ -18,7 +18,7 @@ export function readTranscriptLines(filePath: string, limit?: number): Transcrip
 
     for (const line of linesToProcess) {
       try {
-        const parsed = JSON.parse(line) as Record<string, unknown>;
+        const parsed = JSON.parse(line) as Record<string, any>;
         result.push({
           role: typeof parsed.role === 'string' ? parsed.role : undefined,
           text: typeof parsed.text === 'string' ? parsed.text : undefined,

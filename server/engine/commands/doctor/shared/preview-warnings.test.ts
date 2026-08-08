@@ -79,8 +79,8 @@ vi.mock("../channel-capabilities.js", () => {
 vi.mock("./channel-doctor.js", () => ({
   collectChannelDoctorEmptyAllowlistExtraWarnings: vi.fn(() => []),
   collectChannelDoctorPreviewWarnings: vi.fn(
-    async ({ cfg }: { cfg: { channels?: Record<string, unknown> } }) => {
-      const telegram = cfg.channels?.telegram as { allowFrom?: unknown } | undefined;
+    async ({ cfg }: { cfg: { channels?: Record<string, any> } }) => {
+      const telegram = cfg.channels?.telegram as { allowFrom?: any } | undefined;
       const usernames = Array.isArray(telegram?.allowFrom)
         ? telegram.allowFrom.filter(
             (entry): entry is string => typeof entry === "string" && entry.startsWith("@"),
@@ -106,7 +106,7 @@ vi.mock("./channel-doctor.js", () => ({
 vi.mock("./channel-plugin-blockers.js", () => ({
   scanConfiguredChannelPluginBlockers: (
     cfg: {
-      channels?: Record<string, unknown>;
+      channels?: Record<string, any>;
       plugins?: {
         allow?: string[];
         enabled?: boolean;
@@ -201,8 +201,8 @@ vi.mock("./channel-plugin-blockers.js", () => ({
 
 vi.mock("./stale-plugin-config.js", () => ({
   scanStalePluginConfig: (cfg: {
-    plugins?: { allow?: string[]; entries?: Record<string, unknown> };
-    channels?: Record<string, unknown>;
+    plugins?: { allow?: string[]; entries?: Record<string, any> };
+    channels?: Record<string, any>;
   }) => {
     const knownIds = new Set(manifestState.plugins.map((plugin) => plugin.id));
     const hits = [...(cfg.plugins?.allow ?? []), ...Object.keys(cfg.plugins?.entries ?? {})]

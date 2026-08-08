@@ -104,16 +104,16 @@ export function ssrfPolicyFromDangerouslyAllowPrivateNetwork(
   return ssrfPolicyFromPrivateNetworkOptIn(dangerouslyAllowPrivateNetwork);
 }
 
-export function hasLegacyFlatAllowPrivateNetworkAlias(value: unknown): boolean {
+export function hasLegacyFlatAllowPrivateNetworkAlias(value: any): boolean {
   const entry = asNullableRecord(value);
   return Boolean(entry && Object.hasOwn(entry, "allowPrivateNetwork"));
 }
 
 export function migrateLegacyFlatAllowPrivateNetworkAlias(params: {
-  entry: Record<string, unknown>;
+  entry: Record<string, any>;
   pathPrefix: string;
   changes: string[];
-}): { entry: Record<string, unknown>; changed: boolean } {
+}): { entry: Record<string, any>; changed: boolean } {
   if (!hasLegacyFlatAllowPrivateNetworkAlias(params.entry)) {
     return { entry: params.entry, changed: false };
   }
@@ -123,7 +123,7 @@ export function migrateLegacyFlatAllowPrivateNetworkAlias(params: {
   const currentNetwork = currentNetworkRecord ? { ...currentNetworkRecord } : {};
   const currentDangerousAllowPrivateNetwork = currentNetwork.dangerouslyAllowPrivateNetwork;
 
-  let resolvedDangerousAllowPrivateNetwork: unknown = currentDangerousAllowPrivateNetwork;
+  let resolvedDangerousAllowPrivateNetwork: any = currentDangerousAllowPrivateNetwork;
   if (typeof currentDangerousAllowPrivateNetwork === "boolean") {
     resolvedDangerousAllowPrivateNetwork = currentDangerousAllowPrivateNetwork;
   } else if (typeof legacyAllowPrivateNetwork === "boolean") {

@@ -18,12 +18,12 @@ const mocks = vi.hoisted(() => ({
   maybeRepairLegacyFlatAuthProfileStores: vi.fn().mockResolvedValue(undefined),
   maybeRepairCanonicalApiKeyFieldAlias: vi.fn().mockResolvedValue(undefined),
   maybeRepairGatewayDaemon: vi.fn().mockResolvedValue(undefined),
-  maybeRepairLegacyOAuthProfileIds: vi.fn(async (cfg: unknown) => cfg),
+  maybeRepairLegacyOAuthProfileIds: vi.fn(async (cfg: any) => cfg),
   maybeRepairLegacyOAuthSidecarProfiles: vi.fn().mockResolvedValue(undefined),
   noteAuthProfileHealth: vi.fn().mockResolvedValue(undefined),
   noteLegacyCodexProviderOverride: vi.fn(),
   buildGatewayConnectionDetails: vi.fn(() => ({ message: "gateway details" })),
-  resolveSecretInputRef: vi.fn((params: { value?: unknown }) => ({
+  resolveSecretInputRef: vi.fn((params: { value?: any }) => ({
     ref:
       params.value === "exec-token"
         ? { source: "exec", command: "printf token", cache: false }
@@ -41,7 +41,7 @@ const mocks = vi.hoisted(() => ({
   noteMacLaunchctlGatewayEnvOverrides: vi.fn(),
   noteMacStaleOpenClawUpdateLaunchdJobs: vi.fn(),
   gatewaySecretInputPathCanWin: vi.fn(),
-  readGatewaySecretInputValue: vi.fn((..._args: unknown[]) => undefined as string | undefined),
+  readGatewaySecretInputValue: vi.fn((..._args: any[]) => undefined as string | undefined),
   checkGatewayHealth: vi.fn(async () => ({
     authenticated: true,
     healthOk: true,
@@ -70,10 +70,10 @@ const mocks = vi.hoisted(() => ({
   }),
   gatherDaemonStatus: vi.fn(),
   noteWorkspaceStatus: vi.fn(),
-  applyWizardMetadata: vi.fn((cfg: unknown) => cfg),
+  applyWizardMetadata: vi.fn((cfg: any) => cfg),
   logConfigUpdated: vi.fn(),
   isRecord: vi.fn(
-    (value: unknown): value is Record<string, unknown> =>
+    (value: any): value is Record<string, any> =>
       typeof value === "object" && value !== null && !Array.isArray(value),
   ),
   shortenHomePath: vi.fn((p: string) => p),
@@ -316,7 +316,7 @@ describe("doctor health contributions", () => {
     mocks.maybeRepairGatewayDaemon.mockClear();
     mocks.maybeRepairGatewayDaemon.mockResolvedValue(undefined);
     mocks.maybeRepairLegacyOAuthProfileIds.mockClear();
-    mocks.maybeRepairLegacyOAuthProfileIds.mockImplementation(async (cfg: unknown) => cfg);
+    mocks.maybeRepairLegacyOAuthProfileIds.mockImplementation(async (cfg: any) => cfg);
     mocks.maybeRepairLegacyOAuthSidecarProfiles.mockClear();
     mocks.maybeRepairLegacyOAuthSidecarProfiles.mockResolvedValue(undefined);
     mocks.noteAuthProfileHealth.mockClear();
@@ -1450,7 +1450,7 @@ describe("doctor health contributions", () => {
     beforeEach(() => {
       mocks.replaceConfigFile.mockReset();
       mocks.replaceConfigFile.mockResolvedValue(undefined);
-      mocks.applyWizardMetadata.mockImplementation((cfg: unknown) => cfg);
+      mocks.applyWizardMetadata.mockImplementation((cfg: any) => cfg);
       vi.spyOn(fs, "existsSync").mockReturnValue(false);
     });
 

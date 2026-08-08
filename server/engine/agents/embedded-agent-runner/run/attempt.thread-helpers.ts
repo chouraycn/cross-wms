@@ -81,7 +81,7 @@ function shouldAppendAttemptCacheTtl(params: {
  */
 export function appendAttemptCacheTtlIfNeeded(params: {
   sessionManager: {
-    appendCustomEntry?: (customType: string, data: unknown) => void;
+    appendCustomEntry?: (customType: string, data: any) => void;
   };
   timedOutDuringCompaction: boolean;
   compactionOccurredThisAttempt: boolean;
@@ -109,7 +109,7 @@ export function appendAttemptCacheTtlIfNeeded(params: {
  */
 export function shouldPersistCompletedBootstrapTurn(params: {
   shouldRecordCompletedBootstrapTurn: boolean;
-  promptError: unknown;
+  promptError: any;
   aborted: boolean;
   timedOutDuringCompaction: boolean;
   compactionOccurredThisAttempt: boolean;

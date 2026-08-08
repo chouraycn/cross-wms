@@ -162,10 +162,10 @@ describe("applyMediaUnderstanding – echo transcript", () => {
     vi.doMock("../agents/model-auth.js", () => ({
       resolveApiKeyForProvider: resolveApiKeyForProviderMock,
       hasAvailableAuthForProvider: hasAvailableAuthForProviderMock,
-      isProviderAuthError: (err: unknown, code?: string) =>
+      isProviderAuthError: (err: any, code?: string) =>
         err instanceof Error &&
         "code" in err &&
-        (code === undefined || (err as { code?: unknown }).code === code),
+        (code === undefined || (err as { code?: any }).code === code),
       requireApiKey: (auth: { apiKey?: string; mode?: string }, provider: string) => {
         if (auth?.apiKey) {
           return auth.apiKey;
@@ -194,7 +194,7 @@ describe("applyMediaUnderstanding – echo transcript", () => {
       runCommandWithTimeout: runCommandWithTimeoutMock,
     }));
     vi.doMock("../channels/message/runtime.js", () => ({
-      sendDurableMessageBatch: (...args: unknown[]) => mockDeliverOutboundPayloads(...args),
+      sendDurableMessageBatch: (...args: any[]) => mockDeliverOutboundPayloads(...args),
     }));
     vi.doMock("../utils/message-channel.js", () => ({
       isDeliverableMessageChannel: (channel: string) => channel === "voicechat",

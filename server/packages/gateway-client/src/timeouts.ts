@@ -80,7 +80,7 @@ export function getConnectChallengeTimeoutMsFromEnv(
   return undefined;
 }
 
-function normalizePositiveTimeoutMs(timeoutMs: unknown): number | undefined {
+function normalizePositiveTimeoutMs(timeoutMs: any): number | undefined {
   return typeof timeoutMs === "number" && Number.isFinite(timeoutMs) && timeoutMs > 0
     ? resolveSafeTimeoutDelayMs(timeoutMs)
     : undefined;

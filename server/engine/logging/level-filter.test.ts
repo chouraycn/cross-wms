@@ -41,7 +41,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-function firstMockArg(mock: { mock: { calls: readonly unknown[][] } }): Record<string, unknown> {
+function firstMockArg(mock: { mock: { calls: readonly any[][] } }): Record<string, any> {
   const [call] = mock.mock.calls;
   if (!call) {
     throw new Error("expected mock call");
@@ -50,7 +50,7 @@ function firstMockArg(mock: { mock: { calls: readonly unknown[][] } }): Record<s
   if (typeof arg !== "object" || arg === null || Array.isArray(arg)) {
     throw new Error("expected mock call argument to be an object");
   }
-  return arg as Record<string, unknown>;
+  return arg as Record<string, any>;
 }
 
 describe("isFileLogLevelEnabled", () => {

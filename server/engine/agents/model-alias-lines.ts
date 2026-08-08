@@ -12,7 +12,7 @@
 type OpenClawConfig = unknown;
 
 // 内联降级实现：返回去 whitespace 后的字符串，空串视为 undefined。
-function normalizeOptionalString(value: unknown): string | undefined {
+function normalizeOptionalString(value: any): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }
@@ -42,21 +42,21 @@ export function buildModelAliasLines(cfg?: OpenClawConfig): string[] {
 }
 
 // 降级访问 cfg.agents?.defaults?.models；OpenClawConfig 类型未本地化。
-function readAgentDefaultModels(cfg: unknown): Record<string, unknown> {
+function readAgentDefaultModels(cfg: any): Record<string, any> {
   if (!cfg || typeof cfg !== "object") {
     return {};
   }
-  const agents = (cfg as { agents?: unknown }).agents;
+  const agents = (cfg as { agents?: any }).agents;
   if (!agents || typeof agents !== "object") {
     return {};
   }
-  const defaults = (agents as { defaults?: unknown }).defaults;
+  const defaults = (agents as { defaults?: any }).defaults;
   if (!defaults || typeof defaults !== "object") {
     return {};
   }
-  const models = (defaults as { models?: unknown }).models;
+  const models = (defaults as { models?: any }).models;
   if (!models || typeof models !== "object") {
     return {};
   }
-  return models as Record<string, unknown>;
+  return models as Record<string, any>;
 }

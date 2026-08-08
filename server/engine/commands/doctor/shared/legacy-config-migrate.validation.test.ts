@@ -103,7 +103,7 @@ describe("legacy config migrate validation", () => {
   it("returns valid migrated config for legacy group chat routing drift", () => {
     const res = groupChatRoutingResult;
     expect(res.partiallyValid).toBeUndefined();
-    const migratedConfig = res.config as Record<string, unknown> | null;
+    const migratedConfig = res.config as Record<string, any> | null;
     expect(migratedConfig?.routing).toBeUndefined();
     expect(res.config?.channels?.whatsapp?.allowFrom).toEqual(["+15550001111"]);
     expect(res.config?.channels?.whatsapp?.groups).toEqual({

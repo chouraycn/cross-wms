@@ -633,11 +633,11 @@ describe("classifyFailoverReasonFromHttpStatus", () => {
     expect(classifyFailoverReasonFromHttpStatus(401, "invalid_api_key")).toBe("auth");
   });
 
-  it("treats body-less HTTP 422 as unknown instead of format", () => {
+  it("treats body-less HTTP 422 as any instead of format", () => {
     expect(classifyFailoverReasonFromHttpStatus(422)).toBeNull();
   });
 
-  it("treats no-body HTTP 400/422 wrappers as unknown instead of format", () => {
+  it("treats no-body HTTP 400/422 wrappers as any instead of format", () => {
     expect(classifyFailoverReasonFromHttpStatus(400, "No body response")).toBeNull();
     expect(classifyFailoverReasonFromHttpStatus(400, "400 status code (no body)")).toBeNull();
     expect(classifyFailoverReasonFromHttpStatus(422, "HTTP 422: No body")).toBeNull();

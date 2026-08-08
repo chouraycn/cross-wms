@@ -324,7 +324,7 @@ describe("update-startup", () => {
   }
 
   async function runAutoUpdateCheckWithDefaults(params: {
-    cfg: { update?: Record<string, unknown> };
+    cfg: { update?: Record<string, any> };
     runAutoUpdate?: ReturnType<typeof createAutoUpdateSuccessMock>;
   }) {
     await runGatewayUpdateCheck({

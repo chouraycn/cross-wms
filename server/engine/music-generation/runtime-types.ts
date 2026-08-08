@@ -42,7 +42,7 @@ export type GenerateMusicRuntimeResult = {
   attempts: FallbackAttempt[];
   lyrics?: string[];
   normalization?: MusicGenerationNormalization;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
   ignoredOverrides: MusicGenerationIgnoredOverride[];
 };
 

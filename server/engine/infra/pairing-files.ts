@@ -19,7 +19,7 @@ export function resolvePairingPaths(baseDir: string | undefined, subdir: string)
 }
 
 /** 将持久化的配对映射强制转换为记录，将格式错误的数组/标量视为空状态 */
-export function coercePairingStateRecord<T>(value: unknown): Record<string, T> {
+export function coercePairingStateRecord<T>(value: any): Record<string, T> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return {};
   }

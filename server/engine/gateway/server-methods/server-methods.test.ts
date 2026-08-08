@@ -58,11 +58,11 @@ function countMatching<T>(items: readonly T[], predicate: (item: T) => boolean):
   return count;
 }
 
-function expectRecordFields(record: unknown, expected: Record<string, unknown>) {
+function expectRecordFields(record: any, expected: Record<string, any>) {
   if (!record || typeof record !== "object") {
     throw new Error("Expected record");
   }
-  const actual = record as Record<string, unknown>;
+  const actual = record as Record<string, any>;
   for (const [key, value] of Object.entries(expected)) {
     expect(actual[key]).toEqual(value);
   }
@@ -2266,12 +2266,12 @@ describe("timestampOptsFromConfig", () => {
   it.each([
     {
       name: "extracts timezone from config",
-      cfg: { agents: { defaults: { userTimezone: "America/Chicago" } } } as unknown,
+      cfg: { agents: { defaults: { userTimezone: "America/Chicago" } } } as any,
       expected: "America/Chicago",
     },
     {
       name: "falls back gracefully with empty config",
-      cfg: {} as unknown,
+      cfg: {} as any,
       expected: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
     },
   ])("$name", ({ cfg, expected }) => {
@@ -2424,14 +2424,14 @@ describe("exec approval handlers", () => {
   }
 
   function toExecApprovalRequestContext(context: {
-    broadcast: (event: string, payload: unknown) => void;
+    broadcast: (event: string, payload: any) => void;
     hasExecApprovalClients?: () => boolean;
   }): ExecApprovalRequestArgs["context"] {
     return context as unknown as ExecApprovalRequestArgs["context"];
   }
 
   function toExecApprovalResolveContext(context: {
-    broadcast: (event: string, payload: unknown) => void;
+    broadcast: (event: string, payload: any) => void;
   }): ExecApprovalResolveArgs["context"] {
     return context as unknown as ExecApprovalResolveArgs["context"];
   }
@@ -2470,8 +2470,8 @@ describe("exec approval handlers", () => {
   async function requestExecApproval(params: {
     handlers: ExecApprovalHandlers;
     respond: ReturnType<typeof vi.fn>;
-    context: { broadcast: (event: string, payload: unknown) => void };
-    params?: Record<string, unknown>;
+    context: { broadcast: (event: string, payload: any) => void };
+    params?: Record<string, any>;
     client?: ExecApprovalRequestArgs["client"];
   }) {
     const requestParams = {
@@ -2483,17 +2483,17 @@ describe("exec approval handlers", () => {
     if (
       !hasExplicitPlan &&
       (requestParams as { host?: string }).host === "node" &&
-      Array.isArray((requestParams as { commandArgv?: unknown }).commandArgv)
+      Array.isArray((requestParams as { commandArgv?: any }).commandArgv)
     ) {
-      const commandArgv = (requestParams as { commandArgv: unknown[] }).commandArgv.map((entry) =>
+      const commandArgv = (requestParams as { commandArgv: any[] }).commandArgv.map((entry) =>
         String(entry),
       );
       const cwdValue =
-        typeof (requestParams as { cwd?: unknown }).cwd === "string"
+        typeof (requestParams as { cwd?: any }).cwd === "string"
           ? ((requestParams as { cwd: string }).cwd ?? null)
           : null;
       const commandText =
-        typeof (requestParams as { command?: unknown }).command === "string"
+        typeof (requestParams as { command?: any }).command === "string"
           ? ((requestParams as { command: string }).command ?? null)
           : null;
       requestParams.systemRunPlan = {
@@ -2501,11 +2501,11 @@ describe("exec approval handlers", () => {
         cwd: cwdValue,
         commandText: commandText ?? commandArgv.join(" "),
         agentId:
-          typeof (requestParams as { agentId?: unknown }).agentId === "string"
+          typeof (requestParams as { agentId?: any }).agentId === "string"
             ? ((requestParams as { agentId: string }).agentId ?? null)
             : null,
         sessionKey:
-          typeof (requestParams as { sessionKey?: unknown }).sessionKey === "string"
+          typeof (requestParams as { sessionKey?: any }).sessionKey === "string"
             ? ((requestParams as { sessionKey: string }).sessionKey ?? null)
             : null,
       };
@@ -2528,7 +2528,7 @@ describe("exec approval handlers", () => {
     id: string;
     decision?: "allow-once" | "allow-always" | "deny";
     respond: ReturnType<typeof vi.fn>;
-    context: { broadcast: (event: string, payload: unknown) => void };
+    context: { broadcast: (event: string, payload: any) => void };
     client?: ExecApprovalResolveArgs["client"];
   }) {
     return params.handlers["exec.approval.resolve"]({
@@ -2547,11 +2547,11 @@ describe("exec approval handlers", () => {
   function createExecApprovalFixture(opts?: { config?: OpenClawConfig }) {
     const manager = new ExecApprovalManager();
     const handlers = createExecApprovalHandlers(manager);
-    const broadcasts: Array<{ event: string; payload: unknown }> = [];
+    const broadcasts: Array<{ event: string; payload: any }> = [];
     const respond = vi.fn();
     const context = {
       getRuntimeConfig: () => opts?.config ?? {},
-      broadcast: (event: string, payload: unknown) => {
+      broadcast: (event: string, payload: any) => {
         broadcasts.push({ event, payload });
       },
       hasExecApprovalClients: () => true,
@@ -2560,13 +2560,13 @@ describe("exec approval handlers", () => {
   }
 
   function getRequestedExecApprovalPayload(
-    broadcasts: Array<{ event: string; payload: unknown }>,
-  ): { id: string; request: Record<string, unknown> } {
+    broadcasts: Array<{ event: string; payload: any }>,
+  ): { id: string; request: Record<string, any> } {
     const requested = broadcasts.find((entry) => entry.event === "exec.approval.requested");
     if (!requested) {
       throw new Error("exec approval requested broadcast missing");
     }
-    const payload = requested.payload as { id?: unknown; request?: Record<string, unknown> };
+    const payload = requested.payload as { id?: any; request?: Record<string, any> };
     if (typeof payload.id !== "string" || payload.id.length === 0) {
       throw new Error("exec approval requested id missing");
     }
@@ -2577,8 +2577,8 @@ describe("exec approval handlers", () => {
   }
 
   async function waitForRequestedExecApprovalPayload(
-    broadcasts: Array<{ event: string; payload: unknown }>,
-  ): Promise<{ id: string; request: Record<string, unknown> }> {
+    broadcasts: Array<{ event: string; payload: any }>,
+  ): Promise<{ id: string; request: Record<string, any> }> {
     await vi.waitFor(() => {
       expect(broadcasts.some((entry) => entry.event === "exec.approval.requested")).toBe(true);
     });
@@ -2605,7 +2605,7 @@ describe("exec approval handlers", () => {
     const respond = vi.fn();
     const context = {
       getRuntimeConfig: () => ({}),
-      broadcast: (_eventValue: string, _payload: unknown) => {},
+      broadcast: (_eventValue: string, _payload: any) => {},
       hasExecApprovalClients: () => false,
     };
     return {
@@ -2732,7 +2732,7 @@ describe("exec approval handlers", () => {
     expectRecordFields(mockCallArg(respond, 0, 2), {
       message: "command exceeds exec approval display limit",
     });
-    expectRecordFields((mockCallArg(respond, 0, 2) as { details?: unknown }).details, {
+    expectRecordFields((mockCallArg(respond, 0, 2) as { details?: any }).details, {
       reason: "EXEC_APPROVAL_COMMAND_DISPLAY_LIMIT",
     });
     expect(broadcasts).toEqual([]);
@@ -2760,7 +2760,7 @@ describe("exec approval handlers", () => {
     await getExecApproval({ handlers, id, respond: getRespond });
 
     expect(mockCallArg(getRespond)).toBe(true);
-    const approval = mockCallArg(getRespond, 0, 1) as Record<string, unknown>;
+    const approval = mockCallArg(getRespond, 0, 1) as Record<string, any>;
     expectRecordFields(approval, {
       id,
       commandText: "echo ok",
@@ -2798,7 +2798,7 @@ describe("exec approval handlers", () => {
       },
     });
     const request = await waitForRequestedExecApprovalPayload(broadcasts);
-    const commandAnalysis = request.request?.commandAnalysis as Record<string, unknown>;
+    const commandAnalysis = request.request?.commandAnalysis as Record<string, any>;
     expect(commandAnalysis.commandCount).toBe(1);
     expect(commandAnalysis.riskKinds).toEqual(["inline-eval"]);
     expect(commandAnalysis.warningLines).toEqual(["Contains inline-eval: python3 -c"]);
@@ -2835,10 +2835,10 @@ describe("exec approval handlers", () => {
     await listExecApprovals({ handlers, respond: listRespond });
 
     expect(mockCallArg(listRespond)).toBe(true);
-    const approvals = mockCallArg(listRespond, 0, 1) as Array<Record<string, unknown>>;
+    const approvals = mockCallArg(listRespond, 0, 1) as Array<Record<string, any>>;
     const approval = approvals.find((entry) => entry.id === "approval-list-1");
     expectRecordFields(approval, { id: "approval-list-1" });
-    expectRecordFields((approval as Record<string, unknown>).request, { command: "echo ok" });
+    expectRecordFields((approval as Record<string, any>).request, { command: "echo ok" });
     expect(mockCallArg(listRespond, 0, 2)).toBeUndefined();
 
     const resolveRespond = vi.fn();
@@ -2855,7 +2855,7 @@ describe("exec approval handlers", () => {
     const manager = new ExecApprovalManager();
     const handlers = createExecApprovalHandlers(manager);
     const context = {
-      broadcast: (_eventValue: string, _payload: unknown) => {},
+      broadcast: (_eventValue: string, _payload: any) => {},
     };
     const ownerClient = {
       connId: "conn-owner",
@@ -2887,7 +2887,7 @@ describe("exec approval handlers", () => {
     const listRespond = vi.fn();
     await listExecApprovals({ handlers, respond: listRespond, client: ownerClient });
     expect(mockCallArg(listRespond)).toBe(true);
-    const approvals = mockCallArg(listRespond, 0, 1) as Array<Record<string, unknown>>;
+    const approvals = mockCallArg(listRespond, 0, 1) as Array<Record<string, any>>;
     expect(approvals.map((entry) => entry.id)).toEqual(["approval-abcd-visible"]);
 
     const resolveRespond = vi.fn();
@@ -3030,7 +3030,7 @@ describe("exec approval handlers", () => {
       client: reviewerClient,
     });
     expect(mockCallArg(listRespond)).toBe(true);
-    const approvals = mockCallArg(listRespond, 0, 1) as Array<Record<string, unknown>>;
+    const approvals = mockCallArg(listRespond, 0, 1) as Array<Record<string, any>>;
     expect(approvals.map((entry) => entry.id)).toEqual(["approval-reviewer-runtime"]);
 
     const getRespond = vi.fn();
@@ -3317,7 +3317,7 @@ describe("exec approval handlers", () => {
     );
     expect(mockCallArg(conflictingResolveRespond)).toBe(false);
     expect(mockCallArg(conflictingResolveRespond, 0, 1)).toBeUndefined();
-    const error = mockCallArg(conflictingResolveRespond, 0, 2) as Record<string, unknown>;
+    const error = mockCallArg(conflictingResolveRespond, 0, 2) as Record<string, any>;
     expect(error.message).toBe("approval already resolved");
     expectRecordFields(error.details, { reason: "APPROVAL_ALREADY_RESOLVED" });
   });
@@ -3657,7 +3657,7 @@ describe("exec approval handlers", () => {
     });
     const requested = broadcasts.find((entry) => entry.event === "exec.approval.requested");
     expectRecordFields(requested, { event: "exec.approval.requested" });
-    const request = (requested?.payload as { request?: Record<string, unknown> })?.request ?? {};
+    const request = (requested?.payload as { request?: Record<string, any> })?.request ?? {};
     expectRecordFields(request["commandAnalysis"], { commandCount: 1, nestedCommandCount: 0 });
     expect(request["commandSpans"]).toEqual([
       { startIndex: 0, endIndex: 2 },
@@ -3725,7 +3725,7 @@ describe("exec approval handlers", () => {
       },
     });
     const requested = broadcasts.find((entry) => entry.event === "exec.approval.requested");
-    const request = (requested?.payload as { request?: Record<string, unknown> })?.request ?? {};
+    const request = (requested?.payload as { request?: Record<string, any> })?.request ?? {};
     expect(request["command"]).not.toBe("ls\u0000 | python -c 'print(1)'");
     expect(request["commandSpans"]).toBeUndefined();
   });
@@ -3741,7 +3741,7 @@ describe("exec approval handlers", () => {
     };
 
     const context = {
-      broadcast: (event: string, payload: unknown) => {
+      broadcast: (event: string, payload: any) => {
         if (event !== "exec.approval.requested") {
           return;
         }
@@ -3820,7 +3820,7 @@ describe("exec approval handlers", () => {
     const handlers = createExecApprovalHandlers(manager);
     const respond = vi.fn();
     const context = {
-      broadcast: (_eventValue: string, _payload: unknown) => {},
+      broadcast: (_eventValue: string, _payload: any) => {},
     };
 
     const record = manager.create({ command: "echo ok" }, 60_000, "approval-12345678-aaaa");
@@ -3842,7 +3842,7 @@ describe("exec approval handlers", () => {
     const handlers = createExecApprovalHandlers(manager);
     const respond = vi.fn();
     const context = {
-      broadcast: (_eventValue: string, _payload: unknown) => {},
+      broadcast: (_eventValue: string, _payload: any) => {},
     };
 
     void manager.register(
@@ -3880,7 +3880,7 @@ describe("exec approval handlers", () => {
 
     expect(mockCallArg(respond)).toBe(false);
     expect(mockCallArg(respond, 0, 1)).toBeUndefined();
-    const error = mockCallArg(respond, 0, 2) as Record<string, unknown>;
+    const error = mockCallArg(respond, 0, 2) as Record<string, any>;
     expectRecordFields(error, {
       code: "INVALID_REQUEST",
       message: "unknown or expired approval id",
@@ -3893,7 +3893,7 @@ describe("exec approval handlers", () => {
     const handlers = createExecApprovalHandlers(manager);
     const context = {
       getRuntimeConfig: () => ({}),
-      broadcast: (_eventValue: string, _payload: unknown) => {},
+      broadcast: (_eventValue: string, _payload: any) => {},
       hasExecApprovalClients: () => true,
     };
     void manager.register(manager.create({ command: "echo one" }, 60_000, "approval-one"), 60_000);
@@ -3934,7 +3934,7 @@ describe("exec approval handlers", () => {
       });
       await drainApprovalRequestTicks();
       expect(forwarder.handleRequested).toHaveBeenCalledTimes(1);
-      const forwarded = mockCallArg(forwarder.handleRequested) as Record<string, unknown>;
+      const forwarded = mockCallArg(forwarder.handleRequested) as Record<string, any>;
       expectRecordFields(forwarded.request, {
         turnSourceChannel: "whatsapp",
         turnSourceTo: "+15555550123",
@@ -3951,11 +3951,11 @@ describe("exec approval handlers", () => {
 
   it("resolves Control UI-style approvals by id while preserving stored turn-source metadata", async () => {
     const { handlers, forwarder, respond, context } = createForwardingExecApprovalFixture();
-    const broadcasts: Array<{ event: string; payload: unknown }> = [];
+    const broadcasts: Array<{ event: string; payload: any }> = [];
     const requestContext = {
       ...context,
       hasExecApprovalClients: () => true,
-      broadcast: (event: string, payload: unknown) => {
+      broadcast: (event: string, payload: any) => {
         broadcasts.push({ event, payload });
       },
     };
@@ -3993,7 +3993,7 @@ describe("exec approval handlers", () => {
     await requestPromise;
 
     expect(resolveRespond).toHaveBeenCalledWith(true, { ok: true }, undefined);
-    const resolved = mockCallArg(forwarder.handleResolved) as Record<string, unknown>;
+    const resolved = mockCallArg(forwarder.handleResolved) as Record<string, any>;
     expectRecordFields(resolved, {
       id: "approval-control-ui-multichannel",
       decision: "allow-once",
@@ -4007,7 +4007,7 @@ describe("exec approval handlers", () => {
     });
     const resolvedBroadcast = broadcasts.find((entry) => entry.event === "exec.approval.resolved");
     expect(resolvedBroadcast?.event).toBe("exec.approval.resolved");
-    const payload = resolvedBroadcast?.payload as Record<string, unknown>;
+    const payload = resolvedBroadcast?.payload as Record<string, any>;
     expect(payload.id).toBe("approval-control-ui-multichannel");
     expectRecordFields(payload.request, {
       turnSourceChannel: "feishu",
@@ -4081,7 +4081,7 @@ describe("exec approval handlers", () => {
     const iosPushDelivery = {
       handleRequested: vi.fn(
         async (
-          _request: unknown,
+          _request: any,
           opts?: {
             isTargetVisible?: (target: { deviceId: string; scopes: readonly string[] }) => boolean;
           },

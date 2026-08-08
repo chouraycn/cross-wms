@@ -15,12 +15,12 @@ import { getMethodRegistry } from './methodRegistry.js';
 type GatewayMethodRegistry = ReturnType<typeof getMethodRegistry>;
 
 // 内存配置存储
-const configStore: Record<string, unknown> = {};
+const configStore: Record<string, any> = {};
 
 /**
  * 判断值是否为普通对象（非数组、非 null）
  */
-function isPlainObject(value: unknown): value is Record<string, unknown> {
+function isPlainObject(value: any): value is Record<string, any> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
@@ -29,11 +29,11 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
  * - 同名且均为对象时递归合并
  * - 否则 patch 覆盖 target
  */
-function deepMerge(target: unknown, patch: unknown): unknown {
+function deepMerge(target: any, patch: any): any {
   if (!isPlainObject(target) || !isPlainObject(patch)) {
     return patch;
   }
-  const result: Record<string, unknown> = { ...target };
+  const result: Record<string, any> = { ...target };
   for (const [key, value] of Object.entries(patch)) {
     if (key in result) {
       result[key] = deepMerge(result[key], value);
@@ -48,8 +48,8 @@ function deepMerge(target: unknown, patch: unknown): unknown {
  * 按点分隔路径读取配置项
  * 例如 path "gateway.controlUi.basePath" 返回 configStore.gateway.controlUi.basePath
  */
-function readPath(root: unknown, segments: string[]): { found: boolean; value: unknown } {
-  let current: unknown = root;
+function readPath(root: any, segments: string[]): { found: boolean; value: any } {
+  let current: any = root;
   for (const seg of segments) {
     if (isPlainObject(current) && seg in current) {
       current = current[seg];
@@ -63,14 +63,14 @@ function readPath(root: unknown, segments: string[]): { found: boolean; value: u
 /**
  * 按点分隔路径写入配置项（创建中间对象）
  */
-function writePath(root: Record<string, unknown>, segments: string[], value: unknown): void {
+function writePath(root: Record<string, any>, segments: string[], value: any): void {
   let current = root;
   for (let i = 0; i < segments.length - 1; i++) {
     const seg = segments[i];
     if (!isPlainObject(current[seg])) {
       current[seg] = {};
     }
-    current = current[seg] as Record<string, unknown>;
+    current = current[seg] as Record<string, any>;
   }
   current[segments[segments.length - 1]] = value;
 }
@@ -82,8 +82,8 @@ function parsePath(path: string): string[] | null {
 
 // ========== Config Set ==========
 
-async function configSet(params: unknown, _ctx: GatewayMethodContext) {
-  const { path, value } = params as { path: string; value: unknown };
+async function configSet(params: any, _ctx: GatewayMethodContext) {
+  const { path, value } = params as { path: string; value: any };
 
   if (!path) {
     return { ok: false, error: { code: 'INVALID_REQUEST', message: 'path is required' } };
@@ -107,8 +107,8 @@ async function configSet(params: unknown, _ctx: GatewayMethodContext) {
 
 // ========== Config Patch ==========
 
-async function configPatch(params: unknown, _ctx: GatewayMethodContext) {
-  const { path, patch } = params as { path: string; patch: unknown };
+async function configPatch(params: any, _ctx: GatewayMethodContext) {
+  const { path, patch } = params as { path: string; patch: any };
 
   if (!path) {
     return { ok: false, error: { code: 'INVALID_REQUEST', message: 'path is required' } };
@@ -143,7 +143,7 @@ export function registerConfigMethods(registry: GatewayMethodRegistry): void {
 /**
  * 读取配置存储（供其他模块查询）
  */
-export function getConfigValue(path: string): unknown {
+export function getConfigValue(path: string): any {
   const segments = parsePath(path);
   if (!segments) return undefined;
   const result = readPath(configStore, segments);

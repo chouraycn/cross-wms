@@ -53,7 +53,7 @@ describe("buildOutboundResultEnvelope", () => {
     const envelope = buildOutboundResultEnvelope(input);
     expect(envelope).toEqual(expected);
     if ("payloads" in input) {
-      expect((envelope as { payloads: unknown[] }).payloads).not.toBe(input.payloads);
+      expect((envelope as { payloads: any[] }).payloads).not.toBe(input.payloads);
     }
   });
 

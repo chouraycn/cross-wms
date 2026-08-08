@@ -9,9 +9,9 @@ export const MAX_AGENT_HOOK_HISTORY_MESSAGES = 100;
 
 /** Returns the tail of hook history capped at the configured maximum. */
 export function limitAgentHookHistoryMessages(
-  messages: readonly unknown[],
+  messages: readonly any[],
   maxMessages = MAX_AGENT_HOOK_HISTORY_MESSAGES,
-): unknown[] {
+): any[] {
   if (maxMessages <= 0) {
     return [];
   }
@@ -20,9 +20,9 @@ export function limitAgentHookHistoryMessages(
 
 /** Builds hook-visible conversation messages from bounded history plus current turn. */
 export function buildAgentHookConversationMessages(params: {
-  historyMessages?: readonly unknown[];
-  currentTurnMessages?: readonly unknown[];
-}): unknown[] {
+  historyMessages?: readonly any[];
+  currentTurnMessages?: readonly any[];
+}): any[] {
   return [
     ...limitAgentHookHistoryMessages(params.historyMessages ?? []),
     ...(params.currentTurnMessages ?? []),

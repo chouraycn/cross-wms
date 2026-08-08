@@ -15,7 +15,7 @@ export function clearPluginOwnedSessionState(params: {
 export type PluginHostCleanupFailure = {
   pluginId: string;
   reason: string;
-  error?: unknown;
+  error?: any;
 };
 
 export type PluginHostCleanupResult = {
@@ -35,9 +35,9 @@ export async function runPluginHostCleanup(params: {
 export async function cleanupReplacedPluginHostRegistry(params: {
   replacedPluginIds?: string[];
   sessionId?: string;
-  cfg?: unknown;
-  previousRegistry?: unknown;
-  nextRegistry?: unknown;
+  cfg?: any;
+  previousRegistry?: any;
+  nextRegistry?: any;
   shouldCleanup?: () => boolean;
 }): Promise<void> {
   void params;

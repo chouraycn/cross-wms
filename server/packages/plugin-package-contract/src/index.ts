@@ -1,7 +1,7 @@
 // External code plugin package.json compatibility and validation contracts.
 
 /** JSON object shape accepted by package contract helpers. */
-export type JsonObject = Record<string, unknown>;
+export type JsonObject = Record<string, any>;
 
 /** Compatibility metadata extracted from an external plugin package. */
 export type ExternalPluginCompatibility = {
@@ -30,12 +30,12 @@ export const EXTERNAL_CODE_PLUGIN_REQUIRED_FIELD_PATHS = [
 ] as const;
 
 /** Narrow unknown values to plain records. */
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 /** Normalize optional package metadata strings. */
-function normalizeOptionalString(value: unknown): string | undefined {
+function normalizeOptionalString(value: any): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }
@@ -44,7 +44,7 @@ function normalizeOptionalString(value: unknown): string | undefined {
 }
 
 /** Read OpenClaw package.json blocks without trusting caller input shape. */
-function readOpenClawBlock(packageJson: unknown) {
+function readOpenClawBlock(packageJson: any) {
   const root = isRecord(packageJson) ? packageJson : undefined;
   const openclaw = isRecord(root?.openclaw) ? root.openclaw : undefined;
   const compat = isRecord(openclaw?.compat) ? openclaw.compat : undefined;
@@ -55,7 +55,7 @@ function readOpenClawBlock(packageJson: unknown) {
 
 /** Normalize compatibility metadata from an external plugin package.json. */
 export function normalizeExternalPluginCompatibility(
-  packageJson: unknown,
+  packageJson: any,
 ): ExternalPluginCompatibility | undefined {
   const { root, compat, build, install } = readOpenClawBlock(packageJson);
   const version = normalizeOptionalString(root?.version);
@@ -86,7 +86,7 @@ export function normalizeExternalPluginCompatibility(
 }
 
 /** List missing required field paths for an external code plugin package.json. */
-export function listMissingExternalCodePluginFieldPaths(packageJson: unknown): string[] {
+export function listMissingExternalCodePluginFieldPaths(packageJson: any): string[] {
   const { compat, build } = readOpenClawBlock(packageJson);
   const missing: string[] = [];
   if (!normalizeOptionalString(compat?.pluginApi)) {
@@ -100,7 +100,7 @@ export function listMissingExternalCodePluginFieldPaths(packageJson: unknown): s
 
 /** Validate an external code plugin package.json against required compatibility fields. */
 export function validateExternalCodePluginPackageJson(
-  packageJson: unknown,
+  packageJson: any,
 ): ExternalCodePluginValidationResult {
   const issues = listMissingExternalCodePluginFieldPaths(packageJson).map((fieldPath) => ({
     fieldPath,

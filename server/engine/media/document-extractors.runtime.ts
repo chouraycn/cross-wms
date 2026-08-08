@@ -22,7 +22,7 @@ export type DocumentExtractionRequest = {
   minTextChars: number;
   password?: string;
   pageNumbers?: number[];
-  onImageExtractionError?: (error: unknown) => void;
+  onImageExtractionError?: (error: any) => void;
 };
 
 /** Text and image result returned by a document extractor. */
@@ -35,13 +35,13 @@ type PdfParseResult = {
   text: string;
   numpages?: number;
   numrender?: number;
-  info?: Record<string, unknown>;
-  metadata?: Record<string, unknown>;
+  info?: Record<string, any>;
+  metadata?: Record<string, any>;
 };
 
 type PdfParseFn = (
   dataBuffer: Buffer,
-  options?: Record<string, unknown>,
+  options?: Record<string, any>,
 ) => Promise<PdfParseResult>;
 
 // Non-literal specifier so TypeScript does not resolve the `pdf-parse` module
@@ -52,7 +52,7 @@ let pdfParseLoader: Promise<PdfParseFn> | undefined;
 
 async function loadPdfParse(): Promise<PdfParseFn> {
   pdfParseLoader ??= (async () => {
-    const mod: unknown = await import(PDF_PARSE_MODULE);
+    const mod: any = await import(PDF_PARSE_MODULE);
     const fn = (mod as { default?: PdfParseFn } & PdfParseFn).default ?? (mod as PdfParseFn);
     if (typeof fn !== "function") {
       throw new Error("pdf-parse did not expose a callable default export.");
@@ -69,7 +69,7 @@ async function loadPdfParse(): Promise<PdfParseFn> {
  */
 export async function extractDocumentContent(
   params: DocumentExtractionRequest & {
-    config?: unknown;
+    config?: any;
   },
 ): Promise<(DocumentExtractionResult & { extractor: string }) | null> {
   const mimeType = normalizeLowercaseStringOrEmpty(params.mimeType);

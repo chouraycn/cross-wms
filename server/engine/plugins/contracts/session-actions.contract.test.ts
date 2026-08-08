@@ -17,13 +17,13 @@ import type { OpenClawPluginApi } from "../types.js";
 
 const MAIN_SESSION_KEY = "agent:main:main";
 
-type HookResponse = { ok: boolean; payload?: unknown; error?: unknown };
+type HookResponse = { ok: boolean; payload?: any; error?: any };
 
 function sessionActionBody(
   pluginId: string,
   actionId: string,
-  extra?: Record<string, unknown>,
-): Record<string, unknown> {
+  extra?: Record<string, any>,
+): Record<string, any> {
   return {
     pluginId,
     actionId,
@@ -32,7 +32,7 @@ function sessionActionBody(
 }
 
 async function callPluginSessionActionForTest(params: {
-  body: Record<string, unknown>;
+  body: Record<string, any>;
   scopes?: string[];
 }): Promise<HookResponse> {
   let response: HookResponse | undefined;
@@ -56,7 +56,7 @@ async function callPluginSessionActionForTest(params: {
 async function callRegisteredSessionActionForTest(params: {
   pluginId: string;
   actionId: string;
-  extra?: Record<string, unknown>;
+  extra?: Record<string, any>;
   scopes?: string[];
 }): Promise<HookResponse> {
   return callPluginSessionActionForTest({
@@ -66,7 +66,7 @@ async function callRegisteredSessionActionForTest(params: {
 }
 
 async function callPluginSessionActionThroughGatewayForTest(params: {
-  body: Record<string, unknown>;
+  body: Record<string, any>;
   scopes?: string[];
 }): Promise<HookResponse> {
   let response: HookResponse | undefined;
@@ -96,7 +96,7 @@ async function callPluginSessionActionThroughGatewayForTest(params: {
 async function callRegisteredSessionActionThroughGatewayForTest(params: {
   pluginId: string;
   actionId: string;
-  extra?: Record<string, unknown>;
+  extra?: Record<string, any>;
   scopes?: string[];
 }): Promise<HookResponse> {
   return callPluginSessionActionThroughGatewayForTest({
@@ -105,9 +105,9 @@ async function callRegisteredSessionActionThroughGatewayForTest(params: {
   });
 }
 
-function requireHookError(response: HookResponse): { code?: unknown; message?: unknown } {
+function requireHookError(response: HookResponse): { code?: any; message?: any } {
   expect(response.ok).toBe(false);
-  const error = response.error as { code?: unknown; message?: unknown } | undefined;
+  const error = response.error as { code?: any; message?: any } | undefined;
   if (!error) {
     throw new Error("expected hook error");
   }
@@ -115,11 +115,11 @@ function requireHookError(response: HookResponse): { code?: unknown; message?: u
 }
 
 function requireObservedEvent(
-  observed: unknown[],
+  observed: any[],
   index: number,
-): { runId?: unknown; sessionKey?: unknown; stream?: unknown; data?: Record<string, unknown> } {
+): { runId?: any; sessionKey?: any; stream?: any; data?: Record<string, any> } {
   const event = observed[index] as
-    | { runId?: unknown; sessionKey?: unknown; stream?: unknown; data?: Record<string, unknown> }
+    | { runId?: any; sessionKey?: any; stream?: any; data?: Record<string, any> }
     | undefined;
   if (!event) {
     throw new Error(`expected observed event #${index + 1}`);
@@ -245,14 +245,14 @@ describe("plugin session actions", () => {
   it("validates payload schemas and typed action results", async () => {
     const callSchemaAction = (
       actionId: string,
-      extra?: Record<string, unknown>,
-    ): Promise<{ ok: boolean; payload?: unknown; error?: unknown }> =>
+      extra?: Record<string, any>,
+    ): Promise<{ ok: boolean; payload?: any; error?: any }> =>
       callRegisteredSessionActionForTest({
         pluginId: "schema-action-fixture",
         actionId,
         ...(extra ? { extra } : {}),
       });
-    const handlerCalls: unknown[] = [];
+    const handlerCalls: any[] = [];
     const { registry } = registerActionFixture({
       id: "schema-action-fixture",
       name: "Schema Action Fixture",
@@ -363,7 +363,7 @@ describe("plugin session actions", () => {
   it("validates plugin session action results before returning gateway payloads", async () => {
     const callValidationAction = (
       actionId: string,
-    ): Promise<{ ok: boolean; payload?: unknown; error?: unknown }> =>
+    ): Promise<{ ok: boolean; payload?: any; error?: any }> =>
       callRegisteredSessionActionForTest({
         pluginId: "session-action-validation-fixture",
         actionId,
@@ -481,16 +481,16 @@ describe("plugin session actions", () => {
   it("authorizes session actions through the gateway by action-declared scopes", async () => {
     const callApprovalAction = (params: {
       actionId: string;
-      extra?: Record<string, unknown>;
+      extra?: Record<string, any>;
       scopes?: string[];
-    }): Promise<{ ok: boolean; payload?: unknown; error?: unknown }> =>
+    }): Promise<{ ok: boolean; payload?: any; error?: any }> =>
       callRegisteredSessionActionThroughGatewayForTest({
         pluginId: "approval-action-fixture",
         actionId: params.actionId,
         ...(params.extra ? { extra: params.extra } : {}),
         ...(params.scopes ? { scopes: params.scopes } : {}),
       });
-    const handlerCalls: unknown[] = [];
+    const handlerCalls: any[] = [];
     const { registry } = registerActionFixture({
       id: "approval-action-fixture",
       name: "Approval Action Fixture",
@@ -601,7 +601,7 @@ describe("plugin session actions", () => {
 
   it("passes a defensive copy of client scopes to session action handlers", async () => {
     const registry = createEmptyPluginRegistry();
-    let response: { ok: boolean; payload?: unknown; error?: unknown } | undefined;
+    let response: { ok: boolean; payload?: any; error?: any } | undefined;
     let handlerScopes: string[] | undefined;
     const originalScopes = [READ_SCOPE];
     registry.sessionActions = [
@@ -692,7 +692,7 @@ describe("plugin session actions", () => {
   });
 
   it("emits plugin-attributed agent events through the plugin API", () => {
-    const observed: unknown[] = [];
+    const observed: any[] = [];
     const unsubscribe = onAgentEvent((event) => observed.push(event));
     const { config, registry } = createPluginRegistryFixture();
     let bundledApi: OpenClawPluginApi | undefined;
@@ -796,7 +796,7 @@ describe("plugin session actions", () => {
   });
 
   it("blocks agent events from stale and non-activating plugin API closures", () => {
-    const observed: unknown[] = [];
+    const observed: any[] = [];
     const unsubscribe = onAgentEvent((event) => observed.push(event));
     const { config, registry } = createPluginRegistryFixture();
     let capturedApi: OpenClawPluginApi | undefined;
@@ -892,7 +892,7 @@ describe("plugin session actions", () => {
   });
 
   it("allows reactivated cached registries to emit agent events again", () => {
-    const observed: unknown[] = [];
+    const observed: any[] = [];
     const unsubscribe = onAgentEvent((event) => observed.push(event));
     const { config, registry } = createPluginRegistryFixture();
     let capturedApi: OpenClawPluginApi | undefined;

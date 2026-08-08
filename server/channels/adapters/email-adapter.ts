@@ -98,7 +98,7 @@ function runHimalaya(args: string[], options?: { timeoutMs?: number; stdin?: str
   });
 }
 
-function parseAddressField(field: unknown): string {
+function parseAddressField(field: any): string {
   if (!field) return "unknown";
   if (typeof field === "string") return field;
   if (typeof field === "object") {

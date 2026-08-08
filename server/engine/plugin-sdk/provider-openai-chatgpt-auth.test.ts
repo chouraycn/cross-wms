@@ -8,7 +8,7 @@ import {
   resolveOpenAICodexImportProfileName,
 } from "./provider-auth.js";
 
-function jwt(payload: Record<string, unknown>): string {
+function jwt(payload: Record<string, any>): string {
   return [
     Buffer.from(JSON.stringify({ alg: "none" })).toString("base64url"),
     Buffer.from(JSON.stringify(payload)).toString("base64url"),

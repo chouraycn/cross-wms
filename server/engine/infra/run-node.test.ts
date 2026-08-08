@@ -137,7 +137,7 @@ async function syncBundledPluginMetadata(params?: {
   copyBundledPluginMetadata({ cwd: params?.cwd, env: params?.env });
 }
 
-function firstMockCall<T extends unknown[]>(mock: { mock: { calls: T[] } }): T | undefined {
+function firstMockCall<T extends any[]>(mock: { mock: { calls: T[] } }): T | undefined {
   return mock.mock.calls[0];
 }
 
@@ -189,7 +189,7 @@ function resolvePath(tmp: string, relativePath: string) {
 }
 
 async function expectPathMissing(targetPath: string): Promise<void> {
-  let accessError: unknown;
+  let accessError: any;
   try {
     await fs.access(targetPath);
   } catch (error) {
@@ -375,7 +375,7 @@ async function runQaCommand(params: {
 
 async function expectManifestId(tmp: string, relativePath: string, id: string) {
   const manifest = JSON.parse(await fs.readFile(resolvePath(tmp, relativePath), "utf-8")) as {
-    id?: unknown;
+    id?: any;
   };
   expect(manifest.id).toBe(id);
 }
@@ -491,7 +491,7 @@ describe("run-node script", () => {
         args: string[];
         env: Record<string, string | undefined>;
       }> = [];
-      const spawn = (_cmd: string, args: string[], options?: unknown) => {
+      const spawn = (_cmd: string, args: string[], options?: any) => {
         const opts = options as { env?: NodeJS.ProcessEnv } | undefined;
         spawnCalls.push({
           args,
@@ -536,10 +536,10 @@ describe("run-node script", () => {
       const spawnCalls: Array<{
         args: string[];
         env: Record<string, string | undefined>;
-        stdio: unknown;
+        stdio: any;
       }> = [];
-      const spawn = (_cmd: string, args: string[], options?: unknown) => {
-        const opts = options as { env?: NodeJS.ProcessEnv; stdio?: unknown } | undefined;
+      const spawn = (_cmd: string, args: string[], options?: any) => {
+        const opts = options as { env?: NodeJS.ProcessEnv; stdio?: any } | undefined;
         spawnCalls.push({
           args,
           env: { ...opts?.env },
@@ -721,7 +721,7 @@ describe("run-node script", () => {
       });
       const profileDir = path.join(tmp, ".artifacts", "profiles");
       const spawnCalls: Array<{ args: string[]; env: Record<string, string | undefined> }> = [];
-      const spawn = (_cmd: string, args: string[], options?: unknown) => {
+      const spawn = (_cmd: string, args: string[], options?: any) => {
         const opts = options as { env?: NodeJS.ProcessEnv } | undefined;
         spawnCalls.push({ args, env: { ...opts?.env } });
         return createExitedProcess(0);
@@ -893,7 +893,7 @@ describe("run-node script", () => {
     await withTempDir({ prefix: "openclaw-run-node-" }, async (tmp) => {
       await setupTrackedProject(tmp);
       const spawnCalls: Array<{ args: string[]; env: Record<string, string | undefined> }> = [];
-      const spawn = (_cmd: string, args: string[], options?: unknown) => {
+      const spawn = (_cmd: string, args: string[], options?: any) => {
         const opts = options as { env?: NodeJS.ProcessEnv } | undefined;
         spawnCalls.push({ args, env: { ...opts?.env } });
         return createPipedExitedProcess({});
@@ -1548,7 +1548,7 @@ describe("run-node script", () => {
         (
           cmd: string,
           args: string[],
-          options: unknown,
+          options: any,
         ) => {
           kill: (signal?: string) => boolean;
           on: (event: "exit", cb: (code: number | null, signal: string | null) => void) => void;
@@ -1584,7 +1584,7 @@ describe("run-node script", () => {
 
       expect(exitCode).toBe(143);
       expect(spawn).toHaveBeenCalledTimes(1);
-      const spawnCall = firstMockCall(spawn) as [string, string[], { stdio?: unknown }] | undefined;
+      const spawnCall = firstMockCall(spawn) as [string, string[], { stdio?: any }] | undefined;
       expect(spawnCall?.[0]).toBe(process.execPath);
       expect(spawnCall?.[1]).toEqual(["openclaw.mjs", "status"]);
       expect(spawnCall?.[2].stdio).toBe("inherit");
@@ -1621,7 +1621,7 @@ describe("run-node script", () => {
           (
             cmd: string,
             args: string[],
-            options: unknown,
+            options: any,
           ) => {
             kill: (signal?: string) => boolean;
             on: (event: "exit", cb: (code: number | null, signal: string | null) => void) => void;
@@ -1667,7 +1667,7 @@ describe("run-node script", () => {
 
         expect(exitCode).toBe(143);
         const spawnCall = firstMockCall(spawn) as
-          | [string, string[], { detached?: boolean; stdio?: unknown }]
+          | [string, string[], { detached?: boolean; stdio?: any }]
           | undefined;
         expect(spawnCall?.[1]).toEqual(["openclaw.mjs", "status"]);
         expect(spawnCall?.[2]).toMatchObject({ detached: true, stdio: "inherit" });

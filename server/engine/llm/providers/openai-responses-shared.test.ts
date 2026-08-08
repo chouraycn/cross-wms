@@ -82,7 +82,7 @@ function createAssistantOutput(): AssistantMessage {
   };
 }
 
-async function* responseEvents(events: Array<Record<string, unknown>>) {
+async function* responseEvents(events: Array<Record<string, any>>) {
   for (const event of events) {
     yield event as never;
   }
@@ -453,7 +453,7 @@ describe("convertResponsesMessages", () => {
       } satisfies Context,
       allowedToolCallProviders,
       { includeSystemPrompt: false, replayResponsesItemIds: false },
-    ) as unknown as Array<Record<string, unknown>>;
+    ) as unknown as Array<Record<string, any>>;
 
     const reasoningItem = input.find((item) => item.type === "reasoning");
     expect(reasoningItem).toMatchObject({
@@ -518,7 +518,7 @@ describe("convertResponsesMessages", () => {
       } satisfies Context,
       allowedToolCallProviders,
       { includeSystemPrompt: false, replayResponsesItemIds: true },
-    ) as unknown as Array<Record<string, unknown>>;
+    ) as unknown as Array<Record<string, any>>;
 
     expect(input.find((item) => item.type === "reasoning")).toMatchObject({
       type: "reasoning",
@@ -536,10 +536,10 @@ describe("processResponsesStream", () => {
   ])("preserves streamed tool-call arguments when done %s", async (_label, doneArguments) => {
     const output = createAssistantOutput();
     const stream = new AssistantMessageEventStream();
-    const events: Array<Record<string, unknown>> = [];
+    const events: Array<Record<string, any>> = [];
     const collect = (async () => {
       for await (const event of stream) {
-        events.push(event as unknown as Record<string, unknown>);
+        events.push(event as unknown as Record<string, any>);
       }
     })();
 
@@ -610,10 +610,10 @@ describe("processResponsesStream", () => {
   it("collapses cumulative message snapshot items into one text block (#91959)", async () => {
     const output = createAssistantOutput();
     const stream = new AssistantMessageEventStream();
-    const events: Array<Record<string, unknown>> = [];
+    const events: Array<Record<string, any>> = [];
     const collect = (async () => {
       for await (const event of stream) {
-        events.push(event as unknown as Record<string, unknown>);
+        events.push(event as unknown as Record<string, any>);
       }
     })();
 
@@ -682,10 +682,10 @@ describe("processResponsesStream", () => {
   ])("keeps %s adjacent same-phase message items as distinct blocks", async (_label, a, b) => {
     const output = createAssistantOutput();
     const stream = new AssistantMessageEventStream();
-    const events: Array<Record<string, unknown>> = [];
+    const events: Array<Record<string, any>> = [];
     const collect = (async () => {
       for await (const event of stream) {
-        events.push(event as unknown as Record<string, unknown>);
+        events.push(event as unknown as Record<string, any>);
       }
     })();
     await processResponsesStream(
@@ -751,10 +751,10 @@ describe("processResponsesStream", () => {
   it("streams a deferred distinct message live once its text diverges from the prior block", async () => {
     const output = createAssistantOutput();
     const stream = new AssistantMessageEventStream();
-    const events: Array<Record<string, unknown>> = [];
+    const events: Array<Record<string, any>> = [];
     const collect = (async () => {
       for await (const event of stream) {
-        events.push(event as unknown as Record<string, unknown>);
+        events.push(event as unknown as Record<string, any>);
       }
     })();
 

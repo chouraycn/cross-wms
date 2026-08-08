@@ -171,7 +171,7 @@ export class HttpTransport implements ChannelTransport {
     await this.connect();
   }
 
-  private emitEvent(type: TransportEvent["type"], data?: unknown): void {
+  private emitEvent(type: TransportEvent["type"], data?: any): void {
     const handlers = this.eventHandlers.get(type);
     if (!handlers) return;
 

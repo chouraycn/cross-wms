@@ -13,7 +13,7 @@ type TypingStartGuard = {
 export function createTypingStartGuard(params: {
   isSealed: () => boolean;
   shouldBlock?: () => boolean;
-  onStartError?: (err: unknown) => void;
+  onStartError?: (err: any) => void;
   maxConsecutiveFailures?: number;
   onTrip?: () => void;
   rethrowOnError?: boolean;

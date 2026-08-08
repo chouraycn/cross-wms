@@ -78,7 +78,7 @@ type ModelFallbackParams = {
   agentId?: string;
   sessionId?: string;
   sessionKey?: string;
-  fallbacksOverride?: unknown[];
+  fallbacksOverride?: any[];
   resolveAgentHarnessRuntimeOverride?: (provider: string, model: string) => string | undefined;
   prepareAgentHarnessRuntime?: (params: {
     provider: string;
@@ -90,8 +90,8 @@ type ModelFallbackParams = {
 type EmbeddedAgentParams = {
   provider?: string;
   model?: string;
-  authProfileId?: unknown;
-  authProfileIdSource?: unknown;
+  authProfileId?: any;
+  authProfileIdSource?: any;
   prompt?: string;
   transcriptPrompt?: string;
   memoryFlushWritePath?: string;
@@ -1572,7 +1572,7 @@ describe("runMemoryFlushIfNeeded", () => {
       totalTokensFresh: false,
     };
 
-    let directTranscriptStats: unknown[];
+    let directTranscriptStats: any[];
     try {
       await runMemoryFlushIfNeeded({
         cfg: { agents: { defaults: { compaction: { memoryFlush: {} } } } },
@@ -2097,7 +2097,7 @@ describe("runMemoryFlushIfNeeded", () => {
       .mockImplementation(async (target, options) => originalStat(target, options));
 
     let entry: SessionEntry | undefined;
-    let directTranscriptStats: unknown[];
+    let directTranscriptStats: any[];
     try {
       entry = await runPreflightCompactionIfNeeded({
         cfg: {

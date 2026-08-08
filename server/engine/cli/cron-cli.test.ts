@@ -12,7 +12,7 @@ const mocks = vi.hoisted(() => {
     writeStdout: vi.fn((value: string) => {
       defaultRuntime.log(value.endsWith("\n") ? value.slice(0, -1) : value);
     }),
-    writeJson: vi.fn((value: unknown, space = 2) => {
+    writeJson: vi.fn((value: any, space = 2) => {
       defaultRuntime.writeStdout(JSON.stringify(value, null, space > 0 ? space : undefined));
     }),
     exit: vi.fn((code: number) => {
@@ -29,8 +29,8 @@ const { defaultRuntime, callGatewayFromCli } = mocks;
 
 const defaultGatewayMock = async (
   method: string,
-  _opts: unknown,
-  params?: unknown,
+  _opts: any,
+  params?: any,
   _timeoutMs?: number,
 ) => {
   if (method === "cron.status") {
@@ -48,7 +48,7 @@ vi.mock("./gateway-rpc.js", async () => {
   const actual = await vi.importActual<typeof import("./gateway-rpc.js")>("./gateway-rpc.js");
   return {
     ...actual,
-    callGatewayFromCli: (method: string, opts: unknown, params?: unknown, extra?: unknown) =>
+    callGatewayFromCli: (method: string, opts: any, params?: any, extra?: any) =>
       mocks.callGatewayFromCli(method, opts, params, extra as number | undefined),
   };
 });
@@ -201,9 +201,9 @@ async function runCronSimpleAndGetUpdatePatch(
   };
 }
 
-function mockCronEditJobLookup(schedule: unknown): void {
+function mockCronEditJobLookup(schedule: any): void {
   callGatewayFromCli.mockImplementation(
-    async (method: string, _opts: unknown, params?: unknown) => {
+    async (method: string, _opts: any, params?: any) => {
       if (method === "cron.status") {
         return { enabled: true };
       }
@@ -229,7 +229,7 @@ function getGatewayCallParams<T>(method: string): T {
 }
 
 async function runCronEditWithScheduleLookup(
-  schedule: unknown,
+  schedule: any,
   editArgs: string[],
 ): Promise<CronUpdatePatch> {
   resetGatewayMock();
@@ -240,7 +240,7 @@ async function runCronEditWithScheduleLookup(
 }
 
 async function expectCronEditWithScheduleLookupExit(
-  schedule: unknown,
+  schedule: any,
   editArgs: string[],
 ): Promise<void> {
   resetGatewayMock();
@@ -260,7 +260,7 @@ async function runCronRunAndCaptureExit(params: {
 }) {
   resetGatewayMock();
   callGatewayFromCli.mockImplementation(
-    async (method: string, _opts: unknown, callParams?: unknown) => {
+    async (method: string, _opts: any, callParams?: any) => {
       if (method === "cron.status") {
         return { enabled: true };
       }
@@ -379,7 +379,7 @@ describe("cron cli", () => {
     vi.useFakeTimers();
     resetGatewayMock();
     callGatewayFromCli.mockImplementation(
-      async (method: string, _opts: unknown, params?: unknown) => {
+      async (method: string, _opts: any, params?: any) => {
         if (method === "cron.status") {
           return { enabled: true };
         }
@@ -850,7 +850,7 @@ describe("cron cli", () => {
   it("paginates cron show lookups", async () => {
     resetGatewayMock();
     callGatewayFromCli.mockImplementation(
-      async (method: string, _opts: unknown, params?: unknown) => {
+      async (method: string, _opts: any, params?: any) => {
         if (method === "cron.status") {
           return { enabled: true };
         }
@@ -953,10 +953,10 @@ describe("cron cli", () => {
     const stdout = stdoutText();
     expect(stdout).not.toContain("No --agent specified");
     const output = JSON.parse(stdout) as {
-      ok?: unknown;
+      ok?: any;
       params?: {
-        name?: unknown;
-        payload?: { kind?: unknown; message?: unknown };
+        name?: any;
+        payload?: { kind?: any; message?: any };
       };
     };
     expect(output.ok).toBe(true);
@@ -1117,11 +1117,11 @@ describe("cron cli", () => {
   it("sets and clears agent id on cron edit", async () => {
     await runCronCommand(["cron", "edit", "job-1", "--agent", " Ops ", "--message", "hello"]);
 
-    const patch = getGatewayCallParams<{ patch?: { agentId?: unknown } }>("cron.update");
+    const patch = getGatewayCallParams<{ patch?: { agentId?: any } }>("cron.update");
     expect(patch?.patch?.agentId).toBe("ops");
 
     await runCronCommand(["cron", "edit", "job-2", "--clear-agent"]);
-    const clearPatch = getGatewayCallParams<{ patch?: { agentId?: unknown } }>("cron.update");
+    const clearPatch = getGatewayCallParams<{ patch?: { agentId?: any } }>("cron.update");
     expect(clearPatch?.patch?.agentId).toBeNull();
   });
 
@@ -1155,7 +1155,7 @@ describe("cron cli", () => {
   it("updates command cron timeout without requiring argv to be repeated", async () => {
     resetGatewayMock();
     callGatewayFromCli.mockImplementation(
-      async (method: string, _opts: unknown, params?: unknown) => {
+      async (method: string, _opts: any, params?: any) => {
         if (method === "cron.status") {
           return { enabled: true };
         }
@@ -1331,7 +1331,7 @@ describe("cron cli", () => {
           to?: string;
           bestEffortDeliver?: boolean;
         };
-        delivery?: unknown;
+        delivery?: any;
       };
     }>("cron.update");
 
@@ -1566,7 +1566,7 @@ describe("cron cli", () => {
   it("paginates cron edit existing-job schedule lookups", async () => {
     resetGatewayMock();
     callGatewayFromCli.mockImplementation(
-      async (method: string, _opts: unknown, params?: unknown) => {
+      async (method: string, _opts: any, params?: any) => {
         if (method === "cron.status") {
           return { enabled: true };
         }
@@ -1621,7 +1621,7 @@ describe("cron cli", () => {
   it("rejects non-advancing cron edit lookup pagination", async () => {
     resetGatewayMock();
     callGatewayFromCli.mockImplementation(
-      async (method: string, _opts: unknown, params?: unknown) => {
+      async (method: string, _opts: any, params?: any) => {
         if (method === "cron.status") {
           return { enabled: true };
         }
@@ -1647,7 +1647,7 @@ describe("cron cli", () => {
   it("rejects excessive cron edit lookup pagination", async () => {
     resetGatewayMock();
     callGatewayFromCli.mockImplementation(
-      async (method: string, _opts: unknown, params?: unknown) => {
+      async (method: string, _opts: any, params?: any) => {
         if (method === "cron.status") {
           return { enabled: true };
         }

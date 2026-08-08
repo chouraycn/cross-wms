@@ -36,7 +36,7 @@ describe("ssrf pinning", () => {
     expect(first.address).toBe("93.184.216.34");
     expect(first.family).toBe(4);
 
-    const all = await new Promise<unknown>((resolve, reject) => {
+    const all = await new Promise<any>((resolve, reject) => {
       pinned.lookup("example.com", { all: true }, (err, addresses) => {
         if (err) {
           reject(err);
@@ -80,7 +80,7 @@ describe("ssrf pinning", () => {
     await expect(lookupDefault()).resolves.toEqual({ address: "160.79.104.10", family: 4 });
     await expect(lookupDefault()).resolves.toEqual({ address: "160.79.104.10", family: 4 });
 
-    const all = await new Promise<unknown>((resolve, reject) => {
+    const all = await new Promise<any>((resolve, reject) => {
       lookup("api.anthropic.com", { all: true }, (err, addresses) => {
         if (err) {
           reject(err);
@@ -123,7 +123,7 @@ describe("ssrf pinning", () => {
   });
 
   it("falls back for non-matching hostnames", async () => {
-    const fallback = vi.fn((host: string, options?: unknown, callback?: unknown) => {
+    const fallback = vi.fn((host: string, options?: any, callback?: any) => {
       const cb = typeof options === "function" ? options : (callback as () => void);
       (cb as (err: null, address: string, family: number) => void)(null, "1.2.3.4", 4);
     }) as unknown as Parameters<typeof createPinnedLookup>[0]["fallback"];

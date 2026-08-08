@@ -13,7 +13,7 @@ import type {
 type GatewayClientLike = {
   request<T = unknown>(
     method: string,
-    params?: unknown,
+    params?: any,
     options?: GatewayRequestOptions,
   ): Promise<T>;
   stopAndWait(): Promise<void>;
@@ -46,21 +46,21 @@ export type GatewayClientTransportOptions = {
   commands?: string[];
   permissions?: Record<string, boolean>;
   pathEnv?: string;
-  deviceIdentity?: unknown;
+  deviceIdentity?: any;
   minProtocol?: number;
   maxProtocol?: number;
   tlsFingerprint?: string;
   onEvent?: (evt: GatewayEvent) => void;
-  onHelloOk?: (hello: unknown) => void;
+  onHelloOk?: (hello: any) => void;
   onConnectError?: (err: Error) => void;
-  onReconnectPaused?: (info: unknown) => void;
+  onReconnectPaused?: (info: any) => void;
   onClose?: (code: number, reason: string) => void;
   onGap?: (info: { expected: number; received: number }) => void;
 };
 
-function toGatewayEvent(event: unknown): GatewayEvent {
+function toGatewayEvent(event: any): GatewayEvent {
   const record =
-    typeof event === "object" && event !== null ? (event as Record<string, unknown>) : {};
+    typeof event === "object" && event !== null ? (event as Record<string, any>) : {};
   const eventName = typeof record.event === "string" ? record.event : "unknown";
   return {
     event: eventName,
@@ -97,12 +97,12 @@ export class GatewayClientTransport implements ConnectableOpenClawTransport {
       this.rejectPendingConnect = reject;
       const client = new GatewayClient({
         ...this.options,
-        onEvent: (event: unknown) => {
+        onEvent: (event: any) => {
           const normalized = toGatewayEvent(event);
           this.eventsHub.publish(normalized);
           this.options.onEvent?.(normalized);
         },
-        onHelloOk: (_hello: unknown) => {
+        onHelloOk: (_hello: any) => {
           try {
             this.options.onHelloOk?.(_hello);
           } finally {
@@ -138,7 +138,7 @@ export class GatewayClientTransport implements ConnectableOpenClawTransport {
 
   async request<T = unknown>(
     method: string,
-    params?: unknown,
+    params?: any,
     options?: GatewayRequestOptions,
   ): Promise<T> {
     await this.connect();
@@ -177,5 +177,5 @@ export class GatewayClientTransport implements ConnectableOpenClawTransport {
 export function isConnectableTransport(
   transport: OpenClawTransport,
 ): transport is ConnectableOpenClawTransport {
-  return typeof (transport as { connect?: unknown }).connect === "function";
+  return typeof (transport as { connect?: any }).connect === "function";
 }

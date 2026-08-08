@@ -73,7 +73,7 @@ function createPluginMetadataSnapshot(workspaceDir: string): PluginMetadataSnaps
   };
 }
 
-async function expectMissingPath(operation: Promise<unknown>) {
+async function expectMissingPath(operation: Promise<any>) {
   // Filesystem deletion assertions should fail on the errno, not path text.
   let error: NodeJS.ErrnoException | undefined;
   try {
@@ -105,7 +105,7 @@ function planParamsAt(callIndex: number): {
 
 beforeAll(async () => {
   vi.doMock("./models-config.plan.js", () => ({
-    planOpenClawModelsJson: (...args: unknown[]) => planOpenClawModelsJsonMock(...args),
+    planOpenClawModelsJson: (...args: any[]) => planOpenClawModelsJsonMock(...args),
   }));
   vi.doMock("../infra/private-file-store.js", async () => {
     const actual = await vi.importActual<typeof import("../infra/private-file-store.js")>(
@@ -248,11 +248,11 @@ describe("models-config write serialization", () => {
       await ensureOpenClawModelsJson({}, agentDir);
 
       const root = JSON.parse(await fs.readFile(path.join(agentDir, "models.json"), "utf8")) as {
-        providers?: Record<string, unknown>;
+        providers?: Record<string, any>;
       };
       const catalog = JSON.parse(
         await fs.readFile(path.join(agentDir, "plugins", "zai", PLUGIN_MODEL_CATALOG_FILE), "utf8"),
-      ) as { providers?: Record<string, unknown> };
+      ) as { providers?: Record<string, any> };
       expect(root.providers).toEqual({});
       expect(root).not.toHaveProperty("pluginCatalogs");
       expect(Object.keys(catalog.providers ?? {})).toEqual(["zai"]);

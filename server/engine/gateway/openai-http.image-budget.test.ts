@@ -10,7 +10,7 @@ vi.mock("../media/input-files.js", async () => {
     await vi.importActual<typeof import("../media/input-files.js")>("../media/input-files.js");
   return {
     ...actual,
-    extractImageContentFromSource: (...args: unknown[]) =>
+    extractImageContentFromSource: (...args: any[]) =>
       extractImageContentFromSourceMock(...args),
   };
 });

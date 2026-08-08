@@ -1,12 +1,12 @@
 /** Visit object-shaped content blocks in an assistant/user message payload. */
 export function visitObjectContentBlocks(
-  message: unknown,
-  visitor: (block: Record<string, unknown>) => void,
+  message: any,
+  visitor: (block: Record<string, any>) => void,
 ): void {
   if (!message || typeof message !== "object") {
     return;
   }
-  const content = (message as { content?: unknown }).content;
+  const content = (message as { content?: any }).content;
   if (!Array.isArray(content)) {
     return;
   }
@@ -14,6 +14,6 @@ export function visitObjectContentBlocks(
     if (!block || typeof block !== "object") {
       continue;
     }
-    visitor(block as Record<string, unknown>);
+    visitor(block as Record<string, any>);
   }
 }

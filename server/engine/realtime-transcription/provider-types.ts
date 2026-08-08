@@ -5,7 +5,7 @@ import type { OpenClawConfig } from "../config/types.openclaw.js";
 // Providers own config resolution; core owns session lifecycle shape.
 export type RealtimeTranscriptionProviderId = string;
 
-export type RealtimeTranscriptionProviderConfig = Record<string, unknown>;
+export type RealtimeTranscriptionProviderConfig = Record<string, any>;
 
 export type RealtimeTranscriptionProviderResolveConfigContext = {
   cfg: OpenClawConfig;

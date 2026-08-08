@@ -63,7 +63,7 @@ describe("scopeLegacySessionKeyToAgent", () => {
       "agent:ops:global",
     );
     expect(scopeLegacySessionKeyToAgent({ agentId: "ops", sessionKey: "UNKNOWN" })).toBe(
-      "agent:ops:unknown",
+      "agent:ops: any",
     );
   });
 });

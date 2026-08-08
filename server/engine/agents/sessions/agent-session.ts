@@ -123,11 +123,11 @@ function normalizeBranchSummaryResult(
   return { error: result.error.message };
 }
 
-function hasPersistedAssistantContent(content: unknown): boolean {
+function hasPersistedAssistantContent(content: any): boolean {
   return (typeof content === "string" || Array.isArray(content)) && content.length > 0;
 }
 
-function extractPersistedAssistantText(content: unknown): string {
+function extractPersistedAssistantText(content: any): string {
   if (typeof content === "string") {
     return content;
   }
@@ -139,7 +139,7 @@ function extractPersistedAssistantText(content: unknown): string {
     if (!block || typeof block !== "object") {
       continue;
     }
-    const candidate = block as { type?: unknown; text?: unknown };
+    const candidate = block as { type?: any; text?: any };
     if (candidate.type === "text" && typeof candidate.text === "string") {
       text += candidate.text;
     }
@@ -508,7 +508,7 @@ export class AgentSession {
             type: "tool_call",
             toolName: toolCall.name,
             toolCallId: toolCall.id,
-            input: args as Record<string, unknown>,
+            input: args as Record<string, any>,
           });
         } catch (err) {
           if (err instanceof Error) {
@@ -531,7 +531,7 @@ export class AgentSession {
             type: "tool_result",
             toolName: toolCall.name,
             toolCallId: toolCall.id,
-            input: args as Record<string, unknown>,
+            input: args as Record<string, any>,
             content: result.content,
             details: result.details,
             isError,
@@ -714,7 +714,7 @@ export class AgentSession {
       return;
     }
 
-    const targetRecord = target as unknown as Record<string, unknown>;
+    const targetRecord = target as unknown as Record<string, any>;
     for (const key of Object.keys(targetRecord)) {
       delete targetRecord[key];
     }
@@ -2326,7 +2326,7 @@ export class AgentSession {
     runner.bindCore(
       {
         sendMessage: (message, options) => {
-          this.sendCustomMessage(message, options).catch((err: unknown) => {
+          this.sendCustomMessage(message, options).catch((err: any) => {
             runner.emitError({
               extensionPath: "<runtime>",
               event: "send_message",
@@ -2335,7 +2335,7 @@ export class AgentSession {
           });
         },
         sendUserMessage: (content, options) => {
-          this.sendUserMessage(content, options).catch((err: unknown) => {
+          this.sendUserMessage(content, options).catch((err: any) => {
             runner.emitError({
               extensionPath: "<runtime>",
               event: "send_user_message",
@@ -2896,7 +2896,7 @@ export class AgentSession {
     this.branchSummaryAbortController = new AbortController();
 
     try {
-      let extensionSummary: { summary: string; details?: unknown } | undefined;
+      let extensionSummary: { summary: string; details?: any } | undefined;
       let fromExtension = false;
 
       // Emit session_before_tree event
@@ -2930,7 +2930,7 @@ export class AgentSession {
 
       // Run default summarizer if needed
       let summaryText: string | undefined;
-      let summaryDetails: unknown;
+      let summaryDetails: any;
       if (options.summarize && entriesToSummarize.length > 0 && !extensionSummary) {
         const model = this.model!;
         const { apiKey, headers } = await this.getRequiredRequestAuth(model);
@@ -3135,7 +3135,7 @@ export class AgentSession {
 
     // After compaction, the last assistant usage reflects pre-compaction context size.
     // We can only trust usage from an assistant that responded after the latest compaction.
-    // If no such assistant exists, context token count is unknown until the next LLM response.
+    // If no such assistant exists, context token count is any until the next LLM response.
     const branchEntries = this.sessionManager.getBranch();
     const latestCompaction = getLatestCompactionEntry(branchEntries);
 
@@ -3238,7 +3238,7 @@ export class AgentSession {
         if (m.role !== "assistant") {
           return false;
         }
-        const content = (m as { content?: unknown }).content;
+        const content = (m as { content?: any }).content;
         if (m.stopReason === "aborted" && !hasPersistedAssistantContent(content)) {
           return false;
         }
@@ -3249,7 +3249,7 @@ export class AgentSession {
       return undefined;
     }
 
-    const content = (lastAssistant as { content?: unknown }).content;
+    const content = (lastAssistant as { content?: any }).content;
     return extractPersistedAssistantText(content).trim() || undefined;
   }
 

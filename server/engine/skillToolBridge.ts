@@ -18,7 +18,7 @@ const SKILL_TOOL_PREFIX = 'skill_';
  */
 export interface ToolCallRequest {
   skillId: string;
-  params: Record<string, unknown>;
+  params: Record<string, any>;
   sessionId?: string;
   agentId?: string;
   workspace?: string;
@@ -29,10 +29,10 @@ export interface ToolCallRequest {
  */
 export interface ToolCallResponse {
   success: boolean;
-  data?: unknown;
+  data?: any;
   error?: string;
   content?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 /**
@@ -43,7 +43,7 @@ export interface OpenAIToolDefinition {
   function: {
     name: string;
     description: string;
-    parameters: Record<string, unknown>;
+    parameters: Record<string, any>;
   };
 }
 
@@ -96,9 +96,9 @@ export function getSkillToolDefinitions(skills?: RegisteredSkill[] | { allow?: s
  * @param request - 工具调用请求
  * @returns 工具调用响应
  */
-export async function handleSkillToolCall(request: ToolCallRequest | { id: string; type: string; function: { name: string; arguments: string } }, skillConfig?: { allow?: string[]; deny?: string[]; elevated?: { enabled?: string } }, sessionId?: string, extraSkillExecutor?: (id: string, params: Record<string, unknown>, ctx?: SkillContext) => Promise<SkillResult>): Promise<ToolCallResponse> {
+export async function handleSkillToolCall(request: ToolCallRequest | { id: string; type: string; function: { name: string; arguments: string } }, skillConfig?: { allow?: string[]; deny?: string[]; elevated?: { enabled?: string } }, sessionId?: string, extraSkillExecutor?: (id: string, params: Record<string, any>, ctx?: SkillContext) => Promise<SkillResult>): Promise<ToolCallResponse> {
   let skillId: string;
-  let params: Record<string, unknown> = {};
+  let params: Record<string, any> = {};
   
   if ('skillId' in request) {
     skillId = request.skillId;

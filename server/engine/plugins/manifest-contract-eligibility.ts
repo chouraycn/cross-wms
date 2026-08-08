@@ -26,21 +26,21 @@ type PluginManifestRecord = {
 
 /** 占位：PluginMetadataSnapshot。 */
 type PluginMetadataSnapshot = {
-  index: unknown;
+  index: any;
   plugins: PluginManifestRecord[];
-  manifestRegistry?: unknown;
+  manifestRegistry?: any;
 };
 
 /** 占位：PluginMetadataManifestView。 */
 type PluginMetadataManifestView = {
-  index: unknown;
+  index: any;
   plugins: PluginManifestRecord[];
 };
 
 /** 占位：PluginMetadataRegistryView。 */
 type PluginMetadataRegistryView = {
-  index: unknown;
-  manifestRegistry: unknown;
+  index: any;
+  manifestRegistry: any;
 };
 
 export function isManifestPluginAvailableForControlPlane(params: {

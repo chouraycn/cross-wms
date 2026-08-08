@@ -21,22 +21,22 @@ const CHANNEL_API_RETRY_RE =
 const log = createSubsystemLogger("retry-policy");
 
 function resolveChannelApiShouldRetry(params: {
-  shouldRetry?: (err: unknown) => boolean;
+  shouldRetry?: (err: any) => boolean;
   strictShouldRetry?: boolean;
 }) {
   if (!params.shouldRetry) {
-    return (err: unknown) => CHANNEL_API_RETRY_RE.test(formatErrorMessage(err));
+    return (err: any) => CHANNEL_API_RETRY_RE.test(formatErrorMessage(err));
   }
   if (params.strictShouldRetry) {
     return params.shouldRetry;
   }
   // 通道 API 通常按 provider 不同地包装网络失败。
   // 除非调用方选择严格幂等控制，否则保留回退正则。
-  return (err: unknown) =>
+  return (err: any) =>
     params.shouldRetry?.(err) || CHANNEL_API_RETRY_RE.test(formatErrorMessage(err));
 }
 
-function getChannelApiRetryAfterMs(err: unknown): number | undefined {
+function getChannelApiRetryAfterMs(err: any): number | undefined {
   if (!err || typeof err !== "object") {
     return undefined;
   }
@@ -44,18 +44,18 @@ function getChannelApiRetryAfterMs(err: unknown): number | undefined {
     // Telegram 风格客户端可能在根错误、response 或嵌套 error 对象上暴露 retry_after；
     // 保持所有形状对齐以便限流睡眠匹配。
     "parameters" in err && err.parameters && typeof err.parameters === "object"
-      ? (err.parameters as { retry_after?: unknown }).retry_after
+      ? (err.parameters as { retry_after?: any }).retry_after
       : "response" in err &&
           err.response &&
           typeof err.response === "object" &&
           "parameters" in err.response
         ? (
             err.response as {
-              parameters?: { retry_after?: unknown };
+              parameters?: { retry_after?: any };
             }
           ).parameters?.retry_after
         : "error" in err && err.error && typeof err.error === "object" && "parameters" in err.error
-          ? (err.error as { parameters?: { retry_after?: unknown } }).parameters?.retry_after
+          ? (err.error as { parameters?: { retry_after?: any } }).parameters?.retry_after
           : undefined;
   return typeof candidate === "number" && Number.isFinite(candidate) ? candidate * 1000 : undefined;
 }
@@ -67,8 +67,8 @@ export function createRateLimitRetryRunner(params: {
   verbose?: boolean;
   defaults: Required<RetryConfig>;
   logLabel: string;
-  shouldRetry: (err: unknown) => boolean;
-  retryAfterMs?: (err: unknown) => number | undefined;
+  shouldRetry: (err: any) => boolean;
+  retryAfterMs?: (err: any) => number | undefined;
 }): RetryRunner {
   const retryConfig = resolveRetryConfig(params.defaults, {
     ...params.configRetry,
@@ -97,7 +97,7 @@ export function createChannelApiRetryRunner(params: {
   retry?: RetryConfig;
   configRetry?: RetryConfig;
   verbose?: boolean;
-  shouldRetry?: (err: unknown) => boolean;
+  shouldRetry?: (err: any) => boolean;
   /**
    * 为 true 时，自定义 shouldRetry 谓词被独占使用 ——
    * 默认通道 API 回退正则不被 OR 进来。

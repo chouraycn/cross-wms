@@ -44,10 +44,10 @@ function makeEvent(overrides?: Partial<InternalHookEvent>): InternalHookEvent {
 
 function expectBootCall(
   index: number,
-  expected: { cfg: unknown; workspaceDir: string; agentId: string },
+  expected: { cfg: any; workspaceDir: string; agentId: string },
 ) {
   const params = runBootOnce.mock.calls[index]?.[0] as
-    | { cfg?: unknown; workspaceDir?: unknown; agentId?: unknown }
+    | { cfg?: any; workspaceDir?: any; agentId?: any }
     | undefined;
   if (!params) {
     throw new Error(`missing boot call ${index}`);
@@ -61,13 +61,13 @@ describe("boot-md handler", () => {
   function setupTwoAgentBootConfig() {
     const cfg = { agents: { list: [{ id: "main" }, { id: "ops" }] } };
     listAgentIds.mockReturnValue(["main", "ops"]);
-    resolveAgentWorkspaceDir.mockImplementation((_cfg: unknown, id: string) =>
+    resolveAgentWorkspaceDir.mockImplementation((_cfg: any, id: string) =>
       id === "main" ? MAIN_WORKSPACE_DIR : OPS_WORKSPACE_DIR,
     );
     return cfg;
   }
 
-  function setupSingleMainAgentBootConfig(cfg: unknown) {
+  function setupSingleMainAgentBootConfig(cfg: any) {
     listAgentIds.mockReturnValue(["main"]);
     resolveAgentWorkspaceDir.mockReturnValue(MAIN_WORKSPACE_DIR);
     return cfg;

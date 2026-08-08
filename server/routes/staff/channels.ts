@@ -53,7 +53,7 @@ const CHANNEL_META = [
     channel: 'wechat',
     name: '微信',
     setup: 'qrcode',
-    credential_fields: [] as Array<Record<string, unknown>>,
+    credential_fields: [] as Array<Record<string, any>>,
     capabilities: ['typing'],
   },
   {
@@ -103,11 +103,11 @@ function isoFromUnix(sec: number | null | undefined): string {
   return new Date(sec * 1000).toISOString();
 }
 
-function parseJson(text: string | null | undefined): Record<string, unknown> {
+function parseJson(text: string | null | undefined): Record<string, any> {
   if (!text) return {};
   try {
     const v = JSON.parse(text);
-    return v && typeof v === 'object' ? (v as Record<string, unknown>) : {};
+    return v && typeof v === 'object' ? (v as Record<string, any>) : {};
   } catch {
     return {};
   }
@@ -120,14 +120,14 @@ function getDb(): Database.Database {
 /** row -> ChannelBindingRead（含挂载员工、config_json 扁平化到顶层已知字段） */
 function buildBindingRead(
   db: Database.Database,
-  row: unknown,
-): Record<string, unknown> {
+  row: any,
+): Record<string, any> {
   const config = parseJson(row.config_json);
   const agentRows = db
     .prepare(
       'SELECT * FROM sd_channel_binding_agents WHERE binding_id = ? ORDER BY sort_order ASC',
     )
-    .all(row.id) as unknown[];
+    .all(row.id) as any[];
   const agents = agentRows.map((a) => ({
     agent_id: a.agent_id,
     name: a.name || a.agent_id,
@@ -135,7 +135,7 @@ function buildBindingRead(
     sort_order: a.sort_order,
   }));
 
-  const flattened: Record<string, unknown> = {};
+  const flattened: Record<string, any> = {};
   for (const key of [
     'ilink_bot_id',
     'baseurl',
@@ -170,7 +170,7 @@ function buildBindingRead(
   };
 }
 
-function ok(res: Response, data: unknown): void {
+function ok(res: Response, data: any): void {
   res.json({ code: 0, data, message: 'ok' });
 }
 
@@ -191,7 +191,7 @@ router.get('/', (req: Request, res: Response) => {
   const db = getDb();
   const rows = db
     .prepare('SELECT * FROM sd_channel_bindings WHERE tenant_id = ? ORDER BY created_at ASC')
-    .all(tenantId) as unknown[];
+    .all(tenantId) as any[];
   ok(res, rows.map((row) => buildBindingRead(db, row)));
 });
 
@@ -252,7 +252,7 @@ router.get('/my-identity-bindings', (req: Request, res: Response) => {
     .prepare(
       'SELECT * FROM sd_channel_identities WHERE tenant_id = ? AND staffdeck_user_id = ? ORDER BY channel ASC',
     )
-    .all(tenantId, 'default-user') as unknown[];
+    .all(tenantId, 'default-user') as any[];
   ok(
     res,
     rows.map((r) => ({
@@ -291,7 +291,7 @@ router.get('/:bindingId/agents', (req: Request, res: Response) => {
   }
   const agentRows = db
     .prepare('SELECT * FROM sd_channel_binding_agents WHERE binding_id = ? ORDER BY sort_order ASC')
-    .all(bindingId) as unknown[];
+    .all(bindingId) as any[];
   ok(
     res,
     agentRows.map((a) => ({
@@ -320,7 +320,7 @@ router.put('/:bindingId', (req: Request, res: Response) => {
     fail(res, 404, '渠道绑定不存在');
     return;
   }
-  const config = parseJson((binding as unknown).config_json);
+  const config = parseJson((binding as any).config_json);
   if (agents !== undefined) {
     if (!agents.length) {
       fail(res, 400, '挂载员工列表不能为空');
@@ -397,9 +397,9 @@ router.delete('/:bindingId', (req: Request, res: Response) => {
 function activateBindingLocal(
   db: Database.Database,
   bindingId: string,
-  extraConfig: Record<string, unknown>,
-): Record<string, unknown> {
-  const binding = db.prepare('SELECT * FROM sd_channel_bindings WHERE id = ?').get(bindingId) as unknown;
+  extraConfig: Record<string, any>,
+): Record<string, any> {
+  const binding = db.prepare('SELECT * FROM sd_channel_bindings WHERE id = ?').get(bindingId) as any;
   const config = { ...parseJson(binding.config_json), ...extraConfig };
   config.session_expired = false;
   config.bound_at = isoFromUnix(nowUnix());
@@ -435,12 +435,12 @@ export interface DeliverToChannelOptions {
  */
 export function deliverToChannel(opts: DeliverToChannelOptions): {
   ok: boolean;
-  delivery?: Record<string, unknown>;
+  delivery?: Record<string, any>;
   error?: string;
 } {
   const tenantId = opts.tenantId || DEFAULT_TENANT_ID;
   const db = getDb();
-  let binding: unknown = null;
+  let binding: any = null;
   if (opts.bindingId) {
     binding = db
       .prepare('SELECT * FROM sd_channel_bindings WHERE id = ? AND tenant_id = ?')
@@ -450,7 +450,7 @@ export function deliverToChannel(opts: DeliverToChannelOptions): {
       .prepare(
         "SELECT * FROM sd_channel_bindings WHERE tenant_id = ? AND channel = ? AND status = 'active' ORDER BY updated_at DESC",
       )
-      .all(tenantId, opts.channel) as unknown[];
+      .all(tenantId, opts.channel) as any[];
     if (opts.agentId) rows = rows.filter((r) => r.agent_id === opts.agentId);
     if (rows.length) binding = rows[0];
   }
@@ -481,7 +481,7 @@ export function deliverToChannel(opts: DeliverToChannelOptions): {
     t,
     t,
   );
-  const row = db.prepare('SELECT * FROM sd_channel_deliveries WHERE id = ?').get(id) as unknown;
+  const row = db.prepare('SELECT * FROM sd_channel_deliveries WHERE id = ?').get(id) as any;
   return {
     ok: true,
     delivery: {
@@ -645,8 +645,8 @@ router.get('/:bindingId/deliveries', (req: Request, res: Response) => {
     .prepare(
       'SELECT * FROM sd_channel_deliveries WHERE binding_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
     )
-    .all(bindingId, limit, offset) as unknown[];
-  const total = (db.prepare('SELECT COUNT(*) AS c FROM sd_channel_deliveries WHERE binding_id = ?').get(bindingId) as unknown)
+    .all(bindingId, limit, offset) as any[];
+  const total = (db.prepare('SELECT COUNT(*) AS c FROM sd_channel_deliveries WHERE binding_id = ?').get(bindingId) as any)
     .c;
   ok(res, {
     items: rows.map((r) => ({

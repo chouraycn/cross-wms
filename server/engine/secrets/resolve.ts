@@ -13,7 +13,7 @@ import { resolveSecretRefAsync } from './resolver.js';
 import { createDefaultProviderRegistry } from './provider.js';
 
 export interface ResolveSecretRefOptions {
-  config?: unknown;
+  config?: any;
   env?: Record<string, string | undefined>;
 }
 

@@ -4,7 +4,7 @@
  * 降级实现：提供 compaction 超时管理，不再抛出 stub 错误。
  */
 
-export function shouldFlagCompactionTimeout(_params: unknown): boolean {
+export function shouldFlagCompactionTimeout(_params: any): boolean {
   return false;
 }
 
@@ -12,6 +12,6 @@ export function resolveRunTimeoutDuringCompaction(params: { timeoutMs?: number; 
   return params.timeoutMs ?? params.defaultMs ?? 60_000;
 }
 
-export function selectCompactionTimeoutSnapshot(_params: unknown): null {
+export function selectCompactionTimeoutSnapshot(_params: any): null {
   return null;
 }

@@ -35,11 +35,11 @@ function resolveGatewayStatusProbeDetails(result: GatewayStatusProbeResult) {
   return "authProbe" in result ? result.authProbe : result;
 }
 
-function readRuntimeVersionFromStatusPayload(payload: unknown): string | null {
+function readRuntimeVersionFromStatusPayload(payload: any): string | null {
   if (!payload || typeof payload !== "object") {
     return null;
   }
-  const runtimeVersion = (payload as { runtimeVersion?: unknown }).runtimeVersion;
+  const runtimeVersion = (payload as { runtimeVersion?: any }).runtimeVersion;
   return typeof runtimeVersion === "string" && runtimeVersion.trim().length > 0
     ? runtimeVersion.trim()
     : null;

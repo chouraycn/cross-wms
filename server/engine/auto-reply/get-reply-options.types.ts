@@ -12,13 +12,13 @@ export type ImageContent = {
   url?: string;
   data?: string;
   mediaType?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 /** Minimal typing controller contract surfaced to channels. */
 export type TypingController = {
   stop: () => void;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 export type BlockReplyContext = {
@@ -148,7 +148,7 @@ export type GetReplyOptions = {
     toolCallId?: string;
     name?: string;
     phase?: string;
-    args?: Record<string, unknown>;
+    args?: Record<string, any>;
     detailMode?: "explain" | "raw";
   }) => Promise<void> | void;
   /** Called when a concrete work item starts, updates, or completes. */

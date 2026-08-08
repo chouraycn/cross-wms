@@ -64,7 +64,7 @@ function stripDescriptorVolatileConfigFields(
   if (!("meta" in value) && !("wizard" in value)) {
     return value;
   }
-  const { meta: _meta, wizard: _wizard, ...stableConfig } = value as Record<string, unknown>;
+  const { meta: _meta, wizard: _wizard, ...stableConfig } = value as Record<string, any>;
   return stableConfig as NonNullable<PluginLoadOptions["config"]>;
 }
 
@@ -140,7 +140,7 @@ export function buildPluginToolDescriptorCacheKey(params: {
   });
 }
 
-function asJsonObject(value: unknown): JsonObject {
+function asJsonObject(value: any): JsonObject {
   return value as JsonObject;
 }
 
@@ -149,7 +149,7 @@ export function capturePluginToolDescriptor(params: {
   tool: AnyAgentTool;
   optional: boolean;
 }): CachedPluginToolDescriptor {
-  const label = (params.tool as { label?: unknown }).label;
+  const label = (params.tool as { label?: any }).label;
   const title = typeof label === "string" && label.trim() ? label.trim() : undefined;
   return {
     ...(params.tool.displaySummary ? { displaySummary: params.tool.displaySummary } : {}),

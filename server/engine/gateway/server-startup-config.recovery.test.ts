@@ -220,7 +220,7 @@ function withRuntimeConfig(
 }
 
 function buildInvalidConfigSnapshot(params: {
-  rawConfig: unknown;
+  rawConfig: any;
   config?: OpenClawConfig;
   issues: ConfigFileSnapshot["issues"];
   warnings?: ConfigFileSnapshot["warnings"];
@@ -509,7 +509,7 @@ describe("gateway startup config validation", () => {
     await expect(start).rejects.toThrow(
       `Invalid config at ${configPath}.\nplugins.slots.memory: plugin not found: source-only-pack\nThis is a plugin packaging issue, not a local config problem.\nUpdate or reinstall the plugin after the publisher ships compiled JavaScript, or disable/uninstall the plugin until then.`,
     );
-    await start.catch((error: unknown) => {
+    await start.catch((error: any) => {
       expect(String(error)).not.toContain("openclaw doctor --fix");
     });
   });

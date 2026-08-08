@@ -13,7 +13,7 @@ export type ResolvedSession = {
   sessionFile?: string;
   agentId?: string;
   storePath?: string;
-  entry?: Record<string, unknown>;
+  entry?: Record<string, any>;
 };
 
 type ResolveHandler = (

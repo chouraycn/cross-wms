@@ -16,7 +16,7 @@ import { defaultVoiceWakeTriggers } from "../infra/voicewake.js";
  * normalizeTrimmedStringList，但 cross-wms 的 string-coerce 尚未包含此函数。
  * 行为与 openclaw 一致：字符串按逗号/换行拆分，数组逐项处理，trim 后去重排序。
  */
-function normalizeTrimmedStringList(input: unknown): string[] {
+function normalizeTrimmedStringList(input: any): string[] {
   if (input == null) {
     return [];
   }
@@ -40,7 +40,7 @@ function normalizeTrimmedStringList(input: unknown): string[] {
 }
 
 /** 规范化 voice-wake 触发词配置，限制数量与长度并提供默认值。 */
-export function normalizeVoiceWakeTriggers(input: unknown): string[] {
+export function normalizeVoiceWakeTriggers(input: any): string[] {
   const cleaned = normalizeTrimmedStringList(input)
     .slice(0, 32)
     .map((value) => value.slice(0, 64));
@@ -48,15 +48,15 @@ export function normalizeVoiceWakeTriggers(input: unknown): string[] {
 }
 
 /** 格式化未知 gateway 错误，不会因异常的 status/code 形状而抛出。 */
-export function formatError(err: unknown): string {
+export function formatError(err: any): string {
   if (err instanceof Error) {
     return err.message;
   }
   if (typeof err === "string") {
     return err;
   }
-  const statusValue = (err as { status?: unknown })?.status;
-  const codeValue = (err as { code?: unknown })?.code;
+  const statusValue = (err as { status?: any })?.status;
+  const codeValue = (err as { code?: any })?.code;
   const hasStatus = statusValue !== undefined;
   const hasCode = codeValue !== undefined;
   if (hasStatus || hasCode) {

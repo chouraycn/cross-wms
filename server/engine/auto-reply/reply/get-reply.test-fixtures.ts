@@ -57,7 +57,7 @@ export function buildNativeResetContext(): MsgContext {
   };
 }
 
-export function createGetReplySessionState(overrides: Record<string, unknown> = {}) {
+export function createGetReplySessionState(overrides: Record<string, any> = {}) {
   return {
     sessionCtx: {},
     sessionEntry: {},
@@ -142,19 +142,19 @@ export function createGetReplyContinueDirectivesResult(params: {
 }
 
 export function registerGetReplyRuntimeOverrides(handles: {
-  resolveReplyDirectives: (...args: unknown[]) => unknown;
-  initSessionState: (...args: unknown[]) => unknown;
-  handleInlineActions?: (...args: unknown[]) => unknown;
+  resolveReplyDirectives: (...args: any[]) => unknown;
+  initSessionState: (...args: any[]) => unknown;
+  handleInlineActions?: (...args: any[]) => unknown;
 }): void {
   vi.doMock("./get-reply-directives.js", () => ({
-    resolveReplyDirectives: (...args: unknown[]) => handles.resolveReplyDirectives(...args),
+    resolveReplyDirectives: (...args: any[]) => handles.resolveReplyDirectives(...args),
   }));
   vi.doMock("./get-reply-inline-actions.js", () => ({
     handleInlineActions:
       handles.handleInlineActions ?? vi.fn(async () => ({ kind: "reply", reply: { text: "ok" } })),
   }));
   vi.doMock("./session.js", () => ({
-    initSessionState: (...args: unknown[]) => handles.initSessionState(...args),
+    initSessionState: (...args: any[]) => handles.initSessionState(...args),
   }));
 }
 
@@ -166,8 +166,8 @@ export function expectResolvedTelegramTimezone(
   const call = resolveReplyDirectives.mock.calls.at(0)?.[0] as
     | {
         cfg?: {
-          channels?: { telegram?: { botToken?: unknown } };
-          agents?: { defaults?: { userTimezone?: unknown } };
+          channels?: { telegram?: { botToken?: any } };
+          agents?: { defaults?: { userTimezone?: any } };
         };
       }
     | undefined;

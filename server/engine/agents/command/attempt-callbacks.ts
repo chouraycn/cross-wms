@@ -15,7 +15,7 @@ export type AgentAttemptLifecycleState = {
 /** Event shape emitted by runtimes during an agent attempt. */
 type AgentAttemptLifecycleEvent = {
   stream: string;
-  data?: Record<string, unknown>;
+  data?: Record<string, any>;
   sessionKey?: string;
 };
 

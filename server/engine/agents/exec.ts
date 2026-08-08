@@ -8,6 +8,6 @@
 
 export type ExecOptions = unknown;
 export type ExecResult = unknown;
-export function execCommand(..._args: unknown[]): unknown {
+export function execCommand(..._args: any[]): any {
   return undefined;
 }

@@ -77,7 +77,7 @@ export function inheritPriority(
 }
 
 /** 钳制任意输入为合法优先级。 */
-export function clampPriority(p: unknown): TaskPriority {
+export function clampPriority(p: any): TaskPriority {
   return normalizePriority(p);
 }
 

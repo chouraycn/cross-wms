@@ -44,7 +44,7 @@ const OPENAI_CODEX_RESPONSES_API = "openai-chatgpt-responses";
 
 // Unknown views are rejected by protocol validation first; this helper keeps the
 // handler default explicit for older clients that omit the field.
-function resolveModelsListView(params: Record<string, unknown>): ModelsListView {
+function resolveModelsListView(params: Record<string, any>): ModelsListView {
   return typeof params.view === "string" ? (params.view as ModelsListView) : "default";
 }
 
@@ -52,7 +52,7 @@ function resolveModelsListView(params: Record<string, unknown>): ModelsListView 
 // them here would leak provider invocation details into the Control UI API.
 function omitRuntimeModelParams(entry: ModelCatalogEntry): ModelCatalogEntry {
   const { params: _params, ...rest } = entry as ModelCatalogEntry & {
-    params?: Record<string, unknown>;
+    params?: Record<string, any>;
   };
   return rest;
 }
@@ -73,15 +73,15 @@ function createInFlightProviderAuthChecker(
   };
 }
 
-function hasLiteralSecret(value: unknown): value is string {
+function hasLiteralSecret(value: any): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
 
-function hasAvailableEnvSecretRef(value: unknown): boolean {
+function hasAvailableEnvSecretRef(value: any): boolean {
   return isSecretRef(value) && value.source === "env" && hasLiteralSecret(process.env[value.id]);
 }
 
-function hasSecretRef(value: unknown): boolean {
+function hasSecretRef(value: any): boolean {
   return isSecretRef(value);
 }
 
@@ -243,7 +243,7 @@ async function buildPublicModelsListEntries(params: {
 export async function buildModelsListResult(params: {
   context: GatewayRequestContext;
   agentId?: string;
-  params: Record<string, unknown>;
+  params: Record<string, any>;
   preloadedCatalog?: ModelCatalogEntry[];
 }): Promise<{ models: ModelsListEntry[] }> {
   const cfg = params.context.getRuntimeConfig();

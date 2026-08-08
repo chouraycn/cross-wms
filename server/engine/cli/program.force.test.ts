@@ -12,7 +12,7 @@ vi.mock("node:child_process", async () => {
 const probePortUsageMock = vi.hoisted(() => vi.fn());
 
 vi.mock("../infra/ports-probe.js", () => ({
-  probePortUsage: (...args: unknown[]) => probePortUsageMock(...args),
+  probePortUsage: (...args: any[]) => probePortUsageMock(...args),
 }));
 
 import { execFileSync } from "node:child_process";

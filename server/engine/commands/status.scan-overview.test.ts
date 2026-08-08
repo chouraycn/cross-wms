@@ -62,7 +62,7 @@ type ChannelsTableCall = [
   {
     includeSetupFallbackPlugins?: boolean;
     showSecrets?: boolean;
-    sourceConfig?: unknown;
+    sourceConfig?: any;
   },
 ];
 

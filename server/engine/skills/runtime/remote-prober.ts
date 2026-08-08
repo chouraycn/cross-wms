@@ -213,7 +213,7 @@ export class RemoteNodeProber {
       return {
         nodeId,
         online: false,
-        platform: "unknown",
+        platform: "any",
         lastChecked: Date.now(),
         availableBins: [],
         error: `Node not found: ${nodeId}`,

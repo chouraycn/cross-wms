@@ -3,11 +3,11 @@
 
 /** Starts the native approval handler for a channel runtime context and returns its cleanup hook. */
 export async function startChannelApprovalHandlerBootstrap(_params: {
-  plugin?: unknown;
-  cfg?: unknown;
+  plugin?: any;
+  cfg?: any;
   accountId?: string;
-  channelRuntime?: unknown;
-  logger?: unknown;
+  channelRuntime?: any;
+  logger?: any;
 }): Promise<() => Promise<void>> {
   // Simplified: no real approval handler bootstrap in cross-wms
   return async () => {};

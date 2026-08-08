@@ -4,26 +4,26 @@ export type DeviceSessionAuthz = unknown;
 
 export type DeviceManagementAuthz = unknown;
 
-export function resolveDeviceSessionAuthz(...args: unknown[]): unknown {
+export function resolveDeviceSessionAuthz(...args: any[]): any {
   return undefined;
 }
 
-export function resolveDeviceManagementAuthz(...args: unknown[]): unknown {
+export function resolveDeviceManagementAuthz(...args: any[]): any {
   return undefined;
 }
 
-export function deniesCrossDeviceManagement(...args: unknown[]): unknown {
+export function deniesCrossDeviceManagement(...args: any[]): any {
   return undefined;
 }
 
-export function deniesDeviceTokenRoleManagement(...args: unknown[]): unknown {
+export function deniesDeviceTokenRoleManagement(...args: any[]): any {
   return undefined;
 }
 
-export function requestsNonOperatorDeviceRole(...args: unknown[]): unknown {
+export function requestsNonOperatorDeviceRole(...args: any[]): any {
   return undefined;
 }
 
-export function pairedDeviceHasNonOperatorRole(...args: unknown[]): unknown {
+export function pairedDeviceHasNonOperatorRole(...args: any[]): any {
   return undefined;
 }

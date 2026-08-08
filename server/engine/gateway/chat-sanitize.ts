@@ -9,7 +9,7 @@ import { stripEnvelope } from "@openclaw-src/shared/chat-envelope.js";
 
 export { stripEnvelope };
 
-function extractMessageSenderLabel(entry: Record<string, unknown>): string | null {
+function extractMessageSenderLabel(entry: Record<string, any>): string | null {
   if (typeof entry.senderLabel === "string" && entry.senderLabel.trim()) {
     return entry.senderLabel.trim();
   }
@@ -21,7 +21,7 @@ function extractMessageSenderLabel(entry: Record<string, unknown>): string | nul
       if (!item || typeof item !== "object") {
         continue;
       }
-      const text = (item as { text?: unknown }).text;
+      const text = (item as { text?: any }).text;
       if (typeof text !== "string") {
         continue;
       }
@@ -38,16 +38,16 @@ function extractMessageSenderLabel(entry: Record<string, unknown>): string | nul
 }
 
 function stripEnvelopeFromContentWithRole(
-  content: unknown[],
+  content: any[],
   role: string,
-): { content: unknown[]; changed: boolean } {
+): { content: any[]; changed: boolean } {
   const stripUserEnvelope = role === "user";
   let changed = false;
   const next = content.map((item) => {
     if (!item || typeof item !== "object") {
       return item;
     }
-    const entry = item as Record<string, unknown>;
+    const entry = item as Record<string, any>;
     const isRoleTextBlock =
       entry.type === "text" ||
       (role === "user" && entry.type === "input_text") ||
@@ -70,16 +70,16 @@ function stripEnvelopeFromContentWithRole(
   return { content: next, changed };
 }
 
-export function stripEnvelopeFromMessage(message: unknown): unknown {
+export function stripEnvelopeFromMessage(message: any): any {
   if (!message || typeof message !== "object") {
     return message;
   }
-  const entry = message as Record<string, unknown>;
+  const entry = message as Record<string, any>;
   const role = typeof entry.role === "string" ? normalizeLowercaseStringOrEmpty(entry.role) : "";
   const stripUserEnvelope = role === "user";
 
   let changed = false;
-  const next: Record<string, unknown> = { ...entry };
+  const next: Record<string, any> = { ...entry };
   const senderLabel = stripUserEnvelope ? extractMessageSenderLabel(entry) : null;
   if (senderLabel && entry.senderLabel !== senderLabel) {
     next.senderLabel = senderLabel;
@@ -113,7 +113,7 @@ export function stripEnvelopeFromMessage(message: unknown): unknown {
   return changed ? next : message;
 }
 
-export function stripEnvelopeFromMessages(messages: unknown[]): unknown[] {
+export function stripEnvelopeFromMessages(messages: any[]): any[] {
   if (messages.length === 0) {
     return messages;
   }

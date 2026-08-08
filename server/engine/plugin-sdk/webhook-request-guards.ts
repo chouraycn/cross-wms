@@ -333,7 +333,7 @@ export async function readJsonWebhookBodyOrReject(params: {
   emptyObjectOnEmpty?: boolean;
   /** Response body for malformed JSON. */
   invalidJsonMessage?: string;
-}): Promise<{ ok: true; value: unknown } | { ok: false }> {
+}): Promise<{ ok: true; value: any } | { ok: false }> {
   const limits = resolveWebhookBodyReadLimits({
     maxBytes: params.maxBytes,
     timeoutMs: params.timeoutMs,

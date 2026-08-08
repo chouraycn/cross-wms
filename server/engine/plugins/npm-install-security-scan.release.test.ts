@@ -10,11 +10,11 @@ import { expectNoReaddirSyncDuring } from "../test-utils/fs-scan-assertions.js";
 import { listGitTrackedFiles, toRepoPath, toRepoRelativePath } from "../test-utils/repo-files.js";
 
 type NpmPackFile = {
-  path?: unknown;
+  path?: any;
 };
 
 type NpmPackResult = {
-  files?: unknown;
+  files?: any;
 };
 
 type PublishablePluginPackage = {
@@ -48,7 +48,7 @@ const OPTIONAL_REVIEWED_PUBLISHABLE_DIST_CRITICAL_FINDINGS = new Set([
 ]);
 
 function parseNpmPackFiles(raw: string, packageName: string): string[] {
-  const parsed = JSON.parse(raw) as unknown;
+  const parsed = JSON.parse(raw) as any;
   if (!Array.isArray(parsed) || parsed.length !== 1) {
     throw new Error(`${packageName}: npm pack --dry-run did not return one package result.`);
   }
@@ -181,8 +181,8 @@ function collectPublishablePluginPackages(): PublishablePluginPackage[] {
     .flatMap((packageDir) => {
       const packageJsonPath = join(packageDir, "package.json");
       let packageJson: {
-        name?: unknown;
-        openclaw?: { release?: { publishToNpm?: unknown } };
+        name?: any;
+        openclaw?: { release?: { publishToNpm?: any } };
       };
       try {
         packageJson = JSON.parse(readFileSync(packageJsonPath, "utf8")) as typeof packageJson;

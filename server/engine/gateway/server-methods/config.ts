@@ -88,7 +88,7 @@ type ConfigRestartWriteKind = Parameters<typeof resolveGatewayConfigRestartWrite
 type ConfigRestartWriteMode = Parameters<typeof resolveGatewayConfigRestartWriteResult>[0]["mode"];
 
 function requireConfigBaseHash(
-  params: unknown,
+  params: any,
   snapshot: Awaited<ReturnType<typeof readConfigFileSnapshot>>,
   respond: RespondFn,
 ): boolean {
@@ -137,15 +137,15 @@ function formatConfigPatchPath(parentPath: string, key: string): string {
   return parentPath ? `${parentPath}.${key}` : key;
 }
 
-function readConfigPatchReplacePaths(params: unknown): Set<string> {
-  const rawPaths = (params as { replacePaths?: unknown }).replacePaths;
+function readConfigPatchReplacePaths(params: any): Set<string> {
+  const rawPaths = (params as { replacePaths?: any }).replacePaths;
   return normalizeConfigPatchReplacePaths(Array.isArray(rawPaths) ? rawPaths : undefined);
 }
 
 function collectDestructiveArrayPatchPaths(params: {
-  base: unknown;
-  patch: unknown;
-  merged: unknown;
+  base: any;
+  patch: any;
+  merged: any;
   path?: string;
 }): string[] {
   if (!isPlainObject(params.patch) || !isPlainObject(params.base)) {
@@ -205,7 +205,7 @@ function collectDestructiveArrayPatchPaths(params: {
   return paths;
 }
 
-function collectBaseArrayPaths(base: unknown, path: string): string[] {
+function collectBaseArrayPaths(base: any, path: string): string[] {
   if (Array.isArray(base)) {
     return [path];
   }
@@ -223,20 +223,20 @@ function collectBaseArrayPaths(base: unknown, path: string): string[] {
 }
 
 function isConfigPatchObjectWithStringId(
-  value: unknown,
-): value is Record<string, unknown> & { id: string } {
+  value: any,
+): value is Record<string, any> & { id: string } {
   return isPlainObject(value) && typeof value.id === "string" && value.id.length > 0;
 }
 
 function isConfigPatchIdKeyedArray(
-  value: unknown[],
-): value is Array<Record<string, unknown> & { id: string }> {
+  value: any[],
+): value is Array<Record<string, any> & { id: string }> {
   return value.every(isConfigPatchObjectWithStringId);
 }
 
 function idKeyedArrayPreservesBaseIds(
-  base: Array<Record<string, unknown> & { id: string }>,
-  merged: unknown[],
+  base: Array<Record<string, any> & { id: string }>,
+  merged: any[],
 ): boolean {
   const mergedIds = new Set(
     merged.filter(isConfigPatchObjectWithStringId).map((entry) => entry.id),
@@ -244,7 +244,7 @@ function idKeyedArrayPreservesBaseIds(
   return base.every((entry) => mergedIds.has(entry.id));
 }
 
-function arrayPreservesBaseEntries(base: unknown[], merged: unknown[]): boolean {
+function arrayPreservesBaseEntries(base: any[], merged: any[]): boolean {
   const unmatchedMerged = [...merged];
   for (const baseEntry of base) {
     const matchIndex = unmatchedMerged.findIndex((mergedEntry) =>
@@ -259,9 +259,9 @@ function arrayPreservesBaseEntries(base: unknown[], merged: unknown[]): boolean 
 }
 
 function collectDestructiveIdKeyedArrayEntryPatchPaths(params: {
-  base: unknown[];
-  patch: unknown[];
-  merged: unknown[];
+  base: any[];
+  patch: any[];
+  merged: any[];
   path: string;
 }): string[] {
   if (!isConfigPatchIdKeyedArray(params.base)) {
@@ -295,8 +295,8 @@ function collectDestructiveIdKeyedArrayEntryPatchPaths(params: {
 
 function rejectDestructiveArrayPatchWithoutIntent(params: {
   currentConfig: OpenClawConfig;
-  mergedConfig: unknown;
-  patch: unknown;
+  mergedConfig: any;
+  patch: any;
   replacePaths: Set<string>;
   respond: RespondFn;
 }): boolean {
@@ -322,7 +322,7 @@ function rejectDestructiveArrayPatchWithoutIntent(params: {
 }
 
 async function readConfigWriteSnapshotOrRespond(
-  params: unknown,
+  params: any,
   respond: RespondFn,
 ): Promise<Awaited<ReturnType<typeof readConfigFileSnapshotForWrite>> | null> {
   const result = await readConfigFileSnapshotForWrite();
@@ -333,11 +333,11 @@ async function readConfigWriteSnapshotOrRespond(
 }
 
 function parseRawConfigOrRespond(
-  params: unknown,
+  params: any,
   requestName: string,
   respond: RespondFn,
 ): string | null {
-  const rawValue = (params as { raw?: unknown }).raw;
+  const rawValue = (params as { raw?: any }).raw;
   if (typeof rawValue !== "string") {
     respond(
       false,
@@ -398,7 +398,7 @@ function execConfigOpenCommand(command: ConfigOpenCommand): Promise<void> {
   });
 }
 
-function formatConfigOpenError(error: unknown): string {
+function formatConfigOpenError(error: any): string {
   if (
     typeof error === "object" &&
     error &&
@@ -410,14 +410,14 @@ function formatConfigOpenError(error: unknown): string {
   return String(error);
 }
 
-function hasOwnRecordValue(value: unknown, key: string): boolean {
+function hasOwnRecordValue(value: any, key: string): boolean {
   return isRecord(value) && Object.hasOwn(value, key);
 }
 
 function stripBundledProviderRuntimeDefaults(params: {
-  candidate: unknown;
-  sourceConfig: unknown;
-}): unknown {
+  candidate: any;
+  sourceConfig: any;
+}): any {
   if (!isRecord(params.candidate)) {
     return params.candidate;
   }
@@ -428,14 +428,14 @@ function stripBundledProviderRuntimeDefaults(params: {
   const sourceModels = isRecord(params.sourceConfig) ? params.sourceConfig.models : undefined;
   const sourceProviders = isRecord(sourceModels) ? sourceModels.providers : undefined;
 
-  let nextProviders: Record<string, unknown> | undefined;
+  let nextProviders: Record<string, any> | undefined;
   for (const [providerId, provider] of Object.entries(models.providers)) {
     // Runtime overlays can materialize empty defaults that should not become persisted config.
     if (!isBuiltInModelProviderOverlayId(providerId) || !isRecord(provider)) {
       continue;
     }
     const sourceProvider = isRecord(sourceProviders) ? sourceProviders[providerId] : undefined;
-    let nextProvider: Record<string, unknown> | undefined;
+    let nextProvider: Record<string, any> | undefined;
     if (provider.baseUrl === "" && !hasOwnRecordValue(sourceProvider, "baseUrl")) {
       nextProvider = { ...provider };
       delete nextProvider.baseUrl;
@@ -466,7 +466,7 @@ function stripBundledProviderRuntimeDefaults(params: {
 }
 
 function parseValidateConfigFromRawOrRespond(
-  params: unknown,
+  params: any,
   requestName: string,
   snapshot: Awaited<ReturnType<typeof readConfigFileSnapshot>>,
   respond: RespondFn,
@@ -584,7 +584,7 @@ function clearConfigSchemaResponseCache() {
 }
 
 async function respondWithConfigRestartWrite(params: {
-  requestParams: unknown;
+  requestParams: any;
   kind: ConfigRestartWriteKind;
   mode: ConfigRestartWriteMode;
   writeResult: ConfigWriteCommitResult;
@@ -788,7 +788,7 @@ export const configHandlers: GatewayRequestHandlers = {
       );
       return;
     }
-    const rawValue = (params as { raw?: unknown }).raw;
+    const rawValue = (params as { raw?: any }).raw;
     if (typeof rawValue !== "string") {
       respond(
         false,

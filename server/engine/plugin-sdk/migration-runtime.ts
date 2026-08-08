@@ -95,13 +95,13 @@ async function backupExistingMigrationTarget(
   return backupPath;
 }
 
-function isFileAlreadyExistsError(err: unknown): boolean {
+function isFileAlreadyExistsError(err: any): boolean {
   return Boolean(
     err &&
     typeof err === "object" &&
     "code" in err &&
-    ((err as { code?: unknown }).code === "ERR_FS_CP_EEXIST" ||
-      (err as { code?: unknown }).code === "EEXIST"),
+    ((err as { code?: any }).code === "ERR_FS_CP_EEXIST" ||
+      (err as { code?: any }).code === "EEXIST"),
   );
 }
 

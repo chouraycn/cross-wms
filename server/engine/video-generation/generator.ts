@@ -54,7 +54,7 @@ export type GenerateVideoResult = {
     model: string;
     error?: string;
   }>;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
   historyId?: string;
 };
 

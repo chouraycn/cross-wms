@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
 
-function resolveNonNegativeIntegerOption(value: unknown, fallback: number): number {
+function resolveNonNegativeIntegerOption(value: any, fallback: number): number {
   if (typeof value === "number" && Number.isFinite(value) && value >= 0) {
     return Math.floor(value);
   }
@@ -112,7 +112,7 @@ export type PersistentDedupeEntry = {
 type PersistentDedupeBaseOptions = {
   ttlMs: number;
   memoryMaxSize: number;
-  onDiskError?: (error: unknown) => void;
+  onDiskError?: (error: any) => void;
 };
 
 export type PersistentDedupePluginStateOptions = PersistentDedupeBaseOptions & {
@@ -132,7 +132,7 @@ export type PersistentDedupeLegacyPathOptions = PersistentDedupeBaseOptions & {
   fileMaxEntries: number;
   resolveFilePath: (namespace: string) => string;
   env?: NodeJS.ProcessEnv;
-  lockOptions?: unknown;
+  lockOptions?: any;
 };
 
 export type PersistentDedupeOptions =
@@ -169,14 +169,14 @@ type PersistentDedupeLegacyJsonEntriesResult = {
 export type PersistentDedupeCheckOptions = {
   namespace?: string;
   now?: number;
-  onDiskError?: (error: unknown) => void;
+  onDiskError?: (error: any) => void;
 };
 
 export type PersistentDedupe = {
   checkAndRecord: (key: string, options?: PersistentDedupeCheckOptions) => Promise<boolean>;
   hasRecent: (key: string, options?: PersistentDedupeCheckOptions) => Promise<boolean>;
   forget: (key: string, options?: PersistentDedupeCheckOptions) => Promise<boolean>;
-  warmup: (namespace?: string, onError?: (error: unknown) => void) => Promise<number>;
+  warmup: (namespace?: string, onError?: (error: any) => void) => Promise<number>;
   clearMemory: () => void;
   memorySize: () => number;
 };
@@ -212,12 +212,12 @@ export type ClaimableDedupe = {
     key: string,
     options?: {
       namespace?: string;
-      error?: unknown;
+      error?: any;
     },
   ) => void;
   hasRecent: (key: string, options?: PersistentDedupeCheckOptions) => Promise<boolean>;
   forget?: (key: string, options?: PersistentDedupeCheckOptions) => Promise<boolean>;
-  warmup: (namespace?: string, onError?: (error: unknown) => void) => Promise<number>;
+  warmup: (namespace?: string, onError?: (error: any) => void) => Promise<number>;
   clearMemory: () => void;
   memorySize: () => number;
 };
@@ -240,7 +240,7 @@ function resolveEntrySeenAt(entry: PersistentDedupeEntry | undefined): number | 
     : undefined;
 }
 
-function resolveUnknownEntrySeenAt(value: unknown): number | undefined {
+function resolveUnknownEntrySeenAt(value: any): number | undefined {
   if (!value || typeof value !== "object" || !("seenAt" in value)) {
     return undefined;
   }
@@ -328,7 +328,7 @@ function parseLegacyDedupeData(raw: string): {
   data: Record<string, number>;
   invalidCount: number;
 } {
-  const parsed = JSON.parse(raw) as unknown;
+  const parsed = JSON.parse(raw) as any;
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
     return { data: {}, invalidCount: 0 };
   }
@@ -377,8 +377,8 @@ export async function listPersistentDedupeLegacyJsonFileEntries(options: {
 }
 
 export function shouldReplacePersistentDedupeEntry(params: {
-  existingValue: unknown;
-  incomingValue: unknown;
+  existingValue: any;
+  incomingValue: any;
 }): boolean {
   const incomingSeenAt = resolveUnknownEntrySeenAt(params.incomingValue);
   return (
@@ -409,7 +409,7 @@ export function createPersistentDedupe(options: PersistentDedupeOptions): Persis
     namespace: string,
     scopedKey: string,
     now: number,
-    onDiskError?: (error: unknown) => void,
+    onDiskError?: (error: any) => void,
   ): Promise<boolean> {
     if (memory.check(scopedKey, now)) {
       return false;
@@ -439,7 +439,7 @@ export function createPersistentDedupe(options: PersistentDedupeOptions): Persis
     namespace: string,
     scopedKey: string,
     now: number,
-    onDiskError?: (error: unknown) => void,
+    onDiskError?: (error: any) => void,
   ): Promise<boolean> {
     if (memory.peek(scopedKey, now)) {
       return true;
@@ -458,7 +458,7 @@ export function createPersistentDedupe(options: PersistentDedupeOptions): Persis
     }
   }
 
-  async function warmup(namespace = "global", onError?: (error: unknown) => void): Promise<number> {
+  async function warmup(namespace = "global", onError?: (error: any) => void): Promise<number> {
     const now = Date.now();
     try {
       let loaded = 0;
@@ -593,7 +593,7 @@ export function createClaimableDedupe(
     {
       promise: Promise<boolean>;
       resolve: (result: boolean) => void;
-      reject: (error: unknown) => void;
+      reject: (error: any) => void;
     }
   >();
 
@@ -649,7 +649,7 @@ export function createClaimableDedupe(
     }
 
     let resolve!: (result: boolean) => void;
-    let reject!: (error: unknown) => void;
+    let reject!: (error: any) => void;
     const promise = new Promise<boolean>((resolvePromise, rejectPromise) => {
       resolve = resolvePromise;
       reject = rejectPromise;
@@ -699,7 +699,7 @@ export function createClaimableDedupe(
     key: string,
     dedupeOptions?: {
       namespace?: string;
-      error?: unknown;
+      error?: any;
     },
   ): void {
     const trimmed = key.trim();

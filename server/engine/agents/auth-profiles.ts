@@ -27,10 +27,10 @@ export function createAuthProfile(params: {
   name: string;
   provider: string;
   type: 'api_key' | 'oauth' | 'bearer' | 'basic' | 'custom';
-  credentials: Record<string, unknown>;
+  credentials: Record<string, any>;
   scopes?: string[];
   expiresAt?: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }) {
   return registerAuthProfile({
     id: params.id,
@@ -61,7 +61,7 @@ export function validateAuthProfile(profileId: string): boolean {
   return isAuthProfileValid(profile);
 }
 
-export function refreshAuthProfile(profileId: string, credentials: Record<string, unknown>, expiresAt?: number) {
+export function refreshAuthProfile(profileId: string, credentials: Record<string, any>, expiresAt?: number) {
   return updateAuthProfile(profileId, {
     credentials,
     expiresAt,

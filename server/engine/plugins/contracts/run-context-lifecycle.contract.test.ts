@@ -240,7 +240,7 @@ describe("plugin run context lifecycle", () => {
 
   it("does not let delayed non-terminal subscriptions resurrect closed run context", async () => {
     let releaseToolHandler: (() => void) | undefined;
-    let delayedToolHandlerSawContext: unknown;
+    let delayedToolHandlerSawContext: any;
     const { config, registry } = createPluginRegistryFixture();
     registerTestPlugin({
       registry,
@@ -301,7 +301,7 @@ describe("plugin run context lifecycle", () => {
 
   it("preserves run context until async terminal event subscriptions settle", async () => {
     let releaseTerminalHandler: (() => void) | undefined;
-    let terminalHandlerSawContext: unknown;
+    let terminalHandlerSawContext: any;
     const { config, registry } = createPluginRegistryFixture();
     registerTestPlugin({
       registry,
@@ -368,8 +368,8 @@ describe("plugin run context lifecycle", () => {
   it("waits for terminal handlers added after the first terminal cleanup waiter starts", async () => {
     let releaseFirstTerminalHandler: (() => void) | undefined;
     let releaseSecondTerminalHandler: (() => void) | undefined;
-    let firstTerminalHandlerSawContext: unknown;
-    let secondTerminalHandlerSawContext: unknown;
+    let firstTerminalHandlerSawContext: any;
+    let secondTerminalHandlerSawContext: any;
     let terminalEventsSeen = 0;
     const { config, registry } = createPluginRegistryFixture();
     registerTestPlugin({
@@ -456,8 +456,8 @@ describe("plugin run context lifecycle", () => {
   it("clears run context after the terminal subscription grace period", async () => {
     vi.useFakeTimers();
     let releaseTerminalHandler: (() => void) | undefined;
-    let terminalHandlerSawContext: unknown;
-    let terminalHandlerWroteContext: unknown;
+    let terminalHandlerSawContext: any;
+    let terminalHandlerWroteContext: any;
     const { config, registry } = createPluginRegistryFixture();
     registerTestPlugin({
       registry,
@@ -533,8 +533,8 @@ describe("plugin run context lifecycle", () => {
   it("keeps the expired terminal marker across repeated terminal events", async () => {
     vi.useFakeTimers();
     let releaseFirstTerminalHandler: (() => void) | undefined;
-    let firstTerminalHandlerWroteContext: unknown;
-    let secondTerminalHandlerWroteContext: unknown;
+    let firstTerminalHandlerWroteContext: any;
+    let secondTerminalHandlerWroteContext: any;
     let terminalEventsSeen = 0;
     const { config, registry } = createPluginRegistryFixture();
     registerTestPlugin({

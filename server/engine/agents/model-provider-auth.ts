@@ -6,15 +6,15 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export async function hasAuthForModelProvider(..._args: unknown[]): Promise<unknown> {
+export async function hasAuthForModelProvider(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
-export function createProviderAuthChecker(..._args: unknown[]): unknown {
+export function createProviderAuthChecker(..._args: any[]): any {
   return undefined;
 }
-export async function buildCurrentProviderAuthStateSnapshot(..._args: unknown[]): Promise<unknown> {
+export async function buildCurrentProviderAuthStateSnapshot(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
-export async function warmCurrentProviderAuthStateOffMainThread(..._args: unknown[]): Promise<unknown> {
+export async function warmCurrentProviderAuthStateOffMainThread(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }

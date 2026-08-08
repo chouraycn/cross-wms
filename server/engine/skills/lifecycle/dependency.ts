@@ -48,7 +48,7 @@ export function parseDependencyConfig(
     try {
       const deps = JSON.parse(fm.dependencies);
       if (Array.isArray(deps)) {
-        config.dependsOn = deps.map((d: unknown) => normalizeDependency(d));
+        config.dependsOn = deps.map((d: any) => normalizeDependency(d));
       }
     } catch {
       // 非 JSON 格式，忽略
@@ -59,7 +59,7 @@ export function parseDependencyConfig(
     try {
       const conflicts = JSON.parse(fm.conflicts);
       if (Array.isArray(conflicts)) {
-        config.conflictsWith = conflicts.map((c: unknown) =>
+        config.conflictsWith = conflicts.map((c: any) =>
           normalizeConflict(c)
         );
       }
@@ -71,12 +71,12 @@ export function parseDependencyConfig(
   return config;
 }
 
-function normalizeDependency(raw: unknown): SkillDependency {
+function normalizeDependency(raw: any): SkillDependency {
   if (typeof raw === "string") {
     return { skill: raw, required: true };
   }
   if (raw && typeof raw === "object") {
-    const r = raw as Record<string, unknown>;
+    const r = raw as Record<string, any>;
     return {
       skill: String(r.skill ?? r.name ?? ""),
       version: r.version ? String(r.version) : undefined,
@@ -87,12 +87,12 @@ function normalizeDependency(raw: unknown): SkillDependency {
   return { skill: "", required: true };
 }
 
-function normalizeConflict(raw: unknown): SkillConflict {
+function normalizeConflict(raw: any): SkillConflict {
   if (typeof raw === "string") {
     return { skill: raw, reason: "Declared conflict" };
   }
   if (raw && typeof raw === "object") {
-    const r = raw as Record<string, unknown>;
+    const r = raw as Record<string, any>;
     return {
       skill: String(r.skill ?? r.name ?? ""),
       reason: String(r.reason ?? "Declared conflict"),

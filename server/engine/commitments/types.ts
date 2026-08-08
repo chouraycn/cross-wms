@@ -185,7 +185,7 @@ export type CommitmentRecord = CommitmentScope & {
   /** 标签，用于分类和过滤 */
   tags?: string[];
   /** 元数据，用于存储额外信息 */
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
   createdAtMs: number;
   updatedAtMs: number;
   /** 已尝试投递次数 */
@@ -230,7 +230,7 @@ export type CommitmentCandidate = {
     timezone?: string;
   };
   tags?: string[];
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 /** 提取输入项：单条待抽取的会话回合 */

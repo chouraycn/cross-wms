@@ -11,8 +11,8 @@ import { createDiagnosticsCommandHandler } from "./commands-diagnostics.js";
 import type { HandleCommandsParams } from "./commands-types.js";
 
 type ExecCall = {
-  defaults: unknown;
-  params: unknown;
+  defaults: any;
+  params: any;
 };
 
 type ExecDefaults = {
@@ -122,7 +122,7 @@ function registerHostTrustedReservedCommandForTest(
 }
 
 function registerCodexDiagnosticsCommandForTest(
-  handler: (ctx: PluginCommandContext) => Promise<unknown>,
+  handler: (ctx: PluginCommandContext) => Promise<any>,
 ) {
   const calls: PluginCommandContext[] = [];
   const commandHandler = vi.fn<PluginCommandHandler>(async (ctx) => {
@@ -202,7 +202,7 @@ function createDiagnosticsHandlerForTest(
     privateTargets?: Array<{ channel: string; to: string; accountId?: string | null }>;
     execResult?: {
       content: Array<{ type: "text"; text: string }>;
-      details?: { status: string; [key: string]: unknown };
+      details?: { status: string; [key: string]: any };
     };
   } = {},
 ) {
@@ -211,8 +211,8 @@ function createDiagnosticsHandlerForTest(
     targets: Array<{ channel: string; to: string; accountId?: string | null }>;
     text?: string;
   }> = [];
-  const createExecTool = vi.fn((defaults: unknown) => ({
-    execute: vi.fn(async (_toolCallId: string, params: unknown) => {
+  const createExecTool = vi.fn((defaults: any) => ({
+    execute: vi.fn(async (_toolCallId: string, params: any) => {
       execCalls.push({ defaults, params });
       return (
         options.execResult ?? {

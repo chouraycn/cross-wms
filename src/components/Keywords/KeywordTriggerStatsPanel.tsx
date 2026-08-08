@@ -88,7 +88,7 @@ const KeywordTriggerStatsPanel: React.FC<KeywordTriggerStatsPanelProps> = () => 
     }
   };
 
-  const handleConfigChange = async (key: string, value: unknown) => {
+  const handleConfigChange = async (key: string, value: any) => {
     if (!stats) return;
     setSavingConfig(true);
     try {

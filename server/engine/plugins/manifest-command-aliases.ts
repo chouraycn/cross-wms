@@ -59,7 +59,7 @@ export type PluginManifestCommandAliasRegistry = {
 
 /** 规范化 manifest 命令别名记录并报告重复/无效条目。 */
 export function normalizeManifestCommandAliases(
-  value: unknown,
+  value: any,
 ): PluginManifestCommandAlias[] | undefined {
   if (!Array.isArray(value)) {
     return undefined;

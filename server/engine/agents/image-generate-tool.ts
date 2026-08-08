@@ -8,12 +8,12 @@
  */
 
 /** Resolve image generation model config (returns undefined in cross-wms). */
-export function resolveImageGenerationModelConfigForTool(..._args: unknown[]): undefined {
+export function resolveImageGenerationModelConfigForTool(..._args: any[]): undefined {
   return undefined;
 }
 
 /** Create the image generate tool (returns stub in cross-wms). */
-export function createImageGenerateTool(..._args: unknown[]): unknown {
+export function createImageGenerateTool(..._args: any[]): any {
   return {
     label: "Image Generate",
     name: "image_generate",

@@ -101,7 +101,7 @@ describe("node pairing rate limit", () => {
         ),
       );
       const rateLimited = responses.filter((res) => {
-        const details = res.error?.details as { code?: unknown; authReason?: unknown } | undefined;
+        const details = res.error?.details as { code?: any; authReason?: any } | undefined;
         return (
           details?.code === ConnectErrorDetailCodes.AUTH_RATE_LIMITED &&
           details.authReason === "rate_limited"

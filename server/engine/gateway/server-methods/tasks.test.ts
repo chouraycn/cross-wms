@@ -18,8 +18,8 @@ import type { RespondFn } from "./types.js";
 
 const stateDirEnvSnapshot = captureEnv(["OPENCLAW_STATE_DIR"]);
 type TaskResponsePayload = {
-  tasks?: Array<Record<string, unknown>>;
-  task?: Record<string, unknown>;
+  tasks?: Array<Record<string, any>>;
+  task?: Record<string, any>;
   found?: boolean;
   cancelled?: boolean;
 };
@@ -62,7 +62,7 @@ function createContext() {
 
 async function runTaskHandler(
   method: "tasks.list" | "tasks.get" | "tasks.cancel",
-  params: Record<string, unknown>,
+  params: Record<string, any>,
 ) {
   const { calls, respond } = captureRespond();
   await tasksHandlers[method]({

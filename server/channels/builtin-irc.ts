@@ -64,7 +64,7 @@ export interface IrcWebhookResult {
 }
 
 /** 解析 IRC 配置中的频道列表 */
-function parseChannels(channels: unknown): string[] {
+function parseChannels(channels: any): string[] {
   if (Array.isArray(channels)) {
     return channels.filter((c): c is string => typeof c === "string" && c.length > 0);
   }
@@ -232,7 +232,7 @@ export function createIrcChannelPlugin(): ChannelPlugin {
 
   const ircConfig: ChannelConfigAdapter<IrcAccountConfig> = {
     listAccountIds: (config: AppConfig): ChannelId[] => {
-      const ircConfig = config.irc as Record<string, unknown> | undefined;
+      const ircConfig = config.irc as Record<string, any> | undefined;
       if (ircConfig && ircConfig.host && ircConfig.nick) {
         return [IRC_CHANNEL_ID];
       }
@@ -243,7 +243,7 @@ export function createIrcChannelPlugin(): ChannelPlugin {
       accountId: ChannelId,
     ): IrcAccountConfig | null => {
       if (accountId !== IRC_CHANNEL_ID) return null;
-      const ircCfg = config.irc as Record<string, unknown> | undefined;
+      const ircCfg = config.irc as Record<string, any> | undefined;
       if (ircCfg && ircCfg.host && ircCfg.nick) {
         return {
           host: String(ircCfg.host),
@@ -281,7 +281,7 @@ export function createIrcChannelPlugin(): ChannelPlugin {
         try {
           const rendered = await ctx.render();
           const text = rendered.parts
-            .map((p: { content: unknown }) => String(p.content))
+            .map((p: { content: any }) => String(p.content))
             .join("\n");
 
           const target = ctx.to;

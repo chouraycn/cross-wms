@@ -37,14 +37,14 @@ export function resolvePublicAgentAvatarSource(
 
 /** Resolve the effective avatar for an agent, including config and IDENTITY.md. */
 export function resolveAgentAvatar(
-  cfg: Record<string, unknown>,
+  cfg: Record<string, any>,
   agentId: string,
   opts?: { includeUiOverride?: boolean },
 ): AgentAvatarResolution {
   // Cross-wms does not have agent identity / workspace avatar resolution.
   // Check config for a simple avatar URL.
-  const ui = cfg.ui as Record<string, unknown> | undefined;
-  const assistant = ui?.assistant as Record<string, unknown> | undefined;
+  const ui = cfg.ui as Record<string, any> | undefined;
+  const assistant = ui?.assistant as Record<string, any> | undefined;
   const avatar = typeof assistant?.avatar === "string" ? assistant.avatar : undefined;
 
   if (!avatar) {

@@ -12,7 +12,7 @@
  * - cross-wms `video-generation-task-status.js` exposes object-param signatures
  *   (`{ sessionKey?, ... }` / `{ task, sourcePrefix?, duplicateGuard? }`) instead of the
  *   positional signatures used by the openclaw action. Local wrappers adapt the calls.
- * - cross-wms `VideoModeCapabilities.providerOptions` is `Record<string, unknown>` (not
+ * - cross-wms `VideoModeCapabilities.providerOptions` is `Record<string, any>` (not
  *   `Readonly<Record<string, VideoGenerationProviderOptionType>>`); the declared-option
  *   value is cast to `string` to keep the openclaw summary format.
  */
@@ -42,31 +42,31 @@ type VideoGenerateActionResult = MediaGenerateActionResult;
  * cross-wms returns `unknown` from the underlying shared helpers; the wrappers
  * cast the results so the shared generic action helpers type-check.
  */
-const findActiveVideoTask = (sessionKey?: string): unknown | undefined =>
+const findActiveVideoTask = (sessionKey?: string): any | undefined =>
   findActiveVideoGenerationTaskForSession({ sessionKey: sessionKey ?? undefined });
 
 const findDuplicateGuardVideoTask = (
   sessionKey?: string,
   params?: { prompt?: string; requestKey?: string },
-): unknown | undefined =>
+): any | undefined =>
   findDuplicateGuardVideoGenerationTaskForSession({
     sessionKey: sessionKey,
     requestKey: params?.requestKey,
   });
 
 const buildVideoStatusText = (
-  task: unknown,
+  task: any,
   params?: { duplicateGuard?: boolean },
 ): string =>
   buildVideoGenerationTaskStatusText({
-    task: task as Record<string, unknown>,
+    task: task as Record<string, any>,
     duplicateGuard: params?.duplicateGuard,
   }) as string;
 
-const buildVideoStatusDetails = (task: unknown): Record<string, unknown> =>
+const buildVideoStatusDetails = (task: any): Record<string, any> =>
   buildVideoGenerationTaskStatusDetails({
-    task: task as Record<string, unknown>,
-  }) as Record<string, unknown>;
+    task: task as Record<string, any>,
+  }) as Record<string, any>;
 
 function summarizeVideoGenerationCapabilities(
   provider: ReturnType<typeof listVideoProviders>[number],

@@ -22,7 +22,7 @@ export class AcpRuntimeError extends Error {
   constructor(
     public code: string,
     message: string,
-    public cause?: unknown,
+    public cause?: any,
   ) {
     super(message);
     this.name = "AcpRuntimeError";
@@ -33,7 +33,7 @@ function failInvalidOption(message: string): never {
   throw new AcpRuntimeError("ACP_INVALID_RUNTIME_OPTION", message);
 }
 
-function normalizeText(value: unknown): string | undefined {
+function normalizeText(value: any): string | undefined {
   if (typeof value === "string") {
     const trimmed = value.trim();
     return trimmed.length > 0 ? trimmed : undefined;
@@ -52,7 +52,7 @@ function validateNoControlChars(value: string, field: string): string {
 }
 
 function validateBoundedText(params: {
-  value: unknown;
+  value: any;
   field: string;
   maxLength: number;
 }): string {
@@ -66,7 +66,7 @@ function validateBoundedText(params: {
   return validateNoControlChars(normalized, params.field);
 }
 
-function validateBackendOptionKey(rawKey: unknown): string {
+function validateBackendOptionKey(rawKey: any): string {
   const key = validateBoundedText({
     value: rawKey,
     field: "ACP config key",
@@ -80,7 +80,7 @@ function validateBackendOptionKey(rawKey: unknown): string {
   return key;
 }
 
-function validateBackendOptionValue(rawValue: unknown): string {
+function validateBackendOptionValue(rawValue: any): string {
   return validateBoundedText({
     value: rawValue,
     field: "ACP config value",
@@ -88,7 +88,7 @@ function validateBackendOptionValue(rawValue: unknown): string {
   });
 }
 
-function validateRuntimeTimeoutSecondsInput(rawTimeout: unknown): number {
+function validateRuntimeTimeoutSecondsInput(rawTimeout: any): number {
   if (typeof rawTimeout !== "number" || !Number.isFinite(rawTimeout)) {
     failInvalidOption("Timeout must be a positive integer in seconds.");
   }
@@ -101,7 +101,7 @@ function validateRuntimeTimeoutSecondsInput(rawTimeout: unknown): number {
   return timeout;
 }
 
-export function validateRuntimeModeInput(rawMode: unknown): string {
+export function validateRuntimeModeInput(rawMode: any): string {
   return validateBoundedText({
     value: rawMode,
     field: "Runtime mode",
@@ -109,7 +109,7 @@ export function validateRuntimeModeInput(rawMode: unknown): string {
   });
 }
 
-export function validateRuntimeModelInput(rawModel: unknown): string {
+export function validateRuntimeModelInput(rawModel: any): string {
   return validateBoundedText({
     value: rawModel,
     field: "Model id",
@@ -117,7 +117,7 @@ export function validateRuntimeModelInput(rawModel: unknown): string {
   });
 }
 
-export function validateRuntimeThinkingInput(rawThinking: unknown): string {
+export function validateRuntimeThinkingInput(rawThinking: any): string {
   return validateBoundedText({
     value: rawThinking,
     field: "Thinking level",
@@ -125,7 +125,7 @@ export function validateRuntimeThinkingInput(rawThinking: unknown): string {
   });
 }
 
-export function validateRuntimePermissionProfileInput(rawProfile: unknown): string {
+export function validateRuntimePermissionProfileInput(rawProfile: any): string {
   return validateBoundedText({
     value: rawProfile,
     field: "Permission profile",
@@ -133,7 +133,7 @@ export function validateRuntimePermissionProfileInput(rawProfile: unknown): stri
   });
 }
 
-export function validateRuntimeCwdInput(rawCwd: unknown): string {
+export function validateRuntimeCwdInput(rawCwd: any): string {
   const cwd = validateBoundedText({
     value: rawCwd,
     field: "Working directory",
@@ -151,7 +151,7 @@ export function validateRuntimeOptionPatch(
   if (!patch) {
     return {};
   }
-  const rawPatch = patch as Record<string, unknown>;
+  const rawPatch = patch as Record<string, any>;
   const allowedKeys = new Set([
     "runtimeMode",
     "model",

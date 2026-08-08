@@ -2,7 +2,7 @@
  * 降级策略：返回空。 */
 import type { UnifiedModelCatalogEntry } from "./_openclaw__model_catalog_core__model_catalog_types.js";
 
-export function projectProviderCatalogResultToUnifiedTextRows(params: unknown): UnifiedModelCatalogEntry[] {
+export function projectProviderCatalogResultToUnifiedTextRows(params: any): UnifiedModelCatalogEntry[] {
   void params;
   return [];
 }

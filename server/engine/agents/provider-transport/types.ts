@@ -26,25 +26,25 @@ export type TransportConfig = z.infer<typeof TransportConfigSchema>;
 export interface TransportRequest {
   method: string;
   path?: string;
-  body?: unknown;
+  body?: any;
   headers?: Record<string, string>;
   timeoutMs?: number;
 }
 
 export interface TransportResponse {
   status: number;
-  body: unknown;
+  body: any;
   headers?: Record<string, string>;
 }
 
 export interface TransportMessage {
   id?: string | number;
   type: string;
-  data?: unknown;
+  data?: any;
   error?: {
     code: number;
     message: string;
-    details?: unknown;
+    details?: any;
   };
 }
 
@@ -52,6 +52,6 @@ export type TransportEventType = 'connect' | 'disconnect' | 'message' | 'error' 
 
 export interface TransportEvent {
   type: TransportEventType;
-  data?: unknown;
+  data?: any;
   timestamp: number;
 }

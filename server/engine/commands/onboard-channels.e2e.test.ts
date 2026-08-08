@@ -45,18 +45,18 @@ function createUnexpectedPromptGuards() {
 }
 
 type MockWithCalls = {
-  mock: { calls: unknown[][] };
+  mock: { calls: any[][] };
 };
 
-function callArgAt(mock: MockWithCalls, index: number): Record<string, unknown> {
+function callArgAt(mock: MockWithCalls, index: number): Record<string, any> {
   const value = mock.mock.calls[index]?.[0];
   if (value === undefined || value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error(`expected call ${index} to receive an object argument`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function hasCallWithFields(mock: MockWithCalls, expected: Record<string, unknown>): boolean {
+function hasCallWithFields(mock: MockWithCalls, expected: Record<string, any>): boolean {
   return mock.mock.calls.some(([value]) => {
     if (
       value === undefined ||
@@ -66,12 +66,12 @@ function hasCallWithFields(mock: MockWithCalls, expected: Record<string, unknown
     ) {
       return false;
     }
-    const arg = value as Record<string, unknown>;
+    const arg = value as Record<string, any>;
     return Object.entries(expected).every(([key, expectedValue]) => arg[key] === expectedValue);
   });
 }
 
-function expectCalledWithFields(mock: MockWithCalls, expected: Record<string, unknown>): void {
+function expectCalledWithFields(mock: MockWithCalls, expected: Record<string, any>): void {
   expect(hasCallWithFields(mock, expected)).toBe(true);
 }
 
@@ -89,7 +89,7 @@ function expectCalledWithMessageContaining(mock: MockWithCalls, text: string): v
     ) {
       return false;
     }
-    const message = (value as Record<string, unknown>).message;
+    const message = (value as Record<string, any>).message;
     return typeof message === "string" && message.includes(text);
   });
   expect(hasMatch).toBe(true);
@@ -191,7 +191,7 @@ function setMinimalOnboardingRegistryForTests(): void {
                 channels: {
                   ...cfg.channels,
                   telegram: {
-                    ...(cfg.channels?.telegram as Record<string, unknown> | undefined),
+                    ...(cfg.channels?.telegram as Record<string, any> | undefined),
                     ...(input.token ? { botToken: input.token } : {}),
                   },
                 },
@@ -244,7 +244,7 @@ function setMinimalOnboardingRegistryForTests(): void {
                 channels: {
                   ...cfg.channels,
                   whatsapp: {
-                    ...(cfg.channels?.whatsapp as Record<string, unknown> | undefined),
+                    ...(cfg.channels?.whatsapp as Record<string, any> | undefined),
                     ...(input.account ? { account: input.account } : {}),
                     ...(input.name ? { name: input.name } : {}),
                     linked: false,
@@ -276,7 +276,7 @@ function setMinimalOnboardingRegistryForTests(): void {
                     channels: {
                       ...cfg.channels,
                       whatsapp: {
-                        ...(cfg.channels?.whatsapp as Record<string, unknown> | undefined),
+                        ...(cfg.channels?.whatsapp as Record<string, any> | undefined),
                         account: value,
                       },
                     },
@@ -564,7 +564,7 @@ vi.mock("../channels/plugins/bundled.js", () => ({
                 channels: {
                   ...cfg.channels,
                   telegram: {
-                    ...(cfg.channels?.telegram as Record<string, unknown> | undefined),
+                    ...(cfg.channels?.telegram as Record<string, any> | undefined),
                     ...(input.token ? { botToken: input.token } : {}),
                   },
                 },
@@ -604,7 +604,7 @@ vi.mock("./onboard-helpers.js", () => ({
 vi.mock("../commands/channel-setup/plugin-install.js", async () => {
   const actual = await vi.importActual("../commands/channel-setup/plugin-install.js");
   return {
-    ...(actual as Record<string, unknown>),
+    ...(actual as Record<string, any>),
     ensureChannelSetupPluginInstalled: vi.fn(async ({ cfg }: { cfg: OpenClawConfig }) => ({
       cfg,
       installed: true,
@@ -755,7 +755,7 @@ describe("setupChannels", () => {
 
     const note = vi.fn(async (_message?: string, _title?: string) => {});
     const { multiselect, text } = createUnexpectedPromptGuards();
-    const select = vi.fn(async ({ message, options }: { message: string; options: unknown[] }) => {
+    const select = vi.fn(async ({ message, options }: { message: string; options: any[] }) => {
       if (message === "Select a channel") {
         const external = (options as Array<{ value: string; label?: string; hint?: string }>).find(
           (entry) => entry.value === "external-chat",
@@ -804,7 +804,7 @@ describe("setupChannels", () => {
 
     const note = vi.fn(async (_message?: string, _title?: string) => {});
     const { multiselect, text } = createUnexpectedPromptGuards();
-    const select = vi.fn(async ({ message, options }: { message: string; options: unknown[] }) => {
+    const select = vi.fn(async ({ message, options }: { message: string; options: any[] }) => {
       if (message === "Select a channel") {
         const entries = options as Array<{ value: string; label?: string }>;
         expect(entries.find((entry) => entry.value === "external-chat")?.label).toBe(
@@ -839,7 +839,7 @@ describe("setupChannels", () => {
     setActivePluginRegistry(createEmptyPluginRegistry());
     catalogMocks.listChannelPluginCatalogEntries.mockReturnValue([createMSTeamsCatalogEntry()]);
     mockMSTeamsRegistrySnapshot();
-    const select = vi.fn(async ({ message, options }: { message: string; options: unknown[] }) => {
+    const select = vi.fn(async ({ message, options }: { message: string; options: any[] }) => {
       if (message === "Select a channel") {
         const entries = options as Array<{ value: string; hint?: string }>;
         const msteams = entries.find((entry) => entry.value === "external-chat");
@@ -904,7 +904,7 @@ describe("setupChannels", () => {
       ]),
     );
 
-    const select = vi.fn(async ({ message, options }: { message: string; options: unknown[] }) => {
+    const select = vi.fn(async ({ message, options }: { message: string; options: any[] }) => {
       if (message === "Select a channel") {
         expect(
           (options as Array<{ label?: string }>).some((option) =>
@@ -971,18 +971,18 @@ describe("setupChannels", () => {
         channels: {
           ...cfg.channels,
           "external-chat": {
-            ...(cfg.channels?.["external-chat"] as Record<string, unknown> | undefined),
+            ...(cfg.channels?.["external-chat"] as Record<string, any> | undefined),
             accounts: {
               ...(
                 cfg.channels?.["external-chat"] as
-                  | { accounts?: Record<string, unknown> }
+                  | { accounts?: Record<string, any> }
                   | undefined
               )?.accounts,
               [accountId]: {
                 ...(
                   cfg.channels?.["external-chat"] as
                     | {
-                        accounts?: Record<string, Record<string, unknown>>;
+                        accounts?: Record<string, Record<string, any>>;
                       }
                     | undefined
                 )?.accounts?.[accountId],
@@ -1015,7 +1015,7 @@ describe("setupChannels", () => {
                   Object.keys(
                     (
                       cfg.channels?.["external-chat"] as
-                        | { accounts?: Record<string, unknown> }
+                        | { accounts?: Record<string, any> }
                         | undefined
                     )?.accounts ?? {},
                   ),
@@ -1023,7 +1023,7 @@ describe("setupChannels", () => {
                   (
                     cfg.channels?.["external-chat"] as
                       | {
-                          accounts?: Record<string, Record<string, unknown>>;
+                          accounts?: Record<string, Record<string, any>>;
                         }
                       | undefined
                   )?.accounts?.[accountId] ?? { accountId },
@@ -1053,7 +1053,7 @@ describe("setupChannels", () => {
     );
 
     let channelSelectionCount = 0;
-    const select = vi.fn(async ({ message, options }: { message: string; options: unknown[] }) => {
+    const select = vi.fn(async ({ message, options }: { message: string; options: any[] }) => {
       if (message === "Select a channel") {
         channelSelectionCount += 1;
         return channelSelectionCount === 1 ? "external-chat" : "__done__";
@@ -1133,7 +1133,7 @@ describe("setupChannels", () => {
 
   it("adds disabled hint to channel selection when a channel is disabled", async () => {
     let selectionCount = 0;
-    const select = vi.fn(async ({ message }: { message: string; options: unknown[] }) => {
+    const select = vi.fn(async ({ message }: { message: string; options: any[] }) => {
       if (message === "Select a channel") {
         selectionCount += 1;
         return selectionCount === 1 ? "telegram" : "__done__";

@@ -10,22 +10,22 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 // rebind an already-captured named import, so we mock node:fs and route every
 // writeFileSync (named + default) through a single controllable write-failure hook.
 const writeFailHook = vi.hoisted(() => ({
-  fn: undefined as ((file: unknown, data: unknown, options: unknown) => void) | undefined,
+  fn: undefined as ((file: any, data: any, options: any) => void) | undefined,
   // The unwrapped writeFileSync, so the hook can mutate disk state
   // (e.g. truncate the destination) without re-entering itself.
-  raw: undefined as ((...args: unknown[]) => unknown) | undefined,
+  raw: undefined as ((...args: any[]) => unknown) | undefined,
 }));
 
 vi.mock("node:fs", async (importOriginal) => {
   const actual = await importOriginal<typeof import("node:fs")>();
-  writeFailHook.raw = actual.writeFileSync as (...args: unknown[]) => unknown;
+  writeFailHook.raw = actual.writeFileSync as (...args: any[]) => unknown;
   const writeFileSync: typeof actual.writeFileSync = ((
-    file: unknown,
-    data: unknown,
-    options: unknown,
+    file: any,
+    data: any,
+    options: any,
   ) => {
     writeFailHook.fn?.(file, data, options);
-    return (actual.writeFileSync as (...a: unknown[]) => unknown)(file, data, options);
+    return (actual.writeFileSync as (...a: any[]) => unknown)(file, data, options);
   }) as typeof actual.writeFileSync;
   return {
     ...actual,

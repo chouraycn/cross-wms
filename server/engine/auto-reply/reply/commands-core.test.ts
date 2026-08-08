@@ -39,7 +39,7 @@ const { emitResetCommandHooks } = await import("./commands-reset-hooks.js");
 
 function firstBeforeResetCall() {
   const call = hookRunnerMocks.runBeforeReset.mock.calls[0] as
-    | [Record<string, unknown>, Record<string, unknown>]
+    | [Record<string, any>, Record<string, any>]
     | undefined;
   if (!call) {
     throw new Error("expected before reset hook call");

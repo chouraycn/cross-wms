@@ -48,7 +48,7 @@ export class EventStream<T, R = T> implements AsyncIterable<T> {
     }
     while (this.waiting.length > 0) {
       const waiter = this.waiting.shift()!;
-      waiter({ value: undefined as unknown, done: true });
+      waiter({ value: undefined as any, done: true });
     }
   }
 

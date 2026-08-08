@@ -41,8 +41,8 @@ export interface ToolCall {
   toolName: string;
   toolType: ToolType;
   status: ToolCallStatus;
-  arguments: Record<string, unknown> | null;
-  result: unknown;
+  arguments: Record<string, any> | null;
+  result: any;
   errorMessage: string | null;
   startedAt: string;
   completedAt: string | null;
@@ -64,8 +64,8 @@ export interface TaskFlowStep {
   taskName: string;
   taskDescription: string;
   status: 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
-  arguments: Record<string, unknown> | null;
-  result: unknown;
+  arguments: Record<string, any> | null;
+  result: any;
   errorMessage: string | null;
   startedAt: string | null;
   completedAt: string | null;
@@ -102,7 +102,7 @@ export interface TrajectoryEvent {
   runId: string | null;
   entryId: string | null;
   parentEntryId: string | null;
-  data: Record<string, unknown> | null;
+  data: Record<string, any> | null;
   provider: string | null;
   modelId: string | null;
   workspaceDir: string | null;
@@ -116,7 +116,7 @@ function nowIso(): string {
   return new Date().toISOString();
 }
 
-function publishTaskMonitorEvent(sessionId: string, type: TaskMonitorEventType, payload: unknown): void {
+function publishTaskMonitorEvent(sessionId: string, type: TaskMonitorEventType, payload: any): void {
   try {
     const hub = getWebSocketHub();
     hub.publishTaskMonitorEvent({
@@ -130,7 +130,7 @@ function publishTaskMonitorEvent(sessionId: string, type: TaskMonitorEventType, 
   }
 }
 
-function normalizeTodoRow(row: Record<string, unknown>): TodoItem {
+function normalizeTodoRow(row: Record<string, any>): TodoItem {
   return {
     id: String(row.id),
     sessionId: String(row.session_id),
@@ -145,7 +145,7 @@ function normalizeTodoRow(row: Record<string, unknown>): TodoItem {
   };
 }
 
-function normalizeArtifactRow(row: Record<string, unknown>): Artifact {
+function normalizeArtifactRow(row: Record<string, any>): Artifact {
   return {
     id: String(row.id),
     sessionId: String(row.session_id),
@@ -159,7 +159,7 @@ function normalizeArtifactRow(row: Record<string, unknown>): Artifact {
   };
 }
 
-function normalizeToolCallRow(row: Record<string, unknown>): ToolCall {
+function normalizeToolCallRow(row: Record<string, any>): ToolCall {
   return {
     id: String(row.id),
     sessionId: String(row.session_id),
@@ -180,7 +180,7 @@ function normalizeToolCallRow(row: Record<string, unknown>): ToolCall {
   };
 }
 
-function normalizeTrajectoryRow(row: Record<string, unknown>): TrajectoryEvent {
+function normalizeTrajectoryRow(row: Record<string, any>): TrajectoryEvent {
   return {
     id: String(row.id),
     traceId: String(row.trace_id),
@@ -211,7 +211,7 @@ export interface TodoQueryOptions {
 
 export function findTodosBySession(sessionId: string, options: TodoQueryOptions = {}): TodoItem[] {
   const whereClauses: string[] = ['session_id = ?'];
-  const params: unknown[] = [sessionId];
+  const params: any[] = [sessionId];
 
   if (options.status) {
     whereClauses.push('status = ?');
@@ -237,7 +237,7 @@ export function findTodosBySession(sessionId: string, options: TodoQueryOptions 
 
   const rows = db()
     .prepare(`SELECT * FROM todo_items WHERE ${whereClauses.join(' AND ')} ORDER BY ${orderBy}`)
-    .all(...params) as Array<Record<string, unknown>>;
+    .all(...params) as Array<Record<string, any>>;
   return rows.map(normalizeTodoRow);
 }
 
@@ -257,7 +257,7 @@ export interface TodoStats {
 export function getTodoStats(sessionId: string): TodoStats {
   const rows = db()
     .prepare('SELECT status, priority, COUNT(*) as count FROM todo_items WHERE session_id = ? GROUP BY status, priority')
-    .all(sessionId) as Array<Record<string, unknown>>;
+    .all(sessionId) as Array<Record<string, any>>;
 
   const stats: TodoStats = {
     total: 0,
@@ -353,7 +353,7 @@ export function createTodo(data: {
 
 export function findTodoById(id: string): TodoItem | undefined {
   const row = db().prepare('SELECT * FROM todo_items WHERE id = ?').get(id) as
-    | Record<string, unknown>
+    | Record<string, any>
     | undefined;
   return row ? normalizeTodoRow(row) : undefined;
 }
@@ -371,7 +371,7 @@ export function updateTodo(
   if (!existing) return undefined;
 
   const fields: string[] = [];
-  const vals: unknown[] = [];
+  const vals: any[] = [];
   const now = nowIso();
 
   if (data.text !== undefined) {
@@ -486,7 +486,7 @@ export interface ArtifactQueryOptions {
 
 export function findArtifactsBySession(sessionId: string, options: ArtifactQueryOptions = {}): Artifact[] {
   const whereClauses: string[] = ['session_id = ?'];
-  const params: unknown[] = [sessionId];
+  const params: any[] = [sessionId];
 
   if (options.type) {
     whereClauses.push('mime_type LIKE ?');
@@ -511,7 +511,7 @@ export function findArtifactsBySession(sessionId: string, options: ArtifactQuery
 
   const rows = db()
     .prepare(`SELECT * FROM artifacts WHERE ${whereClauses.join(' AND ')} ORDER BY ${orderBy}`)
-    .all(...params) as Array<Record<string, unknown>>;
+    .all(...params) as Array<Record<string, any>>;
   return rows.map(normalizeArtifactRow);
 }
 
@@ -530,14 +530,14 @@ export function deleteArtifactsBatch(ids: string[]): number {
 
 export function findArtifactById(id: string): Artifact | undefined {
   const row = db().prepare('SELECT * FROM artifacts WHERE id = ?').get(id) as
-    | Record<string, unknown>
+    | Record<string, any>
     | undefined;
   return row ? normalizeArtifactRow(row) : undefined;
 }
 
 export function findArtifactByFilePath(filePath: string): Artifact | undefined {
   const row = db().prepare('SELECT * FROM artifacts WHERE file_path = ?').get(filePath) as
-    | Record<string, unknown>
+    | Record<string, any>
     | undefined;
   return row ? normalizeArtifactRow(row) : undefined;
 }
@@ -598,7 +598,7 @@ export interface ToolCallStats {
 
 export function findToolCallsBySession(sessionId: string, options: ToolCallQueryOptions = {}): ToolCall[] {
   const whereClauses: string[] = ['session_id = ?'];
-  const params: unknown[] = [sessionId];
+  const params: any[] = [sessionId];
 
   if (options.type) {
     whereClauses.push('tool_type = ?');
@@ -628,7 +628,7 @@ export function findToolCallsBySession(sessionId: string, options: ToolCallQuery
 
   const rows = db()
     .prepare(`SELECT * FROM tool_calls WHERE ${whereClauses.join(' AND ')} ORDER BY ${orderBy}`)
-    .all(...params) as Array<Record<string, unknown>>;
+    .all(...params) as Array<Record<string, any>>;
   return rows.map(normalizeToolCallRow);
 }
 
@@ -646,13 +646,13 @@ export function getToolCallStats(sessionId: string): ToolCallStats {
         MAX(duration_ms) as max_duration
        FROM tool_calls WHERE session_id = ?`
     )
-    .get(sessionId) as Record<string, unknown>;
+    .get(sessionId) as Record<string, any>;
 
   const typeRows = db()
     .prepare(
       `SELECT tool_type, COUNT(*) as count FROM tool_calls WHERE session_id = ? GROUP BY tool_type`
     )
-    .all(sessionId) as Array<Record<string, unknown>>;
+    .all(sessionId) as Array<Record<string, any>>;
 
   const byType: Record<string, number> = {};
   for (const r of typeRows) {
@@ -675,7 +675,7 @@ export function getToolCallStats(sessionId: string): ToolCallStats {
 export function findToolCallsByMessage(messageId: string): ToolCall[] {
   const rows = db()
     .prepare('SELECT * FROM tool_calls WHERE message_id = ? ORDER BY started_at ASC')
-    .all(messageId) as Array<Record<string, unknown>>;
+    .all(messageId) as Array<Record<string, any>>;
   return rows.map(normalizeToolCallRow);
 }
 
@@ -684,7 +684,7 @@ export function createToolCall(data: {
   messageId: string;
   toolName: string;
   toolType?: ToolType;
-  arguments?: Record<string, unknown>;
+  arguments?: Record<string, any>;
   maxRetries?: number;
   retryDelayMs?: number;
 }): ToolCall {
@@ -733,10 +733,10 @@ export function createToolCall(data: {
 
 export function completeToolCall(
   id: string,
-  result: { success: boolean; result?: unknown; error?: string }
+  result: { success: boolean; result?: any; error?: string }
 ): ToolCall | undefined {
   const existing = db().prepare('SELECT * FROM tool_calls WHERE id = ?').get(id) as
-    | Record<string, unknown>
+    | Record<string, any>
     | undefined;
   if (!existing) return undefined;
 
@@ -808,7 +808,7 @@ export function retryToolCall(id: string): ToolCall | undefined {
 export function scheduleRetryForFailedToolCalls(sessionId: string): number {
   const rows = db()
     .prepare(`SELECT * FROM tool_calls WHERE session_id = ? AND status = 'error' AND retry_count < max_retries`)
-    .all(sessionId) as Array<Record<string, unknown>>;
+    .all(sessionId) as Array<Record<string, any>>;
 
   let count = 0;
   for (const row of rows) {
@@ -823,7 +823,7 @@ export function scheduleRetryForFailedToolCalls(sessionId: string): number {
 
 export function findToolCallById(id: string): ToolCall | undefined {
   const row = db().prepare('SELECT * FROM tool_calls WHERE id = ?').get(id) as
-    | Record<string, unknown>
+    | Record<string, any>
     | undefined;
   return row ? normalizeToolCallRow(row) : undefined;
 }
@@ -846,7 +846,7 @@ export function searchTrajectoryEvents(sessionId: string, keyword: string): Traj
        WHERE session_id = ? AND (type LIKE ? OR data_json LIKE ?)
        ORDER BY seq ASC`
     )
-    .all(sessionId, `%${keyword}%`, `%${keyword}%`) as Array<Record<string, unknown>>;
+    .all(sessionId, `%${keyword}%`, `%${keyword}%`) as Array<Record<string, any>>;
   return rows.map(normalizeTrajectoryRow);
 }
 
@@ -860,19 +860,19 @@ export function getTrajectoryStats(sessionId: string): TrajectoryStats {
         MAX(ts) as last_ts
        FROM trajectory_events WHERE session_id = ?`
     )
-    .get(sessionId) as Record<string, unknown>;
+    .get(sessionId) as Record<string, any>;
 
   const typeRows = db()
     .prepare(
       `SELECT type, COUNT(*) as count FROM trajectory_events WHERE session_id = ? GROUP BY type ORDER BY count DESC`
     )
-    .all(sessionId) as Array<Record<string, unknown>>;
+    .all(sessionId) as Array<Record<string, any>>;
 
   const sourceRows = db()
     .prepare(
       `SELECT source, COUNT(*) as count FROM trajectory_events WHERE session_id = ? GROUP BY source`
     )
-    .all(sessionId) as Array<Record<string, unknown>>;
+    .all(sessionId) as Array<Record<string, any>>;
 
   const byType: Record<string, number> = {};
   for (const r of typeRows) {
@@ -937,14 +937,14 @@ export function recordTrajectoryEvent(data: Omit<TrajectoryEvent, 'id' | 'seq'> 
 export function getTrajectoryBySession(sessionId: string): TrajectoryEvent[] {
   const rows = db()
     .prepare('SELECT * FROM trajectory_events WHERE session_id = ? ORDER BY seq ASC')
-    .all(sessionId) as Array<Record<string, unknown>>;
+    .all(sessionId) as Array<Record<string, any>>;
   return rows.map(normalizeTrajectoryRow);
 }
 
 export function getTrajectoryByTrace(traceId: string): TrajectoryEvent[] {
   const rows = db()
     .prepare('SELECT * FROM trajectory_events WHERE trace_id = ? ORDER BY seq ASC')
-    .all(traceId) as Array<Record<string, unknown>>;
+    .all(traceId) as Array<Record<string, any>>;
   return rows.map(normalizeTrajectoryRow);
 }
 
@@ -954,7 +954,7 @@ export function getSessionTraces(sessionId: string): Array<{ traceId: string; ev
       `SELECT trace_id, COUNT(*) as event_count, MIN(ts) as first_ts, MAX(ts) as last_ts
        FROM trajectory_events WHERE session_id = ? GROUP BY trace_id ORDER BY first_ts DESC`
     )
-    .all(sessionId) as Array<Record<string, unknown>>;
+    .all(sessionId) as Array<Record<string, any>>;
   return rows.map((r) => ({
     traceId: String(r.trace_id),
     eventCount: Number(r.event_count),
@@ -1084,7 +1084,7 @@ export function exportTodos(sessionId: string): { data: Array<{
               FROM todo_items WHERE session_id = ? ORDER BY order_index`)
     .all(sessionId);
 
-  return { data: todos as unknown[] };
+  return { data: todos as any[] };
 }
 
 export function exportAllTodos(): { data: Array<{
@@ -1102,7 +1102,7 @@ export function exportAllTodos(): { data: Array<{
               FROM todo_items ORDER BY session_id, order_index`)
     .all();
 
-  return { data: todos as unknown[] };
+  return { data: todos as any[] };
 }
 
 export function exportArtifacts(sessionId: string): { data: Array<{
@@ -1119,7 +1119,7 @@ export function exportArtifacts(sessionId: string): { data: Array<{
               FROM artifacts WHERE session_id = ? ORDER BY created_at DESC`)
     .all(sessionId);
 
-  return { data: artifacts as unknown[] };
+  return { data: artifacts as any[] };
 }
 
 export function exportToolCalls(sessionId: string): { data: Array<{
@@ -1136,7 +1136,7 @@ export function exportToolCalls(sessionId: string): { data: Array<{
               FROM tool_calls WHERE session_id = ? ORDER BY started_at DESC`)
     .all(sessionId);
 
-  return { data: toolCalls as unknown[] };
+  return { data: toolCalls as any[] };
 }
 
 export function exportTrajectory(sessionId: string): { data: Array<{
@@ -1145,19 +1145,19 @@ export function exportTrajectory(sessionId: string): { data: Array<{
   type: string;
   source: string;
   ts: string;
-  data: Record<string, unknown> | null;
+  data: Record<string, any> | null;
 }> } {
   const events = db()
     .prepare(`SELECT id, trace_id as traceId, type, source, ts, data 
               FROM trajectory_events WHERE session_id = ? ORDER BY seq`)
     .all(sessionId);
 
-  return { data: events.map((e: unknown) => ({ ...e, data: e.data ? JSON.parse(e.data) : null })) };
+  return { data: events.map((e: any) => ({ ...e, data: e.data ? JSON.parse(e.data) : null })) };
 }
 
 // ===================== Task Flow Orchestration =====================
 
-function normalizeTaskFlowRow(row: Record<string, unknown>): TaskFlow {
+function normalizeTaskFlowRow(row: Record<string, any>): TaskFlow {
   return {
     id: String(row.id),
     sessionId: String(row.session_id),
@@ -1176,7 +1176,7 @@ function normalizeTaskFlowRow(row: Record<string, unknown>): TaskFlow {
   };
 }
 
-function normalizeTaskFlowStepRow(row: Record<string, unknown>): TaskFlowStep {
+function normalizeTaskFlowStepRow(row: Record<string, any>): TaskFlowStep {
   return {
     id: String(row.id),
     flowId: String(row.flow_id),
@@ -1204,7 +1204,7 @@ export function createTaskFlow(data: {
     taskType: string;
     taskName: string;
     taskDescription?: string;
-    arguments?: Record<string, unknown>;
+    arguments?: Record<string, any>;
     dependsOn?: string[];
   }>;
 }): TaskFlow {
@@ -1260,7 +1260,7 @@ export function createTaskFlow(data: {
 
 export function findTaskFlowById(id: string): TaskFlow | undefined {
   const row = db().prepare('SELECT * FROM task_flows WHERE id = ?').get(id) as
-    | Record<string, unknown>
+    | Record<string, any>
     | undefined;
   return row ? normalizeTaskFlowRow(row) : undefined;
 }
@@ -1268,14 +1268,14 @@ export function findTaskFlowById(id: string): TaskFlow | undefined {
 export function findTaskFlowsBySession(sessionId: string): TaskFlow[] {
   const rows = db()
     .prepare('SELECT * FROM task_flows WHERE session_id = ? ORDER BY created_at DESC')
-    .all(sessionId) as Array<Record<string, unknown>>;
+    .all(sessionId) as Array<Record<string, any>>;
   return rows.map(normalizeTaskFlowRow);
 }
 
 export function findTaskFlowSteps(flowId: string): TaskFlowStep[] {
   const rows = db()
     .prepare('SELECT * FROM task_flow_steps WHERE flow_id = ? ORDER BY step_index ASC')
-    .all(flowId) as Array<Record<string, unknown>>;
+    .all(flowId) as Array<Record<string, any>>;
   return rows.map(normalizeTaskFlowStepRow);
 }
 
@@ -1304,15 +1304,15 @@ export function startTaskFlow(flowId: string): TaskFlow | undefined {
   return updated;
 }
 
-export function completeTaskFlowStep(stepId: string, result: { success: boolean; result?: unknown; error?: string }): TaskFlowStep | undefined {
+export function completeTaskFlowStep(stepId: string, result: { success: boolean; result?: any; error?: string }): TaskFlowStep | undefined {
   const step = db().prepare('SELECT * FROM task_flow_steps WHERE id = ?').get(stepId) as
-    | Record<string, unknown>
+    | Record<string, any>
     | undefined;
   if (!step) return undefined;
 
   const now = nowIso();
   const flowId = String(step.flow_id);
-  const sessionId = String((db().prepare('SELECT session_id FROM task_flows WHERE id = ?').get(flowId) as Record<string, unknown> | undefined)?.session_id);
+  const sessionId = String((db().prepare('SELECT session_id FROM task_flows WHERE id = ?').get(flowId) as Record<string, any> | undefined)?.session_id);
   const status = result.success ? 'completed' : 'failed';
 
   db()
@@ -1377,7 +1377,7 @@ export function completeTaskFlowStep(stepId: string, result: { success: boolean;
   }
 
   const updated = db().prepare('SELECT * FROM task_flow_steps WHERE id = ?').get(stepId) as
-    | Record<string, unknown>
+    | Record<string, any>
     | undefined;
   return updated ? normalizeTaskFlowStepRow(updated) : undefined;
 }

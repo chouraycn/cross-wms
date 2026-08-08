@@ -12,12 +12,12 @@
  */
 export type AgentEventPayload = {
   data: {
-    delta?: unknown;
-    text?: unknown;
-    replaceable?: unknown;
-    [key: string]: unknown;
+    delta?: any;
+    text?: any;
+    replaceable?: any;
+    [key: string]: any;
   };
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 // Agent stream events may carry assistant text as either incremental delta or

@@ -109,7 +109,7 @@ export function mockNpmPackMetadataResult(
 }
 
 export function expectIntegrityDriftRejected(params: {
-  onIntegrityDrift: (...args: unknown[]) => unknown;
+  onIntegrityDrift: (...args: any[]) => unknown;
   result: InstallResultLike;
   expectedIntegrity: string;
   actualIntegrity: string;
@@ -130,7 +130,7 @@ export function expectIntegrityDriftRejected(params: {
 export async function expectInstallUsesIgnoreScripts(params: {
   run: {
     mockResolvedValue: (value: SpawnResult) => unknown;
-    mock: { calls: unknown[][] };
+    mock: { calls: any[][] };
   };
   install: () => Promise<
     | {

@@ -66,7 +66,7 @@ export function parseSshConfigOutput(output: string): SshResolvedConfig {
 
 export function appendSshConfigOutput(
   current: string,
-  chunk: unknown,
+  chunk: any,
   maxChars = SSH_CONFIG_OUTPUT_MAX_CHARS,
 ): AppendSshConfigOutputResult {
   const next = current + String(chunk);

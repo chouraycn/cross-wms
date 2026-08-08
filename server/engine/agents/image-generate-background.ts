@@ -7,8 +7,8 @@
  */
 
 export type ImageGenerationTaskHandle = unknown;
-export const imageGenerationTaskLifecycle: unknown = undefined;
-export const createImageGenerationTaskRun: unknown = undefined;
-export const recordImageGenerationTaskProgress: unknown = undefined;
-export const completeImageGenerationTaskRun: unknown = undefined;
-export const failImageGenerationTaskRun: unknown = undefined;
+export const imageGenerationTaskLifecycle: any = undefined;
+export const createImageGenerationTaskRun: any = undefined;
+export const recordImageGenerationTaskProgress: any = undefined;
+export const completeImageGenerationTaskRun: any = undefined;
+export const failImageGenerationTaskRun: any = undefined;

@@ -9,7 +9,7 @@ import type { ZodType } from "zod";
  */
 
 /** Safely validates an unknown value with a Zod schema, returning null on validation failure. */
-export function safeParseWithSchema<T>(schema: ZodType<T>, value: unknown): T | null {
+export function safeParseWithSchema<T>(schema: ZodType<T>, value: any): T | null {
   const parsed = schema.safeParse(value);
   return parsed.success ? parsed.data : null;
 }

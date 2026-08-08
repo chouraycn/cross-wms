@@ -28,7 +28,7 @@ export type GenerateVideoParams = {
   inputAudios?: VideoGenerationSourceAsset[];
   autoProviderFallback?: boolean;
   /** Arbitrary provider-specific options forwarded as-is to provider.generateVideo. */
-  providerOptions?: Record<string, unknown>;
+  providerOptions?: Record<string, any>;
   /** Optional per-request provider timeout in milliseconds. */
   timeoutMs?: number;
 };
@@ -39,7 +39,7 @@ export type GenerateVideoRuntimeResult = {
   model: string;
   attempts: FallbackAttempt[];
   normalization?: VideoGenerationNormalization;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
   ignoredOverrides: VideoGenerationIgnoredOverride[];
 };
 

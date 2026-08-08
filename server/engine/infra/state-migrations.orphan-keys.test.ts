@@ -9,20 +9,20 @@ import {
   sessionStoreTextMayNeedCanonicalization,
 } from "./state-migrations.js";
 
-function writeStore(storePath: string, store: Record<string, unknown>): void {
+function writeStore(storePath: string, store: Record<string, any>): void {
   fs.mkdirSync(path.dirname(storePath), { recursive: true });
   fs.writeFileSync(storePath, JSON.stringify(store));
 }
 
-function readStore(storePath: string): Record<string, unknown> {
+function readStore(storePath: string): Record<string, any> {
   return JSON.parse(fs.readFileSync(storePath, "utf-8"));
 }
 
 function requireStoreEntry(
-  store: Record<string, unknown>,
+  store: Record<string, any>,
   key: string,
 ): { sessionId: string; updatedAt?: number } {
-  const entry = store[key] as { sessionId?: unknown; updatedAt?: number } | undefined;
+  const entry = store[key] as { sessionId?: any; updatedAt?: number } | undefined;
   if (!entry || typeof entry.sessionId !== "string") {
     throw new Error(`expected session store entry ${key}`);
   }

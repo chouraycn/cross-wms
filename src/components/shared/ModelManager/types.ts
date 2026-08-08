@@ -194,7 +194,7 @@ export interface ModelListProps {
   /** 选中的能力标签 */
   selectedCapabilities: string[];
   /** 健康状态映射 (modelId → status) */
-  healthStatuses?: Record<string, 'healthy' | 'unhealthy' | 'timeout' | 'skipped' | 'unknown'>;
+  healthStatuses?: Record<string, 'healthy' | 'unhealthy' | 'timeout' | 'skipped' | 'any'>;
   /** 健康延迟映射 (modelId → latency ms) */
   healthLatencies?: Record<string, number>;
 }

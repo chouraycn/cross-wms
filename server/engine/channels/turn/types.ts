@@ -18,7 +18,7 @@ export interface TurnContext {
   startedAt: number;
   updatedAt: number;
   completedAt?: number;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
 }
 
 export interface TurnWindow {
@@ -37,7 +37,7 @@ export interface DeliveryResult {
   attempt: number;
   deliveredAt?: number;
   error?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export type DispatchStatus = "accepted" | "rejected" | "queued" | "duplicate";
@@ -47,7 +47,7 @@ export interface DispatchResult {
   status: DispatchStatus;
   reason?: string;
   queuePosition?: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface BotLoopProtectionState {

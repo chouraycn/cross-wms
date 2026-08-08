@@ -155,7 +155,7 @@ function installGroupRequireMentionTestPlugins() {
 describe("applyTemplate", () => {
   it("renders primitive values", () => {
     const ctx = { MessageSid: "sid", IsNewSession: "no" } as TemplateContext;
-    const overrides = ctx as Record<string, unknown>;
+    const overrides = ctx as Record<string, any>;
     overrides.MessageSid = 42;
     overrides.IsNewSession = true;
 
@@ -164,7 +164,7 @@ describe("applyTemplate", () => {
 
   it("renders arrays of primitives", () => {
     const ctx = { MediaPaths: ["a"] } as TemplateContext;
-    (ctx as Record<string, unknown>).MediaPaths = ["a", 2, true, null, { ok: false }];
+    (ctx as Record<string, any>).MediaPaths = ["a", 2, true, null, { ok: false }];
 
     expect(applyTemplate("paths={{MediaPaths}}", ctx)).toBe("paths=a,2,true");
   });
@@ -801,8 +801,8 @@ describe("createInboundDebouncer", () => {
         throw new Error("flush failed");
       },
     });
-    const unhandled: unknown[] = [];
-    const onUnhandledRejection = (reason: unknown) => {
+    const unhandled: any[] = [];
+    const onUnhandledRejection = (reason: any) => {
       unhandled.push(reason);
     };
     process.on("unhandledRejection", onUnhandledRejection);

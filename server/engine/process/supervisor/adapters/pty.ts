@@ -39,7 +39,7 @@ export type PtyAdapter = SpawnProcessAdapter;
 let ptyModulePromise: Promise<PtyModule> | null = null;
 
 async function loadPtyModule(): Promise<PtyModule> {
-  ptyModulePromise ??= import("@lydell/node-pty") as Promise<unknown> as Promise<PtyModule>;
+  ptyModulePromise ??= import("@lydell/node-pty") as Promise<any> as Promise<PtyModule>;
   return ptyModulePromise;
 }
 

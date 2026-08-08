@@ -12,13 +12,13 @@ import {
 type AssistantMessage = Extract<AgentMessage, { role: "assistant" }>;
 type ToolResultMessage = Extract<AgentMessage, { role: "toolResult" }>;
 type FakeWrappedStream = {
-  result: () => Promise<unknown>;
-  [Symbol.asyncIterator]: () => AsyncIterator<unknown>;
+  result: () => Promise<any>;
+  [Symbol.asyncIterator]: () => AsyncIterator<any>;
 };
 
 function createFakeStream(params: {
-  events: unknown[];
-  resultMessage: unknown;
+  events: any[];
+  resultMessage: any;
 }): FakeWrappedStream {
   return {
     async result() {
@@ -34,20 +34,20 @@ function createFakeStream(params: {
   };
 }
 
-async function collectStreamEvents(stream: AsyncIterable<unknown>): Promise<unknown[]> {
+async function collectStreamEvents(stream: AsyncIterable<any>): Promise<any[]> {
   // Drain streams to inspect generated tool-call events after wrapper mutation.
-  const events: unknown[] = [];
+  const events: any[] = [];
   for await (const event of stream) {
     events.push(event);
   }
   return events;
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object") {
     throw new Error(`expected ${label}`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 function requireAssistantMessage(message: AgentMessage | undefined): AssistantMessage {
@@ -69,7 +69,7 @@ function assistantToolUseSummaries(message: AgentMessage | undefined) {
   // full provider-specific message payloads.
   const assistant = requireAssistantMessage(message);
   return assistant.content.map((content) => {
-    const record = content as unknown as Record<string, unknown>;
+    const record = content as unknown as Record<string, any>;
     if (record.type !== "toolUse") {
       throw new Error(`expected toolUse content, got ${String(record.type)}`);
     }
@@ -83,7 +83,7 @@ function assistantToolUseSummaries(message: AgentMessage | undefined) {
 
 function toolResultSummary(message: AgentMessage | undefined) {
   const toolResult = requireToolResultMessage(message);
-  const record = toolResult as unknown as Record<string, unknown>;
+  const record = toolResult as unknown as Record<string, any>;
   return {
     role: toolResult.role,
     toolCallId: toolResult.toolCallId,
@@ -152,7 +152,7 @@ describe("wrapStreamFnPromoteStandaloneTextToolCalls", () => {
     ]);
     expect(requireRecord(events.at(-1), "done").reason).toBe("toolUse");
     expect(result.stopReason).toBe("toolUse");
-    const content = result.content as Array<Record<string, unknown>>;
+    const content = result.content as Array<Record<string, any>>;
     expect(content).toHaveLength(3);
     expect(content[0]).toEqual({ type: "thinking", thinking: "Need to audit the mount." });
     expect(content[1]).toMatchObject({
@@ -193,7 +193,7 @@ describe("wrapStreamFnPromoteStandaloneTextToolCalls", () => {
 
     const result = requireRecord(await stream.result(), "result message");
 
-    expect(requireRecord((result.content as unknown[])[0], "tool call")).toMatchObject({
+    expect(requireRecord((result.content as any[])[0], "tool call")).toMatchObject({
       type: "toolCall",
       name: "hidden_catalog_tool",
       arguments: { value: "deferred" },
@@ -252,7 +252,7 @@ describe("wrapStreamFnPromoteStandaloneTextToolCalls", () => {
     ]);
     expect(requireRecord(events[0], "thinking event").contentIndex).toBe(1);
     expect(requireRecord(events[1], "toolcall start").contentIndex).toBe(0);
-    expect((result.content as Array<Record<string, unknown>>).map((block) => block.type)).toEqual([
+    expect((result.content as Array<Record<string, any>>).map((block) => block.type)).toEqual([
       "toolCall",
       "thinking",
     ]);
@@ -323,16 +323,16 @@ describe("wrapStreamFnPromoteStandaloneTextToolCalls", () => {
     expect(requireRecord(events[0], "thinking event").contentIndex).toBe(1);
     expect(requireRecord(events[1], "first toolcall start").contentIndex).toBe(0);
     expect(requireRecord(events[3], "second toolcall start").contentIndex).toBe(2);
-    expect((result.content as Array<Record<string, unknown>>).map((block) => block.type)).toEqual([
+    expect((result.content as Array<Record<string, any>>).map((block) => block.type)).toEqual([
       "toolCall",
       "thinking",
       "toolCall",
     ]);
-    expect(requireRecord((result.content as unknown[])[0], "first tool call")).toMatchObject({
+    expect(requireRecord((result.content as any[])[0], "first tool call")).toMatchObject({
       name: "exec",
       arguments: { command: "pwd" },
     });
-    expect(requireRecord((result.content as unknown[])[2], "second tool call")).toMatchObject({
+    expect(requireRecord((result.content as any[])[2], "second tool call")).toMatchObject({
       name: "exec",
       arguments: { command: "whoami" },
     });
@@ -380,11 +380,11 @@ describe("wrapStreamFnPromoteStandaloneTextToolCalls", () => {
     ]);
     expect(requireRecord(events[0], "thinking event").contentIndex).toBe(2);
     expect(requireRecord(events[1], "toolcall start").contentIndex).toBe(0);
-    expect((result.content as Array<Record<string, unknown>>).map((block) => block.type)).toEqual([
+    expect((result.content as Array<Record<string, any>>).map((block) => block.type)).toEqual([
       "toolCall",
       "thinking",
     ]);
-    expect(requireRecord((result.content as unknown[])[0], "tool call")).toMatchObject({
+    expect(requireRecord((result.content as any[])[0], "tool call")).toMatchObject({
       name: "exec",
       arguments: { command: "pwd" },
     });
@@ -427,7 +427,7 @@ describe("wrapStreamFnPromoteStandaloneTextToolCalls", () => {
       "done",
     ]);
     expect(result.stopReason).toBe("toolUse");
-    expect(requireRecord((result.content as unknown[])[0], "tool call")).toMatchObject({
+    expect(requireRecord((result.content as any[])[0], "tool call")).toMatchObject({
       type: "toolCall",
       name: "Read",
       arguments: { path: "src/index.ts" },
@@ -470,7 +470,7 @@ describe("wrapStreamFnPromoteStandaloneTextToolCalls", () => {
       "toolcall_delta",
       "done",
     ]);
-    expect(requireRecord((result.content as unknown[])[0], "tool call")).toMatchObject({
+    expect(requireRecord((result.content as any[])[0], "tool call")).toMatchObject({
       type: "toolCall",
       name: "exec",
       arguments: { command: "pwd" },
@@ -1096,7 +1096,7 @@ describe("wrapStreamFnSanitizeMalformedToolCalls", () => {
         ],
       } as never,
     ];
-    const baseFn = vi.fn((_model: unknown, _context: unknown, _options: unknown) =>
+    const baseFn = vi.fn((_model: any, _context: any, _options: any) =>
       createFakeStream({
         events: [],
         resultMessage: { role: "assistant", content: "ok" },
@@ -1137,7 +1137,7 @@ describe("wrapStreamFnSanitizeMalformedToolCalls", () => {
         content: "Worked: the QA lighthouse image completed.",
       } as never,
     ];
-    const baseFn = vi.fn((_model: unknown, _context: unknown, _options: unknown) =>
+    const baseFn = vi.fn((_model: any, _context: any, _options: any) =>
       createFakeStream({
         events: [],
         resultMessage: { role: "assistant", content: "ok" },
@@ -1195,8 +1195,8 @@ describe("sanitizeOpenAIResponsesReplayForStream", () => {
       (block) =>
         Boolean(block) &&
         typeof block === "object" &&
-        (block as { type?: unknown }).type === "toolCall" &&
-        typeof (block as { id?: unknown }).id === "string",
+        (block as { type?: any }).type === "toolCall" &&
+        typeof (block as { id?: any }).id === "string",
     ) as { id: string } | undefined;
 
     expect(toolCall?.id).toMatch(/^call_[A-Za-z0-9_-]{1,59}$/);
@@ -1288,7 +1288,7 @@ describe("sanitizeOpenAIResponsesReplayForStream", () => {
       (block) =>
         Boolean(block) &&
         typeof block === "object" &&
-        (block as { type?: unknown }).type === "toolCall",
+        (block as { type?: any }).type === "toolCall",
     ) as { id?: string } | undefined;
     const danglingResult = out[6] as Extract<AgentMessage, { role: "toolResult" }>;
 

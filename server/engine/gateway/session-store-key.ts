@@ -11,26 +11,26 @@
  * 完整实现见 openclaw 源码。
  */
 
-export function canonicalizeSessionKeyForAgent(..._args: unknown[]): unknown {
+export function canonicalizeSessionKeyForAgent(..._args: any[]): any {
   return false;
 }
 
-export function resolveSessionStoreKey(..._args: unknown[]): unknown {
+export function resolveSessionStoreKey(..._args: any[]): any {
   return undefined;
 }
 
-export function resolveSessionStoreAgentId(..._args: unknown[]): unknown {
+export function resolveSessionStoreAgentId(..._args: any[]): any {
   return undefined;
 }
 
-export function resolveStoredSessionKeyForAgentStore(..._args: unknown[]): unknown {
+export function resolveStoredSessionKeyForAgentStore(..._args: any[]): any {
   return undefined;
 }
 
-export function resolveStoredSessionOwnerAgentId(..._args: unknown[]): unknown {
+export function resolveStoredSessionOwnerAgentId(..._args: any[]): any {
   return undefined;
 }
 
-export function canonicalizeSpawnedByForAgent(..._args: unknown[]): unknown {
+export function canonicalizeSpawnedByForAgent(..._args: any[]): any {
   return false;
 }

@@ -15,13 +15,13 @@ export type JsonRpcRequest = {
   jsonrpc: "2.0";
   id?: JsonRpcId;
   method: string;
-  params?: Record<string, unknown>;
+  params?: Record<string, any>;
 };
 
 /**
  * Builds a JSON-RPC success response, using null for notifications or malformed missing ids.
  */
-export function jsonRpcResult(id: JsonRpcId, result: unknown) {
+export function jsonRpcResult(id: JsonRpcId, result: any) {
   return { jsonrpc: "2.0" as const, id: id ?? null, result };
 }
 

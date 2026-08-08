@@ -6,5 +6,5 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export const testing_compaction_safeguard: unknown = undefined;
+export const testing_compaction_safeguard: any = undefined;
 // skipped: export default (cannot stub default export)

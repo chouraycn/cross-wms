@@ -43,21 +43,21 @@ function requireStreamFn(streamFn: StreamFn | null | undefined) {
   return streamFn;
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error(`expected ${label} to be an object`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function requirePayload(payload: Record<string, unknown> | undefined): Record<string, unknown> {
+function requirePayload(payload: Record<string, any> | undefined): Record<string, any> {
   if (!payload) {
     throw new Error("expected captured payload");
   }
   return payload;
 }
 
-function expectDefaultThinkingBudget(payload: Record<string, unknown>) {
+function expectDefaultThinkingBudget(payload: Record<string, any>) {
   const config = requireRecord(payload.config, "payload.config");
   const thinkingConfig = requireRecord(config.thinkingConfig, "payload.config.thinkingConfig");
   expect(thinkingConfig.thinkingBudget).toBe(-1);
@@ -65,7 +65,7 @@ function expectDefaultThinkingBudget(payload: Record<string, unknown>) {
 
 describe("createMoonshotThinkingWrapper", () => {
   it("sanitizes K2.7 after an async caller replaces the payload", async () => {
-    let finalPayload: Record<string, unknown> | undefined;
+    let finalPayload: Record<string, any> | undefined;
     const baseStreamFn: StreamFn = async (model, _context, options) => {
       const payload = { model: model.id };
       const replacement = await options?.onPayload?.(payload, model);
@@ -139,12 +139,12 @@ describe("composeProviderStreamWrappers", () => {
 
 describe("buildProviderStreamFamilyHooks", () => {
   it("covers the stream family matrix", async () => {
-    let capturedPayload: Record<string, unknown> | undefined;
+    let capturedPayload: Record<string, any> | undefined;
     let capturedModelId: string | undefined;
     let capturedModelReasoning: boolean | undefined;
     let capturedHeaders: Record<string, string> | undefined;
     let capturedReasoning: string | undefined;
-    let payloadSeed: Record<string, unknown> | undefined;
+    let payloadSeed: Record<string, any> | undefined;
 
     const baseStreamFn: StreamFn = (model, _context, options) => {
       capturedModelId = model.id;
@@ -154,7 +154,7 @@ describe("buildProviderStreamFamilyHooks", () => {
         model: model.id,
         config: { thinkingConfig: { thinkingBudget: -1 } },
         ...payloadSeed,
-      } as Record<string, unknown>;
+      } as Record<string, any>;
       payloadSeed = undefined;
       options?.onPayload?.(payload as never, model as never);
       capturedPayload = payload;
@@ -421,7 +421,7 @@ describe("createPlainTextToolCallCompatWrapper", () => {
       {} as never,
       { tools: [{ name: "read" }] } as never,
       {},
-    ) as AsyncIterable<unknown>;
+    ) as AsyncIterable<any>;
     const iterator = output[Symbol.asyncIterator]();
     const first = iterator.next();
 

@@ -4,7 +4,7 @@ import type { AgentMessage } from "./runtime/index.js";
 import type { ExtensionContext } from "./sessions/index.js";
 
 const compactionMocks = vi.hoisted(() => {
-  function readText(value: unknown): string {
+  function readText(value: any): string {
     if (typeof value === "string") {
       return value;
     }
@@ -12,13 +12,13 @@ const compactionMocks = vi.hoisted(() => {
       return value.map(readText).join("");
     }
     if (value && typeof value === "object") {
-      const record = value as { text?: unknown; content?: unknown; arguments?: unknown };
+      const record = value as { text?: any; content?: any; arguments?: any };
       return `${readText(record.text)}${readText(record.content)}${readText(record.arguments)}`;
     }
     return "";
   }
   return {
-    estimateTokens: vi.fn((message: unknown) =>
+    estimateTokens: vi.fn((message: any) =>
       Math.max(1, Math.ceil(readText(message).length / 4)),
     ),
     generateSummary: vi.fn(),

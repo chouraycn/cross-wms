@@ -34,11 +34,11 @@ export interface ExecutionStrategyOptions extends ToolExecutorOptions {
   /** 执行模式 */
   executionMode: ExecutionMode;
   /** SSE 事件回调（用于推送 observer_reflection 等事件） */
-  onSSEEvent?: (event: Record<string, unknown>) => void;
+  onSSEEvent?: (event: Record<string, any>) => void;
   /** v5.0: 预算配置（传递给 ReActExecutor） */
   budgetConfig?: Partial<BudgetConfig>;
   /** v8.2: 权限请求回调 */
-  onPermissionRequest?: (toolName: string, toolArgs: Record<string, unknown>) => Promise<boolean> | boolean;
+  onPermissionRequest?: (toolName: string, toolArgs: Record<string, any>) => Promise<boolean> | boolean;
   /** v9.0: 已授权工具缓存 */
   approvedToolsCache?: Set<string>;
   /** 工具 Profile */
@@ -67,7 +67,7 @@ export interface ExecutionStrategyOptions extends ToolExecutorOptions {
    * 数字员工（per-call）物化技能执行器。
    * 当工具名为 `skill_<id>` 且全局 skillRegistry 未命中时，回退到该函数执行。
    */
-  extraSkillExecutor?: (id: string, params: Record<string, unknown>, ctx?: SkillContext) => Promise<SkillResult>;
+  extraSkillExecutor?: (id: string, params: Record<string, any>, ctx?: SkillContext) => Promise<SkillResult>;
   /**
    * 数字员工（per-call）HTTP API 工具定义列表。
    * 从 sd_tools 表 tool_type='http' 读取，以 http_tool_ 前缀注入工具列表，

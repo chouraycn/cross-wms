@@ -6,10 +6,10 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function createIdleTimeoutBreakerState(..._args: unknown[]): unknown {
+export function createIdleTimeoutBreakerState(..._args: any[]): any {
   return undefined;
 }
-export function stepIdleTimeoutBreaker(..._args: unknown[]): unknown {
+export function stepIdleTimeoutBreaker(..._args: any[]): any {
   return undefined;
 }
-export const MAX_CONSECUTIVE_IDLE_TIMEOUTS_BEFORE_OUTPUT: unknown = undefined;
+export const MAX_CONSECUTIVE_IDLE_TIMEOUTS_BEFORE_OUTPUT: any = undefined;

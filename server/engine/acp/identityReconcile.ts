@@ -24,8 +24,8 @@ export interface IdentityReconcileResult {
   changed: boolean;
   changes: Array<{
     field: string;
-    oldValue: unknown;
-    newValue: unknown;
+    oldValue: any;
+    newValue: any;
   }>;
 }
 

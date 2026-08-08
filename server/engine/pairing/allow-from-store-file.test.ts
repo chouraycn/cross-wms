@@ -35,7 +35,7 @@ function fsError(message: string, code: string): NodeJS.ErrnoException {
 
 describe("allow-from store file keys", () => {
   it("formats invalid channel diagnostics without stringifying unsafe values", () => {
-    const circular: Record<string, unknown> = { label: "private-channel-value" };
+    const circular: Record<string, any> = { label: "private-channel-value" };
     circular.self = circular;
 
     expectInvalidPairingKey({

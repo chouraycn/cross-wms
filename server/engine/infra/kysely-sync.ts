@@ -26,7 +26,7 @@ export type KyselyExpressionBuilder = {
 export type KyselyOnConflictBuilder = {
   columns: (columns: readonly string[]) => {
     doUpdateSet: (
-      set: Record<string, unknown | ((eb: KyselyExpressionBuilder) => unknown)>,
+      set: Record<string, any | ((eb: KyselyExpressionBuilder) => unknown)>,
     ) => KyselyQueryBuilder;
   };
 };
@@ -36,13 +36,13 @@ export type KyselyQueryBuilder = {
   compile(): CompiledSqliteQuery;
   select: (columns: readonly string[]) => KyselyQueryBuilder;
   orderBy: (column: string, order?: string) => KyselyQueryBuilder;
-  values: (row: Record<string, unknown>) => KyselyQueryBuilder;
+  values: (row: Record<string, any>) => KyselyQueryBuilder;
   onConflict: (cb: (conflict: KyselyOnConflictBuilder) => KyselyQueryBuilder) => KyselyQueryBuilder;
-  where: (...args: unknown[]) => KyselyQueryBuilder;
+  where: (...args: any[]) => KyselyQueryBuilder;
 };
 
 /** Kysely 数据库占位类型 */
-export interface KyselyDatabase<DB = Record<string, unknown>> {
+export interface KyselyDatabase<DB = Record<string, any>> {
   readonly __DB: DB;
   selectFrom: (table: string) => KyselyQueryBuilder;
   insertInto: (table: string) => KyselyQueryBuilder;
@@ -51,7 +51,7 @@ export interface KyselyDatabase<DB = Record<string, unknown>> {
 }
 
 /** SQLite 查询执行结果 */
-export type SqliteQueryResult<T = Record<string, unknown>> = {
+export type SqliteQueryResult<T = Record<string, any>> = {
   rows: T[];
   changes: number;
   lastInsertRowid: number | bigint | null;
@@ -68,8 +68,8 @@ const databaseCache = new WeakMap<object, KyselyDatabase>();
  * 降级实现：kysely 包不可用，返回占位 KyselyDatabase。
  * 任何调用 .selectFrom() 等查询构建器方法都会在运行时抛出错误。
  */
-export function getNodeSqliteKysely<DB = Record<string, unknown>>(
-  db: unknown,
+export function getNodeSqliteKysely<DB = Record<string, any>>(
+  db: any,
 ): KyselyDatabase<DB> {
   const cacheKey = (db ?? {}) as object;
   const cached = databaseCache.get(cacheKey) as KyselyDatabase<DB> | undefined;
@@ -87,7 +87,7 @@ export function getNodeSqliteKysely<DB = Record<string, unknown>>(
  * 调用方应预期在降级模式下获得空结果。
  */
 export function executeCompiledSqliteQuerySync(
-  _db: unknown,
+  _db: any,
   query: CompiledSqliteQuery,
 ): SqliteQueryResult {
   return { rows: [], changes: 0, lastInsertRowid: null };
@@ -97,8 +97,8 @@ export function executeCompiledSqliteQuerySync(
  * 执行 Kysely 查询构建器并返回结果（同步）。
  * 降级实现：kysely 包不可用，返回空结果集而非抛出错误。
  */
-export function executeSqliteQuerySync<T = Record<string, unknown>>(
-  _db: unknown,
+export function executeSqliteQuerySync<T = Record<string, any>>(
+  _db: any,
   _queryBuilder: KyselyQueryBuilder,
 ): SqliteQueryResult<T> {
   return { rows: [], changes: 0, lastInsertRowid: null };
@@ -108,8 +108,8 @@ export function executeSqliteQuerySync<T = Record<string, unknown>>(
  * 执行 Kysely 查询并返回第一行（同步）。
  * 降级实现：kysely 包不可用，返回 undefined（空结果集的第一行）。
  */
-export function executeSqliteQueryTakeFirstSync<T = Record<string, unknown>>(
-  db: unknown,
+export function executeSqliteQueryTakeFirstSync<T = Record<string, any>>(
+  db: any,
   queryBuilder: KyselyQueryBuilder,
 ): T | undefined {
   const result = executeSqliteQuerySync<T>(db, queryBuilder);
@@ -119,7 +119,7 @@ export function executeSqliteQueryTakeFirstSync<T = Record<string, unknown>>(
 /**
  * 清除指定数据库的 Kysely 缓存。
  */
-export function clearNodeSqliteKyselyCacheForDatabase(db: unknown): void {
+export function clearNodeSqliteKyselyCacheForDatabase(db: any): void {
   const cacheKey = (db ?? {}) as object;
   databaseCache.delete(cacheKey);
 }
@@ -130,7 +130,7 @@ export function clearNodeSqliteKyselyCacheForDatabase(db: unknown): void {
 
 type NoopChainFn = (() => NoopChainFn) & { compile: () => CompiledSqliteQuery };
 
-function createCompileOnlyKyselyFacade<DB>(_db: unknown): KyselyDatabase<DB> {
+function createCompileOnlyKyselyFacade<DB>(_db: any): KyselyDatabase<DB> {
   // 返回一个链式代理对象，任何属性访问都返回可链式调用的 no-op 函数。
   // 最终调用 .compile() 时返回空查询。这允许调用方链式构建查询而不崩溃。
   const noopChain = (): NoopChainFn => {
@@ -154,15 +154,15 @@ function createCompileOnlyKyselyFacade<DB>(_db: unknown): KyselyDatabase<DB> {
 
 // 占位类（保留导出供类型检查）
 export class CompileOnlyNodeSqliteKyselyDialect {
-  constructor(_config: unknown) {}
+  constructor(_config: any) {}
 }
 
 export class CompileOnlySqliteDriver {
   async init(): Promise<void> {}
-  async acquireConnection(): Promise<unknown> {
+  async acquireConnection(): Promise<any> {
     return undefined;
   }
-  async releaseConnection(_connection: unknown): Promise<void> {}
+  async releaseConnection(_connection: any): Promise<void> {}
   async destroy(): Promise<void> {}
 }
 

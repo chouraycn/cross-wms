@@ -132,12 +132,12 @@ describe("subscribeEmbeddedAgentSession", () => {
     const waitPromise = subscription.waitForCompactionRetry();
     subscription.unsubscribe();
 
-    const firstAbort = await waitPromise.catch((error: unknown) => error);
+    const firstAbort = await waitPromise.catch((error: any) => error);
     expect(firstAbort).toBeInstanceOf(Error);
     expect((firstAbort as Error).name).toBe("AbortError");
     const secondAbort = await subscription
       .waitForCompactionRetry()
-      .catch((error: unknown) => error);
+      .catch((error: any) => error);
     expect(secondAbort).toBeInstanceOf(Error);
     expect((secondAbort as Error).name).toBe("AbortError");
     expect(abortCompaction).toHaveBeenCalledTimes(1);

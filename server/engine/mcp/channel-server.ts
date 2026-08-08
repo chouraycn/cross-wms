@@ -30,24 +30,24 @@ export type McpRequest = {
   jsonrpc: '2.0';
   id: string | number;
   method: string;
-  params?: Record<string, unknown>;
+  params?: Record<string, any>;
 };
 
 export type McpResponse = {
   jsonrpc: '2.0';
   id: string | number | null;
-  result?: unknown;
+  result?: any;
   error?: {
     code: number;
     message: string;
-    data?: unknown;
+    data?: any;
   };
 };
 
 export type McpNotification = {
   jsonrpc: '2.0';
   method: string;
-  params?: Record<string, unknown>;
+  params?: Record<string, any>;
 };
 
 export type McpServerCapabilities = {
@@ -76,7 +76,7 @@ export type McpInitializeResult = {
   instructions?: string;
 };
 
-type ToolHandler = (args: Record<string, unknown> | undefined) => Promise<MCPToolCallResult>;
+type ToolHandler = (args: Record<string, any> | undefined) => Promise<MCPToolCallResult>;
 
 type ResourceHandler = (uri: string) => Promise<{ uri: string; mimeType?: string; text?: string; blob?: string }>;
 
@@ -88,7 +88,7 @@ export class McpChannelServer {
   private readonly serverName: string;
   private readonly bridge: McpChannelBridge;
   private initialized = false;
-  private requestHandlers: Map<string, (params: Record<string, unknown> | undefined) => Promise<unknown>> = new Map();
+  private requestHandlers: Map<string, (params: Record<string, any> | undefined) => Promise<any>> = new Map();
   private capabilities: MCPServerCapabilities = {};
   private serverInfo: MCPServerInfo;
   private instructions?: string;
@@ -151,7 +151,7 @@ export class McpChannelServer {
 
   registerRequestHandler(
     method: string,
-    handler: (params: Record<string, unknown> | undefined) => Promise<unknown>,
+    handler: (params: Record<string, any> | undefined) => Promise<any>,
   ): void {
     this.requestHandlers.set(method, handler);
   }
@@ -351,9 +351,9 @@ export class McpChannelServer {
     };
   }
 
-  private async handleToolsCall(params: Record<string, unknown> | undefined): Promise<MCPToolCallResult> {
+  private async handleToolsCall(params: Record<string, any> | undefined): Promise<MCPToolCallResult> {
     const name = params?.name as string | undefined;
-    const args = (params?.arguments as Record<string, unknown>) ?? {};
+    const args = (params?.arguments as Record<string, any>) ?? {};
 
     if (!name) {
       return {
@@ -380,7 +380,7 @@ export class McpChannelServer {
     };
   }
 
-  private async handleResourcesRead(params: Record<string, unknown> | undefined): Promise<{
+  private async handleResourcesRead(params: Record<string, any> | undefined): Promise<{
     contents: Array<{ uri: string; mimeType?: string; text?: string; blob?: string }>;
   }> {
     const uri = params?.uri as string | undefined;
@@ -397,7 +397,7 @@ export class McpChannelServer {
     return { contents: [content] };
   }
 
-  private handleResourcesSubscribe(params: Record<string, unknown> | undefined): Record<string, never> {
+  private handleResourcesSubscribe(params: Record<string, any> | undefined): Record<string, never> {
     const uri = params?.uri as string | undefined;
     if (!uri) {
       throw new Error('Resource URI required');
@@ -406,7 +406,7 @@ export class McpChannelServer {
     return {};
   }
 
-  private handleResourcesUnsubscribe(params: Record<string, unknown> | undefined): Record<string, never> {
+  private handleResourcesUnsubscribe(params: Record<string, any> | undefined): Record<string, never> {
     const uri = params?.uri as string | undefined;
     if (!uri) {
       throw new Error('Resource URI required');
@@ -421,7 +421,7 @@ export class McpChannelServer {
     };
   }
 
-  private async handlePromptsGet(params: Record<string, unknown> | undefined): Promise<{
+  private async handlePromptsGet(params: Record<string, any> | undefined): Promise<{
     messages: Array<{ role: string; content: Array<{ type: string; text?: string }> }>;
   }> {
     const name = params?.name as string | undefined;
@@ -439,7 +439,7 @@ export class McpChannelServer {
     return promptEntry.handler(args);
   }
 
-  private handleLoggingSetLevel(params: Record<string, unknown> | undefined): Record<string, never> {
+  private handleLoggingSetLevel(params: Record<string, any> | undefined): Record<string, never> {
     const level = params?.level as MCPLogLevel | undefined;
     if (level) {
       this.logLevel = level;
@@ -448,7 +448,7 @@ export class McpChannelServer {
     return {};
   }
 
-  private handleCompletions(_params: Record<string, unknown> | undefined): {
+  private handleCompletions(_params: Record<string, any> | undefined): {
     completion: { values: string[]; hasMore: boolean };
   } {
     return {
@@ -484,7 +484,7 @@ export class McpChannelServer {
     });
   }
 
-  async sendRequest(method: string, params?: Record<string, unknown>): Promise<JsonRpcResponse> {
+  async sendRequest(method: string, params?: Record<string, any>): Promise<JsonRpcResponse> {
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const request: JsonRpcRequest = {
       jsonrpc: '2.0',

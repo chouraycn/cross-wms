@@ -14,14 +14,14 @@ import {
   verifyTalkHandoffToken,
 } from "./talk-handoff.js";
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error(`Expected ${label}`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function requireArray(value: unknown, label: string): unknown[] {
+function requireArray(value: any, label: string): any[] {
   if (!Array.isArray(value)) {
     throw new Error(`Expected ${label}`);
   }
@@ -29,10 +29,10 @@ function requireArray(value: unknown, label: string): unknown[] {
 }
 
 function expectFields(
-  value: unknown,
+  value: any,
   label: string,
-  fields: Record<string, unknown>,
-): Record<string, unknown> {
+  fields: Record<string, any>,
+): Record<string, any> {
   const record = requireRecord(value, label);
   for (const [key, expected] of Object.entries(fields)) {
     expect(record[key]).toEqual(expected);
@@ -40,19 +40,19 @@ function expectFields(
   return record;
 }
 
-function requireRoom(value: unknown, label = "handoff room"): Record<string, unknown> {
+function requireRoom(value: any, label = "handoff room"): Record<string, any> {
   return requireRecord(requireRecord(value, label).room, `${label} room`);
 }
 
-function requireEvents(value: unknown, label = "handoff result"): unknown[] {
+function requireEvents(value: any, label = "handoff result"): any[] {
   return requireArray(requireRecord(value, label).events, `${label} events`);
 }
 
 function expectEventFields(
-  events: unknown[],
+  events: any[],
   index: number,
-  fields: Record<string, unknown>,
-): Record<string, unknown> {
+  fields: Record<string, any>,
+): Record<string, any> {
   return expectFields(events[index], `event ${index}`, fields);
 }
 

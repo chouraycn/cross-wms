@@ -33,38 +33,38 @@ export interface PluginApi {
   /** 当前 manifest */
   readonly manifest: PluginManifest;
   /** 注册一个工具 */
-  registerTool(tool: PluginToolDefinition & { handler: (args: unknown) => Promise<unknown> }): void;
+  registerTool(tool: PluginToolDefinition & { handler: (args: any) => Promise<any> }): void;
   /** 注册一个 hook */
-  registerHook(hookName: string, handler: (payload: unknown) => unknown, options?: { priority?: number; metadata?: Record<string, unknown> }): string;
+  registerHook(hookName: string, handler: (payload: any) => unknown, options?: { priority?: number; metadata?: Record<string, any> }): string;
   /** 注销一个 hook */
   unregisterHook(hookId: string): boolean;
   /** 读取配置 */
   getConfig<T = unknown>(key: string): T | undefined;
   /** 读取全部配置 */
-  getAllConfig(): Record<string, unknown>;
+  getAllConfig(): Record<string, any>;
   /** 请求权限 */
   requestPermission(permission: PluginPermission, reason?: string): Promise<boolean>;
   /** 检查权限 */
   hasPermission(permission: PluginPermission): boolean;
   /** 触发事件 */
-  emit(event: string, payload?: unknown): void;
+  emit(event: string, payload?: any): void;
   /** 订阅事件 */
-  on(event: string, handler: (payload: unknown) => void): () => void;
+  on(event: string, handler: (payload: any) => void): () => void;
 }
 
 export interface CreatePluginApiOptions {
   pluginId: string;
   manifest: PluginManifest;
   /** 已合并的配置 */
-  config?: Record<string, unknown>;
+  config?: Record<string, any>;
   /** 事件总线 */
   eventBus?: PluginContext['eventBus'];
   /** 受限 logger */
   logger?: PluginContext['logger'];
 }
 
-const eventListeners = new Map<string, Map<string, Set<(payload: unknown) => void>>>();
-const registeredTools = new Map<string, Array<PluginToolDefinition & { handler: (args: unknown) => Promise<unknown> }>>();
+const eventListeners = new Map<string, Map<string, Set<(payload: any) => void>>>();
+const registeredTools = new Map<string, Array<PluginToolDefinition & { handler: (args: any) => Promise<any> }>>();
 
 /**
  * 创建一个 PluginApi 实例（每个插件独立隔离）。
@@ -144,13 +144,13 @@ export function createPluginApi(options: CreatePluginApiOptions): PluginApi {
 }
 
 // hook handler 缓存：用于 unregisterHook 时清理
-const hookHandlers = new Map<string, (payload: unknown) => unknown>();
+const hookHandlers = new Map<string, (payload: any) => unknown>();
 
 /**
  * 创建本地事件总线（按插件 ID 命名空间隔离）。
  */
 function createLocalEventBus(pluginId: string): PluginContext['eventBus'] {
-  const listeners = new Map<string, Set<(payload: unknown) => void>>();
+  const listeners = new Map<string, Set<(payload: any) => void>>();
   eventListeners.set(pluginId, listeners);
 
   return {
@@ -185,7 +185,7 @@ function createLocalEventBus(pluginId: string): PluginContext['eventBus'] {
 
 // ===================== 查询接口 =====================
 
-export function getPluginTools(pluginId: string): Array<PluginToolDefinition & { handler: (args: unknown) => Promise<unknown> }> {
+export function getPluginTools(pluginId: string): Array<PluginToolDefinition & { handler: (args: any) => Promise<any> }> {
   return registeredTools.get(pluginId) ?? [];
 }
 

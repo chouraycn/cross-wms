@@ -16,7 +16,7 @@ function Skeleton({
       variant={variant === 'rectangular' ? 'rounded' : (variant as 'text' | 'rounded' | 'circular' | undefined) ?? 'rounded'}
       className={cn(className)}
       sx={sx}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     />
   )
 }

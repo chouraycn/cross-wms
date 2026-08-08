@@ -82,7 +82,7 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ warehouseId, sk
     setLoading(true);
     setError(null);
     try {
-      const params: Record<string, unknown> = {
+      const params: Record<string, any> = {
         page: page + 1, // API 从 1 开始
         pageSize: rowsPerPage,
       };

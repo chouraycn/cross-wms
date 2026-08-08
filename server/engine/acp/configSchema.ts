@@ -8,7 +8,7 @@ export type ResolvedAcpxPluginConfig = {
   stateDir: string;
   agents: Record<string, string>;
   probeAgent?: string;
-  mcpServers?: unknown[];
+  mcpServers?: any[];
   permissionMode?: AcpxPermissionMode;
   nonInteractivePermissions?: string[];
   timeoutSeconds?: number;
@@ -21,7 +21,7 @@ export type ResolvedAcpxPluginConfig = {
 export type RawAcpxPluginConfig = {
   agents?: Record<string, string>;
   probeAgent?: string;
-  mcpServers?: unknown[];
+  mcpServers?: any[];
   permissionMode?: string;
   nonInteractivePermissions?: string[];
   timeoutSeconds?: number;

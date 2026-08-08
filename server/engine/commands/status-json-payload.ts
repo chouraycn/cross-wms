@@ -10,18 +10,18 @@ import {
 
 /** Combines scan summary, overview surface, services, agents, diagnostics, and optional deep probes. */
 export function buildStatusJsonPayload(params: {
-  summary: Record<string, unknown>;
+  summary: Record<string, any>;
   surface: StatusOverviewSurface;
-  osSummary: unknown;
-  memory: unknown;
-  memoryPlugin: unknown;
-  agents: unknown;
+  osSummary: any;
+  memory: any;
+  memoryPlugin: any;
+  agents: any;
   secretDiagnostics: string[];
-  securityAudit?: unknown;
-  health?: unknown;
-  usage?: unknown;
-  lastHeartbeat?: unknown;
-  pluginCompatibility?: Array<Record<string, unknown>> | null | undefined;
+  securityAudit?: any;
+  health?: any;
+  usage?: any;
+  lastHeartbeat?: any;
+  pluginCompatibility?: Array<Record<string, any>> | null | undefined;
 }) {
   const channelInfo = resolveStatusUpdateChannelInfo({
     updateConfigChannel: params.surface.cfg.update?.channel ?? undefined,

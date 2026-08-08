@@ -48,7 +48,7 @@ export type ReplyOperationAbortCode = "aborted_by_user" | "aborted_for_restart";
 
 export type ReplyOperationResult =
   | { kind: "completed" }
-  | { kind: "failed"; code: ReplyOperationFailureCode; cause?: unknown }
+  | { kind: "failed"; code: ReplyOperationFailureCode; cause?: any }
   | { kind: "aborted"; code: ReplyOperationAbortCode };
 
 export type ReplyOperation = {
@@ -79,10 +79,10 @@ export type ReplyOperation = {
    * until delivery or another external barrier settles.
    */
   completeWithAfterClearBarrier(
-    barrier: PromiseLike<unknown>,
+    barrier: PromiseLike<any>,
     timeout?: number | ReplyFollowupAdmissionBarrierTimeoutPolicy,
   ): void;
-  fail(code: Exclude<ReplyOperationFailureCode, "aborted_by_user">, cause?: unknown): void;
+  fail(code: Exclude<ReplyOperationFailureCode, "aborted_by_user">, cause?: any): void;
   abortByUser(): void;
   abortForRestart(): void;
 };
@@ -256,7 +256,7 @@ function flushReplyOperationAfterClear(operation: ReplyOperation, sessionId: str
 function registerFollowupAdmissionBarrier(
   sessionKey: string,
   sessionId: string,
-  barrier: PromiseLike<unknown>,
+  barrier: PromiseLike<any>,
   timeout: number | ReplyFollowupAdmissionBarrierTimeoutPolicy = REPLY_RUN_IDLE_SETTLE_TIMEOUT_MS,
 ): ReplyRunFollowupAdmissionBarrier {
   const barriersByKey = replyRunState.followupAdmissionBarriersByKey;
@@ -394,7 +394,7 @@ export function createReplyOperation(params: {
   let retainFailureUntilComplete = false;
 
   const clearState = (
-    afterClearBarrier?: PromiseLike<unknown>,
+    afterClearBarrier?: PromiseLike<any>,
     followupAdmissionBarrierTimeout?: number | ReplyFollowupAdmissionBarrierTimeoutPolicy,
   ) => {
     if (stateCleared) {
@@ -424,7 +424,7 @@ export function createReplyOperation(params: {
     );
   };
 
-  const abortInternally = (reason?: unknown) => {
+  const abortInternally = (reason?: any) => {
     if (!controller.signal.aborted) {
       controller.abort(reason);
     }
@@ -432,7 +432,7 @@ export function createReplyOperation(params: {
 
   const abortWithReason = (
     reason: ReplyBackendCancelReason,
-    abortReason: unknown,
+    abortReason: any,
     opts?: { abortedCode?: ReplyOperationAbortCode },
   ) => {
     if (opts?.abortedCode && !result) {
@@ -727,7 +727,7 @@ export function abortReplyRunBySessionId(sessionId: string): boolean {
   return true;
 }
 
-export function forceClearReplyRunBySessionId(sessionId: string, cause?: unknown): boolean {
+export function forceClearReplyRunBySessionId(sessionId: string, cause?: any): boolean {
   const operation = resolveReplyRunForCurrentSessionId(sessionId);
   if (!operation) {
     return false;

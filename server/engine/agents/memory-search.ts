@@ -10,7 +10,7 @@ export type ResolvedMemorySearchConfig = {
   extraPaths: string[];
   provider: string;
   model: string;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 export type ResolvedMemorySearchSyncConfig = {
@@ -21,10 +21,10 @@ export type ResolvedMemorySearchSyncConfig = {
   intervalMinutes: number;
 };
 
-export function resolveMemorySearchConfig(_cfg: unknown, _agentId: string): ResolvedMemorySearchConfig | null {
+export function resolveMemorySearchConfig(_cfg: any, _agentId: string): ResolvedMemorySearchConfig | null {
   return null;
 }
 
-export function resolveMemorySearchSyncConfig(_cfg: unknown, _agentId: string): ResolvedMemorySearchSyncConfig | null {
+export function resolveMemorySearchSyncConfig(_cfg: any, _agentId: string): ResolvedMemorySearchSyncConfig | null {
   return null;
 }

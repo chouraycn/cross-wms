@@ -35,7 +35,7 @@ vi.mock("../llm/stream.js", async () => {
   const original = await vi.importActual<typeof import("../llm/stream.js")>("../llm/stream.js");
   return {
     ...original,
-    streamSimple: (...args: unknown[]) => streamSimpleMock(...args),
+    streamSimple: (...args: any[]) => streamSimpleMock(...args),
   };
 });
 
@@ -45,39 +45,39 @@ vi.mock("node:fs/promises", async () => {
     ...actual,
     default: {
       ...actual,
-      readFile: (...args: unknown[]) => readFileMock(...args),
+      readFile: (...args: any[]) => readFileMock(...args),
     },
-    readFile: (...args: unknown[]) => readFileMock(...args),
+    readFile: (...args: any[]) => readFileMock(...args),
   };
 });
 
 vi.mock("./sessions/session-manager.js", () => ({
-  buildSessionContext: (...args: unknown[]) => buildSessionContextMock(...args),
+  buildSessionContext: (...args: any[]) => buildSessionContextMock(...args),
   generateSummary: vi.fn(async () => "summary"),
-  migrateSessionEntries: (...args: unknown[]) => migrateSessionEntriesMock(...args),
-  parseSessionEntries: (...args: unknown[]) => parseSessionEntriesMock(...args),
+  migrateSessionEntries: (...args: any[]) => migrateSessionEntriesMock(...args),
+  parseSessionEntries: (...args: any[]) => parseSessionEntriesMock(...args),
 }));
 
 vi.mock("./models-config.js", () => ({
-  ensureOpenClawModelsJson: (...args: unknown[]) => ensureOpenClawModelsJsonMock(...args),
+  ensureOpenClawModelsJson: (...args: any[]) => ensureOpenClawModelsJsonMock(...args),
 }));
 
 vi.mock("./agent-model-discovery.js", () => ({
-  discoverAuthStorage: (...args: unknown[]) => discoverAuthStorageMock(...args),
-  discoverModels: (...args: unknown[]) => discoverModelsMock(...args),
+  discoverAuthStorage: (...args: any[]) => discoverAuthStorageMock(...args),
+  discoverModels: (...args: any[]) => discoverModelsMock(...args),
 }));
 
 vi.mock("./embedded-agent-runner/model.js", () => ({
-  resolveModelAsync: (...args: unknown[]) => resolveModelAsyncMock(...args),
-  resolveModelWithRegistry: (...args: unknown[]) => resolveModelWithRegistryMock(...args),
+  resolveModelAsync: (...args: any[]) => resolveModelAsyncMock(...args),
+  resolveModelWithRegistry: (...args: any[]) => resolveModelWithRegistryMock(...args),
 }));
 
 vi.mock("./model-auth.js", () => ({
-  ensureAuthProfileStore: (...args: unknown[]) => ensureAuthProfileStoreMock(...args),
-  ensureAuthProfileStoreWithoutExternalProfiles: (...args: unknown[]) =>
+  ensureAuthProfileStore: (...args: any[]) => ensureAuthProfileStoreMock(...args),
+  ensureAuthProfileStoreWithoutExternalProfiles: (...args: any[]) =>
     ensureAuthProfileStoreWithoutExternalProfilesMock(...args),
-  getApiKeyForModel: (...args: unknown[]) => getApiKeyForModelMock(...args),
-  requireApiKey: (...args: unknown[]) => requireApiKeyMock(...args),
+  getApiKeyForModel: (...args: any[]) => getApiKeyForModelMock(...args),
+  requireApiKey: (...args: any[]) => requireApiKeyMock(...args),
 }));
 
 vi.mock("./model-runtime-aliases.js", () => ({
@@ -125,52 +125,52 @@ vi.mock("./model-runtime-aliases.js", () => ({
 }));
 
 vi.mock("./cli-runner/prepare.runtime.js", () => ({
-  prepareCliRunContext: (...args: unknown[]) => prepareCliRunContextMock(...args),
+  prepareCliRunContext: (...args: any[]) => prepareCliRunContextMock(...args),
 }));
 
 vi.mock("./cli-runner/execute.runtime.js", () => ({
-  executePreparedCliRun: (...args: unknown[]) => executePreparedCliRunMock(...args),
+  executePreparedCliRun: (...args: any[]) => executePreparedCliRunMock(...args),
 }));
 
 vi.mock("./harness/runtime-plugin.js", () => ({
-  ensureSelectedAgentHarnessPlugin: (...args: unknown[]) =>
+  ensureSelectedAgentHarnessPlugin: (...args: any[]) =>
     ensureSelectedAgentHarnessPluginMock(...args),
 }));
 
 vi.mock("./embedded-agent-runner/runs.js", () => ({
-  getActiveEmbeddedRunSnapshot: (...args: unknown[]) => getActiveEmbeddedRunSnapshotMock(...args),
+  getActiveEmbeddedRunSnapshot: (...args: any[]) => getActiveEmbeddedRunSnapshotMock(...args),
 }));
 
 vi.mock("./agent-scope.js", () => ({
-  listAgentEntries: (...args: unknown[]) => listAgentEntriesMock(...args),
+  listAgentEntries: (...args: any[]) => listAgentEntriesMock(...args),
   resolveAgentConfig: (cfg: { agents?: { list?: Array<{ id?: string }> } }, agentId: string) =>
     cfg.agents?.list?.find((entry) => entry.id === agentId),
-  resolveSessionAgentIds: (...args: unknown[]) => resolveSessionAgentIdsMock(...args),
-  resolveSessionAgentId: (...args: unknown[]) => resolveSessionAgentIdMock(...args),
-  resolveAgentWorkspaceDir: (...args: unknown[]) => resolveAgentWorkspaceDirMock(...args),
+  resolveSessionAgentIds: (...args: any[]) => resolveSessionAgentIdsMock(...args),
+  resolveSessionAgentId: (...args: any[]) => resolveSessionAgentIdMock(...args),
+  resolveAgentWorkspaceDir: (...args: any[]) => resolveAgentWorkspaceDirMock(...args),
 }));
 
 vi.mock("../plugins/provider-runtime.js", () => ({
-  prepareProviderRuntimeAuth: (...args: unknown[]) => prepareProviderRuntimeAuthMock(...args),
+  prepareProviderRuntimeAuth: (...args: any[]) => prepareProviderRuntimeAuthMock(...args),
 }));
 
 vi.mock("./provider-stream.js", () => ({
-  registerProviderStreamForModel: (...args: unknown[]) =>
+  registerProviderStreamForModel: (...args: any[]) =>
     registerProviderStreamForModelMock(...args),
 }));
 
 vi.mock("./embedded-agent-runner/stream-resolution.js", () => ({
-  resolveEmbeddedAgentStreamFn: (...args: unknown[]) => resolveEmbeddedAgentStreamFnMock(...args),
+  resolveEmbeddedAgentStreamFn: (...args: any[]) => resolveEmbeddedAgentStreamFnMock(...args),
 }));
 
 vi.mock("./auth-profiles/session-override.js", () => ({
-  resolveSessionAuthProfileOverride: (...args: unknown[]) =>
+  resolveSessionAuthProfileOverride: (...args: any[]) =>
     resolveSessionAuthProfileOverrideMock(...args),
 }));
 
 vi.mock("../logging/diagnostic.js", () => ({
   diagnosticLogger: {
-    debug: (...args: unknown[]) => diagDebugMock(...args),
+    debug: (...args: any[]) => diagDebugMock(...args),
   },
 }));
 
@@ -197,7 +197,7 @@ const DEFAULT_USAGE = {
   cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
 };
 
-function makeAsyncEvents(events: unknown[]) {
+function makeAsyncEvents(events: any[]) {
   // Minimal async iterable that matches provider stream shape without loading
   // real model/runtime infrastructure.
   return {
@@ -218,7 +218,7 @@ function createSessionEntry(overrides: Partial<SessionEntry> = {}): SessionEntry
   };
 }
 
-function createAssistantDoneEvent(content: unknown[]) {
+function createAssistantDoneEvent(content: any[]) {
   // Done events include usage/provider metadata because BTW persists the reply
   // as a normal assistant turn.
   return {
@@ -275,7 +275,7 @@ function clearBuiltSessionMessages() {
   buildSessionContextMock.mockReturnValue({ messages: [] });
 }
 
-function createUserTranscriptMessage(content: unknown[] = [{ type: "text", text: "seed" }]) {
+function createUserTranscriptMessage(content: any[] = [{ type: "text", text: "seed" }]) {
   return {
     role: "user",
     content,
@@ -284,7 +284,7 @@ function createUserTranscriptMessage(content: unknown[] = [{ type: "text", text:
 }
 
 function createAssistantTranscriptMessage(
-  content: unknown,
+  content: any,
   overrides: {
     stopReason?: string;
     output?: number;
@@ -307,7 +307,7 @@ function createAssistantTranscriptMessage(
   };
 }
 
-function createTranscriptEntry(params: { id: string; parentId?: string | null; message: unknown }) {
+function createTranscriptEntry(params: { id: string; parentId?: string | null; message: any }) {
   return {
     type: "message",
     id: params.id,
@@ -316,11 +316,11 @@ function createTranscriptEntry(params: { id: string; parentId?: string | null; m
   };
 }
 
-function mockTranscriptEntries(entries: unknown[]) {
+function mockTranscriptEntries(entries: any[]) {
   parseSessionEntriesMock.mockReturnValue(entries);
 }
 
-function mockActiveTranscript(messages: unknown[]) {
+function mockActiveTranscript(messages: any[]) {
   getActiveEmbeddedRunSnapshotMock.mockReturnValue({
     transcriptLeafId: "assistant-1",
     messages,
@@ -328,9 +328,9 @@ function mockActiveTranscript(messages: unknown[]) {
 }
 
 function mockCall(
-  mockFn: { mock: { calls: ReadonlyArray<ReadonlyArray<unknown>> } },
+  mockFn: { mock: { calls: ReadonlyArray<ReadonlyArray<any>> } },
   callIndex = 0,
-): ReadonlyArray<unknown> {
+): ReadonlyArray<any> {
   const call = mockFn.mock.calls[callIndex];
   if (!call) {
     throw new Error(`Expected mock call ${callIndex + 1}`);
@@ -339,10 +339,10 @@ function mockCall(
 }
 
 function mockArg(
-  mockFn: { mock: { calls: ReadonlyArray<ReadonlyArray<unknown>> } },
+  mockFn: { mock: { calls: ReadonlyArray<ReadonlyArray<any>> } },
   callIndex: number,
   argIndex: number,
-): unknown {
+): any {
   return mockCall(mockFn, callIndex)[argIndex];
 }
 
@@ -354,13 +354,13 @@ async function runMathSideQuestionAndCaptureContext() {
 }
 
 function expectRecordFields(
-  record: unknown,
-  expected: Record<string, unknown>,
-): Record<string, unknown> {
+  record: any,
+  expected: Record<string, any>,
+): Record<string, any> {
   if (!record || typeof record !== "object") {
     throw new Error("Expected record");
   }
-  const actual = record as Record<string, unknown>;
+  const actual = record as Record<string, any>;
   for (const [key, value] of Object.entries(expected)) {
     expect(actual[key]).toEqual(value);
   }
@@ -368,43 +368,43 @@ function expectRecordFields(
 }
 
 function streamContext(callIndex = 0): {
-  messages?: Array<Record<string, unknown>>;
-  systemPrompt?: unknown;
+  messages?: Array<Record<string, any>>;
+  systemPrompt?: any;
 } {
   const call = streamSimpleMock.mock.calls[callIndex];
   if (!call) {
     throw new Error(`Expected streamSimple call at index ${callIndex}`);
   }
   return (call[1] ?? {}) as {
-    messages?: Array<Record<string, unknown>>;
-    systemPrompt?: unknown;
+    messages?: Array<Record<string, any>>;
+    systemPrompt?: any;
   };
 }
 
-function contextMessages(context: unknown): Array<Record<string, unknown>> {
-  const messages = (context as { messages?: Array<Record<string, unknown>> }).messages;
+function contextMessages(context: any): Array<Record<string, any>> {
+  const messages = (context as { messages?: Array<Record<string, any>> }).messages;
   if (!messages) {
     throw new Error("Expected BTW context messages");
   }
   return messages;
 }
 
-function expectTextBlockContains(block: unknown, text: string): void {
+function expectTextBlockContains(block: any, text: string): void {
   const record = expectRecordFields(block, { type: "text" });
   expect(typeof record.text).toBe("string");
   expect(record.text).toContain(text);
 }
 
-function firstTextBlockIncludes(message: Record<string, unknown>, text: string): boolean {
+function firstTextBlockIncludes(message: Record<string, any>, text: string): boolean {
   if (!Array.isArray(message.content)) {
     return false;
   }
   const [block] = message.content;
-  const blockText = (block as { text?: unknown } | undefined)?.text;
+  const blockText = (block as { text?: any } | undefined)?.text;
   return typeof blockText === "string" && blockText.includes(text);
 }
 
-function expectNoAssistantMessages(context: unknown) {
+function expectNoAssistantMessages(context: any) {
   expect(
     (context as { messages?: Array<{ role?: string }> }).messages?.filter(
       (message) => message.role === "assistant",
@@ -412,7 +412,7 @@ function expectNoAssistantMessages(context: unknown) {
   ).toHaveLength(0);
 }
 
-function expectSanitizedAssistantContext(context: unknown, text: string) {
+function expectSanitizedAssistantContext(context: any, text: string) {
   const messages = contextMessages(context);
   expect(messages).toHaveLength(3);
   expectRecordFields(messages[0], { role: "user" });
@@ -423,7 +423,7 @@ function expectSanitizedAssistantContext(context: unknown, text: string) {
   expectRecordFields(messages[2], { role: "user" });
 }
 
-function expectSeedOnlyUserContext(context: unknown) {
+function expectSeedOnlyUserContext(context: any) {
   const messages = contextMessages(context);
   expect(messages).toHaveLength(2);
   expectRecordFields(messages[0], {
@@ -480,7 +480,7 @@ describe("runBtwSideQuestion", () => {
         },
       }),
     ]);
-    buildSessionContextMock.mockImplementation((entries: Array<{ message?: unknown }> = []) => {
+    buildSessionContextMock.mockImplementation((entries: Array<{ message?: any }> = []) => {
       return { messages: entries.flatMap((entry) => (entry.message ? [entry.message] : [])) };
     });
     resolveModelWithRegistryMock.mockReturnValue({
@@ -501,7 +501,7 @@ describe("runBtwSideQuestion", () => {
     prepareProviderRuntimeAuthMock.mockResolvedValue(undefined);
     registerProviderStreamForModelMock.mockReturnValue(undefined);
     resolveEmbeddedAgentStreamFnMock.mockImplementation(
-      (params: { currentStreamFn: unknown; providerStreamFn?: unknown }) => {
+      (params: { currentStreamFn: any; providerStreamFn?: any }) => {
         return params.providerStreamFn ?? params.currentStreamFn;
       },
     );
@@ -966,8 +966,8 @@ describe("runBtwSideQuestion", () => {
     });
 
     const prepareParams = mockArg(prepareCliRunContextMock, 0, 0) as {
-      timeoutMs?: unknown;
-      runTimeoutOverrideMs?: unknown;
+      timeoutMs?: any;
+      runTimeoutOverrideMs?: any;
     };
     expect(prepareParams.timeoutMs).toBe(MAX_TIMER_TIMEOUT_MS);
     expect(prepareParams.runTimeoutOverrideMs).toBe(MAX_TIMER_TIMEOUT_MS);
@@ -1247,9 +1247,9 @@ describe("runBtwSideQuestion", () => {
     expectRecordFields(mockArg(getApiKeyForModelMock, 0, 0), {
       profileId: "anthropic:api",
     });
-    expect((mockArg(getApiKeyForModelMock, 0, 0) as { store?: unknown }).store).toBeUndefined();
+    expect((mockArg(getApiKeyForModelMock, 0, 0) as { store?: any }).store).toBeUndefined();
     expectRecordFields(
-      (mockArg(prepareProviderRuntimeAuthMock, 0, 0) as { context?: unknown }).context,
+      (mockArg(prepareProviderRuntimeAuthMock, 0, 0) as { context?: any }).context,
       {
         profileId: "anthropic:api",
         authMode: "api-key",
@@ -1287,9 +1287,9 @@ describe("runBtwSideQuestion", () => {
     expectRecordFields(mockArg(getApiKeyForModelMock, 0, 0), {
       profileId: "anthropic:api",
     });
-    expect((mockArg(getApiKeyForModelMock, 0, 0) as { store?: unknown }).store).toBeUndefined();
+    expect((mockArg(getApiKeyForModelMock, 0, 0) as { store?: any }).store).toBeUndefined();
     expectRecordFields(
-      (mockArg(prepareProviderRuntimeAuthMock, 0, 0) as { context?: unknown }).context,
+      (mockArg(prepareProviderRuntimeAuthMock, 0, 0) as { context?: any }).context,
       {
         profileId: "anthropic:api",
         authMode: "api-key",
@@ -1436,8 +1436,8 @@ describe("runBtwSideQuestion", () => {
     await runSideQuestion();
 
     const options = mockArg(streamSimpleMock, 0, 2);
-    const onPayload = (options as { onPayload?: (payload: unknown) => void })?.onPayload;
-    const payloadWithEmptyTools = { messages: [], tools: [] as unknown[] };
+    const onPayload = (options as { onPayload?: (payload: any) => void })?.onPayload;
+    const payloadWithEmptyTools = { messages: [], tools: [] as any[] };
 
     const result = onPayload?.(payloadWithEmptyTools);
 
@@ -1477,7 +1477,7 @@ describe("runBtwSideQuestion", () => {
   });
 
   it("forces provider reasoning off even when the session think level is adaptive", async () => {
-    streamSimpleMock.mockImplementation((_model, _input, options?: { reasoning?: unknown }) => {
+    streamSimpleMock.mockImplementation((_model, _input, options?: { reasoning?: any }) => {
       return options?.reasoning === undefined
         ? makeAsyncEvents([createDoneEvent("Final answer.")])
         : makeAsyncEvents([createThinkingOnlyDoneEvent("thinking only")]);
@@ -1487,7 +1487,7 @@ describe("runBtwSideQuestion", () => {
 
     expect(result).toEqual({ text: "Final answer." });
     const options = mockArg(streamSimpleMock, 0, 2);
-    expect((options as { reasoning?: unknown } | undefined)?.reasoning).toBeUndefined();
+    expect((options as { reasoning?: any } | undefined)?.reasoning).toBeUndefined();
   });
 
   it("fails when the current branch has no messages", async () => {
@@ -1548,7 +1548,7 @@ describe("runBtwSideQuestion", () => {
     const [message] = contextMessages(streamContext());
     expectRecordFields(message, { role: "user" });
     expectTextBlockContains(
-      (message.content as Array<unknown>)[0],
+      (message.content as Array<any>)[0],
       "<in_flight_main_task>\nbuild me a tic-tac-toe game in brainfuck\n</in_flight_main_task>",
     );
   });
@@ -1856,7 +1856,7 @@ describe("runBtwSideQuestion", () => {
     );
     const assistantContentTypes = assistantMessages.flatMap((message) =>
       Array.isArray(message.content)
-        ? message.content.map((block) => (block as { type?: unknown }).type)
+        ? message.content.map((block) => (block as { type?: any }).type)
         : [],
     );
     expect(assistantContentTypes).not.toContain("toolCall");
@@ -1918,7 +1918,7 @@ describe("runBtwSideQuestion", () => {
       .filter((message) => message.role === "assistant")
       .flatMap((message) =>
         Array.isArray(message.content)
-          ? message.content.map((block) => (block as { type?: unknown }).type)
+          ? message.content.map((block) => (block as { type?: any }).type)
           : [],
       );
     expect(assistantContentTypes).not.toContain("thinking");

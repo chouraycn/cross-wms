@@ -28,7 +28,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 mocks.withProgress.mockImplementation(
-  async (_opts: unknown, run: (progress: unknown) => unknown) => await run(mocks.progress),
+  async (_opts: any, run: (progress: any) => unknown) => await run(mocks.progress),
 );
 
 vi.mock("../config/config.js", () => ({
@@ -242,18 +242,18 @@ function codexPluginPlan(overrides: Partial<MigrationPlan> = {}): MigrationPlan 
 
 type MockCallSource = {
   mock: {
-    calls: ReadonlyArray<ReadonlyArray<unknown>>;
+    calls: ReadonlyArray<ReadonlyArray<any>>;
   };
 };
 
 type MigrationSelectionPrompt = {
-  initialValues?: unknown;
-  message?: unknown;
-  options?: Array<{ hint?: unknown; label?: unknown; value?: unknown }>;
-  required?: unknown;
+  initialValues?: any;
+  message?: any;
+  options?: Array<{ hint?: any; label?: any; value?: any }>;
+  required?: any;
 };
 
-function mockCall(source: MockCallSource, callIndex = 0): ReadonlyArray<unknown> {
+function mockCall(source: MockCallSource, callIndex = 0): ReadonlyArray<any> {
   const call = source.mock.calls[callIndex];
   if (!call) {
     throw new Error(`Expected mock call ${callIndex}`);
@@ -269,8 +269,8 @@ function multiselectPrompt(callIndex = 0): MigrationSelectionPrompt {
   return mockArg(mocks.multiselect, callIndex, 0) as MigrationSelectionPrompt;
 }
 
-function firstApplyContext(): Record<string, unknown> {
-  return mockArg(mocks.provider.apply, 0, 0) as Record<string, unknown>;
+function firstApplyContext(): Record<string, any> {
+  return mockArg(mocks.provider.apply, 0, 0) as Record<string, any>;
 }
 
 function firstAppliedPlan(): MigrationPlan {
@@ -769,10 +769,10 @@ describe("migrateApplyCommand", () => {
           (
             (
               appliedPlan.items.find((item) => item.id === "config:codex-plugins")!.details!
-                .value as Record<string, unknown>
-            ).config as Record<string, unknown>
-          ).codexPlugins as Record<string, unknown>
-        ).plugins as Record<string, unknown>,
+                .value as Record<string, any>
+            ).config as Record<string, any>
+          ).codexPlugins as Record<string, any>
+        ).plugins as Record<string, any>,
       ),
     ).toEqual(["gmail"]);
   });
@@ -1140,14 +1140,14 @@ describe("migrateApplyCommand", () => {
         details?: {
           value?: {
             time?: {
-              env?: Record<string, unknown>;
-              headers?: Record<string, unknown>;
+              env?: Record<string, any>;
+              headers?: Record<string, any>;
             };
           };
         };
       }>;
-      providerId?: unknown;
-      summary?: { planned?: unknown };
+      providerId?: any;
+      summary?: { planned?: any };
     };
     expect(logPayload.providerId).toBe("hermes");
     expect(logPayload.summary?.planned).toBe(1);
@@ -1285,7 +1285,7 @@ describe("migrateApplyCommand", () => {
     const result = await migrateApplyCommand(runtime, { provider: "hermes", yes: true });
 
     const backupCall = mockCall(mocks.backupCreateCommand);
-    expect(typeof (backupCall?.[0] as { log?: unknown } | undefined)?.log).toBe("function");
+    expect(typeof (backupCall?.[0] as { log?: any } | undefined)?.log).toBe("function");
     expect(backupCall?.[1]).toStrictEqual({ output: undefined, verify: true });
     const applyContext = firstApplyContext();
     expect(applyContext.backupPath).toBe("/tmp/openclaw-backup.tgz");
@@ -1333,18 +1333,18 @@ describe("migrateApplyCommand", () => {
     expect(logs).toHaveLength(1);
     expect(mocks.withProgress).not.toHaveBeenCalled();
     const logPayload = JSON.parse(logs[0] ?? "{}") as {
-      backupPath?: unknown;
+      backupPath?: any;
       items?: Array<{
         details?: {
           value?: {
             time?: {
-              env?: Record<string, unknown>;
-              headers?: Record<string, unknown>;
+              env?: Record<string, any>;
+              headers?: Record<string, any>;
             };
           };
         };
       }>;
-      providerId?: unknown;
+      providerId?: any;
     };
     expect(logPayload.providerId).toBe("hermes");
     expect(logPayload.backupPath).toBe("/tmp/openclaw-backup.tgz");
@@ -1385,7 +1385,7 @@ describe("migrateApplyCommand", () => {
     await migrateDefaultCommand(jsonRuntime, { provider: "hermes", yes: true, json: true });
 
     expect(logs).toHaveLength(1);
-    expect((JSON.parse(logs[0] ?? "{}") as { providerId?: unknown }).providerId).toBe("hermes");
+    expect((JSON.parse(logs[0] ?? "{}") as { providerId?: any }).providerId).toBe("hermes");
     expect(errors).toEqual(["provider planning", "provider applying"]);
   });
 
@@ -1438,9 +1438,9 @@ describe("migrateApplyCommand", () => {
 
     expect(logs).toHaveLength(1);
     const logPayload = JSON.parse(logs[0] ?? "{}") as {
-      providerId?: unknown;
-      reportDir?: unknown;
-      summary?: { errors?: unknown };
+      providerId?: any;
+      reportDir?: any;
+      summary?: { errors?: any };
     };
     expect(logPayload.providerId).toBe("hermes");
     expect(logPayload.summary?.errors).toBe(1);
@@ -1478,9 +1478,9 @@ describe("migrateApplyCommand", () => {
 
     expect(logs).toHaveLength(1);
     const logPayload = JSON.parse(logs[0] ?? "{}") as {
-      providerId?: unknown;
-      reportDir?: unknown;
-      summary?: { conflicts?: unknown };
+      providerId?: any;
+      reportDir?: any;
+      summary?: { conflicts?: any };
     };
     expect(logPayload.providerId).toBe("hermes");
     expect(logPayload.summary?.conflicts).toBe(1);
@@ -1507,8 +1507,8 @@ describe("migrateApplyCommand", () => {
 
     expect(logs).toHaveLength(1);
     const logPayload = JSON.parse(logs[0] ?? "{}") as {
-      providerId?: unknown;
-      summary?: { planned?: unknown };
+      providerId?: any;
+      summary?: { planned?: any };
     };
     expect(logPayload.providerId).toBe("hermes");
     expect(logPayload.summary?.planned).toBe(1);
@@ -1540,7 +1540,7 @@ describe("migrateApplyCommand", () => {
 
     expect(logs).toHaveLength(1);
     expect(errors).toEqual([]);
-    const logPayload = JSON.parse(logs[0] ?? "{}") as { warnings?: unknown };
+    const logPayload = JSON.parse(logs[0] ?? "{}") as { warnings?: any };
     expect(logPayload.warnings).toEqual([warning]);
   });
 });

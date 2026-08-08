@@ -24,10 +24,10 @@ function expectedContainer(nextSegment: string): "array" | "object" {
 }
 
 function parseArrayLeafTarget(
-  cursor: unknown,
+  cursor: any,
   leaf: string,
   segments: string[],
-): { array: unknown[]; index: number } | null {
+): { array: any[]; index: number } | null {
   if (!Array.isArray(cursor)) {
     return null;
   }
@@ -35,15 +35,15 @@ function parseArrayLeafTarget(
 }
 
 function traverseToLeafParent(params: {
-  root: unknown;
+  root: any;
   segments: string[];
   requireExistingSegment: boolean;
-}): unknown {
+}): any {
   if (params.segments.length === 0) {
     throw new Error("Target path is empty.");
   }
 
-  let cursor: unknown = params.root;
+  let cursor: any = params.root;
   for (let index = 0; index < params.segments.length - 1; index += 1) {
     const segment = params.segments[index] ?? "";
     if (Array.isArray(cursor)) {
@@ -77,11 +77,11 @@ function traverseToLeafParent(params: {
  * Reads a config path from object/array containers.
  * Missing containers, invalid array indexes, and scalar parents resolve to undefined.
  */
-export function getPath(root: unknown, segments: string[]): unknown {
+export function getPath(root: any, segments: string[]): any {
   if (segments.length === 0) {
     return undefined;
   }
-  let cursor: unknown = root;
+  let cursor: any = root;
   for (const segment of segments) {
     if (Array.isArray(cursor)) {
       const arrayIndex = parseArrayIndexSegment(segment);
@@ -104,14 +104,14 @@ export function getPath(root: unknown, segments: string[]): unknown {
  * Existing non-container parents fail so callers cannot silently change config shape.
  */
 export function setPathCreateStrict(
-  root: Record<string, unknown>,
+  root: Record<string, any>,
   segments: string[],
-  value: unknown,
+  value: any,
 ): boolean {
   if (segments.length === 0) {
     throw new Error("Target path is empty.");
   }
-  let cursor: unknown = root;
+  let cursor: any = root;
   let changed = false;
 
   for (let index = 0; index < segments.length - 1; index += 1) {
@@ -171,9 +171,9 @@ export function setPathCreateStrict(
  * Used by runtime resolution paths that must only replace values proven by source discovery.
  */
 export function setPathExistingStrict(
-  root: Record<string, unknown>,
+  root: Record<string, any>,
   segments: string[],
-  value: unknown,
+  value: any,
 ): boolean {
   const cursor = traverseToLeafParent({ root, segments, requireExistingSegment: true });
 
@@ -206,7 +206,7 @@ export function setPathExistingStrict(
  * Deletes an existing config path, returning whether anything was removed.
  * Array deletes compact with splice; object deletes remove only the concrete leaf key.
  */
-export function deletePathStrict(root: Record<string, unknown>, segments: string[]): boolean {
+export function deletePathStrict(root: Record<string, any>, segments: string[]): boolean {
   const cursor = traverseToLeafParent({ root, segments, requireExistingSegment: false });
 
   const leaf = segments[segments.length - 1] ?? "";

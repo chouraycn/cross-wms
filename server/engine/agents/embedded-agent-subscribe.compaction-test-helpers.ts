@@ -6,12 +6,12 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function seedSessionStore(..._args: unknown[]): unknown {
+export function seedSessionStore(..._args: any[]): any {
   return undefined;
 }
-export function readCompactionCount(..._args: unknown[]): unknown {
+export function readCompactionCount(..._args: any[]): any {
   return undefined;
 }
-export function waitForCompactionCount(..._args: unknown[]): unknown {
+export function waitForCompactionCount(..._args: any[]): any {
   return undefined;
 }

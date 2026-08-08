@@ -1,12 +1,12 @@
 import { normalizeOptionalLowercaseString, normalizeOptionalString } from "./string-coerce.js";
 
 /** Coerces entries to strings, trims them, and drops empty results. */
-export function normalizeStringEntries(list?: ReadonlyArray<unknown>) {
+export function normalizeStringEntries(list?: ReadonlyArray<any>) {
   return (list ?? []).map((entry) => normalizeOptionalString(String(entry)) ?? "").filter(Boolean);
 }
 
 /** Normalizes string entries and lowercases each retained value. */
-export function normalizeStringEntriesLower(list?: ReadonlyArray<unknown>) {
+export function normalizeStringEntriesLower(list?: ReadonlyArray<any>) {
   return normalizeStringEntries(list).map((entry) => normalizeOptionalLowercaseString(entry) ?? "");
 }
 
@@ -28,24 +28,24 @@ export function sortUniqueStrings(values: Iterable<string>): string[] {
 }
 
 /** Normalizes entries, removes duplicates, and preserves first-seen order. */
-export function normalizeUniqueStringEntries(values?: Iterable<unknown>): string[] {
+export function normalizeUniqueStringEntries(values?: Iterable<any>): string[] {
   return uniqueStrings(normalizeStringEntries(values ? [...values] : undefined));
 }
 
 /** Lowercases normalized entries, removes empties/duplicates, and preserves first-seen order. */
-export function normalizeUniqueStringEntriesLower(values?: Iterable<unknown>): string[] {
+export function normalizeUniqueStringEntriesLower(values?: Iterable<any>): string[] {
   return uniqueStrings(
     normalizeStringEntriesLower(values ? [...values] : undefined).filter(Boolean),
   );
 }
 
 /** Normalizes entries, removes duplicates, and returns sorted output. */
-export function normalizeSortedUniqueStringEntries(values?: Iterable<unknown>): string[] {
+export function normalizeSortedUniqueStringEntries(values?: Iterable<any>): string[] {
   return sortUniqueStrings(normalizeUniqueStringEntries(values));
 }
 
 /** Normalizes array-backed string lists and rejects non-array input as empty. */
-export function normalizeTrimmedStringList(value: unknown): string[] {
+export function normalizeTrimmedStringList(value: any): string[] {
   if (!Array.isArray(value)) {
     return [];
   }
@@ -56,23 +56,23 @@ export function normalizeTrimmedStringList(value: unknown): string[] {
 }
 
 /** Normalizes an array-backed string list and removes duplicates. */
-export function normalizeUniqueTrimmedStringList(value: unknown): string[] {
+export function normalizeUniqueTrimmedStringList(value: any): string[] {
   return uniqueStrings(normalizeTrimmedStringList(value));
 }
 
 /** Normalizes an array-backed string list, removes duplicates, and sorts it. */
-export function normalizeSortedUniqueTrimmedStringList(value: unknown): string[] {
+export function normalizeSortedUniqueTrimmedStringList(value: any): string[] {
   return sortUniqueStrings(normalizeTrimmedStringList(value));
 }
 
 /** Returns undefined instead of an empty normalized array-backed string list. */
-export function normalizeOptionalTrimmedStringList(value: unknown): string[] | undefined {
+export function normalizeOptionalTrimmedStringList(value: any): string[] | undefined {
   const normalized = normalizeTrimmedStringList(value);
   return normalized.length > 0 ? normalized : undefined;
 }
 
 /** Returns undefined for non-arrays but preserves an empty array for explicit arrays. */
-export function normalizeArrayBackedTrimmedStringList(value: unknown): string[] | undefined {
+export function normalizeArrayBackedTrimmedStringList(value: any): string[] | undefined {
   if (!Array.isArray(value)) {
     return undefined;
   }
@@ -80,7 +80,7 @@ export function normalizeArrayBackedTrimmedStringList(value: unknown): string[] 
 }
 
 /** Normalizes either a single string-like value or an array-backed string list. */
-export function normalizeSingleOrTrimmedStringList(value: unknown): string[] {
+export function normalizeSingleOrTrimmedStringList(value: any): string[] {
   if (Array.isArray(value)) {
     return normalizeTrimmedStringList(value);
   }
@@ -89,12 +89,12 @@ export function normalizeSingleOrTrimmedStringList(value: unknown): string[] {
 }
 
 /** Normalizes single-or-array string input and removes duplicates. */
-export function normalizeUniqueSingleOrTrimmedStringList(value: unknown): string[] {
+export function normalizeUniqueSingleOrTrimmedStringList(value: any): string[] {
   return uniqueStrings(normalizeSingleOrTrimmedStringList(value));
 }
 
 /** Parses either array entries or comma-separated string entries into trimmed values. */
-export function normalizeCsvOrLooseStringList(value: unknown): string[] {
+export function normalizeCsvOrLooseStringList(value: any): string[] {
   if (Array.isArray(value)) {
     return normalizeStringEntries(value);
   }

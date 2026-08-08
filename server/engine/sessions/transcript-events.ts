@@ -25,7 +25,7 @@ type SessionTranscriptUpdateFields = {
   agentId?: string;
   /** @deprecated Pre-SQLite compatibility mirror. Prefer `target.sessionId`. */
   sessionId?: string;
-  message?: unknown;
+  message?: any;
   messageId?: string;
   messageSeq?: number;
 };
@@ -172,6 +172,6 @@ function normalizeUpdateTarget(update: {
 }
 
 /** 返回正安全整数；非数字、非安全整数或 ≤ 0 返回 undefined。 */
-function asPositiveSafeInteger(value: unknown): number | undefined {
+function asPositiveSafeInteger(value: any): number | undefined {
   return typeof value === 'number' && Number.isSafeInteger(value) && value > 0 ? value : undefined;
 }

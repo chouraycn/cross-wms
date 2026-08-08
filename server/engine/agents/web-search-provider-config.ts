@@ -6,51 +6,51 @@
  */
 
 /** Reads the legacy top-level web search credential value. */
-export function getTopLevelCredentialValue(searchConfig?: Record<string, unknown>): unknown {
+export function getTopLevelCredentialValue(searchConfig?: Record<string, any>): any {
   return searchConfig?.apiKey;
 }
 
 /** Writes the legacy top-level web search credential value. */
 export function setTopLevelCredentialValue(
-  searchConfigTarget: Record<string, unknown>,
-  value: unknown,
+  searchConfigTarget: Record<string, any>,
+  value: any,
 ): void {
   searchConfigTarget.apiKey = value;
 }
 
 /** Reads a provider-scoped credential value from a web search config object. */
 export function getScopedCredentialValue(
-  searchConfig: Record<string, unknown> | undefined,
+  searchConfig: Record<string, any> | undefined,
   key: string,
-): unknown {
+): any {
   const scoped = searchConfig?.[key];
   if (!scoped || typeof scoped !== "object" || Array.isArray(scoped)) {
     return undefined;
   }
-  return (scoped as Record<string, unknown>).apiKey;
+  return (scoped as Record<string, any>).apiKey;
 }
 
 /** Writes a provider-scoped credential value, creating the scoped object when needed. */
 export function setScopedCredentialValue(
-  searchConfigTarget: Record<string, unknown>,
+  searchConfigTarget: Record<string, any>,
   key: string,
-  value: unknown,
+  value: any,
 ): void {
   const scoped = searchConfigTarget[key];
   if (!scoped || typeof scoped !== "object" || Array.isArray(scoped)) {
     searchConfigTarget[key] = { apiKey: value };
     return;
   }
-  (scoped as Record<string, unknown>).apiKey = value;
+  (scoped as Record<string, any>).apiKey = value;
 }
 
 /** Merges plugin web-search config into a provider-scoped legacy-compatible shape. */
 export function mergeScopedSearchConfig(
-  searchConfig: Record<string, unknown> | undefined,
+  searchConfig: Record<string, any> | undefined,
   key: string,
-  pluginConfig: Record<string, unknown> | undefined,
+  pluginConfig: Record<string, any> | undefined,
   options?: { mirrorApiKeyToTopLevel?: boolean },
-): Record<string, unknown> | undefined {
+): Record<string, any> | undefined {
   if (!pluginConfig) {
     return searchConfig;
   }
@@ -59,9 +59,9 @@ export function mergeScopedSearchConfig(
     searchConfig?.[key] &&
     typeof searchConfig[key] === "object" &&
     !Array.isArray(searchConfig[key])
-      ? (searchConfig[key] as Record<string, unknown>)
+      ? (searchConfig[key] as Record<string, any>)
       : {};
-  const next: Record<string, unknown> = { ...searchConfig };
+  const next: Record<string, any> = { ...searchConfig };
   const existingDescriptor = searchConfig
     ? Object.getOwnPropertyDescriptor(searchConfig, key)
     : undefined;
@@ -104,9 +104,9 @@ function isLegacyWebSearchProviderConfigKey(key: string): boolean {
 
 /** Resolves plugin-owned web-search config for a provider plugin id. */
 export function resolveProviderWebSearchPluginConfig(
-  config: Record<string, unknown> | undefined,
+  config: Record<string, any> | undefined,
   pluginId: string,
-): Record<string, unknown> | undefined {
+): Record<string, any> | undefined {
   if (!config) {
     return undefined;
   }
@@ -114,37 +114,37 @@ export function resolveProviderWebSearchPluginConfig(
   if (!plugins || typeof plugins !== "object" || Array.isArray(plugins)) {
     return undefined;
   }
-  const entries = (plugins as Record<string, unknown>).entries;
+  const entries = (plugins as Record<string, any>).entries;
   if (!entries || typeof entries !== "object" || Array.isArray(entries)) {
     return undefined;
   }
-  const entry = (entries as Record<string, unknown>)[pluginId];
+  const entry = (entries as Record<string, any>)[pluginId];
   if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
     return undefined;
   }
-  const entryConfig = (entry as Record<string, unknown>).config;
+  const entryConfig = (entry as Record<string, any>).config;
   if (!entryConfig || typeof entryConfig !== "object" || Array.isArray(entryConfig)) {
     return undefined;
   }
-  return (entryConfig as Record<string, unknown>).webSearch as Record<string, unknown> | undefined;
+  return (entryConfig as Record<string, any>).webSearch as Record<string, any> | undefined;
 }
 
-function ensureObject(target: Record<string, unknown>, key: string): Record<string, unknown> {
+function ensureObject(target: Record<string, any>, key: string): Record<string, any> {
   const current = target[key];
   if (current && typeof current === "object" && !Array.isArray(current)) {
-    return current as Record<string, unknown>;
+    return current as Record<string, any>;
   }
-  const next: Record<string, unknown> = {};
+  const next: Record<string, any> = {};
   target[key] = next;
   return next;
 }
 
 /** Writes a single plugin-owned web-search config value and enables the plugin entry if needed. */
 export function setProviderWebSearchPluginConfigValue(
-  configTarget: Record<string, unknown>,
+  configTarget: Record<string, any>,
   pluginId: string,
   key: string,
-  value: unknown,
+  value: any,
 ): void {
   const plugins = ensureObject(configTarget, "plugins");
   const entries = ensureObject(plugins, "entries");

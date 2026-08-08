@@ -93,7 +93,7 @@ const DEFAULT_BRIDGE_CONFIG: Required<CompactionBridgeConfig> = {
  * @returns 压缩决策
  */
 export function evaluateCompactionNeed(
-  messages: unknown[],
+  messages: any[],
   contextWindow: ContextWindowInfo,
   config?: CompactionBridgeConfig,
 ): CompactionDecision {
@@ -137,9 +137,9 @@ export function evaluateCompactionNeed(
  * @returns 压缩结果
  */
 export async function executeCompaction(
-  messages: unknown[],
+  messages: any[],
   contextWindow: ContextWindowInfo,
-  generateSummary: (messages: unknown[]) => Promise<string>,
+  generateSummary: (messages: any[]) => Promise<string>,
   config?: CompactionBridgeConfig,
 ): Promise<CompactionExecutionResult> {
   const cfg = { ...DEFAULT_BRIDGE_CONFIG, ...config };
@@ -173,8 +173,8 @@ export async function executeCompaction(
     maxSingleMessageTokens: cfg.maxSingleMessageTokens,
   };
 
-  let chunks: unknown[][] | undefined;
-  let oversizedPlan: { smallMessages: unknown[]; oversizedNotes: string[] } | undefined;
+  let chunks: any[][] | undefined;
+  let oversizedPlan: { smallMessages: any[]; oversizedNotes: string[] } | undefined;
 
   try {
     const workerResult = await submitChunkTask(workerInput);
@@ -231,7 +231,7 @@ export async function executeCompaction(
  * @returns 诊断信息
  */
 export function getCompactionDiagnostics(
-  messages: unknown[],
+  messages: any[],
   contextWindow: ContextWindowInfo,
 ): {
   totalMessages: number;

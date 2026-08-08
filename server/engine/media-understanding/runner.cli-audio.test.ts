@@ -9,12 +9,12 @@ import { withAudioFixture } from "./runner.test-utils.js";
 const runExecMock = vi.hoisted(() => vi.fn());
 
 vi.mock("../process/exec.js", () => ({
-  runExec: (...args: unknown[]) => runExecMock(...args),
+  runExec: (...args: any[]) => runExecMock(...args),
 }));
 
 let runCliEntry: typeof import("./runner.entries.js").runCliEntry;
 
-function requireFirstRunExecCall(): unknown[] {
+function requireFirstRunExecCall(): any[] {
   const [call] = runExecMock.mock.calls;
   if (!call) {
     throw new Error("expected runExec call");

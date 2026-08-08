@@ -57,7 +57,7 @@ export class GatewaySecretRefUnavailableError extends Error {
 
 /** Type guard for unresolved Gateway secret-ref errors, optionally scoped to a config path. */
 export function isGatewaySecretRefUnavailableError(
-  error: unknown,
+  error: any,
   expectedPath?: string,
 ): error is GatewaySecretRefUnavailableError {
   if (!(error instanceof GatewaySecretRefUnavailableError)) {
@@ -84,8 +84,8 @@ function throwUnresolvedGatewaySecretInput(path: string): never {
 
 /** Resolve direct token/password values with caller-selected env-vs-config precedence. */
 export function resolveGatewayCredentialsFromValues(params: {
-  configToken?: unknown;
-  configPassword?: unknown;
+  configToken?: any;
+  configPassword?: any;
   env?: NodeJS.ProcessEnv;
   tokenPrecedence?: GatewayCredentialPrecedence;
   passwordPrecedence?: GatewayCredentialPrecedence;

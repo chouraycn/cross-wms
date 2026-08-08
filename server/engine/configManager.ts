@@ -23,8 +23,8 @@ export interface ConfigEntry<T = unknown> {
 
 export interface ConfigChangeEvent {
   key: string;
-  oldValue: unknown;
-  newValue: unknown;
+  oldValue: any;
+  newValue: any;
   scope: ConfigScope;
   timestamp: number;
 }
@@ -296,7 +296,7 @@ class ConfigManager {
     return (entry?.value as T) ?? defaultValue;
   }
 
-  set(key: string, value: unknown, scope: ConfigScope = "global"): boolean {
+  set(key: string, value: any, scope: ConfigScope = "global"): boolean {
     const entry = this.entries.get(key);
     const oldValue = entry?.value;
 
@@ -336,7 +336,7 @@ class ConfigManager {
     return true;
   }
 
-  private validateValue(entry: ConfigEntry, value: unknown): boolean {
+  private validateValue(entry: ConfigEntry, value: any): boolean {
     if (entry.type === "number") {
       if (typeof value !== "number" || Number.isNaN(value)) return false;
       if (entry.min !== undefined && value < entry.min) return false;
@@ -445,8 +445,8 @@ class ConfigManager {
 
   // ========== Bulk Operations ==========
 
-  getBulk(keys: string[]): Record<string, unknown> {
-    const result: Record<string, unknown> = {};
+  getBulk(keys: string[]): Record<string, any> {
+    const result: Record<string, any> = {};
     for (const key of keys) {
       const entry = this.entries.get(key);
       if (entry) {
@@ -456,7 +456,7 @@ class ConfigManager {
     return result;
   }
 
-  setBulk(values: Record<string, unknown>, scope: ConfigScope = "global"): {
+  setBulk(values: Record<string, any>, scope: ConfigScope = "global"): {
     updated: string[];
     failed: string[];
   } {
@@ -495,8 +495,8 @@ class ConfigManager {
   exportConfig(options?: {
     scope?: ConfigScope;
     includeDefaults?: boolean;
-  }): Record<string, unknown> {
-    const result: Record<string, unknown> = {};
+  }): Record<string, any> {
+    const result: Record<string, any> = {};
     for (const [key, entry] of this.entries) {
       if (options?.scope && entry.scope !== options.scope) continue;
       if (!options?.includeDefaults && entry.value === entry.defaultValue) continue;
@@ -505,7 +505,7 @@ class ConfigManager {
     return result;
   }
 
-  importConfig(values: Record<string, unknown>, scope: ConfigScope = "global"): {
+  importConfig(values: Record<string, any>, scope: ConfigScope = "global"): {
     updated: string[];
     failed: string[];
   } {
@@ -560,7 +560,7 @@ export function getConfigValue<T = unknown>(key: string): T | undefined {
   return CONFIG_INSTANCE.get<T>(key);
 }
 
-export function setConfigValue(key: string, value: unknown): boolean {
+export function setConfigValue(key: string, value: any): boolean {
   return CONFIG_INSTANCE.set(key, value);
 }
 

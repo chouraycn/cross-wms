@@ -35,7 +35,7 @@ function decodeHtmlEntities(value: string): string {
 }
 
 /** Recursively decodes common HTML entities in string leaves of an object graph. */
-export function decodeHtmlEntitiesInObject(value: unknown): unknown {
+export function decodeHtmlEntitiesInObject(value: any): any {
   if (typeof value === "string") {
     return HTML_ENTITY_RE.test(value) ? decodeHtmlEntities(value) : value;
   }
@@ -43,8 +43,8 @@ export function decodeHtmlEntitiesInObject(value: unknown): unknown {
     return value.map(decodeHtmlEntitiesInObject);
   }
   if (value && typeof value === "object") {
-    const result: Record<string, unknown> = {};
-    for (const [key, entry] of Object.entries(value as Record<string, unknown>)) {
+    const result: Record<string, any> = {};
+    for (const [key, entry] of Object.entries(value as Record<string, any>)) {
       result[key] = decodeHtmlEntitiesInObject(entry);
     }
     return result;
@@ -54,9 +54,9 @@ export function decodeHtmlEntitiesInObject(value: unknown): unknown {
 
 const decodedToolCallArguments = new WeakSet<object>();
 
-function decodeToolCallArgumentsHtmlEntitiesInMessage(message: unknown): void {
+function decodeToolCallArgumentsHtmlEntitiesInMessage(message: any): void {
   visitObjectContentBlocks(message, (block) => {
-    const typedBlock = block as { type?: unknown; arguments?: unknown };
+    const typedBlock = block as { type?: any; arguments?: any };
     if (
       typedBlock.type !== "toolCall" ||
       typeof typedBlock.arguments !== "object" ||
@@ -75,7 +75,7 @@ function decodeToolCallArgumentsHtmlEntitiesInMessage(message: unknown): void {
 
 function wrapStreamMessageObjects(
   stream: MutableAssistantMessageEventStream,
-  transformMessage: (message: unknown) => void,
+  transformMessage: (message: any) => void,
 ): MutableAssistantMessageEventStream {
   const originalResult = stream.result.bind(stream);
   stream.result = async () => {
@@ -94,16 +94,16 @@ function wrapStreamMessageObjects(
         async next() {
           const result = await iterator.next();
           if (!result.done && result.value && typeof result.value === "object") {
-            const event = result.value as { partial?: unknown; message?: unknown };
+            const event = result.value as { partial?: any; message?: any };
             transformMessage(event.partial);
             transformMessage(event.message);
           }
           return result;
         },
-        async return(value?: unknown) {
+        async return(value?: any) {
           return iterator.return?.(value) ?? { done: true as const, value: undefined };
         },
-        async throw(error?: unknown) {
+        async throw(error?: any) {
           return iterator.throw?.(error) ?? { done: true as const, value: undefined };
         },
       };

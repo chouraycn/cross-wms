@@ -10,7 +10,7 @@ export type ConfiguredAgentHarnessRuntimeOptions = {
   includeImplicitRuntimePreferences?: boolean;
 };
 export function collectConfiguredAgentHarnessRuntimes(
-  _config: unknown,
+  _config: any,
   _options: ConfiguredAgentHarnessRuntimeOptions = {},
 ): string[] {
   return [];

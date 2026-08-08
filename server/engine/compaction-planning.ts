@@ -582,8 +582,8 @@ export interface CompactionQualityMetrics {
  * @param originalTokens 原始消息的 token 数
  */
 export function evaluateCompactionQuality(
-  originalMessages: Array<{ role: string; content: string; toolCalls?: unknown[]; tool_calls?: unknown[] }>,
-  compressedMessages: Array<{ role: string; content: string; toolCalls?: unknown[]; tool_calls?: unknown[] }>,
+  originalMessages: Array<{ role: string; content: string; toolCalls?: any[]; tool_calls?: any[] }>,
+  compressedMessages: Array<{ role: string; content: string; toolCalls?: any[]; tool_calls?: any[] }>,
   originalTokens: number,
 ): CompactionQualityMetrics {
   const compressedTokens = compressedMessages.reduce(

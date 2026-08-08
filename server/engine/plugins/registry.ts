@@ -18,7 +18,7 @@ import type { PluginCliRegistration } from "./registry-types.js";
 export interface RegistryEntry {
   pluginId: string;
   manifest: PluginManifest;
-  instance?: unknown;
+  instance?: any;
   capabilities: PluginCapabilityKind[];
   status: PluginStatus;
   registeredAt: number;
@@ -28,7 +28,7 @@ export interface RegistryEntry {
 class PluginRegistryImpl {
   private entries = new Map<string, RegistryEntry>();
   plugins: PluginRecord[] = [];
-  diagnostics: Array<Record<string, unknown>> = [];
+  diagnostics: Array<Record<string, any>> = [];
   hooks: Array<{ pluginId: string }> = [];
   typedHooks: Array<{ pluginId: string; hookName: string }> = [];
   tools: Array<{ pluginId: string }> = [];
@@ -123,7 +123,7 @@ class PluginRegistryImpl {
   }
 
   /** 更新实例 */
-  setInstance(pluginId: string, instance: unknown): boolean {
+  setInstance(pluginId: string, instance: any): boolean {
     const entry = this.entries.get(pluginId);
     if (!entry) return false;
     entry.instance = instance;
@@ -165,13 +165,13 @@ export function createPluginRegistry(): PluginRegistryImpl {
 }
 
 // Auto-generated stub exports (added by auto-fix-exports.mjs)
-export const createEmptyPluginRegistry: (...args: unknown[]) => unknown = undefined as unknown as (...args: unknown[]) => unknown;
+export const createEmptyPluginRegistry: (...args: any[]) => unknown = undefined as unknown as (...args: any[]) => unknown;
 
 // 降级类型桩：对应 openclaw 中 registry.ts 的完整类型/函数
 export interface PluginRecord {
   pluginId?: string;
   manifest?: PluginManifest;
-  instance?: unknown;
+  instance?: any;
   capabilities?: PluginCapabilityKind[];
   status?: PluginStatus;
   registeredAt?: number;
@@ -191,7 +191,7 @@ export interface PluginRecord {
   workspaceDir?: string;
   trustedOfficialInstall?: boolean;
   enabled?: boolean;
-  compat?: readonly unknown[];
+  compat?: readonly any[];
   explicitlyEnabled?: boolean;
   activated?: boolean;
   activationSource?: string;
@@ -217,23 +217,23 @@ export interface PluginRecord {
   contextEngineIds?: string[];
   memoryEmbeddingProviderIds?: string[];
   agentHarnessIds?: string[];
-  cliCommands?: unknown[];
-  services?: unknown[];
+  cliCommands?: any[];
+  services?: any[];
   gatewayDiscoveryServiceIds?: string[];
-  commands?: unknown[];
+  commands?: any[];
   httpRoutes?: number;
   hookCount?: number;
   configSchema?: boolean;
-  configUiHints?: unknown;
-  configJsonSchema?: unknown;
-  contracts?: unknown;
+  configUiHints?: any;
+  configJsonSchema?: any;
+  contracts?: any;
   error?: string;
   failedAt?: Date;
   failurePhase?: string | null;
 }
 export type PluginRegistry = PluginRegistryImpl;
-export type PluginHttpRouteRegistration = { [key: string]: unknown };
+export type PluginHttpRouteRegistration = { [key: string]: any };
 
-export function normalizeAnyChannelId(value: unknown): string {
+export function normalizeAnyChannelId(value: any): string {
   return typeof value === "string" ? value : String(value ?? "");
 }

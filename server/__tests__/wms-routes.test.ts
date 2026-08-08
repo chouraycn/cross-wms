@@ -84,11 +84,11 @@ vi.mock('node:path', async (importOriginal) => {
 // ===================== Mock DAO Data =====================
 
 // In-memory test data stores
-let qualityStore: Map<number, Record<string, unknown>>;
-let inventoryStore: Map<number, Record<string, unknown>>;
-let outboundStore: Map<number, Record<string, unknown>>;
-let alertStore: Map<number, Record<string, unknown>>;
-let reportStore: Map<number, Record<string, unknown>>;
+let qualityStore: Map<number, Record<string, any>>;
+let inventoryStore: Map<number, Record<string, any>>;
+let outboundStore: Map<number, Record<string, any>>;
+let alertStore: Map<number, Record<string, any>>;
+let reportStore: Map<number, Record<string, any>>;
 let nextId: Record<string, number>;
 
 function resetStores() {
@@ -101,7 +101,7 @@ function resetStores() {
 }
 
 // Helper to create a model-like record
-function makeQuality(overrides: Record<string, unknown> = {}) {
+function makeQuality(overrides: Record<string, any> = {}) {
   const id = nextId.quality++;
   const record = {
     id,
@@ -124,7 +124,7 @@ function makeQuality(overrides: Record<string, unknown> = {}) {
   return record;
 }
 
-function makeInventory(overrides: Record<string, unknown> = {}) {
+function makeInventory(overrides: Record<string, any> = {}) {
   const id = nextId.inventory++;
   const systemQty = (overrides.systemQuantity as number) ?? 100;
   const actualQty = (overrides.actualQuantity as number) ?? 100;
@@ -148,7 +148,7 @@ function makeInventory(overrides: Record<string, unknown> = {}) {
   return record;
 }
 
-function makeOutbound(overrides: Record<string, unknown> = {}) {
+function makeOutbound(overrides: Record<string, any> = {}) {
   const id = nextId.outbound++;
   const record = {
     id,
@@ -170,7 +170,7 @@ function makeOutbound(overrides: Record<string, unknown> = {}) {
   return record;
 }
 
-function makeAlert(overrides: Record<string, unknown> = {}) {
+function makeAlert(overrides: Record<string, any> = {}) {
   const id = nextId.alert++;
   const record = {
     id,
@@ -190,7 +190,7 @@ function makeAlert(overrides: Record<string, unknown> = {}) {
   return record;
 }
 
-function makeReport(overrides: Record<string, unknown> = {}) {
+function makeReport(overrides: Record<string, any> = {}) {
   const id = nextId.report++;
   const record = {
     id,
@@ -281,7 +281,7 @@ vi.mock('../dao/wmsSkillDao.js', () => {
 });
 
 import * as daoOriginal from '../dao/wmsSkillDao.js';
-const dao = vi.mocked(daoOriginal) as unknown;
+const dao = vi.mocked(daoOriginal) as any;
 
 // ===================== Test Server Helper =====================
 
@@ -332,7 +332,7 @@ describe('WMS Routes', () => {
     vi.clearAllMocks();
 
     // ---- Quality Mocks ----
-    dao.createQualityCheck.mockImplementation((check: Record<string, unknown>) => {
+    dao.createQualityCheck.mockImplementation((check: Record<string, any>) => {
       const record = makeQuality(check);
       return record.id;
     });
@@ -346,7 +346,7 @@ describe('WMS Routes', () => {
     dao.getQualityCheckById.mockImplementation((id: number) =>
       qualityStore.get(id) || undefined
     );
-    dao.updateQualityCheck.mockImplementation((id: number, updates: Record<string, unknown>) => {
+    dao.updateQualityCheck.mockImplementation((id: number, updates: Record<string, any>) => {
       const existing = qualityStore.get(id);
       if (!existing) return false;
       qualityStore.set(id, { ...existing, ...updates, updatedAt: new Date().toISOString() });
@@ -359,7 +359,7 @@ describe('WMS Routes', () => {
     });
 
     // ---- Inventory Mocks ----
-    dao.createInventoryCount.mockImplementation((count: Record<string, unknown>) => {
+    dao.createInventoryCount.mockImplementation((count: Record<string, any>) => {
       const record = makeInventory(count);
       return record.id;
     });
@@ -374,7 +374,7 @@ describe('WMS Routes', () => {
     dao.getInventoryCountById.mockImplementation((id: number) =>
       inventoryStore.get(id) || undefined
     );
-    dao.updateInventoryCount.mockImplementation((id: number, updates: Record<string, unknown>) => {
+    dao.updateInventoryCount.mockImplementation((id: number, updates: Record<string, any>) => {
       const existing = inventoryStore.get(id);
       if (!existing) return false;
       inventoryStore.set(id, { ...existing, ...updates, updatedAt: new Date().toISOString() });
@@ -394,7 +394,7 @@ describe('WMS Routes', () => {
     });
 
     // ---- Outbound Mocks ----
-    dao.createOutboundReview.mockImplementation((review: Record<string, unknown>) => {
+    dao.createOutboundReview.mockImplementation((review: Record<string, any>) => {
       const record = makeOutbound(review);
       return record.id;
     });
@@ -409,7 +409,7 @@ describe('WMS Routes', () => {
     dao.getOutboundReviewById.mockImplementation((id: number) =>
       outboundStore.get(id) || undefined
     );
-    dao.updateOutboundReview.mockImplementation((id: number, updates: Record<string, unknown>) => {
+    dao.updateOutboundReview.mockImplementation((id: number, updates: Record<string, any>) => {
       const existing = outboundStore.get(id);
       if (!existing) return false;
       outboundStore.set(id, { ...existing, ...updates, updatedAt: new Date().toISOString() });
@@ -417,7 +417,7 @@ describe('WMS Routes', () => {
     });
 
     // ---- Alert Mocks ----
-    dao.createAlert.mockImplementation((alert: Record<string, unknown>) => {
+    dao.createAlert.mockImplementation((alert: Record<string, any>) => {
       const record = makeAlert(alert);
       return record.id;
     });
@@ -446,7 +446,7 @@ describe('WMS Routes', () => {
     });
 
     // ---- Report Mocks ----
-    dao.createReport.mockImplementation((report: Record<string, unknown>) => {
+    dao.createReport.mockImplementation((report: Record<string, any>) => {
       const record = makeReport(report);
       return record.id;
     });
@@ -460,7 +460,7 @@ describe('WMS Routes', () => {
     dao.getReportById.mockImplementation((id: number) =>
       reportStore.get(id) || undefined
     );
-    dao.generateInventoryReport.mockImplementation((params?: Record<string, unknown>) => {
+    dao.generateInventoryReport.mockImplementation((params?: Record<string, any>) => {
       const record = makeReport({
         reportType: 'inventory',
         warehouseId: params?.warehouseId,

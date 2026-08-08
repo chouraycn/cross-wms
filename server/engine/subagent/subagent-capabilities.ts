@@ -241,7 +241,7 @@ export function clearCapabilities(): void {
   logger.debug('[SubagentCapabilities] Cleared all capabilities');
 }
 
-export function validateCapability(data: unknown): {
+export function validateCapability(data: any): {
   success: boolean;
   capability?: SubagentCapability;
   error?: string;

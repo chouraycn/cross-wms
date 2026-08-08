@@ -166,19 +166,19 @@ function createManifestlessClaudeBundleIndex(params: {
   });
 }
 
-function expectDiagnosticsContainCode(diagnostics: readonly { code?: unknown }[], code: string) {
+function expectDiagnosticsContainCode(diagnostics: readonly { code?: any }[], code: string) {
   expect(diagnostics.map((diagnostic) => diagnostic.code)).toContain(code);
 }
 
 function expectDiagnosticsContainSource(
-  diagnostics: readonly { source?: unknown }[],
+  diagnostics: readonly { source?: any }[],
   source: string,
 ) {
   expect(diagnostics.map((diagnostic) => diagnostic.source)).toContain(source);
 }
 
 function expectDiagnosticsDoNotContainSource(
-  diagnostics: readonly { source?: unknown }[],
+  diagnostics: readonly { source?: any }[],
   source: string,
 ) {
   expect(diagnostics.map((diagnostic) => diagnostic.source)).not.toContain(source);

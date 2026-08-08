@@ -180,9 +180,9 @@ export function registerMaintenanceCommands(program: Command) {
 function hasLintOnlyDoctorOptions(opts: {
   readonly json?: boolean;
   readonly postUpgrade?: boolean;
-  readonly severityMin?: unknown;
-  readonly skip?: unknown;
-  readonly only?: unknown;
+  readonly severityMin?: any;
+  readonly skip?: any;
+  readonly only?: any;
 }): boolean {
   return (
     (opts.json === true && opts.postUpgrade !== true) ||

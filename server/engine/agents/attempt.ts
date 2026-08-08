@@ -20,7 +20,7 @@ export type RunEmbeddedAttemptResult = {
  * This stub returns a skipped result so callers can test their integration
  * without the full agent runtime.
  */
-export function runEmbeddedAttempt(..._args: unknown[]): RunEmbeddedAttemptResult {
+export function runEmbeddedAttempt(..._args: any[]): RunEmbeddedAttemptResult {
   return {
     status: "skipped",
     reason: "runEmbeddedAttempt: embedded agent runner not available in cross-wms",

@@ -26,8 +26,8 @@ const mocks = vi.hoisted(() => ({
 
 type GatewayCall = {
   clientName?: string;
-  config?: unknown;
-  deviceIdentity?: unknown;
+  config?: any;
+  deviceIdentity?: any;
   method?: string;
   mode?: string;
   password?: string;
@@ -36,7 +36,7 @@ type GatewayCall = {
 };
 
 type GatewayProbeCall = {
-  auth?: unknown;
+  auth?: any;
   detailLevel?: string;
   preauthHandshakeTimeoutMs?: number;
   timeoutMs?: number;
@@ -47,7 +47,7 @@ type MemorySearchManagerCall = {
   agentId?: string;
   cfg: {
     plugins?: {
-      slots?: unknown;
+      slots?: any;
     };
   };
   purpose?: string;

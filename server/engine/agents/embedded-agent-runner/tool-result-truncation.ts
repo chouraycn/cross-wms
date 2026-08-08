@@ -256,7 +256,7 @@ export function getToolResultTextLength(msg: AgentMessage): number {
   if (!msg || (msg as { role?: string }).role !== "toolResult") {
     return 0;
   }
-  const content = (msg as { content?: unknown }).content;
+  const content = (msg as { content?: any }).content;
   if (!Array.isArray(content)) {
     return 0;
   }
@@ -287,7 +287,7 @@ export function truncateToolResultMessage(
     minKeepChars: options.minKeepChars ?? MIN_KEEP_CHARS,
     suffixFactory,
   });
-  const content = (msg as { content?: unknown }).content;
+  const content = (msg as { content?: any }).content;
   if (!Array.isArray(content)) {
     return msg;
   }
@@ -299,7 +299,7 @@ export function truncateToolResultMessage(
   }
 
   // Distribute the budget proportionally among text blocks
-  const newContent = content.map((block: unknown) => {
+  const newContent = content.map((block: any) => {
     if (!isToolResultTextBlock(block)) {
       return block; // Keep non-text blocks (images) as-is
     }
@@ -332,15 +332,15 @@ export function truncateToolResultMessage(
 }
 
 function isToolResultTextBlock(
-  block: unknown,
-): block is TextContent & { content?: unknown; type: "text" | "toolResult" } {
+  block: any,
+): block is TextContent & { content?: any; type: "text" | "toolResult" } {
   if (!block || typeof block !== "object") {
     return false;
   }
-  const type = (block as { type?: unknown }).type;
+  const type = (block as { type?: any }).type;
   return (
     (type === "text" || type === "toolResult") &&
-    typeof (block as { text?: unknown }).text === "string"
+    typeof (block as { text?: any }).text === "string"
   );
 }
 
@@ -496,8 +496,8 @@ function getToolResultProjectionBaseKey(message: AgentMessage): string | undefin
   if (message.role !== "toolResult") {
     return undefined;
   }
-  const toolCallId = (message as { toolCallId?: unknown }).toolCallId;
-  const timestamp = (message as { timestamp?: unknown }).timestamp;
+  const toolCallId = (message as { toolCallId?: any }).toolCallId;
+  const timestamp = (message as { timestamp?: any }).timestamp;
   const timestampKey = typeof timestamp === "number" ? `:${timestamp}` : "";
   if (typeof toolCallId === "string" && toolCallId.length > 0) {
     return `tool:${toolCallId}${timestampKey}`;
@@ -543,8 +543,8 @@ function mergeProjectedToolResultMessage(
   if (message.role !== "toolResult" || projectedMessage.role !== "toolResult") {
     return projectedMessage;
   }
-  const currentContent = (message as { content?: unknown }).content;
-  const projectedContent = (projectedMessage as { content?: unknown }).content;
+  const currentContent = (message as { content?: any }).content;
+  const projectedContent = (projectedMessage as { content?: any }).content;
   if (!Array.isArray(currentContent) || !Array.isArray(projectedContent)) {
     return projectedMessage;
   }
@@ -552,8 +552,8 @@ function mergeProjectedToolResultMessage(
     (block): block is { type: "text"; text: string } =>
       Boolean(block) &&
       typeof block === "object" &&
-      (block as { type?: unknown }).type === "text" &&
-      typeof (block as { text?: unknown }).text === "string",
+      (block as { type?: any }).type === "text" &&
+      typeof (block as { text?: any }).text === "string",
   );
   const currentText = getToolResultTextBlocks(message);
   if (sourceText && currentText.some((text, index) => text !== sourceText[index])) {
@@ -561,14 +561,14 @@ function mergeProjectedToolResultMessage(
   }
   const currentTextCount = currentContent.filter(
     (block) =>
-      Boolean(block) && typeof block === "object" && (block as { type?: unknown }).type === "text",
+      Boolean(block) && typeof block === "object" && (block as { type?: any }).type === "text",
   ).length;
   if (currentTextCount !== projectedText.length) {
     return message;
   }
   let textIndex = 0;
   const mergedContent = currentContent.map((block) => {
-    if (!block || typeof block !== "object" || (block as { type?: unknown }).type !== "text") {
+    if (!block || typeof block !== "object" || (block as { type?: any }).type !== "text") {
       return block;
     }
     const projectedBlock = projectedText[textIndex++];
@@ -578,14 +578,14 @@ function mergeProjectedToolResultMessage(
 }
 
 function getToolResultTextBlocks(message: AgentMessage): string[] {
-  const content = (message as { content?: unknown }).content;
+  const content = (message as { content?: any }).content;
   if (!Array.isArray(content)) {
     return [];
   }
   return content.flatMap((block) =>
-    block && typeof block === "object" && (block as { type?: unknown }).type === "text"
+    block && typeof block === "object" && (block as { type?: any }).type === "text"
       ? [
-          typeof (block as { text?: unknown }).text === "string"
+          typeof (block as { text?: any }).text === "string"
             ? (block as { text: string }).text
             : "",
         ]
@@ -706,14 +706,14 @@ function buildAggregateToolResultReplacements(params: {
 }
 
 function clearToolResultText(message: AgentMessage): AgentMessage {
-  const content = (message as { content?: unknown }).content;
+  const content = (message as { content?: any }).content;
   if (!Array.isArray(content)) {
     return message;
   }
   return {
     ...message,
     content: content.map((block) =>
-      block && typeof block === "object" && (block as { type?: unknown }).type === "text"
+      block && typeof block === "object" && (block as { type?: any }).type === "text"
         ? Object.assign({}, block, { text: "" })
         : block,
     ),
@@ -959,7 +959,7 @@ function truncateOversizedToolResultsInExistingSessionManager(params: {
     `[tool-result-truncation] Truncated ${rewriteResult.rewrittenEntries} tool result(s) in session ` +
       `(contextWindow=${contextWindowTokens} maxChars=${maxChars} aggregateBudgetChars=${aggregateBudgetChars} ` +
       `oversized=${plan.oversizedReplacementCount} aggregate=${plan.aggregateReplacementCount}) ` +
-      `sessionKey=${params.sessionKey ?? params.sessionId ?? "unknown"}`,
+      `sessionKey=${params.sessionKey ?? params.sessionId ?? "any"}`,
   );
 
   return {

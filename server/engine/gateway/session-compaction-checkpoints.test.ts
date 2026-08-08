@@ -49,21 +49,21 @@ function requireNonEmptyString(value: string | null | undefined, message: string
   return value;
 }
 
-function requireRecord(value: unknown, message: string): Record<string, unknown> {
+function requireRecord(value: any, message: string): Record<string, any> {
   if (!value || typeof value !== "object") {
     throw new Error(message);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function expectRecordFields(value: unknown, expected: Record<string, unknown>): void {
+function expectRecordFields(value: any, expected: Record<string, any>): void {
   const record = requireRecord(value, "expected record");
   for (const [key, expectedValue] of Object.entries(expected)) {
     expect(record[key]).toEqual(expectedValue);
   }
 }
 
-function expectNonEmptyStringField(value: unknown, message: string): string {
+function expectNonEmptyStringField(value: any, message: string): string {
   if (typeof value !== "string" || value.length === 0) {
     throw new Error(message);
   }
@@ -92,9 +92,9 @@ function checkpointConfig(storePath: string): OpenClawConfig {
 async function writeSessionStore(
   storePath: string,
   sessionKey: string,
-  entry: { sessionId: string; updatedAt: number; compactionCheckpoints?: unknown[] } & Record<
+  entry: { sessionId: string; updatedAt: number; compactionCheckpoints?: any[] } & Record<
     string,
-    unknown
+    any
   >,
 ): Promise<void> {
   await fs.writeFile(storePath, JSON.stringify({ [sessionKey]: entry }, null, 2), "utf-8");
@@ -362,7 +362,7 @@ describe("session-compaction-checkpoints", () => {
     const restoredEntries = (await fs.readFile(forked.sessionFile, "utf-8"))
       .trim()
       .split(/\r?\n/)
-      .map((line) => JSON.parse(line) as Record<string, unknown>);
+      .map((line) => JSON.parse(line) as Record<string, any>);
     expect(restoredEntries.at(-1)).toMatchObject({
       type: "message",
       parentId: "post-leaf-metadata",
@@ -571,13 +571,13 @@ describe("session-compaction-checkpoints", () => {
     }
 
     const forkedLines = (await fs.readFile(forked.sessionFile, "utf-8")).trim().split(/\r?\n/);
-    const forkedEntries = forkedLines.map((line) => JSON.parse(line) as Record<string, unknown>);
+    const forkedEntries = forkedLines.map((line) => JSON.parse(line) as Record<string, any>);
     const sourceEntries = (await fs.readFile(sessionFile, "utf-8"))
       .trim()
       .split(/\r?\n/)
       .flatMap((line) => {
         try {
-          return [JSON.parse(line) as Record<string, unknown>];
+          return [JSON.parse(line) as Record<string, any>];
         } catch {
           return [];
         }
@@ -628,7 +628,7 @@ describe("session-compaction-checkpoints", () => {
       throw new Error("expected forked checkpoint transcript");
     }
     const messages = SessionManager.open(forked.sessionFile, dir).buildSessionContext().messages;
-    expect(messages.map((message) => (message as { content?: unknown }).content)).toEqual([
+    expect(messages.map((message) => (message as { content?: any }).content)).toEqual([
       "checkpoint source",
     ]);
   });
@@ -696,7 +696,7 @@ describe("session-compaction-checkpoints", () => {
       "restored session file missing",
     );
     const messages = SessionManager.open(restoredSessionFile, dir).buildSessionContext().messages;
-    expect(messages.map((message) => (message as { content?: unknown }).content)).toEqual([
+    expect(messages.map((message) => (message as { content?: any }).content)).toEqual([
       "checkpoint source",
     ]);
     const nextStore = await readSessionStore<{ sessionFile?: string; totalTokens?: number }>(
@@ -760,7 +760,7 @@ describe("session-compaction-checkpoints", () => {
     const forkedEntries = (await fs.readFile(forked.sessionFile, "utf-8"))
       .trim()
       .split(/\r?\n/)
-      .map((line) => JSON.parse(line) as Record<string, unknown>);
+      .map((line) => JSON.parse(line) as Record<string, any>);
     expectRecordFields(forkedEntries[0], {
       type: "session",
       version: CURRENT_SESSION_VERSION,
@@ -787,7 +787,7 @@ describe("session-compaction-checkpoints", () => {
     expect(forkedEntries[2]?.id).not.toBe("");
 
     const messages = SessionManager.open(forked.sessionFile, dir).buildSessionContext().messages;
-    expect(messages.map((message) => (message as { content?: unknown }).content)).toEqual([
+    expect(messages.map((message) => (message as { content?: any }).content)).toEqual([
       "legacy first",
       "legacy second",
     ]);
@@ -853,7 +853,7 @@ describe("session-compaction-checkpoints", () => {
     const forkedEntries = (await fs.readFile(forked.sessionFile, "utf-8"))
       .trim()
       .split(/\r?\n/)
-      .map((line) => JSON.parse(line) as Record<string, unknown>);
+      .map((line) => JSON.parse(line) as Record<string, any>);
     expect(forkedEntries.map((entry) => entry.type)).toEqual(["session", "message", "message"]);
     expect(requireRecord(forkedEntries[1]?.message, "first forked message").content).toBe("first");
     expect(requireRecord(forkedEntries[2]?.message, "second forked message").content).toBe(
@@ -926,7 +926,7 @@ describe("session-compaction-checkpoints", () => {
     });
 
     expect(stored).toBeNull();
-    const nextStore = await readSessionStore<{ compactionCheckpoints?: unknown[] }>(storePath);
+    const nextStore = await readSessionStore<{ compactionCheckpoints?: any[] }>(storePath);
     expect(nextStore[MAIN_SESSION_KEY]?.compactionCheckpoints).toBeUndefined();
   });
 

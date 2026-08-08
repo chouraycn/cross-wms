@@ -311,7 +311,7 @@ router.post('/health-check', async (req: Request, res: Response) => {
             latency,
             checkedAt: new Date().toISOString(),
           });
-        } catch (fetchError: unknown) {
+        } catch (fetchError: any) {
           const isTimeout = fetchError instanceof Error && fetchError.name === 'AbortError';
           const status: HealthCheckItem['status'] = isTimeout ? 'timeout' : 'unhealthy';
           const message = isTimeout ? '连接超时（6秒）' : `连接失败`;
@@ -630,7 +630,7 @@ router.post('/test-connection', async (req: Request, res: Response) => {
       }
 
       return ok(res, { success: true, message, modelValid, models });
-    } catch (fetchError: unknown) {
+    } catch (fetchError: any) {
       if (fetchError instanceof Error && fetchError.name === 'AbortError') {
         return ok(res, { success: false, message: '连接超时（8秒）' });
       } else {

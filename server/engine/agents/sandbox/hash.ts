@@ -7,14 +7,14 @@
 import crypto from 'node:crypto';
 
 /** 将值稳定序列化为字符串（对象键名按字典序排序，保证序列化结果与键出现顺序无关） */
-function stableStringify(value: unknown): string {
+function stableStringify(value: any): string {
   if (value === null || typeof value !== 'object') {
     return JSON.stringify(value);
   }
   if (Array.isArray(value)) {
     return `[${value.map(stableStringify).join(',')}]`;
   }
-  const obj = value as Record<string, unknown>;
+  const obj = value as Record<string, any>;
   const keys = Object.keys(obj).sort();
   const entries = keys.map(
     (key) => `${JSON.stringify(key)}:${stableStringify(obj[key])}`,

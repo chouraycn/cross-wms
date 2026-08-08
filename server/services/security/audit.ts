@@ -8,7 +8,7 @@ export interface AuditLog {
   action: string;
   resource: string;
   resourceId: string;
-  details: Record<string, unknown>;
+  details: Record<string, any>;
   ipAddress: string;
   userAgent: string;
   timestamp: string;
@@ -107,7 +107,7 @@ export function logAudit(
   action: AuditAction,
   resource: AuditResource,
   resourceId: string,
-  details: Record<string, unknown> = {},
+  details: Record<string, any> = {},
   ipAddress: string = '',
   userAgent: string = '',
   success: boolean = true,
@@ -138,7 +138,7 @@ export function queryAuditLogs(params: AuditQueryParams): AuditQueryResult {
   } = params;
 
   let query = 'SELECT * FROM audit_logs WHERE 1=1';
-  const paramsArray: unknown[] = [];
+  const paramsArray: any[] = [];
 
   if (userId) {
     query += ' AND user_id = ?';
@@ -216,7 +216,7 @@ export function getAuditSummary(startTime?: string): {
   topResources: Array<{ resource: string; count: number }>;
 } {
   let baseQuery = 'SELECT * FROM audit_logs';
-  const params: unknown[] = [];
+  const params: any[] = [];
 
   if (startTime) {
     baseQuery += ' WHERE timestamp >= ?';

@@ -7,32 +7,32 @@
 
 type SupportedTransport = "sse" | "websocket" | "auto";
 
-function resolveSupportedTransport(value: unknown): SupportedTransport | undefined {
+function resolveSupportedTransport(value: any): SupportedTransport | undefined {
   return value === "sse" || value === "websocket" || value === "auto" ? value : undefined;
 }
 
 /** Resolve provider-specific extra params from model config. */
 export function resolveExtraParams(params: {
-  cfg?: Record<string, unknown>;
+  cfg?: Record<string, any>;
   provider: string;
   modelId: string;
   agentId?: string;
-}): Record<string, unknown> | undefined {
+}): Record<string, any> | undefined {
   const config = params.cfg;
   if (!config) {
     return undefined;
   }
-  const agents = config.agents as Record<string, unknown> | undefined;
-  const defaults = agents?.defaults as Record<string, unknown> | undefined;
-  const defaultParams = defaults?.params as Record<string, unknown> | undefined;
+  const agents = config.agents as Record<string, any> | undefined;
+  const defaults = agents?.defaults as Record<string, any> | undefined;
+  const defaultParams = defaults?.params as Record<string, any> | undefined;
 
-  const models = defaults?.models as Record<string, Record<string, unknown>> | undefined;
+  const models = defaults?.models as Record<string, Record<string, any>> | undefined;
   const modelConfig = models?.[`${params.provider}/${params.modelId}`] ?? models?.[params.modelId];
   const globalParams = modelConfig?.params ? { ...modelConfig.params } : undefined;
 
   const agentParams =
     params.agentId && Array.isArray(agents?.list)
-      ? (agents!.list as Array<Record<string, unknown>>).find((agent) => agent.id === params.agentId)?.params
+      ? (agents!.list as Array<Record<string, any>>).find((agent) => agent.id === params.agentId)?.params
       : undefined;
 
   const merged = Object.assign({}, defaultParams, globalParams, agentParams);
@@ -41,19 +41,19 @@ export function resolveExtraParams(params: {
 
 /** Resolve prepared extra params with caching. */
 export function resolvePreparedExtraParams(params: {
-  cfg?: Record<string, unknown>;
+  cfg?: Record<string, any>;
   provider: string;
   modelId: string;
   agentDir?: string;
   workspaceDir?: string;
-  extraParamsOverride?: Record<string, unknown>;
-  thinkingLevel?: unknown;
+  extraParamsOverride?: Record<string, any>;
+  thinkingLevel?: any;
   agentId?: string;
-  resolvedExtraParams?: Record<string, unknown>;
-  model?: unknown;
+  resolvedExtraParams?: Record<string, any>;
+  model?: any;
   resolvedTransport?: SupportedTransport;
-  providerRuntimeHandle?: unknown;
-}): Record<string, unknown> {
+  providerRuntimeHandle?: any;
+}): Record<string, any> {
   const resolvedExtraParams =
     params.resolvedExtraParams ??
     resolveExtraParams({
@@ -70,7 +70,7 @@ export function resolvePreparedExtraParams(params: {
 
   const merged = { ...resolvedExtraParams, ...override };
   // Strip prototype keys - use type assertion to avoid TS2790
-  const result: Record<string, unknown> = {};
+  const result: Record<string, any> = {};
   for (const key of Object.keys(merged)) {
     if (key !== '__proto__' && key !== 'prototype' && key !== 'constructor') {
       result[key] = merged[key];
@@ -81,8 +81,8 @@ export function resolvePreparedExtraParams(params: {
 
 /** Resolve transport override from extra params. */
 export function resolveAgentTransportOverride(params: {
-  settingsManager?: { getGlobalSettings: () => Record<string, unknown>; getProjectSettings: () => Record<string, unknown> };
-  effectiveExtraParams?: Record<string, unknown>;
+  settingsManager?: { getGlobalSettings: () => Record<string, any>; getProjectSettings: () => Record<string, any> };
+  effectiveExtraParams?: Record<string, any>;
 }): SupportedTransport | undefined {
   if (!params.settingsManager) {
     return undefined;
@@ -97,8 +97,8 @@ export function resolveAgentTransportOverride(params: {
 
 /** Resolve transport from explicit settings. */
 export function resolveExplicitSettingsTransport(params: {
-  settingsManager?: { getGlobalSettings: () => Record<string, unknown>; getProjectSettings: () => Record<string, unknown> };
-  sessionTransport: unknown;
+  settingsManager?: { getGlobalSettings: () => Record<string, any>; getProjectSettings: () => Record<string, any> };
+  sessionTransport: any;
 }): SupportedTransport | undefined {
   if (!params.settingsManager) {
     return undefined;
@@ -113,22 +113,22 @@ export function resolveExplicitSettingsTransport(params: {
 
 /** Apply extra params to an agent — simplified in cross-wms. */
 export function applyExtraParamsToAgent(
-  agent: { streamFn?: unknown },
-  cfg: Record<string, unknown> | undefined,
+  agent: { streamFn?: any },
+  cfg: Record<string, any> | undefined,
   provider: string,
   modelId: string,
-  extraParamsOverride?: Record<string, unknown>,
-  thinkingLevel?: unknown,
+  extraParamsOverride?: Record<string, any>,
+  thinkingLevel?: any,
   agentId?: string,
   workspaceDir?: string,
-  model?: unknown,
+  model?: any,
   agentDir?: string,
   resolvedTransport?: SupportedTransport,
   options?: {
-    preparedExtraParams?: Record<string, unknown>;
-    nativeWebSearchPolicyContext?: unknown;
+    preparedExtraParams?: Record<string, any>;
+    nativeWebSearchPolicyContext?: any;
   },
-): { effectiveExtraParams: Record<string, unknown> } {
+): { effectiveExtraParams: Record<string, any> } {
   const resolvedExtraParams = resolveExtraParams({ cfg, provider, modelId, agentId });
   const effectiveExtraParams =
     options?.preparedExtraParams ??

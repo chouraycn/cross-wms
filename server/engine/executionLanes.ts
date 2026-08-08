@@ -60,7 +60,7 @@ export interface LaneTask<T = unknown> {
   /** 错误信息 */
   error?: string;
   /** 任务执行结果 */
-  result?: unknown;
+  result?: any;
   /** 依赖的任务 ID 数组 */
   dependsOn?: string[];
   /** 父任务 ID - 用于嵌套任务的层级追踪 */
@@ -360,7 +360,7 @@ export class LaneManager {
    * @param taskId - 任务 ID
    * @param result - 任务执行结果
    */
-  completeTask(taskId: string, result?: unknown): void {
+  completeTask(taskId: string, result?: any): void {
     const task = this.taskStore.get(taskId);
     if (!task) {
       return;
@@ -732,7 +732,7 @@ export class LaneExecutionContext {
           results[currentIndex] = result;
         } catch {
           // 错误已在 runWithExecutor 中处理
-          results[currentIndex] = undefined as unknown as R;
+          results[currentIndex] = undefined as any as R;
         }
       }
     };

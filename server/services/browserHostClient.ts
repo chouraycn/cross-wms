@@ -34,7 +34,7 @@ const RESTART_BASE_DELAY = 1000; // 1s, 2s, 4s
 export interface BrowserHostResponse {
   id: string;
   ok: boolean;
-  output?: unknown;
+  output?: any;
   error?: string;
 }
 
@@ -204,7 +204,7 @@ function connectIpc(): Promise<void> {
 /**
  * 发送 IPC 命令并等待响应
  */
-export async function sendCommand(type: string, args: Record<string, unknown> = {}): Promise<BrowserHostResponse> {
+export async function sendCommand(type: string, args: Record<string, any> = {}): Promise<BrowserHostResponse> {
   const id = `req-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
   // 尝试连接 IPC
@@ -509,7 +509,7 @@ export async function renderContent(options: {
 export async function executeJs(options: {
   script: string;
   returnHtml?: boolean;
-}): Promise<{ ok: boolean; result?: unknown; html?: string; url?: string; error?: string }> {
+}): Promise<{ ok: boolean; result?: any; html?: string; url?: string; error?: string }> {
   const response = await sendCommand('browser_execute_js', {
     script: options.script,
     returnHtml: options.returnHtml || false,

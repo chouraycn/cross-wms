@@ -7,43 +7,43 @@
  */
 
 export type ToolResultPromptProjectionState = unknown;
-export function truncateToolResultText(..._args: unknown[]): unknown {
+export function truncateToolResultText(..._args: any[]): any {
   return undefined;
 }
-export function calculateMaxToolResultChars(..._args: unknown[]): unknown {
+export function calculateMaxToolResultChars(..._args: any[]): any {
   return undefined;
 }
-export function resolveAutoLiveToolResultMaxChars(..._args: unknown[]): unknown {
+export function resolveAutoLiveToolResultMaxChars(..._args: any[]): any {
   return undefined;
 }
-export function calculateMaxToolResultCharsWithCap(..._args: unknown[]): unknown {
+export function calculateMaxToolResultCharsWithCap(..._args: any[]): any {
   return undefined;
 }
-export function resolveLiveToolResultMaxChars(..._args: unknown[]): unknown {
+export function resolveLiveToolResultMaxChars(..._args: any[]): any {
   return undefined;
 }
-export function getToolResultTextLength(..._args: unknown[]): unknown {
+export function getToolResultTextLength(..._args: any[]): any {
   return undefined;
 }
-export function truncateToolResultMessage(..._args: unknown[]): unknown {
+export function truncateToolResultMessage(..._args: any[]): any {
   return undefined;
 }
-export function truncateOversizedToolResultsInMessages(..._args: unknown[]): unknown {
+export function truncateOversizedToolResultsInMessages(..._args: any[]): any {
   return undefined;
 }
-export function createToolResultPromptProjectionState(..._args: unknown[]): unknown {
+export function createToolResultPromptProjectionState(..._args: any[]): any {
   return undefined;
 }
-export function estimateToolResultReductionPotential(..._args: unknown[]): unknown {
+export function estimateToolResultReductionPotential(..._args: any[]): any {
   return undefined;
 }
-export function truncateOversizedToolResultsInSessionManager(..._args: unknown[]): unknown {
+export function truncateOversizedToolResultsInSessionManager(..._args: any[]): any {
   return undefined;
 }
-export function truncateOversizedToolResultsInSession(..._args: unknown[]): unknown {
+export function truncateOversizedToolResultsInSession(..._args: any[]): any {
   return undefined;
 }
-export function sessionLikelyHasOversizedToolResults(..._args: unknown[]): unknown {
+export function sessionLikelyHasOversizedToolResults(..._args: any[]): any {
   return undefined;
 }
-export const DEFAULT_MAX_LIVE_TOOL_RESULT_CHARS: unknown = undefined;
+export const DEFAULT_MAX_LIVE_TOOL_RESULT_CHARS: any = undefined;

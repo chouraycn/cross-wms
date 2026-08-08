@@ -22,7 +22,7 @@ type NativeEsmLazyImportProbe = {
 };
 let nativeEsmLazyImportProbe: NativeEsmLazyImportProbe;
 
-function writeJsonFile(targetPath: string, value: unknown): void {
+function writeJsonFile(targetPath: string, value: any): void {
   fs.mkdirSync(path.dirname(targetPath), { recursive: true });
   fs.writeFileSync(targetPath, `${JSON.stringify(value, null, 2)}\n`, "utf8");
 }

@@ -6,24 +6,24 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function getAgentHarnessHookRunner(..._args: unknown[]): unknown {
+export function getAgentHarnessHookRunner(..._args: any[]): any {
   return undefined;
 }
-export function clearAgentHarnessFinalizeRetryBudget(..._args: unknown[]): unknown {
+export function clearAgentHarnessFinalizeRetryBudget(..._args: any[]): any {
   return undefined;
 }
-export function runAgentHarnessLlmInputHook(..._args: unknown[]): unknown {
+export function runAgentHarnessLlmInputHook(..._args: any[]): any {
   return undefined;
 }
-export function runAgentHarnessLlmOutputHook(..._args: unknown[]): unknown {
+export function runAgentHarnessLlmOutputHook(..._args: any[]): any {
   return undefined;
 }
-export function runAgentHarnessAgentEndHook(..._args: unknown[]): unknown {
+export function runAgentHarnessAgentEndHook(..._args: any[]): any {
   return undefined;
 }
-export function awaitAgentHarnessAgentEndHook(..._args: unknown[]): unknown {
+export function awaitAgentHarnessAgentEndHook(..._args: any[]): any {
   return undefined;
 }
-export function runAgentHarnessBeforeAgentFinalizeHook(..._args: unknown[]): unknown {
+export function runAgentHarnessBeforeAgentFinalizeHook(..._args: any[]): any {
   return undefined;
 }

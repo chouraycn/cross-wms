@@ -9,7 +9,7 @@ describe("execDockerRaw", () => {
     // ENOENT otherwise looks like a low-level spawn failure; operators need the
     // sandbox config remediation in the error text.
     await withEnvAsync({ PATH: "" }, async () => {
-      let err: unknown;
+      let err: any;
       try {
         await execDockerRaw(["version"]);
       } catch (caught) {

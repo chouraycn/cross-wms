@@ -1,8 +1,8 @@
 export const loggingState = {
-  cachedLogger: null as unknown,
-  cachedSettings: null as unknown,
-  cachedConsoleSettings: null as unknown,
-  overrideSettings: null as unknown,
+  cachedLogger: null as any,
+  cachedSettings: null as any,
+  cachedConsoleSettings: null as any,
+  overrideSettings: null as any,
   invalidEnvLogLevelValue: null as string | null,
   consolePatched: false,
   forceConsoleToStderr: false,
@@ -16,6 +16,6 @@ export const loggingState = {
     warn: typeof console.warn;
     error: typeof console.error;
   } | null,
-  diagnosticSessions: new Map<string, unknown>(),
-  diagnosticEventListeners: [] as Array<(event: unknown) => void>,
+  diagnosticSessions: new Map<string, any>(),
+  diagnosticEventListeners: [] as Array<(event: any) => void>,
 };

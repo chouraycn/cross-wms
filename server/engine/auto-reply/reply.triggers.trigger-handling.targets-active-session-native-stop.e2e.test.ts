@@ -225,9 +225,9 @@ async function runAuthorizedSmsCommand(body: string, cfg: ReturnType<typeof make
 }
 
 function firstMockCallArg(
-  mock: { mock: { calls: unknown[][] } },
+  mock: { mock: { calls: any[][] } },
   label: string,
-): Record<string, unknown> {
+): Record<string, any> {
   const call = mock.mock.calls[0];
   if (!call) {
     throw new Error(`expected ${label} call params`);
@@ -236,7 +236,7 @@ function firstMockCallArg(
   if (!arg || typeof arg !== "object") {
     throw new Error(`expected ${label} first argument`);
   }
-  return arg as Record<string, unknown>;
+  return arg as Record<string, any>;
 }
 
 async function expectNextRunUsesTargetSession(
@@ -245,7 +245,7 @@ async function expectNextRunUsesTargetSession(
     targetSessionKey: string;
     runEmbeddedAgentMock: ReturnType<typeof getRunEmbeddedAgentMock>;
   },
-  expected: Record<string, unknown>,
+  expected: Record<string, any>,
 ) {
   mockRunEmbeddedAgentText("ok", 5);
 

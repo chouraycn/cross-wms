@@ -7,7 +7,7 @@
 
 type SessionKind = "main" | "group" | "cron" | "hook" | "node" | "other";
 
-function normalizeOptionalString(value: unknown): string | undefined {
+function normalizeOptionalString(value: any): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }
@@ -45,7 +45,7 @@ export type SessionListRow = {
 export function resolveSessionToolContext(opts?: {
   agentSessionKey?: string;
   sandboxed?: boolean;
-  config?: unknown;
+  config?: any;
 }) {
   return {
     cfg: opts?.config ?? {},

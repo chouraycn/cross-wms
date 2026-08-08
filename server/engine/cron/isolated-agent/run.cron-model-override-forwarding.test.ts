@@ -28,7 +28,7 @@ const runCronIsolatedAgentTurn = await loadRunCronIsolatedAgentTurn();
 
 // ---------- helpers ----------
 
-function makeJob(overrides?: Record<string, unknown>) {
+function makeJob(overrides?: Record<string, any>) {
   return {
     id: "model-fwd-job",
     name: "Model Forward Test",
@@ -43,7 +43,7 @@ function makeJob(overrides?: Record<string, unknown>) {
   } as never;
 }
 
-function makeParams(overrides?: Record<string, unknown>) {
+function makeParams(overrides?: Record<string, any>) {
   return {
     cfg: {},
     deps: {} as never,
@@ -74,7 +74,7 @@ function makeSuccessfulRunResult(provider = "google", model = "gemini-2.0-flash"
 
 function createDeferred<T = void>() {
   let resolve!: (value: T | PromiseLike<T>) => void;
-  let reject!: (reason?: unknown) => void;
+  let reject!: (reason?: any) => void;
   const promise = new Promise<T>((res, rej) => {
     resolve = res;
     reject = rej;
@@ -82,23 +82,23 @@ function createDeferred<T = void>() {
   return { promise, resolve, reject };
 }
 
-function requireRecord(value: unknown): Record<string, unknown> {
+function requireRecord(value: any): Record<string, any> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("Expected a non-array record");
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function firstMockArg(mock: { mock: { calls: unknown[][] } }): Record<string, unknown> {
+function firstMockArg(mock: { mock: { calls: any[][] } }): Record<string, any> {
   return requireRecord(mock.mock.calls[0]?.[0]);
 }
 
-function hasPhaseWithFields(phases: unknown[], fields: Record<string, unknown>): boolean {
+function hasPhaseWithFields(phases: any[], fields: Record<string, any>): boolean {
   return phases.some((phase) => {
     if (!phase || typeof phase !== "object" || Array.isArray(phase)) {
       return false;
     }
-    const record = phase as Record<string, unknown>;
+    const record = phase as Record<string, any>;
     return Object.entries(fields).every(([key, value]) => record[key] === value);
   });
 }
@@ -201,11 +201,11 @@ describe("runCronIsolatedAgentTurn — cron model override forwarding (#58065)",
         meta: { agentMeta: { usage: { input: 10, output: 20 } } },
       };
     });
-    const phases: unknown[] = [];
+    const phases: any[] = [];
 
     const result = await runCronIsolatedAgentTurn(
       makeParams({
-        onExecutionPhase: (info: unknown) => phases.push(info),
+        onExecutionPhase: (info: any) => phases.push(info),
       }),
     );
 
@@ -254,12 +254,12 @@ describe("runCronIsolatedAgentTurn — cron model override forwarding (#58065)",
         meta: { agentMeta: { usage: { input: 10, output: 20 } } },
       };
     });
-    const phases: unknown[] = [];
+    const phases: any[] = [];
 
     const runPromise = runCronIsolatedAgentTurn(
       makeParams({
         job: makeJob({ sessionTarget: "session:existing-cron-session" }),
-        onExecutionPhase: (info: unknown) => phases.push(info),
+        onExecutionPhase: (info: any) => phases.push(info),
       }),
     );
 

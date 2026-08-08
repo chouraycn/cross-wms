@@ -133,7 +133,7 @@ export function createRunwayProvider(
       const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
       try {
-        const body: Record<string, unknown> = {
+        const body: Record<string, any> = {
           model,
           promptText: req.prompt,
           duration: durationSeconds,

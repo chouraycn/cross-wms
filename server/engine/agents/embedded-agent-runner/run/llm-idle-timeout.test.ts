@@ -328,12 +328,12 @@ describe("streamWithIdleTimeout", () => {
     };
   }
 
-  function createNeverYieldingStream(): AsyncIterable<unknown> {
+  function createNeverYieldingStream(): AsyncIterable<any> {
     return {
       [Symbol.asyncIterator]() {
         return {
           async next() {
-            return new Promise<IteratorResult<unknown>>(() => {});
+            return new Promise<IteratorResult<any>>(() => {});
           },
         };
       },
@@ -382,7 +382,7 @@ describe("streamWithIdleTimeout", () => {
     const context = {} as Parameters<typeof baseFn>[1];
     const options = {} as Parameters<typeof baseFn>[2];
 
-    const stream = wrapped(model, context, options) as AsyncIterable<unknown>;
+    const stream = wrapped(model, context, options) as AsyncIterable<any>;
     const iterator = stream[Symbol.asyncIterator]();
 
     const next = expect(iterator.next()).rejects.toThrow(/LLM idle timeout/);
@@ -465,8 +465,8 @@ describe("streamWithIdleTimeout", () => {
     const context = {} as Parameters<typeof baseFn>[1];
     const options = {} as Parameters<typeof baseFn>[2];
 
-    const stream = wrapped(model, context, options) as AsyncIterable<unknown>;
-    const results: unknown[] = [];
+    const stream = wrapped(model, context, options) as AsyncIterable<any>;
+    const results: any[] = [];
 
     for await (const chunk of stream) {
       results.push(chunk);
@@ -562,10 +562,10 @@ describe("streamWithIdleTimeout", () => {
     const context = {} as Parameters<typeof baseFn>[1];
     const options = {} as Parameters<typeof baseFn>[2];
 
-    const stream = wrapped(model, context, options) as AsyncIterable<unknown>;
+    const stream = wrapped(model, context, options) as AsyncIterable<any>;
     const iterator = stream[Symbol.asyncIterator]();
 
-    const next = iterator.next().catch((error: unknown) => error);
+    const next = iterator.next().catch((error: any) => error);
     await vi.advanceTimersByTimeAsync(50);
     const error = await next;
 
@@ -579,7 +579,7 @@ describe("streamWithIdleTimeout", () => {
   });
 });
 
-function toLintErrorObject(value: unknown, fallbackMessage: string): Error {
+function toLintErrorObject(value: any, fallbackMessage: string): Error {
   // Abort reasons can be arbitrary values; normalize them into Error objects
   // so rejection assertions and provider wrappers see a stable shape.
   if (value instanceof Error) {

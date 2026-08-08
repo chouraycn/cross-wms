@@ -18,7 +18,7 @@ import { logger } from '../logger.js';
 type AnthropicContentBlock =
   | { type: 'text'; text: string; cache_control?: { type: 'ephemeral' } }
   | { type: 'image'; source: { type: 'base64'; media_type: string; data: string }; cache_control?: { type: 'ephemeral' } }
-  | { type: 'tool_use'; id: string; name: string; input: Record<string, unknown>; cache_control?: { type: 'ephemeral' } }
+  | { type: 'tool_use'; id: string; name: string; input: Record<string, any>; cache_control?: { type: 'ephemeral' } }
   | { type: 'tool_result'; tool_use_id: string; content: string; cache_control?: { type: 'ephemeral' } };
 
 /** Anthropic 消息 */
@@ -147,7 +147,7 @@ function convertToolsToAnthropic(
 ): Array<{
   name: string;
   description: string;
-  input_schema: Record<string, unknown>;
+  input_schema: Record<string, any>;
   cache_control?: { type: 'ephemeral' };
 }> {
   const result = tools.map(t => ({
@@ -156,7 +156,7 @@ function convertToolsToAnthropic(
     input_schema: t.function.parameters,
   }));
   if (cacheLastTool && result.length > 0) {
-    (result[result.length - 1] as unknown).cache_control = { type: 'ephemeral' };
+    (result[result.length - 1] as any).cache_control = { type: 'ephemeral' };
   }
   return result;
 }
@@ -264,7 +264,7 @@ export class AnthropicAdapter implements IAiApiAdapter {
       compat?.cacheBreakpoints,
     );
 
-    const body: Record<string, unknown> = {
+    const body: Record<string, any> = {
       model: modelId,
       messages: anthropicMessages,
       temperature,

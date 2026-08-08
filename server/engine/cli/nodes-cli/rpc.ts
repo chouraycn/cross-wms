@@ -33,19 +33,19 @@ const STORED_DEVICE_AUTH_FALLBACK_DETAIL_CODES = new Set([
   "PAIRING_REQUIRED",
 ]);
 
-function readGatewayClientRequestDetailCode(value: unknown): string | null {
+function readGatewayClientRequestDetailCode(value: any): string | null {
   if (!(value instanceof Error) || value.name !== "GatewayClientRequestError") {
     return null;
   }
-  const details = (value as Error & { details?: unknown }).details;
+  const details = (value as Error & { details?: any }).details;
   if (!details || typeof details !== "object") {
     return null;
   }
-  const code = (details as { code?: unknown }).code;
+  const code = (details as { code?: any }).code;
   return typeof code === "string" ? code : null;
 }
 
-function isDiagnosticsAuthFallbackError(value: unknown): value is Error {
+function isDiagnosticsAuthFallbackError(value: any): value is Error {
   if (
     value instanceof Error &&
     (value.name === "GatewayCredentialsRequiredError" ||
@@ -61,16 +61,16 @@ function isDiagnosticsAuthFallbackError(value: unknown): value is Error {
   return (
     value instanceof Error &&
     value.name === "GatewayClientRequestError" &&
-    (value as Error & { gatewayCode?: unknown }).gatewayCode === "INVALID_REQUEST" &&
+    (value as Error & { gatewayCode?: any }).gatewayCode === "INVALID_REQUEST" &&
     value.message.includes("missing scope: operator.read")
   );
 }
 
-function isUnknownGatewayMethodError(value: unknown, method: string): value is Error {
+function isUnknownGatewayMethodError(value: any, method: string): value is Error {
   return (
     value instanceof Error &&
     value.name === "GatewayClientRequestError" &&
-    (value as Error & { gatewayCode?: unknown }).gatewayCode === "INVALID_REQUEST" &&
+    (value as Error & { gatewayCode?: any }).gatewayCode === "INVALID_REQUEST" &&
     value.message.includes(`unknown method: ${method}`)
   );
 }
@@ -87,7 +87,7 @@ export const nodesCallOpts = (cmd: Command, defaults?: { timeoutMs?: number }) =
 export const callGatewayCli = async (
   method: string,
   opts: NodesRpcOpts,
-  params?: unknown,
+  params?: any,
   callOpts?: {
     scopes?: OperatorScope[];
     transportTimeoutMs?: number;
@@ -104,7 +104,7 @@ export const callGatewayCli = async (
 export const callNodeDiagnosticsGatewayCli = async (
   method: "node.list" | "node.describe",
   opts: NodesRpcOpts,
-  params?: unknown,
+  params?: any,
 ) => {
   try {
     return await callGatewayCli(method, opts, params, {
@@ -133,7 +133,7 @@ export const callNodeDiagnosticsGatewayCli = async (
 export const callNodePairApprovalGatewayCli = async (
   method: "node.pair.list" | "node.pair.approve",
   opts: NodesRpcOpts,
-  params: unknown,
+  params: any,
   callOpts: { scopes: OperatorScope[]; transportTimeoutMs?: number },
 ) => {
   const runtime = await loadNodesCliRpcRuntime();
@@ -144,11 +144,11 @@ export const callNodePairApprovalGatewayCli = async (
 export function buildNodeInvokeParams(params: {
   nodeId: string;
   command: string;
-  params?: Record<string, unknown>;
+  params?: Record<string, any>;
   timeoutMs?: number;
   idempotencyKey?: string;
-}): Record<string, unknown> {
-  const invokeParams: Record<string, unknown> = {
+}): Record<string, any> {
+  const invokeParams: Record<string, any> = {
     nodeId: params.nodeId,
     command: params.command,
     params: params.params,
@@ -160,12 +160,12 @@ export function buildNodeInvokeParams(params: {
   return invokeParams;
 }
 
-function hasOptionalValue(value: unknown): boolean {
+function hasOptionalValue(value: any): boolean {
   return value !== undefined && value !== null && value !== "";
 }
 
 /** Parse an optional positive integer node CLI flag. */
-export function parseOptionalNodePositiveInteger(value: unknown, flag: string): number | undefined {
+export function parseOptionalNodePositiveInteger(value: any, flag: string): number | undefined {
   if (!hasOptionalValue(value)) {
     return undefined;
   }
@@ -178,7 +178,7 @@ export function parseOptionalNodePositiveInteger(value: unknown, flag: string): 
 
 /** Parse an optional non-negative integer node CLI flag. */
 export function parseOptionalNodeNonNegativeInteger(
-  value: unknown,
+  value: any,
   flag: string,
 ): number | undefined {
   if (!hasOptionalValue(value)) {
@@ -193,7 +193,7 @@ export function parseOptionalNodeNonNegativeInteger(
 
 /** Parse an optional finite number node CLI flag with optional bounds. */
 export function parseOptionalNodeFiniteNumber(
-  value: unknown,
+  value: any,
   flag: string,
   bounds?: {
     minExclusive?: number;

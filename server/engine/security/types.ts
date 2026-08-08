@@ -21,7 +21,7 @@ export type SecurityFinding = {
   description: string;
   recommendation: string;
   autoFixable?: boolean;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 export type SecuritySummary = {

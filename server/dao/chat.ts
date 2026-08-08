@@ -63,7 +63,7 @@ function truncateToolCalls(toolCallsJson: string | undefined): string | undefine
     if (!Array.isArray(toolCalls)) return toolCallsJson;
 
     let totalBytes = 0;
-    const truncated: unknown[] = [];
+    const truncated: any[] = [];
     let firstDropped = true;
     let droppedCount = 0;
 
@@ -71,10 +71,10 @@ function truncateToolCalls(toolCallsJson: string | undefined): string | undefine
       if (!tc || typeof tc !== 'object') continue;
 
       // 单条 result 智能截断（head+tail）
-      const result = (tc as Record<string, unknown>).result;
+      const result = (tc as Record<string, any>).result;
       if (typeof result === 'string' && Buffer.byteLength(result, 'utf-8') > MAX_TOOL_RESULT_BYTES) {
         const truncatedResult = smartTruncate(result, MAX_TOOL_RESULT_BYTES);
-        (tc as Record<string, unknown>).result = truncatedResult;
+        (tc as Record<string, any>).result = truncatedResult;
       }
 
       const entryBytes = Buffer.byteLength(JSON.stringify(tc), 'utf-8');
@@ -136,14 +136,14 @@ function parseSessionFile(sessionId: string): { session: Session | null; message
     if (lines.length === 0) return { session: null, messages: [] };
 
     // 第 0 行：session + 初始消息
-    const firstLine = lines[0] as unknown;
+    const firstLine = lines[0] as any;
     const session = firstLine.session as Session;
     const initialMessages: Message[] = firstLine.messages || [];
 
     // 第 1+ 行：后续追加的消息
     const subsequentMessages: Message[] = [];
     for (let i = 1; i < lines.length; i++) {
-      const line = lines[i] as unknown;
+      const line = lines[i] as any;
       if (line.message) {
         subsequentMessages.push(line.message as Message);
       }
@@ -157,7 +157,7 @@ function parseSessionFile(sessionId: string): { session: Session | null; message
 
 // ===================== Session DAO =====================
 
-function buildSessionFromFirstLine(id: string, firstLine: unknown, isArchived: boolean = false): Session | null {
+function buildSessionFromFirstLine(id: string, firstLine: any, isArchived: boolean = false): Session | null {
   if (!firstLine || !firstLine.session) return null;
   const session = { ...firstLine.session } as Session;
 
@@ -170,13 +170,13 @@ function buildSessionFromFirstLine(id: string, firstLine: unknown, isArchived: b
     session.lastActiveAt = fileMtime;
   }
 
-  const cachedCount = (firstLine as unknown)._cachedMsgCount;
+  const cachedCount = (firstLine as any)._cachedMsgCount;
   if (typeof cachedCount === 'number' && cachedCount >= 0) {
-    (session as unknown).messageCount = cachedCount;
+    (session as any).messageCount = cachedCount;
   } else {
     const initialMsgCount = (firstLine.messages || []).length;
     const totalLines = FileStorage.countSessionLines(id);
-    (session as unknown).messageCount = initialMsgCount + Math.max(0, totalLines - 1);
+    (session as any).messageCount = initialMsgCount + Math.max(0, totalLines - 1);
   }
   return session;
 }
@@ -185,7 +185,7 @@ function loadActiveSessions(): Session[] {
   const sessionIds = FileStorage.listSessionFiles();
   const result: Session[] = [];
   for (const id of sessionIds) {
-    const firstLine = FileStorage.readSessionFirstLine(id) as unknown;
+    const firstLine = FileStorage.readSessionFirstLine(id) as any;
     const session = buildSessionFromFirstLine(id, firstLine, false);
     if (session) result.push(session);
   }
@@ -196,7 +196,7 @@ function loadArchivedSessions(): Session[] {
   const sessionIds = FileStorage.listArchivedSessionFiles();
   const result: Session[] = [];
   for (const id of sessionIds) {
-    const firstLine = FileStorage.readArchivedSessionFirstLine(id) as unknown;
+    const firstLine = FileStorage.readArchivedSessionFirstLine(id) as any;
     const session = buildSessionFromFirstLine(id, firstLine, true);
     if (session) {
       if (!session.status) session.status = 'archived';
@@ -299,7 +299,7 @@ export function searchArchivedSessionsPaged(query: string, limit: number = 50, o
 /** 归档会话：更新状态 + 移动文件到归档目录 */
 export function archiveSessionInStorage(sessionId: string): boolean {
   try {
-    const firstLine = FileStorage.readSessionFirstLine(sessionId) as unknown;
+    const firstLine = FileStorage.readSessionFirstLine(sessionId) as any;
     if (!firstLine || !firstLine.session) return false;
     if (firstLine.session.status === 'archived') return true;
 
@@ -320,7 +320,7 @@ export function restoreSessionFromStorage(sessionId: string): boolean {
     const moved = FileStorage.moveSessionFromArchive(sessionId);
     if (!moved) return false;
 
-    const firstLine = FileStorage.readSessionFirstLine(sessionId) as unknown;
+    const firstLine = FileStorage.readSessionFirstLine(sessionId) as any;
     if (!firstLine || !firstLine.session) return false;
 
     firstLine.session.status = 'active';
@@ -438,7 +438,7 @@ export function updateSession(
   updates: { title?: string; tags?: string; thinkingLevel?: string }
 ): void {
   try {
-    const firstLine = FileStorage.readSessionFirstLine(id) as unknown;
+    const firstLine = FileStorage.readSessionFirstLine(id) as any;
     if (!firstLine || !firstLine.session) return;
 
     if (updates.title !== undefined) {
@@ -454,12 +454,12 @@ export function updateSession(
     // 顺便更新 _cachedMsgCount（搭便车，无需额外 I/O）
     // 这样 getSessions 下次可以直接读首行，无需 countSessionLines 遍历文件
     const lines = FileStorage.readSessionLines(id);
-    const initialMsgCount = (lines[0] as unknown)?.messages?.length || 0;
+    const initialMsgCount = (lines[0] as any)?.messages?.length || 0;
     let msgCount = initialMsgCount;
     for (let i = 1; i < lines.length; i++) {
-      if ((lines[i] as unknown).message) msgCount++;
+      if ((lines[i] as any).message) msgCount++;
     }
-    (firstLine as unknown)._cachedMsgCount = msgCount;
+    (firstLine as any)._cachedMsgCount = msgCount;
 
     // 只重写第一行，保留后续消息不变
     FileStorage.rewriteSessionFirstLine(id, firstLine);
@@ -529,7 +529,7 @@ export function deleteFolder(id: string): void {
 export function moveSessionToFolder(sessionId: string, folderId: string | null): void {
   // folderId 在 firstLine.session 中，只需重写首行，避免全文件读写
   try {
-    const firstLine = FileStorage.readSessionFirstLine(sessionId) as unknown;
+    const firstLine = FileStorage.readSessionFirstLine(sessionId) as any;
     if (!firstLine || !firstLine.session) return;
     firstLine.session.folderId = folderId || null;
     FileStorage.rewriteSessionFirstLine(sessionId, firstLine);

@@ -6,7 +6,7 @@ export type SystemTag = {
   value: string;
   category: 'system' | 'security' | 'feature' | 'configuration' | 'environment' | 'custom';
   expiresAt?: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 export type SystemTagSet = {
@@ -214,7 +214,7 @@ export function auditSystemTags(): TagSecurityCheckResult {
   };
 }
 
-export function buildSystemTagReport(): Record<string, unknown> {
+export function buildSystemTagReport(): Record<string, any> {
   const tagSet = getSystemTagSet();
   const securityTags = findTagsByCategory('security');
   const auditResult = auditSystemTags();

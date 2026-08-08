@@ -1,7 +1,7 @@
 // @ts-nocheck
 // Parses chat-provided config values into typed booleans, numbers, and strings.
 export function parseConfigValue(raw: string): {
-  value?: unknown;
+  value?: any;
   error?: string;
 } {
   const trimmed = raw.trim();

@@ -195,7 +195,7 @@ export class ReActExecutor {
   /** 数字员工（per-call）MCP 客户端管理器：隔离 MCP server 连接 */
   private _staffMcpManager?: import('./mcpClientManager.js').McpClientManager;
   /** 数字员工（per-call）物化技能执行器 */
-  private _extraSkillExecutor?: (id: string, params: Record<string, unknown>, ctx?: import('../types/skill-runtime.js').SkillContext) => Promise<import('../types/skill-runtime.js').SkillResult>;
+  private _extraSkillExecutor?: (id: string, params: Record<string, any>, ctx?: import('../types/skill-runtime.js').SkillContext) => Promise<import('../types/skill-runtime.js').SkillResult>;
   /** 数字员工（per-call）技能权限配置 */
   private _skillPermissionConfig?: import('../types/skill-runtime.js').SkillPermissionConfig;
   /** 数字员工技能调用事件回调（写侧统计来源），由 ExecutionStrategyOptions 注入 */
@@ -537,8 +537,8 @@ ${stepsText}`;
             this._activePlan = plan;
             const planPrompt = this.buildPlanNavigation(plan);
             currentMessages.unshift({ role: 'system', content: planPrompt } as typeof currentMessages[number]);
-            if (onSSEEvent) onSSEEvent({ type: 'plan', plan: plan as unknown as Record<string, unknown> });
-            onPlan?.(plan as unknown as Record<string, unknown>);
+            if (onSSEEvent) onSSEEvent({ type: 'plan', plan: plan as unknown as Record<string, any> });
+            onPlan?.(plan as unknown as Record<string, any>);
             logger.debug(`[ReActExecutor] 已生成执行计划 ${plan.id} (${plan.steps.length} 步)`);
             // v9.3: WebSocket 推送计划创建事件
             if (sessionId) {
@@ -592,7 +592,7 @@ ${stepsText}`;
       }
 
       // ============== 上下文截断（双重防护）=============
-      const ctxWindow = (modelConfig as unknown as Record<string, unknown>).contextWindow as number || 128000;
+      const ctxWindow = (modelConfig as any as Record<string, any>).contextWindow as number || 128000;
       const ctxMaxTokens = Math.min(modelConfig.maxTokens || 8192, 8192);
       const estimatedTokens = estimateMessagesTokens(currentMessages);
       const tokenThreshold = ctxWindow * 0.8;
@@ -613,7 +613,7 @@ ${stepsText}`;
         }
         
         // v9.2: 如果 autoCompressor 判断需要压缩，先获取压缩计划
-        let compressionPlan: unknown = null;
+        let compressionPlan: any = null;
         if (this.autoCompressor.shouldCompress()) {
           try {
             compressionPlan = this.autoCompressor.getCompressionPlan(currentMessages);
@@ -669,7 +669,7 @@ ${stepsText}`;
       // 触发 before_ai_call 钩子
       await pluginHooks.executeHooks('before_ai_call', {
         sessionId,
-        messages: currentMessages as Array<Record<string, unknown>>,
+        messages: currentMessages as Array<Record<string, any>>,
         extra: { phase: 'reasoning', turn: turn + 1 },
       });
 
@@ -686,8 +686,8 @@ ${stepsText}`;
       // 触发 after_ai_call 钩子
       await pluginHooks.executeHooks('after_ai_call', {
         sessionId,
-        messages: currentMessages as Array<Record<string, unknown>>,
-        aiResult: response as unknown as Record<string, unknown>,
+        messages: currentMessages as Array<Record<string, any>>,
+        aiResult: response as unknown as Record<string, any>,
         extra: { phase: 'reasoning', turn: turn + 1 },
       });
 
@@ -903,7 +903,7 @@ ${stepsText}`;
                 toolName: failedObs.toolCall.name,
               });
               this._activePlan = adjusted;
-              if (onSSEEvent) onSSEEvent({ type: 'plan_revised', plan: adjusted as unknown as Record<string, unknown> });
+              if (onSSEEvent) onSSEEvent({ type: 'plan_revised', plan: adjusted as unknown as Record<string, any> });
               // v9.3: WebSocket 推送计划修订事件
               if (sessionId) {
                 publishPlanRevised(sessionId, adjusted);
@@ -951,9 +951,9 @@ ${stepsText}`;
               if (navIdx >= 0) {
                 currentMessages[navIdx] = { ...currentMessages[navIdx], content: this.buildPlanNavigation(revised) };
               }
-              if (onSSEEvent) onSSEEvent({ type: 'plan_revised', plan: revised as unknown as Record<string, unknown> });
-              onPlan?.(revised as unknown as Record<string, unknown>);
-              publishPlanRevised(sessionId || '', revised as unknown as Record<string, unknown>);
+              if (onSSEEvent) onSSEEvent({ type: 'plan_revised', plan: revised as unknown as Record<string, any> });
+              onPlan?.(revised as unknown as Record<string, any>);
+              publishPlanRevised(sessionId || '', revised as unknown as Record<string, any>);
               logger.debug(`[ReActExecutor] 反思式重规划完成，${revised.steps.length} 步`);
             }
           } catch (replanErr) {
@@ -988,7 +988,7 @@ ${stepsText}`;
     // 触发任务完成钩子
     await pluginHooks.executeHooks('on_completion', {
       sessionId,
-      result: finalResult as unknown as Record<string, unknown>,
+      result: finalResult as unknown as Record<string, any>,
     });
 
     return finalResult;
@@ -1047,7 +1047,7 @@ ${stepsText}`;
       }
     }
 
-    let lastError: unknown;
+    let lastError: any;
     const maxAttempts = 3;
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
@@ -1174,7 +1174,7 @@ ${stepsText}`;
 
     for (const [toolCall, result] of actionResults) {
       try {
-        let toolArgs: Record<string, unknown> = {};
+        let toolArgs: Record<string, any> = {};
         try {
           toolArgs = JSON.parse(toolCall.function.arguments);
         } catch {
@@ -1206,7 +1206,7 @@ ${stepsText}`;
           observerErr instanceof Error ? observerErr.message : String(observerErr),
         );
 
-        let toolArgs: Record<string, unknown> = {};
+        let toolArgs: Record<string, any> = {};
         try {
           toolArgs = JSON.parse(toolCall.function.arguments);
         } catch {
@@ -1242,7 +1242,7 @@ ${stepsText}`;
    * @param description - 阶段描述
    */
   private emitPhase(
-    onSSEEvent: ((event: Record<string, unknown>) => void) | undefined,
+    onSSEEvent: ((event: Record<string, any>) => void) | undefined,
     phase: ReActPhase,
     step?: number,
     totalSteps?: number,
@@ -1258,7 +1258,7 @@ ${stepsText}`;
       description,
     };
 
-    onSSEEvent(event as unknown as Record<string, unknown>);
+    onSSEEvent(event as unknown as Record<string, any>);
   }
 
   /**

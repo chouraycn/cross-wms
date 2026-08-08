@@ -5,7 +5,7 @@ import type { ChannelPlugin } from "../../../channels/plugin.js";
 export interface ChannelSetupContext {
   channelId: ChannelId;
   config: AppConfig;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface ChannelSetupResult {
@@ -156,11 +156,11 @@ export function applyAccountNameToChannelSection(params: {
   if (!trimmed) {
     return params.cfg;
   }
-  const channels = (params.cfg as { channels?: Record<string, unknown> }).channels;
+  const channels = (params.cfg as { channels?: Record<string, any> }).channels;
   if (!channels) {
     return params.cfg;
   }
-  const section = channels[params.channelKey] as { accounts?: Record<string, unknown> } | undefined;
+  const section = channels[params.channelKey] as { accounts?: Record<string, any> } | undefined;
   if (!section?.accounts) {
     return params.cfg;
   }
@@ -189,8 +189,8 @@ export function migrateBaseNameToDefaultAccount(params: {
   if (params.alwaysUseAccounts) {
     return params.cfg;
   }
-  const channels = (params.cfg as { channels?: Record<string, unknown> }).channels;
-  const base = channels?.[params.channelKey] as { name?: string; accounts?: Record<string, unknown> } | undefined;
+  const channels = (params.cfg as { channels?: Record<string, any> }).channels;
+  const base = channels?.[params.channelKey] as { name?: string; accounts?: Record<string, any> } | undefined;
   const baseName = base?.name?.trim();
   if (!baseName || base?.accounts) {
     return params.cfg;

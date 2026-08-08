@@ -8,17 +8,17 @@ import { registerExecApprovalsCli, testing } from "./exec-approvals-cli.js";
 
 const mocks = vi.hoisted(() => {
   const runtimeErrors: string[] = [];
-  const stringifyArgs = (args: unknown[]) => args.map((value) => String(value)).join(" ");
+  const stringifyArgs = (args: any[]) => args.map((value) => String(value)).join(" ");
   const readBestEffortConfig = vi.fn(async () => ({}));
   const defaultRuntime = {
     log: vi.fn(),
-    error: vi.fn((...args: unknown[]) => {
+    error: vi.fn((...args: any[]) => {
       runtimeErrors.push(stringifyArgs(args));
     }),
     writeStdout: vi.fn((value: string) => {
       defaultRuntime.log(value.endsWith("\n") ? value.slice(0, -1) : value);
     }),
-    writeJson: vi.fn((value: unknown, space = 2) => {
+    writeJson: vi.fn((value: any, space = 2) => {
       defaultRuntime.log(JSON.stringify(value, null, space > 0 ? space : undefined));
     }),
     exit: vi.fn((code: number) => {
@@ -26,7 +26,7 @@ const mocks = vi.hoisted(() => {
     }),
   };
   return {
-    callGatewayFromCli: vi.fn(async (method: string, _opts: unknown, params?: unknown) => {
+    callGatewayFromCli: vi.fn(async (method: string, _opts: any, params?: any) => {
       if (method.endsWith(".get")) {
         if (method === "config.get") {
           return {
@@ -65,14 +65,14 @@ const localSnapshot = {
   file: { version: 1, agents: {} } as ExecApprovalsFile,
 };
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error(`Expected ${label}`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function requireArray(value: unknown, label: string): unknown[] {
+function requireArray(value: any, label: string): any[] {
   if (!Array.isArray(value)) {
     throw new Error(`Expected ${label}`);
   }
@@ -80,10 +80,10 @@ function requireArray(value: unknown, label: string): unknown[] {
 }
 
 function expectFields(
-  value: unknown,
+  value: any,
   label: string,
-  fields: Record<string, unknown>,
-): Record<string, unknown> {
+  fields: Record<string, any>,
+): Record<string, any> {
   const record = requireRecord(value, label);
   for (const [key, expected] of Object.entries(fields)) {
     expect(record[key]).toEqual(expected);
@@ -91,7 +91,7 @@ function expectFields(
   return record;
 }
 
-function firstMockArg(mock: { mock: { calls: ReadonlyArray<ReadonlyArray<unknown>> } }): unknown {
+function firstMockArg(mock: { mock: { calls: ReadonlyArray<ReadonlyArray<any>> } }): any {
   const call = mock.mock.calls[0];
   if (!call) {
     throw new Error("Expected mock to have at least one call");
@@ -107,27 +107,27 @@ function gatewayCall(index: number) {
   return call;
 }
 
-function expectGatewayCall(index: number, method: string, params: unknown) {
+function expectGatewayCall(index: number, method: string, params: any) {
   const call = gatewayCall(index);
   expect(call[0]).toBe(method);
   expect(requireRecord(call[1], "gateway call options").timeout).toBe("60000");
   expect(call[2]).toEqual(params);
 }
 
-function writtenJson(): Record<string, unknown> {
+function writtenJson(): Record<string, any> {
   const value = firstMockArg(vi.mocked(defaultRuntime.writeJson));
   return requireRecord(value, "written json");
 }
 
-function effectivePolicy(output: Record<string, unknown> = writtenJson()) {
+function effectivePolicy(output: Record<string, any> = writtenJson()) {
   return requireRecord(output.effectivePolicy, "effective policy");
 }
 
-function scopes(output: Record<string, unknown> = writtenJson()) {
+function scopes(output: Record<string, any> = writtenJson()) {
   return requireArray(effectivePolicy(output).scopes, "effective policy scopes");
 }
 
-function scopeByLabel(label: string, output: Record<string, unknown> = writtenJson()) {
+function scopeByLabel(label: string, output: Record<string, any> = writtenJson()) {
   const scope = scopes(output).find(
     (entry) => requireRecord(entry, "policy scope").scopeLabel === label,
   );
@@ -142,7 +142,7 @@ function resetLocalSnapshot() {
 }
 
 vi.mock("./gateway-rpc.js", () => ({
-  callGatewayFromCli: (method: string, opts: unknown, params?: unknown) =>
+  callGatewayFromCli: (method: string, opts: any, params?: any) =>
     mocks.callGatewayFromCli(method, opts, params),
 }));
 
@@ -304,7 +304,7 @@ describe("exec approvals CLI", () => {
 
   it("adds combined node effective policy to json output", async () => {
     callGatewayFromCli.mockImplementation(
-      async (method: string, _opts: unknown, params?: unknown) => {
+      async (method: string, _opts: any, params?: any) => {
         if (method === "config.get") {
           return {
             config: {
@@ -363,7 +363,7 @@ describe("exec approvals CLI", () => {
 
   it("keeps gateway approvals output when config.get fails", async () => {
     callGatewayFromCli.mockImplementation(
-      async (method: string, _opts: unknown, params?: unknown) => {
+      async (method: string, _opts: any, params?: any) => {
         if (method === "config.get") {
           throw new Error("gateway config unavailable");
         }
@@ -391,7 +391,7 @@ describe("exec approvals CLI", () => {
 
   it("reports gateway config timeout explicitly", async () => {
     callGatewayFromCli.mockImplementation(
-      async (method: string, _opts: unknown, params?: unknown) => {
+      async (method: string, _opts: any, params?: any) => {
         if (method === "config.get") {
           throw new Error("gateway timeout after 10000ms\u001b[2K\u0007\nRPC config.get");
         }
@@ -419,7 +419,7 @@ describe("exec approvals CLI", () => {
 
   it("keeps node approvals output when gateway config is unavailable", async () => {
     callGatewayFromCli.mockImplementation(
-      async (method: string, _opts: unknown, params?: unknown) => {
+      async (method: string, _opts: any, params?: any) => {
         if (method === "config.get") {
           throw new Error("gateway config unavailable");
         }

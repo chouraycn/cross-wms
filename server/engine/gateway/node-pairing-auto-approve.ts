@@ -13,10 +13,10 @@
 
 export type NodePairingAutoApproveReason = unknown;
 
-export function resolveNodePairingClientIpSource(..._args: unknown[]): unknown {
+export function resolveNodePairingClientIpSource(..._args: any[]): any {
   return undefined;
 }
 
-export function shouldAutoApproveNodePairingFromTrustedCidrs(..._args: unknown[]): unknown {
+export function shouldAutoApproveNodePairingFromTrustedCidrs(..._args: any[]): any {
   return false;
 }

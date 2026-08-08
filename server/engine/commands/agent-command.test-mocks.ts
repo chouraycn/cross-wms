@@ -26,7 +26,7 @@ vi.mock("../cli/deps.js", () => ({
 const acpManagerMock = vi.hoisted(() => ({
   current: {
     resolveSession: vi.fn(() => null),
-  } as unknown,
+  } as any,
 }));
 
 vi.mock("../acp/control-plane/manager.js", () => ({
@@ -36,7 +36,7 @@ vi.mock("../acp/control-plane/manager.js", () => ({
         resolveSession: vi.fn(() => null),
       };
     }),
-    setAcpSessionManagerForTests: vi.fn((manager: unknown) => {
+    setAcpSessionManagerForTests: vi.fn((manager: any) => {
       acpManagerMock.current = manager;
     }),
   },
@@ -265,7 +265,7 @@ vi.mock("../skills/discovery/agent-filter.js", () => ({
 
 vi.mock("../skills/runtime/session-snapshot.js", () => ({
   resolveReusableWorkspaceSkillSnapshot: vi.fn(
-    (params?: { existingSnapshot?: unknown; skillFilter?: string[] }) => ({
+    (params?: { existingSnapshot?: any; skillFilter?: string[] }) => ({
       snapshot: params?.existingSnapshot ?? {
         prompt: "",
         skills: [],

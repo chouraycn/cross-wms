@@ -8,8 +8,8 @@ import { buildMcpToolSchema } from "./mcp-http.schema.js";
 type MockGatewayTool = {
   name: string;
   description: string;
-  parameters: Record<string, unknown>;
-  execute: (...args: unknown[]) => Promise<{ content: Array<{ type: string; text: string }> }>;
+  parameters: Record<string, any>;
+  execute: (...args: any[]) => Promise<{ content: Array<{ type: string; text: string }> }>;
 };
 
 type MockGatewayScopedTools = {
@@ -19,7 +19,7 @@ type MockGatewayScopedTools = {
 
 type MockBeforeToolCallHookResult =
   | { blocked: true; reason: string }
-  | { blocked: false; params: unknown };
+  | { blocked: false; params: any };
 
 type ScopedToolsCall = {
   sessionKey?: string;
@@ -42,18 +42,18 @@ type ScopedToolsCall = {
 
 type BeforeToolCallHookInput = {
   toolName?: string;
-  params?: unknown;
+  params?: any;
   ctx?: {
     agentId?: string;
-    config?: unknown;
+    config?: any;
     sessionKey?: string;
   };
-  signal?: unknown;
+  signal?: any;
 };
 
 type McpToolResultPayload = {
   result?: {
-    tools?: Array<{ name: string; inputSchema?: Record<string, unknown> }>;
+    tools?: Array<{ name: string; inputSchema?: Record<string, any> }>;
     content?: Array<{ text?: string }>;
     isError?: boolean;
   };
@@ -61,7 +61,7 @@ type McpToolResultPayload = {
 
 const runBeforeToolCallHookMock = vi.hoisted(() =>
   vi.fn(
-    async (args: { params: unknown }): Promise<MockBeforeToolCallHookResult> => ({
+    async (args: { params: any }): Promise<MockBeforeToolCallHookResult> => ({
       blocked: false,
       params: args.params,
     }),
@@ -69,7 +69,7 @@ const runBeforeToolCallHookMock = vi.hoisted(() =>
 );
 
 const resolveGatewayScopedToolsMock = vi.hoisted(() =>
-  vi.fn<(...args: unknown[]) => MockGatewayScopedTools>(() => ({
+  vi.fn<(...args: any[]) => MockGatewayScopedTools>(() => ({
     agentId: "main",
     tools: [
       {
@@ -388,7 +388,7 @@ async function sendLoopbackToolsList(params: {
 async function sendLoopbackToolCall(params: {
   token?: string;
   name: string;
-  args?: Record<string, unknown>;
+  args?: Record<string, any>;
   headers?: Record<string, string>;
 }) {
   return sendRaw({
@@ -402,7 +402,7 @@ async function sendLoopbackToolCall(params: {
 async function sendMainSessionToolCall(params: {
   token?: string;
   name?: string;
-  args?: Record<string, unknown>;
+  args?: Record<string, any>;
 }) {
   return sendLoopbackToolCall({
     token: params.token,
@@ -430,7 +430,7 @@ async function listMainSessionTools(token?: string) {
 async function callMainSessionTool(params: {
   token?: string;
   name?: string;
-  args?: Record<string, unknown>;
+  args?: Record<string, any>;
 }) {
   return readOkMcpPayload(await sendMainSessionToolCall(params));
 }
@@ -482,7 +482,7 @@ function expectMcpResultText(payload: McpToolResultPayload, text: string, isErro
   expect(payload.result?.content?.[0]?.text).toBe(text);
 }
 
-function angleSchema(property: unknown, required: string[] = []) {
+function angleSchema(property: any, required: string[] = []) {
   return {
     type: "object",
     properties: { angle: property },
@@ -552,7 +552,7 @@ function mcpToolsListBody(id = 1) {
   return JSON.stringify({ jsonrpc: "2.0", id, method: "tools/list" });
 }
 
-function mcpToolCallBody(name: string, args: Record<string, unknown> = {}, id = 1) {
+function mcpToolCallBody(name: string, args: Record<string, any> = {}, id = 1) {
   return JSON.stringify({
     jsonrpc: "2.0",
     id,
@@ -570,7 +570,7 @@ beforeEach(() => {
   resolveGatewayScopedToolsMock.mockClear();
   runBeforeToolCallHookMock.mockClear();
   runBeforeToolCallHookMock.mockImplementation(
-    async (args: { params: unknown }): Promise<MockBeforeToolCallHookResult> => ({
+    async (args: { params: any }): Promise<MockBeforeToolCallHookResult> => ({
       blocked: false,
       params: args.params,
     }),
@@ -634,8 +634,8 @@ describe("buildMcpToolSchema", () => {
   it("flattens usable schemas from malformed and boolean union variants", () => {
     const cases: Array<{
       name: string;
-      parameters: Record<string, unknown>;
-      expected: Record<string, unknown>;
+      parameters: Record<string, any>;
+      expected: Record<string, any>;
     }> = [
       {
         name: "fuzzplugin_move_delta",
@@ -835,7 +835,7 @@ describe("mcp loopback server", () => {
       sessionKey: "agent:main:telegram:group:chat123",
       sourceReplyDeliveryMode: "message_tool_only",
     } satisfies Omit<Parameters<McpLoopbackToolCache["resolve"]>[0], "senderIsOwner">;
-    resolveGatewayScopedToolsMock.mockImplementation((input: unknown) => {
+    resolveGatewayScopedToolsMock.mockImplementation((input: any) => {
       const params = input as { senderIsOwner?: boolean };
       return {
         agentId: "main",
@@ -1014,9 +1014,9 @@ describe("mcp loopback server", () => {
 
   it("captures only successful calls with an explicit CLI capture key", async () => {
     const captureKey = "google-gemini-cli";
-    const captured: Array<{ toolName: string; args: Record<string, unknown> }> = [];
-    const startedTargets: unknown[] = [];
-    const finishedTargets: unknown[] = [];
+    const captured: Array<{ toolName: string; args: Record<string, any> }> = [];
+    const startedTargets: any[] = [];
+    const finishedTargets: any[] = [];
     beginMcpLoopbackToolCallCapture({
       captureKey,
       onToolCallStart: ({ args }) => startedTargets.push(args.target),
@@ -1511,7 +1511,7 @@ describe("mcp loopback server", () => {
       body: "{",
     });
     const payload = (await response.json()) as {
-      id?: unknown;
+      id?: any;
       error?: { code?: number; message?: string };
     };
 
@@ -1536,7 +1536,7 @@ describe("mcp loopback server", () => {
       body: mcpToolsListBody(42),
     });
     const payload = (await response.json()) as {
-      id?: unknown;
+      id?: any;
       error?: { code?: number; message?: string };
     };
 
@@ -1558,7 +1558,7 @@ describe("mcp loopback server", () => {
       body: `[null,${mcpToolsListBody(7)}]`,
     });
     const payload = (await response.json()) as Array<{
-      id?: unknown;
+      id?: any;
       error?: { code?: number; message?: string };
       result?: { tools?: Array<{ name: string }> };
     }>;

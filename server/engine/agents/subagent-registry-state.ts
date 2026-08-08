@@ -6,18 +6,18 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function clearSubagentRunsReadCacheForTest(..._args: unknown[]): unknown {
+export function clearSubagentRunsReadCacheForTest(..._args: any[]): any {
   return undefined;
 }
-export function persistSubagentRunsToDisk(..._args: unknown[]): unknown {
+export function persistSubagentRunsToDisk(..._args: any[]): any {
   return undefined;
 }
-export function persistSubagentRunsToDiskOrThrow(..._args: unknown[]): unknown {
+export function persistSubagentRunsToDiskOrThrow(..._args: any[]): any {
   return undefined;
 }
-export function restoreSubagentRunsFromDisk(..._args: unknown[]): unknown {
+export function restoreSubagentRunsFromDisk(..._args: any[]): any {
   return undefined;
 }
-export function getSubagentRunsSnapshotForRead(..._args: unknown[]): unknown {
+export function getSubagentRunsSnapshotForRead(..._args: any[]): any {
   return undefined;
 }

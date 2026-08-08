@@ -29,7 +29,7 @@ export interface PluginConfig {
   id: string;
   name: string;
   enabled: boolean;
-  config: Record<string, unknown>;
+  config: Record<string, any>;
 }
 
 export interface MigrationConfig {

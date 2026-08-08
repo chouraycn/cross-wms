@@ -21,7 +21,7 @@ describe('验证器模块', () => {
     });
 
     it('不支持的 provider 应失败', () => {
-      const result = validateSecretRef({ provider: 'invalid' as unknown, key: 'KEY' });
+      const result = validateSecretRef({ provider: 'invalid' as any, key: 'KEY' });
       expect(result.valid).toBe(false);
       expect(result.errors.length).toBeGreaterThan(0);
     });
@@ -113,7 +113,7 @@ describe('验证器模块', () => {
   describe('isExpired / isExpiringSoon', () => {
     it('无 expiresAt 应视为未过期', () => {
       expect(isExpired(undefined)).toBe(false);
-      expect(isExpired(null as unknown)).toBe(false);
+      expect(isExpired(null as any)).toBe(false);
     });
 
     it('过期时间已过应返回 true', () => {

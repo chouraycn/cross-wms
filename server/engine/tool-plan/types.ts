@@ -96,7 +96,7 @@ export interface ToolDescriptor {
     /** 是否需要用户确认 */
     needsConfirmation?: boolean;
     /** 自定义注解 */
-    [key: string]: unknown;
+    [key: string]: any;
   };
   /** 排序键（用于确定性排序，省略时用 name） */
   sortKey?: string;

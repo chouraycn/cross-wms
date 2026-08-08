@@ -20,7 +20,7 @@ import { runCommandWithRuntime } from "../cli-utils.js";
 import { parsePort } from "../shared/parse-port.js";
 
 function resolveInstallDaemonFlag(
-  command: unknown,
+  command: any,
   opts: { installDaemon?: boolean },
 ): boolean | undefined {
   if (!command || typeof command !== "object") {
@@ -84,7 +84,7 @@ function resolveOnboardAuthFlags(): OnboardAuthFlag[] {
 const ONBOARD_AUTH_FLAGS = resolveOnboardAuthFlags();
 
 function pickOnboardProviderAuthOptionValues(
-  opts: Record<string, unknown>,
+  opts: Record<string, any>,
 ): Partial<Record<string, string | undefined>> {
   return Object.fromEntries(
     ONBOARD_AUTH_FLAGS.map((flag) => [flag.optionKey, opts[flag.optionKey] as string | undefined]),
@@ -197,7 +197,7 @@ export function registerOnboardCommand(program: Command): void {
       });
       const gatewayPort = parsePort(opts.gatewayPort);
       const providerAuthOptionValues = pickOnboardProviderAuthOptionValues(
-        opts as Record<string, unknown>,
+        opts as Record<string, any>,
       );
       const { setupWizardCommand } = await import("../../commands/onboard.js");
       await setupWizardCommand(

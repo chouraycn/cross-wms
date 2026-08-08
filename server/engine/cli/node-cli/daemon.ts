@@ -230,7 +230,7 @@ export async function runNodeDaemonStatus(opts: NodeDaemonStatusOptions = {}) {
     service.readCommand(process.env).catch(() => null),
     service
       .readRuntime(process.env)
-      .catch((err: unknown): GatewayServiceRuntime => ({ status: "unknown", detail: String(err) })),
+      .catch((err: any): GatewayServiceRuntime => ({ status: "unknown", detail: String(err) })),
   ]);
 
   const payload = {

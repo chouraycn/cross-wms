@@ -31,11 +31,11 @@ class FetchMock {
     this.mock('DELETE', path, handler);
   }
 
-  json(path: string | RegExp, data: unknown, status = 200): void {
+  json(path: string | RegExp, data: any, status = 200): void {
     this.get(path, () => Response.json(data, { status }));
   }
 
-  postJson(path: string | RegExp, data: unknown, status = 200): void {
+  postJson(path: string | RegExp, data: any, status = 200): void {
     this.post(path, () => Response.json(data, { status }));
   }
 

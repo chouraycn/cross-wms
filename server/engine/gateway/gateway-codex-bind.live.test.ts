@@ -114,13 +114,13 @@ function createSlackCurrentConversationBindingRegistry(outboundReplies: Captured
   ]);
 }
 
-function extractAssistantTexts(messages: unknown[]): string[] {
+function extractAssistantTexts(messages: any[]): string[] {
   const texts: string[] = [];
   for (const entry of messages) {
     if (!entry || typeof entry !== "object") {
       continue;
     }
-    if ((entry as { role?: unknown }).role !== "assistant") {
+    if ((entry as { role?: any }).role !== "assistant") {
       continue;
     }
     const text = extractFirstTextBlock(entry);
@@ -244,12 +244,12 @@ async function waitForAssistantText(params: {
   caseInsensitive?: boolean;
   minAssistantCount?: number;
   timeoutMs?: number;
-}): Promise<{ messages: unknown[]; assistantTexts: string[]; matchedAssistantText: string }> {
+}): Promise<{ messages: any[]; assistantTexts: string[]; matchedAssistantText: string }> {
   const timeoutMs = params.timeoutMs ?? 60_000;
   const startedAt = Date.now();
 
   while (Date.now() - startedAt < timeoutMs) {
-    const history: { messages?: unknown[] } = await params.client.request("chat.history", {
+    const history: { messages?: any[] } = await params.client.request("chat.history", {
       sessionKey: params.sessionKey,
       limit: 24,
     });
@@ -266,7 +266,7 @@ async function waitForAssistantText(params: {
     await sleep(500);
   }
 
-  const finalHistory: { messages?: unknown[] } = await params.client.request("chat.history", {
+  const finalHistory: { messages?: any[] } = await params.client.request("chat.history", {
     sessionKey: params.sessionKey,
     limit: 24,
   });

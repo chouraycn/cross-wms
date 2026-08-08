@@ -1,14 +1,14 @@
 // 移植自 openclaw/src/gateway/test-helpers.assertions.ts
 // 注意：本文件为测试基础设施 stub，仅用于占位，不包含实际测试逻辑。
 
-export function isRecord(...args: unknown[]): unknown {
+export function isRecord(...args: any[]): any {
   return false;
 }
 
-export function requireRecord(...args: unknown[]): unknown {
+export function requireRecord(...args: any[]): any {
   return undefined;
 }
 
-export function expectRecordFields(...args: unknown[]): unknown {
+export function expectRecordFields(...args: any[]): any {
   return undefined;
 }

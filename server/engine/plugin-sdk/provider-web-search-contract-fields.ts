@@ -54,7 +54,7 @@ function createSearchCredentialFields(
       return {
         getCredentialValue: (searchConfig?: SearchConfigRecord) =>
           getScopedCredentialValue(searchConfig, credential.scopeId),
-        setCredentialValue: (searchConfigTarget: SearchConfigRecord, value: unknown) =>
+        setCredentialValue: (searchConfigTarget: SearchConfigRecord, value: any) =>
           setScopedCredentialValue(searchConfigTarget, credential.scopeId, value),
       };
     case "top-level":
@@ -86,7 +86,7 @@ function createConfiguredCredentialFields(
   return {
     getConfiguredCredentialValue: (config?: OpenClawConfig) =>
       resolveProviderWebSearchPluginConfig(config, configuredCredential.pluginId)?.[field],
-    setConfiguredCredentialValue: (configTarget: OpenClawConfig, value: unknown) => {
+    setConfiguredCredentialValue: (configTarget: OpenClawConfig, value: any) => {
       setProviderWebSearchPluginConfigValue(
         configTarget,
         configuredCredential.pluginId,

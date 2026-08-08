@@ -14,7 +14,7 @@ import { withProgress } from "./progress.js";
 type CallGatewayFromCliRuntimeExtra = {
   clientName?: string;
   mode?: string;
-  deviceIdentity?: unknown;
+  deviceIdentity?: any;
   expectFinal?: boolean;
   progress?: boolean;
   scopes?: string[];
@@ -27,14 +27,14 @@ async function callGateway(_params: {
   url?: string;
   token?: string;
   method: string;
-  params?: unknown;
-  deviceIdentity?: unknown;
+  params?: any;
+  deviceIdentity?: any;
   expectFinal?: boolean;
   scopes?: string[];
   timeoutMs: number;
   clientName?: string;
   mode?: string;
-}): Promise<unknown> {
+}): Promise<any> {
   // 降级：openclaw 的 gateway/call.js 未移植。
   console.error("Gateway RPC is not available in cross-wms");
   process.exit(1);
@@ -50,9 +50,9 @@ async function callGateway(_params: {
 export async function callGatewayFromCliRuntime(
   method: string,
   opts: GatewayRpcOpts,
-  params?: unknown,
+  params?: any,
   extra?: CallGatewayFromCliRuntimeExtra,
-): Promise<unknown> {
+): Promise<any> {
   const showProgress = extra?.progress ?? opts.json !== true;
   const timeoutMs = parseTimeoutMsWithFallback(opts.timeout, DEFAULT_GATEWAY_RPC_TIMEOUT_MS, {
     invalidType: "error",

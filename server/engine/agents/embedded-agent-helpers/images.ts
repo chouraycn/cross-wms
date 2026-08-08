@@ -9,7 +9,7 @@ import { sanitizeToolCallIdsForCloudCodeAssist } from "../tool-call-id.js";
 import { sanitizeContentBlocksImages } from "../tool-images.js";
 import { stripThoughtSignatures } from "./bootstrap.js";
 
-type ContentBlock = AgentToolResult<unknown>["content"][number];
+type ContentBlock = AgentToolResult<any>["content"][number];
 const EMPTY_CONTENT_PLACEHOLDER = "[empty content omitted]";
 
 function dropEmptyTextBlocks<T>(content: T[]): T[] {
@@ -17,7 +17,7 @@ function dropEmptyTextBlocks<T>(content: T[]): T[] {
     if (!block || typeof block !== "object") {
       return true;
     }
-    const rec = block as { type?: unknown; text?: unknown };
+    const rec = block as { type?: any; text?: any };
     if (rec.type !== "text" || typeof rec.text !== "string") {
       return true;
     }
@@ -76,7 +76,7 @@ export async function sanitizeSessionMessagesImages(
       continue;
     }
 
-    const role = (msg as { role?: unknown }).role;
+    const role = (msg as { role?: any }).role;
     if (role === "toolResult") {
       const toolMsg = msg as Extract<AgentMessage, { role: "toolResult" }>;
       const content = Array.isArray(toolMsg.content) ? toolMsg.content : [];

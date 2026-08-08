@@ -179,10 +179,10 @@ export class McpClientManager {
 
       // 4. listTools
       const toolsResult = await client.listTools();
-      const tools: McpToolInfo[] = (toolsResult.tools || []).map((tool: { name: string; description?: string; inputSchema?: Record<string, unknown> }) => ({
+      const tools: McpToolInfo[] = (toolsResult.tools || []).map((tool: { name: string; description?: string; inputSchema?: Record<string, any> }) => ({
         name: tool.name,
         description: tool.description || '',
-        inputSchema: (tool.inputSchema || { type: 'object', properties: {} }) as Record<string, unknown>,
+        inputSchema: (tool.inputSchema || { type: 'object', properties: {} }) as Record<string, any>,
       }));
 
       // 5. 缓存
@@ -325,7 +325,7 @@ export class McpClientManager {
    */
   async executeMcpTool(
     fullToolName: string, 
-    args: Record<string, unknown>,
+    args: Record<string, any>,
     options?: { signal?: AbortSignal }
   ): Promise<string> {
     const parsed = parseMcpToolName(fullToolName);
@@ -464,10 +464,10 @@ export class McpClientManager {
       ]);
 
       const toolsResult = await client.listTools();
-      const tools: McpToolInfo[] = (toolsResult.tools || []).map((tool: { name: string; description?: string; inputSchema?: Record<string, unknown> }) => ({
+      const tools: McpToolInfo[] = (toolsResult.tools || []).map((tool: { name: string; description?: string; inputSchema?: Record<string, any> }) => ({
         name: tool.name,
         description: tool.description || '',
-        inputSchema: (tool.inputSchema || { type: 'object', properties: {} }) as Record<string, unknown>,
+        inputSchema: (tool.inputSchema || { type: 'object', properties: {} }) as Record<string, any>,
       }));
 
       // 测试完成后关闭连接

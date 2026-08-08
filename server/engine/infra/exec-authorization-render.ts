@@ -2,6 +2,6 @@
 
 export type AuthorizedShellRenderMode = unknown;
 export type AuthorizedShellRenderResult = unknown;
-export function buildAuthorizedShellCommandFromPlan(...args: unknown[]): unknown {
+export function buildAuthorizedShellCommandFromPlan(...args: any[]): any {
   return undefined;
 }

@@ -46,7 +46,7 @@ function getProgress(steps: OnboardStep[]): { total: number; completed: number; 
   return { total, completed, percentage: Math.round((completed / total) * 100) };
 }
 
-function formatJsonOutput(data: unknown): string {
+function formatJsonOutput(data: any): string {
   return JSON.stringify(data, null, 2);
 }
 

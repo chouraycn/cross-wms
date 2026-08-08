@@ -19,7 +19,7 @@ function activeClientSocketsToPort(port: number): Socket[] {
   // Node has no public active-handle API; this regression must prove the probe
   // promise does not resolve while the client-side socket handle is still live.
   const getActiveHandles = Reflect.get(process, "_getActiveHandles") as
-    | (() => unknown[])
+    | (() => any[])
     | undefined;
   const handles = getActiveHandles?.() ?? [];
   return handles.filter(

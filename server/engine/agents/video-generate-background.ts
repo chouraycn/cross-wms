@@ -7,8 +7,8 @@
  */
 
 export type VideoGenerationTaskHandle = unknown;
-export const videoGenerationTaskLifecycle: unknown = undefined;
-export const createVideoGenerationTaskRun: unknown = undefined;
-export const recordVideoGenerationTaskProgress: unknown = undefined;
-export const completeVideoGenerationTaskRun: unknown = undefined;
-export const failVideoGenerationTaskRun: unknown = undefined;
+export const videoGenerationTaskLifecycle: any = undefined;
+export const createVideoGenerationTaskRun: any = undefined;
+export const recordVideoGenerationTaskProgress: any = undefined;
+export const completeVideoGenerationTaskRun: any = undefined;
+export const failVideoGenerationTaskRun: any = undefined;

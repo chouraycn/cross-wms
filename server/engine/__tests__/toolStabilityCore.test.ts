@@ -277,7 +277,7 @@ describe('toolContextGuard — guardToolResultContext', () => {
       { role: 'user', content: 'x'.repeat(20000) },
       { role: 'assistant', content: 'y'.repeat(20000) },
     ];
-    const result = guardToolResultContext('z'.repeat(15000), messages as unknown, 8000);
+    const result = guardToolResultContext('z'.repeat(15000), messages as any, 8000);
     // 结果应被截断
     expect(result.length).toBeLessThanOrEqual(15000);
   });
@@ -290,7 +290,7 @@ describe('toolContextGuard — guardToolResultContext', () => {
   it('context window 很小时应保留至少 1800 字符', () => {
     const longResult = 'a'.repeat(10000);
     const messages = [{ role: 'user', content: 'x'.repeat(30000) }];
-    const result = guardToolResultContext(longResult, messages as unknown, 4000);
+    const result = guardToolResultContext(longResult, messages as any, 4000);
     // smartTruncateResult 使用 60% head + 30% tail = 90% 内容 + 截断标记
     // minResultChars=2000 → 内容约 1800 + 标记约 70 → 总长约 1870
     expect(result.length).toBeGreaterThanOrEqual(1800);

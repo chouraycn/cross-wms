@@ -7,25 +7,25 @@
  */
 
 export { sanitizeTransportPayloadText } from "./transport-stream-shared.js";
-export const testing: unknown = undefined;
-export function resolveAzureOpenAIApiVersion(..._args: unknown[]): unknown {
+export const testing: any = undefined;
+export function resolveAzureOpenAIApiVersion(..._args: any[]): any {
   return undefined;
 }
-export function createOpenAIResponsesTransportStreamFn(..._args: unknown[]): unknown {
+export function createOpenAIResponsesTransportStreamFn(..._args: any[]): any {
   return undefined;
 }
-export function buildOpenAIResponsesParams(..._args: unknown[]): unknown {
+export function buildOpenAIResponsesParams(..._args: any[]): any {
   return undefined;
 }
-export function createAzureOpenAIResponsesTransportStreamFn(..._args: unknown[]): unknown {
+export function createAzureOpenAIResponsesTransportStreamFn(..._args: any[]): any {
   return undefined;
 }
-export function createOpenAICompletionsTransportStreamFn(..._args: unknown[]): unknown {
+export function createOpenAICompletionsTransportStreamFn(..._args: any[]): any {
   return undefined;
 }
-export function buildOpenAICompletionsParams(..._args: unknown[]): unknown {
+export function buildOpenAICompletionsParams(..._args: any[]): any {
   return undefined;
 }
-export function parseTransportChunkUsage(..._args: unknown[]): unknown {
+export function parseTransportChunkUsage(..._args: any[]): any {
   return undefined;
 }

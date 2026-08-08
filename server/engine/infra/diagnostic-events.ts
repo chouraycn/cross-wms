@@ -77,60 +77,60 @@ export type DiagnosticEventMetadata = unknown;
 export type DiagnosticModelCallContent = unknown;
 export type DiagnosticToolCallContent = unknown;
 export type DiagnosticEventPrivateData = unknown;
-export function isDiagnosticsEnabled(...args: unknown[]): unknown {
+export function isDiagnosticsEnabled(...args: any[]): any {
   return false;
 }
-export function setDiagnosticsEnabledForProcess(...args: unknown[]): unknown {
+export function setDiagnosticsEnabledForProcess(...args: any[]): any {
   return undefined;
 }
-export function areDiagnosticsEnabledForProcess(...args: unknown[]): unknown {
+export function areDiagnosticsEnabledForProcess(...args: any[]): any {
   return undefined;
 }
-export function waitForDiagnosticEventsDrained(...args: unknown[]): unknown {
+export function waitForDiagnosticEventsDrained(...args: any[]): any {
   return undefined;
 }
-export function emitDiagnosticEvent(...args: unknown[]): unknown {
+export function emitDiagnosticEvent(...args: any[]): any {
   return undefined;
 }
-export function emitDiagnosticEventWithTrustedTraceContext(...args: unknown[]): unknown {
+export function emitDiagnosticEventWithTrustedTraceContext(...args: any[]): any {
   return undefined;
 }
-export function emitInternalDiagnosticEvent(...args: unknown[]): unknown {
+export function emitInternalDiagnosticEvent(...args: any[]): any {
   return undefined;
 }
-export function getInternalDiagnosticEventSequence(...args: unknown[]): unknown {
+export function getInternalDiagnosticEventSequence(...args: any[]): any {
   return undefined;
 }
-export function emitTrustedDiagnosticEvent(...args: unknown[]): unknown {
+export function emitTrustedDiagnosticEvent(...args: any[]): any {
   return undefined;
 }
-export function emitTrustedDiagnosticEventWithPrivateData(...args: unknown[]): unknown {
+export function emitTrustedDiagnosticEventWithPrivateData(...args: any[]): any {
   return undefined;
 }
-export function emitTrustedSecurityEvent(...args: unknown[]): unknown {
+export function emitTrustedSecurityEvent(...args: any[]): any {
   return undefined;
 }
-export function emitFailoverEvent(...args: unknown[]): unknown {
+export function emitFailoverEvent(...args: any[]): any {
   return undefined;
 }
-export function onInternalDiagnosticEvent(...args: unknown[]): unknown {
+export function onInternalDiagnosticEvent(...args: any[]): any {
   return undefined;
 }
-export function onTrustedInternalDiagnosticEvent(...args: unknown[]): unknown {
+export function onTrustedInternalDiagnosticEvent(...args: any[]): any {
   return undefined;
 }
-export function hasPendingInternalDiagnosticEvent(...args: unknown[]): unknown {
+export function hasPendingInternalDiagnosticEvent(...args: any[]): any {
   return false;
 }
-export function onDiagnosticEvent(...args: unknown[]): unknown {
+export function onDiagnosticEvent(...args: any[]): any {
   return undefined;
 }
-export function formatDiagnosticTraceparentForPropagation(...args: unknown[]): unknown {
+export function formatDiagnosticTraceparentForPropagation(...args: any[]): any {
   return "";
 }
-export function isInternalDiagnosticEventMetadata(...args: unknown[]): unknown {
+export function isInternalDiagnosticEventMetadata(...args: any[]): any {
   return false;
 }
-export function resetDiagnosticEventsForTest(...args: unknown[]): unknown {
+export function resetDiagnosticEventsForTest(...args: any[]): any {
   return undefined;
 }

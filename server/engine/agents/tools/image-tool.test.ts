@@ -228,7 +228,7 @@ vi.mock("../auth-profiles.js", () => ({
 
 vi.mock("../auth-profiles/external-cli-sync.js", () => ({
   resolveExternalCliAuthProfiles: (
-    _store: unknown,
+    _store: any,
     options?: { providerIds?: Iterable<string> },
   ) => {
     const providerIds = new Set(
@@ -340,7 +340,7 @@ vi.mock("../openclaw-tools.js", async () => {
   };
 });
 
-async function writeAuthProfiles(agentDir: string, profiles: unknown) {
+async function writeAuthProfiles(agentDir: string, profiles: any) {
   await fs.mkdir(agentDir, { recursive: true });
   await fs.writeFile(
     path.join(agentDir, "auth-profiles.json"),
@@ -825,7 +825,7 @@ function makeModelDefinition(id: string, input: Array<"text" | "image">): ModelD
 
 async function expectImageToolExecOk(
   tool: {
-    execute: (toolCallId: string, input: { prompt: string; image: string }) => Promise<unknown>;
+    execute: (toolCallId: string, input: { prompt: string; image: string }) => Promise<any>;
   },
   image: string,
 ) {
@@ -842,15 +842,15 @@ type ToolTextResult = {
     text?: string;
     image_url?: { url?: string };
   }>;
-  details?: Record<string, unknown>;
+  details?: Record<string, any>;
 };
 
-function expectToolText(result: unknown, text: string): void {
+function expectToolText(result: any, text: string): void {
   const content = (result as ToolTextResult).content ?? [];
   expect(content.some((block) => block.type === "text" && block.text === text)).toBe(true);
 }
 
-function firstImageRequest(mock: { mock: { calls: unknown[][] } }): ImageDescriptionRequest {
+function firstImageRequest(mock: { mock: { calls: any[][] } }): ImageDescriptionRequest {
   const request = mock.mock.calls.at(0)?.[0];
   if (!request) {
     throw new Error("expected describeImage call");
@@ -858,7 +858,7 @@ function firstImageRequest(mock: { mock: { calls: unknown[][] } }): ImageDescrip
   return request as ImageDescriptionRequest;
 }
 
-function fetchCallAt(mock: { mock: { calls: unknown[][] } }, index: number): unknown[] {
+function fetchCallAt(mock: { mock: { calls: any[][] } }, index: number): any[] {
   const call = mock.mock.calls[index];
   if (!call) {
     throw new Error(`expected fetch call ${index + 1}`);
@@ -867,7 +867,7 @@ function fetchCallAt(mock: { mock: { calls: unknown[][] } }, index: number): unk
 }
 
 function requireImageTool<T>(tool: T | null | undefined): T {
-  expect(typeof (tool as { execute?: unknown } | null | undefined)?.execute).toBe("function");
+  expect(typeof (tool as { execute?: any } | null | undefined)?.execute).toBe("function");
   if (!tool) {
     throw new Error("expected image tool");
   }
@@ -904,14 +904,14 @@ async function withMinimaxImageToolFromTempAgentDir(
   });
 }
 
-function findSchemaUnionKeywords(schema: unknown, pathLocal = "root"): string[] {
+function findSchemaUnionKeywords(schema: any, pathLocal = "root"): string[] {
   if (!schema || typeof schema !== "object") {
     return [];
   }
   if (Array.isArray(schema)) {
     return schema.flatMap((item, index) => findSchemaUnionKeywords(item, `${pathLocal}[${index}]`));
   }
-  const record = schema as Record<string, unknown>;
+  const record = schema as Record<string, any>;
   const out: string[] = [];
   for (const [key, value] of Object.entries(record)) {
     const nextPath = `${pathLocal}.${key}`;
@@ -1896,7 +1896,7 @@ describe("image tool implicit imageModel config", () => {
       });
 
       expect(fetch).toHaveBeenCalledTimes(1);
-      const [url, init] = fetchCallAt(fetch, 0) as [unknown, { body?: unknown }];
+      const [url, init] = fetchCallAt(fetch, 0) as [unknown, { body?: any }];
       expect(String(url)).toBe("https://api.moonshot.ai/v1/chat/completions");
       expect(typeof init?.body).toBe("string");
       const bodyRaw = typeof init?.body === "string" ? init.body : "";
@@ -2033,13 +2033,13 @@ describe("image tool implicit imageModel config", () => {
       expect(violations).toStrictEqual([]);
 
       const schema = tool.parameters as {
-        properties?: Record<string, unknown>;
+        properties?: Record<string, any>;
       };
-      const imageSchema = schema.properties?.image as { type?: unknown } | undefined;
+      const imageSchema = schema.properties?.image as { type?: any } | undefined;
       const imagesSchema = schema.properties?.images as
-        | { type?: unknown; items?: unknown }
+        | { type?: any; items?: any }
         | undefined;
-      const imageItems = imagesSchema?.items as { type?: unknown } | undefined;
+      const imageItems = imagesSchema?.items as { type?: any } | undefined;
 
       expect(imageSchema?.type).toBe("string");
       expect(imagesSchema?.type).toBe("array");
@@ -2687,7 +2687,7 @@ describe("image tool MiniMax VLM routing", () => {
     expect(fetch).toHaveBeenCalledTimes(1);
     const [url, init] = fetchCallAt(fetch, 0) as [
       unknown,
-      { body?: unknown; headers?: unknown; method?: unknown },
+      { body?: any; headers?: any; method?: any },
     ];
     expect(String(url)).toBe("https://api.minimax.io/v1/coding_plan/vlm");
     expect(init?.method).toBe("POST");
@@ -2882,7 +2882,7 @@ describe("image tool response validation", () => {
       model: string;
       stopReason: string;
       errorMessage: string;
-      content: unknown[];
+      content: any[];
     }>,
   ) {
     return {
@@ -2893,7 +2893,7 @@ describe("image tool response validation", () => {
       stopReason: "stop",
       timestamp: Date.now(),
       usage: makeZeroUsageSnapshot(),
-      content: [] as unknown[],
+      content: [] as any[],
       ...overrides,
     };
   }

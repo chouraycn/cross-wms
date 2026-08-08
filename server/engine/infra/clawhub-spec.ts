@@ -86,10 +86,10 @@ export type SpecValidationResult = {
  * @param input - 待解析的输入（JSON 字符串或对象）
  * @returns 解析成功的 ClawhubSpec，失败返回 null
  */
-export function parseSpec(input: unknown): ClawhubSpec | null {
+export function parseSpec(input: any): ClawhubSpec | null {
   if (input == null) return null;
 
-  let data: unknown = input;
+  let data: any = input;
 
   if (typeof input === 'string') {
     const trimmed = input.trim();
@@ -129,7 +129,7 @@ export function parseSpec(input: unknown): ClawhubSpec | null {
  * @param spec - 待验证的 spec 对象
  * @returns 验证结果，包含 valid 标志和错误信息列表
  */
-export function validateSpec(spec: unknown): SpecValidationResult {
+export function validateSpec(spec: any): SpecValidationResult {
   const result = ClawhubSpecSchema.safeParse(spec);
   if (result.success) {
     return { valid: true, errors: [] };

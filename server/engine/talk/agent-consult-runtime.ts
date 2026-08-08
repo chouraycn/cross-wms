@@ -28,7 +28,7 @@ export type RealtimeVoiceAgentConsultRunParams = {
  * 代理运行产出的流式载荷条目。
  */
 export type RealtimeVoiceAgentConsultRunPayload = {
-  text?: unknown;
+  text?: any;
   isError?: boolean;
   isReasoning?: boolean;
 };
@@ -77,7 +77,7 @@ export async function consultRealtimeVoiceAgent(params: {
   agentRuntime: RealtimeVoiceAgentConsultRuntime;
   logger: ConsultLogger;
   sessionKey: string;
-  args: unknown;
+  args: any;
   transcript: RealtimeVoiceAgentConsultTranscriptEntry[];
   surface: string;
   userLabel: string;

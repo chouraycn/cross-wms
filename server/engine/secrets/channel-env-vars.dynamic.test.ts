@@ -7,7 +7,7 @@ type MockManifestRegistry = {
     origin: string;
     channelEnvVars?: Record<string, string[]>;
   }>;
-  diagnostics: unknown[];
+  diagnostics: any[];
 };
 
 const pluginRegistryMocks = vi.hoisted(() => {

@@ -79,7 +79,7 @@ export interface DeferredToolCallContext {
  */
 export interface AfterToolCallResult {
   content?: (TextContent | ImageContent)[];
-  details?: unknown;
+  details?: any;
   isError?: boolean;
   /**
    * Hint that the agent should stop after the current tool batch.
@@ -95,7 +95,7 @@ export interface BeforeToolCallContext {
   /** The raw tool call block from `assistantMessage.content`. */
   toolCall: AgentToolCall;
   /** Validated tool arguments for the target tool schema. */
-  args: unknown;
+  args: any;
   /** Current agent context at the time the tool call is prepared. */
   context: AgentContext;
 }
@@ -107,9 +107,9 @@ export interface AfterToolCallContext {
   /** The raw tool call block from `assistantMessage.content`. */
   toolCall: AgentToolCall;
   /** Validated tool arguments for the target tool schema. */
-  args: unknown;
+  args: any;
   /** The executed tool result before unknown `afterToolCall` overrides are applied. */
-  result: AgentToolResult<unknown>;
+  result: AgentToolResult<any>;
   /** Whether the executed tool result is currently treated as an error. */
   isError: boolean;
   /** Current agent context at the time the tool call is finalized. */
@@ -371,7 +371,7 @@ export interface CompactionSummaryMessage {
   /** Optional first retained entry id from the compaction range. */
   firstKeptEntryId?: string;
   /** Optional implementation-specific compaction metadata. */
-  details?: unknown;
+  details?: any;
 }
 
 /**
@@ -458,7 +458,7 @@ export type AgentToolUpdateCallback<T = unknown> = (partialResult: AgentToolResu
 /** Tool definition used by the agent runtime. */
 export interface AgentTool<
   TParameters extends TSchema = TSchema,
-  TDetails = unknown,
+  TDetails = any,
 > extends Tool<TParameters> {
   /** Human-readable label for UI display. */
   label: string;
@@ -466,7 +466,7 @@ export interface AgentTool<
    * Optional compatibility shim for raw tool-call arguments before schema validation.
    * Must return an object that matches `TParameters`.
    */
-  prepareArguments?: (args: unknown) => Static<TParameters>;
+  prepareArguments?: (args: any) => Static<TParameters>;
   /** Execute the tool call. Throw on failure instead of encoding errors in `content`. */
   execute: (
     toolCallId: string,
@@ -514,19 +514,19 @@ export type AgentEvent =
   | { type: "message_update"; message: AgentMessage; assistantMessageEvent: AssistantMessageEvent }
   | { type: "message_end"; message: AgentMessage }
   // Tool execution lifecycle
-  | { type: "tool_execution_start"; toolCallId: string; toolName: string; args: unknown }
+  | { type: "tool_execution_start"; toolCallId: string; toolName: string; args: any }
   | {
       type: "tool_execution_update";
       toolCallId: string;
       toolName: string;
-      args: unknown;
-      partialResult: unknown;
+      args: any;
+      partialResult: any;
     }
   | {
       type: "tool_execution_end";
       toolCallId: string;
       toolName: string;
-      result: unknown;
+      result: any;
       isError: boolean;
       /** False when resolution, argument preparation, validation, or policy blocked execution. */
       executionStarted?: boolean;

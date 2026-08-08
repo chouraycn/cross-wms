@@ -5,7 +5,7 @@
  * or opt into a configured allowlist that is still intersected with known agents.
  */
 
-function normalizeAgentId(value: unknown): string {
+function normalizeAgentId(value: any): string {
   if (typeof value !== "string") {
     return "";
   }

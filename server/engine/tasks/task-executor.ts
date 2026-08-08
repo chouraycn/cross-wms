@@ -43,7 +43,7 @@ export interface ExecuteOptions {
 
 export interface ExecuteResult {
   result: TaskResult;
-  output: unknown;
+  output: any;
 }
 
 /** 执行单个任务，处理重试/超时/取消。 */

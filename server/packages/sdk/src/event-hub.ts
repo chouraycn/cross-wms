@@ -19,7 +19,7 @@ export class EventHub<T> {
   private readonly replayLimit: number;
   private readonly replayEvents: T[] = [];
   private closed = false;
-  private closeError: unknown;
+  private closeError: any;
   private hasCloseError = false;
   private readonly listeners = new Set<Listener<T>>();
   private readonly waiters = new Set<() => void>();
@@ -44,7 +44,7 @@ export class EventHub<T> {
     }
   }
 
-  close(error?: unknown): void {
+  close(error?: any): void {
     const hasError = arguments.length > 0;
     if (hasError) {
       this.closeError = error;
@@ -135,10 +135,10 @@ export class EventHub<T> {
   }
 }
 
-export function isGatewayEvent(value: unknown): value is GatewayEvent {
+export function isGatewayEvent(value: any): value is GatewayEvent {
   return (
     typeof value === "object" &&
     value !== null &&
-    typeof (value as { event?: unknown }).event === "string"
+    typeof (value as { event?: any }).event === "string"
   );
 }

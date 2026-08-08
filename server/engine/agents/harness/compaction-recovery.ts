@@ -7,7 +7,7 @@
 import type { EmbeddedAgentCompactResult } from "../embedded-agent-runner/types.js";
 
 /** Returns whether a native harness failure reason indicates a recoverable binding issue. */
-export function isRecoverableNativeHarnessBindingReason(reason: unknown): boolean {
+export function isRecoverableNativeHarnessBindingReason(reason: any): boolean {
   if (typeof reason !== "string") {
     return false;
   }

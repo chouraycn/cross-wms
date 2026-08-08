@@ -94,7 +94,7 @@ function apnsResult(overrides: Partial<ApnsPushResult>): ApnsPushResult {
   };
 }
 
-function createInvokeParams(params: Record<string, unknown>) {
+function createInvokeParams(params: Record<string, any>) {
   const respond = vi.fn();
   return {
     respond,

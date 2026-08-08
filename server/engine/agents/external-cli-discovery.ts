@@ -7,18 +7,18 @@
  */
 
 export type ExternalCliAuthDiscovery = unknown;
-export function externalCliDiscoveryNone(..._args: unknown[]): unknown {
+export function externalCliDiscoveryNone(..._args: any[]): any {
   return undefined;
 }
-export function externalCliDiscoveryScoped(..._args: unknown[]): unknown {
+export function externalCliDiscoveryScoped(..._args: any[]): any {
   return undefined;
 }
-export function externalCliDiscoveryForProviderAuth(..._args: unknown[]): unknown {
+export function externalCliDiscoveryForProviderAuth(..._args: any[]): any {
   return undefined;
 }
-export function externalCliDiscoveryForConfigStatus(..._args: unknown[]): unknown {
+export function externalCliDiscoveryForConfigStatus(..._args: any[]): any {
   return undefined;
 }
-export function externalCliDiscoveryForProviders(..._args: unknown[]): unknown {
+export function externalCliDiscoveryForProviders(..._args: any[]): any {
   return undefined;
 }

@@ -6,22 +6,22 @@ const logger = getLogger().child({ subsystem: 'diagnostic' });
 let lastActivityAt = 0;
 
 export const diagnosticLogger = {
-  trace(...args: unknown[]): void {
+  trace(...args: any[]): void {
     logger.trace('[diagnostic]', ...args);
   },
-  debug(...args: unknown[]): void {
+  debug(...args: any[]): void {
     logger.debug('[diagnostic]', ...args);
   },
-  info(...args: unknown[]): void {
+  info(...args: any[]): void {
     logger.info('[diagnostic]', ...args);
   },
-  warn(...args: unknown[]): void {
+  warn(...args: any[]): void {
     logger.warn('[diagnostic]', ...args);
   },
-  error(...args: unknown[]): void {
+  error(...args: any[]): void {
     logger.error('[diagnostic]', ...args);
   },
-  fatal(...args: unknown[]): void {
+  fatal(...args: any[]): void {
     logger.fatal('[diagnostic]', ...args);
   },
   isEnabled(level: string): boolean {

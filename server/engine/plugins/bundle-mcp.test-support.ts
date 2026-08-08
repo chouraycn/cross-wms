@@ -41,7 +41,7 @@ export async function writeBundleTextFiles(
 export async function writeClaudeBundleManifest(params: {
   homeDir: string;
   pluginId: string;
-  manifest: Record<string, unknown>;
+  manifest: Record<string, any>;
 }) {
   const pluginRoot = resolveBundlePluginRoot(params.homeDir, params.pluginId);
   await fs.mkdir(path.join(pluginRoot, ".claude-plugin"), { recursive: true });

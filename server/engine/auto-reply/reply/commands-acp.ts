@@ -26,7 +26,7 @@ export type AcpCommandContext = {
   userId?: string;
   agentId?: string;
   channel?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 // ACP 命令处理结果

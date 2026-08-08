@@ -5,7 +5,7 @@ export interface RenderedBatch {
   id: string;
   parts: MessagePart[];
   textContent: string;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
   createdAt: number;
 }
 

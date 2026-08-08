@@ -90,7 +90,7 @@ export type PluginStateStoreErrorOptions = {
   code: PluginStateStoreErrorCode;
   operation: PluginStateStoreOperation;
   path?: string;
-  cause?: unknown;
+  cause?: any;
 };
 
 /** Typed error thrown for plugin-state validation failures. */
@@ -172,7 +172,7 @@ function validateOptionalTtlMs(
 }
 
 function assertPlainJsonValue(
-  value: unknown,
+  value: any,
   seen: WeakSet<object>,
   path: string,
   depth = 0,
@@ -235,16 +235,16 @@ function assertPlainJsonValue(
   }
 }
 
-function assertJsonSerializable(value: unknown): void {
+function assertJsonSerializable(value: any): void {
   assertPlainJsonValue(value, new WeakSet<object>(), "value");
 }
 
 function prepareRegisterParams(
   key: string,
-  value: unknown,
+  value: any,
   defaultTtlMs?: number,
   opts?: { ttlMs?: number },
-): { key: string; value: unknown; ttlMs?: number } {
+): { key: string; value: any; ttlMs?: number } {
   const normalizedKey = validateKey(key, "register");
   assertJsonSerializable(value);
   const ttlMs = validateOptionalTtlMs(opts?.ttlMs, "register") ?? defaultTtlMs;
@@ -255,7 +255,7 @@ function prepareRegisterParams(
 
 type StoredEntry = {
   key: string;
-  value: unknown;
+  value: any;
   createdAt: number;
   expiresAt: number | null;
 };

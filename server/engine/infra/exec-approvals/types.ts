@@ -52,6 +52,6 @@ export type UnixSocketMessage =
 export type UnixSocketResponse = {
   requestId: string;
   success: boolean;
-  data?: unknown;
+  data?: any;
   error?: string;
 };

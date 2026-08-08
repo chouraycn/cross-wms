@@ -6,7 +6,7 @@ import { createNonExitingRuntime } from "../runtime.js";
 import type { WizardPrompter } from "./prompts.js";
 
 const ensureStandaloneMigrationProviderRegistryLoaded = vi.hoisted(() => vi.fn());
-const resolvePluginMigrationProviders = vi.hoisted(() => vi.fn(() => [] as unknown[]));
+const resolvePluginMigrationProviders = vi.hoisted(() => vi.fn(() => [] as any[]));
 vi.mock("../plugins/migration-provider-runtime.js", () => ({
   ensureStandaloneMigrationProviderRegistryLoaded,
   resolvePluginMigrationProviders,
@@ -36,7 +36,7 @@ const resolveStateDir = vi.hoisted(() => vi.fn(() => "/tmp/state"));
 vi.mock("../config/paths.js", () => ({ resolveStateDir }));
 
 const migrateDefaultCommand = vi.hoisted(() =>
-  vi.fn(async (_runtime: unknown, _opts: { provider: string }) => undefined),
+  vi.fn(async (_runtime: any, _opts: { provider: string }) => undefined),
 );
 vi.mock("../commands/migrate.js", () => ({ migrateDefaultCommand }));
 
@@ -67,7 +67,7 @@ function setOwnership(providerId: string, owningPluginIds: string[]): void {
 }
 
 function setProviders(providers: ProviderMock[]): void {
-  resolvePluginMigrationProviders.mockReturnValue(providers as unknown[]);
+  resolvePluginMigrationProviders.mockReturnValue(providers as any[]);
 }
 
 function setTTY(isTTY: boolean): void {

@@ -53,7 +53,7 @@ function setInCache(key: string, results: WebSearchResultList): void {
 
 const DEFAULT_BASE_URL = PROVIDER_ENDPOINTS.ollama.replace(/\/v1$/, "");
 
-function getBaseUrl(searchConfig?: Record<string, unknown>): string {
+function getBaseUrl(searchConfig?: Record<string, any>): string {
   if (searchConfig) {
     const configValue = searchConfig.baseUrl;
     if (configValue !== undefined && configValue !== null && configValue !== "") {
@@ -174,12 +174,12 @@ const plugin: WebSearchProviderPlugin = {
   credentialPath: "tools.web.search.providers.ollama.baseUrl",
   inactiveSecretPaths: [],
 
-  getCredentialValue(searchConfig?: Record<string, unknown>): unknown {
+  getCredentialValue(searchConfig?: Record<string, any>): any {
     if (!searchConfig) return undefined;
     return searchConfig.baseUrl;
   },
 
-  setCredentialValue(searchConfigTarget: Record<string, unknown>, value: unknown): void {
+  setCredentialValue(searchConfigTarget: Record<string, any>, value: any): void {
     searchConfigTarget.baseUrl = value;
   },
 
@@ -209,7 +209,7 @@ const plugin: WebSearchProviderPlugin = {
         required: ["query"],
       },
       async execute(
-        args: Record<string, unknown>,
+        args: Record<string, any>,
         context?: { signal?: AbortSignal },
       ): Promise<WebSearchResultList> {
         const query = String(args.query || "").trim();

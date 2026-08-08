@@ -80,8 +80,8 @@ export type ChannelApprovalCapability = {
       request: ApprovalRequest;
     }) => boolean;
   };
-  nativeRuntime?: unknown;
-  render?: unknown;
+  nativeRuntime?: any;
+  render?: any;
   native?: {
     describeDeliveryCapabilities?: (params: {
       cfg: OpenClawConfig;

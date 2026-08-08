@@ -8,8 +8,8 @@ import { createRuntimeEnv } from "./plugin-runtime-env.js";
 
 /** Wizard prompt doubles shared by plugin setup flow tests. */
 export type { WizardPrompter } from "../wizard/prompts.js";
-type UnknownMock = Mock<(...args: unknown[]) => unknown>;
-type AsyncUnknownMock = Mock<(...args: unknown[]) => Promise<unknown>>;
+type UnknownMock = Mock<(...args: any[]) => unknown>;
+type AsyncUnknownMock = Mock<(...args: any[]) => Promise<any>>;
 type QueuedWizardPrompter = {
   intro: AsyncUnknownMock;
   outro: AsyncUnknownMock;
@@ -101,8 +101,8 @@ type SetupWizardCredentialValues = Record<string, string>;
 type SetupWizardTestPlugin = {
   id: string;
   setupWizard?: ChannelPlugin["setupWizard"];
-  config: Record<string, unknown>;
-} & Record<string, unknown>;
+  config: Record<string, any>;
+} & Record<string, any>;
 
 // Tests pass plugin-like stubs; require the declarative wizard shape before adapting.
 function isDeclarativeSetupWizard(
@@ -178,7 +178,7 @@ export function createPluginSetupWizardStatus(plugin: SetupWizardTestPlugin) {
 
 export async function runSetupWizardConfigure<
   TCfg,
-  TOptions extends Record<string, unknown>,
+  TOptions extends Record<string, any>,
   TAccountOverrides extends Record<string, string | undefined>,
   TRuntime,
   TResult,
@@ -213,7 +213,7 @@ export async function runSetupWizardConfigure<
 
 export async function runSetupWizardPrepare<
   TCfg,
-  TOptions extends Record<string, unknown>,
+  TOptions extends Record<string, any>,
   TRuntime,
   TResult,
 >(params: {
@@ -247,7 +247,7 @@ export async function runSetupWizardPrepare<
 
 export async function runSetupWizardFinalize<
   TCfg,
-  TOptions extends Record<string, unknown>,
+  TOptions extends Record<string, any>,
   TRuntime,
   TResult,
 >(params: {

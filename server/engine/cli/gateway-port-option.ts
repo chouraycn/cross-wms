@@ -20,7 +20,7 @@ function parseStrictPositiveInteger(value: string): number | undefined {
   return num;
 }
 
-export function parseGatewayPortOption(raw: unknown, flagName = "--port"): number | undefined {
+export function parseGatewayPortOption(raw: any, flagName = "--port"): number | undefined {
   if (raw === undefined || raw === null) {
     return undefined;
   }

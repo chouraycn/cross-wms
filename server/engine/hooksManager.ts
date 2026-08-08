@@ -50,7 +50,7 @@ export interface HookContext {
   sessionKey?: string;
   userId?: string;
   timestamp: number;
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 class HooksManager {
@@ -155,7 +155,7 @@ class HooksManager {
       try {
         const result = await hook.handler(currentContext);
         if (result !== undefined && result !== null) {
-          currentContext = { ...currentContext, ...(result as Record<string, unknown>) } as T;
+          currentContext = { ...currentContext, ...(result as Record<string, any>) } as T;
         }
       } catch (error) {
         logger.error(`[hooks] Hook ${hook.id} (${type}) failed:`, error);
@@ -180,7 +180,7 @@ class HooksManager {
       try {
         const result = hook.handler(currentContext);
         if (result !== undefined && result !== null && typeof result === 'object') {
-          currentContext = { ...currentContext, ...(result as Record<string, unknown>) } as T;
+          currentContext = { ...currentContext, ...(result as Record<string, any>) } as T;
         }
       } catch (error) {
         logger.error(`[hooks] Hook ${hook.id} (${type}) failed:`, error);

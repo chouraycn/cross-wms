@@ -18,7 +18,7 @@ export type RuntimeToolInputSchemaProjection = {
   readonly violations: readonly string[];
 };
 
-function isJsonValue(value: unknown): value is RuntimeToolInputSchemaJson {
+function isJsonValue(value: any): value is RuntimeToolInputSchemaJson {
   if (value === null) {
     return true;
   }
@@ -31,7 +31,7 @@ function isJsonValue(value: unknown): value is RuntimeToolInputSchemaJson {
       if (Array.isArray(value)) {
         return value.every(isJsonValue);
       }
-      return Object.values(value as Record<string, unknown>).every(isJsonValue);
+      return Object.values(value as Record<string, any>).every(isJsonValue);
     default:
       return false;
   }
@@ -43,7 +43,7 @@ function isJsonObject(value: RuntimeToolInputSchemaJson): value is {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
-function serializeToolInputSchema(value: unknown, path: string): RuntimeToolInputSchemaProjection {
+function serializeToolInputSchema(value: any, path: string): RuntimeToolInputSchemaProjection {
   let text: string | undefined;
   try {
     text = JSON.stringify(value);
@@ -59,7 +59,7 @@ function serializeToolInputSchema(value: unknown, path: string): RuntimeToolInpu
       violations: [`${path} is not JSON-serializable`],
     };
   }
-  const parsed = JSON.parse(text) as unknown;
+  const parsed = JSON.parse(text) as any;
   if (!isJsonValue(parsed)) {
     return {
       schema: {},
@@ -118,7 +118,7 @@ function findDynamicSchemaKeywordViolations(
 
 /** Projects one runtime tool input schema to JSON and reports runtime incompatibilities. */
 export function projectRuntimeToolInputSchema(
-  schema: unknown,
+  schema: any,
   path = "parameters",
 ): RuntimeToolInputSchemaProjection {
   const projection = serializeToolInputSchema(schema, path);

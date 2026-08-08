@@ -43,13 +43,13 @@ type ResolvedTranscriptsConfig = {
   autoStart: ResolvedTranscriptsAutoStartConfig[];
 };
 
-function resolveAutoStart(raw: unknown): ResolvedTranscriptsAutoStartConfig[] {
+function resolveAutoStart(raw: any): ResolvedTranscriptsAutoStartConfig[] {
   if (!Array.isArray(raw)) {
     return [];
   }
   return raw
     .map((entry): ResolvedTranscriptsAutoStartConfig | undefined => {
-      const config = entry && typeof entry === "object" ? (entry as Record<string, unknown>) : {};
+      const config = entry && typeof entry === "object" ? (entry as Record<string, any>) : {};
       const providerId = readString(config.providerId);
       if (!providerId) {
         return undefined;
@@ -68,8 +68,8 @@ function resolveAutoStart(raw: unknown): ResolvedTranscriptsAutoStartConfig[] {
 }
 
 /** Normalize raw transcripts config into runtime settings. */
-export function resolveTranscriptsConfig(raw: unknown): ResolvedTranscriptsConfig {
-  const config = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
+export function resolveTranscriptsConfig(raw: any): ResolvedTranscriptsConfig {
+  const config = raw && typeof raw === "object" ? (raw as Record<string, any>) : {};
   const maxUtterances =
     typeof config.maxUtterances === "number" && Number.isFinite(config.maxUtterances)
       ? Math.max(1, Math.min(10_000, Math.floor(config.maxUtterances)))

@@ -19,7 +19,7 @@ let mockResponse: {
 };
 
 function createMockResponse(
-  result: unknown,
+  result: any,
   ok = true,
   status = 200,
 ): typeof mockResponse {

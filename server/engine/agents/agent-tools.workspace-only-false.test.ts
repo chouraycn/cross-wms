@@ -60,7 +60,7 @@ describe("FS tools with workspaceOnly=false", () => {
   const runFsTool = async (
     toolName: "write" | "edit" | "read",
     callId: string,
-    input: Record<string, unknown>,
+    input: Record<string, any>,
     workspaceOnly: boolean | undefined,
   ) => {
     const tool = requireTool(toolsFor(workspaceOnly), toolName);

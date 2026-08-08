@@ -132,25 +132,25 @@ describe("config io write", () => {
     );
   }
 
-  const expectInputOwnerDisplayUnchanged = (input: Record<string, unknown>) => {
-    expect((input.commands as Record<string, unknown>).ownerDisplay).toBe("hash");
+  const expectInputOwnerDisplayUnchanged = (input: Record<string, any>) => {
+    expect((input.commands as Record<string, any>).ownerDisplay).toBe("hash");
   };
 
   const readPersistedCommands = async (configPath: string) => {
     const persisted = JSON.parse(await fs.readFile(configPath, "utf-8")) as {
-      commands?: Record<string, unknown>;
+      commands?: Record<string, any>;
     };
     return persisted.commands;
   };
 
-  const requireRecord = (value: unknown, label: string): Record<string, unknown> => {
+  const requireRecord = (value: any, label: string): Record<string, any> => {
     if (!value || typeof value !== "object" || Array.isArray(value)) {
       throw new Error(`expected ${label} to be a record`);
     }
-    return value as Record<string, unknown>;
+    return value as Record<string, any>;
   };
 
-  const requireArray = (value: unknown, label: string): unknown[] => {
+  const requireArray = (value: any, label: string): any[] => {
     if (!Array.isArray(value)) {
       throw new Error(`expected ${label} to be an array`);
     }
@@ -158,7 +158,7 @@ describe("config io write", () => {
   };
 
   const expectInstallRecord = (
-    record: unknown,
+    record: any,
     expected: { source: string; spec: string; installPath: string },
   ) => {
     const actual = requireRecord(record, "plugin install record");
@@ -167,7 +167,7 @@ describe("config io write", () => {
     expect(actual.installPath).toBe(expected.installPath);
   };
 
-  const expectConfigWriteRejected = async (promise: Promise<unknown>) => {
+  const expectConfigWriteRejected = async (promise: Promise<any>) => {
     try {
       await promise;
     } catch (error) {
@@ -177,7 +177,7 @@ describe("config io write", () => {
     throw new Error("expected config write rejection");
   };
 
-  const expectPersistedHashResult = (result: unknown) => {
+  const expectPersistedHashResult = (result: any) => {
     const persistedHash = requireRecord(result, "config write result").persistedHash;
     expect(typeof persistedHash).toBe("string");
     expect(persistedHash).not.toBe("");
@@ -460,7 +460,7 @@ describe("config io write", () => {
         expect(indexedPlugin.pluginId).toBe("demo");
         expect(indexedPlugin.installRecordHash).toMatch(/^[a-f0-9]{64}$/u);
         const persistedConfig = JSON.parse(await fs.readFile(configPath, "utf-8")) as {
-          plugins?: { installs?: unknown };
+          plugins?: { installs?: any };
         };
         expect(persistedConfig.plugins?.installs).toBeUndefined();
       } finally {
@@ -518,7 +518,7 @@ describe("config io write", () => {
       });
       expect(index.plugins).toEqual([]);
       const persistedConfig = JSON.parse(await fs.readFile(configPath, "utf-8")) as {
-        plugins?: { installs?: unknown };
+        plugins?: { installs?: any };
       };
       expect(persistedConfig.plugins?.installs).toBeUndefined();
     });
@@ -682,14 +682,14 @@ describe("config io write", () => {
       });
 
       const livePersisted = JSON.parse(await fs.readFile(liveConfigPath, "utf-8")) as {
-        gateway?: { mode?: unknown; port?: unknown };
+        gateway?: { mode?: any; port?: any };
       };
       expect(livePersisted.gateway).toEqual({ mode: "local", port: 18789 });
 
       const overridePersisted = JSON.parse(
         await fs.readFile(path.join(overrideDir, "openclaw.json"), "utf-8"),
       ) as {
-        session?: { store?: unknown };
+        session?: { store?: any };
       };
       expect(overridePersisted.session?.store).toBe(path.join(overrideDir, "sessions.json"));
     });
@@ -704,7 +704,7 @@ describe("config io write", () => {
         logger: silentLogger,
       });
 
-      const input: Record<string, unknown> = {
+      const input: Record<string, any> = {
         gateway: { mode: "local" },
         commands: { ownerDisplay: "hash" },
       };
@@ -1900,7 +1900,7 @@ describe("config io write", () => {
       await io.writeConfigFile({ agents: { defaults: { maxConcurrent: 1 } } });
 
       const persisted = JSON.parse(await fs.readFile(configPath, "utf-8")) as {
-        agents?: { defaults?: Record<string, unknown> };
+        agents?: { defaults?: Record<string, any> };
       };
       expect(persisted.agents?.defaults).toEqual({ $include: "./agent-defaults.json5" });
       await expect(fs.readFile(includePath, "utf-8")).resolves.toBe(originalIncludeRaw);
@@ -1961,7 +1961,7 @@ describe("config io write", () => {
       await io.writeConfigFile({ plugins: {} });
 
       const persisted = JSON.parse(await fs.readFile(configPath, "utf-8")) as {
-        plugins?: Record<string, unknown>;
+        plugins?: Record<string, any>;
       };
       expect(persisted.plugins).toEqual({});
     });
@@ -2087,7 +2087,7 @@ describe("config io write", () => {
 
       await expect(fs.readFile(configPath, "utf-8")).resolves.not.toBe(originalRootRaw);
       const persistedRoot = JSON.parse(await fs.readFile(configPath, "utf-8")) as {
-        agents?: { defaults?: unknown; list?: unknown[] };
+        agents?: { defaults?: any; list?: any[] };
       };
       expect(persistedRoot.agents?.defaults).toBeUndefined();
       expect(persistedRoot.agents?.list).toEqual([{ $include: "./main-agent.json5" }]);
@@ -2218,7 +2218,7 @@ describe("config io write", () => {
         });
 
         const persisted = JSON.parse(await fs.readFile(configPath, "utf-8")) as {
-          meta?: Record<string, unknown>;
+          meta?: Record<string, any>;
         };
         expect(persisted).toEqual({
           gateway: { mode: "local", port: 18789 },
@@ -2261,7 +2261,7 @@ describe("config io write", () => {
         )}\n`,
         "utf-8",
       );
-      const observedSources: unknown[] = [];
+      const observedSources: any[] = [];
       const unsubscribe = registerConfigWriteListener((event) => {
         observedSources.push(event.sourceConfig);
       });
@@ -2418,7 +2418,7 @@ describe("config io write", () => {
           },
         },
       } satisfies ConfigFileSnapshot["config"];
-      const observedSources: unknown[] = [];
+      const observedSources: any[] = [];
       const unsubscribe = registerConfigWriteListener((event) => {
         observedSources.push(event.sourceConfig);
       });

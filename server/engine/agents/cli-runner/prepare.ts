@@ -639,7 +639,7 @@ export async function prepareCliRunContext(
       `cli session reset: provider=${params.provider} reason=${reusableCliSession.invalidatedReason}`,
     );
   }
-  let openClawHistoryMessages: unknown[] | undefined;
+  let openClawHistoryMessages: any[] | undefined;
   const loadOpenClawHistoryMessages = async () => {
     openClawHistoryMessages ??= await loadCliSessionHistoryMessages({
       sessionId: params.sessionId,

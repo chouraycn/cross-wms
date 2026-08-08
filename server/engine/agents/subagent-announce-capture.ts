@@ -6,9 +6,9 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export async function readLatestSubagentOutputWithRetryUsing(..._args: unknown[]): Promise<unknown> {
+export async function readLatestSubagentOutputWithRetryUsing(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
-export async function captureSubagentCompletionReplyUsing(..._args: unknown[]): Promise<unknown> {
+export async function captureSubagentCompletionReplyUsing(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }

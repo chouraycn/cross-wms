@@ -80,7 +80,7 @@ export const buildErnieHeaders: ProviderHeaderBuilder = (ctx) =>
 /** ERNIE 请求体（OpenAI 兼容，但 messages 中 user_id 可选用于合规审计）。 */
 export const buildErnieRequestBody: ProviderRequestBodyBuilder = (ctx) => {
   const { model, options } = ctx;
-  const body: Record<string, unknown> = {
+  const body: Record<string, any> = {
     model: model.id,
     messages: options.messages.map((m) => ({ role: m.role, content: m.content })),
   };
@@ -126,7 +126,7 @@ export const parseErnieStreamChunk: ProviderStreamChunkParser = (chunk) => {
   }
   // 工具调用
   if (data.function_call?.name) {
-    let args: Record<string, unknown> = {};
+    let args: Record<string, any> = {};
     try {
       args = data.function_call.arguments ? JSON.parse(data.function_call.arguments) : {};
     } catch {

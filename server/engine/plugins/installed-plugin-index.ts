@@ -92,10 +92,10 @@ export { resolveInstalledPluginIndexPolicyHash } from "./installed-plugin-index-
 type OpenClawConfig = {
   plugins?: {
     entries?: Record<string, { enabled?: boolean }>;
-    [key: string]: unknown;
+    [key: string]: any;
   };
-  channels?: Record<string, unknown>;
-  [key: string]: unknown;
+  channels?: Record<string, any>;
+  [key: string]: any;
 };
 
 /** 插件发现结果（降级 unknown 占位）。 */
@@ -135,7 +135,7 @@ type NormalizedPluginsConfig = {
  * 降级说明：cross-wms 的 config-state.js 尚未移植。这里降级为始终返回空规范化
  * 结构，使所有插件默认通过 base policy。
  */
-function normalizePluginsConfig(_plugins: unknown): NormalizedPluginsConfig {
+function normalizePluginsConfig(_plugins: any): NormalizedPluginsConfig {
   return {
     enabled: true,
     entries: {},

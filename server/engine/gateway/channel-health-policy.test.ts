@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { evaluateChannelHealth, resolveChannelRestartReason } from "./channel-health-policy.js";
 
 function evaluateHealth(
-  account: Record<string, unknown>,
+  account: Record<string, any>,
   opts: { now?: number; channelId?: string } = {},
 ) {
   const { now = 100_000, channelId = "discord" } = opts;
@@ -17,7 +17,7 @@ function evaluateHealth(
   });
 }
 
-function runningAccount(overrides: Record<string, unknown> = {}) {
+function runningAccount(overrides: Record<string, any> = {}) {
   return {
     running: true,
     enabled: true,
@@ -26,11 +26,11 @@ function runningAccount(overrides: Record<string, unknown> = {}) {
   };
 }
 
-function connectedAccount(overrides: Record<string, unknown> = {}) {
+function connectedAccount(overrides: Record<string, any> = {}) {
   return runningAccount({ connected: true, ...overrides });
 }
 
-function activeRunAccount(lastRunActivityAt: number, overrides: Record<string, unknown> = {}) {
+function activeRunAccount(lastRunActivityAt: number, overrides: Record<string, any> = {}) {
   return runningAccount({
     connected: false,
     activeRuns: 1,
@@ -39,7 +39,7 @@ function activeRunAccount(lastRunActivityAt: number, overrides: Record<string, u
   });
 }
 
-function staleTransportAccount(overrides: Record<string, unknown> = {}) {
+function staleTransportAccount(overrides: Record<string, any> = {}) {
   return connectedAccount({
     lastStartAt: 0,
     lastTransportActivityAt: 0,

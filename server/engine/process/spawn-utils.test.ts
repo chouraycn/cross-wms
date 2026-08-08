@@ -20,9 +20,9 @@ function createStubChild() {
 }
 
 function spawnOptionsAt(
-  spawnMock: { mock: { calls: readonly unknown[][] } },
+  spawnMock: { mock: { calls: readonly any[][] } },
   callIndex: number,
-): { stdio?: unknown } {
+): { stdio?: any } {
   const call = spawnMock.mock.calls[callIndex];
   if (!call) {
     throw new Error(`expected spawn call ${callIndex}`);

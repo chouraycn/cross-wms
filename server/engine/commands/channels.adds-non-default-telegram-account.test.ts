@@ -33,10 +33,10 @@ type ChannelSectionConfig = {
   botToken?: string;
   appToken?: string;
   account?: string;
-  accounts?: Record<string, Record<string, unknown>>;
+  accounts?: Record<string, Record<string, any>>;
 };
 
-function formatChannelStatusJoined(channelAccounts: Record<string, unknown>) {
+function formatChannelStatusJoined(channelAccounts: Record<string, any>) {
   return formatGatewayChannelsStatusLines({
     channelLabels: {
       discord: "Discord",
@@ -69,7 +69,7 @@ function resolveScopedAccount(
   cfg: Parameters<NonNullable<ChannelPlugin["config"]["resolveAccount"]>>[0],
   channelKey: string,
   accountId?: string | null,
-): Record<string, unknown> {
+): Record<string, any> {
   const resolvedAccountId = normalizeAccountId(accountId);
   const channel = cfg.channels?.[channelKey] as ChannelSectionConfig | undefined;
   const scoped = channel?.accounts?.[resolvedAccountId];
@@ -94,7 +94,7 @@ function createScopedCommandTestPlugin(params: {
     botToken?: string;
     appToken?: string;
     signalNumber?: string;
-  }) => Record<string, unknown>;
+  }) => Record<string, any>;
   clearBaseFields: string[];
   singleAccountKeysToMove?: readonly string[];
   onAccountConfigChanged?: NonNullable<ChannelPlugin["lifecycle"]>["onAccountConfigChanged"];

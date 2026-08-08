@@ -10,7 +10,7 @@ import type { ModelCatalogEntry } from "./model-catalog.types.js";
 import { publishProviderAuthWarmSnapshot } from "./model-provider-auth-state.js";
 
 const modelCatalogMocks = vi.hoisted(() => ({
-  loadModelCatalog: vi.fn<(params?: unknown) => Promise<ModelCatalogEntry[]>>(),
+  loadModelCatalog: vi.fn<(params?: any) => Promise<ModelCatalogEntry[]>>(),
 }));
 
 const modelAuthMocks = vi.hoisted(() => ({
@@ -30,7 +30,7 @@ const modelAuthMocks = vi.hoisted(() => ({
         provider: string;
         cfg?: OpenClawConfig;
         workspaceDir?: string;
-        runtimeLookup?: unknown;
+        runtimeLookup?: any;
       }) => boolean
     >(),
 }));

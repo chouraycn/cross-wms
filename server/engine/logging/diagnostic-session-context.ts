@@ -85,7 +85,7 @@ function readTailText(filePath: string): { text: string; truncated: boolean } | 
   }
 }
 
-function textFromContent(content: unknown): string | undefined {
+function textFromContent(content: any): string | undefined {
   if (typeof content === "string") {
     return content;
   }
@@ -97,7 +97,7 @@ function textFromContent(content: unknown): string | undefined {
       if (!part || typeof part !== "object") {
         return undefined;
       }
-      const text = (part as { text?: unknown }).text;
+      const text = (part as { text?: any }).text;
       return typeof text === "string" ? text : undefined;
     })
     .filter((text): text is string => Boolean(text?.trim()));
@@ -119,7 +119,7 @@ export function readLastAssistantFromSessionFile(filePath: string | undefined): 
   for (let index = lines.length - 1; index >= 0; index -= 1) {
     try {
       const parsed = JSON.parse(lines[index]) as {
-        message?: { role?: unknown; content?: unknown };
+        message?: { role?: any; content?: any };
       };
       if (parsed.message?.role !== "assistant") {
         continue;

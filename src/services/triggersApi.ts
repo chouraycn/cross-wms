@@ -11,7 +11,7 @@ export interface TriggerConfig {
   enabled: boolean;
   targetType: 'skill' | 'chain' | 'workflow' | 'automation';
   targetId: string;
-  params?: Record<string, unknown>;
+  params?: Record<string, any>;
   description?: string;
   createdAt: string;
   updatedAt: string;
@@ -25,7 +25,7 @@ export interface TriggerExecution {
   startedAt: string;
   completedAt?: string;
   duration?: number;
-  result?: unknown;
+  result?: any;
   error?: string;
 }
 

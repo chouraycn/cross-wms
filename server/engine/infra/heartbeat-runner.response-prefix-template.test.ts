@@ -39,7 +39,7 @@ describe("runHeartbeatOnce responsePrefix templates", () => {
 
   function makeTelegramDeps(params: { sendTelegram: ReturnType<typeof vi.fn> }): HeartbeatDeps {
     return {
-      telegram: params.sendTelegram as unknown,
+      telegram: params.sendTelegram as any,
       getQueueSize: () => 0,
       nowMs: () => 0,
     } satisfies HeartbeatDeps;

@@ -82,7 +82,7 @@ export interface WebFetchParams {
   retries?: number;
   retryDelayMs?: number;
   priority?: WebFetchPriority;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
   onlyPluginIds?: string[];
 }
 
@@ -492,7 +492,7 @@ async function nativeFetch(
     headers: Headers;
     arrayBuffer: () => Promise<ArrayBuffer>;
     text: () => Promise<string>;
-    json: () => Promise<unknown>;
+    json: () => Promise<any>;
     redirected: boolean;
     redirectCount: number;
     release?: () => void;
@@ -656,8 +656,8 @@ async function nativeFetch(
 export interface WebFetchOptions {
   signal?: AbortSignal;
   onProgress?: WebFetchProgressCallback;
-  fetchConfig?: Record<string, unknown>;
-  config?: Record<string, unknown>;
+  fetchConfig?: Record<string, any>;
+  config?: Record<string, any>;
 }
 
 export async function webFetch(
@@ -772,7 +772,7 @@ async function webFetchInternal(
           message: `Fetching via ${provider.label}...`,
         });
 
-        const providerArgs: Record<string, unknown> = {
+        const providerArgs: Record<string, any> = {
           url: validated.url,
           maxChars: validated.maxChars,
           maxResponseBytes: validated.maxResponseBytes,
@@ -838,7 +838,7 @@ async function webFetchInternal(
 
 // ==================== 工具处理函数（用于 toolRegistry） ====================
 
-export async function handleWebFetchV3(args: Record<string, unknown>): Promise<string> {
+export async function handleWebFetchV3(args: Record<string, any>): Promise<string> {
   try {
     const result = await webFetch(args as unknown as WebFetchParams);
     return JSON.stringify({

@@ -12,13 +12,13 @@ describe("throwIfAborted", () => {
     const controller = new AbortController();
     controller.abort();
 
-    let thrown: unknown;
+    let thrown: any;
     try {
       throwIfAborted(controller.signal);
     } catch (error) {
       thrown = error;
     }
-    expect((thrown as { name?: unknown }).name).toBe("AbortError");
-    expect((thrown as { message?: unknown }).message).toBe("Operation aborted");
+    expect((thrown as { name?: any }).name).toBe("AbortError");
+    expect((thrown as { message?: any }).message).toBe("Operation aborted");
   });
 });

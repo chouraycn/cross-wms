@@ -16,13 +16,13 @@ const mocks = vi.hoisted(() => ({
   buildServiceEnvironment: vi.fn(),
   resolveOpenClawWrapperPath: vi.fn(),
   loadPluginManifestRegistry: vi.fn<
-    (...args: unknown[]) => { diagnostics: unknown[]; plugins: unknown[] }
+    (...args: any[]) => { diagnostics: any[]; plugins: any[] }
   >(() => ({
     diagnostics: [],
     plugins: [],
   })),
   loadPluginManifestRegistryForPluginRegistry: vi.fn<
-    (...args: unknown[]) => { diagnostics: unknown[]; plugins: unknown[] }
+    (...args: any[]) => { diagnostics: any[]; plugins: any[] }
   >(() => ({
     diagnostics: [],
     plugins: [],
@@ -93,7 +93,7 @@ afterEach(() => {
   vi.resetAllMocks();
 });
 
-function firstMockArg(mockFn: ReturnType<typeof vi.fn>, label: string): Record<string, unknown> {
+function firstMockArg(mockFn: ReturnType<typeof vi.fn>, label: string): Record<string, any> {
   const call = mockFn.mock.calls[0];
   if (!call) {
     throw new Error(`Expected ${label} call`);
@@ -102,7 +102,7 @@ function firstMockArg(mockFn: ReturnType<typeof vi.fn>, label: string): Record<s
   if (!arg || typeof arg !== "object") {
     throw new Error(`Expected ${label} first argument`);
   }
-  return arg as Record<string, unknown>;
+  return arg as Record<string, any>;
 }
 
 function writeSecurePluginEntrypoint(pathname: string): void {

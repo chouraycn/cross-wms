@@ -76,19 +76,19 @@ const runtimeMocks = vi.hoisted(() => ({
     key: sessionKey,
     agentId: "main",
   })),
-  createOutboundSendDeps: vi.fn((deps: unknown) => deps),
+  createOutboundSendDeps: vi.fn((deps: any) => deps),
   defaultRuntime: {},
   deleteMediaBuffer: vi.fn(async () => {}),
   deliverOutboundPayloads: vi.fn(async () => {}),
   enqueueSystemEvent: vi.fn(),
-  formatForLog: vi.fn((err: unknown) => (err instanceof Error ? err.message : String(err))),
+  formatForLog: vi.fn((err: any) => (err instanceof Error ? err.message : String(err))),
   getRuntimeConfig: vi.fn(() => ({ session: { mainKey: "agent:main:main" } })),
   loadOrCreateDeviceIdentity: loadOrCreateDeviceIdentityMock,
   loadSessionEntry: vi.fn((sessionKey: string) => buildSessionLookup(sessionKey)),
   canonicalizeSessionEntryAliases: vi.fn(),
   normalizeChannelId: normalizeChannelIdMock,
   normalizeMainKey: vi.fn((key?: string | null) => key?.trim() || "agent:main:main"),
-  normalizeRpcAttachmentsToChatAttachments: vi.fn((attachments?: unknown[]) => attachments ?? []),
+  normalizeRpcAttachmentsToChatAttachments: vi.fn((attachments?: any[]) => attachments ?? []),
   parseMessageWithAttachments: parseMessageWithAttachmentsMock,
   registerApnsRegistration: registerApnsRegistrationMock,
   requestHeartbeat: vi.fn(),
@@ -201,7 +201,7 @@ function makeNodeClient(connId: string, nodeId: string, sent: string[] = []): Ga
     connId,
     usesSharedGatewayAuth: false,
     socket: {
-      send(frame: unknown) {
+      send(frame: any) {
         if (typeof frame === "string") {
           sent.push(frame);
         }
@@ -227,21 +227,21 @@ function makeNodeClient(connId: string, nodeId: string, sent: string[] = []): Ga
   };
 }
 
-function expectFields(value: unknown, expected: Record<string, unknown>): void {
+function expectFields(value: any, expected: Record<string, any>): void {
   if (!value || typeof value !== "object") {
     throw new Error("expected fields object");
   }
-  const record = value as Record<string, unknown>;
+  const record = value as Record<string, any>;
   for (const [key, expectedValue] of Object.entries(expected)) {
     expect(record[key], key).toEqual(expectedValue);
   }
 }
 
-function mockCall(mock: { mock: { calls: unknown[][] } }, index = 0) {
+function mockCall(mock: { mock: { calls: any[][] } }, index = 0) {
   return mock.mock.calls.at(index);
 }
 
-function mockCallArg(mock: { mock: { calls: unknown[][] } }, index = 0, argIndex = 0) {
+function mockCallArg(mock: { mock: { calls: any[][] } }, index = 0, argIndex = 0) {
   return mockCall(mock, index)?.at(argIndex);
 }
 
@@ -254,7 +254,7 @@ function expectPresencePersistCall(
   const [actualDeviceId, metadata] = mockCall(mock) ?? [];
   expect(actualDeviceId).toBe(deviceId);
   expectFields(metadata, { lastSeenReason: reason });
-  const lastSeenAtMs = (metadata as { lastSeenAtMs?: unknown } | undefined)?.lastSeenAtMs;
+  const lastSeenAtMs = (metadata as { lastSeenAtMs?: any } | undefined)?.lastSeenAtMs;
   expect(typeof lastSeenAtMs).toBe("number");
 }
 
@@ -843,7 +843,7 @@ describe("voice transcript events", () => {
       deliver: false,
       messageChannel: "node",
     });
-    const optsRecord = opts as Record<string, unknown>;
+    const optsRecord = opts as Record<string, any>;
     expectFields(optsRecord.inputProvenance, {
       kind: "external_user",
       sourceChannel: "voice",
@@ -854,7 +854,7 @@ describe("voice transcript events", () => {
     expect(addChatRun).toHaveBeenCalledTimes(1);
     const [runId, runMetadata] = mockCall(addChatRun) ?? [];
     expect(runId).toBe(optsRecord.runId);
-    const clientRunId = (runMetadata as { clientRunId?: unknown } | undefined)?.clientRunId;
+    const clientRunId = (runMetadata as { clientRunId?: any } | undefined)?.clientRunId;
     expect(typeof clientRunId).toBe("string");
     expect(clientRunId).toMatch(/^voice-/);
   });
@@ -895,7 +895,7 @@ describe("voice transcript events", () => {
       }),
     );
 
-    let updatedEntry: Record<string, unknown> | undefined;
+    let updatedEntry: Record<string, any> | undefined;
     canonicalizeSessionEntryAliasesMock.mockImplementationOnce(async ({ target, update }) => {
       const existing = {
         sessionId: "sess-preserve",
@@ -1206,7 +1206,7 @@ describe("agent request events", () => {
       channel: "telegram",
       to: "123",
     });
-    const optsRecord = opts as Record<string, unknown>;
+    const optsRecord = opts as Record<string, any>;
     expect(optsRecord.runId).toBe(optsRecord.sessionId);
   });
 

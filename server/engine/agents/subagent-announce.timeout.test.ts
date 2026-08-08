@@ -8,17 +8,17 @@ type GatewayCall = {
   method?: string;
   timeoutMs?: number;
   expectFinal?: boolean;
-  params?: Record<string, unknown>;
+  params?: Record<string, any>;
 };
 
 const gatewayCalls: GatewayCall[] = [];
-let callGatewayImpl: (request: GatewayCall) => Promise<unknown> = async (request) => {
+let callGatewayImpl: (request: GatewayCall) => Promise<any> = async (request) => {
   if (request.method === "chat.history") {
     return { messages: [] };
   }
   return {};
 };
-let sessionStore: Record<string, Record<string, unknown>> = {};
+let sessionStore: Record<string, Record<string, any>> = {};
 let configOverride: ReturnType<(typeof import("../config/config.js"))["getRuntimeConfig"]> = {
   session: {
     mainKey: "main",
@@ -37,7 +37,7 @@ let fallbackRequesterResolution: {
   requesterSessionKey: string;
   requesterOrigin?: { channel?: string; to?: string; accountId?: string };
 } | null = null;
-let chatHistoryMessages: Array<Record<string, unknown>> = [];
+let chatHistoryMessages: Array<Record<string, any>> = [];
 
 function createGatewayCallModuleMock() {
   return {
@@ -79,7 +79,7 @@ vi.mock("../gateway/call.js", createGatewayCallModuleMock);
 vi.mock("./subagent-depth.js", createSubagentDepthModuleMock);
 vi.mock("./subagent-announce-delivery.runtime.js", () =>
   createSubagentAnnounceDeliveryRuntimeMock({
-    callGateway: async (request: unknown) => {
+    callGateway: async (request: any) => {
       const typed = request as GatewayCall;
       gatewayCalls.push(typed);
       if (typed.method === "chat.history") {
@@ -110,7 +110,7 @@ vi.mock("./subagent-announce-delivery.js", () => ({
     requesterSessionOrigin?: { provider?: string; channel?: string };
     bestEffortDeliver?: boolean;
     directIdempotencyKey?: string;
-    internalEvents?: unknown;
+    internalEvents?: any;
   }) => {
     // Retry behavior is modeled here because the outer announce flow only sees
     // whether direct delivery eventually succeeded or failed.
@@ -159,9 +159,9 @@ vi.mock("./subagent-announce-delivery.js", () => ({
     entry: sessionStore[sessionKey],
   }),
   loadSessionEntryByKey: (sessionKey: string) => sessionStore[sessionKey],
-  resolveAnnounceOrigin: (entry: { origin?: unknown } | undefined, requesterOrigin?: unknown) =>
+  resolveAnnounceOrigin: (entry: { origin?: any } | undefined, requesterOrigin?: any) =>
     requesterOrigin ?? entry?.origin,
-  resolveSubagentCompletionOrigin: async (params: { requesterOrigin?: unknown }) =>
+  resolveSubagentCompletionOrigin: async (params: { requesterOrigin?: any }) =>
     params.requesterOrigin,
   resolveSubagentAnnounceTimeoutMs: (cfg: typeof configOverride) => {
     const configured = cfg.agents?.defaults?.subagents?.announceTimeoutMs;
@@ -173,7 +173,7 @@ vi.mock("./subagent-announce.runtime.js", () => ({
   callGateway: createGatewayCallModuleMock().callGateway,
   dispatchGatewayMethodInProcess: async (
     method: string,
-    params: Record<string, unknown>,
+    params: Record<string, any>,
     options?: { expectFinal?: boolean; timeoutMs?: number },
   ) => {
     const request = {

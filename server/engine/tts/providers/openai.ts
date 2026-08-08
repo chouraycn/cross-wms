@@ -36,7 +36,7 @@ export function buildOpenAiRequest(
   voice: string,
   format: string,
   speed?: number,
-): Record<string, unknown> {
+): Record<string, any> {
   return {
     model,
     input: text,

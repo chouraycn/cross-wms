@@ -196,7 +196,7 @@ export type EmbeddedAgentRunResult = {
     isReasoning?: boolean;
     audioAsVoice?: boolean;
     trustedLocalMedia?: boolean;
-    channelData?: Record<string, unknown>;
+    channelData?: Record<string, any>;
   }>;
   meta: EmbeddedAgentRunMeta;
   diagnosticTrace?: DiagnosticTraceContext;
@@ -239,7 +239,7 @@ export type EmbeddedAgentCompactResult = {
     firstKeptEntryId: string;
     tokensBefore: number;
     tokensAfter?: number;
-    details?: unknown;
+    details?: any;
     sessionId?: string;
     sessionFile?: string;
   };

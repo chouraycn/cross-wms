@@ -580,7 +580,7 @@ const ToolExecBaseShape = {
 } as const;
 
 function addExecPolicyModeConflictIssue(
-  value: { mode?: unknown; security?: unknown; ask?: unknown },
+  value: { mode?: any; security?: any; ask?: any },
   ctx: z.RefinementCtx,
 ): void {
   if (value.mode === undefined || (value.security === undefined && value.ask === undefined)) {

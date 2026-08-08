@@ -112,7 +112,7 @@ export class TokenBudgetManager {
   estimateMessageTokens(message: {
     role: string;
     content: string;
-    toolCalls?: unknown[];
+    toolCalls?: any[];
   }): number {
     const estimate = this.estimateTokens(message.content, message.role);
     let toolTokens = 0;
@@ -125,7 +125,7 @@ export class TokenBudgetManager {
   estimateMessagesTokens(messages: Array<{
     role: string;
     content: string;
-    toolCalls?: unknown[];
+    toolCalls?: any[];
   }>): number {
     return messages.reduce((total, msg) => total + this.estimateMessageTokens(msg), 0);
   }

@@ -129,7 +129,7 @@ describe('插件系统合约测试', () => {
         status: 'enabled',
         install_path: '/nonexistent',
         entry_path: 'index.js',
-      } as unknown);
+      } as any);
       mocks.deletePlugin.mockReturnValue(true);
 
       const result = await pluginRegistry.uninstall('to-remove');
@@ -263,7 +263,7 @@ describe('插件系统合约测试', () => {
           permissions: ['tool:execute', 'file:read'],
           tools: [],
         }),
-      } as unknown);
+      } as any);
 
       expect(pluginRegistry.checkPermission('perm-test', 'tool:execute')).toBe(true);
       expect(pluginRegistry.checkPermission('perm-test', 'file:read')).toBe(true);
@@ -284,7 +284,7 @@ describe('插件系统合约测试', () => {
           permissions: ['*'],
           tools: [],
         }),
-      } as unknown);
+      } as any);
 
       // '*' 应匹配任意权限
       expect(pluginRegistry.checkPermission('wildcard-test', 'tool:execute')).toBe(true);

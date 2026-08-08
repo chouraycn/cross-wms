@@ -67,7 +67,7 @@ export interface SessionAcpMeta {
   mode: AcpRuntimeSessionMode;
   backend?: string;
   cwd?: string;
-  runtimeOptions?: { cwd?: string; [key: string]: unknown };
+  runtimeOptions?: { cwd?: string; [key: string]: any };
   state: "ready" | "error" | "starting" | "stopped";
 }
 

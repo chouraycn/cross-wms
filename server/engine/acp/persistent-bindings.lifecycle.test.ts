@@ -78,22 +78,22 @@ function mockReadySession(params: {
   return sessionKey;
 }
 
-function expectCloseArgs(): Record<string, unknown> {
+function expectCloseArgs(): Record<string, any> {
   expect(managerMocks.closeSession).toHaveBeenCalledTimes(1);
   const call = managerMocks.closeSession.mock.calls[0];
   if (!call) {
     throw new Error("expected closeSession call");
   }
-  return call[0] as Record<string, unknown>;
+  return call[0] as Record<string, any>;
 }
 
-function expectInitializeArgs(): Record<string, unknown> {
+function expectInitializeArgs(): Record<string, any> {
   expect(managerMocks.initializeSession).toHaveBeenCalledTimes(1);
   const call = managerMocks.initializeSession.mock.calls[0];
   if (!call) {
     throw new Error("expected initializeSession call");
   }
-  return call[0] as Record<string, unknown>;
+  return call[0] as Record<string, any>;
 }
 
 describe("ensureConfiguredAcpBindingSession", () => {

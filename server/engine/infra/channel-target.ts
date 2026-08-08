@@ -18,7 +18,7 @@ const MESSAGE_ACTION_TARGET_MODE: Record<string, "none" | "channelId" | "to"> = 
 /** Maps canonical `target` into the legacy field required by the action implementation. */
 export function applyTargetToParams(params: {
   action: string;
-  args: Record<string, unknown>;
+  args: Record<string, any>;
 }): void {
   const target = normalizeOptionalString(params.args.target) ?? "";
   const hasLegacyTo = hasNonEmptyString(params.args.to);

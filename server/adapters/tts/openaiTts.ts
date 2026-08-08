@@ -46,9 +46,9 @@ export function buildOpenAiTtsRequest(
   format: string,
   speed?: number,
   instructions?: string,
-  extraBody?: Record<string, unknown>,
-): Record<string, unknown> {
-  const body: Record<string, unknown> = {
+  extraBody?: Record<string, any>,
+): Record<string, any> {
+  const body: Record<string, any> = {
     model,
     input: text,
     voice,

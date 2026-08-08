@@ -11,6 +11,6 @@
  * 完整实现见 openclaw 源码。
  */
 
-export function hasConnectedTalkNode(..._args: unknown[]): unknown {
+export function hasConnectedTalkNode(..._args: any[]): any {
   return false;
 }

@@ -37,7 +37,7 @@ export type ToolDefinition = z.infer<typeof ToolDefinitionSchema>;
 export interface ToolCall {
   id: string;
   toolName: string;
-  arguments: Record<string, unknown>;
+  arguments: Record<string, any>;
   timestamp: number;
 }
 
@@ -45,7 +45,7 @@ export interface ToolResult {
   id: string;
   toolName: string;
   success: boolean;
-  result?: unknown;
+  result?: any;
   error?: string;
   durationMs: number;
   timestamp: number;
@@ -54,6 +54,6 @@ export interface ToolResult {
 export interface ToolExecutorOptions {
   timeoutMs?: number;
   maxRetries?: number;
-  context?: Record<string, unknown>;
+  context?: Record<string, any>;
   continueOnError?: boolean;
 }

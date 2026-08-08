@@ -79,7 +79,7 @@ export function createSpawnAdapter(
 
   const stdoutListeners: Array<(chunk: string) => void> = [];
   const stderrListeners: Array<(chunk: string) => void> = [];
-  const ipcListeners: Array<(message: unknown) => void> = [];
+  const ipcListeners: Array<(message: any) => void> = [];
   let exitResolve: ((value: { code: number | null; signal: NodeJS.Signals | null }) => void) | null = null;
   let settled = false;
   let exitResult: { code: number | null; signal: NodeJS.Signals | null } | null = null;
@@ -101,7 +101,7 @@ export function createSpawnAdapter(
     }
   });
   if (config.ipc) {
-    child.on('message', (message: unknown) => {
+    child.on('message', (message: any) => {
       for (const l of [...ipcListeners]) {
         l(message);
       }

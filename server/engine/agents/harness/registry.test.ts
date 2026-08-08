@@ -88,7 +88,7 @@ describe("agent harness registry", () => {
   });
 
   it("dispatches generic session reset to registered harnesses", async () => {
-    const resets: unknown[] = [];
+    const resets: any[] = [];
     registerAgentHarness({
       ...makeHarness("custom"),
       reset: async (params) => {

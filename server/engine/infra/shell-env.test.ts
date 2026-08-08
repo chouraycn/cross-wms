@@ -99,7 +99,7 @@ describe("shell env fallback", () => {
     }
   }
 
-  function requireExecCall(exec: ReturnType<typeof vi.fn>): unknown[] {
+  function requireExecCall(exec: ReturnType<typeof vi.fn>): any[] {
     const call = exec.mock.calls[0];
     if (!call) {
       throw new Error("expected shell env exec call");
@@ -130,7 +130,7 @@ describe("shell env fallback", () => {
     const [shell, args, options] = requireExecCall(exec);
     expect(shell).toBe("/bin/sh");
     expect(args).toStrictEqual(["-l", "-c", "env -0"]);
-    expect((options as { windowsHide?: unknown } | undefined)?.windowsHide).toBe(true);
+    expect((options as { windowsHide?: any } | undefined)?.windowsHide).toBe(true);
   }
 
   it("is disabled by default", () => {
@@ -332,7 +332,7 @@ describe("shell env fallback", () => {
         enabled: true,
         env,
         expectedKeys: ["OPENAI_API_KEY"],
-        exec: exec as unknown as Parameters<typeof loadShellEnvFallback>[0]["exec"],
+        exec: exec as any as Parameters<typeof loadShellEnvFallback>[0]["exec"],
         logger,
       });
       expect(result).toEqual({
@@ -490,7 +490,7 @@ describe("shell env fallback", () => {
       const [shell, args, options] = requireExecCall(exec);
       expect(shell).toBe(trustedShell);
       expect(args).toStrictEqual(["-l", "-c", "env -0"]);
-      expect((options as { windowsHide?: unknown } | undefined)?.windowsHide).toBe(true);
+      expect((options as { windowsHide?: any } | undefined)?.windowsHide).toBe(true);
     });
   });
 

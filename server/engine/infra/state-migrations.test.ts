@@ -404,7 +404,7 @@ describe("state migrations", () => {
     expect(mergedStore["agent:worker-1:mobileauth:group:mobile-room"]?.sessionId).toBe(
       "group-session",
     );
-    expect(mergedStore["agent:worker-1:unknown:group:legacy-room"]?.sessionId).toBe(
+    expect(mergedStore["agent:worker-1: any:group:legacy-room"]?.sessionId).toBe(
       "generic-group-session",
     );
 

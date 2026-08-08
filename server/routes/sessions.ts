@@ -107,7 +107,7 @@ router.get('/:id/messages', (req, res) => {
   );
 
   // 解析 JSON 字符串字段
-  const parsed = messages.map((m: unknown) => {
+  const parsed = messages.map((m: any) => {
     let toolCalls = m.toolCalls;
     if (toolCalls && typeof toolCalls === 'string') {
       const MAX_TOOLCALLS_BYTES = 200 * 1024;
@@ -115,7 +115,7 @@ router.get('/:id/messages', (req, res) => {
         try {
           const arr = JSON.parse(toolCalls);
           if (Array.isArray(arr)) {
-            toolCalls = JSON.stringify(arr.slice(0, 5).map((tc: unknown) => ({
+            toolCalls = JSON.stringify(arr.slice(0, 5).map((tc: any) => ({
               ...tc,
               result: typeof tc.result === 'string' && tc.result.length > 5000
                 ? tc.result.slice(0, 5000) + `\n\n[已截断，原大小 ${(Buffer.byteLength(tc.result, 'utf-8') / 1024).toFixed(1)} KB]`
@@ -153,7 +153,7 @@ router.get('/:id/messages', (req, res) => {
 router.get('/:id', (req, res) => {
   const messages = getSessionMessages(req.params.id);
   // 解析 JSON 字符串字段为数组/对象（DB 中存储为 TEXT）
-  const parsed = messages.map((m: unknown) => {
+  const parsed = messages.map((m: any) => {
     let toolCalls = m.toolCalls;
     if (toolCalls && typeof toolCalls === 'string') {
       // 快速检查大小，超大则直接截断后再 parse，避免内存爆炸
@@ -162,7 +162,7 @@ router.get('/:id', (req, res) => {
         try {
           const arr = JSON.parse(toolCalls);
           if (Array.isArray(arr)) {
-            toolCalls = JSON.stringify(arr.slice(0, 5).map((tc: unknown) => ({
+            toolCalls = JSON.stringify(arr.slice(0, 5).map((tc: any) => ({
               ...tc,
               result: typeof tc.result === 'string' && tc.result.length > 5000
                 ? tc.result.slice(0, 5000) + `\n\n[已截断，原大小 ${(Buffer.byteLength(tc.result, 'utf-8') / 1024).toFixed(1)} KB]`

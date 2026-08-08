@@ -98,13 +98,13 @@ import type { TypingController } from "./typing.js";
 
 type EmbeddedAgentRunResult = Awaited<ReturnType<typeof runEmbeddedAgent>>;
 
-type FollowupAgentEvent = { stream: string; data: Record<string, unknown> };
+type FollowupAgentEvent = { stream: string; data: Record<string, any> };
 
-function readApprovalScopeValue(value: unknown): "turn" | "session" | undefined {
+function readApprovalScopeValue(value: any): "turn" | "session" | undefined {
   return value === "turn" || value === "session" ? value : undefined;
 }
 
-function filterStringArray(value: unknown): string[] | undefined {
+function filterStringArray(value: any): string[] | undefined {
   return Array.isArray(value)
     ? value.filter((entry): entry is string => typeof entry === "string")
     : undefined;
@@ -177,7 +177,7 @@ async function forwardFollowupProgressEvent(params: {
         phase,
         args:
           evt.data.args && typeof evt.data.args === "object"
-            ? (evt.data.args as Record<string, unknown>)
+            ? (evt.data.args as Record<string, any>)
             : undefined,
         detailMode: params.detailMode,
       });
@@ -577,7 +577,7 @@ export function createFollowupRunner(params: {
       let progressDeliveryChain: Promise<void> = Promise.resolve();
       const pendingProgressDeliveries = new Set<Promise<void>>();
       const enqueueProgressDelivery = (deliver: () => Promise<void>) => {
-        progressDeliveryChain = progressDeliveryChain.then(deliver).catch((err: unknown) => {
+        progressDeliveryChain = progressDeliveryChain.then(deliver).catch((err: any) => {
           logVerbose(`followup queue: progress delivery failed: ${formatErrorMessage(err)}`);
         });
         const task = progressDeliveryChain.finally(() => {
@@ -1275,7 +1275,7 @@ export function createFollowupRunner(params: {
           settledLifecycleTerminal?.emit("end", runResult);
           throw runAbortSignal.reason;
         }
-        const emitSettledLifecycleError = (error: Error, extraData?: Record<string, unknown>) => {
+        const emitSettledLifecycleError = (error: Error, extraData?: Record<string, any>) => {
           if (settledLifecycleTerminal) {
             settledLifecycleTerminal.emit("error", error, extraData);
             return;

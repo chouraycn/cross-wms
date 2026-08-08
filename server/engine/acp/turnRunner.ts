@@ -27,14 +27,14 @@ interface TurnRunnerParams {
   deps: AcpSessionManagerDeps;
   runtimeHandles: RuntimeHandleCache;
   activeTurnBySession: Map<string, ActiveTurnState>;
-  resolveSession: (params: { cfg: unknown; sessionKey: string }) => {
+  resolveSession: (params: { cfg: any; sessionKey: string }) => {
     kind: "ready" | "stale" | "none";
     sessionKey: string;
     meta?: SessionAcpMeta;
     error?: string;
   };
   ensureRuntimeHandle: (params: {
-    cfg: unknown;
+    cfg: any;
     sessionKey: string;
     meta: SessionAcpMeta;
   }) => Promise<{ runtime: AcpRuntime; handle: AcpRuntimeHandle; meta: SessionAcpMeta }>;
@@ -45,7 +45,7 @@ interface TurnRunnerParams {
     meta: SessionAcpMeta;
   }) => Promise<void>;
   setSessionState: (params: {
-    cfg: unknown;
+    cfg: any;
     sessionKey: string;
     state: SessionAcpMeta["state"];
     lastError?: string;
@@ -53,7 +53,7 @@ interface TurnRunnerParams {
   }) => Promise<void>;
   recordTurnCompletion: (params: { startedAt: number; errorCode?: string }) => void;
   reconcileRuntimeSessionIdentifiers: (params: {
-    cfg: unknown;
+    cfg: any;
     sessionKey: string;
     runtime: AcpRuntime;
     handle: AcpRuntimeHandle;
@@ -61,7 +61,7 @@ interface TurnRunnerParams {
     failOnStatusError: boolean;
   }) => Promise<{ handle: AcpRuntimeHandle; meta: SessionAcpMeta }>;
   writeSessionMeta: (params: {
-    cfg: unknown;
+    cfg: any;
     sessionKey: string;
     mutate: (
       current: SessionAcpMeta | undefined,
@@ -148,7 +148,7 @@ function requireReadySessionMeta(
   return resolution.meta;
 }
 
-function formatAcpErrorChain(error: unknown): string {
+function formatAcpErrorChain(error: any): string {
   if (error instanceof Error) {
     return error.message;
   }
@@ -156,7 +156,7 @@ function formatAcpErrorChain(error: unknown): string {
 }
 
 function toAcpRuntimeError(params: {
-  error: unknown;
+  error: any;
   fallbackCode: AcpRuntimeErrorCode;
   fallbackMessage: string;
 }): AcpRuntimeError {

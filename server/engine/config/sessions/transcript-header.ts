@@ -27,7 +27,7 @@ export function createTranscriptHeader(
   };
 }
 
-export function validateTranscriptHeader(header: unknown): header is TranscriptHeader {
+export function validateTranscriptHeader(header: any): header is TranscriptHeader {
   const result = TranscriptHeaderSchema.safeParse(header);
   return result.success;
 }

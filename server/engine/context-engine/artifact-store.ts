@@ -18,7 +18,7 @@ export interface Artifact {
   content: string;
   contentType: string;
   sizeBytes: number;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
   source: string;
   sessionId?: string;
   createdAt: number;
@@ -138,7 +138,7 @@ export class ArtifactStore {
     updates: Partial<{
       content: string;
       name: string;
-      metadata: Record<string, unknown>;
+      metadata: Record<string, any>;
       tags: string[];
       expiresAt: number;
     }>

@@ -27,13 +27,13 @@ export interface PluginManifest {
   dependencies?: Record<string, string>;
   capabilities?: string[];
   permissions?: string[];
-  configSchema?: Record<string, unknown>;
+  configSchema?: Record<string, any>;
   displayName?: string;
   icon?: string;
   riskLevel?: string;
   apiVersion?: string;
-  tools?: Record<string, unknown>[];
-  metadata?: Record<string, unknown>;
+  tools?: Record<string, any>[];
+  metadata?: Record<string, any>;
   entry?: string;
 }
 
@@ -47,7 +47,7 @@ export interface PluginInstallResult {
 export interface LoadedPlugin {
   id: string;
   manifest: PluginManifest;
-  instance?: unknown;
+  instance?: any;
   loadedAt: number;
   status: 'loaded' | 'error' | 'disabled';
   error?: string;

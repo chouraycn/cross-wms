@@ -70,7 +70,7 @@ function createSeenSignalFetch() {
 
 function createSymbolHeaderInit(enumerable: boolean): RequestInit {
   const headers = { "Content-Type": "application/json" } as Record<string, string> & {
-    [key: symbol]: unknown;
+    [key: symbol]: any;
   };
   Object.defineProperty(headers, Symbol("sensitiveHeaders"), {
     value: new Set(["content-type"]),
@@ -130,8 +130,8 @@ describe("wrapFetchWithAbortSignal", () => {
   });
 
   it("does not emit an extra unhandled rejection when wrapped fetch rejects", async () => {
-    const unhandled: unknown[] = [];
-    const onUnhandled = (reason: unknown) => {
+    const unhandled: any[] = [];
+    const onUnhandled = (reason: any) => {
       unhandled.push(reason);
     };
     process.on("unhandledRejection", onUnhandled);
@@ -265,7 +265,7 @@ describe("wrapFetchWithAbortSignal", () => {
   });
 
   it("keeps preconnect bound to the original fetch implementation", () => {
-    const preconnectSpy = vi.fn(function (this: unknown) {
+    const preconnectSpy = vi.fn(function (this: any) {
       return this;
     });
     const fetchImpl = vi.fn(async () => ({ ok: true }) as Response) as unknown as typeof fetch & {

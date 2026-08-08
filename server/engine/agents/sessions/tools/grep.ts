@@ -303,7 +303,7 @@ export function createGrepToolDefinition(
                 type?: string;
                 data?: {
                   path?: { text?: string };
-                  line_number?: unknown;
+                  line_number?: any;
                   lines?: { text?: string };
                 };
               };

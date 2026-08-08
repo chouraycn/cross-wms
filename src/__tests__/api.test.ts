@@ -19,7 +19,7 @@ import { API_BASE_URL } from '../constants/api';
 const BASE_URL = API_BASE_URL;
 
 /** Helper: create a successful fetch response */
-function mockSuccessResponse(data: unknown): Response {
+function mockSuccessResponse(data: any): Response {
   return {
     ok: true,
     status: 200,
@@ -471,7 +471,7 @@ describe('Migration API', () => {
 
 describe('Inbound Operations API', () => {
   /** Helper: create a successful inbound/outbound JSON response (code: 0) */
-  function mockApiSuccessResponse(data: unknown): Response {
+  function mockApiSuccessResponse(data: any): Response {
     return {
       ok: true,
       status: 200,
@@ -566,7 +566,7 @@ describe('Inbound Operations API', () => {
 
 describe('Outbound Operations API', () => {
   /** Helper: create a successful inbound/outbound JSON response (code: 0) */
-  function mockApiSuccessResponse(data: unknown): Response {
+  function mockApiSuccessResponse(data: any): Response {
     return {
       ok: true,
       status: 200,
@@ -661,7 +661,7 @@ describe('Outbound Operations API', () => {
 
 describe('Inventory Transactions API', () => {
   /** Helper: create a successful JSON response (code: 0) */
-  function mockApiSuccessResponse(data: unknown): Response {
+  function mockApiSuccessResponse(data: any): Response {
     return {
       ok: true,
       status: 200,

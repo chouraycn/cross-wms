@@ -70,7 +70,7 @@ function replaceControlChars(value: string): string {
   return cleaned;
 }
 
-function stringMetaValue(meta: Record<string, unknown>, key: string): string | undefined {
+function stringMetaValue(meta: Record<string, any>, key: string): string | undefined {
   const value = meta[key];
   return typeof value === "string" && value.trim().length > 0 ? value : undefined;
 }
@@ -130,15 +130,15 @@ function resolveSocketAddress(socket: WebSocket): {
   };
 }
 
-function isWsPayloadLimitError(err: unknown): boolean {
+function isWsPayloadLimitError(err: any): boolean {
   if (!err || typeof err !== "object") {
     return false;
   }
-  const code = (err as { code?: unknown }).code;
+  const code = (err as { code?: any }).code;
   if (code === "WS_ERR_UNSUPPORTED_MESSAGE_LENGTH") {
     return true;
   }
-  const message = (err as { message?: unknown }).message;
+  const message = (err as { message?: any }).message;
   return typeof message === "string" && /max payload size exceeded/i.test(message);
 }
 
@@ -173,7 +173,7 @@ export type AttachGatewayWsConnectionHandlerParams = GatewayWsSharedHandlerParam
   getMethodRegistry?: () => GatewayMethodRegistry;
   broadcast: (
     event: string,
-    payload: unknown,
+    payload: any,
     opts?: {
       dropIfSlow?: boolean;
       stateVersion?: { presence?: number; health?: number };
@@ -206,7 +206,7 @@ function attachGatewayWsMessageHandlerOnDemand(params: GatewayWsMessageHandlerPa
         params.socket.emit("message", data);
       }
     })
-    .catch((error: unknown) => {
+    .catch((error: any) => {
       params.socket.off("message", queueMessage);
       params.setCloseCause("message-handler-load-failed", {
         error: formatError(error),
@@ -292,12 +292,12 @@ export function attachGatewayWsConnectionHandler(params: AttachGatewayWsConnecti
     let handshakeState: "pending" | "connected" | "failed" = "pending";
     let holdsPreauthBudget = true;
     let closeCause: string | undefined;
-    let closeMeta: Record<string, unknown> = {};
+    let closeMeta: Record<string, any> = {};
     let lastFrameType: string | undefined;
     let lastFrameMethod: string | undefined;
     let lastFrameId: string | undefined;
 
-    const setCloseCause = (cause: string, meta?: Record<string, unknown>) => {
+    const setCloseCause = (cause: string, meta?: Record<string, any>) => {
       if (!closeCause) {
         closeCause = cause;
       }
@@ -360,7 +360,7 @@ export function attachGatewayWsConnectionHandler(params: AttachGatewayWsConnecti
       }
     };
 
-    const send = (obj: unknown) => {
+    const send = (obj: any) => {
       if (closed) {
         return;
       }

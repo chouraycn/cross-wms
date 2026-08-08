@@ -15,11 +15,11 @@ export interface ConfigManager {
   /** 取消注册 */
   unregisterSchema(pluginId: string): void;
   /** 校验配置是否满足 schema */
-  validate(pluginId: string, config: Record<string, unknown>): ConfigValidationResult;
+  validate(pluginId: string, config: Record<string, any>): ConfigValidationResult;
   /** 合并默认值与已存储值 */
-  merge(pluginId: string, stored: Record<string, unknown>, override?: Record<string, unknown>): Record<string, unknown>;
+  merge(pluginId: string, stored: Record<string, any>, override?: Record<string, any>): Record<string, any>;
   /** 应用默认值到配置 */
-  applyDefaults(pluginId: string, config: Record<string, unknown>): Record<string, unknown>;
+  applyDefaults(pluginId: string, config: Record<string, any>): Record<string, any>;
   /** 获取已注册 schema */
   getSchema(pluginId: string): PluginConfigSchema | undefined;
 }
@@ -45,7 +45,7 @@ class ConfigManagerImpl implements ConfigManager {
     return this.schemas.get(pluginId);
   }
 
-  validate(pluginId: string, config: Record<string, unknown>): ConfigValidationResult {
+  validate(pluginId: string, config: Record<string, any>): ConfigValidationResult {
     const schema = this.schemas.get(pluginId);
     if (!schema) return { valid: true, errors: [] };
     const errors: string[] = [];
@@ -54,7 +54,7 @@ class ConfigManagerImpl implements ConfigManager {
   }
 
   private validateObject(
-    obj: Record<string, unknown>,
+    obj: Record<string, any>,
     schema: PluginConfigSchema | PluginConfigProperty,
     path: string,
     errors: string[],
@@ -78,7 +78,7 @@ class ConfigManagerImpl implements ConfigManager {
     }
   }
 
-  private validateProperty(value: unknown, schema: PluginConfigProperty, path: string, errors: string[]): void {
+  private validateProperty(value: any, schema: PluginConfigProperty, path: string, errors: string[]): void {
     if (value === null || value === undefined) return;
     if (schema.enum && !schema.enum.includes(value)) {
       errors.push(`${path}: 值 ${JSON.stringify(value)} 不在允许的枚举内 ${JSON.stringify(schema.enum)}`);
@@ -115,15 +115,15 @@ class ConfigManagerImpl implements ConfigManager {
           errors.push(`${path}: 期望 object，实际 ${typeof value}`);
           break;
         }
-        this.validateObject(value as Record<string, unknown>, schema, path, errors);
+        this.validateObject(value as Record<string, any>, schema, path, errors);
         break;
     }
   }
 
-  applyDefaults(pluginId: string, config: Record<string, unknown>): Record<string, unknown> {
+  applyDefaults(pluginId: string, config: Record<string, any>): Record<string, any> {
     const schema = this.schemas.get(pluginId);
     if (!schema?.properties) return { ...config };
-    const result: Record<string, unknown> = {};
+    const result: Record<string, any> = {};
     for (const [key, propSchema] of Object.entries(schema.properties)) {
       if (propSchema.default !== undefined) {
         result[key] = propSchema.default;
@@ -134,9 +134,9 @@ class ConfigManagerImpl implements ConfigManager {
 
   merge(
     pluginId: string,
-    stored: Record<string, unknown>,
-    override?: Record<string, unknown>,
-  ): Record<string, unknown> {
+    stored: Record<string, any>,
+    override?: Record<string, any>,
+  ): Record<string, any> {
     const withDefaults = this.applyDefaults(pluginId, stored);
     return override ? { ...withDefaults, ...override } : withDefaults;
   }
@@ -155,7 +155,7 @@ export function createConfigManager(): ConfigManager {
  */
 export function validateConfig(
   schema: PluginConfigSchema,
-  config: Record<string, unknown>,
+  config: Record<string, any>,
 ): ConfigValidationResult {
   const temp = new ConfigManagerImpl();
   temp.registerSchema('__temp__', schema);

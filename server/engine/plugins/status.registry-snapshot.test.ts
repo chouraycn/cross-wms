@@ -25,17 +25,17 @@ afterEach(() => {
   cleanupTrackedTempDirs(tempDirs);
 });
 
-function requireRecord(value: unknown): Record<string, unknown> {
+function requireRecord(value: any): Record<string, any> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("Expected a non-array record");
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 function requirePlugin(
-  plugins: readonly Record<string, unknown>[],
+  plugins: readonly Record<string, any>[],
   id: string,
-): Record<string, unknown> {
+): Record<string, any> {
   const plugin = plugins.find((entry) => entry.id === id);
   if (!plugin) {
     throw new Error(`Expected plugin ${id}`);
@@ -43,15 +43,15 @@ function requirePlugin(
   return requireRecord(plugin);
 }
 
-function requireRecordArray(value: unknown): Record<string, unknown>[] {
+function requireRecordArray(value: any): Record<string, any>[] {
   expect(Array.isArray(value)).toBe(true);
-  return value as Record<string, unknown>[];
+  return value as Record<string, any>[];
 }
 
 function requireNamedEntry(
-  entries: readonly Record<string, unknown>[],
+  entries: readonly Record<string, any>[],
   name: string,
-): Record<string, unknown> {
+): Record<string, any> {
   const entry = entries.find((candidate) => candidate.name === name);
   if (!entry) {
     throw new Error(`Expected entry ${name}`);
@@ -59,7 +59,7 @@ function requireNamedEntry(
   return requireRecord(entry);
 }
 
-function expectFields(actual: Record<string, unknown>, expected: Record<string, unknown>): void {
+function expectFields(actual: Record<string, any>, expected: Record<string, any>): void {
   for (const [key, value] of Object.entries(expected)) {
     expect(actual[key]).toEqual(value);
   }

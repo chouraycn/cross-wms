@@ -28,7 +28,7 @@ export interface EmbeddedAgentState {
 
 export interface EmbeddedAgentRunOptions {
   input: string;
-  context?: Record<string, unknown>;
+  context?: Record<string, any>;
   tools?: string[];
   maxTurns?: number;
   timeoutMs?: number;
@@ -40,8 +40,8 @@ export interface EmbeddedAgentRunResult {
   status: 'success' | 'failed' | 'timeout';
   toolCalls?: Array<{
     toolName: string;
-    arguments: Record<string, unknown>;
-    result: unknown;
+    arguments: Record<string, any>;
+    result: any;
   }>;
   turnCount: number;
   totalTokens?: {

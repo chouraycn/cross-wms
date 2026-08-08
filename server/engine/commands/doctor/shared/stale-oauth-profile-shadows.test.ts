@@ -41,7 +41,7 @@ function storeWith(profileId: string, credential: OAuthCredential): AuthProfileS
   };
 }
 
-async function writeRawAuthStore(agentDir: string, store: unknown): Promise<void> {
+async function writeRawAuthStore(agentDir: string, store: any): Promise<void> {
   const authPath = resolveAuthStorePath(agentDir);
   await fs.mkdir(path.dirname(authPath), { recursive: true });
   await fs.writeFile(authPath, `${JSON.stringify(store, null, 2)}\n`, "utf8");
@@ -264,7 +264,7 @@ describe("stale OAuth profile shadow doctor repair", () => {
     expect(hits).toEqual([]);
     expect(repair).toEqual({ changes: [], warnings: [] });
     const raw = JSON.parse(await fs.readFile(resolveAuthStorePath(childAgentDir), "utf8")) as {
-      profiles: Record<string, { oauthRef?: unknown }>;
+      profiles: Record<string, { oauthRef?: any }>;
     };
     expect(raw.profiles[profileId]?.oauthRef).toBeDefined();
   });

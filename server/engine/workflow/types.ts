@@ -31,7 +31,7 @@ export interface TriggerConfig {
   };
   event?: {
     eventName: string;
-    filters?: Record<string, unknown>;
+    filters?: Record<string, any>;
   };
   webhook?: {
     path: string;
@@ -45,7 +45,7 @@ export interface ConditionConfig {
   conditions: Array<{
     variable: string;
     operator: ConditionOperator;
-    value: unknown;
+    value: any;
   }>;
   logic: 'and' | 'or';
   branches?: {
@@ -57,7 +57,7 @@ export interface ConditionConfig {
 /** 动作配置 */
 export interface ActionConfig {
   type: ActionType;
-  params: Record<string, unknown>;
+  params: Record<string, any>;
   retryPolicy?: {
     maxRetries: number;
     retryDelay: number;
@@ -107,7 +107,7 @@ export interface TransformConfig {
     source: string; // 源字段路径，支持表达式
     target: string; // 目标字段名
     transform?: 'uppercase' | 'lowercase' | 'trim' | 'number' | 'string' | 'boolean' | 'json_parse' | 'json_stringify';
-    defaultValue?: unknown;
+    defaultValue?: any;
   }>;
   outputVariable?: string; // 输出变量名
 }
@@ -123,7 +123,7 @@ export interface MergeConfig {
 export interface SwitchConfig {
   expression: string; // 条件表达式
   cases: Array<{
-    value: unknown; // 匹配值
+    value: any; // 匹配值
     targetNodeId: string; // 目标节点 ID
   }>;
   defaultTargetNodeId?: string; // 默认分支目标节点 ID
@@ -159,7 +159,7 @@ export interface WorkflowNode {
   type: NodeType;
   name: string;
   description?: string;
-  config: Record<string, unknown>;
+  config: Record<string, any>;
   position: {
     x: number;
     y: number;
@@ -184,7 +184,7 @@ export interface WorkflowVariable {
   id: string;
   name: string;
   type: VariableType;
-  defaultValue?: unknown;
+  defaultValue?: any;
   description?: string;
   required?: boolean;
   scope: 'global' | 'local';
@@ -211,8 +211,8 @@ export interface NodeExecutionRecord {
   startTime: number;
   endTime?: number;
   duration?: number;
-  input?: Record<string, unknown>;
-  output?: Record<string, unknown>;
+  input?: Record<string, any>;
+  output?: Record<string, any>;
   error?: string;
   retryCount?: number;
 }
@@ -229,7 +229,7 @@ export interface WorkflowExecution {
   triggerType: TriggerType;
   triggeredBy?: string;
   nodeExecutions: NodeExecutionRecord[];
-  variables: Record<string, unknown>;
+  variables: Record<string, any>;
   error?: string;
   logs: Array<{
     timestamp: number;
@@ -299,11 +299,11 @@ export interface WorkflowTemplate {
 export interface ExecutionContext {
   workflowId: string;
   executionId: string;
-  variables: Record<string, unknown>;
+  variables: Record<string, any>;
   triggerType: TriggerType;
   triggeredBy?: string;
   startTime: number;
-  nodeOutputs: Map<string, Record<string, unknown>>;
+  nodeOutputs: Map<string, Record<string, any>>;
   nodeExecutions: NodeExecutionRecord[];
   logs: Array<{
     timestamp: number;
@@ -318,9 +318,9 @@ export interface ExecutionContext {
 /** 执行结果 */
 export interface ExecutionResult {
   success: boolean;
-  output?: Record<string, unknown>;
+  output?: Record<string, any>;
   error?: string;
-  nodeResults?: Map<string, Record<string, unknown>>;
+  nodeResults?: Map<string, Record<string, any>>;
 }
 
 // ===================== API 响应类型 =====================
@@ -416,7 +416,7 @@ export interface TraceEvent {
   executionId?: string;
   nodeId?: string;
   nodeName?: string;
-  data?: Record<string, unknown>;
+  data?: Record<string, any>;
   message?: string;
 }
 
@@ -431,12 +431,12 @@ export interface WorkflowTracer {
 
 /** 变量上下文接口 */
 export interface IVariableContext {
-  get(key: string): unknown;
-  set(key: string, value: unknown): void;
+  get(key: string): any;
+  set(key: string, value: any): void;
   has(key: string): boolean;
-  evaluate(expression: string): unknown;
-  merge(data: Record<string, unknown>): void;
-  snapshot(): Record<string, unknown>;
+  evaluate(expression: string): any;
+  merge(data: Record<string, any>): void;
+  snapshot(): Record<string, any>;
 }
 
 // ===================== 执行状态扩展 =====================

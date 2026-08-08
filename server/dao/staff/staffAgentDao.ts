@@ -20,7 +20,7 @@ const now = (): number => Math.floor(Date.now() / 1000);
 
 /** 资源绑定 row -> read（metadata JSON 反序列化） */
 export function toResourceBindingRead(row: AgentResourceBindingRow): AgentResourceBindingRead {
-  let metadata: Record<string, unknown> = {};
+  let metadata: Record<string, any> = {};
   try {
     metadata = row.metadata_json ? JSON.parse(row.metadata_json) : {};
   } catch {
@@ -71,7 +71,7 @@ export function toAgentRead(
   row: AgentProfileRow,
   resources: AgentResourceBindingRead[] = [],
 ): AgentProfileRead {
-  let metadata: Record<string, unknown> = {};
+  let metadata: Record<string, any> = {};
   try {
     metadata = row.metadata_json ? JSON.parse(row.metadata_json) : {};
   } catch {
@@ -238,7 +238,7 @@ export function upsertAgentUsage(
     .get(tenantId, userId, agentId) as AgentUsageRow | undefined;
   const ts = now();
   if (existing) {
-    let metadata: Record<string, unknown> = {};
+    let metadata: Record<string, any> = {};
     try {
       metadata = existing.metadata_json ? JSON.parse(existing.metadata_json) : {};
     } catch {
@@ -253,7 +253,7 @@ export function upsertAgentUsage(
     return { ...existing, updated_at: ts, metadata_json: JSON.stringify(metadata) };
   }
   const id = newStaffId(StaffIdPrefix.agentUsage);
-  const initialMeta: Record<string, unknown> = {
+  const initialMeta: Record<string, any> = {
     chatCount: opts?.incrementChat ? 1 : 0,
     ...(opts?.model ? { lastModel: opts.model } : {}),
   };
@@ -270,7 +270,7 @@ export interface AgentWorkRecordEvent {
   id: string;
   session_id: string;
   event_type: string;
-  payload: unknown;
+  payload: any;
   created_at: number;
 }
 
@@ -333,7 +333,7 @@ export function getAgentWorkRecord(tenantId: string, agentId: string): AgentWork
         created_at: number;
       }>;
     for (const r of rows) {
-      let payload: unknown = {};
+      let payload: any = {};
       try {
         payload = r.payload_json ? JSON.parse(r.payload_json) : {};
       } catch {
@@ -430,7 +430,7 @@ export function upsertAgentResourceBinding(
   agentId: string,
   resourceType: string,
   resourceId: string,
-  metadata: Record<string, unknown> = {},
+  metadata: Record<string, any> = {},
   status: string = 'active',
 ): AgentResourceBindingRow {
   const db = initDb();

@@ -23,14 +23,14 @@ import { MAX_SEARCH_COUNT, SEARCH_CACHE } from "./web-search-provider-common.js"
 import { resolveWebSearchToolRuntimeContext } from "./web-tool-runtime-context.js";
 
 /** Reads tool args as a record, normalizing non-object inputs to an empty record. */
-function asToolParamsRecord(params: unknown): Record<string, unknown> {
+function asToolParamsRecord(params: any): Record<string, any> {
   return params && typeof params === "object" && !Array.isArray(params)
-    ? (params as Record<string, unknown>)
+    ? (params as Record<string, any>)
     : {};
 }
 
 /** Serializes a payload as a JSON text content block. */
-function jsonResult(payload: unknown): AgentToolResult<unknown> {
+function jsonResult(payload: any): AgentToolResult<any> {
   return {
     content: [
       {
@@ -48,12 +48,12 @@ type RunWebSearchParams = {
   sandboxed?: boolean;
   runtimeWebSearch?: RuntimeWebSearchMetadata;
   preferRuntimeProviders?: boolean;
-  args: Record<string, unknown>;
+  args: Record<string, any>;
   signal?: AbortSignal;
 };
 
 type RunWebSearchResult = {
-  result: Record<string, unknown>;
+  result: Record<string, any>;
   provider: string;
 };
 
@@ -74,7 +74,7 @@ async function runWebSearch(_params: RunWebSearchParams): Promise<RunWebSearchRe
  * provider id when present, otherwise an empty string.
  */
 function resolveWebSearchProviderId(params: {
-  search?: { provider?: unknown } | null;
+  search?: { provider?: any } | null;
 }): string {
   const provider = params.search?.provider;
   return typeof provider === "string" ? provider.trim().toLowerCase() : "";
@@ -136,7 +136,7 @@ const WebSearchSchema = {
       minimum: 1,
     },
   },
-} satisfies Record<string, unknown>;
+} satisfies Record<string, any>;
 
 function isWebSearchDisabled(config?: OpenClawConfig): boolean {
   const search = config?.tools?.web?.search;
@@ -166,13 +166,13 @@ export function createWebSearchTool(options?: {
         type: "string" | "number" | "boolean" | "object" | "any" | "array";
         description: string;
         required: boolean;
-        default?: unknown;
+        default?: any;
         enum?: string[];
         items?: { type: string };
-        properties?: Record<string, unknown>;
+        properties?: Record<string, any>;
       }
     >,
-    execute: async (_toolCallId: string, args: unknown, signal?: AbortSignal) => {
+    execute: async (_toolCallId: string, args: any, signal?: AbortSignal) => {
       // Late binding lets long-lived agents pick up runtime web-search credentials/config without
       // rebuilding the tool object.
       const { config, preferRuntimeProviders, runtimeWebSearch } =

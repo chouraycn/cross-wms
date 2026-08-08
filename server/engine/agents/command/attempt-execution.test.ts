@@ -593,7 +593,7 @@ describe("claudeCliSessionTranscriptHasContent", () => {
 
     let graceFires = 0;
     const setTimeoutSpy = vi.spyOn(globalThis, "setTimeout").mockImplementation(((
-      handler: (...args: unknown[]) => void,
+      handler: (...args: any[]) => void,
       delay?: number,
     ) => {
       if (delay === GRACE_MS) {
@@ -632,7 +632,7 @@ describe("claudeCliSessionTranscriptHasContent", () => {
     const workspaceDir = await makeWorkspace();
     const warnSpy = vi.spyOn(cliBackendLog, "warn").mockImplementation(() => undefined);
     const setTimeoutSpy = vi.spyOn(globalThis, "setTimeout").mockImplementation(((
-      handler: (...args: unknown[]) => void,
+      handler: (...args: any[]) => void,
       delay?: number,
     ) => {
       if (delay === GRACE_MS) {
@@ -685,7 +685,7 @@ describe("claudeCliSessionTranscriptHasContent", () => {
 
     const warnSpy = vi.spyOn(cliBackendLog, "warn").mockImplementation(() => undefined);
     const setTimeoutSpy = vi.spyOn(globalThis, "setTimeout").mockImplementation(((
-      handler: (...args: unknown[]) => void,
+      handler: (...args: any[]) => void,
       delay?: number,
     ) => {
       if (delay === GRACE_MS) {

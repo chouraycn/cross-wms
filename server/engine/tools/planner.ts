@@ -4,7 +4,7 @@ import type { ToolDefinition } from '../../aiClient.js';
 export interface ToolPlan {
   tools: Array<{
     toolName: string;
-    args: Record<string, unknown>;
+    args: Record<string, any>;
     dependencies?: string[];
     priority: number;
   }>;

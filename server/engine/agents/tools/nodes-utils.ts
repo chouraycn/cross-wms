@@ -21,7 +21,7 @@ type DefaultNodeSelectionOptions = {
   preferLocalMac?: boolean;
 };
 
-function messageFromError(error: unknown): string {
+function messageFromError(error: any): string {
   if (error instanceof Error) {
     return error.message;
   }
@@ -32,7 +32,7 @@ function messageFromError(error: unknown): string {
     typeof error === "object" &&
     error !== null &&
     "message" in error &&
-    typeof (error as { message?: unknown }).message === "string"
+    typeof (error as { message?: any }).message === "string"
   ) {
     return (error as { message: string }).message;
   }
@@ -46,7 +46,7 @@ function messageFromError(error: unknown): string {
   return "";
 }
 
-function shouldFallbackToPairList(error: unknown): boolean {
+function shouldFallbackToPairList(error: any): boolean {
   const message = normalizeOptionalLowercaseString(messageFromError(error)) ?? "";
   if (!message.includes("node.list")) {
     return false;

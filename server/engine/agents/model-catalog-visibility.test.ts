@@ -10,7 +10,7 @@ import type { ModelCatalogEntry } from "./model-catalog.types.js";
 const normalizeProviderModelIdWithRuntimeMock = vi.hoisted(() => vi.fn());
 
 vi.mock("./provider-model-normalization.runtime.js", () => ({
-  normalizeProviderModelIdWithRuntime: (params: unknown) =>
+  normalizeProviderModelIdWithRuntime: (params: any) =>
     normalizeProviderModelIdWithRuntimeMock(params),
 }));
 

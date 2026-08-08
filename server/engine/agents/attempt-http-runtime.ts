@@ -7,6 +7,6 @@
  */
 
 /** Configure the embedded attempt HTTP runtime (no-op in cross-wms). */
-export function configureEmbeddedAttemptHttpRuntime(..._args: unknown[]): void {
+export function configureEmbeddedAttemptHttpRuntime(..._args: any[]): void {
   // No-op: HTTP runtime configuration not available in cross-wms.
 }

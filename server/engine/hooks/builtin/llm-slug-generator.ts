@@ -43,7 +43,7 @@ function extractLeadingHttpStatus(text: string): { code: number; rest: string } 
   return { code, rest: match[2] };
 }
 
-function parseApiErrorPayload(text: string): Record<string, unknown> | null {
+function parseApiErrorPayload(text: string): Record<string, any> | null {
   try {
     const parsed = JSON.parse(text);
     if (parsed && typeof parsed === 'object' && (parsed.error || parsed.errors)) {

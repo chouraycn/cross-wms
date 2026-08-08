@@ -27,8 +27,8 @@ export type AcpRuntimeStatus = {
 
 export type AcpRuntimeEvent =
   | { type: "text"; content: string; streamId?: string }
-  | { type: "tool_call"; content: unknown; streamId?: string }
-  | { type: "tool_result"; content: unknown; streamId?: string }
+  | { type: "tool_call"; content: any; streamId?: string }
+  | { type: "tool_result"; content: any; streamId?: string }
   | { type: "error"; code: string; message: string; streamId?: string };
 
 export type AcpRuntimeTurnResult =
@@ -59,19 +59,19 @@ export interface AcpRuntime {
   runTurn(input: {
     handle: AcpRuntimeHandle;
     requestId: string;
-    messages: unknown[];
-    tools?: unknown[];
+    messages: any[];
+    tools?: any[];
   }): AsyncIterable<AcpRuntimeEvent>;
   startTurn(input: {
     handle: AcpRuntimeHandle;
     requestId: string;
-    messages: unknown[];
-    tools?: unknown[];
+    messages: any[];
+    tools?: any[];
   }): AcpRuntimeTurn;
-  getCapabilities(): unknown;
+  getCapabilities(): any;
   getStatus(input: { handle: AcpRuntimeHandle }): Promise<AcpRuntimeStatus>;
   setMode(input: { handle: AcpRuntimeHandle; mode: string }): Promise<void>;
-  setConfigOption(input: { handle: AcpRuntimeHandle; key: string; value: unknown }): Promise<void>;
+  setConfigOption(input: { handle: AcpRuntimeHandle; key: string; value: any }): Promise<void>;
   cancel(input: { handle: AcpRuntimeHandle }): Promise<void>;
   close(input: {
     handle: AcpRuntimeHandle;

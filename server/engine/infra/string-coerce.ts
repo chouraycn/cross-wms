@@ -4,12 +4,12 @@
  */
 
 /** 当输入本身就是字符串时返回它（保留空白），否则返回 undefined */
-export function readStringValue(value: unknown): string | undefined {
+export function readStringValue(value: any): string | undefined {
   return typeof value === "string" ? value : undefined;
 }
 
 /** 将任意输入规范化为非空字符串（去除首尾空白），输入无效时返回 undefined */
-export function normalizeOptionalString(value: unknown): string | undefined {
+export function normalizeOptionalString(value: any): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }
@@ -18,7 +18,7 @@ export function normalizeOptionalString(value: unknown): string | undefined {
 }
 
 /** Stringifies primitive ids/flags before applying optional string normalization. */
-export function normalizeStringifiedOptionalString(value: unknown): string | undefined {
+export function normalizeStringifiedOptionalString(value: any): string | undefined {
   if (typeof value === "string") {
     return normalizeOptionalString(value);
   }
@@ -29,18 +29,18 @@ export function normalizeStringifiedOptionalString(value: unknown): string | und
 }
 
 /** 将任意输入规范化为非空小写字符串，输入无效时返回 undefined */
-export function normalizeOptionalLowercaseString(value: unknown): string | undefined {
+export function normalizeOptionalLowercaseString(value: any): string | undefined {
   const normalized = normalizeOptionalString(value);
   return normalized !== undefined ? normalized.toLowerCase() : undefined;
 }
 
 /** 将任意输入规范化为小写字符串（不去除空白），输入无效时返回空字符串 */
-export function normalizeLowercaseStringOrEmpty(value: unknown): string {
+export function normalizeLowercaseStringOrEmpty(value: any): string {
   return normalizeOptionalLowercaseString(value) ?? "";
 }
 
 /** 规范化可能是数字或字符串的线程 id */
-export function normalizeOptionalThreadValue(value: unknown): string | number | undefined {
+export function normalizeOptionalThreadValue(value: any): string | number | undefined {
   if (typeof value === "number") {
     return Number.isFinite(value) ? Math.trunc(value) : undefined;
   }
@@ -48,13 +48,13 @@ export function normalizeOptionalThreadValue(value: unknown): string | number | 
 }
 
 /** 规范化线程/id 值并将有限数字 id 字符串化 */
-export function normalizeOptionalStringifiedId(value: unknown): string | undefined {
+export function normalizeOptionalStringifiedId(value: any): string | undefined {
   const normalized = normalizeOptionalThreadValue(value);
   return normalized == null ? undefined : String(normalized);
 }
 
 /** Type guard: 非空字符串 */
-export function hasNonEmptyString(value: unknown): value is string {
+export function hasNonEmptyString(value: any): value is string {
   return normalizeOptionalString(value) !== undefined;
 }
 

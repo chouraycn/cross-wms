@@ -4,7 +4,7 @@ import type { UserSkillRow, BuiltinStatusPatchRow } from '../db.js';
 // ===================== User Skills DAO =====================
 
 /** Parse a UserSkillRow into a frontend-friendly shape */
-export function skillRowToClient(row: UserSkillRow): Record<string, unknown> {
+export function skillRowToClient(row: UserSkillRow): Record<string, any> {
   let tags: string[] = [];
   try {
     if (row.tags) tags = JSON.parse(row.tags);
@@ -31,7 +31,7 @@ export function skillRowToClient(row: UserSkillRow): Record<string, unknown> {
 }
 
 /** Convert frontend Skill data to DB-compatible fields */
-export function clientToSkillRow(data: Record<string, unknown>): Omit<UserSkillRow, 'id'> {
+export function clientToSkillRow(data: Record<string, any>): Omit<UserSkillRow, 'id'> {
   return {
     name: (data.name ?? '') as string,
     desc: (data.desc ?? '') as string,
@@ -51,19 +51,19 @@ export function clientToSkillRow(data: Record<string, unknown>): Omit<UserSkillR
   };
 }
 
-export function getUserSkills(): Record<string, unknown>[] {
+export function getUserSkills(): Record<string, any>[] {
   const db = initDb();
   const rows = db.prepare('SELECT * FROM user_skills ORDER BY installedAt DESC').all() as UserSkillRow[];
   return rows.map(skillRowToClient);
 }
 
-export function getUserSkillById(id: string): Record<string, unknown> | undefined {
+export function getUserSkillById(id: string): Record<string, any> | undefined {
   const db = initDb();
   const row = db.prepare('SELECT * FROM user_skills WHERE id = ?').get(id) as UserSkillRow | undefined;
   return row ? skillRowToClient(row) : undefined;
 }
 
-export function createUserSkill(data: Record<string, unknown>): Record<string, unknown> {
+export function createUserSkill(data: Record<string, any>): Record<string, any> {
   const id = (data.id as string) || `skill-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const db = initDb();
   const row = clientToSkillRow(data);
@@ -76,7 +76,7 @@ export function createUserSkill(data: Record<string, unknown>): Record<string, u
   return skillRowToClient(saved!);
 }
 
-export function updateUserSkill(id: string, data: Record<string, unknown>): Record<string, unknown> | null {
+export function updateUserSkill(id: string, data: Record<string, any>): Record<string, any> | null {
   const db = initDb();
   const existing = db.prepare('SELECT * FROM user_skills WHERE id = ?').get(id) as UserSkillRow | undefined;
   if (!existing) return null;

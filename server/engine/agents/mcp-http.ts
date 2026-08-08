@@ -9,12 +9,12 @@ export interface McpMessage {
   jsonrpc: string;
   id?: number | string;
   method?: string;
-  params?: unknown;
-  result?: unknown;
+  params?: any;
+  result?: any;
   error?: {
     code: number;
     message: string;
-    data?: unknown;
+    data?: any;
   };
 }
 
@@ -26,7 +26,7 @@ export class McpHttpTransport {
     this.config = options.config;
   }
 
-  async sendRequest(method: string, params?: unknown): Promise<unknown> {
+  async sendRequest(method: string, params?: any): Promise<any> {
     const id = ++this.messageId;
     const message: McpMessage = {
       jsonrpc: '2.0',
@@ -88,7 +88,7 @@ export class McpHttpTransport {
     }
   }
 
-  async sendNotification(method: string, params?: unknown): Promise<void> {
+  async sendNotification(method: string, params?: any): Promise<void> {
     const message: McpMessage = {
       jsonrpc: '2.0',
       method,

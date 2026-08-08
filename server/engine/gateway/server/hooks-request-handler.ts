@@ -62,12 +62,12 @@ type HookReplayScope = {
   pathKey: string;
   token: string | undefined;
   idempotencyKey?: string;
-  dispatchScope: Record<string, unknown>;
+  dispatchScope: Record<string, any>;
 };
 
 function resolveMappedHookExternalContentSource(params: {
   subPath: string;
-  payload: Record<string, unknown>;
+  payload: Record<string, any>;
   sessionKey: string;
 }) {
   const payloadSource =
@@ -243,7 +243,7 @@ export function createHooksRequestHandler(
     const payload = typeof body.value === "object" && body.value !== null ? body.value : {};
     const headers = normalizeHookHeaders(req);
     const idempotencyKey = resolveHookIdempotencyKey({
-      payload: payload as Record<string, unknown>,
+      payload: payload as Record<string, any>,
       headers,
     });
     const now = Date.now();
@@ -264,7 +264,7 @@ export function createHooksRequestHandler(
     };
 
     if (subPath === "wake") {
-      const normalized = normalizeWakePayload(payload as Record<string, unknown>);
+      const normalized = normalizeWakePayload(payload as Record<string, any>);
       if (!normalized.ok) {
         sendJson(res, 400, { ok: false, error: normalized.error });
         return true;
@@ -275,7 +275,7 @@ export function createHooksRequestHandler(
     }
 
     if (subPath === "agent") {
-      const normalized = normalizeAgentPayload(payload as Record<string, unknown>);
+      const normalized = normalizeAgentPayload(payload as Record<string, any>);
       if (!normalized.ok) {
         sendJson(res, 400, { ok: false, error: normalized.error });
         return true;
@@ -345,7 +345,7 @@ export function createHooksRequestHandler(
     if (hooksConfig.mappings.length > 0) {
       try {
         const mapped = await applyHookMappings(hooksConfig.mappings, {
-          payload: payload as Record<string, unknown>,
+          payload: payload as Record<string, any>,
           headers,
           url,
           path: subPath,
@@ -440,7 +440,7 @@ export function createHooksRequestHandler(
             allowUnsafeExternalContent: mapped.action.allowUnsafeExternalContent,
             externalContentSource: resolveMappedHookExternalContentSource({
               subPath,
-              payload: payload as Record<string, unknown>,
+              payload: payload as Record<string, any>,
               sessionKey: sessionKey.value,
             }),
           });

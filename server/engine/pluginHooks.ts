@@ -74,26 +74,26 @@ export interface HookContext {
   /** 会话 ID */
   sessionId?: string;
   /** 会话数据（如果有） */
-  session?: Record<string, unknown>;
+  session?: Record<string, any>;
   /** 用户消息（消息相关钩子） */
-  message?: Record<string, unknown>;
+  message?: Record<string, any>;
   /** 消息列表（AI 调用相关钩子） */
-  messages?: Array<Record<string, unknown>>;
+  messages?: Array<Record<string, any>>;
   /** 工具调用信息（工具调用相关钩子） */
   toolCall?: {
     toolName: string;
-    args: Record<string, unknown>;
+    args: Record<string, any>;
   };
   /** 工具调用结果（after_tool_call） */
-  toolResult?: unknown;
+  toolResult?: any;
   /** AI 调用结果（after_ai_call） */
-  aiResult?: unknown;
+  aiResult?: any;
   /** 错误信息（on_error） */
   error?: Error;
   /** 任务完成结果（on_completion） */
-  result?: unknown;
+  result?: any;
   /** 额外的自定义上下文数据 */
-  extra?: Record<string, unknown>;
+  extra?: Record<string, any>;
 }
 
 // ===================== 钩子返回值类型 =====================
@@ -110,7 +110,7 @@ export interface HookResult {
   /** 是否停止后续钩子执行（短路） */
   stopPropagation?: boolean;
   /** 修改后的数据，会合并到上下文中 */
-  modified?: unknown;
+  modified?: any;
   /** 钩子执行错误（内部使用，通常不需要手动返回） */
   error?: Error;
 }
@@ -265,7 +265,7 @@ class PluginHookManager {
     }
 
     let currentContext = { ...context };
-    let lastModified: unknown = undefined as unknown;
+    let lastModified: any = undefined as any;
     let stopped = false;
 
     for (const hook of hookList) {
@@ -407,20 +407,20 @@ class PluginHookManager {
    * @param modified - 修改后的数据
    * @returns 合并后的新上下文
    */
-  private mergeContext(context: HookContext, modified: unknown): HookContext {
+  private mergeContext(context: HookContext, modified: any): HookContext {
     const newContext = { ...context };
 
     if (modified && typeof modified === 'object' && !Array.isArray(modified)) {
       // 如果 modified 是对象，尝试智能合并
-      const mod = modified as Record<string, unknown>;
+      const mod = modified as Record<string, any>;
 
       // 如果有 message 字段，替换 message
       if ('message' in mod && mod.message !== undefined) {
-        newContext.message = mod.message as Record<string, unknown>;
+        newContext.message = mod.message as Record<string, any>;
       }
       // 如果有 messages 字段，替换 messages
       if ('messages' in mod && mod.messages !== undefined) {
-        newContext.messages = mod.messages as Array<Record<string, unknown>>;
+        newContext.messages = mod.messages as Array<Record<string, any>>;
       }
       // 如果有 toolResult 字段，替换 toolResult
       if ('toolResult' in mod && mod.toolResult !== undefined) {
@@ -438,7 +438,7 @@ class PluginHookManager {
       if ('extra' in mod && mod.extra !== undefined) {
         newContext.extra = {
           ...(newContext.extra ?? {}),
-          ...(mod.extra as Record<string, unknown>),
+          ...(mod.extra as Record<string, any>),
         };
       }
     } else {

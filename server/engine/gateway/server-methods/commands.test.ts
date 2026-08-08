@@ -214,9 +214,9 @@ function createDiscordChannelPlugin() {
   };
 }
 
-function callHandler(params: Record<string, unknown> = {}) {
-  let result: { ok: boolean; payload?: unknown; error?: unknown } | undefined;
-  const respond = (ok: boolean, payload?: unknown, error?: unknown) => {
+function callHandler(params: Record<string, any> = {}) {
+  let result: { ok: boolean; payload?: any; error?: any } | undefined;
+  const respond = (ok: boolean, payload?: any, error?: any) => {
     result = { ok, payload, error };
   };
   void commandsHandlers["commands.list"]({
@@ -233,16 +233,16 @@ function callHandler(params: Record<string, unknown> = {}) {
   return result;
 }
 
-type ListedCommand = Record<string, unknown> & {
+type ListedCommand = Record<string, any> & {
   name: string;
   source: string;
   scope?: string;
   textAliases?: string[];
   nativeName?: string;
-  args?: Array<Record<string, unknown>>;
+  args?: Array<Record<string, any>>;
 };
 
-function listCommands(params: Record<string, unknown> = {}): ListedCommand[] {
+function listCommands(params: Record<string, any> = {}): ListedCommand[] {
   const { payload } = callHandler(params);
   return (payload as { commands: ListedCommand[] }).commands;
 }
@@ -265,7 +265,7 @@ function collectBuiltinNames(commands: readonly { name: string; source: string }
   return names;
 }
 
-function pluginCommand(params: Record<string, unknown> = {}): ListedCommand | undefined {
+function pluginCommand(params: Record<string, any> = {}): ListedCommand | undefined {
   return listCommands(params).find((command) => command.source === "plugin");
 }
 
@@ -347,7 +347,7 @@ describe("commands.list handler", () => {
     debugCmd.acceptsArgs = true;
     try {
       const debug = requireCommand(listCommands(), "debug_prompt");
-      const args = debug.args as Array<Record<string, unknown>>;
+      const args = debug.args as Array<Record<string, any>>;
       expect(args[0].dynamic).toBe(true);
       expect(args[0].choices).toBeUndefined();
     } finally {
@@ -530,10 +530,10 @@ describe("commands.list handler", () => {
       expect((first.description as string).length).toBeLessThanOrEqual(
         COMMAND_DESCRIPTION_MAX_LENGTH,
       );
-      expect((first.textAliases as unknown[]).length).toBeLessThanOrEqual(COMMAND_ALIAS_MAX_ITEMS);
-      expect(first.args as unknown[]).toHaveLength(COMMAND_ARGS_MAX_ITEMS);
-      const firstArg = (first.args as Array<Record<string, unknown>>)[0];
-      expect(firstArg.choices as unknown[]).toHaveLength(COMMAND_ARG_CHOICES_MAX_ITEMS);
+      expect((first.textAliases as any[]).length).toBeLessThanOrEqual(COMMAND_ALIAS_MAX_ITEMS);
+      expect(first.args as any[]).toHaveLength(COMMAND_ARGS_MAX_ITEMS);
+      const firstArg = (first.args as Array<Record<string, any>>)[0];
+      expect(firstArg.choices as any[]).toHaveLength(COMMAND_ARG_CHOICES_MAX_ITEMS);
     } finally {
       mockChatCommands.length = 0;
       mockChatCommands.push(...originalCommands);

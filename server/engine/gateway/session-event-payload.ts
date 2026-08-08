@@ -21,7 +21,7 @@ export function buildGatewaySessionEventFields(params: {
   displayName?: string;
   parentSessionKey?: string;
   hasActiveRun?: boolean;
-}): Record<string, unknown> {
+}): Record<string, any> {
   const { sessionRow } = params;
   const omitUnscopedGlobalGoal = sessionRow.key === "global" && !params.agentId;
   return {

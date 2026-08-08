@@ -90,7 +90,7 @@ function invokeNode(id: string, capability: string, payload?: string): { success
   return { success: true, result: `已调用 ${node.name} 的 ${capability} 能力${payload ? ` (负载: ${payload})` : ""}` };
 }
 
-function formatJsonOutput(data: unknown): string {
+function formatJsonOutput(data: any): string {
   return JSON.stringify(data, null, 2);
 }
 

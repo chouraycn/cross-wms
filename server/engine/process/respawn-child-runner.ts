@@ -20,7 +20,7 @@ export function runRespawnChildWithSignalBridge(params: {
   detachForProcessTree?: boolean;
   stdioIsTerminal?: boolean;
   runtime: RespawnChildRuntime;
-  onError: (error: unknown) => void;
+  onError: (error: any) => void;
 }): ChildProcess {
   const { command, args, env, runtime, onError } = params;
   const stdioIsTerminal = params.stdioIsTerminal ?? (process.stdin.isTTY || process.stdout.isTTY);

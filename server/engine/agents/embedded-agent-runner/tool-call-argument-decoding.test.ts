@@ -71,10 +71,10 @@ describe("createHtmlEntityToolCallArgumentDecodingWrapper", () => {
   const drive = async (baseStreamFn: never): Promise<DecodedMessage> => {
     const wrapped = createHtmlEntityToolCallArgumentDecodingWrapper(baseStreamFn);
     const stream = wrapped({} as never, {} as never, {} as never) as unknown as {
-      [Symbol.asyncIterator](): AsyncIterator<unknown>;
+      [Symbol.asyncIterator](): AsyncIterator<any>;
       result(): Promise<DecodedMessage>;
     };
-    for await (const event of stream as AsyncIterable<unknown>) {
+    for await (const event of stream as AsyncIterable<any>) {
       void event;
     }
     return stream.result();

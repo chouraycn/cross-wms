@@ -58,7 +58,7 @@ export function registerNodesScreenCommands(nodes: Command) {
           });
 
           const raw = await callGatewayCli("node.invoke", opts, invokeParams);
-          const res = typeof raw === "object" && raw !== null ? (raw as { payload?: unknown }) : {};
+          const res = typeof raw === "object" && raw !== null ? (raw as { payload?: any }) : {};
           const filePath = opts.out ?? `/tmp/screen-record-${Date.now()}.mp4`;
 
           if (opts.json) {

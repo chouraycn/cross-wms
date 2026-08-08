@@ -17,7 +17,7 @@ export {
 
 export type AttemptContextEngine = ContextEngine;
 
-type AttemptBootstrapContext<TBootstrapFile = unknown, TContextFile = unknown> = {
+type AttemptBootstrapContext<TBootstrapFile = any, TContextFile = any> = {
   bootstrapFiles: TBootstrapFile[];
   contextFiles: TContextFile[];
 };
@@ -135,7 +135,7 @@ export function findCurrentAttemptAssistantMessage(params: {
     .find((message): message is AssistantMessage => message.role === "assistant");
 }
 
-function parsePromptCacheTouchTimestamp(value: unknown): number | null {
+function parsePromptCacheTouchTimestamp(value: any): number | null {
   if (typeof value === "number" && Number.isFinite(value)) {
     return value;
   }
@@ -155,7 +155,7 @@ function parsePromptCacheTouchTimestamp(value: unknown): number | null {
  */
 export function resolvePromptCacheTouchTimestamp(params: {
   lastCallUsage?: NormalizedUsage;
-  assistantTimestamp?: unknown;
+  assistantTimestamp?: any;
   fallbackLastCacheTouchAt?: number | null;
 }): number | null {
   const hasCacheUsage =

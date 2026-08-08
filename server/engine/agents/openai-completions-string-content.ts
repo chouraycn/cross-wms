@@ -2,7 +2,7 @@
  * OpenAI Chat Completions 兼容性辅助函数。
  * 部分 provider 仅接受 role/content 为纯字符串的消息，而不接受文本块数组。
  */
-function flattenStringOnlyCompletionContent(content: unknown): unknown {
+function flattenStringOnlyCompletionContent(content: any): any {
   if (!Array.isArray(content)) {
     return content;
   }
@@ -11,8 +11,8 @@ function flattenStringOnlyCompletionContent(content: unknown): unknown {
     if (
       !item ||
       typeof item !== "object" ||
-      (item as { type?: unknown }).type !== "text" ||
-      typeof (item as { text?: unknown }).text !== "string"
+      (item as { type?: any }).type !== "text" ||
+      typeof (item as { text?: any }).text !== "string"
     ) {
       return content;
     }
@@ -22,12 +22,12 @@ function flattenStringOnlyCompletionContent(content: unknown): unknown {
 }
 
 /** 将仅包含字符串文本块的内容数组扁平化为换行拼接的字符串。 */
-export function flattenCompletionMessagesToStringContent(messages: unknown[]): unknown[] {
+export function flattenCompletionMessagesToStringContent(messages: any[]): any[] {
   return messages.map((message) => {
     if (!message || typeof message !== "object") {
       return message;
     }
-    const content = (message as { content?: unknown }).content;
+    const content = (message as { content?: any }).content;
     const flattenedContent = flattenStringOnlyCompletionContent(content);
     if (flattenedContent === content) {
       return message;
@@ -40,13 +40,13 @@ export function flattenCompletionMessagesToStringContent(messages: unknown[]): u
 }
 
 /** 将消息精简为 role/content 字段，以适配严格的 provider。 */
-export function stripCompletionMessagesToRoleContent(messages: unknown[]): unknown[] {
+export function stripCompletionMessagesToRoleContent(messages: any[]): any[] {
   return messages.map((message) => {
     if (!message || typeof message !== "object" || Array.isArray(message)) {
       return message;
     }
-    const record = message as Record<string, unknown>;
-    const stripped: Record<string, unknown> = {};
+    const record = message as Record<string, any>;
+    const stripped: Record<string, any> = {};
     if (Object.hasOwn(record, "role")) {
       stripped.role = record.role;
     }

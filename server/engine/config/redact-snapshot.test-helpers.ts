@@ -5,7 +5,7 @@ import type { ConfigUiHints } from "./schema.js";
 import type { ConfigFileSnapshot } from "./types.openclaw.js";
 
 /** Complete snapshot shape used by redaction tests. */
-export type TestSnapshot<TConfig extends Record<string, unknown>> = ConfigFileSnapshot & {
+export type TestSnapshot<TConfig extends Record<string, any>> = ConfigFileSnapshot & {
   parsed: TConfig;
   sourceConfig: TConfig;
   resolved: TConfig;
@@ -13,7 +13,7 @@ export type TestSnapshot<TConfig extends Record<string, unknown>> = ConfigFileSn
   config: TConfig;
 };
 
-export function makeSnapshot<TConfig extends Record<string, unknown>>(
+export function makeSnapshot<TConfig extends Record<string, any>>(
   config: TConfig,
   raw?: string,
 ): TestSnapshot<TConfig> {
@@ -35,7 +35,7 @@ export function makeSnapshot<TConfig extends Record<string, unknown>>(
 }
 
 export function restoreRedactedValues<TOriginal>(
-  incoming: unknown,
+  incoming: any,
   original: TOriginal,
   hints?: ConfigUiHints,
 ): TOriginal {

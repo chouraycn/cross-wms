@@ -1,15 +1,15 @@
 // 移植自 openclaw/src/gateway/server-methods/agent-timestamp.ts
 
-export interface TimestampInjectionOptions { [key: string]: unknown; }
+export interface TimestampInjectionOptions { [key: string]: any; }
 
-export function buildTimestampPrefix(...args: unknown[]): unknown {
+export function buildTimestampPrefix(...args: any[]): any {
   return undefined;
 }
 
-export function injectTimestamp(...args: unknown[]): unknown {
+export function injectTimestamp(...args: any[]): any {
   return undefined;
 }
 
-export function timestampOptsFromConfig(...args: unknown[]): unknown {
+export function timestampOptsFromConfig(...args: any[]): any {
   return undefined;
 }

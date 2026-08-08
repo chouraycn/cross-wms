@@ -3614,7 +3614,7 @@ describe("embedded attempt session lock lifecycle", () => {
     const records = (await fs.readFile(sessionFile, "utf8"))
       .trim()
       .split("\n")
-      .map((line) => JSON.parse(line) as unknown);
+      .map((line) => JSON.parse(line) as any);
     expect(records).toContainEqual({
       type: "metadata",
       payload: { source: "plugin" },
@@ -3972,7 +3972,7 @@ describe("embedded attempt session lock lifecycle", () => {
       .withSessionWriteLock(async () => {
         events.push("late-write");
       })
-      .catch((error: unknown) => error)
+      .catch((error: any) => error)
       .finally(() => {
         takeoverSettled = true;
       });
@@ -4081,7 +4081,7 @@ describe("embedded attempt session lock lifecycle", () => {
 
   it("wraps provider stream submission with queued transcript drain and lock release", async () => {
     const events: string[] = [];
-    const streamFn = vi.fn(async (..._args: unknown[]) => {
+    const streamFn = vi.fn(async (..._args: any[]) => {
       events.push("stream");
     });
     const waitForSessionEvents = vi.fn(async () => {
@@ -4113,10 +4113,10 @@ describe("embedded attempt session lock lifecycle", () => {
 
   it("rewraps provider stream submission after the stream function is rebuilt", async () => {
     const events: string[] = [];
-    const firstStreamFn = vi.fn(async (..._args: unknown[]) => {
+    const firstStreamFn = vi.fn(async (..._args: any[]) => {
       events.push("first-stream");
     });
-    const secondStreamFn = vi.fn(async (..._args: unknown[]) => {
+    const secondStreamFn = vi.fn(async (..._args: any[]) => {
       events.push("second-stream");
     });
     const waitForSessionEvents = vi.fn(async () => {
@@ -4184,7 +4184,7 @@ describe("embedded attempt session lock lifecycle", () => {
     });
     const session = {
       agent: {
-        streamFn: vi.fn(async (..._args: unknown[]) => {
+        streamFn: vi.fn(async (..._args: any[]) => {
           await appendSessionTranscriptMessage({
             transcriptPath: sessionFile,
             message: {

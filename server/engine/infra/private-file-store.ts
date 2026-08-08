@@ -13,10 +13,10 @@ export type FileStore = {
     options?: { mode?: number },
   ) => Promise<void>;
   removeFile: (filePath: string) => Promise<void>;
-  readJson: (filePath: string) => Promise<unknown>;
+  readJson: (filePath: string) => Promise<any>;
   writeJson: (
     filePath: string,
-    value: unknown,
+    value: any,
     options?: { mode?: number; trailingNewline?: boolean },
   ) => Promise<void>;
 };
@@ -33,7 +33,7 @@ export type FileStoreSync = {
   readJsonSync: (filePath: string) => unknown;
   writeJsonSync: (
     filePath: string,
-    value: unknown,
+    value: any,
     options?: { mode?: number; trailingNewline?: boolean },
   ) => void;
   /** 别名：与 readJsonSync 等价（openclaw 上游接口名） */
@@ -41,7 +41,7 @@ export type FileStoreSync = {
   /** 别名：与 writeJsonSync 等价（openclaw 上游接口名） */
   writeJson: (
     filePath: string,
-    value: unknown,
+    value: any,
     options?: { mode?: number; trailingNewline?: boolean },
   ) => void;
 };
@@ -84,7 +84,7 @@ export function privateFileStore(rootDir: string): FileStore {
       const fullPath = resolveRootedPath(rootDir, filePath);
       await fs.promises.unlink(fullPath);
     },
-    async readJson(filePath: string): Promise<unknown> {
+    async readJson(filePath: string): Promise<any> {
       try {
         const content = await fs.promises.readFile(resolveRootedPath(rootDir, filePath), "utf-8");
         return JSON.parse(content);
@@ -126,7 +126,7 @@ export function privateFileStoreSync(rootDir: string): PrivateFileStoreSync {
       const fullPath = resolveRootedPath(rootDir, filePath);
       fs.unlinkSync(fullPath);
     },
-    readJsonSync(filePath: string): unknown {
+    readJsonSync(filePath: string): any {
       try {
         const content = fs.readFileSync(resolveRootedPath(rootDir, filePath), "utf-8");
         return JSON.parse(content);
@@ -146,7 +146,7 @@ export function privateFileStoreSync(rootDir: string): PrivateFileStoreSync {
         mode: options?.mode ?? 0o600,
       });
     },
-    readJsonIfExists(filePath: string): unknown {
+    readJsonIfExists(filePath: string): any {
       try {
         const content = fs.readFileSync(resolveRootedPath(rootDir, filePath), "utf-8");
         return JSON.parse(content);

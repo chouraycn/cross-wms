@@ -18,12 +18,12 @@ vi.mock("../agents/agent-scope.js", () => ({
 }));
 
 vi.mock("../agents/embedded-agent.js", () => ({
-  runEmbeddedAgent: (...args: unknown[]) => runEmbeddedAgentMock(...args),
+  runEmbeddedAgent: (...args: any[]) => runEmbeddedAgentMock(...args),
 }));
 
 import { generateSlugViaLLM } from "./llm-slug-generator.js";
 
-function requireFirstRunOptions(): Record<string, unknown> {
+function requireFirstRunOptions(): Record<string, any> {
   const [call] = runEmbeddedAgentMock.mock.calls;
   if (!call) {
     throw new Error("expected embedded OpenClaw agent run");
@@ -32,7 +32,7 @@ function requireFirstRunOptions(): Record<string, unknown> {
   if (!options || typeof options !== "object") {
     throw new Error("expected embedded OpenClaw agent run options");
   }
-  return options as Record<string, unknown>;
+  return options as Record<string, any>;
 }
 
 describe("generateSlugViaLLM", () => {

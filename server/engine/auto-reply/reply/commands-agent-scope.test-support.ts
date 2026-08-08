@@ -4,7 +4,7 @@ import { vi } from "vitest";
 
 export const resolveSessionAgentIdMock = vi.fn(() => "main");
 export const resolveAgentDirMock = vi.fn(
-  (_cfg: unknown, agentId: string) => `/tmp/workspace/.openclaw/agents/${agentId}/agent`,
+  (_cfg: any, agentId: string) => `/tmp/workspace/.openclaw/agents/${agentId}/agent`,
 );
 
 vi.doMock("../../agents/agent-scope.js", async () => {

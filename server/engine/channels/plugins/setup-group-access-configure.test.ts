@@ -24,7 +24,7 @@ async function runConfigureChannelAccess<TResolved>(params: {
 }) {
   return await configureChannelAccessWithAllowlist({
     cfg: params.cfg,
-    prompter: params.prompter as unknown,
+    prompter: params.prompter as any,
     label: params.label ?? "Slack channels",
     currentPolicy: "allowlist",
     currentEntries: [],
@@ -106,7 +106,7 @@ describe("configureChannelAccessWithAllowlist", () => {
 
     const next = await configureChannelAccessWithAllowlist({
       cfg,
-      prompter: prompter as unknown,
+      prompter: prompter as any,
       label: "Twitch chat",
       currentPolicy: "disabled",
       currentEntries: [],

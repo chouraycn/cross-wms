@@ -22,7 +22,7 @@ type PersistedRuntimeToolSchemaQuarantineRecord = {
   processStartTime: number;
 };
 
-function isNonEmptyString(value: unknown): value is string {
+function isNonEmptyString(value: any): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
 

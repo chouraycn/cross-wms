@@ -42,19 +42,19 @@ type ChannelConfigSurface = {
 
 const moduleLoaders: PluginModuleLoaderCache = createPluginModuleLoaderCache();
 
-function isBuiltChannelConfigSchema(value: unknown): value is ChannelConfigSurface {
+function isBuiltChannelConfigSchema(value: any): value is ChannelConfigSurface {
   if (!value || typeof value !== "object") {
     return false;
   }
-  const candidate = value as { schema?: unknown };
+  const candidate = value as { schema?: any };
   return Boolean(candidate.schema && typeof candidate.schema === "object");
 }
 
-function isJsonSchemaConfigSurface(value: unknown): value is JsonSchemaObject {
+function isJsonSchemaConfigSurface(value: any): value is JsonSchemaObject {
   if (!value || typeof value !== "object") {
     return false;
   }
-  const candidate = value as Record<string, unknown>;
+  const candidate = value as Record<string, any>;
   if (typeof candidate.safeParse === "function" || typeof candidate.toJSONSchema === "function") {
     return false;
   }
@@ -68,7 +68,7 @@ function isJsonSchemaConfigSurface(value: unknown): value is JsonSchemaObject {
   );
 }
 
-function resolveConfigSchemaExport(imported: Record<string, unknown>): ChannelConfigSurface | null {
+function resolveConfigSchemaExport(imported: Record<string, any>): ChannelConfigSurface | null {
   for (const [name, value] of Object.entries(imported)) {
     if (name.endsWith("ChannelConfigSchema") && isBuiltChannelConfigSchema(value)) {
       return value;
@@ -129,7 +129,7 @@ function resolveChannelConfigSchemaModulePath(pluginDir: string): string | undef
 
 function loadChannelConfigSurfaceModuleSync(modulePath: string): ChannelConfigSurface | null {
   try {
-    const imported = getModuleLoader(modulePath)(modulePath) as Record<string, unknown>;
+    const imported = getModuleLoader(modulePath)(modulePath) as Record<string, any>;
     return resolveConfigSchemaExport(imported);
   } catch {
     return null;

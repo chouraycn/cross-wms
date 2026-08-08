@@ -20,7 +20,7 @@ import {
 const TINY_PNG_BASE64 =
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACXBIWXMAAAsTAAALEwEAmpwYAAAADUlEQVR4nGP4////KwAJ5gPoxLp9owAAAABJRU5ErkJggg==";
 
-function expectNoPromptImages(result: { detectedRefs: unknown[]; images: unknown[] }) {
+function expectNoPromptImages(result: { detectedRefs: any[]; images: any[] }) {
   expect(result.detectedRefs).toHaveLength(0);
   expect(result.images).toHaveLength(0);
 }

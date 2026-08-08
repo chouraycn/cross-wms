@@ -64,8 +64,8 @@ export interface TTSConfig {
   /** 自定义请求头。 */
   extraHeaders?: Record<string, string>;
   /** 自定义请求体参数。 */
-  extraBody?: Record<string, unknown>;
-  [key: string]: unknown;
+  extraBody?: Record<string, any>;
+  [key: string]: any;
 }
 
 /** 声音元数据，用于 UI 选择器与 listVoices 返回。 */
@@ -94,7 +94,7 @@ export interface TTSAudioResult {
   format: AudioFormat;
   sampleRate?: number;
   durationMs?: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 /** 列举声音请求。 */

@@ -51,7 +51,7 @@ function runUninstall(options: UninstallOptions): { steps: UninstallStep[]; remo
   return { steps, removed, skipped };
 }
 
-function formatJsonOutput(data: unknown): string {
+function formatJsonOutput(data: any): string {
   return JSON.stringify(data, null, 2);
 }
 

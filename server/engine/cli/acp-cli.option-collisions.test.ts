@@ -62,7 +62,7 @@ describe("acp cli option collisions", () => {
     expect(defaultRuntime.exit).toHaveBeenCalledWith(1);
   }
 
-  function requireFirstMockArg(mock: { mock: { calls: ReadonlyArray<ReadonlyArray<unknown>> } }) {
+  function requireFirstMockArg(mock: { mock: { calls: ReadonlyArray<ReadonlyArray<any>> } }) {
     const call = mock.mock.calls[0];
     if (!call) {
       throw new Error("expected mock to have at least one call");

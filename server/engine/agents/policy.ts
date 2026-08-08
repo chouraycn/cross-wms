@@ -7,6 +7,6 @@
  */
 
 export type AgentHarnessPolicy = unknown;
-export function resolveAgentHarnessPolicy(..._args: unknown[]): unknown {
+export function resolveAgentHarnessPolicy(..._args: any[]): any {
   return undefined;
 }

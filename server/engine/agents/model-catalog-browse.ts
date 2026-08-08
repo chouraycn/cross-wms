@@ -7,9 +7,9 @@
  */
 
 export type ModelCatalogBrowseView = unknown;
-export function modelCatalogBrowseRequiresFullDiscovery(..._args: unknown[]): unknown {
+export function modelCatalogBrowseRequiresFullDiscovery(..._args: any[]): any {
   return undefined;
 }
-export async function loadModelCatalogForBrowse(..._args: unknown[]): Promise<unknown> {
+export async function loadModelCatalogForBrowse(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }

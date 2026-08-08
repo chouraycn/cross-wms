@@ -20,7 +20,7 @@ export function listScheduledTasks(
 ): ScheduledTaskRow[] {
   const db = initDb();
   const conditions: string[] = ['tenant_id = ?'];
-  const params: unknown[] = [tenantId];
+  const params: any[] = [tenantId];
   if (filter.agent_id) {
     conditions.push('agent_id = ?');
     params.push(filter.agent_id);
@@ -71,7 +71,7 @@ interface CreateScheduledTaskData {
   prompt: string;
   description?: string | null;
   schedule_type?: string;
-  schedule?: Record<string, unknown>;
+  schedule?: Record<string, any>;
   timezone?: string;
   rrule?: string | null;
   status?: string;
@@ -81,7 +81,7 @@ interface CreateScheduledTaskData {
   end_at?: number | null;
   next_run_at?: number | null;
   source_session_id?: string | null;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 /** 创建定时任务 */
@@ -126,7 +126,7 @@ interface UpdateScheduledTaskData {
   prompt?: string;
   description?: string | null;
   schedule_type?: string;
-  schedule?: Record<string, unknown>;
+  schedule?: Record<string, any>;
   timezone?: string;
   rrule?: string | null;
   status?: string;
@@ -138,7 +138,7 @@ interface UpdateScheduledTaskData {
   last_run_at?: number | null;
   last_status?: string | null;
   run_count?: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 /** 更新定时任务（部分更新） */
@@ -152,7 +152,7 @@ export function updateScheduledTask(
   if (!existing) return undefined;
 
   const setClauses: string[] = ['updated_at = CAST(strftime(\'%s\',\'now\') AS INTEGER)'];
-  const params: unknown[] = [];
+  const params: any[] = [];
 
   if (updates.title !== undefined) { setClauses.push('title = ?'); params.push(updates.title); }
   if (updates.prompt !== undefined) { setClauses.push('prompt = ?'); params.push(updates.prompt); }
@@ -215,7 +215,7 @@ export function listAllRuns(
 ): ScheduledTaskRunRow[] {
   const db = initDb();
   const conditions: string[] = ['tenant_id = ?'];
-  const params: unknown[] = [tenantId];
+  const params: any[] = [tenantId];
   if (filter.agent_id) { conditions.push('agent_id = ?'); params.push(filter.agent_id); }
   if (filter.status) { conditions.push('status = ?'); params.push(filter.status); }
   if (filter.user_id) { conditions.push('user_id = ?'); params.push(filter.user_id); }
@@ -255,7 +255,7 @@ interface CreateRunData {
   finished_at?: number | null;
   result_summary?: string | null;
   error?: string | null;
-  trace?: Record<string, unknown>;
+  trace?: Record<string, any>;
 }
 
 /** 创建执行记录 */
@@ -305,7 +305,7 @@ export function updateRun(
 ): ScheduledTaskRunRow | undefined {
   const db = initDb();
   const setClauses: string[] = ['updated_at = CAST(strftime(\'%s\',\'now\') AS INTEGER)'];
-  const params: unknown[] = [];
+  const params: any[] = [];
   if (updates.status !== undefined) { setClauses.push('status = ?'); params.push(updates.status); }
   if (updates.started_at !== undefined) { setClauses.push('started_at = ?'); params.push(updates.started_at); }
   if (updates.finished_at !== undefined) { setClauses.push('finished_at = ?'); params.push(updates.finished_at); }

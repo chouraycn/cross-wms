@@ -76,7 +76,7 @@ export interface InstallProgress {
   stepCurrent?: number;
   progress?: number;
   message?: string;
-  result?: unknown;
+  result?: any;
   error?: string;
   eta?: number;
   downloadedBytes?: number;

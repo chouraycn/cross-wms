@@ -248,10 +248,10 @@ function installDebugProxyGlobalFetchPatch(
       throw error;
     }
   };
-  const mockState = (fetchImpl as typeof globalThis.fetch & { mock?: unknown }).mock;
+  const mockState = (fetchImpl as typeof globalThis.fetch & { mock?: any }).mock;
   if (typeof mockState === "object" && mockState !== null) {
     // Preserve Vitest mock metadata when patching mocked fetch targets.
-    (patchedFetch as typeof globalThis.fetch & { mock?: unknown }).mock = mockState;
+    (patchedFetch as typeof globalThis.fetch & { mock?: any }).mock = mockState;
   }
   fetchTarget.fetch = patchedFetch as typeof globalThis.fetch;
 }
@@ -315,7 +315,7 @@ export function captureHttpExchange(
     response: Response;
     transport?: "http" | "sse";
     flowId?: string;
-    meta?: Record<string, unknown>;
+    meta?: Record<string, any>;
   },
   resolved?: DebugProxySettings,
   deps: DebugProxyCaptureRuntimeDeps = {},
@@ -415,7 +415,7 @@ export function captureHttpExchange(
         ...responsePayload,
       });
     })
-    .catch((error: unknown) => {
+    .catch((error: any) => {
       store.recordEvent({
         ...createHttpCaptureEventBase({
           settings,
@@ -442,7 +442,7 @@ export function captureWsEvent(params: {
   payload?: string | Buffer;
   closeCode?: number;
   errorText?: string;
-  meta?: Record<string, unknown>;
+  meta?: Record<string, any>;
 }): void {
   const settings = resolveDebugProxySettings();
   if (!settings.enabled) {

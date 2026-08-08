@@ -37,7 +37,7 @@ async function readChunkWithIdleTimeout(
           resolve(result);
         }
       },
-      (err: unknown) => {
+      (err: any) => {
         clear();
         if (!timedOut) {
           reject(toLintErrorObject(err, "Non-Error rejection"));
@@ -185,7 +185,7 @@ export async function readResponseTextSnippet(
   return prefix.truncated ? `${collapsed}…` : collapsed;
 }
 
-function toLintErrorObject(value: unknown, fallbackMessage: string): Error {
+function toLintErrorObject(value: any, fallbackMessage: string): Error {
   if (value instanceof Error) {
     return value;
   }

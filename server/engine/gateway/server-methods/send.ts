@@ -57,9 +57,9 @@ import type { GatewayRequestContext, GatewayRequestHandlers, RespondFn } from ".
 
 type InflightResult = {
   ok: boolean;
-  payload?: unknown;
+  payload?: any;
   error?: ReturnType<typeof errorShape>;
-  meta?: Record<string, unknown>;
+  meta?: Record<string, any>;
 };
 
 const inflightByContext = new WeakMap<
@@ -163,7 +163,7 @@ async function runGatewayInflightWork(params: {
 }
 
 async function resolveRequestedChannel(params: {
-  requestChannel: unknown;
+  requestChannel: any;
   unsupportedMessage: (input: string) => string;
   context: GatewayRequestContext;
   rejectWebchatAsInternalOnly?: boolean;
@@ -209,7 +209,7 @@ async function resolveRequestedChannel(params: {
 }
 
 async function resolveInternalDeliveryChannel(
-  requestChannel: unknown,
+  requestChannel: any,
   context: GatewayRequestContext,
 ): Promise<
   | {
@@ -292,9 +292,9 @@ function resolveMessageActionRuntimeConfig(params: {
 function buildGatewayDeliveryPayload(params: {
   runId: string;
   channel: string;
-  result: Record<string, unknown>;
-}): Record<string, unknown> {
-  const payload: Record<string, unknown> = {
+  result: Record<string, any>;
+}): Record<string, any> {
+  const payload: Record<string, any> = {
     runId: params.runId,
     messageId: params.result.messageId,
     channel: params.channel,
@@ -320,7 +320,7 @@ function buildGatewayDeliveryPayload(params: {
 function cacheGatewayDedupeSuccess(params: {
   context: GatewayRequestContext;
   dedupeKey: string;
-  payload: unknown;
+  payload: any;
 }) {
   params.context.dedupe.set(params.dedupeKey, {
     ts: Date.now(),
@@ -344,7 +344,7 @@ function cacheGatewayDedupeFailure(params: {
 function createGatewayInflightSuccess(params: {
   context: GatewayRequestContext;
   dedupeKey: string;
-  payload: unknown;
+  payload: any;
   channel: string;
 }): InflightResult {
   cacheGatewayDedupeSuccess({
@@ -364,7 +364,7 @@ function createGatewayDeliveryInflightSuccess(params: {
   dedupeKey: string;
   runId: string;
   channel: string;
-  result: Record<string, unknown>;
+  result: Record<string, any>;
 }): InflightResult {
   return createGatewayInflightSuccess({
     context: params.context,
@@ -382,7 +382,7 @@ function createGatewayInflightUnavailableFailure(params: {
   context: GatewayRequestContext;
   dedupeKey: string;
   channel: string;
-  err: unknown;
+  err: any;
 }): InflightResult {
   const error = errorShape(ErrorCodes.UNAVAILABLE, String(params.err));
   cacheGatewayDedupeFailure({
@@ -461,7 +461,7 @@ export const sendHandlers: GatewayRequestHandlers = {
     const request = p as {
       channel: string;
       action: string;
-      params: Record<string, unknown>;
+      params: Record<string, any>;
       accountId?: string;
       requesterAccountId?: string;
       requesterSenderId?: string;
@@ -701,7 +701,7 @@ export const sendHandlers: GatewayRequestHandlers = {
           : undefined;
         const defaultAgentId = resolveSessionAgentId({ config: cfg });
         const effectiveAgentId = explicitAgentId ?? sessionAgentId ?? defaultAgentId;
-        const sendArgs: Record<string, unknown> = {
+        const sendArgs: Record<string, any> = {
           mediaUrl,
           mediaUrls,
           buffer,

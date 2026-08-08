@@ -187,7 +187,7 @@ type AgentSendSessionLifecycleTransition = {
   previousEndReason?: PluginHookSessionEndReason;
 };
 
-function formatAttachmentFailureForLog(err: unknown): string {
+function formatAttachmentFailureForLog(err: any): string {
   const primary = formatUncaughtError(err);
   const cause = err instanceof Error ? err.cause : undefined;
   if (cause === undefined) {
@@ -203,7 +203,7 @@ function formatAttachmentFailureForLog(err: unknown): string {
 function logAttachmentFailure(
   logGateway: Pick<GatewayRequestContext["logGateway"], "error">,
   label: string,
-  err: unknown,
+  err: any,
 ): void {
   logGateway.error(label, {
     error: formatAttachmentFailureForLog(err),
@@ -521,10 +521,10 @@ type TrustedGroupMetadata = {
 };
 
 function normalizeTrustedGroupMetadata(value?: {
-  groupId?: unknown;
-  groupChannel?: unknown;
-  groupSpace?: unknown;
-  space?: unknown;
+  groupId?: any;
+  groupChannel?: any;
+  groupSpace?: any;
+  space?: any;
 }): TrustedGroupMetadata {
   return {
     groupId: normalizeOptionalString(value?.groupId),
@@ -623,7 +623,7 @@ async function registerPluginSubagentRunFromGateway(params: {
   });
 }
 
-function resolveFailedTrackedAgentTaskStatus(error: unknown): GatewayAgentTaskTerminalStatus {
+function resolveFailedTrackedAgentTaskStatus(error: any): GatewayAgentTaskTerminalStatus {
   return isAbortError(error) || isTimeoutError(error) ? "timed_out" : "failed";
 }
 
@@ -675,36 +675,36 @@ function readGatewayDedupeEntry(params: {
   return undefined;
 }
 
-function isAcceptedAgentDedupePayload(payload: unknown): payload is {
-  acceptedAt?: unknown;
-  agentId?: unknown;
-  dedupeKeys?: unknown;
-  expiresAtMs?: unknown;
-  ownerConnId?: unknown;
-  ownerDeviceId?: unknown;
-  runId?: unknown;
-  sessionKey?: unknown;
+function isAcceptedAgentDedupePayload(payload: any): payload is {
+  acceptedAt?: any;
+  agentId?: any;
+  dedupeKeys?: any;
+  expiresAtMs?: any;
+  ownerConnId?: any;
+  ownerDeviceId?: any;
+  runId?: any;
+  sessionKey?: any;
   status: "accepted";
 } {
   return (
     typeof payload === "object" &&
     payload !== null &&
-    (payload as { status?: unknown }).status === "accepted"
+    (payload as { status?: any }).status === "accepted"
   );
 }
 
-function isPreRegistrationAbortedAgentDedupePayload(payload: unknown): payload is {
-  agentId?: unknown;
-  runId?: unknown;
-  sessionKey?: unknown;
+function isPreRegistrationAbortedAgentDedupePayload(payload: any): payload is {
+  agentId?: any;
+  runId?: any;
+  sessionKey?: any;
   status: "timeout";
-  stopReason?: unknown;
+  stopReason?: any;
 } {
-  const stopReason = (payload as { stopReason?: unknown } | null)?.stopReason;
+  const stopReason = (payload as { stopReason?: any } | null)?.stopReason;
   return (
     typeof payload === "object" &&
     payload !== null &&
-    (payload as { status?: unknown }).status === "timeout" &&
+    (payload as { status?: any }).status === "timeout" &&
     (stopReason === "rpc" || stopReason === "stop")
   );
 }
@@ -781,10 +781,10 @@ function setAbortedAgentDedupeEntries(params: {
   });
 }
 
-function readAgentRunTimeoutAttribution(meta: unknown) {
+function readAgentRunTimeoutAttribution(meta: any) {
   const record =
     meta && typeof meta === "object" && !Array.isArray(meta)
-      ? (meta as Record<string, unknown>)
+      ? (meta as Record<string, any>)
       : undefined;
   return {
     timeoutPhase: normalizeAgentRunTimeoutPhase(record?.timeoutPhase),
@@ -792,11 +792,11 @@ function readAgentRunTimeoutAttribution(meta: unknown) {
   };
 }
 
-function isGatewayAbortSignalReason(reason: unknown): boolean {
+function isGatewayAbortSignalReason(reason: any): boolean {
   return reason === undefined || isAbortError(reason) || readErrorName(reason) === "TimeoutError";
 }
 
-function isGatewayAgentAbortRejection(error: unknown, signal: AbortSignal): boolean {
+function isGatewayAgentAbortRejection(error: any, signal: AbortSignal): boolean {
   if (!signal.aborted) {
     return false;
   }
@@ -916,7 +916,7 @@ function dispatchAgentRunFromGateway(params: {
       // Swift clients will typically treat the first res as the result and ignore this.
       params.respond(true, payload, undefined, { runId: params.runId });
     })
-    .catch((err: unknown) => {
+    .catch((err: any) => {
       const aborted = isGatewayAgentAbortRejection(err, params.abortController.signal);
       const renderedErr = formatForLog(err);
       if (taskTracked) {
@@ -1010,7 +1010,7 @@ export const agentHandlers: GatewayRequestHandlers = {
         type?: string;
         mimeType?: string;
         fileName?: string;
-        content?: unknown;
+        content?: any;
       }>;
       channel?: string;
       replyChannel?: string;
@@ -1300,7 +1300,7 @@ export const agentHandlers: GatewayRequestHandlers = {
         undefined,
         errorShape(
           ErrorCodes.INVALID_REQUEST,
-          `invalid agent params: unknown agent id "${request.agentId}"`,
+          `invalid agent params: any agent id "${request.agentId}"`,
         ),
       );
       return;
@@ -1343,7 +1343,7 @@ export const agentHandlers: GatewayRequestHandlers = {
             undefined,
             errorShape(
               ErrorCodes.INVALID_REQUEST,
-              `invalid agent params: unknown agent id "${parsed?.agentId}"`,
+              `invalid agent params: any agent id "${parsed?.agentId}"`,
             ),
           );
           return;
@@ -1522,7 +1522,7 @@ export const agentHandlers: GatewayRequestHandlers = {
             undefined,
             errorShape(
               ErrorCodes.INVALID_REQUEST,
-              `invalid agent params: unknown channel: ${normalized}`,
+              `invalid agent params: any channel: ${normalized}`,
             ),
           );
           return;

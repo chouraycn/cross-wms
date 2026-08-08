@@ -63,7 +63,7 @@ vi.mock("../media/media-services.js", () => ({
   convertHeicToJpeg: mocks.convertHeicToJpeg,
 }));
 
-function requireRunCapabilityRequest(): unknown {
+function requireRunCapabilityRequest(): any {
   // File API tests verify the normalized request handed to runCapability, not
   // just the public return shape.
   const [call] = mocks.runCapability.mock.calls;
@@ -739,7 +739,7 @@ describe("media-understanding runtime", () => {
     const [[extractOptions]] = extractStructured.mock.calls as unknown as Array<
       [
         {
-          input?: unknown;
+          input?: any;
           instructions?: string;
           provider?: string;
           model?: string;

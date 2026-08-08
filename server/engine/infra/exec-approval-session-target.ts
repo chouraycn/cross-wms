@@ -2,15 +2,15 @@
 
 export type ExecApprovalSessionTarget = unknown;
 export type ApprovalRequestSessionConversation = unknown;
-export function resolveApprovalRequestSessionConversation(...args: unknown[]): unknown {
+export function resolveApprovalRequestSessionConversation(...args: any[]): any {
   return undefined;
 }
-export function resolveExecApprovalSessionTarget(...args: unknown[]): unknown {
+export function resolveExecApprovalSessionTarget(...args: any[]): any {
   return undefined;
 }
-export function resolveApprovalRequestSessionTarget(...args: unknown[]): unknown {
+export function resolveApprovalRequestSessionTarget(...args: any[]): any {
   return undefined;
 }
-export function resolveApprovalRequestOriginTarget(...args: unknown[]): unknown {
+export function resolveApprovalRequestOriginTarget(...args: any[]): any {
   return undefined;
 }

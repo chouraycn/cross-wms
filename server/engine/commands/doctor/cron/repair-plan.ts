@@ -118,15 +118,15 @@ export function formatLegacyIssuePreview(issues: CronLegacyIssueCounts): string[
   return lines;
 }
 
-function cronJobMigrationKey(job: Record<string, unknown>): string | undefined {
+function cronJobMigrationKey(job: Record<string, any>): string | undefined {
   return normalizeOptionalString(job.id) ?? normalizeOptionalString(job.jobId);
 }
 
 /** Merge legacy JSON jobs into current jobs without duplicating matching ids/jobIds. */
 export function mergeLegacyCronJobs(params: {
-  currentJobs: Array<Record<string, unknown>>;
-  legacyJobs: Array<Record<string, unknown>>;
-}): { jobs: Array<Record<string, unknown>>; importedCount: number } {
+  currentJobs: Array<Record<string, any>>;
+  legacyJobs: Array<Record<string, any>>;
+}): { jobs: Array<Record<string, any>>; importedCount: number } {
   const merged = [...params.currentJobs];
   const currentKeys = new Set(
     params.currentJobs.map((job) => cronJobMigrationKey(job)).filter((key) => key !== undefined),
@@ -150,9 +150,9 @@ export function mergeLegacyCronJobs(params: {
 
 /** Attach runtime SQLite state columns back onto a config-defined cron job row. */
 export function mergeRuntimeEntryIntoConfigJob(params: {
-  job: Record<string, unknown>;
-  runtimeEntry?: { updatedAtMs?: number; state?: Record<string, unknown> };
-}): Record<string, unknown> {
+  job: Record<string, any>;
+  runtimeEntry?: { updatedAtMs?: number; state?: Record<string, any> };
+}): Record<string, any> {
   return {
     ...params.job,
     ...(params.runtimeEntry?.updatedAtMs !== undefined
@@ -164,7 +164,7 @@ export function mergeRuntimeEntryIntoConfigJob(params: {
 
 /** Return true when a SQLite cron projection row no longer matches config JSON. */
 export function needsSqliteProjectionBackfill(params: {
-  configJob: Record<string, unknown>;
+  configJob: Record<string, any>;
   projectedJob?: CronJob;
 }): boolean {
   if (!params.projectedJob) {
@@ -174,7 +174,7 @@ export function needsSqliteProjectionBackfill(params: {
   if (!normalizedConfig) {
     return true;
   }
-  const projected = params.projectedJob as unknown as Record<string, unknown>;
+  const projected = params.projectedJob as unknown as Record<string, any>;
   for (const field of [
     "agentId",
     "deleteAfterRun",

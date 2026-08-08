@@ -15,7 +15,7 @@ import type { ChunkPlan } from './chunkWorker.js';
 
 /** Worker 任务输入 */
 export interface WorkerTaskInput {
-  messages: unknown[];
+  messages: any[];
   maxTokens: number;
   safetyMargin: number;
   overheadTokens: number;
@@ -25,7 +25,7 @@ export interface WorkerTaskInput {
 /** Worker 任务结果 */
 export type WorkerTaskResult =
   | { kind: 'chunk-plan'; plan: ChunkPlan }
-  | { kind: 'oversized-plan'; plan: { smallMessages: unknown[]; oversizedNotes: string[] } }
+  | { kind: 'oversized-plan'; plan: { smallMessages: any[]; oversizedNotes: string[] } }
   | { kind: 'error'; error: string };
 
 /** Worker 池配置 */

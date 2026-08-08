@@ -15,7 +15,7 @@ import {
 } from "./chat.abort.test-helpers.js";
 
 type TranscriptLine = {
-  message?: Record<string, unknown>;
+  message?: Record<string, any>;
 };
 
 const sessionEntryState = vi.hoisted(() => ({
@@ -23,7 +23,7 @@ const sessionEntryState = vi.hoisted(() => ({
   sessionId: "",
   hasEntry: true,
   canonicalKey: "main",
-  cfg: {} as Record<string, unknown>,
+  cfg: {} as Record<string, any>,
   loadCalls: [] as Array<{ sessionKey: string; opts?: { agentId?: string } }>,
 }));
 
@@ -81,8 +81,8 @@ async function readTranscriptLines(transcriptPath: string): Promise<TranscriptLi
 function collectMessagesWithIdempotencyKey(
   lines: TranscriptLine[],
   idempotencyKey: string,
-): Record<string, unknown>[] {
-  const messages: Record<string, unknown>[] = [];
+): Record<string, any>[] {
+  const messages: Record<string, any>[] = [];
   for (const line of lines) {
     if (line.message?.idempotencyKey === idempotencyKey) {
       messages.push(line.message);
@@ -94,7 +94,7 @@ function collectMessagesWithIdempotencyKey(
 function findMessageWithIdempotencyKey(
   lines: TranscriptLine[],
   idempotencyKey: string,
-): Record<string, unknown> | undefined {
+): Record<string, any> | undefined {
   for (const line of lines) {
     if (line.message?.idempotencyKey === idempotencyKey) {
       return line.message;
@@ -103,14 +103,14 @@ function findMessageWithIdempotencyKey(
   return undefined;
 }
 
-function expectRecord(value: unknown, label: string): Record<string, unknown> {
+function expectRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object") {
     throw new Error(`expected ${label}`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function expectAbortPayload(payload: unknown, expected?: { runIds?: string[] }) {
+function expectAbortPayload(payload: any, expected?: { runIds?: string[] }) {
   const actual = expectRecord(payload, "abort payload");
   expect(actual.aborted).toBe(true);
   if (expected?.runIds) {
@@ -119,15 +119,15 @@ function expectAbortPayload(payload: unknown, expected?: { runIds?: string[] }) 
   return actual;
 }
 
-function expectAbortPayloadContainsRunIds(payload: unknown, runIds: string[]) {
+function expectAbortPayloadContainsRunIds(payload: any, runIds: string[]) {
   const actual = expectAbortPayload(payload);
   expect(Array.isArray(actual.runIds)).toBe(true);
   for (const runId of runIds) {
-    expect(actual.runIds as unknown[]).toContain(runId);
+    expect(actual.runIds as any[]).toContain(runId);
   }
 }
 
-function requireLastRespondCall(respond: ReturnType<typeof vi.fn>): unknown[] {
+function requireLastRespondCall(respond: ReturnType<typeof vi.fn>): any[] {
   const calls = respond.mock.calls;
   const call = calls[calls.length - 1];
   if (!call) {
@@ -137,7 +137,7 @@ function requireLastRespondCall(respond: ReturnType<typeof vi.fn>): unknown[] {
 }
 
 function expectPersistedAbortMessage(
-  message: unknown,
+  message: any,
   expected: {
     idempotencyKey: string;
     origin: string;

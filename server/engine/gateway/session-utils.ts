@@ -8,12 +8,12 @@ import { getChildSessionKeys } from './session-child-sessions.js';
 import { getCompactionCheckpointCount, getLatestCompactionCheckpoint } from './session-compaction-checkpoints.js';
 
 export type LoadSessionEntryResult = {
-  entry: Record<string, unknown> | null;
+  entry: Record<string, any> | null;
   storePath: string;
   canonicalKey: string;
 };
 
-export type SessionStore = Record<string, Record<string, unknown>>;
+export type SessionStore = Record<string, Record<string, any>>;
 
 const sessionStore: SessionStore = {};
 
@@ -21,11 +21,11 @@ export function getSessionStore(): SessionStore {
   return sessionStore;
 }
 
-export function getSessionEntry(sessionKey: string): Record<string, unknown> | undefined {
+export function getSessionEntry(sessionKey: string): Record<string, any> | undefined {
   return sessionStore[sessionKey];
 }
 
-export function setSessionEntry(sessionKey: string, entry: Record<string, unknown>): void {
+export function setSessionEntry(sessionKey: string, entry: Record<string, any>): void {
   sessionStore[sessionKey] = entry;
 }
 
@@ -55,7 +55,7 @@ export function loadSessionEntry(
 
 export function buildGatewaySessionRow(
   sessionKey: string,
-  entry: Record<string, unknown>,
+  entry: Record<string, any>,
 ): GatewaySessionRow {
   const childSessions = getChildSessionKeys(sessionKey);
   const compactionCheckpointCount = getCompactionCheckpointCount(sessionKey);
@@ -174,7 +174,7 @@ export function listSessions(params: {
 }
 
 export function loadCombinedSessionStoreForGateway(
-  _cfg: Record<string, unknown>,
+  _cfg: Record<string, any>,
 ): { store: SessionStore; storePath: string } {
   return {
     store: sessionStore,
@@ -183,7 +183,7 @@ export function loadCombinedSessionStoreForGateway(
 }
 
 export function resolveGatewaySessionStoreTarget(params: {
-  cfg: Record<string, unknown>;
+  cfg: Record<string, any>;
   key: string;
   store: SessionStore;
 }): { agentId: string; storePath: string } {
@@ -204,7 +204,7 @@ export function resolveSessionTranscriptCandidates(
 }
 
 export function resolvePreferredSessionKeyForSessionIdMatches(
-  matches: Array<[string, Record<string, unknown>]>,
+  matches: Array<[string, Record<string, any>]>,
   _sessionId: string,
 ): string | undefined {
   if (matches.length === 0) return undefined;

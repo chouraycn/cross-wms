@@ -14,8 +14,8 @@ export type CodexAppServerToolResultEvent = {
   turnId: string;
   toolCallId: string;
   toolName: string;
-  args: Record<string, unknown>;
-  result: AgentToolResult<unknown>;
+  args: Record<string, any>;
+  result: AgentToolResult<any>;
 };
 
 /** Codex app-server 扩展事件附带的会话上下文。 */
@@ -28,7 +28,7 @@ export type CodexAppServerExtensionContext = {
 
 /** Codex app-server 扩展处理器返回的可选替换结果。 */
 export type CodexAppServerToolResultHandlerResult = {
-  result: AgentToolResult<unknown>;
+  result: AgentToolResult<any>;
 };
 
 /** 暴露给 Codex app-server 扩展工厂的运行时事件面。 */

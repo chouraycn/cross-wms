@@ -197,7 +197,7 @@ describe("plugin authoring commands", () => {
         },
       },
     });
-    expect((manifest.toolMetadata as Record<string, unknown>).stale_tool).toBeUndefined();
+    expect((manifest.toolMetadata as Record<string, any>).stale_tool).toBeUndefined();
     expect(
       validateToolPluginProject({
         metadata,

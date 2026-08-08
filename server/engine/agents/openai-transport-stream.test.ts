@@ -34,7 +34,7 @@ type CapturedStreamEvent = {
   type?: string;
   delta?: string;
   content?: string;
-  partial?: unknown;
+  partial?: any;
 };
 
 function createDeepSeekCompletionsModel(): Model<"openai-completions"> {
@@ -109,30 +109,30 @@ function createAzureResponsesModel(): Model<"azure-openai-responses"> {
   };
 }
 
-function neverYieldsStream(): AsyncIterable<unknown> {
+function neverYieldsStream(): AsyncIterable<any> {
   // Simulates an HTTP stream that opened but never delivered the first SSE event.
   return {
     [Symbol.asyncIterator]() {
       return {
-        next: async () => await new Promise<IteratorResult<unknown>>(() => {}),
+        next: async () => await new Promise<IteratorResult<any>>(() => {}),
         return: async () => ({ done: true, value: undefined }),
       };
     },
   };
 }
 
-async function* streamChunks(chunks: readonly unknown[]): AsyncGenerator<never> {
+async function* streamChunks(chunks: readonly any[]): AsyncGenerator<never> {
   for (const chunk of chunks) {
     yield chunk as never;
   }
 }
 
-function expectRecordFields(record: unknown, expected: Record<string, unknown>) {
+function expectRecordFields(record: any, expected: Record<string, any>) {
   // Shared assertion helper for parsed transport payload/event records.
   if (!record || typeof record !== "object") {
     throw new Error("Expected record");
   }
-  const actual = record as Record<string, unknown>;
+  const actual = record as Record<string, any>;
   for (const [key, value] of Object.entries(expected)) {
     expect(actual[key]).toEqual(value);
   }
@@ -347,11 +347,11 @@ describe("openai transport stream", () => {
     });
     const thinkingBlock = output.content[0] as {
       thinkingSignature?: string;
-      openclawReasoningReplay?: unknown;
+      openclawReasoningReplay?: any;
     };
     const replayItem = JSON.parse(thinkingBlock.thinkingSignature ?? "{}") as Record<
       string,
-      unknown
+      any
     >;
     expect(replayItem).toMatchObject({
       type: "reasoning",
@@ -1485,10 +1485,10 @@ describe("openai transport stream", () => {
       { apiKey: "test-key" } as never,
     );
 
-    let errorPayload: Record<string, unknown> | undefined;
+    let errorPayload: Record<string, any> | undefined;
     for await (const event of stream as AsyncIterable<{
       type: string;
-      error?: Record<string, unknown>;
+      error?: Record<string, any>;
     }>) {
       if (event.type === "error") {
         errorPayload = event.error;
@@ -1595,7 +1595,7 @@ describe("openai transport stream", () => {
   });
 
   it("parses JSON chat completions returned to streaming requests", async () => {
-    let capturedStreamFlag: unknown;
+    let capturedStreamFlag: any;
     const server = createServer((req, res) => {
       let body = "";
       req.setEncoding("utf8");
@@ -1603,7 +1603,7 @@ describe("openai transport stream", () => {
         body += chunk;
       });
       req.on("end", () => {
-        capturedStreamFlag = (JSON.parse(body) as { stream?: unknown }).stream;
+        capturedStreamFlag = (JSON.parse(body) as { stream?: any }).stream;
         res.writeHead(200, {
           "content-type": "application/json; charset=utf-8",
         });
@@ -1693,7 +1693,7 @@ describe("openai transport stream", () => {
   });
 
   it("emits Qwen thinking streams when enabled without reasoning_effort support", async () => {
-    let capturedPayload: Record<string, unknown> | undefined;
+    let capturedPayload: Record<string, any> | undefined;
     const server = createServer((req, res) => {
       let body = "";
       req.setEncoding("utf8");
@@ -1701,7 +1701,7 @@ describe("openai transport stream", () => {
         body += chunk;
       });
       req.on("end", () => {
-        capturedPayload = JSON.parse(body) as Record<string, unknown>;
+        capturedPayload = JSON.parse(body) as Record<string, any>;
         res.writeHead(200, {
           "content-type": "application/json; charset=utf-8",
         });
@@ -1876,10 +1876,10 @@ describe("openai transport stream", () => {
         { apiKey: "test-key" } as never,
       );
 
-      let errorPayload: Record<string, unknown> | undefined;
+      let errorPayload: Record<string, any> | undefined;
       for await (const event of stream as AsyncIterable<{
         type: string;
-        error?: Record<string, unknown>;
+        error?: Record<string, any>;
       }>) {
         if (event.type === "error") {
           errorPayload = event.error;
@@ -1950,10 +1950,10 @@ describe("openai transport stream", () => {
         { apiKey: "test-key" } as never,
       );
 
-      let errorPayload: Record<string, unknown> | undefined;
+      let errorPayload: Record<string, any> | undefined;
       for await (const event of stream as AsyncIterable<{
         type: string;
-        error?: Record<string, unknown>;
+        error?: Record<string, any>;
       }>) {
         if (event.type === "error") {
           errorPayload = event.error;
@@ -2075,7 +2075,7 @@ describe("openai transport stream", () => {
       stopReason: "stop",
       timestamp: Date.now(),
     };
-    const stream: { push(event: unknown): void } = { push() {} };
+    const stream: { push(event: any): void } = { push() {} };
 
     async function* mockStream() {
       yield {
@@ -2486,7 +2486,7 @@ describe("openai transport stream", () => {
       stopReason: "stop",
       timestamp: Date.now(),
     };
-    const stream: { push(event: unknown): void } = { push() {} };
+    const stream: { push(event: any): void } = { push() {} };
 
     async function* mockStream() {
       yield null as never;
@@ -3167,7 +3167,7 @@ describe("openai transport stream", () => {
       {
         reasoningEffort: "high",
       } as never,
-    ) as { reasoning?: unknown; reasoning_effort?: unknown };
+    ) as { reasoning?: any; reasoning_effort?: any };
 
     expect(params).not.toHaveProperty("reasoning");
     expect(params).not.toHaveProperty("reasoning_effort");
@@ -3207,7 +3207,7 @@ describe("openai transport stream", () => {
         tools: [],
       } as never,
       undefined,
-    ) as { input?: Array<{ type?: string; role?: string; content?: unknown }> };
+    ) as { input?: Array<{ type?: string; role?: string; content?: any }> };
 
     expect(params.input?.[0]).toMatchObject({
       type: "message",
@@ -3244,7 +3244,7 @@ describe("openai transport stream", () => {
       {
         reasoning: "high",
       } as never,
-    ) as { reasoning?: unknown; include?: string[] };
+    ) as { reasoning?: any; include?: string[] };
 
     expect(params).not.toHaveProperty("reasoning");
     expect(params).not.toHaveProperty("include");
@@ -3274,7 +3274,7 @@ describe("openai transport stream", () => {
         tools: [],
       } as never,
       undefined,
-    ) as { reasoning?: unknown; include?: string[] };
+    ) as { reasoning?: any; include?: string[] };
 
     expect(params).not.toHaveProperty("reasoning");
     expect(params).not.toHaveProperty("include");
@@ -3306,7 +3306,7 @@ describe("openai transport stream", () => {
       {
         reasoning: "high",
       } as never,
-    ) as { reasoning?: unknown; include?: string[] };
+    ) as { reasoning?: any; include?: string[] };
 
     expect(params.reasoning).toEqual({ effort: "high", summary: "auto" });
     expect(params.include).toEqual(["reasoning.encrypted_content"]);
@@ -3357,7 +3357,7 @@ describe("openai transport stream", () => {
         tools: [],
       } as never,
       undefined,
-    ) as { input?: unknown };
+    ) as { input?: any };
 
     expect(params.input).toEqual([
       {
@@ -3393,7 +3393,7 @@ describe("openai transport stream", () => {
         tools: [],
       } as never,
       undefined,
-    ) as { max_output_tokens?: unknown };
+    ) as { max_output_tokens?: any };
 
     expect(params.max_output_tokens).toBe(65_536);
   });
@@ -3506,7 +3506,7 @@ describe("openai transport stream", () => {
         maxTokens: 16,
         sessionId: "session-123",
       },
-    ) as Record<string, unknown>;
+    ) as Record<string, any>;
 
     expect(params.instructions).toBe("Follow the user request.");
     expect(params.max_output_tokens).toBeUndefined();
@@ -3536,7 +3536,7 @@ describe("openai transport stream", () => {
         maxTokens: 16,
         sessionId: "session-123",
       },
-    ) as Record<string, unknown>;
+    ) as Record<string, any>;
 
     expect(params.instructions).toBe("Follow the user request.");
     expect(params.max_output_tokens).toBeUndefined();
@@ -3566,7 +3566,7 @@ describe("openai transport stream", () => {
         maxTokens: 16,
         sessionId: "session-123",
       },
-    ) as Record<string, unknown>;
+    ) as Record<string, any>;
 
     expect(params.instructions).toBeUndefined();
     expect(params.max_output_tokens).toBe(16);
@@ -3603,7 +3603,7 @@ describe("openai transport stream", () => {
         openclaw_session_id: "session-123",
         openclaw_turn_id: "turn-123",
       },
-    ) as Record<string, unknown> & {
+    ) as Record<string, any> & {
       input?: Array<{ role?: string }>;
       instructions?: string;
     };
@@ -3655,7 +3655,7 @@ describe("openai transport stream", () => {
         openclaw_session_id: "session-123",
         openclaw_turn_id: "turn-123",
       },
-    ) as Record<string, unknown> & {
+    ) as Record<string, any> & {
       input?: Array<{ role?: string }>;
       instructions?: string;
     };
@@ -3743,7 +3743,7 @@ describe("openai transport stream", () => {
         openclaw_session_id: "session-123",
         openclaw_turn_id: "turn-123",
       },
-    ) as Record<string, unknown>;
+    ) as Record<string, any>;
 
     expect(params.instructions).toBe("Stable prefix\nDynamic suffix");
     expect(params.prompt_cache_key).toBe("session-123");
@@ -3779,7 +3779,7 @@ describe("openai transport stream", () => {
     {
       const params = buildOpenAIResponsesParams(model, context, {
         responseFormat: { type: "json_object" },
-      }) as Record<string, unknown>;
+      }) as Record<string, any>;
       expect(params.text).toEqual({ format: { type: "json_object" } });
     }
 
@@ -3789,14 +3789,14 @@ describe("openai transport stream", () => {
           type: "json_schema",
           json_schema: { name: "test", schema: { type: "object" } },
         },
-      }) as Record<string, unknown>;
+      }) as Record<string, any>;
       expect(params.text).toEqual({
         format: { type: "json_schema", name: "test", schema: { type: "object" } },
       });
     }
 
     {
-      const params = buildOpenAIResponsesParams(model, context, {}) as Record<string, unknown>;
+      const params = buildOpenAIResponsesParams(model, context, {}) as Record<string, any>;
       expect(params).not.toHaveProperty("text");
     }
   });
@@ -3913,7 +3913,7 @@ describe("openai transport stream", () => {
         call_id?: string;
         phase?: string;
         encrypted_content?: string;
-        summary?: unknown;
+        summary?: any;
       }>;
     };
 
@@ -4021,7 +4021,7 @@ describe("openai transport stream", () => {
         call_id?: string;
         phase?: string;
         encrypted_content?: string;
-        summary?: unknown;
+        summary?: any;
       }>;
     };
 
@@ -4129,7 +4129,7 @@ describe("openai transport stream", () => {
         call_id?: string;
         phase?: string;
         encrypted_content?: string;
-        summary?: unknown;
+        summary?: any;
       }>;
     };
 
@@ -4227,7 +4227,7 @@ describe("openai transport stream", () => {
         id?: string;
         call_id?: string;
         phase?: string;
-        summary?: unknown;
+        summary?: any;
       }>;
     };
 
@@ -4334,7 +4334,7 @@ describe("openai transport stream", () => {
         call_id?: string;
         phase?: string;
         encrypted_content?: string;
-        summary?: unknown;
+        summary?: any;
       }>;
     };
 
@@ -4418,7 +4418,7 @@ describe("openai transport stream", () => {
       input?: Array<{
         type?: string;
         id?: string;
-        summary?: unknown;
+        summary?: any;
       }>;
     };
 
@@ -4553,7 +4553,7 @@ describe("openai transport stream", () => {
         type?: string;
         id?: string;
         encrypted_content?: string;
-        summary?: unknown;
+        summary?: any;
       }>;
     };
 
@@ -4628,7 +4628,7 @@ describe("openai transport stream", () => {
         type?: string;
         id?: string;
         encrypted_content?: string;
-        summary?: unknown;
+        summary?: any;
       }>;
     };
 
@@ -4705,7 +4705,7 @@ describe("openai transport stream", () => {
         type?: string;
         id?: string;
         encrypted_content?: string;
-        summary?: unknown;
+        summary?: any;
       }>;
     };
 
@@ -5044,7 +5044,7 @@ describe("openai transport stream", () => {
         tools: [],
       } as never,
       undefined,
-    ) as { reasoning?: unknown; include?: string[] };
+    ) as { reasoning?: any; include?: string[] };
 
     expect(params.reasoning).toEqual({ effort: "none" });
     expect(params).not.toHaveProperty("include");
@@ -5072,7 +5072,7 @@ describe("openai transport stream", () => {
       {
         reasoning: "high",
       } as never,
-    ) as { reasoning?: unknown };
+    ) as { reasoning?: any };
 
     expect(params.reasoning).toEqual({ effort: "high", summary: "auto" });
   });
@@ -5099,7 +5099,7 @@ describe("openai transport stream", () => {
       {
         reasoningEffort: "none",
       } as never,
-    ) as { reasoning?: unknown; include?: unknown };
+    ) as { reasoning?: any; include?: any };
 
     expect(params.reasoning).toEqual({ effort: "none" });
     expect(params).not.toHaveProperty("include");
@@ -5127,7 +5127,7 @@ describe("openai transport stream", () => {
       {
         reasoningEffort: "none",
       } as never,
-    ) as { reasoning?: unknown; include?: unknown };
+    ) as { reasoning?: any; include?: any };
 
     expect(params).not.toHaveProperty("reasoning");
     expect(params).not.toHaveProperty("include");
@@ -5155,7 +5155,7 @@ describe("openai transport stream", () => {
       {
         reasoning: "minimal",
       } as never,
-    ) as { reasoning?: unknown };
+    ) as { reasoning?: any };
 
     expect(params.reasoning).toEqual({ effort: "low", summary: "auto" });
   });
@@ -5193,7 +5193,7 @@ describe("openai transport stream", () => {
       {
         reasoning: "minimal",
       } as never,
-    ) as { reasoning?: unknown };
+    ) as { reasoning?: any };
 
     expect(params.reasoning).toEqual({ effort: "low", summary: "auto" });
   });
@@ -5231,7 +5231,7 @@ describe("openai transport stream", () => {
       {
         reasoning: "minimal",
       } as never,
-    ) as { reasoning?: unknown };
+    ) as { reasoning?: any };
 
     expect(params.reasoning).toEqual({ effort: "minimal", summary: "auto" });
   });
@@ -5258,7 +5258,7 @@ describe("openai transport stream", () => {
       {
         reasoning: "low",
       } as never,
-    ) as { reasoning?: unknown };
+    ) as { reasoning?: any };
 
     expect(params.reasoning).toEqual({ effort: "medium", summary: "auto" });
   });
@@ -5497,7 +5497,7 @@ describe("openai transport stream", () => {
       { toolChoice: { type: "function", name: "lookup" } },
     ) as {
       tools?: Array<{ name?: string; strict?: boolean }>;
-      tool_choice?: unknown;
+      tool_choice?: any;
     };
 
     expect(params.tools).toEqual([expect.objectContaining({ name: "lookup", strict: true })]);
@@ -5571,7 +5571,7 @@ describe("openai transport stream", () => {
           ],
         },
       },
-    ) as { tool_choice?: unknown };
+    ) as { tool_choice?: any };
 
     expect(params.tool_choice).toEqual({
       type: "allowed_tools",
@@ -5658,7 +5658,7 @@ describe("openai transport stream", () => {
         ],
       } as never,
       undefined,
-    ) as { tools?: unknown[] };
+    ) as { tools?: any[] };
 
     expect(params.tools).toEqual([]);
   });
@@ -5933,7 +5933,7 @@ describe("openai transport stream", () => {
       tools?: Array<{
         name?: string;
         strict?: boolean;
-        parameters?: Record<string, unknown>;
+        parameters?: Record<string, any>;
       }>;
     };
 
@@ -5979,7 +5979,7 @@ describe("openai transport stream", () => {
         ],
       } as never,
       undefined,
-    ) as { tools?: Array<{ strict?: boolean; parameters?: Record<string, unknown> }> };
+    ) as { tools?: Array<{ strict?: boolean; parameters?: Record<string, any> }> };
 
     expect(params.tools?.[0]).not.toHaveProperty("strict");
     expectRecordFields(params.tools?.[0]?.parameters, {
@@ -6017,7 +6017,7 @@ describe("openai transport stream", () => {
         ],
       } as never,
       undefined,
-    ) as { tools?: Array<{ strict?: boolean; parameters?: Record<string, unknown> }> };
+    ) as { tools?: Array<{ strict?: boolean; parameters?: Record<string, any> }> };
 
     expect(params.tools?.[0]?.strict).toBe(false);
     expectRecordFields(params.tools?.[0]?.parameters, {
@@ -6111,7 +6111,7 @@ describe("openai transport stream", () => {
       {
         serviceTier: "priority",
       },
-    ) as { service_tier?: unknown };
+    ) as { service_tier?: any };
     const proxyParams = buildOpenAIResponsesParams(
       {
         id: "custom-model",
@@ -6133,7 +6133,7 @@ describe("openai transport stream", () => {
       {
         serviceTier: "priority",
       },
-    ) as { service_tier?: unknown };
+    ) as { service_tier?: any };
 
     expect(nativeParams.service_tier).toBe("priority");
     expect(proxyParams).not.toHaveProperty("service_tier");
@@ -6160,7 +6160,7 @@ describe("openai transport stream", () => {
         tools: [],
       } as never,
       undefined,
-    ) as { store?: unknown };
+    ) as { store?: any };
 
     expect(params).not.toHaveProperty("store");
   });
@@ -6262,7 +6262,7 @@ describe("openai transport stream", () => {
       {
         reasoning: "medium",
       } as never,
-    ) as { reasoning_effort?: unknown };
+    ) as { reasoning_effort?: any };
 
     expect(params.reasoning_effort).toBe("medium");
   });
@@ -6289,7 +6289,7 @@ describe("openai transport stream", () => {
       {
         reasoning: "minimal",
       } as never,
-    ) as { reasoning_effort?: unknown };
+    ) as { reasoning_effort?: any };
 
     expect(params.reasoning_effort).toBe("low");
   });
@@ -6314,7 +6314,7 @@ describe("openai transport stream", () => {
         tools: [],
       } as never,
       undefined,
-    ) as { reasoning_effort?: unknown };
+    ) as { reasoning_effort?: any };
 
     expect(params.reasoning_effort).toBe("high");
   });
@@ -6347,10 +6347,10 @@ describe("openai transport stream", () => {
       {
         reasoning: "medium",
       } as never,
-    ) as { reasoning_effort?: unknown; tools?: unknown };
+    ) as { reasoning_effort?: any; tools?: any };
 
     expect(params.tools).toHaveLength(1);
-    const tool = (params.tools as Array<Record<string, unknown>>)[0];
+    const tool = (params.tools as Array<Record<string, any>>)[0];
     expectRecordFields(tool, { type: "function" });
     expectRecordFields(tool.function, { name: "lookup_weather" });
     expect(params).not.toHaveProperty("reasoning_effort");
@@ -6389,7 +6389,7 @@ describe("openai transport stream", () => {
         {
           reasoning: "medium",
         } as never,
-      ) as { reasoning_effort?: unknown; tools?: unknown };
+      ) as { reasoning_effort?: any; tools?: any };
 
       expect(params.tools).toHaveLength(1);
       expect(params).not.toHaveProperty("reasoning_effort");
@@ -6430,7 +6430,7 @@ describe("openai transport stream", () => {
         {
           reasoning: "medium",
         } as never,
-      ) as { reasoning_effort?: unknown; tools?: unknown };
+      ) as { reasoning_effort?: any; tools?: any };
 
       expect(params.tools).toHaveLength(1);
       expect(params).not.toHaveProperty("reasoning_effort");
@@ -6466,7 +6466,7 @@ describe("openai transport stream", () => {
       {
         reasoning: "medium",
       } as never,
-    ) as { reasoning_effort?: unknown; tools?: unknown };
+    ) as { reasoning_effort?: any; tools?: any };
 
     expect(params.tools).toHaveLength(1);
     expect(params.reasoning_effort).toBe("medium");
@@ -6494,7 +6494,7 @@ describe("openai transport stream", () => {
       {
         reasoning: "medium",
       } as never,
-    ) as { reasoning_effort?: unknown; tools?: unknown };
+    ) as { reasoning_effort?: any; tools?: any };
 
     expect(params.tools).toHaveLength(0);
     expect(params.reasoning_effort).toBe("medium");
@@ -6522,7 +6522,7 @@ describe("openai transport stream", () => {
       {
         reasoning: "medium",
       } as never,
-    ) as { reasoning_effort?: unknown; tools?: unknown };
+    ) as { reasoning_effort?: any; tools?: any };
 
     expect(params.tools).toStrictEqual([]);
     expect(params.reasoning_effort).toBe("medium");
@@ -6559,10 +6559,10 @@ describe("openai transport stream", () => {
 
     const enabled = buildOpenAICompletionsParams(baseModel, context, {
       reasoning: "medium",
-    } as never) as { reasoning_effort?: unknown };
+    } as never) as { reasoning_effort?: any };
     const disabled = buildOpenAICompletionsParams(baseModel, context, {
       reasoning: "off",
-    } as never) as { reasoning_effort?: unknown };
+    } as never) as { reasoning_effort?: any };
 
     expect(enabled.reasoning_effort).toBe("default");
     expect(disabled.reasoning_effort).toBe("none");
@@ -6592,10 +6592,10 @@ describe("openai transport stream", () => {
 
     const enabled = buildOpenAICompletionsParams(baseModel, context, {
       reasoning: "medium",
-    } as never) as { enable_thinking?: unknown; reasoning_effort?: unknown };
+    } as never) as { enable_thinking?: any; reasoning_effort?: any };
     const disabled = buildOpenAICompletionsParams(baseModel, context, {
       reasoning: "off",
-    } as never) as { enable_thinking?: unknown; reasoning_effort?: unknown };
+    } as never) as { enable_thinking?: any; reasoning_effort?: any };
 
     expect(enabled.enable_thinking).toBe(true);
     expect(disabled.enable_thinking).toBe(false);
@@ -6628,7 +6628,7 @@ describe("openai transport stream", () => {
       {
         reasoning: "off",
       } as never,
-    ) as { chat_template_kwargs?: Record<string, unknown>; reasoning_effort?: unknown };
+    ) as { chat_template_kwargs?: Record<string, any>; reasoning_effort?: any };
 
     expect(params.chat_template_kwargs).toEqual({ enable_thinking: false });
     expect(params).not.toHaveProperty("reasoning_effort");
@@ -6660,14 +6660,14 @@ describe("openai transport stream", () => {
     const enabled = buildOpenAICompletionsParams(baseModel, context, {
       reasoning: "medium",
     } as never) as {
-      max_completion_tokens?: unknown;
-      max_tokens?: unknown;
-      reasoning?: unknown;
-      reasoning_effort?: unknown;
+      max_completion_tokens?: any;
+      max_tokens?: any;
+      reasoning?: any;
+      reasoning_effort?: any;
     };
     const disabled = buildOpenAICompletionsParams(baseModel, context, {
       reasoning: "off",
-    } as never) as { reasoning?: unknown; reasoning_effort?: unknown };
+    } as never) as { reasoning?: any; reasoning_effort?: any };
 
     expect(enabled.max_tokens).toBe(32768);
     expect(enabled).not.toHaveProperty("max_completion_tokens");
@@ -6703,7 +6703,7 @@ describe("openai transport stream", () => {
       {
         reasoning: "off",
       } as never,
-    ) as { reasoning_effort?: unknown };
+    ) as { reasoning_effort?: any };
 
     expect(params).not.toHaveProperty("reasoning_effort");
   });
@@ -7081,9 +7081,9 @@ describe("openai transport stream", () => {
       } as never,
     ) as {
       messages?: Array<{ role?: string }>;
-      reasoning_effort?: unknown;
-      stream_options?: unknown;
-      store?: unknown;
+      reasoning_effort?: any;
+      stream_options?: any;
+      store?: any;
       tools?: Array<{ function?: { strict?: boolean } }>;
     };
 
@@ -7109,7 +7109,7 @@ describe("openai transport stream", () => {
         maxTokens: 4096,
         compat: {
           requiresStringContent: true,
-        } as Record<string, unknown>,
+        } as Record<string, any>,
       } satisfies Model<"openai-completions">,
       {
         systemPrompt: "system",
@@ -7123,7 +7123,7 @@ describe("openai transport stream", () => {
         tools: [],
       } as never,
       undefined,
-    ) as { messages?: Array<{ role?: string; content?: unknown }> };
+    ) as { messages?: Array<{ role?: string; content?: any }> };
 
     expect(params.messages?.[0]).toEqual({ role: "system", content: "system" });
     expect(params.messages?.[1]).toEqual({ role: "user", content: "What is 2 + 2?" });
@@ -7144,7 +7144,7 @@ describe("openai transport stream", () => {
         maxTokens: 4096,
         compat: {
           strictMessageKeys: true,
-        } as Record<string, unknown>,
+        } as Record<string, any>,
       } satisfies Model<"openai-completions">,
       {
         messages: [
@@ -7170,7 +7170,7 @@ describe("openai transport stream", () => {
         tools: [],
       } as never,
       undefined,
-    ) as { messages?: Array<Record<string, unknown>> };
+    ) as { messages?: Array<Record<string, any>> };
 
     expect(params.messages?.[0]).toEqual({ role: "assistant", content: null });
     expect(params.messages?.[1]).toEqual({ role: "tool", content: "tool result" });
@@ -7712,7 +7712,7 @@ describe("openai transport stream", () => {
         function?: {
           name?: string;
           strict?: boolean;
-          parameters?: Record<string, unknown>;
+          parameters?: Record<string, any>;
         };
       }>;
     };
@@ -7803,7 +7803,7 @@ describe("openai transport stream", () => {
       } as never,
       undefined,
     ) as {
-      tools?: Array<{ function?: { parameters?: { properties?: Record<string, unknown> } } }>;
+      tools?: Array<{ function?: { parameters?: { properties?: Record<string, any> } } }>;
     };
 
     expect(params.tools?.[0]?.function?.parameters?.properties?.forbidden).toStrictEqual({});
@@ -7845,7 +7845,7 @@ describe("openai transport stream", () => {
       } as never,
       undefined,
     ) as {
-      tools?: Array<{ function?: { parameters?: { properties?: Record<string, unknown> } } }>;
+      tools?: Array<{ function?: { parameters?: { properties?: Record<string, any> } } }>;
     };
 
     expect(params.tools?.[0]?.function?.parameters?.properties?.hints).toStrictEqual({
@@ -7872,7 +7872,7 @@ describe("openai transport stream", () => {
         maxTokens: 4096,
         compat: {
           supportsTools: false,
-        } as Record<string, unknown>,
+        } as Record<string, any>,
       } satisfies Model<"openai-completions">,
       {
         systemPrompt: "system",
@@ -7886,7 +7886,7 @@ describe("openai transport stream", () => {
         ],
       } as never,
       undefined,
-    ) as { tools?: unknown; tool_choice?: unknown };
+    ) as { tools?: any; tool_choice?: any };
 
     expect(params).not.toHaveProperty("tools");
     expect(params).not.toHaveProperty("tool_choice");
@@ -7907,7 +7907,7 @@ describe("openai transport stream", () => {
         maxTokens: 4096,
         compat: {
           supportsTools: false,
-        } as Record<string, unknown>,
+        } as Record<string, any>,
       } satisfies Model<"openai-completions">,
       {
         systemPrompt: "system",
@@ -7935,7 +7935,7 @@ describe("openai transport stream", () => {
         ],
       } as never,
       undefined,
-    ) as { tools?: unknown };
+    ) as { tools?: any };
 
     expect(params).not.toHaveProperty("tools");
   });
@@ -7957,7 +7957,7 @@ describe("openai transport stream", () => {
     function makeAssistantOutput(model: Model<"openai-completions">) {
       return {
         role: "assistant" as const,
-        content: [] as Array<Record<string, unknown>>,
+        content: [] as Array<Record<string, any>>,
         api: model.api,
         provider: model.provider,
         model: model.id,
@@ -8079,7 +8079,7 @@ describe("openai transport stream", () => {
           tools: [],
         } as never,
         undefined,
-      ) as { messages: Array<Record<string, unknown>> };
+      ) as { messages: Array<Record<string, any>> };
 
       const assistant = params.messages.find((message) => message.role === "assistant") as
         | { tool_calls?: Array<{ extra_content?: { google?: { thought_signature?: string } } }> }
@@ -8123,7 +8123,7 @@ describe("openai transport stream", () => {
           tools: [],
         } as never,
         undefined,
-      ) as { messages: Array<Record<string, unknown>> };
+      ) as { messages: Array<Record<string, any>> };
 
       const assistant = params.messages.find((message) => message.role === "assistant") as
         | { tool_calls?: Array<{ extra_content?: { google?: { thought_signature?: string } } }> }
@@ -8159,7 +8159,7 @@ describe("openai transport stream", () => {
           tools: [],
         } as never,
         undefined,
-      ) as { messages: Array<Record<string, unknown>> };
+      ) as { messages: Array<Record<string, any>> };
 
       const assistant = params.messages.find((message) => message.role === "assistant") as
         | { tool_calls?: Array<{ extra_content?: { google?: { thought_signature?: string } } }> }
@@ -8207,7 +8207,7 @@ describe("openai transport stream", () => {
           tools: [],
         } as never,
         undefined,
-      ) as { messages: Array<Record<string, unknown>> };
+      ) as { messages: Array<Record<string, any>> };
 
       const assistant = params.messages.find((message) => message.role === "assistant") as
         | { tool_calls?: Array<{ extra_content?: { google?: { thought_signature?: string } } }> }
@@ -8260,7 +8260,7 @@ describe("openai transport stream", () => {
           tools: [],
         } as never,
         undefined,
-      ) as { messages: Array<Record<string, unknown>> };
+      ) as { messages: Array<Record<string, any>> };
 
       const assistant = params.messages.find((message) => message.role === "assistant") as
         | { tool_calls?: Array<{ extra_content?: { google?: { thought_signature?: string } } }> }
@@ -8307,10 +8307,10 @@ describe("openai transport stream", () => {
           tools: [],
         } as never,
         undefined,
-      ) as { messages: Array<Record<string, unknown>> };
+      ) as { messages: Array<Record<string, any>> };
 
       const assistant = params.messages.find((message) => message.role === "assistant") as
-        | { tool_calls?: Array<{ extra_content?: unknown }> }
+        | { tool_calls?: Array<{ extra_content?: any }> }
         | undefined;
       expect(assistant?.tool_calls?.[0]?.extra_content).toBeUndefined();
     });
@@ -8622,7 +8622,7 @@ describe("openai transport stream", () => {
     );
 
     expect(params).toHaveProperty("tools");
-    expect((params as { tools: unknown[] }).tools).toEqual([]);
+    expect((params as { tools: any[] }).tools).toEqual([]);
   });
 
   it("preserves tools: [] fallback for native openai-completions endpoints when only prior tool history is present (existing behavior)", () => {
@@ -8664,7 +8664,7 @@ describe("openai transport stream", () => {
     );
 
     expect(params).toHaveProperty("tools");
-    expect((params as { tools: unknown[] }).tools).toEqual([]);
+    expect((params as { tools: any[] }).tools).toEqual([]);
   });
 
   it("resets stopReason to stop when finish_reason is tool_calls but tool_calls array is empty", async () => {
@@ -9746,7 +9746,7 @@ describe("openai transport stream", () => {
       timestamp: Date.now(),
     };
 
-    const stream: { push(event: unknown): void } = { push() {} };
+    const stream: { push(event: any): void } = { push() {} };
 
     const mockChunks = [
       {
@@ -9760,7 +9760,7 @@ describe("openai transport stream", () => {
                 { type: "reasoning.text", text: "I need to think about this." },
                 { type: "reasoning.text", text: " Let me analyze." },
               ],
-            } as Record<string, unknown>,
+            } as Record<string, any>,
             logprobs: null,
             finish_reason: null,
           },
@@ -9844,7 +9844,7 @@ describe("openai transport stream", () => {
       timestamp: Date.now(),
     };
 
-    const stream: { push(event: unknown): void } = { push() {} };
+    const stream: { push(event: any): void } = { push() {} };
     const mockChunks = [
       {
         id: "chatcmpl-structured-content",
@@ -9857,7 +9857,7 @@ describe("openai transport stream", () => {
                 { type: "thinking", thinking: [{ type: "text", text: "Need to think." }] },
                 { type: "text", content: "Visible answer." },
               ],
-            } as Record<string, unknown>,
+            } as Record<string, any>,
             logprobs: null,
             finish_reason: null,
           },
@@ -9923,7 +9923,7 @@ describe("openai transport stream", () => {
       timestamp: Date.now(),
     };
 
-    const stream: { push(event: unknown): void } = { push() {} };
+    const stream: { push(event: any): void } = { push() {} };
 
     const mockChunks = [
       {
@@ -9941,7 +9941,7 @@ describe("openai transport stream", () => {
                   function: { name: "lookup", arguments: '{"query":"qwen3"}' },
                 },
               ],
-            } as Record<string, unknown>,
+            } as Record<string, any>,
             logprobs: null,
             finish_reason: null,
           },
@@ -10016,7 +10016,7 @@ describe("openai transport stream", () => {
       timestamp: Date.now(),
     };
 
-    const stream: { push(event: unknown): void } = { push() {} };
+    const stream: { push(event: any): void } = { push() {} };
 
     const mockChunks = [
       {
@@ -10104,7 +10104,7 @@ describe("openai transport stream", () => {
       timestamp: Date.now(),
     };
 
-    const stream: { push(event: unknown): void } = { push() {} };
+    const stream: { push(event: any): void } = { push() {} };
 
     const mockChunks = [
       {
@@ -10122,7 +10122,7 @@ describe("openai transport stream", () => {
                   function: { name: "lookup", arguments: '{"query":' },
                 },
               ],
-            } as Record<string, unknown>,
+            } as Record<string, any>,
             logprobs: null,
             finish_reason: null,
           },
@@ -10143,7 +10143,7 @@ describe("openai transport stream", () => {
                   function: { arguments: '"qwen3"}' },
                 },
               ],
-            } as Record<string, unknown>,
+            } as Record<string, any>,
             logprobs: null,
             finish_reason: null,
           },
@@ -10219,7 +10219,7 @@ describe("openai transport stream", () => {
       timestamp: Date.now(),
     };
 
-    const stream: { push(event: unknown): void } = { push() {} };
+    const stream: { push(event: any): void } = { push() {} };
 
     const mockChunks = [
       {
@@ -10240,7 +10240,7 @@ describe("openai transport stream", () => {
                   function: { name: "lookup", arguments: '{"query":"weather"}' },
                 },
               ],
-            } as Record<string, unknown>,
+            } as Record<string, any>,
             logprobs: null,
             finish_reason: null,
           },
@@ -10316,7 +10316,7 @@ describe("openai transport stream", () => {
       timestamp: Date.now(),
     };
 
-    const stream: { push(event: unknown): void } = { push() {} };
+    const stream: { push(event: any): void } = { push() {} };
 
     const mockChunks = [
       {
@@ -10330,7 +10330,7 @@ describe("openai transport stream", () => {
                 { type: "reasoning.text", text: "Internal thought." },
                 { type: "text", text: "Do not leak this by default." },
               ],
-            } as Record<string, unknown>,
+            } as Record<string, any>,
             logprobs: null,
             finish_reason: null,
           },
@@ -10398,7 +10398,7 @@ describe("openai transport stream", () => {
       timestamp: Date.now(),
     };
 
-    const stream: { push(event: unknown): void } = { push() {} };
+    const stream: { push(event: any): void } = { push() {} };
 
     const mockChunks = [
       {
@@ -10413,7 +10413,7 @@ describe("openai transport stream", () => {
                 { type: "reasoning.text", text: " Hidden second." },
                 { type: "response.text", text: " Visible third." },
               ],
-            } as Record<string, unknown>,
+            } as Record<string, any>,
             logprobs: null,
             finish_reason: "stop" as const,
           },
@@ -10471,7 +10471,7 @@ describe("openai transport stream", () => {
       timestamp: Date.now(),
     };
 
-    const stream: { push(event: unknown): void } = { push() {} };
+    const stream: { push(event: any): void } = { push() {} };
 
     const mockChunks = [
       {
@@ -10483,7 +10483,7 @@ describe("openai transport stream", () => {
             delta: {
               reasoning_details: [{ type: "reasoning.text", text: "Primary reasoning." }],
               reasoning: "Duplicate fallback reasoning.",
-            } as Record<string, unknown>,
+            } as Record<string, any>,
             logprobs: null,
             finish_reason: "stop" as const,
           },
@@ -10539,7 +10539,7 @@ describe("openai transport stream", () => {
       timestamp: Date.now(),
     };
 
-    const stream: { push(event: unknown): void } = { push() {} };
+    const stream: { push(event: any): void } = { push() {} };
 
     const mockChunks = [
       {
@@ -10551,7 +10551,7 @@ describe("openai transport stream", () => {
             delta: {
               reasoning_details: [{ type: "response.output_text", text: "Visible answer." }],
               reasoning: "Hidden fallback reasoning.",
-            } as Record<string, unknown>,
+            } as Record<string, any>,
             logprobs: null,
             finish_reason: "stop" as const,
           },
@@ -10608,7 +10608,7 @@ describe("openai transport stream", () => {
       timestamp: Date.now(),
     };
 
-    const stream: { push(event: unknown): void } = { push() {} };
+    const stream: { push(event: any): void } = { push() {} };
 
     const mockChunks = [
       {
@@ -10625,7 +10625,7 @@ describe("openai transport stream", () => {
                   function: { name: "lookup", arguments: '{"query":' },
                 },
               ],
-            } as Record<string, unknown>,
+            } as Record<string, any>,
             logprobs: null,
             finish_reason: null,
           },
@@ -10646,7 +10646,7 @@ describe("openai transport stream", () => {
                   function: { arguments: '"weather"}' },
                 },
               ],
-            } as Record<string, unknown>,
+            } as Record<string, any>,
             logprobs: null,
             finish_reason: null,
           },
@@ -10717,7 +10717,7 @@ describe("openai transport stream", () => {
       timestamp: Date.now(),
     };
 
-    const stream: { push(event: unknown): void } = { push() {} };
+    const stream: { push(event: any): void } = { push() {} };
 
     const mockChunks = [
       {
@@ -10734,7 +10734,7 @@ describe("openai transport stream", () => {
                   function: { name: "lookup", arguments: '{"query":' },
                 },
               ],
-            } as Record<string, unknown>,
+            } as Record<string, any>,
             logprobs: null,
             finish_reason: null,
           },
@@ -10748,7 +10748,7 @@ describe("openai transport stream", () => {
             index: 0,
             delta: {
               reasoning_details: [{ type: "response.output_text", text: "Working on it." }],
-            } as Record<string, unknown>,
+            } as Record<string, any>,
             logprobs: null,
             finish_reason: null,
           },
@@ -10768,7 +10768,7 @@ describe("openai transport stream", () => {
                   function: { arguments: '"weather"}' },
                 },
               ],
-            } as Record<string, unknown>,
+            } as Record<string, any>,
             logprobs: null,
             finish_reason: null,
           },
@@ -10839,7 +10839,7 @@ describe("openai transport stream", () => {
       timestamp: Date.now(),
     };
 
-    const stream: { push(event: unknown): void } = { push() {} };
+    const stream: { push(event: any): void } = { push() {} };
     const oversizedText = "x".repeat(300_000);
 
     const mockChunks = [
@@ -10857,7 +10857,7 @@ describe("openai transport stream", () => {
                   function: { name: "lookup", arguments: '{"query":' },
                 },
               ],
-            } as Record<string, unknown>,
+            } as Record<string, any>,
             logprobs: null,
             finish_reason: null,
           },
@@ -10871,7 +10871,7 @@ describe("openai transport stream", () => {
             index: 0,
             delta: {
               content: oversizedText,
-            } as Record<string, unknown>,
+            } as Record<string, any>,
             logprobs: null,
             finish_reason: null,
           },
@@ -10922,7 +10922,7 @@ describe("openai transport stream", () => {
       timestamp: Date.now(),
     };
 
-    const stream: { push(event: unknown): void } = { push() {} };
+    const stream: { push(event: any): void } = { push() {} };
     const oversizedArgs = `"${"x".repeat(300_000)}"}`;
 
     const mockChunks = [
@@ -10940,7 +10940,7 @@ describe("openai transport stream", () => {
                   function: { name: "lookup", arguments: `{${oversizedArgs}` },
                 },
               ],
-            } as Record<string, unknown>,
+            } as Record<string, any>,
             logprobs: null,
             finish_reason: null,
           },
@@ -11100,12 +11100,12 @@ describe("buildOpenAICompletionsParams sanitizes reasoning replay fields", () =>
     baseUrl: "https://api.kimi.com/coding/v1",
   } satisfies Model<"openai-completions">;
 
-  function getAssistantMessage(params: { messages: unknown }) {
+  function getAssistantMessage(params: { messages: any }) {
     expect(Array.isArray(params.messages)).toBe(true);
-    const list = params.messages as Array<Record<string, unknown>>;
+    const list = params.messages as Array<Record<string, any>>;
     const assistant = list.find((m) => m.role === "assistant");
     expect(assistant).toBeDefined();
-    return assistant as Record<string, unknown>;
+    return assistant as Record<string, any>;
   }
 
   function buildReplayParams(model: Model<"openai-completions">, thinkingSignature: string) {
@@ -11136,7 +11136,7 @@ describe("buildOpenAICompletionsParams sanitizes reasoning replay fields", () =>
         tools: [],
       } as never,
       undefined,
-    ) as { messages: unknown };
+    ) as { messages: any };
   }
 
   it.each(["reasoning_details", "reasoning_content", "reasoning", "reasoning_text"])(
@@ -11227,7 +11227,7 @@ describe("buildOpenAICompletionsParams sanitizes reasoning replay fields", () =>
         tools: [],
       } as never,
       undefined,
-    ) as { messages: Array<Record<string, unknown>> };
+    ) as { messages: Array<Record<string, any>> };
 
     const assistantMessages = params.messages.filter((msg) => msg.role === "assistant");
     for (const msg of assistantMessages) {
@@ -11463,7 +11463,7 @@ describe("buildOpenAICompletionsParams sanitizes reasoning replay fields", () =>
         tools: [],
       } as never,
       undefined,
-    ) as { messages: unknown };
+    ) as { messages: any };
 
     const assistant = getAssistantMessage(params);
     expect(assistant.reasoning_details).toEqual([reasoningDetail]);

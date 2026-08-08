@@ -145,7 +145,7 @@ export interface SessionInfoEntry extends SessionEntryBase {
 
 interface PromptReleasedOpaqueEntry {
   type: "prompt_released_opaque";
-  record: unknown;
+  record: any;
 }
 
 type PromptReleasedSessionEntry =
@@ -604,7 +604,7 @@ function hasCacheableSessionHeader(entries: FileEntry[]): boolean {
     return true;
   }
   const header = entries[0];
-  if (header.type !== "session" || typeof (header as { id?: unknown }).id !== "string") {
+  if (header.type !== "session" || typeof (header as { id?: any }).id !== "string") {
     return false;
   }
 
@@ -764,7 +764,7 @@ function publishRememberedSessionFileSnapshot(
   }
 }
 
-function jsonSerializationCanRunUserCode(value: unknown, ancestors = new Set<object>()): boolean {
+function jsonSerializationCanRunUserCode(value: any, ancestors = new Set<object>()): boolean {
   if (typeof value === "bigint") {
     return Object.getOwnPropertyDescriptor(BigInt.prototype, "toJSON") !== undefined;
   }
@@ -933,7 +933,7 @@ function freezeFileEntry(entry: FileEntry): FileEntry {
 // The cache key proves only the file bytes at a specific stat snapshot. Freezing
 // cached JSONL objects prevents caller mutations from creating transcript state
 // that was never read from or written to disk.
-function freezeJsonLikeValue(value: unknown, seen = new WeakSet<object>()): void {
+function freezeJsonLikeValue(value: any, seen = new WeakSet<object>()): void {
   if (typeof value !== "object" || value === null || seen.has(value)) {
     return;
   }
@@ -943,7 +943,7 @@ function freezeJsonLikeValue(value: unknown, seen = new WeakSet<object>()): void
       freezeJsonLikeValue(item, seen);
     }
   } else {
-    for (const item of Object.values(value as Record<string, unknown>)) {
+    for (const item of Object.values(value as Record<string, any>)) {
       freezeJsonLikeValue(item, seen);
     }
   }
@@ -971,14 +971,14 @@ function parseJsonlEntries(content: string): FileEntry[] {
 
 function hasReadableSessionHeader(entries: FileEntry[]): boolean {
   const header = entries[0];
-  return header?.type === "session" && typeof (header as { id?: unknown }).id === "string";
+  return header?.type === "session" && typeof (header as { id?: any }).id === "string";
 }
 
-function isJsonRecord(value: unknown): value is Record<string, unknown> {
+function isJsonRecord(value: any): value is Record<string, any> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function isSessionEntryType(type: unknown): boolean {
+function isSessionEntryType(type: any): boolean {
   switch (type) {
     case "message":
     case "thinking_level_change":
@@ -995,7 +995,7 @@ function isSessionEntryType(type: unknown): boolean {
   }
 }
 
-function isIndexedSessionEntry(entry: unknown): entry is SessionEntry {
+function isIndexedSessionEntry(entry: any): entry is SessionEntry {
   if (!isJsonRecord(entry)) {
     return false;
   }
@@ -1004,7 +1004,7 @@ function isIndexedSessionEntry(entry: unknown): entry is SessionEntry {
 
 type PreservedOpaqueFileEntry = {
   index: number;
-  record: unknown;
+  record: any;
 };
 
 type SessionLeafControl = {
@@ -1018,7 +1018,7 @@ type SessionLeafControl = {
 };
 
 function parseParentLinkedOpaqueEntry(
-  record: unknown,
+  record: any,
 ): { id: string; parentId: string | null } | undefined {
   if (
     !isJsonRecord(record) ||
@@ -1033,7 +1033,7 @@ function parseParentLinkedOpaqueEntry(
   return { id: record.id, parentId: record.parentId };
 }
 
-function parseOpaqueLeafEntry(record: unknown):
+function parseOpaqueLeafEntry(record: any):
   | {
       id: string;
       parentId: string | null;
@@ -1093,7 +1093,7 @@ function partitionSessionFileEntries(entries: readonly FileEntry[]): {
       entry.type === "session" &&
       typeof entry.id === "string"
     ) {
-      fileEntries.push(entry as unknown as SessionHeader);
+      fileEntries.push(entry as any as SessionHeader);
       fileEntriesByOriginalIndex[originalIndex] = entry;
       hasHeader = true;
       continue;
@@ -1125,7 +1125,7 @@ function recoverCorruptSessionEntries(filePath: string, cwd: string): FileEntry[
   const parsedEntries = parseJsonlEntries(content);
   const recoveredHeader = parsedEntries.find(
     (entry): entry is SessionHeader =>
-      entry.type === "session" && typeof (entry as { id?: unknown }).id === "string",
+      entry.type === "session" && typeof (entry as { id?: any }).id === "string",
   );
   const header: SessionHeader =
     recoveredHeader ??
@@ -1836,13 +1836,13 @@ export class SessionManager {
   private getPersistedFileEntries(
     leafAppendParentId: string | null = this.appendParentId,
     leafAppendMode?: "side",
-  ): unknown[] {
+  ): any[] {
     // Tail cleanup removes canonical entries before rewriting. Clamp opaque
     // anchors now so later appends stay after records that the rewrite moved
     // to the new tail instead of crossing them on the next full rewrite.
     this.clampOpaqueFileEntryIndexes();
 
-    const entries: unknown[] = [];
+    const entries: any[] = [];
     let opaqueIndex = 0;
     for (let index = 0; index <= this.fileEntries.length; index += 1) {
       while (this.opaqueFileEntries[opaqueIndex]?.index === index) {
@@ -2081,7 +2081,7 @@ export class SessionManager {
   }
 
   private persistRecord(
-    entry: unknown,
+    entry: any,
     options?: AppendPersistenceOptions,
     publishSnapshot = true,
   ): void {
@@ -2383,7 +2383,7 @@ export class SessionManager {
     summary: string,
     firstKeptEntryId: string,
     tokensBefore: number,
-    details?: unknown,
+    details?: any,
     fromHook?: boolean,
   ): string {
     const entry: CompactionEntry = {
@@ -2404,7 +2404,7 @@ export class SessionManager {
   }
 
   /** Append a custom entry (for extensions) as child of current leaf, then advance leaf. Returns entry id. */
-  appendCustomEntry(customType: string, data?: unknown): string {
+  appendCustomEntry(customType: string, data?: any): string {
     const entry: CustomEntry = {
       type: "custom",
       customType,
@@ -2456,7 +2456,7 @@ export class SessionManager {
     customType: string,
     content: string | (TextContent | ImageContent)[],
     display: boolean,
-    details?: unknown,
+    details?: any,
   ): string {
     const entry: CustomMessageEntry = {
       type: "custom_message",
@@ -2676,7 +2676,7 @@ export class SessionManager {
   branchWithSummary(
     branchFromId: string | null,
     summary: string,
-    details?: unknown,
+    details?: any,
     fromHook?: boolean,
   ): string {
     const branchTargetId = branchFromId === null ? null : this.resolveBranchTargetId(branchFromId);
@@ -2709,9 +2709,9 @@ export class SessionManager {
   } {
     type BranchNode =
       | { type: "entry"; entry: SessionEntry }
-      | { type: "opaque"; id: string; record: Record<string, unknown> };
+      | { type: "opaque"; id: string; record: Record<string, any> };
 
-    const opaqueById = new Map<string, Record<string, unknown>>();
+    const opaqueById = new Map<string, Record<string, any>>();
     for (const opaqueEntry of this.opaqueFileEntries) {
       const leafEntry = parseOpaqueLeafEntry(opaqueEntry.record);
       const link = leafEntry ?? parseParentLinkedOpaqueEntry(opaqueEntry.record);

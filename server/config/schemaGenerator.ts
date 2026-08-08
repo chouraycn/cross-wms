@@ -13,8 +13,8 @@ export interface UiHint {
   title?: string;
   description?: string;
   type: JsonSchemaType | string;
-  default?: unknown;
-  enum?: unknown[];
+  default?: any;
+  enum?: any[];
   ui?: {
     widget?: string;
     placeholder?: string;
@@ -28,17 +28,17 @@ export type UiHints = Record<string, UiHint>;
 /**
  * 将任意 zod schema 递归转换为 JSON Schema（Draft 7 简化版）
  */
-export function zodToJsonSchema(schema: z.ZodTypeAny): Record<string, unknown> {
+export function zodToJsonSchema(schema: z.ZodTypeAny): Record<string, any> {
   return convertSchema(schema);
 }
 
-function convertSchema(schema: z.ZodTypeAny): Record<string, unknown> {
+function convertSchema(schema: z.ZodTypeAny): Record<string, any> {
   if (!schema || typeof schema !== 'object') {
     return {};
   }
 
   // zod v4 使用 _zod.def 存储类型定义
-  const def = (schema as unknown)._zod?.def ?? (schema as unknown)._def;
+  const def = (schema as any)._zod?.def ?? (schema as any)._def;
   const type = def?.type;
 
   switch (type) {
@@ -97,9 +97,9 @@ function convertSchema(schema: z.ZodTypeAny): Record<string, unknown> {
       return { type: 'integer' };
     default:
       // 兜底：若 schema 自带 toJSONSchema（zod v4 原生方法），优先使用
-      if (typeof (schema as unknown).toJSONSchema === 'function') {
+      if (typeof (schema as any).toJSONSchema === 'function') {
         try {
-          return (schema as unknown).toJSONSchema() as Record<string, unknown>;
+          return (schema as any).toJSONSchema() as Record<string, any>;
         } catch {
           // fallthrough
         }
@@ -108,8 +108,8 @@ function convertSchema(schema: z.ZodTypeAny): Record<string, unknown> {
   }
 }
 
-function convertStringSchema(_schema: z.ZodTypeAny, def: unknown): Record<string, unknown> {
-  const json: Record<string, unknown> = { type: 'string' };
+function convertStringSchema(_schema: z.ZodTypeAny, def: any): Record<string, any> {
+  const json: Record<string, any> = { type: 'string' };
   const checks = def.checks ?? [];
   for (const check of checks) {
     if (!check || typeof check !== 'object') continue;
@@ -132,7 +132,7 @@ function convertStringSchema(_schema: z.ZodTypeAny, def: unknown): Record<string
   return json;
 }
 
-function convertNumberSchema(def: unknown): Record<string, unknown> {
+function convertNumberSchema(def: any): Record<string, any> {
   // zod v4: z.int() 的 def 为 { type: 'number', check: 'number_format', format: 'safeint' }
   if (def.check === 'number_format' && def.format === 'safeint') {
     return { type: 'integer' };
@@ -147,9 +147,9 @@ function convertNumberSchema(def: unknown): Record<string, unknown> {
   return { type: 'number' };
 }
 
-function convertArraySchema(_schema: z.ZodTypeAny, def: unknown): Record<string, unknown> {
+function convertArraySchema(_schema: z.ZodTypeAny, def: any): Record<string, any> {
   const element = def.element ?? (def.innerType as z.ZodTypeAny);
-  const json: Record<string, unknown> = {
+  const json: Record<string, any> = {
     type: 'array',
     items: element ? convertSchema(element as z.ZodTypeAny) : {},
   };
@@ -168,13 +168,13 @@ function convertArraySchema(_schema: z.ZodTypeAny, def: unknown): Record<string,
   return json;
 }
 
-function convertObjectSchema(schema: z.ZodTypeAny, def: unknown): Record<string, unknown> {
-  const shape = def.shape ?? (schema as unknown).shape;
+function convertObjectSchema(schema: z.ZodTypeAny, def: any): Record<string, any> {
+  const shape = def.shape ?? (schema as any).shape;
   if (!shape || typeof shape !== 'object') {
     return { type: 'object' };
   }
 
-  const properties: Record<string, unknown> = {};
+  const properties: Record<string, any> = {};
   const required: string[] = [];
 
   for (const [key, value] of Object.entries(shape)) {
@@ -187,7 +187,7 @@ function convertObjectSchema(schema: z.ZodTypeAny, def: unknown): Record<string,
     }
   }
 
-  const json: Record<string, unknown> = { type: 'object', properties };
+  const json: Record<string, any> = { type: 'object', properties };
   if (required.length > 0) {
     json.required = required;
   }
@@ -195,7 +195,7 @@ function convertObjectSchema(schema: z.ZodTypeAny, def: unknown): Record<string,
   // catchall / additionalProperties
   const catchall = def.catchall;
   if (catchall) {
-    const catchType = (catchall as unknown)._zod?.def?.type ?? (catchall as unknown)._def?.type;
+    const catchType = (catchall as any)._zod?.def?.type ?? (catchall as any)._def?.type;
     if (catchType === 'never') {
       json.additionalProperties = false;
     } else if (catchType !== 'undefined') {
@@ -206,7 +206,7 @@ function convertObjectSchema(schema: z.ZodTypeAny, def: unknown): Record<string,
   return json;
 }
 
-function convertEnumSchema(_schema: z.ZodTypeAny, def: unknown): Record<string, unknown> {
+function convertEnumSchema(_schema: z.ZodTypeAny, def: any): Record<string, any> {
   const entries = def.entries;
   if (entries && typeof entries === 'object') {
     const values = Object.values(entries);
@@ -217,13 +217,13 @@ function convertEnumSchema(_schema: z.ZodTypeAny, def: unknown): Record<string, 
   return { type: 'string', enum: options };
 }
 
-function convertUnionSchema(_schema: z.ZodTypeAny, def: unknown): Record<string, unknown> {
+function convertUnionSchema(_schema: z.ZodTypeAny, def: any): Record<string, any> {
   const options = def.options ?? [];
   const anyOf = (options as z.ZodTypeAny[]).map((opt: z.ZodTypeAny) => convertSchema(opt));
   return { anyOf };
 }
 
-function convertRecordSchema(_schema: z.ZodTypeAny, def: unknown): Record<string, unknown> {
+function convertRecordSchema(_schema: z.ZodTypeAny, def: any): Record<string, any> {
   const valueSchema = def.valueType;
   return {
     type: 'object',
@@ -231,7 +231,7 @@ function convertRecordSchema(_schema: z.ZodTypeAny, def: unknown): Record<string
   };
 }
 
-function convertTupleSchema(_schema: z.ZodTypeAny, def: unknown): Record<string, unknown> {
+function convertTupleSchema(_schema: z.ZodTypeAny, def: any): Record<string, any> {
   const items = def.items ?? [];
   return {
     type: 'array',
@@ -242,7 +242,7 @@ function convertTupleSchema(_schema: z.ZodTypeAny, def: unknown): Record<string,
 }
 
 function isOptionalField(field: z.ZodTypeAny): boolean {
-  const def = (field as unknown)._zod?.def ?? (field as unknown)._def;
+  const def = (field as any)._zod?.def ?? (field as any)._def;
   const type = def?.type;
   if (type === 'optional' || type === 'exactOptional' || type === 'default' || type === 'catch') {
     return true;
@@ -259,7 +259,7 @@ function isOptionalField(field: z.ZodTypeAny): boolean {
  * @param basePath - 递归用的基础路径（内部使用）
  */
 export function generateUiHints(
-  schema: z.ZodTypeAny | Record<string, unknown>,
+  schema: z.ZodTypeAny | Record<string, any>,
   basePath = '',
 ): UiHints {
   const json = isZodSchema(schema) ? zodToJsonSchema(schema as z.ZodTypeAny) : schema;
@@ -268,22 +268,22 @@ export function generateUiHints(
   return hints;
 }
 
-function isZodSchema(value: unknown): value is z.ZodTypeAny {
+function isZodSchema(value: any): value is z.ZodTypeAny {
   return (
     typeof value === 'object' &&
     value !== null &&
-    ('_zod' in value || '_def' in value || typeof (value as unknown).safeParse === 'function')
+    ('_zod' in value || '_def' in value || typeof (value as any).safeParse === 'function')
   );
 }
 
 function walkJsonSchema(
-  node: unknown,
+  node: any,
   path: string,
   hints: UiHints,
 ): void {
   if (!node || typeof node !== 'object') return;
 
-  const schemaNode = node as Record<string, unknown>;
+  const schemaNode = node as Record<string, any>;
 
   // 收集当前节点的 UI hint
   const hint = buildUiHint(schemaNode);
@@ -292,7 +292,7 @@ function walkJsonSchema(
   }
 
   // 遍历 properties
-  const properties = schemaNode.properties as Record<string, unknown> | undefined;
+  const properties = schemaNode.properties as Record<string, any> | undefined;
   if (properties) {
     for (const [key, child] of Object.entries(properties)) {
       const childPath = path ? `${path}.${key}` : key;
@@ -307,7 +307,7 @@ function walkJsonSchema(
   }
 
   // 遍历 items（若 array）
-  const items = schemaNode.items as unknown;
+  const items = schemaNode.items as any;
   if (Array.isArray(items)) {
     items.forEach((item, index) => {
       walkJsonSchema(item, path ? `${path}[${index}]` : `[${index}]`, hints);
@@ -318,7 +318,7 @@ function walkJsonSchema(
 
   // 遍历 anyOf / oneOf / allOf
   for (const key of ['anyOf', 'oneOf', 'allOf'] as const) {
-    const variants = schemaNode[key] as unknown[] | undefined;
+    const variants = schemaNode[key] as any[] | undefined;
     if (Array.isArray(variants)) {
       variants.forEach((variant, index) => {
         walkJsonSchema(variant, path ? `${path}.${key}[${index}]` : `${key}[${index}]`, hints);
@@ -327,7 +327,7 @@ function walkJsonSchema(
   }
 }
 
-function buildUiHint(node: Record<string, unknown>): UiHint {
+function buildUiHint(node: Record<string, any>): UiHint {
   const type = inferType(node);
   const hint: UiHint = {
     title: typeof node.title === 'string' ? node.title : undefined,
@@ -348,7 +348,7 @@ function buildUiHint(node: Record<string, unknown>): UiHint {
   return hint;
 }
 
-function inferType(node: Record<string, unknown>): string {
+function inferType(node: Record<string, any>): string {
   if (typeof node.type === 'string') return node.type;
   if (Array.isArray(node.type)) return node.type.join(' | ');
   if ('const' in node) return typeof node.const === 'string' ? 'string' : typeof node.const as string;
@@ -362,7 +362,7 @@ function inferType(node: Record<string, unknown>): string {
 }
 
 function inferUiWidget(
-  node: Record<string, unknown>,
+  node: Record<string, any>,
   type: string,
 ): { widget?: string; placeholder?: string } {
   const ui: { widget?: string; placeholder?: string } = {};

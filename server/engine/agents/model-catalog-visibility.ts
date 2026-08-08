@@ -37,8 +37,8 @@ export function isCodexRoutableOpenAIPlatformCatalogEntry(entry: {
  * is not available.
  */
 export async function resolveVisibleModelCatalog(params: {
-  cfg?: unknown;
-  catalog: Array<{ provider: string; id: string; [key: string]: unknown }>;
+  cfg?: any;
+  catalog: Array<{ provider: string; id: string; [key: string]: any }>;
   defaultProvider: string;
   defaultModel?: string;
   agentDir?: string;
@@ -48,7 +48,7 @@ export async function resolveVisibleModelCatalog(params: {
   view?: "default" | "configured" | "all";
   runtimeAuthDiscovery?: boolean;
   providerAuthChecker?: (provider: string, modelApi?: string) => boolean | Promise<boolean>;
-}): Promise<Array<{ provider: string; id: string; [key: string]: unknown }>> {
+}): Promise<Array<{ provider: string; id: string; [key: string]: any }>> {
   if (params.view === "all") {
     return params.catalog;
   }

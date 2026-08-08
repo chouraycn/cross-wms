@@ -89,7 +89,7 @@ describe("security audit workspace skill path escape findings", () => {
     // and workspace-root detection work normally.
     const realpathSpy = vi
       .spyOn(fs, "realpath")
-      .mockImplementation(async (p: unknown): Promise<string> => {
+      .mockImplementation(async (p: any): Promise<string> => {
         if (String(p).endsWith("SKILL.md")) {
           throw new Error("simulated realpath timeout");
         }
@@ -138,7 +138,7 @@ describe("security audit workspace skill path escape findings", () => {
     });
     const realpathSpy = vi
       .spyOn(fs, "realpath")
-      .mockImplementation(async (p: unknown) => String(p));
+      .mockImplementation(async (p: any) => String(p));
 
     try {
       const findings = await collectWorkspaceSkillSymlinkEscapeFindings({

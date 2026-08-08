@@ -7,13 +7,13 @@
 export type AgentSystemPromptConfig = {
   enabled: boolean;
   content?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
-export function resolveAgentSystemPromptConfig(_params?: unknown): AgentSystemPromptConfig {
+export function resolveAgentSystemPromptConfig(_params?: any): AgentSystemPromptConfig {
   return { enabled: true };
 }
 
-export function buildConfiguredAgentSystemPrompt(_params?: unknown): string {
+export function buildConfiguredAgentSystemPrompt(_params?: any): string {
   return "";
 }

@@ -57,27 +57,27 @@ async function pathExists(filePath: string): Promise<boolean> {
   }
 }
 
-function writeRestartSentinelRow(env: NodeJS.ProcessEnv, sentinel: unknown): void {
+function writeRestartSentinelRow(env: NodeJS.ProcessEnv, sentinel: any): void {
   const { db } = openOpenClawStateDatabase({ env });
   const stateDb = getNodeSqliteKysely<GatewayRestartSentinelDatabase>(db);
   const payload =
-    sentinel && typeof sentinel === "object" && (sentinel as { version?: unknown }).version === 1
-      ? (sentinel as { payload?: unknown }).payload
+    sentinel && typeof sentinel === "object" && (sentinel as { version?: any }).version === 1
+      ? (sentinel as { payload?: any }).payload
       : null;
   if (!payload || typeof payload !== "object") {
     throw new Error("expected versioned restart sentinel payload");
   }
   const record = payload as {
-    kind?: unknown;
-    status?: unknown;
-    ts?: unknown;
-    sessionKey?: unknown;
-    threadId?: unknown;
-    deliveryContext?: { channel?: unknown; to?: unknown; accountId?: unknown };
-    message?: unknown;
-    continuation?: unknown;
-    doctorHint?: unknown;
-    stats?: unknown;
+    kind?: any;
+    status?: any;
+    ts?: any;
+    sessionKey?: any;
+    threadId?: any;
+    deliveryContext?: { channel?: any; to?: any; accountId?: any };
+    message?: any;
+    continuation?: any;
+    doctorHint?: any;
+    stats?: any;
   };
   executeSqliteQuerySync(
     db,
@@ -107,7 +107,7 @@ function writeRestartSentinelRow(env: NodeJS.ProcessEnv, sentinel: unknown): voi
   );
 }
 
-function readRestartSentinelPayload(env: NodeJS.ProcessEnv): unknown {
+function readRestartSentinelPayload(env: NodeJS.ProcessEnv): any {
   const { db } = openOpenClawStateDatabase({ env });
   const stateDb = getNodeSqliteKysely<GatewayRestartSentinelDatabase>(db);
   const row = executeSqliteQueryTakeFirstSync(
@@ -124,7 +124,7 @@ async function runHelperWithExistingSentinel(params: {
   handoffId?: string;
   metaHandoffId?: string;
   prepareStateDatabase?: (env: NodeJS.ProcessEnv) => Promise<void> | void;
-  sentinel?: unknown;
+  sentinel?: any;
 }) {
   const { execFile } =
     await vi.importActual<typeof import("node:child_process")>("node:child_process");
@@ -157,7 +157,7 @@ async function runHelperWithExistingSentinel(params: {
   tempDirs.add(path.dirname(helperScriptPath));
   const helperParams = JSON.parse(await fs.readFile(args[1] ?? "", "utf-8")) as Record<
     string,
-    unknown
+    any
   >;
   const env = { OPENCLAW_STATE_DIR: tmpDir } as NodeJS.ProcessEnv;
   await params.prepareStateDatabase?.(env);
@@ -232,7 +232,7 @@ async function spawnExitedPid(): Promise<number> {
 
 async function runHelperWithCommand(params: {
   commandArgv: string[];
-  serviceRecovery?: Record<string, unknown>;
+  serviceRecovery?: Record<string, any>;
   pathPrepend?: string;
 }): Promise<{ code: number }> {
   const { execFile } =
@@ -257,7 +257,7 @@ async function runHelperWithCommand(params: {
   tempDirs.add(path.dirname(helperScriptPath));
   const baseParams = JSON.parse(await fs.readFile(args[1] ?? "", "utf-8")) as Record<
     string,
-    unknown
+    any
   >;
 
   const helperParamsPath = path.join(tmpDir, "helper-params.json");
@@ -462,7 +462,7 @@ describe("managed service update handoff", () => {
     const helperParams = JSON.parse(await fs.readFile(args[6] ?? "", "utf-8")) as {
       commandArgv?: string[];
       handoffId?: string;
-      serviceRecovery?: unknown;
+      serviceRecovery?: any;
     };
     expect(helperParams.serviceRecovery).toEqual({
       kind: "systemd",
@@ -575,7 +575,7 @@ describe("managed service update handoff", () => {
       const [, args] = spawnMock.mock.calls.at(-1) as unknown as [string, string[]];
       tempDirs.add(path.dirname(args[0] ?? ""));
       const helperParams = JSON.parse(await fs.readFile(args[1] ?? "", "utf-8")) as {
-        serviceRecovery?: unknown;
+        serviceRecovery?: any;
       };
       expect(helperParams.serviceRecovery).toEqual(testCase.expected);
     }

@@ -80,7 +80,7 @@ describe('PluginToolHandlers', () => {
     });
 
     it('应该正确传递上下文', async () => {
-      let capturedCtx: unknown = null;
+      let capturedCtx: any = null;
       handlers.registerTool(
         { name: 'ctx_test', description: 'Test' },
         async (ctx) => {

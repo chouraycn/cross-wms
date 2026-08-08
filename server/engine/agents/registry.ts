@@ -6,24 +6,24 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function registerAgentHarness(..._args: unknown[]): unknown {
+export function registerAgentHarness(..._args: any[]): any {
   return undefined;
 }
-export function getRegisteredAgentHarness(..._args: unknown[]): unknown {
+export function getRegisteredAgentHarness(..._args: any[]): any {
   return undefined;
 }
-export function listRegisteredAgentHarnesses(..._args: unknown[]): unknown {
+export function listRegisteredAgentHarnesses(..._args: any[]): any {
   return [];
 }
-export function clearAgentHarnesses(..._args: unknown[]): unknown {
+export function clearAgentHarnesses(..._args: any[]): any {
   return undefined;
 }
-export function restoreRegisteredAgentHarnesses(..._args: unknown[]): unknown {
+export function restoreRegisteredAgentHarnesses(..._args: any[]): any {
   return undefined;
 }
-export function resetRegisteredAgentHarnessSessions(..._args: unknown[]): unknown {
+export function resetRegisteredAgentHarnessSessions(..._args: any[]): any {
   return undefined;
 }
-export function disposeRegisteredAgentHarnesses(..._args: unknown[]): unknown {
+export function disposeRegisteredAgentHarnesses(..._args: any[]): any {
   return undefined;
 }

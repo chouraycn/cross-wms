@@ -37,7 +37,7 @@ vi.mock("../plugins/provider-runtime.js", () => ({
 let clearRuntimeAuthProfileStoreSnapshots: typeof import("./auth-profiles.js").clearRuntimeAuthProfileStoreSnapshots;
 let loadAuthProfileStoreForRuntime: typeof import("./auth-profiles.js").loadAuthProfileStoreForRuntime;
 
-type MockWithCalls = { mock: { calls: unknown[][] } };
+type MockWithCalls = { mock: { calls: any[][] } };
 
 function firstMockArg(mock: MockWithCalls, label: string) {
   const call = mock.mock.calls[0];
@@ -88,7 +88,7 @@ describe("auth profiles read-only external auth overlay", () => {
         "resolveExternalAuthProfilesWithPlugins",
       ) as
         | {
-            config?: unknown;
+            config?: any;
             context?: {
               agentDir?: string;
               store?: AuthProfileStore;
@@ -152,9 +152,9 @@ describe("auth profiles read-only external auth overlay", () => {
         "resolveExternalAuthProfilesWithPlugins",
       ) as
         | {
-            config?: unknown;
+            config?: any;
             context?: {
-              config?: unknown;
+              config?: any;
             };
           }
         | undefined;

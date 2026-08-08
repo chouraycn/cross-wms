@@ -66,7 +66,7 @@ function listMessages(channel?: string): MessageRecord[] {
   return all;
 }
 
-function formatJsonOutput(data: unknown): string {
+function formatJsonOutput(data: any): string {
   return JSON.stringify(data, null, 2);
 }
 

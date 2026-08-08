@@ -125,7 +125,7 @@ function parseDurationMs(raw: string, opts?: { defaultUnit?: "m" | "s" | "h" | "
 }
 
 function hasExplicitHeartbeatAgents(cfg: OpenClawConfig): boolean {
-  const agents = cfg.agents as { list?: Array<{ heartbeat?: unknown }> } | undefined;
+  const agents = cfg.agents as { list?: Array<{ heartbeat?: any }> } | undefined;
   const list = agents?.list ?? [];
   return list.some((entry) => Boolean(entry?.heartbeat));
 }
@@ -134,7 +134,7 @@ function hasExplicitHeartbeatAgents(cfg: OpenClawConfig): boolean {
 export function isHeartbeatEnabledForAgent(cfg: OpenClawConfig, agentId?: string): boolean {
   const resolvedAgentId = normalizeAgentId(agentId ?? resolveDefaultAgentId(cfg));
   const agents = cfg.agents as
-    | { list?: Array<{ id?: string; heartbeat?: unknown }>; defaults?: { heartbeat?: unknown } }
+    | { list?: Array<{ id?: string; heartbeat?: any }>; defaults?: { heartbeat?: any } }
     | undefined;
   const list = agents?.list ?? [];
   const hasExplicit = hasExplicitHeartbeatAgents(cfg);

@@ -48,18 +48,18 @@ type VolcengineResponse = {
   data?: string;
 };
 
-function parseJsonObject(text: string): Record<string, unknown> {
-  const parsed = JSON.parse(text) as unknown;
+function parseJsonObject(text: string): Record<string, any> {
+  const parsed = JSON.parse(text) as any;
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
     throw new Error('expected JSON object');
   }
-  return parsed as Record<string, unknown>;
+  return parsed as Record<string, any>;
 }
 
-function toTtsResponse(parsed: Record<string, unknown>): VolcengineResponse {
+function toTtsResponse(parsed: Record<string, any>): VolcengineResponse {
   const header =
     parsed.header && typeof parsed.header === 'object' && !Array.isArray(parsed.header)
-      ? (parsed.header as Record<string, unknown>)
+      ? (parsed.header as Record<string, any>)
       : undefined;
   return {
     code:

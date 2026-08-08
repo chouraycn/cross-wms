@@ -8,7 +8,7 @@ import type { FollowupRun } from "./queue.js";
 /** Creates an externally resolved promise for queue-order tests. */
 export function createDeferred<T>() {
   let resolve!: (value: T) => void;
-  let reject!: (reason?: unknown) => void;
+  let reject!: (reason?: any) => void;
   const promise = new Promise<T>((res, rej) => {
     resolve = res;
     reject = rej;

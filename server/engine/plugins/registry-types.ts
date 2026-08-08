@@ -42,13 +42,13 @@ type AgentHarness = unknown;
 type GatewayMethodDescriptor = unknown;
 
 /** 降级占位：../gateway/server-methods/types.js —— GatewayRequestHandlers */
-type GatewayRequestHandlers = Record<string, unknown>;
+type GatewayRequestHandlers = Record<string, any>;
 
 /** 降级占位：../hooks/types.js —— HookEntry */
 type HookEntry = unknown;
 
 /** 降级占位：../shared/json-schema.types.js —— JsonSchemaObject */
-type JsonSchemaObject = Record<string, unknown>;
+type JsonSchemaObject = Record<string, any>;
 
 /** 降级占位：./compat/registry.js —— PluginCompatCode */
 type PluginCompatCode = string;
@@ -68,14 +68,14 @@ type PluginSessionSchedulerJobRegistration = {
   id: string;
   sessionKey: string;
   kind: string;
-  cleanup?: (params: { reason: unknown; sessionKey: string; jobId: string }) => void | Promise<void>;
+  cleanup?: (params: { reason: any; sessionKey: string; jobId: string }) => void | Promise<void>;
 };
 type PluginSessionExtensionRegistration = unknown;
 type PluginToolMetadataRegistration = unknown;
 import type { PluginTrustedToolPolicyRegistration } from "./host-hooks.js";
 
 /** 降级占位：./manifest.js —— PluginManifestContracts */
-type PluginManifestContracts = Record<string, unknown>;
+type PluginManifestContracts = Record<string, any>;
 
 /** 降级占位：./memory-embedding-providers.js —— MemoryEmbeddingProviderAdapter */
 type MemoryEmbeddingProviderAdapter = { id: string };
@@ -103,10 +103,10 @@ type OpenClawPluginSecurityAuditCollector = unknown;
 type OpenClawPluginService = unknown;
 type OpenClawPluginToolFactory = unknown;
 type PluginConversationBindingResolvedEvent = unknown;
-type PluginLogger = (...args: unknown[]) => void;
+type PluginLogger = (...args: any[]) => void;
 type PluginOrigin = string;
 type PluginTextTransformRegistration = unknown;
-type CliBackendPlugin = { id: string; [key: string]: unknown };
+type CliBackendPlugin = { id: string; [key: string]: any };
 type ImageGenerationProviderPlugin = { id: string };
 type MediaUnderstandingProviderPlugin = { id: string };
 type TranscriptSourceProvider = { id: string };
@@ -331,7 +331,7 @@ export type PluginNodeInvokePolicyRegistration = {
   pluginId: string;
   pluginName?: string;
   policy: OpenClawPluginNodeInvokePolicy;
-  pluginConfig?: Record<string, unknown>;
+  pluginConfig?: Record<string, any>;
   source: string;
   rootDir?: string;
 };

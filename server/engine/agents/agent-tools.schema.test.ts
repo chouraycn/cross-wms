@@ -232,8 +232,8 @@ describe("normalizeToolParameterSchema", () => {
       },
       { modelProvider: "gemini" },
     ) as {
-      $defs?: unknown;
-      properties?: Record<string, unknown>;
+      $defs?: any;
+      properties?: Record<string, any>;
     };
 
     expect(cleaned.$defs).toBeUndefined();
@@ -702,13 +702,13 @@ describe("normalizeToolParameterSchema", () => {
       },
       { modelProvider: "gemini" },
     ) as {
-      properties?: Record<string, unknown>;
+      properties?: Record<string, any>;
     };
 
-    const tuples = cleaned.properties?.tuples as { items?: unknown } | undefined;
+    const tuples = cleaned.properties?.tuples as { items?: any } | undefined;
     const items = Array.isArray(tuples?.items) ? tuples?.items : [];
-    const first = items[0] as { format?: unknown } | undefined;
-    const second = items[1] as { minimum?: unknown } | undefined;
+    const first = items[0] as { format?: any } | undefined;
+    const second = items[1] as { minimum?: any } | undefined;
 
     expect(first?.format).toBeUndefined();
     expect(second?.minimum).toBeUndefined();
@@ -725,14 +725,14 @@ describe("normalizeToolParameterSchema", () => {
       },
       { modelProvider: "gemini" },
     ) as {
-      properties?: Record<string, unknown>;
+      properties?: Record<string, any>;
     };
 
     const parentId = cleaned.properties?.parentId as
-      | { type?: unknown; anyOf?: unknown; oneOf?: unknown }
+      | { type?: any; anyOf?: any; oneOf?: any }
       | undefined;
     const count = cleaned.properties?.count as
-      | { type?: unknown; anyOf?: unknown; oneOf?: unknown }
+      | { type?: any; anyOf?: any; oneOf?: any }
       | undefined;
 
     expect(parentId?.type).toBe("string");
@@ -758,7 +758,7 @@ describe("normalizeToolParameters", () => {
     const wrapped = wrapToolWithBeforeToolCallHook(source, hookContext);
 
     const normalized = normalizeToolParameters(wrapped);
-    const tagged = normalized as unknown as Record<symbol, unknown>;
+    const tagged = normalized as unknown as Record<symbol, any>;
 
     expect(isToolWrappedWithBeforeToolCallHook(normalized)).toBe(true);
     expect(tagged[beforeToolCallTesting.BEFORE_TOOL_CALL_SOURCE_TOOL]).toBe(source);
@@ -776,7 +776,7 @@ describe("normalizeToolParameters", () => {
 
     const normalized = normalizeToolParameters(tool);
 
-    const parameters = normalized.parameters as Record<string, unknown>;
+    const parameters = normalized.parameters as Record<string, any>;
     expect(parameters.type).toBe("object");
     expect(parameters.properties).toStrictEqual({});
   });
@@ -806,7 +806,7 @@ describe("normalizeToolParameters", () => {
 
     const normalized = normalizeToolParameters(tool);
 
-    const parameters = normalized.parameters as Record<string, unknown>;
+    const parameters = normalized.parameters as Record<string, any>;
     expect(parameters.type).toBe("object");
     expect(parameters.properties).toStrictEqual({});
   });
@@ -816,13 +816,13 @@ describe("normalizeToolParameters", () => {
       name: "get_flux_instance",
       label: "get_flux_instance",
       description: "Get flux instance",
-      parameters: { type: "object", properties: undefined } as unknown as Record<string, unknown>,
+      parameters: { type: "object", properties: undefined } as unknown as Record<string, any>,
       execute: vi.fn(),
     };
 
     const normalized = normalizeToolParameters(tool);
 
-    const parameters = normalized.parameters as Record<string, unknown>;
+    const parameters = normalized.parameters as Record<string, any>;
     expect(parameters.type).toBe("object");
     expect(parameters.properties).toStrictEqual({});
   });
@@ -832,13 +832,13 @@ describe("normalizeToolParameters", () => {
       name: "get_flux_instance",
       label: "get_flux_instance",
       description: "Get flux instance",
-      parameters: { type: "object", properties: null } as unknown as Record<string, unknown>,
+      parameters: { type: "object", properties: null } as unknown as Record<string, any>,
       execute: vi.fn(),
     };
 
     const normalized = normalizeToolParameters(tool);
 
-    const parameters = normalized.parameters as Record<string, unknown>;
+    const parameters = normalized.parameters as Record<string, any>;
     expect(parameters.type).toBe("object");
     expect(parameters.properties).toStrictEqual({});
   });
@@ -854,7 +854,7 @@ describe("normalizeToolParameters", () => {
 
     const normalized = normalizeToolParameters(tool);
 
-    const parameters = normalized.parameters as Record<string, unknown>;
+    const parameters = normalized.parameters as Record<string, any>;
     expect(parameters.type).toBe("object");
     expect(parameters.properties).toEqual({ q: { type: "string" } });
   });
@@ -870,7 +870,7 @@ describe("normalizeToolParameters", () => {
 
     const normalized = normalizeToolParameters(tool);
 
-    const parameters = normalized.parameters as Record<string, unknown>;
+    const parameters = normalized.parameters as Record<string, any>;
     expect(parameters.type).toBe("object");
     expect(parameters.properties).toStrictEqual({});
     expect(parameters.additionalProperties).toBe(true);
@@ -1047,7 +1047,7 @@ describe("normalizeToolParameters", () => {
           toolCallId?: string;
           toolName?: string;
           isError?: boolean;
-          content?: unknown;
+          content?: any;
         }
       | undefined;
     expect(toolResultRecord?.role).toBe("toolResult");
@@ -1083,7 +1083,7 @@ describe("normalizeToolParameters", () => {
 
     const parameters = normalized.parameters as {
       required?: string[];
-      properties?: Record<string, Record<string, unknown>>;
+      properties?: Record<string, Record<string, any>>;
     };
 
     expect(parameters.required).toEqual(["count"]);
@@ -1130,7 +1130,7 @@ describe("normalizeToolParameters", () => {
         ["literalEnum", { type: "string", enum: [{ type: "array", items: {} }] }],
       ]),
     });
-    const properties = (normalized.parameters as { properties?: Record<string, unknown> })
+    const properties = (normalized.parameters as { properties?: Record<string, any> })
       .properties;
     expect(properties).toBeDefined();
     expect(Object.hasOwn(properties ?? {}, "__proto__")).toBe(true);
@@ -1164,7 +1164,7 @@ describe("normalizeToolParameters", () => {
 
     const params = result.parameters as {
       required?: string[];
-      properties?: Record<string, unknown>;
+      properties?: Record<string, any>;
     };
 
     expect(params.required).not.toContain("token");

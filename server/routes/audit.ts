@@ -15,10 +15,10 @@ router.get('/', (req, res) => {
     const query = {
       sessionKey: req.query.sessionKey as string | undefined,
       messageId: req.query.messageId as string | undefined,
-      action: req.query.action as unknown,
-      severity: req.query.severity as unknown,
+      action: req.query.action as any,
+      severity: req.query.severity as any,
       actor: req.query.actor as string | undefined,
-      actorType: req.query.actorType as unknown,
+      actorType: req.query.actorType as any,
       startTime: req.query.startTime ? parseInt(req.query.startTime as string, 10) : undefined,
       endTime: req.query.endTime ? parseInt(req.query.endTime as string, 10) : undefined,
       limit: req.query.limit ? parseInt(req.query.limit as string, 10) : 100,

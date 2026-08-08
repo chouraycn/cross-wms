@@ -57,7 +57,7 @@ export type GatewayConfigSummary = {
   };
 };
 
-function parseIntOrNull(value: unknown): number | null {
+function parseIntOrNull(value: any): number | null {
   const s =
     typeof value === "string"
       ? value.trim()
@@ -71,7 +71,7 @@ function parseIntOrNull(value: unknown): number | null {
 }
 
 /** Parses CLI timeout input with the gateway-status fallback rules. */
-export function parseTimeoutMs(raw: unknown, fallbackMs: number): number {
+export function parseTimeoutMs(raw: any, fallbackMs: number): number {
   return parseTimeoutMsWithFallback(raw, fallbackMs);
 }
 
@@ -164,7 +164,7 @@ export function resolveProbeBudgetMs(
 }
 
 /** Normalizes user-entered SSH targets, accepting both raw targets and `ssh host` input. */
-export function sanitizeSshTarget(value: unknown): string | null {
+export function sanitizeSshTarget(value: any): string | null {
   if (typeof value !== "string") {
     return null;
   }
@@ -194,7 +194,7 @@ export async function resolveAuthForTarget(
 }
 
 /** Extracts the config fields displayed by `openclaw gateway status --deep`. */
-export function extractConfigSummary(snapshotUnknown: unknown): GatewayConfigSummary {
+export function extractConfigSummary(snapshotUnknown: any): GatewayConfigSummary {
   const snap = snapshotUnknown as Partial<ConfigFileSnapshot> | null;
   const path = typeof snap?.path === "string" ? snap.path : null;
   const exists = Boolean(snap?.exists);
@@ -202,19 +202,19 @@ export function extractConfigSummary(snapshotUnknown: unknown): GatewayConfigSum
   const issuesRaw = Array.isArray(snap?.issues) ? snap.issues : [];
   const legacyRaw = Array.isArray(snap?.legacyIssues) ? snap.legacyIssues : [];
 
-  const cfg = (snap?.config ?? {}) as Record<string, unknown>;
-  const gateway = (cfg.gateway ?? {}) as Record<string, unknown>;
-  const secrets = (cfg.secrets ?? {}) as Record<string, unknown>;
+  const cfg = (snap?.config ?? {}) as Record<string, any>;
+  const gateway = (cfg.gateway ?? {}) as Record<string, any>;
+  const secrets = (cfg.secrets ?? {}) as Record<string, any>;
   const secretDefaults = (secrets.defaults ?? undefined) as
     | { env?: string; file?: string; exec?: string }
     | undefined;
-  const discovery = (cfg.discovery ?? {}) as Record<string, unknown>;
-  const wideArea = (discovery.wideArea ?? {}) as Record<string, unknown>;
+  const discovery = (cfg.discovery ?? {}) as Record<string, any>;
+  const wideArea = (discovery.wideArea ?? {}) as Record<string, any>;
 
-  const remote = (gateway.remote ?? {}) as Record<string, unknown>;
-  const auth = (gateway.auth ?? {}) as Record<string, unknown>;
-  const controlUi = (gateway.controlUi ?? {}) as Record<string, unknown>;
-  const tailscale = (gateway.tailscale ?? {}) as Record<string, unknown>;
+  const remote = (gateway.remote ?? {}) as Record<string, any>;
+  const auth = (gateway.auth ?? {}) as Record<string, any>;
+  const controlUi = (gateway.controlUi ?? {}) as Record<string, any>;
+  const tailscale = (gateway.tailscale ?? {}) as Record<string, any>;
 
   const authMode = typeof auth.mode === "string" ? auth.mode : null;
   const authTokenConfigured = hasConfiguredSecretInput(auth.token, secretDefaults);
@@ -342,7 +342,7 @@ function formatGatewayProbeCapabilityLabel(capability: GatewayProbeCapability) {
     case "pairing_pending":
       return "Capability: pairing pending";
     default:
-      return "Capability: unknown";
+      return "Capability: any";
   }
 }
 

@@ -37,7 +37,7 @@ const slackPlugin: Pick<ChannelPlugin, "actions"> = {
       }
       if (
         account?.capabilities &&
-        (account.capabilities as { interactiveReplies?: unknown }).interactiveReplies === true
+        (account.capabilities as { interactiveReplies?: any }).interactiveReplies === true
       ) {
         capabilities.add("presentation");
       }

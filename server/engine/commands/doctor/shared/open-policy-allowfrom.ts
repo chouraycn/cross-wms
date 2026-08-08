@@ -33,7 +33,7 @@ export function maybeRepairOpenPolicyAllowFrom(cfg: OpenClawConfig): {
   const changes: string[] = [];
 
   const ensureWildcard = (
-    account: Record<string, unknown>,
+    account: Record<string, any>,
     prefix: string,
     mode: AllowFromMode,
   ) => {
@@ -45,7 +45,7 @@ export function maybeRepairOpenPolicyAllowFrom(cfg: OpenClawConfig): {
     });
   };
 
-  const nextChannels = next.channels as Record<string, Record<string, unknown>>;
+  const nextChannels = next.channels as Record<string, Record<string, any>>;
   for (const [channelName, channelConfig] of Object.entries(nextChannels)) {
     if (!channelConfig || typeof channelConfig !== "object") {
       continue;
@@ -61,7 +61,7 @@ export function maybeRepairOpenPolicyAllowFrom(cfg: OpenClawConfig): {
     for (const [accountName, accountConfig] of Object.entries(accounts)) {
       if (accountConfig && typeof accountConfig === "object") {
         ensureWildcard(
-          accountConfig as Record<string, unknown>,
+          accountConfig as Record<string, any>,
           `channels.${channelName}.accounts.${accountName}`,
           allowFromMode,
         );

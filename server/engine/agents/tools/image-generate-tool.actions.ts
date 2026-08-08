@@ -10,11 +10,11 @@
  *   (its params type is `{ includeUnavailable?: boolean }`), so the call drops the `cfg`
  *   argument. cross-wms lists all configured providers regardless of cfg.
  * - cross-wms `image-generation-task-status.js` is a degraded stub whose functions return
- *   `unknown` (instead of typed `TaskRecord` / `string` / `Record<string, unknown>`).
+ *   `unknown` (instead of typed `TaskRecord` / `string` / `Record<string, any>`).
  *   `buildStatusText` / `buildStatusDetails` are cast to the expected signatures so the
  *   shared generic helpers in `media-generate-tool-actions-shared.js` type-check.
  * - `listActiveImageGenerationTasksForSession` returns `unknown` in cross-wms; cast to
- *   `unknown[]` so `.length` and indexing work. List-text/list-details builders are cast
+ *   `any[]` so `.length` and indexing work. List-text/list-details builders are cast
  *   to their expected return types.
  */
 import type { OpenClawConfig } from "../../config/types.openclaw.js";
@@ -113,19 +113,19 @@ const imageGenerateTaskStatusActions = createMediaGenerateTaskStatusActions({
   inactiveText: "No active image generation task is currently running for this session.",
   findActiveTask: (sessionKey) => findActiveImageGenerationTaskForSession(sessionKey) ?? undefined,
   buildStatusText: buildImageGenerationTaskStatusText as unknown as (
-    task: unknown,
+    task: any,
     params?: { duplicateGuard?: boolean },
   ) => string,
   buildStatusDetails: buildImageGenerationTaskStatusDetails as unknown as (
-    task: unknown,
-  ) => Record<string, unknown>,
+    task: any,
+  ) => Record<string, any>,
 });
 
 /** Builds status output for active image-generation tasks in the current session. */
 export function createImageGenerateStatusActionResult(
   sessionKey?: string,
 ): ImageGenerateActionResult {
-  const activeTasks = listActiveImageGenerationTasksForSession(sessionKey) as unknown[];
+  const activeTasks = listActiveImageGenerationTasksForSession(sessionKey) as any[];
   if (activeTasks.length > 1) {
     return {
       content: [
@@ -136,7 +136,7 @@ export function createImageGenerateStatusActionResult(
       ],
       details: {
         action: "status",
-        ...(buildImageGenerationTaskStatusListDetails(activeTasks) as Record<string, unknown>),
+        ...(buildImageGenerationTaskStatusListDetails(activeTasks) as Record<string, any>),
       },
     };
   }
@@ -154,11 +154,11 @@ export function createImageGenerateDuplicateGuardResult(
     requestKey: params?.requestKey,
     findDuplicateTask: findDuplicateGuardImageGenerationTaskForSession,
     buildStatusText: buildImageGenerationTaskStatusText as unknown as (
-      task: unknown,
+      task: any,
       params?: { duplicateGuard?: boolean },
     ) => string,
     buildStatusDetails: buildImageGenerationTaskStatusDetails as unknown as (
-      task: unknown,
-    ) => Record<string, unknown>,
+      task: any,
+    ) => Record<string, any>,
   });
 }

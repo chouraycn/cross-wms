@@ -39,11 +39,11 @@ const slackThreadOrigin = {
   threadId: "171.222",
 } as const;
 
-function createGatewayMock(response: Record<string, unknown> = {}) {
+function createGatewayMock(response: Record<string, any> = {}) {
   return vi.fn(async () => response) as unknown as typeof runtimeCallGateway;
 }
 
-function createInProcessGatewayMock(response: Record<string, unknown> = {}) {
+function createInProcessGatewayMock(response: Record<string, any> = {}) {
   return vi.fn(async () => response) as unknown as typeof runtimeDispatchGatewayMethodInProcess;
 }
 
@@ -117,18 +117,18 @@ const longChildCompletionOutput = [
   "Verification: pnpm test src/agents/subagent-announce-delivery.test.ts passed with the regression enabled.",
 ].join("\n");
 
-function expectRecordFields(record: unknown, expected: Record<string, unknown>) {
+function expectRecordFields(record: any, expected: Record<string, any>) {
   if (!record || typeof record !== "object") {
     throw new Error("Expected record");
   }
-  const actual = record as Record<string, unknown>;
+  const actual = record as Record<string, any>;
   for (const [key, value] of Object.entries(expected)) {
     expect(actual[key]).toEqual(value);
   }
   return actual;
 }
 
-function asMock(fn: unknown) {
+function asMock(fn: any) {
   return fn as ReturnType<typeof vi.fn>;
 }
 
@@ -153,7 +153,7 @@ function registerDirectTargetTestChannel(channelId: string): void {
   );
 }
 
-function mockCallArg(fn: unknown, callIndex = 0, argIndex = 0) {
+function mockCallArg(fn: any, callIndex = 0, argIndex = 0) {
   const call = asMock(fn).mock.calls[callIndex];
   if (!call) {
     throw new Error(`Expected mock call ${callIndex}`);
@@ -163,7 +163,7 @@ function mockCallArg(fn: unknown, callIndex = 0, argIndex = 0) {
 
 function expectGatewayAgentParams(
   callGateway: typeof runtimeCallGateway,
-  expected: Record<string, unknown>,
+  expected: Record<string, any>,
 ) {
   const request = expectRecordFields(mockCallArg(callGateway), { method: "agent" });
   return expectRecordFields(request.params, expected);
@@ -171,7 +171,7 @@ function expectGatewayAgentParams(
 
 function expectInProcessAgentParams(
   dispatchGatewayMethodInProcess: typeof runtimeDispatchGatewayMethodInProcess,
-  expected: Record<string, unknown>,
+  expected: Record<string, any>,
 ) {
   const method = mockCallArg(dispatchGatewayMethodInProcess, 0, 0);
   expect(method).toBe("agent");
@@ -278,7 +278,7 @@ async function deliverTelegramDirectMessageCompletion(params: {
   queueEmbeddedAgentMessageWithOutcome?: QueueEmbeddedAgentMessageWithOutcome;
   requesterSessionKey?: string;
   sourceTool?: string;
-  runtimeConfig?: Record<string, unknown>;
+  runtimeConfig?: Record<string, any>;
   requesterAbandoned?: boolean;
   origin?: {
     channel: "telegram";
@@ -353,7 +353,7 @@ async function deliverSlackChannelAnnouncement(params: {
   sourceSessionKey?: string;
   sourceChannel?: string;
   sourceTool?: string;
-  runtimeConfig?: Record<string, unknown>;
+  runtimeConfig?: Record<string, any>;
 }) {
   const origin = {
     channel: "slack",
@@ -4880,7 +4880,7 @@ describe("deliverSubagentAnnouncement completion delivery", () => {
       waitForTranscriptCommit: true,
     });
     expect(
-      (retryOptions as { sourceReplyDeliveryMode?: unknown }).sourceReplyDeliveryMode,
+      (retryOptions as { sourceReplyDeliveryMode?: any }).sourceReplyDeliveryMode,
     ).toBeUndefined();
     expect(callGateway).not.toHaveBeenCalled();
   });

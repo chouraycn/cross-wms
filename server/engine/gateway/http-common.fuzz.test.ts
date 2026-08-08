@@ -72,7 +72,7 @@ function randString(rng: () => number, maxLen = 48): string {
   return out;
 }
 
-function randBody(rng: () => number): unknown {
+function randBody(rng: () => number): any {
   const kind = randInt(rng, 0, 5);
   if (kind === 0) {
     return null;
@@ -88,7 +88,7 @@ function randBody(rng: () => number): unknown {
   }
   if (kind === 4) {
     const n = randInt(rng, 0, 4);
-    const arr: unknown[] = [];
+    const arr: any[] = [];
     for (let i = 0; i < n; i += 1) {
       arr.push(randInt(rng, 0, 100));
     }
@@ -290,7 +290,7 @@ describe("fuzz: readJsonBodyOrError", () => {
       const pick = randInt(rng, 0, 3);
       let expectedStatus: number | undefined;
       let expectedBody: string | undefined;
-      let expectedValue: unknown;
+      let expectedValue: any;
 
       if (pick === 0) {
         const value = randBody(rng);
@@ -354,7 +354,7 @@ describe("fuzz: setSseHeaders", () => {
       const hasFlush = rng() < 0.5;
       const flushHeaders = vi.fn();
       if (hasFlush) {
-        (res as unknown as { flushHeaders: () => void }).flushHeaders = flushHeaders;
+        (res as any as { flushHeaders: () => void }).flushHeaders = flushHeaders;
       }
       setSseHeaders(res);
       expect(res.statusCode).toBe(200);

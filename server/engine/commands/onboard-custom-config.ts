@@ -38,7 +38,7 @@ type CustomModelImageInputInference = {
   confidence: "known" | "unknown";
 };
 
-function normalizeContextWindowForCustomModel(value: unknown): number {
+function normalizeContextWindowForCustomModel(value: any): number {
   const parsed = typeof value === "number" && Number.isFinite(value) ? Math.floor(value) : 0;
   // The hard minimum is a guardrail sentinel, not a useful custom model window.
   if (parsed <= 0 || parsed === CONTEXT_WINDOW_HARD_MIN_TOKENS) {
@@ -359,11 +359,11 @@ function buildAnthropicHeaders(apiKey: string) {
 type VerificationRequest = {
   endpoint: string;
   headers: Record<string, string>;
-  body: Record<string, unknown>;
+  body: Record<string, any>;
 };
 
 /** Normalizes optional provider API key input while preserving secret refs. */
-export function normalizeOptionalProviderApiKey(value: unknown): SecretInput | undefined {
+export function normalizeOptionalProviderApiKey(value: any): SecretInput | undefined {
   if (isSecretRef(value)) {
     return value;
   }

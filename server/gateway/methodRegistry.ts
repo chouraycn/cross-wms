@@ -30,7 +30,7 @@ class MethodRegistry {
 
   async invoke(
     method: string,
-    params: unknown,
+    params: any,
     context: GatewayMethodContext,
   ): Promise<GatewayMethodResult> {
     const handler = this.methods.get(method);
@@ -82,7 +82,7 @@ export function unregisterGatewayMethod(method: string): boolean {
 
 export async function invokeGatewayMethod(
   method: string,
-  params: unknown,
+  params: any,
   context: GatewayMethodContext,
 ): Promise<GatewayMethodResult> {
   return await METHOD_REGISTRY_INSTANCE.invoke(method, params, context);

@@ -55,7 +55,7 @@ function canIgnorePrivateChmodError(target: string, code: string | undefined): b
 export function applyPrivateModeSync(
   target: string,
   mode: number,
-): { applied: true } | { applied: false; error: unknown } {
+): { applied: true } | { applied: false; error: any } {
   try {
     chmodSync(target, mode);
     return { applied: true };

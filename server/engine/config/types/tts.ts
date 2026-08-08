@@ -24,7 +24,7 @@ export type TtsModelOverrideConfig = {
   allowSeed?: boolean;
 };
 
-export type TtsProviderConfigMap = Record<string, Record<string, unknown>>;
+export type TtsProviderConfigMap = Record<string, Record<string, any>>;
 
 export type TtsPersonaFallbackPolicy = "preserve-persona" | "provider-defaults" | "fail";
 

@@ -35,7 +35,7 @@ export class EmbeddedAgent {
   async run(options: EmbeddedAgentRunOptions): Promise<EmbeddedAgentRunResult> {
     const startTime = Date.now();
     const turnCount = 0;
-    const toolCalls: Array<{ toolName: string; arguments: Record<string, unknown>; result: unknown }> = [];
+    const toolCalls: Array<{ toolName: string; arguments: Record<string, any>; result: any }> = [];
 
     this.setState({ status: 'running', currentTask: options.input });
 
@@ -67,7 +67,7 @@ export class EmbeddedAgent {
     }
   }
 
-  private async executeTurn(options: EmbeddedAgentRunOptions): Promise<{ output: string; toolCalls?: Array<{ toolName: string; arguments: Record<string, unknown>; result: unknown }> }> {
+  private async executeTurn(options: EmbeddedAgentRunOptions): Promise<{ output: string; toolCalls?: Array<{ toolName: string; arguments: Record<string, any>; result: any }> }> {
     return {
       output: '',
       toolCalls: [],

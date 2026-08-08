@@ -55,7 +55,7 @@ export interface ParsedSkillMd {
 export interface SkillMdFrontmatter {
   name?: string;
   description?: string;
-  trigger?: unknown; // 可能是 string 或 string[]
+  trigger?: any; // 可能是 string 或 string[]
   version?: string;
   author?: string;
   category?: string;
@@ -63,7 +63,7 @@ export interface SkillMdFrontmatter {
   tags?: string[];
   dependencies?: SkillDependency[];
   permissions?: SkillPermission[];
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 /** 技能依赖 */
@@ -200,7 +200,7 @@ export function extractInstructionBlocks(body: string): InstructionBlock[] {
  * @param raw - 原始 trigger 值（string、string[] 或其他）
  * @returns 规范化后的字符串数组，空数组表示无 trigger
  */
-function normalizeTrigger(raw: unknown): string[] {
+function normalizeTrigger(raw: any): string[] {
   if (raw === undefined || raw === null) return [];
   if (Array.isArray(raw)) return raw.map(String).filter((s) => s.trim().length > 0);
   if (typeof raw === 'string') {

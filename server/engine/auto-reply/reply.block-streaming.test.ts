@@ -61,7 +61,7 @@ vi.mock("./reply/directive-handling.defaults.js", () => ({
   })),
 }));
 vi.mock("./reply/inbound-context.js", () => ({
-  finalizeInboundContext: vi.fn((ctx: unknown) => ctx),
+  finalizeInboundContext: vi.fn((ctx: any) => ctx),
 }));
 vi.mock("./reply/session-reset-model.runtime.js", () => ({
   applyResetModelOverride: vi.fn(async () => undefined),
@@ -74,16 +74,16 @@ vi.mock("./reply/typing.js", () => ({
 }));
 
 vi.mock("./reply/get-reply-directives.js", () => ({
-  resolveReplyDirectives: (...args: unknown[]) => mocks.resolveReplyDirectives(...args),
+  resolveReplyDirectives: (...args: any[]) => mocks.resolveReplyDirectives(...args),
 }));
 vi.mock("./reply/get-reply-inline-actions.js", () => ({
-  handleInlineActions: (...args: unknown[]) => mocks.handleInlineActions(...args),
+  handleInlineActions: (...args: any[]) => mocks.handleInlineActions(...args),
 }));
 vi.mock("./reply/session.js", () => ({
-  initSessionState: (...args: unknown[]) => mocks.initSessionState(...args),
+  initSessionState: (...args: any[]) => mocks.initSessionState(...args),
 }));
 vi.mock("./reply/get-reply-run.js", () => ({
-  runPreparedReply: (...args: unknown[]) => mocks.runPreparedReply(...args),
+  runPreparedReply: (...args: any[]) => mocks.runPreparedReply(...args),
 }));
 
 let getReplyFromConfig: typeof import("./reply/get-reply.js").getReplyFromConfig;

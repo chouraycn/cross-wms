@@ -20,7 +20,7 @@ vi.mock("node:child_process", async () => {
   return mockNodeBuiltinModule(
     () => vi.importActual<typeof import("node:child_process")>("node:child_process"),
     {
-      spawn: (...args: unknown[]) => spawnMock(...args),
+      spawn: (...args: any[]) => spawnMock(...args),
     },
   );
 });

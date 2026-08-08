@@ -6,20 +6,20 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export const TOOL_CALL_HISTORY_SIZE: unknown = undefined;
-export const WARNING_THRESHOLD: unknown = undefined;
-export const UNKNOWN_TOOL_THRESHOLD: unknown = undefined;
-export const CRITICAL_THRESHOLD: unknown = undefined;
-export const GLOBAL_CIRCUIT_BREAKER_THRESHOLD: unknown = undefined;
-export function hashToolCall(..._args: unknown[]): unknown {
+export const TOOL_CALL_HISTORY_SIZE: any = undefined;
+export const WARNING_THRESHOLD: any = undefined;
+export const UNKNOWN_TOOL_THRESHOLD: any = undefined;
+export const CRITICAL_THRESHOLD: any = undefined;
+export const GLOBAL_CIRCUIT_BREAKER_THRESHOLD: any = undefined;
+export function hashToolCall(..._args: any[]): any {
   return false;
 }
-export function detectToolCallLoop(..._args: unknown[]): unknown {
+export function detectToolCallLoop(..._args: any[]): any {
   return undefined;
 }
-export function recordToolCall(..._args: unknown[]): unknown {
+export function recordToolCall(..._args: any[]): any {
   return undefined;
 }
-export function recordToolCallOutcome(..._args: unknown[]): unknown {
+export function recordToolCallOutcome(..._args: any[]): any {
   return undefined;
 }

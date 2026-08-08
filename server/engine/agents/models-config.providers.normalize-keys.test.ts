@@ -19,7 +19,7 @@ vi.mock("./models-config.providers.policy.runtime.js", () => {
     applyProviderNativeStreamingUsagePolicy: () => undefined,
     normalizeProviderConfigPolicy: (
       providerKey: string,
-      provider: { baseUrl?: unknown } | undefined,
+      provider: { baseUrl?: any } | undefined,
     ) =>
       // Keep the test focused on normalizeProviders while preserving LM Studio policy behavior.
       providerKey === "lmstudio" && typeof provider?.baseUrl === "string"
@@ -379,7 +379,7 @@ describe("normalizeProviders", () => {
       providers,
       sourceProviders,
     });
-    expect((enforced as Record<string, unknown>).openai).toBeNull();
+    expect((enforced as Record<string, any>).openai).toBeNull();
     expect(enforced?.moonshot?.apiKey).toBe("MOONSHOT_API_KEY"); // pragma: allowlist secret
   });
 

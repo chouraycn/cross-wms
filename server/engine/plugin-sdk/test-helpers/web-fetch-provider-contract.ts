@@ -11,7 +11,7 @@ import { resolveBundledExplicitWebFetchProvidersFromPublicArtifacts } from "../.
 import type { WebFetchProviderPlugin } from "../provider-web-fetch-contract.js";
 import { installWebFetchProviderContractSuite } from "./provider-contract-suites.js";
 
-function resolveWebFetchCredentialValue(provider: WebFetchProviderPlugin): unknown {
+function resolveWebFetchCredentialValue(provider: WebFetchProviderPlugin): any {
   if (provider.requiresCredential === false) {
     return `${provider.id}-no-key-needed`;
   }
@@ -32,7 +32,7 @@ export function describeWebFetchProviderContracts(pluginId: string) {
     | Array<{
         pluginId: string;
         provider: WebFetchProviderPlugin;
-        credentialValue: unknown;
+        credentialValue: any;
       }>
     | undefined;
   const resolveProviders = () => {

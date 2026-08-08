@@ -119,7 +119,7 @@ export type CommandsMessageResult = {
  */
 export function buildCommandsMessage(
   cfg?: OpenClawConfig,
-  _skillCommands?: unknown,
+  _skillCommands?: any,
   options?: CommandsMessageOptions,
 ): string {
   const result = buildCommandsMessagePaginated(cfg, _skillCommands, options);
@@ -135,7 +135,7 @@ export function buildCommandsMessage(
  */
 export function buildCommandsMessagePaginated(
   _cfg?: OpenClawConfig,
-  _skillCommands?: unknown,
+  _skillCommands?: any,
   options?: CommandsMessageOptions,
 ): CommandsMessageResult {
   const page = Math.max(1, options?.page ?? 1);

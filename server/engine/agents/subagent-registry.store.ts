@@ -22,7 +22,7 @@ export type SubagentRunRecord = {
   endedAt?: number;
   runTimeoutSeconds?: number;
   outcome?: { status: string };
-  requesterOrigin?: unknown;
+  requesterOrigin?: any;
   spawnMode?: "run" | "session";
   cleanupCompletedAt?: number;
   cleanupHandled?: boolean;

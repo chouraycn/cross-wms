@@ -10,7 +10,7 @@ export type AcceptedSessionSpawn = {
 };
 
 /** Normalize a tool result that accepted a child session spawn. */
-export function normalizeAcceptedSessionSpawnResult(result: unknown): AcceptedSessionSpawn | null {
+export function normalizeAcceptedSessionSpawnResult(result: any): AcceptedSessionSpawn | null {
   const details = asOptionalRecord(asOptionalRecord(result)?.details);
   if (!details || details.status !== "accepted") {
     return null;
@@ -24,7 +24,7 @@ export function normalizeAcceptedSessionSpawnResult(result: unknown): AcceptedSe
 }
 
 /** Return true when a collection contains at least one accepted child spawn. */
-export function hasAcceptedSessionSpawn(acceptedSessionSpawns?: readonly unknown[]): boolean {
+export function hasAcceptedSessionSpawn(acceptedSessionSpawns?: readonly any[]): boolean {
   return (acceptedSessionSpawns ?? []).some((spawn) => {
     const record = asOptionalRecord(spawn);
     if (!record) {

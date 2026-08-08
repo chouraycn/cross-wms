@@ -19,7 +19,7 @@ const OPENCLAW_PACKAGE_ROOT =
     modulePath: __filename,
     moduleUrl: __filename,
   }) ?? path.resolve(__dirname, "../..");
-const publicSurfaceModuleCache = new Map<string, unknown>();
+const publicSurfaceModuleCache = new Map<string, any>();
 const sourceArtifactRequire = createRequire(__filename);
 const publicSurfaceLocationCache = new Map<
   string,
@@ -106,7 +106,7 @@ function getModuleLoader(modulePath: string) {
   });
 }
 
-function loadPublicSurfaceModule(modulePath: string): unknown {
+function loadPublicSurfaceModule(modulePath: string): any {
   const tryNative = resolvePluginLoaderTryNative(modulePath, { preferBuiltDist: true });
   if (canUseSourceArtifactRequire({ modulePath, tryNative })) {
     return sourceArtifactRequire(modulePath);

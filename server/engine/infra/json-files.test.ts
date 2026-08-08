@@ -64,7 +64,7 @@ describe("json file helpers", () => {
 
       await expect(readDurableJsonFile(validPath)).resolves.toEqual({ ok: true });
       await expect(readDurableJsonFile(missingPath)).resolves.toBeNull();
-      let readError: unknown;
+      let readError: any;
       try {
         await readDurableJsonFile(invalidPath);
       } catch (error) {

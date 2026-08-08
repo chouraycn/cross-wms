@@ -27,7 +27,7 @@ type SpeechProvider = Parameters<typeof withSpeechProviders>[0][number]["provide
 
 const ALIAS_STUB_VOICE_ID = "VoiceAlias1234567890";
 
-async function setTalkConfig(talk: Record<string, unknown>) {
+async function setTalkConfig(talk: Record<string, any>) {
   const { setRuntimeConfigSnapshot } = await import("../config/config.js");
   const config = {
     commands: {
@@ -261,7 +261,7 @@ describe("gateway talk runtime", () => {
     const res = await invokeTalkSpeakDirect({ text: "Hello from talk mode." });
     expect(res?.ok).toBe(false);
     expect(res?.error?.message).toContain("talk provider not configured");
-    expect((res?.error as { details?: unknown } | undefined)?.details).toEqual({
+    expect((res?.error as { details?: any } | undefined)?.details).toEqual({
       reason: "talk_unconfigured",
       fallbackEligible: true,
     });

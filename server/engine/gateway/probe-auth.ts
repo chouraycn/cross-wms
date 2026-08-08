@@ -77,7 +77,7 @@ function buildUnresolvedProbeAuthWarning(path: string): string {
   return `${path} SecretRef is unresolved in this command path; probing without configured auth credentials.`;
 }
 
-function resolveGatewayProbeWarning(error: unknown): string | undefined {
+function resolveGatewayProbeWarning(error: any): string | undefined {
   if (!isGatewaySecretRefUnavailableError(error)) {
     throw error;
   }

@@ -7,7 +7,7 @@ const DEFAULT_BODY_BYTES = 2 * 1024 * 1024;
 
 export type ToolsInvokeInput = {
   tool: string;
-  parameters?: Record<string, unknown>;
+  parameters?: Record<string, any>;
   sessionKey?: string;
   sessionId?: string;
   idempotencyKey?: string;
@@ -16,7 +16,7 @@ export type ToolsInvokeInput = {
 
 export type ToolsInvokeResult = {
   ok: boolean;
-  result?: unknown;
+  result?: any;
   error?: string;
   errorCode?: string;
   toolCallId?: string;
@@ -26,7 +26,7 @@ export type ToolsInvokeResult = {
 async function readJsonBodyFromRequest(
   req: IncomingMessage,
   maxBytes: number,
-): Promise<{ success: boolean; data?: unknown; error?: string }> {
+): Promise<{ success: boolean; data?: any; error?: string }> {
   return new Promise((resolve) => {
     let data = '';
     let size = 0;
@@ -56,7 +56,7 @@ async function readJsonBodyFromRequest(
   });
 }
 
-function sendJson(res: ServerResponse, status: number, body: unknown): void {
+function sendJson(res: ServerResponse, status: number, body: any): void {
   sendJsonResponse(res, status, body);
 }
 
@@ -129,10 +129,10 @@ export async function handleToolsInvokeHttpRequest(
       const durationMs = Date.now() - startTime;
 
       if (result && typeof result === 'object' && 'error' in result) {
-        logger.warn(`[Gateway] Tool invoke failed: ${body.tool} - ${String((result as Record<string, unknown>).error)}`);
+        logger.warn(`[Gateway] Tool invoke failed: ${body.tool} - ${String((result as Record<string, any>).error)}`);
         sendJson(res, 500, {
           ok: false,
-          error: String((result as Record<string, unknown>).error),
+          error: String((result as Record<string, any>).error),
           errorCode: 'TOOL_EXECUTION_ERROR',
           toolCallId,
           durationMs,

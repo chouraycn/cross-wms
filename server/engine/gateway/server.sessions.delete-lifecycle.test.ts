@@ -35,7 +35,7 @@ afterEach(() => {
   closeOpenClawStateDatabaseForTest();
 });
 
-function expectObject(value: unknown) {
+function expectObject(value: any) {
   if (!value || typeof value !== "object") {
     throw new Error("expected object");
   }
@@ -106,7 +106,7 @@ test("sessions.delete rejects main and aborts active runs", async () => {
   expect(browserSessionTabMocks.closeTrackedBrowserTabsForSessions).toHaveBeenCalledTimes(1);
   const closeTabsCall = (
     browserSessionTabMocks.closeTrackedBrowserTabsForSessions.mock.calls as unknown as Array<
-      [{ sessionKeys?: string[]; onWarn?: unknown }]
+      [{ sessionKeys?: string[]; onWarn?: any }]
     >
   )[0]?.[0];
   expect(closeTabsCall?.sessionKeys).toHaveLength(3);
@@ -234,7 +234,7 @@ test("sessions.delete closes ACP runtime handles before removing ACP sessions", 
       [
         {
           allowBackendUnavailable?: boolean;
-          cfg?: unknown;
+          cfg?: any;
           discardPersistentState?: boolean;
           requireAcpSession?: boolean;
           reason?: string;
@@ -253,7 +253,7 @@ test("sessions.delete closes ACP runtime handles before removing ACP sessions", 
   expect(acpManagerMocks.cancelSession).toHaveBeenCalledTimes(1);
   const cancelSessionCall = (
     acpManagerMocks.cancelSession.mock.calls as unknown as Array<
-      [{ cfg?: unknown; reason?: string; sessionKey?: string }]
+      [{ cfg?: any; reason?: string; sessionKey?: string }]
     >
   )[0]?.[0];
   expectObject(cancelSessionCall?.cfg);
@@ -340,7 +340,7 @@ test("sessions.delete emits session_end with deleted reason and no replacement",
   expect(sessionLifecycleHookMocks.runSessionStart).not.toHaveBeenCalled();
 
   const [event, context] = (
-    sessionLifecycleHookMocks.runSessionEnd.mock.calls as unknown as Array<[unknown, unknown]>
+    sessionLifecycleHookMocks.runSessionEnd.mock.calls as unknown as Array<[any, any]>
   )[0] ?? [undefined, undefined];
   expect((event as { sessionId?: string } | undefined)?.sessionId).toBe("sess-delete");
   expect((event as { sessionKey?: string } | undefined)?.sessionKey).toBe(
@@ -383,7 +383,7 @@ test("sessions.delete emits subagent targetKind for subagent sessions", async ()
     key: "agent:main:subagent:worker",
   });
   expect(subagentLifecycleHookMocks.runSubagentEnded).toHaveBeenCalledTimes(1);
-  const event = (subagentLifecycleHookMocks.runSubagentEnded.mock.calls as unknown[][])[0]?.[0] as
+  const event = (subagentLifecycleHookMocks.runSubagentEnded.mock.calls as any[][])[0]?.[0] as
     | { targetKind?: string; targetSessionKey?: string; reason?: string; outcome?: string }
     | undefined;
   expect(event?.targetSessionKey).toBe("agent:main:subagent:worker");

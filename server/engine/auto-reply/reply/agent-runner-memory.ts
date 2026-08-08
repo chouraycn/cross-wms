@@ -345,7 +345,7 @@ function resolveVisibleMemoryFlushErrorPayloads(payloads?: ReplyPayload[]): Repl
   );
 }
 
-function buildMemoryFlushErrorPayload(err: unknown): ReplyPayload | undefined {
+function buildMemoryFlushErrorPayload(err: any): ReplyPayload | undefined {
   if (isAbortError(err)) {
     return undefined;
   }
@@ -363,7 +363,7 @@ function buildMemoryFlushErrorPayload(err: unknown): ReplyPayload | undefined {
   };
 }
 
-function truncateMemoryFlushErrorMessage(err: unknown): string {
+function truncateMemoryFlushErrorMessage(err: any): string {
   const message = normalizeOptionalString(formatErrorMessage(err)) || String(err);
   return message.length > MAX_FLUSH_ERROR_LENGTH
     ? `${message.slice(0, MAX_FLUSH_ERROR_LENGTH - 1)}…`

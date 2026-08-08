@@ -19,13 +19,13 @@ export function findAllTasks(projectId?: string): Task[] {
     params.push(projectId);
   }
   sql += ' ORDER BY created_at DESC';
-  const rows = db().prepare(sql).all(...params) as Array<Record<string, unknown>>;
+  const rows = db().prepare(sql).all(...params) as Array<Record<string, any>>;
   return rows.map(normalizeRow);
 }
 
 /** 按 id 查询单条任务 */
 export function findTaskById(id: string): Task | undefined {
-  const row = db().prepare('SELECT * FROM tasks WHERE id = ?').get(id) as Record<string, unknown> | undefined;
+  const row = db().prepare('SELECT * FROM tasks WHERE id = ?').get(id) as Record<string, any> | undefined;
   return row ? normalizeRow(row) : undefined;
 }
 
@@ -75,7 +75,7 @@ export function updateTask(id: string, data: Partial<{
   if (!existing) return undefined;
 
   const fields: string[] = [];
-  const vals: unknown[] = [];
+  const vals: any[] = [];
 
   if (data.title !== undefined) { fields.push('title = ?'); vals.push(data.title); }
   if (data.description !== undefined) { fields.push('description = ?'); vals.push(data.description); }
@@ -141,7 +141,7 @@ export function migrateTasks(tasks: Array<{
 }
 
 /** 将数据库行转为 Task 类型（tags JSON → string[]） */
-function normalizeRow(row: Record<string, unknown>): Task {
+function normalizeRow(row: Record<string, any>): Task {
   let tags: string[] = [];
   try { tags = JSON.parse((row.tags as string) || '[]'); } catch (e) { console.debug("[compat-swallowed]", e); }
   return {

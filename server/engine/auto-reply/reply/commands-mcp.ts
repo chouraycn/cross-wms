@@ -13,7 +13,7 @@ import {
 import type { CommandHandler } from "./commands-types.js";
 import { parseMcpCommand } from "./mcp-commands.js";
 
-function renderJsonBlock(label: string, value: unknown): string {
+function renderJsonBlock(label: string, value: any): string {
   return `${label}\n\`\`\`json\n${JSON.stringify(value, null, 2)}\n\`\`\``;
 }
 

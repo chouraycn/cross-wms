@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { validateConfigObjectWithPlugins } from "./validation.js";
 
 describe("config hooks module paths", () => {
-  const expectRejectedIssuePath = (config: Record<string, unknown>, expectedPath: string) => {
+  const expectRejectedIssuePath = (config: Record<string, any>, expectedPath: string) => {
     const res = validateConfigObjectWithPlugins(config);
     expect(res.ok).toBe(false);
     if (res.ok) {

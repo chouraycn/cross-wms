@@ -19,8 +19,8 @@ export interface ProjectionSource {
 
 /** 投影内容 */
 export interface ProjectionContent {
-  messages: Array<{ role: string; content: unknown }>;
-  metadata?: Record<string, unknown>;
+  messages: Array<{ role: string; content: any }>;
+  metadata?: Record<string, any>;
   tokenCount: number;
 }
 
@@ -49,9 +49,9 @@ export interface ProjectionBuildOptions {
 
 /** 投影指纹输入 */
 export interface ProjectionFingerprintInput {
-  messages: Array<{ role: string; content: unknown }>;
+  messages: Array<{ role: string; content: any }>;
   systemPrompt?: string;
-  tools?: unknown[];
+  tools?: any[];
   agentId?: string;
   modelId?: string;
 }
@@ -76,9 +76,9 @@ export interface ProjectionMergeOptions {
 
 /** 投影差异 */
 export interface ProjectionDiff {
-  added: Array<{ role: string; content: unknown }>;
-  removed: Array<{ role: string; content: unknown }>;
-  modified: Array<{ before: unknown; after: unknown }>;
+  added: Array<{ role: string; content: any }>;
+  removed: Array<{ role: string; content: any }>;
+  modified: Array<{ before: any; after: any }>;
 }
 
 /** MMR 重排序结果 */
@@ -301,7 +301,7 @@ export class ContextProjectionManager {
    */
   buildProjection(
     sessionId: string,
-    messages: Array<{ role: string; content: unknown }>,
+    messages: Array<{ role: string; content: any }>,
     options: ProjectionBuildOptions,
   ): ContextProjection {
     const {
@@ -421,7 +421,7 @@ export class ContextProjectionManager {
    */
   buildThreadBootstrap(
     sourceSessionId: string,
-    messages: Array<{ role: string; content: unknown }>,
+    messages: Array<{ role: string; content: any }>,
     options: Omit<ProjectionBuildOptions, 'type'> = {},
   ): ContextProjection {
     return this.buildProjection(sourceSessionId, messages, {
@@ -438,7 +438,7 @@ export class ContextProjectionManager {
    */
   buildEpochProjection(
     sessionId: string,
-    messages: Array<{ role: string; content: unknown }>,
+    messages: Array<{ role: string; content: any }>,
     options: Omit<ProjectionBuildOptions, 'type'> = {},
   ): ContextProjection {
     const epoch = this.epochManager.incrementEpoch(sessionId);
@@ -639,7 +639,7 @@ export function compareProjections(
  *
  * 在保持相关性的同时增加结果多样性
  */
-export function mmrRerank<T extends { content: unknown }>(
+export function mmrRerank<T extends { content: any }>(
   items: T[],
   queryEmbedding: number[],
   getEmbedding: (item: T) => number[],
@@ -744,7 +744,7 @@ export function mergeProjections(
     })
     .map(item => item.proj);
 
-  let mergedMessages: Array<{ role: string; content: unknown }> = [];
+  let mergedMessages: Array<{ role: string; content: any }> = [];
 
   switch (strategy) {
     case 'newest':
@@ -862,9 +862,9 @@ export function computeProjectionDiff(
     ]),
   );
 
-  const added: Array<{ role: string; content: unknown }> = [];
-  const removed: Array<{ role: string; content: unknown }> = [];
-  const modified: Array<{ before: unknown; after: unknown }> = [];
+  const added: Array<{ role: string; content: any }> = [];
+  const removed: Array<{ role: string; content: any }> = [];
+  const modified: Array<{ before: any; after: any }> = [];
 
   for (const [key, msg] of afterMap) {
     if (!beforeMap.has(key)) {

@@ -58,7 +58,7 @@ describe("AcpSessionManager", () => {
       id: "acpx",
       runtime: runtimeState.runtime,
     });
-    hoisted.readAcpSessionEntryMock.mockImplementation((paramsUnknown: unknown) => {
+    hoisted.readAcpSessionEntryMock.mockImplementation((paramsUnknown: any) => {
       const sessionKey = (paramsUnknown as { sessionKey?: string }).sessionKey;
       if (sessionKey !== "agent:main:main") {
         return null;
@@ -143,7 +143,7 @@ describe("AcpSessionManager", () => {
         id: "acpx",
         runtime: runtimeState.runtime,
       });
-      hoisted.readAcpSessionEntryMock.mockImplementation((paramsUnknown: unknown) => {
+      hoisted.readAcpSessionEntryMock.mockImplementation((paramsUnknown: any) => {
         const sessionKey = (paramsUnknown as { sessionKey?: string }).sessionKey;
         if (sessionKey === "agent:codex:acp:child-1") {
           return {
@@ -229,7 +229,7 @@ describe("AcpSessionManager", () => {
         id: "acpx",
         runtime: runtimeState.runtime,
       });
-      hoisted.readAcpSessionEntryMock.mockImplementation((paramsUnknown: unknown) => {
+      hoisted.readAcpSessionEntryMock.mockImplementation((paramsUnknown: any) => {
         const sessionKey = (paramsUnknown as { sessionKey?: string }).sessionKey;
         if (sessionKey === "agent:codex:acp:child-1") {
           return {
@@ -350,7 +350,7 @@ describe("AcpSessionManager", () => {
         id: "acpx",
         runtime: runtimeState.runtime,
       });
-      hoisted.readAcpSessionEntryMock.mockImplementation((paramsUnknown: unknown) => {
+      hoisted.readAcpSessionEntryMock.mockImplementation((paramsUnknown: any) => {
         const sessionKey = (paramsUnknown as { sessionKey?: string }).sessionKey;
         if (sessionKey === "agent:codex:acp:child-1") {
           return {
@@ -428,7 +428,7 @@ describe("AcpSessionManager", () => {
         id: "acpx",
         runtime: runtimeState.runtime,
       });
-      hoisted.readAcpSessionEntryMock.mockImplementation((paramsUnknown: unknown) => {
+      hoisted.readAcpSessionEntryMock.mockImplementation((paramsUnknown: any) => {
         const sessionKey = (paramsUnknown as { sessionKey?: string }).sessionKey;
         if (sessionKey === "agent:codex:acp:child-1") {
           return {
@@ -495,7 +495,7 @@ describe("AcpSessionManager", () => {
         runtime: runtimeState.runtime,
       });
       let childReads = 0;
-      hoisted.readAcpSessionEntryMock.mockImplementation((paramsUnknown: unknown) => {
+      hoisted.readAcpSessionEntryMock.mockImplementation((paramsUnknown: any) => {
         const sessionKey = (paramsUnknown as { sessionKey?: string }).sessionKey;
         if (sessionKey === "agent:codex:acp:child-1") {
           childReads += 1;
@@ -596,7 +596,7 @@ describe("AcpSessionManager", () => {
     const secondOutcome = await Promise.race([
       second.then(
         () => ({ status: "resolved" as const }),
-        (error: unknown) => ({ status: "rejected" as const, error }),
+        (error: any) => ({ status: "rejected" as const, error }),
       ),
       new Promise<{ status: "pending" }>((resolve) => {
         scheduleNativeTimeout(() => resolve({ status: "pending" }), 100);
@@ -753,7 +753,7 @@ describe("AcpSessionManager", () => {
         id: "acpx",
         runtime: runtimeState.runtime,
       });
-      hoisted.readAcpSessionEntryMock.mockImplementation((paramsUnknown: unknown) => {
+      hoisted.readAcpSessionEntryMock.mockImplementation((paramsUnknown: any) => {
         const sessionKey = (paramsUnknown as { sessionKey?: string }).sessionKey ?? "";
         return {
           sessionKey,
@@ -836,7 +836,7 @@ describe("AcpSessionManager", () => {
       id: "acpx",
       runtime: runtimeState.runtime,
     });
-    hoisted.readAcpSessionEntryMock.mockImplementation((paramsUnknown: unknown) => {
+    hoisted.readAcpSessionEntryMock.mockImplementation((paramsUnknown: any) => {
       const sessionKey = (paramsUnknown as { sessionKey?: string }).sessionKey ?? "";
       return {
         sessionKey,
@@ -897,7 +897,7 @@ describe("AcpSessionManager", () => {
       id: "acpx",
       runtime: runtimeState.runtime,
     });
-    hoisted.readAcpSessionEntryMock.mockImplementation((paramsUnknown: unknown) => {
+    hoisted.readAcpSessionEntryMock.mockImplementation((paramsUnknown: any) => {
       const sessionKey = (paramsUnknown as { sessionKey?: string }).sessionKey ?? "";
       return {
         sessionKey,
@@ -1009,7 +1009,7 @@ describe("AcpSessionManager", () => {
         id: "acpx",
         runtime: runtimeState.runtime,
       });
-      hoisted.readAcpSessionEntryMock.mockImplementation((paramsUnknown: unknown) => {
+      hoisted.readAcpSessionEntryMock.mockImplementation((paramsUnknown: any) => {
         const sessionKey = (paramsUnknown as { sessionKey?: string }).sessionKey ?? "";
         return {
           sessionKey,
@@ -1155,7 +1155,7 @@ describe("AcpSessionManager", () => {
       runtime: runtimeState.runtime,
     });
     hoisted.readAcpSessionEntryMock.mockImplementation(() => entry);
-    hoisted.upsertAcpSessionMetaMock.mockImplementation(async (paramsUnknown: unknown) => {
+    hoisted.upsertAcpSessionMetaMock.mockImplementation(async (paramsUnknown: any) => {
       const params = paramsUnknown as {
         mutate: (
           current: SessionAcpMeta | undefined,
@@ -1218,7 +1218,7 @@ describe("AcpSessionManager", () => {
         lastUpdatedAt: Date.now(),
       },
     });
-    hoisted.readAcpSessionEntryMock.mockImplementation((paramsUnknown: unknown) => {
+    hoisted.readAcpSessionEntryMock.mockImplementation((paramsUnknown: any) => {
       const key = (paramsUnknown as { sessionKey?: string }).sessionKey ?? sessionKey;
       return {
         sessionKey: key,
@@ -1226,7 +1226,7 @@ describe("AcpSessionManager", () => {
         acp: currentMeta,
       };
     });
-    hoisted.upsertAcpSessionMetaMock.mockImplementation(async (paramsUnknown: unknown) => {
+    hoisted.upsertAcpSessionMetaMock.mockImplementation(async (paramsUnknown: any) => {
       const params = paramsUnknown as {
         mutate: (
           current: SessionAcpMeta | undefined,
@@ -1288,7 +1288,7 @@ describe("AcpSessionManager", () => {
       }),
     };
     hoisted.readAcpSessionEntryMock.mockImplementation(() => entry);
-    hoisted.upsertAcpSessionMetaMock.mockImplementation(async (paramsUnknown: unknown) => {
+    hoisted.upsertAcpSessionMetaMock.mockImplementation(async (paramsUnknown: any) => {
       const params = paramsUnknown as {
         mutate: (
           current: SessionAcpMeta | undefined,
@@ -1339,7 +1339,7 @@ describe("AcpSessionManager", () => {
         id: "acpx",
         runtime: runtimeState.runtime,
       });
-      hoisted.readAcpSessionEntryMock.mockImplementation((paramsUnknown: unknown) => {
+      hoisted.readAcpSessionEntryMock.mockImplementation((paramsUnknown: any) => {
         const sessionKey = (paramsUnknown as { sessionKey?: string }).sessionKey ?? "";
         return {
           sessionKey,
@@ -1403,7 +1403,7 @@ describe("AcpSessionManager", () => {
       id: "acpx",
       runtime: runtimeState.runtime,
     });
-    hoisted.readAcpSessionEntryMock.mockImplementation((paramsUnknown: unknown) => {
+    hoisted.readAcpSessionEntryMock.mockImplementation((paramsUnknown: any) => {
       const sessionKey = (paramsUnknown as { sessionKey?: string }).sessionKey ?? "";
       return {
         sessionKey,
@@ -1448,7 +1448,7 @@ describe("AcpSessionManager", () => {
       id: "acpx",
       runtime: runtimeState.runtime,
     });
-    hoisted.readAcpSessionEntryMock.mockImplementation((paramsUnknown: unknown) => {
+    hoisted.readAcpSessionEntryMock.mockImplementation((paramsUnknown: any) => {
       const sessionKey = (paramsUnknown as { sessionKey?: string }).sessionKey ?? "";
       return {
         sessionKey,

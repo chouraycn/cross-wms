@@ -160,7 +160,7 @@ export async function ensureMediaDir() {
   return mediaDir;
 }
 
-function findErrorWithCode(err: unknown, code: string): NodeJS.ErrnoException | undefined {
+function findErrorWithCode(err: any, code: string): NodeJS.ErrnoException | undefined {
   if (!(err instanceof Error)) {
     return undefined;
   }
@@ -170,7 +170,7 @@ function findErrorWithCode(err: unknown, code: string): NodeJS.ErrnoException | 
   return findErrorWithCode(err.cause, code);
 }
 
-function isMissingPathError(err: unknown): boolean {
+function isMissingPathError(err: any): boolean {
   return findErrorWithCode(err, "ENOENT") !== undefined;
 }
 
@@ -306,7 +306,7 @@ async function downloadToFile(
                 size: total,
               });
             })
-            .catch(async (err: unknown) => {
+            .catch(async (err: any) => {
               await fs.rm(dest, { force: true }).catch(() => {});
               reject(toErrorObject(err, "Non-Error rejection"));
             });
@@ -439,7 +439,7 @@ async function writeSavedMediaBuffer(params: {
 }
 
 async function writeMediaStreamToFile(params: {
-  stream: AsyncIterable<unknown>;
+  stream: AsyncIterable<any>;
   tempPath: string;
   maxBytes: number;
 }): Promise<{ sniffBuffer: Buffer; size: number }> {
@@ -616,7 +616,7 @@ export async function saveMediaBuffer(
 
 /** Streams media into a sibling temp file before atomically publishing the final media ID. */
 export async function saveMediaStream(
-  stream: AsyncIterable<unknown>,
+  stream: AsyncIterable<any>,
   contentType?: string,
   subdir = "inbound",
   maxBytes = MAX_BYTES,

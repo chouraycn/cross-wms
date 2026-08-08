@@ -2,12 +2,12 @@ import { logger } from '../../logger.js';
 
 export type EarlyStartupContext = {
   startTime: number;
-  config: Record<string, unknown>;
+  config: Record<string, any>;
   env: NodeJS.ProcessEnv;
   warnings: string[];
   errors: string[];
   stage: string;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
 };
 
 export type EarlyStartupTask = {
@@ -34,7 +34,7 @@ export function getEarlyStartupTasks(): EarlyStartupTask[] {
 }
 
 export function createEarlyStartupContext(
-  config: Record<string, unknown> = {},
+  config: Record<string, any> = {},
 ): EarlyStartupContext {
   return {
     startTime: Date.now(),
@@ -48,7 +48,7 @@ export function createEarlyStartupContext(
 }
 
 export async function runEarlyStartup(
-  config?: Record<string, unknown>,
+  config?: Record<string, any>,
 ): Promise<EarlyStartupContext> {
   const context = createEarlyStartupContext(config);
   logger.info('[Gateway] Running early startup tasks...');

@@ -28,7 +28,7 @@ async function createTempDeviceIdentity() {
 async function startMinimalGatewayServer(params: { token: string }) {
   const wss = new WebSocketServer({ host: "127.0.0.1", port: 0 });
   const requests: string[] = [];
-  let connectParams: Record<string, unknown> | undefined;
+  let connectParams: Record<string, any> | undefined;
 
   wss.on("connection", (ws) => {
     sendMinimalGatewayConnectChallenge(ws);
@@ -39,7 +39,7 @@ async function startMinimalGatewayServer(params: { token: string }) {
       }
       requests.push(frame.method ?? "");
       if (frame.method === "connect") {
-        connectParams = frame.params as Record<string, unknown> | undefined;
+        connectParams = frame.params as Record<string, any> | undefined;
         expect(frame.params?.auth?.token).toBe(params.token);
         expect(frame.params?.device?.nonce).toBe("test-nonce");
         sendMinimalGatewayResponse(
@@ -115,7 +115,7 @@ describe("gateway cli backend connect", () => {
         const health = await client.request("health", undefined, {
           timeoutMs: GATEWAY_CONNECT_OPERATION_TIMEOUT_MS,
         });
-        const connectClient = server.connectParams?.client as Record<string, unknown> | undefined;
+        const connectClient = server.connectParams?.client as Record<string, any> | undefined;
         expect(health.ok).toBe(true);
         expect(connectClient?.id).toBe(GATEWAY_CLIENT_NAMES.TEST);
         expect(connectClient?.displayName).toBe("vitest-live");

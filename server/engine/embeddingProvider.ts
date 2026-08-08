@@ -400,7 +400,7 @@ async function embedBatchRemote(
     };
   }
 
-  const body: Record<string, unknown> = {
+  const body: Record<string, any> = {
     model,
     input: texts,
   };

@@ -2,11 +2,11 @@
 /** 待处理的独占 store 写入及其调用方的 promise 钩子 */
 export type StoreWriterTask = {
   /** 同一 store 路径上较早任务完成后再运行的写操作 */
-  fn: () => Promise<unknown>;
+  fn: () => Promise<any>;
   /** 用写入结果 resolve 调用方的 promise */
-  resolve: (value: unknown) => void;
+  resolve: (value: any) => void;
   /** 用写入失败或测试清理错误 reject 调用方的 promise */
-  reject: (reason: unknown) => void;
+  reject: (reason: any) => void;
 };
 
 /** 按 store 路径的 FIFO 队列 */
@@ -52,8 +52,8 @@ async function drainStoreWriterQueue(queues: StoreWriterQueues, storePath: strin
         if (!task) {
           continue;
         }
-        let result: unknown;
-        let failed: unknown;
+        let result: any;
+        let failed: any;
         let hasFailure = false;
         try {
           result = await task.fn();

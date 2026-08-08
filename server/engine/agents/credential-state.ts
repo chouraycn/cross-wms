@@ -8,13 +8,13 @@
 
 export type AuthCredentialReasonCode = unknown;
 export type TokenExpiryState = unknown;
-export function resolveTokenExpiryState(..._args: unknown[]): unknown {
+export function resolveTokenExpiryState(..._args: any[]): any {
   return undefined;
 }
-export function hasUsableOAuthCredential(..._args: unknown[]): unknown {
+export function hasUsableOAuthCredential(..._args: any[]): any {
   return false;
 }
-export function evaluateStoredCredentialEligibility(..._args: unknown[]): unknown {
+export function evaluateStoredCredentialEligibility(..._args: any[]): any {
   return undefined;
 }
-export const DEFAULT_OAUTH_REFRESH_MARGIN_MS: unknown = undefined;
+export const DEFAULT_OAUTH_REFRESH_MARGIN_MS: any = undefined;

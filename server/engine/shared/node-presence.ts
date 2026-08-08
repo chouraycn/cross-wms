@@ -20,7 +20,7 @@ type NodePresenceAliveReason = (typeof NODE_PRESENCE_ALIVE_REASONS)[number];
 const NODE_PRESENCE_ALIVE_REASON_SET = new Set<string>(NODE_PRESENCE_ALIVE_REASONS);
 
 /** Normalizes untrusted presence trigger values, defaulting unknown input to background. */
-export function normalizeNodePresenceAliveReason(value: unknown): NodePresenceAliveReason {
+export function normalizeNodePresenceAliveReason(value: any): NodePresenceAliveReason {
   const normalized = normalizeOptionalString(value)?.toLowerCase();
   if (normalized && NODE_PRESENCE_ALIVE_REASON_SET.has(normalized)) {
     return normalized as NodePresenceAliveReason;

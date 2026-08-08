@@ -62,7 +62,7 @@ describe("applyProviderAuthConfigPatch", () => {
     const patch = JSON.parse('{"__proto__":{"polluted":true},"agents":{"defaults":{}}}');
     const next = applyProviderAuthConfigPatch(base, patch);
     expect(next.agents?.defaults?.models).toEqual(base.agents.defaults.models);
-    expect(({} as Record<string, unknown>).polluted).toBeUndefined();
+    expect(({} as Record<string, any>).polluted).toBeUndefined();
     expect(Object.getPrototypeOf(next).polluted).toBeUndefined();
   });
 
@@ -80,7 +80,7 @@ describe("applyProviderAuthConfigPatch", () => {
     });
     expect(Object.hasOwn(models ?? {}, "__proto__")).toBe(false);
     expect(Object.getPrototypeOf(Object.assign({}, models)).polluted).toBeUndefined();
-    expect(({} as Record<string, unknown>).polluted).toBeUndefined();
+    expect(({} as Record<string, any>).polluted).toBeUndefined();
   });
 
   it("keeps normal recursive merges for unrelated provider auth patch fields", () => {
@@ -147,7 +147,7 @@ describe("applyProviderAuthConfigPatch", () => {
 
     const next = applyProviderAuthConfigPatch(baseLocal, patch);
     const provider = next.models?.providers?.["microsoft-foundry"] as
-      | Record<string, unknown>
+      | Record<string, any>
       | undefined;
 
     expect(provider).toMatchObject({ authHeader: true });

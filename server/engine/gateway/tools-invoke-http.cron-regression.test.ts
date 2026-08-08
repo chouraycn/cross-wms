@@ -6,12 +6,12 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 
 const TEST_GATEWAY_TOKEN = "test-gateway-token-1234567890";
 const resolveToolLoopDetectionConfig = () => ({ warnAt: 3 });
-const runBeforeToolCallHook = async (args: { params: unknown }) => ({
+const runBeforeToolCallHook = async (args: { params: any }) => ({
   blocked: false as const,
   params: args.params,
 });
 
-let cfg: Record<string, unknown> = {};
+let cfg: Record<string, any> = {};
 const alwaysAuthorized = async () => ({ ok: true as const });
 const disableDefaultMemorySlot = () => false;
 const noPluginToolMeta = () => undefined;
@@ -91,7 +91,7 @@ beforeAll(async () => {
       }
       res.statusCode = 404;
       res.end("not found");
-    })().catch((err: unknown) => {
+    })().catch((err: any) => {
       res.statusCode = 500;
       res.end(String(err));
     });

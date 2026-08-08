@@ -8,21 +8,21 @@ const TRANSIENT_MEMORY_READ_CODES = new Set(["EAGAIN", "EWOULDBLOCK", "EDEADLK"]
 const TRANSIENT_MEMORY_READ_MESSAGE = /Unknown system error -11\b/i;
 
 /** Extract errno from Node filesystem-style errors. */
-function getErrno(error: unknown): number | undefined {
+function getErrno(error: any): number | undefined {
   return typeof (error as NodeJS.ErrnoException | undefined)?.errno === "number"
     ? (error as NodeJS.ErrnoException).errno
     : undefined;
 }
 
 /** Extract code from Node filesystem-style errors. */
-function getCode(error: unknown): string | undefined {
+function getCode(error: any): string | undefined {
   return typeof (error as NodeJS.ErrnoException | undefined)?.code === "string"
     ? (error as NodeJS.ErrnoException).code
     : undefined;
 }
 
 /** Return true for transient memory read failures that should be retried. */
-export function isTransientMemoryReadError(error: unknown): boolean {
+export function isTransientMemoryReadError(error: any): boolean {
   const code = getCode(error);
   if (code && TRANSIENT_MEMORY_READ_CODES.has(code)) {
     return true;

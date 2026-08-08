@@ -8,7 +8,7 @@
 type ToolCallEvent = {
   toolUseId: string;
   name: string;
-  input: Record<string, unknown>;
+  input: Record<string, any>;
 };
 
 type ToolResultEvent = {
@@ -111,16 +111,16 @@ export function countActiveToolExecutions(): number {
 }
 
 /** Stub: no-op for tool execution start events. */
-export function handleToolExecutionStart(_event?: unknown): void {
+export function handleToolExecutionStart(_event?: any): void {
   // no-op
 }
 
 /** Stub: no-op for tool execution update events. */
-export function handleToolExecutionUpdate(_event?: unknown): void {
+export function handleToolExecutionUpdate(_event?: any): void {
   // no-op
 }
 
 /** Stub: no-op for tool execution end events. */
-export function handleToolExecutionEnd(_event?: unknown): void {
+export function handleToolExecutionEnd(_event?: any): void {
   // no-op
 }

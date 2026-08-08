@@ -22,14 +22,14 @@ export type ExtractedFrame = {
   timeSeconds: number;
   buffer: Buffer;
   mimeType: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 export type FrameExtractionResult = {
   frames: ExtractedFrame[];
   totalCount: number;
   durationSeconds: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 export function validateExtractionOptions(

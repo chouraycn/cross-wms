@@ -12,7 +12,7 @@ export interface TimingPhase {
   startTime: number;
   endTime?: number;
   durationMs?: number;
-  details?: Record<string, unknown>;
+  details?: Record<string, any>;
 }
 
 export interface WebVitalMetric {
@@ -242,7 +242,7 @@ export function recordSnapshot(snapshot: PerformanceSnapshot): void {
   }
 }
 
-export function recordBackendPhase(name: string, durationMs: number, details?: Record<string, unknown>): void {
+export function recordBackendPhase(name: string, durationMs: number, details?: Record<string, any>): void {
   backendPhases.push({
     name,
     startTime: Date.now() - durationMs,

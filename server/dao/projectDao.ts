@@ -15,7 +15,7 @@ import type Database from 'better-sqlite3';
 
 // ===================== Row ↔ Data Mappers =====================
 
-function rowToProject(row: ProjectRow): Record<string, unknown> {
+function rowToProject(row: ProjectRow): Record<string, any> {
   return {
     id: row.id,
     name: row.name,
@@ -34,12 +34,12 @@ function db(): Database.Database {
   return initDb();
 }
 
-export function getAllProjects(): Record<string, unknown>[] {
+export function getAllProjects(): Record<string, any>[] {
   const rows = db().prepare('SELECT * FROM projects ORDER BY updated_at DESC').all() as ProjectRow[];
   return rows.map(rowToProject);
 }
 
-export function getProjectById(id: string): Record<string, unknown> | null {
+export function getProjectById(id: string): Record<string, any> | null {
   const row = db().prepare('SELECT * FROM projects WHERE id = ?').get(id) as ProjectRow | undefined;
   return row ? rowToProject(row) : null;
 }
@@ -51,7 +51,7 @@ export function createProject(data: {
   status?: string;
   category?: string;
   agent_id?: string | null;
-}): Record<string, unknown> {
+}): Record<string, any> {
   const id = data.id || `proj_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
   const now = new Date().toISOString();
 
@@ -78,13 +78,13 @@ export function updateProject(id: string, data: {
   status?: string;
   category?: string;
   agent_id?: string | null;
-}): Record<string, unknown> | null {
+}): Record<string, any> | null {
   const existing = db().prepare('SELECT * FROM projects WHERE id = ?').get(id) as ProjectRow | undefined;
   if (!existing) return null;
 
   const now = new Date().toISOString();
   const setClauses: string[] = [];
-  const params: unknown[] = [];
+  const params: any[] = [];
 
   if (data.name !== undefined) {
     setClauses.push('name = ?');
@@ -122,7 +122,7 @@ export function deleteProject(id: string): boolean {
   return result.changes > 0;
 }
 
-export function getProjectTasks(projectId: string): Record<string, unknown>[] {
+export function getProjectTasks(projectId: string): Record<string, any>[] {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const rows = db().prepare('SELECT * FROM tasks WHERE project_id = ? ORDER BY created_at DESC').all(projectId) as any[];
   return rows.map(rowToTask);
@@ -130,7 +130,7 @@ export function getProjectTasks(projectId: string): Record<string, unknown>[] {
 
 // Helper to convert task row to frontend format
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function rowToTask(row: any): Record<string, unknown> {
+function rowToTask(row: any): Record<string, any> {
   let tags: string[] = [];
   try {
     if (row.tags) tags = JSON.parse(row.tags);

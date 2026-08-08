@@ -14,7 +14,7 @@ import {
   listDirectoryUserEntriesFromAllowFrom,
 } from "./directory-config-helpers.js";
 
-function expectUserDirectoryEntries(entries: unknown) {
+function expectUserDirectoryEntries(entries: any) {
   expect(entries).toEqual([
     { kind: "user", id: "alice" },
     { kind: "user", id: "carla" },

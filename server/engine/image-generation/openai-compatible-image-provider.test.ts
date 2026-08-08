@@ -17,7 +17,7 @@ const {
   sanitizeConfiguredModelProviderRequestMock,
 } = vi.hoisted(() => ({
   assertOkOrThrowHttpErrorMock: vi.fn(async () => {}),
-  createProviderOperationDeadlineMock: vi.fn((params: Record<string, unknown>) => ({
+  createProviderOperationDeadlineMock: vi.fn((params: Record<string, any>) => ({
     timeoutMs: params.timeoutMs,
     label: params.label,
   })),
@@ -25,10 +25,10 @@ const {
   postJsonRequestMock: vi.fn(),
   postMultipartRequestMock: vi.fn(),
   resolveApiKeyForProviderMock: vi.fn(async () => ({ apiKey: "provider-key" })),
-  resolveProviderHttpRequestConfigMock: vi.fn((params: Record<string, unknown>) => {
+  resolveProviderHttpRequestConfigMock: vi.fn((params: Record<string, any>) => {
     const request =
       typeof params.request === "object" && params.request !== null
-        ? (params.request as Record<string, unknown>)
+        ? (params.request as Record<string, any>)
         : undefined;
     return {
       baseUrl: params.baseUrl ?? params.defaultBaseUrl,
@@ -38,7 +38,7 @@ const {
     };
   }),
   resolveProviderOperationTimeoutMsMock: vi.fn(
-    (params: Record<string, unknown>) => params.defaultTimeoutMs,
+    (params: Record<string, any>) => params.defaultTimeoutMs,
   ),
   sanitizeConfiguredModelProviderRequestMock: vi.fn((request) => request),
 }));
@@ -78,7 +78,7 @@ function requireFirstRequestHeaders(mock: ReturnType<typeof vi.fn>): Headers {
   return headers;
 }
 
-function requireFirstCallArg(mock: ReturnType<typeof vi.fn>): unknown {
+function requireFirstCallArg(mock: ReturnType<typeof vi.fn>): any {
   const call = (mock.mock.calls as unknown as Array<[unknown] | undefined>)[0];
   const arg = call?.[0];
   if (!arg) {
@@ -201,9 +201,9 @@ describe("OpenAI-compatible image provider helper", () => {
     const jsonRequest = requireFirstCallArg(postJsonRequestMock) as {
       url?: string;
       allowPrivateNetwork?: boolean;
-      ssrfPolicy?: unknown;
-      dispatcherPolicy?: unknown;
-      body?: unknown;
+      ssrfPolicy?: any;
+      dispatcherPolicy?: any;
+      body?: any;
     };
     expect(jsonRequest.url).toBe("https://sample.example/v1/images/generations");
     expect(jsonRequest.allowPrivateNetwork).toBe(true);
@@ -240,7 +240,7 @@ describe("OpenAI-compatible image provider helper", () => {
 
     const multipartRequest = requireFirstCallArg(postMultipartRequestMock) as {
       url?: string;
-      body?: unknown;
+      body?: any;
     };
     expect(multipartRequest.url).toBe("https://sample.example/v1/images/edits");
     expect(multipartRequest.body).toBeInstanceOf(FormData);

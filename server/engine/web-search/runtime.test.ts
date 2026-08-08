@@ -17,7 +17,7 @@ import {
 
 type TestPluginWebSearchConfig = {
   webSearch?: {
-    apiKey?: unknown;
+    apiKey?: any;
   };
 };
 
@@ -63,11 +63,11 @@ function createCustomSearchTool() {
   return {
     description: "custom",
     parameters: {},
-    execute: async (args: Record<string, unknown>) => ({ ...args, ok: true }),
+    execute: async (args: Record<string, any>) => ({ ...args, ok: true }),
   };
 }
 
-function getCustomSearchApiKey(config?: OpenClawConfig): unknown {
+function getCustomSearchApiKey(config?: OpenClawConfig): any {
   const pluginConfig = config?.plugins?.entries?.["custom-search"]?.config as
     | TestPluginWebSearchConfig
     | undefined;
@@ -88,7 +88,7 @@ function createCustomSearchProvider(
   });
 }
 
-function createCustomSearchConfig(apiKey: unknown): OpenClawConfig {
+function createCustomSearchConfig(apiKey: any): OpenClawConfig {
   return {
     plugins: {
       entries: {
@@ -139,14 +139,14 @@ function createOAuthAuthProfileStore(params: {
   };
 }
 
-function requireRecord(value: unknown): Record<string, unknown> {
+function requireRecord(value: any): Record<string, any> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("Expected a non-array record");
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function mockCallParam(mock: ReturnType<typeof vi.fn>, index = 0): Record<string, unknown> {
+function mockCallParam(mock: ReturnType<typeof vi.fn>, index = 0): Record<string, any> {
   return requireRecord(mock.mock.calls[index]?.[0]);
 }
 
@@ -224,7 +224,7 @@ describe("web search runtime", () => {
   it("passes the run abort signal to provider execution", async () => {
     const controller = new AbortController();
     const execute = vi.fn(
-      async (args: Record<string, unknown>, context?: { signal?: AbortSignal }) => ({
+      async (args: Record<string, any>, context?: { signal?: AbortSignal }) => ({
         ...args,
         aborted: context?.signal?.aborted ?? false,
         sameSignal: context?.signal === controller.signal,
@@ -291,7 +291,7 @@ describe("web search runtime", () => {
         return modelProvider && typeof modelProvider === "object" && "apiKey" in modelProvider
           ? {
               path: "models.providers.custom-search.apiKey",
-              value: (modelProvider as { apiKey?: unknown }).apiKey,
+              value: (modelProvider as { apiKey?: any }).apiKey,
             }
           : undefined;
       },

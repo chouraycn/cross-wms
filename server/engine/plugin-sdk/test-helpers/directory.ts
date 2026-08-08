@@ -19,7 +19,7 @@ export function createDirectoryTestRuntime() {
   };
 }
 
-export function expectDirectorySurface(directory: unknown): DirectorySurface {
+export function expectDirectorySurface(directory: any): DirectorySurface {
   if (!directory || typeof directory !== "object") {
     throw new Error("expected directory");
   }

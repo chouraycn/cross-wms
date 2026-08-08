@@ -6,9 +6,9 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function isDeliveredMessageToolOnlySourceReply(..._args: unknown[]): unknown {
+export function isDeliveredMessageToolOnlySourceReply(..._args: any[]): any {
   return false;
 }
-export function installMessageToolOnlyTerminalHook(..._args: unknown[]): unknown {
+export function installMessageToolOnlyTerminalHook(..._args: any[]): any {
   return undefined;
 }

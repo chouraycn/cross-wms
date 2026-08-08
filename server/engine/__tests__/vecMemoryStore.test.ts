@@ -30,7 +30,7 @@ vi.mock('../../storage/databaseManager.js', () => {
     exec: vi.fn(),
     pragma: vi.fn(),
     prepare: vi.fn((sql: string) => {
-      const mockRun = vi.fn((...params: unknown[]) => {
+      const mockRun = vi.fn((...params: any[]) => {
         if (sql.includes('DELETE FROM memory_vec_index')) {
           return { changes: 0, lastInsertRowid: 0 };
         }
@@ -65,7 +65,7 @@ vi.mock('../../storage/databaseManager.js', () => {
       }
       return [];
     }),
-    run: vi.fn((sql: string, params?: unknown[]) => {
+    run: vi.fn((sql: string, params?: any[]) => {
       if (sql.includes('DELETE FROM memory_vec_index')) {
         return { changes: 0, lastInsertRowid: 0 };
       }

@@ -1,15 +1,15 @@
 // 移植自 openclaw/src/gateway/server-methods/config.ts
 
-export function resolveConfigOpenCommand(...args: unknown[]): unknown {
+export function resolveConfigOpenCommand(...args: any[]): any {
   return undefined;
 }
 
-export function clearConfigSchemaResponseCacheForTests(...args: unknown[]): unknown {
+export function clearConfigSchemaResponseCacheForTests(...args: any[]): any {
   return undefined;
 }
 
-export function loadConfigSchemaResponseForTests(...args: unknown[]): unknown {
+export function loadConfigSchemaResponseForTests(...args: any[]): any {
   return undefined;
 }
 
-export const configHandlers: (...args: unknown[]) => unknown = undefined as unknown as (...args: unknown[]) => unknown;
+export const configHandlers: (...args: any[]) => unknown = undefined as unknown as (...args: any[]) => unknown;

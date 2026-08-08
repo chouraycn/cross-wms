@@ -7,7 +7,7 @@
 
 /** Prepares a session manager for an embedded run. */
 export async function prepareSessionManagerForRun(params: {
-  sessionManager: unknown;
+  sessionManager: any;
   sessionFile: string;
   hadSessionFile: boolean;
   sessionId: string;

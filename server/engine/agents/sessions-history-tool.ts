@@ -6,7 +6,7 @@
  */
 
 /** Creates a sessions history tool. */
-export function createSessionsHistoryTool(..._args: unknown[]): Record<string, unknown> {
+export function createSessionsHistoryTool(..._args: any[]): Record<string, any> {
   return {
     name: "session_history",
     description: "View session conversation history (cross-wms placeholder).",

@@ -31,14 +31,14 @@ function makeAssistantMessage(
   };
 }
 
-function firstAttemptInput(): Record<string, unknown> {
+function firstAttemptInput(): Record<string, any> {
   // Harness calls are single-attempt in these tests; expose the first input so
   // forwarding assertions stay readable.
   const call = mockedRunEmbeddedAttempt.mock.calls[0];
   if (!call) {
     throw new Error("Expected embedded attempt");
   }
-  return call[0] as Record<string, unknown>;
+  return call[0] as Record<string, any>;
 }
 
 describe("runEmbeddedAgent usage reporting", () => {

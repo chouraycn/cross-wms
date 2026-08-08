@@ -138,7 +138,7 @@ describe("applyAuthChoicePluginProvider", () => {
     const resultConfig = result?.config;
     expect(resultConfig?.agents?.defaults?.model).toEqual({ primary: "gpt-5.5" });
     const codexConfig = resultConfig?.plugins?.entries?.codex?.config as
-      | { codexPlugins?: { plugins?: unknown } }
+      | { codexPlugins?: { plugins?: any } }
       | undefined;
     expect(codexConfig?.codexPlugins?.plugins).toEqual({
       gmail: {

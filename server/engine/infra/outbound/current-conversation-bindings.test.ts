@@ -48,7 +48,7 @@ function expectBindingFields(
 
 function expectBindingMetadata(
   binding: SessionBindingRecord | null | undefined,
-  expected: Record<string, unknown>,
+  expected: Record<string, any>,
 ): void {
   const metadata = expectSessionBinding(binding ?? null).metadata;
   for (const [key, value] of Object.entries(expected)) {

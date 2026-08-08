@@ -2,7 +2,7 @@ export type SourceProjection = {
   source: string;
   type: "file" | "env" | "command" | "config" | "runtime";
   path?: string;
-  value: unknown;
+  value: any;
   timestamp: number;
 };
 
@@ -25,7 +25,7 @@ export class RuntimeSourceProjection {
     return this.projections.get(key);
   }
 
-  getValue(key: string): unknown {
+  getValue(key: string): any {
     const projection = this.projections.get(key);
     return projection?.value;
   }
@@ -64,9 +64,9 @@ export class RuntimeSourceProjection {
     }
   }
 
-  project(options: ProjectionOptions = {}): Record<string, unknown> {
+  project(options: ProjectionOptions = {}): Record<string, any> {
     const { filter, transform } = options;
-    const result: Record<string, unknown> = {};
+    const result: Record<string, any> = {};
 
     for (const [key, projection] of this.projections) {
       if (filter && !filter(projection)) {
@@ -79,14 +79,14 @@ export class RuntimeSourceProjection {
     return result;
   }
 
-  toJSON(): Record<string, unknown> {
+  toJSON(): Record<string, any> {
     return this.project();
   }
 }
 
 export const runtimeSourceProjection = new RuntimeSourceProjection();
 
-export function projectRuntimeSource(key: string, value: unknown, source: string, type: SourceProjection["type"], path?: string): void {
+export function projectRuntimeSource(key: string, value: any, source: string, type: SourceProjection["type"], path?: string): void {
   runtimeSourceProjection.add(key, {
     source,
     type,

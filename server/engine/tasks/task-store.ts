@@ -97,7 +97,7 @@ export class TaskStore {
     // 应用 patch（不允许改 id）
     for (const [k, v] of Object.entries(patch)) {
       if (k === 'id') continue;
-      (task as unknown as Record<string, unknown>)[k] = v;
+      (task as unknown as Record<string, any>)[k] = v;
     }
     // 重建索引差异
     if (patch.status && patch.status !== prevStatus) {

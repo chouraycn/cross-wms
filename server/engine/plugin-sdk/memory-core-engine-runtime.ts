@@ -83,7 +83,7 @@ export type ShortTermAuditSummary = {
   promotedCount: number;
   spacedEntryCount: number;
   conceptTaggedEntryCount: number;
-  conceptTagScripts?: Record<string, unknown>;
+  conceptTagScripts?: Record<string, any>;
   invalidEntryCount: number;
   issues: ShortTermAuditIssue[];
   qmd?:

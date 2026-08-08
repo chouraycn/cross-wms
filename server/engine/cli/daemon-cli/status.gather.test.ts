@@ -13,26 +13,26 @@ import type { GatewayRestartSnapshot } from "./restart-health.js";
 import { gatherDaemonStatus } from "./status.gather.js";
 
 const callGatewayStatusProbe = vi.fn<
-  (opts?: unknown) => Promise<{
+  (opts?: any) => Promise<{
     ok: boolean;
     url?: string;
     error?: string | null;
     server?: { version?: string | null; connId?: string | null };
     version?: string | null;
   }>
->(async (_opts?: unknown) => ({
+>(async (_opts?: any) => ({
   ok: true,
   url: "ws://127.0.0.1:19001",
   error: null,
   server: { version: "2026.5.6", connId: "conn-1" },
 }));
-const resolveGatewayProbeAuthSafeWithSecretInputsCalls = vi.fn<(opts?: unknown) => void>();
-const loadGatewayTlsRuntime = vi.fn(async (_cfg?: unknown) => ({
+const resolveGatewayProbeAuthSafeWithSecretInputsCalls = vi.fn<(opts?: any) => void>();
+const loadGatewayTlsRuntime = vi.fn(async (_cfg?: any) => ({
   enabled: true,
   required: true,
   fingerprintSha256: "sha256:11:22:33:44",
 }));
-const findExtraGatewayServices = vi.fn(async (_env?: unknown, _opts?: unknown) => []);
+const findExtraGatewayServices = vi.fn(async (_env?: any, _opts?: any) => []);
 const findStaleOpenClawUpdateLaunchdJobs = vi.fn<
   (env?: NodeJS.ProcessEnv) => Promise<StaleOpenClawUpdateLaunchdJob[]>
 >(async () => []);
@@ -54,18 +54,18 @@ const loadInstalledPluginIndexInstallRecords = vi.fn<
     env?: NodeJS.ProcessEnv;
     stateDir?: string;
     filePath?: string;
-  }) => Promise<Record<string, unknown>>
+  }) => Promise<Record<string, any>>
 >(async (_params?) => ({}));
 const readGatewayRestartHandoffSync = vi.fn<
   (_env?: NodeJS.ProcessEnv) => GatewayRestartHandoff | null
 >(() => null);
-const auditGatewayServiceConfig = vi.fn(async (_opts?: unknown) => undefined);
-const serviceIsLoaded = vi.fn(async (_opts?: unknown) => true);
+const auditGatewayServiceConfig = vi.fn(async (_opts?: any) => undefined);
+const serviceIsLoaded = vi.fn(async (_opts?: any) => true);
 const serviceReadRuntime = vi.fn<
   (_env?: NodeJS.ProcessEnv) => Promise<{ status: string; detail?: string }>
 >(async (_env?: NodeJS.ProcessEnv) => ({ status: "running" }));
-const inspectGatewayRestart = vi.fn<(opts?: unknown) => Promise<GatewayRestartSnapshot>>(
-  async (_opts?: unknown) => ({
+const inspectGatewayRestart = vi.fn<(opts?: any) => Promise<GatewayRestartSnapshot>>(
+  async (_opts?: any) => ({
     runtime: { status: "running", pid: 1234 },
     portUsage: { port: 19001, status: "busy", listeners: [], hints: [] },
     healthy: true,
@@ -88,7 +88,7 @@ const resolveGatewayBindHost = vi.fn(
   async (_bindMode?: string, _customBindHost?: string) => "0.0.0.0",
 );
 const pickPrimaryTailnetIPv4 = vi.fn(() => "100.64.0.9");
-const resolveGatewayPort = vi.fn((_cfg?: unknown, _env?: unknown) => 18789);
+const resolveGatewayPort = vi.fn((_cfg?: any, _env?: any) => 18789);
 const resolveStateDir = vi.fn(
   (env: NodeJS.ProcessEnv) => env.OPENCLAW_STATE_DIR ?? "/tmp/openclaw-cli",
 );
@@ -103,14 +103,14 @@ const readConfigFileSnapshotCalls = vi.fn((configPath: string) => configPath);
 const loadConfigCalls = vi.fn((configPath: string) => configPath);
 let daemonConfigWarnings: Array<{ path: string; message: string }> = [];
 let cliConfigWarnings: Array<{ path: string; message: string }> = [];
-let daemonLoadedConfig: Record<string, unknown> = {
+let daemonLoadedConfig: Record<string, any> = {
   gateway: {
     bind: "lan",
     tls: { enabled: true },
     auth: { token: "daemon-token" },
   },
 };
-let cliLoadedConfig: Record<string, unknown> = {
+let cliLoadedConfig: Record<string, any> = {
   gateway: {
     bind: "loopback",
   },
@@ -150,7 +150,7 @@ vi.mock("../../config/config.js", () => ({
   getRuntimeConfig: () => cliLoadedConfig,
   loadConfig: () => cliLoadedConfig,
   resolveConfigPath: (env: NodeJS.ProcessEnv, stateDir: string) => resolveConfigPath(env, stateDir),
-  resolveGatewayPort: (cfg?: unknown, env?: unknown) => resolveGatewayPort(cfg, env),
+  resolveGatewayPort: (cfg?: any, env?: any) => resolveGatewayPort(cfg, env),
   resolveStateDir: (env: NodeJS.ProcessEnv) => resolveStateDir(env),
 }));
 
@@ -159,7 +159,7 @@ vi.mock("../../daemon/diagnostics.js", () => ({
 }));
 
 vi.mock("../../daemon/inspect.js", () => ({
-  findExtraGatewayServices: (env: unknown, opts?: unknown) => findExtraGatewayServices(env, opts),
+  findExtraGatewayServices: (env: any, opts?: any) => findExtraGatewayServices(env, opts),
 }));
 
 vi.mock("../../daemon/launchd.js", () => ({
@@ -168,7 +168,7 @@ vi.mock("../../daemon/launchd.js", () => ({
 }));
 
 vi.mock("../../daemon/service-audit.js", () => ({
-  auditGatewayServiceConfig: (opts: unknown) => auditGatewayServiceConfig(opts),
+  auditGatewayServiceConfig: (opts: any) => auditGatewayServiceConfig(opts),
 }));
 
 vi.mock("../../daemon/service.js", () => ({
@@ -186,13 +186,13 @@ vi.mock("../../gateway/net.js", () => ({
 }));
 
 vi.mock("../../gateway/probe-auth.js", async (importOriginal) => {
-  const actual = await importOriginal<Record<string, unknown>>();
+  const actual = await importOriginal<Record<string, any>>();
   return {
     ...actual,
-    resolveGatewayProbeAuthSafeWithSecretInputs: async (opts: unknown) => {
+    resolveGatewayProbeAuthSafeWithSecretInputs: async (opts: any) => {
       resolveGatewayProbeAuthSafeWithSecretInputsCalls(opts);
       return await (
-        actual.resolveGatewayProbeAuthSafeWithSecretInputs as (opts: unknown) => Promise<unknown>
+        actual.resolveGatewayProbeAuthSafeWithSecretInputs as (opts: any) => Promise<any>
       )(opts);
     },
   };
@@ -213,11 +213,11 @@ vi.mock("../../infra/tailnet.js", () => ({
 }));
 
 vi.mock("../../infra/tls/gateway.js", () => ({
-  loadGatewayTlsRuntime: (cfg: unknown) => loadGatewayTlsRuntime(cfg),
+  loadGatewayTlsRuntime: (cfg: any) => loadGatewayTlsRuntime(cfg),
 }));
 
 vi.mock("./probe.js", () => ({
-  probeGatewayStatus: (opts: unknown) => callGatewayStatusProbe(opts),
+  probeGatewayStatus: (opts: any) => callGatewayStatusProbe(opts),
 }));
 
 vi.mock("../../plugins/installed-plugin-index-record-reader.js", () => ({
@@ -229,10 +229,10 @@ vi.mock("../../plugins/installed-plugin-index-record-reader.js", () => ({
 }));
 
 vi.mock("./restart-health.js", () => ({
-  inspectGatewayRestart: (opts: unknown) => inspectGatewayRestart(opts),
+  inspectGatewayRestart: (opts: any) => inspectGatewayRestart(opts),
 }));
 
-function callArg(mock: { mock: { calls: unknown[][] } }, index = 0): unknown {
+function callArg(mock: { mock: { calls: any[][] } }, index = 0): any {
   const call = mock.mock.calls[index];
   if (!call) {
     throw new Error(`Expected mock call ${index}`);
@@ -372,7 +372,7 @@ describe("gatherDaemonStatus", () => {
     });
 
     const probeInput = callArg(callGatewayStatusProbe) as {
-      config?: unknown;
+      config?: any;
       preauthHandshakeTimeoutMs?: number;
       timeoutMs?: number;
     };

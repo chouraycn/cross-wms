@@ -63,7 +63,7 @@ const toolsTestState = vi.hoisted(() => {
 
   return {
     resolveToolsImpl: defaultResolveTools,
-    resolveToolsMock: vi.fn((..._args: unknown[]) => defaultResolveTools()),
+    resolveToolsMock: vi.fn((..._args: any[]) => defaultResolveTools()),
     threadingContext: {
       currentChannelId: "channel-123",
       currentMessageId: "message-456",
@@ -83,7 +83,7 @@ vi.mock("../../agents/agent-scope.js", async () => {
 });
 
 vi.mock("../../agents/tools-effective-inventory.js", () => ({
-  resolveEffectiveToolInventory: (...args: unknown[]) => toolsTestState.resolveToolsMock(...args),
+  resolveEffectiveToolInventory: (...args: any[]) => toolsTestState.resolveToolsMock(...args),
 }));
 
 vi.mock("./agent-runner-utils.js", () => ({
@@ -99,7 +99,7 @@ let handleToolsCommandImpl: typeof import("./commands-info.js").handleToolsComma
 
 async function loadToolsHarness(options?: { resolveTools?: () => EffectiveToolInventoryResult }) {
   toolsTestState.resolveToolsImpl = options?.resolveTools ?? (() => makeDefaultInventory());
-  toolsTestState.resolveToolsMock.mockImplementation((..._args: unknown[]) =>
+  toolsTestState.resolveToolsMock.mockImplementation((..._args: any[]) =>
     toolsTestState.resolveToolsImpl(),
   );
 
@@ -117,12 +117,12 @@ function buildConfig() {
   } as OpenClawConfig;
 }
 
-function resolveToolsArg(resolveToolsMock: { mock: { calls: unknown[][] } }, index = 0) {
+function resolveToolsArg(resolveToolsMock: { mock: { calls: any[][] } }, index = 0) {
   const [arg] = resolveToolsMock.mock.calls[index] ?? [];
   if (!arg || typeof arg !== "object") {
     throw new Error(`expected resolve tools call ${index + 1}`);
   }
-  return arg as Record<string, unknown>;
+  return arg as Record<string, any>;
 }
 
 describe("handleToolsCommand", () => {

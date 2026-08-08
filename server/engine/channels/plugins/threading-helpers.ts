@@ -10,7 +10,7 @@ export interface ChannelThread {
   createdAt: number;
   updatedAt: number;
   messageCount: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface ThreadResolutionResult {
@@ -28,7 +28,7 @@ export function createThread(params: {
   accountId?: AccountId;
   parentMessageId?: string;
   title?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }): ChannelThread {
   const now = Date.now();
   const thread: ChannelThread = {
@@ -172,7 +172,7 @@ export function createTopLevelChannelReplyToModeResolver(channelId: string): Rep
  * Creates a resolver that reads reply-to mode from account-scoped config.
  */
 export function createScopedAccountReplyToModeResolver<TAccount>(params: {
-  resolveAccount: (cfg: unknown, accountId?: string | null) => TAccount;
+  resolveAccount: (cfg: any, accountId?: string | null) => TAccount;
   resolveReplyToMode: (
     account: TAccount,
     chatType?: string | null,

@@ -48,7 +48,7 @@ function resolveResetTargetAccountId(params: {
   }
 
   const channelCfg = (
-    params.cfg.channels as Record<string, { defaultAccount?: unknown } | undefined>
+    params.cfg.channels as Record<string, { defaultAccount?: any } | undefined>
   )[params.channel];
   const configuredDefault = channelCfg?.defaultAccount;
   return normalizeOptionalString(configuredDefault) ?? DEFAULT_ACCOUNT_ID;

@@ -17,9 +17,9 @@ function mergeChannelPluginSection<T>(
     typeof overrideValue === "object"
   ) {
     const merged = {
-      ...(baseValue as Record<string, unknown>),
+      ...(baseValue as Record<string, any>),
     };
-    for (const [key, value] of Object.entries(overrideValue as Record<string, unknown>)) {
+    for (const [key, value] of Object.entries(overrideValue as Record<string, any>)) {
       if (value !== undefined) {
         merged[key] = value;
       }
@@ -59,18 +59,18 @@ export type BundledRuntimeChannelRegistration = {
 };
 
 export function resolveBundledRuntimeChannelRegistration(
-  moduleExport: unknown,
+  moduleExport: any,
 ): BundledRuntimeChannelRegistration {
   const resolved = unwrapDefaultModuleExport(moduleExport);
   if (!resolved || typeof resolved !== "object") {
     return {};
   }
   const entryRecord = resolved as {
-    kind?: unknown;
-    id?: unknown;
-    loadChannelPlugin?: unknown;
-    loadChannelSecrets?: unknown;
-    setChannelRuntime?: unknown;
+    kind?: any;
+    id?: any;
+    loadChannelPlugin?: any;
+    loadChannelSecrets?: any;
+    setChannelRuntime?: any;
   };
   if (
     entryRecord.kind !== "bundled-channel-entry" ||
@@ -101,7 +101,7 @@ export function loadBundledRuntimeChannelPlugin(params: {
   registration: BundledRuntimeChannelRegistration;
 }): {
   plugin?: ChannelPlugin;
-  loadError?: unknown;
+  loadError?: any;
 } {
   if (typeof params.registration.loadChannelPlugin !== "function") {
     return {};
@@ -124,23 +124,23 @@ export function loadBundledRuntimeChannelPlugin(params: {
   }
 }
 
-export function resolveSetupChannelRegistration(moduleExport: unknown): {
+export function resolveSetupChannelRegistration(moduleExport: any): {
   plugin?: ChannelPlugin;
   setChannelRuntime?: (runtime: PluginRuntime) => void;
   registerSetupRuntime?: (api: OpenClawPluginApi) => void;
   usesBundledSetupContract?: boolean;
-  loadError?: unknown;
+  loadError?: any;
 } {
   const resolved = unwrapDefaultModuleExport(moduleExport);
   if (!resolved || typeof resolved !== "object") {
     return {};
   }
   const setupEntryRecord = resolved as {
-    kind?: unknown;
-    loadSetupPlugin?: unknown;
-    loadSetupSecrets?: unknown;
-    setChannelRuntime?: unknown;
-    registerSetupRuntime?: unknown;
+    kind?: any;
+    loadSetupPlugin?: any;
+    loadSetupSecrets?: any;
+    setChannelRuntime?: any;
+    registerSetupRuntime?: any;
   };
   if (
     setupEntryRecord.kind === "bundled-channel-setup-entry" &&
@@ -184,8 +184,8 @@ export function resolveSetupChannelRegistration(moduleExport: unknown): {
     }
   }
   const setup = resolved as {
-    plugin?: unknown;
-    setChannelRuntime?: unknown;
+    plugin?: any;
+    setChannelRuntime?: any;
   };
   if (!setup.plugin || typeof setup.plugin !== "object") {
     return {};

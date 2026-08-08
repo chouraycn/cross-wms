@@ -13,11 +13,11 @@ export type ProxyValidationApnsCheckResult = unknown;
 export type ProxyValidationApnsCheck = unknown;
 export type ResolveProxyValidationConfigOptions = unknown;
 export type RunProxyValidationOptions = unknown;
-export function resolveProxyValidationConfig(...args: unknown[]): unknown {
+export function resolveProxyValidationConfig(...args: any[]): any {
   return undefined;
 }
-export function runProxyValidation(...args: unknown[]): unknown {
+export function runProxyValidation(...args: any[]): any {
   return undefined;
 }
-export const DEFAULT_PROXY_VALIDATION_ALLOWED_URLS: unknown = undefined as unknown;
-export const DEFAULT_PROXY_VALIDATION_APNS_AUTHORITY: unknown = undefined as unknown;
+export const DEFAULT_PROXY_VALIDATION_ALLOWED_URLS: any = undefined as any;
+export const DEFAULT_PROXY_VALIDATION_APNS_AUTHORITY: any = undefined as any;

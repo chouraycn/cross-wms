@@ -17,7 +17,7 @@ export interface StreamingEvent {
   accountId?: AccountId;
   conversationId?: string;
   type: StreamingEventType;
-  data?: unknown;
+  data?: any;
   delta?: string;
   token?: string;
   timestamp: number;

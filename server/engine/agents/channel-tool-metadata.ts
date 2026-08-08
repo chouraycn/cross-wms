@@ -10,7 +10,7 @@
 type ChannelAgentTool = {
   name: string;
   description?: string;
-  schema?: unknown;
+  schema?: any;
 };
 
 type ChannelAgentToolMeta = {

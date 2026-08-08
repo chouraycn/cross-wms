@@ -4,15 +4,15 @@
  * 降级实现：提供 compaction 原因解析，不再抛出 stub 错误。
  */
 
-export function resolveCompactionFailureReason(_params: unknown): string {
+export function resolveCompactionFailureReason(_params: any): string {
   return "unknown";
 }
 
-export function classifyCompactionReason(_params: unknown): string {
+export function classifyCompactionReason(_params: any): string {
   return "unknown";
 }
 
-export function formatUnknownCompactionReasonDetail(_params: unknown): string {
+export function formatUnknownCompactionReasonDetail(_params: any): string {
   return "";
 }
 

@@ -35,7 +35,7 @@ export function buildBatchHeaders(
 
 const jsonlEncoder = new TextEncoder();
 
-function estimateJsonlLineBytes(request: unknown): number {
+function estimateJsonlLineBytes(request: any): number {
   return jsonlEncoder.encode(JSON.stringify(request) ?? "").byteLength;
 }
 

@@ -65,7 +65,7 @@ vi.mock("./chat.js", () => ({
 
 const { skillsHandlers } = await import("./skills.js");
 
-function callHandler(method: string, params: Record<string, unknown>) {
+function callHandler(method: string, params: Record<string, any>) {
   return callGatewayHandler(skillsHandlers, method, params);
 }
 
@@ -234,8 +234,8 @@ describe("skills proposal gateway handlers", () => {
     });
     expect(mocks.chatSend).toHaveBeenCalledTimes(1);
     const forwarded = mocks.chatSend.mock.calls[0]?.[0] as {
-      params?: Record<string, unknown>;
-      req?: { method?: string; params?: Record<string, unknown> };
+      params?: Record<string, any>;
+      req?: { method?: string; params?: Record<string, any> };
     };
     expect(forwarded.req?.method).toBe("chat.send");
     expect(forwarded.params).toMatchObject({

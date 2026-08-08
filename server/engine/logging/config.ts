@@ -59,7 +59,7 @@ export function readLoggingConfig(): LoggerSettings | undefined {
   }
 }
 
-export function resolveMaxLogFileBytes(raw: unknown): number {
+export function resolveMaxLogFileBytes(raw: any): number {
   if (typeof raw === 'number' && Number.isFinite(raw) && raw > 0) {
     return Math.floor(raw);
   }

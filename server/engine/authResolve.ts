@@ -38,7 +38,7 @@ export interface GatewayAuthConfig {
   token?: string;
   password?: string;
   allowTailscale?: boolean;
-  rateLimit?: Record<string, unknown>;
+  rateLimit?: Record<string, any>;
   trustedProxy?: GatewayTrustedProxyConfig;
 }
 

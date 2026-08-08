@@ -99,8 +99,8 @@ function supportsMultimodalFunctionResponse(modelId: string): boolean {
 export type GeminiPart =
   | { text: string; thought?: boolean; thoughtSignature?: string }
   | { inlineData: { mimeType: string; data: string } }
-  | { functionCall: { name: string; args: Record<string, unknown>; id?: string }; thoughtSignature?: string }
-  | { functionResponse: { name: string; response: Record<string, unknown> } };
+  | { functionCall: { name: string; args: Record<string, any>; id?: string }; thoughtSignature?: string }
+  | { functionResponse: { name: string; response: Record<string, any> } };
 
 export type GeminiContent = {
   role: "user" | "model";
@@ -238,7 +238,7 @@ export function convertMessages(
           ? "(see attached image)"
           : "";
 
-      const responseObj: Record<string, unknown> = msg.isError
+      const responseObj: Record<string, any> = msg.isError
         ? { error: responseValue }
         : { output: responseValue };
 
@@ -309,7 +309,7 @@ export function convertSystemInstruction(
   return sanitizeSurrogates(stripSystemPromptCacheBoundary(context.systemPrompt) as string);
 }
 
-export function convertTools(tools: Tool[]): Array<{ functionDeclarations: Array<{ name: string; description: string; parameters: Record<string, unknown> }> }> {
+export function convertTools(tools: Tool[]): Array<{ functionDeclarations: Array<{ name: string; description: string; parameters: Record<string, any> }> }> {
   if (tools.length === 0) {
     return [];
   }
@@ -318,7 +318,7 @@ export function convertTools(tools: Tool[]): Array<{ functionDeclarations: Array
       functionDeclarations: tools.map((tool) => ({
         name: tool.name,
         description: tool.description,
-        parameters: tool.parameters as Record<string, unknown>,
+        parameters: tool.parameters as Record<string, any>,
       })),
     },
   ];
@@ -387,8 +387,8 @@ export function resolveGoogleThinkingConfig(
 export function buildGoogleGenerationConfig(
   model: Model<GoogleApiType>,
   options?: GoogleProviderOptions,
-): Record<string, unknown> {
-  const config: Record<string, unknown> = {};
+): Record<string, any> {
+  const config: Record<string, any> = {};
 
   if (options?.temperature !== undefined) {
     config.temperature = options.temperature;

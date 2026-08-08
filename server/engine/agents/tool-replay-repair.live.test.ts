@@ -203,7 +203,7 @@ function syntheticToolResultText(message: AgentMessage): string | undefined {
   if (message.role !== "toolResult") {
     return undefined;
   }
-  const first = message.content[0] as { type?: unknown; text?: unknown } | undefined;
+  const first = message.content[0] as { type?: any; text?: any } | undefined;
   return first?.type === "text" && typeof first.text === "string" ? first.text : undefined;
 }
 
@@ -336,7 +336,7 @@ describeLive("tool replay repair live", () => {
 
         const text = responseText(response.content);
         const errorMessage =
-          typeof (response as { errorMessage?: unknown }).errorMessage === "string"
+          typeof (response as { errorMessage?: any }).errorMessage === "string"
             ? ((response as { errorMessage?: string }).errorMessage ?? "")
             : "";
         if (errorMessage && isKnownLiveBlocker(errorMessage)) {
@@ -419,7 +419,7 @@ describeLive("tool replay repair live", () => {
 
         const text = responseText(response.content);
         const errorMessage =
-          typeof (response as { errorMessage?: unknown }).errorMessage === "string"
+          typeof (response as { errorMessage?: any }).errorMessage === "string"
             ? ((response as { errorMessage?: string }).errorMessage ?? "")
             : "";
         if (errorMessage && isKnownLiveBlocker(errorMessage)) {

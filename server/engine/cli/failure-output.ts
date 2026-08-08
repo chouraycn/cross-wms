@@ -19,7 +19,7 @@ import { formatCliCommand } from "./command-format.js";
  * 降级实现：openclaw 的 `infra/errors.js` 中导出此函数；cross-wms 未导出。
  * 这里直接复制原实现，依赖 cross-wms 已有的 `logging/redact.js` 与 `infra/errors.js`。
  */
-function formatUncaughtError(err: unknown): string {
+function formatUncaughtError(err: any): string {
   if (extractErrorCode(err) === "INVALID_CONFIG") {
     return formatErrorMessage(err);
   }
@@ -32,7 +32,7 @@ function formatUncaughtError(err: unknown): string {
 
 type FormatCliFailureOptions = {
   title: string;
-  error: unknown;
+  error: any;
   argv?: string[];
   env?: NodeJS.ProcessEnv;
   includeDoctorHint?: boolean;

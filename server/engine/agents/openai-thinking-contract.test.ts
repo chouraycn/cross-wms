@@ -165,9 +165,9 @@ async function captureProviderPayload<
     options?: SimpleStreamOptions,
   ) => ReturnType<StreamFn>;
   options: SimpleStreamOptions;
-}): Promise<Record<string, unknown>> {
+}): Promise<Record<string, any>> {
   // Stop at onPayload so transport serialization can be asserted without HTTP.
-  const payloadPromise = new Promise<Record<string, unknown>>((resolve, reject) => {
+  const payloadPromise = new Promise<Record<string, any>>((resolve, reject) => {
     const timeout = setTimeout(
       () => reject(new Error(`provider payload callback was not invoked for ${params.model.api}`)),
       1_000,
@@ -183,7 +183,7 @@ async function captureProviderPayload<
         ...params.options,
         onPayload: (payload) => {
           clearTimeout(timeout);
-          resolve(structuredClone(payload as Record<string, unknown>));
+          resolve(structuredClone(payload as Record<string, any>));
           throw new Error("stop after payload capture");
         },
       },

@@ -4,7 +4,7 @@
 export type ChannelCommandDefaults = {
   provider: string;
   commands?: Record<string, { defaultValue?: string; readOnly?: boolean }>;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 const SAFE_CHANNEL_ID_PATTERN = /^[a-z][a-z0-9_-]*$/;
@@ -15,7 +15,7 @@ export function isSafeManifestChannelId(channelId: string): boolean {
 }
 
 /** Reads a value from a record with string key normalization. */
-export function readOwnRecordValue(record: Record<string, unknown>, key: string): unknown {
+export function readOwnRecordValue(record: Record<string, any>, key: string): any {
   return record[key] ?? record[key.toLowerCase()] ?? undefined;
 }
 
@@ -30,7 +30,7 @@ export function normalizeChannelCommandDefaults(defaults: Partial<ChannelCommand
 /** Resolves read-only channel command defaults. */
 export function resolveReadOnlyChannelCommandDefaults(params: {
   provider: string;
-  cfg?: unknown;
+  cfg?: any;
 }): ChannelCommandDefaults {
   return { provider: params.provider?.trim() || "", commands: {} };
 }

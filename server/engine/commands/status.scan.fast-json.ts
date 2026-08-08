@@ -39,7 +39,7 @@ type StatusJsonScanPolicy = {
   resolveMemory: Parameters<typeof executeStatusScanFromOverview>[0]["resolveMemory"];
 };
 
-function hasMeaningfulStatusJsonChannelConfig(value: unknown): boolean {
+function hasMeaningfulStatusJsonChannelConfig(value: any): boolean {
   if (!isRecord(value)) {
     return false;
   }

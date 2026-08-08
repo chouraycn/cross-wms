@@ -80,22 +80,22 @@ vi.mock("../commands/channel-setup/plugin-install.js", () => ({
     mocks.loadChannelSetupPluginRegistrySnapshotForChannel,
 }));
 
-function expectFields(value: unknown, expected: Record<string, unknown>): void {
+function expectFields(value: any, expected: Record<string, any>): void {
   if (!value || typeof value !== "object") {
     throw new Error("expected fields object");
   }
-  const record = value as Record<string, unknown>;
+  const record = value as Record<string, any>;
   for (const [key, expectedValue] of Object.entries(expected)) {
     expect(record[key], key).toEqual(expectedValue);
   }
 }
 
-function readFirstCallArg(mock: ReturnType<typeof vi.fn>): Record<string, unknown> {
+function readFirstCallArg(mock: ReturnType<typeof vi.fn>): Record<string, any> {
   const [arg] = mock.mock.calls[0] ?? [];
   if (!arg || typeof arg !== "object") {
     throw new Error("expected first call argument object");
   }
-  return arg as Record<string, unknown>;
+  return arg as Record<string, any>;
 }
 
 function readFirstLogMessage(runtime: { log: ReturnType<typeof vi.fn> }): string {
@@ -105,11 +105,11 @@ function readFirstLogMessage(runtime: { log: ReturnType<typeof vi.fn> }): string
 
 function findCallArg(
   mock: ReturnType<typeof vi.fn>,
-  predicate: (arg: Record<string, unknown>) => boolean,
-): Record<string, unknown> | undefined {
+  predicate: (arg: Record<string, any>) => boolean,
+): Record<string, any> | undefined {
   for (const [arg] of mock.mock.calls) {
-    if (arg && typeof arg === "object" && predicate(arg as Record<string, unknown>)) {
-      return arg as Record<string, unknown>;
+    if (arg && typeof arg === "object" && predicate(arg as Record<string, any>)) {
+      return arg as Record<string, any>;
     }
   }
   return undefined;
@@ -142,7 +142,7 @@ describe("channel-auth", () => {
         nextConfig,
         baseHash,
       }: {
-        nextConfig: { plugins?: { installs?: Record<string, unknown> } };
+        nextConfig: { plugins?: { installs?: Record<string, any> } };
         baseHash?: string;
       }) => {
         if (

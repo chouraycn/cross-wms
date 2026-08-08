@@ -2,6 +2,6 @@
 
 export type ResolveMarkdownTableMode = unknown;
 export type ResolveMarkdownTableModeParams = unknown;
-export function resolveMarkdownTableMode(...args: unknown[]): unknown {
+export function resolveMarkdownTableMode(...args: any[]): any {
   return undefined;
 }

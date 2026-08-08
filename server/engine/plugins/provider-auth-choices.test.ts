@@ -39,7 +39,7 @@ vi.mock("../plugins/plugin-metadata-snapshot.js", () => ({
   resolvePluginMetadataSnapshot: pluginRegistryMocks.resolvePluginMetadataSnapshot,
 }));
 vi.mock("./official-external-plugin-catalog.js", () => ({
-  getOfficialExternalPluginCatalogManifest: (entry: { openclaw?: unknown }) => entry.openclaw,
+  getOfficialExternalPluginCatalogManifest: (entry: { openclaw?: any }) => entry.openclaw,
   listOfficialExternalProviderCatalogEntries:
     officialCatalogMocks.listOfficialExternalProviderCatalogEntries,
 }));
@@ -57,18 +57,18 @@ const {
 const { resetProviderAuthAliasMapCacheForTest, resolveProviderIdForAuth } =
   await import("../agents/provider-auth-aliases.js");
 
-function createManifestPlugin(id: string, providerAuthChoices: Array<Record<string, unknown>>) {
+function createManifestPlugin(id: string, providerAuthChoices: Array<Record<string, any>>) {
   return {
     id,
     providerAuthChoices,
   };
 }
 
-function createProviderAuthChoice(overrides: Record<string, unknown>) {
+function createProviderAuthChoice(overrides: Record<string, any>) {
   return overrides;
 }
 
-function setManifestPlugins(plugins: Array<Record<string, unknown>>) {
+function setManifestPlugins(plugins: Array<Record<string, any>>) {
   pluginRegistryMocks.loadPluginManifestRegistryForInstalledIndex.mockReturnValue({
     plugins,
   });
@@ -80,13 +80,13 @@ function setManifestPlugins(plugins: Array<Record<string, unknown>>) {
     manifestRegistry: { plugins },
   });
   pluginRegistryMocks.resolvePluginMetadataSnapshot.mockImplementation(
-    (params?: { pluginMetadataSnapshot?: unknown }) =>
+    (params?: { pluginMetadataSnapshot?: any }) =>
       params?.pluginMetadataSnapshot ?? pluginRegistryMocks.loadPluginMetadataSnapshot(params),
   );
 }
 
 function expectResolvedProviderAuthChoices(params: {
-  expectedFlattened: Array<Record<string, unknown>>;
+  expectedFlattened: Array<Record<string, any>>;
   resolvedProviderIds?: Record<string, string | undefined>;
   deprecatedChoiceIds?: Record<string, string | undefined>;
 }) {
@@ -101,7 +101,7 @@ function expectResolvedProviderAuthChoices(params: {
 
 function setSingleManifestProviderAuthChoices(
   pluginId: string,
-  providerAuthChoices: Array<Record<string, unknown>>,
+  providerAuthChoices: Array<Record<string, any>>,
 ) {
   setManifestPlugins([createManifestPlugin(pluginId, providerAuthChoices)]);
 }
@@ -125,7 +125,7 @@ describe("provider auth choice manifest helpers", () => {
     });
     pluginRegistryMocks.resolvePluginMetadataSnapshot.mockReset();
     pluginRegistryMocks.resolvePluginMetadataSnapshot.mockImplementation(
-      (params?: { pluginMetadataSnapshot?: unknown }) =>
+      (params?: { pluginMetadataSnapshot?: any }) =>
         params?.pluginMetadataSnapshot ?? pluginRegistryMocks.loadPluginMetadataSnapshot(params),
     );
     officialCatalogMocks.listOfficialExternalProviderCatalogEntries.mockReset();

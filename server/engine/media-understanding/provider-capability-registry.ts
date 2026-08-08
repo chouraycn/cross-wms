@@ -38,23 +38,23 @@ function resolveImageCapableConfigProviderIds(cfg?: OpenClawConfig): string[] {
   if (!cfg) {
     return [];
   }
-  const models = cfg.models as Record<string, unknown> | undefined;
+  const models = cfg.models as Record<string, any> | undefined;
   const providers =
     models && typeof models === "object"
-      ? (models as Record<string, unknown>).providers
+      ? (models as Record<string, any>).providers
       : undefined;
   if (!providers || typeof providers !== "object") {
     return [];
   }
   const providerIds: string[] = [];
-  for (const [providerKey, providerCfg] of Object.entries(providers as Record<string, unknown>)) {
+  for (const [providerKey, providerCfg] of Object.entries(providers as Record<string, any>)) {
     if (!providerKey?.trim()) {
       continue;
     }
     if (!providerCfg || typeof providerCfg !== "object") {
       continue;
     }
-    const providerModels = (providerCfg as Record<string, unknown>).models;
+    const providerModels = (providerCfg as Record<string, any>).models;
     if (!Array.isArray(providerModels)) {
       continue;
     }
@@ -62,8 +62,8 @@ function resolveImageCapableConfigProviderIds(cfg?: OpenClawConfig): string[] {
       (rawModel) =>
         rawModel &&
         typeof rawModel === "object" &&
-        Array.isArray((rawModel as Record<string, unknown>).input) &&
-        ((rawModel as Record<string, unknown>).input as unknown[]).includes("image"),
+        Array.isArray((rawModel as Record<string, any>).input) &&
+        ((rawModel as Record<string, any>).input as any[]).includes("image"),
     );
     if (hasImageCapable) {
       providerIds.push(normalizeMediaProviderId(providerKey));

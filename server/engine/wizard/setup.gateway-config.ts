@@ -22,14 +22,14 @@ export type ConfigureGatewayResult = {
   config: GatewayConfig;
 };
 
-function normalizeWizardTextInput(value: unknown): string {
+function normalizeWizardTextInput(value: any): string {
   if (typeof value === "number") {
     return String(value);
   }
   return typeof value === "string" ? value.trim() : "";
 }
 
-export function validateGatewayPortInput(value: unknown): string | undefined {
+export function validateGatewayPortInput(value: any): string | undefined {
   const port = Number(normalizeWizardTextInput(value));
   if (!Number.isInteger(port) || port < 1 || port > 65_535) {
     return "Port must be a number between 1 and 65535";
@@ -37,7 +37,7 @@ export function validateGatewayPortInput(value: unknown): string | undefined {
   return undefined;
 }
 
-export function validateGatewayPasswordInput(value: unknown): string | undefined {
+export function validateGatewayPasswordInput(value: any): string | undefined {
   const str = normalizeWizardTextInput(value);
   if (str.length < 8) {
     return "Password must be at least 8 characters";
@@ -45,7 +45,7 @@ export function validateGatewayPasswordInput(value: unknown): string | undefined
   return undefined;
 }
 
-export function validateIPv4AddressInput(value: unknown): string | undefined {
+export function validateIPv4AddressInput(value: any): string | undefined {
   const str = normalizeWizardTextInput(value);
   const parts = str.split(".");
   if (parts.length !== 4) {

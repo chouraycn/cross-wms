@@ -7,15 +7,15 @@
 
 /** Creates a runner that applies registered Codex app-server tool-result extensions. */
 export function createCodexAppServerToolResultExtensionRunner(
-  _ctx?: Record<string, unknown>,
-  _factories?: unknown[],
+  _ctx?: Record<string, any>,
+  _factories?: any[],
 ) {
   return {
     async applyToolResultExtensions(
-      event: Record<string, unknown>,
-    ): Promise<Record<string, unknown>> {
+      event: Record<string, any>,
+    ): Promise<Record<string, any>> {
       // Cross-wms does not have registered extension factories.
-      return event.result as Record<string, unknown>;
+      return event.result as Record<string, any>;
     },
   };
 }

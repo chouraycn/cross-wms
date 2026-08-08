@@ -11,6 +11,6 @@
  * 完整实现见 openclaw 源码。
  */
 
-export function classifyControlUiRequest(..._args: unknown[]): unknown {
+export function classifyControlUiRequest(..._args: any[]): any {
   return undefined;
 }

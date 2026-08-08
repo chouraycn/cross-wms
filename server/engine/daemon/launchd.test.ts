@@ -56,7 +56,7 @@ const state = vi.hoisted(() => ({
 }));
 const launchdRestartHandoffState = vi.hoisted(() => ({
   scheduleDetachedLaunchdRestartHandoff: vi.fn<
-    (_params: unknown) => { ok: boolean; pid?: number; detail?: string }
+    (_params: any) => { ok: boolean; pid?: number; detail?: string }
   >(() => ({ ok: true, pid: 7331 })),
 }));
 const cleanStaleGatewayProcessesSync = vi.hoisted(() =>
@@ -120,7 +120,7 @@ async function runStopLaunchAgentWithFakeTimers(args: Parameters<typeof stopLaun
   try {
     const stopPromise = stopLaunchAgent(args)
       .then(() => ({ ok: true as const }))
-      .catch((error: unknown) => ({ ok: false as const, error }));
+      .catch((error: any) => ({ ok: false as const, error }));
     await vi.runAllTimersAsync();
     const result = await stopPromise;
     if (!result.ok) {
@@ -252,7 +252,7 @@ vi.mock("./exec-file.js", () => ({
 }));
 
 vi.mock("./launchd-restart-handoff.js", () => ({
-  scheduleDetachedLaunchdRestartHandoff: (params: unknown) =>
+  scheduleDetachedLaunchdRestartHandoff: (params: any) =>
     launchdRestartHandoffState.scheduleDetachedLaunchdRestartHandoff(params),
 }));
 

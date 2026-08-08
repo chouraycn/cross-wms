@@ -12,7 +12,7 @@ describe("stableStringify", () => {
 
   it("marks true circular references without collapsing repeated references", () => {
     const shared = { value: 1 };
-    const root: Record<string, unknown> = { first: shared, second: shared };
+    const root: Record<string, any> = { first: shared, second: shared };
     root.self = root;
 
     expect(stableStringify(root)).toBe(
@@ -22,7 +22,7 @@ describe("stableStringify", () => {
 
   it("handles circular arrays without treating later siblings as circular", () => {
     const shared = { value: "same" };
-    const items: unknown[] = [shared, shared];
+    const items: any[] = [shared, shared];
     items.push(items);
 
     expect(stableStringify(items)).toBe('[{"value":"same"},{"value":"same"},"[Circular]"]');

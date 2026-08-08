@@ -7,10 +7,10 @@
  */
 
 export type ResolveAttemptTrajectoryTerminalParams = unknown;
-export function resolveTerminalAssistantTexts(..._args: unknown[]): unknown {
+export function resolveTerminalAssistantTexts(..._args: any[]): any {
   return undefined;
 }
-export function resolveAttemptTrajectoryTerminal(..._args: unknown[]): unknown {
+export function resolveAttemptTrajectoryTerminal(..._args: any[]): any {
   return undefined;
 }
-export const NON_DELIVERABLE_TERMINAL_TURN_REASON: unknown = undefined;
+export const NON_DELIVERABLE_TERMINAL_TURN_REASON: any = undefined;

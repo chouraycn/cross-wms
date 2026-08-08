@@ -6,18 +6,18 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function makeOverflowError(..._args: unknown[]): unknown {
+export function makeOverflowError(..._args: any[]): any {
   return undefined;
 }
-export function makeCompactionSuccess(..._args: unknown[]): unknown {
+export function makeCompactionSuccess(..._args: any[]): any {
   return undefined;
 }
-export function makeAttemptResult(..._args: unknown[]): unknown {
+export function makeAttemptResult(..._args: any[]): any {
   return undefined;
 }
-export function mockOverflowRetrySuccess(..._args: unknown[]): unknown {
+export function mockOverflowRetrySuccess(..._args: any[]): any {
   return undefined;
 }
-export function queueOverflowAttemptWithOversizedToolOutput(..._args: unknown[]): unknown {
+export function queueOverflowAttemptWithOversizedToolOutput(..._args: any[]): any {
   return undefined;
 }

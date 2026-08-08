@@ -5,14 +5,14 @@
  * Identifies mutating tool calls and file targets so retry/recovery logic can reason about side effects.
  */
 
-function normalizeLowercaseStringOrEmpty(value: unknown): string {
+function normalizeLowercaseStringOrEmpty(value: any): string {
   if (typeof value !== "string") {
     return "";
   }
   return value.toLowerCase();
 }
 
-function normalizeOptionalLowercaseString(value: unknown): string | undefined {
+function normalizeOptionalLowercaseString(value: any): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }
@@ -20,11 +20,11 @@ function normalizeOptionalLowercaseString(value: unknown): string | undefined {
   return normalized || undefined;
 }
 
-function asOptionalObjectRecord(value: unknown): Record<string, unknown> | undefined {
+function asOptionalObjectRecord(value: any): Record<string, any> | undefined {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     return undefined;
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 const MUTATING_TOOL_NAMES = new Set([
@@ -163,12 +163,12 @@ type ToolActionRef = {
   fileTarget?: FileTarget;
 };
 
-function normalizeActionName(value: unknown): string | undefined {
+function normalizeActionName(value: any): string | undefined {
   const normalized = normalizeOptionalLowercaseString(value)?.replace(/[\s-]+/g, "_");
   return normalized || undefined;
 }
 
-function readShellCommand(record: Record<string, unknown> | undefined): string | undefined {
+function readShellCommand(record: Record<string, any> | undefined): string | undefined {
   const command = record?.command ?? record?.cmd;
   if (typeof command !== "string") {
     return undefined;
@@ -317,7 +317,7 @@ function isPlainReadOnlyShellCommand(command: string | undefined): boolean {
   return false;
 }
 
-function normalizeFingerprintValue(value: unknown): string | undefined {
+function normalizeFingerprintValue(value: any): string | undefined {
   if (typeof value === "string") {
     const normalized = value.trim();
     return normalized ? normalizeLowercaseStringOrEmpty(normalized) : undefined;
@@ -330,7 +330,7 @@ function normalizeFingerprintValue(value: unknown): string | undefined {
 
 function appendFingerprintAlias(
   parts: string[],
-  record: Record<string, unknown> | undefined,
+  record: Record<string, any> | undefined,
   label: string,
   keys: string[],
 ): boolean {
@@ -358,7 +358,7 @@ export function isLikelyMutatingToolName(toolName: string): boolean {
   );
 }
 
-export function isMutatingToolCall(toolName: string, args: unknown): boolean {
+export function isMutatingToolCall(toolName: string, args: any): boolean {
   const normalized = normalizeLowercaseStringOrEmpty(toolName);
   const record = asOptionalObjectRecord(args);
   const action = normalizeActionName(record?.action);
@@ -402,7 +402,7 @@ export function isMutatingToolCall(toolName: string, args: unknown): boolean {
   }
 }
 
-export function isReplaySafeToolCall(toolName: string, args: unknown): boolean {
+export function isReplaySafeToolCall(toolName: string, args: any): boolean {
   const normalized = normalizeLowercaseStringOrEmpty(toolName);
   const record = asOptionalObjectRecord(args);
   const action = normalizeActionName(record?.action);
@@ -442,7 +442,7 @@ export function isReplaySafeToolCall(toolName: string, args: unknown): boolean {
 
 function buildToolActionFingerprint(
   toolName: string,
-  args: unknown,
+  args: any,
   meta?: string,
 ): string | undefined {
   if (!isMutatingToolCall(toolName, args)) {
@@ -492,7 +492,7 @@ function isFileMutatingToolName(rawName: string): boolean {
 }
 
 function readArgFingerprintValue(
-  record: Record<string, unknown> | undefined,
+  record: Record<string, any> | undefined,
   keys: readonly string[],
 ): string | undefined {
   if (!record) {
@@ -507,7 +507,7 @@ function readArgFingerprintValue(
   return undefined;
 }
 
-function extractFileTarget(toolName: string, args: unknown): FileTarget | undefined {
+function extractFileTarget(toolName: string, args: any): FileTarget | undefined {
   if (!isFileMutatingToolName(toolName)) {
     return undefined;
   }
@@ -529,7 +529,7 @@ function fileTargetsEqual(a: FileTarget, b: FileTarget): boolean {
 
 export function buildToolMutationState(
   toolName: string,
-  args: unknown,
+  args: any,
   meta?: string,
 ): ToolMutationState {
   const actionFingerprint = buildToolActionFingerprint(toolName, args, meta);

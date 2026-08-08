@@ -124,7 +124,7 @@ const connectNodeClient = async (params: {
   clientName?: GatewayClientName;
   instanceId?: string;
   displayName?: string;
-  onEvent?: (evt: { event?: string; payload?: unknown }) => void;
+  onEvent?: (evt: { event?: string; payload?: any }) => void;
 }) => {
   const token = process.env.OPENCLAW_GATEWAY_TOKEN;
   if (!token) {
@@ -318,7 +318,7 @@ function createInvokeCapture() {
         resolveInvoke = resolve;
       });
     },
-    onEvent: (evt: { event?: string; payload?: unknown }) => {
+    onEvent: (evt: { event?: string; payload?: any }) => {
       if (evt.event === "node.invoke.request") {
         const payload = evt.payload as { id?: string; nodeId?: string };
         if (resolveInvoke) {

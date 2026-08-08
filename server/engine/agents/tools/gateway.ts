@@ -40,7 +40,7 @@ export type GatewayCallOptions = {
 type GatewayOverrideTarget = "local" | "remote";
 
 /** Reads common gateway options from tool parameters while preserving explicit token whitespace. */
-export function readGatewayCallOptions(params: Record<string, unknown>): GatewayCallOptions {
+export function readGatewayCallOptions(params: Record<string, any>): GatewayCallOptions {
   return {
     gatewayUrl: readStringParam(params, "gatewayUrl", { trim: false }),
     gatewayToken: readStringParam(params, "gatewayToken", { trim: false }),
@@ -268,10 +268,10 @@ function resolveApprovalRequesterDeviceIdentityForGatewayTool(params: {
 /**
  * Calls a gateway method as the agent-tool backend client with least-privilege scopes.
  */
-export async function callGatewayTool<T = Record<string, unknown>>(
+export async function callGatewayTool<T = Record<string, any>>(
   method: string,
   opts: GatewayCallOptions,
-  params?: unknown,
+  params?: any,
   extra?: { expectFinal?: boolean; scopes?: OperatorScope[] },
 ) {
   const gateway = resolveGatewayOptions(opts);

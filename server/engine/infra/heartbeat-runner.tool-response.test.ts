@@ -78,7 +78,7 @@ describe("runHeartbeatOnce heartbeat response tool", () => {
     getReplyFromConfig: HeartbeatDeps["getReplyFromConfig"];
   }): HeartbeatDeps {
     return {
-      telegram: params.sendTelegram as unknown,
+      telegram: params.sendTelegram as any,
       getQueueSize: () => 0,
       nowMs: () => 0,
       getReplyFromConfig: params.getReplyFromConfig,
@@ -103,7 +103,7 @@ describe("runHeartbeatOnce heartbeat response tool", () => {
     ]);
   }
 
-  function replyCall(replySpy: ReturnType<typeof vi.fn>): unknown[] {
+  function replyCall(replySpy: ReturnType<typeof vi.fn>): any[] {
     const call = replySpy.mock.calls[0];
     if (!call) {
       throw new Error("Expected reply call");

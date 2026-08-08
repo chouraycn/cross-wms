@@ -160,7 +160,7 @@ describe("CronService - session reaper runs in finally block (#31946)", () => {
 
       const updatedSessionStore = JSON.parse(
         await fs.readFile(sessionStorePath, "utf-8"),
-      ) as Record<string, unknown>;
+      ) as Record<string, any>;
       expect(updatedSessionStore).toStrictEqual({});
       expect(state.running).toBe(false);
     });

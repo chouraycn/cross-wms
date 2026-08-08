@@ -65,7 +65,7 @@ export const buildMinimaxHeaders: ProviderHeaderBuilder = (ctx) =>
  */
 export const buildMinimaxRequestBody: ProviderRequestBodyBuilder = (ctx) => {
   const { model, options } = ctx;
-  const body: Record<string, unknown> = {
+  const body: Record<string, any> = {
     model: model.id,
     messages: [],
     // MiniMax 默认配置
@@ -128,7 +128,7 @@ export const parseMinimaxStreamChunk: ProviderStreamChunkParser = (chunk) => {
       events.push({ type: 'text', content: choice.delta.content });
     }
     if (choice.delta?.function_call?.name) {
-      let args: Record<string, unknown> = {};
+      let args: Record<string, any> = {};
       try {
         args = choice.delta.function_call.arguments ? JSON.parse(choice.delta.function_call.arguments) : {};
       } catch {

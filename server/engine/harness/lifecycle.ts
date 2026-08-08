@@ -33,7 +33,7 @@ import type {
 interface RunCompletion {
   outcome: 'completed' | 'aborted' | 'blocked' | 'error';
   blockedBy?: string;
-  error?: unknown;
+  error?: any;
 }
 
 /** 解析运行完成状态 */

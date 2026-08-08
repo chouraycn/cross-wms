@@ -19,14 +19,14 @@ import {
   normalizeStringRecord,
 } from "./bundle-mcp-adapter-shared.js";
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
-async function readJsonObject(filePath: string): Promise<Record<string, unknown>> {
-  const raw = await tryReadJson<unknown>(filePath);
+async function readJsonObject(filePath: string): Promise<Record<string, any>> {
+  const raw = await tryReadJson<any>(filePath);
   return raw && typeof raw === "object" && !Array.isArray(raw)
-    ? ({ ...raw } as Record<string, unknown>)
+    ? ({ ...raw } as Record<string, any>)
     : {};
 }
 
@@ -47,8 +47,8 @@ function resolveEnvPlaceholder(
 function normalizeGeminiServerConfig(
   server: BundleMcpServerConfig,
   inheritedEnv: Record<string, string> | undefined,
-): Record<string, unknown> {
-  const next: Record<string, unknown> = {};
+): Record<string, any> {
+  const next: Record<string, any> = {};
   applyCommonServerConfig(next, server);
   if (typeof server.type === "string") {
     next.type = server.type;
@@ -94,7 +94,7 @@ export async function writeGeminiSystemSettings(
       allowed: Object.keys(normalizedConfig.mcpServers),
     },
     mcpServers: normalizedConfig.mcpServers,
-  }) as Record<string, unknown>;
+  }) as Record<string, any>;
   if (!isRecord(settings.mcp) || !isRecord(settings.mcpServers)) {
     throw new Error("Gemini MCP settings merge produced an invalid object");
   }

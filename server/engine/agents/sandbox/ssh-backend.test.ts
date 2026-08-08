@@ -72,11 +72,11 @@ function createSession() {
   };
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object") {
     throw new Error(`expected ${label}`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 function requireMockRecordArg(mock: ReturnType<typeof vi.fn>, callIndex: number, label: string) {

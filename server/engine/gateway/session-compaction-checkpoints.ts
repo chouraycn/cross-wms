@@ -241,7 +241,7 @@ async function readSessionHeaderFromTranscriptAsync(
     if (!firstLine) {
       return null;
     }
-    const parsed = JSON.parse(firstLine) as { type?: unknown; id?: unknown; cwd?: unknown };
+    const parsed = JSON.parse(firstLine) as { type?: any; id?: any; cwd?: any };
     if (parsed.type !== "session" || typeof parsed.id !== "string" || !parsed.id.trim()) {
       return null;
     }
@@ -262,13 +262,13 @@ async function readSessionIdFromTranscriptHeaderAsync(sessionFile: string): Prom
   return (await readSessionHeaderFromTranscriptAsync(sessionFile))?.id ?? null;
 }
 
-function parseTranscriptLine(line: string): Record<string, unknown> | null {
+function parseTranscriptLine(line: string): Record<string, any> | null {
   try {
-    const parsed = JSON.parse(line) as unknown;
+    const parsed = JSON.parse(line) as any;
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
       return null;
     }
-    return parsed as Record<string, unknown>;
+    return parsed as Record<string, any>;
   } catch {
     return null;
   }
@@ -284,15 +284,15 @@ async function readTranscriptEntriesForForkAsync(params: {
   try {
     for await (const line of streamSessionTranscriptLines(params.sessionFile)) {
       try {
-        const parsed = JSON.parse(line) as unknown;
+        const parsed = JSON.parse(line) as any;
         if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
           continue;
         }
         entries.push(parsed as SessionFileEntry);
         if (
           stopAfterEntryId &&
-          (parsed as { type?: unknown; id?: unknown }).type !== "session" &&
-          (parsed as { id?: unknown }).id === stopAfterEntryId
+          (parsed as { type?: any; id?: any }).type !== "session" &&
+          (parsed as { id?: any }).id === stopAfterEntryId
         ) {
           foundStopEntry = true;
           break;
@@ -304,7 +304,7 @@ async function readTranscriptEntriesForForkAsync(params: {
   } catch {
     return null;
   }
-  const firstEntry = entries[0] as { type?: unknown; id?: unknown } | undefined;
+  const firstEntry = entries[0] as { type?: any; id?: any } | undefined;
   if (firstEntry?.type !== "session" || typeof firstEntry.id !== "string") {
     return null;
   }
@@ -323,7 +323,7 @@ function trimTranscriptEntriesThroughLeaf(
     return entries;
   }
   const leafIndex = entries.findIndex(
-    (entry, index) => index > 0 && (entry as { id?: unknown }).id === normalizedLeafId,
+    (entry, index) => index > 0 && (entry as { id?: any }).id === normalizedLeafId,
   );
   if (leafIndex < 1) {
     return null;
@@ -353,7 +353,7 @@ export async function readSessionLeafStateFromTranscriptAsync(
       const buffer = await readFileRangeAsync(fileHandle, readStart, readLength);
       const lines = buffer.toString("utf-8").split(/\r?\n/);
       const candidateLines = readStart > 0 ? lines.slice(1) : lines;
-      const records: Record<string, unknown>[] = [];
+      const records: Record<string, any>[] = [];
       let latestEntryId: string | undefined;
       for (const candidateLine of candidateLines) {
         const line = candidateLine.trim();
@@ -443,7 +443,7 @@ export async function forkCompactionCheckpointTranscriptAsync(params: {
     await fs.mkdir(sessionDir, { recursive: true });
     const lines = [JSON.stringify(header)];
     for (const entry of forkEntries) {
-      if ((entry as { type?: unknown }).type !== "session") {
+      if ((entry as { type?: any }).type !== "session") {
         lines.push(JSON.stringify(entry));
       }
     }

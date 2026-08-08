@@ -61,9 +61,9 @@ import {
 } from "./method-scopes.js";
 export type { GatewayConnectionDetails };
 
-export type GatewayRequestFunction = <T = Record<string, unknown>>(
+export type GatewayRequestFunction = <T = Record<string, any>>(
   method: string,
-  params?: unknown,
+  params?: any,
   opts?: GatewayClientRequestOptions,
 ) => Promise<T>;
 
@@ -74,7 +74,7 @@ type CallGatewayBaseOptions = {
   tlsFingerprint?: string;
   config?: OpenClawConfig;
   method: string;
-  params?: unknown;
+  params?: any;
   expectFinal?: boolean;
   timeoutMs?: number;
   signal?: AbortSignal;
@@ -210,7 +210,7 @@ export type GatewayClientRequestErrorJson = {
     type: "gateway_request_error";
     code: string;
     message: string;
-    details?: unknown;
+    details?: any;
     retryable: boolean;
     retryAfterMs?: number;
   };
@@ -225,7 +225,7 @@ function firstGatewayErrorLine(message: string): string {
   return message.split("\n", 1)[0]?.trim() || message;
 }
 
-export function formatGatewayTransportErrorJson(value: unknown): GatewayTransportErrorJson | null {
+export function formatGatewayTransportErrorJson(value: any): GatewayTransportErrorJson | null {
   if (!isGatewayTransportError(value)) {
     return null;
   }
@@ -253,16 +253,16 @@ export function formatGatewayTransportErrorJson(value: unknown): GatewayTranspor
 }
 
 export function formatGatewayClientRequestErrorJson(
-  value: unknown,
+  value: any,
 ): GatewayClientRequestErrorJson | null {
   if (!(value instanceof Error) || value.name !== "GatewayClientRequestError") {
     return null;
   }
   const requestError = value as Error & {
-    gatewayCode?: unknown;
-    details?: unknown;
-    retryable?: unknown;
-    retryAfterMs?: unknown;
+    gatewayCode?: any;
+    details?: any;
+    retryable?: any;
+    retryAfterMs?: any;
   };
   if (
     typeof requestError.gatewayCode !== "string" ||
@@ -291,7 +291,7 @@ export function formatGatewayClientRequestErrorJson(
   };
 }
 
-export function isGatewayTransportError(value: unknown): value is GatewayTransportError {
+export function isGatewayTransportError(value: any): value is GatewayTransportError {
   if (value instanceof GatewayTransportError) {
     return true;
   }
@@ -307,7 +307,7 @@ export function isGatewayTransportError(value: unknown): value is GatewayTranspo
 }
 
 export function isGatewayCredentialsRequiredError(
-  value: unknown,
+  value: any,
 ): value is GatewayCredentialsRequiredError {
   if (value instanceof GatewayCredentialsRequiredError) {
     return true;
@@ -320,7 +320,7 @@ export function isGatewayCredentialsRequiredError(
 }
 
 export function isGatewayExplicitAuthRequiredError(
-  value: unknown,
+  value: any,
 ): value is GatewayExplicitAuthRequiredError {
   return value instanceof Error && value.name === "GatewayExplicitAuthRequiredError";
 }
@@ -649,7 +649,7 @@ type ResolvedGatewayCallContext = {
 };
 
 function resolveGatewayCallTimeout(
-  timeoutValue: unknown,
+  timeoutValue: any,
   configuredHandshakeTimeoutMs?: number | null,
 ): {
   timeoutMs: number;
@@ -1082,7 +1082,7 @@ async function executeGatewayRequestWithScopes<T>(params: {
           }),
         );
       })
-      .catch((err: unknown) => {
+      .catch((err: any) => {
         if (settled) {
           return;
         }
@@ -1092,7 +1092,7 @@ async function executeGatewayRequestWithScopes<T>(params: {
   });
 }
 
-async function callGatewayWithScopes<T = Record<string, unknown>>(
+async function callGatewayWithScopes<T = Record<string, any>>(
   opts: CallGatewayBaseOptions,
   scopes: OperatorScope[] | undefined,
 ): Promise<T> {
@@ -1240,7 +1240,7 @@ export async function buildGatewayProbeConnectionDetails(
   };
 }
 
-export async function callGatewayCli<T = Record<string, unknown>>(
+export async function callGatewayCli<T = Record<string, any>>(
   opts: CallGatewayCliOptions,
 ): Promise<T> {
   const scopes = Array.isArray(opts.scopes)
@@ -1251,14 +1251,14 @@ export async function callGatewayCli<T = Record<string, unknown>>(
   return await callGatewayWithScopes(opts, scopes);
 }
 
-export async function callGatewayLeastPrivilege<T = Record<string, unknown>>(
+export async function callGatewayLeastPrivilege<T = Record<string, any>>(
   opts: CallGatewayBaseOptions,
 ): Promise<T> {
   const scopes = resolveLeastPrivilegeOperatorScopesForMethod(opts.method, opts.params);
   return await callGatewayWithScopes(opts, scopes);
 }
 
-export async function callGateway<T = Record<string, unknown>>(
+export async function callGateway<T = Record<string, any>>(
   opts: CallGatewayOptions,
 ): Promise<T> {
   const callerMode = opts.mode ?? GATEWAY_CLIENT_MODES.BACKEND;

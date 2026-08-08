@@ -51,7 +51,7 @@ import type { CommandHandler } from "./commands-types.js";
 import { AutoReplyConfigMutationError, setPluginEnabledFromCommand } from "./config-mutations.js";
 import { parsePluginsCommand } from "./plugins-commands.js";
 
-function renderJsonBlock(label: string, value: unknown): string {
+function renderJsonBlock(label: string, value: any): string {
   return `${label}\n\`\`\`json\n${JSON.stringify(value, null, 2)}\n\`\`\``;
 }
 
@@ -395,7 +395,7 @@ async function loadPluginCommandConfig(): Promise<
   }
   const writeOptions = selectInstallMutationWriteOptions(prepared.writeOptions);
   const { pluginMutation } = resolveInstallConfigMutationPreflights({
-    parsed: (snapshot.parsed ?? {}) as Record<string, unknown>,
+    parsed: (snapshot.parsed ?? {}) as Record<string, any>,
     snapshotPath: snapshot.path,
     writeOptions,
   });

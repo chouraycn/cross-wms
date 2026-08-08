@@ -40,7 +40,7 @@ function collectConfiguredSubagentTargetIds(cfg: OpenClawConfig): Set<string> {
 }
 
 function collectStaleAllowlistEntries(params: {
-  allowAgents: unknown;
+  allowAgents: any;
   pathLabel: string;
   configuredTargetIds: ReadonlySet<string>;
 }): StaleSubagentAllowlistHit[] {

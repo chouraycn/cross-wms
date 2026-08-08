@@ -111,7 +111,7 @@ export function buildBundledCapabilityRuntimeConfig(
   });
 }
 
-function resolvePluginModuleExport(moduleExport: unknown): {
+function resolvePluginModuleExport(moduleExport: any): {
   definition?: OpenClawPluginDefinition;
   register?: OpenClawPluginDefinition["register"];
 } {

@@ -24,7 +24,7 @@ async function readCachedClaudeCliCredentials(allowKeychainPrompt: boolean) {
 function createJwtWithExp(expSeconds: number): string {
   // Signature verification is out of scope; expiration extraction only needs a
   // syntactically valid JWT-like payload.
-  const encode = (value: Record<string, unknown>) =>
+  const encode = (value: Record<string, any>) =>
     Buffer.from(JSON.stringify(value)).toString("base64url");
   return `${encode({ alg: "RS256", typ: "JWT" })}.${encode({ exp: expSeconds })}.signature`;
 }
@@ -41,13 +41,13 @@ function mockClaudeCliCredentialRead() {
   );
 }
 
-function expectFields(value: unknown, expected: Record<string, unknown>): void {
+function expectFields(value: any, expected: Record<string, any>): void {
   // Keeps large credential objects readable while still asserting exact fields
   // relevant to the branch under test.
   if (!value || typeof value !== "object") {
     throw new Error("expected fields object");
   }
-  const record = value as Record<string, unknown>;
+  const record = value as Record<string, any>;
   for (const [key, expectedValue] of Object.entries(expected)) {
     expect(record[key], key).toEqual(expectedValue);
   }
@@ -194,7 +194,7 @@ describe("cli credentials", () => {
 
     const accountHash = "cli|";
 
-    execSyncMock.mockImplementation((command: unknown) => {
+    execSyncMock.mockImplementation((command: any) => {
       const cmd = String(command);
       expect(cmd).toContain("Codex Auth");
       expect(cmd).toContain(accountHash);
@@ -226,7 +226,7 @@ describe("cli credentials", () => {
     const fallbackExpiry = lastRefresh + 60 * 60 * 1000;
     const accountHash = "cli|";
 
-    execSyncMock.mockImplementation((command: unknown) => {
+    execSyncMock.mockImplementation((command: any) => {
       const cmd = String(command);
       expect(cmd).toContain("Codex Auth");
       expect(cmd).toContain(accountHash);
@@ -254,7 +254,7 @@ describe("cli credentials", () => {
     const accountHash = "cli|";
     const dateNowSpy = vi.spyOn(Date, "now").mockReturnValue(Number.NaN);
     try {
-      execSyncMock.mockImplementation((command: unknown) => {
+      execSyncMock.mockImplementation((command: any) => {
         const cmd = String(command);
         expect(cmd).toContain("Codex Auth");
         expect(cmd).toContain(accountHash);

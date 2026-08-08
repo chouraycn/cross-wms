@@ -19,7 +19,7 @@ export interface ValidationError {
   /** 错误消息 */
   message: string;
   /** 允许的值列表（若适用） */
-  allowedValues?: unknown[];
+  allowedValues?: any[];
   /** 错误代码 */
   code: string;
 }
@@ -73,7 +73,7 @@ const DEFAULT_POLICY: Required<ValidationPolicy> = {
  * @returns 验证结果，包含 valid 标志、错误列表和警告列表
  */
 export function validateConfig<T>(
-  config: unknown,
+  config: any,
   schema: z.ZodType<T>,
   policy?: ValidationPolicy,
 ): ValidationResult {
@@ -119,7 +119,7 @@ export function validateConfig<T>(
 
 /** 使用 zod schema 进行结构校验 */
 function validateStructure(
-  config: unknown,
+  config: any,
   schema: z.ZodType,
 ): { errors: ValidationError[]; warnings: ValidationWarning[] } {
   const errors: ValidationError[] = [];
@@ -144,9 +144,9 @@ function mapZodIssueToError(issue: z.ZodIssue): ValidationError {
 
   // 从 issue 中提取允许值信息
   // zod v4 中枚举值校验失败的 code 为 'invalid_value'
-  let allowedValues: unknown[] | undefined;
+  let allowedValues: any[] | undefined;
   if (code === 'invalid_value') {
-    const issueAny = issue as unknown as { values?: unknown[] };
+    const issueAny = issue as unknown as { values?: any[] };
     if (Array.isArray(issueAny.values)) {
       allowedValues = issueAny.values;
     }
@@ -168,7 +168,7 @@ function mapZodIssueToError(issue: z.ZodIssue): ValidationError {
  * 主要检查枚举类型字段，确保用户配置的值在 schema 允许的枚举列表中。
  */
 function checkAllowedValues(
-  config: unknown,
+  config: any,
   schema: z.ZodType,
 ): { errors: ValidationError[]; warnings: ValidationWarning[] } {
   const errors: ValidationError[] = [];
@@ -193,8 +193,8 @@ function checkAllowedValues(
 }
 
 /** 从 zod schema 中提取允许值列表（枚举值） */
-function extractAllowedValues(schema: z.ZodType): unknown[] | undefined {
-  const internal = schema as unknown as { _zod?: { def: Record<string, unknown> }; _def?: Record<string, unknown> };
+function extractAllowedValues(schema: z.ZodType): any[] | undefined {
+  const internal = schema as unknown as { _zod?: { def: Record<string, any> }; _def?: Record<string, any> };
   const def = internal?._zod?.def ?? internal?._def;
   if (!def) return undefined;
 
@@ -230,7 +230,7 @@ function extractAllowedValues(schema: z.ZodType): unknown[] | undefined {
  * 这类检查属于"冷导入"检查 — 验证配置引用的资源在文件系统中是否存在。
  */
 function checkColdImports(
-  config: unknown,
+  config: any,
   pathPrefixes: readonly string[],
 ): { errors: ValidationError[]; warnings: ValidationWarning[] } {
   const errors: ValidationError[] = [];
@@ -240,7 +240,7 @@ function checkColdImports(
     return { errors, warnings };
   }
 
-  const configObj = config as Record<string, unknown>;
+  const configObj = config as Record<string, any>;
 
   for (const prefix of pathPrefixes) {
     const segments = prefix.split('.');
@@ -308,23 +308,23 @@ function checkPathExists(
 // ===================== 辅助函数 =====================
 
 /** 按 dot-path 获取嵌套值 */
-function getNestedValue(obj: Record<string, unknown>, segments: string[]): unknown {
-  let current: unknown = obj;
+function getNestedValue(obj: Record<string, any>, segments: string[]): any {
+  let current: any = obj;
   for (const segment of segments) {
     if (current === null || current === undefined || typeof current !== 'object') {
       return undefined;
     }
-    current = (current as Record<string, unknown>)[segment];
+    current = (current as Record<string, any>)[segment];
   }
   return current;
 }
 
 /** 递归遍历配置，对每个字段调用回调 */
 function walkConfigWithPath(
-  config: unknown,
+  config: any,
   schema: z.ZodType,
   basePath: string,
-  callback: (value: unknown, path: string, fieldSchema: z.ZodType) => void,
+  callback: (value: any, path: string, fieldSchema: z.ZodType) => void,
 ): void {
   if (config === null || config === undefined) {
     return;
@@ -342,7 +342,7 @@ function walkConfigWithPath(
     return;
   }
 
-  const configObj = config as Record<string, unknown>;
+  const configObj = config as Record<string, any>;
   for (const [key, value] of Object.entries(configObj)) {
     const childPath = basePath ? `${basePath}.${key}` : key;
     const childSchema = shape[key];
@@ -353,8 +353,8 @@ function walkConfigWithPath(
 }
 
 /** 从 zod schema 中获取对象 shape（如果 schema 是对象类型） */
-function getObjectSchemaShape(schema: z.ZodType): Record<string, unknown> | null {
-  const internal = schema as unknown as { _zod?: { def: Record<string, unknown> }; _def?: Record<string, unknown>; shape?: Record<string, unknown> };
+function getObjectSchemaShape(schema: z.ZodType): Record<string, any> | null {
+  const internal = schema as unknown as { _zod?: { def: Record<string, any> }; _def?: Record<string, any>; shape?: Record<string, any> };
   const def = internal?._zod?.def ?? internal?._def;
   if (!def) return null;
 
@@ -362,7 +362,7 @@ function getObjectSchemaShape(schema: z.ZodType): Record<string, unknown> | null
   if (def.type === 'object') {
     const shape = def.shape ?? internal.shape;
     if (shape && typeof shape === 'object') {
-      return shape as Record<string, unknown>;
+      return shape as Record<string, any>;
     }
   }
 

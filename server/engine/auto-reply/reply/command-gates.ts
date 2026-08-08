@@ -84,7 +84,7 @@ export function buildDisabledCommandReply(params: {
 }
 
 export function requireCommandFlagEnabled(
-  cfg: { commands?: unknown } | undefined,
+  cfg: { commands?: any } | undefined,
   params: {
     label: string;
     configKey: CommandFlagKey;

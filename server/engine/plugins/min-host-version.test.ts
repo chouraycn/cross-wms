@@ -29,7 +29,7 @@ function expectValidHostCheck(currentVersion: string, minHostVersion?: string) {
 function expectHostCheckResult(params: {
   currentVersion: string;
   minHostVersion?: string | number;
-  expected: unknown;
+  expected: any;
 }) {
   expect(
     checkMinHostVersion({

@@ -35,7 +35,7 @@ vi.mock("./run-wait.js", () => {
   const readLatestAssistantReplySnapshot = async (params: {
     sessionKey: string;
     limit?: number;
-    callGateway?: (request: CallGatewayOptions) => Promise<{ messages?: unknown[] }>;
+    callGateway?: (request: CallGatewayOptions) => Promise<{ messages?: any[] }>;
   }) => {
     // The real helper snapshots assistant fingerprints so a steer command only
     // reports new replies, not the baseline text that existed before steering.
@@ -49,10 +49,10 @@ vi.mock("./run-wait.js", () => {
       if (!message || typeof message !== "object") {
         continue;
       }
-      if ((message as { role?: unknown }).role !== "assistant") {
+      if ((message as { role?: any }).role !== "assistant") {
         continue;
       }
-      const content = (message as { content?: unknown }).content;
+      const content = (message as { content?: any }).content;
       let text = "";
       if (Array.isArray(content)) {
         const textBlocks: string[] = [];
@@ -60,7 +60,7 @@ vi.mock("./run-wait.js", () => {
           if (
             block &&
             typeof block === "object" &&
-            typeof (block as { text?: unknown }).text === "string"
+            typeof (block as { text?: any }).text === "string"
           ) {
             textBlocks.push((block as { text: string }).text);
           }
@@ -84,7 +84,7 @@ vi.mock("./run-wait.js", () => {
       timeoutMs: number;
       limit?: number;
       baseline?: { fingerprint?: string };
-      callGateway?: (request: CallGatewayOptions) => Promise<Record<string, unknown>>;
+      callGateway?: (request: CallGatewayOptions) => Promise<Record<string, any>>;
     }) => {
       const wait = await params.callGateway?.({
         method: "agent.wait",
@@ -102,7 +102,7 @@ vi.mock("./run-wait.js", () => {
         sessionKey: params.sessionKey,
         limit: params.limit,
         callGateway: params.callGateway as
-          | ((request: CallGatewayOptions) => Promise<{ messages?: unknown[] }>)
+          | ((request: CallGatewayOptions) => Promise<{ messages?: any[] }>)
           | undefined,
       });
       return {
@@ -179,7 +179,7 @@ function cfgWithSessionStore(storePath = nextSessionStorePath("sessions")): Open
   } as OpenClawConfig;
 }
 
-function writeSessionStoreFixture(label: string, store: Record<string, unknown>) {
+function writeSessionStoreFixture(label: string, store: Record<string, any>) {
   const storePath = nextSessionStorePath(label);
   fs.writeFileSync(storePath, JSON.stringify(store, null, 2), "utf-8");
   return storePath;
@@ -261,7 +261,7 @@ describe("sendControlledSubagentMessage", () => {
     });
 
     setSubagentControlDepsForTest({
-      callGateway: async <T = Record<string, unknown>>(request: CallGatewayOptions) => {
+      callGateway: async <T = Record<string, any>>(request: CallGatewayOptions) => {
         if (request.method === "agent") {
           throw new Error("gateway unavailable");
         }
@@ -358,7 +358,7 @@ describe("sendControlledSubagentMessage", () => {
     });
 
     setSubagentControlDepsForTest({
-      callGateway: async <T = Record<string, unknown>>(request: CallGatewayOptions) => {
+      callGateway: async <T = Record<string, any>>(request: CallGatewayOptions) => {
         if (request.method === "chat.history") {
           return { messages: [] } as T;
         }
@@ -433,7 +433,7 @@ describe("sendControlledSubagentMessage", () => {
     });
 
     setSubagentControlDepsForTest({
-      callGateway: async <T = Record<string, unknown>>(request: CallGatewayOptions) => {
+      callGateway: async <T = Record<string, any>>(request: CallGatewayOptions) => {
         if (request.method === "chat.history") {
           return { messages: [] } as T;
         }
@@ -502,7 +502,7 @@ describe("sendControlledSubagentMessage", () => {
     };
 
     setSubagentControlDepsForTest({
-      callGateway: async <T = Record<string, unknown>>(request: CallGatewayOptions) => {
+      callGateway: async <T = Record<string, any>>(request: CallGatewayOptions) => {
         if (request.method === "chat.history") {
           historyCalls += 1;
           return { messages: [staleAssistantMessage] } as T;
@@ -1214,7 +1214,7 @@ describe("steerControlledSubagentRun", () => {
       .mockReturnValue(false);
 
     setSubagentControlDepsForTest({
-      callGateway: async <T = Record<string, unknown>>(request: CallGatewayOptions) => {
+      callGateway: async <T = Record<string, any>>(request: CallGatewayOptions) => {
         if (request.method === "agent.wait") {
           return {} as T;
         }
@@ -1339,7 +1339,7 @@ describe("steerControlledSubagentRun", () => {
     });
 
     setSubagentControlDepsForTest({
-      callGateway: async <T = Record<string, unknown>>(request: CallGatewayOptions) => {
+      callGateway: async <T = Record<string, any>>(request: CallGatewayOptions) => {
         if (request.method === "agent.wait") {
           return {} as T;
         }
@@ -1402,7 +1402,7 @@ describe("steerControlledSubagentRun", () => {
     });
 
     setSubagentControlDepsForTest({
-      callGateway: async <T = Record<string, unknown>>(request: CallGatewayOptions) => {
+      callGateway: async <T = Record<string, any>>(request: CallGatewayOptions) => {
         if (request.method === "agent.wait") {
           return {} as T;
         }
@@ -1470,7 +1470,7 @@ describe("steerControlledSubagentRun", () => {
     });
 
     setSubagentControlDepsForTest({
-      callGateway: async <T = Record<string, unknown>>(request: CallGatewayOptions) => {
+      callGateway: async <T = Record<string, any>>(request: CallGatewayOptions) => {
         if (request.method === "agent.wait") {
           return {} as T;
         }

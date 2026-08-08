@@ -6,21 +6,21 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function isSubagentRecoveryWedgedEntry(..._args: unknown[]): unknown {
+export function isSubagentRecoveryWedgedEntry(..._args: any[]): any {
   return false;
 }
-export function formatSubagentRecoveryWedgedReason(..._args: unknown[]): unknown {
+export function formatSubagentRecoveryWedgedReason(..._args: any[]): any {
   return "";
 }
-export function evaluateSubagentRecoveryGate(..._args: unknown[]): unknown {
+export function evaluateSubagentRecoveryGate(..._args: any[]): any {
   return undefined;
 }
-export function markSubagentRecoveryAttempt(..._args: unknown[]): unknown {
+export function markSubagentRecoveryAttempt(..._args: any[]): any {
   return undefined;
 }
-export function markSubagentRecoveryWedged(..._args: unknown[]): unknown {
+export function markSubagentRecoveryWedged(..._args: any[]): any {
   return undefined;
 }
-export function clearWedgedSubagentRecoveryAbort(..._args: unknown[]): unknown {
+export function clearWedgedSubagentRecoveryAbort(..._args: any[]): any {
   return undefined;
 }

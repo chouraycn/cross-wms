@@ -17,29 +17,29 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("./loader.js", () => ({
-  loadOpenClawPluginCliRegistry: (...args: unknown[]) =>
+  loadOpenClawPluginCliRegistry: (...args: any[]) =>
     mocks.loadOpenClawPluginCliRegistry(...args),
-  loadOpenClawPlugins: (...args: unknown[]) => mocks.loadOpenClawPlugins(...args),
+  loadOpenClawPlugins: (...args: any[]) => mocks.loadOpenClawPlugins(...args),
 }));
 
 vi.mock("./activation-planner.js", () => ({
-  resolveManifestActivationPluginIds: (...args: unknown[]) =>
+  resolveManifestActivationPluginIds: (...args: any[]) =>
     mocks.resolveManifestActivationPluginIds(...args),
 }));
 
 vi.mock("../config/plugin-auto-enable.js", () => ({
-  applyPluginAutoEnable: (...args: unknown[]) => mocks.applyPluginAutoEnable(...args),
+  applyPluginAutoEnable: (...args: any[]) => mocks.applyPluginAutoEnable(...args),
 }));
 
 vi.mock("./plugin-metadata-snapshot.js", () => ({
-  resolvePluginMetadataSnapshot: (...args: unknown[]) =>
+  resolvePluginMetadataSnapshot: (...args: any[]) =>
     mocks.resolvePluginMetadataSnapshot(...args),
 }));
 
 vi.mock("../config/config.js", () => ({
-  getRuntimeConfig: (...args: unknown[]) => mocks.loadConfig(...args),
-  loadConfig: (...args: unknown[]) => mocks.loadConfig(...args),
-  readConfigFileSnapshot: (...args: unknown[]) => mocks.readConfigFileSnapshot(...args),
+  getRuntimeConfig: (...args: any[]) => mocks.loadConfig(...args),
+  loadConfig: (...args: any[]) => mocks.loadConfig(...args),
+  readConfigFileSnapshot: (...args: any[]) => mocks.readConfigFileSnapshot(...args),
 }));
 
 let getPluginCliCommandDescriptors: typeof import("./cli.js").getPluginCliCommandDescriptors;
@@ -113,7 +113,7 @@ function getMockCallObject(mock: ReturnType<typeof vi.fn>, callIndex = 0, argInd
   if (!value || typeof value !== "object") {
     throw new Error(`expected mock call ${callIndex} arg ${argIndex} object`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 function expectAutoEnabledCliLoad(params: {
@@ -202,7 +202,7 @@ describe("registerPluginCliCommands", () => {
     await registerPluginCliCommands(createProgram(), {} as OpenClawConfig);
 
     const loadOptions = getMockCallObject(mocks.loadOpenClawPlugins) as {
-      runtimeOptions?: { nodes?: { list?: unknown; invoke?: unknown } };
+      runtimeOptions?: { nodes?: { list?: any; invoke?: any } };
     };
     expect(typeof loadOptions.runtimeOptions?.nodes?.list).toBe("function");
     expect(typeof loadOptions.runtimeOptions?.nodes?.invoke).toBe("function");
@@ -324,7 +324,7 @@ describe("registerPluginCliCommands", () => {
     const stderrWrite = vi
       .spyOn(process.stderr, "write")
       .mockImplementation((() => true) as unknown as typeof process.stderr.write);
-    mocks.loadOpenClawPluginCliRegistry.mockImplementationOnce((options: { logger?: unknown }) => {
+    mocks.loadOpenClawPluginCliRegistry.mockImplementationOnce((options: { logger?: any }) => {
       const logger = options.logger as { error?: (message: string) => void };
       logger.error?.("[plugins] stale failed to load from /tmp/stale: boom");
       throw new Error("boom");

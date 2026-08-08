@@ -36,13 +36,13 @@ import {
 import { buildEmbeddedAttemptToolRunContext } from "./attempt.tool-run-context.js";
 
 type FakeWrappedStream = {
-  result: () => Promise<unknown>;
-  [Symbol.asyncIterator]: () => AsyncIterator<unknown>;
+  result: () => Promise<any>;
+  [Symbol.asyncIterator]: () => AsyncIterator<any>;
 };
 
 function createFakeStream(params: {
-  events: unknown[];
-  resultMessage: unknown;
+  events: any[];
+  resultMessage: any;
 }): FakeWrappedStream {
   // Minimal stream compatible with wrappers that decorate result and iteration
   // without needing a real provider stream.
@@ -71,14 +71,14 @@ async function invokeWrappedTestStream(
   return await Promise.resolve(wrappedFn({} as never, {} as never, {} as never));
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object") {
     throw new Error(`expected ${label}`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function requireContentItem(content: unknown[], index = 0) {
+function requireContentItem(content: any[], index = 0) {
   return requireRecord(content[index], `content item ${index}`);
 }
 
@@ -86,27 +86,27 @@ function wrappedPluginSystemContext(text: string): string {
   return wrapPluginSystemContextSection(text) ?? "";
 }
 
-function expectSingleTextContent(content: unknown[], textFragment: string) {
+function expectSingleTextContent(content: any[], textFragment: string) {
   expect(content).toHaveLength(1);
   const item = requireContentItem(content);
   expect(item.type).toBe("text");
   expect(item.text).toContain(textFragment);
 }
 
-function expectSingleToolCallContent(content: unknown[], name: string) {
+function expectSingleToolCallContent(content: any[], name: string) {
   expect(content).toHaveLength(1);
   const item = requireContentItem(content);
   expect(item.type).toBe("toolCall");
   expect(item.name).toBe(name);
 }
 
-function firstBaseContext(baseFn: ReturnType<typeof vi.fn>): { messages: unknown[] } {
+function firstBaseContext(baseFn: ReturnType<typeof vi.fn>): { messages: any[] } {
   // Wrapper tests assert the context passed to the underlying stream function.
   const call = baseFn.mock.calls.at(0);
   if (!call) {
     throw new Error("expected base stream call");
   }
-  return call[1] as { messages: unknown[] };
+  return call[1] as { messages: any[] };
 }
 
 describe("buildEmbeddedAttemptToolRunContext", () => {
@@ -681,7 +681,7 @@ describe("wrapStreamFnTrimToolCallNames", () => {
   }
 
   function createEventStream(params: {
-    event: unknown;
+    event: any;
     finalToolCall: { type: string; name: string };
   }) {
     const finalMessage = { role: "assistant", content: [params.finalToolCall] };
@@ -704,7 +704,7 @@ describe("wrapStreamFnTrimToolCallNames", () => {
 
     const stream = await invokeWrappedStream(baseFn);
 
-    const seenEvents: unknown[] = [];
+    const seenEvents: any[] = [];
     for await (const item of stream) {
       seenEvents.push(item);
     }
@@ -843,7 +843,7 @@ describe("wrapStreamFnTrimToolCallNames", () => {
       const result = await stream.result();
       const message = requireRecord(result, "result message");
       expect(message.role).toBe("assistant");
-      expectSingleToolCallContent(message.content as unknown[], "exec");
+      expectSingleToolCallContent(message.content as any[], "exec");
     }
 
     const blockedStream = await Promise.resolve(wrappedFn({} as never, {} as never, {} as never));
@@ -873,7 +873,7 @@ describe("wrapStreamFnTrimToolCallNames", () => {
       const result = await stream.result();
       const message = requireRecord(result, "result message");
       expect(message.role).toBe("assistant");
-      expectSingleToolCallContent(message.content as unknown[], "exec");
+      expectSingleToolCallContent(message.content as any[], "exec");
     }
   });
 
@@ -2198,7 +2198,7 @@ describe("wrapStreamFnSanitizeMalformedToolCalls", () => {
 
     expect(baseFn).toHaveBeenCalledTimes(1);
     const seenContext = firstBaseContext(baseFn) as {
-      messages: Array<{ content?: Array<Record<string, unknown>> }>;
+      messages: Array<{ content?: Array<Record<string, any>> }>;
     };
     const toolCall = seenContext.messages[0]?.content?.[0] as {
       name?: string;
@@ -2236,7 +2236,7 @@ describe("wrapStreamFnSanitizeMalformedToolCalls", () => {
 
     expect(baseFn).toHaveBeenCalledTimes(1);
     const seenContext = firstBaseContext(baseFn) as {
-      messages: Array<{ content?: unknown[] }>;
+      messages: Array<{ content?: any[] }>;
     };
     expect(seenContext.messages[0]?.content).toEqual([
       { type: "thinking", thinking: "internal", thinkingSignature: "sig_1" },
@@ -2615,7 +2615,7 @@ describe("wrapStreamFnSanitizeMalformedToolCalls", () => {
 
     expect(baseFn).toHaveBeenCalledTimes(1);
     const seenContext = firstBaseContext(baseFn) as {
-      messages: Array<{ role?: string; content?: unknown[] }>;
+      messages: Array<{ role?: string; content?: any[] }>;
     };
     expect(seenContext.messages).toEqual([
       {
@@ -2662,7 +2662,7 @@ describe("wrapStreamFnSanitizeMalformedToolCalls", () => {
 
     expect(baseFn).toHaveBeenCalledTimes(1);
     const seenContext = firstBaseContext(baseFn) as {
-      messages: Array<{ role?: string; content?: unknown[] }>;
+      messages: Array<{ role?: string; content?: any[] }>;
     };
     expect(seenContext.messages).toEqual([
       {
@@ -2716,7 +2716,7 @@ describe("wrapStreamFnSanitizeMalformedToolCalls", () => {
 
     expect(baseFn).toHaveBeenCalledTimes(1);
     const seenContext = firstBaseContext(baseFn) as {
-      messages: Array<{ role?: string; content?: unknown[] }>;
+      messages: Array<{ role?: string; content?: any[] }>;
     };
     expect(seenContext.messages).toEqual([
       {
@@ -2763,7 +2763,7 @@ describe("wrapStreamFnSanitizeMalformedToolCalls", () => {
 
     expect(baseFn).toHaveBeenCalledTimes(1);
     const seenContext = firstBaseContext(baseFn) as {
-      messages: Array<{ role?: string; content?: unknown[] }>;
+      messages: Array<{ role?: string; content?: any[] }>;
     };
     expect(seenContext.messages).toEqual(messages);
   });
@@ -2805,7 +2805,7 @@ describe("wrapStreamFnSanitizeMalformedToolCalls", () => {
 
       expect(baseFn).toHaveBeenCalledTimes(1);
       const seenContext = firstBaseContext(baseFn) as {
-        messages: Array<{ role?: string; content?: unknown[] }>;
+        messages: Array<{ role?: string; content?: any[] }>;
       };
       expect(seenContext.messages).toEqual(messages);
     },
@@ -2847,7 +2847,7 @@ describe("wrapStreamFnSanitizeMalformedToolCalls", () => {
 
     expect(baseFn).toHaveBeenCalledTimes(1);
     const seenContext = firstBaseContext(baseFn) as {
-      messages: Array<{ role?: string; content?: unknown[] }>;
+      messages: Array<{ role?: string; content?: any[] }>;
     };
     expect(seenContext.messages).toEqual([
       {

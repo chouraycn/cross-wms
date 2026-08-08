@@ -46,12 +46,12 @@ const XAI_UNSUPPORTED_SCHEMA_KEYWORDS = new Set([
   "maxContains",
 ]);
 
-function collectActionValues(schema: unknown, values: Set<string>): void {
+function collectActionValues(schema: any, values: Set<string>): void {
   if (!schema || typeof schema !== "object") {
     return;
   }
 
-  const record = schema as Record<string, unknown>;
+  const record = schema as Record<string, any>;
   if (typeof record.const === "string") {
     values.add(record.const);
   }
@@ -72,7 +72,7 @@ function collectActionValues(schema: unknown, values: Set<string>): void {
 async function writeSessionStore(
   storeTemplate: string,
   agentId: string,
-  entries: Record<string, unknown>,
+  entries: Record<string, any>,
 ) {
   await fs.writeFile(
     storeTemplate.replaceAll("{agentId}", agentId),
@@ -174,10 +174,10 @@ describe("createOpenClawCodingTools", () => {
     const gateway = requireTool(tools, "gateway");
 
     const parameters = gateway.parameters as {
-      properties?: Record<string, unknown>;
+      properties?: Record<string, any>;
     };
     const action = parameters.properties?.action as
-      | { const?: unknown; enum?: unknown[] }
+      | { const?: any; enum?: any[] }
       | undefined;
     const values = new Set<string>();
     collectActionValues(action, values);
@@ -871,10 +871,10 @@ describe("createOpenClawCodingTools", () => {
     for (const name of toolNames) {
       const tool = defaultTools.find((candidate) => candidate.name === name);
       const parameters = tool?.parameters as {
-        properties?: Record<string, unknown>;
+        properties?: Record<string, any>;
       };
       const action = parameters.properties?.action as
-        | { const?: unknown; enum?: unknown[] }
+        | { const?: any; enum?: any[] }
         | undefined;
       const values = new Set<string>();
       collectActionValues(action, values);
@@ -965,7 +965,7 @@ describe("createOpenClawCodingTools", () => {
       .map((tool) => {
         const schema =
           tool.parameters && typeof tool.parameters === "object"
-            ? (tool.parameters as Record<string, unknown>)
+            ? (tool.parameters as Record<string, any>)
             : null;
         return {
           name: tool.name,

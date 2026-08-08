@@ -80,7 +80,7 @@ const GATEWAY_AUTH_MODES: readonly GatewayAuthMode[] = [
 ];
 const GATEWAY_TAILSCALE_MODES: readonly GatewayTailscaleMode[] = ["off", "serve", "funnel"];
 
-const toOptionString = (value: unknown): string | undefined => {
+const toOptionString = (value: any): string | undefined => {
   if (typeof value === "string") {
     return value;
   }
@@ -90,7 +90,7 @@ const toOptionString = (value: unknown): string | undefined => {
   return undefined;
 };
 
-function extractGatewayMiskeys(parsed: unknown): {
+function extractGatewayMiskeys(parsed: any): {
   hasGatewayToken: boolean;
   hasRemoteToken: boolean;
 } {
@@ -98,14 +98,14 @@ function extractGatewayMiskeys(parsed: unknown): {
   if (!parsed || typeof parsed !== "object") {
     return { hasGatewayToken: false, hasRemoteToken: false };
   }
-  const gateway = (parsed as Record<string, unknown>).gateway;
+  const gateway = (parsed as Record<string, any>).gateway;
   if (!gateway || typeof gateway !== "object") {
     return { hasGatewayToken: false, hasRemoteToken: false };
   }
-  const hasGatewayToken = "token" in (gateway as Record<string, unknown>);
-  const remote = (gateway as Record<string, unknown>).remote;
+  const hasGatewayToken = "token" in (gateway as Record<string, any>);
+  const remote = (gateway as Record<string, any>).remote;
   const hasRemoteToken =
-    remote && typeof remote === "object" ? "token" in (remote as Record<string, unknown>) : false;
+    remote && typeof remote === "object" ? "token" in (remote as Record<string, any>) : false;
   return { hasGatewayToken, hasRemoteToken };
 }
 
@@ -413,7 +413,7 @@ async function readGatewayStartupConfigWithShellEnv(params: {
   );
 }
 
-function isGatewayLockError(err: unknown): err is GatewayLockError {
+function isGatewayLockError(err: any): err is GatewayLockError {
   return (
     err instanceof GatewayLockError ||
     (Boolean(err) &&
@@ -422,7 +422,7 @@ function isGatewayLockError(err: unknown): err is GatewayLockError {
   );
 }
 
-function isGatewayAlreadyRunningLockError(err: unknown): boolean {
+function isGatewayAlreadyRunningLockError(err: any): boolean {
   if (!isGatewayLockError(err) || typeof err.message !== "string") {
     return false;
   }
@@ -432,12 +432,12 @@ function isGatewayAlreadyRunningLockError(err: unknown): boolean {
   );
 }
 
-function isHealthyGatewayLockError(err: unknown): boolean {
+function isHealthyGatewayLockError(err: any): boolean {
   return isGatewayAlreadyRunningLockError(err);
 }
 
 function resolveGatewayLockErrorExitCode(
-  err: unknown,
+  err: any,
   supervisor: RespawnSupervisor | null,
 ): number {
   if (supervisor === "systemd" && isGatewayAlreadyRunningLockError(err)) {
@@ -553,7 +553,7 @@ async function runGatewayLoopWithSupervisedLockRecovery(params: {
   }
 }
 
-async function maybeWriteGatewayStartupFailureBundle(err: unknown): Promise<void> {
+async function maybeWriteGatewayStartupFailureBundle(err: any): Promise<void> {
   const { writeDiagnosticStabilityBundleForFailureSync } =
     await import("../../logging/diagnostic-stability-bundle.js");
   const result = writeDiagnosticStabilityBundleForFailureSync("gateway.startup_failed", err);
@@ -693,7 +693,7 @@ export async function runGatewayCommand(opts: GatewayRunOpts, hooks: GatewayRunR
     process.env[GATEWAY_SERVICE_RUNTIME_PID_ENV] = String(process.pid);
   }
   await hooks.refreshManagedProxy?.(cfg.proxy);
-  void maybeLogPendingControlUiBuild(cfg).catch((err: unknown) => {
+  void maybeLogPendingControlUiBuild(cfg).catch((err: any) => {
     gatewayLog.warn(`Control UI asset check failed: ${String(err)}`);
   });
   const portOverride = parsePort(opts.port);

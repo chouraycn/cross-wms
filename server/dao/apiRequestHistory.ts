@@ -66,7 +66,7 @@ export function listHistory(params?: {
 }): { items: ApiRequestHistoryRow[]; total: number } {
   const db = initDb();
   const conditions: string[] = [];
-  const sqlParams: unknown[] = [];
+  const sqlParams: any[] = [];
 
   if (params?.templateId) {
     conditions.push('template_id = ?');

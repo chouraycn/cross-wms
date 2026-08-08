@@ -6,6 +6,6 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function normalizeSubagentTaskName(..._args: unknown[]): unknown {
+export function normalizeSubagentTaskName(..._args: any[]): any {
   return undefined;
 }

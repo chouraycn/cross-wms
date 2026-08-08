@@ -10,7 +10,7 @@ import { extractReplyToTag } from './reply-tags.js';
 export async function getReplyFromConfig(
   ctx: { message: string; sessionId?: string; sessionKey?: string; workspaceDir?: string },
   opts?: GetReplyOptions,
-  _configOverride?: unknown,
+  _configOverride?: any,
 ): Promise<ReplyPayload | ReplyPayload[] | undefined> {
   const sessionId = opts?.sessionId ?? ctx.sessionId ?? `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   const message = ctx.message;

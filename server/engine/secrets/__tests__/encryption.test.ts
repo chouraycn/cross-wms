@@ -82,9 +82,9 @@ describe('加密模块', () => {
     });
 
     it('非字符串应返回 false', () => {
-      expect(constantTimeEqual(null as unknown, 'test')).toBe(false);
-      expect(constantTimeEqual(undefined as unknown, 'test')).toBe(false);
-      expect(constantTimeEqual(123 as unknown, '123')).toBe(false);
+      expect(constantTimeEqual(null as any, 'test')).toBe(false);
+      expect(constantTimeEqual(undefined as any, 'test')).toBe(false);
+      expect(constantTimeEqual(123 as any, '123')).toBe(false);
     });
 
     it('应大小写敏感', () => {

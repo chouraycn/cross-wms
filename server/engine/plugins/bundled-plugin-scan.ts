@@ -27,7 +27,7 @@ const RUNTIME_SIDECAR_ARTIFACTS = new Set([
 export { normalizeOptionalString as trimBundledPluginString };
 
 /** 规范化扫描 bundled 插件文件时找到的 string-list manifest 字段。 */
-export function normalizeBundledPluginStringList(value: unknown): string[] {
+export function normalizeBundledPluginStringList(value: any): string[] {
   return normalizeTrimmedStringList(value);
 }
 

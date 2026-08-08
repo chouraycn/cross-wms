@@ -11,7 +11,7 @@ export type ConfigOptions = {
 
 interface ConfigItem {
   key: string;
-  value: unknown;
+  value: any;
   description?: string;
 }
 
@@ -21,7 +21,7 @@ interface ConfigSchema {
     type?: 'string' | 'boolean' | 'number' | 'array';
     validValues?: string[];
     required?: boolean;
-    default?: unknown;
+    default?: any;
   };
 }
 
@@ -38,7 +38,7 @@ const CONFIG_SCHEMA: ConfigSchema = {
   'server.port': { description: '服务端口', type: 'number', default: 3000 },
 };
 
-function loadConfigFile(): Record<string, unknown> {
+function loadConfigFile(): Record<string, any> {
   if (!fs.existsSync(AppPaths.settingsFile)) {
     return {};
   }
@@ -49,7 +49,7 @@ function loadConfigFile(): Record<string, unknown> {
   }
 }
 
-function saveConfigFile(config: Record<string, unknown>): void {
+function saveConfigFile(config: Record<string, any>): void {
   const dir = path.dirname(AppPaths.settingsFile);
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
@@ -89,7 +89,7 @@ function getConfig(key: string): ConfigItem | undefined {
 
 function setConfig(key: string, value: string, dryRun: boolean): { success: boolean; message: string } {
   const schema = CONFIG_SCHEMA[key];
-  let parsedValue: unknown = value;
+  let parsedValue: any = value;
   
   if (schema?.type === 'boolean') {
     parsedValue = value.toLowerCase() === 'true' || value === '1';
@@ -137,7 +137,7 @@ function unsetConfig(key: string, dryRun: boolean): { success: boolean; message:
 }
 
 function patchConfig(patchJson: string, dryRun: boolean): { success: boolean; message: string } {
-  let patch: Record<string, unknown>;
+  let patch: Record<string, any>;
   try {
     patch = JSON.parse(patchJson);
   } catch {
@@ -160,7 +160,7 @@ function validateConfig(key: string, value: string): { valid: boolean; message: 
     return { valid: true, message: '未知配置项，跳过验证' };
   }
 
-  let parsedValue: unknown = value;
+  let parsedValue: any = value;
   if (schema.type === 'boolean') {
     parsedValue = value.toLowerCase() === 'true' || value === '1';
   } else if (schema.type === 'number') {
@@ -182,7 +182,7 @@ function validateConfig(key: string, value: string): { valid: boolean; message: 
   return { valid: true, message: '配置值有效' };
 }
 
-function formatJsonOutput(data: unknown): string {
+function formatJsonOutput(data: any): string {
   return JSON.stringify(data, null, 2);
 }
 

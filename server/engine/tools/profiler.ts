@@ -7,7 +7,7 @@ export interface ToolExecutionRecord {
   durationMs?: number;
   success: boolean;
   error?: string;
-  args?: Record<string, unknown>;
+  args?: Record<string, any>;
   resultSize?: number;
 }
 
@@ -21,7 +21,7 @@ export function recordToolExecution(record: ToolExecutionRecord): void {
   }
 }
 
-export function startToolExecution(toolName: string, args?: Record<string, unknown>): ToolExecutionRecord {
+export function startToolExecution(toolName: string, args?: Record<string, any>): ToolExecutionRecord {
   const record: ToolExecutionRecord = {
     toolName,
     startedAt: Date.now(),

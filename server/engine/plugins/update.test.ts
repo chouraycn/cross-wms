@@ -41,7 +41,7 @@ const runCommandWithTimeoutMock = vi.fn();
 const tempDirs: string[] = [];
 
 vi.mock("./install.js", () => ({
-  installPluginFromNpmSpec: (...args: unknown[]) => installPluginFromNpmSpecMock(...args),
+  installPluginFromNpmSpec: (...args: any[]) => installPluginFromNpmSpecMock(...args),
   resolvePluginInstallDir: (pluginId: string, extensionsDir = "/tmp") =>
     `${extensionsDir}/${pluginId}`,
   PLUGIN_INSTALL_ERROR_CODE: {
@@ -50,11 +50,11 @@ vi.mock("./install.js", () => ({
 }));
 
 vi.mock("./git-install.js", () => ({
-  installPluginFromGitSpec: (...args: unknown[]) => installPluginFromGitSpecMock(...args),
+  installPluginFromGitSpec: (...args: any[]) => installPluginFromGitSpecMock(...args),
 }));
 
 vi.mock("./marketplace.js", () => ({
-  installPluginFromMarketplace: (...args: unknown[]) => installPluginFromMarketplaceMock(...args),
+  installPluginFromMarketplace: (...args: any[]) => installPluginFromMarketplaceMock(...args),
 }));
 
 vi.mock("./clawhub.js", () => ({
@@ -65,15 +65,15 @@ vi.mock("./clawhub.js", () => ({
     ARCHIVE_INTEGRITY_MISMATCH: "archive_integrity_mismatch",
     ARTIFACT_DOWNLOAD_UNAVAILABLE: "artifact_download_unavailable",
   },
-  installPluginFromClawHub: (...args: unknown[]) => installPluginFromClawHubMock(...args),
+  installPluginFromClawHub: (...args: any[]) => installPluginFromClawHubMock(...args),
 }));
 
 vi.mock("./bundled-sources.js", () => ({
-  resolveBundledPluginSources: (...args: unknown[]) => resolveBundledPluginSourcesMock(...args),
+  resolveBundledPluginSources: (...args: any[]) => resolveBundledPluginSourcesMock(...args),
 }));
 
 vi.mock("../process/exec.js", () => ({
-  runCommandWithTimeout: (...args: unknown[]) => runCommandWithTimeoutMock(...args),
+  runCommandWithTimeout: (...args: any[]) => runCommandWithTimeoutMock(...args),
 }));
 
 vi.resetModules();
@@ -325,7 +325,7 @@ function mockNpmViewMetadata(params: {
   version: string;
   integrity?: string;
   shasum?: string;
-  openclaw?: Record<string, unknown>;
+  openclaw?: Record<string, any>;
 }) {
   runCommandWithTimeoutMock.mockResolvedValueOnce({
     code: 0,
@@ -348,44 +348,44 @@ function mockNpmViewVersions(versions: string[]) {
   });
 }
 
-function npmInstallCall(index = 0): Record<string, unknown> | undefined {
+function npmInstallCall(index = 0): Record<string, any> | undefined {
   const calls = installPluginFromNpmSpecMock.mock.calls as unknown as Array<
-    [Record<string, unknown>]
+    [Record<string, any>]
   >;
   return calls[index]?.[0];
 }
 
-function clawHubInstallCall(index = 0): Record<string, unknown> | undefined {
+function clawHubInstallCall(index = 0): Record<string, any> | undefined {
   const calls = installPluginFromClawHubMock.mock.calls as unknown as Array<
-    [Record<string, unknown>]
+    [Record<string, any>]
   >;
   return calls[index]?.[0];
 }
 
-function marketplaceInstallCall(index = 0): Record<string, unknown> | undefined {
+function marketplaceInstallCall(index = 0): Record<string, any> | undefined {
   const calls = installPluginFromMarketplaceMock.mock.calls as unknown as Array<
-    [Record<string, unknown>]
+    [Record<string, any>]
   >;
   return calls[index]?.[0];
 }
 
-function gitInstallCall(index = 0): Record<string, unknown> | undefined {
+function gitInstallCall(index = 0): Record<string, any> | undefined {
   const calls = installPluginFromGitSpecMock.mock.calls as unknown as Array<
-    [Record<string, unknown>]
+    [Record<string, any>]
   >;
   return calls[index]?.[0];
 }
 
-function npmViewCall(): [unknown, Record<string, unknown>] | undefined {
+function npmViewCall(): [unknown, Record<string, any>] | undefined {
   const calls = runCommandWithTimeoutMock.mock.calls as unknown as Array<
-    [unknown, Record<string, unknown>]
+    [unknown, Record<string, any>]
   >;
   return calls.find(([argv]) => Array.isArray(argv) && argv[0] === "npm" && argv[1] === "view");
 }
 
 function expectRecordFields(
-  actual: Record<string, unknown> | undefined,
-  expected: Record<string, unknown>,
+  actual: Record<string, any> | undefined,
+  expected: Record<string, any>,
 ) {
   for (const [key, value] of Object.entries(expected)) {
     expect(actual?.[key]).toEqual(value);
@@ -425,7 +425,7 @@ function mockBundledSources(...sources: ReturnType<typeof createBundledSource>[]
 }
 
 function expectBundledPathInstall(params: {
-  install: Record<string, unknown> | undefined;
+  install: Record<string, any> | undefined;
   sourcePath: string;
   installPath: string;
   spec?: string;
@@ -456,8 +456,8 @@ function expectCodexAppServerInstallState(params: {
 
 describe("updateNpmInstalledPlugins", () => {
   let timeoutBudgetCase: {
-    installCall: Record<string, unknown> | undefined;
-    npmViewTimeoutMs: unknown;
+    installCall: Record<string, any> | undefined;
+    npmViewTimeoutMs: any;
   };
 
   beforeAll(async () => {
@@ -2826,7 +2826,7 @@ describe("updateNpmInstalledPlugins", () => {
       resolvedSpec: "openclaw-codex-app-server@0.2.6",
     });
     expect(result.outcomes[0]?.message).toBe(
-      "Updated openclaw-codex-app-server: unknown -> 0.2.6. (warning: beta channel fallback used openclaw-codex-app-server because openclaw-codex-app-server@beta could not be used).",
+      "Updated openclaw-codex-app-server: any -> 0.2.6. (warning: beta channel fallback used openclaw-codex-app-server because openclaw-codex-app-server@beta could not be used).",
     );
     expect(result.outcomes[0]?.channelFallback).toEqual({
       requestedSpec: "openclaw-codex-app-server@beta",
@@ -2869,7 +2869,7 @@ describe("updateNpmInstalledPlugins", () => {
     });
 
     expect(result.outcomes[0]?.message).toBe(
-      "Would update openclaw-codex-app-server: unknown -> 0.2.6. (warning: beta channel fallback would use openclaw-codex-app-server because openclaw-codex-app-server@beta could not be used).",
+      "Would update openclaw-codex-app-server: any -> 0.2.6. (warning: beta channel fallback would use openclaw-codex-app-server because openclaw-codex-app-server@beta could not be used).",
     );
     expect(result.outcomes[0]?.channelFallback?.message).toBe(
       "plugin channel fallback: openclaw-codex-app-server would use @latest because @beta was unavailable",
@@ -2917,7 +2917,7 @@ describe("updateNpmInstalledPlugins", () => {
       resolvedSpec: "openclaw-codex-app-server@0.2.6",
     });
     expect(result.outcomes[0]?.message).toBe(
-      "Updated openclaw-codex-app-server: unknown -> 0.2.6. (warning: beta channel fallback used openclaw-codex-app-server because openclaw-codex-app-server@beta could not be used).",
+      "Updated openclaw-codex-app-server: any -> 0.2.6. (warning: beta channel fallback used openclaw-codex-app-server because openclaw-codex-app-server@beta could not be used).",
     );
     expect(result.outcomes[0]?.channelFallback).toMatchObject({
       requestedLabel: "@beta",
@@ -3175,7 +3175,7 @@ describe("updateNpmInstalledPlugins", () => {
       clawhubPackage: "demo",
     });
     expect(result.outcomes[0]?.message).toBe(
-      "Updated demo: unknown -> 1.2.4. (warning: beta channel fallback used clawhub:demo because clawhub:demo@beta could not be used).",
+      "Updated demo: any -> 1.2.4. (warning: beta channel fallback used clawhub:demo because clawhub:demo@beta could not be used).",
     );
   });
 
@@ -3449,7 +3449,7 @@ describe("updateNpmInstalledPlugins", () => {
       clawhubFamily: "bundle-plugin",
       clawhubChannel: "community",
     });
-    (config.plugins!.installs!.whatsapp as Record<string, unknown>).version = "2026.2.9";
+    (config.plugins!.installs!.whatsapp as Record<string, any>).version = "2026.2.9";
 
     const warnMessages: string[] = [];
     const result = await updateNpmInstalledPlugins({
@@ -3505,7 +3505,7 @@ describe("updateNpmInstalledPlugins", () => {
       clawhubFamily: "code-plugin",
       clawhubChannel: "official",
     });
-    (config.plugins!.installs!.demo as Record<string, unknown>).version = "1.5.0";
+    (config.plugins!.installs!.demo as Record<string, any>).version = "1.5.0";
 
     const result = await updateNpmInstalledPlugins({
       config,
@@ -3546,7 +3546,7 @@ describe("updateNpmInstalledPlugins", () => {
       clawhubFamily: "code-plugin",
       clawhubChannel: "official",
     });
-    (config.plugins!.installs!.demo as Record<string, unknown>).version = "2026.5.3-1";
+    (config.plugins!.installs!.demo as Record<string, any>).version = "2026.5.3-1";
 
     const result = await updateNpmInstalledPlugins({
       config,
@@ -3719,7 +3719,7 @@ describe("updateNpmInstalledPlugins", () => {
         status: "updated",
         currentVersion: undefined,
         nextVersion: "1.2.0",
-        message: "Would update claude-bundle: unknown -> 1.2.0.",
+        message: "Would update claude-bundle: any -> 1.2.0.",
       },
     ]);
   });

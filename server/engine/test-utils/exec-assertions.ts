@@ -42,7 +42,7 @@ export function expectSingleNpmInstallIgnoreScriptsCall(params: {
 }
 
 export function expectSingleNpmPackIgnoreScriptsCall(params: {
-  calls: Array<[unknown, unknown]>;
+  calls: Array<[any, any]>;
   expectedSpec: string;
 }) {
   const packCalls = params.calls.filter(

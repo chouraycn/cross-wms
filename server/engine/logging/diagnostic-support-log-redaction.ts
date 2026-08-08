@@ -43,16 +43,16 @@ function byteLength(content: string): number {
   return Buffer.byteLength(content, "utf8");
 }
 
-function createLogRecord(): Record<string, unknown> {
-  return Object.create(null) as Record<string, unknown>;
+function createLogRecord(): Record<string, any> {
+  return Object.create(null) as Record<string, any>;
 }
 
 /** Parses and sanitizes one log line into safe support-bundle metadata. */
 export function sanitizeSupportLogRecord(
   line: string,
   redaction: SupportRedactionContext,
-): Record<string, unknown> {
-  let parsed: unknown;
+): Record<string, any> {
+  let parsed: any;
   try {
     parsed = JSON.parse(line);
   } catch {
@@ -84,8 +84,8 @@ export function sanitizeSupportLogRecord(
 }
 
 function addNamedLogFields(
-  sanitized: Record<string, unknown>,
-  source: Record<string, unknown>,
+  sanitized: Record<string, any>,
+  source: Record<string, any>,
   redaction: SupportRedactionContext,
 ): void {
   for (const [key, value] of Object.entries(source)) {
@@ -97,8 +97,8 @@ function addNamedLogFields(
 }
 
 function addLogTapeMetaFields(
-  sanitized: Record<string, unknown>,
-  source: Record<string, unknown>,
+  sanitized: Record<string, any>,
+  source: Record<string, any>,
   redaction: SupportRedactionContext,
 ): void {
   const meta = asOptionalRecord(source[LOGTAPE_META_FIELD]);
@@ -124,8 +124,8 @@ function addLogTapeMetaFields(
 }
 
 function addLogTapeArgFields(
-  sanitized: Record<string, unknown>,
-  source: Record<string, unknown>,
+  sanitized: Record<string, any>,
+  source: Record<string, any>,
   redaction: SupportRedactionContext,
 ): void {
   const args = Object.entries(source)
@@ -147,7 +147,7 @@ function addLogTapeArgFields(
 }
 
 function addLogTapeMessageField(
-  sanitized: Record<string, unknown>,
+  sanitized: Record<string, any>,
   value: string,
   redaction: SupportRedactionContext,
 ): void {
@@ -159,18 +159,18 @@ function addLogTapeMessageField(
   addOmittedLogMessageMetadata(sanitized, value);
 }
 
-function addOmittedLogMessageMetadata(sanitized: Record<string, unknown>, value: string): void {
+function addOmittedLogMessageMetadata(sanitized: Record<string, any>, value: string): void {
   sanitized.omitted = "log-message";
   sanitized.omittedLogMessageBytes =
     numericLogMetadata(sanitized.omittedLogMessageBytes) + byteLength(value);
   sanitized.omittedLogMessageCount = numericLogMetadata(sanitized.omittedLogMessageCount) + 1;
 }
 
-function numericLogMetadata(value: unknown): number {
+function numericLogMetadata(value: any): number {
   return typeof value === "number" && Number.isFinite(value) ? value : 0;
 }
 
-function parseJsonRecord(value: string): Record<string, unknown> | undefined {
+function parseJsonRecord(value: string): Record<string, any> | undefined {
   const trimmed = value.trim();
   if (!trimmed.startsWith("{") || !trimmed.endsWith("}")) {
     return undefined;
@@ -183,8 +183,8 @@ function parseJsonRecord(value: string): Record<string, unknown> | undefined {
 }
 
 function addLogObjectFields(
-  sanitized: Record<string, unknown>,
-  source: Record<string, unknown>,
+  sanitized: Record<string, any>,
+  source: Record<string, any>,
   redaction: SupportRedactionContext,
 ): void {
   for (const [key, value] of Object.entries(source)) {
@@ -193,9 +193,9 @@ function addLogObjectFields(
 }
 
 function addSafeLogField(
-  sanitized: Record<string, unknown>,
+  sanitized: Record<string, any>,
   key: string,
-  value: unknown,
+  value: any,
   redaction: SupportRedactionContext,
 ): void {
   if (OMITTED_LOG_FIELD_RE.test(key)) {
@@ -226,7 +226,7 @@ function sanitizeLogString(value: string, redaction: SupportRedactionContext): s
   });
 }
 
-function isSafeLogField(key: string, value: unknown): boolean {
+function isSafeLogField(key: string, value: any): boolean {
   if (typeof value === "string") {
     return LOG_STRING_FIELD_RE.test(key);
   }

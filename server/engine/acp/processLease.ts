@@ -32,11 +32,11 @@ export type AcpxProcessLeaseFile = {
   leases: AcpxProcessLease[];
 };
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-export function normalizeAcpxProcessLease(value: unknown): AcpxProcessLease | undefined {
+export function normalizeAcpxProcessLease(value: any): AcpxProcessLease | undefined {
   if (!isRecord(value)) {
     return undefined;
   }
@@ -68,7 +68,7 @@ export function normalizeAcpxProcessLease(value: unknown): AcpxProcessLease | un
   };
 }
 
-export function normalizeAcpxProcessLeaseFile(value: unknown): AcpxProcessLeaseFile {
+export function normalizeAcpxProcessLeaseFile(value: any): AcpxProcessLeaseFile {
   const root = isRecord(value) ? value : {};
   const leases = Array.isArray(root.leases)
     ? root.leases

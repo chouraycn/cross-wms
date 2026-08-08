@@ -21,7 +21,7 @@ afterEach(() => {
   extraParamsTesting.resetProviderRuntimeDepsForTest();
 });
 
-function runGoogleExtraParamsCase(params?: { cfg?: unknown }) {
+function runGoogleExtraParamsCase(params?: { cfg?: any }) {
   // Common Gemini payload fixture: tests vary only config precedence and final
   // option shape.
   return runExtraParamsCase({
@@ -62,7 +62,7 @@ describe("extra-params: Google thinking payload compatibility", () => {
       },
     }).payload as {
       config?: {
-        thinkingConfig?: Record<string, unknown>;
+        thinkingConfig?: Record<string, any>;
       };
     };
 

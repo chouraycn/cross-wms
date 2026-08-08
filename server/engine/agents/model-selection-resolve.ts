@@ -8,9 +8,9 @@
 
 export { buildConfiguredAllowlistKeys, buildModelAliasIndex, normalizeModelSelection, resolveConfiguredModelRef, resolveHooksGmailModel, resolveModelRefFromString } from "./model-selection-shared.js";
 export type { ModelRefStatus } from "./model-selection-shared.js";
-export function getModelRefStatus(..._args: unknown[]): unknown {
+export function getModelRefStatus(..._args: any[]): any {
   return undefined;
 }
-export function resolveAllowedModelRef(..._args: unknown[]): unknown {
+export function resolveAllowedModelRef(..._args: any[]): any {
   return undefined;
 }

@@ -627,11 +627,11 @@ export function detectMacCloudSyncedStateDir(
   return null;
 }
 
-function isPairingPolicy(value: unknown): boolean {
+function isPairingPolicy(value: any): boolean {
   return normalizeOptionalLowercaseString(value) === "pairing";
 }
 
-function hasPairingPolicy(value: unknown): boolean {
+function hasPairingPolicy(value: any): boolean {
   const record = asNullableObjectRecord(value);
   if (!record) {
     return false;

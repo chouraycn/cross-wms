@@ -8,12 +8,12 @@ import {
 import { respondInvalidParams } from "./nodes.helpers.js";
 import type { GatewayRequestHandler } from "./types.js";
 
-function normalizeNodeInvokeResultParams(params: unknown): unknown {
+function normalizeNodeInvokeResultParams(params: any): any {
   if (!params || typeof params !== "object") {
     return params;
   }
-  const raw = params as Record<string, unknown>;
-  const normalized: Record<string, unknown> = { ...raw };
+  const raw = params as Record<string, any>;
+  const normalized: Record<string, any> = { ...raw };
   if (normalized.payloadJSON === null) {
     delete normalized.payloadJSON;
   } else if (normalized.payloadJSON !== undefined && typeof normalized.payloadJSON !== "string") {
@@ -48,7 +48,7 @@ export const handleNodeInvokeResult: GatewayRequestHandler = async ({
     id: string;
     nodeId: string;
     ok: boolean;
-    payload?: unknown;
+    payload?: any;
     payloadJSON?: string | null;
     error?: { code?: string; message?: string } | null;
   };

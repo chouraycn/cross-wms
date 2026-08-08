@@ -64,7 +64,7 @@ function registerOwnerEnforcingTelegramPlugin() {
 
 function buildParams(
   commandBody: string,
-  ctxOverrides?: Record<string, unknown>,
+  ctxOverrides?: Record<string, any>,
 ): HandleCommandsParams {
   const normalized = commandBody.trim();
   const ctx = {
@@ -192,7 +192,7 @@ describe("subagents command dispatch", () => {
       cfg,
       commandAuthorized: true,
     });
-    const params = buildParams("/subagents list", ctx as unknown as Record<string, unknown>);
+    const params = buildParams("/subagents list", ctx as unknown as Record<string, any>);
     params.cfg = cfg;
     params.command.senderId = auth.senderId;
     params.command.senderIsOwner = auth.senderIsOwner;

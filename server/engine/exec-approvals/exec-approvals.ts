@@ -49,7 +49,7 @@ export function normalizeExecTarget(value?: string | null): ExecTarget | null {
   return normalizeExecHost(normalized);
 }
 
-export function requireValidExecTarget(value?: unknown): ExecTarget | null {
+export function requireValidExecTarget(value?: any): ExecTarget | null {
   if (value == null) {
     return null;
   }
@@ -306,7 +306,7 @@ function writeExecApprovalsRaw(filePath: string, raw: string) {
   } catch (e) { console.debug("[compat-swallowed]", e); }
 }
 
-function coerceAllowlistEntries(allowlist: unknown): ExecAllowlistEntry[] | undefined {
+function coerceAllowlistEntries(allowlist: any): ExecAllowlistEntry[] | undefined {
   if (!Array.isArray(allowlist) || allowlist.length === 0) {
     return Array.isArray(allowlist) ? (allowlist as ExecAllowlistEntry[]) : undefined;
   }
@@ -322,7 +322,7 @@ function coerceAllowlistEntries(allowlist: unknown): ExecAllowlistEntry[] | unde
         changed = true;
       }
     } else if (item && typeof item === 'object' && !Array.isArray(item)) {
-      const pattern = (item as { pattern?: unknown }).pattern;
+      const pattern = (item as { pattern?: any }).pattern;
       if (typeof pattern === 'string' && pattern.trim().length > 0) {
         result.push(item as ExecAllowlistEntry);
       } else {

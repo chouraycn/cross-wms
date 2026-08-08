@@ -111,7 +111,7 @@ export type ModelDefinitionConfig = {
   contextTokens?: number;
   maxTokens: number;
   thinkingLevelMap?: Record<string, string | null>;
-  params?: Record<string, unknown>;
+  params?: Record<string, any>;
   agentRuntime?: AgentRuntimePolicyConfig;
   headers?: Record<string, string>;
   compat?: ModelCompatConfig;
@@ -130,7 +130,7 @@ export type ModelProviderConfig = {
   timeoutSeconds?: number;
   region?: string;
   injectNumCtxForOpenAICompat?: boolean;
-  params?: Record<string, unknown>;
+  params?: Record<string, any>;
   agentRuntime?: AgentRuntimePolicyConfig;
   localService?: ModelProviderLocalServiceConfig;
   headers?: Record<string, SecretInput>;

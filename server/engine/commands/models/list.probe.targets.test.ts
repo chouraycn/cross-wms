@@ -56,7 +56,7 @@ vi.mock("../../agents/model-selection.js", () => {
       : value.trim().toLowerCase();
   return {
     normalizeProviderId,
-    findNormalizedProviderValue: (record: Record<string, unknown> | undefined, provider: string) =>
+    findNormalizedProviderValue: (record: Record<string, any> | undefined, provider: string) =>
       Object.entries(record ?? {}).find(([key]) => normalizeProviderId(key) === provider)?.[1],
     parseModelRef: (raw: string, defaultProvider: string) => {
       const [provider, ...modelParts] = raw.includes("/") ? raw.split("/") : [defaultProvider, raw];
@@ -77,7 +77,7 @@ vi.mock("./shared.js", () => ({
 }));
 
 vi.mock("../../agents/auth-profiles.js", () => ({
-  externalCliDiscoveryScoped: (params: Record<string, unknown> = {}) => ({
+  externalCliDiscoveryScoped: (params: Record<string, any> = {}) => ({
     mode: "scoped",
     ...params,
   }),

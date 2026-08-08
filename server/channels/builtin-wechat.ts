@@ -77,7 +77,7 @@ export function createWeChatChannelPlugin(): ChannelPlugin {
 
   const wechatChannelConfig: ChannelConfigAdapter<WeChatAccountConfig> = {
     listAccountIds: (config: AppConfig): ChannelId[] => {
-      const wechatConfig = config.wechat as Record<string, unknown>;
+      const wechatConfig = config.wechat as Record<string, any>;
       if (wechatConfig && wechatConfig.appId && wechatConfig.appSecret) {
         return [WECHAT_CHANNEL_ID];
       }
@@ -85,7 +85,7 @@ export function createWeChatChannelPlugin(): ChannelPlugin {
     },
     resolveAccount: (config: AppConfig, accountId: ChannelId): WeChatAccountConfig | null => {
       if (accountId !== WECHAT_CHANNEL_ID) return null;
-      const wechatConfig = config.wechat as Record<string, unknown>;
+      const wechatConfig = config.wechat as Record<string, any>;
       if (wechatConfig && wechatConfig.appId && wechatConfig.appSecret) {
         return {
           appId: String(wechatConfig.appId),
@@ -121,7 +121,7 @@ export function createWeChatChannelPlugin(): ChannelPlugin {
           const token = await getAccessToken(account);
           const rendered = await ctx.render();
           const text = rendered.parts
-            .map((p: { content: unknown }) => String(p.content))
+            .map((p: { content: any }) => String(p.content))
             .join("\n");
 
           const response = await fetch("https://api.weixin.qq.com/cgi-bin/message/custom/send", {
@@ -175,8 +175,8 @@ export interface WeChatWebhookResult {
   error?: string;
 }
 
-export function parseWeChatWebhook(body: unknown, _account: WeChatAccountConfig): WeChatWebhookResult {
-  const data = body as Record<string, unknown>;
+export function parseWeChatWebhook(body: any, _account: WeChatAccountConfig): WeChatWebhookResult {
+  const data = body as Record<string, any>;
   const msgType = String(data.MsgType || "");
 
   if (msgType === "text") {

@@ -29,7 +29,7 @@ vi.mock("./plugin-registry.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./plugin-registry.js")>();
   return {
     ...actual,
-    loadPluginRegistrySnapshotWithMetadata: (params: unknown) =>
+    loadPluginRegistrySnapshotWithMetadata: (params: any) =>
       loadPluginRegistrySnapshotWithMetadata(params),
   };
 });
@@ -38,7 +38,7 @@ vi.mock("./manifest-registry-installed.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./manifest-registry-installed.js")>();
   return {
     ...actual,
-    loadPluginManifestRegistryForInstalledIndex: (params: unknown) =>
+    loadPluginManifestRegistryForInstalledIndex: (params: any) =>
       loadPluginManifestRegistryForInstalledIndex(params),
   };
 });
@@ -75,7 +75,7 @@ function touchPersistedIndex(stateDir: string, value = 1): void {
   );
 }
 
-function writeJson(filePath: string, value: unknown): void {
+function writeJson(filePath: string, value: any): void {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, `${JSON.stringify(value)}\n`);
 }
@@ -835,7 +835,7 @@ describe("loadPluginMetadataSnapshot process memo", () => {
     const readdirSpy = vi.spyOn(fs, "readdirSync").mockImplementation(((
       directoryPath: fs.PathLike,
       options?: Parameters<typeof fs.readdirSync>[1],
-    ): unknown => {
+    ): any => {
       const entries = originalReaddirSync(directoryPath, options as never);
       if (directoryPath === projectsDir && reverseProjectEntries && Array.isArray(entries)) {
         return entries.toReversed();

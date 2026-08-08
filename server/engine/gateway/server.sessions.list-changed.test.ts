@@ -40,7 +40,7 @@ afterEach(() => {
 });
 
 type MockCalls = {
-  mock: { calls: unknown[][] };
+  mock: { calls: any[][] };
 };
 type SessionStoreEntryOptions = Parameters<typeof sessionStoreEntry>[1];
 type MutationMethod = "sessions.patch" | "sessions.compact";
@@ -49,7 +49,7 @@ function expectedLastMessageTranscript(sessionId: string, contents: string[]): s
   const records = createLinearSessionTranscript(sessionId, contents)
     .trim()
     .split("\n")
-    .map((line) => JSON.parse(line) as Record<string, unknown>);
+    .map((line) => JSON.parse(line) as Record<string, any>);
   const header = records[0];
   const last = records.at(-1);
   if (!header || !last) {
@@ -58,11 +58,11 @@ function expectedLastMessageTranscript(sessionId: string, contents: string[]): s
   return `${JSON.stringify(header)}\n${JSON.stringify({ ...last, parentId: null })}\n`;
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return typeof value === "object" && value !== null;
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   expect(isRecord(value), `${label} should be an object`).toBe(true);
   if (!isRecord(value)) {
     throw new Error(`${label} should be an object`);
@@ -70,7 +70,7 @@ function requireRecord(value: unknown, label: string): Record<string, unknown> {
   return value;
 }
 
-function requireArray(value: unknown, label: string): unknown[] {
+function requireArray(value: any, label: string): any[] {
   expect(Array.isArray(value), `${label} should be an array`).toBe(true);
   if (!Array.isArray(value)) {
     throw new Error(`${label} should be an array`);
@@ -78,13 +78,13 @@ function requireArray(value: unknown, label: string): unknown[] {
   return value;
 }
 
-function expectFields(record: Record<string, unknown>, expected: Record<string, unknown>) {
+function expectFields(record: Record<string, any>, expected: Record<string, any>) {
   for (const [key, value] of Object.entries(expected)) {
     expect(record[key], key).toEqual(value);
   }
 }
 
-function expectRespondPayload(respond: MockCalls): Record<string, unknown> {
+function expectRespondPayload(respond: MockCalls): Record<string, any> {
   expect(respond.mock.calls).toHaveLength(1);
   const [ok, payload, error] = respond.mock.calls[0] ?? [];
   expect(ok).toBe(true);
@@ -93,12 +93,12 @@ function expectRespondPayload(respond: MockCalls): Record<string, unknown> {
 }
 
 function findSession(
-  payload: Record<string, unknown>,
+  payload: Record<string, any>,
   sessionKey: string,
-): Record<string, unknown> {
+): Record<string, any> {
   const sessions = requireArray(payload.sessions, "response sessions");
   const session = sessions.find(
-    (candidate): candidate is Record<string, unknown> =>
+    (candidate): candidate is Record<string, any> =>
       isRecord(candidate) && candidate.key === sessionKey,
   );
   if (!session) {
@@ -109,8 +109,8 @@ function findSession(
 
 function expectChangedBroadcast(
   broadcastToConnIds: MockCalls,
-  expected: Record<string, unknown>,
-): Record<string, unknown> {
+  expected: Record<string, any>,
+): Record<string, any> {
   expect(broadcastToConnIds.mock.calls).toHaveLength(1);
   const [event, payload, connIds, options] = broadcastToConnIds.mock.calls[0] ?? [];
   expect(event).toBe("sessions.changed");
@@ -128,8 +128,8 @@ async function invokeSessionsList({
   defer = false,
 }: {
   requestId: string;
-  params?: Record<string, unknown>;
-  context?: Record<string, unknown>;
+  params?: Record<string, any>;
+  context?: Record<string, any>;
   defer?: boolean;
 }) {
   const respond = vi.fn();
@@ -165,8 +165,8 @@ async function invokeSessionMutation({
   subscribedConnIds = new Set(["conn-1"]),
 }: {
   method: MutationMethod;
-  params: Record<string, unknown>;
-  context?: Record<string, unknown>;
+  params: Record<string, any>;
+  context?: Record<string, any>;
   subscribedConnIds?: Set<string>;
 }) {
   const broadcastToConnIds = vi.fn();
@@ -193,7 +193,7 @@ async function invokeSessionMutation({
   };
 }
 
-async function invokeSessionsPatch(params: Record<string, unknown>) {
+async function invokeSessionsPatch(params: Record<string, any>) {
   return invokeSessionMutation({ method: "sessions.patch", params });
 }
 
@@ -208,7 +208,7 @@ async function writeMainSessionStore(options?: SessionStoreEntryOptions) {
 
 function expectMainPatchBroadcast(
   result: Awaited<ReturnType<typeof invokeSessionsPatch>>,
-  expected: Record<string, unknown>,
+  expected: Record<string, any>,
 ) {
   expectFields(result.responsePayload, { ok: true, key: "agent:main:main" });
   expectChangedBroadcast(result.broadcastToConnIds, {
@@ -289,8 +289,8 @@ async function invokeSessionsCompact({
   params,
   subscribedConnIds = new Set(["conn-1"]),
 }: {
-  getRuntimeConfig: unknown;
-  params: Record<string, unknown>;
+  getRuntimeConfig: any;
+  params: Record<string, any>;
   subscribedConnIds?: Set<string>;
 }) {
   return invokeSessionMutation({
@@ -305,7 +305,7 @@ async function invokeSessionsCompact({
 
 async function expectListedSessionActiveRun(
   requestId: string,
-  run: Record<string, unknown>,
+  run: Record<string, any>,
   expected: boolean,
 ) {
   await writeMainSessionStore();

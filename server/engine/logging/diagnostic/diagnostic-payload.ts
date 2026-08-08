@@ -21,7 +21,7 @@ export const diagnosticPayloadSchema = z.object({
 
 export type DiagnosticPayload = z.infer<typeof diagnosticPayloadSchema>;
 
-export function validateDiagnosticPayload(payload: unknown): DiagnosticPayload | null {
+export function validateDiagnosticPayload(payload: any): DiagnosticPayload | null {
   const result = diagnosticPayloadSchema.safeParse(payload);
   if (result.success) {
     return result.data;
@@ -29,7 +29,7 @@ export function validateDiagnosticPayload(payload: unknown): DiagnosticPayload |
   return null;
 }
 
-export function isDiagnosticEvent(value: unknown): value is DiagnosticEvent {
+export function isDiagnosticEvent(value: any): value is DiagnosticEvent {
   return validateDiagnosticPayload(value) !== null;
 }
 

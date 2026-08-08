@@ -8,7 +8,7 @@ describe("applyTargetToParams", () => {
     {
       params: {
         action: "send",
-        args: { target: "  channel:C1  " } as Record<string, unknown>,
+        args: { target: "  channel:C1  " } as Record<string, any>,
       },
       field: "to",
       expected: "channel:C1",
@@ -16,7 +16,7 @@ describe("applyTargetToParams", () => {
     {
       params: {
         action: "channel-info",
-        args: { target: "  C123  " } as Record<string, unknown>,
+        args: { target: "  C123  " } as Record<string, any>,
       },
       field: "channelId",
       expected: "C123",
@@ -64,7 +64,7 @@ describe("applyTargetToParams", () => {
   it("does nothing when target is blank", () => {
     const params = {
       action: "send",
-      args: { target: "   " } as Record<string, unknown>,
+      args: { target: "   " } as Record<string, any>,
     };
 
     applyTargetToParams(params);

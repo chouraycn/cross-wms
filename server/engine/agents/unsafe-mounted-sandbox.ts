@@ -7,11 +7,11 @@
  */
 
 /** Create an unsafe mounted sandbox (unsupported in cross-wms). */
-export function createUnsafeMountedSandbox(..._args: unknown[]): never {
+export function createUnsafeMountedSandbox(..._args: any[]): never {
   throw new Error("Unsafe mounted sandbox is not supported in cross-wms");
 }
 
 /** Run a harness with an unsafe mounted sandbox (unsupported in cross-wms). */
-export function withUnsafeMountedSandboxHarness(..._args: unknown[]): never {
+export function withUnsafeMountedSandboxHarness(..._args: any[]): never {
   throw new Error("Unsafe mounted sandbox harness is not supported in cross-wms");
 }

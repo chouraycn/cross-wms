@@ -42,16 +42,16 @@ describe("image-generation runtime", () => {
 
   it("generates images through the active image-generation provider", async () => {
     const authStore = { version: 1, profiles: {} } as const;
-    let seenAuthStore: unknown;
+    let seenAuthStore: any;
     let seenTimeoutMs: number | undefined;
-    let seenSsrfPolicy: unknown;
+    let seenSsrfPolicy: any;
     const provider: ImageGenerationProvider = {
       id: "image-plugin",
       capabilities: {
         generate: {},
         edit: { enabled: false },
       },
-      async generateImage(req: { authStore?: unknown; timeoutMs?: number; ssrfPolicy?: unknown }) {
+      async generateImage(req: { authStore?: any; timeoutMs?: number; ssrfPolicy?: any }) {
         seenAuthStore = req.authStore;
         seenTimeoutMs = req.timeoutMs;
         seenSsrfPolicy = req.ssrfPolicy;
@@ -341,7 +341,7 @@ describe("image-generation runtime", () => {
           quality?: string;
           outputFormat?: string;
           background?: string;
-          providerOptions?: unknown;
+          providerOptions?: any;
         }
       | undefined;
     providers = [

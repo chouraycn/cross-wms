@@ -72,12 +72,12 @@ export interface ChatErrorPayload {
 export interface SessionCreatePayload {
   sessionKey: string;
   label?: string;
-  meta?: Record<string, unknown>;
+  meta?: Record<string, any>;
 }
 
 export interface SessionUpdatePayload {
   sessionKey: string;
-  changes: Record<string, unknown>;
+  changes: Record<string, any>;
   version?: number;
 }
 
@@ -89,7 +89,7 @@ export interface SessionDeletePayload {
 export interface ToolCallStartPayload {
   toolName: string;
   callId: string;
-  args?: unknown;
+  args?: any;
   sessionKey?: string;
 }
 
@@ -97,7 +97,7 @@ export interface ToolCallEndPayload {
   toolName: string;
   callId: string;
   ok: boolean;
-  result?: unknown;
+  result?: any;
   error?: string;
   durationMs?: number;
 }

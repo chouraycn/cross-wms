@@ -109,7 +109,7 @@ export interface ModelCatalogEntry {
   outputCost?: number;
   available: boolean;
   authStatus: 'authenticated' | 'unauthenticated' | 'pending';
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface ModelSearchParams {

@@ -70,7 +70,7 @@ function getToolIcon(name: string): string {
 
 // ===================== 工具摘要提取 =====================
 
-function extractToolSummary(name: string, args: Record<string, unknown> | null): string {
+function extractToolSummary(name: string, args: Record<string, any> | null): string {
   if (!args) return '';
   
   switch (name) {
@@ -406,7 +406,7 @@ const ToolCallItem = React.memo<ToolCallItemProps>(function ToolCallItem({ toolC
 
   // 尝试格式化参数
   let formattedArgs = toolCall.arguments;
-  let parsedArgs: Record<string, unknown> | null = null;
+  let parsedArgs: Record<string, any> | null = null;
   try {
     parsedArgs = JSON.parse(toolCall.arguments);
     formattedArgs = JSON.stringify(parsedArgs, null, 2);

@@ -94,9 +94,9 @@ function createRuntime() {
   };
 }
 
-type MockCalls = { mock: { calls: Array<Array<unknown>> } };
+type MockCalls = { mock: { calls: Array<Array<any>> } };
 
-function mockCall(mock: MockCalls, callIndex = 0): Array<unknown> {
+function mockCall(mock: MockCalls, callIndex = 0): Array<any> {
   const call = mock.mock.calls[callIndex];
   if (!call) {
     throw new Error(`expected mock call ${callIndex}`);
@@ -104,21 +104,21 @@ function mockCall(mock: MockCalls, callIndex = 0): Array<unknown> {
   return call;
 }
 
-function mockArg(mock: MockCalls, callIndex = 0, argIndex = 0): Record<string, unknown> {
+function mockArg(mock: MockCalls, callIndex = 0, argIndex = 0): Record<string, any> {
   const arg = mockCall(mock, callIndex)[argIndex];
   if (!arg || typeof arg !== "object") {
     throw new Error(`expected mock arg at call ${callIndex}, arg ${argIndex}`);
   }
-  return arg as Record<string, unknown>;
+  return arg as Record<string, any>;
 }
 
-function expectWorkspaceDir(value: unknown) {
+function expectWorkspaceDir(value: any) {
   expect(typeof value).toBe("string");
   expect((value as string).length).toBeGreaterThan(0);
 }
 
-function expectConfigDefaults(value: unknown) {
-  const config = value as { agents?: unknown };
+function expectConfigDefaults(value: any) {
+  const config = value as { agents?: any };
   expect(config.agents).toEqual({ defaults: {} });
 }
 

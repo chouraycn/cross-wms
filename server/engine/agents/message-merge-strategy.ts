@@ -7,10 +7,10 @@
  */
 
 export type MessageMergeStrategy = unknown;
-export function resolveMessageMergeStrategy(..._args: unknown[]): unknown {
+export function resolveMessageMergeStrategy(..._args: any[]): any {
   return undefined;
 }
-export function registerMessageMergeStrategyForTest(..._args: unknown[]): unknown {
+export function registerMessageMergeStrategyForTest(..._args: any[]): any {
   return undefined;
 }
-export const DEFAULT_MESSAGE_MERGE_STRATEGY_ID: unknown = undefined;
+export const DEFAULT_MESSAGE_MERGE_STRATEGY_ID: any = undefined;

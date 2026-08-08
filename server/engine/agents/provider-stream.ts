@@ -6,6 +6,6 @@
  */
 
 /** Registers a provider stream handler for a model. */
-export function registerProviderStreamForModel(..._args: unknown[]): void {
+export function registerProviderStreamForModel(..._args: any[]): void {
   // Cross-wms does not have provider stream registry.
 }

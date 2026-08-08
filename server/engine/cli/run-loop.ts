@@ -1,4 +1,4 @@
 
-export async function runGatewayLoop(..._args: unknown[]): Promise<void> {
+export async function runGatewayLoop(..._args: any[]): Promise<void> {
   console.warn('runGatewayLoop is not available in cross-wms');
 }

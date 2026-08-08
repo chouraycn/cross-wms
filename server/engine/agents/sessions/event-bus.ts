@@ -7,8 +7,8 @@ import { EventEmitter } from "node:events";
 
 /** Minimal publish/subscribe interface used by session components. */
 export interface EventBus {
-  emit(channel: string, data: unknown): void;
-  on(channel: string, handler: (data: unknown) => void): () => void;
+  emit(channel: string, data: any): void;
+  on(channel: string, handler: (data: any) => void): () => void;
 }
 
 /** Event bus plus lifecycle control for tests and teardown. */
@@ -24,7 +24,7 @@ export function createEventBus(): EventBusController {
       emitter.emit(channel, data);
     },
     on: (channel, handler) => {
-      const safeHandler = (data: unknown) => {
+      const safeHandler = (data: any) => {
         try {
           handler(data);
         } catch (err) {

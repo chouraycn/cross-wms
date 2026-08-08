@@ -46,7 +46,7 @@ export function getRecentSlashCommands(limit: number = RECENT_DEFAULT_LIMIT): st
   try {
     const raw = window.localStorage.getItem(RECENT_STORAGE_KEY);
     if (!raw) return [];
-    const parsed = JSON.parse(raw) as unknown;
+    const parsed = JSON.parse(raw) as any;
     if (!Array.isArray(parsed)) return [];
     return parsed.filter((c): c is string => typeof c === 'string').slice(0, limit);
   } catch {

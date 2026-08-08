@@ -265,7 +265,7 @@ export type ImageDescriptionRequest = {
   timeoutMs: number;
   profile?: string;
   preferredProfile?: string;
-  authStore?: unknown;
+  authStore?: any;
   agentDir: string;
   workspaceDir?: string;
   cfg: OpenClawConfig;
@@ -288,7 +288,7 @@ export type ImagesDescriptionRequest = {
   timeoutMs: number;
   profile?: string;
   preferredProfile?: string;
-  authStore?: unknown;
+  authStore?: any;
   agentDir: string;
   workspaceDir?: string;
   cfg: OpenClawConfig;
@@ -324,12 +324,12 @@ export type StructuredExtractionRequest = {
   input: StructuredExtractionInput[];
   instructions: string;
   schemaName?: string;
-  jsonSchema?: unknown;
+  jsonSchema?: any;
   jsonMode?: boolean;
   timeoutMs: number;
   profile?: string;
   preferredProfile?: string;
-  authStore?: unknown;
+  authStore?: any;
   agentDir: string;
   cfg: OpenClawConfig;
   model: string;
@@ -338,7 +338,7 @@ export type StructuredExtractionRequest = {
 
 export type StructuredExtractionResult = {
   text: string;
-  parsed?: unknown;
+  parsed?: any;
   model?: string;
   provider?: string;
   contentType?: "json" | "text";

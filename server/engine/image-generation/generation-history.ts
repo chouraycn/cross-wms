@@ -29,7 +29,7 @@ export type GenerationHistoryRecord = {
   createdAt: number;
   tags?: string[];
   favorite?: boolean;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 export type HistoryQueryParams = {

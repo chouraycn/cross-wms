@@ -32,10 +32,10 @@ async function readTimeline(path: string) {
   return (await readFile(path, "utf8"))
     .trim()
     .split("\n")
-    .map((line) => JSON.parse(line) as Record<string, unknown>);
+    .map((line) => JSON.parse(line) as Record<string, any>);
 }
 
-function eventRecord(events: Record<string, unknown>[], index: number): Record<string, unknown> {
+function eventRecord(events: Record<string, any>[], index: number): Record<string, any> {
   const event = events[index];
   if (!event) {
     throw new Error(`Expected diagnostics event at index ${index}`);
@@ -43,7 +43,7 @@ function eventRecord(events: Record<string, unknown>[], index: number): Record<s
   return event;
 }
 
-function attributesRecord(event: Record<string, unknown>): Record<string, unknown> {
+function attributesRecord(event: Record<string, any>): Record<string, any> {
   if (
     !event.attributes ||
     typeof event.attributes !== "object" ||
@@ -51,7 +51,7 @@ function attributesRecord(event: Record<string, unknown>): Record<string, unknow
   ) {
     throw new Error("Expected diagnostics event attributes");
   }
-  return event.attributes as Record<string, unknown>;
+  return event.attributes as Record<string, any>;
 }
 
 afterEach(async () => {

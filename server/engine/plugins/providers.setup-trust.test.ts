@@ -22,7 +22,7 @@ function makeTempDir() {
   return makeTrackedTempDir("openclaw-provider-setup-trust", tempDirs);
 }
 
-function writeJson(filePath: string, value: unknown) {
+function writeJson(filePath: string, value: any) {
   fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, "utf-8");
 }
 

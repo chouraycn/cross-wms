@@ -59,9 +59,9 @@ function installCompactRuntimeSpy() {
   });
 }
 
-function requireCompactRuntimeParams(callIndex: number): Record<string, unknown> {
+function requireCompactRuntimeParams(callIndex: number): Record<string, any> {
   const params = compactEmbeddedAgentSessionDirectMock.mock.calls[callIndex]?.[0] as
-    | Record<string, unknown>
+    | Record<string, any>
     | undefined;
   if (!params) {
     throw new Error(`missing compact runtime call ${callIndex}`);
@@ -89,7 +89,7 @@ function uniqueEngineId(prefix: string): string {
 }
 
 function registerPromptTrackingEngine(engineId: string) {
-  const calls: Array<Record<string, unknown>> = [];
+  const calls: Array<Record<string, any>> = [];
   registerContextEngine(engineId, () => ({
     info: { id: engineId, name: "Prompt Tracker", version: "0.0.0" },
     async ingest() {
@@ -116,9 +116,9 @@ function requireFactoryContext(
 }
 
 function requireRegistryState() {
-  const registryState = (globalThis as Record<symbol, unknown>)[
+  const registryState = (globalThis as Record<symbol, any>)[
     Symbol.for("openclaw.contextEngineRegistryState")
-  ] as { engines: Map<string, unknown> } | undefined;
+  ] as { engines: Map<string, any> } | undefined;
   if (!registryState) {
     throw new Error("expected context engine registry state");
   }
@@ -164,7 +164,7 @@ class MockContextEngine implements ContextEngine {
     tokenBudget?: number;
     compactionTarget?: "budget" | "threshold";
     customInstructions?: string;
-    runtimeContext?: Record<string, unknown>;
+    runtimeContext?: Record<string, any>;
   }): Promise<CompactResult> {
     return {
       ok: true,
@@ -185,10 +185,10 @@ class MockContextEngine implements ContextEngine {
 
 class LegacySessionKeyStrictEngine implements ContextEngine {
   readonly info: ContextEngineInfo;
-  readonly ingestCalls: Array<Record<string, unknown>> = [];
-  readonly assembleCalls: Array<Record<string, unknown>> = [];
-  readonly compactCalls: Array<Record<string, unknown>> = [];
-  readonly maintainCalls: Array<Record<string, unknown>> = [];
+  readonly ingestCalls: Array<Record<string, any>> = [];
+  readonly assembleCalls: Array<Record<string, any>> = [];
+  readonly compactCalls: Array<Record<string, any>> = [];
+  readonly maintainCalls: Array<Record<string, any>> = [];
   readonly ingestedMessages: AgentMessage[] = [];
 
   constructor(engineId = "legacy-sessionkey-strict") {
@@ -240,7 +240,7 @@ class LegacySessionKeyStrictEngine implements ContextEngine {
     tokenBudget?: number;
     compactionTarget?: "budget" | "threshold";
     customInstructions?: string;
-    runtimeContext?: Record<string, unknown>;
+    runtimeContext?: Record<string, any>;
   }): Promise<CompactResult> {
     this.compactCalls.push({ ...params });
     this.rejectSessionKey(params);
@@ -258,7 +258,7 @@ class LegacySessionKeyStrictEngine implements ContextEngine {
     sessionId: string;
     sessionKey?: string;
     sessionFile: string;
-    runtimeContext?: Record<string, unknown>;
+    runtimeContext?: Record<string, any>;
   }): Promise<ContextEngineMaintenanceResult> {
     this.maintainCalls.push({ ...params });
     this.rejectSessionKey(params);
@@ -309,7 +309,7 @@ class SessionKeyRuntimeErrorEngine implements ContextEngine {
     tokenBudget?: number;
     compactionTarget?: "budget" | "threshold";
     customInstructions?: string;
-    runtimeContext?: Record<string, unknown>;
+    runtimeContext?: Record<string, any>;
   }): Promise<CompactResult> {
     return {
       ok: true,
@@ -320,7 +320,7 @@ class SessionKeyRuntimeErrorEngine implements ContextEngine {
 
 class LegacyAssembleStrictEngine implements ContextEngine {
   readonly info: ContextEngineInfo;
-  readonly assembleCalls: Array<Record<string, unknown>> = [];
+  readonly assembleCalls: Array<Record<string, any>> = [];
 
   constructor(engineId = "legacy-assemble-strict") {
     this.info = {
@@ -346,7 +346,7 @@ class LegacyAssembleStrictEngine implements ContextEngine {
     availableTools?: Set<string>;
     citationsMode?: MemoryCitationsMode;
     prompt?: string;
-    runtimeSettings?: unknown;
+    runtimeSettings?: any;
   }): Promise<AssembleResult> {
     this.assembleCalls.push({ ...params });
     if (Object.hasOwn(params, "sessionKey")) {
@@ -371,7 +371,7 @@ class LegacyAssembleStrictEngine implements ContextEngine {
     tokenBudget?: number;
     compactionTarget?: "budget" | "threshold";
     customInstructions?: string;
-    runtimeContext?: Record<string, unknown>;
+    runtimeContext?: Record<string, any>;
   }): Promise<CompactResult> {
     return {
       ok: true,
@@ -382,11 +382,11 @@ class LegacyAssembleStrictEngine implements ContextEngine {
 
 class LegacyRuntimeSettingsStrictEngine implements ContextEngine {
   readonly info: ContextEngineInfo;
-  readonly bootstrapCalls: Array<Record<string, unknown>> = [];
-  readonly maintainCalls: Array<Record<string, unknown>> = [];
-  readonly afterTurnCalls: Array<Record<string, unknown>> = [];
-  readonly assembleCalls: Array<Record<string, unknown>> = [];
-  readonly compactCalls: Array<Record<string, unknown>> = [];
+  readonly bootstrapCalls: Array<Record<string, any>> = [];
+  readonly maintainCalls: Array<Record<string, any>> = [];
+  readonly afterTurnCalls: Array<Record<string, any>> = [];
+  readonly assembleCalls: Array<Record<string, any>> = [];
+  readonly compactCalls: Array<Record<string, any>> = [];
 
   constructor(engineId = "legacy-runtime-settings-strict") {
     this.info = {
@@ -395,7 +395,7 @@ class LegacyRuntimeSettingsStrictEngine implements ContextEngine {
     };
   }
 
-  private rejectRuntimeSettings(params: { runtimeSettings?: unknown }): void {
+  private rejectRuntimeSettings(params: { runtimeSettings?: any }): void {
     if (Object.hasOwn(params, "runtimeSettings")) {
       throw new Error("Unrecognized key(s) in object: 'runtimeSettings'");
     }
@@ -405,7 +405,7 @@ class LegacyRuntimeSettingsStrictEngine implements ContextEngine {
     sessionId: string;
     sessionKey?: string;
     sessionFile: string;
-    runtimeSettings?: unknown;
+    runtimeSettings?: any;
   }): Promise<BootstrapResult> {
     this.bootstrapCalls.push({ ...params });
     this.rejectRuntimeSettings(params);
@@ -425,7 +425,7 @@ class LegacyRuntimeSettingsStrictEngine implements ContextEngine {
     sessionId: string;
     sessionKey?: string;
     sessionFile: string;
-    runtimeSettings?: unknown;
+    runtimeSettings?: any;
   }): Promise<ContextEngineMaintenanceResult> {
     this.maintainCalls.push({ ...params });
     this.rejectRuntimeSettings(params);
@@ -438,7 +438,7 @@ class LegacyRuntimeSettingsStrictEngine implements ContextEngine {
     sessionFile: string;
     messages: AgentMessage[];
     prePromptMessageCount: number;
-    runtimeSettings?: unknown;
+    runtimeSettings?: any;
   }): Promise<void> {
     this.afterTurnCalls.push({ ...params });
     this.rejectRuntimeSettings(params);
@@ -448,7 +448,7 @@ class LegacyRuntimeSettingsStrictEngine implements ContextEngine {
     sessionId: string;
     sessionKey?: string;
     messages: AgentMessage[];
-    runtimeSettings?: unknown;
+    runtimeSettings?: any;
   }): Promise<AssembleResult> {
     this.assembleCalls.push({ ...params });
     this.rejectRuntimeSettings(params);
@@ -459,7 +459,7 @@ class LegacyRuntimeSettingsStrictEngine implements ContextEngine {
     sessionId: string;
     sessionKey?: string;
     sessionFile: string;
-    runtimeSettings?: unknown;
+    runtimeSettings?: any;
   }): Promise<CompactResult> {
     this.compactCalls.push({ ...params });
     this.rejectRuntimeSettings(params);
@@ -469,8 +469,8 @@ class LegacyRuntimeSettingsStrictEngine implements ContextEngine {
 
 class LegacyRuntimeThenAssembleStrictEngine implements ContextEngine {
   readonly info: ContextEngineInfo;
-  readonly maintainCalls: Array<Record<string, unknown>> = [];
-  readonly assembleCalls: Array<Record<string, unknown>> = [];
+  readonly maintainCalls: Array<Record<string, any>> = [];
+  readonly assembleCalls: Array<Record<string, any>> = [];
 
   constructor(engineId = "legacy-runtime-then-assemble-strict") {
     this.info = {
@@ -492,7 +492,7 @@ class LegacyRuntimeThenAssembleStrictEngine implements ContextEngine {
     sessionId: string;
     sessionKey?: string;
     sessionFile: string;
-    runtimeSettings?: unknown;
+    runtimeSettings?: any;
   }): Promise<ContextEngineMaintenanceResult> {
     this.maintainCalls.push({ ...params });
     if (Object.hasOwn(params, "runtimeSettings")) {
@@ -506,7 +506,7 @@ class LegacyRuntimeThenAssembleStrictEngine implements ContextEngine {
     sessionKey?: string;
     messages: AgentMessage[];
     prompt?: string;
-    runtimeSettings?: unknown;
+    runtimeSettings?: any;
   }): Promise<AssembleResult> {
     this.assembleCalls.push({ ...params });
     if (Object.hasOwn(params, "sessionKey")) {

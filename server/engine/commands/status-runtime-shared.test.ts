@@ -43,7 +43,7 @@ vi.mock("./status.daemon.js", () => ({
 
 function requireProviderUsageCall(): {
   timeoutMs?: number;
-  config?: unknown;
+  config?: any;
   agentDir?: string;
 } {
   const call = mocks.loadProviderUsageSummary.mock.calls[0];
@@ -56,7 +56,7 @@ function requireProviderUsageCall(): {
   }
   return params as {
     timeoutMs?: number;
-    config?: unknown;
+    config?: any;
     agentDir?: string;
   };
 }

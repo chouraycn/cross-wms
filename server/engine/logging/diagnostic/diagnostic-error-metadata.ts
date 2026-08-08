@@ -16,7 +16,7 @@ export const errorMetadataSchema = z.object({
 
 export type ErrorMetadata = z.infer<typeof errorMetadataSchema>;
 
-export function extractErrorMetadata(error: unknown): ErrorMetadata {
+export function extractErrorMetadata(error: any): ErrorMetadata {
   if (!error) {
     return {};
   }
@@ -24,14 +24,14 @@ export function extractErrorMetadata(error: unknown): ErrorMetadata {
   if (error instanceof Error) {
     const metadata: ErrorMetadata = {
       code: (error as { code?: string }).code,
-      cause: (error as { cause?: unknown }).cause
-        ? String((error as { cause: unknown }).cause)
+      cause: (error as { cause?: any }).cause
+        ? String((error as { cause: any }).cause)
         : undefined,
       stack: error.stack,
       timestamp: new Date().toISOString(),
     };
 
-    const err = error as Error & Record<string, unknown>;
+    const err = error as Error & Record<string, any>;
     if (err.category !== undefined) {
       metadata.category = String(err.category);
     }
@@ -42,7 +42,7 @@ export function extractErrorMetadata(error: unknown): ErrorMetadata {
       metadata.retryable = Boolean(err.retryable);
     }
     if (err.context !== undefined && typeof err.context === 'object') {
-      metadata.context = err.context as Record<string, unknown>;
+      metadata.context = err.context as Record<string, any>;
     }
     if (err.requestId !== undefined) {
       metadata.requestId = String(err.requestId);
@@ -81,7 +81,7 @@ export function formatErrorMetadata(metadata: ErrorMetadata): string {
   return parts.join(' ');
 }
 
-export function classifyError(error: unknown): {
+export function classifyError(error: any): {
   category: string;
   severity: 'low' | 'medium' | 'high' | 'critical';
   retryable: boolean;

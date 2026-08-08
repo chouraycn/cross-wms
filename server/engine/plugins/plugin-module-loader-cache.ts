@@ -194,11 +194,11 @@ function createLazySourceTransformLoader(params: {
           modulePath: params.loaderFilename,
         }),
         tryNative: params.sourceTransformTryNative,
-      } as JITIOptions & Record<string, unknown>,
+      } as JITIOptions & Record<string, any>,
     );
     loadWithSourceTransform = new Proxy(jitiLoader, {
       apply(target, thisArg, argArray) {
-        const [first, ...rest] = argArray as [unknown, ...unknown[]];
+        const [first, ...rest] = argArray as [unknown, ...any[]];
         if (typeof first === "string") {
           return Reflect.apply(target, thisArg, [
             toSourceTransformImportPath(first),
@@ -222,8 +222,8 @@ function createPluginModuleLoader(params: {
     ...params,
     sourceTransformTryNative: params.tryNative,
   });
-  const loadedTargetExports = new Map<string, unknown>();
-  const loadCachedTarget = (target: string, rest: unknown[], load: () => unknown): unknown => {
+  const loadedTargetExports = new Map<string, any>();
+  const loadCachedTarget = (target: string, rest: any[], load: () => unknown): any => {
     if (rest.length > 0) {
       return load();
     }
@@ -239,12 +239,12 @@ function createPluginModuleLoader(params: {
   // jiti's alias rewriting to surface a narrow SDK slice), route every
   // target through jiti so those alias rewrites still apply.
   if (!params.tryNative) {
-    return ((target: string, ...rest: unknown[]) => {
+    return ((target: string, ...rest: any[]) => {
       return loadCachedTarget(target, rest, () => {
         pluginModuleLoaderStats.calls += 1;
         pluginModuleLoaderStats.sourceTransformForced += 1;
         recordSourceTransformTarget(target);
-        return (getLoadWithSourceTransform() as (t: string, ...a: unknown[]) => unknown)(
+        return (getLoadWithSourceTransform() as (t: string, ...a: any[]) => unknown)(
           target,
           ...rest,
         );
@@ -258,7 +258,7 @@ function createPluginModuleLoader(params: {
   // for TS / TSX sources and for the small set of require(esm) /
   // async-module fallbacks `tryNativeRequireJavaScriptModule` declines to
   // handle.
-  return ((target: string, ...rest: unknown[]) => {
+  return ((target: string, ...rest: any[]) => {
     return loadCachedTarget(target, rest, () => {
       pluginModuleLoaderStats.calls += 1;
       const native = tryNativeRequireJavaScriptModule(target, {
@@ -274,7 +274,7 @@ function createPluginModuleLoader(params: {
       pluginModuleLoaderStats.nativeMisses += 1;
       pluginModuleLoaderStats.sourceTransformFallbacks += 1;
       recordSourceTransformTarget(target);
-      return (getLoadWithSourceTransform() as (t: string, ...a: unknown[]) => unknown)(
+      return (getLoadWithSourceTransform() as (t: string, ...a: any[]) => unknown)(
         target,
         ...rest,
       );

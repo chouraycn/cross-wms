@@ -39,7 +39,7 @@ import type {
   TuiStateAccess,
 } from "./tui-types.js";
 
-function formatTuiFastMode(mode: unknown): "auto" | "on" | "off" {
+function formatTuiFastMode(mode: any): "auto" | "on" | "off" {
   return mode === "auto" ? "auto" : mode === true ? "on" : "off";
 }
 
@@ -84,16 +84,16 @@ function isSlashStopCommand(text: string): boolean {
   return trimmed.startsWith("/") && isChatStopCommandText(trimmed);
 }
 
-function normalizedChatSendAckStatus(status: unknown): string {
+function normalizedChatSendAckStatus(status: any): string {
   return typeof status === "string" ? status.trim().toLowerCase() : "";
 }
 
-function isTerminalChatSendAckFailure(status: unknown): boolean {
+function isTerminalChatSendAckFailure(status: any): boolean {
   const normalized = normalizedChatSendAckStatus(status);
   return normalized === "timeout" || normalized === "error";
 }
 
-function isTerminalChatSendAckSuccess(status: unknown): boolean {
+function isTerminalChatSendAckSuccess(status: any): boolean {
   return normalizedChatSendAckStatus(status) === "ok";
 }
 
@@ -417,7 +417,7 @@ export function createCommandHandlers(context: CommandHandlerContext) {
             }
             break;
           }
-          chatLog.addSystem("status: unknown response");
+          chatLog.addSystem("status: any response");
         } catch (err) {
           chatLog.addSystem(`status failed: ${String(err)}`);
         }

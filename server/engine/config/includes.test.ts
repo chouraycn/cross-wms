@@ -34,7 +34,7 @@ function sharedPath(...parts: string[]) {
   return path.join(SHARED_DIR, ...parts);
 }
 
-function createMockResolver(files: Record<string, unknown>): IncludeResolver {
+function createMockResolver(files: Record<string, any>): IncludeResolver {
   return {
     readFile: (filePath: string) => {
       if (filePath in files) {
@@ -46,7 +46,7 @@ function createMockResolver(files: Record<string, unknown>): IncludeResolver {
   };
 }
 
-function resolve(obj: unknown, files: Record<string, unknown> = {}, basePath = DEFAULT_BASE_PATH) {
+function resolve(obj: any, files: Record<string, any> = {}, basePath = DEFAULT_BASE_PATH) {
   return resolveConfigIncludes(obj, basePath, createMockResolver(files));
 }
 
@@ -54,7 +54,7 @@ function expectResolveIncludeError(
   run: () => unknown,
   expectedPattern?: RegExp,
 ): ConfigIncludeError {
-  let thrown: unknown;
+  let thrown: any;
   try {
     run();
   } catch (error) {
@@ -250,7 +250,7 @@ describe("resolveConfigIncludes", () => {
   });
 
   it("respects max depth limit", () => {
-    const files: Record<string, unknown> = {};
+    const files: Record<string, any> = {};
     for (let i = 0; i < 15; i++) {
       files[configPath(`level${i}.json`)] = {
         $include: `./level${i + 1}.json`,
@@ -263,7 +263,7 @@ describe("resolveConfigIncludes", () => {
   });
 
   it("allows depth 10 but rejects depth 11", () => {
-    const okFiles: Record<string, unknown> = {};
+    const okFiles: Record<string, any> = {};
     for (let i = 0; i < 9; i++) {
       okFiles[configPath(`ok${i}.json`)] = { $include: `./ok${i + 1}.json` };
     }
@@ -272,7 +272,7 @@ describe("resolveConfigIncludes", () => {
       done: true,
     });
 
-    const failFiles: Record<string, unknown> = {};
+    const failFiles: Record<string, any> = {};
     for (let i = 0; i < 10; i++) {
       failFiles[configPath(`fail${i}.json`)] = {
         $include: `./fail${i + 1}.json`,
@@ -597,7 +597,7 @@ describe("security: path traversal protection (CWE-22)", () => {
 
       for (const { base, incoming, expected } of cases) {
         const result = deepMerge(base, incoming);
-        expect((Object.prototype as Record<string, unknown>).polluted).toBeUndefined();
+        expect((Object.prototype as Record<string, any>).polluted).toBeUndefined();
         expect(result).toEqual(expected);
       }
     });

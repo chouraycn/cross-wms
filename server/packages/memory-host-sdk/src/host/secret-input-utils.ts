@@ -17,12 +17,12 @@ const ENV_SECRET_TEMPLATE_RE = /^\$\{([A-Z][A-Z0-9_]{0,127})\}$/;
 const SECRET_REF_SOURCES = new Set<SecretRefSource>(["env", "file", "exec"]);
 
 /** Narrow unknown JSON config values to plain records. */
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 /** Normalize literal secret strings and reject empty placeholders. */
-function normalizeSecretInputString(value: unknown): string | undefined {
+function normalizeSecretInputString(value: any): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }
@@ -31,17 +31,17 @@ function normalizeSecretInputString(value: unknown): string | undefined {
 }
 
 /** Narrow a string to a supported SecretRef source. */
-function hasSecretRefSource(value: unknown): value is SecretRefSource {
+function hasSecretRefSource(value: any): value is SecretRefSource {
   return typeof value === "string" && SECRET_REF_SOURCES.has(value as SecretRefSource);
 }
 
 /** Narrow unknown values to non-empty strings. */
-function hasNonEmptyString(value: unknown): value is string {
+function hasNonEmptyString(value: any): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
 
 /** Detect canonical three-field SecretRef objects. */
-function isSecretRef(value: unknown): value is SecretRef {
+function isSecretRef(value: any): value is SecretRef {
   if (!isRecord(value)) {
     return false;
   }
@@ -56,7 +56,7 @@ function isSecretRef(value: unknown): value is SecretRef {
 
 /** Detect legacy refs that predate explicit provider names. */
 function isLegacySecretRefWithoutProvider(
-  value: unknown,
+  value: any,
 ): value is { source: SecretRefSource; id: string } {
   if (!isRecord(value)) {
     return false;
@@ -67,7 +67,7 @@ function isLegacySecretRefWithoutProvider(
 }
 
 /** Parse env template shorthand such as "${OPENAI_API_KEY}". */
-function parseEnvTemplateSecretRef(value: unknown): SecretRef | null {
+function parseEnvTemplateSecretRef(value: any): SecretRef | null {
   if (typeof value !== "string") {
     return null;
   }
@@ -83,7 +83,7 @@ function parseEnvTemplateSecretRef(value: unknown): SecretRef | null {
 }
 
 /** Parse legacy secretref-env markers from older config snapshots. */
-function parseLegacySecretRefEnvMarker(value: unknown): SecretRef | null {
+function parseLegacySecretRefEnvMarker(value: any): SecretRef | null {
   if (typeof value !== "string") {
     return null;
   }
@@ -103,7 +103,7 @@ function parseLegacySecretRefEnvMarker(value: unknown): SecretRef | null {
 }
 
 /** Coerce all accepted shipped secret reference shapes to canonical SecretRef. */
-function coerceSecretRef(value: unknown): SecretRef | null {
+function coerceSecretRef(value: any): SecretRef | null {
   if (isSecretRef(value)) {
     return value;
   }
@@ -118,7 +118,7 @@ function coerceSecretRef(value: unknown): SecretRef | null {
 }
 
 /** Return true when a secret input has either a literal value or resolvable reference shape. */
-export function hasConfiguredSecretInput(value: unknown): boolean {
+export function hasConfiguredSecretInput(value: any): boolean {
   if (normalizeSecretInputString(value)) {
     return true;
   }
@@ -138,13 +138,13 @@ function createUnresolvedSecretInputError(params: { path: string; ref: SecretRef
 }
 
 /** Return a canonical SecretRef when the input is a supported reference shape. */
-export function resolveSecretInputRef(value: unknown): SecretRef | null {
+export function resolveSecretInputRef(value: any): SecretRef | null {
   return coerceSecretRef(value);
 }
 
 /** Normalize literal secrets, or throw for refs that still require gateway resolution. */
 export function normalizeResolvedSecretInputString(params: {
-  value: unknown;
+  value: any;
   path: string;
 }): string | undefined {
   const normalized = normalizeSecretInputString(params.value);
@@ -159,6 +159,6 @@ export function normalizeResolvedSecretInputString(params: {
 }
 
 /** Normalize env-provided secret values before use. */
-export function normalizeEnvSecretInputString(value: unknown): string | undefined {
+export function normalizeEnvSecretInputString(value: any): string | undefined {
   return normalizeSecretInputString(value);
 }

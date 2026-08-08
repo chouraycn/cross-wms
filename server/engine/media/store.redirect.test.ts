@@ -21,7 +21,7 @@ function createMockHttpExchange() {
   const resume = vi.fn(() => originalResume());
   res.resume = resume as typeof res.resume;
   const req = {
-    on: (event: string, handler: (...args: unknown[]) => void) => {
+    on: (event: string, handler: (...args: any[]) => void) => {
       if (event === "error") {
         res.on("error", handler);
       }
@@ -40,9 +40,9 @@ function mockRedirectExchange(params: { body?: string; location?: string }) {
   return {
     req,
     resume,
-    send(cb: (value: unknown) => void) {
+    send(cb: (value: any) => void) {
       setImmediate(() => {
-        cb(res as unknown);
+        cb(res as any);
         if (params.body) {
           res.write(params.body);
         }
@@ -58,9 +58,9 @@ function mockHttpStatusExchange(params: { body?: string; statusCode: number }) {
   return {
     req,
     resume,
-    send(cb: (value: unknown) => void) {
+    send(cb: (value: any) => void) {
       setImmediate(() => {
-        cb(res as unknown);
+        cb(res as any);
         if (params.body) {
           res.write(params.body);
         }
@@ -76,9 +76,9 @@ function mockSuccessfulTextExchange(params: { text: string; contentType: string 
   res.headers = { "content-type": params.contentType };
   return {
     req,
-    send(cb: (value: unknown) => void) {
+    send(cb: (value: any) => void) {
       setImmediate(() => {
-        cb(res as unknown);
+        cb(res as any);
         res.write(params.text);
         res.end();
       });

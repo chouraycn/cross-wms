@@ -29,7 +29,7 @@ export type PluginPackageChannel = {
   id?: string;
   label?: string;
   aliases?: readonly string[];
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 // ============================================================================

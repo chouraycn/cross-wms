@@ -8,7 +8,7 @@ const pluginRegistryMocks = vi.hoisted(() => {
     loadPluginManifestRegistryForInstalledIndex: loadManifestRegistry,
     loadPluginManifestRegistryForPluginRegistry: loadManifestRegistry,
     loadPluginRegistrySnapshot: vi.fn(() => ({ plugins: [] })),
-    loadPluginMetadataSnapshot: vi.fn((params: unknown) => {
+    loadPluginMetadataSnapshot: vi.fn((params: any) => {
       const registry = loadManifestRegistry(params) ?? { plugins: [], diagnostics: [] };
       return {
         index: {

@@ -115,9 +115,9 @@ export class VecMemoryHost extends BaseMemoryHost {
       const now = Date.now();
       return {
         id: String(result.id),
-        sessionId: (result.metadata as Record<string, unknown>)?.sessionId as string ?? 'unknown',
+        sessionId: (result.metadata as Record<string, any>)?.sessionId as string ?? 'unknown',
         content: result.text,
-        metadata: result.metadata as Record<string, unknown>,
+        metadata: result.metadata as Record<string, any>,
         createdAt: now,
         updatedAt: now,
         accessCount: 1,
@@ -196,9 +196,9 @@ export class VecMemoryHost extends BaseMemoryHost {
       const memoryResults: MemorySearchResult[] = results.map((r, idx) => ({
         entry: {
           id: String(r.id),
-          sessionId: (r.metadata as Record<string, unknown>)?.sessionId as string ?? 'unknown',
+          sessionId: (r.metadata as Record<string, any>)?.sessionId as string ?? 'unknown',
           content: r.text,
-          metadata: r.metadata as Record<string, unknown>,
+          metadata: r.metadata as Record<string, any>,
           createdAt: 0,
           updatedAt: 0,
           accessCount: 0,
@@ -233,7 +233,7 @@ export class VecMemoryHost extends BaseMemoryHost {
         id: String(m.id),
         sessionId,
         content: m.text,
-        metadata: m.metadata as Record<string, unknown>,
+        metadata: m.metadata as Record<string, any>,
         createdAt: new Date(m.createdAt).getTime(),
         updatedAt: new Date(m.createdAt).getTime(),
         accessCount: 0,

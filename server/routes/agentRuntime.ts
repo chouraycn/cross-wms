@@ -40,7 +40,7 @@ const router = Router();
 
 // ===================== 响应辅助 =====================
 
-function ok(res: Response, data: unknown, status = 200): void {
+function ok(res: Response, data: any, status = 200): void {
   res.status(status).json({ success: true, data });
 }
 
@@ -76,7 +76,7 @@ router.get('/subagents', (_req: Request, res: Response) => {
     const definitions = registry.listDefinitions();
     const stats = registry.getStats();
     ok(res, { definitions, stats });
-  } catch (err: unknown) {
+  } catch (err: any) {
     fail(res, err instanceof Error ? err.message : 'Internal server error');
   }
 });
@@ -108,7 +108,7 @@ router.get('/subagents/describe', (req: Request, res: Response) => {
       availableTools: registry.getAvailableTools(definition.id) ?? { builtin: [], mcp: [] },
     }));
     ok(res, { definitions: all });
-  } catch (err: unknown) {
+  } catch (err: any) {
     fail(res, err instanceof Error ? err.message : 'Internal server error');
   }
 });
@@ -132,7 +132,7 @@ router.get('/subagents/instances', (req: Request, res: Response) => {
           : undefined,
     );
     ok(res, { instances, total: instances.length });
-  } catch (err: unknown) {
+  } catch (err: any) {
     fail(res, err instanceof Error ? err.message : 'Internal server error');
   }
 });
@@ -146,8 +146,8 @@ router.get('/subagents/instances', (req: Request, res: Response) => {
  *  - taskDescription: string         (必填) 任务描述
  *  - sessionKey?: string             会话 Key（缺省自动生成，仅作标识）
  *  - parentSessionKey?: string
- *  - input?: Record<string, unknown>
- *  - metadata?: Record<string, unknown>
+ *  - input?: Record<string, any>
+ *  - metadata?: Record<string, any>
  *  - timeoutMs?: number
  *  - thinkLevel?: string
  *  - mode?: 'sequential' | 'parallel' | 'isolated'
@@ -197,7 +197,7 @@ router.post('/subagents/run', async (req: Request, res: Response) => {
 
     const result: SubagentExecutionResult = await getSubagentRunner().execute(config);
     ok(res, result, 202);
-  } catch (err: unknown) {
+  } catch (err: any) {
     fail(res, err instanceof Error ? err.message : 'Internal server error');
   }
 });
@@ -216,7 +216,7 @@ router.get('/mcp', (_req: Request, res: Response) => {
       stats,
       note: 'MCP 客户端管理器（mcpClientManager）连接状态与统计。',
     });
-  } catch (err: unknown) {
+  } catch (err: any) {
     fail(res, err instanceof Error ? err.message : 'Internal server error');
   }
 });
@@ -242,7 +242,7 @@ router.get('/instances', (req: Request, res: Response) => {
       ...(parentInstanceId ? { parentInstanceId } : {}),
     });
     ok(res, { instances, total: instances.length });
-  } catch (err: unknown) {
+  } catch (err: any) {
     fail(res, err instanceof Error ? err.message : 'Internal server error');
   }
 });
@@ -261,7 +261,7 @@ router.get('/instances/:id', (req: Request, res: Response) => {
     const events = agentRegistry.getInstanceEvents(req.params.id);
     const deliveryState = agentRegistry.getInstanceDeliveryState(req.params.id);
     ok(res, { instance, events, deliveryState });
-  } catch (err: unknown) {
+  } catch (err: any) {
     fail(res, err instanceof Error ? err.message : 'Internal server error');
   }
 });
@@ -278,7 +278,7 @@ router.post('/instances/:id/cancel', (req: Request, res: Response) => {
       return;
     }
     ok(res, { success: true });
-  } catch (err: unknown) {
+  } catch (err: any) {
     fail(res, err instanceof Error ? err.message : 'Internal server error');
   }
 });
@@ -292,7 +292,7 @@ router.get('/instances/:id/children/reconcile', (req: Request, res: Response) =>
     const result = agentRegistry.reconcileChildInstances(req.params.id);
     const children = agentRegistry.listInstances({ parentInstanceId: req.params.id });
     ok(res, { summary: result, children });
-  } catch (err: unknown) {
+  } catch (err: any) {
     fail(res, err instanceof Error ? err.message : 'Internal server error');
   }
 });
@@ -306,7 +306,7 @@ router.post('/orphans/recover', (_req: Request, res: Response) => {
     const recoveredCount = agentRegistry.recoverOrphanInstances();
     const stats = agentRegistry.getInstanceStats();
     ok(res, { recoveredCount, stats });
-  } catch (err: unknown) {
+  } catch (err: any) {
     fail(res, err instanceof Error ? err.message : 'Internal server error');
   }
 });
@@ -319,7 +319,7 @@ router.get('/stats', (_req: Request, res: Response) => {
   try {
     const stats = agentRegistry.getInstanceStats();
     ok(res, stats);
-  } catch (err: unknown) {
+  } catch (err: any) {
     fail(res, err instanceof Error ? err.message : 'Internal server error');
   }
 });
@@ -361,7 +361,7 @@ router.get('/health', (_req: Request, res: Response) => {
       timestamp: Date.now(),
     };
     ok(res, data, degraded ? 200 : 200);
-  } catch (err: unknown) {
+  } catch (err: any) {
     fail(res, err instanceof Error ? err.message : 'Internal server error');
   }
 });

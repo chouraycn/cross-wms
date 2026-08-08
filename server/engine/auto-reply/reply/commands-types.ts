@@ -35,7 +35,7 @@ export type CommandContext = {
 };
 
 /** Minimal MsgContext 占位类型（与 openclaw MsgContext 结构兼容子集）。 */
-export type MsgContext = Record<string, unknown> & {
+export type MsgContext = Record<string, any> & {
   ChatType?: string;
   MessageSidFull?: string;
   MessageSid?: string;
@@ -52,15 +52,15 @@ export type HandleCommandsParams = {
   command: CommandContext;
   agentId?: string;
   agentDir?: string;
-  directives: Record<string, unknown>;
+  directives: Record<string, any>;
   elevated: {
     enabled: boolean;
     allowed: boolean;
     failures: Array<{ gate: string; key: string }>;
   };
-  sessionEntry?: Record<string, unknown>;
-  previousSessionEntry?: Record<string, unknown>;
-  sessionStore?: Record<string, Record<string, unknown>>;
+  sessionEntry?: Record<string, any>;
+  previousSessionEntry?: Record<string, any>;
+  sessionStore?: Record<string, Record<string, any>>;
   sessionKey: string;
   storePath?: string;
   workspaceDir: string;

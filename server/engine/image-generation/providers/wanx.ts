@@ -161,7 +161,7 @@ export function createWanxiangProvider(
       const timeoutMs = req.timeoutMs ?? defaultTimeoutMs;
       const baseUrl = resolveBaseUrl(req, baseUrlEnvVar, defaultBaseUrl);
 
-      const wanxOptions = req.providerOptions?.wanx as Record<string, unknown> | undefined;
+      const wanxOptions = req.providerOptions?.wanx as Record<string, any> | undefined;
       const seed = wanxOptions?.seed as number | undefined;
       const style = wanxOptions?.style as string | undefined;
       const refImage = wanxOptions?.ref_image as string | undefined;
@@ -176,7 +176,7 @@ export function createWanxiangProvider(
       const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
       try {
-        const body: Record<string, unknown> = {
+        const body: Record<string, any> = {
           model,
           input: {
             prompt: req.prompt,
@@ -188,16 +188,16 @@ export function createWanxiangProvider(
         };
 
         if (seed !== undefined) {
-          (body.parameters as Record<string, unknown>).seed = seed;
+          (body.parameters as Record<string, any>).seed = seed;
         }
         if (style) {
-          (body.parameters as Record<string, unknown>).style = style;
+          (body.parameters as Record<string, any>).style = style;
         }
         if (refImage) {
-          (body.input as Record<string, unknown>).ref_image = refImage;
+          (body.input as Record<string, any>).ref_image = refImage;
         }
         if (negativePrompt) {
-          (body.input as Record<string, unknown>).negative_prompt = negativePrompt;
+          (body.input as Record<string, any>).negative_prompt = negativePrompt;
         }
 
         const response = await fetch(endpoint, {

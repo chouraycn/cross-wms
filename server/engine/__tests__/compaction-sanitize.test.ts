@@ -12,10 +12,10 @@ import {
 
 type TestMessage = {
   role: string;
-  content: unknown;
-  toolCalls?: Array<{ id: string; name: string; input?: Record<string, unknown> }>;
+  content: any;
+  toolCalls?: Array<{ id: string; name: string; input?: Record<string, any> }>;
   toolCallId?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 function createUserMessage(content: string): TestMessage {
@@ -34,7 +34,7 @@ function createToolCallMessage(toolId: string): TestMessage {
   };
 }
 
-function createToolResultMessage(toolId: string, content: unknown): TestMessage {
+function createToolResultMessage(toolId: string, content: any): TestMessage {
   return { role: 'tool', content, toolCallId: toolId };
 }
 

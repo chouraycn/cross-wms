@@ -11,7 +11,7 @@ import { createStreamIteratorWrapper } from "../../stream-iterator-wrapper.js";
  */
 export function wrapStreamObjectEvents(
   stream: MutableAssistantMessageEventStream,
-  onEvent: (event: Record<string, unknown>) => void | Promise<void>,
+  onEvent: (event: Record<string, any>) => void | Promise<void>,
 ): MutableAssistantMessageEventStream {
   const originalAsyncIterator = stream[Symbol.asyncIterator].bind(stream);
   (stream as { [Symbol.asyncIterator]: typeof originalAsyncIterator })[Symbol.asyncIterator] =
@@ -22,7 +22,7 @@ export function wrapStreamObjectEvents(
         next: async (streamIterator) => {
           const result = await streamIterator.next();
           if (!result.done && result.value && typeof result.value === "object") {
-            await onEvent(result.value as Record<string, unknown>);
+            await onEvent(result.value as Record<string, any>);
           }
           return result;
         },

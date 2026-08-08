@@ -80,13 +80,13 @@ afterAll(async () => {
   await server.close();
 });
 
-function toRecord(value: unknown): Record<string, unknown> {
+function toRecord(value: any): Record<string, any> {
   return value && typeof value === "object" && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
+    ? (value as Record<string, any>)
     : {};
 }
 
-function buildConfigSetWithRotatedToken(config: Record<string, unknown>): Record<string, unknown> {
+function buildConfigSetWithRotatedToken(config: Record<string, any>): Record<string, any> {
   const next = structuredClone(config);
   const gateway = { ...toRecord(next.gateway) };
   const auth = { ...toRecord(gateway.auth), mode: "token", token: NEW_TOKEN };

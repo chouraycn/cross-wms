@@ -406,7 +406,7 @@ export class ModelRegistry {
 
     try {
       const content = readFileSync(modelsJsonPath, "utf-8");
-      const parsed = JSON.parse(stripJsonComments(content)) as unknown;
+      const parsed = JSON.parse(stripJsonComments(content)) as any;
       if (options.requireGeneratedCatalog === true && !isGeneratedPluginModelCatalog(parsed)) {
         return emptyCustomModelsResult();
       }
@@ -807,7 +807,7 @@ export class ModelRegistry {
     }
     for (const k of Object.keys(config) as (keyof ProviderConfigInput)[]) {
       if (config[k] !== undefined) {
-        (existing as Record<string, unknown>)[k] = config[k];
+        (existing as Record<string, any>)[k] = config[k];
       }
     }
   }
@@ -931,7 +931,7 @@ export interface ProviderConfigInput {
     cost: { input: number; output: number; cacheRead: number; cacheWrite: number };
     contextWindow: number;
     maxTokens: number;
-    params?: Record<string, unknown>;
+    params?: Record<string, any>;
     headers?: Record<string, string>;
     compat?: Model["compat"];
   }>;

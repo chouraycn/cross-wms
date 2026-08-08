@@ -6,33 +6,33 @@
  */
 
 export function consumePendingToolMediaIntoReply(params: {
-  reply: Record<string, unknown>;
-  pendingMedia?: Array<Record<string, unknown>>;
-}): Record<string, unknown> {
+  reply: Record<string, any>;
+  pendingMedia?: Array<Record<string, any>>;
+}): Record<string, any> {
   return params.reply;
 }
 
 export function consumePendingToolMediaReply(params: {
-  pendingMedia?: Array<Record<string, unknown>>;
-}): Record<string, unknown> | undefined {
+  pendingMedia?: Array<Record<string, any>>;
+}): Record<string, any> | undefined {
   return undefined;
 }
 
 export function readPendingToolMediaReply(params: {
-  pendingMedia?: Array<Record<string, unknown>>;
-}): Record<string, unknown> | undefined {
+  pendingMedia?: Array<Record<string, any>>;
+}): Record<string, any> | undefined {
   return undefined;
 }
 
 export function consumePendingAssistantReplyDirectivesIntoReply(params: {
-  reply: Record<string, unknown>;
-  directives?: Array<Record<string, unknown>>;
-}): Record<string, unknown> {
+  reply: Record<string, any>;
+  directives?: Array<Record<string, any>>;
+}): Record<string, any> {
   return params.reply;
 }
 
 export function hasAssistantVisibleReply(params: {
-  reply: Record<string, unknown>;
+  reply: Record<string, any>;
 }): boolean {
   const content = params.reply["content"];
   if (!content) return false;
@@ -42,22 +42,22 @@ export function hasAssistantVisibleReply(params: {
 }
 
 export function handleMessageStart(params: {
-  context: Record<string, unknown>;
-  message: Record<string, unknown>;
+  context: Record<string, any>;
+  message: Record<string, any>;
 }): void {
   // No-op in simplified cross-wms
 }
 
 export function handleMessageUpdate(params: {
-  context: Record<string, unknown>;
-  message: Record<string, unknown>;
+  context: Record<string, any>;
+  message: Record<string, any>;
 }): void {
   // No-op in simplified cross-wms
 }
 
 export function handleMessageEnd(params: {
-  context: Record<string, unknown>;
-  message: Record<string, unknown>;
+  context: Record<string, any>;
+  message: Record<string, any>;
 }): void {
   // No-op in simplified cross-wms
 }

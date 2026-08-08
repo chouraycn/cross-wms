@@ -64,7 +64,7 @@ export function pluginMetadataSnapshotCoversProvider(
     // （providers / aliases 字段名），但 PluginMetadataSnapshot 类型声明未精化
     // 到具体 engine 模块。用宽松 as 断言与原 @ts-nocheck 代码保持一致行为。
     const mc = plugin.modelCatalog as
-      | { providers?: Record<string, unknown>; aliases?: Record<string, unknown> }
+      | { providers?: Record<string, any>; aliases?: Record<string, any> }
       | undefined;
     const modelCatalogProviderIds = [
       ...Object.keys(mc?.providers ?? {}),
@@ -82,7 +82,7 @@ export function pluginMetadataSnapshotCoversProvider(
 export function summarizeMessagePayload(
   msg: AgentMessage,
 ): { textChars: number; imageBlocks: number } {
-  const content = (msg as { content?: unknown }).content;
+  const content = (msg as { content?: any }).content;
   if (typeof content === "string") {
     return { textChars: content.length, imageBlocks: 0 };
   }
@@ -96,7 +96,7 @@ export function summarizeMessagePayload(
     if (!block || typeof block !== "object") {
       continue;
     }
-    const typedBlock = block as { type?: unknown; text?: unknown };
+    const typedBlock = block as { type?: any; text?: any };
     if (typedBlock.type === "image") {
       imageBlocks++;
       continue;
@@ -157,8 +157,8 @@ export function sessionMessagesContainIdempotencyKey(
 ): boolean {
   return messages.some(
     (message) =>
-      typeof (message as { idempotencyKey?: unknown }).idempotencyKey === "string" &&
-      (message as { idempotencyKey?: unknown }).idempotencyKey === idempotencyKey,
+      typeof (message as { idempotencyKey?: any }).idempotencyKey === "string" &&
+      (message as { idempotencyKey?: any }).idempotencyKey === idempotencyKey,
   );
 }
 
@@ -181,7 +181,7 @@ export function repairAttemptToolUseResultPairing(
   // 注：session-transcript-repair 当前是 stub（只接受 1 个参数直接返回），
   // 真实 policy（erroredAssistantResultPolicy / missingToolResultText）由
   // attempt.ts 中的真实逻辑接管。保留这段接口以便后续替换完整版。
-  const out = sanitizeToolUseResultPairing(messages as unknown[]);
+  const out = sanitizeToolUseResultPairing(messages as any[]);
   if (!isOpenAIResponsesApi) {
     // 无额外处理
   }
@@ -192,8 +192,8 @@ export function repairAttemptToolUseResultPairing(
 // Prompt / cleanup 错误优先级判定
 // ============================================================
 export function shouldPreservePromptErrorAfterCleanupError(params: {
-  promptError: unknown;
-  cleanupError: unknown;
+  promptError: any;
+  cleanupError: any;
 }): boolean {
   return (
     Boolean(params.promptError) &&
@@ -202,11 +202,11 @@ export function shouldPreservePromptErrorAfterCleanupError(params: {
 }
 
 export class EmbeddedAttemptPromptErrorWithCleanupTakeoverError extends Error {
-  readonly promptError: unknown;
+  readonly promptError: any;
   readonly cleanupError: EmbeddedAttemptSessionTakeoverError;
 
   constructor(params: {
-    promptError: unknown;
+    promptError: any;
     cleanupError: EmbeddedAttemptSessionTakeoverError;
   }) {
     super(formatErrorMessage(params.promptError), { cause: params.cleanupError });
@@ -239,8 +239,8 @@ export function isMidTurnPrecheckAssistantError(
     return false;
   }
   const record = message as unknown as {
-    stopReason?: unknown;
-    errorMessage?: unknown;
+    stopReason?: any;
+    errorMessage?: any;
   };
   return (
     record.stopReason === "error" &&
@@ -291,7 +291,7 @@ export function removeTrailingMidTurnPrecheckAssistantError(params: {
 // Tools allowlist 解析（纯构造，外部依赖是确定性纯函数）
 // ============================================================
 export function collectAttemptExplicitToolAllowlistSources(params: {
-  config?: unknown;
+  config?: any;
   sessionKey?: string;
   sandboxSessionKey?: string;
   agentId?: string;

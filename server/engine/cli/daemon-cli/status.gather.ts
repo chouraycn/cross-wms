@@ -159,20 +159,20 @@ function resolveSnapshotRuntimeConfig(snapshot: ConfigFileSnapshot | null): Open
   return snapshot.runtimeConfig;
 }
 
-function coerceStatusConfig(value: unknown): OpenClawConfig {
+function coerceStatusConfig(value: any): OpenClawConfig {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return {};
   }
   return value as OpenClawConfig;
 }
 
-function hasOwnKey(value: unknown, key: string): boolean {
+function hasOwnKey(value: any, key: string): boolean {
   return Boolean(
     value && typeof value === "object" && !Array.isArray(value) && Object.hasOwn(value, key),
   );
 }
 
-function needsFullStatusConfigRead(raw: string, parsed: unknown): boolean {
+function needsFullStatusConfigRead(raw: string, parsed: any): boolean {
   // Fast reads skip config expansion; includes/env placeholders require full config IO.
   return raw.includes("$include") || raw.includes("${") || hasOwnKey(parsed, "env");
 }
@@ -185,7 +185,7 @@ async function readFastStatusConfig(configPath: string): Promise<StatusConfigRea
     return null;
   }
 
-  let parsed: unknown;
+  let parsed: any;
   try {
     parsed = JSON5.parse(raw);
   } catch (err) {
@@ -561,7 +561,7 @@ export async function gatherDaemonStatus(
     service.isLoaded({ env: serviceEnv }).catch(() => false),
     service
       .readRuntime(serviceEnv)
-      .catch((err: unknown) => ({ status: "unknown", detail: String(err) })),
+      .catch((err: any) => ({ status: "unknown", detail: String(err) })),
   ]);
   const restartHandoff = opts.deep ? readGatewayRestartHandoffSync(serviceEnv) : null;
   const configAudit = command

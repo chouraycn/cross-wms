@@ -94,14 +94,14 @@ export function formatSessionKeyCell(key: string, rich: boolean): string {
 
 /** Formats a relative session age cell for table output. */
 export function formatSessionAgeCell(updatedAt: number | null | undefined, rich: boolean): string {
-  const ageLabel = updatedAt ? formatTimeAgo(Date.now() - updatedAt) : "unknown";
+  const ageLabel = updatedAt ? formatTimeAgo(Date.now() - updatedAt) : "any";
   const padded = ageLabel.padEnd(SESSION_AGE_PAD);
   return rich ? theme.muted(padded) : padded;
 }
 
 /** Formats a model cell for table output. */
 export function formatSessionModelCell(model: string | null | undefined, rich: boolean): string {
-  const label = (model ?? "unknown").padEnd(SESSION_MODEL_PAD);
+  const label = (model ?? "any").padEnd(SESSION_MODEL_PAD);
   return rich ? theme.info(label) : label;
 }
 

@@ -6,7 +6,7 @@
 //  - Kysely/SQLite 状态数据库 → 基于文件的 JSON 持久化（stateDir/update-check-state.json）
 //  - scheduleGatewaySigusr1Restart → scheduleGatewayRestart（cross-wms 降级实现）
 //  - VERSION → resolveRuntimeServiceVersion()（来自 _runtime-stubs.js）
-//  - OpenClawConfig → Record<string, unknown>（来自 _runtime-stubs.js）
+//  - OpenClawConfig → Record<string, any>（来自 _runtime-stubs.js）
 import { createHash, randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import os from "node:os";
@@ -146,8 +146,8 @@ function shouldSkipCheck(allowInTests: boolean): boolean {
 }
 
 function resolveAutoUpdatePolicy(cfg: OpenClawConfig): AutoUpdatePolicy {
-  const update = (cfg.update as Record<string, unknown> | undefined) ?? undefined;
-  const auto = (update?.auto as Record<string, unknown> | undefined) ?? undefined;
+  const update = (cfg.update as Record<string, any> | undefined) ?? undefined;
+  const auto = (update?.auto as Record<string, any> | undefined) ?? undefined;
   const stableDelayHours =
     typeof auto?.stableDelayHours === "number" && Number.isFinite(auto.stableDelayHours)
       ? Math.max(0, auto.stableDelayHours)
@@ -170,7 +170,7 @@ function resolveAutoUpdatePolicy(cfg: OpenClawConfig): AutoUpdatePolicy {
 }
 
 function resolveCheckIntervalMs(cfg: OpenClawConfig): number {
-  const update = (cfg.update as Record<string, unknown> | undefined) ?? undefined;
+  const update = (cfg.update as Record<string, any> | undefined) ?? undefined;
   const channel = normalizeUpdateChannel(update?.channel as string | undefined) ?? DEFAULT_PACKAGE_CHANNEL;
   const auto = resolveAutoUpdatePolicy(cfg);
   if (!auto.enabled) {
@@ -247,11 +247,11 @@ function resolveStableJitterMs(params: {
   return bucket % (Math.floor(params.jitterWindowMs) + 1);
 }
 
-function resolveUpdateCheckNowMs(valueMs: unknown): number {
+function resolveUpdateCheckNowMs(valueMs: any): number {
   return asDateTimestampMs(valueMs) ?? asDateTimestampMs(Date.now()) ?? 0;
 }
 
-function resolveUpdateCheckTimestamp(valueMs: unknown): string {
+function resolveUpdateCheckTimestamp(valueMs: any): string {
   return (
     timestampMsToIsoString(typeof valueMs === "number" ? valueMs : undefined) ??
     timestampMsToIsoString(resolveUpdateCheckNowMs(Date.now())) ??
@@ -438,7 +438,7 @@ function clearAutoState(nextState: UpdateCheckState): void {
 
 export async function runGatewayUpdateCheck(params: {
   cfg: OpenClawConfig;
-  log: { info: (msg: string, meta?: Record<string, unknown>) => void };
+  log: { info: (msg: string, meta?: Record<string, any>) => void };
   isNixMode: boolean;
   allowInTests?: boolean;
   onUpdateAvailableChange?: (updateAvailable: UpdateAvailable | null) => void;
@@ -457,7 +457,7 @@ export async function runGatewayUpdateCheck(params: {
   const auto = resolveAutoUpdatePolicy(params.cfg);
   const autoDisabledByEnv = isTruthyEnvValue(process.env.OPENCLAW_NO_AUTO_UPDATE);
   const shouldRunAutoUpdate = auto.enabled && !autoDisabledByEnv;
-  const update = (params.cfg.update as Record<string, unknown> | undefined) ?? undefined;
+  const update = (params.cfg.update as Record<string, any> | undefined) ?? undefined;
   const shouldRunUpdateHints = update?.checkOnStart !== false;
   if (!shouldRunUpdateHints && !shouldRunAutoUpdate) {
     return;
@@ -656,7 +656,7 @@ export async function runGatewayUpdateCheck(params: {
 
 export function scheduleGatewayUpdateCheck(params: {
   cfg: OpenClawConfig;
-  log: { info: (msg: string, meta?: Record<string, unknown>) => void };
+  log: { info: (msg: string, meta?: Record<string, any>) => void };
   isNixMode: boolean;
   onUpdateAvailableChange?: (updateAvailable: UpdateAvailable | null) => void;
 }): () => void {

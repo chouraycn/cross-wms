@@ -54,7 +54,7 @@ export type RealtimeVoiceSpeakableToolResultOptions = {
 
 /** Read the consult question from a raw string or selected object keys. */
 export function readRealtimeVoiceConsultQuestion(
-  args: unknown,
+  args: any,
   keys: readonly string[] = DEFAULT_REALTIME_VOICE_CONSULT_QUESTION_KEYS,
 ): string | undefined {
   if (typeof args === "string") {
@@ -63,7 +63,7 @@ export function readRealtimeVoiceConsultQuestion(
   if (!args || typeof args !== "object" || Array.isArray(args)) {
     return undefined;
   }
-  const record = args as Record<string, unknown>;
+  const record = args as Record<string, any>;
   for (const key of keys) {
     const value = record[key];
     if (typeof value === "string" && value.trim()) {
@@ -127,7 +127,7 @@ export function matchRealtimeVoiceConsultQuestions(
 
 /** Extract a bounded speakable string from a tool result payload. */
 export function readSpeakableRealtimeVoiceToolResult(
-  result: unknown,
+  result: any,
   options: RealtimeVoiceSpeakableToolResultOptions = {},
 ): string | undefined {
   const stringResult = options.stringResult ?? true;
@@ -139,7 +139,7 @@ export function readSpeakableRealtimeVoiceToolResult(
   if (!result || typeof result !== "object" || Array.isArray(result)) {
     return undefined;
   }
-  const record = result as Record<string, unknown>;
+  const record = result as Record<string, any>;
   const keys = options.keys ?? DEFAULT_REALTIME_VOICE_SPEAKABLE_RESULT_KEYS;
   for (const key of keys) {
     const value = record[key];

@@ -6,10 +6,10 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function setSubagentsConfigOverride(..._args: unknown[]): unknown {
+export function setSubagentsConfigOverride(..._args: any[]): any {
   return undefined;
 }
-export function resetSubagentsConfigOverride(..._args: unknown[]): unknown {
+export function resetSubagentsConfigOverride(..._args: any[]): any {
   return undefined;
 }
-export const callGatewayMock: unknown = undefined;
+export const callGatewayMock: any = undefined;

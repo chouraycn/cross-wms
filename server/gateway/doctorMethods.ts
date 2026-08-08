@@ -20,7 +20,7 @@ export interface DoctorCheckResult {
   ok: boolean;
   severity: DoctorCheckSeverity;
   message: string;
-  details?: Record<string, unknown>;
+  details?: Record<string, any>;
   fixable: boolean;
 }
 
@@ -28,8 +28,8 @@ export interface DoctorFixResult {
   checkId: string;
   fixed: boolean;
   message: string;
-  before?: Record<string, unknown>;
-  after?: Record<string, unknown>;
+  before?: Record<string, any>;
+  after?: Record<string, any>;
 }
 
 interface DoctorCheck {
@@ -127,7 +127,7 @@ registerDoctorCheck({
 
 // ========== Doctor Check ==========
 
-async function doctorCheck(params: unknown, _ctx: GatewayMethodContext) {
+async function doctorCheck(params: any, _ctx: GatewayMethodContext) {
   const { checkId } = params as { checkId?: string };
 
   if (checkId) {
@@ -171,7 +171,7 @@ async function doctorCheck(params: unknown, _ctx: GatewayMethodContext) {
 
 // ========== Doctor Fix ==========
 
-async function doctorFix(params: unknown, _ctx: GatewayMethodContext) {
+async function doctorFix(params: any, _ctx: GatewayMethodContext) {
   const { checkId } = params as { checkId?: string };
 
   if (!checkId) {
@@ -215,7 +215,7 @@ async function doctorFix(params: unknown, _ctx: GatewayMethodContext) {
 
 // ========== Doctor List Checks ==========
 
-async function doctorListChecks(_params: unknown, _ctx: GatewayMethodContext) {
+async function doctorListChecks(_params: any, _ctx: GatewayMethodContext) {
   const checks = Array.from(doctorChecks.values()).map((check) => ({
     id: check.id,
     name: check.name,

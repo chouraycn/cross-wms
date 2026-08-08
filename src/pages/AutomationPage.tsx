@@ -51,7 +51,7 @@ import {
 // ===================== 触发器默认配置 =====================
 
 /** 根据触发器类型返回一份默认 triggerConfig（供 TriggerConfigPanel 初始化） */
-function defaultTriggerConfig(type: TriggerType): Record<string, unknown> {
+function defaultTriggerConfig(type: TriggerType): Record<string, any> {
   switch (type) {
     case 'schedule':
       return { cronExpression: '0 9 * * *' };
@@ -134,7 +134,7 @@ const AutomationPage: React.FC = () => {
   });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   /** 富触发器配置（交由 AutomationPanel/TriggerConfigPanel 编辑） */
-  const [formTriggerConfig, setFormTriggerConfig] = useState<Record<string, unknown>>({});
+  const [formTriggerConfig, setFormTriggerConfig] = useState<Record<string, any>>({});
 
   // URL 参数处理（从恶意技能卡片跳转过来）
   const [searchParams, setSearchParams] = useSearchParams();
@@ -308,20 +308,20 @@ const AutomationPage: React.FC = () => {
     if (tt === 'schedule') {
       setFormTriggerConfig({ cronExpression: rruleToCron(auto.rrule) });
     } else if (tt === 'event') {
-      const et = (auto.eventTrigger ?? {}) as unknown as Record<string, unknown>;
+      const et = (auto.eventTrigger ?? {}) as unknown as Record<string, any>;
       setFormTriggerConfig({ eventName: et.eventName ?? '', debounceMs: et.debounceMs ?? 0 });
     } else if (tt === 'webhook') {
-      const wc = (auto.webhookConfig ?? {}) as unknown as Record<string, unknown>;
+      const wc = (auto.webhookConfig ?? {}) as unknown as Record<string, any>;
       setFormTriggerConfig({ webhookPath: wc.path ?? '' });
     } else if (tt === 'file_change') {
-      const ft = (auto.fileChangeTrigger ?? {}) as unknown as Record<string, unknown>;
+      const ft = (auto.fileChangeTrigger ?? {}) as unknown as Record<string, any>;
       setFormTriggerConfig({
         pathPattern: ft.pathPattern ?? '',
         events: (ft.events as ('add' | 'change' | 'unlink')[]) ?? ['add', 'change', 'unlink'],
         ignorePattern: ft.ignorePattern ?? '',
       });
     } else if (tt === 'threshold') {
-      const th = (auto.thresholdTrigger ?? {}) as unknown as Record<string, unknown>;
+      const th = (auto.thresholdTrigger ?? {}) as unknown as Record<string, any>;
       setFormTriggerConfig({
         metric: th.metric ?? '',
         thresholdType: (th.thresholdType as 'upper' | 'lower') ?? 'upper',
@@ -412,7 +412,7 @@ const AutomationPage: React.FC = () => {
     };
 
     // 根据触发器类型组装专属字段（与后端约定对齐）
-    let payload: Record<string, unknown>;
+    let payload: Record<string, any>;
     if (formTriggerType === 'schedule') {
       payload = {
         ...base,

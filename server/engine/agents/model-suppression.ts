@@ -6,7 +6,7 @@
  * return false (no suppressed models).
  */
 
-function normalizeLowercaseStringOrEmpty(value: unknown): string {
+function normalizeLowercaseStringOrEmpty(value: any): string {
   if (typeof value === "string") {
     return value.trim().toLowerCase();
   }
@@ -60,7 +60,7 @@ export function buildSuppressedBuiltInModelError(_params: {
 
 /** Build a reusable suppression predicate for repeated catalog filtering. */
 export function buildShouldSuppressBuiltInModel(_params?: {
-  config?: unknown;
+  config?: any;
   workspaceDir?: string;
 }): (input: { provider?: string | null; id?: string | null; baseUrl?: string | null }) => boolean {
   return () => false;

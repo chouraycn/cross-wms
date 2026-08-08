@@ -9,12 +9,12 @@
 export { addEnvBackedAgentCredentials } from "./agent-auth-discovery-core.js";
 
 export type DiscoverAuthStorageOptions = {
-  externalCli?: Record<string, unknown>;
+  externalCli?: Record<string, any>;
   readOnly?: boolean;
   skipExternalAuthProfiles?: boolean;
   skipCredentials?: boolean;
   syntheticAuthProviderRefs?: Iterable<string>;
-  config?: Record<string, unknown>;
+  config?: Record<string, any>;
   workspaceDir?: string;
   env?: Record<string, string | undefined>;
 };
@@ -23,7 +23,7 @@ export type DiscoverAuthStorageOptions = {
 export function resolveAgentCredentialsForDiscovery(
   agentDir: string,
   options?: DiscoverAuthStorageOptions,
-): Record<string, unknown> {
+): Record<string, any> {
   // Cross-wms does not have the full auth profile store / synthetic auth pipeline.
   // Return an empty credential map.
   return {};

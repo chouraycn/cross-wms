@@ -111,7 +111,7 @@ export function createDiffusersProvider(
       const size = req.size || "512*512";
       const timeoutMs = req.timeoutMs ?? defaultTimeoutMs;
 
-      const diffusersOptions = req.providerOptions?.diffusers as Record<string, unknown> | undefined;
+      const diffusersOptions = req.providerOptions?.diffusers as Record<string, any> | undefined;
 
       const steps = diffusersOptions?.steps || defaultSteps;
       const guidanceScale = diffusersOptions?.guidanceScale || defaultGuidanceScale;

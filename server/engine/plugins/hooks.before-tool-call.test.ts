@@ -33,7 +33,7 @@ function expectRequireApprovalResult(
   expected: {
     block?: boolean;
     blockReason?: string;
-    params?: Record<string, unknown>;
+    params?: Record<string, any>;
     requireApproval?: PluginHookBeforeToolCallResult["requireApproval"];
   },
 ) {

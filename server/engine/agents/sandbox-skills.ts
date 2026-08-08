@@ -6,9 +6,9 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function mapSandboxSkillEntriesForPrompt(..._args: unknown[]): unknown {
+export function mapSandboxSkillEntriesForPrompt(..._args: any[]): any {
   return undefined;
 }
-export function resolveSandboxSkillRuntimeInputs(..._args: unknown[]): unknown {
+export function resolveSandboxSkillRuntimeInputs(..._args: any[]): any {
   return undefined;
 }

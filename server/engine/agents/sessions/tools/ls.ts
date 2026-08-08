@@ -216,7 +216,7 @@ export function createLsToolDefinition(
               content: [{ type: "text", text: output }],
               details: Object.keys(details).length > 0 ? details : undefined,
             });
-          } catch (e: unknown) {
+          } catch (e: any) {
             signal?.removeEventListener("abort", onAbort);
             reject(toErrorObject(e, "Non-Error rejection"));
           }

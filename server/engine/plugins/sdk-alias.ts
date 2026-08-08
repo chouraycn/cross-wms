@@ -30,8 +30,8 @@ export type PluginRuntimeModuleResolution = {
 };
 
 type PluginSdkPackageJson = {
-  exports?: Record<string, unknown>;
-  bin?: string | Record<string, unknown>;
+  exports?: Record<string, any>;
+  bin?: string | Record<string, any>;
   version?: string;
 };
 
@@ -336,7 +336,7 @@ function listArgvRuntimeFallbackStartDirs(argv1: string | undefined): string[] {
   return dedupeResolvedPaths(starts);
 }
 
-function formatResolutionError(error: unknown): string {
+function formatResolutionError(error: any): string {
   return error instanceof Error ? error.message : String(error);
 }
 
@@ -1027,14 +1027,14 @@ function normalizePackageExportSubpath(exportKey: string): string | null {
   return subpath && !subpath.includes("..") ? subpath : null;
 }
 
-function resolvePackageExportImportPath(value: unknown): string | null {
+function resolvePackageExportImportPath(value: any): string | null {
   if (typeof value === "string") {
     return value;
   }
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return null;
   }
-  const record = value as Record<string, unknown>;
+  const record = value as Record<string, any>;
   return typeof record.import === "string"
     ? record.import
     : typeof record.default === "string"
@@ -1171,7 +1171,7 @@ function readPrivateLocalOnlyPluginSdkSubpaths(packageRoot: string): string[] {
 }
 
 function readBundledPluginPackageName(packageJsonPath: string): string | null {
-  const parsed = tryReadJsonSync<{ name?: unknown }>(packageJsonPath);
+  const parsed = tryReadJsonSync<{ name?: any }>(packageJsonPath);
   const name = typeof parsed?.name === "string" ? parsed.name.trim() : "";
   return name.startsWith("@openclaw/") ? name : null;
 }
@@ -1406,7 +1406,7 @@ function isOfficialInstalledPluginPackageRoot(params: {
 function isOfficialInstalledPluginModulePath(params: { modulePath: string; packageName: string }) {
   let cursor = path.dirname(path.resolve(params.modulePath));
   for (let depth = 0; depth < 12; depth += 1) {
-    const packageJson = tryReadJsonSync<{ name?: unknown }>(path.join(cursor, "package.json"));
+    const packageJson = tryReadJsonSync<{ name?: any }>(path.join(cursor, "package.json"));
     if (packageJson) {
       return (
         packageJson.name === params.packageName &&
@@ -1718,7 +1718,7 @@ const pluginLoaderModuleConfigCache = new PluginLruCache<{
 }>(MAX_PLUGIN_LOADER_ALIAS_CACHE_ENTRIES);
 
 function hasJitiNormalizedAliasMarker(aliasMap: Record<string, string>) {
-  return Boolean((aliasMap as Record<symbol, unknown>)[JITI_NORMALIZED_ALIAS_SYMBOL]);
+  return Boolean((aliasMap as Record<symbol, any>)[JITI_NORMALIZED_ALIAS_SYMBOL]);
 }
 
 function createJitiAliasContentCacheKey(aliasMap: Record<string, string>) {

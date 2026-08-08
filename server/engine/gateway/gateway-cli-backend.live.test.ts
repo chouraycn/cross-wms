@@ -91,7 +91,7 @@ function parsePositiveIntegerEnv(name: string, fallback: number): number {
   return value;
 }
 
-function logCliBackendLiveStep(step: string, details?: Record<string, unknown>): void {
+function logCliBackendLiveStep(step: string, details?: Record<string, any>): void {
   if (!CLI_DEBUG) {
     return;
   }
@@ -141,7 +141,7 @@ function openAiProviderConfigForCodexCli(
   };
 }
 
-function isProviderCapacityError(error: unknown): boolean {
+function isProviderCapacityError(error: any): boolean {
   const message = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
   const normalized = message.toLowerCase();
   return (
@@ -388,7 +388,7 @@ describeLive("gateway live (cli backend)", () => {
       const cfgWithCliBackends = cfg as OpenClawConfig & {
         agents?: {
           defaults?: {
-            cliBackends?: Record<string, Record<string, unknown>>;
+            cliBackends?: Record<string, Record<string, any>>;
           };
         };
       };

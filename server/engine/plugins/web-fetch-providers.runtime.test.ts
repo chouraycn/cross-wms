@@ -19,9 +19,9 @@ let clearLoadPluginMetadataSnapshotMemo: typeof import("./plugin-metadata-snapsh
 
 const DEFAULT_WORKSPACE = "/tmp/workspace";
 
-type PluginLoadOptions = { logger?: Record<string, unknown> } & Record<string, unknown>;
+type PluginLoadOptions = { logger?: Record<string, any> } & Record<string, any>;
 
-function firstPluginLoadOptions(mock: { mock: { calls: unknown[][] } }): PluginLoadOptions {
+function firstPluginLoadOptions(mock: { mock: { calls: any[][] } }): PluginLoadOptions {
   return (mock.mock.calls[0]?.[0] ?? {}) as PluginLoadOptions;
 }
 
@@ -128,7 +128,7 @@ describe("resolvePluginWebFetchProviders", () => {
     clearLoadPluginMetadataSnapshotMemo();
     vi.spyOn(manifestRegistryModule, "loadPluginManifestRegistry").mockReturnValue(
       createManifestRegistryFixture() as ManifestRegistryModule["loadPluginManifestRegistry"] extends (
-        ...args: unknown[]
+        ...args: any[]
       ) => infer R
         ? R
         : never,

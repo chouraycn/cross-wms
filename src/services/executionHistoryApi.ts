@@ -12,8 +12,8 @@ export interface ExecutionNode {
   status: 'success' | 'failed' | 'skipped';
   startTime: number;
   endTime: number;
-  input: Record<string, unknown>;
-  output: Record<string, unknown>;
+  input: Record<string, any>;
+  output: Record<string, any>;
 }
 
 export interface ExecutionRecord {
@@ -27,7 +27,7 @@ export interface ExecutionRecord {
   duration?: number;
   nodes?: ExecutionNode[];
   error?: string;
-  output?: Record<string, unknown>;
+  output?: Record<string, any>;
 }
 
 export interface ExecutionHistoryFilter {

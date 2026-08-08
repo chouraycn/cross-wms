@@ -38,7 +38,7 @@ type LegacyOAuthSidecarProfile = {
 };
 
 type LegacyOAuthSidecarStore = AuthProfileRepairCandidate & {
-  raw: Record<string, unknown>;
+  raw: Record<string, any>;
   profiles: LegacyOAuthSidecarProfile[];
 };
 
@@ -52,7 +52,7 @@ type LegacyOAuthSidecarRepairResult = {
   warnings: string[];
 };
 
-function readNonEmptyString(value: unknown): string | undefined {
+function readNonEmptyString(value: any): string | undefined {
   return typeof value === "string" && value.trim() ? value : undefined;
 }
 
@@ -158,7 +158,7 @@ function listUnreferencedLegacyOAuthSidecars(
 }
 
 function applyLegacyOAuthSidecarMaterial(params: {
-  raw: Record<string, unknown>;
+  raw: Record<string, any>;
   profile: LegacyOAuthSidecarProfile;
   material: LegacyOAuthSecretMaterial;
 }): boolean {

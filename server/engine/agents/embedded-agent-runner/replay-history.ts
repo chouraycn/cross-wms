@@ -67,7 +67,7 @@ import {
 } from "./thinking.js";
 
 const MODEL_SNAPSHOT_CUSTOM_TYPE = "model-snapshot";
-type CustomEntryLike = { type?: unknown; customType?: unknown; data?: unknown };
+type CustomEntryLike = { type?: any; customType?: any; data?: any };
 type ModelSnapshotEntry = {
   timestamp: number;
   provider?: string;
@@ -111,11 +111,11 @@ function annotateInterSessionUserMessages(messages: AgentMessage[]): AgentMessag
   let touched = false;
   const out: AgentMessage[] = [];
   for (const msg of messages) {
-    if (!hasInterSessionUserProvenance(msg as { role?: unknown; provenance?: unknown })) {
+    if (!hasInterSessionUserProvenance(msg as { role?: any; provenance?: any })) {
       out.push(msg);
       continue;
     }
-    const provenance = normalizeInputProvenance((msg as { provenance?: unknown }).provenance);
+    const provenance = normalizeInputProvenance((msg as { provenance?: any }).provenance);
     const user = msg as Extract<AgentMessage, { role: "user" }>;
     if (typeof user.content === "string") {
       const annotated = annotateInterSessionPromptText(user.content, provenance);
@@ -125,7 +125,7 @@ function annotateInterSessionUserMessages(messages: AgentMessage[]): AgentMessag
       }
       touched = true;
       out.push({
-        ...(msg as unknown as Record<string, unknown>),
+        ...(msg as unknown as Record<string, any>),
         content: annotated,
       } as AgentMessage);
       continue;
@@ -139,8 +139,8 @@ function annotateInterSessionUserMessages(messages: AgentMessage[]): AgentMessag
       (block) =>
         block &&
         typeof block === "object" &&
-        (block as { type?: unknown }).type === "text" &&
-        typeof (block as { text?: unknown }).text === "string",
+        (block as { type?: any }).type === "text" &&
+        typeof (block as { text?: any }).text === "string",
     );
 
     if (textIndex >= 0) {
@@ -157,7 +157,7 @@ function annotateInterSessionUserMessages(messages: AgentMessage[]): AgentMessag
       };
       touched = true;
       out.push({
-        ...(msg as unknown as Record<string, unknown>),
+        ...(msg as unknown as Record<string, any>),
         content: nextContent,
       } as AgentMessage);
       continue;
@@ -165,7 +165,7 @@ function annotateInterSessionUserMessages(messages: AgentMessage[]): AgentMessag
 
     touched = true;
     out.push({
-      ...(msg as unknown as Record<string, unknown>),
+      ...(msg as unknown as Record<string, any>),
       content: [
         {
           type: "text",
@@ -182,7 +182,7 @@ function sanitizeUserReplayContent(message: AgentMessage): AgentMessage | null {
   if (!message || message.role !== "user") {
     return message;
   }
-  const replayContent = (message as { content?: unknown }).content;
+  const replayContent = (message as { content?: any }).content;
   if (typeof replayContent === "string") {
     return replayContent.trim() ? message : null;
   }
@@ -195,10 +195,10 @@ function sanitizeUserReplayContent(message: AgentMessage): AgentMessage | null {
     if (!block || typeof block !== "object") {
       return true;
     }
-    if ((block as { type?: unknown }).type !== "text") {
+    if ((block as { type?: any }).type !== "text") {
       return true;
     }
-    const text = (block as { text?: unknown }).text;
+    const text = (block as { text?: any }).text;
     if (typeof text !== "string" || text.trim().length > 0) {
       return true;
     }
@@ -223,15 +223,15 @@ function normalizeAssistantReplayTextContent(message: AgentMessage, replayConten
   } as AgentMessage;
 }
 
-function normalizeAssistantReplayBlockContent(message: AgentMessage, replayContent: unknown[]) {
+function normalizeAssistantReplayBlockContent(message: AgentMessage, replayContent: any[]) {
   let touched = false;
-  const sanitizedContent: unknown[] = [];
+  const sanitizedContent: any[] = [];
   for (const block of replayContent) {
     if (!block || typeof block !== "object") {
       sanitizedContent.push(block);
       continue;
     }
-    const text = (block as { text?: unknown }).text;
+    const text = (block as { text?: any }).text;
     if (typeof text !== "string") {
       sanitizedContent.push(block);
       continue;
@@ -285,7 +285,7 @@ export function normalizeAssistantReplayContent(messages: AgentMessage[]): Agent
       continue;
     }
     let assistantMessage: AssistantReplayMessage = message;
-    let replayContent = (message as { content?: unknown }).content;
+    let replayContent = (message as { content?: any }).content;
     if (typeof replayContent === "string") {
       const normalized = normalizeAssistantReplayTextContent(message, replayContent);
       if (normalized) {
@@ -334,7 +334,7 @@ export function normalizeAssistantReplayContent(messages: AgentMessage[]): Agent
       // or completion and no content. Leaving other non-error empty-content
       // turns untouched preserves silent-reply semantics on every other code
       // path.
-      const stopReason = (assistantMessage as { stopReason?: unknown }).stopReason;
+      const stopReason = (assistantMessage as { stopReason?: any }).stopReason;
       if (stopReason === "error" || isZeroUsageEmptyStopAssistantTurn(assistantMessage)) {
         out.push({
           ...assistantMessage,
@@ -373,12 +373,12 @@ function isReplayDroppableTrailingAssistant(message: AgentMessage | undefined): 
   if (!message || message.role !== "assistant") {
     return false;
   }
-  const content = (message as { content?: unknown }).content;
+  const content = (message as { content?: any }).content;
   if (!Array.isArray(content)) {
     return false;
   }
   if (content.length === 0) {
-    const stopReason = (message as { stopReason?: unknown }).stopReason;
+    const stopReason = (message as { stopReason?: any }).stopReason;
     return stopReason === "error" || isZeroUsageEmptyStopAssistantTurn(message);
   }
   // Sentinel-text content is the post-rewrite shape produced by either
@@ -393,18 +393,18 @@ function isReplayDroppableTrailingAssistant(message: AgentMessage | undefined): 
   if (!isStreamErrorSentinelContent(content)) {
     return false;
   }
-  const stopReason = (message as { stopReason?: unknown }).stopReason;
+  const stopReason = (message as { stopReason?: any }).stopReason;
   if (stopReason === "error") {
     return true;
   }
   return isZeroUsageEmptyStopAssistantTurn({
     stopReason,
-    usage: (message as { usage?: unknown }).usage,
+    usage: (message as { usage?: any }).usage,
     content: [],
   });
 }
 
-function isStreamErrorSentinelContent(content: readonly unknown[]): boolean {
+function isStreamErrorSentinelContent(content: readonly any[]): boolean {
   if (content.length !== 1) {
     return false;
   }
@@ -412,11 +412,11 @@ function isStreamErrorSentinelContent(content: readonly unknown[]): boolean {
   if (!block || typeof block !== "object") {
     return false;
   }
-  const blockRecord = block as { type?: unknown; text?: unknown };
+  const blockRecord = block as { type?: any; text?: any };
   return blockRecord.type === "text" && blockRecord.text === STREAM_ERROR_FALLBACK_TEXT;
 }
 
-function normalizeAssistantUsageSnapshot(usage: unknown) {
+function normalizeAssistantUsageSnapshot(usage: any) {
   const normalized = normalizeUsage((usage ?? undefined) as UsageLike | undefined);
   if (!normalized) {
     return makeZeroUsageSnapshot();
@@ -437,16 +437,16 @@ function normalizeAssistantUsageSnapshot(usage: unknown) {
   };
 }
 
-function normalizeAssistantUsageCost(usage: unknown): AssistantUsageSnapshot["cost"] | undefined {
+function normalizeAssistantUsageCost(usage: any): AssistantUsageSnapshot["cost"] | undefined {
   const base = makeZeroUsageSnapshot().cost;
   if (!usage || typeof usage !== "object") {
     return undefined;
   }
-  const rawCost = (usage as { cost?: unknown }).cost;
+  const rawCost = (usage as { cost?: any }).cost;
   if (!rawCost || typeof rawCost !== "object") {
     return undefined;
   }
-  const cost = rawCost as Record<string, unknown>;
+  const cost = rawCost as Record<string, any>;
   const inputRaw = toFiniteCostNumber(cost.input);
   const outputRaw = toFiniteCostNumber(cost.output);
   const cacheReadRaw = toFiniteCostNumber(cost.cacheRead);
@@ -469,7 +469,7 @@ function normalizeAssistantUsageCost(usage: unknown): AssistantUsageSnapshot["co
   return { input, output, cacheRead, cacheWrite, total };
 }
 
-function toFiniteCostNumber(value: unknown): number | undefined {
+function toFiniteCostNumber(value: any): number | undefined {
   return typeof value === "number" && Number.isFinite(value) ? value : undefined;
 }
 
@@ -481,38 +481,38 @@ function ensureAssistantUsageSnapshots(messages: AgentMessage[]): AgentMessage[]
   let touched = false;
   const out = [...messages];
   for (let i = 0; i < out.length; i += 1) {
-    const message = out[i] as (AgentMessage & { role?: unknown; usage?: unknown }) | undefined;
+    const message = out[i] as (AgentMessage & { role?: any; usage?: any }) | undefined;
     if (!message || message.role !== "assistant") {
       continue;
     }
     const normalizedUsage = normalizeAssistantUsageSnapshot(message.usage);
     const usageCost =
       message.usage && typeof message.usage === "object"
-        ? (message.usage as { cost?: unknown }).cost
+        ? (message.usage as { cost?: any }).cost
         : undefined;
     const normalizedCost = normalizedUsage.cost;
     if (
       message.usage &&
       typeof message.usage === "object" &&
-      (message.usage as { input?: unknown }).input === normalizedUsage.input &&
-      (message.usage as { output?: unknown }).output === normalizedUsage.output &&
-      (message.usage as { cacheRead?: unknown }).cacheRead === normalizedUsage.cacheRead &&
-      (message.usage as { cacheWrite?: unknown }).cacheWrite === normalizedUsage.cacheWrite &&
-      (message.usage as { totalTokens?: unknown }).totalTokens === normalizedUsage.totalTokens &&
+      (message.usage as { input?: any }).input === normalizedUsage.input &&
+      (message.usage as { output?: any }).output === normalizedUsage.output &&
+      (message.usage as { cacheRead?: any }).cacheRead === normalizedUsage.cacheRead &&
+      (message.usage as { cacheWrite?: any }).cacheWrite === normalizedUsage.cacheWrite &&
+      (message.usage as { totalTokens?: any }).totalTokens === normalizedUsage.totalTokens &&
       ((normalizedCost &&
         usageCost &&
         typeof usageCost === "object" &&
-        (usageCost as { input?: unknown }).input === normalizedCost.input &&
-        (usageCost as { output?: unknown }).output === normalizedCost.output &&
-        (usageCost as { cacheRead?: unknown }).cacheRead === normalizedCost.cacheRead &&
-        (usageCost as { cacheWrite?: unknown }).cacheWrite === normalizedCost.cacheWrite &&
-        (usageCost as { total?: unknown }).total === normalizedCost.total) ||
+        (usageCost as { input?: any }).input === normalizedCost.input &&
+        (usageCost as { output?: any }).output === normalizedCost.output &&
+        (usageCost as { cacheRead?: any }).cacheRead === normalizedCost.cacheRead &&
+        (usageCost as { cacheWrite?: any }).cacheWrite === normalizedCost.cacheWrite &&
+        (usageCost as { total?: any }).total === normalizedCost.total) ||
         (!normalizedCost && usageCost === undefined))
     ) {
       continue;
     }
     out[i] = {
-      ...(message as unknown as Record<string, unknown>),
+      ...(message as unknown as Record<string, any>),
       usage: normalizedUsage,
     } as AgentMessage;
     touched = true;
@@ -547,7 +547,7 @@ function createProviderReplaySessionState(
         return [];
       }
     },
-    appendCustomEntry(customType: string, data: unknown) {
+    appendCustomEntry(customType: string, data: any) {
       try {
         sessionManager.appendCustomEntry(customType, data);
       } catch {
@@ -609,7 +609,7 @@ function assertOpenAIResponsesToolUseResultInvariant(messages: AgentMessage[]): 
 
   for (let i = 0; i < messages.length; i += 1) {
     const message = messages[i];
-    const role = (message as { role?: unknown } | undefined)?.role;
+    const role = (message as { role?: any } | undefined)?.role;
 
     if (pending.size > 0 && role !== "toolResult") {
       const [toolCallId, meta] = pending.entries().next().value as [

@@ -13,13 +13,13 @@ export type ContextScope = 'global' | 'session' | 'thread' | 'subagent';
 
 export interface SubagentContextData {
   key: string;
-  value: unknown;
+  value: any;
   scope: ContextScope;
   transferable: boolean;
   createdAt: number;
   updatedAt: number;
   ttlMs?: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface SubagentContextSnapshot {
@@ -59,12 +59,12 @@ export function initSubagentContext(instanceId: string, parentInstanceId?: strin
 export function setContextValue(
   instanceId: string,
   key: string,
-  value: unknown,
+  value: any,
   options?: {
     scope?: ContextScope;
     transferable?: boolean;
     ttlMs?: number;
-    metadata?: Record<string, unknown>;
+    metadata?: Record<string, any>;
   },
 ): void {
   let context = contexts.get(instanceId);
@@ -91,7 +91,7 @@ export function setContextValue(
   enforceLimits(instanceId);
 }
 
-export function getContextValue(instanceId: string, key: string): unknown | undefined {
+export function getContextValue(instanceId: string, key: string): any | undefined {
   const context = contexts.get(instanceId);
   if (!context) return undefined;
 
@@ -146,11 +146,11 @@ export function getContextKeys(instanceId: string): string[] {
   return keys;
 }
 
-export function getAllContextValues(instanceId: string): Record<string, unknown> {
+export function getAllContextValues(instanceId: string): Record<string, any> {
   const context = contexts.get(instanceId);
   if (!context) return {};
 
-  const result: Record<string, unknown> = {};
+  const result: Record<string, any> = {};
   for (const [key, data] of context) {
     if (!isExpired(data)) {
       result[key] = data.value;
@@ -271,7 +271,7 @@ export function getContextDepth(instanceId: string): number {
   return getContextHierarchy(instanceId).length - 1;
 }
 
-export function resolveContextValue(instanceId: string, key: string): unknown | undefined {
+export function resolveContextValue(instanceId: string, key: string): any | undefined {
   const hierarchy = getContextHierarchy(instanceId);
 
   for (const id of hierarchy) {
@@ -317,7 +317,7 @@ function countValidItems(context: Map<string, SubagentContextData>): number {
   return count;
 }
 
-function estimateSize(value: unknown): number {
+function estimateSize(value: any): number {
   try {
     return JSON.stringify(value)?.length ?? 0;
   } catch {
@@ -397,8 +397,8 @@ export function buildInheritedContext(
     scopes?: ContextScope[];
     maxDepth?: number;
   },
-): Record<string, unknown> {
-  const result: Record<string, unknown> = {};
+): Record<string, any> {
+  const result: Record<string, any> = {};
   const hierarchy = getContextHierarchy(instanceId);
   const maxDepth = options?.maxDepth ?? 5;
 

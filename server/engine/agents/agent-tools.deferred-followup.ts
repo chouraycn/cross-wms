@@ -4,6 +4,6 @@
  * 降级实现：提供 deferred followup tool 描述应用，不再抛出 stub 错误。
  */
 
-export function applyDeferredFollowupToolDescriptions(tools: unknown): unknown {
+export function applyDeferredFollowupToolDescriptions(tools: any): any {
   return tools;
 }

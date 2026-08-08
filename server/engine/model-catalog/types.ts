@@ -108,7 +108,7 @@ export interface ModelCatalogModel {
   tieredPricing?: ModelCatalogTieredCost;
   aliases?: string[];
   tags?: string[];
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
   isRecommended?: boolean;
   thinkingProfile?: ThinkingProfile;
 }
@@ -157,7 +157,7 @@ export interface NormalizedModelCatalogRow {
   description?: string;
   isRecommended?: boolean;
   tags?: string[];
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface UnifiedModelCatalogEntry {
@@ -178,7 +178,7 @@ export interface UnifiedModelCatalogEntry {
   aliases?: string[];
   isRecommended?: boolean;
   thinkingProfile?: ThinkingProfile;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface ModelManifest {
@@ -199,7 +199,7 @@ export interface ModelManifest {
   aliases?: string[];
   isRecommended?: boolean;
   thinkingProfile?: ThinkingProfile;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface ModelSearchParams {

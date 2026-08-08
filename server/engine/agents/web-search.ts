@@ -64,32 +64,32 @@ const WebSearchSchema = {
       minimum: 1,
     },
   },
-} satisfies Record<string, unknown>;
+} satisfies Record<string, any>;
 
-function isWebSearchDisabled(config?: Record<string, unknown>): boolean {
+function isWebSearchDisabled(config?: Record<string, any>): boolean {
   const tools = config?.tools;
   if (!tools || typeof tools !== "object" || Array.isArray(tools)) return false;
-  const web = (tools as Record<string, unknown>).web;
+  const web = (tools as Record<string, any>).web;
   if (!web || typeof web !== "object" || Array.isArray(web)) return false;
-  const search = (web as Record<string, unknown>).search;
+  const search = (web as Record<string, any>).search;
   if (!search || typeof search !== "object" || Array.isArray(search)) return false;
-  return (search as Record<string, unknown>).enabled === false;
+  return (search as Record<string, any>).enabled === false;
 }
 
 type AnyAgentTool = {
   label: string;
   name: string;
   description: string;
-  parameters: Record<string, unknown>;
-  execute: (toolCallId: string, args: unknown, signal: AbortSignal) => Promise<unknown>;
+  parameters: Record<string, any>;
+  execute: (toolCallId: string, args: any, signal: AbortSignal) => Promise<any>;
 };
 
 /** Creates the `web_search` tool, or `null` when web search is disabled by config or no runtime is available. */
 export function createWebSearchTool(options?: {
-  config?: Record<string, unknown>;
+  config?: Record<string, any>;
   agentDir?: string;
   sandboxed?: boolean;
-  runtimeWebSearch?: unknown;
+  runtimeWebSearch?: any;
   lateBindRuntimeConfig?: boolean;
 }): AnyAgentTool | null {
   if (isWebSearchDisabled(options?.config)) {
@@ -104,7 +104,7 @@ export function createWebSearchTool(options?: {
 /** Test-only utilities for web search tool discovery state. */
 export const testing = {
   SEARCH_CACHE: MAX_SEARCH_COUNT,
-  resolveSearchProvider: (_search?: unknown): { provider: string | null } => {
+  resolveSearchProvider: (_search?: any): { provider: string | null } => {
     return { provider: null };
   },
 };

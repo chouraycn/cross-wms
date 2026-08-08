@@ -13,7 +13,7 @@ function mockTool(params: {
   label: string;
   description: string;
   displaySummary?: string;
-  parameters?: unknown;
+  parameters?: any;
 }): AnyAgentTool {
   return {
     ...params,
@@ -33,9 +33,9 @@ const effectiveInventoryState = vi.hoisted(() => ({
   channelMeta: {} as Record<string, { channelId: string } | undefined>,
   effectivePolicy: {} as { profile?: string; providerProfile?: string },
   normalizeToolsMock: vi.fn((options: { tools: AnyAgentTool[] }) => options.tools),
-  staticCatalogModelMock: vi.fn((_options: unknown) => undefined as unknown),
-  dynamicModelMock: vi.fn((_options: unknown) => undefined as unknown),
-  normalizeTransportMock: vi.fn((_options: unknown) => undefined as unknown),
+  staticCatalogModelMock: vi.fn((_options: any) => undefined as any),
+  dynamicModelMock: vi.fn((_options: any) => undefined as any),
+  normalizeTransportMock: vi.fn((_options: any) => undefined as any),
   createToolsMock: vi.fn<typeof createOpenClawCodingTools>(
     (_options) =>
       [
@@ -81,17 +81,17 @@ vi.mock("./runtime-plan/tools.js", () => ({
 }));
 
 vi.mock("./embedded-agent-runner/model.static-catalog.js", () => ({
-  resolveBundledStaticCatalogModel: (options: unknown) =>
+  resolveBundledStaticCatalogModel: (options: any) =>
     effectiveInventoryState.staticCatalogModelMock(options),
 }));
 
 vi.mock("./embedded-agent-runner/model.js", () => ({
   resolveModel: (
-    provider: unknown,
-    modelId: unknown,
-    agentDir: unknown,
-    cfg: unknown,
-    options: unknown,
+    provider: any,
+    modelId: any,
+    agentDir: any,
+    cfg: any,
+    options: any,
   ) =>
     ({
       model: effectiveInventoryState.dynamicModelMock({
@@ -101,11 +101,11 @@ vi.mock("./embedded-agent-runner/model.js", () => ({
         cfg,
         options,
       }),
-    }) as unknown,
+    }) as any,
 }));
 
 vi.mock("../plugins/provider-runtime.js", () => ({
-  normalizeProviderTransportWithPlugin: (options: unknown) =>
+  normalizeProviderTransportWithPlugin: (options: any) =>
     effectiveInventoryState.normalizeTransportMock(options),
 }));
 
@@ -128,9 +128,9 @@ async function loadHarness(options?: {
   effectiveInventoryState.effectivePolicy = options?.effectivePolicy ?? {};
   effectiveInventoryState.normalizeToolsMock =
     options?.normalizeToolsMock ?? vi.fn((normalizeOptions) => normalizeOptions.tools);
-  effectiveInventoryState.staticCatalogModelMock = vi.fn((_options: unknown) => undefined);
-  effectiveInventoryState.dynamicModelMock = vi.fn((_options: unknown) => undefined);
-  effectiveInventoryState.normalizeTransportMock = vi.fn((_options: unknown) => undefined);
+  effectiveInventoryState.staticCatalogModelMock = vi.fn((_options: any) => undefined);
+  effectiveInventoryState.dynamicModelMock = vi.fn((_options: any) => undefined);
+  effectiveInventoryState.normalizeTransportMock = vi.fn((_options: any) => undefined);
   effectiveInventoryState.createToolsMock =
     options?.createToolsMock ??
     vi.fn<typeof createOpenClawCodingTools>((_options) => effectiveInventoryState.tools);
@@ -154,9 +154,9 @@ describe("resolveEffectiveToolInventory", () => {
     effectiveInventoryState.channelMeta = {};
     effectiveInventoryState.effectivePolicy = {};
     effectiveInventoryState.normalizeToolsMock = vi.fn((options) => options.tools);
-    effectiveInventoryState.staticCatalogModelMock = vi.fn((_options: unknown) => undefined);
-    effectiveInventoryState.dynamicModelMock = vi.fn((_options: unknown) => undefined);
-    effectiveInventoryState.normalizeTransportMock = vi.fn((_options: unknown) => undefined);
+    effectiveInventoryState.staticCatalogModelMock = vi.fn((_options: any) => undefined);
+    effectiveInventoryState.dynamicModelMock = vi.fn((_options: any) => undefined);
+    effectiveInventoryState.normalizeTransportMock = vi.fn((_options: any) => undefined);
     effectiveInventoryState.createToolsMock = vi.fn<typeof createOpenClawCodingTools>(
       (_options) => effectiveInventoryState.tools,
     );

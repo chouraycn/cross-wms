@@ -38,9 +38,9 @@ describe("spawnSubagentDirect runtime model persistence", () => {
     updateSessionStoreMock.mockImplementation(
       async (
         _storePath: string,
-        mutator: (store: Record<string, Record<string, unknown>>) => unknown,
+        mutator: (store: Record<string, Record<string, any>>) => unknown,
       ) => {
-        const store: Record<string, Record<string, unknown>> = {};
+        const store: Record<string, Record<string, any>> = {};
         await mutator(store);
         return store;
       },
@@ -64,7 +64,7 @@ describe("spawnSubagentDirect runtime model persistence", () => {
       }
       return {};
     });
-    let persistedStore: Record<string, Record<string, unknown>> | undefined;
+    let persistedStore: Record<string, Record<string, any>> | undefined;
     installSessionStoreCaptureMock(updateSessionStoreMock, {
       operations,
       onStore: (store) => {
@@ -124,7 +124,7 @@ describe("spawnSubagentDirect runtime model persistence", () => {
       workspaceDir: os.tmpdir(),
     });
     resetForAutoModelTest();
-    let persistedStore: Record<string, Record<string, unknown>> | undefined;
+    let persistedStore: Record<string, Record<string, any>> | undefined;
     installSessionStoreCaptureMock(dedicatedUpdateSessionStoreMock, {
       onStore: (store) => {
         persistedStore = store;

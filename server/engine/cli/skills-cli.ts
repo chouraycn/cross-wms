@@ -79,7 +79,7 @@ function registerDepsCommand(skills: Command): void {
       }
 
       if (opts.json) {
-        const obj: Record<string, unknown> = {};
+        const obj: Record<string, any> = {};
         for (const [id, r] of results) obj[id] = r;
         console.log(JSON.stringify(obj, null, 2));
       } else {
@@ -110,12 +110,12 @@ function registerDepsCommand(skills: Command): void {
                 if (typeof dep === "string") {
                   edges.push({ source: s.dirName, target: dep, type: "required" });
                 } else if (dep && typeof dep === "object") {
-                  const id = String((dep as Record<string, unknown>).skill ?? (dep as Record<string, unknown>).name ?? "");
+                  const id = String((dep as Record<string, any>).skill ?? (dep as Record<string, any>).name ?? "");
                   if (id) {
                     edges.push({
                       source: s.dirName,
                       target: id,
-                      type: (dep as Record<string, unknown>).required === false ? "optional" : "required",
+                      type: (dep as Record<string, any>).required === false ? "optional" : "required",
                     });
                   }
                 }
@@ -133,7 +133,7 @@ function registerDepsCommand(skills: Command): void {
                 if (typeof c2 === "string") {
                   edges.push({ source: s.dirName, target: c2, type: "conflicts" });
                 } else if (c2 && typeof c2 === "object") {
-                  const id = String((c2 as Record<string, unknown>).skill ?? (c2 as Record<string, unknown>).name ?? "");
+                  const id = String((c2 as Record<string, any>).skill ?? (c2 as Record<string, any>).name ?? "");
                   if (id) edges.push({ source: s.dirName, target: id, type: "conflicts" });
                 }
               }

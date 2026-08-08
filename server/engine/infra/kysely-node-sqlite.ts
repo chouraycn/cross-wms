@@ -14,15 +14,15 @@ import type { DatabaseSync, SQLInputValue } from "node:sqlite";
 /** Kysely Driver 占位类型 */
 export interface Driver {
   init(): Promise<void>;
-  acquireConnection(): Promise<unknown>;
-  releaseConnection(connection: unknown): Promise<void>;
+  acquireConnection(): Promise<any>;
+  releaseConnection(connection: any): Promise<void>;
   destroy(): Promise<void>;
 }
 
 /** Kysely DatabaseConnection 占位类型 */
 export interface DatabaseConnection {
-  executeQuery<R>(query: unknown): Promise<{ rows: R[] }>;
-  streamQuery?<R>(query: unknown, chunkSize?: number): AsyncIterableIterator<{ rows: R[] }>;
+  executeQuery<R>(query: any): Promise<{ rows: R[] }>;
+  streamQuery?<R>(query: any, chunkSize?: number): AsyncIterableIterator<{ rows: R[] }>;
 }
 
 /** Kysely QueryResult 占位类型 */
@@ -33,9 +33,9 @@ export interface QueryResult<R> {
 /** Kysely Dialect 占位类型 */
 export interface Dialect {
   createDriver(): Driver;
-  createQueryAdapter(): unknown;
-  createIntrospector(db: unknown): unknown;
-  createAdapter(): unknown;
+  createQueryAdapter(): any;
+  createIntrospector(db: any): any;
+  createAdapter(): any;
 }
 
 // ============================================================================
@@ -46,7 +46,7 @@ export type NodeSqliteKyselyDialectConfig = {
   databasePath: string;
   // 降级：node:sqlite 的 DatabaseSync 构造函数参数类型不易静态获取，
   // 这里以 unknown 占位，运行时由降级实现抛出错误。
-  options?: unknown;
+  options?: any;
 };
 
 /**
@@ -64,15 +64,15 @@ export class NodeSqliteKyselyDialect implements Dialect {
     return undefined as unknown as Driver;
   }
 
-  createQueryAdapter(): unknown {
+  createQueryAdapter(): any {
     return undefined;
   }
 
-  createIntrospector(_db: unknown): unknown {
+  createIntrospector(_db: any): any {
     return undefined;
   }
 
-  createAdapter(): unknown {
+  createAdapter(): any {
     return undefined;
   }
 
@@ -83,7 +83,7 @@ export class NodeSqliteKyselyDialect implements Dialect {
 
 // ConnectionMutex 占位类（保留导出供类型检查）
 export class ConnectionMutex {
-  async withConnection<T>(_callback: (conn: unknown) => Promise<T>): Promise<T> {
+  async withConnection<T>(_callback: (conn: any) => Promise<T>): Promise<T> {
     return undefined as T;
   }
 }

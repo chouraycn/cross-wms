@@ -3,9 +3,9 @@ import { describe, expect, it } from "vitest";
 import type { ChannelPlugin } from "../channels/plugins/types.js";
 import { buildChannelSummary } from "./channel-summary.js";
 
-const isFixtureAccountConfigured = (account: unknown) =>
+const isFixtureAccountConfigured = (account: any) =>
   Boolean((account as { configured?: boolean }).configured);
-const isFixtureAccountEnabled = (account: unknown) =>
+const isFixtureAccountEnabled = (account: any) =>
   Boolean((account as { enabled?: boolean }).enabled);
 const summaryPluginActions = {
   describeMessageTool: () => ({ actions: ["send"] as const }),
@@ -159,7 +159,7 @@ function makeFallbackSummaryPlugin(params: {
   accountIds?: string[];
   defaultAccountId?: string;
 }): ChannelPlugin {
-  const getAccount = (_cfg: unknown, accountId?: string | null) => ({
+  const getAccount = (_cfg: any, accountId?: string | null) => ({
     accountId,
     enabled: params.enabled,
     configured: params.configured,

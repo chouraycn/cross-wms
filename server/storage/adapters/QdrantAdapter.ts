@@ -18,14 +18,14 @@ import type { IStorageEngine, IPreparedStatement } from '../StorageEngine.js';
 interface QdrantPoint {
   id: string | number;
   vector: number[];
-  payload?: Record<string, unknown>;
+  payload?: Record<string, any>;
 }
 
 interface QdrantSearchResult {
   id: string | number;
   version: number;
   score: number;
-  payload?: Record<string, unknown>;
+  payload?: Record<string, any>;
   vector?: number[];
 }
 
@@ -160,7 +160,7 @@ export class QdrantAdapter implements IStorageEngine {
     collectionName: string,
     vector: number[],
     limit = 10,
-    filter?: Record<string, unknown>,
+    filter?: Record<string, any>,
     withPayload = true,
     withVector = false,
   ): Promise<QdrantSearchResult[]> {
@@ -210,7 +210,7 @@ export class QdrantAdapter implements IStorageEngine {
   /** 按过滤条件删除点 */
   async deletePointsByFilter(
     collectionName: string,
-    filter: Record<string, unknown>,
+    filter: Record<string, any>,
   ): Promise<{ operationId: number; status: string }> {
     const resp = await this.request<{ operation_id: number; status: string }>(
       `/collections/${collectionName}/points/delete?wait=true`,
@@ -223,7 +223,7 @@ export class QdrantAdapter implements IStorageEngine {
   /** 获取集合点数量 */
   async countPoints(
     collectionName: string,
-    filter?: Record<string, unknown>,
+    filter?: Record<string, any>,
   ): Promise<number> {
     const resp = await this.request<{ count: number }>(
       `/collections/${collectionName}/points/count`,
@@ -237,7 +237,7 @@ export class QdrantAdapter implements IStorageEngine {
   async scrollPoints(
     collectionName: string,
     limit = 100,
-    filter?: Record<string, unknown>,
+    filter?: Record<string, any>,
   ): Promise<QdrantPoint[]> {
     const allPoints: QdrantPoint[] = [];
     let nextPageOffset: string | number | null = null;
@@ -247,7 +247,7 @@ export class QdrantAdapter implements IStorageEngine {
 
     while (page < maxPages) {
       page += 1;
-      const body: Record<string, unknown> = { limit, with_payload: true, with_vector: true };
+      const body: Record<string, any> = { limit, with_payload: true, with_vector: true };
       if (nextPageOffset !== null) {
         body.offset = nextPageOffset;
       }
@@ -301,19 +301,19 @@ export class QdrantAdapter implements IStorageEngine {
     throw new Error(`QdrantAdapter.exec 不支持的语句: ${sql.slice(0, 100)}`);
   }
 
-  get<T>(sql: string, params?: unknown[]): T | undefined {
+  get<T>(sql: string, params?: any[]): T | undefined {
     throw new Error(
       'QdrantAdapter 不支持 SQL 查询。请使用向量专属方法: search / getPoint / ...',
     );
   }
 
-  all<T>(sql: string, params?: unknown[]): T[] {
+  all<T>(sql: string, params?: any[]): T[] {
     throw new Error(
       'QdrantAdapter 不支持 SQL 查询。请使用向量专属方法: search / scrollPoints / ...',
     );
   }
 
-  run(sql: string, params?: unknown[]): { changes: number; lastInsertRowid: number } {
+  run(sql: string, params?: any[]): { changes: number; lastInsertRowid: number } {
     throw new Error(
       'QdrantAdapter 不支持 SQL 写入。请使用向量专属方法: upsertPoints / deletePoints / ...',
     );
@@ -380,7 +380,7 @@ export class QdrantAdapter implements IStorageEngine {
   private async request<T>(
     path: string,
     method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH',
-    body?: unknown,
+    body?: any,
   ): Promise<T> {
     const url = `${this.baseUrl}${path.startsWith('/') ? path : `/${path}`}`;
     const headers: Record<string, string> = {

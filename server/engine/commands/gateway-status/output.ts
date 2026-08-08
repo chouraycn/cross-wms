@@ -53,15 +53,15 @@ function hasMultipleReachableGatewayIdentities(reachable: GatewayStatusProbedTar
   return new Set(identityKeys).size > 1;
 }
 
-function readModelPricingDegradedDetail(health: unknown): string | null {
+function readModelPricingDegradedDetail(health: any): string | null {
   if (!health || typeof health !== "object") {
     return null;
   }
-  const modelPricing = (health as { modelPricing?: unknown }).modelPricing;
+  const modelPricing = (health as { modelPricing?: any }).modelPricing;
   if (!modelPricing || typeof modelPricing !== "object") {
     return null;
   }
-  const record = modelPricing as { state?: unknown; detail?: unknown };
+  const record = modelPricing as { state?: any; detail?: any };
   if (record.state !== "degraded") {
     return null;
   }

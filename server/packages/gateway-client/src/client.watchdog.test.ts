@@ -21,7 +21,7 @@ async function getFreePort(): Promise<number> {
   });
 }
 
-function rawDataToString(data: unknown): string {
+function rawDataToString(data: any): string {
   if (typeof data === "string") {
     return data;
   }
@@ -58,10 +58,10 @@ function createOpenGatewayClient(requestTimeoutMs: number): {
 }
 
 function getPendingCount(client: GatewayClient): number {
-  return (client as unknown as { pending: Map<string, unknown> }).pending.size;
+  return (client as unknown as { pending: Map<string, any> }).pending.size;
 }
 
-function trackSettlement(promise: Promise<unknown>): () => boolean {
+function trackSettlement(promise: Promise<any>): () => boolean {
   let settled = false;
   void promise.then(
     () => {
@@ -189,9 +189,9 @@ describe("GatewayClient", () => {
         tickWatchMinIntervalMs: 5,
       });
       const close = vi.fn();
-      const pending = (client as unknown as { pending: Map<string, unknown> }).pending;
+      const pending = (client as unknown as { pending: Map<string, any> }).pending;
       Object.assign(
-        client as unknown as { ws: unknown; tickIntervalMs: number; lastTick: number },
+        client as unknown as { ws: any; tickIntervalMs: number; lastTick: number },
         {
           ws: {
             readyState: WebSocket.OPEN,
@@ -236,7 +236,7 @@ describe("GatewayClient", () => {
       });
       const close = vi.fn();
       Object.assign(
-        client as unknown as { ws: unknown; tickIntervalMs: number; lastTick: number },
+        client as unknown as { ws: any; tickIntervalMs: number; lastTick: number },
         {
           ws: {
             readyState: WebSocket.OPEN,
@@ -271,7 +271,7 @@ describe("GatewayClient", () => {
         tickWatchMinIntervalMs: 5,
       });
       Object.assign(
-        client as unknown as { ws: unknown; tickIntervalMs: number; lastTick: number },
+        client as unknown as { ws: any; tickIntervalMs: number; lastTick: number },
         {
           ws: {
             readyState: WebSocket.OPEN,
@@ -395,7 +395,7 @@ describe("GatewayClient", () => {
     );
 
     expect(onAccepted).toHaveBeenCalledWith({ status: "accepted", runId: "run-1" });
-    expect((client as unknown as { pending: Map<string, unknown> }).pending.size).toBe(1);
+    expect((client as unknown as { pending: Map<string, any> }).pending.size).toBe(1);
 
     (
       client as unknown as {
@@ -411,7 +411,7 @@ describe("GatewayClient", () => {
     );
 
     await expect(requestPromise).resolves.toEqual({ status: "ok" });
-    expect((client as unknown as { pending: Map<string, unknown> }).pending.size).toBe(0);
+    expect((client as unknown as { pending: Map<string, any> }).pending.size).toBe(0);
   });
 
   test("aborts in-flight requests from caller AbortSignal", async () => {
@@ -435,12 +435,12 @@ describe("GatewayClient", () => {
       timeoutMs: null,
     });
     expect(send).toHaveBeenCalledTimes(1);
-    expect((client as unknown as { pending: Map<string, unknown> }).pending.size).toBe(1);
+    expect((client as unknown as { pending: Map<string, any> }).pending.size).toBe(1);
 
     controller.abort();
 
     await expect(requestPromise).rejects.toThrow("gateway request aborted for status");
-    expect((client as unknown as { pending: Map<string, unknown> }).pending.size).toBe(0);
+    expect((client as unknown as { pending: Map<string, any> }).pending.size).toBe(0);
   });
 
   test("clamps oversized explicit request timeouts before scheduling", async () => {
@@ -492,7 +492,7 @@ describe("GatewayClient", () => {
         close: vi.fn(),
         terminate: vi.fn(),
       };
-      (client as unknown as { ws: unknown }).ws = ws;
+      (client as unknown as { ws: any }).ws = ws;
       const setTimeoutSpy = vi.spyOn(globalThis, "setTimeout");
 
       const stopPromise = client.stopAndWait({ timeoutMs: Number.MAX_SAFE_INTEGER });

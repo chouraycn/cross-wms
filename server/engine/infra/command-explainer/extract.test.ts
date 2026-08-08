@@ -130,20 +130,20 @@ function createByteIndexedUnicodeCommandTree(source: string): Tree {
   } as unknown as Tree;
 }
 
-function riskMatches(risk: unknown, fields: Record<string, unknown>): boolean {
+function riskMatches(risk: any, fields: Record<string, any>): boolean {
   if (!risk || typeof risk !== "object") {
     return false;
   }
-  const candidate = risk as Record<string, unknown>;
+  const candidate = risk as Record<string, any>;
   return Object.entries(fields).every(([key, value]) => candidate[key] === value);
 }
 
 function expectRisk(
-  risks: readonly unknown[],
-  fields: Record<string, unknown>,
-): Record<string, unknown> {
+  risks: readonly any[],
+  fields: Record<string, any>,
+): Record<string, any> {
   const risk = risks.find((candidate) => riskMatches(candidate, fields)) as
-    | Record<string, unknown>
+    | Record<string, any>
     | undefined;
   if (!risk) {
     throw new Error(`Expected risk ${JSON.stringify(fields)}`);
@@ -217,8 +217,8 @@ describe("command explainer tree-sitter runtime", () => {
     const parser = {
       parse: (
         _source: string,
-        _oldTree: unknown,
-        options?: { progressCallback?: (state: unknown) => boolean },
+        _oldTree: any,
+        options?: { progressCallback?: (state: any) => boolean },
       ) => {
         options?.progressCallback?.({ currentOffset: 0, hasError: false });
         return null;
@@ -770,7 +770,7 @@ describe("command explainer tree-sitter runtime", () => {
 
     expect(explanation.ok).toBe(false);
     const syntaxError = expectRisk(explanation.risks, { kind: "syntax-error" });
-    const span = syntaxError.span as { startIndex?: unknown; endIndex?: unknown } | undefined;
+    const span = syntaxError.span as { startIndex?: any; endIndex?: any } | undefined;
     expect(typeof span?.startIndex).toBe("number");
     expect(typeof span?.endIndex).toBe("number");
   });

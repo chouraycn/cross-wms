@@ -107,7 +107,7 @@ describe("memory search config", () => {
     });
   }
 
-  function configWithRemoteDefaults(remote: Record<string, unknown>) {
+  function configWithRemoteDefaults(remote: Record<string, any>) {
     return asConfig({
       agents: {
         defaults: {
@@ -133,7 +133,7 @@ describe("memory search config", () => {
 
   function expectMergedRemoteConfig(
     resolved: ReturnType<typeof resolveMemorySearchConfig>,
-    apiKey: unknown,
+    apiKey: any,
     extras?: { nonBatchConcurrency?: number },
   ) {
     expect(resolved?.remote).toEqual({

@@ -26,9 +26,9 @@ function assertSafeExpression(expr: string): void {
  * 管理工作流执行过程中的变量和表达式求值
  */
 export class VariableContext implements IVariableContext {
-  private variables: Map<string, unknown>;
+  private variables: Map<string, any>;
 
-  constructor(initialVariables?: Record<string, unknown>) {
+  constructor(initialVariables?: Record<string, any>) {
     this.variables = new Map();
     if (initialVariables) {
       this.merge(initialVariables);
@@ -40,11 +40,11 @@ export class VariableContext implements IVariableContext {
    * @param key 变量名，支持点路径（如 user.name）
    * @returns 变量值
    */
-  get(key: string): unknown {
+  get(key: string): any {
     if (!key) return undefined;
 
     const parts = key.split('.');
-    let current: unknown = this.variables.get(parts[0]);
+    let current: any = this.variables.get(parts[0]);
 
     if (parts.length === 1) {
       return current;
@@ -55,7 +55,7 @@ export class VariableContext implements IVariableContext {
         return undefined;
       }
       if (typeof current === 'object') {
-        current = (current as Record<string, unknown>)[parts[i]];
+        current = (current as Record<string, any>)[parts[i]];
       } else {
         return undefined;
       }
@@ -69,7 +69,7 @@ export class VariableContext implements IVariableContext {
    * @param key 变量名，支持点路径
    * @param value 变量值
    */
-  set(key: string, value: unknown): void {
+  set(key: string, value: any): void {
     if (!key) return;
 
     const parts = key.split('.');
@@ -78,12 +78,12 @@ export class VariableContext implements IVariableContext {
       return;
     }
 
-    let current: Record<string, unknown>;
+    let current: Record<string, any>;
     const rootKey = parts[0];
     const existing = this.variables.get(rootKey);
 
     if (existing && typeof existing === 'object' && existing !== null) {
-      current = existing as Record<string, unknown>;
+      current = existing as Record<string, any>;
     } else {
       current = {};
       this.variables.set(rootKey, current);
@@ -94,7 +94,7 @@ export class VariableContext implements IVariableContext {
       if (!(part in current) || typeof current[part] !== 'object' || current[part] === null) {
         current[part] = {};
       }
-      current = current[part] as Record<string, unknown>;
+      current = current[part] as Record<string, any>;
     }
 
     current[parts[parts.length - 1]] = value;
@@ -115,7 +115,7 @@ export class VariableContext implements IVariableContext {
    * @param expression 表达式字符串
    * @returns 求值结果
    */
-  evaluate(expression: string): unknown {
+  evaluate(expression: string): any {
     if (!expression || typeof expression !== 'string') {
       return expression;
     }
@@ -153,7 +153,7 @@ export class VariableContext implements IVariableContext {
   /**
    * 求值 JavaScript 表达式
    */
-  private evaluateExpression(expr: string): unknown {
+  private evaluateExpression(expr: string): any {
     try {
       assertSafeExpression(expr);
       const variablesObj = this.snapshot();
@@ -170,7 +170,7 @@ export class VariableContext implements IVariableContext {
    * 合并多个变量
    * @param data 要合并的变量对象
    */
-  merge(data: Record<string, unknown>): void {
+  merge(data: Record<string, any>): void {
     if (!data) return;
 
     for (const [key, value] of Object.entries(data)) {
@@ -182,8 +182,8 @@ export class VariableContext implements IVariableContext {
    * 获取变量快照（浅拷贝）
    * @returns 所有变量的对象形式
    */
-  snapshot(): Record<string, unknown> {
-    const result: Record<string, unknown> = {};
+  snapshot(): Record<string, any> {
+    const result: Record<string, any> = {};
     for (const [key, value] of this.variables.entries()) {
       result[key] = value;
     }
@@ -209,11 +209,11 @@ export class VariableContext implements IVariableContext {
     }
 
     const rootKey = parts[0];
-    let current = this.variables.get(rootKey) as Record<string, unknown> | undefined;
+    let current = this.variables.get(rootKey) as Record<string, any> | undefined;
     if (!current || typeof current !== 'object') return;
 
     for (let i = 1; i < parts.length - 1; i++) {
-      current = current?.[parts[i]] as Record<string, unknown> | undefined;
+      current = current?.[parts[i]] as Record<string, any> | undefined;
       if (!current || typeof current !== 'object') return;
     }
 

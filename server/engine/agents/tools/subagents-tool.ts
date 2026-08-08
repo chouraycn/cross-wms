@@ -34,7 +34,7 @@ export function createSubagentsTool(opts?: { agentSessionKey?: string }): AnyAge
       "List active and recent subagents for the requester session. If sessions_yield exists, use it for completion; do not poll wait loops.",
     parameters: SubagentsToolSchema,
     execute: async (_toolCallId, args) => {
-      const params = args as Record<string, unknown>;
+      const params = args as Record<string, any>;
       const action = (readStringParam(params, "action") ?? "list") as SubagentAction;
       const cfg = getRuntimeConfig();
       const recentMinutesRaw = readPositiveIntegerParam(params, "recentMinutes");

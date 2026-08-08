@@ -107,7 +107,7 @@ vi.mock("node:tls", () => ({
   connect: tlsConnectSpy,
 }));
 
-function requireFirstTlsConnectOptions(): unknown {
+function requireFirstTlsConnectOptions(): any {
   const [call] = tlsConnectSpy.mock.calls;
   if (!call) {
     throw new Error("expected TLS connect call");
@@ -233,7 +233,7 @@ describe("openHttpConnectTunnel", () => {
     setNextNetSocket(proxySocket);
     const { openHttpConnectTunnel } = await import("./http-connect-tunnel.js");
 
-    let caught: unknown;
+    let caught: any;
     try {
       await openHttpConnectTunnel({
         proxyUrl: new URL("http://user:secret@proxy.example:8080/?token=hidden#fragment"),

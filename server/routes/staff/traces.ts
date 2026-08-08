@@ -43,7 +43,7 @@ router.get('/', staffAuth, (req: Request, res: Response) => {
     const lastDecisionEvent = reversedEvents.find(
       (e) => e.event_type === 'router_decision_created',
     );
-    let lastDecision: unknown = null;
+    let lastDecision: any = null;
     if (lastDecisionEvent) {
       try {
         lastDecision = lastDecisionEvent.payload_json

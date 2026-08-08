@@ -53,6 +53,6 @@ export function silenceCleanupCommandRuntime(runtime: RuntimeEnv) {
 }
 
 export function cleanupCommandLogMessages(runtime: RuntimeEnv): string[] {
-  const calls = (runtime.log as MockFn<(...args: unknown[]) => void>).mock.calls;
+  const calls = (runtime.log as MockFn<(...args: any[]) => void>).mock.calls;
   return calls.map((call) => String(call[0]));
 }

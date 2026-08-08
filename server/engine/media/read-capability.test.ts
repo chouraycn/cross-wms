@@ -9,7 +9,7 @@ const channelPluginMocks = vi.hoisted(() => ({
     () =>
       | {
           groups?: {
-            resolveToolPolicy?: (params: unknown) => { deny?: string[]; allow?: string[] };
+            resolveToolPolicy?: (params: any) => { deny?: string[]; allow?: string[] };
           };
         }
       | undefined

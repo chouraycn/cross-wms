@@ -365,7 +365,7 @@ export async function ensureSandboxContainer(params: {
     apparmorProfile?: string;
     dns?: string[];
     extraHosts?: string[];
-  } & Record<string, unknown>;
+  } & Record<string, any>;
   /**
    * Optional caller-provided allowed source roots. Bind sources outside these
    * roots are rejected unless allowSourcesOutsideAllowedRoots=true.

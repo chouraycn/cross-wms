@@ -61,7 +61,7 @@ function toAlert(wms: WmsAlert): Alert {
 /**
  * 生成预警消息
  */
-function generateAlertMessage(type: AlertType, params: Record<string, unknown>): string {
+function generateAlertMessage(type: AlertType, params: Record<string, any>): string {
   switch (type) {
     case 'low_stock':
       return `商品 ${params.sku} 库存低于阈值，当前库存: ${params.currentStock}，阈值: ${params.threshold}`;
@@ -100,7 +100,7 @@ interface InventoryItemView {
   updatedAt: string;
 }
 
-function toItemView(item: Record<string, unknown>): InventoryItemView {
+function toItemView(item: Record<string, any>): InventoryItemView {
   return {
     sku: String(item.sku ?? ''),
     name: String(item.name ?? ''),

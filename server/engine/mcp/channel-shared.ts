@@ -65,7 +65,7 @@ export type SessionDescribeResult = {
 
 /** Minimal Gateway response shape used by message reads. */
 export type ChatHistoryResult = {
-  messages?: Array<{ id?: string; role?: string; content?: unknown; [key: string]: unknown }>;
+  messages?: Array<{ id?: string; role?: string; content?: any; [key: string]: any }>;
 };
 
 /** Gateway session.message payload fields consumed by the MCP event bridge. */
@@ -73,12 +73,12 @@ export type SessionMessagePayload = {
   sessionKey?: string;
   messageId?: string;
   messageSeq?: number;
-  message?: { role?: string; content?: unknown; [key: string]: unknown };
+  message?: { role?: string; content?: any; [key: string]: any };
   lastChannel?: string;
   lastTo?: string;
   lastAccountId?: string;
   lastThreadId?: string | number;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 /** Gateway approval family exposed through MCP. */
@@ -90,7 +90,7 @@ export type ApprovalDecision = "allow-once" | "allow-always" | "deny";
 export type PendingApproval = {
   kind: ApprovalKind;
   id: string;
-  request?: Record<string, unknown>;
+  request?: Record<string, any>;
   createdAtMs?: number;
   expiresAtMs?: number;
 };
@@ -119,12 +119,12 @@ export type QueueEvent =
   | {
       cursor: number;
       type: "exec_approval_requested" | "exec_approval_resolved";
-      raw: Record<string, unknown>;
+      raw: Record<string, any>;
     }
   | {
       cursor: number;
       type: "plugin_approval_requested" | "plugin_approval_resolved";
-      raw: Record<string, unknown>;
+      raw: Record<string, any>;
     };
 
 /** Cursor and optional session filter used by event polling and waiting. */
@@ -147,11 +147,11 @@ export const ClaudePermissionRequestSchema = z.object({
 export { toText };
 
 /** Resolve the visible message id, including OpenClaw metadata attached to raw entries. */
-export function resolveMessageId(entry: Record<string, unknown>): string | undefined {
+export function resolveMessageId(entry: Record<string, any>): string | undefined {
   return (
     toText(entry.id) ??
     (entry["__openclaw"] && typeof entry["__openclaw"] === "object"
-      ? toText((entry["__openclaw"] as { id?: unknown }).id)
+      ? toText((entry["__openclaw"] as { id?: any }).id)
       : undefined)
   );
 }
@@ -170,7 +170,7 @@ export function summarizeResult(
 export function summarizeStructuredResult(
   label: string,
   count: number,
-  payload: unknown,
+  payload: any,
 ): { content: Array<{ type: "text"; text: string }> } {
   return {
     content: [{ type: "text", text: `${label}: ${count}\n\n${JSON.stringify(payload, null, 2)}` }],
@@ -222,11 +222,11 @@ export function matchEventFilter(event: QueueEvent, filter: WaitFilter): boolean
 }
 
 /** Return non-text content blocks from a raw message payload. */
-export function extractAttachmentsFromMessage(message: unknown): unknown[] {
+export function extractAttachmentsFromMessage(message: any): any[] {
   if (!message || typeof message !== "object") {
     return [];
   }
-  const content = (message as { content?: unknown }).content;
+  const content = (message as { content?: any }).content;
   if (!Array.isArray(content)) {
     return [];
   }
@@ -234,12 +234,12 @@ export function extractAttachmentsFromMessage(message: unknown): unknown[] {
     if (!entry || typeof entry !== "object") {
       return false;
     }
-    return toText((entry as { type?: unknown }).type) !== "text";
+    return toText((entry as { type?: any }).type) !== "text";
   });
 }
 
 /** Normalize approval identifiers before local tracking or resolution. */
-export function normalizeApprovalId(value: unknown): string | undefined {
+export function normalizeApprovalId(value: any): string | undefined {
   const id = toText(value);
   return id ? id.trim() : undefined;
 }

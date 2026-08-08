@@ -16,7 +16,7 @@ import type { PluginManifestRecord, PluginManifestRegistry } from "./manifest-re
 import type { PluginRegistrySnapshotSource } from "./plugin-registry-snapshot.types.js";
 
 /** OpenClaw 配置（降级为 unknown 占位）。 */
-export type OpenClawConfig = Record<string, unknown>;
+export type OpenClawConfig = Record<string, any>;
 
 /** 插件发现结果（降级为 unknown 占位）。 */
 export type PluginDiscoveryResult = unknown;

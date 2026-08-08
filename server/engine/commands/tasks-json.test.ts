@@ -41,7 +41,7 @@ function createManagedTaskFlow(
   return flow;
 }
 
-function readJsonLog(runtime: RuntimeEnv): unknown {
+function readJsonLog(runtime: RuntimeEnv): any {
   const [call] = vi.mocked(runtime.log).mock.calls;
   if (!call) {
     throw new Error("expected runtime log call");

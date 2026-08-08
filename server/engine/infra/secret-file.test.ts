@@ -64,7 +64,7 @@ describe("readSecretFileSync", () => {
 
     expect(thrown).toBeInstanceOf(Error);
     expect(thrown?.message).toContain(`Failed to inspect Gateway password file at ${file}:`);
-    expect((thrown as Error & { cause?: unknown }).cause).toBeInstanceOf(Error);
+    expect((thrown as Error & { cause?: any }).cause).toBeInstanceOf(Error);
   });
 
   it.each([

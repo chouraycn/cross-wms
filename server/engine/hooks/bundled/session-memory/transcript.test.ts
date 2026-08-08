@@ -21,7 +21,7 @@ async function writeTranscript(content: string): Promise<string> {
   return filePath;
 }
 
-function message(role: "user" | "assistant", content: unknown): string {
+function message(role: "user" | "assistant", content: any): string {
   return JSON.stringify({
     type: "message",
     message: { role, content },

@@ -44,7 +44,7 @@ export function buildAliyunRequest(
   speed?: number,
   pitch?: number,
   volume?: number,
-): Record<string, unknown> {
+): Record<string, any> {
   return {
     appkey: config.apiKey,
     text,
@@ -110,7 +110,7 @@ export function createAliyunProvider(): TTSProviderPlugin {
       });
 
       // 兼容返回 JSON 错误体的场景
-      if (res.json && typeof res.json === 'object' && 'err_msg' in (res.json as Record<string, unknown>)) {
+      if (res.json && typeof res.json === 'object' && 'err_msg' in (res.json as Record<string, any>)) {
         const err = res.json as { err_msg?: string; code?: string };
         throw new Error(`阿里云 TTS 错误: ${err.err_msg ?? err.code ?? 'unknown'}`);
       }

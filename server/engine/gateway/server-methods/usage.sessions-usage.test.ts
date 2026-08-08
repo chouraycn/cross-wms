@@ -86,7 +86,7 @@ vi.mock("../../infra/session-cost-usage.js", async () => {
         staleFiles: 0,
       },
     })),
-    loadSessionCostSummariesFromCache: vi.fn(async (params: { sessions: unknown[] }) => ({
+    loadSessionCostSummariesFromCache: vi.fn(async (params: { sessions: any[] }) => ({
       summaries: params.sessions.map(() => null),
       cacheStatus: {
         status: "fresh",
@@ -121,7 +121,7 @@ const TEST_RUNTIME_CONFIG = {
 };
 
 async function runSessionsUsage(
-  params: Record<string, unknown>,
+  params: Record<string, any>,
   config: OpenClawConfig = TEST_RUNTIME_CONFIG,
 ) {
   const respond = vi.fn();
@@ -133,7 +133,7 @@ async function runSessionsUsage(
   return respond;
 }
 
-async function runSessionsUsageTimeseries(params: Record<string, unknown>) {
+async function runSessionsUsageTimeseries(params: Record<string, any>) {
   const respond = vi.fn();
   await usageHandlers["sessions.usage.timeseries"]({
     respond,
@@ -143,7 +143,7 @@ async function runSessionsUsageTimeseries(params: Record<string, unknown>) {
   return respond;
 }
 
-async function runSessionsUsageLogs(params: Record<string, unknown>) {
+async function runSessionsUsageLogs(params: Record<string, any>) {
   const respond = vi.fn();
   await usageHandlers["sessions.usage.logs"]({
     respond,
@@ -159,7 +159,7 @@ const BASE_USAGE_RANGE = {
   limit: 10,
 } as const;
 
-function mockCall(mockFn: ReturnType<typeof vi.fn>, callIndex = 0): ReadonlyArray<unknown> {
+function mockCall(mockFn: ReturnType<typeof vi.fn>, callIndex = 0): ReadonlyArray<any> {
   const call = mockFn.mock.calls[callIndex];
   if (!call) {
     throw new Error(`expected mock call ${callIndex + 1}`);

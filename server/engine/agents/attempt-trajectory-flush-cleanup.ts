@@ -5,6 +5,6 @@
  */
 
 /** Flushes the embedded attempt trajectory recorder for cleanup. */
-export function flushEmbeddedAttemptTrajectoryRecorder(..._args: unknown[]): void {
+export function flushEmbeddedAttemptTrajectoryRecorder(..._args: any[]): void {
   // Cross-wms does not have the trajectory recorder subsystem.
 }

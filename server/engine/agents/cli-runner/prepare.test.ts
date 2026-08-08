@@ -224,7 +224,7 @@ function appendTranscriptEntry(
     id: string;
     parentId: string | null;
     timestamp: string;
-    message: unknown;
+    message: any;
   },
 ): void {
   fs.appendFileSync(
@@ -713,7 +713,7 @@ describe("shouldSkipLocalCliCredentialEpoch", () => {
     const { dir, sessionFile } = createSessionFile();
     const agentDir = path.join(dir, "agents", "main", "agent");
     const authProfileId = "test-cli:secret";
-    const prepareExecution = vi.fn(async (_ctx: unknown) => undefined);
+    const prepareExecution = vi.fn(async (_ctx: any) => undefined);
     fs.mkdirSync(agentDir, { recursive: true });
     saveAuthProfileStore(
       {
@@ -781,7 +781,7 @@ describe("shouldSkipLocalCliCredentialEpoch", () => {
       ownerToken: "loopback-owner-token",
       nonOwnerToken: "loopback-non-owner-token",
     }));
-    const prepareExecution = vi.fn(async (_ctx: unknown) => ({
+    const prepareExecution = vi.fn(async (_ctx: any) => ({
       env: {
         GEMINI_CLI_SYSTEM_SETTINGS_PATH: profileSystemSettingsPath,
       },
@@ -860,7 +860,7 @@ describe("shouldSkipLocalCliCredentialEpoch", () => {
       ownerToken: "loopback-owner-token",
       nonOwnerToken: "loopback-non-owner-token",
     }));
-    const prepareExecution = vi.fn(async (ctx: unknown) => {
+    const prepareExecution = vi.fn(async (ctx: any) => {
       generatedSystemSettingsPath = (ctx as { env?: Record<string, string> }).env
         ?.GEMINI_CLI_SYSTEM_SETTINGS_PATH;
       throw new Error("Gemini auth profile was selected but no credential material was found");
@@ -1051,7 +1051,7 @@ describe("shouldSkipLocalCliCredentialEpoch", () => {
       });
       const hookRunner = {
         hasHooks: vi.fn((hookName: string) => hookName === "before_prompt_build"),
-        runBeforePromptBuild: vi.fn(async ({ messages }: { messages: unknown[] }) => ({
+        runBeforePromptBuild: vi.fn(async ({ messages }: { messages: any[] }) => ({
           prependContext: `history:${messages.length}`,
           systemPrompt: "hook system",
           prependSystemContext: "prepend system",
@@ -1089,7 +1089,7 @@ describe("shouldSkipLocalCliCredentialEpoch", () => {
       );
       expect(hookRunner.runBeforePromptBuild).toHaveBeenCalledTimes(1);
       const beforePromptBuildCalls = hookRunner.runBeforePromptBuild.mock.calls as unknown as Array<
-        [unknown, unknown]
+        [any, any]
       >;
       expect(beforePromptBuildCalls[0]?.[0]).toEqual({
         prompt: "latest ask",
@@ -1185,7 +1185,7 @@ describe("shouldSkipLocalCliCredentialEpoch", () => {
       expect(context.contextEngineTurnPrompt).toBe("latest ask");
       expect(hookRunner.runBeforePromptBuild).toHaveBeenCalledTimes(1);
       const beforePromptBuildCalls = hookRunner.runBeforePromptBuild.mock.calls as unknown as Array<
-        [unknown, unknown]
+        [any, any]
       >;
       const promptBuildParams = beforePromptBuildCalls[0]?.[0] as { prompt?: string } | undefined;
       expect(promptBuildParams?.prompt).toBe("latest ask");
@@ -1321,7 +1321,7 @@ describe("shouldSkipLocalCliCredentialEpoch", () => {
       expect(context.params.prompt).toBe("turn prepend\n\nlatest ask\n\nturn append");
       expect(hookRunner.runAgentTurnPrepare).toHaveBeenCalledTimes(1);
       const agentTurnPrepareCalls = hookRunner.runAgentTurnPrepare.mock.calls as unknown as Array<
-        [unknown, unknown]
+        [any, any]
       >;
       expect(agentTurnPrepareCalls[0]?.[0]).toEqual({
         prompt: "latest ask",
@@ -1391,7 +1391,7 @@ describe("shouldSkipLocalCliCredentialEpoch", () => {
       expect(hookRunner.runBeforePromptBuild).toHaveBeenCalledOnce();
       expect(hookRunner.runBeforeAgentStart).toHaveBeenCalledOnce();
       const beforePromptBuildCalls = hookRunner.runBeforePromptBuild.mock.calls as unknown as Array<
-        [unknown, unknown]
+        [any, any]
       >;
       const promptContext = beforePromptBuildCalls[0]?.[1] as
         | { channel?: string; chatId?: string; senderId?: string }
@@ -1400,7 +1400,7 @@ describe("shouldSkipLocalCliCredentialEpoch", () => {
       expect(promptContext?.chatId).toBe("room-1");
       expect(promptContext?.senderId).toBe("user-789");
       const beforeAgentStartCalls = hookRunner.runBeforeAgentStart.mock.calls as unknown as Array<
-        [unknown, unknown]
+        [any, any]
       >;
       const legacyContext = beforeAgentStartCalls[0]?.[1] as
         | { channel?: string; chatId?: string; senderId?: string }
@@ -1605,7 +1605,7 @@ describe("shouldSkipLocalCliCredentialEpoch", () => {
       },
       plugins: { slots: { contextEngine: engineId } },
     } satisfies OpenClawConfig;
-    const factory = vi.fn((_ctx: unknown): ContextEngine => {
+    const factory = vi.fn((_ctx: any): ContextEngine => {
       return {
         info: { id: engineId, name: "CLI runtime config engine" },
         ingest: vi.fn(async () => ({ ingested: true })),

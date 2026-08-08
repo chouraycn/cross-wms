@@ -47,7 +47,7 @@ function createUnknownUsageSessionStore() {
 }
 
 function createChannelIssueCollector(channel: string) {
-  return (accounts: Array<Record<string, unknown>>) =>
+  return (accounts: Array<Record<string, any>>) =>
     accounts
       .filter((account) => typeof account.lastError === "string" && account.lastError)
       .map((account) => ({
@@ -83,7 +83,7 @@ async function withUnknownUsageStore(run: () => Promise<void>) {
 }
 
 function getRuntimeLogs() {
-  return runtimeLogMock.mock.calls.map((call: unknown[]) => String(call[0]));
+  return runtimeLogMock.mock.calls.map((call: any[]) => String(call[0]));
 }
 
 function getRuntimeLog(index: number): string {
@@ -130,12 +130,12 @@ type ProbeGatewayResult = {
   url: string;
   connectLatencyMs: number | null;
   error: string | null;
-  connectErrorDetails?: unknown;
+  connectErrorDetails?: any;
   close: { code: number; reason: string } | null;
-  health: unknown;
-  status: unknown;
-  presence: unknown;
-  configSnapshot: unknown;
+  health: any;
+  status: any;
+  presence: any;
+  configSnapshot: any;
 };
 
 function mockProbeGatewayResult(overrides: Partial<ProbeGatewayResult>) {
@@ -513,13 +513,13 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("../channels/config-presence.js", () => ({
-  hasMeaningfulChannelConfig: (entry: unknown) =>
+  hasMeaningfulChannelConfig: (entry: any) =>
     Boolean(
-      entry && typeof entry === "object" && Object.keys(entry as Record<string, unknown>).length,
+      entry && typeof entry === "object" && Object.keys(entry as Record<string, any>).length,
     ),
-  listPotentialConfiguredChannelIds: (cfg: { channels?: Record<string, unknown> }) =>
+  listPotentialConfiguredChannelIds: (cfg: { channels?: Record<string, any> }) =>
     Object.keys(cfg.channels ?? {}).filter((key) => key !== "defaults" && key !== "modelByChannel"),
-  listPotentialConfiguredChannelPresenceSignals: (cfg: { channels?: Record<string, unknown> }) =>
+  listPotentialConfiguredChannelPresenceSignals: (cfg: { channels?: Record<string, any> }) =>
     Object.keys(cfg.channels ?? {})
       .filter((key) => key !== "defaults" && key !== "modelByChannel")
       .map((channelId) => ({ channelId, source: "config" })),
@@ -615,7 +615,7 @@ vi.mock("../channels/plugins/index.js", () => ({
         }),
       },
     ] as const;
-    return plugins as unknown;
+    return plugins as any;
   },
   getChannelPlugin: (channelId: string) =>
     [
@@ -651,7 +651,7 @@ vi.mock("../channels/plugins/index.js", () => ({
           docsPath: "/platforms/mac",
         }),
       },
-    ].find((plugin) => plugin.id === channelId) as unknown,
+    ].find((plugin) => plugin.id === channelId) as any,
 }));
 vi.mock("../plugins/runtime/runtime-web-channel-plugin.js", () => ({
   webAuthExists: mocks.webAuthExists,
@@ -672,7 +672,7 @@ vi.mock("../gateway/call.js", () => ({
       config?: {
         gateway?: {
           auth?: {
-            token?: unknown;
+            token?: any;
           };
         };
       };
@@ -781,7 +781,7 @@ vi.mock("./status-runtime-shared.ts", () => ({
     formatUsageReportLines: vi.fn(() => []),
   })),
   resolveStatusGatewayHealth: vi.fn(async () => ({})),
-  resolveStatusSecurityAudit: vi.fn(async (input: unknown) =>
+  resolveStatusSecurityAudit: vi.fn(async (input: any) =>
     mocks.runSecurityAudit({
       ...(typeof input === "object" && input ? input : {}),
       deep: false,
@@ -794,9 +794,9 @@ vi.mock("./status-runtime-shared.ts", () => ({
   resolveStatusRuntimeSnapshot: vi.fn(
     async (params: {
       includeSecurityAudit?: boolean;
-      resolveSecurityAudit?: (input: unknown) => Promise<unknown>;
-      config: unknown;
-      sourceConfig: unknown;
+      resolveSecurityAudit?: (input: any) => Promise<any>;
+      config: any;
+      sourceConfig: any;
     }) => {
       const securityAudit = params.includeSecurityAudit
         ? await (
@@ -838,7 +838,7 @@ const runtime = {
   exit: vi.fn(),
 };
 
-const runtimeLogMock = runtime.log as Mock<(...args: unknown[]) => void>;
+const runtimeLogMock = runtime.log as Mock<(...args: any[]) => void>;
 
 vi.mock("../channels/chat-meta.js", () => {
   const mockChatChannels = [
@@ -1007,7 +1007,7 @@ describe("statusCommand", () => {
       }),
     });
     runtimeLogMock.mockClear();
-    (runtime.error as Mock<(...args: unknown[]) => void>).mockClear();
+    (runtime.error as Mock<(...args: any[]) => void>).mockClear();
   });
 
   it("prints JSON and includes security audit only when all is requested", async () => {
@@ -1064,10 +1064,10 @@ describe("statusCommand", () => {
 
     const params = snapshotMock.mock.calls[snapshotMock.mock.calls.length - 1]?.[0] as
       | {
-          config: unknown;
+          config: any;
           timeoutMs?: number;
           usage?: boolean;
-          resolveUsage?: (input: { config: unknown; timeoutMs?: number }) => Promise<unknown>;
+          resolveUsage?: (input: { config: any; timeoutMs?: number }) => Promise<any>;
         }
       | undefined;
     expect(params?.usage).toBe(true);

@@ -18,8 +18,8 @@ const loadPluginMetadataRegistrySnapshotMock = vi.fn();
 const loadPluginManifestRegistryForPluginRegistryMock = vi.fn();
 const loadPluginRegistrySnapshotWithMetadataMock = vi.fn();
 const loadPluginManifestRegistryForInstalledIndexMock = vi.fn();
-const loadPluginMetadataSnapshotMock = vi.fn((rawParams: unknown = {}) => {
-  const params = rawParams as { index?: unknown };
+const loadPluginMetadataSnapshotMock = vi.fn((rawParams: any = {}) => {
+  const params = rawParams as { index?: any };
   const manifestRegistry = loadPluginManifestRegistryForInstalledIndexMock(params) ?? {
     plugins: [],
     diagnostics: [],
@@ -54,55 +54,55 @@ vi.mock("../config/config.js", () => ({
 }));
 
 vi.mock("../config/plugin-auto-enable.js", () => ({
-  applyPluginAutoEnable: (...args: unknown[]) => applyPluginAutoEnableMock(...args),
+  applyPluginAutoEnable: (...args: any[]) => applyPluginAutoEnableMock(...args),
 }));
 
 vi.mock("./loader.js", () => ({
-  loadOpenClawPlugins: (...args: unknown[]) => loadOpenClawPluginsMock(...args),
+  loadOpenClawPlugins: (...args: any[]) => loadOpenClawPluginsMock(...args),
 }));
 
 vi.mock("./runtime/metadata-registry-loader.js", () => ({
-  loadPluginMetadataRegistrySnapshot: (...args: unknown[]) =>
+  loadPluginMetadataRegistrySnapshot: (...args: any[]) =>
     loadPluginMetadataRegistrySnapshotMock(...args),
 }));
 
 vi.mock("./plugin-registry.js", () => ({
-  loadPluginManifestRegistryForPluginRegistry: (...args: unknown[]) =>
+  loadPluginManifestRegistryForPluginRegistry: (...args: any[]) =>
     loadPluginManifestRegistryForPluginRegistryMock(...args),
-  loadPluginRegistrySnapshotWithMetadata: (...args: unknown[]) =>
+  loadPluginRegistrySnapshotWithMetadata: (...args: any[]) =>
     loadPluginRegistrySnapshotWithMetadataMock(...args),
 }));
 
 vi.mock("./manifest-registry-installed.js", () => ({
-  loadPluginManifestRegistryForInstalledIndex: (...args: unknown[]) =>
+  loadPluginManifestRegistryForInstalledIndex: (...args: any[]) =>
     loadPluginManifestRegistryForInstalledIndexMock(...args),
   resolveInstalledManifestRegistryIndexFingerprint: () => "test-installed-index",
 }));
 
 vi.mock("./plugin-metadata-snapshot.js", () => ({
-  loadPluginMetadataSnapshot: (...args: unknown[]) => loadPluginMetadataSnapshotMock(...args),
-  resolvePluginMetadataSnapshot: (params?: { pluginMetadataSnapshot?: unknown }) =>
+  loadPluginMetadataSnapshot: (...args: any[]) => loadPluginMetadataSnapshotMock(...args),
+  resolvePluginMetadataSnapshot: (params?: { pluginMetadataSnapshot?: any }) =>
     params?.pluginMetadataSnapshot ?? loadPluginMetadataSnapshotMock(params),
 }));
 
 vi.mock("./providers.js", () => ({
-  resolveBundledProviderCompatPluginIds: (...args: unknown[]) =>
+  resolveBundledProviderCompatPluginIds: (...args: any[]) =>
     resolveBundledProviderCompatPluginIdsMock(...args),
 }));
 
 vi.mock("./bundled-compat.js", () => ({
-  withBundledPluginEnablementCompat: (...args: unknown[]) =>
+  withBundledPluginEnablementCompat: (...args: any[]) =>
     withBundledPluginEnablementCompatMock(...args),
 }));
 
 vi.mock("../plugin-sdk/facade-runtime.js", () => ({
-  listImportedBundledPluginFacadeIds: (...args: unknown[]) =>
+  listImportedBundledPluginFacadeIds: (...args: any[]) =>
     listImportedBundledPluginFacadeIdsMock(...args),
 }));
 
 vi.mock("./runtime.js", () => ({
   getActivePluginChannelRegistry: () => null,
-  listImportedRuntimePluginIds: (...args: unknown[]) => listImportedRuntimePluginIdsMock(...args),
+  listImportedRuntimePluginIds: (...args: any[]) => listImportedRuntimePluginIdsMock(...args),
 }));
 
 vi.mock("../agents/agent-scope.js", () => ({
@@ -134,8 +134,8 @@ function setSinglePluginLoadResult(
 }
 
 function createInstalledPluginIndexSnapshot(
-  plugins: Array<Record<string, unknown>>,
-): Record<string, unknown> {
+  plugins: Array<Record<string, any>>,
+): Record<string, any> {
   return {
     version: 1,
     warning: "test",
@@ -161,17 +161,17 @@ function expectInspectReport(
   return inspect;
 }
 
-function mockInput(mock: { mock: { calls: unknown[][] } }, index = 0): Record<string, unknown> {
+function mockInput(mock: { mock: { calls: any[][] } }, index = 0): Record<string, any> {
   const input = mock.mock.calls[index]?.[0];
   if (!input || typeof input !== "object") {
     throw new Error(`expected mock input ${index}`);
   }
-  return input as Record<string, unknown>;
+  return input as Record<string, any>;
 }
 
 function expectMockCalledWithFields(
-  mock: { mock: { calls: unknown[][] } },
-  fields: Record<string, unknown>,
+  mock: { mock: { calls: any[][] } },
+  fields: Record<string, any>,
 ) {
   const input = mockInput(mock, mock.mock.calls.length - 1);
   for (const [key, expected] of Object.entries(fields)) {
@@ -180,12 +180,12 @@ function expectMockCalledWithFields(
 }
 
 function expectPluginLoaderCall(params: {
-  config?: unknown;
-  activationSourceConfig?: unknown;
+  config?: any;
+  activationSourceConfig?: any;
   autoEnabledReasons?: Record<string, string[]>;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
-  logger?: unknown;
+  logger?: any;
   loadModules?: boolean;
 }) {
   expectMockCalledWithFields(loadOpenClawPluginsMock, {
@@ -204,11 +204,11 @@ function expectPluginLoaderCall(params: {
 }
 
 function expectMetadataSnapshotLoaderCall(params: {
-  config?: unknown;
-  activationSourceConfig?: unknown;
+  config?: any;
+  activationSourceConfig?: any;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
-  logger?: unknown;
+  logger?: any;
   loadModules?: boolean;
 }) {
   expectMockCalledWithFields(loadPluginMetadataRegistrySnapshotMock, {
@@ -223,7 +223,7 @@ function expectMetadataSnapshotLoaderCall(params: {
   });
 }
 
-function expectAutoEnabledStatusLoad(params: { rawConfig: unknown }) {
+function expectAutoEnabledStatusLoad(params: { rawConfig: any }) {
   expectMockCalledWithFields(applyPluginAutoEnableMock, {
     config: params.rawConfig,
     env: process.env,
@@ -246,9 +246,9 @@ function createCompatChainFixture() {
 }
 
 function expectBundledCompatChainApplied(params: {
-  config: unknown;
+  config: any;
   pluginIds: string[];
-  enabledConfig: unknown;
+  enabledConfig: any;
   loadModules: boolean;
 }) {
   expect(withBundledPluginEnablementCompatMock).toHaveBeenCalledWith({
@@ -263,8 +263,8 @@ function expectBundledCompatChainApplied(params: {
 }
 
 function createAutoEnabledStatusConfig(
-  entries: Record<string, unknown>,
-  rawConfigOverrides?: Record<string, unknown>,
+  entries: Record<string, any>,
+  rawConfigOverrides?: Record<string, any>,
 ) {
   const rawConfig = {
     plugins: {},
@@ -328,7 +328,7 @@ function expectNoCompatibilityWarnings() {
   expect(buildPluginCompatibilityWarnings()).toStrictEqual([]);
 }
 
-function expectCompatibilityOutput(params: { notices?: unknown[]; warnings?: string[] }) {
+function expectCompatibilityOutput(params: { notices?: any[]; warnings?: string[] }) {
   if (params.notices) {
     expect(buildPluginCompatibilityNotices()).toEqual(params.notices);
   }
@@ -359,7 +359,7 @@ function expectInspectShape(
 
 function expectInspectPolicy(
   inspect: NonNullable<ReturnType<typeof buildPluginInspectReport>>,
-  expected: Record<string, unknown>,
+  expected: Record<string, any>,
 ) {
   expect(inspect.policy).toEqual(expected);
 }
@@ -418,14 +418,14 @@ describe("plugin status reports", () => {
       plugins: [],
       diagnostics: [],
     });
-    applyPluginAutoEnableMock.mockImplementation((params: { config: unknown }) => ({
+    applyPluginAutoEnableMock.mockImplementation((params: { config: any }) => ({
       config: params.config,
       changes: [],
       autoEnabledReasons: {},
     }));
     resolveBundledProviderCompatPluginIdsMock.mockReturnValue([]);
     withBundledPluginEnablementCompatMock.mockImplementation(
-      (params: { config: unknown }) => params.config,
+      (params: { config: any }) => params.config,
     );
     listImportedBundledPluginFacadeIdsMock.mockReturnValue([]);
     listImportedRuntimePluginIdsMock.mockReturnValue([]);

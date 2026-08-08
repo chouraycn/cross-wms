@@ -73,7 +73,7 @@ export function createDingTalkChannelPlugin(): ChannelPlugin {
 
   const dingTalkChannelConfig: ChannelConfigAdapter<DingTalkAccountConfig> = {
     listAccountIds: (config: AppConfig): ChannelId[] => {
-      const dingTalkConfig = config.dingtalk as Record<string, unknown>;
+      const dingTalkConfig = config.dingtalk as Record<string, any>;
       if (dingTalkConfig && dingTalkConfig.appKey && dingTalkConfig.appSecret) {
         return [DINGTALK_CHANNEL_ID];
       }
@@ -81,7 +81,7 @@ export function createDingTalkChannelPlugin(): ChannelPlugin {
     },
     resolveAccount: (config: AppConfig, accountId: ChannelId): DingTalkAccountConfig | null => {
       if (accountId !== DINGTALK_CHANNEL_ID) return null;
-      const dingTalkConfig = config.dingtalk as Record<string, unknown>;
+      const dingTalkConfig = config.dingtalk as Record<string, any>;
       if (dingTalkConfig && dingTalkConfig.appKey && dingTalkConfig.appSecret) {
         return {
           appKey: String(dingTalkConfig.appKey),
@@ -116,7 +116,7 @@ export function createDingTalkChannelPlugin(): ChannelPlugin {
           const token = await getAccessToken(account);
           const rendered = await ctx.render();
           const text = rendered.parts
-            .map((p: { content: unknown }) => String(p.content))
+            .map((p: { content: any }) => String(p.content))
             .join("\n");
 
           const response = await fetch("https://api.dingtalk.com/v1.0/robot/oToMessages/batchSend", {
@@ -197,11 +197,11 @@ function verifyDingTalkSignature(
  * 配置签名 Token 后会严格校验回调签名；未配置则放行（与 feishu/wecom 的宽松策略保持一致）。
  */
 export function parseDingTalkWebhook(
-  body: unknown,
+  body: any,
   account: DingTalkAccountConfig,
   options?: { signature?: string; timestamp?: string; nonce?: string },
 ): DingTalkWebhookResult {
-  const data = (body ?? {}) as Record<string, unknown>;
+  const data = (body ?? {}) as Record<string, any>;
   const msgField = data.msg;
   const timeStamp = String(options?.timestamp ?? data.timeStamp ?? "");
   const nonce = String(options?.nonce ?? data.nonce ?? "");
@@ -215,15 +215,15 @@ export function parseDingTalkWebhook(
   }
 
   // 尝试解析包裹层 msg（JSON 字符串或对象）
-  const tryParseMsg = (): Record<string, unknown> | null => {
+  const tryParseMsg = (): Record<string, any> | null => {
     if (typeof msgField === "string" && msgField.trim().startsWith("{")) {
       try {
-        return JSON.parse(msgField) as Record<string, unknown>;
+        return JSON.parse(msgField) as Record<string, any>;
       } catch {
         return null;
       }
     }
-    if (msgField && typeof msgField === "object") return msgField as Record<string, unknown>;
+    if (msgField && typeof msgField === "object") return msgField as Record<string, any>;
     return null;
   };
 
@@ -237,7 +237,7 @@ export function parseDingTalkWebhook(
   // 形态 A：包裹层内是消息事件（机器人接收消息格式）
   if (parsedMsg) {
     const msgtype = String(parsedMsg.msgtype || "");
-    const content = parsedMsg.content as Record<string, unknown> | undefined;
+    const content = parsedMsg.content as Record<string, any> | undefined;
     const text = content ? String(content.text || "") : String(parsedMsg.text || "");
     if (msgtype === "text" || (text && msgtype === "")) {
       const isGroup = String(parsedMsg.conversationType) === "2";
@@ -261,7 +261,7 @@ export function parseDingTalkWebhook(
 
   // 形态 B：已解包的直接消息体
   const msgtypeB = String(data.msgtype || "");
-  const contentB = data.content as Record<string, unknown> | undefined;
+  const contentB = data.content as Record<string, any> | undefined;
   const textB = contentB ? String(contentB.text || "") : String(data.text || "");
   const messageIdB = String(data.msgId || "");
   if ((msgtypeB === "text" || contentB) && messageIdB) {

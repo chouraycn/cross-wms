@@ -49,7 +49,7 @@ function clearCronTimer(state: ReturnType<typeof createCronServiceState>) {
 
 async function expectJobDoesNotRefireWhenNextRunIsUnresolved(params: {
   state: ReturnType<typeof createCronServiceState>;
-  runIsolatedAgentJob: unknown;
+  runIsolatedAgentJob: any;
   advanceNow: () => void;
 }) {
   await onTimer(params.state);

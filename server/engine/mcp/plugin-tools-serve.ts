@@ -236,7 +236,7 @@ export class PluginToolsServe {
 
   async callTool(
     toolName: string,
-    args: Record<string, unknown>,
+    args: Record<string, any>,
     options?: { sessionId?: string; requestId?: string | number; pluginId?: string },
   ): Promise<MCPToolCallResult> {
     const result = await this.toolHandlers.executeTool(toolName, args, options);
@@ -248,8 +248,8 @@ export class PluginToolsServe {
 
   async handleMCPRequest(
     method: string,
-    params: Record<string, unknown> | undefined,
-  ): Promise<{ result?: unknown; error?: { code: number; message: string; data?: unknown } }> {
+    params: Record<string, any> | undefined,
+  ): Promise<{ result?: any; error?: { code: number; message: string; data?: any } }> {
     switch (method) {
       case MCPMethod.TOOLS_LIST: {
         const tools = this.listMCPTools();
@@ -258,7 +258,7 @@ export class PluginToolsServe {
 
       case MCPMethod.TOOLS_CALL: {
         const name = params?.name as string | undefined;
-        const args = (params?.arguments as Record<string, unknown>) ?? {};
+        const args = (params?.arguments as Record<string, any>) ?? {};
 
         if (!name) {
           return {
@@ -338,7 +338,7 @@ export function registerPluginTools(config: PluginToolServeConfig): void {
 
 export async function callPluginTool(
   toolName: string,
-  args: Record<string, unknown>,
+  args: Record<string, any>,
   options?: { sessionId?: string; requestId?: string | number },
 ): Promise<ToolHandlerResult> {
   return pluginToolsServe.getToolHandlers().executeTool(toolName, args, options);

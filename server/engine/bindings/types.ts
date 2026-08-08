@@ -24,7 +24,7 @@ export type SessionBindingRecord = {
   status: BindingStatus;
   boundAt: number;
   expiresAt?: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 export type SessionBindingBindInput = {
@@ -32,7 +32,7 @@ export type SessionBindingBindInput = {
   targetKind: BindingTargetKind;
   conversation: ConversationRef;
   placement?: SessionBindingPlacement;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
   ttlMs?: number;
 };
 

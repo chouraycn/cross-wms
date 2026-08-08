@@ -1,9 +1,9 @@
 // 移植自 openclaw/src/infra/best-effort-delivery.ts
 
 export type ExternalBestEffortDeliveryTarget = unknown;
-export function resolveExternalBestEffortDeliveryTarget(...args: unknown[]): unknown {
+export function resolveExternalBestEffortDeliveryTarget(...args: any[]): any {
   return undefined;
 }
-export function shouldDowngradeDeliveryToSessionOnly(...args: unknown[]): unknown {
+export function shouldDowngradeDeliveryToSessionOnly(...args: any[]): any {
   return false;
 }

@@ -30,13 +30,13 @@ const X_SEARCH_RULE: LegacyConfigRule = {
     'tools.web.x_search.apiKey moved to the xAI plugin; use plugins.entries.xai.config.webSearch.apiKey instead. Run "openclaw doctor --fix".',
 };
 
-function rewritePluginIdList(value: unknown): { next: unknown; changed: boolean } {
+function rewritePluginIdList(value: any): { next: any; changed: boolean } {
   if (!Array.isArray(value)) {
     return { next: value, changed: false };
   }
   let changed = false;
   const seen = new Set<string>();
-  const next: unknown[] = [];
+  const next: any[] = [];
   for (const entry of value) {
     const replacement = entry === LEGACY_OPENAI_CODEX_PLUGIN_ID ? OPENAI_PLUGIN_ID : entry;
     if (replacement !== entry) {
@@ -54,7 +54,7 @@ function rewritePluginIdList(value: unknown): { next: unknown; changed: boolean 
   return { next, changed };
 }
 
-function rewritePluginSlots(value: unknown): boolean {
+function rewritePluginSlots(value: any): boolean {
   if (!isRecord(value)) {
     return false;
   }
@@ -68,7 +68,7 @@ function rewritePluginSlots(value: unknown): boolean {
   return changed;
 }
 
-function rewritePluginEntries(value: unknown): boolean {
+function rewritePluginEntries(value: any): boolean {
   if (!isRecord(value) || !(LEGACY_OPENAI_CODEX_PLUGIN_ID in value)) {
     return false;
   }
@@ -79,7 +79,7 @@ function rewritePluginEntries(value: unknown): boolean {
   return true;
 }
 
-function rewriteLegacyOpenAICodexPluginPolicy(raw: Record<string, unknown>): string[] {
+function rewriteLegacyOpenAICodexPluginPolicy(raw: Record<string, any>): string[] {
   const plugins = isRecord(raw.plugins) ? raw.plugins : undefined;
   if (!plugins) {
     return [];

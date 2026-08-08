@@ -118,7 +118,7 @@ type AuthorizedSystemRunEvent = PendingSystemRunEvent & {
 /** node.invoke 返回的结果载荷。 */
 type NodeInvokeResult = {
   ok: boolean;
-  payload?: unknown;
+  payload?: any;
   payloadJSON?: string | null;
   error?: { code?: string; message?: string } | null;
 };
@@ -132,11 +132,11 @@ type NodeConnectivityResult =
 type PingableSocket = {
   readyState?: number;
   ping?: (data?: Buffer, mask?: boolean, cb?: (err?: Error) => void) => void;
-  once?: (event: "pong" | "close" | "error", listener: (...args: unknown[]) => void) => unknown;
-  off?: (event: "pong" | "close" | "error", listener: (...args: unknown[]) => void) => unknown;
+  once?: (event: "pong" | "close" | "error", listener: (...args: any[]) => void) => unknown;
+  off?: (event: "pong" | "close" | "error", listener: (...args: any[]) => void) => unknown;
   removeListener?: (
     event: "pong" | "close" | "error",
-    listener: (...args: unknown[]) => void,
+    listener: (...args: any[]) => void,
   ) => unknown;
 };
 
@@ -151,7 +151,7 @@ export type SerializedEventPayload = {
 };
 
 /** 序列化事件载荷一次，使扇出可复用同一 JSON 字符串。 */
-export function serializeEventPayload(payload: unknown): SerializedEventPayload | null {
+export function serializeEventPayload(payload: any): SerializedEventPayload | null {
   if (payload === undefined) {
     return null;
   }
@@ -160,17 +160,17 @@ export function serializeEventPayload(payload: unknown): SerializedEventPayload 
 }
 
 /** 收窄由 serializeEventPayload 创建的值。 */
-function isSerializedEventPayload(value: unknown): value is SerializedEventPayload {
+function isSerializedEventPayload(value: any): value is SerializedEventPayload {
   return (
     typeof value === "object" &&
     value !== null &&
-    (value as { [SERIALIZED_EVENT_PAYLOAD]?: unknown })[SERIALIZED_EVENT_PAYLOAD] === true &&
-    typeof (value as { json?: unknown }).json === "string"
+    (value as { [SERIALIZED_EVENT_PAYLOAD]?: any })[SERIALIZED_EVENT_PAYLOAD] === true &&
+    typeof (value as { json?: any }).json === "string"
   );
 }
 
 /** 规范化可选的字符串型 websocket 字段。 */
-function normalizeString(value: unknown): string {
+function normalizeString(value: any): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
@@ -211,7 +211,7 @@ function logRejectedLargePayload(params: {
 }
 
 /** 规范化 system.run 超时值，保留 null 表示无过期。 */
-function normalizeSystemRunTimeoutMs(value: unknown): number | null | undefined {
+function normalizeSystemRunTimeoutMs(value: any): number | null | undefined {
   if (value === undefined) {
     return undefined;
   }
@@ -225,12 +225,12 @@ function normalizeSystemRunTimeoutMs(value: unknown): number | null | undefined 
 /** 从 invoke 参数提取 system.run 事件鉴权元数据。 */
 function resolvePendingSystemRunEvent(params: {
   command: string;
-  params?: unknown;
+  params?: any;
 }): PendingSystemRunEvent | undefined {
   if (params.command !== "system.run" || !params.params || typeof params.params !== "object") {
     return undefined;
   }
-  const obj = params.params as Record<string, unknown>;
+  const obj = params.params as Record<string, any>;
   const runId = normalizeString(obj.runId);
   if (!runId) {
     return undefined;
@@ -245,7 +245,7 @@ function resolvePendingSystemRunEvent(params: {
 }
 
 /** 确保 system.run 请求在发送给 node 前拥有 runId。 */
-function withSystemRunEventRunId(params: { command: string; params?: unknown }): unknown {
+function withSystemRunEventRunId(params: { command: string; params?: any }): any {
   if (
     params.command !== "system.run" ||
     !params.params ||
@@ -254,7 +254,7 @@ function withSystemRunEventRunId(params: { command: string; params?: unknown }):
   ) {
     return params.params;
   }
-  const obj = params.params as Record<string, unknown>;
+  const obj = params.params as Record<string, any>;
   if (normalizeString(obj.runId)) {
     return params.params;
   }
@@ -399,7 +399,7 @@ export class NodeRegistry {
           ok: false,
           error: { code: "NOT_CONNECTED", message: "node socket closed during connectivity probe" },
         });
-      const onError = (err: unknown) =>
+      const onError = (err: any) =>
         finish({
           ok: false,
           error: {
@@ -500,7 +500,7 @@ export class NodeRegistry {
   async invoke(params: {
     nodeId: string;
     command: string;
-    params?: unknown;
+    params?: any;
     timeoutMs?: number;
     idempotencyKey?: string;
   }): Promise<NodeInvokeResult> {
@@ -718,7 +718,7 @@ export class NodeRegistry {
     nodeId: string;
     connId: string | undefined;
     ok: boolean;
-    payload?: unknown;
+    payload?: any;
     payloadJSON?: string | null;
     error?: { code?: string; message?: string } | null;
   }): boolean {
@@ -747,7 +747,7 @@ export class NodeRegistry {
     return true;
   }
 
-  sendEvent(nodeId: string, event: string, payload?: unknown): boolean {
+  sendEvent(nodeId: string, event: string, payload?: any): boolean {
     const node = this.nodesById.get(nodeId);
     if (!node) {
       return false;
@@ -767,7 +767,7 @@ export class NodeRegistry {
     return this.sendEventRawInternal(node, event, payloadJSON);
   }
 
-  private sendEventInternal(node: NodeSession, event: string, payload: unknown): boolean {
+  private sendEventInternal(node: NodeSession, event: string, payload: any): boolean {
     if (this.rejectSlowNodeSocket(node)) {
       return false;
     }
@@ -811,7 +811,7 @@ export class NodeRegistry {
     }
   }
 
-  private sendEventToSession(node: NodeSession, event: string, payload: unknown): boolean {
+  private sendEventToSession(node: NodeSession, event: string, payload: any): boolean {
     return this.sendEventInternal(node, event, payload);
   }
 

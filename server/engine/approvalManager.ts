@@ -39,7 +39,7 @@ export interface ApprovalRequest {
   /** 工具名称 */
   toolName: string;
   /** 工具参数 */
-  toolArgs: Record<string, unknown>;
+  toolArgs: Record<string, any>;
   /** 风险等级 */
   riskLevel: ApprovalRiskLevel;
   /** 审批原因/说明 */
@@ -177,7 +177,7 @@ export class ApprovalManager extends EventEmitter {
    */
   createRequest(
     toolName: string,
-    toolArgs: Record<string, unknown>,
+    toolArgs: Record<string, any>,
     riskLevel: ApprovalRiskLevel,
     reason: string,
     sessionId?: string,

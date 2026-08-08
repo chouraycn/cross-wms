@@ -57,7 +57,7 @@ function makeRuntime(): { runtime: RuntimeEnv; logs: string[] } {
   const logs: string[] = [];
   return {
     runtime: {
-      log: (msg: unknown) => logs.push(String(msg)),
+      log: (msg: any) => logs.push(String(msg)),
       error: () => {},
       exit: () => {},
     },
@@ -78,7 +78,7 @@ describe("sessionsCleanupCommand", () => {
       { agentId: "main", storePath: "/resolved/sessions.json" },
     ]);
     mocks.resolveSessionStoreTargetsOrExit.mockImplementation(
-      (params: { cfg: unknown; opts: unknown; runtime: RuntimeEnv }) => {
+      (params: { cfg: any; opts: any; runtime: RuntimeEnv }) => {
         try {
           return mocks.resolveSessionStoreTargets(params.cfg, params.opts);
         } catch (error) {
@@ -146,7 +146,7 @@ describe("sessionsCleanupCommand", () => {
       },
     );
     mocks.serializeSessionCleanupResult.mockImplementation(
-      (params: { mode: string; dryRun: boolean; summaries: Record<string, unknown>[] }) => {
+      (params: { mode: string; dryRun: boolean; summaries: Record<string, any>[] }) => {
         if (params.summaries.length === 1) {
           return params.summaries[0] ?? {};
         }

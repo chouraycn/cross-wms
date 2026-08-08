@@ -6,10 +6,10 @@ import type { SecretDefaults } from "./runtime-shared.js";
 const CREDENTIAL_FIELD_NAMES = new Set(["apikey", "key", "token", "secret", "password"]);
 
 function hasRecursiveSecretValue(params: {
-  value: unknown;
+  value: any;
   defaults: SecretDefaults | undefined;
   seen: WeakSet<object>;
-  matchesEntry?: (key: string, value: unknown) => boolean;
+  matchesEntry?: (key: string, value: any) => boolean;
 }): boolean {
   if (coerceSecretRef(params.value, params.defaults)) {
     return true;
@@ -25,7 +25,7 @@ function hasRecursiveSecretValue(params: {
   if (Array.isArray(params.value)) {
     return params.value.some((entry) => hasRecursiveSecretValue({ ...params, value: entry }));
   }
-  return Object.entries(params.value as Record<string, unknown>).some(([key, entry]) => {
+  return Object.entries(params.value as Record<string, any>).some(([key, entry]) => {
     if (params.matchesEntry?.(key, entry)) {
       return true;
     }
@@ -38,7 +38,7 @@ function hasRecursiveSecretValue(params: {
  * `seen` may be shared across sibling probes to preserve cycle safety.
  */
 export function hasSecretRefCandidate(
-  value: unknown,
+  value: any,
   defaults: SecretDefaults | undefined,
   seen = new WeakSet<object>(),
 ): boolean {
@@ -50,7 +50,7 @@ export function hasSecretRefCandidate(
  * Used before runtime fast-paths so enabled web tools do not skip secret-aware preparation.
  */
 export function hasCredentialBearingObjectValue(
-  value: unknown,
+  value: any,
   defaults: SecretDefaults | undefined,
   seen = new WeakSet<object>(),
 ): boolean {

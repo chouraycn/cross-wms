@@ -40,7 +40,7 @@ export type PluginNextTurnInjectionEnqueueResult = {
 /** agent turn 准备前传给插件的事件。 */
 export type PluginAgentTurnPrepareEvent = {
   prompt: string;
-  messages: unknown[];
+  messages: any[];
   queuedInjections: PluginNextTurnInjectionRecord[];
 };
 

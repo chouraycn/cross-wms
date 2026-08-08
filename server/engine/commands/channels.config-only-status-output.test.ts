@@ -24,11 +24,11 @@ vi.mock("../channels/plugins/status.js", () => ({
     plugin,
   }: {
     accountId: string;
-    cfg: unknown;
+    cfg: any;
     plugin: ChannelPlugin;
   }) => {
     const account = await plugin.config.inspectAccount?.(cfg as never, accountId);
-    return account ? { accountId, ...(account as Record<string, unknown>) } : null;
+    return account ? { accountId, ...(account as Record<string, any>) } : null;
   },
   buildChannelAccountSnapshot: async ({
     accountId,
@@ -36,13 +36,13 @@ vi.mock("../channels/plugins/status.js", () => ({
     plugin,
   }: {
     accountId: string;
-    cfg: unknown;
+    cfg: any;
     plugin: ChannelPlugin;
   }) => {
     const account =
       (await plugin.config.inspectAccount?.(cfg as never, accountId)) ??
       plugin.config.resolveAccount(cfg as never, accountId);
-    return { accountId, ...(account as Record<string, unknown>) };
+    return { accountId, ...(account as Record<string, any>) };
   },
 }));
 
@@ -51,9 +51,9 @@ function registerSingleTestPlugin(_pluginId: string, plugin: ChannelPlugin) {
 }
 
 async function formatLocalStatusSummary(
-  cfg: unknown,
+  cfg: any,
   options?: {
-    sourceConfig?: unknown;
+    sourceConfig?: any;
   },
 ) {
   const lines = await formatConfigChannelsStatusLines(
@@ -192,7 +192,7 @@ function expectResolvedTokenStatusSummary(
   }
 }
 
-function requireReadOnlyPluginListCall(): unknown[] {
+function requireReadOnlyPluginListCall(): any[] {
   const call = listReadOnlyChannelPluginsForConfig.mock.calls[0];
   if (!call) {
     throw new Error("expected listReadOnlyChannelPluginsForConfig call");

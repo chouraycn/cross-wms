@@ -30,7 +30,7 @@ vi.mock("../plugins/provider-discovery.js", () => ({
     result,
   }: {
     provider: ProviderPlugin;
-    result?: { provider?: unknown; providers?: Record<string, unknown> } | null;
+    result?: { provider?: any; providers?: Record<string, any> } | null;
   }) => result?.providers ?? (result?.provider ? { [provider.id]: result.provider } : {}),
 }));
 
@@ -100,7 +100,7 @@ function createTextModel(id: string, name: string) {
   };
 }
 
-function firstMockArg(mock: { mock: { calls: unknown[][] } }, label: string): unknown {
+function firstMockArg(mock: { mock: { calls: any[][] } }, label: string): any {
   // Centralizes the mock-call assertion so failed discovery paths report intent.
   const call = mock.mock.calls[0];
   if (!call) {

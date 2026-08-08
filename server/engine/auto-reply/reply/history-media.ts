@@ -43,7 +43,7 @@ function isHistoryImageMedia(media: HistoryMediaEntry): boolean {
   return Boolean(resolveHistoryImageContentType(media)?.startsWith("image/"));
 }
 
-function resolveTimestamp(value: unknown): number | undefined {
+function resolveTimestamp(value: any): number | undefined {
   return asFiniteNumber(value);
 }
 

@@ -10,7 +10,7 @@ export type RunTasksWithConcurrencyOptions<T> = {
   /** `stop` prevents new work after the first failure; in-flight workers still settle. */
   errorMode?: ConcurrencyErrorMode;
   /** Called once per failed task with the original task index. */
-  onTaskError?: (error: unknown, index: number) => void;
+  onTaskError?: (error: any, index: number) => void;
 };
 
 /** Ordered task results plus aggregate error state for callers that keep partial success. */
@@ -18,7 +18,7 @@ export type RunTasksWithConcurrencyResult<T> = {
   /** Results are written at their original task indexes; failed or unscheduled indexes stay empty. */
   results: T[];
   /** First task error observed by the worker pool, if any. */
-  firstError: unknown;
+  firstError: any;
   /** True when at least one task rejected. */
   hasError: boolean;
 };
@@ -36,7 +36,7 @@ export async function runTasksWithConcurrency<T>(
   const resolvedLimit = Math.max(1, Math.min(limit, tasks.length));
   const results: T[] = Array.from({ length: tasks.length });
   let next = 0;
-  let firstError: unknown = undefined;
+  let firstError: any = undefined;
   let hasError = false;
 
   const workers = Array.from({ length: resolvedLimit }, async () => {

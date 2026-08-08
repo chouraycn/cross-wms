@@ -6,7 +6,7 @@
 /** 运行清理并吞掉失败，调用可选错误钩子后返回 undefined */
 export async function runBestEffortCleanup<T>(params: {
   cleanup: () => Promise<T>;
-  onError?: (error: unknown) => void;
+  onError?: (error: any) => void;
 }): Promise<T | undefined> {
   try {
     return await params.cleanup();

@@ -822,7 +822,7 @@ export function createImageTool(options?: {
       maxImages: optionalPositiveIntegerSchema(),
     }),
     execute: async (_toolCallId, args) => {
-      const record = args && typeof args === "object" ? (args as Record<string, unknown>) : {};
+      const record = args && typeof args === "object" ? (args as Record<string, any>) : {};
 
       // MARK: - Normalize image + images input and dedupe while preserving order
       const imageCandidates: string[] = [];

@@ -24,7 +24,7 @@ type AnthropicStreamContext = Parameters<AnthropicStreamFn>[1];
 type AnthropicStreamOptions = Parameters<AnthropicStreamFn>[2];
 type RequestTransportConfig = Parameters<typeof attachModelProviderRequestTransport>[1];
 
-function createSseResponse(events: Record<string, unknown>[] = []): Response {
+function createSseResponse(events: Record<string, any>[] = []): Response {
   const body = events.map((event) => `data: ${JSON.stringify(event)}\n\n`).join("");
   return new Response(body, {
     status: 200,
@@ -32,7 +32,7 @@ function createSseResponse(events: Record<string, unknown>[] = []): Response {
   });
 }
 
-function createStalledSseResponse(params: { onCancel: (reason: unknown) => void }): Response {
+function createStalledSseResponse(params: { onCancel: (reason: any) => void }): Response {
   const encoder = new TextEncoder();
   const body = new ReadableStream<Uint8Array>({
     start(controller) {
@@ -62,7 +62,7 @@ function createRawSseResponse(body: string): Response {
 
 function createOpenRawSseResponse(params: {
   body: string;
-  onCancel: (reason: unknown) => void;
+  onCancel: (reason: any) => void;
 }): Response {
   const encoder = new TextEncoder();
   const stream = new ReadableStream<Uint8Array>({
@@ -90,7 +90,7 @@ function latestAnthropicRequest() {
   const body = init?.body;
   return {
     init,
-    payload: typeof body === "string" ? (JSON.parse(body) as Record<string, unknown>) : {},
+    payload: typeof body === "string" ? (JSON.parse(body) as Record<string, any>) : {},
   };
 }
 
@@ -100,29 +100,29 @@ function latestAnthropicRequestHeaders() {
 
 function guardedFetchCall(
   callIndex = 0,
-): [unknown, { method?: unknown; headers?: HeadersInit } | undefined] {
+): [unknown, { method?: any; headers?: HeadersInit } | undefined] {
   const call = guardedFetchMock.mock.calls[callIndex];
   if (!call) {
     throw new Error(`expected guarded fetch call ${callIndex + 1}`);
   }
-  return call as [unknown, { method?: unknown; headers?: HeadersInit } | undefined];
+  return call as [unknown, { method?: any; headers?: HeadersInit } | undefined];
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error(`Expected ${label}`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function requireArray(value: unknown, label: string): unknown[] {
+function requireArray(value: any, label: string): any[] {
   if (!Array.isArray(value)) {
     throw new Error(`Expected ${label}`);
   }
   return value;
 }
 
-function findRecord(items: unknown, predicate: (record: Record<string, unknown>) => boolean) {
+function findRecord(items: any, predicate: (record: Record<string, any>) => boolean) {
   for (const item of requireArray(items, "items")) {
     const record = requireRecord(item, "item");
     if (predicate(record)) {
@@ -139,7 +139,7 @@ function makeAnthropicTransportModel(
     provider?: string;
     baseUrl?: string;
     reasoning?: boolean;
-    params?: Record<string, unknown>;
+    params?: Record<string, any>;
     maxTokens?: number;
     thinkingLevelMap?: AnthropicMessagesModel["thinkingLevelMap"];
     headers?: Record<string, string>;
@@ -310,7 +310,7 @@ describe("anthropic transport stream", () => {
   it("aborts stalled streamed Anthropic error responses", async () => {
     vi.useFakeTimers();
     const encoder = new TextEncoder();
-    let cancelReason: unknown;
+    let cancelReason: any;
     guardedFetchMock.mockResolvedValueOnce(
       new Response(
         new ReadableStream<Uint8Array>({
@@ -2383,7 +2383,7 @@ describe("anthropic transport stream", () => {
   it("cancels stalled SSE body reads when the abort signal fires mid-stream", async () => {
     const controller = new AbortController();
     const abortReason = new Error("anthropic test abort");
-    let cancelReason: unknown;
+    let cancelReason: any;
     guardedFetchMock.mockResolvedValueOnce(
       createStalledSseResponse({
         onCancel: (reason) => {
@@ -2417,7 +2417,7 @@ describe("anthropic transport stream", () => {
   it("treats already-aborted signals as abort errors before reading SSE chunks", async () => {
     const controller = new AbortController();
     const abortReason = new Error("pre-aborted stream");
-    let cancelReason: unknown;
+    let cancelReason: any;
     guardedFetchMock.mockResolvedValueOnce(
       createStalledSseResponse({
         onCancel: (reason) => {

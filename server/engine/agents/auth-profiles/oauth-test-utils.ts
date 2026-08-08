@@ -94,15 +94,15 @@ export function readAuthProfileStoreForTest(agentDir: string): AuthProfileStore 
 }
 
 type ResettableMock = {
-  mockReset(): unknown;
+  mockReset(): any;
 };
 
 type ResolvedValueMock = ResettableMock & {
-  mockResolvedValue(value: unknown): unknown;
+  mockResolvedValue(value: any): any;
 };
 
 type ReturnValueMock = ResettableMock & {
-  mockReturnValue(value: unknown): unknown;
+  mockReturnValue(value: any): any;
 };
 
 /** Reset provider-runtime OAuth mocks to default no-op behavior. */

@@ -34,7 +34,7 @@ export function createScope(params: {
   maxTokens?: number;
   maxDurationMs?: number;
   maxToolCalls?: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }): AgentScope {
   const now = Date.now();
   const scope: AgentScope = {
@@ -175,7 +175,7 @@ export function clearScopes(): void {
 logger.debug('[Agents:AgentScope] Module loaded');
 
 // Auto-generated stub exports (added by auto-fix-exports.mjs)
-export const resolveAgentWorkspaceDir: (...args: unknown[]) => unknown = undefined as unknown as (...args: unknown[]) => unknown;
-export const resolveDefaultAgentId: (...args: unknown[]) => unknown = undefined as unknown as (...args: unknown[]) => unknown;
-export const resolveAgentDir: (...args: unknown[]) => unknown = undefined as unknown as (...args: unknown[]) => unknown;
-export const resolveSessionAgentIds: (...args: unknown[]) => unknown = undefined as unknown as (...args: unknown[]) => unknown;
+export const resolveAgentWorkspaceDir: (...args: any[]) => unknown = undefined as unknown as (...args: any[]) => unknown;
+export const resolveDefaultAgentId: (...args: any[]) => unknown = undefined as unknown as (...args: any[]) => unknown;
+export const resolveAgentDir: (...args: any[]) => unknown = undefined as unknown as (...args: any[]) => unknown;
+export const resolveSessionAgentIds: (...args: any[]) => unknown = undefined as unknown as (...args: any[]) => unknown;

@@ -85,10 +85,10 @@ export type BundledCapabilityManifest = Pick<
   | "setup"
 >;
 
-function readJsonRecord(filePath: string): Record<string, unknown> | undefined {
+function readJsonRecord(filePath: string): Record<string, any> | undefined {
   const raw = tryReadJsonSync(filePath);
   return raw && typeof raw === "object" && !Array.isArray(raw)
-    ? (raw as Record<string, unknown>)
+    ? (raw as Record<string, any>)
     : undefined;
 }
 

@@ -5,7 +5,7 @@
  */
 import fs from "node:fs";
 
-export function fileFingerprint(filePath: string): unknown {
+export function fileFingerprint(filePath: string): any {
   try {
     const stat = fs.statSync(filePath, { bigint: true });
     const kind = stat.isFile() ? "file" : stat.isDirectory() ? "dir" : "other";

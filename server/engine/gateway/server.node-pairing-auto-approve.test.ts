@@ -154,7 +154,7 @@ describe("gateway trusted CIDR node pairing auto-approve", () => {
       },
       async ({ res, loaded }) => {
         expect(res.ok).toBe(true);
-        expect((res.payload as { type?: unknown } | undefined)?.type).toBe("hello-ok");
+        expect((res.payload as { type?: any } | undefined)?.type).toBe("hello-ok");
         const pending = (await listDevicePairing()).pending.filter(
           (entry) => entry.deviceId === loaded.identity.deviceId,
         );

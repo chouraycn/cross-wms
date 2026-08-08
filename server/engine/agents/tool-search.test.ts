@@ -50,14 +50,14 @@ function pluginTool(name: string, description: string, pluginId = "fake-catalog"
   return tool;
 }
 
-function resultDetails(result: { details?: unknown }): Record<string, unknown> {
+function resultDetails(result: { details?: any }): Record<string, any> {
   if (!result.details || typeof result.details !== "object") {
     throw new Error("Expected result details");
   }
-  return result.details as Record<string, unknown>;
+  return result.details as Record<string, any>;
 }
 
-function mockCall(mock: { mock: { calls: unknown[][] } }, index = 0): unknown[] {
+function mockCall(mock: { mock: { calls: any[][] } }, index = 0): any[] {
   const call = mock.mock.calls[index];
   if (!call) {
     throw new Error(`Expected mock call ${index}`);
@@ -1054,9 +1054,9 @@ describe("Tool Search", () => {
       sourceName?: string;
       toolCallId?: string;
       parentToolCallId?: string;
-      input?: unknown;
-      signal?: unknown;
-      onUpdate?: unknown;
+      input?: any;
+      signal?: any;
+      onUpdate?: any;
     };
     expect(firstExecuteInput.tool?.name).toBe("fake_lifecycle");
     expect(firstExecuteInput.toolName).toBe("fake_lifecycle");
@@ -1086,9 +1086,9 @@ describe("Tool Search", () => {
       sourceName?: string;
       toolCallId?: string;
       parentToolCallId?: string;
-      input?: unknown;
-      signal?: unknown;
-      onUpdate?: unknown;
+      input?: any;
+      signal?: any;
+      onUpdate?: any;
     };
     expect(secondExecuteInput.tool?.name).toBe("fake_lifecycle");
     expect(secondExecuteInput.toolName).toBe("fake_lifecycle");
@@ -1146,8 +1146,8 @@ describe("Tool Search", () => {
         type?: string;
         id?: string;
         name?: string;
-        arguments?: unknown;
-        input?: unknown;
+        arguments?: any;
+        input?: any;
       }>;
     };
     expect(projectedToolCall.role).toBe("assistant");
@@ -1165,7 +1165,7 @@ describe("Tool Search", () => {
       toolCallId?: string;
       toolName?: string;
       isError?: boolean;
-      content?: unknown;
+      content?: any;
     };
     expect(projectedToolResult.role).toBe("toolResult");
     expect(projectedToolResult.toolCallId).toBe("tool_search_code:wrapper-call:fake_target:1");
@@ -1212,7 +1212,7 @@ describe("Tool Search", () => {
     const target = pluginTool("fake_then_started", "Started by .then without await");
     let resolveTool: (() => void) | undefined;
     target.execute = vi.fn(
-      async (_toolCallId: string, input: unknown): Promise<ReturnType<typeof jsonResult>> => {
+      async (_toolCallId: string, input: any): Promise<ReturnType<typeof jsonResult>> => {
         await new Promise<void>((resolve) => {
           resolveTool = resolve;
         });
@@ -1529,7 +1529,7 @@ describe("Tool Search", () => {
     target.execute = vi.fn(
       async (
         _toolCallId: string,
-        _input: unknown,
+        _input: any,
         signal?: AbortSignal,
       ): Promise<ReturnType<typeof jsonResult>> => {
         observedSignal = signal;

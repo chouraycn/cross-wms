@@ -35,7 +35,7 @@ describe("web_search redirect resolution hardening", () => {
     expect(resolved).toBe("https://example.com/final");
     expect(withStrictWebToolsEndpointMock).toHaveBeenCalledTimes(1);
     const call = withStrictWebToolsEndpointMock.mock.calls.at(0) as
-      | [{ url?: unknown; timeoutMs?: unknown; init?: { method?: unknown } }, unknown]
+      | [{ url?: any; timeoutMs?: any; init?: { method?: any } }, unknown]
       | undefined;
     if (!call) {
       throw new Error("expected withStrictWebToolsEndpoint to be called");

@@ -6,15 +6,15 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function canonicalizeCronToolObject(..._args: unknown[]): unknown {
+export function canonicalizeCronToolObject(..._args: any[]): any {
   return false;
 }
-export function isEmptyRecoveredCronPatch(..._args: unknown[]): unknown {
+export function isEmptyRecoveredCronPatch(..._args: any[]): any {
   return false;
 }
-export function recoverCronObjectFromFlatParams(..._args: unknown[]): unknown {
+export function recoverCronObjectFromFlatParams(..._args: any[]): any {
   return undefined;
 }
-export function hasCronCreateSignal(..._args: unknown[]): unknown {
+export function hasCronCreateSignal(..._args: any[]): any {
   return false;
 }

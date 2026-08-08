@@ -7,7 +7,7 @@
 import { getDb } from '../db.js';
 
 /** 查询 SQLite 数据库（安全限制：仅允许 SELECT 语句） */
-export async function handleDbQuery(args: Record<string, unknown>): Promise<string> {
+export async function handleDbQuery(args: Record<string, any>): Promise<string> {
   const sql = String(args.sql || '').trim();
 
   // 安全检查：仅允许 SELECT 语句

@@ -6,12 +6,12 @@ import {
   type LegacyConfigRule,
 } from "@openclaw-src/config/legacy.shared.js";
 
-function hasLegacyRotateBytes(value: unknown): boolean {
+function hasLegacyRotateBytes(value: any): boolean {
   const maintenance = getRecord(value);
   return Boolean(maintenance && Object.hasOwn(maintenance, "rotateBytes"));
 }
 
-function hasLegacyParentForkMaxTokens(value: unknown): boolean {
+function hasLegacyParentForkMaxTokens(value: any): boolean {
   const session = getRecord(value);
   return Boolean(session && Object.hasOwn(session, "parentForkMaxTokens"));
 }

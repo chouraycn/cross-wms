@@ -28,8 +28,8 @@ function ensureControlUiAllowedOriginsForNonLoopbackBind(
   config: OpenClawConfig,
   _params: {
     isContainerEnvironment: () => boolean;
-    runtimeBind?: unknown;
-    runtimePort?: unknown;
+    runtimeBind?: any;
+    runtimePort?: any;
   },
 ): {
   config: OpenClawConfig;
@@ -51,8 +51,8 @@ function ensureControlUiAllowedOriginsForNonLoopbackBind(
 export async function maybeSeedControlUiAllowedOriginsAtStartup(params: {
   config: OpenClawConfig;
   log: { info: (msg: string) => void; warn: (msg: string) => void };
-  runtimeBind?: unknown;
-  runtimePort?: unknown;
+  runtimeBind?: any;
+  runtimePort?: any;
 }): Promise<{ config: OpenClawConfig; seededAllowedOrigins: boolean }> {
   const seeded = ensureControlUiAllowedOriginsForNonLoopbackBind(params.config, {
     isContainerEnvironment,

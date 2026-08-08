@@ -12,7 +12,7 @@ export type MediaModelConfig = {
   image?: ActiveMediaModel;
   audio?: ActiveMediaModel;
   video?: ActiveMediaModel;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 export type NormalizedMediaToolConfig = {
@@ -106,7 +106,7 @@ export function resolveActiveMediaModel(
   cfg: OpenClawConfig,
   capability?: MediaUnderstandingCapability,
 ): ActiveMediaModel | undefined {
-  const models = cfg.models as Record<string, unknown> | undefined;
+  const models = cfg.models as Record<string, any> | undefined;
   const mediaModel = models?.media as MediaModelConfig | undefined;
   if (!mediaModel) {
     return undefined;

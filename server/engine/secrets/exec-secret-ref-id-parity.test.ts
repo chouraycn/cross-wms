@@ -57,7 +57,7 @@ describe("exec SecretRef id parity", () => {
     return result.ok;
   }
 
-  function configAcceptsRef(ref: unknown): boolean {
+  function configAcceptsRef(ref: any): boolean {
     const result = validateConfigObjectRaw({
       models: {
         providers: {
@@ -90,7 +90,7 @@ describe("exec SecretRef id parity", () => {
     });
   }
 
-  function planAcceptsRef(ref: unknown) {
+  function planAcceptsRef(ref: any) {
     return isSecretsApplyPlan({
       version: 1,
       protocolVersion: 1,

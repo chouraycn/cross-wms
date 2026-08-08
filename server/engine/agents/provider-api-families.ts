@@ -11,6 +11,6 @@ const GPT_PARALLEL_TOOL_CALLS_APIS = new Set([
 ]);
 
 /** 判断某个 provider API 是否接受 GPT parallel-tool-call 负载设置。 */
-export function supportsGptParallelToolCallsPayload(api: unknown): boolean {
+export function supportsGptParallelToolCallsPayload(api: any): boolean {
   return typeof api === "string" && GPT_PARALLEL_TOOL_CALLS_APIS.has(api);
 }

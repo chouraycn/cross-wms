@@ -45,19 +45,19 @@ function createFailureAlertCron(params: {
 function alertCallArg(
   sendCronFailureAlert: ReturnType<typeof vi.fn>,
   callIndex = sendCronFailureAlert.mock.calls.length - 1,
-): Record<string, unknown> {
+): Record<string, any> {
   const value = sendCronFailureAlert.mock.calls[callIndex]?.[0];
   if (!value || typeof value !== "object") {
     throw new Error(`expected failure alert call ${callIndex}`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 function expectAlertFields(
   sendCronFailureAlert: ReturnType<typeof vi.fn>,
-  expected: Record<string, unknown>,
+  expected: Record<string, any>,
   callIndex?: number,
-): Record<string, unknown> {
+): Record<string, any> {
   const alert = alertCallArg(sendCronFailureAlert, callIndex);
   for (const [key, value] of Object.entries(expected)) {
     expect(alert[key]).toEqual(value);

@@ -19,7 +19,7 @@ import {
   stripTrailingAnthropicAssistantPrefillWhenThinking,
 } from "./provider-stream-shared.js";
 
-type StreamEvent = { type: string } & Record<string, unknown>;
+type StreamEvent = { type: string } & Record<string, any>;
 
 const lmstudioBinaryModel = {
   api: "openai-completions",
@@ -42,16 +42,16 @@ const lmstudioBareModel = {
   reasoning: true,
 } as unknown as Model<"openai-completions">;
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error(`expected ${label} to be a record`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function createEventStream(events: unknown[]): ReturnType<StreamFn> {
+function createEventStream(events: any[]): ReturnType<StreamFn> {
   const output = createAssistantMessageEventStream();
-  const stream = output as unknown as { push(event: unknown): void; end(): void };
+  const stream = output as unknown as { push(event: any): void; end(): void };
   queueMicrotask(() => {
     for (const event of events) {
       stream.push(event);
@@ -62,9 +62,9 @@ function createEventStream(events: unknown[]): ReturnType<StreamFn> {
 }
 
 function createPayloadCapture(initialReasoningEffort?: string) {
-  const payloads: Array<Record<string, unknown>> = [];
+  const payloads: Array<Record<string, any>> = [];
   const baseStreamFn: StreamFn = (model, _context, options) => {
-    const payload: Record<string, unknown> = { model: model.id };
+    const payload: Record<string, any> = { model: model.id };
     if (initialReasoningEffort !== undefined) {
       payload.reasoning_effort = initialReasoningEffort;
     }
@@ -94,7 +94,7 @@ async function resolveStream(stream: ReturnType<StreamFn>) {
   return stream instanceof Promise ? await stream : stream;
 }
 
-async function nextEvent(iterator: AsyncIterator<unknown>, label: string): Promise<StreamEvent> {
+async function nextEvent(iterator: AsyncIterator<any>, label: string): Promise<StreamEvent> {
   const result = await Promise.race([
     iterator.next(),
     new Promise<"timed out">((resolve) => {
@@ -182,7 +182,7 @@ describe("setQwenChatTemplateThinking", () => {
   });
 
   it("creates the required chat-template kwargs when absent", () => {
-    const payload: Record<string, unknown> = {};
+    const payload: Record<string, any> = {};
 
     setQwenChatTemplateThinking(payload, false);
 
@@ -197,7 +197,7 @@ describe("setQwenChatTemplateThinking", () => {
 
 describe("normalizeOpenAICompatibleReasoningPayload", () => {
   it("removes the legacy field and adds the selected reasoning effort", () => {
-    const payload: Record<string, unknown> = {
+    const payload: Record<string, any> = {
       reasoning_effort: "high",
     };
 
@@ -207,11 +207,11 @@ describe("normalizeOpenAICompatibleReasoningPayload", () => {
   });
 
   it("preserves explicit reasoning controls", () => {
-    const withMaxTokens: Record<string, unknown> = {
+    const withMaxTokens: Record<string, any> = {
       reasoning_effort: "high",
       reasoning: { max_tokens: 256 },
     };
-    const withEffort: Record<string, unknown> = {
+    const withEffort: Record<string, any> = {
       reasoning_effort: "high",
       reasoning: { effort: "low", summary: "auto" },
     };
@@ -224,7 +224,7 @@ describe("normalizeOpenAICompatibleReasoningPayload", () => {
   });
 
   it("removes only the legacy field when thinking is disabled", () => {
-    const payload: Record<string, unknown> = {
+    const payload: Record<string, any> = {
       reasoning_effort: "high",
     };
 
@@ -267,16 +267,16 @@ describe("createDeepSeekV4OpenAICompatibleThinkingWrapper", () => {
 
 describe("createPayloadPatchStreamWrapper", () => {
   it("passes stream call options to payload patches", () => {
-    let captured: Record<string, unknown> = {};
+    let captured: Record<string, any> = {};
     const baseStreamFn: StreamFn = (_model, _context, options) => {
-      const payload: Record<string, unknown> = {};
+      const payload: Record<string, any> = {};
       options?.onPayload?.(payload, _model);
       captured = payload;
       return {} as ReturnType<StreamFn>;
     };
 
     const wrapped = createPayloadPatchStreamWrapper(baseStreamFn, ({ payload, options }) => {
-      payload.reasoning = (options as { reasoning?: unknown } | undefined)?.reasoning;
+      payload.reasoning = (options as { reasoning?: any } | undefined)?.reasoning;
     });
     void wrapped(
       { id: "model" } as never,
@@ -360,13 +360,13 @@ describe("createPlainTextToolCallCompatWrapper", () => {
         },
       ]);
     const wrapped = createPlainTextToolCallCompatWrapper(baseStreamFn);
-    const events: unknown[] = [];
+    const events: any[] = [];
 
     for await (const event of wrapped(
       {} as never,
       { tools: [{ name: "read" }] } as never,
       {},
-    ) as AsyncIterable<unknown>) {
+    ) as AsyncIterable<any>) {
       events.push(event);
     }
 
@@ -375,7 +375,7 @@ describe("createPlainTextToolCallCompatWrapper", () => {
       "toolcall_delta",
       "done",
     ]);
-    const done = events.at(-1) as { message?: { content?: unknown; stopReason?: unknown } };
+    const done = events.at(-1) as { message?: { content?: any; stopReason?: any } };
     expect(done.message?.stopReason).toBe("toolUse");
     expect(done.message?.content).toEqual([
       expect.objectContaining({
@@ -401,13 +401,13 @@ describe("createPlainTextToolCallCompatWrapper", () => {
         },
       ]);
     const wrapped = createPlainTextToolCallCompatWrapper(baseStreamFn);
-    const events: unknown[] = [];
+    const events: any[] = [];
 
     for await (const event of wrapped(
       {} as never,
       { tools: [{ name: "read" }] } as never,
       {},
-    ) as AsyncIterable<unknown>) {
+    ) as AsyncIterable<any>) {
       events.push(event);
     }
 
@@ -416,7 +416,7 @@ describe("createPlainTextToolCallCompatWrapper", () => {
       "toolcall_delta",
       "done",
     ]);
-    const done = events.at(-1) as { reason?: unknown; message?: { stopReason?: unknown } };
+    const done = events.at(-1) as { reason?: any; message?: { stopReason?: any } };
     expect(done.reason).toBe("toolUse");
     expect(done.message?.stopReason).toBe("toolUse");
   });
@@ -435,13 +435,13 @@ describe("createPlainTextToolCallCompatWrapper", () => {
         },
       ]);
     const wrapped = createPlainTextToolCallCompatWrapper(baseStreamFn);
-    const events: unknown[] = [];
+    const events: any[] = [];
 
     for await (const event of wrapped(
       {} as never,
       { tools: [{ name: "read" }] } as never,
       {},
-    ) as AsyncIterable<unknown>) {
+    ) as AsyncIterable<any>) {
       events.push(event);
     }
 
@@ -475,7 +475,7 @@ describe("createPlainTextToolCallCompatWrapper", () => {
 
     const message = requireRecord(await resultPromise, "result message");
     expect(message.stopReason).toBe("toolUse");
-    expect(requireRecord((message.content as unknown[])[0], "tool call")).toMatchObject({
+    expect(requireRecord((message.content as any[])[0], "tool call")).toMatchObject({
       type: "toolCall",
       name: "read",
       arguments: { path: "src/index.ts" },
@@ -515,7 +515,7 @@ describe("createPlainTextToolCallCompatWrapper", () => {
 
     const message = requireRecord(await resultPromise, "result message");
     expect(message.stopReason).toBe("toolUse");
-    expect(requireRecord((message.content as unknown[])[0], "tool call")).toMatchObject({
+    expect(requireRecord((message.content as any[])[0], "tool call")).toMatchObject({
       type: "toolCall",
       name: "read",
       arguments: { path: "src/index.ts" },
@@ -541,7 +541,7 @@ describe("createPlainTextToolCallCompatWrapper", () => {
     source.end();
 
     const message = requireRecord(await resultPromise, "result message");
-    expect(requireRecord((message.content as unknown[])[0], "tool call")).toMatchObject({
+    expect(requireRecord((message.content as any[])[0], "tool call")).toMatchObject({
       type: "toolCall",
       name: "read",
       arguments: { path: "src/index.ts" },
@@ -567,7 +567,7 @@ describe("createPlainTextToolCallCompatWrapper", () => {
     source.end();
 
     const message = requireRecord(await resultPromise, "result message");
-    expect(requireRecord((message.content as unknown[])[0], "tool call")).toMatchObject({
+    expect(requireRecord((message.content as any[])[0], "tool call")).toMatchObject({
       type: "toolCall",
       name: "read",
       arguments: { path: "src/index.ts" },
@@ -613,9 +613,9 @@ describe("createPlainTextToolCallCompatWrapper", () => {
     const stream = await resolveStream(
       wrapped({} as never, { tools: [{ name: "read" }] } as never, {}),
     );
-    const events: unknown[] = [];
+    const events: any[] = [];
 
-    for await (const event of stream as AsyncIterable<unknown>) {
+    for await (const event of stream as AsyncIterable<any>) {
       events.push(event);
     }
 
@@ -671,9 +671,9 @@ describe("createPlainTextToolCallCompatWrapper", () => {
     const stream = await resolveStream(
       wrapped({} as never, { tools: [{ name: "read" }] } as never, {}),
     );
-    const events: unknown[] = [];
+    const events: any[] = [];
 
-    for await (const event of stream as AsyncIterable<unknown>) {
+    for await (const event of stream as AsyncIterable<any>) {
       events.push(event);
     }
 
@@ -727,9 +727,9 @@ describe("createPlainTextToolCallCompatWrapper", () => {
     const stream = await resolveStream(
       wrapped({} as never, { tools: [{ name: "read" }] } as never, {}),
     );
-    const events: unknown[] = [];
+    const events: any[] = [];
 
-    for await (const event of stream as AsyncIterable<unknown>) {
+    for await (const event of stream as AsyncIterable<any>) {
       events.push(event);
     }
 
@@ -854,13 +854,13 @@ describe("createPlainTextToolCallCompatWrapper", () => {
         },
       ]);
     const wrapped = createPlainTextToolCallCompatWrapper(baseStreamFn);
-    const events: unknown[] = [];
+    const events: any[] = [];
 
     for await (const event of wrapped(
       {} as never,
       { tools: [{ name: "read" }] } as never,
       {},
-    ) as AsyncIterable<unknown>) {
+    ) as AsyncIterable<any>) {
       events.push(event);
     }
 
@@ -904,13 +904,13 @@ describe("createPlainTextToolCallCompatWrapper", () => {
         },
       ]);
     const wrapped = createPlainTextToolCallCompatWrapper(baseStreamFn);
-    const events: unknown[] = [];
+    const events: any[] = [];
 
     for await (const event of wrapped(
       {} as never,
       { tools: [{ name: "read" }] } as never,
       {},
-    ) as AsyncIterable<unknown>) {
+    ) as AsyncIterable<any>) {
       events.push(event);
     }
 
@@ -945,13 +945,13 @@ describe("createPlainTextToolCallCompatWrapper", () => {
         },
       ]);
     const wrapped = createPlainTextToolCallCompatWrapper(baseStreamFn);
-    const events: unknown[] = [];
+    const events: any[] = [];
 
     for await (const event of wrapped(
       {} as never,
       { tools: [{ name: "read" }] } as never,
       {},
-    ) as AsyncIterable<unknown>) {
+    ) as AsyncIterable<any>) {
       events.push(event);
     }
 
@@ -971,8 +971,8 @@ describe("createPlainTextToolCallCompatWrapper", () => {
     const output = await resolveStream(stream);
     const resultPromise = output.result();
     const eventsPromise = (async () => {
-      const events: unknown[] = [];
-      for await (const event of output as AsyncIterable<unknown>) {
+      const events: any[] = [];
+      for await (const event of output as AsyncIterable<any>) {
         events.push(event);
       }
       return events;
@@ -1026,13 +1026,13 @@ describe("createPlainTextToolCallCompatWrapper", () => {
         },
       ]);
     const wrapped = createPlainTextToolCallCompatWrapper(baseStreamFn);
-    const events: unknown[] = [];
+    const events: any[] = [];
 
     for await (const event of wrapped(
       {} as never,
       { tools: [{ name: "read" }] } as never,
       {},
-    ) as AsyncIterable<unknown>) {
+    ) as AsyncIterable<any>) {
       events.push(event);
     }
 
@@ -1070,13 +1070,13 @@ describe("createPlainTextToolCallCompatWrapper", () => {
         },
       ]);
     const wrapped = createPlainTextToolCallCompatWrapper(baseStreamFn);
-    const events: unknown[] = [];
+    const events: any[] = [];
 
     for await (const event of wrapped(
       {} as never,
       { tools: [{ name: "read" }] } as never,
       {},
-    ) as AsyncIterable<unknown>) {
+    ) as AsyncIterable<any>) {
       events.push(event);
     }
 
@@ -1110,13 +1110,13 @@ describe("createPlainTextToolCallCompatWrapper", () => {
         },
       ]);
     const wrapped = createPlainTextToolCallCompatWrapper(baseStreamFn);
-    const events: unknown[] = [];
+    const events: any[] = [];
 
     for await (const event of wrapped(
       {} as never,
       { tools: [{ name: "read" }] } as never,
       {},
-    ) as AsyncIterable<unknown>) {
+    ) as AsyncIterable<any>) {
       events.push(event);
     }
 
@@ -1151,13 +1151,13 @@ describe("createPlainTextToolCallCompatWrapper", () => {
         },
       ]);
     const wrapped = createPlainTextToolCallCompatWrapper(baseStreamFn);
-    const events: unknown[] = [];
+    const events: any[] = [];
 
     for await (const event of wrapped(
       {} as never,
       { tools: [{ name: "read" }] } as never,
       {},
-    ) as AsyncIterable<unknown>) {
+    ) as AsyncIterable<any>) {
       events.push(event);
     }
 
@@ -1188,13 +1188,13 @@ describe("createPlainTextToolCallCompatWrapper", () => {
         },
       ]);
     const wrapped = createPlainTextToolCallCompatWrapper(baseStreamFn);
-    const events: unknown[] = [];
+    const events: any[] = [];
 
     for await (const event of wrapped(
       {} as never,
       { tools: [{ name: "read" }] } as never,
       {},
-    ) as AsyncIterable<unknown>) {
+    ) as AsyncIterable<any>) {
       events.push(event);
     }
 
@@ -1228,13 +1228,13 @@ describe("createPlainTextToolCallCompatWrapper", () => {
         },
       ]);
     const wrapped = createPlainTextToolCallCompatWrapper(baseStreamFn);
-    const events: unknown[] = [];
+    const events: any[] = [];
 
     for await (const event of wrapped(
       {} as never,
       { tools: [{ name: "read" }] } as never,
       {},
-    ) as AsyncIterable<unknown>) {
+    ) as AsyncIterable<any>) {
       events.push(event);
     }
 
@@ -1268,13 +1268,13 @@ describe("createPlainTextToolCallCompatWrapper", () => {
         },
       ]);
     const wrapped = createPlainTextToolCallCompatWrapper(baseStreamFn);
-    const events: unknown[] = [];
+    const events: any[] = [];
 
     for await (const event of wrapped(
       {} as never,
       { tools: [{ name: "read" }] } as never,
       {},
-    ) as AsyncIterable<unknown>) {
+    ) as AsyncIterable<any>) {
       events.push(event);
     }
 
@@ -1309,13 +1309,13 @@ describe("createPlainTextToolCallCompatWrapper", () => {
         },
       ]);
     const wrapped = createPlainTextToolCallCompatWrapper(baseStreamFn);
-    const events: unknown[] = [];
+    const events: any[] = [];
 
     for await (const event of wrapped(
       {} as never,
       { tools: [{ name: "read" }] } as never,
       {},
-    ) as AsyncIterable<unknown>) {
+    ) as AsyncIterable<any>) {
       events.push(event);
     }
 
@@ -1347,13 +1347,13 @@ describe("createPlainTextToolCallCompatWrapper", () => {
         },
       ]);
     const wrapped = createPlainTextToolCallCompatWrapper(baseStreamFn);
-    const events: unknown[] = [];
+    const events: any[] = [];
 
     for await (const event of wrapped(
       {} as never,
       { tools: [{ name: "read" }] } as never,
       {},
-    ) as AsyncIterable<unknown>) {
+    ) as AsyncIterable<any>) {
       events.push(event);
     }
 
@@ -1385,13 +1385,13 @@ describe("createPlainTextToolCallCompatWrapper", () => {
         },
       ]);
     const wrapped = createPlainTextToolCallCompatWrapper(baseStreamFn);
-    const events: unknown[] = [];
+    const events: any[] = [];
 
     for await (const event of wrapped(
       {} as never,
       { tools: [{ name: "read" }] } as never,
       {},
-    ) as AsyncIterable<unknown>) {
+    ) as AsyncIterable<any>) {
       events.push(event);
     }
 
@@ -1428,13 +1428,13 @@ describe("createPlainTextToolCallCompatWrapper", () => {
         },
       ]);
     const wrapped = createPlainTextToolCallCompatWrapper(baseStreamFn);
-    const events: unknown[] = [];
+    const events: any[] = [];
 
     for await (const event of wrapped(
       {} as never,
       { tools: [{ name: "read" }] } as never,
       {},
-    ) as AsyncIterable<unknown>) {
+    ) as AsyncIterable<any>) {
       events.push(event);
     }
 
@@ -1472,13 +1472,13 @@ describe("createPlainTextToolCallCompatWrapper", () => {
         },
       ]);
     const wrapped = createPlainTextToolCallCompatWrapper(baseStreamFn);
-    const events: unknown[] = [];
+    const events: any[] = [];
 
     for await (const event of wrapped(
       {} as never,
       { tools: [{ name: "read" }] } as never,
       {},
-    ) as AsyncIterable<unknown>) {
+    ) as AsyncIterable<any>) {
       events.push(event);
     }
 
@@ -1508,13 +1508,13 @@ describe("createPlainTextToolCallCompatWrapper", () => {
         },
       ]);
     const wrapped = createPlainTextToolCallCompatWrapper(baseStreamFn);
-    const events: unknown[] = [];
+    const events: any[] = [];
 
     for await (const event of wrapped(
       {} as never,
       { tools: [{ name: "read_file" }] } as never,
       {},
-    ) as AsyncIterable<unknown>) {
+    ) as AsyncIterable<any>) {
       events.push(event);
     }
 
@@ -1541,13 +1541,13 @@ describe("createPlainTextToolCallCompatWrapper", () => {
         },
       ]);
     const wrapped = createPlainTextToolCallCompatWrapper(baseStreamFn);
-    const events: unknown[] = [];
+    const events: any[] = [];
 
     for await (const event of wrapped(
       {} as never,
       { tools: [{ name: "read" }] } as never,
       {},
-    ) as AsyncIterable<unknown>) {
+    ) as AsyncIterable<any>) {
       events.push(event);
     }
 
@@ -1576,13 +1576,13 @@ describe("createPlainTextToolCallCompatWrapper", () => {
         },
       ]);
     const wrapped = createPlainTextToolCallCompatWrapper(baseStreamFn);
-    const events: unknown[] = [];
+    const events: any[] = [];
 
     for await (const event of wrapped(
       {} as never,
       { tools: [{ name: "read" }] } as never,
       {},
-    ) as AsyncIterable<unknown>) {
+    ) as AsyncIterable<any>) {
       events.push(event);
     }
 
@@ -1622,13 +1622,13 @@ describe("createPlainTextToolCallCompatWrapper", () => {
         },
       ]);
     const wrapped = createPlainTextToolCallCompatWrapper(baseStreamFn);
-    const events: unknown[] = [];
+    const events: any[] = [];
 
     for await (const event of wrapped(
       {} as never,
       { tools: [{ name: "read" }] } as never,
       {},
-    ) as AsyncIterable<unknown>) {
+    ) as AsyncIterable<any>) {
       events.push(event);
     }
 
@@ -1664,13 +1664,13 @@ describe("createPlainTextToolCallCompatWrapper", () => {
         },
       ]);
     const wrapped = createPlainTextToolCallCompatWrapper(baseStreamFn);
-    const events: unknown[] = [];
+    const events: any[] = [];
 
     for await (const event of wrapped(
       {} as never,
       { tools: [{ name: "read" }] } as never,
       {},
-    ) as AsyncIterable<unknown>) {
+    ) as AsyncIterable<any>) {
       events.push(event);
     }
 
@@ -1701,13 +1701,13 @@ describe("createPlainTextToolCallCompatWrapper", () => {
         },
       ]);
     const wrapped = createPlainTextToolCallCompatWrapper(baseStreamFn);
-    const events: unknown[] = [];
+    const events: any[] = [];
 
     for await (const event of wrapped(
       {} as never,
       { tools: [{ name: "read" }] } as never,
       {},
-    ) as AsyncIterable<unknown>) {
+    ) as AsyncIterable<any>) {
       events.push(event);
     }
 
@@ -1748,13 +1748,13 @@ describe("createPlainTextToolCallCompatWrapper", () => {
         },
       ]);
     const wrapped = createPlainTextToolCallCompatWrapper(baseStreamFn);
-    const events: unknown[] = [];
+    const events: any[] = [];
 
     for await (const event of wrapped(
       {} as never,
       { tools: [{ name: "read" }] } as never,
       {},
-    ) as AsyncIterable<unknown>) {
+    ) as AsyncIterable<any>) {
       events.push(event);
     }
 
@@ -1790,13 +1790,13 @@ describe("createPlainTextToolCallCompatWrapper", () => {
         },
       ]);
     const wrapped = createPlainTextToolCallCompatWrapper(baseStreamFn);
-    const events: unknown[] = [];
+    const events: any[] = [];
 
     for await (const event of wrapped(
       {} as never,
       { tools: [{ name: "read" }] } as never,
       {},
-    ) as AsyncIterable<unknown>) {
+    ) as AsyncIterable<any>) {
       events.push(event);
     }
 
@@ -1831,13 +1831,13 @@ describe("createPlainTextToolCallCompatWrapper", () => {
         },
       ]);
     const wrapped = createPlainTextToolCallCompatWrapper(baseStreamFn);
-    const events: unknown[] = [];
+    const events: any[] = [];
 
     for await (const event of wrapped(
       {} as never,
       { tools: [{ name: "read" }] } as never,
       {},
-    ) as AsyncIterable<unknown>) {
+    ) as AsyncIterable<any>) {
       events.push(event);
     }
 
@@ -1867,13 +1867,13 @@ describe("createPlainTextToolCallCompatWrapper", () => {
         },
       ]);
     const wrapped = createPlainTextToolCallCompatWrapper(baseStreamFn);
-    const events: unknown[] = [];
+    const events: any[] = [];
 
     for await (const event of wrapped(
       {} as never,
       { tools: [{ name: "read" }] } as never,
       {},
-    ) as AsyncIterable<unknown>) {
+    ) as AsyncIterable<any>) {
       events.push(event);
     }
 
@@ -1911,13 +1911,13 @@ describe("createPlainTextToolCallCompatWrapper", () => {
         },
       ]);
     const wrapped = createPlainTextToolCallCompatWrapper(baseStreamFn);
-    const events: unknown[] = [];
+    const events: any[] = [];
 
     for await (const event of wrapped(
       {} as never,
       { tools: [{ name: "read" }] } as never,
       {},
-    ) as AsyncIterable<unknown>) {
+    ) as AsyncIterable<any>) {
       events.push(event);
     }
 
@@ -1957,13 +1957,13 @@ describe("createPlainTextToolCallCompatWrapper", () => {
         },
       ]);
     const wrapped = createPlainTextToolCallCompatWrapper(baseStreamFn);
-    const events: unknown[] = [];
+    const events: any[] = [];
 
     for await (const event of wrapped(
       {} as never,
       { tools: [{ name: "read" }] } as never,
       {},
-    ) as AsyncIterable<unknown>) {
+    ) as AsyncIterable<any>) {
       events.push(event);
     }
 
@@ -1999,13 +1999,13 @@ describe("createPlainTextToolCallCompatWrapper", () => {
         },
       ]);
     const wrapped = createPlainTextToolCallCompatWrapper(baseStreamFn);
-    const events: unknown[] = [];
+    const events: any[] = [];
 
     for await (const event of wrapped(
       {} as never,
       { tools: [{ name: "read" }] } as never,
       {},
-    ) as AsyncIterable<unknown>) {
+    ) as AsyncIterable<any>) {
       events.push(event);
     }
 

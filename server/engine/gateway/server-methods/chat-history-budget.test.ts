@@ -8,7 +8,7 @@ type DisplayMessage = {
   content?: Array<{ type?: string; text?: string }>;
 };
 
-function firstText(messages: unknown[]): string {
+function firstText(messages: any[]): string {
   const msg = messages[0] as DisplayMessage | undefined;
   return msg?.content?.[0]?.text ?? "";
 }
@@ -67,7 +67,7 @@ describe("enforceChatHistoryFinalBudget", () => {
     expect(result.messages).toHaveLength(1);
     expect(firstText(result.messages)).toContain("chat.history unavailable");
     // The sentinel does not carry the oversized source metadata.
-    expect((result.messages[0] as Record<string, unknown>)["__openclaw"]).toBeUndefined();
+    expect((result.messages[0] as Record<string, any>)["__openclaw"]).toBeUndefined();
     expect(result.placeholderCount).toBe(1);
   });
 });

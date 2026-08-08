@@ -65,7 +65,7 @@ describe("OpenAI strict tool schema normalization", () => {
 
   it("normalizes truly empty MCP tool schema {} for strict mode", () => {
     const schema = {};
-    const normalized = normalizeStrictOpenAIJsonSchema(schema) as Record<string, unknown>;
+    const normalized = normalizeStrictOpenAIJsonSchema(schema) as Record<string, any>;
     expect(normalized.type).toBe("object");
     expect(normalized.properties).toStrictEqual({});
     expect(normalized.required).toStrictEqual([]);

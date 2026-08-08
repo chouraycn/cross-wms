@@ -44,7 +44,7 @@ function sleep(ms: number): Promise<void> {
 
 function createAbortError(signal: AbortSignal): Error {
   const err = new Error("aborted", {
-    cause: "reason" in signal ? (signal as { reason?: unknown }).reason : undefined,
+    cause: "reason" in signal ? (signal as { reason?: any }).reason : undefined,
   });
   err.name = "AbortError";
   return err;
@@ -77,7 +77,7 @@ async function sleepWithAbort(
         signal.removeEventListener("abort", onAbort);
         resolve();
       },
-      (err: unknown) => {
+      (err: any) => {
         signal.removeEventListener("abort", onAbort);
         reject(toErrorObject(err, "Non-Error rejection"));
       },

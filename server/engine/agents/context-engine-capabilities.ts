@@ -7,7 +7,7 @@
  */
 
 /** Resolve context engine capabilities (returns empty in cross-wms). */
-export function resolveContextEngineCapabilities(..._args: unknown[]): {
+export function resolveContextEngineCapabilities(..._args: any[]): {
   supported: false;
   reason: string;
 } {

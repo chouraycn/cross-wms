@@ -31,7 +31,7 @@ export interface AuditEntry {
   actor: string;
   actorType: 'user' | 'system' | 'agent' | 'plugin' | 'external';
   description: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
   ip?: string;
   userAgent?: string;
 }
@@ -94,7 +94,7 @@ export class MessageAuditLog {
     options: {
       severity?: AuditSeverity;
       actorType?: AuditEntry['actorType'];
-      metadata?: Record<string, unknown>;
+      metadata?: Record<string, any>;
     } = {},
   ): AuditEntry {
     return this.log({
@@ -117,7 +117,7 @@ export class MessageAuditLog {
     options: {
       severity?: AuditSeverity;
       actorType?: AuditEntry['actorType'];
-      metadata?: Record<string, unknown>;
+      metadata?: Record<string, any>;
     } = {},
   ): AuditEntry {
     return this.log({

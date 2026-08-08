@@ -70,13 +70,13 @@ type SaveAuthProfileStoreOptions = {
 
 const INLINE_OAUTH_TOKEN_FIELDS = ["access", "refresh", "idToken"] as const;
 
-function hasInlineOAuthTokenMaterial(credential: Record<string, unknown>): boolean {
+function hasInlineOAuthTokenMaterial(credential: Record<string, any>): boolean {
   return INLINE_OAUTH_TOKEN_FIELDS.some((field) => credential[field] !== undefined);
 }
 
 function hasChangedInlineOAuthTokenMaterial(params: {
-  credential: Record<string, unknown>;
-  existingCredential: Record<string, unknown>;
+  credential: Record<string, any>;
+  existingCredential: Record<string, any>;
 }): boolean {
   return INLINE_OAUTH_TOKEN_FIELDS.some((field) => {
     if (params.credential[field] === undefined) {
@@ -88,14 +88,14 @@ function hasChangedInlineOAuthTokenMaterial(params: {
 
 function preserveLegacyOAuthRefsOnSave(params: {
   payload: ReturnType<typeof buildPersistedAuthProfileSecretsStore>;
-  existingRaw: unknown;
+  existingRaw: any;
 }): ReturnType<typeof buildPersistedAuthProfileSecretsStore> {
   if (!isRecord(params.existingRaw) || !isRecord(params.existingRaw.profiles)) {
     return params.payload;
   }
   let nextProfiles: typeof params.payload.profiles | undefined;
   for (const [profileId, credential] of Object.entries(
-    params.payload.profiles as Record<string, unknown>,
+    params.payload.profiles as Record<string, any>,
   )) {
     if (!isRecord(credential) || credential.oauthRef !== undefined || credential.type !== "oauth") {
       continue;

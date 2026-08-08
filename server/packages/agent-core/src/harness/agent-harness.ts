@@ -65,7 +65,7 @@ function createUserMessage(text: string, images?: ImageContent[]): UserMessage {
   return { role: "user", content, timestamp: Date.now() };
 }
 
-function createFailureMessage(model: Model, error: unknown, aborted: boolean): AssistantMessage {
+function createFailureMessage(model: Model, error: any, aborted: boolean): AssistantMessage {
   return {
     role: "assistant",
     content: [{ type: "text", text: "" }],
@@ -171,10 +171,10 @@ function applyStreamOptionsPatch(
 
 const SUBSCRIBER_EVENT_TYPE = "*";
 
-type AgentHarnessHandler = (event: unknown, signal?: AbortSignal) => unknown;
+type AgentHarnessHandler = (event: any, signal?: AbortSignal) => unknown;
 
 function normalizeHarnessError(
-  error: unknown,
+  error: any,
   fallbackCode: AgentHarnessError["code"],
 ): AgentHarnessError {
   if (error instanceof AgentHarnessError) {
@@ -193,7 +193,7 @@ function normalizeHarnessError(
   return new AgentHarnessError(fallbackCode, cause.message, cause);
 }
 
-function normalizeHookError(error: unknown): AgentHarnessError {
+function normalizeHookError(error: any): AgentHarnessError {
   return normalizeHarnessError(error, "hook");
 }
 
@@ -339,7 +339,7 @@ export class CoreAgentHarness<
     return current;
   }
 
-  private async emitBeforeProviderPayload(model: Model, payload: unknown): Promise<unknown> {
+  private async emitBeforeProviderPayload(model: Model, payload: any): Promise<any> {
     const handlers = this.getHandlers("before_provider_payload");
     let current = payload;
     if (!handlers || handlers.size === 0) {
@@ -502,7 +502,7 @@ export class CoreAgentHarness<
           type: "tool_call",
           toolCallId: toolCall.id,
           toolName: toolCall.name,
-          input: args as Record<string, unknown>,
+          input: args as Record<string, any>,
         });
         return result ? { block: result.block, reason: result.reason } : undefined;
       },
@@ -511,7 +511,7 @@ export class CoreAgentHarness<
           type: "tool_result",
           toolCallId: toolCall.id,
           toolName: toolCall.name,
-          input: args as Record<string, unknown>,
+          input: args as Record<string, any>,
           content: result.content,
           details: result.details,
           isError,
@@ -585,7 +585,7 @@ export class CoreAgentHarness<
       return;
     }
     if (event.type === "turn_end") {
-      let eventError: unknown;
+      let eventError: any;
       try {
         await this.emitAny(event, signal);
       } catch (error) {
@@ -611,7 +611,7 @@ export class CoreAgentHarness<
 
   private async emitRunFailure(
     model: Model,
-    error: unknown,
+    error: any,
     aborted: boolean,
     signal: AbortSignal,
   ): Promise<AgentMessage[]> {
@@ -809,7 +809,7 @@ export class CoreAgentHarness<
     summary: string;
     firstKeptEntryId: string;
     tokensBefore: number;
-    details?: unknown;
+    details?: any;
   }> {
     if (this.phase !== "idle") {
       throw new AgentHarnessError("busy", "compact() requires idle harness");
@@ -928,7 +928,7 @@ export class CoreAgentHarness<
       }
       let summaryEntry: NavigateTreeResult["summaryEntry"];
       let summaryText: string | undefined = hookResult?.summary?.summary;
-      let summaryDetails: unknown = hookResult?.summary?.details;
+      let summaryDetails: any = hookResult?.summary?.details;
       if (!summaryText && options?.summarize && entries.length > 0) {
         const model = this.model;
         if (!model) {
@@ -1196,7 +1196,7 @@ export class CoreAgentHarness<
 
 export { CoreAgentHarness as AgentHarness };
 
-function toLintErrorObject(value: unknown, fallbackMessage: string): Error {
+function toLintErrorObject(value: any, fallbackMessage: string): Error {
   if (value instanceof Error) {
     return value;
   }

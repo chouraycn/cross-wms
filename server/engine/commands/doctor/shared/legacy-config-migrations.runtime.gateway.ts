@@ -27,11 +27,11 @@ const GATEWAY_WEBCHAT_RULE: LegacyConfigRule = {
   message: 'gateway.webchat is retired. Run "openclaw doctor --fix".',
 };
 
-function isLegacyGatewayBindHostAlias(value: unknown): boolean {
+function isLegacyGatewayBindHostAlias(value: any): boolean {
   return normalizeLegacyGatewayBindHostAlias(value) !== null;
 }
 
-function normalizeLegacyGatewayBindHostAlias(value: unknown): "lan" | "loopback" | null {
+function normalizeLegacyGatewayBindHostAlias(value: any): "lan" | "loopback" | null {
   const normalized = normalizeOptionalLowercaseString(value);
   if (!normalized) {
     return null;

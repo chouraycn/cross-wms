@@ -58,7 +58,7 @@ function verifySetup(): { ok: boolean; checks: { name: string; ok: boolean; mess
   return { ok: checks.every((c) => c.ok), checks };
 }
 
-function formatJsonOutput(data: unknown): string {
+function formatJsonOutput(data: any): string {
   return JSON.stringify(data, null, 2);
 }
 

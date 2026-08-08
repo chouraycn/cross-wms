@@ -53,7 +53,7 @@ const TASK_TERMINAL_OUTCOMES = new Set<TaskTerminalOutcome>(["succeeded", "block
 const TASK_SCOPE_KINDS = new Set<TaskScopeKind>(["session", "system"]);
 
 function parsePersistedTaskValue<T extends string>(
-  value: unknown,
+  value: any,
   values: ReadonlySet<T>,
   label: string,
 ): T {
@@ -63,27 +63,27 @@ function parsePersistedTaskValue<T extends string>(
   throw new Error(`Invalid persisted task ${label}: ${JSON.stringify(value)}`);
 }
 
-export function parseTaskRuntime(value: unknown): TaskRuntime {
+export function parseTaskRuntime(value: any): TaskRuntime {
   return parsePersistedTaskValue(value, TASK_RUNTIMES, "runtime");
 }
 
-export function parseTaskStatus(value: unknown): TaskStatus {
+export function parseTaskStatus(value: any): TaskStatus {
   return parsePersistedTaskValue(value, TASK_STATUSES, "status");
 }
 
-export function parseTaskDeliveryStatus(value: unknown): TaskDeliveryStatus {
+export function parseTaskDeliveryStatus(value: any): TaskDeliveryStatus {
   return parsePersistedTaskValue(value, TASK_DELIVERY_STATUSES, "delivery status");
 }
 
-export function parseTaskNotifyPolicy(value: unknown): TaskNotifyPolicy {
+export function parseTaskNotifyPolicy(value: any): TaskNotifyPolicy {
   return parsePersistedTaskValue(value, TASK_NOTIFY_POLICIES, "notify policy");
 }
 
-export function parseTaskScopeKind(value: unknown): TaskScopeKind {
+export function parseTaskScopeKind(value: any): TaskScopeKind {
   return parsePersistedTaskValue(value, TASK_SCOPE_KINDS, "scope kind");
 }
 
-export function parseOptionalTaskTerminalOutcome(value: unknown): TaskTerminalOutcome | undefined {
+export function parseOptionalTaskTerminalOutcome(value: any): TaskTerminalOutcome | undefined {
   if (value == null || value === "") {
     return undefined;
   }

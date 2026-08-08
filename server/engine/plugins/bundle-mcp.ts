@@ -21,7 +21,7 @@ import {
 import type { PluginManifestRegistry } from "./manifest-registry.js";
 import type { PluginBundleFormat } from "./manifest-types.js";
 
-export type BundleMcpServerConfig = Record<string, unknown>;
+export type BundleMcpServerConfig = Record<string, any>;
 
 export type BundleMcpConfig = {
   mcpServers: Record<string, BundleMcpServerConfig>;
@@ -51,7 +51,7 @@ const MANIFEST_PATH_BY_FORMAT: Record<PluginBundleFormat, string> = {
 const CLAUDE_PLUGIN_ROOT_PLACEHOLDER = "${CLAUDE_PLUGIN_ROOT}";
 
 function resolveBundleMcpConfigPaths(params: {
-  raw: Record<string, unknown>;
+  raw: Record<string, any>;
   rootDir: string;
   bundleFormat: PluginBundleFormat;
 }): string[] {
@@ -63,7 +63,7 @@ function resolveBundleMcpConfigPaths(params: {
   return mergeBundlePathLists(defaults, declared);
 }
 
-export function extractMcpServerMap(raw: unknown): Record<string, BundleMcpServerConfig> {
+export function extractMcpServerMap(raw: any): Record<string, BundleMcpServerConfig> {
   if (!isRecord(raw)) {
     return {};
   }
@@ -207,7 +207,7 @@ function loadBundleFileBackedMcpConfig(params: { rootDir: string; relativePath: 
 }
 
 function loadBundleInlineMcpConfig(params: {
-  raw: Record<string, unknown>;
+  raw: Record<string, any>;
   baseDir: string;
 }): BundleMcpConfig {
   if (!isRecord(params.raw.mcpServers)) {

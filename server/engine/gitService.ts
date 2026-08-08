@@ -287,7 +287,7 @@ export class GitService {
     const git = this.getGitClient(repoPath);
 
     try {
-      const logOptions: Record<string, unknown> = {
+      const logOptions: Record<string, any> = {
         '--max-count': options.limit ?? 10,
         '--format': '%H|%s|%an|%ai',
       };
@@ -353,7 +353,7 @@ export class GitService {
         success: true,
         commit: result.commit || undefined,
         message: message,
-        files: (result as { files?: unknown[] }).files?.length ?? 0,
+        files: (result as { files?: any[] }).files?.length ?? 0,
       };
     } catch (err) {
       logger.error('[GitService] 提交失败:', err);

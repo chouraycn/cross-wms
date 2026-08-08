@@ -10,7 +10,7 @@
  * 分层建议：
  *   - server/routes/*      请求入参 zod 校验后再 handler
  *   - server/dao/*         SQL 结果 zod 校验后再 return
- *   - server/engine/*      不允许 as unknown；输入均来自上一层，已验证
+ *   - server/engine/*      不允许 as any；输入均来自上一层，已验证
  */
 
 import { z, type ZodType } from 'zod';
@@ -31,7 +31,7 @@ export class ValidationBoundaryError extends Error {
       `[ValidationBoundary] ${boundary} failed, ${zodIssues.length} issue(s):\n${top}${more}`,
     );
     // Node Error cause 协议 — 日志系统可展示结构化 issues
-    (this as unknown as { cause: unknown }).cause = { boundary, zodIssues };
+    (this as unknown as { cause: any }).cause = { boundary, zodIssues };
   }
 }
 
@@ -40,7 +40,7 @@ export class ValidationBoundaryError extends Error {
  * 通过 → 返回类型为 T 的数据；失败 → 抛 ValidationBoundaryError
  */
 export function validateRow<T>(
-  raw: unknown,
+  raw: any,
   schema: ZodType<T>,
   boundary: string,
 ): T {
@@ -54,7 +54,7 @@ export function validateRow<T>(
  * 相比 Array(schema) 手动 map，这里能给出更精确的索引定位。
  */
 export function validateRows<T>(
-  raw: unknown,
+  raw: any,
   schema: ZodType<T>,
   boundary: string,
 ): T[] {

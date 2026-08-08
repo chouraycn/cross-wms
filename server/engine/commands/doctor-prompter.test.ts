@@ -6,8 +6,8 @@ const confirmMock = vi.fn();
 const selectMock = vi.fn();
 
 vi.mock("@clack/prompts", () => ({
-  confirm: (options: unknown) => confirmMock(options),
-  select: (options: unknown) => selectMock(options),
+  confirm: (options: any) => confirmMock(options),
+  select: (options: any) => selectMock(options),
 }));
 
 function setNonInteractiveTerminal() {

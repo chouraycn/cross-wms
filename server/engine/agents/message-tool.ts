@@ -8,11 +8,11 @@ export type AnyAgentTool = {
   label?: string;
   name: string;
   description: string;
-  parameters?: unknown;
-  execute?: (toolCallId: string, args: unknown, signal?: AbortSignal) => Promise<unknown>;
+  parameters?: any;
+  execute?: (toolCallId: string, args: any, signal?: AbortSignal) => Promise<any>;
 };
 
-export function createMessageTool(_options?: unknown): AnyAgentTool {
+export function createMessageTool(_options?: any): AnyAgentTool {
   return {
     label: "Message",
     name: "message",

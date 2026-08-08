@@ -1,21 +1,21 @@
 // 移植自 openclaw/src/infra/event-session-routing.ts
 
 export type EventSessionRoutingPolicy = unknown;
-export function parseDirectAgentSessionTarget(...args: unknown[]): unknown {
+export function parseDirectAgentSessionTarget(...args: any[]): any {
   return undefined;
 }
-export function resolveEventSessionAllowFrom(...args: unknown[]): unknown {
+export function resolveEventSessionAllowFrom(...args: any[]): any {
   return undefined;
 }
-export function resolveEventSessionRoutingPolicy(...args: unknown[]): unknown {
+export function resolveEventSessionRoutingPolicy(...args: any[]): any {
   return undefined;
 }
-export function resolveMainScopedEventSessionKey(...args: unknown[]): unknown {
+export function resolveMainScopedEventSessionKey(...args: any[]): any {
   return undefined;
 }
-export function resolveEventSessionKeyForPolicy(...args: unknown[]): unknown {
+export function resolveEventSessionKeyForPolicy(...args: any[]): any {
   return undefined;
 }
-export function scopedHeartbeatWakeOptionsForPolicy(...args: unknown[]): unknown {
+export function scopedHeartbeatWakeOptionsForPolicy(...args: any[]): any {
   return undefined;
 }

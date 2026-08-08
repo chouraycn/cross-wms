@@ -6,11 +6,11 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function pruneProcessedHistoryImages(..._args: unknown[]): unknown {
+export function pruneProcessedHistoryImages(..._args: any[]): any {
   return undefined;
 }
-export function installHistoryImagePruneContextTransform(..._args: unknown[]): unknown {
+export function installHistoryImagePruneContextTransform(..._args: any[]): any {
   return undefined;
 }
-export const PRUNED_HISTORY_IMAGE_MARKER: unknown = undefined;
-export const PRUNED_HISTORY_MEDIA_REFERENCE_MARKER: unknown = undefined;
+export const PRUNED_HISTORY_IMAGE_MARKER: any = undefined;
+export const PRUNED_HISTORY_MEDIA_REFERENCE_MARKER: any = undefined;

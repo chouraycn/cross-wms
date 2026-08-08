@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { fetchWithBearerAuthScopeFallback } from "./fetch-auth.js";
 import { resolveRequestUrl } from "./request-url.js";
 
-const asFetch = (fn: unknown): typeof fetch => fn as typeof fetch;
+const asFetch = (fn: any): typeof fetch => fn as typeof fetch;
 
 function fetchCall(fetchFn: ReturnType<typeof vi.fn>, index: number): [unknown, RequestInit?] {
   const call = fetchFn.mock.calls[index];
@@ -127,7 +127,7 @@ describe("fetchWithBearerAuthScopeFallback", () => {
 
   it("normalizes symbol-bearing request headers across unauthenticated and retry attempts", async () => {
     const headers = { Accept: "application/json" } as Record<string, string> & {
-      [key: symbol]: unknown;
+      [key: symbol]: any;
     };
     Object.defineProperty(headers, Symbol("sensitiveHeaders"), {
       value: new Set(["accept"]),

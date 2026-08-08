@@ -264,7 +264,7 @@ class ToolReplayRepairManager {
   /**
    * P2-5: 错误类型分类（用于统计/审计）
    */
-  private classifyErrorType(error: unknown): 'timeout' | 'abort' | 'transient' | 'permanent' | 'validation' | 'unknown' {
+  private classifyErrorType(error: any): 'timeout' | 'abort' | 'transient' | 'permanent' | 'validation' | 'unknown' {
     if (error instanceof Error) {
       if (error.name === 'ToolTimeoutError') return 'timeout';
       if (error.name === 'ToolAbortError' || error.name === 'AbortError') return 'abort';

@@ -4,20 +4,20 @@ export type TargetResolveKind = unknown;
 export type ResolveAmbiguousMode = unknown;
 export type ResolvedMessagingTarget = unknown;
 export type ResolveMessagingTargetResult = unknown;
-export function resolveChannelTarget(...args: unknown[]): unknown {
+export function resolveChannelTarget(...args: any[]): any {
   return undefined;
 }
-export function resetDirectoryCache(...args: unknown[]): unknown {
+export function resetDirectoryCache(...args: any[]): any {
   return undefined;
 }
-export function formatTargetDisplay(...args: unknown[]): unknown {
+export function formatTargetDisplay(...args: any[]): any {
   return "";
 }
-export function resolveMessagingTarget(...args: unknown[]): unknown {
+export function resolveMessagingTarget(...args: any[]): any {
   return undefined;
 }
-export function lookupDirectoryDisplay(...args: unknown[]): unknown {
+export function lookupDirectoryDisplay(...args: any[]): any {
   return undefined;
 }
 export type maybeResolveIdLikeTarget = unknown;
-export const maybeResolveIdLikeTarget: (...args: unknown[]) => unknown = undefined as unknown as (...args: unknown[]) => unknown;
+export const maybeResolveIdLikeTarget: (...args: any[]) => unknown = undefined as unknown as (...args: any[]) => unknown;

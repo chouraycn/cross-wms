@@ -118,7 +118,7 @@ export async function resolveStatusGatewayHealthSafe(params: {
     timeoutMs: params.timeoutMs,
     config: params.config,
     ...params.callOverrides,
-  }).catch((err: unknown) => ({ error: String(err) }));
+  }).catch((err: any) => ({ error: String(err) }));
 }
 
 /** Reads gateway delivery diagnostics when reachable, returning null on failures. */
@@ -136,7 +136,7 @@ export async function resolveStatusGatewayDiagnosticsSafe(params: {
     return null;
   }
   const { callGateway } = await loadGatewayCallModule();
-  return await callGateway<unknown>({
+  return await callGateway<any>({
     method: "diagnostics.stability",
     params: { limit: 1000 },
     timeoutMs: params.timeoutMs,

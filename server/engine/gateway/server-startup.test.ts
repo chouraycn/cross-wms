@@ -6,12 +6,12 @@ import type { OpenClawConfig } from "../config/config.js";
 
 const ensureOpenClawModelsJsonMock = vi.fn<
   (
-    config: unknown,
-    agentDir: unknown,
-    options?: unknown,
+    config: any,
+    agentDir: any,
+    options?: any,
   ) => Promise<{ agentDir: string; wrote: boolean }>
 >(async () => ({ agentDir: "/tmp/agent", wrote: false }));
-const resolveModelMock = vi.fn<(...args: unknown[]) => Record<string, never>>(() => ({}));
+const resolveModelMock = vi.fn<(...args: any[]) => Record<string, never>>(() => ({}));
 
 vi.mock("../agents/agent-scope.js", () => ({
   resolveDefaultAgentDir: () => "/tmp/agent",
@@ -20,12 +20,12 @@ vi.mock("../agents/agent-scope.js", () => ({
 }));
 
 vi.mock("../agents/models-config.js", () => ({
-  ensureOpenClawModelsJson: (config: unknown, agentDir: unknown, options?: unknown) =>
+  ensureOpenClawModelsJson: (config: any, agentDir: any, options?: any) =>
     ensureOpenClawModelsJsonMock(config, agentDir, options),
 }));
 
 vi.mock("../agents/embedded-agent-runner/model.js", () => ({
-  resolveModel: (...args: unknown[]) => resolveModelMock(...args),
+  resolveModel: (...args: any[]) => resolveModelMock(...args),
 }));
 
 let prewarmConfiguredPrimaryModel: typeof import("./server-startup-post-attach.js").testing.prewarmConfiguredPrimaryModel;

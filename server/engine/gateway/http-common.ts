@@ -8,7 +8,7 @@ export type HttpRequestLike = {
   path?: string;
   headers: HttpHeaders;
   query?: Record<string, string | string[] | undefined>;
-  body?: unknown;
+  body?: any;
   ip?: string;
   hostname?: string;
 };
@@ -17,14 +17,14 @@ export type HttpResponseLike = {
   statusCode?: number;
   setHeader?: (name: string, value: string) => void;
   end?: (body?: string) => void;
-  json?: (body: unknown) => void;
+  json?: (body: any) => void;
 };
 
 export type HttpError = {
   status: number;
   message: string;
   code?: string;
-  details?: unknown;
+  details?: any;
 };
 
 export function normalizeHttpMethod(method: string | undefined): HttpMethod {
@@ -107,7 +107,7 @@ export function createHttpError(status: number, message: string, code?: string):
   return { status, message, code };
 }
 
-export function isHttpError(error: unknown): error is HttpError {
+export function isHttpError(error: any): error is HttpError {
   return (
     typeof error === 'object' &&
     error !== null &&
@@ -150,7 +150,7 @@ export function setCorsHeaders(
   }
 }
 
-export function sendJsonResponse(res: HttpResponseLike, status: number, body: unknown): void {
+export function sendJsonResponse(res: HttpResponseLike, status: number, body: any): void {
   if (res.statusCode !== undefined) {
     res.statusCode = status;
   }

@@ -26,7 +26,7 @@ function makeDemoConfigWritesCfg(accountIdKey: string) {
 
 describe("resolveChannelConfigWrites", () => {
   function expectResolvedChannelConfigWrites(params: {
-    cfg: Record<string, unknown>;
+    cfg: Record<string, any>;
     channelId: string;
     accountId?: string;
     expected: boolean;

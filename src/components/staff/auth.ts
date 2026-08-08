@@ -77,12 +77,12 @@ export function isEnterpriseAdmin(user?: EnterpriseAuthUser | null): boolean {
   return user?.role === 'admin'
 }
 
-export function isGalleryEmployee(agent?: { metadata?: Record<string, unknown> } | null): boolean {
+export function isGalleryEmployee(agent?: { metadata?: Record<string, any> } | null): boolean {
   return agent?.metadata?.published_to_gallery === true
 }
 
 export function isEmployeeOwnedBy(
-  agent: { metadata?: Record<string, unknown> },
+  agent: { metadata?: Record<string, any> },
   user?: EnterpriseAuthUser | null,
 ): boolean {
   if (!user) return false

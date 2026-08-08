@@ -237,7 +237,7 @@ describe('ChannelCircuitBreakerManager', () => {
         getAllHealth: () => snapshots,
       };
 
-      manager.bindHealthMonitor(mockMonitor as unknown);
+      manager.bindHealthMonitor(mockMonitor as any);
       manager.syncAllFromHealthMonitor();
 
       expect(manager.getCircuitBreaker('ch1')?.getState()).toBe('closed');

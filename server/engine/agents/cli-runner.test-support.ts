@@ -16,7 +16,7 @@ type ProcessSupervisor = ReturnType<typeof getProcessSupervisor>;
 type SupervisorSpawnFn = ProcessSupervisor["spawn"];
 type EnqueueSystemEventFn = typeof enqueueSystemEvent;
 type RequestHeartbeatFn = typeof requestHeartbeat;
-type UnknownMock = Mock<(...args: unknown[]) => unknown>;
+type UnknownMock = Mock<(...args: any[]) => unknown>;
 type BootstrapContext = {
   bootstrapFiles: WorkspaceBootstrapFile[];
   contextFiles: EmbeddedContextFile[];

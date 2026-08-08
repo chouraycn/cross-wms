@@ -59,18 +59,18 @@ async function expectNoForwardedInvoke(hasInvoke: () => boolean): Promise<void> 
   expect(hasInvoke()).toBe(false);
 }
 
-function parseInvokeParamsJSON(payload: unknown): Record<string, unknown> | null {
-  const obj = payload as { paramsJSON?: unknown };
+function parseInvokeParamsJSON(payload: any): Record<string, any> | null {
+  const obj = payload as { paramsJSON?: any };
   const raw = typeof obj?.paramsJSON === "string" ? obj.paramsJSON : "";
-  return raw ? (JSON.parse(raw) as Record<string, unknown>) : null;
+  return raw ? (JSON.parse(raw) as Record<string, any>) : null;
 }
 
 function createInvokeParamCapture() {
   let invokeCount = 0;
-  let lastInvokeParams: Record<string, unknown> | null = null;
+  let lastInvokeParams: Record<string, any> | null = null;
   return {
     count: () => invokeCount,
-    onInvoke: (payload: unknown) => {
+    onInvoke: (payload: any) => {
       invokeCount += 1;
       lastInvokeParams = parseInvokeParamsJSON(payload);
     },
@@ -109,9 +109,9 @@ function requireNonEmptyString(value: string | null | undefined, label: string):
 }
 
 function requireRecord(
-  value: Record<string, unknown> | null | undefined,
+  value: Record<string, any> | null | undefined,
   label: string,
-): Record<string, unknown> {
+): Record<string, any> {
   if (!value) {
     throw new Error(`expected ${label}`);
   }
@@ -173,8 +173,8 @@ function approvedSystemRunParams(
   command: string[],
   rawCommand: string,
   runId: string,
-  extra: Record<string, unknown> = {},
-): Record<string, unknown> {
+  extra: Record<string, any> = {},
+): Record<string, any> {
   return {
     command,
     rawCommand,
@@ -188,8 +188,8 @@ function approvedSystemRunParams(
 function approvedChatSystemRunParams(
   context: ChatApprovalContext,
   runId: string,
-  extra: Record<string, unknown> = {},
-): Record<string, unknown> {
+  extra: Record<string, any> = {},
+): Record<string, any> {
   return approvedSystemRunParams(["echo", "chat"], "echo chat", runId, {
     agentId: context.agentId,
     sessionKey: context.sessionKey,
@@ -328,7 +328,7 @@ describe("node.invoke approval bypass", () => {
           return Promise.resolve("");
         }
         return challengePromise.then((challenge) => {
-          const value = (challenge.payload as { nonce?: unknown } | undefined)?.nonce;
+          const value = (challenge.payload as { nonce?: any } | undefined)?.nonce;
           expect(typeof value).toBe("string");
           return String(value);
         });
@@ -408,7 +408,7 @@ describe("node.invoke approval bypass", () => {
   };
 
   const connectLinuxNode = async (
-    onInvoke: (payload: unknown) => void,
+    onInvoke: (payload: any) => void,
     deviceIdentity?: DeviceIdentity,
     commands: string[] = ["system.run"],
   ) => {
@@ -663,8 +663,8 @@ describe("node.invoke approval bypass", () => {
 
   test("blocks cross-node replay on same device", async () => {
     const invokeCounts = new Map<string, number>();
-    const onInvoke = (payload: unknown) => {
-      const obj = payload as { nodeId?: unknown };
+    const onInvoke = (payload: any) => {
+      const obj = payload as { nodeId?: any };
       const nodeId = typeof obj?.nodeId === "string" ? obj.nodeId : "";
       if (!nodeId) {
         return;

@@ -3,12 +3,12 @@ import { triggerSessionPatchHook } from './session-patch-hooks.js';
 
 export type SessionsPatchParams = {
   sessionKey: string;
-  patch: Record<string, unknown>;
+  patch: Record<string, any>;
 };
 
 export type SessionsPatchResult = {
   ok: boolean;
-  entry?: Record<string, unknown>;
+  entry?: Record<string, any>;
   error?: string;
   resolved?: {
     modelProvider?: string;
@@ -33,7 +33,7 @@ export function unregisterSessionsPatchHandler(handler: PatchHandler): void {
 
 export async function patchSession(
   params: SessionsPatchParams,
-  cfg: Record<string, unknown> = {},
+  cfg: Record<string, any> = {},
 ): Promise<SessionsPatchResult> {
   const { sessionKey, patch } = params;
 

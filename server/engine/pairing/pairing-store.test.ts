@@ -85,7 +85,7 @@ async function withTempStateDir<T>(fn: (stateDir: string, env: NodeJS.ProcessEnv
   return await fn(dir, env);
 }
 
-function writeJsonFixture(filePath: string, value: unknown) {
+function writeJsonFixture(filePath: string, value: any) {
   fsSync.mkdirSync(path.dirname(filePath), { recursive: true });
   fsSync.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, "utf8");
 }
@@ -208,7 +208,7 @@ async function expectAllowFromCacheInvalidationWithReadSpy(params: {
   }
 }
 
-function countFileReads(spy: { mock: { calls: unknown[][] } }, filePath: string): number {
+function countFileReads(spy: { mock: { calls: any[][] } }, filePath: string): number {
   let count = 0;
   for (const [candidate] of spy.mock.calls) {
     if (candidate === filePath) {
@@ -421,7 +421,7 @@ describe("pairing store", () => {
       const filePath = resolvePairingFilePath(stateDir, "demo-pairing-b");
       const raw = fsSync.readFileSync(filePath, "utf8");
       const parsed = JSON.parse(raw) as {
-        requests?: Array<Record<string, unknown>>;
+        requests?: Array<Record<string, any>>;
       };
       const expiredAt = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
       const requests = (parsed.requests ?? []).map((entry) =>

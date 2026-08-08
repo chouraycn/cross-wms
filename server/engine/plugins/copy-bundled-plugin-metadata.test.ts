@@ -19,7 +19,7 @@ function makeRepoRoot(prefix: string): string {
   return makeTempRepoRoot(tempDirs, prefix);
 }
 
-function writeJson(filePath: string, value: unknown): void {
+function writeJson(filePath: string, value: any): void {
   writeJsonFile(filePath, value);
 }
 
@@ -28,8 +28,8 @@ function createPlugin(
   params: {
     id: string;
     packageName: string;
-    manifest?: Record<string, unknown>;
-    packageOpenClaw?: Record<string, unknown>;
+    manifest?: Record<string, any>;
+    packageOpenClaw?: Record<string, any>;
   },
 ) {
   const pluginDir = path.join(repoRoot, "extensions", params.id);
@@ -46,13 +46,13 @@ function createPlugin(
   return pluginDir;
 }
 
-function readBundledManifest(repoRoot: string, pluginId: string): Record<string, unknown> {
+function readBundledManifest(repoRoot: string, pluginId: string): Record<string, any> {
   return JSON.parse(
     fs.readFileSync(
       path.join(repoRoot, "dist", "extensions", pluginId, "openclaw.plugin.json"),
       "utf8",
     ),
-  ) as Record<string, unknown>;
+  ) as Record<string, any>;
 }
 
 function readBundledPackageJson(repoRoot: string, pluginId: string) {

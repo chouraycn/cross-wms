@@ -9,7 +9,7 @@
 const MODEL_PROVIDER_LOCAL_SERVICE_SYMBOL = Symbol.for("openclaw.modelProviderLocalService");
 
 type ModelWithProviderLocalService = {
-  [MODEL_PROVIDER_LOCAL_SERVICE_SYMBOL]?: Record<string, unknown>;
+  [MODEL_PROVIDER_LOCAL_SERVICE_SYMBOL]?: Record<string, any>;
 };
 
 export type ProviderLocalServiceLease = {
@@ -18,7 +18,7 @@ export type ProviderLocalServiceLease = {
 
 export function attachModelProviderLocalService<TModel extends object>(
   model: TModel,
-  service: Record<string, unknown> | undefined,
+  service: Record<string, any> | undefined,
 ): TModel {
   if (!service) {
     return model;
@@ -30,7 +30,7 @@ export function attachModelProviderLocalService<TModel extends object>(
 
 export function getModelProviderLocalService(
   model: object,
-): Record<string, unknown> | undefined {
+): Record<string, any> | undefined {
   return (model as ModelWithProviderLocalService)[MODEL_PROVIDER_LOCAL_SERVICE_SYMBOL];
 }
 

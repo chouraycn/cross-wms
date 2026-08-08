@@ -214,7 +214,7 @@ describe("skill_workshop tool", () => {
     expect((punctuationOnly.content[0] as { text: string }).text).toBe(
       "No skill proposals matched.",
     );
-    expect((punctuationOnly.details as { proposals: unknown[] }).proposals).toEqual([]);
+    expect((punctuationOnly.details as { proposals: any[] }).proposals).toEqual([]);
 
     const inspected = await tool.execute("call-4", {
       action: "inspect",

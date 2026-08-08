@@ -6,7 +6,7 @@ import { getChannelPlugin } from "../../../channels/plugins/index.js";
 import type { ChannelMessageActionName } from "../../../channels/plugins/types.public.js";
 import type { MessageCliHelpers } from "./helpers.js";
 
-function resolveThreadCreateRequest(opts: Record<string, unknown>) {
+function resolveThreadCreateRequest(opts: Record<string, any>) {
   const channel = normalizeLowercaseStringOrEmpty(opts.channel);
   if (channel) {
     const request = getChannelPlugin(channel)?.actions?.resolveCliActionRequest?.({

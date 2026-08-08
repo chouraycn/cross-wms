@@ -47,7 +47,7 @@ function unreadableTrustedPolicyRegistration(): TrustedPolicyRegistration {
 function copyTrustedPolicyRegistrations(
   registry: TrustedToolPolicyRegistry,
 ): TrustedPolicyRegistration[] {
-  let policies: unknown;
+  let policies: any;
   try {
     policies = registry?.trustedToolPolicies;
   } catch {
@@ -177,14 +177,14 @@ export async function runTrustedToolPolicies(
   options?: {
     config?: OpenClawConfig;
     deriveEvent?: (
-      params: Record<string, unknown>,
+      params: Record<string, any>,
     ) => Pick<PluginHookBeforeToolCallEvent, "derivedPaths">;
     normalizeEvent?: (
       event: PluginHookBeforeToolCallEvent,
       ctx: PluginHookToolContext,
     ) =>
       | {
-          params?: Record<string, unknown>;
+          params?: Record<string, any>;
           event?: Pick<PluginHookBeforeToolCallEvent, "toolKind" | "toolInputKind">;
           ctx?: Pick<PluginHookToolContext, "toolKind" | "toolInputKind">;
         }
@@ -193,7 +193,7 @@ export async function runTrustedToolPolicies(
   },
 ): Promise<PluginHookBeforeToolCallResult | undefined> {
   const policies = copyTrustedPolicyRegistrations(options?.registry ?? getActivePluginRegistry());
-  let adjustedParams = event.params as Record<string, unknown> | undefined;
+  let adjustedParams = event.params as Record<string, any> | undefined;
   let hasAdjustedParams = false;
   let approval: PluginHookBeforeToolCallResult["requireApproval"];
   const sessionExtensionStateCache = new Map<string, Record<string, PluginJsonValue> | undefined>();
@@ -315,7 +315,7 @@ export async function runTrustedToolPolicies(
         }
         hasAdjustedParams = true;
         currentDerivedEvent = normalizeDerivedEventFields(
-          options?.deriveEvent?.(adjustedParams as Record<string, unknown>),
+          options?.deriveEvent?.(adjustedParams as Record<string, any>),
         );
       }
       if ("requireApproval" in decision && decision.requireApproval && !approval) {

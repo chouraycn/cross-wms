@@ -8,7 +8,7 @@ import {
 const scheduleGatewaySigusr1Restart = vi.hoisted(() => vi.fn());
 
 vi.mock("./restart.js", () => ({
-  scheduleGatewaySigusr1Restart: (opts: unknown) => scheduleGatewaySigusr1Restart(opts),
+  scheduleGatewaySigusr1Restart: (opts: any) => scheduleGatewaySigusr1Restart(opts),
 }));
 
 describe("safe gateway restart coordinator", () => {

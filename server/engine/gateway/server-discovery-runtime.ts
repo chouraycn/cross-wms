@@ -11,6 +11,6 @@
  * 完整实现见 openclaw 源码。
  */
 
-export async function startGatewayDiscovery(..._args: unknown[]): Promise<unknown> {
+export async function startGatewayDiscovery(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }

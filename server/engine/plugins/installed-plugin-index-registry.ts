@@ -47,7 +47,7 @@ type PluginManifestRecord = {
   rootDir: string;
   manifestPath: string;
   origin: string;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 /** 插件诊断信息的最小结构占位。 */
@@ -76,7 +76,7 @@ type NormalizedPluginsConfig = {
  * 降级说明：cross-wms 的 config-state.js 尚未移植。这里降级为始终返回空规范化
  * 结构，使 resolveInstalledPluginIndexRegistry 不传递任何 extraPaths 给 discovery。
  */
-function normalizePluginsConfig(_plugins: unknown): NormalizedPluginsConfig {
+function normalizePluginsConfig(_plugins: any): NormalizedPluginsConfig {
   return {
     enabled: true,
     entries: {},
@@ -100,7 +100,7 @@ function discoverOpenClawPlugins(_params: {
   workspaceDir?: string;
   extraPaths?: readonly string[];
   env?: NodeJS.ProcessEnv;
-  installRecords?: Record<string, unknown>;
+  installRecords?: Record<string, any>;
 }): PluginDiscoveryResult {
   return {
     candidates: [],
@@ -119,12 +119,12 @@ function discoverOpenClawPlugins(_params: {
  * 构建清单注册表。这里降级为始终返回空注册表（plugins 与 diagnostics 均为空）。
  */
 function loadPluginManifestRegistry(_params: {
-  config?: unknown;
+  config?: any;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   candidates?: readonly PluginCandidate[];
   diagnostics?: readonly PluginDiagnostic[];
-  installRecords?: Record<string, unknown>;
+  installRecords?: Record<string, any>;
 }): PluginManifestRegistry {
   return {
     plugins: [],
@@ -162,7 +162,7 @@ export function resolveInstalledPluginIndexRegistry(params: LoadInstalledPluginI
   }
 
   const normalized = normalizePluginsConfig(
-    (params.config as { plugins?: unknown } | undefined)?.plugins,
+    (params.config as { plugins?: any } | undefined)?.plugins,
   );
   const installRecords =
     params.installRecords ?? loadInstalledPluginIndexInstallRecordsSync({ env: params.env });

@@ -4,7 +4,7 @@ import type { MockFn } from "@openclaw-src/test-utils/vitest-mock-fn.js";
 
 const readConfigFileSnapshotMock = vi.fn() as unknown as MockFn;
 const writeConfigFileMock = vi.fn().mockResolvedValue(undefined) as unknown as MockFn;
-const replaceConfigFileMock = vi.fn(async (params: { nextConfig: unknown }) => {
+const replaceConfigFileMock = vi.fn(async (params: { nextConfig: any }) => {
   await writeConfigFileMock(params.nextConfig);
 }) as unknown as MockFn;
 
@@ -31,7 +31,7 @@ export const lifecycleMocks: {
 };
 
 export const secretMocks = {
-  resolveCommandConfigWithSecrets: vi.fn(async ({ config }: { config: unknown }) => ({
+  resolveCommandConfigWithSecrets: vi.fn(async ({ config }: { config: any }) => ({
     resolvedConfig: config,
     effectiveConfig: config,
     diagnostics: [],

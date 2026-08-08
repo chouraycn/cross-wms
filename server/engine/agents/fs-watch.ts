@@ -6,10 +6,10 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function closeWatcher(..._args: unknown[]): unknown {
+export function closeWatcher(..._args: any[]): any {
   return undefined;
 }
-export function watchWithErrorHandler(..._args: unknown[]): unknown {
+export function watchWithErrorHandler(..._args: any[]): any {
   return undefined;
 }
-export const FS_WATCH_RETRY_DELAY_MS: unknown = undefined;
+export const FS_WATCH_RETRY_DELAY_MS: any = undefined;

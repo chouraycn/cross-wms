@@ -6,7 +6,7 @@ import { buildPluginsCommandParams, type ConfigSnapshotMock } from "./commands.t
 
 const readConfigFileSnapshotMock = vi.hoisted(() => vi.fn());
 const validateConfigObjectWithPluginsMock = vi.hoisted(() => vi.fn());
-const replaceConfigFileMock = vi.hoisted(() => vi.fn(async (_params: unknown) => undefined));
+const replaceConfigFileMock = vi.hoisted(() => vi.fn(async (_params: any) => undefined));
 const buildPluginRegistrySnapshotReportMock = vi.hoisted(() => vi.fn());
 const buildPluginDiagnosticsReportMock = vi.hoisted(() => vi.fn());
 const buildPluginInspectReportMock = vi.hoisted(() => vi.fn());
@@ -36,15 +36,15 @@ vi.mock("../../config/config.js", () => ({
   validateConfigObjectWithPlugins: validateConfigObjectWithPluginsMock,
   replaceConfigFile: replaceConfigFileMock,
   transformConfigFileWithRetry: async (params: {
-    afterWrite?: unknown;
+    afterWrite?: any;
     transform: (
       currentConfig: OpenClawConfig,
       context: { snapshot: ConfigSnapshotMock; previousHash: string | null; attempt: number },
     ) =>
-      | Promise<{ nextConfig: OpenClawConfig; result?: unknown }>
+      | Promise<{ nextConfig: OpenClawConfig; result?: any }>
       | {
           nextConfig: OpenClawConfig;
-          result?: unknown;
+          result?: any;
         };
   }) => {
     const snapshot = (await readConfigFileSnapshotMock()) as ConfigSnapshotMock;
@@ -148,21 +148,21 @@ function buildPluginsParams(
 }
 
 type MockCalls = {
-  mock: { calls: unknown[][] };
+  mock: { calls: any[][] };
 };
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object") {
     throw new Error(`expected ${label}`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function getNestedRecord(record: Record<string, unknown>, key: string, label: string) {
+function getNestedRecord(record: Record<string, any>, key: string, label: string) {
   return requireRecord(record[key], label);
 }
 
-function expectPluginEnabledInConfig(config: unknown, enabled: boolean) {
+function expectPluginEnabledInConfig(config: any, enabled: boolean) {
   const configRecord = requireRecord(config, "config");
   const plugins = getNestedRecord(configRecord, "plugins", "config.plugins");
   const entries = getNestedRecord(plugins, "entries", "config.plugins.entries");

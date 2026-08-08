@@ -447,7 +447,7 @@ export function createPinnedLookup(params: {
   ) => void;
   const fallbackWithOptions = fallback as unknown as (
     hostname: string,
-    options: unknown,
+    options: any,
     callback: LookupCallback,
   ) => void;
   const records = params.addresses.map((address) => ({
@@ -458,7 +458,7 @@ export function createPinnedLookup(params: {
   const automaticRecords = ipv4Records.length > 0 ? ipv4Records : records;
   let index = 0;
 
-  return ((host: string, options?: unknown, callback?: unknown) => {
+  return ((host: string, options?: any, callback?: any) => {
     const cb: LookupCallback =
       typeof options === "function" ? (options as LookupCallback) : (callback as LookupCallback);
     if (!cb) {
@@ -507,20 +507,20 @@ export type PinnedHostnameOverride = {
 export type PinnedDispatcherPolicy =
   | {
       mode: "direct";
-      connect?: Record<string, unknown>;
+      connect?: Record<string, any>;
       pinnedHostname?: PinnedHostnameOverride;
     }
   | {
       mode: "env-proxy";
-      connect?: Record<string, unknown>;
-      proxyTls?: Record<string, unknown>;
+      connect?: Record<string, any>;
+      proxyTls?: Record<string, any>;
       pinnedHostname?: PinnedHostnameOverride;
     }
   | {
       mode: "explicit-proxy";
       proxyUrl: string;
       allowPrivateProxy?: boolean;
-      proxyTls?: Record<string, unknown>;
+      proxyTls?: Record<string, any>;
       pinnedHostname?: PinnedHostnameOverride;
     };
 
@@ -595,8 +595,8 @@ export async function resolvePinnedHostname(
 
 function withPinnedLookup(
   lookup: PinnedHostname["lookup"],
-  connect?: Record<string, unknown>,
-): Record<string, unknown> {
+  connect?: Record<string, any>,
+): Record<string, any> {
   return connect ? { ...connect, lookup } : { lookup };
 }
 

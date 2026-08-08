@@ -9,14 +9,14 @@ import {
 
 type SubstitutionScenario = {
   name: string;
-  config: unknown;
+  config: any;
   env: Record<string, string>;
-  expected: unknown;
+  expected: any;
 };
 
 type MissingEnvScenario = {
   name: string;
-  config: unknown;
+  config: any;
   env: Record<string, string>;
   varName: string;
   configPath: string;
@@ -256,7 +256,7 @@ describe("resolveConfigEnvVars", () => {
     });
 
     it("preserves empty and non-string containers", () => {
-      const scenarios: Array<{ config: unknown; expected: unknown }> = [
+      const scenarios: Array<{ config: any; expected: any }> = [
         { config: {}, expected: {} },
         { config: [], expected: [] },
         {

@@ -35,13 +35,13 @@ import { getStaffContext, staffAuth } from '../../middleware/staffAuth.js';
 const router = Router();
 
 /** 从 LLM 输出中容错抽取第一个 JSON 对象 */
-function parseJsonObject(raw: string): Record<string, unknown> | null {
+function parseJsonObject(raw: string): Record<string, any> | null {
   if (!raw) return null;
   const start = raw.indexOf('{');
   const end = raw.lastIndexOf('}');
   if (start === -1 || end === -1 || end <= start) return null;
   try {
-    return JSON.parse(raw.slice(start, end + 1)) as Record<string, unknown>;
+    return JSON.parse(raw.slice(start, end + 1)) as Record<string, any>;
   } catch {
     return null;
   }
@@ -116,7 +116,7 @@ router.get('/sessions', staffAuth, (req: Request, res: Response) => {
     grouped.set(row.session_id, arr);
   }
 
-  const results: Array<Record<string, unknown>> = [];
+  const results: Array<Record<string, any>> = [];
   for (const [sessionId, rows] of grouped) {
     const session = sessionMap.get(sessionId);
     if (!session) continue;

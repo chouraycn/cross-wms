@@ -13,14 +13,14 @@
 
 export type HookMappingResolved = unknown;
 
-export function resolveHookMappings(..._args: unknown[]): unknown {
+export function resolveHookMappings(..._args: any[]): any {
   return undefined;
 }
 
-export async function applyHookMappings(..._args: unknown[]): Promise<unknown> {
+export async function applyHookMappings(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
 
-export function hasHookTemplateExpressions(..._args: unknown[]): unknown {
+export function hasHookTemplateExpressions(..._args: any[]): any {
   return false;
 }

@@ -30,7 +30,7 @@ export type QaBusAttachment = {
 /** Tool-call fixture attached to QA messages for agent-runtime tests. */
 export type QaBusToolCall = {
   name: string;
-  arguments?: Record<string, unknown>;
+  arguments?: Record<string, any>;
 };
 
 /** Stored QA bus message after defaults, reactions, and account ids are normalized. */
@@ -192,7 +192,7 @@ const QA_BUS_TOOL_CALL_REDACTED = "[redacted]";
 const QA_BUS_TOOL_CALL_SENSITIVE_KEY_RE =
   /authorization|cookie|credential|password|secret|token|api[-_]?key|access[-_]?key|private[-_]?key/iu;
 
-function sanitizeQaBusToolCallValue(value: unknown, depth: number, key?: string): unknown {
+function sanitizeQaBusToolCallValue(value: any, depth: number, key?: string): any {
   if (key && QA_BUS_TOOL_CALL_SENSITIVE_KEY_RE.test(key)) {
     return QA_BUS_TOOL_CALL_REDACTED;
   }
@@ -232,8 +232,8 @@ function sanitizeQaBusToolCallValue(value: unknown, depth: number, key?: string)
 
 /** Sanitize arbitrary tool-call arguments before storing them in QA bus messages. */
 export function sanitizeQaBusToolCallArguments(
-  value: unknown,
-): Record<string, unknown> | undefined {
+  value: any,
+): Record<string, any> | undefined {
   if (!isRecord(value)) {
     return undefined;
   }
@@ -242,7 +242,7 @@ export function sanitizeQaBusToolCallArguments(
 }
 
 /** Normalize and redact a bounded list of tool calls from untrusted QA input. */
-export function sanitizeQaBusToolCalls(value: unknown): QaBusToolCall[] | undefined {
+export function sanitizeQaBusToolCalls(value: any): QaBusToolCall[] | undefined {
   if (!Array.isArray(value)) {
     return undefined;
   }

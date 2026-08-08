@@ -312,7 +312,7 @@ describe("forkSessionFromParentRuntime", () => {
     const forkedEntries = raw
       .trim()
       .split(/\r?\n/u)
-      .map((line) => JSON.parse(line) as Record<string, unknown>);
+      .map((line) => JSON.parse(line) as Record<string, any>);
     const resolvedParentSessionFile = await fs.realpath(parentSessionFile);
     const forkedHeader = forkedEntries[0];
     expect(forkedHeader?.type).toBe("session");
@@ -416,7 +416,7 @@ describe("forkSessionFromParentRuntime", () => {
     const forkedRecords = raw
       .trim()
       .split(/\r?\n/)
-      .map((line) => JSON.parse(line) as Record<string, unknown>);
+      .map((line) => JSON.parse(line) as Record<string, any>);
     expect(forkedRecords.find((entry) => entry.id === "plugin-metadata")).toMatchObject({
       parentId: "active-root",
     });
@@ -435,7 +435,7 @@ describe("forkSessionFromParentRuntime", () => {
     const records = (await fs.readFile(fork.sessionFile, "utf-8"))
       .trim()
       .split(/\r?\n/)
-      .map((line) => JSON.parse(line) as Record<string, unknown>);
+      .map((line) => JSON.parse(line) as Record<string, any>);
     expect(records.at(-1)).toMatchObject({ type: "message", parentId: "plugin-metadata" });
     expect(records.at(-1)).not.toHaveProperty("appendMode");
     expect(reopened.buildSessionContext().messages).toMatchObject([
@@ -514,7 +514,7 @@ describe("forkSessionFromParentRuntime", () => {
     const records = raw
       .trim()
       .split(/\r?\n/)
-      .map((line) => JSON.parse(line) as Record<string, unknown>);
+      .map((line) => JSON.parse(line) as Record<string, any>);
     expect(records.at(-1)).toMatchObject({ type: "message", parentId: "append-root" });
   });
 
@@ -591,7 +591,7 @@ describe("forkSessionFromParentRuntime", () => {
     const records = (await fs.readFile(fork.sessionFile, "utf-8"))
       .trim()
       .split(/\r?\n/)
-      .map((line) => JSON.parse(line) as Record<string, unknown>);
+      .map((line) => JSON.parse(line) as Record<string, any>);
     expect(records.some((record) => record.id === "inactive-root")).toBe(false);
     expect(records.find((record) => record.id === continuedId)).toMatchObject({
       type: "message",
@@ -700,7 +700,7 @@ describe("forkSessionFromParentRuntime", () => {
     const records = (await fs.readFile(fork.sessionFile, "utf-8"))
       .trim()
       .split(/\r?\n/)
-      .map((line) => JSON.parse(line) as Record<string, unknown>);
+      .map((line) => JSON.parse(line) as Record<string, any>);
     expect(records.at(-1)).toMatchObject({ type: "message", parentId: null });
   });
 
@@ -759,7 +759,7 @@ describe("forkSessionFromParentRuntime", () => {
     const records = (await fs.readFile(fork.sessionFile, "utf-8"))
       .trim()
       .split(/\r?\n/)
-      .map((line) => JSON.parse(line) as Record<string, unknown>);
+      .map((line) => JSON.parse(line) as Record<string, any>);
     expect(records.slice(1)).toMatchObject([
       { id: "linear-user", parentId: null },
       { id: "linear-assistant", parentId: "linear-user" },
@@ -771,7 +771,7 @@ describe("forkSessionFromParentRuntime", () => {
     const continuedRecords = (await fs.readFile(fork.sessionFile, "utf-8"))
       .trim()
       .split(/\r?\n/)
-      .map((line) => JSON.parse(line) as Record<string, unknown>);
+      .map((line) => JSON.parse(line) as Record<string, any>);
     expect(continuedRecords.at(-1)).toMatchObject({
       type: "message",
       parentId: "linear-metadata",
@@ -813,7 +813,7 @@ describe("forkSessionFromParentRuntime", () => {
     const lines = raw.trim().split(/\r?\n/u);
     expect(lines).toHaveLength(1);
     const resolvedParentSessionFile = await fs.realpath(parentSessionFile);
-    const header = JSON.parse(lines[0] ?? "{}") as Record<string, unknown>;
+    const header = JSON.parse(lines[0] ?? "{}") as Record<string, any>;
     expect(header.type).toBe("session");
     expect(header.id).toBe(fork.sessionId);
     expect(header.parentSession).toBe(resolvedParentSessionFile);

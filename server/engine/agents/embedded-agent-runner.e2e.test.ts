@@ -115,8 +115,8 @@ const installRunEmbeddedMocks = () => {
       await vi.importActual<typeof import("./command/session.js")>("./command/session.js");
     return {
       ...actual,
-      resolveSessionKeyForRequest: (opts: unknown) => resolveSessionKeyForRequestMock(opts),
-      resolveStoredSessionKeyForSessionId: (opts: unknown) =>
+      resolveSessionKeyForRequest: (opts: any) => resolveSessionKeyForRequestMock(opts),
+      resolveStoredSessionKeyForSessionId: (opts: any) =>
         resolveStoredSessionKeyForSessionIdMock(opts),
     };
   });
@@ -128,7 +128,7 @@ const installRunEmbeddedMocks = () => {
       ...actual,
       log: {
         ...actual.log,
-        warn: (...args: unknown[]) => loggerWarnMock(...args),
+        warn: (...args: any[]) => loggerWarnMock(...args),
       },
     };
   });
@@ -256,7 +256,7 @@ const runWithOrphanedSingleUserMessage = async (text: string, sessionKey: string
   });
 };
 
-const textFromContent = (content: unknown) => {
+const textFromContent = (content: any) => {
   if (typeof content === "string") {
     return content;
   }
@@ -268,10 +268,10 @@ const textFromContent = (content: unknown) => {
 
 const readSessionEntries = async (sessionFile: string) => {
   const raw = await fs.readFile(sessionFile, "utf-8");
-  const entries: Array<{ type?: string; customType?: string; data?: unknown }> = [];
+  const entries: Array<{ type?: string; customType?: string; data?: any }> = [];
   for (const line of raw.split(/\r?\n/)) {
     if (line.length > 0) {
-      entries.push(JSON.parse(line) as { type?: string; customType?: string; data?: unknown });
+      entries.push(JSON.parse(line) as { type?: string; customType?: string; data?: any });
     }
   }
   return entries;
@@ -282,8 +282,8 @@ const readSessionMessages = async (sessionFile: string) => {
   return entries
     .filter((entry) => entry.type === "message")
     .map(
-      (entry) => (entry as { message?: { role?: string; content?: unknown } }).message,
-    ) as Array<{ role?: string; content?: unknown }>;
+      (entry) => (entry as { message?: { role?: string; content?: any } }).message,
+    ) as Array<{ role?: string; content?: any }>;
 };
 
 const runDefaultEmbeddedTurn = async (sessionFile: string, prompt: string, sessionKey: string) => {
@@ -349,7 +349,7 @@ const mockSuccessfulEmbeddedAttempt = () => {
   );
 };
 
-function firstMockCall(mock: { mock: { calls: unknown[][] } }, label: string): unknown[] {
+function firstMockCall(mock: { mock: { calls: any[][] } }, label: string): any[] {
   const call = mock.mock.calls[0];
   if (!call) {
     throw new Error(`Expected ${label} to be called`);
@@ -1018,7 +1018,7 @@ describe("runEmbeddedAgent", () => {
     const cfg = createEmbeddedAgentRunnerOpenAiConfig(["gpt-5.4"]);
     const sessionKey = nextSessionKey();
 
-    runEmbeddedAttemptMock.mockImplementationOnce(async (params: unknown) => {
+    runEmbeddedAttemptMock.mockImplementationOnce(async (params: any) => {
       expect((params as { prompt?: string }).prompt).toMatch(/^ship it(?:\n\n|$)/);
       return makeEmbeddedRunnerAttempt({
         assistantTexts: ["I'll inspect the files, make the change, and run the checks."],

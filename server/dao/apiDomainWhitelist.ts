@@ -101,7 +101,7 @@ export function listDomainWhitelist(
 ): { items: ApiDomainWhitelistRow[]; total: number } {
   const db = initDb();
   const conditions: string[] = [];
-  const params: unknown[] = [];
+  const params: any[] = [];
 
   if (category) {
     conditions.push('category = ?');

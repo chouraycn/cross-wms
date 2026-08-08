@@ -145,7 +145,7 @@ export function createHunyuanProvider(
       const timeoutMs = req.timeoutMs ?? defaultTimeoutMs;
       const baseUrl = resolveBaseUrl(req, baseUrlEnvVar, defaultBaseUrl);
 
-      const hunyuanOptions = req.providerOptions?.hunyuan as Record<string, unknown> | undefined;
+      const hunyuanOptions = req.providerOptions?.hunyuan as Record<string, any> | undefined;
       const steps = hunyuanOptions?.steps || defaultSteps;
       const cfgScale = hunyuanOptions?.cfgScale || defaultCfgScale;
       const seed = hunyuanOptions?.seed as number | undefined;
@@ -164,7 +164,7 @@ export function createHunyuanProvider(
       const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
       try {
-        const body: Record<string, unknown> = {
+        const body: Record<string, any> = {
           model,
           prompt: req.prompt,
           width: width || 1024,

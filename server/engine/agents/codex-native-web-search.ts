@@ -10,7 +10,7 @@ export { describeCodexNativeWebSearch, resolveCodexNativeWebSearchConfig } from 
 
 /** True when Codex native web search should appear relevant for an agent. */
 export function isCodexNativeWebSearchRelevant(params: {
-  config: Record<string, unknown>;
+  config: Record<string, any>;
   agentId?: string;
   agentDir?: string;
 }): boolean {

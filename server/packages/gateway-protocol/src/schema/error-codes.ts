@@ -24,7 +24,7 @@ export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes];
 export function errorShape(
   code: ErrorCode,
   message: string,
-  opts?: { details?: unknown; retryable?: boolean; retryAfterMs?: number },
+  opts?: { details?: any; retryable?: boolean; retryAfterMs?: number },
 ): ErrorShape {
   return {
     code,

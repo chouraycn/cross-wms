@@ -44,7 +44,7 @@ export type SetupOptions = {
     id: string;
     name?: string;
     configUiHints?: Record<string, PluginConfigUiHint>;
-    configSchema?: Record<string, unknown>;
+    configSchema?: Record<string, any>;
     enabled?: boolean;
   }>;
 };
@@ -289,7 +289,7 @@ export async function runSetupWizard(
       });
 
       if (configurable.length > 0) {
-        const existingConfigs: Record<string, Record<string, unknown>> = {};
+        const existingConfigs: Record<string, Record<string, any>> = {};
         for (const plugin of plugins) {
           existingConfigs[plugin.id] = plugin.config;
         }

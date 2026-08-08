@@ -1,5 +1,5 @@
 // 移植自 openclaw/src/channels/plugins/session-thread-info-loaded.ts
 
-export function resolveLoadedSessionThreadInfo(..._args: unknown[]): unknown {
+export function resolveLoadedSessionThreadInfo(..._args: any[]): any {
   return undefined;
 }

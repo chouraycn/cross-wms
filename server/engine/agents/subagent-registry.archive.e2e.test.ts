@@ -19,7 +19,7 @@ const flushSweepMicrotasks = async () => {
 };
 
 vi.mock("../gateway/call.js", () => ({
-  callGateway: vi.fn(async (request: unknown) => {
+  callGateway: vi.fn(async (request: any) => {
     const method = (request as { method?: string }).method;
     if (method === "agent.wait") {
       // Keep lifecycle unsettled so register/replace assertions can inspect stored state.
@@ -31,7 +31,7 @@ vi.mock("../gateway/call.js", () => ({
 
 vi.mock("../infra/agent-events.js", () => ({
   getAgentRunContext: vi.fn(() => undefined),
-  onAgentEvent: vi.fn((_handler: unknown) => noop),
+  onAgentEvent: vi.fn((_handler: any) => noop),
 }));
 
 vi.mock("../config/config.js", async () => {
@@ -79,7 +79,7 @@ describe("subagent registry archive behavior", () => {
       agents: { defaults: { subagents: { archiveAfterMinutes: 60 } } },
     };
     vi.mocked(callGateway).mockReset();
-    vi.mocked(callGateway).mockImplementation(async (request: unknown) => {
+    vi.mocked(callGateway).mockImplementation(async (request: any) => {
       const method = (request as { method?: string }).method;
       if (method === "agent.wait") {
         // Keep lifecycle unsettled so register/replace assertions can inspect stored state.
@@ -146,7 +146,7 @@ describe("subagent registry archive behavior", () => {
     await fs.mkdir(attachmentsDir, { recursive: true });
     await fs.writeFile(path.join(attachmentsDir, "artifact.txt"), "artifact", "utf8");
     let deleteAttempts = 0;
-    vi.mocked(callGateway).mockImplementation(async (request: unknown) => {
+    vi.mocked(callGateway).mockImplementation(async (request: any) => {
       const method = (request as { method?: string }).method;
       if (method === "agent.wait") {
         return { status: "pending" };
@@ -202,7 +202,7 @@ describe("subagent registry archive behavior", () => {
     const deletePromise = new Promise<void>((resolve) => {
       resolveDelete = resolve;
     });
-    vi.mocked(callGateway).mockImplementation(async (request: unknown) => {
+    vi.mocked(callGateway).mockImplementation(async (request: any) => {
       const method = (request as { method?: string }).method;
       if (method === "agent.wait") {
         return { status: "pending" };
@@ -350,7 +350,7 @@ describe("subagent registry archive behavior", () => {
 
     expect(replaced).toBe(true);
     await vi.waitFor(async () => {
-      let err: unknown;
+      let err: any;
       try {
         await fs.access(attachmentsDir);
       } catch (caught) {

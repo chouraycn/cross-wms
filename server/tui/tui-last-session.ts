@@ -47,7 +47,7 @@ async function readStore(filePath: string): Promise<LastSessionStore> {
   }
 }
 
-function normalizeMarker(value: unknown): string {
+function normalizeMarker(value: any): string {
   return typeof value === "string" ? value.trim().toLowerCase() : "";
 }
 

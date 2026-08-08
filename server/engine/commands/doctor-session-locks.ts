@@ -35,7 +35,7 @@ function formatLockLine(lock: SessionLockInspection): string {
     lock.pid === null ? "pid=missing" : `pid=${lock.pid} (${lock.pidAlive ? "alive" : "dead"})`;
   const ageStatus = `age=${formatAge(lock.ageMs)}`;
   const staleStatus = lock.stale
-    ? `stale=yes (${lock.staleReasons.join(", ") || "unknown"})`
+    ? `stale=yes (${lock.staleReasons.join(", ") || "any"})`
     : "stale=no";
   const removedStatus = lock.removed ? " [removed]" : "";
   return `- ${shortenHomePath(lock.lockPath)} ${pidStatus} ${ageStatus} ${staleStatus}${removedStatus}`;

@@ -7,7 +7,7 @@ export interface HookFrontmatter {
     bins?: string[];
     env?: string[];
   };
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 const FRONTMATTER_REGEX = /^---\n([\s\S]*?)\n---/;

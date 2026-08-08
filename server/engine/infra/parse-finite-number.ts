@@ -5,7 +5,7 @@
  */
 
 /** 解析严格非负整数；输入非有限或为负返回 undefined */
-export function parseStrictNonNegativeInteger(value: unknown): number | undefined {
+export function parseStrictNonNegativeInteger(value: any): number | undefined {
   if (typeof value === "number") {
     return Number.isFinite(value) && Number.isInteger(value) && value >= 0 ? value : undefined;
   }
@@ -25,13 +25,13 @@ export function parseStrictNonNegativeInteger(value: unknown): number | undefine
 }
 
 /** 解析有限正整数；输入非有限或 ≤ 0 返回 undefined */
-export function parseStrictPositiveInteger(value: unknown): number | undefined {
+export function parseStrictPositiveInteger(value: any): number | undefined {
   const parsed = parseStrictNonNegativeInteger(value);
   return parsed !== undefined && parsed > 0 ? parsed : undefined;
 }
 
 /** 解析有限数字；输入非有限返回 undefined */
-export function parseFiniteNumber(value: unknown): number | undefined {
+export function parseFiniteNumber(value: any): number | undefined {
   if (typeof value === "number") {
     return Number.isFinite(value) ? value : undefined;
   }
@@ -47,7 +47,7 @@ export function parseFiniteNumber(value: unknown): number | undefined {
 }
 
 /** 解析严格整数（可为负）；输入非有限或非纯数字返回 undefined */
-export function parseStrictInteger(value: unknown): number | undefined {
+export function parseStrictInteger(value: any): number | undefined {
   if (typeof value === "number") {
     return Number.isFinite(value) && Number.isInteger(value) ? value : undefined;
   }

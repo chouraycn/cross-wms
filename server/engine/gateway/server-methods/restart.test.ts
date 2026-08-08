@@ -18,10 +18,10 @@ vi.mock("../../infra/restart-coordinator.js", () => ({
     blockers: [],
     summary: "safe to restart now",
   })),
-  requestSafeGatewayRestart: (opts: unknown) => requestSafeGatewayRestart(opts),
+  requestSafeGatewayRestart: (opts: any) => requestSafeGatewayRestart(opts),
 }));
 
-function invokeRestartRequest(params: unknown) {
+function invokeRestartRequest(params: any) {
   const respond = vi.fn();
   const handler = restartHandlers["gateway.restart.request"];
   return Promise.resolve(

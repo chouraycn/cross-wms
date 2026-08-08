@@ -9,7 +9,7 @@ import { isRecord } from "@openclaw-src/utils.js";
 type ChannelDefaultAccountContext = {
   accountIds: string[];
   defaultAccountId: string;
-  account: unknown;
+  account: any;
   enabled: boolean;
   configured: boolean;
   diagnostics: string[];
@@ -22,7 +22,7 @@ type ChannelDefaultAccountContext = {
 
 type ChannelAccountContextMode = "strict" | "read_only";
 
-function getBooleanField(value: unknown, key: string): boolean | undefined {
+function getBooleanField(value: any, key: string): boolean | undefined {
   const record = isRecord(value) ? value : null;
   if (!record) {
     return undefined;

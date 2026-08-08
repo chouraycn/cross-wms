@@ -11,7 +11,7 @@
 // ===== 内联降级：RootHelpRenderOptions =====
 /** Render options for root help (degraded placeholder). */
 export type RootHelpRenderOptions = {
-  config?: unknown;
+  config?: any;
   env?: NodeJS.ProcessEnv;
 };
 // ===== RootHelpRenderOptions 结束 =====

@@ -12,7 +12,7 @@ function ScrollArea({ className, children, ...props }: React.ComponentProps<'div
       data-slot="scroll-area"
       className={cn('relative', className)}
       sx={{ position: 'relative', overflow: 'auto' }}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     >
       {children}
     </Box>

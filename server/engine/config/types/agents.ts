@@ -152,7 +152,7 @@ export type AgentConfig = {
   /** Optional per-agent sandbox overrides. */
   sandbox?: AgentSandboxConfig;
   /** Optional per-agent stream params (e.g. cacheRetention, temperature). */
-  params?: Record<string, unknown>;
+  params?: Record<string, any>;
   tools?: AgentToolsConfig;
   /** Optional runtime descriptor for this agent. */
   runtime?: AgentRuntimeConfig;

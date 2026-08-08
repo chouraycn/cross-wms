@@ -14,9 +14,9 @@ import { resetPluginRuntimeStateForTest } from "../plugins/runtime.js";
 import { withStateDirEnv } from "../test-helpers/state-dir-env.js";
 
 const subagentRegistryReadMock = vi.hoisted(() => {
-  let runsByChildSessionKey = new Map<string, Record<string, unknown>>();
+  let runsByChildSessionKey = new Map<string, Record<string, any>>();
   const buildSubagentRunReadIndex = vi.fn(() => {
-    const runsByControllerSessionKey = new Map<string, Record<string, unknown>[]>();
+    const runsByControllerSessionKey = new Map<string, Record<string, any>[]>();
     for (const entry of runsByChildSessionKey.values()) {
       const controllerSessionKey =
         typeof entry.controllerSessionKey === "string"
@@ -60,7 +60,7 @@ const subagentRegistryReadMock = vi.hoisted(() => {
       }),
     ),
     resolveSubagentSessionStatus: vi.fn(() => undefined),
-    setSubagentRunsForTest: (runs: Record<string, unknown>[]) => {
+    setSubagentRunsForTest: (runs: Record<string, any>[]) => {
       runsByChildSessionKey = new Map(
         runs
           .filter((entry) => typeof entry.childSessionKey === "string")

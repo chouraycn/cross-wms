@@ -275,7 +275,7 @@ describe("prepareSessionManagerForRun", () => {
     const records = (await fs.readFile(sessionFile, "utf8"))
       .trim()
       .split("\n")
-      .map((line) => JSON.parse(line) as Record<string, unknown>);
+      .map((line) => JSON.parse(line) as Record<string, any>);
     expect(records[0]).toMatchObject({
       type: "session",
       id: "child-session",

@@ -4,7 +4,7 @@
  * Simplified: stream function resolution replaced with identity defaults.
  */
 
-export function resolveEmbeddedAgentBaseStreamFn(streamFn: unknown): unknown {
+export function resolveEmbeddedAgentBaseStreamFn(streamFn: any): any {
   return streamFn;
 }
 
@@ -14,11 +14,11 @@ export function describeEmbeddedAgentStreamStrategy(): string {
   return "default";
 }
 
-export function resolveEmbeddedAgentApiKey(apiKey: unknown): unknown {
+export function resolveEmbeddedAgentApiKey(apiKey: any): any {
   return apiKey;
 }
 
-export function resolveEmbeddedAgentStreamFn(streamFn: unknown): unknown {
+export function resolveEmbeddedAgentStreamFn(streamFn: any): any {
   return streamFn;
 }
 

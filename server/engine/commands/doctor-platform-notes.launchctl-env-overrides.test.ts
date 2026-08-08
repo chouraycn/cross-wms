@@ -10,7 +10,7 @@ import {
   noteMacStaleOpenClawUpdateLaunchdJobs,
 } from "./doctor-platform-notes.js";
 
-function requireNoteCall(noteFn: { mock: { calls: unknown[][] } }, index = 0): unknown[] {
+function requireNoteCall(noteFn: { mock: { calls: any[][] } }, index = 0): any[] {
   const call = noteFn.mock.calls[index];
   if (!call) {
     throw new Error(`expected note call ${index}`);

@@ -241,7 +241,7 @@ async function expectSessionHistoryText(params: { sessionKey: string; expectedTe
 async function readSseEvent(
   reader: ReadableStreamDefaultReader<Uint8Array>,
   state: { buffer: string },
-): Promise<{ event: string; data: unknown }> {
+): Promise<{ event: string; data: any }> {
   const decoder = new TextDecoder();
   while (true) {
     const boundary = state.buffer.indexOf("\n\n");
@@ -286,7 +286,7 @@ function expectOpenClawMetadata(
   expect(metadata?.seq).toBe(expected.seq);
 }
 
-function expectErrorResponse(body: unknown, expected: { type: string; message: string }) {
+function expectErrorResponse(body: any, expected: { type: string; message: string }) {
   expect(body).toEqual({
     ok: false,
     error: {
@@ -913,7 +913,7 @@ describe("session history HTTP endpoints", () => {
       });
       expect(connect.ok).toBe(true);
 
-      const wsHistory = await rpcReq<{ messages?: unknown[] }>(ws, "chat.history", {
+      const wsHistory = await rpcReq<{ messages?: any[] }>(ws, "chat.history", {
         sessionKey: "agent:main:main",
         limit: 1,
       });

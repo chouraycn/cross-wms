@@ -163,7 +163,7 @@ function resolveNpmPinState(params: {
   return params.hasIntegrity ? "floating-with-integrity" : "floating-without-integrity";
 }
 
-function resolveDefaultChoice(value: unknown): PluginPackageInstall["defaultChoice"] | undefined {
+function resolveDefaultChoice(value: any): PluginPackageInstall["defaultChoice"] | undefined {
   return value === "clawhub" || value === "npm" || value === "local" ? value : undefined;
 }
 

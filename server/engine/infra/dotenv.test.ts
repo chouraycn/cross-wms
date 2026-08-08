@@ -239,7 +239,7 @@ describe("loadDotEnv", () => {
         expect(loggerMocks.warn).toHaveBeenCalledOnce();
         const [message, metadata] = requireFirstWarnCall();
         expect(String(message)).toContain("Conflicting values in");
-        expect(String((metadata as { ignoredPath?: unknown } | undefined)?.ignoredPath)).toContain(
+        expect(String((metadata as { ignoredPath?: any } | undefined)?.ignoredPath)).toContain(
           "gateway.env",
         );
       });

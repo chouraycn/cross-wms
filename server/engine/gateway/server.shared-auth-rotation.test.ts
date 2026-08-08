@@ -47,7 +47,7 @@ async function openDeviceTokenWsWithDetails(
   ws: WebSocket;
   deviceId: string;
   hello: Awaited<ReturnType<typeof connectOk>> & {
-    auth?: { deviceToken?: unknown };
+    auth?: { deviceToken?: any };
   };
 }> {
   const identityPath = path.join(os.tmpdir(), `openclaw-shared-auth-${process.pid}-${port}.json`);
@@ -119,7 +119,7 @@ async function openDeviceTokenWsWithDetails(
     deviceToken: issuedDeviceToken,
     scopes: ["operator.admin"],
   })) as Awaited<ReturnType<typeof connectOk>> & {
-    auth?: { deviceToken?: unknown };
+    auth?: { deviceToken?: any };
   };
   return { ws, deviceId: identity.deviceId, hello };
 }

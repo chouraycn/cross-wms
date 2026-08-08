@@ -10,7 +10,7 @@ import { captureEnv, deleteTestEnvValue, setTestEnvValue } from "../test-utils/e
 import { createThrowingRuntime } from "./onboard-non-interactive.test-helpers.js";
 import type { installGatewayDaemonNonInteractive } from "./onboard-non-interactive/local/daemon-install.js";
 
-const ensureWorkspaceAndSessionsMock = vi.fn(async (..._args: unknown[]) => {});
+const ensureWorkspaceAndSessionsMock = vi.fn(async (..._args: any[]) => {});
 const testConfigStore = new Map<string, OpenClawConfig>();
 type InstallGatewayDaemonResult = Awaited<ReturnType<typeof installGatewayDaemonNonInteractive>>;
 const installGatewayDaemonNonInteractiveMock = vi.hoisted(() =>
@@ -118,7 +118,7 @@ vi.mock("../config/config.js", () => ({
 }));
 
 vi.mock("./onboard-helpers.js", () => {
-  const normalizeGatewayTokenInput = (value: unknown): string => {
+  const normalizeGatewayTokenInput = (value: any): string => {
     if (typeof value !== "string") {
       return "";
     }
@@ -127,7 +127,7 @@ vi.mock("./onboard-helpers.js", () => {
   };
   return {
     DEFAULT_WORKSPACE: "/tmp/openclaw-workspace",
-    applyWizardMetadata: (cfg: unknown) => cfg,
+    applyWizardMetadata: (cfg: any) => cfg,
     ensureWorkspaceAndSessions: ensureWorkspaceAndSessionsMock,
     normalizeGatewayTokenInput,
     randomToken: () => "tok_generated_gateway_test_token",
@@ -195,7 +195,7 @@ const runtime = createThrowingRuntime();
 function createJsonCaptureRuntime() {
   let capturedJson = "";
   const runtimeWithCapture: RuntimeEnv = {
-    log: (...args: unknown[]) => {
+    log: (...args: any[]) => {
       const firstArg = args[0];
       capturedJson =
         typeof firstArg === "string"
@@ -204,7 +204,7 @@ function createJsonCaptureRuntime() {
             ? firstArg.message
             : (JSON.stringify(firstArg) ?? "");
     },
-    error: (...args: unknown[]) => {
+    error: (...args: any[]) => {
       const firstArg = args[0];
       const capturedError =
         typeof firstArg === "string"
@@ -225,14 +225,14 @@ function createJsonCaptureRuntime() {
   };
 }
 
-type MockWithCalls<TArgs extends unknown[]> = {
+type MockWithCalls<TArgs extends any[]> = {
   mock: {
     calls: TArgs[];
   };
 };
 
-function readFirstMockCall(mock: unknown, label: string): unknown[] {
-  const calls = (mock as MockWithCalls<unknown[]>).mock.calls;
+function readFirstMockCall(mock: any, label: string): any[] {
+  const calls = (mock as MockWithCalls<any[]>).mock.calls;
   const call = calls[0];
   if (!call) {
     throw new Error(`Expected ${label} to be called`);

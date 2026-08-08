@@ -55,7 +55,7 @@ function stripFrontmatter(content: string): string {
   return normalized.slice(endIndex + 4).trim();
 }
 
-function readClaudeBundleManifest(rootDir: string): Record<string, unknown> {
+function readClaudeBundleManifest(rootDir: string): Record<string, any> {
   const result = readRootJsonObjectSync({
     rootDir,
     relativePath: CLAUDE_BUNDLE_MANIFEST_RELATIVE_PATH,

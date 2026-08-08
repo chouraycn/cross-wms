@@ -87,7 +87,7 @@ interface TriggerConfigPanelProps {
   triggerConfig: {
     cronExpression?: string;
     eventName?: string;
-    condition?: Record<string, unknown>;
+    condition?: Record<string, any>;
     webhookPath?: string;
     pathPattern?: string;
     events?: ('add' | 'change' | 'unlink')[];
@@ -100,7 +100,7 @@ interface TriggerConfigPanelProps {
     debounceMs?: number;
   };
   /** 配置变更回调 */
-  onChange: (config: Record<string, unknown>) => void;
+  onChange: (config: Record<string, any>) => void;
   /** 是否禁用 */
   disabled?: boolean;
   /** 自动化 ID（用于 webhook URL） */

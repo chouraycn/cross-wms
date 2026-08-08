@@ -3,7 +3,7 @@ import { asRecord } from "../infra/record-coerce.js";
 import type { NodeListNode, PairedNode, PairingList, PendingRequest } from "./node-list-types.js";
 
 /** Extracts pending and paired node arrays from permissive node.pair.list payloads. */
-export function parsePairingList(value: unknown): PairingList {
+export function parsePairingList(value: any): PairingList {
   const obj = asRecord(value);
   const pending = Array.isArray(obj.pending) ? (obj.pending as PendingRequest[]) : [];
   const paired = Array.isArray(obj.paired) ? (obj.paired as PairedNode[]) : [];
@@ -11,7 +11,7 @@ export function parsePairingList(value: unknown): PairingList {
 }
 
 /** Extracts the nodes array from a node.list response, treating malformed payloads as empty. */
-export function parseNodeList(value: unknown): NodeListNode[] {
+export function parseNodeList(value: any): NodeListNode[] {
   const obj = asRecord(value);
   return Array.isArray(obj.nodes) ? (obj.nodes as NodeListNode[]) : [];
 }

@@ -249,7 +249,7 @@ vi.mock("../channels/plugins/legacy-config.js", () => ({
 
 vi.mock("./zod-schema.js", () => ({
   OpenClawSchema: {
-    safeParse: (raw: unknown) => ({ success: true, data: raw }),
+    safeParse: (raw: any) => ({ success: true, data: raw }),
   },
 }));
 
@@ -813,7 +813,7 @@ describe("validateConfigObjectWithPlugins bundled allowlist compatibility", () =
   });
 
   it("loads a plugin metadata snapshot once during plugin validation", () => {
-    const loadPluginMetadataSnapshot = vi.fn((_configForTest: unknown) => ({
+    const loadPluginMetadataSnapshot = vi.fn((_configForTest: any) => ({
       manifestRegistry: createPluginConfigSchemaRegistry(),
     }));
 

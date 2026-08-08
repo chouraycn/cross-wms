@@ -5,4 +5,4 @@ export type ExecAutoReviewDecision = unknown;
 export type ExecAutoReviewHost = unknown;
 export type ExecAutoReviewInput = unknown;
 export type ExecAutoReviewer = unknown;
-export const defaultExecAutoReviewer: unknown = undefined;
+export const defaultExecAutoReviewer: any = undefined;

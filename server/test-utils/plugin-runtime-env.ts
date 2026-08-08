@@ -9,10 +9,10 @@
 import { vi } from "vitest";
 
 export type OutputRuntimeEnv = {
-  log: (...args: unknown[]) => void;
-  error: (...args: unknown[]) => void;
+  log: (...args: any[]) => void;
+  error: (...args: any[]) => void;
   writeStdout: (text: string) => void;
-  writeJson: (value: unknown) => void;
+  writeJson: (value: any) => void;
   exit: (code: number) => never;
 };
 

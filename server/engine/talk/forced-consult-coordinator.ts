@@ -82,7 +82,7 @@ export type RealtimeVoiceForcedConsultCoordinator<TContext = unknown> = {
   consumePending(question?: string): RealtimeVoiceForcedConsultHandle<TContext> | undefined;
   cancelPending(handle: RealtimeVoiceForcedConsultHandle<TContext>): void;
   recordNativeConsult(
-    args: unknown,
+    args: any,
     nativeCallId?: string,
   ): RealtimeVoiceForcedConsultNativeMatch<TContext>;
   markStarted(handle: RealtimeVoiceForcedConsultHandle<TContext>): void;

@@ -4,7 +4,7 @@
  * 降级策略：返回空。
  */
 export type ResolvePluginWebProvidersParams = {
-  config?: unknown;
+  config?: any;
   env?: NodeJS.ProcessEnv;
   workspaceDir?: string;
 };

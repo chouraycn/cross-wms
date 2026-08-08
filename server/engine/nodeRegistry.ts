@@ -29,7 +29,7 @@ export interface NodeSession {
 
 export interface NodeInvokeResult {
   ok: boolean;
-  payload?: unknown;
+  payload?: any;
   payloadJSON?: string | null;
   error?: { code?: string; message?: string } | null;
 }

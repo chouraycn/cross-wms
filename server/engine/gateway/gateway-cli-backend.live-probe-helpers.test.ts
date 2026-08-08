@@ -47,7 +47,7 @@ async function readRequestBody(request: IncomingMessage): Promise<string> {
   return Buffer.concat(chunks).toString("utf8");
 }
 
-function writeJson(response: ServerResponse, status: number, body: unknown): void {
+function writeJson(response: ServerResponse, status: number, body: any): void {
   response.writeHead(status, { "content-type": "application/json" });
   response.end(JSON.stringify(body));
 }
@@ -76,7 +76,7 @@ describe("gateway CLI backend live probe helpers", () => {
     const server = createHttpServer((request, response) => {
       void (async () => {
         const body = JSON.parse(await readRequestBody(request)) as {
-          id?: unknown;
+          id?: any;
           method?: string;
         };
         if (body.method) {

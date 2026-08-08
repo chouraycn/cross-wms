@@ -13,7 +13,7 @@ export function hasToolModelConfig(model: ToolModelConfig | undefined): boolean 
   );
 }
 
-export function resolveDefaultModelRef(cfg?: unknown): { provider: string; model: string } {
+export function resolveDefaultModelRef(cfg?: any): { provider: string; model: string } {
   // Default to anthropic/claude as fallback
   return { provider: "anthropic", model: "claude-sonnet-4-20250514" };
 }
@@ -21,7 +21,7 @@ export function resolveDefaultModelRef(cfg?: unknown): { provider: string; model
 export function hasAuthForProvider(params: {
   provider: string;
   agentDir?: string;
-  authStore?: unknown;
+  authStore?: any;
 }): boolean {
   // Simplified: check for common env var patterns
   const envKeyMap: Record<string, string[]> = {
@@ -36,7 +36,7 @@ export function hasAuthForProvider(params: {
 export function hasAuthProfileForProvider(params: {
   provider: string;
   agentDir?: string;
-  authStore?: unknown;
+  authStore?: any;
   includeExternalCli?: boolean;
   type?: string;
 }): boolean {
@@ -45,20 +45,20 @@ export function hasAuthProfileForProvider(params: {
 
 export function hasProviderAuthForTool(params: {
   provider: string;
-  cfg?: unknown;
+  cfg?: any;
   workspaceDir?: string;
   agentDir?: string;
-  authStore?: unknown;
+  authStore?: any;
 }): boolean {
   return hasAuthForProvider(params);
 }
 
 export function hasDirectProviderApiKeyAuthForTool(params: {
   provider: string;
-  cfg?: unknown;
+  cfg?: any;
   workspaceDir?: string;
   agentDir?: string;
-  authStore?: unknown;
+  authStore?: any;
   modelApi?: string;
 }): boolean {
   // Check for direct API key env vars
@@ -72,10 +72,10 @@ export function hasDirectProviderApiKeyAuthForTool(params: {
 }
 
 export function resolveOpenAiImageMediaCandidate(params: {
-  cfg?: unknown;
+  cfg?: any;
   workspaceDir?: string;
   agentDir: string;
-  authStore?: unknown;
+  authStore?: any;
   openAiModel: string;
   codexModel?: string;
 }): { kind: "keep" | "substitute" | "drop"; ref?: string; provider?: string } {
@@ -100,11 +100,11 @@ export function resolveOpenAiImageMediaCandidate(params: {
   return { kind: "drop" };
 }
 
-export function coerceToolModelConfig(model?: unknown): ToolModelConfig {
+export function coerceToolModelConfig(model?: any): ToolModelConfig {
   if (!model || typeof model !== "object") {
     return {};
   }
-  const m = model as Record<string, unknown>;
+  const m = model as Record<string, any>;
   const primary = typeof m.primary === "string" ? m.primary.trim() : undefined;
   const fallbacks = Array.isArray(m.fallbacks)
     ? m.fallbacks.filter((f): f is string => typeof f === "string" && f.trim().length > 0)
@@ -119,10 +119,10 @@ export function coerceToolModelConfig(model?: unknown): ToolModelConfig {
 
 export function buildToolModelConfigFromCandidates(params: {
   explicit: ToolModelConfig;
-  cfg?: unknown;
+  cfg?: any;
   workspaceDir?: string;
   agentDir?: string;
-  authStore?: unknown;
+  authStore?: any;
   candidates: Array<string | null | undefined>;
   isProviderConfigured?: (provider: string) => boolean | undefined;
 }): ToolModelConfig | null {

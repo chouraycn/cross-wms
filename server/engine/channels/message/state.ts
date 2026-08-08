@@ -9,12 +9,12 @@ export interface MessageState {
   attemptCount: number;
   createdAt: number;
   updatedAt: number;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
 }
 
 const messageStates = new Map<string, MessageState>();
 
-export function initMessageState(messageId: string, metadata?: Record<string, unknown>): MessageState {
+export function initMessageState(messageId: string, metadata?: Record<string, any>): MessageState {
   const now = Date.now();
   const state: MessageState = {
     messageId,
@@ -65,7 +65,7 @@ export function incrementAttempt(messageId: string): number {
   return state.attemptCount;
 }
 
-export function setMessageMetadata(messageId: string, key: string, value: unknown): boolean {
+export function setMessageMetadata(messageId: string, key: string, value: any): boolean {
   const state = messageStates.get(messageId);
   if (!state) return false;
 
@@ -74,7 +74,7 @@ export function setMessageMetadata(messageId: string, key: string, value: unknow
   return true;
 }
 
-export function getMessageMetadata(messageId: string, key: string): unknown {
+export function getMessageMetadata(messageId: string, key: string): any {
   return messageStates.get(messageId)?.metadata[key];
 }
 

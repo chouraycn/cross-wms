@@ -10,7 +10,7 @@ const configMocks = vi.hoisted(() => {
   return {
     readConfigFileSnapshot: vi.fn(),
     writeConfigFile,
-    replaceConfigFile: vi.fn(async (params: { nextConfig: unknown }) => {
+    replaceConfigFile: vi.fn(async (params: { nextConfig: any }) => {
       await writeConfigFile(params.nextConfig);
     }),
   };

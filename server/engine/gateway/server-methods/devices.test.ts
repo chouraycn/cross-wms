@@ -65,7 +65,7 @@ function createClient(
 
 function createOptions(
   method: string,
-  params: Record<string, unknown>,
+  params: Record<string, any>,
   overrides?: Partial<GatewayRequestHandlerOptions>,
 ): GatewayRequestHandlerOptions {
   return {

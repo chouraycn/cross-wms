@@ -95,7 +95,7 @@ const TASK_RUN_SELECT_COLUMNS = [
 
 let cachedDatabase: TaskRegistryDatabase | null = null;
 
-function serializeJson(value: unknown): string | null {
+function serializeJson(value: any): string | null {
   return value == null ? null : JSON.stringify(value);
 }
 
@@ -149,7 +149,7 @@ function rowToTaskDeliveryState(row: TaskDeliveryStateRow): TaskDeliveryState {
   };
 }
 
-function bindTaskRecordBase(record: TaskRecord): Record<string, unknown> {
+function bindTaskRecordBase(record: TaskRecord): Record<string, any> {
   return {
     task_id: record.taskId,
     runtime: record.runtime,
@@ -181,7 +181,7 @@ function bindTaskRecordBase(record: TaskRecord): Record<string, unknown> {
   };
 }
 
-function bindTaskDeliveryState(state: TaskDeliveryState): Record<string, unknown> {
+function bindTaskDeliveryState(state: TaskDeliveryState): Record<string, any> {
   return {
     task_id: state.taskId,
     requester_origin_json: serializeJson(state.requesterOrigin),
@@ -196,7 +196,7 @@ function getTaskRegistryKysely(db: Database) {
 function selectTaskRows(db: Database): TaskRegistryRow[] {
   const query = getTaskRegistryKysely(db)
     .selectFrom("task_runs")
-    .select(TASK_RUN_SELECT_COLUMNS as unknown)
+    .select(TASK_RUN_SELECT_COLUMNS as any)
     .orderBy("created_at", "asc")
     .orderBy("task_id", "asc");
   return executeSqliteQuerySync(db, query).rows as TaskRegistryRow[];
@@ -205,45 +205,45 @@ function selectTaskRows(db: Database): TaskRegistryRow[] {
 function selectTaskDeliveryStateRows(db: Database): TaskDeliveryStateRow[] {
   const query = getTaskRegistryKysely(db)
     .selectFrom("task_delivery_state")
-    .select(["task_id", "requester_origin_json", "last_notified_event_at"] as unknown)
+    .select(["task_id", "requester_origin_json", "last_notified_event_at"] as any)
     .orderBy("task_id", "asc");
   return executeSqliteQuerySync(db, query).rows as TaskDeliveryStateRow[];
 }
 
-function upsertTaskRow(db: Database, row: Record<string, unknown>): void {
+function upsertTaskRow(db: Database, row: Record<string, any>): void {
   executeSqliteQuerySync(
     db,
     getTaskRegistryKysely(db)
       .insertInto("task_runs")
       .values(row)
-      .onConflict((conflict: unknown) =>
+      .onConflict((conflict: any) =>
         conflict.column("task_id").doUpdateSet({
-          runtime: (eb: unknown) => eb.ref("excluded.runtime"),
-          task_kind: (eb: unknown) => eb.ref("excluded.task_kind"),
-          source_id: (eb: unknown) => eb.ref("excluded.source_id"),
-          requester_session_key: (eb: unknown) => eb.ref("excluded.requester_session_key"),
-          owner_key: (eb: unknown) => eb.ref("excluded.owner_key"),
-          scope_kind: (eb: unknown) => eb.ref("excluded.scope_kind"),
-          child_session_key: (eb: unknown) => eb.ref("excluded.child_session_key"),
-          parent_flow_id: (eb: unknown) => eb.ref("excluded.parent_flow_id"),
-          parent_task_id: (eb: unknown) => eb.ref("excluded.parent_task_id"),
-          agent_id: (eb: unknown) => eb.ref("excluded.agent_id"),
-          requester_agent_id: (eb: unknown) => eb.ref("excluded.requester_agent_id"),
-          run_id: (eb: unknown) => eb.ref("excluded.run_id"),
-          label: (eb: unknown) => eb.ref("excluded.label"),
-          task: (eb: unknown) => eb.ref("excluded.task"),
-          status: (eb: unknown) => eb.ref("excluded.status"),
-          delivery_status: (eb: unknown) => eb.ref("excluded.delivery_status"),
-          notify_policy: (eb: unknown) => eb.ref("excluded.notify_policy"),
-          created_at: (eb: unknown) => eb.ref("excluded.created_at"),
-          started_at: (eb: unknown) => eb.ref("excluded.started_at"),
-          ended_at: (eb: unknown) => eb.ref("excluded.ended_at"),
-          last_event_at: (eb: unknown) => eb.ref("excluded.last_event_at"),
-          cleanup_after: (eb: unknown) => eb.ref("excluded.cleanup_after"),
-          error: (eb: unknown) => eb.ref("excluded.error"),
-          progress_summary: (eb: unknown) => eb.ref("excluded.progress_summary"),
-          terminal_summary: (eb: unknown) => eb.ref("excluded.terminal_summary"),
-          terminal_outcome: (eb: unknown) => eb.ref("excluded.terminal_outcome"),
+          runtime: (eb: any) => eb.ref("excluded.runtime"),
+          task_kind: (eb: any) => eb.ref("excluded.task_kind"),
+          source_id: (eb: any) => eb.ref("excluded.source_id"),
+          requester_session_key: (eb: any) => eb.ref("excluded.requester_session_key"),
+          owner_key: (eb: any) => eb.ref("excluded.owner_key"),
+          scope_kind: (eb: any) => eb.ref("excluded.scope_kind"),
+          child_session_key: (eb: any) => eb.ref("excluded.child_session_key"),
+          parent_flow_id: (eb: any) => eb.ref("excluded.parent_flow_id"),
+          parent_task_id: (eb: any) => eb.ref("excluded.parent_task_id"),
+          agent_id: (eb: any) => eb.ref("excluded.agent_id"),
+          requester_agent_id: (eb: any) => eb.ref("excluded.requester_agent_id"),
+          run_id: (eb: any) => eb.ref("excluded.run_id"),
+          label: (eb: any) => eb.ref("excluded.label"),
+          task: (eb: any) => eb.ref("excluded.task"),
+          status: (eb: any) => eb.ref("excluded.status"),
+          delivery_status: (eb: any) => eb.ref("excluded.delivery_status"),
+          notify_policy: (eb: any) => eb.ref("excluded.notify_policy"),
+          created_at: (eb: any) => eb.ref("excluded.created_at"),
+          started_at: (eb: any) => eb.ref("excluded.started_at"),
+          ended_at: (eb: any) => eb.ref("excluded.ended_at"),
+          last_event_at: (eb: any) => eb.ref("excluded.last_event_at"),
+          cleanup_after: (eb: any) => eb.ref("excluded.cleanup_after"),
+          error: (eb: any) => eb.ref("excluded.error"),
+          progress_summary: (eb: any) => eb.ref("excluded.progress_summary"),
+          terminal_summary: (eb: any) => eb.ref("excluded.terminal_summary"),
+          terminal_outcome: (eb: any) => eb.ref("excluded.terminal_outcome"),
         }),
       ),
   );
@@ -251,17 +251,17 @@ function upsertTaskRow(db: Database, row: Record<string, unknown>): void {
 
 function replaceTaskDeliveryStateRow(
   db: Database,
-  row: Record<string, unknown>,
+  row: Record<string, any>,
 ): void {
   executeSqliteQuerySync(
     db,
     getTaskRegistryKysely(db)
       .insertInto("task_delivery_state")
       .values(row)
-      .onConflict((conflict: unknown) =>
+      .onConflict((conflict: any) =>
         conflict.column("task_id").doUpdateSet({
-          requester_origin_json: (eb: unknown) => eb.ref("excluded.requester_origin_json"),
-          last_notified_event_at: (eb: unknown) => eb.ref("excluded.last_notified_event_at"),
+          requester_origin_json: (eb: any) => eb.ref("excluded.requester_origin_json"),
+          last_notified_event_at: (eb: any) => eb.ref("excluded.last_notified_event_at"),
         }),
       ),
   );
@@ -277,7 +277,7 @@ function deleteTaskRowsWithDeliveryState(db: Database, taskId: string): void {
 }
 
 function openTaskRegistryDatabase(): TaskRegistryDatabase {
-  const database: unknown = openStateDatabase();
+  const database: any = openStateDatabase();
   const pathname = database.path;
   if (cachedDatabase && cachedDatabase.path === pathname && cachedDatabase.db.open) {
     return cachedDatabase;
@@ -317,7 +317,7 @@ export function listTaskRegistryRecordsByOwnerKeyFromSqlite(ownerKey: string): T
   const { db } = openTaskRegistryDatabase();
   const query = getTaskRegistryKysely(db)
     .selectFrom("task_runs")
-    .select(TASK_RUN_SELECT_COLUMNS as unknown)
+    .select(TASK_RUN_SELECT_COLUMNS as any)
     .where("owner_key", "=", key)
     .orderBy("created_at", "asc")
     .orderBy("task_id", "asc");

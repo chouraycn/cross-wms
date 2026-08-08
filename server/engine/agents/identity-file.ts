@@ -56,7 +56,7 @@ export function saveIdentityFile(filePath: string, identity: IdentityFile): void
   logger.debug(`[Agents:IdentityFile] Saved identity: ${identity.id}`);
 }
 
-export function validateIdentityFile(identity: unknown): identity is IdentityFile {
+export function validateIdentityFile(identity: any): identity is IdentityFile {
   const result = IdentityFileSchema.safeParse(identity);
   return result.success;
 }
@@ -70,7 +70,7 @@ export function createIdentityFile(params: {
   memory?: string;
   capabilities?: IdentityFile['capabilities'];
   tools?: string[];
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }): IdentityFile {
   const now = new Date().toISOString();
   const identity: IdentityFile = {

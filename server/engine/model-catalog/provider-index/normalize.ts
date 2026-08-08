@@ -14,11 +14,11 @@ import { logger } from '../../../logger.js';
 
 const PROVIDER_INDEX_VERSION = 1;
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function normalizeOptionalString(value: unknown): string | undefined {
+function normalizeOptionalString(value: any): string | undefined {
   if (typeof value !== 'string') {
     return undefined;
   }
@@ -26,7 +26,7 @@ function normalizeOptionalString(value: unknown): string | undefined {
   return trimmed.length > 0 ? trimmed : undefined;
 }
 
-function normalizeSafeKey(value: unknown): string {
+function normalizeSafeKey(value: any): string {
   const key = normalizeOptionalString(value) ?? '';
   if (key === '__proto__' || key === 'prototype' || key === 'constructor') {
     return '';
@@ -34,7 +34,7 @@ function normalizeSafeKey(value: unknown): string {
   return key;
 }
 
-function normalizeUniqueTrimmedStringList(value: unknown): readonly string[] {
+function normalizeUniqueTrimmedStringList(value: any): readonly string[] {
   if (!Array.isArray(value)) {
     return [];
   }
@@ -50,7 +50,7 @@ function normalizeUniqueTrimmedStringList(value: unknown): readonly string[] {
   return result;
 }
 
-function normalizeInstall(value: unknown): ProviderIndexPluginInstall | undefined {
+function normalizeInstall(value: any): ProviderIndexPluginInstall | undefined {
   if (!isRecord(value)) {
     return undefined;
   }
@@ -69,7 +69,7 @@ function normalizeInstall(value: unknown): ProviderIndexPluginInstall | undefine
   };
 }
 
-function normalizePlugin(value: unknown): ProviderIndexPlugin | undefined {
+function normalizePlugin(value: any): ProviderIndexPlugin | undefined {
   if (!isRecord(value)) {
     return undefined;
   }
@@ -88,11 +88,11 @@ function normalizePlugin(value: unknown): ProviderIndexPlugin | undefined {
   };
 }
 
-function normalizeCategories(value: unknown): readonly string[] {
+function normalizeCategories(value: any): readonly string[] {
   return normalizeUniqueTrimmedStringList(value);
 }
 
-function normalizeModelCatalogModel(value: unknown): ModelCatalogModel | undefined {
+function normalizeModelCatalogModel(value: any): ModelCatalogModel | undefined {
   if (!isRecord(value)) {
     return undefined;
   }
@@ -142,7 +142,7 @@ function normalizeModelCatalogModel(value: unknown): ModelCatalogModel | undefin
 
 function normalizePreviewCatalog(params: {
   providerId: string;
-  value: unknown;
+  value: any;
 }): ModelCatalogProvider | undefined {
   if (!isRecord(params.value)) {
     return undefined;
@@ -175,7 +175,7 @@ function normalizePreviewCatalog(params: {
 }
 
 function normalizeOnboardingScopes(
-  value: unknown,
+  value: any,
 ): ProviderIndexAuthChoice['onboardingScopes'] | undefined {
   const scopes = normalizeUniqueTrimmedStringList(value).filter(
     (scope): scope is 'text-inference' | 'image-generation' | 'music-generation' =>
@@ -187,7 +187,7 @@ function normalizeOnboardingScopes(
 function normalizeAuthChoice(params: {
   providerId: string;
   providerName: string;
-  value: unknown;
+  value: any;
 }): ProviderIndexAuthChoice | undefined {
   if (!isRecord(params.value)) {
     return undefined;
@@ -226,7 +226,7 @@ function normalizeAuthChoice(params: {
 function normalizeAuthChoices(params: {
   providerId: string;
   providerName: string;
-  value: unknown;
+  value: any;
 }): readonly ProviderIndexAuthChoice[] | undefined {
   if (!Array.isArray(params.value)) {
     return undefined;
@@ -239,7 +239,7 @@ function normalizeAuthChoices(params: {
 
 function normalizeProvider(
   rawProviderId: string,
-  value: unknown,
+  value: any,
 ): ProviderIndexProvider | undefined {
   if (!isRecord(value)) {
     return undefined;
@@ -262,11 +262,11 @@ function normalizeProvider(
   const authChoices = normalizeAuthChoices({
     providerId,
     providerName: name,
-    value: (value as Record<string, unknown>).authChoices,
+    value: (value as Record<string, any>).authChoices,
   });
   const previewCatalog = normalizePreviewCatalog({
     providerId,
-    value: (value as Record<string, unknown>).previewCatalog,
+    value: (value as Record<string, any>).previewCatalog,
   });
   return {
     id: providerId,
@@ -279,7 +279,7 @@ function normalizeProvider(
   };
 }
 
-export function normalizeProviderIndex(value: unknown): ProviderIndex | undefined {
+export function normalizeProviderIndex(value: any): ProviderIndex | undefined {
   if (!isRecord(value) || value.version !== PROVIDER_INDEX_VERSION) {
     logger.debug('[ProviderIndex] 版本不匹配或不是记录对象');
     return undefined;

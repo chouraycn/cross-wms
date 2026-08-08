@@ -357,7 +357,7 @@ function normalizeDockerLimit(value?: string | number) {
   return trimmed ? trimmed : undefined;
 }
 
-function normalizeFiniteDockerNumber(value: unknown, min: number): number | undefined {
+function normalizeFiniteDockerNumber(value: any, min: number): number | undefined {
   return typeof value === "number" && Number.isFinite(value) ? Math.max(min, value) : undefined;
 }
 

@@ -18,7 +18,7 @@ import {
 import type { PluginBundleFormat } from "./manifest-types.js";
 
 /** LSP server config block loaded from plugin bundle metadata. */
-export type BundleLspServerConfig = Record<string, unknown>;
+export type BundleLspServerConfig = Record<string, any>;
 
 /** Merged LSP config contributed by enabled plugin bundles. */
 export type BundleLspConfig = {
@@ -37,7 +37,7 @@ const MANIFEST_PATH_BY_FORMAT: Partial<Record<PluginBundleFormat, string>> = {
   claude: CLAUDE_BUNDLE_MANIFEST_RELATIVE_PATH,
 };
 
-function extractLspServerMap(raw: unknown): Record<string, BundleLspServerConfig> {
+function extractLspServerMap(raw: any): Record<string, BundleLspServerConfig> {
   if (!isRecord(raw)) {
     return {};
   }
@@ -56,7 +56,7 @@ function extractLspServerMap(raw: unknown): Record<string, BundleLspServerConfig
 }
 
 function resolveBundleLspConfigPaths(params: {
-  raw: Record<string, unknown>;
+  raw: Record<string, any>;
   rootDir: string;
 }): string[] {
   const declared = normalizeBundlePathList(params.raw.lspServers);

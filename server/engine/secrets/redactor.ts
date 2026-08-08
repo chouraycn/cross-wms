@@ -154,11 +154,11 @@ export class SecretRedactor {
   }
 
   /** 脱敏对象（递归处理所有字符串字段） */
-  redactObject(obj: unknown): unknown {
+  redactObject(obj: any): any {
     if (typeof obj === 'string') return this.redact(obj);
     if (Array.isArray(obj)) return obj.map(item => this.redactObject(item));
     if (obj && typeof obj === 'object') {
-      const result: Record<string, unknown> = {};
+      const result: Record<string, any> = {};
       for (const [key, value] of Object.entries(obj)) {
         result[key] = this.redactObject(value);
       }

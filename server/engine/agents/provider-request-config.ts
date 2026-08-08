@@ -12,42 +12,42 @@ export type ProviderRequestProxyOverride = unknown;
 export type ProviderRequestTransportOverrides = unknown;
 export type ModelProviderRequestTransportOverrides = unknown;
 export type ResolvedProviderRequestConfig = unknown;
-export function sanitizeConfiguredProviderRequest(..._args: unknown[]): unknown {
+export function sanitizeConfiguredProviderRequest(..._args: any[]): any {
   return undefined;
 }
-export function sanitizeConfiguredModelProviderRequest(..._args: unknown[]): unknown {
+export function sanitizeConfiguredModelProviderRequest(..._args: any[]): any {
   return undefined;
 }
-export function mergeProviderRequestOverrides(..._args: unknown[]): unknown {
+export function mergeProviderRequestOverrides(..._args: any[]): any {
   return undefined;
 }
-export function mergeModelProviderRequestOverrides(..._args: unknown[]): unknown {
+export function mergeModelProviderRequestOverrides(..._args: any[]): any {
   return undefined;
 }
-export function normalizeBaseUrl(..._args: unknown[]): unknown {
+export function normalizeBaseUrl(..._args: any[]): any {
   return undefined;
 }
-export function sanitizeRuntimeProviderRequestOverrides(..._args: unknown[]): unknown {
+export function sanitizeRuntimeProviderRequestOverrides(..._args: any[]): any {
   return undefined;
 }
-export function applyPreparedRuntimeAuthToModel(..._args: unknown[]): unknown {
+export function applyPreparedRuntimeAuthToModel(..._args: any[]): any {
   return undefined;
 }
-export function buildProviderRequestDispatcherPolicy(..._args: unknown[]): unknown {
+export function buildProviderRequestDispatcherPolicy(..._args: any[]): any {
   return undefined;
 }
-export function resolveProviderRequestPolicyConfig(..._args: unknown[]): unknown {
+export function resolveProviderRequestPolicyConfig(..._args: any[]): any {
   return undefined;
 }
-export function resolveProviderRequestConfig(..._args: unknown[]): unknown {
+export function resolveProviderRequestConfig(..._args: any[]): any {
   return undefined;
 }
-export function resolveProviderRequestHeaders(..._args: unknown[]): unknown {
+export function resolveProviderRequestHeaders(..._args: any[]): any {
   return undefined;
 }
-export function attachModelProviderRequestTransport(..._args: unknown[]): unknown {
+export function attachModelProviderRequestTransport(..._args: any[]): any {
   return undefined;
 }
-export function getModelProviderRequestTransport(..._args: unknown[]): unknown {
+export function getModelProviderRequestTransport(..._args: any[]): any {
   return undefined;
 }

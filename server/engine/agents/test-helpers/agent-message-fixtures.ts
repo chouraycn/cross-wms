@@ -10,12 +10,12 @@ import type { AgentMessage } from "../runtime/index.js";
 import { ZERO_USAGE_FIXTURE } from "./usage-fixtures.js";
 
 /** Casts an unknown fixture value to an agent message for tests. */
-export function castAgentMessage(message: unknown): AgentMessage {
+export function castAgentMessage(message: any): AgentMessage {
   return message as AgentMessage;
 }
 
 /** Casts unknown fixture values to agent messages for tests. */
-export function castAgentMessages(messages: unknown[]): AgentMessage[] {
+export function castAgentMessages(messages: any[]): AgentMessage[] {
   return messages as AgentMessage[];
 }
 

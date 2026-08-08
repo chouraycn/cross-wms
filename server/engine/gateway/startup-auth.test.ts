@@ -135,7 +135,7 @@ describe("ensureGatewayStartupAuth", () => {
     env: NodeJS.ProcessEnv;
     authOverride?: StartupAuthInput["authOverride"];
     expectedToken: string;
-    expectedConfiguredToken?: unknown;
+    expectedConfiguredToken?: any;
   }) {
     const result = await runStartupAuth({
       cfg: params.cfg,

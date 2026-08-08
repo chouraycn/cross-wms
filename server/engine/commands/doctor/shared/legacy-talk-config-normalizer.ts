@@ -5,9 +5,9 @@ import { normalizeTalkSection } from "@openclaw-src/config/talk.js";
 import type { OpenClawConfig } from "@openclaw-src/config/types.js";
 
 function buildLegacyTalkProviderCompat(
-  talk: Record<string, unknown>,
-): Record<string, unknown> | undefined {
-  const compat: Record<string, unknown> = {};
+  talk: Record<string, any>,
+): Record<string, any> | undefined {
+  const compat: Record<string, any> = {};
   for (const key of ["voiceId", "voiceAliases", "modelId", "outputFormat", "apiKey"] as const) {
     if (talk[key] !== undefined) {
       compat[key] = talk[key];
@@ -17,13 +17,13 @@ function buildLegacyTalkProviderCompat(
 }
 
 function buildLegacyRealtimeTalkCompat(
-  talk: Record<string, unknown>,
+  talk: Record<string, any>,
   normalizedTalk: NonNullable<OpenClawConfig["talk"]>,
-): Record<string, unknown> | undefined {
+): Record<string, any> | undefined {
   if (talk.realtime !== undefined) {
     return undefined;
   }
-  const compat: Record<string, unknown> = {};
+  const compat: Record<string, any> = {};
   for (const key of ["model", "voice", "mode", "transport", "brain"] as const) {
     if (talk[key] !== undefined) {
       compat[key] = talk[key];
@@ -42,7 +42,7 @@ function buildLegacyRealtimeTalkCompat(
 }
 
 function removeDerivedRealtimeSpeakerVoice(
-  rawTalk: Record<string, unknown>,
+  rawTalk: Record<string, any>,
   normalizedTalk: NonNullable<OpenClawConfig["talk"]>,
 ): void {
   const rawRealtime = rawTalk.realtime;

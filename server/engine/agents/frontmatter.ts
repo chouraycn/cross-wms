@@ -6,5 +6,5 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export const parseFrontmatter: unknown = undefined;
-export const stripFrontmatter: unknown = undefined;
+export const parseFrontmatter: any = undefined;
+export const stripFrontmatter: any = undefined;

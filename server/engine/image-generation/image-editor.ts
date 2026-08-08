@@ -16,7 +16,7 @@ export type InpaintRequest = {
   inpaintArea?: "masked" | "whole";
   strength?: number;
   modelOverride?: string;
-  providerOptions?: Record<string, unknown>;
+  providerOptions?: Record<string, any>;
 };
 
 export type OutpaintRequest = {
@@ -29,7 +29,7 @@ export type OutpaintRequest = {
   bottom?: number;
   strength?: number;
   modelOverride?: string;
-  providerOptions?: Record<string, unknown>;
+  providerOptions?: Record<string, any>;
 };
 
 export type VariationRequest = {
@@ -39,7 +39,7 @@ export type VariationRequest = {
   count?: number;
   strength?: number;
   modelOverride?: string;
-  providerOptions?: Record<string, unknown>;
+  providerOptions?: Record<string, any>;
 };
 
 export type ImageEditResult = {
@@ -47,7 +47,7 @@ export type ImageEditResult = {
   type: "inpaint" | "outpaint" | "variation";
   originalPrompt?: string;
   modifiedAt: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 export function createMaskFromAlpha(image: Buffer): Buffer {

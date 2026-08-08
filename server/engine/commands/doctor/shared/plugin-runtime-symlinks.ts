@@ -12,7 +12,7 @@ interface FsLike {
   readdir(dir: string, options: { withFileTypes: true }): Promise<readonly DirentLike[]>;
   lstat(file: string): Promise<StatsLike>;
   readlink(file: string): Promise<string>;
-  stat(file: string): Promise<unknown>;
+  stat(file: string): Promise<any>;
   rm(file: string, options: { force: true }): Promise<void>;
   unlink?(file: string): Promise<void>;
 }

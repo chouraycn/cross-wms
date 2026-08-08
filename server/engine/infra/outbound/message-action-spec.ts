@@ -94,7 +94,7 @@ const ACTION_TARGET_ALIASES: Partial<Record<ChannelMessageActionName, ActionTarg
 
 function listActionTargetAliasSpecs(
   action: ChannelMessageActionName,
-  params: Record<string, unknown>,
+  params: Record<string, any>,
   channel?: string,
 ): ActionTargetAliasSpec[] {
   const specs: ActionTargetAliasSpec[] = [];
@@ -127,7 +127,7 @@ export function actionRequiresTarget(action: ChannelMessageActionName): boolean 
  */
 export function actionHasTarget(
   action: ChannelMessageActionName,
-  params: Record<string, unknown>,
+  params: Record<string, any>,
   options?: { channel?: string },
 ): boolean {
   const to = normalizeOptionalString(params.to) ?? "";

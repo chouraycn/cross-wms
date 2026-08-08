@@ -56,7 +56,7 @@ export async function listSpawnedSessionKeys(params: {
       ? Math.max(1, Math.floor(params.limit))
       : undefined;
   try {
-    const list = await callGatewayForListSpawned<{ sessions: Array<{ key?: unknown }> }>({
+    const list = await callGatewayForListSpawned<{ sessions: Array<{ key?: any }> }>({
       method: "sessions.list",
       params: {
         includeGlobal: false,
@@ -75,7 +75,7 @@ export async function listSpawnedSessionKeys(params: {
 
 /** Resolve configured session-tool visibility, defaulting invalid or missing values to tree. */
 export function resolveSessionToolsVisibility(cfg: OpenClawConfig): SessionToolsVisibility {
-  const raw = (cfg.tools as { sessions?: { visibility?: unknown } } | undefined)?.sessions
+  const raw = (cfg.tools as { sessions?: { visibility?: any } } | undefined)?.sessions
     ?.visibility;
   const value = normalizeLowercaseStringOrEmpty(raw);
   if (value === "self" || value === "tree" || value === "agent" || value === "all") {

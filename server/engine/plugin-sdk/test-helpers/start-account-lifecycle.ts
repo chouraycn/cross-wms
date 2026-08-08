@@ -7,7 +7,7 @@ import type { ChannelAccountSnapshot, ChannelGatewayContext } from "../testing.j
 import { createStartAccountContext } from "./start-account-context.js";
 
 export function startAccountAndTrackLifecycle<TAccount extends { accountId: string }>(params: {
-  startAccount: (ctx: ChannelGatewayContext<TAccount>) => Promise<unknown>;
+  startAccount: (ctx: ChannelGatewayContext<TAccount>) => Promise<any>;
   account: TAccount;
 }) {
   const patches: ChannelAccountSnapshot[] = [];
@@ -33,7 +33,7 @@ export function startAccountAndTrackLifecycle<TAccount extends { accountId: stri
 
 export async function abortStartedAccount(params: {
   abort: AbortController;
-  task: Promise<unknown>;
+  task: Promise<any>;
 }) {
   params.abort.abort();
   await params.task;
@@ -60,7 +60,7 @@ export async function expectPendingUntilAbort(params: {
   waitForStarted: () => Promise<void>;
   isSettled: () => boolean;
   abort: AbortController;
-  task: Promise<unknown>;
+  task: Promise<any>;
   assertBeforeAbort?: () => void;
   assertAfterAbort?: () => void;
 }) {
@@ -75,7 +75,7 @@ export async function expectStopPendingUntilAbort(params: {
   waitForStarted: () => Promise<void>;
   isSettled: () => boolean;
   abort: AbortController;
-  task: Promise<unknown>;
+  task: Promise<any>;
   stop: ReturnType<typeof vi.fn>;
 }) {
   await expectPendingUntilAbort({

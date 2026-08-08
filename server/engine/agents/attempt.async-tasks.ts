@@ -8,12 +8,12 @@
 
 export type AsyncStartedToolMeta = unknown;
 export type CompletionRequiredAsyncTaskWaitResult = unknown;
-export function requiresCompletionRequiredAsyncTaskWait(..._args: unknown[]): unknown {
+export function requiresCompletionRequiredAsyncTaskWait(..._args: any[]): any {
   return undefined;
 }
-export function shouldWaitForCompletionRequiredAsyncTasks(..._args: unknown[]): unknown {
+export function shouldWaitForCompletionRequiredAsyncTasks(..._args: any[]): any {
   return false;
 }
-export function waitForCompletionRequiredAsyncTasks(..._args: unknown[]): unknown {
+export function waitForCompletionRequiredAsyncTasks(..._args: any[]): any {
   return undefined;
 }

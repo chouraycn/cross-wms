@@ -4,12 +4,12 @@ import type { PluginAutoEnableResult } from "../../config/plugin-auto-enable.js"
 
 const loadPluginRegistrySnapshot = vi.hoisted(() => vi.fn());
 const listPluginContributionIds = vi.hoisted(() =>
-  vi.fn((_index?: unknown, _contribution?: unknown, _options?: unknown): string[] => []),
+  vi.fn((_index?: any, _contribution?: any, _options?: any): string[] => []),
 );
-const listChannelPluginCatalogEntries = vi.hoisted(() => vi.fn((): unknown[] => []));
+const listChannelPluginCatalogEntries = vi.hoisted(() => vi.fn((): any[] => []));
 const listChatChannels = vi.hoisted(() => vi.fn((): Array<Record<string, string>> => []));
 const applyPluginAutoEnable = vi.hoisted(() =>
-  vi.fn<(args: { config: unknown; env?: NodeJS.ProcessEnv }) => PluginAutoEnableResult>(
+  vi.fn<(args: { config: any; env?: NodeJS.ProcessEnv }) => PluginAutoEnableResult>(
     ({ config }) => ({
       config: config as never,
       changes: [] as string[],
@@ -20,18 +20,18 @@ const applyPluginAutoEnable = vi.hoisted(() =>
 
 vi.mock("../../plugins/plugin-registry.js", () => ({
   loadPluginManifestRegistryForPluginRegistry: () => ({ diagnostics: [], plugins: [] }),
-  loadPluginRegistrySnapshot: (...args: unknown[]) => loadPluginRegistrySnapshot(...args),
-  listPluginContributionIds: (args: unknown) => listPluginContributionIds(args),
+  loadPluginRegistrySnapshot: (...args: any[]) => loadPluginRegistrySnapshot(...args),
+  listPluginContributionIds: (args: any) => listPluginContributionIds(args),
 }));
 
 vi.mock("../../config/plugin-auto-enable.js", () => ({
-  applyPluginAutoEnable: (args: unknown) =>
-    applyPluginAutoEnable(args as { config: unknown; env?: NodeJS.ProcessEnv }),
+  applyPluginAutoEnable: (args: any) =>
+    applyPluginAutoEnable(args as { config: any; env?: NodeJS.ProcessEnv }),
 }));
 
 vi.mock("../../channels/plugins/catalog.js", () => ({
-  listChannelPluginCatalogEntries: (_args?: unknown) => listChannelPluginCatalogEntries(),
-  listRawChannelPluginCatalogEntries: (_args?: unknown) => listChannelPluginCatalogEntries(),
+  listChannelPluginCatalogEntries: (_args?: any) => listChannelPluginCatalogEntries(),
+  listRawChannelPluginCatalogEntries: (_args?: any) => listChannelPluginCatalogEntries(),
 }));
 
 vi.mock("../../channels/chat-meta.js", () => ({

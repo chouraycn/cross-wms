@@ -477,7 +477,7 @@ function resolveSingleKey(ref: string, modelId: string, index?: number): string 
  * 移除 model 中的 apiKey/apiKeys/apiKeyRef 字段（保留 apiKeyRefs 与其他字段）
  * 用于多 Key 模式：已保存到 Keychain 后，移除明文 Key
  */
-function omitApiKeyFields<T extends { apiKey?: unknown; apiKeys?: unknown; apiKeyRef?: unknown }>(
+function omitApiKeyFields<T extends { apiKey?: any; apiKeys?: any; apiKeyRef?: any }>(
   model: T
 ): Omit<T, 'apiKey' | 'apiKeys' | 'apiKeyRef'> {
   const { apiKey: _apiKey, apiKeys: _apiKeys, apiKeyRef: _apiKeyRef, ...rest } = model;
@@ -488,7 +488,7 @@ function omitApiKeyFields<T extends { apiKey?: unknown; apiKeys?: unknown; apiKe
  * 移除 model 中的 apiKey/apiKeys/apiKeyRefs 字段（保留 apiKeyRef 与其他字段）
  * 用于单 Key 模式：已保存到 Keychain 后，移除明文 Key
  */
-function omitApiKeyRefsFields<T extends { apiKey?: unknown; apiKeys?: unknown; apiKeyRefs?: unknown }>(
+function omitApiKeyRefsFields<T extends { apiKey?: any; apiKeys?: any; apiKeyRefs?: any }>(
   model: T
 ): Omit<T, 'apiKey' | 'apiKeys' | 'apiKeyRefs'> {
   const { apiKey: _apiKey, apiKeys: _apiKeys, apiKeyRefs: _apiKeyRefs, ...rest } = model;

@@ -47,7 +47,7 @@ interface HttpToolEntry {
   /** 鉴权配置（来自 auth_json） */
   auth: { type?: string; token?: string; apiKey?: string; header?: string };
   /** 输入 schema（OpenAI function parameters 格式） */
-  inputSchema: Record<string, unknown>;
+  inputSchema: Record<string, any>;
 }
 
 /** 模块级注册表：llmName → HttpToolEntry */
@@ -107,7 +107,7 @@ function rowToEntry(row: ToolRow): HttpToolEntry {
     row.auth_json as string | null,
     {},
   );
-  const inputSchema = parseJsonSafe<Record<string, unknown>>(
+  const inputSchema = parseJsonSafe<Record<string, any>>(
     row.input_schema as string | null,
     {},
   );
@@ -191,7 +191,7 @@ export function getStaffHttpToolDefinitions(tenantId: string): ToolDefinition[] 
  */
 export async function executeStaffHttpTool(
   llmName: string,
-  args: Record<string, unknown>,
+  args: Record<string, any>,
 ): Promise<string> {
   const entry = registry.get(llmName);
   if (!entry) {
@@ -249,7 +249,7 @@ export async function executeStaffHttpTool(
  */
 export async function executeHttpToolFromCall(toolCall: ToolCall): Promise<string> {
   const toolName = toolCall.function.name;
-  let args: Record<string, unknown> = {};
+  let args: Record<string, any> = {};
   try {
     args = JSON.parse(toolCall.function.arguments || '{}');
   } catch {

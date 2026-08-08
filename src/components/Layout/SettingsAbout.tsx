@@ -40,7 +40,7 @@ const SettingsAbout: React.FC<SettingsAboutProps> = ({ draft, setDraft }) => {
       <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
         <Typography sx={{ color: gs.textMuted, fontSize: '0.8rem' }}>运行环境</Typography>
         <Typography sx={{ color: gs.textPrimary, fontSize: '0.8rem', fontWeight: 500 }}>
-          {typeof window !== 'undefined' && (window as unknown as { electronAPI?: unknown }).electronAPI ? 'Electron 桌面应用' : '浏览器'}
+          {typeof window !== 'undefined' && (window as unknown as { electronAPI?: any }).electronAPI ? 'Electron 桌面应用' : '浏览器'}
         </Typography>
       </Box>
       <Divider sx={{ my: 0.5, borderColor: gs.border }} />

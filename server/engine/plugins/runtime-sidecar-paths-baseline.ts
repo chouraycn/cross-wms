@@ -15,7 +15,7 @@ function collectRootPackageExcludedRuntimeSidecarPluginDirs(rootDir: string): Se
   if (!fs.existsSync(packageJsonPath)) {
     return new Set();
   }
-  const packageJson = tryReadJsonSync<{ files?: unknown }>(packageJsonPath);
+  const packageJson = tryReadJsonSync<{ files?: any }>(packageJsonPath);
   if (!Array.isArray(packageJson?.files)) {
     return new Set();
   }

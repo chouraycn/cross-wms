@@ -35,7 +35,7 @@ describe("diagnostic-events", () => {
     vi.restoreAllMocks();
   });
 
-  function expectConsoleErrorPrefix(errorSpy: { mock: { calls: unknown[][] } }, prefix: string) {
+  function expectConsoleErrorPrefix(errorSpy: { mock: { calls: any[][] } }, prefix: string) {
     expect(errorSpy.mock.calls).toHaveLength(1);
     const [call] = errorSpy.mock.calls;
     if (!call) {
@@ -268,7 +268,7 @@ describe("diagnostic-events", () => {
   });
 
   it("does not expose mutable diagnostic state on the obsolete global symbol", async () => {
-    const globalStore = globalThis as Record<PropertyKey, unknown>;
+    const globalStore = globalThis as Record<PropertyKey, any>;
     const events: boolean[] = [];
     globalStore[Symbol.for("openclaw.diagnosticEventsState")] = {
       listeners: new Set([() => events.push(true)]),
@@ -476,7 +476,7 @@ describe("diagnostic-events", () => {
       source: "plugin",
       constructor: "blocked",
       prototype: "blocked",
-    }) as Parameters<typeof emitDiagnosticEvent>[0] & Record<string, unknown>;
+    }) as Parameters<typeof emitDiagnosticEvent>[0] & Record<string, any>;
     Object.defineProperty(eventInput, "__proto__", {
       enumerable: true,
       value: { polluted: true },
@@ -492,7 +492,7 @@ describe("diagnostic-events", () => {
     expect(Object.hasOwn(events[0] ?? {}, "__proto__")).toBe(false);
     expect(Object.hasOwn(events[0] ?? {}, "constructor")).toBe(false);
     expect(Object.hasOwn(events[0] ?? {}, "prototype")).toBe(false);
-    expect((Object.prototype as Record<string, unknown>).polluted).toBeUndefined();
+    expect((Object.prototype as Record<string, any>).polluted).toBeUndefined();
   });
 
   it("dispatches high-frequency tool and model lifecycle events asynchronously", async () => {
@@ -805,7 +805,7 @@ describe("diagnostic-events", () => {
     const internalEvents: DiagnosticEventPayload[] = [];
     const trustedEvents: Array<{
       event: DiagnosticEventPayload;
-      privateData: unknown;
+      privateData: any;
     }> = [];
     onInternalDiagnosticEvent((event) => {
       internalEvents.push(event);

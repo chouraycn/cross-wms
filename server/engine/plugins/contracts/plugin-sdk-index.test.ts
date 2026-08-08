@@ -119,7 +119,7 @@ describe("plugin-sdk exports", () => {
   it("keeps package.json plugin-sdk exports synced with the manifest", async () => {
     const packageJsonPath = path.join(process.cwd(), "package.json");
     const packageJson = JSON.parse(await fs.readFile(packageJsonPath, "utf8")) as {
-      exports?: Record<string, unknown>;
+      exports?: Record<string, any>;
     };
     const currentPluginSdkExports = Object.fromEntries(
       Object.entries(packageJson.exports ?? {}).filter(([key]) => key.startsWith("./plugin-sdk")),

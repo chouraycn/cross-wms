@@ -49,7 +49,7 @@ router.post('/', async (req: Request, res: Response) => {
 
     const result: AcpResponseEnvelope = await handleAcpRequest(envelope);
     res.json(result);
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     res.status(500).json({ error: message });
   }
@@ -67,7 +67,7 @@ router.get('/health', async (_req: Request, res: Response) => {
       method: 'health',
     });
     res.json(result);
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     res.status(500).json({ error: message });
   }
@@ -82,7 +82,7 @@ router.get('/doctor', async (_req: Request, res: Response) => {
   try {
     const report: DoctorReport = await runDoctorChecks();
     res.json({ success: true, data: report });
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     res.status(500).json({ error: message });
   }

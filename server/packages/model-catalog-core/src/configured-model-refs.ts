@@ -4,7 +4,7 @@ import { normalizeProviderId } from "./provider-id.js";
 // Collects configured model references from OpenClaw config-shaped objects.
 
 /** Narrow unknown values to plain records. */
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
@@ -27,16 +27,16 @@ export const AGENT_MODEL_CONFIG_KEYS = [
 
 /** Collect configured model references from agents, channels, hooks, and message config. */
 export function collectConfiguredModelRefs(
-  config: unknown,
+  config: any,
   options: { includeChannelModelOverrides?: boolean } = {},
 ): ConfiguredModelRef[] {
   const refs: ConfiguredModelRef[] = [];
-  const pushModelRef = (path: string, value: unknown) => {
+  const pushModelRef = (path: string, value: any) => {
     if (typeof value === "string" && value.trim()) {
       refs.push({ path, value: value.trim() });
     }
   };
-  const collectModelConfig = (path: string, value: unknown) => {
+  const collectModelConfig = (path: string, value: any) => {
     if (typeof value === "string") {
       pushModelRef(path, value);
       return;
@@ -51,7 +51,7 @@ export function collectConfiguredModelRefs(
       }
     }
   };
-  const collectFromAgent = (path: string, agent: unknown) => {
+  const collectFromAgent = (path: string, agent: any) => {
     if (!isRecord(agent)) {
       return;
     }
@@ -126,7 +126,7 @@ export function collectConfiguredModelRefs(
 
 /** Collect only configured model reference values. */
 export function collectConfiguredModelRefValues(
-  config: unknown,
+  config: any,
   options?: { includeChannelModelOverrides?: boolean },
 ): string[] {
   return collectConfiguredModelRefs(config, options).map((ref) => ref.value);

@@ -30,8 +30,8 @@ type TsdownOnLog = (
 
 type TsdownInputOptions = (
   options: { external?: TsdownExternalOption; onLog?: TsdownOnLog },
-  format?: unknown,
-  context?: unknown,
+  format?: any,
+  context?: any,
 ) => { external?: TsdownExternalOption; onLog?: TsdownOnLog } | undefined;
 
 type TsdownExternalOption = string | RegExp | Array<string | RegExp> | TsdownExternalFunction;
@@ -42,7 +42,7 @@ type TsdownExternalFunction = (
   isResolved: boolean,
 ) => boolean | null | undefined;
 
-function asConfigArray(config: unknown): TsdownConfigEntry[] {
+function asConfigArray(config: any): TsdownConfigEntry[] {
   return Array.isArray(config) ? (config as TsdownConfigEntry[]) : [config as TsdownConfigEntry];
 }
 

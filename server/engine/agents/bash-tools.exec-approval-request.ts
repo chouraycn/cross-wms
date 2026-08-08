@@ -7,21 +7,21 @@
  */
 
 export type ExecApprovalRegistration = unknown;
-export async function registerExecApprovalRequest(..._args: unknown[]): Promise<unknown> {
+export async function registerExecApprovalRequest(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
-export async function resolveRegisteredExecApprovalDecision(..._args: unknown[]): Promise<unknown> {
+export async function resolveRegisteredExecApprovalDecision(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
-export function buildExecApprovalRequesterContext(..._args: unknown[]): unknown {
+export function buildExecApprovalRequesterContext(..._args: any[]): any {
   return undefined;
 }
-export function buildExecApprovalTurnSourceContext(..._args: unknown[]): unknown {
+export function buildExecApprovalTurnSourceContext(..._args: any[]): any {
   return undefined;
 }
-export async function registerExecApprovalRequestForHost(..._args: unknown[]): Promise<unknown> {
+export async function registerExecApprovalRequestForHost(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
-export async function registerExecApprovalRequestForHostOrThrow(..._args: unknown[]): Promise<unknown> {
+export async function registerExecApprovalRequestForHostOrThrow(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }

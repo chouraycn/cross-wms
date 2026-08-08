@@ -1,1 +1,1 @@
-export const initContextEngine = (..._args: unknown[]): unknown => undefined;
+export const initContextEngine = (..._args: any[]): any => undefined;

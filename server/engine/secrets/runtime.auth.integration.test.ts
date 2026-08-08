@@ -26,7 +26,7 @@ vi.mock("./runtime-prepare.runtime.js", () => ({
     sourceConfig,
     env,
   }: {
-    sourceConfig: unknown;
+    sourceConfig: any;
     env: NodeJS.ProcessEnv;
   }) => ({
     sourceConfig,

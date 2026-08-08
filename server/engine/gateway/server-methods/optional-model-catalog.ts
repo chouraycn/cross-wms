@@ -21,14 +21,14 @@ type LoadOptionalServerMethodModelCatalogOptions = {
   timeoutMs?: number;
 };
 
-function normalizeOptionalModelCatalog(value: unknown): ModelCatalogEntry[] | undefined {
+function normalizeOptionalModelCatalog(value: any): ModelCatalogEntry[] | undefined {
   return Array.isArray(value) ? value : undefined;
 }
 
 export function startOptionalServerMethodModelCatalogLoad(
   context: GatewayRequestContext,
 ): OptionalServerMethodModelCatalogLoad {
-  let catalogPromise: Promise<unknown>;
+  let catalogPromise: Promise<any>;
   try {
     catalogPromise = context.loadGatewayModelCatalog();
   } catch {

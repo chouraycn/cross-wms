@@ -90,7 +90,7 @@ export type SessionListRow = {
   lastAccountId?: string;
   lastThreadId?: string | number;
   transcriptPath?: string;
-  messages?: unknown[];
+  messages?: any[];
 };
 
 /** Resolves config plus sandbox visibility context for a session tool call. */

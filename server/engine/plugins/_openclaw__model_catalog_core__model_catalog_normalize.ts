@@ -2,20 +2,20 @@ import type { ModelCatalog } from './_openclaw__model_catalog_core__model_catalo
 import { normalizeProviderId } from './_openclaw__model_catalog_core__provider_id.js';
 import { buildModelCatalogMergeKey } from './_openclaw__model_catalog_core__model_catalog_refs.js';
 
-export function normalizeModelCatalog(catalog: unknown): ModelCatalog {
+export function normalizeModelCatalog(catalog: any): ModelCatalog {
   if (!Array.isArray(catalog)) return [];
   const seen = new Set<string>();
   return catalog
     .filter(item => item && typeof item === 'object')
     .map(item => {
-      const entry = item as Record<string, unknown>;
+      const entry = item as Record<string, any>;
       return {
         providerId: normalizeProviderId(entry.providerId ?? ''),
         modelId: String(entry.modelId ?? '').trim(),
         modelName: String(entry.modelName ?? '').trim(),
         aliases: entry.aliases
           ? Array.isArray(entry.aliases)
-            ? (entry.aliases as unknown[]).map(String).filter(Boolean)
+            ? (entry.aliases as any[]).map(String).filter(Boolean)
             : undefined
           : undefined,
       };

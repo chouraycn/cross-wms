@@ -51,7 +51,7 @@ export class MediaFetchError extends Error {
   constructor(
     code: MediaFetchErrorCode,
     message: string,
-    options?: { cause?: unknown; status?: number },
+    options?: { cause?: any; status?: number },
   ) {
     super(message, options);
     this.code = code;
@@ -84,7 +84,7 @@ type FetchMediaOptions = {
   lookupFn?: LookupFn;
   dispatcherPolicy?: PinnedDispatcherPolicy;
   dispatcherAttempts?: FetchDispatcherAttempt[];
-  shouldRetryFetchError?: (error: unknown) => boolean;
+  shouldRetryFetchError?: (error: any) => boolean;
   /**
    * Retries the complete guarded fetch/read-or-save operation. Dispatcher
    * attempts still run inside each retry attempt.
@@ -221,7 +221,7 @@ async function fetchGuardedMediaResponse(
     );
   try {
     let result!: Awaited<ReturnType<typeof fetchWithSsrFGuard>>;
-    const attemptErrors: unknown[] = [];
+    const attemptErrors: any[] = [];
     for (let i = 0; i < attempts.length; i += 1) {
       try {
         result = await runGuardedFetch(attempts[i]);
@@ -239,11 +239,11 @@ async function fetchGuardedMediaResponse(
             );
             (
               combined as Error & {
-                primaryError?: unknown;
-                attemptErrors?: unknown[];
+                primaryError?: any;
+                attemptErrors?: any[];
               }
             ).primaryError = attemptErrors[0];
-            (combined as Error & { attemptErrors?: unknown[] }).attemptErrors = [
+            (combined as Error & { attemptErrors?: any[] }).attemptErrors = [
               ...attemptErrors,
               err,
             ];
@@ -424,7 +424,7 @@ async function readChunkWithIdleTimeout(
           resolve(result);
         }
       },
-      (err: unknown) => {
+      (err: any) => {
         clear();
         if (!timedOut) {
           reject(toErrorObject(err, "Non-Error rejection"));
@@ -463,7 +463,7 @@ async function* responseBodyChunks(
   }
 }
 
-function isMediaLimitError(err: unknown): boolean {
+function isMediaLimitError(err: any): boolean {
   return err instanceof Error && /Media exceeds .* limit/.test(err.message);
 }
 
@@ -533,7 +533,7 @@ async function saveOkMediaResponse(params: {
   }
 }
 
-function shouldRetryMediaFetch(err: unknown): boolean {
+function shouldRetryMediaFetch(err: any): boolean {
   if (err instanceof MediaFetchError) {
     if (err.code === "max_bytes") {
       return false;

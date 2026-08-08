@@ -27,7 +27,7 @@ const replyRuntimeMockState = vi.hoisted(() => ({
 
 vi.mock("../agents/embedded-agent.js", () => ({
   abortEmbeddedAgentRun: vi.fn().mockReturnValue(false),
-  runEmbeddedAgent: (...args: unknown[]) => replyRuntimeMockState.mocks.runEmbeddedAgent(...args),
+  runEmbeddedAgent: (...args: any[]) => replyRuntimeMockState.mocks.runEmbeddedAgent(...args),
   queueEmbeddedAgentMessage: vi.fn().mockReturnValue(false),
   resolveEmbeddedSessionLane: (key: string) => `session:${key.trim() || "main"}`,
   isEmbeddedAgentRunActive: vi.fn().mockReturnValue(false),
@@ -35,7 +35,7 @@ vi.mock("../agents/embedded-agent.js", () => ({
 }));
 
 vi.mock("../agents/model-catalog.runtime.js", () => ({
-  loadModelCatalog: (...args: unknown[]) => replyRuntimeMockState.mocks.loadModelCatalog(...args),
+  loadModelCatalog: (...args: any[]) => replyRuntimeMockState.mocks.loadModelCatalog(...args),
 }));
 
 vi.mock("../agents/auth-profiles/session-override.js", () => ({
@@ -52,9 +52,9 @@ vi.mock("../skills/discovery/chat-commands.runtime.js", () => ({
 }));
 
 vi.mock("../plugins/runtime/runtime-web-channel-plugin.js", () => ({
-  webAuthExists: (...args: unknown[]) => replyRuntimeMockState.mocks.webAuthExists(...args),
-  getWebAuthAgeMs: (...args: unknown[]) => replyRuntimeMockState.mocks.getWebAuthAgeMs(...args),
-  readWebSelfId: (...args: unknown[]) => replyRuntimeMockState.mocks.readWebSelfId(...args),
+  webAuthExists: (...args: any[]) => replyRuntimeMockState.mocks.webAuthExists(...args),
+  getWebAuthAgeMs: (...args: any[]) => replyRuntimeMockState.mocks.getWebAuthAgeMs(...args),
+  readWebSelfId: (...args: any[]) => replyRuntimeMockState.mocks.readWebSelfId(...args),
 }));
 
 vi.mock("../agents/embedded-agent.runtime.js", () => ({
@@ -74,24 +74,24 @@ vi.mock("./reply/agent-runner.runtime.js", () => ({
       run: {
         agentDir: string;
         agentId: string;
-        config: unknown;
-        execOverrides?: unknown;
-        inputProvenance?: unknown;
+        config: any;
+        execOverrides?: any;
+        inputProvenance?: any;
         messageProvider?: string;
         model: string;
         ownerNumbers?: string[];
         provider: string;
-        reasoningLevel?: unknown;
+        reasoningLevel?: any;
         senderIsOwner?: boolean;
         sessionFile: string;
         sessionId: string;
         sessionKey: string;
-        skillsSnapshot?: unknown;
-        thinkLevel?: unknown;
+        skillsSnapshot?: any;
+        thinkLevel?: any;
         timeoutMs?: number;
-        verboseLevel?: unknown;
+        verboseLevel?: any;
         workspaceDir: string;
-        bashElevated?: unknown;
+        bashElevated?: any;
       };
     };
   }) => {

@@ -137,12 +137,12 @@ export function deepClone<T>(obj: T): T {
 }
 
 export function mergeDeep<T>(target: T, source: Partial<T>): T {
-  const result = { ...target } as Record<string, unknown>;
+  const result = { ...target } as Record<string, any>;
   
   for (const [key, value] of Object.entries(source)) {
     if (value && typeof value === 'object' && !Array.isArray(value)) {
       if (typeof result[key] === 'object' && !Array.isArray(result[key])) {
-        result[key] = mergeDeep(result[key] as Record<string, unknown>, value as Record<string, unknown>);
+        result[key] = mergeDeep(result[key] as Record<string, any>, value as Record<string, any>);
       } else {
         result[key] = value;
       }

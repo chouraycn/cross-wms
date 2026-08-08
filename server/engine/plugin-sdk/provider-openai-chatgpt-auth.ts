@@ -30,7 +30,7 @@ export type OpenAICodexAuthIdentity = {
 /**
  * Decodes a JWT payload without verifying signatures for local metadata extraction.
  */
-export function decodeOpenAICodexJwtPayload(token: string): Record<string, unknown> | undefined {
+export function decodeOpenAICodexJwtPayload(token: string): Record<string, any> | undefined {
   const payload = token.split(".")[1];
   if (!payload) {
     return undefined;
@@ -38,16 +38,16 @@ export function decodeOpenAICodexJwtPayload(token: string): Record<string, unkno
   try {
     const parsed = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
     return parsed && typeof parsed === "object" && !Array.isArray(parsed)
-      ? (parsed as Record<string, unknown>)
+      ? (parsed as Record<string, any>)
       : undefined;
   } catch {
     return undefined;
   }
 }
 
-function readRecord(value: unknown): Record<string, unknown> {
+function readRecord(value: any): Record<string, any> {
   return value && typeof value === "object" && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
+    ? (value as Record<string, any>)
     : {};
 }
 
@@ -110,7 +110,7 @@ export function resolveOpenAICodexAccessTokenExpiry(access: string): number | un
  */
 export function buildOpenAICodexCredentialExtra(
   identity: OpenAICodexAuthIdentity & { idToken?: string },
-): Record<string, unknown> | undefined {
+): Record<string, any> | undefined {
   const extra = {
     ...(identity.accountId ? { accountId: identity.accountId } : {}),
     ...(identity.chatgptPlanType ? { chatgptPlanType: identity.chatgptPlanType } : {}),

@@ -82,13 +82,13 @@ describe("createLocalShellRunner", () => {
   });
 
   it("sets CDFKNOW_SHELL when running local shell commands", async () => {
-    const spawnCommand = vi.fn((_command: string, _options: unknown) => {
+    const spawnCommand = vi.fn((_command: string, _options: any) => {
       const stdout = new EventEmitter();
       const stderr = new EventEmitter();
       return {
         stdout,
         stderr,
-        on: (event: string, callback: (...args: unknown[]) => void) => {
+        on: (event: string, callback: (...args: any[]) => void) => {
           if (event === "close") {
             setImmediate(() => callback(0, null));
           }
@@ -121,7 +121,7 @@ describe("createLocalShellRunner", () => {
     const spawnCommand = vi.fn(() => ({
       stdout,
       stderr,
-      on: (event: string, callback: (...args: unknown[]) => void) => {
+      on: (event: string, callback: (...args: any[]) => void) => {
         if (event === "close") {
           setImmediate(() => {
             // stdout fills the entire cap; stderr then carries the failure reason.

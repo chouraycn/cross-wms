@@ -28,7 +28,7 @@ type CodexUserMcpServersProjectionOptions = {
   agentId?: string;
 };
 
-function normalizeAgentIds(value: unknown): string[] {
+function normalizeAgentIds(value: any): string[] {
   if (!Array.isArray(value)) {
     return [];
   }
@@ -39,7 +39,7 @@ function normalizeAgentIds(value: unknown): string[] {
     .map((entry) => normalizeAgentId(entry));
 }
 
-function readCodexProjectionConfig(server: BundleMcpServerConfig): Record<string, unknown> {
+function readCodexProjectionConfig(server: BundleMcpServerConfig): Record<string, any> {
   return isRecord(server.codex) ? server.codex : {};
 }
 

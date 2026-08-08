@@ -4,8 +4,8 @@ import { describe, expect, it } from "vitest";
 import { assertGatewayConfigMutationAllowedForTest } from "./gateway-tool.js";
 
 function expectBlocked(
-  currentConfig: Record<string, unknown>,
-  patch: Record<string, unknown>,
+  currentConfig: Record<string, any>,
+  patch: Record<string, any>,
 ): void {
   expect(() =>
     assertGatewayConfigMutationAllowedForTest({
@@ -17,8 +17,8 @@ function expectBlocked(
 }
 
 function expectAllowed(
-  currentConfig: Record<string, unknown>,
-  patch: Record<string, unknown>,
+  currentConfig: Record<string, any>,
+  patch: Record<string, any>,
 ): void {
   expect(
     assertGatewayConfigMutationAllowedForTest({
@@ -30,8 +30,8 @@ function expectAllowed(
 }
 
 function expectBlockedApply(
-  currentConfig: Record<string, unknown>,
-  nextConfig: Record<string, unknown>,
+  currentConfig: Record<string, any>,
+  nextConfig: Record<string, any>,
 ): void {
   expect(() =>
     assertGatewayConfigMutationAllowedForTest({
@@ -43,8 +43,8 @@ function expectBlockedApply(
 }
 
 function expectAllowedApply(
-  currentConfig: Record<string, unknown>,
-  nextConfig: Record<string, unknown>,
+  currentConfig: Record<string, any>,
+  nextConfig: Record<string, any>,
 ): void {
   expect(
     assertGatewayConfigMutationAllowedForTest({
@@ -113,7 +113,7 @@ describe("gateway config mutation guard coverage", () => {
       },
     );
     expectAllowed(
-      { agents: { list: [] as Array<Record<string, unknown>> } },
+      { agents: { list: [] as Array<Record<string, any>> } },
       {
         agents: {
           list: [{ id: "helper", subagents: { thinking: "medium" } }],
@@ -256,7 +256,7 @@ describe("gateway config mutation guard coverage", () => {
 
   it("blocks id-less per-agent sandbox injection under agents.list[]", () => {
     expectBlocked(
-      { agents: { list: [] as Array<Record<string, unknown>> } },
+      { agents: { list: [] as Array<Record<string, any>> } },
       {
         agents: {
           list: [{ sandbox: { mode: "off" } }],

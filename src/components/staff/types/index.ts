@@ -14,8 +14,8 @@ export type SkillCard = {
   user_utterance_examples: string[]
   goal: string[]
   required_info: string[]
-  nodes: Array<Record<string, unknown>>
-  edges: Array<Record<string, unknown>>
+  nodes: Array<Record<string, any>>
+  edges: Array<Record<string, any>>
   start_node_id: string
   terminal_node_ids: string[]
   interruption_policy: Record<string, string>
@@ -32,7 +32,7 @@ export type KnowledgeIngestJobRead = {
   stage: string
   progress: number
   error?: string
-  metadata?: Record<string, unknown>
+  metadata?: Record<string, any>
   created_at: string
   started_at?: string
   finished_at?: string
@@ -49,7 +49,7 @@ export type KnowledgeBaseRead = {
   branch_sync_state?: string
   branch_base_version?: string
   branch_head_version?: string
-  metadata?: Record<string, unknown>
+  metadata?: Record<string, any>
   document_count: number
   bucket_count: number
   chunk_count: number
@@ -68,7 +68,7 @@ export type KnowledgeDocumentRead = {
   status: string
   bucket_count: number
   chunk_count: number
-  metadata?: Record<string, unknown>
+  metadata?: Record<string, any>
   error?: string
   created_at: string
   updated_at: string
@@ -85,7 +85,7 @@ export type KnowledgeBucketRead = {
   token_estimate: number
   chunk_count: number
   status: string
-  metadata?: Record<string, unknown>
+  metadata?: Record<string, any>
   created_at: string
   updated_at: string
 }
@@ -100,7 +100,7 @@ export type KnowledgeChunkRead = {
   content: string
   summary?: string
   source_ref?: string
-  metadata: Record<string, unknown>
+  metadata: Record<string, any>
   created_at: string
   updated_at: string
 }
@@ -119,12 +119,12 @@ export type KnowledgeSearchEvidence = {
 export type KnowledgeSearchResponse = {
   selected_buckets: KnowledgeBucketRead[]
   chunks: KnowledgeChunkRead[]
-  trace: Array<Record<string, unknown>>
-  route_trace: Array<Record<string, unknown>>
-  selected_documents: Array<Record<string, unknown>>
-  expanded_sections: Array<Record<string, unknown>>
-  selected_concepts: Array<Record<string, unknown>>
-  okf_citations: Array<Record<string, unknown>>
+  trace: Array<Record<string, any>>
+  route_trace: Array<Record<string, any>>
+  selected_documents: Array<Record<string, any>>
+  expanded_sections: Array<Record<string, any>>
+  selected_concepts: Array<Record<string, any>>
+  okf_citations: Array<Record<string, any>>
   evidence_pack: KnowledgeSearchEvidence[]
 }
 
@@ -137,7 +137,7 @@ export type AgentResourceBindingRead = {
   resource_type: AgentResourceType
   resource_id: string
   status: 'active' | 'inactive' | string
-  metadata: Record<string, unknown>
+  metadata: Record<string, any>
   created_at: string
   updated_at: string
 }
@@ -150,7 +150,7 @@ export type AgentProfileRead = {
   persona_prompt?: string
   is_overall: boolean
   status: 'active' | 'archived' | string
-  metadata: Record<string, unknown>
+  metadata: Record<string, any>
   resources: AgentResourceBindingRead[]
   created_at: string
   updated_at: string
@@ -159,8 +159,8 @@ export type AgentProfileRead = {
 export type ToolProbeResponse = {
   success: boolean
   status_code?: number
-  data_preview?: unknown
-  inferred_output_schema: Record<string, unknown>
+  data_preview?: any
+  inferred_output_schema: Record<string, any>
   error?: {
     code: string
     message: string
@@ -175,10 +175,10 @@ export type ToolSuggestion = {
   tool_type?: 'http' | 'mcp' | string
   method: string
   url: string
-  mcp_config?: Record<string, unknown>
-  input_schema: Record<string, unknown>
-  output_schema: Record<string, unknown>
-  sample_arguments?: Record<string, unknown>
+  mcp_config?: Record<string, any>
+  input_schema: Record<string, any>
+  output_schema: Record<string, any>
+  sample_arguments?: Record<string, any>
   source_excerpt?: string
   probe_result?: ToolProbeResponse
   reason: string
@@ -220,7 +220,7 @@ export type SkillRead = {
   branch_sync_state?: string
   branch_base_version?: string
   branch_head_version?: string
-  metadata?: Record<string, unknown>
+  metadata?: Record<string, any>
   created_at: string
   updated_at: string
 }
@@ -243,21 +243,21 @@ export type GeneralSkillRead = {
     size?: number
     mime_type?: string
   }>
-  metadata: Record<string, unknown>
+  metadata: Record<string, any>
   status: 'draft' | 'published' | 'archived'
-  permissions: Record<string, unknown>
-  runtime_config: Record<string, unknown>
+  permissions: Record<string, any>
+  runtime_config: Record<string, any>
   created_at: string
   updated_at: string
 }
 
 export type GeneralSkillRunResponse = {
   skill_slug: string
-  execution_trace: Array<Record<string, unknown>>
+  execution_trace: Array<Record<string, any>>
   generated_code: string
   stdout: string
   stderr: string
-  structured_result: Record<string, unknown>
+  structured_result: Record<string, any>
   reply: string
 }
 
@@ -272,9 +272,9 @@ export type ModelConfigRead = {
   model: string
   temperature: number
   max_output_tokens: number
-  extra_body: Record<string, unknown>
-  protocol_options: Record<string, unknown>
-  legacy_unmapped_options: Record<string, unknown>
+  extra_body: Record<string, any>
+  protocol_options: Record<string, any>
+  legacy_unmapped_options: Record<string, any>
   trust_status: 'legacy_trusted' | 'unverified' | 'verified'
   verification_attempt_status: 'idle' | 'verifying' | 'succeeded' | 'failed'
   config_revision: number
@@ -309,7 +309,7 @@ export type MemoryRead = {
   kind: string
   content: string
   importance: number
-  metadata: Record<string, unknown>
+  metadata: Record<string, any>
   created_at: string
   updated_at: string
 }
@@ -324,15 +324,15 @@ export type ToolRead = {
   tool_type: 'http' | 'mcp' | string
   method: string
   url: string
-  headers: Record<string, unknown>
-  auth: Record<string, unknown>
-  mcp_config: Record<string, unknown>
-  input_schema: Record<string, unknown>
-  output_schema: Record<string, unknown>
+  headers: Record<string, any>
+  auth: Record<string, any>
+  mcp_config: Record<string, any>
+  input_schema: Record<string, any>
+  output_schema: Record<string, any>
   allowed_skills: string[]
   mcp_server_id?: string | null
   enabled: boolean
-  metadata?: Record<string, unknown>
+  metadata?: Record<string, any>
   created_at: string
   updated_at: string
 }
@@ -367,8 +367,8 @@ export type MCPServerRead = {
 export type MCPDiscoveredTool = {
   name: string
   description: string
-  input_schema: Record<string, unknown>
-  output_schema: Record<string, unknown>
+  input_schema: Record<string, any>
+  output_schema: Record<string, any>
   imported: boolean
   tool_id?: string | null
   enabled?: boolean | null
@@ -397,7 +397,7 @@ export type ScheduledTaskRead = {
   prompt: string
   description?: string
   schedule_type: 'once' | 'daily' | 'weekly' | 'monthly' | string
-  schedule: Record<string, unknown>
+  schedule: Record<string, any>
   timezone: string
   rrule?: string
   status: 'active' | 'paused' | 'completed' | 'archived' | string
@@ -410,7 +410,7 @@ export type ScheduledTaskRead = {
   last_status?: string
   run_count: number
   source_session_id?: string
-  metadata: Record<string, unknown>
+  metadata: Record<string, any>
   created_at: string
   updated_at: string
 }
@@ -430,7 +430,7 @@ export type ScheduledTaskRunRead = {
   finished_at?: string
   result_summary?: string
   error?: string
-  trace: Record<string, unknown>
+  trace: Record<string, any>
   created_at: string
   updated_at: string
 }
@@ -443,7 +443,7 @@ export type ScheduledTaskDraftRead = {
   prompt: string
   description?: string
   schedule_type: 'once' | 'daily' | 'weekly' | 'monthly' | string
-  schedule: Record<string, unknown>
+  schedule: Record<string, any>
   timezone: string
   rrule?: string
   confidence: number
@@ -454,10 +454,10 @@ export type ScheduledTaskDraftRead = {
 export type ChatTurnResponse = {
   reply: string
   session_id: string
-  router_decision?: Record<string, unknown>
-  step_result?: Record<string, unknown>
-  tool_result?: Record<string, unknown>
-  session_state: Record<string, unknown>
+  router_decision?: Record<string, any>
+  step_result?: Record<string, any>
+  tool_result?: Record<string, any>
+  session_state: Record<string, any>
 }
 
 // ---------------------------------------------------------------------------
@@ -519,8 +519,8 @@ export type ChatMessage = {
   metadata?: {
     attachments?: ChatAttachmentRead[]
     knowledge_citations?: KnowledgeCitation[]
-    knowledge_query?: Record<string, unknown>
-    [key: string]: unknown
+    knowledge_query?: Record<string, any>
+    [key: string]: any
   }
   created_at: string
   feedback_rating?: 'up' | 'down' | null
@@ -552,7 +552,7 @@ export type EnterpriseSessionDetailRead = {
   events: Array<{
     id: string
     event_type: string
-    payload: Record<string, unknown>
+    payload: Record<string, any>
     created_at: string
   }>
 }
@@ -563,7 +563,7 @@ export type ChatSessionEventRead = {
   run_id?: string
   seq?: number
   event: string
-  data: Record<string, unknown>
+  data: Record<string, any>
 }
 
 export type HumanHandoffRead = {
@@ -579,8 +579,8 @@ export type HumanHandoffRead = {
   pending_question?: string | null
   status: string
   human_reply?: string | null
-  resume_payload?: Record<string, unknown> | null
-  metadata?: Record<string, unknown> | null
+  resume_payload?: Record<string, any> | null
+  metadata?: Record<string, any> | null
   created_at: string
   updated_at: string
   answered_at?: string | null
@@ -633,7 +633,7 @@ export type TraceSummary = {
   user_id?: string
   active_skill_id?: string
   active_step_id?: string
-  last_decision?: Record<string, unknown>
+  last_decision?: Record<string, any>
   last_message?: string
   last_message_time?: string
   tool_call_count: number
@@ -672,7 +672,7 @@ export type FeedbackAnalysisRead = {
   reason?: string
   summary?: string
   confidence?: number
-  metadata?: Record<string, unknown>
+  metadata?: Record<string, any>
   analyzed_at?: string | null
 }
 
@@ -690,9 +690,9 @@ export type FeedbackMessageRead = {
 }
 
 export type FeedbackSessionDetailRead = {
-  session: Record<string, unknown>
+  session: Record<string, any>
   messages: FeedbackMessageRead[]
-  feedback: Array<Record<string, unknown>>
+  feedback: Array<Record<string, any>>
 }
 
 export type FeedbackSummaryRead = {
@@ -702,5 +702,5 @@ export type FeedbackSummaryRead = {
   bucket_counts: Array<{ bucket: string; label: string; count: number }>
   status_counts: Record<string, number>
   summary: string
-  top_summaries: Array<Record<string, unknown>>
+  top_summaries: Array<Record<string, any>>
 }

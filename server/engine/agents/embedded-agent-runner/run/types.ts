@@ -124,7 +124,7 @@ export type EmbeddedRunAttemptResult = {
   timedOutDuringCompaction: boolean;
   /** Optional because this type is re-exported as `AgentHarnessAttemptResult`. */
   timedOutDuringToolExecution?: boolean;
-  promptError: unknown;
+  promptError: any;
   /**
    * Identifies which phase produced the promptError.
    * - "prompt": the LLM call itself failed and may be eligible for retry/fallback.
@@ -235,7 +235,7 @@ export type EmbeddedRunAttemptResult = {
    * checks across the runner pipeline (`attempt.clientToolCalls ? ...`)
    * keep their meaning. When set, the array always has at least one entry.
    */
-  clientToolCalls?: Array<{ name: string; params: Record<string, unknown> }>;
+  clientToolCalls?: Array<{ name: string; params: Record<string, any> }>;
   /** True when sessions_yield tool was called during this attempt. */
   yieldDetected?: boolean;
   replayMetadata: EmbeddedRunReplayMetadata;

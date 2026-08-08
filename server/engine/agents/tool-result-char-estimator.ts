@@ -11,22 +11,22 @@ const IMAGE_CHAR_ESTIMATE = 8_000;
 
 export type MessageCharEstimateCache = WeakMap<object, number>;
 
-function isTextBlock(block: unknown): block is { type: "text"; text: string } {
+function isTextBlock(block: any): block is { type: "text"; text: string } {
   return (
     Boolean(block) &&
     typeof block === "object" &&
-    (block as { type?: unknown }).type === "text" &&
-    typeof (block as { text?: unknown }).text === "string"
+    (block as { type?: any }).type === "text" &&
+    typeof (block as { text?: any }).text === "string"
   );
 }
 
-function isImageBlock(block: unknown): boolean {
+function isImageBlock(block: any): boolean {
   return (
-    Boolean(block) && typeof block === "object" && (block as { type?: unknown }).type === "image"
+    Boolean(block) && typeof block === "object" && (block as { type?: any }).type === "image"
   );
 }
 
-function estimateUnknownChars(value: unknown): number {
+function estimateUnknownChars(value: any): number {
   if (typeof value === "string") {
     return value.length;
   }
@@ -41,13 +41,13 @@ function estimateUnknownChars(value: unknown): number {
   }
 }
 
-export function isToolResultMessage(msg: Record<string, unknown>): boolean {
+export function isToolResultMessage(msg: Record<string, any>): boolean {
   const role = msg.role;
   const type = msg.type;
   return role === "toolResult" || role === "tool" || type === "toolResult";
 }
 
-function getToolResultContent(msg: Record<string, unknown>): unknown[] {
+function getToolResultContent(msg: Record<string, any>): any[] {
   if (!isToolResultMessage(msg)) {
     return [];
   }
@@ -58,7 +58,7 @@ function getToolResultContent(msg: Record<string, unknown>): unknown[] {
   return Array.isArray(content) ? content : [];
 }
 
-function estimateContentBlockChars(content: unknown[]): number {
+function estimateContentBlockChars(content: any[]): number {
   let chars = 0;
   for (const block of content) {
     if (isTextBlock(block)) {
@@ -72,7 +72,7 @@ function estimateContentBlockChars(content: unknown[]): number {
   return chars;
 }
 
-export function getToolResultText(msg: Record<string, unknown>): string {
+export function getToolResultText(msg: Record<string, any>): string {
   const content = getToolResultContent(msg);
   const chunks: string[] = [];
   for (const block of content) {
@@ -83,7 +83,7 @@ export function getToolResultText(msg: Record<string, unknown>): string {
   return chunks.join("\n");
 }
 
-function estimateMessageChars(msg: Record<string, unknown>): number {
+function estimateMessageChars(msg: Record<string, any>): number {
   if (!msg || typeof msg !== "object") {
     return 0;
   }
@@ -107,7 +107,7 @@ function estimateMessageChars(msg: Record<string, unknown>): number {
         if (!block || typeof block !== "object") {
           continue;
         }
-        const typed = block as Record<string, unknown>;
+        const typed = block as Record<string, any>;
         if (typed.type === "text" && typeof typed.text === "string") {
           chars += typed.text.length;
         } else if (typed.type === "thinking" && typeof typed.thinking === "string") {
@@ -143,7 +143,7 @@ export function createMessageCharEstimateCache(): MessageCharEstimateCache {
 }
 
 export function estimateMessageCharsCached(
-  msg: Record<string, unknown>,
+  msg: Record<string, any>,
   cache: MessageCharEstimateCache,
 ): number {
   const hit = cache.get(msg);
@@ -156,7 +156,7 @@ export function estimateMessageCharsCached(
 }
 
 export function estimateContextChars(
-  messages: Record<string, unknown>[],
+  messages: Record<string, any>[],
   cache: MessageCharEstimateCache,
 ): number {
   return messages.reduce((sum, msg) => sum + estimateMessageCharsCached(msg, cache), 0);
@@ -164,7 +164,7 @@ export function estimateContextChars(
 
 export function invalidateMessageCharsCacheEntry(
   cache: MessageCharEstimateCache,
-  msg: Record<string, unknown>,
+  msg: Record<string, any>,
 ): void {
   cache.delete(msg);
 }

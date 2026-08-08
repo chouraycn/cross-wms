@@ -214,7 +214,7 @@ describe("runCronIsolatedAgentTurn session identity", () => {
 
       const finalPersist = updateSessionStoreMock.mock.calls.at(-1);
       expect(finalPersist?.[0]).toBe(storePath);
-      const persistedStore: Record<string, { [key: string]: unknown }> = {};
+      const persistedStore: Record<string, { [key: string]: any }> = {};
       (finalPersist![1] as (store: typeof persistedStore) => void)(persistedStore);
       expect(persistedStore[boundSessionKey]).toEqual(
         expect.objectContaining({
@@ -300,7 +300,7 @@ describe("runCronIsolatedAgentTurn session identity", () => {
     await withTempHome(async (home) => {
       const storePath = await writeSessionStore(home, { lastProvider: "webchat", lastTo: "" });
       const raw = await fs.readFile(storePath, "utf-8");
-      const store = JSON.parse(raw) as Record<string, Record<string, unknown>>;
+      const store = JSON.parse(raw) as Record<string, Record<string, any>>;
       store["agent:main:cron:job-1"] = {
         sessionId: "old",
         updatedAt: Date.now(),

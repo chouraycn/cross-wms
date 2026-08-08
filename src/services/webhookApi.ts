@@ -96,7 +96,7 @@ export async function getWebhookStats(): Promise<WebhookStats> {
   return res.stats;
 }
 
-export async function testWebhook(id: string, payload?: unknown): Promise<WebhookTestResponse> {
+export async function testWebhook(id: string, payload?: any): Promise<WebhookTestResponse> {
   return request<WebhookTestResponse>('POST', `/api/webhook/${encodeURIComponent(id)}/test`, { payload });
 }
 

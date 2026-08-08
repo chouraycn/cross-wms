@@ -6,10 +6,10 @@
  */
 
 // ---- In-memory run state ----
-const ACTIVE_EMBEDDED_RUNS = new Map<string, { abort: (reason?: string) => void; isStreaming: () => boolean; isCompacting: () => boolean; queueMessage: (text: string, options?: unknown) => Promise<void>; supportsTranscriptCommitWait?: boolean; sourceReplyDeliveryMode?: string }>();
+const ACTIVE_EMBEDDED_RUNS = new Map<string, { abort: (reason?: string) => void; isStreaming: () => boolean; isCompacting: () => boolean; queueMessage: (text: string, options?: any) => Promise<void>; supportsTranscriptCommitWait?: boolean; sourceReplyDeliveryMode?: string }>();
 const ACTIVE_EMBEDDED_RUN_SESSION_IDS_BY_KEY = new Map<string, string>();
 const ACTIVE_EMBEDDED_RUN_SESSION_IDS_BY_FILE = new Map<string, string>();
-const ACTIVE_EMBEDDED_RUN_SNAPSHOTS = new Map<string, unknown>();
+const ACTIVE_EMBEDDED_RUN_SNAPSHOTS = new Map<string, any>();
 const ABANDONED_EMBEDDED_RUNS = new Map<string, { sessionId: string; sessionKey?: string; sessionFile?: string; abandonedAtMs: number; reason: string }>();
 const ABANDONED_SESSION_IDS_BY_KEY = new Map<string, string>();
 const ABANDONED_SESSION_IDS_BY_FILE = new Map<string, string>();
@@ -129,7 +129,7 @@ export function markEmbeddedRunAbandoned(params: {
 
 export function markActiveEmbeddedRunAbandoned(params: {
   sessionId: string;
-  handle: unknown;
+  handle: any;
   sessionKey?: string;
   sessionFile?: string;
   reason: string;
@@ -162,7 +162,7 @@ export function isEmbeddedRunAbandoned(params: {
 export function queueEmbeddedAgentMessage(
   sessionId: string,
   text: string,
-  options?: unknown,
+  options?: any,
 ): boolean {
   return queueEmbeddedAgentMessageWithOutcome(sessionId, text, options).queued;
 }
@@ -170,7 +170,7 @@ export function queueEmbeddedAgentMessage(
 export function queueEmbeddedAgentMessageWithOutcome(
   sessionId: string,
   text: string,
-  options?: unknown,
+  options?: any,
 ): EmbeddedAgentQueueMessageOutcome {
   const handle = ACTIVE_EMBEDDED_RUNS.get(sessionId);
   if (!handle) {
@@ -189,7 +189,7 @@ export function queueEmbeddedAgentMessageWithOutcome(
 export async function queueEmbeddedAgentMessageWithOutcomeAsync(
   sessionId: string,
   text: string,
-  options?: unknown,
+  options?: any,
 ): Promise<EmbeddedAgentQueueMessageOutcome> {
   const handle = ACTIVE_EMBEDDED_RUNS.get(sessionId);
   if (!handle) {
@@ -296,7 +296,7 @@ export function resolveActiveEmbeddedRunSessionIdBySessionFile(
 
 export function getActiveEmbeddedRunSnapshot(
   sessionId: string,
-): unknown | undefined {
+): any | undefined {
   return ACTIVE_EMBEDDED_RUN_SNAPSHOTS.get(sessionId);
 }
 
@@ -416,7 +416,7 @@ export function setActiveEmbeddedRun(
 
 export function updateActiveEmbeddedRunSnapshot(
   sessionId: string,
-  snapshot: unknown,
+  snapshot: any,
 ) {
   if (!ACTIVE_EMBEDDED_RUNS.has(sessionId)) {
     return;
@@ -444,7 +444,7 @@ export function updateActiveEmbeddedRunSessionFile(
 
 export function clearActiveEmbeddedRun(
   sessionId: string,
-  handle: unknown,
+  handle: any,
   sessionKey?: string,
   sessionFile?: string,
 ) {

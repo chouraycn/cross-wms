@@ -40,11 +40,11 @@ export type AcpProjectionSettings = {
   tagVisibility: Partial<Record<AcpSessionUpdateTag, boolean>>;
 };
 
-function clampBoolean(value: unknown, fallback: boolean): boolean {
+function clampBoolean(value: any, fallback: boolean): boolean {
   return typeof value === "boolean" ? value : fallback;
 }
 
-function resolveAcpDeliveryMode(value: unknown): AcpDeliveryMode {
+function resolveAcpDeliveryMode(value: any): AcpDeliveryMode {
   if (value === "live" || value === "final_only") {
     return value;
   }
@@ -52,7 +52,7 @@ function resolveAcpDeliveryMode(value: unknown): AcpDeliveryMode {
 }
 
 function resolveAcpHiddenBoundarySeparator(
-  value: unknown,
+  value: any,
   fallback: AcpHiddenBoundarySeparator,
 ): AcpHiddenBoundarySeparator {
   if (value === "none" || value === "space" || value === "newline" || value === "paragraph") {

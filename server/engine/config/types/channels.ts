@@ -42,7 +42,7 @@ export type ExtensionNestedPolicyConfig = {
   /** Sender ids, usernames, or platform ids accepted by the nested policy. */
   allowFrom?: Array<string | number> | ReadonlyArray<string | number>;
   /** Plugin-owned config keys that are intentionally outside the core schema. */
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 export type ExtensionAccountConfig = ExtensionNestedPolicyConfig & {
@@ -87,19 +87,19 @@ export type ExtensionChannelConfig = {
   /** Nested direct-message config owned by the channel plugin. */
   dm?: ExtensionNestedPolicyConfig;
   /** Plugin-owned network config, including private-network controls when supported. */
-  network?: Record<string, unknown>;
+  network?: Record<string, any>;
   /** Plugin-owned group config keyed by platform group id/name. */
-  groups?: Record<string, unknown>;
+  groups?: Record<string, any>;
   /** Plugin-owned room config keyed by platform room id/name. */
-  rooms?: Record<string, unknown>;
+  rooms?: Record<string, any>;
   /** Channel-wide media size limit in megabytes. */
   mediaMaxMb?: number;
   /** Base callback URL used by interaction/webhook-capable channel plugins. */
   callbackBaseUrl?: string;
   /** Interaction callback config; callbackBaseUrl mirrors the top-level fallback. */
-  interactions?: { callbackBaseUrl?: string; [key: string]: unknown };
+  interactions?: { callbackBaseUrl?: string; [key: string]: any };
   /** Plugin-owned native exec approval routing config. */
-  execApprovals?: Record<string, unknown>;
+  execApprovals?: Record<string, any>;
   threadBindings?: {
     /** Enables thread-bound session routing for this channel. */
     enabled?: boolean;
@@ -121,7 +121,7 @@ export type ExtensionChannelConfig = {
   /** Account-scoped channel config keyed by plugin-defined account id. */
   accounts?: Record<string, ExtensionAccountConfig>;
   /** Plugin-owned config keys intentionally stay open-world at this boundary. */
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 export interface ChannelsConfig {

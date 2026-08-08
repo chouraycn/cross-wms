@@ -17,9 +17,9 @@ export function buildAgentRuntimeAuthPlan(params: {
   authProfileMode?: string;
   sessionAuthProfileId?: string;
   sessionAuthProfileCandidateIds?: string[];
-  config?: unknown;
+  config?: any;
   workspaceDir?: string;
-  metadataSnapshot?: unknown;
+  metadataSnapshot?: any;
   providerAuthAliasesEnabled?: boolean;
   harnessId?: string;
   harnessRuntime?: string;

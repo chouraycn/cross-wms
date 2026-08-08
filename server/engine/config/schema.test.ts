@@ -100,9 +100,9 @@ describe("config schema", () => {
 
   it("exports schema + hints", () => {
     const res = baseSchema;
-    const schema = res.schema as { properties?: Record<string, unknown> };
+    const schema = res.schema as { properties?: Record<string, any> };
     const gatewaySchema = schema.properties?.gateway as
-      | { properties?: Record<string, unknown> }
+      | { properties?: Record<string, any> }
       | undefined;
     const gatewayPortSchema = gatewaySchema?.properties?.port as
       | { title?: string; description?: string }
@@ -146,17 +146,17 @@ describe("config schema", () => {
 
   it("includes MCP SSE header schema under mcp.servers entries", () => {
     const schema = baseSchema.schema as {
-      properties?: Record<string, unknown>;
+      properties?: Record<string, any>;
     };
     const mcpNode = schema.properties?.mcp as
       | {
-          properties?: Record<string, unknown>;
+          properties?: Record<string, any>;
         }
       | undefined;
     const serversNode = mcpNode?.properties?.servers as
       | {
           additionalProperties?: {
-            properties?: Record<string, unknown>;
+            properties?: Record<string, any>;
           };
         }
       | undefined;
@@ -334,30 +334,30 @@ describe("config schema", () => {
     const res = buildConfigSchema(mergedSchemaInput);
 
     const schema = res.schema as {
-      properties?: Record<string, unknown>;
+      properties?: Record<string, any>;
     };
-    const pluginsNode = schema.properties?.plugins as Record<string, unknown> | undefined;
-    const entriesNode = pluginsNode?.properties as Record<string, unknown> | undefined;
-    const entriesProps = entriesNode?.entries as Record<string, unknown> | undefined;
-    const entryProps = entriesProps?.properties as Record<string, unknown> | undefined;
-    const pluginEntry = entryProps?.["voice-call"] as Record<string, unknown> | undefined;
-    const pluginConfig = pluginEntry?.properties as Record<string, unknown> | undefined;
-    const pluginConfigSchema = pluginConfig?.config as Record<string, unknown> | undefined;
-    const pluginConfigProps = pluginConfigSchema?.properties as Record<string, unknown> | undefined;
+    const pluginsNode = schema.properties?.plugins as Record<string, any> | undefined;
+    const entriesNode = pluginsNode?.properties as Record<string, any> | undefined;
+    const entriesProps = entriesNode?.entries as Record<string, any> | undefined;
+    const entryProps = entriesProps?.properties as Record<string, any> | undefined;
+    const pluginEntry = entryProps?.["voice-call"] as Record<string, any> | undefined;
+    const pluginConfig = pluginEntry?.properties as Record<string, any> | undefined;
+    const pluginConfigSchema = pluginConfig?.config as Record<string, any> | undefined;
+    const pluginConfigProps = pluginConfigSchema?.properties as Record<string, any> | undefined;
     expect(pluginConfigProps).toHaveProperty("provider");
 
-    const channelsNode = schema.properties?.channels as Record<string, unknown> | undefined;
-    const channelsProps = channelsNode?.properties as Record<string, unknown> | undefined;
-    const channelSchema = channelsProps?.matrix as Record<string, unknown> | undefined;
-    const channelProps = channelSchema?.properties as Record<string, unknown> | undefined;
+    const channelsNode = schema.properties?.channels as Record<string, any> | undefined;
+    const channelsProps = channelsNode?.properties as Record<string, any> | undefined;
+    const channelSchema = channelsProps?.matrix as Record<string, any> | undefined;
+    const channelProps = channelSchema?.properties as Record<string, any> | undefined;
     expect(channelProps).toHaveProperty("accessToken");
     const progressPropsFor = (channelId: string) => {
-      const channel = channelsProps?.[channelId] as Record<string, unknown> | undefined;
-      const properties = channel?.properties as Record<string, unknown> | undefined;
-      const streaming = properties?.streaming as Record<string, unknown> | undefined;
-      const streamingProperties = streaming?.properties as Record<string, unknown> | undefined;
-      const progress = streamingProperties?.progress as Record<string, unknown> | undefined;
-      return progress?.properties as Record<string, unknown> | undefined;
+      const channel = channelsProps?.[channelId] as Record<string, any> | undefined;
+      const properties = channel?.properties as Record<string, any> | undefined;
+      const streaming = properties?.streaming as Record<string, any> | undefined;
+      const streamingProperties = streaming?.properties as Record<string, any> | undefined;
+      const progress = streamingProperties?.progress as Record<string, any> | undefined;
+      return progress?.properties as Record<string, any> | undefined;
     };
     expect(progressPropsFor("slack")).toHaveProperty("nativeTaskCards");
     expect(progressPropsFor("discord")).not.toHaveProperty("nativeTaskCards");
@@ -894,7 +894,7 @@ describe("config schema", () => {
           JSON.stringify(issue.path) === JSON.stringify(["media", "image", "models", 0, "request"]),
       );
       expect(requestIssue?.path).toEqual(["media", "image", "models", 0, "request"]);
-      const requestKeys = (requestIssue as { keys?: unknown } | undefined)?.keys;
+      const requestKeys = (requestIssue as { keys?: any } | undefined)?.keys;
       expect(requestKeys).toEqual(["allowPrivateNetwork"]);
     }
   });
@@ -917,7 +917,7 @@ describe("config schema", () => {
         (issue) => JSON.stringify(issue.path) === JSON.stringify(["web", "fetch", "firecrawl"]),
       );
       expect(firecrawlIssue?.path).toEqual(["web", "fetch", "firecrawl"]);
-      const firecrawlKeys = (firecrawlIssue as { keys?: unknown } | undefined)?.keys;
+      const firecrawlKeys = (firecrawlIssue as { keys?: any } | undefined)?.keys;
       expect(firecrawlKeys).toEqual(["nope"]);
     }
   });
@@ -960,7 +960,7 @@ describe("config schema", () => {
     expect(tokenChild?.path).toBe("gateway.auth.token");
     expect(tokenChild?.hint?.sensitive).toBe(true);
     expect(tokenChild?.hintPath).toBe("gateway.auth.token");
-    const schema = lookup?.schema as { properties?: unknown } | undefined;
+    const schema = lookup?.schema as { properties?: any } | undefined;
     expect(schema?.properties).toBeUndefined();
   });
 
@@ -969,7 +969,7 @@ describe("config schema", () => {
     expect(lookup?.path).toBe(".");
     expect(lookup?.children.map((child) => child.key)).toContain("gateway");
     expect(lookup?.children.find((child) => child.key === "gateway")?.path).toBe("gateway");
-    const schema = lookup?.schema as { properties?: unknown } | undefined;
+    const schema = lookup?.schema as { properties?: any } | undefined;
     expect(schema?.properties).toBeUndefined();
   });
 
@@ -1007,7 +1007,7 @@ describe("config schema", () => {
     expect(lookup?.hintPath).toBe("agents.list[].runtime");
     expect(lookup?.schema).not.toHaveProperty("allOf");
     expect(lookup?.schema).not.toHaveProperty("oneOf");
-    const schema = lookup?.schema as { anyOf?: Array<{ properties?: Record<string, unknown> }> };
+    const schema = lookup?.schema as { anyOf?: Array<{ properties?: Record<string, any> }> };
     expect(schema.anyOf?.some((variant) => variant.properties?.type)).toBe(true);
     expect(lookup?.schema).toHaveProperty("title", "Agent Runtime");
     expect(lookup?.schema).toHaveProperty("description");
@@ -1021,7 +1021,7 @@ describe("config schema", () => {
           items?: {
             properties?: Record<
               string,
-              { anyOf?: Array<{ properties?: Record<string, unknown> }> }
+              { anyOf?: Array<{ properties?: Record<string, any> }> }
             >;
           };
         }
@@ -1035,7 +1035,7 @@ describe("config schema", () => {
   it("keeps scoped map properties for form editing", () => {
     const lookup = lookupConfigSchema(baseSchema, "env");
     expect(lookup?.children.map((child) => child.key)).toEqual(["shellEnv", "vars", "*"]);
-    const schema = lookup?.schema as { properties?: Record<string, unknown> } | undefined;
+    const schema = lookup?.schema as { properties?: Record<string, any> } | undefined;
     expect(schema?.properties).toHaveProperty("shellEnv");
     expect(schema?.properties).toHaveProperty("vars");
   });
@@ -1081,7 +1081,7 @@ describe("config schema", () => {
     const lookup = lookupConfigSchema(tupleSchema, "pair.1");
     expect(lookup?.path).toBe("pair.1");
     expect(lookup?.schema?.type).toBe("number");
-    expect((lookup?.schema as { items?: unknown } | undefined)?.items).toBeUndefined();
+    expect((lookup?.schema as { items?: any } | undefined)?.items).toBeUndefined();
   });
 
   it("rejects impractical numeric tuple lookup indexes", () => {
@@ -1111,7 +1111,7 @@ describe("config schema", () => {
   it("rejects overly deep lookup paths", () => {
     const buildNestedObjectSchema = (
       segments: string[],
-    ): { type: string; properties?: Record<string, unknown> } => {
+    ): { type: string; properties?: Record<string, any> } => {
       const [head, ...rest] = segments;
       if (!head) {
         return { type: "string" };

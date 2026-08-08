@@ -18,7 +18,7 @@ type CrestodianAuditEntry = {
   configPath?: string;
   configHashBefore?: string | null;
   configHashAfter?: string | null;
-  details?: Record<string, unknown>;
+  details?: Record<string, any>;
 };
 
 /** Resolve the JSONL audit path for Crestodian persistent operations. */

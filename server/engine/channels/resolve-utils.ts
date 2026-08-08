@@ -2,26 +2,26 @@
 
 export type AllowlistUserResolutionLike = unknown;
 
-export function mergeAllowlist(..._args: unknown[]): unknown {
+export function mergeAllowlist(..._args: any[]): any {
   return undefined;
 }
 
-export function buildAllowlistResolutionSummary(..._args: unknown[]): unknown {
+export function buildAllowlistResolutionSummary(..._args: any[]): any {
   return undefined;
 }
 
-export function canonicalizeAllowlistWithResolvedIds(..._args: unknown[]): unknown {
+export function canonicalizeAllowlistWithResolvedIds(..._args: any[]): any {
   return false;
 }
 
-export function patchAllowlistUsersInConfigEntries(..._args: unknown[]): unknown {
+export function patchAllowlistUsersInConfigEntries(..._args: any[]): any {
   return undefined;
 }
 
-export function addAllowlistUserEntriesFromConfigEntry(..._args: unknown[]): unknown {
+export function addAllowlistUserEntriesFromConfigEntry(..._args: any[]): any {
   return undefined;
 }
 
-export function summarizeMapping(..._args: unknown[]): unknown {
+export function summarizeMapping(..._args: any[]): any {
   return undefined;
 }

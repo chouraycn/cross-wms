@@ -5,13 +5,13 @@ export type MessageChannelId = string;
 export type MessageChannelSelectionSource = "config" | "bootstrap" | "auto" | "explicit";
 
 /** Checks if a channel is configured. */
-export function isConfiguredChannel(_cfg: unknown, _channel: string): boolean {
+export function isConfiguredChannel(_cfg: any, _channel: string): boolean {
   // Simplified: no real config access
   return false;
 }
 
 /** Lists configured message channels. */
-export async function listConfiguredMessageChannels(_cfg: unknown): Promise<string[]> {
+export async function listConfiguredMessageChannels(_cfg: any): Promise<string[]> {
   // Simplified: no real config access
   return [];
 }
@@ -19,7 +19,7 @@ export async function listConfiguredMessageChannels(_cfg: unknown): Promise<stri
 /** Resolves the message channel selection. */
 export function resolveMessageChannelSelection(params: {
   channel?: string;
-  cfg?: unknown;
+  cfg?: any;
 }): { channel: string; source: MessageChannelSelectionSource } | null {
   if (!params.channel?.trim()) return null;
   return { channel: params.channel.trim(), source: "explicit" };

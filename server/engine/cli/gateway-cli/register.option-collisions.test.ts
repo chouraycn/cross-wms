@@ -4,11 +4,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { registerGatewayCli } from "./register.js";
 
 const mocks = vi.hoisted(() => ({
-  callGatewayCli: vi.fn(async (_method: string, _opts: unknown, _params?: unknown) => ({
+  callGatewayCli: vi.fn(async (_method: string, _opts: any, _params?: any) => ({
     ok: true,
   })),
-  emitReachableGatewayAuthDiagnostic: vi.fn(async (_params: unknown) => false),
-  gatewayStatusCommand: vi.fn(async (_opts: unknown, _runtime: unknown) => {}),
+  emitReachableGatewayAuthDiagnostic: vi.fn(async (_params: any) => false),
+  gatewayStatusCommand: vi.fn(async (_opts: any, _runtime: any) => {}),
   defaultRuntime: {
     log: vi.fn(),
     error: vi.fn(),
@@ -23,9 +23,9 @@ const { callGatewayCli, emitReachableGatewayAuthDiagnostic, gatewayStatusCommand
 
 vi.mock("../cli-utils.js", () => ({
   runCommandWithRuntime: async (
-    _runtime: unknown,
+    _runtime: any,
     action: () => Promise<void>,
-    onError: (err: unknown) => void,
+    onError: (err: any) => void,
   ) => {
     try {
       await action();
@@ -41,7 +41,7 @@ vi.mock("../../runtime.js", async () => ({
 }));
 
 vi.mock("../../commands/gateway-status.js", () => ({
-  gatewayStatusCommand: (opts: unknown, runtime: unknown) =>
+  gatewayStatusCommand: (opts: any, runtime: any) =>
     mocks.gatewayStatusCommand(opts, runtime),
 }));
 
@@ -54,7 +54,7 @@ vi.mock("./call.js", () => ({
       .option("--timeout <ms>", "Timeout in ms", "10000")
       .option("--expect-final", "Wait for final response (agent)", false)
       .option("--json", "Output JSON", false),
-  callGatewayCli: (method: string, opts: unknown, params?: unknown) =>
+  callGatewayCli: (method: string, opts: any, params?: any) =>
     mocks.callGatewayCli(method, opts, params),
 }));
 
@@ -71,7 +71,7 @@ vi.mock("../daemon-cli/register-service-commands.js", () => ({
 }));
 
 vi.mock("../../commands/health.js", () => ({
-  emitReachableGatewayAuthDiagnostic: (params: unknown) =>
+  emitReachableGatewayAuthDiagnostic: (params: any) =>
     mocks.emitReachableGatewayAuthDiagnostic(params),
   formatHealthChannelLines: () => [],
 }));
@@ -117,11 +117,11 @@ vi.mock("../help-format.js", () => ({
 }));
 
 vi.mock("../progress.js", () => ({
-  withProgress: async (_opts: unknown, fn: () => Promise<unknown>) => await fn(),
+  withProgress: async (_opts: any, fn: () => Promise<any>) => await fn(),
 }));
 
 vi.mock("./discover.js", () => ({
-  dedupeBeacons: (beacons: unknown[]) => beacons,
+  dedupeBeacons: (beacons: any[]) => beacons,
   parseDiscoverTimeoutMs: () => 2000,
   pickBeaconHost: () => null,
   pickGatewayPort: () => 18789,

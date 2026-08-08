@@ -10,8 +10,8 @@ vi.mock("../sessions/index.js", () => ({
   // Constructor mock captures options so tests can assert discovery policy
   // without touching filesystem-backed session resources.
   DefaultResourceLoader: vi.fn(function DefaultResourceLoaderLocal(
-    this: Record<string, unknown>,
-    options: unknown,
+    this: Record<string, any>,
+    options: any,
   ) {
     Object.assign(this, {
       options,

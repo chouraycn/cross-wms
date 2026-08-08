@@ -29,7 +29,7 @@ type ProviderChoiceModelPrompt = {
 };
 
 /** Reject undefined, empty, and common JS string-coercion artifacts for token auth. */
-function sanitizeTokenValue(value: unknown): string | undefined {
+function sanitizeTokenValue(value: any): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }

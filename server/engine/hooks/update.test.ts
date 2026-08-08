@@ -6,7 +6,7 @@ import type { HookNpmIntegrityDriftParams } from "./install.js";
 const installHooksFromNpmSpecMock = vi.fn();
 
 vi.mock("./install.js", () => ({
-  installHooksFromNpmSpec: (...args: unknown[]) => installHooksFromNpmSpecMock(...args),
+  installHooksFromNpmSpec: (...args: any[]) => installHooksFromNpmSpecMock(...args),
   resolveHookInstallDir: (hookId: string) => `/tmp/hooks/${hookId}`,
 }));
 

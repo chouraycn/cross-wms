@@ -23,7 +23,7 @@ export type HtmlExportConversation = {
   // 消息列表
   messages: HtmlExportMessage[];
   // 可选的元数据
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 // HTML 导出选项
@@ -148,7 +148,7 @@ function renderMessages(messages: HtmlExportMessage[]): string {
   return `<div class="messages">\n${items.join('\n')}\n</div>`;
 }
 
-function renderMetadata(metadata: Record<string, unknown>): string {
+function renderMetadata(metadata: Record<string, any>): string {
   const entries = Object.entries(metadata);
   if (entries.length === 0) return '';
   const items = entries

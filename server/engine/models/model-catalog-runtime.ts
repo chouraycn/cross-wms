@@ -224,7 +224,7 @@ export function initializeRuntimeCatalogFromRegistry(): RuntimeCatalog {
     const providers = getAllRegistryProviders();
 
     for (const provider of providers) {
-      const models: RuntimeCatalogModel[] = provider.models.map((m: Record<string, unknown>) => ({
+      const models: RuntimeCatalogModel[] = provider.models.map((m: Record<string, any>) => ({
         id: String(m.id ?? ''),
         name: String(m.name ?? ''),
         provider: provider.id,

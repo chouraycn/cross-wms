@@ -91,9 +91,9 @@ type DefinedToolPluginTool = {
   description: string;
   parameters: TSchema;
   optional: boolean;
-  execute?: (params: unknown, config: unknown, context: ToolPluginExecutionContext) => unknown;
+  execute?: (params: any, config: any, context: ToolPluginExecutionContext) => unknown;
   factory?: (
-    context: ToolPluginFactoryContext<unknown>,
+    context: ToolPluginFactoryContext<any>,
   ) => AnyAgentTool | AnyAgentTool[] | null | undefined;
 };
 
@@ -139,7 +139,7 @@ export type DefinedToolPluginEntry = ReturnType<typeof definePluginEntry> & {
   [toolPluginMetadataSymbol]: ToolPluginMetadata;
 };
 
-function wrapToolPluginResult(result: unknown): AgentToolResult<unknown> {
+function wrapToolPluginResult(result: any): AgentToolResult<any> {
   if (typeof result === "string") {
     return textResult(result, result);
   }
@@ -243,11 +243,11 @@ export function defineToolPlugin<TConfigSchema extends TSchema | undefined = und
 }
 
 /** Read tool-plugin metadata from an entry without exposing the symbol to callers. */
-export function getToolPluginMetadata(entry: unknown): ToolPluginMetadata | undefined {
+export function getToolPluginMetadata(entry: any): ToolPluginMetadata | undefined {
   if (!entry || typeof entry !== "object") {
     return undefined;
   }
-  const metadata = (entry as { [toolPluginMetadataSymbol]?: unknown })[toolPluginMetadataSymbol];
+  const metadata = (entry as { [toolPluginMetadataSymbol]?: any })[toolPluginMetadataSymbol];
   if (!metadata || typeof metadata !== "object") {
     return undefined;
   }

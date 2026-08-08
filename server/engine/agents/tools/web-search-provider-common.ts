@@ -58,7 +58,7 @@ export type SearchConfigRecord = (NonNullable<OpenClawConfig["tools"]>["web"] ex
     ? Search
     : never
   : never) &
-  Record<string, unknown>;
+  Record<string, any>;
 
 type UnsupportedWebSearchFilterName =
   | "country"
@@ -69,7 +69,7 @@ type UnsupportedWebSearchFilterName =
 
 export const DEFAULT_SEARCH_COUNT = 5;
 export const MAX_SEARCH_COUNT = 10;
-export const SEARCH_CACHE = new Map<string, CacheEntry<Record<string, unknown>>>();
+export const SEARCH_CACHE = new Map<string, CacheEntry<Record<string, any>>>();
 
 export function resolveSearchTimeoutSeconds(searchConfig?: SearchConfigRecord): number {
   return resolveTimeoutSeconds(searchConfig?.timeoutSeconds, DEFAULT_TIMEOUT_SECONDS);
@@ -79,13 +79,13 @@ export function resolveSearchCacheTtlMs(searchConfig?: SearchConfigRecord): numb
   return resolveCacheTtlMs(searchConfig?.cacheTtlMinutes, DEFAULT_CACHE_TTL_MINUTES);
 }
 
-export function resolveSearchCount(value: unknown, fallback: number): number {
+export function resolveSearchCount(value: any, fallback: number): number {
   const parsed = typeof value === "number" && Number.isFinite(value) ? value : fallback;
   const clamped = Math.max(1, Math.min(MAX_SEARCH_COUNT, Math.floor(parsed)));
   return clamped;
 }
 
-export function readConfiguredSecretString(value: unknown, path: string): string | undefined {
+export function readConfiguredSecretString(value: any, path: string): string | undefined {
   return normalizeSecretInput(normalizeResolvedSecretInputString({ value, path })) || undefined;
 }
 
@@ -150,7 +150,7 @@ export async function postTrustedWebToolsJson<T>(
     url: string;
     timeoutSeconds: number;
     apiKey: string;
-    body: Record<string, unknown>;
+    body: Record<string, any>;
     errorLabel: string;
     maxErrorBytes?: number;
     extraHeaders?: Record<string, string>;
@@ -421,7 +421,7 @@ export function parseWebSearchTimeFilters<Provider extends WebSearchFreshnessPro
 }
 
 /** Reads a search cache payload and marks it so provider responses can disclose cache hits. */
-export function readCachedSearchPayload(cacheKey: string): Record<string, unknown> | undefined {
+export function readCachedSearchPayload(cacheKey: string): Record<string, any> | undefined {
   const cached = readCache(SEARCH_CACHE, cacheKey);
   return cached ? { ...cached.value, cached: true } : undefined;
 }
@@ -436,14 +436,14 @@ export function buildSearchCacheKey(parts: Array<string | number | boolean | und
 /** Stores one provider search payload with its provider-selected TTL. */
 export function writeCachedSearchPayload(
   cacheKey: string,
-  payload: Record<string, unknown>,
+  payload: Record<string, any>,
   ttlMs: number,
 ): void {
   writeCache(SEARCH_CACHE, cacheKey, payload, ttlMs);
 }
 
 function readUnsupportedSearchFilter(
-  params: Record<string, unknown>,
+  params: Record<string, any>,
 ): UnsupportedWebSearchFilterName | undefined {
   for (const name of ["country", "language", "freshness", "date_after", "date_before"] as const) {
     const value = params[name];
@@ -471,7 +471,7 @@ function describeUnsupportedSearchFilter(name: UnsupportedWebSearchFilterName): 
 }
 
 export function buildUnsupportedSearchFilterResponse(
-  params: Record<string, unknown>,
+  params: Record<string, any>,
   provider: string,
   docs = "https://docs.openclaw.ai/tools/web",
 ):

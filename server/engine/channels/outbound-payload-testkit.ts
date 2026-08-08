@@ -2,6 +2,6 @@
 
 export type OutboundPayloadHarnessParams = unknown;
 
-export function installChannelOutboundPayloadContractSuite(..._args: unknown[]): unknown {
+export function installChannelOutboundPayloadContractSuite(..._args: any[]): any {
   return undefined;
 }

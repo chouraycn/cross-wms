@@ -70,7 +70,7 @@ export function formatChannelAccountLabel(params: {
 /** Append common enabled/configured/linked status fragments for account output. */
 export function appendEnabledConfiguredLinkedBits(
   bits: string[],
-  account: Record<string, unknown>,
+  account: Record<string, any>,
 ) {
   if (typeof account.enabled === "boolean") {
     bits.push(account.enabled ? "enabled" : "disabled");
@@ -91,14 +91,14 @@ export function appendEnabledConfiguredLinkedBits(
 }
 
 /** Append account mode metadata when present. */
-export function appendModeBit(bits: string[], account: Record<string, unknown>) {
+export function appendModeBit(bits: string[], account: Record<string, any>) {
   if (typeof account.mode === "string" && account.mode.length > 0) {
     bits.push(`mode:${account.mode}`);
   }
 }
 
 /** Append credential source fragments, preserving unavailable-secret state. */
-export function appendTokenSourceBits(bits: string[], account: Record<string, unknown>) {
+export function appendTokenSourceBits(bits: string[], account: Record<string, any>) {
   const appendSourceBit = (label: string, sourceKey: string, statusKey: string) => {
     const source = account[sourceKey];
     if (typeof source !== "string" || !source || source === "none") {
@@ -116,7 +116,7 @@ export function appendTokenSourceBits(bits: string[], account: Record<string, un
 }
 
 /** Append account base URL metadata when present. */
-export function appendBaseUrlBit(bits: string[], account: Record<string, unknown>) {
+export function appendBaseUrlBit(bits: string[], account: Record<string, any>) {
   if (typeof account.baseUrl === "string" && account.baseUrl) {
     bits.push(`url:${account.baseUrl}`);
   }
@@ -125,7 +125,7 @@ export function appendBaseUrlBit(bits: string[], account: Record<string, unknown
 /** Build a complete human-readable channel account status line. */
 export function buildChannelAccountLine(
   provider: ChatChannel,
-  account: Record<string, unknown>,
+  account: Record<string, any>,
   bits: string[],
   opts?: { channelLabel?: string },
 ): string {

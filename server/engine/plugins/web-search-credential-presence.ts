@@ -3,18 +3,18 @@ import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { loadManifestMetadataSnapshot } from "./manifest-contract-eligibility.js";
 import type { PluginManifestRecord } from "./manifest-registry.js";
 
-function hasConfiguredCredentialValue(value: unknown): boolean {
+function hasConfiguredCredentialValue(value: any): boolean {
   if (typeof value === "string") {
     return value.trim().length > 0;
   }
   return value !== undefined && value !== null;
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return typeof value === "object" && value !== null;
 }
 
-function hasConfiguredSearchCredentialCandidate(searchConfig: unknown): boolean {
+function hasConfiguredSearchCredentialCandidate(searchConfig: any): boolean {
   if (!isRecord(searchConfig)) {
     return false;
   }
@@ -66,12 +66,12 @@ function hasManifestWebSearchEnvCredentialCandidate(params: {
 export function hasConfiguredWebSearchCredential(params: {
   config: OpenClawConfig;
   env?: NodeJS.ProcessEnv;
-  searchConfig?: Record<string, unknown>;
+  searchConfig?: Record<string, any>;
   origin?: PluginManifestRecord["origin"];
 }): boolean {
   const searchConfig =
     params.searchConfig ??
-    (params.config.tools?.web?.search as Record<string, unknown> | undefined);
+    (params.config.tools?.web?.search as Record<string, any> | undefined);
   return (
     hasConfiguredSearchCredentialCandidate(searchConfig) ||
     hasConfiguredPluginWebSearchCandidate(params.config) ||

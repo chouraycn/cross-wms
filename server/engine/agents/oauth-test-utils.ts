@@ -11,8 +11,8 @@ import path from "node:path";
 export const OAUTH_AGENT_ENV_KEYS = ["OPENCLAW_STATE_DIR", "OPENCLAW_AGENT_DIR"];
 
 export function resolveApiKeyForProfileInTest(
-  resolver: (params: Record<string, unknown>) => unknown,
-  params: Record<string, unknown>,
+  resolver: (params: Record<string, any>) => unknown,
+  params: Record<string, any>,
 ) {
   return resolver({ cfg: {}, ...params });
 }
@@ -24,11 +24,11 @@ export function oauthCred(params: {
   expires: number;
   accountId?: string;
   email?: string;
-}): Record<string, unknown> {
+}): Record<string, any> {
   return { type: "oauth", ...params };
 }
 
-export function storeWith(profileId: string, cred: Record<string, unknown>): Record<string, unknown> {
+export function storeWith(profileId: string, cred: Record<string, any>): Record<string, any> {
   return { version: 1, profiles: { [profileId]: cred } };
 }
 
@@ -39,7 +39,7 @@ export function createExpiredOauthStore(params: {
   refresh?: string;
   accountId?: string;
   email?: string;
-}): Record<string, unknown> {
+}): Record<string, any> {
   return {
     version: 1,
     profiles: {
@@ -74,14 +74,14 @@ export async function removeOAuthTestTempRoot(tempRoot: string): Promise<void> {
   }
 }
 
-export function readAuthProfileStoreForTest(agentDir: string): Record<string, unknown> {
+export function readAuthProfileStoreForTest(agentDir: string): Record<string, any> {
   // Simplified: return empty store instead of loading from disk
   return { version: 1, profiles: {} };
 }
 
 export function resetOAuthProviderRuntimeMocks(mocks: {
-  refreshProviderOAuthCredentialWithPluginMock: { mockReset: () => void; mockResolvedValue: (v: unknown) => void };
-  formatProviderAuthProfileApiKeyWithPluginMock: { mockReset: () => void; mockReturnValue: (v: unknown) => void };
+  refreshProviderOAuthCredentialWithPluginMock: { mockReset: () => void; mockResolvedValue: (v: any) => void };
+  formatProviderAuthProfileApiKeyWithPluginMock: { mockReset: () => void; mockReturnValue: (v: any) => void };
 }): void {
   mocks.refreshProviderOAuthCredentialWithPluginMock.mockReset();
   mocks.refreshProviderOAuthCredentialWithPluginMock.mockResolvedValue(undefined);

@@ -1,20 +1,20 @@
 // 移植自 openclaw/src/config/model-input.ts
 
-export function resolveAgentModelPrimaryValue(...args: unknown[]): unknown {
+export function resolveAgentModelPrimaryValue(...args: any[]): any {
   return undefined;
 }
-export function resolveAgentModelFallbackValues(...args: unknown[]): unknown {
+export function resolveAgentModelFallbackValues(...args: any[]): any {
   return undefined;
 }
-export function resolveAgentModelTimeoutMsValue(...args: unknown[]): unknown {
+export function resolveAgentModelTimeoutMsValue(...args: any[]): any {
   return undefined;
 }
-export function toAgentModelListLike(...args: unknown[]): unknown {
+export function toAgentModelListLike(...args: any[]): any {
   return undefined;
 }
-export function normalizeAgentModelRefForConfig(...args: unknown[]): unknown {
+export function normalizeAgentModelRefForConfig(...args: any[]): any {
   return undefined;
 }
-export function normalizeAgentModelMapForConfig(...args: unknown[]): unknown {
+export function normalizeAgentModelMapForConfig(...args: any[]): any {
   return undefined;
 }

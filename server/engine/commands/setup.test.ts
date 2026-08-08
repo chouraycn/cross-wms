@@ -23,7 +23,7 @@ function createSetupDeps(home: string) {
     ),
     mkdir: vi.fn(async () => {}),
     resolveSessionTranscriptsDir: vi.fn(() => path.join(home, ".openclaw", "sessions")),
-    replaceConfigFile: vi.fn(async ({ nextConfig }: { nextConfig: unknown }) => {
+    replaceConfigFile: vi.fn(async ({ nextConfig }: { nextConfig: any }) => {
       await fs.mkdir(path.dirname(configPath), { recursive: true });
       await fs.writeFile(configPath, JSON.stringify(nextConfig, null, 2));
     }),
@@ -32,7 +32,7 @@ function createSetupDeps(home: string) {
 
 function requireFirstWorkspaceParams(
   ensureAgentWorkspace: ReturnType<typeof vi.fn>,
-): Record<string, unknown> {
+): Record<string, any> {
   const [call] = ensureAgentWorkspace.mock.calls;
   if (!call) {
     throw new Error("expected workspace setup call");
@@ -41,7 +41,7 @@ function requireFirstWorkspaceParams(
   if (!params || typeof params !== "object" || Array.isArray(params)) {
     throw new Error("expected workspace setup params");
   }
-  return params as Record<string, unknown>;
+  return params as Record<string, any>;
 }
 
 describe("setupCommand", () => {
@@ -58,7 +58,7 @@ describe("setupCommand", () => {
       await setupCommand({ workspace }, runtime, deps);
 
       const configPath = path.join(home, ".openclaw", "openclaw.json");
-      const raw = JSON.parse(await fs.readFile(configPath, "utf-8")) as unknown;
+      const raw = JSON.parse(await fs.readFile(configPath, "utf-8")) as any;
 
       expect(raw).toStrictEqual({
         agents: {

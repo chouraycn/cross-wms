@@ -28,7 +28,7 @@ function resolveLazy<T>(value: Lazy<T>): T {
 
 function expectWebProviderCredentialContract(
   provider: WebProviderCredentialContract,
-  credentialValue: unknown,
+  credentialValue: any,
 ) {
   expect(provider.id).toMatch(/^[a-z0-9][a-z0-9-]*$/);
   expect(provider.label.trim()).not.toBe("");
@@ -42,7 +42,7 @@ function expectWebProviderCredentialContract(
   expect(provider.envVars).toEqual([...new Set(provider.envVars)]);
   expect(provider.envVars.every((entry) => entry.trim().length > 0)).toBe(true);
 
-  const configTarget: Record<string, unknown> = {};
+  const configTarget: Record<string, any> = {};
   provider.setCredentialValue(configTarget, credentialValue);
   expect(provider.getCredentialValue(configTarget)).toEqual(credentialValue);
 
@@ -131,7 +131,7 @@ export function installProviderPluginContractSuite(params: { provider: Lazy<Prov
 
 export function installWebSearchProviderContractSuite(params: {
   provider: Lazy<WebSearchProviderPlugin>;
-  credentialValue: Lazy<unknown>;
+  credentialValue: Lazy<any>;
 }) {
   it("satisfies the base web search provider contract", () => {
     const provider = resolveLazy(params.provider);
@@ -147,7 +147,7 @@ export function installWebSearchProviderContractSuite(params: {
 
 export function installWebFetchProviderContractSuite(params: {
   provider: Lazy<WebFetchProviderPlugin>;
-  credentialValue: Lazy<unknown>;
+  credentialValue: Lazy<any>;
   pluginId?: string;
 }) {
   it("satisfies the base web fetch provider contract", () => {
@@ -161,7 +161,7 @@ export function installWebFetchProviderContractSuite(params: {
       expect(provider.inactiveSecretPaths).toContain(provider.credentialPath);
     }
 
-    const fetchConfigTarget: Record<string, unknown> = {};
+    const fetchConfigTarget: Record<string, any> = {};
     provider.setCredentialValue(fetchConfigTarget, credentialValue);
     expect(provider.getCredentialValue(fetchConfigTarget)).toEqual(credentialValue);
 

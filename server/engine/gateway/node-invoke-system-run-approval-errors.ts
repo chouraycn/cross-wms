@@ -6,14 +6,14 @@
 type SystemRunApprovalGuardError = {
   ok: false;
   message: string;
-  details: Record<string, unknown>;
+  details: Record<string, any>;
 };
 
 /** Builds a failed system.run approval guard result with a structured code. */
 export function systemRunApprovalGuardError(params: {
   code: string;
   message: string;
-  details?: Record<string, unknown>;
+  details?: Record<string, any>;
 }): SystemRunApprovalGuardError {
   const details = params.details ? { ...params.details } : {};
   return {

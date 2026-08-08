@@ -252,7 +252,7 @@ export const BotMessageContent = React.memo<BotMessageContentProps>(({
   const shouldShowGenerateFile = (() => {
     if (msg.isStreaming) return false;
     if (msg.role !== 'assistant') return false;
-    if ((msg.metadata as unknown)?.error) return false;
+    if ((msg.metadata as any)?.error) return false;
     // 条件1: 已有 generatedFiles（工具明确生成了文件）
     if (generatedFiles.length > 0) return true;
     // 条件2: AI 调用了文件相关工具
@@ -567,7 +567,7 @@ export const BotMessageContent = React.memo<BotMessageContentProps>(({
         </Box>
       ) : msg.role === 'assistant' ? (
         (() => {
-          const serverError = (msg.metadata as unknown)?.error as string | undefined;
+          const serverError = (msg.metadata as any)?.error as string | undefined;
           const thinkingSummary = (() => {
             if (!msg.thinking || msg.thinking.trim() === '') return null;
             const paragraphs = msg.thinking.split(/\n\n+/).filter(p => p.trim());
@@ -596,7 +596,7 @@ export const BotMessageContent = React.memo<BotMessageContentProps>(({
                 </Typography>
                 {serverError && (
                   <Typography sx={{ fontSize: 11, color: gs.textDisabled, mt: 0.5, fontFamily: 'monospace' }}>
-                    错误码: {(msg.metadata as unknown)?.errorCode || 'N/A'}
+                    错误码: {(msg.metadata as any)?.errorCode || 'N/A'}
                   </Typography>
                 )}
               </Box>

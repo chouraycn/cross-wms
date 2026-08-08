@@ -31,7 +31,7 @@ export type CodeModeExecHookMetadata = {
 };
 
 /** 内联降级实现：严格 plain-object 守卫（排除数组与宿主对象）。 */
-function isPlainObject(value: unknown): value is Record<string, unknown> {
+function isPlainObject(value: any): value is Record<string, any> {
   return (
     typeof value === "object" &&
     value !== null &&
@@ -69,7 +69,7 @@ function isCodeModeExecTool(tool: AnyAgentTool): boolean {
   return isCodeModeControlTool(tool) && normalizeToolName(tool.name) === CODE_MODE_EXEC_TOOL_NAME;
 }
 
-function resolveCodeModeExecToolInputKind(params: unknown): CodeModeExecToolInputKind | undefined {
+function resolveCodeModeExecToolInputKind(params: any): CodeModeExecToolInputKind | undefined {
   if (!isPlainObject(params)) {
     return undefined;
   }
@@ -83,7 +83,7 @@ function resolveCodeModeExecToolInputKind(params: unknown): CodeModeExecToolInpu
   return undefined;
 }
 
-function normalizeCodeModeExecParams(params: unknown): unknown {
+function normalizeCodeModeExecParams(params: any): any {
   if (!isPlainObject(params)) {
     return params;
   }
@@ -103,7 +103,7 @@ function normalizeCodeModeExecParams(params: unknown): unknown {
 /** Build before-tool-call metadata for a marked code-mode exec tool. */
 export function getCodeModeExecBeforeHookMetadata(params: {
   tool: AnyAgentTool;
-  params: unknown;
+  params: any;
 }): CodeModeExecHookMetadata | undefined {
   if (!isCodeModeExecTool(params.tool)) {
     return undefined;
@@ -117,8 +117,8 @@ export function getCodeModeExecBeforeHookMetadata(params: {
 
 /** Build before-tool-call metadata when only the tool kind is available. */
 export function getCodeModeExecBeforeHookMetadataForToolKind(params: {
-  toolKind: unknown;
-  params: unknown;
+  toolKind: any;
+  params: any;
 }): CodeModeExecHookMetadata | undefined {
   if (params.toolKind !== CODE_MODE_EXEC_TOOL_KIND) {
     return undefined;
@@ -133,8 +133,8 @@ export function getCodeModeExecBeforeHookMetadataForToolKind(params: {
 /** Normalize before-hook params for a marked code-mode exec tool. */
 export function normalizeCodeModeExecBeforeHookParams(params: {
   tool: AnyAgentTool;
-  params: unknown;
-}): unknown {
+  params: any;
+}): any {
   if (!isCodeModeExecTool(params.tool)) {
     return params.params;
   }
@@ -143,9 +143,9 @@ export function normalizeCodeModeExecBeforeHookParams(params: {
 
 /** Normalize before-hook params when only the code-mode tool kind is available. */
 export function normalizeCodeModeExecBeforeHookParamsForToolKind(params: {
-  toolKind: unknown;
-  params: unknown;
-}): unknown {
+  toolKind: any;
+  params: any;
+}): any {
   if (params.toolKind !== CODE_MODE_EXEC_TOOL_KIND) {
     return params.params;
   }
@@ -155,10 +155,10 @@ export function normalizeCodeModeExecBeforeHookParamsForToolKind(params: {
 /** Reconcile hook-adjusted `code` and `command` fields after code-mode normalization. */
 export function reconcileCodeModeExecBeforeHookParams(params: {
   tool: AnyAgentTool;
-  originalParams: unknown;
-  hookParams: unknown;
-  adjustedParams: unknown;
-}): unknown {
+  originalParams: any;
+  hookParams: any;
+  adjustedParams: any;
+}): any {
   if (
     !isCodeModeExecTool(params.tool) ||
     !isPlainObject(params.originalParams) ||

@@ -10,7 +10,7 @@ import type { OutboundMediaAccess } from "../../media/load-options.js";
 
 type RuntimeSendOpts = {
   cfg?: OpenClawConfig;
-  blocks?: unknown;
+  blocks?: any;
   mediaUrl?: string;
   mediaAccess?: OutboundMediaAccess;
   mediaLocalRoots?: readonly string[];

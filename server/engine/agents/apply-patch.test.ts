@@ -92,7 +92,7 @@ async function expectOutsideWriteRejected(params: {
   await expectMissingPath(fs.readFile(params.outsidePath, "utf8"));
 }
 
-async function expectMissingPath(operation: Promise<unknown>) {
+async function expectMissingPath(operation: Promise<any>) {
   let error: NodeJS.ErrnoException | undefined;
   try {
     await operation;

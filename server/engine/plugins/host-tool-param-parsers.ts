@@ -32,12 +32,12 @@ const DELETE_FILE_MARKER = "*** Delete File: ";
 const UPDATE_FILE_MARKER = "*** Update File: ";
 const MOVE_TO_MARKER = "*** Move to: ";
 
-function readPatchText(input: unknown): string | undefined {
+function readPatchText(input: any): string | undefined {
   if (typeof input === "string") {
     return input;
   }
   if (input && typeof input === "object" && "input" in input) {
-    const candidate = (input as { input?: unknown }).input;
+    const candidate = (input as { input?: any }).input;
     if (typeof candidate === "string") {
       return candidate;
     }
@@ -97,7 +97,7 @@ function readMarkerPath(line: string | undefined, marker: string): string | unde
  * 去重后按出现顺序返回。
  */
 function extractApplyPatchTargetPaths(
-  input: unknown,
+  input: any,
   options: ApplyPatchPathExtractionOptions = {},
 ): string[] {
   const text = readPatchText(input);
@@ -177,7 +177,7 @@ export type HostToolDerivationOptions = ApplyPatchPathExtractionOptions;
  */
 const HOST_TOOL_PARAM_PARSERS: Record<
   string,
-  (params: unknown, options?: HostToolDerivationOptions) => HostToolDerivedParams
+  (params: any, options?: HostToolDerivationOptions) => HostToolDerivedParams
 > = {
   apply_patch: (params, options) => {
     const paths = extractApplyPatchTargetPaths(params, options);
@@ -192,7 +192,7 @@ const HOST_TOOL_PARAM_PARSERS: Record<
  */
 export function deriveToolParams(
   toolName: string,
-  params: unknown,
+  params: any,
   options?: HostToolDerivationOptions,
 ): HostToolDerivedParams {
   if (!Object.hasOwn(HOST_TOOL_PARAM_PARSERS, toolName)) {

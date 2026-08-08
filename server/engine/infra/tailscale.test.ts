@@ -19,7 +19,7 @@ function expectExecCall(
   callNumber: number,
   command: string,
   args: readonly string[],
-  options?: Record<string, unknown>,
+  options?: Record<string, any>,
 ) {
   const call = exec.mock.calls[callNumber - 1];
   if (!call) {
@@ -273,14 +273,14 @@ describe("tailscale helpers", () => {
 });
 
 describe("tailscaleFunnelStatusCoversPort", () => {
-  function buildFunnelStatus(handlers: Record<string, { Proxy?: unknown }>) {
+  function buildFunnelStatus(handlers: Record<string, { Proxy?: any }>) {
     const host = "device.tailnet.ts.net:443";
     return {
       AllowFunnel: { [host]: true },
       Web: {
         [host]: { Handlers: handlers },
       },
-    } as Record<string, unknown>;
+    } as Record<string, any>;
   }
 
   it("matches a Funnel route whose Proxy is a full http URL", () => {
@@ -352,7 +352,7 @@ describe("tailscaleFunnelStatusCoversPort", () => {
           Handlers: { "/": { Proxy: "http://127.0.0.1:18789" } },
         },
       },
-    } as Record<string, unknown>;
+    } as Record<string, any>;
     expect(tailscaleFunnelStatusCoversPort(status, 18789)).toBe(false);
   });
 

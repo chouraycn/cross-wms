@@ -92,12 +92,12 @@ export function repairJson(json: string): string {
   return repaired;
 }
 
-export function parseJsonWithRepair(json: string): unknown {
+export function parseJsonWithRepair(json: string): any {
   const repairedJson = repairJson(json);
   if (repairedJson !== json) {
-    return JSON.parse(repairedJson) as unknown;
+    return JSON.parse(repairedJson) as any;
   }
-  return JSON.parse(json) as unknown;
+  return JSON.parse(json) as any;
 }
 
 function looksLikeWindowsPathPrefix(prefix: string): boolean {
@@ -105,13 +105,13 @@ function looksLikeWindowsPathPrefix(prefix: string): boolean {
   return /(?:^|[^A-Za-z0-9])[A-Za-z]:(?:[\\/][^"\\/:*?<>|\r\n]*)*$/.test(tail);
 }
 
-function asStreamingJsonRecord(value: unknown): Record<string, unknown> {
+function asStreamingJsonRecord(value: any): Record<string, any> {
   return value !== null && typeof value === "object" && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
+    ? (value as Record<string, any>)
     : {};
 }
 
-export function parseStreamingJson(partialJson: string | undefined): Record<string, unknown> {
+export function parseStreamingJson(partialJson: string | undefined): Record<string, any> {
   if (!partialJson || partialJson.trim() === "") {
     return {};
   }

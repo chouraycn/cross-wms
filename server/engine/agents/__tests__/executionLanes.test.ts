@@ -245,7 +245,7 @@ describe('ExecutionLanes', () => {
       };
 
       // release 任意函数不应抛错（内部 release 仅为 token() 调用）
-      expect(() => lanes.release('cron', fakeToken as unknown)).not.toThrow();
+      expect(() => lanes.release('cron', fakeToken as any)).not.toThrow();
       // 状态应保持不变
       expect(lanes.getLaneStatus('cron').used).toBe(0);
     });
@@ -261,7 +261,7 @@ describe('ExecutionLanes', () => {
 
     it('release 不存在的车道应不抛错', () => {
       const fakeToken = () => {};
-      expect(() => lanes.release('non-existent-lane', fakeToken as unknown)).not.toThrow();
+      expect(() => lanes.release('non-existent-lane', fakeToken as any)).not.toThrow();
     });
   });
 

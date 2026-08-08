@@ -125,7 +125,7 @@ async function readMigrationConfig(
   return await configModule.readBestEffortConfig();
 }
 
-function normalizeRegistryReference(value: unknown): string | undefined {
+function normalizeRegistryReference(value: any): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }
@@ -176,7 +176,7 @@ function createMigrationPluginIdNormalizer(
 function addPluginReference(
   references: Set<string>,
   normalizePluginId: (pluginId: string) => string,
-  value: unknown,
+  value: any,
 ): void {
   if (typeof value !== "string") {
     return;
@@ -214,7 +214,7 @@ function listConfiguredModelProviderIds(config: OpenClawConfig): Set<string> {
 function listMigrationRelevantPluginRecords(params: {
   index: InstalledPluginIndex;
   config: OpenClawConfig;
-  installRecords: Record<string, unknown>;
+  installRecords: Record<string, any>;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
 }): readonly InstalledPluginIndexRecord[] {

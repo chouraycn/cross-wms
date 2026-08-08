@@ -23,7 +23,7 @@ const TtsToolSchema = Type.Object({
   ),
 });
 
-function readTtsTimeoutMs(args: Record<string, unknown>): number | undefined {
+function readTtsTimeoutMs(args: Record<string, any>): number | undefined {
   return readPositiveIntegerParam(args, "timeoutMs", {
     message: "timeoutMs must be a positive integer in milliseconds.",
   });
@@ -58,7 +58,7 @@ export function createTtsTool(opts?: {
       "Use only for explicit audio intent (voice/speech/TTS) or active TTS config. Never use for ordinary text replies. Audio auto-delivered from tool result; after success follow reply instructions, no duplicate text/audio.",
     parameters: TtsToolSchema,
     execute: async (_toolCallId, args) => {
-      const params = args as Record<string, unknown>;
+      const params = args as Record<string, any>;
       const text = readStringParam(params, "text", { required: true });
       const channel = readStringParam(params, "channel");
       const timeoutMs = readTtsTimeoutMs(params);

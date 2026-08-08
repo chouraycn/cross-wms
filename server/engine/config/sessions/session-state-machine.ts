@@ -13,7 +13,7 @@ interface Transition {
 interface StateMachineContext {
   sessionId: string;
   currentStatus: SessionStatus;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
 }
 
 const TRANSITIONS: Transition[] = [
@@ -149,7 +149,7 @@ export class SessionStateMachine {
     return [...new Set(possible)];
   }
 
-  updateContext(metadata: Record<string, unknown>): void {
+  updateContext(metadata: Record<string, any>): void {
     this.context.metadata = { ...this.context.metadata, ...metadata };
   }
 

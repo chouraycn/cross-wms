@@ -120,6 +120,6 @@ export function createProviderRegistry(): ProviderRegistry {
 export const providerRegistry: ProviderRegistry = createProviderRegistry();
 
 /** 列举已注册的 Speech Provider，以 SpeechProviderPlugin 形态返回。 */
-export function listSpeechProviders(_cfg?: unknown): SpeechProviderPlugin[] {
+export function listSpeechProviders(_cfg?: any): SpeechProviderPlugin[] {
   return providerRegistry.list() as unknown as SpeechProviderPlugin[];
 }

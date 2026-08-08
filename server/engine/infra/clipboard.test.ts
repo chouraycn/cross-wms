@@ -5,7 +5,7 @@ const runCommandWithTimeoutMock = vi.hoisted(() => vi.fn());
 const isWSL2SyncMock = vi.hoisted(() => vi.fn(() => false));
 
 vi.mock("../process/exec.js", () => ({
-  runCommandWithTimeout: (...args: unknown[]) => runCommandWithTimeoutMock(...args),
+  runCommandWithTimeout: (...args: any[]) => runCommandWithTimeoutMock(...args),
 }));
 
 vi.mock("./wsl.js", () => ({

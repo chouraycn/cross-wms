@@ -13,10 +13,10 @@ export interface ExecutionErrorInfo {
   category: ExecutionErrorCategory;
   message: string;
   retryable: boolean;
-  details?: Record<string, unknown>;
+  details?: Record<string, any>;
 }
 
-export function classifyExecutionError(error: unknown): ExecutionErrorInfo {
+export function classifyExecutionError(error: any): ExecutionErrorInfo {
   const message = error instanceof Error ? error.message : String(error);
 
   if (message.includes("delivery") || message.includes("target")) {
@@ -74,7 +74,7 @@ export function classifyExecutionError(error: unknown): ExecutionErrorInfo {
   };
 }
 
-export function createErrorOutcome(error: unknown): CronRunOutcome {
+export function createErrorOutcome(error: any): CronRunOutcome {
   const info = classifyExecutionError(error);
   return {
     status: "error",

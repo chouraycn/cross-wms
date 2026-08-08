@@ -294,7 +294,7 @@ class TriggerEngine {
     const eventListener = getEventListener();
 
     // 注册事件监听
-    eventListener.subscribe(eventName, async (eventPayload: Record<string, unknown>) => {
+    eventListener.subscribe(eventName, async (eventPayload: Record<string, any>) => {
       // 检查触发条件
       if (trigger.config.condition) {
         if (!this.evaluateCondition(trigger.config.condition, eventPayload)) {
@@ -479,7 +479,7 @@ class TriggerEngine {
     triggerId: string,
     automationId: string,
     triggerSource: TriggerType,
-    triggerDetail?: Record<string, unknown>
+    triggerDetail?: Record<string, any>
   ): Promise<TriggerExecutionResult> {
     const trigger = this.triggers.get(triggerId);
     const automation = getAutomationById(automationId);
@@ -590,7 +590,7 @@ class TriggerEngine {
    */
   private evaluateCondition(
     conditionGroup: TriggerConditionGroup,
-    payload: Record<string, unknown>
+    payload: Record<string, any>
   ): boolean {
     const results = conditionGroup.conditions.map(cond => {
       // 如果是嵌套条件组

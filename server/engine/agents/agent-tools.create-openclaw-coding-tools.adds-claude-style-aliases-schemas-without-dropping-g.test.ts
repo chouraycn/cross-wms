@@ -13,11 +13,11 @@ import * as windowsEncoding from "../infra/windows-encoding.js";
 import { createOpenClawReadTool, createSandboxedReadTool } from "./agent-tools.read.js";
 import { createHostSandboxFsBridge } from "./test-helpers/host-sandbox-fs-bridge.js";
 
-function extractToolText(result: unknown): string {
+function extractToolText(result: any): string {
   if (!result || typeof result !== "object") {
     return "";
   }
-  const content = (result as { content?: unknown }).content;
+  const content = (result as { content?: any }).content;
   if (!Array.isArray(content)) {
     return "";
   }
@@ -25,8 +25,8 @@ function extractToolText(result: unknown): string {
     return (
       block &&
       typeof block === "object" &&
-      (block as { type?: unknown }).type === "text" &&
-      typeof (block as { text?: unknown }).text === "string"
+      (block as { type?: any }).type === "text" &&
+      typeof (block as { text?: any }).text === "string"
     );
   }) as { text?: string } | undefined;
   return textBlock?.text ?? "";
@@ -187,7 +187,7 @@ describe("createOpenClawCodingTools read behavior", () => {
   });
 
   it("returns already-read adaptive content when pagination reaches EOF", async () => {
-    const readResult: AgentToolResult<unknown> = {
+    const readResult: AgentToolResult<any> = {
       content: [
         {
           type: "text",
@@ -249,7 +249,7 @@ describe("createOpenClawCodingTools read behavior", () => {
   });
 
   it("strips truncation.content details from read results while preserving other fields", async () => {
-    const readResult: AgentToolResult<unknown> = {
+    const readResult: AgentToolResult<any> = {
       content: [{ type: "text" as const, text: "line-0001" }],
       details: {
         truncation: {
@@ -277,7 +277,7 @@ describe("createOpenClawCodingTools read behavior", () => {
     );
     const result = await wrapped.execute("read-strip-1", { path: "demo.txt", limit: 1 });
 
-    const details = (result as { details?: { truncation?: Record<string, unknown> } }).details;
+    const details = (result as { details?: { truncation?: Record<string, any> } }).details;
     expect(details?.truncation?.truncated).toBe(true);
     expect(details?.truncation?.outputLines).toBe(1);
     expect(details?.truncation?.firstLineExceedsLimit).toBe(false);

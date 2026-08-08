@@ -106,7 +106,7 @@ const GENERATION_PROVIDER_ENV_VARS = [
   "XAI_API_KEY",
 ];
 
-function asConfig(value: unknown): OpenClawConfig {
+function asConfig(value: any): OpenClawConfig {
   return value as OpenClawConfig;
 }
 
@@ -223,7 +223,7 @@ function createVideoProviderSnapshot(params: {
   };
 }
 
-function mockVideoPluginProvider(capabilities: Record<string, unknown> = {}) {
+function mockVideoPluginProvider(capabilities: Record<string, any> = {}) {
   vi.spyOn(videoGenerationRuntime, "listRuntimeVideoGenerationProviders").mockReturnValue([
     {
       id: "video-plugin",
@@ -270,15 +270,15 @@ function mockSavedVideoResult(fileName = "out.mp4") {
   return generateSpy;
 }
 
-function resultDetails(result: { details?: unknown }): Record<string, unknown> {
+function resultDetails(result: { details?: any }): Record<string, any> {
   if (result.details === undefined) {
     throw new Error("Expected video generation result details");
   }
   expect(typeof result.details).toBe("object");
-  return result.details as Record<string, unknown>;
+  return result.details as Record<string, any>;
 }
 
-function firstMockCallArg(mock: { mock: { calls: unknown[][] } }): unknown {
+function firstMockCallArg(mock: { mock: { calls: any[][] } }): any {
   const firstCall = mock.mock.calls[0];
   if (!firstCall) {
     throw new Error("Expected first mock call");
@@ -286,7 +286,7 @@ function firstMockCallArg(mock: { mock: { calls: unknown[][] } }): unknown {
   return firstCall[0];
 }
 
-function firstMockCall(mock: { mock: { calls: unknown[][] } }): unknown[] {
+function firstMockCall(mock: { mock: { calls: any[][] } }): any[] {
   const firstCall = mock.mock.calls[0];
   if (!firstCall) {
     throw new Error("Expected first mock call");
@@ -296,7 +296,7 @@ function firstMockCall(mock: { mock: { calls: unknown[][] } }): unknown[] {
 
 function toolParameterProperties(tool: ReturnType<typeof createVideoGenerateTool>) {
   const parameters = expectVideoGenerateTool(tool).parameters as {
-    properties?: Record<string, unknown>;
+    properties?: Record<string, any>;
   };
   return parameters.properties ?? {};
 }
@@ -672,7 +672,7 @@ describe("createVideoGenerateTool", () => {
     expect((details.media as { mediaUrls?: string[] }).mediaUrls).toEqual([
       "/tmp/generated-lobster.mp4",
     ]);
-    expect((details.media as { attachments?: unknown }).attachments).toEqual([
+    expect((details.media as { attachments?: any }).attachments).toEqual([
       {
         type: "video",
         path: "/tmp/generated-lobster.mp4",
@@ -956,7 +956,7 @@ describe("createVideoGenerateTool", () => {
     const wake = firstMockCallArg(wakeSpy) as {
       handle: { taskId?: string };
       status: string;
-      attachments: unknown[];
+      attachments: any[];
       result: string;
     };
     expect(wake.handle.taskId).toBe("task-123");
@@ -1426,7 +1426,7 @@ describe("createVideoGenerateTool", () => {
     await expect(
       tool.execute("call-1", {
         prompt: "lobster",
-        providerOptions: ["seed", 42] as unknown as Record<string, unknown>,
+        providerOptions: ["seed", 42] as unknown as Record<string, any>,
       }),
     ).rejects.toThrow(
       "providerOptions must be a JSON object keyed by provider-specific option name.",
@@ -1435,7 +1435,7 @@ describe("createVideoGenerateTool", () => {
     await expect(
       tool.execute("call-2", {
         prompt: "lobster",
-        providerOptions: "seed=42" as unknown as Record<string, unknown>,
+        providerOptions: "seed=42" as unknown as Record<string, any>,
       }),
     ).rejects.toThrow(
       "providerOptions must be a JSON object keyed by provider-specific option name.",
@@ -1457,7 +1457,7 @@ describe("createVideoGenerateTool", () => {
 
     const input = firstMockCallArg(generateSpy) as {
       autoProviderFallback?: boolean;
-      providerOptions?: unknown;
+      providerOptions?: any;
     };
     expect(input.autoProviderFallback).toBe(false);
     expect(input.providerOptions).toEqual({ seed: 42, draft: true });
@@ -1574,7 +1574,7 @@ describe("createVideoGenerateTool", () => {
 
     const loadCall = firstMockCall(vi.mocked(webMedia.loadWebMedia));
     expect(loadCall?.[0]).toBe("/tmp/reference.png");
-    const loadOptions = loadCall?.[1] as { ssrfPolicy?: unknown } | undefined;
+    const loadOptions = loadCall?.[1] as { ssrfPolicy?: any } | undefined;
     expect(loadOptions?.ssrfPolicy).toEqual({ allowRfc2544BenchmarkRange: true });
   });
 

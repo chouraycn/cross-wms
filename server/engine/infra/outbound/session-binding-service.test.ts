@@ -84,17 +84,17 @@ function createRecord(input: SessionBindingBindInput): SessionBindingRecord {
   };
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error(`expected ${label} to be a record`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 function firstMockArg(
-  mock: { mock: { calls: readonly unknown[][] } },
+  mock: { mock: { calls: readonly any[][] } },
   label: string,
-): Record<string, unknown> {
+): Record<string, any> {
   const [call] = mock.mock.calls;
   if (!call) {
     throw new Error(`expected ${label} call`);
@@ -103,13 +103,13 @@ function firstMockArg(
   return requireRecord(arg, `${label} input`);
 }
 
-function expectRecordFields(record: Record<string, unknown>, fields: Record<string, unknown>) {
+function expectRecordFields(record: Record<string, any>, fields: Record<string, any>) {
   for (const [key, value] of Object.entries(fields)) {
     expect(record[key]).toEqual(value);
   }
 }
 
-async function expectSessionBindingError(promise: Promise<unknown>, code: string) {
+async function expectSessionBindingError(promise: Promise<any>, code: string) {
   try {
     await promise;
   } catch (error) {
@@ -119,7 +119,7 @@ async function expectSessionBindingError(promise: Promise<unknown>, code: string
   throw new Error(`expected ${code} session binding error`);
 }
 
-function expectConversationFields(value: unknown, fields: Record<string, unknown>) {
+function expectConversationFields(value: any, fields: Record<string, any>) {
   expectRecordFields(requireRecord(value, "conversation"), fields);
 }
 
@@ -237,7 +237,7 @@ describe("session binding service", () => {
         },
         placement: "child",
       })
-      .catch((error: unknown) => error);
+      .catch((error: any) => error);
 
     expect(isSessionBindingError(rejected)).toBe(true);
     const rejectedRecord = requireRecord(rejected, "session binding error");

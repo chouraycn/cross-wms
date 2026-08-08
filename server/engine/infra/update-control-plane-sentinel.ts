@@ -58,11 +58,11 @@ export function isPendingControlPlaneUpdateRestartSentinel(
   );
 }
 
-function normalizeText(value: unknown): string | undefined {
+function normalizeText(value: any): string | undefined {
   return typeof value === "string" && value.trim() ? value : undefined;
 }
 
-function normalizeMeta(value: unknown): UpdateRestartSentinelMeta | null {
+function normalizeMeta(value: any): UpdateRestartSentinelMeta | null {
   if (!isRecord(value)) {
     return null;
   }
@@ -105,7 +105,7 @@ export async function readControlPlaneUpdateSentinelMeta(
   }
   try {
     const raw = await fs.readFile(filePath, "utf-8");
-    const parsed = JSON.parse(raw) as unknown;
+    const parsed = JSON.parse(raw) as any;
     if (!isRecord(parsed) || parsed.version !== 1) {
       return null;
     }

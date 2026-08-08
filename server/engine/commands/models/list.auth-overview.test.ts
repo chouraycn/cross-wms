@@ -5,7 +5,7 @@ import { resolveEnvApiKey } from "../../agents/model-auth.js";
 import { withEnv } from "../../test-utils/env.js";
 import { resolveProviderAuthOverview } from "./list.auth-overview.js";
 
-const persistedStores = vi.hoisted(() => new Map<string, { profiles: Record<string, unknown> }>());
+const persistedStores = vi.hoisted(() => new Map<string, { profiles: Record<string, any> }>());
 
 vi.mock("../../agents/auth-profiles/display.js", () => ({
   resolveAuthProfileDisplayLabel: vi.fn(({ profileId }: { profileId: string }) => profileId),

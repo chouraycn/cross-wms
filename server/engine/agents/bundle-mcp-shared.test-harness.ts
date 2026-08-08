@@ -6,12 +6,12 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function writeExecutable(..._args: unknown[]): unknown {
+export function writeExecutable(..._args: any[]): any {
   return undefined;
 }
-export function writeBundleProbeMcpServer(..._args: unknown[]): unknown {
+export function writeBundleProbeMcpServer(..._args: any[]): any {
   return undefined;
 }
-export function writeClaudeBundle(..._args: unknown[]): unknown {
+export function writeClaudeBundle(..._args: any[]): any {
   return undefined;
 }

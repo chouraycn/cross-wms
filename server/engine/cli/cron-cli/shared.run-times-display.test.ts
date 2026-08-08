@@ -4,10 +4,10 @@ import { formatTimestamp } from "../../logging/timestamps.js";
 import { defaultRuntime } from "../../runtime.js";
 import { printCronJson } from "./shared.js";
 
-function captureCronJson(value: unknown): unknown {
-  let written: unknown;
+function captureCronJson(value: any): any {
+  let written: any;
   const original = defaultRuntime.writeJson;
-  defaultRuntime.writeJson = (v: unknown) => {
+  defaultRuntime.writeJson = (v: any) => {
     written = v;
   };
   try {
@@ -32,7 +32,7 @@ describe("printCronJson readable run times", () => {
         },
       ],
     });
-    const entry = (written as { entries: Array<Record<string, unknown>> }).entries[0];
+    const entry = (written as { entries: Array<Record<string, any>> }).entries[0];
     expect(entry?.tsIso).toBe(formatTimestamp(new Date(1_733_551_200_123), { style: "long" }));
     expect(entry?.runAtIso).toBe(formatTimestamp(new Date(1_733_551_200_000), { style: "long" }));
     expect(entry?.nextRunAtIso).toBe(
@@ -49,7 +49,7 @@ describe("printCronJson readable run times", () => {
     const written = captureCronJson({
       entries: [{ ts: 1_733_551_200_123, jobId: "job-1", action: "finished", status: "ok" }],
     });
-    const entry = (written as { entries: Array<Record<string, unknown>> }).entries[0];
+    const entry = (written as { entries: Array<Record<string, any>> }).entries[0];
     expect(entry?.tsIso).toBeDefined();
     expect(entry?.runAtIso).toBeUndefined();
     expect(entry?.nextRunAtIso).toBeUndefined();
@@ -57,7 +57,7 @@ describe("printCronJson readable run times", () => {
 
   it("leaves non-run-log entries untouched", () => {
     const written = captureCronJson({ entries: [{ status: "error" }] });
-    const entry = (written as { entries: Array<Record<string, unknown>> }).entries[0];
+    const entry = (written as { entries: Array<Record<string, any>> }).entries[0];
     expect(entry?.tsIso).toBeUndefined();
     expect(entry?.runAtIso).toBeUndefined();
   });

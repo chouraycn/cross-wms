@@ -52,7 +52,7 @@ function createEmptyResourceLoader(): ResourceLoader {
 }
 
 function createResourceLoaderWithHandlers(
-  handlers: Map<string, Array<(...args: unknown[]) => Promise<unknown>>>,
+  handlers: Map<string, Array<(...args: any[]) => Promise<any>>>,
 ): ResourceLoader {
   const extensionsResult: LoadExtensionsResult = {
     extensions:
@@ -112,7 +112,7 @@ async function createSessionAndStreamModel(model: Model): Promise<SimpleStreamOp
 
 function appendPersistedAssistantMessage(params: {
   sessionManager: SessionManager;
-  content: unknown;
+  content: any;
   stopReason?: "stop" | "aborted";
 }) {
   params.sessionManager.appendMessage({
@@ -145,7 +145,7 @@ async function createSessionFromManager(sessionManager: SessionManager) {
   return session;
 }
 
-async function createSessionWithPersistedAssistantContent(content: unknown) {
+async function createSessionWithPersistedAssistantContent(content: any) {
   const sessionManager = SessionManager.inMemory();
   appendPersistedAssistantMessage({ sessionManager, content });
   return await createSessionFromManager(sessionManager);
@@ -367,7 +367,7 @@ describe("createAgentSession tool defaults", () => {
     });
 
     const handleAgentEvent = (
-      session as unknown as { handleAgentEvent(event: unknown): Promise<void> }
+      session as unknown as { handleAgentEvent(event: any): Promise<void> }
     )["handleAgentEvent"];
 
     await handleAgentEvent({
@@ -385,7 +385,7 @@ describe("createAgentSession tool defaults", () => {
 
   it("runs write-capable tool hooks under the configured write lock", async () => {
     const events: string[] = [];
-    const handlers = new Map<string, Array<(...args: unknown[]) => Promise<unknown>>>([
+    const handlers = new Map<string, Array<(...args: any[]) => Promise<any>>>([
       [
         "tool_call",
         [

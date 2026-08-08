@@ -190,7 +190,7 @@ describe("buildSystemPromptReport", () => {
 
   it("keeps reporting when a tool schema cannot be stringified", () => {
     const file = makeBootstrapFile({ path: "/tmp/workspace/AGENTS.md" });
-    const circularSchema: Record<string, unknown> = {
+    const circularSchema: Record<string, any> = {
       type: "object",
       properties: { count: { type: "integer" } },
     };

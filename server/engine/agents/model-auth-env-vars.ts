@@ -7,8 +7,8 @@
 
 /** Resolves both env-var candidates and richer auth evidence from one manifest snapshot. */
 export function resolveProviderEnvAuthLookupMaps(
-  _params?: Record<string, unknown>,
-): { envCandidateMap: Record<string, readonly string[]>; authEvidenceMap: Record<string, readonly unknown[]> } {
+  _params?: Record<string, any>,
+): { envCandidateMap: Record<string, readonly string[]>; authEvidenceMap: Record<string, readonly any[]> } {
   // Cross-wms does not have the secrets/provider-env-vars module.
   return { envCandidateMap: {}, authEvidenceMap: {} };
 }
@@ -16,7 +16,7 @@ export function resolveProviderEnvAuthLookupMaps(
 /** Lists every provider key represented by either env candidates or auth evidence. */
 export function listProviderEnvAuthLookupKeys(params: {
   envCandidateMap: Readonly<Record<string, readonly string[]>>;
-  authEvidenceMap: Readonly<Record<string, readonly unknown[]>>;
+  authEvidenceMap: Readonly<Record<string, readonly any[]>>;
 }): string[] {
   return Array.from(
     new Set([...Object.keys(params.envCandidateMap), ...Object.keys(params.authEvidenceMap)]),

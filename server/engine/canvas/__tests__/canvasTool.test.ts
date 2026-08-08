@@ -27,7 +27,7 @@ import type {
 describe('Canvas Tool — 画布工具', () => {
   let tempDir: string;
   let mockNodes: CanvasNodeInfo[];
-  let mockCallHistory: Array<{ command: string; params: Record<string, unknown> }>;
+  let mockCallHistory: Array<{ command: string; params: Record<string, any> }>;
 
   const mockListNodes = async (_opts: CanvasGatewayOptions): Promise<CanvasNodeInfo[]> => {
     return mockNodes;
@@ -36,8 +36,8 @@ describe('Canvas Tool — 画布工具', () => {
   const mockCallGatewayTool = async (
     command: string,
     _opts: CanvasGatewayOptions,
-    params: Record<string, unknown>,
-  ): Promise<{ payload?: unknown }> => {
+    params: Record<string, any>,
+  ): Promise<{ payload?: any }> => {
     mockCallHistory.push({ command, params });
 
     if (command === 'node.invoke' && params.command === 'canvas.snapshot') {
@@ -108,8 +108,8 @@ describe('Canvas Tool — 画布工具', () => {
     const lastCall = mockCallHistory[mockCallHistory.length - 1];
     expect(lastCall.command).toBe('node.invoke');
     expect(lastCall.params.command).toBe('canvas.present');
-    expect((lastCall.params.params as unknown).url).toBe('https://example.com');
-    expect((lastCall.params.params as unknown).placement).toBeDefined();
+    expect((lastCall.params.params as any).url).toBe('https://example.com');
+    expect((lastCall.params.params as any).placement).toBeDefined();
   });
 
   // 3
@@ -139,7 +139,7 @@ describe('Canvas Tool — 画布工具', () => {
 
     const lastCall = mockCallHistory[mockCallHistory.length - 1];
     expect(lastCall.params.command).toBe('canvas.navigate');
-    expect((lastCall.params.params as unknown).url).toBe('https://example.com/page');
+    expect((lastCall.params.params as any).url).toBe('https://example.com/page');
   });
 
   // 5
@@ -156,9 +156,9 @@ describe('Canvas Tool — 画布工具', () => {
 
     const lastCall = mockCallHistory[mockCallHistory.length - 1];
     expect(lastCall.params.command).toBe('canvas.eval');
-    expect((lastCall.params.params as unknown).javaScript).toBe('document.title');
+    expect((lastCall.params.params as any).javaScript).toBe('document.title');
     expect(result.content[0].type).toBe('text');
-    expect((result.content[0] as unknown).text).toBe('eval-result');
+    expect((result.content[0] as any).text).toBe('eval-result');
   });
 
   // 6
@@ -179,7 +179,7 @@ describe('Canvas Tool — 画布工具', () => {
     expect(textContent).toBeDefined();
     expect(textContent.text).toContain('saved to');
 
-    const filePath = (result.details as unknown)?.path;
+    const filePath = (result.details as any)?.path;
     expect(filePath).toBeDefined();
     const exists = await fs.access(filePath).then(() => true).catch(() => false);
     expect(exists).toBe(true);

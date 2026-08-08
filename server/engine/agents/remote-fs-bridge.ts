@@ -7,13 +7,13 @@
 export type RemoteShellSandboxHandle = {
   remoteWorkspaceDir: string;
   remoteAgentWorkspaceDir: string;
-  runRemoteShellScript: (params: unknown) => Promise<unknown>;
+  runRemoteShellScript: (params: any) => Promise<any>;
 };
 
 export type SandboxFsBridge = unknown;
 
 export function createRemoteShellSandboxFsBridge(_params: {
-  sandbox: unknown;
+  sandbox: any;
   runtime: RemoteShellSandboxHandle;
 }): SandboxFsBridge {
   return null;

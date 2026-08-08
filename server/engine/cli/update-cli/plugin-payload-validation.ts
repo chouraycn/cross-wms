@@ -90,7 +90,7 @@ export async function runPluginPayloadSmokeCheck(params: {
       continue;
     }
 
-    let manifest: PackageManifest & { main?: unknown; exports?: unknown };
+    let manifest: PackageManifest & { main?: any; exports?: any };
     try {
       manifest = JSON.parse(await fs.readFile(packageJsonPath, "utf8")) as typeof manifest;
     } catch (err) {
@@ -171,12 +171,12 @@ export async function runPluginPayloadSmokeCheck(params: {
 }
 
 function manifestDeclaresOpenClawPeer(manifest: PackageManifest): boolean {
-  const peerDependencies = (manifest as { peerDependencies?: unknown }).peerDependencies;
+  const peerDependencies = (manifest as { peerDependencies?: any }).peerDependencies;
   return (
     typeof peerDependencies === "object" &&
     peerDependencies !== null &&
     !Array.isArray(peerDependencies) &&
-    typeof (peerDependencies as Record<string, unknown>).openclaw === "string"
+    typeof (peerDependencies as Record<string, any>).openclaw === "string"
   );
 }
 

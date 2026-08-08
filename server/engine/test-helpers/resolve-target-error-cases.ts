@@ -8,7 +8,7 @@ export type ResolveTargetMode = "explicit" | "implicit" | "heartbeat";
 export type ResolveTargetResult = {
   ok: boolean;
   to?: string;
-  error?: unknown;
+  error?: any;
 };
 
 export type ResolveTargetFn = (params: {

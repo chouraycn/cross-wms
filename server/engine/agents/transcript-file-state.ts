@@ -6,13 +6,13 @@
 
 export type TranscriptPersistedEntry = {
   sessionId?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 export class TranscriptFileState {
   private entry: TranscriptPersistedEntry = {};
 
-  constructor(_params?: unknown) {}
+  constructor(_params?: any) {}
 
   getEntry(): TranscriptPersistedEntry {
     return this.entry;
@@ -23,14 +23,14 @@ export class TranscriptFileState {
   }
 }
 
-export function readTranscriptFileState(_params: unknown): TranscriptFileState {
+export function readTranscriptFileState(_params: any): TranscriptFileState {
   return new TranscriptFileState();
 }
 
-export function writeTranscriptFileAtomic(_params: unknown): void {
+export function writeTranscriptFileAtomic(_params: any): void {
   // no-op in cross-wms降级实现
 }
 
-export function persistTranscriptStateMutation(_params: unknown): void {
+export function persistTranscriptStateMutation(_params: any): void {
   // no-op in cross-wms降级实现
 }

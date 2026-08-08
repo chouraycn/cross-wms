@@ -21,9 +21,9 @@ export type ResolvedRealtimeVoiceProvider = {
 /** Inputs for resolving a configured or auto-selected realtime voice provider. */
 export type ResolveConfiguredRealtimeVoiceProviderParams = {
   configuredProviderId?: string;
-  providerConfigs?: Record<string, Record<string, unknown> | undefined>;
+  providerConfigs?: Record<string, Record<string, any> | undefined>;
   /** Last-mile overrides from a session/client request. */
-  providerConfigOverrides?: Record<string, unknown>;
+  providerConfigOverrides?: Record<string, any>;
   cfg?: TalkRuntimeConfig;
   /** Test/runtime override for the provider list. */
   providers?: RealtimeVoiceProviderPlugin[];

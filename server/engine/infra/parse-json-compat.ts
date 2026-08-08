@@ -5,7 +5,7 @@
 
 import JSON5 from "json5";
 
-export function parseJsonWithJson5Fallback(raw: string): unknown {
+export function parseJsonWithJson5Fallback(raw: string): any {
   try {
     return JSON.parse(raw);
   } catch {

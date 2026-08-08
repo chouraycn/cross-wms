@@ -18,7 +18,7 @@ export type SessionResourceCleanup = (sessionId?: string) => void;
 export type CleanupResult = {
   success: number;
   failures: number;
-  errors: unknown[];
+  errors: any[];
 };
 
 /** 进程内清理钩子注册表。 */
@@ -56,7 +56,7 @@ export function registerScopedSessionResourceCleanup(
 
 /** 执行所有全局清理钩子（聚合错误）。 */
 export function cleanupSessionResources(sessionId?: string): CleanupResult {
-  const errors: unknown[] = [];
+  const errors: any[] = [];
   let success = 0;
   for (const cleanup of sessionCleanups) {
     try {
@@ -75,7 +75,7 @@ export function cleanupSession(sessionId: string): CleanupResult {
   const globalResult = cleanupSessionResources(sessionId);
   const scoped = sessionScopedCleanups.get(sessionId);
   if (!scoped) return globalResult;
-  const errors: unknown[] = [...globalResult.errors];
+  const errors: any[] = [...globalResult.errors];
   let success = globalResult.success;
   for (const cleanup of scoped) {
     try {

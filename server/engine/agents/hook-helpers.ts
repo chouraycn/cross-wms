@@ -6,9 +6,9 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function runAgentHarnessAfterToolCallHook(..._args: unknown[]): unknown {
+export function runAgentHarnessAfterToolCallHook(..._args: any[]): any {
   return undefined;
 }
-export function runAgentHarnessBeforeMessageWriteHook(..._args: unknown[]): unknown {
+export function runAgentHarnessBeforeMessageWriteHook(..._args: any[]): any {
   return undefined;
 }

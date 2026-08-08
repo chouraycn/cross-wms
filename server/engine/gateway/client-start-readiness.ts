@@ -25,7 +25,7 @@ import {
  */
 export type GatewayClientStartable = {
   start(): Promise<void> | void;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 /**

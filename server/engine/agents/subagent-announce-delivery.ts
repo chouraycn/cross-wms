@@ -6,25 +6,25 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export const testing: unknown = undefined;
-export function resolveSubagentAnnounceTimeoutMs(..._args: unknown[]): unknown {
+export const testing: any = undefined;
+export function resolveSubagentAnnounceTimeoutMs(..._args: any[]): any {
   return undefined;
 }
-export function isInternalAnnounceRequesterSession(..._args: unknown[]): unknown {
+export function isInternalAnnounceRequesterSession(..._args: any[]): any {
   return false;
 }
-export async function runAnnounceDeliveryWithRetry(..._args: unknown[]): Promise<unknown> {
+export async function runAnnounceDeliveryWithRetry(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
-export async function resolveSubagentCompletionOrigin(..._args: unknown[]): Promise<unknown> {
+export async function resolveSubagentCompletionOrigin(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
-export function loadRequesterSessionEntry(..._args: unknown[]): unknown {
+export function loadRequesterSessionEntry(..._args: any[]): any {
   return undefined;
 }
-export function loadSessionEntryByKey(..._args: unknown[]): unknown {
+export function loadSessionEntryByKey(..._args: any[]): any {
   return undefined;
 }
-export async function deliverSubagentAnnouncement(..._args: unknown[]): Promise<unknown> {
+export async function deliverSubagentAnnouncement(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }

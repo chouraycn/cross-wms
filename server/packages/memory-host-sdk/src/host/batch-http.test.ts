@@ -9,15 +9,15 @@ type RetryOptions = {
   attempts: number;
   minDelayMs: number;
   maxDelayMs: number;
-  shouldRetry: (err: unknown) => boolean;
+  shouldRetry: (err: any) => boolean;
 };
 
 type PostJsonParams = {
-  url?: unknown;
-  headers?: unknown;
-  body?: unknown;
-  errorPrefix?: unknown;
-  attachStatus?: unknown;
+  url?: any;
+  headers?: any;
+  body?: any;
+  errorPrefix?: any;
+  attachStatus?: any;
 };
 
 function requirePostJsonParams(
@@ -56,7 +56,7 @@ describe("postJsonWithRetry", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    retryAsyncMock = vi.fn(async (run: () => Promise<unknown>) => await run());
+    retryAsyncMock = vi.fn(async (run: () => Promise<any>) => await run());
   });
 
   it("posts JSON and returns parsed response payload", async () => {
@@ -94,7 +94,7 @@ describe("postJsonWithRetry", () => {
       Object.assign(new Error("memory batch failed: 503 backend down"), { status: 503 }),
     );
 
-    let error: unknown;
+    let error: any;
     try {
       await postJsonWithRetry({
         url: "https://memory.example/v1/batch",
@@ -109,6 +109,6 @@ describe("postJsonWithRetry", () => {
 
     expect(error).toBeInstanceOf(Error);
     expect((error as Error).message).toBe("memory batch failed: 503 backend down");
-    expect((error as { status?: unknown }).status).toBe(503);
+    expect((error as { status?: any }).status).toBe(503);
   });
 });

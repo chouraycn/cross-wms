@@ -50,7 +50,7 @@ export interface InstallStepResult {
   /** 错误信息 */
   error?: string;
   /** 步骤产出 */
-  output?: Record<string, unknown>;
+  output?: Record<string, any>;
 }
 
 /** 安装请求 */
@@ -68,7 +68,7 @@ export interface PluginInstallPipelineRequest {
   /** 是否跳过依赖解析 */
   skipDependencyResolution?: boolean;
   /** 自定义步骤处理器 */
-  stepHandlers?: Partial<Record<string, (ctx: InstallStepContext) => Promise<Record<string, unknown>>>>;
+  stepHandlers?: Partial<Record<string, (ctx: InstallStepContext) => Promise<Record<string, any>>>>;
 }
 
 /** 安装步骤上下文 */
@@ -185,7 +185,7 @@ async function executeStep(step: string, context: InstallStepContext): Promise<I
   const { request } = context;
 
   try {
-    let output: Record<string, unknown> = {};
+    let output: Record<string, any> = {};
 
     // 优先使用自定义处理器
     if (request.stepHandlers?.[step]) {
@@ -212,7 +212,7 @@ async function executeStep(step: string, context: InstallStepContext): Promise<I
 }
 
 /** 默认步骤处理器 */
-async function defaultStepHandler(step: string, context: InstallStepContext): Promise<Record<string, unknown>> {
+async function defaultStepHandler(step: string, context: InstallStepContext): Promise<Record<string, any>> {
   switch (step) {
     case INSTALL_STEP_DOWNLOAD:
       return handleDownload(context);
@@ -237,7 +237,7 @@ async function defaultStepHandler(step: string, context: InstallStepContext): Pr
 
 // ===================== 默认步骤实现 =====================
 
-async function handleDownload(ctx: InstallStepContext): Promise<Record<string, unknown>> {
+async function handleDownload(ctx: InstallStepContext): Promise<Record<string, any>> {
   logger.debug(`[InstallPipeline] download: ${ctx.request.sourcePath}`);
   // 验证来源
   if (!ctx.request.sourcePath) {
@@ -246,7 +246,7 @@ async function handleDownload(ctx: InstallStepContext): Promise<Record<string, u
   return { source: ctx.request.source, sourcePath: ctx.request.sourcePath };
 }
 
-async function handleExtract(ctx: InstallStepContext): Promise<Record<string, unknown>> {
+async function handleExtract(ctx: InstallStepContext): Promise<Record<string, any>> {
   logger.debug(`[InstallPipeline] extract: ${ctx.request.installPath}`);
   if (!ctx.request.installPath) {
     throw new PluginInstallError('installPath 不能为空', INSTALL_STEP_EXTRACT);
@@ -254,7 +254,7 @@ async function handleExtract(ctx: InstallStepContext): Promise<Record<string, un
   return { installPath: ctx.request.installPath, files: [] };
 }
 
-async function handleScanManifest(ctx: InstallStepContext): Promise<Record<string, unknown>> {
+async function handleScanManifest(ctx: InstallStepContext): Promise<Record<string, any>> {
   logger.debug('[InstallPipeline] scan-manifest');
   // 在实际实现中，这里会读取 manifest.json 文件
   // 降级：返回空 manifest
@@ -267,7 +267,7 @@ async function handleScanManifest(ctx: InstallStepContext): Promise<Record<strin
   return { manifest };
 }
 
-async function handleValidate(ctx: InstallStepContext): Promise<Record<string, unknown>> {
+async function handleValidate(ctx: InstallStepContext): Promise<Record<string, any>> {
   if (!ctx.manifest) {
     throw new PluginManifestError('manifest 未扫描', ['manifest is undefined']);
   }
@@ -283,13 +283,13 @@ async function handleValidate(ctx: InstallStepContext): Promise<Record<string, u
   return { valid: true, violations: [] };
 }
 
-async function handleSecurityScan(ctx: InstallStepContext): Promise<Record<string, unknown>> {
+async function handleSecurityScan(ctx: InstallStepContext): Promise<Record<string, any>> {
   logger.debug(`[InstallPipeline] security-scan: ${ctx.manifest?.id ?? 'unknown'}`);
   // 降级：返回通过
   return { ok: true, findings: [] };
 }
 
-async function handleResolveDeps(ctx: InstallStepContext): Promise<Record<string, unknown>> {
+async function handleResolveDeps(ctx: InstallStepContext): Promise<Record<string, any>> {
   if (!ctx.manifest) {
     return { resolved: true, dependencies: [] };
   }
@@ -305,12 +305,12 @@ async function handleResolveDeps(ctx: InstallStepContext): Promise<Record<string
   return { resolved: true, dependencies: result.resolved, loadOrder: result.loadOrder };
 }
 
-async function handlePersist(ctx: InstallStepContext): Promise<Record<string, unknown>> {
+async function handlePersist(ctx: InstallStepContext): Promise<Record<string, any>> {
   logger.debug(`[InstallPipeline] persist: ${ctx.manifest?.id ?? 'unknown'}`);
   return { persisted: true, installPath: ctx.request.installPath };
 }
 
-async function handleActivate(ctx: InstallStepContext): Promise<Record<string, unknown>> {
+async function handleActivate(ctx: InstallStepContext): Promise<Record<string, any>> {
   logger.debug(`[InstallPipeline] activate: ${ctx.manifest?.id ?? 'unknown'}`);
   // 实际激活由 plugin-lifecycle.ts 处理
   return { activated: true };

@@ -173,10 +173,10 @@ type EmbeddedAgentMeta = {
   provider?: string;
   model?: string;
   contextTokens?: number;
-  usage?: unknown;
-  lastCallUsage?: unknown;
-  promptTokens?: unknown;
-  [key: string]: unknown;
+  usage?: any;
+  lastCallUsage?: any;
+  promptTokens?: any;
+  [key: string]: any;
 };
 
 type UsageAccumulator = {
@@ -204,9 +204,9 @@ function toLastCallUsage(acc: UsageAccumulator): Record<string, number> | undefi
   };
 }
 
-function normalizeUsage(usage: unknown): Record<string, number> | undefined {
+function normalizeUsage(usage: any): Record<string, number> | undefined {
   if (!usage || typeof usage !== "object") return undefined;
-  const rec = usage as Record<string, unknown>;
+  const rec = usage as Record<string, any>;
   const result: Record<string, number> = {};
   for (const key of ["input", "output", "cacheRead", "cacheWrite", "total"]) {
     const val = rec[key];
@@ -249,7 +249,7 @@ export function buildErrorAgentMeta(params: {
   contextTokens?: number;
   usageAccumulator: UsageAccumulator;
   lastRunPromptUsage: UsageSnapshot | undefined;
-  lastAssistant?: { usage?: unknown } | null;
+  lastAssistant?: { usage?: any } | null;
   lastTurnTotal?: number;
 }): EmbeddedAgentMeta {
   const usageMeta = buildUsageAgentMetaFields({
@@ -272,9 +272,9 @@ export function buildErrorAgentMeta(params: {
 
 type AssistantMessage = {
   role: "assistant";
-  content: string | Array<{ type: string; text?: string; [key: string]: unknown }>;
+  content: string | Array<{ type: string; text?: string; [key: string]: any }>;
   stopReason?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 function extractAssistantVisibleText(msg: AssistantMessage): string {

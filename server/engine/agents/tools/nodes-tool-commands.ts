@@ -38,13 +38,13 @@ export type NodeCommandAction =
 
 export async function executeNodeCommandAction(params: {
   action: NodeCommandAction;
-  input: Record<string, unknown>;
+  input: Record<string, any>;
   gatewayOpts: GatewayCallOptions;
   allowMediaInvokeCommands?: boolean;
   mediaInvokeActions: Record<string, string>;
 }): Promise<
   | ReturnType<typeof jsonResult>
-  | { content: Array<{ type: "text"; text: string }>; details: Record<string, unknown> }
+  | { content: Array<{ type: "text"; text: string }>; details: Record<string, any> }
 > {
   switch (params.action) {
     case "camera_list":
@@ -148,7 +148,7 @@ export async function executeNodeCommandAction(params: {
         typeof params.input.invokeParamsJson === "string"
           ? params.input.invokeParamsJson.trim()
           : "";
-      let invokeParams: unknown = {};
+      let invokeParams: any = {};
       if (invokeParamsJson) {
         try {
           invokeParams = JSON.parse(invokeParamsJson);
@@ -177,10 +177,10 @@ async function invokeNodeCommandPayload(params: {
   gatewayOpts: GatewayCallOptions;
   node: string;
   command: string;
-  commandParams?: Record<string, unknown>;
-}): Promise<unknown> {
+  commandParams?: Record<string, any>;
+}): Promise<any> {
   const nodeId = await resolveNodeId(params.gatewayOpts, params.node);
-  const raw = await callGatewayTool<{ payload: unknown }>("node.invoke", params.gatewayOpts, {
+  const raw = await callGatewayTool<{ payload: any }>("node.invoke", params.gatewayOpts, {
     nodeId,
     command: params.command,
     params: params.commandParams ?? {},

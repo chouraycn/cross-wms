@@ -128,7 +128,7 @@ describe("session transcript runtime SDK", () => {
     ).resolves.toMatchObject({ ok: true, messageId: expect.any(String) });
     await expect(readLatestAssistantTextByIdentity(scope)).resolves.toBeUndefined();
     const assistantMessages = (await readSessionTranscriptEvents(scope)).filter((event) => {
-      const message = (event as { message?: { role?: unknown } }).message;
+      const message = (event as { message?: { role?: any } }).message;
       return message?.role === "assistant";
     });
     expect(assistantMessages).toHaveLength(2);
@@ -358,7 +358,7 @@ describe("session transcript runtime SDK", () => {
     const observedUpdates: Array<{
       callbackCompleted: boolean;
       fileText: string;
-      update: unknown;
+      update: any;
     }> = [];
     let callbackCompleted = false;
     const emitSpy = vi

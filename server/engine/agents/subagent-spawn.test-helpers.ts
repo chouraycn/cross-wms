@@ -6,11 +6,11 @@ import { normalizeOptionalString } from "@openclaw/normalization-core/string-coe
 import { expect, vi } from "vitest";
 import type { SubagentLifecycleHookRunner } from "../plugins/hooks.js";
 
-type MockFn = (...args: unknown[]) => unknown;
+type MockFn = (...args: any[]) => unknown;
 type MockImplementationTarget = {
-  mockImplementation: (implementation: (opts: { method?: string }) => Promise<unknown>) => unknown;
+  mockImplementation: (implementation: (opts: { method?: string }) => Promise<any>) => unknown;
 };
-type SessionStore = Record<string, Record<string, unknown>>;
+type SessionStore = Record<string, Record<string, any>>;
 type SessionStoreMutator = (store: SessionStore) => unknown;
 type HookRunner = Pick<SubagentLifecycleHookRunner, "hasHooks"> &
   Partial<
@@ -26,7 +26,7 @@ type SubagentSpawnModuleForTest = Awaited<typeof import("./subagent-spawn.js")> 
 /** Build a minimal runtime config for sessions_spawn tests. */
 export function createSubagentSpawnTestConfig(
   workspaceDir = os.tmpdir(),
-  overrides?: Record<string, unknown>,
+  overrides?: Record<string, any>,
 ) {
   return {
     session: {
@@ -68,7 +68,7 @@ export function setupAcceptedSubagentGatewayMock(callGatewayMock: MockImplementa
   });
 }
 
-function identityDeliveryContext(value: unknown) {
+function identityDeliveryContext(value: any) {
   return value;
 }
 
@@ -131,7 +131,7 @@ export async function loadSubagentSpawnModuleForTest(params: {
   callGatewayMock: MockFn;
   dispatchGatewayMethodInProcessMock?: MockFn;
   hasInProcessGatewayContextMock?: MockFn;
-  getRuntimeConfig?: () => Record<string, unknown>;
+  getRuntimeConfig?: () => Record<string, any>;
   loadSessionStoreMock?: MockFn;
   ensureContextEnginesInitializedMock?: MockFn;
   updateSessionStoreMock?: MockFn;
@@ -143,13 +143,13 @@ export async function loadSubagentSpawnModuleForTest(params: {
   registerSubagentRunMock?: MockFn;
   emitSessionLifecycleEventMock?: MockFn;
   hookRunner?: HookRunner;
-  resolveAgentConfig?: (cfg: Record<string, unknown>, agentId: string) => unknown;
-  resolveAgentWorkspaceDir?: (cfg: Record<string, unknown>, agentId: string) => string;
+  resolveAgentConfig?: (cfg: Record<string, any>, agentId: string) => unknown;
+  resolveAgentWorkspaceDir?: (cfg: Record<string, any>, agentId: string) => string;
   resolveSubagentSpawnModelSelection?: () => string | undefined;
-  getSubagentDepthFromSessionStore?: (sessionKey: string, opts?: unknown) => number;
+  getSubagentDepthFromSessionStore?: (sessionKey: string, opts?: any) => number;
   countActiveRunsForSession?: (sessionKey: string) => number;
   resolveSandboxRuntimeStatus?: (params: {
-    cfg?: Record<string, unknown>;
+    cfg?: Record<string, any>;
     sessionKey?: string;
   }) => { sandboxed: boolean };
   getSessionBindingService?: () => {
@@ -168,7 +168,7 @@ export async function loadSubagentSpawnModuleForTest(params: {
         parentConversationId?: string;
       };
       placement: "current" | "child";
-      metadata?: Record<string, unknown>;
+      metadata?: Record<string, any>;
     }) => Promise<{
       targetSessionKey: string;
       targetKind?: string;
@@ -212,8 +212,8 @@ export async function loadSubagentSpawnModuleForTest(params: {
   }));
 
   vi.doMock("./subagent-spawn.runtime.js", () => ({
-    callGateway: (opts: unknown) => params.callGatewayMock(opts),
-    dispatchGatewayMethodInProcess: (...args: unknown[]) =>
+    callGateway: (opts: any) => params.callGatewayMock(opts),
+    dispatchGatewayMethodInProcess: (...args: any[]) =>
       params.dispatchGatewayMethodInProcessMock?.(...args),
     hasInProcessGatewayContext: () => Boolean(params.hasInProcessGatewayContextMock?.()),
     buildSubagentSystemPrompt: () => "system-prompt",
@@ -251,10 +251,10 @@ export async function loadSubagentSpawnModuleForTest(params: {
       params.forkSessionFromParentMock ??
       (async () => ({ sessionId: "forked-session-id", sessionFile: "/tmp/forked-session.jsonl" })),
     getGlobalHookRunner: () => params.hookRunner ?? { hasHooks: () => false },
-    emitSessionLifecycleEvent: (...args: unknown[]) =>
+    emitSessionLifecycleEvent: (...args: any[]) =>
       params.emitSessionLifecycleEventMock?.(...args),
     formatThinkingLevels: (levels: string[]) => levels.join(", "),
-    normalizeThinkLevel: (level: unknown) => normalizeOptionalString(level),
+    normalizeThinkLevel: (level: any) => normalizeOptionalString(level),
     DEFAULT_SUBAGENT_MAX_CHILDREN_PER_AGENT: 5,
     DEFAULT_SUBAGENT_MAX_SPAWN_DEPTH: 3,
     ADMIN_SCOPE: "operator.admin",
@@ -268,7 +268,7 @@ export async function loadSubagentSpawnModuleForTest(params: {
     resolveContextEngine: params.resolveContextEngineMock ?? (async () => ({})),
     resolveParentForkDecision:
       params.resolveParentForkDecisionMock ??
-      (async (forkParams: { parentEntry?: { totalTokens?: unknown } }) => {
+      (async (forkParams: { parentEntry?: { totalTokens?: any } }) => {
         const maxTokens = 100_000;
         const parentTokens =
           typeof forkParams.parentEntry?.totalTokens === "number" &&
@@ -291,8 +291,8 @@ export async function loadSubagentSpawnModuleForTest(params: {
         };
       }),
     mergeSessionEntry: (
-      current: Record<string, unknown> | undefined,
-      next: Record<string, unknown>,
+      current: Record<string, any> | undefined,
+      next: Record<string, any>,
     ) => ({
       ...current,
       ...next,
@@ -306,7 +306,7 @@ export async function loadSubagentSpawnModuleForTest(params: {
       }),
     isAdminOnlyMethod: (method: string) =>
       method === "sessions.patch" || method === "sessions.delete",
-    pruneLegacyStoreKeys: (...args: unknown[]) => params.pruneLegacyStoreKeysMock?.(...args),
+    pruneLegacyStoreKeys: (...args: any[]) => params.pruneLegacyStoreKeysMock?.(...args),
     getSessionBindingService:
       params.getSessionBindingService ??
       (() => ({
@@ -328,8 +328,8 @@ export async function loadSubagentSpawnModuleForTest(params: {
           : undefined,
       })),
     mergeDeliveryContext: (
-      primary?: Record<string, unknown>,
-      fallback?: Record<string, unknown>,
+      primary?: Record<string, any>,
+      fallback?: Record<string, any>,
     ) => ({
       ...fallback,
       ...primary,
@@ -346,7 +346,7 @@ export async function loadSubagentSpawnModuleForTest(params: {
       params.resolveAgentWorkspaceDir ?? (() => params.workspaceDir ?? os.tmpdir()),
     resolveSubagentSpawnModelSelection:
       params.resolveSubagentSpawnModelSelection ??
-      ((spawnParams: { modelOverride?: unknown }) =>
+      ((spawnParams: { modelOverride?: any }) =>
         typeof spawnParams.modelOverride === "string" && spawnParams.modelOverride.trim()
           ? spawnParams.modelOverride.trim()
           : "openai/gpt-4"),
@@ -362,7 +362,7 @@ export async function loadSubagentSpawnModuleForTest(params: {
   vi.doMock("./subagent-registry.js", () => ({
     countActiveRunsForSession: params.countActiveRunsForSession ?? (() => 0),
     registerSubagentRun:
-      params.registerSubagentRunMock ?? vi.fn((_record: Record<string, unknown>) => undefined),
+      params.registerSubagentRunMock ?? vi.fn((_record: Record<string, any>) => undefined),
     resetSubagentRegistryForTests,
   }));
 

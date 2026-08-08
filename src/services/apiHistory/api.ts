@@ -44,7 +44,7 @@ async function fetchWithTimeout(url: string, options?: RequestInit): Promise<Res
 }
 
 /** 将后端 snake_case 行映射为前端 camelCase */
-function mapRow(row: Record<string, unknown>): ApiHistoryRecord {
+function mapRow(row: Record<string, any>): ApiHistoryRecord {
   return {
     id: row.id as string,
     templateId: (row.template_id ?? row.templateId) as string | null,

@@ -70,8 +70,8 @@ function PopoverTrigger({
         onClick?.(e as React.MouseEvent<HTMLButtonElement>)
         open(e.currentTarget)
       },
-      ...(props as Record<string, unknown>),
-    } as Record<string, unknown>)
+      ...(props as Record<string, any>),
+    } as Record<string, any>)
   }
   return (
     <button
@@ -81,7 +81,7 @@ function PopoverTrigger({
         onClick?.(e)
         open(e.currentTarget)
       }}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     >
       {children}
     </button>
@@ -150,9 +150,9 @@ function PopoverContent({
           'data-slot': 'popover-content',
           className: cn('rounded-lg shadow-md', className),
           style: { overflow: 'visible' },
-        } as Record<string, unknown>,
+        } as Record<string, any>,
       }}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     >
       <Box sx={{ p: 1 }}>{children}</Box>
     </MuiPopover>
@@ -170,14 +170,14 @@ function PopoverAnchor({
     return React.cloneElement(child, {
       ref: ((el: HTMLElement | null) => setAnchorEl(el)) as unknown as React.Ref<HTMLElement>,
       'data-slot': 'popover-anchor',
-    } as Record<string, unknown>)
+    } as Record<string, any>)
   }
   const ref = React.useRef<HTMLDivElement>(null)
   React.useEffect(() => {
     setAnchorEl(ref.current)
     return () => setAnchorEl(null)
   }, [setAnchorEl])
-  return <div ref={ref} data-slot="popover-anchor" {...(props as Record<string, unknown>)} />
+  return <div ref={ref} data-slot="popover-anchor" {...(props as Record<string, any>)} />
 }
 
 function PopoverArrow({
@@ -195,17 +195,17 @@ function PopoverArrow({
 
 function PopoverHeader({ className, ...props }: React.ComponentProps<'div'> & { sx?: SxProps }) {
   return (
-    <Box component="div" data-slot="popover-header" className={cn('flex flex-col gap-0.5 text-sm', className)} {...(props as Record<string, unknown>)} />
+    <Box component="div" data-slot="popover-header" className={cn('flex flex-col gap-0.5 text-sm', className)} {...(props as Record<string, any>)} />
   )
 }
 function PopoverTitle({ className, ...props }: React.ComponentProps<'h2'> & { sx?: SxProps }) {
   return (
-    <Box component="div" data-slot="popover-title" className={cn('font-medium', className)} {...(props as Record<string, unknown>)} />
+    <Box component="div" data-slot="popover-title" className={cn('font-medium', className)} {...(props as Record<string, any>)} />
   )
 }
 function PopoverDescription({ className, ...props }: React.ComponentProps<'p'> & { sx?: SxProps }) {
   return (
-    <Box component="p" data-slot="popover-description" className={cn('text-muted-foreground', className)} {...(props as Record<string, unknown>)} />
+    <Box component="p" data-slot="popover-description" className={cn('text-muted-foreground', className)} {...(props as Record<string, any>)} />
   )
 }
 

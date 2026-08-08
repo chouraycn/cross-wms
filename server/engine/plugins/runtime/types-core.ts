@@ -112,10 +112,10 @@ export type PluginRuntimeThinkingPolicy = {
 
 /** Structured logger surface injected into runtime-backed plugin helpers. */
 export type RuntimeLogger = {
-  debug?: (message: string, meta?: Record<string, unknown>) => void;
-  info: (message: string, meta?: Record<string, unknown>) => void;
-  warn: (message: string, meta?: Record<string, unknown>) => void;
-  error: (message: string, meta?: Record<string, unknown>) => void;
+  debug?: (message: string, meta?: Record<string, any>) => void;
+  info: (message: string, meta?: Record<string, any>) => void;
+  warn: (message: string, meta?: Record<string, any>) => void;
+  error: (message: string, meta?: Record<string, any>) => void;
 };
 
 export type RunHeartbeatOnceOptions = {
@@ -365,7 +365,7 @@ export type PluginRuntimeCore = {
   logging: {
     shouldLogVerbose: typeof import("../../globals.js").shouldLogVerbose;
     getChildLogger: (
-      bindings?: Record<string, unknown>,
+      bindings?: Record<string, any>,
       opts?: { level?: LogLevel },
     ) => RuntimeLogger;
   };
@@ -377,7 +377,7 @@ export type PluginRuntimeCore = {
     openSyncKeyedStore: <T>(
       options: import("../../plugin-state/plugin-state-store.types.js").OpenKeyedStoreOptions,
     ) => import("../../plugin-state/plugin-state-store.types.js").PluginStateSyncKeyedStore<T>;
-    openChannelIngressQueue: <TPayload, TMetadata = unknown, TCompletedMetadata = unknown>(
+    openChannelIngressQueue: <TPayload, TMetadata = any, TCompletedMetadata = any>(
       options?: Omit<
         import("../../channels/message/ingress-queue.js").CreateChannelIngressQueueOptions,
         "channelId"

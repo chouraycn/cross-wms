@@ -13,12 +13,12 @@ import { WhatsAppConfigSchema } from "./zod-schema.providers-whatsapp.js";
 function expectSchemaAllowlistIssue(
   schema: {
     safeParse: (
-      value: unknown,
+      value: any,
     ) =>
-      | { success: true; data: unknown }
+      | { success: true; data: any }
       | { success: false; error: { issues: Array<{ path: PropertyKey[] }> } };
   },
-  config: unknown,
+  config: any,
   path: string | readonly string[],
 ) {
   const result = schema.safeParse(config);

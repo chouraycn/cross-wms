@@ -76,7 +76,7 @@ async function resolveStatusAllLocalDiagnosis(params: {
     agentStatus: StatusScanOverviewResult["agentStatus"];
     gatewayReachable: boolean;
     health: StatusGatewayHealthSafe | undefined;
-    deliveryDiagnostics: unknown;
+    deliveryDiagnostics: any;
     nodeOnlyGateway: NodeOnlyGatewayInfo | null;
   };
 }> {

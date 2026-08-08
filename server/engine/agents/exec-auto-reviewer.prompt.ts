@@ -6,4 +6,4 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export const DEFAULT_EXEC_REVIEWER_SYSTEM_PROMPT: unknown = undefined;
+export const DEFAULT_EXEC_REVIEWER_SYSTEM_PROMPT: any = undefined;

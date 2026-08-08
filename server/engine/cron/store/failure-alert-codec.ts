@@ -12,7 +12,7 @@ import { booleanToInteger, integerToBoolean, normalizeNumber } from "./scalar-co
  */
 export function encodeFailureAlert(
   failureAlert: CronFailureAlert | false | undefined,
-): Record<string, unknown> {
+): Record<string, any> {
   if (failureAlert === false) {
     return {
       failure_alert_disabled: 1,
@@ -40,7 +40,7 @@ export function encodeFailureAlert(
 /**
  * 从扁平记录重建失败告警配置，区分禁用和省略的配置
  */
-export function decodeFailureAlert(row: Record<string, unknown>): CronFailureAlert | false | undefined {
+export function decodeFailureAlert(row: Record<string, any>): CronFailureAlert | false | undefined {
   if (row.failure_alert_disabled === 1) {
     return false;
   }

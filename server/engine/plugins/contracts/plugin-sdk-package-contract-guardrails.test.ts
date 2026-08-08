@@ -132,7 +132,7 @@ function listTrackedCodeFiles(root: string): string[] | null {
 
 function collectPluginSdkPackageExports(): string[] {
   const packageJson = JSON.parse(fs.readFileSync(resolve(REPO_ROOT, "package.json"), "utf8")) as {
-    exports?: Record<string, unknown>;
+    exports?: Record<string, any>;
   };
   const exports = packageJson.exports ?? {};
   const subpaths: string[] = [];

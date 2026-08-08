@@ -74,7 +74,7 @@ export type McpServerConfig = {
   toolFilter?: McpServerToolFilterConfig;
   /** Codex-specific projection controls for Codex app-server/runtime config. */
   codex?: McpServerCodexConfig;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 export type McpConfig = {

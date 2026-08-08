@@ -13,20 +13,20 @@
 
 export type ClaudeCliFallbackSeed = unknown;
 
-export function resolveClaudeCliBindingSessionId(..._args: unknown[]): unknown {
+export function resolveClaudeCliBindingSessionId(..._args: any[]): any {
   return undefined;
 }
 
-export function resolveClaudeCliSessionFilePath(..._args: unknown[]): unknown {
+export function resolveClaudeCliSessionFilePath(..._args: any[]): any {
   return undefined;
 }
 
-export function readClaudeCliSessionMessages(..._args: unknown[]): unknown {
+export function readClaudeCliSessionMessages(..._args: any[]): any {
   return undefined;
 }
 
-export function readClaudeCliFallbackSeed(..._args: unknown[]): unknown {
+export function readClaudeCliFallbackSeed(..._args: any[]): any {
   return undefined;
 }
 
-export const CLAUDE_CLI_PROVIDER: unknown = undefined;
+export const CLAUDE_CLI_PROVIDER: any = undefined;

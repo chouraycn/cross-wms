@@ -167,12 +167,12 @@ function buildApiKeyProfileResult(params: {
   return result as ResolveApiKeyForProfileResult;
 }
 
-function extractErrorMessage(error: unknown): string {
+function extractErrorMessage(error: any): string {
   return formatErrorMessage(error);
 }
 
 /** Detect provider errors caused by single-use OAuth refresh token races. */
-export function isRefreshTokenReusedError(error: unknown): boolean {
+export function isRefreshTokenReusedError(error: any): boolean {
   const message = normalizeLowercaseStringOrEmpty(extractErrorMessage(error));
   return (
     message.includes("refresh_token_reused") ||
@@ -298,7 +298,7 @@ async function resolveProfileSecretString(params: {
   profileId: string;
   provider: string;
   value: string | undefined;
-  valueRef: unknown;
+  valueRef: any;
   refDefaults: SecretDefaults | undefined;
   configForRefResolution: OpenClawConfig;
   cache: SecretRefResolveCache;

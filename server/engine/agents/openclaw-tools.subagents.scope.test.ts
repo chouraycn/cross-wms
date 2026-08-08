@@ -12,7 +12,7 @@ import { addSubagentRunForTests, resetSubagentRegistryForTests } from "./subagen
 import { createPerSenderSessionConfig } from "./test-helpers/session-config.js";
 import { createSubagentsTool } from "./tools/subagents-tool.js";
 
-function writeStore(storePath: string, store: Record<string, unknown>) {
+function writeStore(storePath: string, store: Record<string, any>) {
   // Scope tests use a real session-store file so spawnedBy lookups match runtime behavior.
   fs.mkdirSync(path.dirname(storePath), { recursive: true });
   fs.writeFileSync(storePath, JSON.stringify(store, null, 2), "utf-8");
@@ -82,8 +82,8 @@ describe("openclaw-tools: subagents scope isolation", () => {
       callerSessionKey?: string;
       callerIsSubagent?: boolean;
       total?: number;
-      active?: unknown[];
-      recent?: unknown[];
+      active?: any[];
+      recent?: any[];
     };
     expect(details.status).toBe("ok");
     expect(details.requesterSessionKey).toBe(leafKey);

@@ -13,7 +13,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // ===================== Mock Fetch =====================
 
-function createMockResponse(json: unknown, ok = true, status = 200): Response {
+function createMockResponse(json: any, ok = true, status = 200): Response {
   return {
     ok,
     status,

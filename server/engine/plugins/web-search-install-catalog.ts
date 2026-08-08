@@ -26,10 +26,10 @@ type CatalogWebSearchProviderEntry = PluginWebSearchProviderEntry & {
   credentialLabel?: string;
   docsUrl?: string;
   autoDetectOrder?: number;
-  getCredentialValue: (searchConfig?: Record<string, unknown>) => unknown;
-  setCredentialValue: (searchConfigTarget: Record<string, unknown>, value: unknown) => void;
+  getCredentialValue: (searchConfig?: Record<string, any>) => unknown;
+  setCredentialValue: (searchConfigTarget: Record<string, any>, value: any) => void;
   getConfiguredCredentialValue: (config?: OpenClawConfig) => unknown;
-  setConfiguredCredentialValue: (configTarget: OpenClawConfig, value: unknown) => void;
+  setConfiguredCredentialValue: (configTarget: OpenClawConfig, value: any) => void;
   applySelectionConfig: (config: OpenClawConfig) => unknown;
   createTool: () => unknown;
 };
@@ -60,8 +60,8 @@ function pathSegments(path: string): string[] {
     .filter((segment) => segment.length > 0);
 }
 
-function getConfigPath(config: OpenClawConfig | undefined, path: string): unknown {
-  let current: unknown = config;
+function getConfigPath(config: OpenClawConfig | undefined, path: string): any {
+  let current: any = config;
   for (const segment of pathSegments(path)) {
     if (!isRecord(current)) {
       return undefined;
@@ -71,15 +71,15 @@ function getConfigPath(config: OpenClawConfig | undefined, path: string): unknow
   return current;
 }
 
-function setConfigPath(target: OpenClawConfig, path: string, value: unknown): void {
+function setConfigPath(target: OpenClawConfig, path: string, value: any): void {
   const segments = pathSegments(path);
-  let current: Record<string, unknown> = target as Record<string, unknown>;
+  let current: Record<string, any> = target as Record<string, any>;
   for (const segment of segments.slice(0, -1)) {
     const next = current[segment];
     if (!isRecord(next)) {
       current[segment] = {};
     }
-    current = current[segment] as Record<string, unknown>;
+    current = current[segment] as Record<string, any>;
   }
   const leaf = segments.at(-1);
   if (leaf) {
@@ -136,13 +136,13 @@ function buildProviderEntry(params: {
     ...(typeof params.provider.autoDetectOrder === "number"
       ? { autoDetectOrder: params.provider.autoDetectOrder }
       : {}),
-    getCredentialValue: (searchConfig?: Record<string, unknown>) => searchConfig?.apiKey,
-    setCredentialValue: (searchConfigTarget: Record<string, unknown>, value: unknown) => {
+    getCredentialValue: (searchConfig?: Record<string, any>) => searchConfig?.apiKey,
+    setCredentialValue: (searchConfigTarget: Record<string, any>, value: any) => {
       searchConfigTarget.apiKey = value;
     },
     getConfiguredCredentialValue: (config?: OpenClawConfig) =>
       getConfigPath(config, credentialPath),
-    setConfiguredCredentialValue: (configTarget: OpenClawConfig, value: unknown) => {
+    setConfiguredCredentialValue: (configTarget: OpenClawConfig, value: any) => {
       setConfigPath(configTarget, credentialPath, value);
     },
     applySelectionConfig: (config: OpenClawConfig) =>

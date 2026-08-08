@@ -48,7 +48,7 @@ export function createTrackedTempDirs() {
       pendingPrefixRoots.clear();
       const dirlists = await Promise.all(
         roots.map((dir) =>
-          fs.readdir(dir).catch((err: unknown) => {
+          fs.readdir(dir).catch((err: any) => {
             if ((err as NodeJS.ErrnoException).code === "ENOENT") {
               return [];
             }

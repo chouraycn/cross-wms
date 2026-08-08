@@ -9,7 +9,7 @@ export interface ChannelConfig {
   name: string;
   enabled: boolean;
   credentials: Record<string, string>;
-  options?: Record<string, unknown>;
+  options?: Record<string, any>;
 }
 
 export interface ChannelAccount {

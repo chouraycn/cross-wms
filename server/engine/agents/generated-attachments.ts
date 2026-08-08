@@ -9,7 +9,7 @@
  */
 
 // 内联降级实现：返回去 whitespace 后的字符串，空串视为 undefined。
-function normalizeOptionalString(value: unknown): string | undefined {
+function normalizeOptionalString(value: any): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }

@@ -6,7 +6,7 @@ export type StartupLogEntry = {
   message: string;
   level: 'info' | 'warn' | 'error' | 'debug';
   durationMs?: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 export type StartupLogSummary = {
@@ -30,7 +30,7 @@ export function logStartupEvent(
   options?: {
     level?: StartupLogEntry['level'];
     durationMs?: number;
-    metadata?: Record<string, unknown>;
+    metadata?: Record<string, any>;
   },
 ): void {
   const entry: StartupLogEntry = {

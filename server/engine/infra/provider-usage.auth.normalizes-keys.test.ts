@@ -30,10 +30,10 @@ vi.mock("../agents/auth-profiles.js", () => {
     try {
       const parsed = JSON.parse(nodeFs.readFileSync(authPath, "utf8")) as {
         version?: number;
-        profiles?: Record<string, unknown>;
+        profiles?: Record<string, any>;
         order?: Record<string, string[]>;
         lastGood?: Record<string, string>;
-        usageStats?: Record<string, unknown>;
+        usageStats?: Record<string, any>;
       };
       return {
         version: parsed.version ?? 1,
@@ -133,7 +133,7 @@ vi.mock("../agents/auth-profiles.js", () => {
 
 const providerRuntimeMocks = vi.hoisted(() => ({
   providerRuntimeMock: {
-    augmentModelCatalogWithProviderPlugins: vi.fn((catalog: unknown) => catalog),
+    augmentModelCatalogWithProviderPlugins: vi.fn((catalog: any) => catalog),
     buildProviderAuthDoctorHintWithPlugin: vi.fn(() => undefined),
     buildProviderMissingAuthMessageWithPlugin: vi.fn(() => undefined),
     buildProviderUnknownModelHintWithPlugin: vi.fn(() => undefined),
@@ -338,7 +338,7 @@ describe("resolveProviderAuths key normalization", () => {
     return suiteEnv;
   }
 
-  async function writeAuthProfiles(home: string, profiles: Record<string, unknown>) {
+  async function writeAuthProfiles(home: string, profiles: Record<string, any>) {
     const agentDir = agentDirForHome(home);
     await fs.mkdir(agentDir, { recursive: true });
     await fs.writeFile(
@@ -348,7 +348,7 @@ describe("resolveProviderAuths key normalization", () => {
     );
   }
 
-  async function writeConfig(home: string, config: Record<string, unknown>) {
+  async function writeConfig(home: string, config: Record<string, any>) {
     const stateDir = path.join(home, ".openclaw");
     await fs.mkdir(stateDir, { recursive: true });
     await fs.writeFile(
@@ -362,10 +362,10 @@ describe("resolveProviderAuths key normalization", () => {
     const agentDir = agentDirForHome(home);
     const parsed = JSON.parse(
       await fs.readFile(path.join(agentDir, "auth-profiles.json"), "utf8"),
-    ) as Record<string, unknown>;
+    ) as Record<string, any>;
     const order = (parsed.order && typeof parsed.order === "object" ? parsed.order : {}) as Record<
       string,
-      unknown
+      any
     >;
     order[provider] = profileIds;
     parsed.order = order;

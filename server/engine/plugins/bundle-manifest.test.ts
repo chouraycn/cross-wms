@@ -46,12 +46,12 @@ function expectLoadedManifest(rootDir: string, bundleFormat: "codex" | "claude" 
 function writeBundleManifest(
   rootDir: string,
   relativePath: string,
-  manifest: Record<string, unknown>,
+  manifest: Record<string, any>,
 ) {
   writeBundleFixtureFile(rootDir, relativePath, manifest);
 }
 
-function writeBundleFixtureFile(rootDir: string, relativePath: string, value: unknown) {
+function writeBundleFixtureFile(rootDir: string, relativePath: string, value: any) {
   mkdirSafe(path.dirname(path.join(rootDir, relativePath)));
   fs.writeFileSync(
     path.join(rootDir, relativePath),
@@ -60,7 +60,7 @@ function writeBundleFixtureFile(rootDir: string, relativePath: string, value: un
   );
 }
 
-function writeBundleFixtureFiles(rootDir: string, files: Readonly<Record<string, unknown>>) {
+function writeBundleFixtureFiles(rootDir: string, files: Readonly<Record<string, any>>) {
   Object.entries(files).forEach(([relativePath, value]) => {
     writeBundleFixtureFile(rootDir, relativePath, value);
   });
@@ -69,10 +69,10 @@ function writeBundleFixtureFiles(rootDir: string, files: Readonly<Record<string,
 function setupBundleFixture(params: {
   rootDir: string;
   dirs?: readonly string[];
-  jsonFiles?: Readonly<Record<string, unknown>>;
+  jsonFiles?: Readonly<Record<string, any>>;
   textFiles?: Readonly<Record<string, string>>;
   manifestRelativePath?: string;
-  manifest?: Record<string, unknown>;
+  manifest?: Record<string, any>;
 }) {
   for (const relativeDir of params.dirs ?? []) {
     mkdirSafe(path.join(params.rootDir, relativeDir));

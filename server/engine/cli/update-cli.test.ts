@@ -27,7 +27,7 @@ import { isOwningNpmCommand } from "./update-cli.test-helpers.js";
 const confirm = vi.fn();
 const select = vi.fn();
 const spinner = vi.fn(() => ({ start: vi.fn(), stop: vi.fn() }));
-const isCancel = (value: unknown) => value === "cancel";
+const isCancel = (value: any) => value === "cancel";
 
 const readPackageName = vi.fn();
 const readPackageVersion = vi.fn();
@@ -61,7 +61,7 @@ const launchdUpdateCleanupMocks = vi.hoisted(() => ({
   disableCurrentOpenClawUpdateLaunchdJob: vi.fn(async () => false),
 }));
 const nodeVersionSatisfiesEngine = vi.fn();
-const execFile = vi.fn((...args: unknown[]) => {
+const execFile = vi.fn((...args: any[]) => {
   const callback = args.at(-1);
   if (typeof callback === "function") {
     callback(null, new Date(Date.now() - 1000).toString(), "");
@@ -216,9 +216,9 @@ vi.mock("../utils.js", async (importOriginal) => {
   return {
     ...actual,
     displayString: (input: string) => input,
-    isRecord: (value: unknown) =>
+    isRecord: (value: any) =>
       typeof value === "object" && value !== null && !Array.isArray(value),
-    pathExists: (...args: unknown[]) => pathExists(...args),
+    pathExists: (...args: any[]) => pathExists(...args),
     resolveConfigDir: () => "/tmp/openclaw-config",
   };
 });
@@ -229,8 +229,8 @@ vi.mock("../plugins/official-external-install-records.js", () => ({
 }));
 
 vi.mock("../plugins/update.js", () => ({
-  syncPluginsForUpdateChannel: (...args: unknown[]) => syncPluginsForUpdateChannel(...args),
-  updateNpmInstalledPlugins: (...args: unknown[]) => updateNpmInstalledPlugins(...args),
+  syncPluginsForUpdateChannel: (...args: any[]) => syncPluginsForUpdateChannel(...args),
+  updateNpmInstalledPlugins: (...args: any[]) => updateNpmInstalledPlugins(...args),
 }));
 
 vi.mock("../plugins/installed-plugin-index-records.js", async (importOriginal) => {
@@ -260,7 +260,7 @@ vi.mock("./update-cli/post-core-plugin-convergence.js", () => ({
       })),
     errored: convergence.errored,
   }),
-  runPostCorePluginConvergence: vi.fn(async (params: { baselineInstallRecords?: unknown }) => ({
+  runPostCorePluginConvergence: vi.fn(async (params: { baselineInstallRecords?: any }) => ({
     changes: [],
     warnings: [],
     errored: false,
@@ -292,11 +292,11 @@ vi.mock("../daemon/service.js", () => ({
     };
   },
   resolveGatewayService: vi.fn(() => ({
-    isLoaded: (...args: unknown[]) => serviceLoaded(...args),
-    readCommand: (...args: unknown[]) => serviceReadCommand(...args),
-    readRuntime: (...args: unknown[]) => serviceReadRuntime(...args),
-    stop: (...args: unknown[]) => serviceStop(...args),
-    restart: (...args: unknown[]) => serviceRestart(...args),
+    isLoaded: (...args: any[]) => serviceLoaded(...args),
+    readCommand: (...args: any[]) => serviceReadCommand(...args),
+    readRuntime: (...args: any[]) => serviceReadRuntime(...args),
+    stop: (...args: any[]) => serviceStop(...args),
+    restart: (...args: any[]) => serviceRestart(...args),
   })),
 }));
 
@@ -307,18 +307,18 @@ vi.mock("../daemon/launchd.js", async (importOriginal) => ({
 }));
 
 vi.mock("../infra/ports.js", () => ({
-  inspectPortUsage: (...args: unknown[]) => inspectPortUsage(...args),
-  classifyPortListener: (...args: unknown[]) => classifyPortListener(...args),
-  formatPortDiagnostics: (...args: unknown[]) => formatPortDiagnostics(...args),
+  inspectPortUsage: (...args: any[]) => inspectPortUsage(...args),
+  classifyPortListener: (...args: any[]) => classifyPortListener(...args),
+  formatPortDiagnostics: (...args: any[]) => formatPortDiagnostics(...args),
 }));
 
 vi.mock("../gateway/probe.js", () => ({
-  probeGateway: (...args: unknown[]) => probeGateway(...args),
+  probeGateway: (...args: any[]) => probeGateway(...args),
 }));
 
 vi.mock("./update-cli/restart-helper.js", () => ({
-  prepareRestartScript: (...args: unknown[]) => prepareRestartScript(...args),
-  runRestartScript: (...args: unknown[]) => runRestartScript(...args),
+  prepareRestartScript: (...args: any[]) => prepareRestartScript(...args),
+  runRestartScript: (...args: any[]) => runRestartScript(...args),
 }));
 
 // Mock doctor (heavy module; should not run in unit tests)
@@ -326,8 +326,8 @@ vi.mock("../commands/doctor.js", () => ({
   doctorCommand: vi.fn(),
 }));
 vi.mock("../commands/doctor-completion.js", () => ({
-  checkShellCompletionStatus: (...args: unknown[]) => checkShellCompletionStatus(...args),
-  ensureCompletionCacheExists: (...args: unknown[]) => ensureCompletionCacheExists(...args),
+  checkShellCompletionStatus: (...args: any[]) => checkShellCompletionStatus(...args),
+  ensureCompletionCacheExists: (...args: any[]) => ensureCompletionCacheExists(...args),
 }));
 vi.mock("../commands/doctor/legacy-config-repair.js", () => ({
   repairLegacyConfigForUpdateChannel: legacyConfigRepairMocks.repairLegacyConfigForUpdateChannel,
@@ -336,7 +336,7 @@ vi.mock("./completion-runtime.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./completion-runtime.js")>();
   return {
     ...actual,
-    installCompletion: (...args: unknown[]) => installCompletion(...args),
+    installCompletion: (...args: any[]) => installCompletion(...args),
   };
 });
 // Mock the daemon-cli module
@@ -455,7 +455,7 @@ describe("update-cli", () => {
   };
   const commandCalls = () =>
     vi.mocked(runCommandWithTimeout).mock.calls as unknown as Array<
-      [string[], Record<string, unknown>]
+      [string[], Record<string, any>]
     >;
 
   const packageInstallCommandCall = () =>
@@ -515,7 +515,7 @@ describe("update-cli", () => {
 
   const spawnCall = (index = 0) => {
     const calls = spawn.mock.calls as unknown as Array<
-      [string, string[], { env?: NodeJS.ProcessEnv; stdio?: unknown }]
+      [string, string[], { env?: NodeJS.ProcessEnv; stdio?: any }]
     >;
     return calls[index];
   };
@@ -1006,7 +1006,7 @@ describe("update-cli", () => {
   it("finishes package updates when the post-core process writes a result but keeps handles open", async () => {
     setupUpdatedRootRefresh();
     const kill = vi.fn();
-    spawn.mockImplementationOnce((_command: unknown, _argv: unknown, options: unknown) => {
+    spawn.mockImplementationOnce((_command: any, _argv: any, options: any) => {
       const resultPath = (options as { env?: NodeJS.ProcessEnv }).env
         ?.OPENCLAW_UPDATE_POST_CORE_RESULT_PATH;
       if (!resultPath) {
@@ -1036,7 +1036,7 @@ describe("update-cli", () => {
     mockPackageInstallStatus(root);
     serviceLoaded.mockResolvedValue(true);
     pathExists.mockImplementation(async (candidate: string) => candidate === entryPath);
-    spawn.mockImplementationOnce((_command: unknown, _argv: unknown, options: unknown) => {
+    spawn.mockImplementationOnce((_command: any, _argv: any, options: any) => {
       const resultPath = (options as { env?: NodeJS.ProcessEnv }).env
         ?.OPENCLAW_UPDATE_POST_CORE_RESULT_PATH;
       if (!resultPath) {
@@ -1132,8 +1132,8 @@ describe("update-cli", () => {
         },
       },
     } as OpenClawConfig;
-    let capturedRecords: unknown;
-    let capturedSourceConfig: unknown;
+    let capturedRecords: any;
+    let capturedSourceConfig: any;
     vi.mocked(readConfigFileSnapshot).mockResolvedValue({
       ...baseSnapshot,
       parsed: preUpdateConfig,
@@ -1191,7 +1191,7 @@ describe("update-cli", () => {
         integrity: "sha512-newer",
       },
     } as const;
-    let capturedRecords: unknown;
+    let capturedRecords: any;
     loadInstalledPluginIndexInstallRecords.mockResolvedValueOnce(pluginInstallRecords);
     spawn.mockImplementationOnce((_node, _argv, options) => {
       const env = (options as { env?: NodeJS.ProcessEnv }).env;
@@ -1365,7 +1365,7 @@ describe("update-cli", () => {
 
     expect(runGatewayUpdate).not.toHaveBeenCalled();
     const installCall = (
-      vi.mocked(runCommandWithTimeout).mock.calls as unknown as Array<[string[], unknown]>
+      vi.mocked(runCommandWithTimeout).mock.calls as unknown as Array<[string[], any]>
     ).find(([argv]) => argv[0] === "npm" && argv[1] === "i" && argv[2] === "-g");
     expect(installCall).toBeUndefined();
     expect(
@@ -2024,8 +2024,8 @@ describe("update-cli", () => {
       },
       assert: () => {
         const last = requireValue(lastWriteJsonCall(), "update status JSON output");
-        const parsed = last as Record<string, unknown>;
-        const channel = parsed.channel as { value?: unknown };
+        const parsed = last as Record<string, any>;
+        const channel = parsed.channel as { value?: any };
         expect(channel.value).toBe(isBetaTag(VERSION) ? "beta" : "stable");
       },
     },
@@ -2044,8 +2044,8 @@ describe("update-cli", () => {
     await updateStatusCommand({ json: true });
 
     const last = requireValue(lastWriteJsonCall(), "update status JSON output");
-    const parsed = last as Record<string, unknown>;
-    const channel = parsed.channel as { value?: unknown; config?: unknown };
+    const parsed = last as Record<string, any>;
+    const channel = parsed.channel as { value?: any; config?: any };
     expect(channel.value).toBe("dev");
     expect(channel.config).toBe("dev");
   });
@@ -4961,7 +4961,7 @@ describe("update-cli", () => {
       config,
       outcomes: [],
     }));
-    execFile.mockImplementationOnce((...args: unknown[]) => {
+    execFile.mockImplementationOnce((...args: any[]) => {
       const [file, commandArgs] = args;
       expect(file).toBe("powershell.exe");
       expect(commandArgs).toContain("-NonInteractive");
@@ -5042,7 +5042,7 @@ describe("update-cli", () => {
       config,
       outcomes: [],
     }));
-    execFile.mockImplementationOnce((...args: unknown[]) => {
+    execFile.mockImplementationOnce((...args: any[]) => {
       const callback = args.at(-1);
       if (typeof callback === "function") {
         callback(new Error("ps unavailable"), "", "");

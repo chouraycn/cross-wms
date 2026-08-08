@@ -140,7 +140,7 @@ type DeliveryResult = {
 };
 
 type FinalizeResult = {
-  admission?: unknown;
+  admission?: any;
   dispatched?: boolean;
   routeSessionKey?: string;
 };
@@ -171,11 +171,11 @@ function latestDurableSupportRequest(): DurableSupportRequest {
   return request;
 }
 
-function deliveryResult(value: unknown): DeliveryResult {
+function deliveryResult(value: any): DeliveryResult {
   return value as DeliveryResult;
 }
 
-function finalizeResult(value: unknown): FinalizeResult {
+function finalizeResult(value: any): FinalizeResult {
   return value as FinalizeResult;
 }
 
@@ -279,7 +279,7 @@ describe("channel turn kernel", () => {
 
   it("returns durable delivery result to the buffered dispatcher", async () => {
     sendDurableMessageBatch.mockResolvedValueOnce(createDurableSendResult(["tg-1", "tg-2"]));
-    let deliveredResult: unknown;
+    let deliveredResult: any;
     const dispatchReplyWithBufferedBlockDispatcher = vi.fn(
       async (params: Parameters<DispatchReplyWithBufferedBlockDispatcher>[0]) => {
         deliveredResult = await params.dispatcherOptions.deliver(
@@ -361,7 +361,7 @@ describe("channel turn kernel", () => {
       reason: "missing_outbound_handler",
     });
     const deliver = vi.fn(async () => ({ messageIds: ["legacy-1"], visibleReplySent: true }));
-    let deliveredResult: unknown;
+    let deliveredResult: any;
     const dispatchReplyWithBufferedBlockDispatcher = vi.fn(
       async (params: Parameters<DispatchReplyWithBufferedBlockDispatcher>[0]) => {
         deliveredResult = await params.dispatcherOptions.deliver(
@@ -499,7 +499,7 @@ describe("channel turn kernel", () => {
   });
 
   it("returns custom delivery result to the buffered dispatcher", async () => {
-    let deliveredResult: unknown;
+    let deliveredResult: any;
     const dispatchReplyWithBufferedBlockDispatcher = vi.fn(
       async (params: Parameters<DispatchReplyWithBufferedBlockDispatcher>[0]) => {
         deliveredResult = await params.dispatcherOptions.deliver(

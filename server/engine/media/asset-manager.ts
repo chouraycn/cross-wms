@@ -85,7 +85,7 @@ export function createAsset(params: {
   height?: number;
   durationSeconds?: number;
   tags?: string[];
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }): MediaAsset {
   const type = detectMediaType(params.mimeType);
   const format = detectMediaFormat(params.mimeType);

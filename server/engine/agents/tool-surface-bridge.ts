@@ -8,7 +8,7 @@ export type AgentHarnessToolSurfaceRuntime = {
   resolveToolSurface: (toolName: string) => unknown;
 };
 
-export function createAgentHarnessToolSurfaceRuntime(_params?: unknown): AgentHarnessToolSurfaceRuntime {
+export function createAgentHarnessToolSurfaceRuntime(_params?: any): AgentHarnessToolSurfaceRuntime {
   return {
     resolveToolSurface: () => null,
   };

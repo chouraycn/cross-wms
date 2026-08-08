@@ -76,7 +76,7 @@ export interface MusicTrack {
   durationSeconds?: number;
   /** 资产大小（字节） */
   size?: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 /** 音乐生成结果 */
@@ -89,7 +89,7 @@ export interface MusicGenerationResult {
   attempts: ProviderAttempt[];
   historyId?: string;
   createdAt?: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 // ===================== 视频生成 =====================
@@ -149,7 +149,7 @@ export interface VideoAsset {
   width?: number;
   height?: number;
   size?: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 /** 视频生成结果 */
@@ -162,7 +162,7 @@ export interface VideoGenerationResult {
   attempts: ProviderAttempt[];
   historyId?: string;
   createdAt?: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 // ===================== 前端常量（镜像 engine 预设） =====================

@@ -9,7 +9,7 @@ export function createDispatchResult(params: {
   status: DispatchStatus;
   reason?: string;
   queuePosition?: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }): DispatchResult {
   return {
     turnId: params.turnId,
@@ -44,7 +44,7 @@ export function isDispatchRejected(result: DispatchResult): boolean {
 
 export function acceptDispatch(
   turnId: string,
-  metadata?: Record<string, unknown>
+  metadata?: Record<string, any>
 ): DispatchResult {
   const result = createDispatchResult({
     turnId,
@@ -58,7 +58,7 @@ export function acceptDispatch(
 export function rejectDispatch(
   turnId: string,
   reason: string,
-  metadata?: Record<string, unknown>
+  metadata?: Record<string, any>
 ): DispatchResult {
   const result = createDispatchResult({
     turnId,
@@ -73,7 +73,7 @@ export function rejectDispatch(
 export function queueDispatch(
   turnId: string,
   position: number,
-  metadata?: Record<string, unknown>
+  metadata?: Record<string, any>
 ): DispatchResult {
   const result = createDispatchResult({
     turnId,
@@ -88,7 +88,7 @@ export function queueDispatch(
 export function markDuplicateDispatch(
   turnId: string,
   reason?: string,
-  metadata?: Record<string, unknown>
+  metadata?: Record<string, any>
 ): DispatchResult {
   const result = createDispatchResult({
     turnId,

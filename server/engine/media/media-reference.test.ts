@@ -14,10 +14,10 @@ import {
 } from "./media-reference.js";
 
 async function expectMediaReferenceError(
-  run: () => Promise<unknown>,
+  run: () => Promise<any>,
   expectedCode: MediaReferenceError["code"],
 ) {
-  let mediaError: unknown;
+  let mediaError: any;
   try {
     await run();
   } catch (error) {

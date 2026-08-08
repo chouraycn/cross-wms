@@ -98,7 +98,7 @@ export type PluginManifestRecord = {
   manifestPath: string;
   setupSource?: string;
   configSchema?: PluginManifest["configSchema"];
-  configUiHints?: Record<string, unknown>;
+  configUiHints?: Record<string, any>;
   requiresPlugins?: string[];
   contracts?: PluginManifest["contracts"];
   configContracts?: PluginManifest["configContracts"];
@@ -137,11 +137,11 @@ export type PluginCandidate = {
 export function loadPluginManifestRegistry(params: {
   env?: NodeJS.ProcessEnv;
   workspaceDir?: string;
-  config?: unknown;
+  config?: any;
   bundledChannelConfigCollector?: BundledChannelConfigCollector;
-  candidates?: unknown;
-  diagnostics?: unknown;
-  installRecords?: unknown;
+  candidates?: any;
+  diagnostics?: any;
+  installRecords?: any;
 }): PluginManifestRegistry {
   void params;
   return { plugins: [], diagnostics: [] };

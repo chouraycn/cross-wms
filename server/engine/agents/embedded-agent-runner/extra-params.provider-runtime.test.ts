@@ -30,7 +30,7 @@ beforeEach(() => {
           ...options,
           onPayload: (payload, payloadModel) => {
             if (payload && typeof payload === "object") {
-              (payload as Record<string, unknown>).think = false;
+              (payload as Record<string, any>).think = false;
             }
             return options?.onPayload?.(payload, payloadModel);
           },
@@ -87,12 +87,12 @@ describe("extra-params: provider runtime handoff", () => {
           num_ctx: 65536,
         },
       },
-    }).payload as Record<string, unknown>;
+    }).payload as Record<string, any>;
 
     // think must be top-level, not nested under options; provider runtimes own
     // this wire-format distinction.
     expect(payload.think).toBe(false);
-    expect((payload.options as Record<string, unknown>).think).toBeUndefined();
+    expect((payload.options as Record<string, any>).think).toBeUndefined();
   });
 
   it("does not apply the plugin wrapper for other providers", () => {
@@ -109,7 +109,7 @@ describe("extra-params: provider runtime handoff", () => {
         model: "gpt-5.4",
         messages: [],
       },
-    }).payload as Record<string, unknown>;
+    }).payload as Record<string, any>;
 
     expect(payload.think).toBeUndefined();
   });
@@ -132,7 +132,7 @@ describe("extra-params: provider runtime handoff", () => {
           num_ctx: 65536,
         },
       },
-    }).payload as Record<string, unknown>;
+    }).payload as Record<string, any>;
 
     expect(payload.think).toBeUndefined();
   });

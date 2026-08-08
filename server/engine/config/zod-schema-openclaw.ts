@@ -1363,7 +1363,7 @@ export const OpenClawSchema = z
         if (!binding || typeof binding !== "object") {
           continue;
         }
-        const agentId = (binding as { agentId?: unknown }).agentId;
+        const agentId = (binding as { agentId?: any }).agentId;
         if (typeof agentId === "string" && !effectiveAgentIds.has(normalizeAgentId(agentId))) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,

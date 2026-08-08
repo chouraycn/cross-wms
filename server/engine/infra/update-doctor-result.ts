@@ -95,11 +95,11 @@ export async function consumeUpdatePostInstallDoctorResult(
   }
 }
 
-function parseUpdatePostInstallDoctorResult(value: unknown): UpdatePostInstallDoctorResult | null {
+function parseUpdatePostInstallDoctorResult(value: any): UpdatePostInstallDoctorResult | null {
   if (!value || typeof value !== "object") {
     return null;
   }
-  const record = value as Record<string, unknown>;
+  const record = value as Record<string, any>;
   if (record.status !== "advisory") {
     return null;
   }
@@ -107,7 +107,7 @@ function parseUpdatePostInstallDoctorResult(value: unknown): UpdatePostInstallDo
   if (!advisory || typeof advisory !== "object") {
     return null;
   }
-  const advisoryRecord = advisory as Record<string, unknown>;
+  const advisoryRecord = advisory as Record<string, any>;
   const details = advisoryRecord.details;
   if (
     advisoryRecord.kind !== "package-post-install-doctor" ||

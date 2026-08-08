@@ -31,7 +31,7 @@ export type {
   LoadCodexBundleMcpThreadConfigParams,
 } from "./codex-mcp-config.types.js";
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
@@ -51,11 +51,11 @@ const CODEX_MCP_TOOL_APPROVAL_MODES = new Set<CodexMcpToolApprovalMode>([
   "approve",
 ]);
 
-function readCodexProjectionConfig(server: BundleMcpServerConfig): Record<string, unknown> {
+function readCodexProjectionConfig(server: BundleMcpServerConfig): Record<string, any> {
   return isRecord(server.codex) ? server.codex : {};
 }
 
-function normalizeCodexToolApprovalMode(value: unknown): CodexMcpToolApprovalMode | undefined {
+function normalizeCodexToolApprovalMode(value: any): CodexMcpToolApprovalMode | undefined {
   return typeof value === "string" &&
     CODEX_MCP_TOOL_APPROVAL_MODES.has(value as CodexMcpToolApprovalMode)
     ? (value as CodexMcpToolApprovalMode)
@@ -76,8 +76,8 @@ function resolveCodexDefaultToolsApprovalMode(
 export function normalizeCodexMcpServerConfig(
   name: string,
   server: BundleMcpServerConfig,
-): Record<string, unknown> {
-  const next: Record<string, unknown> = {};
+): Record<string, any> {
+  const next: Record<string, any> = {};
   applyCommonServerConfig(next, server);
   const defaultToolsApprovalMode = resolveCodexDefaultToolsApprovalMode(server);
   if (defaultToolsApprovalMode) {
@@ -124,7 +124,7 @@ export function buildCodexMcpServersConfig(config: BundleMcpConfig): CodexMcpSer
   );
 }
 
-function stableJsonValue(value: unknown): unknown {
+function stableJsonValue(value: any): any {
   if (Array.isArray(value)) {
     return value.map(stableJsonValue);
   }
@@ -132,7 +132,7 @@ function stableJsonValue(value: unknown): unknown {
     return value;
   }
   return Object.fromEntries(
-    Object.entries(value as Record<string, unknown>)
+    Object.entries(value as Record<string, any>)
       .toSorted(([left], [right]) => left.localeCompare(right))
       .map(([key, child]) => [key, stableJsonValue(child)]),
   );

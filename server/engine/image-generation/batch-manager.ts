@@ -27,7 +27,7 @@ export type BatchTask = {
   completedItems: number;
   failedItems: number;
   skippedItems: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 export type BatchItem = {
@@ -45,7 +45,7 @@ export type BatchItem = {
   retries: number;
   maxRetries: number;
   index: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 export type CreateBatchOptions = {
@@ -53,7 +53,7 @@ export type CreateBatchOptions = {
   concurrency?: number;
   priority?: number;
   maxRetries?: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 export type BatchProgress = {

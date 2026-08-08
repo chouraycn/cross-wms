@@ -12,5 +12,5 @@ export type MemoryHostStatus = {
 export type MemoryHostQueryResult = {
   ids: string[];
   scores: number[];
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };

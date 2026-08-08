@@ -32,7 +32,7 @@ export interface InboundEventMedia {
   height?: number;
   duration?: number;
   filename?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface InboundEventClassification {
@@ -54,7 +54,7 @@ export interface InboundEventContext {
   source: InboundEventSource;
   timestamp: number;
   updatedAt: number;
-  raw: unknown;
+  raw: any;
   sender?: MessageSender;
   conversationId?: string;
   threadId?: string;
@@ -64,5 +64,5 @@ export interface InboundEventContext {
   attachments?: MessageAttachment[];
   mentions?: string[];
   classification?: InboundEventClassification;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
 }

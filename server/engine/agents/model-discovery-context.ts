@@ -5,7 +5,7 @@
 
 /** Resolve the workspace directory model discovery should use for agent scope. */
 export function resolveModelWorkspaceDir(
-  cfg: unknown,
+  cfg: any,
   explicitWorkspaceDir: string | undefined,
 ): string | undefined {
   if (explicitWorkspaceDir !== undefined || !cfg) {
@@ -18,12 +18,12 @@ export function resolveModelWorkspaceDir(
 /** Resolve the plugin metadata snapshot for model discovery. */
 export function resolveModelPluginMetadataSnapshot(params: {
   allowWorkspaceScopedCurrent?: boolean;
-  config?: unknown;
+  config?: any;
   env?: NodeJS.ProcessEnv;
-  pluginMetadataSnapshot?: unknown;
+  pluginMetadataSnapshot?: any;
   useRuntimeConfig?: boolean;
   workspaceDir?: string;
-}): unknown | undefined {
+}): any | undefined {
   if (params.pluginMetadataSnapshot) {
     return params.pluginMetadataSnapshot;
   }

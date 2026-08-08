@@ -61,11 +61,11 @@ describe("compaction identifier-preservation instructions", () => {
     });
   }
 
-  function summaryCall(index: number): unknown[] | undefined {
+  function summaryCall(index: number): any[] | undefined {
     return mockGenerateSummary.mock.calls[index];
   }
 
-  function latestSummaryCall(): unknown[] | undefined {
+  function latestSummaryCall(): any[] | undefined {
     return mockGenerateSummary.mock.calls[mockGenerateSummary.mock.calls.length - 1];
   }
 
@@ -132,7 +132,7 @@ describe("compaction identifier-preservation instructions", () => {
   });
 });
 
-function extractSummaryInstructions(call: unknown[] | undefined): string {
+function extractSummaryInstructions(call: any[] | undefined): string {
   // generateSummary has compatibility parameters; scan from the tail so the
   // instruction argument is found across old and new call shapes.
   if (!call) {

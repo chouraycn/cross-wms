@@ -95,7 +95,7 @@ describe("prepareGoogleSimpleCompletionModel", () => {
       const model = makeGoogleModel();
       const wrapped = prepareGoogleSimpleCompletionModel(model);
       const streamFn = ensureCustomApiRegistered.mock.calls[0]?.[1] as (
-        ...args: unknown[]
+        ...args: any[]
       ) => unknown;
 
       // The custom alias must unwrap to the real Google API before delegating,
@@ -120,9 +120,9 @@ describe("prepareGoogleSimpleCompletionModel", () => {
   );
 
   it("returns the sanitizer-mutated payload shape", async () => {
-    sanitizeGoogleThinkingPayload.mockImplementationOnce((args: { payload: unknown }) => {
+    sanitizeGoogleThinkingPayload.mockImplementationOnce((args: { payload: any }) => {
       const payload = args.payload as {
-        generationConfig: { thinkingConfig: Record<string, unknown> };
+        generationConfig: { thinkingConfig: Record<string, any> };
       };
       delete payload.generationConfig.thinkingConfig.thinkingBudget;
       payload.generationConfig.thinkingConfig.thinkingLevel = "MINIMAL";
@@ -130,7 +130,7 @@ describe("prepareGoogleSimpleCompletionModel", () => {
     const model = makeGoogleModel();
     prepareGoogleSimpleCompletionModel(model);
     const streamFn = ensureCustomApiRegistered.mock.calls[0]?.[1] as (
-      ...args: unknown[]
+      ...args: any[]
     ) => unknown;
 
     const result = await streamFn(model, { messages: [] }, { apiKey: "key", reasoning: "off" });
@@ -147,7 +147,7 @@ describe("prepareGoogleSimpleCompletionModel", () => {
     expect(
       (
         result as {
-          payload: { generationConfig: { thinkingConfig: Record<string, unknown> } };
+          payload: { generationConfig: { thinkingConfig: Record<string, any> } };
         }
       ).payload.generationConfig.thinkingConfig,
     ).not.toHaveProperty("thinkingBudget");

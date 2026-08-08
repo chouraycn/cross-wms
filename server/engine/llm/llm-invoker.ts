@@ -286,7 +286,7 @@ export async function invokeWithGuards<T>(
   // 4) 重试包装执行
   let attempts = 0;
   let retried = false;
-  let lastError: unknown;
+  let lastError: any;
 
   try {
     const result = await withRetry(

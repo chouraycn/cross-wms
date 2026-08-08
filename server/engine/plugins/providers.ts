@@ -1,15 +1,15 @@
 /** Providers. 移植自 openclaw/src/plugins/providers.ts。
  * 降级策略：返回空数组。 */
 export type ProviderRegistryLoadParams = {
-  config?: unknown;
+  config?: any;
   env?: NodeJS.ProcessEnv;
   workspaceDir?: string;
 };
-export function withBundledProviderVitestCompat(params: unknown): unknown {
+export function withBundledProviderVitestCompat(params: any): any {
   void params;
   return undefined;
 }
-export function resolveBundledProviderCompatPluginIds(params: unknown): string[] {
+export function resolveBundledProviderCompatPluginIds(params: any): string[] {
   void params;
   return [];
 }
@@ -17,23 +17,23 @@ export function resolveEnabledProviderPluginIds(params: ProviderRegistryLoadPara
   void params;
   return [];
 }
-export function resolveExternalAuthProfileProviderPluginIds(params: unknown): string[] {
+export function resolveExternalAuthProfileProviderPluginIds(params: any): string[] {
   void params;
   return [];
 }
-export function resolveExternalAuthProfileCompatFallbackPluginIds(params: unknown): string[] {
+export function resolveExternalAuthProfileCompatFallbackPluginIds(params: any): string[] {
   void params;
   return [];
 }
-export function resolveDiscoveredProviderPluginIds(params: unknown): string[] {
+export function resolveDiscoveredProviderPluginIds(params: any): string[] {
   void params;
   return [];
 }
-export function resolveDiscoverableProviderOwnerPluginIds(params: unknown): string[] {
+export function resolveDiscoverableProviderOwnerPluginIds(params: any): string[] {
   void params;
   return [];
 }
-export function resolveActivatableProviderOwnerPluginIds(params: unknown): string[] {
+export function resolveActivatableProviderOwnerPluginIds(params: any): string[] {
   void params;
   return [];
 }
@@ -42,23 +42,23 @@ export const testing = {
     // 降级
   },
 };
-export function resolveOwningPluginIdsForProvider(params: unknown): string[] {
+export function resolveOwningPluginIdsForProvider(params: any): string[] {
   void params;
   return [];
 }
-export function resolveOwningPluginIdsForProviderRef(params: unknown): string[] {
+export function resolveOwningPluginIdsForProviderRef(params: any): string[] {
   void params;
   return [];
 }
-export function resolveOwningPluginIdsForModelRef(params: unknown): string[] {
+export function resolveOwningPluginIdsForModelRef(params: any): string[] {
   void params;
   return [];
 }
-export function resolveOwningPluginIdsForModelRefs(params: unknown): string[] {
+export function resolveOwningPluginIdsForModelRefs(params: any): string[] {
   void params;
   return [];
 }
-export function resolveCatalogHookProviderPluginIds(params: unknown): string[] {
+export function resolveCatalogHookProviderPluginIds(params: any): string[] {
   void params;
   return [];
 }

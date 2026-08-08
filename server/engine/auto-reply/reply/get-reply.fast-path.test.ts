@@ -61,7 +61,7 @@ vi.mock("../../agents/model-catalog.js", async () => {
 
 vi.mock("../../agents/workspace.js", () => ({
   DEFAULT_AGENT_WORKSPACE_DIR: "/tmp/openclaw-workspace",
-  ensureAgentWorkspace: (...args: unknown[]) => mocks.ensureAgentWorkspace(...args),
+  ensureAgentWorkspace: (...args: any[]) => mocks.ensureAgentWorkspace(...args),
 }));
 registerGetReplyRuntimeOverrides(mocks);
 
@@ -106,13 +106,13 @@ function requireDirectiveParams() {
 
 async function seedFastPathSessionStore(
   storePath: string,
-  entries: Record<string, Record<string, unknown>>,
+  entries: Record<string, Record<string, any>>,
 ): Promise<void> {
   await writeSessionStoreForTestAsync(storePath, entries);
 }
 
-function readFastPathSessionEntry(storePath: string, sessionKey: string): Record<string, unknown> {
-  return readSessionStoreForTest<Record<string, unknown>>(storePath)[sessionKey] ?? {};
+function readFastPathSessionEntry(storePath: string, sessionKey: string): Record<string, any> {
+  return readSessionStoreForTest<Record<string, any>>(storePath)[sessionKey] ?? {};
 }
 
 describe("getReplyFromConfig fast test bootstrap", () => {
@@ -578,7 +578,7 @@ describe("getReplyFromConfig fast test bootstrap", () => {
       session: { store: storePath },
     } as OpenClawConfig);
     const continuationPrompt = `Pursue this goal exactly as written from this JSON string: "\\/status"`;
-    const continueDirectives = async (params: unknown) =>
+    const continueDirectives = async (params: any) =>
       createGetReplyContinueDirectivesResult({
         body: (params as { triggerBodyNormalized: string }).triggerBodyNormalized,
         abortKey: targetSessionKey,
@@ -591,13 +591,13 @@ describe("getReplyFromConfig fast test bootstrap", () => {
       });
     mocks.resolveReplyDirectives
       .mockImplementationOnce(continueDirectives)
-      .mockImplementationOnce(async (params: unknown) => {
+      .mockImplementationOnce(async (params: any) => {
         expect((params as { triggerBodyNormalized: string }).triggerBodyNormalized).toBe(
           continuationPrompt,
         );
         return continueDirectives(params);
       });
-    mocks.handleInlineActions.mockImplementation(async (params: unknown) => {
+    mocks.handleInlineActions.mockImplementation(async (params: any) => {
       expect(params).toMatchObject({
         command: {
           rawBodyNormalized: continuationPrompt,

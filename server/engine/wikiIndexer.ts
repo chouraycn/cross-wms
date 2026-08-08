@@ -29,7 +29,7 @@ export interface MarkdownParseResult {
   /** 自动提取的标签 */
   tags: string[];
   /** 元数据（从 YAML frontmatter 提取） */
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
   /** 代码块列表 */
   codeBlocks?: Array<{ language: string; code: string }>;
   /** 链接列表 */
@@ -45,7 +45,7 @@ export interface MarkdownParseResult {
 export function parseMarkdown(markdown: string): MarkdownParseResult {
   let title = '';
   let content = markdown;
-  let metadata: Record<string, unknown> | undefined;
+  let metadata: Record<string, any> | undefined;
   const tags: string[] = [];
   const codeBlocks: Array<{ language: string; code: string }> = [];
   const links: Array<{ text: string; url: string }> = [];
@@ -131,8 +131,8 @@ export function parseMarkdown(markdown: string): MarkdownParseResult {
 /**
  * 解析 YAML frontmatter（简单实现）
  */
-function parseYamlFrontmatter(yaml: string): Record<string, unknown> {
-  const result: Record<string, unknown> = {};
+function parseYamlFrontmatter(yaml: string): Record<string, any> {
+  const result: Record<string, any> = {};
   const lines = yaml.split('\n');
 
   for (const line of lines) {

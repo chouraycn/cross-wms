@@ -22,7 +22,7 @@ export type AzureResponsesTextDeltaEvent = {
 };
 
 export function isResponsesTextContentPartType(
-  type: unknown,
+  type: any,
 ): type is ResponsesTextContentPartType {
   return (
     type === OPENAI_RESPONSES_OUTPUT_TEXT_CONTENT_PART_TYPE ||
@@ -30,7 +30,7 @@ export function isResponsesTextContentPartType(
   );
 }
 
-export function isResponsesTextDeltaEventType(type: unknown): type is ResponsesTextDeltaEventType {
+export function isResponsesTextDeltaEventType(type: any): type is ResponsesTextDeltaEventType {
   return (
     type === OPENAI_RESPONSES_OUTPUT_TEXT_DELTA_EVENT_TYPE ||
     type === AZURE_RESPONSES_TEXT_DELTA_EVENT_TYPE
@@ -38,14 +38,14 @@ export function isResponsesTextDeltaEventType(type: unknown): type is ResponsesT
 }
 
 export function isAzureResponsesTextDeltaEventType(
-  type: unknown,
+  type: any,
 ): type is typeof AZURE_RESPONSES_TEXT_DELTA_EVENT_TYPE {
   return type === AZURE_RESPONSES_TEXT_DELTA_EVENT_TYPE;
 }
 
 export function isAzureResponsesTextDeltaEvent(event: {
-  type?: unknown;
-  delta?: unknown;
+  type?: any;
+  delta?: any;
 }): event is AzureResponsesTextDeltaEvent {
   return isAzureResponsesTextDeltaEventType(event.type) && typeof event.delta === "string";
 }

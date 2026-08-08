@@ -26,11 +26,11 @@ const {
   closeMcpLoopbackServerMock,
 } = vi.hoisted(() => ({
   hasHooksMock: vi.fn<(hookName: string) => boolean>(() => false),
-  runBeforeAgentReplyMock: vi.fn<(event: unknown, ctx: unknown) => Promise<BeforeAgentReplyResult>>(
+  runBeforeAgentReplyMock: vi.fn<(event: any, ctx: any) => Promise<BeforeAgentReplyResult>>(
     async () => undefined,
   ),
   executePreparedCliRunMock: vi.fn<
-    (_context: unknown, _cliSessionIdToUse?: string) => Promise<CliOutput>
+    (_context: any, _cliSessionIdToUse?: string) => Promise<CliOutput>
   >(async () => ({ text: "" })),
   prepareCliRunContextMock: vi.fn(),
   closeClaudeLiveSessionForContextMock: vi.fn(),
@@ -90,7 +90,7 @@ function makeStubContext(params: typeof baseRunParams & { trigger?: string }) {
     backendResolved: {},
     preparedBackend: {},
     reusableCliSession: {},
-  } as unknown;
+  } as any;
 }
 
 beforeEach(() => {
@@ -158,7 +158,7 @@ describe("runCliAgent cron before_agent_reply seam", () => {
       });
       const [event, context] = runBeforeAgentReplyMock.mock.calls.at(0) ?? [];
       expect(event).toEqual({ cleanedBody: baseRunParams.prompt });
-      const hookContext = context as Record<string, unknown> | undefined;
+      const hookContext = context as Record<string, any> | undefined;
       expect(hookContext?.jobId).toBe("cron-job-123");
       expect(hookContext?.agentId).toBe(baseRunParams.agentId);
       expect(hookContext?.sessionId).toBe(baseRunParams.sessionId);

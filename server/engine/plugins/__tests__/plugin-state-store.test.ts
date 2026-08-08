@@ -162,7 +162,7 @@ describe('plugins/_stub__plugin-state-store', () => {
 
     it('register 拒绝循环引用对象', async () => {
       const store = createPluginStateKeyedStore('p1', { namespace: 'ns', maxEntries: 10 });
-      const obj: Record<string, unknown> = {};
+      const obj: Record<string, any> = {};
       obj.self = obj;
       await expect(store.register('k', obj)).rejects.toThrow(PluginStateStoreError);
     });
@@ -390,7 +390,7 @@ describe('plugins/_stub__plugin-state-store', () => {
 
     it('拒绝稀疏数组', async () => {
       const store = createPluginStateKeyedStore('p1', { namespace: 'ns', maxEntries: 10 });
-      const sparse: unknown[] = [];
+      const sparse: any[] = [];
       sparse[2] = 'x';
       await expect(store.register('k', sparse)).rejects.toThrow(PluginStateStoreError);
     });
@@ -398,7 +398,7 @@ describe('plugins/_stub__plugin-state-store', () => {
     it('拒绝带 symbol 键的对象', async () => {
       const store = createPluginStateKeyedStore('p1', { namespace: 'ns', maxEntries: 10 });
       const sym = Symbol('s');
-      const obj: Record<symbol, unknown> = {};
+      const obj: Record<symbol, any> = {};
       obj[sym] = 'v';
       await expect(store.register('k', obj)).rejects.toThrow(PluginStateStoreError);
     });

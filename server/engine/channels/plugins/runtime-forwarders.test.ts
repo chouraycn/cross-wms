@@ -12,8 +12,8 @@ type RenderPresentationParams = Parameters<
 
 describe("createRuntimeDirectoryLiveAdapter", () => {
   it("forwards live directory calls through the runtime getter", async () => {
-    const self = vi.fn(async (_ctx: unknown) => ({ kind: "user" as const, id: "self" }));
-    const listPeersLive = vi.fn(async (_ctx: unknown) => [{ kind: "user" as const, id: "alice" }]);
+    const self = vi.fn(async (_ctx: any) => ({ kind: "user" as const, id: "self" }));
+    const listPeersLive = vi.fn(async (_ctx: any) => [{ kind: "user" as const, id: "alice" }]);
     const adapter = createRuntimeDirectoryLiveAdapter({
       getRuntime: async () => ({ self, listPeersLive }),
       self: (runtime) => runtime.self,

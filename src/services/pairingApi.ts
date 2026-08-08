@@ -64,7 +64,7 @@ export interface DeviceInfo {
   appVersion?: string;
   capabilities?: string[];
   publicKey?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 /** 已配对设备 */
@@ -76,7 +76,7 @@ export interface PairedDevice {
   isActive: boolean;
   trustLevel: number;
   sharedSecret?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 /** 配对会话 */
@@ -92,7 +92,7 @@ export interface PairingSession {
   expiresAt?: number;
   sharedSecret?: string;
   error?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 /** 已发现的附近设备 */

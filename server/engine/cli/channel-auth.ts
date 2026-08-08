@@ -46,9 +46,9 @@ export async function runChannelAuth(
  * 降级实现：保留 normalizeOptionalString 调用以维持签名兼容。
  */
 export function resolveChannelAuthOptions(raw: {
-  channel?: unknown;
-  account?: unknown;
-  verbose?: unknown;
+  channel?: any;
+  account?: any;
+  verbose?: any;
 }): ChannelAuthOptions {
   return {
     channel: normalizeOptionalString(raw.channel),

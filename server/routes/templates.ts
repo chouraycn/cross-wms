@@ -45,7 +45,7 @@ router.get('/', (req: Request, res: Response) => {
 
     const templates = getTemplates(filter);
     return ok(res, { data: templates, total: templates.length });
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     return serverError(res, message);
   }
@@ -61,7 +61,7 @@ router.get('/categories', (_req: Request, res: Response) => {
   try {
     const categories = getTemplateCategories();
     return ok(res, categories);
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     return serverError(res, message);
   }
@@ -85,7 +85,7 @@ router.get('/search', (req: Request, res: Response) => {
 
     const templates = searchTemplates(query);
     return ok(res, { data: templates, total: templates.length });
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     return serverError(res, message);
   }
@@ -104,7 +104,7 @@ router.get('/:id', (req: Request, res: Response) => {
       return notFound(res, 'Template not found');
     }
     return ok(res, template);
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     return serverError(res, message);
   }
@@ -123,7 +123,7 @@ router.post('/:id/install', (req: Request, res: Response) => {
       return notFound(res, 'Template not found');
     }
     return ok(res, { success: true, workflow });
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     return serverError(res, message);
   }
@@ -149,7 +149,7 @@ router.post('/:id/rate', (req: Request, res: Response) => {
       return notFound(res, 'Template not found');
     }
     return ok(res, { success: true });
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     return serverError(res, message);
   }

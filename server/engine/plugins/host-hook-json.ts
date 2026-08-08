@@ -33,7 +33,7 @@ export const PLUGIN_JSON_VALUE_LIMITS: PluginJsonValueLimits = {
 };
 
 function isPluginJsonValueWithinLimits(
-  value: unknown,
+  value: any,
   limits: PluginJsonValueLimits,
   state: { depth: number; nodes: number },
 ): value is PluginJsonValue {
@@ -63,7 +63,7 @@ function isPluginJsonValueWithinLimits(
   if (prototype !== Object.prototype && prototype !== null) {
     return false;
   }
-  const entries = Object.entries(value as Record<string, unknown>);
+  const entries = Object.entries(value as Record<string, any>);
   if (entries.length > limits.maxObjectKeys) {
     return false;
   }
@@ -77,7 +77,7 @@ function isPluginJsonValueWithinLimits(
 }
 
 /** Validates that a plugin hook payload is finite, plain JSON under size limits. */
-export function isPluginJsonValue(value: unknown): value is PluginJsonValue {
+export function isPluginJsonValue(value: any): value is PluginJsonValue {
   if (!isPluginJsonValueWithinLimits(value, PLUGIN_JSON_VALUE_LIMITS, { depth: 0, nodes: 0 })) {
     return false;
   }

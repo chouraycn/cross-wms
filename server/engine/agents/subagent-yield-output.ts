@@ -8,11 +8,11 @@
  */
 
 /** Check if the assistant calls sessions_yield (always false in cross-wms). */
-export function assistantCallsSessionsYield(..._args: unknown[]): false {
+export function assistantCallsSessionsYield(..._args: any[]): false {
   return false;
 }
 
 /** Check if a tool result is a sessions_yield result (always false in cross-wms). */
-export function isSessionsYieldToolResult(..._args: unknown[]): false {
+export function isSessionsYieldToolResult(..._args: any[]): false {
   return false;
 }

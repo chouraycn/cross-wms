@@ -27,7 +27,7 @@ function runToolStreamCase(params: ToolStreamCase) {
     model: params.model,
     options: params.options,
     payload: { model: params.model.id, messages: [] },
-  }).payload as Record<string, unknown>;
+  }).payload as Record<string, any>;
 }
 
 describe("extra-params: provider tool_stream support", () => {
@@ -59,7 +59,7 @@ describe("extra-params: provider tool_stream support", () => {
             ...options,
             onPayload(payload, payloadModel) {
               if (payload && typeof payload === "object") {
-                (payload as Record<string, unknown>).tool_stream = true;
+                (payload as Record<string, any>).tool_stream = true;
               }
               options?.onPayload?.(payload, payloadModel);
             },

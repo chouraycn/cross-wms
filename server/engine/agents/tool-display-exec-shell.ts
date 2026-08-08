@@ -83,7 +83,7 @@ export function splitShellWords(input: string | undefined, maxWords = 48): strin
   return words;
 }
 
-function normalizeLowercaseStringOrEmpty(value: unknown): string {
+function normalizeLowercaseStringOrEmpty(value: any): string {
   if (typeof value === "string") {
     return value.toLowerCase();
   }

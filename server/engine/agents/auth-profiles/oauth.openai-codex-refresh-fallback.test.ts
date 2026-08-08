@@ -33,7 +33,7 @@ const { getOAuthApiKeyMock } = vi.hoisted(() => ({
 }));
 
 const { readCodexCliCredentialsCachedMock } = vi.hoisted(() => ({
-  readCodexCliCredentialsCachedMock: vi.fn<(_options?: unknown) => OAuthCredential | null>(
+  readCodexCliCredentialsCachedMock: vi.fn<(_options?: any) => OAuthCredential | null>(
     () => null,
   ),
 }));
@@ -44,7 +44,7 @@ const {
   buildProviderAuthDoctorHintWithPluginMock,
 } = vi.hoisted(() => ({
   refreshProviderOAuthCredentialWithPluginMock: vi.fn(
-    async (_params?: { context?: unknown }): Promise<OAuthCredential | undefined> => undefined,
+    async (_params?: { context?: any }): Promise<OAuthCredential | undefined> => undefined,
   ),
   formatProviderAuthProfileApiKeyWithPluginMock: vi.fn(() => undefined),
   buildProviderAuthDoctorHintWithPluginMock: vi.fn(async () => undefined),
@@ -102,7 +102,7 @@ function mockRotatedOpenAICodexRefresh() {
 
 function expectPersistedOpenAICodexProfile(
   credential: AuthProfileStore["profiles"][string],
-  metadata: Record<string, unknown> = {},
+  metadata: Record<string, any> = {},
 ): void {
   expect(credential?.type).toBe("oauth");
   expect(credential?.provider).toBe("openai");
@@ -128,7 +128,7 @@ function requireOAuthProfile(store: AuthProfileStore, profileId: string): OAuthC
   return profile;
 }
 
-function requireOAuthContext(context: unknown): OAuthCredential {
+function requireOAuthContext(context: any): OAuthCredential {
   expect(context && typeof context === "object").toBe(true);
   if (!context || typeof context !== "object") {
     throw new Error("expected OAuth credential context");
@@ -384,7 +384,7 @@ describe("resolveApiKeyForProfile openai refresh fallback", () => {
       accountId: "acct-external",
     });
     refreshProviderOAuthCredentialWithPluginMock.mockImplementationOnce(
-      async (params?: { context?: unknown }) => {
+      async (params?: { context?: any }) => {
         const context = requireOAuthContext(params?.context);
         expect(context.access).toBe("expired-local-access-token");
         expect(context.refresh).toBe("local-refresh-token");
@@ -448,7 +448,7 @@ describe("resolveApiKeyForProfile openai refresh fallback", () => {
       accountId: "acct-cli",
     });
     refreshProviderOAuthCredentialWithPluginMock.mockImplementationOnce(
-      async (params?: { context?: unknown }) => {
+      async (params?: { context?: any }) => {
         const context = requireOAuthContext(params?.context);
         expect(context.access).toBe("expired-local-access-token");
         expect(context.refresh).toBe("stale-local-refresh-token");

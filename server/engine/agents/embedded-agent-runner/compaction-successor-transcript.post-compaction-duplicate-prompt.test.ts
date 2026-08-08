@@ -19,15 +19,15 @@ function makeAssistant(text: string, timestamp: number) {
   return makeAgentAssistantMessage({ content: [{ type: "text", text }], timestamp });
 }
 
-function readUserTexts(entries: { type: string; message?: unknown }[]): string[] {
+function readUserTexts(entries: { type: string; message?: any }[]): string[] {
   return entries
     .filter(
       (entry) =>
         entry.type === "message" &&
-        (entry.message as { role?: unknown } | undefined)?.role === "user",
+        (entry.message as { role?: any } | undefined)?.role === "user",
     )
     .map((entry) => {
-      const content = (entry.message as { content?: unknown } | undefined)?.content;
+      const content = (entry.message as { content?: any } | undefined)?.content;
       if (typeof content === "string") {
         return content;
       }
@@ -73,7 +73,7 @@ describe("rotateTranscriptAfterCompaction post-compaction duplicate", () => {
 
     const successor = await readTranscriptFileState(successorFile);
     const userPromptTexts = readUserTexts(
-      successor.getEntries() as { type: string; message?: unknown }[],
+      successor.getEntries() as { type: string; message?: any }[],
     );
 
     const occurrences = userPromptTexts.filter((text) => text.includes(PROMPT)).length;

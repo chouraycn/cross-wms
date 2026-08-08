@@ -31,7 +31,7 @@ const pluginApprovalManager = new ExecApprovalManager<PluginApprovalRequestPaylo
 
 // ========== Plugin Approval List ==========
 
-async function pluginApprovalList(_params: unknown, _ctx: GatewayMethodContext) {
+async function pluginApprovalList(_params: any, _ctx: GatewayMethodContext) {
   const pending = pluginApprovalManager.listPending();
 
   return {
@@ -43,7 +43,7 @@ async function pluginApprovalList(_params: unknown, _ctx: GatewayMethodContext) 
 
 // ========== Plugin Approval Approve ==========
 
-async function pluginApprovalApprove(params: unknown, _ctx: GatewayMethodContext) {
+async function pluginApprovalApprove(params: any, _ctx: GatewayMethodContext) {
   const { approvalId, resolvedBy } = params as {
     approvalId: string;
     resolvedBy?: string;
@@ -73,7 +73,7 @@ async function pluginApprovalApprove(params: unknown, _ctx: GatewayMethodContext
 
 // ========== Plugin Approval Deny ==========
 
-async function pluginApprovalDeny(params: unknown, _ctx: GatewayMethodContext) {
+async function pluginApprovalDeny(params: any, _ctx: GatewayMethodContext) {
   const { approvalId, resolvedBy } = params as {
     approvalId: string;
     resolvedBy?: string;

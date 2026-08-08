@@ -64,8 +64,8 @@ describe("tui session actions", () => {
     });
 
   it("queues session refreshes and applies the latest result", async () => {
-    let resolveFirst: ((value: unknown) => void) | undefined;
-    let resolveSecond: ((value: unknown) => void) | undefined;
+    let resolveFirst: ((value: any) => void) | undefined;
+    let resolveSecond: ((value: any) => void) | undefined;
 
     const listSessions = vi
       .fn()
@@ -156,8 +156,8 @@ describe("tui session actions", () => {
   });
 
   it("coalesces refresh bursts into a single follow-up lookup", async () => {
-    let resolveFirst: ((value: unknown) => void) | undefined;
-    let resolveSecond: ((value: unknown) => void) | undefined;
+    let resolveFirst: ((value: any) => void) | undefined;
+    let resolveSecond: ((value: any) => void) | undefined;
 
     const listSessions = vi
       .fn()

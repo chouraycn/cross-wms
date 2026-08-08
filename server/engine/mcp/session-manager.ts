@@ -16,11 +16,11 @@ export type McpSession = {
   createdAt: number;
   lastActivityAt: number;
   expiresAt?: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
   resources: ResourceManager;
   subscriptions: Map<string, () => void>;
   capabilities?: MCPClientCapabilities;
-  toolContext?: Record<string, unknown>;
+  toolContext?: Record<string, any>;
 };
 
 export class McpSessionManager {
@@ -34,7 +34,7 @@ export class McpSessionManager {
     this.startCleanup();
   }
 
-  createSession(clientId: string, metadata?: Record<string, unknown>, options?: {
+  createSession(clientId: string, metadata?: Record<string, any>, options?: {
     capabilities?: MCPClientCapabilities;
     ttlMs?: number;
   }): McpSession {
@@ -308,7 +308,7 @@ export class McpSessionManager {
     return this.sessions.get(sessionId)?.state;
   }
 
-  updateSessionMetadata(sessionId: string, metadata: Record<string, unknown>): boolean {
+  updateSessionMetadata(sessionId: string, metadata: Record<string, any>): boolean {
     const session = this.sessions.get(sessionId);
     if (!session) {
       return false;
@@ -317,7 +317,7 @@ export class McpSessionManager {
     return true;
   }
 
-  setToolContext(sessionId: string, key: string, value: unknown): boolean {
+  setToolContext(sessionId: string, key: string, value: any): boolean {
     const session = this.sessions.get(sessionId);
     if (!session) {
       return false;
@@ -329,7 +329,7 @@ export class McpSessionManager {
     return true;
   }
 
-  getToolContext(sessionId: string, key: string): unknown {
+  getToolContext(sessionId: string, key: string): any {
     return this.sessions.get(sessionId)?.toolContext?.[key];
   }
 
@@ -374,7 +374,7 @@ export class McpSessionManager {
 
 export const mcpSessionManager = new McpSessionManager();
 
-export function createSession(clientId: string, metadata?: Record<string, unknown>): McpSession {
+export function createSession(clientId: string, metadata?: Record<string, any>): McpSession {
   return mcpSessionManager.createSession(clientId, metadata);
 }
 

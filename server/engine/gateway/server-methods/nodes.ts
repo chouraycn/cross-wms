@@ -200,21 +200,21 @@ function isPersistentBrowserProxyMutation(method: string, path: string): boolean
   return method === "DELETE" && /^\/profiles\/[^/]+$/.test(normalizedPath);
 }
 
-function isForbiddenBrowserProxyMutation(params: unknown): boolean {
+function isForbiddenBrowserProxyMutation(params: any): boolean {
   if (!params || typeof params !== "object") {
     return false;
   }
-  const candidate = params as { method?: unknown; path?: unknown };
+  const candidate = params as { method?: any; path?: any };
   const method = (normalizeOptionalString(candidate.method) ?? "").toUpperCase();
   const path = normalizeOptionalString(candidate.path) ?? "";
   return Boolean(method && path && isPersistentBrowserProxyMutation(method, path));
 }
 
-function normalizePluginSurfaceRefreshParams(params: unknown): { surface: string } | undefined {
+function normalizePluginSurfaceRefreshParams(params: any): { surface: string } | undefined {
   if (!params || typeof params !== "object") {
     return undefined;
   }
-  const surface = normalizeOptionalString((params as { surface?: unknown }).surface);
+  const surface = normalizeOptionalString((params as { surface?: any }).surface);
   if (!surface) {
     return undefined;
   }
@@ -312,7 +312,7 @@ function isForegroundRestrictedIosCommand(command: string): boolean {
 function shouldQueueAsPendingForegroundAction(params: {
   platform?: string;
   command: string;
-  error: unknown;
+  error: any;
 }): boolean {
   // iOS cannot run camera/screen/Talk commands in the background. Queue only
   // those foreground-only commands when the node explicitly reports that state.
@@ -325,7 +325,7 @@ function shouldQueueAsPendingForegroundAction(params: {
   }
   const error =
     params.error && typeof params.error === "object"
-      ? (params.error as { code?: unknown; message?: unknown })
+      ? (params.error as { code?: any; message?: any })
       : null;
   const code = normalizeOptionalString(error?.code)?.toUpperCase() ?? "";
   const message = normalizeOptionalString(error?.message)?.toUpperCase() ?? "";
@@ -521,7 +521,7 @@ function refreshConnectedNodeSurfaceCaches(params: {
     deviceFamily: nodeSession.deviceFamily,
     commands: nodeSession.commands,
     cfg,
-  }).catch((err: unknown) =>
+  }).catch((err: any) =>
     params.context.logGateway.warn(
       `remote bin probe failed for ${nodeSession.nodeId}: ${formatErrorMessage(err)}`,
     ),
@@ -580,7 +580,7 @@ function ackPendingNodeActions(nodeId: string, ids: string[]): PendingNodeAction
   return remaining;
 }
 
-function toPendingParamsJSON(params: unknown): string | undefined {
+function toPendingParamsJSON(params: any): string | undefined {
   if (params === undefined) {
     return undefined;
   }
@@ -595,14 +595,14 @@ function emitTalkPttNodeEvent(params: {
   context: Pick<GatewayRequestContext, "broadcast">;
   nodeId: string;
   command: string;
-  payload: unknown;
+  payload: any;
 }): void {
   if (!TALK_PTT_COMMANDS.has(params.command)) {
     return;
   }
   const payloadObj =
     typeof params.payload === "object" && params.payload !== null
-      ? (params.payload as Record<string, unknown>)
+      ? (params.payload as Record<string, any>)
       : {};
   const captureId = normalizeOptionalString(payloadObj.captureId) ?? randomUUID();
   const sessionId = `node:${params.nodeId}:talk:${captureId}`;
@@ -1285,7 +1285,7 @@ export const nodeHandlers: GatewayRequestHandlers = {
     const p = params as {
       nodeId: string;
       command: string;
-      params?: unknown;
+      params?: any;
       timeoutMs?: number;
       idempotencyKey: string;
     };
@@ -1586,7 +1586,7 @@ export const nodeHandlers: GatewayRequestHandlers = {
       });
       return;
     }
-    const p = params as { event: string; payload?: unknown; payloadJSON?: string | null };
+    const p = params as { event: string; payload?: any; payloadJSON?: string | null };
     const payloadJSON =
       typeof p.payloadJSON === "string"
         ? p.payloadJSON

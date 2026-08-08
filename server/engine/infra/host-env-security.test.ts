@@ -1003,7 +1003,7 @@ describe("sanitizeHostExecEnv", () => {
       baseEnv: {
         PATH: "/usr/bin:/bin",
         GOOD: "1",
-        BAD_NUMBER: 1 as unknown,
+        BAD_NUMBER: 1 as any,
         "NOT-PORTABLE": "x",
         "ProgramFiles(x86)": "C:\\Program Files (x86)",
       },

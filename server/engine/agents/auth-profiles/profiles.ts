@@ -28,7 +28,7 @@ export {
 // Auth profile order/lastGood keys may be stored as aliases. Resolve through
 // auth provider normalization before updating per-provider state.
 function findProviderAuthStateKey(
-  entries: Record<string, unknown> | undefined,
+  entries: Record<string, any> | undefined,
   providerKey: string,
 ): string | undefined {
   if (!entries) {

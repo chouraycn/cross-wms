@@ -52,7 +52,7 @@ export interface SkillSignal {
   /** 错误信息 */
   error?: string;
   /** 附加数据 */
-  data?: Record<string, unknown>;
+  data?: Record<string, any>;
 }
 
 /** 信号统计 */
@@ -391,8 +391,8 @@ export class SkillPerformanceMonitor {
   /** 监控技能调用 */
   monitorSkillCall(
     skillName: string,
-    fn: () => Promise<unknown>
-  ): Promise<{ result: unknown; durationMs: number }> {
+    fn: () => Promise<any>
+  ): Promise<{ result: any; durationMs: number }> {
     const startTime = Date.now();
 
     return fn()

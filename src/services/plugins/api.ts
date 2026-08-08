@@ -173,7 +173,7 @@ export async function reloadPlugin(id: string): Promise<PluginInfo> {
 
 /** 获取插件配置和 Schema */
 export async function fetchPluginConfig(id: string): Promise<{
-  config: Record<string, unknown>;
+  config: Record<string, any>;
   configSchema: PluginConfigSchema | null;
 }> {
   const res = await fetchWithTimeout(`${BASE}/${encodeURIComponent(id)}/config`);
@@ -188,8 +188,8 @@ export async function fetchPluginConfig(id: string): Promise<{
 /** 更新插件配置 */
 export async function updatePluginConfig(
   id: string,
-  config: Record<string, unknown>
-): Promise<Record<string, unknown>> {
+  config: Record<string, any>
+): Promise<Record<string, any>> {
   const res = await fetchWithTimeout(`${BASE}/${encodeURIComponent(id)}/config`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
@@ -204,7 +204,7 @@ export async function updatePluginConfig(
 }
 
 /** 重置插件配置 */
-export async function resetPluginConfig(id: string): Promise<Record<string, unknown>> {
+export async function resetPluginConfig(id: string): Promise<Record<string, any>> {
   const res = await fetchWithTimeout(`${BASE}/${encodeURIComponent(id)}/config/reset`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

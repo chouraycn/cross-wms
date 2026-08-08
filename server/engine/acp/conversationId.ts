@@ -5,7 +5,7 @@
  * 参考 openclaw/src/acp/conversation-id.ts 设计
  */
 
-export function normalizeConversationText(value: unknown): string {
+export function normalizeConversationText(value: any): string {
   if (typeof value === "string") {
     return value.trim();
   }

@@ -1,9 +1,9 @@
 // 移植自 openclaw/src/config/agent-dirs.ts
 
-export function findDuplicateAgentDirs(...args: unknown[]): unknown {
+export function findDuplicateAgentDirs(...args: any[]): any {
   return [];
 }
-export function formatDuplicateAgentDirError(...args: unknown[]): unknown {
+export function formatDuplicateAgentDirError(...args: any[]): any {
   return "";
 }
 export class DuplicateAgentDirError {

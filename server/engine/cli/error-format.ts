@@ -58,7 +58,7 @@ export function formatUnsupportedChannelActionMessage(params: {
 }
 
 /** 格式化严格 JSON 解析失败，不原样暴露长不可信输入。 */
-export function formatStrictJsonParseFailure(params: { value: string; cause: unknown }): string {
+export function formatStrictJsonParseFailure(params: { value: string; cause: any }): string {
   const rawCause = params.cause instanceof Error ? params.cause.message : String(params.cause);
   const cause = rawCause.trim().replace(/[.。]+$/u, "");
   const preview =
@@ -76,7 +76,7 @@ export function formatStrictJsonParseFailure(params: { value: string; cause: unk
 /** 规范化 gateway 失败文本，并附上深度状态恢复命令。 */
 export function formatGatewayCommandFailure(params: {
   action: string;
-  error: unknown;
+  error: any;
   inspectCommand?: string;
 }): string {
   const raw = params.error instanceof Error ? params.error.message : String(params.error);

@@ -12,51 +12,51 @@ import type { OpenClawConfig } from "../../config/types.openclaw.js";
 import { isLegacyWebSearchProviderConfigKey } from "../../config/web-search-legacy-provider-keys.js";
 
 /** Reads the legacy top-level web search credential value. */
-export function getTopLevelCredentialValue(searchConfig?: Record<string, unknown>): unknown {
+export function getTopLevelCredentialValue(searchConfig?: Record<string, any>): any {
   return searchConfig?.apiKey;
 }
 
 /** Writes the legacy top-level web search credential value. */
 export function setTopLevelCredentialValue(
-  searchConfigTarget: Record<string, unknown>,
-  value: unknown,
+  searchConfigTarget: Record<string, any>,
+  value: any,
 ): void {
   searchConfigTarget.apiKey = value;
 }
 
 /** Reads a provider-scoped credential value from a web search config object. */
 export function getScopedCredentialValue(
-  searchConfig: Record<string, unknown> | undefined,
+  searchConfig: Record<string, any> | undefined,
   key: string,
-): unknown {
+): any {
   const scoped = searchConfig?.[key];
   if (!scoped || typeof scoped !== "object" || Array.isArray(scoped)) {
     return undefined;
   }
-  return (scoped as Record<string, unknown>).apiKey;
+  return (scoped as Record<string, any>).apiKey;
 }
 
 /** Writes a provider-scoped credential value, creating the scoped object when needed. */
 export function setScopedCredentialValue(
-  searchConfigTarget: Record<string, unknown>,
+  searchConfigTarget: Record<string, any>,
   key: string,
-  value: unknown,
+  value: any,
 ): void {
   const scoped = searchConfigTarget[key];
   if (!scoped || typeof scoped !== "object" || Array.isArray(scoped)) {
     searchConfigTarget[key] = { apiKey: value };
     return;
   }
-  (scoped as Record<string, unknown>).apiKey = value;
+  (scoped as Record<string, any>).apiKey = value;
 }
 
 /** Merges plugin web-search config into a provider-scoped legacy-compatible shape. */
 export function mergeScopedSearchConfig(
-  searchConfig: Record<string, unknown> | undefined,
+  searchConfig: Record<string, any> | undefined,
   key: string,
-  pluginConfig: Record<string, unknown> | undefined,
+  pluginConfig: Record<string, any> | undefined,
   options?: { mirrorApiKeyToTopLevel?: boolean },
-): Record<string, unknown> | undefined {
+): Record<string, any> | undefined {
   if (!pluginConfig) {
     return searchConfig;
   }
@@ -65,9 +65,9 @@ export function mergeScopedSearchConfig(
     searchConfig?.[key] &&
     typeof searchConfig[key] === "object" &&
     !Array.isArray(searchConfig[key])
-      ? (searchConfig[key] as Record<string, unknown>)
+      ? (searchConfig[key] as Record<string, any>)
       : {};
-  const next: Record<string, unknown> = { ...searchConfig };
+  const next: Record<string, any> = { ...searchConfig };
   const existingDescriptor = searchConfig
     ? Object.getOwnPropertyDescriptor(searchConfig, key)
     : undefined;
@@ -96,18 +96,18 @@ export function mergeScopedSearchConfig(
 export function resolveProviderWebSearchPluginConfig(
   config: OpenClawConfig | undefined,
   pluginId: string,
-): Record<string, unknown> | undefined {
+): Record<string, any> | undefined {
   return resolvePluginWebSearchConfig(config, pluginId) as
-    | Record<string, unknown>
+    | Record<string, any>
     | undefined;
 }
 
-function ensureObject(target: Record<string, unknown>, key: string): Record<string, unknown> {
+function ensureObject(target: Record<string, any>, key: string): Record<string, any> {
   const current = target[key];
   if (current && typeof current === "object" && !Array.isArray(current)) {
-    return current as Record<string, unknown>;
+    return current as Record<string, any>;
   }
-  const next: Record<string, unknown> = {};
+  const next: Record<string, any> = {};
   target[key] = next;
   return next;
 }
@@ -117,9 +117,9 @@ export function setProviderWebSearchPluginConfigValue(
   configTarget: OpenClawConfig,
   pluginId: string,
   key: string,
-  value: unknown,
+  value: any,
 ): void {
-  const plugins = ensureObject(configTarget as Record<string, unknown>, "plugins");
+  const plugins = ensureObject(configTarget as Record<string, any>, "plugins");
   const entries = ensureObject(plugins, "entries");
   const entry = ensureObject(entries, pluginId);
   if (entry.enabled === undefined) {

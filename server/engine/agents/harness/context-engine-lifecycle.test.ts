@@ -324,7 +324,7 @@ describe("harness context engine lifecycle", () => {
       warn: () => {},
     });
 
-    const afterTurnCalls = (afterTurn as unknown as { mock: { calls: unknown[][] } }).mock.calls;
+    const afterTurnCalls = (afterTurn as unknown as { mock: { calls: any[][] } }).mock.calls;
     const afterTurnParams = afterTurnCalls[0]?.[0] as
       | { messages?: AgentMessage[]; prePromptMessageCount?: number }
       | undefined;
@@ -346,7 +346,7 @@ describe("harness context engine lifecycle", () => {
     // back to the pipeline messages instead of corrupting session state.
     const visibleUser = textMessage("user", "ping", 1);
 
-    async function runAssembleWithEngineResult(result: unknown) {
+    async function runAssembleWithEngineResult(result: any) {
       return assembleHarnessContextEngine({
         contextEngine: createContextEngine({
           info: { id: "broken-engine", name: "Broken engine" },
@@ -433,7 +433,7 @@ describe("harness context engine lifecycle", () => {
       isHeartbeat: true,
     });
 
-    const ingestBatchCalls = (ingestBatch as unknown as { mock: { calls: unknown[][] } }).mock
+    const ingestBatchCalls = (ingestBatch as unknown as { mock: { calls: any[][] } }).mock
       .calls;
     const ingestBatchParams = ingestBatchCalls[0]?.[0] as
       | { isHeartbeat?: boolean; messages?: AgentMessage[] }
@@ -464,7 +464,7 @@ describe("harness context engine lifecycle", () => {
       isHeartbeat: true,
     });
 
-    const ingestCalls = (ingest as unknown as { mock: { calls: unknown[][] } }).mock.calls;
+    const ingestCalls = (ingest as unknown as { mock: { calls: any[][] } }).mock.calls;
     expect(ingestCalls).toHaveLength(2);
     for (const call of ingestCalls) {
       const ingestParams = call[0] as { isHeartbeat?: boolean };

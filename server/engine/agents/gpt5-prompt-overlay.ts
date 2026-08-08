@@ -18,15 +18,15 @@ type OpenClawConfig = {
     defaults?: {
       promptOverlays?: {
         gpt5?: {
-          personality?: unknown;
+          personality?: any;
         };
       };
     };
   };
   plugins?: {
-    entries?: Record<string, { config?: { personality?: unknown } }>;
+    entries?: Record<string, { config?: { personality?: any } }>;
   };
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 const GPT5_MODEL_ID_PATTERN = /(?:^|[/:])gpt-5(?:[.-]|$)/i;
@@ -110,7 +110,7 @@ If no gate can run, state why.
 export type Gpt5PromptOverlayMode = "friendly" | "off";
 
 /** @deprecated OpenAI/Codex provider-owned prompt overlay helper; do not use from third-party plugins. */
-export function normalizeGpt5PromptOverlayMode(value: unknown): Gpt5PromptOverlayMode | undefined {
+export function normalizeGpt5PromptOverlayMode(value: any): Gpt5PromptOverlayMode | undefined {
   const normalized = normalizeOptionalLowercaseString(value);
   if (normalized === "off") {
     return "off";
@@ -124,7 +124,7 @@ export function normalizeGpt5PromptOverlayMode(value: unknown): Gpt5PromptOverla
 /** @deprecated OpenAI/Codex provider-owned prompt overlay helper; do not use from third-party plugins. */
 export function resolveGpt5PromptOverlayMode(
   config?: OpenClawConfig,
-  legacyPluginConfig?: Record<string, unknown>,
+  legacyPluginConfig?: Record<string, any>,
   params?: { providerId?: string },
 ): Gpt5PromptOverlayMode {
   const providerId = normalizeOptionalLowercaseString(params?.providerId);
@@ -151,7 +151,7 @@ export function resolveGpt5SystemPromptContribution(params: {
   config?: OpenClawConfig;
   providerId?: string;
   modelId?: string;
-  legacyPluginConfig?: Record<string, unknown>;
+  legacyPluginConfig?: Record<string, any>;
   enabled?: boolean;
   trigger?: "cron" | "heartbeat" | "manual" | "memory" | "overflow" | "user";
   includeHeartbeatGuidance?: boolean;
@@ -178,7 +178,7 @@ export function renderGpt5PromptOverlay(params: {
   config?: OpenClawConfig;
   providerId?: string;
   modelId?: string;
-  legacyPluginConfig?: Record<string, unknown>;
+  legacyPluginConfig?: Record<string, any>;
   enabled?: boolean;
 }): string | undefined {
   const contribution = resolveGpt5SystemPromptContribution(params);

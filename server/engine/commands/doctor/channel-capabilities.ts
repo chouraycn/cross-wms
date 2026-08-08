@@ -73,11 +73,11 @@ type DoctorChannelAccountIds = {
   runtime: string[];
 };
 
-function readResolvedAccountId(account: unknown): string | undefined {
+function readResolvedAccountId(account: any): string | undefined {
   if (!account || typeof account !== "object") {
     return undefined;
   }
-  const accountId = (account as { accountId?: unknown }).accountId;
+  const accountId = (account as { accountId?: any }).accountId;
   return typeof accountId === "string" && accountId ? accountId : undefined;
 }
 

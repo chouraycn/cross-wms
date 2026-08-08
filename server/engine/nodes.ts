@@ -15,7 +15,7 @@ export interface NodeInfo {
   status: 'connected' | 'disconnected' | 'busy' | 'unpaired';
   capabilities: string[];
   lastSeenAt: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface NodeInvokeParams {

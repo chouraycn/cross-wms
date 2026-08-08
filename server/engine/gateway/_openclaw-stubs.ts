@@ -34,9 +34,9 @@ export type OpenClawConfig = {
     reload?: { mode?: GatewayReloadMode; debounceMs?: number };
     auth?: { token?: string; password?: string };
     remote?: { token?: string; password?: string };
-    [key: string]: unknown;
+    [key: string]: any;
   };
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 // ============================================================================
@@ -217,14 +217,14 @@ export type DescribedFailoverError = {
  *
  * 基于错误消息和状态码进行分类，提供更准确的 failover 原因判断。
  */
-export function describeFailoverError(err: unknown): DescribedFailoverError {
+export function describeFailoverError(err: any): DescribedFailoverError {
   let message = "";
   let status: number | undefined;
   let code: string | undefined;
   let reason: FailoverReason | undefined;
 
   const errRecord = (err instanceof Error || (typeof err === "object" && err !== null))
-    ? (err as Record<string, unknown>)
+    ? (err as Record<string, any>)
     : undefined;
 
   if (err instanceof Error) {

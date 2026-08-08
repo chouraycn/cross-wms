@@ -6,9 +6,9 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function shouldIncludeHeartbeatGuidanceForSystemPrompt(..._args: unknown[]): unknown {
+export function shouldIncludeHeartbeatGuidanceForSystemPrompt(..._args: any[]): any {
   return false;
 }
-export function resolveHeartbeatPromptForSystemPrompt(..._args: unknown[]): unknown {
+export function resolveHeartbeatPromptForSystemPrompt(..._args: any[]): any {
   return undefined;
 }

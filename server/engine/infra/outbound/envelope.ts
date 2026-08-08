@@ -7,13 +7,13 @@ import { normalizeOutboundPayloadsForJson, type OutboundPayloadJson } from "./pa
 /** Structured result returned by outbound helpers when payloads/meta wrap delivery data. */
 export type OutboundResultEnvelope = {
   payloads?: OutboundPayloadJson[];
-  meta?: unknown;
+  meta?: any;
   delivery?: OutboundDeliveryJson;
 };
 
 type BuildEnvelopeParams = {
   payloads?: readonly ReplyPayload[] | readonly OutboundPayloadJson[];
-  meta?: unknown;
+  meta?: any;
   delivery?: OutboundDeliveryJson;
   flattenDelivery?: boolean;
 };

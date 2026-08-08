@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const requestJsonlSocketMock = vi.hoisted(() => vi.fn());
 
 vi.mock("./jsonl-socket.js", () => ({
-  requestJsonlSocket: (...args: unknown[]) => requestJsonlSocketMock(...args),
+  requestJsonlSocket: (...args: any[]) => requestJsonlSocketMock(...args),
 }));
 
 import { requestExecHostViaSocket } from "./exec-host.js";
@@ -13,7 +13,7 @@ type JsonlSocketCall = {
   socketPath: string;
   requestLine: string;
   timeoutMs: number;
-  accept: (msg: unknown) => unknown;
+  accept: (msg: any) => unknown;
 };
 
 function requireJsonlSocketCall(): JsonlSocketCall {

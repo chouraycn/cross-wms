@@ -73,13 +73,13 @@ async function withAuthProfileTestState<T>(
 }
 
 function expectOAuthCredentialFields(
-  value: unknown,
+  value: any,
   expected: ExpectedOAuthCredentialFields,
-): Record<string, unknown> {
+): Record<string, any> {
   if (!value || typeof value !== "object") {
     throw new Error("Expected OAuth credential object");
   }
-  const credential = value as Record<string, unknown>;
+  const credential = value as Record<string, any>;
   expect(credential.type).toBe("oauth");
   expect(credential.provider).toBe(expected.provider);
   for (const field of [

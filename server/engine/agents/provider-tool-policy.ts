@@ -5,14 +5,14 @@
  * normalization helpers (no external package dependencies).
  */
 
-function normalizeLowercaseStringOrEmpty(value: unknown): string {
+function normalizeLowercaseStringOrEmpty(value: any): string {
   if (typeof value !== "string") {
     return "";
   }
   return value.toLowerCase();
 }
 
-function normalizeOptionalLowercaseString(value: unknown): string | undefined {
+function normalizeOptionalLowercaseString(value: any): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }
@@ -20,7 +20,7 @@ function normalizeOptionalLowercaseString(value: unknown): string | undefined {
   return trimmed || undefined;
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
@@ -45,11 +45,11 @@ export function isCanonicalToolProviderPolicyKey(value: string): boolean {
 
 type ProviderToolPolicyEntry = {
   key: string;
-  policy: unknown;
+  policy: any;
 };
 
 export function resolveProviderToolPolicyEntry(params: {
-  byProvider?: Record<string, unknown>;
+  byProvider?: Record<string, any>;
   modelProvider?: string;
   modelId?: string;
 }): ProviderToolPolicyEntry | undefined {
@@ -92,9 +92,9 @@ export function resolveProviderToolPolicyEntry(params: {
 }
 
 export function resolveProviderToolPolicy(params: {
-  byProvider?: Record<string, unknown>;
+  byProvider?: Record<string, any>;
   modelProvider?: string;
   modelId?: string;
-}): unknown | undefined {
+}): any | undefined {
   return resolveProviderToolPolicyEntry(params)?.policy;
 }

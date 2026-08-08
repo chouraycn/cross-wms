@@ -40,8 +40,8 @@ import { SpinningIcon } from '../SpinningIcon';
 
 /** pywebview 环境下用系统浏览器打开 URL */
 function openInSystemBrowser(url: string): void {
-  if ((window as unknown).pywebview?.api?.open_in_browser) {
-    (window as unknown).pywebview.api.open_in_browser(url).catch(() => {
+  if ((window as any).pywebview?.api?.open_in_browser) {
+    (window as any).pywebview.api.open_in_browser(url).catch(() => {
       window.open(url, '_blank', 'noopener,noreferrer');
     });
   } else {
@@ -1037,7 +1037,7 @@ const CompatConfigSection: React.FC<{
   };
 
   const toggleFlag = (key: keyof typeof config) => {
-    updateConfig({ [key]: !config[key] } as unknown);
+    updateConfig({ [key]: !config[key] } as any);
   };
 
   return (
@@ -1092,7 +1092,7 @@ const CompatConfigSection: React.FC<{
           <Typography sx={{ ...styles.label, mb: 0.5 }}>System 消息不支持时</Typography>
           <Select
             value={config.systemMessageFallback || 'merge-to-first-user'}
-            onChange={e => updateConfig({ systemMessageFallback: e.target.value as unknown })}
+            onChange={e => updateConfig({ systemMessageFallback: e.target.value as any })}
             size="small"
           >
             <MenuItem value="merge-to-first-user">合并到第一条用户消息</MenuItem>
@@ -1166,7 +1166,7 @@ const MediaInputSection: React.FC<{
       : [...current, type];
     setModelForm(p => ({
       ...p,
-      mediaInputConfig: { ...p.mediaInputConfig, supportedInputs: next as unknown },
+      mediaInputConfig: { ...p.mediaInputConfig, supportedInputs: next as any },
     }));
   };
 

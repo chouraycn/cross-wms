@@ -11,14 +11,14 @@ import {
 const hoisted = vi.hoisted(() => ({
   activeChildrenBySession: new Map<string, number>(),
   callGatewayMock: vi.fn(),
-  configOverride: {} as Record<string, unknown>,
+  configOverride: {} as Record<string, any>,
   depthBySession: new Map<string, number>(),
   updateSessionStoreMock: vi.fn(),
   registerSubagentRunMock: vi.fn(),
 }));
 
 let spawnSubagentDirect: typeof import("./subagent-spawn.js").spawnSubagentDirect;
-let persistedStore: Record<string, Record<string, unknown>> | undefined;
+let persistedStore: Record<string, Record<string, any>> | undefined;
 
 type SpawnResult = Awaited<ReturnType<typeof spawnSubagentDirect>>;
 type AcceptedSpawnResult = SpawnResult & {
@@ -27,7 +27,7 @@ type AcceptedSpawnResult = SpawnResult & {
   status: "accepted";
 };
 
-function createDepthLimitConfig(subagents?: Record<string, unknown>) {
+function createDepthLimitConfig(subagents?: Record<string, any>) {
   return createSubagentSpawnTestConfig("/tmp/workspace-main", {
     agents: {
       defaults: {
@@ -41,7 +41,7 @@ function createDepthLimitConfig(subagents?: Record<string, unknown>) {
   });
 }
 
-async function spawnFrom(sessionKey: string, params?: Record<string, unknown>) {
+async function spawnFrom(sessionKey: string, params?: Record<string, any>) {
   return await spawnSubagentDirect(
     {
       task: "hello",

@@ -29,7 +29,7 @@ describe("secrets runtime snapshot inline auth-store refs", () => {
 
     const profile = snapshot.authStores[0]?.store.profiles["custom:inline-token"] as Record<
       string,
-      unknown
+      any
     >;
     expect(profile.tokenRef).toEqual({ source: "env", provider: "default", id: "MY_TOKEN" });
     activateSecretsRuntimeSnapshot(snapshot);
@@ -54,7 +54,7 @@ describe("secrets runtime snapshot inline auth-store refs", () => {
 
     const profile = snapshot.authStores[0]?.store.profiles["custom:inline-key"] as Record<
       string,
-      unknown
+      any
     >;
     expect(profile.keyRef).toEqual({ source: "env", provider: "default", id: "MY_KEY" });
     activateSecretsRuntimeSnapshot(snapshot);
@@ -83,7 +83,7 @@ describe("secrets runtime snapshot inline auth-store refs", () => {
 
     const profile = snapshot.authStores[0]?.store.profiles["custom:explicit-keyref"] as Record<
       string,
-      unknown
+      any
     >;
     expect(profile.keyRef).toEqual({ source: "env", provider: "default", id: "PRIMARY_KEY" });
     activateSecretsRuntimeSnapshot(snapshot);

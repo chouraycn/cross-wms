@@ -160,7 +160,7 @@ export function updateCredential(
 
   const now = new Date().toISOString();
   const updates: string[] = ['updated_at = ?'];
-  const params: unknown[] = [now];
+  const params: any[] = [now];
 
   if (data.name && typeof data.name === 'string') {
     updates.push('name = ?');

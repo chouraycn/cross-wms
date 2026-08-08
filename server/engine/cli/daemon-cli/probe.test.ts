@@ -6,15 +6,15 @@ const callGatewayMock = vi.hoisted(() => vi.fn());
 const probeGatewayMock = vi.hoisted(() => vi.fn());
 
 vi.mock("../../gateway/call.js", () => ({
-  callGateway: (...args: unknown[]) => callGatewayMock(...args),
+  callGateway: (...args: any[]) => callGatewayMock(...args),
 }));
 
 vi.mock("../../gateway/probe.js", () => ({
-  probeGateway: (...args: unknown[]) => probeGatewayMock(...args),
+  probeGateway: (...args: any[]) => probeGatewayMock(...args),
 }));
 
 vi.mock("../progress.js", () => ({
-  withProgress: async (_opts: unknown, fn: () => Promise<unknown>) => await fn(),
+  withProgress: async (_opts: any, fn: () => Promise<any>) => await fn(),
 }));
 
 describe("probeGatewayStatus", () => {

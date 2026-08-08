@@ -51,7 +51,7 @@ const CRON_RECOVERABLE_OBJECT_KEYS: ReadonlySet<string> = new Set([
   ...CRON_FLAT_SCHEDULE_KEYS,
 ]);
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return (
     typeof value === "object" &&
     value !== null &&
@@ -71,27 +71,27 @@ function timestampMsToIsoString(ms: number): string | undefined {
   }
 }
 
-function isCronScheduleKind(value: unknown): value is (typeof CRON_SCHEDULE_KINDS)[number] {
+function isCronScheduleKind(value: any): value is (typeof CRON_SCHEDULE_KINDS)[number] {
   return value === "at" || value === "every" || value === "cron";
 }
 
-function isCronPayloadKind(value: unknown): value is (typeof CRON_PAYLOAD_KINDS)[number] {
+function isCronPayloadKind(value: any): value is (typeof CRON_PAYLOAD_KINDS)[number] {
   return value === "systemEvent" || value === "agentTurn";
 }
 
-function isNonEmptyString(value: unknown): value is string {
+function isNonEmptyString(value: any): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
 
-function isStringArrayOrNull(value: unknown): boolean {
+function isStringArrayOrNull(value: any): boolean {
   return (
     value === null || (Array.isArray(value) && value.every((entry) => typeof entry === "string"))
   );
 }
 
 function moveDefinedField(params: {
-  source: Record<string, unknown>;
-  target: Record<string, unknown>;
+  source: Record<string, any>;
+  target: Record<string, any>;
   from: string;
   to?: string;
 }): boolean {
@@ -103,7 +103,7 @@ function moveDefinedField(params: {
   return true;
 }
 
-function repairConcatenatedCronToolKeys(value: Record<string, unknown>): void {
+function repairConcatenatedCronToolKeys(value: Record<string, any>): void {
   if (!isRecord(value.payload) && isRecord(value.namePayload)) {
     value.payload = { ...value.namePayload };
   }
@@ -125,12 +125,12 @@ function repairConcatenatedCronToolKeys(value: Record<string, unknown>): void {
   delete value.sessionTargetName;
 }
 
-function setScheduleAtMs(schedule: Record<string, unknown>, value: unknown): void {
+function setScheduleAtMs(schedule: Record<string, any>, value: any): void {
   const atMs = typeof value === "number" ? value : Number(value);
   schedule.at = Number.isFinite(atMs) ? (timestampMsToIsoString(Math.floor(atMs)) ?? value) : value;
 }
 
-function canonicalizeCronToolSchedule(value: Record<string, unknown>): void {
+function canonicalizeCronToolSchedule(value: Record<string, any>): void {
   const schedule = isRecord(value.schedule) ? { ...value.schedule } : {};
   let hasSchedule = isRecord(value.schedule);
 
@@ -220,7 +220,7 @@ function canonicalizeCronToolSchedule(value: Record<string, unknown>): void {
   }
 }
 
-function canonicalizeCronToolPayload(value: Record<string, unknown>): void {
+function canonicalizeCronToolPayload(value: Record<string, any>): void {
   const payload = isRecord(value.payload) ? { ...value.payload } : {};
   let hasPayload = isRecord(value.payload);
 
@@ -257,7 +257,7 @@ function canonicalizeCronToolPayload(value: Record<string, unknown>): void {
   }
 }
 
-function repairPaddedCronKeys(value: Record<string, unknown>): void {
+function repairPaddedCronKeys(value: Record<string, any>): void {
   for (const key of Object.keys(value)) {
     const trimmed = key.trim();
     if (trimmed !== key && CRON_RECOVERABLE_OBJECT_KEYS.has(trimmed)) {
@@ -270,8 +270,8 @@ function repairPaddedCronKeys(value: Record<string, unknown>): void {
 }
 
 export function canonicalizeCronToolObject(
-  value: Record<string, unknown>,
-): Record<string, unknown> {
+  value: Record<string, any>,
+): Record<string, any> {
   const unwrapped = isRecord(value.data) ? value.data : isRecord(value.job) ? value.job : value;
   const next = { ...unwrapped };
   repairPaddedCronKeys(next);
@@ -281,7 +281,7 @@ export function canonicalizeCronToolObject(
   return next;
 }
 
-export function isEmptyRecoveredCronPatch(value: unknown): boolean {
+export function isEmptyRecoveredCronPatch(value: any): boolean {
   if (!isRecord(value)) {
     return true;
   }
@@ -295,11 +295,11 @@ export function isEmptyRecoveredCronPatch(value: unknown): boolean {
   );
 }
 
-export function recoverCronObjectFromFlatParams(params: Record<string, unknown>): {
+export function recoverCronObjectFromFlatParams(params: Record<string, any>): {
   found: boolean;
-  value: Record<string, unknown>;
+  value: Record<string, any>;
 } {
-  const value: Record<string, unknown> = {};
+  const value: Record<string, any> = {};
   let found = false;
   for (const key of Object.keys(params)) {
     if (CRON_RECOVERABLE_OBJECT_KEYS.has(key) && params[key] !== undefined) {
@@ -310,7 +310,7 @@ export function recoverCronObjectFromFlatParams(params: Record<string, unknown>)
   return { found, value: canonicalizeCronToolObject(value) };
 }
 
-export function hasCronCreateSignal(value: Record<string, unknown>): boolean {
+export function hasCronCreateSignal(value: Record<string, any>): boolean {
   return (
     value.schedule !== undefined ||
     value.at !== undefined ||

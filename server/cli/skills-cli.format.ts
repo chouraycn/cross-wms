@@ -50,7 +50,7 @@ const ANSI = {
   gray: "\x1b[90m",
 };
 
-function formatJson(data: unknown): string {
+function formatJson(data: any): string {
   return JSON.stringify(data, null, 2);
 }
 

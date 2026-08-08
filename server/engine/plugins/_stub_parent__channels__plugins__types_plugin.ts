@@ -4,7 +4,7 @@
 // Used by: server/engine/plugins/{channel-validation,loader-channel-setup}.ts
 // 注：openclaw ChannelPlugin 是大型 channel 插件接口，依赖 30+ adapter 类型
 //      (types.adapters.ts / types.core.ts)。本简化版保留核心字段类型
-//      (meta/commands/configSchema)，其余 adapter 字段保留为 Record<string, unknown>。
+//      (meta/commands/configSchema)，其余 adapter 字段保留为 Record<string, any>。
 
 import type { ChannelConfigSchema } from "./_stub_parent__channels__plugins__types_config.js";
 import type { ChannelMeta } from "./_stub_parent__channels__plugins__types_public.js";
@@ -17,14 +17,14 @@ export type ChannelCommandDefaults = {
 
 /** Channel command adapter surface (simplified). */
 export type ChannelCommandAdapter = ChannelCommandDefaults & {
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 /** Simplified channel plugin contract. */
 export interface ChannelPlugin {
   id: string;
   meta?: ChannelMeta;
-  capabilities?: Record<string, unknown>;
+  capabilities?: Record<string, any>;
   defaults?: {
     queue?: {
       debounceMs?: number;
@@ -34,35 +34,35 @@ export interface ChannelPlugin {
   configSchema?: ChannelConfigSchema;
   config?: {
     listAccountIds?: () => unknown;
-    resolveAccount?: (...args: unknown[]) => unknown;
-    [key: string]: unknown;
+    resolveAccount?: (...args: any[]) => unknown;
+    [key: string]: any;
   };
-  setup?: Record<string, unknown>;
-  pairing?: Record<string, unknown>;
-  security?: Record<string, unknown>;
-  groups?: Record<string, unknown>;
-  mentions?: Record<string, unknown>;
-  outbound?: Record<string, unknown>;
-  status?: Record<string, unknown>;
-  gateway?: Record<string, unknown>;
-  auth?: Record<string, unknown>;
-  elevated?: Record<string, unknown>;
+  setup?: Record<string, any>;
+  pairing?: Record<string, any>;
+  security?: Record<string, any>;
+  groups?: Record<string, any>;
+  mentions?: Record<string, any>;
+  outbound?: Record<string, any>;
+  status?: Record<string, any>;
+  gateway?: Record<string, any>;
+  auth?: Record<string, any>;
+  elevated?: Record<string, any>;
   commands?: ChannelCommandAdapter;
-  lifecycle?: Record<string, unknown>;
-  secrets?: Record<string, unknown>;
-  allowlist?: Record<string, unknown>;
-  doctor?: Record<string, unknown>;
-  bindings?: Record<string, unknown>;
-  conversationBindings?: Record<string, unknown>;
-  streaming?: Record<string, unknown>;
-  threading?: Record<string, unknown>;
-  message?: Record<string, unknown>;
-  messaging?: Record<string, unknown>;
-  agentPrompt?: Record<string, unknown>;
-  directory?: Record<string, unknown>;
-  resolver?: Record<string, unknown>;
-  actions?: Record<string, unknown>;
-  heartbeat?: Record<string, unknown>;
-  agentTools?: unknown;
-  [key: string]: unknown;
+  lifecycle?: Record<string, any>;
+  secrets?: Record<string, any>;
+  allowlist?: Record<string, any>;
+  doctor?: Record<string, any>;
+  bindings?: Record<string, any>;
+  conversationBindings?: Record<string, any>;
+  streaming?: Record<string, any>;
+  threading?: Record<string, any>;
+  message?: Record<string, any>;
+  messaging?: Record<string, any>;
+  agentPrompt?: Record<string, any>;
+  directory?: Record<string, any>;
+  resolver?: Record<string, any>;
+  actions?: Record<string, any>;
+  heartbeat?: Record<string, any>;
+  agentTools?: any;
+  [key: string]: any;
 }

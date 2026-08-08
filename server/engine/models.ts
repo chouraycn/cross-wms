@@ -15,7 +15,7 @@ export interface ModelInfo {
   capabilities?: string[];
   contextWindow?: number;
   authStatus: 'authenticated' | 'unauthenticated' | 'pending';
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface ModelListResult {

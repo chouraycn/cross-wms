@@ -36,20 +36,20 @@ interface JSONRPCRequest {
   jsonrpc: '2.0';
   id: number | string;
   method: string;
-  params?: unknown;
+  params?: any;
 }
 
 interface JSONRPCResponse {
   jsonrpc: '2.0';
   id: number | string;
-  result?: unknown;
-  error?: { code: number; message: string; data?: unknown };
+  result?: any;
+  error?: { code: number; message: string; data?: any };
 }
 
 interface JSONRPCNotification {
   jsonrpc: '2.0';
   method: string;
-  params?: unknown;
+  params?: any;
 }
 
 // ===================== LSP Client 类 =====================
@@ -62,7 +62,7 @@ export class LSPClient {
   private requestId = 0;
   private pendingRequests = new Map<
     number | string,
-    { resolve: (value: unknown) => void; reject: (error: Error) => void }
+    { resolve: (value: any) => void; reject: (error: Error) => void }
   >();
   private buffer = '';
   private capabilities: LSPServerCapabilities | null = null;
@@ -252,7 +252,7 @@ export class LSPClient {
   /**
    * 发送 JSON-RPC 请求
    */
-  private async sendRequest(method: string, params: unknown): Promise<unknown> {
+  private async sendRequest(method: string, params: any): Promise<any> {
     if (!this.process?.stdin) {
       throw new Error('LSP server not running');
     }
@@ -286,7 +286,7 @@ export class LSPClient {
   /**
    * 发送 JSON-RPC 通知
    */
-  private sendNotification(method: string, params: unknown): void {
+  private sendNotification(method: string, params: any): void {
     if (!this.process?.stdin) {
       logger.warn(`[LSP Client] ${this.config.id} 无法发送通知: 进程未运行`);
       return;

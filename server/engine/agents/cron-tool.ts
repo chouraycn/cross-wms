@@ -10,7 +10,7 @@ export type CronCreatorToolAllowlistEntry = {
   message: string;
 };
 
-export function createCronToolSchema(_params?: unknown): unknown {
+export function createCronToolSchema(_params?: any): any {
   return null;
 }
 
@@ -18,6 +18,6 @@ export function replaceWithEffectiveCronCreatorToolAllowlist(allowlist: CronCrea
   return allowlist;
 }
 
-export function createCronTool(_params?: unknown): null {
+export function createCronTool(_params?: any): null {
   return null;
 }

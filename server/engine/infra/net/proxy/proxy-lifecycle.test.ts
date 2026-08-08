@@ -384,7 +384,7 @@ describe("startProxy", () => {
     });
 
     expect(installGlobalProxyMock).toHaveBeenCalledTimes(2);
-    const installCalls = installGlobalProxyMock.mock.calls as unknown[][];
+    const installCalls = installGlobalProxyMock.mock.calls as any[][];
     expect(installCalls[1]?.[0]).toEqual(
       expect.objectContaining({
         ifActive: "replace",

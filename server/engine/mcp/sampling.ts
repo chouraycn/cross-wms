@@ -375,7 +375,7 @@ export class SamplingManager {
   }
 
   private async executeWithRetry<T>(fn: () => Promise<T>): Promise<T> {
-    let lastError: unknown;
+    let lastError: any;
 
     for (let attempt = 0; attempt <= this.maxRetries; attempt++) {
       try {

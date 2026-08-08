@@ -242,7 +242,7 @@ export function buildMemoryPromptSection(params: {
   return [...primary, ...supplements];
 }
 
-function normalizeMemoryPromptLines(value: unknown): string[] {
+function normalizeMemoryPromptLines(value: any): string[] {
   if (!Array.isArray(value)) {
     return [];
   }

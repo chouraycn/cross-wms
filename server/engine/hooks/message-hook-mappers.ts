@@ -24,7 +24,7 @@
  *     来自 cross-wms 的 `../plugins/hook-message.types.js`
  *   - `DiagnosticTraceContext` / `freezeDiagnosticTraceContext`
  *     来自 cross-wms 的 `../infra/diagnostic-trace-context.ts`
- *   - `OpenClawConfig`（降级为 `Record<string, unknown>`）
+ *   - `OpenClawConfig`（降级为 `Record<string, any>`）
  *     来自 cross-wms 的 `../infra/_runtime-stubs.js`
  *   - `FinalizedMsgContext`（openclaw auto-reply/templating 的入参）
  *     本文件自给自足定义一个最小子集，调用方传入 `Partial<FinalizedMsgContext>` 即可
@@ -259,7 +259,7 @@ export function createEmailToMessageMapper(): MessageHookMapper {
     to: 'message:received',
     description: 'Map incoming mail events to chat message events',
     transform: (event: InternalHookEvent): InternalHookEvent => {
-      const ctx = event.context as Record<string, unknown>;
+      const ctx = event.context as Record<string, any>;
       return {
         ...event,
         type: 'message',
@@ -301,9 +301,9 @@ export type FinalizedMsgContext = {
   From?: string;
   GroupSubject?: string;
   GroupChannel?: string;
-  MediaPaths?: unknown;
-  MediaTypes?: unknown;
-  MediaUrls?: unknown;
+  MediaPaths?: any;
+  MediaTypes?: any;
+  MediaUrls?: any;
   MediaPath?: string;
   MediaUrl?: string;
   MediaType?: string;
@@ -401,21 +401,21 @@ export type CanonicalSentMessageHookContext = {
 // 字符串归一化工具（对应 openclaw @openclaw/normalization-core/string-coerce）
 // ---------------------------------------------------------------------------
 
-function readNonBlankString(value: unknown): string | undefined {
+function readNonBlankString(value: any): string | undefined {
   return typeof value === 'string' && value.trim().length > 0 ? value : undefined;
 }
 
-function normalizeLowercaseStringOrEmpty(value: unknown): string {
+function normalizeLowercaseStringOrEmpty(value: any): string {
   return typeof value === 'string' ? value.trim().toLowerCase() : '';
 }
 
-function normalizeOptionalString(value: unknown): string | undefined {
+function normalizeOptionalString(value: any): string | undefined {
   if (typeof value !== 'string') return undefined;
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : undefined;
 }
 
-function asStringArray(value: unknown): string[] | undefined {
+function asStringArray(value: any): string[] | undefined {
   if (!Array.isArray(value)) return undefined;
   const filtered = value.filter(
     (item): item is string => typeof item === 'string' && item.length > 0,

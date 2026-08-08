@@ -4,7 +4,7 @@
  * These details cross client/server boundaries, so readers normalize untrusted
  * payloads before using them in reconnect decisions or user-facing messages.
  */
-function normalizeOptionalString(value: unknown): string | undefined {
+function normalizeOptionalString(value: any): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }
@@ -12,7 +12,7 @@ function normalizeOptionalString(value: unknown): string | undefined {
   return trimmed || undefined;
 }
 
-function normalizeArrayBackedTrimmedStringList(value: unknown): string[] | undefined {
+function normalizeArrayBackedTrimmedStringList(value: any): string[] | undefined {
   if (!Array.isArray(value)) {
     return undefined;
   }
@@ -227,22 +227,22 @@ export function resolveDeviceAuthConnectErrorDetailCode(
 }
 
 /** Reads a non-empty detail code from an untrusted error details payload. */
-export function readConnectErrorDetailCode(details: unknown): string | null {
+export function readConnectErrorDetailCode(details: any): string | null {
   if (!details || typeof details !== "object" || Array.isArray(details)) {
     return null;
   }
-  const code = (details as { code?: unknown }).code;
+  const code = (details as { code?: any }).code;
   return typeof code === "string" && code.trim().length > 0 ? code : null;
 }
 
 /** Extracts normalized retry advice from untrusted connect-error details. */
-export function readConnectErrorRecoveryAdvice(details: unknown): ConnectErrorRecoveryAdvice {
+export function readConnectErrorRecoveryAdvice(details: any): ConnectErrorRecoveryAdvice {
   if (!details || typeof details !== "object" || Array.isArray(details)) {
     return {};
   }
   const raw = details as {
-    canRetryWithDeviceToken?: unknown;
-    recommendedNextStep?: unknown;
+    canRetryWithDeviceToken?: any;
+    recommendedNextStep?: any;
   };
   const canRetryWithDeviceToken =
     typeof raw.canRetryWithDeviceToken === "boolean" ? raw.canRetryWithDeviceToken : undefined;
@@ -258,7 +258,7 @@ export function readConnectErrorRecoveryAdvice(details: unknown): ConnectErrorRe
   };
 }
 
-function normalizePairingConnectReason(value: unknown): ConnectPairingRequiredReason | undefined {
+function normalizePairingConnectReason(value: any): ConnectPairingRequiredReason | undefined {
   const normalized = normalizeOptionalString(value) ?? "";
   return CONNECT_PAIRING_REQUIRED_REASON_VALUES.has(normalized as ConnectPairingRequiredReason)
     ? (normalized as ConnectPairingRequiredReason)
@@ -266,12 +266,12 @@ function normalizePairingConnectReason(value: unknown): ConnectPairingRequiredRe
 }
 
 /** Normalizes pairing request ids before echoing them in close reasons or UI text. */
-export function normalizePairingConnectRequestId(value: unknown): string | undefined {
+export function normalizePairingConnectRequestId(value: any): string | undefined {
   const normalized = normalizeOptionalString(value);
   return normalized && PAIRING_CONNECT_REQUEST_ID_PATTERN.test(normalized) ? normalized : undefined;
 }
 
-function normalizeStringArray(value: unknown): string[] | undefined {
+function normalizeStringArray(value: any): string[] | undefined {
   return normalizeArrayBackedTrimmedStringList(value);
 }
 
@@ -389,7 +389,7 @@ export function buildPairingConnectCloseReason(params: {
 
 /** Reads and backfills pairing-required details from an untrusted details object. */
 export function readPairingConnectErrorDetails(
-  details: unknown,
+  details: any,
 ): PairingConnectErrorDetails | null {
   if (readConnectErrorDetailCode(details) !== ConnectErrorDetailCodes.PAIRING_REQUIRED) {
     return null;
@@ -398,17 +398,17 @@ export function readPairingConnectErrorDetails(
     return null;
   }
   const raw = details as {
-    reason?: unknown;
-    requestId?: unknown;
-    remediationHint?: unknown;
-    recommendedNextStep?: unknown;
-    retryable?: unknown;
-    pauseReconnect?: unknown;
-    deviceId?: unknown;
-    requestedRole?: unknown;
-    requestedScopes?: unknown;
-    approvedRoles?: unknown;
-    approvedScopes?: unknown;
+    reason?: any;
+    requestId?: any;
+    remediationHint?: any;
+    recommendedNextStep?: any;
+    retryable?: any;
+    pauseReconnect?: any;
+    deviceId?: any;
+    requestedRole?: any;
+    requestedScopes?: any;
+    approvedRoles?: any;
+    approvedScopes?: any;
   };
   const reason = normalizePairingConnectReason(raw.reason);
   const requestId = normalizePairingConnectRequestId(raw.requestId);
@@ -474,7 +474,7 @@ export function readConnectPairingRequiredMessage(
 }
 
 /** Formats pairing-required details into the canonical user-facing message. */
-export function formatConnectPairingRequiredMessage(details: unknown): string {
+export function formatConnectPairingRequiredMessage(details: any): string {
   const pairing = readPairingConnectErrorDetails(details);
   const base =
     CONNECT_PAIRING_REQUIRED_MESSAGE_BY_REASON[
@@ -484,7 +484,7 @@ export function formatConnectPairingRequiredMessage(details: unknown): string {
 }
 
 /** Formats connect errors using structured details before falling back to raw messages. */
-export function formatConnectErrorMessage(params: { message?: string; details?: unknown }): string {
+export function formatConnectErrorMessage(params: { message?: string; details?: any }): string {
   if (readConnectErrorDetailCode(params.details) === ConnectErrorDetailCodes.PAIRING_REQUIRED) {
     return formatConnectPairingRequiredMessage(params.details);
   }
@@ -494,12 +494,12 @@ export function formatConnectErrorMessage(params: { message?: string; details?: 
   return normalizeOptionalString(params.message) ?? "gateway request failed";
 }
 
-function formatProtocolMismatchMessage(message: string | undefined, details: unknown): string {
+function formatProtocolMismatchMessage(message: string | undefined, details: any): string {
   const raw = details as {
-    clientMinProtocol?: unknown;
-    clientMaxProtocol?: unknown;
-    expectedProtocol?: unknown;
-    minimumProbeProtocol?: unknown;
+    clientMinProtocol?: any;
+    clientMaxProtocol?: any;
+    expectedProtocol?: any;
+    minimumProbeProtocol?: any;
   };
   const clientMin = normalizeProtocolNumber(raw.clientMinProtocol);
   const clientMax = normalizeProtocolNumber(raw.clientMaxProtocol);
@@ -523,6 +523,6 @@ function formatProtocolMismatchMessage(message: string | undefined, details: unk
   return parts.length > 0 ? `${normalized}: ${parts.join(", ")}` : normalized;
 }
 
-function normalizeProtocolNumber(value: unknown): number | undefined {
+function normalizeProtocolNumber(value: any): number | undefined {
   return typeof value === "number" && Number.isInteger(value) && value > 0 ? value : undefined;
 }

@@ -96,7 +96,7 @@ const DEFAULT_JSON_OUTPUT = "docs/.generated/plugin-sdk-api-baseline.json";
 const DEFAULT_STATEFILE_OUTPUT = "docs/.generated/plugin-sdk-api-baseline.jsonl";
 const DEFAULT_HASH_OUTPUT = "docs/.generated/plugin-sdk-api-baseline.sha256";
 
-function assert(condition: unknown, message: string): asserts condition {
+function assert(condition: any, message: string): asserts condition {
   if (!condition) {
     throw new Error(message);
   }

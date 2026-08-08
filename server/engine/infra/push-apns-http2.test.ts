@@ -11,22 +11,22 @@ import {
 
 const { connectSpy, tunnelSpy, fakeRequest, fakeSession, fakeTlsSocket } = vi.hoisted(() => {
   class FakeEmitter {
-    private readonly handlers = new Map<string, Array<(...args: unknown[]) => void>>();
+    private readonly handlers = new Map<string, Array<(...args: any[]) => void>>();
 
-    on(event: string, handler: (...args: unknown[]) => void): this {
+    on(event: string, handler: (...args: any[]) => void): this {
       this.handlers.set(event, [...(this.handlers.get(event) ?? []), handler]);
       return this;
     }
 
-    once(event: string, handler: (...args: unknown[]) => void): this {
-      const wrapped = (...args: unknown[]) => {
+    once(event: string, handler: (...args: any[]) => void): this {
+      const wrapped = (...args: any[]) => {
         this.off(event, wrapped);
         handler(...args);
       };
       return this.on(event, wrapped);
     }
 
-    off(event: string, handler: (...args: unknown[]) => void): this {
+    off(event: string, handler: (...args: any[]) => void): this {
       this.handlers.set(
         event,
         (this.handlers.get(event) ?? []).filter((candidate) => candidate !== handler),
@@ -34,7 +34,7 @@ const { connectSpy, tunnelSpy, fakeRequest, fakeSession, fakeTlsSocket } = vi.ho
       return this;
     }
 
-    emit(event: string, ...args: unknown[]): void {
+    emit(event: string, ...args: any[]): void {
       for (const handler of this.handlers.get(event) ?? []) {
         handler(...args);
       }

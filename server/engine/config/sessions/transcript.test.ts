@@ -514,7 +514,7 @@ describe("appendAssistantMessageToSessionTranscript", () => {
           role?: string;
           provider?: string;
           model?: string;
-          content?: unknown;
+          content?: any;
         }
       | undefined;
     expect(event?.sessionFile).toBe(sessionFile);
@@ -1850,7 +1850,7 @@ describe("appendAssistantMessageToSessionTranscript", () => {
       .readFileSync(sessionFile, "utf8")
       .trim()
       .split("\n")
-      .map((line) => JSON.parse(line) as Record<string, unknown>);
+      .map((line) => JSON.parse(line) as Record<string, any>);
     expect(finalRecords.find((entry) => entry.id === nextUser.messageId)).toMatchObject({
       parentId: appended.messageId,
     });

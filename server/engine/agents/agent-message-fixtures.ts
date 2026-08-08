@@ -6,15 +6,15 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function castAgentMessage(..._args: unknown[]): unknown {
+export function castAgentMessage(..._args: any[]): any {
   return undefined;
 }
-export function castAgentMessages(..._args: unknown[]): unknown {
+export function castAgentMessages(..._args: any[]): any {
   return undefined;
 }
-export function makeAgentUserMessage(..._args: unknown[]): unknown {
+export function makeAgentUserMessage(..._args: any[]): any {
   return undefined;
 }
-export function makeAgentAssistantMessage(..._args: unknown[]): unknown {
+export function makeAgentAssistantMessage(..._args: any[]): any {
   return undefined;
 }

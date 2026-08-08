@@ -102,7 +102,7 @@ function createGatewaySubagentRunFixture(params?: { allowGatewaySubagentBinding?
   return { run, runtime };
 }
 
-function expectFunctionKeys(value: Record<string, unknown>, keys: readonly string[]) {
+function expectFunctionKeys(value: Record<string, any>, keys: readonly string[]) {
   for (const key of keys) {
     expect(typeof value[key]).toBe("function");
   }
@@ -248,7 +248,7 @@ describe("plugin runtime command execution", () => {
     {
       name: "exposes runtime.mediaUnderstanding helpers and keeps stt as an alias",
       assert: (runtime: ReturnType<typeof createPluginRuntime>) => {
-        expectFunctionKeys(runtime.mediaUnderstanding as Record<string, unknown>, [
+        expectFunctionKeys(runtime.mediaUnderstanding as Record<string, any>, [
           "runFile",
           "describeImageFile",
           "describeImageFileWithModel",
@@ -263,7 +263,7 @@ describe("plugin runtime command execution", () => {
     {
       name: "exposes runtime.imageGeneration helpers",
       assert: (runtime: ReturnType<typeof createPluginRuntime>) => {
-        expectFunctionKeys(runtime.imageGeneration as Record<string, unknown>, [
+        expectFunctionKeys(runtime.imageGeneration as Record<string, any>, [
           "generate",
           "listProviders",
         ]);
@@ -272,7 +272,7 @@ describe("plugin runtime command execution", () => {
     {
       name: "exposes runtime.webSearch helpers",
       assert: (runtime: ReturnType<typeof createPluginRuntime>) => {
-        expectFunctionKeys(runtime.webSearch as Record<string, unknown>, [
+        expectFunctionKeys(runtime.webSearch as Record<string, any>, [
           "listProviders",
           "search",
         ]);
@@ -281,19 +281,19 @@ describe("plugin runtime command execution", () => {
     {
       name: "exposes canonical runtime.tasks task runtimes while keeping legacy TaskFlow aliases",
       assert: (runtime: ReturnType<typeof createPluginRuntime>) => {
-        expectFunctionKeys(runtime.tasks.runs as Record<string, unknown>, [
+        expectFunctionKeys(runtime.tasks.runs as Record<string, any>, [
           "bindSession",
           "fromToolContext",
         ]);
-        expectFunctionKeys(runtime.tasks.flows as Record<string, unknown>, [
+        expectFunctionKeys(runtime.tasks.flows as Record<string, any>, [
           "bindSession",
           "fromToolContext",
         ]);
-        expectFunctionKeys(runtime.tasks.managedFlows as Record<string, unknown>, [
+        expectFunctionKeys(runtime.tasks.managedFlows as Record<string, any>, [
           "bindSession",
           "fromToolContext",
         ]);
-        expectFunctionKeys(runtime.tasks.flow as Record<string, unknown>, [
+        expectFunctionKeys(runtime.tasks.flow as Record<string, any>, [
           "bindSession",
           "fromToolContext",
         ]);
@@ -308,7 +308,7 @@ describe("plugin runtime command execution", () => {
           model: DEFAULT_MODEL,
           provider: DEFAULT_PROVIDER,
         });
-        expectFunctionKeys(runtime.agent as Record<string, unknown>, [
+        expectFunctionKeys(runtime.agent as Record<string, any>, [
           "runEmbeddedAgent",
           "runEmbeddedPiAgent",
           "normalizeThinkingLevel",
@@ -316,7 +316,7 @@ describe("plugin runtime command execution", () => {
           "resolveAgentDir",
         ]);
         expect(runtime.agent.runEmbeddedPiAgent).toBe(runtime.agent.runEmbeddedAgent);
-        expectFunctionKeys(runtime.agent.session as Record<string, unknown>, [
+        expectFunctionKeys(runtime.agent.session as Record<string, any>, [
           "loadSessionStore",
           "getSessionEntry",
           "listSessionEntries",

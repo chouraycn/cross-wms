@@ -8,16 +8,16 @@
 
 export { CODE_MODE_EXEC_TOOL_NAME, CODE_MODE_WAIT_TOOL_NAME, isCodeModeControlTool } from "./code-mode-control-tools.js";
 export type CodeModeConfig = unknown;
-export const testing: unknown = undefined;
-export function resolveCodeModeConfig(..._args: unknown[]): unknown {
+export const testing: any = undefined;
+export function resolveCodeModeConfig(..._args: any[]): any {
   return undefined;
 }
-export function createCodeModeTools(..._args: unknown[]): unknown {
+export function createCodeModeTools(..._args: any[]): any {
   return undefined;
 }
-export function applyCodeModeCatalog(..._args: unknown[]): unknown {
+export function applyCodeModeCatalog(..._args: any[]): any {
   return undefined;
 }
-export function addClientToolsToCodeModeCatalog(..._args: unknown[]): unknown {
+export function addClientToolsToCodeModeCatalog(..._args: any[]): any {
   return undefined;
 }

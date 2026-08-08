@@ -51,7 +51,7 @@ function parseDetail(detail: string): {
 export function explainQueryPlan(
   db: Database.Database,
   sql: string,
-  params: unknown[] = []
+  params: any[] = []
 ): QueryPlanStep[] {
   const rows = db.prepare(`EXPLAIN QUERY PLAN ${sql}`).all(...params) as ExplainQueryPlanRow[];
   return rows.map((row) => {
@@ -68,7 +68,7 @@ export function explainQueryPlan(
 export function analyzeQueryPlan(
   db: Database.Database,
   sql: string,
-  params: unknown[] = []
+  params: any[] = []
 ): QueryPlan {
   const steps = explainQueryPlan(db, sql, params);
   const hasFullTableScan = steps.some((step) => step.isScan);
@@ -86,7 +86,7 @@ export function planUsesIndex(
   db: Database.Database,
   indexName: string,
   sql: string,
-  params: unknown[] = []
+  params: any[] = []
 ): boolean {
   const plan = explainQueryPlan(db, sql, params);
   return plan.some((step) => step.index === indexName);
@@ -96,7 +96,7 @@ export function planIncludesDetail(
   db: Database.Database,
   expected: string,
   sql: string,
-  params: unknown[] = []
+  params: any[] = []
 ): boolean {
   const plan = explainQueryPlan(db, sql, params);
   return plan.some((step) => step.detail.includes(expected));
@@ -138,7 +138,7 @@ export interface IndexOptimizationSuggestion {
 
 export function suggestIndexes(
   db: Database.Database,
-  queries: Array<{ sql: string; params?: unknown[]; frequency?: number }>
+  queries: Array<{ sql: string; params?: any[]; frequency?: number }>
 ): IndexOptimizationSuggestion[] {
   const suggestions: IndexOptimizationSuggestion[] = [];
   const seenSuggestions = new Set<string>();

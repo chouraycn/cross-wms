@@ -19,11 +19,11 @@ import {
 } from "@openclaw-src/config/sessions/transcript-tree.js";
 import { shortenHomePath } from "@openclaw-src/utils.js";
 
-type TranscriptEntry = Record<string, unknown> & {
-  id?: unknown;
-  parentId?: unknown;
-  type?: unknown;
-  message?: unknown;
+type TranscriptEntry = Record<string, any> & {
+  id?: any;
+  parentId?: any;
+  type?: any;
+  message?: any;
 };
 
 type TranscriptRepairResult = {
@@ -75,9 +75,9 @@ function getParentId(entry: TranscriptEntry): string | null {
   return typeof entry.parentId === "string" && entry.parentId.trim() ? entry.parentId : null;
 }
 
-function getMessage(entry: TranscriptEntry): Record<string, unknown> | null {
+function getMessage(entry: TranscriptEntry): Record<string, any> | null {
   return entry.message && typeof entry.message === "object" && !Array.isArray(entry.message)
-    ? (entry.message as Record<string, unknown>)
+    ? (entry.message as Record<string, any>)
     : null;
 }
 
@@ -108,7 +108,7 @@ function normalizeLegacyOpenAICodexTranscriptMetadata(entries: TranscriptEntry[]
   return changed;
 }
 
-function textFromContent(content: unknown): string | null {
+function textFromContent(content: any): string | null {
   if (typeof content === "string") {
     return content;
   }
@@ -117,7 +117,7 @@ function textFromContent(content: unknown): string | null {
   }
   const text = content
     .map((part) =>
-      part && typeof part === "object" && typeof (part as { text?: unknown }).text === "string"
+      part && typeof part === "object" && typeof (part as { text?: any }).text === "string"
         ? (part as { text: string }).text
         : "",
     )

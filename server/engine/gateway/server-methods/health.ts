@@ -156,7 +156,7 @@ export const healthHandlers: GatewayRequestHandlers = {
       );
       // Serve the fresh-enough cache immediately but still refresh in the
       // background so the next caller sees updated expensive probe data.
-      void refreshHealthSnapshot({ probe: false, includeSensitive }).catch((err: unknown) =>
+      void refreshHealthSnapshot({ probe: false, includeSensitive }).catch((err: any) =>
         logHealth.error(`background health refresh failed: ${formatError(err)}`),
       );
       return;

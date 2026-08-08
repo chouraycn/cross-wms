@@ -531,12 +531,12 @@ describe("runMessageAction context isolation", () => {
   ])("aborts $name when abortSignal is already aborted", async ({ run }) => {
     const controller = new AbortController();
     controller.abort();
-    let rejection: unknown;
+    let rejection: any;
     try {
       await run(controller.signal);
     } catch (error) {
       rejection = error;
     }
-    expect((rejection as { name?: unknown }).name).toBe("AbortError");
+    expect((rejection as { name?: any }).name).toBe("AbortError");
   });
 });

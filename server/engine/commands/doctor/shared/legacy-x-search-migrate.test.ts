@@ -13,11 +13,11 @@ describe("legacy x_search config migration", () => {
             enabled: true,
             model: "grok-4-1-fast",
           },
-        } as Record<string, unknown>,
+        } as Record<string, any>,
       },
     } as OpenClawConfig);
 
-    expect((res.config.tools?.web as Record<string, unknown> | undefined)?.x_search).toEqual({
+    expect((res.config.tools?.web as Record<string, any> | undefined)?.x_search).toEqual({
       enabled: true,
       model: "grok-4-1-fast",
     });
@@ -44,7 +44,7 @@ describe("legacy x_search config migration", () => {
             model: "legacy-model",
             cacheTtlMinutes: 5,
           },
-        } as Record<string, unknown>,
+        } as Record<string, any>,
       },
       plugins: {
         entries: {
@@ -63,7 +63,7 @@ describe("legacy x_search config migration", () => {
       },
     } as OpenClawConfig);
 
-    expect((res.config.tools?.web as Record<string, unknown> | undefined)?.x_search).toEqual({
+    expect((res.config.tools?.web as Record<string, any> | undefined)?.x_search).toEqual({
       enabled: true,
       model: "legacy-model",
       cacheTtlMinutes: 5,
@@ -90,11 +90,11 @@ describe("legacy x_search config migration", () => {
             },
             enabled: true,
           },
-        } as Record<string, unknown>,
+        } as Record<string, any>,
       },
     } as OpenClawConfig);
 
-    expect((res.config.tools?.web as Record<string, unknown> | undefined)?.x_search).toEqual({
+    expect((res.config.tools?.web as Record<string, any> | undefined)?.x_search).toEqual({
       enabled: true,
     });
     expect(res.config.plugins?.entries?.xai).toEqual({
@@ -122,7 +122,7 @@ describe("legacy x_search config migration", () => {
             enabled: true,
             model: "grok-4-1-fast",
           },
-        } as Record<string, unknown>,
+        } as Record<string, any>,
       },
     } as OpenClawConfig;
 

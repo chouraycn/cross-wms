@@ -5,8 +5,8 @@ import type { PluginRegistry } from "./registry-types.js";
 import { createEmptyPluginRegistry } from "./registry.js";
 
 type MockManifestRegistry = {
-  plugins: Array<Record<string, unknown>>;
-  diagnostics: unknown[];
+  plugins: Array<Record<string, any>>;
+  diagnostics: any[];
 };
 
 type MockPluginIndex = {
@@ -16,7 +16,7 @@ type MockPluginIndex = {
     enabled: boolean;
     enabledByDefault?: boolean;
   }>;
-  diagnostics: unknown[];
+  diagnostics: any[];
 };
 
 function createEmptyMockManifestRegistry(): MockManifestRegistry {
@@ -28,13 +28,13 @@ function createMockPluginIndex(plugins: MockPluginIndex["plugins"]): MockPluginI
 }
 
 const mocks = vi.hoisted(() => ({
-  resolveRuntimePluginRegistry: vi.fn<(params?: unknown) => PluginRegistry | undefined>(
+  resolveRuntimePluginRegistry: vi.fn<(params?: any) => PluginRegistry | undefined>(
     () => undefined,
   ),
-  loadPluginManifestRegistry: vi.fn<(params?: Record<string, unknown>) => MockManifestRegistry>(
+  loadPluginManifestRegistry: vi.fn<(params?: Record<string, any>) => MockManifestRegistry>(
     () => createEmptyMockManifestRegistry(),
   ),
-  loadPluginRegistrySnapshot: vi.fn<(_params?: unknown) => MockPluginIndex>(() =>
+  loadPluginRegistrySnapshot: vi.fn<(_params?: any) => MockPluginIndex>(() =>
     createMockPluginIndex([]),
   ),
   loadPluginRegistrySnapshotWithMetadata: vi.fn((params?: { index?: MockPluginIndex }) => ({
@@ -88,11 +88,11 @@ function createMigrationProvider(id: string) {
 }
 
 function requireMockCallArg(
-  mockFn: { mock: { calls: unknown[][] } },
+  mockFn: { mock: { calls: any[][] } },
   label: string,
   index = 0,
-): Record<string, unknown> {
-  const arg = mockFn.mock.calls[index]?.[0] as Record<string, unknown> | undefined;
+): Record<string, any> {
+  const arg = mockFn.mock.calls[index]?.[0] as Record<string, any> | undefined;
   if (!arg) {
     throw new Error(`expected ${label} call #${index + 1}`);
   }
@@ -148,11 +148,11 @@ describe("migration provider runtime", () => {
       mocks.ensureStandaloneRuntimePluginRegistryLoaded,
       "ensureStandaloneRuntimePluginRegistryLoaded",
     ) as {
-      surface?: unknown;
-      requiredPluginIds?: unknown;
+      surface?: any;
+      requiredPluginIds?: any;
       loadOptions?: {
-        activate?: unknown;
-        onlyPluginIds?: unknown;
+        activate?: any;
+        onlyPluginIds?: any;
         config?: OpenClawConfig;
       };
     };
@@ -179,7 +179,7 @@ describe("migration provider runtime", () => {
       source: "test",
       provider,
     } as never);
-    mocks.resolveRuntimePluginRegistry.mockImplementation((params?: unknown) =>
+    mocks.resolveRuntimePluginRegistry.mockImplementation((params?: any) =>
       params === undefined ? active : loaded,
     );
     mocks.loadPluginRegistrySnapshot.mockReturnValue(
@@ -196,7 +196,7 @@ describe("migration provider runtime", () => {
         },
       ]),
     );
-    mocks.loadPluginManifestRegistry.mockImplementation((params?: Record<string, unknown>) => ({
+    mocks.loadPluginManifestRegistry.mockImplementation((params?: Record<string, any>) => ({
       diagnostics: [],
       plugins: params?.includeDisabled
         ? [
@@ -234,7 +234,7 @@ describe("migration provider runtime", () => {
       index?: MockPluginIndex;
       config?: OpenClawConfig;
       env?: NodeJS.ProcessEnv;
-      includeDisabled?: unknown;
+      includeDisabled?: any;
     };
     expect(manifestParams.index?.plugins.map((plugin) => plugin.pluginId)).toEqual([
       "external-migration",
@@ -259,7 +259,7 @@ describe("migration provider runtime", () => {
       source: "test",
       provider,
     } as never);
-    mocks.resolveRuntimePluginRegistry.mockImplementation((params?: unknown) =>
+    mocks.resolveRuntimePluginRegistry.mockImplementation((params?: any) =>
       params === undefined ? active : loaded,
     );
     mocks.loadPluginRegistrySnapshot.mockReturnValue(
@@ -297,8 +297,8 @@ describe("migration provider runtime", () => {
       index?: MockPluginIndex;
       config?: OpenClawConfig;
       env?: NodeJS.ProcessEnv;
-      includeDisabled?: unknown;
-      workspaceDir?: unknown;
+      includeDisabled?: any;
+      workspaceDir?: any;
     };
     expect(manifestParams.index?.plugins).toEqual([
       {
@@ -333,7 +333,7 @@ describe("migration provider runtime", () => {
       source: "test",
       provider: externalProvider,
     } as never);
-    mocks.resolveRuntimePluginRegistry.mockImplementation((params?: unknown) =>
+    mocks.resolveRuntimePluginRegistry.mockImplementation((params?: any) =>
       params === undefined ? active : loaded,
     );
     mocks.loadPluginRegistrySnapshot.mockReturnValue(
@@ -345,7 +345,7 @@ describe("migration provider runtime", () => {
         },
       ]),
     );
-    mocks.loadPluginManifestRegistry.mockImplementation((params?: Record<string, unknown>) => ({
+    mocks.loadPluginManifestRegistry.mockImplementation((params?: Record<string, any>) => ({
       diagnostics: [],
       plugins: params?.includeDisabled
         ? [

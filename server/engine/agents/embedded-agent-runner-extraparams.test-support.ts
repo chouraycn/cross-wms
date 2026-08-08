@@ -8,12 +8,12 @@ export function runExtraParamsPayloadCase(params: {
   provider: string;
   modelId: string;
   thinkingLevel?: "off" | "low" | "medium" | "high";
-  payload?: Record<string, unknown>;
-  cfg?: Record<string, unknown>;
+  payload?: Record<string, any>;
+  cfg?: Record<string, any>;
 }) {
   // Captures the model-provider payload after applyExtraParamsToAgent wraps the
   // stream function, without invoking a real provider runtime.
-  const payloads: Record<string, unknown>[] = [];
+  const payloads: Record<string, any>[] = [];
   const baseStreamFn: StreamFn = (model, _context, options) => {
     const payload = { ...params.payload };
     options?.onPayload?.(payload, model);

@@ -49,12 +49,12 @@ const findDuplicateGuardMusicTask = findDuplicateGuardMusicGenerationTaskForSess
   params?: { prompt?: string; requestKey?: string },
 ) => unknown | undefined;
 const buildMusicStatusText = buildMusicGenerationTaskStatusText as unknown as (
-  task: unknown,
+  task: any,
   params?: { duplicateGuard?: boolean },
 ) => string;
 const buildMusicStatusDetails = buildMusicGenerationTaskStatusDetails as unknown as (
-  task: unknown,
-) => Record<string, unknown>;
+  task: any,
+) => Record<string, any>;
 
 /** Formats provider capability details for the music generation `list` action. */
 function summarizeMusicGenerationCapabilities(

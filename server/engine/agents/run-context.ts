@@ -8,9 +8,9 @@ export type AgentRunContext = {
   agentId?: string;
   sessionId?: string;
   sessionKey?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
-export function resolveAgentRunContext(_params?: unknown): AgentRunContext {
+export function resolveAgentRunContext(_params?: any): AgentRunContext {
   return {};
 }

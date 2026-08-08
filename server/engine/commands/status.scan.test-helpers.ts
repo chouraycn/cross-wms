@@ -4,7 +4,7 @@ import { vi } from "vitest";
 import type { OpenClawConfig } from "../config/types.js";
 import { withEnvAsync } from "../test-utils/env.js";
 
-type UnknownMock = Mock<(...args: unknown[]) => unknown>;
+type UnknownMock = Mock<(...args: any[]) => unknown>;
 type ResolveConfigPathMock = Mock<() => string>;
 
 type StatusScanSharedMocks = {
@@ -22,7 +22,7 @@ type StatusScanSharedMocks = {
   probeGateway: UnknownMock;
   resolveGatewayProbeAuthResolution: UnknownMock;
   ensurePluginRegistryLoaded: UnknownMock;
-  buildPluginCompatibilityNotices: Mock<() => unknown[]>;
+  buildPluginCompatibilityNotices: Mock<() => any[]>;
 };
 
 export function createStatusScanSharedMocks(configPathLabel: string): StatusScanSharedMocks {
@@ -87,12 +87,12 @@ function createStatusGatewayProbeModuleMock(
 
 type StatusGatewayCallModuleMock = {
   buildGatewayConnectionDetails: StatusScanSharedMocks["buildGatewayConnectionDetails"];
-  callGateway?: unknown;
+  callGateway?: any;
 };
 
 function createStatusGatewayCallModuleMock(
   mocks: Pick<StatusScanSharedMocks, "buildGatewayConnectionDetails"> & {
-    callGateway?: unknown;
+    callGateway?: any;
   },
 ): StatusGatewayCallModuleMock {
   return {
@@ -294,7 +294,7 @@ export function createStatusScanConfig<T extends object = OpenClawConfig>(
 export function createStatusSummary(
   options: {
     linkChannel?: { linked: boolean };
-    byAgent?: unknown[];
+    byAgent?: any[];
   } = {},
 ) {
   return {
@@ -406,7 +406,7 @@ export function applyStatusScanDefaults(
   const resolvedConfig = options.resolvedConfig ?? sourceConfig;
 
   mocks.hasConfiguredChannels.mockReturnValue(options.hasConfiguredChannels ?? false);
-  mocks.hasConfiguredChannelsForReadOnlyScope.mockImplementation((rawParams: unknown) => {
+  mocks.hasConfiguredChannelsForReadOnlyScope.mockImplementation((rawParams: any) => {
     const params = rawParams as {
       config: OpenClawConfig;
       env?: NodeJS.ProcessEnv;

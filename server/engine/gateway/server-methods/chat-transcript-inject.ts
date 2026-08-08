@@ -19,7 +19,7 @@ export type GatewayInjectedAbortMeta = {
 export type GatewayInjectedTranscriptAppendResult = {
   ok: boolean;
   messageId?: string;
-  message?: Record<string, unknown>;
+  message?: Record<string, any>;
   error?: string;
 };
 
@@ -31,8 +31,8 @@ export type GatewayInjectedTtsSupplementMarker = {
 function resolveInjectedAssistantContent(params: {
   message: string;
   label?: string;
-  content?: Array<Record<string, unknown>>;
-}): Array<Record<string, unknown>> {
+  content?: Array<Record<string, any>>;
+}): Array<Record<string, any>> {
   const labelPrefix = params.label ? `[${params.label}]\n\n` : "";
   // Preserve rich content arrays when callers already prepared media blocks;
   // only the first text block is rewritten so block ordering stays intact.
@@ -62,7 +62,7 @@ export async function appendInjectedAssistantMessageToTranscript(params: {
   message: string;
   label?: string;
   /** When set, used as the assistant `content` array (e.g. text + embedded audio blocks). */
-  content?: Array<Record<string, unknown>>;
+  content?: Array<Record<string, any>>;
   idempotencyKey?: string;
   abortMeta?: GatewayInjectedAbortMeta;
   ttsSupplement?: GatewayInjectedTtsSupplementMarker;
@@ -89,7 +89,7 @@ export async function appendInjectedAssistantMessageToTranscript(params: {
     label: params.label,
     content: params.content,
   });
-  const messageBody: AppendMessageArg & Record<string, unknown> = {
+  const messageBody: AppendMessageArg & Record<string, any> = {
     role: "assistant",
     // Gateway-injected assistant messages can include non-model content blocks (e.g. embedded TTS audio).
     content: resolvedContent as unknown as Extract<
@@ -144,7 +144,7 @@ export async function appendInjectedAssistantMessageToTranscript(params: {
     return {
       ok: true,
       messageId: appended.messageId,
-      message: appended.message as Record<string, unknown>,
+      message: appended.message as Record<string, any>,
     };
   } catch (err) {
     return { ok: false, error: formatErrorMessage(err) };

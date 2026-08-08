@@ -18,13 +18,13 @@ const mocks = vi.hoisted(() => {
         auth: { token: "ltok" },
       },
     })),
-    resolveGatewayPort: vi.fn((_cfg?: unknown) => 18789),
-    discoverGatewayBeacons: vi.fn(async (_opts?: unknown): Promise<GatewayBonjourBeacon[]> => []),
+    resolveGatewayPort: vi.fn((_cfg?: any) => 18789),
+    discoverGatewayBeacons: vi.fn(async (_opts?: any): Promise<GatewayBonjourBeacon[]> => []),
     pickPrimaryTailnetIPv4: vi.fn(() => "100.64.0.10"),
     sshStop,
     resolveSshConfig: vi.fn(
       async (
-        _opts?: unknown,
+        _opts?: any,
       ): Promise<{
         user: string;
         host: string;
@@ -32,7 +32,7 @@ const mocks = vi.hoisted(() => {
         identityFiles: string[];
       } | null> => null,
     ),
-    startSshPortForward: vi.fn(async (_opts?: unknown) => ({
+    startSshPortForward: vi.fn(async (_opts?: any) => ({
       parsedTarget: { user: "me", host: "studio", port: 22 },
       localPort: 18789,
       remotePort: 18789,
@@ -260,12 +260,12 @@ function requireProbeCall(url: string): ProbeGatewayCall {
   return call;
 }
 
-function requireSshForwardCall(index = 0): Record<string, unknown> {
+function requireSshForwardCall(index = 0): Record<string, any> {
   const [call] = startSshPortForward.mock.calls[index] ?? [];
   if (!call || typeof call !== "object") {
     throw new Error(`Expected SSH forward call ${index}`);
   }
-  return call as Record<string, unknown>;
+  return call as Record<string, any>;
 }
 
 function makeRemoteGatewayConfig(url: string, token = "rtok", localToken = "ltok") {
@@ -300,7 +300,7 @@ async function runGatewayStatus(
   opts: {
     timeout: string;
     json?: boolean;
-    port?: unknown;
+    port?: any;
     ssh?: string;
     sshAuto?: boolean;
     sshIdentity?: string;
@@ -309,21 +309,21 @@ async function runGatewayStatus(
   await gatewayStatusCommand(opts, asRuntimeEnv(runtime));
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (typeof value !== "object" || value === null) {
     throw new Error(`expected ${label}`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function requireRecordArray(value: unknown, label: string): Array<Record<string, unknown>> {
+function requireRecordArray(value: any, label: string): Array<Record<string, any>> {
   if (
     !Array.isArray(value) ||
     !value.every((entry) => typeof entry === "object" && entry !== null)
   ) {
     throw new Error(`expected ${label}`);
   }
-  return value as Array<Record<string, unknown>>;
+  return value as Array<Record<string, any>>;
 }
 
 function findUnresolvedSecretRefWarning(runtimeLogs: string[]) {
@@ -367,7 +367,7 @@ describe("gateway-status command", () => {
     await runGatewayStatus(runtime, { timeout: "1000", json: true });
 
     expect(runtimeErrors).toHaveLength(0);
-    const parsed = JSON.parse(runtimeLogs.join("\n")) as Record<string, unknown>;
+    const parsed = JSON.parse(runtimeLogs.join("\n")) as Record<string, any>;
     expect(parsed.ok).toBe(true);
     const targets = requireRecordArray(parsed.targets, "gateway status targets");
     expect(targets.length).toBeGreaterThanOrEqual(2);
@@ -801,7 +801,7 @@ describe("gateway-status command", () => {
 
     expect(runtimeErrors).toHaveLength(0);
     const parsed = JSON.parse(runtimeLogs.join("\n")) as {
-      targets?: Array<Record<string, unknown>>;
+      targets?: Array<Record<string, any>>;
     };
     const configRemoteTarget = parsed.targets?.find((target) => target.kind === "configRemote");
     expect(configRemoteTarget?.config).toMatchInlineSnapshot(`
@@ -849,8 +849,8 @@ describe("gateway-status command", () => {
     expect(tunnelCall?.auth?.token).toBe("rtok");
     expect(sshStop).toHaveBeenCalledTimes(1);
 
-    const parsed = JSON.parse(runtimeLogs.join("\n")) as Record<string, unknown>;
-    const targets = parsed.targets as Array<Record<string, unknown>>;
+    const parsed = JSON.parse(runtimeLogs.join("\n")) as Record<string, any>;
+    const targets = parsed.targets as Array<Record<string, any>>;
     const targetKinds = targets.map((target) => target.kind);
     expect(targetKinds).toContain("sshTunnel");
   });

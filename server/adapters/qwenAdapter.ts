@@ -61,7 +61,7 @@ function handleSystemMessageFallback(
       const newContent = [...firstUser.content];
       const firstTextIdx = newContent.findIndex(c => c.type === 'text');
       if (firstTextIdx !== -1) {
-        newContent[firstTextIdx] = { ...newContent[firstTextIdx], text: systemContent + '\n\n' + (newContent[firstTextIdx] as unknown).text };
+        newContent[firstTextIdx] = { ...newContent[firstTextIdx], text: systemContent + '\n\n' + (newContent[firstTextIdx] as any).text };
       } else {
         newContent.unshift({ type: 'text', text: systemContent });
       }
@@ -148,7 +148,7 @@ export class QwenAdapter implements IAiApiAdapter {
       Object.assign(headers, compat.extraHeaders);
     }
 
-    const body: Record<string, unknown> = {
+    const body: Record<string, any> = {
       model: modelId,
       messages: processedMessages,
       temperature,

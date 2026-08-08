@@ -14,27 +14,27 @@ const clobberCapWarnedPaths = new Set<string>();
 
 type ConfigClobberSnapshotFs = {
   promises: {
-    mkdir(path: string, options?: { recursive?: boolean; mode?: number }): Promise<unknown>;
+    mkdir(path: string, options?: { recursive?: boolean; mode?: number }): Promise<any>;
     readdir(path: string): Promise<string[]>;
-    rmdir(path: string): Promise<unknown>;
+    rmdir(path: string): Promise<any>;
     stat(path: string): Promise<{ mtimeMs?: number } | null>;
-    unlink(path: string): Promise<unknown>;
+    unlink(path: string): Promise<any>;
     writeFile(
       path: string,
       data: string,
       options?: { encoding?: BufferEncoding; mode?: number; flag?: string },
-    ): Promise<unknown>;
+    ): Promise<any>;
   };
-  mkdirSync(path: string, options?: { recursive?: boolean; mode?: number }): unknown;
+  mkdirSync(path: string, options?: { recursive?: boolean; mode?: number }): any;
   readdirSync(path: string): string[];
-  rmdirSync(path: string): unknown;
+  rmdirSync(path: string): any;
   statSync(path: string, options?: { throwIfNoEntry?: boolean }): { mtimeMs?: number } | null;
-  unlinkSync(path: string): unknown;
+  unlinkSync(path: string): any;
   writeFileSync(
     path: string,
     data: string,
     options?: { encoding?: BufferEncoding; mode?: number; flag?: string },
-  ): unknown;
+  ): any;
 };
 
 type ConfigClobberSnapshotDeps = {
@@ -46,11 +46,11 @@ function formatConfigArtifactTimestamp(ts: string): string {
   return ts.replaceAll(":", "-").replaceAll(".", "-");
 }
 
-function isFsErrorCode(error: unknown, code: string): boolean {
+function isFsErrorCode(error: any, code: string): boolean {
   return (
     error instanceof Error &&
     "code" in error &&
-    typeof (error as { code?: unknown }).code === "string" &&
+    typeof (error as { code?: any }).code === "string" &&
     (error as { code: string }).code === code
   );
 }

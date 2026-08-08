@@ -17,7 +17,7 @@ export type { CliDeps } from "./deps.types.js";
 // ===== 内联降级：OutboundSendDeps =====
 /** Outbound send dependencies (degraded placeholder). */
 export type OutboundSendDeps = {
-  sendMessage?: (...args: unknown[]) => Promise<unknown>;
+  sendMessage?: (...args: any[]) => Promise<any>;
 };
 // ===== OutboundSendDeps 结束 =====
 

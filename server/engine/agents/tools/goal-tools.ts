@@ -100,7 +100,7 @@ export function createCreateGoalTool(options: GoalToolOptions): AnyAgentTool {
       "Create a goal only when explicitly requested by the user or system instructions. Fails if a goal already exists; use user-facing goal controls to clear it.",
     parameters: CreateGoalToolSchema,
     execute: async (_toolCallId, args) => {
-      const params = args as Record<string, unknown>;
+      const params = args as Record<string, any>;
       const objective = readStringParam(params, "objective", { required: true });
       const tokenBudget = readNumberParam(params, "token_budget", { integer: true });
       if (tokenBudget !== undefined && tokenBudget <= 0) {
@@ -127,7 +127,7 @@ export function createUpdateGoalTool(options: GoalToolOptions): AnyAgentTool {
       "Mark the current goal complete only when achieved, or blocked only after the same blocking condition recurs for at least three consecutive goal turns. Do not use blocked for ordinary difficulty or missing polish.",
     parameters: UpdateGoalToolSchema,
     execute: async (_toolCallId, args) => {
-      const params = args as Record<string, unknown>;
+      const params = args as Record<string, any>;
       const status = readStringParam(params, "status", { required: true });
       if (
         !MODEL_UPDATABLE_SESSION_GOAL_STATUSES.includes(

@@ -34,7 +34,7 @@ async function openPermissionClient(client: Pick<PermissionClient, "id" | "mode"
   });
 }
 
-function requireFirstCallArg(mock: { mock: { calls: readonly (readonly unknown[])[] } }) {
+function requireFirstCallArg(mock: { mock: { calls: readonly (readonly any[])[] } }) {
   const call = mock.mock.calls.at(0);
   if (!call) {
     throw new Error("Expected first mock call");
@@ -242,7 +242,7 @@ test("session:patch skips clone and dispatch when no hooks listen", async () => 
     if (!value || typeof value !== "object" || Array.isArray(value)) {
       return false;
     }
-    const record = value as Record<string, unknown>;
+    const record = value as Record<string, any>;
     return Boolean(record.cfg && record.patch && record.sessionEntry);
   });
   expect(clonedHookContexts).toHaveLength(0);

@@ -6,10 +6,10 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function computeSandboxConfigHash(..._args: unknown[]): unknown {
+export function computeSandboxConfigHash(..._args: any[]): any {
   return undefined;
 }
-export function computeSandboxBrowserConfigHash(..._args: unknown[]): unknown {
+export function computeSandboxBrowserConfigHash(..._args: any[]): any {
   return undefined;
 }
-export const SANDBOX_DOCKER_EXPLICIT_ENV_POLICY_EPOCH: unknown = undefined;
+export const SANDBOX_DOCKER_EXPLICIT_ENV_POLICY_EPOCH: any = undefined;

@@ -51,7 +51,7 @@ export interface CronServiceState {
   /** 事件回调 */
   listeners: Set<CronEventListener>;
   /** 操作序列化 Promise 链，用于锁定机制 */
-  op: Promise<unknown>;
+  op: Promise<any>;
 }
 
 /** Cron 事件类型 */

@@ -13,7 +13,7 @@ const PROVIDER_BINARY_RESPONSE_MAX_BYTES = 16 * 1024 * 1024;
 const PROVIDER_JSON_RESPONSE_MAX_BYTES = 16 * 1024 * 1024;
 
 /** Normalize optional string: trim and return undefined if empty. */
-function trimToUndefined(value: unknown): string | undefined {
+function trimToUndefined(value: any): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }
@@ -22,9 +22,9 @@ function trimToUndefined(value: unknown): string | undefined {
 }
 
 /** Returns a plain object view for provider JSON payloads when one exists. */
-export function asObject(value: unknown): Record<string, unknown> | undefined {
+export function asObject(value: any): Record<string, any> | undefined {
   return typeof value === "object" && value !== null && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
+    ? (value as Record<string, any>)
     : undefined;
 }
 
@@ -97,7 +97,7 @@ export async function readResponseTextLimited(
 }
 
 /** Formats common provider JSON error payload shapes into one readable detail string. */
-export function formatProviderErrorPayload(payload: unknown): string | undefined {
+export function formatProviderErrorPayload(payload: any): string | undefined {
   const root = asObject(payload);
   const detailObject = asObject(root?.detail);
   const subject = asObject(root?.error) ?? detailObject ?? root;
@@ -137,7 +137,7 @@ type ProviderErrorPayloadMetadata = {
   type?: string;
 };
 
-function extractProviderErrorPayloadMetadata(payload: unknown): ProviderErrorPayloadMetadata {
+function extractProviderErrorPayloadMetadata(payload: any): ProviderErrorPayloadMetadata {
   const root = asObject(payload);
   const detailObject = asObject(root?.detail);
   const subject = asObject(root?.error) ?? detailObject ?? root;
@@ -361,8 +361,8 @@ export async function readProviderJsonResponse<T>(
 export async function readProviderJsonObjectResponse(
   response: Response,
   label: string,
-): Promise<Record<string, unknown>> {
-  const payload = await readProviderJsonResponse<unknown>(response, label);
+): Promise<Record<string, any>> {
+  const payload = await readProviderJsonResponse<any>(response, label);
   const object = asObject(payload);
   if (!object) {
     throw new Error(`${label}: malformed JSON response`);
@@ -375,7 +375,7 @@ export async function readProviderJsonArrayFieldResponse(
   response: Response,
   label: string,
   field: string,
-): Promise<unknown[]> {
+): Promise<any[]> {
   const payload = await readProviderJsonObjectResponse(response, label);
   const value = payload[field];
   if (!Array.isArray(value)) {

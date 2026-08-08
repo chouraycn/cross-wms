@@ -6,12 +6,12 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function resolveModelPayloadDebugMode(..._args: unknown[]): unknown {
+export function resolveModelPayloadDebugMode(..._args: any[]): any {
   return undefined;
 }
-export function resolveModelSseDebugMode(..._args: unknown[]): unknown {
+export function resolveModelSseDebugMode(..._args: any[]): any {
   return undefined;
 }
-export function emitModelTransportDebug(..._args: unknown[]): unknown {
+export function emitModelTransportDebug(..._args: any[]): any {
   return undefined;
 }

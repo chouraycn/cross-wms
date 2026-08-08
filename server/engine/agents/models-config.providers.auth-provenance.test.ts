@@ -4,7 +4,7 @@ import { captureEnv } from "../test-utils/env.js";
 
 vi.mock("../plugins/provider-runtime.js", () => ({
   normalizeProviderConfigWithPlugin: vi.fn(
-    (params: { context?: { providerConfig?: unknown } }) => params.context?.providerConfig,
+    (params: { context?: { providerConfig?: any } }) => params.context?.providerConfig,
   ),
   resolveProviderSyntheticAuthWithPlugin: vi.fn(),
 }));

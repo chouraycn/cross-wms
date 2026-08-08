@@ -85,9 +85,9 @@ vi.mock("./embedded-agent.js", () => ({
 }));
 
 function mockCallArg(
-  mockFn: { mock: { calls: ReadonlyArray<ReadonlyArray<unknown>> } },
+  mockFn: { mock: { calls: ReadonlyArray<ReadonlyArray<any>> } },
   argIndex = 0,
-): unknown {
+): any {
   const call = mockFn.mock.calls[0];
   if (!call) {
     throw new Error("expected mock to be called");

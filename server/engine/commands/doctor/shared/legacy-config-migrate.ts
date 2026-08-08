@@ -4,7 +4,7 @@ import { validateConfigObjectWithPlugins } from "@openclaw-src/config/validation
 import { applyLegacyDoctorMigrations } from "./legacy-config-compat.js";
 
 /** Apply legacy migrations and validate the resulting OpenClaw config shape when possible. */
-export function migrateLegacyConfig(raw: unknown): {
+export function migrateLegacyConfig(raw: any): {
   config: OpenClawConfig | null;
   changes: string[];
   partiallyValid?: boolean;

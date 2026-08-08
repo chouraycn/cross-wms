@@ -169,7 +169,7 @@ router.post('/files/extract', (req: Request, res: Response) => {
 });
 
 // ===================== 蒸馏 SSE 基础设施 =====================
-function sse(event: string, data: unknown): string {
+function sse(event: string, data: any): string {
   return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
 }
 function sleep(ms: number): Promise<void> {
@@ -181,8 +181,8 @@ function chunkText(text: string, size = 28): string[] {
   return out;
 }
 
-type DistillNode = { id: string; type: string; label: string; [k: string]: unknown };
-type DistillEdge = { id: string; source: string; target: string; label?: string; [k: string]: unknown };
+type DistillNode = { id: string; type: string; label: string; [k: string]: any };
+type DistillEdge = { id: string; source: string; target: string; label?: string; [k: string]: any };
 type DistillDraft = {
   skill_id: string;
   name: string;
@@ -197,7 +197,7 @@ type DistillDraft = {
   edges: DistillEdge[];
   start_node_id: string;
   terminal_node_ids: string[];
-  interruption_policy: Record<string, unknown>;
+  interruption_policy: Record<string, any>;
   response_rules: string[];
 };
 
@@ -286,8 +286,8 @@ function skillCardToText(draft: DistillDraft): string {
 }
 async function runDistill(
   jobId: string,
-  params: Record<string, unknown>,
-  write: (event: string, data: unknown) => void,
+  params: Record<string, any>,
+  write: (event: string, data: any) => void,
   isCancelled: () => boolean,
 ): Promise<DistillDraft> {
   const prompt = (params.prompt as string) || (params.requirement as string) || '';
@@ -319,7 +319,7 @@ async function runDistill(
 
 // ===================== POST /distill — 同步蒸馏 =====================
 router.post('/distill', async (req: Request, res: Response) => {
-  const write = (_event: string, _data: unknown) => {
+  const write = (_event: string, _data: any) => {
     /* 同步模式不推送事件 */
   };
   try {
@@ -338,7 +338,7 @@ router.post('/distill/stream', async (req: Request, res: Response) => {
   res.setHeader('X-Accel-Buffering', 'no');
   const jobId = streamJobs.createJob('distill', { prompt: req.body?.prompt });
   let closed = false;
-  const write = (event: string, data: unknown) => {
+  const write = (event: string, data: any) => {
     streamJobs.append(jobId, event, data);
     if (!closed) res.write(sse(event, data));
   };
@@ -367,7 +367,7 @@ router.post('/distill/stream', async (req: Request, res: Response) => {
 router.post('/distill/jobs', (req: Request, res: Response) => {
   const jobId = streamJobs.createJob('distill', { prompt: req.body?.prompt });
   void (async () => {
-    const write = (event: string, data: unknown) => streamJobs.append(jobId, event, data);
+    const write = (event: string, data: any) => streamJobs.append(jobId, event, data);
     try {
       write('job_attached', { job_id: jobId, status: 'running' });
       await runDistill(jobId, req.body ?? {}, write, () => streamJobs.isCancelled(jobId));
@@ -548,13 +548,13 @@ router.post('/:skillId/rewrite', (req: Request, res: Response) => {
     const fields = (req.body?.fields as string[]) || ['description', 'content'];
 
     // 读取现有 content
-    let content: Record<string, unknown> = {};
+    let content: Record<string, any> = {};
     try {
       content = skill.content_json ? JSON.parse(skill.content_json) : {};
     } catch { content = {}; }
 
     // 基于指令对 content 做重写（规则化改写，非 AI 调用）
-    const rewritten: Record<string, unknown> = { ...content };
+    const rewritten: Record<string, any> = { ...content };
     const warnings: string[] = [];
 
     if (fields.includes('description') && typeof content.description === 'string') {
@@ -623,13 +623,13 @@ router.post('/:skillId/rewrite/jobs', (req: Request, res: Response) => {
 
     // 异步执行重写（复用 rewrite 逻辑）
     void (async () => {
-      const write = (event: string, data: unknown) => streamJobs.append(jobId, event, data);
+      const write = (event: string, data: any) => streamJobs.append(jobId, event, data);
       try {
         write('job_attached', { job_id: jobId, status: 'running', skill_id: skillId });
         write('status', { text: '正在分析现有 skill 内容…' });
         await sleep(300);
 
-        let content: Record<string, unknown> = {};
+        let content: Record<string, any> = {};
         try {
           content = skill.content_json ? JSON.parse(skill.content_json) : {};
         } catch { content = {}; }
@@ -687,7 +687,7 @@ router.post('/:skillId/rewrite/stream', async (req: Request, res: Response) => {
 
     const jobId = streamJobs.createJob('rewrite', { skill_id: skillId });
     let closed = false;
-    const write = (event: string, data: unknown) => {
+    const write = (event: string, data: any) => {
       streamJobs.append(jobId, event, data);
       if (!closed) res.write(sse(event, data));
     };
@@ -698,7 +698,7 @@ router.post('/:skillId/rewrite/stream', async (req: Request, res: Response) => {
     await sleep(300);
     if (closed || streamJobs.isCancelled(jobId)) { streamJobs.fail(jobId, 'cancelled'); res.end(); return; }
 
-    let content: Record<string, unknown> = {};
+    let content: Record<string, any> = {};
     try {
       content = skill.content_json ? JSON.parse(skill.content_json) : {};
     } catch { content = {}; }

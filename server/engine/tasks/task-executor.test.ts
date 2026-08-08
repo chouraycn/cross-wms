@@ -90,7 +90,7 @@ vi.mock("../acp/control-plane/manager.js", () => ({
 }));
 
 vi.mock("../agents/subagent-control.js", () => ({
-  killSubagentRunAdmin: (params: unknown) => hoisted.killSubagentRunAdminMock(params),
+  killSubagentRunAdmin: (params: any) => hoisted.killSubagentRunAdminMock(params),
 }));
 
 vi.mock("../utils/message-channel.js", () => ({
@@ -151,7 +151,7 @@ function requireCreatedFlowTask(
   return result.task;
 }
 
-function expectCancelRequestedAt(value: unknown): number {
+function expectCancelRequestedAt(value: any): number {
   expect(typeof value).toBe("number");
   if (typeof value !== "number") {
     throw new Error("Expected numeric cancelRequestedAt");

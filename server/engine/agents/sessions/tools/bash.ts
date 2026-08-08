@@ -35,7 +35,7 @@ export type { BashToolDetails, BashToolInput } from "./tool-contracts.js";
 
 export type { BashOperations } from "./bash-operations.js";
 
-export function resolveBashTimeoutMs(timeoutSeconds: unknown): number | undefined {
+export function resolveBashTimeoutMs(timeoutSeconds: any): number | undefined {
   if (
     typeof timeoutSeconds !== "number" ||
     !Number.isFinite(timeoutSeconds) ||
@@ -117,7 +117,7 @@ export function createLocalBashOperations(options?: { shellPath?: string }): Bas
             }
             resolve({ exitCode: code });
           })
-          .catch((err: unknown) => {
+          .catch((err: any) => {
             if (timeoutHandle) {
               clearTimeout(timeoutHandle);
             }

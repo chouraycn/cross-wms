@@ -4,6 +4,6 @@
 const NON_TERMINAL_AGENT_RUN_STATUSES = new Set(["accepted", "started", "in_flight"]);
 
 /** 返回 true 表示该 agent 运行状态仍需要轮询或 live 更新 */
-export function isNonTerminalAgentRunStatus(status: unknown): boolean {
+export function isNonTerminalAgentRunStatus(status: any): boolean {
   return typeof status === "string" && NON_TERMINAL_AGENT_RUN_STATUSES.has(status);
 }

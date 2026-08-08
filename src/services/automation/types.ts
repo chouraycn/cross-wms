@@ -221,7 +221,7 @@ export interface AutomationExecution {
   /** 触发来源 */
   triggerSource?: 'schedule' | 'event' | 'webhook' | 'file_change' | 'threshold' | 'manual';
   /** 触发详情（JSON 字符串：事件详情 / Webhook payload / 文件变化详情 / 阈值详情） */
-  triggerDetail?: string | Record<string, unknown>;
+  triggerDetail?: string | Record<string, any>;
   /** 本次执行实际重试次数 */
   retryCount?: number;
 }
@@ -253,7 +253,7 @@ export interface AutomationEngineAPI {
   /** 重试失败的执行 */
   retry(executionId: string): Promise<AutomationExecution | null>;
   /** 获取执行结果详情（snapshot/report/alert 的 localStorage 数据） */
-  getExecutionResults(type: 'snapshots' | 'reports' | 'alerts'): unknown[];
+  getExecutionResults(type: 'snapshots' | 'reports' | 'alerts'): any[];
   /** 清空执行日志 */
   clearExecutionLogs(): void;
 }

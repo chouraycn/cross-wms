@@ -54,7 +54,7 @@ const hoisted = vi.hoisted(() => ({
   activeEmbeddedRunCount: { value: 0 },
   activeEmbeddedRunSessionIds: [] as string[],
   activeEmbeddedRunSessionKeys: [] as string[],
-  markRestartAbortedMainSessions: vi.fn(async (_params: unknown) => ({ marked: 1, skipped: 0 })),
+  markRestartAbortedMainSessions: vi.fn(async (_params: any) => ({ marked: 1, skipped: 0 })),
   runtimeConfig: { value: { session: { store: "/tmp/active-sessions.json" } } as OpenClawConfig },
   reloadEvents: [] as string[],
   loadModelCatalog: vi.fn(async (_params: { config: OpenClawConfig }) => []),
@@ -1727,7 +1727,7 @@ describe("gateway plugin hot reload handlers", () => {
 
     const [reloadParams] = reloadPlugins.mock.calls.at(-1) ?? [];
     const reloadParamsRecord = reloadParams as
-      | { nextConfig?: unknown; changedPaths?: unknown }
+      | { nextConfig?: any; changedPaths?: any }
       | undefined;
     expect(reloadParamsRecord?.nextConfig).toEqual({
       plugins: {

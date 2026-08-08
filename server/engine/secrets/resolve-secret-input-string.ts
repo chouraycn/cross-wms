@@ -18,14 +18,14 @@ type SecretDefaults = NonNullable<OpenClawConfig["secrets"]>["defaults"];
 export async function resolveSecretInputString(params: {
   config: OpenClawConfig;
   /** Inline string, SecretInput object, or SecretRef object from config/plugin settings. */
-  value: unknown;
+  value: any;
   env: NodeJS.ProcessEnv;
   /** SecretRef defaults used when `value` omits source/provider aliases. */
   defaults?: SecretDefaults;
   /** Surface-specific normalization for resolved or inline values. */
-  normalize?: (value: unknown) => string | undefined;
+  normalize?: (value: any) => string | undefined;
   /** Converts provider resolution failures into caller-specific errors. */
-  onResolveRefError?: (error: unknown, ref: SecretRef) => never;
+  onResolveRefError?: (error: any, ref: SecretRef) => never;
 }): Promise<string | undefined> {
   const normalize = params.normalize ?? normalizeSecretInputString;
   const { ref } = resolveSecretInputRef({

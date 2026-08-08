@@ -22,7 +22,7 @@ vi.mock("../../agents/shell-utils.js", () => ({
 }));
 
 vi.mock("./adapters/pty.js", () => ({
-  createPtyAdapter: (...args: unknown[]) => createPtyAdapterMock(...args),
+  createPtyAdapter: (...args: any[]) => createPtyAdapterMock(...args),
 }));
 
 function createStubPtyAdapter() {

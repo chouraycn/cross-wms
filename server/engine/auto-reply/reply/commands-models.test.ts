@@ -16,7 +16,7 @@ const modelCatalogMocks = vi.hoisted(() => ({
 }));
 
 const modelAuthLabelMocks = vi.hoisted(() => ({
-  resolveModelAuthLabel: vi.fn<(params: unknown) => string | undefined>(() => undefined),
+  resolveModelAuthLabel: vi.fn<(params: any) => string | undefined>(() => undefined),
 }));
 const modelProviderAuthMocks = vi.hoisted(() => {
   const state = {
@@ -32,7 +32,7 @@ const normalizeProviderModelIdWithRuntimeMock = vi.hoisted(() => vi.fn());
 const pluginMetadataMocks = vi.hoisted(() => ({
   snapshot: undefined as
     | {
-        plugins: unknown[];
+        plugins: any[];
         owners: {
           cliBackends: Map<string, string>;
         };
@@ -88,7 +88,7 @@ vi.mock("../../agents/model-provider-auth.js", () => ({
 }));
 
 vi.mock("../../agents/provider-model-normalization.runtime.js", () => ({
-  normalizeProviderModelIdWithRuntime: (params: unknown) =>
+  normalizeProviderModelIdWithRuntime: (params: any) =>
     normalizeProviderModelIdWithRuntimeMock(params),
 }));
 

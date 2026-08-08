@@ -4,18 +4,18 @@
  * Shared normalization helpers for CLI-specific bundle MCP adapters.
  */
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function normalizeStringArray(value: unknown): string[] | undefined {
+function normalizeStringArray(value: any): string[] | undefined {
   return Array.isArray(value) && value.every((entry) => typeof entry === "string")
     ? [...value]
     : undefined;
 }
 
 /** Normalize a string-valued record, dropping non-string entries. */
-export function normalizeStringRecord(value: unknown): Record<string, string> | undefined {
+export function normalizeStringRecord(value: any): Record<string, string> | undefined {
   if (!isRecord(value)) {
     return undefined;
   }
@@ -42,11 +42,11 @@ export function decodeHeaderEnvPlaceholder(
 
 /** Copy common MCP server config fields into a CLI adapter config object. */
 export function applyCommonServerConfig(
-  next: Record<string, unknown>,
+  next: Record<string, any>,
   server: {
     command?: string;
-    args?: unknown;
-    env?: unknown;
+    args?: any;
+    env?: any;
     cwd?: string;
     url?: string;
   },

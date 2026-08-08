@@ -60,7 +60,7 @@ function isInboundMetaSentinelLine(line: string): boolean {
   return INBOUND_META_SENTINELS.some((sentinel) => sentinel === trimmed);
 }
 
-function restoreNeutralizedMarkdownFences(value: unknown): unknown {
+function restoreNeutralizedMarkdownFences(value: any): any {
   if (typeof value === "string") {
     return value.replaceAll("`\u200b``", "```");
   }
@@ -75,19 +75,19 @@ function restoreNeutralizedMarkdownFences(value: unknown): unknown {
   );
 }
 
-function parseJsonObjectRecord(jsonText: string): Record<string, unknown> | null {
+function parseJsonObjectRecord(jsonText: string): Record<string, any> | null {
   try {
-    const parsed: unknown = JSON.parse(jsonText);
+    const parsed: any = JSON.parse(jsonText);
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
       return null;
     }
-    return parsed as Record<string, unknown>;
+    return parsed as Record<string, any>;
   } catch {
     return null;
   }
 }
 
-function parseInboundMetaBlock(lines: string[], sentinel: string): Record<string, unknown> | null {
+function parseInboundMetaBlock(lines: string[], sentinel: string): Record<string, any> | null {
   for (let i = 0; i < lines.length; i++) {
     if (lines[i]?.trim() !== sentinel) {
       continue;
@@ -110,12 +110,12 @@ function parseInboundMetaBlock(lines: string[], sentinel: string): Record<string
       return null;
     }
     const parsed = parseJsonObjectRecord(jsonText);
-    return parsed ? (restoreNeutralizedMarkdownFences(parsed) as Record<string, unknown>) : null;
+    return parsed ? (restoreNeutralizedMarkdownFences(parsed) as Record<string, any>) : null;
   }
   return null;
 }
 
-function firstNonEmptyString(...values: unknown[]): string | null {
+function firstNonEmptyString(...values: any[]): string | null {
   for (const value of values) {
     if (typeof value !== "string") {
       continue;

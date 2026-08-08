@@ -9,7 +9,7 @@ export interface ChannelDirectoryEntry {
   type: "user" | "channel" | "group" | "team";
   parentId?: string;
   externalId?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface ChannelDirectoryAdapter {

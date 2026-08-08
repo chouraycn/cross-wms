@@ -32,7 +32,7 @@ export interface TemplateFilter {
 
 // ===================== JSON Helpers =====================
 
-function serializeJson(value: unknown): string {
+function serializeJson(value: any): string {
   try {
     return JSON.stringify(value);
   } catch {
@@ -40,7 +40,7 @@ function serializeJson(value: unknown): string {
   }
 }
 
-function parseJson(value: string | null): Record<string, unknown> | null {
+function parseJson(value: string | null): Record<string, any> | null {
   if (!value) return null;
   try {
     return JSON.parse(value);
@@ -423,7 +423,7 @@ export function getTemplates(filter?: TemplateFilter): WorkflowTemplate[] {
   initTemplateTables();
 
   const conditions: string[] = [];
-  const params: unknown[] = [];
+  const params: any[] = [];
 
   if (filter?.category) {
     conditions.push('category = ?');

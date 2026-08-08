@@ -545,7 +545,7 @@ describe("scanDirectoryWithSummary", () => {
     });
 
     try {
-      let thrown: unknown;
+      let thrown: any;
       try {
         await scanDirectoryWithSummary(root);
       } catch (error) {
@@ -585,7 +585,7 @@ describe("scanDirectoryWithSummary", () => {
     const spy = mockStatPermissionDeniedFor(filePath);
 
     try {
-      let thrown: unknown;
+      let thrown: any;
       try {
         await scanDirectoryWithSummary(root);
       } catch (error) {

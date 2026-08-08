@@ -21,12 +21,12 @@ type ModelCompatConfig = {
 };
 
 type ToolSchemaCompatInput = {
-  unsupportedToolSchemaKeywords?: unknown;
-  omitEmptyArrayItems?: unknown;
+  unsupportedToolSchemaKeywords?: any;
+  omitEmptyArrayItems?: any;
 };
 
 const MAX_STRICT_SCHEMA_CACHE_ENTRIES_PER_SCHEMA = 8;
-let strictOpenAISchemaCache = new WeakMap<object, Array<{ key: string; value: unknown }>>();
+let strictOpenAISchemaCache = new WeakMap<object, Array<{ key: string; value: any }>>();
 
 // 内联降级实现：判断是否应省略空数组 items。
 function shouldOmitEmptyArrayItems(compat: ModelCompatConfig | undefined): boolean {
@@ -63,11 +63,11 @@ function resolveStrictOpenAISchemaCacheKey(
   ]);
 }
 
-function readCachedStrictOpenAISchema(schema: object, key: string): unknown {
+function readCachedStrictOpenAISchema(schema: object, key: string): any {
   return strictOpenAISchemaCache.get(schema)?.find((entry) => entry.key === key)?.value;
 }
 
-function rememberStrictOpenAISchema(schema: object, key: string, value: unknown): unknown {
+function rememberStrictOpenAISchema(schema: object, key: string, value: any): any {
   const entries = strictOpenAISchemaCache.get(schema) ?? [];
   strictOpenAISchemaCache.set(
     schema,
@@ -89,15 +89,15 @@ export function clearOpenAIToolSchemaCacheForTest(): void {
  * 仅移除 unsupported keywords 并处理 omitEmptyArrayItems；不进行完整的 schema 规范化。
  */
 function normalizeToolParameterSchema(
-  schema: unknown,
+  schema: any,
   options?: { modelCompat?: ModelCompatConfig | undefined },
-): unknown {
+): any {
   if (!schema || typeof schema !== "object") {
     return schema;
   }
   const unsupported = new Set(options?.modelCompat?.unsupportedToolSchemaKeywords ?? []);
   const omitEmpty = shouldOmitEmptyArrayItems(options?.modelCompat);
-  const normalize = (value: unknown): unknown => {
+  const normalize = (value: any): any => {
     if (Array.isArray(value)) {
       let changed = false;
       const result = value.map((entry) => {
@@ -112,9 +112,9 @@ function normalizeToolParameterSchema(
     if (!value || typeof value !== "object") {
       return value;
     }
-    const record = value as Record<string, unknown>;
+    const record = value as Record<string, any>;
     let changed = false;
-    const normalized: Record<string, unknown> = {};
+    const normalized: Record<string, any> = {};
     for (const [key, val] of Object.entries(record)) {
       if (unsupported.has(key)) {
         changed = true;
@@ -137,9 +137,9 @@ function normalizeToolParameterSchema(
 
 /** Normalizes a tool parameter schema into the OpenAI strict JSON-schema subset. */
 export function normalizeStrictOpenAIJsonSchema(
-  schema: unknown,
+  schema: any,
   modelCompat?: ToolSchemaCompatInput | null,
-): unknown {
+): any {
   const schemaInput = schema ?? {};
   if (!schemaInput || typeof schemaInput !== "object") {
     return normalizeStrictOpenAIJsonSchemaRecursive(
@@ -166,7 +166,7 @@ export function normalizeStrictOpenAIJsonSchema(
   );
 }
 
-function normalizeStrictOpenAIJsonSchemaRecursive(schema: unknown, depth: number): unknown {
+function normalizeStrictOpenAIJsonSchemaRecursive(schema: any, depth: number): any {
   if (Array.isArray(schema)) {
     let changed = false;
     const normalized = schema.map((entry) => {
@@ -180,9 +180,9 @@ function normalizeStrictOpenAIJsonSchemaRecursive(schema: unknown, depth: number
     return schema;
   }
 
-  const record = schema as Record<string, unknown>;
+  const record = schema as Record<string, any>;
   let changed = false;
-  const normalized: Record<string, unknown> = {};
+  const normalized: Record<string, any> = {};
   for (const [key, value] of Object.entries(record)) {
     const next = normalizeStrictOpenAIJsonSchemaRecursive(
       value,
@@ -197,7 +197,7 @@ function normalizeStrictOpenAIJsonSchemaRecursive(schema: unknown, depth: number
       normalized.properties &&
       typeof normalized.properties === "object" &&
       !Array.isArray(normalized.properties)
-        ? (normalized.properties as Record<string, unknown>)
+        ? (normalized.properties as Record<string, any>)
         : undefined;
     if (properties && Object.keys(properties).length === 0 && !Array.isArray(normalized.required)) {
       normalized.required = [];
@@ -226,7 +226,7 @@ export function normalizeOpenAIStrictToolParameters<T>(
 }
 
 /** Returns whether a schema already satisfies OpenAI strict tool-schema constraints. */
-export function isStrictOpenAIJsonSchemaCompatible(schema: unknown): boolean {
+export function isStrictOpenAIJsonSchemaCompatible(schema: any): boolean {
   return isStrictOpenAIJsonSchemaCompatibleRecursive(normalizeStrictOpenAIJsonSchema(schema));
 }
 
@@ -258,7 +258,7 @@ export function findOpenAIStrictToolProjectionDiagnostics(
   ];
 }
 
-function isStrictOpenAIJsonSchemaCompatibleRecursive(schema: unknown): boolean {
+function isStrictOpenAIJsonSchemaCompatibleRecursive(schema: any): boolean {
   if (Array.isArray(schema)) {
     return schema.every((entry) => isStrictOpenAIJsonSchemaCompatibleRecursive(entry));
   }
@@ -266,7 +266,7 @@ function isStrictOpenAIJsonSchemaCompatibleRecursive(schema: unknown): boolean {
     return true;
   }
 
-  const record = schema as Record<string, unknown>;
+  const record = schema as Record<string, any>;
   if ("anyOf" in record || "oneOf" in record || "allOf" in record) {
     return false;
   }
@@ -281,7 +281,7 @@ function isStrictOpenAIJsonSchemaCompatibleRecursive(schema: unknown): boolean {
       record.properties &&
       typeof record.properties === "object" &&
       !Array.isArray(record.properties)
-        ? (record.properties as Record<string, unknown>)
+        ? (record.properties as Record<string, any>)
         : {};
     const required = Array.isArray(record.required)
       ? record.required.filter((entry): entry is string => typeof entry === "string")
@@ -297,7 +297,7 @@ function isStrictOpenAIJsonSchemaCompatibleRecursive(schema: unknown): boolean {
 
   return Object.entries(record).every(([key, entry]) => {
     if (key === "properties" && entry && typeof entry === "object" && !Array.isArray(entry)) {
-      return Object.values(entry as Record<string, unknown>).every((value) =>
+      return Object.values(entry as Record<string, any>).every((value) =>
         isStrictOpenAIJsonSchemaCompatibleRecursive(value),
       );
     }
@@ -305,7 +305,7 @@ function isStrictOpenAIJsonSchemaCompatibleRecursive(schema: unknown): boolean {
   });
 }
 
-function findStrictOpenAIJsonSchemaViolations(schema: unknown, path: string): string[] {
+function findStrictOpenAIJsonSchemaViolations(schema: any, path: string): string[] {
   if (Array.isArray(schema)) {
     return schema.flatMap((entry, index) =>
       findStrictOpenAIJsonSchemaViolations(entry, `${path}[${index}]`),
@@ -315,7 +315,7 @@ function findStrictOpenAIJsonSchemaViolations(schema: unknown, path: string): st
     return [];
   }
 
-  const record = schema as Record<string, unknown>;
+  const record = schema as Record<string, any>;
   const violations: string[] = [];
   for (const key of ["anyOf", "oneOf", "allOf"] as const) {
     if (key in record) {
@@ -333,7 +333,7 @@ function findStrictOpenAIJsonSchemaViolations(schema: unknown, path: string): st
       record.properties &&
       typeof record.properties === "object" &&
       !Array.isArray(record.properties)
-        ? (record.properties as Record<string, unknown>)
+        ? (record.properties as Record<string, any>)
         : {};
     const required = Array.isArray(record.required)
       ? record.required.filter((entry): entry is string => typeof entry === "string")

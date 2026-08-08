@@ -115,7 +115,7 @@ function loadMessageActionGatewayRuntime() {
 export type RunMessageActionParams = {
   cfg: OpenClawConfig;
   action: ChannelMessageActionName;
-  params: Record<string, unknown>;
+  params: Record<string, any>;
   defaultAccountId?: string;
   requesterAccountId?: string | null;
   requesterSenderId?: string | null;
@@ -144,8 +144,8 @@ export type MessageActionRunResult =
       action: "send";
       to: string;
       handledBy: "plugin" | "core" | "internal-source";
-      payload: unknown;
-      toolResult?: AgentToolResult<unknown>;
+      payload: any;
+      toolResult?: AgentToolResult<any>;
       sendResult?: MessageSendResult;
       dryRun: boolean;
     }
@@ -161,7 +161,7 @@ export type MessageActionRunResult =
           ok: boolean;
           error?: string;
           sentBeforeError?: true;
-          payload?: unknown;
+          payload?: any;
           result?: MessageSendResult;
         }>;
       };
@@ -173,8 +173,8 @@ export type MessageActionRunResult =
       action: "poll";
       to: string;
       handledBy: "plugin" | "core";
-      payload: unknown;
-      toolResult?: AgentToolResult<unknown>;
+      payload: any;
+      toolResult?: AgentToolResult<any>;
       pollResult?: MessagePollResult;
       dryRun: boolean;
     }
@@ -183,14 +183,14 @@ export type MessageActionRunResult =
       channel: ChannelId;
       action: Exclude<ChannelMessageActionName, "send" | "poll">;
       handledBy: "plugin" | "dry-run";
-      payload: unknown;
-      toolResult?: AgentToolResult<unknown>;
+      payload: any;
+      toolResult?: AgentToolResult<any>;
       dryRun: boolean;
     };
 
 export function getToolResult(
   result: MessageActionRunResult,
-): AgentToolResult<unknown> | undefined {
+): AgentToolResult<any> | undefined {
   return "toolResult" in result ? result.toolResult : undefined;
 }
 
@@ -200,7 +200,7 @@ function resolveGatewayActionOptions(gateway?: MessageActionRunnerGateway) {
 
 async function callGatewayMessageAction<T>(params: {
   gateway?: MessageActionRunnerGateway;
-  actionParams: Record<string, unknown>;
+  actionParams: Record<string, any>;
 }): Promise<T> {
   const { callGatewayLeastPrivilege } = await loadMessageActionGatewayRuntime();
   const gateway = resolveGatewayActionOptions(params.gateway);
@@ -229,7 +229,7 @@ function applyCrossContextMessageDecoration({
   decoration,
   preferPresentation,
 }: {
-  params: Record<string, unknown>;
+  params: Record<string, any>;
   message: string;
   decoration: CrossContextDecoration;
   preferPresentation: boolean;
@@ -260,7 +260,7 @@ async function maybeApplyCrossContextMarker(params: {
   toolContext?: ChannelThreadingToolContext;
   accountId?: string | null;
   agentId?: string | null;
-  args: Record<string, unknown>;
+  args: Record<string, any>;
   message: string;
   preferPresentation: boolean;
 }): Promise<string> {
@@ -288,7 +288,7 @@ async function maybeApplyCrossContextMarker(params: {
 
 async function resolveChannel(
   cfg: OpenClawConfig,
-  params: Record<string, unknown>,
+  params: Record<string, any>,
   toolContext?: { currentChannelProvider?: string },
 ) {
   const selection = await resolveMessageChannelSelection({
@@ -343,7 +343,7 @@ function inferPeerKindForAccountBinding(channel: ChannelId, target: string): Cha
 function resolveTargetBoundAccountId(params: {
   cfg: OpenClawConfig;
   channel: ChannelId;
-  args: Record<string, unknown>;
+  args: Record<string, any>;
   agentId?: string;
 }): string | undefined {
   if (!params.agentId) {
@@ -380,7 +380,7 @@ async function resolveActionTarget(params: {
   cfg: OpenClawConfig;
   channel: ChannelId;
   action: ChannelMessageActionName;
-  args: Record<string, unknown>;
+  args: Record<string, any>;
   accountId?: string | null;
 }): Promise<ResolvedMessagingTarget | undefined> {
   let resolvedTarget: ResolvedMessagingTarget | undefined;
@@ -444,7 +444,7 @@ async function resolveResolvedTargetOrThrow(params: {
 
 type ResolvedActionContext = {
   cfg: OpenClawConfig;
-  params: Record<string, unknown>;
+  params: Record<string, any>;
   channel: ChannelId;
   mediaAccess: OutboundMediaAccess;
   extraActionMediaSourceParamKeys?: readonly string[];
@@ -486,7 +486,7 @@ function updateSendPayloadPartsFromReplyPayload(
 }
 
 function applySendPayloadPartsToActionParams(
-  actionParams: Record<string, unknown>,
+  actionParams: Record<string, any>,
   parts: SendPayloadParts,
 ) {
   actionParams.message = parts.message;
@@ -497,13 +497,13 @@ function applySendPayloadPartsToActionParams(
   actionParams.audioAsVoice = parts.asVoice || undefined;
 }
 
-function collectMessageAttachmentMediaHints(value: unknown): string[] {
+function collectMessageAttachmentMediaHints(value: any): string[] {
   if (!Array.isArray(value)) {
     return [];
   }
   const mediaUrls: string[] = [];
   const seen = new Set<string>();
-  const pushMedia = (entry: unknown) => {
+  const pushMedia = (entry: any) => {
     const normalized = normalizeOptionalString(entry);
     if (!normalized || seen.has(normalized)) {
       return;
@@ -515,7 +515,7 @@ function collectMessageAttachmentMediaHints(value: unknown): string[] {
     if (!attachment || typeof attachment !== "object" || Array.isArray(attachment)) {
       continue;
     }
-    const record = attachment as Record<string, unknown>;
+    const record = attachment as Record<string, any>;
     pushMedia(record.media);
     pushMedia(record.mediaUrl);
     pushMedia(record.path);
@@ -526,7 +526,7 @@ function collectMessageAttachmentMediaHints(value: unknown): string[] {
   return mediaUrls;
 }
 
-function hasExplicitTargetParam(params: Record<string, unknown>): boolean {
+function hasExplicitTargetParam(params: Record<string, any>): boolean {
   for (const key of ["target", "to", "channelId"]) {
     if (normalizeOptionalString(params[key])) {
       return true;
@@ -539,7 +539,7 @@ function hasExplicitTargetParam(params: Record<string, unknown>): boolean {
 
 function isCurrentSourceTargetParam(
   input: RunMessageActionParams,
-  params: Record<string, unknown>,
+  params: Record<string, any>,
 ): boolean {
   const currentChannelId = normalizeOptionalString(input.toolContext?.currentChannelId);
   const currentMessagingTarget = normalizeOptionalString(input.toolContext?.currentMessagingTarget);
@@ -590,7 +590,7 @@ function isCurrentSourceTargetParam(
 
 function hasExplicitNonCurrentChannelParam(
   input: RunMessageActionParams,
-  params: Record<string, unknown>,
+  params: Record<string, any>,
 ): boolean {
   const explicitChannel = normalizeOptionalLowercaseString(params.channel);
   if (!explicitChannel) {
@@ -604,7 +604,7 @@ function hasExplicitNonCurrentChannelParam(
 
 function applyImplicitSourceReplySendPolicy(
   input: RunMessageActionParams,
-  params: Record<string, unknown>,
+  params: Record<string, any>,
 ) {
   if (input.action !== "send" || input.sourceReplyDeliveryMode !== "message_tool_only") {
     return;
@@ -620,7 +620,7 @@ function applyImplicitSourceReplySendPolicy(
 
 async function runGatewayPluginMessageActionOrNull(params: {
   cfg: OpenClawConfig;
-  params: Record<string, unknown>;
+  params: Record<string, any>;
   channel: ChannelId;
   action: ChannelMessageActionName;
   accountId?: string | null;
@@ -628,7 +628,7 @@ async function runGatewayPluginMessageActionOrNull(params: {
   gateway?: MessageActionRunnerGateway;
   input: RunMessageActionParams;
   agentId?: string;
-  result: (payload: unknown) => MessageActionRunResult;
+  result: (payload: any) => MessageActionRunResult;
 }): Promise<MessageActionRunResult | null> {
   if (params.dryRun || !params.gateway) {
     return null;
@@ -641,7 +641,7 @@ async function runGatewayPluginMessageActionOrNull(params: {
   if (executionMode !== "gateway") {
     return null;
   }
-  const payload = await callGatewayMessageAction<unknown>({
+  const payload = await callGatewayMessageAction<any>({
     gateway: params.gateway,
     actionParams: {
       channel: params.channel,
@@ -680,7 +680,7 @@ function resolveGateway(input: RunMessageActionParams): MessageActionRunnerGatew
 
 async function handleBroadcastAction(
   input: RunMessageActionParams,
-  params: Record<string, unknown>,
+  params: Record<string, any>,
 ): Promise<MessageActionRunResult> {
   throwIfAborted(input.abortSignal);
   const broadcastEnabled =
@@ -710,10 +710,10 @@ async function handleBroadcastAction(
     ok: boolean;
     error?: string;
     sentBeforeError?: true;
-    payload?: unknown;
+    payload?: any;
     result?: MessageSendResult;
   }> = [];
-  const isAbortError = (err: unknown): boolean => err instanceof Error && err.name === "AbortError";
+  const isAbortError = (err: any): boolean => err instanceof Error && err.name === "AbortError";
   for (const targetChannel of targetChannels) {
     throwIfAborted(input.abortSignal);
     for (const target of rawTargets) {
@@ -751,7 +751,7 @@ async function handleBroadcastAction(
           error: formatErrorMessage(err),
           ...(err &&
           typeof err === "object" &&
-          (err as { sentBeforeError?: unknown }).sentBeforeError === true
+          (err as { sentBeforeError?: any }).sentBeforeError === true
             ? { sentBeforeError: true as const }
             : {}),
         });
@@ -770,7 +770,7 @@ async function handleBroadcastAction(
 
 async function handleInternalSourceReplySendAction(
   input: RunMessageActionParams,
-  params: Record<string, unknown>,
+  params: Record<string, any>,
 ): Promise<MessageActionRunResult> {
   throwIfAborted(input.abortSignal);
   const dryRun = Boolean(input.dryRun ?? readBooleanParam(params, "dryRun"));
@@ -863,7 +863,7 @@ function buildInternalSourceReplyToolResult(payload: {
 
 async function buildSendPayloadParts(params: {
   cfg: OpenClawConfig;
-  actionParams: Record<string, unknown>;
+  actionParams: Record<string, any>;
   input: RunMessageActionParams;
   channel?: ChannelId;
   target?: string;
@@ -999,7 +999,7 @@ async function buildSendPayloadParts(params: {
   const rawChannelData = actionParams.channelData;
   const channelData =
     rawChannelData && typeof rawChannelData === "object" && !Array.isArray(rawChannelData)
-      ? (rawChannelData as Record<string, unknown>)
+      ? (rawChannelData as Record<string, any>)
       : undefined;
   const presentation = normalizeMessagePresentation(actionParams.presentation);
   const interactive = normalizeInteractiveReply(actionParams.interactive);

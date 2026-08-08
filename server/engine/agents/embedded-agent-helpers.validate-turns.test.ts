@@ -7,7 +7,7 @@ import {
   validateGeminiTurns,
 } from "./embedded-agent-helpers.js";
 
-function asMessages(messages: unknown[]): AgentMessage[] {
+function asMessages(messages: any[]): AgentMessage[] {
   return messages as AgentMessage[];
 }
 
@@ -19,7 +19,7 @@ function makeDualToolUseAssistantContent() {
   ];
 }
 
-function makeDualToolAnthropicTurns(nextUserContent: unknown[]) {
+function makeDualToolAnthropicTurns(nextUserContent: any[]) {
   // Anthropic places tool results inside the next user turn, so these fixtures
   // exercise sibling tool-use pruning.
   return asMessages([
@@ -44,8 +44,8 @@ function makeSignedThinkingGatewayToolCall(toolId: string) {
 
 function expectAssistantToolCallsOmitted(result: AgentMessage[], expectedLength: number) {
   expect(result).toHaveLength(expectedLength);
-  expect((result[1] as { role?: unknown }).role).toBe("assistant");
-  expect((result[1] as { content?: unknown[] }).content).toEqual([
+  expect((result[1] as { role?: any }).role).toBe("assistant");
+  expect((result[1] as { content?: any[] }).content).toEqual([
     { type: "text", text: "[tool calls omitted]" },
   ]);
 }
@@ -286,7 +286,7 @@ describe("validateAnthropicTurns", () => {
     expect(result).toHaveLength(1);
     const merged = result[0];
     expect(merged.timestamp).toBe(2000);
-    expect((merged as { attachments?: unknown[] }).attachments).toEqual([
+    expect((merged as { attachments?: any[] }).attachments).toEqual([
       { type: "image", url: "new.png" },
     ]);
     expect((merged as { someCustomField?: string }).someCustomField).toBe("keep-me");
@@ -454,7 +454,7 @@ describe("mergeConsecutiveUserTurns", () => {
       { type: "text", text: "before" },
       { type: "text", text: "after" },
     ]);
-    expect((merged as { attachments?: unknown[] }).attachments).toEqual([
+    expect((merged as { attachments?: any[] }).attachments).toEqual([
       { type: "image", url: "new.png" },
     ]);
     expect((merged as { someCustomField?: string }).someCustomField).toBe("keep-me");
@@ -518,7 +518,7 @@ describe("validateAnthropicTurns strips dangling tool_use blocks", () => {
 
     expect(result).toHaveLength(3);
     // The dangling tool_use should be stripped, but text content preserved
-    const assistantContent = (result[1] as { content?: unknown[] }).content;
+    const assistantContent = (result[1] as { content?: any[] }).content;
     expect(assistantContent).toEqual([{ type: "text", text: "I'll check that" }]);
   });
 
@@ -545,7 +545,7 @@ describe("validateAnthropicTurns strips dangling tool_use blocks", () => {
 
     expect(result).toHaveLength(3);
     // tool_use should be preserved because matching tool_result exists
-    const assistantContent = (result[1] as { content?: unknown[] }).content;
+    const assistantContent = (result[1] as { content?: any[] }).content;
     expect(assistantContent).toEqual([
       { type: "toolUse", id: "tool-1", name: "test", arguments: {} },
       { type: "text", text: "Here's result" },
@@ -566,7 +566,7 @@ describe("validateAnthropicTurns strips dangling tool_use blocks", () => {
 
     expect(result).toHaveLength(3);
     // Should insert fallback text since all content would be removed
-    const assistantContent = (result[1] as { content?: unknown[] }).content;
+    const assistantContent = (result[1] as { content?: any[] }).content;
     expect(assistantContent).toEqual([{ type: "text", text: "[tool calls omitted]" }]);
   });
 
@@ -584,7 +584,7 @@ describe("validateAnthropicTurns strips dangling tool_use blocks", () => {
     const result = validateAnthropicTurns(msgs);
 
     expect(result).toHaveLength(3);
-    expect((result[1] as { content?: unknown[] }).content).toStrictEqual([]);
+    expect((result[1] as { content?: any[] }).content).toStrictEqual([]);
   });
 
   it("should handle multiple dangling tool_use blocks", () => {
@@ -593,7 +593,7 @@ describe("validateAnthropicTurns strips dangling tool_use blocks", () => {
     const result = validateAnthropicTurns(msgs);
 
     expect(result).toHaveLength(3);
-    const assistantContent = (result[1] as { content?: unknown[] }).content;
+    const assistantContent = (result[1] as { content?: any[] }).content;
     // Only text content should remain
     expect(assistantContent).toEqual([{ type: "text", text: "Done" }]);
   });
@@ -612,7 +612,7 @@ describe("validateAnthropicTurns strips dangling tool_use blocks", () => {
 
     expect(result).toHaveLength(3);
     // tool-1 should be preserved (has matching tool_result), tool-2 stripped, text preserved
-    const assistantContent = (result[1] as { content?: unknown[] }).content;
+    const assistantContent = (result[1] as { content?: any[] }).content;
     expect(assistantContent).toEqual([
       { type: "toolUse", id: "tool-1", name: "test1", arguments: {} },
       { type: "text", text: "Done" },
@@ -633,7 +633,7 @@ describe("validateAnthropicTurns strips dangling tool_use blocks", () => {
     const result = validateAnthropicTurns(msgs);
 
     expect(result).toHaveLength(4);
-    const assistantContent = (result[1] as { content?: unknown[] }).content;
+    const assistantContent = (result[1] as { content?: any[] }).content;
     expect(assistantContent).toEqual([
       { type: "toolCall", id: "tool-1", name: "test", arguments: {} },
     ]);
@@ -657,7 +657,7 @@ describe("validateAnthropicTurns strips dangling tool_use blocks", () => {
     const result = validateAnthropicTurns(msgs);
 
     expect(result).toHaveLength(5);
-    const assistantContent = (result[1] as { content?: unknown[] }).content;
+    const assistantContent = (result[1] as { content?: any[] }).content;
     expect(assistantContent).toEqual([
       { type: "functionCall", id: "tool-1", name: "test", arguments: {} },
       { type: "text", text: "Checking" },
@@ -686,7 +686,7 @@ describe("validateAnthropicTurns strips dangling tool_use blocks", () => {
     const result = validateAnthropicTurns(msgs);
 
     expect(result).toHaveLength(4);
-    const assistantContent = (result[1] as { content?: unknown[] }).content;
+    const assistantContent = (result[1] as { content?: any[] }).content;
     expect(assistantContent).toEqual(makeSignedThinkingGatewayToolCall("tool-1"));
   });
 
@@ -735,7 +735,7 @@ describe("validateAnthropicTurns strips dangling tool_use blocks", () => {
     const result = validateAnthropicTurns(msgs);
 
     expect(result).toHaveLength(4);
-    expect((result[1] as { content?: unknown[] }).content).toEqual(
+    expect((result[1] as { content?: any[] }).content).toEqual(
       makeSignedThinkingGatewayToolCall("tool-current"),
     );
   });
@@ -793,7 +793,7 @@ describe("validateAnthropicTurns strips dangling tool_use blocks", () => {
     const result = validateAnthropicTurns(msgs);
 
     expect(result).toHaveLength(3);
-    const assistantContent = (result[1] as { content?: unknown[] }).content;
+    const assistantContent = (result[1] as { content?: any[] }).content;
     expect(assistantContent).toEqual([{ type: "text", text: "[tool calls omitted]" }]);
   });
 

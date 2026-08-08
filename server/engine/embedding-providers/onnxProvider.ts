@@ -103,6 +103,6 @@ export class OnnxEmbeddingProvider extends BaseEmbeddingProvider {
   }
 }
 
-export function createOnnxEmbeddingProvider(_options?: Record<string, unknown>): OnnxEmbeddingProvider {
+export function createOnnxEmbeddingProvider(_options?: Record<string, any>): OnnxEmbeddingProvider {
   return new OnnxEmbeddingProvider();
 }

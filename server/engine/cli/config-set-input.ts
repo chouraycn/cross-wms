@@ -47,9 +47,9 @@ export type ConfigSetOptions = {
 
 export type ConfigSetBatchEntry = {
   path: string;
-  value?: unknown;
-  ref?: unknown;
-  provider?: unknown;
+  value?: any;
+  ref?: any;
+  provider?: any;
 };
 
 export function hasBatchMode(opts: ConfigSetOptions): boolean {
@@ -83,7 +83,7 @@ export function hasProviderBuilderOptions(opts: ConfigSetOptions): boolean {
   );
 }
 
-function parseJson5Raw(raw: string, label: string): unknown {
+function parseJson5Raw(raw: string, label: string): any {
   try {
     return JSON5.parse(raw);
   } catch (err) {
@@ -101,7 +101,7 @@ function parseBatchEntries(raw: string, sourceLabel: string): ConfigSetBatchEntr
     if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
       throw new Error(`${sourceLabel}[${index}] must be an object.`);
     }
-    const typed = entry as Record<string, unknown>;
+    const typed = entry as Record<string, any>;
     const path = normalizeOptionalString(typed.path) ?? "";
     if (!path) {
       throw new Error(`${sourceLabel}[${index}].path is required.`);

@@ -6,12 +6,12 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function shouldSuppressRawErrorConsoleSuffix(..._args: unknown[]): unknown {
+export function shouldSuppressRawErrorConsoleSuffix(..._args: any[]): any {
   return false;
 }
-export function buildApiErrorObservationFields(..._args: unknown[]): unknown {
+export function buildApiErrorObservationFields(..._args: any[]): any {
   return undefined;
 }
-export function buildTextObservationFields(..._args: unknown[]): unknown {
+export function buildTextObservationFields(..._args: any[]): any {
   return undefined;
 }

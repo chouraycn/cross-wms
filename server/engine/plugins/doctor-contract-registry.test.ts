@@ -372,7 +372,7 @@ describe("doctor-contract-registry module loader", () => {
       normalizeCompatibilityConfig: ({
         cfg,
       }: {
-        cfg: { models?: { providers?: Record<string, Record<string, unknown>> } };
+        cfg: { models?: { providers?: Record<string, Record<string, any>> } };
       }) => ({
         config: {
           ...cfg,

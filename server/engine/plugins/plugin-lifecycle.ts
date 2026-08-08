@@ -51,7 +51,7 @@ export interface LifecycleOperationResult {
 /** 启用插件（installed → enabled） */
 export async function activatePlugin(
   manifest: PluginManifest,
-  config?: Record<string, unknown>,
+  config?: Record<string, any>,
 ): Promise<LifecycleOperationResult> {
   const startTime = Date.now();
   const pluginId = manifest.id;
@@ -169,7 +169,7 @@ export async function deactivatePlugin(pluginId: string): Promise<LifecycleOpera
 /** 安装插件（首次注册 manifest + 调用 install 钩子） */
 export async function installPluginEntry(
   manifest: PluginManifest,
-  config?: Record<string, unknown>,
+  config?: Record<string, any>,
 ): Promise<LifecycleOperationResult> {
   const startTime = Date.now();
   const pluginId = manifest.id;
@@ -276,7 +276,7 @@ export async function uninstallPluginEntry(pluginId: string): Promise<LifecycleO
 export async function updatePluginEntry(
   manifest: PluginManifest,
   fromVersion: string,
-  config?: Record<string, unknown>,
+  config?: Record<string, any>,
 ): Promise<LifecycleOperationResult> {
   const startTime = Date.now();
   const pluginId = manifest.id;

@@ -399,8 +399,8 @@ export class KeywordTriggerEngine {
     }
 
     const defAny = definition as typeof definition & {
-      toolNames?: unknown[];
-      synonyms?: unknown[];
+      toolNames?: any[];
+      synonyms?: any[];
       weight?: number;
     };
 

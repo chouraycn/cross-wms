@@ -165,8 +165,8 @@ describe("handleStopCommand target fallback", () => {
       [
         {
           key?: string;
-          entry?: unknown;
-          sessionStore?: unknown;
+          entry?: any;
+          sessionStore?: any;
           storePath?: string;
         },
       ]
@@ -176,7 +176,7 @@ describe("handleStopCommand target fallback", () => {
     expect(persistAbortTargetParams?.sessionStore).toBe(params.sessionStore);
     expect(persistAbortTargetParams?.storePath).toBe("/tmp/sessions.json");
     const [[stopSubagentsParams]] = stopSubagentsForRequesterMock.mock.calls as unknown as Array<
-      [{ cfg?: unknown; requesterSessionKey?: string }]
+      [{ cfg?: any; requesterSessionKey?: string }]
     >;
     expect(stopSubagentsParams?.cfg).toBe(params.cfg);
     expect(stopSubagentsParams?.requesterSessionKey).toBe("agent:target:telegram:direct:123");

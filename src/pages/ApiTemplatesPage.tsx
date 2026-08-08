@@ -139,7 +139,7 @@ const ApiTemplatesPage: React.FC = () => {
   const [testDialogOpen, setTestDialogOpen] = useState(false);
   const [testTemplateId, setTestTemplateId] = useState<string | null>(null);
   const [testVariables, setTestVariables] = useState('{}');
-  const [testResult, setTestResult] = useState<unknown>(null);
+  const [testResult, setTestResult] = useState<any>(null);
   const [testing, setTesting] = useState(false);
 
   // 删除确认

@@ -54,7 +54,7 @@ async function loadWithMocks(params: {
   return { module, discoverSpy, loadRecordsSpy };
 }
 
-function firstDiscoverOptions(discoverSpy: ReturnType<typeof vi.fn>): Record<string, unknown> {
+function firstDiscoverOptions(discoverSpy: ReturnType<typeof vi.fn>): Record<string, any> {
   const call = discoverSpy.mock.calls[0];
   if (!call) {
     throw new Error("expected discovery call");
@@ -63,7 +63,7 @@ function firstDiscoverOptions(discoverSpy: ReturnType<typeof vi.fn>): Record<str
   if (!options || typeof options !== "object") {
     throw new Error("expected discovery options");
   }
-  return options as Record<string, unknown>;
+  return options as Record<string, any>;
 }
 
 function createChannelCandidate(params: {

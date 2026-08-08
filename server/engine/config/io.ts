@@ -10,64 +10,64 @@ export type ConfigIoDeps = unknown;
 export type ConfigSnapshotReadOptions = unknown;
 export type ReadConfigFileSnapshotWithPluginMetadataResult = unknown;
 export type BestEffortConfigSnapshot = unknown;
-export function resolveConfigSnapshotHash(...args: unknown[]): unknown {
+export function resolveConfigSnapshotHash(...args: any[]): any {
   return undefined;
 }
-export function parseConfigJson5(...args: unknown[]): unknown {
+export function parseConfigJson5(...args: any[]): any {
   return undefined;
 }
-export function restoreEnvChangesIfUnchanged(...args: unknown[]): unknown {
+export function restoreEnvChangesIfUnchanged(...args: any[]): any {
   return undefined;
 }
-export function createConfigIO(...args: unknown[]): unknown {
+export function createConfigIO(...args: any[]): any {
   return undefined;
 }
-export function clearConfigCache(...args: unknown[]): unknown {
+export function clearConfigCache(...args: any[]): any {
   return undefined;
 }
-export function registerConfigWriteListener(...args: unknown[]): unknown {
+export function registerConfigWriteListener(...args: any[]): any {
   return undefined;
 }
-export function loadConfig(...args: unknown[]): unknown {
+export function loadConfig(...args: any[]): any {
   return undefined;
 }
-export function getRuntimeConfig(...args: unknown[]): unknown {
+export function getRuntimeConfig(...args: any[]): any {
   return undefined;
 }
-export function readBestEffortConfig(...args: unknown[]): unknown {
+export function readBestEffortConfig(...args: any[]): any {
   return undefined;
 }
-export function readBestEffortConfigSnapshot(...args: unknown[]): unknown {
+export function readBestEffortConfigSnapshot(...args: any[]): any {
   return undefined;
 }
-export function readSourceConfigBestEffort(...args: unknown[]): unknown {
+export function readSourceConfigBestEffort(...args: any[]): any {
   return undefined;
 }
-export function readConfigFileSnapshot(...args: unknown[]): unknown {
+export function readConfigFileSnapshot(...args: any[]): any {
   return undefined;
 }
-export function readConfigFileSnapshotWithPluginMetadata(...args: unknown[]): unknown {
+export function readConfigFileSnapshotWithPluginMetadata(...args: any[]): any {
   return undefined;
 }
-export function promoteConfigSnapshotToLastKnownGood(...args: unknown[]): unknown {
+export function promoteConfigSnapshotToLastKnownGood(...args: any[]): any {
   return undefined;
 }
-export function recoverConfigFromLastKnownGood(...args: unknown[]): unknown {
+export function recoverConfigFromLastKnownGood(...args: any[]): any {
   return undefined;
 }
-export function recoverConfigFromJsonRootSuffix(...args: unknown[]): unknown {
+export function recoverConfigFromJsonRootSuffix(...args: any[]): any {
   return undefined;
 }
-export function readSourceConfigSnapshot(...args: unknown[]): unknown {
+export function readSourceConfigSnapshot(...args: any[]): any {
   return undefined;
 }
-export function readConfigFileSnapshotForWrite(...args: unknown[]): unknown {
+export function readConfigFileSnapshotForWrite(...args: any[]): any {
   return undefined;
 }
-export function readSourceConfigSnapshotForWrite(...args: unknown[]): unknown {
+export function readSourceConfigSnapshotForWrite(...args: any[]): any {
   return undefined;
 }
-export function writeConfigFile(...args: unknown[]): unknown {
+export function writeConfigFile(...args: any[]): any {
   return undefined;
 }
 export class ConfigRuntimeRefreshError {
@@ -83,12 +83,12 @@ export type selectApplicableRuntimeConfig = unknown;
 export type setRuntimeConfigSnapshot = unknown;
 export type setRuntimeConfigSnapshotRefreshHandler = unknown;
 export type projectConfigOntoRuntimeSourceSnapshot = unknown;
-export const projectConfigOntoRuntimeSourceSnapshot: (...args: unknown[]) => unknown = undefined as unknown as (...args: unknown[]) => unknown;
+export const projectConfigOntoRuntimeSourceSnapshot: (...args: any[]) => unknown = undefined as unknown as (...args: any[]) => unknown;
 export type CircularIncludeError = unknown;
-export const CircularIncludeError: new (...args: unknown[]) => unknown = undefined as unknown as new (...args: unknown[]) => unknown;
+export const CircularIncludeError: new (...args: any[]) => unknown = undefined as unknown as new (...args: any[]) => unknown;
 export type ConfigIncludeError = unknown;
-export const ConfigIncludeError: new (...args: unknown[]) => unknown = undefined as unknown as new (...args: unknown[]) => unknown;
+export const ConfigIncludeError: new (...args: any[]) => unknown = undefined as unknown as new (...args: any[]) => unknown;
 export type MissingEnvVarError = unknown;
-export const MissingEnvVarError: new (...args: unknown[]) => unknown = undefined as unknown as new (...args: unknown[]) => unknown;
+export const MissingEnvVarError: new (...args: any[]) => unknown = undefined as unknown as new (...args: any[]) => unknown;
 export type resolveShellEnvExpectedKeys = unknown;
-export const resolveShellEnvExpectedKeys: (...args: unknown[]) => unknown = undefined as unknown as (...args: unknown[]) => unknown;
+export const resolveShellEnvExpectedKeys: (...args: any[]) => unknown = undefined as unknown as (...args: any[]) => unknown;

@@ -196,7 +196,7 @@ function createPendingErrorTimeoutSnapshot(snapshot: AgentRunSnapshot): AgentRun
 function createSnapshotFromLifecycleEvent(params: {
   runId: string;
   phase: "end" | "error";
-  data?: Record<string, unknown>;
+  data?: Record<string, any>;
 }): AgentRunSnapshot {
   const { runId, phase, data } = params;
   const startedAt =

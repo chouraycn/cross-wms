@@ -39,7 +39,7 @@ let lastAppliedProxyBootstrapKey: string | null = null;
 // ============================================================================
 
 /** proxyline dispatcher 品牌检测（降级：始终返回 false）。 */
-function isProxylineDispatcher(_dispatcher: unknown): boolean {
+function isProxylineDispatcher(_dispatcher: any): boolean {
   return false;
 }
 
@@ -149,7 +149,7 @@ const timedProxylineManagedDispatchers = new WeakMap<
   TimedProxylineManagedDispatcherState
 >();
 
-function isTimedProxylineManagedDispatcher(dispatcher: unknown): dispatcher is UndiciDispatcher {
+function isTimedProxylineManagedDispatcher(dispatcher: any): dispatcher is UndiciDispatcher {
   return typeof dispatcher === "object" && dispatcher !== null
     ? timedProxylineManagedDispatchers.has(dispatcher)
     : false;
@@ -210,7 +210,7 @@ function createTimedProxylineManagedDispatcher(
       if (UNDICI_DISPATCH_HELPER_METHODS.has(property)) {
         // Undici helper methods expect the dispatcher proxy as `this` so they
         // still route through our wrapped dispatch implementation.
-        return (...args: unknown[]) => Reflect.apply(value, receiver, args);
+        return (...args: any[]) => Reflect.apply(value, receiver, args);
       }
       return value;
     },
@@ -219,7 +219,7 @@ function createTimedProxylineManagedDispatcher(
   return proxy;
 }
 
-function resolveDispatcherKind(dispatcher: unknown): DispatcherKind {
+function resolveDispatcherKind(dispatcher: any): DispatcherKind {
   const ctorName = (dispatcher as { constructor?: { name?: string } })?.constructor?.name;
   if (typeof ctorName !== "string" || ctorName.length === 0) {
     return "unsupported";
@@ -265,7 +265,7 @@ function resolveEnvProxyDispatcherOptions(): ConstructorParameters<
 function resolveEnvProxyBootstrapKey(
   options: ConstructorParameters<UndiciGlobalDispatcherDeps["EnvHttpProxyAgent"]>[0],
 ): string {
-  const entries = Object.entries((options ?? {}) as Record<string, unknown>)
+  const entries = Object.entries((options ?? {}) as Record<string, any>)
     .filter(([, value]) => value !== undefined)
     .toSorted(([a], [b]) => a.localeCompare(b));
   return JSON.stringify(entries);
@@ -288,7 +288,7 @@ function resolveCurrentDispatcherKind(
 function resolveCurrentDispatcherInfo(
   runtime: Pick<UndiciGlobalDispatcherDeps, "getGlobalDispatcher">,
 ): CurrentDispatcherInfo | null {
-  let dispatcher: unknown;
+  let dispatcher: any;
   try {
     dispatcher = runtime.getGlobalDispatcher();
   } catch {

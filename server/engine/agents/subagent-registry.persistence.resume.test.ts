@@ -176,7 +176,7 @@ describe("subagent registry persistence resume", () => {
       });
 
       const raw = await fs.readFile(registryPath, "utf8");
-      const parsed = JSON.parse(raw) as { runs?: Record<string, unknown> };
+      const parsed = JSON.parse(raw) as { runs?: Record<string, any> };
       expect(parsed.runs && Object.keys(parsed.runs)).toContain("run-1");
       const run = parsed.runs?.["run-1"] as
         | {

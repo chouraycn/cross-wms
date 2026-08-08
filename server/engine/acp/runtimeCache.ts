@@ -207,10 +207,10 @@ export class RuntimeHandleCache {
   }
 
   async evictIdle(params: {
-    cfg: unknown;
+    cfg: any;
     maxIdleMs: number;
     actorQueue: { getTotalPendingCount(): number };
-    activeTurnBySession: Map<string, unknown>;
+    activeTurnBySession: Map<string, any>;
   }): Promise<void> {
     const candidates = this.cache.collectIdleCandidates({
       maxIdleMs: params.maxIdleMs,

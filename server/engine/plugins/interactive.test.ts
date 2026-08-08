@@ -218,7 +218,7 @@ function createSlackDispatchParams(params: {
 async function expectDedupedInteractiveDispatch(params: {
   baseParams: InteractiveDispatchParams;
   handler: ReturnType<typeof vi.fn>;
-  expectHandlerContext: (ctx: unknown) => void;
+  expectHandlerContext: (ctx: any) => void;
 }) {
   const first = await dispatchInteractive(params.baseParams);
   const duplicate = await dispatchInteractive(params.baseParams);
@@ -351,7 +351,7 @@ function registerInteractiveHandler(params: {
   });
 }
 
-function requireHandlerCall(handler: ReturnType<typeof vi.fn>, index = 0): unknown {
+function requireHandlerCall(handler: ReturnType<typeof vi.fn>, index = 0): any {
   const call = handler.mock.calls[index] as [unknown] | undefined;
   if (!call) {
     throw new Error(`handler call ${index} missing`);
@@ -486,7 +486,7 @@ describe("plugin interactive handlers", () => {
   });
 
   it("hydrates legacy interactive state shapes before clearing handlers", async () => {
-    const globalStore = globalThis as Record<PropertyKey, unknown>;
+    const globalStore = globalThis as Record<PropertyKey, any>;
     const stateKey = Symbol.for("openclaw.pluginInteractiveState");
     const originalState = globalStore[stateKey];
 
@@ -497,7 +497,7 @@ describe("plugin interactive handlers", () => {
     try {
       clearPluginInteractiveHandlers();
       const hydrated = globalStore[stateKey] as {
-        interactiveHandlers?: Map<string, unknown>;
+        interactiveHandlers?: Map<string, any>;
         callbackDedupe?: { clear: () => void };
         inflightCallbackDedupe?: Set<string>;
       };
@@ -551,7 +551,7 @@ describe("plugin interactive handlers", () => {
         data: "codex:resume:thread-1",
         callbackId: "cb-1",
       }),
-      expectHandlerContext: (ctx: unknown) => {
+      expectHandlerContext: (ctx: any) => {
         const telegramCtx = ctx as TelegramInteractiveHandlerContext;
         expect(telegramCtx.channel).toBe("telegram");
         expect(telegramCtx.conversationId).toBe("-10099:topic:77");
@@ -569,7 +569,7 @@ describe("plugin interactive handlers", () => {
         interactionId: "ix-1",
         interaction: { kind: "button", values: ["allow"] },
       }),
-      expectHandlerContext: (ctx: unknown) => {
+      expectHandlerContext: (ctx: any) => {
         const discordCtx = ctx as DiscordInteractiveHandlerContext;
         expect(discordCtx.channel).toBe("discord");
         expect(discordCtx.conversationId).toBe("channel-1");
@@ -587,7 +587,7 @@ describe("plugin interactive handlers", () => {
         interactionId: "slack-ix-1",
         interaction: { kind: "button" },
       }),
-      expectHandlerContext: (ctx: unknown) => {
+      expectHandlerContext: (ctx: any) => {
         const slackCtx = ctx as SlackInteractiveHandlerContext;
         expect(slackCtx.channel).toBe("slack");
         expect(slackCtx.conversationId).toBe("C123");

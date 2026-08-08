@@ -5,40 +5,40 @@ export type GetReplyFromConfigFn = unknown;
 
 export type RunBtwSideQuestionFn = unknown;
 
-export function getGatewayTestHoistedState(...args: unknown[]): unknown {
+export function getGatewayTestHoistedState(...args: any[]): any {
   return undefined;
 }
 
-export const testTailnetIPv4: unknown = undefined;
+export const testTailnetIPv4: any = undefined;
 
-export const testTailscaleWhois: unknown = undefined;
+export const testTailscaleWhois: any = undefined;
 
-export const agentDiscoveryMock: unknown = undefined;
+export const agentDiscoveryMock: any = undefined;
 
-export const cronIsolatedRun: unknown = undefined;
+export const cronIsolatedRun: any = undefined;
 
-export const agentCommand: unknown = undefined;
+export const agentCommand: any = undefined;
 
-export const runBtwSideQuestion: unknown = undefined;
+export const runBtwSideQuestion: any = undefined;
 
-export const dispatchInboundMessageMock: unknown = undefined;
+export const dispatchInboundMessageMock: any = undefined;
 
-export const getReplyFromConfig: unknown = undefined;
+export const getReplyFromConfig: any = undefined;
 
-export const mockGetReplyFromConfigOnce: unknown = undefined;
+export const mockGetReplyFromConfigOnce: any = undefined;
 
-export const sendWhatsAppMock: unknown = undefined;
+export const sendWhatsAppMock: any = undefined;
 
-export const testState: unknown = undefined;
+export const testState: any = undefined;
 
-export const testIsNixMode: unknown = undefined;
+export const testIsNixMode: any = undefined;
 
-export const sessionStoreSaveDelayMs: unknown = undefined;
+export const sessionStoreSaveDelayMs: any = undefined;
 
-export const embeddedRunMock: unknown = undefined;
+export const embeddedRunMock: any = undefined;
 
-export const testConfigRoot: unknown = undefined;
+export const testConfigRoot: any = undefined;
 
-export function setTestConfigRoot(...args: unknown[]): unknown {
+export function setTestConfigRoot(...args: any[]): any {
   return undefined;
 }

@@ -15,7 +15,7 @@ export function collectOption(value: string, previous: string[] = []): string[] 
 }
 
 /** Parse an optional positive integer, treating empty values as unset. */
-export function parsePositiveIntOrUndefined(value: unknown): number | undefined {
+export function parsePositiveIntOrUndefined(value: any): number | undefined {
   if (value === undefined || value === null || value === "") {
     return undefined;
   }
@@ -23,7 +23,7 @@ export function parsePositiveIntOrUndefined(value: unknown): number | undefined 
 }
 
 /** Parse a positive integer without treating empty values specially. */
-export function parseStrictPositiveIntOrUndefined(value: unknown): number | undefined {
+export function parseStrictPositiveIntOrUndefined(value: any): number | undefined {
   return parseStrictPositiveInteger(value);
 }
 
@@ -52,7 +52,7 @@ function isDefaultOptionValue(command: Command, name: string): boolean {
   return command.getOptionValueSource(name) === "default";
 }
 
-function appendOptionValue(out: string[], flag: string, value: unknown): void {
+function appendOptionValue(out: string[], flag: string, value: any): void {
   if (value === undefined) {
     return;
   }
@@ -72,7 +72,7 @@ function appendOptionValue(out: string[], flag: string, value: unknown): void {
   }
 }
 
-function stringifyOptionValue(value: unknown): string | undefined {
+function stringifyOptionValue(value: any): string | undefined {
   if (typeof value === "string") {
     return value;
   }

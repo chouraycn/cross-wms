@@ -78,7 +78,7 @@ router.post('/install', async (req, res) => {
     ensurePluginUploadsDir();
 
     // 使用自定义 multipart 解析器
-    const parsed = await parseMultipartFormData(req as unknown);
+    const parsed = await parseMultipartFormData(req as any);
     if (!parsed) {
       return res.status(400).json({ error: '未找到插件包文件或请求格式错误' });
     }
@@ -261,7 +261,7 @@ router.put('/:id/config', (req, res) => {
       return res.status(400).json({ error: 'config 参数必须是对象' });
     }
 
-    const updated = setPluginConfig(req.params.id, config as Record<string, unknown>);
+    const updated = setPluginConfig(req.params.id, config as Record<string, any>);
     if (!updated) {
       return res.status(500).json({ error: '更新插件配置失败' });
     }
@@ -281,7 +281,7 @@ router.post('/:id/config/reset', (req, res) => {
     }
 
     // 从 configSchema 中提取默认值
-    const defaultConfig: Record<string, unknown> = {};
+    const defaultConfig: Record<string, any> = {};
     try {
       const manifest = JSON.parse(plugin.manifest_json || '{}');
       const schema = manifest.configSchema;
@@ -477,7 +477,7 @@ router.put('/:id/config-v2', (req, res) => {
     if (typeof config !== 'object' || config === null) {
       return res.status(400).json({ error: 'config 必须是对象' });
     }
-    const updated = setPluginConfigJson(req.params.id, config as Record<string, unknown>);
+    const updated = setPluginConfigJson(req.params.id, config as Record<string, any>);
     if (!updated) {
       return res.status(500).json({ error: '更新插件配置失败' });
     }

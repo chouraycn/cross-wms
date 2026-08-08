@@ -2,6 +2,6 @@
 
 export type AuthProvidedKind = unknown;
 
-export function formatGatewayAuthFailureMessage(...args: unknown[]): unknown {
+export function formatGatewayAuthFailureMessage(...args: any[]): any {
   return "";
 }

@@ -140,7 +140,7 @@ export function createStabilityAIProvider(
       const timeoutMs = req.timeoutMs ?? defaultTimeoutMs;
       const baseUrl = resolveBaseUrl(req, defaultBaseUrl);
 
-      const stabilityOptions = req.providerOptions?.stability as Record<string, unknown> | undefined;
+      const stabilityOptions = req.providerOptions?.stability as Record<string, any> | undefined;
       const steps = stabilityOptions?.steps || defaultSteps;
       const cfgScale = stabilityOptions?.cfgScale || defaultCfgScale;
       const seed = stabilityOptions?.seed as number | undefined;
@@ -159,7 +159,7 @@ export function createStabilityAIProvider(
       const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
       try {
-        const body: Record<string, unknown> = {
+        const body: Record<string, any> = {
           text_prompts: [
             {
               text: req.prompt,
@@ -180,7 +180,7 @@ export function createStabilityAIProvider(
           body.style_preset = stylePreset;
         }
         if (negativePrompt) {
-          (body.text_prompts as Array<Record<string, unknown>>).push({
+          (body.text_prompts as Array<Record<string, any>>).push({
             text: negativePrompt,
             weight: -1,
           });

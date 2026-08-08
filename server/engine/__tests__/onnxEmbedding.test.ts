@@ -25,7 +25,7 @@ vi.mock('onnxruntime-node', () => {
    * Same input_ids always yield same output; different input_ids yield different output.
    */
   function createMockRun() {
-    return vi.fn().mockImplementation(async (feeds: Record<string, unknown>) => {
+    return vi.fn().mockImplementation(async (feeds: Record<string, any>) => {
       const feedValues = Object.values(feeds) as Array<{
         data: BigInt64Array;
         dims: number[];
@@ -75,9 +75,9 @@ vi.mock('onnxruntime-node', () => {
     },
     Tensor: class MockTensor {
       type: string;
-      data: unknown;
+      data: any;
       dims: number[];
-      constructor(type: string, data: unknown, dims: number[]) {
+      constructor(type: string, data: any, dims: number[]) {
         this.type = type;
         this.data = data;
         this.dims = dims;

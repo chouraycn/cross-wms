@@ -9,7 +9,7 @@ import { createPluginRecord } from "../plugins/status.test-helpers.js";
 import { MAX_TIMER_TIMEOUT_MS } from "../shared/number-coercion.js";
 import type { HealthSummary } from "./health.js";
 
-let testConfig: Record<string, unknown> = {};
+let testConfig: Record<string, any> = {};
 let testStore: Record<string, { updatedAt?: number }> = {};
 let listHealthSessionEntriesCalls: Array<{ agentId?: string; storePath?: string }> = [];
 let healthPluginsForTest: HealthTestPlugin[] = [];
@@ -20,7 +20,7 @@ let createTestRegistry: typeof import("../test-utils/channel-plugins.js").create
 let getHealthSnapshot: typeof import("./health.js").getHealthSnapshot;
 let buildTelegramHealthSummaryForTest = buildTelegramHealthSummary;
 let probeTelegramAccountForTestOverride:
-  | ((account: TelegramHealthAccount, timeoutMs: number) => Promise<Record<string, unknown>>)
+  | ((account: TelegramHealthAccount, timeoutMs: number) => Promise<Record<string, any>>)
   | undefined;
 
 type HealthTestPlugin = Pick<ChannelPlugin, "id" | "meta" | "capabilities" | "config" | "status">;
@@ -31,7 +31,7 @@ type TelegramHealthAccount = {
   configured: boolean;
   config: {
     proxy?: string;
-    network?: Record<string, unknown>;
+    network?: Record<string, any>;
     apiRoot?: string;
   };
 };
@@ -102,14 +102,14 @@ async function loadFreshHealthModulesForTest() {
   };
 }
 
-function getTelegramChannelConfig(cfg: Record<string, unknown>) {
-  const channels = cfg.channels as Record<string, unknown> | undefined;
-  return (channels?.telegram as Record<string, unknown> | undefined) ?? {};
+function getTelegramChannelConfig(cfg: Record<string, any>) {
+  const channels = cfg.channels as Record<string, any> | undefined;
+  return (channels?.telegram as Record<string, any> | undefined) ?? {};
 }
 
-function listTelegramAccountIdsForTest(cfg: Record<string, unknown>): string[] {
+function listTelegramAccountIdsForTest(cfg: Record<string, any>): string[] {
   const telegram = getTelegramChannelConfig(cfg);
-  const accounts = telegram.accounts as Record<string, unknown> | undefined;
+  const accounts = telegram.accounts as Record<string, any> | undefined;
   const ids: string[] = [];
   for (const accountId of Object.keys(accounts ?? {})) {
     if (accountId) {
@@ -119,7 +119,7 @@ function listTelegramAccountIdsForTest(cfg: Record<string, unknown>): string[] {
   return ids.length > 0 ? ids : ["default"];
 }
 
-function readTokenFromFile(tokenFile: unknown): string {
+function readTokenFromFile(tokenFile: any): string {
   if (typeof tokenFile !== "string" || !tokenFile.trim()) {
     return "";
   }
@@ -131,14 +131,14 @@ function readTokenFromFile(tokenFile: unknown): string {
 }
 
 function resolveTelegramAccountForTest(params: {
-  cfg: Record<string, unknown>;
+  cfg: Record<string, any>;
   accountId?: string | null;
 }): TelegramHealthAccount {
   const telegram = getTelegramChannelConfig(params.cfg);
-  const accounts = (telegram.accounts as Record<string, Record<string, unknown>> | undefined) ?? {};
+  const accounts = (telegram.accounts as Record<string, Record<string, any>> | undefined) ?? {};
   const accountId = params.accountId?.trim() || "default";
   const channelConfig = { ...telegram };
-  delete (channelConfig as { accounts?: unknown }).accounts;
+  delete (channelConfig as { accounts?: any }).accounts;
   const merged = {
     ...channelConfig,
     ...accounts[accountId],
@@ -158,7 +158,7 @@ function resolveTelegramAccountForTest(params: {
         ? { proxy: merged.proxy.trim() }
         : {}),
       ...(merged.network && typeof merged.network === "object" && !Array.isArray(merged.network)
-        ? { network: merged.network as Record<string, unknown> }
+        ? { network: merged.network as Record<string, any> }
         : {}),
       ...(typeof merged.apiRoot === "string" && merged.apiRoot.trim()
         ? { apiRoot: merged.apiRoot.trim() }
@@ -170,12 +170,12 @@ function resolveTelegramAccountForTest(params: {
 function buildTelegramHealthSummary(snapshot: {
   accountId: string;
   configured?: boolean;
-  probe?: unknown;
+  probe?: any;
   lastProbeAt?: number | null;
 }) {
   const probeRecord =
     snapshot.probe && typeof snapshot.probe === "object"
-      ? (snapshot.probe as Record<string, unknown>)
+      ? (snapshot.probe as Record<string, any>)
       : null;
   return {
     accountId: snapshot.accountId,
@@ -188,7 +188,7 @@ function buildTelegramHealthSummary(snapshot: {
 async function probeTelegramAccountForTest(
   account: TelegramHealthAccount,
   timeoutMs: number,
-): Promise<Record<string, unknown>> {
+): Promise<Record<string, any>> {
   const started = Date.now();
   const apiRoot = account.config.apiRoot?.trim()?.replace(/\/+$/, "") || "https://api.telegram.org";
   const base = `${apiRoot}/bot${account.token}`;
@@ -287,7 +287,7 @@ function stubTelegramFetchOk(calls: string[]) {
 }
 
 async function runSuccessfulTelegramProbe(
-  config: Record<string, unknown>,
+  config: Record<string, any>,
   options?: { clearTokenEnv?: boolean },
 ) {
   testConfig = config;
@@ -317,11 +317,11 @@ function createTelegramHealthPlugin(): HealthTestPlugin {
   return {
     ...createChannelTestPluginBase({ id: "telegram", label: "Telegram" }),
     config: {
-      listAccountIds: (cfg) => listTelegramAccountIdsForTest(cfg as Record<string, unknown>),
+      listAccountIds: (cfg) => listTelegramAccountIdsForTest(cfg as Record<string, any>),
       resolveAccount: (cfg, accountId) =>
-        resolveTelegramAccountForTest({ cfg: cfg as Record<string, unknown>, accountId }),
+        resolveTelegramAccountForTest({ cfg: cfg as Record<string, any>, accountId }),
       inspectAccount: (cfg, accountId) =>
-        resolveTelegramAccountForTest({ cfg: cfg as Record<string, unknown>, accountId }),
+        resolveTelegramAccountForTest({ cfg: cfg as Record<string, any>, accountId }),
       isConfigured: (account) => Boolean((account as TelegramHealthAccount).token.trim()),
     },
     status: {
@@ -336,11 +336,11 @@ function createTelegramHealthPlugin(): HealthTestPlugin {
 }
 
 function resolveDiscordHealthAccountForTest(params: {
-  cfg: Record<string, unknown>;
+  cfg: Record<string, any>;
   accountId?: string | null;
 }): DiscordHealthAccount {
-  const channels = params.cfg.channels as Record<string, unknown> | undefined;
-  const discord = (channels?.discord as Record<string, unknown> | undefined) ?? {};
+  const channels = params.cfg.channels as Record<string, any> | undefined;
+  const discord = (channels?.discord as Record<string, any> | undefined) ?? {};
   const accountId = params.accountId?.trim() || "default";
   const token = typeof discord.token === "string" ? discord.token.trim() : "";
   return {
@@ -354,11 +354,11 @@ function resolveDiscordHealthAccountForTest(params: {
 }
 
 function inspectDiscordHealthAccountForTest(params: {
-  cfg: Record<string, unknown>;
+  cfg: Record<string, any>;
   accountId?: string | null;
 }): DiscordHealthAccount {
-  const channels = params.cfg.channels as Record<string, unknown> | undefined;
-  const discord = (channels?.discord as Record<string, unknown> | undefined) ?? {};
+  const channels = params.cfg.channels as Record<string, any> | undefined;
+  const discord = (channels?.discord as Record<string, any> | undefined) ?? {};
   const accountId = params.accountId?.trim() || "default";
   const token = typeof discord.token === "string" ? discord.token.trim() : "";
   const tokenStatus =
@@ -384,12 +384,12 @@ function createDiscordHealthPlugin(): HealthTestPlugin {
       listAccountIds: () => ["default"],
       resolveAccount: (cfg, accountId) =>
         resolveDiscordHealthAccountForTest({
-          cfg: cfg as Record<string, unknown>,
+          cfg: cfg as Record<string, any>,
           accountId,
         }),
       inspectAccount: (cfg, accountId) =>
         inspectDiscordHealthAccountForTest({
-          cfg: cfg as Record<string, unknown>,
+          cfg: cfg as Record<string, any>,
           accountId,
         }),
       isEnabled: (account) => (account as DiscordHealthAccount).enabled,
@@ -568,7 +568,7 @@ describe("getHealthSnapshot", () => {
     expect(snap.ok).toBe(true);
     const telegram = snap.channels.telegram as {
       configured?: boolean;
-      probe?: unknown;
+      probe?: any;
     };
     expect(telegram.configured).toBe(false);
     expect(telegram.probe).toBeUndefined();
@@ -786,7 +786,7 @@ describe("getHealthSnapshot", () => {
     const telegram = snap.channels.telegram as {
       connected?: boolean;
       lastConnectedAt?: number;
-      probe?: unknown;
+      probe?: any;
       channelAccessToken?: string;
       channelSecret?: string;
       webhookUrl?: string;
@@ -795,7 +795,7 @@ describe("getHealthSnapshot", () => {
         {
           connected?: boolean;
           lastConnectedAt?: number;
-          probe?: unknown;
+          probe?: any;
           channelAccessToken?: string;
           channelSecret?: string;
           webhookUrl?: string;
@@ -828,7 +828,7 @@ describe("getHealthSnapshot", () => {
       probe?: {
         ok?: boolean;
         error?: string;
-        privateApi?: unknown;
+        privateApi?: any;
       };
       accounts?: Record<
         string,
@@ -836,7 +836,7 @@ describe("getHealthSnapshot", () => {
           probe?: {
             ok?: boolean;
             error?: string;
-            privateApi?: unknown;
+            privateApi?: any;
           };
         }
       >;
@@ -874,8 +874,8 @@ describe("getHealthSnapshot", () => {
     });
     const telegram = snap.channels.telegram as {
       configured?: boolean;
-      probe?: unknown;
-      accounts?: Record<string, { probe?: unknown }>;
+      probe?: any;
+      accounts?: Record<string, { probe?: any }>;
     };
 
     expect(telegram.configured).toBe(true);

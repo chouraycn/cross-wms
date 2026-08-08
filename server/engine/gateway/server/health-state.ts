@@ -30,7 +30,7 @@ export function buildGatewaySnapshot(opts?: { includeSensitive?: boolean }): Sna
   const uptimeMs = Math.round(process.uptime() * 1000);
   const updateAvailable = getUpdateAvailable() ?? undefined;
   // Health is async; caller should await getHealthSnapshot and replace later if needed.
-  const emptyHealth: unknown = {};
+  const emptyHealth: any = {};
   const snapshot: Snapshot = {
     presence,
     health: emptyHealth,

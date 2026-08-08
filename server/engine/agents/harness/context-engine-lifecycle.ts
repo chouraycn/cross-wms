@@ -80,7 +80,7 @@ export async function bootstrapHarnessContextEngine(params: {
   sessionId: string;
   sessionKey?: string;
   sessionFile: string;
-  sessionManager?: unknown;
+  sessionManager?: any;
   runtimeContext?: ContextEngineRuntimeContext;
   runtimeSettings?: ContextEngineRuntimeSettings;
   contextEngineHostSupport?: ContextEngineHostSupport;
@@ -181,13 +181,13 @@ export async function assembleHarnessContextEngine(params: {
  * log the offending engine id and fall back to the unmodified pipeline
  * messages instead of poisoning session state.
  */
-function ensureAssembleResultShape(result: unknown, engineId: string): AssembleResult {
+function ensureAssembleResultShape(result: any, engineId: string): AssembleResult {
   if (!result || typeof result !== "object") {
     throw new Error(
       `context engine "${engineId}" assemble() returned an invalid result: expected an object with a "messages" array (got ${describeAssembleResultType(result)})`,
     );
   }
-  const candidate = result as { messages?: unknown };
+  const candidate = result as { messages?: any };
   if (!Array.isArray(candidate.messages)) {
     throw new Error(
       `context engine "${engineId}" assemble() returned an invalid result: expected an object with a "messages" array (got messages of type ${describeAssembleResultType(candidate.messages)})`,
@@ -196,7 +196,7 @@ function ensureAssembleResultShape(result: unknown, engineId: string): AssembleR
   return result as AssembleResult;
 }
 
-function describeAssembleResultType(value: unknown): string {
+function describeAssembleResultType(value: any): string {
   if (value === null) {
     return "null";
   }
@@ -232,7 +232,7 @@ export async function finalizeHarnessContextEngineTurn(params: {
   fallbackReason?: string | null;
   degradedReason?: string | null;
   runMaintenance?: typeof runHarnessContextEngineMaintenance;
-  sessionManager?: unknown;
+  sessionManager?: any;
   config?: SessionWriteLockAcquireTimeoutConfig;
   warn: (message: string) => void;
   /** True when this turn belongs to a heartbeat run. */
@@ -366,7 +366,7 @@ export async function runHarnessContextEngineMaintenance(params: {
   sessionKey?: string;
   sessionFile: string;
   reason: "bootstrap" | "compaction" | "turn";
-  sessionManager?: unknown;
+  sessionManager?: any;
   runtimeContext?: ContextEngineRuntimeContext;
   runtimeSettings?: ContextEngineRuntimeSettings;
   contextEngineHostSupport?: ContextEngineHostSupport;

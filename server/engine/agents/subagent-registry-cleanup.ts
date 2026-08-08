@@ -8,12 +8,12 @@
  */
 
 /** Resolve the cleanup completion reason (returns "keep" in cross-wms). */
-export function resolveCleanupCompletionReason(..._args: unknown[]): "keep" {
+export function resolveCleanupCompletionReason(..._args: any[]): "keep" {
   return "keep";
 }
 
 /** Resolve deferred cleanup decision (returns no-cleanup in cross-wms). */
-export function resolveDeferredCleanupDecision(..._args: unknown[]): {
+export function resolveDeferredCleanupDecision(..._args: any[]): {
   shouldCleanup: false;
 } {
   return { shouldCleanup: false };

@@ -20,7 +20,7 @@ export function resolveLocalModelLeanPreserveToolNames(params?: {
 
 /** Returns true when local-model lean mode is enabled for the selected agent. */
 export function isLocalModelLeanEnabled(params: {
-  config?: unknown;
+  config?: any;
   agentId?: string;
   sessionKey?: string;
 }): boolean {
@@ -40,7 +40,7 @@ export function isLocalModelLeanEnabled(params: {
 /** Filters tools for local-model lean mode while preserving required delivery tools. */
 export function filterLocalModelLeanTools(params: {
   tools: Array<{ name: string }>;
-  config?: unknown;
+  config?: any;
   agentId?: string;
   sessionKey?: string;
   preserveToolNames?: Iterable<string>;
@@ -59,15 +59,15 @@ export function filterLocalModelLeanTools(params: {
 
 /** Apply local-model lean tool search defaults. */
 export function applyLocalModelLeanToolSearchDefaults(params: {
-  config?: unknown;
+  config?: any;
   agentId?: string;
   sessionKey?: string;
-}): unknown | undefined {
+}): any | undefined {
   if (!params.config || !isLocalModelLeanEnabled(params)) {
     return params.config;
   }
-  const cfg = params.config as Record<string, unknown>;
-  const tools = cfg.tools as Record<string, unknown> | undefined;
+  const cfg = params.config as Record<string, any>;
+  const tools = cfg.tools as Record<string, any> | undefined;
   if (tools?.toolSearch !== undefined) {
     return params.config;
   }

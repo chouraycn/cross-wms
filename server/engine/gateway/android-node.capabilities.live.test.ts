@@ -27,43 +27,43 @@ const SKIPPED_INTERACTIVE_COMMANDS = new Set<string>();
 type CommandOutcome = "success" | "error";
 
 type CommandContext = {
-  notifications: Array<Record<string, unknown>>;
+  notifications: Array<Record<string, any>>;
 };
 
 type CommandProfile = {
-  buildParams: (ctx: CommandContext) => Record<string, unknown>;
+  buildParams: (ctx: CommandContext) => Record<string, any>;
   timeoutMs?: number;
   outcome: CommandOutcome;
   allowedErrorCodes?: string[];
-  onSuccess?: (payload: unknown, ctx: CommandContext) => void;
+  onSuccess?: (payload: any, ctx: CommandContext) => void;
 };
 
 type CommandResult = {
   command: string;
   ok: boolean;
-  payload?: unknown;
+  payload?: any;
   errorCode?: string;
   errorMessage?: string;
   durationMs: number;
 };
 
-function asRecord(value: unknown): Record<string, unknown> {
-  return typeof value === "object" && value !== null ? (value as Record<string, unknown>) : {};
+function asRecord(value: any): Record<string, any> {
+  return typeof value === "object" && value !== null ? (value as Record<string, any>) : {};
 }
 
-function expectRecord(value: unknown, label: string): Record<string, unknown> {
+function expectRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object") {
     throw new Error(`expected ${label}`);
   }
   expect(Array.isArray(value), label).toBe(false);
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function readString(value: unknown): string | null {
+function readString(value: any): string | null {
   return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
 }
 
-function expectNonEmptyString(value: unknown, label: string): string {
+function expectNonEmptyString(value: any, label: string): string {
   const text = readString(value);
   if (text === null) {
     throw new Error(`expected ${label}`);
@@ -71,7 +71,7 @@ function expectNonEmptyString(value: unknown, label: string): string {
   return text;
 }
 
-function readStringArray(value: unknown): string[] {
+function readStringArray(value: any): string[] {
   if (!Array.isArray(value)) {
     return [];
   }
@@ -90,7 +90,7 @@ function parseErrorCode(message: string): string {
   return "UNKNOWN";
 }
 
-function readGatewayErrorCode(err: unknown, fallbackMessage: string): string {
+function readGatewayErrorCode(err: any, fallbackMessage: string): string {
   const byField = readString(asRecord(err).gatewayCode);
   if (byField) {
     return byField;
@@ -98,7 +98,7 @@ function readGatewayErrorCode(err: unknown, fallbackMessage: string): string {
   return parseErrorCode(fallbackMessage);
 }
 
-function assertObjectPayload(command: string, payload: unknown): Record<string, unknown> {
+function assertObjectPayload(command: string, payload: any): Record<string, any> {
   const obj = asRecord(payload);
   expect(Object.keys(obj).length, `${command} payload must be a JSON object`).toBeGreaterThan(0);
   return obj;

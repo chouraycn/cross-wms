@@ -80,10 +80,10 @@ function mcpServerRead(row: McpServerRow): McpServerRead {
 interface ConnectionInput {
   transport?: string;
   url?: string | null;
-  headers?: Record<string, unknown>;
+  headers?: Record<string, any>;
   command?: string | null;
   args?: string[];
-  env?: Record<string, unknown>;
+  env?: Record<string, any>;
   cwd?: string | null;
 }
 
@@ -161,7 +161,7 @@ router.post('/discover', (_req: Request, res: Response) => {
       return;
     }
     const raw = JSON.parse(fs.readFileSync(GLOBAL_MCP_CONFIG, 'utf-8')) as {
-      mcpServers?: Record<string, Record<string, unknown>>;
+      mcpServers?: Record<string, Record<string, any>>;
     };
     const entries = raw.mcpServers ?? {};
     const servers = Object.entries(entries).map(([name, cfg]) => {
@@ -179,7 +179,7 @@ router.post('/discover', (_req: Request, res: Response) => {
         url: url ?? null,
         command: command ?? null,
         args: (cfg.args as string[]) ?? [],
-        headers: (cfg.headers as Record<string, unknown>) ?? {},
+        headers: (cfg.headers as Record<string, any>) ?? {},
         description: `从全局配置导入的 MCP 服务器：${name}`,
       };
     });
@@ -282,7 +282,7 @@ function toConnectionConfig(row: McpServerRow): McpConnectionConfig {
 
 function leafNameFromConfig(configJson: string | null): string {
   try {
-    return String((JSON.parse(configJson || '{}') as Record<string, unknown>).tool || '');
+    return String((JSON.parse(configJson || '{}') as Record<string, any>).tool || '');
   } catch {
     return '';
   }

@@ -33,9 +33,9 @@ const sendFailureNotificationAnnounceMock = vi.hoisted(() => vi.fn(async () => u
 const closeTrackedBrowserTabsForSessionsMock = vi.hoisted(() => vi.fn(async () => 0));
 
 vi.mock("../infra/net/fetch-guard.js", () => ({
-  fetchWithSsrFGuard: (...args: unknown[]) =>
+  fetchWithSsrFGuard: (...args: any[]) =>
     (
-      fetchWithSsrFGuardMock as unknown as (...innerArgs: unknown[]) => Promise<{
+      fetchWithSsrFGuardMock as unknown as (...innerArgs: any[]) => Promise<{
         response: Response;
         finalUrl: string;
         release: () => Promise<void>;
@@ -47,9 +47,9 @@ vi.mock("../cron/delivery.js", async () => {
   const actual = await vi.importActual<typeof import("../cron/delivery.js")>("../cron/delivery.js");
   return {
     ...actual,
-    sendFailureNotificationAnnounce: (...args: unknown[]) =>
+    sendFailureNotificationAnnounce: (...args: any[]) =>
       (
-        sendFailureNotificationAnnounceMock as unknown as (...innerArgs: unknown[]) => Promise<void>
+        sendFailureNotificationAnnounceMock as unknown as (...innerArgs: any[]) => Promise<void>
       )(...args),
   };
 });
@@ -80,7 +80,7 @@ async function rmTempDir(dir: string) {
       await fs.rm(dir, { recursive: true, force: true });
       return;
     } catch (err) {
-      const code = (err as { code?: unknown } | null)?.code;
+      const code = (err as { code?: any } | null)?.code;
       if (code === "ENOTEMPTY" || code === "EBUSY" || code === "EPERM" || code === "EACCES") {
         await yieldToEventLoop();
         continue;
@@ -93,7 +93,7 @@ async function rmTempDir(dir: string) {
 
 async function waitForCronEvent(
   ws: WebSocket,
-  check: (payload: Record<string, unknown> | null) => boolean,
+  check: (payload: Record<string, any> | null) => boolean,
   timeoutMs = CRON_WAIT_TIMEOUT_MS,
 ) {
   const message = await onceMessage(
@@ -144,7 +144,7 @@ async function setupCronTestRun(params: {
   tempPrefix: string;
   cronEnabled?: boolean;
   sessionConfig?: { mainKey: string };
-  jobs?: unknown[];
+  jobs?: any[];
 }): Promise<{ prevSkipCron: string | undefined; dir: string }> {
   const prevSkipCron = process.env.OPENCLAW_SKIP_CRON;
   process.env.OPENCLAW_SKIP_CRON = "0";
@@ -167,7 +167,7 @@ type DirectCronState = GatewayCronState & {
   getRuntimeConfig: () => import("../config/types.openclaw.js").OpenClawConfig;
 };
 
-type CronBroadcast = (event: string, payload: unknown) => void;
+type CronBroadcast = (event: string, payload: any) => void;
 
 async function createDirectCronState(params?: {
   broadcast?: CronBroadcast;
@@ -188,14 +188,14 @@ async function createDirectCronState(params?: {
 }
 
 function createCronEventCollector() {
-  const events: Record<string, unknown>[] = [];
+  const events: Record<string, any>[] = [];
   const waiters: Array<{
-    check: (payload: Record<string, unknown>) => boolean;
-    resolve: (payload: Record<string, unknown>) => void;
+    check: (payload: Record<string, any>) => boolean;
+    resolve: (payload: Record<string, any>) => void;
     reject: (error: Error) => void;
     timer: ReturnType<typeof setTimeout>;
   }> = [];
-  const flush = (payload: Record<string, unknown>) => {
+  const flush = (payload: Record<string, any>) => {
     for (let index = waiters.length - 1; index >= 0; index -= 1) {
       const waiter = waiters[index];
       if (!waiter) {
@@ -210,20 +210,20 @@ function createCronEventCollector() {
     }
   };
   return {
-    broadcast(event: string, payload: unknown) {
+    broadcast(event: string, payload: any) {
       if (event !== "cron" || !payload || typeof payload !== "object" || Array.isArray(payload)) {
         return;
       }
-      const record = payload as Record<string, unknown>;
+      const record = payload as Record<string, any>;
       events.push(record);
       flush(record);
     },
-    wait(check: (payload: Record<string, unknown>) => boolean, timeoutMs = CRON_WAIT_TIMEOUT_MS) {
+    wait(check: (payload: Record<string, any>) => boolean, timeoutMs = CRON_WAIT_TIMEOUT_MS) {
       const existing = events.find(check);
       if (existing) {
         return Promise.resolve(existing);
       }
-      return new Promise<Record<string, unknown>>((resolve, reject) => {
+      return new Promise<Record<string, any>>((resolve, reject) => {
         const waiter = {
           check,
           resolve,
@@ -242,13 +242,13 @@ function createCronEventCollector() {
 async function directCronReq(
   cronState: DirectCronState,
   method: string,
-  params: Record<string, unknown>,
-): Promise<{ ok: boolean; payload?: unknown; error?: { code?: string; message?: string } }> {
+  params: Record<string, any>,
+): Promise<{ ok: boolean; payload?: any; error?: { code?: string; message?: string } }> {
   const { cronHandlers } = await import("./server-methods/cron.js");
   let result:
-    | { ok: boolean; payload?: unknown; error?: { code?: string; message?: string } }
+    | { ok: boolean; payload?: any; error?: { code?: string; message?: string } }
     | undefined;
-  const respond = (ok: boolean, payload?: unknown, error?: { code?: string; message?: string }) => {
+  const respond = (ok: boolean, payload?: any, error?: { code?: string; message?: string }) => {
     result = {
       ok,
       payload,
@@ -285,9 +285,9 @@ async function directCronReq(
   return result;
 }
 
-function expectCronJobIdFromResponse(response: { ok?: unknown; payload?: unknown }) {
-  expect(response.ok, JSON.stringify((response as { error?: unknown }).error ?? null)).toBe(true);
-  const value = (response.payload as { id?: unknown } | null)?.id;
+function expectCronJobIdFromResponse(response: { ok?: any; payload?: any }) {
+  expect(response.ok, JSON.stringify((response as { error?: any }).error ?? null)).toBe(true);
+  const value = (response.payload as { id?: any } | null)?.id;
   const id = typeof value === "string" ? value : "";
   expect(id.length > 0).toBe(true);
   return id;
@@ -314,7 +314,7 @@ async function addWebhookCronJob(params: {
   name: string;
   sessionTarget?: "main" | "isolated";
   payloadText?: string;
-  delivery: Record<string, unknown>;
+  delivery: Record<string, any>;
 }) {
   const response = await rpcReq(params.ws, "cron.add", {
     name: params.name,
@@ -333,7 +333,7 @@ async function addWebhookCronJob(params: {
   return expectCronJobIdFromResponse(response);
 }
 
-async function writeCronConfig(config: unknown) {
+async function writeCronConfig(config: any) {
   const configPath = process.env.OPENCLAW_CONFIG_PATH;
   expect(typeof configPath).toBe("string");
   await fs.mkdir(path.dirname(configPath as string), { recursive: true });
@@ -348,16 +348,16 @@ async function runCronJobForce(ws: WebSocket, id: string) {
   return response;
 }
 
-function expectEnqueuedRunPayload(payload: unknown): string {
-  const record = payload as { ok?: unknown; enqueued?: unknown; runId?: unknown } | null;
+function expectEnqueuedRunPayload(payload: any): string {
+  const record = payload as { ok?: any; enqueued?: any; runId?: any } | null;
   expect(record?.ok).toBe(true);
   expect(record?.enqueued).toBe(true);
   expect(typeof record?.runId).toBe("string");
   return record?.runId as string;
 }
 
-function expectRecordFields(actual: unknown, expected: Record<string, unknown>): void {
-  const record = actual as Record<string, unknown> | null;
+function expectRecordFields(actual: any, expected: Record<string, any>): void {
+  const record = actual as Record<string, any> | null;
   for (const [key, value] of Object.entries(expected)) {
     expect(record?.[key], key).toEqual(value);
   }
@@ -409,7 +409,7 @@ function getWebhookCall(index: number) {
   ];
   const url = args.url ?? "";
   const init = args.init ?? {};
-  const body = JSON.parse(init.body ?? "{}") as Record<string, unknown>;
+  const body = JSON.parse(init.body ?? "{}") as Record<string, any>;
   return { url, init, body };
 }
 
@@ -459,24 +459,24 @@ describe("gateway server cron", () => {
         delivery: { mode: "webhook", to: "https://example.invalid/cron-finished" },
       });
       expect(addRes.ok).toBe(true);
-      const dailyJobId = (addRes.payload as { id?: unknown } | null)?.id;
+      const dailyJobId = (addRes.payload as { id?: any } | null)?.id;
       expect(typeof dailyJobId).toBe("string");
 
       const listRes = await directCronReq(cronState, "cron.list", {
         includeDisabled: true,
       });
       expect(listRes.ok).toBe(true);
-      const jobs = (listRes.payload as { jobs?: unknown } | null)?.jobs;
+      const jobs = (listRes.payload as { jobs?: any } | null)?.jobs;
       expect(Array.isArray(jobs)).toBe(true);
-      expect((jobs as unknown[]).length).toBe(1);
-      expect(((jobs as Array<{ name?: unknown }>)[0]?.name as string) ?? "").toBe("daily");
+      expect((jobs as any[]).length).toBe(1);
+      expect(((jobs as Array<{ name?: any }>)[0]?.name as string) ?? "").toBe("daily");
       expect(
-        ((jobs as Array<{ delivery?: { mode?: unknown } }>)[0]?.delivery?.mode as string) ?? "",
+        ((jobs as Array<{ delivery?: { mode?: any } }>)[0]?.delivery?.mode as string) ?? "",
       ).toBe("webhook");
       expect(
         (
           listRes.payload as {
-            deliveryPreviews?: Record<string, { label?: unknown; detail?: unknown }>;
+            deliveryPreviews?: Record<string, { label?: any; detail?: any }>;
           } | null
         )?.deliveryPreviews?.[String(dailyJobId)],
       ).toEqual({
@@ -490,7 +490,7 @@ describe("gateway server cron", () => {
       });
       expect(compactListRes.ok).toBe(true);
       const compactJobs = (
-        compactListRes.payload as { jobs?: Array<Record<string, unknown>> } | null
+        compactListRes.payload as { jobs?: Array<Record<string, any>> } | null
       )?.jobs;
       expect(compactJobs).toHaveLength(1);
       expect(compactJobs?.[0]).toMatchObject({
@@ -504,13 +504,13 @@ describe("gateway server cron", () => {
         ["enabled", "id", "lastRunStatus", "name", "nextRunAtMs", "scheduleKind"].toSorted(),
       );
       expect(
-        (compactListRes.payload as { deliveryPreviews?: unknown } | null)?.deliveryPreviews,
+        (compactListRes.payload as { deliveryPreviews?: any } | null)?.deliveryPreviews,
       ).toBeUndefined();
 
       const getRes = await directCronReq(cronState, "cron.get", { id: String(dailyJobId) });
       expect(getRes.ok).toBe(true);
-      expect((getRes.payload as { id?: unknown } | null)?.id).toBe(dailyJobId);
-      expect((getRes.payload as { name?: unknown } | null)?.name).toBe("daily");
+      expect((getRes.payload as { id?: any } | null)?.id).toBe(dailyJobId);
+      expect((getRes.payload as { name?: any } | null)?.name).toBe("daily");
 
       const missingGetRes = await directCronReq(cronState, "cron.get", { id: "missing-job-id" });
       expect(missingGetRes.ok).toBe(false);
@@ -545,7 +545,7 @@ describe("gateway server cron", () => {
         payload: { kind: "systemEvent", text: "cron route check" },
       });
       expect(routeRes.ok).toBe(true);
-      const routeJobIdValue = (routeRes.payload as { id?: unknown } | null)?.id;
+      const routeJobIdValue = (routeRes.payload as { id?: any } | null)?.id;
       const routeJobId = typeof routeJobIdValue === "string" ? routeJobIdValue : "";
       expect(routeJobId.length > 0).toBe(true);
 
@@ -627,11 +627,11 @@ describe("gateway server cron", () => {
 
       const listRes = await directCronReq(cronState, "cron.list", { includeDisabled: true });
       expect(listRes.ok).toBe(true);
-      const listedJobs = (listRes.payload as { jobs?: Array<Record<string, unknown>> } | null)
+      const listedJobs = (listRes.payload as { jobs?: Array<Record<string, any>> } | null)
         ?.jobs;
       expect(listedJobs?.map((job) => job.id)).toEqual([newJobId]);
 
-      const legacyStore = JSON.parse(await fs.readFile(storePath as string, "utf-8")) as unknown;
+      const legacyStore = JSON.parse(await fs.readFile(storePath as string, "utf-8")) as any;
       expect(Array.isArray(legacyStore)).toBe(true);
     } finally {
       await cleanupCronTestRun({ cronState, prevSkipCron });
@@ -663,7 +663,7 @@ describe("gateway server cron", () => {
       });
       expect(updateRes.ok).toBe(true);
       const updated = updateRes.payload as
-        | { schedule?: { kind?: unknown }; payload?: { kind?: unknown } }
+        | { schedule?: { kind?: any }; payload?: { kind?: any } }
         | undefined;
       expect(updated?.schedule?.kind).toBe("at");
       expect(updated?.payload?.kind).toBe("systemEvent");
@@ -677,7 +677,7 @@ describe("gateway server cron", () => {
         payload: { kind: "agentTurn", message: "hello", model: "opus" },
       });
       expect(mergeRes.ok).toBe(true);
-      const mergeJobIdValue = (mergeRes.payload as { id?: unknown } | null)?.id;
+      const mergeJobIdValue = (mergeRes.payload as { id?: any } | null)?.id;
       const mergeJobId = typeof mergeJobIdValue === "string" ? mergeJobIdValue : "";
       expect(mergeJobId.length > 0).toBe(true);
 
@@ -693,8 +693,8 @@ describe("gateway server cron", () => {
       const noTimeoutPayload = noTimeoutRes.payload as
         | {
             payload?: {
-              kind?: unknown;
-              timeoutSeconds?: unknown;
+              kind?: any;
+              timeoutSeconds?: any;
             };
           }
         | undefined;
@@ -710,8 +710,8 @@ describe("gateway server cron", () => {
       expect(mergeUpdateRes.ok).toBe(true);
       const merged = mergeUpdateRes.payload as
         | {
-            payload?: { kind?: unknown; message?: unknown; model?: unknown };
-            delivery?: { mode?: unknown; channel?: unknown; to?: unknown };
+            payload?: { kind?: any; message?: any; model?: any };
+            delivery?: { mode?: any; channel?: any; to?: any };
           }
         | undefined;
       expect(merged?.payload?.kind).toBe("agentTurn");
@@ -734,9 +734,9 @@ describe("gateway server cron", () => {
       const modelOnlyPatched = modelOnlyPatchRes.payload as
         | {
             payload?: {
-              kind?: unknown;
-              message?: unknown;
-              model?: unknown;
+              kind?: any;
+              message?: any;
+              model?: any;
             };
           }
         | undefined;
@@ -757,9 +757,9 @@ describe("gateway server cron", () => {
       const modelCleared = modelClearPatchRes.payload as
         | {
             payload?: {
-              kind?: unknown;
-              message?: unknown;
-              model?: unknown;
+              kind?: any;
+              message?: any;
+              model?: any;
             };
           }
         | undefined;
@@ -776,7 +776,7 @@ describe("gateway server cron", () => {
         payload: { kind: "systemEvent", text: "ping" },
       });
       expect(replaceRes.ok).toBe(true);
-      const replaceJobIdValue = (replaceRes.payload as { id?: unknown } | null)?.id;
+      const replaceJobIdValue = (replaceRes.payload as { id?: any } | null)?.id;
       const replaceJobId = typeof replaceJobIdValue === "string" ? replaceJobIdValue : "";
       expect(replaceJobId.length > 0).toBe(true);
 
@@ -795,9 +795,9 @@ describe("gateway server cron", () => {
       const replaced = replacePatchRes.payload as
         | {
             payload?: {
-              kind?: unknown;
-              message?: unknown;
-              model?: unknown;
+              kind?: any;
+              message?: any;
+              model?: any;
             };
           }
         | undefined;
@@ -819,8 +819,8 @@ describe("gateway server cron", () => {
       expect(deliveryPatchRes.ok).toBe(true);
       const deliveryPatched = deliveryPatchRes.payload as
         | {
-            payload?: { kind?: unknown; message?: unknown };
-            delivery?: { mode?: unknown; channel?: unknown; to?: unknown; bestEffort?: unknown };
+            payload?: { kind?: any; message?: any };
+            delivery?: { mode?: any; channel?: any; to?: any; bestEffort?: any };
           }
         | undefined;
       expect(deliveryPatched?.payload?.kind).toBe("agentTurn");
@@ -867,7 +867,7 @@ describe("gateway server cron", () => {
         patch: { enabled: false },
       });
       expect(disableUpdateRes.ok).toBe(true);
-      const disabled = disableUpdateRes.payload as { enabled?: unknown } | undefined;
+      const disabled = disableUpdateRes.payload as { enabled?: any } | undefined;
       expect(disabled?.enabled).toBe(false);
     } finally {
       await cleanupCronTestRun({
@@ -909,7 +909,7 @@ describe("gateway server cron", () => {
         payload: { kind: "agentTurn", message: "hello" },
       });
       expect(validRes.ok).toBe(true);
-      const jobId = (validRes.payload as { id?: unknown } | null)?.id;
+      const jobId = (validRes.payload as { id?: any } | null)?.id;
       expect(typeof jobId).toBe("string");
 
       const updateRes = await directCronReq(cronState, "cron.update", {
@@ -958,7 +958,7 @@ describe("gateway server cron", () => {
         payload: { kind: "systemEvent", text: "hello" },
       });
       expect(addRes.ok).toBe(true);
-      const jobIdValue = (addRes.payload as { id?: unknown } | null)?.id;
+      const jobIdValue = (addRes.payload as { id?: any } | null)?.id;
       const jobId = typeof jobIdValue === "string" ? jobIdValue : "";
       expect(jobId.length > 0).toBe(true);
 
@@ -970,7 +970,7 @@ describe("gateway server cron", () => {
       });
 
       expect(updateRes.ok).toBe(true);
-      const updated = updateRes.payload as { delivery?: unknown } | undefined;
+      const updated = updateRes.payload as { delivery?: any } | undefined;
       expect(updated?.delivery).toBeUndefined();
     } finally {
       await cleanupCronTestRun({ cronState, prevSkipCron });
@@ -1054,7 +1054,7 @@ describe("gateway server cron", () => {
         payload: { kind: "systemEvent", text: "hello" },
       });
       expect(addRes.ok).toBe(true);
-      const jobIdValue = (addRes.payload as { id?: unknown } | null)?.id;
+      const jobIdValue = (addRes.payload as { id?: any } | null)?.id;
       const jobId = typeof jobIdValue === "string" ? jobIdValue : "";
       expect(jobId.length > 0).toBe(true);
 
@@ -1151,7 +1151,7 @@ describe("gateway server cron", () => {
         payload: { kind: "systemEvent", text: "hello" },
       });
       expect(addRes.ok).toBe(true);
-      const jobIdValue = (addRes.payload as { id?: unknown } | null)?.id;
+      const jobIdValue = (addRes.payload as { id?: any } | null)?.id;
       const jobId = typeof jobIdValue === "string" ? jobIdValue : "";
       expect(jobId.length > 0).toBe(true);
 
@@ -1161,7 +1161,7 @@ describe("gateway server cron", () => {
       const runRes = await directCronReq(cronState, "cron.run", { id: jobId, mode: "force" });
       expect(runRes.ok).toBe(true);
       expectEnqueuedRunPayload(runRes.payload);
-      const manualRunId = (runRes.payload as { runId?: unknown } | null)?.runId;
+      const manualRunId = (runRes.payload as { runId?: any } | null)?.runId;
       expect(typeof manualRunId).toBe("string");
       const finishedPayload = await finishedRun;
       expectRecordFields(finishedPayload, {
@@ -1174,31 +1174,31 @@ describe("gateway server cron", () => {
 
       const runsRes = await directCronReq(cronState, "cron.runs", { id: jobId, limit: 50 });
       expect(runsRes.ok).toBe(true);
-      const entries = (runsRes.payload as { entries?: unknown } | null)?.entries;
+      const entries = (runsRes.payload as { entries?: any } | null)?.entries;
       expect(Array.isArray(entries)).toBe(true);
-      expect((entries as Array<{ jobId?: unknown }>).at(-1)?.jobId).toBe(jobId);
-      expect((entries as Array<{ jobName?: unknown }>).at(-1)?.jobName).toBe("log test");
-      expect((entries as Array<{ summary?: unknown }>).at(-1)?.summary).toBe("hello");
-      expect((entries as Array<{ deliveryStatus?: unknown }>).at(-1)?.deliveryStatus).toBe(
+      expect((entries as Array<{ jobId?: any }>).at(-1)?.jobId).toBe(jobId);
+      expect((entries as Array<{ jobName?: any }>).at(-1)?.jobName).toBe("log test");
+      expect((entries as Array<{ summary?: any }>).at(-1)?.summary).toBe("hello");
+      expect((entries as Array<{ deliveryStatus?: any }>).at(-1)?.deliveryStatus).toBe(
         "not-requested",
       );
-      expect((entries as Array<{ runId?: unknown }>).at(-1)?.runId).toBe(manualRunId);
+      expect((entries as Array<{ runId?: any }>).at(-1)?.runId).toBe(manualRunId);
       const allRunsRes = await directCronReq(cronState, "cron.runs", {
         scope: "all",
         limit: 50,
         statuses: ["ok"],
       });
       expect(allRunsRes.ok).toBe(true);
-      const allEntries = (allRunsRes.payload as { entries?: unknown } | null)?.entries;
+      const allEntries = (allRunsRes.payload as { entries?: any } | null)?.entries;
       expect(Array.isArray(allEntries)).toBe(true);
       expect(
-        (allEntries as Array<{ jobId?: unknown }>).some((entry) => entry.jobId === jobId),
+        (allEntries as Array<{ jobId?: any }>).some((entry) => entry.jobId === jobId),
       ).toBe(true);
 
       const statusRes = await directCronReq(cronState, "cron.status", {});
       expect(statusRes.ok).toBe(true);
       const statusPayload = statusRes.payload as
-        | { enabled?: unknown; storePath?: unknown }
+        | { enabled?: any; storePath?: any }
         | undefined;
       expect(statusPayload?.enabled).toBe(true);
       const storePath = typeof statusPayload?.storePath === "string" ? statusPayload.storePath : "";
@@ -1213,7 +1213,7 @@ describe("gateway server cron", () => {
         payload: { kind: "systemEvent", text: "auto" },
       });
       expect(autoRes.ok).toBe(true);
-      const autoJobIdValue = (autoRes.payload as { id?: unknown } | null)?.id;
+      const autoJobIdValue = (autoRes.payload as { id?: any } | null)?.id;
       const autoJobId = typeof autoJobIdValue === "string" ? autoJobIdValue : "";
       expect(autoJobId.length > 0).toBe(true);
 
@@ -1224,7 +1224,7 @@ describe("gateway server cron", () => {
       await autoFinished;
       const autoEntries = (
         await directCronReq(cronState, "cron.runs", { id: autoJobId, limit: 10 })
-      ).payload as { entries?: Array<{ jobId?: unknown }> } | undefined;
+      ).payload as { entries?: Array<{ jobId?: any }> } | undefined;
       expect(Array.isArray(autoEntries?.entries)).toBe(true);
       const runs = autoEntries?.entries ?? [];
       expect(runs.at(-1)?.jobId).toBe(autoJobId);
@@ -1273,7 +1273,7 @@ describe("gateway server cron", () => {
       expectEnqueuedRunPayload(runRes.payload);
       await finished;
       expect(cronIsolatedRun).toHaveBeenCalledTimes(1);
-      const call = cronIsolatedRun.mock.calls.at(0)?.[0] as { sessionKey?: unknown } | undefined;
+      const call = cronIsolatedRun.mock.calls.at(0)?.[0] as { sessionKey?: any } | undefined;
       expect(call?.sessionKey).toBe("agent:main:dingtalk:group:cid3tmd4xb19xjfk/wogxwy2a==");
     } finally {
       await cleanupCronTestRun({ ws, server, prevSkipCron });
@@ -1308,7 +1308,7 @@ describe("gateway server cron", () => {
         delivery: { mode: "none" },
       });
       expect(addRes.ok).toBe(true);
-      const jobIdValue = (addRes.payload as { id?: unknown } | null)?.id;
+      const jobIdValue = (addRes.payload as { id?: any } | null)?.id;
       const jobId = typeof jobIdValue === "string" ? jobIdValue : "";
       expect(jobId.length > 0).toBe(true);
 
@@ -1542,7 +1542,7 @@ describe("gateway server cron", () => {
         payload: { kind: "systemEvent", text: "do not send" },
       });
       expect(silentRes.ok).toBe(true);
-      const silentJobIdValue = (silentRes.payload as { id?: unknown } | null)?.id;
+      const silentJobIdValue = (silentRes.payload as { id?: any } | null)?.id;
       const silentJobId = typeof silentJobIdValue === "string" ? silentJobIdValue : "";
       expect(silentJobId.length > 0).toBe(true);
 
@@ -1581,7 +1581,7 @@ describe("gateway server cron", () => {
       expect(failureDestCall.url).toBe("https://example.invalid/failure-destination");
       const failureDestBody = failureDestCall.body;
       expect(failureDestBody.message).toBe(
-        'Cron job "failure destination webhook" failed: unknown error',
+        'Cron job "failure destination webhook" failed: any error',
       );
 
       fetchWithSsrFGuardMock.mockClear();
@@ -1668,7 +1668,7 @@ describe("gateway server cron", () => {
         jobId,
         channel: "last",
         sessionKey: "agent:main:telegram:direct:123:thread:99",
-        message: '⚠️ Cron job "primary delivery fallback" failed: unknown error',
+        message: '⚠️ Cron job "primary delivery fallback" failed: any error',
       });
     } finally {
       await cleanupCronTestRun({ ws, server, prevSkipCron });
@@ -1719,7 +1719,7 @@ describe("gateway server cron", () => {
         jobId,
         channel: "last",
         sessionKey: "agent:avery:feishu:direct:ou_founder",
-        message: '⚠️ Cron job "session target failure fallback" failed: unknown error',
+        message: '⚠️ Cron job "session target failure fallback" failed: any error',
       });
     } finally {
       await cleanupCronTestRun({ ws, server, prevSkipCron });

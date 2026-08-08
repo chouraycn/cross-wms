@@ -19,26 +19,26 @@ import { setActivePluginRegistry } from "../runtime.js";
 import { createPluginRecord } from "../status.test-helpers.js";
 import { runTrustedToolPolicies } from "../trusted-tool-policy.js";
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object") {
     throw new Error(`expected ${label}`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-async function expectOkResult(promise: Promise<unknown>, label: string) {
+async function expectOkResult(promise: Promise<any>, label: string) {
   const result = requireRecord(await promise, label);
   expect(result.ok).toBe(true);
   return result;
 }
 
-async function expectNoCleanupFailures(promise: Promise<unknown>, label: string) {
+async function expectNoCleanupFailures(promise: Promise<any>, label: string) {
   const result = requireRecord(await promise, label);
   expect(result.failures).toEqual([]);
   return result;
 }
 
-function extensionNamespace(entry: Record<string, unknown>, pluginId: string, namespace: string) {
+function extensionNamespace(entry: Record<string, any>, pluginId: string, namespace: string) {
   const extensions = requireRecord(entry.pluginExtensions, "plugin extensions");
   const pluginExtensions = requireRecord(extensions[pluginId], `${pluginId} extensions`);
   return requireRecord(pluginExtensions[namespace], `${pluginId}.${namespace} state`);
@@ -123,7 +123,7 @@ describe("plugin session extension SessionEntry projection", () => {
         expect(patchResult.ok).toBe(true);
         const afterPatch = loadSessionStore(storePath, { skipCache: true });
         expect(
-          (afterPatch["agent:main:main"] as unknown as Record<string, unknown>).approvalSnapshot,
+          (afterPatch["agent:main:main"] as unknown as Record<string, any>).approvalSnapshot,
         ).toEqual({ state: "executing", title: "Deploy approval" });
 
         const unsetResult = await patchPluginSessionExtension({
@@ -136,7 +136,7 @@ describe("plugin session extension SessionEntry projection", () => {
         expect(unsetResult.ok).toBe(true);
         const afterUnset = loadSessionStore(storePath, { skipCache: true });
         expect(
-          (afterUnset["agent:main:main"] as unknown as Record<string, unknown>).approvalSnapshot,
+          (afterUnset["agent:main:main"] as unknown as Record<string, any>).approvalSnapshot,
         ).toBeUndefined();
       },
     );
@@ -193,7 +193,7 @@ describe("plugin session extension SessionEntry projection", () => {
           (
             loadSessionStore(storePath, { skipCache: true })[
               "agent:main:main"
-            ] as unknown as Record<string, unknown>
+            ] as unknown as Record<string, any>
           ).approvalSnapshot,
         ).toEqual({ state: "ready" });
 
@@ -209,7 +209,7 @@ describe("plugin session extension SessionEntry projection", () => {
         );
         const afterThrow = loadSessionStore(storePath, { skipCache: true })[
           "agent:main:main"
-        ] as unknown as Record<string, unknown>;
+        ] as unknown as Record<string, any>;
         expect(afterThrow.approvalSnapshot).toBeUndefined();
         expect(extensionNamespace(afterThrow, "failing-promoted-plugin", "workflow")).toEqual({
           state: "bad",
@@ -230,7 +230,7 @@ describe("plugin session extension SessionEntry projection", () => {
           (
             loadSessionStore(storePath, { skipCache: true })[
               "agent:main:main"
-            ] as unknown as Record<string, unknown>
+            ] as unknown as Record<string, any>
           ).approvalSnapshot,
         ).toEqual({ state: "ready-again" });
 
@@ -246,7 +246,7 @@ describe("plugin session extension SessionEntry projection", () => {
         );
         const afterPromise = loadSessionStore(storePath, { skipCache: true })[
           "agent:main:main"
-        ] as unknown as Record<string, unknown>;
+        ] as unknown as Record<string, any>;
         expect(afterPromise.approvalSnapshot).toBeUndefined();
         expect(extensionNamespace(afterPromise, "failing-promoted-plugin", "workflow")).toEqual({
           state: "async-bad",
@@ -436,7 +436,7 @@ describe("plugin session extension SessionEntry projection", () => {
         );
 
         const stored = loadSessionStore(storePath, { skipCache: true });
-        const entry = stored["agent:main:main"] as unknown as Record<string, unknown>;
+        const entry = stored["agent:main:main"] as unknown as Record<string, any>;
         expect(entry.pluginExtensions).toBeUndefined();
         expect(entry.approvalSnapshot).toBeUndefined();
       },
@@ -489,7 +489,7 @@ describe("plugin session extension SessionEntry projection", () => {
         );
 
         const stored = loadSessionStore(storePath, { skipCache: true });
-        const entry = stored["agent:main:main"] as unknown as Record<string, unknown>;
+        const entry = stored["agent:main:main"] as unknown as Record<string, any>;
         expect(entry.pluginExtensions).toBeUndefined();
         expect(entry.approvalSnapshot).toBeUndefined();
       },
@@ -554,7 +554,7 @@ describe("plugin session extension SessionEntry projection", () => {
         );
 
         const stored = loadSessionStore(storePath, { skipCache: true });
-        const entry = stored["agent:main:main"] as unknown as Record<string, unknown>;
+        const entry = stored["agent:main:main"] as unknown as Record<string, any>;
         expect(entry.approvalSnapshot).toBeUndefined();
         expect(entry.pluginExtensionSlotKeys).toBeUndefined();
         expect(entry.pluginExtensions).toEqual({
@@ -644,7 +644,7 @@ describe("plugin session extension SessionEntry projection", () => {
         );
 
         const stored = loadSessionStore(storePath, { skipCache: true });
-        const entry = stored["agent:main:main"] as unknown as Record<string, unknown>;
+        const entry = stored["agent:main:main"] as unknown as Record<string, any>;
         expect(entry.approvalSnapshot).toEqual({ state: "waiting" });
         expect(entry.legacyApprovalSnapshot).toBeUndefined();
         expect(entry.pluginExtensionSlotKeys).toEqual({
@@ -721,7 +721,7 @@ describe("plugin session extension SessionEntry projection", () => {
         );
 
         const stored = loadSessionStore(storePath, { skipCache: true });
-        const entry = stored["agent:main:main"] as unknown as Record<string, unknown>;
+        const entry = stored["agent:main:main"] as unknown as Record<string, any>;
         expect(entry.approvalSnapshot).toEqual({ state: "waiting" });
         expect(entry.pluginExtensionSlotKeys).toEqual({
           "restart-preserved-plugin": {
@@ -770,7 +770,7 @@ describe("plugin session extension SessionEntry projection", () => {
         );
 
         const stored = loadSessionStore(storePath, { skipCache: true });
-        const entry = stored["agent:main:main"] as unknown as Record<string, unknown>;
+        const entry = stored["agent:main:main"] as unknown as Record<string, any>;
         expect(entry.approvalSnapshot).toBeUndefined();
         expect(entry.pluginExtensionSlotKeys).toBeUndefined();
         expect(entry.pluginExtensions).toBeUndefined();
@@ -779,8 +779,8 @@ describe("plugin session extension SessionEntry projection", () => {
   });
 
   it("exposes scoped session extension reads to trusted tool policies", async () => {
-    const seen: unknown[] = [];
-    const seenConfig: unknown[] = [];
+    const seen: any[] = [];
+    const seenConfig: any[] = [];
     const { config, registry } = createPluginRegistryFixture();
     registerTestPlugin({
       registry,
@@ -806,7 +806,7 @@ describe("plugin session extension SessionEntry projection", () => {
             seen.push(ctx.getSessionExtension?.("policy"));
             seen.push(ctx.getSessionExtension?.("second"));
             seen.push(ctx.getSessionExtension?.("missing"));
-            seenConfig.push((ctx as { config?: unknown }).config);
+            seenConfig.push((ctx as { config?: any }).config);
             return undefined;
           },
         });
@@ -911,7 +911,7 @@ describe("plugin session extension SessionEntry projection", () => {
         });
         expect(result.ok).toBe(true);
         const stored = loadSessionStore(storePath, { skipCache: true });
-        const entry = stored["agent:main:main"] as unknown as Record<string, unknown>;
+        const entry = stored["agent:main:main"] as unknown as Record<string, any>;
         expect(entry.approvalSnapshot).toBeUndefined();
       },
     );

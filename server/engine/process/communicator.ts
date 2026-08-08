@@ -10,7 +10,7 @@ import type { SpawnAdapter } from './types.js';
 /** IPC 消息类型约束 */
 export interface IPCMessage {
   type: string;
-  payload?: unknown;
+  payload?: any;
 }
 
 /** 通信器事件 */
@@ -140,7 +140,7 @@ export class ProcessCommunicator {
     }
   }
 
-  private handleIPCMessage(message: unknown): void {
+  private handleIPCMessage(message: any): void {
     const msg = this.normalizeIPCMessage(message);
     if (!msg) {
       logger.debug(`[Process:Communicator] invalid IPC message: ${typeof message}`);
@@ -156,7 +156,7 @@ export class ProcessCommunicator {
     }
   }
 
-  private normalizeIPCMessage(message: unknown): IPCMessage | null {
+  private normalizeIPCMessage(message: any): IPCMessage | null {
     if (typeof message === 'string') {
       try {
         const parsed = JSON.parse(message);
@@ -168,7 +168,7 @@ export class ProcessCommunicator {
       }
       return { type: 'raw', payload: message };
     }
-    if (message && typeof message === 'object' && typeof (message as { type?: unknown }).type === 'string') {
+    if (message && typeof message === 'object' && typeof (message as { type?: any }).type === 'string') {
       return message as IPCMessage;
     }
     return null;

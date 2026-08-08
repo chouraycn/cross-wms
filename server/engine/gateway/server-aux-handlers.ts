@@ -11,8 +11,8 @@
  * 完整实现见 openclaw 源码。
  */
 
-export const GATEWAY_AUX_METHODS: unknown = undefined;
+export const GATEWAY_AUX_METHODS: any = undefined;
 
-export function createGatewayAuxHandlers(..._args: unknown[]): unknown {
+export function createGatewayAuxHandlers(..._args: any[]): any {
   return undefined;
 }

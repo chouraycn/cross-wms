@@ -35,7 +35,7 @@ export function normalizeHeadersInitForFetch(
   }
 
   const normalized = Object.create(null) as Record<string, string>;
-  const headerRecord = headers as Record<string, unknown>;
+  const headerRecord = headers as Record<string, any>;
   for (const key of Object.getOwnPropertyNames(headerRecord)) {
     normalized[key] = String(headerRecord[key]);
   }

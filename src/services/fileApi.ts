@@ -36,7 +36,7 @@ export async function listDirectory(path: string): Promise<FileEntry[]> {
   if (data.error) {
     throw new Error(data.error);
   }
-  return data.map((e: unknown) => ({
+  return data.map((e: any) => ({
     name: e.name,
     path: `${path}/${e.name}`,
     isDirectory: e.isDirectory,

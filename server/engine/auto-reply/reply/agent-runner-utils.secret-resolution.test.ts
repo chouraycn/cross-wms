@@ -8,13 +8,13 @@ const hoisted = vi.hoisted(() => ({
 }));
 
 vi.mock("../../cli/command-secret-gateway.js", () => ({
-  resolveCommandSecretRefsViaGateway: (...args: unknown[]) =>
+  resolveCommandSecretRefsViaGateway: (...args: any[]) =>
     hoisted.resolveCommandSecretRefsViaGatewayMock(...args),
 }));
 
 vi.mock("../../cli/command-secret-targets.js", () => ({
   getAgentRuntimeCommandSecretTargetIds: () => new Set(["skills.entries.*.apiKey"]),
-  getScopedChannelsCommandSecretTargets: (...args: unknown[]) =>
+  getScopedChannelsCommandSecretTargets: (...args: any[]) =>
     hoisted.getScopedChannelsCommandSecretTargetsMock(...args),
 }));
 

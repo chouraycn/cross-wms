@@ -4,7 +4,7 @@ export interface ListPageOptions {
   sortBy?: string;
   sortDir?: "asc" | "desc";
   query?: string;
-  filters?: Record<string, unknown>;
+  filters?: Record<string, any>;
 }
 
 export interface ListPageResult<T> {
@@ -24,7 +24,7 @@ export interface SortConfig {
 export interface FilterConfig {
   field: string;
   operator: "eq" | "ne" | "contains" | "startsWith" | "endsWith" | "in" | "gt" | "lt" | "gte" | "lte";
-  value: unknown;
+  value: any;
 }
 
 export function createListPageResult<T>(

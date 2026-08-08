@@ -21,8 +21,8 @@ function Separator({
       orientation={orientation}
       flexItem={orientation === 'vertical'}
       className={cn(className)}
-      sx={{ borderColor: 'divider', ...(decorative ? null : {}), ...(sx as Record<string, unknown>) }}
-      {...(props as Record<string, unknown>)}
+      sx={{ borderColor: 'divider', ...(decorative ? null : {}), ...(sx as Record<string, any>) }}
+      {...(props as Record<string, any>)}
     />
   )
 }

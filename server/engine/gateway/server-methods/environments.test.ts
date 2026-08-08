@@ -36,11 +36,11 @@ function mockContext() {
 
 async function callEnvironmentMethod(
   method: "environments.list" | "environments.status",
-  params: unknown,
+  params: any,
 ) {
   const respond = vi.fn();
   await environmentsHandlers[method]?.({
-    params: params as Record<string, unknown>,
+    params: params as Record<string, any>,
     respond,
     context: mockContext(),
   } as never);

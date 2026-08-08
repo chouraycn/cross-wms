@@ -44,7 +44,7 @@ const pairingIdLabels: Record<string, string> = {
   discord: "discordUserId",
 };
 
-function requireFirstMockCall(calls: readonly unknown[][], label: string): unknown[] {
+function requireFirstMockCall(calls: readonly any[][], label: string): any[] {
   const call = calls.at(0);
   if (!call) {
     throw new Error(`expected ${label} call`);

@@ -15,7 +15,7 @@ export function buildOutboundBaseSessionKey(params: {
   accountId?: string | null;
   peer: RoutePeer;
 }): string {
-  const sessionCfg = (params.cfg as { session?: { dmScope?: string; identityLinks?: unknown } }).session;
+  const sessionCfg = (params.cfg as { session?: { dmScope?: string; identityLinks?: any } }).session;
   return buildAgentSessionKey({
     agentId: params.agentId,
     channel: params.channel,

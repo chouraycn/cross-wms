@@ -10,7 +10,7 @@ export const SERIALIZATION_VERSION = 1;
 
 export interface SerializedTaskEnvelope {
   version: number;
-  task: unknown;
+  task: any;
 }
 
 /** 序列化单个任务。 */
@@ -27,7 +27,7 @@ export function serializeTasks(tasks: Task[]): string {
 
 /** 反序列化单个任务；非法返回 null。 */
 export function deserializeTask(json: string): Task | null {
-  let parsed: unknown;
+  let parsed: any;
   try {
     parsed = JSON.parse(json);
   } catch {
@@ -40,21 +40,21 @@ export function deserializeTask(json: string): Task | null {
 
 /** 反序列化任务列表；非法返回空数组。 */
 export function deserializeTasks(json: string): Task[] {
-  let parsed: unknown;
+  let parsed: any;
   try {
     parsed = JSON.parse(json);
   } catch {
     return [];
   }
-  const env = parsed as { version: number; tasks: unknown[] };
+  const env = parsed as { version: number; tasks: any[] };
   if (!env || env.version !== SERIALIZATION_VERSION || !Array.isArray(env.tasks)) return [];
   return env.tasks.map(reviveTask).filter((t): t is Task => !!t);
 }
 
 /** 复活一个松散对象为合法 Task（补全缺失字段、规范化枚举）。 */
-export function reviveTask(raw: unknown): Task | null {
+export function reviveTask(raw: any): Task | null {
   if (!raw || typeof raw !== 'object') return null;
-  const r = raw as Record<string, unknown>;
+  const r = raw as Record<string, any>;
   const id = r.id;
   const name = r.name;
   if (typeof id !== 'string' || typeof name !== 'string') return null;
@@ -72,7 +72,7 @@ export function reviveTask(raw: unknown): Task | null {
     maxRetries: typeof r.maxRetries === 'number' ? r.maxRetries : 0,
     retryCount: typeof r.retryCount === 'number' ? r.retryCount : 0,
     tags: Array.isArray(r.tags) ? (r.tags as string[]) : [],
-    metadata: r.metadata && typeof r.metadata === 'object' ? (r.metadata as Record<string, unknown>) : {},
+    metadata: r.metadata && typeof r.metadata === 'object' ? (r.metadata as Record<string, any>) : {},
     createdAt: typeof r.createdAt === 'string' ? r.createdAt : new Date(0).toISOString(),
     queuedAt: typeof r.queuedAt === 'string' ? r.queuedAt : null,
     startedAt: typeof r.startedAt === 'string' ? r.startedAt : null,

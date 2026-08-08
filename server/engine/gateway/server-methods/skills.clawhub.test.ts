@@ -5,9 +5,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { callGatewayHandler } from "./skills.test-helpers.js";
 
 const loadConfigMock = vi.fn(() => ({}));
-const listAgentIdsMock = vi.fn<(_cfg: unknown) => string[]>(() => ["main"]);
+const listAgentIdsMock = vi.fn<(_cfg: any) => string[]>(() => ["main"]);
 const resolveDefaultAgentIdMock = vi.fn(() => "main");
-const resolveAgentWorkspaceDirMock = vi.fn<(_cfg: unknown, _agentId: string) => string>(
+const resolveAgentWorkspaceDirMock = vi.fn<(_cfg: any, _agentId: string) => string>(
   () => "/tmp/workspace",
 );
 const buildWorkspaceSkillStatusMock = vi.fn();
@@ -23,31 +23,31 @@ vi.mock("../../config/config.js", () => ({
 }));
 
 vi.mock("../../agents/agent-scope.js", () => ({
-  listAgentIds: (cfg: unknown) => listAgentIdsMock(cfg),
+  listAgentIds: (cfg: any) => listAgentIdsMock(cfg),
   resolveAgentConfig: vi.fn(() => undefined),
   resolveDefaultAgentId: () => resolveDefaultAgentIdMock(),
-  resolveAgentWorkspaceDir: (cfg: unknown, agentId: string) =>
+  resolveAgentWorkspaceDir: (cfg: any, agentId: string) =>
     resolveAgentWorkspaceDirMock(cfg, agentId),
   resolveSessionAgentId: vi.fn(() => undefined),
 }));
 
 vi.mock("../../skills/lifecycle/clawhub.js", () => ({
-  installSkillFromClawHub: (...args: unknown[]) => installSkillFromClawHubMock(...args),
-  readLocalSkillCardContentSync: (...args: unknown[]) => readLocalSkillCardContentSyncMock(...args),
-  updateSkillsFromClawHub: (...args: unknown[]) => updateSkillsFromClawHubMock(...args),
+  installSkillFromClawHub: (...args: any[]) => installSkillFromClawHubMock(...args),
+  readLocalSkillCardContentSync: (...args: any[]) => readLocalSkillCardContentSyncMock(...args),
+  updateSkillsFromClawHub: (...args: any[]) => updateSkillsFromClawHubMock(...args),
 }));
 
 vi.mock("../../skills/discovery/status.js", () => ({
-  buildWorkspaceSkillStatus: (...args: unknown[]) => buildWorkspaceSkillStatusMock(...args),
+  buildWorkspaceSkillStatus: (...args: any[]) => buildWorkspaceSkillStatusMock(...args),
 }));
 
 vi.mock("../../skills/lifecycle/install.js", () => ({
-  installSkill: (...args: unknown[]) => installSkillMock(...args),
+  installSkill: (...args: any[]) => installSkillMock(...args),
 }));
 
 vi.mock("../../infra/clawhub.js", () => ({
   fetchClawHubSkillDetail: vi.fn(),
-  fetchClawHubSkillSecurityVerdicts: (...args: unknown[]) =>
+  fetchClawHubSkillSecurityVerdicts: (...args: any[]) =>
     fetchClawHubSkillSecurityVerdictsMock(...args),
   resolveClawHubBaseUrl: () => "https://clawhub.ai",
 }));
@@ -64,11 +64,11 @@ function emptySkillStatusReport() {
   };
 }
 
-async function callSkillsHandler(method: SkillsHandlerName, params: Record<string, unknown>) {
+async function callSkillsHandler(method: SkillsHandlerName, params: Record<string, any>) {
   return callGatewayHandler(skillsHandlers, method, params);
 }
 
-function expectEmptySecurityVerdicts(response: unknown): void {
+function expectEmptySecurityVerdicts(response: any): void {
   expect(response).toEqual({
     schema: "openclaw.skills.security-verdicts.v1",
     items: [],

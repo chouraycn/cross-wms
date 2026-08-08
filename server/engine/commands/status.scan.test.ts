@@ -74,7 +74,7 @@ function configureScanStatus(
   mocks.getStatusCommandSecretTargetIds.mockReturnValue(new Set<string>());
 }
 
-function firstCallArg(mock: { mock: { calls: unknown[][] } }, label: string): unknown {
+function firstCallArg(mock: { mock: { calls: any[][] } }, label: string): any {
   const arg = mock.mock.calls[0]?.[0];
   if (arg === undefined) {
     throw new Error(`expected ${label}`);
@@ -82,7 +82,7 @@ function firstCallArg(mock: { mock: { calls: unknown[][] } }, label: string): un
   return arg;
 }
 
-function firstBuildChannelsTableCall(): unknown[] {
+function firstBuildChannelsTableCall(): any[] {
   const call = mocks.buildChannelsTable.mock.calls[0];
   if (!call) {
     throw new Error("expected buildChannelsTable call");
@@ -144,7 +144,7 @@ describe("scanStatus", () => {
 
     expect(
       mocks.callGateway.mock.calls.some(([call]) => {
-        return (call as { method?: unknown } | undefined)?.method === "channels.status";
+        return (call as { method?: any } | undefined)?.method === "channels.status";
       }),
     ).toBe(false);
     expect(mocks.getUpdateCheckResult).toHaveBeenCalledWith({
@@ -344,7 +344,7 @@ describe("scanStatus", () => {
     });
     expect(
       mocks.callGateway.mock.calls.some(([call]) => {
-        return (call as { method?: unknown } | undefined)?.method === "channels.status";
+        return (call as { method?: any } | undefined)?.method === "channels.status";
       }),
     ).toBe(false);
   });

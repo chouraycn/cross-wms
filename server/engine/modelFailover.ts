@@ -44,7 +44,7 @@
  *      }
  *    ): Promise<AIResponse> {
  *      let currentModelId = modelConfig.id;
- *      let lastError: unknown;
+ *      let lastError: any;
  *      const maxAttempts = options?.maxFailovers ?? 3;
  *
  *      for (let attempt = 0; attempt < maxAttempts; attempt++) {
@@ -67,7 +67,7 @@
  *
  *          const nextModel = failoverManager.getNextModel(
  *            currentModelId,
- *            error instanceof AIAPIError ? error.category : 'unknown',
+ *            error instanceof AIAPIError ? error.category : 'any',
  *            options?.requiredCapabilities,
  *          );
  *
@@ -114,7 +114,7 @@ export type ErrorCategory =
   | 'server'
   | 'model_not_supported'
   | 'context_overflow'
-  | 'unknown';
+  | 'any';
 
 /**
  * 不同错误类型的冷却时间倍率（以 cooldownMs 为基准）
@@ -123,7 +123,7 @@ export type ErrorCategory =
  * - server/network/timeout: 服务问题，×0.5 短冷却
  * - model_not_supported: 模型不支持，×6 长冷却
  * - context_overflow: 上下文溢出，×0 不冷却（立即换大模型）
- * - unknown: ×1 标准冷却
+ * - any: ×1 标准冷却
  */
 const COOLDOWN_MULTIPLIER: Record<ErrorCategory, number> = {
   auth: 3,
@@ -356,7 +356,7 @@ export class ModelFailoverManager {
    * @param error 错误对象或错误消息
    * @param errorCategory 错误分类
    */
-  recordFailure(modelId: string, error: unknown, errorCategory?: ErrorCategory): void {
+  recordFailure(modelId: string, error: any, errorCategory?: ErrorCategory): void {
     const state = this.getOrCreateHealthState(modelId);
     state.failureCount++;
     state.consecutiveFailures++;
@@ -790,7 +790,7 @@ type FailoverDecision =
 const MAX_DECISION_LOG = 100;
 const decisionLog: FailoverDecision[] = [];
 
-function logFailoverDecision(decision: Record<string, unknown>): void {
+function logFailoverDecision(decision: Record<string, any>): void {
   const entry = { ...decision, timestamp: Date.now() } as FailoverDecision;
   decisionLog.push(entry);
   if (decisionLog.length > MAX_DECISION_LOG) {

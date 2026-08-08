@@ -4,8 +4,8 @@ import { expect, vi } from "vitest";
 
 type MockWithReset = {
   mockReset(): void;
-  mockResolvedValue?(value: unknown): void;
-  mockReturnValue?(value: unknown): void;
+  mockResolvedValue?(value: any): void;
+  mockReturnValue?(value: any): void;
 };
 
 export const taskExecutorMocks = {
@@ -60,7 +60,7 @@ type ProgressExpectation = {
 };
 
 type FallbackAnnouncementExpectation = {
-  deliverAnnouncementMock: unknown;
+  deliverAnnouncementMock: any;
   requesterSessionKey: string;
   channel: string;
   to: string;
@@ -78,19 +78,19 @@ type CompletionFixtureParams = {
   taskLabel: string;
 };
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error(`expected ${label}`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function requireMockFirstParam(mock: unknown, label: string): Record<string, unknown> {
-  const first = (mock as { mock?: { calls?: unknown[][] } }).mock?.calls?.[0]?.[0];
+function requireMockFirstParam(mock: any, label: string): Record<string, any> {
+  const first = (mock as { mock?: { calls?: any[][] } }).mock?.calls?.[0]?.[0];
   return requireRecord(first, label);
 }
 
-function requireRecordArray(value: unknown, label: string): Record<string, unknown>[] {
+function requireRecordArray(value: any, label: string): Record<string, any>[] {
   if (!Array.isArray(value)) {
     throw new Error(`expected ${label}`);
   }

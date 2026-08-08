@@ -24,5 +24,5 @@ export type ChannelMeta = {
   blurb?: string;
   detailLabel?: string;
   systemImage?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 };

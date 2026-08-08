@@ -37,17 +37,17 @@ vi.mock("./tools/gateway.js", () => ({
 const mockGetGlobalHookRunner = vi.mocked(getGlobalHookRunner);
 const mockCallGatewayTool = vi.mocked(callGatewayTool);
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error(`expected ${label}`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 function requireApprovalRequestCall(label: string): {
-  timeoutParams: Record<string, unknown>;
-  request: Record<string, unknown>;
-  options: Record<string, unknown>;
+  timeoutParams: Record<string, any>;
+  request: Record<string, any>;
+  options: Record<string, any>;
 } {
   const call = mockCallGatewayTool.mock.calls[0];
   if (!call) {

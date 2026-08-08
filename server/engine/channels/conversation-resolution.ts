@@ -11,7 +11,7 @@ export interface ConversationInfo {
   createdAt: number;
   lastActivityAt: number;
   messageCount: number;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
 }
 
 export interface ConversationResolutionResult {
@@ -31,7 +31,7 @@ export function resolveConversation(params: {
   type?: ConversationInfo["type"];
   participants?: string[];
   title?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }): ConversationResolutionResult {
   if (params.conversationId) {
     const existing = conversations.get(params.conversationId);
@@ -74,7 +74,7 @@ export function createConversation(params: {
   type: ConversationInfo["type"];
   participants?: string[];
   title?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }): ConversationInfo {
   const now = Date.now();
   const id = `conv-${params.channelId}-${now}-${Math.random().toString(36).slice(2, 8)}`;

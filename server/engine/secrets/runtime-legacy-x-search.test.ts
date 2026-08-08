@@ -49,7 +49,7 @@ describe("secrets runtime snapshot legacy x_search", () => {
       loadablePluginOrigins: EMPTY_LOADABLE_PLUGIN_ORIGINS,
     });
 
-    expect((snapshot.config.tools?.web as Record<string, unknown> | undefined)?.x_search).toEqual({
+    expect((snapshot.config.tools?.web as Record<string, any> | undefined)?.x_search).toEqual({
       apiKey: "xai-runtime-key",
       enabled: true,
       model: "grok-4-1-fast",
@@ -82,7 +82,7 @@ describe("secrets runtime snapshot legacy x_search", () => {
       loadablePluginOrigins: EMPTY_LOADABLE_PLUGIN_ORIGINS,
     });
 
-    expect((snapshot.config.tools?.web as Record<string, unknown> | undefined)?.x_search).toEqual({
+    expect((snapshot.config.tools?.web as Record<string, any> | undefined)?.x_search).toEqual({
       apiKey: "xai-runtime-key-invalid-config",
       enabled: true,
     });
@@ -107,7 +107,7 @@ describe("secrets runtime snapshot legacy x_search", () => {
       loadablePluginOrigins: EMPTY_LOADABLE_PLUGIN_ORIGINS,
     });
 
-    expect((snapshot.config.tools?.web as Record<string, unknown> | undefined)?.x_search).toEqual({
+    expect((snapshot.config.tools?.web as Record<string, any> | undefined)?.x_search).toEqual({
       enabled: true,
       model: "grok-4-1-fast",
     });

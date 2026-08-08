@@ -8,7 +8,7 @@ type ConfigFlag = {
   description: string;
   severity: SecurityLevel;
   category: 'auth' | 'network' | 'filesystem' | 'config' | 'secrets';
-  check: (config: Record<string, unknown>) => boolean;
+  check: (config: Record<string, any>) => boolean;
   recommendation: string;
 };
 
@@ -20,8 +20,8 @@ const DANGEROUS_FLAGS: ConfigFlag[] = [
     severity: 'critical',
     category: 'auth',
     check: (config) => {
-      const gateway = config['gateway'] as Record<string, unknown> | undefined;
-      const auth = gateway?.['auth'] as Record<string, unknown> | undefined;
+      const gateway = config['gateway'] as Record<string, any> | undefined;
+      const auth = gateway?.['auth'] as Record<string, any> | undefined;
       return auth?.['mode'] === 'none' || auth?.['enabled'] === false;
     },
     recommendation: 'Enable authentication with token or password mode.',
@@ -33,7 +33,7 @@ const DANGEROUS_FLAGS: ConfigFlag[] = [
     severity: 'medium',
     category: 'secrets',
     check: (config) => {
-      const logging = config['logging'] as Record<string, unknown> | undefined;
+      const logging = config['logging'] as Record<string, any> | undefined;
       return logging?.['redactSecrets'] === false;
     },
     recommendation: 'Enable secret redaction in logging configuration.',
@@ -45,8 +45,8 @@ const DANGEROUS_FLAGS: ConfigFlag[] = [
     severity: 'medium',
     category: 'network',
     check: (config) => {
-      const server = config['server'] as Record<string, unknown> | undefined;
-      const cors = server?.['cors'] as Record<string, unknown> | undefined;
+      const server = config['server'] as Record<string, any> | undefined;
+      const cors = server?.['cors'] as Record<string, any> | undefined;
       return cors?.['enabled'] === true && (cors?.['origin'] === '*' || cors?.['origin'] === true);
     },
     recommendation: 'Restrict CORS origins to trusted domains only.',
@@ -58,7 +58,7 @@ const DANGEROUS_FLAGS: ConfigFlag[] = [
     severity: 'high',
     category: 'config',
     check: (config) => {
-      const plugins = config['plugins'] as Record<string, unknown> | undefined;
+      const plugins = config['plugins'] as Record<string, any> | undefined;
       return plugins?.['autoLoadEnabled'] === true;
     },
     recommendation: 'Disable plugin auto-loading and use explicit allowlist.',
@@ -70,7 +70,7 @@ const DANGEROUS_FLAGS: ConfigFlag[] = [
     severity: 'critical',
     category: 'config',
     check: (config) => {
-      const sandbox = config['sandbox'] as Record<string, unknown> | undefined;
+      const sandbox = config['sandbox'] as Record<string, any> | undefined;
       return sandbox?.['enabled'] === false || sandbox?.['mode'] === 'off';
     },
     recommendation: 'Enable sandbox for all code execution environments.',
@@ -82,7 +82,7 @@ const DANGEROUS_FLAGS: ConfigFlag[] = [
     severity: 'medium',
     category: 'config',
     check: (config) => {
-      const debug = config['debug'] as Record<string, unknown> | undefined;
+      const debug = config['debug'] as Record<string, any> | undefined;
       return debug?.['enabled'] === true;
     },
     recommendation: 'Disable debug mode in production environments.',
@@ -94,7 +94,7 @@ const DANGEROUS_FLAGS: ConfigFlag[] = [
     severity: 'info',
     category: 'config',
     check: (config) => {
-      const privacy = config['privacy'] as Record<string, unknown> | undefined;
+      const privacy = config['privacy'] as Record<string, any> | undefined;
       return privacy?.['enableErrorReporting'] === false;
     },
     recommendation: 'Consider enabling error reporting to help improve security.',
@@ -106,7 +106,7 @@ const DANGEROUS_FLAGS: ConfigFlag[] = [
     severity: 'high',
     category: 'network',
     check: (config) => {
-      const rateLimit = config['rateLimit'] as Record<string, unknown> | undefined;
+      const rateLimit = config['rateLimit'] as Record<string, any> | undefined;
       return rateLimit?.['enabled'] === false;
     },
     recommendation: 'Enable rate limiting to prevent abuse.',
@@ -118,7 +118,7 @@ const DANGEROUS_FLAGS: ConfigFlag[] = [
     severity: 'critical',
     category: 'network',
     check: (config) => {
-      const tls = config['tls'] as Record<string, unknown> | undefined;
+      const tls = config['tls'] as Record<string, any> | undefined;
       return tls?.['enabled'] === false;
     },
     recommendation: 'Enable TLS/HTTPS for all network connections.',
@@ -130,7 +130,7 @@ const DANGEROUS_FLAGS: ConfigFlag[] = [
     severity: 'high',
     category: 'filesystem',
     check: (config) => {
-      const upload = config['upload'] as Record<string, unknown> | undefined;
+      const upload = config['upload'] as Record<string, any> | undefined;
       return upload?.['allowedTypes'] === '*' || upload?.['maxSize'] === 0;
     },
     recommendation: 'Restrict allowed file types and set reasonable file size limits.',
@@ -144,7 +144,7 @@ export const ConfigSecuritySchema = z.object({
 
 export type ConfigSecurityOptions = z.infer<typeof ConfigSecuritySchema>;
 
-export function collectDangerousConfigFlags(config: Record<string, unknown>): string[] {
+export function collectDangerousConfigFlags(config: Record<string, any>): string[] {
   const dangerousFlags: string[] = [];
 
   for (const flag of DANGEROUS_FLAGS) {
@@ -161,7 +161,7 @@ export function collectDangerousConfigFlags(config: Record<string, unknown>): st
 }
 
 export function auditConfigSecurity(
-  config: Record<string, unknown>,
+  config: Record<string, any>,
   options: Partial<ConfigSecurityOptions> = {},
 ): SecurityFinding[] {
   const findings: SecurityFinding[] = [];
@@ -216,7 +216,7 @@ function scoreToRating(score: number): SecurityRating {
 }
 
 export function rateConfigSecurity(
-  config: Record<string, unknown>,
+  config: Record<string, any>,
   options: Partial<ConfigSecurityOptions> = {},
 ): ConfigSecurityRating {
   const findings = auditConfigSecurity(config, options);
@@ -235,7 +235,7 @@ export function rateConfigSecurity(
 }
 
 export function isConfigSafe(
-  config: Record<string, unknown>,
+  config: Record<string, any>,
   minRating: SecurityRating = 'medium_risk',
 ): boolean {
   const { rating } = rateConfigSecurity(config);

@@ -6,6 +6,6 @@ export type GatewayInjectedTranscriptAppendResult = unknown;
 
 export type GatewayInjectedTtsSupplementMarker = unknown;
 
-export async function appendInjectedAssistantMessageToTranscript(...args: unknown[]): Promise<unknown> {
+export async function appendInjectedAssistantMessageToTranscript(...args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }

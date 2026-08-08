@@ -15,7 +15,7 @@ export type DiagnosticEvent = {
   message: string;
   traceId?: string;
   spanId?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 /**

@@ -22,7 +22,7 @@ type SessionsJsonPayload = {
 };
 
 async function resolveSubagentModel(
-  runtimeFields: Record<string, unknown>,
+  runtimeFields: Record<string, any>,
   sessionId: string,
 ): Promise<string | null | undefined> {
   const store = writeStore(

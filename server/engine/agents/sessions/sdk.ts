@@ -57,7 +57,7 @@ function projectThinkingCatalogCompat(compat: Model["compat"]) {
   if (!compat || typeof compat !== "object") {
     return undefined;
   }
-  const record = compat as Record<string, unknown>;
+  const record = compat as Record<string, any>;
   const projected: ThinkingCatalogCompat = {};
   if (typeof record.thinkingFormat === "string") {
     projected.thinkingFormat = record.thinkingFormat;

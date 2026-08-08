@@ -17,7 +17,7 @@ vi.mock("./bundled.js", () => ({
 
 function withMalformedChannels(registry: PluginRegistry): PluginRegistry {
   const malformed = { ...registry } as PluginRegistry;
-  (malformed as { channels?: unknown }).channels = undefined;
+  (malformed as { channels?: any }).channels = undefined;
   return malformed;
 }
 

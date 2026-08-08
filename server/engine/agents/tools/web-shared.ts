@@ -16,7 +16,7 @@ export const DEFAULT_TIMEOUT_SECONDS = 30;
 export const DEFAULT_CACHE_TTL_MINUTES = 15;
 const DEFAULT_CACHE_MAX_ENTRIES = 100;
 
-function asDateTimestampMs(value: unknown): number | undefined {
+function asDateTimestampMs(value: any): number | undefined {
   if (typeof value !== "number" || !Number.isFinite(value)) {
     return undefined;
   }
@@ -41,25 +41,25 @@ function resolveTimerTimeoutMs(timeoutMs: number, minMs: number): number {
   return Math.min(maxMs, Math.max(minMs, Math.floor(parsed)));
 }
 
-function normalizeLowercaseStringOrEmpty(value: unknown): string {
+function normalizeLowercaseStringOrEmpty(value: any): string {
   if (typeof value !== "string") {
     return "";
   }
   return value.trim().toLowerCase();
 }
 
-export function resolveTimeoutSeconds(value: unknown, fallback: number): number {
+export function resolveTimeoutSeconds(value: any, fallback: number): number {
   const parsed = typeof value === "number" && Number.isFinite(value) ? value : fallback;
   return Math.min(MAX_TIMER_TIMEOUT_SECONDS, Math.max(1, Math.floor(parsed)));
 }
 
-export function resolvePositiveTimeoutSeconds(value: unknown, fallback: number): number {
+export function resolvePositiveTimeoutSeconds(value: any, fallback: number): number {
   const parsed =
     typeof value === "number" && Number.isFinite(value) && value > 0 ? value : fallback;
   return Math.min(MAX_TIMER_TIMEOUT_SECONDS, Math.max(1, Math.floor(parsed)));
 }
 
-export function resolveCacheTtlMs(value: unknown, fallbackMinutes: number): number {
+export function resolveCacheTtlMs(value: any, fallbackMinutes: number): number {
   const minutes =
     typeof value === "number" && Number.isFinite(value) ? Math.max(0, value) : fallbackMinutes;
   return Math.round(minutes * 60_000);
@@ -262,7 +262,7 @@ export async function readResponseText(
       ? Math.floor(maxBytesRaw)
       : undefined;
 
-  const body = (res as unknown as { body?: unknown }).body;
+  const body = (res as unknown as { body?: any }).body;
   if (
     maxBytes &&
     body &&

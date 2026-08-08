@@ -7,7 +7,7 @@ import type { PluginManifestRegistry } from "../plugins/manifest-registry.js";
 import type { PluginMetadataSnapshot } from "../plugins/plugin-metadata-snapshot.js";
 
 const applyPluginAutoEnable = vi.hoisted(() =>
-  vi.fn((params: { config: unknown }) => ({
+  vi.fn((params: { config: any }) => ({
     config: params.config,
     changes: [] as string[],
     autoEnabledReasons: {} as Record<string, string[]>,
@@ -15,7 +15,7 @@ const applyPluginAutoEnable = vi.hoisted(() =>
 );
 const initSubagentRegistry = vi.hoisted(() => vi.fn());
 const loadGatewayStartupPlugins = vi.hoisted(() =>
-  vi.fn((_params: unknown) => ({
+  vi.fn((_params: any) => ({
     pluginRegistry: { diagnostics: [], gatewayHandlers: {}, plugins: [] },
     gatewayMethods: ["ping"],
   })),
@@ -91,7 +91,7 @@ const pluginLookUpTableMetrics = vi.hoisted(() => ({
   deferredChannelPluginCount: 0,
 }));
 const loadPluginLookUpTable = vi.hoisted(() =>
-  vi.fn((_params: unknown) => ({
+  vi.fn((_params: any) => ({
     manifestRegistry: pluginManifestRegistry,
     startup: {
       configuredDeferredChannelPluginIds: [] as string[],
@@ -100,11 +100,11 @@ const loadPluginLookUpTable = vi.hoisted(() =>
     metrics: pluginLookUpTableMetrics,
   })),
 );
-const resolveOpenClawPackageRootSync = vi.hoisted(() => vi.fn((_params: unknown) => "/package"));
+const resolveOpenClawPackageRootSync = vi.hoisted(() => vi.fn((_params: any) => "/package"));
 const runChannelPluginStartupMaintenance = vi.hoisted(() =>
-  vi.fn(async (_params: unknown) => undefined),
+  vi.fn(async (_params: any) => undefined),
 );
-const runStartupSessionMigration = vi.hoisted(() => vi.fn(async (_params: unknown) => undefined));
+const runStartupSessionMigration = vi.hoisted(() => vi.fn(async (_params: any) => undefined));
 vi.mock("../agents/agent-scope.js", () => ({
   resolveAgentWorkspaceDir: () => "/workspace",
   resolveDefaultAgentId: () => "default",
@@ -115,20 +115,20 @@ vi.mock("../agents/subagent-registry.js", () => ({
 }));
 
 vi.mock("../channels/plugins/lifecycle-startup.js", () => ({
-  runChannelPluginStartupMaintenance: (params: unknown) =>
+  runChannelPluginStartupMaintenance: (params: any) =>
     runChannelPluginStartupMaintenance(params),
 }));
 
 vi.mock("../config/plugin-auto-enable.js", () => ({
-  applyPluginAutoEnable: (params: { config: unknown }) => applyPluginAutoEnable(params),
+  applyPluginAutoEnable: (params: { config: any }) => applyPluginAutoEnable(params),
 }));
 
 vi.mock("../infra/openclaw-root.js", () => ({
-  resolveOpenClawPackageRootSync: (params: unknown) => resolveOpenClawPackageRootSync(params),
+  resolveOpenClawPackageRootSync: (params: any) => resolveOpenClawPackageRootSync(params),
 }));
 
 vi.mock("../plugins/plugin-lookup-table.js", () => ({
-  loadPluginLookUpTable: (params: unknown) => loadPluginLookUpTable(params),
+  loadPluginLookUpTable: (params: any) => loadPluginLookUpTable(params),
 }));
 
 vi.mock("../plugins/registry.js", () => ({
@@ -153,11 +153,11 @@ vi.mock("./server-methods.js", () => ({
 }));
 
 vi.mock("./server-plugin-bootstrap.js", () => ({
-  loadGatewayStartupPlugins: (params: unknown) => loadGatewayStartupPlugins(params),
+  loadGatewayStartupPlugins: (params: any) => loadGatewayStartupPlugins(params),
 }));
 
 vi.mock("./server-startup-session-migration.js", () => ({
-  runStartupSessionMigration: (params: unknown) => runStartupSessionMigration(params),
+  runStartupSessionMigration: (params: any) => runStartupSessionMigration(params),
 }));
 
 function createLog() {
@@ -169,7 +169,7 @@ function createLog() {
   };
 }
 
-function firstCallArg<T>(mock: { mock: { calls: unknown[][] } }, _type?: (value: T) => T): T {
+function firstCallArg<T>(mock: { mock: { calls: any[][] } }, _type?: (value: T) => T): T {
   const call = mock.mock.calls.at(0);
   if (!call) {
     throw new Error("Expected first mock call");
@@ -424,7 +424,7 @@ describe("prepareGatewayPluginBootstrap startup plugins", () => {
     const startupInput = firstCallArg<{
       cfg?: OpenClawConfig;
       pluginIds?: string[];
-      pluginLookUpTable?: unknown;
+      pluginLookUpTable?: any;
       preferSetupRuntimeForChannelPlugins?: boolean;
       suppressPluginInfoLogs?: boolean;
     }>(loadGatewayStartupPlugins);

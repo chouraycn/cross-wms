@@ -49,7 +49,7 @@ type FlowRegistryDatabase = {
 
 let cachedDatabase: FlowRegistryDatabase | null = null;
 
-function serializeJson(value: unknown): string | null {
+function serializeJson(value: any): string | null {
   return value === undefined ? null : JSON.stringify(value);
 }
 
@@ -100,7 +100,7 @@ function rowToFlowRecord(row: FlowRegistryRow): TaskFlowRecord {
   };
 }
 
-function bindFlowRecord(record: TaskFlowRecord): Record<string, unknown> {
+function bindFlowRecord(record: TaskFlowRecord): Record<string, any> {
   return {
     flow_id: record.flowId,
     sync_mode: record.syncMode,
@@ -157,38 +157,38 @@ function selectFlowRows(db: Database): FlowRegistryRow[] {
   return executeSqliteQuerySync(db, query).rows as FlowRegistryRow[];
 }
 
-function upsertFlowRow(db: Database, row: Record<string, unknown>): void {
+function upsertFlowRow(db: Database, row: Record<string, any>): void {
   executeSqliteQuerySync(
     db,
     getFlowRegistryKysely(db)
       .insertInto("flow_runs")
       .values(row)
-      .onConflict((conflict: unknown) =>
+      .onConflict((conflict: any) =>
         conflict.column("flow_id").doUpdateSet({
-          sync_mode: (eb: unknown) => eb.ref("excluded.sync_mode"),
-          owner_key: (eb: unknown) => eb.ref("excluded.owner_key"),
-          requester_origin_json: (eb: unknown) => eb.ref("excluded.requester_origin_json"),
-          controller_id: (eb: unknown) => eb.ref("excluded.controller_id"),
-          revision: (eb: unknown) => eb.ref("excluded.revision"),
-          status: (eb: unknown) => eb.ref("excluded.status"),
-          notify_policy: (eb: unknown) => eb.ref("excluded.notify_policy"),
-          goal: (eb: unknown) => eb.ref("excluded.goal"),
-          current_step: (eb: unknown) => eb.ref("excluded.current_step"),
-          blocked_task_id: (eb: unknown) => eb.ref("excluded.blocked_task_id"),
-          blocked_summary: (eb: unknown) => eb.ref("excluded.blocked_summary"),
-          state_json: (eb: unknown) => eb.ref("excluded.state_json"),
-          wait_json: (eb: unknown) => eb.ref("excluded.wait_json"),
-          cancel_requested_at: (eb: unknown) => eb.ref("excluded.cancel_requested_at"),
-          created_at: (eb: unknown) => eb.ref("excluded.created_at"),
-          updated_at: (eb: unknown) => eb.ref("excluded.updated_at"),
-          ended_at: (eb: unknown) => eb.ref("excluded.ended_at"),
+          sync_mode: (eb: any) => eb.ref("excluded.sync_mode"),
+          owner_key: (eb: any) => eb.ref("excluded.owner_key"),
+          requester_origin_json: (eb: any) => eb.ref("excluded.requester_origin_json"),
+          controller_id: (eb: any) => eb.ref("excluded.controller_id"),
+          revision: (eb: any) => eb.ref("excluded.revision"),
+          status: (eb: any) => eb.ref("excluded.status"),
+          notify_policy: (eb: any) => eb.ref("excluded.notify_policy"),
+          goal: (eb: any) => eb.ref("excluded.goal"),
+          current_step: (eb: any) => eb.ref("excluded.current_step"),
+          blocked_task_id: (eb: any) => eb.ref("excluded.blocked_task_id"),
+          blocked_summary: (eb: any) => eb.ref("excluded.blocked_summary"),
+          state_json: (eb: any) => eb.ref("excluded.state_json"),
+          wait_json: (eb: any) => eb.ref("excluded.wait_json"),
+          cancel_requested_at: (eb: any) => eb.ref("excluded.cancel_requested_at"),
+          created_at: (eb: any) => eb.ref("excluded.created_at"),
+          updated_at: (eb: any) => eb.ref("excluded.updated_at"),
+          ended_at: (eb: any) => eb.ref("excluded.ended_at"),
         }),
       ),
   );
 }
 
 function openFlowRegistryDatabase(): FlowRegistryDatabase {
-  const database: unknown = openStateDatabase();
+  const database: any = openStateDatabase();
   const pathname = database.path;
   if (cachedDatabase && cachedDatabase.path === pathname && cachedDatabase.db.open) {
     return cachedDatabase;

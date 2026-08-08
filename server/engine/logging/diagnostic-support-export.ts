@@ -41,7 +41,7 @@ const DEFAULT_LOG_MAX_BYTES = 1_000_000;
 const SUPPORT_EXPORT_PREFIX = "openclaw-diagnostics-";
 const SUPPORT_EXPORT_SUFFIX = ".zip";
 type Awaitable<T> = T | Promise<T>;
-type SupportSnapshotReader = () => Awaitable<unknown>;
+type SupportSnapshotReader = () => Awaitable<any>;
 
 type DiagnosticSupportExportOptions = {
   outputPath?: string;
@@ -95,14 +95,14 @@ type ConfigShape = {
   error?: string;
   topLevelKeys: string[];
   gateway?: {
-    mode?: unknown;
-    bind?: unknown;
-    port?: unknown;
-    authMode?: unknown;
-    tailscale?: unknown;
+    mode?: any;
+    bind?: any;
+    port?: any;
+    authMode?: any;
+    tailscale?: any;
   };
   discovery?: {
-    mdnsMode?: unknown;
+    mdnsMode?: any;
     bonjourEnvOverride: "unset" | "force-enabled" | "force-disabled" | "unrecognized";
   };
   channels?: {
@@ -120,7 +120,7 @@ type ConfigShape = {
 
 type ConfigExport = {
   shape: ConfigShape;
-  sanitized?: unknown;
+  sanitized?: any;
 };
 
 type IncludedSanitizedLogTail = {
@@ -131,7 +131,7 @@ type IncludedSanitizedLogTail = {
   lineCount: number;
   truncated: boolean;
   reset: boolean;
-  lines: Array<Record<string, unknown>>;
+  lines: Array<Record<string, any>>;
 };
 
 type FailedSanitizedLogTail = Omit<IncludedSanitizedLogTail, "status"> & {
@@ -179,7 +179,7 @@ function formatExportTimestamp(now: Date): string {
   return now.toISOString().replace(/[:.]/g, "-");
 }
 
-function normalizePositiveInteger(value: unknown, fallback: number): number {
+function normalizePositiveInteger(value: any, fallback: number): number {
   const parsed = typeof value === "number" ? value : Number(value);
   if (!Number.isFinite(parsed) || parsed < 1) {
     return fallback;
@@ -187,7 +187,7 @@ function normalizePositiveInteger(value: unknown, fallback: number): number {
   return Math.floor(parsed);
 }
 
-function safeScalar(value: unknown): unknown {
+function safeScalar(value: any): any {
   if (typeof value === "boolean") {
     return value;
   }
@@ -224,12 +224,12 @@ function resolveBonjourEnvOverride(
   }
 }
 
-function sortedObjectKeys(value: unknown): string[] {
+function sortedObjectKeys(value: any): string[] {
   return Object.keys(asOptionalRecord(value) ?? {}).toSorted((a, b) => a.localeCompare(b));
 }
 
 function sanitizeConfigShape(
-  parsed: unknown,
+  parsed: any,
   configPath: string,
   stat: fs.Stats,
   env: NodeJS.ProcessEnv,
@@ -291,7 +291,7 @@ function sanitizeConfigShape(
   return shape;
 }
 
-function sanitizeConfigDetails(parsed: unknown, redaction: SupportRedactionContext): unknown {
+function sanitizeConfigDetails(parsed: any, redaction: SupportRedactionContext): any {
   return sanitizeSupportConfigValue(redactConfigObject(parsed), redaction);
 }
 
@@ -317,14 +317,14 @@ function configShapeReadFailure(params: {
   return shape;
 }
 
-function isMissingPathError(error: unknown): boolean {
+function isMissingPathError(error: any): boolean {
   if (!error || typeof error !== "object" || !("code" in error)) {
     return false;
   }
   return error.code === "ENOENT" || error.code === "ENOTDIR";
 }
 
-function configReadErrorMessage(error: unknown, stat?: fs.Stats): string | undefined {
+function configReadErrorMessage(error: any, stat?: fs.Stats): string | undefined {
   if (!stat && isMissingPathError(error)) {
     return undefined;
   }
@@ -367,7 +367,7 @@ function readConfigExport(options: {
   }
 }
 
-function redactErrorForSupport(error: unknown, redaction: SupportRedactionContext): string {
+function redactErrorForSupport(error: any, redaction: SupportRedactionContext): string {
   return redactSupportString(error instanceof Error ? error.message : String(error), redaction);
 }
 
@@ -436,7 +436,7 @@ function sanitizeLogTail(tail: LogTailPayload, options: SupportRedactionContext)
   };
 }
 
-function failedLogTail(error: unknown, redaction: SupportRedactionContext): SanitizedLogTail {
+function failedLogTail(error: any, redaction: SupportRedactionContext): SanitizedLogTail {
   const redactedError = redactErrorForSupport(error, redaction);
   return {
     status: "failed",
@@ -456,12 +456,12 @@ function failedLogTail(error: unknown, redaction: SupportRedactionContext): Sani
   };
 }
 
-function logString(record: Record<string, unknown>, key: string): string | undefined {
+function logString(record: Record<string, any>, key: string): string | undefined {
   const value = record[key];
   return typeof value === "string" && value.trim() ? value : undefined;
 }
 
-function isBonjourLogRecord(record: Record<string, unknown>): boolean {
+function isBonjourLogRecord(record: Record<string, any>): boolean {
   const sourceFields = ["subsystem", "logger", "module", "pluginId", "component"];
   if (sourceFields.some((field) => logString(record, field)?.toLowerCase().includes("bonjour"))) {
     return true;

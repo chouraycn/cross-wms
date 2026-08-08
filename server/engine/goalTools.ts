@@ -36,7 +36,7 @@ function resolveSessionKey(options: GoalToolOptions): string {
 /**
  * JSON 结果格式化
  */
-function jsonResult(data: unknown): string {
+function jsonResult(data: any): string {
   return JSON.stringify(data, null, 2);
 }
 
@@ -73,7 +73,7 @@ export function getCreateGoalToolDefinition(): ToolDefinition {
  * 创建目标工具处理器
  */
 export function createCreateGoalToolHandler(options: GoalToolOptions): ToolHandler {
-  return async (args: Record<string, unknown>) => {
+  return async (args: Record<string, any>) => {
     try {
       const sessionKey = resolveSessionKey(options);
       const objective = args.objective as string;
@@ -116,7 +116,7 @@ export function getGetGoalToolDefinition(): ToolDefinition {
  * 获取目标工具处理器
  */
 export function createGetGoalToolHandler(options: GoalToolOptions): ToolHandler {
-  return async (_args: Record<string, unknown>) => {
+  return async (_args: Record<string, any>) => {
     try {
       const sessionKey = resolveSessionKey(options);
       const snapshot = getGoal({ sessionKey });
@@ -161,7 +161,7 @@ export function getUpdateGoalToolDefinition(): ToolDefinition {
  * 更新目标工具处理器
  */
 export function createUpdateGoalToolHandler(options: GoalToolOptions): ToolHandler {
-  return async (args: Record<string, unknown>) => {
+  return async (args: Record<string, any>) => {
     try {
       const sessionKey = resolveSessionKey(options);
       const status = args.status as string;

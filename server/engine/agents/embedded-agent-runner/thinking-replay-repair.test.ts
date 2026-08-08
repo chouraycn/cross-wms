@@ -7,7 +7,7 @@ import { repairRejectedThinkingReplayInSessionManager } from "./thinking-replay-
 
 type AppendMessage = Parameters<SessionManager["appendMessage"]>[0];
 
-function asAppendMessage(message: unknown): AppendMessage {
+function asAppendMessage(message: any): AppendMessage {
   return message as AppendMessage;
 }
 
@@ -18,7 +18,7 @@ function branchMessages(sessionManager: SessionManager): AgentMessage[] {
     .map((entry) => entry.message);
 }
 
-function branchAssistantContents(sessionManager: SessionManager): unknown[] {
+function branchAssistantContents(sessionManager: SessionManager): any[] {
   return branchMessages(sessionManager)
     .filter((message): message is Extract<AgentMessage, { role: "assistant" }> => {
       return message.role === "assistant";

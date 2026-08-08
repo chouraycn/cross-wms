@@ -6,11 +6,11 @@ const resolveAgentIdentityMock = vi.hoisted(() => vi.fn());
 const resolveAgentAvatarMock = vi.hoisted(() => vi.fn());
 
 vi.mock("../../agents/identity.js", () => ({
-  resolveAgentIdentity: (...args: unknown[]) => resolveAgentIdentityMock(...args),
+  resolveAgentIdentity: (...args: any[]) => resolveAgentIdentityMock(...args),
 }));
 
 vi.mock("../../agents/identity-avatar.js", () => ({
-  resolveAgentAvatar: (...args: unknown[]) => resolveAgentAvatarMock(...args),
+  resolveAgentAvatar: (...args: any[]) => resolveAgentAvatarMock(...args),
 }));
 
 type IdentityModule = typeof import("./identity.js");

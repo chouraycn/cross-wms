@@ -8,9 +8,9 @@
 
 export type EditOperations = unknown;
 export type EditToolOptions = unknown;
-export function createEditToolDefinition(..._args: unknown[]): unknown {
+export function createEditToolDefinition(..._args: any[]): any {
   return undefined;
 }
-export function createEditTool(..._args: unknown[]): unknown {
+export function createEditTool(..._args: any[]): any {
   return undefined;
 }

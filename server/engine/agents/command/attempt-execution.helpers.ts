@@ -55,14 +55,14 @@ async function scanJsonlFile(filePath: string | undefined): Promise<JsonlFileSca
         if (recordCount > SESSION_FILE_MAX_RECORDS) {
           break;
         }
-        let obj: unknown;
+        let obj: any;
         try {
           obj = JSON.parse(line);
         } catch {
           continue;
         }
-        const rec = obj as Record<string, unknown> | null;
-        if ((rec?.message as Record<string, unknown> | undefined)?.role === "assistant") {
+        const rec = obj as Record<string, any> | null;
+        if ((rec?.message as Record<string, any> | undefined)?.role === "assistant") {
           return { fileExists: true, hasAssistant: true };
         }
       }
@@ -146,7 +146,7 @@ export async function claudeCliSessionTranscriptHasContent(params: {
   return false;
 }
 
-function toToolContentBlocks(content: unknown): ToolContentBlock[] | undefined {
+function toToolContentBlocks(content: any): ToolContentBlock[] | undefined {
   if (!Array.isArray(content)) {
     return undefined;
   }
@@ -189,17 +189,17 @@ async function jsonlFileHasOrphanedTrailingToolUse(filePath: string): Promise<bo
         if (!line.trim()) {
           continue;
         }
-        let obj: unknown;
+        let obj: any;
         try {
           obj = JSON.parse(line);
         } catch {
           continue;
         }
-        const rec = obj as Record<string, unknown> | null;
+        const rec = obj as Record<string, any> | null;
         if (rec?.isSidechain === true) {
           continue;
         }
-        const message = rec?.message as Record<string, unknown> | undefined;
+        const message = rec?.message as Record<string, any> | undefined;
         const role = message?.role;
         if (role === "assistant") {
           lastAssistantToolUseIds = new Set();
@@ -294,7 +294,7 @@ export function resolveFallbackRetryPrompt(params: {
 const CLAUDE_CLI_FALLBACK_PRELUDE_DEFAULT_CHAR_BUDGET = 8_000;
 const CLAUDE_CLI_FALLBACK_PRELUDE_MIN_TURN_CHARS = 64;
 
-type FallbackTurnLikeMessage = Record<string, unknown>;
+type FallbackTurnLikeMessage = Record<string, any>;
 
 function extractFallbackTurnText(message: FallbackTurnLikeMessage): string {
   const content = message.content;
@@ -313,7 +313,7 @@ function extractFallbackTurnText(message: FallbackTurnLikeMessage): string {
     if (!block || typeof block !== "object") {
       continue;
     }
-    const rec = block as Record<string, unknown>;
+    const rec = block as Record<string, any>;
     if (typeof rec.text === "string") {
       parts.push(rec.text);
       continue;

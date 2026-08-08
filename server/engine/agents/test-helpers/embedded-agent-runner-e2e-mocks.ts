@@ -6,7 +6,7 @@
 import { vi } from "vitest";
 
 type EmbeddedRunnerFastRunMockOptions = {
-  runEmbeddedAttempt: (params: unknown) => unknown;
+  runEmbeddedAttempt: (params: any) => unknown;
   prepareProviderRuntimeAuth?: (params: {
     provider: string;
     context: { apiKey: string };
@@ -74,7 +74,7 @@ export function installEmbeddedRunnerFastRunE2eMocks(
       }),
     ),
     resolveAgentHarnessPolicy: vi.fn(() => ({ runtime: "openclaw" })),
-    runAgentHarnessAttempt: (params: unknown) => options.runEmbeddedAttempt(params),
+    runAgentHarnessAttempt: (params: any) => options.runEmbeddedAttempt(params),
   }));
   vi.doMock("../runtime-plan/build.js", () => ({
     buildAgentRuntimePlan: vi.fn(
@@ -103,7 +103,7 @@ export function installEmbeddedRunnerFastRunE2eMocks(
           transformSystemPrompt: vi.fn((context) => context.systemPrompt),
         },
         tools: {
-          normalize: vi.fn((tools: unknown[]) => tools),
+          normalize: vi.fn((tools: any[]) => tools),
           logDiagnostics: vi.fn(),
         },
         transcript: {
@@ -145,7 +145,7 @@ export function installEmbeddedRunnerFastRunE2eMocks(
     ),
   }));
   vi.doMock("../embedded-agent-runner/run/attempt.js", () => ({
-    runEmbeddedAttempt: (params: unknown) => options.runEmbeddedAttempt(params),
+    runEmbeddedAttempt: (params: any) => options.runEmbeddedAttempt(params),
   }));
   vi.doMock("../../plugins/provider-runtime.js", () => ({
     applyProviderResolvedTransportWithPlugin: vi.fn(() => undefined),

@@ -82,18 +82,18 @@ function createMonitorHarness(params?: { cpuMsPerWallMs?: number; utilization?: 
   };
 }
 
-function expectSnapshotFields(snapshot: unknown, expected: Record<string, unknown>) {
+function expectSnapshotFields(snapshot: any, expected: Record<string, any>) {
   if (!snapshot || typeof snapshot !== "object") {
     throw new Error("expected event loop health snapshot");
   }
-  const actual = snapshot as Record<string, unknown>;
+  const actual = snapshot as Record<string, any>;
   for (const [key, value] of Object.entries(expected)) {
     expect(actual[key]).toEqual(value);
   }
   return actual;
 }
 
-function expectSaturatedLoadSnapshot(snapshot: unknown) {
+function expectSaturatedLoadSnapshot(snapshot: any) {
   return expectSnapshotFields(snapshot, {
     degraded: true,
     reasons: ["event_loop_utilization", "cpu"],

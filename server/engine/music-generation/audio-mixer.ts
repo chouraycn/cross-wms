@@ -28,7 +28,7 @@ export type MixResult = {
   durationSeconds: number;
   trackCount: number;
   mimeType: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 export function validateMixTracks(tracks: MixTrack[]): string[] {

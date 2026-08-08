@@ -135,7 +135,7 @@ export function isLocalModel(model: { provider?: string; apiEndpoint?: string })
 }
 
 /** 写入队列，防止并发写入 */
-let writeLockPromise: Promise<unknown> = Promise.resolve();
+let writeLockPromise: Promise<any> = Promise.resolve();
 
 function withWriteLock<T>(fn: () => Promise<T>): Promise<T> {
   const result = writeLockPromise.then(() => fn());
@@ -154,7 +154,7 @@ let memoryFallbackMode = false;
 let memoryModelsFile: ModelsFile | null = null;
 
 /** 检测是否为 EPERM/权限类错误 */
-function isPermissionError(e: unknown): boolean {
+function isPermissionError(e: any): boolean {
   const code = (e as NodeJS.ErrnoException).code;
   return code === 'EPERM' || code === 'EACCES' || code === 'EROFS';
 }

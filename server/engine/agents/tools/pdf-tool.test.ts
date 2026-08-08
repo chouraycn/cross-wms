@@ -83,17 +83,17 @@ function withDefaultModel(primary: string): OpenClawConfig {
   } as OpenClawConfig;
 }
 
-function expectFields(value: unknown, expected: Record<string, unknown>): void {
+function expectFields(value: any, expected: Record<string, any>): void {
   if (!value || typeof value !== "object") {
     throw new Error("expected fields object");
   }
-  const record = value as Record<string, unknown>;
+  const record = value as Record<string, any>;
   for (const [key, expectedValue] of Object.entries(expected)) {
     expect(record[key], key).toEqual(expectedValue);
   }
 }
 
-function firstMockCall(mock: { mock: { calls: unknown[][] } }, label: string): unknown[] {
+function firstMockCall(mock: { mock: { calls: any[][] } }, label: string): any[] {
   const call = mock.mock.calls.at(0);
   if (!call) {
     throw new Error(`expected ${label} to be called`);
@@ -513,7 +513,7 @@ describe("createPdfTool", () => {
         "ensureOpenClawModelsJson",
       );
       expectFields(
-        (modelsConfigArg as { agents?: { defaults?: unknown } } | undefined)?.agents?.defaults,
+        (modelsConfigArg as { agents?: { defaults?: any } } | undefined)?.agents?.defaults,
         {
           pdfModel: { primary: ANTHROPIC_PDF_MODEL },
         },

@@ -97,7 +97,7 @@ describe("live cache regression runner", () => {
   it("keeps missing optional live-cache prerequisites non-blocking", async () => {
     const regressions: string[] = [];
     const warnings: string[] = [];
-    const summary: Record<string, Record<string, unknown>> = {
+    const summary: Record<string, Record<string, any>> = {
       anthropic: {},
       openai: {},
     };
@@ -133,7 +133,7 @@ describe("live cache regression runner", () => {
     // treated as validation failures rather than advisory skips.
     const regressions: string[] = [];
     const warnings: string[] = [];
-    const summary: Record<string, Record<string, unknown>> = {
+    const summary: Record<string, Record<string, any>> = {
       anthropic: {},
       openai: {},
     };

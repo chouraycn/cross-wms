@@ -24,11 +24,11 @@ import {
 } from "./plugins-cli-test-helpers.js";
 
 function requireMockCallArg(
-  mockFn: { mock: { calls: unknown[][] } },
+  mockFn: { mock: { calls: any[][] } },
   label: string,
   index = 0,
-): Record<string, unknown> {
-  const arg = mockFn.mock.calls[index]?.[0] as Record<string, unknown> | undefined;
+): Record<string, any> {
+  const arg = mockFn.mock.calls[index]?.[0] as Record<string, any> | undefined;
   if (!arg) {
     throw new Error(`expected ${label} call #${index + 1}`);
   }
@@ -65,7 +65,7 @@ describe("persistPluginInstall", () => {
         },
       },
     } as OpenClawConfig;
-    enablePluginInConfig.mockImplementation((...args: unknown[]) => {
+    enablePluginInConfig.mockImplementation((...args: any[]) => {
       const [cfg, pluginId] = args as [OpenClawConfig, string];
       expect(pluginId).toBe("alpha");
       expect(cfg.plugins?.allow).toEqual(["memory-core", "alpha"]);
@@ -120,7 +120,7 @@ describe("persistPluginInstall", () => {
     const refreshParams = requireMockCallArg(refreshPluginRegistry, "refreshPluginRegistry");
     expect(refreshParams.config).toBe(enabledConfig);
     expect(refreshParams.reason).toBe("source-changed");
-    expect((refreshParams.installRecords as Record<string, unknown>).alpha).toEqual({
+    expect((refreshParams.installRecords as Record<string, any>).alpha).toEqual({
       source: "npm",
       spec: "alpha@1.0.0",
       installPath: "/tmp/alpha",
@@ -588,7 +588,7 @@ describe("persistPluginInstall", () => {
         },
       },
     } as OpenClawConfig;
-    enablePluginInConfig.mockImplementation((...args: unknown[]) => {
+    enablePluginInConfig.mockImplementation((...args: any[]) => {
       const [cfg, pluginId] = args as [OpenClawConfig, string];
       expect(pluginId).toBe("alpha");
       expect(cfg.plugins?.deny).toEqual(["other"]);
@@ -661,7 +661,7 @@ describe("persistPluginInstall", () => {
         warnings: [],
         changed: true,
       };
-    }) as (...args: unknown[]) => unknown);
+    }) as (...args: any[]) => unknown);
 
     const next = await persistPluginInstall({
       snapshot: {
@@ -734,7 +734,7 @@ describe("persistPluginInstall", () => {
         warnings: [],
         changed: true,
       };
-    }) as (...args: unknown[]) => unknown);
+    }) as (...args: any[]) => unknown);
 
     const next = await persistPluginInstall({
       snapshot: {

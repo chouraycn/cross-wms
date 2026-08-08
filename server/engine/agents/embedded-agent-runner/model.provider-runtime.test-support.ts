@@ -49,7 +49,7 @@ type DynamicModelContext = {
   };
 };
 
-type ResolvedModelLike = Record<string, unknown>;
+type ResolvedModelLike = Record<string, any>;
 type NormalizedTransportLike = {
   api?: string | null;
   baseUrl?: string;
@@ -757,7 +757,7 @@ export function createProviderRuntimeTestMock(options: ProviderRuntimeTestMockOp
         : undefined,
     normalizeProviderResolvedModelWithPlugin: (params: {
       provider: string;
-      context: { model: unknown };
+      context: { model: any };
     }) =>
       handledDynamicProviders.has(params.provider)
         ? normalizeDynamicModel({
@@ -767,10 +767,10 @@ export function createProviderRuntimeTestMock(options: ProviderRuntimeTestMockOp
         : undefined,
     applyProviderResolvedTransportWithPlugin: (params: {
       provider: string;
-      config?: unknown;
+      config?: any;
       workspaceDir?: string;
       env?: NodeJS.ProcessEnv;
-      context: { model: unknown };
+      context: { model: any };
     }) => {
       const model = params.context.model as ResolvedModelLike;
       const normalized = normalizeTransport({

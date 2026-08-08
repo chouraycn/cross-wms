@@ -16,21 +16,21 @@ export type FinalizeInboundContextOptions = {
 
 const DEFAULT_MEDIA_TYPE = "application/octet-stream";
 
-function normalizeTextField(value: unknown): string | undefined {
+function normalizeTextField(value: any): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }
   return sanitizeInboundSystemTags(normalizeInboundTextNewlines(value));
 }
 
-function normalizeTrustedTextField(value: unknown): string | undefined {
+function normalizeTrustedTextField(value: any): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }
   return normalizeInboundTextNewlines(value);
 }
 
-function normalizeMediaType(value: unknown): string | undefined {
+function normalizeMediaType(value: any): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }
@@ -74,7 +74,7 @@ function applySupplementalContext(ctx: MsgContext): void {
   delete ctx.SupplementalContext;
 }
 
-export function finalizeInboundContext<T extends Record<string, unknown>>(
+export function finalizeInboundContext<T extends Record<string, any>>(
   ctx: T,
   opts: FinalizeInboundContextOptions = {},
 ): T & FinalizedMsgContext {

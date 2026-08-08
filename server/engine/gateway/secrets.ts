@@ -1,5 +1,5 @@
 // 移植自 openclaw/src/gateway/server-methods/secrets.ts
 
-export function createSecretsHandlers(...args: unknown[]): unknown {
+export function createSecretsHandlers(...args: any[]): any {
   return undefined;
 }

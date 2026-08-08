@@ -1,29 +1,29 @@
 // 移植自 openclaw/src/gateway/server/health-state.ts
 
-export function buildGatewaySnapshot(...args: unknown[]): unknown {
+export function buildGatewaySnapshot(...args: any[]): any {
   return undefined;
 }
 
-export function getHealthCache(...args: unknown[]): unknown {
+export function getHealthCache(...args: any[]): any {
   return undefined;
 }
 
-export function getHealthVersion(...args: unknown[]): unknown {
+export function getHealthVersion(...args: any[]): any {
   return undefined;
 }
 
-export function incrementPresenceVersion(...args: unknown[]): unknown {
+export function incrementPresenceVersion(...args: any[]): any {
   return undefined;
 }
 
-export function getPresenceVersion(...args: unknown[]): unknown {
+export function getPresenceVersion(...args: any[]): any {
   return undefined;
 }
 
-export function setBroadcastHealthUpdate(...args: unknown[]): unknown {
+export function setBroadcastHealthUpdate(...args: any[]): any {
   return undefined;
 }
 
-export async function refreshGatewayHealthSnapshot(...args: unknown[]): Promise<unknown> {
+export async function refreshGatewayHealthSnapshot(...args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }

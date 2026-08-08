@@ -5,12 +5,12 @@ export type BoundTaskRunsRuntime = unknown;
 export type PluginRuntimeTaskFlows = unknown;
 export type PluginRuntimeTaskRuns = unknown;
 export type PluginRuntimeTasks = unknown;
-export function createRuntimeTaskRuns(...args: unknown[]): unknown {
+export function createRuntimeTaskRuns(...args: any[]): any {
   return undefined;
 }
-export function createRuntimeTaskFlows(...args: unknown[]): unknown {
+export function createRuntimeTaskFlows(...args: any[]): any {
   return undefined;
 }
-export function createRuntimeTasks(...args: unknown[]): unknown {
+export function createRuntimeTasks(...args: any[]): any {
   return undefined;
 }

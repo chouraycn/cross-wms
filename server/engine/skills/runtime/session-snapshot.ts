@@ -14,7 +14,7 @@ import { getSkillEnvTracker } from "../security/sandbox.js";
 import { getSkillOriginTracker, type SkillOrigin } from "../lifecycle/skill-origin.js";
 import { getAgentAllowlistManager } from "../discovery/agent-allowlist.js";
 
-const logger = getChildLogger("session-snapshot" as unknown as Record<string, unknown>);
+const logger = getChildLogger("session-snapshot" as unknown as Record<string, any>);
 
 // ============================================================================
 // 类型定义
@@ -70,7 +70,7 @@ export interface SessionSnapshot {
     list?: Array<{ id: string; skills?: string[] }>;
   };
   /** 技能来源信息 */
-  skillOrigins: Record<string, unknown>;
+  skillOrigins: Record<string, any>;
   /** 系统信息 */
   systemInfo: {
     platform: string;
@@ -421,11 +421,11 @@ export function resetSessionSnapshotManager(): void {
 
 /** 技能快照格式（旧版） */
 export interface SessionSkillSnapshot {
-  skills: Array<{ name: string; [key: string]: unknown }>;
+  skills: Array<{ name: string; [key: string]: any }>;
   prompt?: string;
-  resolvedSkills?: Array<{ name: string; description?: string; [key: string]: unknown }>;
+  resolvedSkills?: Array<{ name: string; description?: string; [key: string]: any }>;
   promptFormatVersion?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 /** 构建会话技能快照的选项 */
@@ -436,7 +436,7 @@ export interface BuildSnapshotOptions {
 
 /** 构建会话技能快照 */
 export function buildSessionSkillSnapshot(
-  skillEntries: Array<{ skill: { name: string; disableModelInvocation?: boolean; [key: string]: unknown }; frontmatter: Record<string, unknown> }>,
+  skillEntries: Array<{ skill: { name: string; disableModelInvocation?: boolean; [key: string]: any }; frontmatter: Record<string, any> }>,
   options?: BuildSnapshotOptions
 ): SessionSkillSnapshot {
   let filtered = skillEntries;
@@ -471,11 +471,11 @@ export function buildSessionSkillSnapshot(
 
 /** 转换为旧版格式 */
 export function snapshotToLegacyFormat(snapshot: SessionSkillSnapshot): {
-  skills: Array<{ name: string; [key: string]: unknown }>;
-  resolvedSkills?: Array<{ name: string; description?: string; [key: string]: unknown }>;
+  skills: Array<{ name: string; [key: string]: any }>;
+  resolvedSkills?: Array<{ name: string; description?: string; [key: string]: any }>;
   promptFormatVersion?: string;
   prompt?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 } {
   return snapshot;
 }
@@ -527,7 +527,7 @@ export function diffSnapshots(a: SessionSkillSnapshot, b: SessionSkillSnapshot):
 export function getSkillFromSnapshot(
   snapshot: SessionSkillSnapshot,
   skillName: string
-): { name: string; [key: string]: unknown } | undefined {
+): { name: string; [key: string]: any } | undefined {
   return snapshot.skills.find(
     (s) => s.name.toLowerCase() === skillName.toLowerCase()
   );

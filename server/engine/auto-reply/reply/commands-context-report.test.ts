@@ -15,7 +15,7 @@ function makeParams(
     contextTokens?: number | null;
     totalTokens?: number | null;
     totalTokensFresh?: boolean;
-    cfg?: Record<string, unknown>;
+    cfg?: Record<string, any>;
     sessionKey?: string;
     sessionId?: string;
     sessionFile?: string;
@@ -90,7 +90,7 @@ function makeParams(
 }
 
 async function withTranscript(
-  messages: unknown[],
+  messages: any[],
   run: (sessionFile: string, dir: string) => Promise<void>,
 ): Promise<void> {
   const dir = await mkdtemp(join(tmpdir(), "openclaw-context-report-"));
@@ -266,7 +266,7 @@ describe("buildContextReply", () => {
     );
     expect(result.text).toContain("Tracked prompt estimate: 1,020 chars (~255 tok)");
     expect(result.text).toContain("Actual context usage (cached): unavailable");
-    expect(result.text).toContain("Session tokens (cached): unknown / ctx=8,192");
+    expect(result.text).toContain("Session tokens (cached): any / ctx=8,192");
     expect(result.text).not.toContain("~645 tok");
   });
 

@@ -6,15 +6,15 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function isToolExplicitlyAllowedByFactoryPolicy(..._args: unknown[]): unknown {
+export function isToolExplicitlyAllowedByFactoryPolicy(..._args: any[]): any {
   return false;
 }
-export function mergeFactoryPolicyList(..._args: unknown[]): unknown {
+export function mergeFactoryPolicyList(..._args: any[]): any {
   return undefined;
 }
-export function resolveImageToolFactoryAvailable(..._args: unknown[]): unknown {
+export function resolveImageToolFactoryAvailable(..._args: any[]): any {
   return undefined;
 }
-export function resolveOptionalMediaToolFactoryPlan(..._args: unknown[]): unknown {
+export function resolveOptionalMediaToolFactoryPlan(..._args: any[]): any {
   return undefined;
 }

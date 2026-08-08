@@ -480,7 +480,7 @@ describe("writeCliSystemPromptFile", () => {
     } finally {
       await written.cleanup();
     }
-    let err: unknown;
+    let err: any;
     try {
       await fs.access(written.filePath ?? "");
     } catch (caught) {

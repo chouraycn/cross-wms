@@ -8,9 +8,9 @@
 
 export type LsOperations = unknown;
 export type LsToolOptions = unknown;
-export function createLsToolDefinition(..._args: unknown[]): unknown {
+export function createLsToolDefinition(..._args: any[]): any {
   return undefined;
 }
-export function createLsTool(..._args: unknown[]): unknown {
+export function createLsTool(..._args: any[]): any {
   return undefined;
 }

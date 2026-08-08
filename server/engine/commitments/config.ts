@@ -148,33 +148,33 @@ export const DEFAULT_AUTO_VERIFICATION_WINDOW_MS = 48 * 60 * 60_000;
 // ===================== 解析工具 =====================
 
 /** 取正整数，非法时回退到 fallback */
-function positiveInt(value: unknown, fallback: number): number {
+function positiveInt(value: any, fallback: number): number {
   return typeof value === "number" && Number.isFinite(value) && value > 0
     ? Math.floor(value)
     : fallback;
 }
 
 /** 取正有限数，非法时回退到 fallback */
-function positiveNumber(value: unknown, fallback: number): number {
+function positiveNumber(value: any, fallback: number): number {
   return typeof value === "number" && Number.isFinite(value) && value > 0
     ? value
     : fallback;
 }
 
 /** 取 0-1 之间的数，非法时回退到 fallback */
-function zeroToOneNumber(value: unknown, fallback: number): number {
+function zeroToOneNumber(value: any, fallback: number): number {
   return typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 1
     ? value
     : fallback;
 }
 
 /** 取布尔值，非法时回退到 fallback */
-function booleanValue(value: unknown, fallback: boolean): boolean {
+function booleanValue(value: any, fallback: boolean): boolean {
   return typeof value === "boolean" ? value : fallback;
 }
 
 /** 取字符串，非法时回退到 fallback */
-function stringValue(value: unknown, fallback: string): string {
+function stringValue(value: any, fallback: string): string {
   return typeof value === "string" && value.trim().length > 0 ? value.trim() : fallback;
 }
 

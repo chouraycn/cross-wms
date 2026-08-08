@@ -21,7 +21,7 @@ export interface BoundAccount {
   teamId?: string;
   roles?: string[];
   boundAt: number;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
 }
 
 export interface RouteResolution {

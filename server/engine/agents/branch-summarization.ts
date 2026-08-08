@@ -9,9 +9,9 @@
 export type CollectEntriesResult = unknown;
 export type BranchSummaryResult = unknown;
 export type GenerateBranchSummaryOptions = unknown;
-export function collectEntriesForBranchSummary(..._args: unknown[]): unknown {
+export function collectEntriesForBranchSummary(..._args: any[]): any {
   return [];
 }
-export function generateBranchSummary(..._args: unknown[]): unknown {
+export function generateBranchSummary(..._args: any[]): any {
   return undefined;
 }

@@ -109,7 +109,7 @@ function formatNodeTerminalLabel(node: { nodeId: string; displayName?: string })
   return sanitizeTerminalText(label);
 }
 
-function formatNodeApprovalState(raw: unknown): NodeApprovalState | null {
+function formatNodeApprovalState(raw: any): NodeApprovalState | null {
   return raw === "approved" ||
     raw === "pending-approval" ||
     raw === "pending-reapproval" ||
@@ -134,7 +134,7 @@ function isPendingApprovalState(
   return state === "pending-approval" || state === "pending-reapproval";
 }
 
-function formatPendingApprovalCommand(raw: unknown, opts: NodesRpcOpts): string | null {
+function formatPendingApprovalCommand(raw: any, opts: NodesRpcOpts): string | null {
   const requestId = normalizeOptionalString(raw);
   if (!requestId) {
     return null;
@@ -157,7 +157,7 @@ function formatConnectionFlagReminder(opts: NodesRpcOpts): string | null {
     : null;
 }
 
-function parseSinceMs(raw: unknown, label: string): number | undefined {
+function parseSinceMs(raw: any, label: string): number | undefined {
   if (raw === undefined || raw === null) {
     return undefined;
   }
@@ -236,7 +236,7 @@ async function tryReadNodeList(opts: NodesRpcOpts): Promise<NodeListNode[] | nul
 }
 
 function sanitizePairedNodeForListJson(node: PairedNodeListRow): Omit<PairedNodeListRow, "token"> {
-  const copy: Record<string, unknown> = { ...node };
+  const copy: Record<string, any> = { ...node };
   delete copy.token;
   return copy as Omit<PairedNodeListRow, "token">;
 }
@@ -254,7 +254,7 @@ export function registerNodesStatusCommands(nodes: Command) {
           const connectedOnly = Boolean(opts.connected);
           const sinceMs = parseSinceMs(opts.lastConnected, "Invalid --last-connected");
           const result = await callNodeDiagnosticsGatewayCli("node.list", opts, {});
-          const obj: Record<string, unknown> =
+          const obj: Record<string, any> =
             typeof result === "object" && result !== null ? result : {};
           const { ok, warn, muted } = getNodesTheme();
           const tableWidth = getTerminalTableWidth();
@@ -401,7 +401,7 @@ export function registerNodesStatusCommands(nodes: Command) {
             return;
           }
 
-          const obj: Record<string, unknown> =
+          const obj: Record<string, any> =
             typeof result === "object" && result !== null ? result : {};
           const displayName = typeof obj.displayName === "string" ? obj.displayName : nodeId;
           const connected = Boolean(obj.connected);

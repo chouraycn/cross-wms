@@ -328,8 +328,8 @@ export interface ChainExecutionStep {
   skillId: string;
   skillName: string;
   status: StepStatus;
-  input?: unknown;
-  output?: unknown;
+  input?: any;
+  output?: any;
   duration?: number;
   error?: string;
 }

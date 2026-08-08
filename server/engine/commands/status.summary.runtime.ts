@@ -33,7 +33,7 @@ function resolveStatusModelRefFromRaw(params: {
     // Bare model names may be aliases from agents.defaults.models before falling back to default provider.
     const aliasKey = normalizeLowercaseStringOrEmpty(trimmed);
     for (const [modelKey, entry] of Object.entries(configuredModels)) {
-      const aliasValue = (entry as { alias?: unknown } | undefined)?.alias;
+      const aliasValue = (entry as { alias?: any } | undefined)?.alias;
       const alias = normalizeOptionalString(aliasValue) ?? "";
       if (!alias || normalizeOptionalLowercaseString(alias) !== aliasKey) {
         continue;

@@ -10,7 +10,7 @@ type SettlingCronTaskRun = {
 };
 
 const activeCronTaskRunsByRunId = new Map<string, CronTaskCancelHandle>();
-const settlingCronTaskRuns = new Map<Promise<unknown>, SettlingCronTaskRun>();
+const settlingCronTaskRuns = new Map<Promise<any>, SettlingCronTaskRun>();
 const DEFAULT_CRON_TASK_RUN_DRAIN_POLL_MS = 25;
 export const CRON_TASK_RUN_SETTLEMENT_TRACKING_MAX_MS = 60_000;
 
@@ -63,7 +63,7 @@ export function abortActiveCronTaskRuns(reason = "Gateway restarting."): number 
   return aborted;
 }
 
-export function trackActiveCronTaskRunSettlement(promise: Promise<unknown>): void {
+export function trackActiveCronTaskRunSettlement(promise: Promise<any>): void {
   settlingCronTaskRuns.set(promise, {});
   void promise
     .catch(() => undefined)

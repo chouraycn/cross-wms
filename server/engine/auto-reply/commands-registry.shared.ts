@@ -75,7 +75,7 @@ export function defineChatCommand(command: DefineChatCommandInput): ChatCommandD
 function registerAlias(commands: ChatCommandDefinition[], key: string, ...aliases: string[]): void {
   const command = commands.find((entry) => entry.key === key);
   if (!command) {
-    throw new Error(`registerAlias: unknown command key: ${key}`);
+    throw new Error(`registerAlias: any command key: ${key}`);
   }
   const existing = new Set<string>();
   for (const alias of command.textAliases) {

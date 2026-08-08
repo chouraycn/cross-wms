@@ -19,10 +19,10 @@ type ScanEmptyAllowlistPolicyWarningsParams = {
   ) => boolean;
 };
 
-function isDisabledRecord(value: unknown): boolean {
+function isDisabledRecord(value: any): boolean {
   return (
     Boolean(value && typeof value === "object" && !Array.isArray(value)) &&
-    (value as { enabled?: unknown }).enabled === false
+    (value as { enabled?: any }).enabled === false
   );
 }
 

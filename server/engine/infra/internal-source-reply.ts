@@ -15,8 +15,8 @@ export async function shouldUseInternalSourceReplySink(input: {
     currentMessageId?: string | number;
   };
   sessionKey?: string;
-  cfg?: unknown;
-}, params: Record<string, unknown>): Promise<boolean> {
+  cfg?: any;
+}, params: Record<string, any>): Promise<boolean> {
   if (input.action !== "send") return false;
   if (input.sourceReplyDeliveryMode !== "message_tool_only") return false;
 
@@ -36,7 +36,7 @@ export async function shouldUseInternalSourceReplySink(input: {
   for (const key of ["channel", "target", "to", "channelId"]) {
     if (normalizeOptionalString(params[key])) return false;
   }
-  if (Array.isArray(params.targets) && params.targets.some((v: unknown) => normalizeOptionalString(v))) {
+  if (Array.isArray(params.targets) && params.targets.some((v: any) => normalizeOptionalString(v))) {
     return false;
   }
 

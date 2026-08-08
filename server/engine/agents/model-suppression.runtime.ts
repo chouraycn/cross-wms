@@ -16,7 +16,7 @@ export function shouldSuppressBuiltInModel(
 
 /** Build a provider-aware predicate for hiding bundled models. Returns a no-suppress predicate. */
 export function buildShouldSuppressBuiltInModel(
-  _params?: unknown,
+  _params?: any,
 ): (modelId: string, provider?: string) => boolean {
   return () => false;
 }

@@ -30,7 +30,7 @@ const pluginRuntimeLoaderLogger = vi.hoisted(() => ({
   debug: vi.fn(),
 }));
 type HandleGatewayRequestOptions = GatewayRequestOptions & {
-  extraHandlers?: Record<string, unknown>;
+  extraHandlers?: Record<string, any>;
 };
 const handleGatewayRequest = vi.hoisted(() =>
   vi.fn(async (_opts: HandleGatewayRequestOptions) => {}),
@@ -197,11 +197,11 @@ function createTestContext(label: string): GatewayRequestContext {
   return { label } as unknown as GatewayRequestContext;
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!isRecord(value)) {
     throw new Error(`Expected ${label} to be an object`);
   }
@@ -209,9 +209,9 @@ function requireRecord(value: unknown, label: string): Record<string, unknown> {
 }
 
 function getLastMockFirstArg(
-  mock: { mock: { calls: ReadonlyArray<ReadonlyArray<unknown>> } },
+  mock: { mock: { calls: ReadonlyArray<ReadonlyArray<any>> } },
   label: string,
-): unknown {
+): any {
   const calls = mock.mock.calls;
   const call = calls[calls.length - 1];
   if (!call) {
@@ -220,7 +220,7 @@ function getLastMockFirstArg(
   return call[0];
 }
 
-function readRecordField(record: Record<string, unknown>, key: string, label: string) {
+function readRecordField(record: Record<string, any>, key: string, label: string) {
   const value = record[key];
   if (!isRecord(value)) {
     throw new Error(`Expected ${label} to be an object`);
@@ -228,7 +228,7 @@ function readRecordField(record: Record<string, unknown>, key: string, label: st
   return value;
 }
 
-function getLastPluginLoadOptions(): Record<string, unknown> {
+function getLastPluginLoadOptions(): Record<string, any> {
   return requireRecord(
     getLastMockFirstArg(loadOpenClawPlugins, "plugin load"),
     "plugin load options",
@@ -246,14 +246,14 @@ function getLastDispatchedContext(): GatewayRequestContext | undefined {
   return call?.context;
 }
 
-function getLastDispatchedParams(): Record<string, unknown> | undefined {
+function getLastDispatchedParams(): Record<string, any> | undefined {
   const call = getLastMockFirstArg(handleGatewayRequest, "gateway request") as
     | HandleGatewayRequestOptions
     | undefined;
-  return call?.req?.params as Record<string, unknown> | undefined;
+  return call?.req?.params as Record<string, any> | undefined;
 }
 
-function getRequiredLastDispatchedParams(): Record<string, unknown> {
+function getRequiredLastDispatchedParams(): Record<string, any> {
   return requireRecord(getLastDispatchedParams(), "dispatched params");
 }
 
@@ -265,11 +265,11 @@ function getLastDispatchedClientScopes(): string[] {
   return Array.isArray(scopes) ? scopes : [];
 }
 
-function getLastDispatchedClientInternal(): Record<string, unknown> {
+function getLastDispatchedClientInternal(): Record<string, any> {
   const call = getLastMockFirstArg(handleGatewayRequest, "gateway request") as
     | HandleGatewayRequestOptions
     | undefined;
-  return (call?.client?.internal ?? {}) as Record<string, unknown>;
+  return (call?.client?.internal ?? {}) as Record<string, any>;
 }
 
 function getLastPluginLoadLogger(): {
@@ -307,7 +307,7 @@ async function loadTestModules() {
 
 async function createSubagentRuntime(
   _serverPlugins: ServerPluginsModule,
-  cfg: Record<string, unknown> = {},
+  cfg: Record<string, any> = {},
 ): Promise<PluginRuntime["subagent"]> {
   const log = createTestLog();
   loadOpenClawPlugins.mockReturnValue(createRegistry([]));

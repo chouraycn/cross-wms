@@ -2,7 +2,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { publicArtifactModule } = vi.hoisted(() => ({
-  publicArtifactModule: {} as Record<string, unknown>,
+  publicArtifactModule: {} as Record<string, any>,
 }));
 
 vi.mock("./public-surface-loader.js", () => ({

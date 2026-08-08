@@ -31,7 +31,7 @@ export interface ExecutionStep {
 export interface ExecutionResult {
   success: boolean;
   message: string;
-  data?: unknown;
+  data?: any;
   steps: ExecutionStep[];
   shouldNotify: boolean;
 }
@@ -85,11 +85,11 @@ async function executeDataSync(
   automation: AutomationData,
   startTime: number,
   steps: ExecutionStep[],
-): Promise<unknown> {
+): Promise<any> {
   const categories: string[] | undefined =
     automation.taskConfig?.categories as string[] | undefined;
 
-  const result: Record<string, unknown> = {};
+  const result: Record<string, any> = {};
 
   // 仓库数据
   if (!categories || categories.length === 0 || categories.includes('warehouses')) {
@@ -164,7 +164,7 @@ async function executeInventorySnapshot(
   automation: AutomationData,
   startTime: number,
   steps: ExecutionStep[],
-): Promise<unknown> {
+): Promise<any> {
   const t = Date.now();
   try {
     checkTimeout(startTime, automation);
@@ -220,7 +220,7 @@ async function executeReportGen(
   automation: AutomationData,
   startTime: number,
   steps: ExecutionStep[],
-): Promise<unknown> {
+): Promise<any> {
   const t = Date.now();
 
   try {
@@ -318,7 +318,7 @@ async function executeVolumeAlert(
   automation: AutomationData,
   startTime: number,
   steps: ExecutionStep[],
-): Promise<unknown> {
+): Promise<any> {
   const t = Date.now();
 
   try {
@@ -382,14 +382,14 @@ async function executeInventoryPrediction(
   automation: AutomationData,
   startTime: number,
   steps: ExecutionStep[],
-): Promise<unknown> {
+): Promise<any> {
   const t = Date.now();
   try {
     checkTimeout(startTime, automation);
     const db = initDb();
 
     // 从 taskConfig 读取预测配置
-    const taskConfig = (automation.taskConfig ?? {}) as Record<string, unknown>;
+    const taskConfig = (automation.taskConfig ?? {}) as Record<string, any>;
     const predictionConfig = {
       enabled: taskConfig.enablePrediction !== false,
       predictionDays: typeof taskConfig.predictionDays === 'number' ? taskConfig.predictionDays : 14,
@@ -426,13 +426,13 @@ async function executeReplenishmentSuggestion(
   automation: AutomationData,
   startTime: number,
   steps: ExecutionStep[],
-): Promise<unknown> {
+): Promise<any> {
   const t = Date.now();
   try {
     checkTimeout(startTime, automation);
 
     // 从 taskConfig 读取补货配置
-    const taskConfig = (automation.taskConfig ?? {}) as Record<string, unknown>;
+    const taskConfig = (automation.taskConfig ?? {}) as Record<string, any>;
     const replenishmentConfig = {
       coverDays: typeof taskConfig.coverDays === 'number' ? taskConfig.coverDays : 14,
       enableAutoGenerate: taskConfig.enableAutoGenerate !== false,
@@ -459,9 +459,9 @@ async function executeSkillChain(
   automation: AutomationData,
   startTime: number,
   steps: ExecutionStep[],
-): Promise<unknown> {
+): Promise<any> {
   const t = Date.now();
-  const taskConfig = automation.taskConfig as Record<string, unknown> | undefined;
+  const taskConfig = automation.taskConfig as Record<string, any> | undefined;
   const chainId = taskConfig?.chainId as string | undefined;
 
   if (!chainId) {
@@ -499,9 +499,9 @@ async function executeCustom(
   automation: AutomationData,
   startTime: number,
   steps: ExecutionStep[],
-): Promise<unknown> {
+): Promise<any> {
   const t = Date.now();
-  const taskConfig = automation.taskConfig as Record<string, unknown> | undefined;
+  const taskConfig = automation.taskConfig as Record<string, any> | undefined;
   const actionChain = taskConfig?.actionChain as string[] | undefined;
 
   if (!actionChain || actionChain.length === 0) {
@@ -509,7 +509,7 @@ async function executeCustom(
     return null;
   }
 
-  const actionResults: Record<string, unknown> = {};
+  const actionResults: Record<string, any> = {};
 
   for (const action of actionChain) {
     const at = Date.now();
@@ -617,11 +617,11 @@ function computeBackoffDelay(
  * 执行一次自动化任务（内部实现，不含重试）
  */
 async function executeOnce(automation: AutomationData, startTime: number): Promise<{
-  data: unknown;
+  data: any;
   steps: ExecutionStep[];
 }> {
   const steps: ExecutionStep[] = [];
-  let data: unknown = null;
+  let data: any = null;
   const taskType = automation.taskType as string;
 
   try {
@@ -683,8 +683,8 @@ export async function executeAutomation(automation: AutomationData): Promise<Exe
   const startTime = Date.now();
 
   // 读取执行策略
-  const executionPolicy = automation.executionPolicy as Record<string, unknown> | null | undefined;
-  const retry = (executionPolicy?.retry ?? {}) as Record<string, unknown>;
+  const executionPolicy = automation.executionPolicy as Record<string, any> | null | undefined;
+  const retry = (executionPolicy?.retry ?? {}) as Record<string, any>;
   const maxAttempts: number = typeof retry?.maxAttempts === 'number' && retry.maxAttempts > 0
     ? retry.maxAttempts
     : 1;
@@ -695,7 +695,7 @@ export async function executeAutomation(automation: AutomationData): Promise<Exe
     retry?.backoff === 'exponential' ? 'exponential' : 'fixed';
 
   const allSteps: ExecutionStep[] = [];
-  let lastData: unknown = null;
+  let lastData: any = null;
   let lastFailureSteps: ExecutionStep[] | null = null;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {

@@ -80,7 +80,7 @@ type AgentCommandDeliveryPayloadOutcome = {
   error?: string;
   hookEffect?: {
     cancelReason?: string;
-    metadata?: Record<string, unknown>;
+    metadata?: Record<string, any>;
   };
 };
 
@@ -201,11 +201,11 @@ function mergeResultMetaOverrides(
   };
 }
 
-function hasNonEmptyString(value: unknown): value is string {
+function hasNonEmptyString(value: any): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
 
-function hasNonEmptyStringArray(value: unknown): value is string[] {
+function hasNonEmptyStringArray(value: any): value is string[] {
   return Array.isArray(value) && value.some(hasNonEmptyString);
 }
 
@@ -623,7 +623,7 @@ export async function deliverAgentCommandResult(
   } = deliveryRouting;
 
   let deliveryLoggedError = false;
-  const logDeliveryError = (err: unknown) => {
+  const logDeliveryError = (err: any) => {
     deliveryLoggedError = true;
     const message = `Delivery failed (${deliveryChannel}${deliveryTarget ? ` to ${deliveryTarget}` : ""}): ${String(err)}`;
     runtime.error?.(message);
@@ -631,9 +631,9 @@ export async function deliverAgentCommandResult(
       runtime.log(message);
     }
   };
-  let strictPreDeliveryError: unknown;
+  let strictPreDeliveryError: any;
   let deliveryStatus: AgentCommandDeliveryStatus | undefined;
-  const handlePreDeliveryError = (err: unknown, reason: string) => {
+  const handlePreDeliveryError = (err: any, reason: string) => {
     deliveryStatus = preDeliveryFailureStatus(reason);
     if (!bestEffortDeliver) {
       if (opts.json) {

@@ -86,7 +86,7 @@ type KnownNodeCatalog = {
 // 本地内联实现：合并多个字符串数组，去空白、去重、排序。
 // 替代 @openclaw/normalization-core/string-normalization 的 normalizeSortedUniqueTrimmedStringList。
 function normalizeSortedUniqueTrimmedStringList(
-  ...items: Array<readonly unknown[] | undefined>
+  ...items: Array<readonly any[] | undefined>
 ): string[] {
   const flattened = items.flatMap((item) => (Array.isArray(item) ? item : []));
   const set = new Set<string>();
@@ -102,7 +102,7 @@ function normalizeSortedUniqueTrimmedStringList(
   return [...set].sort();
 }
 
-function uniqueSortedStrings(...items: Array<readonly unknown[] | undefined>): string[] {
+function uniqueSortedStrings(...items: Array<readonly any[] | undefined>): string[] {
   return normalizeSortedUniqueTrimmedStringList(...items);
 }
 

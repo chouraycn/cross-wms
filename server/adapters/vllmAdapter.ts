@@ -44,7 +44,7 @@ export class VllmAdapter implements IAiApiAdapter {
       Object.assign(headers, compat.extraHeaders);
     }
 
-    const body: Record<string, unknown> = {
+    const body: Record<string, any> = {
       model: modelId || 'vllm',
       messages,
       temperature,

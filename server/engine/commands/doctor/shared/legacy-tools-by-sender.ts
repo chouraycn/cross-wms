@@ -18,7 +18,7 @@ export type LegacyToolsBySenderKeyHit = {
 };
 
 function collectLegacyToolsBySenderKeyHits(
-  value: unknown,
+  value: any,
   pathParts: Array<string | number>,
   hits: LegacyToolsBySenderKeyHit[],
 ) {

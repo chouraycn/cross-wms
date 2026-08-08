@@ -12,10 +12,10 @@ type ChannelTestPlugin = {
     listAccountIds: () => string[];
     resolveAccount: () => Record<string, never>;
     isEnabled: () => boolean;
-    isConfigured: (_account: unknown, cfg: { autoEnabled?: boolean }) => boolean | Promise<boolean>;
+    isConfigured: (_account: any, cfg: { autoEnabled?: boolean }) => boolean | Promise<boolean>;
   };
   status?: {
-    probeAccount?: (params?: unknown) => unknown;
+    probeAccount?: (params?: any) => unknown;
     buildChannelSummary?: () => unknown;
   };
 };
@@ -64,7 +64,7 @@ vi.mock("../../infra/channel-activity.js", () => ({
 import { channelsHandlers } from "./channels.js";
 
 function createOptions(
-  params: Record<string, unknown>,
+  params: Record<string, any>,
   overrides?: Partial<GatewayRequestHandlerOptions>,
 ): GatewayRequestHandlerOptions {
   return {
@@ -87,7 +87,7 @@ function createOptions(
 function createChannelPlugin(
   params: {
     id?: string;
-    probeAccount?: (params?: unknown) => unknown;
+    probeAccount?: (params?: any) => unknown;
     buildChannelSummary?: () => unknown;
   } = {},
 ): ChannelTestPlugin {
@@ -119,7 +119,7 @@ function configureAutoEnabledChannels(plugins: ChannelTestPlugin[]): void {
 }
 
 async function runChannelsStatus(
-  params: Record<string, unknown>,
+  params: Record<string, any>,
   overrides?: Partial<GatewayRequestHandlerOptions>,
 ) {
   const respond = vi.fn();
@@ -128,22 +128,22 @@ async function runChannelsStatus(
 }
 
 function channelAccounts(
-  payload: Record<string, unknown>,
+  payload: Record<string, any>,
   channel: string,
-): Record<string, unknown>[] {
-  const accounts = requireRecord(payload.channelAccounts, "channel accounts")[channel] as unknown[];
+): Record<string, any>[] {
+  const accounts = requireRecord(payload.channelAccounts, "channel accounts")[channel] as any[];
   expect(Array.isArray(accounts)).toBe(true);
   return accounts.map((account) => requireRecord(account, "channel account"));
 }
 
 function firstChannelAccount(
-  payload: Record<string, unknown>,
+  payload: Record<string, any>,
   channel: string,
-): Record<string, unknown> {
+): Record<string, any> {
   return channelAccounts(payload, channel)[0];
 }
 
-function requireFirstCallArg(mock: { mock: { calls: readonly (readonly unknown[])[] } }) {
+function requireFirstCallArg(mock: { mock: { calls: readonly (readonly any[])[] } }) {
   const call = mock.mock.calls[0];
   if (!call) {
     throw new Error("Expected first mock call");
@@ -151,7 +151,7 @@ function requireFirstCallArg(mock: { mock: { calls: readonly (readonly unknown[]
   return call[0];
 }
 
-function requireRespondPayload(respond: ReturnType<typeof vi.fn>): Record<string, unknown> {
+function requireRespondPayload(respond: ReturnType<typeof vi.fn>): Record<string, any> {
   const call = respond.mock.calls[0];
   if (!call) {
     throw new Error("Expected respond call");

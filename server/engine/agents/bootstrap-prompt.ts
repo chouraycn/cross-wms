@@ -6,13 +6,13 @@
  */
 
 /** Builds full bootstrap prompt lines. */
-export function buildFullBootstrapPromptLines(..._args: unknown[]): string[] {
+export function buildFullBootstrapPromptLines(..._args: any[]): string[] {
   // Cross-wms does not have the full bootstrap prompt assembler.
   return [];
 }
 
 /** Builds limited bootstrap prompt lines. */
-export function buildLimitedBootstrapPromptLines(..._args: unknown[]): string[] {
+export function buildLimitedBootstrapPromptLines(..._args: any[]): string[] {
   // Cross-wms does not have the limited bootstrap prompt assembler.
   return [];
 }

@@ -11,14 +11,14 @@
  * 完整实现见 openclaw 源码。
  */
 
-export async function runGatewayHttpRequestStages(..._args: unknown[]): Promise<unknown> {
+export async function runGatewayHttpRequestStages(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
 
-export function createGatewayHttpServer(..._args: unknown[]): unknown {
+export function createGatewayHttpServer(..._args: any[]): any {
   return undefined;
 }
 
-export function attachGatewayUpgradeHandler(..._args: unknown[]): unknown {
+export function attachGatewayUpgradeHandler(..._args: any[]): any {
   return undefined;
 }

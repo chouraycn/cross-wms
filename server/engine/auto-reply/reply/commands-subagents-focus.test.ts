@@ -27,16 +27,16 @@ function buildFocusSessionBindingService() {
   return {
     touch: vi.fn(),
     listBySession: vi.fn(),
-    resolveByConversation(ref: unknown) {
+    resolveByConversation(ref: any) {
       return hoisted.sessionBindingResolveByConversationMock(ref);
     },
-    getCapabilities(params: unknown) {
+    getCapabilities(params: any) {
       return hoisted.sessionBindingCapabilitiesMock(params);
     },
-    bind(input: unknown) {
+    bind(input: any) {
       return hoisted.sessionBindingBindMock(input);
     },
-    unbind(input: unknown) {
+    unbind(input: any) {
       return hoisted.sessionBindingUnbindMock(input);
     },
   };
@@ -45,7 +45,7 @@ function buildFocusSessionBindingService() {
 vi.mock("@openclaw/acp-core/runtime/session-identifiers", () => ({
   resolveAcpSessionCwd: () => undefined,
   resolveAcpThreadSessionDetailLines: (params: {
-    meta?: { identity?: Record<string, unknown> };
+    meta?: { identity?: Record<string, any> };
   }) => {
     const identity = params.meta?.identity ?? {};
     const lines: string[] = [];
@@ -61,7 +61,7 @@ vi.mock("@openclaw/acp-core/runtime/session-identifiers", () => ({
 }));
 
 vi.mock("../../acp/runtime/session-meta.js", () => ({
-  readAcpSessionEntry: (params: unknown) => hoisted.readAcpSessionEntryMock(params),
+  readAcpSessionEntry: (params: any) => hoisted.readAcpSessionEntryMock(params),
 }));
 
 vi.mock("../../channels/thread-bindings-messages.js", () => ({
@@ -106,12 +106,12 @@ vi.mock("../../infra/outbound/session-binding-service.js", () => ({
 }));
 
 vi.mock("../../agents/subagent-capabilities.js", () => ({
-  resolveStoredSubagentCapabilities: (sessionKey: string, options: unknown) =>
+  resolveStoredSubagentCapabilities: (sessionKey: string, options: any) =>
     hoisted.resolveStoredSubagentCapabilitiesMock(sessionKey, options),
 }));
 
 vi.mock("./conversation-binding-input.js", () => ({
-  resolveConversationBindingContextFromAcpCommand: (params: unknown) =>
+  resolveConversationBindingContextFromAcpCommand: (params: any) =>
     hoisted.resolveConversationBindingContextMock(params),
 }));
 
@@ -121,7 +121,7 @@ vi.mock("./commands-subagents/shared.js", async () => {
   );
   return {
     ...actual,
-    resolveFocusTargetSession: (params: unknown) => hoisted.resolveFocusTargetSessionMock(params),
+    resolveFocusTargetSession: (params: any) => hoisted.resolveFocusTargetSessionMock(params),
   };
 });
 
@@ -175,7 +175,7 @@ type SessionBindingBindInput = {
     conversationId: string;
     parentConversationId?: string;
   };
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 function firstFocusTargetSessionParams(): FocusTargetSessionParams {
@@ -287,7 +287,7 @@ describe("focus actions", () => {
           conversationId: string;
           parentConversationId?: string;
         };
-        metadata?: Record<string, unknown>;
+        metadata?: Record<string, any>;
       }) =>
         createSessionBindingRecord({
           targetSessionKey: input.targetSessionKey,

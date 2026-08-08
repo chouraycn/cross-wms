@@ -6,8 +6,8 @@
 
 export function resolveProviderPluginLookupKey(params: {
   provider: string;
-  config?: unknown;
-  metadataSnapshot?: unknown;
+  config?: any;
+  metadataSnapshot?: any;
 }): string {
   return params.provider;
 }

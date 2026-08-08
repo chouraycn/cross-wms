@@ -17,7 +17,7 @@ export interface CatalogStateEntry {
   usageCount: number;
   errorCount: number;
   successCount: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface CatalogStateCacheOptions {

@@ -29,8 +29,8 @@ export interface HarnessAttemptParams {
   provider: string;
   modelId: string;
   prompt: string;
-  messages: unknown[];
-  tools?: unknown[];
+  messages: any[];
+  tools?: any[];
   agentId?: string;
   trigger?: string;
   /** 诊断追踪上下文 */
@@ -64,7 +64,7 @@ export interface HarnessAttemptResult {
 export interface HarnessCompactParams {
   sessionId: string;
   sessionKey?: string;
-  messages: unknown[];
+  messages: any[];
   keepRecentCount?: number;
 }
 

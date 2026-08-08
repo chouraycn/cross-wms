@@ -76,7 +76,7 @@ type ToolLike = {
   function: {
     name: string;
     description: string;
-    parameters: Record<string, unknown>;
+    parameters: Record<string, any>;
   };
 };
 
@@ -295,7 +295,7 @@ export function projectToolSchema<T extends ToolDefinition>(
 
   const params = fn.parameters as {
     type?: string;
-    properties?: Record<string, unknown>;
+    properties?: Record<string, any>;
     required?: string[];
   } | null;
 

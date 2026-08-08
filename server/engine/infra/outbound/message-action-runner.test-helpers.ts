@@ -36,19 +36,19 @@ export const directOutbound: ChannelOutboundAdapter = {
 };
 
 // Test plugins model token-gated workspace sends without booting real channel runtimes.
-function hasChannelBotToken(channelConfig: unknown): boolean {
+function hasChannelBotToken(channelConfig: any): boolean {
   if (channelConfig == null || typeof channelConfig !== "object" || Array.isArray(channelConfig)) {
     return false;
   }
-  const token = (channelConfig as Record<string, unknown>).botToken;
+  const token = (channelConfig as Record<string, any>).botToken;
   return typeof token === "string" && Boolean(token.trim());
 }
 
 export const runDryAction = (params: {
   cfg: OpenClawConfig;
   action: ChannelMessageActionName;
-  actionParams: Record<string, unknown>;
-  toolContext?: Record<string, unknown>;
+  actionParams: Record<string, any>;
+  toolContext?: Record<string, any>;
   abortSignal?: AbortSignal;
   sandboxRoot?: string;
   agentId?: string;
@@ -66,8 +66,8 @@ export const runDryAction = (params: {
 
 export const runDrySend = (params: {
   cfg: OpenClawConfig;
-  actionParams: Record<string, unknown>;
-  toolContext?: Record<string, unknown>;
+  actionParams: Record<string, any>;
+  toolContext?: Record<string, any>;
   abortSignal?: AbortSignal;
   sandboxRoot?: string;
   agentId?: string;

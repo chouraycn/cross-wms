@@ -508,7 +508,7 @@ export function resolveCommandRequestId(params: HandleCommandsParams): string {
 }
 
 export function collectAcpErrorText(params: {
-  error: unknown;
+  error: any;
   fallbackCode: AcpRuntimeError["code"];
   fallbackMessage: string;
 }): string {

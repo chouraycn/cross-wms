@@ -36,14 +36,14 @@ export type AcpSessionLineageRow = {
   spawnedCwd?: string;
 };
 
-function readInteger(value: unknown): number | undefined {
+function readInteger(value: any): number | undefined {
   if (typeof value !== "number" || !Number.isInteger(value) || value < 0) {
     return undefined;
   }
   return value;
 }
 
-function readEnum<T extends string>(value: unknown, allowed: readonly T[]): T | undefined {
+function readEnum<T extends string>(value: any, allowed: readonly T[]): T | undefined {
   const normalized = normalizeOptionalString(value);
   return allowed.find((candidate) => candidate === normalized);
 }

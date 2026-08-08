@@ -15,7 +15,7 @@ import {
 /**
  * 将可变 cron 运行时状态编码为扁平对象
  */
-export function encodeState(state: CronJobState): Record<string, unknown> {
+export function encodeState(state: CronJobState): Record<string, any> {
   return {
     next_run_at_ms: state.nextRunAtMs ?? null,
     running_at_ms: state.runningAtMs ?? null,
@@ -37,7 +37,7 @@ export function encodeState(state: CronJobState): Record<string, unknown> {
 /**
  * 从 JSON 加拆分索引列重建 cron 运行时状态
  */
-export function decodeState(row: Record<string, unknown>): CronJobState {
+export function decodeState(row: Record<string, any>): CronJobState {
   const stateJson = row.state_json;
   const baseState = typeof stateJson === "string"
     ? parseJsonObject<CronJobState>(stateJson, {})

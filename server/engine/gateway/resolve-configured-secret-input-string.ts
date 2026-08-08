@@ -13,14 +13,14 @@
 
 export type SecretInputUnresolvedReasonStyle = unknown;
 
-export async function resolveConfiguredSecretInputString(..._args: unknown[]): Promise<unknown> {
+export async function resolveConfiguredSecretInputString(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
 
-export async function resolveConfiguredSecretInputWithFallback(..._args: unknown[]): Promise<unknown> {
+export async function resolveConfiguredSecretInputWithFallback(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
 
-export async function resolveRequiredConfiguredSecretRefInputString(..._args: unknown[]): Promise<unknown> {
+export async function resolveRequiredConfiguredSecretRefInputString(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }

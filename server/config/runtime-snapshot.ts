@@ -30,7 +30,7 @@ export interface ConfigSnapshot {
 }
 
 export type RedactedConfigSnapshot = Omit<ConfigSnapshot, 'config'> & {
-  config: unknown;
+  config: any;
 };
 
 // ==================== 内部状态 ====================
@@ -58,18 +58,18 @@ function isSensitiveKey(key: string): boolean {
   return SENSITIVE_KEY_HINTS.some((hint) => lower.includes(hint));
 }
 
-function isPlainObject(value: unknown): value is Record<string, unknown> {
+function isPlainObject(value: any): value is Record<string, any> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function stableStringify(value: unknown): string {
+function stableStringify(value: any): string {
   if (value === null || typeof value !== 'object') {
     return JSON.stringify(value) ?? 'null';
   }
   if (Array.isArray(value)) {
     return `[${value.map((entry) => stableStringify(entry)).join(',')}]`;
   }
-  const record = value as Record<string, unknown>;
+  const record = value as Record<string, any>;
   const keys = Object.keys(record).sort();
   return `{${keys.map((k) => `${JSON.stringify(k)}:${stableStringify(record[k])}`).join(',')}}`;
 }
@@ -81,8 +81,8 @@ function hashConfig(value: CDFKnowConfig): string {
 function deepClone<T>(value: T): T {
   if (value === null || typeof value !== 'object') return value;
   if (Array.isArray(value)) return value.map((item) => deepClone(item)) as unknown as T;
-  const result: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+  const result: Record<string, any> = {};
+  for (const [k, v] of Object.entries(value as Record<string, any>)) {
     result[k] = deepClone(v);
   }
   return result as unknown as T;
@@ -144,7 +144,7 @@ export function resetConfigSnapshotState(): void {
 
 // ==================== 脱敏 ====================
 
-function redactValue(value: unknown, keyHint: string): unknown {
+function redactValue(value: any, keyHint: string): any {
   // 字符串敏感值直接替换为 sentinel
   if (typeof value === 'string') {
     if (isSensitiveKey(keyHint)) return REDACTED_SENTINEL;
@@ -156,7 +156,7 @@ function redactValue(value: unknown, keyHint: string): unknown {
     return value.map((item) => redactValue(item, keyHint));
   }
   if (isPlainObject(value)) {
-    const result: Record<string, unknown> = {};
+    const result: Record<string, any> = {};
     for (const [k, v] of Object.entries(value)) {
       result[k] = redactValue(v, k);
     }

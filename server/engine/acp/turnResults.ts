@@ -19,7 +19,7 @@ export interface ProcessedTurnResult {
     id: string;
     name: string;
     input: string;
-    result?: unknown;
+    result?: any;
     isError?: boolean;
   }>;
   finishReason: string;
@@ -42,7 +42,7 @@ export interface TurnResultAccumulator {
     name: string;
     input: string;
     completed: boolean;
-    result?: unknown;
+    result?: any;
     isError?: boolean;
   }>;
   contentBlocks: ContentBlock[];
@@ -314,7 +314,7 @@ export function summarizeTurnResult(result: ProcessedTurnResult): string {
 /**
  * 将回合结果转换为可存储格式
  */
-export function turnResultToStorable(result: ProcessedTurnResult): Record<string, unknown> {
+export function turnResultToStorable(result: ProcessedTurnResult): Record<string, any> {
   return {
     content: result.content,
     thinkingText: result.thinkingText,
@@ -331,7 +331,7 @@ export function turnResultToStorable(result: ProcessedTurnResult): Record<string
 /**
  * 从存储格式恢复回合结果
  */
-export function turnResultFromStored(data: Record<string, unknown>): ProcessedTurnResult {
+export function turnResultFromStored(data: Record<string, any>): ProcessedTurnResult {
   return {
     content: (data.content as string) ?? "",
     thinkingText: (data.thinkingText as string) ?? "",

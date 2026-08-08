@@ -2,12 +2,12 @@ import { logger } from '../../logger.js';
 
 export type PostAttachContext = {
   startTime: number;
-  config: Record<string, unknown>;
-  server: Record<string, unknown>;
+  config: Record<string, any>;
+  server: Record<string, any>;
   warnings: string[];
   errors: string[];
   stage: string;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
 };
 
 export type PostAttachTask = {
@@ -34,8 +34,8 @@ export function getPostAttachTasks(): PostAttachTask[] {
 }
 
 export function createPostAttachContext(
-  server: Record<string, unknown>,
-  config: Record<string, unknown> = {},
+  server: Record<string, any>,
+  config: Record<string, any> = {},
 ): PostAttachContext {
   return {
     startTime: Date.now(),
@@ -49,8 +49,8 @@ export function createPostAttachContext(
 }
 
 export async function runPostAttachStartup(
-  server: Record<string, unknown>,
-  config?: Record<string, unknown>,
+  server: Record<string, any>,
+  config?: Record<string, any>,
 ): Promise<PostAttachContext> {
   const context = createPostAttachContext(server, config);
   logger.info('[Gateway] Running post-attach startup tasks...');

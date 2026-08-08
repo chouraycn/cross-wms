@@ -13,24 +13,24 @@
 
 export type ManagedImageAttachmentLimits = unknown;
 
-export function resolveManagedImageAttachmentLimits(..._args: unknown[]): unknown {
+export function resolveManagedImageAttachmentLimits(..._args: any[]): any {
   return undefined;
 }
 
-export async function cleanupManagedOutgoingImageRecords(..._args: unknown[]): Promise<unknown> {
+export async function cleanupManagedOutgoingImageRecords(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
 
-export async function attachManagedOutgoingImagesToMessage(..._args: unknown[]): Promise<unknown> {
+export async function attachManagedOutgoingImagesToMessage(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
 
-export async function createManagedOutgoingImageBlocks(..._args: unknown[]): Promise<unknown> {
+export async function createManagedOutgoingImageBlocks(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
 
-export async function handleManagedOutgoingImageHttpRequest(..._args: unknown[]): Promise<unknown> {
+export async function handleManagedOutgoingImageHttpRequest(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
 
-export const DEFAULT_MANAGED_IMAGE_ATTACHMENT_LIMITS: unknown = undefined;
+export const DEFAULT_MANAGED_IMAGE_ATTACHMENT_LIMITS: any = undefined;

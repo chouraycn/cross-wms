@@ -9,7 +9,7 @@ export type SecretExpectedResolvedValue = "string" | "string-or-object"; // prag
 /**
  * Narrows to strings that contain non-whitespace content.
  */
-function isNonEmptyString(value: unknown): value is string {
+function isNonEmptyString(value: any): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
 
@@ -17,7 +17,7 @@ function isNonEmptyString(value: unknown): value is string {
  * Returns whether a resolved provider value satisfies the target's accepted runtime shape.
  */
 export function isExpectedResolvedSecretValue(
-  value: unknown,
+  value: any,
   expected: SecretExpectedResolvedValue,
 ): boolean {
   if (expected === "string") {
@@ -30,7 +30,7 @@ export function isExpectedResolvedSecretValue(
  * Returns whether an inline configured value should be treated as plaintext secret material.
  */
 export function hasConfiguredPlaintextSecretValue(
-  value: unknown,
+  value: any,
   expected: SecretExpectedResolvedValue,
 ): boolean {
   if (expected === "string") {
@@ -43,7 +43,7 @@ export function hasConfiguredPlaintextSecretValue(
  * Throws a caller-provided error when a resolved secret value does not match its target shape.
  */
 export function assertExpectedResolvedSecretValue(params: {
-  value: unknown;
+  value: any;
   expected: SecretExpectedResolvedValue;
   errorMessage: string;
 }): void {

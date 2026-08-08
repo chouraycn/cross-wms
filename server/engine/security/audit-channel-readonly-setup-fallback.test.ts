@@ -9,7 +9,7 @@ const {
   listReadOnlyChannelPluginsForConfigMock,
   hasConfiguredChannelsForReadOnlyScopeMock,
 } = vi.hoisted(() => ({
-  collectChannelSecurityFindingsMock: vi.fn(async (..._args: unknown[]) => [
+  collectChannelSecurityFindingsMock: vi.fn(async (..._args: any[]) => [
     {
       checkId: "channels.telegram.setup_fallback_audited",
       severity: "warn",
@@ -29,19 +29,19 @@ vi.mock("./dangerous-config-flags.js", () => ({
 }));
 
 vi.mock("../channels/plugins/read-only.js", () => ({
-  listReadOnlyChannelPluginsForConfig: (...args: unknown[]) =>
-    (listReadOnlyChannelPluginsForConfigMock as (...params: unknown[]) => unknown)(...args),
+  listReadOnlyChannelPluginsForConfig: (...args: any[]) =>
+    (listReadOnlyChannelPluginsForConfigMock as (...params: any[]) => unknown)(...args),
 }));
 
 vi.mock("../plugins/channel-plugin-ids.js", () => ({
-  hasConfiguredChannelsForReadOnlyScope: (...args: unknown[]) =>
-    (hasConfiguredChannelsForReadOnlyScopeMock as (...params: unknown[]) => unknown)(...args),
+  hasConfiguredChannelsForReadOnlyScope: (...args: any[]) =>
+    (hasConfiguredChannelsForReadOnlyScopeMock as (...params: any[]) => unknown)(...args),
   resolveConfiguredChannelPluginIds: () => [],
 }));
 
 vi.mock("./audit-channel.collect.runtime.js", () => ({
-  collectChannelSecurityFindings: (...args: unknown[]) =>
-    (collectChannelSecurityFindingsMock as (...params: unknown[]) => unknown)(...args),
+  collectChannelSecurityFindings: (...args: any[]) =>
+    (collectChannelSecurityFindingsMock as (...params: any[]) => unknown)(...args),
 }));
 
 const collectNoFindings = vi.hoisted(() => vi.fn(() => []));

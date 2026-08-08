@@ -27,15 +27,15 @@ function requireFallbackSeed(
   return seed;
 }
 
-function expectFields(value: unknown, expected: Record<string, unknown>): void {
+function expectFields(value: any, expected: Record<string, any>): void {
   expectRecordFields(value, "fields", expected);
 }
 
-function readRecord(value: unknown): Record<string, unknown> {
+function readRecord(value: any): Record<string, any> {
   return requireRecord(value, "record");
 }
 
-function expectCliSessionMarker(message: unknown, sessionId: string): void {
+function expectCliSessionMarker(message: any, sessionId: string): void {
   expectFields(readRecord(message)["__openclaw"], { cliSessionId: sessionId });
 }
 
@@ -361,7 +361,7 @@ describe("cli session history", () => {
         const record = readRecord(message);
         return (
           record.role === "user" &&
-          (record["__openclaw"] as { cliSessionId?: unknown } | undefined)?.cliSessionId ===
+          (record["__openclaw"] as { cliSessionId?: any } | undefined)?.cliSessionId ===
             sessionId
         );
       });
@@ -463,7 +463,7 @@ describe("readClaudeCliFallbackSeed", () => {
     return withEnvAsync({ HOME: homeDir }, async () => readClaudeCliFallbackSeed({ cliSessionId }));
   }
 
-  async function writeJsonl(lines: ReadonlyArray<Record<string, unknown>>): Promise<void> {
+  async function writeJsonl(lines: ReadonlyArray<Record<string, any>>): Promise<void> {
     const file = path.join(projectsDir, `${SESSION_ID}.jsonl`);
     await fs.writeFile(file, `${lines.map((line) => JSON.stringify(line)).join("\n")}\n`, "utf-8");
   }

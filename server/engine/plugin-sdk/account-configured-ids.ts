@@ -9,7 +9,7 @@
 
 /** 从原始 channel account 记录 map 列出规范化的已配置账号 id。 */
 export function listConfiguredAccountIds(params: {
-  accounts: Record<string, unknown> | undefined;
+  accounts: Record<string, any> | undefined;
   normalizeAccountId: (accountId: string) => string;
 }): string[] {
   if (!params.accounts) {

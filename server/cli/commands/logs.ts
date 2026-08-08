@@ -58,7 +58,7 @@ function filterLogs(options: LogsOptions & { source?: string; query?: string }):
   return entries.slice(-limit);
 }
 
-function formatJsonOutput(data: unknown): string {
+function formatJsonOutput(data: any): string {
   return JSON.stringify(data, null, 2);
 }
 

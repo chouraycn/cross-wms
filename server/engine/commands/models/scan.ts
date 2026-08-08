@@ -159,7 +159,7 @@ function printScanTable(results: ModelScanResult[], runtime: RuntimeEnv) {
   }
 }
 
-function parseOptionalNonNegativeFiniteOption(raw: unknown, label: string): number | undefined {
+function parseOptionalNonNegativeFiniteOption(raw: any, label: string): number | undefined {
   if (raw === undefined || raw === null || raw === "") {
     return undefined;
   }
@@ -170,7 +170,7 @@ function parseOptionalNonNegativeFiniteOption(raw: unknown, label: string): numb
   return parsed;
 }
 
-function parseOptionalPositiveFiniteOption(raw: unknown, label: string): number | undefined {
+function parseOptionalPositiveFiniteOption(raw: any, label: string): number | undefined {
   if (raw === undefined || raw === null || raw === "") {
     return undefined;
   }
@@ -181,7 +181,7 @@ function parseOptionalPositiveFiniteOption(raw: unknown, label: string): number 
   return parsed;
 }
 
-function parsePositiveIntegerOption(raw: unknown, label: string, fallback: number): number {
+function parsePositiveIntegerOption(raw: any, label: string, fallback: number): number {
   if (raw === undefined || raw === null || raw === "") {
     return fallback;
   }

@@ -7,60 +7,60 @@ export type ConfigWriteFollowUp = unknown;
 export type RuntimeConfigSnapshotRefreshHandler = unknown;
 export type RuntimeConfigWriteNotification = unknown;
 export type RuntimeConfigSnapshotMetadata = unknown;
-export function resolveConfigWriteAfterWrite(...args: unknown[]): unknown {
+export function resolveConfigWriteAfterWrite(...args: any[]): any {
   return undefined;
 }
-export function resolveConfigWriteFollowUp(...args: unknown[]): unknown {
+export function resolveConfigWriteFollowUp(...args: any[]): any {
   return undefined;
 }
-export function hashRuntimeConfigValue(...args: unknown[]): unknown {
+export function hashRuntimeConfigValue(...args: any[]): any {
   return false;
 }
-export function setRuntimeConfigSnapshot(...args: unknown[]): unknown {
+export function setRuntimeConfigSnapshot(...args: any[]): any {
   return undefined;
 }
-export function resetConfigRuntimeState(...args: unknown[]): unknown {
+export function resetConfigRuntimeState(...args: any[]): any {
   return undefined;
 }
-export function clearRuntimeConfigSnapshot(...args: unknown[]): unknown {
+export function clearRuntimeConfigSnapshot(...args: any[]): any {
   return undefined;
 }
-export function getRuntimeConfigSnapshot(...args: unknown[]): unknown {
+export function getRuntimeConfigSnapshot(...args: any[]): any {
   return undefined;
 }
-export function getRuntimeConfigSourceSnapshot(...args: unknown[]): unknown {
+export function getRuntimeConfigSourceSnapshot(...args: any[]): any {
   return undefined;
 }
-export function getRuntimeConfigSnapshotMetadata(...args: unknown[]): unknown {
+export function getRuntimeConfigSnapshotMetadata(...args: any[]): any {
   return undefined;
 }
-export function resolveRuntimeConfigCacheKey(...args: unknown[]): unknown {
+export function resolveRuntimeConfigCacheKey(...args: any[]): any {
   return undefined;
 }
-export function createRuntimeConfigWriteNotification(...args: unknown[]): unknown {
+export function createRuntimeConfigWriteNotification(...args: any[]): any {
   return undefined;
 }
-export function selectApplicableRuntimeConfig(...args: unknown[]): unknown {
+export function selectApplicableRuntimeConfig(...args: any[]): any {
   return undefined;
 }
-export function setRuntimeConfigSnapshotRefreshHandler(...args: unknown[]): unknown {
+export function setRuntimeConfigSnapshotRefreshHandler(...args: any[]): any {
   return undefined;
 }
-export function getRuntimeConfigSnapshotRefreshHandler(...args: unknown[]): unknown {
+export function getRuntimeConfigSnapshotRefreshHandler(...args: any[]): any {
   return undefined;
 }
-export function registerRuntimeConfigWriteListener(...args: unknown[]): unknown {
+export function registerRuntimeConfigWriteListener(...args: any[]): any {
   return undefined;
 }
-export function notifyRuntimeConfigWriteListeners(...args: unknown[]): unknown {
+export function notifyRuntimeConfigWriteListeners(...args: any[]): any {
   return undefined;
 }
-export function loadPinnedRuntimeConfig(...args: unknown[]): unknown {
+export function loadPinnedRuntimeConfig(...args: any[]): any {
   return undefined;
 }
-export function preflightRuntimeSnapshotWrite(...args: unknown[]): unknown {
+export function preflightRuntimeSnapshotWrite(...args: any[]): any {
   return undefined;
 }
-export function finalizeRuntimeSnapshotWrite(...args: unknown[]): unknown {
+export function finalizeRuntimeSnapshotWrite(...args: any[]): any {
   return undefined;
 }

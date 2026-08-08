@@ -110,7 +110,7 @@ export interface PermissionTemplate {
 export interface PolicyLoadResult {
   loaded: number;
   skipped: number;
-  errors: Array<{ input: unknown; error: string }>;
+  errors: Array<{ input: any; error: string }>;
   policies: PermissionPolicySummary[];
 }
 
@@ -122,7 +122,7 @@ export interface PolicyValidationResult {
 
 export interface ConfigBootstrapResult {
   success: boolean;
-  config: Record<string, unknown>;
+  config: Record<string, any>;
   migration?: {
     fromVersion: number;
     toVersion: number;

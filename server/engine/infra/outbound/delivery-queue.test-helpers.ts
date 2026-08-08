@@ -35,7 +35,7 @@ export function installDeliveryQueueTmpDirHooks(): { readonly tmpDir: () => stri
   };
 }
 
-export function readQueuedEntry(tmpDir: string, id: string): Record<string, unknown> {
+export function readQueuedEntry(tmpDir: string, id: string): Record<string, any> {
   const { db } = openOpenClawStateDatabase({ env: { ...process.env, OPENCLAW_STATE_DIR: tmpDir } });
   const row = db
     .prepare(
@@ -45,10 +45,10 @@ export function readQueuedEntry(tmpDir: string, id: string): Record<string, unkn
   if (!row?.entry_json) {
     throw new Error(`Missing queued entry ${id}`);
   }
-  return JSON.parse(row.entry_json) as Record<string, unknown>;
+  return JSON.parse(row.entry_json) as Record<string, any>;
 }
 
-export function readQueuedEntries(tmpDir: string): Record<string, unknown>[] {
+export function readQueuedEntries(tmpDir: string): Record<string, any>[] {
   const { db } = openOpenClawStateDatabase({ env: { ...process.env, OPENCLAW_STATE_DIR: tmpDir } });
   const rows = db
     .prepare(
@@ -60,7 +60,7 @@ export function readQueuedEntries(tmpDir: string): Record<string, unknown>[] {
       `,
     )
     .all() as Array<{ entry_json: string }>;
-  return rows.map((row) => JSON.parse(row.entry_json) as Record<string, unknown>);
+  return rows.map((row) => JSON.parse(row.entry_json) as Record<string, any>);
 }
 
 export function setQueuedEntryState(

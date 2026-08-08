@@ -7,12 +7,12 @@ export type PluginConfigContractMatch = {
   /** Concrete config path matched by the contract pattern. */
   path: string;
   /** Config value stored at the matched path. */
-  value: unknown;
+  value: any;
 };
 
 type TraversalState = {
   segments: string[];
-  value: unknown;
+  value: any;
 };
 
 function normalizePathPattern(pathPattern: string): string[] {
@@ -33,7 +33,7 @@ function parseCanonicalArrayIndex(segment: string, length: number): number | nul
 
 /** Collect concrete config values that match a plugin contract path pattern. */
 export function collectPluginConfigContractMatches(params: {
-  root: unknown;
+  root: any;
   pathPattern: string;
 }): PluginConfigContractMatch[] {
   const pattern = normalizePathPattern(params.pathPattern);

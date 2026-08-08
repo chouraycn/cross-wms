@@ -7,6 +7,6 @@
  */
 
 export type ToolDetailMode = unknown;
-export function resolveExecDetail(..._args: unknown[]): unknown {
+export function resolveExecDetail(..._args: any[]): any {
   return undefined;
 }

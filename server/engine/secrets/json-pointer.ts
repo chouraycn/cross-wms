@@ -25,10 +25,10 @@ export function encodeJsonPointerToken(token: string): string {
  * Missing segments throw by default; `onMissing: "undefined"` is for optional probes.
  */
 export function readJsonPointer(
-  root: unknown,
+  root: any,
   pointer: string,
   options: { onMissing?: "throw" | "undefined" } = {},
-): unknown {
+): any {
   const onMissing = options.onMissing ?? "throw";
   if (!pointer.startsWith("/")) {
     return failOrUndefined({
@@ -43,7 +43,7 @@ export function readJsonPointer(
     .split("/")
     .map((token) => decodeJsonPointerToken(token));
 
-  let current: unknown = root;
+  let current: any = root;
   for (const token of tokens) {
     if (Array.isArray(current)) {
       // Array segments must be canonical non-negative indexes, not partial parses like "1abc".

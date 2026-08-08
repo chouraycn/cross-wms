@@ -84,7 +84,7 @@ describe("runDoctorLintCli", () => {
       config: {},
       path: "/tmp/openclaw.json",
     });
-    const detect = vi.fn(async (_ctx: unknown) => []);
+    const detect = vi.fn(async (_ctx: any) => []);
     registerHealthCheck({
       id: "test/deep-context",
       kind: "plugin",

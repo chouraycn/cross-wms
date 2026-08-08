@@ -23,7 +23,7 @@ function staleDreamingJob() {
     sessionTarget: "main",
     wakeMode: "now",
     payload: { kind: "systemEvent", text: DREAMING_TOKEN },
-  } as Record<string, unknown>;
+  } as Record<string, any>;
 }
 
 function migratedDreamingJob() {
@@ -37,7 +37,7 @@ function migratedDreamingJob() {
     wakeMode: "now",
     payload: { kind: "agentTurn", message: DREAMING_TOKEN, lightContext: true },
     delivery: { mode: "none" },
-  } as Record<string, unknown>;
+  } as Record<string, any>;
 }
 
 describe("migrateLegacyDreamingPayloadShape", () => {
@@ -55,7 +55,7 @@ describe("migrateLegacyDreamingPayloadShape", () => {
   });
 
   it("identifies the managed job by description tag even when name was edited", () => {
-    const jobs: Array<Record<string, unknown>> = [{ ...staleDreamingJob(), name: "Custom Name" }];
+    const jobs: Array<Record<string, any>> = [{ ...staleDreamingJob(), name: "Custom Name" }];
     const result = migrateLegacyDreamingPayloadShape(jobs);
     expect(result.rewrittenCount).toBe(1);
     expect(jobs[0]?.sessionTarget).toBe("isolated");
@@ -78,11 +78,11 @@ describe("migrateLegacyDreamingPayloadShape", () => {
 
   it("re-applies missing pieces (e.g. lightContext flag) on partially-migrated jobs", () => {
     const job = migratedDreamingJob();
-    (job.payload as Record<string, unknown>).lightContext = false;
+    (job.payload as Record<string, any>).lightContext = false;
     const jobs = [job];
     const result = migrateLegacyDreamingPayloadShape(jobs);
     expect(result.rewrittenCount).toBe(1);
-    expect((jobs[0].payload as Record<string, unknown>).lightContext).toBe(true);
+    expect((jobs[0].payload as Record<string, any>).lightContext).toBe(true);
   });
 
   it("normalizes delivery to mode=none when omitted on an isolated dreaming job", () => {
@@ -104,7 +104,7 @@ describe("migrateLegacyDreamingPayloadShape", () => {
       sessionTarget: "main",
       wakeMode: "now",
       payload: { kind: "agentTurn", message: "good morning" },
-    } as Record<string, unknown>;
+    } as Record<string, any>;
     const snapshot = jsonRoundTrip(unrelated);
     const jobs = [unrelated];
     const result = migrateLegacyDreamingPayloadShape(jobs);
@@ -115,7 +115,7 @@ describe("migrateLegacyDreamingPayloadShape", () => {
   it("ignores look-alike jobs whose payload token does not match", () => {
     const lookalike = staleDreamingJob();
     delete lookalike.description;
-    (lookalike.payload as Record<string, unknown>).text = "some other system event";
+    (lookalike.payload as Record<string, any>).text = "some other system event";
     const jobs = [lookalike];
     const result = migrateLegacyDreamingPayloadShape(jobs);
     expect(result.rewrittenCount).toBe(0);
@@ -136,7 +136,7 @@ describe("migrateLegacyDreamingPayloadShape", () => {
         payload: { kind: "agentTurn", message: "hi" },
       },
       migratedDreamingJob(),
-    ] as Array<Record<string, unknown>>;
+    ] as Array<Record<string, any>>;
     const result = migrateLegacyDreamingPayloadShape(jobs);
     expect(result).toEqual({ changed: true, rewrittenCount: 1 });
     expect(jobs[0]?.sessionTarget).toBe("isolated");
@@ -152,7 +152,7 @@ describe("countStaleDreamingJobs", () => {
 
   it("counts partially-migrated jobs (e.g. lightContext flipped to false)", () => {
     const partial = migratedDreamingJob();
-    (partial.payload as Record<string, unknown>).lightContext = false;
+    (partial.payload as Record<string, any>).lightContext = false;
     expect(countStaleDreamingJobs([partial])).toBe(1);
   });
 

@@ -15,7 +15,7 @@ export interface ChannelEvent {
   channelId: ChannelId;
   accountId: AccountId;
   timestamp: number;
-  data?: Record<string, unknown>;
+  data?: Record<string, any>;
 }
 
 export interface ChannelEventEmitter {
@@ -54,7 +54,7 @@ export abstract class ChannelAdapter {
   abstract sendMessage(message: ChannelMessage): Promise<ChannelMessageSendResult>;
   abstract receiveMessages(): AsyncIterable<ChannelMessage | null>;
 
-  protected emitEvent(name: ChannelEventName, data?: Record<string, unknown>): void {
+  protected emitEvent(name: ChannelEventName, data?: Record<string, any>): void {
     if (this.eventEmitter) {
       this.eventEmitter.emit({
         name,

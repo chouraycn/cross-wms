@@ -147,11 +147,11 @@ describe("talk realtime gateway relay", () => {
     };
   }
 
-  function expectRecordFields(record: unknown, expected: Record<string, unknown>) {
+  function expectRecordFields(record: any, expected: Record<string, any>) {
     if (!record || typeof record !== "object") {
       throw new Error("Expected record");
     }
-    const actual = record as Record<string, unknown>;
+    const actual = record as Record<string, any>;
     for (const [key, value] of Object.entries(expected)) {
       expect(actual[key]).toEqual(value);
     }
@@ -167,21 +167,21 @@ describe("talk realtime gateway relay", () => {
   }
 
   function findEventPayload(
-    events: Array<{ payload: unknown }>,
-    predicate: (payload: Record<string, unknown>) => boolean,
+    events: Array<{ payload: any }>,
+    predicate: (payload: Record<string, any>) => boolean,
   ) {
     const event = events.find((entry) => {
       const payload = entry.payload;
       return (
         typeof payload === "object" &&
         payload !== null &&
-        predicate(payload as Record<string, unknown>)
+        predicate(payload as Record<string, any>)
       );
     });
     if (!event) {
       throw new Error("Expected matching relay event");
     }
-    return event.payload as Record<string, unknown>;
+    return event.payload as Record<string, any>;
   }
 
   function expectChatAbortPayload(mock: ReturnType<typeof vi.fn>, stopReason: string) {
@@ -237,14 +237,14 @@ describe("talk realtime gateway relay", () => {
     };
     const events: Array<{
       event: string;
-      payload: unknown;
+      payload: any;
       connIds: string[];
       opts?: { dropIfSlow?: boolean };
     }> = [];
     const context = {
       broadcastToConnIds: (
         event: string,
-        payload: unknown,
+        payload: any,
         connIds: ReadonlySet<string>,
         opts?: { dropIfSlow?: boolean },
       ) => {
@@ -445,11 +445,11 @@ describe("talk realtime gateway relay", () => {
     const toolResultPayloads = events
       .map((entry) => entry.payload)
       .filter(
-        (payload): payload is Record<string, unknown> =>
+        (payload): payload is Record<string, any> =>
           typeof payload === "object" &&
           payload !== null &&
-          (payload as Record<string, unknown>).type === "toolResult" &&
-          (payload as Record<string, unknown>).callId === "call-1",
+          (payload as Record<string, any>).type === "toolResult" &&
+          (payload as Record<string, any>).callId === "call-1",
       );
     expect(toolResultPayloads).toHaveLength(3);
     expectRecordFields(toolResultPayloads[0], {
@@ -510,9 +510,9 @@ describe("talk realtime gateway relay", () => {
         isConnected: vi.fn(() => false),
       }),
     };
-    const events: Array<{ event: string; payload: unknown; connIds: string[] }> = [];
+    const events: Array<{ event: string; payload: any; connIds: string[] }> = [];
     const context = {
-      broadcastToConnIds: (event: string, payload: unknown, connIds: ReadonlySet<string>) => {
+      broadcastToConnIds: (event: string, payload: any, connIds: ReadonlySet<string>) => {
         events.push({ event, payload, connIds: [...connIds] });
       },
     } as never;
@@ -543,7 +543,7 @@ describe("talk realtime gateway relay", () => {
       type: "session.error",
       final: true,
     });
-    expectRecordFields((errorPayload.talkEvent as Record<string, unknown>).payload, {
+    expectRecordFields((errorPayload.talkEvent as Record<string, any>).payload, {
       code: "realtime_unavailable",
       provider: "openai",
       model: "gpt-realtime-2",
@@ -572,9 +572,9 @@ describe("talk realtime gateway relay", () => {
         };
       },
     };
-    const events: Array<{ event: string; payload: unknown; connIds: string[] }> = [];
+    const events: Array<{ event: string; payload: any; connIds: string[] }> = [];
     const context = {
-      broadcastToConnIds: (event: string, payload: unknown, connIds: ReadonlySet<string>) => {
+      broadcastToConnIds: (event: string, payload: any, connIds: ReadonlySet<string>) => {
         events.push({ event, payload, connIds: [...connIds] });
       },
     } as never;
@@ -628,9 +628,9 @@ describe("talk realtime gateway relay", () => {
         };
       },
     };
-    const events: Array<{ event: string; payload: unknown; connIds: string[] }> = [];
+    const events: Array<{ event: string; payload: any; connIds: string[] }> = [];
     const context = {
-      broadcastToConnIds: (event: string, payload: unknown, connIds: ReadonlySet<string>) => {
+      broadcastToConnIds: (event: string, payload: any, connIds: ReadonlySet<string>) => {
         events.push({ event, payload, connIds: [...connIds] });
       },
     } as never;
@@ -650,10 +650,10 @@ describe("talk realtime gateway relay", () => {
     const errorPayloads = events
       .map((entry) => entry.payload)
       .filter(
-        (payload): payload is Record<string, unknown> =>
+        (payload): payload is Record<string, any> =>
           typeof payload === "object" &&
           payload !== null &&
-          (payload as Record<string, unknown>).type === "error",
+          (payload as Record<string, any>).type === "error",
       );
     expect(errorPayloads).toHaveLength(1);
     expectRecordFields(errorPayloads[0], {
@@ -688,9 +688,9 @@ describe("talk realtime gateway relay", () => {
         return bridge;
       },
     };
-    const events: Array<{ event: string; payload: unknown; connIds: string[] }> = [];
+    const events: Array<{ event: string; payload: any; connIds: string[] }> = [];
     const context = {
-      broadcastToConnIds: (event: string, payload: unknown, connIds: ReadonlySet<string>) => {
+      broadcastToConnIds: (event: string, payload: any, connIds: ReadonlySet<string>) => {
         events.push({ event, payload, connIds: [...connIds] });
       },
     } as never;
@@ -718,7 +718,7 @@ describe("talk realtime gateway relay", () => {
         return (
           typeof payload === "object" &&
           payload !== null &&
-          (payload as Record<string, unknown>).type === "toolCall"
+          (payload as Record<string, any>).type === "toolCall"
         );
       }),
     ).toBe(false);
@@ -750,9 +750,9 @@ describe("talk realtime gateway relay", () => {
         return bridge;
       },
     };
-    const events: Array<{ event: string; payload: unknown; connIds: string[] }> = [];
+    const events: Array<{ event: string; payload: any; connIds: string[] }> = [];
     const context = {
-      broadcastToConnIds: (event: string, payload: unknown, connIds: ReadonlySet<string>) => {
+      broadcastToConnIds: (event: string, payload: any, connIds: ReadonlySet<string>) => {
         events.push({ event, payload, connIds: [...connIds] });
       },
     } as never;
@@ -775,8 +775,8 @@ describe("talk realtime gateway relay", () => {
         return (
           typeof payload === "object" &&
           payload !== null &&
-          (payload as Record<string, unknown>).type === "toolCall" &&
-          (payload as Record<string, unknown>).forced === true
+          (payload as Record<string, any>).type === "toolCall" &&
+          (payload as Record<string, any>).forced === true
         );
       }),
     ).toBe(false);
@@ -810,9 +810,9 @@ describe("talk realtime gateway relay", () => {
         return bridge;
       },
     };
-    const events: Array<{ event: string; payload: unknown; connIds: string[] }> = [];
+    const events: Array<{ event: string; payload: any; connIds: string[] }> = [];
     const context = {
-      broadcastToConnIds: (event: string, payload: unknown, connIds: ReadonlySet<string>) => {
+      broadcastToConnIds: (event: string, payload: any, connIds: ReadonlySet<string>) => {
         events.push({ event, payload, connIds: [...connIds] });
       },
     } as never;
@@ -850,7 +850,7 @@ describe("talk realtime gateway relay", () => {
       responseStyle: "Reply in a concise spoken tone.",
     });
     expectRecordFields(forcedToolCall.talkEvent, { type: "tool.call" });
-    expectRecordFields((forcedToolCall.talkEvent as Record<string, unknown>).payload, {
+    expectRecordFields((forcedToolCall.talkEvent as Record<string, any>).payload, {
       forced: true,
     });
     expect(bridge.handleBargeIn).toHaveBeenCalledWith({
@@ -924,8 +924,8 @@ describe("talk realtime gateway relay", () => {
         return (
           typeof payload === "object" &&
           payload !== null &&
-          (payload as Record<string, unknown>).type === "toolCall" &&
-          (payload as Record<string, unknown>).callId === "native-call"
+          (payload as Record<string, any>).type === "toolCall" &&
+          (payload as Record<string, any>).callId === "native-call"
         );
       }),
     ).toBe(false);
@@ -986,9 +986,9 @@ describe("talk realtime gateway relay", () => {
         return bridge;
       },
     };
-    const events: Array<{ event: string; payload: unknown; connIds: string[] }> = [];
+    const events: Array<{ event: string; payload: any; connIds: string[] }> = [];
     const context = {
-      broadcastToConnIds: (event: string, payload: unknown, connIds: ReadonlySet<string>) => {
+      broadcastToConnIds: (event: string, payload: any, connIds: ReadonlySet<string>) => {
         events.push({ event, payload, connIds: [...connIds] });
       },
     } as never;
@@ -1018,8 +1018,8 @@ describe("talk realtime gateway relay", () => {
         return (
           typeof payload === "object" &&
           payload !== null &&
-          (payload as Record<string, unknown>).type === "toolCall" &&
-          (payload as Record<string, unknown>).forced === true
+          (payload as Record<string, any>).type === "toolCall" &&
+          (payload as Record<string, any>).forced === true
         );
       }),
     ).toBe(false);
@@ -1052,8 +1052,8 @@ describe("talk realtime gateway relay", () => {
         return (
           typeof payload === "object" &&
           payload !== null &&
-          (payload as Record<string, unknown>).type === "toolCall" &&
-          (payload as Record<string, unknown>).forced === true
+          (payload as Record<string, any>).type === "toolCall" &&
+          (payload as Record<string, any>).forced === true
         );
       }),
     ).toBe(false);
@@ -1085,8 +1085,8 @@ describe("talk realtime gateway relay", () => {
         return (
           typeof payload === "object" &&
           payload !== null &&
-          (payload as Record<string, unknown>).type === "toolCall" &&
-          (payload as Record<string, unknown>).forced === true
+          (payload as Record<string, any>).type === "toolCall" &&
+          (payload as Record<string, any>).forced === true
         );
       }),
     ).toBe(false);
@@ -1235,9 +1235,9 @@ describe("talk realtime gateway relay", () => {
 
   it("returns structured relay steering status and emits Talk progress", async () => {
     const provider = createIdleRelayProvider();
-    const events: Array<{ event: string; payload: unknown; connIds: string[] }> = [];
+    const events: Array<{ event: string; payload: any; connIds: string[] }> = [];
     const context = {
-      broadcastToConnIds: (event: string, payload: unknown, connIds: ReadonlySet<string>) => {
+      broadcastToConnIds: (event: string, payload: any, connIds: ReadonlySet<string>) => {
         events.push({ event, payload, connIds: [...connIds] });
       },
     } as never;
@@ -1398,9 +1398,9 @@ describe("talk realtime gateway relay", () => {
         return bridge;
       },
     };
-    const events: Array<{ event: string; payload: unknown; connIds: string[] }> = [];
+    const events: Array<{ event: string; payload: any; connIds: string[] }> = [];
     const context = {
-      broadcastToConnIds: (event: string, payload: unknown, connIds: ReadonlySet<string>) => {
+      broadcastToConnIds: (event: string, payload: any, connIds: ReadonlySet<string>) => {
         events.push({ event, payload, connIds: [...connIds] });
       },
     } as never;

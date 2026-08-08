@@ -7,7 +7,7 @@ import type {
   ImagesDescriptionResult,
 } from "./types.js";
 
-export type ImagePayloadTransformFn = (payload: unknown, model: unknown) => unknown | Promise<unknown>;
+export type ImagePayloadTransformFn = (payload: any, model: any) => unknown | Promise<any>;
 
 function resolveImageToolMaxTokens(modelMaxTokens: number | undefined, requestedMaxTokens = 4096) {
   if (
@@ -20,16 +20,16 @@ function resolveImageToolMaxTokens(modelMaxTokens: number | undefined, requested
   return Math.min(requestedMaxTokens, modelMaxTokens);
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
-function isImageModelNoTextError(err: unknown): boolean {
+function isImageModelNoTextError(err: any): boolean {
   return err instanceof Error && /^Image model returned no text\b/.test(err.message);
 }
 
-function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
-  return Boolean(value) && typeof (value as { then?: unknown }).then === "function";
+function isPromiseLike(value: any): value is PromiseLike<any> {
+  return Boolean(value) && typeof (value as { then?: any }).then === "function";
 }
 
 function resolveImageDescriptionTimeoutMs(timeoutMs: number | undefined) {

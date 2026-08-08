@@ -15,7 +15,7 @@ export type SafeStreamWriter = {
 };
 
 /** Detect broken pipe style stream errors. */
-function isBrokenPipeError(err: unknown): err is NodeJS.ErrnoException {
+function isBrokenPipeError(err: any): err is NodeJS.ErrnoException {
   const code = (err as NodeJS.ErrnoException)?.code;
   return code === "EPIPE" || code === "EIO";
 }
@@ -33,7 +33,7 @@ export function createSafeStreamWriter(options: SafeStreamWriterOptions = {}): S
     options.onBrokenPipe?.(err, stream);
   };
 
-  const handleError = (err: unknown, stream: NodeJS.WriteStream): boolean => {
+  const handleError = (err: any, stream: NodeJS.WriteStream): boolean => {
     if (!isBrokenPipeError(err)) {
       throw err;
     }

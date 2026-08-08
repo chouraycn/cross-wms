@@ -70,11 +70,11 @@ function writeLine(value: string): void {
   process.stdout.write(`${value}\n`);
 }
 
-function writeJson(value: unknown): void {
+function writeJson(value: any): void {
   writeLine(JSON.stringify(value, null, 2));
 }
 
-function isNodeError(err: unknown, code: string): boolean {
+function isNodeError(err: any, code: string): boolean {
   return Boolean(err && typeof err === "object" && "code" in err && err.code === code);
 }
 
@@ -94,7 +94,7 @@ async function readJsonFile<T>(filePath: string): Promise<T> {
   return JSON.parse(await fs.readFile(filePath, "utf8")) as T;
 }
 
-function formatErrorMessage(err: unknown): string {
+function formatErrorMessage(err: any): string {
   return err instanceof Error ? err.message : String(err);
 }
 

@@ -55,7 +55,7 @@ describe("runCronIsolatedAgentTurn — payload.fallbacks", () => {
 
     expect(result.status).toBe("ok");
     expect(runEmbeddedAgentMock).toHaveBeenCalledOnce();
-    const request = runEmbeddedAgentMock.mock.calls[0]?.[0] as { prompt?: unknown } | undefined;
+    const request = runEmbeddedAgentMock.mock.calls[0]?.[0] as { prompt?: any } | undefined;
     expect(request?.prompt).toContain("SERIALIZATION_PROBE: reply exactly");
     expect(request?.prompt).not.toContain(dispatchMessage);
     expect(request?.prompt).not.toContain("[object Object]");

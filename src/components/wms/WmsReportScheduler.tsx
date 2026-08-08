@@ -80,7 +80,7 @@ const WmsReportScheduler: React.FC = () => {
   }, [showToast]);
 
   // 处理报表类型变化
-  const handleReportTypeChange = (event: React.ChangeEvent<{ value: unknown }>) => {
+  const handleReportTypeChange = (event: React.ChangeEvent<{ value: any }>) => {
     setConfig((prev) => ({
       ...prev,
       reportType: event.target.value as ReportType,
@@ -88,7 +88,7 @@ const WmsReportScheduler: React.FC = () => {
   };
 
   // 处理仓库选择变化
-  const handleWarehouseChange = (event: React.ChangeEvent<{ value: unknown }>) => {
+  const handleWarehouseChange = (event: React.ChangeEvent<{ value: any }>) => {
     setConfig((prev) => ({
       ...prev,
       warehouseId: event.target.value as string,
@@ -205,7 +205,7 @@ const WmsReportScheduler: React.FC = () => {
           <InputLabel>报表类型</InputLabel>
           <Select
             value={config.reportType}
-            onChange={handleReportTypeChange as unknown}
+            onChange={handleReportTypeChange as any}
             label="报表类型"
           >
             <MenuItem value="inventory">库存报表</MenuItem>
@@ -221,7 +221,7 @@ const WmsReportScheduler: React.FC = () => {
           <InputLabel>选择仓库</InputLabel>
           <Select
             value={config.warehouseId}
-            onChange={handleWarehouseChange as unknown}
+            onChange={handleWarehouseChange as any}
             label="选择仓库"
           >
             <MenuItem value="">全部仓库</MenuItem>

@@ -7,29 +7,29 @@
  */
 
 export type PluginModelCatalogMetadataSnapshot = unknown;
-export const PLUGIN_MODEL_CATALOG_FILE: unknown = undefined;
-export const PLUGIN_MODEL_CATALOG_GENERATED_BY: unknown = undefined;
-export function encodePluginModelCatalogRelativePath(..._args: unknown[]): unknown {
+export const PLUGIN_MODEL_CATALOG_FILE: any = undefined;
+export const PLUGIN_MODEL_CATALOG_GENERATED_BY: any = undefined;
+export function encodePluginModelCatalogRelativePath(..._args: any[]): any {
   return undefined;
 }
-export function isPluginModelCatalogRelativePath(..._args: unknown[]): unknown {
+export function isPluginModelCatalogRelativePath(..._args: any[]): any {
   return false;
 }
-export function decodePluginModelCatalogRelativePathPluginId(..._args: unknown[]): unknown {
+export function decodePluginModelCatalogRelativePathPluginId(..._args: any[]): any {
   return undefined;
 }
-export function listPluginModelCatalogRelativePaths(..._args: unknown[]): unknown {
+export function listPluginModelCatalogRelativePaths(..._args: any[]): any {
   return [];
 }
-export function listPluginModelCatalogFiles(..._args: unknown[]): unknown {
+export function listPluginModelCatalogFiles(..._args: any[]): any {
   return [];
 }
-export function isGeneratedPluginModelCatalog(..._args: unknown[]): unknown {
+export function isGeneratedPluginModelCatalog(..._args: any[]): any {
   return false;
 }
-export function resolvePluginModelCatalogOwnerPluginId(..._args: unknown[]): unknown {
+export function resolvePluginModelCatalogOwnerPluginId(..._args: any[]): any {
   return undefined;
 }
-export function filterGeneratedPluginModelCatalogProviders(..._args: unknown[]): unknown {
+export function filterGeneratedPluginModelCatalogProviders(..._args: any[]): any {
   return undefined;
 }

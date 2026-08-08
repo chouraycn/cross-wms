@@ -20,41 +20,41 @@ export type ToolOutcomeObserver = (observation: ToolOutcomeObservation) => void;
 
 export type HookContext = {
   agentId?: string;
-  config?: unknown;
+  config?: any;
   cwd?: string;
   workspaceDir?: string;
   sessionKey?: string;
   sessionId?: string;
   runId?: string;
-  trace?: unknown;
+  trace?: any;
   channelId?: string;
   turnSourceChannel?: string;
   turnSourceTo?: string;
   turnSourceAccountId?: string;
   turnSourceThreadId?: string | number;
-  loopDetection?: unknown;
+  loopDetection?: any;
   onToolOutcome?: ToolOutcomeObserver;
   allocateToolOutcomeOrdinal?: (toolCallId?: string) => number;
-  skillsSnapshot?: unknown;
+  skillsSnapshot?: any;
   skillCommand?: {
     commandName: string;
     skillName: string;
-    skillSource?: unknown;
+    skillSource?: any;
     toolName?: string;
   };
   sandbox?: {
     root: string;
-    bridge: unknown;
+    bridge: any;
   };
 };
 
 export type DeferredPluginToolApproval = {
-  approval: unknown;
+  approval: any;
   toolName: string;
   toolCallId?: string;
   ctx?: HookContext;
-  baseParams: unknown;
-  overrideParams?: unknown;
+  baseParams: any;
+  overrideParams?: any;
 };
 
 export type BeforeToolCallPolicyDiagnosticState = {
@@ -88,9 +88,9 @@ export function hasBeforeToolCallPolicy(): boolean {
 
 /** Resolve terminal presentation for a tool result. */
 export function resolveToolTerminalPresentation(_params: {
-  tool: unknown;
-  toolParams: unknown;
-  result: unknown;
+  tool: any;
+  toolParams: any;
+  result: any;
 }): string | undefined {
   return undefined;
 }
@@ -99,7 +99,7 @@ export function resolveToolTerminalPresentation(_params: {
 export function finalizeToolTerminalPresentation(_params: {
   toolCallId: string;
   runId?: string;
-  result: unknown;
+  result: any;
   isError: boolean;
   observer?: ToolOutcomeObserver;
   toolName?: string;
@@ -111,7 +111,7 @@ export function finalizeToolTerminalPresentation(_params: {
 /** Remember hook-adjusted params for later adapter-side execution. */
 export function recordAdjustedParamsForToolCall(
   _toolCallId: string | undefined,
-  _params: unknown,
+  _params: any,
   _runId?: string,
 ): void {
   // No-op: adjusted param tracking not available in simplified port.
@@ -120,14 +120,14 @@ export function recordAdjustedParamsForToolCall(
 /** Record that one concrete core-owned tool call may use structured replay classification. */
 export function recordStructuredReplayTrustForToolCall(
   _toolCallId: string | undefined,
-  _tool: unknown,
+  _tool: any,
   _runId?: string,
 ): void {
   // No-op in simplified port.
 }
 
 /** Returns true when an error represents an intentional before_tool_call veto. */
-export function isBeforeToolCallBlockedError(err: unknown): err is BeforeToolCallBlockedError {
+export function isBeforeToolCallBlockedError(err: any): err is BeforeToolCallBlockedError {
   return err instanceof BeforeToolCallBlockedError;
 }
 
@@ -135,7 +135,7 @@ export function isBeforeToolCallBlockedError(err: unknown): err is BeforeToolCal
 export async function requestDeferredPluginToolApproval(_params: {
   deferredApproval: DeferredPluginToolApproval;
   signal?: AbortSignal;
-}): Promise<{ blocked: true; kind: "failure"; deniedReason: "plugin-approval"; reason: string; params: unknown }> {
+}): Promise<{ blocked: true; kind: "failure"; deniedReason: "plugin-approval"; reason: string; params: any }> {
   return { blocked: true, kind: "failure", deniedReason: "plugin-approval", reason: "Plugin approval not available", params: undefined };
 }
 
@@ -164,48 +164,48 @@ export function buildBlockedToolResult(params: {
 /** Run the full before_tool_call policy chain for a pending tool call. */
 export async function runBeforeToolCallHook(args: {
   toolName: string;
-  params: unknown;
-  toolKind?: unknown;
-  toolInputKind?: unknown;
+  params: any;
+  toolKind?: any;
+  toolInputKind?: any;
   toolCallId?: string;
   ctx?: HookContext;
   signal?: AbortSignal;
   approvalMode?: "request" | "report" | "defer";
-}): Promise<{ blocked: false; params: unknown }> {
+}): Promise<{ blocked: false; params: any }> {
   // Simplified: no hooks active, always allow.
   return { blocked: false, params: args.params };
 }
 
 /** Wrap a tool execute function with before_tool_call hooks and diagnostics. */
 export function wrapToolWithBeforeToolCallHook(
-  tool: unknown & { execute?: (...args: unknown[]) => Promise<unknown>; name?: string },
+  tool: any & { execute?: (...args: any[]) => Promise<any>; name?: string },
   _ctx?: HookContext,
   _options?: { approvalMode?: "request" | "report"; emitDiagnostics?: boolean },
-): unknown {
+): any {
   return tool;
 }
 
 /** Return true when a tool already carries the before_tool_call wrapper marker. */
-export function isToolWrappedWithBeforeToolCallHook(_tool: unknown): boolean {
+export function isToolWrappedWithBeforeToolCallHook(_tool: any): boolean {
   return false;
 }
 
 /** Toggle diagnostic event emission on an existing before_tool_call wrapper. */
-export function setBeforeToolCallDiagnosticsEnabled(_tool: unknown, _enabled: boolean): void {
+export function setBeforeToolCallDiagnosticsEnabled(_tool: any, _enabled: boolean): void {
   // No-op in simplified port.
 }
 
 /** Rebuild a before_tool_call wrapper while preserving the original source tool. */
 export function rewrapToolWithBeforeToolCallHook(
-  tool: unknown,
+  tool: any,
   _ctx?: HookContext,
   _options?: { approvalMode?: "request" | "report"; emitDiagnostics?: boolean },
-): unknown {
+): any {
   return tool;
 }
 
 /** Copy before_tool_call marker metadata when another wrapper replaces a tool. */
-export function copyBeforeToolCallHookMarker(_source: unknown, _target: unknown): void {
+export function copyBeforeToolCallHookMarker(_source: any, _target: any): void {
   // No-op in simplified port.
 }
 

@@ -18,19 +18,19 @@ export type OAuthMirrorDecision = {
   reason: OAuthMirrorDecisionReason;
 };
 
-function normalizeToken(value: unknown): string | undefined {
+function normalizeToken(value: any): string | undefined {
   if (typeof value !== "string") return undefined;
   const trimmed = value.trim();
   return trimmed || undefined;
 }
 
 /** Normalizes an auth identity token (sub claim). */
-export function normalizeAuthIdentityToken(value: unknown): string | undefined {
+export function normalizeAuthIdentityToken(value: any): string | undefined {
   return normalizeToken(value);
 }
 
 /** Normalizes an auth email token. */
-export function normalizeAuthEmailToken(value: unknown): string | undefined {
+export function normalizeAuthEmailToken(value: any): string | undefined {
   const normalized = normalizeToken(value);
   return normalized?.toLowerCase();
 }

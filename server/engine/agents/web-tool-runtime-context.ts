@@ -7,11 +7,11 @@
  */
 
 /** Resolve runtime context for the web search tool (returns empty context in cross-wms). */
-export function resolveWebSearchToolRuntimeContext(..._args: unknown[]): null {
+export function resolveWebSearchToolRuntimeContext(..._args: any[]): null {
   return null;
 }
 
 /** Resolve runtime context for the web fetch tool (returns empty context in cross-wms). */
-export function resolveWebFetchToolRuntimeContext(..._args: unknown[]): null {
+export function resolveWebFetchToolRuntimeContext(..._args: any[]): null {
   return null;
 }

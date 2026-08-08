@@ -46,7 +46,7 @@ describe("doctor session transcript repair", () => {
     await fs.rm(root, { recursive: true, force: true });
   });
 
-  async function writeTranscript(entries: unknown[]): Promise<string> {
+  async function writeTranscript(entries: any[]): Promise<string> {
     const sessionsDir = path.join(root, "agents", "main", "sessions");
     await fs.mkdir(sessionsDir, { recursive: true });
     const filePath = path.join(sessionsDir, "session.jsonl");

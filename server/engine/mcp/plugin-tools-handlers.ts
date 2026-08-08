@@ -10,17 +10,17 @@ import { logger } from '../../logger.js';
 
 export type ToolHandlerContext = {
   toolName: string;
-  args: Record<string, unknown>;
+  args: Record<string, any>;
   sessionId?: string;
   requestId?: string | number;
   pluginId?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 export type ToolHandlerResult = {
-  content: Array<{ type: string; text?: string; data?: unknown }>;
+  content: Array<{ type: string; text?: string; data?: any }>;
   isError?: boolean;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 export type ToolHandler = (
@@ -35,8 +35,8 @@ export type ToolMiddleware = (
 export type ToolDefinition = {
   name: string;
   description?: string;
-  inputSchema?: Record<string, unknown>;
-  outputSchema?: Record<string, unknown>;
+  inputSchema?: Record<string, any>;
+  outputSchema?: Record<string, any>;
   categories?: string[];
   tags?: string[];
   timeoutMs?: number;
@@ -162,8 +162,8 @@ export class PluginToolHandlers {
 
   async executeTool(
     name: string,
-    args: Record<string, unknown>,
-    options?: { sessionId?: string; requestId?: string | number; pluginId?: string; metadata?: Record<string, unknown> },
+    args: Record<string, any>,
+    options?: { sessionId?: string; requestId?: string | number; pluginId?: string; metadata?: Record<string, any> },
   ): Promise<ToolHandlerResult> {
     const ctx: ToolHandlerContext = {
       toolName: name,
@@ -324,14 +324,14 @@ export class PluginToolHandlers {
     return this.defaultTimeoutMs;
   }
 
-  validateArgs(name: string, args: Record<string, unknown>): { valid: boolean; error?: string } {
+  validateArgs(name: string, args: Record<string, any>): { valid: boolean; error?: string } {
     const entry = this.tools.get(name);
     if (!entry) {
       return { valid: false, error: `Tool not found: ${name}` };
     }
 
     const schema = entry.definition.inputSchema;
-    if (!schema || !(schema as { properties?: unknown }).properties) {
+    if (!schema || !(schema as { properties?: any }).properties) {
       return { valid: true };
     }
 
@@ -356,7 +356,7 @@ export class PluginToolHandlers {
     return { valid: true };
   }
 
-  private validateType(value: unknown, type: string): boolean {
+  private validateType(value: any, type: string): boolean {
     switch (type) {
       case 'string':
         return typeof value === 'string';
@@ -388,7 +388,7 @@ export function registerToolHandler(
 
 export async function executeToolHandler(
   name: string,
-  args: Record<string, unknown>,
+  args: Record<string, any>,
   options?: { sessionId?: string; requestId?: string | number },
 ): Promise<ToolHandlerResult> {
   return pluginToolHandlers.executeTool(name, args, options);

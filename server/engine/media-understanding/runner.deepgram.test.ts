@@ -138,7 +138,7 @@ describe("runCapability deepgram provider options", () => {
         punctuate: false,
         smart_format: true,
       });
-      expect((seenQuery as Record<string, unknown>)["detectLanguage"]).toBeUndefined();
+      expect((seenQuery as Record<string, any>)["detectLanguage"]).toBeUndefined();
       expect(seenRequest).toEqual({
         headers: {
           "X-Config-Request": "cfg",

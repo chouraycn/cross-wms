@@ -10,7 +10,7 @@
  */
 export const AGENT_RESERVED_TOOL_NAMES = ["bash", "edit", "find", "grep", "ls", "read", "write"];
 
-function addName(names: Set<string>, value: unknown): void {
+function addName(names: Set<string>, value: any): void {
   if (typeof value !== "string") {
     return;
   }

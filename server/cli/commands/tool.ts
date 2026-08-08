@@ -24,7 +24,7 @@ interface ToolParameter {
   type: "string" | "number" | "boolean" | "array" | "object";
   description: string;
   required: boolean;
-  default?: unknown;
+  default?: any;
 }
 
 /** 模拟工具存储 */
@@ -134,7 +134,7 @@ function getToolByName(name: string): ToolDefinition | undefined {
 }
 
 /** 执行工具 */
-function executeTool(name: string, params: Record<string, unknown>): { success: boolean; result?: unknown; error?: string } {
+function executeTool(name: string, params: Record<string, any>): { success: boolean; result?: any; error?: string } {
   const tool = TOOL_STORE.get(name);
   if (!tool) {
     return { success: false, error: `工具 ${name} 不存在` };
@@ -151,7 +151,7 @@ function executeTool(name: string, params: Record<string, unknown>): { success: 
   }
 
   // 模拟工具执行
-  const mockResults: Record<string, unknown> = {
+  const mockResults: Record<string, any> = {
     weather_query: {
       city: params.city,
       temperature: 22,
@@ -199,12 +199,12 @@ function executeTool(name: string, params: Record<string, unknown>): { success: 
 }
 
 /** 解析 JSON 参数 */
-function parseParams(paramsStr: string): Record<string, unknown> {
+function parseParams(paramsStr: string): Record<string, any> {
   try {
     return JSON.parse(paramsStr);
   } catch {
     // 尝试简单参数格式: key=value,key2=value2
-    const params: Record<string, unknown> = {};
+    const params: Record<string, any> = {};
     const pairs = paramsStr.split(",");
     for (const pair of pairs) {
       const [key, value] = pair.split("=").map((s) => s.trim());
@@ -219,7 +219,7 @@ function parseParams(paramsStr: string): Record<string, unknown> {
 }
 
 /** 格式化 JSON 输出 */
-function formatJsonOutput(data: unknown): string {
+function formatJsonOutput(data: any): string {
   return JSON.stringify(data, null, 2);
 }
 
@@ -264,7 +264,7 @@ function formatToolInfo(tool: ToolDefinition | undefined): string {
 }
 
 /** 格式化工具执行结果文本输出 */
-function formatToolExec(result: { success: boolean; result?: unknown; error?: string }): string {
+function formatToolExec(result: { success: boolean; result?: any; error?: string }): string {
   if (!result.success) {
     return `执行失败: ${result.error}`;
   }

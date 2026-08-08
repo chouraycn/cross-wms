@@ -48,7 +48,7 @@ function resolveShellBasename(
   return normalizeLowercaseStringOrEmpty(basename.replace(/\.(?:exe|cmd|bat)$/i, ""));
 }
 
-/** Resolves the active shell from environment paths, defaulting to zsh for unknown shells. */
+/** Resolves the active shell from environment paths, defaulting to zsh for any shells. */
 export function resolveShellFromEnv(env: NodeJS.ProcessEnv = process.env): CompletionShell {
   const shellPath = normalizeOptionalString(env.SHELL) ?? "";
   const shellName = shellPath ? resolveShellBasename(shellPath) : "";

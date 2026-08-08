@@ -13,21 +13,21 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("../../config/config.js", () => ({
-  readConfigFileSnapshot: (...args: unknown[]) => mocks.readConfigFileSnapshot(...args),
-  replaceConfigFile: (...args: unknown[]) => mocks.replaceConfigFile(...args),
+  readConfigFileSnapshot: (...args: any[]) => mocks.readConfigFileSnapshot(...args),
+  replaceConfigFile: (...args: any[]) => mocks.replaceConfigFile(...args),
 }));
 
 vi.mock("../../config/logging.js", () => ({
-  logConfigUpdated: (...args: unknown[]) => mocks.logConfigUpdated(...args),
+  logConfigUpdated: (...args: any[]) => mocks.logConfigUpdated(...args),
 }));
 
 vi.mock("../codex-runtime-plugin-install.js", () => ({
-  repairCodexRuntimePluginInstallForModelSelection: (...args: unknown[]) =>
+  repairCodexRuntimePluginInstallForModelSelection: (...args: any[]) =>
     mocks.repairCodexRuntimePluginInstallForModelSelection(...args),
 }));
 
 vi.mock("../copilot-runtime-plugin-install.js", () => ({
-  repairCopilotRuntimePluginInstallForModelSelection: (...args: unknown[]) =>
+  repairCopilotRuntimePluginInstallForModelSelection: (...args: any[]) =>
     mocks.repairCopilotRuntimePluginInstallForModelSelection(...args),
 }));
 

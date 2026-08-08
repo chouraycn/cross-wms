@@ -35,7 +35,7 @@ describe("device identity state dir defaults", () => {
     await withStateDirEnv("openclaw-identity-state-", async ({ stateDir }) => {
       const original = loadOrCreateDeviceIdentity();
       const identityPath = path.join(stateDir, "identity", "device.json");
-      const raw = JSON.parse(await fs.readFile(identityPath, "utf8")) as Record<string, unknown>;
+      const raw = JSON.parse(await fs.readFile(identityPath, "utf8")) as Record<string, any>;
 
       await fs.writeFile(
         identityPath,

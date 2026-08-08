@@ -23,7 +23,7 @@ export function createSessionsYieldTool(opts?: {
     description: "End current turn. Use after spawning subagents; results arrive as next message.",
     parameters: SessionsYieldToolSchema,
     execute: async (_toolCallId, args) => {
-      const params = args as Record<string, unknown>;
+      const params = args as Record<string, any>;
       const message = readStringParam(params, "message") || "Turn yielded.";
       if (!opts?.sessionId) {
         return jsonResult({ status: "error", error: "No session context" });

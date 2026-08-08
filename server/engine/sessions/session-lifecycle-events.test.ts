@@ -3,10 +3,10 @@ import { describe, expect, it } from "vitest";
 import { emitSessionLifecycleEvent, onSessionLifecycleEvent } from "./session-lifecycle-events.js";
 
 function createListenerSpy(options: { throws?: boolean } = {}) {
-  const calls: unknown[][] = [];
+  const calls: any[][] = [];
   return {
     calls,
-    listener: (...args: unknown[]) => {
+    listener: (...args: any[]) => {
       calls.push(args);
       if (options.throws) {
         throw new Error("boom");

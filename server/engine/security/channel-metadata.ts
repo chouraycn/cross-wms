@@ -13,7 +13,7 @@ export type ChannelMetadata = {
   isEncrypted?: boolean;
   isVerified?: boolean;
   permissions?: ChannelPermissions;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
   securityLevel?: 'low' | 'medium' | 'high' | 'critical';
 };
 
@@ -213,7 +213,7 @@ export function auditChannelMetadata(): ChannelMetadataAuditResult {
   };
 }
 
-export function buildChannelMetadataReport(): Record<string, unknown> {
+export function buildChannelMetadataReport(): Record<string, any> {
   const store = getChannelMetadataStore();
   const auditResult = auditChannelMetadata();
   const dmChannels = findChannelsByType('dm');

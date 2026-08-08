@@ -63,7 +63,7 @@ function providerCatalogProjectionFinding(params: {
   providerId: string;
   pluginId?: string;
   message: string;
-  error: unknown;
+  error: any;
 }): HealthFinding {
   const path = providerCatalogPath(params.pluginId);
   return {
@@ -78,16 +78,16 @@ function providerCatalogProjectionFinding(params: {
   };
 }
 
-function isReadableRecord(value: unknown): value is Record<string, unknown> {
+function isReadableRecord(value: any): value is Record<string, any> {
   return value !== null && typeof value === "object";
 }
 
-function isTrimmedNonEmptyString(value: unknown): value is string {
+function isTrimmedNonEmptyString(value: any): value is string {
   return typeof value === "string" && value.trim() === value && value.length > 0;
 }
 
 function hasProviderCatalogKey(params: {
-  value: Record<string, unknown>;
+  value: Record<string, any>;
   key: string;
   providerId: string;
   pluginId?: string;
@@ -108,11 +108,11 @@ function hasProviderCatalogKey(params: {
 }
 
 function readProviderCatalogValue(params: {
-  value: unknown;
+  value: any;
   key: string;
   providerId: string;
   pluginId?: string;
-}): { ok: true; value: unknown } | { ok: false; finding: HealthFinding } {
+}): { ok: true; value: any } | { ok: false; finding: HealthFinding } {
   if (!isReadableRecord(params.value)) {
     return { ok: true, value: undefined };
   }
@@ -134,10 +134,10 @@ function readProviderCatalogValue(params: {
 function collectProviderCatalogModelFindings(params: {
   providerId: string;
   pluginId?: string;
-  models: unknown;
+  models: any;
 }): HealthFinding[] {
   const findings: HealthFinding[] = [];
-  let models: unknown[];
+  let models: any[];
   try {
     if (!Array.isArray(params.models)) {
       return [
@@ -160,7 +160,7 @@ function collectProviderCatalogModelFindings(params: {
       }),
     ];
   }
-  let modelEntries: Array<[number, unknown]>;
+  let modelEntries: Array<[number, any]>;
   try {
     modelEntries = [];
     let index = 0;
@@ -226,7 +226,7 @@ function collectProviderCatalogModelFindings(params: {
 function collectProviderCatalogResultFindings(params: {
   providerId: string;
   pluginId?: string;
-  result: unknown;
+  result: any;
 }): HealthFinding[] {
   if (params.result == null) {
     return [];
@@ -369,7 +369,7 @@ function collectProviderCatalogResultFindings(params: {
 function readProviderCatalogOrder(
   provider: ProviderPlugin,
 ): { ok: true; order: ProviderCatalogOrder } | { ok: false; finding: HealthFinding } {
-  let order: unknown;
+  let order: any;
   try {
     order = provider.staticCatalog?.order ?? "late";
   } catch (error) {
@@ -456,8 +456,8 @@ export async function collectProviderCatalogProjectionFindings(
   findings.push(...grouped.findings);
   for (const order of PROVIDER_CATALOG_ORDERS) {
     for (const provider of grouped.byOrder[order]) {
-      let staticCatalog: unknown;
-      let staticCatalogRun: unknown;
+      let staticCatalog: any;
+      let staticCatalogRun: any;
       try {
         staticCatalog = provider.staticCatalog;
         staticCatalogRun = isReadableRecord(staticCatalog) ? staticCatalog.run : undefined;
@@ -599,7 +599,7 @@ function collectNormalizedToolSchemaFindings(params: {
   workspaceDir: string;
   modelRef: { provider: string; model: string };
   model: ProviderRuntimeModel;
-  normalizationFailureFinding: (error: unknown) => HealthFinding;
+  normalizationFailureFinding: (error: any) => HealthFinding;
 }): readonly HealthFinding[] {
   const preNormalizationFindings: HealthFinding[] = [];
 
@@ -669,7 +669,7 @@ function collectBundleMcpRuntimeToolSchemaFindings(params: {
 
 function agentRuntimeToolLoadFailureFinding(params: {
   agentId: string;
-  error: unknown;
+  error: any;
 }): HealthFinding {
   return {
     checkId: "core/doctor/runtime-tool-schemas",
@@ -684,7 +684,7 @@ function agentRuntimeToolLoadFailureFinding(params: {
 
 function agentRuntimeToolNormalizationFailureFinding(params: {
   agentId: string;
-  error: unknown;
+  error: any;
 }): HealthFinding {
   return {
     checkId: "core/doctor/runtime-tool-schemas",
@@ -738,7 +738,7 @@ function collectAgentRuntimeToolSchemaFindings(params: {
   });
 }
 
-function bundleMcpRuntimeNormalizationFailureFinding(error: unknown): HealthFinding {
+function bundleMcpRuntimeNormalizationFailureFinding(error: any): HealthFinding {
   return {
     checkId: "core/doctor/runtime-tool-schemas",
     severity: "error",
@@ -750,7 +750,7 @@ function bundleMcpRuntimeNormalizationFailureFinding(error: unknown): HealthFind
   };
 }
 
-function bundleMcpRuntimeLoadFailureFinding(error: unknown): HealthFinding {
+function bundleMcpRuntimeLoadFailureFinding(error: any): HealthFinding {
   return {
     checkId: "core/doctor/runtime-tool-schemas",
     severity: "error",

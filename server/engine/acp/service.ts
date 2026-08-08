@@ -56,7 +56,7 @@ type AcpxRuntimeFactoryParams = {
 };
 
 type CreateAcpxRuntimeServiceParams = {
-  pluginConfig?: unknown;
+  pluginConfig?: any;
   processCleanupDeps?: AcpxProcessCleanupDeps;
 };
 
@@ -130,7 +130,7 @@ function warnOnIgnoredLegacyCompatibilityConfig(params: {
   );
 }
 
-function formatDoctorDetail(detail: unknown): string | null {
+function formatDoctorDetail(detail: any): string | null {
   if (!detail) {
     return null;
   }
@@ -153,7 +153,7 @@ function formatDoctorDetail(detail: unknown): string | null {
   return String(detail);
 }
 
-function formatDoctorFailureMessage(report: { message: string; details?: unknown[] }): string {
+function formatDoctorFailureMessage(report: { message: string; details?: any[] }): string {
   const detailText = report.details?.map(formatDoctorDetail).filter(Boolean).join("; ").trim();
   return detailText ? `${report.message} (${detailText})` : report.message;
 }

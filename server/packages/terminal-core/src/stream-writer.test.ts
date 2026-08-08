@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest";
 import { createSafeStreamWriter } from "./stream-writer.js";
 
-function createSpy<Args extends unknown[], ReturnValue>(
+function createSpy<Args extends any[], ReturnValue>(
   implementation?: (...args: Args) => ReturnValue,
 ) {
   const calls: Args[] = [];

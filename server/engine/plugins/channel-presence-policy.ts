@@ -89,11 +89,11 @@ export function hasExplicitChannelConfig(params: {
   if (!channels || typeof channels !== "object" || Array.isArray(channels)) {
     return false;
   }
-  const entry = (channels as Record<string, unknown>)[params.channelId];
+  const entry = (channels as Record<string, any>)[params.channelId];
   if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
     return false;
   }
-  const enabled = (entry as { enabled?: unknown }).enabled;
+  const enabled = (entry as { enabled?: any }).enabled;
   if (enabled === false) {
     return false;
   }

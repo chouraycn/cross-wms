@@ -39,7 +39,7 @@ export interface PerformanceSnapshot {
   timestamp: string;
   duration: number;
   operation: string;
-  details: Record<string, unknown>;
+  details: Record<string, any>;
 }
 
 export async function getPerformanceSnapshots(limit?: number): Promise<{ snapshots: PerformanceSnapshot[] }> {

@@ -1,8 +1,8 @@
 /** Shared helpers for interactive plugin contract tests. */
 type ConversationBindingHelpers = {
-  requestConversationBinding: (...args: unknown[]) => unknown;
-  detachConversationBinding: (...args: unknown[]) => unknown;
-  getCurrentConversationBinding: (...args: unknown[]) => unknown;
+  requestConversationBinding: (...args: any[]) => unknown;
+  detachConversationBinding: (...args: any[]) => unknown;
+  getCurrentConversationBinding: (...args: any[]) => unknown;
 };
 
 type InteractiveHandlerRegistration<
@@ -21,7 +21,7 @@ type BaseInteractiveContext<TChannel extends string> = ConversationBindingHelper
   parentConversationId?: string;
   senderId: string;
   senderUsername?: string;
-  auth?: unknown;
+  auth?: any;
 };
 
 export type TelegramInteractiveHandlerContext = BaseInteractiveContext<"telegram"> & {
@@ -38,7 +38,7 @@ export type TelegramInteractiveHandlerContext = BaseInteractiveContext<"telegram
     chatId: string;
     messageText?: string;
   };
-  respond: Record<string, (...args: unknown[]) => unknown>;
+  respond: Record<string, (...args: any[]) => unknown>;
 };
 
 export type DiscordInteractiveHandlerContext = BaseInteractiveContext<"discord"> & {
@@ -48,9 +48,9 @@ export type DiscordInteractiveHandlerContext = BaseInteractiveContext<"discord">
     data: string;
     namespace: string;
     payload: string;
-    [key: string]: unknown;
+    [key: string]: any;
   };
-  respond: Record<string, (...args: unknown[]) => unknown>;
+  respond: Record<string, (...args: any[]) => unknown>;
 };
 
 export type SlackInteractiveHandlerContext = BaseInteractiveContext<"slack"> & {
@@ -60,9 +60,9 @@ export type SlackInteractiveHandlerContext = BaseInteractiveContext<"slack"> & {
     data: string;
     namespace: string;
     payload: string;
-    [key: string]: unknown;
+    [key: string]: any;
   };
-  respond: Record<string, (...args: unknown[]) => unknown>;
+  respond: Record<string, (...args: any[]) => unknown>;
 };
 
 export type TelegramInteractiveHandlerRegistration = InteractiveHandlerRegistration<

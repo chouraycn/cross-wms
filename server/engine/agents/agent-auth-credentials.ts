@@ -20,6 +20,6 @@ type AgentCredential = AgentApiKeyCredential | AgentOAuthCredential;
 export type AgentCredentialMap = Record<string, AgentCredential>;
 
 /** Build one credential per normalized provider from an auth profile store (returns empty in cross-wms). */
-export function resolveAgentCredentialMapFromStore(..._args: unknown[]): AgentCredentialMap {
+export function resolveAgentCredentialMapFromStore(..._args: any[]): AgentCredentialMap {
   return {};
 }

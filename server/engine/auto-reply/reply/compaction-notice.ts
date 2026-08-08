@@ -30,7 +30,7 @@ export function createCompactionNoticePayload(params: {
   return params.applyReplyToMode ? params.applyReplyToMode(payload) : payload;
 }
 
-export function readCompactionHookMessages(value: unknown): string[] {
+export function readCompactionHookMessages(value: any): string[] {
   if (!Array.isArray(value)) {
     return [];
   }

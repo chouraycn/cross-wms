@@ -100,7 +100,7 @@ export function createInstanceFromDefinition(
   params: {
     taskDescription: string;
     parentSessionKey?: string;
-    metadata?: Record<string, unknown>;
+    metadata?: Record<string, any>;
   },
 ): SubagentInstance {
   return {
@@ -126,7 +126,7 @@ export function cloneInstance(instance: SubagentInstance): SubagentInstance {
 
 export function mergeInstanceMetadata(
   instance: SubagentInstance,
-  updates: Record<string, unknown>,
+  updates: Record<string, any>,
 ): SubagentInstance {
   return {
     ...instance,

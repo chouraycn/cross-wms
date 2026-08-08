@@ -226,15 +226,15 @@ function requireRegexMatch(value: string, pattern: RegExp): RegExpExecArray {
   return match;
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object") {
     throw new Error(`expected ${label} to be an object`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function mockCallArg(mock: ReturnType<typeof vi.fn>, callIndex = 0, argIndex = 0): unknown {
-  const call = mock.mock.calls[callIndex] as unknown[] | undefined;
+function mockCallArg(mock: ReturnType<typeof vi.fn>, callIndex = 0, argIndex = 0): any {
+  const call = mock.mock.calls[callIndex] as any[] | undefined;
   if (!call) {
     throw new Error(`expected mock call ${callIndex}`);
   }
@@ -242,9 +242,9 @@ function mockCallArg(mock: ReturnType<typeof vi.fn>, callIndex = 0, argIndex = 0
 }
 
 async function expectRejectsWithFields(
-  promise: Promise<unknown>,
-  expected: Record<string, unknown>,
-): Promise<Record<string, unknown>> {
+  promise: Promise<any>,
+  expected: Record<string, any>,
+): Promise<Record<string, any>> {
   // Failover errors carry structured fields; this helper verifies them while
   // preserving the original object for deeper assertions.
   try {
@@ -270,7 +270,7 @@ async function expectPathMissing(targetPath: string): Promise<void> {
 }
 
 async function withTempExecApprovalsFile(
-  file: Record<string, unknown>,
+  file: Record<string, any>,
   run: () => Promise<void>,
 ): Promise<void> {
   const home = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-cli-exec-approvals-"));
@@ -444,7 +444,7 @@ describe("runCliAgent spawn path", () => {
 
   it("passes Claude system prompts through a file instead of argv", async () => {
     let systemPromptPath = "";
-    supervisorSpawnMock.mockImplementationOnce(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementationOnce(async (...args: any[]) => {
       const input = (args[0] ?? {}) as { argv?: string[] };
       systemPromptPath = requireArgAfter(input.argv, "--append-system-prompt-file");
       expect(systemPromptPath).toContain("openclaw-cli-system-prompt-");
@@ -593,7 +593,7 @@ describe("runCliAgent spawn path", () => {
     );
 
     let pluginDir = "";
-    supervisorSpawnMock.mockImplementationOnce(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementationOnce(async (...args: any[]) => {
       const input = (args[0] ?? {}) as { argv?: string[] };
       pluginDir = requireArgAfter(input.argv, "--plugin-dir");
       const manifest = JSON.parse(
@@ -646,7 +646,7 @@ describe("runCliAgent spawn path", () => {
           },
         }),
       );
-      let accessError: unknown;
+      let accessError: any;
       try {
         await fs.access(pluginDir);
       } catch (error) {
@@ -661,7 +661,7 @@ describe("runCliAgent spawn path", () => {
   it("injects skill env overrides into CLI child env and restores host env", async () => {
     const previousEnvValue = process.env.CLI_SKILL_API_KEY;
     delete process.env.CLI_SKILL_API_KEY;
-    supervisorSpawnMock.mockImplementationOnce(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementationOnce(async (...args: any[]) => {
       const input = (args[0] ?? {}) as { env?: Record<string, string> };
       expect(input.env?.CLI_SKILL_API_KEY).toBe("skill-secret");
       return createManagedRun({
@@ -850,7 +850,7 @@ describe("runCliAgent spawn path", () => {
 
   it("passes Codex system prompts through model_instructions_file", async () => {
     let promptFileText = "";
-    supervisorSpawnMock.mockImplementationOnce(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementationOnce(async (...args: any[]) => {
       const input = (args[0] ?? {}) as { argv?: string[] };
       const configArg = requireArgAfter(input.argv, "-c");
       const match = requireRegexMatch(configArg, /^model_instructions_file="(.+)"$/);
@@ -954,7 +954,7 @@ describe("runCliAgent spawn path", () => {
         delta: typeof evt.data.delta === "string" ? evt.data.delta : undefined,
       });
     });
-    supervisorSpawnMock.mockImplementationOnce(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementationOnce(async (...args: any[]) => {
       const input = (args[0] ?? {}) as { onStdout?: (chunk: string) => void };
       input.onStdout?.(
         [
@@ -1018,7 +1018,7 @@ describe("runCliAgent spawn path", () => {
         delta: typeof evt.data.delta === "string" ? evt.data.delta : undefined,
       });
     });
-    supervisorSpawnMock.mockImplementationOnce(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementationOnce(async (...args: any[]) => {
       const input = (args[0] ?? {}) as { onStdout?: (chunk: string) => void };
       input.onStdout?.(
         [
@@ -1066,7 +1066,7 @@ describe("runCliAgent spawn path", () => {
 
   it("reuses a Claude live session process across turns", async () => {
     const logInfoSpy = vi.spyOn(cliBackendLog, "info").mockImplementation(() => undefined);
-    const agentEvents: unknown[] = [];
+    const agentEvents: any[] = [];
     const stop = onAgentEvent((evt) => {
       if (evt.stream === "assistant") {
         agentEvents.push(evt.data);
@@ -1100,7 +1100,7 @@ describe("runCliAgent spawn path", () => {
       }),
       end: vi.fn(),
     };
-    supervisorSpawnMock.mockImplementation(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementation(async (...args: any[]) => {
       const input = (args[0] ?? {}) as { onStdout?: (chunk: string) => void };
       stdoutListener = input.onStdout;
       return {
@@ -1196,7 +1196,7 @@ describe("runCliAgent spawn path", () => {
       }),
       end: vi.fn(),
     };
-    supervisorSpawnMock.mockImplementation(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementation(async (...args: any[]) => {
       const input = (args[0] ?? {}) as { onStdout?: (chunk: string) => void };
       stdoutListener = input.onStdout;
       return {
@@ -1260,7 +1260,7 @@ describe("runCliAgent spawn path", () => {
       const exited = new Promise<RunExit>((resolve) => {
         resolveExit = resolve;
       });
-      supervisorSpawnMock.mockImplementation(async (...args: unknown[]) => {
+      supervisorSpawnMock.mockImplementation(async (...args: any[]) => {
         const input = (args[0] ?? {}) as { onStdout?: (chunk: string) => void };
         stdoutListener = input.onStdout;
         return {
@@ -1341,7 +1341,7 @@ describe("runCliAgent spawn path", () => {
         },
       }),
     });
-    supervisorSpawnMock.mockImplementationOnce(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementationOnce(async (...args: any[]) => {
       const input = args[0] as Parameters<ReturnType<typeof getProcessSupervisor>["spawn"]>[0];
       const captureHandle = markMcpLoopbackToolCallStarted({
         captureKey: input.env?.OPENCLAW_MCP_CLI_CAPTURE_KEY ?? "",
@@ -1415,7 +1415,7 @@ describe("runCliAgent spawn path", () => {
       }),
       end: vi.fn(),
     };
-    supervisorSpawnMock.mockImplementationOnce(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementationOnce(async (...args: any[]) => {
       const input = (args[0] ?? {}) as { onStdout?: (chunk: string) => void };
       stdoutListener = input.onStdout;
       return {
@@ -1459,7 +1459,7 @@ describe("runCliAgent spawn path", () => {
       }),
       end: vi.fn(),
     };
-    supervisorSpawnMock.mockImplementationOnce(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementationOnce(async (...args: any[]) => {
       const input = (args[0] ?? {}) as { onStdout?: (chunk: string) => void };
       stdoutListener = input.onStdout;
       return {
@@ -1511,7 +1511,7 @@ describe("runCliAgent spawn path", () => {
       }),
       end: vi.fn(),
     };
-    supervisorSpawnMock.mockImplementationOnce(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementationOnce(async (...args: any[]) => {
       const input = (args[0] ?? {}) as { onStdout?: (chunk: string) => void };
       stdoutListener = input.onStdout;
       return {
@@ -1557,7 +1557,7 @@ describe("runCliAgent spawn path", () => {
       }),
       end: vi.fn(),
     };
-    supervisorSpawnMock.mockImplementation(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementation(async (...args: any[]) => {
       const input = (args[0] ?? {}) as { onStdout?: (chunk: string) => void };
       stdoutListener = input.onStdout;
       return {
@@ -1635,7 +1635,7 @@ describe("runCliAgent spawn path", () => {
       }),
       end: vi.fn(),
     };
-    supervisorSpawnMock.mockImplementation(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementation(async (...args: any[]) => {
       const input = (args[0] ?? {}) as { onStdout?: (chunk: string) => void };
       stdoutListener = input.onStdout;
       return {
@@ -1701,7 +1701,7 @@ describe("runCliAgent spawn path", () => {
       }),
       end: vi.fn(),
     };
-    supervisorSpawnMock.mockImplementation(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementation(async (...args: any[]) => {
       const input = (args[0] ?? {}) as { onStdout?: (chunk: string) => void };
       stdoutListener = input.onStdout;
       await spawnReady;
@@ -1750,7 +1750,7 @@ describe("runCliAgent spawn path", () => {
     const spawnReady = new Promise<void>((resolve) => {
       releaseSpawn = resolve;
     });
-    supervisorSpawnMock.mockImplementation(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementation(async (...args: any[]) => {
       const input = (args[0] ?? {}) as { onStdout?: (chunk: string) => void };
       const spawnIndex = supervisorSpawnMock.mock.calls.length;
       await spawnReady;
@@ -1927,7 +1927,7 @@ ${JSON.stringify({
       }),
       end: vi.fn(),
     };
-    supervisorSpawnMock.mockImplementation(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementation(async (...args: any[]) => {
       const input = (args[0] ?? {}) as { onStdout?: (chunk: string) => void };
       stdoutListener = input.onStdout;
       return {
@@ -2012,7 +2012,7 @@ ${JSON.stringify({
       }),
       end: vi.fn(),
     };
-    supervisorSpawnMock.mockImplementation(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementation(async (...args: any[]) => {
       const input = (args[0] ?? {}) as { onStdout?: (chunk: string) => void };
       stdoutListener = input.onStdout;
       return {
@@ -2162,7 +2162,7 @@ ${JSON.stringify({
       }),
       end: vi.fn(),
     };
-    supervisorSpawnMock.mockImplementation(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementation(async (...args: any[]) => {
       const input = (args[0] ?? {}) as { onStdout?: (chunk: string) => void };
       stdoutListener = input.onStdout;
       return {
@@ -2228,7 +2228,7 @@ ${JSON.stringify({
         }),
         end: vi.fn(),
       };
-      supervisorSpawnMock.mockImplementation(async (...args: unknown[]) => {
+      supervisorSpawnMock.mockImplementation(async (...args: any[]) => {
         const input = (args[0] ?? {}) as { onStdout?: (chunk: string) => void };
         stdoutListener = input.onStdout;
         return {
@@ -2296,7 +2296,7 @@ ${JSON.stringify({
       }),
       end: vi.fn(),
     };
-    supervisorSpawnMock.mockImplementation(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementation(async (...args: any[]) => {
       const input = (args[0] ?? {}) as { onStdout?: (chunk: string) => void };
       stdoutListener = input.onStdout;
       return {
@@ -2378,7 +2378,7 @@ ${JSON.stringify({
           }),
           end: vi.fn(),
         };
-        supervisorSpawnMock.mockImplementation(async (...args: unknown[]) => {
+        supervisorSpawnMock.mockImplementation(async (...args: any[]) => {
           const input = (args[0] ?? {}) as { onStdout?: (chunk: string) => void };
           stdoutListener = input.onStdout;
           return {
@@ -2461,7 +2461,7 @@ ${JSON.stringify({
       }),
       end: vi.fn(),
     };
-    supervisorSpawnMock.mockImplementation(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementation(async (...args: any[]) => {
       const input = (args[0] ?? {}) as { onStdout?: (chunk: string) => void };
       stdoutListener = input.onStdout;
       return {
@@ -2546,7 +2546,7 @@ ${JSON.stringify({
           }),
           end: vi.fn(),
         };
-        supervisorSpawnMock.mockImplementation(async (...args: unknown[]) => {
+        supervisorSpawnMock.mockImplementation(async (...args: any[]) => {
           const input = (args[0] ?? {}) as { onStdout?: (chunk: string) => void };
           stdoutListener = input.onStdout;
           return {
@@ -2639,7 +2639,7 @@ ${JSON.stringify({
           }),
           end: vi.fn(),
         };
-        supervisorSpawnMock.mockImplementation(async (...args: unknown[]) => {
+        supervisorSpawnMock.mockImplementation(async (...args: any[]) => {
           const input = (args[0] ?? {}) as { onStdout?: (chunk: string) => void };
           stdoutListener = input.onStdout;
           return {
@@ -2726,7 +2726,7 @@ ${JSON.stringify({
       }),
       end: vi.fn(),
     };
-    supervisorSpawnMock.mockImplementation(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementation(async (...args: any[]) => {
       const input = (args[0] ?? {}) as { onStdout?: (chunk: string) => void };
       stdoutListener = input.onStdout;
       return {
@@ -2780,7 +2780,7 @@ ${JSON.stringify({
     const captureKeys: string[] = [];
     const turnResults = ["first-ok", "resume-ok", "env-ok", "fresh-ok"];
     let turnIndex = 0;
-    supervisorSpawnMock.mockImplementation(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementation(async (...args: any[]) => {
       const spawnIndex = supervisorSpawnMock.mock.calls.length;
       const input = (args[0] ?? {}) as { onStdout?: (chunk: string) => void };
       const cancel = vi.fn();
@@ -2924,7 +2924,7 @@ ${JSON.stringify({
       }),
       end: vi.fn(),
     };
-    supervisorSpawnMock.mockImplementationOnce(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementationOnce(async (...args: any[]) => {
       const input = (args[0] ?? {}) as { onStdout?: (chunk: string) => void };
       stdoutListener = input.onStdout;
       return {
@@ -2970,7 +2970,7 @@ ${JSON.stringify({
       }),
       end: vi.fn(),
     };
-    supervisorSpawnMock.mockImplementationOnce(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementationOnce(async (...args: any[]) => {
       const input = (args[0] ?? {}) as { onStdout?: (chunk: string) => void };
       stdoutListener = input.onStdout;
       return {
@@ -3041,7 +3041,7 @@ ${JSON.stringify({
     const abortController = new AbortController();
     let stdoutListener: ((chunk: string) => void) | undefined;
     const cancels: Array<ReturnType<typeof vi.fn>> = [];
-    supervisorSpawnMock.mockImplementation(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementation(async (...args: any[]) => {
       const input = (args[0] ?? {}) as { onStdout?: (chunk: string) => void };
       stdoutListener = input.onStdout;
       const spawnIndex = supervisorSpawnMock.mock.calls.length;
@@ -3147,7 +3147,7 @@ ${JSON.stringify({
     await fs.writeFile(path.join(gitDir, "SKILL.md"), "git instructions\n", "utf-8");
 
     const cancels: Array<ReturnType<typeof vi.fn>> = [];
-    supervisorSpawnMock.mockImplementation(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementation(async (...args: any[]) => {
       const spawnIndex = supervisorSpawnMock.mock.calls.length;
       const input = (args[0] ?? {}) as { onStdout?: (chunk: string) => void };
       const cancel = vi.fn();
@@ -3279,7 +3279,7 @@ ${JSON.stringify({
       }),
       end: vi.fn(),
     };
-    supervisorSpawnMock.mockImplementation(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementation(async (...args: any[]) => {
       const input = (args[0] ?? {}) as { onStdout?: (chunk: string) => void };
       stdoutListener = input.onStdout;
       return {
@@ -3384,7 +3384,7 @@ ${JSON.stringify({
       }),
       end: vi.fn(),
     };
-    supervisorSpawnMock.mockImplementationOnce(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementationOnce(async (...args: any[]) => {
       const input = (args[0] ?? {}) as {
         onStdout?: (chunk: string) => void;
         onStderr?: (chunk: string) => void;

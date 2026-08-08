@@ -6,7 +6,7 @@ type AcpSessionInteractionMode = "interactive" | "parent-owned-background";
 type SessionInteractionEntry = {
   spawnedBy?: string;
   parentSessionKey?: string;
-  acp?: unknown;
+  acp?: any;
 };
 
 function resolveAcpSessionInteractionMode(

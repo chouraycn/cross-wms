@@ -25,7 +25,7 @@ export async function applyUpdateHunk(
   options?: { readFile?: (filePath: string) => Promise<string> },
 ): Promise<string> {
   const reader = options?.readFile ?? defaultReadFile;
-  const originalContents = await reader(filePath).catch((err: unknown) => {
+  const originalContents = await reader(filePath).catch((err: any) => {
     throw new Error(`Failed to read file to update ${filePath}: ${formatErrorMessage(err)}`);
   });
 

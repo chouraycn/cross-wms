@@ -16,7 +16,7 @@ function createRuntime() {
   };
 }
 
-function joinedArgs(mock: { mock: { calls: unknown[][] } }): string {
+function joinedArgs(mock: { mock: { calls: any[][] } }): string {
   return mock.mock.calls.map((call) => String(call[0])).join("\n");
 }
 

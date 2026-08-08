@@ -32,14 +32,14 @@ export interface GatewayMethodResult<R = unknown> {
   error?: {
     code: string;
     message: string;
-    data?: unknown;
+    data?: any;
   };
 }
 
 export type GatewayMethodHandler = (
-  params: unknown,
+  params: any,
   context: GatewayMethodContext,
-) => Promise<unknown>;
+) => Promise<any>;
 
 export interface GatewayServerInfo {
   version: string;
@@ -58,7 +58,7 @@ export interface GatewaySession {
   updatedAt: number;
   messageCount: number;
   lastMessageAt?: number;
-  meta?: Record<string, unknown>;
+  meta?: Record<string, any>;
 }
 
 // ========== Chat Types ==========
@@ -112,7 +112,7 @@ export interface GatewayModel {
 export interface GatewayTool {
   name: string;
   description: string;
-  inputSchema: Record<string, unknown>;
+  inputSchema: Record<string, any>;
   tags: string[];
   category: string;
 }

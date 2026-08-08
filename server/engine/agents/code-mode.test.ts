@@ -111,10 +111,10 @@ function registerTestNamespace(
   registerCodeModeNamespaceForPlugin(pluginId, namespace);
 }
 
-function resultDetails(result: { details?: unknown }): Record<string, unknown> {
+function resultDetails(result: { details?: any }): Record<string, any> {
   expect(result.details).toBeDefined();
   expect(typeof result.details).toBe("object");
-  return result.details as Record<string, unknown>;
+  return result.details as Record<string, any>;
 }
 
 function createCodeModeHarness(
@@ -320,7 +320,7 @@ describe("Code Mode", () => {
   it("uses a flat enum for the exec language schema", () => {
     const { tools } = createCodeModeHarness();
     const parameters = tools[0].parameters as {
-      properties?: Record<string, Record<string, unknown>>;
+      properties?: Record<string, Record<string, any>>;
     };
     const language = parameters.properties?.language;
 
@@ -336,7 +336,7 @@ describe("Code Mode", () => {
     const { tools } = createCodeModeHarness();
     const execTool = tools[0];
     const parameters = execTool.parameters as {
-      properties?: Record<string, Record<string, unknown>>;
+      properties?: Record<string, Record<string, any>>;
     };
 
     expect(execTool.description).toContain("Node.js modules");
@@ -506,7 +506,7 @@ describe("Code Mode", () => {
     ).rejects.toThrow("Invalid code mode namespace path segment: constructor");
 
     clearCodeModeNamespacesForTest();
-    const circular: Record<string, unknown> = {};
+    const circular: Record<string, any> = {};
     circular.self = circular;
     registerTestNamespace({
       id: "circular",
@@ -1391,7 +1391,7 @@ describe("Code Mode", () => {
       catalogRef,
     });
     const nowSpy = vi.spyOn(Date, "now").mockReturnValue(8_640_000_000_000_000);
-    let details: Record<string, unknown>;
+    let details: Record<string, any>;
     try {
       details = resultDetails(
         await codeModeTools[0].execute("code-call-yield-overflow", {
@@ -1694,7 +1694,7 @@ describe("Code Mode", () => {
       ModuleKind: { ESNext: 99 },
       ImportsNotUsedAsValues: { Remove: 0 },
       DiagnosticCategory: { Error: 1 },
-      flattenDiagnosticMessageText: (message: unknown) => String(message),
+      flattenDiagnosticMessageText: (message: any) => String(message),
     } as never);
     const { config, catalogRef, tools: codeModeTools } = createCodeModeHarness();
     applyCodeModeCatalog({

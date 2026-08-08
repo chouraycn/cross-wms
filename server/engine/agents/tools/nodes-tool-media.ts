@@ -71,7 +71,7 @@ const MAX_RECORDING_DURATION_MS = 300_000;
 
 type ExecuteNodeMediaActionParams = {
   action: NodeMediaAction;
-  params: Record<string, unknown>;
+  params: Record<string, any>;
   gatewayOpts: GatewayCallOptions;
   modelHasVision?: boolean;
   imageSanitization: ImageSanitizationLimits;
@@ -79,7 +79,7 @@ type ExecuteNodeMediaActionParams = {
 
 export async function executeNodeMediaAction(
   input: ExecuteNodeMediaActionParams,
-): Promise<AgentToolResult<unknown>> {
+): Promise<AgentToolResult<any>> {
   switch (input.action) {
     case "camera_snap":
       return await executeCameraSnap(input);
@@ -100,7 +100,7 @@ async function executeCameraSnap({
   gatewayOpts,
   modelHasVision,
   imageSanitization,
-}: ExecuteNodeMediaActionParams): Promise<AgentToolResult<unknown>> {
+}: ExecuteNodeMediaActionParams): Promise<AgentToolResult<any>> {
   const node = requireString(params, "node");
   const resolvedNode = await resolveNode(gatewayOpts, node);
   const nodeId = resolvedNode.nodeId;
@@ -129,11 +129,11 @@ async function executeCameraSnap({
     throw new Error("facing=both is not allowed when deviceId is set");
   }
 
-  const content: AgentToolResult<unknown>["content"] = [];
-  const details: Array<Record<string, unknown>> = [];
+  const content: AgentToolResult<any>["content"] = [];
+  const details: Array<Record<string, any>> = [];
 
   for (const facing of facings) {
-    const raw = await callGatewayTool<{ payload: unknown }>("node.invoke", gatewayOpts, {
+    const raw = await callGatewayTool<{ payload: any }>("node.invoke", gatewayOpts, {
       nodeId,
       command: "camera.snap",
       params: {
@@ -201,7 +201,7 @@ async function executePhotosLatest({
   gatewayOpts,
   modelHasVision,
   imageSanitization,
-}: ExecuteNodeMediaActionParams): Promise<AgentToolResult<unknown>> {
+}: ExecuteNodeMediaActionParams): Promise<AgentToolResult<any>> {
   const node = requireString(params, "node");
   const resolvedNode = await resolveNode(gatewayOpts, node);
   const nodeId = resolvedNode.nodeId;
@@ -216,7 +216,7 @@ async function executePhotosLatest({
       max: 1,
       message: "quality must be between 0 and 1",
     }) ?? DEFAULT_PHOTOS_QUALITY;
-  const raw = await callGatewayTool<{ payload: unknown }>("node.invoke", gatewayOpts, {
+  const raw = await callGatewayTool<{ payload: any }>("node.invoke", gatewayOpts, {
     nodeId,
     command: "photos.latest",
     params: {
@@ -228,7 +228,7 @@ async function executePhotosLatest({
   });
   const payload =
     raw?.payload && typeof raw.payload === "object" && !Array.isArray(raw.payload)
-      ? (raw.payload as Record<string, unknown>)
+      ? (raw.payload as Record<string, any>)
       : {};
   const photos = Array.isArray(payload.photos) ? payload.photos : [];
 
@@ -243,8 +243,8 @@ async function executePhotosLatest({
     );
   }
 
-  const content: AgentToolResult<unknown>["content"] = [];
-  const details: Array<Record<string, unknown>> = [];
+  const content: AgentToolResult<any>["content"] = [];
+  const details: Array<Record<string, any>> = [];
 
   for (const [index, photoRaw] of photos.entries()) {
     const photo = parseCameraSnapPayload(photoRaw);
@@ -275,7 +275,7 @@ async function executePhotosLatest({
 
     const createdAt =
       photoRaw && typeof photoRaw === "object" && !Array.isArray(photoRaw)
-        ? (photoRaw as Record<string, unknown>).createdAt
+        ? (photoRaw as Record<string, any>).createdAt
         : undefined;
     details.push({
       index,
@@ -306,7 +306,7 @@ async function executePhotosLatest({
 async function executeCameraClip({
   params,
   gatewayOpts,
-}: ExecuteNodeMediaActionParams): Promise<AgentToolResult<unknown>> {
+}: ExecuteNodeMediaActionParams): Promise<AgentToolResult<any>> {
   const node = requireString(params, "node");
   const resolvedNode = await resolveNode(gatewayOpts, node);
   const nodeId = resolvedNode.nodeId;
@@ -324,7 +324,7 @@ async function executeCameraClip({
     typeof params.deviceId === "string" && params.deviceId.trim()
       ? params.deviceId.trim()
       : undefined;
-  const raw = await callGatewayTool<{ payload: unknown }>("node.invoke", gatewayOpts, {
+  const raw = await callGatewayTool<{ payload: any }>("node.invoke", gatewayOpts, {
     nodeId,
     command: "camera.clip",
     params: {
@@ -356,7 +356,7 @@ async function executeCameraClip({
 async function executeScreenRecord({
   params,
   gatewayOpts,
-}: ExecuteNodeMediaActionParams): Promise<AgentToolResult<unknown>> {
+}: ExecuteNodeMediaActionParams): Promise<AgentToolResult<any>> {
   const node = requireString(params, "node");
   const nodeId = await resolveNodeId(gatewayOpts, node);
   const durationMs = Math.min(
@@ -372,7 +372,7 @@ async function executeScreenRecord({
     }) ?? 10;
   const screenIndex = readNonNegativeIntegerParam(params, "screenIndex") ?? 0;
   const includeAudio = typeof params.includeAudio === "boolean" ? params.includeAudio : true;
-  const raw = await callGatewayTool<{ payload: unknown }>("node.invoke", gatewayOpts, {
+  const raw = await callGatewayTool<{ payload: any }>("node.invoke", gatewayOpts, {
     nodeId,
     command: "screen.record",
     params: {
@@ -405,12 +405,12 @@ async function executeScreenRecord({
 async function executeScreenSnapshot({
   params,
   gatewayOpts,
-}: ExecuteNodeMediaActionParams): Promise<AgentToolResult<unknown>> {
+}: ExecuteNodeMediaActionParams): Promise<AgentToolResult<any>> {
   const node = requireString(params, "node");
   const nodeId = await resolveNodeId(gatewayOpts, node);
   const screenIndex = readNonNegativeIntegerParam(params, "screenIndex") ?? 0;
   const maxWidth = readPositiveIntegerParam(params, "maxWidth");
-  const raw = await callGatewayTool<{ payload: unknown }>("node.invoke", gatewayOpts, {
+  const raw = await callGatewayTool<{ payload: any }>("node.invoke", gatewayOpts, {
     nodeId,
     command: "screen.snapshot",
     params: { screenIndex, maxWidth },
@@ -442,7 +442,7 @@ async function executeScreenSnapshot({
   };
 }
 
-function requireString(params: Record<string, unknown>, key: string): string {
+function requireString(params: Record<string, any>, key: string): string {
   const raw = params[key];
   if (typeof raw !== "string" || raw.trim().length === 0) {
     throw new Error(`${key} required`);

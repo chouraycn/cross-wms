@@ -131,7 +131,7 @@ function requireFirstWrite(write: ReturnType<typeof vi.fn>): string {
   return String(value);
 }
 
-function pathLikeToString(pathname: unknown): string {
+function pathLikeToString(pathname: any): string {
   if (typeof pathname === "string") {
     return pathname;
   }

@@ -40,14 +40,14 @@ function overview(overrides: Partial<CrestodianOverview["tools"]> = {}): Crestod
   };
 }
 
-function requireRecord(value: unknown): Record<string, unknown> {
+function requireRecord(value: any): Record<string, any> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("Expected a non-array record");
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function firstMockArg(mock: ReturnType<typeof vi.fn>): Record<string, unknown> {
+function firstMockArg(mock: ReturnType<typeof vi.fn>): Record<string, any> {
   const [call] = mock.mock.calls;
   if (!call) {
     throw new Error("Expected mock to be called");

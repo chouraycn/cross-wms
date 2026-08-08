@@ -24,7 +24,7 @@ export interface ToolExecutionRequest {
   /** 工具名称 */
   toolName: string;
   /** 工具参数 */
-  parameters: Record<string, unknown>;
+  parameters: Record<string, any>;
   /** 执行器引用 */
   executor: ToolExecutorRef;
   /** 会话 ID */
@@ -178,7 +178,7 @@ async function routeExecution(request: ToolExecutionRequest): Promise<string> {
 /** 执行内置核心工具 */
 async function executeCoreTool(
   toolName: string,
-  parameters: Record<string, unknown>,
+  parameters: Record<string, any>,
 ): Promise<string> {
   // 委托给现有 toolRegistry（executeToolCall 接收 ToolCall 对象）
   const toolCall: ToolCall = {
@@ -196,7 +196,7 @@ async function executeCoreTool(
 async function executeMcpTool(
   serverId: string,
   toolName: string,
-  parameters: Record<string, unknown>,
+  parameters: Record<string, any>,
 ): Promise<string> {
   // serverId 在描述符体系中为 server 前缀（见 inferExecutorFromName），
   // executeMcpTool 需要完整的 mcp__{prefix}__{tool} 格式
@@ -208,7 +208,7 @@ async function executeMcpTool(
 async function executePluginTool(
   pluginId: string,
   toolName: string,
-  parameters: Record<string, unknown>,
+  parameters: Record<string, any>,
 ): Promise<string> {
   // 通过 pluginRegistry.invokePluginTool 执行
   // 工具名格式：plugin_<pluginName>_<toolShortName> 或直接使用 toolName
@@ -222,7 +222,7 @@ async function executePluginTool(
 async function executeChannelTool(
   channelId: string,
   actionId: string,
-  parameters: Record<string, unknown>,
+  parameters: Record<string, any>,
 ): Promise<string> {
   // 通过通道注册表查找插件，执行其 agentTools 中匹配的工具
   const registry = getGlobalChannelRegistry();
@@ -304,7 +304,7 @@ function executorKey(executor: ToolExecutorRef): string {
  */
 export async function executeToolBatch(
   entries: readonly ToolPlanEntry[],
-  calls: readonly { name: string; parameters: Record<string, unknown> }[],
+  calls: readonly { name: string; parameters: Record<string, any> }[],
   sessionId?: string,
 ): Promise<ToolExecutionResult[]> {
   const entryMap = new Map<string, ToolPlanEntry>();

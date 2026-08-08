@@ -8,7 +8,7 @@ import type { AgentMessage } from "../../runtime/index.js";
 /**
  * Stream wrapper for applying message transforms immediately before provider dispatch.
  */
-type MessageTransform = (messages: AgentMessage[], model: unknown) => AgentMessage[];
+type MessageTransform = (messages: AgentMessage[], model: any) => AgentMessage[];
 
 /** Wraps a stream function with a conditional message-list transform. */
 export function wrapStreamFnWithMessageTransform(
@@ -16,7 +16,7 @@ export function wrapStreamFnWithMessageTransform(
   transform: MessageTransform,
 ): StreamFn {
   return (model, context, options) => {
-    const messages = (context as unknown as { messages?: unknown })?.messages;
+    const messages = (context as unknown as { messages?: any })?.messages;
     if (!Array.isArray(messages)) {
       return streamFn(model, context, options);
     }
@@ -31,7 +31,7 @@ export function wrapStreamFnWithMessageTransform(
       // context for logging, replay, or retry comparisons.
       model,
       {
-        ...(context as unknown as Record<string, unknown>),
+        ...(context as unknown as Record<string, any>),
         messages: nextMessages,
       } as typeof context,
       options,

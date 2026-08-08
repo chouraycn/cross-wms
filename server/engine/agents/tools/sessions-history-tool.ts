@@ -76,7 +76,7 @@ function redactToolPayloadText<T>(value: T): T {
 
 /** Reads a string param from a params record. */
 function readStringParam(
-  params: Record<string, unknown>,
+  params: Record<string, any>,
   key: string,
   options?: { required?: boolean; trim?: boolean },
 ): string {
@@ -92,7 +92,7 @@ function readStringParam(
 
 /** Reads a positive integer param from a params record. */
 function readPositiveIntegerParam(
-  params: Record<string, unknown>,
+  params: Record<string, any>,
   key: string,
 ): number | undefined {
   const value = params[key];
@@ -103,7 +103,7 @@ function readPositiveIntegerParam(
 }
 
 /** Serializes a payload as a JSON text content block. */
-function jsonResult(payload: unknown): AgentToolResult<unknown> {
+function jsonResult(payload: any): AgentToolResult<any> {
   return {
     content: [
       {
@@ -192,15 +192,15 @@ function truncateHistoryText(text: string): {
   return { text: `${cut}\n…(truncated)…`, truncated: true, redacted };
 }
 
-function sanitizeHistoryContentBlock(block: unknown): {
-  block: unknown;
+function sanitizeHistoryContentBlock(block: any): {
+  block: any;
   truncated: boolean;
   redacted: boolean;
 } {
   if (!block || typeof block !== "object") {
     return { block, truncated: false, redacted: false };
   }
-  const entry = { ...(block as Record<string, unknown>) };
+  const entry = { ...(block as Record<string, any>) };
   let truncated = false;
   let redacted = false;
   const type = typeof entry.type === "string" ? entry.type : "";
@@ -248,15 +248,15 @@ function sanitizeHistoryContentBlock(block: unknown): {
   return { block: entry, truncated, redacted };
 }
 
-function sanitizeHistoryMessage(message: unknown): {
-  message: unknown;
+function sanitizeHistoryMessage(message: any): {
+  message: any;
   truncated: boolean;
   redacted: boolean;
 } {
   if (!message || typeof message !== "object") {
     return { message, truncated: false, redacted: false };
   }
-  const entry = { ...(message as Record<string, unknown>) };
+  const entry = { ...(message as Record<string, any>) };
   let truncated = false;
   let redacted = false;
   // Tool result details often contain very large nested payloads.
@@ -294,10 +294,10 @@ function sanitizeHistoryMessage(message: unknown): {
 }
 
 function enforceSessionsHistoryHardCap(params: {
-  items: unknown[];
+  items: any[];
   bytes: number;
   maxBytes: number;
-}): { items: unknown[]; bytes: number; hardCapped: boolean } {
+}): { items: any[]; bytes: number; hardCapped: boolean } {
   if (params.bytes <= params.maxBytes) {
     return { items: params.items, bytes: params.bytes, hardCapped: false };
   }
@@ -329,21 +329,21 @@ export function createSessionsHistoryTool(opts?: {
     name: "sessions_history",
     displaySummary: SESSIONS_HISTORY_TOOL_DISPLAY_SUMMARY,
     description: describeSessionsHistoryTool(),
-    parameters: SessionsHistoryToolSchema as unknown as Record<
+    parameters: SessionsHistoryToolSchema as any as Record<
       string,
       {
         name: string;
         type: "string" | "number" | "boolean" | "object" | "any" | "array";
         description: string;
         required: boolean;
-        default?: unknown;
+        default?: any;
         enum?: string[];
         items?: { type: string };
-        properties?: Record<string, unknown>;
+        properties?: Record<string, any>;
       }
     >,
-    execute: async (_toolCallId: string, args: unknown) => {
-      const params = args as Record<string, unknown>;
+    execute: async (_toolCallId: string, args: any) => {
+      const params = args as Record<string, any>;
       const gatewayCall = opts?.callGateway ?? callGateway;
       const sessionKeyParam = readStringParam(params, "sessionKey", {
         required: true,
@@ -402,8 +402,8 @@ export function createSessionsHistoryTool(opts?: {
 
       const limit = readPositiveIntegerParam(params, "limit");
       const includeTools = Boolean(params.includeTools);
-      const result = (await (gatewayCall as unknown as (req: unknown) => Promise<{
-        messages: Array<unknown>;
+      const result = (await (gatewayCall as unknown as (req: any) => Promise<{
+        messages: Array<any>;
       }>)({
         method: "chat.history",
         params: { sessionKey: resolvedKey, limit },
@@ -416,7 +416,7 @@ export function createSessionsHistoryTool(opts?: {
       const cappedMessages = capArrayByJsonBytes(
         sanitizedMessages.map((entry) => entry.message),
         SESSIONS_HISTORY_MAX_BYTES,
-      ) as { items: unknown[]; bytes: number };
+      ) as { items: any[]; bytes: number };
       const cappedItems = Array.isArray(cappedMessages?.items) ? cappedMessages.items : [];
       const cappedBytes = typeof cappedMessages?.bytes === "number" ? cappedMessages.bytes : 0;
       const droppedMessages = cappedItems.length < selectedMessages.length;
@@ -435,5 +435,5 @@ export function createSessionsHistoryTool(opts?: {
         bytes: hardened.bytes,
       });
     },
-  } as unknown as AnyAgentTool;
+  } as any as AnyAgentTool;
 }

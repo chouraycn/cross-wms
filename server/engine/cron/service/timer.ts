@@ -106,7 +106,7 @@ export function armTimer(state: CronServiceState): void {
   const flooredDelay = delay === 0 ? MIN_REFIRE_GAP_MS : delay;
   const clampedDelay = Math.min(flooredDelay, MAX_TIMER_DELAY_MS);
   state.timer = setTimeout(() => {
-    void onTimer(state).catch((err: unknown) => {
+    void onTimer(state).catch((err: any) => {
       state.deps.log.error({ err: String(err) }, "cron: timer tick failed");
     });
   }, clampedDelay);
@@ -124,7 +124,7 @@ function armRunningRecheckTimer(state: CronServiceState): void {
     clearTimeout(state.timer);
   }
   state.timer = setTimeout(() => {
-    void onTimer(state).catch((err: unknown) => {
+    void onTimer(state).catch((err: any) => {
       state.deps.log.error({ err: String(err) }, "cron: timer tick failed");
     });
   }, MAX_TIMER_DELAY_MS);
@@ -318,7 +318,7 @@ export async function onTimer(state: CronServiceState): Promise<void> {
   }
 }
 
-function normalizeCronRunErrorText(error: unknown): string {
+function normalizeCronRunErrorText(error: any): string {
   if (error instanceof Error) {
     return error.message || error.name;
   }

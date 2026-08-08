@@ -92,7 +92,7 @@ function emitCompactionSessionLifecycleHooks(params: {
       transcriptArchived: transcript.transcriptArchived,
       nextSessionId: params.nextEntry.sessionId,
     });
-    void hookRunner.runSessionEnd(payload.event, payload.context).catch((err: unknown) => {
+    void hookRunner.runSessionEnd(payload.event, payload.context).catch((err: any) => {
       logVerbose(`session_end hook failed: ${String(err)}`);
     });
   }
@@ -104,7 +104,7 @@ function emitCompactionSessionLifecycleHooks(params: {
       cfg: params.cfg,
       resumedFrom: params.previousEntry.sessionId,
     });
-    void hookRunner.runSessionStart(payload.event, payload.context).catch((err: unknown) => {
+    void hookRunner.runSessionStart(payload.event, payload.context).catch((err: any) => {
       logVerbose(`session_start hook failed: ${String(err)}`);
     });
   }

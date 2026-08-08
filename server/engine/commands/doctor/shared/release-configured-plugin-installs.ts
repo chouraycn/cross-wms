@@ -86,7 +86,7 @@ function isDisabled(cfg: OpenClawConfig, pluginId: string): boolean {
   return channelId ? isChannelDisabled(cfg, channelId) : false;
 }
 
-function hasMaterialPluginEntry(entry: unknown): boolean {
+function hasMaterialPluginEntry(entry: any): boolean {
   const record = asObjectRecord(entry);
   if (!record) {
     return false;

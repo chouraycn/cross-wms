@@ -11,74 +11,74 @@
  * 完整实现见 openclaw 源码。
  */
 
-export const HookMessageChannel: unknown = undefined;
+export const HookMessageChannel: any = undefined;
 
 export type HooksConfigResolved = unknown;
 
 export type HookAgentDispatchPayload = unknown;
 
-export function resolveHooksConfig(..._args: unknown[]): unknown {
+export function resolveHooksConfig(..._args: any[]): any {
   return undefined;
 }
 
-export function isSessionKeyAllowedByPrefix(..._args: unknown[]): unknown {
+export function isSessionKeyAllowedByPrefix(..._args: any[]): any {
   return false;
 }
 
-export function extractHookToken(..._args: unknown[]): unknown {
+export function extractHookToken(..._args: any[]): any {
   return undefined;
 }
 
-export async function readJsonBody(..._args: unknown[]): Promise<unknown> {
+export async function readJsonBody(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
 
-export function normalizeHookHeaders(..._args: unknown[]): unknown {
+export function normalizeHookHeaders(..._args: any[]): any {
   return undefined;
 }
 
-export function normalizeWakePayload(..._args: unknown[]): unknown {
+export function normalizeWakePayload(..._args: any[]): any {
   return undefined;
 }
 
-export function resolveHookChannel(..._args: unknown[]): unknown {
+export function resolveHookChannel(..._args: any[]): any {
   return undefined;
 }
 
-export function resolveHookDeliver(..._args: unknown[]): unknown {
+export function resolveHookDeliver(..._args: any[]): any {
   return undefined;
 }
 
-export function resolveHookIdempotencyKey(..._args: unknown[]): unknown {
+export function resolveHookIdempotencyKey(..._args: any[]): any {
   return undefined;
 }
 
-export function resolveHookTargetAgentId(..._args: unknown[]): unknown {
+export function resolveHookTargetAgentId(..._args: any[]): any {
   return undefined;
 }
 
-export function resolveEffectiveHookTargetAgentId(..._args: unknown[]): unknown {
+export function resolveEffectiveHookTargetAgentId(..._args: any[]): any {
   return undefined;
 }
 
-export function isHookAgentAllowed(..._args: unknown[]): unknown {
+export function isHookAgentAllowed(..._args: any[]): any {
   return false;
 }
 
-export function resolveHookSessionKey(..._args: unknown[]): unknown {
+export function resolveHookSessionKey(..._args: any[]): any {
   return undefined;
 }
 
-export function normalizeHookDispatchSessionKey(..._args: unknown[]): unknown {
+export function normalizeHookDispatchSessionKey(..._args: any[]): any {
   return undefined;
 }
 
-export function normalizeAgentPayload(..._args: unknown[]): unknown {
+export function normalizeAgentPayload(..._args: any[]): any {
   return undefined;
 }
 
-export const getHookChannelError: unknown = undefined;
+export const getHookChannelError: any = undefined;
 
-export const getHookAgentPolicyError: unknown = undefined;
+export const getHookAgentPolicyError: any = undefined;
 
-export const getHookSessionKeyPrefixError: unknown = undefined;
+export const getHookSessionKeyPrefixError: any = undefined;

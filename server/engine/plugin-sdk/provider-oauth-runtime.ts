@@ -16,7 +16,7 @@ export type OAuthCredentials = {
   access: string;
   /** Absolute epoch milliseconds when the access token should be considered expired. */
   expires: number;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 /** Stable provider id used by OAuth credential and config routing. */
@@ -314,7 +314,7 @@ export function parseOAuthAuthorizationInput(
 /** Converts provider `expires_in` seconds into safe positive milliseconds. */
 export function resolveOAuthTokenLifetimeMs(
   /** Provider `expires_in` value in seconds. */
-  value: unknown,
+  value: any,
 ): number | undefined {
   return positiveSecondsToSafeMilliseconds(value);
 }
@@ -322,7 +322,7 @@ export function resolveOAuthTokenLifetimeMs(
 /** Resolves provider token lifetime into an absolute expiry timestamp with optional refresh skew. */
 export function resolveOAuthTokenExpiresAt(
   /** Provider `expires_in` value in seconds. */
-  value: unknown,
+  value: any,
   options: {
     /** Current timestamp override for deterministic expiry calculations. */
     nowMs?: number;
@@ -391,7 +391,7 @@ export function withOAuthLoginAbort<T>(
         cleanup();
         resolve(value);
       },
-      (error: unknown) => {
+      (error: any) => {
         // Preserve Error rejections but wrap non-Error provider/prompt values for lint-safe callers.
         cleanup();
         reject(toLintErrorObject(error, "Non-Error rejection"));
@@ -414,7 +414,7 @@ export function buildOAuthRequestSignal(options: {
   return AbortSignal.any([options.signal, timeoutSignal]);
 }
 
-function toLintErrorObject(value: unknown, fallbackMessage: string): Error {
+function toLintErrorObject(value: any, fallbackMessage: string): Error {
   if (value instanceof Error) {
     return value;
   }

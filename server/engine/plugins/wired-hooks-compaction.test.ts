@@ -39,7 +39,7 @@ describe("compaction hook wiring", () => {
 
   function createCompactionEndCtx(params: {
     runId: string;
-    messages?: unknown[];
+    messages?: any[];
     sessionFile?: string;
     sessionKey?: string;
     compactionCount?: number;
@@ -72,11 +72,11 @@ describe("compaction hook wiring", () => {
 
   function getBeforeCompactionCall() {
     const beforeCalls = hookMocks.runner.runBeforeCompaction.mock.calls as unknown as Array<
-      [unknown, unknown]
+      [any, any]
     >;
     return {
       event: beforeCalls[0]?.[0] as
-        | { messageCount?: number; messages?: unknown[]; sessionFile?: string }
+        | { messageCount?: number; messages?: any[]; sessionFile?: string }
         | undefined,
       hookCtx: beforeCalls[0]?.[1] as { sessionKey?: string } | undefined,
     };
@@ -84,7 +84,7 @@ describe("compaction hook wiring", () => {
 
   function getAfterCompactionCall() {
     const afterCalls = hookMocks.runner.runAfterCompaction.mock.calls as unknown as Array<
-      [unknown, unknown]
+      [any, any]
     >;
     return {
       event: afterCalls[0]?.[0] as
@@ -96,7 +96,7 @@ describe("compaction hook wiring", () => {
 
   function expectCompactionEvent(params: {
     call: ReturnType<typeof getBeforeCompactionCall> | ReturnType<typeof getAfterCompactionCall>;
-    expectedEvent: Record<string, unknown>;
+    expectedEvent: Record<string, any>;
     expectedSessionKey?: string;
   }) {
     expect(params.call.event).toEqual(params.expectedEvent);
@@ -109,7 +109,7 @@ describe("compaction hook wiring", () => {
   }
 
   function runCompactionEnd(
-    ctx: ReturnType<typeof createCompactionEndCtx> | Record<string, unknown>,
+    ctx: ReturnType<typeof createCompactionEndCtx> | Record<string, any>,
     event: {
       willRetry: boolean;
       result?: { summary: string; tokensAfter?: number };
@@ -263,8 +263,8 @@ describe("compaction hook wiring", () => {
 
     runCompactionEnd(ctx, { willRetry: false, result: { summary: "compacted" } });
 
-    const assistantOne = messages[1] as { usage?: unknown };
-    const assistantTwo = messages[2] as { usage?: unknown };
+    const assistantOne = messages[1] as { usage?: any };
+    const assistantTwo = messages[2] as { usage?: any };
     expect(assistantOne.usage).toEqual(makeZeroUsageSnapshot());
     expect(assistantTwo.usage).toEqual(makeZeroUsageSnapshot());
   });
@@ -289,7 +289,7 @@ describe("compaction hook wiring", () => {
 
     runCompactionEnd(ctx, { willRetry: true });
 
-    const assistant = messages[0] as { usage?: unknown };
+    const assistant = messages[0] as { usage?: any };
     expect(assistant.usage).toEqual({ totalTokens: 184_297, input: 130_000, output: 2_000 });
   });
 });

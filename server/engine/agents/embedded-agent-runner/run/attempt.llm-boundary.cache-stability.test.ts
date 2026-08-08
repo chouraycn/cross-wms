@@ -95,8 +95,8 @@ const OPENAI_RESPONSES_MODEL = {
 
 async function captureOpenAICompletionsPayload(
   messages: AgentMsg[],
-): Promise<Record<string, unknown>> {
-  let capturedPayload: Record<string, unknown> | undefined;
+): Promise<Record<string, any>> {
+  let capturedPayload: Record<string, any> | undefined;
   const stream = streamOpenAICompletions(
     OPENAI_COMPLETIONS_MODEL,
     {
@@ -107,7 +107,7 @@ async function captureOpenAICompletionsPayload(
       apiKey: TEST_PROVIDER_OPTION_VALUE,
       cacheRetention: "none",
       onPayload(payload) {
-        capturedPayload = payload as Record<string, unknown>;
+        capturedPayload = payload as Record<string, any>;
         throw new Error("stop after payload capture");
       },
     },
@@ -121,8 +121,8 @@ async function captureOpenAICompletionsPayload(
 
 async function captureOpenAIResponsesPayload(
   messages: AgentMsg[],
-): Promise<Record<string, unknown>> {
-  let capturedPayload: Record<string, unknown> | undefined;
+): Promise<Record<string, any>> {
+  let capturedPayload: Record<string, any> | undefined;
   const stream = streamOpenAIResponses(
     OPENAI_RESPONSES_MODEL,
     {
@@ -133,7 +133,7 @@ async function captureOpenAIResponsesPayload(
       apiKey: TEST_PROVIDER_OPTION_VALUE,
       cacheRetention: "none",
       onPayload(payload) {
-        capturedPayload = payload as Record<string, unknown>;
+        capturedPayload = payload as Record<string, any>;
         throw new Error("stop after payload capture");
       },
     },
@@ -145,10 +145,10 @@ async function captureOpenAIResponsesPayload(
   return capturedPayload!;
 }
 
-function firstTwoProviderMessages(payload: Record<string, unknown>): unknown[] {
+function firstTwoProviderMessages(payload: Record<string, any>): any[] {
   const messages = payload.messages ?? payload.input;
   expect(Array.isArray(messages)).toBe(true);
-  return (messages as unknown[]).slice(0, 2);
+  return (messages as any[]).slice(0, 2);
 }
 
 // ---------------------------------------------------------------------------
@@ -175,10 +175,10 @@ describe("prompt-cache byte-identity (issue #3658)", () => {
 
     const normalizedCurrent = normalizeMessagesForLlmBoundary(asCurrent, {
       timezone: TZ,
-    }) as unknown as Array<{ content?: unknown }>;
+    }) as unknown as Array<{ content?: any }>;
     const normalizedHistorical = normalizeMessagesForLlmBoundary(asHistorical, {
       timezone: TZ,
-    }) as unknown as Array<{ content?: unknown }>;
+    }) as unknown as Array<{ content?: any }>;
 
     const turn1AsCurrent = JSON.stringify(normalizedCurrent[0]?.content);
     const turn1AsHistorical = JSON.stringify(normalizedHistorical[0]?.content);
@@ -262,7 +262,7 @@ describe("prompt-cache byte-identity (issue #3658)", () => {
     expect(call1).toBe(call2);
     // And it is in fact stamped from this message's timestamp.
     const out = normalizeMessagesForLlmBoundary(msg, { timezone: TZ }) as unknown as Array<{
-      content?: unknown;
+      content?: any;
     }>;
     expect(out[0]?.content).toBe(`${EXPECTED_PREFIX_TURN1}Cache test message`);
   });
@@ -285,7 +285,7 @@ describe("prompt-cache byte-identity (issue #3658)", () => {
 
     const input: AgentMsg[] = [attachmentMsg, ASSISTANT_MSG, currentFollowup];
     const output = normalizeMessagesForLlmBoundary(input, { timezone: TZ }) as unknown as Array<{
-      content?: unknown;
+      content?: any;
     }>;
 
     // Attachment turn stays an array of 2 blocks.
@@ -314,7 +314,7 @@ describe("prompt-cache byte-identity (issue #3658)", () => {
     ];
 
     const output = normalizeMessagesForLlmBoundary(input, { timezone: TZ }) as unknown as Array<{
-      content?: unknown;
+      content?: any;
     }>;
 
     const historicalContent = output[0]?.content as string;
@@ -326,7 +326,7 @@ describe("prompt-cache byte-identity (issue #3658)", () => {
     const cron = "Current time: 2026-06-05 10:30. Run the scheduled job.";
     const input: AgentMsg[] = [storedUserMsg(cron, TS_TURN1)];
     const output = normalizeMessagesForLlmBoundary(input, { timezone: TZ }) as unknown as Array<{
-      content?: unknown;
+      content?: any;
     }>;
     expect(output[0]?.content).toBe(cron);
   });
@@ -346,7 +346,7 @@ describe("prompt-cache byte-identity (issue #3658)", () => {
       currentUserMsg("next", TS_TURN2),
     ];
     const output = normalizeMessagesForLlmBoundary(input, { timezone: TZ }) as unknown as Array<{
-      content?: unknown;
+      content?: any;
     }>;
 
     // Metadata stripped, then stamped from the message's own timestamp.

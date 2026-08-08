@@ -121,11 +121,11 @@ describe("WhatsApp prompt config Zod validation", () => {
       unrepresentable: "any",
     }) as {
       properties?: {
-        exposeErrorText?: unknown;
+        exposeErrorText?: any;
         accounts?: {
           additionalProperties?: {
             properties?: {
-              exposeErrorText?: unknown;
+              exposeErrorText?: any;
             };
           };
         };

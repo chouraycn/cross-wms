@@ -57,7 +57,7 @@ type ConfigSnapshotForInstallExecution = ConfigSnapshotForInstallPersist & {
  * 保留函数签名以便未来替换为正式实现。
  */
 export async function loadConfigForInstall(
-  _request: unknown,
+  _request: any,
 ): Promise<ConfigSnapshotForInstallExecution> {
   return {
     config: {} as OpenClawConfig,

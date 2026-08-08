@@ -16,12 +16,12 @@ vi.mock("../channels/chat-meta.js", () => ({
 }));
 
 vi.mock("../../packages/terminal-core/src/note.js", () => ({
-  note: (...args: unknown[]) => note(...args),
+  note: (...args: any[]) => note(...args),
 }));
 
 vi.mock("./configure.shared.js", () => ({
-  select: (params: unknown) => select(params),
-  confirm: (params: unknown) => confirm(params),
+  select: (params: any) => select(params),
+  confirm: (params: any) => confirm(params),
 }));
 
 import { removeChannelConfigWizard } from "./configure.channels.js";
@@ -45,13 +45,13 @@ async function removeUnsafeChannelConfig(unsafeChannel: string) {
 
 function selectArg(index = 0): {
   message?: string;
-  options?: Array<{ value: unknown; label: string }>;
+  options?: Array<{ value: any; label: string }>;
 } {
   const call = select.mock.calls[index];
   if (!call) {
     throw new Error(`Expected select call ${index}`);
   }
-  return call[0] as { message?: string; options?: Array<{ value: unknown; label: string }> };
+  return call[0] as { message?: string; options?: Array<{ value: any; label: string }> };
 }
 
 function confirmArg(index = 0): { message?: string } {
@@ -63,8 +63,8 @@ function confirmArg(index = 0): { message?: string } {
 }
 
 function expectOption(
-  options: Array<{ value: unknown; label: string }> | undefined,
-  value: unknown,
+  options: Array<{ value: any; label: string }> | undefined,
+  value: any,
   label: string,
 ) {
   expect(
@@ -74,7 +74,7 @@ function expectOption(
   ).toBe(true);
 }
 
-function optionLabels(options: Array<{ value: unknown; label: string }> | undefined) {
+function optionLabels(options: Array<{ value: any; label: string }> | undefined) {
   return options?.map((option) => ({ value: option.value, label: option.label }));
 }
 

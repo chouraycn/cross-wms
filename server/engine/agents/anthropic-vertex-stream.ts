@@ -6,7 +6,7 @@
  */
 
 /** Creates an Anthropic Vertex stream function for a model. */
-export function createAnthropicVertexStreamFnForModel(..._args: unknown[]): undefined {
+export function createAnthropicVertexStreamFnForModel(..._args: any[]): undefined {
   // Cross-wms does not have Anthropic Vertex AI stream integration.
   return undefined;
 }

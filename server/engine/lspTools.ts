@@ -471,7 +471,7 @@ function getLanguageId(extension: string): string {
 /**
  * lsp_complete — 代码补全
  */
-async function handleLspComplete(args: Record<string, unknown>): Promise<string> {
+async function handleLspComplete(args: Record<string, any>): Promise<string> {
   const file = args.file as string;
   const line = args.line as number;
   const character = args.character as number;
@@ -529,7 +529,7 @@ async function handleLspComplete(args: Record<string, unknown>): Promise<string>
 /**
  * lsp_hover — 类型/文档提示
  */
-async function handleLspHover(args: Record<string, unknown>): Promise<string> {
+async function handleLspHover(args: Record<string, any>): Promise<string> {
   const file = args.file as string;
   const line = args.line as number;
   const character = args.character as number;
@@ -583,7 +583,7 @@ async function handleLspHover(args: Record<string, unknown>): Promise<string> {
 /**
  * lsp_definition — 跳转定义
  */
-async function handleLspDefinition(args: Record<string, unknown>): Promise<string> {
+async function handleLspDefinition(args: Record<string, any>): Promise<string> {
   const file = args.file as string;
   const line = args.line as number;
   const character = args.character as number;
@@ -637,7 +637,7 @@ async function handleLspDefinition(args: Record<string, unknown>): Promise<strin
 /**
  * lsp_references — 查找引用
  */
-async function handleLspReferences(args: Record<string, unknown>): Promise<string> {
+async function handleLspReferences(args: Record<string, any>): Promise<string> {
   const file = args.file as string;
   const line = args.line as number;
   const character = args.character as number;
@@ -691,7 +691,7 @@ async function handleLspReferences(args: Record<string, unknown>): Promise<strin
 /**
  * lsp_rename — 重命名符号
  */
-async function handleLspRename(args: Record<string, unknown>): Promise<string> {
+async function handleLspRename(args: Record<string, any>): Promise<string> {
   const file = args.file as string;
   const line = args.line as number;
   const character = args.character as number;
@@ -763,7 +763,7 @@ async function handleLspRename(args: Record<string, unknown>): Promise<string> {
 /**
  * lsp_diagnose — 诊断问题
  */
-async function handleLspDiagnose(args: Record<string, unknown>): Promise<string> {
+async function handleLspDiagnose(args: Record<string, any>): Promise<string> {
   const file = args.file as string;
 
   const startTime = Date.now();
@@ -818,7 +818,7 @@ async function handleLspDiagnose(args: Record<string, unknown>): Promise<string>
 /**
  * lsp_format — 格式化代码
  */
-async function handleLspFormat(args: Record<string, unknown>): Promise<string> {
+async function handleLspFormat(args: Record<string, any>): Promise<string> {
   const file = args.file as string;
   const startLine = args.startLine as number | undefined;
   const startCharacter = args.startCharacter as number | undefined;
@@ -901,7 +901,7 @@ async function handleLspFormat(args: Record<string, unknown>): Promise<string> {
 /**
  * lsp_code_action — 获取代码操作建议
  */
-async function handleLspCodeAction(args: Record<string, unknown>): Promise<string> {
+async function handleLspCodeAction(args: Record<string, any>): Promise<string> {
   const file = args.file as string;
   const line = args.line as number;
   const character = args.character as number;
@@ -955,7 +955,7 @@ async function handleLspCodeAction(args: Record<string, unknown>): Promise<strin
 /**
  * lsp_signature_help — 函数参数提示
  */
-async function handleLspSignatureHelp(args: Record<string, unknown>): Promise<string> {
+async function handleLspSignatureHelp(args: Record<string, any>): Promise<string> {
   const file = args.file as string;
   const line = args.line as number;
   const character = args.character as number;
@@ -1010,7 +1010,7 @@ async function handleLspSignatureHelp(args: Record<string, unknown>): Promise<st
 /**
  * lsp_document_symbols — 获取文档符号列表
  */
-async function handleLspDocumentSymbols(args: Record<string, unknown>): Promise<string> {
+async function handleLspDocumentSymbols(args: Record<string, any>): Promise<string> {
   const file = args.file as string;
 
   const startTime = Date.now();
@@ -1061,7 +1061,7 @@ async function handleLspDocumentSymbols(args: Record<string, unknown>): Promise<
 /**
  * lsp_workspace_symbols — 工作区符号搜索
  */
-async function handleLspWorkspaceSymbols(args: Record<string, unknown>): Promise<string> {
+async function handleLspWorkspaceSymbols(args: Record<string, any>): Promise<string> {
   const query = args.query as string;
   const limit = (args.limit as number) ?? 50;
 

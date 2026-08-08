@@ -4,7 +4,7 @@
 export type ChannelApprovalNativeTarget = {
   to: string;
   threadId?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 export type ChannelApprovalNativeSurface = "origin" | "approver-dm";
@@ -38,17 +38,17 @@ function dedupeTargets(
 /** Resolves the origin and approver-DM targets a channel should use for native approvals. */
 export async function resolveChannelNativeApprovalDeliveryPlan(params: {
   adapter?: {
-    describeDeliveryCapabilities(params: unknown): {
+    describeDeliveryCapabilities(params: any): {
       enabled: boolean;
       preferredSurface?: string;
       supportsOriginSurface?: boolean;
       supportsApproverDmSurface?: boolean;
       notifyOriginWhenDmOnly?: boolean;
     } | null;
-    resolveOriginTarget?(params: unknown): Promise<ChannelApprovalNativeTarget | null>;
-    resolveApproverDmTargets?(params: unknown): Promise<ChannelApprovalNativeTarget[]>;
+    resolveOriginTarget?(params: any): Promise<ChannelApprovalNativeTarget | null>;
+    resolveApproverDmTargets?(params: any): Promise<ChannelApprovalNativeTarget[]>;
   } | null;
-  [key: string]: unknown;
+  [key: string]: any;
 }): Promise<ChannelApprovalNativeDeliveryPlan> {
   const adapter = params.adapter;
   if (!adapter) {

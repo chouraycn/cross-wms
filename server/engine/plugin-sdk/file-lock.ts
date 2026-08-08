@@ -56,7 +56,7 @@ const FILE_LOCK_MANAGER_KEY = "openclaw.plugin-sdk.file-lock";
 
 async function shouldReclaimPluginLock(params: {
   lockPath: string;
-  payload: Record<string, unknown> | null;
+  payload: Record<string, any> | null;
   staleMs: number;
   nowMs: number;
 }): Promise<boolean> {
@@ -67,14 +67,14 @@ async function shouldReclaimPluginLock(params: {
   });
 }
 
-function normalizeLockError(err: unknown): never {
-  if ((err as { code?: unknown }).code === FILE_LOCK_TIMEOUT_ERROR_CODE) {
+function normalizeLockError(err: any): never {
+  if ((err as { code?: any }).code === FILE_LOCK_TIMEOUT_ERROR_CODE) {
     throw Object.assign(new Error((err as Error).message), {
       code: FILE_LOCK_TIMEOUT_ERROR_CODE,
       lockPath: (err as { lockPath?: string }).lockPath ?? "",
     }) as FileLockTimeoutError;
   }
-  if ((err as { code?: unknown }).code === FILE_LOCK_STALE_ERROR_CODE) {
+  if ((err as { code?: any }).code === FILE_LOCK_STALE_ERROR_CODE) {
     throw Object.assign(new Error((err as Error).message), {
       code: FILE_LOCK_STALE_ERROR_CODE,
       lockPath: (err as { lockPath?: string }).lockPath ?? "",
@@ -106,7 +106,7 @@ export async function acquireFileLock(
       staleRecovery: "remove-if-unchanged",
       allowReentrant: true,
       payload: () => {
-        const payload: Record<string, unknown> = {
+        const payload: Record<string, any> = {
           pid: process.pid,
           createdAt: new Date().toISOString(),
         };

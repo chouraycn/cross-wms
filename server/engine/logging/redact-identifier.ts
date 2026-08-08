@@ -43,8 +43,8 @@ export function redactIdentifiersInObject<T>(obj: T): T {
   if (typeof obj === 'string') return redactIdentifiers(obj) as unknown as T;
   if (obj === null || typeof obj !== 'object') return obj;
   if (Array.isArray(obj)) return obj.map(item => redactIdentifiersInObject(item)) as unknown as T;
-  const result: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
+  const result: Record<string, any> = {};
+  for (const [key, value] of Object.entries(obj as Record<string, any>)) {
     result[key] = redactIdentifiersInObject(value);
   }
   return result as unknown as T;

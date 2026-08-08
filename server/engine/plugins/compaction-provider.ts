@@ -27,7 +27,7 @@ export interface CompactionProvider {
   id: string;
   label: string;
   summarize(params: {
-    messages: unknown[];
+    messages: any[];
     signal?: AbortSignal;
     compressionRatio?: number;
     customInstructions?: string;

@@ -14,7 +14,7 @@ type SpawnCall = {
 const spawnCalls: SpawnCall[] = [];
 
 vi.mock("node:child_process", () => ({
-  execFile: (...args: unknown[]) => {
+  execFile: (...args: any[]) => {
     // Docker availability probes should succeed without invoking real Docker.
     const callback = args.findLast(
       (arg): arg is (error: null, stdout: string, stderr: string) => void =>
@@ -28,8 +28,8 @@ vi.mock("node:child_process", () => ({
     const child = new EventEmitter() as {
       stdout?: Readable;
       stderr?: Readable;
-      on: (event: string, cb: (...args: unknown[]) => void) => void;
-      emit: (event: string, ...args: unknown[]) => boolean;
+      on: (event: string, cb: (...args: any[]) => void) => void;
+      emit: (event: string, ...args: any[]) => boolean;
     };
     child.stdout = new Readable({ read() {} });
     child.stderr = new Readable({ read() {} });

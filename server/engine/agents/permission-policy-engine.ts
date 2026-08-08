@@ -6,7 +6,7 @@ export type PermissionDecision = 'allow' | 'deny' | 'approval';
 export interface PolicyEvaluationContext {
   agentId: string;
   permission: AgentPermission;
-  context?: Record<string, unknown>;
+  context?: Record<string, any>;
   resource?: string;
 }
 

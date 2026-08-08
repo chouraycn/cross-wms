@@ -69,15 +69,15 @@ function requireTimestamp(value: number | undefined, label: string): number {
   return value;
 }
 
-function requireRecord(value: unknown): Record<string, unknown> {
+function requireRecord(value: any): Record<string, any> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("Expected a non-array record");
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function firstMockArg(mock: unknown): unknown {
-  const calls = (mock as { mock: { calls: readonly (readonly unknown[])[] } }).mock.calls;
+function firstMockArg(mock: any): any {
+  const calls = (mock as { mock: { calls: readonly (readonly any[])[] } }).mock.calls;
   const call = calls[0];
   if (!call) {
     throw new Error("Expected mock to have at least one call");
@@ -2574,7 +2574,7 @@ describe("cron service timer regressions", () => {
       let now = scheduledAt;
       const wallStart = Date.now();
       let abortWallMs: number | undefined;
-      let abortReason: unknown;
+      let abortReason: any;
       const started = createDeferred<void>();
 
       const state = createCronServiceState({
@@ -2926,7 +2926,7 @@ describe("cron service timer regressions", () => {
       let now = scheduledAt;
       const started = createDeferred<void>();
       let abortObserved = false;
-      let abortReason: unknown;
+      let abortReason: any;
       const cleanupTimedOutAgentRun = vi.fn(async () => {});
       const onIsolatedAgentSetupTimeout = vi.fn();
       const state = createCronServiceState({

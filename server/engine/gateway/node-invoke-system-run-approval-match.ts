@@ -11,8 +11,8 @@
  * 完整实现见 openclaw 源码。
  */
 
-export const toSystemRunApprovalMismatchError: unknown = undefined;
+export const toSystemRunApprovalMismatchError: any = undefined;
 
-export function evaluateSystemRunApprovalMatch(..._args: unknown[]): unknown {
+export function evaluateSystemRunApprovalMatch(..._args: any[]): any {
   return undefined;
 }

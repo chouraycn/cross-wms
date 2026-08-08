@@ -4,10 +4,10 @@ import { MEMORY_REMOTE_TRUSTED_ENV_PROXY_MODE, withRemoteHttpResponse } from "./
 
 describe("package withRemoteHttpResponse", () => {
   function makeFetchDeps({ useEnvProxy = false }: { useEnvProxy?: boolean } = {}) {
-    const calls: unknown[] = [];
+    const calls: any[] = [];
     return {
       calls,
-      fetchWithSsrFGuardImpl: async (params: unknown) => {
+      fetchWithSsrFGuardImpl: async (params: any) => {
         calls.push(params);
         return {
           response: new Response("ok", { status: 200 }),

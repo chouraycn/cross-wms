@@ -93,7 +93,7 @@ function readOfficialCatalogFileSync(): ChannelCatalogEntryLike[] {
       officialCatalogFileCache.set(candidate, null);
       continue;
     }
-    const payload = tryReadJsonSync<{ entries?: unknown }>(candidate);
+    const payload = tryReadJsonSync<{ entries?: any }>(candidate);
     if (payload) {
       const entries = Array.isArray(payload.entries)
         ? (payload.entries as ChannelCatalogEntryLike[])

@@ -66,7 +66,7 @@ function isDiscordExecApprovalClientEnabledForTest(params: {
     accountId && accountId !== "default"
       ? (
           params.cfg.channels?.discordAccounts?.[accountId] as
-            | { execApprovals?: { enabled?: boolean; approvers?: unknown[] } }
+            | { execApprovals?: { enabled?: boolean; approvers?: any[] } }
             | undefined
         )?.execApprovals
       : undefined;
@@ -84,7 +84,7 @@ function isTelegramExecApprovalClientEnabledForTest(params: {
     accountId && accountId !== "default"
       ? (
           params.cfg.channels?.telegramAccounts?.[accountId] as
-            | { execApprovals?: { enabled?: boolean; approvers?: unknown[] } }
+            | { execApprovals?: { enabled?: boolean; approvers?: any[] } }
             | undefined
         )?.execApprovals
       : undefined;
@@ -216,17 +216,17 @@ function getFirstDeliveryText(deliver: ReturnType<typeof vi.fn>): string {
   return firstCall.payloads?.[0]?.text ?? "";
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object") {
     throw new Error(`expected ${label} to be an object`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 function requireFirstCallArg(
   mock: ReturnType<typeof vi.fn>,
   label: string,
-): Record<string, unknown> {
+): Record<string, any> {
   const firstCall = mock.mock.calls[0];
   if (!firstCall) {
     throw new Error(`expected ${label} call`);

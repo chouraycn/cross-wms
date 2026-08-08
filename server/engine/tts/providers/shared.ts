@@ -10,7 +10,7 @@ export interface HttpRequestOptions {
   url: string;
   method?: string;
   headers?: Record<string, string>;
-  body?: unknown;
+  body?: any;
   timeoutMs?: number;
   /** 可注入的 fetch 实现，便于测试。 */
   fetchFn?: typeof fetch;
@@ -20,7 +20,7 @@ export interface HttpResponse {
   status: number;
   ok: boolean;
   data: Buffer;
-  json: unknown;
+  json: any;
   contentType?: string;
 }
 
@@ -43,7 +43,7 @@ export async function httpRequest(opts: HttpRequestOptions): Promise<HttpRespons
     const contentType = res.headers?.get?.('content-type') ?? undefined;
     const arrayBuf = await res.arrayBuffer();
     const data = Buffer.from(arrayBuf);
-    let json: unknown = undefined as unknown;
+    let json: any = undefined as any;
     if (contentType?.includes('json')) {
       try {
         json = JSON.parse(data.toString('utf8'));

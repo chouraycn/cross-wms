@@ -12,7 +12,7 @@ import {
 const runCommandWithTimeoutMock = vi.hoisted(() => vi.fn());
 
 vi.mock("../process/exec.js", () => ({
-  runCommandWithTimeout: (...args: unknown[]) => runCommandWithTimeoutMock(...args),
+  runCommandWithTimeout: (...args: any[]) => runCommandWithTimeoutMock(...args),
 }));
 
 let inspectPortConnections: typeof import("./ports-inspect.js").inspectPortConnections;

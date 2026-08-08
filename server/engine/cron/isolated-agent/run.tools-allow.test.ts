@@ -32,7 +32,7 @@ function makeParams() {
 
 function makeParamsWithToolsAllow(toolsAllow: string[]) {
   const params = makeParams();
-  const job = params.job as Record<string, unknown>;
+  const job = params.job as Record<string, any>;
   return {
     ...params,
     job: {

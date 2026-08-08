@@ -4,7 +4,7 @@
 //
 // 降级策略：
 //  - 原文件依赖 ../config/types.openclaw.js 的 OpenClawConfig 类型。
-//    cross-wms 尚未移植该模块。这里使用 Record<string, unknown> 作为
+//    cross-wms 尚未移植该模块。这里使用 Record<string, any> 作为
 //    最小占位类型，与 cross-wms 其他已移植模块的降级约定一致。
 //  - 行为与 openclaw 原版一致：基于 Map 的 LRU 缓存、config-scoped 缓存与
 //    config-scoped promise 加载器。
@@ -13,7 +13,7 @@
 export type PluginLruCacheResult<T> = { hit: true; value: T } | { hit: false };
 
 /** OpenClawConfig 降级占位类型，仅用作 WeakMap 键。 */
-type OpenClawConfig = Record<string, unknown>;
+type OpenClawConfig = Record<string, any>;
 
 /** 用于稳定插件元数据和加载器工件的小型进程本地 LRU 缓存。 */
 export class PluginLruCache<T> {
@@ -116,7 +116,7 @@ export function resolveConfigScopedRuntimeCacheValue<T>(params: {
 }
 
 /** 编码结构化缓存维度，无分隔符歧义。 */
-export function createPluginCacheKey(parts: readonly unknown[]): string {
+export function createPluginCacheKey(parts: readonly any[]): string {
   return JSON.stringify(parts);
 }
 

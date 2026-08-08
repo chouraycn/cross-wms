@@ -29,7 +29,7 @@ function uploadErrorShape(
   return errorShape(ErrorCodes.INVALID_REQUEST, `${prefix}: ${formatValidationErrors(errors)}`);
 }
 
-function mapUploadError(err: unknown): ErrorShape {
+function mapUploadError(err: any): ErrorShape {
   if (err instanceof SkillUploadRequestError) {
     return errorShape(ErrorCodes.INVALID_REQUEST, err.message);
   }

@@ -20,7 +20,7 @@ function RadioGroup({
       defaultValue={defaultValue}
       onChange={(_e, v) => onValueChange?.(String(v))}
       data-slot="radio-group"
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     />
   )
 }
@@ -41,7 +41,7 @@ function RadioGroupItem({
       value={value}
       data-slot="radio-group-item"
       className={cn(className)}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     />
   )
 }

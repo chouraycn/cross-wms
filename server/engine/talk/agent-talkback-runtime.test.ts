@@ -14,21 +14,21 @@ function makeLogger() {
 }
 
 function expectConsultRequest(
-  call: unknown,
-  expected: { metadata: unknown; question: string; responseStyle: string },
+  call: any,
+  expected: { metadata: any; question: string; responseStyle: string },
 ) {
   if (!call || typeof call !== "object") {
     throw new Error("Expected talkback consult request object");
   }
-  const { signal, ...request } = call as { signal?: unknown };
+  const { signal, ...request } = call as { signal?: any };
   expect(signal).toBeInstanceOf(AbortSignal);
   expect(request).toStrictEqual(expected);
 }
 
 function expectConsultCall(
-  consult: { mock: { calls: unknown[][] } },
+  consult: { mock: { calls: any[][] } },
   callIndex: number,
-  expected: { metadata: unknown; question: string; responseStyle: string },
+  expected: { metadata: any; question: string; responseStyle: string },
 ) {
   const call = consult.mock.calls[callIndex]?.[0];
   if (call === undefined) {

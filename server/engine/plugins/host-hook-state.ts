@@ -12,7 +12,7 @@ export { clearPluginOwnedSessionState } from "./host-hook-cleanup.js";
 export async function enqueuePluginNextTurnInjection(params: {
   sessionId: string;
   pluginId: string;
-  injection: unknown;
+  injection: any;
   placement?: string;
 }): Promise<{ enqueued: boolean }> {
   void params;
@@ -21,14 +21,14 @@ export async function enqueuePluginNextTurnInjection(params: {
 
 export async function drainPluginNextTurnInjections(params: {
   sessionId: string;
-}): Promise<{ injections: unknown[] }> {
+}): Promise<{ injections: any[] }> {
   void params;
   return { injections: [] };
 }
 
 export async function drainPluginNextTurnInjectionContext(params: {
   sessionId: string;
-}): Promise<{ context: unknown[] }> {
+}): Promise<{ context: any[] }> {
   void params;
   return { context: [] };
 }
@@ -36,7 +36,7 @@ export async function drainPluginNextTurnInjectionContext(params: {
 export function getPluginSessionExtensionStateSync(params: {
   sessionId?: string;
   pluginId?: string;
-  cfg?: unknown;
+  cfg?: any;
   sessionKey?: string;
 }): Record<string, PluginJsonValue> | undefined {
   void params;
@@ -46,7 +46,7 @@ export function getPluginSessionExtensionStateSync(params: {
 export async function patchPluginSessionExtension(params: {
   sessionId: string;
   pluginId: string;
-  patch: unknown;
+  patch: any;
 }): Promise<void> {
   void params;
 }
@@ -54,7 +54,7 @@ export async function patchPluginSessionExtension(params: {
 export async function projectPluginSessionExtensions(params: {
   sessionId: string;
   pluginIds?: string[];
-}): Promise<{ projections: Record<string, unknown> }> {
+}): Promise<{ projections: Record<string, any> }> {
   void params;
   return { projections: {} };
 }
@@ -62,7 +62,7 @@ export async function projectPluginSessionExtensions(params: {
 export function projectPluginSessionExtensionsSync(params: {
   sessionId: string;
   pluginIds?: string[];
-}): Record<string, unknown> {
+}): Record<string, any> {
   void params;
   return {};
 }

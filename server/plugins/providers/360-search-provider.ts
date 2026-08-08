@@ -143,7 +143,7 @@ const plugin: WebSearchProviderPlugin = {
         },
         required: ["query"],
       },
-      async execute(args: Record<string, unknown>): Promise<WebSearchResultList> {
+      async execute(args: Record<string, any>): Promise<WebSearchResultList> {
         return soSearch({
           query: String(args.query || ""),
           maxResults: Number(args.maxResults || DEFAULT_MAX_RESULTS),

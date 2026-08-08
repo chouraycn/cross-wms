@@ -8,18 +8,18 @@ import type { AgentRuntimePlan, BuildAgentRuntimePlanParams } from "../runtime-p
 import type { CompactionTranscriptRotation } from "./compaction-successor-transcript.js";
 
 type MockResolvedModel = {
-  model: { provider: string; api: string; id: string; input: unknown[] };
+  model: { provider: string; api: string; id: string; input: any[] };
   error: null;
   authStorage: { setRuntimeApiKey: Mock<(provider?: string, apiKey?: string) => void> };
   modelRegistry: Record<string, never>;
 };
 type MockMemorySearchManager = {
   manager: {
-    sync: (params?: unknown) => Promise<void>;
+    sync: (params?: any) => Promise<void>;
   };
 };
 type MockEmbeddedAgentStreamFn = Mock<
-  (model?: unknown, context?: unknown, options?: unknown) => unknown
+  (model?: any, context?: any, options?: any) => unknown
 >;
 
 export const contextEngineCompactMock = vi.fn(async () => ({
@@ -37,14 +37,14 @@ export const hookRunner = {
   runAfterCompaction: vi.fn(async () => undefined),
 };
 
-export const ensureRuntimePluginsLoaded: Mock<(params?: unknown) => void> = vi.fn();
+export const ensureRuntimePluginsLoaded: Mock<(params?: any) => void> = vi.fn();
 export const resolveContextEngineMock = vi.fn(async () => ({
   info: { ownsCompaction: true as boolean },
   compact: contextEngineCompactMock,
 }));
 export const resolveModelMock: Mock<
-  (provider?: string, modelId?: string, agentDir?: string, cfg?: unknown) => MockResolvedModel
-> = vi.fn((_provider?: string, _modelId?: string, _agentDir?: string, _cfg?: unknown) => ({
+  (provider?: string, modelId?: string, agentDir?: string, cfg?: any) => MockResolvedModel
+> = vi.fn((_provider?: string, _modelId?: string, _agentDir?: string, _cfg?: any) => ({
   model: { provider: "openai", api: "responses", id: "fake", input: [] },
   error: null,
   authStorage: { setRuntimeApiKey: vi.fn() },
@@ -56,15 +56,15 @@ export const sessionCompactImpl = vi.fn(async () => ({
   tokensBefore: 120,
   details: { ok: true },
 }));
-export const triggerInternalHook: Mock<(event?: unknown) => void> = vi.fn();
+export const triggerInternalHook: Mock<(event?: any) => void> = vi.fn();
 const sanitizeSessionHistoryMock = vi.fn(
-  async (params: { messages: unknown[] }) => params.messages,
+  async (params: { messages: any[] }) => params.messages,
 );
 export const getMemorySearchManagerMock: Mock<
-  (params?: unknown) => Promise<MockMemorySearchManager>
+  (params?: any) => Promise<MockMemorySearchManager>
 > = vi.fn(async () => ({
   manager: {
-    sync: vi.fn(async (_params?: unknown) => {}),
+    sync: vi.fn(async (_params?: any) => {}),
   },
 }));
 export const resolveMemorySearchConfigMock = vi.fn(() => ({
@@ -80,10 +80,10 @@ export const resolveSessionAgentIdsMock = vi.fn(() => ({
   defaultAgentId: "main",
   sessionAgentId: "main",
 }));
-export const estimateTokensMock = vi.fn((_message?: unknown) => 10);
+export const estimateTokensMock = vi.fn((_message?: any) => 10);
 export const resolveAgentHarnessPolicyMock = vi.fn(() => ({ runtime: "openclaw" }));
 export const resolveContextWindowInfoMock = vi.fn(() => ({ tokens: 128_000 }));
-function createDefaultSessionMessages(): unknown[] {
+function createDefaultSessionMessages(): any[] {
   return [
     { role: "user", content: "hello", timestamp: 1 },
     { role: "assistant", content: [{ type: "text", text: "hi" }], timestamp: 2 },
@@ -97,8 +97,8 @@ function createDefaultSessionMessages(): unknown[] {
     },
   ];
 }
-export const sessionMessages: unknown[] = createDefaultSessionMessages();
-export const sessionAbortCompactionMock: Mock<(reason?: unknown) => void> = vi.fn();
+export const sessionMessages: any[] = createDefaultSessionMessages();
+export const sessionAbortCompactionMock: Mock<(reason?: any) => void> = vi.fn();
 function createMockCompactionSession() {
   const session = {
     sessionId: "session-1",
@@ -110,7 +110,7 @@ function createMockCompactionSession() {
         get messages() {
           return session.messages;
         },
-        set messages(messages: unknown[]) {
+        set messages(messages: any[]) {
           session.messages = [...messages];
         },
         systemPrompt: undefined as string | undefined,
@@ -129,12 +129,12 @@ function createMockCompactionSession() {
   };
   return session;
 }
-export const createAgentSessionMock = vi.fn(async (_options?: unknown) => ({
+export const createAgentSessionMock = vi.fn(async (_options?: any) => ({
   session: createMockCompactionSession(),
 }));
-function createMockToolDefinitions(tools: unknown[] = []) {
+function createMockToolDefinitions(tools: any[] = []) {
   return tools.map((tool) => {
-    const source = tool && typeof tool === "object" ? (tool as Record<string, unknown>) : {};
+    const source = tool && typeof tool === "object" ? (tool as Record<string, any>) : {};
     const name = typeof source.name === "string" && source.name.length > 0 ? source.name : "tool";
     return {
       name,
@@ -162,23 +162,23 @@ export const listRegisteredPluginAgentPromptGuidanceMock = vi.fn((params?: { sur
 );
 export const buildEmbeddedSystemPromptMock = vi.fn(() => "");
 export const resolveEmbeddedAgentStreamFnMock: Mock<
-  (params?: unknown) => MockEmbeddedAgentStreamFn
-> = vi.fn((_params?: unknown) => vi.fn());
-export const registerProviderStreamForModelMock: Mock<(params?: unknown) => unknown> = vi.fn();
+  (params?: any) => MockEmbeddedAgentStreamFn
+> = vi.fn((_params?: any) => vi.fn());
+export const registerProviderStreamForModelMock: Mock<(params?: any) => unknown> = vi.fn();
 export const applyExtraParamsToAgentMock = vi.fn(() => ({ effectiveExtraParams: {} }));
-const resolveAgentTransportOverrideMock: Mock<(params?: unknown) => string | undefined> = vi.fn(
+const resolveAgentTransportOverrideMock: Mock<(params?: any) => string | undefined> = vi.fn(
   () => undefined,
 );
 export const resolveSandboxContextMock = vi.fn(async () => null);
 export const maybeCompactAgentHarnessSessionMock: Mock<
-  (params?: unknown, options?: unknown) => Promise<unknown>
+  (params?: any, options?: any) => Promise<any>
 > = vi.fn(async () => undefined);
 export const rotateTranscriptAfterCompactionMock: Mock<
-  (_params?: unknown) => Promise<CompactionTranscriptRotation>
+  (_params?: any) => Promise<CompactionTranscriptRotation>
 > = vi.fn(async () => ({
   rotated: false,
 }));
-export const enqueueCommandInLaneMock = vi.fn((_lane: unknown, task: () => unknown) => task());
+export const enqueueCommandInLaneMock = vi.fn((_lane: any, task: () => unknown) => task());
 
 function createCompactHooksRuntimePlan(params: BuildAgentRuntimePlanParams): AgentRuntimePlan {
   const modelApi = params.modelApi ?? params.model?.api ?? undefined;
@@ -290,7 +290,7 @@ const emptyPluginMetadataSnapshot: PluginMetadataSnapshot = {
 
 export function resetCompactSessionStateMocks(): void {
   sanitizeSessionHistoryMock.mockReset();
-  sanitizeSessionHistoryMock.mockImplementation(async (params: { messages: unknown[] }) => {
+  sanitizeSessionHistoryMock.mockImplementation(async (params: { messages: any[] }) => {
     return params.messages;
   });
 
@@ -322,7 +322,7 @@ export function resetCompactSessionStateMocks(): void {
     session: createMockCompactionSession(),
   }));
   resolveEmbeddedAgentStreamFnMock.mockReset();
-  resolveEmbeddedAgentStreamFnMock.mockImplementation((_params?: unknown) => vi.fn());
+  resolveEmbeddedAgentStreamFnMock.mockImplementation((_params?: any) => vi.fn());
   registerProviderStreamForModelMock.mockReset();
   registerProviderStreamForModelMock.mockReturnValue(undefined);
   applyExtraParamsToAgentMock.mockReset();
@@ -340,7 +340,7 @@ export function resetCompactSessionStateMocks(): void {
   rotateTranscriptAfterCompactionMock.mockReset();
   rotateTranscriptAfterCompactionMock.mockResolvedValue({ rotated: false });
   enqueueCommandInLaneMock.mockReset();
-  enqueueCommandInLaneMock.mockImplementation((_lane: unknown, task: () => unknown) => task());
+  enqueueCommandInLaneMock.mockImplementation((_lane: any, task: () => unknown) => task());
   listRegisteredPluginAgentPromptGuidanceMock.mockReset();
   listRegisteredPluginAgentPromptGuidanceMock.mockImplementation((params?: { surface?: string }) =>
     params?.surface === "subagent"
@@ -449,7 +449,7 @@ export async function loadCompactHooksHarness(): Promise<{
   }));
 
   vi.doMock("../../plugins/command-registry-state.js", () => {
-    const pluginCommands = new Map<string, unknown>();
+    const pluginCommands = new Map<string, any>();
     return {
       clearPluginCommands: vi.fn(() => pluginCommands.clear()),
       clearPluginCommandsForPlugin: vi.fn(),
@@ -536,8 +536,8 @@ export async function loadCompactHooksHarness(): Promise<{
   }));
 
   vi.doMock("../model-auth.js", () => ({
-    applyAuthHeaderOverride: vi.fn((model: unknown) => model),
-    applyLocalNoAuthHeaderOverride: vi.fn((model: unknown) => model),
+    applyAuthHeaderOverride: vi.fn((model: any) => model),
+    applyLocalNoAuthHeaderOverride: vi.fn((model: any) => model),
     ensureAuthProfileStoreWithoutExternalProfiles: vi.fn(() => ({})),
     formatMissingAuthError: vi.fn(
       (auth: { mode: string; source: string }, provider: string) =>
@@ -645,12 +645,12 @@ export async function loadCompactHooksHarness(): Promise<{
 
   vi.doMock("./replay-history.js", () => ({
     sanitizeSessionHistory: sanitizeSessionHistoryMock,
-    validateReplayTurns: vi.fn(async ({ messages }: { messages: unknown[] }) => messages),
+    validateReplayTurns: vi.fn(async ({ messages }: { messages: any[] }) => messages),
   }));
 
   vi.doMock("./tool-schema-runtime.js", () => ({
     logProviderToolSchemaDiagnostics: vi.fn(),
-    normalizeProviderToolSchemas: vi.fn(({ tools }: { tools: unknown[] }) => tools),
+    normalizeProviderToolSchemas: vi.fn(({ tools }: { tools: any[] }) => tools),
   }));
 
   vi.doMock("./stream-resolution.js", () => ({
@@ -666,7 +666,7 @@ export async function loadCompactHooksHarness(): Promise<{
   }));
 
   vi.doMock("./tool-split.js", () => ({
-    splitSdkTools: vi.fn(({ tools }: { tools?: unknown[] }) => ({
+    splitSdkTools: vi.fn(({ tools }: { tools?: any[] }) => ({
       customTools: createMockToolDefinitions(tools),
     })),
   }));
@@ -674,7 +674,7 @@ export async function loadCompactHooksHarness(): Promise<{
   vi.doMock("./compaction-safety-timeout.js", () => {
     const compactWithSafetyTimeout = vi.fn(
       async (
-        compact: () => Promise<unknown>,
+        compact: () => Promise<any>,
         _timeoutMs?: number,
         opts?: { abortSignal?: AbortSignal; onCancel?: () => void },
       ) => {
@@ -716,8 +716,8 @@ export async function loadCompactHooksHarness(): Promise<{
       // (mocked) safety timeout and thread the abort signal into its params.
       compactContextEngineWithSafetyTimeout: vi.fn(
         (
-          contextEngine: { compact: (params: Record<string, unknown>) => Promise<unknown> },
-          params: Record<string, unknown>,
+          contextEngine: { compact: (params: Record<string, any>) => Promise<any> },
+          params: Record<string, any>,
           timeoutMs?: number,
           abortSignal?: AbortSignal,
         ) =>
@@ -758,7 +758,7 @@ export async function loadCompactHooksHarness(): Promise<{
 
   vi.doMock("./history.js", () => ({
     getHistoryLimitFromSessionKey: vi.fn(() => undefined),
-    limitHistoryTurns: vi.fn((msgs: unknown[]) => msgs.slice(0, 2)),
+    limitHistoryTurns: vi.fn((msgs: any[]) => msgs.slice(0, 2)),
   }));
 
   vi.doMock("../../skills/runtime/env-overrides.js", () => ({
@@ -774,7 +774,7 @@ export async function loadCompactHooksHarness(): Promise<{
   vi.doMock("../agent-scope.js", () => ({
     listAgentEntries: vi.fn(() => []),
     resolveAgentConfig: vi.fn(() => undefined),
-    resolveAgentDir: vi.fn((_cfg: unknown, agentId: string) => `/tmp/agents/${agentId}/agent`),
+    resolveAgentDir: vi.fn((_cfg: any, agentId: string) => `/tmp/agents/${agentId}/agent`),
     resolveDefaultAgentDir: vi.fn(() => "/tmp/agents/main/agent"),
     resolveDefaultAgentId: vi.fn(() => "main"),
     resolveRunModelFallbacksOverride: vi.fn(() => undefined),
@@ -841,8 +841,8 @@ export async function loadCompactHooksHarness(): Promise<{
         ? "minimal"
         : undefined,
     ),
-    validateAnthropicTurns: vi.fn((m: unknown[]) => m),
-    validateGeminiTurns: vi.fn((m: unknown[]) => m),
+    validateAnthropicTurns: vi.fn((m: any[]) => m),
+    validateGeminiTurns: vi.fn((m: any[]) => m),
   }));
 
   vi.doMock("../agent-project-settings.js", () => ({
@@ -858,7 +858,7 @@ export async function loadCompactHooksHarness(): Promise<{
     buildModelAliasLines: vi.fn(() => []),
     resolveModel: resolveModelMock,
     resolveModelAsync: vi.fn(
-      async (provider: string, modelId: string, agentDir?: string, cfg?: unknown) =>
+      async (provider: string, modelId: string, agentDir?: string, cfg?: any) =>
         resolveModelMock(provider, modelId, agentDir, cfg),
     ),
   }));
@@ -881,7 +881,7 @@ export async function loadCompactHooksHarness(): Promise<{
     const actual = await vi.importActual<typeof import("./utils.js")>("./utils.js");
     return {
       ...actual,
-      describeUnknownError: vi.fn((err: unknown) => String(err)),
+      describeUnknownError: vi.fn((err: any) => String(err)),
       mapThinkingLevel: vi.fn((level?: string) => level ?? "off"),
       resolveExecToolDefaults: vi.fn(() => undefined),
     };

@@ -20,7 +20,7 @@ import { asObjectRecord } from "./object.js";
 
 type ChannelMissingDefaultAccountContext = {
   channelKey: string;
-  channel: Record<string, unknown>;
+  channel: Record<string, any>;
   normalizedAccountIds: string[];
 };
 

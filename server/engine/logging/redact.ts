@@ -41,8 +41,8 @@ export function redactObject<T>(obj: T): T {
   if (typeof obj === 'string') return redactSensitiveText(obj) as unknown as T;
   if (obj === null || typeof obj !== 'object') return obj;
   if (Array.isArray(obj)) return obj.map(item => redactObject(item)) as unknown as T;
-  const result: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
+  const result: Record<string, any> = {};
+  for (const [key, value] of Object.entries(obj as Record<string, any>)) {
     const lowerKey = key.toLowerCase();
     if (isSensitiveKey(lowerKey) && typeof value === 'string') {
       result[key] = '<redacted>';

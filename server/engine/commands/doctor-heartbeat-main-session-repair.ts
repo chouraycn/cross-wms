@@ -58,8 +58,8 @@ function sessionEntryHasSyntheticHeartbeatOwnership(entry: SessionEntry): boolea
   );
 }
 
-function parseTranscriptMessageLine(line: string): { role: string; content?: unknown } | null {
-  let parsed: unknown;
+function parseTranscriptMessageLine(line: string): { role: string; content?: any } | null {
+  let parsed: any;
   try {
     parsed = JSON.parse(line);
   } catch {
@@ -212,7 +212,7 @@ export function clearTuiLastSessionPointers(params: {
   if (params.sessionKeys.size === 0 || !existsFile(params.filePath)) {
     return 0;
   }
-  let parsed: unknown;
+  let parsed: any;
   try {
     parsed = JSON.parse(fs.readFileSync(params.filePath, "utf8"));
   } catch {
@@ -223,7 +223,7 @@ export function clearTuiLastSessionPointers(params: {
     return 0;
   }
   let removed = 0;
-  const next: Record<string, unknown> = {};
+  const next: Record<string, any> = {};
   for (const [key, value] of Object.entries(store)) {
     const record = asNullableObjectRecord(value);
     const sessionKey = record?.sessionKey;

@@ -64,6 +64,7 @@ export function findFallbackModel<T extends ModelWithFallback>(
   const fallbackChain: T[] = [];
 
   if (opts.considerHealth && primary && !primary.isHealthy && primary.enabled !== false) {
+    // 占位：后续可做健康度加权排序（当前不改变候选链构建行为）
   }
 
   const candidates = buildFallbackCandidates(failedModelId, allModels, opts);

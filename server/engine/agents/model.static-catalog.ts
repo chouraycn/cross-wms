@@ -6,27 +6,27 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function canonicalizeManifestModelCatalogProviderAlias(..._args: unknown[]): unknown {
+export function canonicalizeManifestModelCatalogProviderAlias(..._args: any[]): any {
   return false;
 }
-export function bundledStaticCatalogProviderUsesRuntimeAugment(..._args: unknown[]): unknown {
+export function bundledStaticCatalogProviderUsesRuntimeAugment(..._args: any[]): any {
   return undefined;
 }
-export function createBundledStaticCatalogModelResolver(..._args: unknown[]): unknown {
+export function createBundledStaticCatalogModelResolver(..._args: any[]): any {
   return undefined;
 }
-export function resolveBundledStaticCatalogModel(..._args: unknown[]): unknown {
+export function resolveBundledStaticCatalogModel(..._args: any[]): any {
   return undefined;
 }
-export function loadBundledProviderStaticCatalogContextModels(..._args: unknown[]): unknown {
+export function loadBundledProviderStaticCatalogContextModels(..._args: any[]): any {
   return undefined;
 }
-export function createBundledProviderStaticCatalogModelResolver(..._args: unknown[]): unknown {
+export function createBundledProviderStaticCatalogModelResolver(..._args: any[]): any {
   return undefined;
 }
-export function createBundledProviderStaticCatalogContextResolver(..._args: unknown[]): unknown {
+export function createBundledProviderStaticCatalogContextResolver(..._args: any[]): any {
   return undefined;
 }
-export function resolveBundledProviderStaticCatalogModel(..._args: unknown[]): unknown {
+export function resolveBundledProviderStaticCatalogModel(..._args: any[]): any {
   return undefined;
 }

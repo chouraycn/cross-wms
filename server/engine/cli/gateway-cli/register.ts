@@ -100,7 +100,7 @@ function gatewayCallOpts(cmd: Command): Command {
     .option("--json", "Output JSON", false);
 }
 
-async function callGatewayCli(method: string, opts: GatewayRpcOpts, params?: unknown) {
+async function callGatewayCli(method: string, opts: GatewayRpcOpts, params?: any) {
   const mod = await import("./call.js");
   return mod.callGatewayCli(method, opts, params);
 }
@@ -131,7 +131,7 @@ async function runGatewayCommand(
   }
 }
 
-function parseDaysOption(raw: unknown, fallback = 30): number {
+function parseDaysOption(raw: any, fallback = 30): number {
   if (typeof raw === "number" && Number.isFinite(raw)) {
     return Math.max(1, Math.floor(raw));
   }
@@ -144,7 +144,7 @@ function parseDaysOption(raw: unknown, fallback = 30): number {
   return fallback;
 }
 
-function parseGatewayRpcTimeoutOption(raw: unknown, fallback = 10_000): number {
+function parseGatewayRpcTimeoutOption(raw: any, fallback = 10_000): number {
   if (typeof raw === "number" && Number.isFinite(raw) && raw > 0) {
     return Math.floor(raw);
   }
@@ -171,7 +171,7 @@ function resolveGatewayRpcOptions<T extends { token?: string; password?: string 
 }
 
 async function resolveGatewayRpcOptionsWithLocalPort(
-  opts: GatewayRpcOpts & { port?: unknown },
+  opts: GatewayRpcOpts & { port?: any },
   command?: Command,
 ): Promise<GatewayRpcOpts> {
   const rpcOpts = resolveGatewayRpcOptions(opts, command);
@@ -322,7 +322,7 @@ function renderStabilitySummary(snapshot: DiagnosticStabilitySnapshot, rich: boo
   return lines;
 }
 
-function normalizeStabilityBundleTarget(raw: unknown): string | null {
+function normalizeStabilityBundleTarget(raw: any): string | null {
   if (raw === undefined || raw === false) {
     return null;
   }
@@ -451,7 +451,7 @@ function resolveSupportExportRpcOptions(
   };
 }
 
-function parseOptionalPositiveIntegerOption(raw: unknown, label: string): number | undefined {
+function parseOptionalPositiveIntegerOption(raw: any, label: string): number | undefined {
   if (raw === undefined || raw === null || raw === "") {
     return undefined;
   }
@@ -604,7 +604,7 @@ export function registerGatewayCli(program: Command) {
               { emitReachableGatewayAuthDiagnostic, formatHealthChannelLines },
               { styleHealthChannelLine },
             ] = await Promise.all([loadGatewayHealthModule(), loadHealthStyleModule()]);
-            let result: unknown;
+            let result: any;
             try {
               result = await callGatewayCli("health", rpcOpts);
             } catch (error) {
@@ -629,8 +629,8 @@ export function registerGatewayCli(program: Command) {
               return;
             }
             const rich = isRich();
-            const obj: Record<string, unknown> =
-              result && typeof result === "object" ? (result as Record<string, unknown>) : {};
+            const obj: Record<string, any> =
+              result && typeof result === "object" ? (result as Record<string, any>) : {};
             const durationMs = typeof obj.durationMs === "number" ? obj.durationMs : null;
             defaultRuntime.log(colorize(rich, theme.heading, "Gateway Health"));
             defaultRuntime.log(

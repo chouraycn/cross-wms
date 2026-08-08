@@ -4,7 +4,7 @@ export type RequiredParamGroup = {
   keys: readonly string[];
   allowEmpty?: boolean;
   label?: string;
-  validator?: (record: Record<string, unknown>) => boolean;
+  validator?: (record: Record<string, any>) => boolean;
 };
 
 const RETRY_GUIDANCE_SUFFIX = " Supply correct parameters before retrying.";
@@ -21,7 +21,7 @@ function parameterValidationError(message: string): Error {
   return new Error(`${message}.${RETRY_GUIDANCE_SUFFIX}`);
 }
 
-function describeReceivedParamValue(value: unknown, allowEmpty = false): string | undefined {
+function describeReceivedParamValue(value: any, allowEmpty = false): string | undefined {
   if (value === undefined || value === null) {
     return undefined;
   }
@@ -38,7 +38,7 @@ function describeReceivedParamValue(value: unknown, allowEmpty = false): string 
 }
 
 function formatReceivedParamHint(
-  record: Record<string, unknown>,
+  record: Record<string, any>,
   groups: readonly RequiredParamGroup[],
 ): string {
   const allowEmptyKeys = new Set<string>();
@@ -60,11 +60,11 @@ function formatReceivedParamHint(
   return received.length > 0 ? ` (received: ${received.join(", ")})` : "";
 }
 
-function isValidEditReplacement(value: unknown): boolean {
+function isValidEditReplacement(value: any): boolean {
   if (!value || typeof value !== "object") {
     return false;
   }
-  const record = value as Record<string, unknown>;
+  const record = value as Record<string, any>;
   return (
     typeof record.oldText === "string" &&
     record.oldText.trim().length > 0 &&
@@ -72,7 +72,7 @@ function isValidEditReplacement(value: unknown): boolean {
   );
 }
 
-function hasValidEditReplacements(record: Record<string, unknown>): boolean {
+function hasValidEditReplacements(record: Record<string, any>): boolean {
   const edits = record.edits;
   return (
     Array.isArray(edits) &&
@@ -106,8 +106,8 @@ export const REQUIRED_PARAM_GROUPS: Record<string, readonly RequiredParamGroup[]
   web_fetch_legacy: [{ keys: ["url"], label: "url" }],
 };
 
-export function getToolParamsRecord(params: unknown): Record<string, unknown> | undefined {
-  return params && typeof params === "object" ? (params as Record<string, unknown>) : undefined;
+export function getToolParamsRecord(params: any): Record<string, any> | undefined {
+  return params && typeof params === "object" ? (params as Record<string, any>) : undefined;
 }
 
 export function stripMalformedXmlArgValueSuffix(value: string): string {
@@ -124,7 +124,7 @@ export function normalizeFileToolPathParam(value: string): string {
   return normalizeHallucinatedOfficePathExtension(stripMalformedXmlArgValueSuffix(value));
 }
 
-export function stripMalformedXmlArgValueSuffixFromKeys<T extends Record<string, unknown>>(
+export function stripMalformedXmlArgValueSuffixFromKeys<T extends Record<string, any>>(
   record: T,
   keys: readonly string[],
 ): T {
@@ -143,7 +143,7 @@ export function stripMalformedXmlArgValueSuffixFromKeys<T extends Record<string,
   return normalized ?? record;
 }
 
-export function normalizeFileToolPathParamsFromKeys<T extends Record<string, unknown>>(
+export function normalizeFileToolPathParamsFromKeys<T extends Record<string, any>>(
   record: T,
   keys: readonly string[],
 ): T {
@@ -175,7 +175,7 @@ function resolveFileToolPathParamKeys(groups: readonly RequiredParamGroup[] | un
 }
 
 export function assertRequiredParams(
-  record: Record<string, unknown> | undefined,
+  record: Record<string, any> | undefined,
   groups: readonly RequiredParamGroup[],
   toolName: string,
 ): void {
@@ -217,8 +217,8 @@ export function assertRequiredParams(
 
 export function validateAndNormalizeToolParams(
   toolName: string,
-  params: unknown,
-): Record<string, unknown> {
+  params: any,
+): Record<string, any> {
   const record = getToolParamsRecord(params) ?? {};
   const requiredGroups = REQUIRED_PARAM_GROUPS[toolName] ?? [];
   

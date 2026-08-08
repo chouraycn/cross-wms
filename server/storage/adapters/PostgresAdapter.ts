@@ -18,8 +18,8 @@ const localRequire = createRequire(basePath);
 interface PgClient {
   connect(): Promise<void>;
   end(): Promise<void>;
-  query(sql: string, params?: unknown[]): Promise<{
-    rows: Record<string, unknown>[];
+  query(sql: string, params?: any[]): Promise<{
+    rows: Record<string, any>[];
     rowCount: number;
   }>;
 }
@@ -27,8 +27,8 @@ interface PgClient {
 interface PgPool {
   connect(): Promise<PgClient>;
   end(): Promise<void>;
-  query(sql: string, params?: unknown[]): Promise<{
-    rows: Record<string, unknown>[];
+  query(sql: string, params?: any[]): Promise<{
+    rows: Record<string, any>[];
     rowCount: number;
   }>;
   totalCount: number;
@@ -118,7 +118,7 @@ export class PostgresAdapter implements IStorageEngine {
     if (!pool) throw new Error('PostgresAdapter: 未连接');
     const finalSql = this.normalizeSql(sql);
     return {
-      async run(...params: unknown[]): Promise<{ changes: number; lastInsertRowid: number }> {
+      async run(...params: any[]): Promise<{ changes: number; lastInsertRowid: number }> {
         const result = await pool.query(finalSql, params);
         const lastId = result.rows[0]?.id ?? 0;
         return {
@@ -126,11 +126,11 @@ export class PostgresAdapter implements IStorageEngine {
           lastInsertRowid: Number(lastId),
         };
       },
-      async get<T>(...params: unknown[]): Promise<T | undefined> {
+      async get<T>(...params: any[]): Promise<T | undefined> {
         const result = await pool.query(finalSql, params);
         return result.rows[0] as T | undefined;
       },
-      async all<T>(...params: unknown[]): Promise<T[]> {
+      async all<T>(...params: any[]): Promise<T[]> {
         const result = await pool.query(finalSql, params);
         return result.rows as T[];
       },
@@ -144,7 +144,7 @@ export class PostgresAdapter implements IStorageEngine {
     void this.pool.query(this.normalizeSql(sql));
   }
 
-  get<T>(sql: string, params?: unknown[]): T | undefined {
+  get<T>(sql: string, params?: any[]): T | undefined {
     if (!this.pool) throw new Error('PostgresAdapter: 未连接');
     // 注意：IStorageEngine 接口为同步签名，
     // Postgres 是异步的。调用方应使用 prepare().get() 异步版本。
@@ -154,14 +154,14 @@ export class PostgresAdapter implements IStorageEngine {
     );
   }
 
-  all<T>(sql: string, params?: unknown[]): T[] {
+  all<T>(sql: string, params?: any[]): T[] {
     if (!this.pool) throw new Error('PostgresAdapter: 未连接');
     throw new Error(
       'PostgresAdapter.all 不支持同步调用，请使用 prepare(sql).all(params) 异步形式',
     );
   }
 
-  run(sql: string, params?: unknown[]): { changes: number; lastInsertRowid: number } {
+  run(sql: string, params?: any[]): { changes: number; lastInsertRowid: number } {
     if (!this.pool) throw new Error('PostgresAdapter: 未连接');
     throw new Error(
       'PostgresAdapter.run 不支持同步调用，请使用 prepare(sql).run(params) 异步形式',

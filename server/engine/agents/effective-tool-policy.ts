@@ -5,9 +5,9 @@
  */
 
 export function applyFinalEffectiveToolPolicy(params: {
-  tools: unknown;
-  config?: unknown;
+  tools: any;
+  config?: any;
   agentId?: string;
-}): unknown {
+}): any {
   return params.tools;
 }

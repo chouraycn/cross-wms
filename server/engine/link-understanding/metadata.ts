@@ -54,8 +54,8 @@ export function parseTwitterCard($: cheerio.CheerioAPI): Record<string, string> 
 }
 
 /** 解析 JSON-LD 结构化数据（type="application/ld+json"） */
-export function parseJsonLd($: cheerio.CheerioAPI): unknown[] {
-  const result: unknown[] = [];
+export function parseJsonLd($: cheerio.CheerioAPI): any[] {
+  const result: any[] = [];
   $('script[type="application/ld+json"]').each((_, elem) => {
     const raw = $(elem).text().trim();
     if (!raw) return;

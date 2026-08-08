@@ -6,9 +6,9 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function makeFetchHeaders(..._args: unknown[]): unknown {
+export function makeFetchHeaders(..._args: any[]): any {
   return undefined;
 }
-export function createBaseWebFetchToolConfig(..._args: unknown[]): unknown {
+export function createBaseWebFetchToolConfig(..._args: any[]): any {
   return undefined;
 }

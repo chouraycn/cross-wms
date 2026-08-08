@@ -312,9 +312,9 @@ export function createPdfTool(options?: {
   }
 
   const maxBytesMbDefault = (
-    options?.config?.agents?.defaults as Record<string, unknown> | undefined
+    options?.config?.agents?.defaults as Record<string, any> | undefined
   )?.pdfMaxBytesMb;
-  const maxPagesDefault = (options?.config?.agents?.defaults as Record<string, unknown> | undefined)
+  const maxPagesDefault = (options?.config?.agents?.defaults as Record<string, any> | undefined)
     ?.pdfMaxPages;
   const configuredMaxBytesMb =
     typeof maxBytesMbDefault === "number" && Number.isFinite(maxBytesMbDefault)
@@ -335,7 +335,7 @@ export function createPdfTool(options?: {
     description,
     parameters: PdfToolSchema,
     execute: async (_toolCallId, args) => {
-      const record = args && typeof args === "object" ? (args as Record<string, unknown>) : {};
+      const record = args && typeof args === "object" ? (args as Record<string, any>) : {};
 
       // MARK: - Normalize pdf + pdfs input
       const pdfInputs = resolvePdfInputs(record);

@@ -106,10 +106,10 @@ describe("TtsConfigSchema openai speed and instructions", () => {
     if (!result.success) {
       const rewriteIssue = result.error.issues.find(
         (issue) =>
-          Array.isArray((issue as { keys?: unknown }).keys) &&
-          (issue as { keys?: unknown[] }).keys?.[0] === "rewrite",
+          Array.isArray((issue as { keys?: any }).keys) &&
+          (issue as { keys?: any[] }).keys?.[0] === "rewrite",
       );
-      expect((rewriteIssue as { keys?: unknown[] } | undefined)?.keys).toEqual(["rewrite"]);
+      expect((rewriteIssue as { keys?: any[] } | undefined)?.keys).toEqual(["rewrite"]);
       expect(rewriteIssue?.path).toEqual(["personas", "alfred"]);
     }
   });

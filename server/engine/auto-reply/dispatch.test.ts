@@ -18,7 +18,7 @@ type CreateReplyDispatcherWithTypingFn =
 
 const hoisted = vi.hoisted(() => ({
   dispatchReplyFromConfigMock: vi.fn(),
-  finalizeInboundContextMock: vi.fn((ctx: unknown, _opts?: unknown) => ctx),
+  finalizeInboundContextMock: vi.fn((ctx: any, _opts?: any) => ctx),
   deriveInboundMessageHookContextMock: vi.fn(),
   getGlobalHookRunnerMock: vi.fn(),
   createReplyDispatcherMock: vi.fn(),
@@ -113,7 +113,7 @@ describe("withReplyDispatcher", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     clearReplyUsageStateForTest();
-    hoisted.finalizeInboundContextMock.mockImplementation((ctx: unknown) => ctx);
+    hoisted.finalizeInboundContextMock.mockImplementation((ctx: any) => ctx);
     hoisted.deriveInboundMessageHookContextMock.mockReturnValue({
       channelId: "threads",
       accountId: "acct-1",

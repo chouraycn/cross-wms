@@ -14,16 +14,16 @@ import {
 import { TEST_UNDICI_RUNTIME_DEPS_KEY } from "./undici-runtime.js";
 
 const { agentCtor, envHttpProxyAgentCtor, proxyAgentCtor } = vi.hoisted(() => ({
-  agentCtor: vi.fn(function MockAgent(this: { options: unknown }, options: unknown) {
+  agentCtor: vi.fn(function MockAgent(this: { options: any }, options: any) {
     this.options = options;
   }),
   envHttpProxyAgentCtor: vi.fn(function MockEnvHttpProxyAgent(
-    this: { options: unknown },
-    options: unknown,
+    this: { options: any },
+    options: any,
   ) {
     this.options = options;
   }),
-  proxyAgentCtor: vi.fn(function MockProxyAgent(this: { options: unknown }, options: unknown) {
+  proxyAgentCtor: vi.fn(function MockProxyAgent(this: { options: any }, options: any) {
     this.options = options;
   }),
 }));
@@ -88,15 +88,15 @@ async function raceWithTimeoutResult<T>(
   }
 }
 
-function getDispatcherClassName(value: unknown): string | null {
+function getDispatcherClassName(value: any): string | null {
   if (!value || typeof value !== "object") {
     return null;
   }
-  const ctor = (value as { constructor?: unknown }).constructor;
+  const ctor = (value as { constructor?: any }).constructor;
   return typeof ctor === "function" && ctor.name ? ctor.name : null;
 }
 
-function expectDispatcherAttached(value: unknown): void {
+function expectDispatcherAttached(value: any): void {
   expect(getDispatcherClassName(value)).toMatch(/^(Agent|Mock)$/u);
 }
 
@@ -110,7 +110,7 @@ function getFetchInputUrl(input: RequestInfo | URL): string {
   return input.url;
 }
 
-function firstMockCall<T extends unknown[]>(mock: { mock: { calls: T[] } }): T | undefined {
+function firstMockCall<T extends any[]>(mock: { mock: { calls: T[] } }): T | undefined {
   return mock.mock.calls[0];
 }
 
@@ -119,11 +119,11 @@ function getSecondRequestHeaders(fetchImpl: ReturnType<typeof vi.fn>): Headers {
   return new Headers(secondInit.headers);
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error(`expected ${label}`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 function getFirstRequestInit(fetchImpl: ReturnType<typeof vi.fn>): RequestInit {
@@ -231,7 +231,7 @@ describe("fetchWithSsrFGuard hardening", () => {
   }): Promise<void> {
     clearProxyEnv();
     vi.stubEnv("http_proxy", "http://127.0.0.1:7890");
-    (globalThis as Record<string, unknown>)[TEST_UNDICI_RUNTIME_DEPS_KEY] = {
+    (globalThis as Record<string, any>)[TEST_UNDICI_RUNTIME_DEPS_KEY] = {
       Agent: agentCtor,
       EnvHttpProxyAgent: envHttpProxyAgentCtor,
       ProxyAgent: proxyAgentCtor,
@@ -239,7 +239,7 @@ describe("fetchWithSsrFGuard hardening", () => {
     };
     const lookupFn = createPublicLookup();
     const fetchImpl = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
-      const requestInit = init as RequestInit & { dispatcher?: unknown };
+      const requestInit = init as RequestInit & { dispatcher?: any };
       if (params.expectEnvProxy) {
         expectDispatcherAttached(requestInit.dispatcher);
       } else {
@@ -288,7 +288,7 @@ describe("fetchWithSsrFGuard hardening", () => {
       vi.stubEnv("OPENCLAW_PROXY_LOOPBACK_MODE", loopbackMode);
     }
     vi.stubEnv("http_proxy", "http://127.0.0.1:7890");
-    (globalThis as Record<string, unknown>)[TEST_UNDICI_RUNTIME_DEPS_KEY] = {
+    (globalThis as Record<string, any>)[TEST_UNDICI_RUNTIME_DEPS_KEY] = {
       Agent: agentCtor,
       EnvHttpProxyAgent: envHttpProxyAgentCtor,
       ProxyAgent: proxyAgentCtor,
@@ -311,7 +311,7 @@ describe("fetchWithSsrFGuard hardening", () => {
     const fetchImpl =
       params.fetchImpl ??
       vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
-        const requestInit = init as RequestInit & { dispatcher?: unknown };
+        const requestInit = init as RequestInit & { dispatcher?: any };
         expectDispatcherAttached(requestInit.dispatcher);
         return okResponse();
       });
@@ -506,17 +506,17 @@ describe("fetchWithSsrFGuard hardening", () => {
     };
 
     class MockAgent {
-      constructor(readonly options: unknown) {}
+      constructor(readonly options: any) {}
     }
     class MockEnvHttpProxyAgent {
-      constructor(readonly options: unknown) {}
+      constructor(readonly options: any) {}
     }
     class MockProxyAgent {
-      constructor(readonly options: unknown) {}
+      constructor(readonly options: any) {}
     }
 
-    (globalThis as Record<string, unknown>).fetch = globalFetch as typeof fetch;
-    (globalThis as Record<string, unknown>)[TEST_UNDICI_RUNTIME_DEPS_KEY] = {
+    (globalThis as Record<string, any>).fetch = globalFetch as typeof fetch;
+    (globalThis as Record<string, any>)[TEST_UNDICI_RUNTIME_DEPS_KEY] = {
       Agent: MockAgent,
       EnvHttpProxyAgent: MockEnvHttpProxyAgent,
       ProxyAgent: MockProxyAgent,
@@ -533,7 +533,7 @@ describe("fetchWithSsrFGuard hardening", () => {
       expect(globalFetchCalls).toBe(0);
       await result.release();
     } finally {
-      (globalThis as Record<string, unknown>).fetch = originalGlobalFetch;
+      (globalThis as Record<string, any>).fetch = originalGlobalFetch;
     }
   });
 
@@ -545,17 +545,17 @@ describe("fetchWithSsrFGuard hardening", () => {
     const globalFetch = vi.fn(async () => okResponse());
 
     class MockAgent {
-      constructor(readonly options: unknown) {}
+      constructor(readonly options: any) {}
     }
     class MockEnvHttpProxyAgent {
-      constructor(readonly options: unknown) {}
+      constructor(readonly options: any) {}
     }
     class MockProxyAgent {
-      constructor(readonly options: unknown) {}
+      constructor(readonly options: any) {}
     }
 
-    (globalThis as Record<string, unknown>).fetch = globalFetch as typeof fetch;
-    (globalThis as Record<string, unknown>)[TEST_UNDICI_RUNTIME_DEPS_KEY] = {
+    (globalThis as Record<string, any>).fetch = globalFetch as typeof fetch;
+    (globalThis as Record<string, any>)[TEST_UNDICI_RUNTIME_DEPS_KEY] = {
       Agent: MockAgent,
       EnvHttpProxyAgent: MockEnvHttpProxyAgent,
       ProxyAgent: MockProxyAgent,
@@ -572,13 +572,13 @@ describe("fetchWithSsrFGuard hardening", () => {
       expect(runtimeFetch).not.toHaveBeenCalled();
       await result.release();
     } finally {
-      (globalThis as Record<string, unknown>).fetch = originalGlobalFetch;
+      (globalThis as Record<string, any>).fetch = originalGlobalFetch;
     }
   });
 
   it("fails closed when the runtime rejects the pinned dispatcher shape", async () => {
     const fetchImpl = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
-      const requestInit = init as RequestInit & { dispatcher?: unknown };
+      const requestInit = init as RequestInit & { dispatcher?: any };
       if (requestInit.dispatcher) {
         throw createPinnedDispatcherCompatibilityError();
       }
@@ -608,17 +608,17 @@ describe("fetchWithSsrFGuard hardening", () => {
     );
 
     class MockAgent {
-      constructor(readonly options: unknown) {}
+      constructor(readonly options: any) {}
     }
     class MockEnvHttpProxyAgent {
-      constructor(readonly options: unknown) {}
+      constructor(readonly options: any) {}
     }
     class MockProxyAgent {
-      constructor(readonly options: unknown) {}
+      constructor(readonly options: any) {}
     }
 
-    (globalThis as Record<string, unknown>).fetch = flaggedGlobalFetch as typeof fetch;
-    (globalThis as Record<string, unknown>)[TEST_UNDICI_RUNTIME_DEPS_KEY] = {
+    (globalThis as Record<string, any>).fetch = flaggedGlobalFetch as typeof fetch;
+    (globalThis as Record<string, any>)[TEST_UNDICI_RUNTIME_DEPS_KEY] = {
       Agent: MockAgent,
       EnvHttpProxyAgent: MockEnvHttpProxyAgent,
       ProxyAgent: MockProxyAgent,
@@ -635,7 +635,7 @@ describe("fetchWithSsrFGuard hardening", () => {
       expect(globalFetchCalls).toBe(0);
       await result.release();
     } finally {
-      (globalThis as Record<string, unknown>).fetch = originalGlobalFetch;
+      (globalThis as Record<string, any>).fetch = originalGlobalFetch;
     }
   });
 
@@ -649,17 +649,17 @@ describe("fetchWithSsrFGuard hardening", () => {
     };
 
     class MockAgent {
-      constructor(readonly options: unknown) {}
+      constructor(readonly options: any) {}
     }
     class MockEnvHttpProxyAgent {
-      constructor(readonly options: unknown) {}
+      constructor(readonly options: any) {}
     }
     class MockProxyAgent {
-      constructor(readonly options: unknown) {}
+      constructor(readonly options: any) {}
     }
 
-    (globalThis as Record<string, unknown>).fetch = globalFetch as typeof fetch;
-    (globalThis as Record<string, unknown>)[TEST_UNDICI_RUNTIME_DEPS_KEY] = {
+    (globalThis as Record<string, any>).fetch = globalFetch as typeof fetch;
+    (globalThis as Record<string, any>)[TEST_UNDICI_RUNTIME_DEPS_KEY] = {
       Agent: MockAgent,
       EnvHttpProxyAgent: MockEnvHttpProxyAgent,
       ProxyAgent: MockProxyAgent,
@@ -677,13 +677,13 @@ describe("fetchWithSsrFGuard hardening", () => {
       expect(globalFetchCalls).toBe(0);
       await result.release();
     } finally {
-      (globalThis as Record<string, unknown>).fetch = originalGlobalFetch;
+      (globalThis as Record<string, any>).fetch = originalGlobalFetch;
     }
   });
 
   it("keeps explicit proxy transport policy when DNS pinning is disabled", async () => {
     const lookupFn = createPublicLookup();
-    (globalThis as Record<string, unknown>)[TEST_UNDICI_RUNTIME_DEPS_KEY] = {
+    (globalThis as Record<string, any>)[TEST_UNDICI_RUNTIME_DEPS_KEY] = {
       Agent: agentCtor,
       EnvHttpProxyAgent: envHttpProxyAgentCtor,
       ProxyAgent: proxyAgentCtor,
@@ -718,7 +718,7 @@ describe("fetchWithSsrFGuard hardening", () => {
       },
     });
     expect(fetchImpl).toHaveBeenCalledTimes(1);
-    const fetchCall = firstMockCall(fetchImpl) as [string, { dispatcher?: unknown }] | undefined;
+    const fetchCall = firstMockCall(fetchImpl) as [string, { dispatcher?: any }] | undefined;
     expect(fetchCall?.[0]).toBe("https://public.example/resource");
     if (!fetchCall?.[1].dispatcher) {
       throw new Error("Expected proxy dispatcher");
@@ -983,7 +983,7 @@ describe("fetchWithSsrFGuard hardening", () => {
     const headers = {
       Authorization: "Bearer secret",
       Accept: "application/json",
-    } as Record<string, string> & { [key: symbol]: unknown };
+    } as Record<string, string> & { [key: symbol]: any };
     Object.defineProperty(headers, Symbol("sensitiveHeaders"), {
       value: new Set(["authorization"]),
       enumerable: false,
@@ -1534,7 +1534,7 @@ describe("fetchWithSsrFGuard hardening", () => {
   it("ignores hidden managed-proxy bypass markers on the public guarded fetch helper", async () => {
     installManagedProxyRuntime("gateway-only");
     const fetchImpl = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
-      const requestInit = init as RequestInit & { dispatcher?: unknown };
+      const requestInit = init as RequestInit & { dispatcher?: any };
       expectDispatcherAttached(requestInit.dispatcher);
       return okResponse();
     });
@@ -1548,7 +1548,7 @@ describe("fetchWithSsrFGuard hardening", () => {
         kind: "configured-local-origin",
         baseUrl: "http://127.0.0.1:11434",
       },
-    } as Parameters<typeof fetchWithSsrFGuard>[0] & { managedProxyBypass: unknown });
+    } as Parameters<typeof fetchWithSsrFGuard>[0] & { managedProxyBypass: any });
 
     expect(fetchImpl).toHaveBeenCalledTimes(1);
     expect(envHttpProxyAgentCtor).toHaveBeenCalledTimes(1);
@@ -1559,7 +1559,7 @@ describe("fetchWithSsrFGuard hardening", () => {
   it("does not carry managed-proxy direct routing across redirects to another loopback port", async () => {
     installManagedProxyRuntime("gateway-only");
     const fetchImpl = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const requestInit = init as RequestInit & { dispatcher?: unknown };
+      const requestInit = init as RequestInit & { dispatcher?: any };
       expectDispatcherAttached(requestInit.dispatcher);
       const url = getFetchInputUrl(input);
       if (url === "http://127.0.0.1:11434/api/embed") {
@@ -1591,7 +1591,7 @@ describe("fetchWithSsrFGuard hardening", () => {
   it("does not carry managed-proxy direct routing across redirects to a public origin", async () => {
     installManagedProxyRuntime("gateway-only");
     const fetchImpl = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const requestInit = init as RequestInit & { dispatcher?: unknown };
+      const requestInit = init as RequestInit & { dispatcher?: any };
       expectDispatcherAttached(requestInit.dispatcher);
       const url = getFetchInputUrl(input);
       if (url === "http://127.0.0.1:11434/api/embed") {
@@ -1658,7 +1658,7 @@ describe("fetchWithSsrFGuard hardening", () => {
   it("keeps DNS pinning in trusted proxy mode when only ALL_PROXY is configured without policy allowlist", async () => {
     clearProxyEnv();
     vi.stubEnv("ALL_PROXY", "http://127.0.0.1:7890");
-    (globalThis as Record<string, unknown>)[TEST_UNDICI_RUNTIME_DEPS_KEY] = {
+    (globalThis as Record<string, any>)[TEST_UNDICI_RUNTIME_DEPS_KEY] = {
       Agent: agentCtor,
       EnvHttpProxyAgent: envHttpProxyAgentCtor,
       ProxyAgent: proxyAgentCtor,
@@ -1684,7 +1684,7 @@ describe("fetchWithSsrFGuard hardening", () => {
     clearProxyEnv();
     vi.stubEnv("HTTPS_PROXY", "http://127.0.0.1:7890");
     vi.stubEnv("NO_PROXY", "public.example");
-    (globalThis as Record<string, unknown>)[TEST_UNDICI_RUNTIME_DEPS_KEY] = {
+    (globalThis as Record<string, any>)[TEST_UNDICI_RUNTIME_DEPS_KEY] = {
       Agent: agentCtor,
       EnvHttpProxyAgent: envHttpProxyAgentCtor,
       ProxyAgent: proxyAgentCtor,
@@ -1707,7 +1707,7 @@ describe("fetchWithSsrFGuard hardening", () => {
   });
 
   it("applies explicit timeoutMs to guarded direct dispatchers", async () => {
-    (globalThis as Record<string, unknown>)[TEST_UNDICI_RUNTIME_DEPS_KEY] = {
+    (globalThis as Record<string, any>)[TEST_UNDICI_RUNTIME_DEPS_KEY] = {
       Agent: agentCtor,
       EnvHttpProxyAgent: envHttpProxyAgentCtor,
       ProxyAgent: proxyAgentCtor,
@@ -1731,7 +1731,7 @@ describe("fetchWithSsrFGuard hardening", () => {
     agentCtor.mockImplementationOnce(function MockAgent(this: { close: () => Promise<void> }) {
       this.close = () => new Promise(() => {});
     });
-    (globalThis as Record<string, unknown>)[TEST_UNDICI_RUNTIME_DEPS_KEY] = {
+    (globalThis as Record<string, any>)[TEST_UNDICI_RUNTIME_DEPS_KEY] = {
       Agent: agentCtor,
       EnvHttpProxyAgent: envHttpProxyAgentCtor,
       ProxyAgent: proxyAgentCtor,
@@ -1758,7 +1758,7 @@ describe("fetchWithSsrFGuard hardening", () => {
     const outcome = await raceWithTimeoutResult(
       fetchPromise.then(
         () => "resolved",
-        (error: unknown) => (error instanceof Error ? error.name : "rejected"),
+        (error: any) => (error instanceof Error ? error.name : "rejected"),
       ),
       250,
       "hung",
@@ -1770,7 +1770,7 @@ describe("fetchWithSsrFGuard hardening", () => {
   it("inherits the configured global stream timeout for guarded direct dispatchers", async () => {
     try {
       ensureGlobalUndiciStreamTimeouts({ timeoutMs: 1_900_000 });
-      (globalThis as Record<string, unknown>)[TEST_UNDICI_RUNTIME_DEPS_KEY] = {
+      (globalThis as Record<string, any>)[TEST_UNDICI_RUNTIME_DEPS_KEY] = {
         Agent: agentCtor,
         EnvHttpProxyAgent: envHttpProxyAgentCtor,
         ProxyAgent: proxyAgentCtor,
@@ -1796,7 +1796,7 @@ describe("fetchWithSsrFGuard hardening", () => {
     // Reproduces #61906: Telegram media downloads fail because the SSRF guard
     // checks the proxy hostname (localhost) against a target-scoped allowlist
     // (api.telegram.org) and rejects it.
-    (globalThis as Record<string, unknown>)[TEST_UNDICI_RUNTIME_DEPS_KEY] = {
+    (globalThis as Record<string, any>)[TEST_UNDICI_RUNTIME_DEPS_KEY] = {
       Agent: agentCtor,
       EnvHttpProxyAgent: envHttpProxyAgentCtor,
       ProxyAgent: proxyAgentCtor,
@@ -1828,7 +1828,7 @@ describe("fetchWithSsrFGuard hardening", () => {
   });
 
   it("does not apply target hostname allowlists to public explicit proxy hosts", async () => {
-    (globalThis as Record<string, unknown>)[TEST_UNDICI_RUNTIME_DEPS_KEY] = {
+    (globalThis as Record<string, any>)[TEST_UNDICI_RUNTIME_DEPS_KEY] = {
       Agent: agentCtor,
       EnvHttpProxyAgent: envHttpProxyAgentCtor,
       ProxyAgent: proxyAgentCtor,
@@ -1865,7 +1865,7 @@ describe("fetchWithSsrFGuard hardening", () => {
   });
 
   it("skips target DNS pinning in trusted explicit-proxy mode after hostname-policy checks", async () => {
-    (globalThis as Record<string, unknown>)[TEST_UNDICI_RUNTIME_DEPS_KEY] = {
+    (globalThis as Record<string, any>)[TEST_UNDICI_RUNTIME_DEPS_KEY] = {
       Agent: agentCtor,
       EnvHttpProxyAgent: envHttpProxyAgentCtor,
       ProxyAgent: proxyAgentCtor,
@@ -1899,7 +1899,7 @@ describe("fetchWithSsrFGuard hardening", () => {
   });
 
   it("still blocks off-allowlist targets in trusted explicit-proxy mode", async () => {
-    (globalThis as Record<string, unknown>)[TEST_UNDICI_RUNTIME_DEPS_KEY] = {
+    (globalThis as Record<string, any>)[TEST_UNDICI_RUNTIME_DEPS_KEY] = {
       Agent: agentCtor,
       EnvHttpProxyAgent: envHttpProxyAgentCtor,
       ProxyAgent: proxyAgentCtor,
@@ -1934,7 +1934,7 @@ describe("fetchWithSsrFGuard hardening", () => {
   });
 
   it("still blocks explicit proxy on localhost when allowPrivateProxy is false", async () => {
-    (globalThis as Record<string, unknown>)[TEST_UNDICI_RUNTIME_DEPS_KEY] = {
+    (globalThis as Record<string, any>)[TEST_UNDICI_RUNTIME_DEPS_KEY] = {
       Agent: agentCtor,
       EnvHttpProxyAgent: envHttpProxyAgentCtor,
       ProxyAgent: proxyAgentCtor,
@@ -1965,7 +1965,7 @@ describe("fetchWithSsrFGuard hardening", () => {
   });
 
   it("does not use target origin trust to allow a private explicit proxy", async () => {
-    (globalThis as Record<string, unknown>)[TEST_UNDICI_RUNTIME_DEPS_KEY] = {
+    (globalThis as Record<string, any>)[TEST_UNDICI_RUNTIME_DEPS_KEY] = {
       Agent: agentCtor,
       EnvHttpProxyAgent: envHttpProxyAgentCtor,
       ProxyAgent: proxyAgentCtor,
@@ -1995,7 +1995,7 @@ describe("fetchWithSsrFGuard hardening", () => {
     clearProxyEnv();
     const lookupFn = createPublicLookup();
     const fetchImpl = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
-      const requestInit = init as RequestInit & { dispatcher?: unknown };
+      const requestInit = init as RequestInit & { dispatcher?: any };
       expectDispatcherAttached(requestInit.dispatcher);
       expect(getDispatcherClassName(requestInit.dispatcher)).not.toBe("EnvHttpProxyAgent");
       return okResponse();
@@ -2061,7 +2061,7 @@ describe("fetchWithSsrFGuard hardening", () => {
   it("keeps DNS pinning in trusted proxy mode when only ALL_PROXY is configured after allowlist checks", async () => {
     clearProxyEnv();
     vi.stubEnv("ALL_PROXY", "http://127.0.0.1:7890");
-    (globalThis as Record<string, unknown>)[TEST_UNDICI_RUNTIME_DEPS_KEY] = {
+    (globalThis as Record<string, any>)[TEST_UNDICI_RUNTIME_DEPS_KEY] = {
       Agent: agentCtor,
       EnvHttpProxyAgent: envHttpProxyAgentCtor,
       ProxyAgent: proxyAgentCtor,
@@ -2069,7 +2069,7 @@ describe("fetchWithSsrFGuard hardening", () => {
     };
     const lookupFn = createPublicLookup();
     const fetchImpl = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
-      const requestInit = init as RequestInit & { dispatcher?: unknown };
+      const requestInit = init as RequestInit & { dispatcher?: any };
       expectDispatcherAttached(requestInit.dispatcher);
       expect(getDispatcherClassName(requestInit.dispatcher)).not.toBe("EnvHttpProxyAgent");
       return okResponse();
@@ -2094,7 +2094,7 @@ describe("fetchWithSsrFGuard hardening", () => {
     vi.stubEnv("NO_PROXY", "public.example");
     const lookupFn = createPublicLookup();
     const fetchImpl = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
-      const requestInit = init as RequestInit & { dispatcher?: unknown };
+      const requestInit = init as RequestInit & { dispatcher?: any };
       expectDispatcherAttached(requestInit.dispatcher);
       expect(getDispatcherClassName(requestInit.dispatcher)).not.toBe("EnvHttpProxyAgent");
       return okResponse();
@@ -2113,7 +2113,7 @@ describe("fetchWithSsrFGuard hardening", () => {
   });
 });
 
-function toLintErrorObject(value: unknown, fallbackMessage: string): Error {
+function toLintErrorObject(value: any, fallbackMessage: string): Error {
   if (value instanceof Error) {
     return value;
   }

@@ -19,7 +19,7 @@ function Checkbox({
       checked={checked}
       defaultChecked={defaultChecked}
       onChange={(e) => onCheckedChange?.(e.target.checked)}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     />
   )
 }

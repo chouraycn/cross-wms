@@ -28,11 +28,11 @@ export function setAppSettings(key: string, value: string): void {
 
 export function migrateData(payload: {
   warehouses?: WarehouseRow[];
-  inventoryItems?: Record<string, unknown>[];
-  transitOrders?: Record<string, unknown>[];
-  userSkills?: Record<string, unknown>[];
+  inventoryItems?: Record<string, any>[];
+  transitOrders?: Record<string, any>[];
+  userSkills?: Record<string, any>[];
   builtinStatusPatches?: Record<string, string>;
-  appSettings?: Record<string, unknown>;
+  appSettings?: Record<string, any>;
 }): MigrateResult {
   const db = initDb();
   const result: MigrateResult = { warehouses: 0, inventoryItems: 0, transitOrders: 0, userSkills: 0, builtinStatusPatches: 0, appSettings: 0 };
@@ -67,7 +67,7 @@ export function migrateData(payload: {
       for (const o of payload.transitOrders!) {
         orderStmt.run(o.id, o.trackingNo ?? '', o.fromWarehouseId ?? '', o.toWarehouseId ?? '', o.category ?? '', o.weight ?? 0, o.volume ?? 0, o.transportMode ?? 'sea', o.estimatedArrival ?? '', o.actualArrival ?? null, o.status ?? 'dispatched', o.createdAt ?? new Date().toISOString(), o.carrier ?? '', o.value ?? 0);
         // Insert status history if present
-        const history = o.statusHistory as Array<Record<string, unknown>> | undefined;
+        const history = o.statusHistory as Array<Record<string, any>> | undefined;
         if (Array.isArray(history)) {
           for (const h of history) {
             historyStmt.run(uuidv4(), o.id, h.status ?? '', h.time ?? '', h.location ?? '', h.remark ?? '');

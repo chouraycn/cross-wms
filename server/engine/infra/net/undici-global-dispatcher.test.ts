@@ -21,12 +21,12 @@ const {
   loadUndiciGlobalDispatcherDeps,
 } = vi.hoisted(() => {
   class AgentLocal {
-    constructor(public readonly options?: Record<string, unknown>) {}
+    constructor(public readonly options?: Record<string, any>) {}
   }
 
   class EnvHttpProxyAgentLocal {
     public readonly capturedHttpProxy = process.env.HTTP_PROXY;
-    constructor(public readonly options?: Record<string, unknown>) {}
+    constructor(public readonly options?: Record<string, any>) {}
   }
 
   class ProxyAgentLocal {
@@ -36,20 +36,20 @@ const {
   class ManagedUndiciDispatcherLocal {
     #closed = false;
     #destroyed = false;
-    public readonly dispatchCalls: Array<Record<string, unknown>> = [];
-    public readonly requestCalls: Array<Record<string, unknown>> = [];
-    constructor(public readonly options?: Record<string, unknown>) {}
+    public readonly dispatchCalls: Array<Record<string, any>> = [];
+    public readonly requestCalls: Array<Record<string, any>> = [];
+    constructor(public readonly options?: Record<string, any>) {}
     get closed(): boolean {
       return this.#closed;
     }
     get destroyed(): boolean {
       return this.#destroyed;
     }
-    dispatch(options: Record<string, unknown>): boolean {
+    dispatch(options: Record<string, any>): boolean {
       this.dispatchCalls.push(options);
       return true;
     }
-    request(options: Record<string, unknown>): boolean {
+    request(options: Record<string, any>): boolean {
       this.requestCalls.push(options);
       return this.dispatch({ ...options, fromRequest: true });
     }
@@ -67,23 +67,23 @@ const {
     value: "ManagedUndiciDispatcher",
   });
 
-  let currentDispatcher: unknown = new AgentLocal();
+  let currentDispatcher: any = new AgentLocal();
 
   const getGlobalDispatcher = vi.fn(() => currentDispatcher);
-  const setGlobalDispatcherLocal = vi.fn((next: unknown) => {
+  const setGlobalDispatcherLocal = vi.fn((next: any) => {
     currentDispatcher = next;
   });
-  const setCurrentDispatcherLocal = (next: unknown) => {
+  const setCurrentDispatcherLocal = (next: any) => {
     currentDispatcher = next;
   };
   const getCurrentDispatcherLocal = () => currentDispatcher;
   const getDefaultAutoSelectFamilyLocal = vi.fn(() => undefined as boolean | undefined);
   const setDefaultAutoSelectFamilyLocal = vi.fn();
   const isProxylineDispatcherLocal = vi.fn(
-    (dispatcher: unknown) => dispatcher instanceof ManagedUndiciDispatcherLocal,
+    (dispatcher: any) => dispatcher instanceof ManagedUndiciDispatcherLocal,
   );
   const createHttp1AgentLocal = vi.fn(
-    (options?: Record<string, unknown>, timeoutMs?: number) =>
+    (options?: Record<string, any>, timeoutMs?: number) =>
       new AgentLocal({
         ...options,
         ...(timeoutMs ? { bodyTimeout: timeoutMs, headersTimeout: timeoutMs } : {}),
@@ -91,7 +91,7 @@ const {
       }),
   );
   const createHttp1EnvHttpProxyAgentLocal = vi.fn(
-    (options?: Record<string, unknown>, timeoutMs?: number) =>
+    (options?: Record<string, any>, timeoutMs?: number) =>
       new EnvHttpProxyAgentLocal({
         ...options,
         ...(timeoutMs ? { bodyTimeout: timeoutMs, headersTimeout: timeoutMs } : {}),
@@ -247,7 +247,7 @@ describe("ensureGlobalUndiciStreamTimeouts", () => {
 
     expect(loadUndiciGlobalDispatcherDeps).toHaveBeenCalledTimes(1);
     expect(setGlobalDispatcher).toHaveBeenCalledTimes(1);
-    const next = getCurrentDispatcher() as { options?: Record<string, unknown> };
+    const next = getCurrentDispatcher() as { options?: Record<string, any> };
     expect(next).toBeInstanceOf(Agent);
     expect(next.options).toEqual({
       bodyTimeout: 1_900_000,
@@ -269,7 +269,7 @@ describe("ensureGlobalUndiciStreamTimeouts", () => {
     ensureGlobalUndiciStreamTimeouts();
 
     expect(setGlobalDispatcher).toHaveBeenCalledTimes(1);
-    const next = getCurrentDispatcher() as { options?: Record<string, unknown> };
+    const next = getCurrentDispatcher() as { options?: Record<string, any> };
     expect(next).toBeInstanceOf(EnvHttpProxyAgent);
     expect(next.options?.bodyTimeout).toBe(DEFAULT_UNDICI_STREAM_TIMEOUT_MS);
     expect(next.options?.headersTimeout).toBe(DEFAULT_UNDICI_STREAM_TIMEOUT_MS);
@@ -291,7 +291,7 @@ describe("ensureGlobalUndiciStreamTimeouts", () => {
     ensureGlobalUndiciStreamTimeouts();
 
     expect(setGlobalDispatcher).toHaveBeenCalledTimes(1);
-    const next = getCurrentDispatcher() as { options?: Record<string, unknown> };
+    const next = getCurrentDispatcher() as { options?: Record<string, any> };
     expect(next).toBeInstanceOf(EnvHttpProxyAgent);
     expect(next.options?.httpProxy).toBe("socks5://proxy.test:1080");
     expect(next.options?.httpsProxy).toBe("socks5://proxy.test:1080");
@@ -315,7 +315,7 @@ describe("ensureGlobalUndiciStreamTimeouts", () => {
       ensureGlobalUndiciStreamTimeouts();
 
       expect(setGlobalDispatcher).toHaveBeenCalledTimes(1);
-      const next = getCurrentDispatcher() as { options?: Record<string, unknown> };
+      const next = getCurrentDispatcher() as { options?: Record<string, any> };
       expect(next).toBeInstanceOf(EnvHttpProxyAgent);
       expect(next.options).toEqual(
         expect.objectContaining({
@@ -348,9 +348,9 @@ describe("ensureGlobalUndiciStreamTimeouts", () => {
     expect(setGlobalDispatcher).toHaveBeenCalledTimes(1);
     const next = getCurrentDispatcher() as {
       constructor?: { name?: string };
-      dispatch: (options: Record<string, unknown>, handler: Record<string, unknown>) => boolean;
+      dispatch: (options: Record<string, any>, handler: Record<string, any>) => boolean;
       on: () => unknown;
-      request: (options: Record<string, unknown>) => boolean;
+      request: (options: Record<string, any>) => boolean;
       close: () => void;
       destroy: () => void;
     };
@@ -413,7 +413,7 @@ describe("ensureGlobalUndiciStreamTimeouts", () => {
     expect(setGlobalDispatcher).toHaveBeenCalledTimes(2);
     const next = getCurrentDispatcher() as {
       constructor?: { name?: string };
-      dispatch: (options: Record<string, unknown>, handler: Record<string, unknown>) => boolean;
+      dispatch: (options: Record<string, any>, handler: Record<string, any>) => boolean;
     };
     expect(next.constructor?.name).toBe("ManagedUndiciDispatcher");
     next.dispatch({ origin: "https://example.test", path: "/", method: "GET" }, {});
@@ -441,7 +441,7 @@ describe("ensureGlobalUndiciStreamTimeouts", () => {
     expect(setGlobalDispatcher).toHaveBeenCalledTimes(2);
     expect(getCurrentDispatcher()).toBe(wrapped);
     const next = getCurrentDispatcher() as {
-      dispatch: (options: Record<string, unknown>, handler: Record<string, unknown>) => boolean;
+      dispatch: (options: Record<string, any>, handler: Record<string, any>) => boolean;
     };
     next.dispatch({ origin: "https://example.test", path: "/", method: "GET" }, {});
     expect(dispatcher.dispatchCalls).toEqual([
@@ -468,7 +468,7 @@ describe("ensureGlobalUndiciStreamTimeouts", () => {
 
     expect(setGlobalDispatcher).toHaveBeenCalledTimes(2);
     const next = getCurrentDispatcher() as {
-      dispatch: (options: Record<string, unknown>, handler: Record<string, unknown>) => boolean;
+      dispatch: (options: Record<string, any>, handler: Record<string, any>) => boolean;
     };
     next.dispatch({ origin: "https://example.test", path: "/", method: "GET" }, {});
     expect(replacement.dispatchCalls).toEqual([
@@ -491,7 +491,7 @@ describe("ensureGlobalUndiciStreamTimeouts", () => {
     ensureGlobalUndiciDispatcherStreamTimeouts({ timeoutMs: 1_900_000 });
 
     const next = getCurrentDispatcher() as {
-      dispatch: (options: Record<string, unknown>, handler: Record<string, unknown>) => boolean;
+      dispatch: (options: Record<string, any>, handler: Record<string, any>) => boolean;
     };
     next.dispatch(
       {
@@ -523,7 +523,7 @@ describe("ensureGlobalUndiciStreamTimeouts", () => {
     ensureGlobalUndiciDispatcherStreamTimeouts({ timeoutMs: 1_900_000 });
 
     const next = getCurrentDispatcher() as {
-      dispatch: (options: Record<string, unknown>, handler: Record<string, unknown>) => boolean;
+      dispatch: (options: Record<string, any>, handler: Record<string, any>) => boolean;
     };
     next.dispatch(
       {
@@ -557,7 +557,7 @@ describe("ensureGlobalUndiciStreamTimeouts", () => {
     ensureGlobalUndiciDispatcherStreamTimeouts({ timeoutMs: 1_900_000 });
 
     const next = getCurrentDispatcher() as {
-      dispatch: (options: Record<string, unknown>, handler: Record<string, unknown>) => boolean;
+      dispatch: (options: Record<string, any>, handler: Record<string, any>) => boolean;
     };
     next.dispatch({ origin: "https://example.test", path: "/", method: "GET" }, {});
     expect(setDefaultAutoSelectFamily).toHaveBeenNthCalledWith(1, false);
@@ -615,7 +615,7 @@ describe("ensureGlobalUndiciStreamTimeouts", () => {
     ensureGlobalUndiciStreamTimeouts();
 
     expect(setGlobalDispatcher).toHaveBeenCalledTimes(2);
-    const next = getCurrentDispatcher() as { options?: Record<string, unknown> };
+    const next = getCurrentDispatcher() as { options?: Record<string, any> };
     expect(next.options?.connect).toEqual({
       autoSelectFamily: false,
       autoSelectFamilyAttemptTimeout: 300,
@@ -631,7 +631,7 @@ describe("ensureGlobalUndiciStreamTimeouts", () => {
     ensureGlobalUndiciStreamTimeouts();
 
     expect(setGlobalDispatcher).toHaveBeenCalledTimes(1);
-    const next = getCurrentDispatcher() as { options?: Record<string, unknown> };
+    const next = getCurrentDispatcher() as { options?: Record<string, any> };
     expect(next).toBeInstanceOf(EnvHttpProxyAgent);
     expect(next.options?.connect).toEqual({
       autoSelectFamily: false,
@@ -659,7 +659,7 @@ describe("ensureGlobalUndiciEnvProxyDispatcher", () => {
     ensureGlobalUndiciEnvProxyDispatcher();
 
     expect(setGlobalDispatcher).toHaveBeenCalledTimes(1);
-    const next = getCurrentDispatcher() as { options?: Record<string, unknown> };
+    const next = getCurrentDispatcher() as { options?: Record<string, any> };
     expect(next).toBeInstanceOf(EnvHttpProxyAgent);
     expect(next.options?.allowH2).toBe(false);
   });
@@ -674,7 +674,7 @@ describe("ensureGlobalUndiciEnvProxyDispatcher", () => {
     ensureGlobalUndiciEnvProxyDispatcher();
 
     expect(setGlobalDispatcher).toHaveBeenCalledTimes(1);
-    const next = getCurrentDispatcher() as { options?: Record<string, unknown> };
+    const next = getCurrentDispatcher() as { options?: Record<string, any> };
     expect(next).toBeInstanceOf(EnvHttpProxyAgent);
     expect(next.options).toEqual({
       httpProxy: "socks5://proxy.test:1080",
@@ -698,7 +698,7 @@ describe("ensureGlobalUndiciEnvProxyDispatcher", () => {
       ensureGlobalUndiciEnvProxyDispatcher();
 
       expect(setGlobalDispatcher).toHaveBeenCalledTimes(1);
-      const next = getCurrentDispatcher() as { options?: Record<string, unknown> };
+      const next = getCurrentDispatcher() as { options?: Record<string, any> };
       expect(next).toBeInstanceOf(EnvHttpProxyAgent);
       expect(next.options).toEqual({
         httpProxy: "https://proxy.example:8443",
@@ -770,7 +770,7 @@ describe("ensureGlobalUndiciEnvProxyDispatcher", () => {
     ensureGlobalUndiciEnvProxyDispatcher();
 
     expect(setGlobalDispatcher).toHaveBeenCalledTimes(2);
-    expect((getCurrentDispatcher() as { options?: Record<string, unknown> }).options).toEqual({
+    expect((getCurrentDispatcher() as { options?: Record<string, any> }).options).toEqual({
       httpProxy: "http://new-proxy.example:3128",
       httpsProxy: "http://new-proxy.example:3128",
       allowH2: false,
@@ -824,7 +824,7 @@ describe("forceResetGlobalDispatcher", () => {
     expect(loadUndiciGlobalDispatcherDeps).toHaveBeenCalledTimes(1);
     expect(setGlobalDispatcher).toHaveBeenCalledTimes(1);
     expect(getCurrentDispatcher()).toBeInstanceOf(Agent);
-    expect((getCurrentDispatcher() as { options?: Record<string, unknown> }).options).toEqual({
+    expect((getCurrentDispatcher() as { options?: Record<string, any> }).options).toEqual({
       allowH2: false,
     });
   });
@@ -841,7 +841,7 @@ describe("forceResetGlobalDispatcher", () => {
 
     expect(setGlobalDispatcher).toHaveBeenCalledTimes(1);
     expect(getCurrentDispatcher()).toBeInstanceOf(EnvHttpProxyAgent);
-    expect((getCurrentDispatcher() as { options?: Record<string, unknown> }).options).toEqual({
+    expect((getCurrentDispatcher() as { options?: Record<string, any> }).options).toEqual({
       httpProxy: "http://proxy-b.example:8080",
       httpsProxy: "http://proxy-b.example:8080",
       allowH2: false,
@@ -861,7 +861,7 @@ describe("forceResetGlobalDispatcher", () => {
 
     expect(setGlobalDispatcher).toHaveBeenCalledTimes(1);
     expect(getCurrentDispatcher()).toBeInstanceOf(EnvHttpProxyAgent);
-    expect((getCurrentDispatcher() as { options?: Record<string, unknown> }).options).toEqual({
+    expect((getCurrentDispatcher() as { options?: Record<string, any> }).options).toEqual({
       httpProxy: "http://proxy-all.example:3128",
       httpsProxy: "http://proxy-all.example:3128",
       allowH2: false,

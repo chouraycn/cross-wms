@@ -8,7 +8,7 @@ import { normalizeCronJobCreate, normalizeCronJobPatch } from "./normalize.js";
 
 const DEFAULT_TOP_OF_HOUR_STAGGER_MS = 5 * 60 * 1000;
 
-function expectNormalizedAtSchedule(scheduleInput: Record<string, unknown>) {
+function expectNormalizedAtSchedule(scheduleInput: Record<string, any>) {
   const normalized = normalizeCronJobCreate({
     name: "iso schedule",
     enabled: true,
@@ -19,15 +19,15 @@ function expectNormalizedAtSchedule(scheduleInput: Record<string, unknown>) {
       kind: "systemEvent",
       text: "hi",
     },
-  }) as unknown as Record<string, unknown>;
+  }) as unknown as Record<string, any>;
 
-  const schedule = normalized.schedule as Record<string, unknown>;
+  const schedule = normalized.schedule as Record<string, any>;
   expect(schedule.kind).toBe("at");
   expect(schedule.at).toBe(new Date(Date.parse("2026-01-12T18:00:00Z")).toISOString());
 }
 
 function expectAnnounceDeliveryTarget(
-  delivery: Record<string, unknown>,
+  delivery: Record<string, any>,
   params: { channel: string; to: string },
 ): void {
   expect(delivery.mode).toBe("announce");
@@ -37,9 +37,9 @@ function expectAnnounceDeliveryTarget(
 
 function normalizeIsolatedAgentTurnCreateJob(params: {
   name: string;
-  payload?: Record<string, unknown>;
-  delivery?: Record<string, unknown>;
-}): Record<string, unknown> {
+  payload?: Record<string, any>;
+  delivery?: Record<string, any>;
+}): Record<string, any> {
   return normalizeCronJobCreate({
     name: params.name,
     enabled: true,
@@ -52,13 +52,13 @@ function normalizeIsolatedAgentTurnCreateJob(params: {
       ...params.payload,
     },
     ...(params.delivery ? { delivery: params.delivery } : {}),
-  }) as unknown as Record<string, unknown>;
+  }) as unknown as Record<string, any>;
 }
 
 function normalizeMainSystemEventCreateJob(params: {
   name: string;
-  schedule: Record<string, unknown>;
-}): Record<string, unknown> {
+  schedule: Record<string, any>;
+}): Record<string, any> {
   return normalizeCronJobCreate({
     name: params.name,
     enabled: true,
@@ -69,7 +69,7 @@ function normalizeMainSystemEventCreateJob(params: {
       kind: "systemEvent",
       text: "tick",
     },
-  }) as unknown as Record<string, unknown>;
+  }) as unknown as Record<string, any>;
 }
 
 describe("normalizeCronJobCreate", () => {
@@ -85,7 +85,7 @@ describe("normalizeCronJobCreate", () => {
         kind: "agentTurn",
         message: "hi",
       },
-    }) as unknown as Record<string, unknown>;
+    }) as unknown as Record<string, any>;
 
     expect(normalized.agentId).toBe("ops");
 
@@ -100,7 +100,7 @@ describe("normalizeCronJobCreate", () => {
         kind: "agentTurn",
         message: "hi",
       },
-    }) as unknown as Record<string, unknown>;
+    }) as unknown as Record<string, any>;
 
     expect(cleared.agentId).toBeNull();
   });
@@ -114,7 +114,7 @@ describe("normalizeCronJobCreate", () => {
       wakeMode: "next-heartbeat",
       sessionKey: "  agent:main:discord:channel:ops  ",
       payload: { kind: "systemEvent", text: "hi" },
-    }) as unknown as Record<string, unknown>;
+    }) as unknown as Record<string, any>;
     expect(normalized.sessionKey).toBe("agent:main:discord:channel:ops");
 
     const cleared = normalizeCronJobCreate({
@@ -125,7 +125,7 @@ describe("normalizeCronJobCreate", () => {
       wakeMode: "next-heartbeat",
       sessionKey: "   ",
       payload: { kind: "systemEvent", text: "hi" },
-    }) as unknown as Record<string, unknown>;
+    }) as unknown as Record<string, any>;
     expect("sessionKey" in cleared).toBe(false);
   });
 
@@ -139,7 +139,7 @@ describe("normalizeCronJobCreate", () => {
       },
     });
 
-    const delivery = normalized.delivery as Record<string, unknown>;
+    const delivery = normalized.delivery as Record<string, any>;
     expectAnnounceDeliveryTarget(delivery, { channel: "telegram", to: "7200373102" });
   });
 
@@ -149,7 +149,7 @@ describe("normalizeCronJobCreate", () => {
         kind: "agentTurn",
         model: null,
       },
-    }) as unknown as Record<string, { model?: unknown }>;
+    }) as unknown as Record<string, { model?: any }>;
 
     expect(normalized.payload?.model).toBeNull();
   });
@@ -164,7 +164,7 @@ describe("normalizeCronJobCreate", () => {
       schedule: { kind: "cron", expr: "0 * * * *", tz: "UTC" },
     });
 
-    const schedule = normalized.schedule as Record<string, unknown>;
+    const schedule = normalized.schedule as Record<string, any>;
     expect(schedule.staggerMs).toBe(DEFAULT_TOP_OF_HOUR_STAGGER_MS);
   });
 
@@ -174,7 +174,7 @@ describe("normalizeCronJobCreate", () => {
       schedule: { kind: "cron", expr: "0 * * * *", tz: "UTC", staggerMs: 0 },
     });
 
-    const schedule = normalized.schedule as Record<string, unknown>;
+    const schedule = normalized.schedule as Record<string, any>;
     expect(schedule.staggerMs).toBe(0);
   });
 
@@ -189,7 +189,7 @@ describe("normalizeCronJobCreate", () => {
         kind: "systemEvent",
         text: "hi",
       },
-    }) as unknown as Record<string, unknown>;
+    }) as unknown as Record<string, any>;
 
     expect(normalized.deleteAfterRun).toBe(true);
   });
@@ -204,7 +204,7 @@ describe("normalizeCronJobCreate", () => {
       },
     });
 
-    const delivery = normalized.delivery as Record<string, unknown>;
+    const delivery = normalized.delivery as Record<string, any>;
     expectAnnounceDeliveryTarget(delivery, { channel: "telegram", to: "7200373102" });
   });
 
@@ -219,7 +219,7 @@ describe("normalizeCronJobCreate", () => {
         kind: "agentTurn",
         message: "   ",
       },
-    }) as unknown as Record<string, unknown>;
+    }) as unknown as Record<string, any>;
     expect(agentTurn.payload).toEqual({ kind: "agentTurn", message: "" });
     expect(validateCronAddParams(agentTurn)).toBe(false);
 
@@ -233,13 +233,13 @@ describe("normalizeCronJobCreate", () => {
         kind: "systemEvent",
         text: "   ",
       },
-    }) as unknown as Record<string, unknown>;
+    }) as unknown as Record<string, any>;
     expect(systemEvent.payload).toEqual({ kind: "systemEvent", text: "" });
     expect(validateCronAddParams(systemEvent)).toBe(false);
 
     const update = normalizeCronJobPatch({
       payload: { kind: "agentTurn", message: "   " },
-    }) as unknown as Record<string, unknown>;
+    }) as unknown as Record<string, any>;
     expect(update.payload).toEqual({ kind: "agentTurn", message: "" });
     expect(validateCronUpdateParams({ id: "job-1", patch: update })).toBe(false);
   });
@@ -255,7 +255,7 @@ describe("normalizeCronJobCreate", () => {
       },
     });
 
-    const delivery = normalized.delivery as Record<string, unknown>;
+    const delivery = normalized.delivery as Record<string, any>;
     expect(delivery.accountId).toBe("coordinator");
   });
 
@@ -270,7 +270,7 @@ describe("normalizeCronJobCreate", () => {
       },
     });
 
-    expect((stringThread.delivery as Record<string, unknown>).threadId).toBe("1008013");
+    expect((stringThread.delivery as Record<string, any>).threadId).toBe("1008013");
 
     const numericThread = normalizeIsolatedAgentTurnCreateJob({
       name: "delivery thread number",
@@ -282,7 +282,7 @@ describe("normalizeCronJobCreate", () => {
       },
     });
 
-    expect((numericThread.delivery as Record<string, unknown>).threadId).toBe(1008013);
+    expect((numericThread.delivery as Record<string, any>).threadId).toBe(1008013);
   });
 
   it("strips empty accountId from delivery", () => {
@@ -295,7 +295,7 @@ describe("normalizeCronJobCreate", () => {
       },
     });
 
-    const delivery = normalized.delivery as Record<string, unknown>;
+    const delivery = normalized.delivery as Record<string, any>;
     expect("accountId" in delivery).toBe(false);
   });
 
@@ -311,9 +311,9 @@ describe("normalizeCronJobCreate", () => {
         mode: " WeBhOoK ",
         to: " https://example.invalid/cron ",
       },
-    }) as unknown as Record<string, unknown>;
+    }) as unknown as Record<string, any>;
 
-    const delivery = normalized.delivery as Record<string, unknown>;
+    const delivery = normalized.delivery as Record<string, any>;
     expect(delivery.mode).toBe("webhook");
     expect(delivery.to).toBe("https://example.invalid/cron");
   });
@@ -333,9 +333,9 @@ describe("normalizeCronJobCreate", () => {
           to: " https://example.invalid/complete ",
         },
       },
-    }) as unknown as Record<string, unknown>;
+    }) as unknown as Record<string, any>;
 
-    const delivery = normalized.delivery as Record<string, unknown>;
+    const delivery = normalized.delivery as Record<string, any>;
     expect(delivery.completionDestination).toEqual({
       mode: "webhook",
       to: "https://example.invalid/complete",
@@ -355,9 +355,9 @@ describe("normalizeCronJobCreate", () => {
         channel: "telegram",
         to: "123",
       },
-    }) as unknown as Record<string, unknown>;
+    }) as unknown as Record<string, any>;
 
-    const delivery = normalized.delivery as Record<string, unknown>;
+    const delivery = normalized.delivery as Record<string, any>;
     expect(delivery.mode).toBeUndefined();
     expect(delivery.channel).toBe("telegram");
     expect(delivery.to).toBe("123");
@@ -369,7 +369,7 @@ describe("normalizeCronJobCreate", () => {
       name: "default-announce",
     });
 
-    const delivery = normalized.delivery as Record<string, unknown>;
+    const delivery = normalized.delivery as Record<string, any>;
     expect(delivery.mode).toBe("announce");
   });
 
@@ -386,10 +386,10 @@ describe("normalizeCronJobCreate", () => {
         noOutputTimeoutSeconds: 5,
         outputMaxBytes: 4096,
       },
-    }) as unknown as Record<string, unknown>;
+    }) as unknown as Record<string, any>;
 
     expect(normalized.sessionTarget).toBe("isolated");
-    expect((normalized.delivery as Record<string, unknown>).mode).toBe("announce");
+    expect((normalized.delivery as Record<string, any>).mode).toBe("announce");
     expect(normalized.payload).toEqual({
       kind: "command",
       argv: ["sh", "-lc", "echo ok"],
@@ -410,7 +410,7 @@ describe("normalizeCronJobCreate", () => {
         kind: "command",
         argv: ["printf", "%s", "  padded value  "],
       },
-    }) as unknown as Record<string, unknown>;
+    }) as unknown as Record<string, any>;
 
     expect(normalized.payload).toMatchObject({
       kind: "command",
@@ -424,9 +424,9 @@ describe("normalizeCronJobCreate", () => {
       name: "no-timeout",
       schedule: { kind: "every", everyMs: 60_000 },
       payload: { kind: "agentTurn", message: "hello", timeoutSeconds: 0 },
-    }) as unknown as Record<string, unknown>;
+    }) as unknown as Record<string, any>;
 
-    const payload = normalized.payload as Record<string, unknown>;
+    const payload = normalized.payload as Record<string, any>;
     expect(payload.timeoutSeconds).toBe(0);
   });
 
@@ -435,9 +435,9 @@ describe("normalizeCronJobCreate", () => {
       name: "fractional timeout",
       schedule: { kind: "every", everyMs: 60_000 },
       payload: { kind: "agentTurn", message: "hello", timeoutSeconds: 0.03 },
-    }) as unknown as Record<string, unknown>;
+    }) as unknown as Record<string, any>;
 
-    const payload = normalized.payload as Record<string, unknown>;
+    const payload = normalized.payload as Record<string, any>;
     expect(payload.timeoutSeconds).toBe(0.03);
   });
 
@@ -446,13 +446,13 @@ describe("normalizeCronJobCreate", () => {
       name: "negative nested timeout",
       schedule: { kind: "every", everyMs: 60_000 },
       payload: { kind: "agentTurn", message: "hello", timeoutSeconds: -5 },
-    }) as unknown as Record<string, unknown>;
+    }) as unknown as Record<string, any>;
     const flattened = normalizeCronJobCreate({
       name: "negative flat timeout",
       schedule: { kind: "every", everyMs: 60_000 },
       payload: { kind: "agentTurn", message: "hello" },
       timeoutSeconds: -5,
-    }) as unknown as Record<string, unknown>;
+    }) as unknown as Record<string, any>;
 
     expect(nested.payload).not.toHaveProperty("timeoutSeconds");
     expect(flattened.payload).not.toHaveProperty("timeoutSeconds");
@@ -469,9 +469,9 @@ describe("normalizeCronJobCreate", () => {
         message: "hello",
         toolsAllow: [],
       },
-    }) as unknown as Record<string, unknown>;
+    }) as unknown as Record<string, any>;
 
-    const payload = normalized.payload as Record<string, unknown>;
+    const payload = normalized.payload as Record<string, any>;
     expect(payload.toolsAllow).toStrictEqual([]);
     expect(validateCronAddParams(normalized)).toBe(true);
   });
@@ -490,10 +490,10 @@ describe("normalizeCronJobCreate", () => {
         toolsAllow: [" read "],
         allowUnsafeExternalContent: true,
       },
-    }) as unknown as Record<string, unknown>;
+    }) as unknown as Record<string, any>;
 
     expect(normalized.sessionTarget).toBe("isolated");
-    expect((normalized.delivery as Record<string, unknown>).mode).toBe("announce");
+    expect((normalized.delivery as Record<string, any>).mode).toBe("announce");
     expect(normalized.payload).toEqual({
       kind: "agentTurn",
       message: "summarize the build",
@@ -525,9 +525,9 @@ describe("normalizeCronJobCreate", () => {
         toolsAllow: ["exec"],
         allowUnsafeExternalContent: true,
       },
-    }) as unknown as Record<string, unknown>;
+    }) as unknown as Record<string, any>;
 
-    const payload = normalized.payload as Record<string, unknown>;
+    const payload = normalized.payload as Record<string, any>;
     expect(payload).toEqual({ kind: "systemEvent", text: "hello" });
     expect(validateCronAddParams(normalized)).toBe(true);
   });
@@ -550,9 +550,9 @@ describe("normalizeCronJobCreate", () => {
         kind: "systemEvent",
         text: "hi",
       },
-    }) as unknown as Record<string, unknown>;
+    }) as unknown as Record<string, any>;
 
-    const schedule = normalized.schedule as Record<string, unknown>;
+    const schedule = normalized.schedule as Record<string, any>;
     expect(schedule).toEqual({
       kind: "at",
       at: new Date("2026-01-12T18:00:00Z").toISOString(),
@@ -574,9 +574,9 @@ describe("normalizeCronJobCreate", () => {
         kind: "systemEvent",
         text: "hi",
       },
-    }) as unknown as Record<string, unknown>;
+    }) as unknown as Record<string, any>;
 
-    const schedule = normalized.schedule as Record<string, unknown>;
+    const schedule = normalized.schedule as Record<string, any>;
     expect(schedule).toEqual({
       kind: "every",
       everyMs: 60_000,
@@ -598,9 +598,9 @@ describe("normalizeCronJobCreate", () => {
         kind: "systemEvent",
         text: "hi",
       },
-    }) as unknown as Record<string, unknown>;
+    }) as unknown as Record<string, any>;
 
-    const schedule = normalized.schedule as Record<string, unknown>;
+    const schedule = normalized.schedule as Record<string, any>;
     expect(schedule).toEqual({
       kind: "every",
       everyMs: 60_000,
@@ -616,9 +616,9 @@ describe("normalizeCronJobCreate", () => {
         everyMs: "60000",
         anchorMs: "123.9",
       },
-    }) as unknown as Record<string, unknown>;
+    }) as unknown as Record<string, any>;
 
-    const schedule = normalized.schedule as Record<string, unknown>;
+    const schedule = normalized.schedule as Record<string, any>;
     expect(schedule).toEqual({
       kind: "every",
       everyMs: 60_000,
@@ -635,7 +635,7 @@ describe("normalizeCronJobCreate", () => {
           mode: null,
         },
       },
-    }) as unknown as Record<string, unknown>;
+    }) as unknown as Record<string, any>;
 
     expect(nested.delivery).toEqual({
       failureDestination: {
@@ -661,7 +661,7 @@ describe("normalizeCronJobCreate", () => {
         kind: "systemEvent",
         text: "hi",
       },
-    }) as unknown as Record<string, unknown>;
+    }) as unknown as Record<string, any>;
     expect(validateCronAddParams(zeroEvery)).toBe(false);
 
     const negativeAnchor = normalizeCronJobPatch({
@@ -670,7 +670,7 @@ describe("normalizeCronJobCreate", () => {
         everyMs: "60000",
         anchorMs: "-1",
       },
-    }) as unknown as Record<string, unknown>;
+    }) as unknown as Record<string, any>;
     expect(validateCronUpdateParams({ id: "job", patch: negativeAnchor })).toBe(false);
   });
 
@@ -681,7 +681,7 @@ describe("normalizeCronJobCreate", () => {
       sessionTarget: " IsOlAtEd ",
       wakeMode: " NOW ",
       payload: { kind: "agentTurn", message: "hello" },
-    }) as unknown as Record<string, unknown>;
+    }) as unknown as Record<string, any>;
 
     expect(normalized.sessionTarget).toBe("isolated");
     expect(normalized.wakeMode).toBe("now");
@@ -693,9 +693,9 @@ describe("normalizeCronJobCreate", () => {
       schedule: { kind: "cron", expr: "* * * * *" },
       payload: { kind: "agentTurn", message: "hello" },
       delivery: { mode: "bogus", to: "123" },
-    }) as unknown as Record<string, unknown>;
+    }) as unknown as Record<string, any>;
 
-    const delivery = normalized.delivery as Record<string, unknown>;
+    const delivery = normalized.delivery as Record<string, any>;
     expect(delivery.mode).toBeUndefined();
     expect(delivery.to).toBe("123");
   });
@@ -709,7 +709,7 @@ describe("normalizeCronJobCreate", () => {
         payload: { kind: "agentTurn", message: "hello" },
       },
       { sessionContext: { sessionKey: "agent:main:discord:group:ops" } },
-    ) as unknown as Record<string, unknown>;
+    ) as unknown as Record<string, any>;
 
     expect(normalized.sessionTarget).toBe("session:agent:main:discord:group:ops");
   });
@@ -720,7 +720,7 @@ describe("normalizeCronJobCreate", () => {
       schedule: { kind: "cron", expr: "* * * * *" },
       sessionTarget: "current",
       payload: { kind: "agentTurn", message: "hello" },
-    }) as unknown as Record<string, unknown>;
+    }) as unknown as Record<string, any>;
 
     expect(normalized.sessionTarget).toBe("isolated");
   });
@@ -731,7 +731,7 @@ describe("normalizeCronJobCreate", () => {
       schedule: { kind: "cron", expr: "* * * * *" },
       sessionTarget: "session:MySessionID",
       payload: { kind: "agentTurn", message: "hello" },
-    }) as unknown as Record<string, unknown>;
+    }) as unknown as Record<string, any>;
 
     expect(normalized.sessionTarget).toBe("session:MySessionID");
   });
@@ -742,7 +742,7 @@ describe("normalizeCronJobCreate", () => {
       schedule: { kind: "cron", expr: "* * * * *" },
       sessionTarget: "session:agent:main:dingtalk:group:cid3tmd4xb19xjfk/wogxwy2a==",
       payload: { kind: "agentTurn", message: "hello" },
-    }) as unknown as Record<string, unknown>;
+    }) as unknown as Record<string, any>;
 
     expect(created.sessionTarget).toBe(
       "session:agent:main:dingtalk:group:cid3tmd4xb19xjfk/wogxwy2a==",
@@ -750,7 +750,7 @@ describe("normalizeCronJobCreate", () => {
 
     const patched = normalizeCronJobPatch({
       sessionTarget: "session:..\\outside",
-    }) as unknown as Record<string, unknown>;
+    }) as unknown as Record<string, any>;
     expect(patched.sessionTarget).toBe("session:..\\outside");
   });
 
@@ -773,9 +773,9 @@ describe("normalizeCronJobPatch", () => {
         kind: "agentTurn",
         model: "anthropic/claude-sonnet-4-6",
       },
-    }) as unknown as Record<string, unknown>;
+    }) as unknown as Record<string, any>;
 
-    const payload = normalized.payload as Record<string, unknown>;
+    const payload = normalized.payload as Record<string, any>;
     expect(payload.kind).toBe("agentTurn");
     expect(payload.model).toBe("anthropic/claude-sonnet-4-6");
   });
@@ -786,9 +786,9 @@ describe("normalizeCronJobPatch", () => {
         kind: "agentTurn",
         fallbacks: [],
       },
-    }) as unknown as Record<string, unknown>;
+    }) as unknown as Record<string, any>;
 
-    const payload = normalized.payload as Record<string, unknown>;
+    const payload = normalized.payload as Record<string, any>;
     expect(payload.kind).toBe("agentTurn");
     expect(payload.fallbacks).toStrictEqual([]);
   });
@@ -799,9 +799,9 @@ describe("normalizeCronJobPatch", () => {
         kind: "agentTurn",
         toolsAllow: [],
       },
-    }) as unknown as Record<string, unknown>;
+    }) as unknown as Record<string, any>;
 
-    const payload = normalized.payload as Record<string, unknown>;
+    const payload = normalized.payload as Record<string, any>;
     expect(payload.kind).toBe("agentTurn");
     expect(payload.toolsAllow).toStrictEqual([]);
     expect(validateCronUpdateParams({ id: "job-1", patch: normalized })).toBe(true);
@@ -813,9 +813,9 @@ describe("normalizeCronJobPatch", () => {
         kind: "agentTurn",
         fallbacks: [" openrouter/gpt-4.1-mini ", "anthropic/claude-haiku-3-5"],
       },
-    }) as unknown as Record<string, unknown>;
+    }) as unknown as Record<string, any>;
 
-    const payload = normalized.payload as Record<string, unknown>;
+    const payload = normalized.payload as Record<string, any>;
     expect(payload.kind).toBe("agentTurn");
     expect(payload.fallbacks).toEqual(["openrouter/gpt-4.1-mini", "anthropic/claude-haiku-3-5"]);
   });
@@ -826,9 +826,9 @@ describe("normalizeCronJobPatch", () => {
         kind: "agentTurn",
         fallbacks: [123],
       },
-    }) as unknown as Record<string, unknown>;
+    }) as unknown as Record<string, any>;
 
-    const payload = normalized.payload as Record<string, unknown>;
+    const payload = normalized.payload as Record<string, any>;
     expect(payload.kind).toBe("agentTurn");
     expect(payload.fallbacks).toBeUndefined();
     expect(validateCronUpdateParams({ id: "job-1", patch: normalized })).toBe(true);
@@ -840,9 +840,9 @@ describe("normalizeCronJobPatch", () => {
         kind: "agentTurn",
         toolsAllow: [" exec ", " read "],
       },
-    }) as unknown as Record<string, unknown>;
+    }) as unknown as Record<string, any>;
 
-    const payload = normalized.payload as Record<string, unknown>;
+    const payload = normalized.payload as Record<string, any>;
     expect(payload.kind).toBe("agentTurn");
     expect(payload.toolsAllow).toEqual(["exec", "read"]);
     expect(validateCronUpdateParams({ id: "job-1", patch: normalized })).toBe(true);
@@ -854,9 +854,9 @@ describe("normalizeCronJobPatch", () => {
         kind: "agentTurn",
         toolsAllow: [123],
       },
-    }) as unknown as Record<string, unknown>;
+    }) as unknown as Record<string, any>;
 
-    const payload = normalized.payload as Record<string, unknown>;
+    const payload = normalized.payload as Record<string, any>;
     expect(payload.kind).toBe("agentTurn");
     expect(payload.toolsAllow).toBeUndefined();
     expect(validateCronUpdateParams({ id: "job-1", patch: normalized })).toBe(true);
@@ -868,9 +868,9 @@ describe("normalizeCronJobPatch", () => {
         kind: "agentTurn",
         toolsAllow: null,
       },
-    }) as unknown as Record<string, unknown>;
+    }) as unknown as Record<string, any>;
 
-    const payload = normalized.payload as Record<string, unknown>;
+    const payload = normalized.payload as Record<string, any>;
     expect(payload.kind).toBe("agentTurn");
     expect(payload.toolsAllow).toBeNull();
     expect(validateCronUpdateParams({ id: "job-1", patch: normalized })).toBe(true);
@@ -882,9 +882,9 @@ describe("normalizeCronJobPatch", () => {
         kind: "agentTurn",
         fallbacks: null,
       },
-    }) as unknown as Record<string, unknown>;
+    }) as unknown as Record<string, any>;
 
-    const payload = normalized.payload as Record<string, unknown>;
+    const payload = normalized.payload as Record<string, any>;
     expect(payload.kind).toBe("agentTurn");
     expect(payload.fallbacks).toBeNull();
     expect(validateCronUpdateParams({ id: "job-1", patch: normalized })).toBe(true);
@@ -896,7 +896,7 @@ describe("normalizeCronJobPatch", () => {
         text: " continue the report ",
         toolsAllow: [" read "],
       },
-    }) as unknown as Record<string, unknown>;
+    }) as unknown as Record<string, any>;
 
     expect(normalized.payload).toEqual({
       kind: "agentTurn",
@@ -909,12 +909,12 @@ describe("normalizeCronJobPatch", () => {
   it("preserves null sessionKey patches and trims string values", () => {
     const trimmed = normalizeCronJobPatch({
       sessionKey: "  agent:main:telegram:group:-100123  ",
-    }) as unknown as Record<string, unknown>;
+    }) as unknown as Record<string, any>;
     expect(trimmed.sessionKey).toBe("agent:main:telegram:group:-100123");
 
     const cleared = normalizeCronJobPatch({
       sessionKey: null,
-    }) as unknown as Record<string, unknown>;
+    }) as unknown as Record<string, any>;
     expect(cleared.sessionKey).toBeNull();
   });
 
@@ -926,7 +926,7 @@ describe("normalizeCronJobPatch", () => {
           to: " https://example.invalid/complete ",
         },
       },
-    }) as unknown as Record<string, unknown>;
+    }) as unknown as Record<string, any>;
 
     expect(normalized.delivery).toEqual({
       completionDestination: {
@@ -946,7 +946,7 @@ describe("normalizeCronJobPatch", () => {
         accountId: null,
         failureDestination: null,
       },
-    }) as unknown as Record<string, unknown>;
+    }) as unknown as Record<string, any>;
 
     expect(normalized.delivery).toEqual({
       channel: null,
@@ -961,9 +961,9 @@ describe("normalizeCronJobPatch", () => {
   it("normalizes cron stagger values in patch schedules", () => {
     const normalized = normalizeCronJobPatch({
       schedule: { kind: "cron", expr: "0 * * * *", staggerMs: "30000" },
-    }) as unknown as Record<string, unknown>;
+    }) as unknown as Record<string, any>;
 
-    const schedule = normalized.schedule as Record<string, unknown>;
+    const schedule = normalized.schedule as Record<string, any>;
     expect(schedule.staggerMs).toBe(30_000);
   });
 
@@ -980,9 +980,9 @@ describe("normalizeCronJobPatch", () => {
         toolsAllow: ["exec"],
         allowUnsafeExternalContent: true,
       },
-    }) as unknown as Record<string, unknown>;
+    }) as unknown as Record<string, any>;
 
-    const payload = normalized.payload as Record<string, unknown>;
+    const payload = normalized.payload as Record<string, any>;
     expect(payload).toEqual({ kind: "systemEvent", text: "hi" });
     expect(validateCronUpdateParams({ id: "job-1", patch: normalized })).toBe(true);
   });
@@ -998,9 +998,9 @@ describe("normalizeCronJobPatch", () => {
         tz: "UTC",
         staggerMs: 30_000,
       },
-    }) as unknown as Record<string, unknown>;
+    }) as unknown as Record<string, any>;
 
-    const schedule = normalized.schedule as Record<string, unknown>;
+    const schedule = normalized.schedule as Record<string, any>;
     expect(schedule).toEqual({
       kind: "at",
       at: new Date("2026-01-12T18:00:00Z").toISOString(),
@@ -1015,9 +1015,9 @@ describe("normalizeCronJobPatch", () => {
         everyMs: 60_000,
         staggerMs: 30_000,
       },
-    }) as unknown as Record<string, unknown>;
+    }) as unknown as Record<string, any>;
 
-    const schedule = normalized.schedule as Record<string, unknown>;
+    const schedule = normalized.schedule as Record<string, any>;
     expect(schedule).toEqual({
       kind: "every",
       everyMs: 60_000,

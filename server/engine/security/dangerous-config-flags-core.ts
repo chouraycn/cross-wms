@@ -8,9 +8,9 @@ export type CoreConfigFlag = {
   description: string;
   severity: SecurityLevel;
   category: 'auth' | 'network' | 'filesystem' | 'config' | 'secrets';
-  check: (config: Record<string, unknown>) => boolean;
+  check: (config: Record<string, any>) => boolean;
   recommendation: string;
-  remediation?: (config: Record<string, unknown>) => Record<string, unknown>;
+  remediation?: (config: Record<string, any>) => Record<string, any>;
 };
 
 export const CoreConfigSecuritySchema = z.object({
@@ -29,14 +29,14 @@ export const CORE_DANGEROUS_FLAGS: CoreConfigFlag[] = [
     severity: 'critical',
     category: 'auth',
     check: (config) => {
-      const core = config['core'] as Record<string, unknown> | undefined;
-      const auth = core?.['auth'] as Record<string, unknown> | undefined;
+      const core = config['core'] as Record<string, any> | undefined;
+      const auth = core?.['auth'] as Record<string, any> | undefined;
       return auth?.['enabled'] === false;
     },
     recommendation: 'Enable core authentication immediately.',
     remediation: (config) => {
-      const core = config['core'] as Record<string, unknown> || {};
-      const auth = (core['auth'] as Record<string, unknown>) || {};
+      const core = config['core'] as Record<string, any> || {};
+      const auth = (core['auth'] as Record<string, any>) || {};
       return {
         ...config,
         core: {
@@ -53,14 +53,14 @@ export const CORE_DANGEROUS_FLAGS: CoreConfigFlag[] = [
     severity: 'critical',
     category: 'network',
     check: (config) => {
-      const core = config['core'] as Record<string, unknown> | undefined;
-      const tls = core?.['tls'] as Record<string, unknown> | undefined;
+      const core = config['core'] as Record<string, any> | undefined;
+      const tls = core?.['tls'] as Record<string, any> | undefined;
       return tls?.['enabled'] === false;
     },
     recommendation: 'Enable TLS for all core communications.',
     remediation: (config) => {
-      const core = config['core'] as Record<string, unknown> || {};
-      const tls = (core['tls'] as Record<string, unknown>) || {};
+      const core = config['core'] as Record<string, any> || {};
+      const tls = (core['tls'] as Record<string, any>) || {};
       return {
         ...config,
         core: {
@@ -77,14 +77,14 @@ export const CORE_DANGEROUS_FLAGS: CoreConfigFlag[] = [
     severity: 'critical',
     category: 'config',
     check: (config) => {
-      const core = config['core'] as Record<string, unknown> | undefined;
-      const sandbox = core?.['sandbox'] as Record<string, unknown> | undefined;
+      const core = config['core'] as Record<string, any> | undefined;
+      const sandbox = core?.['sandbox'] as Record<string, any> | undefined;
       return sandbox?.['enabled'] === false;
     },
     recommendation: 'Enable sandbox for all code execution environments.',
     remediation: (config) => {
-      const core = config['core'] as Record<string, unknown> || {};
-      const sandbox = (core['sandbox'] as Record<string, unknown>) || {};
+      const core = config['core'] as Record<string, any> || {};
+      const sandbox = (core['sandbox'] as Record<string, any>) || {};
       return {
         ...config,
         core: {
@@ -101,14 +101,14 @@ export const CORE_DANGEROUS_FLAGS: CoreConfigFlag[] = [
     severity: 'high',
     category: 'secrets',
     check: (config) => {
-      const core = config['core'] as Record<string, unknown> | undefined;
-      const secrets = core?.['secrets'] as Record<string, unknown> | undefined;
+      const core = config['core'] as Record<string, any> | undefined;
+      const secrets = core?.['secrets'] as Record<string, any> | undefined;
       return secrets?.['encryption'] === false || secrets?.['storage'] === 'plaintext';
     },
     recommendation: 'Enable encryption for secrets storage.',
     remediation: (config) => {
-      const core = config['core'] as Record<string, unknown> || {};
-      const secrets = (core['secrets'] as Record<string, unknown>) || {};
+      const core = config['core'] as Record<string, any> || {};
+      const secrets = (core['secrets'] as Record<string, any>) || {};
       return {
         ...config,
         core: {
@@ -129,14 +129,14 @@ export const CORE_DANGEROUS_FLAGS: CoreConfigFlag[] = [
     severity: 'high',
     category: 'network',
     check: (config) => {
-      const core = config['core'] as Record<string, unknown> | undefined;
-      const rateLimit = core?.['rateLimit'] as Record<string, unknown> | undefined;
+      const core = config['core'] as Record<string, any> | undefined;
+      const rateLimit = core?.['rateLimit'] as Record<string, any> | undefined;
       return rateLimit?.['enabled'] === false;
     },
     recommendation: 'Enable rate limiting to prevent abuse.',
     remediation: (config) => {
-      const core = config['core'] as Record<string, unknown> || {};
-      const rateLimit = (core['rateLimit'] as Record<string, unknown>) || {};
+      const core = config['core'] as Record<string, any> || {};
+      const rateLimit = (core['rateLimit'] as Record<string, any>) || {};
       return {
         ...config,
         core: {
@@ -153,14 +153,14 @@ export const CORE_DANGEROUS_FLAGS: CoreConfigFlag[] = [
     severity: 'high',
     category: 'network',
     check: (config) => {
-      const core = config['core'] as Record<string, unknown> | undefined;
-      const cors = core?.['cors'] as Record<string, unknown> | undefined;
+      const core = config['core'] as Record<string, any> | undefined;
+      const cors = core?.['cors'] as Record<string, any> | undefined;
       return cors?.['origin'] === '*';
     },
     recommendation: 'Restrict CORS origins to trusted domains only.',
     remediation: (config) => {
-      const core = config['core'] as Record<string, unknown> || {};
-      const cors = (core['cors'] as Record<string, unknown>) || {};
+      const core = config['core'] as Record<string, any> || {};
+      const cors = (core['cors'] as Record<string, any>) || {};
       return {
         ...config,
         core: {
@@ -177,14 +177,14 @@ export const CORE_DANGEROUS_FLAGS: CoreConfigFlag[] = [
     severity: 'medium',
     category: 'config',
     check: (config) => {
-      const core = config['core'] as Record<string, unknown> | undefined;
-      const debug = core?.['debug'] as Record<string, unknown> | undefined;
+      const core = config['core'] as Record<string, any> | undefined;
+      const debug = core?.['debug'] as Record<string, any> | undefined;
       return debug?.['enabled'] === true;
     },
     recommendation: 'Disable debug mode in production environments.',
     remediation: (config) => {
-      const core = config['core'] as Record<string, unknown> || {};
-      const debug = (core['debug'] as Record<string, unknown>) || {};
+      const core = config['core'] as Record<string, any> || {};
+      const debug = (core['debug'] as Record<string, any>) || {};
       return {
         ...config,
         core: {
@@ -201,15 +201,15 @@ export const CORE_DANGEROUS_FLAGS: CoreConfigFlag[] = [
     severity: 'info',
     category: 'config',
     check: (config) => {
-      const core = config['core'] as Record<string, unknown> | undefined;
-      const telemetry = core?.['telemetry'] as Record<string, unknown> | undefined;
+      const core = config['core'] as Record<string, any> | undefined;
+      const telemetry = core?.['telemetry'] as Record<string, any> | undefined;
       return telemetry?.['enabled'] === false;
     },
     recommendation: 'Consider enabling error reporting to help improve security.',
   },
 ];
 
-export function collectCoreDangerousConfigFlags(config: Record<string, unknown>): string[] {
+export function collectCoreDangerousConfigFlags(config: Record<string, any>): string[] {
   const dangerousFlags: string[] = [];
 
   for (const flag of CORE_DANGEROUS_FLAGS) {
@@ -226,7 +226,7 @@ export function collectCoreDangerousConfigFlags(config: Record<string, unknown>)
 }
 
 export function auditCoreConfigSecurity(
-  config: Record<string, unknown>,
+  config: Record<string, any>,
   options: Partial<CoreConfigSecurityOptions> = {},
 ): SecurityFinding[] {
   const findings: SecurityFinding[] = [];
@@ -261,10 +261,10 @@ export function auditCoreConfigSecurity(
 }
 
 export function remediateCoreConfigSecurity(
-  config: Record<string, unknown>,
+  config: Record<string, any>,
   options: Partial<CoreConfigSecurityOptions> = {},
 ): {
-  config: Record<string, unknown>;
+  config: Record<string, any>;
   fixedFlags: string[];
   skippedFlags: string[];
 } {
@@ -294,7 +294,7 @@ export function remediateCoreConfigSecurity(
   return { config: currentConfig, fixedFlags, skippedFlags };
 }
 
-export function isCoreConfigSafe(config: Record<string, unknown>): boolean {
+export function isCoreConfigSafe(config: Record<string, any>): boolean {
   const findings = auditCoreConfigSecurity(config);
   return findings.filter((f) => f.severity === 'critical').length === 0;
 }

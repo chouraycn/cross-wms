@@ -16,13 +16,13 @@ type SessionEntry = {
   sessionId?: string;
   sessionFile?: string;
   updatedAt?: number;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 /** 占位：磁盘预算扫描结果。 */
 type SessionDiskBudgetSweepResult = {
   removedEntries?: number;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 /** 占位：已解析的会话维护配置。 */
@@ -31,7 +31,7 @@ type ResolvedSessionMaintenanceConfig = {
   pruneAfterMs: number;
   maxEntries: number;
   resetArchiveRetentionMs?: number | null;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 /** 占位：会话维护告警。 */
@@ -51,7 +51,7 @@ async function enforceSessionDiskBudget(_params: {
   preserveKeys?: ReadonlySet<string>;
   maintenance: ResolvedSessionMaintenanceConfig;
   warnOnly: boolean;
-  log: { warn: (m: string, c?: Record<string, unknown>) => void; info: (m: string, c?: Record<string, unknown>) => void };
+  log: { warn: (m: string, c?: Record<string, any>) => void; info: (m: string, c?: Record<string, any>) => void };
 }): Promise<SessionDiskBudgetSweepResult | null> {
   return null;
 }
@@ -118,8 +118,8 @@ export type SessionMaintenanceApplyReport = {
 };
 
 type SessionMaintenanceLogger = {
-  warn: (message: string, context?: Record<string, unknown>) => void;
-  info: (message: string, context?: Record<string, unknown>) => void;
+  warn: (message: string, context?: Record<string, any>) => void;
+  info: (message: string, context?: Record<string, any>) => void;
 };
 
 type RemovedSessionFiles = Map<string, string | undefined>;

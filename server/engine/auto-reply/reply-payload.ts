@@ -15,20 +15,20 @@ export type ReplyToMode = 'off' | 'always' | 'auto' | null;
  *  payload tree. */
 export type MessagePresentation = {
   type?: string;
-  blocks?: unknown[];
-  [key: string]: unknown;
+  blocks?: any[];
+  [key: string]: any;
 };
 
 /** Legacy interactive reply shape (deprecated upstream, kept for migration). */
 export type InteractiveReply = {
-  blocks?: Array<{ type: string; text?: string; [key: string]: unknown }>;
-  [key: string]: unknown;
+  blocks?: Array<{ type: string; text?: string; [key: string]: any }>;
+  [key: string]: any;
 };
 
 /** Channel-agnostic delivery preferences, e.g. pin the sent message. */
 export type ReplyPayloadDelivery = {
   pin?: boolean;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 /** Channel-agnostic assistant reply payload. */
@@ -84,7 +84,7 @@ export type ReplyPayload = {
   /** Marks this payload as transient status, not assistant answer content. */
   isStatusNotice?: boolean;
   /** Channel-specific payload data (per-channel envelope). */
-  channelData?: Record<string, unknown>;
+  channelData?: Record<string, any>;
 };
 
 /** Metadata for fast-auto progress notices. */
@@ -121,7 +121,7 @@ export function appendReplyMediaFailureWarning(text: string | undefined): string
   return `${text}\n${REPLY_MEDIA_FAILURE_WARNING}`;
 }
 
-function normalizeTtsSupplementSpokenText(value: unknown): string | undefined {
+function normalizeTtsSupplementSpokenText(value: any): string | undefined {
   return typeof value === 'string' && value.trim() ? value : undefined;
 }
 

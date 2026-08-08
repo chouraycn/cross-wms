@@ -57,7 +57,7 @@ export const trimToUndefined = normalizeOptionalString;
  * Note: legitimate credential values containing literal `${UPPER_CASE}` patterns will
  * also be rejected, but this is an extremely unlikely edge case.
  */
-export function trimCredentialToUndefined(value: unknown): string | undefined {
+export function trimCredentialToUndefined(value: any): string | undefined {
   const trimmed = trimToUndefined(value);
   if (trimmed && containsEnvVarReference(trimmed)) {
     return undefined;
@@ -77,7 +77,7 @@ export function hasGatewayPasswordEnvCandidate(env: NodeJS.ProcessEnv = process.
 
 /** Classify one configured credential input without resolving secret refs. */
 function resolveConfiguredGatewayCredentialInput(params: {
-  value: unknown;
+  value: any;
   defaults?: GatewaySecretDefaults;
   path: GatewayCredentialInputPath;
 }): GatewayConfiguredCredentialInput {

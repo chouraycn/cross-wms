@@ -4,13 +4,13 @@ import { SYSTEM_PROMPT_CACHE_BOUNDARY } from "../../agents/system-prompt-cache-b
 import type { Context, Model } from "../types.js";
 
 const mistralMockState = vi.hoisted(() => ({
-  payloads: [] as unknown[],
+  payloads: [] as any[],
 }));
 
 vi.mock("@mistralai/mistralai", () => ({
   Mistral: class MockMistral {
     chat = {
-      stream: vi.fn(async (payload: unknown) => {
+      stream: vi.fn(async (payload: any) => {
         mistralMockState.payloads.push(payload);
         throw new Error("stop before network");
       }),
@@ -71,7 +71,7 @@ describe("Mistral provider", () => {
     const result = await stream.result();
 
     expect(result.stopReason).toBe("error");
-    expect((mistralMockState.payloads[0] as { stop?: unknown }).stop).toEqual(["STOP"]);
+    expect((mistralMockState.payloads[0] as { stop?: any }).stop).toEqual(["STOP"]);
   });
 
   it("skips unreadable tool schemas while preserving healthy Mistral tools", async () => {
@@ -104,7 +104,7 @@ describe("Mistral provider", () => {
     const result = await stream.result();
 
     expect(result.stopReason).toBe("error");
-    expect((mistralMockState.payloads[0] as { tools?: unknown[] }).tools).toEqual([
+    expect((mistralMockState.payloads[0] as { tools?: any[] }).tools).toEqual([
       {
         type: "function",
         function: {
@@ -136,7 +136,7 @@ describe("Mistral provider", () => {
     );
 
     const result = await stream.result();
-    const payload = mistralMockState.payloads[0] as Record<string, unknown>;
+    const payload = mistralMockState.payloads[0] as Record<string, any>;
 
     expect(result.stopReason).toBe("error");
     expect(payload).not.toHaveProperty("tools");
@@ -210,7 +210,7 @@ describe("Mistral provider", () => {
 
     expect(result.stopReason).toBe("error");
     expect(nameReads).toBe(1);
-    expect((mistralMockState.payloads[0] as { toolChoice?: unknown }).toolChoice).toEqual({
+    expect((mistralMockState.payloads[0] as { toolChoice?: any }).toolChoice).toEqual({
       type: "function",
       function: { name: "healthy_tool" },
     });

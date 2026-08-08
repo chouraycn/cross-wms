@@ -16,7 +16,7 @@ const COPIED_INBOUND_METADATA_ONLY_TEXT = `Conversation info (untrusted metadata
 \`\`\``;
 
 function bedrockAssistant(
-  content: unknown,
+  content: any,
   stopReason: "error" | "stop" | "toolUse" | "length" = "error",
   usageOverrides: Record<string, number> = {},
 ): AgentMessage {
@@ -106,7 +106,7 @@ describe("normalizeAssistantReplayContent", () => {
     ];
     const out = normalizeAssistantReplayContent(messages);
     expect(out).not.toBe(messages);
-    expect((out[0] as { content: unknown[] }).content).toEqual([imageBlock]);
+    expect((out[0] as { content: any[] }).content).toEqual([imageBlock]);
   });
 
   it("preserves nonzero-usage silent-reply turns (stopReason=stop, content=[]) untouched", () => {
@@ -238,14 +238,14 @@ describe("normalizeAssistantReplayContent", () => {
     const block = { type: "text", text: "plain object content" };
     const messages = [userMessage("hi"), bedrockAssistant(block, "stop")];
     const out = normalizeAssistantReplayContent(messages);
-    const wrapped = out[1] as AgentMessage & { content: unknown[] };
+    const wrapped = out[1] as AgentMessage & { content: any[] };
     expect(wrapped.content).toEqual([block]);
   });
 
   it("normalizes null assistant content to an empty block array (regression)", () => {
     const messages = [userMessage("hi"), bedrockAssistant(null, "toolUse")];
     const out = normalizeAssistantReplayContent(messages);
-    const normalized = out[1] as AgentMessage & { content: unknown[] };
+    const normalized = out[1] as AgentMessage & { content: any[] };
     expect(normalized.content).toEqual([]);
   });
 
@@ -286,7 +286,7 @@ describe("normalizeAssistantReplayContent", () => {
       ]),
     ];
     const out = normalizeAssistantReplayContent(messages);
-    const normalized = out[1] as AgentMessage & { content: unknown[] };
+    const normalized = out[1] as AgentMessage & { content: any[] };
     expect(normalized.content).toEqual([{ type: "text", text: "Visible before\n\nVisible after" }]);
   });
 
@@ -301,7 +301,7 @@ describe("normalizeAssistantReplayContent", () => {
       ]),
     ];
     const out = normalizeAssistantReplayContent(messages);
-    const normalized = out[1] as AgentMessage & { content: unknown[] };
+    const normalized = out[1] as AgentMessage & { content: any[] };
     expect(normalized.content).toEqual([{ type: "text", text: "Visible reply" }, toolCall]);
     expect(JSON.stringify(out)).not.toContain("assistant copied inbound metadata omitted");
   });
@@ -408,7 +408,7 @@ describe("normalizeAssistantReplayContent", () => {
     const out = normalizeAssistantReplayContent(messages);
     expect(out).toBe(messages);
     expect(out).toHaveLength(2);
-    expect((out[1] as { content: unknown[] }).content).toEqual([
+    expect((out[1] as { content: any[] }).content).toEqual([
       { type: "text", text: FALLBACK_TEXT },
     ]);
   });

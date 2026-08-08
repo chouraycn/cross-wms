@@ -38,7 +38,7 @@ export type TuiGoalCommandOptions = {
 /** Event envelope delivered from Gateway or the embedded backend into the TUI. */
 export type TuiEvent = {
   event: string;
-  payload?: unknown;
+  payload?: any;
   seq?: number;
 };
 
@@ -148,14 +148,14 @@ export type TuiBackend = {
   onGap?: (info: { expected: number; received: number }) => void;
   start: () => void;
   stop: () => void | Promise<void>;
-  subscribeSessionEvents?: () => Promise<unknown>;
+  subscribeSessionEvents?: () => Promise<any>;
   sendChat: (opts: ChatSendOptions) => Promise<TuiChatSendResult>;
   abortChat: (opts: {
     sessionKey: string;
     agentId?: string;
     runId: string;
   }) => Promise<{ ok: boolean; aborted: boolean }>;
-  loadHistory: (opts: { sessionKey: string; agentId?: string; limit?: number }) => Promise<unknown>;
+  loadHistory: (opts: { sessionKey: string; agentId?: string; limit?: number }) => Promise<any>;
   listSessions: (opts?: SessionsListParams) => Promise<TuiSessionList>;
   listAgents: () => Promise<TuiAgentsList>;
   patchSession: (opts: SessionsPatchParams) => Promise<SessionsPatchResult>;
@@ -164,7 +164,7 @@ export type TuiBackend = {
     reason?: "new" | "reset",
     opts?: { agentId?: string },
   ) => Promise<TuiSessionMutationResult>;
-  getGatewayStatus: () => Promise<unknown>;
+  getGatewayStatus: () => Promise<any>;
   listModels: () => Promise<TuiModelChoice[]>;
   listCommands?: (opts?: CommandsListParams) => Promise<CommandEntry[]>;
   runGoalCommand?: (opts: TuiGoalCommandOptions) => Promise<{ text: string }>;

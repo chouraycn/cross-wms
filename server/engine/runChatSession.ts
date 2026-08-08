@@ -117,7 +117,7 @@ ensureBuiltinCommandsRegistered();
  * 该实时通道与 runChatSession 末尾既有 file_generateFile 写库逻辑并存，不替代任何一方。
  */
 function emitToolGeneratedFiles(
-  send: ((event: { type: string; [key: string]: unknown }) => void) | undefined,
+  send: ((event: { type: string; [key: string]: any }) => void) | undefined,
   sessionId: string,
   toolName: string,
   result: string,
@@ -134,9 +134,9 @@ function emitToolGeneratedFiles(
     let markerPaths: string[] = [];
     if (toolName.startsWith('skill_')) {
       try {
-        const parsed = JSON.parse(result) as { data?: { generatedFilePaths?: unknown } };
+        const parsed = JSON.parse(result) as { data?: { generatedFilePaths?: any } };
         const gf = parsed?.data?.generatedFilePaths;
-        if (Array.isArray(gf)) markerPaths = gf.filter((x: unknown) => typeof x === 'string');
+        if (Array.isArray(gf)) markerPaths = gf.filter((x: any) => typeof x === 'string');
       } catch {
         // 解析失败，回退到文本扫描
       }
@@ -165,12 +165,12 @@ export interface RunChatSessionInput {
   skillContext?: string;
   skillId?: string;
   preset?: string;
-  conversationHistory?: unknown[];
-  attachments?: unknown[];
+  conversationHistory?: any[];
+  attachments?: any[];
   executionMode?: string;
   agentId?: string;
   toolProfile?: string;
-  compaction?: unknown;
+  compaction?: any;
   referencedSessionIds?: string[];
   userId?: string;
   /** 思考级别（off/low/medium/high 等），控制模型推理深度 */
@@ -181,7 +181,7 @@ export interface RunChatSessionInput {
 
 export interface RunChatSessionCallbacks {
   /** SSE 事件回调（每个 data: 行触发一次） */
-  onEvent?: (event: { type: string; [key: string]: unknown }) => void;
+  onEvent?: (event: { type: string; [key: string]: any }) => void;
   /** 文本块回调 */
   onChunk?: (text: string) => void;
   /** 思考块回调 */
@@ -206,7 +206,7 @@ export interface RunChatSessionResult {
   thinkingSignature?: string;
   redacted?: boolean;
   toolCallsJson?: string;
-  usage?: unknown;
+  usage?: any;
   errorCode?: string;
   errorMessage?: string;
   fallbackModel?: string;
@@ -752,8 +752,8 @@ export async function runChatSession(
         toolCall.id,
       );
     },
-    onSSEEvent: (event: Record<string, unknown>) => {
-      callbacks.onEvent?.(event as { type: string; [key: string]: unknown });
+    onSSEEvent: (event: Record<string, any>) => {
+      callbacks.onEvent?.(event as { type: string; [key: string]: any });
     },
     onRateLimit: async () => {
       const result = selectKey(modelConfig as ModelConfig);
@@ -1194,7 +1194,7 @@ async function tryFallback(
   sessionId: string,
   skillId: string | undefined,
   toolProfile: string | undefined,
-  compaction: unknown,
+  compaction: any,
   callbacks: RunChatSessionCallbacks,
   textStreamProcessor: ReturnType<typeof import('./shared/text/text-stream-processor.js').createTextStreamProcessor>,
   timerManager: TimerManager,
@@ -1331,8 +1331,8 @@ async function tryFallback(
             toolCall.id,
           );
         },
-        onSSEEvent: (event: Record<string, unknown>) => {
-          callbacks.onEvent?.(event as { type: string; [key: string]: unknown });
+        onSSEEvent: (event: Record<string, any>) => {
+          callbacks.onEvent?.(event as { type: string; [key: string]: any });
         },
         onRateLimit: async () => {
           const keyResult = selectKey(fallbackModel as ModelConfig);
@@ -1414,10 +1414,10 @@ export async function executeTurnViaChatSession(params: {
   sessionId: string;
   text: string;
   model?: string;
-  attachments?: unknown[];
+  attachments?: any[];
   signal?: AbortSignal;
-  onEvent?: (event: { type: string; [key: string]: unknown }) => void;
-}): Promise<{ content: string; thinking?: string; usage?: unknown }> {
+  onEvent?: (event: { type: string; [key: string]: any }) => void;
+}): Promise<{ content: string; thinking?: string; usage?: any }> {
   const result = await runChatSession(
     {
       sessionId: params.sessionId,

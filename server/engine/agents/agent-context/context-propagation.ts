@@ -12,7 +12,7 @@ export function serializeContext(context: AgentContext, options?: ContextPropaga
 
   const opts = { ...defaults, ...options };
 
-  const serialized: Record<string, unknown> = {
+  const serialized: Record<string, any> = {
     agentId: context.agentId,
     sessionId: context.sessionId,
     startTime: context.startTime,
@@ -166,8 +166,8 @@ export function createContextSnapshot(context: AgentContext): {
   agentId: string;
   sessionId: string;
   env: Record<string, string>;
-  memory: Record<string, unknown>;
-  metadata: Record<string, unknown>;
+  memory: Record<string, any>;
+  metadata: Record<string, any>;
   timestamp: number;
 } {
   return {

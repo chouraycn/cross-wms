@@ -7,7 +7,7 @@
  */
 
 /** OpenClaw 配置（降级为 unknown 占位）。 */
-export type OpenClawConfig = Record<string, unknown>;
+export type OpenClawConfig = Record<string, any>;
 
 /** 密钥输入（降级为 unknown 占位）。 */
 export type SecretInput = unknown;
@@ -31,11 +31,11 @@ export type EmbeddingProviderCallOptions = {
 /** 创建 embedding provider 时返回的运行时元数据。 */
 export type EmbeddingProviderRuntime = {
   id: string;
-  cacheKeyData?: Record<string, unknown>;
+  cacheKeyData?: Record<string, any>;
   /** 与当前身份等价的既有持久化 model/cache 身份。 */
   indexIdentityAliases?: Array<{
     model: string;
-    cacheKeyData: Record<string, unknown>;
+    cacheKeyData: Record<string, any>;
   }>;
   inlineQueryTimeoutMs?: number;
   inlineBatchTimeoutMs?: number;
@@ -44,10 +44,10 @@ export type EmbeddingProviderRuntime = {
 /** provider 拥有的规范身份与持久化索引的精确别名。 */
 export type EmbeddingProviderIndexIdentity = {
   model: string;
-  cacheKeyData: Record<string, unknown>;
+  cacheKeyData: Record<string, any>;
   aliases?: Array<{
     model: string;
-    cacheKeyData: Record<string, unknown>;
+    cacheKeyData: Record<string, any>;
   }>;
 };
 
@@ -103,7 +103,7 @@ export type EmbeddingProviderAdapter = {
     options: EmbeddingProviderCreateOptions,
   ) => EmbeddingProviderIndexIdentity;
   create: (options: EmbeddingProviderCreateOptions) => Promise<EmbeddingProviderCreateResult>;
-  formatSetupError?: (err: unknown) => string;
+  formatSetupError?: (err: any) => string;
 };
 
 /** 已注册的 embedding provider，带可选归属插件元数据。 */

@@ -7,8 +7,8 @@
 
 /** Creates a model fallback config fixture for testing. */
 export function makeModelFallbackCfg(
-  overrides: Record<string, unknown> = {},
-): Record<string, unknown> {
+  overrides: Record<string, any> = {},
+): Record<string, any> {
   return {
     provider: "test",
     model: "test-model",

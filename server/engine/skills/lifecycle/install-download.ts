@@ -118,7 +118,7 @@ export async function downloadWithRetry(
   retries: number = DEFAULT_RETRIES,
   options: DownloadOptions = {},
 ): Promise<void> {
-  let lastError: unknown;
+  let lastError: any;
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {

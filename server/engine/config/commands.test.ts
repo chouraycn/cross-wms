@@ -258,7 +258,7 @@ describe("isRestartEnabled", () => {
   it("ignores inherited restart flags", () => {
     expect(
       isRestartEnabled({
-        commands: Object.create({ restart: false }) as Record<string, unknown>,
+        commands: Object.create({ restart: false }) as Record<string, any>,
       }),
     ).toBe(true);
   });
@@ -271,7 +271,7 @@ describe("isCommandFlagEnabled", () => {
     expect(
       isCommandFlagEnabled(
         {
-          commands: Object.create({ bash: true }) as Record<string, unknown>,
+          commands: Object.create({ bash: true }) as Record<string, any>,
         },
         "bash",
       ),

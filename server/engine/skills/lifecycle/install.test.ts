@@ -16,7 +16,7 @@ import type { SkillEntry } from "../types.js";
 import { installSkill, testing as skillsInstallTesting } from "./install.js";
 
 vi.mock("../../process/exec.js", () => ({
-  runCommandWithTimeout: (...args: unknown[]) => runCommandWithTimeoutMock(...args),
+  runCommandWithTimeout: (...args: any[]) => runCommandWithTimeoutMock(...args),
 }));
 
 vi.mock("../loading/plugin-skills.js", () => ({
@@ -78,7 +78,7 @@ function loadTestWorkspaceSkillEntries(workspaceDir: string): SkillEntry[] {
   });
 }
 
-function lastRunCommandCall(): unknown[] | undefined {
+function lastRunCommandCall(): any[] | undefined {
   const calls = runCommandWithTimeoutMock.mock.calls;
   return calls[calls.length - 1];
 }
@@ -218,7 +218,7 @@ describe("installSkill before_install hooks", () => {
             sourcePath?: string;
             sourcePathKind?: string;
             request?: { kind?: string; mode?: string; requestedSpecifier?: string };
-            builtinScan?: { status?: string; findings?: unknown[] };
+            builtinScan?: { status?: string; findings?: any[] };
             skill?: {
               installId?: string;
               installSpec?: { kind?: string; package?: string };

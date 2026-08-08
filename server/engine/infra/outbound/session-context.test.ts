@@ -9,7 +9,7 @@ type SessionContextModule = typeof import("./session-context.js");
 let buildOutboundSessionContext: SessionContextModule["buildOutboundSessionContext"];
 
 vi.mock("../../agents/agent-scope.js", () => ({
-  resolveSessionAgentId: (...args: unknown[]) => resolveSessionAgentIdMock(...args),
+  resolveSessionAgentId: (...args: any[]) => resolveSessionAgentIdMock(...args),
 }));
 
 beforeAll(async () => {

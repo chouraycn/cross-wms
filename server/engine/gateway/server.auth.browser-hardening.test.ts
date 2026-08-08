@@ -389,15 +389,15 @@ describe("gateway auth browser hardening", () => {
         })) as {
           type: "hello-ok";
           snapshot?: {
-            configPath?: unknown;
-            stateDir?: unknown;
-            authMode?: unknown;
+            configPath?: any;
+            stateDir?: any;
+            authMode?: any;
           };
         };
         // connectReq scopes are evaluated after auth and unbound-scope clearing, so this assertion
         // verifies the effective low-privilege session view rather than self-declared client scopes.
         const snapshot = payload.snapshot as
-          | { configPath?: unknown; stateDir?: unknown; authMode?: unknown }
+          | { configPath?: any; stateDir?: any; authMode?: any }
           | undefined;
         if (!snapshot) {
           throw new Error("expected hello-ok snapshot for low-privilege browser session");

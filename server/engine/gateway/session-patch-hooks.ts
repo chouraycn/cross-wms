@@ -1,7 +1,7 @@
 export type SessionPatchHookContext = {
-  sessionEntry: Record<string, unknown>;
-  patch: Record<string, unknown>;
-  cfg: Record<string, unknown>;
+  sessionEntry: Record<string, any>;
+  patch: Record<string, any>;
+  cfg: Record<string, any>;
 };
 
 export type SessionPatchHookEvent = {
@@ -10,7 +10,7 @@ export type SessionPatchHookEvent = {
   sessionKey: string;
   context: SessionPatchHookContext;
   timestamp: Date;
-  messages: unknown[];
+  messages: any[];
 };
 
 type SessionPatchHookListener = (event: SessionPatchHookEvent) => void | Promise<void>;
@@ -33,10 +33,10 @@ export function unregisterSessionPatchHookListener(listener: SessionPatchHookLis
 }
 
 export function triggerSessionPatchHook(params: {
-  cfg: Record<string, unknown>;
-  sessionEntry: Record<string, unknown>;
+  cfg: Record<string, any>;
+  sessionEntry: Record<string, any>;
   sessionKey: string;
-  patch: Record<string, unknown>;
+  patch: Record<string, any>;
 }): void {
   if (patchHookListeners.size === 0) {
     return;

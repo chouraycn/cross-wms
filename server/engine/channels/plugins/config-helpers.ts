@@ -12,14 +12,14 @@ export interface ConfigFieldMapping {
   sourceKey: string;
   targetKey: string;
   required?: boolean;
-  transform?: (value: unknown) => unknown;
-  validate?: (value: unknown) => string | null;
+  transform?: (value: any) => unknown;
+  validate?: (value: any) => string | null;
 }
 
-export function createSimpleConfigAdapter<TAccount extends Record<string, unknown>>(params: {
+export function createSimpleConfigAdapter<TAccount extends Record<string, any>>(params: {
   configPath: string;
   accountsKey?: string;
-  buildAccount?: (raw: Record<string, unknown>, accountId: string) => TAccount;
+  buildAccount?: (raw: Record<string, any>, accountId: string) => TAccount;
   isEnabled?: (account: TAccount, config: AppConfig) => boolean;
   isConfigured?: (account: TAccount, config: AppConfig) => boolean;
 }): ChannelConfigAdapter<TAccount> {
@@ -27,16 +27,16 @@ export function createSimpleConfigAdapter<TAccount extends Record<string, unknow
 
   return {
     listAccountIds(config: AppConfig): AccountId[] {
-      const channelConfig = getNestedValue(config, params.configPath) as Record<string, unknown> | undefined;
-      const accounts = channelConfig?.[accountsKey] as Record<string, unknown> | undefined;
+      const channelConfig = getNestedValue(config, params.configPath) as Record<string, any> | undefined;
+      const accounts = channelConfig?.[accountsKey] as Record<string, any> | undefined;
       if (!accounts) return [];
       return Object.keys(accounts);
     },
 
     resolveAccount(config: AppConfig, accountId: AccountId): TAccount | null {
-      const channelConfig = getNestedValue(config, params.configPath) as Record<string, unknown> | undefined;
-      const accounts = channelConfig?.[accountsKey] as Record<string, unknown> | undefined;
-      const raw = accounts?.[accountId] as Record<string, unknown> | undefined;
+      const channelConfig = getNestedValue(config, params.configPath) as Record<string, any> | undefined;
+      const accounts = channelConfig?.[accountsKey] as Record<string, any> | undefined;
+      const raw = accounts?.[accountId] as Record<string, any> | undefined;
       if (!raw) return null;
       if (params.buildAccount) {
         return params.buildAccount(raw, accountId);
@@ -48,7 +48,7 @@ export function createSimpleConfigAdapter<TAccount extends Record<string, unknow
       if (params.isEnabled) {
         return params.isEnabled(account, config);
       }
-      return (account as unknown as Record<string, unknown>).enabled !== false;
+      return (account as unknown as Record<string, any>).enabled !== false;
     },
 
     isConfigured(account: TAccount, config: AppConfig): boolean {
@@ -80,7 +80,7 @@ export function validateConfig(
 
 export function applyConfigDefaults(
   config: AppConfig,
-  defaults: Record<string, unknown>
+  defaults: Record<string, any>
 ): AppConfig {
   const result = { ...config };
   for (const [key, value] of Object.entries(defaults)) {
@@ -102,8 +102,8 @@ export function getChannelConfigValue(
   config: AppConfig,
   channelId: ChannelId,
   key: string
-): unknown {
-  const channelConfig = config[channelId] as Record<string, unknown> | undefined;
+): any {
+  const channelConfig = config[channelId] as Record<string, any> | undefined;
   return channelConfig?.[key];
 }
 
@@ -111,22 +111,22 @@ export function setChannelConfigValue(
   config: AppConfig,
   channelId: ChannelId,
   key: string,
-  value: unknown
+  value: any
 ): AppConfig {
   return {
     ...config,
     [channelId]: {
-      ...(config[channelId] as Record<string, unknown> | undefined),
+      ...(config[channelId] as Record<string, any> | undefined),
       [key]: value,
     },
   };
 }
 
 export function mapConfigFields(
-  source: Record<string, unknown>,
+  source: Record<string, any>,
   mappings: ConfigFieldMapping[]
-): { result: Record<string, unknown>; errors: string[] } {
-  const result: Record<string, unknown> = {};
+): { result: Record<string, any>; errors: string[] } {
+  const result: Record<string, any> = {};
   const errors: string[] = [];
 
   for (const mapping of mappings) {
@@ -139,7 +139,7 @@ export function mapConfigFields(
       continue;
     }
 
-    let transformed: unknown = value;
+    let transformed: any = value;
     if (mapping.transform) {
       try {
         transformed = mapping.transform(value);
@@ -163,13 +163,13 @@ export function mapConfigFields(
   return { result, errors };
 }
 
-function getNestedValue(obj: Record<string, unknown>, path: string): unknown {
+function getNestedValue(obj: Record<string, any>, path: string): any {
   const parts = path.split(".");
-  let current: unknown = obj;
+  let current: any = obj;
 
   for (const part of parts) {
-    if (current && typeof current === "object" && part in (current as Record<string, unknown>)) {
-      current = (current as Record<string, unknown>)[part];
+    if (current && typeof current === "object" && part in (current as Record<string, any>)) {
+      current = (current as Record<string, any>)[part];
     } else {
       return undefined;
     }
@@ -200,8 +200,8 @@ export function setAccountEnabledInConfigSection(params: {
   allowTopLevel?: boolean;
 }): OpenClawConfig {
   const accountKey = params.accountId || DEFAULT_ACCOUNT_ID;
-  const channels = (params.cfg as { channels?: Record<string, unknown> }).channels;
-  const base = channels?.[params.sectionKey] as { accounts?: Record<string, unknown>; enabled?: boolean } | undefined;
+  const channels = (params.cfg as { channels?: Record<string, any> }).channels;
+  const base = channels?.[params.sectionKey] as { accounts?: Record<string, any>; enabled?: boolean } | undefined;
   if (!base) {
     return params.cfg;
   }
@@ -233,14 +233,14 @@ export function deleteAccountFromConfigSection(params: {
   clearBaseFields?: string[];
 }): OpenClawConfig {
   const accountKey = params.accountId || DEFAULT_ACCOUNT_ID;
-  const channels = (params.cfg as { channels?: Record<string, unknown> }).channels;
-  const base = channels?.[params.sectionKey] as { accounts?: Record<string, unknown> } | undefined;
+  const channels = (params.cfg as { channels?: Record<string, any> }).channels;
+  const base = channels?.[params.sectionKey] as { accounts?: Record<string, any> } | undefined;
   if (!base?.accounts || !(accountKey in base.accounts)) {
     return params.cfg;
   }
   const nextAccounts = { ...base.accounts };
   delete nextAccounts[accountKey];
-  const nextBase: Record<string, unknown> = { ...base, accounts: nextAccounts };
+  const nextBase: Record<string, any> = { ...base, accounts: nextAccounts };
   if (Object.keys(nextAccounts).length === 0) {
     delete nextBase.accounts;
   }
@@ -255,7 +255,7 @@ export function clearAccountEntryFields<TAccountEntry extends object>(params: {
   accounts?: Record<string, TAccountEntry>;
   accountId: string;
   fields: string[];
-  isValueSet?: (value: unknown) => boolean;
+  isValueSet?: (value: any) => boolean;
   markClearedOnFieldPresence?: boolean;
 }): {
   nextAccounts?: Record<string, TAccountEntry>;
@@ -267,9 +267,9 @@ export function clearAccountEntryFields<TAccountEntry extends object>(params: {
   if (!baseAccounts || !(accountKey in baseAccounts)) {
     return { nextAccounts: baseAccounts, changed: false, cleared: false };
   }
-  const entry = { ...(baseAccounts[accountKey] as object) } as Record<string, unknown>;
+  const entry = { ...(baseAccounts[accountKey] as object) } as Record<string, any>;
   let cleared = false;
-  const isValueSet = params.isValueSet ?? ((v: unknown) => v !== undefined && v !== null);
+  const isValueSet = params.isValueSet ?? ((v: any) => v !== undefined && v !== null);
   for (const field of params.fields) {
     if (field in entry && isValueSet(entry[field])) {
       cleared = true;

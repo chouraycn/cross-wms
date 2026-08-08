@@ -52,7 +52,7 @@ function buildGatewaySessionSnapshot(params: {
   displayName?: string;
   parentSessionKey?: string;
   hasActiveRun?: boolean;
-}): Record<string, unknown> {
+}): Record<string, any> {
   const { sessionRow } = params;
   if (!sessionRow) {
     return {};

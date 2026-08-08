@@ -183,7 +183,7 @@ function installTestRegistry(
 function createManager(options?: {
   channelRuntime?: PluginRuntime["channel"];
   resolveChannelRuntime?: () => PluginRuntime["channel"] | Promise<PluginRuntime["channel"]>;
-  getRuntimeConfig?: () => Record<string, unknown>;
+  getRuntimeConfig?: () => Record<string, any>;
   channelIds?: ChannelId[];
   startupTrace?: { measure: <T>(name: string, run: () => T | Promise<T>) => Promise<T> };
   fillChannelDependencies?: boolean;

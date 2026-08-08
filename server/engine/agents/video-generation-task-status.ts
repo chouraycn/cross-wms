@@ -50,7 +50,7 @@ export function findDuplicateGuardVideoGenerationTaskForSession(params: {
 
 /** Builds status details for a video generation task. */
 export function buildVideoGenerationTaskStatusDetails(params: {
-  task: Record<string, unknown>;
+  task: Record<string, any>;
   sourcePrefix?: string;
 }) {
   return buildMediaGenerationTaskStatusDetails({
@@ -61,7 +61,7 @@ export function buildVideoGenerationTaskStatusDetails(params: {
 
 /** Builds status text for a video generation task. */
 export function buildVideoGenerationTaskStatusText(params: {
-  task: Record<string, unknown>;
+  task: Record<string, any>;
   sourcePrefix?: string;
   duplicateGuard?: boolean;
 }) {

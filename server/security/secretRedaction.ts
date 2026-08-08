@@ -151,8 +151,8 @@ export function redactObject<T = unknown>(obj: T): T {
     return obj.map(item => redactObject(item)) as unknown as T;
   }
 
-  const result: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
+  const result: Record<string, any> = {};
+  for (const [k, v] of Object.entries(obj as Record<string, any>)) {
     result[k] = redactObject(v);
   }
   return result as unknown as T;

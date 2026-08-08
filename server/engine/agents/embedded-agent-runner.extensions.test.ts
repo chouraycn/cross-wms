@@ -85,7 +85,7 @@ describe("buildEmbeddedExtensionFactories", () => {
 
   it("finalizes terminal presentation from the post-middleware result", async () => {
     const registry = createEmptyPluginRegistry();
-    const seenMiddlewareArgs: unknown[] = [];
+    const seenMiddlewareArgs: any[] = [];
     registry.agentToolResultMiddlewares.push({
       pluginId: "redactor",
       pluginName: "redactor",

@@ -10,10 +10,10 @@ export type SpeechProviderId = string;
 export type SpeechSynthesisTarget = "audio-file" | "voice-note" | "telephony";
 
 /** Provider-owned normalized config map. */
-export type SpeechProviderConfig = Record<string, unknown>;
+export type SpeechProviderConfig = Record<string, any>;
 
 /** Provider-owned per-request directive/persona overrides. */
-export type SpeechProviderOverrides = Record<string, unknown>;
+export type SpeechProviderOverrides = Record<string, any>;
 
 /** Policy controlling which [[tts:*]] directive fields can affect synthesis. */
 export type SpeechModelOverridePolicy = {
@@ -136,7 +136,7 @@ export type SpeechListVoicesRequest = {
 /** Provider hook input for resolving normalized config from raw OpenClaw config. */
 export type SpeechProviderResolveConfigContext = {
   cfg: OpenClawConfig;
-  rawConfig: Record<string, unknown>;
+  rawConfig: Record<string, any>;
   timeoutMs: number;
 };
 
@@ -160,7 +160,7 @@ export type SpeechDirectiveTokenParseResult = {
 /** Provider hook input for resolving talk-command speech config. */
 export type SpeechProviderResolveTalkConfigContext = {
   cfg: OpenClawConfig;
-  baseTtsConfig: Record<string, unknown>;
+  baseTtsConfig: Record<string, any>;
   talkProviderConfig: TalkProviderConfig;
   timeoutMs: number;
 };
@@ -168,5 +168,5 @@ export type SpeechProviderResolveTalkConfigContext = {
 /** Provider hook input for per-call talk-command overrides. */
 export type SpeechProviderResolveTalkOverridesContext = {
   talkProviderConfig: TalkProviderConfig;
-  params: Record<string, unknown>;
+  params: Record<string, any>;
 };

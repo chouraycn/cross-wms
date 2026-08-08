@@ -79,7 +79,7 @@ async function expectPathMissing(targetPath: string): Promise<void> {
   throw new Error(`Expected path to be missing: ${targetPath}`);
 }
 
-function requireFirstMockCall<T extends unknown[]>(
+function requireFirstMockCall<T extends any[]>(
   mock: { mock: { calls: T[] } },
   label: string,
 ): T {
@@ -533,7 +533,7 @@ describe("managed npm root", () => {
   it("reads workspace pnpm overrides for managed plugin installs", async () => {
     const workspace = YAML.parse(
       await fs.readFile(path.resolve(process.cwd(), "pnpm-workspace.yaml"), "utf8"),
-    ) as { overrides?: Record<string, unknown> };
+    ) as { overrides?: Record<string, any> };
     const expectedOverrides = workspace.overrides ?? {};
 
     expect(expectedOverrides).toMatchObject({
@@ -1382,7 +1382,7 @@ describe("managed npm root", () => {
       await fs.readFile(path.join(npmRoot, "package-lock.json"), "utf8"),
     ) as {
       packages?: Record<string, { dependencies?: Record<string, string>; version?: string }>;
-      dependencies?: Record<string, unknown>;
+      dependencies?: Record<string, any>;
     };
     expect(lockfile.packages?.[""]?.dependencies).toEqual({
       "@openclaw/discord": "2026.5.4",
@@ -1564,7 +1564,7 @@ describe("managed npm root", () => {
       await fs.readFile(path.join(npmRoot, "package-lock.json"), "utf8"),
     ) as {
       packages?: Record<string, { dependencies?: Record<string, string>; version?: string }>;
-      dependencies?: Record<string, unknown>;
+      dependencies?: Record<string, any>;
     };
     expect(lockfile.packages?.[""]?.dependencies).toEqual({
       "@xdarkicex/openclaw-memory-libravdb": "1.4.69",

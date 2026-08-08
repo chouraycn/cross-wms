@@ -92,7 +92,7 @@ describe("runCommandWithTimeout", () => {
     spawnMock.mockReset();
     execFileMock.mockReset();
     execFilePromiseMock.mockReset();
-    delete (execFileMock as { [promisify.custom]?: unknown })[promisify.custom];
+    delete (execFileMock as { [promisify.custom]?: any })[promisify.custom];
     await loadExecModules();
   });
 

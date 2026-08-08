@@ -11,7 +11,7 @@ type BundledChannelEntry = {
 
 type BundledChannelSetupEntry = {
   kind?: string;
-  loadSetupPlugin?: unknown;
+  loadSetupPlugin?: any;
 };
 
 export function assertBundledChannelEntries(params: {

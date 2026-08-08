@@ -15,7 +15,7 @@ import type { RespondFn } from "./types.js";
 /**
  * Shared response adapters for node-related gateway methods.
  */
-type ValidatorFn = ((value: unknown) => boolean) & {
+type ValidatorFn = ((value: any) => boolean) & {
   errors?: ValidationError[] | null;
 };
 
@@ -45,7 +45,7 @@ export async function respondUnavailableOnThrow(respond: RespondFn, fn: () => Pr
 }
 
 /** Narrows successful node invoke results or responds with the node error details. */
-export function respondUnavailableOnNodeInvokeError<T extends { ok: boolean; error?: unknown }>(
+export function respondUnavailableOnNodeInvokeError<T extends { ok: boolean; error?: any }>(
   respond: RespondFn,
   res: T,
 ): res is T & { ok: true } {
@@ -54,7 +54,7 @@ export function respondUnavailableOnNodeInvokeError<T extends { ok: boolean; err
   }
   const nodeError =
     res.error && typeof res.error === "object"
-      ? (res.error as { code?: unknown; message?: unknown })
+      ? (res.error as { code?: any; message?: any })
       : null;
   const nodeCode = normalizeOptionalString(nodeError?.code) ?? "";
   const nodeMessage = normalizeOptionalString(nodeError?.message) ?? "node invoke failed";

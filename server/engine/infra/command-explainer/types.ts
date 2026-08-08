@@ -89,7 +89,7 @@ export type ExplainCommandOptions = {
 export type CommandStep = {
   id?: string;
   parentCommandId?: string;
-  context: unknown;
+  context: any;
   executable: string;
   argv: string[];
   text: string;

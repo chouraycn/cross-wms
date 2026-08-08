@@ -19,17 +19,17 @@ vi.mock("node:child_process", async () => {
     () => vi.importActual<typeof import("node:child_process")>("node:child_process"),
     {
       execFile: execFileMock,
-      spawnSync: (...args: unknown[]) => spawnSyncMock(...args),
+      spawnSync: (...args: any[]) => spawnSyncMock(...args),
     } as Partial<typeof import("node:child_process")>,
   );
 });
 
 vi.mock("./ports-lsof.js", () => ({
-  resolveLsofCommandSync: (...args: unknown[]) => resolveLsofCommandSyncMock(...args),
+  resolveLsofCommandSync: (...args: any[]) => resolveLsofCommandSyncMock(...args),
 }));
 
 vi.mock("../config/paths.js", () => ({
-  resolveGatewayPort: (...args: unknown[]) => resolveGatewayPortMock(...args),
+  resolveGatewayPort: (...args: any[]) => resolveGatewayPortMock(...args),
   resolveStateDir: (env: NodeJS.ProcessEnv = process.env) =>
     env.OPENCLAW_STATE_DIR ?? "/tmp/openclaw-state",
 }));
@@ -107,10 +107,10 @@ describe.runIf(process.platform !== "win32")("findGatewayPidsOnPortSync", () => 
       ) ?? [];
     expect(command).toBe("/usr/sbin/lsof");
     expect(args).toEqual(["-nP", "-iTCP:18789", "-sTCP:LISTEN", "-Fpc"]);
-    expect((options as { encoding?: unknown; timeout?: unknown } | undefined)?.encoding).toBe(
+    expect((options as { encoding?: any; timeout?: any } | undefined)?.encoding).toBe(
       "utf8",
     );
-    expect((options as { encoding?: unknown; timeout?: unknown } | undefined)?.timeout).toBe(2000);
+    expect((options as { encoding?: any; timeout?: any } | undefined)?.timeout).toBe(2000);
   });
 
   it("returns empty when lsof fails", () => {
@@ -176,10 +176,10 @@ describe.runIf(process.platform !== "win32")("cleanStaleGatewayProcessesSync", (
     const [command, args, options] = requireFirstSpawnSyncCall();
     expect(command).toBe("/usr/sbin/lsof");
     expect(args).toEqual(["-nP", "-iTCP:19999", "-sTCP:LISTEN", "-Fpc"]);
-    expect((options as { encoding?: unknown; timeout?: unknown } | undefined)?.encoding).toBe(
+    expect((options as { encoding?: any; timeout?: any } | undefined)?.encoding).toBe(
       "utf8",
     );
-    expect((options as { encoding?: unknown; timeout?: unknown } | undefined)?.timeout).toBe(2000);
+    expect((options as { encoding?: any; timeout?: any } | undefined)?.timeout).toBe(2000);
     expect(killSpy).toHaveBeenCalledWith(stalePid, "SIGTERM");
     expect(killSpy).toHaveBeenCalledWith(stalePid, "SIGKILL");
   });

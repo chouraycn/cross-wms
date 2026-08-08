@@ -42,7 +42,7 @@ export type {
 type BundledChannelRuntime = unknown;
 
 type ChannelEntryConfigSchema<TPlugin> =
-  TPlugin extends ChannelPlugin<unknown>
+  TPlugin extends ChannelPlugin<any>
     ? NonNullable<TPlugin["configSchema"]>
     : ChannelConfigSchema;
 
@@ -132,7 +132,7 @@ export type BundledChannelSetupEntryContract<TPlugin = ChannelPlugin> = {
 const moduleLoaders: PluginModuleLoaderCache = new Map();
 const entryBoundaryInfoCache = new Map<string, BundledEntryBoundaryInfo>();
 const resolvedModulePaths = new Map<string, string>();
-const loadedModuleExports = new Map<string, unknown>();
+const loadedModuleExports = new Map<string, any>();
 const disableBundledEntrySourceFallbackEnv = "OPENCLAW_DISABLE_BUNDLED_ENTRY_SOURCE_FALLBACK";
 
 function isTruthyEnvFlag(value: string | undefined): boolean {
@@ -263,7 +263,7 @@ function resolveBundledEntryModuleCandidates(
   return candidates;
 }
 
-function formatBundledEntryUnknownError(error: unknown): string {
+function formatBundledEntryUnknownError(error: any): string {
   if (typeof error === "string") {
     return error;
   }
@@ -388,13 +388,13 @@ function loadBundledEntryModuleSync(
   importMetaUrl: string,
   specifier: string,
   options: BundledEntryModuleLoadOptions = {},
-): unknown {
+): any {
   const modulePath = resolveBundledEntryModulePath(importMetaUrl, specifier);
   const cached = loadedModuleExports.get(modulePath);
   if (cached !== undefined) {
     return cached;
   }
-  let loaded: unknown;
+  let loaded: any;
   const profile = shouldProfilePluginLoader();
   const loadStartMs = profile ? performance.now() : 0;
   let sourceLoaderReadyMs = 0;
@@ -452,13 +452,13 @@ export function loadBundledEntryExportSync<T>(
 ): T {
   const loaded = loadBundledEntryModuleSync(importMetaUrl, reference.specifier, options);
   const resolved =
-    loaded && typeof loaded === "object" && "default" in (loaded as Record<string, unknown>)
-      ? (loaded as { default: unknown }).default
+    loaded && typeof loaded === "object" && "default" in (loaded as Record<string, any>)
+      ? (loaded as { default: any }).default
       : loaded;
   if (!reference.exportName) {
     return resolved as T;
   }
-  const record = (resolved ?? loaded) as Record<string, unknown> | undefined;
+  const record = (resolved ?? loaded) as Record<string, any> | undefined;
   if (!record || !(reference.exportName in record)) {
     throw new Error(
       `missing export "${reference.exportName}" from bundled entry module ${reference.specifier}`,

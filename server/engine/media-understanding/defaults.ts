@@ -18,7 +18,7 @@ export {
   MIN_AUDIO_FILE_BYTES,
 } from "./defaults.constants.js";
 
-function normalizeOptionalString(value: unknown): string | undefined {
+function normalizeOptionalString(value: any): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }

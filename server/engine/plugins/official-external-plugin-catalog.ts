@@ -97,7 +97,7 @@ const OFFICIAL_CATALOG_SOURCES = [
   officialExternalPluginCatalog,
 ] as const;
 
-function parseCatalogEntries(raw: unknown): OfficialExternalPluginCatalogEntry[] {
+function parseCatalogEntries(raw: any): OfficialExternalPluginCatalogEntry[] {
   if (Array.isArray(raw)) {
     return raw.filter((entry): entry is OfficialExternalPluginCatalogEntry => isRecord(entry));
   }
@@ -111,7 +111,7 @@ function parseCatalogEntries(raw: unknown): OfficialExternalPluginCatalogEntry[]
   return list.filter((entry): entry is OfficialExternalPluginCatalogEntry => isRecord(entry));
 }
 
-function normalizeDefaultChoice(value: unknown): PluginPackageInstall["defaultChoice"] | undefined {
+function normalizeDefaultChoice(value: any): PluginPackageInstall["defaultChoice"] | undefined {
   return value === "clawhub" || value === "npm" || value === "local" ? value : undefined;
 }
 

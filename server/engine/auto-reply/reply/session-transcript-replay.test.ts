@@ -7,7 +7,7 @@ import { replayRecentUserAssistantMessages } from "../../config/sessions/transcr
 
 const DEFAULT_REPLAY_MAX_MESSAGES = 6;
 
-const j = (obj: unknown): string => `${JSON.stringify(obj)}\n`;
+const j = (obj: any): string => `${JSON.stringify(obj)}\n`;
 
 function messageEntry(params: {
   id: string;
@@ -50,7 +50,7 @@ async function readJsonlRecords(filePath: string): Promise<ReplayRecord[]> {
 }
 
 async function expectPathMissing(targetPath: string): Promise<void> {
-  let statError: unknown;
+  let statError: any;
   try {
     await fs.stat(targetPath);
   } catch (error) {

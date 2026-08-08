@@ -10,7 +10,7 @@ import {
 import { subscribeEmbeddedAgentSession } from "./embedded-agent-subscribe.js";
 import { makeZeroUsageSnapshot } from "./usage.js";
 
-type SessionEventHandler = (evt: unknown) => void;
+type SessionEventHandler = (evt: any) => void;
 
 describe("subscribeEmbeddedAgentSession", () => {
   it("splits long single-line fenced blocks with reopen/close", async () => {
@@ -156,7 +156,7 @@ describe("subscribeEmbeddedAgentSession", () => {
       listener({ type: "compaction_end", willRetry: false });
     }
 
-    const usage = (session.messages?.[0] as { usage?: unknown } | undefined)?.usage;
+    const usage = (session.messages?.[0] as { usage?: any } | undefined)?.usage;
     expect(usage).toEqual(makeZeroUsageSnapshot());
   });
 });

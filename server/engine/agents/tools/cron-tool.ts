@@ -46,7 +46,7 @@ const REMINDER_CONTEXT_PER_MESSAGE_MAX = 220;
 const REMINDER_CONTEXT_TOTAL_MAX = 700;
 const REMINDER_CONTEXT_MARKER = "\n\nRecent context:\n";
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return (
     typeof value === "object" &&
     value !== null &&
@@ -55,7 +55,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   );
 }
 
-function isMissingOrEmptyObject(value: unknown): boolean {
+function isMissingOrEmptyObject(value: any): boolean {
   return !value || (isRecord(value) && Object.keys(value).length === 0);
 }
 
@@ -224,7 +224,7 @@ function createCronDeliveryPatchSchema(): TSchema {
 
 function createCronFailureAlertSchema(): TSchema {
   return Type.Optional(
-    Type.Unsafe<Record<string, unknown> | false>({
+    Type.Unsafe<Record<string, any> | false>({
       type: "object",
       properties: {
         after: optionalPositiveIntegerSchema({ description: "Failures before alert" }),
@@ -333,7 +333,7 @@ export function createCronToolSchema(): TSchema {
 
 type CronToolOptions = {
   agentSessionKey?: string;
-  currentDeliveryContext?: unknown;
+  currentDeliveryContext?: any;
   creatorToolAllowlist?: CronCreatorToolAllowlistEntry[];
   selfRemoveOnlyJobId?: string;
 };
@@ -341,10 +341,10 @@ type CronToolOptions = {
 type CronToolDeps = {
   callGatewayTool?: (
     action: string,
-    opts: unknown,
-    params: unknown,
-    extra?: unknown,
-  ) => Promise<unknown>;
+    opts: any,
+    params: any,
+    extra?: any,
+  ) => Promise<any>;
 };
 
 export function replaceWithEffectiveCronCreatorToolAllowlist<T extends { name: string }>(
@@ -403,13 +403,13 @@ PAYLOAD TYPES (payload.kind):
       type: "string" | "number" | "boolean" | "object" | "any" | "array";
       description: string;
       required: boolean;
-      default?: unknown;
+      default?: any;
       enum?: string[] | undefined;
       items?: { type: string } | undefined;
-      properties?: Record<string, unknown> | undefined;
+      properties?: Record<string, any> | undefined;
     }>,
-    async execute(_toolCallId: string, args: unknown) {
-      const params = args as Record<string, unknown>;
+    async execute(_toolCallId: string, args: any) {
+      const params = args as Record<string, any>;
       const action = typeof params.action === "string" ? params.action : "";
 
       if (action === "add" && isMissingOrEmptyObject(params.job)) {

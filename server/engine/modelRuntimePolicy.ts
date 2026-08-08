@@ -34,7 +34,7 @@ export interface ResolveModelRuntimePolicyParams {
   provider?: string;
   modelId?: string;
   sessionKey?: string;
-  config?: Record<string, unknown>;
+  config?: Record<string, any>;
 }
 
 function hasRuntimePolicy(policy?: RuntimePolicyConfig): policy is RuntimePolicyConfig {
@@ -78,56 +78,56 @@ function normalizeModelId(modelId: string | undefined): string | undefined {
 }
 
 function resolveProviderConfig(
-  config: Record<string, unknown> | undefined,
+  config: Record<string, any> | undefined,
   provider: string | undefined,
-): Record<string, unknown> | undefined {
+): Record<string, any> | undefined {
   if (!config || !provider?.trim()) {
     return undefined;
   }
-  const models = config.models as Record<string, unknown> | undefined;
+  const models = config.models as Record<string, any> | undefined;
   if (!models?.providers) {
     return undefined;
   }
-  const providers = models.providers as Record<string, unknown>;
+  const providers = models.providers as Record<string, any>;
   const direct = providers[provider];
   if (direct) {
-    return direct as Record<string, unknown>;
+    return direct as Record<string, any>;
   }
   const normalizedProvider = normalizeProviderId(provider);
   for (const [candidate, candidateConfig] of Object.entries(providers)) {
     if (normalizeProviderId(candidate) === normalizedProvider) {
-      return candidateConfig as Record<string, unknown>;
+      return candidateConfig as Record<string, any>;
     }
   }
   return undefined;
 }
 
 function resolveModelConfig(
-  config: Record<string, unknown> | undefined,
+  config: Record<string, any> | undefined,
   modelId: string | undefined,
-): Record<string, unknown> | undefined {
+): Record<string, any> | undefined {
   if (!config?.models || !modelId?.trim()) {
     return undefined;
   }
   const normalizedModelId = normalizeModelId(modelId);
   if (!normalizedModelId) return undefined;
 
-  const models = config.models as Record<string, unknown>;
+  const models = config.models as Record<string, any>;
 
   if (models.entries) {
-    const entries = models.entries as Record<string, unknown>;
+    const entries = models.entries as Record<string, any>;
     if (entries[normalizedModelId]) {
-      return entries[normalizedModelId] as Record<string, unknown>;
+      return entries[normalizedModelId] as Record<string, any>;
     }
   }
 
-  const providers = models.providers as Record<string, unknown>;
+  const providers = models.providers as Record<string, any>;
   for (const providerConfig of Object.values(providers)) {
-    const provider = providerConfig as Record<string, unknown>;
+    const provider = providerConfig as Record<string, any>;
     if (provider.models) {
-      const providerModels = provider.models as Record<string, unknown>;
+      const providerModels = provider.models as Record<string, any>;
       if (providerModels[normalizedModelId]) {
-        return providerModels[normalizedModelId] as Record<string, unknown>;
+        return providerModels[normalizedModelId] as Record<string, any>;
       }
     }
   }
@@ -136,14 +136,14 @@ function resolveModelConfig(
 }
 
 function resolveAgentConfig(
-  config: Record<string, unknown> | undefined,
+  config: Record<string, any> | undefined,
   agentId: string | undefined,
-): Record<string, unknown> | undefined {
+): Record<string, any> | undefined {
   if (!config?.agents || !agentId?.trim()) {
     return undefined;
   }
-  const agents = config.agents as Record<string, unknown>;
-  return agents[agentId] as Record<string, unknown>;
+  const agents = config.agents as Record<string, any>;
+  return agents[agentId] as Record<string, any>;
 }
 
 export function resolveModelRuntimePolicy(
@@ -216,13 +216,13 @@ export function resolveModelRuntimePolicy(
   };
 }
 
-function extractRuntimePolicy(config: Record<string, unknown>): RuntimePolicyConfig | undefined {
+function extractRuntimePolicy(config: Record<string, any>): RuntimePolicyConfig | undefined {
   if (config.runtime && typeof config.runtime === 'string') {
     return { id: config.runtime };
   }
 
   if (config.runtimePolicy && typeof config.runtimePolicy === 'object') {
-    const policy = config.runtimePolicy as Record<string, unknown>;
+    const policy = config.runtimePolicy as Record<string, any>;
     if (policy.id && typeof policy.id === 'string') {
       return {
         id: policy.id,
@@ -233,7 +233,7 @@ function extractRuntimePolicy(config: Record<string, unknown>): RuntimePolicyCon
   }
 
   if (config.agent && typeof config.agent === 'object') {
-    const agent = config.agent as Record<string, unknown>;
+    const agent = config.agent as Record<string, any>;
     if (agent.runtime && typeof agent.runtime === 'string') {
       return { id: agent.runtime };
     }

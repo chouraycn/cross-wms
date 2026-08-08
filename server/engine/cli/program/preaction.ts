@@ -62,7 +62,7 @@ function getCliLogLevel(actionCommand: Command): LogLevel | undefined {
   if (root.getOptionValueSource("logLevel") !== "cli") {
     return undefined;
   }
-  const logLevel = root.opts<Record<string, unknown>>().logLevel;
+  const logLevel = root.opts<Record<string, any>>().logLevel;
   return typeof logLevel === "string" ? (logLevel as LogLevel) : undefined;
 }
 

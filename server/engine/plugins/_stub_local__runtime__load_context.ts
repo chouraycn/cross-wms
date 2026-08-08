@@ -11,23 +11,23 @@ export interface PluginRuntimeLoadContext {
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   logger: {
-    error: (...args: unknown[]) => void;
-    warn: (...args: unknown[]) => void;
-    debug?: (...args: unknown[]) => void;
-    [key: string]: unknown;
+    error: (...args: any[]) => void;
+    warn: (...args: any[]) => void;
+    debug?: (...args: any[]) => void;
+    [key: string]: any;
   };
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 export const buildPluginRuntimeLoadOptions = (
-  _context: unknown,
-  _options?: Record<string, unknown>,
+  _context: any,
+  _options?: Record<string, any>,
 ): PluginLoadOptions => ({});
 
 export const resolvePluginRuntimeLoadContext = (params: {
   config: OpenClawConfig;
   env?: NodeJS.ProcessEnv;
-  workspaceDir?: unknown;
+  workspaceDir?: any;
 }): PluginRuntimeLoadContext => ({
   config: params.config,
   workspaceDir: typeof params.workspaceDir === "string" ? params.workspaceDir : undefined,

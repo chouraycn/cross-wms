@@ -5,7 +5,7 @@
 // 适配说明：
 //  - @openclaw/normalization-core/string-coerce → ../infra/string-coerce.js（已移植）
 //  - ../config/io.js（getRuntimeConfig）→ 降级为返回空配置对象
-//  - ../config/types.openclaw.js（OpenClawConfig）→ 使用 Record<string, unknown> 宽松类型
+//  - ../config/types.openclaw.js（OpenClawConfig）→ 使用 Record<string, any> 宽松类型
 //  - ./auth.js（authorizeHttpGatewayConnect）→ cross-wms 已移植，签名更简单
 //    （不含 browserOriginPolicy、connectAuth、rateLimiter 参数），适配调用
 //  - ./http-common.js（sendGatewayAuthFailure、sendMissingScopeForbidden）→
@@ -32,8 +32,8 @@ import {
 
 /** AuthRateLimiter 宽松类型（cross-wms auth-rate-limit 为降级占位）。 */
 export type AuthRateLimiter = {
-  check?: (...args: unknown[]) => { allowed: boolean };
-  recordFailure?: (...args: unknown[]) => void;
+  check?: (...args: any[]) => { allowed: boolean };
+  recordFailure?: (...args: any[]) => void;
 };
 
 /** 从 IncomingMessage headers 中按名称获取头部值。 */
@@ -79,14 +79,14 @@ export type GatewayHttpRequestAuthCheckResult =
 /** 解析 HTTP 浏览器来源策略（降级实现：仅返回 host/origin 头信息）。 */
 export function resolveHttpBrowserOriginPolicy(
   req: IncomingMessage,
-  cfg?: Record<string, unknown>,
+  cfg?: Record<string, any>,
 ): {
   requestHost: string | undefined;
   origin: string | undefined;
-  allowedOrigins: unknown;
+  allowedOrigins: any;
   allowHostHeaderOriginFallback: boolean;
 } {
-  const gatewayConfig = (cfg as { gateway?: { controlUi?: Record<string, unknown> } } | undefined)?.gateway;
+  const gatewayConfig = (cfg as { gateway?: { controlUi?: Record<string, any> } } | undefined)?.gateway;
   return {
     requestHost: getHeader(req, "host"),
     origin: getHeader(req, "origin"),
@@ -120,7 +120,7 @@ function shouldTrustDeclaredHttpOperatorScopes(
 /** 发送 gateway 鉴权失败响应（本地实现，替代 openclaw http-common 的 sendGatewayAuthFailure）。 */
 function sendGatewayAuthFailure(res: ServerResponse, authResult: GatewayAuthResult): void {
   const status = authResult.rateLimited ? 429 : 401;
-  sendJsonResponse(res as unknown as { statusCode?: number; setHeader?: (n: string, v: string) => void; end?: (b?: string) => void; json?: (b: unknown) => void }, status, {
+  sendJsonResponse(res as unknown as { statusCode?: number; setHeader?: (n: string, v: string) => void; end?: (b?: string) => void; json?: (b: any) => void }, status, {
     error: authResult.reason ?? "unauthorized",
     method: authResult.method,
     ...(authResult.retryAfterMs ? { retryAfterMs: authResult.retryAfterMs } : {}),
@@ -129,7 +129,7 @@ function sendGatewayAuthFailure(res: ServerResponse, authResult: GatewayAuthResu
 
 /** 发送缺失 scope 的 403 禁止响应（本地实现，替代 openclaw http-common 的 sendMissingScopeForbidden）。 */
 function sendMissingScopeForbidden(res: ServerResponse, missingScope: string): void {
-  sendJsonResponse(res as unknown as { statusCode?: number; setHeader?: (n: string, v: string) => void; end?: (b?: string) => void; json?: (b: unknown) => void }, 403, {
+  sendJsonResponse(res as unknown as { statusCode?: number; setHeader?: (n: string, v: string) => void; end?: (b?: string) => void; json?: (b: any) => void }, 403, {
     error: `missing required scope: ${missingScope}`,
     missingScope,
   });
@@ -159,7 +159,7 @@ export async function checkGatewayHttpRequestAuth(params: {
   trustedProxies?: string[];
   allowRealIpFallback?: boolean;
   rateLimiter?: AuthRateLimiter;
-  cfg?: Record<string, unknown>;
+  cfg?: Record<string, any>;
 }): Promise<GatewayHttpRequestAuthCheckResult> {
   const token = getBearerToken(params.req);
   // 适配 cross-wms auth.ts：authorizeHttpGatewayConnect 接受 (auth, req, trustedProxies?, clientIp?)
@@ -208,12 +208,12 @@ export async function authorizeScopedGatewayHttpRequestOrReply(params: {
     requestAuth: AuthorizedGatewayHttpRequest,
   ) => string[];
 }): Promise<{
-  cfg: Record<string, unknown>;
+  cfg: Record<string, any>;
   requestAuth: AuthorizedGatewayHttpRequest;
   operatorScopes: string[];
 } | null> {
   // 降级：openclaw 使用 getRuntimeConfig()，cross-wms 返回空配置对象。
-  const cfg: Record<string, unknown> = {};
+  const cfg: Record<string, any> = {};
   const requestAuth = await authorizeGatewayHttpRequestOrReply({
     req: params.req,
     res: params.res,

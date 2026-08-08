@@ -262,11 +262,11 @@ export function hasInternalRuntimeContext(text: string): boolean {
   );
 }
 
-function isOpenClawRuntimeContextCustomMessage(message: unknown): boolean {
+function isOpenClawRuntimeContextCustomMessage(message: any): boolean {
   if (!message || typeof message !== "object") {
     return false;
   }
-  const candidate = message as { role?: unknown; customType?: unknown };
+  const candidate = message as { role?: any; customType?: any };
   return (
     candidate.role === "custom" && candidate.customType === OPENCLAW_RUNTIME_CONTEXT_CUSTOM_TYPE
   );
@@ -280,9 +280,9 @@ export function stripRuntimeContextCustomMessages<T>(messages: T[]): T[] {
   return messages.filter((message) => !isOpenClawRuntimeContextCustomMessage(message));
 }
 
-function isUserMessage(message: unknown): boolean {
+function isUserMessage(message: any): boolean {
   return Boolean(
-    message && typeof message === "object" && (message as { role?: unknown }).role === "user",
+    message && typeof message === "object" && (message as { role?: any }).role === "user",
   );
 }
 

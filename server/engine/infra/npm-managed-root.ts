@@ -14,51 +14,51 @@ export type MissingRequiredPlatformPackage = {
   optional: boolean;
 };
 
-export function readOpenClawManagedNpmRootOverrides(...args: unknown[]): Record<string, unknown> {
+export function readOpenClawManagedNpmRootOverrides(...args: any[]): Record<string, any> {
   void args;
   return {};
 }
 
-export function resolveManagedNpmRootDependencySpec(...args: unknown[]): string {
+export function resolveManagedNpmRootDependencySpec(...args: any[]): string {
   void args;
   return "";
 }
 
-export function upsertManagedNpmRootDependency(...args: unknown[]): void {
+export function upsertManagedNpmRootDependency(...args: any[]): void {
   void args;
 }
 
-export function listMissingRequiredPlatformPackages(...args: unknown[]): Promise<MissingRequiredPlatformPackage[]> {
+export function listMissingRequiredPlatformPackages(...args: any[]): Promise<MissingRequiredPlatformPackage[]> {
   void args;
   return Promise.resolve([]);
 }
 
-export function readManagedNpmRootPeerDependencySnapshot(...args: unknown[]): Promise<ManagedNpmRootPeerDependencySnapshot> {
+export function readManagedNpmRootPeerDependencySnapshot(...args: any[]): Promise<ManagedNpmRootPeerDependencySnapshot> {
   void args;
   return Promise.resolve({ managedPeerDependencies: [] });
 }
 
-export function restoreManagedNpmRootPeerDependencySnapshot(...args: unknown[]): Promise<void> {
+export function restoreManagedNpmRootPeerDependencySnapshot(...args: any[]): Promise<void> {
   void args;
   return Promise.resolve();
 }
 
-export function syncManagedNpmRootPeerDependencies(...args: unknown[]): Promise<boolean> {
+export function syncManagedNpmRootPeerDependencies(...args: any[]): Promise<boolean> {
   void args;
   return Promise.resolve(false);
 }
 
-export function repairManagedNpmRootOpenClawPeer(...args: unknown[]): Promise<boolean> {
+export function repairManagedNpmRootOpenClawPeer(...args: any[]): Promise<boolean> {
   void args;
   return Promise.resolve(false);
 }
 
-export function readManagedNpmRootInstalledDependency(...args: unknown[]): Promise<ManagedNpmRootInstalledDependency | null> {
+export function readManagedNpmRootInstalledDependency(...args: any[]): Promise<ManagedNpmRootInstalledDependency | null> {
   void args;
   return Promise.resolve(null);
 }
 
-export function removeManagedNpmRootDependency(...args: unknown[]): Promise<void> {
+export function removeManagedNpmRootDependency(...args: any[]): Promise<void> {
   void args;
   return Promise.resolve();
 }

@@ -11,7 +11,7 @@ type StabilityRecord = {
   level?: string;
   reason?: string;
   durationMs?: number;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 class StabilityRecorder {

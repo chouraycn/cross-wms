@@ -18,7 +18,7 @@ export type SecretRefSource = 'env' | 'file' | 'exec';
 
 export interface ResolveSecretRefOptions {
   env?: NodeJS.ProcessEnv;
-  cache?: Map<string, unknown>;
+  cache?: Map<string, any>;
 }
 
 export interface ResolutionLimits {
@@ -35,7 +35,7 @@ export class SecretProviderResolutionError extends Error {
     source: SecretRefSource;
     provider: string;
     message: string;
-    cause?: unknown;
+    cause?: any;
   }) {
     super(params.message);
     if (params.cause !== undefined) {
@@ -58,7 +58,7 @@ export class SecretRefResolutionError extends Error {
     provider: string;
     refId: string;
     message: string;
-    cause?: unknown;
+    cause?: any;
   }) {
     super(params.message);
     if (params.cause !== undefined) {
@@ -72,13 +72,13 @@ export class SecretRefResolutionError extends Error {
 }
 
 export function isProviderScopedSecretResolutionError(
-  value: unknown,
+  value: any,
 ): value is SecretProviderResolutionError {
   return value instanceof SecretProviderResolutionError;
 }
 
 export function isSecretResolutionError(
-  value: unknown,
+  value: any,
 ): value is SecretProviderResolutionError | SecretRefResolutionError {
   return (
     value instanceof SecretProviderResolutionError || value instanceof SecretRefResolutionError
@@ -89,7 +89,7 @@ function providerResolutionError(params: {
   source: SecretRefSource;
   provider: string;
   message: string;
-  cause?: unknown;
+  cause?: any;
 }): SecretProviderResolutionError {
   return new SecretProviderResolutionError(params);
 }
@@ -99,7 +99,7 @@ function refResolutionError(params: {
   provider: string;
   refId: string;
   message: string;
-  cause?: unknown;
+  cause?: any;
 }): SecretRefResolutionError {
   return new SecretRefResolutionError(params);
 }
@@ -150,8 +150,8 @@ function resolveResolutionLimits(): ResolutionLimits {
   };
 }
 
-async function resolveEnvRefs(refs: Array<{ id: string; provider: string }>, env: NodeJS.ProcessEnv): Promise<Map<string, unknown>> {
-  const results = new Map<string, unknown>();
+async function resolveEnvRefs(refs: Array<{ id: string; provider: string }>, env: NodeJS.ProcessEnv): Promise<Map<string, any>> {
+  const results = new Map<string, any>();
   for (const ref of refs) {
     const value = env[ref.id];
     if (value !== undefined) {
@@ -161,8 +161,8 @@ async function resolveEnvRefs(refs: Array<{ id: string; provider: string }>, env
   return results;
 }
 
-async function resolveFileRefs(refs: Array<{ id: string; provider: string }>): Promise<Map<string, unknown>> {
-  const results = new Map<string, unknown>();
+async function resolveFileRefs(refs: Array<{ id: string; provider: string }>): Promise<Map<string, any>> {
+  const results = new Map<string, any>();
   for (const ref of refs) {
     try {
       const filePath = ref.id === 'value'
@@ -184,8 +184,8 @@ async function resolveFileRefs(refs: Array<{ id: string; provider: string }>): P
   return results;
 }
 
-async function resolveExecRefs(refs: Array<{ id: string; provider: string }>): Promise<Map<string, unknown>> {
-  const results = new Map<string, unknown>();
+async function resolveExecRefs(refs: Array<{ id: string; provider: string }>): Promise<Map<string, any>> {
+  const results = new Map<string, any>();
   for (const ref of refs) {
     try {
       const result = await executeCommand(ref.id, DEFAULT_EXEC_TIMEOUT_MS, DEFAULT_EXEC_MAX_OUTPUT_BYTES);
@@ -235,7 +235,7 @@ async function executeCommand(command: string, timeoutMs: number, maxOutputBytes
 export async function resolveSecretRefValues(
   refs: Array<{ source: SecretRefSource; provider: string; id: string }>,
   options: ResolveSecretRefOptions = {},
-): Promise<Map<string, unknown>> {
+): Promise<Map<string, any>> {
   if (refs.length === 0) {
     return new Map();
   }
@@ -286,7 +286,7 @@ export async function resolveSecretRefValues(
     grouped.set(key, { source: ref.source, providerName: ref.provider, refs: [ref] });
   }
 
-  const results = new Map<string, unknown>();
+  const results = new Map<string, any>();
   for (const group of grouped.values()) {
     if (group.refs.length > limits.maxRefsPerProvider) {
       throw providerResolutionError({
@@ -296,7 +296,7 @@ export async function resolveSecretRefValues(
       });
     }
 
-    let values: Map<string, unknown>;
+    let values: Map<string, any>;
     switch (group.source) {
       case 'env':
         values = await resolveEnvRefs(group.refs, env);

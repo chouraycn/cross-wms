@@ -67,7 +67,7 @@ export class ZaiAdapter implements IAiApiAdapter {
       Object.assign(headers, compat.extraHeaders);
     }
 
-    const body: Record<string, unknown> = {
+    const body: Record<string, any> = {
       model: modelId || ZAI_DEFAULT_MODEL_ID,
       messages,
       temperature,

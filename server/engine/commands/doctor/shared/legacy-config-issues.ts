@@ -9,11 +9,11 @@ import {
   listPluginDoctorLegacyConfigRules,
 } from "@openclaw-src/plugins/doctor-contract-registry.js";
 
-function collectConfiguredChannelIds(raw: unknown): ReadonlySet<string> {
+function collectConfiguredChannelIds(raw: any): ReadonlySet<string> {
   if (!raw || typeof raw !== "object") {
     return new Set();
   }
-  const channels = (raw as { channels?: unknown }).channels;
+  const channels = (raw as { channels?: any }).channels;
   if (!channels || typeof channels !== "object" || Array.isArray(channels)) {
     return new Set();
   }
@@ -21,7 +21,7 @@ function collectConfiguredChannelIds(raw: unknown): ReadonlySet<string> {
 }
 
 function collectPluginLegacyConfigRules(
-  raw: unknown,
+  raw: any,
   touchedPaths?: ReadonlyArray<ReadonlyArray<string>>,
 ): LegacyConfigRule[] {
   const channelIds = collectConfiguredChannelIds(raw);
@@ -38,8 +38,8 @@ function collectPluginLegacyConfigRules(
 
 /** Find legacy config issues using core rules plus relevant channel/plugin doctor contracts. */
 export function findDoctorLegacyConfigIssues(
-  raw: unknown,
-  sourceRaw?: unknown,
+  raw: any,
+  sourceRaw?: any,
   touchedPaths?: ReadonlyArray<ReadonlyArray<string>>,
 ): LegacyConfigIssue[] {
   return findLegacyConfigIssues(

@@ -52,7 +52,7 @@ function gatewayTokenConfig(config: OpenClawConfig): OpenClawConfig {
   };
 }
 
-function asConfig(value: unknown): OpenClawConfig {
+function asConfig(value: any): OpenClawConfig {
   return value as OpenClawConfig;
 }
 
@@ -109,7 +109,7 @@ function preparedSnapshotWithGatewayToken(
   };
 }
 
-function callArg<T>(mock: { mock: { calls: unknown[][] } }, index = 0, _type?: (value: T) => T): T {
+function callArg<T>(mock: { mock: { calls: any[][] } }, index = 0, _type?: (value: T) => T): T {
   const call = mock.mock.calls[index];
   if (!call) {
     throw new Error(`Expected mock call ${index}`);
@@ -163,12 +163,12 @@ function mockLogSecretsForTest(): GatewayStartupLogMock {
   };
 }
 
-function readTimelineEvents(filePath: string): Array<Record<string, unknown>> {
+function readTimelineEvents(filePath: string): Array<Record<string, any>> {
   return readFileSync(filePath, "utf8")
     .trim()
     .split(/\r?\n/u)
     .filter(Boolean)
-    .map((line) => JSON.parse(line) as Record<string, unknown>);
+    .map((line) => JSON.parse(line) as Record<string, any>);
 }
 
 function installDiagnosticsTimelineEnv() {
@@ -231,7 +231,7 @@ function cleanupGatewayStartupSecretsRuntimeMock(): void {
   vi.doUnmock("../secrets/runtime.js");
   delete (
     globalThis as typeof globalThis & {
-      __gatewayStartupSecretsRuntimeMock?: unknown;
+      __gatewayStartupSecretsRuntimeMock?: any;
     }
   )["__gatewayStartupSecretsRuntimeMock"];
 }
@@ -463,8 +463,8 @@ describe("gateway startup config secret preflight", () => {
     });
 
     const preflightInput = callArg<{
-      config?: unknown;
-      loadAuthStore?: unknown;
+      config?: any;
+      loadAuthStore?: any;
     }>(prepareRuntimeSecretsSnapshot);
     expect(typeof preflightInput.config).toBe("object");
     expect(preflightInput.loadAuthStore).toBe(loadAuthProfileStoreWithoutExternalProfiles);
@@ -513,7 +513,7 @@ describe("gateway startup config secret preflight", () => {
       "[WEB_SEARCH_KEY_UNRESOLVED_FALLBACK_USED] web search provider fell back to environment credentials",
     );
     expect(emitStateEvent).not.toHaveBeenCalled();
-    const preflightInput = callArg<{ config?: unknown }>(prepareRuntimeSecretsSnapshot);
+    const preflightInput = callArg<{ config?: any }>(prepareRuntimeSecretsSnapshot);
     expect(typeof preflightInput.config).toBe("object");
   });
 
@@ -635,7 +635,7 @@ describe("gateway startup config secret preflight", () => {
     expect(typeof result.config.gateway).toBe("object");
     const preflightInput = callArg<{
       config?: OpenClawConfig;
-      loadAuthStore?: unknown;
+      loadAuthStore?: any;
     }>(prepareRuntimeSecretsSnapshot);
     expect(preflightInput.config?.channels).toBeUndefined();
     expect(preflightInput.loadAuthStore).toBe(loadAuthProfileStoreWithoutExternalProfiles);
@@ -672,7 +672,7 @@ describe("gateway startup config secret preflight", () => {
     expect(result.auth.password).toBe("override-password");
     const preflightInput = callArg<{
       config?: OpenClawConfig;
-      loadAuthStore?: unknown;
+      loadAuthStore?: any;
     }>(prepareRuntimeSecretsSnapshot);
     expect(preflightInput.config?.gateway?.auth?.mode).toBe("password");
     expect(preflightInput.config?.gateway?.auth?.password).toBe("override-password");
@@ -694,7 +694,7 @@ describe("gateway startup config secret preflight", () => {
     expect(prepareRuntimeSecretsSnapshot).toHaveBeenCalledTimes(1);
     const preflightInput = callArg<{
       config?: OpenClawConfig;
-      loadAuthStore?: unknown;
+      loadAuthStore?: any;
     }>(prepareRuntimeSecretsSnapshot);
     expect(preflightInput.config?.gateway?.auth?.token).toBe("startup-test-token");
     expect(preflightInput.loadAuthStore).toBe(loadAuthProfileStoreWithoutExternalProfiles);
@@ -835,7 +835,7 @@ describe("gateway startup config secret preflight", () => {
       ).resolves.toBe(true);
       expect(runtimeImport).toHaveBeenCalledTimes(1);
       const refreshInput = callArg<{
-        loadAuthStore?: unknown;
+        loadAuthStore?: any;
       }>(prepareRuntimeSecretsSnapshot);
       expect(refreshInput.loadAuthStore).toBeUndefined();
       clearSecretsRuntimeSnapshot();
@@ -844,7 +844,7 @@ describe("gateway startup config secret preflight", () => {
       vi.doUnmock("../secrets/runtime.js");
       delete (
         globalThis as typeof globalThis & {
-          __gatewayStartupSecretsRuntimeMock?: unknown;
+          __gatewayStartupSecretsRuntimeMock?: any;
         }
       )["__gatewayStartupSecretsRuntimeMock"];
       rmSync(agentDir, { recursive: true, force: true });

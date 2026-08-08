@@ -33,8 +33,8 @@ export type FetchLiveProviderModelIdsParams = {
   policy?: SsrFPolicy;
   lookupFn?: LookupFn;
   requireHttps?: boolean;
-  readRows?: (body: unknown) => readonly unknown[];
-  readModelId?: (row: unknown) => string | undefined;
+  readRows?: (body: any) => readonly any[];
+  readModelId?: (row: any) => string | undefined;
   buildRequestHeaders?: (ctx: LiveModelCatalogHeaderContext) => HeadersInit;
 };
 
@@ -42,8 +42,8 @@ export type FetchLiveProviderModelRowsParams = Omit<FetchLiveProviderModelIdsPar
 
 export type CachedLiveProviderModelRowsParams = FetchLiveProviderModelRowsParams & {
   ttlMs?: number;
-  cacheKeyParts?: readonly unknown[];
-  shouldCacheRows?: (rows: readonly unknown[]) => boolean;
+  cacheKeyParts?: readonly any[];
+  shouldCacheRows?: (rows: readonly any[]) => boolean;
 };
 
 // Live model catalogs are fetched at runtime from provider-controlled endpoints,
@@ -70,24 +70,24 @@ export type BuildLiveModelProviderConfigParams<T extends ModelDefinitionConfig> 
     providerConfig: Omit<ModelProviderConfig, "models">;
     models: readonly T[];
     ttlMs?: number;
-    cacheKeyParts?: readonly unknown[];
+    cacheKeyParts?: readonly any[];
   };
 
-function readDefaultLiveModelCatalogRows(body: unknown): readonly unknown[] {
+function readDefaultLiveModelCatalogRows(body: any): readonly any[] {
   if (Array.isArray(body)) {
     return body;
   }
-  if (body && typeof body === "object" && Array.isArray((body as { data?: unknown }).data)) {
-    return (body as { data: unknown[] }).data;
+  if (body && typeof body === "object" && Array.isArray((body as { data?: any }).data)) {
+    return (body as { data: any[] }).data;
   }
   throw new Error("Live model catalog response must be an array or { data: [] }");
 }
 
-function readDefaultLiveModelId(row: unknown): string | undefined {
+function readDefaultLiveModelId(row: any): string | undefined {
   if (!row || typeof row !== "object" || Array.isArray(row)) {
     return undefined;
   }
-  const candidate = row as { id?: unknown; object?: unknown };
+  const candidate = row as { id?: any; object?: any };
   if (candidate.object !== undefined && candidate.object !== "model") {
     return undefined;
   }
@@ -143,7 +143,7 @@ async function cancelUnreadResponseBody(response: Response): Promise<void> {
   }
 }
 
-async function readLiveModelCatalogJson(response: Response, timeoutMs: number): Promise<unknown> {
+async function readLiveModelCatalogJson(response: Response, timeoutMs: number): Promise<any> {
   const buffer = await readResponseWithLimit(response, LIVE_MODEL_CATALOG_BODY_MAX_BYTES, {
     chunkTimeoutMs: timeoutMs,
     onOverflow: ({ size, maxBytes }) =>
@@ -156,7 +156,7 @@ async function readLiveModelCatalogJson(response: Response, timeoutMs: number): 
 
 export async function fetchLiveProviderModelRows(
   params: FetchLiveProviderModelRowsParams,
-): Promise<readonly unknown[]> {
+): Promise<readonly any[]> {
   const fetchGuard = params.fetchGuard ?? fetchWithSsrFGuard;
   const timeoutMs = params.timeoutMs ?? 5_000;
   const { response, release } = await fetchGuard({
@@ -190,7 +190,7 @@ function liveModelCatalogAuthCacheKey(params: LiveModelCatalogHeaderContext): st
 
 export async function getCachedLiveProviderModelRows(
   params: CachedLiveProviderModelRowsParams,
-): Promise<readonly unknown[]> {
+): Promise<readonly any[]> {
   return await getCachedLiveCatalogValue({
     keyParts: params.cacheKeyParts ?? [
       params.providerId,

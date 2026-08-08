@@ -6,7 +6,7 @@
  */
 
 /** Overrides preparation dependencies for CLI runner tests — no-op in cross-wms. */
-export function setCliRunnerPrepareTestDeps(_overrides?: Record<string, unknown>): void {
+export function setCliRunnerPrepareTestDeps(_overrides?: Record<string, any>): void {
   // No-op: cross-wms does not have the full prepare dependency graph.
 }
 
@@ -14,8 +14,8 @@ export function setCliRunnerPrepareTestDeps(_overrides?: Record<string, unknown>
 export function shouldSkipLocalCliCredentialEpoch(params: {
   authEpochMode?: string;
   authProfileId?: string;
-  authCredential?: unknown;
-  preparedExecution?: unknown;
+  authCredential?: any;
+  preparedExecution?: any;
 }): boolean {
   return Boolean(
     params.authEpochMode === "profile-only" &&
@@ -30,7 +30,7 @@ export function shouldSkipLocalCliCredentialEpoch(params: {
  * In cross-wms this returns a minimal context with the provided params,
  * since the full preparation pipeline is not available.
  */
-export async function prepareCliRunContext(params: Record<string, unknown>): Promise<Record<string, unknown>> {
+export async function prepareCliRunContext(params: Record<string, any>): Promise<Record<string, any>> {
   // cross-wms lacks bootstrap files, auth profiles, MCP loopback, context engines, etc.
   // Return a minimal context that carries through the caller's params.
   return {

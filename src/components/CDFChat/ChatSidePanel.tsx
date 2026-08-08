@@ -259,7 +259,7 @@ const ChatSidePanel: React.FC<ChatSidePanelProps> = ({
     const localThinkCount = assistantMsgs.filter(m => m.thinkingType === 'local').length;
 
     const tokenUsages = assistantMsgs
-      .map(m => (m.metadata as unknown)?.tokenUsage)
+      .map(m => (m.metadata as any)?.tokenUsage)
       .filter(Boolean);
     const totalInputTokens = tokenUsages.reduce((sum, t) => sum + (t.input || 0), 0);
     const totalOutputTokens = tokenUsages.reduce((sum, t) => sum + (t.output || 0), 0);
@@ -477,7 +477,7 @@ const ChatSidePanel: React.FC<ChatSidePanelProps> = ({
       </Box>
 
       {/* 自动提取提示 */}
-      {todos.some(t => (t as unknown).source === 'auto') && (
+      {todos.some(t => (t as any).source === 'auto') && (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
           <ThinkingIcon size={12} color="#6366f1" />
           <Typography sx={{ fontSize: '0.65rem', color: gs.textMuted }}>

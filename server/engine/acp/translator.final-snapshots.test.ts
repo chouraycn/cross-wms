@@ -95,9 +95,9 @@ describe("acp final chat snapshots", () => {
 
     await expect(promptPromise).resolves.toEqual({ stopReason: "end_turn" });
     const chunks = sessionUpdate.mock.calls.filter(
-      (call: unknown[]) =>
-        (call[0] as Record<string, unknown>)?.update &&
-        (call[0] as Record<string, Record<string, unknown>>).update?.sessionUpdate ===
+      (call: any[]) =>
+        (call[0] as Record<string, any>)?.update &&
+        (call[0] as Record<string, Record<string, any>>).update?.sessionUpdate ===
           "agent_message_chunk",
     );
     expect(chunks).toHaveLength(1);

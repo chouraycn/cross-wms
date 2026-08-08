@@ -16,11 +16,11 @@ const MAX_ENTRIES = 10;
 const MAX_ENTRY_CHARS = 1_000;
 const MAX_SUMMARY_CHARS = 2_000;
 
-function normalizeSeverity(value: unknown): CronRunDiagnosticSeverity {
+function normalizeSeverity(value: any): CronRunDiagnosticSeverity {
   return value === "info" || value === "warn" || value === "error" ? value : "error";
 }
 
-function normalizeSource(value: unknown): CronRunDiagnosticSource {
+function normalizeSource(value: any): CronRunDiagnosticSource {
   switch (value) {
     case "cron-preflight":
     case "cron-setup":
@@ -35,24 +35,24 @@ function normalizeSource(value: unknown): CronRunDiagnosticSource {
   }
 }
 
-function normalizeTimestamp(value: unknown, nowMs: () => number): number {
+function normalizeTimestamp(value: any, nowMs: () => number): number {
   return typeof value === "number" && Number.isFinite(value) && value >= 0
     ? Math.floor(value)
     : nowMs();
 }
 
-function formatUnknownError(error: unknown): string {
+function formatUnknownError(error: any): string {
   if (error instanceof Error) {
     return error.message || error.name;
   }
   return String(error);
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return value !== null && typeof value === "object";
 }
 
-function normalizeToolName(value: unknown): string | undefined {
+function normalizeToolName(value: any): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }
@@ -60,14 +60,14 @@ function normalizeToolName(value: unknown): string | undefined {
   return trimmed ? trimmed : undefined;
 }
 
-function normalizeExitCode(value: unknown): number | null | undefined {
+function normalizeExitCode(value: any): number | null | undefined {
   if (typeof value === "number" && Number.isFinite(value)) {
     return value;
   }
   return value === null ? null : undefined;
 }
 
-function normalizeDiagnosticMessage(value: unknown): { message?: string; truncated?: boolean } {
+function normalizeDiagnosticMessage(value: any): { message?: string; truncated?: boolean } {
   if (typeof value !== "string") {
     return {};
   }
@@ -111,13 +111,13 @@ export function summarizeCronRunDiagnostics(
  * 将不受信任的 cron 诊断有效负载规范化为有界的条目
  */
 export function normalizeCronRunDiagnostics(
-  value: unknown,
+  value: any,
   opts?: { nowMs?: () => number },
 ): CronRunDiagnostics | undefined {
   if (!value || typeof value !== "object") {
     return undefined;
   }
-  const record = value as { summary?: unknown; entries?: unknown };
+  const record = value as { summary?: any; entries?: any };
   const nowMs = opts?.nowMs ?? Date.now;
   const entriesRaw = Array.isArray(record.entries) ? record.entries : [];
   const entries: CronRunDiagnostic[] = [];
@@ -201,7 +201,7 @@ export function mergeCronRunDiagnostics(
  */
 export function createCronRunDiagnosticsFromError(
   source: CronRunDiagnosticSource,
-  error: unknown,
+  error: any,
   opts?: {
     severity?: CronRunDiagnosticSeverity;
     nowMs?: () => number;
@@ -232,7 +232,7 @@ export function createCronRunDiagnosticsFromError(
  * 从工具元数据中提取失败的执行详情到 cron 诊断中
  */
 export function createCronRunDiagnosticsFromExecDetails(
-  details: unknown,
+  details: any,
   opts?: {
     nowMs?: () => number;
     toolName?: string;

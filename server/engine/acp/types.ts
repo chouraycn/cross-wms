@@ -127,12 +127,12 @@ export interface AcpRuntimeSessionOptions {
 
 export interface AcpSessionManagerDeps {
   readSessionEntry(params: {
-    cfg: unknown;
+    cfg: any;
     sessionKey: string;
     clone: boolean;
   }): { acp?: SessionAcpMeta } | null;
   upsertSessionMeta(params: {
-    cfg: unknown;
+    cfg: any;
     sessionKey: string;
     mutate: (
       current: SessionAcpMeta | undefined,
@@ -145,7 +145,7 @@ export interface AcpSessionManagerDeps {
 }
 
 export interface AcpInitializeSessionInput {
-  cfg: unknown;
+  cfg: any;
   sessionKey: string;
   backend?: string;
   agent?: string;
@@ -154,7 +154,7 @@ export interface AcpInitializeSessionInput {
 }
 
 export interface AcpCloseSessionInput {
-  cfg: unknown;
+  cfg: any;
   sessionKey: string;
   reason?: string;
 }
@@ -165,7 +165,7 @@ export interface AcpCloseSessionResult {
 }
 
 export interface AcpCancelSessionInput {
-  cfg: unknown;
+  cfg: any;
   sessionKey: string;
   reason?: string;
 }
@@ -250,7 +250,7 @@ export class AcpRuntimeError extends Error {
   constructor(
     public code: string,
     message: string,
-    public cause?: unknown,
+    public cause?: any,
   ) {
     super(message);
     this.name = "AcpRuntimeError";

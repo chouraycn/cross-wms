@@ -2,6 +2,6 @@
 
 export type RuntimeGroupPolicyResolver = unknown;
 
-export function installChannelRuntimeGroupPolicyFallbackSuite(..._args: unknown[]): unknown {
+export function installChannelRuntimeGroupPolicyFallbackSuite(..._args: any[]): any {
   return undefined;
 }

@@ -12,34 +12,34 @@ export type LivePreviewFinalizerResult = unknown;
 
 export type FinalizableLivePreviewAdapter = unknown;
 
-export function defineFinalizableLivePreviewAdapter(..._args: unknown[]): unknown {
+export function defineFinalizableLivePreviewAdapter(..._args: any[]): any {
   return undefined;
 }
 
-export function createLiveMessageState(..._args: unknown[]): unknown {
+export function createLiveMessageState(..._args: any[]): any {
   return undefined;
 }
 
-export function markLiveMessageFinalized(..._args: unknown[]): unknown {
+export function markLiveMessageFinalized(..._args: any[]): any {
   return undefined;
 }
 
-export function createPreviewMessageReceipt(..._args: unknown[]): unknown {
+export function createPreviewMessageReceipt(..._args: any[]): any {
   return undefined;
 }
 
-export async function deliverFinalizableLivePreview(..._args: unknown[]): Promise<unknown> {
+export async function deliverFinalizableLivePreview(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
 
-export async function deliverWithFinalizableLivePreviewAdapter(..._args: unknown[]): Promise<unknown> {
+export async function deliverWithFinalizableLivePreviewAdapter(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
 
-export function markLiveMessagePreviewUpdated(..._args: unknown[]): unknown {
+export function markLiveMessagePreviewUpdated(..._args: any[]): any {
   return undefined;
 }
 
-export function markLiveMessageCancelled(..._args: unknown[]): unknown {
+export function markLiveMessageCancelled(..._args: any[]): any {
   return undefined;
 }

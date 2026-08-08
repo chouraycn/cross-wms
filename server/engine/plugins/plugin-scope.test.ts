@@ -9,7 +9,7 @@ describe("normalizePluginIdScope", () => {
 
   it("ignores non-string scope values instead of throwing", () => {
     expect(
-      normalizePluginIdScope(["alpha", null, 42, { id: "beta" }, " beta "] as unknown[]),
+      normalizePluginIdScope(["alpha", null, 42, { id: "beta" }, " beta "] as any[]),
     ).toEqual(["alpha", "beta"]);
   });
 });

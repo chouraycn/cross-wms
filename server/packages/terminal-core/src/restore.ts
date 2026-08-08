@@ -21,7 +21,7 @@ type RestoreTerminalStateOptions = {
   resumeStdinIfPaused?: boolean;
 };
 
-function reportRestoreFailure(scope: string, err: unknown, reason?: string): void {
+function reportRestoreFailure(scope: string, err: any, reason?: string): void {
   const suffix = reason ? ` (${reason})` : "";
   const message = `[terminal] restore ${scope} failed${suffix}: ${String(err)}`;
   try {

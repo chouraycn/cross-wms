@@ -20,20 +20,20 @@ export type ChunkMode = 'single' | 'split';
 /** 分块计划 */
 export interface ChunkPlan {
   mode: ChunkMode;
-  chunks: unknown[][];
+  chunks: any[][];
   totalTokens: number;
   chunkTokens: number[];
 }
 
 /** 超大消息降级计划 */
 export interface OversizedFallbackPlan {
-  smallMessages: unknown[];
+  smallMessages: any[];
   oversizedNotes: string[];
 }
 
 /** Worker 输入数据 */
 export interface ChunkWorkerData {
-  messages: unknown[];
+  messages: any[];
   maxTokens: number;
   safetyMargin: number;
   overheadTokens: number;
@@ -49,7 +49,7 @@ export type ChunkWorkerResult =
 // ==================== Token 估算 ====================
 
 /** 粗略估算消息的 token 数 */
-function estimateTokens(message: unknown): number {
+function estimateTokens(message: any): number {
   if (message === null || message === undefined) return 0;
   if (typeof message === 'string') {
     // 粗略：每 4 个字符约 1 token
@@ -64,12 +64,12 @@ function estimateTokens(message: unknown): number {
 }
 
 /** 估算消息数组的总 token 数 */
-function estimateMessagesTokens(messages: unknown[]): number {
+function estimateMessagesTokens(messages: any[]): number {
   return messages.reduce((sum: number, msg) => sum + estimateTokens(msg), 0);
 }
 
 /** 估算单条消息的 token 数 */
-function estimateMessageTokens(message: unknown): number {
+function estimateMessageTokens(message: any): number {
   return estimateTokens(message);
 }
 
@@ -88,11 +88,11 @@ function computeAdaptiveChunkRatio(
 
 /** 将消息按 token 份额分块 */
 function splitByTokenShare(
-  messages: unknown[],
+  messages: any[],
   parts: number,
   maxTokens: number,
   safetyMargin: number,
-): { chunks: unknown[][]; chunkTokens: number[] } {
+): { chunks: any[][]; chunkTokens: number[] } {
   if (messages.length === 0) {
     return { chunks: [], chunkTokens: [] };
   }
@@ -103,9 +103,9 @@ function splitByTokenShare(
   }
 
   const perChunkLimit = Math.floor((maxTokens * safetyMargin) / effectiveParts);
-  const chunks: unknown[][] = [];
+  const chunks: any[][] = [];
   const chunkTokens: number[] = [];
-  let currentChunk: unknown[] = [];
+  let currentChunk: any[] = [];
   let currentTokens = 0;
 
   for (const message of messages) {
@@ -171,7 +171,7 @@ function buildChunkPlan(data: ChunkWorkerData): ChunkPlan {
 /** 构建超大消息降级计划 */
 function buildOversizedFallback(data: ChunkWorkerData): OversizedFallbackPlan {
   const { messages, maxSingleMessageTokens } = data;
-  const smallMessages: unknown[] = [];
+  const smallMessages: any[] = [];
   const oversizedNotes: string[] = [];
 
   for (let i = 0; i < messages.length; i++) {

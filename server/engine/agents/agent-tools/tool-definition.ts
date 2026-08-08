@@ -75,9 +75,9 @@ export function mergeToolDefinitions(base: ToolDefinition, override: Partial<Too
 export function toOpenAIFunction(definition: ToolDefinition): {
   name: string;
   description: string;
-  parameters: Record<string, unknown>;
+  parameters: Record<string, any>;
 } {
-  const properties: Record<string, unknown> = {};
+  const properties: Record<string, any> = {};
   const required: string[] = [];
 
   for (const [name, param] of Object.entries(definition.parameters)) {
@@ -96,7 +96,7 @@ export function toOpenAIFunction(definition: ToolDefinition): {
     };
 
     if (param.enum) {
-      (properties[name] as Record<string, unknown>).enum = param.enum;
+      (properties[name] as Record<string, any>).enum = param.enum;
     }
 
     if (param.required) {
@@ -118,13 +118,13 @@ export function toOpenAIFunction(definition: ToolDefinition): {
 export function fromOpenAIFunction(func: {
   name: string;
   description: string;
-  parameters?: Record<string, unknown>;
+  parameters?: Record<string, any>;
 }): ToolDefinition {
   const params: Record<string, Partial<ToolParameter>> = {};
 
   if (func.parameters?.properties) {
-    for (const [name, prop] of Object.entries(func.parameters.properties as Record<string, unknown>)) {
-      const propObj = prop as Record<string, unknown>;
+    for (const [name, prop] of Object.entries(func.parameters.properties as Record<string, any>)) {
+      const propObj = prop as Record<string, any>;
       params[name] = {
         type: (propObj.type as string) as ToolParameter['type'] ?? 'string',
         description: (propObj.description as string) ?? '',

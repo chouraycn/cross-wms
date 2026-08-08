@@ -175,7 +175,7 @@ describe("loadChannelConfigSurfaceModule", () => {
       expect(surface).toStrictEqual(expectedOkSchema("number"));
 
       const spawnCalls = spawnSync.mock.calls as unknown as Array<
-        [string, string[], Record<string, unknown>]
+        [string, string[], Record<string, any>]
       >;
       const spawnCall = spawnCalls[0];
       expect(spawnCall?.[0]).toBe("bun");

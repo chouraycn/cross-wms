@@ -37,12 +37,12 @@ type AuditManagedNpmRootResult = {
 type OpenClawPeerLinkResult = "linked" | "skipped" | "unchanged";
 
 /** 占位：检查 error 是否有 errno code（内联实现）。 */
-function hasErrnoCode(err: unknown, code: string): boolean {
+function hasErrnoCode(err: any, code: string): boolean {
   return (
     typeof err === "object" &&
     err !== null &&
     "code" in err &&
-    (err as { code?: unknown }).code === code
+    (err as { code?: any }).code === code
   );
 }
 
@@ -55,7 +55,7 @@ function resolveOpenClawPackageRootSync(_params: {
   return undefined;
 }
 
-function readStringRecord(value: unknown): Record<string, string> {
+function readStringRecord(value: any): Record<string, string> {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     return {};
   }
@@ -71,7 +71,7 @@ function readStringRecord(value: unknown): Record<string, string> {
 async function readPackagePeerDependencies(packageDir: string): Promise<Record<string, string>> {
   try {
     const raw = await fs.readFile(path.join(packageDir, "package.json"), "utf8");
-    const parsed = JSON.parse(raw) as { peerDependencies?: unknown };
+    const parsed = JSON.parse(raw) as { peerDependencies?: any };
     return readStringRecord(parsed.peerDependencies);
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
@@ -102,7 +102,7 @@ async function listManagedNpmRootPackageDirs(npmRoot: string): Promise<string[]>
     if (entry.name.startsWith("@")) {
       const scopedEntries = await fs
         .readdir(entryPath, { withFileTypes: true })
-        .catch((error: unknown) => {
+        .catch((error: any) => {
           if ((error as NodeJS.ErrnoException).code === "ENOENT") {
             return [];
           }
@@ -268,7 +268,7 @@ async function linkOpenClawPeerDependency(params: {
   }
 
   try {
-    const existing = await fs.lstat(linkPath).catch((err: unknown) => {
+    const existing = await fs.lstat(linkPath).catch((err: any) => {
       if (hasErrnoCode(err, "ENOENT")) {
         return null;
       }
@@ -306,7 +306,7 @@ async function linkOpenClawPeerDependency(params: {
 async function readPackageName(packageDir: string): Promise<string | undefined> {
   try {
     const raw = await fs.readFile(path.join(packageDir, "package.json"), "utf8");
-    const parsed = JSON.parse(raw) as { name?: unknown };
+    const parsed = JSON.parse(raw) as { name?: any };
     return typeof parsed.name === "string" ? parsed.name : undefined;
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {

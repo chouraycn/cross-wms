@@ -63,7 +63,7 @@ function expectTerminalHookState<
   }
 }
 
-function requireLoggerErrorMessage(logger: { error: { mock: { calls: unknown[][] } } }): string {
+function requireLoggerErrorMessage(logger: { error: { mock: { calls: any[][] } } }): string {
   const call = logger.error.mock.calls[0];
   if (!call) {
     throw new Error("expected logger error call");

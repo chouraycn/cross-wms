@@ -85,13 +85,13 @@ describe("gateway server chat", () => {
   ];
 
   const loadChatHistoryWithMessages = async (
-    messages: Array<Record<string, unknown>>,
-  ): Promise<unknown[]> => {
+    messages: Array<Record<string, any>>,
+  ): Promise<any[]> => {
     return withMainSessionStore(async (dir) => {
       const lines = messages.map((message) => JSON.stringify({ message }));
       await fs.writeFile(path.join(dir, "sess-main.jsonl"), lines.join("\n"), "utf-8");
 
-      const res = await rpcReq<{ messages?: unknown[] }>(ws, "chat.history", {
+      const res = await rpcReq<{ messages?: any[] }>(ws, "chat.history", {
         sessionKey: "main",
       });
       expect(res.ok).toBe(true);
@@ -123,11 +123,11 @@ describe("gateway server chat", () => {
     }
   };
 
-  const collectHistoryTextValues = (historyMessages: unknown[]) =>
+  const collectHistoryTextValues = (historyMessages: any[]) =>
     historyMessages
       .map((message) => {
         if (message && typeof message === "object") {
-          const entry = message as { text?: unknown };
+          const entry = message as { text?: any };
           if (typeof entry.text === "string") {
             return entry.text;
           }
@@ -136,18 +136,18 @@ describe("gateway server chat", () => {
       })
       .filter((value): value is string => typeof value === "string");
 
-  const expectRecordFields = (value: unknown, expected: Record<string, unknown>) => {
+  const expectRecordFields = (value: any, expected: Record<string, any>) => {
     if (!value || typeof value !== "object") {
       throw new Error("Expected record");
     }
-    const actual = value as Record<string, unknown>;
+    const actual = value as Record<string, any>;
     for (const [key, expectedValue] of Object.entries(expected)) {
       expect(actual[key]).toEqual(expectedValue);
     }
     return actual;
   };
 
-  const expectStringRunId = (payload: unknown) => {
+  const expectStringRunId = (payload: any) => {
     const actual = expectRecordFields(payload, {});
     expect(typeof actual.runId).toBe("string");
     return actual.runId as string;
@@ -337,7 +337,7 @@ describe("gateway server chat", () => {
         (o) => {
           const data =
             o.payload?.data && typeof o.payload.data === "object"
-              ? (o.payload.data as Record<string, unknown>)
+              ? (o.payload.data as Record<string, any>)
               : {};
           return (
             o.type === "event" &&
@@ -651,7 +651,7 @@ describe("gateway server chat", () => {
       }
       await fs.writeFile(path.join(historyDir, "sess-main.jsonl"), lines.join("\n"), "utf-8");
 
-      const defaultRes = await rpcReq<{ messages?: unknown[] }>(ws, "chat.history", {
+      const defaultRes = await rpcReq<{ messages?: any[] }>(ws, "chat.history", {
         sessionKey: "main",
       });
       expect(defaultRes.ok).toBe(true);
@@ -741,13 +741,13 @@ describe("gateway server chat", () => {
         hasActiveRun: false,
       });
 
-      const sessionsRes = await rpcReq<{ sessions?: unknown[] }>(ws, "sessions.list", {});
+      const sessionsRes = await rpcReq<{ sessions?: any[] }>(ws, "sessions.list", {});
       expect(sessionsRes.ok).toBe(true);
       const session = sessionsRes.payload?.sessions?.find(
-        (row): row is Record<string, unknown> =>
+        (row): row is Record<string, any> =>
           Boolean(row) &&
           typeof row === "object" &&
-          (row as { key?: unknown }).key === "agent:main:main",
+          (row as { key?: any }).key === "agent:main:main",
       );
       const actualSession = expectRecordFields(session, {
         status: "failed",
@@ -842,7 +842,7 @@ describe("gateway server chat", () => {
         if (!message || typeof message !== "object") {
           return false;
         }
-        const entry = message as { role?: unknown; openclawMessageToolMirror?: unknown };
+        const entry = message as { role?: any; openclawMessageToolMirror?: any };
         return entry.role === "assistant" && Boolean(entry.openclawMessageToolMirror);
       }),
     ).toBe(true);
@@ -898,7 +898,7 @@ describe("gateway server chat", () => {
         (message) =>
           Boolean(message) &&
           typeof message === "object" &&
-          Boolean((message as { openclawMessageToolMirror?: unknown }).openclawMessageToolMirror),
+          Boolean((message as { openclawMessageToolMirror?: any }).openclawMessageToolMirror),
       ),
     ).toBe(true);
     expect(historyMessages).not.toContainEqual(
@@ -946,7 +946,7 @@ describe("gateway server chat", () => {
         (message) =>
           Boolean(message) &&
           typeof message === "object" &&
-          Boolean((message as { openclawMessageToolMirror?: unknown }).openclawMessageToolMirror),
+          Boolean((message as { openclawMessageToolMirror?: any }).openclawMessageToolMirror),
       ),
     ).toBe(true);
     expect(historyMessages).not.toContainEqual(
@@ -994,7 +994,7 @@ describe("gateway server chat", () => {
         (message) =>
           Boolean(message) &&
           typeof message === "object" &&
-          Boolean((message as { openclawMessageToolMirror?: unknown }).openclawMessageToolMirror),
+          Boolean((message as { openclawMessageToolMirror?: any }).openclawMessageToolMirror),
       ),
     ).toBe(true);
     expect(historyMessages).not.toContainEqual(
@@ -1066,7 +1066,7 @@ describe("gateway server chat", () => {
         (message) =>
           Boolean(message) &&
           typeof message === "object" &&
-          Boolean((message as { openclawMessageToolMirror?: unknown }).openclawMessageToolMirror),
+          Boolean((message as { openclawMessageToolMirror?: any }).openclawMessageToolMirror),
       ),
     ).toHaveLength(2);
     expect(historyMessages).not.toContainEqual(
@@ -1132,7 +1132,7 @@ describe("gateway server chat", () => {
         (message) =>
           Boolean(message) &&
           typeof message === "object" &&
-          Boolean((message as { openclawMessageToolMirror?: unknown }).openclawMessageToolMirror),
+          Boolean((message as { openclawMessageToolMirror?: any }).openclawMessageToolMirror),
       ),
     ).toBe(true);
   });
@@ -1180,7 +1180,7 @@ describe("gateway server chat", () => {
         (message) =>
           Boolean(message) &&
           typeof message === "object" &&
-          Boolean((message as { openclawMessageToolMirror?: unknown }).openclawMessageToolMirror),
+          Boolean((message as { openclawMessageToolMirror?: any }).openclawMessageToolMirror),
       ),
     ).toBe(false);
   });
@@ -1225,7 +1225,7 @@ describe("gateway server chat", () => {
         (message) =>
           Boolean(message) &&
           typeof message === "object" &&
-          Boolean((message as { openclawMessageToolMirror?: unknown }).openclawMessageToolMirror),
+          Boolean((message as { openclawMessageToolMirror?: any }).openclawMessageToolMirror),
       ),
     ).toBe(false);
   });
@@ -1277,7 +1277,7 @@ describe("gateway server chat", () => {
         (message) =>
           Boolean(message) &&
           typeof message === "object" &&
-          Boolean((message as { openclawMessageToolMirror?: unknown }).openclawMessageToolMirror),
+          Boolean((message as { openclawMessageToolMirror?: any }).openclawMessageToolMirror),
       ),
     ).toBe(false);
   });
@@ -1334,13 +1334,13 @@ describe("gateway server chat", () => {
         const role =
           message &&
           typeof message === "object" &&
-          typeof (message as { role?: unknown }).role === "string"
+          typeof (message as { role?: any }).role === "string"
             ? (message as { role: string }).role
             : "unknown";
         const text =
           message &&
           typeof message === "object" &&
-          typeof (message as { text?: unknown }).text === "string"
+          typeof (message as { text?: any }).text === "string"
             ? (message as { text: string }).text
             : (extractFirstTextBlock(message) ?? "");
         return `${role}:${text}`;
@@ -1386,7 +1386,7 @@ describe("gateway server chat", () => {
         })}\n`,
         "utf-8",
       );
-      dispatchInboundMessageMock.mockImplementationOnce(async (...args: unknown[]) => {
+      dispatchInboundMessageMock.mockImplementationOnce(async (...args: any[]) => {
         const [params] = args as [
           {
             dispatcher: {
@@ -1452,7 +1452,7 @@ describe("gateway server chat", () => {
         state: "final",
       });
 
-      const historyRes = await rpcReq<{ messages?: unknown[] }>(ws, "chat.history", {
+      const historyRes = await rpcReq<{ messages?: any[] }>(ws, "chat.history", {
         sessionKey: "main",
       });
       expect(historyRes.ok).toBe(true);
@@ -1474,7 +1474,7 @@ describe("gateway server chat", () => {
         })}\n`,
         "utf-8",
       );
-      dispatchInboundMessageMock.mockImplementationOnce(async (...args: unknown[]) => {
+      dispatchInboundMessageMock.mockImplementationOnce(async (...args: any[]) => {
         const [params] = args as [
           {
             dispatcher: {
@@ -1537,7 +1537,7 @@ describe("gateway server chat", () => {
         process.env.OPENCLAW_STATE_DIR = dir;
         const pngB64 =
           "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=";
-        dispatchInboundMessageMock.mockImplementationOnce(async (...args: unknown[]) => {
+        dispatchInboundMessageMock.mockImplementationOnce(async (...args: any[]) => {
           const [params] = args as [
             {
               dispatcher: {
@@ -1580,19 +1580,19 @@ describe("gateway server chat", () => {
           expect(res.payload?.runId).toBe("idem-managed-image-history");
           await finalPromise;
 
-          let assistantMessage: Record<string, unknown> | undefined;
+          let assistantMessage: Record<string, any> | undefined;
           await vi.waitFor(
             async () => {
-              const historyRes = await rpcReq<{ messages?: unknown[] }>(ws, "chat.history", {
+              const historyRes = await rpcReq<{ messages?: any[] }>(ws, "chat.history", {
                 sessionKey: "main",
               });
               expect(historyRes.ok).toBe(true);
               const messages = historyRes.payload?.messages ?? [];
               assistantMessage = messages.find(
-                (message): message is Record<string, unknown> =>
+                (message): message is Record<string, any> =>
                   typeof message === "object" &&
                   message !== null &&
-                  (message as { role?: unknown }).role === "assistant",
+                  (message as { role?: any }).role === "assistant",
               );
               if (!assistantMessage) {
                 throw new Error("Expected assistant history message");
@@ -1600,7 +1600,7 @@ describe("gateway server chat", () => {
             },
             { timeout: CHAT_RESPONSE_TIMEOUT_MS },
           );
-          const assistantContent = (assistantMessage as { content?: unknown[] }).content ?? [];
+          const assistantContent = (assistantMessage as { content?: any[] }).content ?? [];
           expect(assistantContent).toHaveLength(2);
           expect(assistantContent[0]).toEqual({ type: "text", text: "Image reply" });
           const imageBlock = expectRecordFields(assistantContent[1], {
@@ -1634,13 +1634,13 @@ describe("gateway server chat", () => {
         const role =
           message &&
           typeof message === "object" &&
-          typeof (message as { role?: unknown }).role === "string"
+          typeof (message as { role?: any }).role === "string"
             ? (message as { role: string }).role
             : "unknown";
         const text =
           message &&
           typeof message === "object" &&
-          typeof (message as { text?: unknown }).text === "string"
+          typeof (message as { text?: any }).text === "string"
             ? (message as { text: string }).text
             : (extractFirstTextBlock(message) ?? "");
         return `${role}:${text}`;

@@ -6,7 +6,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 let transcriptUpdateHandler:
-  | ((update: { sessionFile?: string; message?: unknown; messageId?: string }) => void)
+  | ((update: { sessionFile?: string; message?: any; messageId?: string }) => void)
   | undefined;
 let authRevoked = false;
 let gatewayConfig: {
@@ -104,9 +104,9 @@ vi.mock("./session-history-state.js", () => ({
     history: { items: [], nextCursor: null, messages: [] },
   }),
   SessionHistorySseState: {
-    fromRawSnapshot: (_params: unknown) => ({
+    fromRawSnapshot: (_params: any) => ({
       snapshot: () => ({ items: [], nextCursor: null, messages: [] }),
-      appendInlineMessage: ({ message, messageId }: { message: unknown; messageId?: string }) => ({
+      appendInlineMessage: ({ message, messageId }: { message: any; messageId?: string }) => ({
         message,
         messageSeq: 1,
         messageId,

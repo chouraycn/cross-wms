@@ -14,7 +14,7 @@ import type { ToolRenderResultOptions } from "../extensions/types.js";
 import { DEFAULT_MAX_BYTES, formatSize, type TruncationResult } from "./truncate.js";
 
 /** Shortens paths under the current home directory for display. */
-export function shortenPath(path: unknown): string {
+export function shortenPath(path: any): string {
   if (typeof path !== "string") {
     return "";
   }
@@ -26,7 +26,7 @@ export function shortenPath(path: unknown): string {
 }
 
 /** Returns a display string for string/nullish values, or null for unsupported values. */
-export function str(value: unknown): string | null {
+export function str(value: any): string | null {
   if (typeof value === "string") {
     return value;
   }

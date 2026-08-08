@@ -244,11 +244,11 @@ function requireString(value: string | undefined, label: string): string {
 }
 
 function requireMockCallArg(
-  mockFn: { mock: { calls: unknown[][] } },
+  mockFn: { mock: { calls: any[][] } },
   label: string,
   index = 0,
-): Record<string, unknown> {
-  const arg = mockFn.mock.calls[index]?.[0] as Record<string, unknown> | undefined;
+): Record<string, any> {
+  const arg = mockFn.mock.calls[index]?.[0] as Record<string, any> | undefined;
   if (!arg) {
     throw new Error(`expected ${label} call #${index + 1}`);
   }
@@ -257,17 +257,17 @@ function requireMockCallArg(
 
 function expectEntryFields(
   entry: SessionEntry,
-  expected: Record<string, unknown>,
+  expected: Record<string, any>,
   label?: string,
 ): void {
   for (const [key, value] of Object.entries(expected)) {
-    expect((entry as Record<string, unknown>)[key], label ?? key).toEqual(value);
+    expect((entry as Record<string, any>)[key], label ?? key).toEqual(value);
   }
 }
 
 async function writeSessionStoreFast(
   storePath: string,
-  store: Record<string, SessionEntry | Record<string, unknown>>,
+  store: Record<string, SessionEntry | Record<string, any>>,
 ): Promise<void> {
   await fs.mkdir(path.dirname(storePath), { recursive: true });
   await fs.writeFile(storePath, JSON.stringify(store), "utf-8");
@@ -398,7 +398,7 @@ function registerCurrentConversationBindingAdapterForTest(params: {
     };
     status: "active";
     boundAt: number;
-    metadata?: Record<string, unknown>;
+    metadata?: Record<string, any>;
   }> = [];
   registerSessionBindingAdapter({
     channel: params.channel,
@@ -957,11 +957,11 @@ describe("initSessionState RawBody", () => {
     const store = JSON.parse(await fs.readFile(storePath, "utf-8")) as Record<
       string,
       {
-        skillsSnapshot?: unknown;
+        skillsSnapshot?: any;
         totalTokens?: number;
         totalTokensFresh?: boolean;
         contextTokens?: number;
-        contextBudgetStatus?: unknown;
+        contextBudgetStatus?: any;
       }
     >;
     expect(store[sessionKey]?.skillsSnapshot).toBeUndefined();
@@ -2893,7 +2893,7 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
     storePath: string;
     sessionKey: string;
     sessionId: string;
-    overrides: Record<string, unknown>;
+    overrides: Record<string, any>;
   }): Promise<void> {
     await writeSessionStoreFast(params.storePath, {
       [params.sessionKey]: {
@@ -3949,7 +3949,7 @@ describe("persistSessionUsageUpdate", () => {
   async function seedSessionStore(params: {
     storePath: string;
     sessionKey: string;
-    entry: Record<string, unknown>;
+    entry: Record<string, any>;
   }) {
     await fs.mkdir(path.dirname(params.storePath), { recursive: true });
     await fs.writeFile(
@@ -4179,7 +4179,7 @@ describe("persistSessionUsageUpdate", () => {
     expect(stored[sessionKey].cacheWrite).toBe(4_000);
   });
 
-  it("marks totalTokens as unknown when no fresh context snapshot is available", async () => {
+  it("marks totalTokens as any when no fresh context snapshot is available", async () => {
     const storePath = await createStorePath("openclaw-usage-");
     const sessionKey = "main";
     await seedSessionStore({

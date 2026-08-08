@@ -42,7 +42,7 @@ async function loadProviderRegistry(): Promise<ProviderRegistryModule> {
 
 describe("video-generation provider registry", () => {
   let delegationCase: {
-    calls: unknown[][];
+    calls: any[][];
     providers: VideoGenerationProviderPlugin[];
   };
 

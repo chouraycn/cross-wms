@@ -6,12 +6,12 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function resolveModelDisplayRef(..._args: unknown[]): unknown {
+export function resolveModelDisplayRef(..._args: any[]): any {
   return undefined;
 }
-export function resolveModelDisplayName(..._args: unknown[]): unknown {
+export function resolveModelDisplayName(..._args: any[]): any {
   return undefined;
 }
-export function resolveSessionInfoModelSelection(..._args: unknown[]): unknown {
+export function resolveSessionInfoModelSelection(..._args: any[]): any {
   return undefined;
 }

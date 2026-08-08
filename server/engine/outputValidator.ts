@@ -15,7 +15,7 @@ import { logger } from '../logger.js';
 
 export interface ValidationResult {
   isValid: boolean;
-  data: unknown;
+  data: any;
   errors: string[];
   wasRepaired: boolean;
   repairDetails?: string[];
@@ -84,7 +84,7 @@ const WMS_SCHEMAS: Record<string, object> = {
 
 // ===================== 默认值映射 =====================
 
-const DEFAULT_VALUES: Record<string, unknown> = {
+const DEFAULT_VALUES: Record<string, any> = {
   'array': [],
   'object': {},
   'number': 0,
@@ -159,7 +159,7 @@ export class OutputValidator {
    */
   validate(toolName: string, result: string): ValidationResult {
     // 尝试解析 JSON
-    let data: unknown;
+    let data: any;
     try {
       data = JSON.parse(result);
     } catch {
@@ -213,9 +213,9 @@ export class OutputValidator {
    * - required 缺失属性 → 补默认值
    * - type 不匹配 → 尝试类型转换
    */
-  private attemptRepair(data: unknown, validate: ValidateFunction): { success: boolean; data: unknown; details: string[] } {
+  private attemptRepair(data: any, validate: ValidateFunction): { success: boolean; data: any; details: string[] } {
     const details: string[] = [];
-    const repaired = JSON.parse(JSON.stringify(data)) as Record<string, unknown>;
+    const repaired = JSON.parse(JSON.stringify(data)) as Record<string, any>;
 
     for (const error of validate.errors ?? []) {
       const path = error.instancePath || '';
@@ -223,7 +223,7 @@ export class OutputValidator {
 
       // 补缺失属性
       if (error.keyword === 'required') {
-        const missingProp = (error.params as Record<string, unknown>)?.missingProperty as string | undefined;
+        const missingProp = (error.params as Record<string, any>)?.missingProperty as string | undefined;
         if (missingProp) {
           // 尝试从 schema 获取属性类型以推断默认值
           const propSchema = this.getPropSchema(validate, parts, missingProp);
@@ -235,7 +235,7 @@ export class OutputValidator {
 
       // 类型转换
       if (error.keyword === 'type') {
-        const expectedType = (error.params as Record<string, unknown>)?.type as string | undefined;
+        const expectedType = (error.params as Record<string, any>)?.type as string | undefined;
         const currentVal = this.getNestedValue(repaired, parts);
         if (currentVal !== undefined && expectedType) {
           const converted = this.convertType(currentVal, expectedType);
@@ -261,16 +261,16 @@ export class OutputValidator {
   private getPropSchema(validate: ValidateFunction, pathParts: string[], propName: string): { type?: string } | null {
     try {
       // Ajv validate.schema 包含编译后的 schema
-      const schema = validate.schema as Record<string, unknown> | undefined;
+      const schema = validate.schema as Record<string, any> | undefined;
       if (!schema) return null;
 
       // Navigate to the parent schema
-      let current: Record<string, unknown> = schema as Record<string, unknown>;
+      let current: Record<string, any> = schema as Record<string, any>;
       for (const part of pathParts) {
         if (current && typeof current === 'object') {
-          const next = ((current as Record<string, unknown>).properties as Record<string, unknown> | undefined)?.[part];
+          const next = ((current as Record<string, any>).properties as Record<string, any> | undefined)?.[part];
           if (next && typeof next === 'object') {
-            current = next as Record<string, unknown>;
+            current = next as Record<string, any>;
           } else {
             return null;
           }
@@ -278,7 +278,7 @@ export class OutputValidator {
       }
 
       // Get the property schema
-      const props = (current as Record<string, unknown>).properties as Record<string, unknown> | undefined;
+      const props = (current as Record<string, any>).properties as Record<string, any> | undefined;
       if (props && props[propName] && typeof props[propName] === 'object') {
         return props[propName] as { type?: string };
       }
@@ -289,11 +289,11 @@ export class OutputValidator {
   }
 
   /** 获取嵌套对象中指定路径的值 */
-  private getNestedValue(obj: Record<string, unknown>, parts: string[]): unknown {
-    let current: unknown = obj;
+  private getNestedValue(obj: Record<string, any>, parts: string[]): any {
+    let current: any = obj;
     for (const p of parts) {
       if (current && typeof current === 'object') {
-        current = (current as Record<string, unknown>)?.[p];
+        current = (current as Record<string, any>)?.[p];
       } else {
         return undefined;
       }
@@ -302,19 +302,19 @@ export class OutputValidator {
   }
 
   /** 设置嵌套对象中指定路径的值 */
-  private setNestedValue(obj: Record<string, unknown>, pathParts: string[], key: string, value: unknown): void {
-    let current: Record<string, unknown> = obj;
+  private setNestedValue(obj: Record<string, any>, pathParts: string[], key: string, value: any): void {
+    let current: Record<string, any> = obj;
     for (const p of pathParts) {
       if (!current[p] || typeof current[p] !== 'object') {
         current[p] = {};
       }
-      current = current[p] as Record<string, unknown>;
+      current = current[p] as Record<string, any>;
     }
     current[key] = value;
   }
 
   /** 尝试类型转换 */
-  private convertType(value: unknown, targetType: string): unknown {
+  private convertType(value: any, targetType: string): any {
     try {
       switch (targetType) {
         case 'number': {

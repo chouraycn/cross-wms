@@ -180,7 +180,7 @@ export const ModelsFileSchema = z.object({
  * 验证模型配置文件
  * 返回 { valid, errors }
  */
-export function validateModelsFile(data: unknown): {
+export function validateModelsFile(data: any): {
   valid: boolean;
   errors?: z.ZodIssue[];
   data?: ModelsFile;
@@ -195,7 +195,7 @@ export function validateModelsFile(data: unknown): {
 /**
  * 验证单个模型配置
  */
-export function validateModelConfig(data: unknown): {
+export function validateModelConfig(data: any): {
   valid: boolean;
   errors?: z.ZodIssue[];
   data?: ModelConfig;
@@ -210,7 +210,7 @@ export function validateModelConfig(data: unknown): {
 /**
  * 验证单个 Provider 配置
  */
-export function validateProviderConfig(data: unknown): {
+export function validateProviderConfig(data: any): {
   valid: boolean;
   errors?: z.ZodIssue[];
   data?: ProviderConfig;
@@ -236,7 +236,7 @@ export function formatZodErrors(errors: z.ZodIssue[]): string {
  * 记录验证警告（不阻断流程，但记录日志）
  * 用于启动时检查配置文件格式
  */
-export function warnIfModelsFileInvalid(data: unknown): void {
+export function warnIfModelsFileInvalid(data: any): void {
   const result = validateModelsFile(data);
   if (!result.valid && result.errors) {
     logger.warn(

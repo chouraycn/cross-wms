@@ -37,7 +37,7 @@ export function sanitizeSessionMemoryTranscriptText(text: string): string | null
   return withoutArtifacts || null;
 }
 
-function extractTextMessageContent(content: unknown): string | undefined {
+function extractTextMessageContent(content: any): string | undefined {
   if (typeof content === "string") {
     return content;
   }
@@ -48,7 +48,7 @@ function extractTextMessageContent(content: unknown): string | undefined {
     if (!block || typeof block !== "object") {
       continue;
     }
-    const candidate = block as { type?: unknown; text?: unknown };
+    const candidate = block as { type?: any; text?: any };
     if (candidate.type === "text" && typeof candidate.text === "string") {
       return candidate.text;
     }
@@ -70,9 +70,9 @@ export async function getRecentSessionContent(
         const entry = JSON.parse(line);
         if (entry.type === "message" && entry.message) {
           const msg = entry.message as {
-            role?: unknown;
-            content?: unknown;
-            provenance?: unknown;
+            role?: any;
+            content?: any;
+            provenance?: any;
           };
           const role = msg.role;
           if ((role === "user" || role === "assistant") && "content" in msg && msg.content) {

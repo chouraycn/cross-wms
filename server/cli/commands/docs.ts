@@ -11,7 +11,7 @@ interface DocResult {
 }
 
 interface DocsSearchResponse {
-  results?: unknown;
+  results?: any;
 }
 
 function escapeMarkdown(text: string): string {
@@ -77,7 +77,7 @@ async function fetchDocsSearch(query: string): Promise<DocResult[]> {
   }
 }
 
-function parseDocsSearchResults(raw: unknown): DocResult[] {
+function parseDocsSearchResults(raw: any): DocResult[] {
   if (!Array.isArray(raw)) {
     return [];
   }
@@ -86,7 +86,7 @@ function parseDocsSearchResults(raw: unknown): DocResult[] {
     if (!item || typeof item !== "object") {
       continue;
     }
-    const entry = item as Record<string, unknown>;
+    const entry = item as Record<string, any>;
     if (typeof entry.title !== "string" || typeof entry.link !== "string") {
       continue;
     }

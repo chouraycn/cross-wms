@@ -50,7 +50,7 @@ function loadOnboardChannels(): Promise<OnboardChannelsModule> {
 export type ChannelsAddOptions = {
   channel?: string;
   account?: string;
-} & Record<string, unknown>;
+} & Record<string, any>;
 
 const CHANNEL_ADD_CONTROL_OPTION_KEYS = new Set(["channel", "account"]);
 const NEXTCLOUD_TALK_CLI_ALIASES = new Set(["nextcloud-talk", "nc-talk", "nc"]);
@@ -82,7 +82,7 @@ async function resolveCatalogChannelEntry(raw: string, cfg: OpenClawConfig | nul
   });
 }
 
-function parseOptionalInt(value: unknown, flag: string): number | undefined {
+function parseOptionalInt(value: any, flag: string): number | undefined {
   if (value === undefined || value === null || value === "") {
     return undefined;
   }
@@ -93,19 +93,19 @@ function parseOptionalInt(value: unknown, flag: string): number | undefined {
   return parsed;
 }
 
-function parseOptionalDelimitedInput(value: unknown): string[] | undefined {
+function parseOptionalDelimitedInput(value: any): string[] | undefined {
   if (Array.isArray(value)) {
     return value.filter((entry): entry is string => typeof entry === "string");
   }
   return parseOptionalDelimitedEntries(typeof value === "string" ? value : undefined);
 }
 
-function readOptionalString(value: unknown): string | undefined {
+function readOptionalString(value: any): string | undefined {
   return typeof value === "string" && value.length > 0 ? value : undefined;
 }
 
 function buildChannelSetupInput(opts: ChannelsAddOptions): ChannelSetupInput {
-  const input: Record<string, unknown> = {};
+  const input: Record<string, any> = {};
   for (const [key, value] of Object.entries(opts)) {
     if (CHANNEL_ADD_CONTROL_OPTION_KEYS.has(key) || value === undefined) {
       continue;

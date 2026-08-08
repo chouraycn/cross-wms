@@ -16,13 +16,13 @@ vi.mock("./plugin-metadata-snapshot.js", () => ({
 }));
 
 vi.mock("./web-search-providers.shared.js", () => ({
-  resolveBundledWebSearchResolutionConfig: (params: { config?: unknown }) => ({
+  resolveBundledWebSearchResolutionConfig: (params: { config?: any }) => ({
     config: params.config,
   }),
 }));
 
 vi.mock("./web-fetch-providers.shared.js", () => ({
-  resolveBundledWebFetchResolutionConfig: (params: { config?: unknown }) => ({
+  resolveBundledWebFetchResolutionConfig: (params: { config?: any }) => ({
     config: params.config,
   }),
 }));
@@ -62,7 +62,7 @@ describe("web provider public artifact manifest fallback", () => {
       ],
     });
     mocks.resolvePluginMetadataSnapshot.mockImplementation(
-      (params?: { pluginMetadataSnapshot?: unknown }) =>
+      (params?: { pluginMetadataSnapshot?: any }) =>
         params?.pluginMetadataSnapshot ?? mocks.loadPluginMetadataSnapshot(params),
     );
     mocks.loadBundledWebSearchProviderEntriesFromDir.mockReturnValue([

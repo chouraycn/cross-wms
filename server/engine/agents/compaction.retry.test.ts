@@ -108,7 +108,7 @@ describe("compaction retry integration", () => {
   it("should NOT retry on user abort", async () => {
     const abortErr = new Error("aborted");
     abortErr.name = "AbortError";
-    (abortErr as { cause?: unknown }).cause = { source: "user" };
+    (abortErr as { cause?: any }).cause = { source: "user" };
 
     mockGenerateSummary.mockRejectedValueOnce(abortErr);
 
@@ -117,7 +117,7 @@ describe("compaction retry integration", () => {
         attempts: 3,
         minDelayMs: 0,
         label: "compaction/generateSummary",
-        shouldRetry: (err: unknown) => !(err instanceof Error && err.name === "AbortError"),
+        shouldRetry: (err: any) => !(err instanceof Error && err.name === "AbortError"),
       }),
     ).rejects.toThrow("aborted");
 

@@ -4,7 +4,7 @@
  */
 
 /** 返回 JSON.stringify(value) 的 UTF-8 字节长度，失败时回退到 String(value) */
-export function jsonUtf8Bytes(value: unknown): number {
+export function jsonUtf8Bytes(value: any): number {
   try {
     return Buffer.byteLength(JSON.stringify(value), "utf8");
   } catch {
@@ -21,7 +21,7 @@ export type BoundedJsonUtf8Bytes = {
 };
 
 /** 返回 JSON UTF-8 字节长度，无法安全序列化时返回 Infinity */
-export function jsonUtf8BytesOrInfinity(value: unknown): number {
+export function jsonUtf8BytesOrInfinity(value: any): number {
   try {
     const serialized = JSON.stringify(value);
     return typeof serialized === "string"
@@ -39,8 +39,8 @@ function jsonStringByteLengthUpToLimit(value: string, remainingBytes: number): n
   return jsonUtf8BytesOrInfinity(value);
 }
 
-function* enumerableOwnEntries(value: object): Generator<[string, unknown]> {
-  const record = value as Record<string, unknown>;
+function* enumerableOwnEntries(value: object): Generator<[string, any]> {
+  const record = value as Record<string, any>;
   for (const key in record) {
     if (Object.prototype.propertyIsEnumerable.call(record, key)) {
       yield [key, record[key]];
@@ -51,7 +51,7 @@ function* enumerableOwnEntries(value: object): Generator<[string, unknown]> {
 /** 返回 JavaScript 枚举顺序中的前几个可枚举自有键 */
 export function firstEnumerableOwnKeys(value: object, maxKeys: number): string[] {
   const keys: string[] = [];
-  for (const key in value as Record<string, unknown>) {
+  for (const key in value as Record<string, any>) {
     if (!Object.prototype.propertyIsEnumerable.call(value, key)) {
       continue;
     }
@@ -64,7 +64,7 @@ export function firstEnumerableOwnKeys(value: object, maxKeys: number): string[]
 }
 
 /** 不完整序列化大对象的情况下，计数 JSON UTF-8 字节直到硬上限 */
-export function boundedJsonUtf8Bytes(value: unknown, maxBytes: number): BoundedJsonUtf8Bytes {
+export function boundedJsonUtf8Bytes(value: any, maxBytes: number): BoundedJsonUtf8Bytes {
   let bytes = 0;
   const seen = new WeakSet<object>();
 
@@ -75,7 +75,7 @@ export function boundedJsonUtf8Bytes(value: unknown, maxBytes: number): BoundedJ
     }
   };
 
-  const visit = (entry: unknown, inArray: boolean): void => {
+  const visit = (entry: any, inArray: boolean): void => {
     if (entry === null) {
       add(4);
       return;
@@ -110,7 +110,7 @@ export function boundedJsonUtf8Bytes(value: unknown, maxBytes: number): BoundedJ
     // 自定义 toJSON 可能隐藏任意工作或重塑输出，所以有界遍历
     // 仅显式处理 Date 的已知 JSON 转换。
     if (
-      typeof (objectEntry as { toJSON?: unknown }).toJSON === "function" &&
+      typeof (objectEntry as { toJSON?: any }).toJSON === "function" &&
       !(objectEntry instanceof Date)
     ) {
       throw new Error("json_byte_length_custom_to_json");

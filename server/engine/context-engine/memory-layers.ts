@@ -11,7 +11,7 @@ export interface MemoryItem {
   accessCount: number;
   createdAt: number;
   lastAccessedAt: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
   tags?: string[];
   sessionId?: string;
 }
@@ -111,7 +111,7 @@ export class MemoryLayers {
       layer?: MemoryLayerType;
       source?: string;
       importance?: number;
-      metadata?: Record<string, unknown>;
+      metadata?: Record<string, any>;
       tags?: string[];
       sessionId?: string;
     } = {}
@@ -165,7 +165,7 @@ export class MemoryLayers {
     updates: Partial<{
       content: string;
       importance: number;
-      metadata: Record<string, unknown>;
+      metadata: Record<string, any>;
       tags: string[];
     }>
   ): MemoryItem | null {

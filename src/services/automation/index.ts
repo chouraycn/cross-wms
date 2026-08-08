@@ -301,7 +301,7 @@ class AutomationEngine implements AutomationEngineAPI {
   }
 
   /** 获取执行结果详情 */
-  getExecutionResults(type: 'snapshots' | 'reports' | 'alerts'): unknown[] {
+  getExecutionResults(type: 'snapshots' | 'reports' | 'alerts'): any[] {
     // v2.0: 执行结果不再存储在 localStorage，改为通过 API 获取
     // 临时返回空数组，后续可通过 /api/automation/executions 获取
     // console.warn('[AutomationEngine] getExecutionResults 已废弃，请通过 API 获取执行结果');

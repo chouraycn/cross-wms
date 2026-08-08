@@ -29,7 +29,7 @@ function stripNullBytes(value: string): string {
   return value.replaceAll("\u0000", "");
 }
 
-function normalizePromptMetadataString(value: unknown): string | undefined {
+function normalizePromptMetadataString(value: any): string | undefined {
   const normalized = normalizeOptionalString(value);
   if (!normalized) {
     return undefined;
@@ -38,7 +38,7 @@ function normalizePromptMetadataString(value: unknown): string | undefined {
   return sanitized || undefined;
 }
 
-function normalizePromptMediaPath(value: unknown): string | undefined {
+function normalizePromptMediaPath(value: any): string | undefined {
   const mediaPath = normalizePromptMetadataString(value);
   if (!mediaPath) {
     return undefined;
@@ -85,7 +85,7 @@ function normalizePromptMediaPath(value: unknown): string | undefined {
   return toInboundMediaPath(path.posix.basename(normalized));
 }
 
-function normalizePromptMetadataStringArray(value: unknown): string[] | undefined {
+function normalizePromptMetadataStringArray(value: any): string[] | undefined {
   if (!Array.isArray(value)) {
     return undefined;
   }
@@ -95,7 +95,7 @@ function normalizePromptMetadataStringArray(value: unknown): string[] | undefine
   return normalized.length > 0 ? normalized : undefined;
 }
 
-function sanitizePromptBody(value: unknown): string | undefined {
+function sanitizePromptBody(value: any): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }
@@ -142,7 +142,7 @@ function truncateBodyHeadTail(body: string, maxChars = MAX_UNTRUSTED_JSON_STRING
   return `${head}${HEAD_TAIL_OMISSION_MARKER}${tail}`;
 }
 
-function sanitizeUntrustedJsonValue(value: unknown): unknown {
+function sanitizeUntrustedJsonValue(value: any): any {
   if (typeof value === "string") {
     return neutralizeMarkdownFences(truncateUntrustedJsonString(value));
   }
@@ -167,7 +167,7 @@ function truncateUntrustedTranscriptField(value: string): string {
   ).trimEnd()}…[truncated]`;
 }
 
-function sanitizeTranscriptField(value: unknown): string | undefined {
+function sanitizeTranscriptField(value: any): string | undefined {
   const body = sanitizePromptBody(value);
   if (!body) {
     return undefined;
@@ -177,7 +177,7 @@ function sanitizeTranscriptField(value: unknown): string | undefined {
     .trim();
 }
 
-function sanitizeTranscriptBody(value: unknown): string | undefined {
+function sanitizeTranscriptBody(value: any): string | undefined {
   const body = sanitizePromptBody(value);
   if (!body) {
     return undefined;
@@ -188,14 +188,14 @@ function sanitizeTranscriptBody(value: unknown): string | undefined {
   return sanitized || undefined;
 }
 
-function formatUntrustedStructuredContextLabel(label: unknown): string {
+function formatUntrustedStructuredContextLabel(label: any): string {
   const normalized = normalizePromptMetadataString(label);
   return normalized
     ? `${normalized} (untrusted metadata):`
     : "Structured object (untrusted metadata):";
 }
 
-function formatUntrustedJsonBlock(label: string, payload: unknown): string {
+function formatUntrustedJsonBlock(label: string, payload: any): string {
   return [
     label,
     "```json",
@@ -207,7 +207,7 @@ function formatUntrustedJsonBlock(label: string, payload: unknown): string {
 function buildConversationMentionMetadataPayload(
   ctx: TemplateContext,
   isDirect: boolean,
-): Record<string, unknown> {
+): Record<string, any> {
   return {
     is_group_chat: !isDirect ? true : undefined,
     was_mentioned: ctx.WasMentioned === true ? true : undefined,
@@ -220,7 +220,7 @@ function buildConversationMentionMetadataPayload(
   };
 }
 
-function formatStructuredContextRelation(value: unknown): string | undefined {
+function formatStructuredContextRelation(value: any): string | undefined {
   const relation = sanitizeTranscriptField(value);
   if (relation === "before_current_message") {
     return "before current message";
@@ -232,7 +232,7 @@ function formatStructuredContextRelation(value: unknown): string | undefined {
 }
 
 function formatChatWindowMessage(
-  value: unknown,
+  value: any,
   envelope?: EnvelopeFormatOptions,
 ): string | undefined {
   if (!isRecord(value)) {
@@ -285,7 +285,7 @@ function formatChatWindowStructuredContext(
 function isChatWindowStructuredContext(
   entry: NonNullable<TemplateContext["UntrustedStructuredContext"]>[number],
 ): entry is NonNullable<TemplateContext["UntrustedStructuredContext"]>[number] & {
-  payload: Record<string, unknown>;
+  payload: Record<string, any>;
 } {
   return normalizePromptMetadataString(entry.type) === "chat_window" && isRecord(entry.payload);
 }
@@ -322,7 +322,7 @@ function isChatWindowHistoryContext(
   return relation === "before_current_message" || relation === "selected_for_current_message";
 }
 
-function buildLocationContextPayload(ctx: TemplateContext): Record<string, unknown> | undefined {
+function buildLocationContextPayload(ctx: TemplateContext): Record<string, any> | undefined {
   const payload = {
     latitude: typeof ctx.LocationLat === "number" ? ctx.LocationLat : undefined,
     longitude: typeof ctx.LocationLon === "number" ? ctx.LocationLon : undefined,
@@ -339,7 +339,7 @@ function buildLocationContextPayload(ctx: TemplateContext): Record<string, unkno
   return Object.values(payload).some((value) => value !== undefined) ? payload : undefined;
 }
 
-function buildInboundHistoryMediaPromptPayload(value: unknown): Array<Record<string, unknown>> {
+function buildInboundHistoryMediaPromptPayload(value: any): Array<Record<string, any>> {
   if (!Array.isArray(value)) {
     return [];
   }
@@ -358,7 +358,7 @@ function buildInboundHistoryMediaPromptPayload(value: unknown): Array<Record<str
   });
 }
 
-function buildReplyChainPayload(ctx: TemplateContext): Array<Record<string, unknown>> {
+function buildReplyChainPayload(ctx: TemplateContext): Array<Record<string, any>> {
   if (!Array.isArray(ctx.ReplyChain)) {
     return [];
   }
@@ -442,7 +442,7 @@ export function resolveInboundUserContextPromptJoiner(ctx: TemplateContext): " "
 }
 
 function formatConversationTimestamp(
-  value: unknown,
+  value: any,
   envelope?: EnvelopeFormatOptions,
 ): string | undefined {
   if (typeof value !== "number" || !Number.isFinite(value)) {
@@ -468,7 +468,7 @@ function resolveInboundSourceModality(ctx: TemplateContext): string | undefined 
   if (sourceModality && INBOUND_SOURCE_MODALITIES.has(sourceModality)) {
     return sourceModality;
   }
-  const resolveMediaType = (value: unknown): string | undefined => {
+  const resolveMediaType = (value: any): string | undefined => {
     const mediaType = normalizePromptMetadataString(value);
     if (!mediaType) {
       return undefined;

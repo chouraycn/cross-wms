@@ -24,9 +24,9 @@ export type OpenAIChatMessage = {
 };
 
 /** 将统一 CompleteOptions 转换为 OpenAI Chat Completions 请求体。 */
-export function buildOpenAIChatBody(ctx: ProviderRequestContext): Record<string, unknown> {
+export function buildOpenAIChatBody(ctx: ProviderRequestContext): Record<string, any> {
   const { model, options } = ctx;
-  const body: Record<string, unknown> = {
+  const body: Record<string, any> = {
     model: model.id,
     messages: options.messages.map((m) => ({ role: m.role, content: m.content })),
   };
@@ -61,7 +61,7 @@ export function buildOpenAICompatHeaders(
 }
 
 /** 解析 OpenAI 兼容的流式 chunk（delta 文本 + tool_calls + usage）。 */
-export function parseOpenAIChatStreamChunk(chunk: unknown): StreamEvent[] {
+export function parseOpenAIChatStreamChunk(chunk: any): StreamEvent[] {
   const events: StreamEvent[] = [];
   if (!chunk || typeof chunk !== 'object') return events;
   const data = chunk as {
@@ -79,7 +79,7 @@ export function parseOpenAIChatStreamChunk(chunk: unknown): StreamEvent[] {
     }
     if (delta?.tool_calls) {
       for (const call of delta.tool_calls) {
-        let args: Record<string, unknown> = {};
+        let args: Record<string, any> = {};
         try {
           args = call.function.arguments ? JSON.parse(call.function.arguments) : {};
         } catch {
@@ -107,7 +107,7 @@ export function parseOpenAIChatStreamChunk(chunk: unknown): StreamEvent[] {
 
 /** 解析 OpenAI 兼容的 usage 字段。 */
 export function parseOpenAIUsage(
-  data: unknown,
+  data: any,
 ): { input: number; output: number; cacheRead: number; cacheWrite: number } {
   if (!data || typeof data !== 'object') {
     return { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 };
@@ -169,7 +169,7 @@ export function makeOpenAICompatBuilders(opts: {
 }
 
 /** 提取 OpenAI 兼容响应中的纯文本（用于 complete 路径）。 */
-export function extractOpenAIChatText(data: unknown): string {
+export function extractOpenAIChatText(data: any): string {
   if (!data || typeof data !== 'object') return '';
   const choices = (data as { choices?: Array<{ message?: { content?: string } }> }).choices ?? [];
   return choices.map((c) => c.message?.content ?? '').join('');

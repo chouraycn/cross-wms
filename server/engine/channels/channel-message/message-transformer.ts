@@ -76,7 +76,7 @@ export function markdownToText(markdown: string): string {
     .trim();
 }
 
-export function enrichMetadata(message: ChannelMessage): Record<string, unknown> {
+export function enrichMetadata(message: ChannelMessage): Record<string, any> {
   const metadata = message.metadata ?? {};
 
   if (!metadata.transformedAt) {

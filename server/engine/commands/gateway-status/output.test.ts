@@ -10,7 +10,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("../../runtime.js", () => ({
-  writeRuntimeJson: (...args: unknown[]) => mocks.writeRuntimeJson(...args),
+  writeRuntimeJson: (...args: any[]) => mocks.writeRuntimeJson(...args),
 }));
 
 vi.mock("../../../packages/terminal-core/src/theme.js", async () => {
@@ -19,7 +19,7 @@ vi.mock("../../../packages/terminal-core/src/theme.js", async () => {
   >("../../../packages/terminal-core/src/theme.js");
   return {
     ...actual,
-    colorize: (_rich: boolean, _theme: unknown, text: string) => text,
+    colorize: (_rich: boolean, _theme: any, text: string) => text,
   };
 });
 
@@ -36,7 +36,7 @@ function createRuntimeCapture(): RuntimeEnv {
   } as unknown as RuntimeEnv;
 }
 
-function requireRuntimeJsonPayload(runtime: RuntimeEnv, index = 0): unknown {
+function requireRuntimeJsonPayload(runtime: RuntimeEnv, index = 0): any {
   const call = mocks.writeRuntimeJson.mock.calls[index];
   if (!call) {
     throw new Error(`expected writeRuntimeJson call ${index}`);
@@ -332,7 +332,7 @@ describe("gateway status output", () => {
     });
 
     expect(mocks.writeRuntimeJson).toHaveBeenCalledOnce();
-    const payload = requireRuntimeJsonPayload(runtime) as { ok?: unknown; capability?: unknown };
+    const payload = requireRuntimeJsonPayload(runtime) as { ok?: any; capability?: any };
     expect(payload?.ok).toBe(true);
     expect(payload?.capability).toBe("read_only");
   });

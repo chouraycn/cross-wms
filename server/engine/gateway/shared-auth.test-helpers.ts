@@ -22,7 +22,7 @@ export async function openAuthenticatedGatewayWs(
       cleanup();
       resolve();
     };
-    const onError = (error: unknown) => {
+    const onError = (error: any) => {
       cleanup();
       reject(error instanceof Error ? error : new Error(String(error)));
     };
@@ -68,11 +68,11 @@ export async function waitForGatewayWsClose(
 /** Loads the current config through the gateway RPC API for mutation tests. */
 export async function loadGatewayConfig(ws: WebSocket): Promise<{
   hash: string;
-  config: Record<string, unknown>;
+  config: Record<string, any>;
 }> {
   const current = await rpcReq<{
     hash?: string;
-    config?: Record<string, unknown>;
+    config?: Record<string, any>;
   }>(ws, "config.get", {});
   expect(current.ok).toBe(true);
   expect(typeof current.payload?.hash).toBe("string");

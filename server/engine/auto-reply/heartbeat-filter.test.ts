@@ -120,7 +120,7 @@ describe("isHeartbeatOkResponse", () => {
           },
         },
       ],
-    } as { role: string; content?: unknown };
+    } as { role: string; content?: any };
     expect(isHeartbeatOkResponse(toolCallOnlyMessage)).toBe(false);
   });
 

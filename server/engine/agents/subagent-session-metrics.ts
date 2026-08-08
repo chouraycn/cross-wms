@@ -6,12 +6,12 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function getSubagentSessionStartedAt(..._args: unknown[]): unknown {
+export function getSubagentSessionStartedAt(..._args: any[]): any {
   return undefined;
 }
-export function getSubagentSessionRuntimeMs(..._args: unknown[]): unknown {
+export function getSubagentSessionRuntimeMs(..._args: any[]): any {
   return undefined;
 }
-export function resolveSubagentSessionStatus(..._args: unknown[]): unknown {
+export function resolveSubagentSessionStatus(..._args: any[]): any {
   return undefined;
 }

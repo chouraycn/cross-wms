@@ -22,7 +22,7 @@ function resolveNodesTransportTimeoutMs(
 export async function callGatewayCliRuntime(
   method: string,
   opts: NodesRpcOpts,
-  params?: unknown,
+  params?: any,
   callOpts?: {
     scopes?: string[];
     transportTimeoutMs?: number;
@@ -57,7 +57,7 @@ export async function callGatewayCliRuntime(
 export async function callNodePairApprovalGatewayCliRuntime(
   method: "node.pair.list" | "node.pair.approve",
   opts: NodesRpcOpts,
-  params: unknown,
+  params: any,
   callOpts: { scopes: string[]; transportTimeoutMs?: number },
 ) {
   if (!NODE_PAIR_APPROVAL_GATEWAY_METHODS.has(method)) {

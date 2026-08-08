@@ -26,6 +26,6 @@ export class AgentSessionRuntime {
   }
 }
 
-export function createAgentSessionRuntime(_params?: unknown): null {
+export function createAgentSessionRuntime(_params?: any): null {
   return null;
 }

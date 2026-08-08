@@ -3,7 +3,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const clientState = vi.hoisted(() => ({
-  options: null as Record<string, unknown> | null,
+  options: null as Record<string, any> | null,
   startMode: "hello" as "hello" | "close",
   close: { code: 1008, reason: "pairing required" },
   requestSpy: vi.fn(),
@@ -18,9 +18,9 @@ const bootstrapState = vi.hoisted(() => ({
 }));
 
 class MockGatewayClient {
-  private readonly opts: Record<string, unknown>;
+  private readonly opts: Record<string, any>;
 
-  constructor(opts: Record<string, unknown>) {
+  constructor(opts: Record<string, any>) {
     this.opts = opts;
     clientState.options = opts;
   }
@@ -43,7 +43,7 @@ class MockGatewayClient {
       .catch(() => {});
   }
 
-  async request(method: string, params: unknown): Promise<unknown> {
+  async request(method: string, params: any): Promise<any> {
     return await clientState.requestSpy(method, params);
   }
 

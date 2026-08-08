@@ -26,9 +26,9 @@ const mocks = vi.hoisted(() => ({
   loadAuthProfileStoreForRuntime: vi.fn(() => ({ profiles: {}, order: {} })),
   listProfilesForProvider: vi.fn(() => []),
   resolveApiKeyForProvider: vi.fn(),
-  resolveAgentDir: vi.fn((_cfg: unknown, agentId: string) => `/tmp/agent-${agentId}`),
+  resolveAgentDir: vi.fn((_cfg: any, agentId: string) => `/tmp/agent-${agentId}`),
   updateAuthProfileStoreWithLock: vi.fn(
-    async ({ updater }: { updater: (store: unknown) => boolean }) => {
+    async ({ updater }: { updater: (store: any) => boolean }) => {
       const store = {
         version: 1,
         profiles: {},
@@ -173,14 +173,14 @@ const mocks = vi.hoisted(() => ({
     },
   ),
   resolveCommandConfigWithSecrets: vi.fn(
-    async ({ config }: { config: Record<string, unknown> }) => ({
+    async ({ config }: { config: Record<string, any> }) => ({
       resolvedConfig: config,
       effectiveConfig: config,
       diagnostics: [],
     }),
   ),
   modelsStatusCommand: vi.fn(
-    async (_opts: unknown, runtime: { log: (...args: unknown[]) => void }) => {
+    async (_opts: any, runtime: { log: (...args: any[]) => void }) => {
       runtime.log(JSON.stringify({ ok: true, providers: [{ id: "openai" }] }));
     },
   ),
@@ -188,7 +188,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("../runtime.js", () => ({
   defaultRuntime: mocks.runtime,
-  writeRuntimeJson: (runtime: { writeJson: (value: unknown) => void }, value: unknown) =>
+  writeRuntimeJson: (runtime: { writeJson: (value: any) => void }, value: any) =>
     runtime.writeJson(value),
 }));
 
@@ -326,7 +326,7 @@ vi.mock("../plugin-sdk/memory-core-bundled-runtime.js", () => ({
 }));
 
 vi.mock("../image-generation/runtime.js", () => ({
-  generateImage: (...args: unknown[]) => mocks.generateImage(...args),
+  generateImage: (...args: any[]) => mocks.generateImage(...args),
   listRuntimeImageGenerationProviders: vi.fn(() => []),
 }));
 
@@ -371,7 +371,7 @@ vi.mock("../web-fetch/runtime.js", () => ({
 }));
 
 vi.mock("../plugins/web-fetch-providers.runtime.js", () => ({
-  resolvePluginWebFetchProviders: vi.fn((params: { config?: Record<string, unknown> }) => [
+  resolvePluginWebFetchProviders: vi.fn((params: { config?: Record<string, any> }) => [
     {
       pluginId: "firecrawl",
       id: "firecrawl",
@@ -379,7 +379,7 @@ vi.mock("../plugins/web-fetch-providers.runtime.js", () => ({
       getConfiguredCredentialValue: (config?: {
         plugins?: {
           entries?: {
-            firecrawl?: { config?: { webFetch?: { apiKey?: unknown } } };
+            firecrawl?: { config?: { webFetch?: { apiKey?: any } } };
           };
         };
       }) => config?.plugins?.entries?.firecrawl?.config?.webFetch?.apiKey,
@@ -389,7 +389,7 @@ vi.mock("../plugins/web-fetch-providers.runtime.js", () => ({
           params.config as {
             plugins?: {
               entries?: {
-                firecrawl?: { config?: { webSearch?: { apiKey?: unknown } } };
+                firecrawl?: { config?: { webSearch?: { apiKey?: any } } };
               };
             };
           }
@@ -409,7 +409,7 @@ vi.mock("../plugins/web-search-providers.runtime.js", () => ({
       getConfiguredCredentialValue: (config?: {
         plugins?: {
           entries?: {
-            tavily?: { config?: { webSearch?: { apiKey?: unknown } } };
+            tavily?: { config?: { webSearch?: { apiKey?: any } } };
           };
         };
       }) => config?.plugins?.entries?.tavily?.config?.webSearch?.apiKey,
@@ -423,7 +423,7 @@ vi.mock("../plugins/web-search-providers.runtime.js", () => ({
       getConfiguredCredentialValue: (config?: {
         plugins?: {
           entries?: {
-            firecrawl?: { config?: { webSearch?: { apiKey?: unknown } } };
+            firecrawl?: { config?: { webSearch?: { apiKey?: any } } };
           };
         };
       }) => config?.plugins?.entries?.firecrawl?.config?.webSearch?.apiKey,
@@ -437,7 +437,7 @@ vi.mock("../plugins/web-search-providers.runtime.js", () => ({
       getConfiguredCredentialValue: (config?: {
         plugins?: {
           entries?: {
-            exa?: { config?: { webSearch?: { apiKey?: unknown } } };
+            exa?: { config?: { webSearch?: { apiKey?: any } } };
           };
         };
       }) => config?.plugins?.entries?.exa?.config?.webSearch?.apiKey,
@@ -469,7 +469,7 @@ describe("capability cli", () => {
     mocks.setRuntimeConfigSnapshot.mockClear();
     mocks.updateAuthProfileStoreWithLock
       .mockReset()
-      .mockImplementation(async ({ updater }: { updater: (store: unknown) => boolean }) => {
+      .mockImplementation(async ({ updater }: { updater: (store: any) => boolean }) => {
         const store = {
           version: 1,
           profiles: {},
@@ -524,7 +524,7 @@ describe("capability cli", () => {
     mocks.getCapabilityWebFetchCommandSecretTargets.mockClear();
     mocks.resolveCommandConfigWithSecrets
       .mockReset()
-      .mockImplementation(async ({ config }: { config: Record<string, unknown> }) => ({
+      .mockImplementation(async ({ config }: { config: Record<string, any> }) => ({
         resolvedConfig: config,
         effectiveConfig: config,
         diagnostics: [],
@@ -572,26 +572,26 @@ describe("capability cli", () => {
   }
 
   type GatewayCall = {
-    clientName?: unknown;
-    method?: unknown;
-    mode?: unknown;
-    params?: Record<string, unknown>;
-    scopes?: unknown;
+    clientName?: any;
+    method?: any;
+    mode?: any;
+    params?: Record<string, any>;
+    scopes?: any;
   };
   type CompletionCall = {
     context?: {
-      messages?: Array<{ content?: unknown; role?: unknown }>;
-      systemPrompt?: unknown;
+      messages?: Array<{ content?: any; role?: any }>;
+      systemPrompt?: any;
     };
-    options?: { reasoning?: unknown };
+    options?: { reasoning?: any };
   };
   type ImageDescribeParams = {
     filePath?: string;
     mediaUrl?: string;
-    model?: unknown;
-    prompt?: unknown;
-    provider?: unknown;
-    timeoutMs?: unknown;
+    model?: any;
+    prompt?: any;
+    provider?: any;
+    timeoutMs?: any;
   };
 
   function firstGatewayCall() {
@@ -608,19 +608,19 @@ describe("capability cli", () => {
 
   function firstPreparedModelParams() {
     const calls = mocks.prepareSimpleCompletionModelForAgent.mock.calls as unknown as Array<
-      [Record<string, unknown>]
+      [Record<string, any>]
     >;
     return calls[0]?.[0];
   }
 
   function firstJsonOutput() {
-    const calls = mocks.runtime.writeJson.mock.calls as unknown as Array<[Record<string, unknown>]>;
+    const calls = mocks.runtime.writeJson.mock.calls as unknown as Array<[Record<string, any>]>;
     return calls[0]?.[0];
   }
 
   function firstCommandConfigResolutionCall() {
     const calls = mocks.resolveCommandConfigWithSecrets.mock.calls as unknown as Array<
-      [Record<string, unknown>]
+      [Record<string, any>]
     >;
     return calls[0]?.[0];
   }
@@ -638,30 +638,30 @@ describe("capability cli", () => {
   }
 
   function firstImageGenerationCall() {
-    const calls = mocks.generateImage.mock.calls as unknown as Array<[Record<string, unknown>]>;
+    const calls = mocks.generateImage.mock.calls as unknown as Array<[Record<string, any>]>;
     return calls[0]?.[0];
   }
 
   function firstVideoGenerationCall() {
-    const calls = mocks.generateVideo.mock.calls as unknown as Array<[Record<string, unknown>]>;
+    const calls = mocks.generateVideo.mock.calls as unknown as Array<[Record<string, any>]>;
     return calls[0]?.[0];
   }
 
   function firstAudioTranscriptionCall() {
     const calls = mocks.transcribeAudioFile.mock.calls as unknown as Array<
-      [{ cfg?: unknown; filePath?: string; language?: unknown; prompt?: unknown }]
+      [{ cfg?: any; filePath?: string; language?: any; prompt?: any }]
     >;
     return calls[0]?.[0];
   }
 
   function firstTextToSpeechCall() {
-    const calls = mocks.textToSpeech.mock.calls as unknown as Array<[Record<string, unknown>]>;
+    const calls = mocks.textToSpeech.mock.calls as unknown as Array<[Record<string, any>]>;
     return calls[0]?.[0];
   }
 
   function firstEmbeddingProviderCall() {
     const calls = mocks.createEmbeddingProvider.mock.calls as unknown as Array<
-      [Record<string, unknown>]
+      [Record<string, any>]
     >;
     return calls[0]?.[0];
   }
@@ -743,7 +743,7 @@ describe("capability cli", () => {
     });
 
     const calls = mocks.prepareSimpleCompletionModelForAgent.mock.calls as unknown as Array<
-      [Record<string, unknown>]
+      [Record<string, any>]
     >;
     const params = calls[0]?.[0];
     if (!params) {
@@ -777,7 +777,7 @@ describe("capability cli", () => {
       { type: "image", data: PNG_1X1_BASE64, mimeType: "image/png" },
     ]);
     expect(call?.context).not.toHaveProperty("systemPrompt");
-    const inputs = firstJsonOutput()?.inputs as Array<{ mimeType?: unknown; path?: unknown }>;
+    const inputs = firstJsonOutput()?.inputs as Array<{ mimeType?: any; path?: any }>;
     expect(inputs).toHaveLength(1);
     expect(inputs[0]?.path).toBe(tempInput);
     expect(inputs[0]?.mimeType).toBe("image/png");
@@ -897,7 +897,7 @@ describe("capability cli", () => {
         mimeType: "image/jpeg",
       },
     ]);
-    const inputs = firstJsonOutput()?.inputs as Array<{ mimeType?: unknown; path?: unknown }>;
+    const inputs = firstJsonOutput()?.inputs as Array<{ mimeType?: any; path?: any }>;
     expect(inputs).toHaveLength(1);
     expect(inputs[0]?.path).toBe(tempInput);
     expect(inputs[0]?.mimeType).toBe("image/jpeg");
@@ -1084,7 +1084,7 @@ describe("capability cli", () => {
     });
 
     const payload = firstJsonOutput();
-    const attempts = payload?.attempts as Array<Record<string, unknown>>;
+    const attempts = payload?.attempts as Array<Record<string, any>>;
     expect(payload?.provider).toBe("openai");
     expect(payload?.model).toBe("gpt-4.1-mini");
     expect(attempts).toHaveLength(1);
@@ -1130,7 +1130,7 @@ describe("capability cli", () => {
       await runModelRunWithModel("Anthropic/CLAUDE-OPUS-4-7", transport);
 
       const catalogCalls = mocks.loadModelCatalog.mock.calls as unknown as Array<
-        [{ readOnly?: unknown }]
+        [{ readOnly?: any }]
       >;
       const catalogParams = catalogCalls[0]?.[0];
       expect(catalogParams?.readOnly).toBe(true);
@@ -1245,7 +1245,7 @@ describe("capability cli", () => {
     const describeCall = imageDescribeCall();
     expect(path.basename(describeCall?.filePath ?? "")).toBe("photo.jpg");
     const output = firstJsonOutput();
-    const outputs = output?.outputs as Array<Record<string, unknown>>;
+    const outputs = output?.outputs as Array<Record<string, any>>;
     expect(output?.capability).toBe("image.describe");
     expect(outputs).toHaveLength(1);
     expect(outputs[0]?.kind).toBe("image.description");
@@ -1267,7 +1267,7 @@ describe("capability cli", () => {
     const describeCall = imageDescribeCall();
     expect(describeCall?.filePath).toBe("https://httpbin.org/image/png");
     const output = firstJsonOutput();
-    const outputs = output?.outputs as Array<Record<string, unknown>>;
+    const outputs = output?.outputs as Array<Record<string, any>>;
     expect(outputs[0]?.path).toBe("https://httpbin.org/image/png");
   });
 
@@ -1310,7 +1310,7 @@ describe("capability cli", () => {
     const describeCall = imageDescribeCall();
     expect(describeCall?.filePath).toBe("https://example.com/photo.png");
     expect(describeCall?.mediaUrl).toBe("https://example.com/photo.png");
-    const outputs = firstJsonOutput()?.outputs as Array<Record<string, unknown>>;
+    const outputs = firstJsonOutput()?.outputs as Array<Record<string, any>>;
     expect(outputs[0]?.path).toBe("https://example.com/photo.png");
   });
 
@@ -1363,7 +1363,7 @@ describe("capability cli", () => {
     expect(describeCall?.filePath).toBe("https://example.com/photo.png");
     expect(describeCall?.mediaUrl).toBe("https://example.com/photo.png");
     expect(mocks.describeImageFile).not.toHaveBeenCalled();
-    const outputs = firstJsonOutput()?.outputs as Array<Record<string, unknown>>;
+    const outputs = firstJsonOutput()?.outputs as Array<Record<string, any>>;
     expect(outputs[0]?.path).toBe("https://example.com/photo.png");
   });
 
@@ -1510,7 +1510,7 @@ describe("capability cli", () => {
       ],
     });
 
-    const outputs = firstJsonOutput()?.outputs as Array<Record<string, unknown>>;
+    const outputs = firstJsonOutput()?.outputs as Array<Record<string, any>>;
     expect(outputs).toHaveLength(1);
     expect(outputs[0]?.path).toBe(tempOutput.replace(/\.png$/, ".jpg"));
     expect(outputs[0]?.mimeType).toBe("image/jpeg");
@@ -1669,7 +1669,7 @@ describe("capability cli", () => {
     });
 
     const generationCall = firstImageGenerationCall();
-    const inputImages = generationCall?.inputImages as Array<Record<string, unknown>>;
+    const inputImages = generationCall?.inputImages as Array<Record<string, any>>;
     expect(generationCall?.prompt).toBe("make background transparent");
     expect(generationCall?.modelOverride).toBe("openai/gpt-image-1.5");
     expect(generationCall?.outputFormat).toBe("png");
@@ -1861,7 +1861,7 @@ describe("capability cli", () => {
     });
 
     const generationCall = firstImageGenerationCall();
-    const inputImages = generationCall?.inputImages as Array<Record<string, unknown>>;
+    const inputImages = generationCall?.inputImages as Array<Record<string, any>>;
     expect(generationCall?.prompt).toBe("remove the background object");
     expect(generationCall?.modelOverride).toBe("openai/gpt-image-2");
     expect(generationCall?.size).toBe("2160x3840");
@@ -1994,13 +1994,13 @@ describe("capability cli", () => {
     });
 
     const outputPath = `${outputBase}.mp4`;
-    const fetchCalls = fetchMock.mock.calls as unknown as Array<[string, { signal?: unknown }]>;
+    const fetchCalls = fetchMock.mock.calls as unknown as Array<[string, { signal?: any }]>;
     const fetchCall = fetchCalls[0];
     expect(fetchCall?.[0]).toBe("https://example.com/generated-video.mp4");
     expect(fetchCall?.[1]?.signal).toBeInstanceOf(AbortSignal);
     expect(await fs.readFile(outputPath, "utf8")).toBe("video-bytes");
     const output = firstJsonOutput();
-    const outputs = output?.outputs as Array<Record<string, unknown>>;
+    const outputs = output?.outputs as Array<Record<string, any>>;
     expect(output?.capability).toBe("video.generate");
     expect(output?.provider).toBe("vydra");
     expect(outputs).toHaveLength(1);
@@ -2154,7 +2154,7 @@ describe("capability cli", () => {
 
     expect(path.basename(firstAudioTranscriptionCall()?.filePath ?? "")).toBe("memo.m4a");
     const output = firstJsonOutput();
-    const outputs = output?.outputs as Array<Record<string, unknown>>;
+    const outputs = output?.outputs as Array<Record<string, any>>;
     expect(output?.capability).toBe("audio.transcribe");
     expect(outputs).toHaveLength(1);
     expect(outputs[0]?.kind).toBe("audio.transcription");
@@ -2280,8 +2280,8 @@ describe("capability cli", () => {
     const ttsCall = firstTextToSpeechCall();
     const overrides = ttsCall?.overrides as
       | {
-          provider?: unknown;
-          providerOverrides?: { openai?: { modelId?: unknown; voiceId?: unknown } };
+          provider?: any;
+          providerOverrides?: { openai?: { modelId?: any; voiceId?: any } };
         }
       | undefined;
     expect(overrides?.provider).toBe("openai");
@@ -2695,9 +2695,9 @@ describe("capability cli", () => {
     } as never);
     mocks.listProfilesForProvider.mockReturnValue(["openai:default", "openai:secondary"] as never);
 
-    let updatedStore: Record<string, unknown> | null = null;
+    let updatedStore: Record<string, any> | null = null;
     mocks.updateAuthProfileStoreWithLock.mockImplementationOnce(
-      async ({ updater }: { updater: (store: unknown) => boolean }) => {
+      async ({ updater }: { updater: (store: any) => boolean }) => {
         const store = {
           version: 1,
           profiles: {
@@ -2727,7 +2727,7 @@ describe("capability cli", () => {
     if (updatedStore === null) {
       throw new Error("expected updated auth store");
     }
-    const storeSnapshot = updatedStore as unknown as Record<string, unknown>;
+    const storeSnapshot = updatedStore as unknown as Record<string, any>;
     expect(storeSnapshot.profiles).toEqual({
       "anthropic:default": { id: "anthropic:default" },
     });

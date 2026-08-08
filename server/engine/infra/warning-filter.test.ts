@@ -91,8 +91,8 @@ describe("warning filter", () => {
       installProcessWarningFilter();
       installProcessWarningFilter();
       installProcessWarningFilter();
-      const emitWarning = (...args: unknown[]) =>
-        (process.emitWarning as unknown as (...warningArgs: unknown[]) => void)(...args);
+      const emitWarning = (...args: any[]) =>
+        (process.emitWarning as unknown as (...warningArgs: any[]) => void)(...args);
 
       emitWarning(
         "The `util._extend` API is deprecated. Please use Object.assign() instead.",

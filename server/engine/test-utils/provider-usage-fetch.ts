@@ -9,7 +9,7 @@ type UsageFetchMock = ReturnType<
 >;
 
 /** Creates JSON usage-provider responses without depending on a real fetch implementation. */
-export function makeResponse(status: number, body: unknown): Response {
+export function makeResponse(status: number, body: any): Response {
   const payload = typeof body === "string" ? body : JSON.stringify(body);
   const headers = typeof body === "string" ? undefined : { "Content-Type": "application/json" };
   return new Response(payload, { status, headers });

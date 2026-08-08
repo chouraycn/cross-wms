@@ -11,7 +11,7 @@ afterEach(() => {
 });
 
 async function loadCachedPluginModuleLoader(scope: string) {
-  const createJiti = vi.fn((filename: string, options?: Record<string, unknown>) =>
+  const createJiti = vi.fn((filename: string, options?: Record<string, any>) =>
     Object.assign(vi.fn(), {
       filename,
       options,
@@ -32,19 +32,19 @@ async function loadCachedPluginModuleLoader(scope: string) {
   return { createJiti, getCachedPluginModuleLoader };
 }
 
-function asPluginModuleLoaderFactory(factory: unknown): PluginModuleLoaderFactory {
+function asPluginModuleLoaderFactory(factory: any): PluginModuleLoaderFactory {
   return factory as PluginModuleLoaderFactory;
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object") {
     throw new Error(`expected ${label}`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function callArg(mock: unknown, callIndex: number, argIndex: number, label: string) {
-  const calls = (mock as { mock?: { calls?: Array<Array<unknown>> } }).mock?.calls ?? [];
+function callArg(mock: any, callIndex: number, argIndex: number, label: string) {
+  const calls = (mock as { mock?: { calls?: Array<Array<any>> } }).mock?.calls ?? [];
   const call = calls.at(callIndex);
   if (!call) {
     throw new Error(`${label} call ${callIndex} was missing`);
@@ -53,10 +53,10 @@ function callArg(mock: unknown, callIndex: number, argIndex: number, label: stri
 }
 
 function expectJitiOptions(
-  mock: unknown,
+  mock: any,
   callIndex: number,
   filename: string,
-  fields: Record<string, unknown>,
+  fields: Record<string, any>,
 ) {
   expect(callArg(mock, callIndex, 0, "jiti filename")).toBe(filename);
   const options = requireRecord(callArg(mock, callIndex, 1, "jiti options"), "jiti options");
@@ -66,7 +66,7 @@ function expectJitiOptions(
   return options;
 }
 
-function expectNativeOptions(mock: unknown, target: string) {
+function expectNativeOptions(mock: any, target: string) {
   expect(callArg(mock, 0, 0, "native target")).toBe(target);
   const options = requireRecord(callArg(mock, 0, 1, "native options"), "native options");
   expect(options.allowWindows).toBe(true);
@@ -74,7 +74,7 @@ function expectNativeOptions(mock: unknown, target: string) {
   expect(options.fallbackOnNativeError).toBe(true);
 }
 
-function expectStats(value: unknown, fields: Record<string, unknown>) {
+function expectStats(value: any, fields: Record<string, any>) {
   const stats = requireRecord(value, "loader stats");
   for (const [key, expected] of Object.entries(fields)) {
     expect(stats[key]).toEqual(expected);
@@ -86,12 +86,12 @@ describe("getCachedPluginModuleLoader", () => {
   let filenameScopeCase: {
     cacheSize: number;
     firstAliasType: string;
-    firstFilename: unknown;
-    firstOptions: Record<string, unknown>;
+    firstFilename: any;
+    firstOptions: Record<string, any>;
     sameLoader: boolean;
     secondAliasType: string;
-    secondFilename: unknown;
-    secondOptions: Record<string, unknown>;
+    secondFilename: any;
+    secondOptions: Record<string, any>;
   };
 
   beforeAll(async () => {
@@ -441,7 +441,7 @@ describe("getCachedPluginModuleLoader", () => {
     expect(cache.size).toBe(2);
     expect(secondAlias).toBe(firstAlias);
     expect(firstAlias?.beta).toBe("/repo/alpha/sub");
-    expect((firstAlias as Record<symbol, unknown>)[marker]).toBe(true);
+    expect((firstAlias as Record<symbol, any>)[marker]).toBe(true);
   });
 
   it("serves compiled .js targets from native require without invoking the module loader", async () => {
@@ -818,7 +818,7 @@ describe("getCachedPluginModuleLoader", () => {
       createLoader: asPluginModuleLoaderFactory(createJiti),
     });
 
-    const loose = loader as unknown as (t: string, ...a: unknown[]) => unknown;
+    const loose = loader as unknown as (t: string, ...a: any[]) => unknown;
     loose("/repo/dist/extensions/demo/api.js", { hint: "x" }, 42);
     expect(fromSourceTransformer).toHaveBeenCalledWith(
       "/repo/dist/extensions/demo/api.js",

@@ -42,7 +42,7 @@ export const FALLBACK_LANGUAGE_CHAIN: Record<string, string[]> = {
 
 // ===================== 事件发射器 =====================
 
-type EventHandler = (...args: unknown[]) => void;
+type EventHandler = (...args: any[]) => void;
 
 class I18nEventEmitter {
   private events: Map<string, EventHandler[]> = new Map();
@@ -65,7 +65,7 @@ class I18nEventEmitter {
     }
   }
 
-  emit(event: string, ...args: unknown[]): void {
+  emit(event: string, ...args: any[]): void {
     const handlers = this.events.get(event);
     if (handlers) {
       handlers.forEach((handler) => {
@@ -169,7 +169,7 @@ export async function loadLanguage(
  * @param template - 模板字符串
  * @param params - 参数对象
  */
-export function interpolate(template: string, params?: Record<string, unknown>): string {
+export function interpolate(template: string, params?: Record<string, any>): string {
   if (!params) return template;
 
   return template.replace(/\{\{\s*(\w+)\s*\}\}/g, (match, key) => {
@@ -189,7 +189,7 @@ export function interpolate(template: string, params?: Record<string, unknown>):
 export function pluralize(
   template: string,
   count: number,
-  params?: Record<string, unknown>,
+  params?: Record<string, any>,
 ): string {
   const forms = template.split('|').map((s) => s.trim());
   const form = count === 1 ? forms[0] : forms[forms.length - 1];
@@ -282,7 +282,7 @@ export function getFallbackChain(locale: string): string[] {
  * @param key - 翻译 key，支持 "namespace:key" 格式
  * @param params - 参数对象
  */
-export function t(key: string, params?: Record<string, unknown>): string {
+export function t(key: string, params?: Record<string, any>): string {
   let namespace = DEFAULT_NAMESPACE;
   let actualKey = key;
 
@@ -358,8 +358,8 @@ export function getAvailableLocales(): typeof SUPPORTED_LANGUAGES {
 import zhCN from './locales/zh-CN.json';
 import enUS from './locales/en-US.json';
 
-function buildResources(localeData: Record<string, Record<string, unknown>>): Record<I18nNamespace, Record<string, unknown>> {
-  const result = {} as Record<I18nNamespace, Record<string, unknown>>;
+function buildResources(localeData: Record<string, Record<string, any>>): Record<I18nNamespace, Record<string, any>> {
+  const result = {} as Record<I18nNamespace, Record<string, any>>;
   Object.keys(localeData).forEach((ns) => {
     if (NAMESPACES.includes(ns as I18nNamespace)) {
       result[ns as I18nNamespace] = localeData[ns];

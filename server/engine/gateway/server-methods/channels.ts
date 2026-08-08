@@ -42,7 +42,7 @@ type ChannelLogoutPayload = {
   channel: ChannelId;
   accountId: string;
   cleared: boolean;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 type ChannelStartPayload = {
@@ -58,16 +58,16 @@ type ChannelStopPayload = {
 };
 
 type ChannelOperationParams = {
-  channel?: unknown;
-  accountId?: unknown;
+  channel?: any;
+  accountId?: any;
 };
 
 function resolveChannelOperationParams<TParams extends ChannelOperationParams>(params: {
   method: string;
-  rawParams: unknown;
+  rawParams: any;
   respond: RespondFn;
   validate: Validator<TParams>;
-}): { params: TParams; rawChannel: unknown; channelId: ChannelId } | null {
+}): { params: TParams; rawChannel: any; channelId: ChannelId } | null {
   const rawParams = params.rawParams;
   if (!assertValidParams(rawParams, params.validate, params.method, params.respond)) {
     return null;
@@ -99,7 +99,7 @@ async function respondWithChannelOperationPayload<TPayload>(params: {
 const CHANNEL_STATUS_MAX_TIMEOUT_MS = 30_000;
 const CHANNEL_STATUS_PROBE_CONCURRENCY = 5;
 
-function channelStatusTimeoutPayload(step: string, timeoutMs: number): Record<string, unknown> {
+function channelStatusTimeoutPayload(step: string, timeoutMs: number): Record<string, any> {
   return {
     ok: false,
     timedOut: true,
@@ -109,7 +109,7 @@ function channelStatusTimeoutPayload(step: string, timeoutMs: number): Record<st
 
 type TimeoutRaceResult<T> =
   | { kind: "value"; value: T }
-  | { kind: "error"; error: unknown }
+  | { kind: "error"; error: any }
   | { kind: "timeout" };
 
 async function raceWithTimeout<T>(params: {
@@ -129,7 +129,7 @@ async function raceWithTimeout<T>(params: {
       .then(params.run)
       .then(
         (value) => ({ kind: "value" as const, value }),
-        (error: unknown) => ({ kind: "error" as const, error }),
+        (error: any) => ({ kind: "error" as const, error }),
       ),
     timeout,
   ]);
@@ -145,8 +145,8 @@ async function runChannelStatusHook(params: {
   step: "audit" | "probe";
   timeoutMs: number;
   warnings: string[];
-  run: () => Promise<unknown>;
-}): Promise<unknown> {
+  run: () => Promise<any>;
+}): Promise<any> {
   const timeoutMs = Math.max(1, params.timeoutMs);
   // Channel probes come from plugin code and external services. Convert slow or
   // failing hooks into partial status data so one channel cannot block the UI.
@@ -171,7 +171,7 @@ async function runChannelStatusHook(params: {
 }
 
 type ChannelStatusSummaryOutcome =
-  | { ok: true; value: unknown }
+  | { ok: true; value: any }
   | { ok: false; error: string; timedOut?: boolean };
 
 async function runChannelStatusSummary(params: {
@@ -199,18 +199,18 @@ async function runChannelStatusSummary(params: {
   return { ok: false, error: message };
 }
 
-function channelStatusFailureMessage(value: unknown): string | null {
+function channelStatusFailureMessage(value: any): string | null {
   if (!value || typeof value !== "object") {
     return null;
   }
-  const record = value as Record<string, unknown>;
+  const record = value as Record<string, any>;
   if (record.ok !== false || typeof record.error !== "string" || record.error.length === 0) {
     return null;
   }
   return record.error;
 }
 
-function resolveChannelsStatusTimeoutMs(params: { probe: boolean; timeoutMsRaw: unknown }): number {
+function resolveChannelsStatusTimeoutMs(params: { probe: boolean; timeoutMsRaw: any }): number {
   const fallback = params.probe ? CHANNEL_STATUS_MAX_TIMEOUT_MS : 10_000;
   if (typeof params.timeoutMsRaw !== "number" || !Number.isFinite(params.timeoutMsRaw)) {
     return fallback;
@@ -348,9 +348,9 @@ export const channelsHandlers: GatewayRequestHandlers = {
       return;
     }
     const probe = (params as { probe?: boolean }).probe === true;
-    const timeoutMsRaw = (params as { timeoutMs?: unknown }).timeoutMs;
+    const timeoutMsRaw = (params as { timeoutMs?: any }).timeoutMs;
     const timeoutMs = resolveChannelsStatusTimeoutMs({ probe, timeoutMsRaw });
-    const rawChannel = (params as { channel?: unknown }).channel;
+    const rawChannel = (params as { channel?: any }).channel;
     const requestedChannel =
       typeof rawChannel === "string" ? normalizeChannelId(rawChannel) : undefined;
     const runtimeConfig = context.getRuntimeConfig();
@@ -390,7 +390,7 @@ export const channelsHandlers: GatewayRequestHandlers = {
       return raw;
     };
 
-    const isAccountEnabled = (plugin: ChannelPlugin, account: unknown) =>
+    const isAccountEnabled = (plugin: ChannelPlugin, account: any) =>
       plugin.config.isEnabled
         ? plugin.config.isEnabled(account, cfg)
         : !account ||
@@ -405,7 +405,7 @@ export const channelsHandlers: GatewayRequestHandlers = {
     ) => {
       const account = plugin.config.resolveAccount(cfg, accountId);
       const enabled = isAccountEnabled(plugin, account);
-      let probeResult: unknown;
+      let probeResult: any;
       let lastProbeAt: number | null = null;
       if (probe && enabled && plugin.status?.probeAccount) {
         // Skip expensive probes for accounts that are not configured; the
@@ -431,7 +431,7 @@ export const channelsHandlers: GatewayRequestHandlers = {
           lastProbeAt = Date.now();
         }
       }
-      let auditResult: unknown;
+      let auditResult: any;
       if (probe && enabled && plugin.status?.auditAccount) {
         let configured = true;
         if (plugin.config.isConfigured) {
@@ -500,7 +500,7 @@ export const channelsHandlers: GatewayRequestHandlers = {
           accounts: [] as ChannelAccountSnapshot[],
           defaultAccountId: DEFAULT_ACCOUNT_ID,
           defaultAccount: undefined as ChannelAccountSnapshot | undefined,
-          resolvedAccounts: {} as Record<string, unknown>,
+          resolvedAccounts: {} as Record<string, any>,
         };
       }
       const accountIds = plugin.config.listAccountIds(cfg);
@@ -509,7 +509,7 @@ export const channelsHandlers: GatewayRequestHandlers = {
         cfg,
         accountIds,
       });
-      const resolvedAccounts: Record<string, unknown> = {};
+      const resolvedAccounts: Record<string, any> = {};
       const { results } = await runTasksWithConcurrency({
         tasks: accountIds.map(
           (accountId) => async () =>
@@ -530,7 +530,7 @@ export const channelsHandlers: GatewayRequestHandlers = {
     };
 
     const uiCatalog = buildChannelUiCatalog(selectedPlugins);
-    const payload: Record<string, unknown> = {
+    const payload: Record<string, any> = {
       ts: Date.now(),
       channelOrder: uiCatalog.order,
       channelLabels: uiCatalog.labels,
@@ -538,13 +538,13 @@ export const channelsHandlers: GatewayRequestHandlers = {
       channelSystemImages: uiCatalog.systemImages,
       channelMeta: uiCatalog.entries,
       ...(context.getEventLoopHealth ? { eventLoop: context.getEventLoopHealth() } : {}),
-      channels: {} as Record<string, unknown>,
-      channelAccounts: {} as Record<string, unknown>,
-      channelDefaultAccountId: {} as Record<string, unknown>,
+      channels: {} as Record<string, any>,
+      channelAccounts: {} as Record<string, any>,
+      channelDefaultAccountId: {} as Record<string, any>,
     };
-    const channelsMap = payload.channels as Record<string, unknown>;
-    const accountsMap = payload.channelAccounts as Record<string, unknown>;
-    const defaultAccountIdMap = payload.channelDefaultAccountId as Record<string, unknown>;
+    const channelsMap = payload.channels as Record<string, any>;
+    const accountsMap = payload.channelAccounts as Record<string, any>;
+    const defaultAccountIdMap = payload.channelDefaultAccountId as Record<string, any>;
     const { results: channelResults } = await runTasksWithConcurrency({
       tasks: selectedPlugins.map((plugin) => async () => {
         const { accounts, defaultAccountId, defaultAccount, resolvedAccounts } =
@@ -555,7 +555,7 @@ export const channelsHandlers: GatewayRequestHandlers = {
           configured: defaultAccount?.configured ?? false,
           ...(lastError ? { lastError } : {}),
         });
-        let summary: unknown = fallbackSummary();
+        let summary: any = fallbackSummary();
         if (plugin.status?.buildChannelSummary) {
           const summaryResult = await runChannelStatusSummary({
             channelId: plugin.id,

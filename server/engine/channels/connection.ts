@@ -9,7 +9,7 @@ export interface ChannelConnection {
   disconnectedAt?: number;
   retryCount: number;
   lastError?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 const connectionStore = new Map<string, ChannelConnection>();

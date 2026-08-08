@@ -20,7 +20,7 @@ import {
 
 // cross-wms 的 proxy-tls.ts 是 stub（ManagedProxyTlsOptions 为 unknown），
 // 此处定义本地等价类型以保持类型安全。
-type ManagedProxyTlsOptions = Record<string, unknown>;
+type ManagedProxyTlsOptions = Record<string, any>;
 
 export const DEFAULT_PROXY_VALIDATION_ALLOWED_URLS = ["https://example.com/"] as const;
 export const DEFAULT_PROXY_VALIDATION_APNS_AUTHORITY = "https://api.sandbox.push.apple.com";
@@ -281,11 +281,11 @@ async function defaultProxyValidationApnsCheck({
 
 function parseApnsErrorReason(body: string): string | undefined {
   try {
-    const parsed: unknown = JSON.parse(body);
+    const parsed: any = JSON.parse(body);
     if (!parsed || typeof parsed !== "object") {
       return undefined;
     }
-    const reason = (parsed as { reason?: unknown }).reason;
+    const reason = (parsed as { reason?: any }).reason;
     return typeof reason === "string" && reason.trim() ? reason : undefined;
   } catch {
     return undefined;

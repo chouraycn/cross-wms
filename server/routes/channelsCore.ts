@@ -118,7 +118,7 @@ router.get('/adapters', (_req: Request, res: Response) => {
     }));
 
     res.json({ success: true, data: { adapters, total: adapters.length } });
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     res.status(500).json({ success: false, error: message });
   }
@@ -191,7 +191,7 @@ router.post('/inbound', async (req: Request, res: Response) => {
         JSON.stringify(event.payload ?? null),
         Date.now(),
       );
-    } catch (dbErr: unknown) {
+    } catch (dbErr: any) {
       logger.warn(
         '[channelsCore] inbound audit persistence skipped:',
         dbErr instanceof Error ? dbErr.message : String(dbErr),
@@ -208,7 +208,7 @@ router.post('/inbound', async (req: Request, res: Response) => {
     };
 
     res.json({ success: true, data: { processed } });
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     res.status(500).json({ success: false, error: message });
   }
@@ -272,7 +272,7 @@ router.post('/access/check', async (req: Request, res: Response) => {
     });
 
     res.json({ success: true, data: { decision } });
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     res.status(500).json({ success: false, error: message });
   }
@@ -295,7 +295,7 @@ router.get('/lookup/:id', (req: Request, res: Response) => {
     }
 
     res.json({ success: true, data: { channel: plugin } });
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     res.status(500).json({ success: false, error: message });
   }

@@ -98,7 +98,7 @@ type ReapprovalRequestParams = {
 type DeferredResult = {
   promise: Promise<RequestNodePairingResult | null>;
   resolve: (result: RequestNodePairingResult | null) => void;
-  reject: (error: unknown) => void;
+  reject: (error: any) => void;
 };
 
 type QueuedRequest = {

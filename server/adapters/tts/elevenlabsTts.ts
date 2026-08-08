@@ -60,7 +60,7 @@ function resolveVoiceSettings(config: TTSConfig): {
   use_speaker_boost: boolean;
   speed: number;
 } {
-  const raw = (config['voiceSettings'] as Record<string, unknown>) ?? {};
+  const raw = (config['voiceSettings'] as Record<string, any>) ?? {};
   return {
     stability: typeof raw.stability === 'number' ? raw.stability : 0.5,
     similarity_boost: typeof raw.similarityBoost === 'number' ? raw.similarityBoost : 0.75,

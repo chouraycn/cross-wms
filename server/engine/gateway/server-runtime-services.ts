@@ -6,7 +6,7 @@ export type RuntimeService = {
   stop: () => Promise<void> | void;
   status: () => RuntimeServiceStatus;
   dependsOn?: string[];
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 export type RuntimeServiceStatus = 'stopped' | 'starting' | 'running' | 'stopping' | 'error';

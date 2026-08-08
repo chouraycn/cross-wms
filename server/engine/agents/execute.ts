@@ -6,15 +6,15 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function setCliRunnerExecuteTestDeps(..._args: unknown[]): unknown {
+export function setCliRunnerExecuteTestDeps(..._args: any[]): any {
   return undefined;
 }
-export function buildCliExecLogLine(..._args: unknown[]): unknown {
+export function buildCliExecLogLine(..._args: any[]): any {
   return undefined;
 }
-export function buildCliEnvAuthLog(..._args: unknown[]): unknown {
+export function buildCliEnvAuthLog(..._args: any[]): any {
   return undefined;
 }
-export function executePreparedCliRun(..._args: unknown[]): unknown {
+export function executePreparedCliRun(..._args: any[]): any {
   return undefined;
 }

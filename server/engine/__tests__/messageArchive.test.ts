@@ -164,7 +164,7 @@ describe('engine/messageArchive — runArchive', () => {
     // Verify message_archives table has the summary
     const archives = db.prepare(
       'SELECT * FROM message_archives WHERE session_id = ?',
-    ).all('old-session-1') as unknown[];
+    ).all('old-session-1') as any[];
     expect(archives.length).toBe(1);
     expect(archives[0].original_count).toBe(5);
     expect(archives[0].summary).toContain('👤');

@@ -247,7 +247,7 @@ function migrateBuiltinSkillsIntoUserSkills(db: Database.Database): void {
         );
         inserted++;
       }
-    } catch (e: unknown) {
+    } catch (e: any) {
       const msg = e instanceof Error ? e.message : String(e);
       errors.push({ id: skill.id, message: msg });
       logger.error(`[MigrateBuiltin] 迁入 ${skill.id} 失败:`, msg);
@@ -419,7 +419,7 @@ function migrateOpenclawSkillsIntoUserSkills(db: Database.Database): void {
         );
         inserted++;
       }
-    } catch (e: unknown) {
+    } catch (e: any) {
       const msg = e instanceof Error ? e.message : String(e);
       errors.push({ id: skillId, message: msg });
       logger.error(`[MigrateOpenclaw] 迁入 ${skillId} 失败:`, msg);
@@ -537,7 +537,7 @@ function repairSkillMdFrontmatter(): void {
       } else {
         skipped++;
       }
-    } catch (e: unknown) {
+    } catch (e: any) {
       errors++;
       logger.warn(`[RepairSkillMd] 修复 ${entry.name} 失败:`, e instanceof Error ? e.message : String(e));
     }
@@ -548,7 +548,7 @@ function repairSkillMdFrontmatter(): void {
   }
 }
 
-type FrontmatterValue = string | boolean | number | Array<string | number> | Record<string, unknown>;
+type FrontmatterValue = string | boolean | number | Array<string | number> | Record<string, any>;
 
 /** 轻量 frontmatter 解析（不依赖 js-yaml，简单 key: value + tags JSON） */
 function parseSkillMdLightweight(content: string): {
@@ -700,7 +700,7 @@ export function initDb(): Database.Database {
         try {
           fs.copyFileSync(DB_BACKUP_PATH, DB_PATH);
           logger.info('[DB] 数据库已从备份恢复（WAL checkpoint 失败）');
-        } catch (e: unknown) {
+        } catch (e: any) {
           logger.error('[DB] 从备份恢复失败:', e instanceof Error ? e.message : String(e));
         }
       }
@@ -712,7 +712,7 @@ export function initDb(): Database.Database {
 
   try {
     db = new Database(DB_PATH);
-  } catch (e: unknown) {
+  } catch (e: any) {
     const msg = e instanceof Error ? e.message : String(e);
     logger.error('[DB] 数据库初始化失败:', msg);
     if (/busy|locked|permission|cannot open/i.test(msg)) {
@@ -723,7 +723,7 @@ export function initDb(): Database.Database {
           fs.copyFileSync(DB_BACKUP_PATH, DB_PATH);
           logger.info('[DB] 已从备份恢复数据库，重试初始化...');
           db = new Database(DB_PATH);
-        } catch (e2: unknown) {
+        } catch (e2: any) {
           logger.error('[DB] 从备份恢复失败:', e2 instanceof Error ? e2.message : String(e2));
           throw e;
         }

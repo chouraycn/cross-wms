@@ -52,7 +52,7 @@ export type StaffdeckIconName =
 /** 兼容 MUI sx prop 的轻量类型 —— 仅消费 fontSize，其余忽略 */
 type SxLike = {
   fontSize?: string | number;
-  [k: string]: unknown;
+  [k: string]: any;
 };
 
 type StaffdeckIconProps = {

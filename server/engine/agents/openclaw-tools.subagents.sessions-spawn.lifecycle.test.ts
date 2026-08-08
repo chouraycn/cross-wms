@@ -48,9 +48,9 @@ function countMatching<T>(items: readonly T[], predicate: (item: T) => boolean):
   return count;
 }
 
-function expectAcceptedRunDetails(details: unknown): string {
+function expectAcceptedRunDetails(details: any): string {
   // Accepted details must include the run id used by later lifecycle events.
-  const rec = details as { status?: string; runId?: unknown } | undefined;
+  const rec = details as { status?: string; runId?: any } | undefined;
   const runId = rec?.runId;
   expect(rec?.status).toBe("accepted");
   expect(typeof runId).toBe("string");
@@ -62,12 +62,12 @@ function expectAcceptedRunDetails(details: unknown): string {
 
 function buildDiscordCleanupHooks(onDelete: (key: string | undefined) => void) {
   return {
-    onAgentSubagentSpawn: (params: unknown) => {
+    onAgentSubagentSpawn: (params: any) => {
       const rec = params as { channel?: string; timeout?: number } | undefined;
       expect(rec?.channel).toBe("discord");
       expect(rec?.timeout).toBe(1);
     },
-    onSessionsDelete: (params: unknown) => {
+    onSessionsDelete: (params: any) => {
       const rec = params as { key?: string } | undefined;
       onDelete(rec?.key);
     },

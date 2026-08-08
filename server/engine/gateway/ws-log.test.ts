@@ -63,7 +63,7 @@ describe("gateway ws log helpers", () => {
   });
 
   test("formatForLog caps cause-chain depth so a self-referential cause cannot loop", () => {
-    const e: Error & { cause?: unknown } = new Error("loop");
+    const e: Error & { cause?: any } = new Error("loop");
     e.cause = e;
 
     const out = formatForLog(e);

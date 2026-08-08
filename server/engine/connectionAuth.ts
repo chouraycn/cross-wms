@@ -7,7 +7,7 @@
 import { logger } from '../logger.js';
 
 export interface GatewayConnectionAuthOptions {
-  config?: Record<string, unknown>;
+  config?: Record<string, any>;
   token?: string;
   password?: string;
 }
@@ -15,7 +15,7 @@ export interface GatewayConnectionAuthOptions {
 export async function resolveGatewayConnectionAuth(
   params: GatewayConnectionAuthOptions,
 ): Promise<{ token?: string; password?: string }> {
-  const authConfig = params.config?.auth as Record<string, unknown> | undefined;
+  const authConfig = params.config?.auth as Record<string, any> | undefined;
   const token = params.token ?? (authConfig?.token as string | undefined);
   const password = params.password ?? (authConfig?.password as string | undefined);
 

@@ -94,7 +94,7 @@ export function submit(id: string, submittedBy: string): TransferOrderRow {
   }
 
   // 2. 源仓库出库（扣减库存）
-  const allItems = getInventoryItems(transfer.fromWarehouseId) as Array<Record<string, unknown>>;
+  const allItems = getInventoryItems(transfer.fromWarehouseId) as Array<Record<string, any>>;
   const fromInventory = allItems.find(
     (i) => i.sku === transfer.sku
   ) as { id: string; quantity: number } | undefined;
@@ -110,7 +110,7 @@ export function submit(id: string, submittedBy: string): TransferOrderRow {
   }
 
   const newQuantity = fromInventory.quantity - transfer.quantity;
-  const fromItem = allItems.find((i) => i.sku === transfer.sku) as Record<string, unknown>;
+  const fromItem = allItems.find((i) => i.sku === transfer.sku) as Record<string, any>;
   const valuePerUnit = (fromItem.valuePerUnit as number) ?? 0;
   const newTotalValue = valuePerUnit * newQuantity;
 
@@ -179,7 +179,7 @@ export function receive(id: string, receivedBy: string): TransferOrderRow {
   }
 
   // 2. 目标仓库入库（增加库存）
-  const toItems = getInventoryItems(transfer.toWarehouseId) as Array<Record<string, unknown>>;
+  const toItems = getInventoryItems(transfer.toWarehouseId) as Array<Record<string, any>>;
   const toInventory = toItems.find(
     (i) => i.sku === transfer.sku
   ) as { id: string; quantity: number; valuePerUnit: number } | undefined;
@@ -196,7 +196,7 @@ export function receive(id: string, receivedBy: string): TransferOrderRow {
     });
   } else {
     // 新库存，需要复制商品信息
-    const fromItems = getInventoryItems(transfer.fromWarehouseId) as Array<Record<string, unknown>>;
+    const fromItems = getInventoryItems(transfer.fromWarehouseId) as Array<Record<string, any>>;
     const sourceItem = fromItems.find((i) => i.sku === transfer.sku);
 
     if (sourceItem) {

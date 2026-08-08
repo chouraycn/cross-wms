@@ -7,7 +7,7 @@ vi.mock("../media/input-files.js", async () => {
     await vi.importActual<typeof import("../media/input-files.js")>("../media/input-files.js");
   return {
     ...actual,
-    extractFileContentFromSource: (...args: unknown[]) => extractFileContentFromSourceMock(...args),
+    extractFileContentFromSource: (...args: any[]) => extractFileContentFromSourceMock(...args),
   };
 });
 
@@ -45,7 +45,7 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
-async function postResponses(body: unknown) {
+async function postResponses(body: any) {
   return await fetch(`http://127.0.0.1:${port}/v1/responses`, {
     method: "POST",
     headers: {
@@ -91,7 +91,7 @@ describe("OpenResponses file-only input that renders to images", () => {
 
     expect(res.status).toBe(200);
     expect(agentCommand).toHaveBeenCalledTimes(1);
-    const opts = agentCommand.mock.calls[0]?.[0] as { message?: string; images?: unknown[] };
+    const opts = agentCommand.mock.calls[0]?.[0] as { message?: string; images?: any[] };
     expect(opts.message ?? "").not.toBe("");
     expect(opts.images?.length).toBe(1);
     await res.text();

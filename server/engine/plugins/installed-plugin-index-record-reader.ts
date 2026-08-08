@@ -6,7 +6,7 @@
 //  - 原文件依赖 @openclaw/normalization-core/record-coerce 的 isRecord。
 //    改用 cross-wms 的 ../infra/record-coerce.js，已提供同名导出。
 //  - 原文件依赖 ../config/types.plugins.js 的 PluginInstallRecord。cross-wms 尚未
-//    移植该模块。这里降级为 Record<string, unknown> 占位（与
+//    移植该模块。这里降级为 Record<string, any> 占位（与
 //    installed-plugin-index-record-cache.ts 一致）。
 //  - 原文件依赖 ../infra/json-files.js 的 tryReadJsonSync。改用 cross-wms 的
 //    ../infra/_fs-safe-stubs.js 中同名导出，行为一致。
@@ -50,9 +50,9 @@ export { clearLoadInstalledPluginIndexInstallRecordsCache } from "./installed-pl
  * 插件安装记录（降级占位）。
  *
  * 降级原因：cross-wms 尚未移植 openclaw 的 ../config/types.plugins.js。
- * 这里使用 Record<string, unknown> 占位（与 installed-plugin-index-record-cache.ts 一致）。
+ * 这里使用 Record<string, any> 占位（与 installed-plugin-index-record-cache.ts 一致）。
  */
-type PluginInstallRecord = Record<string, unknown>;
+type PluginInstallRecord = Record<string, any>;
 
 // ============================================================================
 // 内联降级：./install-paths.js —— resolveDefaultPluginNpmDir 与 validatePluginId
@@ -166,7 +166,7 @@ function isSafeRecordKey(key: string): boolean {
   return !BLOCKED_RECORD_KEYS.has(key);
 }
 
-function readRecordMap(value: unknown): Record<string, PluginInstallRecord> | null {
+function readRecordMap(value: any): Record<string, PluginInstallRecord> | null {
   if (!isRecord(value)) {
     return null;
   }
@@ -184,12 +184,12 @@ function readRecordMap(value: unknown): Record<string, PluginInstallRecord> | nu
   return records;
 }
 
-function readJsonObjectFileSync(filePath: string): Record<string, unknown> | null {
-  const parsed = tryReadJsonSync<unknown>(filePath);
+function readJsonObjectFileSync(filePath: string): Record<string, any> | null {
+  const parsed = tryReadJsonSync<any>(filePath);
   return isRecord(parsed) ? parsed : null;
 }
 
-function readStringRecord(value: unknown): Record<string, string> {
+function readStringRecord(value: any): Record<string, string> {
   if (!isRecord(value)) {
     return {};
   }
@@ -207,7 +207,7 @@ function readStringRecord(value: unknown): Record<string, string> {
   return record;
 }
 
-function hasPackagePluginMetadata(manifest: Record<string, unknown>): boolean {
+function hasPackagePluginMetadata(manifest: Record<string, any>): boolean {
   const openclaw = manifest.openclaw;
   if (!isRecord(openclaw)) {
     return false;
@@ -365,7 +365,7 @@ function mergeRecoveredManagedNpmInstallRecords(
 }
 
 function extractPluginInstallRecordsFromPersistedInstalledPluginIndex(
-  index: unknown,
+  index: any,
 ): Record<string, PluginInstallRecord> | null {
   if (!isRecord(index)) {
     return null;
@@ -394,14 +394,14 @@ function extractPluginInstallRecordsFromPersistedInstalledPluginIndex(
 
 function readPersistedInstalledPluginIndexForRecords(
   options: InstalledPluginIndexStoreOptions = {},
-): unknown {
+): any {
   const storePath = resolveInstalledPluginIndexStorePath(options);
   if (!fs.existsSync(storePath)) {
     return null;
   }
   // 降级：cross-wms 尚未移植 state/openclaw-state-db.js。仅支持显式 JSON 文件路径。
   if (options.filePath?.endsWith(".json")) {
-    return tryReadJsonSync<unknown>(options.filePath);
+    return tryReadJsonSync<any>(options.filePath);
   }
   // SQLite 读取未实现，返回 null 以触发回退到 recovered managed npm install records。
   void resolveInstalledPluginIndexStateDatabaseOptions(options);

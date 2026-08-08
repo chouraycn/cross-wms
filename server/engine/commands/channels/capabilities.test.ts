@@ -58,10 +58,10 @@ vi.mock("../channel-setup/channel-plugin-resolution.js", () => ({
 }));
 
 const runtime = {
-  log: (...args: unknown[]) => {
+  log: (...args: any[]) => {
     logs.push(args.map(String).join(" "));
   },
-  error: (...args: unknown[]) => {
+  error: (...args: any[]) => {
     errors.push(args.map(String).join(" "));
   },
   exit: (code: number) => {
@@ -74,17 +74,17 @@ function resetOutput() {
   errors.length = 0;
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error(`expected ${label}`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 function requireFirstMockArg(
-  mock: { mock: { calls: unknown[][] } },
+  mock: { mock: { calls: any[][] } },
   label: string,
-): Record<string, unknown> {
+): Record<string, any> {
   const [call] = mock.mock.calls;
   if (!call) {
     throw new Error(`expected ${label} call`);
@@ -95,8 +95,8 @@ function requireFirstMockArg(
 function buildPlugin(params: {
   id: string;
   capabilities?: ChannelPlugin["capabilities"];
-  account?: Record<string, unknown>;
-  probe?: unknown;
+  account?: Record<string, any>;
+  probe?: any;
 }): ChannelPlugin {
   const capabilities =
     params.capabilities ?? ({ chatTypes: ["direct"] } as ChannelPlugin["capabilities"]);
@@ -280,7 +280,7 @@ describe("channelsCapabilitiesCommand", () => {
     await channelsCapabilitiesCommand({ channel: "slack", json: true, timeout: "1" }, runtime);
 
     const payload = JSON.parse(logs[0] ?? "{}") as {
-      channels?: Array<{ probe?: unknown }>;
+      channels?: Array<{ probe?: any }>;
     };
     expect(payload.channels?.[0]?.probe).toStrictEqual({
       ok: false,
@@ -346,7 +346,7 @@ describe("channelsCapabilitiesCommand", () => {
     await channelsCapabilitiesCommand({ channel: "slack", json: true, timeout: "1" }, runtime);
 
     const payload = JSON.parse(logs[0] ?? "{}") as {
-      channels?: Array<{ diagnostics?: unknown }>;
+      channels?: Array<{ diagnostics?: any }>;
     };
     expect(payload.channels?.[0]?.diagnostics).toStrictEqual({
       lines: [

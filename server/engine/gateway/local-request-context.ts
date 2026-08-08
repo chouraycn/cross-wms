@@ -11,10 +11,10 @@
  * 完整实现见 openclaw 源码。
  */
 
-export function createLocalGatewayRequestContext(..._args: unknown[]): unknown {
+export function createLocalGatewayRequestContext(..._args: any[]): any {
   return undefined;
 }
 
-export function withLocalGatewayRequestScope(..._args: unknown[]): unknown {
+export function withLocalGatewayRequestScope(..._args: any[]): any {
   return undefined;
 }

@@ -1,12 +1,12 @@
 
-type OpenClawConfig = Record<string, unknown> & {
+type OpenClawConfig = Record<string, any> & {
   agents?: {
     defaults?: {
-      model?: unknown;
-      mode?: unknown;
+      model?: any;
+      mode?: any;
       models?: Record<string, AgentModelEntryConfig>;
     };
-    providers?: Record<string, unknown>;
+    providers?: Record<string, any>;
   };
   models?: {
     mode?: string;
@@ -20,7 +20,7 @@ type ModelDefinitionConfig = {
   id: string;
   api?: ModelApi;
   name?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 type ModelProviderConfig = {
@@ -28,7 +28,7 @@ type ModelProviderConfig = {
   api?: ModelApi;
   baseUrl?: string;
   apiKey?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 type AgentModelEntryConfig = {
@@ -36,10 +36,10 @@ type AgentModelEntryConfig = {
   model?: string;
   api?: ModelApi;
   alias?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
-function resolvePrimaryStringValue(value: unknown): string | undefined {
+function resolvePrimaryStringValue(value: any): string | undefined {
   if (typeof value === "string" && value.trim().length > 0) {
     return value.trim();
   }
@@ -58,19 +58,19 @@ function normalizeConfiguredProviderCatalogModelId(providerId: string, modelId: 
   return `${providerId}/${modelId}`;
 }
 
-function normalizeAgentModelMapForConfig(map: unknown): Record<string, AgentModelEntryConfig> {
+function normalizeAgentModelMapForConfig(map: any): Record<string, AgentModelEntryConfig> {
   if (map && typeof map === "object" && !Array.isArray(map)) {
     return { ...(map as Record<string, AgentModelEntryConfig>) };
   }
   return {};
 }
 
-function normalizeAgentModelRefForConfig(ref: unknown): string | undefined {
+function normalizeAgentModelRefForConfig(ref: any): string | undefined {
   if (typeof ref === "string" && ref.trim().length > 0) {
     return ref.trim();
   }
   if (ref && typeof ref === "object" && !Array.isArray(ref)) {
-    const r = ref as Record<string, unknown>;
+    const r = ref as Record<string, any>;
     if (typeof r.provider === "string" && typeof r.model === "string") {
       return `${r.provider}/${r.model}`;
     }
@@ -79,7 +79,7 @@ function normalizeAgentModelRefForConfig(ref: unknown): string | undefined {
 }
 
 function findNormalizedProviderKey(
-  providers: Record<string, unknown> | undefined,
+  providers: Record<string, any> | undefined,
   providerId: string,
 ): string | undefined {
   if (!providers) {
@@ -110,19 +110,19 @@ const LEGACY_OPENCODE_ZEN_DEFAULT_MODELS = new Set([
 
 export const OPENCODE_ZEN_DEFAULT_MODEL = "opencode/claude-opus-4-6";
 
-export type ProviderOnboardPresetAppliers<TArgs extends unknown[]> = {
+export type ProviderOnboardPresetAppliers<TArgs extends any[]> = {
   applyProviderConfig: (cfg: OpenClawConfig, ...args: TArgs) => OpenClawConfig;
   applyConfig: (cfg: OpenClawConfig, ...args: TArgs) => OpenClawConfig;
 };
 
-function extractAgentDefaultModelFallbacks(model: unknown): string[] | undefined {
+function extractAgentDefaultModelFallbacks(model: any): string[] | undefined {
   if (!model || typeof model !== "object") {
     return undefined;
   }
   if (!("fallbacks" in model)) {
     return undefined;
   }
-  const fallbacks = (model as { fallbacks?: unknown }).fallbacks;
+  const fallbacks = (model as { fallbacks?: any }).fallbacks;
   return Array.isArray(fallbacks) ? fallbacks.map((value) => String(value)) : undefined;
 }
 
@@ -278,7 +278,7 @@ function applyProviderConfigWithMergedModels(
 }
 
 function createProviderPresetAppliers<
-  TArgs extends unknown[],
+  TArgs extends any[],
   TParams extends {
     primaryModelRef?: string;
   },
@@ -490,7 +490,7 @@ export function applyProviderConfigWithDefaultModelPreset(
     : next;
 }
 
-export function createDefaultModelPresetAppliers<TArgs extends unknown[]>(params: {
+export function createDefaultModelPresetAppliers<TArgs extends any[]>(params: {
   resolveParams: (
     cfg: OpenClawConfig,
     ...args: TArgs
@@ -534,7 +534,7 @@ export function applyProviderConfigWithDefaultModelsPreset(
     : next;
 }
 
-export function createDefaultModelsPresetAppliers<TArgs extends unknown[]>(params: {
+export function createDefaultModelsPresetAppliers<TArgs extends any[]>(params: {
   resolveParams: (
     cfg: OpenClawConfig,
     ...args: TArgs
@@ -609,7 +609,7 @@ export function applyProviderConfigWithModelCatalogPreset(
     : next;
 }
 
-export function createModelCatalogPresetAppliers<TArgs extends unknown[]>(params: {
+export function createModelCatalogPresetAppliers<TArgs extends any[]>(params: {
   resolveParams: (
     cfg: OpenClawConfig,
     ...args: TArgs

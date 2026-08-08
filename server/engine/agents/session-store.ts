@@ -6,12 +6,12 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function updateSessionStoreAfterAgentRun(..._args: unknown[]): unknown {
+export function updateSessionStoreAfterAgentRun(..._args: any[]): any {
   return undefined;
 }
-export function clearCliSessionInStore(..._args: unknown[]): unknown {
+export function clearCliSessionInStore(..._args: any[]): any {
   return undefined;
 }
-export function recordCliCompactionInStore(..._args: unknown[]): unknown {
+export function recordCliCompactionInStore(..._args: any[]): any {
   return undefined;
 }

@@ -139,7 +139,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
 
   // 语音输入状态
   const [isRecording, setIsRecording] = useState(false);
-  const recognitionRef = useRef<unknown>(null);
+  const recognitionRef = useRef<any>(null);
 
   // 输入框聚焦状态
   const [isInputFocused, setIsInputFocused] = useState(false);
@@ -154,7 +154,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
       return;
     }
 
-    const SpeechRecognition = (window as unknown).SpeechRecognition || (window as unknown).webkitSpeechRecognition;
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
       showToast(t('当前浏览器不支持语音识别，请使用 Chrome'), 'error', 3000);
       return;
@@ -168,7 +168,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
     let finalText = '';
     const initialText = editableRef.current?.innerText || '';
 
-    recognition.onresult = (event: unknown) => {
+    recognition.onresult = (event: any) => {
       let interim = '';
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript;
@@ -185,7 +185,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
       }
     };
 
-    recognition.onerror = (event: unknown) => {
+    recognition.onerror = (event: any) => {
       if (event.error === 'not-allowed') {
         showToast(t('无法访问麦克风，请检查权限设置'), 'error', 3000);
       } else if (event.error === 'no-speech') {

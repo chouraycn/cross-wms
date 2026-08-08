@@ -24,7 +24,7 @@ export type RealtimeVoiceAgentTalkbackResult = {
 /** Minimal queue API owned by a realtime voice session. */
 export type RealtimeVoiceAgentTalkbackQueue = {
   close(): void;
-  enqueue(question: string, metadata?: unknown): void;
+  enqueue(question: string, metadata?: any): void;
 };
 
 /** Runtime dependencies and policy knobs for the talkback queue. */
@@ -39,7 +39,7 @@ export type RealtimeVoiceAgentTalkbackQueueParams = {
   /** Delegates a batched question to the agent and respects the abort signal. */
   consult: (args: {
     question: string;
-    metadata?: unknown;
+    metadata?: any;
     responseStyle: string;
     signal: AbortSignal;
   }) => Promise<RealtimeVoiceAgentTalkbackResult>;
@@ -49,7 +49,7 @@ export type RealtimeVoiceAgentTalkbackQueueParams = {
 
 type PendingQuestion = {
   question: string;
-  metadata?: unknown;
+  metadata?: any;
 };
 
 /** Create a serial consult queue for realtime transcript talkback. */
@@ -184,7 +184,7 @@ function appendPendingQuestion(queue: PendingQuestion[], next: PendingQuestion):
   queue.push(next);
 }
 
-function isAbortError(error: unknown): boolean {
+function isAbortError(error: any): boolean {
   return error instanceof Error && error.name === "AbortError";
 }
 

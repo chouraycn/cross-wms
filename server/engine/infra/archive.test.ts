@@ -53,7 +53,7 @@ async function createDirectorySymlink(targetDir: string, linkPath: string) {
   await fs.symlink(targetDir, linkPath, directorySymlinkType);
 }
 
-async function expectRejectedCode(promise: Promise<unknown>, expected: string | RegExp) {
+async function expectRejectedCode(promise: Promise<any>, expected: string | RegExp) {
   try {
     await promise;
   } catch (error) {

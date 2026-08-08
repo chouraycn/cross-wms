@@ -6,15 +6,15 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function rewriteTranscriptEntriesInSessionManager(..._args: unknown[]): unknown {
+export function rewriteTranscriptEntriesInSessionManager(..._args: any[]): any {
   return undefined;
 }
-export function rewriteTranscriptEntriesInState(..._args: unknown[]): unknown {
+export function rewriteTranscriptEntriesInState(..._args: any[]): any {
   return undefined;
 }
-export function rewriteTranscriptEntriesInRuntimeTranscript(..._args: unknown[]): unknown {
+export function rewriteTranscriptEntriesInRuntimeTranscript(..._args: any[]): any {
   return undefined;
 }
-export function rewriteTranscriptEntriesInSessionFile(..._args: unknown[]): unknown {
+export function rewriteTranscriptEntriesInSessionFile(..._args: any[]): any {
   return undefined;
 }

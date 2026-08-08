@@ -30,7 +30,7 @@ describe("session cost usage", () => {
     await withEnvAsync({ OPENCLAW_STATE_DIR: stateDir }, fn);
   const makeSessionCostRoot = async (prefix: string): Promise<string> =>
     await suiteRootTracker.make(prefix);
-  const transcriptText = (sessionId: string, entry: unknown): string =>
+  const transcriptText = (sessionId: string, entry: any): string =>
     [
       JSON.stringify({ type: "session", version: 1, id: sessionId }),
       JSON.stringify(entry),
@@ -936,7 +936,7 @@ describe("session cost usage", () => {
       const cachePath = path.join(sessionsDir, ".usage-cost-cache.json");
       await waitFor(async () => {
         const cache = JSON.parse(await fs.readFile(cachePath, "utf-8")) as {
-          files: Record<string, unknown>;
+          files: Record<string, any>;
         };
         return Boolean(cache.files[oldSessionFile]);
       });
@@ -1324,7 +1324,7 @@ describe("session cost usage", () => {
       await refreshCostUsageCache({ sessionFiles: [sessionFile] });
       const cachePath = path.join(sessionsDir, ".usage-cost-cache.json");
       const cache = JSON.parse(await fs.readFile(cachePath, "utf-8")) as {
-        files: Record<string, { sessionSummary?: unknown }>;
+        files: Record<string, { sessionSummary?: any }>;
       };
 
       expect(cache.files[sessionFile]).toHaveProperty("sessionSummary");
@@ -1710,7 +1710,7 @@ describe("session cost usage", () => {
 
       const cachePath = path.join(sessionsDir, ".usage-cost-cache.json");
       const cache = JSON.parse(await fs.readFile(cachePath, "utf-8")) as {
-        files: Record<string, { sessionSummary?: unknown }>;
+        files: Record<string, { sessionSummary?: any }>;
       };
       expect(cache.files).toHaveProperty(firstSessionFile);
       expect(cache.files).toHaveProperty(secondSessionFile);

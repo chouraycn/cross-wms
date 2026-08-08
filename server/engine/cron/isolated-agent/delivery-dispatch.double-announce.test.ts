@@ -32,7 +32,7 @@ const {
   countActiveDescendantRunsMock: vi.fn().mockReturnValue(0),
   deliverOutboundPayloadsMock: vi.fn().mockResolvedValue([{ ok: true }]),
   ensureOutboundSessionEntryMock: vi.fn().mockResolvedValue(undefined),
-  maybeApplyTtsToPayloadMock: vi.fn(async (params: { payload: unknown }) => params.payload),
+  maybeApplyTtsToPayloadMock: vi.fn(async (params: { payload: any }) => params.payload),
   retireSessionMcpRuntimeMock: vi.fn().mockResolvedValue(true),
   resolveOutboundSessionRouteMock: vi.fn().mockResolvedValue(null),
 }));
@@ -251,11 +251,11 @@ function makeBaseParams(overrides: {
   };
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object") {
     throw new Error(`expected ${label}`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 function outboundDeliveryCall(callIndex = 0) {
@@ -266,17 +266,17 @@ function outboundDeliveryCall(callIndex = 0) {
   return requireRecord(call[0], `outbound delivery call ${callIndex}`);
 }
 
-function expectFields(actual: Record<string, unknown>, expected: Record<string, unknown>) {
+function expectFields(actual: Record<string, any>, expected: Record<string, any>) {
   for (const [key, value] of Object.entries(expected)) {
     expect(actual[key], key).toEqual(value);
   }
 }
 
-function expectDeliveryCall(callIndex: number, expected: Record<string, unknown>) {
+function expectDeliveryCall(callIndex: number, expected: Record<string, any>) {
   expectFields(outboundDeliveryCall(callIndex), expected);
 }
 
-function expectResultFields(result: unknown, expected: Record<string, unknown>) {
+function expectResultFields(result: any, expected: Record<string, any>) {
   expectFields(requireRecord(result, "cron delivery result"), expected);
 }
 
@@ -905,7 +905,7 @@ describe("dispatchCronDelivery — double-announce guard", () => {
       });
       return [{ ok: true } as never];
     });
-    maybeApplyTtsToPayloadMock.mockImplementation(async (params: { payload: unknown }) => {
+    maybeApplyTtsToPayloadMock.mockImplementation(async (params: { payload: any }) => {
       const payload = params.payload as { text?: string };
       expect(payload.text).toBe("[[tts]] Morning briefing complete.");
       return {
@@ -1641,7 +1641,7 @@ describe("dispatchCronDelivery — double-announce guard", () => {
 
     const params = makeBaseParams({ synthesizedText: "Partial bestEffort replay." }) as Record<
       string,
-      unknown
+      any
     >;
     params.deliveryBestEffort = true;
 
@@ -1774,7 +1774,7 @@ describe("dispatchCronDelivery — double-announce guard", () => {
     vi.mocked(deliverOutboundPayloads).mockRejectedValue(new Error("boom"));
 
     const params = makeBaseParams({ synthesizedText: "Report attached." });
-    (params as Record<string, unknown>).deliveryPayloadHasStructuredContent = true;
+    (params as Record<string, any>).deliveryPayloadHasStructuredContent = true;
     const state = await dispatchCronDelivery(params);
 
     expect(deliverOutboundPayloads).toHaveBeenCalledTimes(1);
@@ -1790,7 +1790,7 @@ describe("dispatchCronDelivery — double-announce guard", () => {
 
     const params = makeBaseParams({ synthesizedText: "Report attached." }) as Record<
       string,
-      unknown
+      any
     >;
     params.deliveryPayloadHasStructuredContent = true;
     params.deliveryBestEffort = true;
@@ -1836,7 +1836,7 @@ describe("dispatchCronDelivery — double-announce guard", () => {
 
     const params = makeBaseParams({ synthesizedText: "Report attached." });
     // Simulate structured content so useDirectDelivery path is taken (no retryTransient)
-    (params as Record<string, unknown>).deliveryPayloadHasStructuredContent = true;
+    (params as Record<string, any>).deliveryPayloadHasStructuredContent = true;
     await dispatchCronDelivery(params);
 
     expect(deliverOutboundPayloads).toHaveBeenCalledTimes(1);
@@ -1872,7 +1872,7 @@ describe("dispatchCronDelivery — double-announce guard", () => {
       const params = makeBaseParams({ synthesizedText: controlToken });
       // Force the useDirectDelivery path (structured content) to exercise
       // deliverViaDirect without going through finalizeTextDelivery.
-      (params as Record<string, unknown>).deliveryPayloadHasStructuredContent = true;
+      (params as Record<string, any>).deliveryPayloadHasStructuredContent = true;
       const state = await dispatchCronDelivery(params);
 
       // Control tokens must be filtered out before reaching the outbound adapter.
@@ -2206,7 +2206,7 @@ describe("dispatchCronDelivery — double-announce guard", () => {
 
   it("suppresses NO_REPLY payload with surrounding whitespace", async () => {
     const params = makeBaseParams({ synthesizedText: "  NO_REPLY  " });
-    (params as Record<string, unknown>).deliveryPayloadHasStructuredContent = true;
+    (params as Record<string, any>).deliveryPayloadHasStructuredContent = true;
     const state = await dispatchCronDelivery(params);
 
     expect(deliverOutboundPayloads).not.toHaveBeenCalled();
@@ -2232,7 +2232,7 @@ describe("dispatchCronDelivery — double-announce guard", () => {
   it("cleans up the direct cron session after a structured silent reply when deleteAfterRun is enabled", async () => {
     const params = makeBaseParams({ synthesizedText: SILENT_REPLY_TOKEN });
     params.agentSessionKey = "agent:main:cron:test-job";
-    (params as Record<string, unknown>).deliveryPayloadHasStructuredContent = true;
+    (params as Record<string, any>).deliveryPayloadHasStructuredContent = true;
     (params.job as { deleteAfterRun?: boolean }).deleteAfterRun = true;
 
     const state = await dispatchCronDelivery(params);
@@ -2258,7 +2258,7 @@ describe("dispatchCronDelivery — double-announce guard", () => {
     const params = makeBaseParams({
       synthesizedText: "All 3 items already processed.\n\nNO_REPLY",
     });
-    (params as Record<string, unknown>).deliveryPayloadHasStructuredContent = true;
+    (params as Record<string, any>).deliveryPayloadHasStructuredContent = true;
     const state = await dispatchCronDelivery(params);
 
     expect(deliverOutboundPayloads).not.toHaveBeenCalled();
@@ -2314,7 +2314,7 @@ describe("dispatchCronDelivery — double-announce guard", () => {
       synthesizedText:
         "Reminder: reply NO_REPLY when there is nothing to announce, otherwise send a summary.",
     });
-    (params as Record<string, unknown>).deliveryPayloadHasStructuredContent = true;
+    (params as Record<string, any>).deliveryPayloadHasStructuredContent = true;
     const state = await dispatchCronDelivery(params);
 
     expect(state.deliveryAttempted).toBe(true);

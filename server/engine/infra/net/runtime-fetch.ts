@@ -15,7 +15,7 @@ type RuntimeFormDataCtor = NonNullable<UndiciRuntimeDeps["FormData"]>;
 type FormDataEntryValueWithOptionalName = FormDataEntryValue & { name?: string };
 
 function normalizeRuntimeFormData(
-  body: unknown,
+  body: any,
   RuntimeFormData: RuntimeFormDataCtor | undefined,
 ): BodyInit | null | undefined {
   // Node global FormData and undici runtime FormData can differ; rebuild into
@@ -82,7 +82,7 @@ export function isMockedFetch(fetchImpl: FetchLike | undefined): boolean {
   if (typeof fetchImpl !== "function") {
     return false;
   }
-  return typeof (fetchImpl as FetchLike & { mock?: unknown }).mock === "object";
+  return typeof (fetchImpl as FetchLike & { mock?: any }).mock === "object";
 }
 
 /** Uses the undici runtime fetch so callers can pass dispatcher-aware options. */
@@ -94,7 +94,7 @@ export async function fetchWithRuntimeDispatcher(
   const runtimeFetch = runtimeDeps.fetch as unknown as (
     input: RequestInfo | URL,
     init?: DispatcherAwareRequestInit,
-  ) => Promise<unknown>;
+  ) => Promise<any>;
   return (await runtimeFetch(
     input,
     normalizeRuntimeRequestInit(init, runtimeDeps.FormData),

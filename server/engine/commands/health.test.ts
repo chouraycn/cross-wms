@@ -63,8 +63,8 @@ const createHealthSummary = (params: {
 };
 
 const callGatewayMock = vi.fn();
-const isGatewayCredentialsRequiredErrorMock = vi.fn((_value: unknown) => false);
-const isGatewaySecretRefUnavailableErrorMock = vi.fn((_value: unknown) => false);
+const isGatewayCredentialsRequiredErrorMock = vi.fn((_value: any) => false);
+const isGatewaySecretRefUnavailableErrorMock = vi.fn((_value: any) => false);
 const TEST_GATEWAY_URL = "ws://127.0.0.1:18789";
 const TEST_GATEWAY_MESSAGE = `Gateway mode: local\nGateway target: ${TEST_GATEWAY_URL}`;
 const TEST_AUTH_CLOSE_ERROR = "gateway closed (1008):";
@@ -82,24 +82,24 @@ const buildGatewayProbeConnectionDetailsMock = vi.fn(() => ({
 const formatGatewayTransportErrorJsonMock = vi.fn();
 const probeGatewayStatusMock = vi.fn();
 vi.mock("../gateway/call.js", () => ({
-  callGateway: (...args: unknown[]) => callGatewayMock(...args),
-  buildGatewayConnectionDetails: (...args: [unknown, ...unknown[]]) =>
+  callGateway: (...args: any[]) => callGatewayMock(...args),
+  buildGatewayConnectionDetails: (...args: [unknown, ...any[]]) =>
     Reflect.apply(buildGatewayConnectionDetailsMock, undefined, args),
-  buildGatewayProbeConnectionDetails: (...args: [unknown, ...unknown[]]) =>
+  buildGatewayProbeConnectionDetails: (...args: [unknown, ...any[]]) =>
     Reflect.apply(buildGatewayProbeConnectionDetailsMock, undefined, args),
-  formatGatewayTransportErrorJson: (...args: unknown[]) =>
+  formatGatewayTransportErrorJson: (...args: any[]) =>
     formatGatewayTransportErrorJsonMock(...args),
-  isGatewayCredentialsRequiredError: (value: unknown) =>
+  isGatewayCredentialsRequiredError: (value: any) =>
     isGatewayCredentialsRequiredErrorMock(value),
 }));
 
 vi.mock("../gateway/credentials.js", () => ({
-  isGatewaySecretRefUnavailableError: (value: unknown) =>
+  isGatewaySecretRefUnavailableError: (value: any) =>
     isGatewaySecretRefUnavailableErrorMock(value),
 }));
 
 vi.mock("../cli/daemon-cli/probe.js", () => ({
-  probeGatewayStatus: (...args: unknown[]) => probeGatewayStatusMock(...args),
+  probeGatewayStatus: (...args: any[]) => probeGatewayStatusMock(...args),
 }));
 
 vi.mock("../channels/plugins/read-only.js", () => ({
@@ -118,7 +118,7 @@ function requireFirstRuntimeLog(): string {
   return String(message);
 }
 
-function requireFirstGatewayRequest(): Record<string, unknown> {
+function requireFirstGatewayRequest(): Record<string, any> {
   const [call] = callGatewayMock.mock.calls;
   if (!call) {
     throw new Error("expected gateway call");
@@ -127,7 +127,7 @@ function requireFirstGatewayRequest(): Record<string, unknown> {
   if (!request || typeof request !== "object" || Array.isArray(request)) {
     throw new Error("expected gateway request");
   }
-  return request as Record<string, unknown>;
+  return request as Record<string, any>;
 }
 
 describe("healthCommand", () => {

@@ -45,7 +45,7 @@ export function createModelRuntimePolicy(params: {
   maxRetries?: number;
   retryDelayMs?: number;
   timeoutMs?: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }): ModelRuntimePolicy {
   const policy: ModelRuntimePolicy = {
     id: params.id,

@@ -60,7 +60,7 @@ type ClaudeLiveTurn = {
   streamingParser: ReturnType<typeof createCliJsonlStreamingParser>;
   execPermission: ClaudeLiveExecPermission;
   resolve: (output: CliOutput) => void;
-  reject: (error: unknown) => void;
+  reject: (error: any) => void;
 };
 type ClaudeLiveSession = {
   key: string;
@@ -407,7 +407,7 @@ function finishTurn(session: ClaudeLiveSession, output: CliOutput): void {
   scheduleIdleClose(session);
 }
 
-function failTurn(session: ClaudeLiveSession, error: unknown): void {
+function failTurn(session: ClaudeLiveSession, error: any): void {
   const turn = session.currentTurn;
   if (!turn) {
     return;
@@ -433,7 +433,7 @@ function abortTurn(session: ClaudeLiveSession, error: Error): void {
 
 function cleanupLiveSession(session: ClaudeLiveSession): Promise<void> {
   if (!session.cleanupPromise) {
-    session.cleanupPromise = session.cleanup().catch((error: unknown) => {
+    session.cleanupPromise = session.cleanup().catch((error: any) => {
       cliBackendLog.warn(`Claude live session cleanup failed: ${formatErrorMessage(error)}`);
     });
   }
@@ -443,7 +443,7 @@ function cleanupLiveSession(session: ClaudeLiveSession): Promise<void> {
 function closeLiveSession(
   session: ClaudeLiveSession,
   reason: "idle" | "restart" | "abort",
-  error?: unknown,
+  error?: any,
 ): void {
   if (session.closing) {
     return;
@@ -521,7 +521,7 @@ function emitClaudeLiveProgress(turn: ClaudeLiveTurn, reason: string): void {
   });
 }
 
-function summarizeClaudeLiveToolInput(input: unknown): DiagnosticToolParamsSummary | undefined {
+function summarizeClaudeLiveToolInput(input: any): DiagnosticToolParamsSummary | undefined {
   if (input === undefined) {
     return undefined;
   }
@@ -547,7 +547,7 @@ function summarizeClaudeLiveToolInput(input: unknown): DiagnosticToolParamsSumma
   }
 }
 
-function readClaudeLiveMessageContent(parsed: Record<string, unknown>): unknown[] {
+function readClaudeLiveMessageContent(parsed: Record<string, any>): any[] {
   const message = parsed.message;
   if (!isRecord(message)) {
     return [];
@@ -556,7 +556,7 @@ function readClaudeLiveMessageContent(parsed: Record<string, unknown>): unknown[
   return Array.isArray(content) ? content : [];
 }
 
-function readClaudeLiveToolUses(parsed: Record<string, unknown>): ClaudeLiveToolUse[] {
+function readClaudeLiveToolUses(parsed: Record<string, any>): ClaudeLiveToolUse[] {
   const tools: ClaudeLiveToolUse[] = [];
   for (const entry of readClaudeLiveMessageContent(parsed)) {
     if (!isRecord(entry) || entry.type !== "tool_use") {
@@ -576,7 +576,7 @@ function readClaudeLiveToolUses(parsed: Record<string, unknown>): ClaudeLiveTool
   return tools;
 }
 
-function readClaudeLiveToolResultIds(parsed: Record<string, unknown>): string[] {
+function readClaudeLiveToolResultIds(parsed: Record<string, any>): string[] {
   const toolResultIds: string[] = [];
   for (const entry of readClaudeLiveMessageContent(parsed)) {
     if (!isRecord(entry) || entry.type !== "tool_result") {
@@ -665,7 +665,7 @@ function completeActiveClaudeLiveTools(turn: ClaudeLiveTurn): void {
   }
 }
 
-function failActiveClaudeLiveTools(turn: ClaudeLiveTurn, error: unknown): void {
+function failActiveClaudeLiveTools(turn: ClaudeLiveTurn, error: any): void {
   const errorCategory = error instanceof Error && error.name === "AbortError" ? "aborted" : "error";
   for (const activeTool of turn.activeTools.values()) {
     const event: Omit<DiagnosticToolExecutionErrorEvent, "seq" | "ts" | "type"> = {
@@ -685,7 +685,7 @@ function failActiveClaudeLiveTools(turn: ClaudeLiveTurn, error: unknown): void {
   turn.activeTools.clear();
 }
 
-function noteClaudeLiveProgress(turn: ClaudeLiveTurn, parsed: Record<string, unknown>): void {
+function noteClaudeLiveProgress(turn: ClaudeLiveTurn, parsed: Record<string, any>): void {
   const toolUses = readClaudeLiveToolUses(parsed);
   const toolResultIds = readClaudeLiveToolResultIds(parsed);
   for (const tool of toolUses) {
@@ -724,7 +724,7 @@ function resetNoOutputTimer(session: ClaudeLiveSession): void {
   }, session.noOutputTimeoutMs);
 }
 
-function parseSessionId(parsed: Record<string, unknown>): string | undefined {
+function parseSessionId(parsed: Record<string, any>): string | undefined {
   const sessionId =
     typeof parsed.session_id === "string"
       ? parsed.session_id.trim()
@@ -807,7 +807,7 @@ function resolveClaudeLiveExecPermission(context: PreparedCliRunContext): Claude
 function parseClaudeLiveJsonLine(
   session: ClaudeLiveSession,
   trimmed: string,
-): Record<string, unknown> | null {
+): Record<string, any> | null {
   const maxPendingLineChars =
     session.currentTurn?.outputLimits.maxPendingLineChars ?? CLAUDE_LIVE_DEFAULT_MAX_TURN_RAW_CHARS;
   if (trimmed.length > maxPendingLineChars) {
@@ -818,7 +818,7 @@ function parseClaudeLiveJsonLine(
     );
     return null;
   }
-  let parsed: unknown;
+  let parsed: any;
   try {
     parsed = JSON.parse(trimmed);
   } catch {
@@ -829,7 +829,7 @@ function parseClaudeLiveJsonLine(
 
 function createResultError(
   session: ClaudeLiveSession,
-  parsed: Record<string, unknown>,
+  parsed: Record<string, any>,
   raw: string,
 ): FailoverError {
   const result = typeof parsed.result === "string" ? parsed.result.trim() : "";
@@ -843,7 +843,7 @@ function createResultError(
   });
 }
 
-function writeClaudeLiveControlResponse(session: ClaudeLiveSession, response: unknown): void {
+function writeClaudeLiveControlResponse(session: ClaudeLiveSession, response: any): void {
   const stdin = session.managedRun.stdin;
   if (!stdin) {
     throw new Error("Claude CLI live session stdin is unavailable");
@@ -854,7 +854,7 @@ function writeClaudeLiveControlResponse(session: ClaudeLiveSession, response: un
 function handleClaudeLiveControlRequest(
   session: ClaudeLiveSession,
   turn: ClaudeLiveTurn,
-  parsed: Record<string, unknown>,
+  parsed: Record<string, any>,
 ): void {
   if (parsed.type !== "control_request" || !isRecord(parsed.request)) {
     return;
@@ -1129,7 +1129,7 @@ async function createClaudeLiveSession(params: {
   };
   void managedRun.wait().then(
     (exit) => handleClaudeExit(session, exit.exitCode),
-    (error: unknown) => {
+    (error: any) => {
       if (session) {
         closeLiveSession(session, "abort", error);
       }
@@ -1152,7 +1152,7 @@ function createTurn(params: {
   session: ClaudeLiveSession;
   execPermission: ClaudeLiveExecPermission;
   resolve: (output: CliOutput) => void;
-  reject: (error: unknown) => void;
+  reject: (error: any) => void;
 }): ClaudeLiveTurn {
   const turn: ClaudeLiveTurn = {
     backend: params.context.preparedBackend.backend,

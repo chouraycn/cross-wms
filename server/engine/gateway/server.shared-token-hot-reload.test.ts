@@ -23,7 +23,7 @@ const NEW_TOKEN = "shared-token-hot-reload-new";
 let server: Awaited<ReturnType<typeof startGatewayServer>>;
 let port = 0;
 
-function buildSharedTokenReloadConfig(): Record<string, unknown> {
+function buildSharedTokenReloadConfig(): Record<string, any> {
   return {
     gateway: {
       auth: {
@@ -70,7 +70,7 @@ describe("gateway shared token hot reload rotation", () => {
       const closed = waitForGatewayWsClose(ws);
       setTestEnvValue(SECRET_REF_TOKEN_ID, NEW_TOKEN);
       const reload = await rpcReq<{ warningCount?: number }>(ws, "secrets.reload", {}).catch(
-        (err: unknown) => (err instanceof Error ? err : new Error(String(err))),
+        (err: any) => (err instanceof Error ? err : new Error(String(err))),
       );
 
       await expect(closed).resolves.toEqual({

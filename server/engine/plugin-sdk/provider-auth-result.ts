@@ -12,7 +12,7 @@ import type { ModelProviderConfig } from "../config/types.models.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import type { ProviderAuthResult } from "../plugins/types.js";
 
-function normalizeAgentModelConfigForAuthResult(value: unknown): unknown {
+function normalizeAgentModelConfigForAuthResult(value: any): any {
   if (typeof value === "string") {
     return normalizeAgentModelRefForConfig(value);
   }
@@ -21,7 +21,7 @@ function normalizeAgentModelConfigForAuthResult(value: unknown): unknown {
   }
 
   let mutated = false;
-  const next: Record<string, unknown> = { ...(value as Record<string, unknown>) };
+  const next: Record<string, any> = { ...(value as Record<string, any>) };
   if (typeof next.primary === "string") {
     const primary = normalizeAgentModelRefForConfig(next.primary);
     if (primary !== next.primary) {
@@ -150,7 +150,7 @@ export function buildOauthProviderAuthResult(params: {
   /** Optional prefix added to the generated auth profile id. */
   profilePrefix?: string;
   /** Provider-specific credential fields merged into the OAuth credential. */
-  credentialExtra?: Record<string, unknown>;
+  credentialExtra?: Record<string, any>;
   /** Explicit config patch to emit after model-ref normalization. */
   configPatch?: Partial<OpenClawConfig>;
   /** Optional setup notes forwarded to provider login callers. */

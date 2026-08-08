@@ -136,7 +136,7 @@ describe("sendExecApprovalFollowupResult", () => {
         idempotencyKey?: string;
         execApprovalFollowupToken?: string;
         expectedSessionId?: string;
-        bashElevated?: unknown;
+        bashElevated?: any;
       }
     | undefined {
     return sendExecApprovalFollowup.mock.calls[0]?.[0] as
@@ -145,7 +145,7 @@ describe("sendExecApprovalFollowupResult", () => {
           idempotencyKey?: string;
           execApprovalFollowupToken?: string;
           expectedSessionId?: string;
-          bashElevated?: unknown;
+          bashElevated?: any;
         }
       | undefined;
   }
@@ -561,7 +561,7 @@ describe("buildExecApprovalPendingToolResult", () => {
       unavailableReason: "initiating-platform-disabled",
     });
 
-    const details = result.details as Record<string, unknown>;
+    const details = result.details as Record<string, any>;
     expect(details.status).toBe("approval-unavailable");
     expect(details.reason).toBe("initiating-platform-disabled");
     expect(details.channel).toBe("discord");
@@ -581,7 +581,7 @@ describe("buildExecApprovalPendingToolResult", () => {
       unavailableReason: "initiating-platform-disabled",
     });
 
-    const details = result.details as Record<string, unknown>;
+    const details = result.details as Record<string, any>;
     expect(details.status).toBe("approval-unavailable");
     expect(details.reason).toBe("initiating-platform-disabled");
     expect(details.channel).toBe("telegram");

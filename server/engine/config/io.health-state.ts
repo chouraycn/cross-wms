@@ -4,9 +4,9 @@ export type ConfigHealthFingerprint = unknown;
 export type ConfigHealthEntry = unknown;
 export type ConfigHealthState = unknown;
 export type ConfigHealthStateDeps = unknown;
-export function readConfigHealthStateFromStore(...args: unknown[]): unknown {
+export function readConfigHealthStateFromStore(...args: any[]): any {
   return undefined;
 }
-export function writeConfigHealthStateToStore(...args: unknown[]): unknown {
+export function writeConfigHealthStateToStore(...args: any[]): any {
   return undefined;
 }

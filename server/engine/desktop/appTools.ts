@@ -6,7 +6,7 @@ import { isMac, isLinux, PLATFORM } from '../toolTypes.js';
 import { linuxToolAvailable, BROWSER_APPS } from './helpers.js';
 
 /** desktop_app_launch - Launch application using `open` command */
-export async function handleDesktopAppLaunch(args: Record<string, unknown>): Promise<string> {
+export async function handleDesktopAppLaunch(args: Record<string, any>): Promise<string> {
   const { execSync } = await import('child_process');
 
   try {
@@ -57,7 +57,7 @@ export async function handleDesktopAppLaunch(args: Record<string, unknown>): Pro
       app,
       url: url || undefined,
     });
-  } catch (e: unknown) {
+  } catch (e: any) {
     const message = e instanceof Error ? e.message : String(e);
     // Check if it's a "command failed" error
     if (message.includes('Command failed')) {
@@ -72,7 +72,7 @@ export async function handleDesktopAppLaunch(args: Record<string, unknown>): Pro
 }
 
 /** desktop_app_quit - Quit application using osascript */
-export async function handleDesktopAppQuit(args: Record<string, unknown>): Promise<string> {
+export async function handleDesktopAppQuit(args: Record<string, any>): Promise<string> {
   const { execSync } = await import('child_process');
 
   try {
@@ -113,7 +113,7 @@ export async function handleDesktopAppQuit(args: Record<string, unknown>): Promi
     } else {
       return JSON.stringify({ success: false, error: `Unsupported platform: ${PLATFORM}` });
     }
-  } catch (e: unknown) {
+  } catch (e: any) {
     // If osascript/pkill fails, try pkill as fallback
     try {
       execSync(`pkill -x "${args.app}"`, { encoding: 'utf8', timeout: 3000 });
@@ -133,7 +133,7 @@ export async function handleDesktopAppQuit(args: Record<string, unknown>): Promi
 }
 
 /** desktop_window_focus - Focus application window using osascript */
-export async function handleDesktopWindowFocus(args: Record<string, unknown>): Promise<string> {
+export async function handleDesktopWindowFocus(args: Record<string, any>): Promise<string> {
   const { execSync } = await import('child_process');
 
   try {
@@ -211,7 +211,7 @@ end tell
     } else {
       return JSON.stringify({ success: false, error: `Unsupported platform: ${PLATFORM}` });
     }
-  } catch (e: unknown) {
+  } catch (e: any) {
     return JSON.stringify({
       success: false,
       error: e instanceof Error ? e.message : 'Window focus failed',

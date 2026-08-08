@@ -21,11 +21,11 @@ const runCommandWithTimeoutMock = vi.fn();
 const resolveOpenClawPackageRootSyncMock = vi.fn();
 
 vi.mock("../process/exec.js", () => ({
-  runCommandWithTimeout: (...args: unknown[]) => runCommandWithTimeoutMock(...args),
+  runCommandWithTimeout: (...args: any[]) => runCommandWithTimeoutMock(...args),
 }));
 
 vi.mock("../infra/openclaw-root.js", () => ({
-  resolveOpenClawPackageRootSync: (...args: unknown[]) =>
+  resolveOpenClawPackageRootSync: (...args: any[]) =>
     resolveOpenClawPackageRootSyncMock(...args),
 }));
 
@@ -39,14 +39,14 @@ let previousNpmGlobalConfig: string | undefined;
 let npmGlobalConfigPath: string;
 let npmPackArchiveInstallCase: {
   archivePath: string;
-  calls: unknown[][];
+  calls: any[][];
   dependencySpec: string | undefined;
   npmRoot: string;
   result: Awaited<ReturnType<typeof installPluginFromNpmPackArchive>>;
   stagedArchiveContents: string;
 };
 let npmSpecInstallCase: {
-  calls: unknown[][];
+  calls: any[][];
   dependencyInstalled: boolean;
   npmRoot: string;
   result: Awaited<ReturnType<typeof installPluginFromNpmSpec>>;
@@ -108,27 +108,27 @@ function resolveManagedFileDependency(npmRoot: string, dependencySpec: string): 
   return path.isAbsolute(rawPath) ? rawPath : path.resolve(npmRoot, rawPath);
 }
 
-function isNpmInstallCommand(argv: unknown): argv is string[] {
+function isNpmInstallCommand(argv: any): argv is string[] {
   return Array.isArray(argv) && argv[0] === "npm" && argv[1] === "install";
 }
 
-function isNpmPeerPlannerInstallCommand(argv: unknown): argv is string[] {
+function isNpmPeerPlannerInstallCommand(argv: any): argv is string[] {
   return isNpmInstallCommand(argv) && argv.includes("--package-lock-only");
 }
 
-function isManagedNpmInstallCommand(argv: unknown): argv is string[] {
+function isManagedNpmInstallCommand(argv: any): argv is string[] {
   return isNpmInstallCommand(argv) && !isNpmPeerPlannerInstallCommand(argv);
 }
 
 function expectNpmInstallIntoRoot(params: {
-  calls: unknown[][];
+  calls: any[][];
   npmRoot: string;
   expectedFreshnessBypass?: "before";
 }) {
   const installCalls = params.calls.filter((call) => isManagedNpmInstallCommand(call[0]));
   expect(installCalls).toHaveLength(1);
   const installOptions = installCalls[0]?.[1] as
-    | { cwd?: unknown; env?: Record<string, string | undefined> }
+    | { cwd?: any; env?: Record<string, string | undefined> }
     | undefined;
   expect(installOptions?.cwd).toBe(params.npmRoot);
   expect(installCalls[0]?.[0]).toEqual([
@@ -149,7 +149,7 @@ function expectNpmInstallIntoRoot(params: {
 }
 
 function expectNpmInstallIntoProject(params: {
-  calls: unknown[][];
+  calls: any[][];
   npmRoot: string;
   packageName: string;
 }) {
@@ -217,7 +217,7 @@ function writeInstalledNpmPlugin(params: {
   dependency?: { name: string; version: string };
   hoistedDependency?: { name: string; version: string };
   peerDependencies?: Record<string, string>;
-  openclaw?: Record<string, unknown>;
+  openclaw?: Record<string, any>;
   replaceExisting?: boolean;
 }) {
   const pluginDir = path.join(params.npmRoot, "node_modules", params.packageName);
@@ -297,7 +297,7 @@ type MockNpmPackage = {
   dependency?: { name: string; version: string };
   hoistedDependency?: { name: string; version: string };
   peerDependencies?: Record<string, string>;
-  openclaw?: Record<string, unknown>;
+  openclaw?: Record<string, any>;
   expectedDependencySpec?: string;
   versions?: string[];
   installedVersion?: string;
@@ -314,7 +314,7 @@ function writeNpmRootPackageLock(params: {
   dependencies: Record<string, string>;
   packages: MockNpmPackage[];
 }) {
-  const lockPackages: Record<string, unknown> = {
+  const lockPackages: Record<string, any> = {
     "": {
       dependencies: params.dependencies,
     },
@@ -348,7 +348,7 @@ function writeMissingCurrentPlatformOptionalPackage(params: {
 }): void {
   const lockPath = path.join(params.npmRoot, "package-lock.json");
   const lockfile = JSON.parse(fs.readFileSync(lockPath, "utf8")) as {
-    packages?: Record<string, unknown>;
+    packages?: Record<string, any>;
   };
   lockfile.packages ??= {};
   lockfile.packages[params.packageLocation] = {
@@ -2133,7 +2133,7 @@ describe("installPluginFromNpmSpec", () => {
       const lockfile = JSON.parse(
         fs.readFileSync(path.join(npmProjectRoot, "package-lock.json"), "utf8"),
       ) as {
-        packages?: Record<string, unknown>;
+        packages?: Record<string, any>;
       };
       expect(lockfile.packages?.["node_modules/openclaw"]).toBeUndefined();
       expect(
@@ -2225,8 +2225,8 @@ describe("installPluginFromNpmSpec", () => {
     const lockfile = JSON.parse(
       fs.readFileSync(path.join(npmProjectRoot, "package-lock.json"), "utf8"),
     ) as {
-      packages?: Record<string, unknown>;
-      dependencies?: Record<string, unknown>;
+      packages?: Record<string, any>;
+      dependencies?: Record<string, any>;
     };
     expect(lockfile.packages?.["node_modules/openclaw"]).toBeUndefined();
     expect(lockfile.dependencies?.openclaw).toBeUndefined();
@@ -2487,7 +2487,7 @@ describe("installPluginFromNpmSpec", () => {
     fs.symlinkSync(hostRoot, peerLink, "junction");
 
     const originalCp = fs.promises.cp.bind(fs.promises);
-    const cpSpy = vi.spyOn(fs.promises, "cp").mockImplementation(async (...args: unknown[]) => {
+    const cpSpy = vi.spyOn(fs.promises, "cp").mockImplementation(async (...args: any[]) => {
       const [source, destination, options] = args as [
         string,
         string,
@@ -2635,7 +2635,7 @@ describe("installPluginFromNpmSpec", () => {
           }
           const manifest = JSON.parse(
             fs.readFileSync(path.join(npmProjectRoot, "package.json"), "utf8"),
-          ) as { overrides?: Record<string, unknown>; openclaw?: { managedOverrides?: string[] } };
+          ) as { overrides?: Record<string, any>; openclaw?: { managedOverrides?: string[] } };
           if (installAttempts === 1) {
             expect(manifest.overrides?.["node-domexception"]).toBe(
               "npm:@nolyfill/domexception@1.0.28",

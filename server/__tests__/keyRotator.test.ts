@@ -41,7 +41,7 @@ function makeModel(id: string, keys: string[], strategy: 'round-robin' | 'random
     apiKey: keys.length === 1 ? keys[0] : undefined,
     apiKeys: keys.length > 1 ? keys.map((k, i) => ({ key: k, index: i, enabled: true })) : undefined,
     keyStrategy: strategy,
-  } as unknown;
+  } as any;
 }
 
 describe('keyRotator', () => {
@@ -69,7 +69,7 @@ describe('keyRotator', () => {
     });
 
     it('兼容单 apiKey 字段', () => {
-      const model = { id: 'm-legacy', apiKey: 'legacy-key', keyStrategy: 'round-robin' } as unknown;
+      const model = { id: 'm-legacy', apiKey: 'legacy-key', keyStrategy: 'round-robin' } as any;
       const result = selectKey(model);
       expect(result).toEqual({ key: 'legacy-key', index: 0 });
     });
@@ -82,7 +82,7 @@ describe('keyRotator', () => {
           { key: 'k1', enabled: true },
         ],
         keyStrategy: 'round-robin',
-      } as unknown;
+      } as any;
       const result = selectKey(model);
       expect(result).toEqual({ key: 'k1', index: 0 });
     });
@@ -95,7 +95,7 @@ describe('keyRotator', () => {
           { key: 'valid', enabled: true },
         ],
         keyStrategy: 'round-robin',
-      } as unknown;
+      } as any;
       const result = selectKey(model);
       expect(result).toEqual({ key: 'valid', index: 0 });
     });
@@ -327,7 +327,7 @@ describe('keyRotator', () => {
 
   describe('selectKey - 未知策略', () => {
     it('未知策略时走默认轮询逻辑', () => {
-      const model = makeModel('m-unknown', ['a', 'b', 'c'], 'unknown' as unknown);
+      const model = makeModel('m-unknown', ['a', 'b', 'c'], 'unknown' as any);
       const r1 = selectKey(model);
       const r2 = selectKey(model);
       expect(r1).toEqual({ key: 'a', index: 0 });
@@ -484,18 +484,18 @@ describe('keyRotator', () => {
         apiKey: 'legacy-key',
         apiKeys: [{ key: 'disabled-key', enabled: false }],
         keyStrategy: 'round-robin',
-      } as unknown;
+      } as any;
       const result = selectKey(model);
       expect(result!.key).toBe('legacy-key');
     });
 
     it('apiKeys 和 apiKey 都为空时返回 null', () => {
-      const model = { id: 'm-empty2', keyStrategy: 'round-robin' } as unknown;
+      const model = { id: 'm-empty2', keyStrategy: 'round-robin' } as any;
       expect(selectKey(model)).toBeNull();
     });
 
     it('apiKey 为纯空白时返回 null', () => {
-      const model = { id: 'm-blank2', apiKey: '   ', keyStrategy: 'round-robin' } as unknown;
+      const model = { id: 'm-blank2', apiKey: '   ', keyStrategy: 'round-robin' } as any;
       expect(selectKey(model)).toBeNull();
     });
   });

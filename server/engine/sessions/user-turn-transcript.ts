@@ -169,6 +169,6 @@ export function mergePreparedUserTurnMessageForRuntime(params: {
   };
 }
 
-export function isUserMessage(message: { role?: unknown }): message is PersistedUserTurnMessage {
-  return (message as { role?: unknown }).role === 'user';
+export function isUserMessage(message: { role?: any }): message is PersistedUserTurnMessage {
+  return (message as { role?: any }).role === 'user';
 }

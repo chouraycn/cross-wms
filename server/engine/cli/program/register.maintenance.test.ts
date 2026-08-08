@@ -49,8 +49,8 @@ vi.mock("../../runtime.js", () => ({
   defaultRuntime: mocks.runtime,
 }));
 
-function commandCall(mock: ReturnType<typeof vi.fn>): [typeof runtime, Record<string, unknown>] {
-  const call = mock.mock.calls[0] as [typeof runtime, Record<string, unknown>] | undefined;
+function commandCall(mock: ReturnType<typeof vi.fn>): [typeof runtime, Record<string, any>] {
+  const call = mock.mock.calls[0] as [typeof runtime, Record<string, any>] | undefined;
   if (!call) {
     throw new Error("expected command call");
   }

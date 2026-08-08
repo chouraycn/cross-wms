@@ -49,10 +49,10 @@ function deduplicateFindings(findings: SecurityFinding[]): SecurityFinding[] {
 }
 
 export async function runFullExtraAudit(context?: {
-  config?: Record<string, unknown>;
+  config?: Record<string, any>;
   rootDir?: string;
   envVars?: Record<string, string>;
-  packageJson?: Record<string, unknown>;
+  packageJson?: Record<string, any>;
   files?: string[];
 }): Promise<ExtraAuditSummary> {
   const startTime = Date.now();

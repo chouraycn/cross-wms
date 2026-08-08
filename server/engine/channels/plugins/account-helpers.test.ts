@@ -15,7 +15,7 @@ import {
 const { listConfiguredAccountIds, listAccountIds, resolveDefaultAccountId } =
   createAccountListHelpers("testchannel");
 
-function cfg(accounts?: Record<string, unknown> | null, defaultAccount?: string): OpenClawConfig {
+function cfg(accounts?: Record<string, any> | null, defaultAccount?: string): OpenClawConfig {
   if (accounts === null) {
     return {
       channels: {

@@ -7,17 +7,17 @@ import { expectNoReaddirSyncDuring } from "../test-utils/fs-scan-assertions.js";
 import { listGitTrackedFiles, toRepoRelativePath } from "../test-utils/repo-files.js";
 
 type PluginManifestShape = {
-  id?: unknown;
+  id?: any;
 };
 
 type OpenClawPackageShape = {
-  name?: unknown;
+  name?: any;
   openclaw?: {
     install?: {
-      npmSpec?: unknown;
+      npmSpec?: any;
     };
     channel?: {
-      id?: unknown;
+      id?: any;
     };
   };
 };
@@ -45,11 +45,11 @@ const ALLOWED_PACKAGE_SUFFIXES = [
   "-media-understanding",
 ] as const;
 
-function readJsonFile(filePath: string): unknown {
+function readJsonFile(filePath: string): any {
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
 }
 
-function normalizeText(value: unknown): string | undefined {
+function normalizeText(value: any): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }

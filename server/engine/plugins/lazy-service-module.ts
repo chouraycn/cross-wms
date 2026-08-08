@@ -12,7 +12,7 @@
 import { isTruthyEnvValue } from "../infra/env.js";
 import { toSafeImportPath } from "../shared/import-specifier.js";
 
-type LazyServiceModule = Record<string, unknown>;
+type LazyServiceModule = Record<string, any>;
 
 export type LazyPluginServiceHandle = {
   stop: () => Promise<void>;
@@ -61,7 +61,7 @@ export async function startLazyPluginServiceModule(params: {
   const mod = validatedOverride
     ? await loadOverrideModule(validatedOverride)
     : await params.loadDefaultModule();
-  const start = resolveExport<() => Promise<unknown>>(mod, params.startExportNames);
+  const start = resolveExport<() => Promise<any>>(mod, params.startExportNames);
   if (!start) {
     return null;
   }

@@ -2,12 +2,12 @@
 // 降级：undici dispatcher 依赖简化
 
 export type DispatcherAwareRequestInit = RequestInit & {
-  dispatcher?: unknown;
+  dispatcher?: any;
 };
 
 /** Checks if the global fetch has been mocked. */
 export function isMockedFetch(): boolean {
-  return typeof globalThis.fetch !== "undefined" && !((globalThis.fetch as { __original?: unknown })?.__original);
+  return typeof globalThis.fetch !== "undefined" && !((globalThis.fetch as { __original?: any })?.__original);
 }
 
 /** Performs a fetch with the runtime dispatcher (if configured). */

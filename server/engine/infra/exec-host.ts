@@ -75,7 +75,7 @@ export async function requestExecHostViaSocket(params: {
     requestLine: payload,
     timeoutMs,
     accept: (value) => {
-      const msg = value as { type?: string; ok?: boolean; payload?: unknown; error?: unknown };
+      const msg = value as { type?: string; ok?: boolean; payload?: any; error?: any };
       if (msg?.type !== "exec-res") {
         return undefined;
       }

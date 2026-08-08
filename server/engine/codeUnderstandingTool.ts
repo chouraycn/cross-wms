@@ -28,7 +28,7 @@ export type CodeUnderstandingAction =
  *  - symbolName: 符号名（explainSymbol 必填）
  *  - line?: 符号所在行（explainSymbol 可选）
  */
-export async function handleCodeUnderstanding(args: Record<string, unknown>): Promise<string> {
+export async function handleCodeUnderstanding(args: Record<string, any>): Promise<string> {
   const action = args.action as CodeUnderstandingAction | undefined;
   const service = getCodeUnderstandingService();
 

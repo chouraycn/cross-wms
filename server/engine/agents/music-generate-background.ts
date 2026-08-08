@@ -7,8 +7,8 @@
  */
 
 export type MusicGenerationTaskHandle = unknown;
-export const musicGenerationTaskLifecycle: unknown = undefined;
-export const createMusicGenerationTaskRun: unknown = undefined;
-export const recordMusicGenerationTaskProgress: unknown = undefined;
-export const completeMusicGenerationTaskRun: unknown = undefined;
-export const failMusicGenerationTaskRun: unknown = undefined;
+export const musicGenerationTaskLifecycle: any = undefined;
+export const createMusicGenerationTaskRun: any = undefined;
+export const recordMusicGenerationTaskProgress: any = undefined;
+export const completeMusicGenerationTaskRun: any = undefined;
+export const failMusicGenerationTaskRun: any = undefined;

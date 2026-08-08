@@ -4,24 +4,24 @@
 import { asFiniteNumber } from "@openclaw/normalization-core/number-coercion";
 
 type EmptyAssistantTurnLike = {
-  content?: unknown;
-  stopReason?: unknown;
-  usage?: unknown;
+  content?: any;
+  stopReason?: any;
+  usage?: any;
 };
 
 type UsageFieldMap = {
-  input?: unknown;
-  output?: unknown;
-  cacheRead?: unknown;
-  cacheWrite?: unknown;
-  total?: unknown;
-  totalTokens?: unknown;
-  total_tokens?: unknown;
+  input?: any;
+  output?: any;
+  cacheRead?: any;
+  cacheWrite?: any;
+  total?: any;
+  totalTokens?: any;
+  total_tokens?: any;
 };
 
 // Upstream agent runtimes should normalize Anthropic zero-token empty `stop`
 // turns before OpenClaw sees them. Downstream: openclaw/openclaw#71880.
-function readFiniteTokenCount(value: unknown): number | undefined {
+function readFiniteTokenCount(value: any): number | undefined {
   return asFiniteNumber(value);
 }
 
@@ -29,7 +29,7 @@ function isZero(value: number | undefined): value is 0 {
   return value === 0;
 }
 
-function hasZeroTokenUsageSnapshot(usage: unknown): boolean {
+function hasZeroTokenUsageSnapshot(usage: any): boolean {
   if (!usage || typeof usage !== "object") {
     return false;
   }

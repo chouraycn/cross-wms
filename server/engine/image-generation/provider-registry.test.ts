@@ -46,7 +46,7 @@ async function loadProviderRegistry(): Promise<ProviderRegistryModule> {
 
 describe("image-generation provider registry", () => {
   let delegationCase: {
-    calls: unknown[][];
+    calls: any[][];
     providers: ImageGenerationProviderPlugin[];
   };
 

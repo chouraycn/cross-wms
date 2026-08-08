@@ -21,7 +21,7 @@ const validateConfigObjectWithPluginsMock = vi.hoisted(() =>
     issues: [],
   })),
 );
-const replaceConfigFileMock = vi.hoisted(() => vi.fn(async (_params: unknown) => undefined));
+const replaceConfigFileMock = vi.hoisted(() => vi.fn(async (_params: any) => undefined));
 const getConfigOverridesMock = vi.hoisted(() => vi.fn(() => ({})));
 const getConfigValueAtPathMock = vi.hoisted(() => vi.fn());
 const parseConfigPathMock = vi.hoisted(() => vi.fn());
@@ -87,15 +87,15 @@ vi.mock("../../config/config.js", () => ({
   validateConfigObjectWithPlugins: validateConfigObjectWithPluginsMock,
   replaceConfigFile: replaceConfigFileMock,
   transformConfigFileWithRetry: async (params: {
-    afterWrite?: unknown;
+    afterWrite?: any;
     transform: (
       currentConfig: OpenClawConfig,
       context: { snapshot: ConfigSnapshotMock; previousHash: string | null; attempt: number },
     ) =>
-      | Promise<{ nextConfig: OpenClawConfig; result?: unknown }>
+      | Promise<{ nextConfig: OpenClawConfig; result?: any }>
       | {
           nextConfig: OpenClawConfig;
-          result?: unknown;
+          result?: any;
         };
   }) => {
     const snapshot = (await readConfigFileSnapshotMock()) as ConfigSnapshotMock;
@@ -252,13 +252,13 @@ describe("command gating", () => {
       issues: [],
     });
     getConfigOverridesMock.mockReturnValue({});
-    getConfigValueAtPathMock.mockImplementation((target: unknown, path: string[]) => {
-      let current = target as Record<string, unknown> | undefined;
+    getConfigValueAtPathMock.mockImplementation((target: any, path: string[]) => {
+      let current = target as Record<string, any> | undefined;
       for (const segment of path) {
         if (!current || typeof current !== "object") {
           return undefined;
         }
-        current = current[segment] as Record<string, unknown> | undefined;
+        current = current[segment] as Record<string, any> | undefined;
       }
       return current;
     });
@@ -267,14 +267,14 @@ describe("command gating", () => {
       path: raw.split("."),
     }));
     setConfigValueAtPathMock.mockImplementation(
-      (target: Record<string, unknown>, path: string[], value: unknown) => {
-        let cursor: Record<string, unknown> = target;
+      (target: Record<string, any>, path: string[], value: any) => {
+        let cursor: Record<string, any> = target;
         for (const segment of path.slice(0, -1)) {
           const next = cursor[segment];
           if (!next || typeof next !== "object") {
             cursor[segment] = {};
           }
-          cursor = cursor[segment] as Record<string, unknown>;
+          cursor = cursor[segment] as Record<string, any>;
         }
         const leaf = path[path.length - 1];
         if (leaf) {
@@ -626,7 +626,7 @@ describe("command gating", () => {
       bash: true,
       config: true,
       debug: true,
-    }) as Record<string, unknown>;
+    }) as Record<string, any>;
     const cfg = { commands: inheritedCommands as never } as OpenClawConfig;
     expect(isCommandFlagEnabled(cfg, "bash")).toBe(false);
     expect(isCommandFlagEnabled(cfg, "config")).toBe(false);

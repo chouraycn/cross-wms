@@ -104,7 +104,7 @@ export async function pokeTlon(
   account: TlonAccountConfig,
   app: string,
   mark: string,
-  json: unknown,
+  json: any,
 ): Promise<number> {
   const cookie = await authenticateTlon(account.shipUrl, account.code);
   const channelId = account.channelId || `cross-wms-${Date.now()}`;
@@ -256,7 +256,7 @@ export function createTlonChannelPlugin(): ChannelPlugin {
 
   const tlonConfig: ChannelConfigAdapter<TlonAccountConfig> = {
     listAccountIds: (config: AppConfig): ChannelId[] => {
-      const tlonConfig = config.tlon as Record<string, unknown>;
+      const tlonConfig = config.tlon as Record<string, any>;
       if (tlonConfig && tlonConfig.shipUrl && tlonConfig.code) {
         return [TLON_CHANNEL_ID];
       }
@@ -267,7 +267,7 @@ export function createTlonChannelPlugin(): ChannelPlugin {
       accountId: ChannelId,
     ): TlonAccountConfig | null => {
       if (accountId !== TLON_CHANNEL_ID) return null;
-      const tlonConfig = config.tlon as Record<string, unknown>;
+      const tlonConfig = config.tlon as Record<string, any>;
       if (tlonConfig && tlonConfig.shipUrl && tlonConfig.code) {
         return {
           shipUrl: String(tlonConfig.shipUrl),
@@ -300,7 +300,7 @@ export function createTlonChannelPlugin(): ChannelPlugin {
         try {
           const rendered = await ctx.render();
           const text = rendered.parts
-            .map((p: { content: unknown }) => String(p.content))
+            .map((p: { content: any }) => String(p.content))
             .join("\n");
 
           if (!ctx.to) {
@@ -351,8 +351,8 @@ export function createTlonChannelPlugin(): ChannelPlugin {
  * Urbit 通过 SSE 推送事件到 /~/channel/{channelId} 端点。
  * 事件格式为 JSON 数组，每个元素包含 action 和相关数据。
  */
-export function parseTlonEvent(body: unknown): TlonWebhookResult {
-  const data = body as Record<string, unknown>;
+export function parseTlonEvent(body: any): TlonWebhookResult {
+  const data = body as Record<string, any>;
 
   if (!data || typeof data !== "object") {
     return { success: false, error: "Invalid Tlon event payload" };
@@ -366,18 +366,18 @@ export function parseTlonEvent(body: unknown): TlonWebhookResult {
   }
 
   // 消息事件
-  const json = data.json as Record<string, unknown> | undefined;
+  const json = data.json as Record<string, any> | undefined;
   if (!json) {
     return { success: false, error: "No json payload in Tlon event" };
   }
 
   // 检查是否是聊天消息
-  const diff = json.diff as Record<string, unknown> | undefined;
+  const diff = json.diff as Record<string, any> | undefined;
   if (diff && diff.delta) {
-    const delta = diff.delta as Record<string, unknown>;
-    const add = delta.add as Record<string, unknown> | undefined;
+    const delta = diff.delta as Record<string, any>;
+    const add = delta.add as Record<string, any> | undefined;
     if (add && add.memo) {
-      const memo = add.memo as Record<string, unknown>;
+      const memo = add.memo as Record<string, any>;
       const content = memo.content as Array<{ inline: string[] }> | undefined;
       if (content && content.length > 0) {
         const text = content.map((c) => c.inline.join("")).join("\n");
@@ -391,7 +391,7 @@ export function parseTlonEvent(body: unknown): TlonWebhookResult {
           type: "message",
           message: {
             channelId: isGroup
-              ? String((json.channel as Record<string, unknown>)?.nest || "")
+              ? String((json.channel as Record<string, any>)?.nest || "")
               : author,
             userId: author,
             messageId: id,

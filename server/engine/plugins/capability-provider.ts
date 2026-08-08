@@ -14,7 +14,7 @@ import { PluginCapabilityError, toPluginSdkError } from './plugin-errors.js';
 // ===================== 能力提供者接口 =====================
 
 /** 能力提供者基础接口 */
-export interface CapabilityProvider<TOptions = unknown, TResult = unknown> {
+export interface CapabilityProvider<TOptions = any, TResult = any> {
   /** 能力种类 */
   readonly kind: PluginCapabilityKind;
   /** 提供者 ID（在 kind 范围内唯一） */
@@ -30,7 +30,7 @@ export interface CapabilityProvider<TOptions = unknown, TResult = unknown> {
 }
 
 /** 能力提供者注册项 */
-export interface CapabilityProviderEntry<TOptions = unknown, TResult = unknown> {
+export interface CapabilityProviderEntry<TOptions = any, TResult = any> {
   /** 提供者 */
   provider: CapabilityProvider<TOptions, TResult>;
   /** 注册的插件 ID */
@@ -38,7 +38,7 @@ export interface CapabilityProviderEntry<TOptions = unknown, TResult = unknown> 
   /** 注册时间 */
   registeredAt: number;
   /** 元数据 */
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 // ===================== 能力提供者注册表 =====================
@@ -51,7 +51,7 @@ class CapabilityProviderRegistry {
   register<TOptions, TResult>(
     pluginId: string,
     provider: CapabilityProvider<TOptions, TResult>,
-    metadata?: Record<string, unknown>,
+    metadata?: Record<string, any>,
   ): void {
     let kindMap = this.providers.get(provider.kind);
     if (!kindMap) {

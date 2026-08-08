@@ -55,7 +55,7 @@ type CronEvent = {
   jobId: string;
   status?: string;
   error?: string;
-  summary?: unknown;
+  summary?: any;
   runAtMs?: number;
   durationMs?: number;
   nextRunAtMs?: number;
@@ -65,7 +65,7 @@ type CronEvent = {
 type CronMessageChannel = string;
 
 type CronLogger = {
-  warn: (obj: unknown, msg?: string) => void;
+  warn: (obj: any, msg?: string) => void;
 };
 
 type CronAgentResolver = (requested?: string | null) => {
@@ -87,7 +87,7 @@ function redactWebhookUrl(url: string): string {
   }
 }
 
-function redactOptionalWebhookUrl(url: unknown): string | undefined {
+function redactOptionalWebhookUrl(url: any): string | undefined {
   const normalized = normalizeOptionalString(url);
   return normalized ? redactWebhookUrl(normalized) : undefined;
 }
@@ -122,7 +122,7 @@ type CronFailureDeliveryPlan = {
   accountId?: string;
 };
 
-function normalizeFailureMode(value: unknown): "announce" | "webhook" | undefined {
+function normalizeFailureMode(value: any): "announce" | "webhook" | undefined {
   const trimmed = normalizeOptionalLowercaseString(value);
   if (trimmed === "announce" || trimmed === "webhook") {
     return trimmed;
@@ -230,8 +230,8 @@ function buildCronWebhookHeaders(webhookToken?: string): Record<string, string> 
 async function postCronWebhook(params: {
   webhookUrl: string;
   webhookToken?: string;
-  payload: unknown;
-  logContext: Record<string, unknown>;
+  payload: any;
+  logContext: Record<string, any>;
   blockedLog: string;
   failedLog: string;
   logger: CronLogger;
@@ -277,7 +277,7 @@ export async function sendGatewayCronFailureAlert(params: {
   logger: CronLogger;
   resolveCronAgent: CronAgentResolver;
   deliveryAdapter?: CronDeliveryAdapter;
-  webhookToken?: unknown;
+  webhookToken?: any;
   job: CronJob;
   text: string;
   channel: CronMessageChannel;
@@ -355,7 +355,7 @@ export function dispatchGatewayCronFinishedNotifications(params: {
   logger: CronLogger;
   resolveCronAgent: CronAgentResolver;
   deliveryAdapter?: CronDeliveryAdapter;
-  webhookToken?: unknown;
+  webhookToken?: any;
   globalFailureDestination?: CronFailureDestinationConfig;
 }): void {
   const webhookToken = normalizeOptionalString(params.webhookToken);

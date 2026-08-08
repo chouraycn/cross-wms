@@ -72,7 +72,7 @@ type GatewayCaller = typeof callGateway;
 
 const SESSIONS_LIST_TRANSCRIPT_FIELD_ROWS = 100;
 
-function readSessionRunStatus(value: unknown): SessionRunStatus | undefined {
+function readSessionRunStatus(value: any): SessionRunStatus | undefined {
   return value === "running" ||
     value === "done" ||
     value === "failed" ||
@@ -96,7 +96,7 @@ export function createSessionsListTool(opts?: {
     description: describeSessionsListTool(),
     parameters: SessionsListToolSchema,
     execute: async (_toolCallId, args) => {
-      const params = args as Record<string, unknown>;
+      const params = args as Record<string, any>;
       const cfg = opts?.config ?? getRuntimeConfig();
       const { mainKey, alias, requesterInternalKey, restrictToSpawned } =
         resolveSandboxedSessionToolContext({
@@ -178,7 +178,7 @@ export function createSessionsListTool(opts?: {
           key,
           agentId: typeof entry.agentId === "string" ? entry.agentId : undefined,
           ownerSessionKey:
-            typeof (entry as { ownerSessionKey?: unknown }).ownerSessionKey === "string"
+            typeof (entry as { ownerSessionKey?: any }).ownerSessionKey === "string"
               ? (entry as { ownerSessionKey?: string }).ownerSessionKey
               : undefined,
           spawnedBy: typeof entry.spawnedBy === "string" ? entry.spawnedBy : undefined,
@@ -213,7 +213,7 @@ export function createSessionsListTool(opts?: {
         const entryChannel = typeof entry.channel === "string" ? entry.channel : undefined;
         const entryOrigin =
           entry.origin && typeof entry.origin === "object"
-            ? (entry.origin as Record<string, unknown>)
+            ? (entry.origin as Record<string, any>)
             : undefined;
         const originChannel =
           typeof entryOrigin?.provider === "string" ? entryOrigin.provider : undefined;
@@ -237,7 +237,7 @@ export function createSessionsListTool(opts?: {
         });
 
         const sessionId = readStringValue(entry.sessionId);
-        const sessionFileRaw = (entry as { sessionFile?: unknown }).sessionFile;
+        const sessionFileRaw = (entry as { sessionFile?: any }).sessionFile;
         const sessionFile = readStringValue(sessionFileRaw);
         const resolvedAgentId = resolveAgentIdFromSessionKey(key);
         let transcriptPath: string | undefined;
@@ -364,7 +364,7 @@ export function createSessionsListTool(opts?: {
               sessionId,
               displayName: row.displayName,
               label: row.label,
-              subject: readStringValue((entry as { subject?: unknown }).subject),
+              subject: readStringValue((entry as { subject?: any }).subject),
               updatedAt: typeof row.updatedAt === "number" ? row.updatedAt : 0,
             },
             sessionEntry: {
@@ -434,7 +434,7 @@ export function createSessionsListTool(opts?: {
               return;
             }
             const target = historyTargets[next];
-            const history = await gatewayCall<{ messages: Array<unknown> }>({
+            const history = await gatewayCall<{ messages: Array<any> }>({
               method: "chat.history",
               params: { sessionKey: target.resolvedKey, limit: messageLimit },
             });

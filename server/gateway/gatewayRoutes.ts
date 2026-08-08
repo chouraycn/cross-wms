@@ -69,7 +69,7 @@ initSessionSync();
 export async function gatewayRpcHandler(req: Request, res: Response): Promise<void> {
   const { method, params } = req.body as {
     method: string;
-    params: unknown;
+    params: any;
   };
 
   if (!method) {
@@ -156,7 +156,7 @@ async function resolveModelCallConfig(
 /** OpenAI 请求中的消息格式 */
 interface OpenAIMessage {
   role: string;
-  content?: unknown;
+  content?: any;
   tool_calls?: Array<{
     id: string;
     type: string;
@@ -208,7 +208,7 @@ function normalizeOpenAIMessages(
 }
 
 /** 将 OpenAI content 字段归一化为 MessageContent（string 或 vision 数组） */
-function normalizeMessageContent(content: unknown): MessageContent {
+function normalizeMessageContent(content: any): MessageContent {
   if (typeof content === "string") {
     return content;
   }
@@ -220,13 +220,13 @@ function normalizeMessageContent(content: unknown): MessageContent {
     const parts: Array<{ type: "text" | "image_url"; text?: string; image_url?: { url: string; detail?: "auto" | "low" | "high" } }> = [];
     for (const part of content) {
       if (!part || typeof part !== "object") continue;
-      const p = part as Record<string, unknown>;
+      const p = part as Record<string, any>;
       if (p.type === "text" && typeof p.text === "string") {
         parts.push({ type: "text", text: p.text });
       } else if (p.type === "image_url" && p.image_url && typeof p.image_url === "object") {
-        const url = (p.image_url as Record<string, unknown>).url;
+        const url = (p.image_url as Record<string, any>).url;
         if (typeof url === "string") {
-          const detail = (p.image_url as Record<string, unknown>).detail;
+          const detail = (p.image_url as Record<string, any>).detail;
           parts.push({
             type: "image_url",
             image_url: {
@@ -249,7 +249,7 @@ interface OpenAITool {
   function?: {
     name: string;
     description?: string;
-    parameters?: Record<string, unknown>;
+    parameters?: Record<string, any>;
     strict?: boolean;
   };
 }
@@ -258,7 +258,7 @@ interface OpenAITool {
  * 将 OpenAI tools 数组转换为 callAIModelStream 期望的 ToolDefinition[]。
  * 跳过非 function 类型或缺少 function 字段的条目。
  */
-function convertOpenAITools(tools: unknown): ToolDefinition[] {
+function convertOpenAITools(tools: any): ToolDefinition[] {
   if (!Array.isArray(tools)) return [];
   const result: ToolDefinition[] = [];
   for (const tool of tools) {
@@ -284,7 +284,7 @@ function convertOpenAITools(tools: unknown): ToolDefinition[] {
  * - { type: "function", function: { name } } → 透传
  */
 function convertOpenAIToolChoice(
-  toolChoice: unknown,
+  toolChoice: any,
 ): "auto" | "none" | { type: "function"; function: { name: string } } | undefined {
   if (toolChoice === undefined || toolChoice === null) return undefined;
   if (toolChoice === "auto") return "auto";
@@ -644,7 +644,7 @@ export function registerGatewayRoutes(app: {
       return;
     }
 
-    const models = ((result.result as Record<string, unknown> | undefined)?.models || []) as Array<{
+    const models = ((result.result as Record<string, any> | undefined)?.models || []) as Array<{
       id: string;
       name?: string;
       description?: string;
@@ -711,8 +711,8 @@ export function registerGatewayRoutes(app: {
       max_tokens?: number;
       max_completion_tokens?: number;
       top_p?: number;
-      tools?: unknown;
-      tool_choice?: unknown;
+      tools?: any;
+      tool_choice?: any;
     };
 
     if (!model || typeof model !== "string") {
@@ -781,7 +781,7 @@ export function registerGatewayRoutes(app: {
         req.socket.setNoDelay(true);
       }
 
-      const writeSse = (obj: unknown) => {
+      const writeSse = (obj: any) => {
         res.write(`data: ${JSON.stringify(obj)}\n\n`);
       };
 
@@ -1005,7 +1005,7 @@ export function registerGatewayRoutes(app: {
       return;
     }
 
-    const embeddings = (result.result as Record<string, unknown>)?.embeddings as number[][] || [];
+    const embeddings = (result.result as Record<string, any>)?.embeddings as number[][] || [];
     const texts = typeof input === "string" ? [input] : input;
 
     res.json({

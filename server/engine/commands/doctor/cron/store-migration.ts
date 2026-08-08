@@ -43,16 +43,16 @@ type NormalizeCronStoreJobsResult = {
   issues: CronStoreIssues;
   unresolvedAgentTurnCommandPromptJobs: string[];
   unresolvedAgentTurnShellToolPromptJobs: string[];
-  jobs: Array<Record<string, unknown>>;
+  jobs: Array<Record<string, any>>;
   mutated: boolean;
-  removedJobs: Array<{ job: Record<string, unknown>; reason: string; sourceIndex: number }>;
+  removedJobs: Array<{ job: Record<string, any>; reason: string; sourceIndex: number }>;
 };
 
 function incrementIssue(issues: CronStoreIssues, key: CronStoreIssueKey) {
   issues[key] = (issues[key] ?? 0) + 1;
 }
 
-function normalizeStoredCronJobIdentity(raw: Record<string, unknown>): {
+function normalizeStoredCronJobIdentity(raw: Record<string, any>): {
   mutated: boolean;
   legacyJobIdIssue: boolean;
   missingIdIssue: boolean;
@@ -84,7 +84,7 @@ function normalizeStoredCronJobIdentity(raw: Record<string, unknown>): {
   };
 }
 
-function normalizePayloadKind(payload: Record<string, unknown>) {
+function normalizePayloadKind(payload: Record<string, any>) {
   const raw = normalizeOptionalLowercaseString(payload.kind) ?? "";
   if (raw === "agentturn") {
     if (payload.kind !== "agentTurn") {
@@ -103,7 +103,7 @@ function normalizePayloadKind(payload: Record<string, unknown>) {
   return false;
 }
 
-function inferPayloadIfMissing(raw: Record<string, unknown>) {
+function inferPayloadIfMissing(raw: Record<string, any>) {
   const message = normalizeOptionalString(raw.message) ?? "";
   const text = normalizeOptionalString(raw.text) ?? "";
   const command = normalizeOptionalString(raw.command) ?? "";
@@ -123,8 +123,8 @@ function inferPayloadIfMissing(raw: Record<string, unknown>) {
 }
 
 function copyTopLevelAgentTurnFields(
-  raw: Record<string, unknown>,
-  payload: Record<string, unknown>,
+  raw: Record<string, any>,
+  payload: Record<string, any>,
 ) {
   let mutated = false;
 
@@ -197,7 +197,7 @@ function copyTopLevelAgentTurnFields(
   return mutated;
 }
 
-function stripLegacyTopLevelFields(raw: Record<string, unknown>) {
+function stripLegacyTopLevelFields(raw: Record<string, any>) {
   if ("model" in raw) {
     delete raw.model;
   }
@@ -244,7 +244,7 @@ function stripLegacyTopLevelFields(raw: Record<string, unknown>) {
 
 /** Normalize persisted cron jobs in place and report issues plus rows to quarantine. */
 export function normalizeStoredCronJobs(
-  jobs: Array<Record<string, unknown>>,
+  jobs: Array<Record<string, any>>,
 ): NormalizeCronStoreJobsResult {
   const issues: CronStoreIssues = {};
   const unresolvedAgentTurnCommandPromptJobs: string[] = [];
@@ -254,7 +254,7 @@ export function normalizeStoredCronJobs(
     shellToolPrompt: unresolvedAgentTurnShellToolPromptJobs,
   };
   let mutated = false;
-  const keptJobs: Array<Record<string, unknown>> = [];
+  const keptJobs: Array<Record<string, any>> = [];
   const removedJobs: NormalizeCronStoreJobsResult["removedJobs"] = [];
 
   for (const [sourceIndex, raw] of jobs.entries()) {
@@ -352,7 +352,7 @@ export function normalizeStoredCronJobs(
 
     const payloadRecord =
       raw.payload && typeof raw.payload === "object" && !Array.isArray(raw.payload)
-        ? (raw.payload as Record<string, unknown>)
+        ? (raw.payload as Record<string, any>)
         : null;
 
     if (payloadRecord) {
@@ -441,7 +441,7 @@ export function normalizeStoredCronJobs(
 
     const schedule = raw.schedule;
     if (schedule && typeof schedule === "object" && !Array.isArray(schedule)) {
-      const sched = schedule as Record<string, unknown>;
+      const sched = schedule as Record<string, any>;
       const kind = normalizeOptionalLowercaseString(sched.kind) ?? "";
       if (!kind && ("at" in sched || "atMs" in sched)) {
         sched.kind = "at";
@@ -529,16 +529,16 @@ export function normalizeStoredCronJobs(
 
     const delivery = raw.delivery;
     if (delivery && typeof delivery === "object" && !Array.isArray(delivery)) {
-      const modeRaw = (delivery as { mode?: unknown }).mode;
+      const modeRaw = (delivery as { mode?: any }).mode;
       if (typeof modeRaw === "string") {
         const lowered = normalizeOptionalLowercaseString(modeRaw) ?? "";
         if (lowered === "deliver") {
-          (delivery as { mode?: unknown }).mode = "announce";
+          (delivery as { mode?: any }).mode = "announce";
           mutated = true;
           trackIssue("legacyDeliveryMode");
         }
       } else if (modeRaw === undefined || modeRaw === null) {
-        (delivery as { mode?: unknown }).mode = "announce";
+        (delivery as { mode?: any }).mode = "announce";
         mutated = true;
       }
     }
@@ -589,7 +589,7 @@ export function normalizeStoredCronJobs(
       (sessionTarget === "" && (payloadKind === "agentTurn" || payloadKind === "command"));
     const hasDelivery = delivery && typeof delivery === "object" && !Array.isArray(delivery);
     const normalizedLegacy = normalizeLegacyDeliveryInput({
-      delivery: hasDelivery ? (delivery as Record<string, unknown>) : null,
+      delivery: hasDelivery ? (delivery as Record<string, any>) : null,
       payload: payloadRecord,
     });
 

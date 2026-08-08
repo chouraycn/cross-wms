@@ -25,7 +25,7 @@ vi.mock("./plugin-registry.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./plugin-registry.js")>();
   return {
     ...actual,
-    loadPluginRegistrySnapshotWithMetadata: (params: unknown) =>
+    loadPluginRegistrySnapshotWithMetadata: (params: any) =>
       loadPluginRegistrySnapshotWithMetadata(params),
   };
 });
@@ -34,7 +34,7 @@ vi.mock("./manifest-registry-installed.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./manifest-registry-installed.js")>();
   return {
     ...actual,
-    loadPluginManifestRegistryForInstalledIndex: (params: unknown) =>
+    loadPluginManifestRegistryForInstalledIndex: (params: any) =>
       loadPluginManifestRegistryForInstalledIndex(params),
   };
 });

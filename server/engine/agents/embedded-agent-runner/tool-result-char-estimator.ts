@@ -10,22 +10,22 @@ const IMAGE_CHAR_ESTIMATE = 8_000;
 
 export type MessageCharEstimateCache = WeakMap<AgentMessage, number>;
 
-function isTextBlock(block: unknown): block is { type: "text"; text: string } {
+function isTextBlock(block: any): block is { type: "text"; text: string } {
   return (
     Boolean(block) &&
     typeof block === "object" &&
-    (block as { type?: unknown }).type === "text" &&
-    typeof (block as { text?: unknown }).text === "string"
+    (block as { type?: any }).type === "text" &&
+    typeof (block as { text?: any }).text === "string"
   );
 }
 
-function isImageBlock(block: unknown): boolean {
+function isImageBlock(block: any): boolean {
   return (
-    Boolean(block) && typeof block === "object" && (block as { type?: unknown }).type === "image"
+    Boolean(block) && typeof block === "object" && (block as { type?: any }).type === "image"
   );
 }
 
-function estimateUnknownChars(value: unknown): number {
+function estimateUnknownChars(value: any): number {
   if (typeof value === "string") {
     return value.length;
   }
@@ -41,23 +41,23 @@ function estimateUnknownChars(value: unknown): number {
 }
 
 export function isToolResultMessage(msg: AgentMessage): boolean {
-  const role = (msg as { role?: unknown }).role;
-  const type = (msg as { type?: unknown }).type;
+  const role = (msg as { role?: any }).role;
+  const type = (msg as { type?: any }).type;
   return role === "toolResult" || role === "tool" || type === "toolResult";
 }
 
-function getToolResultContent(msg: AgentMessage): unknown[] {
+function getToolResultContent(msg: AgentMessage): any[] {
   if (!isToolResultMessage(msg)) {
     return [];
   }
-  const content = (msg as { content?: unknown }).content;
+  const content = (msg as { content?: any }).content;
   if (typeof content === "string") {
     return [{ type: "text", text: content }];
   }
   return Array.isArray(content) ? content : [];
 }
 
-function estimateContentBlockChars(content: unknown[]): number {
+function estimateContentBlockChars(content: any[]): number {
   let chars = 0;
   for (const block of content) {
     if (isTextBlock(block)) {
@@ -100,17 +100,17 @@ function estimateMessageChars(msg: AgentMessage): number {
 
   if (msg.role === "assistant") {
     let chars = 0;
-    const content = (msg as { content?: unknown }).content;
+    const content = (msg as { content?: any }).content;
     if (Array.isArray(content)) {
       for (const block of content) {
         if (!block || typeof block !== "object") {
           continue;
         }
         const typed = block as {
-          type?: unknown;
-          text?: unknown;
-          thinking?: unknown;
-          arguments?: unknown;
+          type?: any;
+          text?: any;
+          thinking?: any;
+          arguments?: any;
         };
         if (typed.type === "text" && typeof typed.text === "string") {
           chars += typed.text.length;

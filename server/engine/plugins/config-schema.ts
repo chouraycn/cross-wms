@@ -7,7 +7,7 @@ import { validateJsonSchemaValue } from "./schema-validator.js";
 
 // Use PluginConfigSchema instead of OpenClawPluginConfigSchema
 type OpenClawPluginConfigSchema = {
-  safeParse: (value: unknown) => { success: boolean; data?: unknown; error?: { issues: unknown[] } };
+  safeParse: (value: any) => { success: boolean; data?: any; error?: { issues: any[] } };
   jsonSchema?: JsonSchemaObject;
   uiHint?: PluginConfigUiHint;
 };
@@ -15,11 +15,11 @@ type OpenClawPluginConfigSchema = {
 type Issue = { path: Array<string | number>; message: string };
 
 type SafeParseResult =
-  | { success: true; data?: unknown }
+  | { success: true; data?: any }
   | { success: false; error: { issues: Issue[] } };
 
 type ZodSchemaWithToJsonSchema = ZodTypeAny & {
-  toJSONSchema?: (params?: Record<string, unknown>) => unknown;
+  toJSONSchema?: (params?: Record<string, any>) => unknown;
 };
 
 type BuildPluginConfigSchemaOptions = {
@@ -47,7 +47,7 @@ function cloneIssue(issue: z.ZodIssue): Issue {
   };
 }
 
-function safeParseRuntimeSchema(schema: ZodTypeAny, value: unknown): SafeParseResult {
+function safeParseRuntimeSchema(schema: ZodTypeAny, value: any): SafeParseResult {
   const result = schema.safeParse(value);
   if (result.success) {
     return {
@@ -61,14 +61,14 @@ function safeParseRuntimeSchema(schema: ZodTypeAny, value: unknown): SafeParseRe
   };
 }
 
-function normalizeJsonSchema(schema: unknown): unknown {
+function normalizeJsonSchema(schema: any): any {
   if (Array.isArray(schema)) {
     return schema.map((item) => normalizeJsonSchema(item));
   }
   if (!schema || typeof schema !== "object") {
     return schema;
   }
-  const record = { ...(schema as Record<string, unknown>) };
+  const record = { ...(schema as Record<string, any>) };
   delete record.$schema;
 
   for (const [key, value] of Object.entries(record)) {
@@ -80,7 +80,7 @@ function normalizeJsonSchema(schema: unknown): unknown {
     propertyNames &&
     typeof propertyNames === "object" &&
     !Array.isArray(propertyNames) &&
-    (propertyNames as Record<string, unknown>).type === "string"
+    (propertyNames as Record<string, any>).type === "string"
   ) {
     delete record.propertyNames;
   }
@@ -104,7 +104,7 @@ function toIssuePath(path: string): Array<string | number> {
 function safeParseJsonSchema(
   schema: JsonSchemaObject,
   cacheKey: string,
-  value: unknown,
+  value: any,
 ): SafeParseResult {
   const result = validateJsonSchemaValue({
     schema,
@@ -133,7 +133,7 @@ export function buildJsonPluginConfigSchema(
 ): OpenClawPluginConfigSchema {
   const safeParse =
     options?.safeParse ??
-    ((value: unknown) =>
+    ((value: any) =>
       safeParseJsonSchema(schema, options?.cacheKey ?? "plugin-config-schema:json", value));
   return {
     safeParse,
@@ -177,14 +177,14 @@ export function buildPluginConfigSchema(
 /** Return a schema for plugins that intentionally accept no config keys. */
 export function emptyPluginConfigSchema(): OpenClawPluginConfigSchema {
   return {
-    safeParse(value: unknown): SafeParseResult {
+    safeParse(value: any): SafeParseResult {
       if (value === undefined) {
         return { success: true, data: undefined };
       }
       if (!value || typeof value !== "object" || Array.isArray(value)) {
         return error("expected config object");
       }
-      if (Object.keys(value as Record<string, unknown>).length > 0) {
+      if (Object.keys(value as Record<string, any>).length > 0) {
         return error("config must be empty");
       }
       return { success: true, data: value };

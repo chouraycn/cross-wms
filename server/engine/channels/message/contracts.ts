@@ -142,14 +142,14 @@ export const MessageCapabilitiesSchema = z.object({
   deliveryReceipts: z.boolean().optional(),
 });
 
-export function validateChannelMessage(data: unknown) {
+export function validateChannelMessage(data: any) {
   return ChannelMessageSchema.safeParse(data);
 }
 
-export function validateMessagePart(data: unknown) {
+export function validateMessagePart(data: any) {
   return MessagePartSchema.safeParse(data);
 }
 
-export function validateMessageLifecycleEvent(data: unknown) {
+export function validateMessageLifecycleEvent(data: any) {
   return MessageLifecycleEventSchema.safeParse(data);
 }

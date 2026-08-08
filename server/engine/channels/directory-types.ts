@@ -4,7 +4,7 @@
  * Shared input for channel directory lookups.
  */
 export type DirectoryConfigParams = {
-  cfg: unknown;
+  cfg: any;
   accountId?: string | null;
   query?: string | null;
   limit?: number | null;

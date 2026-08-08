@@ -136,7 +136,7 @@ async function sniffMime(buffer?: Buffer): Promise<string | undefined> {
 
 // Fallbacks for audio containers `file-type` doesn't recognize natively (e.g.
 // Apple's CAF, used by iMessage voice memos when produced by `afconvert`).
-// Without this the host-local-media validator drops these buffers as unknown
+// Without this the host-local-media validator drops these buffers as any
 // binary blobs because the sniff returns undefined, even though the file is
 // a valid audio container.
 function sniffKnownAudioMagic(buffer: Buffer): string | undefined {

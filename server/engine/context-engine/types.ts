@@ -4,9 +4,9 @@ export interface AgentMessage {
   content: string;
   toolCallId?: string;
   toolName?: string;
-  toolCalls?: unknown[];
+  toolCalls?: any[];
   isError?: boolean;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
   timestamp?: number;
 }
 
@@ -122,7 +122,7 @@ export type CompactResult = {
     firstKeptEntryId?: string;
     tokensBefore: number;
     tokensAfter?: number;
-    details?: unknown;
+    details?: any;
     sessionId?: string;
     sessionFile?: string;
   };
@@ -233,7 +233,7 @@ export interface MemorySearchResult {
   score: number;
   source?: string;
   timestamp?: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
   searchDetails?: {
     vectorScore?: number;
     textScore?: number;
@@ -260,7 +260,7 @@ export interface MemorySyncOptions {
   batchSize?: number;
 }
 
-export type ContextEngineRuntimeContext = Record<string, unknown> & {
+export type ContextEngineRuntimeContext = Record<string, any> & {
   cwd?: string;
   modelId?: string;
   provider?: string;
@@ -280,7 +280,7 @@ export type ContextEngineRuntimeContext = Record<string, unknown> & {
     request: TranscriptRewriteRequest,
   ) => Promise<TranscriptRewriteResult>;
   llm?: {
-    complete: (params: Record<string, unknown>) => Promise<Record<string, unknown>>;
+    complete: (params: Record<string, any>) => Promise<Record<string, any>>;
   };
   sessionFile?: string;
   sessionKey?: string;
@@ -433,7 +433,7 @@ export type ContextEngineFactory = (
 ) => ContextEngine | Promise<ContextEngine>;
 
 export type ContextEngineFactoryContext = {
-  config?: Record<string, unknown>;
+  config?: Record<string, any>;
   agentDir?: string;
   workspaceDir?: string;
   sessionId?: string;
@@ -458,6 +458,6 @@ export type ContextEngineLifecyclePhase =
 
 export interface ContextEngineLifecycleHook {
   phase: ContextEngineLifecyclePhase;
-  handler: (engine: ContextEngine, ...args: unknown[]) => Promise<void> | void;
+  handler: (engine: ContextEngine, ...args: any[]) => Promise<void> | void;
   priority?: number;
 }

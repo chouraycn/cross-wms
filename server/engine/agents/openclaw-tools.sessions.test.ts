@@ -9,7 +9,7 @@ import { createTestRegistry } from "../test-utils/channel-plugins.js";
 
 const callGatewayMock = vi.fn();
 vi.mock("../gateway/call.js", () => ({
-  callGateway: (opts: unknown) => callGatewayMock(opts),
+  callGateway: (opts: any) => callGatewayMock(opts),
 }));
 const loadSessionEntryByKeyMock = vi.fn();
 vi.mock("./subagent-announce-delivery.js", () => ({
@@ -141,7 +141,7 @@ function createOpenClawTools(options?: {
 }) {
   // Sessions tests exercise the three related tools as a small local bundle.
   const config = options?.config ?? TEST_CONFIG;
-  const gatewayCall = (opts: unknown) => callGatewayMock(opts);
+  const gatewayCall = (opts: any) => callGatewayMock(opts);
   return [
     createSessionsListTool({
       agentSessionKey: options?.agentSessionKey,
@@ -176,7 +176,7 @@ const waitForCalls = async (getCount: () => number, count: number, timeoutMs = 2
 
 type GatewayCall = {
   method?: string;
-  params?: Record<string, unknown>;
+  params?: Record<string, any>;
 };
 
 type AgentCallParams = {
@@ -206,7 +206,7 @@ type SessionsSendDetails = {
   };
 };
 
-function requireGatewayCall(call: unknown, method: string): GatewayCall {
+function requireGatewayCall(call: any, method: string): GatewayCall {
   const request = call as GatewayCall | undefined;
   if (request?.method !== method) {
     throw new Error(`expected ${method} gateway call`);
@@ -214,11 +214,11 @@ function requireGatewayCall(call: unknown, method: string): GatewayCall {
   return request;
 }
 
-function agentParams(call: { params?: unknown }): AgentCallParams {
+function agentParams(call: { params?: any }): AgentCallParams {
   return (call.params ?? {}) as AgentCallParams;
 }
 
-function expectInterSessionAgentCall(call: { params?: unknown }): void {
+function expectInterSessionAgentCall(call: { params?: any }): void {
   // Inter-session sends should be marked as nested non-user agent calls.
   const params = agentParams(call);
   expect(params.message).toContain("[Inter-session message");
@@ -228,7 +228,7 @@ function expectInterSessionAgentCall(call: { params?: unknown }): void {
   expect(params.inputProvenance?.kind).toBe("inter_session");
 }
 
-function sessionsSendDetails(details: unknown): SessionsSendDetails {
+function sessionsSendDetails(details: any): SessionsSendDetails {
   return details as SessionsSendDetails;
 }
 
@@ -244,13 +244,13 @@ describe("sessions tools", () => {
         payloads: [{ text: "ANNOUNCE_SKIP", mediaUrl: null }],
         meta: { durationMs: 1 },
       }),
-      callGateway: (opts: unknown) => callGatewayMock(opts),
+      callGateway: (opts: any) => callGatewayMock(opts),
     });
     sessionsResolutionTesting.setDepsForTest({
-      callGateway: (opts: unknown) => callGatewayMock(opts),
+      callGateway: (opts: any) => callGatewayMock(opts),
     });
     sessionsSendA2ATesting.setDepsForTest({
-      callGateway: (opts: unknown) => callGatewayMock(opts),
+      callGateway: (opts: any) => callGatewayMock(opts),
     });
   });
 
@@ -267,15 +267,15 @@ describe("sessions tools", () => {
     const schemaProp = (toolName: string, prop: string) => {
       const tool = byName(toolName);
       const schema = tool.parameters as {
-        anyOf?: unknown;
-        oneOf?: unknown;
-        properties?: Record<string, unknown>;
+        anyOf?: any;
+        oneOf?: any;
+        properties?: Record<string, any>;
       };
       expect(schema.anyOf).toBeUndefined();
       expect(schema.oneOf).toBeUndefined();
 
       const properties = schema.properties ?? {};
-      const value = properties[prop] as { type?: unknown } | undefined;
+      const value = properties[prop] as { type?: any } | undefined;
       if (!value) {
         throw new Error(`missing ${toolName} schema prop: ${prop}`);
       }
@@ -284,7 +284,7 @@ describe("sessions tools", () => {
     const hasSchemaProp = (toolName: string, prop: string) => {
       const tool = byName(toolName);
       const schema = tool.parameters as {
-        properties?: Record<string, unknown>;
+        properties?: Record<string, any>;
       };
       return Object.hasOwn(schema.properties ?? {}, prop);
     };
@@ -325,7 +325,7 @@ describe("sessions tools", () => {
       sessionKey: "main",
       [alias]: value,
       timeoutSeconds: 0,
-    }) as Record<string, unknown>;
+    }) as Record<string, any>;
 
     expect(prepared.message).toBe(value);
     expect(prepared[alias]).toBeUndefined();
@@ -336,7 +336,7 @@ describe("sessions tools", () => {
     { alias: "content", value: "hello from content" },
     { alias: "text", value: "hello from text" },
   ])("sessions_send normalizes $alias alias to message", async ({ alias, value }) => {
-    callGatewayMock.mockImplementation(async (opts: unknown) => {
+    callGatewayMock.mockImplementation(async (opts: any) => {
       const request = opts as { method?: string };
       if (request.method === "agent") {
         return { runId: "run-alias", status: "accepted" };
@@ -364,7 +364,7 @@ describe("sessions tools", () => {
   });
 
   it("sessions_send sanitizes formatted reasoning from aliases", async () => {
-    callGatewayMock.mockImplementation(async (opts: unknown) => {
+    callGatewayMock.mockImplementation(async (opts: any) => {
       const request = opts as { method?: string };
       if (request.method === "agent") {
         return { runId: "run-alias", status: "accepted" };
@@ -402,14 +402,14 @@ describe("sessions tools", () => {
       sessionKey: "main",
       SendMessage: "Reasoning:\n_internal plan_\n\nVisible answer",
       timeoutSeconds: 0,
-    }) as Record<string, unknown>;
+    }) as Record<string, any>;
 
     expect(prepared.message).toBe("Visible answer");
     expect(prepared.SendMessage).toBeUndefined();
   });
 
   it("sessions_list forwards mailbox filters and includes messages", async () => {
-    callGatewayMock.mockImplementation(async (opts: unknown) => {
+    callGatewayMock.mockImplementation(async (opts: any) => {
       const request = opts as { method?: string };
       if (request.method === "sessions.list") {
         return {
@@ -549,7 +549,7 @@ describe("sessions tools", () => {
 
     const cronOnly = await tool.execute("call2", { kinds: ["cron"] });
     const cronDetails = cronOnly.details as {
-      sessions?: Array<Record<string, unknown>>;
+      sessions?: Array<Record<string, any>>;
     };
     expect(cronDetails.sessions).toHaveLength(1);
     expect(cronDetails.sessions?.[0]?.kind).toBe("cron");
@@ -578,8 +578,8 @@ describe("sessions tools", () => {
         "utf-8",
       );
 
-      callGatewayMock.mockImplementation(async (opts: unknown) => {
-        const request = opts as { method?: string; params?: Record<string, unknown> };
+      callGatewayMock.mockImplementation(async (opts: any) => {
+        const request = opts as { method?: string; params?: Record<string, any> };
         if (request.method === "sessions.list") {
           expect(request.params?.includeDerivedTitles).toBe(false);
           expect(request.params?.includeLastMessage).toBe(false);
@@ -622,7 +622,7 @@ describe("sessions tools", () => {
         includeDerivedTitles: true,
         includeLastMessage: true,
       });
-      const details = result.details as { sessions?: Array<Record<string, unknown>> };
+      const details = result.details as { sessions?: Array<Record<string, any>> };
       expect(details.sessions).toStrictEqual([
         {
           key: "agent:main:main",
@@ -670,7 +670,7 @@ describe("sessions tools", () => {
   });
 
   it("sessions_list resolves transcriptPath from agent state dir for multi-store listings", async () => {
-    callGatewayMock.mockImplementation(async (opts: unknown) => {
+    callGatewayMock.mockImplementation(async (opts: any) => {
       const request = opts as { method?: string };
       if (request.method === "sessions.list") {
         return {
@@ -709,7 +709,7 @@ describe("sessions tools", () => {
   });
 
   it("sessions_history filters tool messages by default", async () => {
-    callGatewayMock.mockImplementation(async (opts: unknown) => {
+    callGatewayMock.mockImplementation(async (opts: any) => {
       const request = opts as { method?: string };
       if (request.method === "chat.history") {
         return {
@@ -740,7 +740,7 @@ describe("sessions tools", () => {
     }
 
     const result = await tool.execute("call3", { sessionKey: "main" });
-    const details = result.details as { messages?: unknown[] };
+    const details = result.details as { messages?: any[] };
     expect(details.messages).toHaveLength(3);
     expect(details.messages).toContainEqual(
       expect.objectContaining({ provider: "openclaw", model: "gateway-injected" }),
@@ -753,7 +753,7 @@ describe("sessions tools", () => {
       sessionKey: "main",
       includeTools: true,
     });
-    const withToolsDetails = withTools.details as { messages?: unknown[] };
+    const withToolsDetails = withTools.details as { messages?: any[] };
     expect(withToolsDetails.messages).toHaveLength(4);
     expect(withToolsDetails.messages).toContainEqual(
       expect.objectContaining({ provider: "openclaw", model: "delivery-mirror" }),
@@ -792,7 +792,7 @@ describe("sessions tools", () => {
         output: 1,
       },
     }));
-    callGatewayMock.mockImplementation(async (opts: unknown) => {
+    callGatewayMock.mockImplementation(async (opts: any) => {
       const request = opts as { method?: string };
       if (request.method === "chat.history") {
         return { messages: oversized };
@@ -810,7 +810,7 @@ describe("sessions tools", () => {
       includeTools: true,
     });
     const details = result.details as {
-      messages?: Array<Record<string, unknown>>;
+      messages?: Array<Record<string, any>>;
       truncated?: boolean;
       droppedMessages?: boolean;
       contentTruncated?: boolean;
@@ -827,14 +827,14 @@ describe("sessions tools", () => {
 
     const first = details.messages?.[0] as
       | {
-          details?: unknown;
-          usage?: unknown;
+          details?: any;
+          usage?: any;
           content?: Array<{
             type?: string;
             text?: string;
             thinking?: string;
             thinkingSignature?: string;
-            openclawReasoningReplay?: unknown;
+            openclawReasoningReplay?: any;
           }>;
         }
       | undefined;
@@ -849,7 +849,7 @@ describe("sessions tools", () => {
   });
 
   it("sessions_history enforces a hard byte cap even when a single message is huge", async () => {
-    callGatewayMock.mockImplementation(async (opts: unknown) => {
+    callGatewayMock.mockImplementation(async (opts: any) => {
       const request = opts as { method?: string };
       if (request.method === "chat.history") {
         return {
@@ -875,7 +875,7 @@ describe("sessions tools", () => {
       includeTools: true,
     });
     const details = result.details as {
-      messages?: Array<Record<string, unknown>>;
+      messages?: Array<Record<string, any>>;
       truncated?: boolean;
       droppedMessages?: boolean;
       contentTruncated?: boolean;
@@ -896,7 +896,7 @@ describe("sessions tools", () => {
 
   it("sessions_history sets contentRedacted when sensitive data is redacted", async () => {
     callGatewayMock.mockReset();
-    callGatewayMock.mockImplementation(async (opts: unknown) => {
+    callGatewayMock.mockImplementation(async (opts: any) => {
       const request = opts as { method?: string };
       if (request.method === "chat.history") {
         return {
@@ -920,7 +920,7 @@ describe("sessions tools", () => {
 
     const result = await tool.execute("call-redact-1", { sessionKey: "main" });
     const details = result.details as {
-      messages?: Array<Record<string, unknown>>;
+      messages?: Array<Record<string, any>>;
       truncated?: boolean;
       contentTruncated?: boolean;
       contentRedacted?: boolean;
@@ -938,7 +938,7 @@ describe("sessions tools", () => {
     callGatewayMock.mockReset();
     const longPrefix = "safe text ".repeat(420);
     const sensitiveText = `${longPrefix} sk-9876543210fedcba9876 end`;
-    callGatewayMock.mockImplementation(async (opts: unknown) => {
+    callGatewayMock.mockImplementation(async (opts: any) => {
       const request = opts as { method?: string };
       if (request.method === "chat.history") {
         return {
@@ -972,10 +972,10 @@ describe("sessions tools", () => {
   it("sessions_history resolves sessionId inputs", async () => {
     const sessionId = "sess-group";
     const targetKey = "agent:main:discord:channel:1457165743010611293";
-    callGatewayMock.mockImplementation(async (opts: unknown) => {
+    callGatewayMock.mockImplementation(async (opts: any) => {
       const request = opts as {
         method?: string;
-        params?: Record<string, unknown>;
+        params?: Record<string, any>;
       };
       if (request.method === "sessions.resolve") {
         return {
@@ -996,7 +996,7 @@ describe("sessions tools", () => {
     }
 
     const result = await tool.execute("call5", { sessionKey: sessionId });
-    const details = result.details as { messages?: unknown[] };
+    const details = result.details as { messages?: any[] };
     expect(details.messages).toStrictEqual([
       {
         content: [{ text: "ok", type: "text" }],
@@ -1012,7 +1012,7 @@ describe("sessions tools", () => {
 
   it("sessions_history errors on missing sessionId", async () => {
     const sessionId = "aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa";
-    callGatewayMock.mockImplementation(async (opts: unknown) => {
+    callGatewayMock.mockImplementation(async (opts: any) => {
       const request = opts as { method?: string };
       if (request.method === "sessions.resolve") {
         throw new Error("No session found");
@@ -1032,7 +1032,7 @@ describe("sessions tools", () => {
   });
 
   it("sessions_send supports fire-and-forget and wait", async () => {
-    const calls: Array<{ method?: string; params?: unknown }> = [];
+    const calls: Array<{ method?: string; params?: any }> = [];
     let agentCallCount = 0;
     let historyCallCount = 0;
     let waitCallCount = 0;
@@ -1040,8 +1040,8 @@ describe("sessions tools", () => {
     let lastWaitedRunId: string | undefined;
     const replyByRunId = new Map<string, string>();
     const requesterKey = "discord:group:req";
-    callGatewayMock.mockImplementation(async (opts: unknown) => {
-      const request = opts as { method?: string; params?: unknown };
+    callGatewayMock.mockImplementation(async (opts: any) => {
+      const request = opts as { method?: string; params?: any };
       calls.push(request);
       if (request.method === "agent") {
         agentCallCount += 1;
@@ -1181,9 +1181,9 @@ describe("sessions tools", () => {
   });
 
   it("sessions_send returns pending agent error diagnostics on timeout", async () => {
-    const calls: Array<{ method?: string; params?: unknown }> = [];
-    callGatewayMock.mockImplementation(async (opts: unknown) => {
-      const request = opts as { method?: string; params?: unknown };
+    const calls: Array<{ method?: string; params?: any }> = [];
+    callGatewayMock.mockImplementation(async (opts: any) => {
+      const request = opts as { method?: string; params?: any };
       calls.push(request);
       if (request.method === "chat.history") {
         return { messages: [] };
@@ -1235,10 +1235,10 @@ describe("sessions tools", () => {
   it("sessions_send resolves sessionId inputs", async () => {
     const sessionId = "sess-send";
     const targetKey = "agent:main:discord:channel:123";
-    callGatewayMock.mockImplementation(async (opts: unknown) => {
+    callGatewayMock.mockImplementation(async (opts: any) => {
       const request = opts as {
         method?: string;
-        params?: Record<string, unknown>;
+        params?: Record<string, any>;
       };
       if (request.method === "sessions.resolve") {
         return { key: targetKey };
@@ -1278,15 +1278,15 @@ describe("sessions tools", () => {
   });
 
   it("sessions_send runs ping-pong then announces", async () => {
-    const calls: Array<{ method?: string; params?: unknown }> = [];
+    const calls: Array<{ method?: string; params?: any }> = [];
     let agentCallCount = 0;
     let lastWaitedRunId: string | undefined;
     const replyByRunId = new Map<string, string>();
     const requesterKey = "discord:group:req";
     const targetKey = "discord:group:target";
     let sendParams: { to?: string; channel?: string; message?: string } = {};
-    callGatewayMock.mockImplementation(async (opts: unknown) => {
-      const request = opts as { method?: string; params?: unknown };
+    callGatewayMock.mockImplementation(async (opts: any) => {
+      const request = opts as { method?: string; params?: any };
       calls.push(request);
       if (request.method === "agent") {
         agentCallCount += 1;
@@ -1347,7 +1347,7 @@ describe("sessions tools", () => {
         payloads: [{ text: "announce now", mediaUrl: null }],
         meta: { durationMs: 1 },
       }),
-      callGateway: (opts: unknown) => callGatewayMock(opts),
+      callGateway: (opts: any) => callGatewayMock(opts),
     });
 
     const tool = createOpenClawTools({
@@ -1397,12 +1397,12 @@ describe("sessions tools", () => {
   });
 
   it("sessions_send keeps delayed requester replies alive after a wait timeout", async () => {
-    const calls: Array<{ method?: string; params?: unknown }> = [];
+    const calls: Array<{ method?: string; params?: any }> = [];
     const requesterKey = "agent:main:main";
     const targetKey = "agent:director1:main";
     let targetWaitCount = 0;
-    callGatewayMock.mockImplementation(async (opts: unknown) => {
-      const request = opts as { method?: string; params?: unknown };
+    callGatewayMock.mockImplementation(async (opts: any) => {
+      const request = opts as { method?: string; params?: any };
       calls.push(request);
       if (request.method === "agent") {
         const params = request.params as { sessionKey?: string } | undefined;
@@ -1516,10 +1516,10 @@ describe("sessions tools", () => {
   });
 
   it("sessions_send reports active-run queue rejection without durable-session fallback", async () => {
-    const calls: Array<{ method?: string; params?: unknown }> = [];
+    const calls: Array<{ method?: string; params?: any }> = [];
     const requesterKey = "agent:re-portal:main";
     const runScopedCallerKey = "agent:leasing-ops:cron:monthly-utility:run:run-fast";
-    const queueMessage = vi.fn(async (_text: string, _options?: unknown) => {
+    const queueMessage = vi.fn(async (_text: string, _options?: any) => {
       throw new Error("active session ended before queued steering message was committed");
     });
     setActiveEmbeddedRun(
@@ -1534,8 +1534,8 @@ describe("sessions tools", () => {
       },
       runScopedCallerKey,
     );
-    callGatewayMock.mockImplementation(async (opts: unknown) => {
-      const request = opts as { method?: string; params?: unknown };
+    callGatewayMock.mockImplementation(async (opts: any) => {
+      const request = opts as { method?: string; params?: any };
       calls.push(request);
       if (request.method === "agent") {
         return { runId: "fallback-run", status: "accepted", acceptedAt: 2000 };
@@ -1583,7 +1583,7 @@ describe("sessions tools", () => {
   });
 
   it("sessions_send reports source reply delivery mode mismatch without durable-session fallback", async () => {
-    const calls: Array<{ method?: string; params?: unknown }> = [];
+    const calls: Array<{ method?: string; params?: any }> = [];
     const runScopedCallerKey = "agent:leasing-ops:cron:monthly-utility:run:run-fast";
     const queueMessage = vi.fn(async () => {});
     setActiveEmbeddedRun(
@@ -1598,8 +1598,8 @@ describe("sessions tools", () => {
       },
       runScopedCallerKey,
     );
-    callGatewayMock.mockImplementation(async (opts: unknown) => {
-      const request = opts as { method?: string; params?: unknown };
+    callGatewayMock.mockImplementation(async (opts: any) => {
+      const request = opts as { method?: string; params?: any };
       calls.push(request);
       if (request.method === "agent") {
         return { runId: "fallback-run", status: "accepted", acceptedAt: 2000 };
@@ -1639,7 +1639,7 @@ describe("sessions tools", () => {
   });
 
   it("sessions_send keeps ordinary active session targets on the gateway agent path", async () => {
-    const calls: Array<{ method?: string; params?: unknown }> = [];
+    const calls: Array<{ method?: string; params?: any }> = [];
     const ordinaryActiveKey = "agent:main:main";
     const queueMessage = vi.fn(async () => {});
     setActiveEmbeddedRun(
@@ -1654,8 +1654,8 @@ describe("sessions tools", () => {
       },
       ordinaryActiveKey,
     );
-    callGatewayMock.mockImplementation(async (opts: unknown) => {
-      const request = opts as { method?: string; params?: unknown };
+    callGatewayMock.mockImplementation(async (opts: any) => {
+      const request = opts as { method?: string; params?: any };
       calls.push(request);
       if (request.method === "agent") {
         return { runId: "ordinary-agent-run", status: "accepted", acceptedAt: 2000 };
@@ -1695,7 +1695,7 @@ describe("sessions tools", () => {
   });
 
   it("sessions_send falls back from stranded cron run key to durable cron parent", async () => {
-    const calls: Array<{ method?: string; params?: unknown }> = [];
+    const calls: Array<{ method?: string; params?: any }> = [];
     const runScopedCallerKey = "agent:leasing-ops:cron:monthly-utility:run:run-fast";
     const durableCronCallerKey = "agent:leasing-ops:cron:monthly-utility";
     const queueMessage = vi.fn(async () => {});
@@ -1711,8 +1711,8 @@ describe("sessions tools", () => {
       },
       runScopedCallerKey,
     );
-    callGatewayMock.mockImplementation(async (opts: unknown) => {
-      const request = opts as { method?: string; params?: unknown };
+    callGatewayMock.mockImplementation(async (opts: any) => {
+      const request = opts as { method?: string; params?: any };
       calls.push(request);
       if (request.method === "agent") {
         return { runId: "durable-fallback-run", status: "accepted", acceptedAt: 2000 };
@@ -1755,7 +1755,7 @@ describe("sessions tools", () => {
   });
 
   it("sessions_send rejects non-cron run-looking keys without durable-session fallback", async () => {
-    const calls: Array<{ method?: string; params?: unknown }> = [];
+    const calls: Array<{ method?: string; params?: any }> = [];
     const runScopedCallerKey = "agent:leasing-ops:slack:channel:c-room:run:run-fast";
     const queueMessage = vi.fn(async () => {});
     setActiveEmbeddedRun(
@@ -1770,8 +1770,8 @@ describe("sessions tools", () => {
       },
       runScopedCallerKey,
     );
-    callGatewayMock.mockImplementation(async (opts: unknown) => {
-      const request = opts as { method?: string; params?: unknown };
+    callGatewayMock.mockImplementation(async (opts: any) => {
+      const request = opts as { method?: string; params?: any };
       calls.push(request);
       if (request.method === "agent") {
         return { runId: "durable-fallback-run", status: "accepted", acceptedAt: 2000 };
@@ -1823,7 +1823,7 @@ describe("sessions tools", () => {
       },
       runScopedCallerKey,
     );
-    callGatewayMock.mockImplementation(async (opts: unknown) => {
+    callGatewayMock.mockImplementation(async (opts: any) => {
       const request = opts as { method?: string };
       calls.push(request);
       if (request.method === "agent") {
@@ -1876,8 +1876,8 @@ describe("sessions tools", () => {
       },
       runScopedCallerKey,
     );
-    callGatewayMock.mockImplementation(async (opts: unknown) => {
-      const request = opts as { method?: string; params?: unknown };
+    callGatewayMock.mockImplementation(async (opts: any) => {
+      const request = opts as { method?: string; params?: any };
       if (request.method === "agent") {
         throw new Error("gateway request timeout for agent");
       }
@@ -1911,11 +1911,11 @@ describe("sessions tools", () => {
   });
 
   it("sessions_send preserves terminal timeouts without starting A2A", async () => {
-    const calls: Array<{ method?: string; params?: unknown }> = [];
+    const calls: Array<{ method?: string; params?: any }> = [];
     const requesterKey = "agent:main:main";
     const targetKey = "agent:director1:main";
-    callGatewayMock.mockImplementation(async (opts: unknown) => {
-      const request = opts as { method?: string; params?: unknown };
+    callGatewayMock.mockImplementation(async (opts: any) => {
+      const request = opts as { method?: string; params?: any };
       calls.push(request);
       if (request.method === "agent") {
         return { runId: "run-terminal", status: "accepted", acceptedAt: 2000 };
@@ -1961,7 +1961,7 @@ describe("sessions tools", () => {
 
   it("sessions_send preserves delivery evidence for post-start agent errors", async () => {
     const targetKey = "agent:director1:main";
-    callGatewayMock.mockImplementation(async (opts: unknown) => {
+    callGatewayMock.mockImplementation(async (opts: any) => {
       const request = opts as { method?: string };
       if (request.method === "agent") {
         return { runId: "run-error", status: "accepted", acceptedAt: 2000 };
@@ -1996,7 +1996,7 @@ describe("sessions tools", () => {
   });
 
   it("sessions_send skips duplicate A2A delivery for waited parent-owned native subagents", async () => {
-    const calls: Array<{ method?: string; params?: unknown }> = [];
+    const calls: Array<{ method?: string; params?: any }> = [];
     const requesterKey = "agent:main:discord:direct:parent";
     const targetKey = "agent:main:subagent:child";
     let historyCallCount = 0;
@@ -2013,8 +2013,8 @@ describe("sessions tools", () => {
           }
         : undefined,
     );
-    callGatewayMock.mockImplementation(async (opts: unknown) => {
-      const request = opts as { method?: string; params?: unknown };
+    callGatewayMock.mockImplementation(async (opts: any) => {
+      const request = opts as { method?: string; params?: any };
       calls.push(request);
       if (request.method === "agent") {
         return { runId: "run-child", status: "accepted", acceptedAt: 2000 };
@@ -2073,7 +2073,7 @@ describe("sessions tools", () => {
   });
 
   it("sessions_send preserves threadId when announce target is hydrated via sessions.list", async () => {
-    const calls: Array<{ method?: string; params?: unknown }> = [];
+    const calls: Array<{ method?: string; params?: any }> = [];
     let agentCallCount = 0;
     let lastWaitedRunId: string | undefined;
     const replyByRunId = new Map<string, string>();
@@ -2087,8 +2087,8 @@ describe("sessions tools", () => {
       threadId?: string;
     } = {};
 
-    callGatewayMock.mockImplementation(async (opts: unknown) => {
-      const request = opts as { method?: string; params?: unknown };
+    callGatewayMock.mockImplementation(async (opts: any) => {
+      const request = opts as { method?: string; params?: any };
       calls.push(request);
       if (request.method === "agent") {
         agentCallCount += 1;
@@ -2171,7 +2171,7 @@ describe("sessions tools", () => {
         payloads: [{ text: "announce now", mediaUrl: null }],
         meta: { durationMs: 1 },
       }),
-      callGateway: (opts: unknown) => callGatewayMock(opts),
+      callGateway: (opts: any) => callGatewayMock(opts),
     });
 
     const tool = createOpenClawTools({

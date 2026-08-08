@@ -19,7 +19,7 @@ router.get('/', (_req: Request, res: Response) => {
   try {
     const projects = getAllProjects();
     return ok(res, { data: projects, total: projects.length });
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     return serverError(res, message);
   }
@@ -45,7 +45,7 @@ router.post('/', (req: Request, res: Response) => {
     });
 
     return created(res, project);
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     return serverError(res, message);
   }
@@ -62,7 +62,7 @@ router.get('/:id', (req: Request, res: Response) => {
       return notFound(res, 'Project not found');
     }
     return ok(res, project);
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     return serverError(res, message);
   }
@@ -79,7 +79,7 @@ router.put('/:id', (req: Request, res: Response) => {
       return notFound(res, 'Project not found');
     }
 
-    const updateData: Record<string, unknown> = {};
+    const updateData: Record<string, any> = {};
     if (req.body.name !== undefined) updateData.name = req.body.name;
     if (req.body.description !== undefined) updateData.description = req.body.description;
     if (req.body.status !== undefined) updateData.status = req.body.status;
@@ -92,7 +92,7 @@ router.put('/:id', (req: Request, res: Response) => {
     }
 
     return ok(res, updated);
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     return serverError(res, message);
   }
@@ -115,7 +115,7 @@ router.delete('/:id', (req: Request, res: Response) => {
     }
 
     return ok(res, { success: true });
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     return serverError(res, message);
   }
@@ -134,7 +134,7 @@ router.get('/:id/tasks', (req: Request, res: Response) => {
 
     const tasks = getProjectTasks(req.params.id);
     return ok(res, { data: tasks, total: tasks.length });
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     return serverError(res, message);
   }

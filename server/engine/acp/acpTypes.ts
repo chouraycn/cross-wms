@@ -6,7 +6,7 @@
 export interface AcpSessionCreateRequest {
   sessionId?: string;
   name?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface AcpSessionCloseRequest {
@@ -23,24 +23,24 @@ export interface AcpTurnRequest {
   tools?: Array<{
     name: string;
     description?: string;
-    inputSchema?: Record<string, unknown>;
+    inputSchema?: Record<string, any>;
   }>;
-  tool_choice?: string | Record<string, unknown>;
+  tool_choice?: string | Record<string, any>;
   temperature?: number;
   maxTokens?: number;
   thinking?: {
     mode: "disabled" | "auto" | "enabled";
     budgetTokens?: number;
   };
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export type AcpTurnEvent =
   | { type: "text_delta"; text: string; stream?: "main" | "thought" }
   | { type: "thinking_delta"; text: string }
-  | { type: "tool_call"; id: string; name: string; input: unknown }
+  | { type: "tool_call"; id: string; name: string; input: any }
   | { type: "tool_call_delta"; id: string; inputDelta: string }
-  | { type: "tool_result"; id: string; result: unknown; isError?: boolean }
+  | { type: "tool_result"; id: string; result: any; isError?: boolean }
   | { type: "content_block"; block: ContentBlock }
   | { type: "usage"; promptTokens: number; completionTokens: number; totalTokens: number }
   | { type: "done"; finishReason?: string; usage?: { promptTokens: number; completionTokens: number; totalTokens: number } }
@@ -73,11 +73,11 @@ export interface TurnResult {
 export interface ToolCall {
   id: string;
   name: string;
-  input: string | Record<string, unknown>;
+  input: string | Record<string, any>;
 }
 
 export interface ToolResult {
   id: string;
-  result: unknown;
+  result: any;
   isError?: boolean;
 }

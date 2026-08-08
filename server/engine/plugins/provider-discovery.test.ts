@@ -153,7 +153,7 @@ function createCatalogProvider(params: {
 function expectNormalizedDiscoveryResult(params: {
   provider: ProviderPlugin;
   result: Parameters<typeof normalizePluginDiscoveryResult>[0]["result"];
-  expected: Record<string, unknown>;
+  expected: Record<string, any>;
 }) {
   const normalized = normalizePluginDiscoveryResult({
     provider: params.provider,
@@ -167,12 +167,12 @@ type NormalizePluginDiscoveryResultCase = {
   name: string;
   provider: ProviderPlugin;
   result: Parameters<typeof normalizePluginDiscoveryResult>[0]["result"];
-  expected: Record<string, unknown>;
+  expected: Record<string, any>;
 };
 
 async function expectProviderCatalogResult(params: {
   provider: ProviderPlugin;
-  expected: Record<string, unknown>;
+  expected: Record<string, any>;
 }) {
   await expect(
     runProviderCatalog({
@@ -512,7 +512,7 @@ describe("normalizePluginDiscoveryResult", () => {
 
 describe("runProviderStaticCatalog", () => {
   it("runs static catalogs with a sterile context", async () => {
-    const seenContexts: unknown[] = [];
+    const seenContexts: any[] = [];
     const provider: ProviderPlugin = {
       id: "demo",
       label: "Demo",

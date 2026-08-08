@@ -100,7 +100,7 @@ router.post('/plan', (req: Request, res: Response) => {
  * Body: {
  *   toolName: string;
  *   toolOwner: 'core' | 'plugin' | 'channel' | 'mcp';
- *   args?: unknown;
+ *   args?: any;
  *   defaultLevel?: PermissionLevel;
  *   requireApproval?: boolean;
  *   rules?: PermissionRule[];
@@ -118,7 +118,7 @@ router.post('/check-permission', async (req: Request, res: Response) => {
     } = req.body as {
       toolName?: string;
       toolOwner?: 'core' | 'plugin' | 'channel' | 'mcp';
-      args?: unknown;
+      args?: any;
       defaultLevel?: PermissionLevel;
       requireApproval?: boolean;
       rules?: PermissionRule[];

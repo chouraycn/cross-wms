@@ -192,7 +192,7 @@ class TriggerManager {
     this.ensureTables();
 
     const stmt = this.db!.prepare('SELECT * FROM triggers WHERE id = ?');
-    const row = stmt.get(id) as Record<string, unknown> | undefined;
+    const row = stmt.get(id) as Record<string, any> | undefined;
 
     if (!row) return null;
 
@@ -222,7 +222,7 @@ class TriggerManager {
 
     let sql = 'SELECT * FROM triggers';
     const conditions: string[] = [];
-    const params: unknown[] = [];
+    const params: any[] = [];
 
     if (options?.type) {
       conditions.push('type = ?');
@@ -246,7 +246,7 @@ class TriggerManager {
     sql += ' ORDER BY created_at DESC';
 
     const stmt = this.db!.prepare(sql);
-    const rows = stmt.all(...params) as Record<string, unknown>[];
+    const rows = stmt.all(...params) as Record<string, any>[];
 
     return rows.map(row => ({
       id: row.id as string,
@@ -281,8 +281,8 @@ class TriggerManager {
       enabled: 'enabled',
     };
 
-    const updateData: Record<string, unknown> = { updated_at: Date.now() };
-    const updatesRecord = updates as Record<string, unknown>;
+    const updateData: Record<string, any> = { updated_at: Date.now() };
+    const updatesRecord = updates as Record<string, any>;
 
     for (const [key, column] of Object.entries(allowedFields)) {
       if (key in updates && updatesRecord[key] !== undefined) {
@@ -340,7 +340,7 @@ class TriggerManager {
     this.ensureTables();
 
     const stmt = this.db!.prepare('SELECT * FROM trigger_stats WHERE trigger_id = ?');
-    const row = stmt.get(id) as Record<string, unknown> | undefined;
+    const row = stmt.get(id) as Record<string, any> | undefined;
 
     if (!row) {
       // 如果数据库中没有统计，从引擎获取

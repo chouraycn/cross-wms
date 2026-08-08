@@ -225,7 +225,7 @@ function normalizeModelCostConfig(cost: RawModelCostConfig): ModelCostConfig {
   };
 }
 
-function isRawModelCostConfig(value: unknown): value is RawModelCostConfig {
+function isRawModelCostConfig(value: any): value is RawModelCostConfig {
   return value !== null && typeof value === "object";
 }
 
@@ -394,7 +394,7 @@ function findConfiguredProviderCost(params: {
   });
 }
 
-function stableCostFingerprintValue(value: unknown): string {
+function stableCostFingerprintValue(value: any): string {
   if (typeof value === "number") {
     return Number.isFinite(value) ? JSON.stringify(value) : JSON.stringify(String(value));
   }
@@ -404,7 +404,7 @@ function stableCostFingerprintValue(value: unknown): string {
   if (Array.isArray(value)) {
     return `[${value.map((entry) => stableCostFingerprintValue(entry)).join(",")}]`;
   }
-  const record = value as Record<string, unknown>;
+  const record = value as Record<string, any>;
   return `{${Object.keys(record)
     .filter((key) => record[key] !== undefined)
     .toSorted()

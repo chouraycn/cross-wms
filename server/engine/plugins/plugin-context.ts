@@ -39,10 +39,10 @@ import { PluginSandboxResourceError } from './plugin-errors.js';
 export function createPluginLogger(pluginId: string): PluginLogger {
   const prefix = `[Plugin:${pluginId}]`;
   return {
-    debug: (...args: unknown[]) => hostLogger.debug(prefix, ...args),
-    info: (...args: unknown[]) => hostLogger.info(prefix, ...args),
-    warn: (...args: unknown[]) => hostLogger.warn(prefix, ...args),
-    error: (...args: unknown[]) => hostLogger.error(prefix, ...args),
+    debug: (...args: any[]) => hostLogger.debug(prefix, ...args),
+    info: (...args: any[]) => hostLogger.info(prefix, ...args),
+    warn: (...args: any[]) => hostLogger.warn(prefix, ...args),
+    error: (...args: any[]) => hostLogger.error(prefix, ...args),
   };
 }
 
@@ -50,7 +50,7 @@ export function createPluginLogger(pluginId: string): PluginLogger {
 
 /** 内存存储实现（按 pluginId 命名空间隔离） */
 export class InMemoryPluginStorage implements PluginStorage {
-  private store = new Map<string, unknown>();
+  private store = new Map<string, any>();
   private readonly pluginId: string;
 
   constructor(pluginId: string) {
@@ -62,7 +62,7 @@ export class InMemoryPluginStorage implements PluginStorage {
     return this.store.get(namespacedKey) as T | undefined;
   }
 
-  async set(key: string, value: unknown): Promise<void> {
+  async set(key: string, value: any): Promise<void> {
     const namespacedKey = `${this.pluginId}:${key}`;
     this.store.set(namespacedKey, value);
   }
@@ -188,7 +188,7 @@ export function createPluginFetch(pluginId: string, options: {
 // ===================== Config 访问器 =====================
 
 /** 创建只读配置访问器 */
-export function createPluginConfigAccessor(config: Record<string, unknown> = {}): PluginConfigAccessor {
+export function createPluginConfigAccessor(config: Record<string, any> = {}): PluginConfigAccessor {
   return {
     get: <T = unknown>(key: string): T | undefined => config[key] as T | undefined,
     getAll: () => ({ ...config }),
@@ -200,7 +200,7 @@ export function createPluginConfigAccessor(config: Record<string, unknown> = {})
 /** 创建 PluginContext 的参数 */
 export interface CreatePluginContextOptions {
   manifest: PluginManifest;
-  config?: Record<string, unknown>;
+  config?: Record<string, any>;
   allowedDomains?: string[];
   maxFetchCalls?: number;
   defaultTimeoutMs?: number;

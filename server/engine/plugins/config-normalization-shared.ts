@@ -39,7 +39,7 @@ export type NormalizedPluginsConfig = {
         hasAllowedModelsConfig?: boolean;
         allowAgentIdOverride?: boolean;
       };
-      config?: unknown;
+      config?: any;
     }
   >;
 };
@@ -50,7 +50,7 @@ export type NormalizePluginId = (id: string) => string;
 /** Default plugin id normalizer for already-canonical ids. */
 export const identityNormalizePluginId: NormalizePluginId = (id) => id.trim();
 
-function normalizeList(value: unknown, normalizePluginId: NormalizePluginId): string[] {
+function normalizeList(value: any, normalizePluginId: NormalizePluginId): string[] {
   if (!Array.isArray(value)) {
     return [];
   }
@@ -59,7 +59,7 @@ function normalizeList(value: unknown, normalizePluginId: NormalizePluginId): st
     .filter(Boolean);
 }
 
-function normalizeSlotValue(value: unknown): string | null | undefined {
+function normalizeSlotValue(value: any): string | null | undefined {
   const trimmed = normalizeOptionalString(value);
   if (!trimmed) {
     return undefined;
@@ -70,7 +70,7 @@ function normalizeSlotValue(value: unknown): string | null | undefined {
   return trimmed;
 }
 
-function normalizeHookTimeoutMs(value: unknown): number | undefined {
+function normalizeHookTimeoutMs(value: any): number | undefined {
   if (
     typeof value !== "number" ||
     !Number.isInteger(value) ||
@@ -83,7 +83,7 @@ function normalizeHookTimeoutMs(value: unknown): number | undefined {
   return value;
 }
 
-function normalizeHookTimeouts(value: unknown): Record<string, number> | undefined {
+function normalizeHookTimeouts(value: any): Record<string, number> | undefined {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return undefined;
   }
@@ -98,7 +98,7 @@ function normalizeHookTimeouts(value: unknown): Record<string, number> | undefin
 }
 
 function normalizePluginEntries(
-  entries: unknown,
+  entries: any,
   normalizePluginId: NormalizePluginId,
 ): NormalizedPluginsConfig["entries"] {
   if (!entries || typeof entries !== "object" || Array.isArray(entries)) {
@@ -114,17 +114,17 @@ function normalizePluginEntries(
       normalized[normalizedKey] = {};
       continue;
     }
-    const entry = value as Record<string, unknown>;
+    const entry = value as Record<string, any>;
     const hooksRaw = entry.hooks;
     const hooks =
       hooksRaw && typeof hooksRaw === "object" && !Array.isArray(hooksRaw)
         ? {
-            allowPromptInjection: (hooksRaw as { allowPromptInjection?: unknown })
+            allowPromptInjection: (hooksRaw as { allowPromptInjection?: any })
               .allowPromptInjection,
-            allowConversationAccess: (hooksRaw as { allowConversationAccess?: unknown })
+            allowConversationAccess: (hooksRaw as { allowConversationAccess?: any })
               .allowConversationAccess,
-            timeoutMs: normalizeHookTimeoutMs((hooksRaw as { timeoutMs?: unknown }).timeoutMs),
-            timeouts: normalizeHookTimeouts((hooksRaw as { timeouts?: unknown }).timeouts),
+            timeoutMs: normalizeHookTimeoutMs((hooksRaw as { timeoutMs?: any }).timeoutMs),
+            timeouts: normalizeHookTimeouts((hooksRaw as { timeouts?: any }).timeouts),
           }
         : undefined;
     const normalizedHooks =
@@ -148,14 +148,14 @@ function normalizePluginEntries(
     const subagent =
       subagentRaw && typeof subagentRaw === "object" && !Array.isArray(subagentRaw)
         ? {
-            allowModelOverride: (subagentRaw as { allowModelOverride?: unknown })
+            allowModelOverride: (subagentRaw as { allowModelOverride?: any })
               .allowModelOverride,
             hasAllowedModelsConfig: Array.isArray(
-              (subagentRaw as { allowedModels?: unknown }).allowedModels,
+              (subagentRaw as { allowedModels?: any }).allowedModels,
             ),
-            allowedModels: Array.isArray((subagentRaw as { allowedModels?: unknown }).allowedModels)
+            allowedModels: Array.isArray((subagentRaw as { allowedModels?: any }).allowedModels)
               ? normalizeArrayBackedTrimmedStringList(
-                  (subagentRaw as { allowedModels?: unknown }).allowedModels,
+                  (subagentRaw as { allowedModels?: any }).allowedModels,
                 )
               : undefined,
           }
@@ -179,16 +179,16 @@ function normalizePluginEntries(
     const llm =
       llmRaw && typeof llmRaw === "object" && !Array.isArray(llmRaw)
         ? {
-            allowModelOverride: (llmRaw as { allowModelOverride?: unknown }).allowModelOverride,
+            allowModelOverride: (llmRaw as { allowModelOverride?: any }).allowModelOverride,
             hasAllowedModelsConfig: Array.isArray(
-              (llmRaw as { allowedModels?: unknown }).allowedModels,
+              (llmRaw as { allowedModels?: any }).allowedModels,
             ),
-            allowedModels: Array.isArray((llmRaw as { allowedModels?: unknown }).allowedModels)
+            allowedModels: Array.isArray((llmRaw as { allowedModels?: any }).allowedModels)
               ? normalizeArrayBackedTrimmedStringList(
-                  (llmRaw as { allowedModels?: unknown }).allowedModels,
+                  (llmRaw as { allowedModels?: any }).allowedModels,
                 )
               : undefined,
-            allowAgentIdOverride: (llmRaw as { allowAgentIdOverride?: unknown })
+            allowAgentIdOverride: (llmRaw as { allowAgentIdOverride?: any })
               .allowAgentIdOverride,
           }
         : undefined;
@@ -279,10 +279,10 @@ export function isBundledChannelEnabledByChannelConfig(
   if (!channelId) {
     return false;
   }
-  const channels = cfg.channels as Record<string, unknown> | undefined;
+  const channels = cfg.channels as Record<string, any> | undefined;
   const entry = channels?.[channelId];
   if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
     return false;
   }
-  return (entry as Record<string, unknown>).enabled === true;
+  return (entry as Record<string, any>).enabled === true;
 }

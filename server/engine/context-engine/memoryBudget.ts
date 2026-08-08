@@ -47,7 +47,7 @@ export interface MemoryItem {
   id: string;
   sessionId: string;
   content: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
   createdAt: number;
   lastAccessedAt: number;
   accessCount: number;
@@ -112,7 +112,7 @@ export class MemoryBudgetManager {
     id: string,
     sessionId: string,
     content: string,
-    metadata?: Record<string, unknown>
+    metadata?: Record<string, any>
   ): boolean {
     const sizeBytes = this.estimateSize(content, metadata);
 
@@ -547,7 +547,7 @@ export class MemoryBudgetManager {
     }
   }
 
-  private estimateSize(content: string, metadata?: Record<string, unknown>): number {
+  private estimateSize(content: string, metadata?: Record<string, any>): number {
     let size = Buffer.byteLength(content, 'utf-8');
     if (metadata) {
       size += Buffer.byteLength(JSON.stringify(metadata), 'utf-8');

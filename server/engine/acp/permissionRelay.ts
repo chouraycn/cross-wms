@@ -15,7 +15,7 @@ export interface ApprovalRequest {
   id: string;
   sessionId: string;
   toolName: string;
-  input?: unknown;
+  input?: any;
   evaluation: PolicyEvaluationResult;
   requestedAt: number;
   expiresAt?: number;
@@ -43,7 +43,7 @@ export class PermissionRelay {
     this.startExpiryChecker();
   }
 
-  createRequest(sessionId: string, toolName: string, input: unknown, evaluation: PolicyEvaluationResult): ApprovalRequest {
+  createRequest(sessionId: string, toolName: string, input: any, evaluation: PolicyEvaluationResult): ApprovalRequest {
     if (this.pendingCount >= this.maxPendingRequests) {
       throw new Error("Max pending approval requests exceeded");
     }
@@ -119,7 +119,7 @@ export class PermissionRelay {
     return true;
   }
 
-  canExecute(sessionId: string, toolName: string, input: unknown): boolean {
+  canExecute(sessionId: string, toolName: string, input: any): boolean {
     const pending = this.getPendingRequests(sessionId);
     const existing = pending.find(r => r.toolName === toolName);
     

@@ -79,7 +79,7 @@ function formatHookRunWarningConsoleMessage(params: {
 }): string {
   const parts = [
     "hook agent run returned non-ok status",
-    `status=${sanitizeHookConsoleValue(params.status) ?? "unknown"}`,
+    `status=${sanitizeHookConsoleValue(params.status) ?? "any"}`,
   ];
   const model = sanitizeHookConsoleValue(params.model);
   if (model) {

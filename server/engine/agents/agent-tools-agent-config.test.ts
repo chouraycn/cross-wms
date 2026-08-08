@@ -21,7 +21,7 @@ import type { SandboxFsBridge } from "./sandbox/fs-bridge.js";
 import { createRestrictedAgentSandboxConfig } from "./test-helpers/sandbox-agent-config-fixtures.js";
 
 type ToolWithExecute = {
-  execute: (toolCallId: string, args: unknown, signal?: AbortSignal) => Promise<unknown>;
+  execute: (toolCallId: string, args: any, signal?: AbortSignal) => Promise<any>;
 };
 
 describe("Agent-specific tool filtering", () => {
@@ -256,7 +256,7 @@ describe("Agent-specific tool filtering", () => {
       );
       const readError = await fs.readFile(escapedPath, "utf8").then(
         () => undefined,
-        (err: unknown) => err,
+        (err: any) => err,
       );
       expect(readError).toMatchObject({ code: "ENOENT" });
     });

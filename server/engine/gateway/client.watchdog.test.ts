@@ -4,9 +4,9 @@ import { describe, expect, test, vi } from "vitest";
 import { WebSocketServer } from "ws";
 import { GatewayClient } from "./client.js";
 
-function isIpv6UnavailableError(err: unknown): boolean {
+function isIpv6UnavailableError(err: any): boolean {
   const code =
-    typeof err === "object" && err !== null ? (err as { code?: unknown }).code : undefined;
+    typeof err === "object" && err !== null ? (err as { code?: any }).code : undefined;
   return code === "EAFNOSUPPORT" || code === "EADDRNOTAVAIL";
 }
 

@@ -6,10 +6,10 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export const testing: unknown = undefined;
-export async function agentCommand(..._args: unknown[]): Promise<unknown> {
+export const testing: any = undefined;
+export async function agentCommand(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
-export async function agentCommandFromIngress(..._args: unknown[]): Promise<unknown> {
+export async function agentCommandFromIngress(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }

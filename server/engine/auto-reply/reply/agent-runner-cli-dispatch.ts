@@ -143,10 +143,10 @@ function readCommentaryTextPayload(evt: AgentEventPayload): CommentaryTextPayloa
 export type CliToolEventPayload = {
   name: string | undefined;
   phase: "start" | "update" | "result";
-  args: Record<string, unknown> | undefined;
+  args: Record<string, any> | undefined;
   toolCallId?: string;
   isError?: boolean;
-  result?: unknown;
+  result?: any;
 };
 
 export function keepCliSessionBindingOnlyWhenReused(params: {
@@ -347,7 +347,7 @@ type RunCliAgentWithLifecycleParams = {
   onToolEvent?: (payload: CliToolEventPayload) => Promise<void>;
   onCommentaryText?: (payload: CommentaryTextPayload) => Promise<void>;
   onFastModeAutoProgress?: (payload: ReplyPayload) => Promise<void>;
-  onErrorBeforeLifecycle?: (err: unknown) => Promise<void>;
+  onErrorBeforeLifecycle?: (err: any) => Promise<void>;
   transformResult?: (result: EmbeddedAgentRunResult) => EmbeddedAgentRunResult;
 };
 

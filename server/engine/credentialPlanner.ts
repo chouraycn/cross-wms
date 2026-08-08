@@ -42,7 +42,7 @@ export interface GatewayCredentialPlan {
   remotePasswordActive: boolean;
 }
 
-export function trimToUndefined(value: unknown): string | undefined {
+export function trimToUndefined(value: any): string | undefined {
   const trimmed = String(value ?? '').trim();
   return trimmed || undefined;
 }
@@ -55,9 +55,9 @@ export function hasGatewayPasswordEnvCandidate(env: NodeJS.ProcessEnv = process.
   return Boolean(trimToUndefined(env.OPENCLAW_GATEWAY_PASSWORD));
 }
 
-export function resolveGatewayCredentialPlan(config: Record<string, unknown> = {}): GatewayCredentialPlan {
-  const authConfig = config.auth as Record<string, unknown> || {};
-  const remoteConfig = config.remote as Record<string, unknown> || {};
+export function resolveGatewayCredentialPlan(config: Record<string, any> = {}): GatewayCredentialPlan {
+  const authConfig = config.auth as Record<string, any> || {};
+  const remoteConfig = config.remote as Record<string, any> || {};
 
   const localToken = resolveConfiguredCredentialInput(
     authConfig.token,
@@ -108,7 +108,7 @@ export function resolveGatewayCredentialPlan(config: Record<string, unknown> = {
 }
 
 function resolveConfiguredCredentialInput(
-  value: unknown,
+  value: any,
   path: GatewayCredentialInputPath,
 ): GatewayConfiguredCredentialInput {
   const trimmed = trimToUndefined(value);

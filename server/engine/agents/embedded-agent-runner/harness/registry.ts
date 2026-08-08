@@ -1,1 +1,1 @@
-export const resolveHarnessRegistry = (..._args: unknown[]): unknown => undefined;
+export const resolveHarnessRegistry = (..._args: any[]): any => undefined;

@@ -54,7 +54,7 @@ function plainErrorCalls(runtime: ReturnType<typeof makeRuntime>): string[] {
 async function withCapturedStdout(run: () => Promise<void>): Promise<string> {
   const writes: string[] = [];
   const writeSpy = vi.spyOn(process.stdout, "write").mockImplementation(((
-    chunk: unknown,
+    chunk: any,
     encodingOrCallback?: BufferEncoding | ((error?: Error | null) => void),
     callback?: (error?: Error | null) => void,
   ) => {

@@ -16,9 +16,9 @@ function stripThreadSuffix(value: string): string {
  * assistant responses). This reduces token usage for long-running DM sessions.
  */
 export function limitHistoryTurns(
-  messages: Array<{ role: string; [key: string]: unknown }>,
+  messages: Array<{ role: string; [key: string]: any }>,
   limit: number | undefined,
-): Array<{ role: string; [key: string]: unknown }> {
+): Array<{ role: string; [key: string]: any }> {
   if (!limit || limit <= 0 || messages.length === 0) {
     return messages;
   }
@@ -44,7 +44,7 @@ export function limitHistoryTurns(
  */
 export function getHistoryLimitFromSessionKey(
   sessionKey: string | undefined,
-  config: Record<string, unknown> | undefined,
+  config: Record<string, any> | undefined,
 ): number | undefined {
   if (!sessionKey || !config) {
     return undefined;
@@ -61,12 +61,12 @@ export function getHistoryLimitFromSessionKey(
   const userIdRaw = providerParts.slice(2).join(":");
   const userId = stripThreadSuffix(userIdRaw);
 
-  const channels = config.channels as Record<string, unknown> | undefined;
+  const channels = config.channels as Record<string, any> | undefined;
   if (!channels || typeof channels !== "object") {
     return undefined;
   }
 
-  let providerConfig: Record<string, unknown> | undefined;
+  let providerConfig: Record<string, any> | undefined;
   for (const [configuredProviderId, value] of Object.entries(channels)) {
     if (configuredProviderId.trim().toLowerCase() !== provider) {
       continue;
@@ -74,7 +74,7 @@ export function getHistoryLimitFromSessionKey(
     if (!value || typeof value !== "object" || Array.isArray(value)) {
       return undefined;
     }
-    providerConfig = value as Record<string, unknown>;
+    providerConfig = value as Record<string, any>;
     break;
   }
   if (!providerConfig) {

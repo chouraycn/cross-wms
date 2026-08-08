@@ -11,14 +11,14 @@ import {
 
 // ========== 基础工具函数 ==========
 
-export function debounce<T extends (...args: unknown[]) => void>(
+export function debounce<T extends (...args: any[]) => void>(
   fn: T,
   delay: number
 ): T & { cancel: () => void; flush: () => void } {
   let timer: ReturnType<typeof setTimeout> | null = null;
-  let lastArgs: unknown[] | null = null;
+  let lastArgs: any[] | null = null;
 
-  const debounced = ((...args: unknown[]) => {
+  const debounced = ((...args: any[]) => {
     lastArgs = args;
     if (timer) {
       clearTimeout(timer);
@@ -50,15 +50,15 @@ export function debounce<T extends (...args: unknown[]) => void>(
   return debounced;
 }
 
-export function throttle<T extends (...args: unknown[]) => void>(
+export function throttle<T extends (...args: any[]) => void>(
   fn: T,
   limit: number
 ): T & { cancel: () => void } {
   let inThrottle = false;
-  let lastArgs: unknown[] | null = null;
+  let lastArgs: any[] | null = null;
   let timer: ReturnType<typeof setTimeout> | null = null;
 
-  const throttled = ((...args: unknown[]) => {
+  const throttled = ((...args: any[]) => {
     if (!inThrottle) {
       fn(...args);
       inThrottle = true;
@@ -90,13 +90,13 @@ export function throttle<T extends (...args: unknown[]) => void>(
   return throttled;
 }
 
-export function memoize<T extends (...args: unknown[]) => unknown>(
+export function memoize<T extends (...args: any[]) => unknown>(
   fn: T,
   cacheSize: number = 100
 ): T {
-  const cache = new Map<string, unknown>();
+  const cache = new Map<string, any>();
 
-  return ((...args: unknown[]) => {
+  return ((...args: any[]) => {
     const key = JSON.stringify(args);
     if (cache.has(key)) {
       return cache.get(key);
@@ -198,7 +198,7 @@ export function useThrottle<T>(value: T, limit: number = 300): T {
   return throttledValue;
 }
 
-export function deepEqual(a: unknown, b: unknown): boolean {
+export function deepEqual(a: any, b: any): boolean {
   if (a === b) return true;
   if (a == null || b == null) return false;
   if (typeof a !== typeof b) return false;
@@ -225,7 +225,7 @@ export function deepEqual(a: unknown, b: unknown): boolean {
     if (keysA.length !== keysB.length) return false;
     for (const key of keysA) {
       if (!keysB.includes(key)) return false;
-      if (!deepEqual((a as Record<string, unknown>)[key], (b as Record<string, unknown>)[key])) return false;
+      if (!deepEqual((a as Record<string, any>)[key], (b as Record<string, any>)[key])) return false;
     }
     return true;
   }

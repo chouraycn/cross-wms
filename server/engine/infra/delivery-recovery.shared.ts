@@ -11,9 +11,9 @@ export function computeBackoffMs(retryCount: number): number {
   );
 }
 
-export function getErrnoCode(err: unknown): string | null {
+export function getErrnoCode(err: any): string | null {
   return err && typeof err === "object" && "code" in err
-    ? String((err as { code?: unknown }).code)
+    ? String((err as { code?: any }).code)
     : null;
 }
 

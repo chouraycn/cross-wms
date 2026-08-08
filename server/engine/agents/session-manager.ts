@@ -28,24 +28,24 @@ export type SessionInfo = unknown;
 export class SessionManager {
   // Stub: session management not fully ported
 }
-export function migrateSessionEntries(..._args: unknown[]): unknown {
+export function migrateSessionEntries(..._args: any[]): any {
   return undefined;
 }
-export function parseSessionEntries(..._args: unknown[]): unknown {
+export function parseSessionEntries(..._args: any[]): any {
   return undefined;
 }
-export function getLatestCompactionEntry(..._args: unknown[]): unknown {
+export function getLatestCompactionEntry(..._args: any[]): any {
   return undefined;
 }
-export function buildSessionContext(..._args: unknown[]): unknown {
+export function buildSessionContext(..._args: any[]): any {
   return undefined;
 }
-export function getDefaultSessionDir(..._args: unknown[]): unknown {
+export function getDefaultSessionDir(..._args: any[]): any {
   return undefined;
 }
-export function loadEntriesFromFile(..._args: unknown[]): unknown {
+export function loadEntriesFromFile(..._args: any[]): any {
   return undefined;
 }
-export function findMostRecentSession(..._args: unknown[]): unknown {
+export function findMostRecentSession(..._args: any[]): any {
   return [];
 }

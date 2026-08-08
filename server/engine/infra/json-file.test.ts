@@ -167,7 +167,7 @@ describe("json-file helpers", () => {
         const linkPath = path.join(root, "config-link.json");
         fs.symlinkSync(targetPath, linkPath);
 
-        let saveError: unknown;
+        let saveError: any;
         try {
           saveJsonFile(linkPath, SAVED_PAYLOAD);
         } catch (error) {
@@ -176,7 +176,7 @@ describe("json-file helpers", () => {
         if (saveError === undefined) {
           throw new Error("Expected saveJsonFile to fail");
         }
-        expect((saveError as { code?: unknown }).code).toBe("ENOENT");
+        expect((saveError as { code?: any }).code).toBe("ENOENT");
         expect(fs.existsSync(missingTargetDir)).toBe(false);
         expect(fs.lstatSync(linkPath).isSymbolicLink()).toBe(true);
       });

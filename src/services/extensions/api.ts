@@ -57,7 +57,7 @@ export interface ExtensionStats {
 
 /** 扩展详情 */
 export interface ExtensionDetail extends ExtensionInfo {
-  manifest?: Record<string, unknown>;
+  manifest?: Record<string, any>;
 }
 
 /** 获取扩展列表 */
@@ -123,7 +123,7 @@ export async function loadExtension(id: string): Promise<{ success: boolean; mes
 }
 
 /** 启用扩展 */
-export async function enableExtension(id: string, config?: Record<string, unknown>): Promise<{ success: boolean; message: string }> {
+export async function enableExtension(id: string, config?: Record<string, any>): Promise<{ success: boolean; message: string }> {
   const res = await fetchWithTimeout(`${BASE}/${encodeURIComponent(id)}/enable`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

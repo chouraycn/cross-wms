@@ -281,7 +281,7 @@ describe("runEmbeddedAgent incomplete-turn safety", () => {
 
   it("surfaces the latest tool-authored presentation after a structured incomplete turn", async () => {
     mockedClassifyFailoverReason.mockReturnValue(null);
-    mockedRunEmbeddedAttempt.mockImplementationOnce(async (attemptParams: unknown) => {
+    mockedRunEmbeddedAttempt.mockImplementationOnce(async (attemptParams: any) => {
       (
         attemptParams as {
           onToolOutcome?: (observation: {
@@ -334,7 +334,7 @@ describe("runEmbeddedAgent incomplete-turn safety", () => {
 
   it("surfaces read-only cron presentation after a structured incomplete turn", async () => {
     mockedClassifyFailoverReason.mockReturnValue(null);
-    mockedRunEmbeddedAttempt.mockImplementationOnce(async (attemptParams: unknown) => {
+    mockedRunEmbeddedAttempt.mockImplementationOnce(async (attemptParams: any) => {
       (
         attemptParams as {
           onToolOutcome?: (observation: {
@@ -388,7 +388,7 @@ describe("runEmbeddedAgent incomplete-turn safety", () => {
 
   it("preserves a terminal tool presentation across an empty-response retry", async () => {
     mockedClassifyFailoverReason.mockReturnValue(null);
-    mockedRunEmbeddedAttempt.mockImplementationOnce(async (attemptParams: unknown) => {
+    mockedRunEmbeddedAttempt.mockImplementationOnce(async (attemptParams: any) => {
       (
         attemptParams as {
           onToolOutcome?: (observation: {
@@ -449,7 +449,7 @@ describe("runEmbeddedAgent incomplete-turn safety", () => {
 
   it("keeps model-call order when parallel tool outcomes finish out of order", async () => {
     mockedClassifyFailoverReason.mockReturnValue(null);
-    mockedRunEmbeddedAttempt.mockImplementationOnce(async (attemptParams: unknown) => {
+    mockedRunEmbeddedAttempt.mockImplementationOnce(async (attemptParams: any) => {
       const onToolOutcome = (
         attemptParams as {
           onToolOutcome?: (observation: {
@@ -501,7 +501,7 @@ describe("runEmbeddedAgent incomplete-turn safety", () => {
 
   it("does not surface a read-only presentation after a sibling side effect", async () => {
     mockedClassifyFailoverReason.mockReturnValue(null);
-    mockedRunEmbeddedAttempt.mockImplementationOnce(async (attemptParams: unknown) => {
+    mockedRunEmbeddedAttempt.mockImplementationOnce(async (attemptParams: any) => {
       const onToolOutcome = (
         attemptParams as {
           onToolOutcome?: (observation: {
@@ -1275,7 +1275,7 @@ describe("runEmbeddedAgent incomplete-turn safety", () => {
           ],
         } as unknown as EmbeddedRunAttemptResult["lastAssistant"],
       });
-    mockedRunEmbeddedAttempt.mockImplementationOnce(async (attemptParams: unknown) => {
+    mockedRunEmbeddedAttempt.mockImplementationOnce(async (attemptParams: any) => {
       (
         attemptParams as {
           onToolOutcome?: (observation: {

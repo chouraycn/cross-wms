@@ -73,7 +73,7 @@ export class SessionManager {
     return true;
   }
 
-  async updateSessionMetadata(sessionId: string, metadata: Record<string, unknown>): Promise<boolean> {
+  async updateSessionMetadata(sessionId: string, metadata: Record<string, any>): Promise<boolean> {
     const session = await this.store.get(sessionId);
     if (!session) return false;
 

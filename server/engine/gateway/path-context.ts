@@ -2,14 +2,14 @@
 
 export type PluginRoutePathContext = unknown;
 
-export function prefixMatchPath(...args: unknown[]): unknown {
+export function prefixMatchPath(...args: any[]): any {
   return undefined;
 }
 
-export function isProtectedPluginRoutePathFromContext(...args: unknown[]): unknown {
+export function isProtectedPluginRoutePathFromContext(...args: any[]): any {
   return false;
 }
 
-export function resolvePluginRoutePathContext(...args: unknown[]): unknown {
+export function resolvePluginRoutePathContext(...args: any[]): any {
   return undefined;
 }

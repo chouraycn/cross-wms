@@ -57,14 +57,14 @@ const WhatsAppPluginHooksSchema = z
   .strict()
   .optional();
 
-function stripDeprecatedWhatsAppNoopKeys(value: unknown): unknown {
+function stripDeprecatedWhatsAppNoopKeys(value: any): any {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return value;
   }
   if (!Object.hasOwn(value, "exposeErrorText")) {
     return value;
   }
-  const next = { ...(value as Record<string, unknown>) };
+  const next = { ...(value as Record<string, any>) };
   delete next.exposeErrorText;
   return next;
 }
@@ -112,8 +112,8 @@ function buildWhatsAppCommonShape(params: { useDefaults: boolean }) {
 }
 
 function enforceOpenDmPolicyAllowFromStar(params: {
-  dmPolicy: unknown;
-  allowFrom: unknown;
+  dmPolicy: any;
+  allowFrom: any;
   ctx: z.RefinementCtx;
   message: string;
   path?: Array<string | number>;
@@ -133,8 +133,8 @@ function enforceOpenDmPolicyAllowFromStar(params: {
 }
 
 function enforceAllowlistDmPolicyAllowFrom(params: {
-  dmPolicy: unknown;
-  allowFrom: unknown;
+  dmPolicy: any;
+  allowFrom: any;
   ctx: z.RefinementCtx;
   message: string;
   path?: Array<string | number>;

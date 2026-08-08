@@ -107,7 +107,7 @@ describe("extractToolErrorMessage", () => {
   it("preserves structured codes from thrown gateway errors", () => {
     const error = new Error("UNAVAILABLE: SYSTEM_RUN_DENIED: approval required") as Error & {
       gatewayCode?: string;
-      details?: unknown;
+      details?: any;
     };
     error.gatewayCode = "UNAVAILABLE";
     error.details = {
@@ -143,7 +143,7 @@ describe("isToolResultError", () => {
   });
 });
 
-function getTextContent(result: unknown, index = 0): string {
+function getTextContent(result: any, index = 0): string {
   // Sanitizer tests assert text redaction while keeping the result shape opaque.
   const record = result as { content: Array<{ text: string }> };
   return record.content[index].text;

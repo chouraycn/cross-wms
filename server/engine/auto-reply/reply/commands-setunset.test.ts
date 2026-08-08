@@ -8,13 +8,13 @@ import {
 } from "./commands-setunset.js";
 
 type ParsedSetUnsetAction =
-  | { action: "set"; path: string; value: unknown }
+  | { action: "set"; path: string; value: any }
   | { action: "unset"; path: string }
   | { action: "error"; message: string };
 
 function createActionMappers() {
   return {
-    onSet: (path: string, value: unknown): ParsedSetUnsetAction => ({ action: "set", path, value }),
+    onSet: (path: string, value: any): ParsedSetUnsetAction => ({ action: "set", path, value }),
     onUnset: (path: string): ParsedSetUnsetAction => ({ action: "unset", path }),
     onError: (message: string): ParsedSetUnsetAction => ({ action: "error", message }),
   };

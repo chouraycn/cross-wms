@@ -9,8 +9,8 @@
 /** Apply provider native-streaming usage compatibility policy — identity in cross-wms. */
 export function applyProviderNativeStreamingUsagePolicy(
   _providerKey: string,
-  provider: Record<string, unknown>,
-): Record<string, unknown> {
+  provider: Record<string, any>,
+): Record<string, any> {
   // cross-wms does not have plugin runtime hooks; return provider unchanged.
   return provider;
 }
@@ -18,8 +18,8 @@ export function applyProviderNativeStreamingUsagePolicy(
 /** Normalize provider config through any already-available plugin policy hook — identity in cross-wms. */
 export function normalizeProviderConfigPolicy(
   _providerKey: string,
-  provider: Record<string, unknown>,
-): Record<string, unknown> {
+  provider: Record<string, any>,
+): Record<string, any> {
   // cross-wms does not have plugin runtime hooks; return provider unchanged.
   return provider;
 }
@@ -27,7 +27,7 @@ export function normalizeProviderConfigPolicy(
 /** Resolve a provider API-key policy function — returns undefined in cross-wms. */
 export function resolveProviderConfigApiKeyPolicy(
   _providerKey: string,
-  _provider?: Record<string, unknown>,
+  _provider?: Record<string, any>,
 ): ((env: NodeJS.ProcessEnv) => string | undefined) | undefined {
   // cross-wms does not have plugin runtime hooks; no API key policy available.
   return undefined;

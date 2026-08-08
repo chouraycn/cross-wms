@@ -20,7 +20,7 @@ export interface DeviceRecord {
   status: 'paired' | 'unpaired' | 'offline';
   pairedAt: number;
   lastSeenAt?: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 // 内存存储（生产环境应使用数据库）
@@ -28,7 +28,7 @@ const devices = new Map<string, DeviceRecord>();
 
 // ========== Devices List ==========
 
-async function devicesList(params: unknown, _ctx: GatewayMethodContext) {
+async function devicesList(params: any, _ctx: GatewayMethodContext) {
   const { status, role } = params as {
     status?: DeviceRecord['status'];
     role?: string;
@@ -55,7 +55,7 @@ async function devicesList(params: unknown, _ctx: GatewayMethodContext) {
 
 // ========== Devices Pair ==========
 
-async function devicesPair(params: unknown, _ctx: GatewayMethodContext) {
+async function devicesPair(params: any, _ctx: GatewayMethodContext) {
   const {
     deviceId,
     name,
@@ -65,7 +65,7 @@ async function devicesPair(params: unknown, _ctx: GatewayMethodContext) {
     deviceId: string;
     name: string;
     role?: string;
-    metadata?: Record<string, unknown>;
+    metadata?: Record<string, any>;
   };
 
   if (!deviceId) {
@@ -104,7 +104,7 @@ async function devicesPair(params: unknown, _ctx: GatewayMethodContext) {
 
 // ========== Devices Unpair ==========
 
-async function devicesUnpair(params: unknown, _ctx: GatewayMethodContext) {
+async function devicesUnpair(params: any, _ctx: GatewayMethodContext) {
   const { deviceId } = params as { deviceId: string };
 
   if (!deviceId) {
@@ -121,7 +121,7 @@ async function devicesUnpair(params: unknown, _ctx: GatewayMethodContext) {
 
 // ========== Devices Get Status ==========
 
-async function devicesGetStatus(params: unknown, _ctx: GatewayMethodContext) {
+async function devicesGetStatus(params: any, _ctx: GatewayMethodContext) {
   const { deviceId } = params as { deviceId: string };
 
   if (!deviceId) {

@@ -7,7 +7,7 @@ import type { PluginRuntimeGatewayRequestScope } from "../plugins/runtime/gatewa
 import type { GatewayRequestContext, GatewayRequestOptions } from "./server-methods/types.js";
 
 type HandleGatewayRequestOptions = GatewayRequestOptions & {
-  extraHandlers?: Record<string, unknown>;
+  extraHandlers?: Record<string, any>;
 };
 const handleGatewayRequest = vi.hoisted(() =>
   vi.fn(async (_opts: HandleGatewayRequestOptions) => {}),
@@ -140,7 +140,7 @@ describe("createGatewaySubagentRuntime.run subagent_ended tracking (#59164)", ()
       { role: "user", content: "summarize this transcript" },
       { role: "assistant", content: "summary text" },
     ];
-    const sessionStore = new Map<string, { messages: unknown[] }>([
+    const sessionStore = new Map<string, { messages: any[] }>([
       ["agent:main:subagent:plugin-readback", { messages: transcript }],
     ]);
 

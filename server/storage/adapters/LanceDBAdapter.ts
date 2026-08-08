@@ -21,7 +21,7 @@ const localRequire = createRequire(basePath);
 interface LanceTable {
   name: string;
   countRows(): Promise<number>;
-  add(rows: Record<string, unknown>[]): Promise<void>;
+  add(rows: Record<string, any>[]): Promise<void>;
   delete(predicate: string): Promise<void>;
   query(): LanceQueryBuilder;
   vectorSearch(vector: number[]): LanceVectorSearch;
@@ -33,21 +33,21 @@ interface LanceQueryBuilder {
   select(columns: string[]): LanceQueryBuilder;
   limit(n: number): LanceQueryBuilder;
   offset(n: number): LanceQueryBuilder;
-  toArray(): Promise<Record<string, unknown>[]>;
+  toArray(): Promise<Record<string, any>[]>;
 }
 
 interface LanceVectorSearch {
   limit(n: number): LanceVectorSearch;
   filter(predicate: string): LanceVectorSearch;
   column(column: string): LanceVectorSearch;
-  toArray(): Promise<Record<string, unknown>[]>;
+  toArray(): Promise<Record<string, any>[]>;
 }
 
 interface LanceDBClient {
   openTable(name: string): Promise<LanceTable>;
   createTable(
     name: string,
-    data: Record<string, unknown>[],
+    data: Record<string, any>[],
     options?: { mode?: 'overwrite' | 'append' },
   ): Promise<LanceTable>;
   dropTable(name: string): Promise<void>;
@@ -139,7 +139,7 @@ export class LanceDBAdapter implements IStorageEngine {
   /** 创建表（基于初始数据） */
   async createTable(
     tableName: string,
-    initialData: Record<string, unknown>[] = [{ _id: 'init', _init: true }],
+    initialData: Record<string, any>[] = [{ _id: 'init', _init: true }],
   ): Promise<LanceTable> {
     if (!this.client) throw new Error('LanceDBAdapter: 未连接');
     const table = await this.client.createTable(tableName, initialData);
@@ -180,7 +180,7 @@ export class LanceDBAdapter implements IStorageEngine {
    * @param tableName 表名
    * @param rows 行对象数组
    */
-  async insert(tableName: string, rows: Record<string, unknown>[]): Promise<void> {
+  async insert(tableName: string, rows: Record<string, any>[]): Promise<void> {
     const table = await this.openTable(tableName);
     await table.add(rows);
   }
@@ -197,7 +197,7 @@ export class LanceDBAdapter implements IStorageEngine {
     vector: number[],
     limit = 10,
     filter?: string,
-  ): Promise<Record<string, unknown>[]> {
+  ): Promise<Record<string, any>[]> {
     const table = await this.openTable(tableName);
     let search = table.vectorSearch(vector).limit(limit);
     if (filter) {
@@ -216,7 +216,7 @@ export class LanceDBAdapter implements IStorageEngine {
     tableName: string,
     filter?: string,
     limit = 100,
-  ): Promise<Record<string, unknown>[]> {
+  ): Promise<Record<string, any>[]> {
     const table = await this.openTable(tableName);
     let qb = table.query();
     if (filter) {
@@ -266,19 +266,19 @@ export class LanceDBAdapter implements IStorageEngine {
     throw new Error(`LanceDBAdapter.exec 不支持的语句: ${sql.slice(0, 100)}`);
   }
 
-  get<T>(sql: string, params?: unknown[]): T | undefined {
+  get<T>(sql: string, params?: any[]): T | undefined {
     throw new Error(
       'LanceDBAdapter 不支持 SQL 查询。请使用列式专属方法: query / countRows / ...',
     );
   }
 
-  all<T>(sql: string, params?: unknown[]): T[] {
+  all<T>(sql: string, params?: any[]): T[] {
     throw new Error(
       'LanceDBAdapter 不支持 SQL 查询。请使用列式专属方法: query / vectorSearch / ...',
     );
   }
 
-  run(sql: string, params?: unknown[]): { changes: number; lastInsertRowid: number } {
+  run(sql: string, params?: any[]): { changes: number; lastInsertRowid: number } {
     throw new Error(
       'LanceDBAdapter 不支持 SQL 写入。请使用列式专属方法: insert / deleteRows / ...',
     );

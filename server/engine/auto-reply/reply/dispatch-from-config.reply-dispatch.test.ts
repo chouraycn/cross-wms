@@ -31,7 +31,7 @@ let resetReplyRunRegistry: typeof import("./reply-run-registry.js").testing.rese
 
 function firstRuntimeLoadCall() {
   return runtimePluginMocks.ensureRuntimePluginsLoaded.mock.calls[0]?.[0] as
-    | { config?: unknown; workspaceDir?: unknown }
+    | { config?: any; workspaceDir?: any }
     | undefined;
 }
 
@@ -45,7 +45,7 @@ function firstReplyDispatchCall() {
           inboundAudio?: boolean;
         },
         {
-          cfg?: unknown;
+          cfg?: any;
         },
       ]
     | undefined;

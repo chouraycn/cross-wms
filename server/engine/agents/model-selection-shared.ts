@@ -17,14 +17,14 @@ import {
 
 // --- Utility helpers (inlined from @openclaw/normalization-core) ---
 
-function normalizeLowercaseStringOrEmpty(value: unknown): string {
+function normalizeLowercaseStringOrEmpty(value: any): string {
   if (typeof value === "string") {
     return value.trim().toLowerCase();
   }
   return "";
 }
 
-function normalizeOptionalString(value: unknown): string | undefined {
+function normalizeOptionalString(value: any): string | undefined {
   if (typeof value === "string") {
     const trimmed = value.trim();
     return trimmed || undefined;
@@ -37,13 +37,13 @@ function normalizeOptionalString(value: unknown): string | undefined {
 type SimplifiedConfig = {
   agents?: {
     defaults?: {
-      model?: unknown;
-      models?: Record<string, unknown>;
-      imageModel?: unknown;
+      model?: any;
+      models?: Record<string, any>;
+      imageModel?: any;
     };
   };
   models?: {
-    providers?: Record<string, unknown>;
+    providers?: Record<string, any>;
   };
   hooks?: {
     gmail?: {
@@ -64,8 +64,8 @@ type ModelCatalogEntry = {
   reasoning?: boolean;
   input?: string[];
   alias?: string;
-  params?: Record<string, unknown>;
-  compat?: Record<string, unknown>;
+  params?: Record<string, any>;
+  compat?: Record<string, any>;
 };
 
 // --- Exported types ---
@@ -115,7 +115,7 @@ export function inferUniqueProviderFromConfiguredModels(params: {
   cfg: SimplifiedConfig;
   model: string;
   allowManifestNormalization?: boolean;
-  manifestPlugins?: unknown;
+  manifestPlugins?: any;
 }): string | undefined {
   const model = params.model.trim();
   if (!model) {
@@ -145,12 +145,12 @@ export function inferUniqueProviderFromConfiguredModels(params: {
   const configuredProviders = params.cfg.models?.providers;
   if (configuredProviders) {
     for (const [providerId, providerConfig] of Object.entries(configuredProviders)) {
-      const models = (providerConfig as Record<string, unknown>)?.models;
+      const models = (providerConfig as Record<string, any>)?.models;
       if (!Array.isArray(models)) {
         continue;
       }
       for (const entry of models) {
-        const modelId = (entry as Record<string, unknown>)?.id;
+        const modelId = (entry as Record<string, any>)?.id;
         if (typeof modelId !== "string") {
           continue;
         }
@@ -209,7 +209,7 @@ export function resolveBareModelDefaultProvider(params: {
   catalog: readonly ModelCatalogEntry[];
   model: string;
   defaultProvider: string;
-  manifestPlugins?: unknown;
+  manifestPlugins?: any;
 }): string {
   return (
     inferUniqueProviderFromConfiguredModels({
@@ -226,7 +226,7 @@ export function resolveConfiguredOpenRouterCompatAlias(params: {
   cfg?: SimplifiedConfig;
   raw: string;
   defaultProvider: string;
-  manifestPlugins?: unknown;
+  manifestPlugins?: any;
 }): ModelRef | null {
   const normalized = normalizeLowercaseStringOrEmpty(params.raw);
   if (normalized === "openrouter:auto") {
@@ -243,7 +243,7 @@ export function resolveAllowlistModelKey(params: {
   cfg?: SimplifiedConfig;
   raw: string;
   defaultProvider: string;
-  manifestPlugins?: unknown;
+  manifestPlugins?: any;
 }): string | null {
   const parsed = parseModelRef(params.raw, params.defaultProvider);
   if (!parsed) {
@@ -256,7 +256,7 @@ export function resolveAllowlistModelKey(params: {
 export function buildConfiguredAllowlistKeys(params: {
   cfg: SimplifiedConfig | undefined;
   defaultProvider: string;
-  manifestPlugins?: unknown;
+  manifestPlugins?: any;
 }): Set<string> | null {
   const visibility = parseConfiguredModelVisibilityEntries({ cfg: params.cfg });
   if (visibility.exactModelRefs.length === 0) {
@@ -280,7 +280,7 @@ export function buildConfiguredAllowlistKeys(params: {
 export function buildModelAliasIndex(params: {
   cfg: SimplifiedConfig;
   defaultProvider: string;
-  manifestPlugins?: unknown;
+  manifestPlugins?: any;
 }): ModelAliasIndex {
   const byAlias = new Map<string, { alias: string; ref: ModelRef }>();
   const byKey = new Map<string, string[]>();
@@ -289,7 +289,7 @@ export function buildModelAliasIndex(params: {
     if (keyRaw.trim().endsWith("/*")) {
       continue;
     }
-    const alias = ((entryRaw as Record<string, unknown>)?.alias as string)?.trim() ?? "";
+    const alias = ((entryRaw as Record<string, any>)?.alias as string)?.trim() ?? "";
     if (!alias) {
       continue;
     }
@@ -313,7 +313,7 @@ export function resolveModelRefFromString(params: {
   raw: string;
   defaultProvider: string;
   aliasIndex?: ModelAliasIndex;
-  manifestPlugins?: unknown;
+  manifestPlugins?: any;
 }): { ref: ModelRef; alias?: string } | null {
   const model = params.raw.trim();
   if (!model) {
@@ -336,7 +336,7 @@ export function resolveConfiguredModelRef(params: {
   cfg: SimplifiedConfig;
   defaultProvider: string;
   defaultModel: string;
-  manifestPlugins?: unknown;
+  manifestPlugins?: any;
 }): ModelRef {
   const rawModel = resolvePrimaryModelValue(params.cfg.agents?.defaults?.model) ?? "";
   if (rawModel) {
@@ -349,14 +349,14 @@ export function resolveConfiguredModelRef(params: {
   return { provider: params.defaultProvider, model: params.defaultModel };
 }
 
-function resolvePrimaryModelValue(value: unknown): string | undefined {
+function resolvePrimaryModelValue(value: any): string | undefined {
   if (typeof value === "string") {
     return value.trim() || undefined;
   }
   if (!value || typeof value !== "object") {
     return undefined;
   }
-  const primary = (value as Record<string, unknown>).primary;
+  const primary = (value as Record<string, any>).primary;
   if (typeof primary === "string" && primary.trim()) {
     return primary.trim();
   }
@@ -370,7 +370,7 @@ export function buildAllowedModelSetWithFallbacks(params: {
   defaultProvider: string;
   defaultModel?: string;
   fallbackModels: readonly string[];
-  manifestPlugins?: unknown;
+  manifestPlugins?: any;
 }): {
   allowAny: boolean;
   allowedCatalog: ModelCatalogEntry[];
@@ -435,7 +435,7 @@ export function getModelRefStatusWithFallbackModels(params: {
   defaultProvider: string;
   defaultModel?: string;
   fallbackModels: readonly string[];
-  manifestPlugins?: unknown;
+  manifestPlugins?: any;
 }): ModelRefStatus {
   const allowed = buildAllowedModelSetWithFallbacks({
     cfg: params.cfg,
@@ -462,7 +462,7 @@ export function resolveAllowedModelRefFromAliasIndex(params: {
   defaultProvider: string;
   aliasIndex: ModelAliasIndex;
   getStatus: (ref: ModelRef) => ModelRefStatus;
-  manifestPlugins?: unknown;
+  manifestPlugins?: any;
 }): ResolveAllowedModelRefResult {
   const trimmed = params.raw.trim();
   if (!trimmed) {
@@ -491,7 +491,7 @@ export function hasConfiguredProviderModelRows(cfg: SimplifiedConfig): boolean {
     return false;
   }
   return Object.values(providers).some((provider) =>
-    Array.isArray((provider as Record<string, unknown>)?.models),
+    Array.isArray((provider as Record<string, any>)?.models),
   );
 }
 
@@ -499,7 +499,7 @@ export function hasConfiguredProviderModelRows(cfg: SimplifiedConfig): boolean {
 export function buildConfiguredModelCatalog(params: {
   cfg: SimplifiedConfig;
   workspaceDir?: string;
-  manifestPlugins?: unknown;
+  manifestPlugins?: any;
 }): ModelCatalogEntry[] {
   const providers = params.cfg.models?.providers;
   if (!providers || typeof providers !== "object") {
@@ -511,12 +511,12 @@ export function buildConfiguredModelCatalog(params: {
     if (!providerId) {
       continue;
     }
-    const models = (provider as Record<string, unknown>)?.models;
+    const models = (provider as Record<string, any>)?.models;
     if (!Array.isArray(models)) {
       continue;
     }
     for (const model of models) {
-      const entry = model as Record<string, unknown>;
+      const entry = model as Record<string, any>;
       const rawId = typeof entry?.id === "string" ? entry.id.trim() : "";
       if (!rawId) {
         continue;
@@ -535,7 +535,7 @@ export function buildConfiguredModelCatalog(params: {
         provider: providerId,
         id: rawId,
         name,
-        api: (entry?.api as string) ?? ((provider as Record<string, unknown>)?.api as string),
+        api: (entry?.api as string) ?? ((provider as Record<string, any>)?.api as string),
         contextWindow,
         contextTokens,
         reasoning,
@@ -549,7 +549,7 @@ export function buildConfiguredModelCatalog(params: {
 export function resolveHooksGmailModel(params: {
   cfg: SimplifiedConfig;
   defaultProvider: string;
-  manifestPlugins?: unknown;
+  manifestPlugins?: any;
 }): ModelRef | null {
   const hooksModel = params.cfg.hooks?.gmail?.model?.trim();
   if (!hooksModel) {
@@ -569,7 +569,7 @@ export function resolveHooksGmailModel(params: {
 }
 
 /** Normalize a model selection value. */
-export function normalizeModelSelection(value: unknown): string | undefined {
+export function normalizeModelSelection(value: any): string | undefined {
   if (typeof value === "string") {
     const trimmed = value.trim();
     return trimmed || undefined;
@@ -577,7 +577,7 @@ export function normalizeModelSelection(value: unknown): string | undefined {
   if (!value || typeof value !== "object") {
     return undefined;
   }
-  const primary = (value as Record<string, unknown>).primary;
+  const primary = (value as Record<string, any>).primary;
   if (typeof primary === "string" && primary.trim()) {
     return primary.trim();
   }
@@ -641,7 +641,7 @@ export function resolveAllowedModelSelection(params: {
   allowAny: boolean;
   allowedKeys: ReadonlySet<string>;
   allowedCatalog: readonly ModelCatalogEntry[];
-  manifestPlugins?: unknown;
+  manifestPlugins?: any;
 }): ModelRef | null {
   const current = normalizeModelRef(params.provider, params.model);
   if (
@@ -681,7 +681,7 @@ export function createModelVisibilityPolicyWithFallbacks(params: {
   defaultProvider: string;
   defaultModel?: string;
   fallbackModels: readonly string[];
-  manifestPlugins?: unknown;
+  manifestPlugins?: any;
 }): ModelVisibilityPolicy {
   const visibility = parseConfiguredModelVisibilityEntries({ cfg: params.cfg });
   const allowed = buildAllowedModelSetWithFallbacks(params);

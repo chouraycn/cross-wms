@@ -40,7 +40,7 @@ export interface MediaGenerateOptions {
   /** 参考图像（URL 或 base64） */
   referenceImages?: string[];
   /** 额外参数 */
-  extra?: Record<string, unknown>;
+  extra?: Record<string, any>;
 }
 
 /** 媒体转写选项 */
@@ -85,7 +85,7 @@ export interface MediaCapabilityResult {
   /** 转写片段（带时间戳） */
   segments?: Array<{ start: number; end: number; text: string }>;
   /** 分析结果 */
-  analysis?: Record<string, unknown>;
+  analysis?: Record<string, any>;
   /** 耗时（毫秒） */
   durationMs?: number;
   /** 错误信息 */
@@ -106,7 +106,7 @@ export type MediaCapabilityProvider = CapabilityProvider<MediaCapabilityOptions,
 export function registerMediaProvider(
   pluginId: string,
   provider: MediaCapabilityProvider,
-  metadata?: Record<string, unknown>,
+  metadata?: Record<string, any>,
 ): void {
   capabilityProviderRegistry.register(pluginId, provider, metadata);
 }

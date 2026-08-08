@@ -68,11 +68,11 @@ function hasPositiveOutputTokenUsage(message: AgentMessage | null): boolean {
   if (!message || typeof message !== "object") {
     return false;
   }
-  const usage = (message as { usage?: unknown }).usage;
+  const usage = (message as { usage?: any }).usage;
   if (!usage || typeof usage !== "object") {
     return false;
   }
-  const output = asFiniteNumber((usage as { output?: unknown }).output);
+  const output = asFiniteNumber((usage as { output?: any }).output);
   return output !== undefined && output > 0;
 }
 
@@ -317,7 +317,7 @@ export function resolveIncompleteTurnPayloadText(params: {
 export function shouldRetryMissingAssistantTurn(params: {
   payloadCount: number;
   aborted: boolean;
-  promptError?: unknown;
+  promptError?: any;
   timedOut: boolean;
   attempt: IncompleteTurnAttempt;
 }): boolean {
@@ -387,7 +387,7 @@ function isToolResultRole(role: string): boolean {
 }
 
 function readMessageTextContent(message: AgentMessage): string | undefined {
-  const content = (message as { content?: unknown }).content;
+  const content = (message as { content?: any }).content;
   if (typeof content === "string") {
     const trimmed = content.trim();
     return trimmed || undefined;
@@ -400,7 +400,7 @@ function readMessageTextContent(message: AgentMessage): string | undefined {
 }
 
 function readToolResultAggregatedText(message: AgentMessage): string | undefined {
-  const aggregated = (message as { details?: { aggregated?: unknown } }).details?.aggregated;
+  const aggregated = (message as { details?: { aggregated?: any } }).details?.aggregated;
   if (typeof aggregated !== "string") {
     return undefined;
   }
@@ -501,7 +501,7 @@ export function resolveRunLivenessState(params: {
   return "working";
 }
 
-function isReasoningOnlyAssistantTurn(message: unknown): boolean {
+function isReasoningOnlyAssistantTurn(message: any): boolean {
   if (!message || typeof message !== "object") {
     return false;
   }
@@ -511,11 +511,11 @@ function isReasoningOnlyAssistantTurn(message: unknown): boolean {
 // Unsigned thinking blocks have no cryptographic signature; assessLastAssistantMessage
 // returns "incomplete-thinking" for them. Empty content also returns "incomplete-thinking",
 // so the content.length > 0 guard is required to distinguish the two cases.
-function isUnsignedThinkingOnlyAssistantTurn(message: unknown): boolean {
+function isUnsignedThinkingOnlyAssistantTurn(message: any): boolean {
   if (message == null || typeof message !== "object") {
     return false;
   }
-  const content = (message as { content?: unknown }).content;
+  const content = (message as { content?: any }).content;
   if (!Array.isArray(content) || content.length === 0) {
     return false;
   }
@@ -555,7 +555,7 @@ export function shouldRetrySilentErrorAssistantTurn(params: {
     return false;
   }
 
-  const content = (assistant as { content?: unknown }).content;
+  const content = (assistant as { content?: any }).content;
   if (!Array.isArray(content)) {
     return false;
   }

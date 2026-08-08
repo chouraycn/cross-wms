@@ -97,7 +97,7 @@ function handleSystemMessageFallback(
       if (firstTextIdx !== -1) {
         newContent[firstTextIdx] = {
           ...newContent[firstTextIdx],
-          text: systemContent + '\n\n' + (newContent[firstTextIdx] as unknown).text,
+          text: systemContent + '\n\n' + (newContent[firstTextIdx] as any).text,
         };
       } else {
         newContent.unshift({ type: 'text', text: systemContent });
@@ -223,7 +223,7 @@ export class OpenAIChatAdapter implements IAiApiAdapter {
       Object.assign(headers, compat.extraHeaders);
     }
 
-    const body: Record<string, unknown> = {
+    const body: Record<string, any> = {
       model: modelId,
       messages: processedMessages,
       temperature,
@@ -289,8 +289,8 @@ export class OpenAIChatAdapter implements IAiApiAdapter {
     if (!response.ok) {
       const errorText = await response.text();
       if (response.status === 400) {
-        const toolMsgs = processedMessages.filter((m: unknown) => m.role === 'tool');
-        const assistantWithCalls = processedMessages.filter((m: unknown) => m.role === 'assistant' && m.tool_calls);
+        const toolMsgs = processedMessages.filter((m: any) => m.role === 'tool');
+        const assistantWithCalls = processedMessages.filter((m: any) => m.role === 'assistant' && m.tool_calls);
         logger.error(`[OpenAIChatAdapter] 400 错误诊断: ${toolMsgs.length} 条 tool 消息, ${assistantWithCalls.length} 条 assistant(tool_calls)`);
       }
       const category = classifyError(response.status, errorText);
@@ -355,9 +355,9 @@ export class OpenAIChatAdapter implements IAiApiAdapter {
               delta?.reasoning ??
               parsed.reasoning_content ??
               parsed.choices?.[0]?.reasoning_content ??
-              (parsed.choices?.[0] as unknown)?.delta?.reasoning_content ??
+              (parsed.choices?.[0] as any)?.delta?.reasoning_content ??
               delta?.thinking ??
-              (parsed as unknown).reasoning ??
+              (parsed as any).reasoning ??
               null;
 
             if (reasoningDelta !== null && reasoningDelta !== undefined && typeof reasoningDelta === 'string') {

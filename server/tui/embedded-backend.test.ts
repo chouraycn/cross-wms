@@ -17,7 +17,7 @@ const ensureRuntimePluginsLoadedMock = vi.fn();
 const ensureContextWindowCacheLoadedMock = vi.fn(async () => undefined);
 const runSessionStartupMigrationMock = vi.fn<() => Promise<void>>(async () => undefined);
 const listSessionsFromStoreAsyncMock = vi.fn(
-  async (_options?: unknown): Promise<{ sessions: unknown[] }> => ({ sessions: [] }),
+  async (_options?: any): Promise<{ sessions: any[] }> => ({ sessions: [] }),
 );
 const buildGatewaySessionInfoMock = vi.fn(
   (params: { key: string; entry?: { sessionId?: string; thinkingLevel?: string } }) => ({
@@ -33,28 +33,28 @@ const getSessionDefaultsMock = vi.fn(() => ({
   model: null,
   contextTokens: null,
 }));
-const loadCombinedSessionStoreForGatewayMock = vi.fn((_options?: unknown) => ({
+const loadCombinedSessionStoreForGatewayMock = vi.fn((_options?: any) => ({
   storePath: "/tmp/crosswms-sessions.json",
   store: {},
 }));
 const getRuntimeConfigMock = vi.fn(() => ({}));
 const loadGatewayModelCatalogMock = vi.fn(
-  (_params?: unknown): Array<{ id: string; name: string; provider: string }> => [],
+  (_params?: any): Array<{ id: string; name: string; provider: string }> => [],
 );
 const readSessionMessagesAsyncMock = vi.fn(
   async (
     _sessionId?: string,
     _storePath?: string,
     _sessionFile?: string,
-    _opts?: unknown,
-  ): Promise<unknown[]> => [],
+    _opts?: any,
+  ): Promise<any[]> => [],
 );
 type LoadSessionEntryMockResult = {
-  cfg: Record<string, unknown>;
+  cfg: Record<string, any>;
   canonicalKey: string;
   storePath?: string;
-  store?: Record<string, unknown>;
-  entry?: Record<string, unknown>;
+  store?: Record<string, any>;
+  entry?: Record<string, any>;
 };
 const loadSessionEntryMock = vi.fn(
   (sessionKey: string, _opts?: { agentId?: string }): LoadSessionEntryMockResult => ({
@@ -65,19 +65,19 @@ const loadSessionEntryMock = vi.fn(
     entry: {},
   }),
 );
-let registeredListener: ((evt: unknown) => void) | undefined;
+let registeredListener: ((evt: any) => void) | undefined;
 const embeddedEventTimestamp = Date.parse("2026-05-09T07:26:00.000Z");
 
 vi.mock("../engine/agents/agent-command.js", () => ({
-  agentCommandFromIngress: (...args: unknown[]) => agentCommandFromIngressMock(...args),
+  agentCommandFromIngress: (...args: any[]) => agentCommandFromIngressMock(...args),
 }));
 
 vi.mock("../engine/agents/btw.js", () => ({
-  runBtwSideQuestion: (...args: unknown[]) => runBtwSideQuestionMock(...args),
+  runBtwSideQuestion: (...args: any[]) => runBtwSideQuestionMock(...args),
 }));
 
 vi.mock("../engine/infra/agent-events.js", () => ({
-  onAgentEvent: (listener: (evt: unknown) => void) => {
+  onAgentEvent: (listener: (evt: any) => void) => {
     registeredListener = listener;
     return () => {
       if (registeredListener === listener) {
@@ -92,24 +92,24 @@ vi.mock("../cli/deps.js", () => ({
 }));
 
 vi.mock("../config/sessions.js", () => ({
-  clearSessionGoal: (...args: unknown[]) => clearSessionGoalMock(...args),
-  createSessionGoal: (...args: unknown[]) => createSessionGoalMock(...args),
+  clearSessionGoal: (...args: any[]) => clearSessionGoalMock(...args),
+  createSessionGoal: (...args: any[]) => createSessionGoalMock(...args),
   formatSessionGoalStatus: (goal?: { objective?: string }) =>
     goal ? `Goal: ${goal.objective ?? ""}` : "No goal for this session.",
-  getSessionGoal: (...args: unknown[]) => getSessionGoalMock(...args),
+  getSessionGoal: (...args: any[]) => getSessionGoalMock(...args),
   resolveAgentMainSessionKey: () => "agent:main:main",
   resolveStorePath: () => "/tmp/crosswms-sessions.json",
-  updateSessionGoalStatus: (...args: unknown[]) => updateSessionGoalStatusMock(...args),
-  updateSessionStore: (...args: unknown[]) => updateSessionStoreMock(...args),
+  updateSessionGoalStatus: (...args: any[]) => updateSessionGoalStatusMock(...args),
+  updateSessionStore: (...args: any[]) => updateSessionStoreMock(...args),
 }));
 
 vi.mock("../config/sessions/session-accessor.js", () => ({
-  applySessionPatchProjection: (...args: unknown[]) => applySessionPatchProjectionMock(...args),
+  applySessionPatchProjection: (...args: any[]) => applySessionPatchProjectionMock(...args),
 }));
 
 vi.mock("../engine/agents/agent-scope.js", () => ({
-  resolveAgentDir: (_cfg: unknown, agentId: string) => `/tmp/crosswms-agent-${agentId}/agent`,
-  resolveAgentWorkspaceDir: (_cfg: unknown, agentId: string) => `/tmp/crosswms-agent-${agentId}`,
+  resolveAgentDir: (_cfg: any, agentId: string) => `/tmp/crosswms-agent-${agentId}/agent`,
+  resolveAgentWorkspaceDir: (_cfg: any, agentId: string) => `/tmp/crosswms-agent-${agentId}`,
   resolveDefaultAgentId: (cfg?: {
     agents?: { list?: Array<{ id?: string; default?: boolean }> };
   }) =>
@@ -118,7 +118,7 @@ vi.mock("../engine/agents/agent-scope.js", () => ({
 }));
 
 vi.mock("../engine/agents/runtime-plugins.js", () => ({
-  ensureRuntimePluginsLoaded: (...args: unknown[]) => ensureRuntimePluginsLoadedMock(...args),
+  ensureRuntimePluginsLoaded: (...args: any[]) => ensureRuntimePluginsLoadedMock(...args),
 }));
 
 vi.mock("../engine/agents/context.js", () => ({
@@ -130,8 +130,8 @@ vi.mock("../engine/agents/defaults.js", () => ({
 }));
 
 vi.mock("../engine/agents/model-selection.js", () => ({
-  buildAllowedModelSet: ({ catalog }: { catalog: unknown[] }) => ({ allowedCatalog: catalog }),
-  buildConfiguredModelCatalog: ({ cfg }: { cfg: { models?: { providers?: unknown } } }) =>
+  buildAllowedModelSet: ({ catalog }: { catalog: any[] }) => ({ allowedCatalog: catalog }),
+  buildConfiguredModelCatalog: ({ cfg }: { cfg: { models?: { providers?: any } } }) =>
     Object.entries(
       (cfg.models?.providers as Record<string, { models?: Array<{ id: string }> }>) ?? {},
     ).flatMap(([provider, entry]) =>
@@ -155,13 +155,13 @@ vi.mock("../config/sessions/startup-migration.js", () => ({
 }));
 
 vi.mock("../engine/gateway/cli-session-history.js", () => ({
-  augmentChatHistoryWithCliSessionImports: ({ localMessages }: { localMessages?: unknown[] }) =>
+  augmentChatHistoryWithCliSessionImports: ({ localMessages }: { localMessages?: any[] }) =>
     localMessages ?? [],
 }));
 
 vi.mock("../engine/gateway/chat-display-projection.js", () => ({
-  projectChatDisplayMessages: (messages: unknown[]) => messages,
-  projectRecentChatDisplayMessages: (messages: unknown[]) => messages,
+  projectChatDisplayMessages: (messages: any[]) => messages,
+  projectRecentChatDisplayMessages: (messages: any[]) => messages,
   resolveEffectiveChatHistoryMaxChars: () => 100_000,
 }));
 
@@ -171,9 +171,9 @@ vi.mock("../engine/gateway/server-constants.js", () => ({
 
 vi.mock("../engine/gateway/server-methods/chat.js", () => ({
   CHAT_HISTORY_MAX_SINGLE_MESSAGE_BYTES: 100_000,
-  augmentChatHistoryWithCanvasBlocks: (messages: unknown[]) => messages,
-  enforceChatHistoryFinalBudget: ({ messages }: { messages: unknown[] }) => ({ messages }),
-  replaceOversizedChatHistoryMessages: ({ messages }: { messages: unknown[] }) => ({ messages }),
+  augmentChatHistoryWithCanvasBlocks: (messages: any[]) => messages,
+  enforceChatHistoryFinalBudget: ({ messages }: { messages: any[] }) => ({ messages }),
+  replaceOversizedChatHistoryMessages: ({ messages }: { messages: any[] }) => ({ messages }),
 }));
 
 vi.mock("../engine/gateway/session-utils.js", () => ({
@@ -181,8 +181,8 @@ vi.mock("../engine/gateway/session-utils.js", () => ({
     buildGatewaySessionInfoMock(params),
   getSessionDefaults: () => getSessionDefaultsMock(),
   listAgentsForGateway: () => [],
-  listSessionsFromStoreAsync: (...args: unknown[]) => listSessionsFromStoreAsyncMock(...args),
-  loadCombinedSessionStoreForGateway: (...args: unknown[]) =>
+  listSessionsFromStoreAsync: (...args: any[]) => listSessionsFromStoreAsyncMock(...args),
+  loadCombinedSessionStoreForGateway: (...args: any[]) =>
     loadCombinedSessionStoreForGatewayMock(...args),
   loadSessionEntry: (sessionKey: string, opts?: { agentId?: string }) =>
     loadSessionEntryMock(sessionKey, opts),
@@ -198,7 +198,7 @@ vi.mock("../engine/gateway/session-utils.js", () => ({
 }));
 
 vi.mock("../engine/gateway/server-model-catalog.js", () => ({
-  loadGatewayModelCatalog: (params?: unknown) => loadGatewayModelCatalogMock(params),
+  loadGatewayModelCatalog: (params?: any) => loadGatewayModelCatalogMock(params),
 }));
 
 vi.mock("../engine/gateway/session-reset-service.js", () => ({
@@ -206,13 +206,13 @@ vi.mock("../engine/gateway/session-reset-service.js", () => ({
 }));
 
 vi.mock("../engine/gateway/session-transcript-readers.js", () => ({
-  capArrayByJsonBytes: (items: unknown[]) => ({ items }),
+  capArrayByJsonBytes: (items: any[]) => ({ items }),
   readSessionMessagesAsync: (...args: Parameters<typeof readSessionMessagesAsyncMock>) =>
     readSessionMessagesAsyncMock(...args),
 }));
 
 vi.mock("../engine/gateway/sessions-patch.js", () => ({
-  projectSessionsPatchEntry: (...args: unknown[]) => projectSessionsPatchEntryMock(...args),
+  projectSessionsPatchEntry: (...args: any[]) => projectSessionsPatchEntryMock(...args),
 }));
 
 vi.mock("../engine/gateway/server-methods/agent-timestamp.js", () => ({
@@ -222,7 +222,7 @@ vi.mock("../engine/gateway/server-methods/agent-timestamp.js", () => ({
 
 function deferred<T>() {
   let resolve: ((value: T) => void) | undefined;
-  let reject: ((error?: unknown) => void) | undefined;
+  let reject: ((error?: any) => void) | undefined;
   const promise = new Promise<T>((res, rej) => {
     resolve = res;
     reject = rej;
@@ -253,7 +253,7 @@ describe("EmbeddedTuiBackend", () => {
     runBtwSideQuestionMock.mockReset();
     updateSessionStoreMock.mockReset();
     updateSessionStoreMock.mockImplementation(
-      async (_storePath: string, update: (store: Record<string, unknown>) => unknown) =>
+      async (_storePath: string, update: (store: Record<string, any>) => unknown) =>
         await update({}),
     );
     createSessionGoalMock.mockReset();
@@ -287,11 +287,11 @@ describe("EmbeddedTuiBackend", () => {
     applySessionPatchProjectionMock.mockImplementation(
       async (params: {
         project: (context: {
-          entries: unknown[];
-          existingEntry?: unknown;
+          entries: any[];
+          existingEntry?: any;
           primaryKey: string;
-        }) => Promise<unknown>;
-        resolveTarget: (snapshot: { entries: unknown[] }) => { primaryKey: string };
+        }) => Promise<any>;
+        resolveTarget: (snapshot: { entries: any[] }) => { primaryKey: string };
       }) => {
         const target = params.resolveTarget({ entries: [] });
         return await params.project({ ...target, entries: [] });
@@ -332,12 +332,12 @@ describe("EmbeddedTuiBackend", () => {
     const { EmbeddedTuiBackend } = await import("./embedded-backend.js");
     const pending = deferred<{
       payloads: Array<{ text: string }>;
-      meta: Record<string, unknown>;
+      meta: Record<string, any>;
     }>();
     agentCommandFromIngressMock.mockReturnValueOnce(pending.promise);
 
     const backend = new EmbeddedTuiBackend();
-    const events: Array<{ event: string; payload: unknown }> = [];
+    const events: Array<{ event: string; payload: any }> = [];
     const onConnected = vi.fn();
     backend.onConnected = onConnected;
     backend.onEvent = (evt) => {
@@ -528,7 +528,7 @@ describe("EmbeddedTuiBackend", () => {
       async ({
         loadGatewayModelCatalog,
       }: {
-        loadGatewayModelCatalog?: () => Promise<unknown[]>;
+        loadGatewayModelCatalog?: () => Promise<any[]>;
       }) => {
         await loadGatewayModelCatalog?.();
         return { ok: true, entry: {} };
@@ -803,12 +803,12 @@ describe("EmbeddedTuiBackend", () => {
     const { EmbeddedTuiBackend } = await import("./embedded-backend.js");
     const pending = deferred<{
       payloads: Array<{ text: string }>;
-      meta: Record<string, unknown>;
+      meta: Record<string, any>;
     }>();
     agentCommandFromIngressMock.mockReturnValueOnce(pending.promise);
 
     const backend = new EmbeddedTuiBackend();
-    const events: Array<{ event: string; payload: unknown }> = [];
+    const events: Array<{ event: string; payload: any }> = [];
     backend.onEvent = (evt) => {
       events.push({ event: evt.event, payload: evt.payload });
     };
@@ -853,7 +853,7 @@ describe("EmbeddedTuiBackend", () => {
     const { EmbeddedTuiBackend } = await import("./embedded-backend.js");
     const pending = deferred<{
       payloads: Array<{ text: string }>;
-      meta: Record<string, unknown>;
+      meta: Record<string, any>;
     }>();
     const abortListener = vi.fn();
     agentCommandFromIngressMock.mockImplementationOnce((opts: { abortSignal?: AbortSignal }) => {
@@ -862,7 +862,7 @@ describe("EmbeddedTuiBackend", () => {
     });
 
     const backend = new EmbeddedTuiBackend();
-    const events: Array<{ event: string; payload: unknown }> = [];
+    const events: Array<{ event: string; payload: any }> = [];
     backend.onEvent = (evt) => {
       events.push({ event: evt.event, payload: evt.payload });
     };
@@ -907,7 +907,7 @@ describe("EmbeddedTuiBackend", () => {
       const { EmbeddedTuiBackend } = await import("./embedded-backend.js");
       const pending = deferred<{
         payloads: Array<{ text: string }>;
-        meta: Record<string, unknown>;
+        meta: Record<string, any>;
       }>();
       const abortListener = vi.fn();
       agentCommandFromIngressMock.mockImplementationOnce((opts: { abortSignal?: AbortSignal }) => {
@@ -949,11 +949,11 @@ describe("EmbeddedTuiBackend", () => {
     const { EmbeddedTuiBackend } = await import("./embedded-backend.js");
     const first = deferred<{
       payloads: Array<{ text: string }>;
-      meta: Record<string, unknown>;
+      meta: Record<string, any>;
     }>();
     const second = deferred<{
       payloads: Array<{ text: string }>;
-      meta: Record<string, unknown>;
+      meta: Record<string, any>;
     }>();
     const firstAbortListener = vi.fn();
     agentCommandFromIngressMock
@@ -1005,11 +1005,11 @@ describe("EmbeddedTuiBackend", () => {
       const { EmbeddedTuiBackend } = await import("./embedded-backend.js");
       const first = deferred<{
         payloads: Array<{ text: string }>;
-        meta: Record<string, unknown>;
+        meta: Record<string, any>;
       }>();
       const second = deferred<{
         payloads: Array<{ text: string }>;
-        meta: Record<string, unknown>;
+        meta: Record<string, any>;
       }>();
       const firstAbortListener = vi.fn();
       agentCommandFromIngressMock
@@ -1058,7 +1058,7 @@ describe("EmbeddedTuiBackend", () => {
     const { EmbeddedTuiBackend } = await import("./embedded-backend.js");
     const first = deferred<{
       payloads: Array<{ text: string }>;
-      meta: Record<string, unknown>;
+      meta: Record<string, any>;
     }>();
     const firstAbortListener = vi.fn(() => {
       first.resolve({ payloads: [{ text: "first aborted" }], meta: {} });
@@ -1097,7 +1097,7 @@ describe("EmbeddedTuiBackend", () => {
     const { EmbeddedTuiBackend } = await import("./embedded-backend.js");
     const first = deferred<{
       payloads: Array<{ text: string }>;
-      meta: Record<string, unknown>;
+      meta: Record<string, any>;
     }>();
     const firstAbortListener = vi.fn(() => {
       first.resolve({ payloads: [{ text: "first aborted" }], meta: {} });
@@ -1108,7 +1108,7 @@ describe("EmbeddedTuiBackend", () => {
     });
 
     const backend = new EmbeddedTuiBackend();
-    const events: Array<{ event: string; payload: unknown }> = [];
+    const events: Array<{ event: string; payload: any }> = [];
     backend.onEvent = (evt) => {
       events.push({ event: evt.event, payload: evt.payload });
     };
@@ -1148,7 +1148,7 @@ describe("EmbeddedTuiBackend", () => {
     const { EmbeddedTuiBackend } = await import("./embedded-backend.js");
     const pending = deferred<{
       payloads: Array<{ text: string }>;
-      meta: Record<string, unknown>;
+      meta: Record<string, any>;
     }>();
     agentCommandFromIngressMock.mockReturnValueOnce(pending.promise);
 
@@ -1170,12 +1170,12 @@ describe("EmbeddedTuiBackend", () => {
     const { EmbeddedTuiBackend } = await import("./embedded-backend.js");
     const pending = deferred<{
       payloads: Array<{ text: string }>;
-      meta: Record<string, unknown>;
+      meta: Record<string, any>;
     }>();
     agentCommandFromIngressMock.mockReturnValueOnce(pending.promise);
 
     const backend = new EmbeddedTuiBackend();
-    const events: Array<{ event: string; payload: unknown }> = [];
+    const events: Array<{ event: string; payload: any }> = [];
     backend.onEvent = (evt) => {
       events.push({ event: evt.event, payload: evt.payload });
     };
@@ -1210,11 +1210,11 @@ describe("EmbeddedTuiBackend", () => {
     const { EmbeddedTuiBackend } = await import("./embedded-backend.js");
     const first = deferred<{
       payloads: Array<{ text: string }>;
-      meta: Record<string, unknown>;
+      meta: Record<string, any>;
     }>();
     const second = deferred<{
       payloads: Array<{ text: string }>;
-      meta: Record<string, unknown>;
+      meta: Record<string, any>;
     }>();
     agentCommandFromIngressMock
       .mockReturnValueOnce(first.promise)
@@ -1254,11 +1254,11 @@ describe("EmbeddedTuiBackend", () => {
     const { EmbeddedTuiBackend } = await import("./embedded-backend.js");
     const first = deferred<{
       payloads: Array<{ text: string }>;
-      meta: Record<string, unknown>;
+      meta: Record<string, any>;
     }>();
     const second = deferred<{
       payloads: Array<{ text: string }>;
-      meta: Record<string, unknown>;
+      meta: Record<string, any>;
     }>();
     agentCommandFromIngressMock
       .mockReturnValueOnce(first.promise)
@@ -1290,11 +1290,11 @@ describe("EmbeddedTuiBackend", () => {
     const { EmbeddedTuiBackend } = await import("./embedded-backend.js");
     const first = deferred<{
       payloads: Array<{ text: string }>;
-      meta: Record<string, unknown>;
+      meta: Record<string, any>;
     }>();
     const stop = deferred<{
       payloads: Array<{ text: string }>;
-      meta: Record<string, unknown>;
+      meta: Record<string, any>;
     }>();
     const firstAbortListener = vi.fn(() => {
       first.resolve({ payloads: [{ text: "main aborted" }], meta: {} });
@@ -1336,11 +1336,11 @@ describe("EmbeddedTuiBackend", () => {
     });
     const defaultRun = deferred<{
       payloads: Array<{ text: string }>;
-      meta: Record<string, unknown>;
+      meta: Record<string, any>;
     }>();
     const workRun = deferred<{
       payloads: Array<{ text: string }>;
-      meta: Record<string, unknown>;
+      meta: Record<string, any>;
     }>();
     const defaultAbortListener = vi.fn(() => {
       defaultRun.resolve({ payloads: [{ text: "default aborted" }], meta: {} });
@@ -1422,12 +1422,12 @@ describe("EmbeddedTuiBackend", () => {
       const { EmbeddedTuiBackend } = await import("./embedded-backend.js");
       const first = deferred<{
         payloads: Array<{ text: string }>;
-        meta: Record<string, unknown>;
+        meta: Record<string, any>;
       }>();
       agentCommandFromIngressMock.mockReturnValueOnce(first.promise);
 
       const backend = new EmbeddedTuiBackend();
-      const events: Array<{ event: string; payload: unknown }> = [];
+      const events: Array<{ event: string; payload: any }> = [];
       backend.onEvent = (evt) => {
         events.push({ event: evt.event, payload: evt.payload });
       };
@@ -1479,12 +1479,12 @@ describe("EmbeddedTuiBackend", () => {
       const { EmbeddedTuiBackend } = await import("./embedded-backend.js");
       const first = deferred<{
         payloads: Array<{ text: string }>;
-        meta: Record<string, unknown>;
+        meta: Record<string, any>;
       }>();
       agentCommandFromIngressMock.mockReturnValueOnce(first.promise);
 
       const backend = new EmbeddedTuiBackend();
-      const events: Array<{ event: string; payload: unknown }> = [];
+      const events: Array<{ event: string; payload: any }> = [];
       backend.onEvent = (evt) => {
         events.push({ event: evt.event, payload: evt.payload });
       };
@@ -1573,12 +1573,12 @@ describe("EmbeddedTuiBackend", () => {
     const { EmbeddedTuiBackend } = await import("./embedded-backend.js");
     const pending = deferred<{
       payloads: Array<{ text: string }>;
-      meta: Record<string, unknown>;
+      meta: Record<string, any>;
     }>();
     agentCommandFromIngressMock.mockReturnValueOnce(pending.promise);
 
     const backend = new EmbeddedTuiBackend();
-    const events: Array<{ event: string; payload: unknown }> = [];
+    const events: Array<{ event: string; payload: any }> = [];
     backend.onEvent = (evt) => {
       events.push({ event: evt.event, payload: evt.payload });
     };
@@ -1637,12 +1637,12 @@ describe("EmbeddedTuiBackend", () => {
     const { EmbeddedTuiBackend } = await import("./embedded-backend.js");
     const pending = deferred<{
       payloads: Array<{ text: string }>;
-      meta: Record<string, unknown>;
+      meta: Record<string, any>;
     }>();
     agentCommandFromIngressMock.mockReturnValueOnce(pending.promise);
 
     const backend = new EmbeddedTuiBackend();
-    const events: Array<{ event: string; payload: unknown }> = [];
+    const events: Array<{ event: string; payload: any }> = [];
     backend.onEvent = (evt) => {
       events.push({ event: evt.event, payload: evt.payload });
     };
@@ -1696,12 +1696,12 @@ describe("EmbeddedTuiBackend", () => {
     const { EmbeddedTuiBackend } = await import("./embedded-backend.js");
     const pending = deferred<{
       payloads: Array<{ text: string }>;
-      meta: Record<string, unknown>;
+      meta: Record<string, any>;
     }>();
     agentCommandFromIngressMock.mockReturnValueOnce(pending.promise);
 
     const backend = new EmbeddedTuiBackend();
-    const events: Array<{ event: string; payload: unknown }> = [];
+    const events: Array<{ event: string; payload: any }> = [];
     backend.onEvent = (evt) => {
       events.push({ event: evt.event, payload: evt.payload });
     };
@@ -1753,7 +1753,7 @@ describe("EmbeddedTuiBackend", () => {
 
     const chatPayloads = events
       .filter((entry) => entry.event === "chat")
-      .map((entry) => entry.payload as { state?: string; message?: { content?: unknown } });
+      .map((entry) => entry.payload as { state?: string; message?: { content?: any } });
     expect(chatPayloads.some((payload) => payload.state === "error")).toBe(false);
     const finalPayload = chatPayloads.at(-1);
     expect(finalPayload?.state).toBe("final");
@@ -1783,7 +1783,7 @@ describe("EmbeddedTuiBackend", () => {
     runBtwSideQuestionMock.mockResolvedValueOnce({ text: "nothing important" });
 
     const backend = new EmbeddedTuiBackend();
-    const events: Array<{ event: string; payload: unknown }> = [];
+    const events: Array<{ event: string; payload: any }> = [];
     backend.onEvent = (evt) => {
       events.push({ event: evt.event, payload: evt.payload });
     };
@@ -1855,7 +1855,7 @@ describe("EmbeddedTuiBackend", () => {
     runBtwSideQuestionMock.mockResolvedValueOnce({ text: "alias answer" });
 
     const backend = new EmbeddedTuiBackend();
-    const events: Array<{ event: string; payload: unknown }> = [];
+    const events: Array<{ event: string; payload: any }> = [];
     backend.onEvent = (evt) => {
       events.push({ event: evt.event, payload: evt.payload });
     };
@@ -1904,12 +1904,12 @@ describe("EmbeddedTuiBackend", () => {
     const { EmbeddedTuiBackend } = await import("./embedded-backend.js");
     const pending = deferred<{
       payloads: Array<{ text: string }>;
-      meta: Record<string, unknown>;
+      meta: Record<string, any>;
     }>();
     agentCommandFromIngressMock.mockReturnValueOnce(pending.promise);
 
     const backend = new EmbeddedTuiBackend();
-    const events: Array<{ event: string; payload: unknown }> = [];
+    const events: Array<{ event: string; payload: any }> = [];
     backend.onEvent = (evt) => {
       events.push({ event: evt.event, payload: evt.payload });
     };
@@ -2018,7 +2018,7 @@ describe("EmbeddedTuiBackend", () => {
 
       expect(agentCommandFromIngressMock).toHaveBeenCalledTimes(1);
       const ingressOptions = agentCommandFromIngressMock.mock.calls.at(0)?.[0] as
-        | { timeout?: unknown }
+        | { timeout?: any }
         | undefined;
       expect(ingressOptions?.timeout).toBe("300");
     } finally {

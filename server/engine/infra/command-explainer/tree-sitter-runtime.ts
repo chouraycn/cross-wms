@@ -67,7 +67,7 @@ async function loadParser(): Promise<TreeSitter.Parser> {
 export function getBashParserForCommandExplanation(): Promise<TreeSitter.Parser> {
   // Reset the cache on load failure so transient filesystem or WASM init errors
   // do not poison all later command explanations in the process.
-  parserPromise ??= parserLoader().catch((error: unknown) => {
+  parserPromise ??= parserLoader().catch((error: any) => {
     parserPromise = null;
     throw error;
   });

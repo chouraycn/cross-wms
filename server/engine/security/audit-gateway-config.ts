@@ -23,7 +23,7 @@ export type CollectGatewayConfigFindingsOptions = {
   gatewayAuthOverride?: Pick<GatewayAuthConfig, "mode" | "token" | "password">;
 };
 
-function hasNonEmptyString(value: unknown): value is string {
+function hasNonEmptyString(value: any): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
 

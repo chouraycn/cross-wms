@@ -105,7 +105,7 @@ async function emitTranscriptUpdateAndCollectMessageEvent(params: {
   ws: Awaited<ReturnType<Awaited<ReturnType<typeof createGatewaySuiteHarness>>["openWs"]>>;
   sessionKey: string;
   sessionFile: string;
-  message: Record<string, unknown>;
+  message: Record<string, any>;
   messageId: string;
   agentId?: string;
   messageSeq?: number;
@@ -127,7 +127,7 @@ async function emitTranscriptUpdateAndCollectMessageEvent(params: {
 
 async function expectNoMessageWithin(params: {
   action?: () => Promise<void> | void;
-  watch: (timeoutMs: number) => Promise<unknown>;
+  watch: (timeoutMs: number) => Promise<any>;
   timeoutMs?: number;
 }): Promise<void> {
   const timeoutMs = params.timeoutMs ?? 300;
@@ -139,14 +139,14 @@ async function expectNoMessageWithin(params: {
   await expect(received).resolves.toBe(false);
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object") {
     throw new Error(`expected ${label} to be an object`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function expectRecordFields(value: unknown, expected: Record<string, unknown>): void {
+function expectRecordFields(value: any, expected: Record<string, any>): void {
   const record = requireRecord(value, "record");
   for (const [key, expectedValue] of Object.entries(expected)) {
     expect(record[key]).toEqual(expectedValue);
@@ -363,7 +363,7 @@ describe("session.message websocket events", () => {
       });
 
       const payload = messageEvent.payload as {
-        message?: { content?: unknown; __openclaw?: { beforeAgentRunBlocked?: unknown } };
+        message?: { content?: any; __openclaw?: { beforeAgentRunBlocked?: any } };
       };
       expect(payload.message?.content).toEqual([
         { type: "text", text: "The agent cannot read this message." },
@@ -406,9 +406,9 @@ describe("session.message websocket events", () => {
       const messageEvent = await messageEventPromise;
       const payload = messageEvent.payload as {
         message?: {
-          role?: unknown;
-          content?: unknown;
-          __openclaw?: { beforeAgentRunBlocked?: unknown };
+          role?: any;
+          content?: any;
+          __openclaw?: { beforeAgentRunBlocked?: any };
         };
       };
       expect(payload.message?.role).toBe("user");
@@ -655,7 +655,7 @@ describe("session.message websocket events", () => {
       });
       const payload = requireRecord(messageEvent.payload, "session.message payload");
       const message = requireRecord(payload.message, "session.message payload message");
-      expect((message["__openclaw"] as { seq?: unknown } | undefined)?.seq).toBe(7);
+      expect((message["__openclaw"] as { seq?: any } | undefined)?.seq).toBe(7);
     });
   });
 
@@ -889,8 +889,8 @@ describe("session.message websocket events", () => {
         sessionKey: "global",
         messageId: "msg-default-global",
       });
-      expect((mainMessage.payload as { agentId?: unknown }).agentId).toBeUndefined();
-      expect((bareMessage.payload as { agentId?: unknown }).agentId).toBeUndefined();
+      expect((mainMessage.payload as { agentId?: any }).agentId).toBeUndefined();
+      expect((bareMessage.payload as { agentId?: any }).agentId).toBeUndefined();
     } finally {
       workWs.close();
       mainWs.close();

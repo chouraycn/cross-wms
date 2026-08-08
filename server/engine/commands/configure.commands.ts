@@ -59,7 +59,7 @@ async function configureCommandWithSections(
 
 /** Parse `--section` input and run the requested configure wizard sections. */
 export async function configureCommandFromSectionsArg(
-  rawSections: unknown,
+  rawSections: any,
   runtime: RuntimeEnv = defaultRuntime,
   options?: { interactive?: boolean },
 ): Promise<void> {

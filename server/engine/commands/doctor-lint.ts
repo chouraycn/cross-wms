@@ -149,7 +149,7 @@ function writeJsonResult(result: {
   );
 }
 
-function toJsonFinding(f: HealthFinding): Record<string, unknown> {
+function toJsonFinding(f: HealthFinding): Record<string, any> {
   return {
     checkId: f.checkId,
     severity: f.severity,

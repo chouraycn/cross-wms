@@ -7,7 +7,7 @@
 import { vi } from "vitest";
 
 const agentSessionTokenMocks = vi.hoisted(() => {
-  function readText(value: unknown): string {
+  function readText(value: any): string {
     if (typeof value === "string") {
       return value;
     }
@@ -15,20 +15,20 @@ const agentSessionTokenMocks = vi.hoisted(() => {
       return value.map(readText).join("");
     }
     if (value && typeof value === "object") {
-      const record = value as { text?: unknown; content?: unknown; arguments?: unknown };
+      const record = value as { text?: any; content?: any; arguments?: any };
       return `${readText(record.text)}${readText(record.content)}${readText(record.arguments)}`;
     }
     return "";
   }
 
-  function estimateTokenish(message: unknown): number {
+  function estimateTokenish(message: any): number {
     // Approximate one token per four characters while preserving a non-zero
     // token count for empty messages that still participate in budgets.
     return Math.max(1, Math.ceil(readText(message).length / 4));
   }
 
   return {
-    estimateTokens: vi.fn((message: unknown) => estimateTokenish(message)),
+    estimateTokens: vi.fn((message: any) => estimateTokenish(message)),
   };
 });
 

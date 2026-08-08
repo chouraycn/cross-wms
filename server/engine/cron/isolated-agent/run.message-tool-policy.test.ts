@@ -30,8 +30,8 @@ const runCronIsolatedAgentTurn = await loadRunCronIsolatedAgentTurn();
 const { createCronPromptExecutor } = await import("./run-executor.js");
 
 function makeMessageToolPolicyJob(
-  delivery: Record<string, unknown> = { mode: "none" },
-  payload: Record<string, unknown> = { kind: "agentTurn", message: "send a message" },
+  delivery: Record<string, any> = { mode: "none" },
+  payload: Record<string, any> = { kind: "agentTurn", message: "send a message" },
 ) {
   return {
     id: "message-tool-policy",
@@ -47,7 +47,7 @@ function makeAnnounceMessageToolJob(
   options: {
     id?: string;
     name?: string;
-    delivery?: Record<string, unknown>;
+    delivery?: Record<string, any>;
   } = {},
 ) {
   return {
@@ -70,7 +70,7 @@ function makeParams() {
   };
 }
 
-function makeAnnounceDeliveryPlan(overrides: Record<string, unknown> = {}) {
+function makeAnnounceDeliveryPlan(overrides: Record<string, any> = {}) {
   return {
     requested: true,
     mode: "announce",
@@ -80,7 +80,7 @@ function makeAnnounceDeliveryPlan(overrides: Record<string, unknown> = {}) {
   };
 }
 
-function makeResolvedAnnounceTarget(overrides: Record<string, unknown> = {}) {
+function makeResolvedAnnounceTarget(overrides: Record<string, any> = {}) {
   return {
     ok: true,
     channel: "messagechat",
@@ -92,7 +92,7 @@ function makeResolvedAnnounceTarget(overrides: Record<string, unknown> = {}) {
   };
 }
 
-function makeMessageToolRunResult(messagingToolSentTargets: Array<Record<string, unknown>>) {
+function makeMessageToolRunResult(messagingToolSentTargets: Array<Record<string, any>>) {
   return {
     payloads: [{ text: "sent" }],
     didSendViaMessagingTool: true,
@@ -115,18 +115,18 @@ function mockPendingMessagePresentationWarningOutcome() {
   });
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     throw new Error(`expected ${label} to be an object`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 function expectRecordFields(
-  value: unknown,
-  expected: Record<string, unknown>,
+  value: any,
+  expected: Record<string, any>,
   label: string,
-): Record<string, unknown> {
+): Record<string, any> {
   const record = requireRecord(value, label);
   for (const [key, expectedValue] of Object.entries(expected)) {
     expect(record[key], `${label}.${key}`).toEqual(expectedValue);
@@ -135,19 +135,19 @@ function expectRecordFields(
 }
 
 function getMockCallArg(
-  mock: { mock: { calls: readonly unknown[][] } },
+  mock: { mock: { calls: readonly any[][] } },
   callIndex: number,
   argIndex: number,
   label: string,
-): unknown {
-  const call = (mock.mock.calls as unknown[][])[callIndex];
+): any {
+  const call = (mock.mock.calls as any[][])[callIndex];
   if (!call) {
     throw new Error(`expected ${label} call ${callIndex}`);
   }
   return call[argIndex];
 }
 
-function expectEmbeddedRunFields(expected: Record<string, unknown>): Record<string, unknown> {
+function expectEmbeddedRunFields(expected: Record<string, any>): Record<string, any> {
   return expectRecordFields(
     getMockCallArg(runEmbeddedAgentMock, 0, 0, "embedded run"),
     expected,
@@ -171,7 +171,7 @@ function expectEmbeddedTranscriptPrompt(): string {
   return prompt;
 }
 
-function expectDispatchFields(expected: Record<string, unknown>): Record<string, unknown> {
+function expectDispatchFields(expected: Record<string, any>): Record<string, any> {
   return expectRecordFields(
     getMockCallArg(dispatchCronDeliveryMock, 0, 0, "cron delivery dispatch"),
     expected,
@@ -180,9 +180,9 @@ function expectDispatchFields(expected: Record<string, unknown>): Record<string,
 }
 
 function expectDeliveryFields(
-  delivery: unknown,
-  expected: Record<string, unknown>,
-): Record<string, unknown> {
+  delivery: any,
+  expected: Record<string, any>,
+): Record<string, any> {
   return expectRecordFields(delivery, expected, "cron delivery result");
 }
 
@@ -222,8 +222,8 @@ describe("runCronIsolatedAgentTurn message tool policy", () => {
   }
 
   async function runModeNoneDeliveryCase(params: {
-    delivery: Record<string, unknown>;
-    plan: Record<string, unknown>;
+    delivery: Record<string, any>;
+    plan: Record<string, any>;
   }) {
     mockRunCronFallbackPassthrough();
     resolveCronDeliveryPlanMock.mockReturnValue({
@@ -250,9 +250,9 @@ describe("runCronIsolatedAgentTurn message tool policy", () => {
   }
 
   async function expectCronFallbackSkippedForMessageToolDelivery(options: {
-    sentTargets: Array<Record<string, unknown>>;
+    sentTargets: Array<Record<string, any>>;
     job?: Parameters<typeof makeAnnounceMessageToolJob>[0];
-    cfg?: Record<string, unknown>;
+    cfg?: Record<string, any>;
   }) {
     mockRunCronFallbackPassthrough();
     resolveCronDeliveryPlanMock.mockReturnValue(makeAnnounceDeliveryPlan());
@@ -972,7 +972,7 @@ describe("runCronIsolatedAgentTurn message tool policy", () => {
       sessionKey: "agent:default:cron:message-tool-policy",
       verboseLevel: "off",
     });
-    const currentSessionJob = makeMessageToolPolicyJob() as unknown as Record<string, unknown>;
+    const currentSessionJob = makeMessageToolPolicyJob() as unknown as Record<string, any>;
     currentSessionJob.sessionTarget = "current";
 
     await runCronIsolatedAgentTurn({
@@ -991,7 +991,7 @@ describe("runCronIsolatedAgentTurn message tool policy", () => {
     mockRunCronFallbackPassthrough();
     runEmbeddedAgentMock.mockRejectedValueOnce(new Error("runner failed"));
     const { getAgentRunContext } = await import("../../infra/agent-events.js");
-    const currentSessionJob = makeMessageToolPolicyJob() as unknown as Record<string, unknown>;
+    const currentSessionJob = makeMessageToolPolicyJob() as unknown as Record<string, any>;
     currentSessionJob.sessionTarget = "current";
 
     await expect(
@@ -1047,7 +1047,7 @@ describe("runCronIsolatedAgentTurn message tool policy", () => {
         meta: { agentMeta: {} },
       };
     });
-    const currentSessionJob = makeMessageToolPolicyJob() as unknown as Record<string, unknown>;
+    const currentSessionJob = makeMessageToolPolicyJob() as unknown as Record<string, any>;
     currentSessionJob.sessionTarget = "current";
     const runParams = {
       ...makeParams(),
@@ -1083,7 +1083,7 @@ describe("runCronIsolatedAgentTurn message tool policy", () => {
       lifecycleGeneration: getAgentEventLifecycleGeneration(),
     });
     rotateAgentEventLifecycleGeneration();
-    const currentSessionJob = makeMessageToolPolicyJob() as unknown as Record<string, unknown>;
+    const currentSessionJob = makeMessageToolPolicyJob() as unknown as Record<string, any>;
     currentSessionJob.sessionTarget = "current";
 
     await runCronIsolatedAgentTurn({
@@ -1161,7 +1161,7 @@ describe("runCronIsolatedAgentTurn message tool policy", () => {
     const deleteAfterRunJob = makeAnnounceMessageToolJob({
       id: "fatal-delete-after-run",
       name: "Fatal Delete After Run",
-    }) as unknown as Record<string, unknown>;
+    }) as unknown as Record<string, any>;
     deleteAfterRunJob.deleteAfterRun = true;
 
     await runCronIsolatedAgentTurn({

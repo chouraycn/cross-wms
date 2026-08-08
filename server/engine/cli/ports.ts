@@ -29,7 +29,7 @@ type ExecFileError = NodeJS.ErrnoException & {
   status?: number | null;
   stderr?: string | Buffer;
   stdout?: string | Buffer;
-  cause?: unknown;
+  cause?: any;
 };
 
 // ===== 内联降级：sleep =====
@@ -39,14 +39,14 @@ function sleep(ms: number): Promise<void> {
 // ===== sleep 结束 =====
 
 // ===== 内联降级：resolveTimerTimeoutMs / resolvePositiveTimerTimeoutMs =====
-function resolveTimerTimeoutMs(value: unknown, fallback: number, _min = 0): number {
+function resolveTimerTimeoutMs(value: any, fallback: number, _min = 0): number {
   if (typeof value === "number" && Number.isFinite(value) && value >= 0) {
     return Math.floor(value);
   }
   return fallback;
 }
 
-function resolvePositiveTimerTimeoutMs(value: unknown, fallback: number): number {
+function resolvePositiveTimerTimeoutMs(value: any, fallback: number): number {
   if (typeof value === "number" && Number.isFinite(value) && value > 0) {
     return Math.floor(value);
   }
@@ -81,24 +81,24 @@ function readExecOutput(value: string | Buffer | undefined): string {
   return "";
 }
 
-function withErrnoCode(message: string, code: string, cause: unknown): Error {
+function withErrnoCode(message: string, code: string, cause: any): Error {
   const out = new Error(message, { cause: cause instanceof Error ? cause : undefined }) as Error &
     NodeJS.ErrnoException;
   out.code = code;
   return out;
 }
 
-function getErrnoCode(err: unknown): string | undefined {
+function getErrnoCode(err: any): string | undefined {
   if (!err || typeof err !== "object") {
     return undefined;
   }
-  const direct = (err as { code?: unknown }).code;
+  const direct = (err as { code?: any }).code;
   if (typeof direct === "string" && direct.length > 0) {
     return direct;
   }
-  const cause = (err as { cause?: unknown }).cause;
+  const cause = (err as { cause?: any }).cause;
   if (cause && typeof cause === "object") {
-    const nested = (cause as { code?: unknown }).code;
+    const nested = (cause as { code?: any }).code;
     if (typeof nested === "string" && nested.length > 0) {
       return nested;
     }
@@ -106,7 +106,7 @@ function getErrnoCode(err: unknown): string | undefined {
   return undefined;
 }
 
-function isRecoverableLsofError(err: unknown): boolean {
+function isRecoverableLsofError(err: any): boolean {
   const code = getErrnoCode(err);
   if (code === "ENOENT" || code === "EACCES" || code === "EPERM") {
     return true;
@@ -151,7 +151,7 @@ function killPortWithFuser(port: number, signal: "SIGTERM" | "SIGKILL"): PortPro
       stdio: ["ignore", "pipe", "pipe"],
     });
     return parseFuserPidList(stdout).map((pid) => ({ pid }));
-  } catch (err: unknown) {
+  } catch (err: any) {
     const execErr = err as ExecFileError;
     const code = execErr.code;
     const status = execErr.status;
@@ -230,7 +230,7 @@ export function listPortListeners(port: number): PortProcess[] {
         }
       }
       return results;
-    } catch (err: unknown) {
+    } catch (err: any) {
       throw new Error(`netstat failed: ${String(err)}`, { cause: err });
     }
   }
@@ -241,7 +241,7 @@ export function listPortListeners(port: number): PortProcess[] {
       encoding: "utf-8",
     });
     return parseLsofOutput(out);
-  } catch (err: unknown) {
+  } catch (err: any) {
     const execErr = err as ExecFileError;
     const status = execErr.status ?? undefined;
     const code = execErr.code;

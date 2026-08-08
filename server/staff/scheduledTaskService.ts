@@ -56,10 +56,10 @@ interface ScheduleParseResult {
   timezone?: string;
 }
 
-function parseScheduleJson(task: ScheduledTaskRow): Record<string, unknown> {
+function parseScheduleJson(task: ScheduledTaskRow): Record<string, any> {
   if (!task.schedule_json) return {};
   try {
-    return JSON.parse(task.schedule_json) as Record<string, unknown>;
+    return JSON.parse(task.schedule_json) as Record<string, any>;
   } catch {
     return {};
   }
@@ -86,7 +86,7 @@ function parseSchedule(task: ScheduledTaskRow): ScheduleParseResult | null {
     if (type === 'weekly') {
       const [hh, mm] = String(schedule.time || '09:00').split(':');
       const days = Array.isArray(schedule.weekdays) && schedule.weekdays.length
-        ? (schedule.weekdays as unknown[]).map((d) => (Number(d) + 1) % 7)
+        ? (schedule.weekdays as any[]).map((d) => (Number(d) + 1) % 7)
         : [1];
       return { pattern: `${mm} ${hh} * * ${days.join(',')}`, timezone };
     }
@@ -228,7 +228,7 @@ async function executeAndRecord(task: ScheduledTaskRow, run: ScheduledTaskRunRow
       },
       (event) => {
         if (event.type === 'text.delta') {
-          const data = event.data as { text?: unknown } | undefined;
+          const data = event.data as { text?: any } | undefined;
           content += typeof data?.text === 'string' ? data.text : '';
         }
       },

@@ -68,7 +68,7 @@ export interface TalkProviderConfig {
   // API 密钥（明文或密钥引用）
   apiKey?: string | { ref?: string; env?: string };
   // 其他 provider 拥有字段
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 // Talk realtime 配置
@@ -152,12 +152,12 @@ export interface TalkConfigResponse {
 // ============================================================================
 
 // 判断值是否为普通对象（非数组、非 null）
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 // 规范化可选字符串：去空白后返回，空串返回 undefined
-function normalizeOptionalString(value: unknown): string | undefined {
+function normalizeOptionalString(value: any): string | undefined {
   if (typeof value !== 'string') {
     return undefined;
   }
@@ -167,7 +167,7 @@ function normalizeOptionalString(value: unknown): string | undefined {
 
 // 规范化 Talk 密钥输入：字符串直接返回，对象视为密钥引用
 function normalizeTalkSecretInput(
-  value: unknown,
+  value: any,
 ): TalkProviderConfig['apiKey'] | undefined {
   if (typeof value === 'string') {
     const trimmed = value.trim();
@@ -191,7 +191,7 @@ function normalizeTalkSecretInput(
 }
 
 // 规范化静默超时：仅接受正整数
-function normalizeSilenceTimeoutMs(value: unknown): number | undefined {
+function normalizeSilenceTimeoutMs(value: any): number | undefined {
   if (typeof value !== 'number' || !Number.isInteger(value) || value <= 0) {
     return undefined;
   }
@@ -208,7 +208,7 @@ function normalizeThinkLevel(value: string | undefined): string | undefined {
 }
 
 // 规范化快速模式：布尔或字符串 "on"/"off"/"auto"
-function normalizeFastMode(value: unknown): boolean | undefined {
+function normalizeFastMode(value: any): boolean | undefined {
   if (typeof value === 'boolean') {
     return value;
   }
@@ -226,12 +226,12 @@ function normalizeFastMode(value: unknown): boolean | undefined {
 
 // 从遗留 flat provider 字段构建兼容 provider 配置
 function buildLegacyTalkProviderCompat(
-  value: Record<string, unknown>,
+  value: Record<string, any>,
 ): TalkProviderConfig | undefined {
   const provider: TalkProviderConfig = {};
   for (const key of ['voiceId', 'voiceAliases', 'modelId', 'outputFormat'] as const) {
     if (value[key] !== undefined) {
-      (provider as Record<string, unknown>)[key] = value[key];
+      (provider as Record<string, any>)[key] = value[key];
     }
   }
   const apiKey = normalizeTalkSecretInput(value.apiKey);
@@ -246,7 +246,7 @@ function buildLegacyTalkProviderCompat(
 // ============================================================================
 
 // 规范化单个 Talk provider 配置
-function normalizeTalkProviderConfig(value: unknown): TalkProviderConfig | undefined {
+function normalizeTalkProviderConfig(value: any): TalkProviderConfig | undefined {
   if (!isRecord(value)) {
     return undefined;
   }
@@ -269,7 +269,7 @@ function normalizeTalkProviderConfig(value: unknown): TalkProviderConfig | undef
 
 // 规范化 Talk providers 映射
 function normalizeTalkProviders(
-  value: unknown,
+  value: any,
 ): Record<string, TalkProviderConfig> | undefined {
   if (!isRecord(value)) {
     return undefined;
@@ -293,7 +293,7 @@ function normalizeTalkProviders(
 }
 
 // 规范化 Talk realtime 配置
-function normalizeTalkRealtimeConfig(value: unknown): TalkRealtimeConfig | undefined {
+function normalizeTalkRealtimeConfig(value: any): TalkRealtimeConfig | undefined {
   if (!isRecord(value)) {
     return undefined;
   }
@@ -376,7 +376,7 @@ export function normalizeTalkSection(value: TalkConfig | undefined): TalkConfig 
     return undefined;
   }
 
-  const source = value as Record<string, unknown>;
+  const source = value as Record<string, any>;
   const normalized: TalkConfig = {};
   const speechLocale = normalizeOptionalString(source.speechLocale);
   if (speechLocale) {
@@ -457,7 +457,7 @@ export function resolveActiveTalkProviderConfig(
 // 解析 Talk 配置：规范化并填充默认值，返回完整可用的配置对象
 // 参考 openclaw 的 resolveTalkConfig 语义：输入任意 talk 节，输出规范化后的解析结果
 export function resolveTalkConfig(
-  value: unknown,
+  value: any,
 ): TalkConfig {
   const normalized = normalizeTalkSection(isRecord(value) ? (value as TalkConfig) : undefined);
   if (!normalized) {
@@ -485,7 +485,7 @@ export function resolveTalkConfig(
 
 // 构建 Talk 配置响应负载（供网关 talk.config 接口返回）
 // 包含规范化 provider 数据，并在选择无歧义时附带解析后的活动 provider
-export function buildTalkConfigResponse(value: unknown): TalkConfigResponse | undefined {
+export function buildTalkConfigResponse(value: any): TalkConfigResponse | undefined {
   if (!isRecord(value)) {
     return undefined;
   }

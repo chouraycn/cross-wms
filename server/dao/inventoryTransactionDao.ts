@@ -43,7 +43,7 @@ export function findByQuery(params: InventoryTransactionQueryParams): InventoryT
   const { type, warehouseId, startDate, endDate, sku, page = 1, pageSize = 20 } = params;
 
   let sql = 'SELECT * FROM inventory_transactions WHERE 1=1';
-  const queryParams: unknown[] = [];
+  const queryParams: any[] = [];
 
   if (type) {
     sql += ' AND type = ?';
@@ -81,7 +81,7 @@ export function countByQuery(params: Omit<InventoryTransactionQueryParams, 'page
   const { type, warehouseId, startDate, endDate, sku } = params;
 
   let sql = 'SELECT COUNT(*) as total FROM inventory_transactions WHERE 1=1';
-  const queryParams: unknown[] = [];
+  const queryParams: any[] = [];
 
   if (type) {
     sql += ' AND type = ?';

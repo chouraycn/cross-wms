@@ -84,7 +84,7 @@ function runMigrations(dryRun: boolean): { applied: string[]; skipped: string[];
   return { applied, skipped, failed };
 }
 
-function formatJsonOutput(data: unknown): string {
+function formatJsonOutput(data: any): string {
   return JSON.stringify(data, null, 2);
 }
 

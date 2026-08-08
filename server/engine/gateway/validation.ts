@@ -2,6 +2,6 @@
 
 export type Validator = unknown;
 
-export function assertValidParams(...args: unknown[]): unknown {
+export function assertValidParams(...args: any[]): any {
   return undefined;
 }

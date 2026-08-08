@@ -12,7 +12,7 @@ const emptyPluginMetadataSnapshot = vi.hoisted(() => ({
 }));
 
 vi.mock("../agents/provider-model-normalization.runtime.js", () => ({
-  normalizeProviderModelIdWithRuntime: (params: unknown) =>
+  normalizeProviderModelIdWithRuntime: (params: any) =>
     normalizeProviderModelIdWithPluginMock(params),
 }));
 

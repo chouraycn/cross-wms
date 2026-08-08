@@ -32,7 +32,7 @@ type ResolveProviderHttpRequestConfigResult = {
   dispatcherPolicy: undefined;
 };
 
-type AnyMock = Mock<(...args: unknown[]) => unknown>;
+type AnyMock = Mock<(...args: any[]) => unknown>;
 
 interface ProviderHttpMocks {
   resolveApiKeyForProviderMock: Mock<() => Promise<{ apiKey: string }>>;
@@ -82,7 +82,7 @@ providerHttpMocks.executeProviderOperationWithRetryMock.mockImplementation(
   async (params: {
     stage?: string;
     retry?: boolean | { attempts?: number; sleep?: (ms: number) => Promise<void> };
-    operation: () => Promise<unknown>;
+    operation: () => Promise<any>;
   }) => {
     const attempts =
       typeof params.retry === "object"
@@ -90,7 +90,7 @@ providerHttpMocks.executeProviderOperationWithRetryMock.mockImplementation(
         : params.retry === false || params.stage === "create"
           ? 1
           : 2;
-    let lastError: unknown;
+    let lastError: any;
     for (let attempt = 1; attempt <= attempts; attempt += 1) {
       try {
         return await params.operation();

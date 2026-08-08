@@ -294,7 +294,7 @@ describe("commands registry", () => {
       plugins: true,
       debug: true,
       bash: true,
-    }) as Record<string, unknown>;
+    }) as Record<string, any>;
     const commands = listChatCommandsForConfig({
       commands: inheritedCommands as never,
     });

@@ -18,7 +18,7 @@ export type PolicyConditionOperator =
 export type PolicyCondition = {
   field: string;
   operator: PolicyConditionOperator;
-  value: unknown;
+  value: any;
   caseSensitive?: boolean;
 };
 
@@ -77,9 +77,9 @@ export type PolicyEvaluationContext = {
   resource?: string;
   action?: string;
   subject?: string;
-  environment?: Record<string, unknown>;
-  metadata?: Record<string, unknown>;
-  request?: Record<string, unknown>;
+  environment?: Record<string, any>;
+  metadata?: Record<string, any>;
+  request?: Record<string, any>;
 };
 
 export type PolicyEvaluationResult = {
@@ -88,7 +88,7 @@ export type PolicyEvaluationResult = {
   matchedRules: string[];
   actions: PolicyAction[];
   reason?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 export type PolicyStoreOptions = {

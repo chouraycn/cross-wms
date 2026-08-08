@@ -14,7 +14,7 @@ export async function delegateCompactionToRuntime(_params: {
   force?: boolean;
   customInstructions?: string;
   abortSignal?: AbortSignal;
-  runtimeContext?: unknown;
+  runtimeContext?: any;
 }): Promise<{
   ok: boolean;
   compacted: boolean;

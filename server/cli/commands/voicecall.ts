@@ -68,7 +68,7 @@ function listCalls(): CallEntry[] {
   return Array.from(CALL_STORE.values());
 }
 
-function formatJsonOutput(data: unknown): string {
+function formatJsonOutput(data: any): string {
   return JSON.stringify(data, null, 2);
 }
 

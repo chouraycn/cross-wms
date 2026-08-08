@@ -30,9 +30,9 @@ const CRON_EDIT_LOOKUP_PAGE_SIZE = 200;
 const CRON_EDIT_LOOKUP_MAX_PAGES = 50;
 
 const assignIf = (
-  target: Record<string, unknown>,
+  target: Record<string, any>,
   key: string,
-  value: unknown,
+  value: any,
   shouldAssign: boolean,
 ) => {
   if (shouldAssign) {
@@ -41,7 +41,7 @@ const assignIf = (
 };
 
 async function loadCronJobForEditSchedulePatch(
-  opts: Record<string, unknown>,
+  opts: Record<string, any>,
   id: string,
 ): Promise<CronJob | undefined> {
   // Schedule patches need the existing job; page defensively because gateway stores can be large.
@@ -67,7 +67,7 @@ async function loadCronJobForEditSchedulePatch(
   throw new Error("cron.list pagination exceeded maximum pages while looking up cron job");
 }
 
-async function readCronJobForEdit(opts: Record<string, unknown>, id: string): Promise<CronJob> {
+async function readCronJobForEdit(opts: Record<string, any>, id: string): Promise<CronJob> {
   return (await callGatewayFromCli("cron.get", opts, { id })) as CronJob;
 }
 
@@ -197,7 +197,7 @@ export function registerCronEditCommand(cron: Command) {
           if (deliveryModeFlagCount > 1) {
             throw new Error("Choose at most one of --announce, --no-deliver, or --webhook.");
           }
-          const patch: Record<string, unknown> = {};
+          const patch: Record<string, any> = {};
           if (typeof opts.name === "string") {
             patch.name = opts.name;
           }
@@ -410,7 +410,7 @@ export function registerCronEditCommand(cron: Command) {
               text: String(opts.systemEvent),
             };
           } else if (hasAgentTurnPatch) {
-            const payload: Record<string, unknown> = { kind: "agentTurn" };
+            const payload: Record<string, any> = { kind: "agentTurn" };
             assignIf(payload, "message", String(opts.message), typeof opts.message === "string");
             if (opts.clearModel) {
               payload.model = null;
@@ -434,7 +434,7 @@ export function registerCronEditCommand(cron: Command) {
             }
             patch.payload = payload;
           } else if (hasCommandPatch) {
-            const payload: Record<string, unknown> = { kind: "command" };
+            const payload: Record<string, any> = { kind: "command" };
             assignIf(payload, "argv", commandArgv, Boolean(commandArgv));
             assignIf(payload, "argv", ["sh", "-lc", commandShell], Boolean(commandShell));
             assignIf(
@@ -462,7 +462,7 @@ export function registerCronEditCommand(cron: Command) {
           }
 
           if (hasDeliveryModeFlag || hasDeliveryTarget || hasDeliveryAccount || hasBestEffort) {
-            const delivery: Record<string, unknown> = {};
+            const delivery: Record<string, any> = {};
             if (hasDeliveryModeFlag) {
               delivery.mode = hasWebhookDelivery
                 ? "webhook"
@@ -540,7 +540,7 @@ export function registerCronEditCommand(cron: Command) {
           if (failureAlertFlag === false) {
             patch.failureAlert = false;
           } else if (failureAlertFlag === true || hasFailureAlertFields) {
-            const failureAlert: Record<string, unknown> = {};
+            const failureAlert: Record<string, any> = {};
             if (hasFailureAlertAfter) {
               const after = parseStrictPositiveInteger(opts.failureAlertAfter);
               if (after === undefined) {

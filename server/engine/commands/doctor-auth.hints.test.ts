@@ -26,7 +26,7 @@ vi.mock("../agents/auth-profiles.js", async () => {
   };
 });
 
-function doctorFixtureConfig(config: unknown): OpenClawConfig {
+function doctorFixtureConfig(config: any): OpenClawConfig {
   return config as OpenClawConfig;
 }
 

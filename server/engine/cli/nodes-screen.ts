@@ -19,7 +19,7 @@ export type ScreenRecordPayload = {
 };
 
 /** Validate and normalize an unknown screen-record payload. */
-export function parseScreenRecordPayload(value: unknown): ScreenRecordPayload {
+export function parseScreenRecordPayload(value: any): ScreenRecordPayload {
   const obj = asRecord(value);
   const format = asString(obj.format);
   const base64 = asString(obj.base64);
@@ -61,7 +61,7 @@ export type ScreenSnapshotPayload = {
 };
 
 /** Validate and normalize an unknown screen-snapshot payload. */
-export function parseScreenSnapshotPayload(value: unknown): ScreenSnapshotPayload {
+export function parseScreenSnapshotPayload(value: any): ScreenSnapshotPayload {
   const obj = asRecord(value);
   const format = asString(obj.format);
   const base64 = asString(obj.base64);

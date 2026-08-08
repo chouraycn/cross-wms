@@ -7,14 +7,14 @@
 const RAW_APPEND_MESSAGE = Symbol("openclaw.session.rawAppendMessage");
 
 type SessionManagerLike = {
-  appendMessage: (...args: unknown[]) => unknown;
-  [RAW_APPEND_MESSAGE]?: (...args: unknown[]) => unknown;
+  appendMessage: (...args: any[]) => unknown;
+  [RAW_APPEND_MESSAGE]?: (...args: any[]) => unknown;
 };
 
 /** Return the unguarded appendMessage implementation for a session manager. */
 export function getRawSessionAppendMessage(
   sessionManager: SessionManagerLike,
-): (...args: unknown[]) => unknown {
+): (...args: any[]) => unknown {
   const rawAppend = sessionManager[RAW_APPEND_MESSAGE];
   return rawAppend ?? sessionManager.appendMessage.bind(sessionManager);
 }
@@ -22,7 +22,7 @@ export function getRawSessionAppendMessage(
 /** Stores the unguarded appendMessage implementation on a session manager. */
 export function setRawSessionAppendMessage(
   sessionManager: SessionManagerLike,
-  appendMessage: (...args: unknown[]) => unknown,
+  appendMessage: (...args: any[]) => unknown,
 ): void {
   (sessionManager as SessionManagerLike)[RAW_APPEND_MESSAGE] = appendMessage;
 }

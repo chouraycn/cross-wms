@@ -31,8 +31,8 @@ export type RestartSentinelStats = {
   root?: string;
   requiresRestart?: boolean;
   handoffId?: string;
-  before?: Record<string, unknown> | null;
-  after?: Record<string, unknown> | null;
+  before?: Record<string, any> | null;
+  after?: Record<string, any> | null;
   steps?: RestartSentinelStep[];
   reason?: string | null;
   durationMs?: number | null;
@@ -126,7 +126,7 @@ function readSentinelFile(env: NodeJS.ProcessEnv): RestartSentinel | null {
   const sentinelPath = resolveRestartSentinelPath(env);
   try {
     const content = fs.readFileSync(sentinelPath, "utf-8");
-    const parsed = JSON.parse(content) as unknown;
+    const parsed = JSON.parse(content) as any;
     if (
       parsed &&
       typeof parsed === "object" &&

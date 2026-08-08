@@ -17,7 +17,7 @@ export interface TestResult {
   /** 错误信息 */
   error?: string;
   /** 详细信息 */
-  details?: Record<string, unknown>;
+  details?: Record<string, any>;
 }
 
 /**
@@ -52,7 +52,7 @@ export interface MockLLMClient {
     messages: Array<{ role: string; content: string }>;
     tools?: Array<{ type: string; function: { name: string; description: string } }>;
     stream?: boolean;
-  }): Promise<{ content: string; toolCalls?: unknown[] }>;
+  }): Promise<{ content: string; toolCalls?: any[] }>;
 }
 
 /**

@@ -8,15 +8,15 @@
 
 export { modelKey } from "../shared/model-key.js";
 export type ProviderModelIdNormalizationOptions = unknown;
-export function normalizeStaticProviderModelId(..._args: unknown[]): unknown {
+export function normalizeStaticProviderModelId(..._args: any[]): any {
   return undefined;
 }
-export function normalizeConfiguredProviderCatalogModelId(..._args: unknown[]): unknown {
+export function normalizeConfiguredProviderCatalogModelId(..._args: any[]): any {
   return undefined;
 }
-export function resolveStaticAllowlistModelKey(..._args: unknown[]): unknown {
+export function resolveStaticAllowlistModelKey(..._args: any[]): any {
   return undefined;
 }
-export function formatLiteralProviderPrefixedModelRef(..._args: unknown[]): unknown {
+export function formatLiteralProviderPrefixedModelRef(..._args: any[]): any {
   return "";
 }

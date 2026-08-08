@@ -40,24 +40,24 @@ export interface WebFetchResult {
 // ==================== 工具定义 ====================
 
 export type WebSearchProviderToolExecuteFn = (
-  args: Record<string, unknown>,
+  args: Record<string, any>,
   context?: WebSearchProviderToolExecutionContext,
 ) => Promise<WebSearchResultList>;
 
 export interface WebSearchProviderToolDefinition {
   description: string;
-  parameters: Record<string, unknown>;
+  parameters: Record<string, any>;
   execute: WebSearchProviderToolExecuteFn;
 }
 
 export type WebFetchProviderToolExecuteFn = (
-  args: Record<string, unknown>,
+  args: Record<string, any>,
   context?: WebFetchProviderToolExecutionContext,
 ) => Promise<WebFetchResult>;
 
 export interface WebFetchProviderToolDefinition {
   description: string;
-  parameters: Record<string, unknown>;
+  parameters: Record<string, any>;
   execute: WebFetchProviderToolExecuteFn;
 }
 
@@ -74,13 +74,13 @@ export interface WebFetchProviderToolExecutionContext {
 // ==================== Provider 上下文 ====================
 
 export interface WebSearchProviderContext {
-  searchConfig?: Record<string, unknown>;
+  searchConfig?: Record<string, any>;
   runtimeMetadata?: RuntimeWebSearchMetadata;
   agentDir?: string;
 }
 
 export interface WebFetchProviderContext {
-  fetchConfig?: Record<string, unknown>;
+  fetchConfig?: Record<string, any>;
   runtimeMetadata?: RuntimeWebFetchMetadata;
   agentDir?: string;
 }
@@ -92,12 +92,12 @@ export type WebFetchCredentialResolutionSource = "config" | "secretRef" | "env" 
 
 export interface WebSearchProviderConfiguredCredentialFallback {
   path: string;
-  value: unknown;
+  value: any;
 }
 
 export interface WebFetchProviderConfiguredCredentialFallback {
   path: string;
-  value: unknown;
+  value: any;
 }
 
 // ==================== 运行时元数据 ====================
@@ -143,7 +143,7 @@ export interface RuntimeWebToolsMetadata {
 // ==================== 运行时元数据上下文 ====================
 
 export interface WebSearchRuntimeMetadataContext {
-  searchConfig?: Record<string, unknown>;
+  searchConfig?: Record<string, any>;
   runtimeMetadata?: RuntimeWebSearchMetadata;
   resolvedCredential?: {
     value?: string;
@@ -153,7 +153,7 @@ export interface WebSearchRuntimeMetadataContext {
 }
 
 export interface WebFetchRuntimeMetadataContext {
-  fetchConfig?: Record<string, unknown>;
+  fetchConfig?: Record<string, any>;
   runtimeMetadata?: RuntimeWebFetchMetadata;
   resolvedCredential?: {
     value?: string;
@@ -180,14 +180,14 @@ export interface WebSearchProviderPlugin {
   credentialPath: string;
   inactiveSecretPaths?: string[];
 
-  getCredentialValue: (searchConfig?: Record<string, unknown>) => unknown;
-  setCredentialValue: (searchConfigTarget: Record<string, unknown>, value: unknown) => void;
-  getConfiguredCredentialValue?: (config: Record<string, unknown>) => unknown;
-  setConfiguredCredentialValue?: (configTarget: Record<string, unknown>, value: unknown) => void;
+  getCredentialValue: (searchConfig?: Record<string, any>) => unknown;
+  setCredentialValue: (searchConfigTarget: Record<string, any>, value: any) => void;
+  getConfiguredCredentialValue?: (config: Record<string, any>) => unknown;
+  setConfiguredCredentialValue?: (configTarget: Record<string, any>, value: any) => void;
   getConfiguredCredentialFallback?: (
-    config: Record<string, unknown>,
+    config: Record<string, any>,
   ) => WebSearchProviderConfiguredCredentialFallback | undefined;
-  applySelectionConfig?: (config: Record<string, unknown>) => Record<string, unknown>;
+  applySelectionConfig?: (config: Record<string, any>) => Record<string, any>;
 
   resolveRuntimeMetadata?: (
     ctx: WebSearchRuntimeMetadataContext,
@@ -214,14 +214,14 @@ export interface WebFetchProviderPlugin {
   credentialPath: string;
   inactiveSecretPaths?: string[];
 
-  getCredentialValue: (fetchConfig?: Record<string, unknown>) => unknown;
-  setCredentialValue: (fetchConfigTarget: Record<string, unknown>, value: unknown) => void;
-  getConfiguredCredentialValue?: (config: Record<string, unknown>) => unknown;
-  setConfiguredCredentialValue?: (configTarget: Record<string, unknown>, value: unknown) => void;
+  getCredentialValue: (fetchConfig?: Record<string, any>) => unknown;
+  setCredentialValue: (fetchConfigTarget: Record<string, any>, value: any) => void;
+  getConfiguredCredentialValue?: (config: Record<string, any>) => unknown;
+  setConfiguredCredentialValue?: (configTarget: Record<string, any>, value: any) => void;
   getConfiguredCredentialFallback?: (
-    config: Record<string, unknown>,
+    config: Record<string, any>,
   ) => WebFetchProviderConfiguredCredentialFallback | undefined;
-  applySelectionConfig?: (config: Record<string, unknown>) => Record<string, unknown>;
+  applySelectionConfig?: (config: Record<string, any>) => Record<string, any>;
 
   resolveRuntimeMetadata?: (
     ctx: WebFetchRuntimeMetadataContext,

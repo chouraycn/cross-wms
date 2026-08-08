@@ -9,15 +9,15 @@ type WriteJsonlFileOptions = {
 };
 
 /** Serializes one JSONL entry and appends the newline terminator. */
-export function serializeJsonlEntry(entry: unknown): string {
+export function serializeJsonlEntry(entry: any): string {
   return `${serializeJsonlLine(entry)}\n`;
 }
 
-export function serializeJsonlLine(entry: unknown): string {
+export function serializeJsonlLine(entry: any): string {
   return JSON.stringify(entry);
 }
 
-export function serializeJsonlEntries(entries: readonly unknown[]): string {
+export function serializeJsonlEntries(entries: readonly any[]): string {
   return serializeJsonlLines(entries.map(serializeJsonlLine));
 }
 
@@ -26,7 +26,7 @@ export function serializeJsonlLines(lines: readonly string[]): string {
   return lines.length > 0 ? `${lines.join("\n")}\n` : "";
 }
 
-export function writeJsonlEntriesSync(filePath: string, entries: readonly unknown[]): string {
+export function writeJsonlEntriesSync(filePath: string, entries: readonly any[]): string {
   const content = serializeJsonlEntries(entries);
   writeFileSync(filePath, content, "utf-8");
   return content;
@@ -34,7 +34,7 @@ export function writeJsonlEntriesSync(filePath: string, entries: readonly unknow
 
 export function appendJsonlEntrySync(
   filePath: string,
-  entry: unknown,
+  entry: any,
   options?: { prefixNewline?: boolean },
 ): string {
   return appendSerializedJsonlEntrySync(filePath, serializeJsonlEntry(entry), options);
@@ -52,7 +52,7 @@ export function appendSerializedJsonlEntrySync(
 
 export async function writeJsonlEntry(
   filePath: string,
-  entry: unknown,
+  entry: any,
   options?: WriteJsonlFileOptions,
 ): Promise<void> {
   await fs.writeFile(filePath, serializeJsonlEntry(entry), {
@@ -76,7 +76,7 @@ export async function writeJsonlLines(
   return content;
 }
 
-export async function appendJsonlEntry(filePath: string, entry: unknown): Promise<void> {
+export async function appendJsonlEntry(filePath: string, entry: any): Promise<void> {
   await appendSerializedJsonlEntry(filePath, serializeJsonlEntry(entry));
 }
 

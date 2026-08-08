@@ -83,11 +83,11 @@ export interface SkillCommandProvider {
 // ===================== 工具函数 =====================
 
 /** 解析 SKILL.md 的 YAML frontmatter */
-function parseFrontmatter(content: string): Record<string, unknown> {
+function parseFrontmatter(content: string): Record<string, any> {
   const m = content.match(/^---\s*\r?\n([\s\S]*?)\r?\n---/);
   if (!m) return {};
   try {
-    return (yaml.load(m[1]) as Record<string, unknown>) || {};
+    return (yaml.load(m[1]) as Record<string, any>) || {};
   } catch {
     return {};
   }
@@ -130,7 +130,7 @@ export class RealSkillProvider implements SkillCommandProvider {
     const bundledDir = resolveRepoSkillsDir();
     let builtinDir: string;
     try {
-      const appPathsMod: unknown = await import("../../config/appPaths.js");
+      const appPathsMod: any = await import("../../config/appPaths.js");
       builtinDir = appPathsMod.AppPaths.skillsDir;
     } catch {
       // 回退：复刻 appPaths 解析逻辑
@@ -407,7 +407,7 @@ export class RealSkillProvider implements SkillCommandProvider {
             source: "local",
             installedAt: new Date().toISOString(),
           };
-    } catch (e: unknown) {
+    } catch (e: any) {
       return {
         id,
         name: id,
@@ -568,7 +568,7 @@ export class RealSkillProvider implements SkillCommandProvider {
 
 // ===================== 输出格式化 =====================
 
-function formatJsonOutput(data: unknown): string {
+function formatJsonOutput(data: any): string {
   return JSON.stringify(data, null, 2);
 }
 
@@ -716,7 +716,7 @@ export function registerSkillsCommand(
     .option("--json", "JSON 输出格式")
     .option("--local", "仅搜索本地技能")
     .option("--remote", "仅搜索 ClawHub")
-    .action(async (query: string, options: unknown) => {
+    .action(async (query: string, options: any) => {
       const results: Array<{ id: string; name: string; description: string; version: string; source: string }> = [];
 
       if (!options.remote) {
@@ -764,7 +764,7 @@ export function registerSkillsCommand(
     .option("--json", "JSON 输出格式")
     .option("--local", "本地验证（扫描技能目录）")
     .option("--version <version>", "技能版本")
-    .action(async (slug: string, options: unknown) => {
+    .action(async (slug: string, options: any) => {
       let verdict: SecurityVerdict;
       let source: string;
 
@@ -791,7 +791,7 @@ export function registerSkillsCommand(
     .description("检查技能状态和依赖")
     .option("--json", "JSON 输出格式")
     .option("--skill <id>", "检查指定技能")
-    .action(async (options: unknown) => {
+    .action(async (options: any) => {
       const skills = await provider.list();
 
       if (options.json) {
@@ -832,7 +832,7 @@ export function registerSkillsCommand(
     .description("列出所有提案")
     .option("--json", "JSON 输出格式")
     .option("--status <status>", "按状态筛选 (pending/applied/rejected/quarantined)")
-    .action(async (options: unknown) => {
+    .action(async (options: any) => {
       const proposals = await listSkillProposals(process.cwd(), options.status);
 
       if (options.json) {
@@ -855,7 +855,7 @@ export function registerSkillsCommand(
     .option("--json", "JSON 输出格式")
     .option("--description <desc>", "提案描述")
     .option("--goal <goal>", "提案目标")
-    .action(async (name: string, options: unknown) => {
+    .action(async (name: string, options: any) => {
       const result = await createSkillProposal({
         workspaceDir: process.cwd(),
         name,
@@ -879,7 +879,7 @@ export function registerSkillsCommand(
     .command("read <id>")
     .description("查看提案详情")
     .option("--json", "JSON 输出格式")
-    .action(async (id: string, options: unknown) => {
+    .action(async (id: string, options: any) => {
       const result = await readSkillProposal(process.cwd(), id);
 
       if (options.json) {
@@ -906,7 +906,7 @@ export function registerSkillsCommand(
     .description("应用提案")
     .option("--json", "JSON 输出格式")
     .option("--reason <reason>", "应用理由")
-    .action(async (id: string, options: unknown) => {
+    .action(async (id: string, options: any) => {
       const result = await applySkillProposal({
         workspaceDir: process.cwd(),
         proposalId: id,
@@ -929,7 +929,7 @@ export function registerSkillsCommand(
     .description("拒绝提案")
     .option("--json", "JSON 输出格式")
     .option("--reason <reason>", "拒绝理由")
-    .action(async (id: string, options: unknown) => {
+    .action(async (id: string, options: any) => {
       const result = await rejectSkillProposal({
         workspaceDir: process.cwd(),
         proposalId: id,
@@ -951,7 +951,7 @@ export function registerSkillsCommand(
     .command("delete <id>")
     .description("删除提案")
     .option("--json", "JSON 输出格式")
-    .action(async (id: string, options: unknown) => {
+    .action(async (id: string, options: any) => {
       const result = await deleteSkillProposal(process.cwd(), id);
 
       if (options.json) {

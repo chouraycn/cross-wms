@@ -12,7 +12,7 @@ import {
 } from "./errors.js";
 
 function createCircularObject() {
-  const circular: { self?: unknown } = {};
+  const circular: { self?: any } = {};
   circular.self = circular;
   return circular;
 }
@@ -39,8 +39,8 @@ describe("error helpers", () => {
     const leaf = { name: "leaf" };
     const child = { name: "child" } as {
       name: string;
-      cause?: unknown;
-      errors?: unknown[];
+      cause?: any;
+      errors?: any[];
     };
     const root = { name: "root", cause: child, errors: [leaf, child] };
     child.cause = root;
@@ -48,7 +48,7 @@ describe("error helpers", () => {
     expect(
       collectErrorGraphCandidates(root, (current) => [
         current.cause,
-        ...((current as { errors?: unknown[] }).errors ?? []),
+        ...((current as { errors?: any[] }).errors ?? []),
       ]),
     ).toEqual([root, child, leaf]);
     expect(collectErrorGraphCandidates(null)).toStrictEqual([]);
@@ -81,8 +81,8 @@ describe("error helpers", () => {
   });
 
   it("handles circular .cause references without infinite loop", () => {
-    const a: Error & { cause?: unknown } = new Error("error A");
-    const b: Error & { cause?: unknown } = new Error("error B");
+    const a: Error & { cause?: any } = new Error("error A");
+    const b: Error & { cause?: any } = new Error("error B");
     a.cause = b;
     b.cause = a;
     const formatted = formatErrorMessage(a);

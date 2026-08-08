@@ -39,7 +39,7 @@ type LegacyOAuthEncryptedPayload = {
   ciphertext: string;
 };
 
-function readNonEmptyString(value: unknown): string | undefined {
+function readNonEmptyString(value: any): string | undefined {
   return typeof value === "string" && value.trim() ? value : undefined;
 }
 
@@ -51,7 +51,7 @@ export function resolveLegacyOAuthSidecarPath(
   return path.join(resolveOAuthDir(env), LEGACY_OAUTH_SECRET_DIRNAME, `${ref.id}.json`);
 }
 
-function normalizeLegacyOAuthSecretMaterial(raw: unknown): LegacyOAuthSecretMaterial | null {
+function normalizeLegacyOAuthSecretMaterial(raw: any): LegacyOAuthSecretMaterial | null {
   if (!isRecord(raw)) {
     return null;
   }
@@ -63,7 +63,7 @@ function normalizeLegacyOAuthSecretMaterial(raw: unknown): LegacyOAuthSecretMate
   return Object.keys(material).length > 0 ? material : null;
 }
 
-function coerceLegacyOAuthEncryptedPayload(raw: unknown): LegacyOAuthEncryptedPayload | null {
+function coerceLegacyOAuthEncryptedPayload(raw: any): LegacyOAuthEncryptedPayload | null {
   if (!isRecord(raw)) {
     return null;
   }
@@ -81,7 +81,7 @@ function coerceLegacyOAuthEncryptedPayload(raw: unknown): LegacyOAuthEncryptedPa
 }
 
 /** Return true when raw JSON has the legacy OAuth sidecar envelope or plaintext token shape. */
-export function isLegacyOAuthSidecarPayload(raw: unknown): boolean {
+export function isLegacyOAuthSidecarPayload(raw: any): boolean {
   if (!isRecord(raw)) {
     return false;
   }
@@ -294,7 +294,7 @@ function decryptLegacyOAuthSecretMaterialWithSeed(
       decipher.update(Buffer.from(params.encrypted.ciphertext, "base64url")),
       decipher.final(),
     ]).toString("utf8");
-    return normalizeLegacyOAuthSecretMaterial(JSON.parse(plaintext) as unknown);
+    return normalizeLegacyOAuthSecretMaterial(JSON.parse(plaintext) as any);
   } catch {
     return null;
   }

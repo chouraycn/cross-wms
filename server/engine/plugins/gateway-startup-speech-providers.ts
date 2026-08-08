@@ -20,7 +20,7 @@ const TTS_PROVIDER_CONFIG_RESERVED_KEYS = new Set([
 ]);
 
 /** Treats missing activation as enabled while honoring explicit false values. */
-function isConfigActivationValueEnabled(value: unknown): boolean {
+function isConfigActivationValueEnabled(value: any): boolean {
   if (value === false) {
     return false;
   }
@@ -31,7 +31,7 @@ function isConfigActivationValueEnabled(value: unknown): boolean {
 }
 
 /** Normalizes configured TTS provider ids for startup plugin selection. */
-export function normalizeConfiguredSpeechProviderIdForStartup(value: unknown): string | undefined {
+export function normalizeConfiguredSpeechProviderIdForStartup(value: any): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }
@@ -44,7 +44,7 @@ export function normalizeConfiguredSpeechProviderIdForStartup(value: unknown): s
 
 /** Resolves provider activation from both canonical providers maps and legacy root keys. */
 function resolveProviderConfigActivation(
-  ttsConfig: Record<string, unknown>,
+  ttsConfig: Record<string, any>,
   providerId: string,
 ): boolean | undefined {
   let fromProviders: boolean | undefined;
@@ -72,8 +72,8 @@ function resolveProviderConfigActivation(
 
 function addProviderIfEnabled(
   target: Set<string>,
-  ttsConfig: Record<string, unknown>,
-  providerId: unknown,
+  ttsConfig: Record<string, any>,
+  providerId: any,
 ): void {
   const normalized = normalizeConfiguredSpeechProviderIdForStartup(providerId);
   if (!normalized) {
@@ -85,8 +85,8 @@ function addProviderIfEnabled(
 }
 
 function findActivePersona(
-  ttsConfig: Record<string, unknown>,
-): Record<string, unknown> | undefined {
+  ttsConfig: Record<string, any>,
+): Record<string, any> | undefined {
   const personaId = normalizeOptionalLowercaseString(
     typeof ttsConfig.persona === "string" ? ttsConfig.persona : undefined,
   );
@@ -101,7 +101,7 @@ function findActivePersona(
   return undefined;
 }
 
-function addActivePersonaProvider(target: Set<string>, ttsConfig: Record<string, unknown>): void {
+function addActivePersonaProvider(target: Set<string>, ttsConfig: Record<string, any>): void {
   const persona = findActivePersona(ttsConfig);
   if (!persona) {
     return;
@@ -117,7 +117,7 @@ function addActivePersonaProvider(target: Set<string>, ttsConfig: Record<string,
   }
 }
 
-function addConfiguredTtsProviderIds(target: Set<string>, value: unknown): void {
+function addConfiguredTtsProviderIds(target: Set<string>, value: any): void {
   if (!isRecord(value)) {
     return;
   }

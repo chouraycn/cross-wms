@@ -30,7 +30,7 @@ function expectGlobalHookRunner(
   return runner;
 }
 
-async function expectGlobalRunnerState(expected: { hasRunner: boolean; registry?: unknown }) {
+async function expectGlobalRunnerState(expected: { hasRunner: boolean; registry?: any }) {
   const mod = await importHookRunnerGlobalModule();
   expect(mod.getGlobalHookRunner() === null).toBe(!expected.hasRunner);
   if ("registry" in expected) {

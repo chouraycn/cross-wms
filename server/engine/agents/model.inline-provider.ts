@@ -7,15 +7,15 @@
  */
 
 export type InlineProviderConfig = unknown;
-export function normalizeResolvedTransportApi(..._args: unknown[]): unknown {
+export function normalizeResolvedTransportApi(..._args: any[]): any {
   return undefined;
 }
-export function sanitizeModelHeaders(..._args: unknown[]): unknown {
+export function sanitizeModelHeaders(..._args: any[]): any {
   return undefined;
 }
-export function resolveProviderModelInput(..._args: unknown[]): unknown {
+export function resolveProviderModelInput(..._args: any[]): any {
   return undefined;
 }
-export function buildInlineProviderModels(..._args: unknown[]): unknown {
+export function buildInlineProviderModels(..._args: any[]): any {
   return undefined;
 }

@@ -16,13 +16,13 @@ export function isPyWebView(): boolean {
 export function isWKWebView(): boolean {
   return typeof window !== 'undefined' && (
     'pywebview' in window ||
-    !!(window as unknown).webkit?.messageHandlers
+    !!(window as any).webkit?.messageHandlers
   );
 }
 
 /** 是否在 Electron 环境中运行 */
 export function isElectron(): boolean {
-  return typeof window !== 'undefined' && !!(window as unknown).electronAPI;
+  return typeof window !== 'undefined' && !!(window as any).electronAPI;
 }
 
 /**

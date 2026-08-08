@@ -6,7 +6,7 @@ import type { AuthProfileStore } from "../agents/auth-profiles/types.js";
 type FallbackStoreCaseResult = {
   profileIds: string[];
   resolvedKey: string | undefined;
-  resolveApiKeyCalls: unknown[][];
+  resolveApiKeyCalls: any[][];
 };
 
 async function runFallbackStoreCase(): Promise<FallbackStoreCaseResult> {
@@ -206,7 +206,7 @@ describe("provider auth profile helpers", () => {
     };
     const externalCli = { mode: "scoped", providerIds: ["openai"] };
     const loadAuthProfileStoreForSecretsRuntime = vi.fn(
-      (_agentDir?: string, options?: { externalCli?: unknown }) =>
+      (_agentDir?: string, options?: { externalCli?: any }) =>
         options?.externalCli ? externalStore : primaryStore,
     );
 
@@ -259,7 +259,7 @@ describe("provider auth profile helpers", () => {
   it("accepts plus-signed Copilot token expiry strings", async () => {
     vi.resetModules();
 
-    const saved: unknown[] = [];
+    const saved: any[] = [];
     const fetchImpl = vi.fn(
       async () =>
         new Response(
@@ -365,7 +365,7 @@ describe("provider auth profile helpers", () => {
   it("refreshes cached Copilot tokens with out-of-range expiry values", async () => {
     vi.resetModules();
 
-    const saved: unknown[] = [];
+    const saved: any[] = [];
     const fetchImpl = vi.fn(
       async () =>
         new Response(

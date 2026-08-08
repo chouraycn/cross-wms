@@ -71,7 +71,7 @@ export function getServerToolByLeafName(serverId: string, leafName: string): Too
     .all(serverId) as ToolRow[];
   return rows.find((row) => {
     try {
-      const config = JSON.parse(row.config_json || '{}') as Record<string, unknown>;
+      const config = JSON.parse(row.config_json || '{}') as Record<string, any>;
       return String(config.tool || '').trim() === leafName;
     } catch {
       return false;
@@ -87,7 +87,7 @@ export function getToolByConfigSkillId(tenantId: string, skillId: string): ToolR
     .all(tenantId, 'skill') as ToolRow[];
   return rows.find((row) => {
     try {
-      const config = JSON.parse(row.config_json || '{}') as Record<string, unknown>;
+      const config = JSON.parse(row.config_json || '{}') as Record<string, any>;
       return String(config.skillId || '') === skillId;
     } catch {
       return false;
@@ -106,11 +106,11 @@ interface CreateToolData {
   tool_type?: string;
   method: string;
   url: string;
-  headers?: Record<string, unknown>;
-  auth?: Record<string, unknown>;
-  config?: Record<string, unknown>;
-  input_schema?: Record<string, unknown>;
-  output_schema?: Record<string, unknown>;
+  headers?: Record<string, any>;
+  auth?: Record<string, any>;
+  config?: Record<string, any>;
+  input_schema?: Record<string, any>;
+  output_schema?: Record<string, any>;
   allowed_skills?: string[];
   mcp_server_id?: string | null;
   mcp_tool_name?: string | null;
@@ -160,11 +160,11 @@ interface UpdateToolData {
   tool_type?: string;
   method?: string;
   url?: string;
-  headers?: Record<string, unknown>;
-  auth?: Record<string, unknown>;
-  config?: Record<string, unknown>;
-  input_schema?: Record<string, unknown>;
-  output_schema?: Record<string, unknown>;
+  headers?: Record<string, any>;
+  auth?: Record<string, any>;
+  config?: Record<string, any>;
+  input_schema?: Record<string, any>;
+  output_schema?: Record<string, any>;
   allowed_skills?: string[];
   mcp_server_id?: string | null;
   mcp_tool_name?: string | null;
@@ -182,7 +182,7 @@ export function updateTool(
   if (!existing) return undefined;
 
   const setClauses: string[] = ['updated_at = CAST(strftime(\'%s\',\'now\') AS INTEGER)'];
-  const params: unknown[] = [];
+  const params: any[] = [];
 
   if (updates.name !== undefined) {
     setClauses.push('name = ?');

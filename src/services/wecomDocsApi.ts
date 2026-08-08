@@ -24,7 +24,7 @@ export type WeComDocCategory = 'doc' | 'smartsheet' | 'smartpage';
 export interface WeComSheetInfo {
   sheet_id: string;
   title: string;
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 /** 智能表格字段信息 */
@@ -32,7 +32,7 @@ export interface WeComFieldInfo {
   field_id: string;
   field_title: string;
   field_type: string;
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 /** 智能表格记录 */
@@ -40,7 +40,7 @@ export interface WeComRecord {
   record_id: string;
   create_time?: string;
   update_time?: string;
-  values: Record<string, Array<{ text?: string; type?: string; id?: string; style?: number; [key: string]: unknown }>>;
+  values: Record<string, Array<{ text?: string; type?: string; id?: string; style?: number; [key: string]: any }>>;
 }
 
 /** 智能表格数据响应 */
@@ -65,11 +65,11 @@ export interface WeComSmartsheetStructure {
  * waitForApi 函数在 tencentDocsApi.ts 中定义，这里通过动态导入避免循环依赖
  * 在 pywebview 环境外（浏览器开发模式）直接报错
  */
-async function callApi<T>(method: string, ...args: unknown[]): Promise<T> {
+async function callApi<T>(method: string, ...args: any[]): Promise<T> {
   if (!window.pywebview?.api) {
     throw new Error('企业文档功能仅在桌面应用中可用（需要 pywebview 环境）');
   }
-  const api = window.pywebview.api as unknown as Record<string, (...a: unknown[]) => Promise<string>>;
+  const api = window.pywebview.api as unknown as Record<string, (...a: any[]) => Promise<string>>;
   const fn = api[method];
   if (typeof fn !== 'function') {
     throw new Error(`API method "${method}" not available`);

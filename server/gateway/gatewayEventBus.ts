@@ -118,7 +118,7 @@ export class GatewayEventBus {
    * 返回取消订阅函数
    */
   on(eventType: GatewayEventType | string, handler: GatewayEventHandler): () => void {
-    this.emitter.on(eventType, handler as (...args: unknown[]) => void);
+    this.emitter.on(eventType, handler as (...args: any[]) => void);
     return () => this.off(eventType, handler);
   }
 
@@ -126,7 +126,7 @@ export class GatewayEventBus {
    * 移除监听器
    */
   off(eventType: GatewayEventType | string, handler: GatewayEventHandler): void {
-    this.emitter.off(eventType, handler as (...args: unknown[]) => void);
+    this.emitter.off(eventType, handler as (...args: any[]) => void);
   }
 
   /**
@@ -134,11 +134,11 @@ export class GatewayEventBus {
    */
   once(eventType: GatewayEventType | string, handler: GatewayEventHandler): () => void {
     const wrapped = ((event: GatewayEvent) => {
-      this.emitter.off(eventType, wrapped as (...args: unknown[]) => void);
+      this.emitter.off(eventType, wrapped as (...args: any[]) => void);
       handler(event);
     }) as GatewayEventHandler;
-    this.emitter.on(eventType, wrapped as (...args: unknown[]) => void);
-    return () => this.emitter.off(eventType, wrapped as (...args: unknown[]) => void);
+    this.emitter.on(eventType, wrapped as (...args: any[]) => void);
+    return () => this.emitter.off(eventType, wrapped as (...args: any[]) => void);
   }
 
   /**

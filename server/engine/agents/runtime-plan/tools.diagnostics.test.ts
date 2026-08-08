@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   logProviderToolSchemaDiagnostics: vi.fn(),
-  normalizeProviderToolSchemas: vi.fn((params: { tools: unknown[] }) => params.tools),
+  normalizeProviderToolSchemas: vi.fn((params: { tools: any[] }) => params.tools),
 }));
 
 vi.mock("../embedded-agent-runner/tool-schema-runtime.js", () => ({

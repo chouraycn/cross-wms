@@ -63,18 +63,18 @@ export function resolveChannelAccountMediaMaxMb(params: {
   const channelCfg = channelId ? params.cfg.channels?.[channelId] : undefined;
   const channelObj =
     channelCfg && typeof channelCfg === "object"
-      ? (channelCfg as Record<string, unknown>)
+      ? (channelCfg as Record<string, any>)
       : undefined;
   const channelMediaMax =
     typeof channelObj?.mediaMaxMb === "number" ? channelObj.mediaMaxMb : undefined;
   const accountsObj =
     channelObj?.accounts && typeof channelObj.accounts === "object"
-      ? (channelObj.accounts as Record<string, unknown>)
+      ? (channelObj.accounts as Record<string, any>)
       : undefined;
   const accountCfg = accountId && accountsObj ? accountsObj[accountId] : undefined;
   const accountMediaMax =
     accountCfg && typeof accountCfg === "object"
-      ? (accountCfg as Record<string, unknown>).mediaMaxMb
+      ? (accountCfg as Record<string, any>).mediaMaxMb
       : undefined;
   return (typeof accountMediaMax === "number" ? accountMediaMax : undefined) ?? channelMediaMax;
 }

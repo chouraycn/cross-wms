@@ -40,8 +40,8 @@ export type PendingWrite = {
   status?: string;
   failureReason?: string;
   heartbeat?: Omit<CommitmentHeartbeat, 'id'>;
-  resolve: (value: unknown) => void;
-  reject: (reason: unknown) => void;
+  resolve: (value: any) => void;
+  reject: (reason: any) => void;
   createdAtMs: number;
   retries: number;
 };

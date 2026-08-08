@@ -82,7 +82,7 @@ export function resolveConfiguredBinding(params: {
 }): ConfiguredBindingResolution | null {
   const resolved = resolveMaterializedConfiguredBinding(params);
   if (!resolved) return null;
-  const materializedTarget = resolved.materializedTarget as Record<string, unknown>;
+  const materializedTarget = resolved.materializedTarget as Record<string, any>;
   return {
     conversation: resolved.conversation,
     compiledBinding: resolved.resolved.rule,

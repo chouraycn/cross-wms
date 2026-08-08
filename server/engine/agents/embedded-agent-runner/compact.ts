@@ -214,13 +214,13 @@ function createCompactionDiagId(): string {
 }
 
 function prepareCompactionSessionAgent(params: {
-  session: { agent: { streamFn?: unknown } };
-  providerStreamFn: unknown;
+  session: { agent: { streamFn?: any } };
+  providerStreamFn: any;
   sessionId: string;
   signal: AbortSignal;
   effectiveModel: ProviderRuntimeModel;
   resolvedApiKey?: string;
-  authStorage: unknown;
+  authStorage: any;
   config?: OpenClawConfig;
   provider: string;
   modelId: string;
@@ -319,14 +319,14 @@ function resolveCompactionProviderStream(params: {
   });
 }
 
-function normalizeObservedTokenCount(value: unknown): number | undefined {
+function normalizeObservedTokenCount(value: any): number | undefined {
   return typeof value === "number" && Number.isFinite(value) && value > 0
     ? Math.floor(value)
     : undefined;
 }
 
 function getMessageTextChars(msg: AgentMessage): number {
-  const content = (msg as { content?: unknown }).content;
+  const content = (msg as { content?: any }).content;
   if (typeof content === "string") {
     return content.length;
   }
@@ -338,7 +338,7 @@ function getMessageTextChars(msg: AgentMessage): number {
     if (!block || typeof block !== "object") {
       continue;
     }
-    const text = (block as { text?: unknown }).text;
+    const text = (block as { text?: any }).text;
     if (typeof text === "string") {
       total += text.length;
     }
@@ -348,9 +348,9 @@ function getMessageTextChars(msg: AgentMessage): number {
 
 function resolveMessageToolLabel(msg: AgentMessage): string | undefined {
   const candidate =
-    (msg as { toolName?: unknown }).toolName ??
-    (msg as { name?: unknown }).name ??
-    (msg as { tool?: unknown }).tool;
+    (msg as { toolName?: any }).toolName ??
+    (msg as { name?: any }).name ??
+    (msg as { tool?: any }).tool;
   return typeof candidate === "string" && candidate.trim().length > 0 ? candidate : undefined;
 }
 
@@ -459,7 +459,7 @@ function classifyCompactionFallbackResult(
   return failoverError ? { error: failoverError } : null;
 }
 
-function fallbackFailureToCompactionResult(err: unknown): EmbeddedAgentCompactResult {
+function fallbackFailureToCompactionResult(err: any): EmbeddedAgentCompactResult {
   const reason = isFallbackSummaryError(err) ? err.message : formatErrorMessage(err);
   return {
     ok: false,
@@ -635,7 +635,7 @@ async function compactEmbeddedAgentSessionDirectOnce(
   }
   let thinkLevel: ThinkLevel = params.thinkLevel ?? "off";
   const attemptedThinking = new Set<ThinkLevel>();
-  const fail = (reason: string, err?: unknown): EmbeddedAgentCompactResult => {
+  const fail = (reason: string, err?: any): EmbeddedAgentCompactResult => {
     const failureReason = classifyCompactionReason(reason);
     const failure = err ? describeFailoverError(err) : undefined;
     const detail =
@@ -751,7 +751,7 @@ async function compactEmbeddedAgentSessionDirectOnce(
   const { sessionAgentId: effectiveSkillAgentId } = earlyAgentIds;
 
   let restoreSkillEnv: (() => void) | undefined;
-  let compactionSessionManager: unknown = null;
+  let compactionSessionManager: any = null;
   let checkpointSnapshot: CapturedCompactionCheckpointSnapshot | null = null;
   let checkpointSnapshotRetained = false;
   try {

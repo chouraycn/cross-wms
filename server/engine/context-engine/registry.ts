@@ -337,9 +337,9 @@ class ContextEngineRegistry {
           return original;
         }
 
-        return async (...args: unknown[]) => {
+        return async (...args: any[]) => {
           try {
-            const result = await (original as (...a: unknown[]) => Promise<unknown>).apply(target, args);
+            const result = await (original as (...a: any[]) => Promise<any>).apply(target, args);
             this.recordSuccess(engineId);
             return result;
           } catch (err) {
@@ -371,7 +371,7 @@ class ContextEngineRegistry {
   async triggerLifecycle(
     phase: ContextEngineLifecyclePhase,
     engine: ContextEngine,
-    ...args: unknown[]
+    ...args: any[]
   ): Promise<void> {
     const hooks = this.lifecycleHooks.get(phase);
     if (!hooks || hooks.length === 0) return;

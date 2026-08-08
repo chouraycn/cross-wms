@@ -19,13 +19,13 @@ import type {
 /** Schema for channel configuration validation. */
 export interface ChannelConfigSchema {
   type: "object";
-  properties?: Record<string, unknown>;
-  [key: string]: unknown;
+  properties?: Record<string, any>;
+  [key: string]: any;
 }
 
 /** Adapter for channel authentication. */
 export interface ChannelAuthAdapter {
-  getAuth?(accountId: string): Promise<unknown>;
+  getAuth?(accountId: string): Promise<any>;
   clearAuth?(accountId: string): Promise<void>;
 }
 
@@ -42,11 +42,11 @@ export interface ChannelProbeResult {
 
 /** Audit info from channel status check. */
 export interface ChannelAuditInfo {
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 /** Adapter for channel status monitoring. */
-export interface ChannelStatusAdapter<TAccount = unknown, TProbe = unknown, TAudit = unknown> {
+export interface ChannelStatusAdapter<TAccount = any, TProbe = any, TAudit = any> {
   probe?(account: TAccount, config: AppConfig): Promise<TProbe>;
   audit?(account: TAccount, config: AppConfig): Promise<TAudit>;
 }
@@ -61,7 +61,7 @@ export interface ChannelLifecycleAdapter {
 export interface ChannelAgentTool {
   name: string;
   description?: string;
-  schema?: unknown;
+  schema?: any;
 }
 
 /** Lazy agent-tool factory used when tool availability depends on config. */
@@ -69,9 +69,9 @@ export type ChannelAgentToolFactory = (params: { cfg?: AppConfig }) => ChannelAg
 
 /** Full capability contract for a channel plugin. */
 export interface ChannelPlugin<
-  TAccount = unknown,
-  TProbe = unknown,
-  TAudit = unknown,
+  TAccount = any,
+  TProbe = any,
+  TAudit = any,
 > {
   id: ChannelId;
   meta: ChannelMeta;

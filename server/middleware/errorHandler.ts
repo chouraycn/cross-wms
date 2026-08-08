@@ -12,7 +12,7 @@ export interface ErrorResponse {
   timestamp: string;
 }
 
-export function errorHandler(err: unknown, req: Request, res: Response, next: NextFunction): void {
+export function errorHandler(err: any, req: Request, res: Response, next: NextFunction): void {
   const status = err?.status || 500;
   const message = err?.message || 'Internal Server Error';
   
@@ -29,7 +29,7 @@ export function errorHandler(err: unknown, req: Request, res: Response, next: Ne
 }
 
 export function throwHttpError(status: number, message: string): never {
-  const error = new Error(message) as unknown;
+  const error = new Error(message) as any;
   error.status = status;
   throw error;
 }

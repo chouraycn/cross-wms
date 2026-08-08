@@ -85,28 +85,28 @@ export type PixVerseProviderOptions = {
 
 /** PixVerse 统一响应信封 */
 type PixVerseEnvelope<T> = {
-  ErrCode?: unknown;
-  ErrMsg?: unknown;
+  ErrCode?: any;
+  ErrMsg?: any;
   Resp?: T;
 };
 
 type PixVerseUploadImageResponse = {
-  img_id?: unknown;
-  img_url?: unknown;
+  img_id?: any;
+  img_url?: any;
 };
 
 type PixVerseVideoCreateResponse = {
-  video_id?: unknown;
+  video_id?: any;
 };
 
 type PixVerseVideoResultResponse = {
-  id?: unknown;
-  status?: unknown;
-  url?: unknown;
-  outputWidth?: unknown;
-  outputHeight?: unknown;
-  seed?: unknown;
-  size?: unknown;
+  id?: any;
+  status?: any;
+  url?: any;
+  outputWidth?: any;
+  outputHeight?: any;
+  seed?: any;
+  size?: any;
 };
 
 const pixverseCapabilities: VideoProviderCapabilities = {
@@ -141,19 +141,19 @@ const pixverseCapabilities: VideoProviderCapabilities = {
   },
 };
 
-function normalizeString(value: unknown): string | undefined {
+function normalizeString(value: any): string | undefined {
   if (typeof value !== "string") return undefined;
   const trimmed = value.trim();
   return trimmed || undefined;
 }
 
-function asFiniteNumber(value: unknown): number | undefined {
+function asFiniteNumber(value: any): number | undefined {
   if (typeof value !== "number" || !Number.isFinite(value)) return undefined;
   return value;
 }
 
 function asSafeIntegerInRange(
-  value: unknown,
+  value: any,
   min: number,
   max: number,
 ): number | undefined {
@@ -233,7 +233,7 @@ async function readPixVerseJson<T>(
   response: Pick<Response, "json">,
   label: string,
 ): Promise<T> {
-  let payload: unknown;
+  let payload: any;
   try {
     payload = await response.json();
   } catch (cause) {
@@ -317,9 +317,9 @@ function buildVideoBody(
   req: VideoRequest,
   model: string,
   imageId?: number,
-): Record<string, unknown> {
+): Record<string, any> {
   const options = req.providerOptions ?? {};
-  const body: Record<string, unknown> = {
+  const body: Record<string, any> = {
     duration: resolveDurationSeconds(req.durationSeconds),
     model,
     prompt: req.prompt,

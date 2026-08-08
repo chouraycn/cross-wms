@@ -8,7 +8,7 @@ import { resetLogger, setLoggerOverride } from "../logging.js";
 const resolvedRedaction = { mode: "tools" as const, patterns: [/custom-secret-[a-z]+/g] };
 
 const { redactSensitiveLinesMock, resolveRedactOptionsMock } = vi.hoisted(() => ({
-  redactSensitiveLinesMock: vi.fn((lines: string[], options?: unknown) =>
+  redactSensitiveLinesMock: vi.fn((lines: string[], options?: any) =>
     options === resolvedRedaction
       ? lines.map((line) => line.replace("custom-secret-abcdefghijklmnopqrstuvwxyz", "custom…wxyz"))
       : lines,
@@ -20,7 +20,7 @@ vi.mock("./redact.js", async () => {
   const actual = await vi.importActual<typeof import("./redact.js")>("./redact.js");
   return {
     ...actual,
-    redactSensitiveLines: (lines: string[], options?: unknown) =>
+    redactSensitiveLines: (lines: string[], options?: any) =>
       redactSensitiveLinesMock(lines, options),
     resolveRedactOptions: () => resolveRedactOptionsMock(),
   };

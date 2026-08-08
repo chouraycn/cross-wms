@@ -167,7 +167,7 @@ function rowToTaskDeliveryState(row: TaskDeliveryStateRow): TaskDeliveryState {
   };
 }
 
-function bindTaskRecord(record: TaskRecord): Record<string, unknown> {
+function bindTaskRecord(record: TaskRecord): Record<string, any> {
   return {
     task_id: record.taskId,
     runtime: record.runtime,
@@ -199,7 +199,7 @@ function bindTaskRecord(record: TaskRecord): Record<string, unknown> {
   };
 }
 
-function bindTaskDeliveryState(state: TaskDeliveryState): Record<string, unknown> {
+function bindTaskDeliveryState(state: TaskDeliveryState): Record<string, any> {
   return {
     task_id: state.taskId,
     requester_origin_json: state.requesterOrigin ? JSON.stringify(state.requesterOrigin) : null,

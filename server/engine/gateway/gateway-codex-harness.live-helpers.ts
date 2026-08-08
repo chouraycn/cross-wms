@@ -416,7 +416,7 @@ export function isStrictExpectedCodexModelsCommandText(text: string): boolean {
 }
 
 /** Identifies transient live harness errors that are worth retrying, not skipping. */
-export function isRetryableCodexHarnessLiveError(error: unknown): boolean {
+export function isRetryableCodexHarnessLiveError(error: any): boolean {
   if (!(error instanceof Error)) {
     return false;
   }

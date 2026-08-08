@@ -1366,11 +1366,11 @@ export function hardenApprovedExecutionPaths(params: {
 }
 
 export function buildSystemRunApprovalPlan(params: {
-  command?: unknown;
-  rawCommand?: unknown;
-  cwd?: unknown;
-  agentId?: unknown;
-  sessionKey?: unknown;
+  command?: any;
+  rawCommand?: any;
+  cwd?: any;
+  agentId?: any;
+  sessionKey?: any;
 }): { ok: true; plan: SystemRunApprovalPlan } | { ok: false; message: string } {
   const command = resolveSystemRunCommandRequest({
     command: params.command,

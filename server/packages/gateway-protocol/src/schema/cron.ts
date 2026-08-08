@@ -59,7 +59,7 @@ const CronSessionTargetSchema = Type.Union([
 /** Whether a cron job waits for heartbeat processing or wakes immediately. */
 const CronWakeModeSchema = Type.Union([Type.Literal("next-heartbeat"), Type.Literal("now")]);
 /** Run status factory reused for the active field and deprecated alias metadata. */
-function cronRunStatusSchema(options: Record<string, unknown> = {}) {
+function cronRunStatusSchema(options: Record<string, any> = {}) {
   return Type.Union([Type.Literal("ok"), Type.Literal("error"), Type.Literal("skipped")], options);
 }
 

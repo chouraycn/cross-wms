@@ -28,7 +28,7 @@ export type CliBackendConfig = z.infer<typeof CliBackendConfigSchema>;
 const backendStore = new Map<string, CliBackendConfig>();
 const runnerCache = new Map<string, CliRunner>();
 
-export function registerCliBackend(config: Omit<CliBackendConfig, 'metadata'> & { metadata?: Record<string, unknown> }): CliBackendConfig {
+export function registerCliBackend(config: Omit<CliBackendConfig, 'metadata'> & { metadata?: Record<string, any> }): CliBackendConfig {
   const fullConfig: CliBackendConfig = {
     ...config,
     metadata: config.metadata ?? {},

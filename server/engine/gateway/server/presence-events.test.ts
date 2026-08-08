@@ -31,7 +31,7 @@ describe("broadcastPresenceSnapshot", () => {
     if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
       throw new Error("expected object payload");
     }
-    expect(Array.isArray((payload as { presence?: unknown }).presence)).toBe(true);
+    expect(Array.isArray((payload as { presence?: any }).presence)).toBe(true);
     expect(opts?.dropIfSlow).toBe(true);
     expect(opts?.stateVersion).toEqual({ presence: 7, health: 11 });
   });

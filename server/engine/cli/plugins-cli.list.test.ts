@@ -43,8 +43,8 @@ describe("plugins cli list", () => {
     expect(buildPluginRegistrySnapshotReport).toHaveBeenCalledTimes(1);
     const [reportOptions] = buildPluginRegistrySnapshotReport.mock.calls[0] as [
       {
-        config?: unknown;
-        logger?: { info?: unknown; warn?: unknown; error?: unknown };
+        config?: any;
+        logger?: { info?: any; warn?: any; error?: any };
       },
     ];
     expect(reportOptions?.config).toEqual({});
@@ -54,14 +54,14 @@ describe("plugins cli list", () => {
 
     const output = JSON.parse(runtimeLogs[0] ?? "null") as {
       workspaceDir?: string;
-      registry?: { source?: string; diagnostics?: unknown[] };
+      registry?: { source?: string; diagnostics?: any[] };
       plugins?: Array<{
         id?: string;
         imported?: boolean;
         activated?: boolean;
         explicitlyEnabled?: boolean;
       }>;
-      diagnostics?: unknown[];
+      diagnostics?: any[];
     };
     expect(output.workspaceDir).toBe("/workspace");
     expect(output.registry?.source).toBe("persisted");

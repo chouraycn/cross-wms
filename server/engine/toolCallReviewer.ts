@@ -7,12 +7,12 @@ export interface ToolCallReviewResult {
   decision: ToolReviewDecision;
   riskLevel: ToolRiskLevel;
   rationale: string;
-  reviewedParams?: Record<string, unknown>;
+  reviewedParams?: Record<string, any>;
 }
 
 export interface ToolCallReviewInput {
   toolName: string;
-  args: Record<string, unknown>;
+  args: Record<string, any>;
   sessionId?: string;
   userId?: string;
 }

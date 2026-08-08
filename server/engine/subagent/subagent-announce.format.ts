@@ -34,7 +34,7 @@ export interface AnnouncementMetadata {
 export function formatAnnouncement(
   instanceId: string,
   type: string,
-  content: unknown,
+  content: any,
   options: FormatOptions = {},
 ): FormattedAnnouncement {
   const instance = getActiveSubagent(instanceId);
@@ -49,7 +49,7 @@ export function formatAnnouncement(
     type,
   };
 
-  const payload: Record<string, unknown> = {
+  const payload: Record<string, any> = {
     ...(includeMetadata ? { metadata } : {}),
     content,
   };
@@ -96,7 +96,7 @@ export function formatAnnouncement(
 export function parseAnnouncement(
   payload: string | Buffer,
   format: AnnouncementFormat = 'json',
-): Record<string, unknown> {
+): Record<string, any> {
   const raw = typeof payload === 'string' ? payload : payload.toString('utf-8');
 
   switch (format) {
@@ -117,10 +117,10 @@ export function parseAnnouncement(
   }
 }
 
-function toYaml(obj: Record<string, unknown>): string {
+function toYaml(obj: Record<string, any>): string {
   const lines: string[] = [];
 
-  const serialize = (value: unknown, indent: number): string => {
+  const serialize = (value: any, indent: number): string => {
     const prefix = '  '.repeat(indent);
 
     if (value === null) return 'null';
@@ -134,7 +134,7 @@ function toYaml(obj: Record<string, unknown>): string {
     }
 
     if (typeof value === 'object') {
-      const entries = Object.entries(value as Record<string, unknown>);
+      const entries = Object.entries(value as Record<string, any>);
       return `{\n${entries.map(([k, v]) => `${prefix}  ${k}: ${serialize(v, indent + 1)}`).join('\n')}\n${prefix}}`;
     }
 
@@ -148,8 +148,8 @@ function toYaml(obj: Record<string, unknown>): string {
   return lines.join('\n');
 }
 
-function parseYaml(yaml: string): Record<string, unknown> {
-  const result: Record<string, unknown> = {};
+function parseYaml(yaml: string): Record<string, any> {
+  const result: Record<string, any> = {};
   const lines = yaml.split('\n');
 
   for (const line of lines) {
@@ -162,7 +162,7 @@ function parseYaml(yaml: string): Record<string, unknown> {
     const key = trimmed.slice(0, colonIndex).trim();
     const value = trimmed.slice(colonIndex + 1).trim();
 
-    let parsedValue: unknown;
+    let parsedValue: any;
     if (value === 'true') parsedValue = true;
     else if (value === 'false') parsedValue = false;
     else if (value === 'null') parsedValue = null;

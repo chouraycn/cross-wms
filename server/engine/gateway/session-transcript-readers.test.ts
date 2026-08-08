@@ -31,7 +31,7 @@ describe("session transcript reader facade", () => {
     fs.rmSync(tempDir, { recursive: true, force: true });
   });
 
-  function writeTranscript(sessionId: string, events: unknown[]): SessionTranscriptReadScope {
+  function writeTranscript(sessionId: string, events: any[]): SessionTranscriptReadScope {
     const transcriptPath = path.join(tempDir, `${sessionId}.jsonl`);
     fs.writeFileSync(
       transcriptPath,

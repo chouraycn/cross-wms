@@ -6,9 +6,9 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function hasMeaningfulConversationContent(..._args: unknown[]): unknown {
+export function hasMeaningfulConversationContent(..._args: any[]): any {
   return false;
 }
-export function isRealConversationMessage(..._args: unknown[]): unknown {
+export function isRealConversationMessage(..._args: any[]): any {
   return false;
 }

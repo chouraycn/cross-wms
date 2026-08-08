@@ -6,7 +6,7 @@ import { isMac, isLinux, PLATFORM } from '../toolTypes.js';
 import { escapeForAppleScript, linuxToolAvailable, desktopSnapshotCache } from './helpers.js';
 
 /** desktop_click — 点击元素（ref 优先）或坐标（支持归一化坐标） */
-export async function handleDesktopClick(args: Record<string, unknown>): Promise<string> {
+export async function handleDesktopClick(args: Record<string, any>): Promise<string> {
   const { execSync } = await import('child_process');
 
   try {
@@ -81,7 +81,7 @@ export async function handleDesktopClick(args: Record<string, unknown>): Promise
     }
 
     // 构建返回值附加信息
-    const extraInfo: Record<string, unknown> = {};
+    const extraInfo: Record<string, any> = {};
     if (ref) { extraInfo.ref = ref; extraInfo.resolvedFromRef = resolvedFromRef; }
     if (resolvedFromNormalized) { extraInfo.nx = nx; extraInfo.ny = ny; extraInfo.resolvedFromNormalized = true; }
 
@@ -127,13 +127,13 @@ except Exception as e:
     } else {
       return JSON.stringify({ success: false, error: `Unsupported platform: ${PLATFORM}` });
     }
-  } catch (e: unknown) {
+  } catch (e: any) {
     return JSON.stringify({ success: false, error: (e as Error).message || 'Click failed' });
   }
 }
 
 /** desktop_type — 在元素（ref）或当前焦点位置输入文本 */
-export async function handleDesktopType(args: Record<string, unknown>): Promise<string> {
+export async function handleDesktopType(args: Record<string, any>): Promise<string> {
   const { execSync } = await import('child_process');
 
   try {
@@ -216,13 +216,13 @@ export async function handleDesktopType(args: Record<string, unknown>): Promise<
     } else {
       return JSON.stringify({ success: false, error: `Unsupported platform: ${PLATFORM}` });
     }
-  } catch (e: unknown) {
+  } catch (e: any) {
     return JSON.stringify({ success: false, error: (e as Error).message || 'Type failed' });
   }
 }
 
 /** desktop_key_press - Press key combination */
-export async function handleDesktopKeyPress(args: Record<string, unknown>): Promise<string> {
+export async function handleDesktopKeyPress(args: Record<string, any>): Promise<string> {
   const { execSync } = await import('child_process');
 
   try {
@@ -316,13 +316,13 @@ export async function handleDesktopKeyPress(args: Record<string, unknown>): Prom
     } else {
       return JSON.stringify({ success: false, error: `Unsupported platform: ${PLATFORM}` });
     }
-  } catch (e: unknown) {
+  } catch (e: any) {
     return JSON.stringify({ success: false, error: (e as Error).message || 'Key press failed' });
   }
 }
 
 /** desktop_scroll - Scroll using osascript (via keyboard simulation) */
-export async function handleDesktopScroll(args: Record<string, unknown>): Promise<string> {
+export async function handleDesktopScroll(args: Record<string, any>): Promise<string> {
   const { execSync } = await import('child_process');
 
   try {
@@ -379,7 +379,7 @@ export async function handleDesktopScroll(args: Record<string, unknown>): Promis
     } else {
       return JSON.stringify({ success: false, error: `Unsupported platform: ${PLATFORM}` });
     }
-  } catch (e: unknown) {
+  } catch (e: any) {
     return JSON.stringify({
       success: false,
       error: e instanceof Error ? e.message : 'Scroll failed',

@@ -1,29 +1,29 @@
 // 移植自 openclaw/src/gateway/server/ws-connection/handshake-auth-helpers.ts
 
-export const BROWSER_ORIGIN_LOOPBACK_RATE_LIMIT_IP: unknown = undefined as unknown;
+export const BROWSER_ORIGIN_LOOPBACK_RATE_LIMIT_IP: any = undefined as any;
 
-export const BROWSER_ORIGIN_RATE_LIMIT_KEY_PREFIX: unknown = undefined as unknown;
+export const BROWSER_ORIGIN_RATE_LIMIT_KEY_PREFIX: any = undefined as any;
 
-export function resolveHandshakeBrowserSecurityContext(...args: unknown[]): unknown {
+export function resolveHandshakeBrowserSecurityContext(...args: any[]): any {
   return undefined;
 }
 
-export function shouldAllowSilentLocalPairing(...args: unknown[]): unknown {
+export function shouldAllowSilentLocalPairing(...args: any[]): any {
   return false;
 }
 
-export function resolvePairingLocality(...args: unknown[]): unknown {
+export function resolvePairingLocality(...args: any[]): any {
   return undefined;
 }
 
-export function shouldSkipLocalBackendSelfPairing(...args: unknown[]): unknown {
+export function shouldSkipLocalBackendSelfPairing(...args: any[]): any {
   return false;
 }
 
-export function resolveDeviceSignaturePayloadVersion(...args: unknown[]): unknown {
+export function resolveDeviceSignaturePayloadVersion(...args: any[]): any {
   return undefined;
 }
 
-export function resolveUnauthorizedHandshakeContext(...args: unknown[]): unknown {
+export function resolveUnauthorizedHandshakeContext(...args: any[]): any {
   return undefined;
 }

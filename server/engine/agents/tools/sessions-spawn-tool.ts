@@ -76,7 +76,7 @@ async function loadAcpSpawnModule(): Promise<AcpSpawnModule> {
   return await acpSpawnModuleLoader.load();
 }
 
-function summarizeError(err: unknown): string {
+function summarizeError(err: any): string {
   if (err instanceof Error) {
     return err.message;
   }
@@ -281,7 +281,7 @@ export function createSessionsSpawnTool(
     description: describeSessionsSpawnTool({ acpAvailable, threadAvailable }),
     parameters: createSessionsSpawnToolSchema({ acpAvailable, threadAvailable }),
     execute: async (_toolCallId, args) => {
-      const params = args as Record<string, unknown>;
+      const params = args as Record<string, any>;
       const unsupportedParam = UNSUPPORTED_SESSIONS_SPAWN_PARAM_KEYS.find((key) =>
         Object.hasOwn(params, key),
       );
@@ -491,7 +491,7 @@ export function createSessionsSpawnTool(
           attachments,
           attachMountPath:
             params.attachAs && typeof params.attachAs === "object"
-              ? readStringParam(params.attachAs as Record<string, unknown>, "mountPath")
+              ? readStringParam(params.attachAs as Record<string, any>, "mountPath")
               : undefined,
         },
         {

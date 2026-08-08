@@ -12,32 +12,32 @@ import { createWebFetchTool, createWebSearchTool } from "./web-tools.js";
 const runWebSearchCalls = vi.hoisted(
   () =>
     [] as Array<{
-      config?: unknown;
+      config?: any;
       preferRuntimeProviders?: boolean;
-      runtimeWebSearch?: unknown;
+      runtimeWebSearch?: any;
     }>,
 );
 const activeSecretsRuntimeSnapshot = vi.hoisted(() => ({
-  current: null as null | { config: unknown },
+  current: null as null | { config: any },
 }));
 
-function readConfiguredSearchProvider(config: unknown): string | undefined {
+function readConfiguredSearchProvider(config: any): string | undefined {
   if (!config || typeof config !== "object") {
     return undefined;
   }
-  const tools = (config as { tools?: unknown }).tools;
+  const tools = (config as { tools?: any }).tools;
   if (!tools || typeof tools !== "object") {
     return undefined;
   }
-  const web = (tools as { web?: unknown }).web;
+  const web = (tools as { web?: any }).web;
   if (!web || typeof web !== "object") {
     return undefined;
   }
-  const search = (web as { search?: unknown }).search;
+  const search = (web as { search?: any }).search;
   if (!search || typeof search !== "object") {
     return undefined;
   }
-  const provider = (search as { provider?: unknown }).provider;
+  const provider = (search as { provider?: any }).provider;
   return typeof provider === "string" ? provider : undefined;
 }
 
@@ -50,7 +50,7 @@ vi.mock("../../web-search/runtime.js", async () => {
   const { getActiveRuntimeWebToolsMetadata } =
     await import("../../secrets/runtime-web-tools-state.js");
   const resolveRuntimeDefinition = (options?: {
-    config?: unknown;
+    config?: any;
     runtimeWebSearch?: { selectedProvider?: string; providerConfigured?: string };
   }) => {
     // The mock mirrors production provider resolution order closely enough to
@@ -82,10 +82,10 @@ vi.mock("../../web-search/runtime.js", async () => {
     resolveWebSearchDefinition: resolveRuntimeDefinition,
     resolveWebSearchProviderId: () => "",
     runWebSearch: async (options: {
-      config?: unknown;
-      args: Record<string, unknown>;
+      config?: any;
+      args: Record<string, any>;
       preferRuntimeProviders?: boolean;
-      runtimeWebSearch?: unknown;
+      runtimeWebSearch?: any;
     }) => {
       runWebSearchCalls.push({
         config: options.config,

@@ -6,18 +6,18 @@ describe("applyMergePatch prototype pollution guard", () => {
   it("ignores __proto__ keys in patch", () => {
     const base = { a: 1 };
     const patch = JSON.parse('{"__proto__": {"polluted": true}, "b": 2}');
-    const result = applyMergePatch(base, patch) as Record<string, unknown>;
+    const result = applyMergePatch(base, patch) as Record<string, any>;
     expect(result.b).toBe(2);
     expect(result.a).toBe(1);
     expect(Object.hasOwn(result, "__proto__")).toBe(false);
     expect(result.polluted).toBeUndefined();
-    expect(({} as Record<string, unknown>).polluted).toBeUndefined();
+    expect(({} as Record<string, any>).polluted).toBeUndefined();
   });
 
   it("ignores constructor key in patch", () => {
     const base = { a: 1 };
     const patch = { constructor: { polluted: true }, b: 2 };
-    const result = applyMergePatch(base, patch) as Record<string, unknown>;
+    const result = applyMergePatch(base, patch) as Record<string, any>;
     expect(result.b).toBe(2);
     expect(Object.hasOwn(result, "constructor")).toBe(false);
   });
@@ -25,7 +25,7 @@ describe("applyMergePatch prototype pollution guard", () => {
   it("ignores prototype key in patch", () => {
     const base = { a: 1 };
     const patch = { prototype: { polluted: true }, b: 2 };
-    const result = applyMergePatch(base, patch) as Record<string, unknown>;
+    const result = applyMergePatch(base, patch) as Record<string, any>;
     expect(result.b).toBe(2);
     expect(Object.hasOwn(result, "prototype")).toBe(false);
   });
@@ -33,11 +33,11 @@ describe("applyMergePatch prototype pollution guard", () => {
   it("ignores __proto__ in nested patches", () => {
     const base = { nested: { x: 1 } };
     const patch = JSON.parse('{"nested": {"__proto__": {"polluted": true}, "y": 2}}');
-    const result = applyMergePatch(base, patch) as { nested: Record<string, unknown> };
+    const result = applyMergePatch(base, patch) as { nested: Record<string, any> };
     expect(result.nested.y).toBe(2);
     expect(result.nested.x).toBe(1);
     expect(Object.hasOwn(result.nested, "__proto__")).toBe(false);
     expect(result.nested.polluted).toBeUndefined();
-    expect(({} as Record<string, unknown>).polluted).toBeUndefined();
+    expect(({} as Record<string, any>).polluted).toBeUndefined();
   });
 });

@@ -29,7 +29,7 @@ import {
 } from "./durable-delivery.js";
 
 type SendDurableMessageBatchRequest = {
-  cfg?: unknown;
+  cfg?: any;
   channel?: string;
   to?: string;
   threadId?: string | number | null;

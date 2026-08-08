@@ -12,7 +12,7 @@ export type ChannelInstallSpecs = {
 
 export function resolveNpmInstallSpecsForUpdateChannel(params: {
   channelId?: string;
-  config?: unknown;
+  config?: any;
 }): ChannelInstallSpecs | undefined {
   void params;
   return undefined;
@@ -20,7 +20,7 @@ export function resolveNpmInstallSpecsForUpdateChannel(params: {
 
 export function resolveClawHubInstallSpecsForUpdateChannel(params: {
   channelId?: string;
-  config?: unknown;
+  config?: any;
 }): ChannelInstallSpecs | undefined {
   void params;
   return undefined;

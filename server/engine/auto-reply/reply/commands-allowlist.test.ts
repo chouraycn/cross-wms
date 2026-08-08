@@ -34,15 +34,15 @@ vi.mock("../../config/config.js", () => ({
   validateConfigObjectWithPlugins: validateConfigObjectWithPluginsMock,
   replaceConfigFile: replaceConfigFileMock,
   transformConfigFileWithRetry: async (params: {
-    afterWrite?: unknown;
+    afterWrite?: any;
     transform: (
       currentConfig: OpenClawConfig,
       context: { snapshot: ConfigSnapshotMock; previousHash: string | null; attempt: number },
     ) =>
-      | Promise<{ nextConfig: OpenClawConfig; result?: unknown }>
+      | Promise<{ nextConfig: OpenClawConfig; result?: any }>
       | {
           nextConfig: OpenClawConfig;
-          result?: unknown;
+          result?: any;
         };
   }) => {
     const snapshot = (await readConfigFileSnapshotMock()) as ConfigSnapshotMock;
@@ -231,14 +231,14 @@ beforeEach(() => {
     if (!configPath) {
       return { valid: false, parsed: null };
     }
-    const parsed = JSON.parse(await fs.readFile(configPath, "utf-8")) as Record<string, unknown>;
+    const parsed = JSON.parse(await fs.readFile(configPath, "utf-8")) as Record<string, any>;
     return { valid: true, parsed };
   });
-  validateConfigObjectWithPluginsMock.mockImplementation((config: unknown) => ({
+  validateConfigObjectWithPluginsMock.mockImplementation((config: any) => ({
     ok: true,
     config,
   }));
-  replaceConfigFileMock.mockImplementation(async (params: { nextConfig: unknown }) => {
+  replaceConfigFileMock.mockImplementation(async (params: { nextConfig: any }) => {
     const configPath = process.env.OPENCLAW_CONFIG_PATH;
     if (configPath) {
       await fs.writeFile(configPath, JSON.stringify(params.nextConfig, null, 2), "utf-8");
@@ -250,7 +250,7 @@ beforeEach(() => {
 });
 
 async function withTempConfigPath<T>(
-  initialConfig: Record<string, unknown>,
+  initialConfig: Record<string, any>,
   run: (configPath: string) => Promise<T>,
 ): Promise<T> {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-allowlist-config-"));
@@ -736,7 +736,7 @@ describe("handleAllowlistCommand", () => {
   });
 
   it("rejects blocked account ids and keeps Object.prototype clean", async () => {
-    delete (Object.prototype as Record<string, unknown>).allowFrom;
+    delete (Object.prototype as Record<string, any>).allowFrom;
 
     const cfg = {
       commands: { text: true, config: true },
@@ -748,7 +748,7 @@ describe("handleAllowlistCommand", () => {
 
     expect(result?.shouldContinue).toBe(false);
     expect(result?.reply?.text).toContain("Invalid account id");
-    expect((Object.prototype as Record<string, unknown>).allowFrom).toBeUndefined();
+    expect((Object.prototype as Record<string, any>).allowFrom).toBeUndefined();
     expect(replaceConfigFileMock).not.toHaveBeenCalled();
   });
 

@@ -126,7 +126,7 @@ describe("transport params runtime contract (embedded OpenClaw/OpenAI path)", ()
   it("composes provider preparation before transport patch resolution", () => {
     // Provider preparation can rewrite transport context; transport-specific
     // patches must see that prepared context before final payload mutation.
-    const resolveProviderExtraParamsForTransport = vi.fn((_params: unknown) => ({
+    const resolveProviderExtraParamsForTransport = vi.fn((_params: any) => ({
       patch: {
         parallel_tool_calls: false,
         transportHookApplied: true,
@@ -176,9 +176,9 @@ function runPayloadMutation(params: {
   applyModelId: string;
   model: Model<"openai-chatgpt-responses"> | Model<"openai-responses">;
   thinkingLevel?: Parameters<typeof applyExtraParamsToAgent>[5];
-  payload?: Record<string, unknown>;
-}): Record<string, unknown> {
-  const payload: Record<string, unknown> = params.payload ?? {};
+  payload?: Record<string, any>;
+}): Record<string, any> {
+  const payload: Record<string, any> = params.payload ?? {};
   const baseStreamFn: StreamFn = (model, _context, options) => {
     options?.onPayload?.(payload, model);
     return {} as ReturnType<StreamFn>;

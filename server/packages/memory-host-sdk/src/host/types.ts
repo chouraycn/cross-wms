@@ -109,7 +109,7 @@ export type MemoryProviderStatus = {
     lastError?: string;
     lastProvider?: string;
   };
-  custom?: Record<string, unknown>;
+  custom?: Record<string, any>;
 };
 
 /** Search/read/sync/status contract implemented by memory managers. */

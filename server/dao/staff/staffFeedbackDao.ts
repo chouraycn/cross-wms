@@ -47,7 +47,7 @@ export function listMessageFeedback(
   const db = initDb();
   const tenantId = filter.tenantId ?? DEFAULT_TENANT_ID;
   const conditions: string[] = ['tenant_id = ?'];
-  const params: unknown[] = [tenantId];
+  const params: any[] = [tenantId];
   if (filter.sessionId) {
     conditions.push('session_id = ?');
     params.push(filter.sessionId);
@@ -173,7 +173,7 @@ export interface FeedbackAnalysisPatch {
   analysis_reason?: string | null;
   analysis_summary?: string | null;
   analysis_confidence?: number | null;
-  analysis_json?: Record<string, unknown>;
+  analysis_json?: Record<string, any>;
   analyzed_at?: number | null;
 }
 
@@ -254,7 +254,7 @@ export function listSkillFeedback(
   const db = initDb();
   const tenantId = filter.tenantId ?? DEFAULT_TENANT_ID;
   const conditions: string[] = ['tenant_id = ?'];
-  const params: unknown[] = [tenantId];
+  const params: any[] = [tenantId];
   if (filter.skillId) {
     conditions.push('skill_id = ?');
     params.push(filter.skillId);
@@ -392,7 +392,7 @@ export function computeFeedbackSummary(rows: MessageFeedbackRow[]): FeedbackSumm
 
 function _effectiveAnalysisStatus(row: MessageFeedbackRow): string {
   if (row.analysis_status !== 'analyzed') return row.analysis_status;
-  let metadata: Record<string, unknown> = {};
+  let metadata: Record<string, any> = {};
   try {
     metadata = row.analysis_json ? JSON.parse(row.analysis_json) : {};
   } catch {
@@ -428,7 +428,7 @@ export interface FeedbackAnalysisRead {
   reason: string | null;
   summary: string | null;
   confidence: number | null;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
   analyzed_at: number | null;
 }
 
@@ -437,7 +437,7 @@ export function feedbackAnalysisRead(row: MessageFeedbackRow): FeedbackAnalysisR
   const bucket = row.analysis_bucket ?? 'unknown';
   const status = _effectiveAnalysisStatus(row);
   const confidence = status === 'failed' ? null : row.analysis_confidence;
-  let metadata: Record<string, unknown> = {};
+  let metadata: Record<string, any> = {};
   try {
     metadata = row.analysis_json ? JSON.parse(row.analysis_json) : {};
   } catch {

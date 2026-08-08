@@ -26,7 +26,7 @@ export function createUndiciAutoSelectFamilyConnectOptions(options?: {
 }
 
 /** Resolves undici auto-select-family connect options from config. */
-export function resolveUndiciAutoSelectFamilyConnectOptions(_cfg?: unknown): UndiciAutoSelectFamilyOptions {
+export function resolveUndiciAutoSelectFamilyConnectOptions(_cfg?: any): UndiciAutoSelectFamilyOptions {
   return resolveUndiciAutoSelectFamily();
 }
 

@@ -30,7 +30,7 @@ const wms = createDocumentStorage();
 // ===================== Warehouse DAO =====================
 
 export function getWarehouses(warehouseType?: string): ValidatedWarehouseRow[] {
-  const raw = wms.list<unknown>('warehouses');
+  const raw = wms.list<any>('warehouses');
   const rows = validateRows(raw, WarehouseRowSchema, boundary('warehouses', 'list'));
   if (warehouseType) {
     return rows
@@ -41,7 +41,7 @@ export function getWarehouses(warehouseType?: string): ValidatedWarehouseRow[] {
 }
 
 export function getWarehouseById(id: string): ValidatedWarehouseRow | undefined {
-  const raw = wms.get<unknown>('warehouses', id);
+  const raw = wms.get<any>('warehouses', id);
   if (raw === undefined) return undefined;
   return validateRow(raw, WarehouseRowSchema, boundary('warehouses', `getById#${id}`));
 }
@@ -109,16 +109,16 @@ export function deleteWarehouse(id: string): boolean {
 // ===================== Inventory DAO =====================
 
 /** Convert DB row (isAgeWarning: 0|1) to frontend type (isAgeWarning: boolean) */
-function inventoryRowToBoolean(row: InventoryItemRow): Record<string, unknown> {
+function inventoryRowToBoolean(row: InventoryItemRow): Record<string, any> {
   return { ...row, isAgeWarning: row.isAgeWarning === 1 };
 }
 
 /** Convert frontend type (isAgeWarning: boolean) to DB row (isAgeWarning: 0|1) */
-function inventoryBooleanToRow(data: Record<string, unknown>): number {
+function inventoryBooleanToRow(data: Record<string, any>): number {
   return data.isAgeWarning === true ? 1 : 0;
 }
 
-export function getInventoryItems(warehouseId?: string): Record<string, unknown>[] {
+export function getInventoryItems(warehouseId?: string): Record<string, any>[] {
   let rows: InventoryItemRow[];
   if (warehouseId) {
     rows = wms.find<InventoryItemRow>('inventory_items', (item) => item.warehouseId === warehouseId);
@@ -128,12 +128,12 @@ export function getInventoryItems(warehouseId?: string): Record<string, unknown>
   return rows.sort((a, b) => (a.inboundDate > b.inboundDate ? -1 : 1)).map(inventoryRowToBoolean);
 }
 
-export function getInventoryItemById(id: string): Record<string, unknown> | undefined {
+export function getInventoryItemById(id: string): Record<string, any> | undefined {
   const row = wms.get<InventoryItemRow>('inventory_items', id);
   return row ? inventoryRowToBoolean(row) : undefined;
 }
 
-export function createInventoryItem(data: Record<string, unknown>): Record<string, unknown> {
+export function createInventoryItem(data: Record<string, any>): Record<string, any> {
   const id = (data.id as string) || uuidv4();
   const isAgeWarning = inventoryBooleanToRow(data);
   const record: InventoryItemRow = {
@@ -155,10 +155,10 @@ export function createInventoryItem(data: Record<string, unknown>): Record<strin
   return inventoryRowToBoolean(record);
 }
 
-export function updateInventoryItem(id: string, data: Record<string, unknown>): Record<string, unknown> | null {
+export function updateInventoryItem(id: string, data: Record<string, any>): Record<string, any> | null {
   const existing = wms.get<InventoryItemRow>('inventory_items', id);
   if (!existing) return null;
-  const merged: Record<string, unknown> = { ...inventoryRowToBoolean(existing), ...data, id };
+  const merged: Record<string, any> = { ...inventoryRowToBoolean(existing), ...data, id };
   const isAgeWarning = inventoryBooleanToRow(merged);
   const updated: InventoryItemRow = {
     id,
@@ -193,7 +193,7 @@ export function getStatusHistory(orderId: string): StatusHistoryRow[] {
 }
 
 /** Fetch all transit orders, with their statusHistory aggregated as a nested array */
-export function getTransitOrders(status?: string): Record<string, unknown>[] {
+export function getTransitOrders(status?: string): Record<string, any>[] {
   let orders = wms.list<TransitOrderRow>('transit_orders');
   if (status) {
     orders = orders.filter((o) => o.status === status);
@@ -213,7 +213,7 @@ export function getTransitOrders(status?: string): Record<string, unknown>[] {
   });
 }
 
-export function getTransitOrderById(id: string): Record<string, unknown> | undefined {
+export function getTransitOrderById(id: string): Record<string, any> | undefined {
   const order = wms.get<TransitOrderRow>('transit_orders', id);
   if (!order) return undefined;
   const history = getStatusHistory(id);
@@ -228,7 +228,7 @@ export function getTransitOrderById(id: string): Record<string, unknown> | undef
   };
 }
 
-export function createTransitOrder(data: Record<string, unknown>): Record<string, unknown> {
+export function createTransitOrder(data: Record<string, any>): Record<string, any> {
   const id = (data.id as string) || uuidv4();
   const record: TransitOrderRow = {
     id,
@@ -248,7 +248,7 @@ export function createTransitOrder(data: Record<string, unknown>): Record<string
   };
   wms.create<TransitOrderRow>('transit_orders', id, record);
 
-  const statusHistory = data.statusHistory as Array<Record<string, unknown>> | undefined;
+  const statusHistory = data.statusHistory as Array<Record<string, any>> | undefined;
   if (Array.isArray(statusHistory) && statusHistory.length > 0) {
     for (const h of statusHistory) {
       const hId = uuidv4();
@@ -265,13 +265,13 @@ export function createTransitOrder(data: Record<string, unknown>): Record<string
   return getTransitOrderById(id)!;
 }
 
-export function updateTransitOrder(id: string, data: Record<string, unknown>): Record<string, unknown> | null {
+export function updateTransitOrder(id: string, data: Record<string, any>): Record<string, any> | null {
   const existing = wms.get<TransitOrderRow>('transit_orders', id);
   if (!existing) return null;
   const merged: TransitOrderRow = { ...existing, ...data, id } as TransitOrderRow;
   wms.update<TransitOrderRow>('transit_orders', id, merged);
 
-  const statusHistory = data.statusHistory as Array<Record<string, unknown>> | undefined;
+  const statusHistory = data.statusHistory as Array<Record<string, any>> | undefined;
   if (Array.isArray(statusHistory)) {
     // Delete existing history for this order
     const allHistory = wms.list<StatusHistoryRow>('transit_status_history');

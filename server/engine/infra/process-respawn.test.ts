@@ -13,12 +13,12 @@ vi.mock("node:child_process", async () => {
   return mockNodeBuiltinModule(
     () => vi.importActual<typeof import("node:child_process")>("node:child_process"),
     {
-      spawn: (...args: unknown[]) => spawnMock(...args),
+      spawn: (...args: any[]) => spawnMock(...args),
     },
   );
 });
 vi.mock("./restart.js", () => ({
-  triggerOpenClawRestart: (...args: unknown[]) => triggerOpenClawRestartMock(...args),
+  triggerOpenClawRestart: (...args: any[]) => triggerOpenClawRestartMock(...args),
 }));
 vi.mock("./container-environment.js", () => ({
   isContainerEnvironment: () => isContainerEnvironmentMock(),

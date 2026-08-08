@@ -45,7 +45,7 @@ export async function planShellAuthorization(_params: {
 }
 
 export async function planExecAuthorization(_params: {
-  analysis: unknown;
+  analysis: any;
   command?: string;
   cwd?: string;
   env?: NodeJS.ProcessEnv;

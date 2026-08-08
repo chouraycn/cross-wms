@@ -4,6 +4,6 @@ export type ReadinessResult = unknown;
 
 export type ReadinessChecker = unknown;
 
-export function createReadinessChecker(...args: unknown[]): unknown {
+export function createReadinessChecker(...args: any[]): any {
   return undefined;
 }

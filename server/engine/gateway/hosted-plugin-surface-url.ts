@@ -13,6 +13,6 @@
 
 export type HostedPluginSurfaceUrlParams = unknown;
 
-export function resolveHostedPluginSurfaceUrl(..._args: unknown[]): unknown {
+export function resolveHostedPluginSurfaceUrl(..._args: any[]): any {
   return undefined;
 }

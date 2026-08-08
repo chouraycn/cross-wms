@@ -24,7 +24,7 @@ export const SHARED_POLL_CREATION_PARAM_NAMES = Object.keys(
   SHARED_POLL_CREATION_PARAM_DEFS,
 ) as SharedPollCreationParamName[];
 
-function readPollParamRaw(params: Record<string, unknown>, key: string): unknown {
+function readPollParamRaw(params: Record<string, any>, key: string): any {
   return readSnakeCaseParamRaw(params, key);
 }
 
@@ -36,7 +36,7 @@ function readPollParamRaw(params: Record<string, unknown>, key: string): unknown
 // Only content fields count here; action="poll" validates modifiers later.
 const CONTENT_BEARING_SHARED_POLL_PARAM_NAMES = ["pollQuestion", "pollOption"] as const;
 
-function hasContentBearingPollCreationParam(params: Record<string, unknown>): boolean {
+function hasContentBearingPollCreationParam(params: Record<string, any>): boolean {
   for (const key of CONTENT_BEARING_SHARED_POLL_PARAM_NAMES) {
     const def = POLL_CREATION_PARAM_DEFS[key];
     const value = readPollParamRaw(params, key);
@@ -58,6 +58,6 @@ function hasContentBearingPollCreationParam(params: Record<string, unknown>): bo
   return false;
 }
 
-export function hasPollCreationParams(params: Record<string, unknown>): boolean {
+export function hasPollCreationParams(params: Record<string, any>): boolean {
   return hasContentBearingPollCreationParam(params);
 }

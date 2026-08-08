@@ -108,7 +108,7 @@ ${description}
 
   const indexTs = `import { logger } from '../../logger.js';
 
-export function doSomething(params: Record<string, unknown>): Record<string, unknown> {
+export function doSomething(params: Record<string, any>): Record<string, any> {
   logger.debug('[${kebabName}] doSomething called with:', params);
   return {
     success: true,
@@ -124,7 +124,7 @@ export default {
     {
       name: '${kebabName}_action',
       description: '操作描述',
-      handler: (args: Record<string, unknown>) => doSomething(args),
+      handler: (args: Record<string, any>) => doSomething(args),
     },
   ],
 };
@@ -181,14 +181,14 @@ export function getTemplateDetails(templateId: string): SkillTemplate | undefine
   return getTemplate(templateId);
 }
 
-export function validateSkillVariables(templateId: string, variables: Record<string, unknown>): ValidationResult {
+export function validateSkillVariables(templateId: string, variables: Record<string, any>): ValidationResult {
   logger.debug('[skill-creator] validateSkillVariables called for:', templateId);
   return validateTemplateVariables(templateId, variables);
 }
 
 export async function createSkillUsingTemplate(
   templateId: string,
-  variables: Record<string, unknown>,
+  variables: Record<string, any>,
   targetDir: string,
 ): Promise<CreateSkillResult> {
   logger.debug('[skill-creator] createSkillUsingTemplate called with:', templateId);
@@ -293,13 +293,13 @@ export default {
     {
       name: 'skill_creator_validate_variables',
       description: '验证模板变量是否符合要求',
-      handler: (args: { templateId: string; variables: Record<string, unknown> }) =>
+      handler: (args: { templateId: string; variables: Record<string, any> }) =>
         validateSkillVariables(args.templateId, args.variables),
     },
     {
       name: 'skill_creator_create_from_template',
       description: '使用模板创建技能',
-      handler: (args: { templateId: string; variables: Record<string, unknown>; targetDir: string }) =>
+      handler: (args: { templateId: string; variables: Record<string, any>; targetDir: string }) =>
         createSkillUsingTemplate(args.templateId, args.variables, args.targetDir),
     },
     {

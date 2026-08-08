@@ -7,10 +7,10 @@ export type CurrentConfigFlag = {
   description: string;
   severity: SecurityLevel;
   category: 'auth' | 'network' | 'filesystem' | 'config' | 'secrets' | 'plugin' | 'command';
-  check: (config: Record<string, unknown>) => boolean;
+  check: (config: Record<string, any>) => boolean;
   recommendation: string;
-  default?: unknown;
-  acceptableValues?: unknown[];
+  default?: any;
+  acceptableValues?: any[];
 };
 
 export const CURRENT_DANGEROUS_FLAGS: CurrentConfigFlag[] = [
@@ -21,8 +21,8 @@ export const CURRENT_DANGEROUS_FLAGS: CurrentConfigFlag[] = [
     severity: 'high',
     category: 'auth',
     check: (config) => {
-      const current = config['current'] as Record<string, unknown> | undefined;
-      const auth = current?.['auth'] as Record<string, unknown> | undefined;
+      const current = config['current'] as Record<string, any> | undefined;
+      const auth = current?.['auth'] as Record<string, any> | undefined;
       const mode = auth?.['mode'] as string | undefined;
       return !mode || ['none', 'insecure', 'anonymous'].includes(mode);
     },
@@ -36,8 +36,8 @@ export const CURRENT_DANGEROUS_FLAGS: CurrentConfigFlag[] = [
     severity: 'high',
     category: 'config',
     check: (config) => {
-      const current = config['current'] as Record<string, unknown> | undefined;
-      const security = current?.['security'] as Record<string, unknown> | undefined;
+      const current = config['current'] as Record<string, any> | undefined;
+      const security = current?.['security'] as Record<string, any> | undefined;
       return security?.['strict'] !== true;
     },
     recommendation: 'Enable strict security mode for enhanced protections.',
@@ -50,8 +50,8 @@ export const CURRENT_DANGEROUS_FLAGS: CurrentConfigFlag[] = [
     severity: 'high',
     category: 'network',
     check: (config) => {
-      const current = config['current'] as Record<string, unknown> | undefined;
-      const network = current?.['network'] as Record<string, unknown> | undefined;
+      const current = config['current'] as Record<string, any> | undefined;
+      const network = current?.['network'] as Record<string, any> | undefined;
       const externalAccess = network?.['externalAccess'] as string | undefined;
       return externalAccess === 'unrestricted' || externalAccess === '*';
     },
@@ -65,8 +65,8 @@ export const CURRENT_DANGEROUS_FLAGS: CurrentConfigFlag[] = [
     severity: 'high',
     category: 'filesystem',
     check: (config) => {
-      const current = config['current'] as Record<string, unknown> | undefined;
-      const filesystem = current?.['filesystem'] as Record<string, unknown> | undefined;
+      const current = config['current'] as Record<string, any> | undefined;
+      const filesystem = current?.['filesystem'] as Record<string, any> | undefined;
       const root = filesystem?.['root'] as string | undefined;
       return !root || root === '/' || root === '/*';
     },
@@ -79,8 +79,8 @@ export const CURRENT_DANGEROUS_FLAGS: CurrentConfigFlag[] = [
     severity: 'high',
     category: 'plugin',
     check: (config) => {
-      const current = config['current'] as Record<string, unknown> | undefined;
-      const plugins = current?.['plugins'] as Record<string, unknown> | undefined;
+      const current = config['current'] as Record<string, any> | undefined;
+      const plugins = current?.['plugins'] as Record<string, any> | undefined;
       return plugins?.['allowUntrusted'] === true;
     },
     recommendation: 'Set plugins.allowUntrusted to false.',
@@ -93,8 +93,8 @@ export const CURRENT_DANGEROUS_FLAGS: CurrentConfigFlag[] = [
     severity: 'critical',
     category: 'command',
     check: (config) => {
-      const current = config['current'] as Record<string, unknown> | undefined;
-      const command = current?.['command'] as Record<string, unknown> | undefined;
+      const current = config['current'] as Record<string, any> | undefined;
+      const command = current?.['command'] as Record<string, any> | undefined;
       return command?.['allowShell'] === true;
     },
     recommendation: 'Disable shell command execution unless explicitly required.',
@@ -107,8 +107,8 @@ export const CURRENT_DANGEROUS_FLAGS: CurrentConfigFlag[] = [
     severity: 'critical',
     category: 'command',
     check: (config) => {
-      const current = config['current'] as Record<string, unknown> | undefined;
-      const command = current?.['command'] as Record<string, unknown> | undefined;
+      const current = config['current'] as Record<string, any> | undefined;
+      const command = current?.['command'] as Record<string, any> | undefined;
       return command?.['allowExec'] === true;
     },
     recommendation: 'Disable direct exec unless explicitly required.',
@@ -121,8 +121,8 @@ export const CURRENT_DANGEROUS_FLAGS: CurrentConfigFlag[] = [
     severity: 'high',
     category: 'secrets',
     check: (config) => {
-      const current = config['current'] as Record<string, unknown> | undefined;
-      const secrets = current?.['secrets'] as Record<string, unknown> | undefined;
+      const current = config['current'] as Record<string, any> | undefined;
+      const secrets = current?.['secrets'] as Record<string, any> | undefined;
       return secrets?.['expose'] === true;
     },
     recommendation: 'Set secrets.expose to false.',
@@ -135,8 +135,8 @@ export const CURRENT_DANGEROUS_FLAGS: CurrentConfigFlag[] = [
     severity: 'medium',
     category: 'network',
     check: (config) => {
-      const current = config['current'] as Record<string, unknown> | undefined;
-      const webhook = current?.['webhook'] as Record<string, unknown> | undefined;
+      const current = config['current'] as Record<string, any> | undefined;
+      const webhook = current?.['webhook'] as Record<string, any> | undefined;
       return webhook?.['allowAll'] === true;
     },
     recommendation: 'Restrict webhook URLs to allowlist.',
@@ -149,8 +149,8 @@ export const CURRENT_DANGEROUS_FLAGS: CurrentConfigFlag[] = [
     severity: 'high',
     category: 'auth',
     check: (config) => {
-      const current = config['current'] as Record<string, unknown> | undefined;
-      const api = current?.['api'] as Record<string, unknown> | undefined;
+      const current = config['current'] as Record<string, any> | undefined;
+      const api = current?.['api'] as Record<string, any> | undefined;
       return api?.['allowUnauthenticated'] === true;
     },
     recommendation: 'Disable unauthenticated API access.',
@@ -158,7 +158,7 @@ export const CURRENT_DANGEROUS_FLAGS: CurrentConfigFlag[] = [
   },
 ];
 
-export function collectCurrentDangerousConfigFlags(config: Record<string, unknown>): string[] {
+export function collectCurrentDangerousConfigFlags(config: Record<string, any>): string[] {
   const dangerousFlags: string[] = [];
 
   for (const flag of CURRENT_DANGEROUS_FLAGS) {
@@ -174,7 +174,7 @@ export function collectCurrentDangerousConfigFlags(config: Record<string, unknow
   return dangerousFlags;
 }
 
-export function auditCurrentConfigSecurity(config: Record<string, unknown>): SecurityFinding[] {
+export function auditCurrentConfigSecurity(config: Record<string, any>): SecurityFinding[] {
   const findings: SecurityFinding[] = [];
 
   for (const flag of CURRENT_DANGEROUS_FLAGS) {
@@ -213,10 +213,10 @@ export function getCurrentConfigFlagByCategory(category: CurrentConfigFlag['cate
   return CURRENT_DANGEROUS_FLAGS.filter((f) => f.category === category);
 }
 
-export function validateCurrentConfigFlag(key: string, value: unknown): {
+export function validateCurrentConfigFlag(key: string, value: any): {
   valid: boolean;
   reason?: string;
-  acceptableValues?: unknown[];
+  acceptableValues?: any[];
 } {
   const flag = getCurrentConfigFlag(key);
   if (!flag) {

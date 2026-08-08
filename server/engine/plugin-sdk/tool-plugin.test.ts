@@ -129,7 +129,7 @@ describe("defineToolPlugin", () => {
               label: "Factory Echo",
               description: "Echo input.",
               parameters: Type.Object({ input: Type.String() }),
-              async execute(_toolCallId: string, params: { input?: unknown }) {
+              async execute(_toolCallId: string, params: { input?: any }) {
                 const input = typeof params.input === "string" ? params.input : "";
                 return {
                   content: [

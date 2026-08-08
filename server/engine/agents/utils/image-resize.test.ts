@@ -12,7 +12,7 @@ vi.mock("../../media/image-ops.js", () => ({
     encode: mocks.encode,
     probe: mocks.probe,
   }),
-  isImageProcessorUnavailableError: (error: unknown) =>
+  isImageProcessorUnavailableError: (error: any) =>
     typeof error === "object" &&
     error !== null &&
     "code" in error &&

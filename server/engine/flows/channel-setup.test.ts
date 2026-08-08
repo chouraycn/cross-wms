@@ -81,7 +81,7 @@ function makePluginRegistry(overrides: Partial<PluginRegistry> = {}): PluginRegi
   } as unknown as PluginRegistry;
 }
 
-function callArg<T>(mock: { mock: { calls: unknown[][] } }, index = 0, _type?: (value: T) => T): T {
+function callArg<T>(mock: { mock: { calls: any[][] } }, index = 0, _type?: (value: T) => T): T {
   const call = mock.mock.calls[index];
   if (!call) {
     throw new Error(`Expected mock call ${index}`);
@@ -89,7 +89,7 @@ function callArg<T>(mock: { mock: { calls: unknown[][] } }, index = 0, _type?: (
   return call[0] as T;
 }
 
-function mockCall(mock: { mock: { calls: unknown[][] } }, index = 0): unknown[] {
+function mockCall(mock: { mock: { calls: any[][] } }, index = 0): any[] {
   const call = mock.mock.calls[index];
   if (!call) {
     throw new Error(`Expected mock call ${index}`);
@@ -108,18 +108,18 @@ function expectExternalCatalogInstallCall(index = 0) {
 }
 
 const resolveAgentWorkspaceDir = vi.hoisted(() =>
-  vi.fn((_cfg?: unknown, _agentId?: unknown) => "/tmp/openclaw-workspace"),
+  vi.fn((_cfg?: any, _agentId?: any) => "/tmp/openclaw-workspace"),
 );
-const resolveDefaultAgentId = vi.hoisted(() => vi.fn((_cfg?: unknown) => "default"));
+const resolveDefaultAgentId = vi.hoisted(() => vi.fn((_cfg?: any) => "default"));
 const listTrustedChannelPluginCatalogEntries = vi.hoisted(() =>
-  vi.fn((_params?: unknown): unknown[] => []),
+  vi.fn((_params?: any): any[] => []),
 );
 const getTrustedChannelPluginCatalogEntry = vi.hoisted(() =>
-  vi.fn((_channelId: string, _params?: unknown): unknown => undefined),
+  vi.fn((_channelId: string, _params?: any): any => undefined),
 );
-const getChannelSetupPlugin = vi.hoisted(() => vi.fn((_channel?: unknown) => undefined));
-const listChannelSetupPlugins = vi.hoisted(() => vi.fn((): unknown[] => []));
-const listActiveChannelSetupPlugins = vi.hoisted(() => vi.fn((): unknown[] => []));
+const getChannelSetupPlugin = vi.hoisted(() => vi.fn((_channel?: any) => undefined));
+const listChannelSetupPlugins = vi.hoisted(() => vi.fn((): any[] => []));
+const listActiveChannelSetupPlugins = vi.hoisted(() => vi.fn((): any[] => []));
 const loadChannelSetupPluginRegistrySnapshotForChannel = vi.hoisted(() =>
   vi.fn((_params: Parameters<LoadChannelSetupPluginRegistrySnapshotForChannel>[0]) =>
     makePluginRegistry(),
@@ -155,16 +155,16 @@ const collectChannelStatus = vi.hoisted(() =>
     statusLines: [],
   })),
 );
-const isChannelConfigured = vi.hoisted(() => vi.fn((_cfg?: unknown, _channel?: unknown) => true));
+const isChannelConfigured = vi.hoisted(() => vi.fn((_cfg?: any, _channel?: any) => true));
 
 vi.mock("../agents/agent-scope.js", () => ({
-  resolveAgentWorkspaceDir: (cfg?: unknown, agentId?: unknown) =>
+  resolveAgentWorkspaceDir: (cfg?: any, agentId?: any) =>
     resolveAgentWorkspaceDir(cfg, agentId),
-  resolveDefaultAgentId: (cfg?: unknown) => resolveDefaultAgentId(cfg),
+  resolveDefaultAgentId: (cfg?: any) => resolveDefaultAgentId(cfg),
 }));
 
 vi.mock("../channels/plugins/setup-registry.js", () => ({
-  getChannelSetupPlugin: (channel?: unknown) => getChannelSetupPlugin(channel),
+  getChannelSetupPlugin: (channel?: any) => getChannelSetupPlugin(channel),
   listActiveChannelSetupPlugins: () => listActiveChannelSetupPlugins(),
   listChannelSetupPlugins: () => listChannelSetupPlugins(),
 }));
@@ -172,9 +172,9 @@ vi.mock("../channels/plugins/setup-registry.js", () => ({
 vi.mock("../channels/registry.js", () => ({
   getChatChannelMeta: (channelId: string) => ({ id: channelId, label: channelId }),
   listChatChannels: () => [],
-  normalizeAnyChannelId: (channelId?: unknown) =>
+  normalizeAnyChannelId: (channelId?: any) =>
     typeof channelId === "string" ? channelId.trim().toLowerCase() || null : null,
-  normalizeChatChannelId: (channelId?: unknown) =>
+  normalizeChatChannelId: (channelId?: any) =>
     typeof channelId === "string" ? channelId.trim().toLowerCase() || null : null,
 }));
 
@@ -193,19 +193,19 @@ vi.mock("../commands/channel-setup/plugin-install.js", () => ({
 }));
 
 vi.mock("../commands/channel-setup/registry.js", () => ({
-  resolveChannelSetupWizardAdapterForPlugin: (plugin?: { setupWizard?: unknown }) =>
+  resolveChannelSetupWizardAdapterForPlugin: (plugin?: { setupWizard?: any }) =>
     plugin?.setupWizard,
 }));
 
 vi.mock("../commands/channel-setup/trusted-catalog.js", () => ({
-  listTrustedChannelPluginCatalogEntries: (params?: unknown) =>
+  listTrustedChannelPluginCatalogEntries: (params?: any) =>
     listTrustedChannelPluginCatalogEntries(params),
-  getTrustedChannelPluginCatalogEntry: (channelId: string, params?: unknown) =>
+  getTrustedChannelPluginCatalogEntry: (channelId: string, params?: any) =>
     getTrustedChannelPluginCatalogEntry(channelId, params),
 }));
 
 vi.mock("../config/channel-configured.js", () => ({
-  isChannelConfigured: (cfg?: unknown, channel?: unknown) => isChannelConfigured(cfg, channel),
+  isChannelConfigured: (cfg?: any, channel?: any) => isChannelConfigured(cfg, channel),
 }));
 
 vi.mock("./channel-setup.prompts.js", () => ({
@@ -272,7 +272,7 @@ describe("setupChannels workspace shadow exclusion", () => {
       } as never,
     );
 
-    const trustedInput = callArg<{ cfg?: unknown; workspaceDir?: string }>(
+    const trustedInput = callArg<{ cfg?: any; workspaceDir?: string }>(
       listTrustedChannelPluginCatalogEntries,
     );
     expect(trustedInput.cfg).toEqual({});
@@ -371,7 +371,7 @@ describe("setupChannels workspace shadow exclusion", () => {
     );
 
     expect(
-      callArg<{ installedPlugins?: unknown[] }>(resolveChannelSetupEntries).installedPlugins,
+      callArg<{ installedPlugins?: any[] }>(resolveChannelSetupEntries).installedPlugins,
     ).toEqual([activePlugin]);
     expect(listChannelSetupPlugins).not.toHaveBeenCalled();
     expect(collectChannelStatus).not.toHaveBeenCalled();
@@ -385,7 +385,7 @@ describe("setupChannels workspace shadow exclusion", () => {
         configured: false,
         statusLines: [],
       })),
-      configure: vi.fn(async ({ cfg }: { cfg: Record<string, unknown> }) => ({
+      configure: vi.fn(async ({ cfg }: { cfg: Record<string, any> }) => ({
         cfg: {
           ...cfg,
           channels: {
@@ -432,7 +432,7 @@ describe("setupChannels workspace shadow exclusion", () => {
     );
 
     expect(loadChannelSetupPluginRegistrySnapshotForChannel).not.toHaveBeenCalled();
-    expect(callArg<{ cfg?: unknown }>(setupWizard.configure).cfg).toEqual({});
+    expect(callArg<{ cfg?: any }>(setupWizard.configure).cfg).toEqual({});
     expect(next).toEqual({
       channels: {
         "custom-chat": { token: "secret" },
@@ -518,7 +518,7 @@ describe("setupChannels workspace shadow exclusion", () => {
   });
 
   it("loads the selected bundled catalog plugin without writing explicit plugin enablement", async () => {
-    const configure = vi.fn(async ({ cfg }: { cfg: Record<string, unknown> }) => ({
+    const configure = vi.fn(async ({ cfg }: { cfg: Record<string, any> }) => ({
       cfg: {
         ...cfg,
         channels: {
@@ -599,7 +599,7 @@ describe("setupChannels workspace shadow exclusion", () => {
     expect(secondRegistryInput.forceSetupOnlyChannelPlugins).toBe(true);
     expect(getChannelSetupPlugin).not.toHaveBeenCalled();
     expect(collectChannelStatus).not.toHaveBeenCalled();
-    expect(callArg<{ cfg?: unknown }>(configure).cfg).toEqual({});
+    expect(callArg<{ cfg?: any }>(configure).cfg).toEqual({});
     expect(next).toEqual({
       channels: {
         "external-chat": { token: "secret" },
@@ -608,7 +608,7 @@ describe("setupChannels workspace shadow exclusion", () => {
   });
 
   it("returns to quickstart selection when install-on-demand is skipped", async () => {
-    const configure = vi.fn(async ({ cfg }: { cfg: Record<string, unknown> }) => ({ cfg }));
+    const configure = vi.fn(async ({ cfg }: { cfg: Record<string, any> }) => ({ cfg }));
     const externalChatPlugin = makeSetupPlugin({
       id: "external-chat",
       label: "External Chat",
@@ -780,7 +780,7 @@ describe("setupChannels workspace shadow exclusion", () => {
       // `channels.<id>` entry remained in their config got dead-ended with
       // "<channel> plugin not available" because the installed-catalog
       // branch did not fall back to the catalog install flow.
-      const configure = vi.fn(async ({ cfg }: { cfg: Record<string, unknown> }) => ({
+      const configure = vi.fn(async ({ cfg }: { cfg: Record<string, any> }) => ({
         cfg: { ...cfg, channels: { "external-chat": { token: "secret" } } },
       }));
       const externalChatPlugin = makeSetupPlugin({
@@ -929,7 +929,7 @@ describe("setupChannels workspace shadow exclusion", () => {
       // fell through to `enableBundledPluginForSetup` which just printed
       // "qqbot plugin not available." and exited the flow. The fix consults
       // the catalog directly and drives `ensureChannelSetupPluginInstalled`.
-      const configure = vi.fn(async ({ cfg }: { cfg: Record<string, unknown> }) => ({
+      const configure = vi.fn(async ({ cfg }: { cfg: Record<string, any> }) => ({
         cfg: { ...cfg, channels: { "external-chat": { token: "secret" } } },
       }));
       const externalChatPlugin = makeSetupPlugin({

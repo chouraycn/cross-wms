@@ -9,7 +9,7 @@ import {
 function createDeferred<T>() {
   // Manual deferreds let cleanup tests prove ordering around abort settlement.
   let resolve!: (value: T | PromiseLike<T>) => void;
-  let reject!: (reason?: unknown) => void;
+  let reject!: (reason?: any) => void;
   const promise = new Promise<T>((resolvePromise, rejectPromise) => {
     resolve = resolvePromise;
     reject = rejectPromise;

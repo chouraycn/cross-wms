@@ -9,8 +9,8 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("../../config/config.js", () => ({
-  readConfigFileSnapshot: (...args: unknown[]) => mocks.readConfigFileSnapshot(...args),
-  replaceConfigFile: (...args: unknown[]) => mocks.replaceConfigFile(...args),
+  readConfigFileSnapshot: (...args: any[]) => mocks.readConfigFileSnapshot(...args),
+  replaceConfigFile: (...args: any[]) => mocks.replaceConfigFile(...args),
 }));
 
 describe("models/shared", () => {

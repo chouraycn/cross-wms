@@ -43,18 +43,18 @@ const AUTH_BLOCKED_SOURCES = new Set<AuthProfileBlockedSource>(["codex_rate_limi
 
 // Runtime auth state is operator-controlled durability. Coerce every persisted
 // field through closed enums/numbers so bad rows do not poison auth selection.
-function normalizeFiniteNumber(value: unknown): number | undefined {
+function normalizeFiniteNumber(value: any): number | undefined {
   return asFiniteNumber(value);
 }
 
-function normalizeEnumValue<T extends string>(value: unknown, allowed: Set<T>): T | undefined {
+function normalizeEnumValue<T extends string>(value: any, allowed: Set<T>): T | undefined {
   if (typeof value !== "string") {
     return undefined;
   }
   return allowed.has(value as T) ? (value as T) : undefined;
 }
 
-function normalizeFailureCounts(raw: unknown): ProfileUsageStats["failureCounts"] {
+function normalizeFailureCounts(raw: any): ProfileUsageStats["failureCounts"] {
   if (!isRecord(raw)) {
     return undefined;
   }
@@ -71,7 +71,7 @@ function normalizeFailureCounts(raw: unknown): ProfileUsageStats["failureCounts"
   return Object.keys(normalized).length > 0 ? normalized : undefined;
 }
 
-function normalizeAuthProfileOrder(raw: unknown): AuthProfileState["order"] {
+function normalizeAuthProfileOrder(raw: any): AuthProfileState["order"] {
   if (!isRecord(raw)) {
     return undefined;
   }
@@ -95,7 +95,7 @@ function normalizeAuthProfileOrder(raw: unknown): AuthProfileState["order"] {
   return Object.keys(normalized).length > 0 ? normalized : undefined;
 }
 
-function normalizeLastGood(raw: unknown): AuthProfileState["lastGood"] {
+function normalizeLastGood(raw: any): AuthProfileState["lastGood"] {
   if (!isRecord(raw)) {
     return undefined;
   }
@@ -111,7 +111,7 @@ function normalizeLastGood(raw: unknown): AuthProfileState["lastGood"] {
   return Object.keys(normalized).length > 0 ? normalized : undefined;
 }
 
-function normalizeUsageStatsEntry(raw: unknown): ProfileUsageStats | undefined {
+function normalizeUsageStatsEntry(raw: any): ProfileUsageStats | undefined {
   if (!isRecord(raw)) {
     return undefined;
   }
@@ -138,7 +138,7 @@ function normalizeUsageStatsEntry(raw: unknown): ProfileUsageStats | undefined {
   return Object.keys(stats).length > 0 ? stats : undefined;
 }
 
-function normalizeUsageStats(raw: unknown): AuthProfileState["usageStats"] {
+function normalizeUsageStats(raw: any): AuthProfileState["usageStats"] {
   if (!isRecord(raw)) {
     return undefined;
   }
@@ -155,7 +155,7 @@ function normalizeUsageStats(raw: unknown): AuthProfileState["usageStats"] {
 }
 
 /** Coerces persisted auth profile runtime state into the current shape. */
-export function coerceAuthProfileState(raw: unknown): AuthProfileState {
+export function coerceAuthProfileState(raw: any): AuthProfileState {
   if (!isRecord(raw)) {
     return {};
   }

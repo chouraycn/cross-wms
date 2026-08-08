@@ -6,16 +6,16 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function composeSystemPromptWithHookContext(..._args: unknown[]): unknown {
+export function composeSystemPromptWithHookContext(..._args: any[]): any {
   return undefined;
 }
-export function resolveAttemptSpawnWorkspaceDir(..._args: unknown[]): unknown {
+export function resolveAttemptSpawnWorkspaceDir(..._args: any[]): any {
   return undefined;
 }
-export function appendAttemptCacheTtlIfNeeded(..._args: unknown[]): unknown {
+export function appendAttemptCacheTtlIfNeeded(..._args: any[]): any {
   return undefined;
 }
-export function shouldPersistCompletedBootstrapTurn(..._args: unknown[]): unknown {
+export function shouldPersistCompletedBootstrapTurn(..._args: any[]): any {
   return false;
 }
-export const ATTEMPT_CACHE_TTL_CUSTOM_TYPE: unknown = undefined;
+export const ATTEMPT_CACHE_TTL_CUSTOM_TYPE: any = undefined;

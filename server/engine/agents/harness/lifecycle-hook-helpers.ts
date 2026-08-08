@@ -88,7 +88,7 @@ export function runAgentHarnessLlmInputHook(params: {
   }
   void hookRunner
     .runLlmInput(params.event, buildAgentHookContext(params.ctx))
-    .catch((error: unknown) => {
+    .catch((error: any) => {
       log.warn(`llm_input hook failed: ${String(error)}`);
     });
 }
@@ -105,7 +105,7 @@ export function runAgentHarnessLlmOutputHook(params: {
   }
   void hookRunner
     .runLlmOutput(params.event, buildAgentHookContext(params.ctx))
-    .catch((error: unknown) => {
+    .catch((error: any) => {
       log.warn(`llm_output hook failed: ${String(error)}`);
     });
 }
@@ -240,7 +240,7 @@ function readBeforeAgentFinalizeRetryCandidates(
 ): NonNullable<PluginHookBeforeAgentFinalizeResult["retry"]>[] {
   const candidateList = (
     result as {
-      retryCandidates?: unknown;
+      retryCandidates?: any;
     }
   ).retryCandidates;
   if (Array.isArray(candidateList) && candidateList.length > 0) {
@@ -250,7 +250,7 @@ function readBeforeAgentFinalizeRetryCandidates(
 }
 
 function isBeforeAgentFinalizeRetry(
-  value: unknown,
+  value: any,
 ): value is NonNullable<PluginHookBeforeAgentFinalizeResult["retry"]> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }

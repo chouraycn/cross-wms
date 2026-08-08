@@ -7,9 +7,9 @@ const mocks = vi.hoisted(() => ({
   createBundleMcpToolRuntime: vi.fn(),
   createOpenClawCodingTools: vi.fn(),
   disposeBundleRuntime: vi.fn(),
-  loadModelCatalog: vi.fn(async (): Promise<Array<Record<string, unknown>>> => []),
+  loadModelCatalog: vi.fn(async (): Promise<Array<Record<string, any>>> => []),
   normalizeProviderToolSchemasWithPlugin: vi.fn(),
-  resolvePluginProviders: vi.fn((): Array<Record<string, unknown>> => []),
+  resolvePluginProviders: vi.fn((): Array<Record<string, any>> => []),
   resolveDefaultModelForAgent: vi.fn(() => ({ provider: "openai", model: "gpt-5.5" })),
 }));
 
@@ -51,7 +51,7 @@ vi.mock("../plugins/providers.runtime.js", () => ({
 const { collectProviderCatalogProjectionFindings, collectRuntimeToolSchemaFindings } =
   await import("./doctor-core-checks.runtime.js");
 
-function tool(name: string, parameters: unknown): AnyAgentTool {
+function tool(name: string, parameters: any): AnyAgentTool {
   return {
     name,
     label: name,
@@ -61,7 +61,7 @@ function tool(name: string, parameters: unknown): AnyAgentTool {
   } as unknown as AnyAgentTool;
 }
 
-function bundleMcpTool(name: string, parameters: unknown): AnyAgentTool {
+function bundleMcpTool(name: string, parameters: any): AnyAgentTool {
   const entry = tool(name, parameters);
   setPluginToolMeta(entry, { pluginId: "bundle-mcp", optional: false });
   return entry;

@@ -191,7 +191,7 @@ describe("bound delivery router", () => {
       });
 
       for (const [key, value] of Object.entries(expected)) {
-        expect((route as Record<string, unknown>)[key]).toEqual(value);
+        expect((route as Record<string, any>)[key]).toEqual(value);
       }
       if (expectedConversationId !== undefined) {
         expect(route.binding?.conversation.conversationId).toBe(expectedConversationId);

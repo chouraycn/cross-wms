@@ -85,7 +85,7 @@ export function createSignalChannelPlugin(): ChannelPlugin {
 
   const signalConfig: ChannelConfigAdapter<SignalAccountConfig> = {
     listAccountIds: (config: AppConfig): ChannelId[] => {
-      const sigConfig = config.signal as Record<string, unknown> | undefined;
+      const sigConfig = config.signal as Record<string, any> | undefined;
       if (sigConfig && sigConfig.serviceUrl && sigConfig.phoneNumber) {
         return [SIGNAL_CHANNEL_ID];
       }
@@ -96,7 +96,7 @@ export function createSignalChannelPlugin(): ChannelPlugin {
       accountId: ChannelId,
     ): SignalAccountConfig | null => {
       if (accountId !== SIGNAL_CHANNEL_ID) return null;
-      const sigConfig = config.signal as Record<string, unknown> | undefined;
+      const sigConfig = config.signal as Record<string, any> | undefined;
       if (sigConfig && sigConfig.serviceUrl && sigConfig.phoneNumber) {
         return {
           serviceUrl: String(sigConfig.serviceUrl),
@@ -128,7 +128,7 @@ export function createSignalChannelPlugin(): ChannelPlugin {
         try {
           const rendered = await ctx.render();
           const text = rendered.parts
-            .map((p: { content: unknown }) => String(p.content))
+            .map((p: { content: any }) => String(p.content))
             .join("\n");
 
           const recipient = ctx.to;
@@ -137,7 +137,7 @@ export function createSignalChannelPlugin(): ChannelPlugin {
           }
 
           // signal-cli v2 API: POST /v2/send
-          const body: Record<string, unknown> = {
+          const body: Record<string, any> = {
             number: account.phoneNumber,
             recipients: [recipient],
             message: text.length > SIGNAL_TEXT_LIMIT
@@ -195,18 +195,18 @@ export function createSignalChannelPlugin(): ChannelPlugin {
  *
  * signal-cli 在收到消息时会向配置的 Webhook URL POST JSON 载荷。
  */
-export function parseSignalWebhook(body: unknown): SignalWebhookResult {
-  const data = body as Record<string, unknown>;
+export function parseSignalWebhook(body: any): SignalWebhookResult {
+  const data = body as Record<string, any>;
   if (!data || typeof data !== "object") {
     return { success: false, error: "Invalid Signal webhook payload" };
   }
 
-  const envelope = (data.envelope as Record<string, unknown> | undefined) ?? data;
-  const dataMsg = envelope.data as Record<string, unknown> | undefined;
-  const syncMsg = envelope.sync_message as Record<string, unknown> | undefined;
-  const syncSent = syncMsg?.sent as Record<string, unknown> | undefined;
+  const envelope = (data.envelope as Record<string, any> | undefined) ?? data;
+  const dataMsg = envelope.data as Record<string, any> | undefined;
+  const syncMsg = envelope.sync_message as Record<string, any> | undefined;
+  const syncSent = syncMsg?.sent as Record<string, any> | undefined;
 
-  const messageSource = (dataMsg ?? syncSent?.message) as Record<string, unknown> | undefined;
+  const messageSource = (dataMsg ?? syncSent?.message) as Record<string, any> | undefined;
   if (!messageSource) {
     return { success: false, error: "No message data in Signal envelope" };
   }
@@ -244,7 +244,7 @@ export async function registerSignalWebhook(
   account: SignalAccountConfig,
   webhookUrl: string,
 ): Promise<boolean> {
-  const body: Record<string, unknown> = {
+  const body: Record<string, any> = {
     url: webhookUrl,
   };
 

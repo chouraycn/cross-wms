@@ -32,8 +32,8 @@ export interface WebSocketClient {
     send: (data: string) => void;
     close: (code?: number, reason?: string) => void;
     readyState: number;
-    on?: (event: string, handler: (...args: unknown[]) => void) => void;
-    off?: (event: string, handler: (...args: unknown[]) => void) => void;
+    on?: (event: string, handler: (...args: any[]) => void) => void;
+    off?: (event: string, handler: (...args: any[]) => void) => void;
   };
   sessionKeys: Set<string>;
   userId?: string;
@@ -44,22 +44,22 @@ export interface WebSocketClient {
   /** 客户端 IP（用于 flood guard 释放） */
   remoteIp?: string;
   context: GatewayMethodContext;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
 }
 
 export interface WebSocketMessage {
   type: "request" | "response" | "event" | "error" | "auth";
   id?: string;
   method?: string;
-  params?: unknown;
-  result?: unknown;
+  params?: any;
+  result?: any;
   error?: {
     code: string;
     message: string;
-    data?: unknown;
+    data?: any;
   };
   event?: string;
-  data?: unknown;
+  data?: any;
   /** 认证字段，仅 type=auth 时使用 */
   auth?: {
     mode?: "token" | "password" | "tailscale" | "device-token" | "bootstrap-token" | "trusted-proxy";
@@ -76,7 +76,7 @@ export interface WebSocketMessage {
 export interface SessionSyncEvent {
   type: "session:update" | "session:create" | "session:delete";
   sessionKey: string;
-  data?: unknown;
+  data?: any;
   sourceClientId?: string;
   timestamp: number;
 }
@@ -109,27 +109,27 @@ export type TaskMonitorEventType =
 export interface TaskMonitorEvent {
   type: TaskMonitorEventType;
   sessionId: string;
-  payload: unknown;
+  payload: any;
   timestamp: number;
 }
 
 const READY_STATE_OPEN = 1;
 
-type EventHandler = (...args: unknown[]) => void;
+type EventHandler = (...args: any[]) => void;
 
 class WebSocketHub {
   private readonly clients = new Map<string, WebSocketClient>();
   private readonly sessionSubscribers = new Map<string, Set<string>>();
   private readonly taskMonitorSubscribers = new Map<string, Set<string>>();
   private readonly eventListeners = new Map<WebSocketHubEvent, Set<EventHandler>>();
-  private wss: unknown = null;
+  private wss: any = null;
   private httpServer: HttpServer | null = null;
 
   async start(httpServer: HttpServer): Promise<void> {
     this.httpServer = httpServer;
 
     try {
-      const wsModule = await import("ws" as string) as unknown;
+      const wsModule = await import("ws" as string) as any;
       const WebSocketServer = wsModule.WebSocketServer;
       this.wss = new WebSocketServer({
         server: httpServer,
@@ -168,9 +168,9 @@ class WebSocketHub {
         },
       });
 
-      (this.wss as { on: (event: string, handler: (ws: unknown, req: IncomingMessage) => void) => void }).on(
+      (this.wss as { on: (event: string, handler: (ws: any, req: IncomingMessage) => void) => void }).on(
         "connection",
-        (ws: unknown, req: IncomingMessage) => void this.handleConnection(ws, req),
+        (ws: any, req: IncomingMessage) => void this.handleConnection(ws, req),
       );
       console.log("[gateway] WebSocket server started on /gateway/ws");
     } catch {
@@ -201,7 +201,7 @@ class WebSocketHub {
     }
   }
 
-  private emit(event: WebSocketHubEvent, ...args: unknown[]): void {
+  private emit(event: WebSocketHubEvent, ...args: any[]): void {
     const listeners = this.eventListeners.get(event);
     if (listeners) {
       for (const handler of listeners) {
@@ -214,7 +214,7 @@ class WebSocketHub {
     }
   }
 
-  private async handleConnection(ws: unknown, req: IncomingMessage): Promise<void> {
+  private async handleConnection(ws: any, req: IncomingMessage): Promise<void> {
     const clientId = this.generateClientId();
     const now = Date.now();
     const authConfig = getWsAuthConfig();
@@ -248,10 +248,10 @@ class WebSocketHub {
     this.clients.set(clientId, client);
 
     const wsAny = ws as {
-      on: (event: string, handler: (...args: unknown[]) => void) => void;
+      on: (event: string, handler: (...args: any[]) => void) => void;
     };
 
-    wsAny.on("message", async (data: unknown) => {
+    wsAny.on("message", async (data: any) => {
       await this.handleMessage(client, data);
     });
 
@@ -321,7 +321,7 @@ class WebSocketHub {
     this.emit("client:connected", client);
   }
 
-  private async handleMessage(client: WebSocketClient, data: unknown): Promise<void> {
+  private async handleMessage(client: WebSocketClient, data: any): Promise<void> {
     client.lastActiveAt = Date.now();
 
     let message: WebSocketMessage;
@@ -538,7 +538,7 @@ class WebSocketHub {
   }
 
   private handleSessionSync(client: WebSocketClient, message: WebSocketMessage): void {
-    const params = message.params as { sessionKey: string; data: unknown; type?: string } | undefined;
+    const params = message.params as { sessionKey: string; data: any; type?: string } | undefined;
 
     if (!params?.sessionKey) {
       this.sendToClient(client, {
@@ -721,7 +721,7 @@ class WebSocketHub {
     return sent;
   }
 
-  broadcastEvent(event: string, data?: unknown): number {
+  broadcastEvent(event: string, data?: any): number {
     const message: WebSocketMessage = {
       type: "event",
       event,
@@ -731,7 +731,7 @@ class WebSocketHub {
     return this.broadcast(message);
   }
 
-  sendSessionEvent(sessionKey: string, event: string, data?: unknown, excludeClientId?: string): number {
+  sendSessionEvent(sessionKey: string, event: string, data?: any, excludeClientId?: string): number {
     const message: WebSocketMessage = {
       type: "event",
       event,
@@ -816,7 +816,7 @@ class WebSocketHub {
     return true;
   }
 
-  setClientMetadata(clientId: string, metadata: Record<string, unknown>): boolean {
+  setClientMetadata(clientId: string, metadata: Record<string, any>): boolean {
     const client = this.clients.get(clientId);
     if (!client) return false;
     client.metadata = { ...client.metadata, ...metadata };

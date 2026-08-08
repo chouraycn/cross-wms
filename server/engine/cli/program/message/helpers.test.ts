@@ -23,13 +23,13 @@ const { ensurePluginRegistryLoaded } = await import("../../plugin-registry.js");
 
 const hasHooksMock = vi.fn((_hookName: string) => false);
 const runGatewayStopMock = vi.fn(
-  async (_eventValue: { reason?: string }, _ctx: Record<string, unknown>) => {},
+  async (_eventValue: { reason?: string }, _ctx: Record<string, any>) => {},
 );
 const runGlobalGatewayStopSafelyMock = vi.fn(
   async (params: {
     event: { reason?: string };
-    ctx: Record<string, unknown>;
-    onError?: (err: unknown) => void;
+    ctx: Record<string, any>;
+    onError?: (err: any) => void;
   }) => {
     if (!hasHooksMock("gateway_stop")) {
       return;
@@ -73,7 +73,7 @@ function createRunMessageAction() {
   return createMessageCliHelpers(fakeCommand, "discord").runMessageAction;
 }
 
-async function runSendAction(opts: Record<string, unknown> = {}) {
+async function runSendAction(opts: Record<string, any> = {}) {
   const runMessageAction = createRunMessageAction();
   await expect(runMessageAction("send", { ...baseSendOptions, ...opts })).rejects.toThrow("exit");
 }
@@ -88,7 +88,7 @@ function mockChannelExecutionModes(modes: Record<string, "gateway" | "local"> = 
 
 function expectNoAccountFieldInPassedOptions() {
   const passedOpts = (
-    messageCommandMock.mock.calls as unknown as Array<[Record<string, unknown>]>
+    messageCommandMock.mock.calls as unknown as Array<[Record<string, any>]>
   )?.[0]?.[0];
   if (passedOpts === undefined) {
     throw new Error("expected message command call");
@@ -96,15 +96,15 @@ function expectNoAccountFieldInPassedOptions() {
   expect(passedOpts).not.toHaveProperty("account");
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     throw new Error(`expected ${label} to be an object`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function expectMessageCommandOptions(expected: Record<string, unknown>, callIndex = 0): void {
-  const call = (messageCommandMock.mock.calls as unknown[][])[callIndex];
+function expectMessageCommandOptions(expected: Record<string, any>, callIndex = 0): void {
+  const call = (messageCommandMock.mock.calls as any[][])[callIndex];
   if (!call) {
     throw new Error(`expected messageCommand call ${callIndex}`);
   }

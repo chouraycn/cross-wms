@@ -85,14 +85,14 @@ export const buildBedrockRequestBody: ProviderRequestBodyBuilder = (ctx) => {
   return buildBedrockAnthropicBody(options);
 };
 
-function buildBedrockAnthropicBody(options: { messages: Array<{ role: string; content: string }>; maxTokens?: number; temperature?: number }): Record<string, unknown> {
+function buildBedrockAnthropicBody(options: { messages: Array<{ role: string; content: string }>; maxTokens?: number; temperature?: number }): Record<string, any> {
   const system: string[] = [];
   const messages: Array<{ role: 'user' | 'assistant'; content: string }> = [];
   for (const m of options.messages) {
     if (m.role === 'system') system.push(m.content);
     else if (m.role === 'user' || m.role === 'assistant') messages.push({ role: m.role, content: m.content });
   }
-  const body: Record<string, unknown> = {
+  const body: Record<string, any> = {
     anthropic_version: 'bedrock-2023-05-31',
     max_tokens: options.maxTokens ?? 4096,
     messages,
@@ -102,7 +102,7 @@ function buildBedrockAnthropicBody(options: { messages: Array<{ role: string; co
   return body;
 }
 
-function buildBedrockLlamaBody(options: { messages: Array<{ role: string; content: string }>; maxTokens?: number; temperature?: number }): Record<string, unknown> {
+function buildBedrockLlamaBody(options: { messages: Array<{ role: string; content: string }>; maxTokens?: number; temperature?: number }): Record<string, any> {
   const prompt = options.messages.map((m) => {
     const tag = m.role === 'assistant' ? 'assistant' : 'user';
     return `<|start_header_id|>${tag}<|end_header_id|>\n\n${m.content}<|eot_id|>`;
@@ -114,7 +114,7 @@ function buildBedrockLlamaBody(options: { messages: Array<{ role: string; conten
   };
 }
 
-function buildBedrockMistralBody(options: { messages: Array<{ role: string; content: string }>; maxTokens?: number; temperature?: number }): Record<string, unknown> {
+function buildBedrockMistralBody(options: { messages: Array<{ role: string; content: string }>; maxTokens?: number; temperature?: number }): Record<string, any> {
   return {
     messages: options.messages.map((m) => ({ role: m.role, content: m.content })),
     max_tokens: options.maxTokens ?? 1024,
@@ -127,7 +127,7 @@ export const parseBedrockStreamChunk: ProviderStreamChunkParser = (chunk) => {
   const events: StreamEvent[] = [];
   if (!chunk || typeof chunk !== 'object') return events;
   // chunk 可能是 { bytes: string } 或 { payload: ... } 或直接 JSON
-  const data = (chunk as { bytes?: string; payload?: unknown }).payload ?? chunk;
+  const data = (chunk as { bytes?: string; payload?: any }).payload ?? chunk;
   const json = typeof data === 'string' ? safeJsonParse(data) : data;
   if (!json || typeof json !== 'object') return events;
   const obj = json as {
@@ -155,7 +155,7 @@ export const parseBedrockStreamChunk: ProviderStreamChunkParser = (chunk) => {
   return events;
 };
 
-function safeJsonParse(s: string): unknown {
+function safeJsonParse(s: string): any {
   try {
     return JSON.parse(s);
   } catch {

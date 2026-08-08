@@ -45,7 +45,7 @@ describe("device identity crypto helpers", () => {
     await withTempDir("openclaw-device-identity-readonly-", async (dir) => {
       const identityPath = path.join(dir, "identity", "device.json");
       loadOrCreateDeviceIdentity(identityPath);
-      const stored = JSON.parse(fs.readFileSync(identityPath, "utf8")) as Record<string, unknown>;
+      const stored = JSON.parse(fs.readFileSync(identityPath, "utf8")) as Record<string, any>;
       fs.writeFileSync(
         identityPath,
         `${JSON.stringify({ ...stored, deviceId: "mismatched" }, null, 2)}\n`,
@@ -79,7 +79,7 @@ describe("device identity crypto helpers", () => {
 
       const readonly = loadDeviceIdentityIfPresent(identityPath);
       const loaded = loadOrCreateDeviceIdentity(identityPath);
-      const stored = JSON.parse(fs.readFileSync(identityPath, "utf8")) as Record<string, unknown>;
+      const stored = JSON.parse(fs.readFileSync(identityPath, "utf8")) as Record<string, any>;
 
       expect(readonly?.deviceId).toBe(SWIFT_RAW_DEVICE_ID);
       expect(loaded.deviceId).toBe(SWIFT_RAW_DEVICE_ID);

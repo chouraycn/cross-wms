@@ -60,7 +60,7 @@ vi.mock("../infra/update-channels.js", () => ({
 function createRuntimeCapture() {
   const logs: string[] = [];
   const runtime: RuntimeEnv = {
-    log: vi.fn((value: unknown) => {
+    log: vi.fn((value: any) => {
       logs.push(String(value));
     }),
     error: vi.fn(),
@@ -139,7 +139,7 @@ describe("statusJsonCommand", () => {
 
     expect(mocks.runSecurityAudit).not.toHaveBeenCalled();
     expect(logs).toStrictEqual([expect.any(String)]);
-    const payload = JSON.parse(logs[0] ?? "{}") as Record<string, unknown>;
+    const payload = JSON.parse(logs[0] ?? "{}") as Record<string, any>;
     expect(payload).toEqual(createExpectedStatusPayload());
     expect(payload).not.toHaveProperty("securityAudit");
   });
@@ -152,12 +152,12 @@ describe("statusJsonCommand", () => {
     expect(mocks.runSecurityAudit).toHaveBeenCalledOnce();
     const auditInput = mocks.runSecurityAudit.mock.calls[0]?.[0] as
       | {
-          config?: unknown;
-          sourceConfig?: unknown;
-          deep?: unknown;
-          includeFilesystem?: unknown;
-          includeChannelSecurity?: unknown;
-          loadPluginSecurityCollectors?: unknown;
+          config?: any;
+          sourceConfig?: any;
+          deep?: any;
+          includeFilesystem?: any;
+          includeChannelSecurity?: any;
+          loadPluginSecurityCollectors?: any;
           plugins?: Array<{ id: string }>;
         }
       | undefined;
@@ -176,7 +176,7 @@ describe("statusJsonCommand", () => {
       "whatsapp",
     ]);
     expect(logs).toStrictEqual([expect.any(String)]);
-    const payload = JSON.parse(logs[0] ?? "{}") as Record<string, unknown>;
+    const payload = JSON.parse(logs[0] ?? "{}") as Record<string, any>;
     expect(payload).toEqual({
       ...createExpectedStatusPayload(),
       securityAudit: {

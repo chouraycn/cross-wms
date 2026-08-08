@@ -70,7 +70,7 @@ async function flushPendingDelivery(): Promise<void> {
 }
 
 type DeliveryArgs = {
-  payloads?: Array<{ text?: string; presentation?: unknown; interactive?: unknown }>;
+  payloads?: Array<{ text?: string; presentation?: any; interactive?: any }>;
 };
 
 function deliveryArgs(deliver: ReturnType<typeof vi.fn>): DeliveryArgs | undefined {

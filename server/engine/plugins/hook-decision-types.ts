@@ -26,7 +26,7 @@ export type HookDecisionBlock = {
   /** Plugin-defined category for analytics (e.g. "violence", "pii", "cost_limit"). */
   category?: string;
   /** Opaque metadata for the plugin's own use. Core does not interpret it. */
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 export function resolveBlockMessage(
@@ -65,11 +65,11 @@ export function mergeHookDecisions(a: HookDecision | undefined, b: HookDecision)
 /**
  * Type guard: does this object look like a HookDecision (has `outcome` field)?
  */
-export function isHookDecision(value: unknown): value is HookDecision {
+export function isHookDecision(value: any): value is HookDecision {
   if (typeof value !== "object" || value === null) {
     return false;
   }
-  const v = value as Record<string, unknown>;
+  const v = value as Record<string, any>;
   const keys = Object.keys(v);
   if (v.outcome === "pass") {
     return keys.length === 1;

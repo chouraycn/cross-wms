@@ -266,7 +266,7 @@ describe("plugin entry guardrails", () => {
       const packageJsonPath = resolve(plugin.rootDir, "package.json");
       try {
         const pkg = JSON.parse(readFileSync(packageJsonPath, "utf8")) as {
-          openclaw?: { extensions?: unknown };
+          openclaw?: { extensions?: any };
         };
         const extensions = Array.isArray(pkg.openclaw?.extensions) ? pkg.openclaw.extensions : [];
         if (

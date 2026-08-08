@@ -40,7 +40,7 @@ import { ok, fail, notFound, created, serverError, BizCode } from './_shared/res
 
 const router = Router();
 
-function successResponse(res: Response, data: unknown, message?: string): Response {
+function successResponse(res: Response, data: any, message?: string): Response {
   return ok(res, data, message);
 }
 
@@ -159,7 +159,7 @@ router.get('/search', (req: Request, res: Response) => {
 router.get('/audit', async (_req: Request, res: Response) => {
   try {
     const skills = dbGetSkills();
-    const auditResults: Record<string, unknown>[] = [];
+    const auditResults: Record<string, any>[] = [];
 
     for (const skill of skills) {
       try {

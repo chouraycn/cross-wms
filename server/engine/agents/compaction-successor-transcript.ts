@@ -14,7 +14,7 @@ export type CompactionTranscriptRotation = {
 };
 
 /** Check whether compaction transcript rotation is configured. */
-export function shouldRotateCompactionTranscript(config?: unknown): boolean {
+export function shouldRotateCompactionTranscript(config?: any): boolean {
   if (!config || typeof config !== "object") {
     return false;
   }
@@ -24,7 +24,7 @@ export function shouldRotateCompactionTranscript(config?: unknown): boolean {
 
 /** Rotate transcript after compaction using a session manager. */
 export async function rotateTranscriptAfterCompaction(params: {
-  sessionManager: unknown;
+  sessionManager: any;
   sessionFile: string;
   now?: () => Date;
 }): Promise<CompactionTranscriptRotation> {

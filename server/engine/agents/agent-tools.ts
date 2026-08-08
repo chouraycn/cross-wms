@@ -14,10 +14,10 @@ export type OpenClawCodingToolConstructionPlan = {
   includeOpenClawTools: boolean;
   includePluginTools: boolean;
 };
-export const testing: unknown = undefined;
-export function resolveProcessToolScopeKey(..._args: unknown[]): unknown {
+export const testing: any = undefined;
+export function resolveProcessToolScopeKey(..._args: any[]): any {
   return undefined;
 }
-export function createOpenClawCodingTools(..._args: unknown[]): unknown {
+export function createOpenClawCodingTools(..._args: any[]): any {
   return undefined;
 }

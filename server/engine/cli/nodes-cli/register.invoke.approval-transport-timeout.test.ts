@@ -21,7 +21,7 @@ import { callGatewayCli, callNodePairApprovalGatewayCli } from "./rpc.js";
  */
 
 const { callGatewaySpy } = vi.hoisted(() => ({
-  callGatewaySpy: vi.fn<(opts: Record<string, unknown>) => Promise<{ decision: "allow-once" }>>(
+  callGatewaySpy: vi.fn<(opts: Record<string, any>) => Promise<{ decision: "allow-once" }>>(
     async () => ({ decision: "allow-once" }),
   ),
 }));
@@ -32,10 +32,10 @@ vi.mock("../../gateway/call.js", () => ({
 }));
 
 vi.mock("../progress.js", () => ({
-  withProgress: (_opts: unknown, fn: () => unknown) => fn(),
+  withProgress: (_opts: any, fn: () => unknown) => fn(),
 }));
 
-function firstGatewayCall(): Record<string, unknown> {
+function firstGatewayCall(): Record<string, any> {
   const [callOpts] = callGatewaySpy.mock.calls[0] ?? [];
   if (!callOpts) {
     throw new Error("expected gateway call");

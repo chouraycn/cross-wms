@@ -6,8 +6,8 @@
  */
 
 export type GatewayTranscriptMessage = {
-  role?: unknown;
-  content?: unknown;
+  role?: any;
+  content?: any;
 };
 
 export type GatewayChatContentBlock = {

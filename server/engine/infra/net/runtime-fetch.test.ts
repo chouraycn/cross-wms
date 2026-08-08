@@ -7,11 +7,11 @@ import { TEST_UNDICI_RUNTIME_DEPS_KEY } from "./undici-runtime.js";
 class RuntimeFormData {
   readonly records: Array<{
     name: string;
-    value: unknown;
+    value: any;
     filename?: string;
   }> = [];
 
-  append(name: string, value: unknown, filename?: string): void {
+  append(name: string, value: any, filename?: string): void {
     this.records.push({
       name,
       value,
@@ -19,7 +19,7 @@ class RuntimeFormData {
     });
   }
 
-  *entries(): IterableIterator<[string, unknown]> {
+  *entries(): IterableIterator<[string, any]> {
     for (const record of this.records) {
       yield [record.name, record.value];
     }
@@ -65,7 +65,7 @@ describe("fetchWithRuntimeDispatcher", () => {
       return new Response("ok", { status: 200 });
     });
 
-    (globalThis as Record<string, unknown>)[TEST_UNDICI_RUNTIME_DEPS_KEY] = {
+    (globalThis as Record<string, any>)[TEST_UNDICI_RUNTIME_DEPS_KEY] = {
       Agent: MockAgent,
       EnvHttpProxyAgent: MockEnvHttpProxyAgent,
       FormData: RuntimeFormData,
@@ -74,7 +74,7 @@ describe("fetchWithRuntimeDispatcher", () => {
     };
 
     const headers = { "Content-Type": "application/json" } as Record<string, string> & {
-      [key: symbol]: unknown;
+      [key: symbol]: any;
     };
     Object.defineProperty(headers, Symbol("sensitiveHeaders"), {
       value: new Set(["content-type"]),
@@ -107,7 +107,7 @@ describe("fetchWithRuntimeDispatcher", () => {
       return new Response("ok", { status: 200 });
     });
 
-    (globalThis as Record<string, unknown>)[TEST_UNDICI_RUNTIME_DEPS_KEY] = {
+    (globalThis as Record<string, any>)[TEST_UNDICI_RUNTIME_DEPS_KEY] = {
       Agent: MockAgent,
       EnvHttpProxyAgent: MockEnvHttpProxyAgent,
       FormData: RuntimeFormData,

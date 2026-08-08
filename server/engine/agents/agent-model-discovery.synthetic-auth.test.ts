@@ -35,7 +35,7 @@ vi.mock("./auth-profiles/store.js", () => ({
 }));
 
 vi.mock("./agent-auth-discovery-core.js", () => ({
-  addEnvBackedAgentCredentials: (credentials: Record<string, unknown>) => ({ ...credentials }),
+  addEnvBackedAgentCredentials: (credentials: Record<string, any>) => ({ ...credentials }),
 }));
 
 let resolveAgentCredentialsForDiscovery: typeof import("./agent-auth-discovery.js").resolveAgentCredentialsForDiscovery;

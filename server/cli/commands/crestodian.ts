@@ -67,7 +67,7 @@ function listDaemons(): DaemonStatus[] {
   return Array.from(DAEMON_STATE.values());
 }
 
-function formatJsonOutput(data: unknown): string {
+function formatJsonOutput(data: any): string {
   return JSON.stringify(data, null, 2);
 }
 

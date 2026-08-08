@@ -3,13 +3,13 @@
  * 生产环境调用时会抛出错误，仅在 vitest 测试上下文中可用。
  */
 
-type MockFn = (...args: unknown[]) => unknown;
+type MockFn = (...args: any[]) => unknown;
 
 function createLazyMock(name: string): MockFn {
-  return function (...args: unknown[]): unknown {
+  return function (...args: any[]): any {
     try {
       // vitest 运行时通过 globalThis.__vitest__ 或 await import("vitest") 可用
-      const vi = (globalThis as Record<string, unknown>).__vitest_vi__ as
+      const vi = (globalThis as Record<string, any>).__vitest_vi__ as
         | { fn: () => MockFn }
         | undefined;
       if (vi) {
@@ -36,12 +36,12 @@ export async function setupTestMocks(): Promise<void> {
   _fetchWithSsrFGuardMock = vi.fn() as MockFn;
   _hasBinaryMock = vi.fn() as MockFn;
   // 注册到全局以便 lazy mock 访问
-  (globalThis as Record<string, unknown>).__vitest_vi__ = vi;
+  (globalThis as Record<string, any>).__vitest_vi__ = vi;
 }
 
-export const runCommandWithTimeoutMock: MockFn = (...args: unknown[]) =>
+export const runCommandWithTimeoutMock: MockFn = (...args: any[]) =>
   (_runCommandWithTimeoutMock ?? createLazyMock("runCommandWithTimeoutMock"))(...args);
-export const fetchWithSsrFGuardMock: MockFn = (...args: unknown[]) =>
+export const fetchWithSsrFGuardMock: MockFn = (...args: any[]) =>
   (_fetchWithSsrFGuardMock ?? createLazyMock("fetchWithSsrFGuardMock"))(...args);
-export const hasBinaryMock: MockFn = (...args: unknown[]) =>
+export const hasBinaryMock: MockFn = (...args: any[]) =>
   (_hasBinaryMock ?? createLazyMock("hasBinaryMock"))(...args);

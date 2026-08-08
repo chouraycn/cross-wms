@@ -357,26 +357,26 @@ export function logLoadOrder(order: string[]): void {
 }
 
 // Auto-generated stub exports (added by auto-fix-exports.mjs)
-export const resolveCompatibleRuntimePluginRegistry: (...args: unknown[]) => unknown = undefined as unknown as (...args: unknown[]) => unknown;
-export const resolvePluginRegistryLoadCacheKey: (...args: unknown[]) => unknown = undefined as unknown as (...args: unknown[]) => unknown;
-export const resolveRuntimePluginRegistry: (...args: unknown[]) => unknown = undefined as unknown as (...args: unknown[]) => unknown;
+export const resolveCompatibleRuntimePluginRegistry: (...args: any[]) => unknown = undefined as unknown as (...args: any[]) => unknown;
+export const resolvePluginRegistryLoadCacheKey: (...args: any[]) => unknown = undefined as unknown as (...args: any[]) => unknown;
+export const resolveRuntimePluginRegistry: (...args: any[]) => unknown = undefined as unknown as (...args: any[]) => unknown;
 
 // 降级类型桩：对应 openclaw 中 loader.ts 的完整类型/函数
 export type PluginLoadOptions = {
   pluginDir?: string;
   skipDependencies?: boolean;
   env?: NodeJS.ProcessEnv;
-  config?: unknown;
+  config?: any;
   workspaceDir?: string;
   onlyPluginIds?: readonly string[];
   pluginSdkResolution?: PluginSdkResolutionPreference;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
-export async function loadOpenClawPlugins(_options?: PluginLoadOptions): Promise<unknown[]> {
+export async function loadOpenClawPlugins(_options?: PluginLoadOptions): Promise<any[]> {
   return [];
 }
 
-export async function loadOpenClawPluginCliRegistry(_options?: PluginLoadOptions): Promise<unknown> {
+export async function loadOpenClawPluginCliRegistry(_options?: PluginLoadOptions): Promise<any> {
   return {};
 }

@@ -3,7 +3,7 @@ import { describe, expect, it, type Mock, vi } from "vitest";
 import { withEnvAsync } from "../../test-utils/env.js";
 
 const mocks = vi.hoisted(() => {
-  type MockAuthProfile = { provider: string; [key: string]: unknown };
+  type MockAuthProfile = { provider: string; [key: string]: any };
   const store = {
     version: 1,
     profiles: {
@@ -278,20 +278,20 @@ function parseFirstJsonLog(runtimeLike: { log: Mock }) {
   return JSON.parse(String(runtimeLike.log.mock.calls[0]?.[0]));
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (typeof value !== "object" || value === null) {
     throw new Error(`${label} was not an object`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function expectRecordFields(record: Record<string, unknown>, fields: Record<string, unknown>) {
+function expectRecordFields(record: Record<string, any>, fields: Record<string, any>) {
   for (const [key, value] of Object.entries(fields)) {
     expect(record[key]).toEqual(value);
   }
 }
 
-function requireArray(value: unknown, label: string): unknown[] {
+function requireArray(value: any, label: string): any[] {
   expect(Array.isArray(value)).toBe(true);
   if (!Array.isArray(value)) {
     throw new Error(`${label} was not an array`);
@@ -299,7 +299,7 @@ function requireArray(value: unknown, label: string): unknown[] {
   return value;
 }
 
-function requireProvider(providers: unknown, provider: string) {
+function requireProvider(providers: any, provider: string) {
   const entry = requireArray(providers, "auth providers").find(
     (candidate) => requireRecord(candidate, "auth provider").provider === provider,
   );
@@ -309,7 +309,7 @@ function requireProvider(providers: unknown, provider: string) {
   return requireRecord(entry, `provider ${provider}`);
 }
 
-function requireProfile(profiles: unknown, profileId: string) {
+function requireProfile(profiles: any, profileId: string) {
   const entry = requireArray(profiles, "auth profiles").find(
     (candidate) => requireRecord(candidate, "auth profile").profileId === profileId,
   );
@@ -569,7 +569,7 @@ describe("modelsStatusCommand auth overview", () => {
     });
     mocks.store.profiles = {};
     mocks.resolveEnvApiKey.mockImplementation(() => null);
-    mocks.getCustomProviderApiKey.mockImplementation((_cfg: unknown, provider: string) =>
+    mocks.getCustomProviderApiKey.mockImplementation((_cfg: any, provider: string) =>
       provider === "openai" ? "oauth:openai" : undefined,
     );
     mocks.resolveUsableCustomProviderApiKey.mockImplementation(() => null);
@@ -2077,7 +2077,7 @@ describe("modelsStatusCommand auth overview", () => {
         const textRuntime = createRuntime();
         await modelsStatusCommand({ agent: "main" }, textRuntime as never);
         const output = (textRuntime.log as Mock).mock.calls
-          .map((call: unknown[]) => String(call[0]))
+          .map((call: any[]) => String(call[0]))
           .join("\n");
         expect(output).toContain("Default (defaults)");
         expect(output).toContain("Fallbacks (0) (defaults)");

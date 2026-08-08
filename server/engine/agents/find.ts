@@ -5,11 +5,11 @@
  * Cross-wms degradation: returns placeholder tool without file search.
  */
 
-export type FindOperations = Record<string, unknown>;
-export type FindToolOptions = Record<string, unknown>;
+export type FindOperations = Record<string, any>;
+export type FindToolOptions = Record<string, any>;
 
 /** Creates a find tool definition. */
-export function createFindToolDefinition(..._args: unknown[]): Record<string, unknown> {
+export function createFindToolDefinition(..._args: any[]): Record<string, any> {
   return {
     name: "find",
     description: "Search for files by name pattern.",
@@ -23,7 +23,7 @@ export function createFindToolDefinition(..._args: unknown[]): Record<string, un
 }
 
 /** Creates a find tool instance. */
-export function createFindTool(..._args: unknown[]): Record<string, unknown> {
+export function createFindTool(..._args: any[]): Record<string, any> {
   return {
     ...createFindToolDefinition(),
     execute: async () => ({ output: "Find tool not available in cross-wms" }),

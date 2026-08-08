@@ -111,17 +111,17 @@ describe('LSP Tools — lsp_complete 参数验证', () => {
     expect(completeDef).toBeDefined();
     expect(completeDef!.function.parameters.required).toEqual(['file', 'line', 'character']);
 
-    expect((completeDef!.function.parameters as unknown).properties.file).toBeDefined();
-    expect((completeDef!.function.parameters as unknown).properties.file.type).toBe('string');
+    expect((completeDef!.function.parameters as any).properties.file).toBeDefined();
+    expect((completeDef!.function.parameters as any).properties.file.type).toBe('string');
 
-    expect((completeDef!.function.parameters as unknown).properties.line).toBeDefined();
-    expect((completeDef!.function.parameters as unknown).properties.line.type).toBe('number');
+    expect((completeDef!.function.parameters as any).properties.line).toBeDefined();
+    expect((completeDef!.function.parameters as any).properties.line.type).toBe('number');
 
-    expect((completeDef!.function.parameters as unknown).properties.character).toBeDefined();
-    expect((completeDef!.function.parameters as unknown).properties.character.type).toBe('number');
+    expect((completeDef!.function.parameters as any).properties.character).toBeDefined();
+    expect((completeDef!.function.parameters as any).properties.character.type).toBe('number');
 
     // triggerCharacter 是可选参数
-    expect((completeDef!.function.parameters as unknown).properties.triggerCharacter).toBeDefined();
+    expect((completeDef!.function.parameters as any).properties.triggerCharacter).toBeDefined();
     expect(completeDef!.function.parameters.required).not.toContain('triggerCharacter');
   });
 });
@@ -135,8 +135,8 @@ describe('LSP Tools — lsp_rename 参数验证', () => {
     expect(renameDef).toBeDefined();
     expect(renameDef!.function.parameters.required).toEqual(['file', 'line', 'character', 'newName']);
 
-    expect((renameDef!.function.parameters as unknown).properties.newName).toBeDefined();
-    expect((renameDef!.function.parameters as unknown).properties.newName.type).toBe('string');
+    expect((renameDef!.function.parameters as any).properties.newName).toBeDefined();
+    expect((renameDef!.function.parameters as any).properties.newName.type).toBe('string');
   });
 });
 
@@ -150,11 +150,11 @@ describe('LSP Tools — lsp_format 参数验证', () => {
     expect(formatDef!.function.parameters.required).toEqual(['file']);
 
     // 可选参数
-    expect((formatDef!.function.parameters as unknown).properties.startLine).toBeDefined();
-    expect((formatDef!.function.parameters as unknown).properties.tabSize).toBeDefined();
-    expect((formatDef!.function.parameters as unknown).properties.tabSize.default).toBe(2);
-    expect((formatDef!.function.parameters as unknown).properties.insertSpaces).toBeDefined();
-    expect((formatDef!.function.parameters as unknown).properties.insertSpaces.default).toBe(true);
+    expect((formatDef!.function.parameters as any).properties.startLine).toBeDefined();
+    expect((formatDef!.function.parameters as any).properties.tabSize).toBeDefined();
+    expect((formatDef!.function.parameters as any).properties.tabSize.default).toBe(2);
+    expect((formatDef!.function.parameters as any).properties.insertSpaces).toBeDefined();
+    expect((formatDef!.function.parameters as any).properties.insertSpaces.default).toBe(true);
   });
 });
 
@@ -177,7 +177,7 @@ describe('LSP Tools — lsp_signature_help 参数验证', () => {
     const def = definitions.find(d => d.function.name === 'lsp_signature_help');
     expect(def).toBeDefined();
     expect(def!.function.parameters.required).toEqual(['file', 'line', 'character']);
-    expect((def!.function.parameters as unknown).properties.triggerCharacter).toBeDefined();
+    expect((def!.function.parameters as any).properties.triggerCharacter).toBeDefined();
     expect(def!.function.parameters.required).not.toContain('triggerCharacter');
   });
 });
@@ -201,8 +201,8 @@ describe('LSP Tools — lsp_workspace_symbols 参数验证', () => {
     const def = definitions.find(d => d.function.name === 'lsp_workspace_symbols');
     expect(def).toBeDefined();
     expect(def!.function.parameters.required).toEqual(['query']);
-    expect((def!.function.parameters as unknown).properties.limit).toBeDefined();
-    expect((def!.function.parameters as unknown).properties.limit.default).toBe(50);
+    expect((def!.function.parameters as any).properties.limit).toBeDefined();
+    expect((def!.function.parameters as any).properties.limit.default).toBe(50);
   });
 });
 

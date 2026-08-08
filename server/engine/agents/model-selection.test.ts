@@ -261,7 +261,7 @@ function createAgentFallbackConfig(params: {
   } as OpenClawConfig;
 }
 
-function createProviderWithModelsConfig(provider: string, models: Array<Record<string, unknown>>) {
+function createProviderWithModelsConfig(provider: string, models: Array<Record<string, any>>) {
   return {
     models: {
       providers: {

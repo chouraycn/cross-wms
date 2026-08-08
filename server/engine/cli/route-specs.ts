@@ -4,4 +4,4 @@
 
 export type RouteSpec = unknown;
 
-export const routedCommands: unknown = undefined;
+export const routedCommands: any = undefined;

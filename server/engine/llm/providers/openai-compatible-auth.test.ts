@@ -54,7 +54,7 @@ describe("OpenAI-compatible provider credentials", () => {
   });
 
   it("does not replay Responses item ids for direct store-disabled requests", async () => {
-    let capturedPayload: { store?: unknown; input?: Array<Record<string, unknown>> } | undefined;
+    let capturedPayload: { store?: any; input?: Array<Record<string, any>> } | undefined;
     const model = {
       ...createBaseModel("openai-responses"),
       reasoning: true,

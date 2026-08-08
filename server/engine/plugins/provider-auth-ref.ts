@@ -53,7 +53,7 @@ function resolveDefaultProviderEnvVar(
     ...(config ? { config } : {}),
     includeUntrustedWorkspacePlugins: false,
   });
-  return envVars?.find((candidate: unknown) => normalizeOptionalString(candidate) !== undefined);
+  return envVars?.find((candidate: any) => normalizeOptionalString(candidate) !== undefined);
 }
 
 function resolveDefaultFilePointerId(provider: string): string {
@@ -71,7 +71,7 @@ export function resolveRefFallbackInput(params: {
     getProviderEnvVars(params.provider, {
       config: params.config,
       includeUntrustedWorkspacePlugins: false,
-    }).find((candidate: unknown) => normalizeOptionalString(candidate) !== undefined);
+    }).find((candidate: any) => normalizeOptionalString(candidate) !== undefined);
   if (!fallbackEnvVar) {
     throw new Error(
       `No default environment variable mapping found for provider "${params.provider}". Set a provider-specific env var, or re-run setup in an interactive terminal to configure a ref.`,

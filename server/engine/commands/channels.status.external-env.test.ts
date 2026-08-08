@@ -22,7 +22,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("../gateway/call.js", () => ({
-  callGateway: (opts: unknown) => mocks.callGateway(opts),
+  callGateway: (opts: any) => mocks.callGateway(opts),
 }));
 
 vi.mock("../config/config.js", () => ({
@@ -30,11 +30,11 @@ vi.mock("../config/config.js", () => ({
 }));
 
 vi.mock("../cli/command-config-resolution.js", () => ({
-  resolveCommandConfigWithSecrets: (opts: unknown) => mocks.resolveCommandConfigWithSecrets(opts),
+  resolveCommandConfigWithSecrets: (opts: any) => mocks.resolveCommandConfigWithSecrets(opts),
 }));
 
 vi.mock("./channels/shared.js", () => ({
-  requireValidConfigSnapshot: (runtime: unknown) => mocks.requireValidConfigSnapshot(runtime),
+  requireValidConfigSnapshot: (runtime: any) => mocks.requireValidConfigSnapshot(runtime),
   formatChannelAccountLabel: ({ channel, accountId }: { channel: string; accountId: string }) =>
     `${channel} ${accountId}`,
   appendBaseUrlBit: () => undefined,
@@ -45,7 +45,7 @@ vi.mock("./channels/shared.js", () => ({
 }));
 
 vi.mock("../cli/progress.js", () => ({
-  withProgress: async (_opts: unknown, run: () => Promise<unknown>) => await run(),
+  withProgress: async (_opts: any, run: () => Promise<any>) => await run(),
 }));
 
 function writeExternalEnvChannelPlugin() {

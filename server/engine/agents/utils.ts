@@ -4,7 +4,7 @@
  * 完整移植：小型共享归一化辅助函数。
  */
 
-export function normalizeContextTokenBudget(value: unknown): number | undefined {
+export function normalizeContextTokenBudget(value: any): number | undefined {
   return typeof value === "number" && Number.isFinite(value) && value > 0
     ? Math.floor(value)
     : undefined;

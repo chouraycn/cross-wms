@@ -11,10 +11,10 @@ import {
 import { SYSTEM_PROMPT_CACHE_BOUNDARY } from "./system-prompt-cache-boundary.js";
 
 type TestPayload = {
-  messages: Array<{ role: string; content: unknown }>;
+  messages: Array<{ role: string; content: any }>;
   service_tier?: string;
-  system?: unknown;
-  tools?: unknown;
+  system?: any;
+  tools?: any;
 };
 
 function textBlock(text: string, cache_control?: { type: "ephemeral"; ttl?: "1h" }) {

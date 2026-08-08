@@ -46,7 +46,7 @@ function expectHeaderNotSet(setHeader: ReturnType<typeof vi.fn>, name: string): 
   expect(headerNames(setHeader)).not.toContain(name);
 }
 
-function mockCallRecord(mock: ReturnType<typeof vi.fn>, index: number): unknown[] {
+function mockCallRecord(mock: ReturnType<typeof vi.fn>, index: number): any[] {
   const call = mock.mock.calls[index];
   if (!call) {
     throw new Error(`Expected mock call ${index}`);

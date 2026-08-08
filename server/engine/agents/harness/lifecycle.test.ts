@@ -223,7 +223,7 @@ describe("AgentHarness lifecycle runner", () => {
     ]);
     expect(diagnostics.events.every(({ metadata }) => metadata.trusted)).toBe(true);
     const completedEvent = diagnostics.events[1]?.event as
-      | (DiagnosticEventPayload & Record<string, unknown>)
+      | (DiagnosticEventPayload & Record<string, any>)
       | undefined;
     expect(completedEvent?.type).toBe("harness.run.completed");
     expect(completedEvent?.runId).toBe("run-1");
@@ -385,7 +385,7 @@ describe("AgentHarness lifecycle runner", () => {
     ]);
     expect(diagnostics.events.every(({ metadata }) => metadata.trusted)).toBe(true);
     const errorEvent = diagnostics.events[1]?.event as
-      | (DiagnosticEventPayload & Record<string, unknown>)
+      | (DiagnosticEventPayload & Record<string, any>)
       | undefined;
     expect(errorEvent?.type).toBe("harness.run.error");
     expect(errorEvent?.phase).toBe("send");

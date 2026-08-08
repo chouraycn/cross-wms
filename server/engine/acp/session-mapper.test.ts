@@ -7,7 +7,7 @@ function createGateway(resolveLabelKey = "agent:main:label"): {
   gateway: GatewayClient;
   request: ReturnType<typeof vi.fn>;
 } {
-  const request = vi.fn(async (method: string, params: Record<string, unknown>) => {
+  const request = vi.fn(async (method: string, params: Record<string, any>) => {
     if (method === "sessions.resolve" && "label" in params) {
       return { ok: true, key: resolveLabelKey };
     }

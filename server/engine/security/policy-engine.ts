@@ -77,7 +77,7 @@ class PolicyEngine {
     return result;
   }
 
-  evaluateWithDebug(context: PolicyEvaluationContext): { result: PolicyEvaluationResult; debug: Record<string, unknown> } {
+  evaluateWithDebug(context: PolicyEvaluationContext): { result: PolicyEvaluationResult; debug: Record<string, any> } {
     if (!this.initialized) {
       this.initialize();
     }

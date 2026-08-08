@@ -31,11 +31,11 @@ export interface AcpServerOptions {
 }
 
 /** 解析 ACP request metadata 到 session routing hints */
-export function parseSessionMeta(meta: unknown): AcpSessionMeta {
+export function parseSessionMeta(meta: any): AcpSessionMeta {
   if (!meta || typeof meta !== "object") {
     return {};
   }
-  const record = meta as Record<string, unknown>;
+  const record = meta as Record<string, any>;
   return {
     sessionKey: readString(record, ["sessionKey", "session", "key"]),
     sessionLabel: readString(record, ["sessionLabel", "label"]),
@@ -132,7 +132,7 @@ export async function resetSessionIfNeeded(params: {
 
 // ===================== 辅助函数 =====================
 
-function readString(record: Record<string, unknown>, keys: string[]): string | undefined {
+function readString(record: Record<string, any>, keys: string[]): string | undefined {
   for (const key of keys) {
     const value = record[key];
     if (typeof value === "string" && value.trim()) {
@@ -142,7 +142,7 @@ function readString(record: Record<string, unknown>, keys: string[]): string | u
   return undefined;
 }
 
-function readBool(record: Record<string, unknown>, keys: string[]): boolean | undefined {
+function readBool(record: Record<string, any>, keys: string[]): boolean | undefined {
   for (const key of keys) {
     const value = record[key];
     if (typeof value === "boolean") {

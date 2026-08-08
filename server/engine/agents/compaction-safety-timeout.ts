@@ -8,10 +8,10 @@ export function resolveCompactionTimeoutMs(params: { timeoutMs?: number; default
   return params.timeoutMs ?? params.defaultMs ?? 30_000;
 }
 
-export async function compactWithSafetyTimeout(params: { compactFn: () => Promise<unknown>; timeoutMs?: number }): Promise<unknown> {
+export async function compactWithSafetyTimeout(params: { compactFn: () => Promise<any>; timeoutMs?: number }): Promise<any> {
   return await params.compactFn();
 }
 
-export async function compactContextEngineWithSafetyTimeout(params: { compactFn: () => Promise<unknown>; timeoutMs?: number }): Promise<unknown> {
+export async function compactContextEngineWithSafetyTimeout(params: { compactFn: () => Promise<any>; timeoutMs?: number }): Promise<any> {
   return await params.compactFn();
 }

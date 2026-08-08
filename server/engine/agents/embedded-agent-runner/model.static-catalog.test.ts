@@ -51,7 +51,7 @@ import {
   resolveBundledStaticCatalogModel,
 } from "./model.static-catalog.js";
 
-function setManifestPlugins(plugins: unknown[]) {
+function setManifestPlugins(plugins: any[]) {
   // Static catalog resolution reads scan metadata first, then loads the manifest
   // from disk; the mock preserves that two-step contract.
   const byPluginDir = new Map(

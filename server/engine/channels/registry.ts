@@ -75,7 +75,7 @@ export function getRegistryCount(): number {
 }
 
 /** Normalizes a raw channel/provider id to a canonical string. */
-export function normalizeAnyChannelId(value: unknown): string | undefined {
+export function normalizeAnyChannelId(value: any): string | undefined {
   if (typeof value !== "string") return undefined;
   const trimmed = value.trim();
   return trimmed || undefined;

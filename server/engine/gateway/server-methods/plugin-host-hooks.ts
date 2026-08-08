@@ -32,7 +32,7 @@ function formatSessionActionPayloadSchemaErrors(errors: JsonSchemaValidationErro
 
 /** Ensures plugin action result extension fields stay JSON-compatible on the wire. */
 function validatePluginSessionActionJsonFields(
-  result: Record<string, unknown>,
+  result: Record<string, any>,
 ): string | undefined {
   for (const field of ["result", "reply", "details"] as const) {
     if (result[field] !== undefined && !isPluginJsonValue(result[field])) {
@@ -57,7 +57,7 @@ export const pluginHostHookHandlers: GatewayRequestHandlers = {
       return;
     }
     const descriptors = (getActivePluginRegistry()?.controlUiDescriptors ?? []).map((entry) => {
-      const descriptor: Record<string, unknown> = {
+      const descriptor: Record<string, any> = {
         id: entry.descriptor.id,
         pluginId: entry.pluginId,
         pluginName: entry.pluginName,

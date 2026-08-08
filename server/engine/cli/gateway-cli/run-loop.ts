@@ -145,7 +145,7 @@ export async function runGatewayLoop(params: {
     cleanupSignals();
     params.runtime.exit(code);
   };
-  const writeStabilityBundle = async (reason: string, error?: unknown) => {
+  const writeStabilityBundle = async (reason: string, error?: any) => {
     const { writeDiagnosticStabilityBundleForFailureSync } =
       await loadGatewayLifecycleRuntimeModule();
     const result = writeDiagnosticStabilityBundleForFailureSync(reason, error);
@@ -209,7 +209,7 @@ export async function runGatewayLoop(params: {
         } catch {
           // Best-effort; parent fallback keeps the gateway reachable for recovery.
         }
-        await markUpdateRestartSentinelFailure("restart-unhealthy").catch((err: unknown) => {
+        await markUpdateRestartSentinelFailure("restart-unhealthy").catch((err: any) => {
           gatewayLog.warn(`failed to mark update restart sentinel unhealthy: ${String(err)}`);
         });
         if (hadLock && !(await reacquireLockForInProcessRestart())) {
@@ -246,7 +246,7 @@ export async function runGatewayLoop(params: {
         gatewayLog.warn(
           `update respawn failed (${respawn.detail ?? "unknown error"}); falling back to in-process restart`,
         );
-        await markUpdateRestartSentinelFailure("restart-unhealthy").catch((err: unknown) => {
+        await markUpdateRestartSentinelFailure("restart-unhealthy").catch((err: any) => {
           gatewayLog.warn(`failed to mark update restart sentinel unhealthy: ${String(err)}`);
         });
       } else {
@@ -374,7 +374,7 @@ export async function runGatewayLoop(params: {
       restartDrainingMarkPromise = (async () => {
         const { markGatewayDraining } = await loadGatewayLifecycleRuntimeModule();
         markGatewayDraining();
-      })().catch((err: unknown) => {
+      })().catch((err: any) => {
         restartDrainingMarkPromise = null;
         throw err;
       });
@@ -691,7 +691,7 @@ export async function runGatewayLoop(params: {
     }
     if (!server || !restartResolver) {
       pendingStartupRequest = acceptedRequest;
-      void markRestartDraining().catch((err: unknown) => {
+      void markRestartDraining().catch((err: any) => {
         gatewayLog.warn(`failed to mark gateway draining for startup restart: ${String(err)}`);
       });
       armPendingStartupForceExitTimer();
@@ -711,7 +711,7 @@ export async function runGatewayLoop(params: {
         restartIntent?.reason,
         restartIntent ?? undefined,
       );
-    })().catch((err: unknown) => {
+    })().catch((err: any) => {
       gatewayLog.error(`failed to handle SIGTERM: ${String(err)}`);
       request("stop", "SIGTERM");
     });
@@ -772,7 +772,7 @@ export async function runGatewayLoop(params: {
         sigusr1RestartIntent?.reason ?? restartReason,
         sigusr1RestartIntent ?? undefined,
       );
-    })().catch((err: unknown) => {
+    })().catch((err: any) => {
       // Defense in depth: if anything in the listener body rejects, the
       // SIGUSR1 emit has already advanced emittedRestartToken but no one
       // called markGatewaySigusr1RestartHandled. Without unsticking the

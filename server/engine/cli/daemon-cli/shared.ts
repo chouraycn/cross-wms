@@ -23,7 +23,7 @@ export { parsePort };
 export { resolveDaemonContainerContext };
 
 /** Create install action context with JSON flag normalization. */
-export function createDaemonInstallActionContext(jsonFlag: unknown) {
+export function createDaemonInstallActionContext(jsonFlag: any) {
   const json = Boolean(jsonFlag);
   return {
     json,

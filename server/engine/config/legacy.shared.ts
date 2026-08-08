@@ -3,8 +3,8 @@
 
 export type LegacyConfigRule = unknown;
 export type LegacyConfigMigrationSpec = unknown;
-export const getRecord: unknown = undefined;
-export const ensureRecord: unknown = undefined;
-export const mergeMissing: unknown = undefined;
-export const mapLegacyAudioTranscription: unknown = undefined;
-export const defineLegacyConfigMigration: unknown = undefined;
+export const getRecord: any = undefined;
+export const ensureRecord: any = undefined;
+export const mergeMissing: any = undefined;
+export const mapLegacyAudioTranscription: any = undefined;
+export const defineLegacyConfigMigration: any = undefined;

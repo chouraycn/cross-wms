@@ -124,10 +124,10 @@ function makeParams(): HandleCommandsParams {
 }
 
 function requireFirstArg(
-  mockFn: { mock: { calls: unknown[][] } },
+  mockFn: { mock: { calls: any[][] } },
   label: string,
-): Record<string, unknown> {
-  const arg = mockFn.mock.calls.at(0)?.[0] as Record<string, unknown> | undefined;
+): Record<string, any> {
+  const arg = mockFn.mock.calls.at(0)?.[0] as Record<string, any> | undefined;
   if (!arg) {
     throw new Error(`expected ${label} to be called`);
   }
@@ -272,7 +272,7 @@ describe("resolveCommandsSystemPromptBundle", () => {
       "buildAgentSystemPrompt",
     );
     const sandboxInfo = promptParams.sandboxInfo as
-      | { enabled?: unknown; elevated?: Record<string, unknown> }
+      | { enabled?: any; elevated?: Record<string, any> }
       | undefined;
     expect(sandboxInfo?.enabled).toBe(true);
     expect(sandboxInfo?.elevated?.fullAccessAvailable).toBe(false);

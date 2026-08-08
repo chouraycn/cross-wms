@@ -143,7 +143,7 @@ describe("talk logging", () => {
     expect(serialized).not.toContain("item-1");
 
     const fileLog = fs.readFileSync(logFile, "utf8");
-    const fileLogRecord = JSON.parse(fileLog.trim()) as Record<string, unknown>;
+    const fileLogRecord = JSON.parse(fileLog.trim()) as Record<string, any>;
     expect(fileLogRecord.message).toBe("talk event output.text.done");
     expect(fileLogRecord.session_id).toBe("talk-session");
     expect(fileLog).not.toContain("private transcript");

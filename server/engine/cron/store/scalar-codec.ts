@@ -7,7 +7,7 @@
 /** 解析 JSON 对象列，对于格式错误或非对象值返回回退值 */
 export function parseJsonObject<T>(raw: string, fallback: T): T {
   try {
-    const parsed = JSON.parse(raw) as unknown;
+    const parsed = JSON.parse(raw) as any;
     return parsed && typeof parsed === "object" ? (parsed as T) : fallback;
   } catch {
     return fallback;
@@ -44,7 +44,7 @@ export function integerToBoolean(value: number | bigint | null): boolean | undef
 }
 
 /** 序列化可选的结构化值用于 JSON 列 */
-export function serializeJson(value: unknown): string | null {
+export function serializeJson(value: any): string | null {
   return value == null ? null : JSON.stringify(value);
 }
 
@@ -53,7 +53,7 @@ export function parseJsonArray(raw: string | null): string[] | undefined {
   if (!raw) {
     return undefined;
   }
-  const parsed = parseJsonObject<unknown>(raw, undefined);
+  const parsed = parseJsonObject<any>(raw, undefined);
   return Array.isArray(parsed)
     ? parsed.filter((item): item is string => typeof item === "string")
     : undefined;

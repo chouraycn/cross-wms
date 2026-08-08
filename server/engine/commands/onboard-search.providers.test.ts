@@ -34,17 +34,17 @@ function createCustomProviderEntry(): PluginWebSearchProviderEntry {
     getConfiguredCredentialValue: (config) =>
       (
         config?.plugins?.entries?.["custom-plugin"]?.config as
-          | { webSearch?: { apiKey?: unknown } }
+          | { webSearch?: { apiKey?: any } }
           | undefined
       )?.webSearch?.apiKey,
     setConfiguredCredentialValue: (configTarget, value) => {
       const entries = ((configTarget.plugins ??= {}).entries ??= {});
       const pluginEntry = (entries["custom-plugin"] ??= {});
-      const pluginConfig = ((pluginEntry as Record<string, unknown>).config ??= {}) as Record<
+      const pluginConfig = ((pluginEntry as Record<string, any>).config ??= {}) as Record<
         string,
-        unknown
+        any
       >;
-      const webSearch = (pluginConfig.webSearch ??= {}) as Record<string, unknown>;
+      const webSearch = (pluginConfig.webSearch ??= {}) as Record<string, any>;
       webSearch.apiKey = value;
     },
     createTool: () => null,
@@ -67,7 +67,7 @@ function createBundledFirecrawlEntry(): PluginWebSearchProviderEntry {
     getConfiguredCredentialValue: (config) =>
       (
         config?.plugins?.entries?.firecrawl?.config as
-          | { webSearch?: { apiKey?: unknown } }
+          | { webSearch?: { apiKey?: any } }
           | undefined
       )?.webSearch?.apiKey,
     setConfiguredCredentialValue: () => {},
@@ -138,7 +138,7 @@ describe("onboard-search provider resolution", () => {
     expect(
       (
         updated.plugins?.entries?.["custom-plugin"]?.config as
-          | { webSearch?: { apiKey?: unknown } }
+          | { webSearch?: { apiKey?: any } }
           | undefined
       )?.webSearch?.apiKey,
     ).toBe("next-key");
@@ -183,7 +183,7 @@ describe("onboard-search provider resolution", () => {
     expect(
       (
         result.plugins?.entries?.["custom-plugin"]?.config as
-          | { webSearch?: { apiKey?: unknown } }
+          | { webSearch?: { apiKey?: any } }
           | undefined
       )?.webSearch?.apiKey,
     ).toEqual({

@@ -166,7 +166,7 @@ router.post('/batch-delete', (req, res) => {
     return;
   }
   try {
-    const deleted = batchDeleteMemories(ids.map((x: unknown) => Number(x)).filter((n: number) => Number.isFinite(n)));
+    const deleted = batchDeleteMemories(ids.map((x: any) => Number(x)).filter((n: number) => Number.isFinite(n)));
     res.json({ success: true, deleted });
   } catch (e) {
     logger.error('[Memory API] 批量删除记忆失败:', e);
@@ -182,7 +182,7 @@ router.post('/batch-category', (req, res) => {
     return;
   }
   try {
-    const updated = batchUpdateCategory(ids.map((x: unknown) => Number(x)).filter((n: number) => Number.isFinite(n)), category);
+    const updated = batchUpdateCategory(ids.map((x: any) => Number(x)).filter((n: number) => Number.isFinite(n)), category);
     res.json({ success: true, updated });
   } catch (e) {
     logger.error('[Memory API] 批量更新分类失败:', e);

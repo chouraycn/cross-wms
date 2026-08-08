@@ -8,7 +8,7 @@ export type OutboundDeliveryIntent = {
   to: string;
   accountId?: string;
   threadId?: string;
-  payloads: unknown[];
+  payloads: any[];
   queuePolicy?: OutboundDeliveryQueuePolicy;
 };
 
@@ -26,11 +26,11 @@ export type OutboundDurableDeliverySupport = {
 export type NormalizedOutboundPayload = {
   text?: string;
   mediaUrl?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 export type OutboundSendDeps = {
-  send?: (params: unknown) => Promise<unknown>;
+  send?: (params: any) => Promise<any>;
 };
 
 export type DeliverOutboundPayloadsParams = {
@@ -39,21 +39,21 @@ export type DeliverOutboundPayloadsParams = {
   accountId?: string;
   threadId?: string;
   payloads: readonly NormalizedOutboundPayload[];
-  cfg?: unknown;
-  sessionContext?: unknown;
+  cfg?: any;
+  sessionContext?: any;
   sendDeps?: OutboundSendDeps;
 };
 
 export type OutboundDeliveryResult = {
   status: "ok" | "failed" | "partial_failed";
-  results?: unknown[];
+  results?: any[];
   error?: Error;
 };
 
 /** Resolves durable delivery support for a channel. */
 export function resolveOutboundDurableFinalDeliverySupport(_params: {
   channel: string;
-  cfg?: unknown;
+  cfg?: any;
 }): OutboundDurableDeliverySupport {
   return { supported: false };
 }
@@ -69,7 +69,7 @@ export async function deliverOutboundPayloadsInternal(params: DeliverOutboundPay
 }
 
 /** Normalizes outbound payloads for delivery. */
-export function normalizeOutboundPayloads(payloads: readonly unknown[]): NormalizedOutboundPayload[] {
+export function normalizeOutboundPayloads(payloads: readonly any[]): NormalizedOutboundPayload[] {
   return payloads.map((p) => {
     if (p && typeof p === "object" && !Array.isArray(p)) {
       return p as NormalizedOutboundPayload;
@@ -79,6 +79,6 @@ export function normalizeOutboundPayloads(payloads: readonly unknown[]): Normali
 }
 
 /** Resolves outbound send dependencies. */
-export function resolveOutboundSendDep(params: { channel: string; cfg?: unknown }): OutboundSendDeps {
+export function resolveOutboundSendDep(params: { channel: string; cfg?: any }): OutboundSendDeps {
   return {};
 }

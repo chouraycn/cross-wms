@@ -148,7 +148,7 @@ describeLive("anthropic transport stream live", () => {
         ? await Promise.race([requestBodyPromise, delay(500, requestBody)])
         : requestBody;
       if (capturedRequestBody.trim().length > 0) {
-        const body = JSON.parse(capturedRequestBody) as { model?: unknown; stream?: unknown };
+        const body = JSON.parse(capturedRequestBody) as { model?: any; stream?: any };
         expect(body.model).toBe("claude-sonnet-4-6");
         expect(body.stream).toBe(true);
       }

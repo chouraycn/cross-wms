@@ -204,7 +204,7 @@ export interface PdfPanelState {
   status: PdfToolStatus;
   progress: number;
   selectedFiles: string[];
-  result: unknown;
+  result: any;
   error?: string;
 }
 

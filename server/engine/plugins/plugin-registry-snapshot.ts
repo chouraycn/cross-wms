@@ -55,7 +55,7 @@ export type PluginRegistrySnapshotResult = {
   snapshot: PluginRegistrySnapshot;
   source: PluginRegistrySnapshotSource;
   diagnostics: readonly PluginRegistrySnapshotDiagnostic[];
-  discovery?: unknown;
+  discovery?: any;
 };
 
 export const DISABLE_PERSISTED_PLUGIN_REGISTRY_ENV = "OPENCLAW_DISABLE_PERSISTED_PLUGIN_REGISTRY";

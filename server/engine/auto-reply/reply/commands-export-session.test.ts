@@ -21,7 +21,7 @@ const hoisted = await vi.hoisted(async () => {
     mkdirMock: vi.fn(async (_filePath: string, _options?: { recursive?: boolean }) => undefined),
     accessMock: vi.fn(async (_filePath: string) => undefined),
     pathExistsMock: vi.fn(async (_filePath: string) => true),
-    migrateSessionEntriesMock: vi.fn((_entries: unknown[]) => undefined),
+    migrateSessionEntriesMock: vi.fn((_entries: any[]) => undefined),
     exportHtmlTemplateContents: new Map<string, string>(),
     sessionTranscriptContent: "",
   };
@@ -137,7 +137,7 @@ function makeParams(): HandleCommandsParams {
   } as unknown as HandleCommandsParams;
 }
 
-function writeFileArg(callIndex: number, argIndex: number): unknown {
+function writeFileArg(callIndex: number, argIndex: number): any {
   const call = hoisted.writeFileMock.mock.calls.at(callIndex);
   if (!call) {
     throw new Error(`Expected writeFile call ${callIndex}`);

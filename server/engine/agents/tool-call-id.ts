@@ -12,7 +12,7 @@ const callIdMap = new Map<string, {
   sessionId: string;
   createdAt: number;
   status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
 }>();
 
 export function generateToolCallId(): string {
@@ -23,7 +23,7 @@ export function registerToolCall(params: {
   toolName: string;
   agentId: string;
   sessionId: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }): string {
   const callId = generateToolCallId();
   callIdMap.set(callId, {
@@ -45,7 +45,7 @@ export function getToolCallInfo(callId: string) {
 export function updateToolCallStatus(
   callId: string,
   status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled',
-  metadata?: Record<string, unknown>,
+  metadata?: Record<string, any>,
 ): boolean {
   const info = callIdMap.get(callId);
   if (!info) return false;

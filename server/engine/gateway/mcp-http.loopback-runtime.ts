@@ -10,8 +10,8 @@ type McpLoopbackRuntime = {
 
 export type McpLoopbackToolCallResult = {
   toolName: string;
-  args: Record<string, unknown>;
-  result?: unknown;
+  args: Record<string, any>;
+  result?: any;
   isError: boolean;
 };
 
@@ -185,7 +185,7 @@ export function markMcpLoopbackToolCallStarted(params: {
   captureKey?: string;
   requestCaptureHandle?: McpLoopbackRequestCaptureHandle;
   toolName: string;
-  args: Record<string, unknown>;
+  args: Record<string, any>;
 }): McpLoopbackToolCallCaptureHandle | undefined {
   const toolName = params.toolName.trim();
   if (!toolName || params.requestCaptureHandle?.finished) {
@@ -229,8 +229,8 @@ export function updateMcpLoopbackToolCallCapture(
 export function recordMcpLoopbackToolCallResult(params: {
   captureHandle: McpLoopbackToolCallCaptureHandle;
   toolName: string;
-  args: Record<string, unknown>;
-  result?: unknown;
+  args: Record<string, any>;
+  result?: any;
   isError: boolean;
 }): void {
   const toolName = params.toolName.trim();

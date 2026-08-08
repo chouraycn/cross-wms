@@ -72,7 +72,7 @@ export class HttpTransport extends BaseTransportLayer {
 
           res.on('end', () => {
             this.stats.responses++;
-            let parsedBody: unknown = data;
+            let parsedBody: any = data;
             try {
               parsedBody = JSON.parse(data);
             } catch {
@@ -116,7 +116,7 @@ export class HttpTransport extends BaseTransportLayer {
     });
   }
 
-  async sendMessage(message: unknown): Promise<void> {
+  async sendMessage(message: any): Promise<void> {
     await this.sendRequest({
       method: 'POST',
       body: message,

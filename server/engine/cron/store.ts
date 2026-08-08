@@ -152,7 +152,7 @@ async function atomicWrite(
 }
 
 /** 解析 JSON 文件，支持注释 */
-function parseJsonWithComments(raw: string): unknown {
+function parseJsonWithComments(raw: string): any {
   // 移除单行注释
   const cleaned = raw.replace(/\/\/.*$/gm, "");
   // 移除多行注释
@@ -161,12 +161,12 @@ function parseJsonWithComments(raw: string): unknown {
 }
 
 /** 验证是否为有效的记录对象 */
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 /** 验证存储文件格式 */
-function isValidCronStoreFile(value: unknown): value is CronStoreFile {
+function isValidCronStoreFile(value: any): value is CronStoreFile {
   if (!isRecord(value)) return false;
   if (typeof value.version !== "number") return false;
   if (!Array.isArray(value.jobs)) return false;
@@ -174,7 +174,7 @@ function isValidCronStoreFile(value: unknown): value is CronStoreFile {
 }
 
 /** 验证任务配置（使用 types.ts 的 CronJob 字段） */
-function isValidCronJobConfig(value: unknown): value is CronJob {
+function isValidCronJobConfig(value: any): value is CronJob {
   if (!isRecord(value)) return false;
   if (typeof value.id !== "string") return false;
   if (typeof value.name !== "string") return false;
@@ -260,7 +260,7 @@ export class JsonCronJobStore implements CronJobStore {
         validJobs.push(job);
       }
     } catch (err) {
-      const code = (err as { code?: unknown })?.code;
+      const code = (err as { code?: any })?.code;
       if (code === "ENOENT") {
         // 文件不存在，返回空存储
         return {
@@ -334,7 +334,7 @@ export class JsonCronJobStore implements CronJobStore {
 
       return { version: 1, jobs };
     } catch (err) {
-      const code = (err as { code?: unknown })?.code;
+      const code = (err as { code?: any })?.code;
       if (code === "ENOENT") {
         return { version: 1, jobs: [] };
       }

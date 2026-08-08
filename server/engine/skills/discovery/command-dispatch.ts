@@ -6,13 +6,13 @@ const logger = getLogger();
 export type DispatchRequest = {
   skillName: string;
   command: string;
-  params: Record<string, unknown>;
-  context?: Record<string, unknown>;
+  params: Record<string, any>;
+  context?: Record<string, any>;
 };
 
 export type DispatchResponse = {
   success: boolean;
-  result?: unknown;
+  result?: any;
   error?: string;
   command?: string;
 };

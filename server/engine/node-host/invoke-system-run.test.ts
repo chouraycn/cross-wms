@@ -158,10 +158,10 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
   }
 
   function firstMockCallArg(
-    mock: { mock: { calls: readonly unknown[][] } },
+    mock: { mock: { calls: readonly any[][] } },
     label: string,
     argIndex: number,
-  ): unknown {
+  ): any {
     const [call] = mock.mock.calls;
     if (!call) {
       throw new Error(`expected ${label} call`);

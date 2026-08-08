@@ -188,7 +188,7 @@ export function createInternalHookEvent(
   type: InternalHookEventType,
   action: string,
   sessionKey: string,
-  context: Record<string, unknown> = {},
+  context: Record<string, any> = {},
 ): InternalHookEvent {
   return {
     type,
@@ -212,7 +212,7 @@ function isHookEventTypeAndAction(
   return event.type === type && event.action === action;
 }
 
-function getHookContext<T extends Record<string, unknown>>(
+function getHookContext<T extends Record<string, any>>(
   event: InternalHookEvent,
 ): Partial<T> | null {
   const context = event.context as Partial<T> | null;
@@ -222,14 +222,14 @@ function getHookContext<T extends Record<string, unknown>>(
   return context;
 }
 
-function hasStringContextField<T extends Record<string, unknown>>(
+function hasStringContextField<T extends Record<string, any>>(
   context: Partial<T>,
   key: keyof T,
 ): boolean {
   return typeof context[key] === 'string';
 }
 
-function hasBooleanContextField<T extends Record<string, unknown>>(
+function hasBooleanContextField<T extends Record<string, any>>(
   context: Partial<T>,
   key: keyof T,
 ): boolean {

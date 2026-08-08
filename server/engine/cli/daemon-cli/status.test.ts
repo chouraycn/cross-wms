@@ -4,7 +4,7 @@ import { createCliRuntimeCapture } from "../test-runtime-capture.js";
 import type { DaemonStatus } from "./status.gather.js";
 
 const gatherDaemonStatus = vi.fn(
-  async (_opts?: unknown): Promise<DaemonStatus> => ({
+  async (_opts?: any): Promise<DaemonStatus> => ({
     service: {
       label: "LaunchAgent",
       loaded: true,
@@ -27,17 +27,17 @@ vi.mock("../../runtime.js", () => ({
 }));
 
 vi.mock("../../../packages/terminal-core/src/theme.js", () => ({
-  colorize: (_rich: boolean, _color: unknown, text: string) => text,
+  colorize: (_rich: boolean, _color: any, text: string) => text,
   isRich: () => false,
   theme: { error: "error" },
 }));
 
 vi.mock("./status.gather.js", () => ({
-  gatherDaemonStatus: (opts: unknown) => gatherDaemonStatus(opts),
+  gatherDaemonStatus: (opts: any) => gatherDaemonStatus(opts),
 }));
 
 vi.mock("./status.print.js", () => ({
-  printDaemonStatus: (...args: unknown[]) => printDaemonStatus(...args),
+  printDaemonStatus: (...args: any[]) => printDaemonStatus(...args),
 }));
 
 const { runDaemonStatus } = await import("./status.js");

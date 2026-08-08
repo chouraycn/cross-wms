@@ -48,7 +48,7 @@ export function resolvePluginDocumentExtractors(params?: {
   onlyPluginIds?: readonly string[];
 }): PluginDocumentExtractorEntry[] {
   const extractors: PluginDocumentExtractorEntry[] = [];
-  const loadErrors: unknown[] = [];
+  const loadErrors: any[] = [];
   const explicitAllowedPluginIds = resolveExplicitAllowedDocumentExtractorPluginIds({
     config: params?.config,
     onlyPluginIds: params?.onlyPluginIds,

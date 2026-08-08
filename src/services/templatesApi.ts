@@ -13,7 +13,7 @@ export interface WorkflowTemplate {
   category: string;
   icon?: string;
   tags: string[];
-  workflow: Record<string, unknown>;
+  workflow: Record<string, any>;
   author?: string;
   downloads: number;
   rating: number;
@@ -68,8 +68,8 @@ export async function getTemplateCategories(): Promise<string[]> {
 /**
  * 安装模板
  */
-export async function installTemplate(id: string): Promise<{ success: boolean; workflow: Record<string, unknown> }> {
-  return request<{ success: boolean; workflow: Record<string, unknown> }>('POST', `/api/templates/${id}/install`);
+export async function installTemplate(id: string): Promise<{ success: boolean; workflow: Record<string, any> }> {
+  return request<{ success: boolean; workflow: Record<string, any> }>('POST', `/api/templates/${id}/install`);
 }
 
 /**

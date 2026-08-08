@@ -22,7 +22,7 @@ function createWritableTextBuffer(): NodeJS.WritableStream & { text: () => strin
 
 describe("native hook relay CLI", () => {
   it("reads Codex hook JSON from stdin and forwards it to the gateway relay", async () => {
-    const callGateway = vi.fn(async (_opts: unknown) => ({ stdout: "", stderr: "", exitCode: 0 }));
+    const callGateway = vi.fn(async (_opts: any) => ({ stdout: "", stderr: "", exitCode: 0 }));
     const stdout = createWritableTextBuffer();
     const stderr = createWritableTextBuffer();
 

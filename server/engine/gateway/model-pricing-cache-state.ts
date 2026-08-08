@@ -209,7 +209,7 @@ export function getGatewayModelPricingCacheMeta(): {
   };
 }
 
-function stablePricingValue(value: unknown): string {
+function stablePricingValue(value: any): string {
   if (typeof value === "number") {
     return Number.isFinite(value) ? JSON.stringify(value) : JSON.stringify(String(value));
   }
@@ -219,7 +219,7 @@ function stablePricingValue(value: unknown): string {
   if (Array.isArray(value)) {
     return `[${value.map((entry) => stablePricingValue(entry)).join(",")}]`;
   }
-  const record = value as Record<string, unknown>;
+  const record = value as Record<string, any>;
   return `{${Object.keys(record)
     .filter((key) => record[key] !== undefined)
     .sort()

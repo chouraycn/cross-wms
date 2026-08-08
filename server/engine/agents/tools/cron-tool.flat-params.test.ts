@@ -99,8 +99,8 @@ describe("cron tool flat-params", () => {
     });
 
     const [method, _gatewayOpts, params] = firstGatewayToolCall<{
-      schedule?: unknown;
-      payload?: unknown;
+      schedule?: any;
+      payload?: any;
     }>();
     expect(method).toBe("cron.add");
     expect(params.schedule).toEqual({
@@ -127,7 +127,7 @@ describe("cron tool flat-params", () => {
     });
 
     const [method, _gatewayOpts, params] = firstGatewayToolCall<{
-      schedule?: unknown;
+      schedule?: any;
     }>();
     expect(method).toBe("cron.add");
     expect(params.schedule).toEqual({
@@ -151,7 +151,7 @@ describe("cron tool flat-params", () => {
     });
 
     const [method, _gatewayOpts, params] = firstGatewayToolCall<{
-      schedule?: { at?: unknown; kind?: unknown };
+      schedule?: { at?: any; kind?: any };
     }>();
     expect(method).toBe("cron.add");
     expect(params.schedule).toEqual({ kind: "at", at: invalidAtMs });
@@ -170,7 +170,7 @@ describe("cron tool flat-params", () => {
 
     const [method, _gatewayOpts, params] = firstGatewayToolCall<{
       id?: string;
-      patch?: { schedule?: unknown };
+      patch?: { schedule?: any };
     }>();
     expect(method).toBe("cron.update");
     expect(params.id).toBe("job-123");
@@ -199,9 +199,9 @@ describe("cron tool flat-params", () => {
 
     const [method, _gatewayOpts, params] = firstGatewayToolCall<{
       name?: string;
-      schedule?: unknown;
+      schedule?: any;
       sessionTarget?: string;
-      payload?: unknown;
+      payload?: any;
       enabled?: boolean;
     }>();
     expect(method).toBe("cron.add");
@@ -230,12 +230,12 @@ describe("cron tool flat-params", () => {
 
     const [method, _gatewayOpts, params] = firstGatewayToolCall<{
       id?: string;
-      patch?: { schedule?: unknown; enabled?: boolean };
+      patch?: { schedule?: any; enabled?: boolean };
     }>();
     expect(method).toBe("cron.update");
     expect(params.id).toBe("job-123");
     expect(params.patch?.schedule).toBeDefined();
-    expect((params.patch?.schedule as Record<string, unknown>)?.kind).toBe("cron");
+    expect((params.patch?.schedule as Record<string, any>)?.kind).toBe("cron");
     expect(params.patch?.enabled).toBe(false);
     expect(params.patch).not.toHaveProperty("schedule ");
     expect(params.patch).not.toHaveProperty("enabled ");
@@ -257,7 +257,7 @@ describe("cron tool flat-params", () => {
       },
     });
 
-    const [method, _gatewayOpts, params] = firstGatewayToolCall<Record<string, unknown>>();
+    const [method, _gatewayOpts, params] = firstGatewayToolCall<Record<string, any>>();
     expect(method).toBe("cron.add");
     // Non-recognized padded keys should remain as-is
     expect(params).toHaveProperty("__proto__ ");
@@ -283,10 +283,10 @@ describe("cron tool flat-params", () => {
       },
     });
 
-    const [method, _gatewayOpts, params] = firstGatewayToolCall<Record<string, unknown>>();
+    const [method, _gatewayOpts, params] = firstGatewayToolCall<Record<string, any>>();
     expect(method).toBe("cron.add");
     // Canonical key is untouched
-    expect((params.schedule as Record<string, unknown>)?.kind).toBe("cron");
+    expect((params.schedule as Record<string, any>)?.kind).toBe("cron");
     expect(params.enabled).toBe(false);
     // Padded keys are preserved so gateway schema validation sees the conflict
     // and rejects with "unexpected property 'schedule '" instead of silently
@@ -309,7 +309,7 @@ describe("cron tool flat-params", () => {
       },
     });
 
-    const [method, _gatewayOpts, params] = firstGatewayToolCall<Record<string, unknown>>();
+    const [method, _gatewayOpts, params] = firstGatewayToolCall<Record<string, any>>();
     expect(method).toBe("cron.add");
     expect(params.name).toBe("Clean keys");
     expect(params.schedule).toBeDefined();

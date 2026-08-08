@@ -11,7 +11,7 @@
  */
 
 // 内联降级实现：返回 lower-case 后的字符串，非字符串或空串返回 ""。
-function normalizeLowercaseStringOrEmpty(value: unknown): string {
+function normalizeLowercaseStringOrEmpty(value: any): string {
   if (typeof value !== "string") {
     return "";
   }
@@ -35,7 +35,7 @@ function uniqueStrings(values: readonly string[]): string[] {
 }
 
 // 内联降级实现：规范化字符串条目，trim 空串丢弃。
-function normalizeStringEntries(values: readonly unknown[]): string[] {
+function normalizeStringEntries(values: readonly any[]): string[] {
   return values
     .map((value) => (typeof value === "string" ? value.trim() : ""))
     .filter((value) => value.length > 0);
@@ -46,12 +46,12 @@ export type OpenAIReasoningEffort = "none" | "minimal" | "low" | "medium" | "hig
 export type OpenAIApiReasoningEffort = OpenAIReasoningEffort | (string & {});
 
 type OpenAIReasoningModel = {
-  provider?: unknown;
-  id?: unknown;
-  name?: unknown;
-  api?: unknown;
-  baseUrl?: unknown;
-  compat?: unknown;
+  provider?: any;
+  id?: any;
+  name?: any;
+  api?: any;
+  baseUrl?: any;
+  compat?: any;
 };
 
 const GPT_5_REASONING_EFFORTS = ["minimal", "low", "medium", "high"] as const;
@@ -86,14 +86,14 @@ export function normalizeOpenAIReasoningEffort(effort: string): string {
   return effort === "minimal" ? "minimal" : effort;
 }
 
-function readCompatReasoningEfforts(compat: unknown): OpenAIApiReasoningEffort[] | undefined {
+function readCompatReasoningEfforts(compat: any): OpenAIApiReasoningEffort[] | undefined {
   if (!compat || typeof compat !== "object") {
     return undefined;
   }
-  if ((compat as { supportsReasoningEffort?: unknown }).supportsReasoningEffort === false) {
+  if ((compat as { supportsReasoningEffort?: any }).supportsReasoningEffort === false) {
     return [];
   }
-  const raw = (compat as { supportedReasoningEfforts?: unknown }).supportedReasoningEfforts;
+  const raw = (compat as { supportedReasoningEfforts?: any }).supportedReasoningEfforts;
   if (!Array.isArray(raw)) {
     return undefined;
   }

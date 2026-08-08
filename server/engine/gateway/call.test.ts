@@ -27,7 +27,7 @@ const deviceIdentityState = vi.hoisted(() => ({
   throwOnLoad: false,
 }));
 const loadDeviceAuthTokenMock = vi.hoisted(() =>
-  vi.fn<(...args: unknown[]) => DeviceAuthEntry | null>(() => null),
+  vi.fn<(...args: any[]) => DeviceAuthEntry | null>(() => null),
 );
 
 const eventLoopReadyState = vi.hoisted(() => ({
@@ -56,7 +56,7 @@ const connectAssemblyErrorState = vi.hoisted(() => {
       errors.add(error);
       return error;
     },
-    has(value: unknown): value is Error {
+    has(value: any): value is Error {
       return value instanceof Error && errors.has(value);
     },
   };
@@ -73,19 +73,19 @@ let lastClientOptions: {
   mode?: string;
   approvalRuntimeToken?: string;
   scopes?: string[];
-  deviceIdentity?: unknown;
+  deviceIdentity?: any;
   onHelloOk?: (hello: { features?: { methods?: string[] } }) => void | Promise<void>;
   onClose?: (code: number, reason: string, info?: StubGatewayClientCloseInfo) => void;
   onConnectError?: (err: Error) => void;
 } | null = null;
 let lastRequestOptions: {
   method?: string;
-  params?: unknown;
+  params?: any;
   opts?: {
     expectFinal?: boolean;
     timeoutMs?: number | null;
     signal?: AbortSignal;
-    onAccepted?: (payload: unknown) => void;
+    onAccepted?: (payload: any) => void;
   };
 } | null = null;
 type StartMode =
@@ -159,7 +159,7 @@ vi.mock("./client.js", () => ({
     }
     return undefined;
   },
-  isGatewayConnectAssemblyError: (value: unknown) => connectAssemblyErrorState.has(value),
+  isGatewayConnectAssemblyError: (value: any) => connectAssemblyErrorState.has(value),
   GatewayClient: class {
     constructor(opts: {
       url?: string;
@@ -179,7 +179,7 @@ vi.mock("./client.js", () => ({
     }
     async request(
       method: string,
-      params: unknown,
+      params: any,
       opts?: { expectFinal?: boolean; timeoutMs?: number | null },
     ) {
       lastRequestOptions = { method, params, opts };
@@ -231,12 +231,12 @@ class StubGatewayClient {
   }
   async request(
     method: string,
-    params: unknown,
+    params: any,
     opts?: {
       expectFinal?: boolean;
       timeoutMs?: number | null;
       signal?: AbortSignal;
-      onAccepted?: (payload: unknown) => void;
+      onAccepted?: (payload: any) => void;
     },
   ) {
     lastRequestOptions = { method, params, opts };
@@ -630,7 +630,7 @@ describe("callGateway url resolution", () => {
     getRuntimeConfig.mockReturnValue({
       gateway: { mode: "local", bind: "loopback" },
     });
-    resolveGatewayPort.mockImplementation((_config?: unknown, env?: unknown) => {
+    resolveGatewayPort.mockImplementation((_config?: any, env?: any) => {
       const candidateEnv = env as NodeJS.ProcessEnv | undefined;
       return Number(candidateEnv?.OPENCLAW_GATEWAY_PORT ?? 18789);
     });
@@ -1150,13 +1150,13 @@ describe("buildGatewayConnectionDetails", () => {
         bind: "loopback",
       },
     } satisfies OpenClawConfig;
-    resolveGatewayPort.mockImplementation((_config?: unknown, env?: unknown) => {
+    resolveGatewayPort.mockImplementation((_config?: any, env?: any) => {
       const candidateEnv = env as NodeJS.ProcessEnv | undefined;
       return Number(candidateEnv?.OPENCLAW_GATEWAY_PORT ?? 18789);
     });
     testing.setDepsForTests({
       getRuntimeConfig: () => config,
-      resolveGatewayPort: (_config?: unknown, env?: NodeJS.ProcessEnv) =>
+      resolveGatewayPort: (_config?: any, env?: NodeJS.ProcessEnv) =>
         Number(env?.OPENCLAW_GATEWAY_PORT ?? 18789),
     });
     const prevUrl = process.env.OPENCLAW_GATEWAY_URL;
@@ -1286,7 +1286,7 @@ describe("buildGatewayConnectionDetails", () => {
 
   it("lets a local port override bypass gateway env URL and port in connection details", () => {
     getRuntimeConfig.mockReturnValue({ gateway: { mode: "local", bind: "loopback" } });
-    resolveGatewayPort.mockImplementation((_config?: unknown, env?: unknown) => {
+    resolveGatewayPort.mockImplementation((_config?: any, env?: any) => {
       const candidateEnv = env as NodeJS.ProcessEnv | undefined;
       return Number(candidateEnv?.OPENCLAW_GATEWAY_PORT ?? 18789);
     });
@@ -1348,7 +1348,7 @@ describe("buildGatewayConnectionDetails", () => {
     resolveGatewayPort.mockReturnValue(18789);
     pickPrimaryTailnetIPv4.mockReturnValue(undefined);
 
-    let thrown: unknown;
+    let thrown: any;
     try {
       buildGatewayConnectionDetails();
     } catch (error) {
@@ -1502,8 +1502,8 @@ describe("callGateway error details", () => {
     startMode = "connect-error";
     setLocalLoopbackGatewayConfig();
 
-    let err: unknown;
-    await callGateway({ method: "health", timeoutMs: 10_000 }).catch((caught: unknown) => {
+    let err: any;
+    await callGateway({ method: "health", timeoutMs: 10_000 }).catch((caught: any) => {
       err = caught;
     });
 
@@ -1542,7 +1542,7 @@ describe("callGateway error details", () => {
 
     vi.useFakeTimers();
     let errMessage = "";
-    const promise = callGateway({ method: "health", timeoutMs: 5 }).catch((caught: unknown) => {
+    const promise = callGateway({ method: "health", timeoutMs: 5 }).catch((caught: any) => {
       errMessage = caught instanceof Error ? caught.message : String(caught);
     });
 
@@ -1560,8 +1560,8 @@ describe("callGateway error details", () => {
     setLocalLoopbackGatewayConfig();
 
     vi.useFakeTimers();
-    let err: unknown;
-    const promise = callGateway({ method: "health", timeoutMs: 5 }).catch((caught: unknown) => {
+    let err: any;
+    const promise = callGateway({ method: "health", timeoutMs: 5 }).catch((caught: any) => {
       err = caught;
     });
 
@@ -1581,8 +1581,8 @@ describe("callGateway error details", () => {
     closeReason = "";
     setLocalLoopbackGatewayConfig();
 
-    let err: unknown;
-    await callGateway({ method: "health" }).catch((caught: unknown) => {
+    let err: any;
+    await callGateway({ method: "health" }).catch((caught: any) => {
       err = caught;
     });
 
@@ -1651,7 +1651,7 @@ describe("callGateway error details", () => {
 
     vi.useFakeTimers();
     let errMessage = "";
-    const promise = callGateway({ method: "health", timeoutMs: 5 }).catch((caught: unknown) => {
+    const promise = callGateway({ method: "health", timeoutMs: 5 }).catch((caught: any) => {
       errMessage = caught instanceof Error ? caught.message : String(caught);
     });
 
@@ -1678,8 +1678,8 @@ describe("callGateway error details", () => {
       aborted: false,
     };
 
-    let err: unknown;
-    await callGateway({ method: "health", timeoutMs: 5 }).catch((caught: unknown) => {
+    let err: any;
+    await callGateway({ method: "health", timeoutMs: 5 }).catch((caught: any) => {
       err = caught;
     });
     expect(isGatewayTransportError(err)).toBe(true);
@@ -1702,7 +1702,7 @@ describe("callGateway error details", () => {
 
     vi.useFakeTimers();
     let errMessage = "";
-    const promise = callGateway({ method: "health" }).catch((caught: unknown) => {
+    const promise = callGateway({ method: "health" }).catch((caught: any) => {
       errMessage = caught instanceof Error ? caught.message : String(caught);
     });
 
@@ -1723,7 +1723,7 @@ describe("callGateway error details", () => {
 
       vi.useFakeTimers();
       let errMessage = "";
-      const promise = callGateway({ method: "health" }).catch((caught: unknown) => {
+      const promise = callGateway({ method: "health" }).catch((caught: any) => {
         errMessage = caught instanceof Error ? caught.message : String(caught);
       });
 
@@ -1745,7 +1745,7 @@ describe("callGateway error details", () => {
     vi.useFakeTimers();
     let errMessage = "";
     const promise = callGateway({ method: "health", timeoutMs: 2_592_010_000 }).catch(
-      (caught: unknown) => {
+      (caught: any) => {
         errMessage = caught instanceof Error ? caught.message : String(caught);
       },
     );
@@ -1791,7 +1791,7 @@ describe("callGateway error details", () => {
     const controller = new AbortController();
     const abortRequests: Array<{
       method: string;
-      params: unknown;
+      params: any;
       opts?: { timeoutMs?: number | null };
     }> = [];
     let stopStarted = false;
@@ -1801,7 +1801,7 @@ describe("callGateway error details", () => {
         ({
           async request(
             method: string,
-            params: unknown,
+            params: any,
             requestOpts?: {
               expectFinal?: boolean;
               timeoutMs?: number | null;
@@ -1885,7 +1885,7 @@ describe("callGateway error details", () => {
         ({
           async request(
             method: string,
-            params: unknown,
+            params: any,
             requestOpts?: {
               expectFinal?: boolean;
               timeoutMs?: number | null;
@@ -1964,7 +1964,7 @@ describe("callGateway error details", () => {
         ({
           async request(
             method: string,
-            params: unknown,
+            params: any,
             requestOpts?: { expectFinal?: boolean; timeoutMs?: number | null },
           ) {
             lastRequestOptions = { method, params, opts: requestOpts };
@@ -2029,7 +2029,7 @@ describe("callGateway error details", () => {
         ({
           async request(
             method: string,
-            params: unknown,
+            params: any,
             requestOpts?: { expectFinal?: boolean; timeoutMs?: number | null },
           ) {
             lastRequestOptions = { method, params, opts: requestOpts };

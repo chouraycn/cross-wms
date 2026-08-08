@@ -39,7 +39,7 @@ let providerOptionsKey: string | null = null;
 let requestQueue: Promise<void> = Promise.resolve();
 
 /** Send one JSON IPC message when the child still has an IPC channel. */
-function send(message: unknown): void {
+function send(message: any): void {
   if (typeof process.send === "function") {
     process.send(message);
   }
@@ -66,11 +66,11 @@ async function closeProvider(): Promise<void> {
 }
 
 /** Preserve error message and code across JSON IPC. */
-function serializeError(err: unknown): LocalEmbeddingWorkerSerializedError {
+function serializeError(err: any): LocalEmbeddingWorkerSerializedError {
   if (!(err instanceof Error)) {
     return { message: String(err) };
   }
-  const code = (err as Error & { code?: unknown }).code;
+  const code = (err as Error & { code?: any }).code;
   return {
     message: err.message,
     ...(typeof code === "string" ? { code } : {}),

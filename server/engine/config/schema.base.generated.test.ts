@@ -7,12 +7,12 @@ type TestJsonSchema = {
   additionalProperties?: TestJsonSchema | boolean;
   allOf?: TestJsonSchema[];
   anyOf?: TestJsonSchema[];
-  const?: unknown;
-  enum?: unknown[];
+  const?: any;
+  enum?: any[];
   items?: TestJsonSchema | TestJsonSchema[];
   oneOf?: TestJsonSchema[];
   properties?: Record<string, TestJsonSchema>;
-  type?: unknown;
+  type?: any;
 };
 
 const BASE_CONFIG_SCHEMA = computeBaseConfigSchemaResponse({
@@ -106,7 +106,7 @@ describe("base config schema", () => {
   it("omits legacy compatibility paths from the public schema payload", () => {
     const rootProperties = (
       BASE_CONFIG_SCHEMA.schema as {
-        properties?: Record<string, unknown>;
+        properties?: Record<string, any>;
       }
     ).properties;
     const hooksInternalProperties = (
@@ -115,14 +115,14 @@ describe("base config schema", () => {
           hooks?: {
             properties?: {
               internal?: {
-                properties?: Record<string, unknown>;
+                properties?: Record<string, any>;
               };
             };
           };
         };
       }
     ).properties?.hooks?.properties?.internal?.properties;
-    const uiHints = BASE_CONFIG_SCHEMA.uiHints as Record<string, unknown>;
+    const uiHints = BASE_CONFIG_SCHEMA.uiHints as Record<string, any>;
 
     expect(rootProperties?.canvasHost).toBeUndefined();
     expect(hooksInternalProperties?.handlers).toBeUndefined();
@@ -137,14 +137,14 @@ describe("base config schema", () => {
           agents?: {
             properties?: {
               defaults?: {
-                properties?: Record<string, unknown>;
+                properties?: Record<string, any>;
               };
             };
           };
         };
       }
     ).properties?.agents?.properties?.defaults?.properties;
-    const uiHints = BASE_CONFIG_SCHEMA.uiHints as Record<string, unknown>;
+    const uiHints = BASE_CONFIG_SCHEMA.uiHints as Record<string, any>;
 
     expect(agentDefaultsProperties).toHaveProperty("videoGenerationModel");
     expect(agentDefaultsProperties).toHaveProperty("voiceModel");

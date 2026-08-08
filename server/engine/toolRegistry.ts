@@ -979,7 +979,7 @@ export async function initDefaultTools(): Promise<void> {
           },
         },
       },
-      handler: async (args: Record<string, unknown>): Promise<string> => {
+      handler: async (args: Record<string, any>): Promise<string> => {
         const channel = String(args.channel || '');
         const content = String(args.content || '');
         if (!['wechat', 'wecom', 'feishu'].includes(channel)) {
@@ -1033,7 +1033,7 @@ export async function executeToolCall(
     return JSON.stringify({ error: `未知工具: ${toolCall.function.name}` });
   }
 
-  let args: Record<string, unknown> = {};
+  let args: Record<string, any> = {};
   try {
     args = JSON.parse(toolCall.function.arguments);
   } catch {

@@ -35,6 +35,6 @@ export async function resolveAgentRunSessionTarget(params: {
 }
 
 /** Apply agent run session target identity (no-op in cross-wms). */
-export function applyAgentRunSessionTargetIdentity(..._args: unknown[]): void {
+export function applyAgentRunSessionTargetIdentity(..._args: any[]): void {
   // No-op in cross-wms.
 }

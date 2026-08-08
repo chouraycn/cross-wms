@@ -68,12 +68,12 @@ const MCP_LAUNCH_SNIPPET = [
 
 /** 读取 WebSocket Hub 是否已挂载到 httpServer（私有字段，仅诊断用途） */
 function readWebSocketHubAttachment(): boolean {
-  const hub = getWebSocketHub() as unknown as { httpServer?: unknown };
+  const hub = getWebSocketHub() as unknown as { httpServer?: any };
   return hub.httpServer != null;
 }
 
 /** 安全读取网关自身 /gateway/health 端点的健康负载 */
-async function fetchGatewayHealth(baseUrl: string, signal: AbortSignal): Promise<unknown> {
+async function fetchGatewayHealth(baseUrl: string, signal: AbortSignal): Promise<any> {
   try {
     const res = await fetch(`${baseUrl}/gateway/health`, { method: 'GET', signal });
     if (!res.ok) {
@@ -169,7 +169,7 @@ router.get('/health', async (_req: Request, res: Response) => {
         gatewayHealth,
       },
     });
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     res.status(500).json({ success: false, error: message });
   }
@@ -198,7 +198,7 @@ router.post('/mcp/start', (_req: Request, res: Response) => {
         'independent process using the launchSnippet.',
       launchSnippet: MCP_LAUNCH_SNIPPET,
     });
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     mcpGatewayState.status = 'error';
     mcpGatewayState.lastError = message;
@@ -232,7 +232,7 @@ router.get('/mcp/status', (_req: Request, res: Response) => {
         note: 'stdio transport only — not auto-started within the live HTTP server.',
       },
     });
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     res.status(500).json({ success: false, error: message });
   }

@@ -50,8 +50,8 @@ function makeAuthFailure(
   };
 }
 
-function loggedPayloads(): Array<Record<string, unknown>> {
-  return loggerMocks.warn.mock.calls.map(([, payload]) => payload as Record<string, unknown>);
+function loggedPayloads(): Array<Record<string, any>> {
+  return loggerMocks.warn.mock.calls.map(([, payload]) => payload as Record<string, any>);
 }
 
 beforeEach(() => {

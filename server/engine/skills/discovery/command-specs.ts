@@ -7,7 +7,7 @@ export type CommandParameter = {
   type: "string" | "number" | "boolean" | "array" | "object";
   description: string;
   required?: boolean;
-  default?: unknown;
+  default?: any;
   enum?: string[];
 };
 
@@ -185,7 +185,7 @@ export function searchCommands(query: string, options?: SearchCommandsOptions): 
 export function validateCommandParams(
   skillName: string,
   command: string,
-  params: Record<string, unknown>,
+  params: Record<string, any>,
 ): ValidationResult {
   const spec = getCommandSpec(skillName, command);
   const errors: string[] = [];
@@ -237,7 +237,7 @@ export function validateCommandParams(
   };
 }
 
-function validateParamType(param: CommandParameter, value: unknown): string | null {
+function validateParamType(param: CommandParameter, value: any): string | null {
   switch (param.type) {
     case "string":
       if (typeof value !== "string") {

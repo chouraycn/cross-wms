@@ -6,6 +6,6 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export async function runProviderAuthWarmWorkerInput(..._args: unknown[]): Promise<unknown> {
+export async function runProviderAuthWarmWorkerInput(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }

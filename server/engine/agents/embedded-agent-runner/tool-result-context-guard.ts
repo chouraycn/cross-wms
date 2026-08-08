@@ -67,7 +67,7 @@ export function markTranscriptPromptText(message: AgentMessage, text: string): v
 }
 
 function getTranscriptPromptText(message: AgentMessage): string | undefined {
-  const value = (message as unknown as Record<string, unknown>)[TRANSCRIPT_PROMPT_TEXT_KEY];
+  const value = (message as unknown as Record<string, any>)[TRANSCRIPT_PROMPT_TEXT_KEY];
   return typeof value === "string" ? value : undefined;
 }
 
@@ -83,9 +83,9 @@ function restoreTranscriptPromptText(
   if (cached) {
     return cached;
   }
-  const content = (message as { content?: unknown }).content;
+  const content = (message as { content?: any }).content;
   const { [TRANSCRIPT_PROMPT_TEXT_KEY]: _transcriptPromptText, ...messageRest } =
-    message as unknown as Record<string, unknown>;
+    message as unknown as Record<string, any>;
   let restoredMessage: AgentMessage = message;
   if (typeof content === "string") {
     restoredMessage = { ...messageRest, content: transcriptText } as unknown as AgentMessage;
@@ -95,7 +95,7 @@ function restoreTranscriptPromptText(
       if (restored || !block || typeof block !== "object") {
         return block;
       }
-      const textBlock = block as { type?: unknown; text?: unknown };
+      const textBlock = block as { type?: any; text?: any };
       if (textBlock.type !== "text" || typeof textBlock.text !== "string") {
         return block;
       }
@@ -115,7 +115,7 @@ function stripTranscriptPromptMarker(message: AgentMessage): AgentMessage {
     return message;
   }
   const { [TRANSCRIPT_PROMPT_TEXT_KEY]: _transcriptPromptText, ...messageRest } =
-    message as unknown as Record<string, unknown>;
+    message as unknown as Record<string, any>;
   return messageRest as unknown as AgentMessage;
 }
 
@@ -170,11 +170,11 @@ function truncateTextToBudget(text: string, maxChars: number): string {
 }
 
 function replaceToolResultText(msg: AgentMessage, text: string): AgentMessage {
-  const content = (msg as { content?: unknown }).content;
+  const content = (msg as { content?: any }).content;
   const replacementContent =
     typeof content === "string" || content === undefined ? text : [{ type: "text", text }];
 
-  const sourceRecord = msg as unknown as Record<string, unknown>;
+  const sourceRecord = msg as unknown as Record<string, any>;
   const { details: _details, ...rest } = sourceRecord;
   return {
     ...rest,
@@ -224,7 +224,7 @@ function truncateToolResultToChars(
 
 function cloneMessagesForGuard(messages: AgentMessage[]): AgentMessage[] {
   return messages.map(
-    (msg) => ({ ...(msg as unknown as Record<string, unknown>) }) as unknown as AgentMessage,
+    (msg) => ({ ...(msg as unknown as Record<string, any>) }) as unknown as AgentMessage,
   );
 }
 
@@ -262,8 +262,8 @@ function applyMessageMutationInPlace(
     return;
   }
 
-  const targetRecord = target as unknown as Record<string, unknown>;
-  const sourceRecord = source as unknown as Record<string, unknown>;
+  const targetRecord = target as unknown as Record<string, any>;
+  const sourceRecord = source as unknown as Record<string, any>;
   for (const key of Object.keys(targetRecord)) {
     if (!(key in sourceRecord)) {
       delete targetRecord[key];

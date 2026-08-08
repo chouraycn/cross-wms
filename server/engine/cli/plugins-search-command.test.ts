@@ -6,9 +6,9 @@ const mocks = vi.hoisted(() => {
   const logs: string[] = [];
   const errors: string[] = [];
   const runtime = {
-    log: vi.fn((value: unknown) => logs.push(String(value))),
-    error: vi.fn((value: unknown) => errors.push(String(value))),
-    writeJson: vi.fn((value: unknown, space = 2) =>
+    log: vi.fn((value: any) => logs.push(String(value))),
+    error: vi.fn((value: any) => errors.push(String(value))),
+    writeJson: vi.fn((value: any, space = 2) =>
       logs.push(JSON.stringify(value, null, space > 0 ? space : undefined)),
     ),
     writeStdout: vi.fn((value: string) =>
@@ -28,7 +28,7 @@ const mocks = vi.hoisted(() => {
 
 vi.mock("../runtime.js", () => ({
   defaultRuntime: mocks.runtime,
-  writeRuntimeJson: (runtime: typeof mocks.runtime, value: unknown, space = 2) =>
+  writeRuntimeJson: (runtime: typeof mocks.runtime, value: any, space = 2) =>
     runtime.writeJson(value, space),
 }));
 

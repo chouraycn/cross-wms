@@ -14,7 +14,7 @@ type AuthRunCall = {
 type ResolvePluginProvidersCall = {
   activate?: boolean;
   bundledProviderVitestCompat?: boolean;
-  config?: unknown;
+  config?: any;
   includeUntrustedWorkspacePlugins?: boolean;
   providerRefs?: string[];
   workspaceDir?: string;
@@ -29,7 +29,7 @@ type UpsertAuthProfileCall = {
   profileId?: string;
 };
 
-function readMockCallArg(mock: { mock: { calls: unknown[][] } }, index = 0): unknown {
+function readMockCallArg(mock: { mock: { calls: any[][] } }, index = 0): any {
   const value = mock.mock.calls[index]?.[0];
   if (!value) {
     throw new Error("Expected mock call argument");
@@ -40,7 +40,7 @@ function readMockCallArg(mock: { mock: { calls: unknown[][] } }, index = 0): unk
 const mocks = vi.hoisted(() => ({
   clackCancel: vi.fn(),
   clackConfirm: vi.fn(),
-  clackIsCancel: vi.fn((value: unknown) => value === Symbol.for("clack:cancel")),
+  clackIsCancel: vi.fn((value: any) => value === Symbol.for("clack:cancel")),
   clackPassword: vi.fn(),
   clackSelect: vi.fn(),
   clackText: vi.fn(),
@@ -182,13 +182,13 @@ vi.mock("../../plugins/provider-auth-choice-helpers.js", async (importOriginal) 
   const actual =
     await importOriginal<typeof import("../../plugins/provider-auth-choice-helpers.js")>();
   const normalize = (value: string | undefined) => value?.trim().toLowerCase() ?? "";
-  const isRecord = (value: unknown): value is Record<string, unknown> =>
+  const isRecord = (value: any): value is Record<string, any> =>
     Boolean(value && typeof value === "object" && !Array.isArray(value));
-  const mergePatch = <T>(base: T, patch: unknown): T => {
+  const mergePatch = <T>(base: T, patch: any): T => {
     if (!isRecord(base) || !isRecord(patch)) {
       return patch as T;
     }
-    const next: Record<string, unknown> = { ...base };
+    const next: Record<string, any> = { ...base };
     for (const [key, value] of Object.entries(patch)) {
       next[key] = mergePatch(next[key], value);
     }
@@ -216,12 +216,12 @@ vi.mock("../../plugins/provider-auth-choice-helpers.js", async (importOriginal) 
       );
     }),
     applyProviderAuthConfigPatch: vi.fn(
-      (cfg: OpenClawConfig, patch: unknown, options?: { replaceDefaultModels?: boolean }) => {
+      (cfg: OpenClawConfig, patch: any, options?: { replaceDefaultModels?: boolean }) => {
         const merged = mergePatch(cfg, patch);
         if (!options?.replaceDefaultModels) {
           return merged;
         }
-        const patchModels = (patch as { agents?: { defaults?: { models?: unknown } } })?.agents
+        const patchModels = (patch as { agents?: { defaults?: { models?: any } } })?.agents
           ?.defaults?.models;
         return isRecord(patchModels)
           ? {
@@ -356,7 +356,7 @@ describe("modelsAuthLoginCommand", () => {
     mocks.clackCancel.mockReset();
     mocks.clackConfirm.mockReset();
     mocks.clackIsCancel.mockImplementation(
-      (value: unknown) => value === Symbol.for("clack:cancel"),
+      (value: any) => value === Symbol.for("clack:cancel"),
     );
     mocks.clackPassword.mockReset();
     mocks.clackSelect.mockReset();
@@ -594,7 +594,7 @@ describe("modelsAuthLoginCommand", () => {
       select,
     });
     mocks.loadAuthProfileStoreForRuntime.mockReturnValue(fakeStore);
-    mocks.listProfilesForProvider.mockImplementation((_store: unknown, provider: string) =>
+    mocks.listProfilesForProvider.mockImplementation((_store: any, provider: string) =>
       provider === "openai"
         ? ["openai:api-key-backup"]
         : provider === "openai"
@@ -1290,7 +1290,7 @@ describe("modelsAuthLoginCommand", () => {
     try {
       const cancelSymbol = Symbol.for("clack:cancel");
       mocks.clackPassword.mockResolvedValue(cancelSymbol);
-      mocks.clackIsCancel.mockImplementation((value: unknown) => value === cancelSymbol);
+      mocks.clackIsCancel.mockImplementation((value: any) => value === cancelSymbol);
 
       await expect(modelsAuthPasteTokenCommand({ provider: "openai" }, runtime)).rejects.toThrow(
         "exit:0",

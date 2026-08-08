@@ -13,9 +13,9 @@ vi.mock("./ffmpeg-exec.js", () => ({
 
 import { transcodeAudioBuffer, transcodeAudioBufferToOpus } from "./audio-transcode.js";
 
-type MockWithCalls = { mock: { calls: unknown[][] } };
+type MockWithCalls = { mock: { calls: any[][] } };
 
-function firstMockCall(mock: MockWithCalls, label: string): unknown[] {
+function firstMockCall(mock: MockWithCalls, label: string): any[] {
   const call = mock.mock.calls[0];
   if (!call) {
     throw new Error(`expected ${label} call`);

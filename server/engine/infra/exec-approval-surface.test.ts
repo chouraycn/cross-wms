@@ -11,7 +11,7 @@ vi.mock("../config/config.js", async () => {
   const actual = await vi.importActual<typeof import("../config/config.js")>("../config/config.js");
   return {
     ...actual,
-    getRuntimeConfig: (...args: unknown[]) => loadConfigMock(...args),
+    getRuntimeConfig: (...args: any[]) => loadConfigMock(...args),
   };
 });
 
@@ -21,15 +21,15 @@ vi.mock("../channels/plugins/index.js", async () => {
   );
   return {
     ...actual,
-    getChannelPlugin: (...args: unknown[]) => getChannelPluginMock(...args),
-    listChannelPlugins: (...args: unknown[]) => listChannelPluginsMock(...args),
+    getChannelPlugin: (...args: any[]) => getChannelPluginMock(...args),
+    listChannelPlugins: (...args: any[]) => listChannelPluginsMock(...args),
   };
 });
 
 vi.mock("../utils/message-channel.js", () => ({
   INTERNAL_MESSAGE_CHANNEL: "web",
-  isDeliverableMessageChannel: (...args: unknown[]) => isDeliverableMessageChannelMock(...args),
-  normalizeMessageChannel: (...args: unknown[]) => normalizeMessageChannelMock(...args),
+  isDeliverableMessageChannel: (...args: any[]) => isDeliverableMessageChannelMock(...args),
+  normalizeMessageChannel: (...args: any[]) => normalizeMessageChannelMock(...args),
 }));
 
 type ExecApprovalSurfaceModule = typeof import("./exec-approval-surface.js");

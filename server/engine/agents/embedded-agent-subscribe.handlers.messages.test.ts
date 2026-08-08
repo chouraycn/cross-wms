@@ -29,14 +29,14 @@ function createMessageUpdateContext(
     shouldEmitPartialReplies?: boolean;
     consumePartialReplyDirectives?: ReturnType<typeof vi.fn>;
     stripBlockTags?: ReturnType<typeof vi.fn>;
-    state?: Record<string, unknown>;
+    state?: Record<string, any>;
   } = {},
 ) {
   // Update context fixture wires the partial-reply path through the same
   // directive accumulator used by streaming runtime events.
   const partialReplyDirectiveAccumulator = createStreamingDirectiveAccumulator();
-  const onAgentEvent = params.onAgentEvent as ((event: unknown) => void) | undefined;
-  const onPartialReply = params.onPartialReply as ((event: unknown) => void) | undefined;
+  const onAgentEvent = params.onAgentEvent as ((event: any) => void) | undefined;
+  const onPartialReply = params.onPartialReply as ((event: any) => void) | undefined;
   return {
     params: {
       runId: "run-1",
@@ -106,12 +106,12 @@ function createMessageEndContext(
     builtinToolNames?: ReadonlySet<string>;
     sourceReplyDeliveryMode?: "automatic" | "message_tool_only";
     blockChunker?: { hasBuffered: () => boolean; reset: () => void };
-    state?: Record<string, unknown>;
+    state?: Record<string, any>;
   } = {},
 ) {
   // Message-end context starts with buffered assistant text so tests can assert
   // final flushing, directive consumption, and source-reply behavior.
-  const onAgentEvent = params.onAgentEvent as ((event: unknown) => void) | undefined;
+  const onAgentEvent = params.onAgentEvent as ((event: any) => void) | undefined;
   return {
     params: {
       runId: "run-1",
@@ -171,7 +171,7 @@ function createMessageEndContext(
   } as unknown as EmbeddedAgentSubscribeContext;
 }
 
-function firstMockCall(mock: { mock: { calls: unknown[][] } }, label: string): unknown[] {
+function firstMockCall(mock: { mock: { calls: any[][] } }, label: string): any[] {
   const call = mock.mock.calls[0];
   if (!call) {
     throw new Error(`Expected ${label} to be called`);
@@ -179,11 +179,11 @@ function firstMockCall(mock: { mock: { calls: unknown[][] } }, label: string): u
   return call;
 }
 
-function firstMockArg(mock: { mock: { calls: unknown[][] } }, label: string): unknown {
+function firstMockArg(mock: { mock: { calls: any[][] } }, label: string): any {
   return firstMockCall(mock, label)[0];
 }
 
-function createMessageToolEnvelope(message: string, args: Record<string, unknown> = {}): string {
+function createMessageToolEnvelope(message: string, args: Record<string, any> = {}): string {
   // Messaging tool envelopes mimic provider tool-call JSON used by fallback
   // reply extraction when the assistant otherwise says NO_REPLY.
   return JSON.stringify({

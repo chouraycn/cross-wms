@@ -21,7 +21,7 @@ export function normalizeOutboundIdentity(identity: Partial<OutboundIdentity>): 
 /** Resolves the outbound identity for an agent session. */
 export function resolveAgentOutboundIdentity(params: {
   agentId?: string;
-  cfg?: unknown;
+  cfg?: any;
 }): OutboundIdentity {
   return {
     agentId: params.agentId?.trim() || undefined,

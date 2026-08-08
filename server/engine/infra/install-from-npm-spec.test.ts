@@ -6,13 +6,13 @@ const installFromNpmSpecArchiveWithInstallerMock = vi.hoisted(() => vi.fn());
 const finalizeNpmSpecArchiveInstallMock = vi.hoisted(() => vi.fn());
 
 vi.mock("./npm-registry-spec.js", () => ({
-  validateRegistryNpmSpec: (...args: unknown[]) => validateRegistryNpmSpecMock(...args),
+  validateRegistryNpmSpec: (...args: any[]) => validateRegistryNpmSpecMock(...args),
 }));
 
 vi.mock("./npm-pack-install.js", () => ({
-  installFromNpmSpecArchiveWithInstaller: (...args: unknown[]) =>
+  installFromNpmSpecArchiveWithInstaller: (...args: any[]) =>
     installFromNpmSpecArchiveWithInstallerMock(...args),
-  finalizeNpmSpecArchiveInstall: (...args: unknown[]) => finalizeNpmSpecArchiveInstallMock(...args),
+  finalizeNpmSpecArchiveInstall: (...args: any[]) => finalizeNpmSpecArchiveInstallMock(...args),
 }));
 
 import { installFromValidatedNpmSpecArchive } from "./install-from-npm-spec.js";

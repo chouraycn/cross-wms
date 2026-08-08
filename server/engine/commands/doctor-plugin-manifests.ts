@@ -23,13 +23,13 @@ const LEGACY_MANIFEST_CONTRACT_KEYS = [
 type LegacyManifestContractMigration = {
   manifestPath: string;
   pluginId: string;
-  nextRaw: Record<string, unknown>;
+  nextRaw: Record<string, any>;
   changeLines: string[];
 };
 
 const JsonRecordSchema = z.record(z.string(), z.unknown());
 
-function readManifestJson(manifestPath: string): Record<string, unknown> | null {
+function readManifestJson(manifestPath: string): Record<string, any> | null {
   try {
     return safeParseJsonWithSchema(JsonRecordSchema, fs.readFileSync(manifestPath, "utf-8"));
   } catch {
@@ -47,7 +47,7 @@ function manifestSeenKey(manifestPath: string): string {
 
 function buildLegacyManifestContractMigration(params: {
   manifestPath: string;
-  raw: Record<string, unknown>;
+  raw: Record<string, any>;
 }): LegacyManifestContractMigration | null {
   const nextRaw = { ...params.raw };
   const parsedContracts = safeParseWithSchema(JsonRecordSchema, params.raw.contracts);

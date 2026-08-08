@@ -75,7 +75,7 @@ describe("resolveSecretInputString", () => {
   });
 
   it("throws a typed unresolved SecretRef error in strict mode", () => {
-    let thrown: unknown;
+    let thrown: any;
     try {
       resolveSecretInputString({
         value: { source: "env", provider: "default", id: "OPENAI_API_KEY" },

@@ -10,11 +10,11 @@
 
 type AgentRuntimeDeliveryPlan = {
   isSilentPayload: (payload: { text?: string }) => boolean;
-  resolveFollowupRoute: (routeParams: Record<string, unknown>) => unknown;
+  resolveFollowupRoute: (routeParams: Record<string, any>) => unknown;
 };
 
 type AgentRuntimeOutcomePlan = {
-  classifyRunResult: (result: unknown) => string | null;
+  classifyRunResult: (result: any) => string | null;
 };
 
 type AgentRuntimePlan = {
@@ -34,7 +34,7 @@ function isSilentReplyPayloadText(text: string | undefined, token: string): bool
 export function buildAgentRuntimeDeliveryPlan(params: {
   provider: string;
   modelId?: string;
-  config?: unknown;
+  config?: any;
   workspaceDir?: string;
   agentDir?: string;
 }): AgentRuntimeDeliveryPlan {
@@ -52,7 +52,7 @@ export function buildAgentRuntimeDeliveryPlan(params: {
 /** Build run-outcome classification hooks for model fallback decisions. */
 export function buildAgentRuntimeOutcomePlan(): AgentRuntimeOutcomePlan {
   return {
-    classifyRunResult(_result: unknown): string | null {
+    classifyRunResult(_result: any): string | null {
       // Full classification requires the embedded-agent-runner result classifier.
       return null;
     },
@@ -63,7 +63,7 @@ export function buildAgentRuntimeOutcomePlan(): AgentRuntimeOutcomePlan {
 export function buildAgentRuntimePlan(params: {
   provider: string;
   modelId: string;
-  config?: unknown;
+  config?: any;
   workspaceDir?: string;
   agentDir?: string;
   modelApi?: string;

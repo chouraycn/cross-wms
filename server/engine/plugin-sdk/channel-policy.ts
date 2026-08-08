@@ -73,7 +73,7 @@ export function normalizeAllowFromList(list: Array<string | number> | undefined 
 }
 
 /** Coerces native feature settings to the supported boolean/auto shape. */
-export function coerceNativeSetting(value: unknown): boolean | "auto" | undefined {
+export function coerceNativeSetting(value: any): boolean | "auto" | undefined {
   if (value === true || value === false || value === "auto") {
     return value;
   }
@@ -86,7 +86,7 @@ export function coerceNativeSetting(value: unknown): boolean | "auto" | undefine
  */
 export type ChannelMutableAllowlistCandidate = {
   pathLabel: string;
-  list: unknown;
+  list: any;
 };
 
 type ChannelMutableAllowlistHit = {
@@ -131,7 +131,7 @@ export function createDangerousNameMatchingMutableAllowlistWarningCollector(para
   detector: (entry: string) => boolean;
   collectLists: (scope: {
     prefix: string;
-    account: Record<string, unknown>;
+    account: Record<string, any>;
     dangerousFlagPath: string;
   }) => ChannelMutableAllowlistCandidate[];
 }) {

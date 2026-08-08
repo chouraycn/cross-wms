@@ -34,7 +34,7 @@ export interface ExecutionStep {
   /** 工具名称（tool_call 类型） */
   toolName?: string;
   /** 工具参数 */
-  toolArgs?: Record<string, unknown>;
+  toolArgs?: Record<string, any>;
   /** 超时时间（毫秒） */
   timeoutMs?: number;
   /** 最大重试次数 */
@@ -48,7 +48,7 @@ export interface ExecutionStep {
   /** 条件表达式（condition 类型） */
   condition?: string;
   /** 元数据 */
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 /** 步骤执行结果 */
@@ -60,7 +60,7 @@ export interface StepResult {
   /** 执行状态 */
   status: ExecutionStatus;
   /** 输出结果 */
-  output?: unknown;
+  output?: any;
   /** 错误信息 */
   error?: string;
   /** 重试次数 */
@@ -96,7 +96,7 @@ export interface ExecutionResult {
   /** 错误信息（若整体失败） */
   error?: string;
   /** 最终输出 */
-  finalOutput?: unknown;
+  finalOutput?: any;
 }
 
 /** 执行上下文 */
@@ -108,7 +108,7 @@ export interface ExecutionContext {
   /** 执行器标识 */
   executor?: string;
   /** 变量存储 */
-  variables: Map<string, unknown>;
+  variables: Map<string, any>;
   /** 步骤结果存储 */
   stepResults: Map<string, StepResult>;
   /** 中止信号 */
@@ -118,7 +118,7 @@ export interface ExecutionContext {
   /** 是否暂停 */
   isPaused: boolean;
   /** 元数据 */
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
 }
 
 /** 执行配置 */
@@ -138,9 +138,9 @@ export interface ExecutionConfig {
 /** 工具执行函数 */
 export type ToolExecutor = (
   toolName: string,
-  toolArgs: Record<string, unknown>,
+  toolArgs: Record<string, any>,
   context: ExecutionContext,
-) => Promise<unknown>;
+) => Promise<any>;
 
 /** 工具注册信息 */
 export interface ToolRegistration {
@@ -171,6 +171,6 @@ export interface ExecutionEvent {
   type: ExecutionEventType;
   executionId: string;
   stepId?: string;
-  data?: unknown;
+  data?: any;
   timestamp: number;
 }

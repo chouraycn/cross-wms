@@ -106,7 +106,7 @@ function firstSpawnWithFallbackParams(): SpawnWithFallbackParams {
   return params;
 }
 
-function firstMockArg(mock: { mock: { calls: readonly unknown[][] } }, label: string): unknown {
+function firstMockArg(mock: { mock: { calls: readonly any[][] } }, label: string): any {
   const [call] = mock.mock.calls;
   if (!call) {
     throw new Error(`expected ${label} call`);

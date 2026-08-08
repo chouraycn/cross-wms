@@ -6,7 +6,7 @@ export interface PluginHookRegistration {
   hookName: string;
   priority: number;
   enabled: boolean;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 const hookRegistrations: PluginHookRegistration[] = [];

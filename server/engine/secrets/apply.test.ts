@@ -49,11 +49,11 @@ type ApplyFixture = {
   env: NodeJS.ProcessEnv;
 };
 
-function stripVolatileConfigMeta(input: string): Record<string, unknown> {
-  const parsed = JSON.parse(input) as Record<string, unknown>;
+function stripVolatileConfigMeta(input: string): Record<string, any> {
+  const parsed = JSON.parse(input) as Record<string, any>;
   const meta =
     parsed.meta && typeof parsed.meta === "object" && !Array.isArray(parsed.meta)
-      ? { ...(parsed.meta as Record<string, unknown>) }
+      ? { ...(parsed.meta as Record<string, any>) }
       : undefined;
   if (meta && "lastTouchedAt" in meta) {
     delete meta.lastTouchedAt;
@@ -64,7 +64,7 @@ function stripVolatileConfigMeta(input: string): Record<string, unknown> {
   return parsed;
 }
 
-async function writeJsonFile(filePath: string, value: unknown): Promise<void> {
+async function writeJsonFile(filePath: string, value: any): Promise<void> {
   if (path.basename(filePath) === "openclaw-agent.sqlite") {
     saveAuthProfileStore(value as AuthProfileStore, path.dirname(filePath), {
       filterExternalAuthProfiles: false,
@@ -80,7 +80,7 @@ async function readAuthStore(fixture: ApplyFixture): Promise<AuthProfileStore> {
   return loadPersistedAuthProfileStore(fixture.agentDir) ?? { version: 1, profiles: {} };
 }
 
-function createOpenAiProviderConfig(apiKey: unknown = "sk-openai-plaintext") {
+function createOpenAiProviderConfig(apiKey: any = "sk-openai-plaintext") {
   return {
     baseUrl: "https://api.openai.com/v1",
     api: "openai-completions",
@@ -307,12 +307,12 @@ describe("secrets apply", () => {
     expect(prepareSecretsRuntimeSnapshotMock).toHaveBeenCalledTimes(1);
 
     const nextConfig = JSON.parse(await fs.readFile(fixture.configPath, "utf8")) as {
-      models: { providers: { openai: { apiKey: unknown } } };
+      models: { providers: { openai: { apiKey: any } } };
     };
     expect(nextConfig.models.providers.openai.apiKey).toEqual(OPENAI_API_KEY_ENV_REF);
 
     const nextAuthStore = (await readAuthStore(fixture)) as unknown as {
-      profiles: { "openai:default": { key?: string; keyRef?: unknown } };
+      profiles: { "openai:default": { key?: string; keyRef?: any } };
     };
     expect(nextAuthStore.profiles["openai:default"].key).toBeUndefined();
     expect(nextAuthStore.profiles["openai:default"].keyRef).toEqual({
@@ -323,7 +323,7 @@ describe("secrets apply", () => {
 
     const nextAuthJson = JSON.parse(await fs.readFile(fixture.authJsonPath, "utf8")) as Record<
       string,
-      unknown
+      any
     >;
     expect(nextAuthJson.openai).toBeUndefined();
 
@@ -352,7 +352,7 @@ describe("secrets apply", () => {
     await runSecretsApply({ plan, env: fixture.env, write: true });
 
     const nextAuthStore = (await readAuthStore(fixture)) as unknown as {
-      profiles: { "openai:bot": { token?: string; tokenRef?: unknown } };
+      profiles: { "openai:bot": { token?: string; tokenRef?: any } };
     };
     expect(nextAuthStore.profiles["openai:bot"].token).toBeUndefined();
     expect(nextAuthStore.profiles["openai:bot"].tokenRef).toEqual(OPENAI_API_KEY_ENV_REF);
@@ -378,7 +378,7 @@ describe("secrets apply", () => {
     await runSecretsApply({ plan, env: fixture.env, write: true });
 
     const nextAuthStore = (await readAuthStore(fixture)) as unknown as {
-      profiles: { "openai:default": { key?: string; keyRef?: unknown } };
+      profiles: { "openai:default": { key?: string; keyRef?: any } };
     };
     expect(nextAuthStore.profiles["openai:default"].key).toBeUndefined();
     expect(nextAuthStore.profiles["openai:default"].keyRef).toBeUndefined();
@@ -561,7 +561,7 @@ describe("secrets apply", () => {
     expect(result.changedFiles).toContain(fixture.authStorePath);
 
     const nextAuthStore = (await readAuthStore(fixture)) as unknown as {
-      profiles: { "openai:default": { key?: string; keyRef?: unknown } };
+      profiles: { "openai:default": { key?: string; keyRef?: any } };
     };
     expect(nextAuthStore.profiles["openai:default"].key).toBeUndefined();
     expect(nextAuthStore.profiles["openai:default"].keyRef).toEqual({
@@ -669,9 +669,9 @@ describe("secrets apply", () => {
         string,
         {
           key?: string;
-          keyRef?: unknown;
+          keyRef?: any;
           mode?: string;
-          oauthRef?: unknown;
+          oauthRef?: any;
           provider?: string;
           type?: string;
         }
@@ -728,7 +728,7 @@ describe("secrets apply", () => {
         "openai:bot": {
           type: string;
           provider: string;
-          tokenRef?: unknown;
+          tokenRef?: any;
         };
       };
     };
@@ -798,7 +798,7 @@ describe("secrets apply", () => {
       env: fixture.env,
     })) as {
       models?: {
-        providers?: Record<string, { apiKey?: unknown }>;
+        providers?: Record<string, { apiKey?: any }>;
       };
     };
     expect(nextConfig.models?.providers?.["openai.dev"]?.apiKey).toEqual(OPENAI_API_KEY_ENV_REF);
@@ -836,8 +836,8 @@ describe("secrets apply", () => {
     });
 
     const nextConfig = await applyPlanAndReadConfig<{
-      models: { providers: { openai: { apiKey: unknown } } };
-      skills: { entries: { "qa-secret-test": { apiKey: unknown } } };
+      models: { providers: { openai: { apiKey: any } } };
+      skills: { entries: { "qa-secret-test": { apiKey: any } } };
     }>(fixture, plan);
     expect(nextConfig.models.providers.openai.apiKey).toEqual(OPENAI_API_KEY_ENV_REF);
     expect(nextConfig.skills.entries["qa-secret-test"].apiKey).toEqual(OPENAI_API_KEY_ENV_REF);
@@ -877,7 +877,7 @@ describe("secrets apply", () => {
       plan,
       env: fixture.env,
     })) as {
-      talk?: { providers?: Record<string, { apiKey?: unknown }> };
+      talk?: { providers?: Record<string, { apiKey?: any }> };
     };
     expect(nextConfig.talk?.providers?.[TALK_TEST_PROVIDER_ID]?.apiKey).toEqual({
       source: "env",
@@ -920,7 +920,7 @@ describe("secrets apply", () => {
       models?: {
         providers?: {
           openai?: {
-            headers?: Record<string, unknown>;
+            headers?: Record<string, any>;
           };
         };
       };
@@ -983,7 +983,7 @@ describe("secrets apply", () => {
         list?: Array<{
           memorySearch?: {
             remote?: {
-              apiKey?: unknown;
+              apiKey?: any;
             };
           };
         }>;
@@ -1075,7 +1075,7 @@ describe("secrets apply", () => {
       env: fixture.env,
     })) as {
       secrets?: {
-        providers?: Record<string, unknown>;
+        providers?: Record<string, any>;
       };
     };
     expect(nextConfig.secrets?.providers?.fileold).toBeUndefined();

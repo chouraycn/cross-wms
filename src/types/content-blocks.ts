@@ -44,7 +44,7 @@ export interface ToolCallContentBlock {
   name: string;
   arguments: string;
   status: 'pending' | 'running' | 'completed' | 'failed';
-  result?: unknown;
+  result?: any;
   startedAt?: number;
   completedAt?: number;
   /** 执行模式 */

@@ -6,7 +6,7 @@ const TRANSCRIPT_ONLY_OPENCLAW_ASSISTANT_MODELS = new Set<string>([
   "gateway-injected",
 ]);
 
-export function isTranscriptOnlyOpenClawAssistantModel(provider: unknown, model: unknown): boolean {
+export function isTranscriptOnlyOpenClawAssistantModel(provider: any, model: any): boolean {
   return (
     provider === "openclaw" &&
     typeof model === "string" &&
@@ -14,22 +14,22 @@ export function isTranscriptOnlyOpenClawAssistantModel(provider: unknown, model:
   );
 }
 
-export function isTranscriptOnlyOpenClawAssistantMessage(message: unknown): boolean {
+export function isTranscriptOnlyOpenClawAssistantMessage(message: any): boolean {
   if (!message || typeof message !== "object" || Array.isArray(message)) {
     return false;
   }
-  const entry = message as { role?: unknown; provider?: unknown; model?: unknown };
+  const entry = message as { role?: any; provider?: any; model?: any };
   return (
     entry.role === "assistant" &&
     isTranscriptOnlyOpenClawAssistantModel(entry.provider, entry.model)
   );
 }
 
-export function isOpenClawDeliveryMirrorAssistantMessage(message: unknown): boolean {
+export function isOpenClawDeliveryMirrorAssistantMessage(message: any): boolean {
   if (!message || typeof message !== "object" || Array.isArray(message)) {
     return false;
   }
-  const entry = message as { role?: unknown; provider?: unknown; model?: unknown };
+  const entry = message as { role?: any; provider?: any; model?: any };
   return (
     entry.role === "assistant" && entry.provider === "openclaw" && entry.model === "delivery-mirror"
   );

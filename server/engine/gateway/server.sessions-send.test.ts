@@ -47,7 +47,7 @@ function getSessionsSendTool(): SessionSendTool {
 }
 
 function expectSessionsSendDetails(
-  result: { details?: unknown },
+  result: { details?: any },
   expected: { reply: string; sessionKey: string },
 ): void {
   const details = result.details as {
@@ -61,7 +61,7 @@ function expectSessionsSendDetails(
 }
 
 async function emitLifecycleAssistantReply(params: {
-  opts: unknown;
+  opts: any;
   defaultSessionId: string;
   includeTimestamp?: boolean;
   resolveText: (extraSystemPrompt?: string) => string;
@@ -150,8 +150,8 @@ afterAll(async () => {
 
 describe("sessions_send gateway loopback", () => {
   it("returns reply when lifecycle ends before agent.wait", async () => {
-    const spy = agentCommand as unknown as Mock<(opts: unknown) => Promise<void>>;
-    spy.mockImplementation(async (opts: unknown) =>
+    const spy = agentCommand as unknown as Mock<(opts: any) => Promise<void>>;
+    spy.mockImplementation(async (opts: any) =>
       emitLifecycleAssistantReply({
         opts,
         defaultSessionId: "main",
@@ -311,8 +311,8 @@ describe("sessions_send label lookup", () => {
         "utf-8",
       );
 
-      const spy = agentCommand as unknown as Mock<(opts: unknown) => Promise<void>>;
-      spy.mockImplementation(async (opts: unknown) =>
+      const spy = agentCommand as unknown as Mock<(opts: any) => Promise<void>>;
+      spy.mockImplementation(async (opts: any) =>
         emitLifecycleAssistantReply({
           opts,
           defaultSessionId: "test-labeled",
@@ -393,8 +393,8 @@ describe("sessions_send agent targeting", () => {
           },
         });
 
-        const spy = agentCommand as unknown as Mock<(opts: unknown) => Promise<void>>;
-        spy.mockImplementation(async (opts: unknown) =>
+        const spy = agentCommand as unknown as Mock<(opts: any) => Promise<void>>;
+        spy.mockImplementation(async (opts: any) =>
           emitLifecycleAssistantReply({
             opts,
             defaultSessionId: "orion-created",

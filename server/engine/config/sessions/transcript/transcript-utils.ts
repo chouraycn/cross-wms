@@ -59,7 +59,7 @@ export function extractTextFromContent(content: string): string {
   }
 }
 
-export function validateTranscriptEntry(entry: unknown): { valid: boolean; errors: string[] } {
+export function validateTranscriptEntry(entry: any): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
 
   if (!entry || typeof entry !== 'object') {

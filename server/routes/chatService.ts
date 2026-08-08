@@ -64,7 +64,7 @@ import { resolveSkillContext, extractContextTexts } from '../engine/skillRouter.
  * 将 AI API 错误分类为用户友好的错误消息和错误代码。
  */
 export function classifyAndFormatError(
-  error: unknown,
+  error: any,
   modelConfig?: ModelConfig,
   effectiveModel?: string,
 ): { code: string; message: string } {
@@ -159,7 +159,7 @@ export function classifyAndFormatError(
 /** 降级处理参数 */
 interface FallbackParams {
   /** 原始错误 */
-  error: unknown;
+  error: any;
   /** 原始 API 消息列表（用于降级重试） */
   apiMessages: Array<{ role: string; content: MessageContent; tool_calls?: ToolCall[]; tool_call_id?: string }>;
   /** 模型配置文件 */
@@ -253,7 +253,7 @@ async function handleFallback(params: FallbackParams): Promise<boolean> {
       maxToolTurns: 10,
       signal: signal ?? new AbortController().signal,
       executionMode,
-      onSSEEvent: (evt: Record<string, unknown>) => {
+      onSSEEvent: (evt: Record<string, any>) => {
         const evtType = evt.type as string;
         if (evtType === 'text') stream.push({ type: 'text_delta', contentIndex: 0, delta: evt.content as string });
         else if (evtType === 'thinking') stream.push({ type: 'thinking_delta', contentIndex: 0, delta: evt.content as string });
@@ -265,7 +265,7 @@ async function handleFallback(params: FallbackParams): Promise<boolean> {
             api: '',
             provider: '',
             model: '',
-            usage: evt.usage as unknown,
+            usage: evt.usage as any,
             stopReason: 'stop',
             timestamp: Date.now(),
           };
@@ -344,16 +344,16 @@ interface QueueExecuteParams {
   assistantId: string;
   preset: typeof MODEL_PRESETS[string] | null;
   executionMode?: string;
-  conversationHistory?: unknown[];
+  conversationHistory?: any[];
   skillContext?: string;
   skillId?: string;
-  attachments?: unknown[];
+  attachments?: any[];
   autoReason?: string;
   autoReasonType?: string;
   message: string;
   modelsConfig: ModelsFile;
   toolProfile?: string;
-  compaction?: unknown;
+  compaction?: any;
 }
 
 /**
@@ -544,7 +544,7 @@ async function executeQueuedMessage(
       estimatedToolsCount: 30,
       fromQueue: true,
       callbacks,
-      toolProfile: params.toolProfile as unknown,
+      toolProfile: params.toolProfile as any,
       compaction: params.compaction,
     });
 
@@ -687,13 +687,13 @@ export async function handleChat(req: import('express').Request, res: import('ex
       const hasImg = hasImageAttachment(attachments);
       try {
         // v1.7.162: 传入完整 ScoringInput，启用 5 维度评分（上下文长度 + 工具调用加分）
-        const historyMsgs: ApiMessage[] = (conversationHistory || []).map((m: unknown) => ({
+        const historyMsgs: ApiMessage[] = (conversationHistory || []).map((m: any) => ({
           role: m.role || 'user',
           content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content || ''),
         }));
         const contextTokenCount = historyMsgs.length > 0 ? estimateMessagesTokens(historyMsgs) : 0;
-        const toolCallCount = (conversationHistory || []).filter((m: unknown) =>
-          m.tool_calls || (Array.isArray(m.content) && m.content.some((c: unknown) => c.type === 'tool_use' || c.type === 'tool_result'))
+        const toolCallCount = (conversationHistory || []).filter((m: any) =>
+          m.tool_calls || (Array.isArray(m.content) && m.content.some((c: any) => c.type === 'tool_use' || c.type === 'tool_result'))
         ).length;
         const scoringInput: Partial<ScoringInput> = {
           contextTokenCount,
@@ -708,7 +708,7 @@ export async function handleChat(req: import('express').Request, res: import('ex
         autoSemanticMethod = autoResult.semanticIntent?.method;
         autoSemanticConfidence = autoResult.semanticIntent?.confidence;
         reqLog.debug(`[Auto Model] ${autoResult.reasonType} → ${autoResult.modelName} (${autoResult.modelId})`);
-      } catch (autoErr: unknown) {
+      } catch (autoErr: any) {
         const errMsg = autoErr instanceof Error ? autoErr.message : '无可用模型';
         // 直接写入 SSE 错误事件
         try {

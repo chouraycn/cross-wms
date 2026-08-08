@@ -56,7 +56,7 @@ describe("completion delivery policy", () => {
   ] as const)("falls back to origin target prefix $to", ({ to, expected }) => {
     expect(
       resolveCompletionChatType({
-        requesterSessionKey: "agent:main:opaque:unknown-target",
+        requesterSessionKey: "agent:main:opaque: any-target",
         directOrigin: { channel: "test", to },
       }),
     ).toBe(expected);

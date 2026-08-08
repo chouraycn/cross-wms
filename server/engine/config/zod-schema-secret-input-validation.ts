@@ -4,31 +4,31 @@ import { z } from "zod";
 import { hasConfiguredSecretInput } from "./types/secrets.js";
 
 type TelegramAccountLike = {
-  enabled?: unknown;
-  webhookUrl?: unknown;
-  webhookSecret?: unknown;
+  enabled?: any;
+  webhookUrl?: any;
+  webhookSecret?: any;
 };
 
 type TelegramConfigLike = {
-  webhookUrl?: unknown;
-  webhookSecret?: unknown;
+  webhookUrl?: any;
+  webhookSecret?: any;
   accounts?: Record<string, TelegramAccountLike | undefined>;
 };
 
 type SlackAccountLike = {
-  enabled?: unknown;
-  mode?: unknown;
-  signingSecret?: unknown;
+  enabled?: any;
+  mode?: any;
+  signingSecret?: any;
 };
 
 type SlackConfigLike = {
-  mode?: unknown;
-  signingSecret?: unknown;
+  mode?: any;
+  signingSecret?: any;
   accounts?: Record<string, SlackAccountLike | undefined>;
 };
 
 // Only enabled accounts need per-account secret requirement checks.
-function forEachEnabledAccount<T extends { enabled?: unknown }>(
+function forEachEnabledAccount<T extends { enabled?: any }>(
   accounts: Record<string, T | undefined> | undefined,
   run: (accountId: string, account: T) => void,
 ): void {
@@ -78,7 +78,7 @@ export function validateSlackSigningSecretRequirements(
   value: SlackConfigLike,
   ctx: z.RefinementCtx,
 ): void {
-  const resolveMode = (mode: unknown) =>
+  const resolveMode = (mode: any) =>
     mode === "http" || mode === "socket" || mode === "relay" ? mode : undefined;
   const baseMode = resolveMode(value.mode) ?? "socket";
   if (baseMode === "http" && !hasConfiguredSecretInput(value.signingSecret)) {

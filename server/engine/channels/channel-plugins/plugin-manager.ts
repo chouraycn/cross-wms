@@ -115,7 +115,7 @@ export async function shutdownAllPlugins(): Promise<void> {
 
 export async function executePluginHook(
   hookType: PluginHookType,
-  data?: unknown,
+  data?: any,
   filter?: (plugin: RegisteredPlugin) => boolean
 ): Promise<void> {
   const plugins = listPlugins().filter(filter ?? (() => true));

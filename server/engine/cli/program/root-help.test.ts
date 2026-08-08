@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderRootHelpText } from "./root-help.js";
 
 const getPluginCliCommandDescriptorsMock = vi.fn(
-  async (_configForTest?: unknown, _env?: unknown, _loaderOptions?: unknown) => [
+  async (_configForTest?: any, _env?: any, _loaderOptions?: any) => [
     {
       name: "matrix",
       description: "Matrix channel utilities",

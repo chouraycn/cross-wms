@@ -30,7 +30,7 @@ export function resolveAutoCliSessionReseedHistoryChars(params?: {
 
 /** Builds the CLI session history prompt section. */
 export function buildCliSessionHistoryPrompt(params: {
-  messages: Array<{ role: string; content: unknown }>;
+  messages: Array<{ role: string; content: any }>;
   modelId?: string;
 }): string {
   if (!params.messages.length) return "";
@@ -54,7 +54,7 @@ export function hasCliSessionTranscript(params: {
 export function loadCliSessionHistoryMessages(params: {
   sessionKey: string;
   sessionDir?: string;
-}): Array<{ role: string; content: unknown }> {
+}): Array<{ role: string; content: any }> {
   const filePath = resolveSessionFilePath(params.sessionKey, params.sessionDir);
   if (!fs.existsSync(filePath)) return [];
   try {
@@ -71,7 +71,7 @@ export function loadCliSessionHistoryMessages(params: {
 export function loadCliSessionContextEngineMessages(params: {
   sessionKey: string;
   sessionDir?: string;
-}): Array<{ role: string; content: unknown }> {
+}): Array<{ role: string; content: any }> {
   return loadCliSessionHistoryMessages(params);
 }
 
@@ -80,11 +80,11 @@ export function loadCliSessionReseedMessages(params: {
   sessionKey: string;
   sessionDir?: string;
   maxChars?: number;
-}): Array<{ role: string; content: unknown }> {
+}): Array<{ role: string; content: any }> {
   const messages = loadCliSessionHistoryMessages(params);
   const maxChars = params.maxChars ?? MAX_CLI_SESSION_RESEED_HISTORY_CHARS;
   let totalChars = 0;
-  const result: Array<{ role: string; content: unknown }> = [];
+  const result: Array<{ role: string; content: any }> = [];
   for (const msg of messages) {
     const content = typeof msg.content === "string" ? msg.content : JSON.stringify(msg.content);
     totalChars += content.length;

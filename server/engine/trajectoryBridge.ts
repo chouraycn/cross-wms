@@ -47,13 +47,13 @@ function mapEventType(ledgerType: EventType): string {
   return typeMap[ledgerType] || ledgerType;
 }
 
-function extractProviderAndModel(payload: Record<string, unknown>): { provider: string | null; modelId: string | null } {
+function extractProviderAndModel(payload: Record<string, any>): { provider: string | null; modelId: string | null } {
   const provider = payload.provider ? String(payload.provider) : null;
   const modelId = payload.modelId || payload.model ? String(payload.modelId || payload.model) : null;
   return { provider, modelId };
 }
 
-function extractWorkspaceDir(payload: Record<string, unknown>): string | null {
+function extractWorkspaceDir(payload: Record<string, any>): string | null {
   return payload.workspaceDir || payload.cwd ? String(payload.workspaceDir || payload.cwd) : null;
 }
 

@@ -6,12 +6,12 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function wrapToolDefinition(..._args: unknown[]): unknown {
+export function wrapToolDefinition(..._args: any[]): any {
   return undefined;
 }
-export function wrapToolDefinitions(..._args: unknown[]): unknown {
+export function wrapToolDefinitions(..._args: any[]): any {
   return undefined;
 }
-export function createToolDefinitionFromAgentTool(..._args: unknown[]): unknown {
+export function createToolDefinitionFromAgentTool(..._args: any[]): any {
   return undefined;
 }

@@ -22,13 +22,13 @@ const DEFAULT_TRUTHY_SET = new Set<string>(DEFAULT_TRUTHY);
 const DEFAULT_FALSY_SET = new Set<string>(DEFAULT_FALSY);
 
 /** Returns only real boolean values and leaves boolean-like strings for explicit parsing. */
-export function asBoolean(value: unknown): boolean | undefined {
+export function asBoolean(value: any): boolean | undefined {
   return typeof value === "boolean" ? value : undefined;
 }
 
 /** Parses booleans and configured string literals, returning undefined for ambiguous input. */
 export function parseBooleanValue(
-  value: unknown,
+  value: any,
   options: BooleanParseOptions = {},
 ): boolean | undefined {
   const booleanValue = asBoolean(value);

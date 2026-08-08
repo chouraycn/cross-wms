@@ -16,7 +16,7 @@ const LEGACY_KEY_MAP: Record<string, string> = {
   'loglevel': 'logging.level',
 };
 
-export function detectLegacyConfig(config: Record<string, unknown>): string[] {
+export function detectLegacyConfig(config: Record<string, any>): string[] {
   const found: string[] = [];
   for (const oldKey of Object.keys(LEGACY_KEY_MAP)) {
     if (getNestedValue(config, oldKey) !== undefined) {
@@ -26,7 +26,7 @@ export function detectLegacyConfig(config: Record<string, unknown>): string[] {
   return found;
 }
 
-export function migrateLegacyConfig(config: Record<string, unknown>): LegacyConfigResult {
+export function migrateLegacyConfig(config: Record<string, any>): LegacyConfigResult {
   const oldKeys = detectLegacyConfig(config);
   const warnings: string[] = [];
 
@@ -48,12 +48,12 @@ export function migrateLegacyConfig(config: Record<string, unknown>): LegacyConf
   };
 }
 
-function getNestedValue(obj: Record<string, unknown>, path: string): unknown {
+function getNestedValue(obj: Record<string, any>, path: string): any {
   const parts = path.split('.');
-  let current: unknown = obj;
+  let current: any = obj;
   for (const part of parts) {
     if (current && typeof current === 'object') {
-      current = (current as Record<string, unknown>)[part];
+      current = (current as Record<string, any>)[part];
     } else {
       return undefined;
     }
@@ -61,24 +61,24 @@ function getNestedValue(obj: Record<string, unknown>, path: string): unknown {
   return current;
 }
 
-function setNestedValue(obj: Record<string, unknown>, path: string, value: unknown): void {
+function setNestedValue(obj: Record<string, any>, path: string, value: any): void {
   const parts = path.split('.');
-  let current: Record<string, unknown> = obj;
+  let current: Record<string, any> = obj;
   for (let i = 0; i < parts.length - 1; i++) {
     if (!current[parts[i]] || typeof current[parts[i]] !== 'object') {
       current[parts[i]] = {};
     }
-    current = current[parts[i]] as Record<string, unknown>;
+    current = current[parts[i]] as Record<string, any>;
   }
   current[parts[parts.length - 1]] = value;
 }
 
-function deleteNestedValue(obj: Record<string, unknown>, path: string): void {
+function deleteNestedValue(obj: Record<string, any>, path: string): void {
   const parts = path.split('.');
-  let current: Record<string, unknown> = obj;
+  let current: Record<string, any> = obj;
   for (let i = 0; i < parts.length - 1; i++) {
     if (!current[parts[i]] || typeof current[parts[i]] !== 'object') return;
-    current = current[parts[i]] as Record<string, unknown>;
+    current = current[parts[i]] as Record<string, any>;
   }
   delete current[parts[parts.length - 1]];
 }

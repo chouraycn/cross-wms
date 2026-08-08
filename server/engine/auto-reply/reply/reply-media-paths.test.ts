@@ -29,11 +29,11 @@ type NormalizedReply = {
   text?: string;
 };
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return typeof value === "object" && value !== null;
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   expect(isRecord(value)).toBe(true);
   if (!isRecord(value)) {
     throw new Error(`${label} was not an object`);
@@ -55,8 +55,8 @@ function expectOutboundAttachmentCall(
   index: number,
   mediaUrl: string,
   mediaMaxBytes: number,
-): Record<string, unknown> {
-  const call = resolveOutboundAttachmentFromUrl.mock.calls[index] as unknown[] | undefined;
+): Record<string, any> {
+  const call = resolveOutboundAttachmentFromUrl.mock.calls[index] as any[] | undefined;
   if (!call) {
     throw new Error(`missing outbound attachment call ${index + 1}`);
   }
@@ -65,8 +65,8 @@ function expectOutboundAttachmentCall(
   return requireRecord(call[2], "outbound attachment options");
 }
 
-function expectAgentScopedMediaAccessCall(): Record<string, unknown> {
-  const call = resolveAgentScopedOutboundMediaAccess.mock.calls[0] as unknown[] | undefined;
+function expectAgentScopedMediaAccessCall(): Record<string, any> {
+  const call = resolveAgentScopedOutboundMediaAccess.mock.calls[0] as any[] | undefined;
   if (!call) {
     throw new Error("missing agent scoped media access call");
   }

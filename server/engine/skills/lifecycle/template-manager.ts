@@ -14,7 +14,7 @@ export interface TemplateVariable {
   label: string;
   description: string;
   required: boolean;
-  default?: unknown;
+  default?: any;
   options?: string[];
 }
 
@@ -30,7 +30,7 @@ export interface SkillTemplate {
 
 export interface TemplateInstance {
   templateId: string;
-  variables: Record<string, unknown>;
+  variables: Record<string, any>;
   createdAt: number;
 }
 
@@ -46,7 +46,7 @@ export interface ValidationResult {
 
 const templates: Map<string, SkillTemplate> = new Map();
 
-function renderTemplate(content: string, variables: Record<string, unknown>): string {
+function renderTemplate(content: string, variables: Record<string, any>): string {
   return content.replace(/\{\{(\w+)\}\}/g, (_, key) => {
     const value = variables[key];
     if (value === undefined || value === null) {
@@ -79,7 +79,7 @@ export function clearTemplates(): void {
 
 export function validateTemplateVariables(
   templateId: string,
-  variables: Record<string, unknown>,
+  variables: Record<string, any>,
 ): ValidationResult {
   const template = getTemplate(templateId);
   if (!template) {
@@ -153,7 +153,7 @@ export function validateTemplateVariables(
 
 export async function createSkillFromTemplate(
   templateId: string,
-  variables: Record<string, unknown>,
+  variables: Record<string, any>,
   targetDir: string,
 ): Promise<{ success: boolean; skillDir?: string; error?: string }> {
   const validation = validateTemplateVariables(templateId, variables);
@@ -170,7 +170,7 @@ export async function createSkillFromTemplate(
   try {
     logger.debug("[TemplateManager] Creating skill from template:", templateId);
 
-    const resolvedVariables: Record<string, unknown> = { ...variables };
+    const resolvedVariables: Record<string, any> = { ...variables };
     for (const variable of template.variables) {
       if (resolvedVariables[variable.name] === undefined && variable.default !== undefined) {
         resolvedVariables[variable.name] = variable.default;
@@ -381,7 +381,7 @@ metadata:
           path: "index.ts",
           content: `import { logger } from '../../logger.js';
 
-export function doSomething(params: Record<string, unknown>): Record<string, unknown> {
+export function doSomething(params: Record<string, any>): Record<string, any> {
   logger.debug('[{{skillName}}] doSomething called with:', params);
   return {
     success: true,
@@ -397,7 +397,7 @@ export default {
     {
       name: '{{skillName}}_action',
       description: '操作描述',
-      handler: (args: Record<string, unknown>) => doSomething(args),
+      handler: (args: Record<string, any>) => doSomething(args),
     },
   ],
 };
@@ -472,7 +472,7 @@ metadata:
           path: "index.ts",
           content: `import { logger } from '../../logger.js';
 
-export async function executeQuery(params: Record<string, unknown>): Promise<Record<string, unknown>> {
+export async function executeQuery(params: Record<string, any>): Promise<Record<string, any>> {
   logger.debug('[{{skillName}}] executeQuery called with:', params);
   return {
     success: true,
@@ -489,7 +489,7 @@ export default {
     {
       name: '{{skillName}}_query',
       description: '执行 MCP 查询',
-      handler: (args: Record<string, unknown>) => executeQuery(args),
+      handler: (args: Record<string, any>) => executeQuery(args),
     },
   ],
 };
@@ -582,7 +582,7 @@ import { promisify } from 'node:util';
 
 const execAsync = promisify(exec);
 
-export async function runCommand(args: Record<string, unknown>): Promise<Record<string, unknown>> {
+export async function runCommand(args: Record<string, any>): Promise<Record<string, any>> {
   logger.debug('[{{skillName}}] runCommand called with:', args);
 
   const command = '{{cliCommand}}';
@@ -617,7 +617,7 @@ export default {
     {
       name: '{{skillName}}_run',
       description: '运行 CLI 命令',
-      handler: (args: Record<string, unknown>) => runCommand(args),
+      handler: (args: Record<string, any>) => runCommand(args),
     },
   ],
 };
@@ -699,7 +699,7 @@ curl {{apiBaseUrl}}/endpoint
           path: "index.ts",
           content: `import { logger } from '../../logger.js';
 
-export async function fetchData(params: Record<string, unknown>): Promise<Record<string, unknown>> {
+export async function fetchData(params: Record<string, any>): Promise<Record<string, any>> {
   logger.debug('[{{skillName}}] fetchData called with:', params);
 
   const url = new URL('{{apiBaseUrl}}');
@@ -736,7 +736,7 @@ export default {
     {
       name: '{{skillName}}_fetch',
       description: '调用 Web API',
-      handler: (args: Record<string, unknown>) => fetchData(args),
+      handler: (args: Record<string, any>) => fetchData(args),
     },
   ],
 };
@@ -831,10 +831,10 @@ metadata:
           path: "index.ts",
           content: `import { logger } from '../../logger.js';
 
-export function processData(input: Record<string, unknown>): Record<string, unknown> {
+export function processData(input: Record<string, any>): Record<string, any> {
   logger.debug('[{{skillName}}] processData called with:', input);
 
-  const processed: Record<string, unknown> = {
+  const processed: Record<string, any> = {
     original: input,
     processedAt: Date.now(),
     format: '{{dataFormat}}',
@@ -846,7 +846,7 @@ export function processData(input: Record<string, unknown>): Record<string, unkn
   };
 }
 
-export function transformData(input: Record<string, unknown>[]): Record<string, unknown>[] {
+export function transformData(input: Record<string, any>[]): Record<string, any>[] {
   logger.debug('[{{skillName}}] transformData called with:', input.length, 'items');
 
   return input.map((item, index) => ({
@@ -863,12 +863,12 @@ export default {
     {
       name: '{{skillName}}_process',
       description: '处理数据',
-      handler: (args: Record<string, unknown>) => processData(args),
+      handler: (args: Record<string, any>) => processData(args),
     },
     {
       name: '{{skillName}}_transform',
       description: '转换数据',
-      handler: (args: { data: Record<string, unknown>[] }) => transformData(args.data),
+      handler: (args: { data: Record<string, any>[] }) => transformData(args.data),
     },
   ],
 };

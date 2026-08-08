@@ -161,9 +161,9 @@ describe("hooks", () => {
     });
 
     it("stores handlers in the global singleton registry", async () => {
-      const globalHooks = resolveGlobalSingleton<Map<string, Array<(event: unknown) => unknown>>>(
+      const globalHooks = resolveGlobalSingleton<Map<string, Array<(event: any) => unknown>>>(
         INTERNAL_HOOK_HANDLERS_KEY,
-        () => new Map<string, Array<(event: unknown) => unknown>>(),
+        () => new Map<string, Array<(event: any) => unknown>>(),
       );
       const handler = vi.fn();
       registerInternalHook("command:new", handler);

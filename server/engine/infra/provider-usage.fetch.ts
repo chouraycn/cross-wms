@@ -2,14 +2,14 @@
 // 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
 export type fetchClaudeUsage = unknown;
-export const fetchClaudeUsage: unknown = undefined;
+export const fetchClaudeUsage: any = undefined;
 export type fetchCodexUsage = unknown;
-export const fetchCodexUsage: unknown = undefined;
+export const fetchCodexUsage: any = undefined;
 export type fetchDeepSeekUsage = unknown;
-export const fetchDeepSeekUsage: unknown = undefined;
+export const fetchDeepSeekUsage: any = undefined;
 export type fetchGeminiUsage = unknown;
-export const fetchGeminiUsage: unknown = undefined;
+export const fetchGeminiUsage: any = undefined;
 export type fetchMinimaxUsage = unknown;
-export const fetchMinimaxUsage: unknown = undefined;
+export const fetchMinimaxUsage: any = undefined;
 export type fetchZaiUsage = unknown;
-export const fetchZaiUsage: unknown = undefined;
+export const fetchZaiUsage: any = undefined;

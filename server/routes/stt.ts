@@ -127,20 +127,20 @@ setInterval(() => {
 // 工具函数
 // ============================================================================
 
-function toStr(value: unknown, fallback?: string): string | undefined {
+function toStr(value: any, fallback?: string): string | undefined {
   if (value === null || value === undefined) return fallback;
   const s = String(value).trim();
   return s.length > 0 ? s : fallback;
 }
 
-function toBool(value: unknown, fallback = false): boolean {
+function toBool(value: any, fallback = false): boolean {
   if (value === null || value === undefined) return fallback;
   if (typeof value === 'boolean') return value;
   if (typeof value === 'string') return value === 'true' || value === '1';
   return fallback;
 }
 
-function toNumber(value: unknown, fallback?: number): number | undefined {
+function toNumber(value: any, fallback?: number): number | undefined {
   if (value === null || value === undefined) return fallback;
   const n = Number(value);
   return Number.isFinite(n) ? n : fallback;
@@ -168,7 +168,7 @@ router.post('/transcribe', transcribeRawMiddleware, async (req, res) => {
       audioBuffer = req.body;
       mimeType = req.headers['content-type'];
     } else if (req.body && typeof req.body === 'object') {
-      const body = req.body as Record<string, unknown>;
+      const body = req.body as Record<string, any>;
       // Case 2: JSON body with base64 audio
       if (typeof body.audio === 'string') {
         audioBuffer = Buffer.from(body.audio, 'base64');
@@ -204,7 +204,7 @@ router.post('/transcribe', transcribeRawMiddleware, async (req, res) => {
 
     const body = (Buffer.isBuffer(req.body) ? {} : req.body ?? {}) as Record<
       string,
-      unknown
+      any
     >;
 
     const providerHint = toStr(body.provider, 'auto');
@@ -269,7 +269,7 @@ router.post('/transcribe', transcribeRawMiddleware, async (req, res) => {
 
 router.post('/stream', async (req, res) => {
   try {
-    const body = (req.body ?? {}) as Record<string, unknown>;
+    const body = (req.body ?? {}) as Record<string, any>;
 
     const apiKey = toStr(body.apiKey);
     if (!apiKey && !process.env.DEEPGRAM_API_KEY) {
@@ -374,10 +374,10 @@ router.post('/stream/:sessionId/audio', audioRawMiddleware, (req, res) => {
     } else if (
       req.body &&
       typeof req.body === 'object' &&
-      typeof (req.body as Record<string, unknown>).audio === 'string'
+      typeof (req.body as Record<string, any>).audio === 'string'
     ) {
       audio = Buffer.from(
-        (req.body as Record<string, unknown>).audio as string,
+        (req.body as Record<string, any>).audio as string,
         'base64',
       );
     } else {

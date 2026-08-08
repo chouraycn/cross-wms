@@ -68,7 +68,7 @@ async function startTokenServer(port: number, opts?: { openAiChatCompletionsEnab
   });
 }
 
-async function writeGatewayConfig(config: Record<string, unknown>) {
+async function writeGatewayConfig(config: Record<string, any>) {
   const configPath = process.env.OPENCLAW_CONFIG_PATH;
   if (!configPath) {
     throw new Error("OPENCLAW_CONFIG_PATH is required for gateway config tests");
@@ -77,7 +77,7 @@ async function writeGatewayConfig(config: Record<string, unknown>) {
   await fs.writeFile(configPath, JSON.stringify(config, null, 2), "utf-8");
 }
 
-async function postChatCompletions(port: number, body: unknown, headers?: Record<string, string>) {
+async function postChatCompletions(port: number, body: any, headers?: Record<string, string>) {
   const res = await fetch(`http://127.0.0.1:${port}/v1/chat/completions`, {
     method: "POST",
     headers: {
@@ -103,7 +103,7 @@ type FirstAgentCommandOptions = {
     function?: {
       description?: string;
       name?: string;
-      parameters?: Record<string, unknown>;
+      parameters?: Record<string, any>;
       strict?: boolean;
     };
     type?: string;
@@ -118,7 +118,7 @@ type FirstAgentCommandOptions = {
     frequencyPenalty?: number;
     maxTokens?: number;
     presencePenalty?: number;
-    responseFormat?: Record<string, unknown>;
+    responseFormat?: Record<string, any>;
     seed?: number;
     stop?: string[];
     temperature?: number;
@@ -138,7 +138,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
       agentCommand.mockResolvedValueOnce({ payloads } as never);
     };
     const expectAgentSessionKeyMatch = async (request: {
-      body: unknown;
+      body: any;
       headers?: Record<string, string>;
       matcher: RegExp;
     }) => {
@@ -164,15 +164,15 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
     };
     const getFirstAgentCall = () => firstAgentCommandOptions();
     const getFirstAgentMessage = () => getFirstAgentCall()?.message ?? "";
-    const expectInvalidRequestNoDispatch = async (messages: unknown[]) => {
+    const expectInvalidRequestNoDispatch = async (messages: any[]) => {
       agentCommand.mockClear();
       const res = await postChatCompletions(port, {
         model: "openclaw",
         messages,
       });
       expect(res.status).toBe(400);
-      const json = (await res.json()) as Record<string, unknown>;
-      expect((json.error as Record<string, unknown> | undefined)?.type).toBe(
+      const json = (await res.json()) as Record<string, any>;
+      expect((json.error as Record<string, any> | undefined)?.type).toBe(
         "invalid_request_error",
       );
       expect(agentCommand).toHaveBeenCalledTimes(0);
@@ -184,7 +184,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
         messages: [{ role: "user", content: message }],
       });
       expect(res.status).toBe(200);
-      return (await res.json()) as Record<string, unknown>;
+      return (await res.json()) as Record<string, any>;
     };
 
     try {
@@ -1236,7 +1236,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
         const json = (await res.json()) as {
           choices?: Array<{
             finish_reason?: string | null;
-            message?: { content?: string; tool_calls?: unknown[] };
+            message?: { content?: string; tool_calls?: any[] };
           }>;
         };
         const choice = json.choices?.[0];
@@ -1250,15 +1250,15 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
         const json = await postSyncUserMessage("hi");
         expect(json.object).toBe("chat.completion");
         expect(Array.isArray(json.choices)).toBe(true);
-        const choice0 = (json.choices as Array<Record<string, unknown>>)[0] ?? {};
-        const msg = (choice0.message as Record<string, unknown> | undefined) ?? {};
+        const choice0 = (json.choices as Array<Record<string, any>>)[0] ?? {};
+        const msg = (choice0.message as Record<string, any> | undefined) ?? {};
         expect(msg.role).toBe("assistant");
         expect(msg.content).toBe("hello");
       }
 
       {
         agentCommand.mockClear();
-        agentCommand.mockImplementationOnce((async (opts: unknown) => {
+        agentCommand.mockImplementationOnce((async (opts: any) => {
           const runId = (opts as { runId?: string } | undefined)?.runId ?? "";
           const { session, emit } = createStubSessionHarness();
           subscribeEmbeddedAgentSession({ session, runId });
@@ -1279,10 +1279,10 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
         const splitFinalData = parseSseDataLines(splitFinalText);
         const splitFinalChunks = splitFinalData
           .filter((d) => d !== "[DONE]")
-          .map((d) => JSON.parse(d) as Record<string, unknown>);
+          .map((d) => JSON.parse(d) as Record<string, any>);
         const splitFinalContent = splitFinalChunks
-          .flatMap((c) => (c.choices as Array<Record<string, unknown>> | undefined) ?? [])
-          .map((choice) => (choice.delta as Record<string, unknown> | undefined)?.content)
+          .flatMap((c) => (c.choices as Array<Record<string, any>> | undefined) ?? [])
+          .map((choice) => (choice.delta as Record<string, any> | undefined)?.content)
           .filter((v): v is string => typeof v === "string")
           .join("");
         expect(splitFinalContent).toBe("Title\nLine one\nLine two");
@@ -1449,8 +1449,8 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
         agentCommand.mockClear();
         agentCommand.mockResolvedValueOnce({ payloads: [{ text: "" }] } as never);
         const json = await postSyncUserMessage("hi");
-        const choice0 = (json.choices as Array<Record<string, unknown>>)[0] ?? {};
-        const msg = (choice0.message as Record<string, unknown> | undefined) ?? {};
+        const choice0 = (json.choices as Array<Record<string, any>>)[0] ?? {};
+        const msg = (choice0.message as Record<string, any> | undefined) ?? {};
         expect(msg.content).toBe("No response from OpenClaw.");
       }
 
@@ -1460,8 +1460,8 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
           messages: [{ role: "system", content: "yo" }],
         });
         expect(res.status).toBe(400);
-        const missingUserJson = (await res.json()) as Record<string, unknown>;
-        expect((missingUserJson.error as Record<string, unknown> | undefined)?.type).toBe(
+        const missingUserJson = (await res.json()) as Record<string, any>;
+        expect((missingUserJson.error as Record<string, any> | undefined)?.type).toBe(
           "invalid_request_error",
         );
       }
@@ -1812,7 +1812,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
       mode: "token",
       token: "secret",
       rateLimit: { maxAttempts: 1, windowMs: 60_000, lockoutMs: 60_000, exemptLoopback: false },
-    } as unknown;
+    } as any;
     await withGatewayServer(
       async ({ port }) => {
         const headers = {
@@ -1854,7 +1854,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
     try {
       {
         agentCommand.mockClear();
-        agentCommand.mockImplementationOnce((async (opts: unknown) =>
+        agentCommand.mockImplementationOnce((async (opts: any) =>
           buildAssistantDeltaResult({
             opts,
             emit: emitAgentEvent,
@@ -1876,11 +1876,11 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
 
         const jsonChunks = data
           .filter((d) => d !== "[DONE]")
-          .map((d) => JSON.parse(d) as Record<string, unknown>);
+          .map((d) => JSON.parse(d) as Record<string, any>);
         expect(jsonChunks.map((chunk) => chunk.object)).toContain("chat.completion.chunk");
         const allContent = jsonChunks
-          .flatMap((c) => (c.choices as Array<Record<string, unknown>> | undefined) ?? [])
-          .map((choice) => (choice.delta as Record<string, unknown> | undefined)?.content)
+          .flatMap((c) => (c.choices as Array<Record<string, any>> | undefined) ?? [])
+          .map((choice) => (choice.delta as Record<string, any> | undefined)?.content)
           .filter((v): v is string => typeof v === "string")
           .join("");
         expect(allContent).toBe("hello");
@@ -1890,7 +1890,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
 
       {
         agentCommand.mockClear();
-        agentCommand.mockImplementationOnce((async (opts: unknown) =>
+        agentCommand.mockImplementationOnce((async (opts: any) =>
           buildAssistantDeltaResult({
             opts,
             emit: emitAgentEvent,
@@ -1908,10 +1908,10 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
         const repeatedData = parseSseDataLines(repeatedText);
         const repeatedChunks = repeatedData
           .filter((d) => d !== "[DONE]")
-          .map((d) => JSON.parse(d) as Record<string, unknown>);
+          .map((d) => JSON.parse(d) as Record<string, any>);
         const repeatedContent = repeatedChunks
-          .flatMap((c) => (c.choices as Array<Record<string, unknown>> | undefined) ?? [])
-          .map((choice) => (choice.delta as Record<string, unknown> | undefined)?.content)
+          .flatMap((c) => (c.choices as Array<Record<string, any>> | undefined) ?? [])
+          .map((choice) => (choice.delta as Record<string, any> | undefined)?.content)
           .filter((v): v is string => typeof v === "string")
           .join("");
         expect(repeatedContent).toBe("hihi");
@@ -1936,7 +1936,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
 
       {
         agentCommand.mockClear();
-        agentCommand.mockImplementationOnce((async (opts: unknown) =>
+        agentCommand.mockImplementationOnce((async (opts: any) =>
           buildAssistantDeltaResult({
             opts,
             emit: emitAgentEvent,
@@ -1993,23 +1993,23 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
         const toolCallData = parseSseDataLines(toolCallText);
         const toolCallChunks = toolCallData
           .filter((d) => d !== "[DONE]")
-          .map((d) => JSON.parse(d) as Record<string, unknown>);
+          .map((d) => JSON.parse(d) as Record<string, any>);
         const toolDeltaChunks = toolCallChunks.filter((chunk) => {
-          const choice = ((chunk.choices as Array<Record<string, unknown>> | undefined) ?? [])[0];
-          const delta = (choice?.delta as Record<string, unknown> | undefined) ?? {};
+          const choice = ((chunk.choices as Array<Record<string, any>> | undefined) ?? [])[0];
+          const delta = (choice?.delta as Record<string, any> | undefined) ?? {};
           return Array.isArray(delta.tool_calls);
         });
         expect(toolDeltaChunks.length).toBeGreaterThan(0);
         const toolCallDeltaRecords = toolDeltaChunks.flatMap((chunk) => {
-          const choice = ((chunk.choices as Array<Record<string, unknown>> | undefined) ?? [])[0];
-          const delta = (choice?.delta as Record<string, unknown> | undefined) ?? {};
-          return (delta.tool_calls as Array<Record<string, unknown>> | undefined) ?? [];
+          const choice = ((chunk.choices as Array<Record<string, any>> | undefined) ?? [])[0];
+          const delta = (choice?.delta as Record<string, any> | undefined) ?? {};
+          return (delta.tool_calls as Array<Record<string, any>> | undefined) ?? [];
         });
         const withIdentity = toolCallDeltaRecords.find(
           (record) =>
             record.id === "call_1" &&
             record.type === "function" &&
-            ((record.function as Record<string, unknown> | undefined)?.name as
+            ((record.function as Record<string, any> | undefined)?.name as
               | string
               | undefined) === "get_weather",
         );
@@ -2020,14 +2020,14 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
           .filter((record) => record.index === 0)
           .map(
             (record) =>
-              ((record.function as Record<string, unknown> | undefined)?.arguments as
+              ((record.function as Record<string, any> | undefined)?.arguments as
                 | string
                 | undefined) ?? "",
           )
           .join("");
         expect(argsJoined).toBe('{"city":"Taipei"}');
         const finishChunk = toolCallChunks
-          .flatMap((chunk) => (chunk.choices as Array<Record<string, unknown>> | undefined) ?? [])
+          .flatMap((chunk) => (chunk.choices as Array<Record<string, any>> | undefined) ?? [])
           .find((choice) => choice.finish_reason === "tool_calls");
         if (!finishChunk) {
           throw new Error("expected tool_calls finish chunk");
@@ -2068,7 +2068,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
         const toolCallUsageData = parseSseDataLines(toolCallUsageText);
         const jsonChunks = toolCallUsageData
           .filter((d) => d !== "[DONE]")
-          .map((d) => JSON.parse(d) as Record<string, unknown>);
+          .map((d) => JSON.parse(d) as Record<string, any>);
         const usageChunk = jsonChunks.find((chunk) => "usage" in chunk);
         if (!usageChunk) {
           throw new Error("expected streamed usage chunk");
@@ -2094,7 +2094,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
             }) => void)
           | undefined;
         agentCommand.mockImplementationOnce(
-          ((opts: unknown) =>
+          ((opts: any) =>
             new Promise((resolve) => {
               resolveLateToolCall = resolve;
               const runId = (opts as { runId?: string } | undefined)?.runId ?? "";
@@ -2148,16 +2148,16 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
         const lateToolCallData = parseSseDataLines(lateToolCallText);
         const lateToolCallChunks = lateToolCallData
           .filter((d) => d !== "[DONE]")
-          .map((d) => JSON.parse(d) as Record<string, unknown>);
+          .map((d) => JSON.parse(d) as Record<string, any>);
         const finishChunk = lateToolCallChunks
-          .flatMap((chunk) => (chunk.choices as Array<Record<string, unknown>> | undefined) ?? [])
+          .flatMap((chunk) => (chunk.choices as Array<Record<string, any>> | undefined) ?? [])
           .find((choice) => choice.finish_reason === "tool_calls");
         if (!finishChunk) {
           throw new Error("expected late tool_calls finish chunk");
         }
         const anyToolCalls = lateToolCallChunks.some((chunk) => {
-          const choice = ((chunk.choices as Array<Record<string, unknown>> | undefined) ?? [])[0];
-          const delta = (choice?.delta as Record<string, unknown> | undefined) ?? {};
+          const choice = ((chunk.choices as Array<Record<string, any>> | undefined) ?? [])[0];
+          const delta = (choice?.delta as Record<string, any> | undefined) ?? {};
           return Array.isArray(delta.tool_calls);
         });
         expect(anyToolCalls).toBe(true);
@@ -2189,18 +2189,18 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
 
         const toolConflictChunks = toolConflictData
           .filter((d) => d !== "[DONE]")
-          .map((d) => JSON.parse(d) as Record<string, unknown>);
+          .map((d) => JSON.parse(d) as Record<string, any>);
         const protocolError = toolConflictChunks.find(
           (chunk) =>
             typeof chunk.error === "object" &&
-            ((chunk.error as { type?: unknown }).type ?? "") === "invalid_request_error" &&
-            ((chunk.error as { message?: unknown }).message ?? "") === "invalid tool configuration",
+            ((chunk.error as { type?: any }).type ?? "") === "invalid_request_error" &&
+            ((chunk.error as { message?: any }).message ?? "") === "invalid tool configuration",
         );
         if (!protocolError) {
           throw new Error("expected invalid tool configuration protocol error");
         }
         const stopChoice = toolConflictChunks
-          .flatMap((c) => (c.choices as Array<Record<string, unknown>> | undefined) ?? [])
+          .flatMap((c) => (c.choices as Array<Record<string, any>> | undefined) ?? [])
           .find((choice) => choice.finish_reason === "stop");
         expect(stopChoice).toBeUndefined();
       }
@@ -2221,11 +2221,11 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
 
         const errorChunks = errorData
           .filter((d) => d !== "[DONE]")
-          .map((d) => JSON.parse(d) as Record<string, unknown>);
+          .map((d) => JSON.parse(d) as Record<string, any>);
         const stopChoice = errorChunks
-          .flatMap((c) => (c.choices as Array<Record<string, unknown>> | undefined) ?? [])
+          .flatMap((c) => (c.choices as Array<Record<string, any>> | undefined) ?? [])
           .find((choice) => choice.finish_reason === "stop");
-        expect((stopChoice?.delta as Record<string, unknown> | undefined)?.content).toBe(
+        expect((stopChoice?.delta as Record<string, any> | undefined)?.content).toBe(
           "Error: internal error",
         );
       }
@@ -2243,7 +2243,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
 
       agentCommand.mockClear();
       agentCommand.mockImplementationOnce(
-        (opts: unknown) =>
+        (opts: any) =>
           new Promise<undefined>((resolve) => {
             const signal = (opts as { abortSignal?: AbortSignal } | undefined)?.abortSignal;
             serverAbortSignal = signal;
@@ -2316,7 +2316,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
   it("buffers replaceable assistant events for streaming chat completions", async () => {
     const port = enabledPort;
     agentCommand.mockClear();
-    agentCommand.mockImplementationOnce((async (opts: unknown) => {
+    agentCommand.mockImplementationOnce((async (opts: any) => {
       const runId = (opts as { runId?: string } | undefined)?.runId ?? "";
       emitAgentEvent({
         runId,
@@ -2343,10 +2343,10 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
     const data = parseSseDataLines(await res.text());
     const chunks = data
       .filter((d) => d !== "[DONE]")
-      .map((d) => JSON.parse(d) as Record<string, unknown>);
+      .map((d) => JSON.parse(d) as Record<string, any>);
     const allContent = chunks
-      .flatMap((chunk) => (chunk.choices as Array<Record<string, unknown>> | undefined) ?? [])
-      .map((choice) => (choice.delta as Record<string, unknown> | undefined)?.content)
+      .flatMap((chunk) => (chunk.choices as Array<Record<string, any>> | undefined) ?? [])
+      .map((choice) => (choice.delta as Record<string, any> | undefined)?.content)
       .filter((content): content is string => typeof content === "string")
       .join("");
 
@@ -2357,7 +2357,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
   it("prefers final result text over buffered replaceable chat drafts", async () => {
     const port = enabledPort;
     agentCommand.mockClear();
-    agentCommand.mockImplementationOnce((async (opts: unknown) => {
+    agentCommand.mockImplementationOnce((async (opts: any) => {
       const runId = (opts as { runId?: string } | undefined)?.runId ?? "";
       emitAgentEvent({
         runId,
@@ -2378,10 +2378,10 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
     const data = parseSseDataLines(await res.text());
     const chunks = data
       .filter((d) => d !== "[DONE]")
-      .map((d) => JSON.parse(d) as Record<string, unknown>);
+      .map((d) => JSON.parse(d) as Record<string, any>);
     const allContent = chunks
-      .flatMap((chunk) => (chunk.choices as Array<Record<string, unknown>> | undefined) ?? [])
-      .map((choice) => (choice.delta as Record<string, unknown> | undefined)?.content)
+      .flatMap((chunk) => (chunk.choices as Array<Record<string, any>> | undefined) ?? [])
+      .map((choice) => (choice.delta as Record<string, any> | undefined)?.content)
       .filter((content): content is string => typeof content === "string")
       .join("");
 
@@ -2391,7 +2391,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
   it("includes usage in final stream chunk when stream_options.include_usage=true", async () => {
     const port = enabledPort;
     agentCommand.mockClear();
-    agentCommand.mockImplementationOnce((async (opts: unknown) => {
+    agentCommand.mockImplementationOnce((async (opts: any) => {
       const runId = (opts as { runId?: string } | undefined)?.runId ?? "";
       emitAgentEvent({ runId, stream: "assistant", data: { delta: "he" } });
       emitAgentEvent({ runId, stream: "assistant", data: { delta: "llo" } });
@@ -2424,7 +2424,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
     expect(data[data.length - 1]).toBe("[DONE]");
     const jsonChunks = data
       .filter((d) => d !== "[DONE]")
-      .map((d) => JSON.parse(d) as Record<string, unknown>);
+      .map((d) => JSON.parse(d) as Record<string, any>);
 
     const usageChunk = jsonChunks.find((chunk) => "usage" in chunk);
     expect(usageChunk?.usage).toEqual({
@@ -2439,7 +2439,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
   it("keeps aggregate-only usage total in final stream usage chunk", async () => {
     const port = enabledPort;
     agentCommand.mockClear();
-    agentCommand.mockImplementationOnce((async (opts: unknown) => {
+    agentCommand.mockImplementationOnce((async (opts: any) => {
       const runId = (opts as { runId?: string } | undefined)?.runId ?? "";
       emitAgentEvent({ runId, stream: "assistant", data: { delta: "hello" } });
       return {
@@ -2467,7 +2467,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
     expect(data[data.length - 1]).toBe("[DONE]");
     const jsonChunks = data
       .filter((d) => d !== "[DONE]")
-      .map((d) => JSON.parse(d) as Record<string, unknown>);
+      .map((d) => JSON.parse(d) as Record<string, any>);
     const usageChunk = jsonChunks.find((chunk) => "usage" in chunk);
     expect(usageChunk?.usage).toEqual({
       prompt_tokens: 0,
@@ -2480,7 +2480,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
     const port = enabledPort;
     agentCommand.mockClear();
     agentCommand.mockImplementationOnce(
-      ((opts: unknown) =>
+      ((opts: any) =>
         new Promise((resolve) => {
           const runId = (opts as { runId?: string } | undefined)?.runId ?? "";
           emitAgentEvent({ runId, stream: "assistant", data: { delta: "hello" } });
@@ -2511,7 +2511,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
     expect(data[data.length - 1]).toBe("[DONE]");
     const jsonChunks = data
       .filter((d) => d !== "[DONE]")
-      .map((d) => JSON.parse(d) as Record<string, unknown>);
+      .map((d) => JSON.parse(d) as Record<string, any>);
     const usageChunk = jsonChunks.find((chunk) => "usage" in chunk);
     expect(usageChunk?.usage).toEqual({
       prompt_tokens: 7,
@@ -2529,7 +2529,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
 
       agentCommand.mockClear();
       agentCommand.mockImplementationOnce(
-        (opts: unknown) =>
+        (opts: any) =>
           new Promise<undefined>((resolve) => {
             const runId = (opts as { runId?: string } | undefined)?.runId ?? "";
             const signal = (opts as { abortSignal?: AbortSignal } | undefined)?.abortSignal;
@@ -2583,7 +2583,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
     const port = enabledPort;
     agentCommand.mockClear();
     agentCommand.mockImplementationOnce(
-      ((opts: unknown) =>
+      ((opts: any) =>
         new Promise((resolve) => {
           const runId = (opts as { runId?: string } | undefined)?.runId ?? "";
           emitAgentEvent({ runId, stream: "assistant", data: { delta: "hello" } });
@@ -2606,7 +2606,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
     expect(data[data.length - 1]).toBe("[DONE]");
     const jsonChunks = data
       .filter((d) => d !== "[DONE]")
-      .map((d) => JSON.parse(d) as Record<string, unknown>);
+      .map((d) => JSON.parse(d) as Record<string, any>);
     const usageChunks = jsonChunks.filter((chunk) => "usage" in chunk);
     expect(usageChunks).toHaveLength(0);
   });
@@ -2644,7 +2644,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
 
     agentCommand.mockClear();
     agentCommand.mockImplementationOnce(
-      (opts: unknown) =>
+      (opts: any) =>
         new Promise<undefined>((resolve) => {
           const signal = (opts as { abortSignal?: AbortSignal } | undefined)?.abortSignal;
           serverAbortSignal = signal;
@@ -2698,7 +2698,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
 
       agentCommand.mockClear();
       agentCommand.mockImplementationOnce(
-        (opts: unknown) =>
+        (opts: any) =>
           new Promise<undefined>((resolve) => {
             const signal = (opts as { abortSignal?: AbortSignal } | undefined)?.abortSignal;
             serverAbortSignal = signal;

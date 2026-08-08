@@ -6,18 +6,18 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function selectDefaultNodeFromList(..._args: unknown[]): unknown {
+export function selectDefaultNodeFromList(..._args: any[]): any {
   return undefined;
 }
-export function listNodes(..._args: unknown[]): unknown {
+export function listNodes(..._args: any[]): any {
   return [];
 }
-export function resolveNodeIdFromList(..._args: unknown[]): unknown {
+export function resolveNodeIdFromList(..._args: any[]): any {
   return undefined;
 }
-export function resolveNodeId(..._args: unknown[]): unknown {
+export function resolveNodeId(..._args: any[]): any {
   return undefined;
 }
-export function resolveNode(..._args: unknown[]): unknown {
+export function resolveNode(..._args: any[]): any {
   return undefined;
 }

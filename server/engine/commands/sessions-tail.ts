@@ -99,15 +99,15 @@ function parseTailCount(value: string | number | undefined): number | null {
   return Number.parseInt(trimmed, 10);
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function toOptionalString(value: unknown): string | undefined {
+function toOptionalString(value: any): string | undefined {
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }
 
-function isTrajectoryEvent(value: unknown): value is TrajectoryEvent {
+function isTrajectoryEvent(value: any): value is TrajectoryEvent {
   return (
     isRecord(value) &&
     value.traceSchema === "openclaw-trajectory" &&
@@ -124,7 +124,7 @@ function parseTrajectoryEventLine(line: string): TrajectoryEvent | null {
     return null;
   }
   try {
-    const parsed = JSON.parse(trimmed) as unknown;
+    const parsed = JSON.parse(trimmed) as any;
     return isTrajectoryEvent(parsed) ? parsed : null;
   } catch {
     return null;
@@ -213,11 +213,11 @@ function modelLabel(event: TrajectoryEvent): string | undefined {
   return model || provider || undefined;
 }
 
-function toolName(data: Record<string, unknown> | undefined): string {
+function toolName(data: Record<string, any> | undefined): string {
   return toOptionalString(data?.name) ?? toOptionalString(data?.toolName) ?? "tool";
 }
 
-function resultStatus(data: Record<string, unknown> | undefined): string {
+function resultStatus(data: Record<string, any> | undefined): string {
   if (data?.success === true) {
     return "ok";
   }
@@ -227,7 +227,7 @@ function resultStatus(data: Record<string, unknown> | undefined): string {
   return toOptionalString(data?.status) ?? "done";
 }
 
-function modelCompletionStatus(data: Record<string, unknown> | undefined): string {
+function modelCompletionStatus(data: Record<string, any> | undefined): string {
   if (data?.timedOut === true) {
     return "timeout";
   }
@@ -370,7 +370,7 @@ async function readTrajectoryPointerSessionId(sessionFile: string): Promise<stri
     return undefined;
   }
   try {
-    const parsed = JSON.parse(fs.readFileSync(pointerPath, "utf8")) as unknown;
+    const parsed = JSON.parse(fs.readFileSync(pointerPath, "utf8")) as any;
     if (!isRecord(parsed) || typeof parsed.sessionId !== "string") {
       return undefined;
     }

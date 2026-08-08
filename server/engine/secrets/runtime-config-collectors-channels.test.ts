@@ -15,10 +15,10 @@ vi.mock("./channel-contract-api.js", () => ({
 }));
 
 function requireLoadChannelSecretContractApiCall(): {
-  channelId?: unknown;
-  config?: unknown;
-  env?: unknown;
-  loadablePluginOrigins?: unknown;
+  channelId?: any;
+  config?: any;
+  env?: any;
+  loadablePluginOrigins?: any;
 } {
   const [call] = loadChannelSecretContractApi.mock.calls;
   if (!call) {

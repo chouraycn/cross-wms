@@ -33,9 +33,9 @@ export function truncateLine(value: string, maxLength: number) {
 }
 
 type TokenUsageLike = {
-  totalTokens?: unknown;
-  inputTokens?: unknown;
-  outputTokens?: unknown;
+  totalTokens?: any;
+  inputTokens?: any;
+  outputTokens?: any;
 };
 
 /** Resolves total token usage, falling back to input+output when no explicit total exists. */

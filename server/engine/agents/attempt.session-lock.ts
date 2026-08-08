@@ -12,15 +12,15 @@ export type EmbeddedAttemptSessionLockController = unknown;
 export class EmbeddedAttemptSessionTakeoverError {
   // Stub: not fully ported
 }
-export function acquireEmbeddedAttemptSessionFileOwner(..._args: unknown[]): unknown {
+export function acquireEmbeddedAttemptSessionFileOwner(..._args: any[]): any {
   return undefined;
 }
-export function resetEmbeddedAttemptSessionFileOwnersForTest(..._args: unknown[]): unknown {
+export function resetEmbeddedAttemptSessionFileOwnersForTest(..._args: any[]): any {
   return undefined;
 }
-export function createEmbeddedAttemptSessionLockController(..._args: unknown[]): unknown {
+export function createEmbeddedAttemptSessionLockController(..._args: any[]): any {
   return undefined;
 }
-export function installPromptSubmissionLockRelease(..._args: unknown[]): unknown {
+export function installPromptSubmissionLockRelease(..._args: any[]): any {
   return undefined;
 }

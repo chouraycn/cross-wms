@@ -158,7 +158,7 @@ describe("validateSetupConfig", () => {
 });
 
 describe("runSetupWizard", () => {
-  function createPrompter(overrides: Record<string, unknown> = {}) {
+  function createPrompter(overrides: Record<string, any> = {}) {
     return createMockPrompter({
       select: vi.fn(async () => "quickstart"),
       text: vi.fn(async () => ""),

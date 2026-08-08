@@ -11,7 +11,7 @@ import { createTestRegistry } from "../../test-utils/channel-plugins.js";
 
 // Target fixtures keep normalization deterministic while exercising plugin-owned seams.
 function readTestDefaultTo(cfg: OpenClawConfig, channelId: string): string | undefined {
-  const channels = cfg.channels as Record<string, { defaultTo?: unknown }> | undefined;
+  const channels = cfg.channels as Record<string, { defaultTo?: any }> | undefined;
   const value = channels?.[channelId]?.defaultTo;
   return typeof value === "string" ? value : undefined;
 }

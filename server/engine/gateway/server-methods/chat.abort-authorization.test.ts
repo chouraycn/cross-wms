@@ -60,7 +60,7 @@ function requireLastRespondCall(respond: AbortRespond) {
 }
 
 function expectAbortPayload(
-  payload: unknown,
+  payload: any,
   expected: { aborted: boolean; runIds: string[] },
 ): void {
   const abortPayload = payload as AbortResponsePayload | undefined;

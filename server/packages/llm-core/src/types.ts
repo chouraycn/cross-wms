@@ -100,7 +100,7 @@ export interface StreamOptions {
    * Optional callback for inspecting or replacing provider payloads before sending.
    * Return undefined to keep the payload unchanged.
    */
-  onPayload?: (payload: unknown, model: Model) => MaybePromise<unknown>;
+  onPayload?: (payload: any, model: Model) => MaybePromise<any>;
   /**
    * Optional callback invoked after an HTTP response is received and before
    * its body stream is consumed.
@@ -135,10 +135,10 @@ export interface StreamOptions {
    * Providers extract the fields they understand and ignore the rest.
    * For example, Anthropic uses `user_id` for abuse tracking and rate limiting.
    */
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
-export type ProviderStreamOptions = StreamOptions & Record<string, unknown>;
+export type ProviderStreamOptions = StreamOptions & Record<string, any>;
 
 /** Request options shared by image-generation providers. */
 export interface ImagesOptions {
@@ -148,7 +148,7 @@ export interface ImagesOptions {
    * Optional callback for inspecting or replacing provider payloads before sending.
    * Return undefined to keep the payload unchanged.
    */
-  onPayload?: (payload: unknown, model: ImagesModel) => MaybePromise<unknown>;
+  onPayload?: (payload: any, model: ImagesModel) => MaybePromise<any>;
   /**
    * Optional callback invoked after an HTTP response is received.
    */
@@ -178,10 +178,10 @@ export interface ImagesOptions {
    * Optional metadata to include in API requests.
    * Providers extract the fields they understand and ignore the rest.
    */
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
-export type ProviderImagesOptions = ImagesOptions & Record<string, unknown>;
+export type ProviderImagesOptions = ImagesOptions & Record<string, any>;
 
 /** Unified text options used by simple completion helpers. */
 export interface SimpleStreamOptions extends StreamOptions {
@@ -252,7 +252,7 @@ export interface ToolCall {
   type: "toolCall";
   id: string;
   name: string;
-  arguments: Record<string, unknown>;
+  arguments: Record<string, any>;
   thoughtSignature?: string; // Google-specific: opaque signature for reusing thought context
   executionMode?: "sequential" | "parallel";
 }
@@ -607,7 +607,7 @@ export interface Model<TApi extends Api = Api> {
   contextTokens?: number;
   maxTokens: number;
   /** Provider-specific request/runtime parameters passed through to provider plugins. */
-  params?: Record<string, unknown>;
+  params?: Record<string, any>;
   headers?: Record<string, string>;
   /** Sends runtime credentials as Authorization: Bearer instead of provider-specific key headers. */
   authHeader?: boolean;

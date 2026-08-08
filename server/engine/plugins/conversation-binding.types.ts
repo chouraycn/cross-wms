@@ -7,7 +7,7 @@ import type { ReplyPayload } from "./_stub_parent__auto_reply__reply_payload.js"
 export type PluginConversationBindingRequestParams = {
   summary?: string;
   detachHint?: string;
-  data?: Record<string, unknown>;
+  data?: Record<string, any>;
 };
 
 /** Maintainer/user decision recorded for a plugin conversation binding request. */
@@ -27,7 +27,7 @@ export type PluginConversationBinding = {
   boundAt: number;
   summary?: string;
   detachHint?: string;
-  data?: Record<string, unknown>;
+  data?: Record<string, any>;
 };
 
 /** Result returned when a plugin asks to bind to a conversation. */
@@ -54,7 +54,7 @@ export type PluginConversationBindingResolvedEvent = {
   request: {
     summary?: string;
     detachHint?: string;
-    data?: Record<string, unknown>;
+    data?: Record<string, any>;
     requestedBySenderId?: string;
     conversation: {
       channel: string;

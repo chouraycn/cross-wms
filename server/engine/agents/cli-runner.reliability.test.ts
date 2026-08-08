@@ -65,14 +65,14 @@ const hookRunnerGlobalStateKey = Symbol.for("openclaw.plugins.hook-runner-global
 let sessionFileEnvSnapshot: ReturnType<typeof captureEnv> | undefined;
 
 type HookRunnerGlobalStateForTest = {
-  hookRunner: unknown;
-  registry: unknown;
+  hookRunner: any;
+  registry: any;
 };
 
-function setHookRunnerForTest(hookRunner: unknown): void {
+function setHookRunnerForTest(hookRunner: any): void {
   // Keep the module-level hook runner singleton aligned with the mocked getter.
   mockGetGlobalHookRunner.mockReturnValue(hookRunner as never);
-  const globalStore = globalThis as Record<PropertyKey, unknown>;
+  const globalStore = globalThis as Record<PropertyKey, any>;
   const state = (globalStore[hookRunnerGlobalStateKey] as
     | HookRunnerGlobalStateForTest
     | undefined) ?? {
@@ -223,20 +223,20 @@ function buildPreparedContext(params?: {
   };
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object") {
     throw new Error(`expected ${label}`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function requireArray(value: unknown, label: string): Array<unknown> {
+function requireArray(value: any, label: string): Array<any> {
   expect(Array.isArray(value), label).toBe(true);
-  return value as Array<unknown>;
+  return value as Array<any>;
 }
 
 function callArg(
-  mock: { mock: { calls: Array<Array<unknown>> } },
+  mock: { mock: { calls: Array<Array<any>> } },
   callIndex: number,
   argIndex: number,
   label: string,
@@ -251,7 +251,7 @@ function callArg(
   return call[argIndex];
 }
 
-function firstSystemEventCall(): Array<unknown> {
+function firstSystemEventCall(): Array<any> {
   const call = enqueueSystemEventMock.mock.calls[0];
   if (!call) {
     throw new Error("expected system event call");
@@ -260,7 +260,7 @@ function firstSystemEventCall(): Array<unknown> {
 }
 
 async function expectFailoverAttribution(
-  run: Promise<unknown>,
+  run: Promise<any>,
   expected: { sessionId: string; lane: string },
 ) {
   try {
@@ -274,19 +274,19 @@ async function expectFailoverAttribution(
   }
 }
 
-function expectTextMessage(value: unknown, fields: { role: string; content: string }) {
+function expectTextMessage(value: any, fields: { role: string; content: string }) {
   const message = requireRecord(value, "message");
   expect(message.role).toBe(fields.role);
   expect(message.content).toBe(fields.content);
   expect(message.timestamp).toBeTypeOf("number");
 }
 
-function readTranscriptMessages(sessionFile: string): unknown[] {
+function readTranscriptMessages(sessionFile: string): any[] {
   return fs
     .readFileSync(sessionFile, "utf-8")
     .trim()
     .split("\n")
-    .map((line) => JSON.parse(line) as { message?: unknown })
+    .map((line) => JSON.parse(line) as { message?: any })
     .map((entry) => entry.message)
     .filter(Boolean);
 }
@@ -593,7 +593,7 @@ describe("runCliAgent reliability", () => {
 
   it("does not retry or fail over after a confirmed message send", async () => {
     supervisorSpawnMock.mockClear();
-    supervisorSpawnMock.mockImplementationOnce(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementationOnce(async (...args: any[]) => {
       const input = args[0] as Parameters<ReturnType<typeof getProcessSupervisor>["spawn"]>[0];
       const captureKey = input.env?.OPENCLAW_MCP_CLI_CAPTURE_KEY ?? "";
       const captureHandle = markMcpLoopbackToolCallStarted({
@@ -663,7 +663,7 @@ describe("runCliAgent reliability", () => {
 
   it("preserves first-turn delivery through cleanup without binding the OpenClaw session id", async () => {
     supervisorSpawnMock.mockClear();
-    supervisorSpawnMock.mockImplementationOnce(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementationOnce(async (...args: any[]) => {
       const input = args[0] as Parameters<ReturnType<typeof getProcessSupervisor>["spawn"]>[0];
       const captureHandle = markMcpLoopbackToolCallStarted({
         captureKey: input.env?.OPENCLAW_MCP_CLI_CAPTURE_KEY ?? "",
@@ -737,7 +737,7 @@ describe("runCliAgent reliability", () => {
 
   it("returns only the source-reply mirror after a successful CLI turn", async () => {
     supervisorSpawnMock.mockClear();
-    supervisorSpawnMock.mockImplementationOnce(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementationOnce(async (...args: any[]) => {
       const input = args[0] as Parameters<ReturnType<typeof getProcessSupervisor>["spawn"]>[0];
       const captureHandle = markMcpLoopbackToolCallStarted({
         captureKey: input.env?.OPENCLAW_MCP_CLI_CAPTURE_KEY ?? "",
@@ -811,7 +811,7 @@ describe("runCliAgent reliability", () => {
     };
     setHookRunnerForTest(hookRunner);
     supervisorSpawnMock.mockClear();
-    supervisorSpawnMock.mockImplementationOnce(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementationOnce(async (...args: any[]) => {
       const input = args[0] as Parameters<ReturnType<typeof getProcessSupervisor>["spawn"]>[0];
       const captureHandle = markMcpLoopbackToolCallStarted({
         captureKey: input.env?.OPENCLAW_MCP_CLI_CAPTURE_KEY ?? "",
@@ -889,7 +889,7 @@ describe("runCliAgent reliability", () => {
 
   it("accepts empty terminal output after a confirmed message delivery", async () => {
     supervisorSpawnMock.mockClear();
-    supervisorSpawnMock.mockImplementationOnce(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementationOnce(async (...args: any[]) => {
       const input = args[0] as Parameters<ReturnType<typeof getProcessSupervisor>["spawn"]>[0];
       const captureHandle = markMcpLoopbackToolCallStarted({
         captureKey: input.env?.OPENCLAW_MCP_CLI_CAPTURE_KEY ?? "",
@@ -954,7 +954,7 @@ describe("runCliAgent reliability", () => {
     const captureStartedPromise = new Promise<void>((resolve) => {
       captureStarted = resolve;
     });
-    supervisorSpawnMock.mockImplementationOnce(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementationOnce(async (...args: any[]) => {
       const input = args[0] as Parameters<ReturnType<typeof getProcessSupervisor>["spawn"]>[0];
       const captureHandle = markMcpLoopbackToolCallStarted({
         captureKey: input.env?.OPENCLAW_MCP_CLI_CAPTURE_KEY ?? "",
@@ -1013,7 +1013,7 @@ describe("runCliAgent reliability", () => {
     const captureStartedPromise = new Promise<void>((resolve) => {
       captureStarted = resolve;
     });
-    supervisorSpawnMock.mockImplementationOnce(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementationOnce(async (...args: any[]) => {
       const input = args[0] as Parameters<ReturnType<typeof getProcessSupervisor>["spawn"]>[0];
       const captureHandle = markMcpLoopbackToolCallStarted({
         captureKey: input.env?.OPENCLAW_MCP_CLI_CAPTURE_KEY ?? "",
@@ -1096,7 +1096,7 @@ describe("runCliAgent reliability", () => {
     const captureStartedPromise = new Promise<void>((resolve) => {
       captureStarted = resolve;
     });
-    supervisorSpawnMock.mockImplementationOnce(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementationOnce(async (...args: any[]) => {
       const input = args[0] as Parameters<ReturnType<typeof getProcessSupervisor>["spawn"]>[0];
       const captureHandle = markMcpLoopbackToolCallStarted({
         captureKey: input.env?.OPENCLAW_MCP_CLI_CAPTURE_KEY ?? "",
@@ -1158,7 +1158,7 @@ describe("runCliAgent reliability", () => {
     const captureStartedPromise = new Promise<void>((resolve) => {
       captureStarted = resolve;
     });
-    supervisorSpawnMock.mockImplementationOnce(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementationOnce(async (...args: any[]) => {
       const input = args[0] as Parameters<ReturnType<typeof getProcessSupervisor>["spawn"]>[0];
       const captureHandle = markMcpLoopbackRequestStarted(
         input.env?.OPENCLAW_MCP_CLI_CAPTURE_KEY ?? "",
@@ -1205,7 +1205,7 @@ describe("runCliAgent reliability", () => {
     const captureStartedPromise = new Promise<void>((resolve) => {
       captureStarted = resolve;
     });
-    supervisorSpawnMock.mockImplementationOnce(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementationOnce(async (...args: any[]) => {
       const input = args[0] as Parameters<ReturnType<typeof getProcessSupervisor>["spawn"]>[0];
       const requestCaptureHandle = markMcpLoopbackRequestStarted(
         input.env?.OPENCLAW_MCP_CLI_CAPTURE_KEY ?? "",
@@ -1257,7 +1257,7 @@ describe("runCliAgent reliability", () => {
     const captureStartedPromise = new Promise<void>((resolve) => {
       captureStarted = resolve;
     });
-    supervisorSpawnMock.mockImplementationOnce(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementationOnce(async (...args: any[]) => {
       const input = args[0] as Parameters<ReturnType<typeof getProcessSupervisor>["spawn"]>[0];
       const captureHandle = markMcpLoopbackToolCallStarted({
         captureKey: input.env?.OPENCLAW_MCP_CLI_CAPTURE_KEY ?? "",
@@ -1326,7 +1326,7 @@ describe("runCliAgent reliability", () => {
       }),
     );
     const context = buildPreparedContext({
-      sessionKey: "agent:main:unknown-output",
+      sessionKey: "agent:main: any-output",
       runId: "run-unknown-output",
       cliSessionId: "stale-cli-session",
       provider: "claude-cli",
@@ -1698,7 +1698,7 @@ describe("runCliAgent reliability", () => {
   });
 
   it("marks CLI runs as paused after sessions_yield", async () => {
-    supervisorSpawnMock.mockImplementationOnce(async (...args: unknown[]) => {
+    supervisorSpawnMock.mockImplementationOnce(async (...args: any[]) => {
       const input = args[0] as Parameters<ReturnType<typeof getProcessSupervisor>["spawn"]>[0];
       const captureHandle = markMcpLoopbackRequestStarted(input.env?.OPENCLAW_MCP_CLI_CAPTURE_KEY);
       await resolveMcpLoopbackYieldContext(captureHandle)?.onYield("waiting on subagents");
@@ -2425,7 +2425,7 @@ describe("runCliAgent reliability", () => {
     );
     const { dir, sessionFile } = createSessionFile();
     const taskDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-cli-persist-cwd-"));
-    let capturedTarget: unknown;
+    let capturedTarget: any;
     const recorder = {
       message: undefined,
       resolveMessage: vi.fn(async () => undefined),
@@ -2436,7 +2436,7 @@ describe("runCliAgent reliability", () => {
       isBlocked: vi.fn(() => false),
       hasRuntimePersistencePending: vi.fn(() => false),
       waitForRuntimePersistence: vi.fn(async () => undefined),
-      persistApproved: vi.fn(async (options?: { target?: unknown }) => {
+      persistApproved: vi.fn(async (options?: { target?: any }) => {
         capturedTarget =
           typeof options?.target === "function" ? await options.target() : options?.target;
         return {

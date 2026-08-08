@@ -74,7 +74,7 @@ export interface PolicyContext {
   /** 工具名 */
   toolName: string;
   /** 工具参数 */
-  toolArgs?: Record<string, unknown>;
+  toolArgs?: Record<string, any>;
   /** 会话 ID */
   sessionId?: string;
   /** 请求者 */

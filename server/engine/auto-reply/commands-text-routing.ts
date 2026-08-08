@@ -20,7 +20,7 @@ type ChannelPluginCapabilities = {
 
 function pluginSupportsNativeCommands(plugin: {
   id: string;
-  capabilities?: unknown;
+  capabilities?: any;
 }): boolean {
   const capabilities = plugin.capabilities as ChannelPluginCapabilities | undefined;
   return capabilities?.nativeCommands === true;

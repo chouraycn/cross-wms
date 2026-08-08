@@ -80,7 +80,7 @@ export const mockedGlobalHookRunner = {
   ),
   runBeforeAgentStart: vi.fn(
     async (
-      _eventValue: { prompt: string; messages?: unknown[] },
+      _eventValue: { prompt: string; messages?: any[] },
       _ctx: PluginHookAgentContext,
     ): Promise<PluginHookBeforeAgentStartResult | undefined> => undefined,
   ),
@@ -92,7 +92,7 @@ export const mockedGlobalHookRunner = {
   ),
   runBeforePromptBuild: vi.fn(
     async (
-      _eventValue: { prompt: string; messages: unknown[] },
+      _eventValue: { prompt: string; messages: any[] },
       _ctx: PluginHookAgentContext,
     ): Promise<PluginHookBeforePromptBuildResult | undefined> => undefined,
   ),
@@ -108,7 +108,7 @@ export const mockedGlobalHookRunner = {
 
 export const mockedContextEngine = {
   info: { ownsCompaction: false as boolean },
-  compact: vi.fn<(params: unknown) => Promise<MockCompactionResult>>(async () => ({
+  compact: vi.fn<(params: any) => Promise<MockCompactionResult>>(async () => ({
     ok: false as const,
     compacted: false as const,
     reason: "nothing to compact",
@@ -123,7 +123,7 @@ export const mockedRunPostCompactionSideEffects = vi.fn(async () => {});
 export const mockedSleepWithAbort = vi.fn(
   async (_ms: number, _abortSignal?: AbortSignal) => undefined,
 );
-export const mockedEnsureRuntimePluginsLoaded = vi.fn<(params?: unknown) => void>();
+export const mockedEnsureRuntimePluginsLoaded = vi.fn<(params?: any) => void>();
 export const mockedResolveModelAsync = vi.fn(
   async (): Promise<MockResolveModelResult> => ({
     model: {
@@ -141,7 +141,7 @@ export const mockedResolveModelAsync = vi.fn(
 );
 export const mockedPrepareProviderRuntimeAuth = vi.fn(async () => undefined);
 export const mockedRunEmbeddedAttempt =
-  vi.fn<(params: unknown) => Promise<EmbeddedRunAttemptResult>>();
+  vi.fn<(params: any) => Promise<EmbeddedRunAttemptResult>>();
 export const mockedBuildEmbeddedRunPayloads = vi.fn<
   (
     ...args: Parameters<typeof buildEmbeddedRunPayloads>
@@ -174,10 +174,10 @@ type MockFailoverErrorDescription = {
 };
 
 type MockCoerceToFailoverError = (
-  err: unknown,
+  err: any,
   params?: { provider?: string; model?: string; profileId?: string },
 ) => unknown;
-type MockDescribeFailoverError = (err: unknown) => MockFailoverErrorDescription;
+type MockDescribeFailoverError = (err: any) => MockFailoverErrorDescription;
 type MockResolveFailoverStatus = (reason: string) => number | undefined;
 type MockAssistantErrorProbe = (assistant?: { errorMessage?: string }) => boolean;
 export class MockedFailoverError extends Error {
@@ -189,7 +189,7 @@ export class MockedFailoverError extends Error {
 
 export const mockedCoerceToFailoverError = vi.fn<MockCoerceToFailoverError>();
 export const mockedDescribeFailoverError = vi.fn<MockDescribeFailoverError>(
-  (err: unknown): MockFailoverErrorDescription => ({
+  (err: any): MockFailoverErrorDescription => ({
     message: formatErrorMessage(err),
     reason: undefined,
     status: undefined,
@@ -199,10 +199,10 @@ export const mockedDescribeFailoverError = vi.fn<MockDescribeFailoverError>(
 export const mockedResolveFailoverStatus = vi.fn<MockResolveFailoverStatus>();
 
 export const mockedLog: {
-  debug: Mock<(...args: unknown[]) => void>;
-  info: Mock<(...args: unknown[]) => void>;
-  warn: Mock<(...args: unknown[]) => void>;
-  error: Mock<(...args: unknown[]) => void>;
+  debug: Mock<(...args: any[]) => void>;
+  info: Mock<(...args: any[]) => void>;
+  warn: Mock<(...args: any[]) => void>;
+  error: Mock<(...args: any[]) => void>;
   isEnabled: Mock<(level?: string) => boolean>;
 } = {
   debug: vi.fn(),
@@ -246,7 +246,7 @@ export const mockedParseImageSizeError = vi.fn(() => null);
 export const mockedParseImageDimensionError = vi.fn(() => null);
 export const mockedIsRateLimitAssistantError = vi.fn<MockAssistantErrorProbe>(() => false);
 export const mockedIsTimeoutErrorMessage = vi.fn(() => false);
-export const mockedPickFallbackThinkingLevel = vi.fn<(params?: unknown) => ThinkLevel | null>(
+export const mockedPickFallbackThinkingLevel = vi.fn<(params?: any) => ThinkLevel | null>(
   () => null,
 );
 export const mockedEvaluateContextWindowGuard = vi.fn(() => ({
@@ -282,8 +282,8 @@ export const mockedEnsureAuthProfileStore = vi.fn(() => ({}));
 export const mockedEnsureAuthProfileStoreWithoutExternalProfiles = vi.fn(
   (_agentDir?: string, _options?: { allowKeychainPrompt?: boolean }) => ({}),
 );
-export const mockedResolveAuthProfileOrder = vi.fn<(_params?: unknown) => string[]>(
-  (_params?: unknown) => [],
+export const mockedResolveAuthProfileOrder = vi.fn<(_params?: any) => string[]>(
+  (_params?: any) => [],
 );
 export const mockedMarkAuthProfileSuccess = vi.fn(async () => {});
 export const mockedShouldPreferExplicitConfigApiKeyAuth = vi.fn(() => false);
@@ -380,7 +380,7 @@ export function resetRunOverflowCompactionHarnessMocks(): void {
   mockedCoerceToFailoverError.mockReturnValue(null);
   mockedDescribeFailoverError.mockReset();
   mockedDescribeFailoverError.mockImplementation(
-    (err: unknown): MockFailoverErrorDescription => ({
+    (err: any): MockFailoverErrorDescription => ({
       message: formatErrorMessage(err),
       reason: undefined,
       status: undefined,
@@ -573,7 +573,7 @@ export async function loadRunOverflowCompactionHarness(): Promise<{
     resolveProviderCapabilitiesWithPlugin: vi.fn(() => ({})),
     resolveProviderAuthProfileId: vi.fn(() => undefined),
     prepareProviderExtraParams: vi.fn(async () => ({})),
-    wrapProviderStreamFn: vi.fn((_cfg: unknown, _model: unknown, fn: unknown) => fn),
+    wrapProviderStreamFn: vi.fn((_cfg: any, _model: any, fn: any) => fn),
   }));
 
   vi.doMock("../auth-profiles.js", () => ({
@@ -584,7 +584,7 @@ export async function loadRunOverflowCompactionHarness(): Promise<{
   }));
 
   vi.doMock("../usage.js", () => ({
-    normalizeUsage: vi.fn((usage?: unknown) =>
+    normalizeUsage: vi.fn((usage?: any) =>
       usage && typeof usage === "object" ? usage : undefined,
     ),
     derivePromptTokens: vi.fn(
@@ -609,7 +609,7 @@ export async function loadRunOverflowCompactionHarness(): Promise<{
     };
     return {
       ...actual,
-      listCliRuntimeModelBackendBindings: vi.fn((params?: unknown) => [
+      listCliRuntimeModelBackendBindings: vi.fn((params?: any) => [
         claudeBinding,
         ...actual
           .listCliRuntimeModelBackendBindings(
@@ -663,7 +663,7 @@ export async function loadRunOverflowCompactionHarness(): Promise<{
     isRateLimitAssistantError: mockedIsRateLimitAssistantError,
     isTimeoutErrorMessage: mockedIsTimeoutErrorMessage,
     pickFallbackThinkingLevel: mockedPickFallbackThinkingLevel,
-    sanitizeUserFacingText: vi.fn((text: unknown) => (typeof text === "string" ? text : "")),
+    sanitizeUserFacingText: vi.fn((text: any) => (typeof text === "string" ? text : "")),
   }));
 
   vi.doMock("./run/attempt.js", () => ({
@@ -686,8 +686,8 @@ export async function loadRunOverflowCompactionHarness(): Promise<{
   }));
 
   vi.doMock("../model-auth.js", () => ({
-    applyAuthHeaderOverride: vi.fn((model: unknown) => model),
-    applyLocalNoAuthHeaderOverride: vi.fn((model: unknown) => model),
+    applyAuthHeaderOverride: vi.fn((model: any) => model),
+    applyLocalNoAuthHeaderOverride: vi.fn((model: any) => model),
     ensureAuthProfileStore: mockedEnsureAuthProfileStore,
     ensureAuthProfileStoreWithoutExternalProfiles:
       mockedEnsureAuthProfileStoreWithoutExternalProfiles,
@@ -744,7 +744,7 @@ export async function loadRunOverflowCompactionHarness(): Promise<{
   }));
 
   vi.doMock("./utils.js", () => ({
-    describeUnknownError: vi.fn((err: unknown) => {
+    describeUnknownError: vi.fn((err: any) => {
       if (err instanceof Error) {
         return err.message;
       }

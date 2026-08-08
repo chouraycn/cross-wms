@@ -68,9 +68,9 @@ export async function createArchiveFromFiles(paths: string[]): Promise<string> {
 
 // Auto-generated stub exports (added by auto-fix-exports.mjs)
 export const ARCHIVE_LIMIT_ERROR_CODE: Record<string, string> = undefined as unknown as Record<string, string>;
-export const ArchiveLimitError: new (...args: unknown[]) => unknown = undefined as unknown as new (...args: unknown[]) => unknown;
+export const ArchiveLimitError: new (...args: any[]) => unknown = undefined as unknown as new (...args: any[]) => unknown;
 export const DEFAULT_MAX_ARCHIVE_BYTES_ZIP: number = undefined as unknown as number;
 export const DEFAULT_MAX_ENTRIES: number = undefined as unknown as number;
 export const DEFAULT_MAX_EXTRACTED_BYTES: number = undefined as unknown as number;
 export const DEFAULT_MAX_ENTRY_BYTES: number = undefined as unknown as number;
-export const loadZipArchiveWithPreflight: (...args: unknown[]) => unknown = undefined as unknown as (...args: unknown[]) => unknown;
+export const loadZipArchiveWithPreflight: (...args: any[]) => unknown = undefined as unknown as (...args: any[]) => unknown;

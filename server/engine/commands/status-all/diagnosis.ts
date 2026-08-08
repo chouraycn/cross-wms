@@ -53,7 +53,7 @@ type TailscaleStatusLike = {
 
 type SkillStatusLike = {
   workspaceDir: string;
-  skills: Array<{ eligible: boolean; missing: Record<string, unknown[]> }>;
+  skills: Array<{ eligible: boolean; missing: Record<string, any[]> }>;
 };
 
 type ChannelIssueLike = {
@@ -106,7 +106,7 @@ function countGatewayListenerPids(portUsage: PortUsageLike): number {
   return pids.size;
 }
 
-function isDeliveryDiagnosticsLike(value: unknown): value is DeliveryDiagnosticsLike {
+function isDeliveryDiagnosticsLike(value: any): value is DeliveryDiagnosticsLike {
   return Boolean(value && typeof value === "object");
 }
 
@@ -155,12 +155,12 @@ export async function appendStatusAllDiagnosis(params: {
   tailscaleHttpsUrl: string | null;
   skillStatus: SkillStatusLike | null;
   pluginCompatibility: PluginCompatibilityNotice[];
-  channelsStatus: unknown;
+  channelsStatus: any;
   channelIssues: ChannelIssueLike[];
-  deliveryDiagnostics: unknown;
+  deliveryDiagnostics: any;
   agentStatus?: AgentStatusLike;
   gatewayReachable: boolean;
-  health: unknown;
+  health: any;
   nodeOnlyGateway: NodeOnlyGatewayInfo | null;
 }) {
   const { lines, muted, ok, warn, fail } = params;
@@ -458,7 +458,7 @@ export async function appendStatusAllDiagnosis(params: {
     if (!params.health || typeof params.health !== "object") {
       return "";
     }
-    const record = params.health as Record<string, unknown>;
+    const record = params.health as Record<string, any>;
     if (!("error" in record)) {
       return "";
     }

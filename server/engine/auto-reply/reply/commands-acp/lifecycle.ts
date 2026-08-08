@@ -113,7 +113,7 @@ function buildSpawnedAcpBindingMetadata(params: {
   label: string;
   senderId: string;
   sessionMeta?: SessionAcpMeta;
-}): Record<string, unknown> {
+}): Record<string, any> {
   return {
     threadName: resolveThreadBindingThreadName({
       agentId: params.agentId,

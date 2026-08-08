@@ -29,7 +29,7 @@ import { logger } from '../logger.js';
 
 interface ExtendedPluginManifest extends PluginManifest {
   dependencies?: Array<string | { name: string; version?: string; optional?: boolean }>;
-  configSchema?: Record<string, unknown>;
+  configSchema?: Record<string, any>;
   provides?: string[];
 }
 
@@ -59,11 +59,11 @@ export interface PluginInfo {
   status: PluginLifecycleStatus;
   dependencies: PluginDependency[];
   provides: string[];
-  configSchema: Record<string, unknown> | null;
-  config: Record<string, unknown>;
+  configSchema: Record<string, any> | null;
+  config: Record<string, any>;
   installedAt: string;
   updatedAt: string;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
 }
 
 export interface PluginManagerStats {
@@ -381,14 +381,14 @@ class PluginManager extends EventEmitter {
   /**
    * 获取插件配置
    */
-  getConfig(pluginId: string): Record<string, unknown> {
+  getConfig(pluginId: string): Record<string, any> {
     return getPluginConfig(pluginId);
   }
 
   /**
    * 更新插件配置
    */
-  setConfig(pluginId: string, config: Record<string, unknown>): boolean {
+  setConfig(pluginId: string, config: Record<string, any>): boolean {
     const result = setPluginConfig(pluginId, config);
     if (result) {
       this.emit('plugin:config:changed', pluginId, config);
@@ -400,13 +400,13 @@ class PluginManager extends EventEmitter {
   /**
    * 获取插件配置 schema
    */
-  getConfigSchema(pluginId: string): Record<string, unknown> | null {
+  getConfigSchema(pluginId: string): Record<string, any> | null {
     const plugin = getPlugin(pluginId);
     if (!plugin) return null;
 
     try {
       const manifest: ExtendedPluginManifest = JSON.parse(plugin.manifest_json);
-      return (manifest.configSchema as Record<string, unknown>) || null;
+      return (manifest.configSchema as Record<string, any>) || null;
     } catch {
       return null;
     }
@@ -415,12 +415,12 @@ class PluginManager extends EventEmitter {
   /**
    * 重置插件配置为默认值
    */
-  resetConfig(pluginId: string): Record<string, unknown> {
+  resetConfig(pluginId: string): Record<string, any> {
     const schema = this.getConfigSchema(pluginId);
-    const defaultConfig: Record<string, unknown> = {};
+    const defaultConfig: Record<string, any> = {};
 
     if (schema?.fields && Array.isArray(schema.fields)) {
-      for (const field of schema.fields as Array<{ key: string; default?: unknown }>) {
+      for (const field of schema.fields as Array<{ key: string; default?: any }>) {
         if (field.default !== undefined) {
           defaultConfig[field.key] = field.default;
         }
@@ -605,14 +605,14 @@ class PluginManager extends EventEmitter {
   /**
    * 监听插件事件
    */
-  onPluginEvent(event: PluginEventName, listener: (...args: unknown[]) => void): this {
+  onPluginEvent(event: PluginEventName, listener: (...args: any[]) => void): this {
     return this.on(event, listener);
   }
 
   /**
    * 移除插件事件监听
    */
-  offPluginEvent(event: PluginEventName, listener: (...args: unknown[]) => void): this {
+  offPluginEvent(event: PluginEventName, listener: (...args: any[]) => void): this {
     return this.off(event, listener);
   }
 
@@ -626,9 +626,9 @@ class PluginManager extends EventEmitter {
     }
   }
 
-  private safeParseJson(json: string): Record<string, unknown> {
+  private safeParseJson(json: string): Record<string, any> {
     try {
-      return JSON.parse(json) as Record<string, unknown>;
+      return JSON.parse(json) as Record<string, any>;
     } catch {
       return {};
     }

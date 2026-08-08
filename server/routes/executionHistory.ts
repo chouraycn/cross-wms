@@ -58,7 +58,7 @@ router.get('/', (req: Request, res: Response) => {
 
     const result = getExecutionHistory(limit, offset, filter);
     res.json(result);
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     res.status(500).json({ error: message });
   }
@@ -91,7 +91,7 @@ router.get('/stats', (req: Request, res: Response) => {
 
     const stats = getExecutionHistoryStats(filter);
     res.json(stats);
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     res.status(500).json({ error: message });
   }
@@ -111,7 +111,7 @@ router.get('/:id', (req: Request, res: Response) => {
       return;
     }
     res.json(record);
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     res.status(500).json({ error: message });
   }
@@ -131,7 +131,7 @@ router.delete('/:id', (req: Request, res: Response) => {
       return;
     }
     res.json({ success: true });
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     res.status(500).json({ error: message });
   }
@@ -160,7 +160,7 @@ router.delete('/purge', (req: Request, res: Response) => {
 
     const deletedCount = purgeExecutionHistory(options);
     res.json({ success: true, deleted: deletedCount });
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     res.status(500).json({ error: message });
   }

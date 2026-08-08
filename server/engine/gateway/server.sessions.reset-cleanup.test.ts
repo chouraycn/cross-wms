@@ -157,7 +157,7 @@ test("sessions.reset aborts active runs and clears queues", async () => {
   expect(waitCallCountAtSnapshotClear).toEqual([1]);
   expect(browserSessionTabMocks.closeTrackedBrowserTabsForSessions).toHaveBeenCalledTimes(1);
   const closeTabsCall = browserSessionTabMocks.closeTrackedBrowserTabsForSessions.mock
-    .calls[0] as unknown as [{ sessionKeys?: string[]; onWarn?: unknown }] | undefined;
+    .calls[0] as unknown as [{ sessionKeys?: string[]; onWarn?: any }] | undefined;
   const closeTabsParams = closeTabsCall?.[0];
   expect(closeTabsParams?.sessionKeys).toEqual(["main", "agent:main:main", "sess-main"]);
   expect(typeof closeTabsParams?.onWarn).toBe("function");
@@ -215,7 +215,7 @@ test("sessions.reset closes ACP runtime handles for ACP sessions", async () => {
   const reset = await directSessionReq<{
     ok: true;
     key: string;
-    entry: Record<string, unknown>;
+    entry: Record<string, any>;
   }>("sessions.reset", {
     key: "main",
   });
@@ -227,7 +227,7 @@ test("sessions.reset closes ACP runtime handles for ACP sessions", async () => {
     | [
         {
           allowBackendUnavailable?: boolean;
-          cfg?: unknown;
+          cfg?: any;
           discardPersistentState?: boolean;
           requireAcpSession?: boolean;
           reason?: string;
@@ -238,7 +238,7 @@ test("sessions.reset closes ACP runtime handles for ACP sessions", async () => {
   const closeSessionParams = closeSessionCall?.[0] as
     | {
         allowBackendUnavailable?: boolean;
-        cfg?: unknown;
+        cfg?: any;
         discardPersistentState?: boolean;
         requireAcpSession?: boolean;
         reason?: string;
@@ -545,7 +545,7 @@ test("sessions.reset closes child ACP runtimes concurrently so stuck children do
   // sequential cleanup only the first child would dispatch; concurrent cleanup
   // dispatches all three before any resolves.
   const releaseChildren: Array<() => void> = [];
-  acpManagerMocks.cancelSession.mockImplementation(async (...args: unknown[]) => {
+  acpManagerMocks.cancelSession.mockImplementation(async (...args: any[]) => {
     const req = args[0] as { sessionKey?: string } | undefined;
     if (req?.sessionKey === "agent:main:main") {
       return;
@@ -619,7 +619,7 @@ test("sessions.reset emits subagent targetKind for subagent sessions", async () 
   expect(reset.payload?.key).toBe("agent:main:subagent:worker");
   expect(reset.payload?.entry.sessionId).not.toBe("sess-subagent");
   expect(subagentLifecycleHookMocks.runSubagentEnded).toHaveBeenCalledTimes(1);
-  const event = (subagentLifecycleHookMocks.runSubagentEnded.mock.calls as unknown[][])[0]?.[0] as
+  const event = (subagentLifecycleHookMocks.runSubagentEnded.mock.calls as any[][])[0]?.[0] as
     | { targetKind?: string; targetSessionKey?: string; reason?: string; outcome?: string }
     | undefined;
   expect(event?.targetSessionKey).toBe("agent:main:subagent:worker");

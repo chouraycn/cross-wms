@@ -71,7 +71,7 @@ export type SecretsApplyPlan = {
 
 const FORBIDDEN_PATH_SEGMENTS = new Set(["__proto__", "prototype", "constructor"]);
 
-function isSecretProviderConfigShape(value: unknown): value is SecretProviderConfig {
+function isSecretProviderConfigShape(value: any): value is SecretProviderConfig {
   return SecretProviderSchema.safeParse(value).success;
 }
 
@@ -127,7 +127,7 @@ export function resolveValidatedPlanTarget(candidate: {
 }
 
 /** Validates the external secrets apply plan shape and every target/provider mutation. */
-export function isSecretsApplyPlan(value: unknown): value is SecretsApplyPlan {
+export function isSecretsApplyPlan(value: any): value is SecretsApplyPlan {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return false;
   }

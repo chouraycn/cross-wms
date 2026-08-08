@@ -47,7 +47,7 @@ describe("sessions", () => {
 
   async function createSessionStoreFixture(params: {
     prefix: string;
-    entries: Record<string, Record<string, unknown>>;
+    entries: Record<string, Record<string, any>>;
   }): Promise<{ storePath: string }> {
     const dir = await createCaseDir(params.prefix);
     const storePath = path.join(dir, "sessions.json");
@@ -65,7 +65,7 @@ describe("sessions", () => {
     );
   }
 
-  function buildMainSessionEntry(overrides: Record<string, unknown> = {}) {
+  function buildMainSessionEntry(overrides: Record<string, any> = {}) {
     return {
       sessionId: "sess-1",
       updatedAt: 123,
@@ -111,11 +111,11 @@ describe("sessions", () => {
   }
 
   async function expectPathMissing(targetPath: string): Promise<void> {
-    let error: { code?: unknown } | undefined;
+    let error: { code?: any } | undefined;
     try {
       await fs.stat(targetPath);
     } catch (err) {
-      error = err as { code?: unknown };
+      error = err as { code?: any };
     }
     expect(error?.code).toBe("ENOENT");
   }
@@ -839,7 +839,7 @@ describe("sessions", () => {
       "utf-8",
     );
 
-    const store = loadSessionStore(storePath) as unknown as Record<string, Record<string, unknown>>;
+    const store = loadSessionStore(storePath) as unknown as Record<string, Record<string, any>>;
     const entry = store[mainSessionKey] ?? {};
     expect(entry.channel).toBe("slack");
     expect(entry.provider).toBeUndefined();
@@ -1040,7 +1040,7 @@ describe("sessions", () => {
     // Simulate an external writer that updates the store but preserves mtime.
     const externalStore = JSON.parse(await fs.readFile(storePath, "utf-8")) as Record<
       string,
-      Record<string, unknown>
+      Record<string, any>
     >;
     externalStore[mainSessionKey] = {
       ...externalStore[mainSessionKey],

@@ -22,7 +22,7 @@ const { mockLogger, mockUuid, mockCallAIModel, mockExecuteToolCall,
   mockToolFallbackManager: { checkAndFallback: vi.fn((name) => name) },
   mockToolSendReceipts: { createReceipt: vi.fn(), completeReceipt: vi.fn(), failReceipt: vi.fn() },
   mockToolExecutionQueue: { enqueue: vi.fn((_task, executor) => executor(new AbortController().signal)) },
-  mockExecuteToolCallWithRetry: vi.fn((_name, fn) => fn().then((result: unknown) => ({ result, retryCount: 0 }))),
+  mockExecuteToolCallWithRetry: vi.fn((_name, fn) => fn().then((result: any) => ({ result, retryCount: 0 }))),
   mockExecuteToolCallWithTimeout: vi.fn((_name, fn) => fn()),
   mockExecuteToolCallWithMiddleware: vi.fn((_name, result) => ({ content: result, errorType: 'none' as const, truncated: false })),
   mockToolExecutionStats: { record: vi.fn() },
@@ -347,8 +347,8 @@ describe('WorkflowExecutor', () => {
         },
       ]);
 
-      const originalExecuteNodeByType = (executor as unknown).executeNodeByType?.bind(executor);
-      (executor as unknown).executeNodeByType = function(workflow: unknown, node: unknown, context: unknown, variableCtx: unknown) {
+      const originalExecuteNodeByType = (executor as any).executeNodeByType?.bind(executor);
+      (executor as any).executeNodeByType = function(workflow: any, node: any, context: any, variableCtx: any) {
         if (node.id === 'script-1') {
           nodeCallCount++;
           if (nodeCallCount < 3) {

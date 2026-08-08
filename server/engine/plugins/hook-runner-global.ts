@@ -84,7 +84,7 @@ export function hasGlobalHooks(hookName: Parameters<HookRunner["hasHooks"]>[0]):
 export async function runGlobalGatewayStopSafely(params: {
   event: PluginHookGatewayStopEvent;
   ctx: PluginHookGatewayContext;
-  onError?: (err: unknown) => void;
+  onError?: (err: any) => void;
 }): Promise<void> {
   const log = getLog();
   const hookRunner = getGlobalHookRunner();

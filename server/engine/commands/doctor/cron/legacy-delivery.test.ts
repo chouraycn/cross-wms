@@ -47,7 +47,7 @@ describe("legacy delivery threadId support", () => {
   });
 
   it("strips threadId from legacy payloads after normalization", () => {
-    const payload: Record<string, unknown> = {
+    const payload: Record<string, any> = {
       channel: "telegram",
       to: "-100123:topic:42",
       threadId: 42,

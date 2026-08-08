@@ -73,4 +73,4 @@ export function resetScopeConfig(): void {
 logger.debug('[Agents:AgentScopeConfig] Module loaded');
 
 // Auto-generated stub exports (added by auto-fix-exports.mjs)
-export const resolveDefaultAgentDir: (...args: unknown[]) => unknown = undefined as unknown as (...args: unknown[]) => unknown;
+export const resolveDefaultAgentDir: (...args: any[]) => unknown = undefined as unknown as (...args: any[]) => unknown;

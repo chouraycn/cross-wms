@@ -13,7 +13,7 @@ export type SkillConfig = {
   /** Plain environment overrides applied when the skill runs. */
   env?: Record<string, string>;
   /** Skill-specific structured config consumed by the skill runtime. */
-  config?: Record<string, unknown>;
+  config?: Record<string, any>;
 };
 
 /** Discovery and watcher settings for skill sources. */

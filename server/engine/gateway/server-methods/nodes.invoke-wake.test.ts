@@ -28,7 +28,7 @@ const mocks = vi.hoisted(() => ({
   isForegroundRestrictedPluginNodeCommand: vi.fn((command: string) =>
     command.startsWith("canvas."),
   ),
-  sanitizeNodeInvokeParamsForForwarding: vi.fn(({ rawParams }: { rawParams: unknown }) => ({
+  sanitizeNodeInvokeParamsForForwarding: vi.fn(({ rawParams }: { rawParams: any }) => ({
     ok: true,
     params: rawParams,
   })),
@@ -82,13 +82,13 @@ type RespondCall = [
   {
     code?: number;
     message?: string;
-    details?: unknown;
+    details?: any;
   }?,
 ];
 
 type MockCallSource = {
   mock: {
-    calls: ArrayLike<ReadonlyArray<unknown>>;
+    calls: ArrayLike<ReadonlyArray<any>>;
   };
 };
 
@@ -98,12 +98,12 @@ type TestNodeSession = {
   platform?: string;
 };
 
-function requireString(value: unknown, label: string): string {
+function requireString(value: any, label: string): string {
   expect(typeof value, `${label} must be a string`).toBe("string");
   return value as string;
 }
 
-function mockCall(source: MockCallSource, callIndex = 0): ReadonlyArray<unknown> {
+function mockCall(source: MockCallSource, callIndex = 0): ReadonlyArray<any> {
   const call = source.mock.calls[callIndex];
   if (!call) {
     throw new Error(`expected mock call ${callIndex}`);
@@ -161,16 +161,16 @@ function requireRespondPayload(call: RespondCall | undefined, label: string) {
 }
 
 function expectQueuedAction(
-  payload: Record<string, unknown>,
-  expected: Record<string, unknown>,
-): Record<string, unknown> {
+  payload: Record<string, any>,
+  expected: Record<string, any>,
+): Record<string, any> {
   expect(Array.isArray(payload.actions), "payload.actions must be an array").toBe(true);
-  const actions = payload.actions as unknown[];
+  const actions = payload.actions as any[];
   expect(actions).toHaveLength(1);
   return expectRecordFields(actions[0], "queued action", expected);
 }
 
-function expectWakeSendError(wake: unknown, reason: string, status: number) {
+function expectWakeSendError(wake: any, reason: string, status: number) {
   expectRecordFields(wake, "wake result", {
     available: true,
     throttled: false,
@@ -180,7 +180,7 @@ function expectWakeSendError(wake: unknown, reason: string, status: number) {
   });
 }
 
-function expectNoAuthWake(wake: unknown, label: string, reason: string) {
+function expectNoAuthWake(wake: any, label: string, reason: string) {
   expectRecordFields(wake, label, {
     available: false,
     throttled: false,
@@ -191,13 +191,13 @@ function expectNoAuthWake(wake: unknown, label: string, reason: string) {
 
 async function expectWakeState(
   nodeId: string,
-  expected: Record<string, unknown>,
+  expected: Record<string, any>,
   label = "wake result",
 ) {
   expectRecordFields(await maybeWakeNodeWithApns(nodeId), label, expected);
 }
 
-async function expectNudgeState(nodeId: string, expected: Record<string, unknown>) {
+async function expectNudgeState(nodeId: string, expected: Record<string, any>) {
   expectRecordFields(await maybeSendNodeWakeNudge(nodeId), "nudge result", expected);
 }
 
@@ -300,7 +300,7 @@ function mockRelayWakeConfig(nodeId: string, overrides: WakeResultOverrides = {}
   });
 }
 
-function makeNodeInvokeParams(overrides?: Partial<Record<string, unknown>>) {
+function makeNodeInvokeParams(overrides?: Partial<Record<string, any>>) {
   return {
     nodeId: "ios-node-1",
     command: "camera.capture",
@@ -317,17 +317,17 @@ async function invokeNode(params: {
     invoke: (payload: {
       nodeId: string;
       command: string;
-      params?: unknown;
+      params?: any;
       timeoutMs?: number;
       idempotencyKey?: string;
     }) => Promise<{
       ok: boolean;
-      payload?: unknown;
+      payload?: any;
       payloadJSON?: string | null;
       error?: { code?: string; message?: string } | null;
     }>;
   };
-  requestParams?: Partial<Record<string, unknown>>;
+  requestParams?: Partial<Record<string, any>>;
 }) {
   const respond = vi.fn();
   const logGateway = {
@@ -543,7 +543,7 @@ describe("node.invoke APNs wake path", () => {
     );
     mocks.sanitizeNodeInvokeParamsForForwarding.mockClear();
     mocks.sanitizeNodeInvokeParamsForForwarding.mockImplementation(
-      ({ rawParams }: { rawParams: unknown }) => ({ ok: true, params: rawParams }),
+      ({ rawParams }: { rawParams: any }) => ({ ok: true, params: rawParams }),
     );
     mocks.loadApnsRegistration.mockClear();
     mocks.clearApnsRegistrationIfCurrent.mockClear();

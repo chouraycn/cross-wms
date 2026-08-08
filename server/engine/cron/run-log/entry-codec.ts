@@ -1,6 +1,6 @@
 import type { CronRunLogEntry } from "./index.js";
 
-export function encodeCronRunLogEntry(entry: CronRunLogEntry): Record<string, unknown> {
+export function encodeCronRunLogEntry(entry: CronRunLogEntry): Record<string, any> {
   return {
     runId: entry.runId,
     jobId: entry.jobId,
@@ -16,7 +16,7 @@ export function encodeCronRunLogEntry(entry: CronRunLogEntry): Record<string, un
   };
 }
 
-export function decodeCronRunLogEntry(raw: Record<string, unknown>): CronRunLogEntry | null {
+export function decodeCronRunLogEntry(raw: Record<string, any>): CronRunLogEntry | null {
   if (typeof raw.runId !== "string" || typeof raw.jobId !== "string") {
     return null;
   }

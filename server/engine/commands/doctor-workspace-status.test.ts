@@ -16,23 +16,23 @@ const mocks = vi.hoisted(() => ({
   buildWorkspaceSkillStatus: vi.fn(),
   buildPluginRegistrySnapshotReport: vi.fn(),
   buildPluginCompatibilityWarnings: vi.fn(),
-  listTaskFlowRecords: vi.fn<() => unknown[]>(() => []),
-  listTasksForFlowId: vi.fn<(flowId: string) => unknown[]>((_flowId: string) => []),
+  listTaskFlowRecords: vi.fn<() => any[]>(() => []),
+  listTasksForFlowId: vi.fn<(flowId: string) => any[]>((_flowId: string) => []),
 }));
 
 vi.mock("../agents/agent-scope.js", () => ({
-  resolveAgentWorkspaceDir: (...args: unknown[]) => mocks.resolveAgentWorkspaceDir(...args),
-  resolveDefaultAgentId: (...args: unknown[]) => mocks.resolveDefaultAgentId(...args),
+  resolveAgentWorkspaceDir: (...args: any[]) => mocks.resolveAgentWorkspaceDir(...args),
+  resolveDefaultAgentId: (...args: any[]) => mocks.resolveDefaultAgentId(...args),
 }));
 
 vi.mock("../skills/discovery/status.js", () => ({
-  buildWorkspaceSkillStatus: (...args: unknown[]) => mocks.buildWorkspaceSkillStatus(...args),
+  buildWorkspaceSkillStatus: (...args: any[]) => mocks.buildWorkspaceSkillStatus(...args),
 }));
 
 vi.mock("../plugins/status.js", () => ({
-  buildPluginRegistrySnapshotReport: (...args: unknown[]) =>
+  buildPluginRegistrySnapshotReport: (...args: any[]) =>
     mocks.buildPluginRegistrySnapshotReport(...args),
-  buildPluginCompatibilityWarnings: (...args: unknown[]) =>
+  buildPluginCompatibilityWarnings: (...args: any[]) =>
     mocks.buildPluginCompatibilityWarnings(...args),
 }));
 
@@ -50,8 +50,8 @@ async function runNoteWorkspaceStatusForTest(
   opts?: {
     cfg?: OpenClawConfig;
     pluginVersionDrift?: PluginVersionDriftReport;
-    flows?: unknown[];
-    tasksByFlowId?: (flowId: string) => unknown[];
+    flows?: any[];
+    tasksByFlowId?: (flowId: string) => any[];
   },
 ) {
   const cfg: OpenClawConfig = opts?.cfg ?? {};
@@ -384,7 +384,7 @@ describe("noteWorkspaceStatus", () => {
       platformIncompatible: fields.platformIncompatible,
     }) as never;
 
-  async function runWithSkills(skills: unknown[]) {
+  async function runWithSkills(skills: any[]) {
     mocks.resolveDefaultAgentId.mockReturnValue("default");
     mocks.resolveAgentWorkspaceDir.mockReturnValue("/workspace");
     mocks.buildWorkspaceSkillStatus.mockReturnValue({ skills });

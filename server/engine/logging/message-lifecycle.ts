@@ -13,7 +13,7 @@ export interface MessageLifecycleEvent {
   stage: MessageLifecycleStage;
   timestamp: string;
   durationMs?: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export class MessageLifecycleTracker {
@@ -21,7 +21,7 @@ export class MessageLifecycleTracker {
   private readonly startTime: Map<string, number> = new Map();
   private readonly messageIds: Set<string> = new Set();
 
-  trackStage(messageId: string, stage: MessageLifecycleStage, metadata?: Record<string, unknown>): void {
+  trackStage(messageId: string, stage: MessageLifecycleStage, metadata?: Record<string, any>): void {
     const now = Date.now();
     const event: MessageLifecycleEvent = {
       messageId,
@@ -81,7 +81,7 @@ export const messageLifecycle = new MessageLifecycleTracker();
 export function trackMessageStage(
   messageId: string,
   stage: MessageLifecycleStage,
-  metadata?: Record<string, unknown>,
+  metadata?: Record<string, any>,
 ): void {
   messageLifecycle.trackStage(messageId, stage, metadata);
 }

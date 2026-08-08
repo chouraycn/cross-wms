@@ -224,7 +224,7 @@ export class PolicyEngine {
     return this.activeProfile;
   }
 
-  evaluateToolCall(toolName: string, input?: unknown): PolicyEvaluationResult {
+  evaluateToolCall(toolName: string, input?: any): PolicyEvaluationResult {
     const results: PolicyEvaluationResult[] = [];
     const matchedRules: PolicyRule[] = [];
 
@@ -328,7 +328,7 @@ export class PolicyEngine {
     };
   }
 
-  private matchesRule(rule: PolicyRule, context: Record<string, unknown>): boolean {
+  private matchesRule(rule: PolicyRule, context: Record<string, any>): boolean {
     const checkCondition = (condition: PolicyCondition): boolean => {
       const value = context[condition.field];
       if (value === undefined && condition.operator !== "exists") {
@@ -368,12 +368,12 @@ export class PolicyEngine {
       : rule.conditions.every(checkCondition);
   }
 
-  canExecuteTool(toolName: string, input?: unknown): boolean {
+  canExecuteTool(toolName: string, input?: any): boolean {
     const result = this.evaluateToolCall(toolName, input);
     return result.allowed && !result.requiresApproval;
   }
 
-  requiresApproval(toolName: string, input?: unknown): boolean {
+  requiresApproval(toolName: string, input?: any): boolean {
     const result = this.evaluateToolCall(toolName, input);
     return result.requiresApproval ?? false;
   }

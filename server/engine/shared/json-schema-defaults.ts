@@ -79,11 +79,11 @@ const schemaIntegerKeywords = new Set([
 ]);
 const schemaBooleanKeywords = new Set(["deprecated", "readOnly", "uniqueItems", "writeOnly"]);
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }
 
-function schemaTypeIncludes(schema: Record<string, unknown>, type: string): boolean {
+function schemaTypeIncludes(schema: Record<string, any>, type: string): boolean {
   return schema.type === type || (Array.isArray(schema.type) && schema.type.includes(type));
 }
 
@@ -103,7 +103,7 @@ function schemaResourceRefKey(
   return `schema:${id}:${baseId ?? ""}:${ref}`;
 }
 
-function normalizeSchemaMap(value: unknown): unknown {
+function normalizeSchemaMap(value: any): any {
   if (!isRecord(value)) {
     return value;
   }
@@ -136,7 +136,7 @@ export function repairJsonSchemaPatternForUnicodeRegExp(pattern: string): string
   return compilesUnicodePattern(repaired) ? repaired : pattern;
 }
 
-function normalizeSchemaDependencies(value: unknown): unknown {
+function normalizeSchemaDependencies(value: any): any {
   if (!isRecord(value)) {
     return value;
   }
@@ -148,8 +148,8 @@ function normalizeSchemaDependencies(value: unknown): unknown {
   );
 }
 
-function normalizePatternProperties(value: Record<string, unknown>): Record<string, unknown> {
-  const normalized = new Map<string, unknown>();
+function normalizePatternProperties(value: Record<string, any>): Record<string, any> {
+  const normalized = new Map<string, any>();
   for (const [pattern, propertySchema] of Object.entries(value)) {
     const repairedPattern = repairJsonSchemaPatternForUnicodeRegExp(pattern);
     const repairedSchema = normalizeJsonSchemaNode(propertySchema);
@@ -162,7 +162,7 @@ function normalizePatternProperties(value: Record<string, unknown>): Record<stri
   return Object.fromEntries(normalized);
 }
 
-function expandJsonSchemaTypeArray(schema: Record<string, unknown>): Record<string, unknown> {
+function expandJsonSchemaTypeArray(schema: Record<string, any>): Record<string, any> {
   const { nullable, type, ...rest } = schema;
   const types = Array.isArray(type) ? [...type] : typeof type === "string" ? [type] : null;
   if (!types) {
@@ -180,8 +180,8 @@ function expandJsonSchemaTypeArray(schema: Record<string, unknown>): Record<stri
 }
 
 function normalizeAdditionalPropertiesSchema(
-  schema: Record<string, unknown>,
-): Record<string, unknown> {
+  schema: Record<string, any>,
+): Record<string, any> {
   if (
     !isRecord(schema.additionalProperties) ||
     isRecord(schema.properties) ||
@@ -199,7 +199,7 @@ function normalizeAdditionalPropertiesSchema(
   };
 }
 
-function normalizeJsonSchemaNode(schema: unknown): unknown {
+function normalizeJsonSchemaNode(schema: any): any {
   if (Array.isArray(schema)) {
     return schema.map((entry) => normalizeJsonSchemaNode(entry));
   }
@@ -232,7 +232,7 @@ function normalizeJsonSchemaNode(schema: unknown): unknown {
   );
 }
 
-function validateTypeKeyword(type: unknown, path: string): string | undefined {
+function validateTypeKeyword(type: any, path: string): string | undefined {
   if (typeof type === "string") {
     return jsonSchemaTypes.has(type) ? undefined : `${path}.type: unsupported JSON Schema type`;
   }
@@ -345,7 +345,7 @@ function resolveLocalRef(
     return { found: true, schema: resourceRoot, resourceRoot, resourceBaseId };
   }
   if (ref.startsWith("#/")) {
-    let current: unknown = resourceRoot;
+    let current: any = resourceRoot;
     let currentResourceRoot = resourceRoot;
     let currentResourceBaseId = resourceBaseId;
     for (const segment of ref.slice(2).split("/").map(decodePointerSegment)) {
@@ -505,11 +505,11 @@ export function normalizeJsonSchemaForTypeBox(schema: JsonSchemaValue): JsonSche
   return normalizeJsonSchemaNode(schema) as JsonSchemaValue;
 }
 
-function isStringArray(value: unknown): value is string[] {
+function isStringArray(value: any): value is string[] {
   return Array.isArray(value) && value.every((entry) => typeof entry === "string");
 }
 
-function hasDuplicateJsonValues(values: unknown[]): boolean {
+function hasDuplicateJsonValues(values: any[]): boolean {
   const seen = new Set<string>();
   for (const value of values) {
     const key = JSON.stringify(value);
@@ -522,7 +522,7 @@ function hasDuplicateJsonValues(values: unknown[]): boolean {
 }
 
 function validateSchemaKeywordShapes(
-  schema: Record<string, unknown>,
+  schema: Record<string, any>,
   path: string,
 ): string | undefined {
   for (const key of schemaStringKeywords) {
@@ -605,7 +605,7 @@ function validateSchemaKeywordShapes(
 }
 
 function findJsonSchemaNodeError(
-  schema: unknown,
+  schema: any,
   path: string,
   root: JsonSchemaValue,
   resourceRoot: JsonSchemaValue,
@@ -758,7 +758,7 @@ function cloneDefault<T>(value: T): T {
   return structuredClone(value);
 }
 
-function getDefault(schema: JsonSchemaValue): unknown {
+function getDefault(schema: JsonSchemaValue): any {
   if (!isRecord(schema) || !Object.hasOwn(schema, "default")) {
     return undefined;
   }
@@ -896,7 +896,7 @@ function inlineLocalRefsForMatch(
 
 function schemaMatches(
   schema: JsonSchemaValue,
-  value: unknown,
+  value: any,
   root: JsonSchemaValue,
   resourceRoot: JsonSchemaValue,
   resourceBaseId: string | undefined,
@@ -912,13 +912,13 @@ function schemaMatches(
 }
 
 function applyObjectPropertyDefaults(
-  schema: Record<string, unknown>,
-  value: Record<string, unknown>,
+  schema: Record<string, any>,
+  value: Record<string, any>,
   root: JsonSchemaValue,
   resolvingRefs: Set<string>,
   currentResourceRoot: JsonSchemaValue,
   currentResourceBaseId: string | undefined,
-): Record<string, unknown> {
+): Record<string, any> {
   const properties = isRecord(schema.properties) ? schema.properties : {};
   for (const [key, propertySchema] of Object.entries(properties)) {
     const currentValue = value[key];
@@ -981,13 +981,13 @@ function applyObjectPropertyDefaults(
 }
 
 function applyObjectDependencyDefaults(
-  schema: Record<string, unknown>,
-  value: Record<string, unknown>,
+  schema: Record<string, any>,
+  value: Record<string, any>,
   root: JsonSchemaValue,
   resolvingRefs: Set<string>,
   currentResourceRoot: JsonSchemaValue,
   currentResourceBaseId: string | undefined,
-): Record<string, unknown> {
+): Record<string, any> {
   let nextValue = value;
   if (isRecord(schema.dependencies)) {
     for (const [key, dependencySchema] of Object.entries(schema.dependencies)) {
@@ -1001,7 +1001,7 @@ function applyObjectDependencyDefaults(
         resolvingRefs,
         currentResourceRoot,
         currentResourceBaseId,
-      ) as Record<string, unknown>;
+      ) as Record<string, any>;
     }
   }
   if (isRecord(schema.dependentSchemas)) {
@@ -1016,20 +1016,20 @@ function applyObjectDependencyDefaults(
         resolvingRefs,
         currentResourceRoot,
         currentResourceBaseId,
-      ) as Record<string, unknown>;
+      ) as Record<string, any>;
     }
   }
   return nextValue;
 }
 
 function applyObjectConditionalDefaults(
-  schema: Record<string, unknown>,
-  value: Record<string, unknown>,
+  schema: Record<string, any>,
+  value: Record<string, any>,
   root: JsonSchemaValue,
   resolvingRefs: Set<string>,
   currentResourceRoot: JsonSchemaValue,
   currentResourceBaseId: string | undefined,
-): Record<string, unknown> {
+): Record<string, any> {
   if (!(typeof schema.if === "boolean" || isRecord(schema.if))) {
     return value;
   }
@@ -1052,7 +1052,7 @@ function applyObjectConditionalDefaults(
     resolvingRefs,
     currentResourceRoot,
     currentResourceBaseId,
-  ) as Record<string, unknown>;
+  ) as Record<string, any>;
 }
 
 function countSchemaNodes(schema: JsonSchemaValue, seen = new Set<object>()): number {
@@ -1102,13 +1102,13 @@ function countSchemaNodes(schema: JsonSchemaValue, seen = new Set<object>()): nu
 }
 
 function applyObjectApplicatorDefaults(
-  schema: Record<string, unknown>,
-  value: Record<string, unknown>,
+  schema: Record<string, any>,
+  value: Record<string, any>,
   root: JsonSchemaValue,
   resolvingRefs: Set<string>,
   currentResourceRoot: JsonSchemaValue,
   currentResourceBaseId: string | undefined,
-): Record<string, unknown> {
+): Record<string, any> {
   let nextValue = applyObjectPropertyAndDependencyDefaults(
     schema,
     value,
@@ -1136,13 +1136,13 @@ function applyObjectApplicatorDefaults(
 }
 
 function applyObjectPropertyAndDependencyDefaults(
-  schema: Record<string, unknown>,
-  value: Record<string, unknown>,
+  schema: Record<string, any>,
+  value: Record<string, any>,
   root: JsonSchemaValue,
   resolvingRefs: Set<string>,
   currentResourceRoot: JsonSchemaValue,
   currentResourceBaseId: string | undefined,
-): Record<string, unknown> {
+): Record<string, any> {
   let nextValue = value;
   const maxIterations = countSchemaNodes(schema);
   for (let index = 0; index < maxIterations; index++) {
@@ -1172,12 +1172,12 @@ function applyObjectPropertyAndDependencyDefaults(
 
 function applySchemaDefaults(
   schema: JsonSchemaValue,
-  valueInput: unknown,
+  valueInput: any,
   root = schema,
   resolvingRefs = new Set<string>(),
   resourceRoot = root,
   resourceBaseId?: string,
-): unknown {
+): any {
   let value = valueInput;
   if (value === undefined) {
     const defaultValue = getDefault(schema);

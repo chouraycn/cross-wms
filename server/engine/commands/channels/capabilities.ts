@@ -46,7 +46,7 @@ type ChannelCapabilitiesReport = {
   enabled?: boolean;
   support?: ChannelCapabilities;
   actions?: string[];
-  probe?: unknown;
+  probe?: any;
   diagnostics?: ChannelCapabilitiesDiagnostics;
 };
 
@@ -54,7 +54,7 @@ const CHANNEL_CAPABILITIES_TIMEOUT_MAX_MS = 30_000;
 
 type ChannelCapabilitiesStepResult<T> =
   | { kind: "value"; value: T }
-  | { kind: "error"; error: unknown }
+  | { kind: "error"; error: any }
   | { kind: "timeout" };
 
 function resolveChannelCapabilitiesTimeoutMs(timeoutMs: number) {
@@ -74,7 +74,7 @@ async function raceChannelCapabilitiesStep<T>(params: {
     .then(params.run)
     .then(
       (value): ChannelCapabilitiesStepResult<T> => ({ kind: "value", value }),
-      (error: unknown): ChannelCapabilitiesStepResult<T> => ({ kind: "error", error }),
+      (error: any): ChannelCapabilitiesStepResult<T> => ({ kind: "error", error }),
     );
   const result = await Promise.race([resultPromise, timeoutPromise]);
   if (timeout) {
@@ -86,7 +86,7 @@ async function raceChannelCapabilitiesStep<T>(params: {
 async function runChannelCapabilitiesProbe(params: {
   timeoutMs: number;
   run: () => unknown;
-}): Promise<unknown> {
+}): Promise<any> {
   const result = await raceChannelCapabilitiesStep(params);
   switch (result.kind) {
     case "value":
@@ -181,11 +181,11 @@ function formatSupport(capabilities?: ChannelCapabilities) {
   return bits.length ? bits.join(" ") : "none";
 }
 
-function formatGenericProbeLines(probe: unknown): ChannelCapabilitiesDisplayLine[] {
+function formatGenericProbeLines(probe: any): ChannelCapabilitiesDisplayLine[] {
   if (!probe || typeof probe !== "object") {
     return [];
   }
-  const probeObj = probe as Record<string, unknown>;
+  const probeObj = probe as Record<string, any>;
   const ok = typeof probeObj.ok === "boolean" ? probeObj.ok : undefined;
   if (ok === true) {
     return [{ text: "Probe: ok" }];
@@ -239,7 +239,7 @@ async function resolveChannelReports(params: {
     const enabled = plugin.config.isEnabled
       ? plugin.config.isEnabled(resolvedAccount, cfg)
       : (resolvedAccount as { enabled?: boolean }).enabled !== false;
-    let probe: unknown;
+    let probe: any;
     if (configured && enabled && plugin.status?.probeAccount) {
       probe = await runChannelCapabilitiesProbe({
         timeoutMs,

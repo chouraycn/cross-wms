@@ -3,7 +3,7 @@
 
 /** Builds a simplified channel summary. */
 export async function buildChannelSummary(
-  _cfg?: unknown,
+  _cfg?: any,
   _options?: { colorize?: boolean; includeAllowFrom?: boolean },
 ): Promise<string[]> {
   // Simplified: no real channel plugin enumeration in cross-wms

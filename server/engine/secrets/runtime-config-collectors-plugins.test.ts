@@ -22,7 +22,7 @@ vi.mock("../plugins/bundled-plugin-metadata.js", () => ({
   listBundledPluginMetadata: () => [],
 }));
 
-function asConfig(value: unknown): OpenClawConfig {
+function asConfig(value: any): OpenClawConfig {
   return value as OpenClawConfig;
 }
 
@@ -52,8 +52,8 @@ function requireAssignment(context: ResolverContext, index: number): RuntimeConf
 }
 
 function createAcpxMcpSecretConfig(params: {
-  plugins?: Record<string, unknown>;
-  entry?: Record<string, unknown>;
+  plugins?: Record<string, any>;
+  entry?: Record<string, any>;
 }): OpenClawConfig {
   return asConfig({
     plugins: {
@@ -189,12 +189,12 @@ describe("collectPluginConfigAssignments", () => {
     expect(context.assignments).toHaveLength(1);
     requireAssignment(context, 0).apply("resolved-key-value");
 
-    const entries = config.plugins?.entries as Record<string, Record<string, unknown>>;
-    const mcpServers = (entries?.acpx?.config as Record<string, unknown>)?.mcpServers as Record<
+    const entries = config.plugins?.entries as Record<string, Record<string, any>>;
+    const mcpServers = (entries?.acpx?.config as Record<string, any>)?.mcpServers as Record<
       string,
-      Record<string, unknown>
+      Record<string, any>
     >;
-    const env = mcpServers?.mcp1?.env as Record<string, unknown>;
+    const env = mcpServers?.mcp1?.env as Record<string, any>;
     if (!env) {
       throw new Error("expected acpx mcp env config");
     }
@@ -251,9 +251,9 @@ describe("collectPluginConfigAssignments", () => {
 
     assignment.apply("resolved-second");
 
-    const entries = config.plugins?.entries as Record<string, Record<string, unknown>>;
+    const entries = config.plugins?.entries as Record<string, Record<string, any>>;
     const pluginConfig = entries["array-plugin"]?.config as {
-      servers?: Array<{ env?: Record<string, unknown> }>;
+      servers?: Array<{ env?: Record<string, any> }>;
     };
     expect(pluginConfig.servers?.[1]?.env?.API_KEY).toBe("resolved-second");
     expect(pluginConfig.servers?.[0]?.env?.API_KEY).toEqual(envRef("FIRST"));

@@ -6,13 +6,13 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function createEmbeddedRunStageTracker(..._args: unknown[]): unknown {
+export function createEmbeddedRunStageTracker(..._args: any[]): any {
   return undefined;
 }
-export function shouldWarnEmbeddedRunStageSummary(..._args: unknown[]): unknown {
+export function shouldWarnEmbeddedRunStageSummary(..._args: any[]): any {
   return false;
 }
-export function formatEmbeddedRunStageSummary(..._args: unknown[]): unknown {
+export function formatEmbeddedRunStageSummary(..._args: any[]): any {
   return "";
 }
-export const EMBEDDED_RUN_ATTEMPT_DISPATCH_STAGE: unknown = undefined;
+export const EMBEDDED_RUN_ATTEMPT_DISPATCH_STAGE: any = undefined;

@@ -138,7 +138,7 @@ describe('explainShellCommand', () => {
       expect(result.ok).toBe(true);
       expect(result.risks).toHaveLength(1);
       expect(result.risks[0].kind).toBe('source');
-      expect((result.risks[0] as unknown).command).toBe('source');
+      expect((result.risks[0] as any).command).toBe('source');
     });
 
     it('should detect dot (.) command as source risk', async () => {
@@ -146,7 +146,7 @@ describe('explainShellCommand', () => {
       expect(result.ok).toBe(true);
       expect(result.risks).toHaveLength(1);
       expect(result.risks[0].kind).toBe('source');
-      expect((result.risks[0] as unknown).command).toBe('.');
+      expect((result.risks[0] as any).command).toBe('.');
     });
 
     it('should detect shell wrapper with -c flag', async () => {
@@ -154,10 +154,10 @@ describe('explainShellCommand', () => {
       expect(result.ok).toBe(true);
       expect(result.risks).toHaveLength(1);
       expect(result.risks[0].kind).toBe('shell-wrapper');
-      expect((result.risks[0] as unknown).executable).toBe('bash');
-      expect((result.risks[0] as unknown).flag).toBe('-c');
+      expect((result.risks[0] as any).executable).toBe('bash');
+      expect((result.risks[0] as any).flag).toBe('-c');
       // Note: simplified parser splits by whitespace, so payload is just the next argument
-      expect((result.risks[0] as unknown).payload).toBe('"echo');
+      expect((result.risks[0] as any).payload).toBe('"echo');
     });
 
     it('should detect different shell wrappers', async () => {
@@ -168,7 +168,7 @@ describe('explainShellCommand', () => {
         expect(result.ok).toBe(true);
         expect(result.risks).toHaveLength(1);
         expect(result.risks[0].kind).toBe('shell-wrapper');
-        expect((result.risks[0] as unknown).executable).toBe(shell);
+        expect((result.risks[0] as any).executable).toBe(shell);
       }
     });
 

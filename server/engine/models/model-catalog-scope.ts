@@ -19,7 +19,7 @@ export interface CatalogScopeEntry {
   scope: CatalogScope;
   scopeId?: string;
   priority: number;
-  modelOverrides?: Record<string, Record<string, unknown>>;
+  modelOverrides?: Record<string, Record<string, any>>;
   hiddenModels?: string[];
   visibleModels?: string[];
   defaultModel?: string;
@@ -87,8 +87,8 @@ export function getScopeEntry(
 export function resolveScopedModelConfig(
   stack: CatalogScopeStack,
   modelId: string,
-): Record<string, unknown> {
-  const result: Record<string, unknown> = {};
+): Record<string, any> {
+  const result: Record<string, any> = {};
 
   for (const scope of stack.scopes) {
     const overrides = scope.modelOverrides?.[modelId];
@@ -132,9 +132,9 @@ export function resolveDefaultModelFromScopes(
   return undefined;
 }
 
-export function mergeScopeOverrides<T extends Record<string, unknown>>(
+export function mergeScopeOverrides<T extends Record<string, any>>(
   base: T,
-  overrides: Record<string, unknown> | undefined,
+  overrides: Record<string, any> | undefined,
 ): T {
   if (!overrides) return base;
   return { ...base, ...overrides } as T;

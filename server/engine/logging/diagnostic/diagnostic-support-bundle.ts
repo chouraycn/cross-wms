@@ -48,9 +48,9 @@ export function formatSupportBundleSummary(bundle: SupportBundle): string {
   return lines.join('\n');
 }
 
-export function validateSupportBundle(bundle: unknown): bundle is SupportBundle {
+export function validateSupportBundle(bundle: any): bundle is SupportBundle {
   if (!bundle || typeof bundle !== 'object') return false;
-  const b = bundle as Record<string, unknown>;
+  const b = bundle as Record<string, any>;
   return (
     typeof b.id === 'string' &&
     typeof b.generatedAt === 'string' &&

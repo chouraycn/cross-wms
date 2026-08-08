@@ -242,7 +242,7 @@ export class AgentAllowlistManager {
   }
 
   /** 从 JSON 文件加载配置 */
-  static fromJSON(json: unknown): AgentAllowlistManager {
+  static fromJSON(json: any): AgentAllowlistManager {
     const config = json as AgentsConfig;
     return new AgentAllowlistManager(config);
   }

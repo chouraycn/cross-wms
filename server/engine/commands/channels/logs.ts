@@ -57,7 +57,7 @@ function matchesChannel(line: NonNullable<LogLine>, channel: string) {
   return false;
 }
 
-function parseLinesOption(value: unknown): number {
+function parseLinesOption(value: any): number {
   if (value === undefined || value === null || value === "") {
     return DEFAULT_LIMIT;
   }

@@ -127,7 +127,7 @@ describe('gateway auth 授权函数', () => {
     it('none 模式应直接成功', async () => {
       const result = await authorizeGatewayConnect({
         auth: { mode: 'none', allowTailscale: false },
-        req: { headers: {} } as unknown,
+        req: { headers: {} } as any,
         authSurface: 'http',
       });
       expect(result.ok).toBe(true);
@@ -138,7 +138,7 @@ describe('gateway auth 授权函数', () => {
       const result = await authorizeGatewayConnect({
         auth: { mode: 'token', token: 'mytoken', allowTailscale: false },
         connectAuth: { token: 'mytoken' },
-        req: { headers: {} } as unknown,
+        req: { headers: {} } as any,
         authSurface: 'http',
       });
       expect(result.ok).toBe(true);
@@ -149,7 +149,7 @@ describe('gateway auth 授权函数', () => {
       const result = await authorizeGatewayConnect({
         auth: { mode: 'token', token: 'mytoken', allowTailscale: false },
         connectAuth: { token: 'wrong' },
-        req: { headers: {} } as unknown,
+        req: { headers: {} } as any,
         authSurface: 'http',
       });
       expect(result.ok).toBe(false);
@@ -159,7 +159,7 @@ describe('gateway auth 授权函数', () => {
       const result = await authorizeGatewayConnect({
         auth: { mode: 'password', password: 'secret', allowTailscale: false },
         connectAuth: { password: 'secret' },
-        req: { headers: {} } as unknown,
+        req: { headers: {} } as any,
         authSurface: 'http',
       });
       expect(result.ok).toBe(true);
@@ -190,7 +190,7 @@ describe('gateway auth 授权函数', () => {
         req: {
           headers: { 'x-forwarded-user': 'bob' },
           socket: { remoteAddress: '127.0.0.1' },
-        } as unknown,
+        } as any,
         authSurface: 'http',
       });
       expect(result.ok).toBe(true);
@@ -199,8 +199,8 @@ describe('gateway auth 授权函数', () => {
 
     it('未知 auth mode 时应失败', async () => {
       const result = await authorizeGatewayConnect({
-        auth: { mode: 'unknown-mode' as unknown, allowTailscale: false },
-        req: { headers: {} } as unknown,
+        auth: { mode: 'unknown-mode' as any, allowTailscale: false },
+        req: { headers: {} } as any,
         authSurface: 'http',
       });
       expect(result.ok).toBe(false);
@@ -211,7 +211,7 @@ describe('gateway auth 授权函数', () => {
     it('http 表面应成功授权 none 模式', async () => {
       const result = await authorizeHttpGatewayConnect({
         auth: { mode: 'none', allowTailscale: false },
-        req: { headers: {} } as unknown,
+        req: { headers: {} } as any,
       });
       expect(result.ok).toBe(true);
     });
@@ -219,7 +219,7 @@ describe('gateway auth 授权函数', () => {
     it('ws-control-ui 表面应成功授权 none 模式', async () => {
       const result = await authorizeWsControlUiGatewayConnect({
         auth: { mode: 'none', allowTailscale: false },
-        req: { headers: {} } as unknown,
+        req: { headers: {} } as any,
       });
       expect(result.ok).toBe(true);
     });
@@ -228,7 +228,7 @@ describe('gateway auth 授权函数', () => {
       const result = await authorizeHttpGatewayConnect({
         auth: { mode: 'token', token: 't', allowTailscale: false },
         connectAuth: { token: 't' },
-        req: { headers: {} } as unknown,
+        req: { headers: {} } as any,
       });
       expect(result.ok).toBe(true);
     });

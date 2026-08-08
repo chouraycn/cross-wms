@@ -7,4 +7,4 @@
  */
 
 export type StubTool = unknown;
-export const stubTool: unknown = undefined;
+export const stubTool: any = undefined;

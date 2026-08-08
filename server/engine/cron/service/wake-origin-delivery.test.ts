@@ -114,14 +114,14 @@ describe("cron wake() origin delivery-context carry", () => {
     expect(enqueueSystemEvent).toHaveBeenCalledExactlyOnceWith("check the queue", {
       sessionKey: "agent:main:telegram:8661849123:topic:4052",
     });
-    const [, options] = enqueueSystemEvent.mock.calls[0] as [string, Record<string, unknown>];
+    const [, options] = enqueueSystemEvent.mock.calls[0] as [string, Record<string, any>];
     expect(options).not.toHaveProperty("deliveryContext");
   });
 
   it("works when no resolveOriginDeliveryContext dep is wired (legacy deps)", () => {
     const { state, enqueueSystemEvent } = makeStateWithMocks();
     // Drop the dep entirely to mirror a deployment whose adapter predates the fix.
-    (state.deps as { resolveOriginDeliveryContext?: unknown }).resolveOriginDeliveryContext =
+    (state.deps as { resolveOriginDeliveryContext?: any }).resolveOriginDeliveryContext =
       undefined;
 
     const result = wake(state, {

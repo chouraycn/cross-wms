@@ -9,12 +9,12 @@
 export type HighlightFormatter = unknown;
 export type HighlightTheme = unknown;
 export type HighlightOptions = unknown;
-export function renderHighlightedHtml(..._args: unknown[]): unknown {
+export function renderHighlightedHtml(..._args: any[]): any {
   return "";
 }
-export function highlight(..._args: unknown[]): unknown {
+export function highlight(..._args: any[]): any {
   return undefined;
 }
-export function supportsLanguage(..._args: unknown[]): unknown {
+export function supportsLanguage(..._args: any[]): any {
   return undefined;
 }

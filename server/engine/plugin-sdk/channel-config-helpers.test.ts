@@ -43,13 +43,13 @@ function createConfigWritesCfg() {
   };
 }
 
-function expectAdapterAllowFromAndDefaultTo(adapter: unknown) {
+function expectAdapterAllowFromAndDefaultTo(adapter: any) {
   const channelAdapter = adapter as {
     resolveAllowFrom?: (params: { cfg: object; accountId: string }) => unknown;
     resolveDefaultTo?: (params: { cfg: object; accountId: string }) => unknown;
     setAccountEnabled?: (params: { cfg: object; accountId: string; enabled: boolean }) => {
       channels?: {
-        demo?: unknown;
+        demo?: any;
       };
     };
   };

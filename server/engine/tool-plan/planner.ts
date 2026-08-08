@@ -32,7 +32,7 @@ export function createToolPlanContractError(error: ToolPlanContractError): Error
 }
 
 /** 判断是否为工具规划契约错误 */
-export function isToolPlanContractError(err: unknown): err is { __toolPlanContractError: ToolPlanContractError } {
+export function isToolPlanContractError(err: any): err is { __toolPlanContractError: ToolPlanContractError } {
   return err instanceof Error && '__toolPlanContractError' in err;
 }
 
@@ -128,7 +128,7 @@ function evaluateSignal(
     default: {
       // exhaustiveness 检查
       const _exhaustive: never = signal;
-      return [{ code: 'unsupported-signal', kind: String((_exhaustive as Record<string, unknown>).kind) }];
+      return [{ code: 'unsupported-signal', kind: String((_exhaustive as Record<string, any>).kind) }];
     }
   }
 }
@@ -185,9 +185,9 @@ export interface ToolPlanContext {
   /** 已启用的插件 ID 集合 */
   enabledPlugins?: Set<string>;
   /** 配置值（按路径索引） */
-  configValues?: Record<string, unknown>;
+  configValues?: Record<string, any>;
   /** 上下文值（运行时状态） */
-  contextValues?: Record<string, unknown>;
+  contextValues?: Record<string, any>;
 }
 
 // ===================== 核心规划器 =====================

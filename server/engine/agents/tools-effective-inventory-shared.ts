@@ -5,7 +5,7 @@
  * cross-wms 简化实现：提供基本的标签解析和去重逻辑。
  */
 
-function normalizeOptionalString(value: unknown): string | undefined {
+function normalizeOptionalString(value: any): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }
@@ -13,7 +13,7 @@ function normalizeOptionalString(value: unknown): string | undefined {
   return trimmed || undefined;
 }
 
-function normalizeLowercaseStringOrEmpty(value: unknown): string {
+function normalizeLowercaseStringOrEmpty(value: any): string {
   if (typeof value !== "string") {
     return "";
   }
@@ -24,7 +24,7 @@ export type EffectiveToolInventoryEntry = {
   name: string;
   label: string;
   description: string;
-  sourceInfo?: unknown;
+  sourceInfo?: any;
 };
 
 /** Resolve the display label for a tool. */

@@ -10,6 +10,6 @@
 export const testing = false;
 
 /** Run live cache regression tests (no-op in cross-wms). */
-export async function runLiveCacheRegression(..._args: unknown[]): Promise<void> {
+export async function runLiveCacheRegression(..._args: any[]): Promise<void> {
   // No-op: live cache regression testing not available in cross-wms.
 }

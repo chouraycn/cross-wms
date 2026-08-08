@@ -13,7 +13,7 @@
 
 const pluginRuntimeStoreRegistryKey = Symbol.for('openclaw.plugin-sdk.runtime-store-registry');
 
-type PluginRuntimeStoreRegistry = Map<string, { runtime: unknown }>;
+type PluginRuntimeStoreRegistry = Map<string, { runtime: any }>;
 
 type PluginRuntimeStoreKeyOptions = {
   /** 显式全局注册表 key，用于共享 runtime slot。 */

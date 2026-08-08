@@ -6,7 +6,7 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export const testing: unknown = undefined;
-export function createOpenClawTools(..._args: unknown[]): unknown {
+export const testing: any = undefined;
+export function createOpenClawTools(..._args: any[]): any {
   return undefined;
 }

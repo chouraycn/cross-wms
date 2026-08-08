@@ -32,23 +32,23 @@ const CLI_SESSION_RESEED_HISTORY_CONTEXT_SHARE = 0.08;
 const CHARS_PER_TOKEN_ESTIMATE = 4;
 
 type HistoryMessage = {
-  role?: unknown;
-  content?: unknown;
-  summary?: unknown;
+  role?: any;
+  content?: any;
+  summary?: any;
 };
 type HistoryEntry = {
-  type?: unknown;
-  message?: unknown;
-  summary?: unknown;
-  customType?: unknown;
-  content?: unknown;
-  display?: unknown;
-  details?: unknown;
-  timestamp?: unknown;
-  fromId?: unknown;
-  firstKeptEntryId?: unknown;
-  tokensBefore?: unknown;
-  tokensAfter?: unknown;
+  type?: any;
+  message?: any;
+  summary?: any;
+  customType?: any;
+  content?: any;
+  display?: any;
+  details?: any;
+  timestamp?: any;
+  fromId?: any;
+  firstKeptEntryId?: any;
+  tokensBefore?: any;
+  tokensAfter?: any;
 };
 
 type RawTranscriptReseedReason =
@@ -84,7 +84,7 @@ export function resolveAutoCliSessionReseedHistoryChars(contextWindowTokens: num
   );
 }
 
-function coerceHistoryText(content: unknown): string {
+function coerceHistoryText(content: any): string {
   if (typeof content === "string") {
     return content.trim();
   }
@@ -96,14 +96,14 @@ function coerceHistoryText(content: unknown): string {
       if (!block || typeof block !== "object") {
         return [];
       }
-      const text = (block as { text?: unknown }).text;
+      const text = (block as { text?: any }).text;
       return typeof text === "string" && text.trim().length > 0 ? [text.trim()] : [];
     })
     .join("\n")
     .trim();
 }
 
-function coerceHistoryTimestamp(value: unknown): number | string {
+function coerceHistoryTimestamp(value: any): number | string {
   if (typeof value === "number" && Number.isFinite(value)) {
     return value;
   }
@@ -138,14 +138,14 @@ function historyEntryToContextEngineMessage(entry: HistoryEntry): AgentMessage |
   return undefined;
 }
 
-function loadContextEngineMessagesFromEntries(entries: unknown[]): AgentMessage[] {
+function loadContextEngineMessagesFromEntries(entries: any[]): AgentMessage[] {
   return entries.flatMap((entry) => {
     const message = historyEntryToContextEngineMessage(entry as HistoryEntry);
     return message ? [message] : [];
   });
 }
 
-function renderHistoryMessage(message: unknown): string | undefined {
+function renderHistoryMessage(message: any): string | undefined {
   if (!message || typeof message !== "object") {
     return undefined;
   }
@@ -170,7 +170,7 @@ function renderHistoryMessage(message: unknown): string | undefined {
 
 /** Builds a reseed prompt that carries prior OpenClaw transcript context. */
 export function buildCliSessionHistoryPrompt(params: {
-  messages: unknown[];
+  messages: any[];
   prompt: string;
   maxHistoryChars?: number;
 }): string | undefined {
@@ -309,7 +309,7 @@ async function loadCliSessionEntries(params: {
   sessionKey?: string;
   agentId?: string;
   config?: OpenClawConfig;
-}): Promise<unknown[]> {
+}): Promise<any[]> {
   try {
     const { sessionFile, sessionsDir } = resolveSafeCliSessionFile(params);
     const entryStat = await fsp.lstat(sessionFile);
@@ -375,7 +375,7 @@ export async function loadCliSessionHistoryMessages(params: {
   sessionKey?: string;
   agentId?: string;
   config?: OpenClawConfig;
-}): Promise<unknown[]> {
+}): Promise<any[]> {
   const history = (await loadCliSessionEntries(params)).flatMap((entry) => {
     const candidate = entry as HistoryEntry;
     return candidate.type === "message" ? [candidate.message] : [];
@@ -390,7 +390,7 @@ export async function loadCliSessionContextEngineMessages(params: {
   sessionKey?: string;
   agentId?: string;
   config?: OpenClawConfig;
-}): Promise<unknown[]> {
+}): Promise<any[]> {
   const entries = await loadCliSessionEntries(params);
   const latestCompactionIndex = entries.findLastIndex((entry) => {
     const candidate = entry as HistoryEntry;
@@ -436,7 +436,7 @@ export async function loadCliSessionReseedMessages(params: {
   config?: OpenClawConfig;
   allowRawTranscriptReseed?: boolean;
   rawTranscriptReseedReason?: RawTranscriptReseedReason;
-}): Promise<unknown[]> {
+}): Promise<any[]> {
   const entries = await loadCliSessionEntries(params);
   const loadRawTail = () => {
     if (

@@ -23,7 +23,7 @@ export interface ToolAuditEntry {
   toolName: string;
   originalToolName?: string;
   sessionId?: string;
-  args: Record<string, unknown>;
+  args: Record<string, any>;
   result: string;
   success: boolean;
   durationMs: number;
@@ -124,8 +124,8 @@ class ToolAuditLogManager {
   /**
    * 脱敏参数（移除敏感信息）
    */
-  private sanitizeArgs(args: Record<string, unknown>): Record<string, unknown> {
-    const sanitized: Record<string, unknown> = {};
+  private sanitizeArgs(args: Record<string, any>): Record<string, any> {
+    const sanitized: Record<string, any> = {};
     // 注意: 全部小写 — key.toLowerCase().includes(sk) 不会对 sk 做小写转换
     const sensitiveKeys = ['password', 'token', 'apikey', 'secret', 'credential', 'authorization'];
 

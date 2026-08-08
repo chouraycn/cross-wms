@@ -28,7 +28,7 @@ const DEFAULT_MAX_DEPTH = 5;
 
 export function dispatchAnnouncement(
   instanceId: string,
-  announcement: unknown,
+  announcement: any,
   options: DispatchOptions = {},
 ): DispatchResult {
   const strategy = options.strategy ?? 'direct';

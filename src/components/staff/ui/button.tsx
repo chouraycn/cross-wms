@@ -119,10 +119,10 @@ const Button = React.forwardRef<
   if (asChild && React.isValidElement(children)) {
     const child = children as React.ReactElement
     return React.cloneElement(child, {
-      ref: composeRefs(ref, (child as unknown as { ref?: React.Ref<unknown> }).ref),
+      ref: composeRefs(ref, (child as unknown as { ref?: React.Ref<any> }).ref),
       className: cn(buttonVariants({ variant: v, size: sz }), (child.props as { className?: string }).className),
       ...props,
-    } as Record<string, unknown>)
+    } as Record<string, any>)
   }
 
   return (
@@ -141,7 +141,7 @@ const Button = React.forwardRef<
         ...(sMap.sx ?? {}),
         ...(sx ?? {}),
       }}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     >
       {children}
     </MuiButton>

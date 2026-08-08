@@ -37,7 +37,7 @@ vi.mock("../runtime.js", () => ({
 }));
 
 vi.mock("../security/audit.js", () => ({
-  runSecurityAudit: (opts: unknown) => mocks.runSecurityAudit(opts),
+  runSecurityAudit: (opts: any) => mocks.runSecurityAudit(opts),
 }));
 
 vi.mock("../security/fix.js", () => ({
@@ -45,7 +45,7 @@ vi.mock("../security/fix.js", () => ({
 }));
 
 vi.mock("./command-secret-gateway.js", () => ({
-  resolveCommandSecretRefsViaGateway: (opts: unknown) =>
+  resolveCommandSecretRefsViaGateway: (opts: any) =>
     mocks.resolveCommandSecretRefsViaGateway(opts),
 }));
 
@@ -76,14 +76,14 @@ function primeDeepAuditConfig(sourceConfig = { gateway: { mode: "local" } }) {
   return sourceConfig;
 }
 
-function lastSecretResolverOptions(): Record<string, unknown> | undefined {
+function lastSecretResolverOptions(): Record<string, any> | undefined {
   const calls = resolveCommandSecretRefsViaGateway.mock.calls;
-  return calls[calls.length - 1]?.[0] as Record<string, unknown> | undefined;
+  return calls[calls.length - 1]?.[0] as Record<string, any> | undefined;
 }
 
-function lastSecurityAuditOptions(): Record<string, unknown> | undefined {
+function lastSecurityAuditOptions(): Record<string, any> | undefined {
   const calls = runSecurityAudit.mock.calls;
-  return calls[calls.length - 1]?.[0] as Record<string, unknown> | undefined;
+  return calls[calls.length - 1]?.[0] as Record<string, any> | undefined;
 }
 
 describe("security CLI", () => {

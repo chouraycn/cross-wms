@@ -135,7 +135,7 @@ async function runSingleJobAndReadState(params: {
   cron: CronService;
   finished: ReturnType<typeof createFinishedBarrier>;
   job: CronAddInput;
-  waitForFinished?: (jobId: string) => Promise<unknown>;
+  waitForFinished?: (jobId: string) => Promise<any>;
 }) {
   const job = await params.cron.add(params.job);
   const finishedPromise = params.waitForFinished?.(job.id) ?? params.finished.waitForOk(job.id);
@@ -153,7 +153,7 @@ function expectSuccessfulCronRun(
         state: {
           lastStatus?: string;
           lastRunStatus?: string;
-          [key: string]: unknown;
+          [key: string]: any;
         };
       }
     | undefined,
@@ -202,7 +202,7 @@ async function runIsolatedJobAndReadState(params: {
   }) => void;
 }) {
   const store = await makeStorePath();
-  const finishedEvents = new Map<string, (evt: unknown) => void>();
+  const finishedEvents = new Map<string, (evt: any) => void>();
   const { cron, finished } = createIsolatedCronWithFinishedBarrier({
     storePath: store.storePath,
     ...(params.status !== undefined ? { status: params.status } : {}),

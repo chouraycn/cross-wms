@@ -28,9 +28,9 @@ export interface SubagentAnnouncement {
   taskDescription?: string;
   message?: string;
   progress?: number;
-  result?: unknown;
+  result?: any;
   error?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 let announcementIdCounter = 0;

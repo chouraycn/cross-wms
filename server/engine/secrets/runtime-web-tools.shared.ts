@@ -52,7 +52,7 @@ export type RuntimeWebProviderSelectionParams<
     id: string;
     requiresCredential?: boolean;
   },
-  TToolConfig extends Record<string, unknown> | undefined,
+  TToolConfig extends Record<string, any> | undefined,
   TSource extends string,
   TMetadata extends RuntimeWebProviderMetadataBase<TSource>,
 > = {
@@ -84,10 +84,10 @@ export type RuntimeWebProviderSelectionParams<
     provider: TProvider;
     config: OpenClawConfig;
     toolConfig: TToolConfig;
-  }) => { path: string; value: unknown } | undefined;
+  }) => { path: string; value: any } | undefined;
   /** Resolves inline/env/SecretRef credentials and reports the winning source. */
   resolveSecretInput: (params: {
-    value: unknown;
+    value: any;
     path: string;
     envVars: string[];
   }) => Promise<SecretResolutionResult<TSource>>;
@@ -98,7 +98,7 @@ export type RuntimeWebProviderSelectionParams<
     value: string;
   }) => void;
   inactivePathsForProvider: (provider: TProvider) => string[];
-  hasConfiguredSecretRef: (value: unknown, defaults: SecretDefaults | undefined) => boolean;
+  hasConfiguredSecretRef: (value: any, defaults: SecretDefaults | undefined) => boolean;
   mergeRuntimeMetadata?: (params: {
     provider: TProvider;
     metadata: TMetadata;
@@ -109,7 +109,7 @@ export type RuntimeWebProviderSelectionParams<
 
 function pushInactiveProviderCredentialWarnings<
   TProvider extends { id: string; requiresCredential?: boolean },
-  TToolConfig extends Record<string, unknown> | undefined,
+  TToolConfig extends Record<string, any> | undefined,
   TSource extends string,
   TMetadata extends RuntimeWebProviderMetadataBase<TSource>,
 >(params: {
@@ -143,20 +143,20 @@ function pushInactiveProviderCredentialWarnings<
  * Ensures a nested config object exists and returns it for mutation.
  */
 export function ensureObject(
-  target: Record<string, unknown>,
+  target: Record<string, any>,
   key: string,
-): Record<string, unknown> {
+): Record<string, any> {
   const current = target[key];
   if (isRecord(current)) {
     return current;
   }
-  const next: Record<string, unknown> = {};
+  const next: Record<string, any> = {};
   target[key] = next;
   return next;
 }
 
 function normalizeKnownProvider(
-  value: unknown,
+  value: any,
   providers: Array<{ id: string }>,
 ): string | undefined {
   const normalized = normalizeOptionalLowercaseString(value);
@@ -173,7 +173,7 @@ function normalizeKnownProvider(
  * Returns whether a configured value or sibling ref field contains a SecretRef.
  */
 export function hasConfiguredSecretRef(
-  value: unknown,
+  value: any,
   defaults: SecretDefaults | undefined,
 ): boolean {
   return Boolean(
@@ -202,7 +202,7 @@ function setResolvedCredentialPath(params: {
   }
   try {
     setPathExistingStrict(
-      params.resolvedConfig as Record<string, unknown>,
+      params.resolvedConfig as Record<string, any>,
       pathSegments,
       params.value,
     );
@@ -229,7 +229,7 @@ export type ResolveRuntimeWebProviderSurfaceParams<
     id: string;
     requiresCredential?: boolean;
   },
-  TToolConfig extends Record<string, unknown> | undefined,
+  TToolConfig extends Record<string, any> | undefined,
 > = {
   contract: "webSearchProviders" | "webFetchProviders";
   rawProvider: string;
@@ -253,7 +253,7 @@ export type ResolveRuntimeWebProviderSurfaceParams<
     provider: TProvider;
     config: OpenClawConfig;
     toolConfig: TToolConfig;
-  }) => { path: string; value: unknown } | undefined;
+  }) => { path: string; value: any } | undefined;
   ignoreKeylessProvidersForConfiguredSurface?: boolean;
   emptyProvidersWhenSurfaceMissing?: boolean;
   normalizeConfiguredProviderAgainstActiveProviders?: boolean;
@@ -267,7 +267,7 @@ export async function resolveRuntimeWebProviderSurface<
     id: string;
     requiresCredential?: boolean;
   },
-  TToolConfig extends Record<string, unknown> | undefined,
+  TToolConfig extends Record<string, any> | undefined,
 >(
   params: ResolveRuntimeWebProviderSurfaceParams<TProvider, TToolConfig>,
 ): Promise<RuntimeWebProviderSurface<TProvider>> {
@@ -383,7 +383,7 @@ export async function resolveRuntimeWebProviderSelection<
     id: string;
     requiresCredential?: boolean;
   },
-  TToolConfig extends Record<string, unknown> | undefined,
+  TToolConfig extends Record<string, any> | undefined,
   TSource extends string,
   TMetadata extends RuntimeWebProviderMetadataBase<TSource>,
 >(

@@ -81,7 +81,7 @@ function parseSkillMd(content: string): { frontmatter: Record<string, string>; b
 
 // ===================== 依赖检测 =====================
 
-function normalizeRequiresList(raw: unknown): string[] {
+function normalizeRequiresList(raw: any): string[] {
   if (!raw) return [];
   if (Array.isArray(raw)) {
     return raw.filter((v): v is string => typeof v === 'string').map(s => s.trim()).filter(Boolean);
@@ -98,10 +98,10 @@ function extractOpenClawRequires(content: string): { bins?: string[]; anyBins?: 
   if (!fmMatch) return undefined;
 
   try {
-    const parsed = yaml.load(fmMatch[1], { json: true }) as Record<string, unknown>;
-    const metadata = parsed.metadata as Record<string, unknown> | undefined;
-    const openclaw = metadata?.openclaw as Record<string, unknown> | undefined;
-    const requires = openclaw?.requires as Record<string, unknown> | undefined;
+    const parsed = yaml.load(fmMatch[1], { json: true }) as Record<string, any>;
+    const metadata = parsed.metadata as Record<string, any> | undefined;
+    const openclaw = metadata?.openclaw as Record<string, any> | undefined;
+    const requires = openclaw?.requires as Record<string, any> | undefined;
     if (!requires) return undefined;
 
     const bins = normalizeRequiresList(requires.bins);
@@ -125,7 +125,7 @@ function extractOpenClawRequires(content: string): { bins?: string[]; anyBins?: 
 
 function loadSkillMdContent(
   skillId: string,
-  skill?: Record<string, unknown>,
+  skill?: Record<string, any>,
   scanned?: ScannedSkillMd[],
 ): string | null {
   if (skill?.source === 'builtin') {
@@ -155,7 +155,7 @@ function syncSkillMdToDisk(skillId: string, promptTemplate: string | null | unde
 }
 
 /** 将数据库 snake_case 行转换为前端 camelCase 格式 */
-function toCamelAudit(row: Record<string, unknown> | null | undefined): Record<string, unknown> | null {
+function toCamelAudit(row: Record<string, any> | null | undefined): Record<string, any> | null {
   if (!row) return null;
   return {
     id: row.id,
@@ -263,9 +263,9 @@ router.get('/user-skills/:id', (req: Request, res: Response) => {
 // POST /api/user-skills
 router.post('/user-skills', (req: Request, res: Response) => {
   try {
-    const data = dbCreateSkill(req.body as Record<string, unknown>);
+    const data = dbCreateSkill(req.body as Record<string, any>);
     // 同步 promptTemplate 到磁盘 SKILL.md（供审计扫描使用）
-    syncSkillMdToDisk(data.id as string, ((req.body as Record<string, unknown>).promptTemplate ?? (data as Record<string, unknown>).promptTemplate) as string | null | undefined);
+    syncSkillMdToDisk(data.id as string, ((req.body as Record<string, any>).promptTemplate ?? (data as Record<string, any>).promptTemplate) as string | null | undefined);
     return created(res, data);
   } catch (e) {
     return fail(res, BizCode.BAD_REQUEST, (e as Error).message, 400);
@@ -280,7 +280,7 @@ router.put('/user-skills/:id', (req: Request, res: Response) => {
       return notFound(res, 'Skill not found');
     }
     // 同步 promptTemplate 到磁盘 SKILL.md（供审计扫描使用）
-    syncSkillMdToDisk(req.params.id, ((req.body as Record<string, unknown>).promptTemplate ?? (data as Record<string, unknown>).promptTemplate) as string | null | undefined);
+    syncSkillMdToDisk(req.params.id, ((req.body as Record<string, any>).promptTemplate ?? (data as Record<string, any>).promptTemplate) as string | null | undefined);
     return ok(res, data);
   } catch (e) {
     return fail(res, BizCode.BAD_REQUEST, (e as Error).message, 400);
@@ -543,7 +543,7 @@ router.get('/skill-usage-stats', (req: Request, res: Response) => {
   } else {
     // 批量查询所有技能（从 user_skills 表中获取所有技能 ID）
     const allSkills = dbGetSkills();
-    const skillIds = allSkills.map((s: Record<string, unknown>) => s.id as string);
+    const skillIds = allSkills.map((s: Record<string, any>) => s.id as string);
     const statsMap = dbGetBatchSkillUsageStats(skillIds);
     const result: Record<string, { totalUses: number; lastUsedAt: string | null }> = {};
     for (const [id, stats] of statsMap.entries()) {
@@ -569,7 +569,7 @@ router.post('/skill-conflict-check', async (req: Request, res: Response) => {
   const THRESHOLD = 0.35; // 冲突阈值（v2 降低，因权重重新分配）
 
   for (const skill of allSkills) {
-    const skillRecord = skill as Record<string, unknown>;
+    const skillRecord = skill as Record<string, any>;
     const { score, reasons } = await checkConflict(
       { name, trigger, tags, desc },
       {
@@ -986,7 +986,7 @@ router.get('/openclaw/skills/:id', (req: Request, res: Response) => {
 
 // POST /api/openclaw/skills/filter — 多条件过滤
 router.post('/openclaw/skills/filter', (req: Request, res: Response) => {
-  const options = req.body as Record<string, unknown>;
+  const options = req.body as Record<string, any>;
   const index = getSkillIndex();
   const entries = index.filter({
     search: options.search as string | undefined,
@@ -1099,7 +1099,7 @@ router.get('/openclaw/skills/dependencies/:id', async (req: Request, res: Respon
 router.post('/openclaw/skills/dependencies/batch', async (req: Request, res: Response) => {
   const skillIds = (req.body as { skillIds?: string[] }).skillIds || [];
   const skillsDir = AppPaths.skillsDir;
-  const results: Record<string, unknown> = {};
+  const results: Record<string, any> = {};
 
   for (const skillId of skillIds) {
     const skillDir = path.join(skillsDir, skillId);
@@ -1177,7 +1177,7 @@ router.get('/skills/dependency-graph', (_req: Request, res: Response) => {
       const node: SkillDepNode = {
         id: s.dirName,
         name: s.name,
-        status: (dbStatusMap.get(s.dirName) as unknown) || 'unknown',
+        status: (dbStatusMap.get(s.dirName) as any) || 'unknown',
       };
       nodes.push(node);
       nodeMap.set(s.dirName, node);
@@ -1323,10 +1323,10 @@ router.get('/skills/:id/skill-dependencies', (req: Request, res: Response) => {
         try {
           const deps = JSON.parse(otherFm.dependencies);
           if (Array.isArray(deps)) {
-            const hasDep = deps.some((d: unknown) => {
+            const hasDep = deps.some((d: any) => {
               if (typeof d === 'string') return d === skillId;
               if (d && typeof d === 'object') {
-                return (d as Record<string, unknown>).skill === skillId || (d as Record<string, unknown>).name === skillId;
+                return (d as Record<string, any>).skill === skillId || (d as Record<string, any>).name === skillId;
               }
               return false;
             });
@@ -1418,15 +1418,15 @@ router.get('/skills/usage-analytics', (req: Request, res: Response) => {
     const sinceMs = Date.now() - days * 86400000;
 
     // 解析 JSONL 单个会话文件
-    const parseSession = (sid: string): Array<Record<string, unknown>> => {
+    const parseSession = (sid: string): Array<Record<string, any>> => {
       try {
         const lines = FileStorage.readSessionLines(sid);
         if (lines.length === 0) return [];
-        const first = lines[0] as unknown;
-        const initial: Array<Record<string, unknown>> = Array.isArray(first?.messages) ? first.messages : [];
-        const rest: Array<Record<string, unknown>> = [];
+        const first = lines[0] as any;
+        const initial: Array<Record<string, any>> = Array.isArray(first?.messages) ? first.messages : [];
+        const rest: Array<Record<string, any>> = [];
         for (let i = 1; i < lines.length; i++) {
-          const l = lines[i] as unknown;
+          const l = lines[i] as any;
           if (l && l.message) rest.push(l.message);
         }
         return [...initial, ...rest];
@@ -1451,7 +1451,7 @@ router.get('/skills/usage-analytics', (req: Request, res: Response) => {
     for (const sid of sessionIds) {
       const messages = parseSession(sid);
       for (const msg of messages) {
-        const m = msg as unknown;
+        const m = msg as any;
         if (!m.skillId) continue;
         const ts = m.timestamp;
         const tsMs = ts ? new Date(ts).getTime() : 0;
@@ -1504,7 +1504,7 @@ router.get('/skills/usage-analytics', (req: Request, res: Response) => {
       const messages = parseSession(sid);
       const ids: string[] = [];
       for (const msg of messages) {
-        const m = msg as unknown;
+        const m = msg as any;
         if (m.skillId) {
           const ts = m.timestamp;
           const tsMs = ts ? new Date(ts).getTime() : 0;
@@ -1599,7 +1599,7 @@ router.get('/skills/health-check', (_req: Request, res: Response) => {
       const metadataScore = Math.max(0, 100 - issues.metadata.length * 25);
 
       // 依赖检查
-      const depConfig: { dependsOn?: unknown[]; conflictsWith?: unknown[] } = {};
+      const depConfig: { dependsOn?: any[]; conflictsWith?: any[] } = {};
       try {
         if (frontmatter.dependencies) depConfig.dependsOn = JSON.parse(frontmatter.dependencies);
       } catch { issues.dependencies.push('dependencies 字段 JSON 格式错误'); }

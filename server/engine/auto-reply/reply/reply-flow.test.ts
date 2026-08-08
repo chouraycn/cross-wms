@@ -6,7 +6,7 @@ import { createReplyDispatcher, waitForReplyDispatcherIdle } from "./reply-dispa
 import { createReplyToModeFilter } from "./reply-threading.js";
 
 type DeliverPayload = Parameters<Parameters<typeof createReplyDispatcher>[0]["deliver"]>[0];
-type DeliverMock = { mock: { calls: unknown[][] } };
+type DeliverMock = { mock: { calls: any[][] } };
 
 function deliveredText(deliver: DeliverMock, index = 0) {
   const payload = deliver.mock.calls[index]?.[0] as DeliverPayload | undefined;

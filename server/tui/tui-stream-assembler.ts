@@ -15,14 +15,14 @@ type RunStreamState = {
 
 type BoundaryDropMode = 'off' | 'streamed-only' | 'streamed-or-incoming';
 
-function extractTextBlocksAndSignals(message: unknown): {
+function extractTextBlocksAndSignals(message: any): {
   textBlocks: string[];
   sawNonTextContentBlocks: boolean;
 } {
   if (!message || typeof message !== 'object') {
     return { textBlocks: [], sawNonTextContentBlocks: false };
   }
-  const record = message as Record<string, unknown>;
+  const record = message as Record<string, any>;
   const content = record.content;
 
   if (typeof content === 'string') {
@@ -42,7 +42,7 @@ function extractTextBlocksAndSignals(message: unknown): {
     if (!block || typeof block !== 'object') {
       continue;
     }
-    const rec = block as Record<string, unknown>;
+    const rec = block as Record<string, any>;
     if (rec.type === 'text' && typeof rec.text === 'string') {
       const text = rec.text.trim();
       if (text) {
@@ -122,7 +122,7 @@ export class TuiStreamAssembler {
 
   private updateRunState(
     state: RunStreamState,
-    message: unknown,
+    message: any,
     showThinking: boolean,
     opts?: { boundaryDropMode?: BoundaryDropMode },
   ) {
@@ -162,7 +162,7 @@ export class TuiStreamAssembler {
     state.displayText = displayText;
   }
 
-  ingestDelta(runId: string, message: unknown, showThinking: boolean): string | null {
+  ingestDelta(runId: string, message: any, showThinking: boolean): string | null {
     const state = this.getOrCreateRun(runId);
     const previousDisplayText = state.displayText;
     this.updateRunState(state, message, showThinking, {
@@ -178,7 +178,7 @@ export class TuiStreamAssembler {
 
   finalize(
     runId: string,
-    message: unknown,
+    message: any,
     showThinking: boolean,
     errorMessage?: string,
   ): string {

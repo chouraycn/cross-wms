@@ -29,8 +29,8 @@ const TRUNCATE_SUFFIX = '...';
  */
 export function formatToolCall(
   toolName: string,
-  args: unknown,
-  result?: unknown,
+  args: any,
+  result?: any,
 ): string {
   const name = typeof toolName === 'string' && toolName ? toolName : 'unknown';
   const argsStr = formatValue(args);
@@ -48,7 +48,7 @@ export function formatToolCall(
  * 字符串原样返回（按需截断），其他类型序列化为 JSON。
  * @param result 工具调用结果
  */
-export function formatToolResult(result: unknown): string {
+export function formatToolResult(result: any): string {
   if (typeof result === 'string') {
     return result;
   }
@@ -77,7 +77,7 @@ export function truncateToolOutput(text: string, maxLength?: number): string {
 }
 
 /** 将任意值序列化为紧凑字符串，对象/数组使用 JSON。 */
-function formatValue(value: unknown): string {
+function formatValue(value: any): string {
   if (value === undefined) {
     return '';
   }

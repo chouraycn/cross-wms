@@ -17,4 +17,4 @@ export type DoctorMemoryRemHarnessSuccessPayload = unknown;
 
 export type DoctorMemoryRemHarnessErrorPayload = unknown;
 
-export const doctorHandlers: unknown = undefined;
+export const doctorHandlers: any = undefined;

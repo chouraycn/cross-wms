@@ -65,7 +65,7 @@ function getFirstGuardedFetchCall() {
   if (!request || typeof request !== "object" || Array.isArray(request)) {
     throw new Error("Expected fetchWithSsrFGuard request");
   }
-  return request as Record<string, unknown>;
+  return request as Record<string, any>;
 }
 
 describe("provider operation deadlines", () => {

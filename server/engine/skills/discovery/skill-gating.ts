@@ -302,7 +302,7 @@ export function getSkillGatingManager(): SkillGatingManager {
 export function initSkillGatingManager(
   options?: { configChecker?: ConfigChecker; cacheTimeout?: number },
 ): SkillGatingManager {
-  globalGatingManager = new SkillGatingManager(options as unknown);
+  globalGatingManager = new SkillGatingManager(options as any);
   return globalGatingManager;
 }
 

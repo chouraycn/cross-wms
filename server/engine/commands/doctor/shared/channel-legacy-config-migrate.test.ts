@@ -11,18 +11,18 @@ const loadBundledChannelDoctorContractApi = vi.hoisted(() => vi.fn());
 const getBootstrapChannelPlugin = vi.hoisted(() => vi.fn());
 
 vi.mock("../../../plugins/doctor-contract-registry.js", () => ({
-  applyPluginDoctorCompatibilityMigrations: (...args: unknown[]) =>
+  applyPluginDoctorCompatibilityMigrations: (...args: any[]) =>
     applyPluginDoctorCompatibilityMigrations(...args),
-  collectRelevantDoctorPluginIds: (...args: unknown[]) => collectRelevantDoctorPluginIds(...args),
+  collectRelevantDoctorPluginIds: (...args: any[]) => collectRelevantDoctorPluginIds(...args),
 }));
 
 vi.mock("../../../channels/plugins/doctor-contract-api.js", () => ({
-  loadBundledChannelDoctorContractApi: (...args: unknown[]) =>
+  loadBundledChannelDoctorContractApi: (...args: any[]) =>
     loadBundledChannelDoctorContractApi(...args),
 }));
 
 vi.mock("../../../channels/plugins/bootstrap-registry.js", () => ({
-  getBootstrapChannelPlugin: (...args: unknown[]) => getBootstrapChannelPlugin(...args),
+  getBootstrapChannelPlugin: (...args: any[]) => getBootstrapChannelPlugin(...args),
 }));
 
 let applyChannelDoctorCompatibilityMigrations: typeof import("./channel-legacy-config-migrate.js").applyChannelDoctorCompatibilityMigrations;
@@ -55,7 +55,7 @@ describe("bundled channel legacy config migrations", () => {
             normalizeCompatibilityConfig: ({
               cfg,
             }: {
-              cfg: { channels?: { slack?: Record<string, unknown> } };
+              cfg: { channels?: { slack?: Record<string, any> } };
             }) => ({
               config: {
                 ...cfg,
@@ -85,7 +85,7 @@ describe("bundled channel legacy config migrations", () => {
     expect(applyPluginDoctorCompatibilityMigrations).not.toHaveBeenCalled();
     expect(loadBundledChannelDoctorContractApi).toHaveBeenCalledWith("slack");
     const nextChannels = (result.next.channels ?? {}) as {
-      slack?: Record<string, unknown>;
+      slack?: Record<string, any>;
     };
     expect(nextChannels.slack?.streaming).toBe(true);
     expect(nextChannels.slack?.normalizedByBundledContract).toBe(true);
@@ -150,7 +150,7 @@ describe("bundled channel legacy config migrations", () => {
     expect(migrationCall?.[1]?.pluginIds).toStrictEqual(["mattermost"]);
 
     const nextChannels = (result.next.channels ?? {}) as {
-      mattermost?: Record<string, unknown>;
+      mattermost?: Record<string, any>;
     };
 
     expect(nextChannels.mattermost).toEqual({

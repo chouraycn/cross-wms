@@ -22,15 +22,15 @@ type AuthProfileConfigProtectionResult = {
   warnings: string[];
 };
 
-function normalizeProviderId(value: unknown): string {
+function normalizeProviderId(value: any): string {
   return normalizeLowercaseStringOrEmpty(value);
 }
 
-function normalizeProfileId(value: unknown): string | null {
+function normalizeProfileId(value: any): string | null {
   return normalizeOptionalString(value) ?? null;
 }
 
-function normalizeMode(value: unknown): AuthProfileConfig["mode"] | null {
+function normalizeMode(value: any): AuthProfileConfig["mode"] | null {
   return typeof value === "string" && AUTH_PROFILE_MODES.has(value as AuthProfileConfig["mode"])
     ? (value as AuthProfileConfig["mode"])
     : null;
@@ -105,7 +105,7 @@ function collectActiveAuthHints(config: OpenClawConfig): {
   return { activeProviders, explicitProfileIds, explicitProfileProviders };
 }
 
-function isValidProfileMetadata(value: unknown): value is AuthProfileConfig {
+function isValidProfileMetadata(value: any): value is AuthProfileConfig {
   if (!isRecord(value)) {
     return false;
   }
@@ -114,8 +114,8 @@ function isValidProfileMetadata(value: unknown): value is AuthProfileConfig {
 
 function buildProfileMetadata(params: {
   profileId: string;
-  before: unknown;
-  after: unknown;
+  before: any;
+  after: any;
   providerHint?: string;
 }): AuthProfileConfig | null {
   const before = isRecord(params.before) ? params.before : {};
@@ -143,8 +143,8 @@ function buildProfileMetadata(params: {
 }
 
 function ensureAuthProfiles(config: OpenClawConfig): Record<string, AuthProfileConfig> {
-  const root = config as Record<string, unknown>;
-  const auth: Record<string, unknown> = isRecord(root.auth) ? root.auth : {};
+  const root = config as Record<string, any>;
+  const auth: Record<string, any> = isRecord(root.auth) ? root.auth : {};
   if (root.auth !== auth) {
     root.auth = auth;
   }

@@ -8,7 +8,7 @@ import {
   resolveRequiredConfiguredSecretRefInputString,
 } from "./resolve-configured-secret-input-string.js";
 
-function createConfig(value: unknown): OpenClawConfig {
+function createConfig(value: any): OpenClawConfig {
   return {
     gateway: {
       auth: {

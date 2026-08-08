@@ -155,14 +155,14 @@ function createTtsConfig(prefsName: string): OpenClawConfig {
   };
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error(`expected ${label} to be a record`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function requireFirstCallParam(calls: ReadonlyArray<readonly unknown[]>, label: string) {
+function requireFirstCallParam(calls: ReadonlyArray<readonly any[]>, label: string) {
   const call = calls[0];
   if (!call) {
     throw new Error(`expected ${label} call`);
@@ -170,11 +170,11 @@ function requireFirstCallParam(calls: ReadonlyArray<readonly unknown[]>, label: 
   return call[0];
 }
 
-function requireFirstSynthesisRequest(label: string): Record<string, unknown> {
+function requireFirstSynthesisRequest(label: string): Record<string, any> {
   return requireRecord(requireFirstCallParam(synthesizeMock.mock.calls, label), label);
 }
 
-function requireAttempt(attempts: unknown[] | undefined, index: number) {
+function requireAttempt(attempts: any[] | undefined, index: number) {
   if (!attempts) {
     throw new Error("expected synthesis attempts");
   }
@@ -312,7 +312,7 @@ describe("speech-core native voice-note routing", () => {
     });
     expect(transcodeAudioBufferMock).toHaveBeenCalledOnce();
     const transcodeRequest = requireRecord(
-      requireFirstCallParam(transcodeAudioBufferMock.mock.calls as unknown[][], "transcode"),
+      requireFirstCallParam(transcodeAudioBufferMock.mock.calls as any[][], "transcode"),
       "transcode request",
     );
     expect(transcodeRequest.sourceExtension).toBe("mp3");
@@ -376,7 +376,7 @@ describe("speech-core native voice-note routing", () => {
       createMockSpeechProvider("mock", {
         isConfigured: ({ providerConfig }) => providerConfig.apiKey === "resolved-minimax-key",
         resolveConfig: ({ rawConfig }) => {
-          const providers = rawConfig.providers as Record<string, { apiKey?: unknown }> | undefined;
+          const providers = rawConfig.providers as Record<string, { apiKey?: any }> | undefined;
           return {
             apiKey: providers?.mock?.apiKey,
           };
@@ -1477,6 +1477,6 @@ describe("speech-core per-agent TTS config", () => {
     const resolved = resolveTtsConfig(cfg, "reader");
 
     expect(resolved.rawConfig?.providers?.openai).toEqual({ voice: "nova" });
-    expect(({} as Record<string, unknown>).polluted).toBeUndefined();
+    expect(({} as Record<string, any>).polluted).toBeUndefined();
   });
 });

@@ -17,8 +17,8 @@ let resetModelCatalogCache: typeof import("./model-catalog.js").resetModelCatalo
 let resetModelCatalogCacheForTest: typeof import("./model-catalog.js").resetModelCatalogCacheForTest;
 let augmentCatalogMock: ReturnType<typeof vi.fn>;
 let prepareOpenClawModelsJsonSourceMock: ReturnType<typeof vi.fn>;
-let currentPluginMetadataSnapshotMock: ReturnType<typeof vi.fn<(...args: unknown[]) => unknown>>;
-let loadPluginMetadataSnapshotMock: ReturnType<typeof vi.fn<(...args: unknown[]) => unknown>>;
+let currentPluginMetadataSnapshotMock: ReturnType<typeof vi.fn<(...args: any[]) => unknown>>;
+let loadPluginMetadataSnapshotMock: ReturnType<typeof vi.fn<(...args: any[]) => unknown>>;
 let readFileMock: ReturnType<typeof vi.fn<(pathname: string) => Promise<string>>>;
 let buildAgentModelCatalogCacheKeyMock: ReturnType<typeof vi.fn>;
 let buildModelsJsonSourceFingerprintMock: ReturnType<typeof vi.fn>;
@@ -86,7 +86,7 @@ function mockCatalogImportFailThenRecover() {
   return () => call;
 }
 
-function mockAgentDiscoveryModels(models: unknown[]) {
+function mockAgentDiscoveryModels(models: any[]) {
   setModelCatalogImportForTest(
     async () =>
       ({
@@ -247,12 +247,12 @@ function expectNoCatalogEntry(entries: readonly ModelCatalogEntry[], provider: s
 function requireMockCallParam(
   mock: ReturnType<typeof vi.fn>,
   label: string,
-): Record<string, unknown> {
+): Record<string, any> {
   const first = mock.mock.calls[0]?.[0];
   if (!first || typeof first !== "object" || Array.isArray(first)) {
     throw new Error(`expected ${label}`);
   }
-  return first as Record<string, unknown>;
+  return first as Record<string, any>;
 }
 
 describe("loadModelCatalog", () => {
@@ -308,7 +308,7 @@ describe("loadModelCatalog", () => {
     }));
     vi.doMock("../plugins/plugin-metadata-snapshot.js", () => ({
       loadPluginMetadataSnapshot: loadPluginMetadataSnapshotMock,
-      resolvePluginMetadataSnapshot: (...args: unknown[]) =>
+      resolvePluginMetadataSnapshot: (...args: any[]) =>
         currentPluginMetadataSnapshotMock(...args) ?? loadPluginMetadataSnapshotMock(...args),
     }));
     vi.doMock("../plugins/manifest-contract-eligibility.js", () => ({
@@ -327,7 +327,7 @@ describe("loadModelCatalog", () => {
             (entry) => (entry.pluginId ?? entry.id) === plugin.id && entry.enabled !== false,
           ),
         ),
-      loadManifestMetadataSnapshot: (...args: unknown[]) =>
+      loadManifestMetadataSnapshot: (...args: any[]) =>
         currentPluginMetadataSnapshotMock(...args) ?? loadPluginMetadataSnapshotMock(...args),
     }));
 

@@ -38,7 +38,7 @@ export type OutboundGatewayContext = {
 export type OutboundSendContext = {
   cfg: OpenClawConfig;
   channel: ChannelId;
-  params: Record<string, unknown>;
+  params: Record<string, any>;
   /** Active agent id for per-agent outbound media root scoping. */
   agentId?: string;
   sessionKey?: string;
@@ -64,8 +64,8 @@ export type OutboundSendContext = {
 
 type PluginHandledResult = {
   handledBy: "plugin";
-  payload: unknown;
-  toolResult: AgentToolResult<unknown>;
+  payload: any;
+  toolResult: AgentToolResult<any>;
 };
 
 type SendMessageParams = Parameters<typeof sendMessage>[0];
@@ -247,8 +247,8 @@ export async function executeSendAction(params: {
   threadId?: string | number;
 }): Promise<{
   handledBy: "plugin" | "core";
-  payload: unknown;
-  toolResult?: AgentToolResult<unknown>;
+  payload: any;
+  toolResult?: AgentToolResult<any>;
   sendResult?: MessageSendResult;
 }> {
   throwIfAborted(params.ctx.abortSignal);
@@ -336,8 +336,8 @@ export async function executePollAction(params: {
   };
 }): Promise<{
   handledBy: "plugin" | "core";
-  payload: unknown;
-  toolResult?: AgentToolResult<unknown>;
+  payload: any;
+  toolResult?: AgentToolResult<any>;
   pollResult?: MessagePollResult;
 }> {
   const pluginHandled = await tryHandleWithPluginAction({

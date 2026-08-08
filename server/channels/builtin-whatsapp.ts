@@ -84,7 +84,7 @@ export function createWhatsAppChannelPlugin(): ChannelPlugin {
 
   const whatsappConfig: ChannelConfigAdapter<WhatsAppAccountConfig> = {
     listAccountIds: (config: AppConfig): ChannelId[] => {
-      const waConfig = config.whatsapp as Record<string, unknown> | undefined;
+      const waConfig = config.whatsapp as Record<string, any> | undefined;
       if (waConfig && waConfig.phoneNumberId && waConfig.accessToken) {
         return [WHATSAPP_CHANNEL_ID];
       }
@@ -95,7 +95,7 @@ export function createWhatsAppChannelPlugin(): ChannelPlugin {
       accountId: ChannelId,
     ): WhatsAppAccountConfig | null => {
       if (accountId !== WHATSAPP_CHANNEL_ID) return null;
-      const waConfig = config.whatsapp as Record<string, unknown> | undefined;
+      const waConfig = config.whatsapp as Record<string, any> | undefined;
       if (waConfig && waConfig.phoneNumberId && waConfig.accessToken) {
         return {
           phoneNumberId: String(waConfig.phoneNumberId),
@@ -128,7 +128,7 @@ export function createWhatsAppChannelPlugin(): ChannelPlugin {
         try {
           const rendered = await ctx.render();
           const text = rendered.parts
-            .map((p: { content: unknown }) => String(p.content))
+            .map((p: { content: any }) => String(p.content))
             .join("\n");
 
           const recipient = ctx.to;
@@ -136,7 +136,7 @@ export function createWhatsAppChannelPlugin(): ChannelPlugin {
             return { success: false, error: "WhatsApp recipient not provided" };
           }
 
-          const body: Record<string, unknown> = {
+          const body: Record<string, any> = {
             messaging_product: "whatsapp",
             recipient_type: "individual",
             to: recipient,
@@ -198,43 +198,43 @@ export function createWhatsAppChannelPlugin(): ChannelPlugin {
  * Meta 在收到用户消息时会向配置的 Webhook URL POST JSON 载荷。
  * 同时也支持 Webhook 验证（GET 请求的 hub.challenge）。
  */
-export function parseWhatsAppWebhook(body: unknown): WhatsAppWebhookResult {
-  const data = body as Record<string, unknown>;
+export function parseWhatsAppWebhook(body: any): WhatsAppWebhookResult {
+  const data = body as Record<string, any>;
   if (!data || typeof data !== "object") {
     return { success: false, error: "Invalid WhatsApp webhook payload" };
   }
 
-  const entry = data.entry as Array<Record<string, unknown>> | undefined;
+  const entry = data.entry as Array<Record<string, any>> | undefined;
   if (!Array.isArray(entry) || entry.length === 0) {
     return { success: false, error: "No entry in WhatsApp webhook payload" };
   }
 
   const firstEntry = entry[0];
-  const changes = firstEntry?.changes as Array<Record<string, unknown>> | undefined;
+  const changes = firstEntry?.changes as Array<Record<string, any>> | undefined;
   if (!Array.isArray(changes) || changes.length === 0) {
     return { success: false, error: "No changes in WhatsApp webhook entry" };
   }
 
-  const value = changes[0]?.value as Record<string, unknown> | undefined;
+  const value = changes[0]?.value as Record<string, any> | undefined;
   if (!value) {
     return { success: false, error: "No value in WhatsApp webhook change" };
   }
 
-  const messages = value.messages as Array<Record<string, unknown>> | undefined;
+  const messages = value.messages as Array<Record<string, any>> | undefined;
   if (!Array.isArray(messages) || messages.length === 0) {
     // 可能是状态更新等其他事件，非消息
     return { success: false, error: "No messages in WhatsApp webhook value" };
   }
 
   const msg = messages[0];
-  const textBody = msg.text as Record<string, unknown> | undefined;
+  const textBody = msg.text as Record<string, any> | undefined;
   const text = String(textBody?.body || "");
   if (!text) {
     return { success: false, error: "Empty message text" };
   }
 
   const from = String(msg.from || "");
-  const contacts = value.contacts as Array<Record<string, unknown>> | undefined;
+  const contacts = value.contacts as Array<Record<string, any>> | undefined;
   const contactName = contacts?.[0]?.wa_id ? String(contacts[0].wa_id) : from;
 
   return {

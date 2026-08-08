@@ -114,12 +114,12 @@ function runWithPluginToolScope<T>(entry: PluginToolRegistration, run: () => T):
   );
 }
 
-function isAgentTool(value: unknown): value is AnyAgentTool {
+function isAgentTool(value: any): value is AnyAgentTool {
   return (
     Boolean(value) &&
     typeof value === "object" &&
     !Array.isArray(value) &&
-    typeof (value as { execute?: unknown }).execute === "function"
+    typeof (value as { execute?: any }).execute === "function"
   );
 }
 
@@ -133,14 +133,14 @@ function wrapPluginToolCallbacks(entry: PluginToolRegistration, tool: AnyAgentTo
 
   const prepareArguments = tool.prepareArguments;
   const scopedPrepareArguments = prepareArguments
-    ? (args: unknown) =>
+    ? (args: any) =>
         runWithPluginToolScope(entry, () => Reflect.apply(prepareArguments, tool, [args]))
     : undefined;
   const scopedExecute = (
     toolCallId: string,
-    params: unknown,
+    params: any,
     signal?: AbortSignal,
-    onUpdate?: unknown,
+    onUpdate?: any,
   ) =>
     runWithPluginToolScope(
       entry,
@@ -327,7 +327,7 @@ function isOptionalToolEntryPotentiallyAllowed(params: {
   return params.names.some((name) => params.allowlist.has(normalizeToolName(name)));
 }
 
-function readPluginToolName(tool: unknown): string {
+function readPluginToolName(tool: any): string {
   if (!isRecord(tool)) {
     return "";
   }
@@ -460,7 +460,7 @@ function shouldWarnPluginToolFactoryTimings(params: {
   );
 }
 
-function describeMalformedPluginTool(tool: unknown): string | undefined {
+function describeMalformedPluginTool(tool: any): string | undefined {
   if (!isRecord(tool)) {
     return "tool must be an object";
   }
@@ -574,7 +574,7 @@ function resolvePluginToolRuntimePluginIds(params: {
   const allowlist = normalizeAllowlist(params.toolAllowlist);
   const denylist = normalizeDenylist(params.toolDenylist);
   const normalizedPlugins = normalizePluginsConfig(
-    (params.config as { plugins?: unknown } | undefined)?.plugins as Parameters<typeof normalizePluginsConfig>[0],
+    (params.config as { plugins?: any } | undefined)?.plugins as Parameters<typeof normalizePluginsConfig>[0],
   );
   const snapshot: PluginMetadataManifestView =
     params.snapshot ??
@@ -633,11 +633,11 @@ function resolvePluginToolRuntimePluginIds(params: {
 }
 
 function readPluginCacheSource(plugin: PluginManifestRecord): string {
-  const source = (plugin as { source?: unknown; manifestPath?: unknown }).source;
+  const source = (plugin as { source?: any; manifestPath?: any }).source;
   if (typeof source === "string" && source.trim()) {
     return source;
   }
-  const manifestPath = (plugin as { manifestPath?: unknown }).manifestPath;
+  const manifestPath = (plugin as { manifestPath?: any }).manifestPath;
   if (typeof manifestPath === "string" && manifestPath.trim()) {
     return manifestPath;
   }
@@ -686,7 +686,7 @@ function createCachedDescriptorPluginTool(params: {
     label: descriptor.title ?? descriptor.name,
     description: descriptor.description,
     parameters: descriptor.inputSchema as never,
-    async execute(toolCallId: string, executeParams: unknown, signal: AbortSignal | undefined, onUpdate: AgentToolUpdateCallback | undefined) {
+    async execute(toolCallId: string, executeParams: any, signal: AbortSignal | undefined, onUpdate: AgentToolUpdateCallback | undefined) {
       const loadOptions = buildPluginRuntimeLoadOptions(params.loadContext, {
         activate: false,
         toolDiscovery: true,
@@ -706,7 +706,7 @@ function createCachedDescriptorPluginTool(params: {
         candidate: PluginToolRegistration,
       ): AnyAgentTool | undefined => {
         const resolved = resolvePluginToolFactory(candidate, params.ctx);
-        const listRaw: unknown[] = Array.isArray(resolved) ? resolved : resolved ? [resolved] : [];
+        const listRaw: any[] = Array.isArray(resolved) ? resolved : resolved ? [resolved] : [];
         for (const toolRaw of listRaw) {
           const malformedReason = describeMalformedPluginTool(toolRaw);
           if (malformedReason) {
@@ -1243,7 +1243,7 @@ export function resolvePluginTools(params: {
       }
       continue;
     }
-    const listRaw: unknown[] = Array.isArray(resolved) ? resolved : [resolved];
+    const listRaw: any[] = Array.isArray(resolved) ? resolved : [resolved];
     const selectedManifestToolNames =
       manifestPlugin && availabilityNames.length > 0
         ? new Set(allowlistNames.map((name) => normalizeToolName(name)))

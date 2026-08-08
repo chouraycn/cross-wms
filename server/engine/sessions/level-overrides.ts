@@ -11,14 +11,14 @@ import type { VerboseLevel, TraceLevel } from "../auto-reply/types.js";
 export type SessionEntry = {
   verboseLevel?: string;
   traceLevel?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 const INVALID_VERBOSE_LEVEL_ERROR = 'invalid verboseLevel (use "on"|"off"|"full")';
 
 // 三态解析：undefined 不变，null 清除，有效值写入
 export function parseVerboseOverride(
-  raw: unknown,
+  raw: any,
 ): { ok: true; value: VerboseLevel | null | undefined } | { ok: false; error: string } {
   if (raw === null) {
     return { ok: true, value: null };
@@ -46,7 +46,7 @@ export function applyVerboseOverride(entry: SessionEntry, level: VerboseLevel | 
 }
 
 export function parseTraceOverride(
-  raw: unknown,
+  raw: any,
 ): { ok: true; value: TraceLevel | null | undefined } | { ok: false; error: string } {
   if (raw === null) return { ok: true, value: null };
   if (raw === undefined) return { ok: true, value: undefined };

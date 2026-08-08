@@ -12,11 +12,11 @@ import {
   buildStrictAnthropicReplayPolicy,
 } from "./provider-replay-helpers.js";
 
-function expectFields(actual: unknown, expected: Record<string, unknown>): void {
+function expectFields(actual: any, expected: Record<string, any>): void {
   if (!actual || typeof actual !== "object") {
     throw new Error("Expected record");
   }
-  const record = actual as Record<string, unknown>;
+  const record = actual as Record<string, any>;
   for (const [key, value] of Object.entries(expected)) {
     expect(record[key]).toEqual(value);
   }
@@ -236,7 +236,7 @@ describe("provider replay helpers", () => {
   });
 
   it("sanitizes Gemini replay ordering with a bootstrap turn", () => {
-    const customEntries: Array<{ customType: string; data: unknown }> = [];
+    const customEntries: Array<{ customType: string; data: any }> = [];
 
     const result = sanitizeGoogleGeminiReplayHistory({
       provider: "google",
@@ -251,13 +251,13 @@ describe("provider replay helpers", () => {
       ],
       sessionState: {
         getCustomEntries: () => customEntries,
-        appendCustomEntry: (customType: string, data: unknown) => {
+        appendCustomEntry: (customType: string, data: any) => {
           customEntries.push({ customType, data });
         },
       },
     } as never);
 
-    const bootstrapMessage = result[0] as { role?: string; content?: unknown } | undefined;
+    const bootstrapMessage = result[0] as { role?: string; content?: any } | undefined;
     expect(bootstrapMessage?.role).toBe("user");
     expect(bootstrapMessage?.content).toBe("(session bootstrap)");
     expect(customEntries[0]?.customType).toBe("google-turn-ordering-bootstrap");

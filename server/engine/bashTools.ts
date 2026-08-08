@@ -231,7 +231,7 @@ export const processToolDefinition: ToolDefinition = {
  * @param args - 工具参数
  * @returns 执行结果 JSON
  */
-export const handleExecCommand: ToolHandler = async (args: Record<string, unknown>): Promise<string> => {
+export const handleExecCommand: ToolHandler = async (args: Record<string, any>): Promise<string> => {
   try {
     // 解析参数
     const params = ExecToolSchema.parse(args);
@@ -255,7 +255,7 @@ export const handleExecCommand: ToolHandler = async (args: Record<string, unknow
  * @param args - 工具参数
  * @returns 操作结果 JSON
  */
-export const handleProcessControl: ToolHandler = async (args: Record<string, unknown>): Promise<string> => {
+export const handleProcessControl: ToolHandler = async (args: Record<string, any>): Promise<string> => {
   try {
     // 解析参数
     const params = ProcessToolSchema.parse(args);
@@ -455,7 +455,7 @@ function checkExecApprovalNeeded(params: ExecToolParams): { riskLevel: ApprovalR
  * 格式化 Exec 结果
  */
 function formatExecResult(result: ExecResult): string {
-  const output: Record<string, unknown> = {
+  const output: Record<string, any> = {
     status: result.status,
     exitCode: result.exitCode,
     durationMs: result.durationMs,

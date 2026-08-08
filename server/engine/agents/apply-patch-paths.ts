@@ -7,6 +7,6 @@
  */
 
 export type ApplyPatchPathExtractionOptions = unknown;
-export function extractApplyPatchTargetPaths(..._args: unknown[]): unknown {
+export function extractApplyPatchTargetPaths(..._args: any[]): any {
   return undefined;
 }

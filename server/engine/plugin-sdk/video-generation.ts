@@ -33,7 +33,7 @@ export type GeneratedVideoAsset = {
   url?: string;
   mimeType: string;
   fileName?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 /** Resolution label accepted by video generation providers. */
@@ -70,7 +70,7 @@ export type VideoGenerationSourceAsset = {
    * provider-specific extensions.
    */
   role?: VideoGenerationAssetRole | (string & Record<never, never>);
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 /** Context passed when checking whether a video provider is configured. */
@@ -109,14 +109,14 @@ export type VideoGenerationRequest = {
   /** Reference audio assets (e.g. background music) forwarded to the provider. */
   inputAudios?: VideoGenerationSourceAsset[];
   /** Arbitrary provider-specific parameters forwarded as-is (e.g. seed, draft, camerafixed). */
-  providerOptions?: Record<string, unknown>;
+  providerOptions?: Record<string, any>;
 };
 
 /** Provider video generation response returned to the runtime. */
 export type VideoGenerationResult = {
   videos: GeneratedVideoAsset[];
   model?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 /** Supported high-level video generation operation modes. */

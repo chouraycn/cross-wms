@@ -9,7 +9,7 @@ import type { PluginHookAgentContext, PluginHookRegistration } from "./types.js"
 export function createMockPluginRegistry(
   hooks: Array<{
     hookName: string;
-    handler: (...args: unknown[]) => unknown;
+    handler: (...args: any[]) => unknown;
     pluginId?: string;
   }>,
 ): PluginRegistry {
@@ -142,7 +142,7 @@ export function addStaticTestHooks<TResult>(
 export function createHookRunnerWithRegistry(
   hooks: Array<{
     hookName: string;
-    handler: (...args: unknown[]) => unknown;
+    handler: (...args: any[]) => unknown;
     pluginId?: string;
   }>,
   options?: Parameters<typeof createHookRunner>[1],

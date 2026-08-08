@@ -57,7 +57,7 @@ export function bundlePlugins(...defs: PluginDefinition[]): PluginDefinition[] {
 /**
  * 简单的 debounce 工具（用于插件节流场景）。
  */
-export function debounce<Args extends unknown[]>(
+export function debounce<Args extends any[]>(
   fn: (...args: Args) => void,
   waitMs: number,
 ): (...args: Args) => void {
@@ -106,7 +106,7 @@ export async function safeRegister(
 /**
  * 把 context 中的核心字段拷贝成一个简单对象（用于日志 / 调试）。
  */
-export function summarizeContext(context: PluginContext): Record<string, unknown> {
+export function summarizeContext(context: PluginContext): Record<string, any> {
   return {
     pluginId: context.pluginId,
     manifestId: context.manifest.id,

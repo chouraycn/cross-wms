@@ -8,7 +8,7 @@ vi.mock("./discovery.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./discovery.js")>();
   return {
     ...actual,
-    discoverOpenClawPlugins: (...args: unknown[]) => discoverOpenClawPluginsMock(...args),
+    discoverOpenClawPlugins: (...args: any[]) => discoverOpenClawPluginsMock(...args),
   };
 });
 

@@ -202,7 +202,7 @@ function createWebSearchProviderEntry(
 
 function expectFirstOnboardingInstallPlanCallOmitsToken() {
   const [firstArg] =
-    (buildGatewayInstallPlan.mock.calls[0] as unknown as [Record<string, unknown>] | undefined) ??
+    (buildGatewayInstallPlan.mock.calls[0] as unknown as [Record<string, any>] | undefined) ??
     [];
   if (!firstArg) {
     throw new Error("expected first onboarding install plan call");
@@ -263,7 +263,7 @@ function createAdvancedFinalizeArgs(params: AdvancedFinalizeArgs = {}) {
   };
 }
 
-function requireMockArg(mock: ReturnType<typeof vi.fn>, callIndex = 0, argIndex = 0): unknown {
+function requireMockArg(mock: ReturnType<typeof vi.fn>, callIndex = 0, argIndex = 0): any {
   const call = mock.mock.calls[callIndex];
   if (!call) {
     throw new Error(`expected mock call ${callIndex}`);

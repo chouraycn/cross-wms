@@ -3,18 +3,18 @@
 export type OpenAIOAuthTlsPreflightResult =
   | { ok: true }
   | { ok: false; reason: string; fixHint?: string };
-export function shouldRunOpenAIOAuthTlsPrerequisites(params: unknown): boolean {
+export function shouldRunOpenAIOAuthTlsPrerequisites(params: any): boolean {
   void params;
   return false;
 }
-export async function runOpenAIOAuthTlsPreflight(options?: unknown): Promise<OpenAIOAuthTlsPreflightResult> {
+export async function runOpenAIOAuthTlsPreflight(options?: any): Promise<OpenAIOAuthTlsPreflightResult> {
   void options;
   return { ok: true };
 }
-export function formatOpenAIOAuthTlsPreflightFix(params: unknown): string | undefined {
+export function formatOpenAIOAuthTlsPreflightFix(params: any): string | undefined {
   void params;
   return undefined;
 }
-export async function noteOpenAIOAuthTlsPrerequisites(params: unknown): Promise<void> {
+export async function noteOpenAIOAuthTlsPrerequisites(params: any): Promise<void> {
   void params;
 }

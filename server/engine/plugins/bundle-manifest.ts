@@ -43,11 +43,11 @@ export type BundleManifestLoadResult =
   | { ok: false; error: string; manifestPath: string };
 
 type BundleManifestFileLoadResult =
-  | { ok: true; raw: Record<string, unknown>; manifestPath: string }
+  | { ok: true; raw: Record<string, any>; manifestPath: string }
   | { ok: false; error: string; manifestPath: string };
 
 /** Normalizes string-or-list path fields from bundle manifests. */
-export function normalizeBundlePathList(value: unknown): string[] {
+export function normalizeBundlePathList(value: any): string[] {
   return normalizeUniqueSingleOrTrimmedStringList(value);
 }
 
@@ -66,7 +66,7 @@ export function mergeBundlePathLists(...groups: string[][]): string[] {
   return merged;
 }
 
-function hasInlineCapabilityValue(value: unknown): boolean {
+function hasInlineCapabilityValue(value: any): boolean {
   if (typeof value === "string") {
     return value.trim().length > 0;
   }
@@ -97,7 +97,7 @@ function loadBundleManifestFile(params: {
   allowMissing?: boolean;
 }): BundleManifestFileLoadResult {
   const manifestPath = path.join(params.rootDir, params.manifestRelativePath);
-  const result = readRootStructuredFileSync<Record<string, unknown>>({
+  const result = readRootStructuredFileSync<Record<string, any>>({
     rootDir: params.rootDir,
     ...(params.rootRealPath !== undefined ? { rootRealPath: params.rootRealPath } : {}),
     relativePath: params.manifestRelativePath,
@@ -134,7 +134,7 @@ function loadBundleManifestFile(params: {
   return { ok: true, raw: result.value, manifestPath };
 }
 
-function resolveCodexSkillDirs(raw: Record<string, unknown>, rootDir: string): string[] {
+function resolveCodexSkillDirs(raw: Record<string, any>, rootDir: string): string[] {
   const declared = normalizeBundlePathList(raw.skills);
   if (declared.length > 0) {
     return declared;
@@ -142,7 +142,7 @@ function resolveCodexSkillDirs(raw: Record<string, unknown>, rootDir: string): s
   return pluginScanExistsSync(path.join(rootDir, "skills")) ? ["skills"] : [];
 }
 
-function resolveCodexHookDirs(raw: Record<string, unknown>, rootDir: string): string[] {
+function resolveCodexHookDirs(raw: Record<string, any>, rootDir: string): string[] {
   const declared = normalizeBundlePathList(raw.hooks);
   if (declared.length > 0) {
     return declared;
@@ -150,13 +150,13 @@ function resolveCodexHookDirs(raw: Record<string, unknown>, rootDir: string): st
   return pluginScanExistsSync(path.join(rootDir, "hooks")) ? ["hooks"] : [];
 }
 
-function resolveCursorSkillsRootDirs(raw: Record<string, unknown>, rootDir: string): string[] {
+function resolveCursorSkillsRootDirs(raw: Record<string, any>, rootDir: string): string[] {
   const declared = normalizeBundlePathList(raw.skills);
   const defaults = pluginScanExistsSync(path.join(rootDir, "skills")) ? ["skills"] : [];
   return mergeBundlePathLists(defaults, declared);
 }
 
-function resolveCursorCommandRootDirs(raw: Record<string, unknown>, rootDir: string): string[] {
+function resolveCursorCommandRootDirs(raw: Record<string, any>, rootDir: string): string[] {
   const declared = normalizeBundlePathList(raw.commands);
   const defaults = pluginScanExistsSync(path.join(rootDir, ".cursor", "commands"))
     ? [".cursor/commands"]
@@ -164,14 +164,14 @@ function resolveCursorCommandRootDirs(raw: Record<string, unknown>, rootDir: str
   return mergeBundlePathLists(defaults, declared);
 }
 
-function resolveCursorSkillDirs(raw: Record<string, unknown>, rootDir: string): string[] {
+function resolveCursorSkillDirs(raw: Record<string, any>, rootDir: string): string[] {
   return mergeBundlePathLists(
     resolveCursorSkillsRootDirs(raw, rootDir),
     resolveCursorCommandRootDirs(raw, rootDir),
   );
 }
 
-function resolveCursorAgentDirs(raw: Record<string, unknown>, rootDir: string): string[] {
+function resolveCursorAgentDirs(raw: Record<string, any>, rootDir: string): string[] {
   const declared = normalizeBundlePathList(raw.subagents ?? raw.agents);
   const defaults = pluginScanExistsSync(path.join(rootDir, ".cursor", "agents"))
     ? [".cursor/agents"]
@@ -179,21 +179,21 @@ function resolveCursorAgentDirs(raw: Record<string, unknown>, rootDir: string): 
   return mergeBundlePathLists(defaults, declared);
 }
 
-function hasCursorHookCapability(raw: Record<string, unknown>, rootDir: string): boolean {
+function hasCursorHookCapability(raw: Record<string, any>, rootDir: string): boolean {
   return (
     hasInlineCapabilityValue(raw.hooks) ||
     pluginScanExistsSync(path.join(rootDir, ".cursor", "hooks.json"))
   );
 }
 
-function hasCursorRulesCapability(raw: Record<string, unknown>, rootDir: string): boolean {
+function hasCursorRulesCapability(raw: Record<string, any>, rootDir: string): boolean {
   return (
     hasInlineCapabilityValue(raw.rules) ||
     pluginScanExistsSync(path.join(rootDir, ".cursor", "rules"))
   );
 }
 
-function hasCursorMcpCapability(raw: Record<string, unknown>, rootDir: string): boolean {
+function hasCursorMcpCapability(raw: Record<string, any>, rootDir: string): boolean {
   return (
     hasInlineCapabilityValue(raw.mcpServers) ||
     pluginScanExistsSync(path.join(rootDir, ".mcp.json"))
@@ -201,7 +201,7 @@ function hasCursorMcpCapability(raw: Record<string, unknown>, rootDir: string): 
 }
 
 function resolveClaudeComponentPaths(
-  raw: Record<string, unknown>,
+  raw: Record<string, any>,
   key: string,
   rootDir: string,
   defaults: string[],
@@ -213,15 +213,15 @@ function resolveClaudeComponentPaths(
   return mergeBundlePathLists(existingDefaults, declared);
 }
 
-function resolveClaudeSkillsRootDirs(raw: Record<string, unknown>, rootDir: string): string[] {
+function resolveClaudeSkillsRootDirs(raw: Record<string, any>, rootDir: string): string[] {
   return resolveClaudeComponentPaths(raw, "skills", rootDir, ["skills"]);
 }
 
-function resolveClaudeCommandRootDirs(raw: Record<string, unknown>, rootDir: string): string[] {
+function resolveClaudeCommandRootDirs(raw: Record<string, any>, rootDir: string): string[] {
   return resolveClaudeComponentPaths(raw, "commands", rootDir, ["commands"]);
 }
 
-function resolveClaudeSkillDirs(raw: Record<string, unknown>, rootDir: string): string[] {
+function resolveClaudeSkillDirs(raw: Record<string, any>, rootDir: string): string[] {
   return mergeBundlePathLists(
     resolveClaudeSkillsRootDirs(raw, rootDir),
     resolveClaudeCommandRootDirs(raw, rootDir),
@@ -230,35 +230,35 @@ function resolveClaudeSkillDirs(raw: Record<string, unknown>, rootDir: string): 
   );
 }
 
-function resolveClaudeAgentDirs(raw: Record<string, unknown>, rootDir: string): string[] {
+function resolveClaudeAgentDirs(raw: Record<string, any>, rootDir: string): string[] {
   return resolveClaudeComponentPaths(raw, "agents", rootDir, ["agents"]);
 }
 
-function resolveClaudeHookPaths(raw: Record<string, unknown>, rootDir: string): string[] {
+function resolveClaudeHookPaths(raw: Record<string, any>, rootDir: string): string[] {
   return resolveClaudeComponentPaths(raw, "hooks", rootDir, ["hooks/hooks.json"]);
 }
 
-function resolveClaudeMcpPaths(raw: Record<string, unknown>, rootDir: string): string[] {
+function resolveClaudeMcpPaths(raw: Record<string, any>, rootDir: string): string[] {
   return resolveClaudeComponentPaths(raw, "mcpServers", rootDir, [".mcp.json"]);
 }
 
-function resolveClaudeLspPaths(raw: Record<string, unknown>, rootDir: string): string[] {
+function resolveClaudeLspPaths(raw: Record<string, any>, rootDir: string): string[] {
   return resolveClaudeComponentPaths(raw, "lspServers", rootDir, [".lsp.json"]);
 }
 
-function resolveClaudeOutputStylePaths(raw: Record<string, unknown>, rootDir: string): string[] {
+function resolveClaudeOutputStylePaths(raw: Record<string, any>, rootDir: string): string[] {
   return resolveClaudeComponentPaths(raw, "outputStyles", rootDir, ["output-styles"]);
 }
 
-function resolveClaudeSettingsFiles(_raw: Record<string, unknown>, rootDir: string): string[] {
+function resolveClaudeSettingsFiles(_raw: Record<string, any>, rootDir: string): string[] {
   return pluginScanExistsSync(path.join(rootDir, "settings.json")) ? ["settings.json"] : [];
 }
 
-function hasClaudeHookCapability(raw: Record<string, unknown>, rootDir: string): boolean {
+function hasClaudeHookCapability(raw: Record<string, any>, rootDir: string): boolean {
   return hasInlineCapabilityValue(raw.hooks) || resolveClaudeHookPaths(raw, rootDir).length > 0;
 }
 
-function buildCodexCapabilities(raw: Record<string, unknown>, rootDir: string): string[] {
+function buildCodexCapabilities(raw: Record<string, any>, rootDir: string): string[] {
   const capabilities: string[] = [];
   if (resolveCodexSkillDirs(raw, rootDir).length > 0) {
     capabilities.push("skills");
@@ -278,7 +278,7 @@ function buildCodexCapabilities(raw: Record<string, unknown>, rootDir: string): 
   return capabilities;
 }
 
-function buildClaudeCapabilities(raw: Record<string, unknown>, rootDir: string): string[] {
+function buildClaudeCapabilities(raw: Record<string, any>, rootDir: string): string[] {
   const capabilities: string[] = [];
   if (resolveClaudeSkillDirs(raw, rootDir).length > 0) {
     capabilities.push("skills");
@@ -310,7 +310,7 @@ function buildClaudeCapabilities(raw: Record<string, unknown>, rootDir: string):
   return capabilities;
 }
 
-function buildCursorCapabilities(raw: Record<string, unknown>, rootDir: string): string[] {
+function buildCursorCapabilities(raw: Record<string, any>, rootDir: string): string[] {
   const capabilities: string[] = [];
   if (resolveCursorSkillDirs(raw, rootDir).length > 0) {
     capabilities.push("skills");

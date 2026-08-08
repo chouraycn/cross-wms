@@ -61,7 +61,7 @@ const wanxProvider = createOpenAiCompatibleImageProvider({
   baseUrlEnvVar: "DASHSCOPE_BASE_URL",
 
   buildGenerateBody({ req, model, count }) {
-    const wanxOptions = req.providerOptions?.wanx as Record<string, unknown> | undefined;
+    const wanxOptions = req.providerOptions?.wanx as Record<string, any> | undefined;
     return {
       model,
       input: {

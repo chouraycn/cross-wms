@@ -6,8 +6,8 @@
 
 /** Builds an assistant message fixture with deterministic error-style defaults. */
 export function makeAssistantMessageFixture(
-  overrides: Record<string, unknown> = {},
-): Record<string, unknown> {
+  overrides: Record<string, any> = {},
+): Record<string, any> {
   const errorText = typeof overrides.errorMessage === "string" ? overrides.errorMessage : "error";
   return {
     role: "assistant",

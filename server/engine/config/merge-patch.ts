@@ -12,7 +12,7 @@
  *   5. 拒绝 __proto__ / constructor / prototype 键，防止原型链污染
  */
 
-type PlainObject = Record<string, unknown>;
+type PlainObject = Record<string, any>;
 
 /** 被拒绝的键名（防止原型链污染） */
 const BLOCKED_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
@@ -20,7 +20,7 @@ const BLOCKED_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 /**
  * 判断值是否为普通对象（非数组、非 null 的对象）
  */
-function isPlainObject(value: unknown): value is PlainObject {
+function isPlainObject(value: any): value is PlainObject {
   if (value === null || typeof value !== 'object') {
     return false;
   }
@@ -53,8 +53,8 @@ export interface MergePatchOptions {
  * 判断值是否为带字符串 id 的对象
  */
 function isObjectWithStringId(
-  value: unknown,
-): value is Record<string, unknown> & { id: string } {
+  value: any,
+): value is Record<string, any> & { id: string } {
   if (!isPlainObject(value)) {
     return false;
   }
@@ -75,17 +75,17 @@ function formatPath(parentPath: string | undefined, key: string): string {
  *   - patch 中不带 id 的条目直接追加
  */
 function mergeObjectArraysById(
-  base: unknown[],
-  patch: unknown[],
+  base: any[],
+  patch: any[],
   options: MergePatchOptions,
   arrayPath: string,
-): unknown[] | undefined {
+): any[] | undefined {
   // base 数组必须全部为带 id 的对象
   if (!base.every(isObjectWithStringId)) {
     return undefined;
   }
 
-  const merged: unknown[] = [...base];
+  const merged: any[] = [...base];
   const indexById = new Map<string, number>();
   for (const [index, entry] of merged.entries()) {
     if (!isObjectWithStringId(entry)) {
@@ -136,10 +136,10 @@ function mergeObjectArraysById(
  * @returns 合并后的新对象（不修改原始对象）
  */
 export function applyMergePatch(
-  target: unknown,
-  patch: unknown,
+  target: any,
+  patch: any,
   options: MergePatchOptions = {},
-): unknown {
+): any {
   // patch 不是对象 → 直接替换
   if (!isPlainObject(patch)) {
     return patch;
@@ -173,7 +173,7 @@ export function applyMergePatch(
         continue;
       }
       const mergedArray = mergeObjectArraysById(
-        result[key] as unknown[],
+        result[key] as any[],
         value,
         options,
         path,

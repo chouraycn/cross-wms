@@ -10,7 +10,7 @@ export interface ResolvedTarget {
   name?: string;
   channelId: ChannelId;
   accountId?: AccountId;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface TargetResolutionOptions {

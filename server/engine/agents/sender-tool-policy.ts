@@ -6,7 +6,7 @@
  */
 
 /** Resolves the sender tool policy. */
-export function resolveSenderToolPolicy(..._args: unknown[]): Record<string, unknown> {
+export function resolveSenderToolPolicy(..._args: any[]): Record<string, any> {
   // Cross-wms does not have sender-based tool policy resolution.
   return { mode: "permissive" };
 }

@@ -6,9 +6,9 @@ import type { SourceReplyDeliveryMode } from "../../../auto-reply/get-reply-opti
 import { isDeliveredMessageToolOnlySourceReplyResult } from "../../embedded-agent-message-tool-source-reply.js";
 import type { AfterToolCallContext, AfterToolCallResult, Agent } from "../../runtime/index.js";
 
-function argsRecordForToolCall(context: AfterToolCallContext): Record<string, unknown> {
+function argsRecordForToolCall(context: AfterToolCallContext): Record<string, any> {
   if (context.args && typeof context.args === "object" && !Array.isArray(context.args)) {
-    return context.args as Record<string, unknown>;
+    return context.args as Record<string, any>;
   }
   const fallbackArgs = context.toolCall.arguments;
   return fallbackArgs && typeof fallbackArgs === "object" && !Array.isArray(fallbackArgs)

@@ -47,17 +47,17 @@ async function findPairedNode(nodeId: string, baseDir: string) {
   return pairing.paired.find((node) => node.nodeId === nodeId) ?? null;
 }
 
-function requireRecord(value: unknown): Record<string, unknown> {
+function requireRecord(value: any): Record<string, any> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("Expected a non-array record");
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function findRecordByField<T extends Record<string, unknown>>(
+function findRecordByField<T extends Record<string, any>>(
   records: T[],
   field: string,
-  value: unknown,
+  value: any,
 ): T {
   const record = records.find((entry) => entry[field] === value);
   if (!record) {

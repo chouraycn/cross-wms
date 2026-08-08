@@ -17,7 +17,7 @@ export interface BroadcastClient {
 
 export interface BroadcastEvent {
   type: string;
-  payload: unknown;
+  payload: any;
   sessionKey?: string;
 }
 

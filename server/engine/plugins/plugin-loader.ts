@@ -42,7 +42,7 @@ export interface PluginLoadResult {
   pluginId: string;
   ok: boolean;
   manifest?: PluginManifest;
-  module?: unknown;
+  module?: any;
   error?: string;
   durationMs: number;
 }
@@ -75,7 +75,7 @@ export async function loadPluginModule(
   installPath: string,
   entryPath: string,
   pluginId: string,
-): Promise<unknown> {
+): Promise<any> {
   const fullPath = path.resolve(installPath, entryPath);
   try {
     // 使用动态 import 实现懒加载
@@ -94,7 +94,7 @@ export async function loadPluginModule(
 
 /** 加载单个插件（manifest → 校验 → 加载模块 → 初始化） */
 export async function loadPluginEntry(
-  manifestRaw: unknown,
+  manifestRaw: any,
   installPath: string,
   options: LoadPluginOptions = {},
 ): Promise<PluginLoadResult> {
@@ -141,7 +141,7 @@ export async function loadPluginEntry(
 
     // 6. 调用 register（如果模块提供）
     if (module && typeof module === 'object' && 'register' in module) {
-      const registerFn = (module as { register?: (ctx: unknown) => unknown }).register;
+      const registerFn = (module as { register?: (ctx: any) => unknown }).register;
       if (typeof registerFn === 'function') {
         await executeInPluginSandbox(manifest, () => registerFn(context));
       }
@@ -190,7 +190,7 @@ export async function loadPluginEntry(
 
 /** 批量加载插件（按依赖拓扑顺序） */
 export async function loadPluginsBatch(
-  plugins: Array<{ manifest: unknown; installPath: string }>,
+  plugins: Array<{ manifest: any; installPath: string }>,
   options: LoadPluginOptions = {},
 ): Promise<PluginBatchLoadResult> {
   // 1. 校验所有 manifest
@@ -295,7 +295,7 @@ export async function unloadPluginEntry(pluginId: string): Promise<boolean> {
 
   try {
     // 调用 unregister（如果模块提供）
-    const module = entry.instance as { unregister?: (ctx: unknown) => unknown } | undefined;
+    const module = entry.instance as { unregister?: (ctx: any) => unknown } | undefined;
     if (module?.unregister && typeof module.unregister === 'function') {
       const context = createPluginContext({ manifest: entry.manifest });
       await executeInPluginSandbox(entry.manifest, () => module.unregister!(context));

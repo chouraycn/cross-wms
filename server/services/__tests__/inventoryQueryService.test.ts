@@ -25,7 +25,7 @@ vi.mock('../../db.js', () => ({
  * Creates a mock better-sqlite3 Database instance.
  */
 function createMockDb(options: {
-  rows?: Record<string, unknown>[];
+  rows?: Record<string, any>[];
   source?: string;
   pragmaValue?: number;
   prepareError?: Error;

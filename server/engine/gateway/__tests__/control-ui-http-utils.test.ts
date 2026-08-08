@@ -16,7 +16,7 @@ function createMockResponse(): ServerResponse {
     setHeader(name: string, value: string) {
       this.headers[name] = value;
     },
-    end(body?: unknown) {
+    end(body?: any) {
       this.ended = true;
       this.endedBody = typeof body === 'string' ? body : undefined;
     },

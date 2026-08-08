@@ -28,7 +28,7 @@ import type { GatewayRequestContext, GatewayRequestHandlers, RespondFn } from ".
 import { assertValidParams, type Validator } from "./validation.js";
 
 function requireApprovalsBaseHash(
-  params: unknown,
+  params: any,
   snapshot: ExecApprovalsSnapshot,
   respond: RespondFn,
 ): boolean {
@@ -95,13 +95,13 @@ function toExecApprovalsPayload(snapshot: ExecApprovalsSnapshot) {
 
 async function respondWithExecApprovalsNodePayload<TParams extends { nodeId: string }>(params: {
   method: string;
-  rawParams: unknown;
+  rawParams: any;
   validate: Validator<TParams>;
   context: GatewayRequestContext;
   respond: RespondFn;
   command: "system.execApprovals.get" | "system.execApprovals.set";
-  commandParams: (parsedParams: TParams) => Record<string, unknown>;
-  readPayload: (response: { payload?: unknown; payloadJSON?: string | null }) => unknown;
+  commandParams: (parsedParams: TParams) => Record<string, any>;
+  readPayload: (response: { payload?: any; payloadJSON?: string | null }) => unknown;
 }): Promise<void> {
   const rawParams = params.rawParams;
   if (!assertValidParams(rawParams, params.validate, params.method, params.respond)) {
@@ -144,7 +144,7 @@ export const execApprovalsHandlers: GatewayRequestHandlers = {
     if (!requireApprovalsBaseHash(params, snapshot, respond)) {
       return;
     }
-    const incoming = (params as { file?: unknown }).file;
+    const incoming = (params as { file?: any }).file;
     if (!incoming || typeof incoming !== "object") {
       respond(
         false,

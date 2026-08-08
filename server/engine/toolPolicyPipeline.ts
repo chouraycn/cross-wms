@@ -45,7 +45,7 @@ export interface PolicyContext {
   /** 工具分组（Skill 的 group 字段） */
   toolGroup?: SkillPermissionGroup;
   /** 调用参数 */
-  params?: Record<string, unknown>;
+  params?: Record<string, any>;
   /** Agent ID */
   agentId?: string;
   /** 用户 ID */

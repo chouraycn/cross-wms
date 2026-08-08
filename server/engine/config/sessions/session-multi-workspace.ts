@@ -13,7 +13,7 @@ export interface Workspace {
   createdAt: string;
   updatedAt: string;
   isDefault: boolean;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
 }
 
 export interface WorkspaceConfig {

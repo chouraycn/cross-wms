@@ -5,7 +5,7 @@
  */
 export function loadBundledWebContentExtractorEntriesFromDir(params: {
   pluginDir: string;
-}): unknown[] {
+}): any[] {
   void params;
   return [];
 }

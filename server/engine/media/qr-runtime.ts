@@ -7,8 +7,8 @@
 type QrCodeModules = { data: ArrayLike<boolean | number>; size: number };
 
 type QrCodeRuntime = {
-  toDataURL(text: string, opts?: Record<string, unknown>): Promise<string>;
-  toString(text: string, opts?: Record<string, unknown>): Promise<string>;
+  toDataURL(text: string, opts?: Record<string, any>): Promise<string>;
+  toString(text: string, opts?: Record<string, any>): Promise<string>;
   create(text: string): { modules: QrCodeModules };
 };
 
@@ -46,7 +46,7 @@ function createLazyImportLoader<T>(load: () => Promise<T>): LazyPromiseLoader<T>
 const QRCODE_MODULE = "qrcode";
 
 const qrCodeRuntimeLoader = createLazyImportLoader<QrCodeRuntime>(async () => {
-  const mod: unknown = await import(QRCODE_MODULE);
+  const mod: any = await import(QRCODE_MODULE);
   const api = (mod as { default?: QrCodeRuntime } & QrCodeRuntime).default ?? (mod as QrCodeRuntime);
   return api;
 });

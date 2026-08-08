@@ -60,12 +60,12 @@ function resolveGatewayUrl(options: OpenClawOptions): string | undefined {
   return undefined;
 }
 
-function runStatusFromWaitPayload(payload: unknown): RunResult["status"] {
+function runStatusFromWaitPayload(payload: any): RunResult["status"] {
   // Gateway wait payloads come from several runtime paths. Preserve timeout vs
   // cancellation semantics from metadata instead of trusting one status field.
   const record =
     typeof payload === "object" && payload !== null
-      ? (payload as Record<string, unknown> & { aborted?: unknown; status?: unknown })
+      ? (payload as Record<string, any> & { aborted?: any; status?: any })
       : {};
   const status = typeof record.status === "string" ? record.status.toLowerCase() : undefined;
   const stopReason = typeof record.stopReason === "string" ? record.stopReason.toLowerCase() : "";
@@ -130,11 +130,11 @@ function runStatusFromWaitPayload(payload: unknown): RunResult["status"] {
   return "failed";
 }
 
-function readOptionalString(value: unknown): string | undefined {
+function readOptionalString(value: any): string | undefined {
   return typeof value === "string" && value.length > 0 ? value : undefined;
 }
 
-function readOptionalTimestamp(value: unknown): RunTimestamp | undefined {
+function readOptionalTimestamp(value: any): RunTimestamp | undefined {
   if (typeof value === "string" && value.length > 0) {
     return value;
   }
@@ -190,7 +190,7 @@ function assertNoUnsupportedRunOptions(params: AgentRunParams): void {
   );
 }
 
-function buildAgentParams(params: AgentRunParams): Record<string, unknown> {
+function buildAgentParams(params: AgentRunParams): Record<string, any> {
   assertNoUnsupportedRunOptions(params);
   const modelRef = splitModelRef(params.model);
   const timeoutSeconds = timeoutSecondsFromMs(params.timeoutMs);
@@ -218,33 +218,33 @@ type ChatProjectionState = "delta" | "final";
 
 type ChatProjection = {
   state: ChatProjectionState;
-  payload: Record<string, unknown>;
+  payload: Record<string, any>;
 };
 
-function asRecord(value: unknown): Record<string, unknown> {
-  return typeof value === "object" && value !== null ? (value as Record<string, unknown>) : {};
+function asRecord(value: any): Record<string, any> {
+  return typeof value === "object" && value !== null ? (value as Record<string, any>) : {};
 }
 
-function hasArtifactQueryScope(params: unknown): params is ArtifactQuery {
+function hasArtifactQueryScope(params: any): params is ArtifactQuery {
   const record = asRecord(params);
   return [record.sessionKey, record.runId, record.taskId].some(
     (value) => typeof value === "string" && value.trim().length > 0,
   );
 }
 
-function requireArtifactQueryScope(api: string, params: unknown): ArtifactQuery {
+function requireArtifactQueryScope(api: string, params: any): ArtifactQuery {
   if (!hasArtifactQueryScope(params)) {
     throw new Error(`${api} requires one of sessionKey, runId, or taskId`);
   }
   return params;
 }
 
-function hasToolsEffectiveSessionKey(params: unknown): params is ToolsEffectiveParams {
+function hasToolsEffectiveSessionKey(params: any): params is ToolsEffectiveParams {
   const record = asRecord(params);
   return typeof record.sessionKey === "string" && record.sessionKey.trim().length > 0;
 }
 
-function requireToolsEffectiveSessionKey(params: unknown): ToolsEffectiveParams {
+function requireToolsEffectiveSessionKey(params: any): ToolsEffectiveParams {
   if (!hasToolsEffectiveSessionKey(params)) {
     throw new Error("oc.tools.effective requires sessionKey");
   }
@@ -262,7 +262,7 @@ function readChatProjection(event: OpenClawEvent): ChatProjection | undefined {
     : undefined;
 }
 
-function readChatProjectionText(payload: Record<string, unknown>): string | undefined {
+function readChatProjectionText(payload: Record<string, any>): string | undefined {
   const message = asRecord(payload.message);
   const content = message.content;
   if (typeof content === "string") {
@@ -280,11 +280,11 @@ function readChatProjectionText(payload: Record<string, unknown>): string | unde
   return text.length > 0 ? text : undefined;
 }
 
-function readChatProjectionDeltaText(payload: Record<string, unknown>): string | undefined {
+function readChatProjectionDeltaText(payload: Record<string, any>): string | undefined {
   return typeof payload.deltaText === "string" ? payload.deltaText : undefined;
 }
 
-function readChatProjectionReplace(payload: Record<string, unknown>): boolean {
+function readChatProjectionReplace(payload: Record<string, any>): boolean {
   return payload.replace === true;
 }
 
@@ -413,7 +413,7 @@ export class OpenClaw {
 
   async request<T = unknown>(
     method: string,
-    params?: unknown,
+    params?: any,
     options?: GatewayRequestOptions,
   ): Promise<T> {
     await this.connect();
@@ -548,7 +548,7 @@ export class OpenClaw {
     });
     this.eventPumpPromise = (async () => {
       let iterator: AsyncIterator<GatewayEvent> | undefined;
-      let pumpError: unknown;
+      let pumpError: any;
       let hasPumpError = false;
       try {
         iterator = this.transport.events()[Symbol.asyncIterator]();
@@ -583,7 +583,7 @@ export class OpenClaw {
         return;
       }
       this.normalizedEvents.close();
-    })().catch((error: unknown) => {
+    })().catch((error: any) => {
       markReady();
       this.normalizedEvents.close(error);
     });
@@ -629,7 +629,7 @@ export class Agent {
     return await this.client.runs.create(params);
   }
 
-  async identity(params?: { sessionKey?: string }): Promise<unknown> {
+  async identity(params?: { sessionKey?: string }): Promise<any> {
     return await this.client.request("agent.identity.get", {
       agentId: this.id,
       ...(params?.sessionKey ? { sessionKey: params.sessionKey } : {}),
@@ -676,7 +676,7 @@ export class Run {
     };
   }
 
-  async cancel(): Promise<unknown> {
+  async cancel(): Promise<any> {
     return await this.client.request("sessions.abort", {
       runId: this.id,
       ...(this.sessionKey ? { key: this.sessionKey } : {}),
@@ -689,7 +689,7 @@ export class Session {
   constructor(
     private readonly client: OpenClaw,
     readonly key: string,
-    readonly info?: unknown,
+    readonly info?: any,
   ) {}
 
   async send(input: string | Omit<SessionSendParams, "key">): Promise<Run> {
@@ -711,18 +711,18 @@ export class Session {
     return new Run(this.client, runId, this.key);
   }
 
-  async abort(runId?: string): Promise<unknown> {
+  async abort(runId?: string): Promise<any> {
     return await this.client.request("sessions.abort", {
       key: this.key,
       ...(runId ? { runId } : {}),
     });
   }
 
-  async patch(params: Record<string, unknown>): Promise<unknown> {
+  async patch(params: Record<string, any>): Promise<any> {
     return await this.client.request("sessions.patch", { ...params, key: this.key });
   }
 
-  async compact(params?: { maxLines?: number }): Promise<unknown> {
+  async compact(params?: { maxLines?: number }): Promise<any> {
     return await this.client.request("sessions.compact", { key: this.key, ...params });
   }
 }
@@ -731,7 +731,7 @@ export class Session {
 export class AgentsNamespace {
   constructor(private readonly client: OpenClaw) {}
 
-  async list(params?: Record<string, unknown>): Promise<unknown> {
+  async list(params?: Record<string, any>): Promise<any> {
     return await this.client.request("agents.list", params === undefined ? {} : params);
   }
 
@@ -739,15 +739,15 @@ export class AgentsNamespace {
     return new Agent(this.client, id);
   }
 
-  async create(params: AgentsCreateParams): Promise<unknown> {
+  async create(params: AgentsCreateParams): Promise<any> {
     return await this.client.request("agents.create", params);
   }
 
-  async update(params: AgentsUpdateParams): Promise<unknown> {
+  async update(params: AgentsUpdateParams): Promise<any> {
     return await this.client.request("agents.update", params);
   }
 
-  async delete(params: AgentsDeleteParams): Promise<unknown> {
+  async delete(params: AgentsDeleteParams): Promise<any> {
     return await this.client.request("agents.delete", params);
   }
 }
@@ -756,7 +756,7 @@ export class AgentsNamespace {
 export class SessionsNamespace {
   constructor(private readonly client: OpenClaw) {}
 
-  async list(params?: Record<string, unknown>): Promise<unknown> {
+  async list(params?: Record<string, any>): Promise<any> {
     return await this.client.request("sessions.list", params === undefined ? {} : params);
   }
 
@@ -776,7 +776,7 @@ export class SessionsNamespace {
     return new Session(this.client, key);
   }
 
-  async resolve(params: Record<string, unknown>): Promise<unknown> {
+  async resolve(params: Record<string, any>): Promise<any> {
     return await this.client.request("sessions.resolve", params);
   }
 
@@ -816,7 +816,7 @@ export class RunsNamespace {
     return await new Run(this.client, runId).wait(options);
   }
 
-  async cancel(runId: string, sessionKey?: string): Promise<unknown> {
+  async cancel(runId: string, sessionKey?: string): Promise<any> {
     return await new Run(this.client, runId, sessionKey).cancel();
   }
 }
@@ -829,7 +829,7 @@ class RpcNamespace {
 
   protected async call<T = unknown>(
     method: string,
-    params?: unknown,
+    params?: any,
     options?: GatewayRequestOptions,
   ): Promise<T> {
     return await this.client.request<T>(`${this.prefix}.${method}`, params, options);
@@ -864,11 +864,11 @@ export class ModelsNamespace extends RpcNamespace {
     super(client, "models");
   }
 
-  async list(params?: unknown): Promise<unknown> {
+  async list(params?: any): Promise<any> {
     return await this.call("list", params === undefined ? {} : params);
   }
 
-  async status(params?: unknown): Promise<unknown> {
+  async status(params?: any): Promise<any> {
     return await this.call("authStatus", params);
   }
 }
@@ -879,11 +879,11 @@ export class ToolsNamespace extends RpcNamespace {
     super(client, "tools");
   }
 
-  async list(params?: unknown): Promise<unknown> {
+  async list(params?: any): Promise<any> {
     return await this.call("catalog", params === undefined ? {} : params);
   }
 
-  async effective(params: ToolsEffectiveParams): Promise<unknown> {
+  async effective(params: ToolsEffectiveParams): Promise<any> {
     return await this.call("effective", requireToolsEffectiveSessionKey(params));
   }
 
@@ -928,11 +928,11 @@ export class ArtifactsNamespace extends RpcNamespace {
 export class ApprovalsNamespace {
   constructor(private readonly client: OpenClaw) {}
 
-  async list(params?: unknown): Promise<unknown> {
+  async list(params?: any): Promise<any> {
     return await this.client.request("exec.approval.list", params === undefined ? {} : params);
   }
 
-  async respond(approvalId: string, params: ApprovalDecisionParams): Promise<unknown> {
+  async respond(approvalId: string, params: ApprovalDecisionParams): Promise<any> {
     return await this.client.request("exec.approval.resolve", {
       id: approvalId,
       decision: params.decision,
@@ -946,11 +946,11 @@ export class EnvironmentsNamespace extends RpcNamespace {
     super(client, "environments");
   }
 
-  async list(params?: unknown): Promise<EnvironmentsListResult> {
+  async list(params?: any): Promise<EnvironmentsListResult> {
     return await this.call("list", params === undefined ? {} : params);
   }
 
-  async create(params?: unknown): Promise<unknown> {
+  async create(params?: any): Promise<any> {
     void params;
     return unsupportedGatewayApi("oc.environments.create");
   }
@@ -959,7 +959,7 @@ export class EnvironmentsNamespace extends RpcNamespace {
     return await this.call("status", { environmentId });
   }
 
-  async delete(environmentId: string): Promise<unknown> {
+  async delete(environmentId: string): Promise<any> {
     void environmentId;
     return unsupportedGatewayApi("oc.environments.delete");
   }

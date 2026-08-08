@@ -30,13 +30,13 @@ export type ProviderEntryApiKeyBindingResolution =
   | { kind: "literal"; apiKey: string; source: string }
   | { kind: "profile-resolved"; auth: { apiKey: string; profileId?: string; source: string; mode: "api-key" | "oauth" | "token" | "aws-sdk" } }
   | { kind: "profile-incompatible"; profileId: string; credentialProvider: string; credentialType: string; reason: "credential-class" | "provider-binding" }
-  | { kind: "profile-unresolved"; profileId: string; error?: unknown };
+  | { kind: "profile-unresolved"; profileId: string; error?: any };
 
 export type ModelAuthMode = "api-key" | "oauth" | "token" | "mixed" | "aws-sdk" | "unknown";
 
 /** Builds stable env/synthetic auth lookup data for repeated provider checks. */
 export function createRuntimeProviderAuthLookup(params: {
-  cfg?: Record<string, unknown>;
+  cfg?: Record<string, any>;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   includePluginSyntheticAuth?: boolean;
@@ -50,12 +50,12 @@ export function createRuntimeProviderAuthLookup(params: {
 
 /** Reads a literal or env-secret marker for a custom provider entry. */
 export function getCustomProviderApiKey(
-  cfg: Record<string, unknown> | undefined,
+  cfg: Record<string, any> | undefined,
   provider: string,
 ): string | undefined {
   if (!cfg) return undefined;
   const providers = cfg.models && typeof cfg.models === "object"
-    ? (cfg.models as Record<string, unknown>).providers as Record<string, Record<string, unknown>> | undefined
+    ? (cfg.models as Record<string, any>).providers as Record<string, Record<string, any>> | undefined
     : undefined;
   if (!providers) return undefined;
   const entry = providers[provider];
@@ -69,7 +69,7 @@ export function getCustomProviderApiKey(
 
 /** Resolves custom provider API keys that are usable without mutating secret stores. */
 export function resolveUsableCustomProviderApiKey(params: {
-  cfg: Record<string, unknown> | undefined;
+  cfg: Record<string, any> | undefined;
   provider: string;
   env?: NodeJS.ProcessEnv;
 }): { apiKey: string; source: string } | null {
@@ -90,7 +90,7 @@ export function resolveUsableCustomProviderApiKey(params: {
 
 /** True when a custom provider has a literal/env/local key available now. */
 export function hasUsableCustomProviderApiKey(
-  cfg: Record<string, unknown> | undefined,
+  cfg: Record<string, any> | undefined,
   provider: string,
   env?: NodeJS.ProcessEnv,
 ): boolean {
@@ -99,12 +99,12 @@ export function hasUsableCustomProviderApiKey(
 
 /** True when explicit provider config should outrank profile/environment auth. */
 export function shouldPreferExplicitConfigApiKeyAuth(
-  cfg: Record<string, unknown> | undefined,
+  cfg: Record<string, any> | undefined,
   provider: string,
 ): boolean {
   if (!cfg) return false;
   const providers = cfg.models && typeof cfg.models === "object"
-    ? (cfg.models as Record<string, unknown>).providers as Record<string, Record<string, unknown>> | undefined
+    ? (cfg.models as Record<string, any>).providers as Record<string, Record<string, any>> | undefined
     : undefined;
   if (!providers) return false;
   const entry = providers[provider];
@@ -115,7 +115,7 @@ export function shouldPreferExplicitConfigApiKeyAuth(
 
 /** True when a bearer auth profile can safely satisfy a provider-entry apiKey reference. */
 export function canUseProfileAsProviderEntryApiKey(params: {
-  cfg?: Record<string, unknown>;
+  cfg?: Record<string, any>;
   provider: string;
   credential: { type: string; provider: string };
 }): boolean {
@@ -130,7 +130,7 @@ export function canUseProfileAsProviderEntryApiKey(params: {
 
 /** Classifies a provider entry apiKey as literal/profile/marker before resolving secrets. */
 export function resolveProviderEntryApiKeyProfileReference(params: {
-  cfg?: Record<string, unknown>;
+  cfg?: Record<string, any>;
   provider: string;
   store: { profiles: Record<string, { type: string; provider: string }> };
 }):
@@ -142,10 +142,10 @@ export function resolveProviderEntryApiKeyProfileReference(params: {
 {
   if (!params.cfg) return { kind: "none" };
   const providers = params.cfg.models && typeof params.cfg.models === "object"
-    ? (params.cfg as Record<string, unknown>).models as Record<string, unknown> | undefined
+    ? (params.cfg as Record<string, any>).models as Record<string, any> | undefined
     : undefined;
   if (!providers) return { kind: "none" };
-  const providerConfig = (providers as Record<string, Record<string, unknown>>).providers?.[params.provider] as Record<string, unknown> | undefined;
+  const providerConfig = (providers as Record<string, Record<string, any>>).providers?.[params.provider] as Record<string, any> | undefined;
   if (!providerConfig) return { kind: "none" };
   const apiKey = providerConfig.apiKey;
   if (typeof apiKey !== "string" || !apiKey.trim()) return { kind: "none" };
@@ -182,7 +182,7 @@ export function resolveProviderEntryApiKeyProfileReference(params: {
 
 /** Resolves a provider-entry apiKey profile reference into runtime auth when possible. */
 export async function resolveProviderEntryApiKeyBinding(params: {
-  cfg?: Record<string, unknown>;
+  cfg?: Record<string, any>;
   provider: string;
   store: { profiles: Record<string, { type: string; provider: string }> };
   agentDir?: string;
@@ -203,12 +203,12 @@ export async function resolveProviderEntryApiKeyBinding(params: {
 
 /** True when a custom local provider can use a synthetic no-auth placeholder. */
 export function hasSyntheticLocalProviderAuthConfig(params: {
-  cfg: Record<string, unknown> | undefined;
+  cfg: Record<string, any> | undefined;
   provider: string;
 }): boolean {
   if (!params.cfg) return false;
   const providers = params.cfg.models && typeof params.cfg.models === "object"
-    ? (params.cfg.models as Record<string, unknown>).providers as Record<string, Record<string, unknown>> | undefined
+    ? (params.cfg.models as Record<string, any>).providers as Record<string, Record<string, any>> | undefined
     : undefined;
   if (!providers) return false;
   const entry = providers[params.provider];
@@ -235,7 +235,7 @@ export function hasSyntheticLocalProviderAuthConfig(params: {
 /** Fast auth-availability check for runtime provider/model selection. */
 export function hasRuntimeAvailableProviderAuth(params: {
   provider: string;
-  cfg?: Record<string, unknown>;
+  cfg?: Record<string, any>;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   allowPluginSyntheticAuth?: boolean;
@@ -257,7 +257,7 @@ export function hasRuntimeAvailableProviderAuth(params: {
 /** Resolves the credential that should be used for one provider request. */
 export async function resolveApiKeyForProvider(params: {
   provider: string;
-  cfg?: Record<string, unknown>;
+  cfg?: Record<string, any>;
   profileId?: string;
   preferredProfile?: string;
   store?: { profiles: Record<string, { type: string; provider: string }> };
@@ -291,7 +291,7 @@ export async function resolveApiKeyForProvider(params: {
 /** Reports the strongest configured auth mode for provider-list UI and diagnostics. */
 export function resolveModelAuthMode(
   provider?: string,
-  cfg?: Record<string, unknown>,
+  cfg?: Record<string, any>,
   store?: { profiles: Record<string, { type: string }> },
   options?: { workspaceDir?: string },
 ): ModelAuthMode | undefined {
@@ -308,7 +308,7 @@ export function resolveModelAuthMode(
 /** Checks provider auth availability, including profile fallback order. */
 export async function hasAvailableAuthForProvider(params: {
   provider: string;
-  cfg?: Record<string, unknown>;
+  cfg?: Record<string, any>;
   preferredProfile?: string;
   store?: { profiles: Record<string, { type: string; provider: string }> };
   agentDir?: string;
@@ -326,7 +326,7 @@ export async function hasAvailableAuthForProvider(params: {
 /** Resolves request credentials from the provider attached to a model descriptor. */
 export async function getApiKeyForModel(params: {
   model: { provider: string; api?: string };
-  cfg?: Record<string, unknown>;
+  cfg?: Record<string, any>;
   profileId?: string;
   preferredProfile?: string;
   store?: { profiles: Record<string, { type: string; provider: string }> };
@@ -350,9 +350,9 @@ export async function getApiKeyForModel(params: {
 }
 
 /** Clears auth for local OpenAI-compatible servers that explicitly use no auth. */
-export function applyLocalNoAuthHeaderOverride<T extends Record<string, unknown>>(model: T, auth: { apiKey?: string } | null | undefined): T {
+export function applyLocalNoAuthHeaderOverride<T extends Record<string, any>>(model: T, auth: { apiKey?: string } | null | undefined): T {
   if (auth?.apiKey !== "local-no-auth") return model;
-  const api = (model as Record<string, unknown>).api;
+  const api = (model as Record<string, any>).api;
   if (api !== "openai-completions") return model;
   return {
     ...model,
@@ -364,17 +364,17 @@ export function applyLocalNoAuthHeaderOverride<T extends Record<string, unknown>
  * When the provider config sets `authHeader: true`, inject an explicit
  * `Authorization: Bearer <apiKey>` header into the model.
  */
-export function applyAuthHeaderOverride<T extends Record<string, unknown>>(model: T, auth: { apiKey?: string } | null | undefined, cfg: Record<string, unknown> | undefined): T {
+export function applyAuthHeaderOverride<T extends Record<string, any>>(model: T, auth: { apiKey?: string } | null | undefined, cfg: Record<string, any> | undefined): T {
   if (!auth?.apiKey) return model;
   // Simple implementation: check for authHeader flag in provider config
   const providers = cfg?.models && typeof cfg.models === "object"
-    ? (cfg.models as Record<string, unknown>).providers as Record<string, Record<string, unknown>> | undefined
+    ? (cfg.models as Record<string, any>).providers as Record<string, Record<string, any>> | undefined
     : undefined;
-  const provider = (model as Record<string, unknown>).provider as string | undefined;
+  const provider = (model as Record<string, any>).provider as string | undefined;
   const entry = provider ? providers?.[provider] : undefined;
   if (!entry?.authHeader) return model;
   const headers: Record<string, string> = {};
-  const existingHeaders = (model as Record<string, unknown>).headers as Record<string, string> | undefined;
+  const existingHeaders = (model as Record<string, any>).headers as Record<string, string> | undefined;
   if (existingHeaders) {
     for (const [key, value] of Object.entries(existingHeaders)) {
       if (key.toLowerCase() !== "authorization") {

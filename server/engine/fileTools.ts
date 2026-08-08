@@ -19,7 +19,7 @@ function getGeneratedFilesDir(sessionId?: string): string {
 }
 
 /** 生成文件到工作区（AI 生成内容专用，可在对话中展示和下载） */
-export async function handleGenerateFile(args: Record<string, unknown>): Promise<string> {
+export async function handleGenerateFile(args: Record<string, any>): Promise<string> {
   const fs = await import('fs');
   const path = await import('path');
 
@@ -81,7 +81,7 @@ export async function handleGenerateFile(args: Record<string, unknown>): Promise
 }
 
 /** 列出生成的文件 */
-export async function handleListGeneratedFiles(args: Record<string, unknown>): Promise<string> {
+export async function handleListGeneratedFiles(args: Record<string, any>): Promise<string> {
   const fs = await import('fs');
   const path = await import('path');
 
@@ -120,7 +120,7 @@ export async function handleListGeneratedFiles(args: Record<string, unknown>): P
 }
 
 /** 读取生成的文件内容 */
-export async function handleReadGeneratedFile(args: Record<string, unknown>): Promise<string> {
+export async function handleReadGeneratedFile(args: Record<string, any>): Promise<string> {
   const fs = await import('fs');
   const path = await import('path');
 
@@ -166,7 +166,7 @@ export async function handleReadGeneratedFile(args: Record<string, unknown>): Pr
 }
 
 /** 更新生成的文件内容 */
-export async function handleUpdateGeneratedFile(args: Record<string, unknown>): Promise<string> {
+export async function handleUpdateGeneratedFile(args: Record<string, any>): Promise<string> {
   const fs = await import('fs');
   const path = await import('path');
 
@@ -216,7 +216,7 @@ export async function handleUpdateGeneratedFile(args: Record<string, unknown>): 
 }
 
 /** 重命名生成的文件 */
-export async function handleRenameGeneratedFile(args: Record<string, unknown>): Promise<string> {
+export async function handleRenameGeneratedFile(args: Record<string, any>): Promise<string> {
   const fs = await import('fs');
   const path = await import('path');
 
@@ -271,7 +271,7 @@ export async function handleRenameGeneratedFile(args: Record<string, unknown>): 
 }
 
 /** 删除生成的文件 */
-export async function handleDeleteGeneratedFile(args: Record<string, unknown>): Promise<string> {
+export async function handleDeleteGeneratedFile(args: Record<string, any>): Promise<string> {
   const fs = await import('fs');
   const path = await import('path');
 
@@ -303,7 +303,7 @@ export async function handleDeleteGeneratedFile(args: Record<string, unknown>): 
 }
 
 /** 列出目录内容 */
-export async function handleListDir(args: Record<string, unknown>): Promise<string> {
+export async function handleListDir(args: Record<string, any>): Promise<string> {
   const fs = await import('fs');
   const path = await import('path');
   const dirPath = String(args.path || '.');
@@ -320,7 +320,7 @@ export async function handleListDir(args: Record<string, unknown>): Promise<stri
 }
 
 /** 读取文件内容 */
-export async function handleReadFile(args: Record<string, unknown>): Promise<string> {
+export async function handleReadFile(args: Record<string, any>): Promise<string> {
   const fs = await import('fs');
   const filePath = String(args.path || '');
   try {
@@ -337,7 +337,7 @@ export async function handleReadFile(args: Record<string, unknown>): Promise<str
 }
 
 /** 写入文件（安全限制：仅允许写入用户数据目录、工作区和临时目录） */
-export async function handleWriteFile(args: Record<string, unknown>): Promise<string> {
+export async function handleWriteFile(args: Record<string, any>): Promise<string> {
   const fs = await import('fs');
   const path = await import('path');
   const os = await import('os');
@@ -426,7 +426,7 @@ export const DANGEROUS_ARG_PATTERNS = [
   /\|\s*sudo/, /;\s*rm/, /\|\s*rm/,
 ];
 
-export async function handleExecCommand(args: Record<string, unknown>): Promise<string> {
+export async function handleExecCommand(args: Record<string, any>): Promise<string> {
   const { spawn } = await import('child_process');
   const command = String(args.command || '');
   const commandArgs = Array.isArray(args.args) ? args.args.map(String) : [];

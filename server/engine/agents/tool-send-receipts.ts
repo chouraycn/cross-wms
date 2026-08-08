@@ -6,9 +6,9 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function recordEmbeddedToolSendReceipt(..._args: unknown[]): unknown {
+export function recordEmbeddedToolSendReceipt(..._args: any[]): any {
   return undefined;
 }
-export function consumeEmbeddedToolSendReceipt(..._args: unknown[]): unknown {
+export function consumeEmbeddedToolSendReceipt(..._args: any[]): any {
   return undefined;
 }

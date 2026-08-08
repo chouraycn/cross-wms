@@ -49,7 +49,7 @@ afterAll(async () => {
  * Create a mock session JSONL file with various entry types
  */
 function createMockSessionContent(
-  entries: Array<{ role: string; content: string } | ({ type: string } & Record<string, unknown>)>,
+  entries: Array<{ role: string; content: string } | ({ type: string } & Record<string, any>)>,
 ): string {
   return entries
     .map((entry) => {

@@ -8,7 +8,7 @@ export interface ChannelAccount {
   type: string;
   enabled: boolean;
   configured: boolean;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
 }
 
 export interface AccountResolutionResult {
@@ -24,15 +24,15 @@ export function listAccounts(
   config: AppConfig,
   resolver?: (config: AppConfig, accountId: AccountId) => unknown
 ): ChannelAccount[] {
-  const channelConfig = config[channelId] as Record<string, unknown> | undefined;
-  const accounts = channelConfig?.accounts as Record<string, unknown> | undefined;
+  const channelConfig = config[channelId] as Record<string, any> | undefined;
+  const accounts = channelConfig?.accounts as Record<string, any> | undefined;
 
   if (!accounts) return [];
 
   const result: ChannelAccount[] = [];
 
   for (const [accountId, rawAccount] of Object.entries(accounts)) {
-    const raw = rawAccount as Record<string, unknown>;
+    const raw = rawAccount as Record<string, any>;
     const account: ChannelAccount = {
       id: accountId,
       channelId,
@@ -60,9 +60,9 @@ export function resolveAccount(
     return { found: true, account: cached };
   }
 
-  const channelConfig = config[channelId] as Record<string, unknown> | undefined;
-  const accounts = channelConfig?.accounts as Record<string, unknown> | undefined;
-  const raw = accounts?.[accountId] as Record<string, unknown> | undefined;
+  const channelConfig = config[channelId] as Record<string, any> | undefined;
+  const accounts = channelConfig?.accounts as Record<string, any> | undefined;
+  const raw = accounts?.[accountId] as Record<string, any> | undefined;
 
   if (!raw) {
     return { found: false, reason: `Account ${accountId} not found in channel ${channelId}` };
@@ -113,7 +113,7 @@ export function isAccountConfigured(
   return result.found && result.account!.configured;
 }
 
-function isConfigured(raw: Record<string, unknown>): boolean {
+function isConfigured(raw: Record<string, any>): boolean {
   if (raw.configured !== undefined) {
     return Boolean(raw.configured);
   }

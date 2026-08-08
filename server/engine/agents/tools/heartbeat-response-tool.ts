@@ -32,7 +32,7 @@ const HeartbeatResponseToolSchema = Type.Object(
   { additionalProperties: false },
 );
 
-function readRequiredBoolean(params: Record<string, unknown>, key: string): boolean {
+function readRequiredBoolean(params: Record<string, any>, key: string): boolean {
   const raw = readSnakeCaseParamRaw(params, key);
   if (typeof raw !== "boolean") {
     throw new ToolInputError(`${key} required`);

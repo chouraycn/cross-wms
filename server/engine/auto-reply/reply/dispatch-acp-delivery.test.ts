@@ -7,8 +7,8 @@ import { buildTestCtx } from "./test-ctx.js";
 import { createAcpTestConfig } from "./test-fixtures/acp-runtime.js";
 
 const ttsMocks = vi.hoisted(() => ({
-  maybeApplyTtsToPayload: vi.fn(async (paramsUnknown: unknown) => {
-    const params = paramsUnknown as { payload: unknown };
+  maybeApplyTtsToPayload: vi.fn(async (paramsUnknown: any) => {
+    const params = paramsUnknown as { payload: any };
     return params.payload;
   }),
 }));
@@ -16,7 +16,7 @@ const ttsMocks = vi.hoisted(() => ({
 const deliveryMocks = vi.hoisted(() => ({
   routeReply: vi.fn(
     async (
-      _params: unknown,
+      _params: any,
     ): Promise<{
       ok: boolean;
       messageId?: string;
@@ -24,7 +24,7 @@ const deliveryMocks = vi.hoisted(() => ({
       reason?: string;
     }> => ({ ok: true, messageId: "mock-message" }),
   ),
-  runMessageAction: vi.fn(async (_params: unknown) => ({ ok: true as const })),
+  runMessageAction: vi.fn(async (_params: any) => ({ ok: true as const })),
 }));
 
 const channelPluginMocks = vi.hoisted(() => ({
@@ -74,11 +74,11 @@ const channelPluginMocks = vi.hoisted(() => ({
 }));
 
 vi.mock("./dispatch-acp-tts.runtime.js", () => ({
-  maybeApplyTtsToPayload: (params: unknown) => ttsMocks.maybeApplyTtsToPayload(params),
+  maybeApplyTtsToPayload: (params: any) => ttsMocks.maybeApplyTtsToPayload(params),
 }));
 
 vi.mock("./route-reply.runtime.js", () => ({
-  routeReply: (params: unknown) => deliveryMocks.routeReply(params),
+  routeReply: (params: any) => deliveryMocks.routeReply(params),
 }));
 
 vi.mock("../../channels/plugins/index.js", () => ({
@@ -87,7 +87,7 @@ vi.mock("../../channels/plugins/index.js", () => ({
 }));
 
 vi.mock("../../infra/outbound/message-action-runner.js", () => ({
-  runMessageAction: (params: unknown) => deliveryMocks.runMessageAction(params),
+  runMessageAction: (params: any) => deliveryMocks.runMessageAction(params),
 }));
 
 function createDispatcher(): ReplyDispatcher {
@@ -102,7 +102,7 @@ function createDispatcher(): ReplyDispatcher {
   };
 }
 
-function createCoordinator(onReplyStart?: (...args: unknown[]) => Promise<void>) {
+function createCoordinator(onReplyStart?: (...args: any[]) => Promise<void>) {
   return createAcpDispatchDeliveryCoordinator({
     cfg: createAcpTestConfig(),
     ctx: buildTestCtx({
@@ -274,7 +274,7 @@ describe("createAcpDispatchDeliveryCoordinator", () => {
   });
 
   it("does not wait for direct block dispatcher delivery before resolving block delivery", async () => {
-    const delivered: unknown[] = [];
+    const delivered: any[] = [];
     let releaseDelivery: (() => void) | undefined;
     let markDeliveryStarted: (() => void) | undefined;
     const deliveryStarted = new Promise<void>((resolve) => {
@@ -321,7 +321,7 @@ describe("createAcpDispatchDeliveryCoordinator", () => {
   });
 
   it("waits for pending direct block delivery before resolving tool delivery", async () => {
-    const delivered: unknown[] = [];
+    const delivered: any[] = [];
     let releaseDelivery: (() => void) | undefined;
     let markDeliveryStarted: (() => void) | undefined;
     const deliveryStarted = new Promise<void>((resolve) => {
@@ -374,7 +374,7 @@ describe("createAcpDispatchDeliveryCoordinator", () => {
   });
 
   it("stops waiting for direct block delivery when the ACP dispatch aborts", async () => {
-    const delivered: unknown[] = [];
+    const delivered: any[] = [];
     const controller = new AbortController();
     let releaseDelivery: (() => void) | undefined;
     let markDeliveryStarted: (() => void) | undefined;

@@ -51,7 +51,7 @@ const STANDARD_MESSAGE_ACTION_PARAM_KEYS = new Set([
 /**
  * Detects non-standard message action params that may need plugin-owned handling.
  */
-export function hasPotentialPluginActionParam(params: Record<string, unknown>): boolean {
+export function hasPotentialPluginActionParam(params: Record<string, any>): boolean {
   return Object.entries(params).some(([key, value]) => {
     if (STANDARD_MESSAGE_ACTION_PARAM_KEYS.has(key)) {
       return false;

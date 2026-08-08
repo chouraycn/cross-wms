@@ -73,7 +73,7 @@ export async function transcribeOpenAiCompatibleAudio(
       baseUrl: params.baseUrl,
       defaultBaseUrl: params.defaultBaseUrl,
       headers: params.headers,
-      request: params.request as Record<string, unknown> | undefined,
+      request: params.request as Record<string, any> | undefined,
       defaultHeaders,
       provider: params.provider,
       api: OPENAI_AUDIO_TRANSCRIPTIONS_API,

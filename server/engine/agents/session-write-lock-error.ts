@@ -7,15 +7,15 @@
  */
 
 export class SessionWriteLockTimeoutError {
-  constructor(..._args: unknown[]) {
+  constructor(..._args: any[]) {
     // Stub: not fully ported
   }
 }
 export class SessionWriteLockStaleError {
-  constructor(..._args: unknown[]) {
+  constructor(..._args: any[]) {
     // Stub: not fully ported
   }
 }
-export function isSessionWriteLockAcquireError(..._args: unknown[]): unknown {
+export function isSessionWriteLockAcquireError(..._args: any[]): any {
   return false;
 }

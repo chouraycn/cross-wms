@@ -14,9 +14,9 @@ const runtimeMocks = vi.hoisted(() => ({
     threadId: "thread-2",
   })),
   applyFinalEffectiveToolPolicy: vi.fn(
-    (params: { bundledTools: unknown[] }) => params.bundledTools,
+    (params: { bundledTools: any[] }) => params.bundledTools,
   ),
-  buildBundleMcpToolsFromCatalog: vi.fn(() => [] as unknown[]),
+  buildBundleMcpToolsFromCatalog: vi.fn(() => [] as any[]),
   getActivePluginChannelRegistryVersion: vi.fn(() => 1),
   getActivePluginRegistryVersion: vi.fn(() => 1),
   resolveRuntimeConfigCacheKey: vi.fn(() => "runtime:1:test"),
@@ -89,7 +89,7 @@ type ToolsEffectivePayload = {
   }>;
 };
 
-function createInvokeParams(params: Record<string, unknown>) {
+function createInvokeParams(params: Record<string, any>) {
   const respond = vi.fn();
   return {
     respond,
@@ -105,9 +105,9 @@ function createInvokeParams(params: Record<string, unknown>) {
   };
 }
 
-function resolveEffectiveToolInventoryArg(callIndex = 0): Record<string, unknown> | undefined {
+function resolveEffectiveToolInventoryArg(callIndex = 0): Record<string, any> | undefined {
   const calls = runtimeMocks.resolveEffectiveToolInventory.mock.calls as unknown as Array<
-    [Record<string, unknown>]
+    [Record<string, any>]
   >;
   return calls[callIndex]?.[0];
 }
@@ -116,7 +116,7 @@ function firstRespondCall(respond: ReturnType<typeof vi.fn>): RespondCall | unde
   return respond.mock.calls[0] as RespondCall | undefined;
 }
 
-function makeMcpTool(params: Record<string, unknown> = { type: "object", properties: {} }) {
+function makeMcpTool(params: Record<string, any> = { type: "object", properties: {} }) {
   return {
     name: "reproProbe__probe_tool",
     label: "Probe Tool",
@@ -177,7 +177,7 @@ function mockWarmMcpRuntime(
   });
 }
 
-function mockWarmMcpTool(params: Record<string, unknown> = { type: "object", properties: {} }) {
+function mockWarmMcpTool(params: Record<string, any> = { type: "object", properties: {} }) {
   const mcpTool = makeMcpTool(params);
   const catalog = makeMcpCatalog();
   mockMcpConfigSummary();
@@ -194,7 +194,7 @@ function expectInvalidResponse(respond: ReturnType<typeof vi.fn>, message: strin
 }
 
 async function expectInvalidToolsParams(
-  params: Record<string, unknown>,
+  params: Record<string, any>,
   message: string,
 ): Promise<void> {
   const { respond, invoke } = createInvokeParams(params);
@@ -247,7 +247,7 @@ describe("tools.effective handler", () => {
     runtimeMocks.peekSessionMcpRuntime.mockReturnValue(undefined);
     runtimeMocks.buildBundleMcpToolsFromCatalog.mockReturnValue([]);
     runtimeMocks.applyFinalEffectiveToolPolicy.mockImplementation(
-      (params: { bundledTools: unknown[] }) => params.bundledTools,
+      (params: { bundledTools: any[] }) => params.bundledTools,
     );
     runtimeMocks.resolveEffectiveToolInventory.mockReturnValue(makeCoreInventory());
   });

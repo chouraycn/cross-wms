@@ -50,7 +50,7 @@ vi.mock("../../plugins/provider-runtime.js", () => ({
 
 let resolveModelAsync: typeof import("./model.js").resolveModelAsync;
 
-function expectWorkspaceHookCall(mock: { mock: { calls: unknown[][] } }) {
+function expectWorkspaceHookCall(mock: { mock: { calls: any[][] } }) {
   // Workspace must be present both at the hook call level and inside the context
   // object because plugin runtimes read either shape.
   expect(mock.mock.calls).toHaveLength(1);
@@ -58,12 +58,12 @@ function expectWorkspaceHookCall(mock: { mock: { calls: unknown[][] } }) {
   if (!arg || typeof arg !== "object") {
     throw new Error("Expected runtime hook call argument");
   }
-  const call = arg as { context?: unknown; workspaceDir?: unknown };
+  const call = arg as { context?: any; workspaceDir?: any };
   expect(call.workspaceDir).toBe("/tmp/workspace");
   if (!call.context || typeof call.context !== "object") {
     throw new Error("Expected runtime hook context");
   }
-  const context = call.context as { workspaceDir?: unknown };
+  const context = call.context as { workspaceDir?: any };
   expect(context.workspaceDir).toBe("/tmp/workspace");
 }
 

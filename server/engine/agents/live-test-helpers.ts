@@ -7,27 +7,27 @@
  */
 
 export type CompleteSimpleContent = unknown;
-export function isLiveTestEnabled(..._args: unknown[]): unknown {
+export function isLiveTestEnabled(..._args: any[]): any {
   return false;
 }
-export function isLiveProfileKeyModeEnabled(..._args: unknown[]): unknown {
+export function isLiveProfileKeyModeEnabled(..._args: any[]): any {
   return false;
 }
-export function requiresLiveProfileCredential(..._args: unknown[]): unknown {
+export function requiresLiveProfileCredential(..._args: any[]): any {
   return undefined;
 }
-export function resolveLiveCredentialPrecedence(..._args: unknown[]): unknown {
+export function resolveLiveCredentialPrecedence(..._args: any[]): any {
   return undefined;
 }
-export function createSingleUserPromptMessage(..._args: unknown[]): unknown {
+export function createSingleUserPromptMessage(..._args: any[]): any {
   return undefined;
 }
-export function extractNonEmptyAssistantText(..._args: unknown[]): unknown {
+export function extractNonEmptyAssistantText(..._args: any[]): any {
   return undefined;
 }
-export function logLiveProgress(..._args: unknown[]): unknown {
+export function logLiveProgress(..._args: any[]): any {
   return undefined;
 }
-export async function completeSimpleWithTimeout(..._args: unknown[]): Promise<unknown> {
+export async function completeSimpleWithTimeout(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }

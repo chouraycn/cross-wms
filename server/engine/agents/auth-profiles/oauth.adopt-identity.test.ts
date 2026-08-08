@@ -37,12 +37,12 @@ const {
 
 function expectPersistedOpenAICodexProfile(
   credential: AuthProfileStore["profiles"][string],
-  metadata: Record<string, unknown> = {},
+  metadata: Record<string, any> = {},
 ): void {
   expect(credential?.type).toBe("oauth");
   expect(credential?.provider).toBe("openai");
   for (const [key, value] of Object.entries(metadata)) {
-    expect((credential as Record<string, unknown> | undefined)?.[key]).toEqual(value);
+    expect((credential as Record<string, any> | undefined)?.[key]).toEqual(value);
   }
 }
 

@@ -38,12 +38,12 @@ function resolveTimeoutMs(params: {
   timeoutMs?: number;
   timeoutSeconds?: number;
 }): number | undefined {
-  const timeoutMs = readPositiveIntegerParam(params as Record<string, unknown>, "timeoutMs");
+  const timeoutMs = readPositiveIntegerParam(params as Record<string, any>, "timeoutMs");
   if (timeoutMs !== undefined) {
     return timeoutMs;
   }
   const timeoutSeconds = readPositiveIntegerParam(
-    params as Record<string, unknown>,
+    params as Record<string, any>,
     "timeoutSeconds",
   );
   if (timeoutSeconds !== undefined) {

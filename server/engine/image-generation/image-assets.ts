@@ -49,7 +49,7 @@ function generateAssetId(): string {
   return `img_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
 }
 
-function generateCacheKey(prompt: string, params: Record<string, unknown> = {}): string {
+function generateCacheKey(prompt: string, params: Record<string, any> = {}): string {
   const normalized = prompt.trim().toLowerCase();
   const paramsStr = JSON.stringify(params);
   const hash = simpleHash(`${normalized}:${paramsStr}`);
@@ -233,7 +233,7 @@ export function createImageAsset(
 
 export function getImageAssetFromCache(
   prompt: string,
-  params: Record<string, unknown> = {},
+  params: Record<string, any> = {},
 ): ImageAsset | undefined {
   const key = generateCacheKey(prompt, params);
   const entry = imageCache.get(key);
@@ -254,7 +254,7 @@ export function getImageAssetFromCache(
 export function setImageAssetCache(
   prompt: string,
   asset: ImageAsset,
-  params: Record<string, unknown> = {},
+  params: Record<string, any> = {},
 ): void {
   const key = generateCacheKey(prompt, params);
 

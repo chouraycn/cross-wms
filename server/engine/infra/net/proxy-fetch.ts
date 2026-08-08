@@ -86,7 +86,7 @@ export function makeProxyFetch(proxyUrl: string): typeof fetch {
   // on stream/body internals. Single cast at the boundary keeps the rest type-safe.
   const proxyFetch = ((input: RequestInfo | URL, init?: RequestInit) =>
     undiciFetch(input as string | URL, {
-      ...(normalizeInitForUndici(init, UndiciFormData) as Record<string, unknown>),
+      ...(normalizeInitForUndici(init, UndiciFormData) as Record<string, any>),
       dispatcher: resolveAgent(),
     }) as unknown as Promise<Response>) as ProxyFetchWithMetadata;
   Object.defineProperty(proxyFetch, PROXY_FETCH_PROXY_URL, {
@@ -130,7 +130,7 @@ export function resolveProxyFetchFromEnv(
     const agent = new EnvHttpProxyAgent(proxyOptions);
     return ((input: RequestInfo | URL, init?: RequestInit) =>
       undiciFetch(input as string | URL, {
-        ...(normalizeInitForUndici(init, UndiciFormData) as Record<string, unknown>),
+        ...(normalizeInitForUndici(init, UndiciFormData) as Record<string, any>),
         dispatcher: agent,
       }) as unknown as Promise<Response>) as typeof fetch;
   } catch (err) {

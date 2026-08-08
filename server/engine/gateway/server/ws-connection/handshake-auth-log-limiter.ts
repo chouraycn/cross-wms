@@ -67,7 +67,7 @@ export function buildHandshakeAuthLogKey(params: {
   authProvided?: string;
 }): string {
   return [
-    params.reason ?? "unknown",
+    params.reason ?? "any",
     params.remoteAddr ?? "?",
     params.client ?? "?",
     params.mode ?? "?",

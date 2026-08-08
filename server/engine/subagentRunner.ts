@@ -43,7 +43,7 @@ export type SubagentRunStatus = 'pending' | 'spawning' | 'running' | 'completed'
  */
 export interface SubagentExecutionResult {
   success: boolean;
-  result?: unknown;
+  result?: any;
   error?: string;
   metadata: {
     instanceId: string;
@@ -60,7 +60,7 @@ export interface SubagentExecutionResult {
 export type SubagentEvent =
   | { type: 'start'; instanceId: string; sessionKey: string }
   | { type: 'progress'; instanceId: string; progress: number; message?: string }
-  | { type: 'complete'; instanceId: string; result: unknown }
+  | { type: 'complete'; instanceId: string; result: any }
   | { type: 'error'; instanceId: string; error: string }
   | { type: 'cancel'; instanceId: string };
 
@@ -82,9 +82,9 @@ export interface SubagentConfig {
   /** 父会话 Key（可选，用于追踪） */
   parentSessionKey?: string;
   /** 输入参数 */
-  input?: Record<string, unknown>;
+  input?: Record<string, any>;
   /** 元数据 */
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
   /** 执行模式 */
   mode?: SubagentMode;
   /** 超时时间（毫秒） */
@@ -118,7 +118,7 @@ export interface SubagentIsolationContext {
   parentSessionKey?: string;
   isolationId: string;
   createdAt: number;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
 }
 
 /**
@@ -128,7 +128,7 @@ export interface SubagentMessage {
   type: 'task' | 'progress' | 'result' | 'error' | 'cancel' | 'heartbeat';
   sourceSessionKey: string;
   targetSessionKey: string;
-  payload: unknown;
+  payload: any;
   timestamp: number;
   messageId: string;
 }
@@ -421,7 +421,7 @@ export class SubagentRunner {
     sessionKey: string,
     timeoutMs: number,
     onEvent?: SubagentEventListener,
-  ): Promise<{ success: boolean; result?: unknown; error?: string }> {
+  ): Promise<{ success: boolean; result?: any; error?: string }> {
     return new Promise((resolve) => {
       const timeout = setTimeout(() => {
         resolve({ success: false, error: 'Timeout waiting for completion' });

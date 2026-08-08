@@ -42,7 +42,7 @@ export interface SpawnOptions {
     mimeType?: string;
   }>;
   attachMountPath?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface SpawnContext {

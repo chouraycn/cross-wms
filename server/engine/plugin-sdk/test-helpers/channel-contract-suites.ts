@@ -183,10 +183,10 @@ type ChannelStatusContractCase<Probe> = {
     enabled: boolean;
   };
   assertSnapshot?: (snapshot: ChannelAccountSnapshot) => void;
-  assertSummary?: (summary: Record<string, unknown>) => void;
+  assertSummary?: (summary: Record<string, any>) => void;
 };
 
-export function installChannelStatusContractSuite<ResolvedAccount, Probe = unknown>(params: {
+export function installChannelStatusContractSuite<ResolvedAccount, Probe = any>(params: {
   plugin: Pick<ChannelPlugin<ResolvedAccount, Probe>, "id" | "config" | "status">;
   cases: readonly ChannelStatusContractCase<Probe>[];
 }) {

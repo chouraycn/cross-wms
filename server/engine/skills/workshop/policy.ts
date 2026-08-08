@@ -5,8 +5,8 @@ const SKILL_WORKSHOP_LIFECYCLE_ACTIONS = new Set(["apply", "reject", "quarantine
 
 type SkillWorkshopLifecycleAction = "apply" | "reject" | "quarantine";
 
-function readLifecycleAction(params: unknown): SkillWorkshopLifecycleAction | undefined {
-  const record = params && typeof params === "object" ? (params as Record<string, unknown>) : null;
+function readLifecycleAction(params: any): SkillWorkshopLifecycleAction | undefined {
+  const record = params && typeof params === "object" ? (params as Record<string, any>) : null;
   const action = record?.action;
   if (typeof action !== "string" || !SKILL_WORKSHOP_LIFECYCLE_ACTIONS.has(action)) {
     return undefined;
@@ -51,7 +51,7 @@ export interface PluginHookBeforeToolCallResult {
 
 export function resolveSkillWorkshopToolApproval(params: {
   toolName: string;
-  toolParams: unknown;
+  toolParams: any;
   config?: OpenClawConfig;
 }): PluginHookBeforeToolCallResult | undefined {
   if (params.toolName !== "skill_workshop") {

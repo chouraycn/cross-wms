@@ -8,7 +8,7 @@ describe("config/debug command parsing", () => {
     const cases: Array<{
       parse: (input: string) => unknown;
       input: string;
-      expected: unknown;
+      expected: any;
     }> = [
       { parse: parseConfigCommand, input: "/config", expected: { action: "show" } },
       {

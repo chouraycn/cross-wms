@@ -33,7 +33,7 @@ const defaultRuntime = {
   exit(code: number) {
     process.exit(code);
   },
-  writeJson(value: unknown) {
+  writeJson(value: any) {
     // eslint-disable-next-line no-console -- CLI 运行时降级实现。
     console.log(JSON.stringify(value, null, 2));
   },

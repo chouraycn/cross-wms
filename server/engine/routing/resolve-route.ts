@@ -88,7 +88,7 @@ function normalizeToken(value: string | undefined | null): string {
   return normalizeLowercaseStringOrEmpty(value);
 }
 
-function normalizeId(value: unknown): string {
+function normalizeId(value: any): string {
   return normalizeRouteBindingId(value);
 }
 

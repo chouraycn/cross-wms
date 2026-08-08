@@ -16,7 +16,7 @@ import {
   resolveManifestBuiltInModelSuppression,
 } from "./manifest-model-suppression.js";
 
-function createMetadataSnapshot(plugins: Record<string, unknown>[]) {
+function createMetadataSnapshot(plugins: Record<string, any>[]) {
   return {
     index: { plugins: [] },
     diagnostics: [],

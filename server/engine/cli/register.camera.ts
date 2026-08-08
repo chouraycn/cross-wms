@@ -32,9 +32,9 @@ const parseFacing = (value: string): CameraFacing => {
   throw new Error(`invalid facing: ${value} (expected front|back)`);
 };
 
-function getGatewayInvokePayload(raw: unknown): unknown {
+function getGatewayInvokePayload(raw: any): any {
   return typeof raw === "object" && raw !== null
-    ? (raw as { payload?: unknown }).payload
+    ? (raw as { payload?: any }).payload
     : undefined;
 }
 
@@ -59,10 +59,10 @@ export function registerNodesCameraCommands(nodes: Command) {
             }),
           );
 
-          const res = typeof raw === "object" && raw !== null ? (raw as { payload?: unknown }) : {};
+          const res = typeof raw === "object" && raw !== null ? (raw as { payload?: any }) : {};
           const payload =
             typeof res.payload === "object" && res.payload !== null
-              ? (res.payload as { devices?: unknown })
+              ? (res.payload as { devices?: any })
               : {};
           const devices = Array.isArray(payload.devices) ? payload.devices : [];
 
@@ -168,7 +168,7 @@ export function registerNodesCameraCommands(nodes: Command) {
             });
 
             const raw = await callGatewayCli("node.invoke", opts, invokeParams);
-            const payload = getGatewayInvokePayload(raw) as Record<string, unknown>;
+            const payload = getGatewayInvokePayload(raw) as Record<string, any>;
             const format = typeof payload.format === "string" ? payload.format : "jpeg";
             const width = typeof payload.width === "number" ? payload.width : 0;
             const height = typeof payload.height === "number" ? payload.height : 0;

@@ -23,7 +23,7 @@ vi.mock("../../agents/agent-scope.js", () => ({
     sessionKey,
   }: {
     sessionKey?: string;
-    config?: unknown;
+    config?: any;
     agentId?: string;
   }) => {
     const match = sessionKey?.match(/^agent:([^:]+)/i);
@@ -33,7 +33,7 @@ vi.mock("../../agents/agent-scope.js", () => ({
 }));
 
 vi.mock("../../config/plugin-auto-enable.js", () => ({
-  applyPluginAutoEnable: ({ config }: { config: unknown }) => ({ config, changes: [] }),
+  applyPluginAutoEnable: ({ config }: { config: any }) => ({ config, changes: [] }),
 }));
 
 vi.mock("../../plugins/loader.js", () => ({
@@ -71,18 +71,18 @@ import { createTestRegistry } from "../../test-utils/channel-plugins.js";
 let sendMessage: typeof import("./message.js").sendMessage;
 let resetOutboundChannelResolutionStateForTest: typeof import("./channel-resolution.js").resetOutboundChannelResolutionStateForTest;
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     throw new Error(`expected ${label} to be an object`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 function expectRecordFields(
-  value: unknown,
-  expected: Record<string, unknown>,
+  value: any,
+  expected: Record<string, any>,
   label: string,
-): Record<string, unknown> {
+): Record<string, any> {
   const record = requireRecord(value, label);
   for (const [key, expectedValue] of Object.entries(expected)) {
     expect(record[key], `${label}.${key}`).toEqual(expectedValue);
@@ -91,19 +91,19 @@ function expectRecordFields(
 }
 
 function getMockCallArg(
-  mock: { mock: { calls: readonly unknown[][] } },
+  mock: { mock: { calls: readonly any[][] } },
   callIndex: number,
   argIndex: number,
   label: string,
-): unknown {
-  const call = (mock.mock.calls as unknown[][])[callIndex];
+): any {
+  const call = (mock.mock.calls as any[][])[callIndex];
   if (!call) {
     throw new Error(`expected ${label} call ${callIndex}`);
   }
   return call[argIndex];
 }
 
-function expectDeliveryCallFields(expected: Record<string, unknown>): Record<string, unknown> {
+function expectDeliveryCallFields(expected: Record<string, any>): Record<string, any> {
   return expectRecordFields(
     getMockCallArg(mocks.deliverOutboundPayloads, 0, 0, "outbound delivery"),
     expected,
@@ -112,7 +112,7 @@ function expectDeliveryCallFields(expected: Record<string, unknown>): Record<str
 }
 
 function readPayloadSummary(
-  deliveryCall: Record<string, unknown>,
+  deliveryCall: Record<string, any>,
 ): Array<{ text: string; mediaUrl: string | null; mediaUrls: string[] }> {
   const payloads = deliveryCall.payloads;
   if (!Array.isArray(payloads)) {
@@ -278,7 +278,7 @@ describe("sendMessage", () => {
     });
 
     expectRecordFields(
-      (expectDeliveryCallFields({}).payloads as unknown[] | undefined)?.[0],
+      (expectDeliveryCallFields({}).payloads as any[] | undefined)?.[0],
       {
         text: "voice note",
         mediaUrl: "file:///tmp/openclaw-voice.ogg",
@@ -309,7 +309,7 @@ describe("sendMessage", () => {
       mediaAccess,
     });
     expectRecordFields(
-      (deliveryParams.payloads as unknown[] | undefined)?.[0],
+      (deliveryParams.payloads as any[] | undefined)?.[0],
       {
         text: "prepared",
         channelData: { forum: { card: true } },
@@ -500,7 +500,7 @@ describe("sendMessage", () => {
   });
 
   it("does not throw best-effort direct send failures", async () => {
-    mocks.deliverOutboundPayloads.mockImplementationOnce(async (params: unknown) => {
+    mocks.deliverOutboundPayloads.mockImplementationOnce(async (params: any) => {
       (
         params as {
           onPayloadDeliveryOutcome?: (outcome: {

@@ -1,11 +1,11 @@
 import { logger } from '../../logger.js';
 
 export interface SubsystemLogger {
-  trace(msg: string, ...args: unknown[]): void;
-  debug(msg: string, ...args: unknown[]): void;
-  info(msg: string, ...args: unknown[]): void;
-  warn(msg: string, ...args: unknown[]): void;
-  error(msg: string, ...args: unknown[]): void;
+  trace(msg: string, ...args: any[]): void;
+  debug(msg: string, ...args: any[]): void;
+  info(msg: string, ...args: any[]): void;
+  warn(msg: string, ...args: any[]): void;
+  error(msg: string, ...args: any[]): void;
   isEnabled(level: string): boolean;
 }
 

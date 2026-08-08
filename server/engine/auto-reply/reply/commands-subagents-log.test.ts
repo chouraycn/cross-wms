@@ -8,7 +8,7 @@ import { handleSubagentsLogAction } from "./commands-subagents/action-log.js";
 const callGatewayMock = vi.hoisted(() => vi.fn());
 
 vi.mock("../../gateway/call.js", () => ({
-  callGateway: (params: unknown) => callGatewayMock(params),
+  callGateway: (params: any) => callGatewayMock(params),
 }));
 
 function makeRun(overrides: Partial<SubagentRunRecord> = {}): SubagentRunRecord {

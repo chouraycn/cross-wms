@@ -86,9 +86,9 @@ const detectZaiEndpoint = vi.hoisted(() => vi.fn<DetectZaiEndpoint>(async () => 
 
 vi.mock("../agents/agent-scope.js", () => ({
   resolveDefaultAgentId: () => "main",
-  resolveAgentDir: (configForTest: unknown, agentId: string) =>
+  resolveAgentDir: (configForTest: any, agentId: string) =>
     `${process.env.OPENCLAW_STATE_DIR ?? "/tmp/openclaw-state"}/agents/${agentId}/agent`,
-  resolveAgentWorkspaceDir: (configForTest: unknown, agentId: string) =>
+  resolveAgentWorkspaceDir: (configForTest: any, agentId: string) =>
     `/tmp/openclaw-workspaces/${agentId}`,
   // Required by src/agents/model-runtime-policy.ts, which is transitively
   // imported through provider-auth-choice -> copilot-runtime-plugin-install ->
@@ -197,7 +197,7 @@ vi.mock("../agents/auth-profiles.js", () => ({
   },
 }));
 
-function normalizeText(value: unknown): string {
+function normalizeText(value: any): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
@@ -238,7 +238,7 @@ function resolveProviderPluginChoice(params: { providers: ProviderPlugin[]; choi
 
 function providerConfigPatch(
   providerId: string,
-  patch: Record<string, unknown>,
+  patch: Record<string, any>,
 ): Partial<OpenClawConfig> {
   const providers: Record<string, ModelProviderConfig> = {
     [providerId]: patch as ModelProviderConfig,
@@ -253,7 +253,7 @@ function providerConfigPatch(
 type TestSecretRef = { source: "env"; provider: string; id: string };
 type TestSecretInput = string | TestSecretRef;
 
-function normalizeProviderInput(value: unknown): string | undefined {
+function normalizeProviderInput(value: any): string | undefined {
   const normalized = normalizeText(value).toLowerCase();
   return normalized || undefined;
 }
@@ -313,7 +313,7 @@ async function resolveApiKeyInput(params: {
   noteMessage?: string;
   noteTitle?: string;
 }): Promise<{ input: TestSecretInput; mode?: "plaintext" | "ref" }> {
-  const opts = (params.ctx.opts ?? {}) as Record<string, unknown>;
+  const opts = (params.ctx.opts ?? {}) as Record<string, any>;
   const flagValue = normalizeText(opts[params.optionKey]);
   const token = flagValue || normalizeText(params.ctx.opts?.token);
   const tokenProvider = normalizeProviderInput(
@@ -647,19 +647,19 @@ describe("applyAuthChoice", () => {
     expect(profile?.provider).toBe(expected.provider);
     expect(profile?.mode).toBe(expected.mode);
   }
-  function promptMessages(mock: { mock: { calls: unknown[][] } }): string[] {
+  function promptMessages(mock: { mock: { calls: any[][] } }): string[] {
     return mock.mock.calls.map((call) => {
-      const message = (call[0] as { message?: unknown }).message;
+      const message = (call[0] as { message?: any }).message;
       return typeof message === "string" ? message : "";
     });
   }
-  function expectPromptMessageContaining(mock: { mock: { calls: unknown[][] } }, expected: string) {
+  function expectPromptMessageContaining(mock: { mock: { calls: any[][] } }, expected: string) {
     expect(promptMessages(mock).join("\n")).toContain(expected);
   }
-  function expectPromptMessage(mock: { mock: { calls: unknown[][] } }, expected: string) {
+  function expectPromptMessage(mock: { mock: { calls: any[][] } }, expected: string) {
     expect(promptMessages(mock)).toContain(expected);
   }
-  function firstCallArg(mock: { mock: { calls: unknown[][] } }): unknown {
+  function firstCallArg(mock: { mock: { calls: any[][] } }): any {
     const call = mock.mock.calls[0];
     if (!call) {
       throw new Error("Expected first mock call");

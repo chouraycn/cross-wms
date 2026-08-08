@@ -22,7 +22,7 @@ vi.mock("./bash-tools.exec-host-node.js", () => ({
 }));
 
 vi.mock("../utils/delivery-context.js", () => ({
-  normalizeDeliveryContext: (value: unknown) => value,
+  normalizeDeliveryContext: (value: any) => value,
 }));
 
 const isWin = process.platform === "win32";

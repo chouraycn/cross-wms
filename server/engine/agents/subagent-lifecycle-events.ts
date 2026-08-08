@@ -8,11 +8,11 @@
 
 export type SubagentLifecycleEndedReason = unknown;
 export type SubagentLifecycleEndedOutcome = unknown;
-export const SUBAGENT_TARGET_KIND_SUBAGENT: unknown = undefined;
-export const SUBAGENT_ENDED_REASON_COMPLETE: unknown = undefined;
-export const SUBAGENT_ENDED_REASON_ERROR: unknown = undefined;
-export const SUBAGENT_ENDED_REASON_KILLED: unknown = undefined;
-export const SUBAGENT_ENDED_OUTCOME_OK: unknown = undefined;
-export const SUBAGENT_ENDED_OUTCOME_ERROR: unknown = undefined;
-export const SUBAGENT_ENDED_OUTCOME_TIMEOUT: unknown = undefined;
-export const SUBAGENT_ENDED_OUTCOME_KILLED: unknown = undefined;
+export const SUBAGENT_TARGET_KIND_SUBAGENT: any = undefined;
+export const SUBAGENT_ENDED_REASON_COMPLETE: any = undefined;
+export const SUBAGENT_ENDED_REASON_ERROR: any = undefined;
+export const SUBAGENT_ENDED_REASON_KILLED: any = undefined;
+export const SUBAGENT_ENDED_OUTCOME_OK: any = undefined;
+export const SUBAGENT_ENDED_OUTCOME_ERROR: any = undefined;
+export const SUBAGENT_ENDED_OUTCOME_TIMEOUT: any = undefined;
+export const SUBAGENT_ENDED_OUTCOME_KILLED: any = undefined;

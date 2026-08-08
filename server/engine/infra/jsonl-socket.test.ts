@@ -22,7 +22,7 @@ async function listenOnSocket(server: net.Server, socketPath: string): Promise<b
   }
 }
 
-function acceptDoneValue(msg: unknown): number | null | undefined {
+function acceptDoneValue(msg: any): number | null | undefined {
   const value = msg as { type?: string; value?: number };
   return value.type === "done" ? (value.value ?? null) : undefined;
 }

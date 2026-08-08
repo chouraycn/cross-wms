@@ -78,9 +78,9 @@ export const buildOpenAIRequestBody: ProviderRequestBodyBuilder = (ctx) => {
 };
 
 /** Responses API 请求体（精简版，输入仍使用 messages 数组）。 */
-function buildOpenAIResponsesBody(ctx: ProviderRequestContext): Record<string, unknown> {
+function buildOpenAIResponsesBody(ctx: ProviderRequestContext): Record<string, any> {
   const { model, options } = ctx;
-  const body: Record<string, unknown> = {
+  const body: Record<string, any> = {
     model: model.id,
     input: options.messages.map((m) => ({
       role: m.role,
@@ -131,7 +131,7 @@ export const parseOpenAIResponsesStreamChunk: ProviderStreamChunkParser = (chunk
   if (data.type === 'response.function_call_arguments.done' && data.response?.output) {
     for (const out of data.response.output) {
       if (out.type === 'function_call' && out.name) {
-        let args: Record<string, unknown> = {};
+        let args: Record<string, any> = {};
         try {
           args = out.arguments ? JSON.parse(out.arguments) : {};
         } catch {

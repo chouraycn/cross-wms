@@ -7,7 +7,7 @@ import { collectChannelSecurityFindings } from "./audit-channel.js";
 function stubSlackPlugin(params: {
   resolveAccount: (cfg: OpenClawConfig, accountId: string | null | undefined) => unknown;
   inspectAccount?: (cfg: OpenClawConfig, accountId: string | null | undefined) => unknown;
-  isConfigured?: (account: unknown, cfg: OpenClawConfig) => boolean;
+  isConfigured?: (account: any, cfg: OpenClawConfig) => boolean;
 }) {
   return stubAuditChannelPlugin({
     id: "slack",
@@ -18,7 +18,7 @@ function stubSlackPlugin(params: {
     },
     collectAuditFindings: async ({ account }) => {
       const config =
-        (account as { config?: { slashCommand?: { enabled?: boolean }; allowFrom?: unknown } })
+        (account as { config?: { slashCommand?: { enabled?: boolean }; allowFrom?: any } })
           .config ?? {};
       const slashCommandEnabled = config.slashCommand?.enabled === true;
       const allowFrom =
@@ -53,7 +53,7 @@ function makeSlackHttpConfig(): OpenClawConfig {
 }
 
 function makeSlackInspection(
-  channel: unknown,
+  channel: any,
   overrides: {
     enabled?: boolean;
     configured?: boolean;

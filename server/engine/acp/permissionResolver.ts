@@ -11,8 +11,8 @@ import { classifyAcpToolApproval, type AcpApprovalClass } from "./approvalClassi
 export interface RequestPermissionRequest {
   toolCall?: {
     title?: string | null;
-    _meta?: unknown;
-    rawInput?: unknown;
+    _meta?: any;
+    rawInput?: any;
   };
   options?: PermissionOption[];
 }

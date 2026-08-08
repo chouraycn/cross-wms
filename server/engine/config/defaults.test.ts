@@ -21,7 +21,7 @@ vi.mock("./provider-policy.js", () => ({
   applyProviderConfigDefaultsForConfig: (
     ...args: Parameters<typeof mocks.applyProviderConfigDefaultsForConfig>
   ) => mocks.applyProviderConfigDefaultsForConfig(...args),
-  normalizeProviderConfigForConfigDefaults: (_params: { providerConfig: unknown }) =>
+  normalizeProviderConfigForConfigDefaults: (_params: { providerConfig: any }) =>
     _params.providerConfig,
 }));
 
@@ -88,7 +88,7 @@ describe("config defaults", () => {
     expect(applyContextPruningDefaults(cfg as never, { manifestRegistry })).toBe(nextCfg);
     expect(mocks.applyProviderConfigDefaultsForConfig).toHaveBeenCalledTimes(1);
     const [[defaultsParams]] = mocks.applyProviderConfigDefaultsForConfig.mock
-      .calls as unknown as Array<[{ manifestRegistry?: unknown }]>;
+      .calls as unknown as Array<[{ manifestRegistry?: any }]>;
     expect(defaultsParams.manifestRegistry).toBe(manifestRegistry);
   });
 

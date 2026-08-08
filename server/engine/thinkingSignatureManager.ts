@@ -113,12 +113,12 @@ export function isOpenAIReasoningSignature(value: string): boolean {
   }
 
   try {
-    const parsed = JSON.parse(value) as unknown;
+    const parsed = JSON.parse(value) as any;
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
       return false;
     }
 
-    const record = parsed as Record<string, unknown>;
+    const record = parsed as Record<string, any>;
 
     // 必须有 type: "reasoning"
     if (record.type !== 'reasoning') {
@@ -173,13 +173,13 @@ export function isOpenAIReasoningSignature(value: string): boolean {
  * }
  */
 export function extractAnthropicThinkingSignature(
-  block: unknown,
+  block: any,
 ): { signature?: string; redacted?: boolean; source: SignatureSource } | null {
   if (!block || typeof block !== 'object') {
     return null;
   }
 
-  const record = block as Record<string, unknown>;
+  const record = block as Record<string, any>;
   const type = record.type;
 
   if (type !== 'thinking' && type !== 'redacted_thinking') {
@@ -233,13 +233,13 @@ export function extractAnthropicThinkingSignature(
  * }
  */
 export function extractGoogleThinkingSignature(
-  part: unknown,
+  part: any,
 ): { signature?: string; redacted?: boolean; source: SignatureSource } | null {
   if (!part || typeof part !== 'object') {
     return null;
   }
 
-  const record = part as Record<string, unknown>;
+  const record = part as Record<string, any>;
 
   // Google 思考块标记：thought: true
   if (record.thought !== true) {
@@ -278,13 +278,13 @@ export function extractGoogleThinkingSignature(
  * }
  */
 export function extractOpenAIResponsesThinkingSignature(
-  outputItem: unknown,
+  outputItem: any,
 ): { signature?: string; redacted?: boolean; source: SignatureSource } | null {
   if (!outputItem || typeof outputItem !== 'object') {
     return null;
   }
 
-  const record = outputItem as Record<string, unknown>;
+  const record = outputItem as Record<string, any>;
 
   if (record.type !== 'reasoning') {
     return null;
@@ -356,7 +356,7 @@ export function extractOpenAIResponsesThinkingSignature(
  * 这里返回 null，thinkingSignature 由前端根据文本内容生成哈希作为伪签名。
  */
 export function extractDeepSeekThinkingSignature(
-  _message: unknown,
+  _message: any,
 ): { signature?: string; redacted?: boolean; source: SignatureSource } | null {
   // DeepSeek R1 不提供加密签名
   return null;
@@ -369,7 +369,7 @@ export function extractDeepSeekThinkingSignature(
  */
 export function extractThinkingSignature(
   provider: string,
-  responseBlock: unknown,
+  responseBlock: any,
 ): { signature?: string; redacted?: boolean; source: SignatureSource } | null {
   switch (provider) {
     case 'anthropic':
@@ -442,7 +442,7 @@ export function extractReplayableSignaturesFromHistory(
   const signatures: string[] = [];
 
   for (const block of historyBlocks) {
-    if (block.thinkingSignature && canReplaySignature(block.thinkingSignature, 'unknown')) {
+    if (block.thinkingSignature && canReplaySignature(block.thinkingSignature, 'any')) {
       signatures.push(block.thinkingSignature);
     }
   }
@@ -497,8 +497,8 @@ export function areSignaturesEqual(
   // JSON 签名：解析后比较关键字段
   if (signature1.startsWith('{') && signature2.startsWith('{')) {
     try {
-      const parsed1 = JSON.parse(signature1) as Record<string, unknown>;
-      const parsed2 = JSON.parse(signature2) as Record<string, unknown>;
+      const parsed1 = JSON.parse(signature1) as Record<string, any>;
+      const parsed2 = JSON.parse(signature2) as Record<string, any>;
 
       // 比较 id 和 encrypted_content
       return (
@@ -523,7 +523,7 @@ export function estimateSignatureTokens(signature: string): number {
   if (signature.startsWith('{')) {
     // JSON 签名：解析后估算
     try {
-      const parsed = JSON.parse(signature) as Record<string, unknown>;
+      const parsed = JSON.parse(signature) as Record<string, any>;
       const id = parsed.id as string | undefined;
       const encrypted = parsed.encrypted_content as string | undefined;
 
@@ -575,7 +575,7 @@ export interface ThinkingContentBlock {
  */
 export interface ChatMessage {
   role: 'user' | 'assistant' | 'system' | 'toolResult' | 'compactionSummary' | string;
-  content?: unknown;
+  content?: any;
   timestamp?: number | string;
 }
 
@@ -605,7 +605,7 @@ export function isAssistantMessageWithContent(
 /**
  * 判断 content block 是否为 thinking / redacted_thinking 块
  */
-function isThinkingBlock(block: unknown): block is ThinkingContentBlock {
+function isThinkingBlock(block: any): block is ThinkingContentBlock {
   return (
     Boolean(block) &&
     typeof block === 'object' &&
@@ -635,7 +635,7 @@ function hasReplayableThinkingSignature(block: ThinkingContentBlock): boolean {
 /**
  * 将时间戳解析为毫秒数；无法解析时返回 null
  */
-function parseTimestampMs(value: unknown): number | null {
+function parseTimestampMs(value: any): number | null {
   if (typeof value === 'number' && Number.isFinite(value)) {
     return value;
   }
@@ -669,8 +669,8 @@ function buildOmittedAssistantReasoningContent(): ThinkingContentBlock[] {
 function stripSignatureFieldsFromThinkingBlock(
   block: ThinkingContentBlock,
 ): ThinkingContentBlock {
-  const record = block as unknown as Record<string, unknown>;
-  const stripped: Record<string, unknown> = {};
+  const record = block as unknown as Record<string, any>;
+  const stripped: Record<string, any> = {};
   for (const key of Object.keys(record)) {
     if (key === 'thinkingSignature' || key === 'signature' || key === 'thought_signature') {
       continue;

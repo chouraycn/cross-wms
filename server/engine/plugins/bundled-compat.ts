@@ -31,11 +31,11 @@ import type { PluginEntryConfig } from "../config/types/plugins.js";
  * config.plugins 是否有显式 enabled/entries/slots 配置。这里降级为
  * 检查 config 是否有非空 entries 或显式 enabled 值。
  */
-function hasExplicitPluginConfig(plugins: unknown): boolean {
+function hasExplicitPluginConfig(plugins: any): boolean {
   if (!plugins || typeof plugins !== "object" || Array.isArray(plugins)) {
     return false;
   }
-  const config = plugins as { enabled?: unknown; entries?: unknown };
+  const config = plugins as { enabled?: any; entries?: any };
   if (typeof config.enabled === "boolean") {
     return true;
   }

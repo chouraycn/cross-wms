@@ -6,7 +6,7 @@ export type SkillLogContext = {
   durationMs?: number;
   success: boolean;
   error?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 type SkillLogger = {
@@ -14,7 +14,7 @@ type SkillLogger = {
   logAction: (context: Omit<SkillLogContext, 'skillName'>) => void;
   logExecution: (action: string, durationMs: number, success: boolean, error?: string) => void;
   logInstallation: (version: string, source: string, success: boolean, error?: string) => void;
-  logSecurity: (verdict: string, details?: Record<string, unknown>) => void;
+  logSecurity: (verdict: string, details?: Record<string, any>) => void;
   logDiscovery: (filter: string, visible: boolean) => void;
 };
 
@@ -101,7 +101,7 @@ export function logSkillInstallation(
 export function logSkillSecurity(
   skillName: string,
   verdict: string,
-  details?: Record<string, unknown>,
+  details?: Record<string, any>,
 ): void {
   const logger = getLogger();
   const level = verdict === 'rejected' ? 'warn' : 'info';

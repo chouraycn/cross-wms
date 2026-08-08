@@ -219,7 +219,7 @@ export function buildErrorAgentMeta(params: {
   contextTokens?: number;
   usageAccumulator: UsageAccumulator;
   lastRunPromptUsage: UsageSnapshot | undefined;
-  lastAssistant?: { usage?: unknown } | null;
+  lastAssistant?: { usage?: any } | null;
   lastTurnTotal?: number;
 }): EmbeddedAgentMeta {
   const usageMeta = buildUsageAgentMetaFields({

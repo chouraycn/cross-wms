@@ -45,8 +45,8 @@ export function createCapturingTestRuntime(): CapturingTestRuntime {
   const logs: string[] = [];
   const errors: string[] = [];
   const runtime = {
-    log: (message: unknown) => logs.push(String(message)),
-    error: (message: unknown) => errors.push(String(message)),
+    log: (message: any) => logs.push(String(message)),
+    error: (message: any) => errors.push(String(message)),
     exit: (_code?: number) => undefined,
   };
   return { runtime, logs, errors };

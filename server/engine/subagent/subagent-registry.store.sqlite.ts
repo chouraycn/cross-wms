@@ -75,7 +75,7 @@ function ensureTable(): void {
   `);
 }
 
-function serializeMetadata(metadata: Record<string, unknown> | undefined): string | null {
+function serializeMetadata(metadata: Record<string, any> | undefined): string | null {
   if (!metadata) return null;
   try {
     return JSON.stringify(metadata);
@@ -84,10 +84,10 @@ function serializeMetadata(metadata: Record<string, unknown> | undefined): strin
   }
 }
 
-function deserializeMetadata(metadata: string | null): Record<string, unknown> | undefined {
+function deserializeMetadata(metadata: string | null): Record<string, any> | undefined {
   if (!metadata) return undefined;
   try {
-    return JSON.parse(metadata) as Record<string, unknown>;
+    return JSON.parse(metadata) as Record<string, any>;
   } catch {
     return undefined;
   }

@@ -55,7 +55,7 @@ vi.mock('../../engine/contextCompress.js', () => ({
 
 vi.mock('../../modelsStore.js', () => ({
   loadModelsConfig: vi.fn(),
-  ModelsFile: {} as unknown,
+  ModelsFile: {} as any,
   isLocalModel: vi.fn(),
 }));
 
@@ -118,7 +118,7 @@ vi.mock('../../logger.js', () => ({
 
 const { autoSelectModelMock, autoSelectModelAsyncMock } = vi.hoisted(() => {
   const autoSelectModelMock = vi.fn();
-  const autoSelectModelAsyncMock = vi.fn(async (...args: unknown[]) => autoSelectModelMock(...(args as [])));
+  const autoSelectModelAsyncMock = vi.fn(async (...args: any[]) => autoSelectModelMock(...(args as [])));
   return { autoSelectModelMock, autoSelectModelAsyncMock };
 });
 
@@ -150,7 +150,7 @@ vi.mock('../chatHelpers/thinkingCache.js', () => ({
 }));
 
 vi.mock('../chatHelpers/sseHelper.js', () => ({
-  activeSSEConnections: new Map<string, { res: unknown; assistantMessageId: string }>(),
+  activeSSEConnections: new Map<string, { res: any; assistantMessageId: string }>(),
 }));
 
 // ====================================================================
@@ -187,7 +187,7 @@ describe('chatService.ts — Module Structure', () => {
 
   beforeAll(async () => {
     // Dynamic import ensures mocks are fully established
-    chatService = (await import('../chatService.js')) as unknown;
+    chatService = (await import('../chatService.js')) as any;
   });
 
   beforeEach(() => {
@@ -234,8 +234,8 @@ describe('chatService.ts — Module Structure', () => {
 
     it('should return a Promise (async function)', async () => {
       const result = chatService.handleChat(
-        { body: { message: 'test' } } as unknown,
-        { setHeader: vi.fn(), flushHeaders: vi.fn(), write: vi.fn(), end: vi.fn(), writableEnded: false, socket: { setNoDelay: vi.fn() } } as unknown,
+        { body: { message: 'test' } } as any,
+        { setHeader: vi.fn(), flushHeaders: vi.fn(), write: vi.fn(), end: vi.fn(), writableEnded: false, socket: { setNoDelay: vi.fn() } } as any,
       );
       expect(result).toBeInstanceOf(Promise);
       // Await and swallow rejection since mocks are minimal
@@ -257,7 +257,7 @@ describe('chatService.ts — Module Structure', () => {
         json: vi.fn(),
         writableEnded: false,
         socket: { setNoDelay: vi.fn() },
-      } as unknown;
+      } as any;
 
       // Arrange mocks for the happy path
       (modelsStoreModule.loadModelsConfig as ReturnType<typeof vi.fn>).mockResolvedValue({
@@ -284,7 +284,7 @@ describe('chatService.ts — Module Structure', () => {
           model: 'auto',
           queueMode: 'single',
         },
-      } as unknown;
+      } as any;
 
       await chatService.handleChat(req, mockRes);
 
@@ -328,7 +328,7 @@ describe('chatService.ts — Module Structure', () => {
         json: vi.fn(),
         writableEnded: false,
         socket: { setNoDelay: vi.fn() },
-      } as unknown;
+      } as any;
 
       (modelsStoreModule.loadModelsConfig as ReturnType<typeof vi.fn>).mockResolvedValue({
         models: [{ id: 'test-model', name: 'Test Model', enabled: true }],
@@ -341,7 +341,7 @@ describe('chatService.ts — Module Structure', () => {
       (messageQueueModule.messageQueue.getSessionState as ReturnType<typeof vi.fn>).mockReturnValue('idle');
 
       await chatService.handleChat(
-        { body: { message: 'hello', queueMode: 'single' } } as unknown,
+        { body: { message: 'hello', queueMode: 'single' } } as any,
         mockRes,
       );
 
@@ -416,7 +416,7 @@ describe('chatService.ts — Module Structure', () => {
       const mq = messageQueueModule.messageQueue;
       const methods = ['enqueue', 'on', 'off', 'getCurrentAbortController', 'getSessionState', 'getQueueLength', 'getCurrentAssistantId', 'markCompleted'];
       for (const method of methods) {
-        expect(vi.isMockFunction((mq as unknown)[method])).toBe(true);
+        expect(vi.isMockFunction((mq as any)[method])).toBe(true);
       }
     });
 

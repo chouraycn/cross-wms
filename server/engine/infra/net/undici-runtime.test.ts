@@ -25,8 +25,8 @@ class MockPool {
   readonly __testStub = true;
 
   constructor(
-    public readonly origin: unknown,
-    public readonly options: unknown,
+    public readonly origin: any,
+    public readonly options: any,
   ) {
     poolCtor(origin, options);
   }
@@ -35,7 +35,7 @@ class MockPool {
 class MockEnvHttpProxyAgent {
   readonly __testStub = true;
 
-  constructor(public readonly options: unknown) {
+  constructor(public readonly options: any) {
     envHttpProxyAgentCtor(options);
   }
 }
@@ -43,13 +43,13 @@ class MockEnvHttpProxyAgent {
 class MockProxyAgent {
   readonly __testStub = true;
 
-  constructor(public readonly options: unknown) {
+  constructor(public readonly options: any) {
     proxyAgentCtor(options);
   }
 }
 
 function installUndiciRuntimeDeps(): void {
-  (globalThis as Record<string, unknown>)[TEST_UNDICI_RUNTIME_DEPS_KEY] = {
+  (globalThis as Record<string, any>)[TEST_UNDICI_RUNTIME_DEPS_KEY] = {
     Agent: MockAgent,
     EnvHttpProxyAgent: MockEnvHttpProxyAgent,
     Pool: MockPool,
@@ -58,14 +58,14 @@ function installUndiciRuntimeDeps(): void {
   };
 }
 
-function expectOptionsRecord(options: unknown, message: string): Record<string, unknown> {
+function expectOptionsRecord(options: any, message: string): Record<string, any> {
   if (typeof options !== "object" || options === null || Array.isArray(options)) {
     throw new Error(message);
   }
-  return options as Record<string, unknown>;
+  return options as Record<string, any>;
 }
 
-function requireProxyAgentOptions(): Record<string, unknown> {
+function requireProxyAgentOptions(): Record<string, any> {
   const call = proxyAgentCtor.mock.calls[0];
   if (!call) {
     throw new Error("expected ProxyAgent constructor call");
@@ -73,7 +73,7 @@ function requireProxyAgentOptions(): Record<string, unknown> {
   return expectOptionsRecord(call[0], "expected ProxyAgent options object");
 }
 
-function requireEnvHttpProxyAgentOptions(): Record<string, unknown> {
+function requireEnvHttpProxyAgentOptions(): Record<string, any> {
   const call = envHttpProxyAgentCtor.mock.calls[0];
   if (!call) {
     throw new Error("expected EnvHttpProxyAgent constructor call");
@@ -81,7 +81,7 @@ function requireEnvHttpProxyAgentOptions(): Record<string, unknown> {
   return expectOptionsRecord(call[0], "expected EnvHttpProxyAgent options object");
 }
 
-function requireClientOptions(): Record<string, unknown> {
+function requireClientOptions(): Record<string, any> {
   const call = poolCtor.mock.calls[0];
   if (!call) {
     throw new Error("expected Pool constructor call");
@@ -89,7 +89,7 @@ function requireClientOptions(): Record<string, unknown> {
   return expectOptionsRecord(call[1], "expected Pool options object");
 }
 
-function invokeProxyClientFactory(options: Record<string, unknown>): void {
+function invokeProxyClientFactory(options: Record<string, any>): void {
   const clientFactory = options.clientFactory;
   if (typeof clientFactory !== "function") {
     throw new Error("expected ProxyAgent clientFactory");
@@ -97,7 +97,7 @@ function invokeProxyClientFactory(options: Record<string, unknown>): void {
   clientFactory(new URL("https://127.0.0.1:8443"), { connect: proxyConnect });
 }
 
-function invokeClientConnect(options: Record<string, unknown>, servername: string): void {
+function invokeClientConnect(options: Record<string, any>, servername: string): void {
   const connect = options.connect;
   if (typeof connect !== "function") {
     throw new Error("expected wrapped Client connect");

@@ -44,14 +44,14 @@ export function getDiagnosticWarningEvents(limit?: number): DiagnosticEvent[] {
   return getDiagnosticLogEvents({ level: 'warn', limit });
 }
 
-export function parseDiagnosticLogFile(content: string): Array<Record<string, unknown>> {
+export function parseDiagnosticLogFile(content: string): Array<Record<string, any>> {
   const lines = content.split('\n').filter((line) => line.trim());
-  const result: Array<Record<string, unknown>> = [];
+  const result: Array<Record<string, any>> = [];
 
   for (const line of lines) {
     const parsed = parseLogLine(line);
     if (parsed) {
-      result.push(parsed as unknown as Record<string, unknown>);
+      result.push(parsed as unknown as Record<string, any>);
     } else {
       result.push({ raw: line });
     }

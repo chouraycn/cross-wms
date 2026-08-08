@@ -228,7 +228,7 @@ export class SkillStatsManager {
       // metadata 中可能包含 dependencies 信息
       const meta = skill.metadata;
       if (meta && typeof meta === 'object') {
-        const m = meta as Record<string, unknown>;
+        const m = meta as Record<string, any>;
         if (m.dependencies) withDeps++;
         if (m.conflicts) withConflicts++;
       }
@@ -280,7 +280,7 @@ export class SkillStatsManager {
     return recent.slice(0, limit).map((id) => {
       const skill = skillRegistry.list().find(s => s.id === id);
       // lastUsed 不是 SkillEntry 的标准字段，通过 metadata 或额外属性查找
-      const lastUsed = skill ? ((skill as unknown as Record<string, unknown>)?.lastUsed as number | undefined) ?? null : null;
+      const lastUsed = skill ? ((skill as unknown as Record<string, any>)?.lastUsed as number | undefined) ?? null : null;
       return {
         id,
         name: skill?.name || id,

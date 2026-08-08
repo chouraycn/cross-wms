@@ -51,12 +51,12 @@ const ctx = {
   markIdle: vi.fn(),
 };
 
-function expectDispatchPayloadFields(expected: Record<string, unknown>): void {
+function expectDispatchPayloadFields(expected: Record<string, any>): void {
   expect(dispatchMock).toHaveBeenCalledTimes(1);
   const [payload] = dispatchMock.mock.calls[0] ?? [];
   expect(payload).toBeTypeOf("object");
   for (const [key, value] of Object.entries(expected)) {
-    expect((payload as Record<string, unknown>)[key]).toBe(value);
+    expect((payload as Record<string, any>)[key]).toBe(value);
   }
 }
 

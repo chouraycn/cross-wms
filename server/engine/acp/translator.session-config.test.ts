@@ -208,7 +208,7 @@ describe("acp setSessionConfigOption bridge behavior", () => {
     const sessionStore = createInMemorySessionStore();
     const connection = createAcpConnection();
     const sessionUpdate = connection["__sessionUpdateMock"];
-    const request = vi.fn(async (method: string, _params?: unknown) => {
+    const request = vi.fn(async (method: string, _params?: any) => {
       if (method === "sessions.list") {
         return {
           ts: Date.now(),

@@ -48,7 +48,7 @@ const drainInProgress = new Map<string, boolean>();
 const entriesInProgress = new Set<string>();
 
 /** 降级版 resolveDateTimestampMs：返回有限时间戳，无效时返回当前时间。 */
-function resolveDateTimestampMs(value: unknown): number {
+function resolveDateTimestampMs(value: any): number {
   return asDateTimestampMs(value) ?? Date.now();
 }
 

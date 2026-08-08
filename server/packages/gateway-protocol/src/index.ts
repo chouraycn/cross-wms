@@ -491,22 +491,22 @@ export type ValidationError = {
   /** JSON-pointer path to the failing schema location. */
   schemaPath?: string;
   /** Validator-specific keyword parameters for richer diagnostics. */
-  params?: Record<string, unknown>;
+  params?: Record<string, any>;
   /** Human-readable validation message. */
   message?: string;
 };
 
 /** Runtime validator shape shared by gateway clients and server handlers. */
-export type ProtocolValidator<T = unknown> = ((data: unknown) => data is T) & {
+export type ProtocolValidator<T = unknown> = ((data: any) => data is T) & {
   /** Last validation errors, matching Ajv-style caller expectations. */
   errors: ValidationError[] | null;
   /** Original schema used by the validator, exposed for diagnostics/tests. */
-  schema: unknown;
+  schema: any;
 };
 
 // Defer TypeBox compilation until the first validation call. Importing this
 // module is common in CLIs/tests, so eager compilation would add startup cost.
-function lazyCompile<T = unknown>(schema: unknown): ProtocolValidator<T> {
+function lazyCompile<T = unknown>(schema: any): ProtocolValidator<T> {
   let compiled: TypeBoxValidator | undefined;
   let errors: ValidationError[] | null = null;
 
@@ -515,7 +515,7 @@ function lazyCompile<T = unknown>(schema: unknown): ProtocolValidator<T> {
     return compiled;
   };
 
-  const validate = ((data: unknown): data is T => {
+  const validate = ((data: any): data is T => {
     const current = getCompiled();
     const valid = current.Check(data);
     errors = valid ? null : ([...current.Errors(data)] as ValidationError[]);
@@ -912,7 +912,7 @@ export const validateWebLoginStartParams =
   lazyCompile<WebLoginStartParams>(WebLoginStartParamsSchema);
 export const validateWebLoginWaitParams = lazyCompile<WebLoginWaitParams>(WebLoginWaitParamsSchema);
 
-function firstStringParam(value: unknown): string | undefined {
+function firstStringParam(value: any): string | undefined {
   if (typeof value === "string" && value.trim()) {
     return value;
   }
@@ -1421,7 +1421,7 @@ type SessionsPatchResult = {
   ok: true;
   path: string;
   key: string;
-  entry: Record<string, unknown>;
+  entry: Record<string, any>;
   resolved?: {
     modelProvider?: string;
     model?: string;

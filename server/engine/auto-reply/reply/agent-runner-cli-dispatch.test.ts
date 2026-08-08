@@ -19,7 +19,7 @@ const cliDispatchState = vi.hoisted(() => ({
 }));
 
 vi.mock("../../agents/cli-runner.js", () => ({
-  runCliAgent: (...args: unknown[]) => cliDispatchState.runCliAgentMock(...args),
+  runCliAgent: (...args: any[]) => cliDispatchState.runCliAgentMock(...args),
 }));
 
 afterEach(() => {
@@ -33,7 +33,7 @@ describe("runCliAgentWithLifecycle", () => {
     const events: Array<{
       stream?: string;
       lifecycleGeneration?: string;
-      data?: Record<string, unknown>;
+      data?: Record<string, any>;
     }> = [];
     const lifecycleGeneration = getAgentEventLifecycleGeneration();
     const stop = onAgentEvent((event) => {
@@ -75,7 +75,7 @@ describe("runCliAgentWithLifecycle", () => {
   });
 
   it("preserves restart ownership when the CLI resolves after cancellation", async () => {
-    const events: Array<{ stream?: string; data?: Record<string, unknown> }> = [];
+    const events: Array<{ stream?: string; data?: Record<string, any> }> = [];
     const stop = onAgentEvent((event) => {
       if (event.runId === "run-restart") {
         events.push(event);
@@ -121,7 +121,7 @@ describe("runCliAgentWithLifecycle", () => {
   });
 
   it("propagates yielded result metadata on lifecycle end", async () => {
-    const events: Array<{ stream?: string; data?: Record<string, unknown> }> = [];
+    const events: Array<{ stream?: string; data?: Record<string, any> }> = [];
     const stop = onAgentEvent((event) => {
       if (event.runId === "run-yielded") {
         events.push(event);
@@ -304,7 +304,7 @@ describe("runCliAgentWithLifecycle fast auto progress", () => {
   it("emits auto-off after the first CLI tool boundary past the threshold", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(1_000);
-    const events: Array<{ stream: string; data: Record<string, unknown> }> = [];
+    const events: Array<{ stream: string; data: Record<string, any> }> = [];
     const stop = onAgentEvent((evt) => {
       if (evt.runId === "run-fast-cli") {
         events.push({ stream: evt.stream, data: evt.data });

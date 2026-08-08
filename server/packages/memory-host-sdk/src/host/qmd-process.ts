@@ -417,7 +417,7 @@ function appendOutputWithCap(
   return { text: chars.slice(-maxChars).join(""), truncated: true };
 }
 
-function formatQmdAvailabilityError(err: unknown): string {
+function formatQmdAvailabilityError(err: any): string {
   if (err instanceof Error && err.message) {
     return err.message;
   }

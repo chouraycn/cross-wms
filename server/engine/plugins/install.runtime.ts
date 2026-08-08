@@ -75,11 +75,11 @@ export type PackageManifestMetadata = {
 export type BundleManifestFormat = string;
 
 export type BundleManifestResult =
-  | { ok: true; manifest: { id: string; version?: string; [key: string]: unknown } }
+  | { ok: true; manifest: { id: string; version?: string; [key: string]: any } }
   | { ok: false; error: string };
 
 export type PluginManifestResult =
-  | { ok: true; manifest: { id: string; version?: string; [key: string]: unknown } }
+  | { ok: true; manifest: { id: string; version?: string; [key: string]: any } }
   | { ok: false; error: string };
 
 export type ArchiveSourcePathResult =

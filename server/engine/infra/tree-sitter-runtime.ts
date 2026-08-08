@@ -13,7 +13,7 @@ export function getBashParserForCommandExplanation(): null {
 }
 
 /** Sets the bash parser loader for testing. No-op without tree-sitter. */
-export function setBashParserLoaderForCommandExplanationForTest(_loader: unknown): void {
+export function setBashParserLoaderForCommandExplanationForTest(_loader: any): void {
   // No-op
 }
 

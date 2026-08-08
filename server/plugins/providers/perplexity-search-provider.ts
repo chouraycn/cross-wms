@@ -56,28 +56,28 @@ function setInCache(key: string, results: WebSearchResultList): void {
 
 // ==================== 凭证辅助 ====================
 
-function getNestedValue(obj: Record<string, unknown> | undefined, path: string): unknown {
+function getNestedValue(obj: Record<string, any> | undefined, path: string): any {
   if (!obj) return undefined;
   const parts = path.split(".");
-  let current: unknown = obj;
+  let current: any = obj;
   for (const part of parts) {
     if (current === null || current === undefined || typeof current !== "object") {
       return undefined;
     }
-    current = (current as Record<string, unknown>)[part];
+    current = (current as Record<string, any>)[part];
   }
   return current;
 }
 
-function setNestedValue(obj: Record<string, unknown>, path: string, value: unknown): void {
+function setNestedValue(obj: Record<string, any>, path: string, value: any): void {
   const parts = path.split(".");
-  let current: Record<string, unknown> = obj;
+  let current: Record<string, any> = obj;
   for (let i = 0; i < parts.length - 1; i++) {
     const part = parts[i];
     if (!(part in current) || current[part] === null || typeof current[part] !== "object") {
       current[part] = {};
     }
-    current = current[part] as Record<string, unknown>;
+    current = current[part] as Record<string, any>;
   }
   current[parts[parts.length - 1]] = value;
 }
@@ -114,7 +114,7 @@ async function performSearch(
       { role: "user", content: query },
     ];
 
-    const body: Record<string, unknown> = {
+    const body: Record<string, any> = {
       model: "sonar",
       messages,
       max_tokens,
@@ -145,7 +145,7 @@ async function performSearch(
       throw new Error(`Perplexity 搜索请求失败: HTTP ${response.status} ${errorText}`);
     }
 
-    const data = (await response.json()) as Record<string, unknown>;
+    const data = (await response.json()) as Record<string, any>;
     const results = normalizeResults(data);
 
     const resultList: WebSearchResultList = {
@@ -171,12 +171,12 @@ async function performSearch(
   }
 }
 
-function normalizeResults(data: Record<string, unknown>): WebSearchResult[] {
+function normalizeResults(data: Record<string, any>): WebSearchResult[] {
   const results: WebSearchResult[] = [];
 
   const choices = data.choices;
   if (Array.isArray(choices) && choices.length > 0) {
-    const message = (choices[0] as Record<string, unknown>)?.message as Record<string, unknown> | undefined;
+    const message = (choices[0] as Record<string, any>)?.message as Record<string, any> | undefined;
     const citations = message?.citations;
     if (Array.isArray(citations)) {
       for (const item of citations) {
@@ -212,19 +212,19 @@ const plugin: WebSearchProviderPlugin = {
   credentialPath: "tools.web.search.providers.perplexity.apiKey",
   inactiveSecretPaths: [],
 
-  getCredentialValue(searchConfig?: Record<string, unknown>): unknown {
+  getCredentialValue(searchConfig?: Record<string, any>): any {
     return getNestedValue(searchConfig, "apiKey");
   },
 
-  setCredentialValue(searchConfigTarget: Record<string, unknown>, value: unknown): void {
+  setCredentialValue(searchConfigTarget: Record<string, any>, value: any): void {
     setNestedValue(searchConfigTarget, "apiKey", value);
   },
 
-  getConfiguredCredentialValue(config: Record<string, unknown>): unknown {
+  getConfiguredCredentialValue(config: Record<string, any>): any {
     return getNestedValue(config, this.credentialPath);
   },
 
-  setConfiguredCredentialValue(configTarget: Record<string, unknown>, value: unknown): void {
+  setConfiguredCredentialValue(configTarget: Record<string, any>, value: any): void {
     setNestedValue(configTarget, this.credentialPath, value);
   },
 
@@ -286,7 +286,7 @@ const plugin: WebSearchProviderPlugin = {
         required: ["query"],
       },
       async execute(
-        args: Record<string, unknown>,
+        args: Record<string, any>,
         context?: { signal?: AbortSignal },
       ): Promise<WebSearchResultList> {
         const query = String(args.query || "").trim();

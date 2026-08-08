@@ -7,6 +7,6 @@
  */
 
 export type WebSearchToolPolicyParams = unknown;
-export function resolveWebSearchToolPolicy(..._args: unknown[]): unknown {
+export function resolveWebSearchToolPolicy(..._args: any[]): any {
   return undefined;
 }

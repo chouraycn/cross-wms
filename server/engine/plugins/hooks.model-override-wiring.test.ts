@@ -78,7 +78,7 @@ describe("model override pipeline wiring", () => {
     });
   }
 
-  async function runPromptBuildWithMessages(messages: unknown[]) {
+  async function runPromptBuildWithMessages(messages: any[]) {
     const runner = createHookRunner(registry);
     return await runner.runBeforePromptBuild({ prompt: "test", messages }, stubCtx);
   }
@@ -121,7 +121,7 @@ describe("model override pipeline wiring", () => {
   }
 
   async function expectPromptBuildPrependContext(params: {
-    messages: unknown[];
+    messages: any[];
     expectedPrependContext: string;
     legacyPrependContext?: string;
   }) {
@@ -212,12 +212,12 @@ describe("model override pipeline wiring", () => {
     it.each([
       {
         name: "hook receives prompt and messages and can prepend context",
-        messages: [{}, {}] as unknown[],
+        messages: [{}, {}] as any[],
         expectedPrependContext: "Saw 2 messages",
       },
       {
         name: "legacy before_agent_start context can still be merged as fallback",
-        messages: [{ role: "user", content: "x" }] as unknown[],
+        messages: [{ role: "user", content: "x" }] as any[],
         legacyPrependContext: "legacy context",
         expectedPrependContext: "new context\n\nlegacy context",
       },

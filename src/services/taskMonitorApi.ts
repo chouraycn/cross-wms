@@ -22,7 +22,7 @@ export type TaskMonitorEventType =
 export interface TaskMonitorEvent {
   type: TaskMonitorEventType;
   sessionId: string;
-  payload: unknown;
+  payload: any;
   timestamp: number;
 }
 
@@ -100,8 +100,8 @@ export interface ToolCall {
   toolName: string;
   toolType: ToolType;
   status: ToolCallStatus;
-  arguments: Record<string, unknown> | null;
-  result: unknown;
+  arguments: Record<string, any> | null;
+  result: any;
   errorMessage: string | null;
   startedAt: string;
   completedAt: string | null;
@@ -120,7 +120,7 @@ export interface TrajectoryEvent {
   runId: string | null;
   entryId: string | null;
   parentEntryId: string | null;
-  data: Record<string, unknown> | null;
+  data: Record<string, any> | null;
   provider: string | null;
   modelId: string | null;
   workspaceDir: string | null;
@@ -165,8 +165,8 @@ export interface TaskFlowStep {
   taskName: string;
   taskDescription: string;
   status: 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
-  arguments: Record<string, unknown> | null;
-  result: unknown;
+  arguments: Record<string, any> | null;
+  result: any;
   errorMessage: string | null;
   startedAt: string | null;
   completedAt: string | null;
@@ -195,7 +195,7 @@ export interface RuntimeInstanceEvent {
   instanceId: string;
   agentId: string;
   status: string;
-  result?: unknown;
+  result?: any;
   error?: string;
   startedAt: number;
   completedAt?: number;
@@ -592,7 +592,7 @@ function scheduleReconnect(sessionId: string): void {
 
 function handleTaskMonitorEvent(
   eventType: TaskMonitorEventType,
-  data: { type: TaskMonitorEventType; sessionId: string; payload: unknown },
+  data: { type: TaskMonitorEventType; sessionId: string; payload: any },
   handlers: TaskMonitorEventHandlers
 ): void {
   switch (eventType) {

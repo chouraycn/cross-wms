@@ -26,7 +26,7 @@ vi.mock('@/contexts/ToastContext', () => ({
 
 const mockCreateInventoryCount = vi.fn();
 vi.mock('@/api/wmsInventoryApi', () => ({
-  createInventoryCount: (...args: unknown[]) => mockCreateInventoryCount(...args),
+  createInventoryCount: (...args: any[]) => mockCreateInventoryCount(...args),
   adjustInventoryCount: vi.fn(),
 }));
 

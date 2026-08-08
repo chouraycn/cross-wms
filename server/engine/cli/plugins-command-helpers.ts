@@ -59,7 +59,7 @@ const defaultRuntime: RuntimeEnv = {
 };
 // ===== RuntimeEnv 结束 =====
 
-type HookInternalEntryLike = Record<string, unknown> & { enabled?: boolean };
+type HookInternalEntryLike = Record<string, any> & { enabled?: boolean };
 
 // ============================================================================
 // 内联降级：file: / npm: / npm-pack: spec 解析
@@ -142,8 +142,8 @@ export function enableInternalHookEntries(
   config: OpenClawConfig,
   hookNames: string[],
 ): OpenClawConfig {
-  const hooksSection = (config.hooks ?? {}) as Record<string, unknown>;
-  const internalSection = (hooksSection.internal ?? {}) as Record<string, unknown>;
+  const hooksSection = (config.hooks ?? {}) as Record<string, any>;
+  const internalSection = (hooksSection.internal ?? {}) as Record<string, any>;
   const entries = {
     ...(internalSection.entries as Record<string, HookInternalEntryLike> | undefined),
   } as Record<string, HookInternalEntryLike>;

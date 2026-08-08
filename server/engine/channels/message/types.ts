@@ -38,8 +38,8 @@ export type MessagePartKind =
 
 export interface MessagePart {
   kind: MessagePartKind;
-  content: unknown;
-  metadata?: Record<string, unknown>;
+  content: any;
+  metadata?: Record<string, any>;
 }
 
 export interface MessageSender {
@@ -48,7 +48,7 @@ export interface MessageSender {
   username?: string;
   avatar?: string;
   isBot?: boolean;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface MessageAttachment {
@@ -57,7 +57,7 @@ export interface MessageAttachment {
   url?: string;
   mimeType: string;
   size?: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface ChannelMessage {
@@ -79,7 +79,7 @@ export interface ChannelMessage {
   replyTo?: string;
   timestamp: number;
   editedAt?: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface MessageEnvelope<T = unknown> {
@@ -88,7 +88,7 @@ export interface MessageEnvelope<T = unknown> {
   accountId?: AccountId;
   payload: T;
   timestamp: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export type MessageLifecyclePhase =
@@ -107,7 +107,7 @@ export interface MessageLifecycleEvent {
   messageId: string;
   phase: MessageLifecyclePhase;
   timestamp: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface MessageCapabilities {

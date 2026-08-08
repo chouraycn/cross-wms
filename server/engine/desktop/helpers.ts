@@ -21,7 +21,7 @@ export async function runAppleScript(script: string, timeout: number = 3000): Pr
       timeout,
     });
     return output.toString().trim();
-  } catch (e: unknown) {
+  } catch (e: any) {
     throw new Error(`AppleScript execution failed: ${e instanceof Error ? e.message : String(e)}`);
   }
 }
@@ -133,7 +133,7 @@ export async function handleDesktopHealth(): Promise<string> {
         ? `All native ${isMac ? 'macOS' : 'Linux'} tools are available`
         : `Some tools are missing on ${isMac ? 'macOS' : 'Linux'}.`,
     });
-  } catch (e: unknown) {
+  } catch (e: any) {
     return JSON.stringify({ success: false, error: (e as Error).message || 'Health check failed' });
   }
 }

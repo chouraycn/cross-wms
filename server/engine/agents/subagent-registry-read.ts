@@ -7,27 +7,27 @@
  */
 
 export { getSubagentSessionRuntimeMs, getSubagentSessionStartedAt, resolveSubagentSessionStatus } from "./subagent-session-metrics.js";
-export function buildSubagentRunReadIndex(..._args: unknown[]): unknown {
+export function buildSubagentRunReadIndex(..._args: any[]): any {
   return undefined;
 }
-export function listSubagentRunsForController(..._args: unknown[]): unknown {
+export function listSubagentRunsForController(..._args: any[]): any {
   return [];
 }
-export function countActiveDescendantRuns(..._args: unknown[]): unknown {
+export function countActiveDescendantRuns(..._args: any[]): any {
   return undefined;
 }
-export function listDescendantRunsForRequester(..._args: unknown[]): unknown {
+export function listDescendantRunsForRequester(..._args: any[]): any {
   return [];
 }
-export function getSubagentRunByChildSessionKey(..._args: unknown[]): unknown {
+export function getSubagentRunByChildSessionKey(..._args: any[]): any {
   return undefined;
 }
-export function isSubagentRunLive(..._args: unknown[]): unknown {
+export function isSubagentRunLive(..._args: any[]): any {
   return false;
 }
-export function getSessionDisplaySubagentRunByChildSessionKey(..._args: unknown[]): unknown {
+export function getSessionDisplaySubagentRunByChildSessionKey(..._args: any[]): any {
   return undefined;
 }
-export function getLatestSubagentRunByChildSessionKey(..._args: unknown[]): unknown {
+export function getLatestSubagentRunByChildSessionKey(..._args: any[]): any {
   return undefined;
 }

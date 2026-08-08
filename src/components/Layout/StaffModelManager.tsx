@@ -82,7 +82,7 @@ const EMPTY_FORM: FormData = {
 async function apiFetch<T>(
   method: string,
   path: string,
-  body?: unknown,
+  body?: any,
   expectCode0 = true,
 ): Promise<T> {
   const headers: Record<string, string> = {};
@@ -119,7 +119,7 @@ function setDefaultConfig(id: string): Promise<ModelConfigRead> {
 }
 
 function testConfig(id: string): Promise<{ success: boolean; message: string; output?: string }> {
-  return apiFetch<unknown>('POST', `/${id}/test?tenant_id=${DEFAULT_TENANT}`, { tenant_id: DEFAULT_TENANT });
+  return apiFetch<any>('POST', `/${id}/test?tenant_id=${DEFAULT_TENANT}`, { tenant_id: DEFAULT_TENANT });
 }
 
 // ---------- 主组件 ----------
@@ -147,7 +147,7 @@ const StaffModelManager: React.FC = () => {
     try {
       const data = await listConfigs();
       setConfigs(Array.isArray(data) ? data : []);
-    } catch (e: unknown) {
+    } catch (e: any) {
       setError(e?.message || '加载失败');
     } finally {
       setLoading(false);
@@ -195,7 +195,7 @@ const StaffModelManager: React.FC = () => {
     setSaving(true);
     setDialogError(null);
     try {
-      const payload: unknown = { ...form };
+      const payload: any = { ...form };
       // 编辑模式且 api_key 为空 → 不传 key，保持原有
       if (editingId && !payload.api_key) delete payload.api_key;
       if (editingId) {
@@ -205,7 +205,7 @@ const StaffModelManager: React.FC = () => {
       }
       setDialogOpen(false);
       await load();
-    } catch (e: unknown) {
+    } catch (e: any) {
       setDialogError(e?.message || '保存失败');
     } finally {
       setSaving(false);
@@ -218,7 +218,7 @@ const StaffModelManager: React.FC = () => {
       // 后端暂未提供 delete 端点，走 update 把 enabled 置为 false 作为软删除提示
       await updateConfig(id, { enabled: false });
       await load();
-    } catch (e: unknown) {
+    } catch (e: any) {
       setError(e?.message || '操作失败');
     }
   };
@@ -227,7 +227,7 @@ const StaffModelManager: React.FC = () => {
     try {
       await setDefaultConfig(id);
       await load();
-    } catch (e: unknown) {
+    } catch (e: any) {
       setError(e?.message || '设置默认失败（请先验证并启用该模型）');
       setTimeout(() => setError(null), 4000);
     }
@@ -237,7 +237,7 @@ const StaffModelManager: React.FC = () => {
     try {
       await updateConfig(cfg.id, { enabled: !cfg.enabled });
       await load();
-    } catch (e: unknown) {
+    } catch (e: any) {
       setError(e?.message || '切换失败');
       setTimeout(() => setError(null), 4000);
     }
@@ -246,13 +246,13 @@ const StaffModelManager: React.FC = () => {
   const onTest = async (cfg: ModelConfigRead) => {
     setTestingId(cfg.id);
     try {
-      const r: unknown = await testConfig(cfg.id);
+      const r: any = await testConfig(cfg.id);
       if (r?.success) {
         alert(`连接成功：${r.message || ''}`);
       } else {
         alert(`连接失败：${r?.message || '未知错误'}`);
       }
-    } catch (e: unknown) {
+    } catch (e: any) {
       alert(`测试失败：${e?.message || '网络错误'}`);
     } finally {
       setTestingId(null);
@@ -260,7 +260,7 @@ const StaffModelManager: React.FC = () => {
   };
 
   const trustChip = (trust: string) => {
-    const map: Record<string, { label: string; color: unknown }> = {
+    const map: Record<string, { label: string; color: any }> = {
       verified: { label: '已验证', color: 'success' },
       legacy_trusted: { label: '已信任', color: 'success' },
       unverified: { label: '未验证', color: 'warning' },

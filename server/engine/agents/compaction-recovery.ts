@@ -6,9 +6,9 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function isRecoverableNativeHarnessBindingReason(..._args: unknown[]): unknown {
+export function isRecoverableNativeHarnessBindingReason(..._args: any[]): any {
   return false;
 }
-export function isRecoverableNativeHarnessBindingFailure(..._args: unknown[]): unknown {
+export function isRecoverableNativeHarnessBindingFailure(..._args: any[]): any {
   return false;
 }

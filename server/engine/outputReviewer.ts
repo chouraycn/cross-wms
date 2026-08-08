@@ -67,7 +67,7 @@ export function parseOutputReviewResponse(text: string): OutputReviewDecision {
       suggestion: 'Reviewer could not evaluate the response',
     };
   }
-  let parsed: unknown;
+  let parsed: any;
   try {
     parsed = JSON.parse(objectText);
   } catch {

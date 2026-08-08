@@ -34,7 +34,7 @@ describe("assertLocalMediaAllowed", () => {
     await fs.writeFile(filePath, Buffer.from("png"));
 
     try {
-      let accessError: unknown;
+      let accessError: any;
       try {
         await assertLocalMediaAllowed(filePath, []);
       } catch (error) {
@@ -71,7 +71,7 @@ describe("assertLocalMediaAllowed", () => {
     hoistedRoots.push(workspaceDir);
 
     try {
-      let accessError: unknown;
+      let accessError: any;
       try {
         await assertLocalMediaAllowed(mediaPath, undefined);
       } catch (error) {

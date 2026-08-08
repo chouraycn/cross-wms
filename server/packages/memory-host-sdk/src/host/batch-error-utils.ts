@@ -34,7 +34,7 @@ export function extractBatchErrorMessage(lines: BatchOutputErrorLike[]): string 
 }
 
 /** Format a failed error-file read without hiding the underlying read problem. */
-export function formatUnavailableBatchError(err: unknown): string | undefined {
+export function formatUnavailableBatchError(err: any): string | undefined {
   const message = formatErrorMessage(err);
   return message ? `error file unavailable: ${message}` : undefined;
 }

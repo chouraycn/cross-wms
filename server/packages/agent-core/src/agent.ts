@@ -532,7 +532,7 @@ export class Agent {
     }
   }
 
-  private async handleRunFailure(error: unknown, aborted: boolean): Promise<void> {
+  private async handleRunFailure(error: any, aborted: boolean): Promise<void> {
     const failureMessage = {
       role: "assistant",
       content: [{ type: "text", text: "" }],

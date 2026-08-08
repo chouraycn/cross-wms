@@ -24,7 +24,7 @@ function stripQuotes(value: string): string {
   return value;
 }
 
-function coerceYamlFrontmatterValue(value: unknown): ParsedYamlValue | undefined {
+function coerceYamlFrontmatterValue(value: any): ParsedYamlValue | undefined {
   if (value === null || value === undefined) {
     return undefined;
   }
@@ -55,12 +55,12 @@ function coerceYamlFrontmatterValue(value: unknown): ParsedYamlValue | undefined
 
 function parseYamlFrontmatter(block: string): Record<string, ParsedYamlValue> | null {
   try {
-    const parsed = YAML.parse(block, { schema: "core" }) as unknown;
+    const parsed = YAML.parse(block, { schema: "core" }) as any;
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
       return null;
     }
     const result: Record<string, ParsedYamlValue> = {};
-    for (const [rawKey, value] of Object.entries(parsed as Record<string, unknown>)) {
+    for (const [rawKey, value] of Object.entries(parsed as Record<string, any>)) {
       const key = rawKey.trim();
       if (!key) {
         continue;

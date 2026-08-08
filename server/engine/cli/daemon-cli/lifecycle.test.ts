@@ -36,7 +36,7 @@ const waitForGatewayHealthyRestart = vi.fn();
 const terminateStaleGatewayPids = vi.fn();
 const renderGatewayPortHealthDiagnostics = vi.fn(() => ["diag: unhealthy port"]);
 const renderRestartDiagnostics = vi.fn(() => ["diag: unhealthy runtime"]);
-const resolveGatewayPort = vi.hoisted(() => vi.fn((_cfg?: unknown, _env?: unknown) => 18789));
+const resolveGatewayPort = vi.hoisted(() => vi.fn((_cfg?: any, _env?: any) => 18789));
 const findVerifiedGatewayListenerPidsOnPortSync = vi.fn<(port: number) => number[]>(() => []);
 const signalVerifiedGatewayPidSync = vi.fn<(pid: number, signal: "SIGTERM" | "SIGUSR1") => void>();
 const formatGatewayPidList = vi.fn<(pids: number[]) => string>((pids) => pids.join(", "));
@@ -47,11 +47,11 @@ const probeGateway = vi.fn<
     timeoutMs: number;
   }) => Promise<{
     ok: boolean;
-    configSnapshot: unknown;
+    configSnapshot: any;
   }>
 >();
 const callGatewayCli = vi.fn();
-const isRestartEnabled = vi.fn<(config?: { commands?: unknown }) => boolean>(() => true);
+const isRestartEnabled = vi.fn<(config?: { commands?: any }) => boolean>(() => true);
 const loadConfig = vi.hoisted(() => vi.fn(() => ({})));
 const recoverInstalledLaunchAgent = vi.hoisted(() => vi.fn());
 const repairLoadedGatewayServiceForStart = vi.hoisted(() => vi.fn());
@@ -66,11 +66,11 @@ const restartSystemdService = vi.hoisted(() =>
 const stopSystemdService = vi.hoisted(() => vi.fn<() => Promise<void>>(async () => {}));
 
 function requireMockCallArg(
-  mockFn: { mock: { calls: unknown[][] } },
+  mockFn: { mock: { calls: any[][] } },
   label: string,
   index = 0,
-): Record<string, unknown> {
-  const arg = mockFn.mock.calls[index]?.[0] as Record<string, unknown> | undefined;
+): Record<string, any> {
+  const arg = mockFn.mock.calls[index]?.[0] as Record<string, any> | undefined;
   if (!arg) {
     throw new Error(`expected ${label} call #${index + 1}`);
   }
@@ -78,7 +78,7 @@ function requireMockCallArg(
 }
 
 async function expectRestartError(
-  promise: Promise<unknown>,
+  promise: Promise<any>,
 ): Promise<Error & { hints?: string[] }> {
   try {
     await promise;
@@ -92,7 +92,7 @@ vi.mock("../../config/config.js", () => ({
   getRuntimeConfig: () => loadConfig(),
   loadConfig: () => loadConfig(),
   readBestEffortConfig: async () => loadConfig(),
-  resolveGatewayPort: (cfg?: unknown, env?: unknown) => resolveGatewayPort(cfg, env),
+  resolveGatewayPort: (cfg?: any, env?: any) => resolveGatewayPort(cfg, env),
 }));
 
 vi.mock("../../infra/gateway-processes.js", () => ({
@@ -112,11 +112,11 @@ vi.mock("../../gateway/probe.js", () => ({
 }));
 
 vi.mock("../../gateway/call.js", () => ({
-  callGatewayCli: (opts: unknown) => callGatewayCli(opts),
+  callGatewayCli: (opts: any) => callGatewayCli(opts),
 }));
 
 vi.mock("../../config/commands.js", () => ({
-  isRestartEnabled: (config?: { commands?: unknown }) => isRestartEnabled(config),
+  isRestartEnabled: (config?: { commands?: any }) => isRestartEnabled(config),
 }));
 
 vi.mock("../../daemon/service.js", () => ({
@@ -135,7 +135,7 @@ vi.mock("./launchd-recovery.js", () => ({
 }));
 
 vi.mock("./start-repair.js", () => ({
-  repairLoadedGatewayServiceForStart: (args: unknown) => repairLoadedGatewayServiceForStart(args),
+  repairLoadedGatewayServiceForStart: (args: any) => repairLoadedGatewayServiceForStart(args),
 }));
 
 vi.mock("./restart-health.js", () => ({
@@ -172,7 +172,7 @@ describe("runDaemonRestart health checks", () => {
     runPostRestartCheck?: boolean;
   } = {}) {
     runServiceRestart.mockImplementation(
-      async (params: RestartParams & { onNotLoaded?: () => Promise<unknown> }) => {
+      async (params: RestartParams & { onNotLoaded?: () => Promise<any> }) => {
         await params.onNotLoaded?.();
         if (runPostRestartCheck) {
           await params.postRestartCheck?.({
@@ -302,7 +302,7 @@ describe("runDaemonRestart health checks", () => {
       loaded: true,
       message: "Gateway LaunchAgent was installed but not loaded; re-bootstrapped launchd service.",
     });
-    runServiceStart.mockImplementation(async (params: { onNotLoaded?: () => Promise<unknown> }) => {
+    runServiceStart.mockImplementation(async (params: { onNotLoaded?: () => Promise<any> }) => {
       await params.onNotLoaded?.();
     });
 
@@ -359,9 +359,9 @@ describe("runDaemonRestart health checks", () => {
         repairLoadedService?: (args: {
           json: boolean;
           stdout: NodeJS.WritableStream;
-          state: unknown;
-          issues: unknown[];
-        }) => Promise<unknown>;
+          state: any;
+          issues: any[];
+        }) => Promise<any>;
       }) => {
         await params.repairLoadedService?.({
           json: true,
@@ -378,10 +378,10 @@ describe("runDaemonRestart health checks", () => {
       repairLoadedGatewayServiceForStart,
       "repairLoadedGatewayServiceForStart",
     ) as {
-      service?: unknown;
-      json?: unknown;
-      state?: { command?: { environment?: unknown } };
-      issues?: Array<{ code?: unknown }>;
+      service?: any;
+      json?: any;
+      state?: { command?: { environment?: any } };
+      issues?: Array<{ code?: any }>;
     };
     expect(repairParams.service).toBe(service);
     expect(repairParams.json).toBe(true);
@@ -472,10 +472,10 @@ describe("runDaemonRestart health checks", () => {
       waitForGatewayHealthyRestart,
       "waitForGatewayHealthyRestart",
     ) as {
-      attempts?: unknown;
-      delayMs?: unknown;
-      includeUnknownListenersAsStale?: unknown;
-      port?: unknown;
+      attempts?: any;
+      delayMs?: any;
+      includeUnknownListenersAsStale?: any;
+      port?: any;
     };
     expect(waitParams.attempts).toBe(360);
     expect(waitParams.delayMs).toBe(500);
@@ -509,7 +509,7 @@ describe("runDaemonRestart health checks", () => {
 
   it("signals an unmanaged gateway process on stop", async () => {
     findVerifiedGatewayListenerPidsOnPortSync.mockReturnValue([4200, 4200, 4300]);
-    runServiceStop.mockImplementation(async (params: { onNotLoaded?: () => Promise<unknown> }) => {
+    runServiceStop.mockImplementation(async (params: { onNotLoaded?: () => Promise<any> }) => {
       await params.onNotLoaded?.();
     });
 
@@ -526,8 +526,8 @@ describe("runDaemonRestart health checks", () => {
     await runDaemonStop({ json: true, disable: true });
 
     const stopParams = requireMockCallArg(runServiceStop, "runServiceStop") as {
-      opts?: unknown;
-      stopWhenNotLoaded?: unknown;
+      opts?: any;
+      stopWhenNotLoaded?: any;
     };
     expect(stopParams.opts).toEqual({ json: true, disable: true });
     expect(stopParams.stopWhenNotLoaded).toBe(true);
@@ -597,7 +597,7 @@ describe("runDaemonRestart health checks", () => {
     });
     findVerifiedGatewayListenerPidsOnPortSync.mockReturnValue([]);
     runServiceRestart.mockImplementation(
-      async (params: RestartParams & { onNotLoaded?: () => Promise<unknown> }) => {
+      async (params: RestartParams & { onNotLoaded?: () => Promise<any> }) => {
         await params.onNotLoaded?.();
         await params.postRestartCheck?.({
           json: Boolean(params.opts?.json),
@@ -693,7 +693,7 @@ describe("runDaemonRestart health checks", () => {
     });
     stopSystemdService.mockResolvedValue(undefined);
     findVerifiedGatewayListenerPidsOnPortSync.mockReturnValue([4200]);
-    runServiceStop.mockImplementation(async (params: { onNotLoaded?: () => Promise<unknown> }) => {
+    runServiceStop.mockImplementation(async (params: { onNotLoaded?: () => Promise<any> }) => {
       await params.onNotLoaded?.();
     });
 
@@ -715,7 +715,7 @@ describe("runDaemonRestart health checks", () => {
       ),
     );
     findVerifiedGatewayListenerPidsOnPortSync.mockReturnValue([4200]);
-    runServiceStop.mockImplementation(async (params: { onNotLoaded?: () => Promise<unknown> }) => {
+    runServiceStop.mockImplementation(async (params: { onNotLoaded?: () => Promise<any> }) => {
       await params.onNotLoaded?.();
     });
 
@@ -728,7 +728,7 @@ describe("runDaemonRestart health checks", () => {
 
   it("skips unmanaged signaling for pids that are not live gateway processes", async () => {
     findVerifiedGatewayListenerPidsOnPortSync.mockReturnValue([]);
-    runServiceStop.mockImplementation(async (params: { onNotLoaded?: () => Promise<unknown> }) => {
+    runServiceStop.mockImplementation(async (params: { onNotLoaded?: () => Promise<any> }) => {
       await params.onNotLoaded?.();
     });
 

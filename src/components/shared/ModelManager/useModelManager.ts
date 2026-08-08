@@ -72,12 +72,12 @@ function createEmptyForm(): ModelFormState {
 
 /** 导入文件 JSON 的校验结构 */
 interface ImportPayload {
-  models: unknown[];
-  defaultModelId: unknown;
+  models: any[];
+  defaultModelId: any;
 }
 
 /** 校验导入 JSON 结构是否合法 */
-function validateImportPayload(data: unknown): { valid: boolean; error?: string } {
+function validateImportPayload(data: any): { valid: boolean; error?: string } {
   if (!data || typeof data !== 'object') {
     return { valid: false, error: '文件内容格式不正确，必须为 JSON 对象' };
   }
@@ -89,7 +89,7 @@ function validateImportPayload(data: unknown): { valid: boolean; error?: string 
     return { valid: false, error: '缺少 defaultModelId 字段' };
   }
   for (let i = 0; i < obj.models.length; i++) {
-    const m = obj.models[i] as Record<string, unknown> | undefined;
+    const m = obj.models[i] as Record<string, any> | undefined;
     if (!m || typeof m !== 'object') {
       return { valid: false, error: `models[${i}] 不是有效对象` };
     }
@@ -419,7 +419,7 @@ export function useModelManager(props: ModelManagerProps): UseModelManagerReturn
               setTestModelValid(true);
             }
           }
-        } catch (e: unknown) {
+        } catch (e: any) {
           const msg = e instanceof Error ? e.message : '网络错误';
           results.push({ label, success: false, message: msg });
         }
@@ -439,7 +439,7 @@ export function useModelManager(props: ModelManagerProps): UseModelManagerReturn
         setTestMessage(`测试完成 ${successCount}/${keysToTest.length} 个 Key 通过\n${summary}`);
         if (allModels.length > 0) setTestAvailableModels(allModels);
       }
-    } catch (e: unknown) {
+    } catch (e: any) {
       setTestStatus('error');
       const msg = e instanceof Error ? e.message : '网络错误，无法连接';
       setTestMessage(msg);
@@ -458,7 +458,7 @@ export function useModelManager(props: ModelManagerProps): UseModelManagerReturn
         try {
           const result = await api.resetModelsConfig();
           onChange(result.models, result.defaultModelId);
-        } catch (e: unknown) {
+        } catch (e: any) {
           // console.error('[ModelManager] resetModelsConfig failed:', e);
           openConfirmDialog({
             title: '恢复失败',

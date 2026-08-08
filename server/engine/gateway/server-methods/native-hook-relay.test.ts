@@ -76,7 +76,7 @@ describe("native hook relay gateway method", () => {
   });
 });
 
-async function invokeNativeHook(params: Record<string, unknown>) {
+async function invokeNativeHook(params: Record<string, any>) {
   const respond = viRespond();
   await nativeHookRelayHandlers["nativeHook.invoke"]({
     req: { type: "req", id: "1", method: "nativeHook.invoke" },

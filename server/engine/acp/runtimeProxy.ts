@@ -27,7 +27,7 @@ export function createLazyAcpRuntimeProxy(resolveRuntime: () => Promise<AcpRunti
     };
   }
 
-  async function getCapabilities(): Promise<unknown> {
+  async function getCapabilities(): Promise<any> {
     return (await resolveRuntime()).getCapabilities();
   }
 

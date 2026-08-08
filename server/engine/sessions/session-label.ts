@@ -19,7 +19,7 @@ export type ParsedSessionLabel =
  * - 去除首尾空白后不得为空
  * - 长度不得超过 SESSION_LABEL_MAX_LENGTH
  */
-export function parseSessionLabel(raw: unknown): ParsedSessionLabel {
+export function parseSessionLabel(raw: any): ParsedSessionLabel {
   if (typeof raw !== 'string') {
     return { ok: false, error: 'invalid label: must be a string' };
   }

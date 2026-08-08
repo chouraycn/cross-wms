@@ -34,7 +34,7 @@ const minimalWarehouse = (overrides: Partial<Warehouse> & { id: string; name: st
 
 // ===================== 辅助函数 =====================
 
-function makeSheet(headers: string[], rows: string[][]): unknown {
+function makeSheet(headers: string[], rows: string[][]): any {
   return {
     gridData: {
       rows: [

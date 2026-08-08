@@ -15,7 +15,7 @@ type SessionEntry = {
   modelOverride?: string;
   modelOverrideFallbackOriginProvider?: string;
   modelOverrideFallbackOriginModel?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 /** Detects model overrides created by automatic fallback provenance. */

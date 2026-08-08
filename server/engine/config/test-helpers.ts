@@ -1,32 +1,32 @@
 // 移植自 openclaw/src/config/test-helpers.ts
 
-export function useTempSessionsFixture(...args: unknown[]): unknown {
+export function useTempSessionsFixture(...args: any[]): any {
   return undefined;
 }
-export function writeSessionStoreForTest(...args: unknown[]): unknown {
+export function writeSessionStoreForTest(...args: any[]): any {
   return undefined;
 }
-export function writeSessionStoreForTestAsync(...args: unknown[]): unknown {
+export function writeSessionStoreForTestAsync(...args: any[]): any {
   return undefined;
 }
-export function readSessionStoreForTest(...args: unknown[]): unknown {
+export function readSessionStoreForTest(...args: any[]): any {
   return undefined;
 }
-export function withTempHome(...args: unknown[]): unknown {
+export function withTempHome(...args: any[]): any {
   return undefined;
 }
-export function writeOpenClawConfig(...args: unknown[]): unknown {
+export function writeOpenClawConfig(...args: any[]): any {
   return undefined;
 }
-export function writeStateDirDotEnv(...args: unknown[]): unknown {
+export function writeStateDirDotEnv(...args: any[]): any {
   return undefined;
 }
-export function withTempHomeConfig(...args: unknown[]): unknown {
+export function withTempHomeConfig(...args: any[]): any {
   return undefined;
 }
-export function withEnvOverride(...args: unknown[]): unknown {
+export function withEnvOverride(...args: any[]): any {
   return undefined;
 }
-export function buildWebSearchProviderConfig(...args: unknown[]): unknown {
+export function buildWebSearchProviderConfig(...args: any[]): any {
   return undefined;
 }

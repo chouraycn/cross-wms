@@ -24,10 +24,10 @@ export type ReplyPayload = {
   mediaUrls?: string[];
   trustedLocalMedia?: boolean;
   sensitiveMedia?: boolean;
-  presentation?: unknown;
-  delivery?: unknown;
-  interactive?: unknown;
-  channelData?: Record<string, unknown>;
+  presentation?: any;
+  delivery?: any;
+  interactive?: any;
+  channelData?: Record<string, any>;
   sessionId?: string;
   modelUsed?: string;
   usage?: {

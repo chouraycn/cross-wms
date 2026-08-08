@@ -139,7 +139,7 @@ export class SqliteMemoryStore extends BaseMemoryStore {
     if (!this.db) throw new Error('Store not initialized');
 
     let query = 'SELECT * FROM memory_entries WHERE 1=1';
-    const params: unknown[] = [];
+    const params: any[] = [];
 
     if (options.agentId) {
       query += ' AND agent_id = ?';
@@ -178,7 +178,7 @@ export class SqliteMemoryStore extends BaseMemoryStore {
       params.push(options.limit);
     }
 
-    const rows = this.db.prepare(query).all(...params) as unknown[];
+    const rows = this.db.prepare(query).all(...params) as any[];
     return rows.map(row => this.rowToEntry(row));
   }
 
@@ -194,7 +194,7 @@ export class SqliteMemoryStore extends BaseMemoryStore {
     if (!this.db) throw new Error('Store not initialized');
 
     let query = 'SELECT COUNT(*) as count FROM memory_entries WHERE 1=1';
-    const params: unknown[] = [];
+    const params: any[] = [];
 
     if (options?.agentId) {
       query += ' AND agent_id = ?';
@@ -219,7 +219,7 @@ export class SqliteMemoryStore extends BaseMemoryStore {
     if (!this.db) throw new Error('Store not initialized');
 
     let query = 'DELETE FROM memory_entries WHERE 1=1';
-    const params: unknown[] = [];
+    const params: any[] = [];
 
     if (options?.agentId) {
       query += ' AND agent_id = ?';
@@ -235,8 +235,8 @@ export class SqliteMemoryStore extends BaseMemoryStore {
     logger.debug(`[Agents:SqliteMemoryStore] Cleared entries${options?.agentId ? ` for agent ${options.agentId}` : ''}`);
   }
 
-  private rowToEntry(row: unknown): MemoryEntry {
-    const r = row as Record<string, unknown>;
+  private rowToEntry(row: any): MemoryEntry {
+    const r = row as Record<string, any>;
     return MemoryEntrySchema.parse({
       id: r.id as string,
       agentId: r.agent_id as string,

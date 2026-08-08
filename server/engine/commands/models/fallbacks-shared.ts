@@ -32,7 +32,7 @@ function getFallbacks(cfg: OpenClawConfig, key: DefaultsFallbackKey): string[] {
 
 function patchDefaultsFallbacks(
   cfg: OpenClawConfig,
-  params: { key: DefaultsFallbackKey; fallbacks: string[]; models?: Record<string, unknown> },
+  params: { key: DefaultsFallbackKey; fallbacks: string[]; models?: Record<string, any> },
 ): OpenClawConfig {
   const existing = toAgentModelListLike(cfg.agents?.defaults?.[params.key]);
   return {

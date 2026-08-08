@@ -89,11 +89,11 @@ function requireString(value: string | undefined, label: string): string {
   return value;
 }
 
-function expectFields(value: unknown, expected: Record<string, unknown>): void {
+function expectFields(value: any, expected: Record<string, any>): void {
   if (!value || typeof value !== "object") {
     throw new Error("expected fields object");
   }
-  const record = value as Record<string, unknown>;
+  const record = value as Record<string, any>;
   for (const [key, expectedValue] of Object.entries(expected)) {
     expect(record[key], key).toEqual(expectedValue);
   }
@@ -1343,7 +1343,7 @@ describe("gateway session utils", () => {
   });
 
   test("pruneLegacyStoreKeys removes alias ghost keys", () => {
-    const store: Record<string, unknown> = {
+    const store: Record<string, any> = {
       "agent:ops:work": { sessionId: "canonical", updatedAt: 3 },
       "agent:ops:main": { sessionId: "legacy-alias", updatedAt: 4 },
     };

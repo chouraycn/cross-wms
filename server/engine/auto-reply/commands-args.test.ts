@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { COMMAND_ARG_FORMATTERS } from "./commands-args.js";
 import type { CommandArgValues } from "./commands-registry.types.js";
 
-function formatArgs(key: keyof typeof COMMAND_ARG_FORMATTERS, values: Record<string, unknown>) {
+function formatArgs(key: keyof typeof COMMAND_ARG_FORMATTERS, values: Record<string, any>) {
   const formatter = COMMAND_ARG_FORMATTERS[key];
   return formatter?.(values as unknown as CommandArgValues);
 }

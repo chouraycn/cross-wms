@@ -146,7 +146,7 @@ function replaceOutsideMarkdownCode(
   replace: (match: string, captures: readonly string[]) => string,
 ): string {
   const codeRanges = collectMarkdownCodeRanges(text);
-  return text.replace(regex, (...args: unknown[]) => {
+  return text.replace(regex, (...args: any[]) => {
     const match = String(args[0]);
     const offset = args.at(-2);
     if (typeof offset === "number" && isInsideRange(offset, codeRanges)) {

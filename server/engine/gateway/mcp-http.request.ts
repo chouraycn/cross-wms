@@ -11,30 +11,30 @@
  * 完整实现见 openclaw 源码。
  */
 
-export function validateMcpLoopbackRequest(..._args: unknown[]): unknown {
+export function validateMcpLoopbackRequest(..._args: any[]): any {
   return undefined;
 }
 
-export async function readMcpHttpBody(..._args: unknown[]): Promise<unknown> {
+export async function readMcpHttpBody(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
 
-export function isMcpHttpBodyTooLargeError(..._args: unknown[]): unknown {
+export function isMcpHttpBodyTooLargeError(..._args: any[]): any {
   return false;
 }
 
-export function isMcpHttpBodyTimeoutError(..._args: unknown[]): unknown {
+export function isMcpHttpBodyTimeoutError(..._args: any[]): any {
   return false;
 }
 
-export function resolveMcpHttpBodyTimeoutMs(..._args: unknown[]): unknown {
+export function resolveMcpHttpBodyTimeoutMs(..._args: any[]): any {
   return undefined;
 }
 
-export function resolveMcpCliCaptureKey(..._args: unknown[]): unknown {
+export function resolveMcpCliCaptureKey(..._args: any[]): any {
   return undefined;
 }
 
-export function resolveMcpRequestContext(..._args: unknown[]): unknown {
+export function resolveMcpRequestContext(..._args: any[]): any {
   return undefined;
 }

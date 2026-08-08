@@ -10,19 +10,19 @@ type RestartDeliveryContext = {
   accountId?: string;
 };
 
-function parseRestartDeliveryContext(params: unknown): {
+function parseRestartDeliveryContext(params: any): {
   deliveryContext: RestartDeliveryContext | undefined;
   threadId: string | undefined;
 } {
-  const raw = (params as { deliveryContext?: unknown }).deliveryContext;
+  const raw = (params as { deliveryContext?: any }).deliveryContext;
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
     return { deliveryContext: undefined, threadId: undefined };
   }
   const context = raw as {
-    channel?: unknown;
-    to?: unknown;
-    accountId?: unknown;
-    threadId?: unknown;
+    channel?: any;
+    to?: any;
+    accountId?: any;
+    threadId?: any;
   };
   const deliveryContext: RestartDeliveryContext = {
     channel: normalizeOptionalString(context.channel),
@@ -40,7 +40,7 @@ function parseRestartDeliveryContext(params: unknown): {
 // Restart sentinels can resume a channel turn after the gateway comes back.
 // Keep only routable delivery fields plus a normalized thread id so malformed
 // UI/tool payloads do not leak arbitrary data into the sentinel file.
-export function parseRestartRequestParams(params: unknown): {
+export function parseRestartRequestParams(params: any): {
   sessionKey: string | undefined;
   deliveryContext: RestartDeliveryContext | undefined;
   threadId: string | undefined;
@@ -48,13 +48,13 @@ export function parseRestartRequestParams(params: unknown): {
   continuationMessage: string | undefined;
   restartDelayMs: number | undefined;
 } {
-  const sessionKey = normalizeOptionalString((params as { sessionKey?: unknown }).sessionKey);
+  const sessionKey = normalizeOptionalString((params as { sessionKey?: any }).sessionKey);
   const { deliveryContext, threadId } = parseRestartDeliveryContext(params);
-  const note = normalizeOptionalString((params as { note?: unknown }).note);
+  const note = normalizeOptionalString((params as { note?: any }).note);
   const continuationMessage = normalizeOptionalString(
-    (params as { continuationMessage?: unknown }).continuationMessage,
+    (params as { continuationMessage?: any }).continuationMessage,
   );
-  const restartDelayMsRaw = (params as { restartDelayMs?: unknown }).restartDelayMs;
+  const restartDelayMsRaw = (params as { restartDelayMs?: any }).restartDelayMs;
   const restartDelayMs =
     typeof restartDelayMsRaw === "number" && Number.isFinite(restartDelayMsRaw)
       ? Math.max(0, Math.floor(restartDelayMsRaw))

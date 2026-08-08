@@ -129,7 +129,7 @@ export type StatusScanOverviewResult = {
     | "gatewaySelf"
     | "gatewayCallOverrides"
   >;
-  channelsStatus: unknown;
+  channelsStatus: any;
   channelIssues: ReturnType<typeof collectChannelStatusIssuesFn>;
   channels: Awaited<ReturnType<typeof buildChannelsTableFn>>;
   agentStatus: Awaited<ReturnType<typeof getAgentLocalStatusesFn>>;

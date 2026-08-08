@@ -74,7 +74,7 @@ export interface SkillChainExecutionRow {
 }
 
 export interface SkillAuditRow {
-  [key: string]: unknown;
+  [key: string]: any;
   id: string;
   skill_id: string;
   skill_version: string;

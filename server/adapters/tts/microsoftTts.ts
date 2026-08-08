@@ -90,11 +90,11 @@ interface EdgeTtsWebSocketLike {
   close(code?: number, reason?: string): void;
   addEventListener(
     type: 'open' | 'message' | 'error' | 'close',
-    listener: (ev: { data?: unknown; code?: number; reason?: string }) => void,
+    listener: (ev: { data?: any; code?: number; reason?: string }) => void,
   ): void;
   removeEventListener(
     type: 'open' | 'message' | 'error' | 'close',
-    listener: (ev: { data?: unknown; code?: number; reason?: string }) => void,
+    listener: (ev: { data?: any; code?: number; reason?: string }) => void,
   ): void;
 }
 
@@ -177,7 +177,7 @@ async function synthesizeViaWebSocket(params: {
       ws.send(ssmlMsg);
     };
 
-    const onMessage = (ev: { data?: unknown }) => {
+    const onMessage = (ev: { data?: any }) => {
       const data = ev.data;
       if (typeof data === 'string') {
         // 文本帧：turn.end 表示合成完成
@@ -210,7 +210,7 @@ async function synthesizeViaWebSocket(params: {
       }
     };
 
-    const onError = (ev: { data?: unknown }) => {
+    const onError = (ev: { data?: any }) => {
       cleanup();
       const detail = ev.data instanceof Error ? ev.data.message : 'WebSocket 错误';
       reject(new Error(`Microsoft Edge TTS 错误: ${detail}`));

@@ -18,7 +18,7 @@ export interface SubTaskSpec {
   /** 优先级 */
   priority?: TaskPriority;
   /** 载荷 */
-  payload?: unknown;
+  payload?: any;
 }
 
 export interface DecompositionResult {

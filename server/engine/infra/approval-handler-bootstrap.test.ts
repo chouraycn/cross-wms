@@ -42,7 +42,7 @@ describe("startChannelApprovalHandlerBootstrap", () => {
 
   const startTestBootstrap = (params: {
     channelRuntime: ReturnType<typeof createRuntimeChannel>;
-    logger?: unknown;
+    logger?: any;
   }) =>
     startChannelApprovalHandlerBootstrap({
       plugin: createApprovalPlugin(),
@@ -54,7 +54,7 @@ describe("startChannelApprovalHandlerBootstrap", () => {
 
   const registerApprovalContext = (
     channelRuntime: ReturnType<typeof createRuntimeChannel>,
-    app: unknown = { ok: true },
+    app: any = { ok: true },
   ) =>
     channelRuntime.runtimeContexts.register({
       channelId: "slack",

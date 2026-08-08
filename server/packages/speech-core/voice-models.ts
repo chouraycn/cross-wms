@@ -41,26 +41,26 @@ export type VoiceProviderCandidate = {
 type VoiceModelConfig =
   | string
   | {
-      primary?: unknown;
-      fallbacks?: unknown;
-      timeoutMs?: unknown;
+      primary?: any;
+      fallbacks?: any;
+      timeoutMs?: any;
     };
 
-function normalizeString(value: unknown): string | undefined {
+function normalizeString(value: any): string | undefined {
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }
 
-function normalizeLowercaseString(value: unknown): string | undefined {
+function normalizeLowercaseString(value: any): string | undefined {
   return normalizeString(value)?.toLowerCase();
 }
 
-function normalizeTimeoutMs(value: unknown): number | undefined {
+function normalizeTimeoutMs(value: any): number | undefined {
   return typeof value === "number" && Number.isFinite(value) && value > 0
     ? Math.floor(value)
     : undefined;
 }
 
-function parseVoiceModelRef(value: unknown): VoiceModelRef | undefined {
+function parseVoiceModelRef(value: any): VoiceModelRef | undefined {
   const raw = normalizeString(value);
   if (!raw) {
     return undefined;
@@ -98,7 +98,7 @@ export function findVoiceModelProvider<T extends VoiceModelProvider>(params: {
 /** Return true when a provider advertises the requested model. */
 export function voiceProviderSupportsModel(
   provider: VoiceModelProvider | undefined,
-  model: unknown,
+  model: any,
 ): boolean {
   if (!provider) {
     return false;
@@ -110,7 +110,7 @@ export function voiceProviderSupportsModel(
 }
 
 /** Parse primary/fallback voice model refs from config. */
-export function resolveVoiceModelRefs(config: unknown): VoiceModelRef[] {
+export function resolveVoiceModelRefs(config: any): VoiceModelRef[] {
   const voiceModel = config as VoiceModelConfig | undefined;
   if (typeof voiceModel === "string") {
     const parsed = parseVoiceModelRef(voiceModel);
@@ -121,7 +121,7 @@ export function resolveVoiceModelRefs(config: unknown): VoiceModelRef[] {
   }
   const timeoutMs = normalizeTimeoutMs(voiceModel.timeoutMs);
   const refs: VoiceModelRef[] = [];
-  const addRef = (value: unknown) => {
+  const addRef = (value: any) => {
     const parsed = parseVoiceModelRef(value);
     if (parsed) {
       refs.push({ ...parsed, ...(timeoutMs === undefined ? {} : { timeoutMs }) });
@@ -138,7 +138,7 @@ export function resolveVoiceModelRefs(config: unknown): VoiceModelRef[] {
 
 /** Resolve configured voice model refs that are supported by known providers. */
 export function resolveSupportedVoiceModelRefs(params: {
-  config: unknown;
+  config: any;
   providers: readonly VoiceModelProvider[];
   providerId?: string;
 }): VoiceModelRef[] {
@@ -160,7 +160,7 @@ export function resolveSupportedVoiceModelRefs(params: {
 export function resolveVoiceProviderCandidates(params: {
   primaryProvider: string;
   providers: readonly VoiceModelProvider[];
-  voiceModelConfig?: unknown;
+  voiceModelConfig?: any;
 }): VoiceProviderCandidate[] {
   const primary =
     findVoiceModelProvider({ providers: params.providers, providerId: params.primaryProvider })
@@ -199,7 +199,7 @@ export function resolveVoiceProviderCandidates(params: {
 export function resolvePrimaryVoiceProviderCandidate(params: {
   primaryProvider: string;
   providers: readonly VoiceModelProvider[];
-  voiceModelConfig?: unknown;
+  voiceModelConfig?: any;
 }): VoiceProviderCandidate {
   const provider =
     findVoiceModelProvider({ providers: params.providers, providerId: params.primaryProvider })
@@ -213,7 +213,7 @@ export function resolvePrimaryVoiceProviderCandidate(params: {
 }
 
 /** Read provider config by configured id, canonical id, or alias. */
-export function getVoiceProviderConfig<TConfig extends Record<string, unknown>>(params: {
+export function getVoiceProviderConfig<TConfig extends Record<string, any>>(params: {
   providerConfigs: Record<string, TConfig | undefined>;
   provider: VoiceModelProvider;
   configuredProviderId?: string;

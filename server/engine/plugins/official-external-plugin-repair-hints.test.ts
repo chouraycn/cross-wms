@@ -7,7 +7,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("./channel-plugin-ids.js", () => ({
-  resolveConfiguredChannelPresencePolicy: (params: unknown) =>
+  resolveConfiguredChannelPresencePolicy: (params: any) =>
     mocks.resolveConfiguredChannelPresencePolicy(params),
 }));
 

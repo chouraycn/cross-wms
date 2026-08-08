@@ -24,7 +24,7 @@ import { normalizeOptionalString } from "./string-coerce.js";
  * 将任意输入规范化为已去除首尾空白的字符串，输入无效时返回 null（而非 undefined）。
  * 与 normalizeOptionalString 行为一致，仅返回类型不同，用于兼容 openclaw 调用方。
  */
-export function normalizeNullableString(value: unknown): string | null {
+export function normalizeNullableString(value: any): string | null {
   return normalizeOptionalString(value) ?? null;
 }
 
@@ -85,7 +85,7 @@ export function isIpInCidr(ip: string, cidr: string): boolean {
  * 用于避免重复初始化 warning filter 等单例资源。
  */
 export function resolveGlobalSingleton<T>(key: symbol, factory: () => T): T {
-  const existing = (globalThis as Record<PropertyKey, unknown>)[key];
+  const existing = (globalThis as Record<PropertyKey, any>)[key];
   if (existing !== undefined) {
     return existing as T;
   }

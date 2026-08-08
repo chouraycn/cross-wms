@@ -9,6 +9,6 @@
 export type CompactionPlanningWorkerInput = unknown;
 export type CompactionPlanningWorkerValue = unknown;
 export type CompactionPlanningWorkerResult = unknown;
-export function runCompactionPlanningWorkerInput(..._args: unknown[]): unknown {
+export function runCompactionPlanningWorkerInput(..._args: any[]): any {
   return undefined;
 }

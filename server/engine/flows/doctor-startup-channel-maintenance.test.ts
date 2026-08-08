@@ -13,7 +13,7 @@ describe("doctor startup channel maintenance", () => {
         },
       },
     };
-    const calls: unknown[] = [];
+    const calls: any[] = [];
     const runtimeCalls: string[] = [];
     const runtime = {
       log: (message: string) => runtimeCalls.push(`log:${message}`),
@@ -53,7 +53,7 @@ describe("doctor startup channel maintenance", () => {
   });
 
   it("skips startup migration outside repair flows", async () => {
-    const calls: unknown[] = [];
+    const calls: any[] = [];
 
     await maybeRunDoctorStartupChannelMaintenance({
       cfg: { channels: { matrix: {} } },

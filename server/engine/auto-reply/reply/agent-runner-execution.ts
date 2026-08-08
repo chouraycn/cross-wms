@@ -314,21 +314,21 @@ function createAgentTurnTimingTracker(options: { profilerEnabled?: boolean } = {
   };
 }
 
-function readApprovalScopeValue(value: unknown): "turn" | "session" | undefined {
+function readApprovalScopeValue(value: any): "turn" | "session" | undefined {
   return value === "turn" || value === "session" ? value : undefined;
 }
 
-function readRecordValue(value: unknown): Record<string, unknown> | undefined {
+function readRecordValue(value: any): Record<string, any> | undefined {
   return value && typeof value === "object" && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
+    ? (value as Record<string, any>)
     : undefined;
 }
 
-function readFiniteNumberValue(value: unknown): number | undefined {
+function readFiniteNumberValue(value: any): number | undefined {
   return typeof value === "number" && Number.isFinite(value) ? value : undefined;
 }
 
-function readNullableNumberValue(value: unknown): number | null | undefined {
+function readNullableNumberValue(value: any): number | null | undefined {
   if (value === null) {
     return null;
   }
@@ -342,7 +342,7 @@ function isCommandToolName(name: string | undefined): boolean {
 
 export function buildCommandOutputFromToolResultEvent(evt: {
   stream: string;
-  data: Record<string, unknown>;
+  data: Record<string, any>;
 }): Parameters<NonNullable<GetReplyOptions["onCommandOutput"]>>[0] | undefined {
   if (evt.stream !== "tool" || readStringValue(evt.data.phase) !== "result") {
     return undefined;
@@ -664,7 +664,7 @@ function rollbackFallbackSelectionStateIfUnchanged(
  * Build a human-friendly rate-limit message from a FallbackSummaryError.
  * Includes a countdown when the soonest cooldown expiry is known.
  */
-function buildRateLimitCooldownMessage(err: unknown): string {
+function buildRateLimitCooldownMessage(err: any): string {
   const codexUsageLimitMessage = extractCodexUsageLimitErrorMessage(err);
   if (codexUsageLimitMessage) {
     return codexUsageLimitMessage;
@@ -692,7 +692,7 @@ function buildRateLimitCooldownMessage(err: unknown): string {
   return "⚠️ All models are temporarily rate-limited. Please try again in a few minutes.";
 }
 
-function resolveBillingFailureReplyText(err: unknown): string {
+function resolveBillingFailureReplyText(err: any): string {
   const billingFailure = isFallbackSummaryError(err)
     ? err.attempts.find(
         (attempt) =>
@@ -715,7 +715,7 @@ function resolveBillingFailureReplyText(err: unknown): string {
   );
 }
 
-function extractCodexUsageLimitErrorMessage(err: unknown): string | undefined {
+function extractCodexUsageLimitErrorMessage(err: any): string | undefined {
   if (isFallbackSummaryError(err)) {
     for (const attempt of err.attempts) {
       const message = extractCodexUsageLimitMessage(attempt.error);
@@ -756,7 +756,7 @@ function extractCodexUsageLimitMessage(text: string): string | undefined {
   return message.length > 500 ? `${message.slice(0, 497)}...` : message;
 }
 
-function isPureTransientRateLimitSummary(err: unknown): boolean {
+function isPureTransientRateLimitSummary(err: any): boolean {
   return (
     isFallbackSummaryError(err) &&
     err.attempts.length > 0 &&
@@ -767,7 +767,7 @@ function isPureTransientRateLimitSummary(err: unknown): boolean {
   );
 }
 
-function hasBillingAttemptSummary(err: unknown): boolean {
+function hasBillingAttemptSummary(err: any): boolean {
   return (
     isFallbackSummaryError(err) &&
     err.attempts.length > 0 &&
@@ -796,7 +796,7 @@ type ExternalRunFailureReply = {
   isGenericRunnerFailure: boolean;
 };
 
-type ExternalRunFailureInput = string | { message: string; error?: unknown };
+type ExternalRunFailureInput = string | { message: string; error?: any };
 
 function isNonDirectConversationContext(ctx: TemplateContext): boolean {
   const chatType = normalizeLowercaseStringOrEmpty(ctx.ChatType);
@@ -894,7 +894,7 @@ function buildCliBackendTimeoutFailureText(message: string): string | null {
   );
 }
 
-function buildMissingApiKeyFailureText(input: { message: string; error?: unknown }): string | null {
+function buildMissingApiKeyFailureText(input: { message: string; error?: any }): string | null {
   const normalizedMessage = collapseRepeatedFailureDetail(input.message);
   const provider = isMissingProviderAuthError(input.error)
     ? input.error.provider.trim().toLowerCase()
@@ -917,7 +917,7 @@ function buildMissingApiKeyFailureText(input: { message: string; error?: unknown
   return "⚠️ Missing API key for the selected provider on the gateway. Configure provider auth, then try again.";
 }
 
-function buildAuthProfileFailoverFailureText(error: unknown): string | null {
+function buildAuthProfileFailoverFailureText(error: any): string | null {
   if (!isFailoverError(error) || !error.provider || !error.authProfileFailure) {
     return null;
   }
@@ -1014,7 +1014,7 @@ function markAgentRunFailureReplyPayload<T extends ReplyPayload>(payload: T): T 
 
 /** Converts known agent-run failures into user-facing reply payloads. */
 export function buildKnownAgentRunFailureReplyPayload(params: {
-  err: unknown;
+  err: any;
   sessionCtx: TemplateContext;
   resolvedVerboseLevel: VerboseLevel | undefined;
   cfg?: OpenClawConfig;
@@ -1237,7 +1237,7 @@ function formatContextWindowLabel(tokens: number): string {
   return `${Math.round(tokens / 1024)}k`;
 }
 
-function normalizePositiveContextTokens(value: unknown): number | undefined {
+function normalizePositiveContextTokens(value: any): number | undefined {
   if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
     return undefined;
   }
@@ -1411,10 +1411,10 @@ function buildRestartLifecycleReplyText(): string {
 }
 
 function resolveRestartLifecycleError(
-  err: unknown,
+  err: any,
 ): GatewayDrainingError | CommandLaneClearedError | undefined {
   const pending = [err];
-  const seen = new Set<unknown>();
+  const seen = new Set<any>();
 
   let pendingIndex = 0;
   while (pendingIndex < pending.length) {
@@ -1458,7 +1458,7 @@ function isReplyOperationRestartAbort(replyOperation?: ReplyOperation): boolean 
 function emitModelFallbackStepLifecycle(params: {
   runId: string;
   sessionKey?: string;
-  step: Record<string, unknown>;
+  step: Record<string, any>;
 }) {
   emitAgentEvent({
     runId: params.runId,
@@ -2619,7 +2619,7 @@ export async function runAgentTurnWithFallback(params: {
                         const toolCallId = readStringValue(evt.data.toolCallId) ?? "";
                         const args =
                           evt.data.args && typeof evt.data.args === "object"
-                            ? (evt.data.args as Record<string, unknown>)
+                            ? (evt.data.args as Record<string, any>)
                             : undefined;
                         if (
                           sourceRepliesAreToolOnly &&
@@ -2878,7 +2878,7 @@ export async function runAgentTurnWithFallback(params: {
                                   text,
                                 });
                               })
-                              .catch((err: unknown) => {
+                              .catch((err: any) => {
                                 // Keep chain healthy after an error so later tool results still deliver.
                                 logVerbose(`tool result delivery failed: ${String(err)}`);
                               });
@@ -2971,7 +2971,7 @@ export async function runAgentTurnWithFallback(params: {
         deferredLifecycleError ??
         userFacingErrorPayload ??
         (embeddedError ? "Agent run failed" : undefined);
-      const emitSettledLifecycleError = (error: Error, extraData?: Record<string, unknown>) => {
+      const emitSettledLifecycleError = (error: Error, extraData?: Record<string, any>) => {
         if (settledLifecycleTerminal) {
           settledLifecycleTerminal.emit("error", error, extraData);
           return;

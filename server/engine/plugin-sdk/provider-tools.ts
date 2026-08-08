@@ -3,8 +3,8 @@ import type { TSchema } from "typebox";
 
 export type AnyAgentTool = {
   name: string;
-  parameters?: unknown;
-  [key: string]: unknown;
+  parameters?: any;
+  [key: string]: any;
 };
 
 export type ProviderNormalizeToolSchemasContext = {
@@ -45,16 +45,16 @@ function cleanSchemaForGemini(schema: TSchema): TSchema {
 }
 
 function stripUnsupportedSchemaKeywords(
-  _schema: unknown,
+  _schema: any,
   _keywords: ReadonlySet<string>,
-): unknown {
+): any {
   return _schema;
 }
 
 export { cleanSchemaForGemini, stripUnsupportedSchemaKeywords };
 
 export function findUnsupportedSchemaKeywords(
-  schema: unknown,
+  schema: any,
   path: string,
   unsupportedKeywords: ReadonlySet<string>,
 ): string[] {
@@ -66,11 +66,11 @@ export function findUnsupportedSchemaKeywords(
       findUnsupportedSchemaKeywords(item, `${path}[${index}]`, unsupportedKeywords),
     );
   }
-  const record = schema as Record<string, unknown>;
+  const record = schema as Record<string, any>;
   const violations: string[] = [];
   const properties =
     record.properties && typeof record.properties === "object" && !Array.isArray(record.properties)
-      ? (record.properties as Record<string, unknown>)
+      ? (record.properties as Record<string, any>)
       : undefined;
   if (properties) {
     for (const [key, value] of Object.entries(properties)) {
@@ -148,7 +148,7 @@ export function normalizeOpenAIToolSchemas(
   });
 }
 
-function normalizeOpenAIStrictCompatSchema(schema: unknown): TSchema {
+function normalizeOpenAIStrictCompatSchema(schema: any): TSchema {
   return normalizeOpenAIStrictCompatSchemaRecursive(schema, {
     promoteEmptyObject: true,
   }) as TSchema;
@@ -208,14 +208,14 @@ const OPENAI_STRICT_COMPAT_SCHEMA_NESTED_KEYS = new Set([
   "unevaluatedProperties",
 ]);
 
-function normalizeOpenAIStrictCompatSchemaMap(schema: unknown): unknown {
+function normalizeOpenAIStrictCompatSchemaMap(schema: any): any {
   if (!schema || typeof schema !== "object" || Array.isArray(schema)) {
     return schema;
   }
 
   let changed = false;
-  const normalized: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(schema as Record<string, unknown>)) {
+  const normalized: Record<string, any> = {};
+  for (const [key, value] of Object.entries(schema as Record<string, any>)) {
     const next = normalizeOpenAIStrictCompatSchemaRecursive(value, {
       promoteEmptyObject: false,
     });
@@ -226,9 +226,9 @@ function normalizeOpenAIStrictCompatSchemaMap(schema: unknown): unknown {
 }
 
 function normalizeOpenAIStrictCompatSchemaRecursive(
-  schema: unknown,
+  schema: any,
   options: NormalizeOpenAIStrictCompatOptions,
-): unknown {
+): any {
   if (Array.isArray(schema)) {
     let changed = false;
     const normalized = schema.map((entry) => {
@@ -244,9 +244,9 @@ function normalizeOpenAIStrictCompatSchemaRecursive(
     return schema;
   }
 
-  const record = schema as Record<string, unknown>;
+  const record = schema as Record<string, any>;
   let changed = false;
-  const normalized: Record<string, unknown> = {};
+  const normalized: Record<string, any> = {};
   for (const [key, value] of Object.entries(record)) {
     const next = OPENAI_STRICT_COMPAT_SCHEMA_MAP_KEYS.has(key)
       ? normalizeOpenAIStrictCompatSchemaMap(value)
@@ -290,7 +290,7 @@ function normalizeOpenAIStrictCompatSchemaRecursive(
     normalized.properties &&
     typeof normalized.properties === "object" &&
     !Array.isArray(normalized.properties) &&
-    Object.keys(normalized.properties as Record<string, unknown>).length === 0;
+    Object.keys(normalized.properties as Record<string, any>).length === 0;
 
   if (normalized.type === "object" && !Array.isArray(normalized.required) && hasEmptyProperties) {
     normalized.required = [];
@@ -310,7 +310,7 @@ function normalizeOpenAIStrictCompatSchemaRecursive(
 }
 
 export function findOpenAIStrictSchemaViolations(
-  schema: unknown,
+  schema: any,
   path: string,
   options?: { requireObjectRoot?: boolean },
 ): string[] {
@@ -329,7 +329,7 @@ export function findOpenAIStrictSchemaViolations(
     return [];
   }
 
-  const record = schema as Record<string, unknown>;
+  const record = schema as Record<string, any>;
   const violations: string[] = [];
   for (const key of ["anyOf", "oneOf", "allOf"] as const) {
     if (Array.isArray(record[key])) {
@@ -342,7 +342,7 @@ export function findOpenAIStrictSchemaViolations(
 
   const properties =
     record.properties && typeof record.properties === "object" && !Array.isArray(record.properties)
-      ? (record.properties as Record<string, unknown>)
+      ? (record.properties as Record<string, any>)
       : undefined;
 
   if (record.type === "object") {
@@ -393,11 +393,11 @@ export function inspectOpenAIToolSchemas(
 
 export const DEEPSEEK_UNSUPPORTED_SCHEMA_KEYWORDS = new Set(["anyOf", "oneOf"]);
 
-function isNullSchemaVariant(schema: unknown): boolean {
+function isNullSchemaVariant(schema: any): boolean {
   if (!schema || typeof schema !== "object" || Array.isArray(schema)) {
     return false;
   }
-  const record = schema as Record<string, unknown>;
+  const record = schema as Record<string, any>;
   if (record.type === "null") {
     return true;
   }
@@ -410,7 +410,7 @@ function isNullSchemaVariant(schema: unknown): boolean {
   return Array.isArray(record.enum) && record.enum.length === 1 && record.enum[0] === null;
 }
 
-function normalizeDeepSeekSchema(schema: unknown): unknown {
+function normalizeDeepSeekSchema(schema: any): any {
   if (Array.isArray(schema)) {
     let changed = false;
     const normalized = schema.map((entry) => {
@@ -424,7 +424,7 @@ function normalizeDeepSeekSchema(schema: unknown): unknown {
     return schema;
   }
 
-  const record = schema as Record<string, unknown>;
+  const record = schema as Record<string, any>;
   const unionKey = Array.isArray(record.anyOf)
     ? "anyOf"
     : Array.isArray(record.oneOf)
@@ -432,7 +432,7 @@ function normalizeDeepSeekSchema(schema: unknown): unknown {
       : undefined;
 
   let changed = false;
-  const normalized: Record<string, unknown> = {};
+  const normalized: Record<string, any> = {};
   for (const [key, value] of Object.entries(record)) {
     if (key === "anyOf" || key === "oneOf") {
       if (key === unionKey) {
@@ -449,14 +449,14 @@ function normalizeDeepSeekSchema(schema: unknown): unknown {
     return changed ? normalized : schema;
   }
 
-  const variants = record[unionKey] as unknown[];
+  const variants = record[unionKey] as any[];
   const normalizedVariants = variants.map((entry) => normalizeDeepSeekSchema(entry));
   const nonNullVariants = normalizedVariants.filter((entry) => !isNullSchemaVariant(entry));
   const hasNullVariant = nonNullVariants.length < normalizedVariants.length;
 
   if (nonNullVariants.length > 1 && nonNullVariants.every((entry) => isStringConstVariant(entry))) {
     const enumValues = nonNullVariants.map((entry) => (entry as { const: string }).const);
-    const merged: Record<string, unknown> = {
+    const merged: Record<string, any> = {
       ...normalized,
       type: "string",
       enum: enumValues,
@@ -473,20 +473,20 @@ function normalizeDeepSeekSchema(schema: unknown): unknown {
   }
 
   const merged = {
-    ...(selected as Record<string, unknown>),
+    ...(selected as Record<string, any>),
     ...normalized,
   };
   if (hasNullVariant) {
-    (merged as Record<string, unknown>).nullable = true;
+    (merged as Record<string, any>).nullable = true;
   }
   return merged;
 }
 
-function isStringConstVariant(entry: unknown): entry is { const: string } {
+function isStringConstVariant(entry: any): entry is { const: string } {
   if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
     return false;
   }
-  const record = entry as Record<string, unknown>;
+  const record = entry as Record<string, any>;
   return typeof record.const === "string";
 }
 

@@ -227,7 +227,7 @@ describe("applyExtraParamsToAgent Moonshot", () => {
     expect(payload).not.toHaveProperty("n");
     expect(payload).not.toHaveProperty("presence_penalty");
     expect(payload).not.toHaveProperty("frequency_penalty");
-    const messages = payload.messages as Array<Record<string, unknown>>;
+    const messages = payload.messages as Array<Record<string, any>>;
     expect(messages[0].reasoning_content).toBe("");
   });
 
@@ -260,7 +260,7 @@ describe("applyExtraParamsToAgent Moonshot", () => {
     });
 
     expect(payload.thinking).toEqual({ type: "enabled" });
-    const messages = payload.messages as Array<Record<string, unknown>>;
+    const messages = payload.messages as Array<Record<string, any>>;
     expect(messages[1].reasoning_content).toBe("");
     expect(messages[2].reasoning_content).toBe("native reasoning");
     expect(messages[3]).not.toHaveProperty("reasoning_content");
@@ -283,7 +283,7 @@ describe("applyExtraParamsToAgent Moonshot", () => {
       },
     });
 
-    const messages = payload.messages as Array<Record<string, unknown>>;
+    const messages = payload.messages as Array<Record<string, any>>;
     expect(messages[0].reasoning_content).toBeUndefined();
   });
 });

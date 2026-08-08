@@ -4,10 +4,10 @@ import { describe, expect, it, vi } from "vitest";
 import { subscribeEmbeddedAgentSession } from "./embedded-agent-subscribe.js";
 
 type StubSession = {
-  subscribe: (fn: (evt: unknown) => void) => () => void;
+  subscribe: (fn: (evt: any) => void) => () => void;
 };
 
-type SessionEventHandler = (evt: unknown) => void;
+type SessionEventHandler = (evt: any) => void;
 
 describe("subscribeEmbeddedAgentSession", () => {
   it("does not call onBlockReplyFlush when callback is not provided", () => {

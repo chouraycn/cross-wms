@@ -4,7 +4,7 @@ export type TimelineEvent = {
   duration?: number;
   type: string;
   label: string;
-  data?: Record<string, unknown>;
+  data?: Record<string, any>;
   parentId?: string;
   children?: TimelineEvent[];
 };
@@ -40,7 +40,7 @@ export class DiagnosticsTimeline {
     return newEvent;
   }
 
-  startEvent(label: string, type: string, data?: Record<string, unknown>): TimelineEvent {
+  startEvent(label: string, type: string, data?: Record<string, any>): TimelineEvent {
     return this.addEvent({ label, type, data });
   }
 

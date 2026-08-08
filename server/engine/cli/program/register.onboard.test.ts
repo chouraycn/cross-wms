@@ -64,13 +64,13 @@ describe("registerOnboardCommand", () => {
     await program.parseAsync(args, { from: "user" });
   }
 
-  function setupWizardOptions(callIndex = 0): Record<string, unknown> {
+  function setupWizardOptions(callIndex = 0): Record<string, any> {
     const call = setupWizardCommandMock.mock.calls[callIndex];
     if (!call) {
       throw new Error(`expected setup wizard call ${callIndex}`);
     }
     expect(call[1]).toBe(runtime);
-    return call[0] as Record<string, unknown>;
+    return call[0] as Record<string, any>;
   }
 
   beforeEach(() => {

@@ -7,7 +7,7 @@ import {
   emitMessageStartAndEndForAssistantText,
 } from "./embedded-agent-subscribe.e2e-harness.js";
 
-function hasAssistantEvent(calls: Array<unknown[]>): boolean {
+function hasAssistantEvent(calls: Array<any[]>): boolean {
   // The gate buffers assistant stream events; tests use this helper to assert
   // nothing leaks before the terminal decision resolves.
   return calls.some((call) => {
@@ -16,7 +16,7 @@ function hasAssistantEvent(calls: Array<unknown[]>): boolean {
   });
 }
 
-function hasLifecycleEndEvent(calls: Array<unknown[]>): boolean {
+function hasLifecycleEndEvent(calls: Array<any[]>): boolean {
   return calls.some((call) => {
     const event = call[0] as { stream?: string; data?: { phase?: string } } | undefined;
     return event?.stream === "lifecycle" && event.data?.phase === "end";

@@ -37,7 +37,7 @@ import type {
 // ============================================================================
 
 // 降级：cross-wms 未提供 sanitizeDiagnosticPayload，使用 redactPayload 替代
-function sanitizeDiagnosticPayload(value: unknown): unknown {
+function sanitizeDiagnosticPayload(value: any): any {
   return redactPayload(value);
 }
 
@@ -65,7 +65,7 @@ function redactSupportString(value: string, _redaction: SupportRedactionContext)
 // 降级：cross-wms 未提供 AgentMessage，定义本地最小类型
 type AgentMessage = {
   role: string;
-  content: unknown;
+  content: any;
 };
 
 // ============================================================================
@@ -84,7 +84,7 @@ type DiagnosticSupportBundleContent = {
   bytes: number;
 };
 
-function jsonSupportBundleFile(pathName: string, value: unknown): DiagnosticSupportBundleFile {
+function jsonSupportBundleFile(pathName: string, value: any): DiagnosticSupportBundleFile {
   const content = safeJsonStringify(value) ?? "{}";
   return {
     path: pathName,
@@ -160,7 +160,7 @@ type RuntimeTrajectoryContext = {
   tools?: TrajectoryToolDefinition[];
 };
 
-type JsonRecord = Record<string, unknown>;
+type JsonRecord = Record<string, any>;
 type TrajectoryExportRedaction = SupportRedactionContext & {
   workspaceDir: string;
 };
@@ -174,11 +174,11 @@ const MAX_TRAJECTORY_TOTAL_EVENTS = 250_000;
 const MAX_TRAJECTORY_SESSION_FILE_BYTES = 50 * 1024 * 1024;
 const MAX_TRAJECTORY_WARNING_ROWS = 20;
 
-function isFiniteNumber(value: unknown): value is number {
+function isFiniteNumber(value: any): value is number {
   return typeof value === "number" && Number.isFinite(value);
 }
 
-function isSessionFileEntry(value: unknown): value is FileEntry {
+function isSessionFileEntry(value: any): value is FileEntry {
   if (!isRecord(value) || typeof value.type !== "string") {
     return false;
   }
@@ -204,7 +204,7 @@ function parseSessionEntries(content: string): {
       continue;
     }
     try {
-      const parsed = JSON.parse(line) as unknown;
+      const parsed = JSON.parse(line) as any;
       if (!isSessionFileEntry(parsed)) {
         warnings.push({
           source: "session",
@@ -230,17 +230,17 @@ function parseSessionEntries(content: string): {
 
 function migrateLegacySessionEntries(entries: FileEntry[]): void {
   const header = entries.find((entry): entry is SessionHeader =>
-    isRecord(entry) && (entry as Record<string, unknown>).type === "session",
+    isRecord(entry) && (entry as Record<string, any>).type === "session",
   );
   const version: number =
-    (isRecord(header) ? ((header as Record<string, unknown>).version as number | undefined) : undefined) ?? 1;
+    (isRecord(header) ? ((header as Record<string, any>).version as number | undefined) : undefined) ?? 1;
   if (version < 2) {
     // Older session logs predate entry ids. Synthetic ids preserve branch order
     // long enough to export the reachable suffix without mutating source files.
     let previousId: string | null = null;
     let index = 0;
     for (const entry of entries) {
-      const mutable = entry as unknown as Record<string, unknown>;
+      const mutable = entry as unknown as Record<string, any>;
       if (mutable.type === "session") {
         mutable.version = 2;
         continue;
@@ -256,8 +256,8 @@ function migrateLegacySessionEntries(entries: FileEntry[]): void {
         typeof mutable.firstKeptEntryIndex === "number"
       ) {
         const target = entries[mutable.firstKeptEntryIndex];
-        if (target && isRecord(target) && (target as Record<string, unknown>).type !== "session") {
-          mutable.firstKeptEntryId = (target as unknown as Record<string, unknown>).id;
+        if (target && isRecord(target) && (target as Record<string, any>).type !== "session") {
+          mutable.firstKeptEntryId = (target as unknown as Record<string, any>).id;
         }
         delete mutable.firstKeptEntryIndex;
       }
@@ -265,7 +265,7 @@ function migrateLegacySessionEntries(entries: FileEntry[]): void {
   }
   if (version < 3) {
     for (const entry of entries) {
-      const mutable = entry as unknown as Record<string, unknown>;
+      const mutable = entry as unknown as Record<string, any>;
       if (mutable.type === "session") {
         mutable.version = 3;
         continue;
@@ -294,15 +294,15 @@ async function readSessionBranch(filePath: string): Promise<{
   migrateLegacySessionEntries(fileEntries);
   const header =
     fileEntries.find((entry): entry is SessionHeader =>
-      isRecord(entry) && (entry as Record<string, unknown>).type === "session",
+      isRecord(entry) && (entry as Record<string, any>).type === "session",
     ) ?? null;
   const entries = fileEntries.filter(
     (entry): entry is SessionEntry => {
       if (!isRecord(entry)) return false;
-      if ((entry as Record<string, unknown>).type === "session") return false;
+      if ((entry as Record<string, any>).type === "session") return false;
       if (!isCanonicalSessionTranscriptEntry(entry)) return false;
-      if (typeof (entry as { id?: unknown }).id !== "string") return false;
-      const ts = (entry as { timestamp?: unknown }).timestamp;
+      if (typeof (entry as { id?: any }).id !== "string") return false;
+      const ts = (entry as { timestamp?: any }).timestamp;
       return typeof ts === "string" || typeof ts === "number";
     },
   );
@@ -379,7 +379,7 @@ async function parseJsonlFile<T>(
     maxBytes: number;
     maxEvents: number;
     include?: (value: T) => boolean;
-    validate?: (value: unknown) => value is T;
+    validate?: (value: any) => value is T;
   },
 ): Promise<{ events: T[]; warnings: JsonlParseWarning[] }> {
   let stat;
@@ -413,7 +413,7 @@ async function parseJsonlFile<T>(
       );
     }
     try {
-      const value = JSON.parse(row) as unknown;
+      const value = JSON.parse(row) as any;
       if (!params.validate || params.validate(value)) {
         const typedValue = value as T;
         if (!params.include || params.include(typedValue)) {
@@ -439,7 +439,7 @@ async function parseJsonlFile<T>(
   return { events: parsed, warnings };
 }
 
-function isRuntimeTrajectoryEvent(value: unknown): value is TrajectoryEvent {
+function isRuntimeTrajectoryEvent(value: any): value is TrajectoryEvent {
   if (!isRecord(value)) {
     return false;
   }
@@ -479,7 +479,7 @@ function summarizeJsonlWarnings(warnings: JsonlParseWarning[]): TrajectoryBundle
   return [...byKey.values()];
 }
 
-function normalizeTimestamp(value: unknown): string {
+function normalizeTimestamp(value: any): string {
   if (typeof value === "number" && Number.isFinite(value)) {
     const parsed = new Date(value);
     if (!Number.isNaN(parsed.getTime())) {
@@ -510,7 +510,7 @@ function resolveMessageEventType(message: AgentMessage): string {
 
 function extractAssistantToolCalls(
   message: AgentMessage,
-): Array<{ id?: string; name?: string; arguments?: unknown; index: number }> {
+): Array<{ id?: string; name?: string; arguments?: any; index: number }> {
   if (message.role !== "assistant" || !Array.isArray(message.content)) {
     return [];
   }
@@ -519,12 +519,12 @@ function extractAssistantToolCalls(
       return [];
     }
     const typedBlock = block as {
-      type?: unknown;
-      id?: unknown;
-      name?: unknown;
-      arguments?: unknown;
-      input?: unknown;
-      parameters?: unknown;
+      type?: any;
+      id?: any;
+      name?: any;
+      arguments?: any;
+      input?: any;
+      parameters?: any;
     };
     const blockType =
       typeof typedBlock.type === "string" ? typedBlock.type.trim().toLowerCase() : "";
@@ -556,8 +556,8 @@ function buildTranscriptEvents(params: {
   const events: TrajectoryEvent[] = [];
   let seq = 0;
   for (const entry of params.entries) {
-    const record = entry as unknown as Record<string, unknown>;
-    const push = (type: string, data?: Record<string, unknown>) => {
+    const record = entry as unknown as Record<string, any>;
+    const push = (type: string, data?: Record<string, any>) => {
       events.push({
         traceSchema: "openclaw-trajectory",
         schemaVersion: 1,
@@ -737,7 +737,7 @@ function maybeRedactPathString(value: string, redaction: TrajectoryExportRedacti
   return workspaceRedacted;
 }
 
-function redactLocalPathValues(value: unknown, redaction: TrajectoryExportRedaction): unknown {
+function redactLocalPathValues(value: any, redaction: TrajectoryExportRedaction): any {
   if (typeof value === "string") {
     return maybeRedactPathString(value, redaction);
   }
@@ -747,8 +747,8 @@ function redactLocalPathValues(value: unknown, redaction: TrajectoryExportRedact
   if (!value || typeof value !== "object") {
     return value;
   }
-  const record = value as Record<string, unknown>;
-  const next: Record<string, unknown> = {};
+  const record = value as Record<string, any>;
+  const next: Record<string, any> = {};
   for (const [key, entry] of Object.entries(record)) {
     next[key] = redactLocalPathValues(entry, redaction);
   }
@@ -770,9 +770,9 @@ function uniqueRedactedObjectKey(key: string, usedKeys: Set<string>): string {
 }
 
 function redactTrajectoryExportObjectKeys(
-  value: unknown,
+  value: any,
   redaction: TrajectoryExportRedaction,
-): unknown {
+): any {
   if (Array.isArray(value)) {
     return value.map((entry) => redactTrajectoryExportObjectKeys(entry, redaction));
   }
@@ -780,7 +780,7 @@ function redactTrajectoryExportObjectKeys(
     return value;
   }
   const usedKeys = new Set<string>();
-  const next: Record<string, unknown> = {};
+  const next: Record<string, any> = {};
   for (const [key, entry] of Object.entries(value)) {
     const redactedKey = redactToolPayloadText(maybeRedactPathString(key, redaction));
     // Object keys can contain file paths or tool payload snippets too. Preserve
@@ -794,9 +794,9 @@ function redactTrajectoryExportObjectKeys(
 }
 
 function redactTrajectoryExportValue(
-  value: unknown,
+  value: any,
   redaction: TrajectoryExportRedaction,
-): unknown {
+): any {
   const redactedValue = sanitizeTrajectoryExportValue(redactLocalPathValues(value, redaction));
   return redactTrajectoryExportObjectKeys(redactedValue, redaction);
 }
@@ -839,9 +839,9 @@ function normalizePathForMatch(value: string): string {
   return value.replaceAll("\\", "/").trim().toLowerCase();
 }
 
-function collectPotentialPathStrings(value: unknown): string[] {
+function collectPotentialPathStrings(value: any): string[] {
   const found = new Set<string>();
-  const visit = (input: unknown) => {
+  const visit = (input: any) => {
     if (!input || typeof input !== "object") {
       return;
     }
@@ -868,12 +868,12 @@ function collectPotentialPathStrings(value: unknown): string[] {
   return [...found];
 }
 
-function markInvokedSkills(params: { skills: unknown; events: TrajectoryEvent[] }): unknown {
+function markInvokedSkills(params: { skills: any; events: TrajectoryEvent[] }): any {
   if (!params.skills || typeof params.skills !== "object") {
     return params.skills;
   }
   const skillsRecord = params.skills as {
-    entries?: Array<Record<string, unknown>>;
+    entries?: Array<Record<string, any>>;
   };
   if (!Array.isArray(skillsRecord.entries) || skillsRecord.entries.length === 0) {
     return params.skills;

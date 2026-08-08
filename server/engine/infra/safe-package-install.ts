@@ -2,10 +2,10 @@
 
 export function createSafeNpmInstallEnv(
   env: NodeJS.ProcessEnv,
-  options?: Record<string, unknown>,
+  options?: Record<string, any>,
 ): NodeJS.ProcessEnv {
   return { ...env };
 }
-export function createSafeNpmInstallArgs(...args: unknown[]): string[] {
+export function createSafeNpmInstallArgs(...args: any[]): string[] {
   return [];
 }

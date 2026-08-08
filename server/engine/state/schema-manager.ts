@@ -134,7 +134,7 @@ export class SchemaManager {
         });
         this.currentVersion = migration.version;
         logger.info(`[SchemaManager] Migration v${migration.version} ${migration.name} applied successfully`);
-      } catch (err: unknown) {
+      } catch (err: any) {
         const errorMsg = err instanceof Error ? err.message : String(err);
         errors.push({ version: migration.version, name: migration.name, error: errorMsg });
         this.recordMigration(migration, 'failed', startTime, errorMsg);

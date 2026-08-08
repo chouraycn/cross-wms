@@ -11,7 +11,7 @@ export type EmbeddingBatchExecutionParams = {
   pollIntervalMs: number;
   timeoutMs: number;
   concurrency: number;
-  debug?: (message: string, data?: Record<string, unknown>) => void;
+  debug?: (message: string, data?: Record<string, any>) => void;
 };
 
 type EmbeddingBatchGroupRunArgs<TRequest> = {
@@ -24,7 +24,7 @@ type EmbeddingBatchGroupRunArgs<TRequest> = {
 };
 
 type EmbeddingBatchSplitArgs<TRequest> = {
-  error: unknown;
+  error: any;
   group: TRequest[];
   parts: TRequest[][];
   groupIndex: number;
@@ -58,7 +58,7 @@ export async function runEmbeddingBatchGroups<TRequest>(params: {
   concurrency: EmbeddingBatchExecutionParams["concurrency"];
   debugLabel: string;
   debug?: EmbeddingBatchExecutionParams["debug"];
-  shouldSplitGroupOnError?: (error: unknown, group: TRequest[]) => boolean;
+  shouldSplitGroupOnError?: (error: any, group: TRequest[]) => boolean;
   onSplitGroup?: (args: EmbeddingBatchSplitArgs<TRequest>) => void;
   runGroup: (args: EmbeddingBatchGroupRunArgs<TRequest>) => Promise<void>;
 }): Promise<Map<string, number[]>> {

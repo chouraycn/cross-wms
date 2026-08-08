@@ -18,7 +18,7 @@ import { hasUsableOAuthCredential } from "./oauth-shared.js";
 /**
  * Detect provider errors caused by single-use OAuth refresh token races.
  */
-export function isRefreshTokenReusedError(error: unknown): boolean {
+export function isRefreshTokenReusedError(error: any): boolean {
   const message = String(error instanceof Error ? error.message : String(error ?? "")).toLowerCase();
   return (
     message.includes("refresh_token_reused") ||
@@ -106,7 +106,7 @@ function resolveTokenExpiryState(expires: number | undefined): "valid" | "expire
  * Returns null when the profile cannot be resolved or credentials are missing.
  */
 export async function resolveApiKeyForProfile(params: {
-  cfg?: unknown;
+  cfg?: any;
   store: AuthProfileStore;
   profileId: string;
   agentDir?: string;
@@ -160,12 +160,12 @@ export async function resolveApiKeyForProfile(params: {
   if (isOAuthCredential(cred)) {
     let credential = cred;
     const needsRefresh =
-      forceRefresh === true || !hasUsableOAuthCredential(credential as unknown as Record<string, unknown>);
+      forceRefresh === true || !hasUsableOAuthCredential(credential as unknown as Record<string, any>);
     if (needsRefresh) {
       const refreshed = await refreshOAuthCredentialForRuntime({ credential });
       if (refreshed) {
         credential = refreshed;
-      } else if (!hasUsableOAuthCredential(credential as unknown as Record<string, unknown>)) {
+      } else if (!hasUsableOAuthCredential(credential as unknown as Record<string, any>)) {
         return null;
       }
     }

@@ -2,15 +2,15 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { OutputRuntimeEnv } from "../runtime.js";
 
-function createJsonRuntime(writes: unknown[]): OutputRuntimeEnv {
+function createJsonRuntime(writes: any[]): OutputRuntimeEnv {
   return {
-    log: (...args: unknown[]) => writes.push(args.length === 1 ? args[0] : args),
+    log: (...args: any[]) => writes.push(args.length === 1 ? args[0] : args),
     error: vi.fn(),
     exit: vi.fn((code: number) => {
       throw new Error(`exit ${code}`);
     }),
     writeStdout: (value: string) => writes.push(value),
-    writeJson: (value: unknown) => writes.push(value),
+    writeJson: (value: any) => writes.push(value),
   };
 }
 
@@ -90,7 +90,7 @@ describe("runPluginsListCommand", () => {
     });
 
     const { runPluginsListCommand } = await import("./plugins-list-command.js");
-    const writes: unknown[] = [];
+    const writes: any[] = [];
 
     await runPluginsListCommand({ json: true }, createJsonRuntime(writes));
 

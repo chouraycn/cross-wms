@@ -17,7 +17,7 @@ interface AlertDialogProps {
   onOpenChange?: (open: boolean) => void
   children?: React.ReactNode
   className?: string
-  [key: string]: unknown
+  [key: string]: any
 }
 
 function AlertDialog({
@@ -57,7 +57,7 @@ function AlertDialogTrigger({ asChild = false, children, ...props }: { asChild?:
         ;(child.props as { onClick?: (e: React.MouseEvent) => void }).onClick?.(e)
         setOpen(true)
       },
-    } as Record<string, unknown>)
+    } as Record<string, any>)
   }
   return (
     <button type="button" onClick={() => setOpen(true)} {...props}>
@@ -92,7 +92,7 @@ function AlertDialogContent({
         mx: 'auto',
         width: '100%',
       }}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     >
       {children}
     </Box>
@@ -105,7 +105,7 @@ function AlertDialogHeader({ className, ...props }: React.ComponentProps<'div'>)
       component="div"
       data-slot="alert-dialog-header"
       className={cn('flex flex-col gap-1.5 text-center sm:text-left', className)}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     />
   )
 }
@@ -116,7 +116,7 @@ function AlertDialogFooter({ className, ...props }: React.ComponentProps<'div'>)
       component="div"
       data-slot="alert-dialog-footer"
       className={cn('flex flex-col-reverse gap-2 sm:flex-row sm:justify-end', className)}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     />
   )
 }
@@ -127,7 +127,7 @@ function AlertDialogMedia({ className, ...props }: React.ComponentProps<'div'>) 
       component="div"
       data-slot="alert-dialog-media"
       className={cn('mb-2 inline-flex size-10 items-center justify-center rounded-md bg-muted', className)}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     />
   )
 }
@@ -139,7 +139,7 @@ function AlertDialogTitle({ className, ...props }: React.ComponentProps<'div'> &
       data-slot="alert-dialog-title"
       className={cn('text-base font-medium', className)}
       sx={{ fontWeight: 500 }}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     />
   )
 }
@@ -151,7 +151,7 @@ function AlertDialogDescription({ className, ...props }: React.ComponentProps<'d
       data-slot="alert-dialog-description"
       className={cn('text-sm', className)}
       sx={{ fontSize: '0.875rem', color: 'text.secondary' }}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     />
   )
 }
@@ -165,7 +165,7 @@ function AlertDialogAction({ className, onClick, children, ...props }: React.Com
         onClick?.(e as unknown as React.MouseEvent<HTMLButtonElement>)
         setOpen(false)
       }}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     >
       {children}
     </Button>
@@ -182,7 +182,7 @@ function AlertDialogCancel({ className, onClick, children, ...props }: React.Com
         onClick?.(e as unknown as React.MouseEvent<HTMLButtonElement>)
         setOpen(false)
       }}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     >
       {children}
     </Button>

@@ -90,11 +90,11 @@ export function isSetupSingleAccountPromotionKey(key: string): boolean {
 /**
  * Lists root-level channel keys that could be promoted into account config.
  */
-export function collectSingleAccountPromotionEntries(channel: Record<string, unknown>): {
+export function collectSingleAccountPromotionEntries(channel: Record<string, any>): {
   entries: string[];
   hasNamedAccounts: boolean;
 } {
-  const hasNamedAccounts = Object.keys((channel.accounts as Record<string, unknown>) ?? {}).some(
+  const hasNamedAccounts = Object.keys((channel.accounts as Record<string, any>) ?? {}).some(
     Boolean,
   );
   const entries = Object.entries(channel)

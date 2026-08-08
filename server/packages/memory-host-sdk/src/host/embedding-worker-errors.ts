@@ -29,7 +29,7 @@ export function createLocalEmbeddingWorkerFailureError(params: {
   reason: LocalEmbeddingWorkerFailureReason;
   exitCode?: number | null;
   signal?: NodeJS.Signals | null;
-  cause?: unknown;
+  cause?: any;
 }): LocalEmbeddingWorkerFailureError {
   return Object.assign(new Error(params.message), {
     code: params.code,

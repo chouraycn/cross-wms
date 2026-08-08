@@ -10,7 +10,7 @@ import { parseJsonValue, serializeJson, parseJsonArray, integerToBoolean, boolea
 /**
  * 将 cron payload 序列化为 JSON 兼容的对象
  */
-export function encodePayload(payload: CronPayload): Record<string, unknown> {
+export function encodePayload(payload: CronPayload): Record<string, any> {
   if (payload.kind === "systemEvent") {
     return {
       kind: "systemEvent",
@@ -41,7 +41,7 @@ export function encodePayload(payload: CronPayload): Record<string, unknown> {
 /**
  * 从原始记录中重建 cron payload，对于无效行返回 null
  */
-export function decodePayload(row: Record<string, unknown>): CronPayload | null {
+export function decodePayload(row: Record<string, any>): CronPayload | null {
   const kind = row.kind ?? row.payload_kind;
   if (kind === "systemEvent") {
     const text = row.text ?? row.payload_message;
@@ -110,14 +110,14 @@ export function decodePayload(row: Record<string, unknown>): CronPayload | null 
 }
 
 function parseCommandPayloadMessage(raw: string): Omit<Extract<CronPayload, { kind: "command" }>, "kind" | "timeoutSeconds"> | null {
-  const parsed = parseJsonValue<unknown>(raw, undefined);
+  const parsed = parseJsonValue<any>(raw, undefined);
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
     return null;
   }
-  return parseCommandPayloadFromRecord(parsed as Record<string, unknown>);
+  return parseCommandPayloadFromRecord(parsed as Record<string, any>);
 }
 
-function parseCommandPayloadFromRecord(record: Record<string, unknown>): Omit<Extract<CronPayload, { kind: "command" }>, "kind" | "timeoutSeconds"> | null {
+function parseCommandPayloadFromRecord(record: Record<string, any>): Omit<Extract<CronPayload, { kind: "command" }>, "kind" | "timeoutSeconds"> | null {
   if (
     !Array.isArray(record.argv) ||
     record.argv.length === 0 ||
@@ -129,7 +129,7 @@ function parseCommandPayloadFromRecord(record: Record<string, unknown>): Omit<Ex
   const env =
     record.env && typeof record.env === "object" && !Array.isArray(record.env)
       ? Object.fromEntries(
-          Object.entries(record.env as Record<string, unknown>).filter(
+          Object.entries(record.env as Record<string, any>).filter(
             (entry): entry is [string, string] => typeof entry[1] === "string",
           ),
         )

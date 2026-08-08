@@ -39,7 +39,7 @@ export type NodeSession = {
   caps?: readonly string[];
   commands?: readonly string[];
   approvedCommands?: readonly string[];
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 /**
@@ -198,13 +198,13 @@ const PLATFORM_DEFAULTS: Record<string, string[]> = {
     ...SYSTEM_COMMANDS,
     ...SCREEN_COMMANDS,
   ],
-  // Fail-safe: unknown metadata should not receive host exec defaults.
+  // Fail-safe: any metadata should not receive host exec defaults.
   unknown: [...UNKNOWN_PLATFORM_COMMANDS],
 };
 
 type PlatformId = "ios" | "android" | "macos" | "windows" | "linux" | "unknown";
 
-const CANONICAL_PLATFORM_IDS = new Set<Exclude<PlatformId, "unknown">>([
+const CANONICAL_PLATFORM_IDS = new Set<Exclude<PlatformId, "any">>([
   "ios",
   "android",
   "macos",
@@ -213,7 +213,7 @@ const CANONICAL_PLATFORM_IDS = new Set<Exclude<PlatformId, "unknown">>([
 ]);
 
 const DEVICE_FAMILY_TOKEN_RULES: ReadonlyArray<{
-  id: Exclude<PlatformId, "unknown">;
+  id: Exclude<PlatformId, "any">;
   tokens: readonly string[];
 }> = [
   { id: "ios", tokens: ["iphone", "ipad", "ios"] },
@@ -223,15 +223,15 @@ const DEVICE_FAMILY_TOKEN_RULES: ReadonlyArray<{
   { id: "linux", tokens: ["linux"] },
 ] as const;
 
-function resolvePlatformIdByExactMatch(value: string): Exclude<PlatformId, "unknown"> | undefined {
-  if (CANONICAL_PLATFORM_IDS.has(value as Exclude<PlatformId, "unknown">)) {
-    return value as Exclude<PlatformId, "unknown">;
+function resolvePlatformIdByExactMatch(value: string): Exclude<PlatformId, "any"> | undefined {
+  if (CANONICAL_PLATFORM_IDS.has(value as Exclude<PlatformId, "any">)) {
+    return value as Exclude<PlatformId, "any">;
   }
   return undefined;
 }
 
 function platformMatchesDeviceFamily(
-  platformId: Exclude<PlatformId, "unknown">,
+  platformId: Exclude<PlatformId, "any">,
   family: string,
 ): boolean {
   switch (platformId) {
@@ -252,7 +252,7 @@ function platformMatchesDeviceFamily(
 function resolvePlatformIdByNativeLabel(
   platform: string,
   deviceFamily: string,
-): Exclude<PlatformId, "unknown"> | undefined {
+): Exclude<PlatformId, "any"> | undefined {
   if (/^(?:ios|ipados) \d+(?:\.\d+){0,2}$/.test(platform)) {
     return /^(?:iphone|ipad|ios)$/.test(deviceFamily) ? "ios" : undefined;
   }
@@ -267,7 +267,7 @@ function resolvePlatformIdByNativeLabel(
 
 function resolvePlatformIdByDeviceFamily(
   value: string,
-): Exclude<PlatformId, "unknown"> | undefined {
+): Exclude<PlatformId, "any"> | undefined {
   for (const rule of DEVICE_FAMILY_TOKEN_RULES) {
     if (rule.tokens.some((token) => value.includes(token))) {
       return rule.id;

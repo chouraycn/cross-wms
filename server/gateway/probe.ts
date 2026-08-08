@@ -79,7 +79,7 @@ export type GatewayProbeResult = {
   close: GatewayProbeClose | null;
   auth: GatewayProbeAuthSummary;
   server: GatewayProbeServerSummary;
-  health: unknown;
+  health: any;
   versionCompatible: boolean;
 };
 
@@ -255,7 +255,7 @@ export async function probeGateway(opts: {
   let close: GatewayProbeClose | null = null;
   let auth = emptyProbeAuth();
   let server = emptyProbeServer();
-  let health: unknown = null;
+  let health: any = null;
   let versionCompatible = true;
   let authMetadataPresent = false;
 
@@ -343,7 +343,7 @@ export async function probeGateway(opts: {
     }
 
     // 提取服务端版本
-    const healthObj = health as Record<string, unknown> | null;
+    const healthObj = health as Record<string, any> | null;
     const serverVersion =
       typeof healthObj?.version === "string" ? healthObj.version : null;
     server = {

@@ -85,11 +85,11 @@ function compactionCheckpointEntry(
   };
 }
 
-function isCompactOperationEvent(message: unknown, phase: "start" | "end") {
+function isCompactOperationEvent(message: any, phase: "start" | "end") {
   const candidate = message as {
-    event?: unknown;
-    payload?: { operation?: unknown; phase?: unknown };
-    type?: unknown;
+    event?: any;
+    payload?: { operation?: any; phase?: any };
+    type?: any;
   };
   return (
     candidate.type === "event" &&
@@ -242,7 +242,7 @@ test("sessions.compaction.* lists checkpoints and branches or restores from comp
     branchedSession
       .buildSessionContext()
       .messages.some(
-        (message) => (message as { content?: unknown }).content === "future turn after checkpoint",
+        (message) => (message as { content?: any }).content === "future turn after checkpoint",
       ),
   ).toBe(false);
 
@@ -250,7 +250,7 @@ test("sessions.compaction.* lists checkpoints and branches or restores from comp
     string,
     {
       parentSessionKey?: string;
-      compactionCheckpoints?: unknown[];
+      compactionCheckpoints?: any[];
       sessionId?: string;
     }
   >;
@@ -269,7 +269,7 @@ test("sessions.compaction.* lists checkpoints and branches or restores from comp
         entry: {
           sessionId: string;
           sessionFile?: string;
-          compactionCheckpoints?: unknown[];
+          compactionCheckpoints?: any[];
           totalTokens?: number;
           totalTokensFresh?: boolean;
         };
@@ -284,7 +284,7 @@ test("sessions.compaction.* lists checkpoints and branches or restores from comp
       entry: {
         sessionId: string;
         sessionFile?: string;
-        compactionCheckpoints?: unknown[];
+        compactionCheckpoints?: any[];
         totalTokens?: number;
         totalTokensFresh?: boolean;
       };
@@ -314,13 +314,13 @@ test("sessions.compaction.* lists checkpoints and branches or restores from comp
     restoredSession
       .buildSessionContext()
       .messages.some(
-        (message) => (message as { content?: unknown }).content === "future turn after checkpoint",
+        (message) => (message as { content?: any }).content === "future turn after checkpoint",
       ),
   ).toBe(false);
 
   const storeAfterRestore = JSON.parse(await fs.readFile(storePath, "utf-8")) as Record<
     string,
-    { compactionCheckpoints?: unknown[]; sessionId?: string }
+    { compactionCheckpoints?: any[]; sessionId?: string }
   >;
   expect(storeAfterRestore["agent:main:main"]?.sessionId).toBe(restored.payload?.sessionId);
   expect(storeAfterRestore["agent:main:main"]?.compactionCheckpoints).toHaveLength(1);
@@ -488,8 +488,8 @@ test("sessions.compact without maxLines runs embedded manual compaction for chec
     | {
         agentHarnessId?: string;
         allowGatewaySubagentBinding?: boolean;
-        bashElevated?: unknown;
-        config?: unknown;
+        bashElevated?: any;
+        config?: any;
         model?: string;
         provider?: string;
         reasoningLevel?: string;
@@ -506,7 +506,7 @@ test("sessions.compact without maxLines runs embedded manual compaction for chec
     throw new Error("expected embedded compaction call");
   }
   const callConfig = compactionCall.config as {
-    agents?: { defaults?: { model?: { primary?: unknown }; workspace?: unknown } };
+    agents?: { defaults?: { model?: { primary?: any }; workspace?: any } };
   };
   expect(compactionCall.sessionId).toBe("sess-main");
   expect(compactionCall.sessionKey).toBe("agent:main:main");
@@ -537,7 +537,7 @@ test("sessions.compact without maxLines runs embedded manual compaction for chec
     string,
     {
       compactionCount?: number;
-      contextBudgetStatus?: unknown;
+      contextBudgetStatus?: any;
       totalTokens?: number;
       totalTokensFresh?: boolean;
     }
@@ -591,7 +591,7 @@ test("sessions.compact treats Codex native compaction start as pending, not comp
     ok: true;
     key: string;
     compacted: boolean;
-    result?: { details?: unknown };
+    result?: { details?: any };
   }>(ws, "sessions.compact", {
     key: "main",
   });

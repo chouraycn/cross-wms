@@ -228,7 +228,7 @@ type SessionStatusRouteDetails = {
 
 const INTERNAL_SESSION_KEY_ORIGIN_PREFIXES = new Set(["main", "cron", "subagent", "acp"]);
 
-function readRouteThreadId(value: unknown): string | number | undefined {
+function readRouteThreadId(value: any): string | number | undefined {
   if (typeof value === "string" && value.trim()) {
     return value.trim();
   }
@@ -509,7 +509,7 @@ export function createSessionStatusTool(opts?: {
     description: describeSessionStatusTool(),
     parameters: SessionStatusToolSchema,
     execute: async (_toolCallId, args) => {
-      const params = args as Record<string, unknown>;
+      const params = args as Record<string, any>;
       const cfg = opts?.config ?? getRuntimeConfig();
       const { mainKey, alias, effectiveRequesterKey } = resolveSandboxedSessionToolContext({
         cfg,

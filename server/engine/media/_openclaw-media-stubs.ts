@@ -46,7 +46,7 @@ export function logVerbose(message: string): void {
 // ============================================================================
 
 /** Trims string input and returns null for non-strings or empty strings. */
-export function normalizeNullableString(value: unknown): string | null {
+export function normalizeNullableString(value: any): string | null {
   return normalizeOptionalString(value) ?? null;
 }
 

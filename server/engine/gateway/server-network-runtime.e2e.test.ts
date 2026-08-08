@@ -32,14 +32,14 @@ const NETWORK_GATEWAY_ENV_KEYS = [
   "no_proxy",
 ] as const;
 
-function isEnvHttpProxyDispatcher(dispatcher: unknown): boolean {
+function isEnvHttpProxyDispatcher(dispatcher: any): boolean {
   return (
     (dispatcher as { constructor?: { name?: string } } | undefined)?.constructor?.name ===
     "EnvHttpProxyAgent"
   );
 }
 
-async function closeTestDispatcher(dispatcher: unknown): Promise<void> {
+async function closeTestDispatcher(dispatcher: any): Promise<void> {
   const close = (dispatcher as { close?: () => Promise<void> | void } | undefined)?.close;
   if (typeof close !== "function") {
     return;

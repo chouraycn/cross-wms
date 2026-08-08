@@ -6,21 +6,21 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function getRuntimeAuthProfileStoreSnapshot(..._args: unknown[]): unknown {
+export function getRuntimeAuthProfileStoreSnapshot(..._args: any[]): any {
   return undefined;
 }
-export function hasRuntimeAuthProfileStoreSnapshot(..._args: unknown[]): unknown {
+export function hasRuntimeAuthProfileStoreSnapshot(..._args: any[]): any {
   return false;
 }
-export function hasAnyRuntimeAuthProfileStoreSource(..._args: unknown[]): unknown {
+export function hasAnyRuntimeAuthProfileStoreSource(..._args: any[]): any {
   return false;
 }
-export function replaceRuntimeAuthProfileStoreSnapshots(..._args: unknown[]): unknown {
+export function replaceRuntimeAuthProfileStoreSnapshots(..._args: any[]): any {
   return undefined;
 }
-export function clearRuntimeAuthProfileStoreSnapshots(..._args: unknown[]): unknown {
+export function clearRuntimeAuthProfileStoreSnapshots(..._args: any[]): any {
   return undefined;
 }
-export function setRuntimeAuthProfileStoreSnapshot(..._args: unknown[]): unknown {
+export function setRuntimeAuthProfileStoreSnapshot(..._args: any[]): any {
   return undefined;
 }

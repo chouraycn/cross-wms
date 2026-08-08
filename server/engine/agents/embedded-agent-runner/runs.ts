@@ -316,7 +316,7 @@ export function queueEmbeddedAgentMessageWithOutcome(
   logMessageQueued({ sessionId, source: "embedded-agent-runner" });
   void prepared.handle
     .queueMessage(text, options ?? { steeringMode: "all" })
-    .catch((err: unknown) => {
+    .catch((err: any) => {
       diag.debug(
         `queue message rejected after enqueue: sessionId=${sessionId} err=${formatQueueError(err)}`,
       );
@@ -330,7 +330,7 @@ export function queueEmbeddedAgentMessageWithOutcome(
   };
 }
 
-function formatQueueError(err: unknown): string {
+function formatQueueError(err: any): string {
   return err instanceof Error ? err.message : String(err);
 }
 

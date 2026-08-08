@@ -35,12 +35,12 @@ function normalizePluginRegistryAliasKey(value: string): string {
   return normalizePluginRegistryAlias(value).toLowerCase();
 }
 
-function collectObjectKeys(value: Record<string, unknown> | undefined): readonly string[] {
+function collectObjectKeys(value: Record<string, any> | undefined): readonly string[] {
   return value ? Object.keys(value) : [];
 }
 
 function listPluginRegistryNormalizerAliases(plugin: PluginManifestRecord): readonly string[] {
-  const p = plugin as Record<string, unknown>;
+  const p = plugin as Record<string, any>;
   const providers = Array.isArray(p.providers) ? p.providers : [];
   const channels = Array.isArray(p.channels) ? p.channels : [];
   const cliBackends = Array.isArray(p.cliBackends) ? p.cliBackends : [];
@@ -51,9 +51,9 @@ function listPluginRegistryNormalizerAliases(plugin: PluginManifestRecord): read
   const setupProviderIds = setup?.providers?.map((provider) => provider.id).filter(Boolean) ?? [];
   const setupCliBackends = setup?.cliBackends ?? [];
   const modelCatalog = p.modelCatalog as
-    | { providers?: Record<string, unknown>; aliases?: Record<string, unknown> }
+    | { providers?: Record<string, any>; aliases?: Record<string, any> }
     | undefined;
-  const providerAuthAliases = p.providerAuthAliases as Record<string, unknown> | undefined;
+  const providerAuthAliases = p.providerAuthAliases as Record<string, any> | undefined;
   return [
     String(p.id ?? ""),
     ...(providers as readonly string[]),

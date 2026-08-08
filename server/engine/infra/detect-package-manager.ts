@@ -11,11 +11,11 @@ type DetectedPackageManager = "pnpm" | "bun" | "npm";
 
 /** 读取并裁剪 packageManager spec，空白或非字符串值返回 null。 */
 async function readPackageManagerSpec(root: string): Promise<string | null> {
-  const parsed = await tryReadJson<unknown>(path.join(root, "package.json"));
+  const parsed = await tryReadJson<any>(path.join(root, "package.json"));
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
     return null;
   }
-  const value = (parsed as { packageManager?: unknown }).packageManager;
+  const value = (parsed as { packageManager?: any }).packageManager;
   if (typeof value !== "string") {
     return null;
   }

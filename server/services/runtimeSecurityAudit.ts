@@ -61,12 +61,12 @@ export interface RuntimeAuditResult {
 // ===================== 辅助函数 =====================
 
 /** 判断值是否为非空字符串 */
-function isNonEmptyString(value: unknown): value is string {
+function isNonEmptyString(value: any): value is string {
   return typeof value === 'string' && value.trim().length > 0;
 }
 
 /** 规范化为小写字符串（非字符串返回 undefined） */
-function normalizeLowercase(value: unknown): string | undefined {
+function normalizeLowercase(value: any): string | undefined {
   if (typeof value !== 'string') {
     return undefined;
   }
@@ -77,7 +77,7 @@ function normalizeLowercase(value: unknown): string | undefined {
  * 读取 settings.json 配置。
  * 文件不存在或解析失败时返回空对象，避免审计流程因配置读取错误而中断。
  */
-function readSettingsConfig(): Record<string, unknown> {
+function readSettingsConfig(): Record<string, any> {
   const settingsPath = AppPaths.settingsFile;
   try {
     if (!fs.existsSync(settingsPath)) {
@@ -86,7 +86,7 @@ function readSettingsConfig(): Record<string, unknown> {
     const raw = fs.readFileSync(settingsPath, 'utf-8');
     const parsed = JSON.parse(raw);
     if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-      return parsed as Record<string, unknown>;
+      return parsed as Record<string, any>;
     }
     return {};
   } catch (err) {
@@ -99,12 +99,12 @@ function readSettingsConfig(): Record<string, unknown> {
 }
 
 /** 从配置中按点分路径读取嵌套字段（如 "tools.exec.security"） */
-function getField(cfg: Record<string, unknown>, dottedPath: string): unknown {
+function getField(cfg: Record<string, any>, dottedPath: string): any {
   const segments = dottedPath.split('.');
-  let current: unknown = cfg;
+  let current: any = cfg;
   for (const seg of segments) {
     if (current && typeof current === 'object' && !Array.isArray(current)) {
-      current = (current as Record<string, unknown>)[seg];
+      current = (current as Record<string, any>)[seg];
     } else {
       return undefined;
     }
@@ -116,7 +116,7 @@ function getField(cfg: Record<string, unknown>, dottedPath: string): unknown {
  * 判断绑定地址是否为非 localhost。
  * 仅当显式绑定到 0.0.0.0、:: 或具体外部 IP/域名时返回 true。
  */
-function isNonLocalhostBind(bind: unknown): boolean {
+function isNonLocalhostBind(bind: any): boolean {
   const value = normalizeLowercase(bind);
   if (!value) {
     return false;
@@ -171,7 +171,7 @@ function isModeTooOpen(mode: number, isDir: boolean): boolean {
  * a) YOLO 检测：检查 security=full 与 ask=off 同时存在的危险组合。
  * 这种组合等同于让 agent 在无任何确认的情况下执行任意命令。
  */
-function collectYoloFindings(cfg: Record<string, unknown>): RuntimeAuditFinding[] {
+function collectYoloFindings(cfg: Record<string, any>): RuntimeAuditFinding[] {
   const findings: RuntimeAuditFinding[] = [];
 
   // 在多个可能的路径上查找 security/ask 配置
@@ -215,7 +215,7 @@ function collectYoloFindings(cfg: Record<string, unknown>): RuntimeAuditFinding[
  * b) Exec 运行时漂移检测：检查 exec 相关配置是否被修改为危险形态。
  * 包括允许所有命令、无沙箱、sandbox 配置为 noop 等。
  */
-function collectExecRuntimeDriftFindings(cfg: Record<string, unknown>): RuntimeAuditFinding[] {
+function collectExecRuntimeDriftFindings(cfg: Record<string, any>): RuntimeAuditFinding[] {
   const findings: RuntimeAuditFinding[] = [];
 
   // 检查 exec.security === 'full'（单独出现，未与 ask=off 组合时仍需告警）
@@ -285,7 +285,7 @@ function collectExecRuntimeDriftFindings(cfg: Record<string, unknown>): RuntimeA
  * c) 开放通道 + exec 检测：检查 dmPolicy/groupPolicy 为 open 的通道是否可达 exec 工具。
  * 开放通道意味着外部任意用户可触达 agent，若 exec 可用将构成远程命令执行风险。
  */
-function collectOpenChannelsWithExecFindings(cfg: Record<string, unknown>): RuntimeAuditFinding[] {
+function collectOpenChannelsWithExecFindings(cfg: Record<string, any>): RuntimeAuditFinding[] {
   const findings: RuntimeAuditFinding[] = [];
 
   // 判定 exec 工具是否可用（默认 deny，仅当显式启用时才视为可用）
@@ -301,11 +301,11 @@ function collectOpenChannelsWithExecFindings(cfg: Record<string, unknown>): Runt
   const channels = getField(cfg, 'channels');
   if (channels && typeof channels === 'object' && !Array.isArray(channels)) {
     const seen = new WeakSet<object>();
-    const visit = (value: unknown, scope: string): void => {
+    const visit = (value: any, scope: string): void => {
       if (!value || typeof value !== 'object' || Array.isArray(value)) {
         return;
       }
-      const record = value as Record<string, unknown>;
+      const record = value as Record<string, any>;
       if (seen.has(record)) {
         return;
       }
@@ -322,7 +322,7 @@ function collectOpenChannelsWithExecFindings(cfg: Record<string, unknown>): Runt
         }
       }
     };
-    for (const [channelId, channelValue] of Object.entries(channels as Record<string, unknown>)) {
+    for (const [channelId, channelValue] of Object.entries(channels as Record<string, any>)) {
       visit(channelValue, `channels.${channelId}`);
     }
   }
@@ -349,14 +349,14 @@ function collectOpenChannelsWithExecFindings(cfg: Record<string, unknown>): Runt
  * d) 网关 HTTP 无 auth 检测：检查网关是否在无认证模式下监听非 localhost。
  * 无认证 + 非本地监听 = 任意网络访问者可调用网关接口。
  */
-function collectGatewayHttpNoAuthFindings(cfg: Record<string, unknown>): RuntimeAuditFinding[] {
+function collectGatewayHttpNoAuthFindings(cfg: Record<string, any>): RuntimeAuditFinding[] {
   const findings: RuntimeAuditFinding[] = [];
 
   const gateway = getField(cfg, 'gateway');
   if (!gateway || typeof gateway !== 'object' || Array.isArray(gateway)) {
     return findings;
   }
-  const gatewayCfg = gateway as Record<string, unknown>;
+  const gatewayCfg = gateway as Record<string, any>;
 
   const bind = gatewayCfg.bind ?? 'loopback';
   const nonLocal = isNonLocalhostBind(bind);
@@ -368,7 +368,7 @@ function collectGatewayHttpNoAuthFindings(cfg: Record<string, unknown>): Runtime
   const auth = gatewayCfg.auth;
   const authRecord =
     auth && typeof auth === 'object' && !Array.isArray(auth)
-      ? (auth as Record<string, unknown>)
+      ? (auth as Record<string, any>)
       : {};
   const authMode = normalizeLowercase(authRecord.mode);
   const hasToken = isNonEmptyString(authRecord.token);
@@ -460,7 +460,7 @@ function collectFilesystemPermissionFindings(): RuntimeAuditFinding[] {
  * f) 沙箱危险配置检测：检查沙箱是否被显式禁用或配置为危险模式。
  * sandbox=disabled/none 等同于关闭沙箱隔离边界。
  */
-function collectSandboxDangerousConfigFindings(cfg: Record<string, unknown>): RuntimeAuditFinding[] {
+function collectSandboxDangerousConfigFindings(cfg: Record<string, any>): RuntimeAuditFinding[] {
   const findings: RuntimeAuditFinding[] = [];
 
   const sandboxMode = normalizeLowercase(getField(cfg, 'sandbox.mode')) ??

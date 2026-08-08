@@ -25,17 +25,17 @@ function getAssistantToolCallBlocks(messages: AgentMessage[]) {
   // Helper inspects all legacy/current tool-call block spellings in assistant content.
   const assistant = messages[0] as Extract<AgentMessage, { role: "assistant" }> | undefined;
   if (!assistant || !Array.isArray(assistant.content)) {
-    return [] as Array<{ type?: unknown; id?: unknown; name?: unknown }>;
+    return [] as Array<{ type?: any; id?: any; name?: any }>;
   }
   return assistant.content.filter((block) => {
-    const type = (block as { type?: unknown }).type;
+    const type = (block as { type?: any }).type;
     return typeof type === "string" && TOOL_CALL_BLOCK_TYPES.has(type);
-  }) as Array<{ type?: unknown; id?: unknown; name?: unknown }>;
+  }) as Array<{ type?: any; id?: any; name?: any }>;
 }
 
 describe("sanitizeToolUseResultPairing", () => {
   const buildDuplicateToolResultInput = (opts?: {
-    middleMessage?: unknown;
+    middleMessage?: any;
     secondText?: string;
   }): AgentMessage[] =>
     castAgentMessages([
@@ -693,7 +693,7 @@ describe("sanitizeToolCallInputs legacy block filtering", () => {
 
 describe("sanitizeToolCallInputs allowed-name filtering", () => {
   function sanitizeAssistantContent(
-    content: unknown[],
+    content: any[],
     options?: Parameters<typeof sanitizeToolCallInputs>[1],
   ) {
     return sanitizeToolCallInputs(
@@ -708,7 +708,7 @@ describe("sanitizeToolCallInputs allowed-name filtering", () => {
   }
 
   function sanitizeAssistantToolCalls(
-    content: unknown[],
+    content: any[],
     options?: Parameters<typeof sanitizeToolCallInputs>[1],
   ) {
     return getAssistantToolCallBlocks(sanitizeAssistantContent(content, options));
@@ -780,7 +780,7 @@ describe("sanitizeToolCallInputs allowed-name filtering", () => {
   ])("$name", ({ content, options, expectedIds }) => {
     const toolCalls = sanitizeAssistantToolCalls(content, options);
     const ids = toolCalls
-      .map((toolCall) => (toolCall as { id?: unknown }).id)
+      .map((toolCall) => (toolCall as { id?: any }).id)
       .filter((id): id is string => typeof id === "string");
 
     expect(ids).toEqual(expectedIds);
@@ -843,7 +843,7 @@ describe("sanitizeToolCallInputs allowed-name filtering", () => {
     ]);
     const out = sanitizeToolCallInputs(input);
     const toolCalls = getAssistantToolCallBlocks(out);
-    const ids = toolCalls.map((t) => (t as { id?: unknown }).id);
+    const ids = toolCalls.map((t) => (t as { id?: any }).id);
     expect(ids).toEqual(["call_ok", "call_partial|fc_123", "call_empty|fc_789"]);
     expect(toolCalls[1]).not.toHaveProperty("partialJson");
     expect(toolCalls[2]).not.toHaveProperty("partialJson");
@@ -870,7 +870,7 @@ describe("sanitizeToolCallInputs allowed-name filtering", () => {
     const toolCalls = getAssistantToolCallBlocks(out);
     expect(toolCalls).toHaveLength(1);
     expect(toolCalls[0]).not.toHaveProperty("partialJson");
-    expect((toolCalls[0] as { arguments?: unknown }).arguments).toEqual({
+    expect((toolCalls[0] as { arguments?: any }).arguments).toEqual({
       attachments: [{ content: "secret data" }],
     });
   });
@@ -915,7 +915,7 @@ describe("sanitizeToolCallInputs allowed-name filtering", () => {
     const out = sanitizeToolCallInputs(input);
     const assistant = out[0] as Extract<AgentMessage, { role: "assistant" }>;
     const types = Array.isArray(assistant.content)
-      ? assistant.content.map((block) => (block as { type?: unknown }).type)
+      ? assistant.content.map((block) => (block as { type?: any }).type)
       : [];
     expect(types).toEqual(["text", "toolUse"]);
   });
@@ -1266,7 +1266,7 @@ describe("sanitizeToolCallInputs allowed-name filtering", () => {
   ])("$name", ({ content, options, expectedNames }) => {
     const toolCalls = sanitizeAssistantToolCalls(content, options);
     const names = toolCalls
-      .map((toolCall) => (toolCall as { name?: unknown }).name)
+      .map((toolCall) => (toolCall as { name?: any }).name)
       .filter((name): name is string => typeof name === "string");
     expect(names).toEqual(expectedNames);
   });
@@ -1287,7 +1287,7 @@ describe("sanitizeToolCallInputs allowed-name filtering", () => {
     ]);
 
     const out = sanitizeToolCallInputs(input);
-    const toolCalls = getAssistantToolCallBlocks(out) as Array<Record<string, unknown>>;
+    const toolCalls = getAssistantToolCallBlocks(out) as Array<Record<string, any>>;
 
     expect(toolCalls).toHaveLength(1);
     expect(Object.hasOwn(toolCalls[0] ?? {}, "input")).toBe(true);
@@ -1314,12 +1314,12 @@ describe("sanitizeToolCallInputs allowed-name filtering", () => {
     ]);
 
     const out = sanitizeToolCallInputs(input);
-    const toolCalls = getAssistantToolCallBlocks(out) as Array<Record<string, unknown>>;
+    const toolCalls = getAssistantToolCallBlocks(out) as Array<Record<string, any>>;
 
     expect(toolCalls).toHaveLength(1);
     expect((toolCalls[0] ?? {}).name).toBe("SESSIONS_SPAWN");
-    const inputObj = (toolCalls[0]?.input ?? {}) as Record<string, unknown>;
-    const attachments = (inputObj.attachments ?? []) as Array<Record<string, unknown>>;
+    const inputObj = (toolCalls[0]?.input ?? {}) as Record<string, any>;
+    const attachments = (inputObj.attachments ?? []) as Array<Record<string, any>>;
     expect(attachments[0]?.content).toBe("SECRET");
   });
   it("preserves other block properties when trimming tool names", () => {
@@ -1328,9 +1328,9 @@ describe("sanitizeToolCallInputs allowed-name filtering", () => {
     ]);
 
     expect(toolCalls).toHaveLength(1);
-    expect((toolCalls[0] as { name?: unknown }).name).toBe("read");
-    expect((toolCalls[0] as { id?: unknown }).id).toBe("call_1");
-    expect((toolCalls[0] as { arguments?: unknown }).arguments).toEqual({ path: "/tmp/test" });
+    expect((toolCalls[0] as { name?: any }).name).toBe("read");
+    expect((toolCalls[0] as { id?: any }).id).toBe("call_1");
+    expect((toolCalls[0] as { arguments?: any }).arguments).toEqual({ path: "/tmp/test" });
   });
 });
 
@@ -1348,7 +1348,7 @@ describe("stripToolResultDetails", () => {
       { role: "user", content: "hello" },
     ]);
 
-    const out = stripToolResultDetails(input) as unknown as Array<Record<string, unknown>>;
+    const out = stripToolResultDetails(input) as unknown as Array<Record<string, any>>;
 
     expect(Object.hasOwn(out[0] ?? {}, "details")).toBe(false);
     expect((out[0] ?? {}).role).toBe("toolResult");

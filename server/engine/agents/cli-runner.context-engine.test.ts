@@ -121,13 +121,13 @@ function buildPreparedContext(contextEngine: ContextEngine): PreparedCliRunConte
 function expectMessageText(message: AgentMessage | undefined, expected: string): void {
   // Context engines may use legacy string content or structured text blocks.
   expect(message).toBeDefined();
-  const content = (message as { content?: unknown } | undefined)?.content;
+  const content = (message as { content?: any } | undefined)?.content;
   if (typeof content === "string") {
     expect(content).toBe(expected);
     return;
   }
   expect(Array.isArray(content)).toBe(true);
-  expect((content as unknown[] | undefined)?.[0]).toMatchObject({ type: "text", text: expected });
+  expect((content as any[] | undefined)?.[0]).toMatchObject({ type: "text", text: expected });
 }
 
 describe("runPreparedCliAgent context engine lifecycle", () => {

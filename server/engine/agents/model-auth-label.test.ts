@@ -13,8 +13,8 @@ const mocks = vi.hoisted(() => ({
     () => null,
   ),
   resolveEnvApiKey: vi.fn<() => { apiKey: string; source: string } | null>(() => null),
-  readClaudeCliCredentialsCached: vi.fn<(options?: unknown) => unknown>(() => null),
-  readCodexCliCredentialsCached: vi.fn<(options?: unknown) => unknown>(() => null),
+  readClaudeCliCredentialsCached: vi.fn<(options?: any) => unknown>(() => null),
+  readCodexCliCredentialsCached: vi.fn<(options?: any) => unknown>(() => null),
 }));
 
 vi.mock("./auth-profiles.js", () => ({

@@ -189,27 +189,27 @@ vi.mock("../process/supervisor/index.js", () => {
   };
 });
 
-function buildPreparedSystemRunPayload(rawInvokeParams: unknown) {
+function buildPreparedSystemRunPayload(rawInvokeParams: any) {
   const invoke = (rawInvokeParams ?? {}) as {
     params?: {
-      command?: unknown;
-      rawCommand?: unknown;
-      cwd?: unknown;
-      agentId?: unknown;
-      sessionKey?: unknown;
+      command?: any;
+      rawCommand?: any;
+      cwd?: any;
+      agentId?: any;
+      sessionKey?: any;
     };
   };
   const params = invoke.params ?? {};
   return buildSystemRunPreparePayload(params);
 }
 
-async function writeExecApprovalsConfig(config: Record<string, unknown>) {
+async function writeExecApprovalsConfig(config: Record<string, any>) {
   const approvalsPath = path.join(process.env.HOME ?? "", ".openclaw", "exec-approvals.json");
   await fs.mkdir(path.dirname(approvalsPath), { recursive: true });
   await fs.writeFile(approvalsPath, JSON.stringify(config, null, 2));
 }
 
-function acceptedApprovalResponse(params: unknown) {
+function acceptedApprovalResponse(params: any) {
   return { status: "accepted", id: (params as { id?: string })?.id };
 }
 
@@ -286,7 +286,7 @@ function createElevatedAllowlistExecTool() {
 }
 
 async function expectGatewayExecWithoutApproval(options: {
-  config: Record<string, unknown>;
+  config: Record<string, any>;
   command: string;
   ask?: "always" | "on-miss" | "off";
   security?: "allowlist" | "full";
@@ -335,8 +335,8 @@ async function expectGatewayAskAlwaysPrompt(options: {
 }
 
 function mockAcceptedApprovalFlow(options: {
-  onAgent?: (params: Record<string, unknown>) => void;
-  onNodeInvoke?: (params: unknown) => unknown;
+  onAgent?: (params: Record<string, any>) => void;
+  onNodeInvoke?: (params: any) => unknown;
 }) {
   vi.mocked(callGatewayTool).mockImplementation(async (method, _opts, params) => {
     if (method === "exec.approval.request") {
@@ -346,7 +346,7 @@ function mockAcceptedApprovalFlow(options: {
       return { decision: "allow-once" };
     }
     if (method === "agent" && options.onAgent) {
-      options.onAgent(params as Record<string, unknown>);
+      options.onAgent(params as Record<string, any>);
       return { status: "ok" };
     }
     if (method === "node.invoke" && options.onNodeInvoke) {
@@ -380,16 +380,16 @@ function mockNoApprovalRouteRegistration() {
   });
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error(`expected ${label}`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 function expectRecordFields(
-  record: Record<string, unknown> | undefined,
-  expected: Record<string, unknown>,
+  record: Record<string, any> | undefined,
+  expected: Record<string, any>,
 ) {
   if (!record) {
     throw new Error("expected record");
@@ -443,8 +443,8 @@ describe("exec approvals", () => {
   });
 
   it("reuses approval id as the node runId", async () => {
-    let invokeParams: unknown;
-    let agentParams: unknown;
+    let invokeParams: any;
+    let agentParams: any;
 
     mockAcceptedApprovalFlow({
       onAgent: (params) => {
@@ -678,7 +678,7 @@ describe("exec approvals", () => {
 
   it("uses exec-approvals defaults to suppress gateway prompts", async () => {
     const cases: Array<{
-      config: Record<string, unknown>;
+      config: Record<string, any>;
       ask?: "always" | "on-miss" | "off";
       security?: "allowlist" | "full";
     }> = [
@@ -942,7 +942,7 @@ describe("exec approvals", () => {
   });
 
   it("starts an internal agent follow-up after approved gateway exec completes without an external route", async () => {
-    const agentCalls: Array<Record<string, unknown>> = [];
+    const agentCalls: Array<Record<string, any>> = [];
 
     mockAcceptedApprovalFlow({
       onAgent: (params) => {
@@ -977,7 +977,7 @@ describe("exec approvals", () => {
   });
 
   it("continues the original agent session after approved gateway exec completes with a non-native external route", async () => {
-    const agentCalls: Array<Record<string, unknown>> = [];
+    const agentCalls: Array<Record<string, any>> = [];
 
     mockAcceptedApprovalFlow({
       onAgent: (params) => {
@@ -1022,7 +1022,7 @@ describe("exec approvals", () => {
   });
 
   it("waits inline for native Discord approval and resumes the same session without a second user turn", async () => {
-    const agentCalls: Array<Record<string, unknown>> = [];
+    const agentCalls: Array<Record<string, any>> = [];
     let resolveDecision: ((value: { decision: string }) => void) | undefined;
     const decisionPromise = new Promise<{ decision: string }>((resolve) => {
       resolveDecision = resolve;
@@ -1036,7 +1036,7 @@ describe("exec approvals", () => {
         return await decisionPromise;
       }
       if (method === "agent") {
-        agentCalls.push(params as Record<string, unknown>);
+        agentCalls.push(params as Record<string, any>);
         return { status: "ok" };
       }
       return { ok: true };
@@ -1078,7 +1078,7 @@ describe("exec approvals", () => {
   });
 
   it("waits for native webchat approval and returns approved gateway output as a foreground result", async () => {
-    const agentCalls: Array<Record<string, unknown>> = [];
+    const agentCalls: Array<Record<string, any>> = [];
 
     mockAcceptedApprovalFlow({
       onAgent: (params) => {
@@ -1106,7 +1106,7 @@ describe("exec approvals", () => {
   });
 
   it("keeps approved internal commands asynchronous without a webchat turn source", async () => {
-    const agentCalls: Array<Record<string, unknown>> = [];
+    const agentCalls: Array<Record<string, any>> = [];
 
     mockAcceptedApprovalFlow({
       onAgent: (params) => {
@@ -1138,7 +1138,7 @@ describe("exec approvals", () => {
   });
 
   it("routes denied approval status through the originating session", async () => {
-    const agentCalls: Array<Record<string, unknown>> = [];
+    const agentCalls: Array<Record<string, any>> = [];
 
     vi.mocked(callGatewayTool).mockImplementation(async (method, _opts, params) => {
       if (method === "exec.approval.request") {
@@ -1148,7 +1148,7 @@ describe("exec approvals", () => {
         return { decision: "deny" };
       }
       if (method === "agent") {
-        agentCalls.push(params as Record<string, unknown>);
+        agentCalls.push(params as Record<string, any>);
         return { status: "ok" };
       }
       return { ok: true };
@@ -1391,8 +1391,8 @@ describe("exec approvals", () => {
 
   it("waits for approval registration before returning approval-pending", async () => {
     const calls: string[] = [];
-    let resolveRegistration: ((value: unknown) => void) | undefined;
-    const registrationPromise = new Promise<unknown>((resolve) => {
+    let resolveRegistration: ((value: any) => void) | undefined;
+    const registrationPromise = new Promise<any>((resolve) => {
       resolveRegistration = resolve;
     });
 
@@ -1495,7 +1495,7 @@ describe("exec approvals", () => {
     });
     mockNoApprovalRouteRegistration();
 
-    let systemRunInvoke: unknown;
+    let systemRunInvoke: any;
     const preparedPlan = {
       argv: ["/bin/sh", "-lc", "echo cron-node-ok"],
       cwd: null,

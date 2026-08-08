@@ -23,7 +23,7 @@ const DEFAULT_MODEL = "gpt-5.5";
 type DeepPartial<T> = {
   [K in keyof T]?: T[K] extends (...args: never[]) => unknown
     ? T[K]
-    : T[K] extends ReadonlyArray<unknown>
+    : T[K] extends ReadonlyArray<any>
       ? T[K]
       : T[K] extends object
         ? DeepPartial<T[K]>
@@ -36,13 +36,13 @@ type UntrustedStructuredContextEntries = NonNullable<
   Awaited<BuildContextResult>["UntrustedStructuredContext"]
 >;
 
-function isObject(value: unknown): value is Record<string, unknown> {
+function isObject(value: any): value is Record<string, any> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function mergeDeep<T>(base: T, overrides: DeepPartial<T>): T {
-  const result: Record<string, unknown> = { ...(base as Record<string, unknown>) };
-  for (const [key, overrideValue] of Object.entries(overrides as Record<string, unknown>)) {
+  const result: Record<string, any> = { ...(base as Record<string, any>) };
+  for (const [key, overrideValue] of Object.entries(overrides as Record<string, any>)) {
     if (overrideValue === undefined) {
       continue;
     }
@@ -82,7 +82,7 @@ function createDeprecatedRuntimeConfigError(name: "loadConfig" | "writeConfigFil
   );
 }
 
-function normalizeUntrustedGroupPrompt(value: unknown): string | undefined {
+function normalizeUntrustedGroupPrompt(value: any): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }
@@ -154,8 +154,8 @@ export function createPluginRuntimeMock(overrides: DeepPartial<PluginRuntime> = 
       createTaskFlowSessionMock,
     ) as unknown as PluginRuntime["tasks"]["managedFlows"]["fromToolContext"],
   };
-  const dispatchAssembledChannelTurnMock = vi.fn(async (params: Record<string, unknown>) => {
-    const ctxPayload = params.ctxPayload as Record<string, unknown>;
+  const dispatchAssembledChannelTurnMock = vi.fn(async (params: Record<string, any>) => {
+    const ctxPayload = params.ctxPayload as Record<string, any>;
     const record = params.record as
       | Parameters<PluginRuntime["channel"]["inbound"]["runPreparedReply"]>[0]["record"]
       | undefined;
@@ -165,22 +165,22 @@ export function createPluginRuntimeMock(overrides: DeepPartial<PluginRuntime> = 
     const routeSessionKey = params.routeSessionKey as string;
     const storePath = params.storePath as string;
     const delivery = params.delivery as {
-      deliver: (payload: unknown, info: unknown) => Promise<unknown>;
-      onError?: (err: unknown, info: { kind: string }) => void;
+      deliver: (payload: any, info: any) => Promise<any>;
+      onError?: (err: any, info: { kind: string }) => void;
     };
     const ctxSessionKey = ctxPayload.SessionKey;
     const sessionKey = typeof ctxSessionKey === "string" ? ctxSessionKey : routeSessionKey;
     const dispatchReplyWithBufferedBlockDispatcher =
       params.dispatchReplyWithBufferedBlockDispatcher as (params: {
-        ctx: unknown;
-        cfg: unknown;
+        ctx: any;
+        cfg: any;
         dispatcherOptions: {
-          deliver: (payload: unknown, info: unknown) => Promise<void>;
-          onError?: (err: unknown, info: { kind: string }) => void;
+          deliver: (payload: any, info: any) => Promise<void>;
+          onError?: (err: any, info: { kind: string }) => void;
         };
-        replyOptions?: unknown;
-        replyResolver?: unknown;
-      }) => Promise<unknown>;
+        replyOptions?: any;
+        replyResolver?: any;
+      }) => Promise<any>;
     await recordInboundSession({
       storePath,
       sessionKey,
@@ -196,7 +196,7 @@ export function createPluginRuntimeMock(overrides: DeepPartial<PluginRuntime> = 
       ctx: ctxPayload,
       cfg: params.cfg,
       dispatcherOptions: {
-        ...(params.dispatcherOptions as Record<string, unknown> | undefined),
+        ...(params.dispatcherOptions as Record<string, any> | undefined),
         deliver: async (payload, info) => {
           await delivery.deliver(payload, info);
         },
@@ -571,7 +571,7 @@ export function createPluginRuntimeMock(overrides: DeepPartial<PluginRuntime> = 
           }
         }) as unknown as PluginRuntime["channel"]["reply"]["withReplyDispatcher"],
         finalizeInboundContext: vi.fn(
-          (ctx: Record<string, unknown>) => ctx,
+          (ctx: Record<string, any>) => ctx,
         ) as unknown as PluginRuntime["channel"]["reply"]["finalizeInboundContext"],
         formatAgentEnvelope: vi.fn(
           (opts: { body: string }) => opts.body,
@@ -662,15 +662,15 @@ export function createPluginRuntimeMock(overrides: DeepPartial<PluginRuntime> = 
       },
       debounce: {
         createInboundDebouncer: vi.fn(
-          (params: { onFlush: (items: unknown[]) => Promise<void> }) => ({
-            enqueue: async (item: unknown) => {
+          (params: { onFlush: (items: any[]) => Promise<void> }) => ({
+            enqueue: async (item: any) => {
               await params.onFlush([item]);
             },
             flushKey: vi.fn(),
             cancelKey: vi.fn(() => false),
           }),
         ) as unknown as PluginRuntime["channel"]["debounce"]["createInboundDebouncer"],
-        resolveInboundDebounceMs: vi.fn((params: unknown) => {
+        resolveInboundDebounceMs: vi.fn((params: any) => {
           // Match the production contract so channel plugins that delegate to
           // `core.channel.debounce.resolveInboundDebounceMs({ cfg, channel })`
           // see the same per-channel/global/default precedence in tests as
@@ -684,13 +684,13 @@ export function createPluginRuntimeMock(overrides: DeepPartial<PluginRuntime> = 
                 cfg?: {
                   messages?: {
                     inbound?: {
-                      debounceMs?: unknown;
-                      byChannel?: Record<string, unknown>;
+                      debounceMs?: any;
+                      byChannel?: Record<string, any>;
                     };
                   };
                 };
                 channel?: string;
-                overrideMs?: unknown;
+                overrideMs?: any;
               }
             | undefined;
           const override = typeof p?.overrideMs === "number" ? p.overrideMs : undefined;

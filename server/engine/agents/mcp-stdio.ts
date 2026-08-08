@@ -10,12 +10,12 @@ export interface McpMessage {
   jsonrpc: string;
   id?: number | string;
   method?: string;
-  params?: unknown;
-  result?: unknown;
+  params?: any;
+  result?: any;
   error?: {
     code: number;
     message: string;
-    data?: unknown;
+    data?: any;
   };
 }
 
@@ -24,8 +24,8 @@ export class McpStdioTransport {
   private process: ChildProcessWithoutNullStreams | null = null;
   private messageId = 0;
   private pendingRequests = new Map<number | string, {
-    resolve: (value: unknown) => void;
-    reject: (reason: unknown) => void;
+    resolve: (value: any) => void;
+    reject: (reason: any) => void;
     timeout?: ReturnType<typeof setTimeout>;
   }>();
   private buffer = '';
@@ -123,7 +123,7 @@ export class McpStdioTransport {
     }
   }
 
-  sendRequest(method: string, params?: unknown): Promise<unknown> {
+  sendRequest(method: string, params?: any): Promise<any> {
     if (!this.connected || !this.process) {
       return Promise.reject(new Error('Not connected'));
     }
@@ -154,7 +154,7 @@ export class McpStdioTransport {
     });
   }
 
-  sendNotification(method: string, params?: unknown): void {
+  sendNotification(method: string, params?: any): void {
     if (!this.connected || !this.process) return;
 
     const message: McpMessage = {

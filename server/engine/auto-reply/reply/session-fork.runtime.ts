@@ -35,7 +35,7 @@ type ForkSourceTranscript = {
   appendParentId: string | null;
   appendMode?: "side";
   preserveLeafControl: boolean;
-  branchEntries: unknown[];
+  branchEntries: any[];
   labelsToWrite: Array<{ targetId: string; label: string; timestamp: string }>;
 };
 
@@ -117,7 +117,7 @@ export async function resolveParentForkTokenCountRuntime(params: {
   return maxPositiveTokenCount(cachedTokens, byteEstimateTokens);
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
@@ -134,7 +134,7 @@ function generateEntryId(existingIds: Set<string>): string {
   return id;
 }
 
-function hasAssistantEntry(entries: unknown[]): boolean {
+function hasAssistantEntry(entries: any[]): boolean {
   return entries.some(
     (entry) =>
       isRecord(entry) &&
@@ -145,7 +145,7 @@ function hasAssistantEntry(entries: unknown[]): boolean {
 }
 
 function collectBranchLabels(params: {
-  allEntries: unknown[];
+  allEntries: any[];
   pathEntryIds: Set<string>;
 }): Array<{ targetId: string; label: string; timestamp: string }> {
   const labelsToWrite: Array<{ targetId: string; label: string; timestamp: string }> = [];

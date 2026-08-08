@@ -18,8 +18,8 @@ const waitForAsyncCallbacks = async () => {
 };
 
 describe("subscribeEmbeddedAgentSession block reply rejections", () => {
-  const unhandledRejections: unknown[] = [];
-  const onUnhandledRejection = (reason: unknown) => {
+  const unhandledRejections: any[] = [];
+  const onUnhandledRejection = (reason: any) => {
     // Capture process-level failures so tests prove callback containment.
     unhandledRejections.push(reason);
   };

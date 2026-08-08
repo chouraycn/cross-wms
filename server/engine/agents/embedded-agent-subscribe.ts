@@ -7,6 +7,6 @@
  */
 
 export type { SubscribeEmbeddedAgentSessionParams } from "./embedded-agent-subscribe.types.js";
-export function subscribeEmbeddedAgentSession(..._args: unknown[]): unknown {
+export function subscribeEmbeddedAgentSession(..._args: any[]): any {
   return undefined;
 }

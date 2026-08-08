@@ -11,21 +11,21 @@ export type ToolCallRepairNameResolver = (
 export type PromotedPlainTextToolCallBlockFactory = (
   block: PlainTextToolCallBlock,
   resolvedName: string,
-) => Record<string, unknown>;
+) => Record<string, any>;
 
 /** Controls when standalone assistant text may be rewritten as tool-call content. */
 export type PlainTextToolCallPromotionOptions = {
-  allowedStopReasons?: ReadonlySet<unknown>;
+  allowedStopReasons?: ReadonlySet<any>;
   allowedToolNames: Set<string>;
   createToolCallBlock: PromotedPlainTextToolCallBlockFactory;
-  isRetainableNonTextBlock?: (block: Record<string, unknown>) => boolean;
-  message: unknown;
+  isRetainableNonTextBlock?: (block: Record<string, any>) => boolean;
+  message: any;
   requireAssistantRole?: boolean;
   resolveToolName?: ToolCallRepairNameResolver;
 };
 
-function asRecord(value: unknown): Record<string, unknown> | undefined {
-  return value && typeof value === "object" ? (value as Record<string, unknown>) : undefined;
+function asRecord(value: any): Record<string, any> | undefined {
+  return value && typeof value === "object" ? (value as Record<string, any>) : undefined;
 }
 
 function resolveExactToolName(rawName: string, allowedToolNames: Set<string>): string | null {
@@ -35,14 +35,14 @@ function resolveExactToolName(rawName: string, allowedToolNames: Set<string>): s
 function createPromotedToolCallBlocks(
   text: string,
   options: PlainTextToolCallPromotionOptions,
-): Record<string, unknown>[] | undefined {
+): Record<string, any>[] | undefined {
   const parsedBlocks = parseStandalonePlainTextToolCallBlocks(text);
   if (!parsedBlocks) {
     return undefined;
   }
 
   const resolveToolName = options.resolveToolName ?? resolveExactToolName;
-  const toolCalls: Record<string, unknown>[] = [];
+  const toolCalls: Record<string, any>[] = [];
   for (const block of parsedBlocks) {
     const resolvedName = resolveToolName(block.name, options.allowedToolNames);
     if (!resolvedName) {
@@ -56,7 +56,7 @@ function createPromotedToolCallBlocks(
 function createPromotedToolCallBlocksFromTextParts(
   textParts: readonly string[],
   options: PlainTextToolCallPromotionOptions,
-): Record<string, unknown>[] | undefined {
+): Record<string, any>[] | undefined {
   const exactText = textParts.join("").trim();
   if (!exactText) {
     return [];
@@ -120,9 +120,9 @@ function shouldPromoteMessage(options: PlainTextToolCallPromotionOptions): boole
 /** Extracts candidate standalone tool-call text while rejecting mixed unsafe content. */
 export function extractStandalonePlainTextToolCallText(params: {
   allowOtherNonTextBlocks?: boolean;
-  allowedStopReasons?: ReadonlySet<unknown>;
-  isRetainableNonTextBlock?: (block: Record<string, unknown>) => boolean;
-  message: unknown;
+  allowedStopReasons?: ReadonlySet<any>;
+  isRetainableNonTextBlock?: (block: Record<string, any>) => boolean;
+  message: any;
   requireAssistantRole?: boolean;
 }): string | undefined {
   const record = asRecord(params.message);
@@ -173,7 +173,7 @@ export function extractStandalonePlainTextToolCallText(params: {
 /** Promotes standalone plain-text tool-call messages into provider-native content blocks. */
 export function promoteStandalonePlainTextToolCallMessage(
   options: PlainTextToolCallPromotionOptions,
-): Record<string, unknown> | undefined {
+): Record<string, any> | undefined {
   if (!shouldPromoteMessage(options)) {
     return undefined;
   }
@@ -203,7 +203,7 @@ export function promoteStandalonePlainTextToolCallMessage(
     return undefined;
   }
 
-  const content: Array<Record<string, unknown>> = [];
+  const content: Array<Record<string, any>> = [];
   let promotedTextBlock = false;
   let textParts: string[] = [];
   const flushTextParts = (): boolean | undefined => {

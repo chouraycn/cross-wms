@@ -7,7 +7,7 @@ import { formatChannelStatusState } from "@openclaw-src/channels/plugins/status-
 import { isGatewayTransportError } from "@openclaw-src/gateway/call.js";
 import type { ChannelAccountHealthSummary, HealthSummary } from "./health.types.js";
 
-export function formatGatewayClosedDiagnostic(err: unknown): string | undefined {
+export function formatGatewayClosedDiagnostic(err: any): string | undefined {
   if (!isGatewayTransportError(err) || err.kind !== "closed") {
     return undefined;
   }
@@ -33,7 +33,7 @@ const formatKv = (line: string, rich: boolean) => {
 };
 
 /** Formats thrown health errors with rich detail lines when terminal color is enabled. */
-export function formatHealthCheckFailure(err: unknown, opts: { rich?: boolean } = {}): string {
+export function formatHealthCheckFailure(err: any, opts: { rich?: boolean } = {}): string {
   const rich = opts.rich ?? isRich();
   const raw = String(err);
   const message = err instanceof Error ? err.message : raw;
@@ -63,7 +63,7 @@ export function formatHealthCheckFailure(err: unknown, opts: { rich?: boolean } 
   return out.join("\n");
 }
 
-const formatProbeLine = (probe: unknown, opts: { botUsernames?: string[] } = {}): string | null => {
+const formatProbeLine = (probe: any, opts: { botUsernames?: string[] } = {}): string | null => {
   const record = asNullableRecord(probe);
   if (!record) {
     return null;
@@ -244,7 +244,7 @@ export const formatHealthChannelLines = (
       lines.push(`${label}: configured`);
       continue;
     }
-    lines.push(`${label}: unknown`);
+    lines.push(`${label}: any`);
   }
   return lines;
 };

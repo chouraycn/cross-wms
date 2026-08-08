@@ -13,7 +13,7 @@ const noopLogger = createNoopLogger();
 const { makeStorePath } = createCronStoreHarness();
 installCronTestHooks({ logger: noopLogger });
 
-function expectCronRunSessionKey(value: unknown, jobId: string) {
+function expectCronRunSessionKey(value: any, jobId: string) {
   expect(value).toMatch(new RegExp(`^agent:main:cron:${jobId}:run:\\d+$`));
 }
 
@@ -25,7 +25,7 @@ describe("CronService interval/cron jobs fire on time", () => {
     firstDueAt,
   }: {
     cron: CronService;
-    finished: { waitForOk: (id: string) => Promise<unknown> };
+    finished: { waitForOk: (id: string) => Promise<any> };
     jobId: string;
     firstDueAt: number;
   }) => {
@@ -46,7 +46,7 @@ describe("CronService interval/cron jobs fire on time", () => {
     if (!matchingCall) {
       throw new Error(`missing system event ${expectedText}`);
     }
-    const options = matchingCall[1] as Record<string, unknown>;
+    const options = matchingCall[1] as Record<string, any>;
     expect(options.agentId).toBeUndefined();
     expectCronRunSessionKey(options.sessionKey, jobId);
     expect(typeof options.contextKey).toBe("string");

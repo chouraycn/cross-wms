@@ -13,18 +13,18 @@
 
 export type ControlUiRootState = unknown;
 
-export function rewriteControlUiIndexHtmlPublicAssetHrefs(..._args: unknown[]): unknown {
+export function rewriteControlUiIndexHtmlPublicAssetHrefs(..._args: any[]): any {
   return undefined;
 }
 
-export async function handleControlUiAssistantMediaRequest(..._args: unknown[]): Promise<unknown> {
+export async function handleControlUiAssistantMediaRequest(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
 
-export async function handleControlUiAvatarRequest(..._args: unknown[]): Promise<unknown> {
+export async function handleControlUiAvatarRequest(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }
 
-export async function handleControlUiHttpRequest(..._args: unknown[]): Promise<unknown> {
+export async function handleControlUiHttpRequest(..._args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }

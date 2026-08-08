@@ -32,7 +32,7 @@ function normalizePluginEventData(params: {
   pluginId: string;
   pluginName?: string;
   data: PluginJsonValue;
-}): Record<string, unknown> {
+}): Record<string, any> {
   if (params.data && typeof params.data === "object" && !Array.isArray(params.data)) {
     return {
       ...params.data,

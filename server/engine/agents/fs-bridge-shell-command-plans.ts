@@ -11,7 +11,7 @@ type PathSafetyCheck = {
   };
   options: {
     action: string;
-    aliasPolicy?: unknown;
+    aliasPolicy?: any;
     requireWritable?: boolean;
     allowedType?: "file" | "directory";
   };

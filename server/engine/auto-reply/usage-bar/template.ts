@@ -6,7 +6,7 @@ import { createSubsystemLogger } from '@openclaw-src/logging/subsystem.js';
 import { DEFAULT_USAGE_BAR_TEMPLATE } from "./default-template.js";
 import type { UsageBarTemplate } from "./translator.js";
 
-export type UsageTemplateConfig = string | Record<string, unknown> | undefined;
+export type UsageTemplateConfig = string | Record<string, any> | undefined;
 
 type CacheEntry = { template: UsageBarTemplate | undefined; watcher?: FSWatcher };
 const fileCache = new Map<string, CacheEntry>();
@@ -23,15 +23,15 @@ function expandPath(p: string): string {
   return isAbsolute(p) ? p : resolve(p);
 }
 
-function isPlainObject(value: unknown): value is Record<string, unknown> {
+function isPlainObject(value: any): value is Record<string, any> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function hasPieces(value: unknown): boolean {
+function hasPieces(value: any): boolean {
   return Array.isArray(value) && value.some(isPlainObject);
 }
 
-function hasOutputPieces(output: unknown): boolean {
+function hasOutputPieces(output: any): boolean {
   if (!isPlainObject(output)) {
     return false;
   }
@@ -45,7 +45,7 @@ function hasOutputPieces(output: unknown): boolean {
   );
 }
 
-function isEmptyTemplate(value: unknown): boolean {
+function isEmptyTemplate(value: any): boolean {
   if (!isPlainObject(value)) {
     return false;
   }
@@ -59,7 +59,7 @@ function isEmptyTemplate(value: unknown): boolean {
   return isPlainObject(output) && !hasOutputPieces(output);
 }
 
-function isUsableTemplate(value: unknown): value is UsageBarTemplate {
+function isUsableTemplate(value: any): value is UsageBarTemplate {
   if (!isPlainObject(value)) {
     return false;
   }
@@ -76,7 +76,7 @@ function isUsableTemplate(value: unknown): value is UsageBarTemplate {
 type InvalidTemplateReason = "invalid-json" | "unreadable" | "unsupported-shape";
 type TemplateReadResult = { template?: UsageBarTemplate; reason?: InvalidTemplateReason };
 
-function getErrorCode(error: unknown): string | undefined {
+function getErrorCode(error: any): string | undefined {
   if (typeof error !== "object" || error === null || !("code" in error)) {
     return undefined;
   }
@@ -97,7 +97,7 @@ function warnInvalidUsageTemplate(source: "inline" | "file", reason: string, pat
   });
 }
 
-function parseTemplate(value: unknown): TemplateReadResult {
+function parseTemplate(value: any): TemplateReadResult {
   if (isUsableTemplate(value)) {
     return { template: value };
   }

@@ -15,8 +15,8 @@ function createTestRuntime() {
     logs,
     errors,
     runtime: {
-      log: (...args: unknown[]) => logs.push(args.map((arg) => String(arg)).join(" ")),
-      error: (...args: unknown[]) => errors.push(args.map((arg) => String(arg)).join(" ")),
+      log: (...args: any[]) => logs.push(args.map((arg) => String(arg)).join(" ")),
+      error: (...args: any[]) => errors.push(args.map((arg) => String(arg)).join(" ")),
       exit: (code: number) => {
         throw new Error(`__exit__:${code}`);
       },

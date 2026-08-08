@@ -39,7 +39,7 @@ export async function deliverFinalizableDraftPreview<TPayload, TId, TEdit>(param
   deliverNormally: (payload: TPayload) => Promise<boolean | void>;
   onPreviewFinalized?: (id: TId) => Promise<void> | void;
   onNormalDelivered?: () => Promise<void> | void;
-  logPreviewEditFailure?: (error: unknown) => void;
+  logPreviewEditFailure?: (error: any) => void;
 }): Promise<DraftPreviewFinalizerResult> {
   const result = await deliverFinalizableLivePreview<TPayload, TId, TEdit>({
     kind: params.kind,

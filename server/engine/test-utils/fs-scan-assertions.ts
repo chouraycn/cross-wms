@@ -44,7 +44,7 @@ export function expectNoFsSyncDuring<T>(run: () => T, counters: FsScanCounter[])
 }
 
 export function captureReaddirSyncCallsDuring<T>(run: () => T): {
-  calls: unknown[][];
+  calls: any[][];
   result: T;
 } {
   const readDir = vi.spyOn(fs, "readdirSync");
@@ -61,7 +61,7 @@ export function expectNoNodeFsScans<T>(
   body: string,
   options?: {
     counters?: FsScanCounter[];
-    parseResult?: (result: unknown) => T;
+    parseResult?: (result: any) => T;
   },
 ): T {
   const counters = options?.counters ?? ["existsSync", "readdirSync"];
@@ -93,7 +93,7 @@ export function expectNoNodeFsScans<T>(
   );
 
   expect(result.status, result.stderr).toBe(0);
-  const payload = JSON.parse(result.stdout) as NodeFsScanResult<unknown>;
+  const payload = JSON.parse(result.stdout) as NodeFsScanResult<any>;
   expect(payload.counts).toEqual(Object.fromEntries(counters.map((name) => [name, 0])));
   return options?.parseResult ? options.parseResult(payload.result) : (payload.result as T);
 }

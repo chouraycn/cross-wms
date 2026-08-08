@@ -16,7 +16,7 @@ type ResolvedTimeFormat = "12" | "24";
 let cachedTimeFormat: ResolvedTimeFormat | undefined;
 
 /** 内联降级实现：将输入归一化为有限毫秒时间戳。 */
-function resolveDateTimestampMs(value: unknown): number {
+function resolveDateTimestampMs(value: any): number {
   if (typeof value === "number" && Number.isFinite(value)) {
     return value < 1_000_000_000_000 ? Math.round(value * 1000) : Math.round(value);
   }

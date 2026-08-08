@@ -36,7 +36,7 @@ function now(): string {
 /**
  * 将 DAO 返回的 Record 转换为 InventoryItem（处理字段映射）
  */
-function toInventoryItem(row: Record<string, unknown>): InventoryItem {
+function toInventoryItem(row: Record<string, any>): InventoryItem {
   return {
     id: Number(row.id),
     sku: row.sku as string,
@@ -65,7 +65,7 @@ function toInventoryItem(row: Record<string, unknown>): InventoryItem {
  */
 export function createInventory(item: Omit<InventoryItem, 'id' | 'createdAt' | 'updatedAt'>): number {
   // 检查是否已存在
-  const allItems = getInventoryItems(item.warehouseId) as Array<Record<string, unknown>>;
+  const allItems = getInventoryItems(item.warehouseId) as Array<Record<string, any>>;
   const existing = allItems.find((i) => i.sku === item.sku) as
     | { id: string; quantity: number; valuePerUnit: number }
     | undefined;
@@ -113,7 +113,7 @@ export function updateInventory(
   itemId: number,
   updates: Partial<Omit<InventoryItem, 'id' | 'createdAt' | 'updatedAt'>>
 ): boolean {
-  const existing = getInventoryItemById(String(itemId)) as Record<string, unknown> | undefined;
+  const existing = getInventoryItemById(String(itemId)) as Record<string, any> | undefined;
   if (!existing) return false;
 
   // 如果更新数量，同步更新总价值
@@ -123,7 +123,7 @@ export function updateInventory(
     totalValue = unitPrice * updates.quantity;
   }
 
-  const data: Record<string, unknown> = {};
+  const data: Record<string, any> = {};
   if (updates.sku !== undefined) data.sku = updates.sku;
   if (updates.name !== undefined) data.name = updates.name;
   if (updates.warehouseId !== undefined) data.warehouseId = updates.warehouseId;
@@ -158,7 +158,7 @@ export function deleteInventory(itemId: number): boolean {
 export function getInventoryDetail(itemId: number): InventoryItem | null {
   const row = getInventoryItemById(String(itemId));
   if (!row) return null;
-  return toInventoryItem(row as Record<string, unknown>);
+  return toInventoryItem(row as Record<string, any>);
 }
 
 /**
@@ -173,7 +173,7 @@ export function queryInventory(filters?: {
   name?: string;
   lowStock?: boolean;
 }): InventoryItem[] {
-  let items = getInventoryItems(filters?.warehouseId) as Array<Record<string, unknown>>;
+  let items = getInventoryItems(filters?.warehouseId) as Array<Record<string, any>>;
 
   if (filters?.sku) {
     items = items.filter((i) => i.sku === filters.sku);
@@ -216,7 +216,7 @@ export function inbound(record: Omit<InboundRecord, 'id' | 'createdAt'>): number
   }
 
   // 2. 增加库存
-  const allItems = getInventoryItems(record.warehouseId) as Array<Record<string, unknown>>;
+  const allItems = getInventoryItems(record.warehouseId) as Array<Record<string, any>>;
   const existing = allItems.find((i) => i.sku === record.sku) as
     | { id: string; quantity: number; valuePerUnit: number }
     | undefined;
@@ -232,11 +232,11 @@ export function inbound(record: Omit<InboundRecord, 'id' | 'createdAt'>): number
     });
   } else {
     // 新商品入库，尝试从记录中获取单价
-    const unitPrice = (record as Record<string, unknown>).unitPrice as number | undefined ?? 0;
+    const unitPrice = (record as Record<string, any>).unitPrice as number | undefined ?? 0;
 
     createInventoryItem({
       sku: record.sku,
-      name: ((record as Record<string, unknown>).productName as string | undefined) ?? record.sku,
+      name: ((record as Record<string, any>).productName as string | undefined) ?? record.sku,
       warehouseId: record.warehouseId,
       quantity: record.quantity,
       valuePerUnit: unitPrice,
@@ -253,7 +253,7 @@ export function inbound(record: Omit<InboundRecord, 'id' | 'createdAt'>): number
   const inboundRec = createInboundRecord({
     warehouseId: record.warehouseId,
     sku: record.sku,
-    name: ((record as Record<string, unknown>).productName as string | undefined) ?? record.sku,
+    name: ((record as Record<string, any>).productName as string | undefined) ?? record.sku,
     quantity: record.quantity,
     volume: 0,
     createdAt: now(),
@@ -290,7 +290,7 @@ export function outbound(record: Omit<OutboundRecord, 'id' | 'createdAt'>): numb
   }
 
   // 2. 校验库存
-  const allItems = getInventoryItems(record.warehouseId) as Array<Record<string, unknown>>;
+  const allItems = getInventoryItems(record.warehouseId) as Array<Record<string, any>>;
   const inventory = allItems.find((i) => i.sku === record.sku) as
     | { id: string; quantity: number; valuePerUnit: number }
     | undefined;

@@ -6,6 +6,6 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function buildSubagentInitialUserMessage(..._args: unknown[]): unknown {
+export function buildSubagentInitialUserMessage(..._args: any[]): any {
   return undefined;
 }

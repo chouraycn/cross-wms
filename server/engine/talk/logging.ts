@@ -32,8 +32,8 @@ const OMITTED_TALK_LOG_EVENT_TYPES = new Set<TalkEventType>([
 const TALK_LOGGER_BINDINGS = Object.freeze({ subsystem: "talk" });
 
 function createTalkLogger(): typeof rootLogger {
-  if (typeof (rootLogger as { child?: unknown }).child === "function") {
-    return (rootLogger as { child: (bindings: Record<string, unknown>) => typeof rootLogger }).child(TALK_LOGGER_BINDINGS as Record<string, unknown>);
+  if (typeof (rootLogger as { child?: any }).child === "function") {
+    return (rootLogger as { child: (bindings: Record<string, any>) => typeof rootLogger }).child(TALK_LOGGER_BINDINGS as Record<string, any>);
   }
   return rootLogger;
 }

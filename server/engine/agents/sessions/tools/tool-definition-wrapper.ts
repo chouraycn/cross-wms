@@ -11,8 +11,8 @@ import type { ExtensionContext, ToolDefinition } from "../extensions/types.js";
 /** Wrap a ToolDefinition into an AgentTool for the core runtime. */
 export function wrapToolDefinition<
   TParams extends TSchema = TSchema,
-  TDetails = unknown,
-  TState = unknown,
+  TDetails = any,
+  TState = any,
 >(
   definition: ToolDefinition<TParams, TDetails, TState>,
   ctxFactory?: () => ExtensionContext,

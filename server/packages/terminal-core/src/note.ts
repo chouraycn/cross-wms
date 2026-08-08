@@ -150,7 +150,7 @@ function wrapLine(line: string, maxWidth: number): string[] {
   return lines;
 }
 
-function coerceNoteMessage(message: unknown): string {
+function coerceNoteMessage(message: any): string {
   if (typeof message === "string") {
     return message;
   }
@@ -167,7 +167,7 @@ function coerceNoteMessage(message: unknown): string {
 }
 
 export function wrapNoteMessage(
-  message: unknown,
+  message: any,
   options: { maxWidth?: number; columns?: number } = {},
 ): string {
   const text = coerceNoteMessage(message);
@@ -206,7 +206,7 @@ function createNoteOutput(columns: number): NodeJS.WriteStream {
   return output;
 }
 
-export function note(message: unknown, title?: string) {
+export function note(message: any, title?: string) {
   if (
     suppressNotesStorage.getStore() === true ||
     isSuppressedByEnv(process.env.OPENCLAW_SUPPRESS_NOTES)

@@ -64,7 +64,7 @@ export function redactSensitiveText(value: string): string {
  * Render a non-Error `cause` value without leaking `[object Object]` or throwing
  * while formatting nested ACP runtime failures.
  */
-export function stringifyNonErrorCause(value: unknown): string {
+export function stringifyNonErrorCause(value: any): string {
   if (value === null) {
     return "null";
   }

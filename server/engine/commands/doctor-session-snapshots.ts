@@ -44,7 +44,7 @@ function decodeXmlText(value: string): string {
     .replace(/&amp;/g, "&");
 }
 
-function extractSkillLocations(prompt: unknown): string[] {
+function extractSkillLocations(prompt: any): string[] {
   if (typeof prompt !== "string" || !prompt.trim()) {
     return [];
   }
@@ -59,7 +59,7 @@ function extractSkillLocations(prompt: unknown): string[] {
   return locations;
 }
 
-function collectResolvedSkillPaths(value: unknown): string[] {
+function collectResolvedSkillPaths(value: any): string[] {
   if (!Array.isArray(value)) {
     return [];
   }
@@ -86,7 +86,7 @@ function collectResolvedSkillPaths(value: unknown): string[] {
   return paths;
 }
 
-function collectInjectedWorkspaceFilePaths(value: unknown): string[] {
+function collectInjectedWorkspaceFilePaths(value: any): string[] {
   if (!Array.isArray(value)) {
     return [];
   }
@@ -96,8 +96,8 @@ function collectInjectedWorkspaceFilePaths(value: unknown): string[] {
 }
 
 function collectCachedSnapshotPaths(entry: SessionEntry): CachedSnapshotPath[] {
-  const snapshot = entry.skillsSnapshot as Record<string, unknown> | undefined;
-  const report = entry.systemPromptReport as Record<string, unknown> | undefined;
+  const snapshot = entry.skillsSnapshot as Record<string, any> | undefined;
+  const report = entry.systemPromptReport as Record<string, any> | undefined;
   const paths: CachedSnapshotPath[] = [];
   for (const location of extractSkillLocations(snapshot?.prompt)) {
     paths.push({ field: "skillsSnapshot.prompt", path: location });
@@ -278,7 +278,7 @@ function resolveSessionStorePaths(params: {
 }
 
 function loadSessionStoreForSnapshotScan(storePath: string): Record<string, SessionEntry> {
-  const parsed = JSON.parse(fs.readFileSync(storePath, "utf-8")) as unknown;
+  const parsed = JSON.parse(fs.readFileSync(storePath, "utf-8")) as any;
   if (!isRecord(parsed)) {
     return {};
   }
@@ -375,7 +375,7 @@ export async function noteSessionSnapshotHealth(params?: {
     for (const [storePath, findings] of findingsByStore) {
       try {
         const raw = fs.readFileSync(storePath, "utf-8");
-        const sessions = JSON.parse(raw) as Record<string, Record<string, unknown>>;
+        const sessions = JSON.parse(raw) as Record<string, Record<string, any>>;
         let modified = false;
 
         let storeCount = 0;
@@ -412,8 +412,8 @@ export async function noteSessionSnapshotHealth(params?: {
                       mode: 0o600,
                       tempPrefix: path.basename(newBlobPath),
                     });
-                    (snapshot.promptRef as Record<string, unknown>).hash = newHash;
-                    (snapshot.promptRef as Record<string, unknown>).bytes = newBytes;
+                    (snapshot.promptRef as Record<string, any>).hash = newHash;
+                    (snapshot.promptRef as Record<string, any>).bytes = newBytes;
                     storeCount++;
                     modified = true;
                   }
@@ -438,7 +438,7 @@ export async function noteSessionSnapshotHealth(params?: {
                 continue;
               }
               const replaceResolvedSkillField = (
-                target: Record<string, unknown>,
+                target: Record<string, any>,
                 field: string,
               ) => {
                 if (typeof target[field] !== "string") {

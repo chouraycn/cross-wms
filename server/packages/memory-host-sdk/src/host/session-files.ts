@@ -89,8 +89,8 @@ export type ResolvedSessionTranscriptIdentity = {
 };
 
 type SessionTranscriptStoreEntry = {
-  sessionFile?: unknown;
-  sessionId?: unknown;
+  sessionFile?: any;
+  sessionId?: any;
 };
 
 function shouldSkipTranscriptFileForDreaming(absPath: string): boolean {
@@ -123,14 +123,14 @@ function isUsageCountedSessionArchiveTranscriptPath(absPath: string): boolean {
   );
 }
 
-function isDreamingNarrativeBootstrapRecord(record: unknown): boolean {
+function isDreamingNarrativeBootstrapRecord(record: any): boolean {
   if (!record || typeof record !== "object" || Array.isArray(record)) {
     return false;
   }
   const candidate = record as {
-    type?: unknown;
-    customType?: unknown;
-    data?: unknown;
+    type?: any;
+    customType?: any;
+    data?: any;
   };
   if (
     candidate.type !== "custom" ||
@@ -141,15 +141,15 @@ function isDreamingNarrativeBootstrapRecord(record: unknown): boolean {
   ) {
     return false;
   }
-  const runId = (candidate.data as { runId?: unknown }).runId;
+  const runId = (candidate.data as { runId?: any }).runId;
   return typeof runId === "string" && runId.startsWith(DREAMING_NARRATIVE_RUN_PREFIX);
 }
 
-function hasDreamingNarrativeRunId(value: unknown): boolean {
+function hasDreamingNarrativeRunId(value: any): boolean {
   return typeof value === "string" && value.startsWith(DREAMING_NARRATIVE_RUN_PREFIX);
 }
 
-function isDreamingNarrativeGeneratedRecord(record: unknown): boolean {
+function isDreamingNarrativeGeneratedRecord(record: any): boolean {
   if (isDreamingNarrativeBootstrapRecord(record)) {
     return true;
   }
@@ -157,9 +157,9 @@ function isDreamingNarrativeGeneratedRecord(record: unknown): boolean {
     return false;
   }
   const candidate = record as {
-    runId?: unknown;
-    sessionKey?: unknown;
-    data?: unknown;
+    runId?: any;
+    sessionKey?: any;
+    data?: any;
   };
   if (
     hasDreamingNarrativeRunId(candidate.runId) ||
@@ -171,8 +171,8 @@ function isDreamingNarrativeGeneratedRecord(record: unknown): boolean {
     return false;
   }
   const nested = candidate.data as {
-    runId?: unknown;
-    sessionKey?: unknown;
+    runId?: any;
+    sessionKey?: any;
   };
   return hasDreamingNarrativeRunId(nested.runId) || hasDreamingNarrativeRunId(nested.sessionKey);
 }
@@ -191,17 +191,17 @@ function isDreamingNarrativeSessionStoreKey(sessionKey: string): boolean {
   return sessionSegment.startsWith(DREAMING_NARRATIVE_RUN_PREFIX);
 }
 
-function hasCronRunSessionKey(value: unknown): boolean {
+function hasCronRunSessionKey(value: any): boolean {
   return typeof value === "string" && isCronRunSessionKey(value);
 }
 
-function isCronRunGeneratedRecord(record: unknown): boolean {
+function isCronRunGeneratedRecord(record: any): boolean {
   if (!record || typeof record !== "object" || Array.isArray(record)) {
     return false;
   }
   const candidate = record as {
-    sessionKey?: unknown;
-    data?: unknown;
+    sessionKey?: any;
+    data?: any;
   };
   if (hasCronRunSessionKey(candidate.sessionKey)) {
     return true;
@@ -210,7 +210,7 @@ function isCronRunGeneratedRecord(record: unknown): boolean {
     return false;
   }
   const nested = candidate.data as {
-    sessionKey?: unknown;
+    sessionKey?: any;
   };
   return hasCronRunSessionKey(nested.sessionKey);
 }
@@ -226,7 +226,7 @@ export function normalizeSessionTranscriptPathForComparison(pathname: string): s
 
 function resolveSessionStoreTranscriptPath(
   sessionsDir: string,
-  entry: { sessionFile?: unknown; sessionId?: unknown } | undefined,
+  entry: { sessionFile?: any; sessionId?: any } | undefined,
 ): string | null {
   const resolved = resolveSessionStoreTranscriptResolvedPath(sessionsDir, entry);
   return resolved ? normalizeComparablePath(resolved) : null;
@@ -234,7 +234,7 @@ function resolveSessionStoreTranscriptPath(
 
 function resolveSessionStoreTranscriptResolvedPath(
   sessionsDir: string,
-  entry: { sessionFile?: unknown; sessionId?: unknown } | undefined,
+  entry: { sessionFile?: any; sessionId?: any } | undefined,
 ): string | null {
   if (typeof entry?.sessionFile === "string" && entry.sessionFile.trim().length > 0) {
     const sessionFile = entry.sessionFile.trim();
@@ -301,7 +301,7 @@ function readSessionTranscriptClassificationStore(
   storePath: string,
 ): Record<string, SessionTranscriptStoreEntry> {
   try {
-    const parsed = JSON.parse(fsSync.readFileSync(storePath, "utf-8")) as unknown;
+    const parsed = JSON.parse(fsSync.readFileSync(storePath, "utf-8")) as any;
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
       return {};
     }
@@ -541,7 +541,7 @@ function resolveCanonicalSessionSyncFilePath(
   return resolved;
 }
 
-async function logSessionFileReadFailure(absPath: string, err: unknown): Promise<void> {
+async function logSessionFileReadFailure(absPath: string, err: any): Promise<void> {
   createSubsystemLogger("memory").debug(`Failed reading session file ${absPath}: ${String(err)}`);
 }
 
@@ -552,7 +552,7 @@ function normalizeSessionText(value: string): string {
     .trim();
 }
 
-function collectRawSessionText(content: unknown): string | null {
+function collectRawSessionText(content: any): string | null {
   if (typeof content === "string") {
     return content;
   }
@@ -564,7 +564,7 @@ function collectRawSessionText(content: unknown): string | null {
     if (!block || typeof block !== "object") {
       continue;
     }
-    const record = block as { type?: unknown; text?: unknown };
+    const record = block as { type?: any; text?: any };
     if (record.type === "text" && typeof record.text === "string") {
       parts.push(record.text);
     }
@@ -705,8 +705,8 @@ function sanitizeSessionText(text: string, role: "user" | "assistant"): string |
 }
 
 function parseSessionTimestampMs(
-  record: { timestamp?: unknown },
-  message: { timestamp?: unknown },
+  record: { timestamp?: any },
+  message: { timestamp?: any },
 ): number {
   const candidates = [message.timestamp, record.timestamp];
   for (const value of candidates) {
@@ -798,7 +798,7 @@ export async function buildSessionEntry(
       if (!line.trim()) {
         continue;
       }
-      let record: unknown;
+      let record: any;
       try {
         record = JSON.parse(line);
       } catch {
@@ -820,12 +820,12 @@ export async function buildSessionEntry(
       if (
         !record ||
         typeof record !== "object" ||
-        (record as { type?: unknown }).type !== "message"
+        (record as { type?: any }).type !== "message"
       ) {
         continue;
       }
-      const message = (record as { message?: unknown }).message as
-        | { role?: unknown; content?: unknown; provenance?: unknown }
+      const message = (record as { message?: any }).message as
+        | { role?: any; content?: any; provenance?: any }
         | undefined;
       if (!message || typeof message.role !== "string") {
         continue;
@@ -868,8 +868,8 @@ export async function buildSessionEntry(
       const label = message.role === "user" ? "User" : "Assistant";
       const renderedLines = renderSessionExportLines(label, safe);
       const timestampMs = parseSessionTimestampMs(
-        record as { timestamp?: unknown },
-        message as { timestamp?: unknown },
+        record as { timestamp?: any },
+        message as { timestamp?: any },
       );
       collected.push(...renderedLines);
       lineMap.push(...renderedLines.map(() => jsonlIdx + 1));

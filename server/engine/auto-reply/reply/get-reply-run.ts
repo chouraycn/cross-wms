@@ -157,7 +157,7 @@ function routeThreadIdsMatch(
   return String(activeThreadId) === String(currentThreadId);
 }
 
-function normalizeMessageTimestampMs(value: unknown): number | undefined {
+function normalizeMessageTimestampMs(value: any): number | undefined {
   const timestamp = typeof value === "number" && Number.isFinite(value) ? value : undefined;
   if (timestamp === undefined || timestamp <= 0) {
     return undefined;
@@ -207,7 +207,7 @@ function normalizePromptRouteChannel(raw?: string | null): string | undefined {
   return normalized && normalized !== "none" ? normalized : undefined;
 }
 
-function normalizeToolProgressDetail(value: unknown): "explain" | "raw" | undefined {
+function normalizeToolProgressDetail(value: any): "explain" | "raw" | undefined {
   return value === "explain" || value === "raw" ? value : undefined;
 }
 
@@ -392,7 +392,7 @@ function hasReplyTargetContext(ctx: MsgContext | TemplateContext): boolean {
   if (normalizeOptionalString(ctx.ReplyToBody)) {
     return true;
   }
-  const replyChain = (ctx as { ReplyChain?: unknown }).ReplyChain;
+  const replyChain = (ctx as { ReplyChain?: any }).ReplyChain;
   return Array.isArray(replyChain) && replyChain.length > 0;
 }
 

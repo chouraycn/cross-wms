@@ -16,7 +16,7 @@ import { createMockTypingController } from "./test-helpers.js";
 const runBtwSideQuestionMock = vi.fn();
 
 vi.mock("../../agents/btw.js", () => ({
-  runBtwSideQuestion: (...args: unknown[]) => runBtwSideQuestionMock(...args),
+  runBtwSideQuestion: (...args: any[]) => runBtwSideQuestionMock(...args),
 }));
 
 const { handleBtwCommand } = await import("./commands-btw.js");
@@ -34,7 +34,7 @@ describe("handleBtwCommand", () => {
     runBtwSideQuestionMock.mockReset();
     resolveAgentDirMock.mockReset();
     resolveAgentDirMock.mockImplementation(
-      (_cfg: unknown, agentId: string) => `/tmp/workspace/.openclaw/agents/${agentId}/agent`,
+      (_cfg: any, agentId: string) => `/tmp/workspace/.openclaw/agents/${agentId}/agent`,
     );
     resolveSessionAgentIdMock.mockReset();
     resolveSessionAgentIdMock.mockReturnValue("main");

@@ -225,7 +225,7 @@ export class SessionStoreWriter {
 
   async writeJsonFile(
     relativePath: string,
-    data: unknown
+    data: any
   ): Promise<StoreWriteResult> {
     const startTime = Date.now();
     const filePath = path.join(this.baseDir, relativePath);

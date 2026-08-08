@@ -37,7 +37,7 @@ const MESSAGE_TOOL_CONVERSATION_CREATE_ACTIONS = new Set([
   "createforumtopic",
 ]);
 
-function normalizeOptionalString(value: unknown): string | undefined {
+function normalizeOptionalString(value: any): string | undefined {
   if (typeof value === "string") {
     const trimmed = value.trim();
     return trimmed.length > 0 ? trimmed : undefined;
@@ -46,13 +46,13 @@ function normalizeOptionalString(value: unknown): string | undefined {
 }
 
 /** Return true when a message action sends or uploads user-visible content. */
-export function isMessageToolSendActionName(action: unknown): boolean {
+export function isMessageToolSendActionName(action: any): boolean {
   const normalized = normalizeOptionalString(action) ?? "";
   return MESSAGE_TOOL_SEND_ACTIONS.has(normalized);
 }
 
 /** Return true when a message action creates a visible destination conversation. */
-export function isMessageToolConversationCreateActionName(action: unknown): boolean {
+export function isMessageToolConversationCreateActionName(action: any): boolean {
   const normalized = normalizeOptionalString(action)?.toLowerCase() ?? "";
   return MESSAGE_TOOL_CONVERSATION_CREATE_ACTIONS.has(normalized);
 }
@@ -65,7 +65,7 @@ export function isMessagingTool(toolName: string): boolean {
 /** Return true when the specific tool invocation is an outbound send. */
 export function isMessagingToolSendAction(
   toolName: string,
-  args: Record<string, unknown>,
+  args: Record<string, any>,
 ): boolean {
   const action = normalizeOptionalString(args.action) ?? "";
   if (toolName === "sessions_send") {
@@ -80,7 +80,7 @@ export function isMessagingToolSendAction(
 /** Return true when a visible delivery has one target worth recording as evidence. */
 export function isMessagingToolTargetEvidenceAction(
   toolName: string,
-  args: Record<string, unknown>,
+  args: Record<string, any>,
 ): boolean {
   if (toolName === "message") {
     const action = normalizeOptionalString(args.action) ?? "";
@@ -95,7 +95,7 @@ export function isMessagingToolTargetEvidenceAction(
 /** Return true when a messaging invocation can create visible outbound delivery. */
 export function isMessagingToolDeliveryAction(
   toolName: string,
-  args: Record<string, unknown>,
+  args: Record<string, any>,
 ): boolean {
   if (toolName === "message") {
     const action = normalizeOptionalString(args.action) ?? "";

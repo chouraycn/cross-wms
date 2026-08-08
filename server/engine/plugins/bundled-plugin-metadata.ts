@@ -53,8 +53,8 @@ type PluginManifest = {
   name?: string;
   description?: string;
   channels?: readonly string[];
-  channelConfigs?: Record<string, unknown>;
-  [key: string]: unknown;
+  channelConfigs?: Record<string, any>;
+  [key: string]: any;
 };
 
 /**
@@ -67,7 +67,7 @@ type PackageManifest = {
   name?: string;
   version?: string;
   description?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 /**
@@ -84,10 +84,10 @@ type OpenClawPackageManifest = {
     label?: string;
     blurb?: string;
     preferOver?: readonly string[];
-    commands?: readonly unknown[];
-    [key: string]: unknown;
+    commands?: readonly any[];
+    [key: string]: any;
   };
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 type PluginManifestLoadResult =
@@ -152,7 +152,7 @@ function collectBundledChannelConfigs(_params: {
   pluginDir: string;
   manifest: PluginManifest;
   packageManifest?: OpenClawPackageManifest;
-}): Record<string, unknown> | undefined {
+}): Record<string, any> | undefined {
   return undefined;
 }
 

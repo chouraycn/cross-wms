@@ -47,7 +47,7 @@ export interface PolicyCheckInput {
   /** 安装目标路径 */
   targetPath: string;
   /** 额外参数 */
-  extra?: Record<string, unknown>;
+  extra?: Record<string, any>;
 }
 
 /** 策略检查结果 */

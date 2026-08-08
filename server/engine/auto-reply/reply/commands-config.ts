@@ -37,10 +37,10 @@ import { parseDebugCommand } from "./debug-commands.js";
 
 function formatConfigSetValueLabel(params: {
   path: string[];
-  value: unknown;
+  value: any;
   uiHints: ReturnType<typeof loadGatewayRuntimeConfigSchema>["uiHints"];
 }): string {
-  const previewRoot: Record<string, unknown> = {};
+  const previewRoot: Record<string, any> = {};
   setConfigValueAtPath(previewRoot, params.path, params.value);
   const redactedRoot = redactConfigObject(previewRoot, params.uiHints);
   const redactedValue = getConfigValueAtPath(redactedRoot, params.path);
@@ -133,7 +133,7 @@ export const handleConfigCommand: CommandHandler = async (params, allowTextComma
   }
   const schema = loadGatewayRuntimeConfigSchema();
   const redactedSnapshot = redactConfigSnapshot(snapshot, schema.uiHints);
-  const parsedBase = structuredClone(redactedSnapshot.parsed as Record<string, unknown>);
+  const parsedBase = structuredClone(redactedSnapshot.parsed as Record<string, any>);
 
   if (configCommand.action === "show") {
     const pathRaw = normalizeOptionalString(configCommand.path);

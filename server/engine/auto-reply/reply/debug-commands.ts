@@ -5,7 +5,7 @@ import { parseStandardSetUnsetSlashCommand } from "./commands-setunset-standard.
 type DebugCommand =
   | { action: "show" }
   | { action: "reset" }
-  | { action: "set"; path: string; value: unknown }
+  | { action: "set"; path: string; value: any }
   | { action: "unset"; path: string }
   | { action: "error"; message: string };
 

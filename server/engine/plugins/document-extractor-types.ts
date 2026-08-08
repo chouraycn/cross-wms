@@ -14,7 +14,7 @@ export type DocumentExtractionRequest = {
   minTextChars: number;
   password?: string;
   pageNumbers?: number[];
-  onImageExtractionError?: (error: unknown) => void;
+  onImageExtractionError?: (error: any) => void;
 };
 
 /** Text and image result returned by a document extractor. */

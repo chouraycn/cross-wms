@@ -5,9 +5,9 @@ import type { RuntimeEnv } from "../runtime.js";
 import { captureEnv } from "../test-utils/env.js";
 
 type RunMessageActionParams = {
-  cfg?: unknown;
+  cfg?: any;
   action: string;
-  params: Record<string, unknown>;
+  params: Record<string, any>;
   agentId?: string;
   senderIsOwner?: boolean;
   gateway?: {
@@ -25,7 +25,7 @@ function readOnlyMessageActionCall(): RunMessageActionParams {
   return call;
 }
 
-let testConfig: Record<string, unknown> = {};
+let testConfig: Record<string, any> = {};
 const applyPluginAutoEnable = vi.hoisted(() => vi.fn(({ config }) => ({ config, changes: [] })));
 vi.mock("../config/config.js", () => ({
   getRuntimeConfig: () => testConfig,
@@ -37,7 +37,7 @@ vi.mock("../config/plugin-auto-enable.js", () => ({
 }));
 
 const resolveCommandConfigWithSecrets = vi.hoisted(() =>
-  vi.fn(async ({ config }: { config: unknown }) => ({
+  vi.fn(async ({ config }: { config: any }) => ({
     resolvedConfig: config,
     effectiveConfig: config,
     diagnostics: [] as string[],
@@ -47,7 +47,7 @@ const resolveCommandConfigWithSecrets = vi.hoisted(() =>
 vi.mock("../cli/command-config-resolution.js", () => ({
   resolveCommandConfigWithSecrets: async (opts: {
     autoEnable?: boolean;
-    config: unknown;
+    config: any;
     env?: NodeJS.ProcessEnv;
     runtime?: { log: (message: string) => void };
   }) => {
@@ -160,8 +160,8 @@ function createTelegramResolvedTokenConfig(token: string) {
 }
 
 function mockResolvedCommandConfig(params: {
-  rawConfig: Record<string, unknown>;
-  resolvedConfig: Record<string, unknown>;
+  rawConfig: Record<string, any>;
+  resolvedConfig: Record<string, any>;
   diagnostics?: string[];
 }) {
   testConfig = params.rawConfig;
@@ -172,7 +172,7 @@ function mockResolvedCommandConfig(params: {
   });
 }
 
-async function runMessageCommand(opts: Record<string, unknown> = {}) {
+async function runMessageCommand(opts: Record<string, any> = {}) {
   await messageCommand(
     {
       action: "send",
@@ -192,8 +192,8 @@ describe("messageCommand", () => {
     const rawConfig = createTelegramSecretRawConfig();
     const resolvedConfig = createTelegramResolvedTokenConfig("12345:resolved-token");
     mockResolvedCommandConfig({
-      rawConfig: rawConfig as unknown as Record<string, unknown>,
-      resolvedConfig: resolvedConfig as unknown as Record<string, unknown>,
+      rawConfig: rawConfig as unknown as Record<string, any>,
+      resolvedConfig: resolvedConfig as unknown as Record<string, any>,
     });
 
     await runMessageCommand();
@@ -211,7 +211,7 @@ describe("messageCommand", () => {
     expect(actionCall.cfg).not.toBe(rawConfig);
     const configResolutionCall = resolveCommandConfigWithSecrets.mock.calls[0]?.[0] as {
       commandName?: string;
-      config?: unknown;
+      config?: any;
       targetIds?: Set<string>;
     };
     expect(configResolutionCall.config).toBe(rawConfig);
@@ -239,8 +239,8 @@ describe("messageCommand", () => {
     };
     const locallyResolvedConfig = createTelegramResolvedTokenConfig("12345:local-fallback-token");
     mockResolvedCommandConfig({
-      rawConfig: rawConfig as unknown as Record<string, unknown>,
-      resolvedConfig: locallyResolvedConfig as unknown as Record<string, unknown>,
+      rawConfig: rawConfig as unknown as Record<string, any>,
+      resolvedConfig: locallyResolvedConfig as unknown as Record<string, any>,
       diagnostics: ["gateway secrets.resolve unavailable; used local resolver fallback."],
     });
 
@@ -314,7 +314,7 @@ describe("messageCommand", () => {
           messageId: "msg-json-1",
           channelId: "general",
         },
-      } as { ok: boolean } & Record<string, unknown>,
+      } as { ok: boolean } & Record<string, any>,
       dryRun: false,
     });
 
@@ -324,7 +324,7 @@ describe("messageCommand", () => {
     });
 
     const output = vi.mocked(runtime.log).mock.calls[0]?.[0];
-    const json = JSON.parse(String(output)) as { messageId?: string; payload?: unknown };
+    const json = JSON.parse(String(output)) as { messageId?: string; payload?: any };
     expect(json.messageId).toBe("msg-json-1");
     expect(json.payload).toEqual({
       ok: true,

@@ -60,7 +60,7 @@ describe("spawnSubagentDirect thread binding delivery", () => {
   let setActivePluginRegistryForTest: SetActivePluginRegistry;
   let createChannelTestPluginBaseForTest: CreateChannelTestPluginBase;
   let createTestRegistryForTest: CreateTestRegistry;
-  let currentConfig: Record<string, unknown>;
+  let currentConfig: Record<string, any>;
   let currentSessionBindingService: ReturnType<SessionBindingService>;
   let currentDeliveryTargetResolver: DeliveryTargetResolver;
 
@@ -167,7 +167,7 @@ describe("spawnSubagentDirect thread binding delivery", () => {
     // Cross-agent spawns bind the target agent account, while requester origin
     // remains the caller account for completion reporting.
     const boundRoom = "!room:example.org";
-    const bindCalls: Array<Record<string, unknown>> = [];
+    const bindCalls: Array<Record<string, any>> = [];
     currentSessionBindingService = {
       getCapabilities: () => ({
         adapterAvailable: true,
@@ -175,7 +175,7 @@ describe("spawnSubagentDirect thread binding delivery", () => {
         placements: ["child"],
       }),
       bind: async (request) => {
-        bindCalls.push(request as unknown as Record<string, unknown>);
+        bindCalls.push(request as unknown as Record<string, any>);
         return {
           targetSessionKey: request.targetSessionKey,
           targetKind: request.targetKind,
@@ -245,7 +245,7 @@ describe("spawnSubagentDirect thread binding delivery", () => {
     expect(bindingConversation?.conversationId).toBe(boundRoom);
     const agentCall = hoisted.callGatewayMock.mock.calls.find(
       ([call]) => (call as { method?: string }).method === "agent",
-    )?.[0] as { params?: Record<string, unknown> } | undefined;
+    )?.[0] as { params?: Record<string, any> } | undefined;
     expect(agentCall?.params?.channel).toBe("matrix");
     expect(agentCall?.params?.accountId).toBe("bot-alpha");
     expect(agentCall?.params?.to).toBe(`room:${boundRoom}`);
@@ -333,7 +333,7 @@ describe("spawnSubagentDirect thread binding delivery", () => {
     expect(result.status).toBe("accepted");
     const agentCall = hoisted.callGatewayMock.mock.calls.find(
       ([call]) => (call as { method?: string }).method === "agent",
-    )?.[0] as { params?: Record<string, unknown> } | undefined;
+    )?.[0] as { params?: Record<string, any> } | undefined;
     expect(agentCall?.params?.channel).toBe("collabchat");
     expect(agentCall?.params?.accountId).toBe("work");
     expect(agentCall?.params?.to).toBe("channel:collab_dm_1");

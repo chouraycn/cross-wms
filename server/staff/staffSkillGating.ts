@@ -26,7 +26,7 @@ export function resolveStaffSkillPermissionConfig(
   for (const t of tools) {
     if (t.enabled !== 1) continue;
     try {
-      const config = JSON.parse(t.config_json || '{}') as Record<string, unknown>;
+      const config = JSON.parse(t.config_json || '{}') as Record<string, any>;
       const skillId = config.skillId;
       if (typeof skillId === 'string' && skillId) enabledIds.push(skillId);
     } catch {

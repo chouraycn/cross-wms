@@ -15,10 +15,10 @@ export type McpLoopbackTool = unknown;
 
 export type McpToolSchemaEntry = unknown;
 
-export function readMcpLoopbackToolName(..._args: unknown[]): unknown {
+export function readMcpLoopbackToolName(..._args: any[]): any {
   return undefined;
 }
 
-export function buildMcpToolSchema(..._args: unknown[]): unknown {
+export function buildMcpToolSchema(..._args: any[]): any {
   return undefined;
 }

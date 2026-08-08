@@ -68,7 +68,7 @@ describe("trajectory metadata", () => {
       });
 
       const harness = metadata.harness as {
-        invocation?: unknown[];
+        invocation?: any[];
         entrypoint?: string;
         workspaceDir?: string;
         sessionFile?: string;

@@ -20,13 +20,13 @@ import { isNonEmptyString } from "./shared.js";
 type ApiKeyCredentialLike = AuthProfileCredential & {
   type: "api_key";
   key?: string;
-  keyRef?: unknown;
+  keyRef?: any;
 };
 
 type TokenCredentialLike = AuthProfileCredential & {
   type: "token";
   token?: string;
-  tokenRef?: unknown;
+  tokenRef?: any;
 };
 
 /**
@@ -35,7 +35,7 @@ type TokenCredentialLike = AuthProfileCredential & {
  */
 function assertNoOAuthSecretRefPolicyViolations(_params: {
   store: AuthProfileStore;
-  cfg: unknown;
+  cfg: any;
   context: string;
 }): void {
   // No-op: OAuth policy validation skipped until policy.js is ported.

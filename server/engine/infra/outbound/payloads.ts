@@ -35,7 +35,7 @@ export type NormalizedOutboundPayload = {
   presentation?: MessagePresentation;
   delivery?: ReplyPayloadDelivery;
   interactive?: InteractiveReply;
-  channelData?: Record<string, unknown>;
+  channelData?: Record<string, any>;
   /** Hook-only content for audio-only TTS payloads. Never used as channel text/caption. */
   hookContent?: string;
 };
@@ -49,7 +49,7 @@ export type OutboundPayloadJson = {
   presentation?: MessagePresentation;
   delivery?: ReplyPayloadDelivery;
   interactive?: InteractiveReply;
-  channelData?: Record<string, unknown>;
+  channelData?: Record<string, any>;
 };
 
 /** Prepared payload entry that keeps source indexing plus reusable projections. */

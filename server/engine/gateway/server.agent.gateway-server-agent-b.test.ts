@@ -105,7 +105,7 @@ const defaultRegistry = createRegistry([
   },
 ]);
 
-function expectChannels(call: Record<string, unknown>, channel: string) {
+function expectChannels(call: Record<string, any>, channel: string) {
   expect(call.channel).toBe(channel);
   expect(call.messageChannel).toBe(channel);
 }
@@ -270,7 +270,7 @@ describe("gateway server agent", () => {
     const stored = JSON.parse(await fs.readFile(sessionStorePath, "utf-8")) as Record<
       string,
       {
-        cliSessionBindings?: Record<string, unknown>;
+        cliSessionBindings?: Record<string, any>;
         cliSessionIds?: Record<string, string>;
         claudeCliSessionId?: string;
       }
@@ -623,7 +623,7 @@ describe("gateway server agent", () => {
         if (o.type !== "event" || o.event !== "chat") {
           return false;
         }
-        const payload = o.payload as { state?: unknown; runId?: unknown } | undefined;
+        const payload = o.payload as { state?: any; runId?: any } | undefined;
         return payload?.state === "final" && payload.runId === "run-auto-1";
       },
       8000,

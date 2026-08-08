@@ -45,7 +45,7 @@ function hasExternalSessionDeliveryRoute(sessionKey: string | undefined): boolea
   );
 }
 
-function hasExplicitRouteParam(params: Record<string, unknown>): boolean {
+function hasExplicitRouteParam(params: Record<string, any>): boolean {
   for (const key of ["channel", "target", "to", "channelId"]) {
     if (normalizeOptionalString(params[key])) {
       return true;
@@ -98,7 +98,7 @@ async function hasConfiguredCurrentSourceChannel(
 /** Return whether this send resolves to the private current-run source-reply sink. */
 export async function shouldUseInternalSourceReplySink(
   input: InternalSourceReplySinkInput,
-  params: Record<string, unknown>,
+  params: Record<string, any>,
 ): Promise<boolean> {
   const hasImplicitCurrentSourceRoute =
     input.action === "send" &&

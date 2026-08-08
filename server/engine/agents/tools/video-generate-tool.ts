@@ -359,7 +359,7 @@ function shouldExposeVideoReferenceAudioParams(params: {
   return false;
 }
 
-function resolveAction(args: Record<string, unknown>): "generate" | "list" | "status" {
+function resolveAction(args: Record<string, any>): "generate" | "list" | "status" {
   return resolveGenerateAction({
     args,
     allowed: ["generate", "status", "list"],
@@ -396,7 +396,7 @@ function normalizeAspectRatio(raw: string | undefined): string | undefined {
  * and treated as "unset" so providers can leave individual slots empty.
  */
 function parseRoleArray(params: {
-  raw: unknown;
+  raw: any;
   kind: "imageRoles" | "videoRoles" | "audioRoles";
   assetCount: number;
 }): string[] {
@@ -418,7 +418,7 @@ function parseRoleArray(params: {
 }
 
 function normalizeReferenceInputs(params: {
-  args: Record<string, unknown>;
+  args: Record<string, any>;
   singularKey: "image" | "video" | "audioRef";
   pluralKey: "images" | "videos" | "audioRefs";
   maxCount: number;
@@ -670,11 +670,11 @@ type ExecutedVideoGeneration = {
   mediaUrls: string[];
   attachments: AgentGeneratedAttachment[];
   contentText: string;
-  details: Record<string, unknown>;
+  details: Record<string, any>;
   wakeResult: string;
 };
 
-function isGeneratedMediaSizeLimitError(error: unknown): boolean {
+function isGeneratedMediaSizeLimitError(error: any): boolean {
   return error instanceof Error && /^Media exceeds \d+MB limit$/.test(error.message);
 }
 
@@ -694,7 +694,7 @@ async function executeVideoGenerationJob(params: {
   loadedReferenceVideos: LoadedReferenceAsset[];
   loadedReferenceAudios: LoadedReferenceAsset[];
   taskHandle?: VideoGenerationTaskHandle | null;
-  providerOptions?: Record<string, unknown>;
+  providerOptions?: Record<string, any>;
   autoProviderFallback?: boolean;
   timeoutMs?: number;
 }): Promise<ExecutedVideoGeneration> {
@@ -974,7 +974,7 @@ export function createVideoGenerateTool(options?: {
       'Create videos. Session chats: background task; do not call video_generate again for same request; wait completion, then report through the current visible-reply contract with generated media attached using structured media fields. "status" checks active task. Duration may round to provider-supported value.',
     parameters: createVideoGenerateToolSchema({ includeAudioReferences }),
     execute: async (_toolCallId, rawArgs) => {
-      const args = rawArgs as Record<string, unknown>;
+      const args = rawArgs as Record<string, any>;
       const action = resolveAction(args);
 
       if (action === "list") {
@@ -1031,7 +1031,7 @@ export function createVideoGenerateTool(options?: {
       const timeoutMs = readGenerationTimeoutMs(args) ?? videoGenerationModelConfig.timeoutMs;
       // providerOptions must be a plain object. Arrays are objects in JS, so
       // exclude them explicitly — a bogus call like `providerOptions: ["seed", 42]`
-      // would otherwise be cast to `Record<string, unknown>` with numeric-string
+      // would otherwise be cast to `Record<string, any>` with numeric-string
       // keys and silently forwarded to the provider.
       const providerOptionsRaw = readSnakeCaseParamRaw(args, "providerOptions");
       if (
@@ -1043,7 +1043,7 @@ export function createVideoGenerateTool(options?: {
         );
       }
       const providerOptions =
-        providerOptionsRaw != null ? (providerOptionsRaw as Record<string, unknown>) : undefined;
+        providerOptionsRaw != null ? (providerOptionsRaw as Record<string, any>) : undefined;
       const imageInputs = normalizeReferenceInputs({
         args,
         singularKey: "image",

@@ -16,16 +16,16 @@ import { logger } from '../logger.js';
 export interface McpToolInfo {
   name: string;
   description?: string;
-  input_schema: Record<string, unknown>;
+  input_schema: Record<string, any>;
 }
 
 export interface McpConnectionConfig {
   transport: string;
   url?: string | null;
-  headers?: Record<string, unknown>;
+  headers?: Record<string, any>;
   command?: string | null;
   args?: string[];
-  env?: Record<string, unknown>;
+  env?: Record<string, any>;
   cwd?: string | null;
 }
 
@@ -102,8 +102,8 @@ export async function discoverMcpTools(
     );
     await withTimeout(client.connect(transport), timeoutMs, 'MCP 连接');
     const listed = await withTimeout(client.listTools(), timeoutMs, 'MCP 列举工具');
-    const tools: McpToolInfo[] = (listed.tools ?? []).map((tool: unknown) => {
-      const t = tool as { name: string; description?: string; inputSchema?: Record<string, unknown> };
+    const tools: McpToolInfo[] = (listed.tools ?? []).map((tool: any) => {
+      const t = tool as { name: string; description?: string; inputSchema?: Record<string, any> };
       return {
         name: t.name,
         description: t.description,

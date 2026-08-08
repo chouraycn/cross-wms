@@ -59,7 +59,7 @@ describe("kysely sync helpers", () => {
   });
 });
 
-async function expectCompileOnlyRejection(promise: Promise<unknown>): Promise<void> {
+async function expectCompileOnlyRejection(promise: Promise<any>): Promise<void> {
   await expect(Promise.race([promise, timeoutAfter(500)])).rejects.toThrow(
     /compile-only Kysely facade/,
   );

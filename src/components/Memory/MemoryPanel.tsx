@@ -109,7 +109,7 @@ async function fetchMemoryStats(): Promise<MemoryStats> {
 
 async function addMemory(
   text: string,
-  metadata?: Record<string, unknown>,
+  metadata?: Record<string, any>,
   category?: MemoryCategory,
   importance?: number
 ): Promise<{ id: number; success: boolean }> {
@@ -442,7 +442,7 @@ const MemoryPanel: React.FC = memo(() => {
   }, [loadMemories]);
 
   // 批量操作
-  const handleBatchOperation = useCallback(async (operation: BatchOperationType, params?: Record<string, unknown>) => {
+  const handleBatchOperation = useCallback(async (operation: BatchOperationType, params?: Record<string, any>) => {
     if (selectedIds.length === 0) return;
 
     try {
@@ -472,7 +472,7 @@ const MemoryPanel: React.FC = memo(() => {
     if (!newMemoryText.trim()) return;
     setAdding(true);
     try {
-      const metadata: Record<string, unknown> = {};
+      const metadata: Record<string, any> = {};
       newMemoryTags.forEach(tag => {
         metadata[tag] = true;
       });

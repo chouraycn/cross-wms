@@ -5,7 +5,7 @@ import { resolveMcpTransport } from "./mcp-transport.js";
 type StreamableTransportOptions = {
   requestInit?: RequestInit;
   fetch?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
-  authProvider?: unknown;
+  authProvider?: any;
 };
 
 const {
@@ -25,9 +25,9 @@ vi.mock("node:dns/promises", () => ({
 }));
 
 vi.mock("../infra/net/undici-runtime.js", () => ({
-  createHttp1Agent: (options: unknown) => ({ options }),
-  createHttp1EnvHttpProxyAgent: (options: unknown) => ({ options }),
-  createHttp1ProxyAgent: (options: unknown) => ({ options }),
+  createHttp1Agent: (options: any) => ({ options }),
+  createHttp1EnvHttpProxyAgent: (options: any) => ({ options }),
+  createHttp1ProxyAgent: (options: any) => ({ options }),
   loadUndiciRuntimeDeps: () => ({
     fetch: runtimeFetchMock,
   }),
@@ -35,7 +35,7 @@ vi.mock("../infra/net/undici-runtime.js", () => ({
 
 vi.mock("@modelcontextprotocol/sdk/client/streamableHttp.js", () => ({
   StreamableHTTPClientTransport: function MockStreamableHTTPClientTransport(
-    this: unknown,
+    this: any,
     url: URL,
     options?: StreamableTransportOptions,
   ) {
@@ -49,7 +49,7 @@ type SseTransportOptions = {
 
 vi.mock("@modelcontextprotocol/sdk/client/sse.js", () => ({
   SSEClientTransport: function MockSSEClientTransport(
-    this: unknown,
+    this: any,
     url: URL,
     options?: SseTransportOptions,
   ) {
@@ -73,7 +73,7 @@ function latestStreamableTransportOptions(): StreamableTransportOptions {
   // options to exercise OpenClaw's wrapped fetch implementation directly.
   const latestCall = streamableTransportConstructorMock.mock.calls[
     streamableTransportConstructorMock.mock.calls.length - 1
-  ] as unknown[] | undefined;
+  ] as any[] | undefined;
   const options = latestCall?.[1];
   if (!options || typeof options !== "object") {
     throw new Error("Expected streamable HTTP transport options");
@@ -92,7 +92,7 @@ function latestStreamableFetch() {
 function latestSseEventSourceFetch() {
   const latestCall = sseTransportConstructorMock.mock.calls[
     sseTransportConstructorMock.mock.calls.length - 1
-  ] as unknown[] | undefined;
+  ] as any[] | undefined;
   const options = latestCall?.[1] as SseTransportOptions | undefined;
   const fetch = options?.eventSourceInit?.fetch;
   if (typeof fetch !== "function") {

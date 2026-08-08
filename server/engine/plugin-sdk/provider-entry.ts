@@ -7,10 +7,10 @@ type UnifiedModelCatalogEntry = {
   name?: string;
   provider: string;
   source: 'static' | 'live';
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
-function normalizeStringEntries(entries: unknown[]): string[] {
+function normalizeStringEntries(entries: any[]): string[] {
   return entries.filter((v): v is string => typeof v === 'string');
 }
 
@@ -23,17 +23,17 @@ type ProviderAuthMethod = {
   label?: string;
   hint?: string;
   envVar?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 type ProviderPluginCatalog = {
   order?: string;
-  run: (ctx: unknown) => Promise<ProviderCatalogResult>;
+  run: (ctx: any) => Promise<ProviderCatalogResult>;
 };
 
 type ProviderCatalogResult = {
-  provider?: unknown;
-  [key: string]: unknown;
+  provider?: any;
+  [key: string]: any;
 };
 
 type ProviderCatalogContext = unknown;
@@ -47,10 +47,10 @@ type ProviderPlugin = {
   auth?: ProviderAuthMethod[];
   catalog?: ProviderPluginCatalog;
   staticCatalog?: ProviderPluginCatalog;
-  buildReplayPolicy?: unknown;
-  sanitizeReplayHistory?: unknown;
-  resolveReasoningOutputMode?: unknown;
-  [key: string]: unknown;
+  buildReplayPolicy?: any;
+  sanitizeReplayHistory?: any;
+  resolveReasoningOutputMode?: any;
+  [key: string]: any;
 };
 
 type UnifiedModelCatalogProviderContext = unknown;
@@ -74,7 +74,7 @@ function createProviderApiKeyAuthMethod(options: {
   hint?: string;
   envVar?: string;
   expectedProviders?: string[];
-  wizard?: unknown;
+  wizard?: any;
 }): ProviderAuthMethod {
   return {
     methodId: options.methodId,
@@ -87,11 +87,11 @@ function createProviderApiKeyAuthMethod(options: {
 type ApiKeyAuthMethodOptions = Parameters<typeof createProviderApiKeyAuthMethod>[0];
 
 async function buildSingleProviderApiKeyCatalog(params: {
-  ctx?: unknown;
+  ctx?: any;
   providerId?: string;
-  buildProvider?: (ctx: unknown) => Promise<unknown>;
+  buildProvider?: (ctx: any) => Promise<any>;
   allowExplicitBaseUrl?: boolean;
-  [key: string]: unknown;
+  [key: string]: any;
 }): Promise<ProviderCatalogResult> {
   if (params.buildProvider) {
     const provider = await params.buildProvider(params.ctx);
@@ -101,20 +101,20 @@ async function buildSingleProviderApiKeyCatalog(params: {
 }
 
 function projectProviderCatalogResultToUnifiedTextRows(
-  _params: unknown,
+  _params: any,
 ): UnifiedModelCatalogEntry[] {
   return [];
 }
 
-function copyArrayEntries(value: unknown): unknown[] {
+function copyArrayEntries(value: any): any[] {
   return Array.isArray(value) ? [...value] : [];
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return value != null && typeof value === 'object' && !Array.isArray(value);
 }
 
-function readRecordValue(record: unknown, key: string): unknown {
+function readRecordValue(record: any, key: string): any {
   if (!isRecord(record)) {
     return undefined;
   }
@@ -194,16 +194,16 @@ function resolveWizardSetup(params: {
   };
 }
 
-function copyProviderAuthOptions(value: unknown): SingleProviderPluginApiKeyAuthOptions[] {
+function copyProviderAuthOptions(value: any): SingleProviderPluginApiKeyAuthOptions[] {
   return copyArrayEntries(value).filter(isRecord) as SingleProviderPluginApiKeyAuthOptions[];
 }
 
-function copyProviderAuthMethods(value: unknown): ProviderAuthMethod[] {
+function copyProviderAuthMethods(value: any): ProviderAuthMethod[] {
   return copyArrayEntries(value).filter(isRecord) as ProviderAuthMethod[];
 }
 
 function resolveEnvVars(params: {
-  envVars?: unknown;
+  envVars?: any;
   auth?: SingleProviderPluginApiKeyAuthOptions[];
 }): string[] | undefined {
   const combined = normalizeStringEntries([
@@ -348,7 +348,7 @@ export function defineSingleProviderPluginEntry(options: SingleProviderPluginOpt
 
         api.registerHook(
           `provider:${providerId}:catalog`,
-          async (ctx: unknown) => {
+          async (ctx: any) => {
             return runUnifiedTextCatalog({
               providerId,
               catalog,
@@ -362,7 +362,7 @@ export function defineSingleProviderPluginEntry(options: SingleProviderPluginOpt
         if (staticCatalog) {
           api.registerHook(
             `provider:${providerId}:static-catalog`,
-            async (ctx: unknown) => {
+            async (ctx: any) => {
               return runUnifiedTextCatalog({
                 providerId,
                 catalog: staticCatalog,

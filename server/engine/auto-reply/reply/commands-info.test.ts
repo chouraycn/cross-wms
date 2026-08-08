@@ -63,7 +63,7 @@ vi.mock("../status.js", async () => {
   };
 });
 
-function firstMockArg(mock: { mock: { calls: unknown[][] } }, label: string): unknown {
+function firstMockArg(mock: { mock: { calls: any[][] } }, label: string): any {
   expect(mock.mock.calls).toHaveLength(1);
   const [arg] = mock.mock.calls.at(0) ?? [];
   if (!arg) {

@@ -36,10 +36,10 @@ export interface SkillChain {
 export interface SkillChainExecutionContext {
   chainId: string;
   currentStepId: string;
-  variables: Record<string, unknown>;
+  variables: Record<string, any>;
   history: Array<{
     stepId: string;
-    result: unknown;
+    result: any;
     timestamp: number;
     duration: number;
   }>;
@@ -49,7 +49,7 @@ export interface SkillChainExecutionContext {
 
 export interface SkillChainExecutionResult {
   success: boolean;
-  result?: unknown;
+  result?: any;
   error?: Error;
   duration: number;
   executedSteps: string[];
@@ -131,7 +131,7 @@ export class SkillChainManager {
     return { valid: errors.length === 0, errors };
   }
 
-  createExecution(chainId: string, initialVariables: Record<string, unknown> = {}): SkillChainExecutionContext | null {
+  createExecution(chainId: string, initialVariables: Record<string, any> = {}): SkillChainExecutionContext | null {
     const chain = this.chains.get(chainId);
     if (!chain) return null;
 

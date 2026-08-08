@@ -213,16 +213,16 @@ export function composeThinkingAndContent(params: {
   return parts.join('\n\n').trim();
 }
 
-function asMessageRecord(message: unknown): Record<string, unknown> | undefined {
+function asMessageRecord(message: any): Record<string, any> | undefined {
   if (!message || typeof message !== 'object') {
     return undefined;
   }
-  return message as Record<string, unknown>;
+  return message as Record<string, any>;
 }
 
 function resolveMessageRecord(
-  message: unknown,
-): { record: Record<string, unknown>; content: unknown } | undefined {
+  message: any,
+): { record: Record<string, any>; content: any } | undefined {
   const record = asMessageRecord(message);
   if (!record) {
     return undefined;
@@ -231,7 +231,7 @@ function resolveMessageRecord(
 }
 
 function collectSanitizedBlockStrings(params: {
-  content: unknown;
+  content: any;
   blockType: 'text' | 'thinking';
   valueKey: 'text' | 'thinking';
 }): string[] {
@@ -243,7 +243,7 @@ function collectSanitizedBlockStrings(params: {
     if (!block || typeof block !== 'object') {
       continue;
     }
-    const rec = block as Record<string, unknown>;
+    const rec = block as Record<string, any>;
     if (rec.type === params.blockType && typeof rec[params.valueKey] === 'string') {
       parts.push(sanitizeRenderableText(rec[params.valueKey] as string));
     }
@@ -251,7 +251,7 @@ function collectSanitizedBlockStrings(params: {
   return parts;
 }
 
-export function extractThinkingFromMessage(message: unknown): string {
+export function extractThinkingFromMessage(message: any): string {
   const resolved = resolveMessageRecord(message);
   if (!resolved) {
     return '';
@@ -268,7 +268,7 @@ export function extractThinkingFromMessage(message: unknown): string {
   return parts.join('\n').trim();
 }
 
-export function extractContentFromMessage(message: unknown): string {
+export function extractContentFromMessage(message: any): string {
   const resolved = resolveMessageRecord(message);
   if (!resolved) {
     return '';
@@ -306,11 +306,11 @@ export function extractContentFromMessage(message: unknown): string {
   return '';
 }
 
-export function isCommandMessage(message: unknown): boolean {
+export function isCommandMessage(message: any): boolean {
   if (!message || typeof message !== 'object') {
     return false;
   }
-  return (message as Record<string, unknown>).command === true;
+  return (message as Record<string, any>).command === true;
 }
 
 export function formatTimestamp(ts: number): string {

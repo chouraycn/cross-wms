@@ -12,7 +12,7 @@ type NonInteractiveRuntime = {
 export function createThrowingRuntime(): NonInteractiveRuntime {
   return {
     log: () => {},
-    error: (...args: unknown[]) => {
+    error: (...args: any[]) => {
       throw new Error(args.map(String).join(" "));
     },
     exit: (code: number) => {

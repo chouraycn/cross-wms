@@ -5,9 +5,9 @@ const getChannelPluginCatalogEntry = vi.hoisted(() => vi.fn());
 const listRawChannelPluginCatalogEntries = vi.hoisted(() => vi.fn());
 
 vi.mock("../../channels/plugins/catalog.js", () => ({
-  getChannelPluginCatalogEntry: (...args: unknown[]) =>
-    getChannelPluginCatalogEntry(...(args as [string, Record<string, unknown>])),
-  listRawChannelPluginCatalogEntries: (options?: unknown) =>
+  getChannelPluginCatalogEntry: (...args: any[]) =>
+    getChannelPluginCatalogEntry(...(args as [string, Record<string, any>])),
+  listRawChannelPluginCatalogEntries: (options?: any) =>
     listRawChannelPluginCatalogEntries(options),
 }));
 

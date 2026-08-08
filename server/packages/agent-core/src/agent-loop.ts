@@ -109,7 +109,7 @@ export function agentLoop(
     .then((messages) => {
       stream.end(messages);
     })
-    .catch((error: unknown) => {
+    .catch((error: any) => {
       pushLoopFailure(stream, config, error, signal?.aborted === true);
     });
 
@@ -154,7 +154,7 @@ export function agentLoopContinue(
     .then((messages) => {
       stream.end(messages);
     })
-    .catch((error: unknown) => {
+    .catch((error: any) => {
       pushLoopFailure(stream, config, error, signal?.aborted === true);
     });
 
@@ -224,7 +224,7 @@ function createAgentStream(): EventStream<AgentEvent, AgentMessage[]> {
 
 function createLoopFailureMessage(
   config: AgentLoopConfig,
-  error: unknown,
+  error: any,
   aborted: boolean,
 ): AssistantMessage {
   return {
@@ -243,7 +243,7 @@ function createLoopFailureMessage(
 function pushLoopFailure(
   stream: EventStream<AgentEvent, AgentMessage[]>,
   config: AgentLoopConfig,
-  error: unknown,
+  error: any,
   aborted: boolean,
 ): void {
   const failureMessage = createLoopFailureMessage(config, error, aborted);
@@ -596,7 +596,7 @@ type ExecutedToolCallBatch = {
 
 type ResolvedToolCallOutcome =
   | { kind: "resolved"; tool?: AgentTool }
-  | { kind: "error"; error: unknown };
+  | { kind: "error"; error: any };
 
 async function executeToolCallsSequential(
   currentContext: AgentContext,
@@ -743,23 +743,23 @@ type PreparedToolCall = {
   kind: "prepared";
   toolCall: AgentToolCall;
   tool: AgentTool;
-  args: unknown;
+  args: any;
 };
 
 type ImmediateToolCallOutcome = {
   kind: "immediate";
-  result: AgentToolResult<unknown>;
+  result: AgentToolResult<any>;
   isError: boolean;
 };
 
 type ExecutedToolCallOutcome = {
-  result: AgentToolResult<unknown>;
+  result: AgentToolResult<any>;
   isError: boolean;
 };
 
 type FinalizedToolCallOutcome = {
   toolCall: AgentToolCall;
-  result: AgentToolResult<unknown>;
+  result: AgentToolResult<any>;
   isError: boolean;
   executionStarted: boolean;
 };
@@ -783,7 +783,7 @@ function prepareToolCallArguments(tool: AgentTool, toolCall: AgentToolCall): Age
   }
   return {
     ...toolCall,
-    arguments: preparedArguments as Record<string, unknown>,
+    arguments: preparedArguments as Record<string, any>,
   };
 }
 
@@ -1002,7 +1002,7 @@ async function finalizeExecutedToolCall(
   };
 }
 
-function createErrorToolResult(message: string): AgentToolResult<unknown> {
+function createErrorToolResult(message: string): AgentToolResult<any> {
   return {
     content: [{ type: "text", text: message }],
     details: {},

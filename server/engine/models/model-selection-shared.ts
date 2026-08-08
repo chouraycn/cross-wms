@@ -285,6 +285,6 @@ export function resolveConfiguredOpenRouterCompatAlias(
   return openRouterAliases[modelId.toLowerCase()] || null;
 }
 
-export function resolveHooksGmailModel(_context?: unknown): string | null {
+export function resolveHooksGmailModel(_context?: any): string | null {
   return null;
 }

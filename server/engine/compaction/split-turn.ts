@@ -15,14 +15,14 @@ export const TURN_PREFIX_SUMMARIZATION_PROMPT = [
   '- Key points: 关键决策、重要约束，用分号分隔或每条独立子项',
 ].join('\n');
 
-function getMessageRole(message: unknown): string {
+function getMessageRole(message: any): string {
   if (!message || typeof message !== 'object') return '';
-  const msg = message as Record<string, unknown>;
+  const msg = message as Record<string, any>;
   return typeof msg.role === 'string' ? msg.role : '';
 }
 
 export function isSplitTurnCut(
-  messages: unknown[],
+  messages: any[],
   cutIndex: number,
 ): boolean {
   if (!Array.isArray(messages) || cutIndex <= 0 || cutIndex >= messages.length) {
@@ -34,12 +34,12 @@ export function isSplitTurnCut(
 
   if (prevRole === 'assistant') {
     if (prevMsg && typeof prevMsg === 'object') {
-      const p = prevMsg as Record<string, unknown>;
+      const p = prevMsg as Record<string, any>;
       if (Array.isArray(p.tool_calls) && p.tool_calls.length > 0) {
         return true;
       }
       if (p.metadata && typeof p.metadata === 'object') {
-        const meta = p.metadata as Record<string, unknown>;
+        const meta = p.metadata as Record<string, any>;
         if (Array.isArray(meta.toolCalls) && meta.toolCalls.length > 0) {
           return true;
         }
@@ -55,7 +55,7 @@ export function isSplitTurnCut(
 }
 
 function findTurnStartIndex(
-  messages: unknown[],
+  messages: any[],
   cutIndex: number,
 ): number {
   let turnStart = 0;
@@ -70,10 +70,10 @@ function findTurnStartIndex(
 }
 
 export function extractTurnPrefixMessages(
-  messages: unknown[],
+  messages: any[],
   cutIndex: number,
   turnStartIndex?: number,
-): unknown[] {
+): any[] {
   if (!Array.isArray(messages) || cutIndex <= 0) {
     return [];
   }

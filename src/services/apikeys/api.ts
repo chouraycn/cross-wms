@@ -32,7 +32,7 @@ export interface ApiKeyRecord {
   createdAt: number;
   lastUsedAt?: number;
   rateLimitPerMinute: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface ApiKeyWithSecret extends ApiKeyRecord {
@@ -58,7 +58,7 @@ export async function fetchApiKeys(): Promise<ApiKeyRecord[]> {
 export async function createApiKey(params: {
   name: string;
   rateLimitPerMinute?: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }): Promise<{ data: ApiKeyWithSecret; warning: string }> {
   const res = await fetchWithTimeout(BASE, {
     method: 'POST',

@@ -92,7 +92,7 @@ function actionNeedsExplicitTarget(action: ChannelMessageActionName): boolean {
   return action === "broadcast" || shouldApplyCrossContextMarker(action);
 }
 
-function normalizeMessageToolIdempotencyKeyPart(value: unknown): string | undefined {
+function normalizeMessageToolIdempotencyKeyPart(value: any): string | undefined {
   const normalized = normalizeOptionalString(value);
   if (!normalized) {
     return undefined;
@@ -111,9 +111,9 @@ const MESSAGE_TOOL_IDEMPOTENCY_ENVELOPE_PARAM_KEYS = new Set<string>(
 );
 
 function stripMessageToolIdempotencyEnvelope(
-  params: Record<string, unknown>,
-): Record<string, unknown> {
-  const out: Record<string, unknown> = {};
+  params: Record<string, any>,
+): Record<string, any> {
+  const out: Record<string, any> = {};
   for (const key of Object.keys(params).toSorted()) {
     if (!MESSAGE_TOOL_IDEMPOTENCY_ENVELOPE_PARAM_KEYS.has(key)) {
       out[key] = params[key];
@@ -122,15 +122,15 @@ function stripMessageToolIdempotencyEnvelope(
   return out;
 }
 
-function canonicalizeMessageToolIdempotencyValue(value: unknown): unknown {
+function canonicalizeMessageToolIdempotencyValue(value: any): any {
   if (Array.isArray(value)) {
     return value.map((entry) => canonicalizeMessageToolIdempotencyValue(entry));
   }
   if (!value || typeof value !== "object") {
     return value;
   }
-  const record = value as Record<string, unknown>;
-  const out: Record<string, unknown> = {};
+  const record = value as Record<string, any>;
+  const out: Record<string, any> = {};
   for (const key of Object.keys(record).toSorted()) {
     out[key] = canonicalizeMessageToolIdempotencyValue(record[key]);
   }
@@ -139,7 +139,7 @@ function canonicalizeMessageToolIdempotencyValue(value: unknown): unknown {
 
 function buildMessageToolDeliveryFingerprint(params: {
   action: ChannelMessageActionName;
-  params: Record<string, unknown>;
+  params: Record<string, any>;
 }): string {
   const canonical = JSON.stringify(
     canonicalizeMessageToolIdempotencyValue({
@@ -200,7 +200,7 @@ function sanitizeUserVisibleToolTextResult(
 }
 
 function sanitizeStringParam(
-  params: Record<string, unknown>,
+  params: Record<string, any>,
   field: string,
   bootPrompt: string | undefined,
 ): VisibleTextSuppressionReason | undefined {
@@ -213,7 +213,7 @@ function sanitizeStringParam(
 }
 
 function sanitizeStringArrayParam(
-  params: Record<string, unknown>,
+  params: Record<string, any>,
   field: string,
   bootPrompt: string | undefined,
 ): VisibleTextSuppressionReason | undefined {
@@ -239,14 +239,14 @@ function sanitizeStringArrayParam(
 }
 
 function sanitizePresentationTextFieldsResult(
-  value: unknown,
+  value: any,
   bootPrompt: string | undefined,
-): { value: unknown; suppressionReason?: VisibleTextSuppressionReason } {
+): { value: any; suppressionReason?: VisibleTextSuppressionReason } {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return { value };
   }
   let suppressionReason: VisibleTextSuppressionReason | undefined;
-  const presentation = { ...(value as Record<string, unknown>) };
+  const presentation = { ...(value as Record<string, any>) };
   if (typeof presentation.title === "string") {
     const sanitized = sanitizeUserVisibleToolTextResult(presentation.title, bootPrompt);
     presentation.title = sanitized.text;
@@ -257,7 +257,7 @@ function sanitizePresentationTextFieldsResult(
       if (!block || typeof block !== "object" || Array.isArray(block)) {
         return block;
       }
-      const sanitizedBlock = { ...(block as Record<string, unknown>) };
+      const sanitizedBlock = { ...(block as Record<string, any>) };
       for (const field of ["text", "placeholder"]) {
         if (typeof sanitizedBlock[field] === "string") {
           const sanitized = sanitizeUserVisibleToolTextResult(sanitizedBlock[field], bootPrompt);
@@ -270,7 +270,7 @@ function sanitizePresentationTextFieldsResult(
           if (!button || typeof button !== "object" || Array.isArray(button)) {
             return button;
           }
-          const sanitizedButton = { ...(button as Record<string, unknown>) };
+          const sanitizedButton = { ...(button as Record<string, any>) };
           if (typeof sanitizedButton.label === "string") {
             const sanitized = sanitizeUserVisibleToolTextResult(sanitizedButton.label, bootPrompt);
             sanitizedButton.label = sanitized.text;
@@ -290,7 +290,7 @@ function sanitizePresentationTextFieldsResult(
             if (!webApp || typeof webApp !== "object" || Array.isArray(webApp)) {
               continue;
             }
-            const sanitizedWebApp = { ...(webApp as Record<string, unknown>) };
+            const sanitizedWebApp = { ...(webApp as Record<string, any>) };
             if (typeof sanitizedWebApp.url !== "string") {
               continue;
             }
@@ -311,7 +311,7 @@ function sanitizePresentationTextFieldsResult(
           if (!option || typeof option !== "object" || Array.isArray(option)) {
             return option;
           }
-          const sanitizedOption = { ...(option as Record<string, unknown>) };
+          const sanitizedOption = { ...(option as Record<string, any>) };
           if (typeof sanitizedOption.label === "string") {
             const sanitized = sanitizeUserVisibleToolTextResult(sanitizedOption.label, bootPrompt);
             sanitizedOption.label = sanitized.text;
@@ -326,7 +326,7 @@ function sanitizePresentationTextFieldsResult(
   return { value: presentation, ...(suppressionReason ? { suppressionReason } : {}) };
 }
 
-function readFirstStringParam(params: Record<string, unknown>, keys: readonly string[]): string {
+function readFirstStringParam(params: Record<string, any>, keys: readonly string[]): string {
   for (const key of keys) {
     const value = readStringParam(params, key);
     if (value) {
@@ -336,7 +336,7 @@ function readFirstStringParam(params: Record<string, unknown>, keys: readonly st
   return "";
 }
 
-function readStructuredAttachmentMediaParams(value: unknown): string[] {
+function readStructuredAttachmentMediaParams(value: any): string[] {
   if (!Array.isArray(value)) {
     return [];
   }
@@ -345,7 +345,7 @@ function readStructuredAttachmentMediaParams(value: unknown): string[] {
     if (!attachment || typeof attachment !== "object" || Array.isArray(attachment)) {
       continue;
     }
-    const record = attachment as Record<string, unknown>;
+    const record = attachment as Record<string, any>;
     for (const key of ["media", "mediaUrl", "path", "filePath", "fileUrl", "url"]) {
       const candidate = readStringParam(record, key);
       if (candidate) {
@@ -356,7 +356,7 @@ function readStructuredAttachmentMediaParams(value: unknown): string[] {
   return values;
 }
 
-function hasSanitizedSendPayloadContent(params: Record<string, unknown>): boolean {
+function hasSanitizedSendPayloadContent(params: Record<string, any>): boolean {
   const text = ["message", "text", "content", "caption", "SendMessage"]
     .map((field) => (typeof params[field] === "string" ? params[field] : ""))
     .filter((value) => value.trim())
@@ -1229,7 +1229,7 @@ export function createMessageTool(options?: MessageToolOptions): AnyAgentTool {
         throw err;
       }
       // Shallow-copy so we don't mutate the original event args (used for logging/dedup).
-      const params = { ...(args as Record<string, unknown>) };
+      const params = { ...(args as Record<string, any>) };
 
       // Sanitize outbound text fields in three layers:
       //

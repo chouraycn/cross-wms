@@ -6,18 +6,18 @@ export type SecretRef = {
   id: string;
 };
 
-function formatSecretResolutionError(error: unknown): string {
+function formatSecretResolutionError(error: any): string {
   if (error instanceof Error && error.message.trim().length > 0) {
     return error.message;
   }
   return String(error);
 }
 
-export function isSecretRef(value: unknown): value is SecretRef {
+export function isSecretRef(value: any): value is SecretRef {
   if (!value || typeof value !== "object") {
     return false;
   }
-  const obj = value as Record<string, unknown>;
+  const obj = value as Record<string, any>;
   return (
     typeof obj.source === "string" &&
     typeof obj.provider === "string" &&
@@ -26,7 +26,7 @@ export function isSecretRef(value: unknown): value is SecretRef {
 }
 
 export function resolveSecretInputRef(params: {
-  value: unknown;
+  value: any;
   envVarName?: string;
   env?: NodeJS.ProcessEnv;
 }): { ref?: SecretRef; plaintext?: string } {
@@ -61,7 +61,7 @@ export function resolveSecretInputRef(params: {
   return {};
 }
 
-export function normalizeSecretInputString(value: unknown): string | undefined {
+export function normalizeSecretInputString(value: any): string | undefined {
   if (typeof value === "string") {
     const trimmed = value.trim();
     return trimmed.length > 0 ? trimmed : undefined;
@@ -85,7 +85,7 @@ async function resolveSecretRefString(
 }
 
 export async function resolveSetupSecretInputString(params: {
-  value: unknown;
+  value: any;
   path: string;
   envVarName?: string;
   env?: NodeJS.ProcessEnv;

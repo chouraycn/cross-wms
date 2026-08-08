@@ -5,11 +5,11 @@
 import type { StreamFn } from "../../agents/runtime/index.js";
 
 export function createCapturedThinkingConfigStream() {
-  let capturedPayload: Record<string, unknown> | undefined;
+  let capturedPayload: Record<string, any> | undefined;
   const streamFn: StreamFn = (model, _context, options) => {
     const payload = { config: { thinkingConfig: { thinkingBudget: -1 } } } as Record<
       string,
-      unknown
+      any
     >;
     options?.onPayload?.(payload as never, model as never);
     capturedPayload = payload;

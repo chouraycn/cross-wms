@@ -19,7 +19,7 @@ type OpenClawConfig = unknown;
 /** 占位：PluginManifestRecord。 */
 type PluginManifestRecord = {
   id: string;
-  toolMetadata?: Record<string, unknown>;
+  toolMetadata?: Record<string, any>;
 };
 
 export type ManifestConfigAvailabilitySignal = PluginManifestCapabilityProviderConfigSignal;

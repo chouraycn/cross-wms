@@ -6,7 +6,7 @@ import { PostgresAdapter, _resetPgDriverCache } from '../adapters/PostgresAdapte
 // ---------------------------------------------------------------------------
 
 interface MockQueryResult {
-  rows: Record<string, unknown>[];
+  rows: Record<string, any>[];
   rowCount: number;
 }
 
@@ -25,7 +25,7 @@ let mockClient: {
 };
 
 const { mockRequire, mockPgPool } = vi.hoisted(() => {
-  let currentPool: unknown = null;
+  let currentPool: any = null;
   const ctor = vi.fn().mockImplementation(() => currentPool);
   const mockReq = vi.fn((id: string) => {
     if (id === 'pg') {
@@ -36,7 +36,7 @@ const { mockRequire, mockPgPool } = vi.hoisted(() => {
   return {
     mockRequire: mockReq,
     mockPgPool: Object.assign(ctor, {
-      _setPool: (p: unknown) => { currentPool = p; },
+      _setPool: (p: any) => { currentPool = p; },
     }),
   };
 });
@@ -77,7 +77,7 @@ describe('PostgresAdapter', () => {
     vi.clearAllMocks();
     _resetPgDriverCache();
     mockPool = createMockPool();
-    (mockPgPool as unknown as { _setPool: (p: unknown) => void })._setPool(mockPool);
+    (mockPgPool as unknown as { _setPool: (p: any) => void })._setPool(mockPool);
     adapter = new PostgresAdapter({
       connectionString: 'postgresql://user:pass@localhost:5432/testdb',
     });

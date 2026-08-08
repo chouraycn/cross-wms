@@ -52,7 +52,7 @@ import {
 
 interface MemoryBatchOperationsProps {
   selectedMemories: MemoryEntry[];
-  onBatchOperation: (operation: BatchOperationType, params?: Record<string, unknown>) => Promise<void>;
+  onBatchOperation: (operation: BatchOperationType, params?: Record<string, any>) => Promise<void>;
   onClearSelection: () => void;
 }
 
@@ -162,7 +162,7 @@ const MemoryBatchOperations: React.FC<MemoryBatchOperationsProps> = memo(({
     setError(null);
 
     try {
-      const params: Record<string, unknown> = {};
+      const params: Record<string, any> = {};
       if (operationType === 'changeCategory' && targetCategory) {
         params.category = targetCategory;
       }

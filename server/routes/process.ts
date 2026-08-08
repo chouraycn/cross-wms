@@ -134,7 +134,7 @@ function seedDemoData(): void {
       restartCount: 1,
       uptimeMs: 1800_000,
       usage: { pid: 12347, timestamp: now, cpuPercent: 0.1, memoryMb: 12.4, rssBytes: 13_008_896 },
-      health: 'unknown',
+      health: 'any',
       command: 'ffmpeg',
       args: ['-i', 'input.mp4', 'output.mp4'],
       cwd: '/tmp',
@@ -149,7 +149,7 @@ function seedDemoData(): void {
       restartCount: 0,
       uptimeMs: 100_000,
       usage: { pid: 0, timestamp: now, cpuPercent: 0, memoryMb: 0, rssBytes: 0 },
-      health: 'unknown',
+      health: 'any',
       command: 'node',
       args: ['dist/migrate.js'],
       cwd: '/opt/cross-wms',
@@ -166,7 +166,7 @@ function seedDemoData(): void {
       const ts = now - i * 30_000;
       let status: HealthStatus = 'healthy';
       if (p.state === 'crashed') status = 'unhealthy';
-      else if (p.state === 'zombie' || p.state === 'exited') status = 'unknown';
+      else if (p.state === 'zombie' || p.state === 'exited') status = 'any';
       else if (p.health === 'degraded' && i < 3) status = 'degraded';
 
       history.push({

@@ -31,7 +31,7 @@ export type ThinkingCatalogEntry = {
   id: string;
   api?: string;
   reasoning?: boolean;
-  params?: Record<string, unknown>;
+  params?: Record<string, any>;
   compat?: {
     thinkingFormat?: string;
     supportedReasoningEfforts?: readonly string[] | null;

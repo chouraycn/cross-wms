@@ -197,10 +197,10 @@ function createDoctorPluginConfig(pluginRoot: string, pluginId: string): OpenCla
   };
 }
 
-function readPluginLlmPolicy(config: OpenClawConfig, pluginId: string): Record<string, unknown> {
-  const entry = config.plugins?.entries?.[pluginId] as { llm?: unknown } | undefined;
+function readPluginLlmPolicy(config: OpenClawConfig, pluginId: string): Record<string, any> {
+  const entry = config.plugins?.entries?.[pluginId] as { llm?: any } | undefined;
   return entry?.llm && typeof entry.llm === "object" && !Array.isArray(entry.llm)
-    ? (entry.llm as Record<string, unknown>)
+    ? (entry.llm as Record<string, any>)
     : {};
 }
 

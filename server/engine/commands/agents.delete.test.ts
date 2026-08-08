@@ -91,13 +91,13 @@ function expectSessionStore(
   expect(loadSessionStore(storePath, { skipCache: true })).toEqual(sessions);
 }
 
-function readJsonLogs(): Array<Record<string, unknown>> {
+function readJsonLogs(): Array<Record<string, any>> {
   return runtime.log.mock.calls
-    .filter((call): call is [string, ...unknown[]] => {
+    .filter((call): call is [string, ...any[]] => {
       const arg = call[0];
       return typeof arg === "string" && arg.startsWith("{");
     })
-    .map((call) => JSON.parse(call[0]) as Record<string, unknown>);
+    .map((call) => JSON.parse(call[0]) as Record<string, any>);
 }
 
 describe("agents delete command", () => {
@@ -112,12 +112,12 @@ describe("agents delete command", () => {
     );
     gatewayMocks.isGatewayCredentialsRequiredError.mockReset();
     gatewayMocks.isGatewayCredentialsRequiredError.mockImplementation(
-      (error: unknown) =>
+      (error: any) =>
         error instanceof Error && error.name === "GatewayCredentialsRequiredError",
     );
     gatewayMocks.isGatewayTransportError.mockReset();
     gatewayMocks.isGatewayTransportError.mockImplementation(
-      (error: unknown) => error instanceof Error && error.name === "GatewayTransportError",
+      (error: any) => error instanceof Error && error.name === "GatewayTransportError",
     );
     runtime.log.mockClear();
     runtime.error.mockClear();

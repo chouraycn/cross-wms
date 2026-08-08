@@ -1093,8 +1093,8 @@ describe('GoogleGenerativeAIAdapter', () => {
       );
       const body = JSON.parse(calls[0].opts.body as string);
       const toolRespMsg = body.contents.find(
-        (c: { parts: Array<{ functionResponse?: unknown }> }) =>
-          c.parts.some((p: { functionResponse?: unknown }) => p.functionResponse),
+        (c: { parts: Array<{ functionResponse?: any }> }) =>
+          c.parts.some((p: { functionResponse?: any }) => p.functionResponse),
       );
       expect(toolRespMsg).toBeDefined();
       expect(toolRespMsg.role).toBe('user');
@@ -1118,7 +1118,7 @@ describe('GoogleGenerativeAIAdapter', () => {
       );
       const body = JSON.parse(calls[0].opts.body as string);
       const assistantContent = body.contents.find((c: { role: string }) => c.role === 'model');
-      const fc = assistantContent.parts.find((p: { functionCall?: unknown }) => p.functionCall);
+      const fc = assistantContent.parts.find((p: { functionCall?: any }) => p.functionCall);
       expect(fc).toBeDefined();
       expect(fc.functionCall.name).toBe('get_weather');
       expect(fc.functionCall.args).toEqual({ city: 'BJ' });

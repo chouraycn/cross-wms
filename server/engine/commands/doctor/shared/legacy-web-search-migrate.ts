@@ -52,7 +52,7 @@ function getLegacyWebSearchProviderIdSet(owners: ReadonlyMap<string, string>): S
   return new Set(getLegacyWebSearchProviderIds(owners));
 }
 
-function resolveLegacySearchConfig(raw: unknown): JsonRecord | undefined {
+function resolveLegacySearchConfig(raw: any): JsonRecord | undefined {
   if (!isRecord(raw)) {
     return undefined;
   }
@@ -67,7 +67,7 @@ function copyLegacyProviderConfig(search: JsonRecord, providerKey: string): Json
 }
 
 function hasMappedLegacyWebSearchConfig(
-  raw: unknown,
+  raw: any,
   owners: ReadonlyMap<string, string>,
 ): boolean {
   const search = resolveLegacySearchConfig(raw);
@@ -156,7 +156,7 @@ function migratePluginWebSearchConfig(params: {
 }
 
 /** List legacy tools.web.search provider config paths present in raw config. */
-export function listLegacyWebSearchConfigPaths(raw: unknown): string[] {
+export function listLegacyWebSearchConfigPaths(raw: any): string[] {
   const owners = getBundledLegacyWebSearchOwners();
   const search = resolveLegacySearchConfig(raw);
   if (!search) {

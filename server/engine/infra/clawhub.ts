@@ -151,7 +151,7 @@ export class ClawhubRegistry {
    * @param spec - 待验证的 spec 对象
    * @returns 验证结果
    */
-  validate(name: string, spec: unknown): SpecValidationResult {
+  validate(name: string, spec: any): SpecValidationResult {
     const result = validateSpec(spec);
     if (!result.valid) {
       return result;
@@ -264,19 +264,19 @@ export function createClawhubRegistry(): ClawhubRegistry {
 }
 
 // Auto-generated stub exports (added by auto-fix-exports.mjs)
-export const satisfiesPluginApiRange: (...args: unknown[]) => unknown = undefined as unknown as (...args: unknown[]) => unknown;
-export const ClawHubRequestError: new (...args: unknown[]) => unknown = undefined as unknown as new (...args: unknown[]) => unknown;
-export const downloadClawHubPackageArchive: (...args: unknown[]) => unknown = undefined as unknown as (...args: unknown[]) => unknown;
-export const fetchClawHubPackageArtifact: (...args: unknown[]) => unknown = undefined as unknown as (...args: unknown[]) => unknown;
-export const fetchClawHubPackageDetail: (...args: unknown[]) => unknown = undefined as unknown as (...args: unknown[]) => unknown;
-export const fetchClawHubPackageVersion: (...args: unknown[]) => unknown = undefined as unknown as (...args: unknown[]) => unknown;
-export const isDefaultClawHubBaseUrl: (...args: unknown[]) => unknown = undefined as unknown as (...args: unknown[]) => unknown;
-export const normalizeClawHubSha256Integrity: (...args: unknown[]) => unknown = undefined as unknown as (...args: unknown[]) => unknown;
-export const normalizeClawHubSha256Hex: (...args: unknown[]) => unknown = undefined as unknown as (...args: unknown[]) => unknown;
-export const parseClawHubPluginSpec: (...args: unknown[]) => unknown = undefined as unknown as (...args: unknown[]) => unknown;
-export const resolveClawHubBaseUrl: (...args: unknown[]) => unknown = undefined as unknown as (...args: unknown[]) => unknown;
-export const resolveLatestVersionFromPackage: (...args: unknown[]) => unknown = undefined as unknown as (...args: unknown[]) => unknown;
-export const satisfiesGatewayMinimum: (...args: unknown[]) => unknown = undefined as unknown as (...args: unknown[]) => unknown;
+export const satisfiesPluginApiRange: (...args: any[]) => unknown = undefined as unknown as (...args: any[]) => unknown;
+export const ClawHubRequestError: new (...args: any[]) => unknown = undefined as unknown as new (...args: any[]) => unknown;
+export const downloadClawHubPackageArchive: (...args: any[]) => unknown = undefined as unknown as (...args: any[]) => unknown;
+export const fetchClawHubPackageArtifact: (...args: any[]) => unknown = undefined as unknown as (...args: any[]) => unknown;
+export const fetchClawHubPackageDetail: (...args: any[]) => unknown = undefined as unknown as (...args: any[]) => unknown;
+export const fetchClawHubPackageVersion: (...args: any[]) => unknown = undefined as unknown as (...args: any[]) => unknown;
+export const isDefaultClawHubBaseUrl: (...args: any[]) => unknown = undefined as unknown as (...args: any[]) => unknown;
+export const normalizeClawHubSha256Integrity: (...args: any[]) => unknown = undefined as unknown as (...args: any[]) => unknown;
+export const normalizeClawHubSha256Hex: (...args: any[]) => unknown = undefined as unknown as (...args: any[]) => unknown;
+export const parseClawHubPluginSpec: (...args: any[]) => unknown = undefined as unknown as (...args: any[]) => unknown;
+export const resolveClawHubBaseUrl: (...args: any[]) => unknown = undefined as unknown as (...args: any[]) => unknown;
+export const resolveLatestVersionFromPackage: (...args: any[]) => unknown = undefined as unknown as (...args: any[]) => unknown;
+export const satisfiesGatewayMinimum: (...args: any[]) => unknown = undefined as unknown as (...args: any[]) => unknown;
 
 // Type stubs for ClawHub package types (degraded placeholders)
 export type ClawHubPackageChannel = "stable" | "beta" | "dev";
@@ -345,7 +345,7 @@ export type ClawHubPackageArtifactResolverResponse = {
         createdAt?: number | null;
         changelog?: string | null;
         distTags?: string[];
-        files?: unknown[];
+        files?: any[];
         sha256hash?: string | null;
         compatibility?: ClawHubPackageCompatibility | null;
         artifact?: ClawHubPackageArtifactSummary | null;

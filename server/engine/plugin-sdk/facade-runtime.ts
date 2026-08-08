@@ -2,12 +2,12 @@ export function createLazyFacadeValue<TFacade extends object, K extends keyof TF
   loadFacadeModule: () => TFacade,
   key: K,
 ): TFacade[K] {
-  return ((...args: unknown[]) => {
+  return ((...args: any[]) => {
     const value = loadFacadeModule()[key];
     if (typeof value !== "function") {
       return value;
     }
-    return (value as (...innerArgs: unknown[]) => unknown)(...args);
+    return (value as (...innerArgs: any[]) => unknown)(...args);
   }) as TFacade[K];
 }
 

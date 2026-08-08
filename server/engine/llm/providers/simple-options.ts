@@ -35,13 +35,13 @@ interface StreamOptions {
   cacheRetention?: CacheRetention;
   sessionId?: string;
   promptCacheKey?: string;
-  onPayload?: (payload: unknown, model: SimpleModel) => MaybePromise<unknown>;
+  onPayload?: (payload: any, model: SimpleModel) => MaybePromise<any>;
   onResponse?: (response: ProviderResponse, model: SimpleModel) => void | Promise<void>;
   headers?: Record<string, string>;
   timeoutMs?: number;
   maxRetries?: number;
   maxRetryDelayMs?: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 /** Unified text options used by simple completion helpers. */
 interface SimpleStreamOptions extends StreamOptions {

@@ -7,8 +7,8 @@
 
 type TerminalToolPresentation = { text: string };
 type TerminalToolPresentationFormatter = (
-  params: unknown,
-  result: unknown,
+  params: any,
+  result: any,
 ) => TerminalToolPresentation | undefined;
 
 const terminalPresentationByTool = new WeakMap<object, TerminalToolPresentationFormatter>();

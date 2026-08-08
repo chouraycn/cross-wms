@@ -25,7 +25,7 @@ export type Transport = "sse" | "websocket" | "websocket-cached" | "auto";
 
 export type Model<TApi extends Api = Api> = BaseModel<TApi> & {
   input?: string[];
-  params?: Record<string, unknown>;
+  params?: Record<string, any>;
   baseUrl?: string;
   compat?: OpenAICompletionsCompat;
   headers?: Record<string, string>;
@@ -84,7 +84,7 @@ export type Context = {
 export type Tool = {
   name: string;
   description: string;
-  parameters: Record<string, unknown>;
+  parameters: Record<string, any>;
 };
 
 export type SimpleStreamOptions = {
@@ -98,12 +98,12 @@ export type SimpleStreamOptions = {
   sessionId?: string;
   promptCacheKey?: string;
   headers?: Record<string, string>;
-  onPayload?: (payload: unknown, model: Model) => unknown | Promise<unknown>;
+  onPayload?: (payload: any, model: Model) => unknown | Promise<any>;
   onResponse?: (response: Response) => void;
   timeoutMs?: number;
   maxRetries?: number;
   maxRetryDelayMs?: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
   reasoning?: {
     level?: ThinkingLevel;
     budgetTokens?: number;
@@ -140,7 +140,7 @@ export type SimpleModel = {
   baseUrl?: string;
   headers?: Record<string, string>;
   input?: string[];
-  params?: Record<string, unknown>;
+  params?: Record<string, any>;
   compat?: OpenAICompletionsCompat;
   reasoning?: boolean;
   thinkingLevelMap?: Partial<Record<ModelThinkingLevel, string | null>>;

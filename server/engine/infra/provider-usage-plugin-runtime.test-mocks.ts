@@ -3,7 +3,7 @@
 
 export type ProviderUsageSnapshotMock = {
   provider: string;
-  windows: unknown[];
+  windows: any[];
   error?: string;
 };
 
@@ -15,6 +15,6 @@ export function resetProviderUsageSnapshotWithPluginMock(provider: string): void
 }
 
 /** Gets a provider usage snapshot with plugin mock. */
-export function getProviderUsageSnapshotWithPluginMock(provider: string, _params?: unknown): ProviderUsageSnapshotMock | undefined {
+export function getProviderUsageSnapshotWithPluginMock(provider: string, _params?: any): ProviderUsageSnapshotMock | undefined {
   return mockSnapshots.get(provider);
 }

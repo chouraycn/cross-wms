@@ -14,11 +14,11 @@ vi.mock("../infra/agent-events.js", () => ({
 }));
 
 function createContext(
-  lastAssistant: unknown,
+  lastAssistant: any,
   overrides?: {
-    onAgentEvent?: (event: unknown) => void;
+    onAgentEvent?: (event: any) => void;
     onBeforeLifecycleTerminal?: () => void | Promise<void>;
-    onBlockReply?: ((payload: unknown) => void) | undefined;
+    onBlockReply?: ((payload: any) => void) | undefined;
     onBlockReplyFlush?: () => void | Promise<void>;
     resolveTerminalStopReason?: () => string | undefined;
   },
@@ -80,14 +80,14 @@ async function handleAgentEndAndReadWarnMeta(ctx: EmbeddedAgentSubscribeContext)
   return readRecord(meta);
 }
 
-function readRecord(value: unknown): Record<string, unknown> {
+function readRecord(value: any): Record<string, any> {
   if (!value || typeof value !== "object") {
     throw new Error("expected metadata record");
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function firstMockCall(mock: { mock: { calls: ReadonlyArray<ReadonlyArray<unknown>> } }) {
+function firstMockCall(mock: { mock: { calls: ReadonlyArray<ReadonlyArray<any>> } }) {
   const call = mock.mock.calls[0];
   if (!call) {
     throw new Error("expected first mock call");
@@ -95,7 +95,7 @@ function firstMockCall(mock: { mock: { calls: ReadonlyArray<ReadonlyArray<unknow
   return call;
 }
 
-function firstWarnMeta(ctx: EmbeddedAgentSubscribeContext): Record<string, unknown> {
+function firstWarnMeta(ctx: EmbeddedAgentSubscribeContext): Record<string, any> {
   return readRecord(firstMockCall(vi.mocked(ctx.log.warn))[1]);
 }
 

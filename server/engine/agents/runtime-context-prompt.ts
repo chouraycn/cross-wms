@@ -7,12 +7,12 @@
  */
 
 export type RuntimeContextCustomMessage = unknown;
-export function buildCurrentInboundPrompt(..._args: unknown[]): unknown {
+export function buildCurrentInboundPrompt(..._args: any[]): any {
   return undefined;
 }
-export function resolveRuntimeContextPromptParts(..._args: unknown[]): unknown {
+export function resolveRuntimeContextPromptParts(..._args: any[]): any {
   return undefined;
 }
-export function buildRuntimeContextCustomMessage(..._args: unknown[]): unknown {
+export function buildRuntimeContextCustomMessage(..._args: any[]): any {
   return undefined;
 }

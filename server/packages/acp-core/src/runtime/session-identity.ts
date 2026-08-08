@@ -6,7 +6,7 @@ import type { AcpRuntimeHandle, AcpRuntimeStatus } from "./types.js";
 // ACP session identity merge and extraction helpers for resume-safe runtime state.
 
 /** Normalize a stored identity state value from metadata. */
-function normalizeIdentityState(value: unknown): SessionAcpIdentity["state"] | undefined {
+function normalizeIdentityState(value: any): SessionAcpIdentity["state"] | undefined {
   if (value !== "pending" && value !== "resolved") {
     return undefined;
   }
@@ -14,7 +14,7 @@ function normalizeIdentityState(value: unknown): SessionAcpIdentity["state"] | u
 }
 
 /** Normalize where an ACP identity observation came from. */
-function normalizeIdentitySource(value: unknown): SessionAcpIdentitySource | undefined {
+function normalizeIdentitySource(value: any): SessionAcpIdentitySource | undefined {
   if (value !== "ensure" && value !== "status" && value !== "event") {
     return undefined;
   }
@@ -58,7 +58,7 @@ type IdentityIds = Pick<SessionAcpIdentity, "acpxRecordId" | "acpxSessionId" | "
 /** Read identity ids from a runtime handle shape. */
 function readIdentityIdsFromHandle(handle: AcpRuntimeHandle): IdentityIds {
   return {
-    acpxRecordId: normalizeText((handle as { acpxRecordId?: unknown }).acpxRecordId),
+    acpxRecordId: normalizeText((handle as { acpxRecordId?: any }).acpxRecordId),
     acpxSessionId: normalizeText(handle.backendSessionId),
     agentSessionId: normalizeText(handle.agentSessionId),
   };
@@ -225,7 +225,7 @@ export function createIdentityFromStatus(params: {
   }
   const details = params.status.details;
   const acpxRecordId =
-    normalizeText((params.status as { acpxRecordId?: unknown }).acpxRecordId) ??
+    normalizeText((params.status as { acpxRecordId?: any }).acpxRecordId) ??
     normalizeText(details?.acpxRecordId);
   const acpxSessionId =
     normalizeText(params.status.backendSessionId) ??

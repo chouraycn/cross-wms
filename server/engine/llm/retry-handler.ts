@@ -49,7 +49,7 @@ export function computeBackoffDelay(
 
 /** 根据错误与重试状态决定是否重试。 */
 export function shouldRetry(
-  error: unknown,
+  error: any,
   attempt: number,
   config: RetryConfig,
   retryAfterMs?: number,
@@ -85,13 +85,13 @@ export async function withRetry<T>(
   config: Partial<RetryConfig> = {},
   options: {
     signal?: AbortSignal;
-    onRetry?: (attempt: number, delayMs: number, error: unknown) => void;
+    onRetry?: (attempt: number, delayMs: number, error: any) => void;
   } = {},
 ): Promise<T> {
   const fullConfig: RetryConfig = { ...DEFAULT_RETRY_CONFIG, ...config };
   const startTime = Date.now();
   let attempt = 0;
-  let lastError: unknown;
+  let lastError: any;
   while (true) {
     if (options.signal?.aborted) {
       throw new Error('aborted');
@@ -117,7 +117,7 @@ export async function withRetry<T>(
 }
 
 /** 从错误对象中提取 Retry-After 值（毫秒）。 */
-export function extractRetryAfter(error: unknown): number | undefined {
+export function extractRetryAfter(error: any): number | undefined {
   if (!error || typeof error !== 'object') return undefined;
   const e = error as { retryAfter?: number; retryAfterMs?: number; headers?: { get?: (k: string) => string | null } };
   if (typeof e.retryAfterMs === 'number') return e.retryAfterMs;
@@ -146,7 +146,7 @@ export function makeAlwaysFailFn(errorFactory: (attempt: number) => unknown): (a
 export function makeSucceedAfterNFn<T>(
   n: number,
   successValue: T,
-  failError?: unknown,
+  failError?: any,
 ): (attempt: number) => Promise<T> {
   return async (attempt: number) => {
     if (attempt >= n) return successValue;

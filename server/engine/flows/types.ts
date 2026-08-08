@@ -122,7 +122,7 @@ export interface FlowRuntimeEnv {
 }
 
 /** 流程所读取的应用配置（以宽松记录形式承载，避免硬编码 schema）。 */
-export type FlowConfig = Record<string, unknown>;
+export type FlowConfig = Record<string, any>;
 
 /** 传入健康检查 detect 阶段的不可变运行时/配置上下文。 */
 export interface HealthCheckContext {
@@ -199,14 +199,14 @@ export interface FlowContext {
   readonly isDev?: boolean;
   readonly config: FlowConfig;
   readonly configPath?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 /** 流程步骤的执行结果状态。 */
 export type FlowStepStatus = 'pending' | 'running' | 'completed' | 'skipped' | 'failed';
 
 /** 单个流程步骤的定义。 */
-export interface FlowStep<Ctx extends FlowContext = FlowContext, Result = unknown> {
+export interface FlowStep<Ctx extends FlowContext = FlowContext, Result = any> {
   readonly id: string;
   readonly title: string;
   readonly description?: string;

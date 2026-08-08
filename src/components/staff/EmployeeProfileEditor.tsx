@@ -103,7 +103,7 @@ export default function EmployeeProfileEditor({
     setSaving(true);
     try {
       const wasPublished = agent.metadata?.published_to_gallery === true;
-      const metadata: Record<string, unknown> = {
+      const metadata: Record<string, any> = {
         ...(agent.metadata || {}),
         blank_onboarding: false,
         role_name: form.roleName.trim() || '待补充岗位',

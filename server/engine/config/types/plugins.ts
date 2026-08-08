@@ -38,7 +38,7 @@ export type PluginEntryConfig = {
     /** Explicitly allow this plugin to run completions against a non-default agent id. */
     allowAgentIdOverride?: boolean;
   };
-  config?: Record<string, unknown>;
+  config?: Record<string, any>;
 };
 
 export type PluginSlotsConfig = {

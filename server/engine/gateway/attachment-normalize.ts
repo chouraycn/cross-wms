@@ -2,6 +2,6 @@
 
 export type RpcAttachmentInput = unknown;
 
-export function normalizeRpcAttachmentsToChatAttachments(...args: unknown[]): unknown {
+export function normalizeRpcAttachmentsToChatAttachments(...args: any[]): any {
   return undefined;
 }

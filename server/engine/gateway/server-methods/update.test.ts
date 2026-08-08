@@ -50,7 +50,7 @@ type UpdateRunPayload = {
   result?: { status?: string; reason?: string; mode?: string };
   handoff?: { status?: string; command?: string; message?: string };
   sentinel?: { persisted?: boolean };
-  restart?: unknown;
+  restart?: any;
 };
 
 vi.mock("../../config/config.js", () => ({
@@ -94,7 +94,7 @@ vi.mock("../../infra/openclaw-root.js", async () => {
 vi.mock("../../infra/restart-sentinel.js", async () => {
   const actual = await vi.importActual("../../infra/restart-sentinel.js");
   return {
-    ...(actual as Record<string, unknown>),
+    ...(actual as Record<string, any>),
     writeRestartSentinel: async (payload: RestartSentinelPayload) => {
       capturedPayload = payload;
     },
@@ -146,7 +146,7 @@ vi.mock("../server-restart-sentinel.js", () => ({
 }));
 
 vi.mock("./restart-request.js", () => ({
-  parseRestartRequestParams: (params: Record<string, unknown>) => ({
+  parseRestartRequestParams: (params: Record<string, any>) => ({
     sessionKey: params.sessionKey,
     note: params.note,
     continuationMessage: params.continuationMessage,
@@ -229,8 +229,8 @@ beforeEach(() => {
 });
 
 async function invokeUpdateRun(
-  params: Record<string, unknown>,
-  respond?: (ok: boolean, response?: unknown) => void,
+  params: Record<string, any>,
+  respond?: (ok: boolean, response?: any) => void,
 ) {
   const { updateHandlers } = await import("./update.js");
   const onRespond = respond ?? (() => {});
@@ -242,10 +242,10 @@ async function invokeUpdateRun(
 }
 
 async function captureUpdateRunPayload(
-  params: Record<string, unknown> = {},
+  params: Record<string, any> = {},
 ): Promise<UpdateRunPayload | undefined> {
   let payload: UpdateRunPayload | undefined;
-  await invokeUpdateRun(params, (_ok: boolean, response: unknown) => {
+  await invokeUpdateRun(params, (_ok: boolean, response: any) => {
     payload = response as UpdateRunPayload;
   });
   return payload;
@@ -259,9 +259,9 @@ function readCapturedPayload(): RestartSentinelPayload {
 }
 
 function firstMockCall(
-  mock: { mock: { calls: Array<readonly unknown[]> } },
+  mock: { mock: { calls: Array<readonly any[]> } },
   label: string,
-): readonly unknown[] {
+): readonly any[] {
   const call = mock.mock.calls[0];
   if (!call) {
     throw new Error(`expected ${label} call`);

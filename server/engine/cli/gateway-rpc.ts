@@ -36,7 +36,7 @@ export function addGatewayClientOptions(cmd: Command): Command {
 export async function callGatewayFromCli(
   method: string,
   opts: GatewayRpcOpts,
-  params?: unknown,
+  params?: any,
   extra?: {
     clientName?: GatewayClientName;
     mode?: GatewayClientMode;
@@ -45,7 +45,7 @@ export async function callGatewayFromCli(
     progress?: boolean;
     scopes?: OperatorScope[];
   },
-): Promise<unknown> {
+): Promise<any> {
   const runtime = await import("./gateway-rpc.runtime.js");
   return await runtime.callGatewayFromCliRuntime(method, opts, params, extra);
 }

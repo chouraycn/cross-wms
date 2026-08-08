@@ -103,7 +103,7 @@ function createAnthropicModelFixture(overrides: Partial<Model> = {}): Model {
   };
 }
 
-type CompactionHandler = (event: unknown, ctx: unknown) => Promise<unknown>;
+type CompactionHandler = (event: any, ctx: any) => Promise<any>;
 const createCompactionHandler = () => {
   let compactionHandler: CompactionHandler | undefined;
   const mockApi = {
@@ -161,7 +161,7 @@ const createCompactionContext = (params: {
 
 async function runCompactionScenario(params: {
   sessionManager: ExtensionContext["sessionManager"];
-  event: unknown;
+  event: any;
   apiKey: string | null;
 }) {
   const compactionHandler = createCompactionHandler();
@@ -203,10 +203,10 @@ function expectCompactionResult(result: {
 }
 
 function mockCallArg(
-  mock: { mock: { calls: ReadonlyArray<ReadonlyArray<unknown>> } },
+  mock: { mock: { calls: ReadonlyArray<ReadonlyArray<any>> } },
   callIndex = 0,
   argIndex = 0,
-): unknown {
+): any {
   const call = mock.mock.calls[callIndex];
   if (!call) {
     throw new Error(`expected mock call ${callIndex + 1}`);
@@ -215,20 +215,20 @@ function mockCallArg(
 }
 
 function latestMockCallArg(
-  mock: { mock: { calls: ReadonlyArray<ReadonlyArray<unknown>> } },
+  mock: { mock: { calls: ReadonlyArray<ReadonlyArray<any>> } },
   argIndex = 0,
-): unknown {
+): any {
   return mockCallArg(mock, mock.mock.calls.length - 1, argIndex);
 }
 
-function requireRecord(value: unknown): Record<string, unknown> {
+function requireRecord(value: any): Record<string, any> {
   if (!value || typeof value !== "object") {
     throw new Error("expected record");
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function requireArray(value: unknown): unknown[] {
+function requireArray(value: any): any[] {
   if (!Array.isArray(value)) {
     throw new Error("expected array");
   }
@@ -726,13 +726,13 @@ describe("compaction-safeguard recent-turn preservation", () => {
     ]);
     expect(
       split.preservedMessages.some(
-        (msg) => msg.role === "user" && (msg as { content?: unknown }).content === "recent ask",
+        (msg) => msg.role === "user" && (msg as { content?: any }).content === "recent ask",
       ),
     ).toBe(true);
 
     const summarizableToolResultIds = split.summarizableMessages
       .filter((msg) => msg.role === "toolResult")
-      .map((msg) => (msg as { toolCallId?: unknown }).toolCallId);
+      .map((msg) => (msg as { toolCallId?: any }).toolCallId);
     expect(summarizableToolResultIds).toContain("call_old");
     expect(summarizableToolResultIds).not.toContain("call_recent");
   });
@@ -875,7 +875,7 @@ describe("compaction-safeguard recent-turn preservation", () => {
     expect(
       split.preservedMessages.some(
         (msg) =>
-          msg.role === "user" && (msg as { content?: unknown }).content === "single user prompt",
+          msg.role === "user" && (msg as { content?: any }).content === "single user prompt",
       ),
     ).toBe(true);
     expect(formatPreservedTurnsSection(split.preservedMessages)).toContain("assistant-8");

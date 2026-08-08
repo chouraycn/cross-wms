@@ -6,8 +6,8 @@ import {
 } from "./attempt.tool-call-argument-repair.js";
 
 type FakeWrappedStream = {
-  result: () => Promise<unknown>;
-  [Symbol.asyncIterator]: () => AsyncIterator<unknown>;
+  result: () => Promise<any>;
+  [Symbol.asyncIterator]: () => AsyncIterator<any>;
 };
 
 type FakeStreamFn = (
@@ -17,8 +17,8 @@ type FakeStreamFn = (
 ) => FakeWrappedStream | Promise<FakeWrappedStream>;
 
 function createFakeStream(params: {
-  events: unknown[];
-  resultMessage: unknown;
+  events: any[];
+  resultMessage: any;
 }): FakeWrappedStream {
   // Minimal fake stream lets repair tests assert both streamed events and final
   // result mutation.
@@ -53,12 +53,12 @@ async function invokeProviderStream(params: {
 }
 
 type ToolCallRepairCaseResult = {
-  partialArgs: unknown;
-  streamedArgs: unknown;
-  endMessageArgs: unknown;
-  finalArgs: unknown;
-  result: unknown;
-  finalMessage: unknown;
+  partialArgs: any;
+  streamedArgs: any;
+  endMessageArgs: any;
+  finalArgs: any;
+  result: any;
+  finalMessage: any;
 };
 
 async function runToolCallRepairCase(params: {
@@ -132,7 +132,7 @@ async function runToolCallRepairCase(params: {
 
 function expectAllToolCallArgs(
   result: ToolCallRepairCaseResult,
-  expectedArgs: Record<string, unknown>,
+  expectedArgs: Record<string, any>,
 ): void {
   expect(result.partialArgs).toEqual(expectedArgs);
   expect(result.streamedArgs).toEqual(expectedArgs);

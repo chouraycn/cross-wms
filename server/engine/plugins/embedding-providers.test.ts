@@ -98,7 +98,7 @@ describe("embedding provider registry", () => {
     const adapter = createAdapter("local-protocol");
     registerEmbeddingProvider(adapter, { ownerPluginId: "local-protocol" });
 
-    const globalRegistry = (globalThis as Record<PropertyKey, unknown>)[
+    const globalRegistry = (globalThis as Record<PropertyKey, any>)[
       EMBEDDING_PROVIDERS_KEY
     ] as Map<string, { adapter: EmbeddingProviderAdapter; ownerPluginId?: string }>;
 

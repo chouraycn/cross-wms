@@ -30,6 +30,6 @@ const KNOWN_OPERATOR_SCOPE_VALUES: readonly OperatorScope[] = [
 const KNOWN_OPERATOR_SCOPES: ReadonlySet<OperatorScope> = new Set(KNOWN_OPERATOR_SCOPE_VALUES);
 
 /** 将不可信的 auth-token scope 条目收窄到 gateway 的封闭 scope 集合。 */
-export function isOperatorScope(value: unknown): value is OperatorScope {
+export function isOperatorScope(value: any): value is OperatorScope {
   return typeof value === "string" && KNOWN_OPERATOR_SCOPES.has(value as OperatorScope);
 }

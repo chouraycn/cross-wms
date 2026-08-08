@@ -75,7 +75,7 @@ vi.mock("../runtime.js", () => ({
 }));
 
 vi.mock("../utils/delivery-context.js", () => ({
-  normalizeDeliveryContext: (origin: unknown) => origin ?? "agent",
+  normalizeDeliveryContext: (origin: any) => origin ?? "agent",
 }));
 
 vi.mock("./subagent-announce.js", () => ({
@@ -115,17 +115,17 @@ function createRunEntry(overrides: Partial<SubagentRunRecord> = {}): SubagentRun
   };
 }
 
-function expectFields(value: unknown, expected: Record<string, unknown>): void {
+function expectFields(value: any, expected: Record<string, any>): void {
   if (!value || typeof value !== "object") {
     throw new Error("expected fields object");
   }
-  const record = value as Record<string, unknown>;
+  const record = value as Record<string, any>;
   for (const [key, expectedValue] of Object.entries(expected)) {
     expect(record[key], key).toEqual(expectedValue);
   }
 }
 
-function firstCall(mock: ReturnType<typeof vi.fn>): ReadonlyArray<unknown> {
+function firstCall(mock: ReturnType<typeof vi.fn>): ReadonlyArray<any> {
   const call = mock.mock.calls[0];
   if (!call) {
     throw new Error("expected first mock call");
@@ -133,21 +133,21 @@ function firstCall(mock: ReturnType<typeof vi.fn>): ReadonlyArray<unknown> {
   return call;
 }
 
-function firstCallArg(mock: ReturnType<typeof vi.fn>): Record<string, unknown> {
+function firstCallArg(mock: ReturnType<typeof vi.fn>): Record<string, any> {
   const [arg] = firstCall(mock);
   if (!arg || typeof arg !== "object") {
     throw new Error("expected first call argument object");
   }
-  return arg as Record<string, unknown>;
+  return arg as Record<string, any>;
 }
 
 function findCallArg(
   mock: ReturnType<typeof vi.fn>,
-  predicate: (arg: Record<string, unknown>) => boolean,
-): Record<string, unknown> {
+  predicate: (arg: Record<string, any>) => boolean,
+): Record<string, any> {
   for (const [arg] of mock.mock.calls) {
-    if (arg && typeof arg === "object" && predicate(arg as Record<string, unknown>)) {
-      return arg as Record<string, unknown>;
+    if (arg && typeof arg === "object" && predicate(arg as Record<string, any>)) {
+      return arg as Record<string, any>;
     }
   }
   throw new Error("expected matching mock call");
@@ -155,7 +155,7 @@ function findCallArg(
 
 function hasDeliveredTaskStatusUpdate(runId: string): boolean {
   return taskExecutorMocks.setDetachedTaskDeliveryStatusByRunId.mock.calls.some(([arg]) => {
-    const record = arg as { runId?: unknown; deliveryStatus?: unknown } | undefined;
+    const record = arg as { runId?: any; deliveryStatus?: any } | undefined;
     return record?.runId === runId && record.deliveryStatus === "delivered";
   });
 }
@@ -189,7 +189,7 @@ function createLifecycleController({
     emitSubagentEndedHookForRun: vi.fn(async () => {}),
     notifyContextEngineSubagentEnded: vi.fn(async () => {}),
     resumeSubagentRun: vi.fn(),
-    callGateway: async <T = Record<string, unknown>>(opts: CallGatewayOptions): Promise<T> =>
+    callGateway: async <T = Record<string, any>>(opts: CallGatewayOptions): Promise<T> =>
       (await gatewayMocks.callGateway(opts)) as T,
     captureSubagentCompletionReply: vi.fn(async () => "final completion reply"),
     runSubagentAnnounceFlow: vi.fn(async () => true),

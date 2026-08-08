@@ -161,7 +161,7 @@ export function getMailConfigPath(configDir: string, accountId: string): string 
 export async function saveMailAccountConfig(
   configDir: string,
   accountId: string,
-  config: Record<string, unknown>,
+  config: Record<string, any>,
 ): Promise<void> {
   const dir = await ensureMailConfigDir(configDir);
   const configPath = path.join(dir, `${accountId}.json`);
@@ -173,11 +173,11 @@ export async function saveMailAccountConfig(
 export async function loadMailAccountConfig(
   configDir: string,
   accountId: string,
-): Promise<Record<string, unknown> | null> {
+): Promise<Record<string, any> | null> {
   const configPath = getMailConfigPath(configDir, accountId);
   try {
     const data = await fs.promises.readFile(configPath, 'utf8');
-    return JSON.parse(data) as Record<string, unknown>;
+    return JSON.parse(data) as Record<string, any>;
   } catch {
     return null;
   }

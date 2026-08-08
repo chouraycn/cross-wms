@@ -13,15 +13,15 @@ type LifecycleEventLike = Pick<AgentEventPayload, "ts" | "sessionId"> & {
   runId?: string;
   lifecycleGeneration?: string;
   data?: {
-    phase?: unknown;
-    startedAt?: unknown;
-    endedAt?: unknown;
-    aborted?: unknown;
-    stopReason?: unknown;
-    error?: unknown;
-    livenessState?: unknown;
-    timeoutPhase?: unknown;
-    providerStarted?: unknown;
+    phase?: any;
+    startedAt?: any;
+    endedAt?: any;
+    aborted?: any;
+    stopReason?: any;
+    error?: any;
+    livenessState?: any;
+    timeoutPhase?: any;
+    providerStarted?: any;
   };
 };
 
@@ -43,7 +43,7 @@ type PersistedLifecycleSessionShape = Pick<
 
 export type GatewaySessionLifecycleSnapshot = Partial<LifecycleSessionShape>;
 
-function isFiniteTimestamp(value: unknown): value is number {
+function isFiniteTimestamp(value: any): value is number {
   return typeof value === "number" && Number.isFinite(value) && value > 0;
 }
 

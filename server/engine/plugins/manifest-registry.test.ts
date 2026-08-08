@@ -44,7 +44,7 @@ function makeOpenClawDevSourceRoot() {
   return root;
 }
 
-function writeManifest(dir: string, manifest: Record<string, unknown>) {
+function writeManifest(dir: string, manifest: Record<string, any>) {
   fs.writeFileSync(path.join(dir, "openclaw.plugin.json"), JSON.stringify(manifest), "utf-8");
 }
 
@@ -58,7 +58,7 @@ function setupBundleFixture(params: {
   dirs?: readonly string[];
   textFiles?: Readonly<Record<string, string>>;
   manifestRelativePath?: string;
-  manifest?: Record<string, unknown>;
+  manifest?: Record<string, any>;
 }) {
   for (const relativeDir of params.dirs ?? []) {
     mkdirSafe(path.join(params.bundleDir, relativeDir));
@@ -145,19 +145,19 @@ function expectNoRegistryDiagnosticContains(
   expect(registry.diagnostics.map((diag) => diag.message).join("\n")).not.toContain(fragment);
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   expect(
     typeof value === "object" && value !== null && !Array.isArray(value),
     `${label} object`,
   ).toBe(true);
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 function expectRecordFields(
-  value: unknown,
+  value: any,
   label: string,
-  expected: Record<string, unknown>,
-): Record<string, unknown> {
+  expected: Record<string, any>,
+): Record<string, any> {
   const record = requireRecord(value, label);
   for (const [key, expectedValue] of Object.entries(expected)) {
     expect(record[key], `${label}.${key}`).toEqual(expectedValue);
@@ -165,10 +165,10 @@ function expectRecordFields(
   return record;
 }
 
-function expectArrayIncludesAll(value: unknown, expected: readonly unknown[], label: string) {
+function expectArrayIncludesAll(value: any, expected: readonly any[], label: string) {
   expect(Array.isArray(value), `${label} array`).toBe(true);
   for (const item of expected) {
-    expect(value as unknown[], `${label} item ${String(item)}`).toContain(item);
+    expect(value as any[], `${label} item ${String(item)}`).toContain(item);
   }
 }
 
@@ -269,7 +269,7 @@ function loadRegistryForMinHostVersionCase(params: {
 
 function loadRegistryForPluginApiCase(params: {
   rootDir: string;
-  pluginApi: unknown;
+  pluginApi: any;
   env?: NodeJS.ProcessEnv;
   origin?: "bundled" | "global" | "workspace" | "config";
   idHint?: string;

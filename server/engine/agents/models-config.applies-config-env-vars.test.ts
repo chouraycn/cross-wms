@@ -126,7 +126,7 @@ async function resolveProvidersAndCaptureDiscoveryEnv(cfg: OpenClawConfig) {
 }
 
 let unauthenticatedProviderWritePlan: Awaited<ReturnType<typeof planOpenClawModelsJsonWithDeps>>;
-let unauthenticatedProviderParsed: { providers?: Record<string, unknown> };
+let unauthenticatedProviderParsed: { providers?: Record<string, any> };
 
 beforeAll(async () => {
   // Reused no-auth write plan proves generated providers stay serializable
@@ -154,7 +154,7 @@ beforeAll(async () => {
     throw new Error("Expected models.json write plan");
   }
   unauthenticatedProviderParsed = JSON.parse(unauthenticatedProviderWritePlan.contents) as {
-    providers?: Record<string, unknown>;
+    providers?: Record<string, any>;
   };
 });
 
@@ -372,13 +372,13 @@ describe("models-config", () => {
       throw new Error("Expected models.json write plan");
     }
     const root = JSON.parse(plan.contents) as {
-      providers?: Record<string, unknown>;
+      providers?: Record<string, any>;
     };
     expect(Object.keys(root.providers ?? {})).toEqual(["custom"]);
     expect(root).not.toHaveProperty("pluginCatalogs");
     const zaiCatalogPath = encodePluginModelCatalogRelativePath("zai");
     const zaiCatalog = JSON.parse(plan.pluginCatalogWrites?.[zaiCatalogPath] ?? "{}") as {
-      providers?: Record<string, unknown>;
+      providers?: Record<string, any>;
     };
     expect(Object.keys(zaiCatalog.providers ?? {})).toEqual(["zai"]);
   });

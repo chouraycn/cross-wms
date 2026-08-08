@@ -63,7 +63,7 @@ export interface OpenAICodexResponsesOptions extends StreamOptions {
 interface RequestBody {
   model: string;
   store?: boolean;
-  input?: unknown;
+  input?: any;
   stream?: boolean;
 }
 

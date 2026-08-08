@@ -53,7 +53,7 @@ export interface AgentRunParams {
   agentId?: string;
   userId?: string;
   signal?: AbortSignal;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface AgentRunResult {
@@ -197,7 +197,7 @@ async function executeAgentRun(
       phase: 'error',
       data: {
         error: err.message,
-        code: (err as { code?: unknown }).code,
+        code: (err as { code?: any }).code,
         durationMs: Date.now() - startTime,
       },
       sessionKey: params.sessionKey,
@@ -355,7 +355,7 @@ function createRunCallbacks(runId: string, sessionKey?: string) {
       }
     },
 
-    onSSEEvent: (event: Record<string, unknown>) => {
+    onSSEEvent: (event: Record<string, any>) => {
       logger.debug(`[AgentRuntime] SSE事件: ${event.type}`);
     },
   };
@@ -432,7 +432,7 @@ export function bridgeAgentEventsToSSE(runId: string, res: Response): () => void
 /**
  * 将 AgentEvent 转换为 SSE 事件格式（向后兼容）
  */
-function convertAgentEventToSSE(evt: { stream: string; data: Record<string, unknown> }): Record<string, unknown> | null {
+function convertAgentEventToSSE(evt: { stream: string; data: Record<string, any> }): Record<string, any> | null {
   const data = evt.data;
   switch (evt.stream) {
     case 'lifecycle': {

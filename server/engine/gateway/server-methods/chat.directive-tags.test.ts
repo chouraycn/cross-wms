@@ -25,7 +25,7 @@ import { readSessionTranscriptIndex } from "../session-transcript-index.fs.js";
 import type { GatewayRequestContext } from "./types.js";
 
 const mockState = vi.hoisted(() => ({
-  config: {} as Record<string, unknown>,
+  config: {} as Record<string, any>,
   transcriptPath: "",
   sessionId: "sess-1",
   mainSessionKey: "main",
@@ -75,17 +75,17 @@ const mockState = vi.hoisted(() => ({
   runtimeUserMessagePersistencePending: null as Promise<void> | null,
   onAfterAgentRunStart: null as (() => void) | null,
   agentRunId: "run-agent-1",
-  sessionEntry: {} as Record<string, unknown>,
+  sessionEntry: {} as Record<string, any>,
   loadSessionEntryCalls: [] as Array<{ rawKey: string; opts?: { agentId?: string } }>,
   lastDispatchCtx: undefined as MsgContext | undefined,
   lastDispatchImages: undefined as Array<{ mimeType: string; data: string }> | undefined,
   lastDispatchImageOrder: undefined as string[] | undefined,
-  lastDispatchUserTurnInput: undefined as unknown,
+  lastDispatchUserTurnInput: undefined as any,
   modelCatalog: null as ModelCatalogEntry[] | null,
   emittedTranscriptUpdates: [] as Array<{
     sessionFile: string;
     sessionKey?: string;
-    message?: unknown;
+    message?: any;
     messageId?: string;
   }>,
   savedMediaResults: [] as Array<{ path: string; contentType?: string }>,
@@ -100,7 +100,7 @@ const mockState = vi.hoisted(() => ({
   hasBeforeAgentRunHooks: false,
   beforeMessageWriteBlock: false,
   beforeMessageWriteContent: null as string | null,
-  beforeMessageWriteCalls: [] as Array<{ message: unknown; ctx: unknown }>,
+  beforeMessageWriteCalls: [] as Array<{ message: any; ctx: any }>,
   dispatchBlockedByBeforeAgentRun: false,
   // `unstagedSources` lets tests simulate partial staging failure: absolute
   // source paths listed here are excluded from the returned `staged` map even
@@ -110,11 +110,11 @@ const mockState = vi.hoisted(() => ({
   deleteMediaBufferCalls: [] as Array<{ id: string; subdir?: string }>,
 }));
 
-function readTranscriptJsonLines(transcriptPath: string): Array<Record<string, unknown>> {
-  const entries: Array<Record<string, unknown>> = [];
+function readTranscriptJsonLines(transcriptPath: string): Array<Record<string, any>> {
+  const entries: Array<Record<string, any>> = [];
   for (const line of fs.readFileSync(transcriptPath, "utf-8").split("\n")) {
     if (line.length > 0) {
-      entries.push(JSON.parse(line) as Record<string, unknown>);
+      entries.push(JSON.parse(line) as Record<string, any>);
     }
   }
   return entries;
@@ -122,8 +122,8 @@ function readTranscriptJsonLines(transcriptPath: string): Array<Record<string, u
 
 const bindingMocks = vi.hoisted(() => ({
   resolveByConversation: vi.fn(
-    (_ref: unknown) =>
-      null as { metadata?: Record<string, unknown>; targetSessionKey?: string } | null,
+    (_ref: any) =>
+      null as { metadata?: Record<string, any>; targetSessionKey?: string } | null,
   ),
 }));
 
@@ -160,7 +160,7 @@ vi.mock("../session-utils.js", async () => {
         cfg: {
           ...mockState.config,
           session: {
-            ...(mockState.config.session as Record<string, unknown> | undefined),
+            ...(mockState.config.session as Record<string, any> | undefined),
             mainKey: mockState.mainSessionKey,
           },
         },
@@ -228,8 +228,8 @@ vi.mock("../../auto-reply/dispatch.js", () => ({
       replyOptions?: {
         onAgentRunStart?: (runId: string) => void;
         userTurnTranscriptRecorder?: {
-          message?: unknown;
-          resolveMessage?: () => Promise<unknown>;
+          message?: any;
+          resolveMessage?: () => Promise<any>;
           markRuntimePersisted: (message: { role: "user"; content: string }) => void;
           markRuntimePersistencePending: (pending: Promise<void>) => void;
         };
@@ -309,7 +309,7 @@ vi.mock("../../infra/outbound/session-binding-service.js", async () => {
     ...actual,
     getSessionBindingService: () => ({
       ...actual.getSessionBindingService(),
-      resolveByConversation: (ref: unknown) => bindingMocks.resolveByConversation(ref),
+      resolveByConversation: (ref: any) => bindingMocks.resolveByConversation(ref),
     }),
   };
 });
@@ -320,7 +320,7 @@ vi.mock("../../plugins/hook-runner-global.js", () => ({
       (hookName === "before_agent_run" && mockState.hasBeforeAgentRunHooks) ||
       (hookName === "before_message_write" &&
         (mockState.beforeMessageWriteBlock || mockState.beforeMessageWriteContent !== null)),
-    runBeforeMessageWrite: (event: { message: unknown }, ctx: unknown) => {
+    runBeforeMessageWrite: (event: { message: any }, ctx: any) => {
       mockState.beforeMessageWriteCalls.push({ message: event.message, ctx });
       if (mockState.beforeMessageWriteBlock) {
         return { block: true };
@@ -344,7 +344,7 @@ vi.mock("../../sessions/transcript-events.js", () => ({
     (update: {
       sessionFile: string;
       sessionKey?: string;
-      message?: unknown;
+      message?: any;
       messageId?: string;
     }) => {
       mockState.emittedTranscriptUpdates.push(update);
@@ -497,29 +497,29 @@ async function appendSourceReplyMirrorEntry(params: {
   });
 }
 
-async function readActiveAssistantTranscriptMessages(): Promise<Array<Record<string, unknown>>> {
+async function readActiveAssistantTranscriptMessages(): Promise<Array<Record<string, any>>> {
   const index = await readSessionTranscriptIndex(mockState.transcriptPath);
   return (
     index?.entries
       .map((entry) => entry.record.message)
       .filter(
-        (message): message is Record<string, unknown> =>
+        (message): message is Record<string, any> =>
           typeof message === "object" &&
           message !== null &&
-          (message as { role?: unknown }).role === "assistant",
+          (message as { role?: any }).role === "assistant",
       ) ?? []
   );
 }
 
-function extractFirstTextBlock(payload: unknown): string | undefined {
+function extractFirstTextBlock(payload: any): string | undefined {
   if (!payload || typeof payload !== "object") {
     return undefined;
   }
-  const message = (payload as { message?: unknown }).message;
+  const message = (payload as { message?: any }).message;
   if (!message || typeof message !== "object") {
     return undefined;
   }
-  const content = (message as { content?: unknown }).content;
+  const content = (message as { content?: any }).content;
   if (!Array.isArray(content)) {
     return undefined;
   }
@@ -527,27 +527,27 @@ function extractFirstTextBlock(payload: unknown): string | undefined {
   if (!first || typeof first !== "object") {
     return undefined;
   }
-  const firstText = (first as { text?: unknown }).text;
+  const firstText = (first as { text?: any }).text;
   return typeof firstText === "string" ? firstText : undefined;
 }
 
-function getMessage(payload: unknown): Record<string, unknown> | undefined {
+function getMessage(payload: any): Record<string, any> | undefined {
   if (!payload || typeof payload !== "object") {
     return undefined;
   }
-  const message = (payload as { message?: unknown }).message;
-  return message && typeof message === "object" ? (message as Record<string, unknown>) : undefined;
+  const message = (payload as { message?: any }).message;
+  return message && typeof message === "object" ? (message as Record<string, any>) : undefined;
 }
 
-function getMessageContent(payload: unknown): Array<Record<string, unknown>> {
+function getMessageContent(payload: any): Array<Record<string, any>> {
   const content = getMessage(payload)?.content;
-  return Array.isArray(content) ? (content as Array<Record<string, unknown>>) : [];
+  return Array.isArray(content) ? (content as Array<Record<string, any>>) : [];
 }
 
 function mockCallAt(
-  mock: { mock: { calls: ReadonlyArray<ReadonlyArray<unknown>> } },
+  mock: { mock: { calls: ReadonlyArray<ReadonlyArray<any>> } },
   index: number,
-): ReadonlyArray<unknown> | undefined {
+): ReadonlyArray<any> | undefined {
   const calls = mock.mock.calls;
   const normalizedIndex = index < 0 ? calls.length + index : index;
   return calls[normalizedIndex];
@@ -555,16 +555,16 @@ function mockCallAt(
 
 function lastRespondCall(respond: ReturnType<typeof vi.fn>) {
   return mockCallAt(respond, -1) as
-    | [boolean, Record<string, unknown> | undefined, Record<string, unknown> | undefined]
+    | [boolean, Record<string, any> | undefined, Record<string, any> | undefined]
     | undefined;
 }
 
-function responseErrorMessage(error: unknown): string {
+function responseErrorMessage(error: any): string {
   if (error instanceof Error) {
     return error.message;
   }
   if (error && typeof error === "object") {
-    const message = (error as { message?: unknown }).message;
+    const message = (error as { message?: any }).message;
     if (typeof message === "string") {
       return message;
     }
@@ -573,66 +573,66 @@ function responseErrorMessage(error: unknown): string {
   return String(error);
 }
 
-function lastBroadcastPayload(context: ChatContext): Record<string, unknown> | undefined {
+function lastBroadcastPayload(context: ChatContext): Record<string, any> | undefined {
   const chatCall = mockCallAt(context.broadcast as unknown as ReturnType<typeof vi.fn>, -1);
   expect(chatCall?.[0]).toBe("chat");
-  return chatCall?.[1] as Record<string, unknown> | undefined;
+  return chatCall?.[1] as Record<string, any> | undefined;
 }
 
 function lastNodeSendCall(context: ChatContext) {
   return mockCallAt(context.nodeSendToSession as unknown as ReturnType<typeof vi.fn>, -1) as
-    | [string, string, Record<string, unknown>]
+    | [string, string, Record<string, any>]
     | undefined;
 }
 
-function findAssistantUpdateWithBlock(predicate: (block: Record<string, unknown>) => boolean) {
+function findAssistantUpdateWithBlock(predicate: (block: Record<string, any>) => boolean) {
   return mockState.emittedTranscriptUpdates.find((update) => {
-    const message = update.message as { role?: unknown; content?: unknown } | undefined;
+    const message = update.message as { role?: any; content?: any } | undefined;
     return (
       message?.role === "assistant" &&
       Array.isArray(message.content) &&
-      (message.content as Array<Record<string, unknown>>).some(predicate)
+      (message.content as Array<Record<string, any>>).some(predicate)
     );
   });
 }
 
 function findUserUpdate() {
   return mockState.emittedTranscriptUpdates.find((update) => {
-    const message = update.message as { role?: unknown } | undefined;
+    const message = update.message as { role?: any } | undefined;
     return message?.role === "user";
   });
 }
 
 function userUpdateMessage(
-  update: { message?: unknown } | undefined,
-): Record<string, unknown> | undefined {
+  update: { message?: any } | undefined,
+): Record<string, any> | undefined {
   return update?.message && typeof update.message === "object"
-    ? (update.message as Record<string, unknown>)
+    ? (update.message as Record<string, any>)
     : undefined;
 }
 
-function readPersistedUserMessages(): Array<Record<string, unknown>> {
+function readPersistedUserMessages(): Array<Record<string, any>> {
   return readTranscriptJsonLines(mockState.transcriptPath)
     .map((entry) => entry.message)
     .filter(
-      (candidate): candidate is Record<string, unknown> =>
+      (candidate): candidate is Record<string, any> =>
         typeof candidate === "object" &&
         candidate !== null &&
-        (candidate as { role?: unknown }).role === "user",
+        (candidate as { role?: any }).role === "user",
     );
 }
 
 function expectDispatchContextFields(expected: {
-  OriginatingChannel?: unknown;
-  OriginatingTo?: unknown;
-  ExplicitDeliverRoute?: unknown;
-  AccountId?: unknown;
-  MessageThreadId?: unknown;
-  BodyForCommands?: unknown;
-  CommandSource?: unknown;
+  OriginatingChannel?: any;
+  OriginatingTo?: any;
+  ExplicitDeliverRoute?: any;
+  AccountId?: any;
+  MessageThreadId?: any;
+  BodyForCommands?: any;
+  CommandSource?: any;
 }) {
   for (const [key, value] of Object.entries(expected)) {
-    expect((mockState.lastDispatchCtx as Record<string, unknown> | undefined)?.[key]).toBe(value);
+    expect((mockState.lastDispatchCtx as Record<string, any> | undefined)?.[key]).toBe(value);
   }
 }
 
@@ -718,7 +718,7 @@ function createChatContext(): Pick<
       ({
         ...mockState.config,
         session: {
-          ...(mockState.config.session as Record<string, unknown> | undefined),
+          ...(mockState.config.session as Record<string, any> | undefined),
           mainKey: mockState.mainSessionKey,
         },
       }) as never,
@@ -743,13 +743,13 @@ async function runNonStreamingChatSend(params: {
   message?: string;
   sessionKey?: string;
   deliver?: boolean;
-  client?: unknown;
+  client?: any;
   expectBroadcast?: boolean;
-  requestParams?: Record<string, unknown>;
+  requestParams?: Record<string, any>;
   waitForCompletion?: boolean;
   waitForDedupe?: boolean;
   waitFor?: NonStreamingChatSendWaitFor;
-}): Promise<Record<string, unknown> | undefined> {
+}): Promise<Record<string, any> | undefined> {
   const sendParams: {
     sessionKey: string;
     message: string;
@@ -802,7 +802,7 @@ async function runNonStreamingChatSend(params: {
 
   const chatCall = mockCallAt(params.context.broadcast as unknown as ReturnType<typeof vi.fn>, 0);
   expect(chatCall?.[0]).toBe("chat");
-  return chatCall?.[1] as Record<string, unknown> | undefined;
+  return chatCall?.[1] as Record<string, any> | undefined;
 }
 
 describe("chat directive tag stripping for non-streaming final payloads", () => {
@@ -881,7 +881,7 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
       ).toBe(1);
     });
     const call = mockCallAt(context.broadcastToConnIds as unknown as ReturnType<typeof vi.fn>, 0);
-    const payload = call?.[1] as { ts?: unknown } | undefined;
+    const payload = call?.[1] as { ts?: any } | undefined;
     expect(call?.[0]).toBe("sessions.changed");
     expect(call?.[2]).toEqual(new Set(["conn-1"]));
     expect(call?.[3]).toEqual({ dropIfSlow: true });
@@ -942,10 +942,10 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
     const persistedAssistant = readTranscriptJsonLines(mockState.transcriptPath)
       .map((entry) => entry.message)
       .find(
-        (message): message is Record<string, unknown> =>
+        (message): message is Record<string, any> =>
           Boolean(message) &&
           typeof message === "object" &&
-          (message as { role?: unknown }).role === "assistant",
+          (message as { role?: any }).role === "assistant",
       );
     expect(persistedAssistant?.idempotencyKey).toBe("idem-final-mirror");
   });
@@ -1252,9 +1252,9 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
 
     await waitForAssertion(() => {
       const assistantUpdate = findAssistantUpdateWithBlock((block) => block.type === "attachment");
-      const message = assistantUpdate?.message as Record<string, unknown> | undefined;
+      const message = assistantUpdate?.message as Record<string, any> | undefined;
       const content = Array.isArray(message?.content)
-        ? (message.content as Array<Record<string, unknown>>)
+        ? (message.content as Array<Record<string, any>>)
         : [];
       expect(message?.role).toBe("assistant");
       expect(message?.idempotencyKey).toBe("idem-agent-audio:assistant-media");
@@ -1312,12 +1312,12 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
       (update) =>
         typeof update.message === "object" &&
         update.message !== null &&
-        (update.message as { role?: unknown }).role === "assistant",
+        (update.message as { role?: any }).role === "assistant",
     );
     expect(assistantUpdates).toHaveLength(1);
-    const message = assistantUpdates[0]?.message as Record<string, unknown> | undefined;
+    const message = assistantUpdates[0]?.message as Record<string, any> | undefined;
     const content = Array.isArray(message?.content)
-      ? (message.content as Array<Record<string, unknown>>)
+      ? (message.content as Array<Record<string, any>>)
       : [];
     expect(message?.role).toBe("assistant");
     expect(message?.idempotencyKey).toBe("idem-agent-tts:assistant-media");
@@ -1374,7 +1374,7 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
       (update) =>
         typeof update.message === "object" &&
         update.message !== null &&
-        (update.message as { role?: unknown }).role === "assistant",
+        (update.message as { role?: any }).role === "assistant",
     );
     // Agent-run delivery is a live projection; message_end owns persisted
     // assistant transcript entries, including stale media/text final payloads.
@@ -1421,7 +1421,7 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
       (update) =>
         typeof update.message === "object" &&
         update.message !== null &&
-        (update.message as { role?: unknown }).role === "assistant",
+        (update.message as { role?: any }).role === "assistant",
     );
     // Normal agent-run final text must not be mirrored into JSONL by WebChat;
     // The agent runtime persists the model-visible assistant turn from message_end.
@@ -1485,7 +1485,7 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
       (update) =>
         typeof update.message === "object" &&
         update.message !== null &&
-        (update.message as { role?: unknown }).role === "assistant",
+        (update.message as { role?: any }).role === "assistant",
     );
     expect(assistantUpdates).toStrictEqual([]);
     const assistantEntries = await readActiveAssistantTranscriptMessages();
@@ -1601,7 +1601,7 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
             (update) =>
               typeof update.message === "object" &&
               update.message !== null &&
-              (update.message as { role?: unknown }).role === "assistant",
+              (update.message as { role?: any }).role === "assistant",
           );
           expect(assistantUpdates).toStrictEqual([]);
           const assistantEntries = await readActiveAssistantTranscriptMessages();
@@ -2208,7 +2208,7 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
     expect(extractFirstTextBlock(broadcast)).toBe("Codex source reply");
     const errorBroadcasts = (
       context.broadcast as unknown as ReturnType<typeof vi.fn>
-    ).mock.calls.filter(([, payload]) => (payload as { state?: unknown })?.state === "error");
+    ).mock.calls.filter(([, payload]) => (payload as { state?: any })?.state === "error");
     expect(errorBroadcasts).toStrictEqual([]);
     const dedupe = context.dedupe.get("chat:idem-agent-source-reply-error");
     expect(dedupe?.ok).toBe(true);
@@ -2256,7 +2256,7 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
     });
     const finalBroadcasts = (
       context.broadcast as unknown as ReturnType<typeof vi.fn>
-    ).mock.calls.filter(([, payload]) => (payload as { state?: unknown })?.state === "final");
+    ).mock.calls.filter(([, payload]) => (payload as { state?: any })?.state === "final");
     expect(finalBroadcasts).toStrictEqual([]);
   });
 
@@ -2301,7 +2301,7 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
       (update) =>
         typeof update.message === "object" &&
         update.message !== null &&
-        (update.message as { role?: unknown }).role === "assistant",
+        (update.message as { role?: any }).role === "assistant",
     );
     expect(assistantUpdates).toStrictEqual([]);
   });
@@ -2351,7 +2351,7 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
       (update) =>
         typeof update.message === "object" &&
         update.message !== null &&
-        (update.message as { role?: unknown }).role === "assistant",
+        (update.message as { role?: any }).role === "assistant",
     );
     expect(assistantUpdates).toHaveLength(1);
     expect(JSON.stringify(assistantUpdates[0]?.message)).toContain("Command result with TTS.");
@@ -2449,7 +2449,7 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
       (update) =>
         typeof update.message === "object" &&
         update.message !== null &&
-        (update.message as { role?: unknown }).role === "assistant" &&
+        (update.message as { role?: any }).role === "assistant" &&
         JSON.stringify(update.message).includes("[[reply_to_current]]"),
     );
     expect(transcriptUpdate).toBeTruthy();
@@ -2518,7 +2518,7 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
       (update) =>
         typeof update.message === "object" &&
         update.message !== null &&
-        (update.message as { role?: unknown }).role === "assistant",
+        (update.message as { role?: any }).role === "assistant",
     );
     expect(JSON.stringify(transcriptUpdate?.message)).toContain("[[reply_to_current]]");
   });
@@ -2550,7 +2550,7 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
       (update) =>
         typeof update.message === "object" &&
         update.message !== null &&
-        (update.message as { role?: unknown }).role === "assistant",
+        (update.message as { role?: any }).role === "assistant",
     );
     expect(JSON.stringify(transcriptUpdate?.message)).toContain("[[reply_to_current]]");
     expect(JSON.stringify(transcriptUpdate?.message)).toContain(
@@ -2771,7 +2771,7 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
       (update) =>
         typeof update.message === "object" &&
         update.message !== null &&
-        (update.message as { role?: unknown }).role === "assistant",
+        (update.message as { role?: any }).role === "assistant",
     );
     expect(JSON.stringify(transcriptUpdate?.message)).toContain("[[reply_to_current]]");
     expect(JSON.stringify(transcriptUpdate?.message)).toContain("done");
@@ -2829,7 +2829,7 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
       }),
     );
     expect(
-      (attachments[0]?.attachment as { isVoiceNote?: unknown } | undefined)?.isVoiceNote,
+      (attachments[0]?.attachment as { isVoiceNote?: any } | undefined)?.isVoiceNote,
     ).not.toBe(true);
     expect(attachments[1]?.attachment).toEqual(
       expect.objectContaining({
@@ -3092,7 +3092,7 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
       (update) =>
         typeof update.message === "object" &&
         update.message !== null &&
-        (update.message as { role?: unknown }).role === "assistant",
+        (update.message as { role?: any }).role === "assistant",
     );
     expect(JSON.stringify(transcriptUpdate?.message)).not.toContain(secretAudioPath);
   });
@@ -3268,7 +3268,7 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
       (update) =>
         typeof update.message === "object" &&
         update.message !== null &&
-        (update.message as { role?: unknown }).role === "assistant",
+        (update.message as { role?: any }).role === "assistant",
     );
     expect(JSON.stringify(transcriptUpdate?.message)).toContain("[[reply_to_current]]");
     expect(JSON.stringify(transcriptUpdate?.message)).toContain("see now  with  spacing");
@@ -3755,7 +3755,7 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
             id: "openclaw-tui",
           },
         },
-      } as unknown,
+      } as any,
       sessionKey: "agent:main:main",
       expectBroadcast: false,
     });
@@ -3794,7 +3794,7 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
             id: "openclaw-tui",
           },
         },
-      } as unknown,
+      } as any,
       sessionKey: "agent:main:main",
       deliver: true,
       expectBroadcast: false,
@@ -3836,7 +3836,7 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
             id: "cli",
           },
         },
-      } as unknown,
+      } as any,
       sessionKey: "agent:main:work",
       deliver: true,
       expectBroadcast: false,
@@ -3874,7 +3874,7 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
             id: "cli",
           },
         },
-      } as unknown,
+      } as any,
       sessionKey: "agent:main:work",
       deliver: true,
       expectBroadcast: false,
@@ -3913,7 +3913,7 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
             id: "cli",
           },
         },
-      } as unknown,
+      } as any,
       sessionKey: "agent:main:work",
       deliver: true,
       expectBroadcast: false,
@@ -3951,7 +3951,7 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
       idempotencyKey: "idem-config-main-connect-no-client",
       client: {
         connect: {},
-      } as unknown,
+      } as any,
       sessionKey: "agent:main:work",
       deliver: true,
       expectBroadcast: false,
@@ -4058,7 +4058,7 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
             id: "openclaw-webchat",
           },
         },
-      } as unknown,
+      } as any,
       sessionKey: "agent:main:imessage:direct:+8619800001234",
       deliver: true,
       expectBroadcast: false,
@@ -4099,7 +4099,7 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
             id: "openclaw-tui",
           },
         },
-      } as unknown,
+      } as any,
       sessionKey: "agent:main:imessage:direct:+8619800001234",
       deliver: true,
       expectBroadcast: false,
@@ -4395,7 +4395,7 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
         (update) =>
           typeof update.message === "object" &&
           update.message !== null &&
-          (update.message as { role?: unknown }).role === "user",
+          (update.message as { role?: any }).role === "user",
       ).length;
     };
     const respond = vi.fn();
@@ -4414,7 +4414,7 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
       (update) =>
         typeof update.message === "object" &&
         update.message !== null &&
-        (update.message as { role?: unknown }).role === "user",
+        (update.message as { role?: any }).role === "user",
     );
     expect(userUpdates).toHaveLength(0);
   });
@@ -4532,7 +4532,7 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
       expect(typeof mockState.savedMediaCalls[1]?.size).toBe("number");
       const userTurnInput = mockState.lastDispatchUserTurnInput as
         | {
-            content?: unknown;
+            content?: any;
             MediaPaths?: string[];
             MediaTypes?: string[];
           }
@@ -4585,7 +4585,7 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
     await waitForAssertion(() => {
       const userTurnInput = mockState.lastDispatchUserTurnInput as
         | {
-            content?: unknown;
+            content?: any;
             MediaPaths?: string[];
             MediaTypes?: string[];
           }
@@ -4653,7 +4653,7 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
     await waitForAssertion(() => {
       const userTurnInput = mockState.lastDispatchUserTurnInput as
         | {
-            content?: unknown;
+            content?: any;
             MediaPaths?: string[];
           }
         | undefined;
@@ -4820,14 +4820,14 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
       (update) =>
         typeof update.message === "object" &&
         update.message !== null &&
-        (update.message as { role?: unknown }).role === "assistant" &&
-        Array.isArray((update.message as { content?: unknown }).content) &&
+        (update.message as { role?: any }).role === "assistant" &&
+        Array.isArray((update.message as { content?: any }).content) &&
         ((update.message as { content: Array<{ type?: string; text?: string }> }).content.some(
           (block) => block?.type === "text" && block?.text?.includes("[[reply_to_current]]"),
         ) ??
           false),
     );
-    const transcriptMessage = transcriptUpdate?.message as Record<string, unknown> | undefined;
+    const transcriptMessage = transcriptUpdate?.message as Record<string, any> | undefined;
     expect(transcriptMessage?.role).toBe("assistant");
     expect(transcriptMessage?.content?.[0]).toEqual({
       type: "text",
@@ -4863,9 +4863,9 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
       (update) =>
         typeof update.message === "object" &&
         update.message !== null &&
-        (update.message as { role?: unknown }).role === "assistant",
+        (update.message as { role?: any }).role === "assistant",
     );
-    const transcriptMessage = transcriptUpdate?.message as Record<string, unknown> | undefined;
+    const transcriptMessage = transcriptUpdate?.message as Record<string, any> | undefined;
     expect(transcriptMessage?.role).toBe("assistant");
     expect(transcriptMessage?.content?.[0]).toEqual({
       type: "text",
@@ -4896,7 +4896,7 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
       (update) =>
         typeof update.message === "object" &&
         update.message !== null &&
-        (update.message as { role?: unknown }).role === "assistant",
+        (update.message as { role?: any }).role === "assistant",
     );
     expect(JSON.stringify(transcriptUpdate)).toContain("[[reply_to:abcaudio_as_voice]]");
     expect(JSON.stringify(transcriptUpdate)).not.toContain("[[audio_as_voice]]");
@@ -4922,7 +4922,7 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
       (update) =>
         typeof update.message === "object" &&
         update.message !== null &&
-        (update.message as { role?: unknown }).role === "assistant",
+        (update.message as { role?: any }).role === "assistant",
     );
     expect(JSON.stringify(transcriptUpdate)).toContain("[[reply_to:inline-id]]");
   });

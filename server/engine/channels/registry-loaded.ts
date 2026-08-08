@@ -4,14 +4,14 @@ export type LoadedChannelPlugin = unknown;
 
 export type LoadedChannelPluginEntry = unknown;
 
-export function listLoadedChannelPlugins(..._args: unknown[]): unknown {
+export function listLoadedChannelPlugins(..._args: any[]): any {
   return [];
 }
 
-export function getLoadedChannelPluginById(..._args: unknown[]): unknown {
+export function getLoadedChannelPluginById(..._args: any[]): any {
   return undefined;
 }
 
-export function getLoadedChannelPluginEntryById(..._args: unknown[]): unknown {
+export function getLoadedChannelPluginEntryById(..._args: any[]): any {
   return undefined;
 }

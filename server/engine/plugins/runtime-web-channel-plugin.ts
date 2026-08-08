@@ -1,64 +1,64 @@
 // 移植自 openclaw/src/plugins/runtime-web-channel-plugin.ts
 
-export function getActiveWebListener(...args: unknown[]): unknown {
+export function getActiveWebListener(...args: any[]): any {
   return undefined;
 }
-export function getWebAuthAgeMs(...args: unknown[]): unknown {
+export function getWebAuthAgeMs(...args: any[]): any {
   return undefined;
 }
-export function logWebSelfId(...args: unknown[]): unknown {
+export function logWebSelfId(...args: any[]): any {
   return undefined;
 }
-export function loginWeb(...args: unknown[]): unknown {
+export function loginWeb(...args: any[]): any {
   return undefined;
 }
-export function logoutWeb(...args: unknown[]): unknown {
+export function logoutWeb(...args: any[]): any {
   return undefined;
 }
-export function readWebSelfId(...args: unknown[]): unknown {
+export function readWebSelfId(...args: any[]): any {
   return undefined;
 }
-export function webAuthExists(...args: unknown[]): unknown {
+export function webAuthExists(...args: any[]): any {
   return undefined;
 }
-export function formatError(...args: unknown[]): unknown {
+export function formatError(...args: any[]): any {
   return "";
 }
-export function getStatusCode(...args: unknown[]): unknown {
+export function getStatusCode(...args: any[]): any {
   return undefined;
 }
-export function pickWebChannel(...args: unknown[]): unknown {
+export function pickWebChannel(...args: any[]): any {
   return undefined;
 }
-export function resolveWebChannelAuthDir(...args: unknown[]): unknown {
+export function resolveWebChannelAuthDir(...args: any[]): any {
   return undefined;
 }
-export function loadWebMedia(...args: unknown[]): unknown {
+export function loadWebMedia(...args: any[]): any {
   return undefined;
 }
-export function loadWebMediaRaw(...args: unknown[]): unknown {
+export function loadWebMediaRaw(...args: any[]): any {
   return undefined;
 }
-export function monitorWebChannel(...args: unknown[]): unknown {
+export function monitorWebChannel(...args: any[]): any {
   return undefined;
 }
-export function monitorWebInbox(...args: unknown[]): unknown {
+export function monitorWebInbox(...args: any[]): any {
   return undefined;
 }
-export function optimizeImageToJpeg(...args: unknown[]): unknown {
+export function optimizeImageToJpeg(...args: any[]): any {
   return undefined;
 }
-export function startWebLoginWithQr(...args: unknown[]): unknown {
+export function startWebLoginWithQr(...args: any[]): any {
   return undefined;
 }
-export function waitForWebChannelConnection(...args: unknown[]): unknown {
+export function waitForWebChannelConnection(...args: any[]): any {
   return undefined;
 }
-export function waitForWebLogin(...args: unknown[]): unknown {
+export function waitForWebLogin(...args: any[]): any {
   return undefined;
 }
-export function getDefaultLocalRoots(...args: unknown[]): unknown {
+export function getDefaultLocalRoots(...args: any[]): any {
   return undefined;
 }
-export const extractMediaPlaceholder: (...args: unknown[]) => unknown = undefined as unknown as (...args: unknown[]) => unknown;
-export const extractText: (...args: unknown[]) => unknown = undefined as unknown as (...args: unknown[]) => unknown;
+export const extractMediaPlaceholder: (...args: any[]) => unknown = undefined as unknown as (...args: any[]) => unknown;
+export const extractText: (...args: any[]) => unknown = undefined as unknown as (...args: any[]) => unknown;

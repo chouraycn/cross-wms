@@ -2,7 +2,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const loadAgentsMock = vi.hoisted(() =>
-  vi.fn(async (host: { agentsList?: unknown }) => {
+  vi.fn(async (host: { agentsList?: any }) => {
     host.agentsList = {
       defaultId: "main",
       mainKey: "main",

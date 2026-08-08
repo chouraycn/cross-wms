@@ -18,7 +18,7 @@ import {
 } from './plugin-constants.js';
 
 /** 事件处理器签名 */
-export type PluginEventHandler = (payload: unknown) => void;
+export type PluginEventHandler = (payload: any) => void;
 
 /** 事件订阅句柄（取消订阅） */
 export interface PluginEventSubscription {
@@ -40,7 +40,7 @@ export class PluginEventBusImpl {
   }
 
   /** 触发事件 */
-  emit(event: string, payload?: unknown): void {
+  emit(event: string, payload?: any): void {
     const handlers = this.handlers.get(event);
     if (handlers) {
       for (const handler of handlers) {
@@ -138,7 +138,7 @@ export function createPluginEventBus(pluginId: string): PluginEventBusImpl {
 }
 
 /** 触发全局错误事件 */
-export function emitPluginError(pluginId: string, error: unknown): void {
+export function emitPluginError(pluginId: string, error: any): void {
   const payload = {
     pluginId,
     message: error instanceof Error ? error.message : String(error),
@@ -157,12 +157,12 @@ export function emitPluginError(pluginId: string, error: unknown): void {
  */
 export function adaptToPluginEventBus(bus: PluginEventBusImpl) {
   return {
-    emit: (event: string, payload?: unknown) => bus.emit(event, payload),
-    on: (event: string, handler: (payload: unknown) => void) => {
+    emit: (event: string, payload?: any) => bus.emit(event, payload),
+    on: (event: string, handler: (payload: any) => void) => {
       const sub = bus.on(event, handler as PluginEventHandler);
       return () => sub.unsubscribe();
     },
-    off: (event: string, handler: (payload: unknown) => void) => {
+    off: (event: string, handler: (payload: any) => void) => {
       bus.off(event, handler as PluginEventHandler);
     },
   };

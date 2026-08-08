@@ -4,7 +4,7 @@
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const buildStatusReply = vi.fn(async (params: unknown) => params);
+const buildStatusReply = vi.fn(async (params: any) => params);
 const loadSessionEntry = vi.fn();
 const resolveSessionAgentId = vi.fn();
 const listAgentEntries = vi.fn();
@@ -44,11 +44,11 @@ vi.mock("../auto-reply/reply/directive-handling.levels.js", () => ({
 
 const { resolveDirectStatusReplyForSession } = await import("./command-status.runtime.js");
 
-function expectResolvedReasoningLevel(value: unknown, expected: string) {
-  expect((value as { resolvedReasoningLevel?: unknown }).resolvedReasoningLevel).toBe(expected);
+function expectResolvedReasoningLevel(value: any, expected: string) {
+  expect((value as { resolvedReasoningLevel?: any }).resolvedReasoningLevel).toBe(expected);
 }
 
-function requireBuildStatusReplyParams(index = 0): unknown {
+function requireBuildStatusReplyParams(index = 0): any {
   const call = buildStatusReply.mock.calls[index];
   if (!call) {
     throw new Error(`expected buildStatusReply call ${index}`);
@@ -67,7 +67,7 @@ describe("resolveDirectStatusReplyForSession", () => {
     createModelSelectionState.mockReset();
     resolveCurrentDirectiveLevels.mockReset();
 
-    buildStatusReply.mockImplementation(async (params: unknown) => params);
+    buildStatusReply.mockImplementation(async (params: any) => params);
     loadSessionEntry.mockReturnValue({
       cfg: {
         agents: {

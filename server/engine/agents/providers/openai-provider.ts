@@ -43,11 +43,11 @@ export class OpenAIProvider extends BaseLlmProvider {
 
     return {
       id: data.id,
-      choices: data.choices.map((choice: unknown) => ({
-        index: (choice as Record<string, unknown>).index as number,
-        message: (choice as Record<string, unknown>).message as ChatCompletionResult['choices'][0]['message'],
-        finishReason: (choice as Record<string, unknown>).finish_reason as string,
-        toolCalls: (choice as Record<string, unknown>).tool_calls as ChatCompletionResult['choices'][0]['toolCalls'],
+      choices: data.choices.map((choice: any) => ({
+        index: (choice as Record<string, any>).index as number,
+        message: (choice as Record<string, any>).message as ChatCompletionResult['choices'][0]['message'],
+        finishReason: (choice as Record<string, any>).finish_reason as string,
+        toolCalls: (choice as Record<string, any>).tool_calls as ChatCompletionResult['choices'][0]['toolCalls'],
       })),
       usage: data.usage ? {
         promptTokens: data.usage.prompt_tokens,
@@ -108,10 +108,10 @@ export class OpenAIProvider extends BaseLlmProvider {
           const event = JSON.parse(data);
           yield {
             id: event.id,
-            choices: event.choices.map((choice: unknown) => ({
-              index: (choice as Record<string, unknown>).index as number,
-              message: (choice as Record<string, unknown>).delta as ChatCompletionResult['choices'][0]['message'],
-              finishReason: (choice as Record<string, unknown>).finish_reason as string,
+            choices: event.choices.map((choice: any) => ({
+              index: (choice as Record<string, any>).index as number,
+              message: (choice as Record<string, any>).delta as ChatCompletionResult['choices'][0]['message'],
+              finishReason: (choice as Record<string, any>).finish_reason as string,
             })),
             createdAt: Date.now(),
           };
@@ -144,7 +144,7 @@ export class OpenAIProvider extends BaseLlmProvider {
     const data = await response.json();
 
     return {
-      embeddings: data.data.map((item: unknown) => (item as Record<string, unknown>).embedding as number[]),
+      embeddings: data.data.map((item: any) => (item as Record<string, any>).embedding as number[]),
       usage: data.usage ? {
         promptTokens: data.usage.prompt_tokens,
         totalTokens: data.usage.total_tokens,
@@ -164,7 +164,7 @@ export class OpenAIProvider extends BaseLlmProvider {
       if (!response.ok) return [];
 
       const data = await response.json();
-      return data.data.map((model: unknown) => (model as Record<string, unknown>).id as string);
+      return data.data.map((model: any) => (model as Record<string, any>).id as string);
     } catch {
       return [];
     }

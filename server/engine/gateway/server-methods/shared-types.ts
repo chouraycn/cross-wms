@@ -55,9 +55,9 @@ export type GatewayClient = {
 /** Callback used by method handlers to emit one protocol response frame. */
 export type RespondFn = (
   ok: boolean,
-  payload?: unknown,
+  payload?: any,
   error?: ErrorShape,
-  meta?: Record<string, unknown>,
+  meta?: Record<string, any>,
 ) => void;
 
 /** Runtime services and mutable gateway state available to request handlers. */
@@ -80,8 +80,8 @@ export type GatewayRequestContext = {
   getHealthVersion: () => number;
   broadcast: GatewayBroadcastFn;
   broadcastToConnIds: GatewayBroadcastToConnIdsFn;
-  nodeSendToSession: (sessionKey: string, event: string, payload: unknown) => void;
-  nodeSendToAllSubscribed: (event: string, payload: unknown) => void;
+  nodeSendToSession: (sessionKey: string, event: string, payload: any) => void;
+  nodeSendToAllSubscribed: (event: string, payload: any) => void;
   nodeSubscribe: (nodeId: string, sessionKey: string) => void;
   nodeUnsubscribe: (nodeId: string, sessionKey: string) => void;
   nodeUnsubscribeAll: (nodeId: string) => void;
@@ -167,7 +167,7 @@ export type GatewayRequestOptions = {
 /** Normalized method invocation options passed to registered handlers. */
 export type GatewayRequestHandlerOptions = {
   req: RequestFrame;
-  params: Record<string, unknown>;
+  params: Record<string, any>;
   client: GatewayClient | null;
   isWebchatConnect: (params: ConnectParams | null | undefined) => boolean;
   respond: RespondFn;

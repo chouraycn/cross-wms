@@ -7,13 +7,13 @@ import Box from '@mui/material/Box'
 import { cn } from './utils'
 
 // 本地 asChild 实现，替代 Radix Slot（仅合并 className + 透传 props，满足 sidebar 的 asChild 用法）。
-function SlotRoot({ children, ...props }: { children?: React.ReactNode } & Record<string, unknown>) {
+function SlotRoot({ children, ...props }: { children?: React.ReactNode } & Record<string, any>) {
   if (!React.isValidElement(children)) return null
   const child = children as React.ReactElement
   return React.cloneElement(child, {
     ...props,
     className: cn((props.className as string) ?? '', (child.props as { className?: string }).className),
-  } as Record<string, unknown>)
+  } as Record<string, any>)
 }
 import { Button } from './button'
 import { Input } from './input'
@@ -164,7 +164,7 @@ function SidebarProvider({
           width: '100%',
           '&:has([data-variant="inset"])': { bgcolor: 'var(--sidebar, #ffffff)' },
         }}
-        {...(props as Record<string, unknown>)}
+        {...(props as Record<string, any>)}
       >
         {children}
       </Box>
@@ -199,7 +199,7 @@ function Sidebar({
           bgcolor: 'var(--sidebar, #ffffff)',
           color: 'var(--sidebar-foreground, #858b9c)',
         }}
-        {...(props as Record<string, unknown>)}
+        {...(props as Record<string, any>)}
       >
         {children}
       </Box>
@@ -276,7 +276,7 @@ function Sidebar({
                 },
               }),
         }}
-        {...(props as Record<string, unknown>)}
+        {...(props as Record<string, any>)}
       >
         <Box
           data-sidebar="sidebar"
@@ -379,7 +379,7 @@ function SidebarRail({ className, ...props }: React.ComponentProps<'button'>) {
         '[data-side="right"][data-collapsible="offcanvas"] &': { left: '-8px' },
         '@media (min-width: 640px)': { display: 'flex' },
       }}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     />
   )
 }
@@ -407,7 +407,7 @@ function SidebarInset({ className, ...props }: React.ComponentProps<'main'>) {
           '[data-variant="inset"][data-state="collapsed"] ~ &': { ml: '8px' },
         },
       }}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     />
   )
 }
@@ -440,7 +440,7 @@ function SidebarHeader({ className, ...props }: React.ComponentProps<'div'>) {
       data-sidebar="header"
       className={className}
       sx={{ display: 'flex', flexDirection: 'column', gap: '8px', p: '8px' }}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     />
   )
 }
@@ -453,7 +453,7 @@ function SidebarFooter({ className, ...props }: React.ComponentProps<'div'>) {
       data-sidebar="footer"
       className={className}
       sx={{ display: 'flex', flexDirection: 'column', gap: '8px' }}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     />
   )
 }
@@ -492,7 +492,7 @@ function SidebarContent({ className, ...props }: React.ComponentProps<'div'>) {
         scrollbarWidth: 'none',
         '[data-collapsible="icon"] &': { overflow: 'hidden' },
       }}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     />
   )
 }
@@ -512,7 +512,7 @@ function SidebarGroup({ className, ...props }: React.ComponentProps<'div'>) {
         flexDirection: 'column',
         p: '8px',
       }}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     />
   )
 }
@@ -529,7 +529,7 @@ function SidebarGroupLabel({
         data-slot="sidebar-group-label"
         data-sidebar="group-label"
         className={className}
-        {...(props as Record<string, unknown>)}
+        {...(props as Record<string, any>)}
       />
     )
   }
@@ -558,9 +558,9 @@ function SidebarGroupLabel({
         '[data-collapsible="icon"] &': { mt: '-32px', opacity: 0 },
         '&:focus-visible': { boxShadow: '0 0 0 2px var(--sidebar-ring, #18181a)' },
         '& > svg': { width: '16px', height: '16px', flexShrink: 0 },
-        ...(sx as Record<string, unknown>),
+        ...(sx as Record<string, any>),
       }}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     />
   )
 }
@@ -577,7 +577,7 @@ function SidebarGroupAction({
         data-slot="sidebar-group-action"
         data-sidebar="group-action"
         className={className}
-        {...(props as Record<string, unknown>)}
+        {...(props as Record<string, any>)}
       />
     )
   }
@@ -618,9 +618,9 @@ function SidebarGroupAction({
         '&:focus-visible': { boxShadow: '0 0 0 2px var(--sidebar-ring, #18181a)' },
         '@media (min-width: 768px)': { '&::after': { display: 'none' } },
         '& > svg': { width: '16px', height: '16px', flexShrink: 0 },
-        ...(sx as Record<string, unknown>),
+        ...(sx as Record<string, any>),
       }}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     />
   )
 }
@@ -636,7 +636,7 @@ function SidebarGroupContent({
       data-sidebar="group-content"
       className={className}
       sx={{ width: '100%', fontSize: '14px' }}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     />
   )
 }
@@ -649,7 +649,7 @@ function SidebarMenu({ className, ...props }: React.ComponentProps<'ul'>) {
       data-sidebar="menu"
       className={className}
       sx={{ display: 'flex', width: '100%', minWidth: 0, flexDirection: 'column', gap: 0 }}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     />
   )
 }
@@ -663,7 +663,7 @@ function SidebarMenuItem({ className, ...props }: React.ComponentProps<'li'>) {
       data-menu-item
       className={className}
       sx={{ position: 'relative' }}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     />
   )
 }
@@ -675,7 +675,7 @@ const menuButtonSx = ({
   variant?: 'default' | 'outline'
   size?: 'default' | 'sm' | 'lg'
 }): SxProps<Theme> => {
-  const base: Record<string, unknown> = {
+  const base: Record<string, any> = {
     position: 'relative',
     display: 'flex',
     width: '100%',
@@ -760,7 +760,7 @@ function SidebarMenuButton({
       data-active={isActive}
       data-menu-button
       className={className}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     />
   ) : (
     <Box
@@ -772,7 +772,7 @@ function SidebarMenuButton({
       data-menu-button
       sx={menuButtonSx({ variant, size })}
       className={className}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     />
   )
 
@@ -816,7 +816,7 @@ function SidebarMenuAction({
         data-slot="sidebar-menu-action"
         data-sidebar="menu-action"
         className={className}
-        {...(props as Record<string, unknown>)}
+        {...(props as Record<string, any>)}
       />
     )
   }
@@ -868,9 +868,9 @@ function SidebarMenuAction({
               '[data-menu-item]:hover &': { opacity: 1 },
             }
           : {}),
-        ...(sx as Record<string, unknown>),
+        ...(sx as Record<string, any>),
       }}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     />
   )
 }
@@ -911,7 +911,7 @@ function SidebarMenuBadge({
           color: 'var(--sidebar-accent-foreground, #18181a)',
         },
       }}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     />
   )
 }
@@ -935,7 +935,7 @@ function SidebarMenuSkeleton({
       data-sidebar="menu-skeleton"
       className={className}
       sx={{ display: 'flex', height: '32px', alignItems: 'center', gap: '8px', borderRadius: '6px', px: '8px' }}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     >
       {showIcon && (
         <Skeleton
@@ -978,7 +978,7 @@ function SidebarMenuSub({ className, ...props }: React.ComponentProps<'ul'>) {
         py: '2px',
         '[data-collapsible="icon"] &': { display: 'none' },
       }}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     />
   )
 }
@@ -994,7 +994,7 @@ function SidebarMenuSubItem({
       data-sidebar="menu-sub-item"
       className={className}
       sx={{ position: 'relative' }}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     />
   )
 }
@@ -1020,7 +1020,7 @@ function SidebarMenuSubButton({
         data-size={size}
         data-active={isActive}
         className={className}
-        {...(props as Record<string, unknown>)}
+        {...(props as Record<string, any>)}
       />
     )
   }
@@ -1069,9 +1069,9 @@ function SidebarMenuSubButton({
           flexShrink: 0,
           color: 'var(--sidebar-accent-foreground, #18181a)',
         },
-        ...(sx as Record<string, unknown>),
+        ...(sx as Record<string, any>),
       }}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     />
   )
 }

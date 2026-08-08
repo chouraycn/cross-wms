@@ -22,7 +22,7 @@ async function assertExistingHeaderIsReadable(sessionFile: string): Promise<void
     return;
   }
 
-  let parsed: unknown;
+  let parsed: any;
   try {
     parsed = JSON.parse(firstLine);
   } catch (error) {
@@ -46,7 +46,7 @@ async function assertExistingHeaderIsReadable(sessionFile: string): Promise<void
  * assistant entry, even for pre-created session files.
  */
 export async function prepareSessionManagerForRun(params: {
-  sessionManager: unknown;
+  sessionManager: any;
   sessionFile: string;
   hadSessionFile: boolean;
   sessionId: string;
@@ -57,8 +57,8 @@ export async function prepareSessionManagerForRun(params: {
     cwd: string;
     flushed: boolean;
     fileEntries: Array<SessionHeaderEntry | SessionMessageEntry | { type: string }>;
-    byId?: Map<string, unknown>;
-    labelsById?: Map<string, unknown>;
+    byId?: Map<string, any>;
+    labelsById?: Map<string, any>;
     leafId?: string | null;
     wasRecoveredFromCorruptHeader?: () => boolean;
     clearPreservedOpaqueFileEntries?: () => void;

@@ -7,7 +7,7 @@ import { registerSingleProviderPlugin } from "../plugin-test-runtime.js";
 
 export async function expectPassthroughReplayPolicy(params: {
   modelId: string;
-  plugin: unknown;
+  plugin: any;
   providerId: string;
   sanitizeThoughtSignatures?: boolean;
 }) {

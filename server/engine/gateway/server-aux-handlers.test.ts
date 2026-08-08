@@ -11,7 +11,7 @@ import {
 import type { GatewayReloadPlan } from "./config-reload.js";
 import { createGatewayAuxHandlers } from "./server-aux-handlers.js";
 
-function asConfig(value: unknown): OpenClawConfig {
+function asConfig(value: any): OpenClawConfig {
   return value as OpenClawConfig;
 }
 

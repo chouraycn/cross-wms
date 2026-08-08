@@ -10,7 +10,7 @@ const statusSummaryMocks = vi.hoisted(() => ({
   listSessionEntries: vi.fn<
     (scope?: { agentId?: string; storePath?: string }) => Array<{
       sessionKey: string;
-      entry: Record<string, unknown>;
+      entry: Record<string, any>;
     }>
   >(() => []),
   configureTaskRegistryMaintenance: vi.fn(),
@@ -178,7 +178,7 @@ const { resolveLinkChannelContext } = await import("./status.link-channel.js");
 let getStatusSummary: typeof import("./status.summary.js").getStatusSummary;
 let statusSummaryRuntime: typeof import("./status.summary.runtime.js").statusSummaryRuntime;
 
-function toSessionEntrySummaries(store: Record<string, Record<string, unknown>>) {
+function toSessionEntrySummaries(store: Record<string, Record<string, any>>) {
   return Object.entries(store).map(([sessionKey, entry]) => ({ sessionKey, entry }));
 }
 

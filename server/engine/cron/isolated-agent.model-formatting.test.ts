@@ -13,14 +13,14 @@ const {
 } = vi.hoisted(() => ({
   loadModelCatalogMock: vi.fn(),
   getModelRefStatusMock: vi.fn(),
-  normalizeModelSelectionMock: vi.fn((value: unknown) => {
+  normalizeModelSelectionMock: vi.fn((value: any) => {
     if (typeof value === "string" && value.trim()) {
       return value.trim();
     }
     if (
       value &&
       typeof value === "object" &&
-      typeof (value as { primary?: unknown }).primary === "string" &&
+      typeof (value as { primary?: any }).primary === "string" &&
       (value as { primary: string }).primary.trim()
     ) {
       return (value as { primary: string }).primary.trim();
@@ -45,8 +45,8 @@ vi.mock("./isolated-agent/run-model-selection.runtime.js", () => ({
     cfg,
     agentConfigOverride,
   }: {
-    cfg?: { agents?: { defaults?: { subagents?: { model?: unknown } } } };
-    agentConfigOverride?: { model?: unknown; subagents?: { model?: unknown } };
+    cfg?: { agents?: { defaults?: { subagents?: { model?: any } } } };
+    agentConfigOverride?: { model?: any; subagents?: { model?: any } };
   }) => {
     for (const candidate of [
       { raw: agentConfigOverride?.subagents?.model, source: "subagent" as const },
@@ -72,7 +72,7 @@ type AgentTurnPayload = {
 };
 
 type SelectModelOptions = {
-  cfg?: Record<string, unknown>;
+  cfg?: Record<string, any>;
   agentConfigOverride?: Pick<AgentConfig, "model" | "subagents">;
   payload?: AgentTurnPayload;
   sessionEntry?: {
@@ -101,18 +101,18 @@ function parseModelRef(raw: string): { provider: string; model: string } | { err
   return { provider, model };
 }
 
-function resolveConfiguredModelForTest(cfg: Record<string, unknown>): {
+function resolveConfiguredModelForTest(cfg: Record<string, any>): {
   provider: string;
   model: string;
 } {
-  const modelValue = (cfg.agents as { defaults?: { model?: unknown } } | undefined)?.defaults
+  const modelValue = (cfg.agents as { defaults?: { model?: any } } | undefined)?.defaults
     ?.model;
   const rawModel =
     typeof modelValue === "string"
       ? modelValue
       : typeof modelValue === "object" &&
           modelValue &&
-          typeof (modelValue as { primary?: unknown }).primary === "string"
+          typeof (modelValue as { primary?: any }).primary === "string"
         ? (modelValue as { primary: string }).primary
         : undefined;
 
@@ -164,7 +164,7 @@ describe("cron model formatting and precedence edge cases", () => {
     loadModelCatalogMock.mockResolvedValue([]);
     getModelRefStatusMock.mockReturnValue({ allowed: false });
     resolveHooksGmailModelMock.mockReturnValue(null);
-    resolveConfiguredModelRefMock.mockImplementation(({ cfg }: { cfg?: Record<string, unknown> }) =>
+    resolveConfiguredModelRefMock.mockImplementation(({ cfg }: { cfg?: Record<string, any> }) =>
       resolveConfiguredModelForTest(cfg ?? {}),
     );
     resolveAllowedModelRefMock.mockImplementation(({ raw }: { raw: string }) => {

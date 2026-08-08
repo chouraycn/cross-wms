@@ -60,7 +60,7 @@ describe("createStreamFnWithExtraParams sampling overrides", () => {
     );
 
     expect(underlying).toHaveBeenCalledTimes(1);
-    const callOptions = (underlying as unknown as { mock: { calls: unknown[][] } }).mock
+    const callOptions = (underlying as unknown as { mock: { calls: any[][] } }).mock
       .calls[0]?.[2] as { temperature?: number; topP?: number; maxTokens?: number } | undefined;
     expect(callOptions?.temperature).toBe(0.4);
     expect(callOptions?.topP).toBe(0.7);
@@ -91,7 +91,7 @@ describe("createStreamFnWithExtraParams sampling overrides", () => {
       undefined,
     );
 
-    const callOptions = (underlying as unknown as { mock: { calls: unknown[][] } }).mock
+    const callOptions = (underlying as unknown as { mock: { calls: any[][] } }).mock
       .calls[0]?.[2] as { maxTokens?: number } | undefined;
     expect(callOptions?.maxTokens).toBe(64_000);
   });
@@ -120,7 +120,7 @@ describe("createStreamFnWithExtraParams sampling overrides", () => {
       { maxTokens: 32_000 } as never,
     );
 
-    const callOptions = (underlying as unknown as { mock: { calls: unknown[][] } }).mock
+    const callOptions = (underlying as unknown as { mock: { calls: any[][] } }).mock
       .calls[0]?.[2] as { maxTokens?: number } | undefined;
     expect(callOptions?.maxTokens).toBe(32_000);
   });
@@ -187,7 +187,7 @@ describe("createStreamFnWithExtraParams sampling overrides", () => {
       { topP: 0.9 } as never,
     );
 
-    const callOptions = (underlying as unknown as { mock: { calls: unknown[][] } }).mock
+    const callOptions = (underlying as unknown as { mock: { calls: any[][] } }).mock
       .calls[0]?.[2] as { temperature?: number; topP?: number } | undefined;
     expect(callOptions?.temperature).toBe(0.4);
     expect(callOptions?.topP).toBe(0.9);
@@ -230,9 +230,9 @@ describe("createStreamFnWithExtraParams sampling overrides", () => {
       undefined,
     );
 
-    const callOptions = (underlying as unknown as { mock: { calls: unknown[][] } }).mock
+    const callOptions = (underlying as unknown as { mock: { calls: any[][] } }).mock
       .calls[0]?.[2] as
-      | { responseFormat?: Record<string, unknown>; temperature?: number }
+      | { responseFormat?: Record<string, any>; temperature?: number }
       | undefined;
     expect(callOptions?.responseFormat).toEqual({ type: "json_object" });
     expect(callOptions?.temperature).toBe(0.4);
@@ -280,8 +280,8 @@ describe("createStreamFnWithExtraParams sampling overrides", () => {
       undefined,
     );
 
-    const callOptions = (underlying as unknown as { mock: { calls: unknown[][] } }).mock
-      .calls[0]?.[2] as { responseFormat?: Record<string, unknown> } | undefined;
+    const callOptions = (underlying as unknown as { mock: { calls: any[][] } }).mock
+      .calls[0]?.[2] as { responseFormat?: Record<string, any> } | undefined;
     expect(callOptions?.responseFormat).toEqual({ type: "json_object" });
   });
 
@@ -385,7 +385,7 @@ describe("createStreamFnWithExtraParams sampling overrides", () => {
     );
 
     expect(underlying).toHaveBeenCalledTimes(1);
-    const callOptions = (underlying as unknown as { mock: { calls: unknown[][] } }).mock
+    const callOptions = (underlying as unknown as { mock: { calls: any[][] } }).mock
       .calls[0]?.[2] as
       | {
           frequencyPenalty?: number;
@@ -421,7 +421,7 @@ describe("createStreamFnWithExtraParams sampling overrides", () => {
     );
 
     expect(underlying).toHaveBeenCalledTimes(1);
-    const callOptions = (underlying as unknown as { mock: { calls: unknown[][] } }).mock
+    const callOptions = (underlying as unknown as { mock: { calls: any[][] } }).mock
       .calls[0]?.[2] as { stop?: string[] } | undefined;
     expect(callOptions?.stop).toEqual(["User:", "Assistant:"]);
   });
@@ -468,7 +468,7 @@ describe("createStreamFnWithExtraParams sampling overrides", () => {
       undefined,
     );
 
-    const callOptions = (underlying as unknown as { mock: { calls: unknown[][] } }).mock
+    const callOptions = (underlying as unknown as { mock: { calls: any[][] } }).mock
       .calls[0]?.[2] as
       | {
           frequencyPenalty?: number;

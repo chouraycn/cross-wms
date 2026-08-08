@@ -4,8 +4,8 @@ import { classifyAcpToolApproval } from "./approval-classifier.js";
 
 function classify(params: {
   title: string;
-  rawInput?: Record<string, unknown>;
-  meta?: Record<string, unknown>;
+  rawInput?: Record<string, any>;
+  meta?: Record<string, any>;
   cwd?: string;
 }) {
   return classifyAcpToolApproval({

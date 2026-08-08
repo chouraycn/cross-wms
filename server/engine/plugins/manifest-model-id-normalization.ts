@@ -1,7 +1,7 @@
 /** Applies manifest-declared model-id normalization policies to provider model refs. */
 // Stub implementation for missing module
-const collectManifestModelIdNormalizationPolicies = (_manifest: unknown): Map<string, PluginManifestModelIdNormalizationProvider> => new Map();
-const normalizeProviderModelIdWithPolicies = (..._args: unknown[]): unknown => undefined;
+const collectManifestModelIdNormalizationPolicies = (_manifest: any): Map<string, PluginManifestModelIdNormalizationProvider> => new Map();
+const normalizeProviderModelIdWithPolicies = (..._args: any[]): any => undefined;
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { getCurrentPluginMetadataSnapshot } from "./current-plugin-metadata-snapshot.js";
 import type { PluginManifestRecord } from "./manifest-registry.js";

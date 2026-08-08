@@ -51,7 +51,7 @@ describe("installUnhandledRejectionHandler - fatal detection", () => {
     process.exit = originalExit;
   });
 
-  function emitUnhandled(reason: unknown): void {
+  function emitUnhandled(reason: any): void {
     process.emit("unhandledRejection", reason, Promise.resolve());
   }
 
@@ -60,13 +60,13 @@ describe("installUnhandledRejectionHandler - fatal detection", () => {
     label: string,
     message: string,
   ): void {
-    const call = spy.mock.calls.find((entry: unknown[]) => entry[0] === label);
+    const call = spy.mock.calls.find((entry: any[]) => entry[0] === label);
     expect(call?.[0]).toBe(label);
     expect(String(call?.[1])).toContain(message);
   }
 
   function expectExitCodeFromUnhandled(
-    reason: unknown,
+    reason: any,
     expected: number[],
     expectedRestoreReason?: string,
   ): void {
@@ -146,7 +146,7 @@ describe("installUnhandledRejectionHandler - fatal detection", () => {
 
   describe("non-fatal errors", () => {
     it("does not exit on known transient network errors", () => {
-      const transientCases: unknown[] = [
+      const transientCases: any[] = [
         Object.assign(new TypeError("fetch failed"), {
           cause: { code: "UND_ERR_CONNECT_TIMEOUT", syscall: "connect" },
         }),
@@ -166,7 +166,7 @@ describe("installUnhandledRejectionHandler - fatal detection", () => {
           code: "slack_webapi_request_error",
           original: { code: "EAI_AGAIN", syscall: "getaddrinfo", hostname: "slack.com" },
         }),
-        Object.assign(new Error("A request error occurred: unknown"), {
+        Object.assign(new Error("A request error occurred: any"), {
           code: "slack_webapi_request_error",
           original: Object.assign(new Error("connect timeout"), {
             code: "UND_ERR_CONNECT_TIMEOUT",
@@ -191,7 +191,7 @@ describe("installUnhandledRejectionHandler - fatal detection", () => {
     });
 
     it("does not exit on transient SQLite errors", () => {
-      const sqliteCases: unknown[] = [
+      const sqliteCases: any[] = [
         Object.assign(new Error("unable to open database file"), {
           code: "SQLITE_CANTOPEN",
         }),

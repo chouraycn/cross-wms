@@ -24,7 +24,7 @@ import type { ToolDefinition } from '../aiClient.js';
 export interface SearchableTool {
   name: string;
   description: string;
-  parameters: Record<string, unknown>;
+  parameters: Record<string, any>;
   categories: string[];
   tags: string[];
   visibility: ToolVisibility;
@@ -221,7 +221,7 @@ export class ToolSearchCatalog {
   ): void {
     const name = definition.function.name;
     const desc = definition.function.description || '';
-    const params = (definition.function.parameters as Record<string, unknown>) || {};
+    const params = (definition.function.parameters as Record<string, any>) || {};
 
     const categories = options?.categories || categorizeTool(name);
     const tags = options?.tags || generateTags(name, desc);

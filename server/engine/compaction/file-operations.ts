@@ -30,10 +30,10 @@ const EDIT_TOOL_NAMES = new Set([
   'replace', 'sed',
 ]);
 
-function extractPathFromArgs(args: unknown): string | null {
+function extractPathFromArgs(args: any): string | null {
   if (!args || typeof args !== 'object') return null;
 
-  const record = args as Record<string, unknown>;
+  const record = args as Record<string, any>;
 
   if (typeof record.path === 'string' && record.path.length > 0) {
     return record.path;
@@ -61,12 +61,12 @@ function extractPathFromArgs(args: unknown): string | null {
   return null;
 }
 
-function getToolNameFromCall(tc: unknown): string | null {
+function getToolNameFromCall(tc: any): string | null {
   if (!tc || typeof tc !== 'object') return null;
-  const call = tc as Record<string, unknown>;
+  const call = tc as Record<string, any>;
 
   if (call.function && typeof call.function === 'object') {
-    const fn = call.function as Record<string, unknown>;
+    const fn = call.function as Record<string, any>;
     if (typeof fn.name === 'string') return fn.name;
   }
 
@@ -77,12 +77,12 @@ function getToolNameFromCall(tc: unknown): string | null {
   return null;
 }
 
-function getToolArgsFromCall(tc: unknown): unknown {
+function getToolArgsFromCall(tc: any): any {
   if (!tc || typeof tc !== 'object') return null;
-  const call = tc as Record<string, unknown>;
+  const call = tc as Record<string, any>;
 
   if (call.function && typeof call.function === 'object') {
-    const fn = call.function as Record<string, unknown>;
+    const fn = call.function as Record<string, any>;
     if (fn.arguments !== undefined) return fn.arguments;
   }
 
@@ -94,9 +94,9 @@ function getToolArgsFromCall(tc: unknown): unknown {
   return null;
 }
 
-function parseArgsString(raw: unknown): Record<string, unknown> | null {
+function parseArgsString(raw: any): Record<string, any> | null {
   if (typeof raw === 'object' && raw !== null) {
-    return raw as Record<string, unknown>;
+    return raw as Record<string, any>;
   }
   if (typeof raw === 'string' && raw.length > 0) {
     try {
@@ -108,7 +108,7 @@ function parseArgsString(raw: unknown): Record<string, unknown> | null {
   return null;
 }
 
-function processToolCall(tc: unknown, fileOps: FileOperations): void {
+function processToolCall(tc: any, fileOps: FileOperations): void {
   const toolName = getToolNameFromCall(tc);
   if (!toolName) return;
 
@@ -154,11 +154,11 @@ function processToolCall(tc: unknown, fileOps: FileOperations): void {
 }
 
 export function extractFileOpsFromMessage(
-  message: unknown,
+  message: any,
   fileOps: FileOperations,
 ): void {
   if (!message || typeof message !== 'object') return;
-  const msg = message as Record<string, unknown>;
+  const msg = message as Record<string, any>;
 
   if (msg.role !== 'assistant') return;
 
@@ -169,7 +169,7 @@ export function extractFileOpsFromMessage(
   }
 
   if (msg.metadata && typeof msg.metadata === 'object') {
-    const meta = msg.metadata as Record<string, unknown>;
+    const meta = msg.metadata as Record<string, any>;
     if (Array.isArray(meta.toolCalls) && meta.toolCalls.length > 0) {
       for (const tc of meta.toolCalls) {
         processToolCall(tc, fileOps);
@@ -204,7 +204,7 @@ export function extractFileOpsFromMessage(
 }
 
 export function extractFileOperations(
-  messagesToSummarize: unknown[],
+  messagesToSummarize: any[],
   prevCompactionDetails?: CompactionFileDetails | null,
 ): FileOperations {
   const fileOps: FileOperations = {

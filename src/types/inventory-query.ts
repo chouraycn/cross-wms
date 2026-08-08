@@ -53,7 +53,7 @@ export interface ChartConfig {
 /** 后端 SQL 安全校验 + 执行后的返回结构 */
 export interface QueryResult {
   columns: string[];
-  rows: Record<string, unknown>[];
+  rows: Record<string, any>[];
   rowCount: number;
   /** 是否因 LIMIT 截断 */
   truncated: boolean;

@@ -3,9 +3,9 @@ const OPENAI_CODEX_AUTH_CLAIM = "https://api.openai.com/auth";
 
 export type OpenAICodexJwtPayload = {
   [OPENAI_CODEX_AUTH_CLAIM]?: {
-    chatgpt_account_id?: unknown;
+    chatgpt_account_id?: any;
   };
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 export function decodeOpenAICodexJwtPayload(token: string): OpenAICodexJwtPayload | null {

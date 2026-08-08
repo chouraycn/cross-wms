@@ -7,6 +7,6 @@
  */
 
 /** Whether to inject a heartbeat prompt for the given trigger (always false in cross-wms). */
-export function shouldInjectHeartbeatPromptForTrigger(..._args: unknown[]): false {
+export function shouldInjectHeartbeatPromptForTrigger(..._args: any[]): false {
   return false;
 }

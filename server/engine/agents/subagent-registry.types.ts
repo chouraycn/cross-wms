@@ -8,13 +8,13 @@ export type PendingFinalDeliveryPayload = unknown;
 
 export interface SubagentExecutionState {
   transcriptFile?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 export interface SubagentCompletionState {
   status: string;
   error?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 export type SubagentCompletionDeliveryState = SubagentCompletionState;
@@ -23,7 +23,7 @@ export interface SubagentRunRecord {
   runId: string;
   childSessionKey: string;
   requesterSessionKey: string;
-  requesterOrigin?: unknown;
+  requesterOrigin?: any;
   requesterRunId?: string;
   workspaceDir?: string;
   agentDir?: string;
@@ -37,6 +37,6 @@ export interface SubagentRunRecord {
   outcome?: SubagentCompletionState;
   cleanupCompletedAt?: number;
   execution?: SubagentExecutionState;
-  frozenResult?: unknown;
-  [key: string]: unknown;
+  frozenResult?: any;
+  [key: string]: any;
 }

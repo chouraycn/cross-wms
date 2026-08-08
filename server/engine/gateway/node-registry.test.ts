@@ -35,7 +35,7 @@ function makeClient(
     socket:
       opts.socket ??
       ({
-        send(frame: unknown) {
+        send(frame: any) {
           if (typeof frame === "string") {
             sent.push(frame);
           }
@@ -70,7 +70,7 @@ function makeClient(
 function makeConnectivitySocket(emitPong: boolean) {
   const socket = new EventEmitter() as EventEmitter & {
     readyState: number;
-    send: (frame: unknown) => void;
+    send: (frame: any) => void;
     ping: (data?: Buffer, mask?: boolean, cb?: (err?: Error) => void) => void;
   };
   socket.readyState = 1;
@@ -100,7 +100,7 @@ function registerLinuxNode(registry: NodeRegistry) {
 function invokeSystemRun(
   registry: NodeRegistry,
   frames: string[],
-  params: Record<string, unknown>,
+  params: Record<string, any>,
   timeoutMs = 1_000,
 ) {
   const invoke = registry.invoke({
@@ -168,7 +168,7 @@ describe("gateway/node-registry", () => {
       command: "system.run",
       timeoutMs: 1_000,
     });
-    const oldDisconnected = oldInvoke.catch((err: unknown) => err);
+    const oldDisconnected = oldInvoke.catch((err: any) => err);
     const oldRequest = JSON.parse(oldFrames[0] ?? "{}") as { payload?: { id?: string } };
     const newSession = registry.register(newClient, {});
 
@@ -380,7 +380,7 @@ describe("gateway/node-registry", () => {
       command: ["/bin/sh", "-lc", "printf ok"],
       sessionKey: "agent:main:main",
     });
-    const forwarded = JSON.parse(request.payload?.paramsJSON ?? "{}") as { runId?: unknown };
+    const forwarded = JSON.parse(request.payload?.paramsJSON ?? "{}") as { runId?: any };
 
     expect(typeof forwarded.runId).toBe("string");
     expect(
@@ -535,7 +535,7 @@ describe("gateway/node-registry", () => {
 
   it("rejects raw event sends when the node socket buffer is saturated", () => {
     resetDiagnosticEventsForTest();
-    const diagnosticEvents: unknown[] = [];
+    const diagnosticEvents: any[] = [];
     const stopDiagnostics = onDiagnosticEvent((event) => diagnosticEvents.push(event));
     const registry = new NodeRegistry();
     const socket = {

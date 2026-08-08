@@ -63,10 +63,10 @@ const editSchema = Type.Object(
 );
 export type { EditToolDetails, EditToolInput } from "./tool-contracts.js";
 
-type LegacyEditToolInput = Record<string, unknown> & {
-  edits?: unknown;
-  oldText?: unknown;
-  newText?: unknown;
+type LegacyEditToolInput = Record<string, any> & {
+  edits?: any;
+  oldText?: any;
+  newText?: any;
 };
 
 const EDIT_MISMATCH_MESSAGE = "Could not find the exact text in";
@@ -96,12 +96,12 @@ export interface EditToolOptions {
   operations?: EditOperations;
 }
 
-function prepareEditArguments(input: unknown): EditToolInput {
+function prepareEditArguments(input: any): EditToolInput {
   if (!input || typeof input !== "object") {
     return input as EditToolInput;
   }
 
-  const args = input as Record<string, unknown>;
+  const args = input as Record<string, any>;
 
   // Some models (Opus 4.6, GLM-5.1) send edits as a JSON string instead of an array
   if (typeof args.edits === "string") {
@@ -206,7 +206,7 @@ function createEditCallRenderComponent(): EditCallRenderComponent {
 
 function getEditCallRenderComponent(
   state: EditRenderState,
-  lastComponent: unknown,
+  lastComponent: any,
 ): EditCallRenderComponent {
   if (lastComponent instanceof Box) {
     const component = lastComponent as EditCallRenderComponent;
@@ -390,7 +390,7 @@ export function createEditToolDefinition(
 
         try {
           await ops.access(absolutePath);
-        } catch (error: unknown) {
+        } catch (error: any) {
           const errorMessage =
             error instanceof Error && "code" in error
               ? `Error code: ${String(error.code)}`
@@ -436,7 +436,7 @@ export function createEditToolDefinition(
               firstChangedLine: diffResult.firstChangedLine,
             },
           };
-        } catch (error: unknown) {
+        } catch (error: any) {
           const normalizedError = error instanceof Error ? error : new Error(String(error));
           const currentContent = await ops
             .readFile(absolutePath)

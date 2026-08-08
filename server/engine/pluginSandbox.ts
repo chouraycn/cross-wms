@@ -20,7 +20,7 @@ import { logger } from '../logger.js';
 /** 沙箱执行结果 */
 export interface SandboxResult {
   ok: boolean;
-  value?: unknown;
+  value?: any;
   error?: string;
   durationMs: number;
 }
@@ -109,7 +109,7 @@ function detectDangerousCode(code: string): string | null {
 function createSandboxedRequire(allowedModules: string[]): (moduleName: string) => unknown {
   const allowedSet = new Set(allowedModules);
 
-  return function sandboxedRequire(moduleName: string): unknown {
+  return function sandboxedRequire(moduleName: string): any {
     // 1. 检查是否在黑名单中
     if (DENIED_MODULES.has(moduleName)) {
       throw new Error(`[Sandbox] 权限拒绝: 模块 '${moduleName}' 属于危险模块，禁止在沙箱中加载`);
@@ -146,7 +146,7 @@ function createSandboxedRequire(allowedModules: string[]): (moduleName: string) 
 export async function executeInSandbox(
   code: string,
   manifest: PluginManifest,
-  context?: Record<string, unknown>,
+  context?: Record<string, any>,
 ): Promise<SandboxResult> {
   const startTime = Date.now();
 
@@ -175,14 +175,14 @@ export async function executeInSandbox(
 
     // 2. 构建沙箱上下文对象
     //    安全策略: 不注入 eval 和 Function 构造函数，阻止动态代码执行
-    const sandbox: Record<string, unknown> = {
+    const sandbox: Record<string, any> = {
       // 基础全局对象
       console: {
-        log: (...args: unknown[]) => logger.debug('[Plugin Sandbox]', ...args),
-        warn: (...args: unknown[]) => logger.warn('[Plugin Sandbox]', ...args),
-        error: (...args: unknown[]) => logger.error('[Plugin Sandbox]', ...args),
-        info: (...args: unknown[]) => logger.debug('[Plugin Sandbox]', ...args),
-        debug: (...args: unknown[]) => logger.debug('[Plugin Sandbox]', ...args),
+        log: (...args: any[]) => logger.debug('[Plugin Sandbox]', ...args),
+        warn: (...args: any[]) => logger.warn('[Plugin Sandbox]', ...args),
+        error: (...args: any[]) => logger.error('[Plugin Sandbox]', ...args),
+        info: (...args: any[]) => logger.debug('[Plugin Sandbox]', ...args),
+        debug: (...args: any[]) => logger.debug('[Plugin Sandbox]', ...args),
       },
       // 代理 require
       require: sandboxedRequire,
@@ -239,7 +239,7 @@ export async function executeInSandbox(
         throw new Error('[Sandbox] 安全策略: eval 已被禁用');
       },
       // 注入一个会抛错的 Function 占位符，防止通过隐式全局获取到宿主的 Function 构造函数
-      Function: (..._args: unknown[]) => {
+      Function: (..._args: any[]) => {
         throw new Error('[Sandbox] 安全策略: Function 构造函数已被禁用');
       },
       // 注入额外上下文
@@ -252,7 +252,7 @@ export async function executeInSandbox(
     // 4. 包装代码 — 使其返回模块导出
     // 插件代码中通常使用 module.exports = ... 或 exports.xxx = ...
     // 我们注入 module 和 exports 对象到沙箱中
-    const moduleObj: { exports: Record<string, unknown> } = { exports: {} };
+    const moduleObj: { exports: Record<string, any> } = { exports: {} };
     sandbox.module = moduleObj;
     sandbox.exports = moduleObj.exports;
 

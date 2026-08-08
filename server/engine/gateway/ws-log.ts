@@ -31,18 +31,18 @@ export function shortId(value: string): string {
   return value.slice(0, 12) + '…' + value.slice(-4);
 }
 
-export function formatForLog(value: unknown): string {
+export function formatForLog(value: any): string {
   if (value === null) return 'null';
   if (value === undefined) return 'undefined';
   if (typeof value === 'string') return value.length > LOG_VALUE_LIMIT ? value.slice(0, LOG_VALUE_LIMIT) + '...' : value;
   if (typeof value === 'number' || typeof value === 'boolean') return String(value);
   if (value instanceof Error) {
     const chain: string[] = [];
-    let current: unknown = value;
+    let current: any = value;
     let depth = 0;
     while (current instanceof Error && depth < 8) {
       chain.push(current.message);
-      current = (current as { cause?: unknown }).cause;
+      current = (current as { cause?: any }).cause;
       depth++;
     }
     return chain.join(' <- ');
@@ -69,7 +69,7 @@ function buildWsStatusToken(ok: boolean | undefined): string {
   return ok ? '✓' : '✗';
 }
 
-function collectWsRestMeta(meta: Record<string, unknown>): string {
+function collectWsRestMeta(meta: Record<string, any>): string {
   const parts: string[] = [];
   for (const [key, value] of Object.entries(meta)) {
     if (WS_META_SKIP_KEYS.has(key)) continue;
@@ -81,7 +81,7 @@ function collectWsRestMeta(meta: Record<string, unknown>): string {
 export function logWs(
   direction: 'in' | 'out',
   kind: 'req' | 'res' | 'event' | 'conn' | 'parse-error',
-  meta: Record<string, unknown>,
+  meta: Record<string, any>,
 ): void {
   if (!shouldLogWs() && kind !== 'parse-error') {
     if (wsLogStyle === 'optimized' && kind === 'res') {

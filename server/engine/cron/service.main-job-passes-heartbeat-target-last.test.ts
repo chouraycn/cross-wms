@@ -68,7 +68,7 @@ describe("cron main job passes heartbeat target=last", () => {
       intent?: string;
       reason?: string;
       sessionKey?: string;
-      heartbeat?: unknown;
+      heartbeat?: any;
     };
   }
 

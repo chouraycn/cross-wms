@@ -30,13 +30,13 @@ export type PackageExecutableScanMetadata = {
 export async function scanBundleInstallSource(_params: {
   archivePath: string;
   dangerouslyForceUnsafeInstall?: boolean;
-  config?: unknown;
+  config?: any;
   sourceDir?: string;
   pluginId?: string;
-  logger?: unknown;
+  logger?: any;
   requestKind?: string;
   requestedSpecifier?: string;
-  source?: unknown;
+  source?: any;
   mode?: string;
   version?: string;
 }): Promise<InstallSecurityScanResult> {
@@ -47,16 +47,16 @@ export async function scanPackageInstallSource(_params: {
   packageDir: string;
   requestKind?: string;
   requestedSpecifier?: string;
-  source?: unknown;
+  source?: any;
   mode?: string;
   packageName?: string;
   manifestId?: string;
   version?: string;
-  config?: unknown;
+  config?: any;
   pluginId?: string;
-  logger?: unknown;
+  logger?: any;
   extensions?: string[];
-  packageMetadata?: unknown;
+  packageMetadata?: any;
   trustedSourceLinkedOfficialInstall?: boolean;
   dangerouslyForceUnsafeInstall?: boolean;
 }): Promise<InstallSecurityScanResult> {
@@ -66,11 +66,11 @@ export async function scanPackageInstallSource(_params: {
 export async function scanInstalledPackageDependencyTree(_params: {
   packageDir: string;
   requestedSpecifier?: string;
-  source?: unknown;
+  source?: any;
   mode?: string;
-  config?: unknown;
+  config?: any;
   pluginId?: string;
-  logger?: unknown;
+  logger?: any;
   trustedSourceLinkedOfficialInstall?: boolean;
   requestKind?: string;
   allowManagedNpmRootPackagePeerSymlinks?: boolean;
@@ -80,9 +80,9 @@ export async function scanInstalledPackageDependencyTree(_params: {
 
 export async function scanFileInstallSource(_params: {
   filePath: string;
-  config?: unknown;
+  config?: any;
   dangerouslyForceUnsafeInstall?: boolean;
-  logger?: unknown;
+  logger?: any;
   mode?: string;
   pluginId?: string;
   requestedSpecifier?: string;
@@ -92,13 +92,13 @@ export async function scanFileInstallSource(_params: {
 
 export async function preflightPluginNpmInstallPolicy(_params: {
   npmSpec?: string;
-  config?: unknown;
-  logger?: unknown;
+  config?: any;
+  logger?: any;
   mode?: string;
   packageName?: string;
   pluginId?: string;
   requestedSpecifier?: string;
-  source?: unknown;
+  source?: any;
   sourcePath?: string;
   sourcePathKind?: string;
 }): Promise<InstallSecurityScanResult> {

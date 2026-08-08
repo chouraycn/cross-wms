@@ -27,7 +27,7 @@ const mocks = vi.hoisted(() => {
     writeStdout: vi.fn((value: string) => {
       runtimeStdout.push(value.endsWith("\n") ? value.slice(0, -1) : value);
     }),
-    writeJson: vi.fn((value: unknown, space = 2) => {
+    writeJson: vi.fn((value: any, space = 2) => {
       runtimeStdout.push(JSON.stringify(value, null, space > 0 ? space : undefined));
     }),
     exit: vi.fn((code: number) => {

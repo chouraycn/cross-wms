@@ -54,7 +54,7 @@ describe("secrets runtime snapshot matrix shadowing", () => {
     });
 
     expect(
-      (snapshot.config.channels?.matrix?.accounts?.ops as { password?: unknown } | undefined)
+      (snapshot.config.channels?.matrix?.accounts?.ops as { password?: any } | undefined)
         ?.password,
     ).toEqual({
       source: "env",
@@ -221,7 +221,7 @@ describe("secrets runtime snapshot matrix shadowing", () => {
     });
 
     expect(
-      (snapshot.config.channels?.matrix?.accounts?.default as { password?: unknown } | undefined)
+      (snapshot.config.channels?.matrix?.accounts?.default as { password?: any } | undefined)
         ?.password,
     ).toEqual({
       source: "env",

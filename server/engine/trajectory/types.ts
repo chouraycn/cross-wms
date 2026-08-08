@@ -7,7 +7,7 @@ type TrajectoryEventSource = "runtime" | "transcript" | "export";
 export type TrajectoryToolDefinition = {
   name: string;
   description?: string;
-  parameters?: unknown;
+  parameters?: any;
 };
 
 // Versioned event envelope for runtime and transcript-derived trajectory rows.
@@ -29,7 +29,7 @@ export type TrajectoryEvent = {
   modelApi?: string | null;
   entryId?: string;
   parentEntryId?: string | null;
-  data?: Record<string, unknown>;
+  data?: Record<string, any>;
 };
 
 // Bundle manifest written beside events.jsonl in trajectory exports.
@@ -78,7 +78,7 @@ export type TrajectoryBundleWarning = {
 // ============================================================================
 
 /** Event filter function type. */
-export type EventFilter = (type: string, data?: Record<string, unknown>) => boolean;
+export type EventFilter = (type: string, data?: Record<string, any>) => boolean;
 
 /** Event sampling configuration. */
 export type EventSamplingConfig = {
@@ -114,7 +114,7 @@ export class TrajectoryRecorder {
     this.config = config;
   }
 
-  recordEvent(type: string, data?: Record<string, unknown>): void {
+  recordEvent(type: string, data?: Record<string, any>): void {
     // Stub implementation - actual recording happens in runtime.ts
     this.seq++;
   }
@@ -142,8 +142,8 @@ export type TrajectoryEntryData = {
   step: number;
   type: string;
   timestamp: number | string;
-  content?: unknown;
-  metadata?: Record<string, unknown>;
+  content?: any;
+  metadata?: Record<string, any>;
   status?: string;
 };
 
@@ -152,7 +152,7 @@ export type TrajectoryStep = {
   seq: number;
   type: string;
   timestamp: string;
-  data?: Record<string, unknown>;
+  data?: Record<string, any>;
 };
 
 /** Options for trajectory replay. */

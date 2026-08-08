@@ -7,6 +7,6 @@
  */
 
 /** Process gateway allowlist for exec host (returns empty in cross-wms). */
-export async function processGatewayAllowlist(..._args: unknown[]): Promise<never[]> {
+export async function processGatewayAllowlist(..._args: any[]): Promise<never[]> {
   return [];
 }

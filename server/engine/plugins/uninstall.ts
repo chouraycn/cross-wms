@@ -499,7 +499,7 @@ export function removePluginFromConfig(
   // Remove channel config owned by this installed plugin.
   // Built-in channels have no install record, so keep their config untouched.
   const hasInstallRecord = Object.hasOwn(cfg.plugins?.installs ?? {}, pluginId);
-  let channels = cfg.channels as Record<string, unknown> | undefined;
+  let channels = cfg.channels as Record<string, any> | undefined;
   if (hasInstallRecord && channels) {
     for (const key of resolveUninstallChannelConfigKeys(pluginId, opts)) {
       if (!Object.hasOwn(channels, key)) {

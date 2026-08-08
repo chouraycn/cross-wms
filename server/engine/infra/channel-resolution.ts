@@ -1,7 +1,7 @@
 // 移植自 openclaw/src/infra/channel-resolution.ts
 // 降级：channel plugin 依赖简化
 
-const testState = new Map<string, unknown>();
+const testState = new Map<string, any>();
 
 /** Resets outbound channel resolution state (for tests). */
 export function resetOutboundChannelResolutionStateForTest(): void {
@@ -18,9 +18,9 @@ export function normalizeDeliverableOutboundChannel(channel: string): string | u
 /** Resolves the outbound channel plugin for a given channel. */
 export function resolveOutboundChannelPlugin(params: {
   channel: string;
-  cfg?: unknown;
+  cfg?: any;
   allowBootstrap?: boolean;
-}): unknown | null {
+}): any | null {
   // Simplified: no real plugin registry
   return null;
 }
@@ -28,8 +28,8 @@ export function resolveOutboundChannelPlugin(params: {
 /** Resolves the outbound channel message adapter for a given channel. */
 export function resolveOutboundChannelMessageAdapter(params: {
   channel: string;
-  cfg?: unknown;
-}): unknown | null {
+  cfg?: any;
+}): any | null {
   // Simplified: no real adapter registry
   return null;
 }

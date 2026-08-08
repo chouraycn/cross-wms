@@ -33,7 +33,7 @@ export interface LinkMetadata {
   /** Twitter Card 标签 */
   twitter?: Record<string, string>;
   /** JSON-LD 结构化数据列表 */
-  jsonLd?: unknown[];
+  jsonLd?: any[];
   /** 标准 meta 标签 */
   standard?: Record<string, string>;
 }

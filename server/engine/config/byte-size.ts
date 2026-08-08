@@ -5,7 +5,7 @@ import { parseByteSize } from "../cli/parse-bytes.js";
  * Parse an optional byte-size value from config.
  * Accepts non-negative numbers or strings like "2mb".
  */
-export function parseNonNegativeByteSize(value: unknown): number | null {
+export function parseNonNegativeByteSize(value: any): number | null {
   if (typeof value === "number" && Number.isFinite(value)) {
     const int = Math.floor(value);
     return int >= 0 ? int : null;

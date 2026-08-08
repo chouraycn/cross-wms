@@ -24,7 +24,7 @@ export function expectOpenClawLiveTranscriptMarker(value: string): void {
 
 export async function waitForLiveExpectation(expectation: () => void, timeoutMs = 30_000) {
   const started = Date.now();
-  let lastError: unknown;
+  let lastError: any;
   while (Date.now() - started < timeoutMs) {
     try {
       expectation();

@@ -58,7 +58,7 @@ function resolveExplicitGatewayAuth(opts?: ExplicitGatewayAuth): ExplicitGateway
 
 async function resolveGatewaySecretInputString(params: {
   config: OpenClawConfig;
-  value: unknown;
+  value: any;
   path: string;
   env: NodeJS.ProcessEnv;
 }): Promise<string | undefined> {

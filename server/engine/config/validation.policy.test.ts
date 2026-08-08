@@ -15,11 +15,11 @@ vi.mock("../secrets/unsupported-surface-policy.js", async () => {
   const { isRecord } = await import("../utils.js");
 
   return {
-    collectUnsupportedSecretRefConfigCandidates: (raw: unknown) => {
+    collectUnsupportedSecretRefConfigCandidates: (raw: any) => {
       if (!isRecord(raw)) {
         return [];
       }
-      const candidates: Array<{ path: string; value: unknown }> = [];
+      const candidates: Array<{ path: string; value: any }> = [];
 
       const hooks = isRecord(raw.hooks) ? raw.hooks : null;
       if (hooks) {

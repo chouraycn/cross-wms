@@ -8,14 +8,14 @@
 
 export function createNodesTool(_options?: {
   agentSessionKey?: string;
-  agentChannel?: unknown;
+  agentChannel?: any;
   agentAccountId?: string;
   currentChannelId?: string;
   currentThreadTs?: string | number;
-  config?: unknown;
+  config?: any;
   modelHasVision?: boolean;
   allowMediaInvokeCommands?: boolean;
-}): unknown {
+}): any {
   return {
     label: "Nodes",
     name: "nodes",

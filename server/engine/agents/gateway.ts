@@ -7,12 +7,12 @@
  */
 
 export type GatewayCallOptions = unknown;
-export function readGatewayCallOptions(..._args: unknown[]): unknown {
+export function readGatewayCallOptions(..._args: any[]): any {
   return undefined;
 }
-export function resolveGatewayOptions(..._args: unknown[]): unknown {
+export function resolveGatewayOptions(..._args: any[]): any {
   return undefined;
 }
-export function callGatewayTool(..._args: unknown[]): unknown {
+export function callGatewayTool(..._args: any[]): any {
   return undefined;
 }

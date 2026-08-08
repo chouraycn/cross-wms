@@ -10,7 +10,7 @@ const resolveSessionFilePathMock = vi.fn();
 const resolveSessionFilePathOptionsMock = vi.fn();
 
 vi.mock("../infra/system-events.js", () => ({
-  enqueueSystemEvent: (...args: unknown[]) => enqueueSystemEventMock(...args),
+  enqueueSystemEvent: (...args: any[]) => enqueueSystemEventMock(...args),
 }));
 
 vi.mock("../infra/heartbeat-wake.js", async () => {
@@ -19,7 +19,7 @@ vi.mock("../infra/heartbeat-wake.js", async () => {
       "../infra/heartbeat-wake.js",
     ),
     () => ({
-      requestHeartbeat: (...args: unknown[]) => requestHeartbeatMock(...args),
+      requestHeartbeat: (...args: any[]) => requestHeartbeatMock(...args),
     }),
   );
 });
@@ -30,7 +30,7 @@ vi.mock("../acp/runtime/session-meta.js", async () => {
       "../acp/runtime/session-meta.js",
     ),
     () => ({
-      readAcpSessionEntry: (...args: unknown[]) => readAcpSessionEntryMock(...args),
+      readAcpSessionEntry: (...args: any[]) => readAcpSessionEntryMock(...args),
     }),
   );
 });
@@ -41,8 +41,8 @@ vi.mock("../config/sessions/paths.js", async () => {
       "../config/sessions/paths.js",
     ),
     () => ({
-      resolveSessionFilePath: (...args: unknown[]) => resolveSessionFilePathMock(...args),
-      resolveSessionFilePathOptions: (...args: unknown[]) =>
+      resolveSessionFilePath: (...args: any[]) => resolveSessionFilePathMock(...args),
+      resolveSessionFilePathOptions: (...args: any[]) =>
         resolveSessionFilePathOptionsMock(...args),
     }),
   );
@@ -90,9 +90,9 @@ function expectNoTextWithFragment(texts: string[], fragment: string): void {
 }
 
 function firstMockCall(
-  mock: { mock: { calls: Array<readonly unknown[]> } },
+  mock: { mock: { calls: Array<readonly any[]> } },
   label: string,
-): readonly unknown[] {
+): readonly any[] {
   const call = mock.mock.calls[0];
   if (!call) {
     throw new Error(`expected ${label} call`);
@@ -113,7 +113,7 @@ describe("startAcpSpawnParentStreamRelay", () => {
     readAcpSessionEntryMock.mockReset();
     resolveSessionFilePathMock.mockReset();
     resolveSessionFilePathOptionsMock.mockReset();
-    resolveSessionFilePathOptionsMock.mockImplementation((value: unknown) => value);
+    resolveSessionFilePathOptionsMock.mockImplementation((value: any) => value);
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-03-04T01:00:00.000Z"));
   });
@@ -169,7 +169,7 @@ describe("startAcpSpawnParentStreamRelay", () => {
         {
           contextKey?: string;
           sessionKey?: string;
-          deliveryContext?: unknown;
+          deliveryContext?: any;
         },
       ]
     >;
@@ -248,7 +248,7 @@ describe("startAcpSpawnParentStreamRelay", () => {
     );
     expect(progressEvent?.[0]).toContain("codex: hello from child");
     const progressOptions = progressEvent?.[1] as
-      | { contextKey?: unknown; sessionKey?: unknown }
+      | { contextKey?: any; sessionKey?: any }
       | undefined;
     expect(progressOptions?.contextKey).toBe("acp-spawn:run-cron:progress");
     expect(progressOptions?.sessionKey).toBe("global");
@@ -1430,7 +1430,7 @@ describe("startAcpSpawnParentStreamRelay", () => {
     const [sessionId, entry, options] = firstMockCall(
       resolveSessionFilePathMock,
       "session file path resolution",
-    ) as [string, { sessionId?: unknown }, { storePath?: unknown }];
+    ) as [string, { sessionId?: any }, { storePath?: any }];
     expect(sessionId).toBe("sess-123");
     expect(entry.sessionId).toBe("sess-123");
     expect(options.storePath).toBe("/tmp/openclaw/agents/codex/sessions/sessions.json");

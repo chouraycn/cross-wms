@@ -7,11 +7,11 @@ import { installGatewayTestHooks, startServer } from "../../../src/gateway/test-
 import { emitAgentEvent, registerAgentRunContext } from "../../../src/infra/agent-events.js";
 import { GatewayClientTransport, OpenClaw } from "./index.js";
 
-type JsonObject = Record<string, unknown>;
+type JsonObject = Record<string, any>;
 type FakeGatewayRequest = {
   id: string;
   method: string;
-  params?: unknown;
+  params?: any;
 };
 type FakeGateway = {
   url: string;
@@ -21,7 +21,7 @@ type FakeGateway = {
 
 const servers: WebSocketServer[] = [];
 
-function expectJsonObject(value: unknown): JsonObject {
+function expectJsonObject(value: any): JsonObject {
   expect(value && typeof value).toBe("object");
   return value as JsonObject;
 }
@@ -568,7 +568,7 @@ describe("OpenClaw SDK websocket e2e", () => {
       requestTimeoutMs: 500,
     });
 
-    const initialConnectError = await transport.connect().catch((error: unknown) => error);
+    const initialConnectError = await transport.connect().catch((error: any) => error);
     expect(initialConnectError).toBeInstanceOf(Error);
     expect(String(initialConnectError)).toMatch(/ECONNREFUSED/);
 
@@ -658,11 +658,11 @@ const liveGatewayUrl = process.env.OPENCLAW_SDK_LIVE_GATEWAY_URL;
 const liveGatewayToken = process.env.OPENCLAW_SDK_LIVE_GATEWAY_TOKEN;
 const liveGatewayDescribe = liveGatewayUrl && liveGatewayToken ? describe : describe.skip;
 
-function readLiveTextDelta(data: unknown): string {
+function readLiveTextDelta(data: any): string {
   if (!data || typeof data !== "object") {
     return "";
   }
-  const record = data as Record<string, unknown>;
+  const record = data as Record<string, any>;
   for (const key of ["delta", "text", "content"]) {
     const value = record[key];
     if (typeof value === "string") {
@@ -672,9 +672,9 @@ function readLiveTextDelta(data: unknown): string {
   return "";
 }
 
-function expectArrayProperty(value: unknown, property: string): void {
+function expectArrayProperty(value: any, property: string): void {
   expect(value && typeof value).toBe("object");
-  const record = value as Record<string, unknown>;
+  const record = value as Record<string, any>;
   expect(Array.isArray(record[property])).toBe(true);
 }
 

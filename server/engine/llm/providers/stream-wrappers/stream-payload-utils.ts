@@ -2,11 +2,11 @@
 // Local type placeholder: openclaw StreamFn contract (cross-wms agents/runtime not ported).
 /** Minimal stream function contract: (model, context, options) => stream result. */
 type StreamFn = (
-  model: unknown,
-  context: unknown,
+  model: any,
+  context: any,
   options?: {
-    onPayload?: (payload: unknown, model: unknown) => unknown;
-    [key: string]: unknown;
+    onPayload?: (payload: any, model: any) => unknown;
+    [key: string]: any;
   },
 ) => unknown;
 
@@ -16,7 +16,7 @@ export function streamWithPayloadPatch(
   model: Parameters<StreamFn>[0],
   context: Parameters<StreamFn>[1],
   options: Parameters<StreamFn>[2],
-  patchPayload: (payload: Record<string, unknown>) => void,
+  patchPayload: (payload: Record<string, any>) => void,
 ): ReturnType<StreamFn> {
   const originalOnPayload = options?.onPayload;
   return underlying(model, context, {
@@ -24,7 +24,7 @@ export function streamWithPayloadPatch(
     onPayload: (payload) => {
       // Payload hooks receive mutable provider request objects before the underlying sender uses them.
       if (payload && typeof payload === "object") {
-        patchPayload(payload as Record<string, unknown>);
+        patchPayload(payload as Record<string, any>);
       }
       return originalOnPayload?.(payload, model);
     },

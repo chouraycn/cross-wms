@@ -4,11 +4,11 @@ import type { ConversationRef } from "./session-binding.types.js";
 
 export type ConversationRefShape = ConversationRef;
 
-export function normalizeConversationTargetRef(ref: unknown): ConversationRef | null {
+export function normalizeConversationTargetRef(ref: any): ConversationRef | null {
   if (!ref || typeof ref !== "object") {
     return null;
   }
-  const r = ref as Record<string, unknown>;
+  const r = ref as Record<string, any>;
   if (typeof r.channel !== "string" || typeof r.accountId !== "string" || typeof r.conversationId !== "string") {
     return null;
   }

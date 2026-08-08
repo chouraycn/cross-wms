@@ -72,12 +72,12 @@ export const UPDATE_SUMMARIZATION_PROMPT = [
   '- 保留 <file-operations> 标签中的文件操作列表（如果存在）',
 ].join('\n');
 
-function messageContentToString(content: unknown): string {
+function messageContentToString(content: any): string {
   if (content == null) return '';
   if (typeof content === 'string') return content;
   if (Array.isArray(content)) {
     const parts: string[] = [];
-    for (const part of content as Array<Record<string, unknown>>) {
+    for (const part of content as Array<Record<string, any>>) {
       if (part && typeof part === 'object') {
         if (typeof part.text === 'string') parts.push(part.text);
         if (part.type === 'image_url') parts.push('[image]');
@@ -95,16 +95,16 @@ function messageContentToString(content: unknown): string {
   return String(content);
 }
 
-function toolCallsToString(toolCalls: unknown): string {
+function toolCallsToString(toolCalls: any): string {
   if (!Array.isArray(toolCalls) || toolCalls.length === 0) return '';
   const parts: string[] = [];
   for (const tc of toolCalls) {
     if (!tc || typeof tc !== 'object') continue;
-    const call = tc as Record<string, unknown>;
+    const call = tc as Record<string, any>;
     let name = '';
     let args = '';
     if (call.function && typeof call.function === 'object') {
-      const fn = call.function as Record<string, unknown>;
+      const fn = call.function as Record<string, any>;
       name = typeof fn.name === 'string' ? fn.name : '';
       if (fn.arguments !== undefined) {
         args = typeof fn.arguments === 'string' ? fn.arguments : JSON.stringify(fn.arguments);
@@ -124,7 +124,7 @@ function toolCallsToString(toolCalls: unknown): string {
   return parts.join(' ');
 }
 
-function getRoleLabel(msg: Record<string, unknown>): string {
+function getRoleLabel(msg: Record<string, any>): string {
   const role = typeof msg.role === 'string' ? msg.role : 'unknown';
   switch (role) {
     case 'user': return 'User';
@@ -135,7 +135,7 @@ function getRoleLabel(msg: Record<string, unknown>): string {
   }
 }
 
-export function formatMessagesForSummarization(messages: unknown[]): string {
+export function formatMessagesForSummarization(messages: any[]): string {
   if (!Array.isArray(messages) || messages.length === 0) return '';
 
   const lines: string[] = [];
@@ -143,14 +143,14 @@ export function formatMessagesForSummarization(messages: unknown[]): string {
   for (let i = 0; i < messages.length; i++) {
     const rawMsg = messages[i];
     if (!rawMsg || typeof rawMsg !== 'object') continue;
-    const msg = rawMsg as Record<string, unknown>;
+    const msg = rawMsg as Record<string, any>;
 
     const label = getRoleLabel(msg);
     const contentStr = messageContentToString(msg.content);
     const toolCallStr = msg.tool_calls !== undefined
       ? toolCallsToString(msg.tool_calls)
       : (msg.metadata && typeof msg.metadata === 'object'
-          ? toolCallsToString((msg.metadata as Record<string, unknown>).toolCalls)
+          ? toolCallsToString((msg.metadata as Record<string, any>).toolCalls)
           : '');
 
     const parts: string[] = [];
@@ -169,7 +169,7 @@ export function formatMessagesForSummarization(messages: unknown[]): string {
 }
 
 export function buildSummarizationInput(params: {
-  conversation: unknown[];
+  conversation: any[];
   previousSummary?: string;
 }): {
   systemPrompt: string;

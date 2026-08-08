@@ -34,19 +34,19 @@ const overrideBoundaryAwareStreamFnOnce = (streamFn: StreamFn): void => {
   );
 };
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   // Test streams return their options/context as plain records; fail early if a
   // route returns an unexpected shape.
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error(`expected ${label} to be an object`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
 async function expectStreamResultRecord(
   result: ReturnType<StreamFn>,
   label: string,
-): Promise<Record<string, unknown>> {
+): Promise<Record<string, any>> {
   return requireRecord(await result, label);
 }
 

@@ -175,9 +175,9 @@ function expectFirstRegistryConfig() {
 }
 
 function expectRowFields(
-  rows: Array<{ key: string } & Record<string, unknown>>,
+  rows: Array<{ key: string } & Record<string, any>>,
   key: string,
-  fields: Record<string, unknown>,
+  fields: Record<string, any>,
 ) {
   const row = requireRow(rows, key);
   for (const [field, value] of Object.entries(fields)) {
@@ -185,20 +185,20 @@ function expectRowFields(
   }
 }
 
-function modelRegistryOptions(index = 0): Record<string, unknown> {
+function modelRegistryOptions(index = 0): Record<string, any> {
   const options = mocks.loadModelRegistry.mock.calls[index]?.[1];
   if (!options || typeof options !== "object") {
     throw new Error(`expected model registry options ${index}`);
   }
-  return options as Record<string, unknown>;
+  return options as Record<string, any>;
 }
 
-function providerCatalogOptions(index = 0): Record<string, unknown> {
+function providerCatalogOptions(index = 0): Record<string, any> {
   const options = mocks.loadProviderCatalogModelsForList.mock.calls[index]?.[0];
   if (!options || typeof options !== "object") {
     throw new Error(`expected provider catalog options ${index}`);
   }
-  return options as Record<string, unknown>;
+  return options as Record<string, any>;
 }
 
 let modelsListCommand: typeof import("./list.list-command.js").modelsListCommand;
@@ -253,12 +253,12 @@ function installModelsListCommandForwardCompatMocks() {
 
   vi.doMock("./list.registry-load.js", () => ({
     loadListModelRegistry: async (
-      cfg: unknown,
+      cfg: any,
       opts?: { providerFilter?: string; normalizeModels?: boolean; loadAvailability?: boolean },
     ): Promise<{
       models: Array<{ provider: string; id: string }>;
       availableKeys?: Set<string>;
-      registry?: unknown;
+      registry?: any;
       discoveredKeys: Set<string>;
     }> => {
       const loaded = await mocks.loadModelRegistry(cfg, opts);
@@ -272,8 +272,8 @@ function installModelsListCommandForwardCompatMocks() {
       };
     },
     loadConfiguredListModelRegistry: (
-      _cfg: unknown,
-      _entries: unknown,
+      _cfg: any,
+      _entries: any,
       opts?: { providerFilter?: string; normalizeModels?: boolean },
     ) => {
       mocks.loadModelRegistry(mocks.resolvedConfig, opts);
@@ -340,7 +340,7 @@ beforeAll(async () => {
 
 async function buildAllOpenAiCodexRows(opts: { supplementCatalog?: boolean } = {}) {
   const loaded = await mocks.loadModelRegistry();
-  const rows: unknown[] = [];
+  const rows: any[] = [];
   const context = {
     cfg: mocks.resolvedConfig,
     agentDir: "/tmp/openclaw-agent",
@@ -1278,7 +1278,7 @@ describe("modelsListCommand forward-compat", () => {
 
     it("suppresses direct openai gpt-5.3-codex-spark rows in --all output", async () => {
       mocks.resolveConfiguredEntries.mockReturnValueOnce({ entries: [] });
-      const rows: unknown[] = [];
+      const rows: any[] = [];
       await listRowsModule.appendDiscoveredRows({
         rows: rows as never,
         models: [

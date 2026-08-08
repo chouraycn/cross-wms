@@ -7,7 +7,7 @@ vi.mock("../gateway/call.js", () => ({
 }));
 
 vi.mock("./progress.js", () => ({
-  withProgress: async (_options: unknown, action: () => Promise<unknown>) => await action(),
+  withProgress: async (_options: any, action: () => Promise<any>) => await action(),
 }));
 
 const { callGatewayFromCliRuntime } = await import("./gateway-rpc.runtime.js");

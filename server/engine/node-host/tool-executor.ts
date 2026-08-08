@@ -30,7 +30,7 @@ export class ToolExecutor {
   private queue: Array<{
     invocationId: string;
     toolName: string;
-    input: Record<string, unknown>;
+    input: Record<string, any>;
     context: ToolContext;
     resolve: (result: ExecutionResult) => void;
     reject: (error: Error) => void;
@@ -44,7 +44,7 @@ export class ToolExecutor {
 
   async execute(
     toolName: string,
-    input: Record<string, unknown>,
+    input: Record<string, any>,
     context: ToolContext,
   ): Promise<ExecutionResult> {
     const invocationId = context.invocationId ?? `tool-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -71,7 +71,7 @@ export class ToolExecutor {
     invocationId: string,
     toolName: string,
     handler: ToolHandler,
-    input: Record<string, unknown>,
+    input: Record<string, any>,
     context: ToolContext,
     startTime: number,
   ): Promise<ExecutionResult> {
@@ -91,7 +91,7 @@ export class ToolExecutor {
     this.runningCount++;
 
     let timedOut = false;
-    let resultData: Record<string, unknown> = {};
+    let resultData: Record<string, any> = {};
     let errorMessage: string | undefined;
 
     const timeoutPromise = new Promise<never>((_, reject) => {
@@ -112,7 +112,7 @@ export class ToolExecutor {
       resultData = await Promise.race([
         handler(input, toolContext),
         timeoutPromise,
-      ]) as Record<string, unknown>;
+      ]) as Record<string, any>;
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') {
         timedOut = true;

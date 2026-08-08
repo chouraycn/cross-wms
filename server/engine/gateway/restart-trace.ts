@@ -216,8 +216,8 @@ export function collectGatewayProcessMemoryUsageMb(): ReadonlyArray<readonly [st
 
 function collectGatewayProcessResourceCounts(): ReadonlyArray<readonly [string, number]> | null {
   const processWithResourceAccess = process as NodeJS.Process & {
-    _getActiveHandles?: () => unknown[];
-    _getActiveRequests?: () => unknown[];
+    _getActiveHandles?: () => any[];
+    _getActiveRequests?: () => any[];
     getActiveResourcesInfo?: () => string[];
   };
   const activeHandles = processWithResourceAccess["_getActiveHandles"]?.();
@@ -250,7 +250,7 @@ function countActiveTimersFromResourceInfo(activeResources: readonly string[]): 
     .length;
 }
 
-function countActiveTimersFromHandles(activeHandles: readonly unknown[]): number {
+function countActiveTimersFromHandles(activeHandles: readonly any[]): number {
   let count = 0;
   for (const handle of activeHandles) {
     if (typeof handle !== "object" || handle === null) {
@@ -264,12 +264,12 @@ function countActiveTimersFromHandles(activeHandles: readonly unknown[]): number
   return count;
 }
 
-function normalizeRestartTraceHandoff(value: unknown): GatewayRestartTraceHandoff | null {
+function normalizeRestartTraceHandoff(value: any): GatewayRestartTraceHandoff | null {
   // 交接值来自另一个进程。拒绝陈旧/未来值，使被复用的 shell 环境无法毒化后续重启测量。
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     return null;
   }
-  const record = value as { startedAt?: unknown; lastAt?: unknown };
+  const record = value as { startedAt?: any; lastAt?: any };
   if (
     typeof record.startedAt !== "number" ||
     !Number.isFinite(record.startedAt) ||
@@ -315,7 +315,7 @@ export function createGatewayRestartTraceHandoffEnv(
 
 /** 从已验证的内存交接对象恢复 restart 追踪。 */
 export function resumeGatewayRestartTraceFromHandoff(
-  handoff: unknown,
+  handoff: any,
   metrics?: RestartTraceMetrics,
 ): boolean {
   if (!isRestartTraceEnabled() || active) {

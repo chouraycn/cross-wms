@@ -11,7 +11,7 @@ function safeRead(key: string): string[] {
   try {
     const raw = window.localStorage.getItem(key);
     if (!raw) return [];
-    const parsed = JSON.parse(raw) as unknown;
+    const parsed = JSON.parse(raw) as any;
     if (!Array.isArray(parsed)) return [];
     return parsed.filter((v): v is string => typeof v === 'string');
   } catch {

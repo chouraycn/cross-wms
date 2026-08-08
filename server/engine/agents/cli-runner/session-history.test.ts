@@ -68,14 +68,14 @@ function createSessionTranscript(params: {
   return sessionFile;
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object") {
     throw new Error(`expected ${label}`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function expectMessageFields(value: unknown, expected: { role: string; content?: string }) {
+function expectMessageFields(value: any, expected: { role: string; content?: string }) {
   const message = requireRecord(value, "message");
   expect(message.role).toBe(expected.role);
   if ("content" in expected) {
@@ -83,20 +83,20 @@ function expectMessageFields(value: unknown, expected: { role: string; content?:
   }
 }
 
-function expectCompactionSummary(value: unknown, summary: string) {
+function expectCompactionSummary(value: any, summary: string) {
   const message = requireRecord(value, "compaction summary");
   expect(message.role).toBe("compactionSummary");
   expect(message.summary).toBe(summary);
 }
 
-function expectCustomMessage(value: unknown, expected: { customType: string; content: string }) {
+function expectCustomMessage(value: any, expected: { customType: string; content: string }) {
   const message = requireRecord(value, "custom message");
   expect(message.role).toBe("custom");
   expect(message.customType).toBe(expected.customType);
   expect(message.content).toBe(expected.content);
 }
 
-function expectBranchSummary(value: unknown, summary: string) {
+function expectBranchSummary(value: any, summary: string) {
   const message = requireRecord(value, "branch summary");
   expect(message.role).toBe("branchSummary");
   expect(message.summary).toBe(summary);

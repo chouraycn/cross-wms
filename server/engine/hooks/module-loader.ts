@@ -6,7 +6,7 @@ export interface ModuleLoaderOptions {
 }
 
 export class ModuleLoader {
-  private cache = new Map<string, unknown>();
+  private cache = new Map<string, any>();
   private paths: string[];
   private extensions: string[];
 
@@ -15,7 +15,7 @@ export class ModuleLoader {
     this.extensions = options.extensions ?? ['.ts', '.js', '.mjs', '.cjs'];
   }
 
-  async load(modulePath: string): Promise<unknown> {
+  async load(modulePath: string): Promise<any> {
     if (this.cache.has(modulePath)) {
       return this.cache.get(modulePath)!;
     }

@@ -29,7 +29,7 @@ export interface DeviceInfo {
   appVersion?: string;
   capabilities?: string[];
   publicKey?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface PairingCodeInfo {
@@ -52,7 +52,7 @@ export interface PairingSession {
   expiresAt?: number;
   sharedSecret?: string;
   error?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface PairedDevice {
@@ -63,7 +63,7 @@ export interface PairedDevice {
   isActive: boolean;
   trustLevel: number;
   sharedSecret?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface EncryptedData {
@@ -98,7 +98,7 @@ export interface DiscoveredDevice {
 export interface PairingMessage {
   type: PairingMessageType;
   sessionId?: PairingSessionId;
-  payload?: unknown;
+  payload?: any;
   timestamp: number;
 }
 

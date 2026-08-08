@@ -41,7 +41,7 @@ export type MediaAsset = {
   channels?: number;
   hash?: string;
   tags?: string[];
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
   createdAt: number;
   updatedAt?: number;
 };
@@ -98,7 +98,7 @@ export type TranscodeResult = {
   format: MediaFormat;
   mimeType: string;
   size: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 /** 缩略图生成请求 */
@@ -136,7 +136,7 @@ export type MediaMetadata = {
   fps?: number;
   codec?: string;
   createdAt?: number;
-  extra?: Record<string, unknown>;
+  extra?: Record<string, any>;
 };
 
 /** 存储后端类型 */
@@ -157,7 +157,7 @@ export type UploadRequest = {
   buffer: Buffer;
   mimeType: string;
   tags?: string[];
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 /** 上传结果 */

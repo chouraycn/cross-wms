@@ -7,9 +7,9 @@
  */
 
 export type RegisterSubagentRunParams = unknown;
-export function markSubagentRunPausedAfterYield(..._args: unknown[]): unknown {
+export function markSubagentRunPausedAfterYield(..._args: any[]): any {
   return undefined;
 }
-export function createSubagentRunManager(..._args: unknown[]): unknown {
+export function createSubagentRunManager(..._args: any[]): any {
   return undefined;
 }

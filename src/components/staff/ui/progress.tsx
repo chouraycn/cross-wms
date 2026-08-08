@@ -19,7 +19,7 @@ function Progress({
       value={value ?? 0}
       className={cn(className)}
       sx={{ borderRadius: 999, ...(indicatorClassName ? null : {}) }}
-      {...(props as Record<string, unknown>)}
+      {...(props as Record<string, any>)}
     />
   )
 }

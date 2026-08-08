@@ -9,7 +9,7 @@ const ANTHROPIC_PDF_MODEL = "anthropic/claude-opus-4-8";
 const TEST_AGENT_DIR = "/tmp/openclaw-pdf-model-config";
 
 vi.mock("./model-config.helpers.js", () => ({
-  coerceToolModelConfig: (model?: unknown) => {
+  coerceToolModelConfig: (model?: any) => {
     if (typeof model === "string") {
       const primary = model.trim();
       return primary ? { primary } : {};

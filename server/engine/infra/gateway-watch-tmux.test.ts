@@ -18,15 +18,15 @@ const createOutput = () => {
   };
 };
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object") {
     throw new Error(`expected ${label}`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function spawnCall(mock: unknown, callIndex: number) {
-  const calls = (mock as { mock?: { calls?: Array<Array<unknown>> } }).mock?.calls ?? [];
+function spawnCall(mock: any, callIndex: number) {
+  const calls = (mock as { mock?: { calls?: Array<Array<any>> } }).mock?.calls ?? [];
   const call = calls[callIndex];
   if (!call) {
     throw new Error(`Expected spawn call ${callIndex + 1}`);
@@ -34,7 +34,7 @@ function spawnCall(mock: unknown, callIndex: number) {
   return call;
 }
 
-function spawnShellCommand(mock: unknown, callIndex: number): string {
+function spawnShellCommand(mock: any, callIndex: number): string {
   const call = spawnCall(mock, callIndex);
   const args = call[1];
   if (!Array.isArray(args) || typeof args[6] !== "string") {
@@ -43,7 +43,7 @@ function spawnShellCommand(mock: unknown, callIndex: number): string {
   return args[6];
 }
 
-function expectSpawn(mock: unknown, callIndex: number, command: string, args: Array<unknown>) {
+function expectSpawn(mock: any, callIndex: number, command: string, args: Array<any>) {
   const call = spawnCall(mock, callIndex);
   expect(call[0]).toBe(command);
   expect(call[1]).toEqual(args);
@@ -267,7 +267,7 @@ describe("gateway-watch tmux wrapper", () => {
     ).toBe("utf8");
     const newSessionCall = spawnCall(spawnSync, 1);
     expect(newSessionCall[0]).toBe("tmux");
-    const newSessionArgs = newSessionCall[1] as Array<unknown>;
+    const newSessionArgs = newSessionCall[1] as Array<any>;
     expect(newSessionArgs.slice(0, 6)).toEqual([
       "new-session",
       "-d",
@@ -417,7 +417,7 @@ describe("gateway-watch tmux wrapper", () => {
     expect(code).toBe(0);
     const respawnCall = spawnCall(spawnSync, 1);
     expect(respawnCall[0]).toBe("tmux");
-    const respawnArgs = respawnCall[1] as Array<unknown>;
+    const respawnArgs = respawnCall[1] as Array<any>;
     expect(respawnArgs.slice(0, 6)).toEqual([
       "respawn-pane",
       "-k",
@@ -458,7 +458,7 @@ describe("gateway-watch tmux wrapper", () => {
     expect(code).toBe(0);
     const staleRespawnCall = spawnCall(spawnSync, 1);
     expect(staleRespawnCall[0]).toBe("tmux");
-    const staleRespawnArgs = staleRespawnCall[1] as Array<unknown>;
+    const staleRespawnArgs = staleRespawnCall[1] as Array<any>;
     expect(staleRespawnArgs.slice(0, 6)).toEqual([
       "respawn-pane",
       "-k",
@@ -475,7 +475,7 @@ describe("gateway-watch tmux wrapper", () => {
     ).toBe("utf8");
     const recreatedCall = spawnCall(spawnSync, 3);
     expect(recreatedCall[0]).toBe("tmux");
-    const recreatedArgs = recreatedCall[1] as Array<unknown>;
+    const recreatedArgs = recreatedCall[1] as Array<any>;
     expect(recreatedArgs.slice(0, 6)).toEqual([
       "new-session",
       "-d",

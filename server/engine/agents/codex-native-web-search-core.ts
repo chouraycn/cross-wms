@@ -27,26 +27,26 @@ type CodexNativeSearchPayloadPatchResult = {
   status: "payload_not_object" | "native_tool_already_present" | "injected";
 };
 
-function resolveCodexNativeWebSearchConfig(config?: unknown): {
+function resolveCodexNativeWebSearchConfig(config?: any): {
   enabled: boolean;
   mode: CodexNativeSearchMode;
   allowedDomains?: string[];
   contextSize?: string;
-  userLocation?: Record<string, unknown>;
+  userLocation?: Record<string, any>;
 } {
-  const cfg = config as Record<string, unknown> | undefined;
-  const codexConfig = cfg?.codex as Record<string, unknown> | undefined;
-  const webSearch = codexConfig?.webSearch as Record<string, unknown> | undefined;
+  const cfg = config as Record<string, any> | undefined;
+  const codexConfig = cfg?.codex as Record<string, any> | undefined;
+  const webSearch = codexConfig?.webSearch as Record<string, any> | undefined;
   return {
     enabled: webSearch?.enabled !== false,
     mode: (webSearch?.mode as CodexNativeSearchMode) ?? "auto",
     allowedDomains: Array.isArray(webSearch?.allowedDomains) ? webSearch.allowedDomains as string[] : undefined,
     contextSize: typeof webSearch?.contextSize === "string" ? webSearch.contextSize : undefined,
-    userLocation: webSearch?.userLocation && typeof webSearch.userLocation === "object" ? webSearch.userLocation as Record<string, unknown> : undefined,
+    userLocation: webSearch?.userLocation && typeof webSearch.userLocation === "object" ? webSearch.userLocation as Record<string, any> : undefined,
   };
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
@@ -66,12 +66,12 @@ export function isCodexNativeSearchEligibleModel(params: {
 
 /** Checks whether OpenAI/Codex auth is available for native web search. */
 export function hasAvailableCodexAuth(params: {
-  config?: unknown;
+  config?: any;
   agentDir?: string;
 }): boolean {
-  const cfg = params.config as Record<string, unknown> | undefined;
-  const auth = cfg?.auth as Record<string, unknown> | undefined;
-  const profiles = auth?.profiles as Record<string, unknown> | undefined;
+  const cfg = params.config as Record<string, any> | undefined;
+  const auth = cfg?.auth as Record<string, any> | undefined;
+  const profiles = auth?.profiles as Record<string, any> | undefined;
   if (profiles) {
     for (const profile of Object.values(profiles)) {
       if (
@@ -88,13 +88,13 @@ export function hasAvailableCodexAuth(params: {
 
 /** Resolves whether native search is active or why managed search should remain. */
 export function resolveCodexNativeSearchActivation(params: {
-  config?: unknown;
+  config?: any;
   modelProvider?: string;
   modelApi?: string;
   modelId?: string;
   agentId?: string;
   sessionKey?: string;
-  sandboxToolPolicy?: unknown;
+  sandboxToolPolicy?: any;
   messageProvider?: string;
   agentAccountId?: string | null;
   groupId?: string | null;
@@ -107,10 +107,10 @@ export function resolveCodexNativeSearchActivation(params: {
   senderE164?: string | null;
   agentDir?: string;
 }): CodexNativeSearchActivation {
-  const cfg = params.config as Record<string, unknown> | undefined;
-  const tools = cfg?.tools as Record<string, unknown> | undefined;
-  const web = tools?.web as Record<string, unknown> | undefined;
-  const search = web?.search as Record<string, unknown> | undefined;
+  const cfg = params.config as Record<string, any> | undefined;
+  const tools = cfg?.tools as Record<string, any> | undefined;
+  const web = tools?.web as Record<string, any> | undefined;
+  const search = web?.search as Record<string, any> | undefined;
   const globalWebSearchEnabled = search?.enabled !== false;
   const codexConfig = resolveCodexNativeWebSearchConfig(params.config);
   const nativeEligible = isCodexNativeSearchEligibleModel(params);
@@ -175,10 +175,10 @@ export function resolveCodexNativeSearchActivation(params: {
 
 /** Builds the OpenAI Responses `web_search` tool payload from config. */
 export function buildCodexNativeWebSearchTool(
-  config: unknown,
-): Record<string, unknown> {
+  config: any,
+): Record<string, any> {
   const nativeConfig = resolveCodexNativeWebSearchConfig(config);
-  const tool: Record<string, unknown> = {
+  const tool: Record<string, any> = {
     type: "web_search",
     external_web_access: nativeConfig.mode === "live",
   };
@@ -194,7 +194,7 @@ export function buildCodexNativeWebSearchTool(
   return tool;
 }
 
-function hasCodexNativeWebSearchTool(tools: unknown): boolean {
+function hasCodexNativeWebSearchTool(tools: any): boolean {
   if (!Array.isArray(tools)) {
     return false;
   }
@@ -205,8 +205,8 @@ function hasCodexNativeWebSearchTool(tools: unknown): boolean {
 
 /** Injects a native Codex web-search tool into a mutable provider payload. */
 export function patchCodexNativeWebSearchPayload(params: {
-  payload: unknown;
-  config?: unknown;
+  payload: any;
+  config?: any;
 }): CodexNativeSearchPayloadPatchResult {
   if (!isRecord(params.payload)) {
     return { status: "payload_not_object" };
@@ -223,13 +223,13 @@ export function patchCodexNativeWebSearchPayload(params: {
 
 /** Returns whether the managed OpenClaw web-search tool should be hidden. */
 export function shouldSuppressManagedWebSearchTool(params: {
-  config?: unknown;
+  config?: any;
   modelProvider?: string;
   modelApi?: string;
   modelId?: string;
   agentId?: string;
   sessionKey?: string;
-  sandboxToolPolicy?: unknown;
+  sandboxToolPolicy?: any;
   messageProvider?: string;
   agentAccountId?: string | null;
   groupId?: string | null;
@@ -247,8 +247,8 @@ export function shouldSuppressManagedWebSearchTool(params: {
 
 /** Parameters for evaluating native web search against a sandbox tool policy. */
 export type NativeWebSearchToolPolicyParams = {
-  config?: unknown;
-  sandboxToolPolicy?: unknown;
+  config?: any;
+  sandboxToolPolicy?: any;
   modelProvider?: string;
   modelApi?: string;
   modelId?: string;

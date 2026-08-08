@@ -15,7 +15,7 @@ export interface ChannelSession {
   startTime: number;
   lastActivityTime: number;
   expiresAt?: number;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
 }
 
 export interface SessionCreateOptions {
@@ -26,11 +26,11 @@ export interface SessionCreateOptions {
   threadId?: string;
   userId?: string;
   ttlMs?: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface SessionUpdateOptions {
   status?: SessionStatus;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
   expiresAt?: number;
 }

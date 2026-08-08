@@ -17,8 +17,8 @@ function getProfileSuffix(profileId: string): string {
 
 /** Suggests a modern OAuth profile id for a legacy provider:default profile. */
 export function suggestOAuthProfileIdForLegacyDefault(params: {
-  cfg?: unknown;
-  store: unknown;
+  cfg?: any;
+  store: any;
   provider: string;
   legacyProfileId: string;
 }): string | null {
@@ -33,11 +33,11 @@ export function suggestOAuthProfileIdForLegacyDefault(params: {
 
 /** Migrates config auth profile references away from a legacy OAuth default id. */
 export function repairOAuthProfileIdMismatch(params: {
-  cfg: unknown;
-  store: unknown;
+  cfg: any;
+  store: any;
   provider: string;
   legacyProfileId?: string;
-}): { config: unknown; changes: string[]; migrated: boolean; fromProfileId?: string; toProfileId?: string } {
+}): { config: any; changes: string[]; migrated: boolean; fromProfileId?: string; toProfileId?: string } {
   const legacyProfileId =
     params.legacyProfileId ?? `${normalizeProviderId(params.provider)}:default`;
   // Full migration requires auth profile store infrastructure not available in cross-wms

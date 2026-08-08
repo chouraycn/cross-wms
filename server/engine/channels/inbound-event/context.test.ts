@@ -510,7 +510,7 @@ describe("buildChannelInboundEventContext", () => {
 
 describe("finalizeChannelInboundContext", () => {
   it("filters supplemental facts and finalizes through the injected finalizer", () => {
-    const finalize = vi.fn((ctx: Record<string, unknown>) => ({ ...ctx, Finalized: true }));
+    const finalize = vi.fn((ctx: Record<string, any>) => ({ ...ctx, Finalized: true }));
     const result = finalizeChannelInboundContext({
       finalize,
       contextVisibility: "allowlist",
@@ -547,7 +547,7 @@ describe("finalizeChannelInboundContext", () => {
         },
       },
     });
-    expect((result.context as Record<string, unknown>).Finalized).toBe(true);
+    expect((result.context as Record<string, any>).Finalized).toBe(true);
   });
 
   it("can finalize context-provided supplemental facts and media facts", () => {

@@ -84,11 +84,11 @@ export function resolveTranscriptPolicy(params: {
   modelApi?: string | null;
   provider?: string | null;
   modelId?: string | null;
-  config?: unknown;
+  config?: any;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
-  model?: unknown;
-  runtimeHandle?: unknown;
+  model?: any;
+  runtimeHandle?: any;
 }): TranscriptPolicy {
   const provider = normalizeProviderId(params.provider);
   const modelApi = params.modelApi;

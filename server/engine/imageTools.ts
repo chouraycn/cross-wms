@@ -260,7 +260,7 @@ function handleStatusAction(): string {
 // ==================== Action: generate ====================
 
 async function handleGenerateAction(
-  args: Record<string, unknown>,
+  args: Record<string, any>,
 ): Promise<string> {
   const os = require("os");
   const path = require("path");
@@ -408,7 +408,7 @@ async function handleGenerateAction(
 // ==================== 主处理器 ====================
 
 const handleImageGenerate: ToolHandler = async (
-  args: Record<string, unknown>,
+  args: Record<string, any>,
 ): Promise<string> => {
   const action = (String(args.action || "generate").toLowerCase() ||
     "generate") as "generate" | "list" | "status";

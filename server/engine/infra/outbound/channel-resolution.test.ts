@@ -16,37 +16,37 @@ const normalizeMessageChannelMock = vi.hoisted(() => vi.fn());
 const isDeliverableMessageChannelMock = vi.hoisted(() => vi.fn());
 
 vi.mock("../../agents/agent-scope.js", () => ({
-  resolveDefaultAgentId: (...args: unknown[]) => resolveDefaultAgentIdMock(...args),
-  resolveAgentWorkspaceDir: (...args: unknown[]) => resolveAgentWorkspaceDirMock(...args),
+  resolveDefaultAgentId: (...args: any[]) => resolveDefaultAgentIdMock(...args),
+  resolveAgentWorkspaceDir: (...args: any[]) => resolveAgentWorkspaceDirMock(...args),
 }));
 
 vi.mock("../../channels/plugins/index.js", () => ({
-  getLoadedChannelPlugin: (...args: unknown[]) => getLoadedChannelPluginMock(...args),
-  getChannelPlugin: (...args: unknown[]) => getChannelPluginMock(...args),
+  getLoadedChannelPlugin: (...args: any[]) => getLoadedChannelPluginMock(...args),
+  getChannelPlugin: (...args: any[]) => getChannelPluginMock(...args),
 }));
 
 vi.mock("../../config/plugin-auto-enable.js", () => ({
-  applyPluginAutoEnable: (...args: unknown[]) => applyPluginAutoEnableMock(...args),
+  applyPluginAutoEnable: (...args: any[]) => applyPluginAutoEnableMock(...args),
 }));
 
 vi.mock("../../plugins/loader.js", () => ({
-  resolveRuntimePluginRegistry: (...args: unknown[]) => resolveRuntimePluginRegistryMock(...args),
+  resolveRuntimePluginRegistry: (...args: any[]) => resolveRuntimePluginRegistryMock(...args),
 }));
 
 vi.mock("../../plugins/runtime.js", () => ({
-  getActivePluginRegistry: (...args: unknown[]) => getActivePluginRegistryMock(...args),
-  getActivePluginRegistryVersion: (...args: unknown[]) =>
+  getActivePluginRegistry: (...args: any[]) => getActivePluginRegistryMock(...args),
+  getActivePluginRegistryVersion: (...args: any[]) =>
     getActivePluginRegistryVersionMock(...args),
-  getActivePluginChannelRegistry: (...args: unknown[]) =>
+  getActivePluginChannelRegistry: (...args: any[]) =>
     getActivePluginChannelRegistryMock(...args),
-  getActivePluginChannelRegistryVersion: (...args: unknown[]) =>
+  getActivePluginChannelRegistryVersion: (...args: any[]) =>
     getActivePluginChannelRegistryVersionMock(...args),
 }));
 
 vi.mock("../../utils/message-channel.js", () => ({
   INTERNAL_MESSAGE_CHANNEL: "webchat",
-  normalizeMessageChannel: (...args: unknown[]) => normalizeMessageChannelMock(...args),
-  isDeliverableMessageChannel: (...args: unknown[]) => isDeliverableMessageChannelMock(...args),
+  normalizeMessageChannel: (...args: any[]) => normalizeMessageChannelMock(...args),
+  isDeliverableMessageChannel: (...args: any[]) => isDeliverableMessageChannelMock(...args),
 }));
 
 import { importFreshModule } from "openclaw/plugin-sdk/test-fixtures";
@@ -58,7 +58,7 @@ async function importChannelResolution(scope: string) {
   );
 }
 
-function firstMockArg(mock: { mock: { calls: readonly unknown[][] } }): Record<string, unknown> {
+function firstMockArg(mock: { mock: { calls: readonly any[][] } }): Record<string, any> {
   const [call] = mock.mock.calls;
   if (!call) {
     throw new Error("expected mock call");
@@ -67,7 +67,7 @@ function firstMockArg(mock: { mock: { calls: readonly unknown[][] } }): Record<s
   if (typeof arg !== "object" || arg === null || Array.isArray(arg)) {
     throw new Error("expected mock call arg to be an object");
   }
-  return arg as Record<string, unknown>;
+  return arg as Record<string, any>;
 }
 
 describe("outbound channel resolution", () => {

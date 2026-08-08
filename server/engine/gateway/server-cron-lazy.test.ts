@@ -8,10 +8,10 @@ import type { CronServiceContract } from "../cron/service-contract.js";
 import type { GatewayCronState } from "./server-cron.js";
 
 const hoisted = vi.hoisted(() => {
-  let state: unknown;
+  let state: any;
   return {
     buildGatewayCronService: vi.fn(() => state),
-    setState(nextState: unknown) {
+    setState(nextState: any) {
       state = nextState;
     },
   };

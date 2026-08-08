@@ -328,7 +328,7 @@ describe("Codex native web-search payload helpers", () => {
   });
 
   it("injects native web_search into provider payloads", () => {
-    const payload: Record<string, unknown> = { tools: [{ type: "function", name: "read" }] };
+    const payload: Record<string, any> = { tools: [{ type: "function", name: "read" }] };
     // Payload patching mutates the provider request in place because callers
     // already hold the request object that will be sent to the model runtime.
     const result = patchCodexNativeWebSearchPayload({ payload, config: baseConfig });
@@ -341,7 +341,7 @@ describe("Codex native web-search payload helpers", () => {
   });
 
   it("does not inject a duplicate native web_search tool", () => {
-    const payload: Record<string, unknown> = { tools: [{ type: "web_search" }] };
+    const payload: Record<string, any> = { tools: [{ type: "web_search" }] };
     const result = patchCodexNativeWebSearchPayload({ payload, config: baseConfig });
 
     expect(result.status).toBe("native_tool_already_present");

@@ -67,9 +67,9 @@ const CURRENT_PLATFORM_VARIANTS: Readonly<
   "win32-x64": { pkg: "sqlite-vec-windows-x64", file: "vec0.dll" },
 };
 
-function isMissingModuleError(err: unknown): boolean {
+function isMissingModuleError(err: any): boolean {
   const code =
-    err && typeof err === "object" && "code" in err ? (err as { code?: unknown }).code : undefined;
+    err && typeof err === "object" && "code" in err ? (err as { code?: any }).code : undefined;
   return code === "MODULE_NOT_FOUND" || code === "ERR_MODULE_NOT_FOUND";
 }
 

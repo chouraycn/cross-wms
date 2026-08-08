@@ -25,17 +25,17 @@ vi.mock("../logger.js", () => ({
   logWarn: vi.fn(),
 }));
 
-function encodeLspMessage(body: unknown): string {
+function encodeLspMessage(body: any): string {
   const json = JSON.stringify(body);
   return `Content-Length: ${Buffer.byteLength(json, "utf-8")}\r\n\r\n${json}`;
 }
 
-function parseWrittenLspBody(text: string): Record<string, unknown> | null {
+function parseWrittenLspBody(text: string): Record<string, any> | null {
   const bodyStart = text.indexOf("\r\n\r\n");
   if (bodyStart === -1) {
     return null;
   }
-  return JSON.parse(text.slice(bodyStart + 4)) as Record<string, unknown>;
+  return JSON.parse(text.slice(bodyStart + 4)) as Record<string, any>;
 }
 
 class MockChildProcess extends EventEmitter {

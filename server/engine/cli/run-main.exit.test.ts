@@ -18,7 +18,7 @@ type ConfigSnapshotStub = {
   path?: string;
   raw?: string | null;
   valid: boolean;
-  sourceConfig: Record<string, unknown>;
+  sourceConfig: Record<string, any>;
 };
 
 type ConfigSnapshotReadOptionsStub = {
@@ -26,8 +26,8 @@ type ConfigSnapshotReadOptionsStub = {
   observe?: boolean;
   recoverSuspicious?: boolean;
   allowSuspiciousRecovery?: (
-    candidate: Record<string, unknown>,
-    current: Record<string, unknown>,
+    candidate: Record<string, any>,
+    current: Record<string, any>,
   ) => boolean | Promise<boolean>;
 };
 
@@ -40,7 +40,7 @@ const ensurePathMock = vi.hoisted(() => vi.fn());
 const assertRuntimeMock = vi.hoisted(() => vi.fn());
 const closeActiveMemorySearchManagersMock = vi.hoisted(() => vi.fn(async () => {}));
 const hasMemoryRuntimeMock = vi.hoisted(() => vi.fn(() => false));
-const listRegisteredAgentHarnessesMock = vi.hoisted(() => vi.fn((): unknown[] => []));
+const listRegisteredAgentHarnessesMock = vi.hoisted(() => vi.fn((): any[] => []));
 const disposeRegisteredAgentHarnessesMock = vi.hoisted(() => vi.fn(async () => {}));
 const ensureTaskRegistryReadyMock = vi.hoisted(() => vi.fn());
 const startTaskRegistryMaintenanceMock = vi.hoisted(() => vi.fn());
@@ -75,7 +75,7 @@ const readConfigFileSnapshotMock = vi.hoisted(() =>
 );
 const setupWizardCommandMock = vi.hoisted(() => vi.fn(async () => {}));
 const runCrestodianMock = vi.hoisted(() =>
-  vi.fn<(options?: unknown) => Promise<void>>(async () => {}),
+  vi.fn<(options?: any) => Promise<void>>(async () => {}),
 );
 const commanderParseAsyncMock = vi.hoisted(() => vi.fn(async () => {}));
 type GatewayRunCommandHooks = {
@@ -85,7 +85,7 @@ type CliExecutionBootstrapOptions = {
   beforeStateMigrations?: () => Promise<boolean>;
 };
 const addGatewayRunCommandMock = vi.hoisted(() =>
-  vi.fn<(command: unknown, hooks?: GatewayRunCommandHooks) => unknown>((command) => command),
+  vi.fn<(command: any, hooks?: GatewayRunCommandHooks) => unknown>((command) => command),
 );
 const ensureCliExecutionBootstrapMock = vi.hoisted(() =>
   vi.fn<(_opts: CliExecutionBootstrapOptions) => Promise<void>>(async () => {}),
@@ -100,9 +100,9 @@ const createCliProgressMock = vi.hoisted(() =>
 );
 const loadConfigMock = vi.hoisted(() => vi.fn(() => ({})));
 const startProxyMock = vi.hoisted(() =>
-  vi.fn<(config: unknown) => Promise<unknown>>(async () => null),
+  vi.fn<(config: any) => Promise<any>>(async () => null),
 );
-const stopProxyMock = vi.hoisted(() => vi.fn<(handle: unknown) => Promise<void>>(async () => {}));
+const stopProxyMock = vi.hoisted(() => vi.fn<(handle: any) => Promise<void>>(async () => {}));
 const maybeRunCliInContainerMock = vi.hoisted(() =>
   vi.fn<
     (argv: string[]) => { handled: true; exitCode: number } | { handled: false; argv: string[] }
@@ -114,7 +114,7 @@ const serviceEnvSnapshot = captureEnv([
   GATEWAY_SERVICE_RUNTIME_PID_ENV,
 ]);
 
-function requireRunCrestodianOptions(index = 0): { onReady?: unknown } {
+function requireRunCrestodianOptions(index = 0): { onReady?: any } {
   const call = runCrestodianMock.mock.calls[index];
   if (!call) {
     throw new Error(`expected runCrestodian call ${index}`);
@@ -123,7 +123,7 @@ function requireRunCrestodianOptions(index = 0): { onReady?: unknown } {
   if (typeof call[0] !== "object" || call[0] === null) {
     throw new Error(`expected runCrestodian call ${index} to receive options`);
   }
-  return call[0] as { onReady?: unknown };
+  return call[0] as { onReady?: any };
 }
 
 vi.mock("commander", () => {
@@ -2179,7 +2179,7 @@ describe("runCli exit behavior", () => {
       cliCommand: "plugins",
     });
 
-    let error: unknown;
+    let error: any;
     try {
       await runCli(["node", "openclaw", "codex"]);
     } catch (caught) {
@@ -2223,7 +2223,7 @@ describe("runCli exit behavior", () => {
       },
     });
 
-    let error: unknown;
+    let error: any;
     try {
       await runCli(["node", "openclaw", "totally-unknown"]);
     } catch (caught) {

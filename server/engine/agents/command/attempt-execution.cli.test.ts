@@ -137,11 +137,11 @@ async function persistCliTranscriptEntry(
 }
 
 async function readSessionMessages(sessionFile: string) {
-  return (await readSessionFileJsonLines<{ type?: string; message?: unknown }>(sessionFile))
+  return (await readSessionFileJsonLines<{ type?: string; message?: any }>(sessionFile))
     .filter((entry) => entry.type === "message")
     .map(
       (entry) =>
-        entry.message as { role?: string; content?: unknown; provider?: string; model?: string },
+        entry.message as { role?: string; content?: any; provider?: string; model?: string },
     );
 }
 
@@ -169,14 +169,14 @@ async function readSessionFileJsonLines<T>(sessionFile: string): Promise<T[]> {
   return entries;
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (typeof value !== "object" || value === null) {
     throw new Error(`${label} was not an object`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function expectRecordFields(record: Record<string, unknown>, fields: Record<string, unknown>) {
+function expectRecordFields(record: Record<string, any>, fields: Record<string, any>) {
   for (const [key, value] of Object.entries(fields)) {
     expect(record[key]).toEqual(value);
   }
@@ -192,7 +192,7 @@ function requireMockArg(mock: ReturnType<typeof vi.fn>, callIndex: number, label
 
 function expectMockArgFields(
   mock: ReturnType<typeof vi.fn>,
-  fields: Record<string, unknown>,
+  fields: Record<string, any>,
   callIndex = 0,
 ) {
   expectRecordFields(requireMockArg(mock, callIndex, "mock call argument"), fields);
@@ -386,7 +386,7 @@ describe("CLI attempt execution", () => {
 
     // The retry hook must clear poisoned bindings before the fresh CLI attempt
     // runs, otherwise the runner would resume the same expired Claude session.
-    runCliAgentMock.mockImplementationOnce(async (args: unknown) => {
+    runCliAgentMock.mockImplementationOnce(async (args: any) => {
       const retry = requireRecord(args, "run CLI agent argument").onBeforeFreshCliSessionRetry;
       expect(retry).toBeTypeOf("function");
       await (
@@ -490,7 +490,7 @@ describe("CLI attempt execution", () => {
     const sessionEntry = makeClaudeCliSessionEntry("session-cli-timeout", cliSessionId);
     const sessionStore: Record<string, SessionEntry> = { [sessionKey]: sessionEntry };
     await fs.writeFile(storePath, JSON.stringify(sessionStore, null, 2), "utf-8");
-    runCliAgentMock.mockImplementationOnce(async (args: unknown) => {
+    runCliAgentMock.mockImplementationOnce(async (args: any) => {
       const retry = requireRecord(args, "run CLI agent argument").onBeforeFreshCliSessionRetry;
       expect(retry).toBeTypeOf("function");
       await (

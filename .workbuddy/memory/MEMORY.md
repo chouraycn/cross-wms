@@ -60,7 +60,7 @@
 ## 剩余技术债 & 当前进度
 - **P2-1 API 契约对齐（基建已落地，全包待拍板）**：`server/routes` 约 1064 处 `res.json`，仅 ~171 处含 `code` envelope，~893 处裸返回。基建 commit `b14969d50`：`server/routes/_shared/respond.ts`(ok/fail/notFound) + inventory 重构为统一响应（not-found 统一 404）。**105+ 路由全包待拍板「范围 + 错误形态」两点再推**
 - **git 瘦身（P0，✅ 2026-08-06 已执行）**：`.git` 732M(pack 678MiB) → 89M(pack 63.36MiB)，**削约 88%**。剥离 `server_dist/ coverage/ report/`（禁剥 `StaffDeck-main/` `openclaw/` submodule，已验证 gitlink 完好 160000）。命令：`git filter-repo --path server_dist/ --path coverage/ --path report/ --invert-paths --force`（`--force` 因非 fresh clone；venv：`/Users/chouray/.workbuddy/binaries/python/envs/default/bin/git-filter-repo`）+ `git gc --aggressive` + `git remote add origin git@github.com:chouraycn/cross-wms.git` + `git push --force --all` + `git push --force --tags`(416 tags)。**⚠️ 全员已需重 clone**（历史已重写）
-- **engine 测试隔离（脚手架已提交）**：`vitest.config.engine.ts` 在；完整拆分被沙箱 OOM 卡覆盖率基线
+- **engine 测试隔离（2026-08-08 推进）**：`vitest.config.engine.ts` + `test:engine` 脚本早就绪。真实阻塞**非 OOM**，而是 engine 测试的两类解析依赖：①`~30` 个测试经相对路径 `../test/helpers/*.js` 引用 openclaw 上游共享 helper（fork 未带入 `server/test/helpers/`）——已用 vitest 正则别名重定向到已检出的 `openclaw/test/helpers/`（`.js`→`.ts` 回退），commit `235b8aa8` 验证 `install-sh-version` + `pairing/__tests__/index`(21 tests) 全绿；②`294` 个测试 import `openclaw/plugin-sdk/test-fixtures` 等，映射到 `openclaw/dist/plugin-sdk/*.js`（构建产物），本仓库未构建 openclaw 子模块 → 需在 CI 先 build openclaw 后 `test:engine` 方可全绿。**最终拆分（从主配置 `vitest.config.ts` 移除 `server/engine/**` + CI 接 `test:engine` 带 coverage）仍待门禁**：须先解决 openclaw/dist 构建，否则 engine 覆盖率静默丢失。主配置当前仍含 engine（且同样缺 helper 别名→那 ~30 测试在主套件也会解析失败）
 - **API client / markdown 渲染各 2 份近亲副本**：重复实现待合并
 - `server/engine`：11,537 .ts / 272.9 万行，测试占 57%。抽样 12% 同上游 / 55% 已改 / 33% 独有 → 不宜回退 submodule
 

@@ -19,7 +19,7 @@ import type { PluginInstallRecord } from "./plugins-install-persist.js";
  * 降级实现：检查 `config.plugins.installs` 字段是否有键。
  */
 export function hasPendingPluginInstallRecords(config: OpenClawConfig): boolean {
-  const plugins = (config.plugins ?? {}) as { installs?: Record<string, unknown> };
+  const plugins = (config.plugins ?? {}) as { installs?: Record<string, any> };
   return Object.keys(plugins.installs ?? {}).length > 0;
 }
 
@@ -35,8 +35,8 @@ export function unchangedPendingPluginInstallRecordIds(
 ): string[] {
    
   const { isDeepStrictEqual } = require("node:util") as typeof import("node:util");
-  const pendingInstalls = ((config.plugins ?? {}) as { installs?: Record<string, unknown> }).installs ?? {};
-  const baseInstalls = ((baseConfig.plugins ?? {}) as { installs?: Record<string, unknown> }).installs ?? {};
+  const pendingInstalls = ((config.plugins ?? {}) as { installs?: Record<string, any> }).installs ?? {};
+  const baseInstalls = ((baseConfig.plugins ?? {}) as { installs?: Record<string, any> }).installs ?? {};
   return Object.entries(baseInstalls)
     .filter(([pluginId, baseInstall]) => isDeepStrictEqual(pendingInstalls[pluginId], baseInstall))
     .map(([pluginId]) => pluginId);
@@ -52,7 +52,7 @@ export function stripPendingPluginInstallRecords(
   pluginIds?: Iterable<string>,
 ): OpenClawConfig {
   const plugins = (config.plugins ?? {}) as {
-    installs?: Record<string, unknown>;
+    installs?: Record<string, any>;
   };
   if (!pluginIds) {
     if (!plugins.installs) {
@@ -95,7 +95,7 @@ export async function commitPluginInstallRecordsWithConfig(_params: {
   nextInstallRecords: Record<string, PluginInstallRecord>;
   nextConfig: OpenClawConfig;
   baseHash?: string;
-  writeOptions?: unknown;
+  writeOptions?: any;
 }): Promise<void> {
   // 降级实现：openclaw 的提交链未移植。
 }
@@ -107,8 +107,8 @@ export async function commitPluginInstallRecordsWithConfig(_params: {
  */
 export async function commitConfigWriteWithPendingPluginInstalls(params: {
   nextConfig: OpenClawConfig;
-  writeOptions?: unknown;
-  commit?: unknown;
+  writeOptions?: any;
+  commit?: any;
 }): Promise<{
   config: OpenClawConfig;
   installRecords: Record<string, PluginInstallRecord>;
@@ -133,7 +133,7 @@ export async function commitConfigWriteWithPendingPluginInstalls(params: {
 export async function commitConfigWithPendingPluginInstalls(params: {
   nextConfig: OpenClawConfig;
   baseHash?: string;
-  writeOptions?: unknown;
+  writeOptions?: any;
 }): Promise<{
   config: OpenClawConfig;
   installRecords: Record<string, PluginInstallRecord>;
@@ -159,10 +159,10 @@ export async function commitConfigWithPendingPluginInstalls(params: {
  */
 export async function transformConfigWithPendingPluginInstalls<T = void>(_params: {
   nextConfig: OpenClawConfig;
-  snapshot?: unknown;
+  snapshot?: any;
   baseHash?: string;
-  writeOptions?: unknown;
-  afterWrite?: unknown;
+  writeOptions?: any;
+  afterWrite?: any;
   transform?: (config: OpenClawConfig) => Promise<T> | T;
 }): Promise<{ result: T | undefined; config: OpenClawConfig | undefined; persistedHash: string | null }> {
   // 降级实现：openclaw 的变换链未移植。

@@ -73,7 +73,7 @@ export type PluginHookInboundClaimEvent = {
   isGroup: boolean;
   commandAuthorized?: boolean;
   wasMentioned?: boolean;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 export type PluginHookMessageReceivedEvent = {
@@ -94,7 +94,7 @@ export type PluginHookMessageReceivedEvent = {
   traceId?: string;
   spanId?: string;
   parentSpanId?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 export type PluginHookMessageSendingEvent = {
@@ -102,14 +102,14 @@ export type PluginHookMessageSendingEvent = {
   content: string;
   replyToId?: string | number;
   threadId?: string | number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 export type PluginHookMessageSendingResult = {
   content?: string;
   cancel?: boolean;
   cancelReason?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 export type PluginHookMessageSentEvent = {

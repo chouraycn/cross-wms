@@ -103,7 +103,7 @@ const MAX_DYNAMIC_FACTOR = 5.0;
  * 校验单个 timeoutMs 值是否合法
  * 返回 true 表示合法，false 表示非法（会 log warn）
  */
-function isValidTimeout(value: unknown, field: string): boolean {
+function isValidTimeout(value: any, field: string): boolean {
   if (typeof value !== 'number' || !Number.isFinite(value)) {
     logger.warn(`[ToolTimeoutConfig] Invalid ${field}: must be a finite number, got=${value}`);
     return false;

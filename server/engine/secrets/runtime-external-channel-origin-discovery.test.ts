@@ -30,8 +30,8 @@ function requireDiscordConfig(snapshot: Awaited<ReturnType<typeof prepareSecrets
 }
 
 function requireLoadChannelSecretContractApiCall(): {
-  channelId?: unknown;
-  loadablePluginOrigins?: unknown;
+  channelId?: any;
+  loadablePluginOrigins?: any;
 } {
   const [call] = loadChannelSecretContractApiMock.mock.calls;
   if (!call) {
@@ -51,13 +51,13 @@ describe("secrets runtime external channel origin discovery", () => {
     });
     loadChannelSecretContractApiMock.mockReturnValue({
       collectRuntimeConfigAssignments: (params: {
-        config: { channels?: { discord?: { token?: unknown } } };
+        config: { channels?: { discord?: { token?: any } } };
         context: {
           assignments: Array<{
             ref: { source: "env"; provider: "default"; id: string };
             path: string;
             expected: "string";
-            apply: (value: unknown) => void;
+            apply: (value: any) => void;
           }>;
         };
       }) => {

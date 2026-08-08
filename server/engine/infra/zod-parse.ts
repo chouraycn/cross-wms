@@ -11,7 +11,7 @@ import type { ZodType } from "zod";
  */
 
 /** 使用 Zod schema 安全校验未知值，校验失败返回 null */
-export function safeParseWithSchema<T>(schema: ZodType<T>, value: unknown): T | null {
+export function safeParseWithSchema<T>(schema: ZodType<T>, value: any): T | null {
   const parsed = schema.safeParse(value);
   return parsed.success ? parsed.data : null;
 }

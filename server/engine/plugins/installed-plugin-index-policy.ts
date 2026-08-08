@@ -28,10 +28,10 @@ import { hashJson } from "./installed-plugin-index-hash.js";
 type OpenClawConfig = {
   plugins?: {
     entries?: Record<string, { enabled?: boolean }>;
-    [key: string]: unknown;
+    [key: string]: any;
   };
-  channels?: Record<string, unknown>;
-  [key: string]: unknown;
+  channels?: Record<string, any>;
+  [key: string]: any;
 };
 
 // ============================================================================
@@ -78,7 +78,7 @@ type NormalizedPluginsConfig = {
   enabled: readonly string[];
   allow: readonly string[];
   deny: readonly string[];
-  slots: Record<string, unknown>;
+  slots: Record<string, any>;
   entries: Record<string, { enabled?: boolean }>;
 };
 
@@ -88,14 +88,14 @@ type NormalizedPluginsConfig = {
  * 降级说明：cross-wms 的 config-state.js 尚未移植。这里降级为
  * 从 config.plugins 中提取 entries 的 enabled 状态，其余字段返回空。
  */
-function normalizePluginsConfig(plugins: unknown): NormalizedPluginsConfig {
+function normalizePluginsConfig(plugins: any): NormalizedPluginsConfig {
   const entries: Record<string, { enabled?: boolean }> = {};
   if (plugins && typeof plugins === "object" && !Array.isArray(plugins)) {
-    const rawEntries = (plugins as { entries?: Record<string, unknown> }).entries;
+    const rawEntries = (plugins as { entries?: Record<string, any> }).entries;
     if (rawEntries && typeof rawEntries === "object" && !Array.isArray(rawEntries)) {
       for (const [pluginId, entry] of Object.entries(rawEntries)) {
         if (entry && typeof entry === "object" && !Array.isArray(entry)) {
-          const enabled = (entry as { enabled?: unknown }).enabled;
+          const enabled = (entry as { enabled?: any }).enabled;
           if (typeof enabled === "boolean") {
             entries[pluginId] = { enabled };
           }
@@ -138,7 +138,7 @@ export function resolveInstalledPluginIndexPolicyHash(config: OpenClawConfig | u
   if (channels && typeof channels === "object" && !Array.isArray(channels)) {
     for (const [channelId, value] of Object.entries(channels)) {
       if (value && typeof value === "object" && !Array.isArray(value)) {
-        const enabled = (value as Record<string, unknown>).enabled;
+        const enabled = (value as Record<string, any>).enabled;
         if (typeof enabled === "boolean") {
           channelPolicy[channelId] = enabled;
         }

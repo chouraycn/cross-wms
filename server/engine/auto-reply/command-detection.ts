@@ -21,22 +21,22 @@ export type CommandDetectionConfig = {
     allowFrom?: Record<string, Array<string | number>>;
     ownerAllowFrom?: Array<string | number>;
   };
-  channels?: Record<string, unknown>;
-  [key: string]: unknown;
+  channels?: Record<string, any>;
+  [key: string]: any;
 };
 
-function normalizeOptionalString(value: unknown): string | undefined {
+function normalizeOptionalString(value: any): string | undefined {
   if (typeof value !== 'string') return undefined;
   const trimmed = value.trim();
   return trimmed ? trimmed : undefined;
 }
 
-function normalizeOptionalLowercaseString(value: unknown): string | undefined {
+function normalizeOptionalLowercaseString(value: any): string | undefined {
   const normalized = normalizeOptionalString(value);
   return normalized ? normalized.toLowerCase() : undefined;
 }
 
-function normalizeLowercaseStringOrEmpty(value: unknown): string {
+function normalizeLowercaseStringOrEmpty(value: any): string {
   return normalizeOptionalLowercaseString(value) ?? '';
 }
 

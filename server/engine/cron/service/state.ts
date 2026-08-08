@@ -49,7 +49,7 @@ export type CronJobExecutor = (job: CronJob) => Promise<CronRunOutcome>;
 export type EnqueueSystemEventOptions = {
   sessionKey?: string;
   agentId?: string;
-  deliveryContext?: unknown;
+  deliveryContext?: any;
 };
 
 /** 心跳请求选项 */
@@ -121,7 +121,7 @@ export type CronServiceState = {
    * 操作序列化 Promise 链
    * 用于序列化变更服务的操作，确保存储写入和定时器保持有序
    */
-  op: Promise<unknown>;
+  op: Promise<any>;
   /** 是否已警告过 cron 功能被禁用 */
   warnedDisabled: boolean;
   /** 已警告过的无效持久化任务 key 集合 */

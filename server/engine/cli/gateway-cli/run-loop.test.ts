@@ -19,7 +19,7 @@ const isGatewaySigusr1RestartExternallyAllowed = vi.fn(() => false);
 const markGatewaySigusr1RestartHandled = vi.fn();
 const peekGatewaySigusr1RestartReason = vi.fn<() => string | undefined>(() => undefined);
 const resetGatewayRestartStateForInProcessRestart = vi.fn();
-const writeGatewayRestartHandoffSync = vi.fn((_opts: unknown) => ({
+const writeGatewayRestartHandoffSync = vi.fn((_opts: any) => ({
   kind: "gateway-supervisor-restart-handoff" as const,
   version: 1 as const,
   intentId: "test-intent",
@@ -93,7 +93,7 @@ const abortEmbeddedAgentRun = vi.fn(
 const getActiveEmbeddedRunCount = vi.fn(() => 0);
 const listActiveEmbeddedRunSessionIds = vi.fn(() => [] as string[]);
 const listActiveEmbeddedRunSessionKeys = vi.fn(() => [] as string[]);
-const markRestartAbortedMainSessions = vi.fn(async (_params: unknown) => ({
+const markRestartAbortedMainSessions = vi.fn(async (_params: any) => ({
   marked: 1,
   skipped: 0,
 }));
@@ -128,7 +128,7 @@ vi.mock("../../infra/restart.js", () => ({
   markGatewaySigusr1RestartHandled: () => markGatewaySigusr1RestartHandled(),
   peekGatewaySigusr1RestartReason: () => peekGatewaySigusr1RestartReason(),
   resetGatewayRestartStateForInProcessRestart: () => resetGatewayRestartStateForInProcessRestart(),
-  resolveGatewayRestartDeferralTimeoutMs: (timeoutMs: unknown) => {
+  resolveGatewayRestartDeferralTimeoutMs: (timeoutMs: any) => {
     if (typeof timeoutMs !== "number" || !Number.isFinite(timeoutMs)) {
       return DEFAULT_RESTART_DEFERRAL_TIMEOUT_MS;
     }
@@ -153,7 +153,7 @@ vi.mock("../../infra/restart-sentinel.js", () => ({
 }));
 
 vi.mock("../../infra/restart-handoff.js", () => ({
-  writeGatewayRestartHandoffSync: (opts: unknown) => writeGatewayRestartHandoffSync(opts),
+  writeGatewayRestartHandoffSync: (opts: any) => writeGatewayRestartHandoffSync(opts),
 }));
 
 vi.mock("../../process/command-queue.js", () => ({
@@ -203,7 +203,7 @@ vi.mock("../../agents/embedded-agent-runner/runs.js", () => ({
 }));
 
 vi.mock("../../agents/main-session-restart-recovery.js", () => ({
-  markRestartAbortedMainSessions: (params: unknown) => markRestartAbortedMainSessions(params),
+  markRestartAbortedMainSessions: (params: any) => markRestartAbortedMainSessions(params),
 }));
 
 vi.mock("../../config/config.js", () => ({
@@ -229,9 +229,9 @@ function setPlatform(platform: string) {
   });
 }
 
-function removeNewSignalListeners(signal: LoopSignal, existing: Set<(...args: unknown[]) => void>) {
+function removeNewSignalListeners(signal: LoopSignal, existing: Set<(...args: any[]) => void>) {
   for (const listener of process.listeners(signal)) {
-    const fn = listener as (...args: unknown[]) => void;
+    const fn = listener as (...args: any[]) => void;
     if (!existing.has(fn)) {
       process.removeListener(signal, fn);
     }
@@ -240,9 +240,9 @@ function removeNewSignalListeners(signal: LoopSignal, existing: Set<(...args: un
 
 function addedSignalListener(
   signal: LoopSignal,
-  existing: Set<(...args: unknown[]) => void>,
+  existing: Set<(...args: any[]) => void>,
 ): (() => void) | null {
-  const listeners = process.listeners(signal) as Array<(...args: unknown[]) => void>;
+  const listeners = process.listeners(signal) as Array<(...args: any[]) => void>;
   for (let i = listeners.length - 1; i >= 0; i -= 1) {
     const listener = listeners[i];
     if (listener && !existing.has(listener)) {
@@ -258,9 +258,9 @@ async function withIsolatedSignals(
   const existingListeners = Object.fromEntries(
     LOOP_SIGNALS.map((signal) => [
       signal,
-      new Set(process.listeners(signal) as Array<(...args: unknown[]) => void>),
+      new Set(process.listeners(signal) as Array<(...args: any[]) => void>),
     ]),
-  ) as Record<LoopSignal, Set<(...args: unknown[]) => void>>;
+  ) as Record<LoopSignal, Set<(...args: any[]) => void>>;
   const captureSignal = (signal: LoopSignal) => {
     const listener = addedSignalListener(signal, existingListeners[signal]);
     if (!listener) {
@@ -295,8 +295,8 @@ function createRuntimeWithExitSignal(exitCallOrder?: string[]) {
 
 type GatewayCloseFn = GatewayServer["close"];
 type LoopRuntime = {
-  log: (...args: unknown[]) => void;
-  error: (...args: unknown[]) => void;
+  log: (...args: any[]) => void;
+  error: (...args: any[]) => void;
   exit: (code: number) => void;
 };
 
@@ -390,7 +390,7 @@ function expectRestartHandoffCall(expected: {
   if (!handoff || typeof handoff !== "object" || Array.isArray(handoff)) {
     throw new Error("expected restart handoff options object");
   }
-  const processInstanceId = (handoff as { processInstanceId?: unknown }).processInstanceId;
+  const processInstanceId = (handoff as { processInstanceId?: any }).processInstanceId;
   expect(typeof processInstanceId).toBe("string");
   if (typeof processInstanceId !== "string") {
     throw new Error("expected restart handoff processInstanceId string");

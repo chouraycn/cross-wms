@@ -26,7 +26,7 @@ function requestModelsList(params: {
   view: "configured" | "all";
   respond?: ReturnType<typeof vi.fn>;
   runtimeConfig?: OpenClawConfig;
-  loadGatewayModelCatalog: () => Promise<Array<Record<string, unknown>>>;
+  loadGatewayModelCatalog: () => Promise<Array<Record<string, any>>>;
   reqId?: string;
 }) {
   const respond = params.respond ?? vi.fn();

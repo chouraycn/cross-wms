@@ -104,7 +104,7 @@ const buildFlags = (entry?: SessionEntry): string[] => {
   if (entry?.abortedLastRun) {
     flags.push("aborted");
   }
-  const sessionId = entry?.sessionId as unknown;
+  const sessionId = entry?.sessionId as any;
   if (typeof sessionId === "string" && sessionId.length > 0) {
     flags.push(`id:${sessionId}`);
   }
@@ -138,7 +138,7 @@ function hasUserPinnedModelSelection(entry: SessionEntry | undefined): boolean {
   return !hasSessionAutoModelFallbackProvenance(entry);
 }
 
-function normalizeStatusModelPart(value: unknown): string {
+function normalizeStatusModelPart(value: any): string {
   return typeof value === "string" ? value.trim().toLowerCase() : "";
 }
 

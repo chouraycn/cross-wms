@@ -6,10 +6,10 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function resolveCompactionInstructions(..._args: unknown[]): unknown {
+export function resolveCompactionInstructions(..._args: any[]): any {
   return undefined;
 }
-export function composeSplitTurnInstructions(..._args: unknown[]): unknown {
+export function composeSplitTurnInstructions(..._args: any[]): any {
   return undefined;
 }
-export const DEFAULT_COMPACTION_INSTRUCTIONS: unknown = undefined;
+export const DEFAULT_COMPACTION_INSTRUCTIONS: any = undefined;

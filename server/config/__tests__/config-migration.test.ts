@@ -307,8 +307,8 @@ describe('ConfigMigrationManager', () => {
 
       expect(result.success).toBe(true);
       expect(result.migratedConfig.port).toBeUndefined();
-      expect((result.migratedConfig.server as Record<string, unknown>)?.port).toBe(3000);
-      expect((result.migratedConfig.logging as Record<string, unknown>)?.level).toBe('info');
+      expect((result.migratedConfig.server as Record<string, any>)?.port).toBe(3000);
+      expect((result.migratedConfig.logging as Record<string, any>)?.level).toBe('info');
     });
 
     it('v2->v3 迁移：apiKey 应迁移到 ai.providers.openai.apiKey', async () => {
@@ -321,10 +321,10 @@ describe('ConfigMigrationManager', () => {
 
       expect(result.success).toBe(true);
       expect(result.migratedConfig.apiKey).toBeUndefined();
-      const ai = result.migratedConfig.ai as Record<string, unknown>;
+      const ai = result.migratedConfig.ai as Record<string, any>;
       expect(ai.defaultModel).toBe('gpt-4o-mini');
-      const providers = ai.providers as Record<string, unknown>;
-      const openai = providers.openai as Record<string, unknown>;
+      const providers = ai.providers as Record<string, any>;
+      const openai = providers.openai as Record<string, any>;
       expect(openai.apiKey).toBe('sk-xxx');
     });
 
@@ -340,11 +340,11 @@ describe('ConfigMigrationManager', () => {
       expect(result.success).toBe(true);
       expect(result.appliedMigrations).toEqual(['restructure-server-config', 'restructure-ai-config']);
       const migrated = result.migratedConfig;
-      expect((migrated.server as Record<string, unknown>)?.port).toBe(8080);
-      expect((migrated.logging as Record<string, unknown>)?.level).toBe('info');
-      const ai = migrated.ai as Record<string, unknown>;
+      expect((migrated.server as Record<string, any>)?.port).toBe(8080);
+      expect((migrated.logging as Record<string, any>)?.level).toBe('info');
+      const ai = migrated.ai as Record<string, any>;
       expect(ai.defaultModel).toBe('gpt-4o-mini');
-      const openai = (ai.providers as Record<string, unknown>)?.openai as Record<string, unknown>;
+      const openai = (ai.providers as Record<string, any>)?.openai as Record<string, any>;
       expect(openai.apiKey).toBe('sk-test');
       expect(migrated.configVersion).toBe(3);
     });

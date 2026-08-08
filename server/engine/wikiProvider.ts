@@ -222,7 +222,7 @@ export async function importJsonFile(
       content: string;
       summary?: string;
       tags?: string[];
-      metadata?: Record<string, unknown>;
+      metadata?: Record<string, any>;
     }> = [];
 
     const { format = 'array', fieldMapping } = options;
@@ -239,7 +239,7 @@ export async function importJsonFile(
       // 对象格式：遍历键值对
       for (const [key, value] of Object.entries(jsonData)) {
         if (typeof value === 'object' && value !== null) {
-          const mappedItem = mapFields(value as Record<string, unknown>, fieldMapping);
+          const mappedItem = mapFields(value as Record<string, any>, fieldMapping);
           // 如果没有 title，使用 key 作为 title
           if (!mappedItem.title) {
             mappedItem.title = key;
@@ -305,14 +305,14 @@ export async function importJsonFile(
  * 字段映射
  */
 function mapFields(
-  item: Record<string, unknown>,
+  item: Record<string, any>,
   fieldMapping?: JsonImportOptions['fieldMapping']
 ): {
   title: string;
   content: string;
   summary?: string;
   tags?: string[];
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 } {
   const mapping = fieldMapping || {
     title: 'title',
@@ -327,7 +327,7 @@ function mapFields(
     content: (item[mapping.content || 'content'] as string) || '',
     summary: item[mapping.summary || 'summary'] as string | undefined,
     tags: item[mapping.tags || 'tags'] as string[] | undefined,
-    metadata: item[mapping.metadata || 'metadata'] as Record<string, unknown> | undefined,
+    metadata: item[mapping.metadata || 'metadata'] as Record<string, any> | undefined,
   };
 }
 

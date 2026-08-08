@@ -7,6 +7,6 @@
  */
 
 /** Check if embedded run has configured model fallbacks (always false in cross-wms). */
-export function hasEmbeddedRunConfiguredModelFallbacks(..._args: unknown[]): false {
+export function hasEmbeddedRunConfiguredModelFallbacks(..._args: any[]): false {
   return false;
 }

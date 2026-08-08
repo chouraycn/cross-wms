@@ -4,13 +4,13 @@
  * 移植自 openclaw/src/agents/code-mode-json.ts —— 无外部依赖，直接复制。
  */
 
-export function toCodeModeJsonSafe(value: unknown): unknown {
+export function toCodeModeJsonSafe(value: any): any {
   if (value === undefined) {
     return null;
   }
   try {
     const serialized = JSON.stringify(value);
-    return serialized === undefined ? null : (JSON.parse(serialized) as unknown);
+    return serialized === undefined ? null : (JSON.parse(serialized) as any);
   } catch {
     if (value instanceof Error) {
       return { name: value.name, message: value.message };

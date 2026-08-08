@@ -50,7 +50,7 @@ export interface DocumentStorage {
  * 不落盘，进程内有效。
  */
 export class MemoryDocumentStorage implements DocumentStorage {
-  private collections = new Map<string, { items: Array<Record<string, unknown> & { id: unknown }>; lastId?: number }>();
+  private collections = new Map<string, { items: Array<Record<string, any> & { id: any }>; lastId?: number }>();
 
   private ensure(collection: string) {
     let c = this.collections.get(collection);
@@ -72,7 +72,7 @@ export class MemoryDocumentStorage implements DocumentStorage {
 
   create<T>(collection: string, id: string | number, data: T): T {
     const c = this.ensure(collection);
-    const record = { ...(data as object), id } as Record<string, unknown> & { id: unknown };
+    const record = { ...(data as object), id } as Record<string, any> & { id: any };
     c.items.push(record);
     return { ...record } as unknown as T;
   }

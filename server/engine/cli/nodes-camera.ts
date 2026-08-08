@@ -46,7 +46,7 @@ export type CameraClipPayload = {
 };
 
 /** Validate and normalize an unknown camera still-image payload. */
-export function parseCameraSnapPayload(value: unknown): CameraSnapPayload {
+export function parseCameraSnapPayload(value: any): CameraSnapPayload {
   const obj = asRecord(value);
   const format = asString(obj.format);
   const base64 = asString(obj.base64);
@@ -60,7 +60,7 @@ export function parseCameraSnapPayload(value: unknown): CameraSnapPayload {
 }
 
 /** Validate and normalize an unknown camera clip payload. */
-export function parseCameraClipPayload(value: unknown): CameraClipPayload {
+export function parseCameraClipPayload(value: any): CameraClipPayload {
   const obj = asRecord(value);
   const format = asString(obj.format);
   const base64 = asString(obj.base64);

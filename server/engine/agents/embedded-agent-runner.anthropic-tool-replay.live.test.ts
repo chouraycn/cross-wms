@@ -179,7 +179,7 @@ describeLive("embedded agent anthropic replay sanitization (live)", () => {
         },
       ];
 
-      const baseFn = vi.fn((_model: unknown, context: unknown) => ({ context }));
+      const baseFn = vi.fn((_model: any, context: any) => ({ context }));
       // First prove local sanitizer output is unchanged, then send the exact
       // sanitized transcript to the live API.
       const wrapped = wrapStreamFnSanitizeMalformedToolCalls(baseFn as never, new Set(["noop"]), {
@@ -192,7 +192,7 @@ describeLive("embedded agent anthropic replay sanitization (live)", () => {
       await Promise.resolve(wrapped(model as never, { messages } as never, {} as never));
 
       expect(baseFn).toHaveBeenCalledTimes(1);
-      const seenMessages = (baseFn.mock.calls.at(0)?.[1] as { messages?: unknown[] })?.messages;
+      const seenMessages = (baseFn.mock.calls.at(0)?.[1] as { messages?: any[] })?.messages;
       expect(seenMessages).toEqual(messages);
 
       logLiveCache(`anthropic replay live model=${model.provider}/${model.id}`);

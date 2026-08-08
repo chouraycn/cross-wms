@@ -37,7 +37,7 @@ const ACP_AGENT_RESUME_HINT_BY_KEY = new Map<string, SessionResumeHintResolver>(
   ],
 ]);
 
-function normalizeAgentHintKey(value: unknown): string | undefined {
+function normalizeAgentHintKey(value: any): string | undefined {
   const normalized = normalizeText(value);
   if (!normalized) {
     return undefined;

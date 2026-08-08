@@ -18,6 +18,6 @@ export type FsSafeLikeError = {
 export const readLocalFileSafely = readLocalFileSafelyImpl;
 
 /** Narrows fs-safe failures without exposing the full infra error class to store callers. */
-export function isFsSafeError(error: unknown): error is FsSafeLikeError {
+export function isFsSafeError(error: any): error is FsSafeLikeError {
   return error instanceof FsSafeError;
 }

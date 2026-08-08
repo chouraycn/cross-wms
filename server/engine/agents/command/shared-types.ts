@@ -11,7 +11,7 @@ export type AgentStreamParams = {
   stop?: string[];
   /** Provider fast-mode override (best-effort). */
   fastMode?: boolean;
-  responseFormat?: Record<string, unknown>;
+  responseFormat?: Record<string, any>;
   frequencyPenalty?: number;
   presencePenalty?: number;
   seed?: number;
@@ -23,7 +23,7 @@ export type ClientToolDefinition = {
   function: {
     name: string;
     description?: string;
-    parameters?: Record<string, unknown>;
+    parameters?: Record<string, any>;
     /** Strict argument enforcement (Responses API). Propagated from the request. */
     strict?: boolean;
   };

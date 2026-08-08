@@ -75,8 +75,8 @@ export interface SdkPluginApi {
 export interface SdkToolRegistration {
   name: string;
   description: string;
-  parameters?: Record<string, unknown>;
-  handler: (args: unknown, context: SdkToolCallContext) => Promise<unknown>;
+  parameters?: Record<string, any>;
+  handler: (args: any, context: SdkToolCallContext) => Promise<any>;
   riskLevel?: 'auto' | 'confirm' | 'high-risk';
 }
 
@@ -117,8 +117,8 @@ export interface SdkChannelSendResult {
 /** 能力注册信息 */
 export interface SdkCapabilityRegistration {
   kind: PluginCapabilityKind;
-  provider: unknown;
-  metadata?: Record<string, unknown>;
+  provider: any;
+  metadata?: Record<string, any>;
 }
 
 /** 命令注册信息 */
@@ -130,17 +130,17 @@ export interface SdkCommandRegistration {
 
 /** SDK logger */
 export interface SdkLogger {
-  debug(...args: unknown[]): void;
-  info(...args: unknown[]): void;
-  warn(...args: unknown[]): void;
-  error(...args: unknown[]): void;
+  debug(...args: any[]): void;
+  info(...args: any[]): void;
+  warn(...args: any[]): void;
+  error(...args: any[]): void;
 }
 
 /** SDK 事件总线 */
 export interface SdkEventBus {
-  emit(event: string, payload?: unknown): void;
-  on(event: string, handler: (payload: unknown) => void): () => void;
-  off(event: string, handler: (payload: unknown) => void): void;
+  emit(event: string, payload?: any): void;
+  on(event: string, handler: (payload: any) => void): () => void;
+  off(event: string, handler: (payload: any) => void): void;
 }
 
 // ===================== API/Route 层类型 =====================
@@ -205,7 +205,7 @@ export interface PluginSdkErrorResponse {
   code: string;
   message: string;
   pluginId?: string;
-  details?: unknown;
+  details?: any;
 }
 
 /** 将 PluginSdkError 转换为 API 响应 */

@@ -16,7 +16,7 @@ import { buildCodexMcpServersConfig, normalizeCodexMcpServerConfig } from "./cod
 import { serializeTomlInlineValue } from "./toml-inline.js";
 import { normalizeConfiguredMcpServers } from "../config/mcp-config-normalize.js";
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, any> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
@@ -35,7 +35,7 @@ type CodexUserMcpServersProjectionOptions = {
   agentId?: string;
 };
 
-function normalizeAgentIds(value: unknown): string[] {
+function normalizeAgentIds(value: any): string[] {
   if (!Array.isArray(value)) {
     return [];
   }
@@ -46,7 +46,7 @@ function normalizeAgentIds(value: unknown): string[] {
     .map((entry) => normalizeAgentId(entry));
 }
 
-function readCodexProjectionConfig(server: BundleMcpServerConfig): Record<string, unknown> {
+function readCodexProjectionConfig(server: BundleMcpServerConfig): Record<string, any> {
   return isRecord(server.codex) ? server.codex : {};
 }
 
@@ -89,7 +89,7 @@ export function buildCodexUserMcpServersThreadConfigPatch(
   options?: CodexUserMcpServersProjectionOptions,
 ): { mcp_servers: CodexThreadConfigObject } | undefined {
   const userServers = normalizeConfiguredMcpServers(
-    (cfg as { mcp?: { servers?: unknown } } | undefined)?.mcp?.servers,
+    (cfg as { mcp?: { servers?: any } } | undefined)?.mcp?.servers,
   ) as Record<string, BundleMcpServerConfig> | undefined;
   if (!userServers) {
     return undefined;

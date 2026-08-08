@@ -15,19 +15,19 @@ import type {
 
 const now = (): number => Math.floor(Date.now() / 1000);
 
-function safeJsonObj(raw: string | null | undefined): Record<string, unknown> {
+function safeJsonObj(raw: string | null | undefined): Record<string, any> {
   if (!raw) return {};
   try {
     const parsed = JSON.parse(raw);
     return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
-      ? (parsed as Record<string, unknown>)
+      ? (parsed as Record<string, any>)
       : {};
   } catch {
     return {};
   }
 }
 
-function safeJsonArray(raw: string | null | undefined): unknown[] {
+function safeJsonArray(raw: string | null | undefined): any[] {
   if (!raw) return [];
   try {
     const parsed = JSON.parse(raw);
@@ -37,7 +37,7 @@ function safeJsonArray(raw: string | null | undefined): unknown[] {
   }
 }
 
-function safeJsonAny(raw: string | null | undefined): unknown | null {
+function safeJsonAny(raw: string | null | undefined): any | null {
   if (!raw) return null;
   try {
     return JSON.parse(raw);
@@ -84,7 +84,7 @@ export function listSessions(filter: SessionListFilter = {}): ChatSessionRow[] {
   const db = initDb();
   const tenantId = filter.tenantId ?? DEFAULT_TENANT_ID;
   const conditions: string[] = ['tenant_id = ?'];
-  const params: unknown[] = [tenantId];
+  const params: any[] = [tenantId];
   if (filter.userId) {
     conditions.push('user_id = ?');
     params.push(filter.userId);
@@ -122,13 +122,13 @@ export interface SessionInput {
   title?: string | null;
   active_skill_id?: string | null;
   active_step_id?: string | null;
-  slots?: Record<string, unknown>;
-  skill_stack?: unknown[];
-  pending_tasks?: unknown[];
-  resume_after_answer?: unknown | null;
-  awaiting_input?: unknown | null;
-  knowledge_context?: unknown[];
-  context_state?: Record<string, unknown>;
+  slots?: Record<string, any>;
+  skill_stack?: any[];
+  pending_tasks?: any[];
+  resume_after_answer?: any | null;
+  awaiting_input?: any | null;
+  knowledge_context?: any[];
+  context_state?: Record<string, any>;
   summary?: string | null;
   last_agent_question?: string | null;
   status?: string;
@@ -174,13 +174,13 @@ export interface SessionUpdateInput {
   title?: string | null;
   active_skill_id?: string | null;
   active_step_id?: string | null;
-  slots?: Record<string, unknown>;
-  skill_stack?: unknown[];
-  pending_tasks?: unknown[];
-  resume_after_answer?: unknown | null;
-  awaiting_input?: unknown | null;
-  knowledge_context?: unknown[];
-  context_state?: Record<string, unknown>;
+  slots?: Record<string, any>;
+  skill_stack?: any[];
+  pending_tasks?: any[];
+  resume_after_answer?: any | null;
+  awaiting_input?: any | null;
+  knowledge_context?: any[];
+  context_state?: Record<string, any>;
   summary?: string | null;
   last_agent_question?: string | null;
   status?: string;
@@ -322,7 +322,7 @@ export interface MessageInput {
   session_id: string;
   role: string;
   content: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export function createMessage(input: MessageInput): MessageRow {
@@ -397,8 +397,8 @@ export interface HandoffInput {
   pending_question?: string | null;
   status?: string;
   human_reply?: string | null;
-  resume_payload?: Record<string, unknown>;
-  metadata?: Record<string, unknown>;
+  resume_payload?: Record<string, any>;
+  metadata?: Record<string, any>;
 }
 
 export function createHandoff(input: HandoffInput): HumanHandoffRequestRow {
@@ -439,7 +439,7 @@ export interface HandoffReplyInput {
   human_reply: string;
   assignee_user_id?: string | null;
   status?: string;
-  resume_payload?: Record<string, unknown>;
+  resume_payload?: Record<string, any>;
 }
 
 export function replyHandoff(

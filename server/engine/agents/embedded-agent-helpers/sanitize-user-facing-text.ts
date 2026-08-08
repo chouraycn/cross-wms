@@ -357,7 +357,7 @@ function shouldRewriteRawPayloadWithoutErrorContext(raw: string): boolean {
   return false;
 }
 
-function stripFinalTagsFromText(text: unknown): string {
+function stripFinalTagsFromText(text: any): string {
   const normalized = coerceChatContentText(text);
   if (!normalized) {
     return normalized;
@@ -425,7 +425,7 @@ export function isLikelyHttpErrorText(raw: string): boolean {
   return HTTP_ERROR_HINTS.some((hint) => message.includes(hint));
 }
 
-export function sanitizeUserFacingText(text: unknown, opts?: { errorContext?: boolean }): string {
+export function sanitizeUserFacingText(text: any, opts?: { errorContext?: boolean }): string {
   const raw = coerceChatContentText(text);
   if (!raw) {
     return raw;

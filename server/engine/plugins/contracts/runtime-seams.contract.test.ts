@@ -13,7 +13,7 @@ import * as activationCheck from "../../plugin-sdk/facade-activation-check.runti
 import * as facadeRuntime from "../../plugin-sdk/facade-runtime.js";
 
 vi.mock("../../config/plugin-auto-enable.js", () => ({
-  applyPluginAutoEnable: ({ config }: { config?: unknown }) => ({
+  applyPluginAutoEnable: ({ config }: { config?: any }) => ({
     config: config ?? {},
     autoEnabledReasons: {},
   }),
@@ -90,7 +90,7 @@ afterEach(() => {
     process.env.OPENCLAW_STATE_DIR = originalStateDir;
   }
   if (originalGlobalFetch) {
-    (globalThis as Record<string, unknown>).fetch = originalGlobalFetch;
+    (globalThis as Record<string, any>).fetch = originalGlobalFetch;
   } else {
     Reflect.deleteProperty(globalThis as object, "fetch");
   }
@@ -143,24 +143,24 @@ describe("shared runtime seam contracts", () => {
 
   it("keeps guarded fetch on mocked global fetches even when a dispatcher is attached", async () => {
     class MockAgent {
-      constructor(readonly options: unknown) {}
+      constructor(readonly options: any) {}
     }
     class MockEnvHttpProxyAgent {
-      constructor(readonly options: unknown) {}
+      constructor(readonly options: any) {}
     }
     class MockProxyAgent {
-      constructor(readonly options: unknown) {}
+      constructor(readonly options: any) {}
     }
 
     const runtimeFetch = vi.fn(async () => new Response("runtime", { status: 200 }));
     const globalFetch = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
-      const requestInit = init as RequestInit & { dispatcher?: unknown };
+      const requestInit = init as RequestInit & { dispatcher?: any };
       expect(requestInit.dispatcher).toBeInstanceOf(MockAgent);
       return new Response("mock", { status: 200 });
     });
 
-    (globalThis as Record<string, unknown>).fetch = globalFetch as typeof fetch;
-    (globalThis as Record<string, unknown>)[TEST_UNDICI_RUNTIME_DEPS_KEY] = {
+    (globalThis as Record<string, any>).fetch = globalFetch as typeof fetch;
+    (globalThis as Record<string, any>)[TEST_UNDICI_RUNTIME_DEPS_KEY] = {
       Agent: MockAgent,
       EnvHttpProxyAgent: MockEnvHttpProxyAgent,
       ProxyAgent: MockProxyAgent,

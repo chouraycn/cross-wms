@@ -53,7 +53,7 @@ export type DoctorCheckResult = {
   readonly title: string;
   readonly description: string;
   readonly findings: readonly DoctorFinding[];
-  readonly details?: Record<string, unknown>;
+  readonly details?: Record<string, any>;
 };
 
 export type DoctorCheck = {

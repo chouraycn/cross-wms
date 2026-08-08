@@ -12,7 +12,7 @@ export interface RetryItem {
   channelId: string;
   accountId: string;
   recipient: string;
-  payload: unknown;
+  payload: any;
   attempt: number;
   maxAttempts: number;
   nextAttemptAt: number;
@@ -20,7 +20,7 @@ export interface RetryItem {
   lastError?: string;
   priority: number;
   backoffMultiplier: number;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
 }
 
 export interface RetryQueueConfig {
@@ -36,7 +36,7 @@ export interface RetryQueueConfig {
 
 export type RetryHandler = (item: RetryItem) => Promise<{ success: boolean; error?: Error }>;
 
-export type RetryQueueEventHandler = (event: string, data: unknown) => void;
+export type RetryQueueEventHandler = (event: string, data: any) => void;
 
 export class RetryQueue {
   private queue: RetryItem[] = [];
@@ -90,7 +90,7 @@ export class RetryQueue {
     channelId: string,
     accountId: string,
     recipient: string,
-    payload: unknown,
+    payload: any,
     error: Error,
     priority: number = 0,
   ): string | null {
@@ -223,7 +223,7 @@ export class RetryQueue {
       this.queue.splice(index, 1);
     }
 
-    (item.metadata as Record<string, unknown>).deadLetterReason = reason;
+    (item.metadata as Record<string, any>).deadLetterReason = reason;
     this.deadLetterQueue.push(item);
     this.emit('item-dead-letter', { item, reason });
   }
@@ -293,7 +293,7 @@ export class RetryQueue {
     this.eventHandlers.delete(handler);
   }
 
-  private emit(event: string, data: unknown): void {
+  private emit(event: string, data: any): void {
     for (const handler of this.eventHandlers) {
       try {
         handler(event, data);

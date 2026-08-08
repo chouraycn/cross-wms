@@ -96,21 +96,21 @@ export interface CdfEventDetailMap {
   [CdfEvents.WINDOW_FULLSCREEN_CHANGED]: { fullscreen: boolean };
 
   // 审批
-  [CdfEvents.APPROVAL_REQUEST]: unknown;
-  [CdfEvents.APPROVAL_TIMEOUT]: { requestId: string; request: unknown };
-  [CdfEvents.APPROVAL_EVENT]: unknown;
+  [CdfEvents.APPROVAL_REQUEST]: any;
+  [CdfEvents.APPROVAL_TIMEOUT]: { requestId: string; request: any };
+  [CdfEvents.APPROVAL_EVENT]: any;
   [CdfEvents.WHITELIST_ADD]: { pattern: string };
   [CdfEvents.WHITELIST_REMOVE]: { pattern: string };
 
   // 错误 / 系统
-  [CdfEvents.API_ERROR]: { action: string; error: unknown };
-  [CdfEvents.STORAGE_WARNING]: unknown;
+  [CdfEvents.API_ERROR]: { action: string; error: any };
+  [CdfEvents.STORAGE_WARNING]: any;
   [CdfEvents.MEMORY_PRESSURE]: void;
   [CdfEvents.SKILL_CREATED]: { skillName: string; action: string; message?: string };
 
   // UI 交互
-  [CdfEvents.CHAT_INPUT_BLUR]: unknown;
-  [CdfEvents.TODOS_UPDATED]: unknown;
+  [CdfEvents.CHAT_INPUT_BLUR]: any;
+  [CdfEvents.TODOS_UPDATED]: any;
   [CdfEvents.TRIGGER_SKILL]: { skillId: string };
 }
 

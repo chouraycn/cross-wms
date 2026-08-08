@@ -50,7 +50,7 @@ type ProviderRequestCapabilities = {
 };
 
 // 内联降级实现：当输入本身就是字符串时返回它，否则返回 undefined。
-function readStringValue(value: unknown): string | undefined {
+function readStringValue(value: any): string | undefined {
   return typeof value === "string" ? value : undefined;
 }
 
@@ -71,7 +71,7 @@ function isLocalEndpointHost(host: string): boolean {
   );
 }
 
-function resolveBundledEndpointClass(baseUrl: unknown): ProviderEndpointClass {
+function resolveBundledEndpointClass(baseUrl: any): ProviderEndpointClass {
   const trimmed = readStringValue(baseUrl)?.trim();
   if (!trimmed) {
     return "default";
@@ -146,7 +146,7 @@ function resolveProviderRequestCapabilities(params: {
   capability?: string;
   transport?: string;
   modelId?: string | undefined;
-  compat?: unknown;
+  compat?: any;
 }): ProviderRequestCapabilities {
   const provider = (readStringValue(params.provider) ?? "").trim().toLowerCase();
   const endpointClass = resolveBundledEndpointClass(params.baseUrl);

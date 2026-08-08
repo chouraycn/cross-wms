@@ -16,11 +16,11 @@ import type { SkillEntry, SkillInstallSpec } from "../types.js";
 import { installDownloadSpec } from "./install-download.js";
 
 vi.mock("../../process/exec.js", () => ({
-  runCommandWithTimeout: (...args: unknown[]) => runCommandWithTimeoutMock(...args),
+  runCommandWithTimeout: (...args: any[]) => runCommandWithTimeoutMock(...args),
 }));
 
 vi.mock("../../infra/net/fetch-guard.js", () => ({
-  fetchWithSsrFGuard: (...args: unknown[]) => fetchWithSsrFGuardMock(...args),
+  fetchWithSsrFGuard: (...args: any[]) => fetchWithSsrFGuardMock(...args),
 }));
 
 vi.mock("../loading/config.js", () => ({
@@ -125,7 +125,7 @@ function mockTarExtractionFlow(params: {
   verboseListOutput: string;
   extract: "ok" | "reject";
 }) {
-  runCommandWithTimeoutMock.mockImplementation(async (...argv: unknown[]) => {
+  runCommandWithTimeoutMock.mockImplementation(async (...argv: any[]) => {
     const cmd = (argv[0] ?? []) as string[];
     if (cmd[0] === "tar" && cmd[1] === "tf") {
       return runCommandResult({ stdout: params.listOutput });
@@ -352,7 +352,7 @@ describe("installDownloadSpec extraction safety (tar.bz2)", () => {
 
     mockArchiveResponse(new Uint8Array([1, 2, 3]));
 
-    runCommandWithTimeoutMock.mockImplementation(async (...argv: unknown[]) => {
+    runCommandWithTimeoutMock.mockImplementation(async (...argv: any[]) => {
       const cmd = (argv[0] ?? []) as string[];
       if (cmd[0] === "tar" && cmd[1] === "tf") {
         return runCommandResult({ stdout: "package/hello.txt\n" });
@@ -399,7 +399,7 @@ describe("installDownloadSpec extraction safety (tar.bz2)", () => {
 
     mockArchiveResponse(new Uint8Array([1, 2, 3]));
 
-    runCommandWithTimeoutMock.mockImplementation(async (...argv: unknown[]) => {
+    runCommandWithTimeoutMock.mockImplementation(async (...argv: any[]) => {
       const cmd = (argv[0] ?? []) as string[];
       if (cmd[0] === "tar" && cmd[1] === "tf") {
         return runCommandResult({ stdout: "escape/pwn.txt\n" });

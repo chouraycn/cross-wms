@@ -21,7 +21,7 @@ export function onMessageLifecycleEvent(listener: LifecycleListener): () => void
 export function emitLifecycleEvent(
   messageId: string,
   phase: MessageLifecyclePhase,
-  metadata?: Record<string, unknown>
+  metadata?: Record<string, any>
 ): void {
   const event: MessageLifecycleEvent = {
     messageId,
@@ -56,7 +56,7 @@ export function trackMessageLifecycle(message: ChannelMessage): void {
 export function advanceMessagePhase(
   messageId: string,
   phase: MessageLifecyclePhase,
-  metadata?: Record<string, unknown>
+  metadata?: Record<string, any>
 ): void {
   const state = messageStates.get(messageId);
   if (state) {

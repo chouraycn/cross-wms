@@ -29,11 +29,11 @@ const beforeToolCallMocks = vi.hoisted(() => ({
       this.reason = reason;
     }
   },
-  consumeAdjustedParamsForToolCall: vi.fn((_: string): unknown => undefined),
+  consumeAdjustedParamsForToolCall: vi.fn((_: string): any => undefined),
   recordAdjustedParamsForToolCall: vi.fn(),
   recordStructuredReplayTrustForToolCall: vi.fn(),
   isToolWrappedWithBeforeToolCallHook: vi.fn(() => false),
-  runBeforeToolCallHook: vi.fn(async ({ params }: { params: unknown }) => ({
+  runBeforeToolCallHook: vi.fn(async ({ params }: { params: any }) => ({
     blocked: false,
     params,
   })),
@@ -114,7 +114,7 @@ async function loadFreshAfterToolCallModulesForTest() {
     recordAdjustedParamsForToolCall: beforeToolCallMocks.recordAdjustedParamsForToolCall,
     recordStructuredReplayTrustForToolCall:
       beforeToolCallMocks.recordStructuredReplayTrustForToolCall,
-    isBeforeToolCallBlockedError: (error: unknown) =>
+    isBeforeToolCallBlockedError: (error: any) =>
       error instanceof beforeToolCallMocks.BeforeToolCallBlockedError,
     isToolWrappedWithBeforeToolCallHook: beforeToolCallMocks.isToolWrappedWithBeforeToolCallHook,
     runBeforeToolCallHook: beforeToolCallMocks.runBeforeToolCallHook,
@@ -159,7 +159,7 @@ describe("after_tool_call fires exactly once in embedded runs", () => {
     ctx: ReturnType<typeof createToolHandlerCtx>;
     toolName: string;
     toolCallId: string;
-    args: Record<string, unknown>;
+    args: Record<string, any>;
   }) {
     await handleToolExecutionStart(
       params.ctx as never,
@@ -177,7 +177,7 @@ describe("after_tool_call fires exactly once in embedded runs", () => {
     toolName: string;
     toolCallId: string;
     isError: boolean;
-    result: unknown;
+    result: any;
   }) {
     await handleToolExecutionEnd(
       params.ctx as never,
@@ -239,7 +239,7 @@ describe("after_tool_call fires exactly once in embedded runs", () => {
     expect(hookMocks.runner.runAfterToolCall).toHaveBeenCalledTimes(1);
 
     const call = (hookMocks.runner.runAfterToolCall as ReturnType<typeof vi.fn>).mock.calls.at(0);
-    const event = call?.[0] as { error?: unknown } | undefined;
+    const event = call?.[0] as { error?: any } | undefined;
     expect(event?.error).toBe("tool failed");
   });
 
@@ -271,7 +271,7 @@ describe("after_tool_call fires exactly once in embedded runs", () => {
       "integration-test",
     );
     const event = (hookMocks.runner.runAfterToolCall as ReturnType<typeof vi.fn>).mock
-      .calls[0]?.[0] as { params?: unknown } | undefined;
+      .calls[0]?.[0] as { params?: any } | undefined;
     expect(event?.params).toEqual(adjusted);
   });
 

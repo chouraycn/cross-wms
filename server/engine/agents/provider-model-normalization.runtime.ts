@@ -8,7 +8,7 @@
 /** Normalizes provider model ids through plugin runtime hooks when available. */
 export function normalizeProviderModelIdWithRuntime(params: {
   provider: string;
-  plugins?: readonly Pick<Record<string, unknown>, "modelIdNormalization">[];
+  plugins?: readonly Pick<Record<string, any>, "modelIdNormalization">[];
   context: {
     provider: string;
     modelId: string;

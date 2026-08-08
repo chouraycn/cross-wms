@@ -21,14 +21,14 @@ export interface BackgroundTask {
   startedAt?: number;
   completedAt?: number;
   error?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface CreateBackgroundTaskParams {
   name: string;
   sessionKey: string;
   total?: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
   execute: (task: BackgroundTask, signal: AbortSignal) => Promise<void>;
   onProgress?: (task: BackgroundTask) => void;
   onComplete?: (task: BackgroundTask) => void;

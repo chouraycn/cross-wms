@@ -7,6 +7,6 @@
  */
 
 /** Warn if the assistant emitted tool text (no-op in cross-wms). */
-export function warnIfAssistantEmittedToolText(..._args: unknown[]): void {
+export function warnIfAssistantEmittedToolText(..._args: any[]): void {
   // No-op: tool text diagnostics not available in cross-wms.
 }

@@ -39,7 +39,7 @@ export interface CompactionMessage {
   toolCallId?: string;
   toolName?: string;
   isError?: boolean;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface ToolUsePair {
@@ -121,7 +121,7 @@ export function sanitizeForCompaction(
     }
 
     if (msg.role === 'assistant' && msg.metadata?.['toolCalls']) {
-      const toolCalls = msg.metadata['toolCalls'] as Array<Record<string, unknown>>;
+      const toolCalls = msg.metadata['toolCalls'] as Array<Record<string, any>>;
       if (toolCalls.length > 20) {
         cleanedMsg.metadata = {
           ...msg.metadata,

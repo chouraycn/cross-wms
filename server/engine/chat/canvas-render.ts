@@ -7,7 +7,7 @@
 
 import type { CanvasPreview, CanvasSurface, CanvasRenderType } from './types.js';
 
-function tryParseJsonRecord(value: string | undefined): Record<string, unknown> | undefined {
+function tryParseJsonRecord(value: string | undefined): Record<string, any> | undefined {
   if (typeof value !== 'string') {
     return undefined;
   }
@@ -23,7 +23,7 @@ function tryParseJsonRecord(value: string | undefined): Record<string, unknown> 
 }
 
 function getRecordStringField(
-  record: Record<string, unknown> | undefined,
+  record: Record<string, any> | undefined,
   key: string,
 ): string | undefined {
   const value = record?.[key];
@@ -31,7 +31,7 @@ function getRecordStringField(
 }
 
 function getRecordNumberField(
-  record: Record<string, unknown> | undefined,
+  record: Record<string, any> | undefined,
   key: string,
 ): number | undefined {
   const value = record?.[key];
@@ -42,12 +42,12 @@ function getRecordNumberField(
 }
 
 function getNestedRecord(
-  record: Record<string, unknown> | undefined,
+  record: Record<string, any> | undefined,
   key: string,
-): Record<string, unknown> | undefined {
+): Record<string, any> | undefined {
   const value = record?.[key];
   if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-    return value as Record<string, unknown>;
+    return value as Record<string, any>;
   }
   return undefined;
 }
@@ -67,7 +67,7 @@ function normalizePreferredHeight(value: number | undefined): number | undefined
 }
 
 function coerceCanvasPreview(
-  record: Record<string, unknown> | undefined,
+  record: Record<string, any> | undefined,
 ): CanvasPreview | undefined {
   if (!record) {
     return undefined;

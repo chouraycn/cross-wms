@@ -10,7 +10,7 @@ import type { GeneralSkillRow, GeneralSkillRead } from '../../types/staff.js';
 
 const now = (): number => Math.floor(Date.now() / 1000);
 
-function safeJsonArray(raw: string | null | undefined): unknown[] {
+function safeJsonArray(raw: string | null | undefined): any[] {
   if (!raw) return [];
   try {
     const parsed = JSON.parse(raw);
@@ -20,12 +20,12 @@ function safeJsonArray(raw: string | null | undefined): unknown[] {
   }
 }
 
-function safeJsonObj(raw: string | null | undefined): Record<string, unknown> {
+function safeJsonObj(raw: string | null | undefined): Record<string, any> {
   if (!raw) return {};
   try {
     const parsed = JSON.parse(raw);
     return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
-      ? (parsed as Record<string, unknown>)
+      ? (parsed as Record<string, any>)
       : {};
   } catch {
     return {};
@@ -61,7 +61,7 @@ export function listGeneralSkills(filter: GeneralSkillListFilter = {}): GeneralS
   const db = initDb();
   const tenantId = filter.tenantId ?? DEFAULT_TENANT_ID;
   const conditions: string[] = ['tenant_id = ?'];
-  const params: unknown[] = [tenantId];
+  const params: any[] = [tenantId];
   if (filter.status) {
     conditions.push('status = ?');
     params.push(filter.status);
@@ -96,11 +96,11 @@ export interface GeneralSkillInput {
   description?: string | null;
   homepage?: string | null;
   skill_markdown: string;
-  skill_files?: unknown[];
-  metadata?: Record<string, unknown>;
+  skill_files?: any[];
+  metadata?: Record<string, any>;
   status?: string;
-  permissions?: Record<string, unknown>;
-  runtime_config?: Record<string, unknown>;
+  permissions?: Record<string, any>;
+  runtime_config?: Record<string, any>;
 }
 
 export function createGeneralSkill(input: GeneralSkillInput): GeneralSkillRow {
@@ -138,11 +138,11 @@ export interface GeneralSkillUpdateInput {
   description?: string | null;
   homepage?: string | null;
   skill_markdown?: string;
-  skill_files?: unknown[];
-  metadata?: Record<string, unknown>;
+  skill_files?: any[];
+  metadata?: Record<string, any>;
   status?: string;
-  permissions?: Record<string, unknown>;
-  runtime_config?: Record<string, unknown>;
+  permissions?: Record<string, any>;
+  runtime_config?: Record<string, any>;
 }
 
 export function updateGeneralSkill(

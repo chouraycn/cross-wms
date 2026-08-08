@@ -63,7 +63,7 @@ function createPluginStateError(params: {
   operation: PluginStateStoreOperation;
   message: string;
   path?: string;
-  cause?: unknown;
+  cause?: any;
 }): PluginStateStoreError {
   return new PluginStateStoreError(params.message, {
     code: params.code,
@@ -95,7 +95,7 @@ function resolvePluginStateExpiresAtMs(params: {
 }
 
 function wrapPluginStateError(
-  error: unknown,
+  error: any,
   operation: PluginStateStoreOperation,
   fallbackCode: PluginStateStoreErrorCode,
   message: string,
@@ -113,9 +113,9 @@ function wrapPluginStateError(
   });
 }
 
-function parseStoredJson(raw: string, operation: PluginStateStoreOperation): unknown {
+function parseStoredJson(raw: string, operation: PluginStateStoreOperation): any {
   try {
-    return JSON.parse(raw) as unknown;
+    return JSON.parse(raw) as any;
   } catch (error) {
     throw createPluginStateError({
       code: "PLUGIN_STATE_CORRUPT",
@@ -130,7 +130,7 @@ function parseStoredJson(raw: string, operation: PluginStateStoreOperation): unk
 function rowToEntry(
   row: PluginStateRow,
   operation: PluginStateStoreOperation,
-): PluginStateEntry<unknown> {
+): PluginStateEntry<any> {
   const expiresAt = normalizeSqliteNumber(row.expires_at);
   return {
     key: row.entry_key,
@@ -553,7 +553,7 @@ export function pluginStateUpdate(params: {
   namespace: string;
   key: string;
   maxEntries: number;
-  updateValueJson: (current: unknown) => { valueJson: string; ttlMs?: number } | undefined;
+  updateValueJson: (current: any) => { valueJson: string; ttlMs?: number } | undefined;
   env?: NodeJS.ProcessEnv;
 }): boolean {
   try {
@@ -622,7 +622,7 @@ export function pluginStateLookup(params: {
   namespace: string;
   key: string;
   env?: NodeJS.ProcessEnv;
-}): unknown {
+}): any {
   try {
     const { db } = openPluginStateDatabase("lookup", envOptions(params.env));
     const row = selectPluginStateEntry(db, {
@@ -647,7 +647,7 @@ export function pluginStateConsume(params: {
   namespace: string;
   key: string;
   env?: NodeJS.ProcessEnv;
-}): unknown {
+}): any {
   try {
     return runWriteTransaction(
       "consume",
@@ -704,7 +704,7 @@ export function pluginStateEntries(params: {
   pluginId: string;
   namespace: string;
   env?: NodeJS.ProcessEnv;
-}): PluginStateEntry<unknown>[] {
+}): PluginStateEntry<any>[] {
   try {
     const { db } = openPluginStateDatabase("entries", envOptions(params.env));
     const rows = selectPluginStateEntries(db, {
@@ -830,7 +830,7 @@ export function probePluginStateStore(): PluginStateStoreProbeResult {
   const stateWasOpen = isOpenClawStateDatabaseOpen();
 
   const pushOk = (name: string) => steps.push({ name, ok: true });
-  const pushFailure = (name: string, error: unknown) => {
+  const pushFailure = (name: string, error: any) => {
     const wrapped =
       error instanceof PluginStateStoreError
         ? error

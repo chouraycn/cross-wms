@@ -11,19 +11,19 @@ export type ThemeBg = unknown;
 export class Theme {
   // Stub: not fully ported
 }
-export function loadThemeFromPath(..._args: unknown[]): unknown {
+export function loadThemeFromPath(..._args: any[]): any {
   return undefined;
 }
-export function setTheme(..._args: unknown[]): unknown {
+export function setTheme(..._args: any[]): any {
   return undefined;
 }
-export function stopThemeWatcher(..._args: unknown[]): unknown {
+export function stopThemeWatcher(..._args: any[]): any {
   return undefined;
 }
-export function highlightCode(..._args: unknown[]): unknown {
+export function highlightCode(..._args: any[]): any {
   return undefined;
 }
-export function getLanguageFromPath(..._args: unknown[]): unknown {
+export function getLanguageFromPath(..._args: any[]): any {
   return undefined;
 }
-export const theme: unknown = undefined;
+export const theme: any = undefined;

@@ -24,7 +24,7 @@ export type LegacySecretRefEnvMarkerCandidate = {
   ref: SecretRef | null;
 };
 
-function isLegacySecretRefEnvMarker(value: unknown): value is string {
+function isLegacySecretRefEnvMarker(value: any): value is string {
   return typeof value === "string" && value.trim().startsWith(LEGACY_SECRETREF_ENV_MARKER_PREFIX);
 }
 
@@ -77,7 +77,7 @@ export function migrateLegacySecretRefEnvMarkers(config: OpenClawConfig): {
     return { config, changes: [] };
   }
 
-  const next = structuredClone(config) as OpenClawConfig & Record<string, unknown>;
+  const next = structuredClone(config) as OpenClawConfig & Record<string, any>;
   const changes: string[] = [];
   for (const candidate of candidates) {
     const ref = candidate.ref;

@@ -7,7 +7,7 @@ import type { UnixSocketMessage, UnixSocketResponse } from './types.js';
 
 export type UnixSocketServerOptions = {
   socketPath?: string;
-  onMessage?: (message: UnixSocketMessage, socket: net.Socket) => Promise<unknown>;
+  onMessage?: (message: UnixSocketMessage, socket: net.Socket) => Promise<any>;
 };
 
 export type UnixSocketClientOptions = {
@@ -32,7 +32,7 @@ function ensureSocketDir(socketPath: string): void {
 export class UnixSocketServer {
   private server: net.Server | null = null;
   private socketPath: string;
-  private onMessage?: (message: UnixSocketMessage, socket: net.Socket) => Promise<unknown>;
+  private onMessage?: (message: UnixSocketMessage, socket: net.Socket) => Promise<any>;
   private sockets = new Set<net.Socket>();
 
   constructor(options: UnixSocketServerOptions = {}) {
@@ -176,7 +176,7 @@ export class UnixSocketClient {
   private socket: net.Socket | null = null;
   private socketPath: string;
   private timeoutMs: number;
-  private pendingRequests = new Map<string, { resolve: (value: unknown) => void; reject: (reason: unknown) => void }>();
+  private pendingRequests = new Map<string, { resolve: (value: any) => void; reject: (reason: any) => void }>();
   private buffer = Buffer.alloc(0);
 
   constructor(options: UnixSocketClientOptions = {}) {
@@ -223,7 +223,7 @@ export class UnixSocketClient {
     });
   }
 
-  async send(message: UnixSocketMessage): Promise<unknown> {
+  async send(message: UnixSocketMessage): Promise<any> {
     if (!this.socket || !this.socket.writable) {
       throw new Error('Not connected');
     }

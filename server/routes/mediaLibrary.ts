@@ -126,13 +126,13 @@ function scanDir(): MediaAsset[] {
   return assets;
 }
 
-function toStr(value: unknown, fallback?: string): string | undefined {
+function toStr(value: any, fallback?: string): string | undefined {
   if (value === null || value === undefined) return fallback;
   const s = String(value).trim();
   return s.length > 0 ? s : fallback;
 }
 
-function toInt(value: unknown, fallback: number): number {
+function toInt(value: any, fallback: number): number {
   if (value === null || value === undefined) return fallback;
   const n = parseInt(String(value), 10);
   return Number.isFinite(n) ? n : fallback;

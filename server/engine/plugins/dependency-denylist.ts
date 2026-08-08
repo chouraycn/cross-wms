@@ -7,7 +7,7 @@
  * 规范化字符串条目数组：去除首尾空白、过滤空值、保留顺序。
  * 本地降级实现，替代 `@openclaw/normalization-core/string-normalization` 的 `normalizeStringEntries`。
  */
-function normalizeStringEntries(entries: readonly unknown[]): string[] {
+function normalizeStringEntries(entries: readonly any[]): string[] {
   const result: string[] = [];
   for (const entry of entries) {
     if (typeof entry !== "string") {
@@ -65,7 +65,7 @@ interface PackageOverrideObject {
 type PackageOverrideValue = string | PackageOverrideObject;
 
 type PackageOverrideFields = {
-  overrides?: unknown;
+  overrides?: any;
 };
 
 const BLOCKED_INSTALL_DEPENDENCY_PACKAGE_NAME_SET = new Set<string>(
@@ -209,7 +209,7 @@ function collectBlockedOverrideFindings(
   return findings;
 }
 
-function isPackageOverrideObject(value: unknown): value is PackageOverrideObject {
+function isPackageOverrideObject(value: any): value is PackageOverrideObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 

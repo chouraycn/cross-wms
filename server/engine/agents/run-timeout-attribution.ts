@@ -21,7 +21,7 @@ export type AgentRunTimeoutPhase = (typeof AGENT_RUN_TIMEOUT_PHASES)[number];
 const AGENT_RUN_TIMEOUT_PHASE_SET = new Set<string>(AGENT_RUN_TIMEOUT_PHASES);
 
 /** Normalizes raw timeout phase metadata into a known agent run phase. */
-export function normalizeAgentRunTimeoutPhase(value: unknown): AgentRunTimeoutPhase | undefined {
+export function normalizeAgentRunTimeoutPhase(value: any): AgentRunTimeoutPhase | undefined {
   if (typeof value !== "string") {
     return undefined;
   }

@@ -2,7 +2,7 @@ import * as path from "node:path";
 import { parseAcpxPermissionMode, type RawAcpxPluginConfig, type ResolvedAcpxPluginConfig } from "./configSchema.js";
 
 export function resolveAcpxPluginConfig(params: {
-  rawConfig?: unknown;
+  rawConfig?: any;
   workspaceDir: string;
 }): ResolvedAcpxPluginConfig {
   const config = (params.rawConfig as RawAcpxPluginConfig) ?? {};
@@ -25,6 +25,6 @@ export function resolveAcpxPluginConfig(params: {
   };
 }
 
-export function toAcpMcpServers(mcpServers?: unknown[]): unknown[] {
+export function toAcpMcpServers(mcpServers?: any[]): any[] {
   return mcpServers ?? [];
 }

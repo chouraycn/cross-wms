@@ -7,11 +7,11 @@ import { ObserverRule } from '../observerRules.js';
 
 // ===================== Test helpers =====================
 
-function makeToolCall(name: string, args: Record<string, unknown> = {}) {
+function makeToolCall(name: string, args: Record<string, any> = {}) {
   return { name, arguments: args };
 }
 
-function jsonResult(obj: unknown): string {
+function jsonResult(obj: any): string {
   return JSON.stringify(obj);
 }
 

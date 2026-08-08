@@ -19,7 +19,7 @@ type AttemptTrajectoryTerminal = {
 
 /** Signals that decide whether a completed run attempt has deliverable output. */
 export type ResolveAttemptTrajectoryTerminalParams = {
-  promptError?: unknown;
+  promptError?: any;
   aborted: boolean;
   externalAbort: boolean;
   timedOut: boolean;
@@ -35,14 +35,14 @@ export type ResolveAttemptTrajectoryTerminalParams = {
   didSendDeterministicApprovalPrompt: boolean;
   messagingToolSentTexts: string[];
   messagingToolSentMediaUrls: string[];
-  messagingToolSentTargets: unknown[];
+  messagingToolSentTargets: any[];
   successfulCronAdds: number;
   synthesizedPayloadCount: number;
   acceptedSessionSpawns?: readonly AcceptedSessionSpawn[];
-  heartbeatToolResponse?: unknown;
-  clientToolCalls?: Array<unknown>;
+  heartbeatToolResponse?: any;
+  clientToolCalls?: Array<any>;
   yieldDetected?: boolean;
-  lastToolError?: unknown;
+  lastToolError?: any;
   silentExpected?: boolean;
   emptyAssistantReplyIsSilent?: boolean;
   lastAssistantStopReason?: string;

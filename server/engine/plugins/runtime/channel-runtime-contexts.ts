@@ -10,7 +10,7 @@ import { createSubsystemLogger } from "../../logging.js";
 
 type StoredRuntimeContext = {
   token: symbol;
-  context: unknown;
+  context: any;
   normalizedKey: {
     channelId: string;
     accountId?: string;

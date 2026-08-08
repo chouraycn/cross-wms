@@ -59,7 +59,7 @@ function runWritePlan(args: string[], input?: string, env?: NodeJS.ProcessEnv) {
 }
 
 async function expectPathMissing(targetPath: string): Promise<void> {
-  let err: unknown;
+  let err: any;
   try {
     await fs.access(targetPath);
   } catch (caught) {

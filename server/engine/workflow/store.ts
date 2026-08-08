@@ -171,7 +171,7 @@ export class WorkflowStore {
     if (!this.db) throw new Error('数据库未初始化');
 
     const stmt = this.db.prepare('SELECT * FROM workflow WHERE id = ?');
-    const row = stmt.get(id) as Record<string, unknown> | undefined;
+    const row = stmt.get(id) as Record<string, any> | undefined;
 
     if (!row) return null;
 
@@ -192,7 +192,7 @@ export class WorkflowStore {
 
     let sql = 'SELECT * FROM workflow';
     const conditions: string[] = [];
-    const params: unknown[] = [];
+    const params: any[] = [];
 
     if (filters?.status) {
       conditions.push('status = ?');
@@ -211,7 +211,7 @@ export class WorkflowStore {
     sql += ' ORDER BY updated_at DESC';
 
     const stmt = this.db.prepare(sql);
-    const rows = stmt.all(...params) as Record<string, unknown>[];
+    const rows = stmt.all(...params) as Record<string, any>[];
 
     return rows.map(row => this.rowToWorkflow(row));
   }
@@ -346,7 +346,7 @@ export class WorkflowStore {
       ORDER BY version DESC
     `);
 
-    const rows = stmt.all(workflowId) as Record<string, unknown>[];
+    const rows = stmt.all(workflowId) as Record<string, any>[];
 
     return rows.map((row): WorkflowVersion & { workflowId: string } => ({
       workflowId: row.workflow_id as string,
@@ -372,7 +372,7 @@ export class WorkflowStore {
       WHERE workflow_id = ? AND version = ?
     `);
 
-    const row = stmt.get(workflowId, version) as Record<string, unknown> | undefined;
+    const row = stmt.get(workflowId, version) as Record<string, any> | undefined;
     if (!row) return null;
 
     const snapshot = JSON.parse(row.snapshot as string) as Workflow;
@@ -444,7 +444,7 @@ export class WorkflowStore {
       LIMIT ? OFFSET ?
     `);
 
-    const rows = stmt.all(workflowId, limit, offset) as Record<string, unknown>[];
+    const rows = stmt.all(workflowId, limit, offset) as Record<string, any>[];
 
     return rows.map(row => this.rowToExecution(row));
   }
@@ -464,7 +464,7 @@ export class WorkflowStore {
       LIMIT ? OFFSET ?
     `);
 
-    const rows = stmt.all(limit, offset) as Record<string, unknown>[];
+    const rows = stmt.all(limit, offset) as Record<string, any>[];
 
     return rows.map(row => this.rowToExecution(row));
   }
@@ -523,7 +523,7 @@ export class WorkflowStore {
     if (!this.db) throw new Error('数据库未初始化');
 
     let sql = 'SELECT * FROM workflow_template';
-    const params: unknown[] = [];
+    const params: any[] = [];
 
     if (category) {
       sql += ' WHERE category = ?';
@@ -533,7 +533,7 @@ export class WorkflowStore {
     sql += ' ORDER BY usage_count DESC, rating DESC';
 
     const stmt = this.db.prepare(sql);
-    const rows = stmt.all(...params) as Record<string, unknown>[];
+    const rows = stmt.all(...params) as Record<string, any>[];
 
     return rows.map((row): WorkflowTemplate => ({
       id: row.id as string,
@@ -559,7 +559,7 @@ export class WorkflowStore {
     if (!this.db) throw new Error('数据库未初始化');
 
     const stmt = this.db.prepare('SELECT * FROM workflow_template WHERE id = ?');
-    const row = stmt.get(templateId) as Record<string, unknown> | undefined;
+    const row = stmt.get(templateId) as Record<string, any> | undefined;
 
     if (!row) return null;
 
@@ -635,7 +635,7 @@ export class WorkflowStore {
   /**
    * 将数据库行转换为 Workflow 对象
    */
-  private rowToWorkflow(row: Record<string, unknown>): Workflow {
+  private rowToWorkflow(row: Record<string, any>): Workflow {
     return {
       id: row.id as string,
       name: row.name as string,
@@ -656,7 +656,7 @@ export class WorkflowStore {
   /**
    * 将数据库行转换为 WorkflowExecution 对象
    */
-  private rowToExecution(row: Record<string, unknown>): WorkflowExecution {
+  private rowToExecution(row: Record<string, any>): WorkflowExecution {
     return {
       id: row.id as string,
       workflowId: row.workflow_id as string,

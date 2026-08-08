@@ -302,7 +302,7 @@ describe("resolveSandboxContext", () => {
       });
 
       const browserCalls = ensureSandboxBrowserMock.mock.calls as unknown as Array<
-        [{ ssrfPolicy?: unknown }]
+        [{ ssrfPolicy?: any }]
       >;
       const [browserOptions] = browserCalls[0] ?? [];
       expect(browserOptions?.ssrfPolicy).toEqual({ dangerouslyAllowPrivateNetwork: true });
@@ -346,7 +346,7 @@ describe("resolveSandboxContext", () => {
           targetWorkspaceDir?: string;
           config?: OpenClawConfig;
           agentId?: string;
-          eligibility?: unknown;
+          eligibility?: any;
         },
       ]
     >;
@@ -398,7 +398,7 @@ describe("resolveSandboxContext", () => {
           targetWorkspaceDir?: string;
           config?: OpenClawConfig;
           agentId?: string;
-          eligibility?: unknown;
+          eligibility?: any;
         },
       ]
     >;

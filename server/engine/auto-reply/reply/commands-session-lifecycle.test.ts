@@ -22,7 +22,7 @@ function firstText(values: Array<string | undefined>): string | undefined {
   return values.map((value) => value?.trim() ?? "").find(Boolean) || undefined;
 }
 
-function normalizeCommandContextText(value: unknown): string {
+function normalizeCommandContextText(value: any): string {
   if (typeof value === "string") {
     return value.trim().toLowerCase();
   }
@@ -274,7 +274,7 @@ vi.mock("../../infra/outbound/session-binding-service.js", () => {
       bind: vi.fn(),
       getCapabilities: vi.fn(),
       listBySession: vi.fn(),
-      resolveByConversation: (ref: unknown) => hoisted.sessionBindingResolveByConversationMock(ref),
+      resolveByConversation: (ref: any) => hoisted.sessionBindingResolveByConversationMock(ref),
       touch: vi.fn(),
       unbind: vi.fn(),
     }),
@@ -288,7 +288,7 @@ const baseCfg = {
 
 function buildSessionCommandParams(
   commandBody: string,
-  ctxOverrides?: Record<string, unknown>,
+  ctxOverrides?: Record<string, any>,
 ): HandleCommandsParams {
   const ctx = {
     Body: commandBody,
@@ -336,7 +336,7 @@ function buildSessionCommandParams(
   };
 }
 
-function createThreadCommandParams(commandBody: string, overrides?: Record<string, unknown>) {
+function createThreadCommandParams(commandBody: string, overrides?: Record<string, any>) {
   return buildSessionCommandParams(commandBody, {
     Provider: THREAD_CHANNEL,
     Surface: THREAD_CHANNEL,
@@ -348,7 +348,7 @@ function createThreadCommandParams(commandBody: string, overrides?: Record<strin
   });
 }
 
-function createTopicCommandParams(commandBody: string, overrides?: Record<string, unknown>) {
+function createTopicCommandParams(commandBody: string, overrides?: Record<string, any>) {
   return buildSessionCommandParams(commandBody, {
     Provider: TOPIC_CHANNEL,
     Surface: TOPIC_CHANNEL,
@@ -360,7 +360,7 @@ function createTopicCommandParams(commandBody: string, overrides?: Record<string
   });
 }
 
-function createRoomThreadCommandParams(commandBody: string, overrides?: Record<string, unknown>) {
+function createRoomThreadCommandParams(commandBody: string, overrides?: Record<string, any>) {
   return buildSessionCommandParams(commandBody, {
     Provider: ROOM_CHANNEL,
     Surface: ROOM_CHANNEL,
@@ -374,7 +374,7 @@ function createRoomThreadCommandParams(commandBody: string, overrides?: Record<s
 
 function createRoomTriggerThreadCommandParams(
   commandBody: string,
-  overrides?: Record<string, unknown>,
+  overrides?: Record<string, any>,
 ) {
   return buildSessionCommandParams(commandBody, {
     Provider: ROOM_CHANNEL,
@@ -387,7 +387,7 @@ function createRoomTriggerThreadCommandParams(
   });
 }
 
-function createRoomCommandParams(commandBody: string, overrides?: Record<string, unknown>) {
+function createRoomCommandParams(commandBody: string, overrides?: Record<string, any>) {
   return buildSessionCommandParams(commandBody, {
     Provider: ROOM_CHANNEL,
     Surface: ROOM_CHANNEL,

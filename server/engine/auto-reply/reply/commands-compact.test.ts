@@ -96,7 +96,7 @@ describe("handleCompactCommand", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     resolveAgentDirMock.mockImplementation(
-      (_cfg: unknown, agentId: string) => `/tmp/workspace/.openclaw/agents/${agentId}/agent`,
+      (_cfg: any, agentId: string) => `/tmp/workspace/.openclaw/agents/${agentId}/agent`,
     );
     resolveSessionAgentIdMock.mockReturnValue("main");
   });

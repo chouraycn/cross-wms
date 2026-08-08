@@ -125,7 +125,7 @@ function validateOptionalTtlMs(
 }
 
 function assertPlainJsonValue(
-  value: unknown,
+  value: any,
   seen: WeakSet<object>,
   path: string,
   depth = 0,
@@ -194,7 +194,7 @@ function assertPlainJsonValue(
   }
 }
 
-function assertJsonSerializable(value: unknown): void {
+function assertJsonSerializable(value: any): void {
   assertPlainJsonValue(value, new WeakSet<object>(), "value");
 }
 
@@ -209,7 +209,7 @@ function assertValueSize(json: string): void {
 
 function prepareRegisterParams(
   key: string,
-  value: unknown,
+  value: any,
   defaultTtlMs?: number,
   opts?: { ttlMs?: number },
 ): PreparedRegisterParams {
@@ -233,7 +233,7 @@ function prepareUpdateValueJson<T>(
   updateValue: (current: T | undefined) => T | undefined,
   defaultTtlMs?: number,
   opts?: { ttlMs?: number },
-): (current: unknown) => { valueJson: string; ttlMs?: number } | undefined {
+): (current: any) => { valueJson: string; ttlMs?: number } | undefined {
   return (current) => {
     const next = updateValue(current as T | undefined);
     if (next === undefined) {

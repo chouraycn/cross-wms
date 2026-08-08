@@ -7,7 +7,7 @@ export type FollowupTask = {
   prompt: string;
   delayMs: number;
   maxRetries?: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 export type FollowupResult = {

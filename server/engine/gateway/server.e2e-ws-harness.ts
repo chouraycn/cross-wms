@@ -5,6 +5,6 @@ export type GatewayWsClient = unknown;
 
 export type GatewayServerHarness = unknown;
 
-export async function startGatewayServerHarness(...args: unknown[]): Promise<unknown> {
+export async function startGatewayServerHarness(...args: any[]): Promise<any> {
   return Promise.resolve(undefined);
 }

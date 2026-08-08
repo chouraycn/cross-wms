@@ -23,7 +23,7 @@ import type { LoadedCronStore } from "./types.js";
  */
 function encodeScheduleColumns(
   schedule: CronSchedule,
-): Record<string, unknown> {
+): Record<string, any> {
   if (schedule.kind === "at") {
     return {
       schedule_kind: "at",
@@ -60,8 +60,8 @@ function encodeScheduleColumns(
 /**
  * 从行记录中重建调度配置
  */
-function decodeSchedule(row: Record<string, unknown>): CronSchedule | null {
-  const scheduleObj = row.schedule && typeof row.schedule === "object" ? row.schedule as Record<string, unknown> : null;
+function decodeSchedule(row: Record<string, any>): CronSchedule | null {
+  const scheduleObj = row.schedule && typeof row.schedule === "object" ? row.schedule as Record<string, any> : null;
   const kind = row.schedule_kind ?? scheduleObj?.kind;
   if (kind === "at" && row.at) {
     return { kind: "at", at: row.at as string | number };
@@ -90,7 +90,7 @@ function decodeSchedule(row: Record<string, unknown>): CronSchedule | null {
 /**
  * 剥离任务运行时字段，只保留配置形状
  */
-function stripJobRuntimeFields(job: CronStoreFile["jobs"][number]): Record<string, unknown> {
+function stripJobRuntimeFields(job: CronStoreFile["jobs"][number]): Record<string, any> {
   const { state: _state, updatedAtMs: _updatedAtMs, ...rest } = job;
   return { ...rest, state: {} };
 }
@@ -98,7 +98,7 @@ function stripJobRuntimeFields(job: CronStoreFile["jobs"][number]): Record<strin
 /**
  * 将 cron 任务编码为完整的行记录
  */
-export function encodeCronJobRow(job: CronJob, sortOrder: number): Record<string, unknown> {
+export function encodeCronJobRow(job: CronJob, sortOrder: number): Record<string, any> {
   return {
     job_id: job.id,
     name: job.name,
@@ -125,7 +125,7 @@ export function encodeCronJobRow(job: CronJob, sortOrder: number): Record<string
 /**
  * 从行记录重建 cron 任务
  */
-export function decodeCronJobRow(row: Record<string, unknown>): CronJob | null {
+export function decodeCronJobRow(row: Record<string, any>): CronJob | null {
   const schedule = decodeSchedule(row);
   const payload = decodePayload(row);
   const delivery = decodeDelivery(row);
@@ -165,10 +165,10 @@ export function decodeCronJobRow(row: Record<string, unknown>): CronJob | null {
 /**
  * 从原始 JSON 加载的任务列表构造 LoadedCronStore
  */
-export function loadedCronStoreFromJson(jobs: unknown[]): LoadedCronStore {
+export function loadedCronStoreFromJson(jobs: any[]): LoadedCronStore {
   const parsedJobs = jobs.map((job) => {
     if (typeof job === "object" && job !== null) {
-      return decodeCronJobRow(job as Record<string, unknown>) ?? (job as CronJob);
+      return decodeCronJobRow(job as Record<string, any>) ?? (job as CronJob);
     }
     return null;
   });
@@ -176,18 +176,18 @@ export function loadedCronStoreFromJson(jobs: unknown[]): LoadedCronStore {
   const configJobs = jobs.map((job, index) => {
     const parsed = parsedJobs[index];
     if (parsed && typeof job === "object" && job !== null) {
-      const { state: _state, ...rest } = job as Record<string, unknown>;
+      const { state: _state, ...rest } = job as Record<string, any>;
       return rest;
     }
-    return typeof job === "object" && job !== null ? (job as Record<string, unknown>) : {};
+    return typeof job === "object" && job !== null ? (job as Record<string, any>) : {};
   });
   const configJobRuntimeEntries = jobs.map((job) => {
     if (typeof job === "object" && job !== null) {
-      const record = job as Record<string, unknown>;
+      const record = job as Record<string, any>;
       const state = record.state;
       return {
         updatedAtMs: typeof record.updatedAtMs === "number" ? record.updatedAtMs : undefined,
-        state: state && typeof state === "object" ? (state as Record<string, unknown>) : {},
+        state: state && typeof state === "object" ? (state as Record<string, any>) : {},
       };
     }
     return { state: {} };

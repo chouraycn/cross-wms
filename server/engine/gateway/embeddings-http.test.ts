@@ -38,15 +38,15 @@ let genericEmbeddingBaseUrl: string;
 const genericEmbeddingRequests: Array<{
   method: string | undefined;
   url: string | undefined;
-  body: Record<string, unknown>;
+  body: Record<string, any>;
 }> = [];
 
-async function readJsonBody(req: IncomingMessage): Promise<Record<string, unknown>> {
+async function readJsonBody(req: IncomingMessage): Promise<Record<string, any>> {
   const chunks: Buffer[] = [];
   for await (const chunk of req) {
     chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
   }
-  return JSON.parse(Buffer.concat(chunks).toString("utf8")) as Record<string, unknown>;
+  return JSON.parse(Buffer.concat(chunks).toString("utf8")) as Record<string, any>;
 }
 
 async function startGenericEmbeddingServer(): Promise<{
@@ -75,7 +75,7 @@ async function startGenericEmbeddingServer(): Promise<{
           model: body.model,
         }),
       );
-    })().catch((error: unknown) => {
+    })().catch((error: any) => {
       res.writeHead(500, { "content-type": "application/json" });
       res.end(JSON.stringify({ error: error instanceof Error ? error.message : String(error) }));
     });
@@ -152,7 +152,7 @@ afterAll(async () => {
   vi.resetModules();
 });
 
-async function postEmbeddings(body: unknown, headers?: Record<string, string>) {
+async function postEmbeddings(body: any, headers?: Record<string, string>) {
   return await fetch(`http://127.0.0.1:${enabledPort}/v1/embeddings`, {
     method: "POST",
     headers: {

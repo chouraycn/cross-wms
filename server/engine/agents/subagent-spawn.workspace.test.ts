@@ -30,12 +30,12 @@ type TestBindingRequest = {
     parentConversationId?: string;
   };
   placement: "current" | "child";
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 const hoisted = vi.hoisted(() => ({
   callGatewayMock: vi.fn(),
-  configOverride: {} as Record<string, unknown>,
+  configOverride: {} as Record<string, any>,
   registerSubagentRunMock: vi.fn(),
   resolveSandboxRuntimeStatusMock: vi.fn<
     (params: { sessionKey?: string }) => { sandboxed: boolean }
@@ -65,7 +65,7 @@ const hoisted = vi.hoisted(() => ({
 let spawnSubagentDirect: typeof import("./subagent-spawn.js").spawnSubagentDirect;
 let resetSubagentRegistryForTests: typeof import("./subagent-registry.js").resetSubagentRegistryForTests;
 
-function createConfigOverride(overrides?: Record<string, unknown>) {
+function createConfigOverride(overrides?: Record<string, any>) {
   return createSubagentSpawnTestConfig("/tmp/workspace-main", {
     agents: {
       list: [
@@ -84,17 +84,17 @@ function createConfigOverride(overrides?: Record<string, unknown>) {
   });
 }
 
-function resolveTestAgentConfig(cfg: Record<string, unknown>, agentId: string) {
+function resolveTestAgentConfig(cfg: Record<string, any>, agentId: string) {
   return (cfg as TestConfig).agents?.list?.find((entry) => entry.id === agentId);
 }
 
-function resolveTestAgentWorkspace(cfg: Record<string, unknown>, agentId: string) {
+function resolveTestAgentWorkspace(cfg: Record<string, any>, agentId: string) {
   return resolveTestAgentConfig(cfg, agentId)?.workspace ?? `/tmp/workspace-${agentId}`;
 }
 
 function getRegisteredRun() {
   return hoisted.registerSubagentRunMock.mock.calls.at(0)?.[0] as
-    | Record<string, unknown>
+    | Record<string, any>
     | undefined;
 }
 
@@ -233,7 +233,7 @@ describe("spawnSubagentDirect workspace inheritance", () => {
     expect(getRegisteredRun()?.workspaceDir).toBe("/tmp/workspace-ops");
     const agentCall = hoisted.callGatewayMock.mock.calls.find(
       ([request]) => (request as { method?: string }).method === "agent",
-    )?.[0] as { params?: Record<string, unknown> } | undefined;
+    )?.[0] as { params?: Record<string, any> } | undefined;
     expect(agentCall?.params).not.toHaveProperty("workspaceDir");
   });
 
@@ -291,7 +291,7 @@ describe("spawnSubagentDirect workspace inheritance", () => {
 
     const agentCall = hoisted.callGatewayMock.mock.calls.find(
       ([request]) => (request as { method?: string }).method === "agent",
-    )?.[0] as { params?: Record<string, unknown> } | undefined;
+    )?.[0] as { params?: Record<string, any> } | undefined;
     return agentCall?.params;
   }
 

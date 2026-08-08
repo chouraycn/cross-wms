@@ -12,11 +12,11 @@ type SessionCustomEntry = {
   parentId: string | null;
   timestamp: string;
   customType: string;
-  data: unknown;
+  data: any;
 };
 
 type TestGooglePromptCacheSessionManager = {
-  appendCustomEntry(customType: string, data: unknown): void | Promise<void>;
+  appendCustomEntry(customType: string, data: any): void | Promise<void>;
   getEntries(): SessionCustomEntry[];
 };
 
@@ -25,7 +25,7 @@ function makeSessionManager(entries: SessionCustomEntry[] = []) {
   // manager preserves append order and timestamps like SessionManager does.
   let counter = 0;
   return {
-    appendCustomEntry(customType: string, data: unknown) {
+    appendCustomEntry(customType: string, data: any) {
       counter += 1;
       const id = `entry-${counter}`;
       entries.push({
@@ -95,14 +95,14 @@ function createOversizedJsonResponse(): { response: Response; cancel: ReturnType
 function createCapturingStreamFn(result = "stream") {
   // The wrapper mutates payloads through onPayload before calling the real
   // stream; capture that final payload instead of mocking Google responses.
-  let capturedPayload: Record<string, unknown> | undefined;
+  let capturedPayload: Record<string, any> | undefined;
   const streamFn = vi.fn(
     (
       model: Parameters<StreamFn>[0],
       _context: Parameters<StreamFn>[1],
       options: Parameters<StreamFn>[2],
     ) => {
-      const payload: Record<string, unknown> = {};
+      const payload: Record<string, any> = {};
       void options?.onPayload?.(payload, model);
       capturedPayload = payload;
       return result as never;
@@ -114,7 +114,7 @@ function createCapturingStreamFn(result = "stream") {
   };
 }
 
-function callArg(mock: { mock: { calls: unknown[][] } }, callIndex: number, argIndex: number) {
+function callArg(mock: { mock: { calls: any[][] } }, callIndex: number, argIndex: number) {
   const call = mock.mock.calls[callIndex];
   if (!call) {
     throw new Error(`Expected mock call ${callIndex}`);
@@ -125,7 +125,7 @@ function callArg(mock: { mock: { calls: unknown[][] } }, callIndex: number, argI
   return call[argIndex];
 }
 
-function fetchInit(fetchMock: { mock: { calls: unknown[][] } }, callIndex = 0): RequestInit {
+function fetchInit(fetchMock: { mock: { calls: any[][] } }, callIndex = 0): RequestInit {
   const init = callArg(fetchMock, callIndex, 1);
   if (!init || typeof init !== "object") {
     throw new Error(`expected fetch init for call ${callIndex}`);
@@ -133,19 +133,19 @@ function fetchInit(fetchMock: { mock: { calls: unknown[][] } }, callIndex = 0): 
   return init as RequestInit;
 }
 
-function fetchUrl(fetchMock: { mock: { calls: unknown[][] } }, callIndex = 0): string {
+function fetchUrl(fetchMock: { mock: { calls: any[][] } }, callIndex = 0): string {
   return String(callArg(fetchMock, callIndex, 0));
 }
 
-function streamContext(streamFn: { mock: { calls: unknown[][] } }, callIndex = 0) {
+function streamContext(streamFn: { mock: { calls: any[][] } }, callIndex = 0) {
   return callArg(streamFn, callIndex, 1) as {
-    systemPrompt?: unknown;
-    tools?: unknown;
+    systemPrompt?: any;
+    tools?: any;
   };
 }
 
-function streamOptions(streamFn: { mock: { calls: unknown[][] } }, callIndex = 0) {
-  return callArg(streamFn, callIndex, 2) as Record<string, unknown>;
+function streamOptions(streamFn: { mock: { calls: any[][] } }, callIndex = 0) {
+  return callArg(streamFn, callIndex, 2) as Record<string, any>;
 }
 
 function preparePromptCacheStream(params: {
@@ -226,7 +226,7 @@ describe("google prompt cache", () => {
     expect(createHeaders["x-goog-api-key"]).toBe("gemini-api-key");
     expect(createHeaders["X-Provider"]).toBe("google");
     expect(typeof createInit.body).toBe("string");
-    const createBody = JSON.parse(createInit.body as string) as Record<string, unknown>;
+    const createBody = JSON.parse(createInit.body as string) as Record<string, any>;
     expect(createBody).toEqual({
       model: "models/gemini-3.1-pro-preview",
       ttl: "3600s",

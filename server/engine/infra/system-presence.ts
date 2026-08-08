@@ -6,7 +6,7 @@ export type SystemPresence = {
   status?: "online" | "away" | "offline" | "busy";
   lastSeenMs?: number;
   channels?: string[];
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 const presenceStore = new Map<string, SystemPresence>();

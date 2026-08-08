@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { CronJobStateSchema } from "../../../packages/gateway-protocol/src/schema.js";
 
 type SchemaLike = {
-  properties?: Record<string, unknown>;
+  properties?: Record<string, any>;
   deprecated?: boolean;
 };
 

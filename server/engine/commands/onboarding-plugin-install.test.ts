@@ -17,7 +17,7 @@ function expectedNpmInstallSpec(spec: string): string {
 }
 
 const resolveBundledInstallPlanForCatalogEntry = vi.hoisted(() =>
-  vi.fn<(...args: unknown[]) => unknown>(() => undefined),
+  vi.fn<(...args: any[]) => unknown>(() => undefined),
 );
 vi.mock("../cli/plugin-install-plan.js", () => ({
   resolveBundledInstallPlanForCatalogEntry,
@@ -32,7 +32,7 @@ vi.mock("../cli/plugins-registry-refresh.js", () => ({
 
 const resolveBundledPluginSources = vi.hoisted(() => vi.fn(() => new Map()));
 const findBundledPluginSourceInMap = vi.hoisted(() =>
-  vi.fn<(...args: unknown[]) => { localPath: string } | undefined>(() => undefined),
+  vi.fn<(...args: any[]) => { localPath: string } | undefined>(() => undefined),
 );
 vi.mock("../plugins/bundled-sources.js", () => ({
   resolveBundledPluginSources,
@@ -127,11 +127,11 @@ function requireCapturedPrompt<T>(captured: T | undefined): T {
 
 type MockWithUnknownCalls = {
   mock: {
-    calls: unknown[][];
+    calls: any[][];
   };
 };
 
-function readFirstMockCall(mock: unknown, label: string): unknown[] {
+function readFirstMockCall(mock: any, label: string): any[] {
   const calls = (mock as MockWithUnknownCalls).mock.calls;
   const call = calls[0];
   if (!call) {

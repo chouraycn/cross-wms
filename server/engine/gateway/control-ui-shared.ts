@@ -11,14 +11,14 @@
  * 完整实现见 openclaw 源码。
  */
 
-export function normalizeControlUiBasePath(..._args: unknown[]): unknown {
+export function normalizeControlUiBasePath(..._args: any[]): any {
   return undefined;
 }
 
-export function buildControlUiAvatarUrl(..._args: unknown[]): unknown {
+export function buildControlUiAvatarUrl(..._args: any[]): any {
   return undefined;
 }
 
-export function resolveAssistantAvatarUrl(..._args: unknown[]): unknown {
+export function resolveAssistantAvatarUrl(..._args: any[]): any {
   return undefined;
 }

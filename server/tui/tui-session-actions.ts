@@ -94,7 +94,7 @@ function sessionInfoUiEquals(left: SessionInfo, right: SessionInfo): boolean {
   );
 }
 
-function extractMessageTimestamp(message: Record<string, unknown>): number | null {
+function extractMessageTimestamp(message: Record<string, any>): number | null {
   const raw = message.timestamp;
   return asDateTimestampMs(typeof raw === "string" ? Date.parse(raw) : raw) ?? null;
 }
@@ -422,7 +422,7 @@ export function createSessionActions(context: SessionActionContext) {
         limit: opts.historyLimit ?? 200,
       });
       const record = history as {
-        messages?: unknown[];
+        messages?: any[];
         sessionId?: string;
         sessionInfo?: SessionInfoEntry;
         defaults?: SessionInfoDefaults;
@@ -430,7 +430,7 @@ export function createSessionActions(context: SessionActionContext) {
         fastMode?: FastMode;
         verboseLevel?: string;
         traceLevel?: string;
-        inFlightRun?: { runId?: unknown; text?: unknown };
+        inFlightRun?: { runId?: any; text?: any };
         runtimePluginsPrewarm?: { status?: string; error?: string };
       };
       const sessionInfo = record.sessionInfo;
@@ -472,7 +472,7 @@ export function createSessionActions(context: SessionActionContext) {
         if (!entry || typeof entry !== "object") {
           continue;
         }
-        const message = entry as Record<string, unknown>;
+        const message = entry as Record<string, any>;
         if (isCommandMessage(message)) {
           const text = extractTextFromMessage(message);
           if (text) {
@@ -510,11 +510,11 @@ export function createSessionActions(context: SessionActionContext) {
           component.setResult(
             {
               content: Array.isArray(message.content)
-                ? (message.content as Record<string, unknown>[])
+                ? (message.content as Record<string, any>[])
                 : [],
               details:
                 typeof message.details === "object" && message.details
-                  ? (message.details as Record<string, unknown>)
+                  ? (message.details as Record<string, any>)
                   : undefined,
             },
             { isError: Boolean(message.isError) },

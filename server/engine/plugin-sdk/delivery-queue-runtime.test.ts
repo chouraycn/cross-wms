@@ -51,7 +51,7 @@ describe("plugin-sdk delivery queue drainPendingDeliveries", () => {
 
     expect(mocks.coreDrainPendingDeliveries).toHaveBeenCalledTimes(1);
     const [[{ deliver: lazyDeliver }]] = mocks.coreDrainPendingDeliveries.mock
-      .calls as unknown as Array<[{ deliver?: unknown }]>;
+      .calls as unknown as Array<[{ deliver?: any }]>;
     expect(lazyDeliver).toBe(mocks.deliverOutboundPayloads);
   });
 
@@ -69,7 +69,7 @@ describe("plugin-sdk delivery queue drainPendingDeliveries", () => {
 
     expect(mocks.coreDrainPendingDeliveries).toHaveBeenCalledTimes(1);
     const [[{ deliver: explicitDeliver }]] = mocks.coreDrainPendingDeliveries.mock
-      .calls as unknown as Array<[{ deliver?: unknown }]>;
+      .calls as unknown as Array<[{ deliver?: any }]>;
     expect(explicitDeliver).toBe(deliver);
     expect(mocks.deliverOutboundPayloads).not.toHaveBeenCalled();
   });

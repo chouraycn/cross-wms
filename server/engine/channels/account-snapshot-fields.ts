@@ -32,17 +32,17 @@ type CredentialStatusKey = (typeof CREDENTIAL_STATUS_KEYS)[number];
 
 type CredentialStatusValue = "available" | "configured_unavailable" | "missing";
 
-function readBoolean(record: Record<string, unknown>, key: string): boolean | undefined {
+function readBoolean(record: Record<string, any>, key: string): boolean | undefined {
   return asBoolean(record[key]);
 }
 
-function readNumber(record: Record<string, unknown>, key: string): number | undefined {
+function readNumber(record: Record<string, any>, key: string): number | undefined {
   const value = record[key];
   return asFiniteNumber(value);
 }
 
 function readNullableNumber(
-  record: Record<string, unknown>,
+  record: Record<string, any>,
   key: string,
 ): number | null | undefined {
   if (record[key] === null) {
@@ -51,7 +51,7 @@ function readNullableNumber(
   return readNumber(record, key);
 }
 
-function readStringArray(record: Record<string, unknown>, key: string): string[] | undefined {
+function readStringArray(record: Record<string, any>, key: string): string[] | undefined {
   const value = record[key];
   if (!Array.isArray(value)) {
     return undefined;
@@ -63,7 +63,7 @@ function readStringArray(record: Record<string, unknown>, key: string): string[]
 }
 
 function readCredentialStatus(
-  record: Record<string, unknown>,
+  record: Record<string, any>,
   key: CredentialStatusKey,
 ): CredentialStatusValue | undefined {
   const value = record[key];
@@ -78,7 +78,7 @@ function readCredentialStatus(
  * Status commands need this metadata for "configured but unavailable" accounts without reading
  * raw credentials from runtime-only helpers.
  */
-export function resolveConfiguredFromCredentialStatuses(account: unknown): boolean | undefined {
+export function resolveConfiguredFromCredentialStatuses(account: any): boolean | undefined {
   const record = isRecord(account) ? account : null;
   if (!record) {
     return undefined;
@@ -99,7 +99,7 @@ export function resolveConfiguredFromCredentialStatuses(account: unknown): boole
 
 /** Infers configured state only from the credential status keys required by a channel. */
 export function resolveConfiguredFromRequiredCredentialStatuses(
-  account: unknown,
+  account: any,
   requiredKeys: CredentialStatusKey[],
 ): boolean | undefined {
   const record = isRecord(account) ? account : null;
@@ -121,7 +121,7 @@ export function resolveConfiguredFromRequiredCredentialStatuses(
 }
 
 /** Returns true when a credential exists but cannot be resolved at status-render time. */
-export function hasConfiguredUnavailableCredentialStatus(account: unknown): boolean {
+export function hasConfiguredUnavailableCredentialStatus(account: any): boolean {
   const record = isRecord(account) ? account : null;
   if (!record) {
     return false;
@@ -132,7 +132,7 @@ export function hasConfiguredUnavailableCredentialStatus(account: unknown): bool
 }
 
 /** Returns true when account data contains a resolved credential value or available status. */
-export function hasResolvedCredentialValue(account: unknown): boolean {
+export function hasResolvedCredentialValue(account: any): boolean {
   const record = isRecord(account) ? account : null;
   if (!record) {
     return false;
@@ -147,7 +147,7 @@ export function hasResolvedCredentialValue(account: unknown): boolean {
 
 /** Projects credential source/status metadata while omitting raw credential values. */
 export function projectCredentialSnapshotFields(
-  account: unknown,
+  account: any,
 ): Pick<
   Partial<ChannelAccountSnapshot>,
   | "tokenSource"
@@ -201,7 +201,7 @@ export function projectCredentialSnapshotFields(
  * new channel fields do not accidentally expose webhook URLs, public keys, or raw credentials.
  */
 export function projectSafeChannelAccountSnapshotFields(
-  account: unknown,
+  account: any,
 ): Partial<ChannelAccountSnapshot> {
   const record = isRecord(account) ? account : null;
   if (!record) {

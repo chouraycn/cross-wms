@@ -6,11 +6,11 @@
  * 类型降级为 unknown 占位，常量降级为 undefined。
  */
 
-export function setCompactionSafeguardCancelReason(..._args: unknown[]): unknown {
+export function setCompactionSafeguardCancelReason(..._args: any[]): any {
   return undefined;
 }
-export function consumeCompactionSafeguardCancelReason(..._args: unknown[]): unknown {
+export function consumeCompactionSafeguardCancelReason(..._args: any[]): any {
   return undefined;
 }
-export const setCompactionSafeguardRuntime: unknown = undefined;
-export const getCompactionSafeguardRuntime: unknown = undefined;
+export const setCompactionSafeguardRuntime: any = undefined;
+export const getCompactionSafeguardRuntime: any = undefined;

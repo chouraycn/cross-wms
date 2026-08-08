@@ -77,7 +77,7 @@ export type MinHostVersionCheckResult =
 
 /** Parses a plugin minHostVersion manifest field. */
 export function parseMinHostVersionRequirement(
-  raw: unknown,
+  raw: any,
   options: { allowLegacyBareSemver?: boolean } = {},
 ): MinHostVersionRequirement | null {
   if (typeof raw !== "string") {
@@ -106,7 +106,7 @@ export function parseMinHostVersionRequirement(
 /** Checks whether the current host satisfies a plugin minHostVersion requirement. */
 export function checkMinHostVersion(params: {
   currentVersion: string | undefined;
-  minHostVersion: unknown;
+  minHostVersion: any;
   allowLegacyBareSemver?: boolean;
 }): MinHostVersionCheckResult {
   if (params.minHostVersion === undefined) {

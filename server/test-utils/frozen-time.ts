@@ -25,7 +25,7 @@ class FrozenTime {
      
     const _this = this;
 
-    const FrozenDate = function (this: Date, ...args: unknown[]) {
+    const FrozenDate = function (this: Date, ...args: any[]) {
       if (new.target) {
         if (args.length === 0) {
           return new _this.originalDate(_this.frozenMs);
@@ -86,7 +86,7 @@ export function freezeTime(options: FrozenTimeOptions = {}): {
 export function advanceTime(ms: number): void {
   const now = Date.now();
   const newDate = new Date(now + ms);
-  const frozenDate = globalThis.Date as unknown;
+  const frozenDate = globalThis.Date as any;
   if (frozenDate._frozenMs !== undefined) {
     frozenDate._frozenMs = newDate.getTime();
   }

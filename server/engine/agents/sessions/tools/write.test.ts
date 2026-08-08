@@ -40,7 +40,7 @@ describe("write tool", () => {
             error &&
             typeof error === "object" &&
             "code" in error &&
-            (error as { code?: unknown }).code === "ENOENT"
+            (error as { code?: any }).code === "ENOENT"
           ) {
             return null;
           }

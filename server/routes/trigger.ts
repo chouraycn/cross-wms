@@ -27,7 +27,7 @@ router.get('/', (req: Request, res: Response) => {
 
     const triggers = manager.listTriggers({ type, enabled, automationId });
     res.json({ data: triggers, total: triggers.length });
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     res.status(500).json({ error: message });
   }
@@ -48,7 +48,7 @@ router.get('/:id', (req: Request, res: Response) => {
     }
 
     res.json(trigger);
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     res.status(500).json({ error: message });
   }
@@ -88,7 +88,7 @@ router.post('/', (req: Request, res: Response) => {
     });
 
     res.status(201).json(trigger);
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     res.status(500).json({ error: message });
   }
@@ -118,7 +118,7 @@ router.put('/:id', (req: Request, res: Response) => {
     const updates: Partial<Trigger> = {};
     for (const [bodyKey, triggerKey] of Object.entries(allowedFields)) {
       if (bodyKey in req.body && req.body[bodyKey] !== undefined) {
-        (updates as Record<string, unknown>)[triggerKey] = req.body[bodyKey];
+        (updates as Record<string, any>)[triggerKey] = req.body[bodyKey];
       }
     }
 
@@ -134,7 +134,7 @@ router.put('/:id', (req: Request, res: Response) => {
     }
 
     res.json(updated);
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     res.status(500).json({ error: message });
   }
@@ -155,7 +155,7 @@ router.delete('/:id', (req: Request, res: Response) => {
     }
 
     res.json({ success: true });
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     res.status(500).json({ error: message });
   }
@@ -178,7 +178,7 @@ router.post('/:id/enable', (req: Request, res: Response) => {
     }
 
     res.json({ success: true, message: 'Trigger enabled' });
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     res.status(500).json({ error: message });
   }
@@ -199,7 +199,7 @@ router.post('/:id/disable', (req: Request, res: Response) => {
     }
 
     res.json({ success: true, message: 'Trigger disabled' });
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     res.status(500).json({ error: message });
   }
@@ -240,7 +240,7 @@ router.post('/:id/trigger', async (req: Request, res: Response) => {
       failed: failedCount,
       results: results.map(r => r.status === 'fulfilled' ? r.value : { error: (r as PromiseRejectedResult).reason }),
     });
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     res.status(500).json({ error: message });
   }
@@ -263,7 +263,7 @@ router.get('/:id/stats', (req: Request, res: Response) => {
     }
 
     res.json(stats);
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     res.status(500).json({ error: message });
   }
@@ -357,7 +357,7 @@ router.get('/metrics/:metric/value', async (req: Request, res: Response) => {
     }
 
     res.json({ metric: req.params.metric, value, timestamp: Date.now() });
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     res.status(500).json({ error: message });
   }
@@ -382,7 +382,7 @@ router.post('/events/test', (req: Request, res: Response) => {
     eventListener.emitSystemEvent(eventName, payload || {});
 
     res.json({ success: true, eventName, payload });
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     res.status(500).json({ error: message });
   }
@@ -418,7 +418,7 @@ router.get('/:id/webhook-url', (req: Request, res: Response) => {
       triggerId: trigger.id,
       enabled: trigger.enabled,
     });
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     res.status(500).json({ error: message });
   }

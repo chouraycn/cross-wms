@@ -69,8 +69,8 @@ const whatsappOutboundForTest: ChannelOutboundAdapter = {
       | ((
           to: string,
           text: string,
-          options?: Record<string, unknown>,
-        ) => Promise<{ messageId: string } & Record<string, unknown>>)
+          options?: Record<string, any>,
+        ) => Promise<{ messageId: string } & Record<string, any>>)
       | undefined;
     if (!sender) {
       throw new Error("missing whatsapp sender");
@@ -99,8 +99,8 @@ const whatsappOutboundForTest: ChannelOutboundAdapter = {
       | ((
           to: string,
           text: string,
-          options?: Record<string, unknown>,
-        ) => Promise<{ messageId: string } & Record<string, unknown>>)
+          options?: Record<string, any>,
+        ) => Promise<{ messageId: string } & Record<string, any>>)
       | undefined;
     if (!sender) {
       throw new Error("missing whatsapp sender");
@@ -169,14 +169,14 @@ const createCaseDir = async (prefix: string) => {
   return dir;
 };
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
+function requireRecord(value: any, label: string): Record<string, any> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error(`expected ${label} to be a record`);
   }
-  return value as Record<string, unknown>;
+  return value as Record<string, any>;
 }
 
-function expectRecordFields(record: Record<string, unknown>, fields: Record<string, unknown>) {
+function expectRecordFields(record: Record<string, any>, fields: Record<string, any>) {
   for (const [key, value] of Object.entries(fields)) {
     expect(record[key]).toEqual(value);
   }
@@ -199,8 +199,8 @@ function expectWhatsAppSendCall(
 function expectReplyCall(
   replySpy: ReturnType<typeof vi.fn>,
   index: number,
-  bodyFields: Record<string, unknown>,
-  optionsFields?: Record<string, unknown>,
+  bodyFields: Record<string, any>,
+  optionsFields?: Record<string, any>,
   cfg?: OpenClawConfig,
 ) {
   const call = replySpy.mock.calls[index];
@@ -703,7 +703,7 @@ describe("runHeartbeatOnce", () => {
     sendWhatsApp: (
       to: string,
       text: string,
-      opts?: unknown,
+      opts?: any,
     ) => Promise<{ messageId: string; toJid: string }>,
     options?: {
       nowMs?: number;
@@ -823,7 +823,7 @@ describe("runHeartbeatOnce", () => {
           (
             to: string,
             text: string,
-            opts?: unknown,
+            opts?: any,
           ) => Promise<{ messageId: string; toJid: string }>
         >()
         .mockResolvedValue({
@@ -887,7 +887,7 @@ describe("runHeartbeatOnce", () => {
           (
             to: string,
             text: string,
-            opts?: unknown,
+            opts?: any,
           ) => Promise<{ messageId: string; toJid: string }>
         >()
         .mockResolvedValue({
@@ -974,7 +974,7 @@ describe("runHeartbeatOnce", () => {
           (
             to: string,
             text: string,
-            opts?: unknown,
+            opts?: any,
           ) => Promise<{ messageId: string; toJid: string }>
         >()
         .mockResolvedValue({
@@ -1090,7 +1090,7 @@ describe("runHeartbeatOnce", () => {
             (
               to: string,
               text: string,
-              opts?: unknown,
+              opts?: any,
             ) => Promise<{ messageId: string; toJid: string }>
           >()
           .mockResolvedValue({ messageId: "m1", toJid: "jid" });
@@ -1181,7 +1181,7 @@ describe("runHeartbeatOnce", () => {
           (
             to: string,
             text: string,
-            opts?: unknown,
+            opts?: any,
           ) => Promise<{ messageId: string; toJid: string }>
         >()
         .mockResolvedValue({ messageId: "m1", toJid: "jid" });
@@ -1242,7 +1242,7 @@ describe("runHeartbeatOnce", () => {
           (
             to: string,
             text: string,
-            opts?: unknown,
+            opts?: any,
           ) => Promise<{ messageId: string; toJid: string }>
         >()
         .mockResolvedValue({ messageId: "m1", toJid: "jid" });
@@ -1357,7 +1357,7 @@ describe("runHeartbeatOnce", () => {
             (
               to: string,
               text: string,
-              opts?: unknown,
+              opts?: any,
             ) => Promise<{ messageId: string; toJid: string }>
           >()
           .mockResolvedValue({ messageId: "m1", toJid: "jid" });
@@ -1421,7 +1421,7 @@ describe("runHeartbeatOnce", () => {
           (
             to: string,
             text: string,
-            opts?: unknown,
+            opts?: any,
           ) => Promise<{ messageId: string; toJid: string }>
         >()
         .mockResolvedValue({ messageId: "m1", toJid: "jid" });
@@ -1478,7 +1478,7 @@ describe("runHeartbeatOnce", () => {
           (
             to: string,
             text: string,
-            opts?: unknown,
+            opts?: any,
           ) => Promise<{ messageId: string; toJid: string }>
         >()
         .mockResolvedValue({
@@ -1606,7 +1606,7 @@ describe("runHeartbeatOnce", () => {
     replySpy.mockResolvedValue({ text: params.replyText ?? "Checked logs and PRs" });
     const sendWhatsApp = vi
       .fn<
-        (to: string, text: string, opts?: unknown) => Promise<{ messageId: string; toJid: string }>
+        (to: string, text: string, opts?: any) => Promise<{ messageId: string; toJid: string }>
       >()
       .mockResolvedValue({ messageId: "m1", toJid: "jid" });
     const res = await runHeartbeatOnce({
@@ -1692,7 +1692,7 @@ Some global directive after tasks.
     const replySpy = vi.fn().mockResolvedValue({ text: "Handled due heartbeat tasks" });
     const sendWhatsApp = vi
       .fn<
-        (to: string, text: string, opts?: unknown) => Promise<{ messageId: string; toJid: string }>
+        (to: string, text: string, opts?: any) => Promise<{ messageId: string; toJid: string }>
       >()
       .mockResolvedValue({ messageId: "m1", toJid: "jid" });
 
@@ -1763,7 +1763,7 @@ tasks:
     const replySpy = vi.fn().mockResolvedValue({ text: "Handled due heartbeat tasks" });
     const sendWhatsApp = vi
       .fn<
-        (to: string, text: string, opts?: unknown) => Promise<{ messageId: string; toJid: string }>
+        (to: string, text: string, opts?: any) => Promise<{ messageId: string; toJid: string }>
       >()
       .mockResolvedValue({ messageId: "m1", toJid: "jid" });
 
@@ -1956,7 +1956,7 @@ tasks:
     replySpy.mockResolvedValue({ text: "Handled internally" });
     const sendWhatsApp = vi
       .fn<
-        (to: string, text: string, opts?: unknown) => Promise<{ messageId: string; toJid: string }>
+        (to: string, text: string, opts?: any) => Promise<{ messageId: string; toJid: string }>
       >()
       .mockResolvedValue({ messageId: "m1", toJid: "jid" });
 
@@ -2013,7 +2013,7 @@ tasks:
     replySpy.mockResolvedValue({ text: "Handled internally" });
     const sendWhatsApp = vi
       .fn<
-        (to: string, text: string, opts?: unknown) => Promise<{ messageId: string; toJid: string }>
+        (to: string, text: string, opts?: any) => Promise<{ messageId: string; toJid: string }>
       >()
       .mockResolvedValue({ messageId: "m1", toJid: "jid" });
 

@@ -7,4 +7,4 @@
  */
 
 // 原 re-export from ./session-utils.js
-export const loadGatewaySessionRow: unknown = undefined;
+export const loadGatewaySessionRow: any = undefined;

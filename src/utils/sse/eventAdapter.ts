@@ -20,7 +20,7 @@ export interface SSEWireEvent {
   seq: number;
   stream: string;
   ts: number;
-  data: Record<string, unknown>;
+  data: Record<string, any>;
   sessionKey?: string;
   sessionId?: string;
 }
@@ -164,7 +164,7 @@ export class EventAdapter {
   // ===================== OpenClaw 标准事件适配 =====================
 
   /** lifecycle: start/init → start 事件；done → done 事件 */
-  private adaptLifecycle(data: Record<string, unknown>): ChatEvent | ChatEvent[] {
+  private adaptLifecycle(data: Record<string, any>): ChatEvent | ChatEvent[] {
     const phase = (data.phase as string) || '';
     if (phase === 'start' || phase === 'init') {
       this.reset();
@@ -191,7 +191,7 @@ export class EventAdapter {
         reason,
         message: this.buildSnapshot(),
         thinkingDuration: typeof data.thinkingDuration === 'number' ? data.thinkingDuration : undefined,
-        usage: (data.usage as Record<string, unknown>) || undefined,
+        usage: (data.usage as Record<string, any>) || undefined,
         fallbackModel: (data.fallbackModel as string) || undefined,
         fallbackReason: (data.fallbackReason as 'key_rotation' | 'model_downgrade' | 'model_not_supported' | 'request_failed') || undefined,
         errorMessage: (data.errorMessage as string) || undefined,
@@ -205,7 +205,7 @@ export class EventAdapter {
   }
 
   /** assistant: data.content 为文本增量，按需发射 text_start/text_delta */
-  private adaptAssistant(data: Record<string, unknown>): ChatEvent | ChatEvent[] {
+  private adaptAssistant(data: Record<string, any>): ChatEvent | ChatEvent[] {
     const delta = (data.content as string) || '';
     if (!delta) return [];
     const events: ChatEvent[] = [];
@@ -225,7 +225,7 @@ export class EventAdapter {
   }
 
   /** thinking: data.content 为思考增量，按需发射 thinking_start/thinking_delta */
-  private adaptThinking(data: Record<string, unknown>): ChatEvent | ChatEvent[] {
+  private adaptThinking(data: Record<string, any>): ChatEvent | ChatEvent[] {
     const delta = (data.content as string) || '';
     if (!delta) return [];
     const events: ChatEvent[] = [];
@@ -254,7 +254,7 @@ export class EventAdapter {
    * tool: 当前 wire 格式在单条事件中携带完整工具调用（name/args/result），
    * 因此发射 toolcall_start + toolcall_end 两条事件。
    */
-  private adaptTool(data: Record<string, unknown>): ChatEvent | ChatEvent[] {
+  private adaptTool(data: Record<string, any>): ChatEvent | ChatEvent[] {
     const events: ChatEvent[] = [];
     const closing = this.closeCurrentStream();
     if (closing) events.push(closing);
@@ -288,7 +288,7 @@ export class EventAdapter {
   }
 
   /** error: 关闭未关闭的流后发射 error 事件 */
-  private adaptError(data: Record<string, unknown>): ChatEvent | ChatEvent[] {
+  private adaptError(data: Record<string, any>): ChatEvent | ChatEvent[] {
     const events: ChatEvent[] = [];
     const closing = this.closeCurrentStream();
     if (closing) events.push(closing);
@@ -306,7 +306,7 @@ export class EventAdapter {
 
   // ===================== 系统扩展事件适配 =====================
 
-  private adaptBudgetExceeded(data: Record<string, unknown>): SystemEvent {
+  private adaptBudgetExceeded(data: Record<string, any>): SystemEvent {
     return {
       type: 'budget_exceeded',
       reason: (data.reason as string) || '',
@@ -319,7 +319,7 @@ export class EventAdapter {
 
   /** plan/plan_revised: 将 wire 的 steps 数组规范化为 PlanStep[] */
   private adaptPlan(
-    data: Record<string, unknown>,
+    data: Record<string, any>,
     type: 'plan_created' | 'plan_revised',
   ): SystemEvent | [] {
     const plan = data.plan as
@@ -335,7 +335,7 @@ export class EventAdapter {
     return { type, plan: steps };
   }
 
-  private adaptItem(data: Record<string, unknown>): SystemEvent | [] {
+  private adaptItem(data: Record<string, any>): SystemEvent | [] {
     const itemId = (data.itemId as string) || '';
     if (!itemId) return [];
     const phase = (data.phase as 'start' | 'update' | 'end') || 'update';
@@ -358,15 +358,15 @@ export class EventAdapter {
     };
   }
 
-  private adaptApproval(data: Record<string, unknown>): SystemEvent {
+  private adaptApproval(data: Record<string, any>): SystemEvent {
     const toolName = (data.toolName as string) || '';
     const approvalId = (data.requestId as string) || `appr_${Date.now()}`;
     const command = (data.command as string) || undefined;
     const filePath = (data.filePath as string) || undefined;
-    const toolArgs: Record<string, unknown> = {};
+    const toolArgs: Record<string, any> = {};
     if (command) toolArgs.command = command;
     if (filePath) toolArgs.filePath = filePath;
-    const details = (data.details as Record<string, unknown>) || undefined;
+    const details = (data.details as Record<string, any>) || undefined;
     if (details) Object.assign(toolArgs, details);
     return {
       type: 'approval_request',
@@ -383,7 +383,7 @@ export class EventAdapter {
     };
   }
 
-  private adaptCompaction(data: Record<string, unknown>): SystemEvent {
+  private adaptCompaction(data: Record<string, any>): SystemEvent {
     return {
       type: 'compaction',
       summary: '',
@@ -394,7 +394,7 @@ export class EventAdapter {
     };
   }
 
-  private adaptCompactionNotification(data: Record<string, unknown>): SystemEvent | [] {
+  private adaptCompactionNotification(data: Record<string, any>): SystemEvent | [] {
     const notification = data.notification as
       | {
           id: string;
@@ -422,7 +422,7 @@ export class EventAdapter {
     };
   }
 
-  private adaptComplexityAssessment(data: Record<string, unknown>): SystemEvent {
+  private adaptComplexityAssessment(data: Record<string, any>): SystemEvent {
     const estimatedSteps = (data.estimatedSteps as number) ?? 0;
     return {
       type: 'complexity_assessment',
@@ -435,7 +435,7 @@ export class EventAdapter {
     };
   }
 
-  private adaptCircuitBreaker(data: Record<string, unknown>): SystemEvent {
+  private adaptCircuitBreaker(data: Record<string, any>): SystemEvent {
     return {
       type: 'circuit_breaker_triggered',
       reason: (data.reason as string) || undefined,
@@ -446,7 +446,7 @@ export class EventAdapter {
     };
   }
 
-  private adaptCommandOutput(data: Record<string, unknown>): SystemEvent {
+  private adaptCommandOutput(data: Record<string, any>): SystemEvent {
     return {
       type: 'command_output',
       output: (data.output as string) || '',
@@ -454,7 +454,7 @@ export class EventAdapter {
     };
   }
 
-  private adaptPatch(data: Record<string, unknown>): SystemEvent {
+  private adaptPatch(data: Record<string, any>): SystemEvent {
     const added = (data.added as string[]) || [];
     const modified = (data.modified as string[]) || [];
     const deleted = (data.deleted as string[]) || [];
@@ -469,7 +469,7 @@ export class EventAdapter {
     };
   }
 
-  private adaptOutputReview(data: Record<string, unknown>): SystemEvent {
+  private adaptOutputReview(data: Record<string, any>): SystemEvent {
     return {
       type: 'output_review',
       quality: (data.quality as 'A' | 'B' | 'C' | 'D') || 'C',
@@ -478,7 +478,7 @@ export class EventAdapter {
     };
   }
 
-  private adaptReactPhase(data: Record<string, unknown>): SystemEvent {
+  private adaptReactPhase(data: Record<string, any>): SystemEvent {
     return {
       type: 'react_phase',
       phase: (data.phase as 'reasoning' | 'acting' | 'observing' | 'reflecting' | 'done') || 'reasoning',
@@ -489,7 +489,7 @@ export class EventAdapter {
   }
 
   private adaptToolExecution(
-    data: Record<string, unknown>,
+    data: Record<string, any>,
     type: 'tool_execution_started' | 'tool_execution_completed',
   ): SystemEvent {
     const toolName = (data.toolName as string) || '';
@@ -515,7 +515,7 @@ export class EventAdapter {
   }
 
   /** file: 工具/技能产出文件事件 */
-  private adaptFile(data: Record<string, unknown>): SystemEvent | [] {
+  private adaptFile(data: Record<string, any>): SystemEvent | [] {
     const fileName = (data.fileName as string) || '';
     if (!fileName) return [];
     return {
@@ -536,11 +536,11 @@ export class EventAdapter {
 // ===================== 工具函数 =====================
 
 /** 解析工具参数 JSON 字符串，失败时回退为 { _raw: 原字符串 } */
-function parseArgs(argsStr: string): Record<string, unknown> {
+function parseArgs(argsStr: string): Record<string, any> {
   try {
     const parsed = JSON.parse(argsStr);
     if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-      return parsed as Record<string, unknown>;
+      return parsed as Record<string, any>;
     }
     return { _raw: argsStr };
   } catch {

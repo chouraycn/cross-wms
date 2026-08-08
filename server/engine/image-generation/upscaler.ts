@@ -32,7 +32,7 @@ export type UpscaleResult = {
   newHeight: number;
   scale: UpscaleScale;
   durationMs: number;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 };
 
 const DEFAULT_UPSCALE_OPTIONS: UpscaleOptions = {
