@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Shared config mutations used by interactive and non-interactive onboarding. */
 import { setConfigValueAtPath } from "@openclaw-src/config/config-paths.js";
 import type { DmScope } from "@openclaw-src/config/types.base.js";

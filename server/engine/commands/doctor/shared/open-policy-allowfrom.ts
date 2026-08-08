@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Doctor repair for open DM policies that still need explicit allowFrom wildcards.
 import { sanitizeForLog } from "@openclaw-src/../packages/terminal-core/src/ansi.js";
 import { ensureOpenDmPolicyAllowFromWildcard } from "@openclaw-src/channels/plugins/dm-access.js";

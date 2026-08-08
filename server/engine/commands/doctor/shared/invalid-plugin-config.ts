@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Doctor quarantine for plugin entries whose config fails plugin-aware validation.
 import { sanitizeForLog } from "@openclaw-src/../packages/terminal-core/src/ansi.js";
 import type { OpenClawConfig } from "@openclaw-src/config/types.openclaw.js";

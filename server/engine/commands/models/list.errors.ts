@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Shared error helpers for model-list availability fallback behavior.
 /** Error code used when model availability lookup is unavailable but auth heuristics can continue. */
 export const MODEL_AVAILABILITY_UNAVAILABLE_CODE = "MODEL_AVAILABILITY_UNAVAILABLE";

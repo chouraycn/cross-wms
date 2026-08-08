@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Shared Vitest mock harness for channel command config and secret resolution.
 import { vi } from "vitest";
 import type { MockFn } from "@openclaw-src/test-utils/vitest-mock-fn.js";

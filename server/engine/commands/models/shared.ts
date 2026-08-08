@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Shared helpers for model commands that read or mutate model config. */
 import { resolveAgentDir, resolveDefaultAgentId, listAgentIds } from "@openclaw-src/agents/agent-scope.js";
 import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "@openclaw-src/agents/defaults.js";

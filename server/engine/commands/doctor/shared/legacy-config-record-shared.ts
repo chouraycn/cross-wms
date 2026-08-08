@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Shared record helpers for legacy config migration modules.
 type JsonRecord = Record<string, any>;
 

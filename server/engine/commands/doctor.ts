@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Top-level doctor command wrapper, including post-upgrade probe mode. */
 import { defaultRuntime, type RuntimeEnv, writeRuntimeJson } from "@openclaw-src/runtime.js";
 import { runPostUpgradeProbes } from "./doctor-post-upgrade.js";

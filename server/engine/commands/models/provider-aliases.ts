@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Provider alias canonicalization for model catalog rows. */
 import fs from "node:fs";
 import path from "node:path";

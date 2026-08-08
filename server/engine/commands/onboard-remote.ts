@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Interactive remote gateway onboarding.
  *

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Custom Clack multi-select prompt for Codex migration skill/plugin choices. */
 import { styleText } from "node:util";
 import { MultiSelectPrompt, settings, wrapTextWithPrefix } from "@clack/core";

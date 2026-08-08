@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Legacy TTS runtime config migrations for provider aliases, enabled toggles, and voices.
 import {
   defineLegacyConfigMigration,

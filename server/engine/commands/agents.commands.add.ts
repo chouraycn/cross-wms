@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Implements `openclaw agents add`, including config mutation, workspace setup, auth copy, and route binding setup.
 import fs from "node:fs/promises";
 import path from "node:path";

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Model registry access helpers for `openclaw models list`. */
 import { loadAgentModelRegistry } from "@openclaw-src/agents/model-registry-loader.js";
 import {

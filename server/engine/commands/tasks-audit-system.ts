@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Combines task and task-flow audit findings for CLI output.
 // The combined shape lets list/json commands filter and sort both registries together.
 

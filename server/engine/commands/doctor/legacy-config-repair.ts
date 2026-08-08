@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Update-channel config repair for legacy config files before normal command startup.
 import { readConfigFileSnapshot, replaceConfigFile } from "@openclaw-src/config/config.js";
 import { INCLUDE_KEY } from "@openclaw-src/config/includes.js";

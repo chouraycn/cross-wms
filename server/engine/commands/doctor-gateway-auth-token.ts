@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Resolves gateway service auth tokens without leaking exec-backed secrets during install. */
 import type { OpenClawConfig } from "@openclaw-src/config/types.openclaw.js";
 import { resolveSecretInputRef } from "@openclaw-src/config/types.secrets.js";

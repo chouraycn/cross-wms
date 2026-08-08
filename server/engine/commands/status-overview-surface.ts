@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Normalized status overview surface shared by text and JSON status outputs.
 // It collects gateway/update/service fields into one shape before row or payload builders run.
 

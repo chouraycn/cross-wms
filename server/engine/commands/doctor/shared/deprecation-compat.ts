@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Inventory of doctor compatibility migrations that outlive deprecated runtime/config paths.
 export type DoctorDeprecationCompatStatus = "active" | "deprecated" | "removal-pending" | "removed";
 

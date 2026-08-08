@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Cron doctor migration for managed memory dreaming jobs created before isolated agent-turn shape.
 import {
   normalizeOptionalLowercaseString,

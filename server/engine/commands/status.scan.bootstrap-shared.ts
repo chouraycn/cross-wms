@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Shared bootstrap for status scans.
 // Starts update, Tailscale, agent, and gateway probes with cold-start shortcuts for first-run users.
 

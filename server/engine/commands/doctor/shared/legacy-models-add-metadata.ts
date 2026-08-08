@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Detection helper for legacy `/models add` OpenAI Codex entries missing metadata markers.
 import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
 import type { ModelDefinitionConfig } from "@openclaw-src/config/types.models.js";

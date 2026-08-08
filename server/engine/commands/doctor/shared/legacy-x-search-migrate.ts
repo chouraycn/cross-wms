@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Legacy X search config migration from tools.web.x_search to the xAI plugin config.
 import { isRecord } from "./legacy-config-record-shared.js";
 

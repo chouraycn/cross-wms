@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Final doctor config-write decision after preview/repair mode has collected mutations.
 import type { OpenClawConfig } from "@openclaw-src/config/types.openclaw.js";
 

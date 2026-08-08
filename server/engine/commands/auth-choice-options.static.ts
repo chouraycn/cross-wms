@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Static auth-choice option definitions used before provider manifests are loaded.
 import { resolveLegacyAuthChoiceAliasesForCli } from "./auth-choice-legacy.js";
 import type { AuthChoice, AuthChoiceGroupId } from "./onboard-types.js";

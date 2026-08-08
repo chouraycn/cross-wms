@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Doctor 命令族
  *

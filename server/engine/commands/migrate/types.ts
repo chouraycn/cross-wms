@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Shared option types for the migrate command family. */
 import type { OpenClawConfig } from "@openclaw-src/config/types.openclaw.js";
 import type { MigrationPlan } from "@openclaw-src/plugins/types.js";

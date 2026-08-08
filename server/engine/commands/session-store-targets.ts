@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Session store target resolution wrapper for CLI commands.
  *

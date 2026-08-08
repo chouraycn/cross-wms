@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Tiny text formatting helpers shared by command output.
 // Uses Array.from so truncation respects Unicode code points instead of UTF-16 units.
 

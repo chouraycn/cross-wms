@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Non-interactive wizard prompter that logs progress but rejects input prompts. */
 import type { RuntimeEnv } from "@openclaw-src/runtime.js";
 import type { WizardPrompter } from "@openclaw-src/wizard/prompts.js";

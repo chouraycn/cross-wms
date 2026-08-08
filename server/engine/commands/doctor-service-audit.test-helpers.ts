@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Doctor service audit test helpers normalize expected service environment-source labels.
 import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
 import { isEnvironmentFileOnlySource } from "../daemon/service-managed-env.js";

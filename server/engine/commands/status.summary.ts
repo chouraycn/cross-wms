@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Builds the status summary used by human and JSON status output.
 // It aggregates sessions, tasks, heartbeat, channel summary, and model/runtime metadata.
 

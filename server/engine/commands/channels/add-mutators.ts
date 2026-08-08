@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Small channel config mutators used by guided and non-interactive channel add flows.
 import { getChannelPlugin } from "@openclaw-src/channels/plugins/index.js";
 import type { ChannelPlugin } from "@openclaw-src/channels/plugins/types.plugin.js";

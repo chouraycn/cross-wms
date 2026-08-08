@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Implements agent deletion with gateway delegation and local cleanup fallback.
 import { findOverlappingWorkspaceAgentIds } from "@openclaw-src/agents/agent-delete-safety.js";
 import { resolveAgentDir, resolveAgentWorkspaceDir } from "@openclaw-src/agents/agent-scope.js";

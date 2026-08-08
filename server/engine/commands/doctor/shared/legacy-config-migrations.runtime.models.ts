@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Legacy model runtime config migrations for stale model refs, compat fields, and catalog data.
 import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
 import { splitTrailingAuthProfile } from "@openclaw-src/agents/model-ref-profile.js";

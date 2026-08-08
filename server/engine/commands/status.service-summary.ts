@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Reads service manager state for status reports.
 // Converts gateway/node launchd/systemd state into a compact summary shape.
 

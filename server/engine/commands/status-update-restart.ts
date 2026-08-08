@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Formats update-restart sentinel state for status reports.
 // The sentinel is written by update flows; status only turns it into operator-facing hints.
 

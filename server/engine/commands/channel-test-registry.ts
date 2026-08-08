@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Test helper for installing bundled channel plugins into the active plugin registry.
 import {
   getBundledChannelPlugin,

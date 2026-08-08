@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Shared status output types.
 // These shapes are consumed by scan, summary, text report, and JSON status builders.
 

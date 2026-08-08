@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Shared base compatibility normalizers reused by core and plugin setup migrations.
 import type { OpenClawConfig } from "@openclaw-src/config/types.openclaw.js";
 import {

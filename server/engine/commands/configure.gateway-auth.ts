@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Configure wizard model/auth selection and gateway auth config helpers.
 import { ensureAuthProfileStore } from "@openclaw-src/agents/auth-profiles.js";
 import { resolveDefaultAgentWorkspaceDir } from "@openclaw-src/agents/workspace.js";

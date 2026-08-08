@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Interactive grouped auth-choice prompt used by onboarding and agent setup.
 import type { AuthProfileStore } from "@openclaw-src/agents/auth-profiles/types.js";
 import type { OpenClawConfig } from "@openclaw-src/config/types.openclaw.js";

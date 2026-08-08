@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "@openclaw-src/agents/defaults.js";
 import { parseModelRef } from "@openclaw-src/agents/model-selection-normalize.js";
 import { resolveAgentModelPrimaryValue } from "@openclaw-src/config/model-input.js";

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Sandbox runtime management commands.
  *

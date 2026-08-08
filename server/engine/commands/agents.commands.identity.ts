@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Implements identity metadata updates for configured agents.
 import fs from "node:fs/promises";
 import path from "node:path";

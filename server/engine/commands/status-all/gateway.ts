@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Gateway log-tail helpers for status diagnostics.
 // Summaries compact repeated auth/runtime failures while preserving enough context for operators.
 

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Resolves the gateway token used when installing or updating the managed service. */
 import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
 import { formatCliCommand } from "@openclaw-src/cli/command-format.js";

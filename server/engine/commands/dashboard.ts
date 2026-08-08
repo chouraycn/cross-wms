@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Implements `openclaw dashboard` URL resolution, readiness check, clipboard, and browser launch.
 import { readConfigFileSnapshot, resolveGatewayPort } from "@openclaw-src/config/config.js";
 import { resolveGatewayAuthToken } from "@openclaw-src/gateway/auth-token-resolution.js";

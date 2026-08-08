@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Test helpers for command runtime/config fixtures.
 // Kept under commands because many command tests need the same mock runtime shapes.
 

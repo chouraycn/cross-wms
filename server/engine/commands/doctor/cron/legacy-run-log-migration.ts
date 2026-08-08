@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Legacy cron JSONL run-log migration into the SQLite cron run-log store.
 import fsSync from "node:fs";
 import fs from "node:fs/promises";

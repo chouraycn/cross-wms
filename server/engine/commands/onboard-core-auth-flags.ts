@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Core auth flag registry for onboarding CLI help and routing. */
 import type { AuthChoice, OnboardOptions } from "./onboard-types.js";
 

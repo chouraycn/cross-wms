@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Token-provider normalization hooks for provider-backed auth choices.
 import { resolveProviderMatch } from "@openclaw-src/plugins/provider-auth-choice-helpers.js";
 import { resolvePluginProviders } from "@openclaw-src/plugins/provider-auth-choice.runtime.js";

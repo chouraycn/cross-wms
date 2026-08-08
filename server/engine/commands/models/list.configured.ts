@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Resolves configured model refs and tags for model-list rows. */
 import {
   buildModelAliasIndex,

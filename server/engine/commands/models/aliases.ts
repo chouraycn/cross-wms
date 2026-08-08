@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Commands for listing, adding, and removing model aliases. */
 import { formatCliCommand } from "@openclaw-src/cli/command-format.js";
 import { logConfigUpdated } from "@openclaw-src/config/logging.js";

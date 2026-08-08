@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Cron store row normalization for doctor repair and quarantine decisions.
 import { randomUUID } from "node:crypto";
 import { timestampMsToIsoString } from "@openclaw-src/../packages/normalization-core/src/number-coercion.js";

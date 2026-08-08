@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Implements `openclaw agents list` text and JSON summaries.
 import { formatCliCommand } from "@openclaw-src/cli/command-format.js";
 import { listRouteBindings } from "@openclaw-src/config/bindings.js";

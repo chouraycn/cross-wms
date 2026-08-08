@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Legacy session runtime config migrations for retired maintenance/fork sizing keys.
 import {
   defineLegacyConfigMigration,

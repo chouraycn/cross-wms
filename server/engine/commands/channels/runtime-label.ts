@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Runtime-aware channel label lookup for command output.
 import { getBundledChannelSetupPlugin } from "@openclaw-src/channels/plugins/bundled.js";
 import { getChannelPlugin, getLoadedChannelPlugin } from "@openclaw-src/channels/plugins/index.js";

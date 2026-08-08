@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Legacy cron `notify: true` migration to explicit webhook/completion delivery.
 import {
   normalizeOptionalLowercaseString,

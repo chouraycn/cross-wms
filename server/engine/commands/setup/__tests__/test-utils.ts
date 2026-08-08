@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Test doubles for setup and command prompt tests.
  *

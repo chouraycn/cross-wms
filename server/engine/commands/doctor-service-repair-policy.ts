@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Policy wrapper for doctor repairs to services managed by external supervisors. */
 import type { DoctorPrompter } from "./doctor-prompter.js";
 

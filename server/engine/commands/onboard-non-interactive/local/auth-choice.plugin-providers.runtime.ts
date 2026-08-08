@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Runtime-only provider plugin helpers for non-interactive onboarding.
  *

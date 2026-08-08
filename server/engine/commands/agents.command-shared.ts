@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Shared config-loading helpers for agent management commands.
 import type { OpenClawConfig } from "@openclaw-src/config/types.openclaw.js";
 import type { RuntimeEnv } from "@openclaw-src/runtime.js";

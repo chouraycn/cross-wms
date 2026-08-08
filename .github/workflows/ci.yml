@@ -37,6 +37,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
+          submodules: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v5
@@ -62,6 +63,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
+          submodules: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v5
@@ -96,6 +98,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
+          submodules: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v5
@@ -109,6 +112,9 @@ jobs:
       - name: Type check frontend
         run: npx tsc --project tsconfig.json --noEmit
 
+      - name: Prepare openclaw mock (if submodule absent)
+        run: node scripts/ensure-openclaw-mock.cjs
+
       - name: Type check server
         run: npx tsc --project server/tsconfig.json --noEmit
 
@@ -121,6 +127,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
+          submodules: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v5
@@ -146,6 +153,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
+          submodules: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v5
@@ -168,6 +176,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
+          submodules: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v5
@@ -191,6 +200,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
+          submodules: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v5
@@ -262,6 +272,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
+          submodules: false
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js

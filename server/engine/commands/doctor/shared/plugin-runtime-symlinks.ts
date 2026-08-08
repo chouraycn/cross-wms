@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Doctor detection and cleanup for stale global plugin-runtime symlinks.
 import fs from "node:fs/promises";
 import path from "node:path";

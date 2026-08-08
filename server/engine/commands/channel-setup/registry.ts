@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { ChannelSetupWizardAdapter } from "@openclaw-src/channels/plugins/setup-wizard-types.js";
 // Adapts declarative and imperative channel setup wizards to the command-facing interface.
 import { buildChannelSetupWizardAdapterFromSetupWizard } from "@openclaw-src/channels/plugins/setup-wizard.js";

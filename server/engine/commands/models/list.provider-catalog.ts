@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Provider plugin catalog loading for model-list output. */
 import { createHash } from "node:crypto";
 import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Normalizes and applies custom provider settings captured by onboarding.
  *

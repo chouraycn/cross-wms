@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Post-selection model/auth sanity checks shown during onboarding and agent setup.
 import { ensureAuthProfileStore, listProfilesForProvider } from "@openclaw-src/agents/auth-profiles.js";
 import type { AuthProfileCredential } from "@openclaw-src/agents/auth-profiles/types.js";

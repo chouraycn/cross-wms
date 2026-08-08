@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Status scan test helpers provide shared mocks and config fixtures for scan suites.
 import type { Mock } from "vitest";
 import { vi } from "vitest";

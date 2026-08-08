@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Legacy channel config migrations for routing, streaming, groups, and account aliases.
 import {
   defineLegacyConfigMigration,

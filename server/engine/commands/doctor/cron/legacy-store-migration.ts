@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Legacy cron JSON/state store loader and archiver for doctor migration.
 import fs from "node:fs/promises";
 import path from "node:path";

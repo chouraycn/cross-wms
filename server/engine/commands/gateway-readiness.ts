@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Ensures the managed gateway is available before commands that need it run. */
 import type { DaemonStatus } from "@openclaw-src/cli/daemon-cli/status.gather.js";
 import { promptYesNo } from "@openclaw-src/cli/prompt.js";

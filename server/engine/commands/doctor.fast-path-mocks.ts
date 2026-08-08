@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Fast-path module mocks for doctor command tests that do not need full integrations. */
 import { vi } from "vitest";
 

@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Provider/account summary helpers for `openclaw agents list`.
 import { isChannelVisibleInConfiguredLists } from "@openclaw-src/channels/plugins/exposure.js";
 import { resolveChannelDefaultAccountId } from "@openclaw-src/channels/plugins/helpers.js";

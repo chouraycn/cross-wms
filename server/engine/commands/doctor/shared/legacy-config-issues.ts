@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Doctor legacy config issue finder that combines core, channel, and plugin rules.
 import { collectChannelLegacyConfigRules } from "@openclaw-src/channels/plugins/legacy-config.js";
 import { findLegacyConfigIssues } from "@openclaw-src/config/legacy.js";

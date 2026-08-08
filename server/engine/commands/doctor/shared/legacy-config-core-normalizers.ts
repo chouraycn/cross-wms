@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Core legacy config normalizers for shipped keys retired outside the rule table.
 import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
 import {

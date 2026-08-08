@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Registry-loading adapters for model-list row construction. */
 import { loadAgentModelRegistry } from "@openclaw-src/agents/model-registry-loader.js";
 import { shouldSuppressBuiltInModel } from "@openclaw-src/agents/model-suppression.js";

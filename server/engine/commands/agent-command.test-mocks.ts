@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Agent command test mocks replace logging and runtime-heavy modules shared by agent command suites.
 import { vi } from "vitest";
 

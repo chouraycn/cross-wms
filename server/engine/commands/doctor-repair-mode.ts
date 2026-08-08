@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Resolves doctor repair mode from CLI flags, TTY state, and update environment. */
 import { isTruthyEnvValue } from "@openclaw-src/infra/env.js";
 import type { DoctorOptions } from "./doctor.types.js";

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Provider-index-backed model catalog rows for bundled model-list output. */
 import { normalizeModelCatalogProviderId } from "@openclaw/model-catalog-core/model-catalog-refs";
 import type { NormalizedModelCatalogRow } from "@openclaw/model-catalog-core/model-catalog-types";

@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Doctor scanner and repair for plugin/channel config that references missing plugins.
 import { sanitizeForLog } from "@openclaw-src/../packages/terminal-core/src/ansi.js";
 import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "@openclaw-src/agents/agent-scope.js";

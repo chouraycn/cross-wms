@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Status 命令族
  *

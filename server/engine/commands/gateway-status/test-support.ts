@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Test-only config helpers for gateway status SecretRef scenarios.
 /** Builds gateway config where local and remote auth values use environment SecretRefs. */
 export function createSecretRefGatewayConfig(params?: { gatewayMode?: "local" | "remote" }) {

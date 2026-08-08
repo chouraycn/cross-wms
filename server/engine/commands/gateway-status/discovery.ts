@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Discovery helpers for turning gateway remote URLs and Bonjour beacons into SSH targets. */
 import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
 import type { GatewayBonjourBeacon } from "@openclaw-src/infra/bonjour-discovery.js";

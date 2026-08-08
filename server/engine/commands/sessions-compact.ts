@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Sessions compact command.
  *

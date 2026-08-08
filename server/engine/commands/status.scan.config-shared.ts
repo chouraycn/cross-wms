@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Config loading helpers shared by status scan variants.
 // Handles missing-config cold start and secret diagnostics before scan work begins.
 

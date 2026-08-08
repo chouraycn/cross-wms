@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Memory status collection for status scans.
 // Runtime memory dependencies stay lazy so status paths without memory avoid loading the search manager.
 

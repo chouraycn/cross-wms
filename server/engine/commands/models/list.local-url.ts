@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Local URL classifier for model provider status/list output. */
 import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
 

@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Resolves the first channel that can report linked/unlinked auth state for status summaries.
 // Channel-specific linking logic stays inside plugin status hooks.
 

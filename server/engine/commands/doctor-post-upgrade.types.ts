@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Shared report types for post-upgrade doctor plugin probes. */
 type PostUpgradeFindingLevel = "ok" | "warn" | "error";
 

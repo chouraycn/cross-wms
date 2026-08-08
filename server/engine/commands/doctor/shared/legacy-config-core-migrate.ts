@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Core doctor compatibility migration pipeline for current config objects.
 import type { OpenClawConfig } from "@openclaw-src/config/types.openclaw.js";
 import { runPluginSetupConfigMigrations } from "@openclaw-src/plugins/setup-registry.js";

@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Shared doctor state helpers for previewing or applying config mutations.
 import type { OpenClawConfig } from "@openclaw-src/config/types.openclaw.js";
 

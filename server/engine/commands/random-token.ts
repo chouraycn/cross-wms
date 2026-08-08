@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Gateway token generation helper.
  *

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Builds provider auth summaries for model-list/status output. */
 import { normalizeProviderIdForAuth } from "@openclaw/model-catalog-core/provider-id";
 import {

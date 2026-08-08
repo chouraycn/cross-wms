@@ -1,13 +1,15 @@
 import {
   buildAgentRunTerminalOutcome,
   type AgentRunTerminalOutcome,
-} from "@openclaw-src/agents/agent-run-terminal-outcome.js";
+} from "../agents/agent-run-terminal-outcome.js";
 import { updateSessionStoreEntry, type SessionEntry } from "@openclaw-src/config/sessions.js";
 import type { AgentEventPayload } from "@openclaw-src/infra/agent-events.js";
 import { loadSessionEntry } from "./session-utils.js";
 import type { GatewaySessionRow, SessionRunStatus } from "./session-utils.types.js";
 
 type LifecyclePhase = "start" | "end" | "error";
+
+type RestartRecoveryRun = { runId: string; lifecycleGeneration: string };
 
 type LifecycleEventLike = Pick<AgentEventPayload, "ts" | "sessionId"> & {
   runId?: string;
@@ -189,11 +191,11 @@ export function derivePersistedSessionLifecyclePatch(params: {
     runId &&
     lifecycleGeneration &&
     restartRecoveryRuns?.some(
-      (run) => run.runId === runId && run.lifecycleGeneration === lifecycleGeneration,
+      (run: RestartRecoveryRun) => run.runId === runId && run.lifecycleGeneration === lifecycleGeneration,
     )
   ) {
     const remainingRuns = restartRecoveryRuns.filter(
-      (run) => run.runId !== runId || run.lifecycleGeneration !== lifecycleGeneration,
+      (run: RestartRecoveryRun) => run.runId !== runId || run.lifecycleGeneration !== lifecycleGeneration,
     );
     if (remainingRuns.length > 0) {
       return { restartRecoveryRuns: remainingRuns };
@@ -213,7 +215,7 @@ export function deriveGatewaySessionLifecycleProjectionPatch(params: {
 }
 
 export function isRestartRecoveryLifecycleEvent(params: {
-  entry?: Pick<SessionEntry, "restartRecoveryRuns"> | null;
+  entry?: Partial<Pick<SessionEntry, "restartRecoveryRuns">> | null;
   event: Pick<LifecycleEventLike, "runId" | "lifecycleGeneration" | "data">;
 }): boolean {
   const runId = params.event.runId?.trim();
@@ -224,7 +226,7 @@ export function isRestartRecoveryLifecycleEvent(params: {
     runId &&
     lifecycleGeneration &&
     params.entry?.restartRecoveryRuns?.some(
-      (run) => run.runId === runId && run.lifecycleGeneration === lifecycleGeneration,
+      (run: RestartRecoveryRun) => run.runId === runId && run.lifecycleGeneration === lifecycleGeneration,
     ),
   );
   return (
@@ -273,7 +275,7 @@ export async function persistGatewaySessionLifecycleEvent(params: {
     skipMaintenance: true,
     takeCacheOwnership: true,
     requireWriteSuccess: true,
-    update: async (entry) => {
+    update: async (entry: SessionEntry) => {
       if (isStaleLifecycleEventForSession({ owningSessionId, currentSessionId: entry.sessionId })) {
         return null;
       }

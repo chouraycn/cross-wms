@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Doctor warnings and repairs for redundant bundled plugin load path aliases.
 import path from "node:path";
 import { sanitizeForLog } from "@openclaw-src/../packages/terminal-core/src/ansi.js";

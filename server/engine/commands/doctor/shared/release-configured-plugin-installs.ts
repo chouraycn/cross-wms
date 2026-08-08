@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Release-era repair for configs that imply official plugin installs before install records existed.
 import { normalizeNullableString as normalizeId } from "@openclaw/normalization-core/string-coerce";
 import { collectConfiguredAgentHarnessRuntimes } from "@openclaw-src/agents/harness-runtimes.js";

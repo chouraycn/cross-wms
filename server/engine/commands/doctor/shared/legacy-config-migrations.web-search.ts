@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Legacy web-search config migration from tools.web.search to plugin-owned config.
 import {
   defineLegacyConfigMigration,

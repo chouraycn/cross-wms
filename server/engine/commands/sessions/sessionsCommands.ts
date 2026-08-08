@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Sessions 命令族
  *

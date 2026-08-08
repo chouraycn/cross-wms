@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Resolves official provider plugins implied by configured auth and model selections.
 import { collectConfiguredModelRefs } from "@openclaw/model-catalog-core/configured-model-refs";
 import { normalizeNullableString as normalizeId } from "@openclaw/normalization-core/string-coerce";

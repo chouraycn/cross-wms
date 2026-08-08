@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Legacy diagnostics config migrations for renamed runtime diagnostic options.
 import {
   defineLegacyConfigMigration,

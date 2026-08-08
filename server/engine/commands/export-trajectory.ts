@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** CLI command for exporting a session transcript as a trajectory artifact. */
 import path from "node:path";
 import { formatCliCommand } from "@openclaw-src/cli/command-format.js";

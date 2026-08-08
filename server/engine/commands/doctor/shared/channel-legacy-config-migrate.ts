@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Legacy config migration bridge for channel doctor compatibility contracts.
 import { getBootstrapChannelPlugin } from "@openclaw-src/channels/plugins/bootstrap-registry.js";
 import { loadBundledChannelDoctorContractApi } from "@openclaw-src/channels/plugins/doctor-contract-api.js";

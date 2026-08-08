@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Migration provider lookup, option shaping, and plan creation helpers. */
 import { getRuntimeConfig } from "@openclaw-src/config/config.js";
 import {

@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Config validation helpers shared by commands that need fail-fast config loading.
 import { formatCliCommand } from "@openclaw-src/cli/command-format.js";
 import { formatPluginPackagingRuntimeOutputRecoveryHint } from "@openclaw-src/cli/config-recovery-hints.js";

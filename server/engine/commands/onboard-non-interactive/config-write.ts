@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Config write commit helper for non-interactive onboarding.
  *

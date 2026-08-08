@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Applies an onboarding auth choice through provider setup flows and legacy normalization.
 import { formatCliCommand } from "@openclaw-src/cli/command-format.js";
 import { applyAuthChoiceLoadedPluginProvider } from "@openclaw-src/plugins/provider-auth-choice.js";

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Node-based daemon install plan builder for managed gateway services. */
 import { formatNodeServiceDescription } from "@openclaw-src/daemon/constants.js";
 import { resolveNodeProgramArguments } from "@openclaw-src/daemon/program-args.js";

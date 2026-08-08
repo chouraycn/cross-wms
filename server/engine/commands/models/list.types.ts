@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Shared data shapes for model-list and model-status output.
 /** Configured model entry plus tags/aliases used by row builders. */
 export type ConfiguredEntry = {

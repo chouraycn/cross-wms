@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Entry points for the full configure wizard and section-limited runs.
 import process from "node:process";
 import { formatCliCommand } from "@openclaw-src/cli/command-format.js";

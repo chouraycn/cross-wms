@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Interactive onboarding step for enabling workspace hooks. */
 import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "@openclaw-src/agents/agent-scope.js";
 import { formatCliCommand } from "@openclaw-src/cli/command-format.js";

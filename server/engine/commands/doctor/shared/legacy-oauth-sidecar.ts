@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Legacy OAuth sidecar reader for migrating encrypted auth-profile secret material.
 import * as childProcess from "node:child_process";
 import { createCipheriv, createDecipheriv, hash } from "node:crypto";

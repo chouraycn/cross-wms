@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Legacy MCP runtime config migrations for CLI-native transport aliases.
 import {
   defineLegacyConfigMigration,

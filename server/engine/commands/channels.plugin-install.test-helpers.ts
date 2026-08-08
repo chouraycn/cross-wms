@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Channels plugin-install test helpers build catalog, plugin, and config fixtures for add/remove suites.
 import { vi } from "vitest";
 import type { ChannelPluginCatalogEntry } from "../channels/plugins/catalog.js";

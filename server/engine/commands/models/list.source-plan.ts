@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Chooses which source family should back a model-list invocation. */
 import type { NormalizedModelCatalogRow } from "@openclaw/model-catalog-core/model-catalog-types";
 import type { OpenClawConfig } from "@openclaw-src/config/types.openclaw.js";

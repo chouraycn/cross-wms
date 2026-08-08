@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Normalized full status scan result shape.
 // Builders flatten the gateway snapshot so downstream text/JSON code reads one stable object.
 

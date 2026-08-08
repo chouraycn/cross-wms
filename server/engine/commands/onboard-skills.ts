@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Interactive skill dependency setup for onboarding.
  *

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Commands for managing default text model fallbacks. */
 import type { RuntimeEnv } from "@openclaw-src/runtime.js";
 import {

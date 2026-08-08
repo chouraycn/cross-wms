@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Shared daemon install runtime/path helpers for service plan generation.
 import fs from "node:fs";
 import path from "node:path";

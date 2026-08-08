@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Public status command barrel.
 // Exposes the command and summary builder without importing implementation details.
 

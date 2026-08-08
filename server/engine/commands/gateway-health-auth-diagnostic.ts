@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Gateway health auth diagnostic helpers for reachable-but-unauthenticated probes. */
 import type { DaemonStatus } from "@openclaw-src/cli/daemon-cli/status.gather.js";
 

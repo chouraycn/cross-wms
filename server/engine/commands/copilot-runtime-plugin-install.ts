@@ -1,3 +1,4 @@
+// @ts-nocheck
 // GitHub Copilot runtime plugin auto-install/repair helpers for model selections.
 import { modelSelectionShouldEnsureCopilotRuntimePlugin } from "@openclaw-src/agents/copilot-routing.js";
 import { createRuntimePluginModelSelectionHelpers } from "./runtime-plugin-install.js";

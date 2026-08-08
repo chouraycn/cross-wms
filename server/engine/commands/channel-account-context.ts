@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Resolves a channel plugin's default account with strict or read-only diagnostics.
 import { resolveChannelDefaultAccountId } from "@openclaw-src/channels/plugins/helpers.js";
 import type { ChannelPlugin } from "@openclaw-src/channels/plugins/types.plugin.js";

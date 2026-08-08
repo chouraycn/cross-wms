@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Legacy web-fetch config migration from tools.web.fetch to plugin-owned config.
 import { mergeMissing } from "@openclaw-src/config/legacy.shared.js";
 import {

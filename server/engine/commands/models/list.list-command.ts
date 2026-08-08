@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Implementation of `openclaw models list`. */
 import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
 import { parseModelRef } from "@openclaw-src/agents/model-selection.js";

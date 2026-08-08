@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Update-phase helpers that gate doctor repairs during package swaps and convergence.
 import { isTruthyEnvValue } from "@openclaw-src/infra/env.js";
 

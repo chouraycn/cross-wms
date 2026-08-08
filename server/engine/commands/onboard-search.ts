@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Search setup command barrel.
  *

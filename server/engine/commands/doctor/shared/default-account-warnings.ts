@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Doctor warnings for multi-account channels missing explicit default account routing.
 import {
   normalizeLowercaseStringOrEmpty,

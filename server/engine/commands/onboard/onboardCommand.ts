@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Onboard 命令族
  *

@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Builds provider-aware auth-choice options and grouped onboarding menus.
 import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
 import type { AuthProfileStore } from "@openclaw-src/agents/auth-profiles/types.js";

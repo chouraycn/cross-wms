@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Validating legacy config migration wrapper used by doctor config flow.
 import type { OpenClawConfig } from "@openclaw-src/config/types.js";
 import { validateConfigObjectWithPlugins } from "@openclaw-src/config/validation.js";

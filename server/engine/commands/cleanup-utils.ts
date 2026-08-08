@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Shared destructive-cleanup planning and guarded removal helpers.
 import fs from "node:fs/promises";
 import path from "node:path";

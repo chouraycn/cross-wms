@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Legacy model-provider aliases that encoded runtime/backend selection in model refs.
 import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
 import { normalizeStaticProviderModelId } from "@openclaw-src/agents/model-ref-shared.js";

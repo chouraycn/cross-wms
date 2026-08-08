@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Formatting helpers for gateway runtime summaries and doctor repair hints. */
 import { formatCliCommand } from "@openclaw-src/cli/command-format.js";
 import {

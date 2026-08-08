@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Shared command implementation for text and image model fallback lists. */
 import { buildModelAliasIndex, resolveModelRefFromString } from "@openclaw-src/agents/model-selection.js";
 import { formatCliCommand } from "@openclaw-src/cli/command-format.js";

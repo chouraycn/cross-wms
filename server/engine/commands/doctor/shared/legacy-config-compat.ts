@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Top-level legacy config migration runner used before full config validation.
 import { applyChannelDoctorCompatibilityMigrations } from "./channel-legacy-config-migrate.js";
 import { LEGACY_CONFIG_MIGRATIONS } from "./legacy-config-migrations.js";

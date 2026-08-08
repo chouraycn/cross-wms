@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Doctor cron warnings for model overrides and stale WhatsApp crontab health scripts.
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";

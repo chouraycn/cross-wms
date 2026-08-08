@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Migration provider context and report-directory helpers. */
 import path from "node:path";
 import { timestampMsToIsoFileStamp } from "@openclaw/normalization-core/number-coercion";

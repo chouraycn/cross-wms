@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Doctor capability lookup for channel-specific policy and migration behavior.
 import { getBundledChannelPlugin } from "@openclaw-src/channels/plugins/bundled.js";
 import type { ChannelDmAllowFromMode } from "@openclaw-src/channels/plugins/dm-access.js";

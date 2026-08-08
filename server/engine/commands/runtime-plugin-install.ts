@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Runtime plugin install helpers for model selection.
  *

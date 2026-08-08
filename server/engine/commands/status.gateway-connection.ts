@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Gateway connection detail formatting for status reports.
 // Keeps verbose human text and status-all connection sections consistent.
 

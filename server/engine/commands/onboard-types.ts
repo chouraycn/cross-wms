@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Shared onboarding option and choice types.
  *

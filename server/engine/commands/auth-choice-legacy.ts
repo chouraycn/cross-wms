@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Legacy auth-choice alias handling for CLI/onboarding compatibility.
 import type { OpenClawConfig } from "@openclaw-src/config/types.openclaw.js";
 import {

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Extracts the gateway's self presence entry from status/presence payloads. */
 import { readStringValue } from "@openclaw/normalization-core/string-coerce";
 

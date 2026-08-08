@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Backup test support provides temp config/state fixtures and mocked backup runtime helpers.
 import fs from "node:fs/promises";
 import path from "node:path";

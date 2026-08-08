@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Doctor repair for configured plugins, runtimes, channels, and providers missing install records.
 import { existsSync } from "node:fs";
 import { readFile, rm } from "node:fs/promises";

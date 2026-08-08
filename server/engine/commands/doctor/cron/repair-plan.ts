@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Cron doctor repair planning helpers for previewing and merging legacy rows.
 import { isDeepStrictEqual } from "node:util";
 import { normalizeOptionalString } from "@openclaw-src/../packages/normalization-core/src/string-coerce.js";

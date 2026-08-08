@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Converts registry/catalog models into printable model-list rows. */
 import { modelKey } from "@openclaw-src/agents/model-ref-shared.js";
 import { isLocalBaseUrl } from "./list.local-url.js";

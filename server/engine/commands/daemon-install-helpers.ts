@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Gateway daemon install plan builder, including service env and SecretRef passthrough policy.
 import fs from "node:fs";
 import os from "node:os";

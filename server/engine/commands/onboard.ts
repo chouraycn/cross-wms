@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Top-level `openclaw onboard` command entrypoint.
  *

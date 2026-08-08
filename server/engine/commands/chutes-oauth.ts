@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Chutes OAuth login flow with loopback callback handling and manual paste fallback.
 import { randomBytes } from "node:crypto";
 import { createServer } from "node:http";

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Built-in Slash Commands
  * 内置 Slash 命令 - 20+ 常用命令

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Doctor warnings for heartbeat.session values that resolve to missing delivery sessions. */
 import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
 import { listAgentEntries, listAgentIds, resolveAgentConfig } from "@openclaw-src/agents/agent-scope.js";

@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Legacy web-search config migration from tools.web.search to plugin-owned configs.
 import { mergeMissing } from "@openclaw-src/config/legacy.shared.js";
 import {

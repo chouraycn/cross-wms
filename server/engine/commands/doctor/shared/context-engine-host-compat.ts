@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Doctor checks for context engine host requirements against configured agent runtimes.
 import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
 import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";

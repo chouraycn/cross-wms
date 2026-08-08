@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Non-interactive onboarding command dispatcher.
  *

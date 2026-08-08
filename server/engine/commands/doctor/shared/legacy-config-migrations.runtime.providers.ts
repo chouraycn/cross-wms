@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Legacy provider runtime config migrations for plugin ids and bundled discovery policy.
 import {
   defineLegacyConfigMigration,

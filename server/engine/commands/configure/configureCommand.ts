@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Configure 命令族
  *

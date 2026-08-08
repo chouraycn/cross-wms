@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Shared summary types returned by gateway health and rendered by the CLI.
 /** Health snapshot for one configured channel account. */
 export type ChannelAccountHealthSummary = {

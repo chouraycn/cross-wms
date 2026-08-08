@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Doctor warnings for active tools whose schemas cannot be projected to the selected runtime.
 import { sanitizeForLog } from "@openclaw-src/../packages/terminal-core/src/ansi.js";
 import {

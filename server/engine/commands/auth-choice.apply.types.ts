@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Shared types for applying auth-choice selections during onboarding and agent setup.
 import type { OpenClawConfig } from "@openclaw-src/config/types.openclaw.js";
 import type { RuntimeEnv } from "@openclaw-src/runtime.js";

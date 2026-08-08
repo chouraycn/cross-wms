@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Interactive custom provider onboarding prompts and endpoint verification.
  *

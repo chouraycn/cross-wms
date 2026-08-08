@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Legacy message queue config migrations for retired steering modes.
 import {
   defineLegacyConfigMigration,

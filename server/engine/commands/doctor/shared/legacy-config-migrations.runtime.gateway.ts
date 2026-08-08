@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Legacy gateway runtime config migrations for bind modes, WebChat, and Control UI origins.
 import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
 import {

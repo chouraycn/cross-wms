@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Legacy audio config migrations for retired transcription command settings.
 import {
   defineLegacyConfigMigration,

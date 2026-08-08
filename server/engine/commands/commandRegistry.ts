@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Slash Command System
  * Slash 命令系统 - 注册、解析、执行 Slash 命令

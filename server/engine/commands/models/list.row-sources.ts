@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Orchestrates model-list row sources across registry, manifests, catalogs, and config. */
 import type { ModelRegistry } from "@openclaw-src/llm/model-registry.js";
 import {

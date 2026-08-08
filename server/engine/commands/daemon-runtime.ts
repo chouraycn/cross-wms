@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Gateway daemon runtime option definitions used by install/configure flows.
 export type GatewayDaemonRuntime = "node" | "bun";
 

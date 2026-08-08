@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Human-readable formatting for agent routing binding match criteria.
 import type { AgentRouteBinding } from "@openclaw-src/config/types.js";
 

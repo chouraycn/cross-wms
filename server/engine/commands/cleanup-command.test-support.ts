@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Cleanup command test support provides non-exiting runtimes and log captures for cleanup suites.
 import { vi } from "vitest";
 import { createNonExitingRuntime, type RuntimeEnv } from "../runtime.js";

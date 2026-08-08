@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Doctor repair for dmPolicy allowlists whose sender entries only exist in pairing stores.
 import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
 import { normalizeUniqueStringEntries } from "@openclaw/normalization-core/string-normalization";

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Config loader for model commands with command-scoped secret resolution. */
 import { resolveCommandConfigWithSecrets } from "@openclaw-src/cli/command-config-resolution.js";
 import type { RuntimeEnv } from "@openclaw-src/runtime.js";

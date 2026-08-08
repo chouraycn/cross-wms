@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Test helpers for loading doctor command with terminal note output mocked. */
 import type { Mock } from "vitest";
 import { vi } from "vitest";

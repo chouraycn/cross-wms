@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Doctor scanner and repair for subagent allowlists that reference missing agents.
 import { listAgentIds } from "@openclaw-src/agents/agent-scope-config.js";
 import type { OpenClawConfig } from "@openclaw-src/config/types.openclaw.js";

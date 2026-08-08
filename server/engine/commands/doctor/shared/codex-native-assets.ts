@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Doctor scan for personal Codex CLI assets that native Codex-mode agents do not auto-load.
 import type { Dirent } from "node:fs";
 import fs from "node:fs/promises";

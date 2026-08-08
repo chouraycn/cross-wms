@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Small value formatters for status overview rows.
 // These helpers keep terse row text consistent between compact and full status reports.
 

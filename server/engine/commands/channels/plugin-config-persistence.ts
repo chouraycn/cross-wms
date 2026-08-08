@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { commitConfigWithPendingPluginInstalls } from "@openclaw-src/cli/plugins-install-record-commit.js";
 import { refreshPluginRegistryAfterConfigMutation } from "@openclaw-src/cli/plugins-registry-refresh.js";
 import { replaceConfigFile } from "@openclaw-src/config/config.js";

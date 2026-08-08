@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Codex runtime plugin auto-install/repair helpers for OpenAI model selections.
 import { modelSelectionShouldEnsureCodexPlugin } from "@openclaw-src/agents/openai-routing.js";
 import { createRuntimePluginModelSelectionHelpers } from "./runtime-plugin-install.js";

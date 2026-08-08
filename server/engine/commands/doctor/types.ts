@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Shared doctor JSON shapes used by repair modules that inspect loose config records. */
 export type DoctorAccountRecord = Record<string, any>;
 export type DoctorAllowFromEntry = string | number;

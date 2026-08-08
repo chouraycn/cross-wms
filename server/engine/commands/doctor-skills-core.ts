@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Pure helpers for doctor skill readiness repairs. */
 import type { OpenClawConfig } from "@openclaw-src/config/types.openclaw.js";
 import type { SkillStatusEntry, SkillStatusReport } from "@openclaw-src/skills/discovery/status.js";

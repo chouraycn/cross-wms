@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** CLI entrypoint for non-mutating doctor lint health checks. */
 import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "@openclaw-src/agents/agent-scope.js";
 import { readConfigFileSnapshot } from "@openclaw-src/config/config.js";

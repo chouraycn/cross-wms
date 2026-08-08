@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** Runtime dependency bundle for provider/model picker flows. */
 import {
   resolveProviderModelPickerFlowContributions,

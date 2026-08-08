@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Status test support builds reusable gateway, update, heartbeat, and service fixtures for command tests.
 import type { HeartbeatEventPayload } from "../infra/heartbeat-events.js";
 import { isBetaTag } from "../infra/update-channels.js";

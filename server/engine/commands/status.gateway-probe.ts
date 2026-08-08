@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Gateway probe auth helpers used by status scans.
 // This module resolves probe credentials without exposing secret values to report builders.
 

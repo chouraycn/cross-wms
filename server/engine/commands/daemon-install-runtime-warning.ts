@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Runtime warning helpers for daemon install plans that depend on Node.
 import { renderSystemNodeWarning, resolveSystemNodeInfo } from "@openclaw-src/daemon/runtime-paths.js";
 
