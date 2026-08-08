@@ -143,7 +143,7 @@ function loadSkillsFromDirInternal(
       }
       diagnostics.push(...result.diagnostics);
     }
-  } catch {}
+  } catch (e) { console.debug("[compat-swallowed]", e); }
 
   return { skills, diagnostics };
 }

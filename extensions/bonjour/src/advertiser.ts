@@ -274,17 +274,17 @@ function shouldSuppressCiaoConsoleLog(args: unknown[]): boolean {
 }
 
 function installCiaoConsoleNoiseFilter(): () => void {
-  const previousConsoleLog = console.log as ConsoleLogFn;
+  const previousConsoleLog = log.log as ConsoleLogFn;
   const wrapper = ((...args: unknown[]) => {
     if (shouldSuppressCiaoConsoleLog(args)) {
       return;
     }
     previousConsoleLog(...args);
   }) as ConsoleLogFn;
-  console.log = wrapper;
+  log.log = wrapper;
   return () => {
-    if (console.log === wrapper) {
-      console.log = previousConsoleLog;
+    if (log.log === wrapper) {
+      log.log = previousConsoleLog;
     }
   };
 }

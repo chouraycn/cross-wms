@@ -9,7 +9,7 @@
  * 2. generateReflectionHint() — 替换模板变量，截断到 200 字符
  * 3. shouldRetry() — 判断是否应该重试
  *
- * 错误容忍：Observer 内部错误 → console.error + 视为 success
+ * 错误容忍：Observer 内部错误 → logger.error + 视为 success
  *
  * v4.0.0: ReAct + Planner 模块
  */
@@ -208,7 +208,7 @@ export class Observer {
    * 2. 生成评估（ObservationAssessment）
    * 3. 生成反思提示（reflectionHint）
    *
-   * 错误容忍：Observer 内部错误 → console.error + 视为 success
+   * 错误容忍：Observer 内部错误 → logger.error + 视为 success
    */
   observe(
     toolCall: { name: string; arguments: Record<string, unknown> },
@@ -271,7 +271,7 @@ export class Observer {
 
       return observation;
     } catch (err) {
-      // 错误容忍：Observer 内部错误 → console.error + 视为 success
+      // 错误容忍：Observer 内部错误 → logger.error + 视为 success
       logger.error('[Observer] observe() 内部错误:', err instanceof Error ? err.message : String(err));
       return {
         toolCall,

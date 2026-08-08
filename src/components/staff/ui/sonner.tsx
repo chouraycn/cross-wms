@@ -1,35 +1,8 @@
-import type { CSSProperties } from 'react';
-import { CircleCheckIcon, InfoIcon, Loader2Icon, OctagonXIcon, TriangleAlertIcon } from 'lucide-react';
-import { Toaster as Sonner, type ToasterProps } from 'sonner';
+// v1.7.187：员工提示代码已统一到主提示位置 src/contexts/ToastContext.tsx
+// （用户要求：使用员工提示样式，删除重复代码，统一一套代码）
+//
+// 此文件仅作重新导出的兼容层，供员工侧 import { Toaster } from '@/components/staff/ui/sonner' 继续工作。
+// 实际实现请查看 ../../contexts/ToastContext.tsx 中的 UnifiedToaster / Toaster 导出。
 
-const Toaster = ({ ...props }: ToasterProps) => {
-  return (
-    <Sonner
-      theme="light"
-      className="toaster group"
-      icons={{
-        success: <CircleCheckIcon className="size-4" />,
-        info: <InfoIcon className="size-4" />,
-        warning: <TriangleAlertIcon className="size-4" />,
-        error: <OctagonXIcon className="size-4" />,
-        loading: <Loader2Icon className="size-4 animate-spin" />,
-      }}
-      style={
-        {
-          '--normal-bg': 'var(--popover)',
-          '--normal-text': 'var(--popover-foreground)',
-          '--normal-border': 'var(--border)',
-          '--border-radius': 'var(--radius)',
-        } as CSSProperties
-      }
-      toastOptions={{
-        classNames: {
-          toast: 'cn-toast',
-        },
-      }}
-      {...props}
-    />
-  );
-};
-
-export { Toaster };
+export { Toaster } from '../../../contexts/ToastContext.js';
+export type { ToasterProps } from 'sonner';

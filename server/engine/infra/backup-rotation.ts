@@ -57,8 +57,7 @@ export function rotateBackups(directory: string, options: BackupRotationOptions 
   for (const file of toDelete) {
     try {
       unlinkSync(file.path);
-    } catch {
-    }
+    } catch (e) { console.debug("[compat-swallowed]", e); }
   }
 
   return filtered.slice(0, maxBackups);
@@ -103,8 +102,7 @@ export function cleanupOldBackups(directory: string, maxAgeDays: number): number
       try {
         unlinkSync(file.path);
         deleted++;
-      } catch {
-      }
+      } catch (e) { console.debug("[compat-swallowed]", e); }
     }
   }
 

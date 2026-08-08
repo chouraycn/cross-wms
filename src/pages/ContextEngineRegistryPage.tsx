@@ -12,7 +12,7 @@ import AlertTriangleIcon from '@mui/icons-material/WarningAmber';
 import ShieldIcon from '@mui/icons-material/Shield';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import InfoIcon from '@mui/icons-material/Info';
-import { useToast } from '../contexts/ToastContext';
+import { useToast, ToastMessages } from '../contexts/ToastContext';
 import { getGrayScale } from '../constants/theme';
 import type { ContextEngineInfo, ContextEngineStats } from '../services/api';
 import {
@@ -125,7 +125,7 @@ const ContextEngineRegistryPage: React.FC = () => {
           break;
       }
       if (success) {
-        showToast('操作成功', 'success');
+        showToast(ToastMessages.OPERATION_SUCCESS, 'success');
         loadData();
       }
     } catch (e) {

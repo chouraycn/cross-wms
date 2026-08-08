@@ -107,7 +107,7 @@ const SkillAuditPage: React.FC = () => {
   }
 
   let report: any = {};
-  try { report = JSON.parse(audit.reportJson); } catch {}
+  try { report = JSON.parse(audit.reportJson); } catch (e) { console.debug("[compat-swallowed]", e); }
 
   const allFindings: AuditFinding[] = [
     ...(report.maliciousFindings || []),

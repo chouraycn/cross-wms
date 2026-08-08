@@ -27,7 +27,7 @@ import WmsAlertList from '../components/wms/WmsAlertList';
 import WmsPredictionDashboard from '../components/wms/WmsPredictionDashboard';
 import WmsPredictionDetail from '../components/wms/WmsPredictionDetail';
 import { subscribeRefresh } from '../App';
-import { useToast } from '../contexts/ToastContext';
+import { useToast, ToastMessages } from '../contexts/ToastContext';
 import type { WmsAlert, PredictionDashboardData } from '../types/wms';
 import { API_BASE_URL } from '../constants/api';
 
@@ -61,7 +61,7 @@ const WmsAlertPage: React.FC = () => {
         showToast(json.message || json.error || '获取预警数据失败', 'error');
       }
     } catch {
-      showToast('网络错误', 'error');
+      showToast(ToastMessages.NETWORK_ERROR, 'error');
     } finally {
       setLoading(false);
     }
@@ -121,7 +121,7 @@ const WmsAlertPage: React.FC = () => {
         showToast(json.message || json.error || '检查失败', 'error');
       }
     } catch {
-      showToast('网络错误', 'error');
+      showToast(ToastMessages.NETWORK_ERROR, 'error');
     } finally {
       setChecking(false);
     }
@@ -140,7 +140,7 @@ const WmsAlertPage: React.FC = () => {
         showToast(json.message || json.error || '操作失败', 'error');
       }
     } catch {
-      showToast('网络错误', 'error');
+      showToast(ToastMessages.NETWORK_ERROR, 'error');
     }
   };
 
@@ -157,7 +157,7 @@ const WmsAlertPage: React.FC = () => {
         showToast(json.message || json.error || '操作失败', 'error');
       }
     } catch {
-      showToast('网络错误', 'error');
+      showToast(ToastMessages.NETWORK_ERROR, 'error');
     }
   };
 
@@ -188,7 +188,7 @@ const WmsAlertPage: React.FC = () => {
         showToast(json.message || '预测失败', 'error');
       }
     } catch {
-      showToast('网络错误', 'error');
+      showToast(ToastMessages.NETWORK_ERROR, 'error');
     } finally {
       setChecking(false);
     }

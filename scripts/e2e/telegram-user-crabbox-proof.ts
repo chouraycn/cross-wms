@@ -637,7 +637,7 @@ export function signalCommandTree(
     try {
       process.kill(-child.pid, signal);
       return;
-    } catch {}
+    } catch (e) { console.debug("[compat-swallowed]", e); }
   }
   if (platform === "win32" && typeof child.pid === "number") {
     const args = ["/PID", String(child.pid), "/T"];
@@ -968,7 +968,7 @@ function killPidTree(pid: number | undefined) {
   } catch {
     try {
       process.kill(pid, "SIGTERM");
-    } catch {}
+    } catch (e) { console.debug("[compat-swallowed]", e); }
   }
 }
 
@@ -2925,7 +2925,7 @@ function isMainModule(): boolean {
 
 if (isMainModule()) {
   main().catch((error: unknown) => {
-    console.error(error instanceof Error ? error.message : String(error));
+    log.error(error instanceof Error ? error.message : String(error));
     process.exit(1);
   });
 }

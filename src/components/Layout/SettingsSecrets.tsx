@@ -43,7 +43,7 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import LockIcon from '@mui/icons-material/Lock';
 import HistoryIcon from '@mui/icons-material/History';
 import { getGrayScale } from '../../constants/theme';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast, ToastMessages } from '../../contexts/ToastContext';
 
 interface SecretItem {
   id: string;
@@ -232,7 +232,7 @@ const SettingsSecrets: React.FC = () => {
       const data = await response.json();
 
       if (data.data && data.data.success) {
-        showToast('密钥已删除', 'success');
+        showToast(ToastMessages.KEY_DELETED, 'success');
         if (selectedSecret?.id === secret.id) {
           setSelectedSecret(null);
         }
@@ -240,7 +240,7 @@ const SettingsSecrets: React.FC = () => {
         loadStats();
       }
     } catch (error) {
-      showToast('删除失败', 'error');
+      showToast(ToastMessages.DELETE_FAILED, 'error');
     }
   };
 
@@ -282,7 +282,7 @@ const SettingsSecrets: React.FC = () => {
       });
       const data = await response.json();
       if (data.data && data.data.success) {
-        showToast('缓存已清除', 'success');
+        showToast(ToastMessages.CACHE_CLEARED, 'success');
         loadStats();
       }
     } catch (error) {

@@ -4,6 +4,10 @@
  * 实现 OpenClaw 风格的分块摘要算法和压缩规划逻辑
  */
 import type { AgentMessage } from './context-engine/types.js';
+import {
+  getUnknownArrayField,
+  getUnknownStringField,
+} from './shared/index.js';
 
 /** 默认分块比例：40% 上下文窗口用于压缩 */
 export const BASE_CHUNK_RATIO = 0.4;
@@ -49,15 +53,15 @@ export function estimateMessageTokens(message: AgentMessage): number {
   }
 
   // reasoning_content token（防御性访问，AgentMessage 可能不含此字段）
-  const reasoningContent = (message as unknown as Record<string, unknown>).reasoning_content;
+  const reasoningContent = getUnknownStringField(message, 'reasoning_content');
   if (typeof reasoningContent === 'string' && reasoningContent.length > 0) {
     tokens += estimateTextTokens(reasoningContent);
   }
 
   // tool_calls token（支持 camelCase 和 snake_case）
   const toolCalls =
-    (message as unknown as Record<string, unknown>).toolCalls ||
-    (message as unknown as Record<string, unknown>).tool_calls;
+    getUnknownArrayField(message, 'toolCalls') ||
+    getUnknownArrayField(message, 'tool_calls');
   if (Array.isArray(toolCalls) && toolCalls.length > 0) {
     const tcJson = JSON.stringify(toolCalls);
     // tool_calls JSON 序列化后含大量标点，BPE 分词比纯文本更碎
@@ -146,7 +150,7 @@ function isActiveToolCall(message: AgentMessage): boolean {
   if (!toolCalls || toolCalls.length === 0) return false;
 
   // 检查 stopReason，排除 aborted 和 error
-  const stopReason = (message as unknown as Record<string, unknown>).stopReason as string | undefined;
+  const stopReason = getUnknownStringField(message, 'stopReason');
   return stopReason !== 'aborted' && stopReason !== 'error';
 }
 

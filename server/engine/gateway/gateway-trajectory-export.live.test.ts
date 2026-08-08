@@ -314,7 +314,7 @@ async function waitForTrajectoryExportSignal(params: {
         if (approval && !approvalId) {
           approvalId = await approveTrajectoryExport(params.client, approval);
         }
-      } catch {}
+      } catch (e) { console.debug("[compat-swallowed]", e); }
       nextHistoryPollAt = Date.now() + 2_000;
     }
     await new Promise((resolve) => {

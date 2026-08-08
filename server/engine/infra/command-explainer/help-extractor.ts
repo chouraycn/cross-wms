@@ -46,8 +46,7 @@ export async function extractVersion(command: string): Promise<string | null> {
         const match = result.match(/version\s+([\d.]+)/i);
         return match ? match[1] : result.trim();
       }
-    } catch {
-    }
+    } catch (e) { console.debug("[compat-swallowed]", e); }
   }
 
   return null;

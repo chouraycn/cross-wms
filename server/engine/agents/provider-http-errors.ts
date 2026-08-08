@@ -90,7 +90,7 @@ export async function readResponseTextLimited(
     }
     try {
       reader.releaseLock();
-    } catch {}
+    } catch (e) { console.debug("[compat-swallowed]", e); }
   }
 
   return text;
@@ -326,7 +326,7 @@ async function readResponseWithLimit(
   } finally {
     try {
       reader.releaseLock();
-    } catch {}
+    } catch (e) { console.debug("[compat-swallowed]", e); }
   }
   const result = new Uint8Array(total);
   let offset = 0;

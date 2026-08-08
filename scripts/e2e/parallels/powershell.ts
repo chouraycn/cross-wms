@@ -147,7 +147,7 @@ function Resolve-OpenClawCommand {
   $npmPrefix = $null
   try {
     $npmPrefix = (& npm.cmd prefix -g 2>$null | Select-Object -First 1)
-  } catch {}
+  } catch (e) { console.debug("[compat-swallowed]", e); }
   if ($npmPrefix) {
     $shimCandidates += Join-Path $npmPrefix 'openclaw.cmd'
     $shimCandidates += Join-Path $npmPrefix 'openclaw.ps1'

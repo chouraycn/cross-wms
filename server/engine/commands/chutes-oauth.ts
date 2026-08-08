@@ -150,7 +150,7 @@ async function waitForLocalCallback(params: {
     timeout = setTimeout(() => {
       try {
         server.close();
-      } catch {}
+      } catch (e) { console.debug("[compat-swallowed]", e); }
       reject(new Error("OAuth callback timeout"));
     }, params.timeoutMs);
   });

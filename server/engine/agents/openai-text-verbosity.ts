@@ -19,11 +19,11 @@ function normalizeOptionalLowercaseString(value: unknown): string | undefined {
   return trimmed.length > 0 ? trimmed.toLowerCase() : undefined;
 }
 
-// 内联降级实现：仅输出到 console.warn，避免引入完整 logger 依赖。
+// 内联降级实现：仅输出到 log.warn，避免引入完整 logger 依赖。
 const log = {
   warn(message: string): void {
     // eslint-disable-next-line no-console
-    console.warn(`[openai-text-verbosity] ${message}`);
+    log.warn(`[openai-text-verbosity] ${message}`);
   },
 };
 

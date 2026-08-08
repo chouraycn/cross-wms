@@ -54,7 +54,7 @@ import {
   type CronJob,
   type CronParseResult,
 } from '../../services/cronApi';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast, ToastMessages } from '../../contexts/ToastContext';
 
 interface CronLogEntry {
   id: string;
@@ -185,7 +185,7 @@ const CronPanel: React.FC = () => {
     try {
       await deleteCronJob(id);
       setJobs(prev => prev.filter(j => j.id !== id));
-      showToast('已删除', 'success');
+      showToast(ToastMessages.ITEM_DELETED, 'success');
     } catch (err) {
       showToast(err instanceof Error ? err.message : '删除失败', 'error');
     }
@@ -212,7 +212,7 @@ const CronPanel: React.FC = () => {
   const handleCopyExpr = useCallback((expr: string) => {
     navigator.clipboard?.writeText(expr).then(
       () => showToast('已复制', 'success'),
-      () => showToast('复制失败', 'error'),
+      () => showToast(ToastMessages.COPY_FAILED, 'error'),
     );
   }, [showToast]);
 

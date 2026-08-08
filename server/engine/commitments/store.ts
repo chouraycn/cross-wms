@@ -157,8 +157,7 @@ async function atomicWrite(
   } catch (err) {
     try {
       await fs.promises.unlink(tempPath);
-    } catch {
-    }
+    } catch (e) { console.debug("[compat-swallowed]", e); }
     throw err;
   }
 }

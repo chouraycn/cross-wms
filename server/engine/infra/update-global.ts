@@ -888,7 +888,7 @@ export async function collectInstalledGlobalPackageErrors(params: {
   errors.push(...(await collectSourceCheckoutInstallErrors(params.packageRoot)));
   const installedVersion = await readPackageVersion(params.packageRoot);
   const expectedComparable = normalizePackageVersionForComparison(params.expectedVersion);
-// @ts-ignore: stub type mismatch (openclaw port)
+  // (原 stub @ts-expect-error 在新版类型对齐后不再需要)
   const installedComparable = normalizePackageVersionForComparison(installedVersion);
   if (expectedComparable && installedComparable !== expectedComparable) {
     errors.push(
@@ -898,7 +898,7 @@ export async function collectInstalledGlobalPackageErrors(params: {
   errors.push(
     ...(await collectInstalledPackageDistErrors({
       packageRoot: params.packageRoot,
-// @ts-ignore: stub type mismatch (openclaw port)
+      // (原 stub @ts-expect-error 在新版类型对齐后不再需要)
       installedVersion,
       expectedVersion: params.expectedVersion,
     })),

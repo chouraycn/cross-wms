@@ -72,6 +72,7 @@ import {
   type AssistantMessageEventStream,
   type ToolCall,
 } from '../sse/openclawSSE.js';
+import { createTextStreamProcessor } from './shared/text/text-stream-processor.js';
 
 // ===================== 压缩 Hook 单例 =====================
 // 在聊天执行核心中挂载「死」模块 engine/compaction/compactionHooks.ts 的生命周期钩子。
@@ -240,13 +241,26 @@ export async function runChatSessionStream(
 ): Promise<RunChatSessionStreamResult> {
   const stream = createAssistantMessageEventStream();
 
+  // runChatSession 内部已带 coalesce，此处仅做 SSE 事件直转（不做二次合并）
+  const textProcessor = createTextStreamProcessor(
+    (kind, mergedText) => {
+      if (kind === 'assistant') {
+        stream.push({ type: 'text_delta', contentIndex: 0, delta: mergedText });
+      } else {
+        stream.push({ type: 'thinking_delta', contentIndex: 0, delta: mergedText });
+      }
+    },
+    { coalesce: undefined },
+  );
+
   const callbacks: RunChatSessionCallbacks = {
     onEvent: (event) => {
       if (event.type === 'text') {
-        stream.push({ type: 'text_delta', contentIndex: 0, delta: event.content as string });
+        textProcessor.pushText(event.content as string);
       } else if (event.type === 'thinking') {
-        stream.push({ type: 'thinking_delta', contentIndex: 0, delta: event.content as string });
+        textProcessor.pushThinking(event.content as string);
       } else if (event.type === 'tool_call') {
+        textProcessor.forceFlush();
         const toolCall: ToolCall = {
           type: 'toolCall',
           id: (event.toolCallId as string) || `tc_${Date.now()}`,
@@ -294,6 +308,7 @@ export async function runChatSessionStream(
         };
         stream.push({ type: 'start', partial });
       } else if (event.type === 'done') {
+        textProcessor.forceFlush();
         const partial: AssistantMessage = {
           role: 'assistant',
           content: [],
@@ -306,6 +321,7 @@ export async function runChatSessionStream(
         };
         stream.push({ type: 'done', reason: 'stop', message: partial });
       } else if (event.type === 'error') {
+        textProcessor.forceFlush();
         const errorMsg: AssistantMessage = {
           role: 'assistant',
           content: [],
@@ -328,12 +344,13 @@ export async function runChatSessionStream(
       }
     },
     onChunk: (text) => {
-      stream.push({ type: 'text_delta', contentIndex: 0, delta: text });
+      textProcessor.pushText(text);
     },
     onThinking: (text) => {
-      stream.push({ type: 'thinking_delta', contentIndex: 0, delta: text });
+      textProcessor.pushThinking(text);
     },
     onToolCall: (tc) => {
+      textProcessor.forceFlush();
       const toolCall: ToolCall = {
         type: 'toolCall',
         id: tc.id,
@@ -363,6 +380,7 @@ export async function runChatSessionStream(
       });
     },
     onDone: (result) => {
+      textProcessor.forceFlush();
       const message: AssistantMessage = {
         role: 'assistant',
         content: [{ type: 'text', text: result.content }],
@@ -377,6 +395,7 @@ export async function runChatSessionStream(
       stream.push({ type: 'done', reason: 'stop', message });
     },
     onError: (err) => {
+      textProcessor.forceFlush();
       const errorMsg: AssistantMessage = {
         role: 'assistant',
         content: [],
@@ -418,6 +437,17 @@ export async function runChatSession(
     : ExecutionMode.REACT;
 
   const assistantMessageId = uuidv4();
+
+  const textStreamProcessor = createTextStreamProcessor(
+    (kind, mergedText) => {
+      if (kind === 'assistant') {
+        callbacks.onEvent?.({ type: 'text', content: mergedText });
+      } else {
+        callbacks.onEvent?.({ type: 'thinking', content: mergedText });
+      }
+    },
+    { coalesce: {} },
+  );
 
   // 熔断器重置（避免上次失败永久熔断）
   resetDefaultCircuitBreaker();
@@ -571,12 +601,11 @@ export async function runChatSession(
   const isLocal = isLocalModel(modelConfig as ModelConfig);
   if (!effectiveApiKey && !isLocal) {
     const mockContent = generateMockResponse(message);
-    // 分段流式发送模拟响应
     const chunkSize = 5;
     for (let i = 0; i < mockContent.length; i += chunkSize) {
       const chunk = mockContent.slice(i, i + chunkSize);
       callbacks.onChunk?.(chunk);
-      callbacks.onEvent?.({ type: 'text', content: chunk });
+      textStreamProcessor.pushText(chunk);
       await new Promise((r) => setTimeout(r, 15));
     }
     addMessage({
@@ -590,6 +619,7 @@ export async function runChatSession(
       thinkingDuration: null,
     });
     runHooks(createHookEvent('message', 'sent', sessionId, { role: 'assistant', content: mockContent })).catch(() => {});
+    textStreamProcessor.forceFlush();
     callbacks.onEvent?.({ type: 'done', errorCode: null, errorMessage: null });
     clearTimeout(timeoutHandle);
     const mockResult: RunChatSessionResult = {
@@ -599,6 +629,7 @@ export async function runChatSession(
       modelName: effectiveModelName,
     };
     callbacks.onDone?.(mockResult);
+    textStreamProcessor.stop();
     return mockResult;
   }
 
@@ -607,9 +638,9 @@ export async function runChatSession(
   const cached = getThinkingCache(thinkingCacheKey);
   if (cached) {
     // 缓存命中：整块输出 thinking + content
-    callbacks.onEvent?.({ type: 'thinking', content: cached.thinking });
+    textStreamProcessor.pushThinking(cached.thinking);
     callbacks.onChunk?.(cached.content);
-    callbacks.onEvent?.({ type: 'text', content: cached.content });
+    textStreamProcessor.pushText(cached.content);
 
     addMessage({
       sessionId,
@@ -624,6 +655,7 @@ export async function runChatSession(
 
     runHooks(createHookEvent('message', 'sent', sessionId, { role: 'assistant', content: cached.content })).catch(() => {});
 
+    textStreamProcessor.forceFlush();
     callbacks.onEvent?.({ type: 'done', errorCode: null, errorMessage: null });
     const cachedResult: RunChatSessionResult = {
       content: cached.content,
@@ -634,6 +666,7 @@ export async function runChatSession(
     };
     callbacks.onDone?.(cachedResult);
     clearTimeout(timeoutHandle);
+    textStreamProcessor.stop();
     return cachedResult;
   }
 
@@ -664,11 +697,11 @@ export async function runChatSession(
   const executeCallbacks: ExecuteChatCallbacks = {
     onChunk: (chunk: string) => {
       callbacks.onChunk?.(chunk);
-      callbacks.onEvent?.({ type: 'text', content: chunk });
+      textStreamProcessor.pushText(chunk);
     },
     onThinking: (thinkingChunk: string) => {
       callbacks.onThinking?.(thinkingChunk);
-      callbacks.onEvent?.({ type: 'thinking', content: thinkingChunk });
+      textStreamProcessor.pushThinking(thinkingChunk);
       accumulatedThinking += thinkingChunk;
       thinkingChunkCount++;
       // 每 5 个 chunk 检查插件触发
@@ -696,6 +729,7 @@ export async function runChatSession(
       }
     },
     onToolCall: (toolCall, result) => {
+      textStreamProcessor.forceFlush();
       callbacks.onToolCall?.({
         id: toolCall.id,
         name: toolCall.function.name,
@@ -1062,6 +1096,7 @@ export async function runChatSession(
       usage: result.usage,
     }).catch(() => {});
 
+    textStreamProcessor.forceFlush();
     callbacks.onEvent?.({
       type: 'done',
       errorCode: null,
@@ -1073,6 +1108,7 @@ export async function runChatSession(
     });
 
     callbacks.onDone?.(finalResult);
+    textStreamProcessor.stop();
     return finalResult;
 
   } catch (error) {
@@ -1095,6 +1131,7 @@ export async function runChatSession(
       input.toolProfile,
       input.compaction,
       callbacks,
+      textStreamProcessor,
       timerManager,
       abortController.signal,
       selectedKeyIndex,
@@ -1105,6 +1142,7 @@ export async function runChatSession(
       if (selectedKeyIndex >= 0 && effectiveModel) {
         reportKeyResult(effectiveModel, selectedKeyIndex, false);
       }
+      textStreamProcessor.stop();
       return fallbackResult;
     }
 
@@ -1124,12 +1162,14 @@ export async function runChatSession(
       modelName: effectiveModelName,
     };
 
+    textStreamProcessor.forceFlush();
     callbacks.onEvent?.({ type: 'error', code: errorCode, message: errorMessage });
     callbacks.onEvent?.({ type: 'done', errorCode, errorMessage });
     callbacks.onError?.(err);
 
     recordTurnFailed(sessionId, err, { model: effectiveModel }).catch(() => {});
 
+    textStreamProcessor.stop();
     return errorResult;
   }
 }
@@ -1156,6 +1196,7 @@ async function tryFallback(
   toolProfile: string | undefined,
   compaction: unknown,
   callbacks: RunChatSessionCallbacks,
+  textStreamProcessor: ReturnType<typeof import('./shared/text/text-stream-processor.js').createTextStreamProcessor>,
   timerManager: TimerManager,
   signal: AbortSignal,
   selectedKeyIndex: number,
@@ -1222,12 +1263,11 @@ async function tryFallback(
   logger.info(`[runChatSession] 降级到: ${isKeyRotation ? `同模型轮换 Key（${fallbackModel.id}）` : fallbackModelName}`);
 
   // 通知前端
-  callbacks.onEvent?.({
-    type: 'text',
-    content: isKeyRotation
-      ? `\n\n> ⚠️ 当前 API Key 触发限流，已自动切换到备用 Key 重试...\n\n`
-      : `\n\n> ⚠️ 模型不支持/请求失败，已自动切换到 **${fallbackModelName}** 重试...\n\n`,
-  });
+  const fallbackNotice = isKeyRotation
+    ? `\n\n> ⚠️ 当前 API Key 触发限流，已自动切换到备用 Key 重试...\n\n`
+    : `\n\n> ⚠️ 模型不支持/请求失败，已自动切换到 **${fallbackModelName}** 重试...\n\n`;
+  callbacks.onChunk?.(fallbackNotice);
+  textStreamProcessor.pushText(fallbackNotice);
 
   // 重启心跳
   timerManager.restart('fallback');
@@ -1267,13 +1307,14 @@ async function tryFallback(
       callbacks: {
         onChunk: (chunk: string) => {
           callbacks.onChunk?.(chunk);
-          callbacks.onEvent?.({ type: 'text', content: chunk });
+          textStreamProcessor.pushText(chunk);
         },
         onThinking: (thinkingChunk: string) => {
           callbacks.onThinking?.(thinkingChunk);
-          callbacks.onEvent?.({ type: 'thinking', content: thinkingChunk });
+          textStreamProcessor.pushThinking(thinkingChunk);
         },
         onToolCall: (toolCall, toolResult) => {
+          textStreamProcessor.forceFlush();
           callbacks.onEvent?.({
             type: 'tool_call',
             toolCallId: toolCall.id,
@@ -1342,6 +1383,7 @@ async function tryFallback(
       modelName: fallbackModelName,
     };
 
+    textStreamProcessor.forceFlush();
     callbacks.onEvent?.({
       type: 'done',
       errorCode: null,

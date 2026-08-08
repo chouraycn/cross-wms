@@ -53,7 +53,7 @@ import {
   Refresh as RefreshIcon,
   Download as DownloadIcon,
 } from '@mui/icons-material';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast, ToastMessages } from '../../contexts/ToastContext';
 import { getGrayScale } from '../../constants/theme';
 import type {
   PdfToolType,
@@ -299,7 +299,7 @@ const PdfPanel: React.FC = () => {
       };
 
       setResult(mockResult);
-      showToast('操作成功', 'success');
+      showToast(ToastMessages.OPERATION_SUCCESS, 'success');
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : '操作失败';
       setError(errorMsg);

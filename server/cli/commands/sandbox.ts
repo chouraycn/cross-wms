@@ -208,7 +208,7 @@ export function registerSandboxCommand(program: Command): void {
         } else {
           console.log(result.stdout);
           if (result.stderr) {
-            console.error(result.stderr);
+            logger.error(result.stderr);
           }
         }
       } catch (err) {

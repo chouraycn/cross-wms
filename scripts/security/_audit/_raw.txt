@@ -1,0 +1,28 @@
+server/engine/pluginSandbox.ts:81: * 使用单词边界正则避免误匹配（如 retrieval( 不会被误判为 eval( ）。
+server/engine/pluginSandbox.ts:88:  // 匹配 eval( 调用（允许前面有空白、属性访问不通过单词边界）
+server/engine/pluginSandbox.ts:91:    return '代码中包含 eval() 调用，禁止在沙箱中使用';
+server/engine/pluginSandbox.ts:93:  // 匹配 new Function( 调用
+server/engine/pluginSandbox.ts:96:    return '代码中包含 new Function() 调用，禁止在沙箱中使用';
+server/engine/pluginSandbox.ts:159:  // 安全检查：执行前检测代码中是否包含 eval( 或 new Function( 调用
+server/engine/pluginSandbox.ts:235:      // 安全策略: 不注入 Function 构造函数，防止通过 new Function() 动态执行代码
+server/engine/security/audit-deep-code-safety.ts:22:    description: 'eval() usage is a security risk',
+server/engine/security/policy-engine.ts:170:        name: 'Block eval() usage',
+server/engine/security/policy-engine.ts:171:        description: 'Blocks code execution using eval() function',
+server/engine/security/policy-engine.ts:172:        conditions: [{ field: 'request.content', operator: 'contains', value: 'eval(' }],
+server/engine/security/policy-engine.ts:174:        actions: [{ type: 'block', message: 'eval() is not allowed' }],
+server/engine/plugins/sandbox.ts:270:    return '代码中包含 eval() 调用';
+server/engine/plugins/sandbox.ts:273:    return '代码中包含 new Function() 调用';
+server/engine/workflow/executor.ts:930:      const fn = new Function(...keys, `return ${expr};`);
+server/engine/workflow/executor.ts:949:      const fn = new Function(...keys, script);
+server/engine/workflow/variable-context.ts:145:      const fn = new Function(...keys, `return (${expr});`);
+server/engine/skills/security/workspace-audit.ts:173:      if (content.includes("eval(") || content.includes("new Function(")) {
+server/engine/skills/security/workspace-audit.ts:222:    if (content.includes("eval(") || content.includes("new Function(")) {
+server/engine/context-engine/retrieval.ts:299:export function createMilvusRetrieval(config: Partial<VectorStoreConfig> = {}): VectorRetrieval {
+server/engine/context-engine/retrieval.ts:300:  return new VectorRetrieval({
+server/engine/context-engine/retrieval.ts:307:export function createQdrantRetrieval(config: Partial<VectorStoreConfig> = {}): VectorRetrieval {
+server/engine/context-engine/retrieval.ts:308:  return new VectorRetrieval({
+server/engine/context-engine/retrieval.ts:315:export function createInMemoryRetrieval(config: Partial<VectorStoreConfig> = {}): VectorRetrieval {
+server/engine/context-engine/retrieval.ts:316:  return new VectorRetrieval({
+server/engine/context-engine/context-engine.ts:102:    this.vectorRetrieval = new VectorRetrieval({
+server/engine/context-engine/context-engine.ts:442:  getVectorRetrieval(): VectorRetrieval {
+packages/skill-core/src/security-scanner.ts:43:    description: 'Use of eval() or Function() constructor for dynamic code execution',

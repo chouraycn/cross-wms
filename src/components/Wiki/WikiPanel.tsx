@@ -57,7 +57,7 @@ import {
   Cancel as CancelIcon,
 } from '@mui/icons-material';
 import { getGrayScale } from '../../constants/theme';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast, ToastMessages } from '../../contexts/ToastContext';
 import WikiSearchDialog from './WikiSearchDialog';
 
 // ===================== Types =====================
@@ -438,7 +438,7 @@ const WikiPanel: React.FC = () => {
         // Update existing
         const updated = await wikiApi.update(editingEntry.id, editingEntry);
         if (updated) {
-          showToast('更新成功', 'success');
+          showToast(ToastMessages.UPDATE_SUCCESS, 'success');
           setSelectedEntry(updated);
           loadRecentEntries();
           loadStats();
@@ -448,7 +448,7 @@ const WikiPanel: React.FC = () => {
         // Create new
         const created = await wikiApi.create(editingEntry);
         if (created) {
-          showToast('创建成功', 'success');
+          showToast(ToastMessages.CREATE_SUCCESS, 'success');
           setSelectedEntry(created);
           loadRecentEntries();
           loadStats();
@@ -457,7 +457,7 @@ const WikiPanel: React.FC = () => {
       }
       setEditDialogOpen(false);
     } catch (error) {
-      showToast('保存失败', 'error');
+      showToast(ToastMessages.SAVE_FAILED, 'error');
     }
     setIsLoading(false);
   }, [editingEntry, showToast, loadRecentEntries, loadStats, loadAllTags]);
@@ -470,16 +470,16 @@ const WikiPanel: React.FC = () => {
     try {
       const success = await wikiApi.delete(selectedEntry.id);
       if (success) {
-        showToast('删除成功', 'success');
+        showToast(ToastMessages.DELETE_SUCCESS, 'success');
         setSelectedEntry(null);
         loadRecentEntries();
         loadStats();
         loadAllTags();
       } else {
-        showToast('删除失败', 'error');
+        showToast(ToastMessages.DELETE_FAILED, 'error');
       }
     } catch (error) {
-      showToast('删除失败', 'error');
+      showToast(ToastMessages.DELETE_FAILED, 'error');
     }
     setIsLoading(false);
     setDeleteDialogOpen(false);
@@ -567,10 +567,10 @@ const WikiPanel: React.FC = () => {
         setSelectedEntry(entry);
         loadAllTags();
       } else {
-        showToast('添加标签失败', 'error');
+        showToast(ToastMessages.TAGS_ADD_FAILED, 'error');
       }
     } catch (error) {
-      showToast('添加标签失败', 'error');
+      showToast(ToastMessages.TAGS_ADD_FAILED, 'error');
     }
     setIsLoading(false);
   }, [selectedEntry, newTag, showToast, loadAllTags]);
@@ -588,10 +588,10 @@ const WikiPanel: React.FC = () => {
         setSelectedEntry(entry);
         loadAllTags();
       } else {
-        showToast('移除标签失败', 'error');
+        showToast(ToastMessages.TAGS_REMOVE_FAILED, 'error');
       }
     } catch (error) {
-      showToast('移除标签失败', 'error');
+      showToast(ToastMessages.TAGS_REMOVE_FAILED, 'error');
     }
     setIsLoading(false);
   }, [selectedEntry, showToast, loadAllTags]);

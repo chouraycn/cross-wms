@@ -204,7 +204,7 @@ async function test8_staleLockCleanup(): Promise<void> {
   release();
 
   // 清理
-  try { fs.unlinkSync(lockPath); } catch {}
+  try { fs.unlinkSync(lockPath); } catch (e) { console.debug("[compat-swallowed]", e); }
 }
 
 async function test9_concurrentAppend(): Promise<void> {
@@ -275,7 +275,7 @@ console.log('child done');
     // 清理
     FileStorage.deleteSessionFile(sessionId);
   } finally {
-    try { fs.unlinkSync(childScriptPath); } catch {}
+    try { fs.unlinkSync(childScriptPath); } catch (e) { console.debug("[compat-swallowed]", e); }
   }
 }
 

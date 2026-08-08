@@ -402,8 +402,7 @@ export function closeAllIrcConnections(): void {
         sendRaw(conn.socket, "QUIT :Connection closed");
         conn.socket.end();
       }
-    } catch {
-    }
+    } catch (e) { console.debug("[compat-swallowed]", e); }
   }
   connections.clear();
 }

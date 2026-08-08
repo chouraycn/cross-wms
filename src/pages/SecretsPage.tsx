@@ -11,7 +11,7 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import HistoryIcon from '@mui/icons-material/History';
 import CachedIcon from '@mui/icons-material/Cached';
 import KeyIcon from '@mui/icons-material/Key';
-import { useToast } from '../contexts/ToastContext';
+import { useToast, ToastMessages } from '../contexts/ToastContext';
 import { getGrayScale } from '../constants/theme';
 import type { SecretItem, SecretAccessLog, SecretsStats } from '../services/api';
 import {
@@ -96,7 +96,7 @@ const SecretsPage: React.FC = () => {
     if (!window.confirm(`确定要删除密钥 "${key}" 吗？`)) return;
     try {
       await deleteSecretApi(provider, key);
-      showToast('密钥已删除', 'success');
+      showToast(ToastMessages.KEY_DELETED, 'success');
       loadData();
     } catch (e) {
       showToast(`删除失败: ${e instanceof Error ? e.message : String(e)}`, 'error');
@@ -120,7 +120,7 @@ const SecretsPage: React.FC = () => {
   const handleClearCache = async () => {
     try {
       await clearSecretsCache();
-      showToast('缓存已清除', 'success');
+      showToast(ToastMessages.CACHE_CLEARED, 'success');
     } catch (e) {
       showToast(`清除失败: ${e instanceof Error ? e.message : String(e)}`, 'error');
     }

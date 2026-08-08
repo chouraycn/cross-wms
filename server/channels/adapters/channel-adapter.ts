@@ -99,8 +99,7 @@ export class ChannelEventBus implements ChannelEventEmitter {
       for (const handler of set) {
         try {
           handler(event);
-        } catch {
-        }
+        } catch (e) { console.debug("[compat-swallowed]", e); }
       }
     }
   }

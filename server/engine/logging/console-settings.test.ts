@@ -45,12 +45,12 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  console.log = snapshot.log;
-  console.info = snapshot.info;
-  console.warn = snapshot.warn;
-  console.error = snapshot.error;
-  console.debug = snapshot.debug;
-  console.trace = snapshot.trace;
+  log.log = snapshot.log;
+  log.info = snapshot.info;
+  log.warn = snapshot.warn;
+  log.error = snapshot.error;
+  log.debug = snapshot.debug;
+  log.trace = snapshot.trace;
   envSnapshot?.restore();
   envSnapshot = undefined;
   Object.defineProperty(process.stdout, "isTTY", { value: originalIsTty, configurable: true });
@@ -65,7 +65,7 @@ function loadLogging() {
     if (loadConfigCalls > 5) {
       return {};
     }
-    console.error("config load failed");
+    log.error("config load failed");
     return {};
   });
   return { logging, state };

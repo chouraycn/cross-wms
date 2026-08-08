@@ -57,8 +57,7 @@ export class GatewayLock {
       if (existsSync(this.lockPath)) {
         unlinkSync(this.lockPath);
       }
-    } catch {
-    }
+    } catch (e) { console.debug("[compat-swallowed]", e); }
   }
 
   isLocked(): boolean {

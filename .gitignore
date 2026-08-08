@@ -37,7 +37,21 @@ Thumbs.db
 # Env
 .env
 .env.local
+.env.*
 .python-version
+
+# === 安全：证书与私钥（禁止提交仓库，吊销操作见 scripts/revoke-and-rotate-certs.zsh）===
+certs/
+*.key
+*.p12
+*.pfx
+*.csr
+*.srl
+# 允许公开的证书分发：如需提交根证书请使用 .pub.crt 命名
+*.crt
+!*.pub.crt
+*.pem
+!*.pub.pem
 
 # Logs
 *.log

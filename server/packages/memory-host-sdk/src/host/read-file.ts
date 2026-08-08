@@ -107,7 +107,7 @@ export async function readMemoryFile(params: {
           allowedAdditional = true;
           break;
         }
-      } catch {}
+      } catch (e) { console.debug("[compat-swallowed]", e); }
     }
   }
   if (!allowedWorkspace && !allowedAdditional) {

@@ -170,14 +170,16 @@ actor ServerProcessManager {
         let entry = self.serverEntry
         if entry.hasSuffix(".ts") {
             proc.arguments = [
-                "--max-old-space-size=2048",
+                "--max-old-space-size=3072",
+                "--max-semi-space-size=128",
                 "--import", "tsx",
                 entry
             ]
         } else {
             // .cjs or .js — run directly
             proc.arguments = [
-                "--max-old-space-size=2048",
+                "--max-old-space-size=3072",
+                "--max-semi-space-size=128",
                 entry
             ]
         }
@@ -187,6 +189,16 @@ actor ServerProcessManager {
         var env = ProcessInfo.processInfo.environment
         env["NODE_TLS_REJECT_UNAUTHORIZED"] = ProcessInfo.processInfo.environment["NODE_TLS_REJECT_UNAUTHORIZED"] ?? "1"
         env["NODE_ENV"] = isAppBundle ? "production" : "development"
+        // v1.7.186: 统一通过 NODE_OPTIONS 设置 V8 堆参数，双重保险（即使 shell 绕过了 arguments）
+        // 注意：NODE_OPTIONS 不允许包含 --gc-interval，只放 heap 相关参数。
+        // 旧配置 --max-old-space-size=2048 导致 V8 默认 GC 触发阈值仅约 450MB，
+        // 实际业务达到 480MB 左右即反复触发 Major GC，造成卡顿甚至进程退出。
+        // 调大到 3072MB 并加上 semi-space 调优：
+        let existingNodeOptions = env["NODE_OPTIONS"] ?? ""
+        let extraNodeOptions = "--max-old-space-size=3072 --max-semi-space-size=128"
+        env["NODE_OPTIONS"] = existingNodeOptions.isEmpty
+            ? extraNodeOptions
+            : "\(existingNodeOptions) \(extraNodeOptions)"
         // 桌面应用场景（app bundle）：数字员工模块随应用启动即以内置 default-user(admin) 身份运行，
         // 无独立登录体系。打包后的 server 将 NODE_ENV 在构建期固化为 "production"，
         // 因此 isDefaultUserAllowed() 实际只取决于 STAFF_AUTH_ALLOW_DEFAULT 这一个开关。

@@ -62,9 +62,8 @@ export { parseConfigPathArrayIndex } from "./path-array-index.js";
 // 正则表达式转义
 export { escapeRegExp } from "./regexp.js";
 
-// 防御性 record 守卫
+// 防御性 record 守卫（typed-shape-accessors 已导出 isRecord，这里只 re-export 其余三个）
 export {
-  isRecord,
   readRecordValue,
   copyArrayEntries,
   copyRecordEntries,
@@ -357,3 +356,26 @@ export type {
   SessionUsageTimePoint,
   SessionUsageTimeSeries,
 } from "./session-usage-timeseries-types.js";
+
+// === 类型信任边界：替代 as unknown as Record + zod 校验入口 ===
+export {
+  getUnknownField,
+  getUnknownStringField,
+  getUnknownArrayField,
+  isString,
+  isNumber,
+  isBoolean,
+  isArray,
+  isPlainObject,
+  isRecord,
+} from "./typed-shape-accessors.js";
+
+export {
+  validateRow,
+  validateRows,
+  boundary,
+  zIntId,
+  zNullableText,
+  zDateLike,
+  ValidationBoundaryError,
+} from "./validation.js";

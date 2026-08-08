@@ -343,8 +343,7 @@ export function closeAllTwitchConnections(): void {
         conn.ws.send("QUIT :Connection closed");
         conn.ws.close();
       }
-    } catch {
-    }
+    } catch (e) { console.debug("[compat-swallowed]", e); }
   }
   twitchConnections.clear();
 }

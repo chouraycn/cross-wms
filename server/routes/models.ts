@@ -541,7 +541,7 @@ router.post('/test-connection', async (req: Request, res: Response) => {
           message = 'Anthropic API 连接成功';
           modelValid = true;
           // 尝试解析响应中的模型信息
-          try { const j = await resp.json() as { model?: string }; if (j.model) models = [j.model]; } catch {}
+          try { const j = await resp.json() as { model?: string }; if (j.model) models = [j.model]; } catch (e) { console.debug("[compat-swallowed]", e); }
         } else {
           const txt = await resp.text().catch(() => '');
           // 检查是否是模型不存在错误

@@ -38,7 +38,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import { getGrayScale } from '../../constants/theme';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast, ToastMessages } from '../../contexts/ToastContext';
 import type { GoalRecord, GoalStatus } from '../../types/goal';
 
 interface GoalStats {
@@ -101,7 +101,7 @@ const GoalPanel: React.FC = () => {
     }
 
     if (!newObjective.trim()) {
-      showToast('请输入目标描述', 'error');
+      showToast(ToastMessages.TARGET_DESCRIPTION_REQUIRED, 'error');
       return;
     }
 
@@ -119,7 +119,7 @@ const GoalPanel: React.FC = () => {
       const data = await response.json();
 
       if (data.data && data.data.goal) {
-        showToast('目标已创建', 'success');
+        showToast(ToastMessages.TARGET_CREATED, 'success');
         setCreateDialogOpen(false);
         setNewObjective('');
         setNewSessionKey('');
@@ -150,7 +150,7 @@ const GoalPanel: React.FC = () => {
       const data = await response.json();
 
       if (data.data && data.data.goal) {
-        showToast('状态已更新', 'success');
+        showToast(ToastMessages.STATUS_UPDATED, 'success');
         setSelectedGoal(data.data.goal);
         setGoals(prev => prev.map(g => g.id === data.data.goal.id ? data.data.goal : g));
         loadStats();
@@ -177,7 +177,7 @@ const GoalPanel: React.FC = () => {
         loadStats();
       }
     } catch (err) {
-      showToast('删除失败', 'error');
+      showToast(ToastMessages.DELETE_FAILED, 'error');
     }
   }, [selectedGoal, showToast, loadStats]);
 

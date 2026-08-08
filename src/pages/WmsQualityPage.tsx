@@ -38,7 +38,7 @@ import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import PageHeader from '../components/Common/PageHeader';
 import WmsQualityForm from '../components/wms/WmsQualityForm';
 import { subscribeRefresh } from '../App';
-import { useToast } from '../contexts/ToastContext';
+import { useToast, ToastMessages } from '../contexts/ToastContext';
 import { exportToCsv } from '../utils/exportCsv';
 import type { QualityCheck } from '../types/wms';
 import { API_BASE_URL } from '../constants/api';
@@ -80,7 +80,7 @@ const WmsQualityPage: React.FC = () => {
         showToast(json.message || json.error || '获取数据失败', 'error');
       }
     } catch {
-      showToast('网络错误', 'error');
+      showToast(ToastMessages.NETWORK_ERROR, 'error');
     } finally {
       setLoading(false);
     }
@@ -132,13 +132,13 @@ const WmsQualityPage: React.FC = () => {
       const res = await fetch(`${BASE_URL}/api/wms/quality/${deletingId}`, { method: 'DELETE' });
       const json = await res.json();
       if (json.code === 0 || json.success) {
-        showToast('删除成功', 'success');
+        showToast(ToastMessages.DELETE_SUCCESS, 'success');
         fetchData();
       } else {
         showToast(json.message || json.error || '删除失败', 'error');
       }
     } catch {
-      showToast('网络错误', 'error');
+      showToast(ToastMessages.NETWORK_ERROR, 'error');
     } finally {
       setDeleteDialogOpen(false);
       setDeletingId(null);

@@ -169,7 +169,7 @@ export async function readResponseText(
       }
       try {
         reader.releaseLock();
-      } catch {}
+      } catch (e) { console.debug("[compat-swallowed]", e); }
     }
 
     const bytes = parts.length === 1 && parts[0]?.byteLength === bytesRead

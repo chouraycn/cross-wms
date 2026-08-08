@@ -190,14 +190,14 @@ export class TesseractOcrProvider implements OcrProvider {
     try {
       require.resolve('tesseract.js');
       return true;
-    } catch {}
+    } catch (e) { console.debug("[compat-swallowed]", e); }
 
     // 检查系统 Tesseract
     try {
       const { execSync } = require('child_process');
       execSync('tesseract --version', { stdio: 'ignore' });
       return true;
-    } catch {}
+    } catch (e) { console.debug("[compat-swallowed]", e); }
 
     return false;
   }

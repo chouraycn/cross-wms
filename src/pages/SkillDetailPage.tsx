@@ -28,7 +28,7 @@ import { ICON_MAP } from '../types/skill';
 import type { Skill, SkillWatchEvent } from '../types/skill';
 import { getCategoryLabel, getCategoryColors, getCategoryGradient } from '../constants/skillCategories';
 import * as api from '../services/api';
-import { useToast } from '../contexts/ToastContext';
+import { useToast, ToastMessages } from '../contexts/ToastContext';
 import SkillInfoCards from '../components/Skills/SkillInfoCards';
 import SkillDependencyPanel from '../components/Skills/SkillDependencyPanel';
 import SkillRecommendationsPanel from '../components/Skills/SkillRecommendationsPanel';
@@ -293,7 +293,7 @@ const SkillDetailPage: React.FC = () => {
     if (!skill) return;
     setSkillStatus(skill.id, 'active');
     setSkillVersion((v) => v + 1);
-    showToast('技能已启用', 'success');
+    showToast(ToastMessages.SKILL_ENABLED, 'success');
   };
 
   const handleDeactivate = () => {

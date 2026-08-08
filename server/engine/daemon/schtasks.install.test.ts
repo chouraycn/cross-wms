@@ -319,7 +319,7 @@ describe("installScheduledTask", () => {
         try {
           await fs.access(candidate);
           remaining.push(candidate);
-        } catch {}
+        } catch (e) { console.debug("[compat-swallowed]", e); }
       }
       expect(remaining).toEqual([]);
     });

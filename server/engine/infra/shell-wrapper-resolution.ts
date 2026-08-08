@@ -89,15 +89,15 @@ function resolveShellWrapperCandidate<TState>(params: {
   }
 
   const dispatchUnwrap = unwrapKnownDispatchWrapperInvocation(params.argv);
-// @ts-ignore: stub type mismatch (openclaw port)
+// @ts-expect-error FIXME: : stub type mismatch (openclaw port)
   if (dispatchUnwrap.kind === "blocked") {
     return null;
   }
-// @ts-ignore: stub type mismatch (openclaw port)
+// @ts-expect-error FIXME: : stub type mismatch (openclaw port)
   if (dispatchUnwrap.kind === "unwrapped") {
     return resolveShellWrapperCandidate({
       ...params,
-// @ts-ignore: stub type mismatch (openclaw port)
+// @ts-expect-error FIXME: : stub type mismatch (openclaw port)
       argv: dispatchUnwrap.argv,
       depth: params.depth + 1,
       state: params.onDispatchUnwrap?.(params.state, params.argv) ?? params.state,
@@ -142,7 +142,7 @@ function resolveShellWrapperSpecAndArgvInternal(
 }
 
 function isWithinDispatchClassificationDepth(depth: number): boolean {
-// @ts-ignore: stub type mismatch (openclaw port)
+  // (原 stub @ts-expect-error 在新版类型对齐后不再需要)
   return depth <= MAX_DISPATCH_WRAPPER_DEPTH;
 }
 
@@ -305,7 +305,7 @@ function hasEnvManipulationBeforeShellWrapperInternal(
     argv,
     depth,
     state: envManipulationSeen,
-// @ts-ignore: stub type mismatch (openclaw port)
+    // (原 stub @ts-expect-error 在新版类型对齐后不再需要)
     onDispatchUnwrap: (state, wrappedArgv) => state || hasDispatchEnvManipulation(wrappedArgv),
   });
   if (!candidate) {

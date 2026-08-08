@@ -45,8 +45,7 @@ async function getUserId(account: MattermostAccountConfig): Promise<string> {
       cachedUserId = data.id;
       return data.id;
     }
-  } catch {
-  }
+  } catch (e) { console.debug("[compat-swallowed]", e); }
   return account.userId || "mattermost-bot";
 }
 

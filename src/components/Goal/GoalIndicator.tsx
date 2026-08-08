@@ -31,7 +31,7 @@ import PauseCircleIcon from '@mui/icons-material/PauseCircle';
 import PlayCircleIcon from '@mui/icons-material/PlayCircle';
 import CloseIcon from '@mui/icons-material/Close';
 import { getGrayScale, CHAT_MAX_WIDTH } from '../../constants/theme';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast, ToastMessages } from '../../contexts/ToastContext';
 import type { GoalRecord, GoalStatus } from '../../types/goal';
 
 interface GoalIndicatorProps {
@@ -79,7 +79,7 @@ const GoalIndicator: React.FC<GoalIndicatorProps> = ({ sessionKey, variant = 'co
 
   const handleCreateGoal = useCallback(async () => {
     if (!newObjective.trim()) {
-      showToast('请输入目标描述', 'error');
+      showToast(ToastMessages.TARGET_DESCRIPTION_REQUIRED, 'error');
       return;
     }
 
@@ -97,7 +97,7 @@ const GoalIndicator: React.FC<GoalIndicatorProps> = ({ sessionKey, variant = 'co
       const data = await response.json();
 
       if (data.data && data.data.goal) {
-        showToast('目标已创建', 'success');
+        showToast(ToastMessages.TARGET_CREATED, 'success');
         setGoal(data.data.goal);
         setCreateDialogOpen(false);
         setNewObjective('');
@@ -144,7 +144,7 @@ const GoalIndicator: React.FC<GoalIndicatorProps> = ({ sessionKey, variant = 'co
       const data = await response.json();
 
       if (data.data && data.data.goal) {
-        showToast('状态已更新', 'success');
+        showToast(ToastMessages.STATUS_UPDATED, 'success');
         setGoal(data.data.goal);
       }
     } catch (err) {

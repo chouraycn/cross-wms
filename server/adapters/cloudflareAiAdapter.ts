@@ -175,8 +175,7 @@ export class CloudflareAiAdapter implements IAiApiAdapter {
               };
               if (onUsage) onUsage(usageData);
             }
-          } catch {
-          }
+          } catch (e) { console.debug("[compat-swallowed]", e); }
         }
       }
     } finally {

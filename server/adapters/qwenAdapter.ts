@@ -233,8 +233,7 @@ export class QwenAdapter implements IAiApiAdapter {
                 fullContent += delta;
                 onChunk(delta);
               }
-            } catch {
-            }
+            } catch (e) { console.debug("[compat-swallowed]", e); }
             continue;
           }
 
@@ -305,8 +304,7 @@ export class QwenAdapter implements IAiApiAdapter {
                 onUsage(usageData);
               }
             }
-          } catch {
-          }
+          } catch (e) { console.debug("[compat-swallowed]", e); }
         }
       }
     } finally {

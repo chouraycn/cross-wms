@@ -191,15 +191,15 @@ async function runCommand(
       const summary = signal
         ? `${label} exited with signal ${signal}`
         : `${label} exited with code ${code}`;
-      console.error(summary);
+      log.error(summary);
     });
   });
 }
 
 export async function runZaiFallbackRepro(deps: RunZaiFallbackReproDeps = {}): Promise<number> {
   const env = deps.env ?? process.env;
-  const log = deps.log ?? console.log;
-  const error = deps.error ?? console.error;
+  const log = deps.log ?? log.log;
+  const error = deps.error ?? log.error;
   const mkdtemp = deps.mkdtemp ?? fs.mkdtemp;
   const mkdir = deps.mkdir ?? fs.mkdir;
   const rm = deps.rm ?? fs.rm;
@@ -317,7 +317,7 @@ function isCliEntrypoint() {
 
 if (isCliEntrypoint()) {
   await main().catch((err: unknown) => {
-    console.error(err);
+    log.error(err);
     process.exit(1);
   });
 }

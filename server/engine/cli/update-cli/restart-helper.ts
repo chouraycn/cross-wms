@@ -207,8 +207,7 @@ function Write-RestartLog {
   param([string]$Message)
   try {
     Add-Content -LiteralPath $logPath -Value "[$(Get-Date -Format o)] $Message"
-  } catch {
-  }
+  } catch (e) { console.debug("[compat-swallowed]", e); }
 }
 
 function Join-OpenClawProcessArguments {
@@ -239,8 +238,7 @@ function Invoke-OpenClawSchtasksWithTimeout {
     if (-not $process.WaitForExit($TimeoutSeconds * 1000)) {
       try {
         $process.Kill()
-      } catch {
-      }
+      } catch (e) { console.debug("[compat-swallowed]", e); }
       Write-RestartLog "openclaw restart schtasks timeout source=update args=$($Arguments -join ' ')"
       return 124
     }
@@ -266,8 +264,7 @@ function Get-OpenClawScheduledTaskState {
     if ($task -and $task.State) {
       return [string]$task.State
     }
-  } catch {
-  }
+  } catch (e) { console.debug("[compat-swallowed]", e); }
 
   try {
     $queryOutput = & schtasks.exe /Query /TN $TaskName /FO LIST 2>$null
@@ -276,8 +273,7 @@ function Get-OpenClawScheduledTaskState {
         return $Matches[1]
       }
     }
-  } catch {
-  }
+  } catch (e) { console.debug("[compat-swallowed]", e); }
 
   return "Unknown"
 }
@@ -291,8 +287,7 @@ function Get-OpenClawListenerPids {
       $listenerPids += Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue |
         ForEach-Object { [int]$_.OwningProcess }
     }
-  } catch {
-  }
+  } catch (e) { console.debug("[compat-swallowed]", e); }
 
   if ($listenerPids.Count -eq 0) {
     try {
@@ -303,8 +298,7 @@ function Get-OpenClawListenerPids {
           $listenerPids += [int]$Matches[1]
         }
       }
-    } catch {
-    }
+    } catch (e) { console.debug("[compat-swallowed]", e); }
   }
 
   $listenerPids | Sort-Object -Unique

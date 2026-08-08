@@ -73,7 +73,7 @@ describe("enableConsoleCapture", () => {
 
   it("swallows EIO from original console writes", () => {
     setLoggerOverride({ level: "info", file: tempLogPath() });
-    console.log = () => {
+    log.log = () => {
       throw eioError();
     };
     enableConsoleCapture();
@@ -86,10 +86,10 @@ describe("enableConsoleCapture", () => {
     vi.useFakeTimers();
     vi.setSystemTime(now);
     const warn = vi.fn();
-    console.warn = warn;
+    log.warn = warn;
     setConsoleTimestampPrefix(true);
     enableConsoleCapture();
-    console.warn("[EventQueue] Slow listener detected");
+    log.warn("[EventQueue] Slow listener detected");
     expect(warn).toHaveBeenCalledTimes(1);
     const firstArg = firstMockArgAsString(warn);
     // Timestamp uses local time with timezone offset instead of UTC "Z" suffix
@@ -102,17 +102,17 @@ describe("enableConsoleCapture", () => {
   it("does not double-prefix timestamps", () => {
     setLoggerOverride({ level: "info", file: tempLogPath() });
     const warn = vi.fn();
-    console.warn = warn;
+    log.warn = warn;
     setConsoleTimestampPrefix(true);
     enableConsoleCapture();
-    console.warn("12:34:56 [exec] hello");
+    log.warn("12:34:56 [exec] hello");
     expect(warn).toHaveBeenCalledWith("12:34:56 [exec] hello");
   });
 
   it("prefixes JSON console output when timestamp prefix is enabled", () => {
     setLoggerOverride({ level: "info", file: tempLogPath() });
     const log = vi.fn();
-    console.log = log;
+    log.log = log;
     setConsoleTimestampPrefix(true);
     enableConsoleCapture();
     const payload = JSON.stringify({ ok: true });
@@ -140,7 +140,7 @@ describe("enableConsoleCapture", () => {
   it("redacts credentials before forwarding console output", () => {
     setLoggerOverride({ level: "info", file: tempLogPath() });
     const log = vi.fn();
-    console.log = log;
+    log.log = log;
     enableConsoleCapture();
 
     console.log("apiKey:", secret);
@@ -157,7 +157,7 @@ describe("enableConsoleCapture", () => {
     routeLogsToStderr();
     enableConsoleCapture();
 
-    console.error(`Authorization: Bearer ${secret}`);
+    log.error(`Authorization: Bearer ${secret}`);
 
     expect(stderrWrite).toHaveBeenCalledTimes(1);
     const line = firstMockArgAsString(stderrWrite);
@@ -168,11 +168,11 @@ describe("enableConsoleCapture", () => {
   it("redacts credentials when timestamp prefixing console output", () => {
     setLoggerOverride({ level: "info", file: tempLogPath() });
     const warn = vi.fn();
-    console.warn = warn;
+    log.warn = warn;
     setConsoleTimestampPrefix(true);
     enableConsoleCapture();
 
-    console.warn(`token=${secret}`);
+    log.warn(`token=${secret}`);
 
     expect(warn).toHaveBeenCalledTimes(1);
     const line = firstMockArgAsString(warn);
@@ -228,11 +228,11 @@ describe("enableConsoleCapture", () => {
   it("suppresses libsignal session dumps even in verbose mode", () => {
     setLoggerOverride({ level: "info", file: tempLogPath() });
     const info = vi.fn();
-    console.info = info;
+    log.info = info;
     setVerbose(true);
     enableConsoleCapture();
 
-    console.info("Closing session:", {
+    log.info("Closing session:", {
       currentRatchet: { rootKey: Buffer.from("root-key") },
       privKey: "private-key",
     });

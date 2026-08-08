@@ -108,7 +108,7 @@ function hasBuiltInMemoryState(databasePath: string): boolean {
   } finally {
     try {
       db?.close();
-    } catch {}
+    } catch (e) { console.debug("[compat-swallowed]", e); }
   }
 }
 
@@ -443,7 +443,7 @@ async function resolveMemoryManagerStatusSnapshot(
       } else {
         await manager.probeVectorAvailability();
       }
-    } catch {}
+    } catch (e) { console.debug("[compat-swallowed]", e); }
     const status = manager.status();
     return { agentId, ...status };
   } finally {

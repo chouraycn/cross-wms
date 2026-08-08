@@ -5,6 +5,22 @@
 
 import type { IVariableContext } from './types.js';
 
+// 与 executor.ts 保持一致的沙盒守卫（表达式级黑名单拦截）
+const EXPRESSION_BLOCKLIST: readonly RegExp[] = [
+  /\brequire\s*\(/, /\bimport\s*\(/, /\beval\s*\(/, /\bnew\s+Function\b/,
+  /process\s*\./, /\bglobalThis\b/, /\bfs\s*\./, /\bchild_process\b/,
+  /\bfetch\s*\(/, /\.constructor\s*\(/, /__proto__/, /\bspawn\s*\(/,
+];
+function assertSafeExpression(expr: string): void {
+  for (const re of EXPRESSION_BLOCKLIST) {
+    if (re.test(expr)) {
+      throw new Error(
+        `[VariableContext] 表达式禁用：匹配危险模式 /${re.source}/`,
+      );
+    }
+  }
+}
+
 /**
  * 变量上下文类
  * 管理工作流执行过程中的变量和表达式求值
@@ -139,6 +155,7 @@ export class VariableContext implements IVariableContext {
    */
   private evaluateExpression(expr: string): unknown {
     try {
+      assertSafeExpression(expr);
       const variablesObj = this.snapshot();
       const keys = Object.keys(variablesObj);
       const values = keys.map(k => variablesObj[k]);

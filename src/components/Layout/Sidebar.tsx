@@ -33,7 +33,7 @@ const isNativeApp = (): boolean => {
   // 构建时检测（优先）
   if (isMacOSApp()) return true;
   // 运行时检测（fallback）
-  // @ts-ignore
+  // @ts-expect-error FIXME: cdfAppNative 是宿主注入的非标准全局对象，应在 src/global.d.ts 补类型声明
   if (window.cdfAppNative && window.cdfAppNative.isNative) return true;
   return isPyWebView();
 };

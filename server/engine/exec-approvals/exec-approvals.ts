@@ -284,8 +284,7 @@ function writeExecApprovalsRaw(filePath: string, raw: string) {
     fs.writeFileSync(tempPath, raw, { mode: 0o600, flag: 'wx' });
     try {
       fs.chmodSync(tempPath, 0o600);
-    } catch (_chmodErr) {
-    }
+    } catch (e) { console.debug("[compat-swallowed]", e); }
     tempWritten = true;
     fs.renameSync(tempPath, filePath);
   } catch (err) {
@@ -304,8 +303,7 @@ function writeExecApprovalsRaw(filePath: string, raw: string) {
   }
   try {
     fs.chmodSync(filePath, 0o600);
-  } catch (_chmodErr) {
-  }
+  } catch (e) { console.debug("[compat-swallowed]", e); }
 }
 
 function coerceAllowlistEntries(allowlist: unknown): ExecAllowlistEntry[] | undefined {

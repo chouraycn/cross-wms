@@ -285,8 +285,7 @@ async function terminatePids(
     try {
       killProcess(pid, "SIGTERM");
       terminated.push(pid);
-    } catch {
-    }
+    } catch (e) { console.debug("[compat-swallowed]", e); }
   }
   if (terminated.length === 0) {
     return terminated;
@@ -296,8 +295,7 @@ async function terminatePids(
     if (deps?.killProcess || isProcessAlive(pid)) {
       try {
         killProcess(pid, "SIGKILL");
-      } catch {
-      }
+      } catch (e) { console.debug("[compat-swallowed]", e); }
     }
   }
   return terminated;

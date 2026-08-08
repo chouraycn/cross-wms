@@ -45,7 +45,7 @@ import { getGrayScale } from '../../constants/theme';
 import { APP_VERSION } from './appVersion';
 import SettingsGeneral from './SettingsGeneral';
 import SettingsAbout from './SettingsAbout';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast, ToastMessages } from '../../contexts/ToastContext';
 import { useNavigate } from 'react-router-dom';
 // StaffDeck 程序化图标（currentColor 主题化，与设置面板文字色联动）
 import StaffdeckIcon from '../staff/StaffdeckIcon';
@@ -170,7 +170,7 @@ const SettingsPanel: React.FC<{ onClose?: () => void; onOpenModelManagement?: ()
     updateSettings({ sidebar: draft.sidebar }); updateSettings({ appearance: draft.appearance });
     showToast('设置已保存', 'success');
   };
-  const handleReset = () => { resetSettings(); setDraft({ ...settings }); setErrors({}); showToast('已重置为默认值', 'info'); };
+  const handleReset = () => { resetSettings(); setDraft({ ...settings }); setErrors({}); showToast(ToastMessages.RESET_TO_DEFAULT, 'info'); };
 
   const hasErrors = Object.keys(errors).length > 0;
   const currentLabel = LABEL_BY_KEY[activeTab];

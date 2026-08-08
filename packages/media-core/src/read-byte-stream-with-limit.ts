@@ -36,13 +36,13 @@ function destroyReadableOnOverflow(stream: unknown, err: Error): void {
   if (typeof readable.destroy === "function") {
     try {
       readable.destroy(err);
-    } catch {}
+    } catch (e) { console.debug("[compat-swallowed]", e); }
     return;
   }
   if (typeof readable.cancel === "function") {
     try {
       void readable.cancel(err);
-    } catch {}
+    } catch (e) { console.debug("[compat-swallowed]", e); }
   }
 }
 

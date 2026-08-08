@@ -8,7 +8,7 @@ import { CollapseIcon, ExpandIcon } from '../Common/Icons';
 
 const isNativeApp = (): boolean => {
   if (isMacOSApp()) return true;
-  // @ts-ignore
+  // @ts-expect-error FIXME: cdfAppNative 是宿主注入的非标准全局对象，应在 src/global.d.ts 补类型声明
   if (window.cdfAppNative && window.cdfAppNative.isNative) return true;
   return isPyWebView();
 };

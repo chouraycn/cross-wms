@@ -15,7 +15,7 @@ let pluginVersion = "0.0.0";
 try {
   const pkg = require("../package.json");
   pluginVersion = pkg.version || "0.0.0";
-} catch {}
+} catch (e) { console.debug("[compat-swallowed]", e); }
 
 export { pluginVersion };
 

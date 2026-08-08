@@ -70,10 +70,10 @@ type SubsystemLogger = {
  */
 function createSubsystemLogger(_namespace: string): SubsystemLogger {
   return {
-    debug: (...args: unknown[]) => console.debug(`[${_namespace}]`, ...args),
-    info: (...args: unknown[]) => console.info(`[${_namespace}]`, ...args),
-    warn: (...args: unknown[]) => console.warn(`[${_namespace}]`, ...args),
-    error: (...args: unknown[]) => console.error(`[${_namespace}]`, ...args),
+    debug: (...args: unknown[]) => log.debug(`[${_namespace}]`, ...args),
+    info: (...args: unknown[]) => log.info(`[${_namespace}]`, ...args),
+    warn: (...args: unknown[]) => log.warn(`[${_namespace}]`, ...args),
+    error: (...args: unknown[]) => log.error(`[${_namespace}]`, ...args),
   };
 }
 

@@ -21,7 +21,7 @@ import { isMacOSApp } from '../../utils/env';
 // v3.3: 增加构建时检测，避免运行时注入延迟导致检测失败
 const isNativeApp = (): boolean => {
   if (isMacOSApp()) return true;
-  // @ts-ignore
+  // @ts-expect-error FIXME: cdfAppNative 是宿主注入的非标准全局对象，应在 src/global.d.ts 补类型声明
   return !!(window.cdfAppNative && window.cdfAppNative.isNative);
 };
 

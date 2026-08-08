@@ -27,7 +27,7 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import SaveIcon from '@mui/icons-material/Save';
 import RecordVoiceOverIcon from '@mui/icons-material/RecordVoiceOver';
 import { getGrayScale } from '../../constants/theme';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast, ToastMessages } from '../../contexts/ToastContext';
 import { fetchTalkConfig, updateTalkConfig, resetTalkConfig } from '../../services/talk/api';
 import type { TalkConfigResponse, TalkConfig } from '../../services/talk/types';
 
@@ -112,7 +112,7 @@ const TalkSettingsPanel: React.FC = () => {
         silenceTimeoutMs: reset.silenceTimeoutMs,
         provider: reset.provider,
       });
-      showToast('已重置为默认值', 'info');
+      showToast(ToastMessages.RESET_TO_DEFAULT, 'info');
     } catch (e) {
       showToast(e instanceof Error ? e.message : '重置失败', 'error');
     } finally {

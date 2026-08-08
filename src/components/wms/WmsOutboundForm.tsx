@@ -22,7 +22,7 @@ import {
   Box,
   Chip,
 } from '@mui/material';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast, ToastMessages } from '../../contexts/ToastContext';
 import type { OutboundReview } from '../../types/wms';
 import { API_BASE_URL } from '../../constants/api';
 
@@ -116,14 +116,14 @@ const WmsOutboundForm: React.FC<WmsOutboundFormProps> = ({ open, onClose, onSucc
       const json = await res.json();
 
       if (json.code === 0 || json.success) {
-        showToast(isEdit ? '更新成功' : '创建成功', 'success');
+        showToast(isEdit ? ToastMessages.UPDATE_SUCCESS : ToastMessages.CREATE_SUCCESS, 'success');
         onSuccess();
         onClose();
       } else {
         showToast(json.message || json.error || '操作失败', 'error');
       }
     } catch (err) {
-      showToast('网络错误', 'error');
+      showToast(ToastMessages.NETWORK_ERROR, 'error');
     } finally {
       setSubmitting(false);
     }

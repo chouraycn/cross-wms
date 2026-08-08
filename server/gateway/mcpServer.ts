@@ -301,8 +301,8 @@ async function main() {
   if (transport === 'stdio') {
     await server.startStdio();
   } else {
-    console.error(`Unknown transport: ${transport}`);
-    console.error('支持的模式: stdio');
+    logger.error(`Unknown transport: ${transport}`);
+    logger.error('支持的模式: stdio');
     process.exit(1);
   }
 }
@@ -311,7 +311,7 @@ async function main() {
 const isMainModule = process.argv[1]?.endsWith('mcpServer.ts');
 if (isMainModule) {
   main().catch((err) => {
-    console.error('MCP Server 启动失败:', err);
+    logger.error('MCP Server 启动失败:', err);
     process.exit(1);
   });
 }

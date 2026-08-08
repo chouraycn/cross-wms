@@ -89,7 +89,7 @@ export class UnifiedPluginRegistry extends EventEmitter<UnifiedPluginRegistryEve
     config: Record<string, unknown> = {},
   ): Promise<boolean> {
     if (this.runtimes.has(definition.id)) {
-      console.warn(`[UnifiedPluginRegistry] Plugin ${definition.id} already registered, overriding`);
+      log.warn(`[UnifiedPluginRegistry] Plugin ${definition.id} already registered, overriding`);
       await this.unregisterDefinition(definition.id);
     }
 
@@ -107,7 +107,7 @@ export class UnifiedPluginRegistry extends EventEmitter<UnifiedPluginRegistryEve
       await definition.register(api);
       runtime.status = 'registered';
       this.emit('plugin_registered', definition.id);
-      console.info(
+      log.info(
         `[UnifiedPluginRegistry] Plugin ${definition.id} registered with ${runtime.capabilities.length} capabilities`,
       );
       return true;
@@ -115,7 +115,7 @@ export class UnifiedPluginRegistry extends EventEmitter<UnifiedPluginRegistryEve
       runtime.status = 'error';
       runtime.error = err instanceof Error ? err.message : String(err);
       this.emit('plugin_error', definition.id, runtime.error);
-      console.error(
+      log.error(
         `[UnifiedPluginRegistry] Failed to register plugin ${definition.id}:`,
         err,
       );
@@ -139,13 +139,13 @@ export class UnifiedPluginRegistry extends EventEmitter<UnifiedPluginRegistryEve
       try {
         await runtime.lifecycle.onCleanup(this.createLifecycleContext(runtime));
       } catch (err) {
-        console.error(`[UnifiedPluginRegistry] onCleanup failed for ${pluginId}:`, err);
+        log.error(`[UnifiedPluginRegistry] onCleanup failed for ${pluginId}:`, err);
       }
     }
 
     this.runtimes.delete(pluginId);
     this.emit('plugin_unregistered', pluginId);
-    console.info(`[UnifiedPluginRegistry] Plugin ${pluginId} unregistered`);
+    log.info(`[UnifiedPluginRegistry] Plugin ${pluginId} unregistered`);
     return true;
   }
 
@@ -164,17 +164,17 @@ export class UnifiedPluginRegistry extends EventEmitter<UnifiedPluginRegistryEve
   async activate(pluginId: string): Promise<boolean> {
     const runtime = this.runtimes.get(pluginId);
     if (!runtime) {
-      console.warn(`[UnifiedPluginRegistry] Cannot activate unknown plugin: ${pluginId}`);
+      log.warn(`[UnifiedPluginRegistry] Cannot activate unknown plugin: ${pluginId}`);
       return false;
     }
 
     if (runtime.status === 'activated') {
-      console.debug(`[UnifiedPluginRegistry] Plugin ${pluginId} already activated`);
+      log.debug(`[UnifiedPluginRegistry] Plugin ${pluginId} already activated`);
       return true;
     }
 
     if (runtime.status === 'error') {
-      console.warn(`[UnifiedPluginRegistry] Cannot activate plugin in error state: ${pluginId}`);
+      log.warn(`[UnifiedPluginRegistry] Cannot activate plugin in error state: ${pluginId}`);
       return false;
     }
 
@@ -192,13 +192,13 @@ export class UnifiedPluginRegistry extends EventEmitter<UnifiedPluginRegistryEve
       runtime.status = 'activated';
       runtime.activatedAt = Date.now();
       this.emit('plugin_activated', pluginId);
-      console.info(`[UnifiedPluginRegistry] Plugin ${pluginId} activated`);
+      log.info(`[UnifiedPluginRegistry] Plugin ${pluginId} activated`);
       return true;
     } catch (err) {
       runtime.status = 'error';
       runtime.error = err instanceof Error ? err.message : String(err);
       this.emit('plugin_error', pluginId, runtime.error);
-      console.error(`[UnifiedPluginRegistry] Failed to activate ${pluginId}:`, err);
+      log.error(`[UnifiedPluginRegistry] Failed to activate ${pluginId}:`, err);
       return false;
     }
   }
@@ -208,7 +208,7 @@ export class UnifiedPluginRegistry extends EventEmitter<UnifiedPluginRegistryEve
     if (!runtime) return false;
 
     if (runtime.status !== 'activated') {
-      console.debug(`[UnifiedPluginRegistry] Plugin ${pluginId} not activated, skip deactivate`);
+      log.debug(`[UnifiedPluginRegistry] Plugin ${pluginId} not activated, skip deactivate`);
       return true;
     }
 
@@ -226,13 +226,13 @@ export class UnifiedPluginRegistry extends EventEmitter<UnifiedPluginRegistryEve
 
       runtime.status = 'deactivated';
       this.emit('plugin_deactivated', pluginId);
-      console.info(`[UnifiedPluginRegistry] Plugin ${pluginId} deactivated`);
+      log.info(`[UnifiedPluginRegistry] Plugin ${pluginId} deactivated`);
       return true;
     } catch (err) {
       runtime.status = 'error';
       runtime.error = err instanceof Error ? err.message : String(err);
       this.emit('plugin_error', pluginId, runtime.error);
-      console.error(`[UnifiedPluginRegistry] Failed to deactivate ${pluginId}:`, err);
+      log.error(`[UnifiedPluginRegistry] Failed to deactivate ${pluginId}:`, err);
       return false;
     }
   }
@@ -247,7 +247,7 @@ export class UnifiedPluginRegistry extends EventEmitter<UnifiedPluginRegistryEve
       try {
         await runtime.lifecycle.onReload(this.createLifecycleContext(runtime));
       } catch (err) {
-        console.error(`[UnifiedPluginRegistry] onReload failed for ${pluginId}:`, err);
+        log.error(`[UnifiedPluginRegistry] onReload failed for ${pluginId}:`, err);
       }
     }
 
@@ -303,7 +303,7 @@ export class UnifiedPluginRegistry extends EventEmitter<UnifiedPluginRegistryEve
       return result;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      console.error(`[UnifiedPluginRegistry] Tool ${toolName} failed:`, err);
+      log.error(`[UnifiedPluginRegistry] Tool ${toolName} failed:`, err);
       return JSON.stringify({ error: msg });
     }
   }
@@ -384,7 +384,7 @@ export class UnifiedPluginRegistry extends EventEmitter<UnifiedPluginRegistryEve
           break;
         }
       } catch (err) {
-        console.error(
+        log.error(
           `[UnifiedPluginRegistry] Hook ${event} failed for plugin ${hook.pluginId}:`,
           err,
         );
@@ -476,10 +476,10 @@ export class UnifiedPluginRegistry extends EventEmitter<UnifiedPluginRegistryEve
 
   private createPluginApi(pluginId: string, runtime: PluginRuntime): PluginApi {
     const log: PluginLogger = {
-      debug: (msg, ...args) => console.debug(`[plugin:${pluginId}] ${msg}`, ...args),
-      info: (msg, ...args) => console.info(`[plugin:${pluginId}] ${msg}`, ...args),
-      warn: (msg, ...args) => console.warn(`[plugin:${pluginId}] ${msg}`, ...args),
-      error: (msg, ...args) => console.error(`[plugin:${pluginId}] ${msg}`, ...args),
+      debug: (msg, ...args) => log.debug(`[plugin:${pluginId}] ${msg}`, ...args),
+      info: (msg, ...args) => log.info(`[plugin:${pluginId}] ${msg}`, ...args),
+      warn: (msg, ...args) => log.warn(`[plugin:${pluginId}] ${msg}`, ...args),
+      error: (msg, ...args) => log.error(`[plugin:${pluginId}] ${msg}`, ...args),
     };
 
     const self = this;

@@ -30,7 +30,7 @@ await fsp.appendFile(${JSON.stringify(params.pidsPath)}, String(process.pid) + "
 process.once("exit", () => {
   try {
     fs.writeFileSync(${JSON.stringify(params.exitPath)}, "exited", "utf8");
-  } catch {}
+  } catch (e) { console.debug("[compat-swallowed]", e); }
 });
 for (const signal of ["SIGINT", "SIGTERM"]) {
   process.once(signal, () => {

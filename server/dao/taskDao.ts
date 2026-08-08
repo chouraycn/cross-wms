@@ -143,7 +143,7 @@ export function migrateTasks(tasks: Array<{
 /** 将数据库行转为 Task 类型（tags JSON → string[]） */
 function normalizeRow(row: Record<string, unknown>): Task {
   let tags: string[] = [];
-  try { tags = JSON.parse((row.tags as string) || '[]'); } catch {}
+  try { tags = JSON.parse((row.tags as string) || '[]'); } catch (e) { console.debug("[compat-swallowed]", e); }
   return {
     id: row.id as string,
     title: row.title as string,

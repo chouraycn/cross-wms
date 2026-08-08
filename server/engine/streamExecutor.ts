@@ -27,6 +27,7 @@ import {
   type AssistantMessageEventStream,
   type AssistantMessage,
 } from '../sse/openclawSSE.js';
+import { createTextStreamProcessor } from './shared/text/text-stream-processor.js';
 
 // ===================== 类型定义 =====================
 
@@ -138,17 +139,29 @@ export interface ExecuteChatStreamResult {
 
 // ===================== 统一执行入口 =====================
 
-export async function executeChatStream(params: Omit<ExecuteChatParams, 'res'>): Promise<ExecuteChatStreamResult> {
+export async function executeChatStream(params: Omit<ExecuteChatParams, 'res'> & { upstreamCoalesced?: boolean }): Promise<ExecuteChatStreamResult> {
   const stream = createAssistantMessageEventStream();
+
+  const textProcessor = createTextStreamProcessor(
+    (kind, mergedText) => {
+      if (kind === 'assistant') {
+        stream.push({ type: 'text_delta', contentIndex: 0, delta: mergedText });
+      } else {
+        stream.push({ type: 'thinking_delta', contentIndex: 0, delta: mergedText });
+      }
+    },
+    { coalesce: params.upstreamCoalesced ? undefined : {} },
+  );
 
   const streamCallbacks: ExecuteChatCallbacks = {
     onChunk: (chunk: string) => {
-      stream.push({ type: 'text_delta', contentIndex: 0, delta: chunk });
+      textProcessor.pushText(chunk);
     },
     onThinking: (thinkingChunk: string) => {
-      stream.push({ type: 'thinking_delta', contentIndex: 0, delta: thinkingChunk });
+      textProcessor.pushThinking(thinkingChunk);
     },
     onToolCall: (toolCall: ToolCall, result: string) => {
+      textProcessor.forceFlush();
       stream.push({ type: 'toolcall_start', contentIndex: 0 });
       stream.push({ type: 'toolcall_delta', contentIndex: 0, delta: toolCall.function.arguments });
       stream.push({ type: 'toolcall_end', contentIndex: 0, toolCall: {
@@ -180,6 +193,7 @@ export async function executeChatStream(params: Omit<ExecuteChatParams, 'res'>):
         };
         stream.push({ type: 'start', partial });
       } else if (eventType === 'done') {
+        textProcessor.forceFlush();
         const partial: AssistantMessage = {
           role: 'assistant',
           content: [],
@@ -192,6 +206,7 @@ export async function executeChatStream(params: Omit<ExecuteChatParams, 'res'>):
         };
         stream.push({ type: 'done', reason: 'stop', message: partial });
       } else if (eventType === 'error') {
+        textProcessor.forceFlush();
         const errorMsg: AssistantMessage = {
           role: 'assistant',
           content: [],
@@ -216,10 +231,11 @@ export async function executeChatStream(params: Omit<ExecuteChatParams, 'res'>):
     onEvent: (event: Record<string, unknown>) => {
       const eventType = event.type as string;
       if (eventType === 'text') {
-        stream.push({ type: 'text_delta', contentIndex: 0, delta: event.content as string });
+        textProcessor.pushText(event.content as string);
       } else if (eventType === 'thinking') {
-        stream.push({ type: 'thinking_delta', contentIndex: 0, delta: event.content as string });
+        textProcessor.pushThinking(event.content as string);
       } else if (eventType === 'tool_call') {
+        textProcessor.forceFlush();
         stream.push({ type: 'toolcall_start', contentIndex: 0 });
       }
     },

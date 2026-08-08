@@ -46,7 +46,7 @@ const DEFAULT_CONFIG: TokenBudgetConfig = {
   modelLimit: 200000,
   warningThreshold: 0.8,
   triggerThreshold: 0.9,
-  reserveTokens: 4096,
+  reserveTokens: 16384,
 };
 
 // ===================== TokenBudgetManager =====================

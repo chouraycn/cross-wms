@@ -43,7 +43,7 @@ export async function readResponseBodySnippet(
       }
       try {
         reader.releaseLock();
-      } catch {}
+      } catch (e) { console.debug("[compat-swallowed]", e); }
     }
 
     return new TextDecoder().decode(Buffer.concat(chunks, total)).slice(0, limits.maxChars);

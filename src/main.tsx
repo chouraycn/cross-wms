@@ -62,7 +62,7 @@ try {
       if (typeof w.__cdfIPC?.request === 'function') {
         w.__cdfIPC.request('reactReady').catch(() => {});
       }
-    } catch {}
+    } catch (e) { console.debug("[compat-swallowed]", e); }
   }, 500);
   console.error('[CDFKnow] React 渲染异常:', errMsg, errStack);
 }
@@ -132,7 +132,7 @@ bootstrap();
         sessionStorage.removeItem(key);
       }
     }
-  } catch {}
+  } catch (e) { console.debug("[compat-swallowed]", e); }
   // 2. 通知 ContextWindowCache 清理（通过自定义事件）
   window.dispatchEvent(new CustomEvent('cdf-memory-pressure'));
 };

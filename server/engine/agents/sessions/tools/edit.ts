@@ -110,7 +110,7 @@ function prepareEditArguments(input: unknown): EditToolInput {
       if (Array.isArray(parsed)) {
         args.edits = parsed;
       }
-    } catch {}
+    } catch (e) { console.debug("[compat-swallowed]", e); }
   }
 
   const legacy = args as LegacyEditToolInput;

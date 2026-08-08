@@ -901,7 +901,7 @@ export class DefaultPackageManager implements PackageManager {
           this.addResource(accumulator.extensions, resolved, metadata, true);
         }
       }
-    } catch {}
+    } catch (e) { console.debug("[compat-swallowed]", e); }
   }
 
   private parseSource(source: string): ParsedSource {

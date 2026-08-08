@@ -23,22 +23,22 @@ export function createPluginLogger(
   return {
     debug(message: string, ...args: unknown[]): void {
       if (shouldLog('debug')) {
-        console.debug(prefix, message, ...args);
+        log.debug(prefix, message, ...args);
       }
     },
     info(message: string, ...args: unknown[]): void {
       if (shouldLog('info')) {
-        console.info(prefix, message, ...args);
+        log.info(prefix, message, ...args);
       }
     },
     warn(message: string, ...args: unknown[]): void {
       if (shouldLog('warn')) {
-        console.warn(prefix, message, ...args);
+        log.warn(prefix, message, ...args);
       }
     },
     error(message: string, ...args: unknown[]): void {
       if (shouldLog('error')) {
-        console.error(prefix, message, ...args);
+        log.error(prefix, message, ...args);
       }
     },
   };
@@ -89,7 +89,7 @@ export class LogCollector {
 
   toConsole(): void {
     for (const log of this.logs) {
-      const fn = console[log.level] || console.log;
+      const fn = console[log.level] || log.log;
       fn(log.message, ...log.args);
     }
   }

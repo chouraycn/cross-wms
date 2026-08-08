@@ -149,7 +149,7 @@ async function readResponsePrefix(
   } finally {
     try {
       reader.releaseLock();
-    } catch {}
+    } catch (e) { console.debug("[compat-swallowed]", e); }
   }
 
   return { bytes: chunks, length, truncated };
@@ -196,7 +196,7 @@ async function readResponseTextWithLimit(
   } finally {
     try {
       reader.releaseLock();
-    } catch {}
+    } catch (e) { console.debug("[compat-swallowed]", e); }
   }
 
   return new TextDecoder().decode(joinChunks(chunks, length));

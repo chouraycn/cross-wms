@@ -61,7 +61,7 @@ async function isMatrixVersionsReachable(baseUrl: string, fetchImpl: FetchLike) 
   } finally {
     try {
       await response?.body?.cancel?.();
-    } catch {}
+    } catch (e) { console.debug("[compat-swallowed]", e); }
   }
 }
 

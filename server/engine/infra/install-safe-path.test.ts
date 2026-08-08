@@ -34,7 +34,7 @@ const canCreateDirectorySymlinks = (() => {
     if (probeDir) {
       try {
         fsSync.rmSync(probeDir, { recursive: true, force: true });
-      } catch {}
+      } catch (e) { console.debug("[compat-swallowed]", e); }
     }
   }
 })();

@@ -312,7 +312,7 @@ export async function readResponseText(
       }
       try {
         reader.releaseLock();
-      } catch {}
+      } catch (e) { console.debug("[compat-swallowed]", e); }
     }
 
     const bytes = concatBytes(parts, bytesRead);

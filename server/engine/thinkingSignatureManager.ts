@@ -10,8 +10,6 @@
  * 参考：OpenClaw transcript-redact.ts + thinking.ts
  */
 
-import type { ThinkingContentBlock } from '../../src/types/content-blocks';
-
 /** 签名来源类型 */
 export type SignatureSource = 'anthropic' | 'google' | 'openai-responses' | 'deepseek' | 'unknown';
 
@@ -538,4 +536,358 @@ export function estimateSignatureTokens(signature: string): number {
 
   // Base64 签名：按长度估算（每 4 字符 ≈ 1 token）
   return Math.ceil(signature.length / 4);
+}
+
+// ===================== Thinking Signature 失效检测与剥离 =====================
+//
+// 以下函数移植自 OpenClaw src/agents/embedded-agent-runner/thinking.ts（行 110-363）。
+// cross-wms 的消息类型并非 OpenClaw 的 AgentMessage，这里采用结构化的通用类型，
+// 仅依赖 role/content/timestamp 字段，避免与具体消息实现耦合。
+
+/**
+ * 思考内容块（宽泛结构）
+ *
+ * 覆盖 thinking / redacted_thinking 两种类型，以及不同 Provider 的签名字段：
+ * - Anthropic: signature / thinkingSignature / data（redacted_thinking 的加密载荷）
+ * - Google: thought_signature / thinkingSignature
+ * - OpenAI Responses: thinkingSignature（reasoning JSON）
+ *
+ * 注意：cross-wms 既有的 src/types/content-blocks.ThinkingContentBlock 字段过窄
+ * （缺少 signature / thought_signature / data / redacted_thinking / timestamp），
+ * 因此在此文件内定义本宽泛类型供失效检测函数使用。
+ */
+export interface ThinkingContentBlock {
+  type: 'thinking' | 'redacted_thinking';
+  thinking?: string;
+  thinkingSignature?: string;
+  signature?: string;
+  thought_signature?: string;
+  data?: string;
+  redacted?: boolean;
+  timestamp?: number | string;
+}
+
+/**
+ * 通用聊天消息类型（cross-wms 适配）
+ *
+ * content 为宽泛的 content block 数组（thinking / text / toolCall 等），这里以
+ * unknown 暴露，由各函数内部通过类型守卫收窄。
+ */
+export interface ChatMessage {
+  role: 'user' | 'assistant' | 'system' | 'toolResult' | 'compactionSummary' | string;
+  content?: unknown;
+  timestamp?: number | string;
+}
+
+/** assistant 推理被省略时填充空 content 的占位文本 */
+export const OMITTED_ASSISTANT_REASONING_TEXT = '[assistant reasoning omitted]';
+
+/** 带 content 数组的 assistant 消息（类型守卫收窄结果） */
+type AssistantMessageWithContent = ChatMessage & {
+  role: 'assistant';
+  content: ThinkingContentBlock[];
+};
+
+/**
+ * 判断消息是否为带 content 数组的 assistant 消息
+ */
+export function isAssistantMessageWithContent(
+  message: ChatMessage,
+): message is AssistantMessageWithContent {
+  return (
+    Boolean(message) &&
+    typeof message === 'object' &&
+    message.role === 'assistant' &&
+    Array.isArray(message.content)
+  );
+}
+
+/**
+ * 判断 content block 是否为 thinking / redacted_thinking 块
+ */
+function isThinkingBlock(block: unknown): block is ThinkingContentBlock {
+  return (
+    Boolean(block) &&
+    typeof block === 'object' &&
+    ((block as ThinkingContentBlock).type === 'thinking' ||
+      (block as ThinkingContentBlock).type === 'redacted_thinking')
+  );
+}
+
+/**
+ * 判断 thinking block 是否带有可回传（非空）的签名
+ *
+ * redacted_thinking 的 data 字段即加密签名载荷，亦视为可回传签名。
+ */
+function hasReplayableThinkingSignature(block: ThinkingContentBlock): boolean {
+  if (!isThinkingBlock(block)) {
+    return false;
+  }
+  const candidates =
+    block.type === 'redacted_thinking'
+      ? [block.data, block.signature, block.thinkingSignature, block.thought_signature]
+      : [block.signature, block.thinkingSignature, block.thought_signature];
+  return candidates.some(
+    (signature) => typeof signature === 'string' && signature.trim().length > 0,
+  );
+}
+
+/**
+ * 将时间戳解析为毫秒数；无法解析时返回 null
+ */
+function parseTimestampMs(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === 'string') {
+    const parsed = Date.parse(value);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+  return null;
+}
+
+/**
+ * 构造占位 content：当 assistant 消息的 thinking 块被剥离后 content 变空时使用。
+ *
+ * Provider 转换器会丢弃空白 text 块，因此保留一段非空中性文本以保证该 assistant turn
+ * 在回传时结构完整。
+ */
+function buildOmittedAssistantReasoningContent(): ThinkingContentBlock[] {
+  return [
+    { type: 'text', text: OMITTED_ASSISTANT_REASONING_TEXT } as unknown as ThinkingContentBlock,
+  ];
+}
+
+/**
+ * 从单个 thinking block 中剥离所有签名字段
+ *
+ * 移除 thinkingSignature / signature / thought_signature，以及 redacted_thinking 的 data。
+ * thinking 文本本身保留。返回新对象。
+ */
+function stripSignatureFieldsFromThinkingBlock(
+  block: ThinkingContentBlock,
+): ThinkingContentBlock {
+  const record = block as unknown as Record<string, unknown>;
+  const stripped: Record<string, unknown> = {};
+  for (const key of Object.keys(record)) {
+    if (key === 'thinkingSignature' || key === 'signature' || key === 'thought_signature') {
+      continue;
+    }
+    // data 是 redacted_thinking 的签名载荷
+    if (key === 'data' && record.type === 'redacted_thinking') {
+      continue;
+    }
+    stripped[key] = record[key];
+  }
+  return stripped as unknown as ThinkingContentBlock;
+}
+
+/**
+ * 从单条 assistant 消息中剥离所有 thinking 签名字段。
+ *
+ * 移除 thinking 块的 thinkingSignature / signature / thought_signature，以及
+ * redacted_thinking 块的 data。thinking 文本保留。若剥离后该消息变为无签名的纯 thinking
+ * 块，下游的 stripInvalidThinkingSignatures 会进一步将其转为占位文本。
+ *
+ * 无变化时返回原引用。
+ */
+export function stripThinkingSignaturesFromMessage(message: ChatMessage): ChatMessage {
+  if (!isAssistantMessageWithContent(message)) {
+    return message;
+  }
+  let changed = false;
+  const newContent: ThinkingContentBlock[] = [];
+  for (const block of message.content) {
+    if (!isThinkingBlock(block)) {
+      newContent.push(block);
+      continue;
+    }
+    const hasSignature =
+      block.thinkingSignature != null ||
+      block.signature != null ||
+      block.thought_signature != null ||
+      (block.type === 'redacted_thinking' && block.data != null);
+    if (!hasSignature) {
+      newContent.push(block);
+      continue;
+    }
+    newContent.push(stripSignatureFieldsFromThinkingBlock(block));
+    changed = true;
+  }
+  if (!changed) {
+    return message;
+  }
+  return { ...message, content: newContent };
+}
+
+/**
+ * 剥离 compaction 之前产生的、已失效的 thinking 签名。
+ *
+ * thinking 签名在密码学上与原始上下文前缀绑定。compaction 后前缀发生变化（被摘要替换），
+ * 此前的签名即变为"过期"签名，Anthropic 会以 "Invalid signature in thinking block" 拒绝。
+ * stripInvalidThinkingSignatures 仅能捕获缺失/空白的签名；本函数通过时间戳与最新
+ * compactionSummary 比较来捕获这种上下文过期的签名。
+ *
+ * 仅剥离时间戳严格早于最新 compactionSummary 时间戳的 assistant 消息的签名；
+ * 时间戳相同或更晚的消息可能是在新上下文中生成的，保留其签名。无可解析时间戳的消息保持不变。
+ *
+ * 无变化时返回原数组引用。
+ */
+export function stripStaleThinkingSignaturesForCompactionReplay(
+  messages: ChatMessage[],
+): ChatMessage[] {
+  let latestCompactionTimestamp: number | null = null;
+  for (const message of messages) {
+    if (message.role !== 'compactionSummary') {
+      continue;
+    }
+    const ts = parseTimestampMs(message.timestamp);
+    if (ts !== null) {
+      latestCompactionTimestamp =
+        latestCompactionTimestamp === null ? ts : Math.max(latestCompactionTimestamp, ts);
+    }
+  }
+  if (latestCompactionTimestamp === null) {
+    return messages;
+  }
+
+  let touched = false;
+  const out: ChatMessage[] = [];
+  for (const message of messages) {
+    if (!isAssistantMessageWithContent(message)) {
+      out.push(message);
+      continue;
+    }
+    const ts = parseTimestampMs(message.timestamp);
+    if (ts === null || ts >= latestCompactionTimestamp) {
+      out.push(message);
+      continue;
+    }
+    const stripped = stripThinkingSignaturesFromMessage(message);
+    if (stripped !== message) {
+      touched = true;
+    }
+    out.push(stripped);
+  }
+  return touched ? out : messages;
+}
+
+/**
+ * 移除签名缺失/空白的 thinking 块。
+ *
+ * Anthropic 与 Bedrock 在签名缺失、空或空白时会拒绝持久化的 thinking 块。签名有效性
+ * 的权威在 Provider 侧，因此这里有意避免本地的长度/形状启发式判断。
+ *
+ * 默认豁免最新的 assistant turn：Provider 会拒绝被修改的最新 thinking 块，因此损坏的
+ * 最新 turn 必须走恢复流程，而不能在请求前重写。当调用方在 Provider 回放前已追加新的
+ * user turn（此时存储的 assistant turn 不再是出站请求中的最新 turn），可通过
+ * preserveLatestAssistant: false 关闭该豁免。
+ *
+ * 若某条 assistant 消息在移除无效 thinking 块后 content 变空，则替换为占位文本。
+ * 无变化时返回原数组引用。
+ */
+export function stripInvalidThinkingSignatures(
+  messages: ChatMessage[],
+  options: { preserveLatestAssistant?: boolean } = {},
+): ChatMessage[] {
+  const preserveLatestAssistant = options.preserveLatestAssistant ?? true;
+  let latestAssistantIndex = -1;
+  if (preserveLatestAssistant) {
+    for (let i = messages.length - 1; i >= 0; i -= 1) {
+      if (isAssistantMessageWithContent(messages[i])) {
+        latestAssistantIndex = i;
+        break;
+      }
+    }
+  }
+
+  let touched = false;
+  const out: ChatMessage[] = [];
+
+  for (let i = 0; i < messages.length; i += 1) {
+    const message = messages[i];
+    if (!isAssistantMessageWithContent(message)) {
+      out.push(message);
+      continue;
+    }
+    if (i === latestAssistantIndex) {
+      out.push(message);
+      continue;
+    }
+
+    const nextContent: ThinkingContentBlock[] = [];
+    let changed = false;
+    for (const block of message.content) {
+      if (!isThinkingBlock(block) || hasReplayableThinkingSignature(block)) {
+        nextContent.push(block);
+        continue;
+      }
+      changed = true;
+      touched = true;
+    }
+
+    if (!changed) {
+      out.push(message);
+      continue;
+    }
+
+    out.push({
+      ...message,
+      content: nextContent.length > 0 ? nextContent : buildOmittedAssistantReasoningContent(),
+    });
+  }
+
+  return touched ? out : messages;
+}
+
+/**
+ * 从所有非最新的 assistant 消息中剥离 thinking / redacted_thinking 块。
+ *
+ * 最新 assistant turn 的 thinking 块原样保留，以便需要回传签名的 Provider 能继续对话。
+ * 若某条非最新 assistant 消息在剥离后 content 变空，则替换为合成的非空 text 块，以在
+ * Provider 适配器过滤空白 text 块时仍能保留 turn 结构。
+ *
+ * 无变化时返回原数组引用（调用方可据此跳过后续工作）。
+ */
+export function dropThinkingBlocks(messages: ChatMessage[]): ChatMessage[] {
+  let latestAssistantIndex = -1;
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    if (isAssistantMessageWithContent(messages[i])) {
+      latestAssistantIndex = i;
+      break;
+    }
+  }
+
+  let touched = false;
+  const out: ChatMessage[] = [];
+  for (let i = 0; i < messages.length; i += 1) {
+    const msg = messages[i];
+    if (!isAssistantMessageWithContent(msg)) {
+      out.push(msg);
+      continue;
+    }
+    if (i === latestAssistantIndex) {
+      out.push(msg);
+      continue;
+    }
+    const nextContent: ThinkingContentBlock[] = [];
+    let changed = false;
+    for (const block of msg.content) {
+      if (isThinkingBlock(block)) {
+        touched = true;
+        changed = true;
+        continue;
+      }
+      nextContent.push(block);
+    }
+    if (!changed) {
+      out.push(msg);
+      continue;
+    }
+    const content = nextContent.length > 0 ? nextContent : buildOmittedAssistantReasoningContent();
+    out.push({ ...msg, content });
+  }
+  return touched ? out : messages;
 }

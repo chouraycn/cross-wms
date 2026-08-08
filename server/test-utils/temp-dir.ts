@@ -66,8 +66,7 @@ class TempDir {
     this.deleted = true;
     try {
       fs.rmSync(this.path, { recursive: true, force: true });
-    } catch {
-    }
+    } catch (e) { console.debug("[compat-swallowed]", e); }
   }
 
   setCleanup(cleanup: boolean): void {

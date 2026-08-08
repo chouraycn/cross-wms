@@ -12,7 +12,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import PersonIcon from '@mui/icons-material/Person';
 import RuleIcon from '@mui/icons-material/Rule';
-import { useToast } from '../contexts/ToastContext';
+import { useToast, ToastMessages } from '../contexts/ToastContext';
 import { getGrayScale } from '../constants/theme';
 import type { AgentInfo, AgentIdentity, AgentScenario } from '../services/api';
 import {
@@ -90,10 +90,10 @@ const AgentsPage: React.FC = () => {
     try {
       if (editingIdentity) {
         await updateAgentIdentity(editingIdentity.id, formData);
-        showToast('更新成功', 'success');
+        showToast(ToastMessages.UPDATE_SUCCESS, 'success');
       } else {
         await createAgentIdentity(formData);
-        showToast('创建成功', 'success');
+        showToast(ToastMessages.CREATE_SUCCESS, 'success');
       }
       setDialogOpen(false);
       loadData();
@@ -106,7 +106,7 @@ const AgentsPage: React.FC = () => {
     if (!confirm('确定要删除这个 Agent 身份吗？')) return;
     try {
       await deleteAgentIdentity(id);
-      showToast('删除成功', 'success');
+      showToast(ToastMessages.DELETE_SUCCESS, 'success');
       loadData();
     } catch (e) {
       showToast(`删除失败: ${e instanceof Error ? e.message : String(e)}`, 'error');

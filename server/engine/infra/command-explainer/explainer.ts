@@ -22,8 +22,7 @@ export async function explainCommand(options: ExplainCommandOptions): Promise<Co
         optionsList = docs.options || optionsList;
         examples = docs.examples.map((e) => ({ command: e.command, description: e.description }));
       }
-    } catch {
-    }
+    } catch (e) { console.debug("[compat-swallowed]", e); }
   }
 
   if (includeExamples && examples.length === 0) {

@@ -49,7 +49,7 @@ import foldersRouter from './routes/folders.js';
 import eventsRouter from './routes/events.js';
 import uploadRouter, { UPLOADS_DIR, ensureUploadsDir } from './routes/upload.js';
 import mediaLibraryRouter from './routes/mediaLibrary.js';
-import healthRouter from './routes/health.js';
+import healthRouter, { markServerCoreReady } from './routes/health.js';
 import healthEnhancedRouter from './routes/healthEnhanced.js';
 import performanceRouter from './routes/performance.js';
 import agentsRouter from './routes/agents.js';
@@ -817,6 +817,12 @@ server.listen(PORT, () => {
     logger.info('[Channel Registry] 内置通道已注册');
 
     initBuiltinProviders();
+
+    // ========== v1.7.186: 核心初始化全部完成后，标记 health 端点可以返回 200 ==========
+    // 在此之前 Swift 端的健康检查会收到 503，不会过早切换 WebView，
+    // 避免 WebView 加载后请求 /api/sessions 时报 "no such table: sessions" 导致白屏。
+    markServerCoreReady();
+    logger.info('[Server] ✅ Core ready — /api/health now returns 200');
 
     import('./engine/acp/doctor.js').then(({ initDoctorChannelRegistry }) => {
       import('./channels/index.js').then(({ getGlobalChannelRegistry }) => {

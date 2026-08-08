@@ -45,8 +45,7 @@ async function getUserId(account: MatrixAccountConfig): Promise<string> {
       cachedUserId = data.user_id;
       return data.user_id;
     }
-  } catch {
-  }
+  } catch (e) { console.debug("[compat-swallowed]", e); }
   return account.userId || "@bot:matrix.org";
 }
 

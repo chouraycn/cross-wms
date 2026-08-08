@@ -13,6 +13,7 @@ import DeleteConfirmDialog from './DeleteConfirmDialog';
 import { useMCPServers } from './useMCPServers';
 import { getGrayScale } from '../../../constants/theme';
 import { useTheme } from '@mui/material';
+import { ToastMessages } from '../../../contexts/ToastContext';
 
 const MCPSettingsTab: React.FC = () => {
   const theme = useTheme();
@@ -94,9 +95,9 @@ const MCPSettingsTab: React.FC = () => {
   const handleDeleteConfirm = useCallback(async () => {
     const success = await deleteServer(deletingServerId);
     if (success) {
-      showToast('已删除');
+      showToast(ToastMessages.ITEM_DELETED);
     } else {
-      showToast('删除失败', 'error');
+      showToast(ToastMessages.DELETE_FAILED, 'error');
     }
     setDeleteDialogOpen(false);
   }, [deleteServer, deletingServerId]);

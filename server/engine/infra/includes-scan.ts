@@ -93,8 +93,7 @@ function getAllFiles(directory: string, includeExtensions?: string[]): string[] 
         }
       }
     }
-  } catch {
-  }
+  } catch (e) { console.debug("[compat-swallowed]", e); }
 
   return files;
 }

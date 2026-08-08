@@ -168,7 +168,7 @@ export async function listMemoryFiles(
         return;
       }
       result.push(absPath);
-    } catch {}
+    } catch (e) { console.debug("[compat-swallowed]", e); }
   };
 
   const memoryFile = await resolveCanonicalRootMemoryFile(workspaceDir);
@@ -180,7 +180,7 @@ export async function listMemoryFiles(
     if (!dirStat.isSymbolicLink() && dirStat.isDirectory()) {
       await collectMemoryFilesFromDir(memoryDir, result, multimodal, shouldSkipWorkspaceMemoryPath);
     }
-  } catch {}
+  } catch (e) { console.debug("[compat-swallowed]", e); }
 
   const normalizedExtraPaths = normalizeExtraMemoryPaths(workspaceDir, extraPaths);
   if (normalizedExtraPaths.length > 0) {
@@ -205,7 +205,7 @@ export async function listMemoryFiles(
         if (stat.isFile() && isAllowedMemoryFilePath(inputPath, multimodal)) {
           result.push(inputPath);
         }
-      } catch {}
+      } catch (e) { console.debug("[compat-swallowed]", e); }
     }
   }
   if (result.length <= 1) {
@@ -217,7 +217,7 @@ export async function listMemoryFiles(
     let key = entry;
     try {
       key = await fs.realpath(entry);
-    } catch {}
+    } catch (e) { console.debug("[compat-swallowed]", e); }
     if (seen.has(key)) {
       continue;
     }

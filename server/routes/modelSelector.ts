@@ -484,7 +484,7 @@ function scoreCodeFeature(message: string): number {
   const codeLangKeywords = [
     'javascript', 'typescript', 'python', 'java', 'go', 'rust', 'c++', 'cpp',
     'react', 'vue', 'angular', 'node', 'express', 'sql', 'html', 'css',
-    'function', 'class', 'interface', 'return', 'console.log', 'print(',
+    'function', 'class', 'interface', 'return', 'logger.log', 'print(',
   ];
   const langMatches = codeLangKeywords.filter(kw => message.toLowerCase().includes(kw));
   score += Math.min(langMatches.length, 3);

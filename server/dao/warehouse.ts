@@ -1,29 +1,56 @@
 import { v4 as uuidv4 } from 'uuid';
+import { z } from 'zod';
 import { createDocumentStorage } from '../storage/index.js';
-import type { WarehouseRow, InventoryItemRow, TransitOrderRow, StatusHistoryRow, InboundRecordRow, OutboundRecordRow, TransferOrderRow } from '../db.js';
+import type { WarehouseRow, InventoryItemRow, TransitOrderRow, StatusHistoryRow, InboundRecordRow, OutboundRecordRow, TransferOrderRow } from '../db-wms.js';
 import { AppPaths } from '../config/appPaths.js';
+import { validateRows, validateRow, boundary } from '../engine/shared/validation.js';
+
+// ===================== Warehouse Zod Schemas（DAO 信任边界入口校验） =====================
+export const WarehouseRowSchema = z.object({
+  id: z.string().min(1),
+  name: z.string(),
+  country: z.string(),
+  city: z.string(),
+  totalVolume: z.number(),
+  usedVolume: z.number(),
+  totalItems: z.number(),
+  usedItems: z.number(),
+  status: z.string(),
+  address: z.string(),
+  manager: z.string(),
+  phone: z.string(),
+  warehouseType: z.enum(['normal', 'cold', 'frozen', 'hazardous']).or(z.string()),
+  temperatureRange: z.string(),
+  createdAt: z.string(),
+});
+export type ValidatedWarehouseRow = z.infer<typeof WarehouseRowSchema>;
 
 const wms = createDocumentStorage();
 
 // ===================== Warehouse DAO =====================
 
-export function getWarehouses(warehouseType?: string): WarehouseRow[] {
-  let rows = wms.list<WarehouseRow>('warehouses');
+export function getWarehouses(warehouseType?: string): ValidatedWarehouseRow[] {
+  const raw = wms.list<unknown>('warehouses');
+  const rows = validateRows(raw, WarehouseRowSchema, boundary('warehouses', 'list'));
   if (warehouseType) {
-    rows = rows.filter((w) => w.warehouseType === warehouseType);
+    return rows
+      .filter((w) => w.warehouseType === warehouseType)
+      .sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1));
   }
   return rows.sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1));
 }
 
-export function getWarehouseById(id: string): WarehouseRow | undefined {
-  return wms.get<WarehouseRow>('warehouses', id);
+export function getWarehouseById(id: string): ValidatedWarehouseRow | undefined {
+  const raw = wms.get<unknown>('warehouses', id);
+  if (raw === undefined) return undefined;
+  return validateRow(raw, WarehouseRowSchema, boundary('warehouses', `getById#${id}`));
 }
 
-export function createWarehouse(data: Omit<WarehouseRow, 'id'> & { id?: string }): WarehouseRow {
+export function createWarehouse(data: Omit<WarehouseRow, 'id'> & { id?: string }): ValidatedWarehouseRow {
   const id = data.id || uuidv4();
   const warehouseType = data.warehouseType ?? 'normal';
   const temperatureRange = data.temperatureRange ?? getDefaultTemperatureRange(warehouseType);
-  const record: WarehouseRow = {
+  const draft: WarehouseRow = {
     ...data,
     id,
     country: data.country ?? '',
@@ -40,6 +67,7 @@ export function createWarehouse(data: Omit<WarehouseRow, 'id'> & { id?: string }
     temperatureRange,
     createdAt: data.createdAt ?? new Date().toISOString().split('T')[0],
   };
+  const record = validateRow(draft, WarehouseRowSchema, boundary('warehouses', `create#${id}`));
   wms.create<WarehouseRow>('warehouses', id, record);
   return record;
 }
@@ -55,21 +83,23 @@ function getDefaultTemperatureRange(type: string): string {
   }
 }
 
-export function updateWarehouse(id: string, data: Partial<Omit<WarehouseRow, 'id'>>): WarehouseRow | null {
+export function updateWarehouse(id: string, data: Partial<Omit<WarehouseRow, 'id'>>): ValidatedWarehouseRow | null {
   const existing = wms.get<WarehouseRow>('warehouses', id);
   if (!existing) return null;
-  const safeData = { ...data };
+  const safeData: Partial<WarehouseRow> = { ...data };
   for (const key of ['country', 'city', 'address', 'manager', 'phone'] as const) {
-    if ((safeData as Record<string, unknown>)[key] == null) {
-      (safeData as Record<string, unknown>)[key] = '' as any;
+    if (safeData[key] == null) {
+      safeData[key] = '';
     }
   }
-  if ((safeData as Record<string, unknown>).status == null) {
-    (safeData as Record<string, unknown>).status = 'normal';
-  }
-  const updated: WarehouseRow = { ...existing, ...safeData, id };
-  wms.update<WarehouseRow>('warehouses', id, updated);
-  return updated;
+  if (safeData.status == null) safeData.status = 'normal';
+  const merged = validateRow(
+    { ...existing, ...safeData, id },
+    WarehouseRowSchema,
+    boundary('warehouses', `update#${id}`),
+  );
+  wms.update<WarehouseRow>('warehouses', id, merged);
+  return merged;
 }
 
 export function deleteWarehouse(id: string): boolean {

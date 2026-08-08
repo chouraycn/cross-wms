@@ -14,7 +14,7 @@ import StopIcon from '@mui/icons-material/Stop';
 import BugReportIcon from '@mui/icons-material/BugReport';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
-import { useToast } from '../contexts/ToastContext';
+import { useToast, ToastMessages } from '../contexts/ToastContext';
 import { getGrayScale } from '../constants/theme';
 import type { McpServerState, McpServerConfig } from '../services/api';
 import {
@@ -142,10 +142,10 @@ const McpServersPage: React.FC = () => {
     try {
       if (editingServer) {
         await updateMcpServer(editingServer.config.id!, data);
-        showToast('更新成功', 'success');
+        showToast(ToastMessages.UPDATE_SUCCESS, 'success');
       } else {
         await createMcpServer(data);
-        showToast('创建成功', 'success');
+        showToast(ToastMessages.CREATE_SUCCESS, 'success');
       }
       setDialogOpen(false);
       loadServers();
@@ -158,7 +158,7 @@ const McpServersPage: React.FC = () => {
     if (!confirm('确定要删除这个 MCP Server 吗？')) return;
     try {
       await deleteMcpServer(id);
-      showToast('删除成功', 'success');
+      showToast(ToastMessages.DELETE_SUCCESS, 'success');
       loadServers();
     } catch (e) {
       showToast(`删除失败: ${e instanceof Error ? e.message : String(e)}`, 'error');

@@ -369,7 +369,7 @@ class SubagentRegistry {
         try {
           listener(instance);
         } catch (e) {
-          console.error("[subagent] Listener error:", e);
+          logger.error("[subagent] Listener error:", e);
         }
       }
     }

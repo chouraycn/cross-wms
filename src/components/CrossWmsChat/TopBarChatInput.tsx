@@ -326,7 +326,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
 
   // 选择文件夹处理：优先使用原生 NSOpenPanel，回退到 input[webkitdirectory]
   const handleSelectFolder = useCallback(async () => {
-    // @ts-ignore
+    // @ts-expect-error FIXME: cdfAppNative 是宿主注入的非标准全局对象，应在 src/global.d.ts 补类型声明
     const native = window.cdfAppNative;
     if (native && typeof native.pickFolder === 'function') {
       try {
@@ -356,7 +356,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
       return;
     }
 
-    // @ts-ignore - webkitRelativePath 是非标准属性
+    // webkitRelativePath 是非标准 File 属性，TS 新版本内置 DOM lib 已声明
     const relPath: string = files[0].webkitRelativePath || '';
     const folderName = relPath.split('/')[0] || 'folder';
     const fileCount = files.length;
@@ -379,7 +379,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
 
     for (let i = 0; i < files.length && readCount < MAX_FILES_TO_READ && totalSize < MAX_TOTAL_SIZE; i++) {
       const file = files[i];
-      // @ts-ignore
+      // webkitRelativePath 是非标准 File 属性，TS 新版本内置 DOM lib 已声明（见 line 359）
       const relativePath: string = file.webkitRelativePath || file.name;
       const ext = (relativePath.split('.').pop() || '').toLowerCase();
       if (!TEXT_EXTS.has(ext)) continue;
@@ -1613,7 +1613,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
             <input
               ref={folderInputRef}
               type="file"
-              // @ts-ignore - webkitdirectory 是非标准属性
+              // @ts-expect-error FIXME: webkitdirectory 是非标准 HTML 属性，TS lib.dom 未声明，生产环境所有主流浏览器均支持
               webkitdirectory=""
               directory=""
               multiple

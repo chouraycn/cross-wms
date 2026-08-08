@@ -532,7 +532,7 @@ class LspManager {
         await fs.access(tsconfig);
         configFiles.push("tsconfig.json");
         recommendedServers.push("typescript-language-server");
-      } catch {}
+      } catch (e) { console.debug("[compat-swallowed]", e); }
 
       try {
         await fs.access(packageJson);
@@ -543,13 +543,13 @@ class LspManager {
         try {
           await fs.access(nodeModules);
           dependenciesInstalled = true;
-        } catch {}
+        } catch (e) { console.debug("[compat-swallowed]", e); }
 
         // 如果没有 tsconfig.json，但有 package.json，也可能是 JS 项目
         if (!configFiles.includes("tsconfig.json")) {
           recommendedServers.push("typescript-language-server");
         }
-      } catch {}
+      } catch (e) { console.debug("[compat-swallowed]", e); }
 
       // 检测 Python 项目
       const pyprojectToml = path.join(workspaceRoot, "pyproject.toml");
@@ -560,7 +560,7 @@ class LspManager {
         await fs.access(pyprojectToml);
         configFiles.push("pyproject.toml");
         recommendedServers.push("pyright");
-      } catch {}
+      } catch (e) { console.debug("[compat-swallowed]", e); }
 
       try {
         await fs.access(setupPy);
@@ -568,7 +568,7 @@ class LspManager {
         if (!recommendedServers.includes("pyright")) {
           recommendedServers.push("pyright");
         }
-      } catch {}
+      } catch (e) { console.debug("[compat-swallowed]", e); }
 
       try {
         await fs.access(requirementsTxt);
@@ -576,7 +576,7 @@ class LspManager {
         if (!recommendedServers.includes("pyright")) {
           recommendedServers.push("pyright");
         }
-      } catch {}
+      } catch (e) { console.debug("[compat-swallowed]", e); }
 
       // 检测 Go 项目
       const goMod = path.join(workspaceRoot, "go.mod");
@@ -584,7 +584,7 @@ class LspManager {
         await fs.access(goMod);
         configFiles.push("go.mod");
         recommendedServers.push("gopls");
-      } catch {}
+      } catch (e) { console.debug("[compat-swallowed]", e); }
 
       // 检测 Rust 项目
       const cargoToml = path.join(workspaceRoot, "Cargo.toml");
@@ -592,7 +592,7 @@ class LspManager {
         await fs.access(cargoToml);
         configFiles.push("Cargo.toml");
         recommendedServers.push("rust-analyzer");
-      } catch {}
+      } catch (e) { console.debug("[compat-swallowed]", e); }
 
       // 检测 Java 项目
       const pomXml = path.join(workspaceRoot, "pom.xml");
@@ -603,7 +603,7 @@ class LspManager {
         await fs.access(pomXml);
         configFiles.push("pom.xml");
         recommendedServers.push("jdtls");
-      } catch {}
+      } catch (e) { console.debug("[compat-swallowed]", e); }
 
       try {
         await fs.access(buildGradle);
@@ -611,7 +611,7 @@ class LspManager {
         if (!recommendedServers.includes("jdtls")) {
           recommendedServers.push("jdtls");
         }
-      } catch {}
+      } catch (e) { console.debug("[compat-swallowed]", e); }
 
       try {
         await fs.access(buildGradleKts);
@@ -619,7 +619,7 @@ class LspManager {
         if (!recommendedServers.includes("jdtls")) {
           recommendedServers.push("jdtls");
         }
-      } catch {}
+      } catch (e) { console.debug("[compat-swallowed]", e); }
 
       // 判断项目类型
       let type: LspLanguage | "mixed" | "unknown" = "unknown";

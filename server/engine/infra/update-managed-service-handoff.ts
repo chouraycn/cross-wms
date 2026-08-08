@@ -255,7 +255,7 @@ function readRestartSentinelPayload() {
     hardenStateDatabaseFiles();
     try {
       db.close();
-    } catch {}
+    } catch (e) { console.debug("[compat-swallowed]", e); }
   }
 }
 
@@ -312,7 +312,7 @@ function writeRestartSentinelPayload(payload) {
     hardenStateDatabaseFiles();
     try {
       db.close();
-    } catch {}
+    } catch (e) { console.debug("[compat-swallowed]", e); }
   }
 }
 

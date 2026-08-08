@@ -459,7 +459,7 @@ async function* responseBodyChunks(
     }
     try {
       reader.releaseLock();
-    } catch {}
+    } catch (e) { console.debug("[compat-swallowed]", e); }
   }
 }
 

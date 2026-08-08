@@ -860,7 +860,7 @@ router.get('/skills/:id/export', async (req: Request, res: Response) => {
     try {
       const skill = dbGetSkillById(req.params.id);
       if (skill && skill.name) skillName = skill.name as string;
-    } catch {}
+    } catch (e) { console.debug("[compat-swallowed]", e); }
 
     // Create ZIP in temp directory
     const tempDir = os.tmpdir();

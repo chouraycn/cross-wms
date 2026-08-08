@@ -66,8 +66,7 @@ export class SkillRegistry extends EventEmitter<SkillRegistryEvents> {
     if (skill.lifecycle?.onUnload) {
       try {
         skill.lifecycle.onUnload(this.createContext(skill));
-      } catch {
-      }
+      } catch (e) { console.debug("[compat-swallowed]", e); }
     }
 
     const existed = this.skills.delete(skillId);
@@ -106,8 +105,7 @@ export class SkillRegistry extends EventEmitter<SkillRegistryEvents> {
     if (skill.lifecycle?.onDisable) {
       try {
         skill.lifecycle.onDisable(this.createContext(skill));
-      } catch {
-      }
+      } catch (e) { console.debug("[compat-swallowed]", e); }
     }
 
     skill.status = 'disabled';
@@ -256,8 +254,7 @@ export class SkillRegistry extends EventEmitter<SkillRegistryEvents> {
                     Object.assign(extractedParams, match.groups);
                   }
                 }
-              } catch {
-              }
+              } catch (e) { console.debug("[compat-swallowed]", e); }
             }
             break;
 

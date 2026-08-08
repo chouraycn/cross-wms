@@ -694,9 +694,9 @@ export function initDb(): Database.Database {
     } catch {
       logger.info('[DB] WAL checkpoint 失败，尝试恢复...');
       if (fs.existsSync(DB_BACKUP_PATH)) {
-        try { fs.unlinkSync(DB_PATH); } catch {}
-        try { fs.unlinkSync(DB_PATH + '-wal'); } catch {}
-        try { fs.unlinkSync(DB_PATH + '-shm'); } catch {}
+        try { fs.unlinkSync(DB_PATH); } catch (e) { console.debug("[compat-swallowed]", e); }
+        try { fs.unlinkSync(DB_PATH + '-wal'); } catch (e) { console.debug("[compat-swallowed]", e); }
+        try { fs.unlinkSync(DB_PATH + '-shm'); } catch (e) { console.debug("[compat-swallowed]", e); }
         try {
           fs.copyFileSync(DB_BACKUP_PATH, DB_PATH);
           logger.info('[DB] 数据库已从备份恢复（WAL checkpoint 失败）');
@@ -754,7 +754,7 @@ export function initDb(): Database.Database {
     db.pragma('wal_checkpoint(RESTART)');
   } catch {
     logger.warn('[DB] 数据库只读（可能是 macOS 安全限制），切换到内存数据库');
-    try { db.close(); } catch {}
+    try { db.close(); } catch (e) { console.debug("[compat-swallowed]", e); }
     db = new Database(':memory:');
     walMaintenance = configureSqliteConnectionPragmas(db, {
       profile: 'large',

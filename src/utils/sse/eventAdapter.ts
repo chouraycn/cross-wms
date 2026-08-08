@@ -96,8 +96,10 @@ export class EventAdapter {
         return this.adaptToolExecution(data, 'tool_execution_started');
       case 'tool_execution_completed':
         return this.adaptToolExecution(data, 'tool_execution_completed');
+      case 'file':
+        return this.adaptFile(data);
       default:
-        // 未识别的 stream（如 file 等）暂不映射，跳过
+        // 未识别的 stream 跳过
         return [];
     }
   }
@@ -166,7 +168,17 @@ export class EventAdapter {
     const phase = (data.phase as string) || '';
     if (phase === 'start' || phase === 'init') {
       this.reset();
-      return { type: 'start', partial: this.buildSnapshot() };
+      return {
+        type: 'start',
+        partial: this.buildSnapshot(),
+        phase,
+        modelName: (data.modelName as string) || undefined,
+        model: (data.model as string) || undefined,
+        autoReason: (data.autoReason as string) || undefined,
+        autoReasonType: (data.autoReasonType as string) || undefined,
+        autoSemanticMethod: (data.autoSemanticMethod as string) || undefined,
+        autoSemanticConfidence: typeof data.autoSemanticConfidence === 'number' ? data.autoSemanticConfidence : undefined,
+      };
     }
     if (phase === 'done') {
       const events: ChatEvent[] = [];
@@ -174,7 +186,19 @@ export class EventAdapter {
       if (closing) events.push(closing);
       // 若本次 run 发生过工具调用，按 OpenClaw 语义标记为 toolUse
       const reason: 'stop' | 'length' | 'toolUse' = this.hadToolCalls ? 'toolUse' : 'stop';
-      events.push({ type: 'done', reason, message: this.buildSnapshot() });
+      events.push({
+        type: 'done',
+        reason,
+        message: this.buildSnapshot(),
+        thinkingDuration: typeof data.thinkingDuration === 'number' ? data.thinkingDuration : undefined,
+        usage: (data.usage as Record<string, unknown>) || undefined,
+        fallbackModel: (data.fallbackModel as string) || undefined,
+        fallbackReason: (data.fallbackReason as 'key_rotation' | 'model_downgrade' | 'model_not_supported' | 'request_failed') || undefined,
+        errorMessage: (data.errorMessage as string) || undefined,
+        errorCode: (data.errorCode as string) || undefined,
+        sessionKey: (data.sessionKey as string) || undefined,
+        sessionId: (data.sessionId as string) || undefined,
+      });
       return events;
     }
     return [];
@@ -216,7 +240,13 @@ export class EventAdapter {
       });
     }
     this.accumulatedThinking += delta;
-    events.push({ type: 'thinking_delta', contentIndex: this.contentIndex, delta });
+    events.push({
+      type: 'thinking_delta',
+      contentIndex: this.contentIndex,
+      delta,
+      thinkingSignature: data.thinkingSignature as string | undefined,
+      redacted: data.redacted as boolean | undefined,
+    });
     return events;
   }
 
@@ -270,7 +300,7 @@ export class EventAdapter {
       snapshot.text = errorMsg;
       snapshot.content = [{ type: 'text', text: errorMsg }];
     }
-    events.push({ type: 'error', reason: 'error', error: snapshot });
+    events.push({ type: 'error', reason: 'error', error: snapshot, message: errorMsg });
     return events;
   }
 
@@ -346,6 +376,10 @@ export class EventAdapter {
       description: (data.description as string) || undefined,
       riskLevel: (data.riskLevel as string) || undefined,
       reason: (data.reason as string) || undefined,
+      command,
+      filePath,
+      timeout: (data.timeout as number) || undefined,
+      expiresAt: (data.expiresAt as number) || undefined,
     };
   }
 
@@ -402,15 +436,13 @@ export class EventAdapter {
   }
 
   private adaptCircuitBreaker(data: Record<string, unknown>): SystemEvent {
-    const toolName = (data.toolName as string) || '';
-    const failureCount = (data.failureCount as number) ?? 0;
-    const state = (data.state as string) || 'open';
-    const alternativeTool = (data.alternativeTool as string) || undefined;
     return {
       type: 'circuit_breaker_triggered',
-      reason: alternativeTool
-        ? `${toolName} 触发熔断 (${state}, 失败 ${failureCount} 次), 备选: ${alternativeTool}`
-        : `${toolName} 触发熔断 (${state}, 失败 ${failureCount} 次)`,
+      reason: (data.reason as string) || undefined,
+      toolName: (data.toolName as string) || undefined,
+      failureCount: (data.failureCount as number) ?? undefined,
+      state: (data.state as string) || undefined,
+      alternativeTool: (data.alternativeTool as string) || undefined,
     };
   }
 
@@ -418,6 +450,7 @@ export class EventAdapter {
     return {
       type: 'command_output',
       output: (data.output as string) || '',
+      title: (data.title as string) || undefined,
     };
   }
 
@@ -428,6 +461,11 @@ export class EventAdapter {
     return {
       type: 'patch',
       files: [...added, ...modified, ...deleted],
+      title: (data.title as string) || undefined,
+      summary: (data.summary as string) || undefined,
+      added,
+      modified,
+      deleted,
     };
   }
 
@@ -454,10 +492,43 @@ export class EventAdapter {
     data: Record<string, unknown>,
     type: 'tool_execution_started' | 'tool_execution_completed',
   ): SystemEvent {
+    const toolName = (data.toolName as string) || '';
+    const toolCallId = (data.toolCallId as string) || '';
+    if (type === 'tool_execution_started') {
+      return {
+        type: 'tool_execution_started',
+        toolName,
+        toolCallId,
+        originalToolName: (data.originalToolName as string) || undefined,
+      };
+    }
     return {
-      type,
-      toolName: (data.toolName as string) || '',
-      toolCallId: (data.toolCallId as string) || '',
+      type: 'tool_execution_completed',
+      toolName,
+      toolCallId,
+      success: (data.success as boolean) ?? undefined,
+      errorType: (data.errorType as string) || undefined,
+      durationMs: (data.durationMs as number) || undefined,
+      retryCount: (data.retryCount as number) || undefined,
+      truncated: (data.truncated as boolean) ?? undefined,
+    };
+  }
+
+  /** file: 工具/技能产出文件事件 */
+  private adaptFile(data: Record<string, unknown>): SystemEvent | [] {
+    const fileName = (data.fileName as string) || '';
+    if (!fileName) return [];
+    return {
+      type: 'file',
+      fileId: (data.fileId as string) || undefined,
+      fileName,
+      fileSize: typeof data.fileSize === 'number' ? data.fileSize : undefined,
+      mimeType: (data.mimeType as string) || undefined,
+      description: (data.description as string) || undefined,
+      downloadUrl: (data.downloadUrl as string) || undefined,
+      previewUrl: (data.previewUrl as string) || undefined,
+      sessionId: (data.sessionId as string) || undefined,
+      createdAt: (data.createdAt as string) || undefined,
     };
   }
 }

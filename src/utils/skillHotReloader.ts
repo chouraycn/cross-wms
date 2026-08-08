@@ -158,8 +158,7 @@ export class SkillHotReloader {
         } else {
           await this.processFileChange(filePath, content);
         }
-      } catch {
-      } finally {
+      } catch (e) { console.debug("[compat-swallowed]", e); } finally {
         this.debounceTimers.delete(timerKey);
       }
     }, this.config.debounceMs);
@@ -189,8 +188,7 @@ export class SkillHotReloader {
         filePath,
         timestamp: Date.now(),
       });
-    } catch {
-    }
+    } catch (e) { console.debug("[compat-swallowed]", e); }
   }
 
   private async processFileRemove(filePath: string): Promise<void> {
@@ -226,11 +224,9 @@ export class SkillHotReloader {
 
           const content = await readFile(filePath, 'utf-8');
           await this.processFileChange(filePath, content);
-        } catch {
-        }
+        } catch (e) { console.debug("[compat-swallowed]", e); }
       }
-    } catch {
-    }
+    } catch (e) { console.debug("[compat-swallowed]", e); }
   }
 
   private async fileExists(filePath: string, node: NonNullable<Awaited<ReturnType<typeof loadNodeModules>>>): Promise<boolean> {
@@ -246,8 +242,7 @@ export class SkillHotReloader {
     for (const callback of this.callbacks) {
       try {
         callback(event);
-      } catch {
-      }
+      } catch (e) { console.debug("[compat-swallowed]", e); }
     }
   }
 }

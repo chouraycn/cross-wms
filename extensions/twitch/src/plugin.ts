@@ -63,7 +63,7 @@ export const twitchPlugin: ChannelPlugin<ResolvedTwitchAccount> =
       normalizeAllowEntry: createPairingPrefixStripper(/^(twitch:)?user:?/i),
       notifyApproval: createLoggedPairingApprovalNotifier(
         ({ id }) => `Pairing approved for user ${id} (notification sent via chat if possible)`,
-        console.warn,
+        log.warn,
       ),
     },
     outbound: twitchOutbound,

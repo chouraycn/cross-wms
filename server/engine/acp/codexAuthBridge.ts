@@ -229,8 +229,7 @@ function writeRedactedStderrLog(text) {
     if (current.length > stderrLogMaxChars) {
       writeFileSync(stderrLogPath, current.slice(-stderrLogMaxChars), "utf8");
     }
-  } catch {
-  }
+  } catch (e) { console.debug("[compat-swallowed]", e); }
 }
 
 function redactIncompletePrivateKeyTail(text) {
@@ -302,8 +301,7 @@ try {
   if (stderrLogPath) {
     writeFileSync(stderrLogPath, "", "utf8");
   }
-} catch {
-}
+} catch (e) { console.debug("[compat-swallowed]", e); }
 
 const configuredArgs = stripOpenClawWrapperArgs(rawConfiguredArgs);
 
@@ -370,8 +368,7 @@ function killChildTree(signal, options = {}) {
     try {
       process.kill(-child.pid, signal);
       return;
-    } catch {
-    }
+    } catch (e) { console.debug("[compat-swallowed]", e); }
   }
   child.kill(signal);
 }
@@ -536,8 +533,7 @@ function renderIsolatedCodexConfig(params: {
 async function makeGeneratedWrapperExecutableIfPossible(wrapperPath: string): Promise<void> {
   try {
     await fs.chmod(wrapperPath, 0o755);
-  } catch {
-  }
+  } catch (e) { console.debug("[compat-swallowed]", e); }
 }
 
 export async function writeCodexAcpWrapper(

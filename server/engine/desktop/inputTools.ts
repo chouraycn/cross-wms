@@ -109,7 +109,7 @@ except Exception as e:
         const tmpFile = `/tmp/desktop-click-${Date.now()}.py`;
         fs.writeFileSync(tmpFile, pythonScript);
         const output = execSync(`python3 "${tmpFile}"`, { encoding: 'utf8', timeout: 3000 }).toString();
-        try { await fs.promises.unlink(tmpFile); } catch {}
+        try { await fs.promises.unlink(tmpFile); } catch (e) { console.debug("[compat-swallowed]", e); }
         return JSON.stringify({ success: true, output: output.trim(), x, y, ...extraInfo });
       } catch {
         // Fallback: cliclick

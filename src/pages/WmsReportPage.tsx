@@ -10,7 +10,7 @@ import { Box } from '@mui/material';
 import PageHeader from '../components/Common/PageHeader';
 import WmsReportGenerator from '../components/wms/WmsReportGenerator';
 import { subscribeRefresh } from '../App';
-import { useToast } from '../contexts/ToastContext';
+import { useToast, ToastMessages } from '../contexts/ToastContext';
 import type { WmsReport, ReportType, FileFormat } from '../types/wms';
 import { API_BASE_URL } from '../constants/api';
 
@@ -33,7 +33,7 @@ const WmsReportPage: React.FC = () => {
         showToast(json.message || json.error || '获取报表列表失败', 'error');
       }
     } catch {
-      showToast('网络错误', 'error');
+      showToast(ToastMessages.NETWORK_ERROR, 'error');
     } finally {
       setLoading(false);
     }
@@ -70,7 +70,7 @@ const WmsReportPage: React.FC = () => {
         showToast(json.message || json.error || '生成失败', 'error');
       }
     } catch {
-      showToast('网络错误', 'error');
+      showToast(ToastMessages.NETWORK_ERROR, 'error');
     }
   };
 

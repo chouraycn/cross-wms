@@ -586,9 +586,9 @@ function getPageRefreshKey(pathname: string): string {
 }
 
 /* ===================== 存量 MUI 版数字员工 UI 已清理 =====================
- * 2026-08-05：src/pages/staff/* 下 79 文件 / 3.2 万行的 MUI 版数字员工页面已全部删除，
- * 统一收敛到 iframe 版（/staffdeck）。仅保留 3 个 iframe 版未覆盖的运维页
- * （traces/debug/tutorial）与登录页。iframe 是数字员工的唯一复刻实现。
+ * 2026-08-05：src/pages/staff/* 下 39 个 MUI 版数字员工页面文件已物理删除（整目录重定向到 /staffdeck），
+ * 统一收敛到 iframe 版（/staffdeck）。仅保留 5 个 iframe 版未覆盖的页面
+ * （DebugPage / TracesPage / TutorialPage / LoginPage / StaffDeckEmbedPage）。iframe 是数字员工的唯一复刻实现。
  */
 
 /** 主布局（需要在 Router 内部以使用 useLocation / useNavigate） */

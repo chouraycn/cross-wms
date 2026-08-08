@@ -163,15 +163,15 @@ export async function handleDesktopSnapshot(): Promise<string> {
       try {
         var pos = elem.position();
         if (pos) { info.x = pos[0]; info.y = pos[1]; }
-      } catch(e) {}
+      } catch (e) { console.debug("[compat-swallowed]", e); }
       try {
         var sz = elem.size();
         if (sz) { info.w = sz[0]; info.h = sz[1]; }
-      } catch(e) {}
+      } catch (e) { console.debug("[compat-swallowed]", e); }
 
-      try { info.enabled = elem.enabled(); } catch(e) {}
-      try { info.value = elem.value() || ''; } catch(e) {}
-      try { info.description = elem.description() || ''; } catch(e) {}
+      try { info.enabled = elem.enabled(); } catch (e) { console.debug("[compat-swallowed]", e); }
+      try { info.value = elem.value() || ''; } catch (e) { console.debug("[compat-swallowed]", e); }
+      try { info.description = elem.description() || ''; } catch (e) { console.debug("[compat-swallowed]", e); }
 
       if (info.role) results.push(info);
 
@@ -182,7 +182,7 @@ export async function handleDesktopSnapshot(): Promise<string> {
             traverse(children[i], depth + 1);
           }
         }
-      } catch(e) {}
+      } catch (e) { console.debug("[compat-swallowed]", e); }
     }
 
     try {

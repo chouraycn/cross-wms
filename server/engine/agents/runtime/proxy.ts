@@ -259,7 +259,7 @@ export function streamProxy(
     } finally {
       try {
         reader?.releaseLock();
-      } catch {}
+      } catch (e) { console.debug("[compat-swallowed]", e); }
       if (options.signal) {
         options.signal.removeEventListener("abort", abortHandler);
       }

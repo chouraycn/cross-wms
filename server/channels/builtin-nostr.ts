@@ -247,8 +247,7 @@ function publishToRelay(relayUrl: string, event: NostrEvent, timeoutMs: number):
         settled = true;
         try {
           ws.close();
-        } catch {
-        }
+        } catch (e) { console.debug("[compat-swallowed]", e); }
         resolve(false);
       }
     }, timeoutMs);
@@ -266,13 +265,11 @@ function publishToRelay(relayUrl: string, event: NostrEvent, timeoutMs: number):
             clearTimeout(timer);
             try {
               ws.close();
-            } catch {
-            }
+            } catch (e) { console.debug("[compat-swallowed]", e); }
             resolve(data[2] === true);
           }
         }
-      } catch {
-      }
+      } catch (e) { console.debug("[compat-swallowed]", e); }
     };
 
     ws.onerror = () => {
@@ -342,8 +339,7 @@ function subscribeToDms(
       if (Array.isArray(data) && data[0] === "EVENT" && data[1] === subId) {
         onEvent(data[2] as NostrEvent);
       }
-    } catch {
-    }
+    } catch (e) { console.debug("[compat-swallowed]", e); }
   };
 
   return () => {
@@ -351,8 +347,7 @@ function subscribeToDms(
     try {
       ws.send(JSON.stringify(["CLOSE", subId]));
       ws.close();
-    } catch {
-    }
+    } catch (e) { console.debug("[compat-swallowed]", e); }
   };
 }
 

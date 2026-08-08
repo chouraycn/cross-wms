@@ -43,7 +43,7 @@ import ChainBuilder from '../components/SkillChain/ChainBuilder';
 import ChainExecutionPanel from '../components/SkillChain/ChainExecutionPanel';
 import { chainStore } from '../stores/chainStore';
 import { getAuditStatus } from '../stores/skillStore';
-import { useToast } from '../contexts/ToastContext';
+import { useToast, ToastMessages } from '../contexts/ToastContext';
 import { usePageFadeIn } from '../hooks/usePageFadeIn';
 import SearchInput from '../components/Common/SearchInput';
 import type { SkillChain } from '../types/skill';
@@ -70,7 +70,7 @@ const COLORS = {
 // 检测是否为原生 App / pywebview 桌面模式
 const isNativeApp = (): boolean => {
   if (isMacOSApp()) return true;
-  // @ts-ignore
+  // @ts-expect-error FIXME: cdfAppNative 是宿主注入的非标准全局对象，应在 src/global.d.ts 补类型声明
   if (typeof window !== 'undefined' && window.cdfAppNative && window.cdfAppNative.isNative) return true;
   return isPyWebView();
 };
@@ -167,7 +167,7 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
               showToast('技能列表已更新', 'info');
             }).catch(() => {});
           }
-        } catch (e) {}
+        } catch (e) { console.debug("[compat-swallowed]", e); }
       });
       evtRef.current = sse;
     }, 800);
@@ -308,7 +308,7 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
       setChainVersion((v) => v + 1);
       showToast('技能链已保存', 'success');
     } catch (e) {
-      showToast('保存失败', 'error');
+      showToast(ToastMessages.SAVE_FAILED, 'error');
     }
   }, [editingChain]);
 
@@ -332,7 +332,7 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
       setChainVersion((v) => v + 1);
       showToast('技能链已删除', 'success');
     } catch (e) {
-      showToast('删除失败', 'error');
+      showToast(ToastMessages.DELETE_FAILED, 'error');
     }
   }, [selectedChainId]);
 
@@ -345,7 +345,7 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
       setChainVersion((v) => v + 1);
       showToast('技能链已复制', 'success');
     } catch (e) {
-      showToast('复制失败', 'error');
+      showToast(ToastMessages.COPY_FAILED, 'error');
     }
   }, [selectedChainId]);
 
@@ -541,7 +541,7 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
     e.stopPropagation();
     setSkillStatus(id, 'active');
     setSkillVersion((v) => v + 1);
-    showToast('技能已启用', 'success');
+    showToast(ToastMessages.SKILL_ENABLED, 'success');
   };
 
   // 已安装标签：开关切换技能状态

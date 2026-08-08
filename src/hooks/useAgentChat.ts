@@ -485,13 +485,13 @@ export function useAgentChat(
 
   // handleChatEvent — 按 OpenClaw ChatEvent.type 分发处理
   // 业务逻辑直接复制自原 handleAgentEvent 的对应 case，仅改变分发机制；
-  // ctx 透传原始 wire 字段（stream/data/runId/seq），保证现有处理行为完全不变。
-  const handleChatEvent = useCallback((chatEvent: ChatEvent, ctx: { stream: string; data: Record<string, unknown>; runId: string; seq: number }) => {
-    const { stream, data, runId } = ctx;
+  // ctx 仅保留 runId（chatEvent 已包含所有业务数据，wire 格式不再透传）
+  const handleChatEvent = useCallback((chatEvent: ChatEvent, ctx: { runId: string }) => {
+    const { runId } = ctx;
     switch (chatEvent.type) {
       case 'start': {
-        // lifecycle: phase=start → 重置运行状态；phase=init → 创建消息气泡/设置 model
-        const phase = (data.phase as string) || '';
+        // chatEvent 已收窄为 start
+        const phase = chatEvent.phase || '';
         if (phase === 'start') {
           if (runId) {
             setCurrentRunId(runId);
@@ -515,7 +515,7 @@ export function useAgentChat(
             startAssistantMessage(false);
           }
           // 如果有 model 信息，更新已创建消息的 model 字段
-          if (data.modelName || data.model) {
+          if (chatEvent.modelName || chatEvent.model) {
             setMessages((prev) => {
               const idx = blockStateRef.current.assistantMessageIndex;
               if (idx < 0 || idx >= prev.length) return prev;
@@ -523,7 +523,7 @@ export function useAgentChat(
               if (msg.role !== 'assistant') return prev;
               const updated: Message = {
                 ...msg,
-                model: (data.modelName as string) || (data.model as string) || msg.model,
+                model: chatEvent.modelName || chatEvent.model || msg.model,
               };
               const newMessages = [...prev];
               newMessages[idx] = updated;
@@ -533,7 +533,7 @@ export function useAgentChat(
 
           // 读取自动路由透明度：autoReason / autoReasonType / 语义融合方法 / 置信度
           // 主聊天路径此前漏读这些字段（BotMessageContent 有渲染但从未填充），本次补齐
-          if (data.autoReason || data.autoReasonType || data.autoSemanticMethod || typeof data.autoSemanticConfidence === 'number') {
+          if (chatEvent.autoReason || chatEvent.autoReasonType || chatEvent.autoSemanticMethod || typeof chatEvent.autoSemanticConfidence === 'number') {
             setMessages((prev) => {
               const idx = blockStateRef.current.assistantMessageIndex;
               if (idx < 0 || idx >= prev.length) return prev;
@@ -541,10 +541,10 @@ export function useAgentChat(
               if (msg.role !== 'assistant') return prev;
               const updated: Message = {
                 ...msg,
-                ...(data.autoReason ? { autoReason: data.autoReason as string } : {}),
-                ...(data.autoReasonType ? { autoReasonType: data.autoReasonType as Message['autoReasonType'] } : {}),
-                ...(data.autoSemanticMethod ? { autoSemanticMethod: data.autoSemanticMethod as string } : {}),
-                ...(typeof data.autoSemanticConfidence === 'number' ? { autoSemanticConfidence: data.autoSemanticConfidence } : {}),
+                ...(chatEvent.autoReason ? { autoReason: chatEvent.autoReason } : {}),
+                ...(chatEvent.autoReasonType ? { autoReasonType: chatEvent.autoReasonType as Message['autoReasonType'] } : {}),
+                ...(chatEvent.autoSemanticMethod ? { autoSemanticMethod: chatEvent.autoSemanticMethod } : {}),
+                ...(typeof chatEvent.autoSemanticConfidence === 'number' ? { autoSemanticConfidence: chatEvent.autoSemanticConfidence } : {}),
               };
               const newMessages = [...prev];
               newMessages[idx] = updated;
@@ -556,7 +556,7 @@ export function useAgentChat(
       }
 
       case 'done': {
-        // lifecycle: phase=done
+        // chatEvent 已收窄为 done
         flushAllBuffers();
         textCoalescerRef.current?.dispose();
         thinkingCoalescerRef.current?.dispose();
@@ -573,11 +573,11 @@ export function useAgentChat(
               ...msg,
               isStreaming: false,
               thinkingDone: true,
-              thinkingDuration: data.thinkingDuration as number | undefined,
-              usage: data.usage as Record<string, unknown> | undefined,
+              thinkingDuration: chatEvent.thinkingDuration,
+              usage: chatEvent.usage,
               // 读取降级信息：fallbackModel / fallbackReason
-              ...(data.fallbackModel ? { fallbackModel: data.fallbackModel as string } : {}),
-              ...(data.fallbackReason ? { fallbackReason: data.fallbackReason as 'key_rotation' | 'model_downgrade' | 'model_not_supported' | 'request_failed' } : {}),
+              ...(chatEvent.fallbackModel ? { fallbackModel: chatEvent.fallbackModel } : {}),
+              ...(chatEvent.fallbackReason ? { fallbackReason: chatEvent.fallbackReason } : {}),
             };
 
             const newMessages = [...prev];
@@ -587,7 +587,7 @@ export function useAgentChat(
         } else if (state.assistantMessageIndex === -1) {
           // 兜底：整个流程未创建 assistant 消息（后端未发送任何文本/思考内容）
           // 创建一条空 assistant 消息，避免用户看到无限 loading 却无回复气泡
-          const fallbackContent = (data.errorMessage as string) || '';
+          const fallbackContent = chatEvent.errorMessage || '';
           const newMsg: Message = {
             id: `msg_${uuidv4().slice(0, 8)}`,
             role: 'assistant',
@@ -597,8 +597,8 @@ export function useAgentChat(
             thinking: '',
             thinkingDone: true,
             isStreaming: false,
-            ...(data.fallbackModel ? { fallbackModel: data.fallbackModel as string } : {}),
-            ...(data.fallbackReason ? { fallbackReason: data.fallbackReason as 'key_rotation' | 'model_downgrade' | 'model_not_supported' | 'request_failed' } : {}),
+            ...(chatEvent.fallbackModel ? { fallbackModel: chatEvent.fallbackModel } : {}),
+            ...(chatEvent.fallbackReason ? { fallbackReason: chatEvent.fallbackReason } : {}),
             ...(fallbackContent ? { error: fallbackContent } : {}),
           };
           setMessages((prev) => [...prev, newMsg]);
@@ -610,7 +610,7 @@ export function useAgentChat(
 
         // 自动提取待办：从助手最终回复内容中提取行动项，写入 localStorage 并派发事件
         // v3.1: 移出 setMessages updater — 不在 state updater 中做副作用，避免阻塞渲染
-        const eventSessionKey = (data.sessionKey as string) || (data.sessionId as string) || '';
+        const eventSessionKey = chatEvent.sessionKey || chatEvent.sessionId || '';
         if (eventSessionKey && state.assistantMessageIndex >= 0) {
           // 延迟到下一帧执行，不阻塞当前渲染周期（setTimeout 16ms 替代 rAF，WKWebView 兼容）
           window.setTimeout(() => {
@@ -646,8 +646,8 @@ export function useAgentChat(
           });
         }
 
-        const errorCode = data.errorCode as string | undefined;
-        const errorMessage = data.errorMessage as string | undefined;
+        const errorCode = chatEvent.errorCode;
+        const errorMessage = chatEvent.errorMessage;
         if (errorCode && errorMessage) {
           setError(errorMessage);
           if (currentPendingMsgIdRef.current) {
@@ -666,9 +666,8 @@ export function useAgentChat(
       case 'text_start':
         break;
       case 'text_delta': {
-        // assistant stream
-        const content = (data.content as string) || '';
-        handleTextContent(content, false);
+        // chatEvent 已收窄为 text_delta
+        handleTextContent(chatEvent.delta, false);
         break;
       }
       case 'text_end':
@@ -676,13 +675,12 @@ export function useAgentChat(
       case 'thinking_start':
         break;
       case 'thinking_delta': {
-        // thinking stream
-        const content = (data.content as string) || '';
-        handleTextContent(content, true);
+        // chatEvent 已收窄为 thinking_delta
+        handleTextContent(chatEvent.delta, true);
 
         // v9.0: 处理 thinkingSignature / redacted 字段，保存到当前 assistant 消息的 metadata
-        const thinkingSignature = data.thinkingSignature as string | undefined;
-        const redacted = data.redacted as boolean | undefined;
+        const thinkingSignature = chatEvent.thinkingSignature;
+        const redacted = chatEvent.redacted;
         if (thinkingSignature !== undefined || redacted !== undefined) {
           const sigState = blockStateRef.current;
           if (sigState.assistantMessageIndex >= 0) {
@@ -714,12 +712,13 @@ export function useAgentChat(
       case 'toolcall_delta':
         break;
       case 'toolcall_end': {
-        // tool stream
+        // chatEvent 已收窄为 toolcall_end
         flushAllBuffers();
 
-        const toolName = (data.name as string) || (data.toolName as string) || '';
-        const toolArgs = (data.args as string) || (data.toolArgs as string) || '{}';
-        const toolResult = (data.result as string) || '';
+        const toolCall = chatEvent.toolCall;
+        const toolName = toolCall.name;
+        const toolArgs = JSON.stringify(toolCall.arguments);
+        const toolResult = toolCall.result || '';
 
         const state = blockStateRef.current;
         if (state.assistantMessageIndex === -1) {
@@ -734,7 +733,7 @@ export function useAgentChat(
 
           const toolCalls = lastMsg.toolCalls || [];
           const newEntry = {
-            id: (data.toolCallId as string) || `tc_${Date.now()}`,
+            id: toolCall.id,
             name: toolName,
             arguments: toolArgs,
             result: toolResult,
@@ -817,9 +816,14 @@ export function useAgentChat(
       }
 
       case 'error': {
-        // error stream
+        // chatEvent 已收窄为 error
         flushAllBuffers();
-        const errorMsg = (data.message as string) || (data.error as string) || '发生错误';
+        // chatEvent.message 为原始错误消息，chatEvent.error 快照可能也包含错误文本
+        const snapshotText = chatEvent.error?.text
+          ?? chatEvent.error?.content[0]?.text;
+        const errorMsg = snapshotText
+          || chatEvent.message
+          || '发生错误';
         setError(errorMsg);
         setIsLoading(false);
         setCurrentRunId(null);
@@ -903,18 +907,19 @@ export function useAgentChat(
         // approval stream
         flushAllBuffers();
 
+        const approvalEvt = chatEvent as SystemEvent & { type: 'approval_request' };
         const approvalData = {
-          requestId: (data.requestId as string) || `appr_${Date.now()}`,
-          type: (data.type as string) || 'tool_call',
-          description: (data.description as string) || '',
-          toolName: (data.toolName as string) || undefined,
-          command: (data.command as string) || undefined,
-          filePath: (data.filePath as string) || undefined,
-          details: (data.details as Record<string, unknown>) || {},
-          riskLevel: (data.riskLevel as string) || undefined,
-          reason: (data.reason as string) || undefined,
-          timeout: (data.timeout as number) || 30000,
-          expiresAt: (data.expiresAt as number) || undefined,
+          requestId: approvalEvt.approvalId || `appr_${Date.now()}`,
+          type: 'tool_call',
+          description: approvalEvt.description || '',
+          toolName: approvalEvt.toolName || undefined,
+          command: approvalEvt.command || undefined,
+          filePath: approvalEvt.filePath || undefined,
+          details: approvalEvt.toolArgs || {},
+          riskLevel: approvalEvt.riskLevel || undefined,
+          reason: approvalEvt.reason || undefined,
+          timeout: approvalEvt.timeout || 30000,
+          expiresAt: approvalEvt.expiresAt || undefined,
         };
 
         // 发送全局审批事件
@@ -926,9 +931,10 @@ export function useAgentChat(
       case 'compaction': {
         // 上下文压缩事件：将后端 tokensBefore/tokensAfter/reductionRatio
         // 映射到 Message.contextCompressed（ContextCompressedData）
-        const tokensBefore = (data.tokensBefore as number) ?? 0;
-        const tokensAfter = (data.tokensAfter as number) ?? 0;
-        const reductionRatio = (data.reductionRatio as number) ?? 0;
+        const compactionEvt = chatEvent as SystemEvent & { type: 'compaction' };
+        const tokensBefore = compactionEvt.tokensBefore ?? 0;
+        const tokensAfter = compactionEvt.tokensAfter ?? 0;
+        const reductionRatio = compactionEvt.reductionRatio ?? 0;
 
         const state = blockStateRef.current;
         if (state.assistantMessageIndex >= 0) {
@@ -958,7 +964,8 @@ export function useAgentChat(
 
       case 'react_phase': {
         // v4.0: ReAct 阶段事件 — 写入 msg.reactPhase 驱动 ReactPhaseIndicator
-        const phase = (data.phase as 'reasoning' | 'acting' | 'observing' | 'reflecting' | 'done') || 'reasoning';
+        const reactEvt = chatEvent as SystemEvent & { type: 'react_phase' };
+        const phase = reactEvt.phase || 'reasoning';
         const state = blockStateRef.current;
         if (state.assistantMessageIndex >= 0) {
           setMessages((prev) => {
@@ -969,9 +976,9 @@ export function useAgentChat(
               ...msg,
               reactPhase: {
                 phase,
-                step: (data.step as number) ?? undefined,
-                totalSteps: (data.totalSteps as number) ?? undefined,
-                description: (data.description as string) ?? undefined,
+                step: reactEvt.step ?? undefined,
+                totalSteps: reactEvt.totalSteps ?? undefined,
+                description: reactEvt.description ?? undefined,
               },
             };
             const newMessages = [...prev];
@@ -984,6 +991,7 @@ export function useAgentChat(
 
       case 'budget_exceeded': {
         // v5.0: 预算超出事件 — 写入 msg.budgetExceeded 驱动 BudgetExceededIndicator
+        const budgetEvt = chatEvent as SystemEvent & { type: 'budget_exceeded' };
         const state = blockStateRef.current;
         if (state.assistantMessageIndex >= 0) {
           setMessages((prev) => {
@@ -993,11 +1001,11 @@ export function useAgentChat(
             const updated: Message = {
               ...msg,
               budgetExceeded: {
-                reason: (data.reason as string) || '',
-                consumedTurns: (data.consumedTurns as number) ?? 0,
-                consumedTokens: (data.consumedTokens as number) ?? 0,
-                maxTurns: (data.maxTurns as number) ?? 0,
-                maxTokens: (data.maxTokens as number) ?? 0,
+                reason: budgetEvt.reason || '',
+                consumedTurns: budgetEvt.consumedTurns ?? 0,
+                consumedTokens: budgetEvt.consumedTokens ?? 0,
+                maxTurns: budgetEvt.maxTurns ?? 0,
+                maxTokens: budgetEvt.maxTokens ?? 0,
               },
             };
             const newMessages = [...prev];
@@ -1010,6 +1018,7 @@ export function useAgentChat(
 
       case 'complexity_assessment': {
         // v5.0: 复杂度评估事件 — 写入 msg.complexityAssessment 驱动 ComplexityAssessmentBadge
+        const complexityEvt = chatEvent as SystemEvent & { type: 'complexity_assessment' };
         const state = blockStateRef.current;
         if (state.assistantMessageIndex >= 0) {
           setMessages((prev) => {
@@ -1019,10 +1028,10 @@ export function useAgentChat(
             const updated: Message = {
               ...msg,
               complexityAssessment: {
-                level: (data.level as 'simple' | 'moderate' | 'complex') || 'moderate',
-                estimatedSteps: (data.estimatedSteps as number) ?? 0,
-                reason: (data.reason as string) || '',
-                recommendedMode: (data.recommendedMode as string) || '',
+                level: (complexityEvt.level as 'simple' | 'moderate' | 'complex') || 'moderate',
+                estimatedSteps: complexityEvt.estimatedSteps ?? 0,
+                reason: complexityEvt.reason || '',
+                recommendedMode: complexityEvt.recommendedMode || '',
               },
             };
             const newMessages = [...prev];
@@ -1038,22 +1047,23 @@ export function useAgentChat(
 
       case 'plan_created': {
         // v9.2: 执行计划事件 — 将计划写入当前助手消息的 executionPlan 字段
-        const plan = data.plan as { steps?: Array<{ step: number; description: string; status?: string; toolName?: string }> } | undefined;
-        if (plan?.steps) {
+        const planEvt = chatEvent as SystemEvent & { type: 'plan_created' };
+        const planSteps = planEvt.plan;
+        if (planSteps?.length) {
           const idx = blockStateRef.current.assistantMessageIndex;
           if (idx >= 0) {
             setMessages(prev => {
               if (idx < 0 || idx >= prev.length) return prev;
               const updated = { ...prev[idx] };
               updated.executionPlan = {
-                id: String(plan.steps!.length),
+                id: String(planSteps.length),
                 intent: '',
-                steps: plan.steps!.map(s => ({
-                  step: s.step,
-                  description: s.description,
+                steps: planSteps.map((s, i) => ({
+                  step: i + 1,
+                  description: s.title,
                   status: (s.status as 'pending' | 'in_progress' | 'completed' | 'failed' | 'skipped') || 'pending',
                   dependsOn: [],
-                  toolName: s.toolName,
+                  toolName: s.description,
                 })),
                 isDynamic: true,
                 createdAt: Date.now().toString(),
@@ -1069,8 +1079,9 @@ export function useAgentChat(
 
       case 'plan_revised': {
         // v9.2: 计划修订事件 — 更新当前助手消息的 executionPlan
-        const revised = data.plan as { steps?: Array<{ step: number; description: string; status?: string; toolName?: string }> } | undefined;
-        if (revised?.steps) {
+        const revisedEvt = chatEvent as SystemEvent & { type: 'plan_revised' };
+        const revisedSteps = revisedEvt.plan;
+        if (revisedSteps?.length) {
           const idx = blockStateRef.current.assistantMessageIndex;
           if (idx >= 0) {
             setMessages(prev => {
@@ -1079,12 +1090,12 @@ export function useAgentChat(
               updated.executionPlan = {
                 id: String(Date.now()),
                 intent: '',
-                steps: revised.steps!.map(s => ({
-                  step: s.step,
-                  description: s.description,
+                steps: revisedSteps.map((s, i) => ({
+                  step: i + 1,
+                  description: s.title,
                   status: (s.status as 'pending' | 'in_progress' | 'completed' | 'failed' | 'skipped') || 'pending',
                   dependsOn: [],
-                  toolName: s.toolName,
+                  toolName: s.description,
                 })),
                 isDynamic: true,
                 createdAt: Date.now().toString(),
@@ -1100,8 +1111,9 @@ export function useAgentChat(
 
       case 'command_output': {
         // v9.2: 命令输出事件 — 添加到 activeItems 供 UI 展示
-        const title = (data.title as string) || '命令输出';
-        const output = (data.output as string) || '';
+        const cmdEvt = chatEvent as SystemEvent & { type: 'command_output' };
+        const title = cmdEvt.title || '命令输出';
+        const output = cmdEvt.output || '';
         setActiveItems(prev => [...prev, {
           type: 'item' as const,
           itemId: `cmd_${Date.now()}`,
@@ -1116,11 +1128,12 @@ export function useAgentChat(
 
       case 'patch': {
         // v9.2: 补丁摘要事件 — 添加到 activeItems 供 UI 展示
-        const title = (data.title as string) || '代码变更';
-        const summary = (data.summary as string) || '';
-        const added = (data.added as string[]) || [];
-        const modified = (data.modified as string[]) || [];
-        const deleted = (data.deleted as string[]) || [];
+        const patchEvt = chatEvent as SystemEvent & { type: 'patch' };
+        const title = patchEvt.title || '代码变更';
+        const summary = patchEvt.summary || '';
+        const added = patchEvt.added || [];
+        const modified = patchEvt.modified || [];
+        const deleted = patchEvt.deleted || [];
         setActiveItems(prev => [...prev, {
           type: 'item' as const,
           itemId: `patch_${Date.now()}`,
@@ -1135,9 +1148,10 @@ export function useAgentChat(
       }
 
       case 'output_review': {
-        const quality = (data.quality as 'A' | 'B' | 'C' | 'D') || 'C';
-        const issues = (data.issues as string[]) || [];
-        const suggestion = (data.suggestion as string) || '';
+        const reviewEvt = chatEvent as SystemEvent & { type: 'output_review' };
+        const quality = reviewEvt.quality || 'C';
+        const issues = reviewEvt.issues || [];
+        const suggestion = reviewEvt.suggestion || '';
         const state = blockStateRef.current;
         if (state.assistantMessageIndex >= 0) {
           setMessages((prev) => {
@@ -1157,19 +1171,8 @@ export function useAgentChat(
       }
 
       case 'compaction_notification': {
-        const notification = data.notification as {
-          id: string;
-          message: string;
-          details: {
-            tokensBefore?: number;
-            tokensAfter?: number;
-            reductionRatio?: number;
-            summary?: string;
-          };
-          timestamp: number;
-          read: boolean;
-        } | undefined;
-        if (notification) {
+        const notifEvt = chatEvent as SystemEvent & { type: 'compaction_notification' };
+        if (notifEvt.id) {
           const state = blockStateRef.current;
           if (state.assistantMessageIndex >= 0) {
             setMessages((prev) => {
@@ -1179,13 +1182,13 @@ export function useAgentChat(
               const updated: Message = {
                 ...msg,
                 compactionNotification: {
-                  id: notification.id,
-                  message: notification.message,
-                  tokensBefore: notification.details?.tokensBefore,
-                  tokensAfter: notification.details?.tokensAfter,
-                  reductionRatio: notification.details?.reductionRatio,
-                  summary: notification.details?.summary,
-                  timestamp: notification.timestamp,
+                  id: notifEvt.id,
+                  message: notifEvt.message,
+                  tokensBefore: notifEvt.tokensBefore,
+                  tokensAfter: notifEvt.tokensAfter,
+                  reductionRatio: notifEvt.reductionRatio,
+                  summary: notifEvt.summary,
+                  timestamp: notifEvt.timestamp,
                   read: false,
                 },
               };
@@ -1200,9 +1203,10 @@ export function useAgentChat(
 
       // v11.1: 工具执行开始 — 通知前端工具开始执行
       case 'tool_execution_started': {
-        const toolName = (data.toolName as string) || '';
-        const originalToolName = (data.originalToolName as string) || undefined;
-        const toolCallId = (data.toolCallId as string) || '';
+        const execStartEvt = chatEvent as SystemEvent & { type: 'tool_execution_started' };
+        const toolName = execStartEvt.toolName || '';
+        const originalToolName = execStartEvt.originalToolName || undefined;
+        const toolCallId = execStartEvt.toolCallId || '';
 
         if (toolName) {
           const state = blockStateRef.current;
@@ -1234,13 +1238,14 @@ export function useAgentChat(
 
       // v11.1: 工具执行完成 — 更新执行状态
       case 'tool_execution_completed': {
-        const toolName = (data.toolName as string) || '';
-        const toolCallId = (data.toolCallId as string) || '';
-        const success = (data.success as boolean) ?? true;
-        const errorType = (data.errorType as string) || undefined;
-        const durationMs = (data.durationMs as number) || 0;
-        const retryCount = (data.retryCount as number) || 0;
-        const truncated = (data.truncated as boolean) || false;
+        const execDoneEvt = chatEvent as SystemEvent & { type: 'tool_execution_completed' };
+        const toolName = execDoneEvt.toolName || '';
+        const toolCallId = execDoneEvt.toolCallId || '';
+        const success = execDoneEvt.success ?? true;
+        const errorType = execDoneEvt.errorType || undefined;
+        const durationMs = execDoneEvt.durationMs || 0;
+        const retryCount = execDoneEvt.retryCount || 0;
+        const truncated = execDoneEvt.truncated || false;
 
         if (toolName) {
           const state = blockStateRef.current;
@@ -1275,10 +1280,11 @@ export function useAgentChat(
 
       // v6.0/v11.1: 熔断器触发 — 通知前端工具被熔断
       case 'circuit_breaker_triggered': {
-        const toolName = (data.toolName as string) || '';
-        const failureCount = (data.failureCount as number) || 0;
-        const cbState = (data.state as string) || 'open';
-        const alternativeTool = (data.alternativeTool as string) || undefined;
+        const cbEvt = chatEvent as SystemEvent & { type: 'circuit_breaker_triggered' };
+        const toolName = cbEvt.toolName || '';
+        const failureCount = cbEvt.failureCount || 0;
+        const cbState = cbEvt.state || 'open';
+        const alternativeTool = cbEvt.alternativeTool || undefined;
 
         if (toolName) {
           const state = blockStateRef.current;
@@ -1310,53 +1316,46 @@ export function useAgentChat(
         break;
       }
 
-      default: {
-        // 适配器未映射的流（如 file）按原始 stream 透传处理
-        switch (stream) {
-          case 'file': {
-            // T4: 技能/工具产出文件实时回写 — 追加到当前 assistant 消息的 generatedFiles
-            const fileId = (data.fileId as string | undefined) ?? undefined;
-
-            const state = blockStateRef.current;
-            if (state.assistantMessageIndex === -1) {
-              startAssistantMessage(false);
-            }
-
-            setMessages((prev) => {
-              const idx = blockStateRef.current.assistantMessageIndex;
-              if (idx < 0 || idx >= prev.length) return prev;
-              const last = prev[idx];
-              if (last.role !== 'assistant') return prev;
-
-              const arr = last.generatedFiles ? [...last.generatedFiles] : [];
-              const key = fileId || (data.fileName as string);
-              if (!arr.some((x: GeneratedFile) => ((x as GeneratedFile & { fileId?: string }).fileId || x.fileName) === key)) {
-                const fileInfo: GeneratedFile & { fileId?: string } = {
-                  fileName: data.fileName as string,
-                  fileSize: Number(data.fileSize) || 0,
-                  mimeType: (data.mimeType as string | undefined) ?? undefined,
-                  description: (data.description as string | undefined) ?? undefined,
-                  downloadUrl: data.downloadUrl as string,
-                  previewUrl: (data.previewUrl as string | undefined) ?? undefined,
-                  sessionId: (data.sessionId as string | undefined) ?? undefined,
-                  createdAt: (data.createdAt as string | undefined) ?? undefined,
-                  ...(fileId ? { fileId } : {}),
-                };
-                arr.push(fileInfo);
-              }
-
-              const updated: Message = { ...last, generatedFiles: arr };
-              const newMessages = [...prev];
-              newMessages[idx] = updated;
-              return newMessages;
-            });
-            break;
-          }
-          default:
-            break;
+      case 'file': {
+        // chatEvent 已收窄为 file — 工具/技能产出文件实时回写
+        const state = blockStateRef.current;
+        if (state.assistantMessageIndex === -1) {
+          startAssistantMessage(false);
         }
+
+        setMessages((prev) => {
+          const idx = blockStateRef.current.assistantMessageIndex;
+          if (idx < 0 || idx >= prev.length) return prev;
+          const last = prev[idx];
+          if (last.role !== 'assistant') return prev;
+
+          const arr = last.generatedFiles ? [...last.generatedFiles] : [];
+          const key = chatEvent.fileId || chatEvent.fileName;
+          if (!arr.some((x: GeneratedFile) => ((x as GeneratedFile & { fileId?: string }).fileId || x.fileName) === key)) {
+            const fileInfo: GeneratedFile & { fileId?: string } = {
+              fileName: chatEvent.fileName,
+              fileSize: chatEvent.fileSize ?? 0,
+              mimeType: chatEvent.mimeType,
+              description: chatEvent.description,
+              downloadUrl: chatEvent.downloadUrl || '',
+              previewUrl: chatEvent.previewUrl,
+              sessionId: chatEvent.sessionId,
+              createdAt: chatEvent.createdAt,
+              ...(chatEvent.fileId ? { fileId: chatEvent.fileId } : {}),
+            };
+            arr.push(fileInfo);
+          }
+
+          const updated: Message = { ...last, generatedFiles: arr };
+          const newMessages = [...prev];
+          newMessages[idx] = updated;
+          return newMessages;
+        });
         break;
       }
+
+      default:
+        break;
     }
   }, [initializeStreaming, handleTextContent, flushAllBuffers, startAssistantMessage, removePendingMessage, updatePendingMessage]);
 
@@ -1377,7 +1376,6 @@ export function useAgentChat(
 
     const seq = wireEvent.seq;
     const stream = wireEvent.stream;
-    const data = wireEvent.data;
     const runId = wireEvent.runId;
 
     if (seq > 0 && !checkAndUpdateSeq(stream, seq)) {
@@ -1388,11 +1386,10 @@ export function useAgentChat(
     const chatEvents = eventAdapterRef.current.adapt(wireEvent);
     const chatEventList = Array.isArray(chatEvents) ? chatEvents : [chatEvents];
 
-    const ctx = { stream, data, runId, seq };
+    const ctx = { runId };
 
     if (chatEventList.length === 0) {
-      // 适配器未映射的流（如 file），以原始 stream 作为 type 透传给 handleChatEvent
-      handleChatEvent({ type: stream } as ChatEvent, ctx);
+      // 适配器未映射的流，跳过（所有已知流均已在 EventAdapter 中映射）
     } else {
       for (const chatEvent of chatEventList) {
         handleChatEvent(chatEvent, ctx);
@@ -2202,7 +2199,7 @@ export function useAgentChat(
       try {
         const gc = (window as any).gc;
         if (typeof gc === 'function') gc();
-      } catch {}
+      } catch (e) { console.debug("[compat-swallowed]", e); }
     };
     window.addEventListener('cdf-memory-pressure', handleMemoryPressure);
     return () => {

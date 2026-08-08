@@ -103,7 +103,7 @@ async function readResponsePrefix(
         truncated = true;
         try {
           await reader.cancel();
-        } catch {}
+        } catch (e) { console.debug("[compat-swallowed]", e); }
         break;
       }
       chunks.push(value);
@@ -113,7 +113,7 @@ async function readResponsePrefix(
   } finally {
     try {
       reader.releaseLock();
-    } catch {}
+    } catch (e) { console.debug("[compat-swallowed]", e); }
   }
 
   return {

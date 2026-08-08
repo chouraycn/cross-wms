@@ -18,6 +18,63 @@ import { toolSendReceipts } from '../toolSendReceipts.js';
 import { abortPrimitives, createRunAbortController } from '../abortPrimitives.js';
 import { toolFallbackManager } from '../toolFallbackStrategy.js';
 import { VariableContext } from './variable-context.js';
+
+// ============= 工作流脚本安全沙盒守卫 =============
+// 拦截 Function 构造函数中的危险访问：进程/文件系统/网络/模块加载。
+// 注：这不是 100% 完美沙盒（JS 语言本身难以完全 sandbox），是"防误用"层。
+// 更严格的隔离应走 vm.isContext + vm.runInNewContext（后续可升级）。
+const DANGEROUS_KEYWORDS: readonly (string | RegExp)[] = [
+  // 模块 / 路径逃逸
+  /\brequire\s*\(/,
+  /\bimport\s*\(/,
+  'importScripts',
+  // 进程相关
+  'process.',
+  '[process]',
+  'globalThis',
+  'global.',
+  // eval / Function 构造递归
+  /\beval\s*\(/,
+  /\bnew\s+Function\b/,
+  '.constructor(',
+  '__proto__',
+  'prototype.',
+  // 文件 / IO
+  /\bfs\./,
+  /\breadFileSync\b/,
+  /\bwriteFileSync\b/,
+  /\bchild_process\b/,
+  /\bexec\s*\(/,
+  /\bexecSync\b/,
+  /\bspawn\s*\(/,
+  // 网络
+  /\bfetch\s*\(/,
+  'XMLHttpRequest',
+  'WebSocket',
+  'net.',
+  'http.',
+  'https.',
+  // 危险原型链方法
+  'Object.defineProperty',
+  'Reflect.',
+];
+
+function assertWorkflowScriptSafe(source: string, kind: 'expression' | 'script'): void {
+  for (const kw of DANGEROUS_KEYWORDS) {
+    if (typeof kw === 'string') {
+      if (source.includes(kw)) {
+        throw new Error(
+          `[WorkflowSandbox] 脚本被拒绝：包含禁用关键字 "${kw}"（kind=${kind}）`,
+        );
+      }
+    } else if (kw.test(source)) {
+      throw new Error(
+        `[WorkflowSandbox] 脚本被拒绝：匹配禁用模式 /${kw.source}/（kind=${kind}）`,
+      );
+    }
+  }
+}
+
 import type {
   Workflow,
   WorkflowNode,
@@ -925,6 +982,7 @@ export class WorkflowExecutor {
     context: Record<string, unknown>
   ): unknown {
     try {
+      assertWorkflowScriptSafe(expr, 'expression');
       const keys = Object.keys(context);
       const values = keys.map(k => context[k]);
       const fn = new Function(...keys, `return ${expr};`);
@@ -943,6 +1001,7 @@ export class WorkflowExecutor {
     variableCtx: VariableContext
   ): unknown {
     if (language === 'javascript' || !language) {
+      assertWorkflowScriptSafe(script, 'script');
       const variablesObj = variableCtx.snapshot();
       const keys = Object.keys(variablesObj);
       const values = keys.map(k => variablesObj[k]);

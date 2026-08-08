@@ -133,8 +133,7 @@ export async function installSkill(source: string, onProgress?: (progress: Insta
     } finally {
       try {
         reader.releaseLock();
-      } catch {
-      }
+      } catch (e) { console.debug("[compat-swallowed]", e); }
     }
   }
 

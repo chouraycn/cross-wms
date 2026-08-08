@@ -3,8 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 // 由于 vitest 的模块解析问题，直接导入编译后的文件
-// @ts-ignore
-const providerDist = require('../../dist/provider.js');
+// @ts-expect-error FIXME: const providerDist = require('../../dist/provider.js');
 const {
   detectProvider,
   detectProviderByModelId,

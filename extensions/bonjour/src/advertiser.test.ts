@@ -568,9 +568,9 @@ describe("gateway bonjour advertiser", () => {
     const advertise = vi.fn().mockResolvedValue(undefined);
     mockCiaoService({ advertise, destroy });
 
-    const originalConsoleLog = console.log;
+    const originalConsoleLog = log.log;
     const baseConsoleLog = vi.fn();
-    console.log = baseConsoleLog as typeof console.log;
+    log.log = baseConsoleLog as typeof log.log;
 
     try {
       const started = await startAdvertiser({
@@ -588,7 +588,7 @@ describe("gateway bonjour advertiser", () => {
 
       await started.stop();
     } finally {
-      console.log = originalConsoleLog;
+      log.log = originalConsoleLog;
     }
   });
 
@@ -625,17 +625,17 @@ describe("gateway bonjour advertiser", () => {
     expect(responder.republishService).toBe(originalMethods.republishService);
   });
 
-  it("does not clobber console.log if another wrapper replaced it before shutdown", async () => {
+  it("does not clobber log.log if another wrapper replaced it before shutdown", async () => {
     enableAdvertiserUnitMode();
 
     const destroy = vi.fn().mockResolvedValue(undefined);
     const advertise = vi.fn().mockResolvedValue(undefined);
     mockCiaoService({ advertise, destroy });
 
-    const originalConsoleLog = console.log;
+    const originalConsoleLog = log.log;
     const baseConsoleLog = vi.fn();
     const replacementConsoleLog = vi.fn();
-    console.log = baseConsoleLog as typeof console.log;
+    log.log = baseConsoleLog as typeof log.log;
 
     try {
       const started = await startAdvertiser({
@@ -643,12 +643,12 @@ describe("gateway bonjour advertiser", () => {
         sshPort: 2222,
       });
 
-      console.log = replacementConsoleLog as typeof console.log;
+      log.log = replacementConsoleLog as typeof log.log;
       await started.stop();
 
-      expect(console.log).toBe(replacementConsoleLog);
+      expect(log.log).toBe(replacementConsoleLog);
     } finally {
-      console.log = originalConsoleLog;
+      log.log = originalConsoleLog;
     }
   });
 

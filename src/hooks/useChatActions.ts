@@ -15,7 +15,7 @@ import { useCallback } from 'react';
 import type { Message, Session } from '../types/chat.js';
 import type { AgentIdentity } from '../components/CDFChat/AgentProfile.js';
 import type { SendAgentMessageOptions } from './useAgentChat.js';
-import { useToast } from '../contexts/ToastContext.js';
+import { useToast, ToastMessages } from '../contexts/ToastContext.js';
 
 /** 导出 Markdown 文件时的默认免责声明 */
 export const EXPORT_DISCLAIMER = '\n\n---\n\n*本内容由 AI 助手自动生成，仅供参考。*';
@@ -188,7 +188,7 @@ export function useChatActions({
       showToast('已导出为 Markdown', 'success', 1500);
     } else {
       // TODO: 实现 PDF 导出
-      showToast('PDF 导出功能开发中', 'info', 2000);
+      showToast(ToastMessages.PDF_EXPORT_IN_PROGRESS, 'info', 2000);
     }
   }, [showToast]);
 
@@ -248,7 +248,7 @@ export function useChatActions({
       URL.revokeObjectURL(url);
       showToast(`已导出 ${messages.length} 条消息为 Markdown`, 'success', 1500);
     } else {
-      showToast('PDF 导出功能开发中', 'info', 2000);
+      showToast(ToastMessages.PDF_EXPORT_IN_PROGRESS, 'info', 2000);
     }
   }, [showToast]);
 

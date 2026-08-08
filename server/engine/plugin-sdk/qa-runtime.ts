@@ -502,7 +502,7 @@ async function isQaDockerHealthy(url: string, fetchImpl: QaDockerFetchLike) {
 async function releaseQaDockerFetchResponse(response: QaDockerFetchResponse | undefined) {
   try {
     await response?.body?.cancel?.();
-  } catch {}
+  } catch (e) { console.debug("[compat-swallowed]", e); }
 }
 
 /** Create Docker command, health-check, and compose helpers for QA harnesses. */

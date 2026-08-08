@@ -46,8 +46,8 @@
 - 两调用方共享执行层、各留功能层：`webTools.ts` 的 `web_api_call`（15s/禁私网）；`staffHttpToolBridge.ts`（30s/允许私网）。禁止删 `staffHttpToolBridge` 让 LLM 直接用 `web_api_call`（token 泄露 + 丢语义化工具名 + 内网不可达）
 
 ## 分支拓扑（2026-08-04 三支已 push）
-- `backup/wip-2026-08-04`(f8c6611fc)：全量安全网。丢文件：`git cat-file -p f8c6611fc:<path>`
-- `sync/openclaw-2026-08-04`(f8c6611fc)：401 上游新文件，待审阅合入
+- `backup/wip-2026-08-04`(5976f186，重写后)：全量安全网。丢文件：`git cat-file -p 5976f186:<path>`
+- `sync/openclaw-2026-08-04`(5976f186，重写后)：401 上游新文件，待审阅合入
 - `refactor/staff-dedup-mcp`：数字员工整合 + P1.1 + README，待真机 e2e 后合 main
 - 收口手法：全量 add 建 backup → `git branch sync/... <sha>` → 干净 HEAD 重开特性分支 `git checkout <sha> -- <文件>` 精挑（注意 `git checkout -f` 删 untracked）
 
@@ -58,8 +58,8 @@
 - 品牌分层：对外名 **CDF Know Claw**（以 `index.html` title 为准）。冻结仓库目录名 `cross-wms`、i18n 测试占位、`useModelPreferences.ts` 的 `STORAGE_KEY='cross-wms.model-preferences.v1'`
 
 ## 剩余技术债 & 当前进度
-- **P2-1 API 契约对齐（进行中）**：`server/routes` 约 1064 处 `res.json`，仅 ~171 处含 `code` envelope，~893 处裸返回。基建已落地：`server/routes/_shared/respond.ts`(ok/fail/notFound) + inventory 已重构为统一响应（not-found 统一 404）。**105+ 路由全包待拍板「范围 + 错误形态」两点再推**
-- **git 瘦身（P0，未执行）**：实测 `.git` 634MiB / pack 762M（旧记 144MB 低估），根因 `server_dist/` 构建产物误提交 + `coverage/` + `report/`。安全剥离集 `server_dist/ coverage/ report/`（**严禁剥 `StaffDeck-main/` `openclaw/` submodule**）。filter-repo 2.47.0 已装隔离 venv，隔离验证削 91%（634MiB→~65MiB）。**执行铁律：①工作树全干净 ②重写所有 ref 后 `git push --force --all` + 全员重 clone ③`git gc --aggressive` ④命令 `git filter-repo --path server_dist/ --path coverage/ --path report/ --invert-paths`（PATH 含 venv bin）**
+- **P2-1 API 契约对齐（基建已落地，全包待拍板）**：`server/routes` 约 1064 处 `res.json`，仅 ~171 处含 `code` envelope，~893 处裸返回。基建 commit `b14969d50`：`server/routes/_shared/respond.ts`(ok/fail/notFound) + inventory 重构为统一响应（not-found 统一 404）。**105+ 路由全包待拍板「范围 + 错误形态」两点再推**
+- **git 瘦身（P0，✅ 2026-08-06 已执行）**：`.git` 732M(pack 678MiB) → 89M(pack 63.36MiB)，**削约 88%**。剥离 `server_dist/ coverage/ report/`（禁剥 `StaffDeck-main/` `openclaw/` submodule，已验证 gitlink 完好 160000）。命令：`git filter-repo --path server_dist/ --path coverage/ --path report/ --invert-paths --force`（`--force` 因非 fresh clone；venv：`/Users/chouray/.workbuddy/binaries/python/envs/default/bin/git-filter-repo`）+ `git gc --aggressive` + `git remote add origin git@github.com:chouraycn/cross-wms.git` + `git push --force --all` + `git push --force --tags`(416 tags)。**⚠️ 全员已需重 clone**（历史已重写）
 - **engine 测试隔离（脚手架已提交）**：`vitest.config.engine.ts` 在；完整拆分被沙箱 OOM 卡覆盖率基线
 - **API client / markdown 渲染各 2 份近亲副本**：重复实现待合并
 - `server/engine`：11,537 .ts / 272.9 万行，测试占 57%。抽样 12% 同上游 / 55% 已改 / 33% 独有 → 不宜回退 submodule
