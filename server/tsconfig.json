@@ -191,6 +191,12 @@
       "@cdf-know/gateway-protocol/*": [
         "../packages/gateway-protocol/src/*"
       ],
+      "@cdf-know/net-policy": [
+        "../packages/net-policy/src/index.ts"
+      ],
+      "@cdf-know/net-policy/*": [
+        "../packages/net-policy/src/*"
+      ],
       "@openclaw-src/*": [
         "../openclaw/src/*"
       ]
