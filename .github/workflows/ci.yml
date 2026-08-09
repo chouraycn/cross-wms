@@ -273,10 +273,11 @@ jobs:
 
   build-dmg:
     name: Build macOS DMG
-    needs: [lint, typecheck, test, e2e-api-test, static-checks]
-    # Unit Tests (vitest) 在 CI runner 上可能 15-25 分钟超时/取消，
-    # 允许 test job 失败/取消，只要 lint/typecheck/e2e/static 四个核心门禁通过就构建 DMG。
-    # 同时避免 workflow_cancelled 时继续执行（!cancelled()）。
+    # 优化：needs 中仅保留真正依赖的 4 个核心门禁（移除 test）。
+    # GitHub Actions 会等待 needs 中所有 job 达到最终状态后才评估 if；
+    # 之前即使 if 不看 test 结果，仍要等 25 分钟的 vitest。现在只要
+    # lint/typecheck/e2e-api/static-checks 完成就立刻启动 DMG 构建。
+    needs: [lint, typecheck, e2e-api-test, static-checks]
     if: |
       !cancelled() &&
       github.event_name == 'push' &&
