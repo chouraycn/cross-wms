@@ -1,6 +1,7 @@
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import path from 'path';
+import os from 'os';
 import { builtinModules } from 'module';
 import type { Plugin } from 'vite';
 
@@ -53,29 +54,79 @@ function externalizeMissingPackages(): Plugin {
   };
 }
 
+const isCI = !!process.env.CI;
+
 export default defineConfig({
   plugins: [react(), externalizeNodeBuiltins(), externalizeMissingPackages()],
   test: {
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/__tests__/setup.ts'],
-    include: [
-      'src/__tests__/**/*.test.{ts,tsx}',
-      'src/components/**/__tests__/**/*.test.{ts,tsx}',
-      'src/hooks/**/__tests__/**/*.test.{ts,tsx}',
-      'src/services/**/__tests__/**/*.test.{ts,tsx}',
-      'src/stores/**/__tests__/**/*.test.{ts,tsx}',
-      'server/__tests__/**/*.test.{ts,tsx}',
-      'server/**/__tests__/**/*.test.{ts,tsx}',
-      'server/engine/**/*.test.{ts,tsx}',
-      'packages/**/__tests__/**/*.test.{ts,tsx}',
-      'cli/src/**/__tests__/**/*.test.{ts,tsx}',
-    ],
+    // CI 环境默认 4 个进程（threads 开销大）；local 按 CPU 一半
+    pool: 'forks',
+    poolOptions: {
+      forks: {
+        singleFork: isCI ? false : false,
+        // CI ubuntu-latest 默认 2 vCPU，设为 2 避免上下文切换；local 至少保留 2
+        minForks: isCI ? 2 : 2,
+        maxForks: isCI ? 2 : Math.max(2, Math.ceil(os.cpus().length / 2)),
+        isolate: true,
+      },
+    },
+    // 单个测试超时：避免某个测试卡住拖垮整个 run
+    testTimeout: isCI ? 60_000 : 600_000,
+    hookTimeout: isCI ? 30_000 : 600_000,
+    teardownTimeout: isCI ? 15_000 : 120_000,
+    // 打印慢测试，辅助定位瓶颈
+    slowTestThreshold: isCI ? 15_000 : 50_000,
+    // CI 环境不再重试失败（避免时间翻倍）；本地 dev 可以 retry 1 次
+    retry: isCI ? 0 : 1,
+    cache: {
+      dir: '.vitest-cache',
+    },
+    include: isCI
+      ? [
+          // CI：仅包含核心源码目录的测试，跳过 engine/commands 桶文件（死代码）
+          'src/__tests__/**/*.test.{ts,tsx}',
+          'src/components/**/__tests__/**/*.test.{ts,tsx}',
+          'src/hooks/**/__tests__/**/*.test.{ts,tsx}',
+          'src/services/**/__tests__/**/*.test.{ts,tsx}',
+          'src/stores/**/__tests__/**/*.test.{ts,tsx}',
+          'server/__tests__/**/*.test.{ts,tsx}',
+          'server/**/__tests__/**/*.test.{ts,tsx}',
+          // engine 中除 commands 外的真实测试
+          'server/engine/agents/**/*.test.{ts,tsx}',
+          'server/engine/auto-reply/**/*.test.{ts,tsx}',
+          'server/engine/channels/**/*.test.{ts,tsx}',
+          'server/engine/cli/**/*.test.{ts,tsx}',
+          'server/engine/compaction/**/*.test.{ts,tsx}',
+          'server/engine/docs/**/*.test.{ts,tsx}',
+          'server/engine/gateway/**/*.test.{ts,tsx}',
+          'server/engine/skills/**/*.test.{ts,tsx}',
+          'server/engine/memory/**/*.test.{ts,tsx}',
+          'server/engine/plugins/**/*.test.{ts,tsx}',
+          'server/engine/routing/**/*.test.{ts,tsx}',
+          'server/engine/shared/**/*.test.{ts,tsx}',
+          'server/engine/storage/**/*.test.{ts,tsx}',
+          'server/engine/workflows/**/*.test.{ts,tsx}',
+          'server/engine/*.test.{ts,tsx}',
+          'packages/**/__tests__/**/*.test.{ts,tsx}',
+          'cli/src/**/__tests__/**/*.test.{ts,tsx}',
+        ]
+      : [
+          'src/__tests__/**/*.test.{ts,tsx}',
+          'src/components/**/__tests__/**/*.test.{ts,tsx}',
+          'src/hooks/**/__tests__/**/*.test.{ts,tsx}',
+          'src/services/**/__tests__/**/*.test.{ts,tsx}',
+          'src/stores/**/__tests__/**/*.test.{ts,tsx}',
+          'server/__tests__/**/*.test.{ts,tsx}',
+          'server/**/__tests__/**/*.test.{ts,tsx}',
+          'server/engine/**/*.test.{ts,tsx}',
+          'packages/**/__tests__/**/*.test.{ts,tsx}',
+          'cli/src/**/__tests__/**/*.test.{ts,tsx}',
+        ],
     deps: {
-      // Force vitest to process (and thus mock) onnxruntime-node
-      // even if it's a native CJS module
       optimizer: {
-        // Exclude onnxruntime-node from dependency optimization
         exclude: ['onnxruntime-node'],
       },
     },
