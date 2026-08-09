@@ -67,11 +67,11 @@
   --radius: 0.625rem;
 
   /* === Sidebar 主题（shadcn sidebar.tsx）=== */
-  --sidebar: #ffffff;
+  --sidebar: #F0F0F0;
   --sidebar-foreground: #858b9c;
   --sidebar-primary: #18181a;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f6f6f6;
+  --sidebar-accent: #F3F4F6;
   --sidebar-accent-foreground: #18181a;
   --sidebar-border: #f4f4f4;
   --sidebar-ring: #18181a;

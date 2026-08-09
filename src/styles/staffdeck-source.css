@@ -85,11 +85,11 @@
   --chart-4: #138a55;
   --chart-5: #b45309;
   --radius: 0.625rem;
-  --sidebar: #ffffff;
+  --sidebar: #F0F0F0;
   --sidebar-foreground: #858b9c;
   --sidebar-primary: #18181a;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f6f6f6;
+  --sidebar-accent: #F3F4F6;
   --sidebar-accent-foreground: #18181a;
   --sidebar-border: #f4f4f4;
   --sidebar-ring: #18181a;
@@ -4174,32 +4174,9 @@ pre {
   }
 }
 
-/* StaffDeck SD1 visual alignment */
-:root {
-  --background: #f7f8fa;
-  --foreground: #111111;
-  --surface: #ffffff;
-  --surface-raised: #ffffff;
-  --surface-muted: #f3f4f6;
-  --surface-subtle: #fafafa;
-  --border: #e5e7eb;
-  --border-strong: #d4d4d8;
-  --line: #eceef1;
-  --muted: #6b7280;
-  --muted-soft: #9ca3af;
-  --accent: #111111;
-  --accent-soft: #f2f3f5;
-  --accent-foreground: #ffffff;
-  --shadow-float: 0 18px 48px rgba(17, 17, 17, 0.10);
-  --shadow-soft: 0 8px 24px rgba(17, 17, 17, 0.045);
-  --font-body: "Inter", "IBM Plex Sans", "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
-  --font-display: var(--font-body);
-  --font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
-  --page-gradient-a: transparent;
-  --page-gradient-top: #f7f8fa;
-  --page-gradient-bottom: #f7f8fa;
-  --panel-bg: rgba(255, 255, 255, 0.94);
-}
+/* [2026-08-09] 已移除 SD1 中性主题 :root 覆盖块 — 与 StaffDeck-main styles.css 的单一 teal :root 对齐，
+   避免全局 --accent(#111111)/--background(#f7f8fa) 被改写为中性灰，使员工域渲染回 teal/warm 设计系统。
+   其后的 .app-shell/.sidebar/.content 中性覆写规则为死代码（src 无对应 class），保留不动，可后续清理。 */
 
 body,
 .app-shell {
