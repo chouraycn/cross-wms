@@ -22,6 +22,9 @@ metadata:
 
 ## 工作流程
 
+> 端点契约以 `server/routes/warehouses.ts` 与 `server/routes/transfer.ts` 实际实现为准。
+> 标注「规划中」的能力当前后端尚未开放 API，请勿在调用中假设其存在。
+
 ### 1. 仓库创建与基础配置
 
 ```bash
@@ -49,108 +52,90 @@ POST /api/warehouses
   }
 }
 
-# 配置仓库参数
-PUT /api/warehouses/{warehouseId}/settings
-{
-  "operating_hours": { "start": "09:00", "end": "18:00" },
-  "timezone": "Asia/Shanghai",
-  "currency": "CNY",
-  "customs_code": "2201",  // 海关监管代码
-  " bonded_zone_id": "PGZ-001"
-}
+# 查询仓库列表（可按 type 过滤）
+GET /api/warehouses?type=bonded
+
+# 查询单个仓库
+GET /api/warehouses/{warehouseId}
+
+# 更新仓库
+PUT /api/warehouses/{warehouseId}
+
+# 删除仓库
+DELETE /api/warehouses/{warehouseId}
 ```
 
-### 2. 库位规划与管理
+> 规划中：仓库级配置（`PUT /api/warehouses/{id}/settings`，如运营时间、时区、币种、海关监管代码）当前后端未实现，待后续版本开放。
+
+### 2. 库位规划与管理（规划中）
+
+库区（zones）/ 库位（locations）的创建与利用率查询端点（`POST /api/warehouses/{id}/zones`、`POST /api/warehouses/{id}/locations`、`GET /api/warehouses/{id}/locations/utilization`）当前后端尚未实现。可先基于仓库 `capacity` 字段做容量规划建议，待 API 开放后再接入精细化库位管理。
+
+### 3. 仓库容量分析（规划中）
+
+实时容量（`GET /api/warehouses/{id}/capacity/realtime`）、容量预测（`/capacity/forecast`）与件数统计（`/statistics`）端点当前后端尚未实现。可基于仓库 `capacity.total_pallet` 等静态字段给出粗略容积率评估，实时数据待 API 开放。
+
+### 4. 多仓调拨管理（已支持，端点为 /api/transfer-orders）
 
 ```bash
-# 创建库区
-POST /api/warehouses/{warehouseId}/zones
+# 查询调拨单列表（支持 status / fromWarehouseId / toWarehouseId / sku / 分页）
+GET /api/transfer-orders?status=draft&page=1&pageSize=20
+
+# 查询调拨单详情（响应含 fromWarehouseName / toWarehouseName / transitTrackingNo）
+GET /api/transfer-orders/{transferId}
+
+# 创建调拨单（支持 autoSubmit 自动提交出库扣减）
+POST /api/transfer-orders
 {
-  "code": "A1",
-  "name": "常温存储区A1",
-  "type": "ambient",  // ambient | chilled | frozen | hazardous | valuable
-  "capacity": { "pallets": 500, "volume_m3": 1500 }
-}
-
-# 创建库位
-POST /api/warehouses/{warehouseId}/locations
-{
-  "zone_code": "A1",
-  "aisle": "01",
-  "bay": "02",
-  "level": "03",
-  "code": "A1-01-02-03",
-  "type": "standard",  // standard | floor | rack | cage
-  "dimensions": { "l": 120, "w": 100, "h": 150 },
-  "max_weight_kg": 1000,
-  "barcode": "LOC-A1-01-02-03"
-}
-
-# 查询库位利用率
-GET /api/warehouses/{warehouseId}/locations/utilization
-# 返回：总库位数、已占用、空闲、利用率百分比
-```
-
-### 3. 仓库容量分析
-
-```bash
-# 获取仓库实时容量
-GET /api/warehouses/{warehouseId}/capacity/realtime
-# 返回：
-# {
-#   "total_pallet": 5000,
-#   "used_pallet": 3200,
-#   "available_pallet": 1800,
-#   "utilization_rate": 0.64,
-#   "by_zone": { "A1": { "total": 500, "used": 450 } }
-# }
-
-# 容量预测
-GET /api/warehouses/{warehouseId}/capacity/forecast?days=30
-# 返回：未来30天每日预计容量使用趋势
-
-# 件数统计
-GET /api/warehouses/{warehouseId}/statistics
-# 返回：SKU数、总件数、日吞吐量、人均效率
-```
-
-### 4. 多仓调拨管理
-
-```bash
-# 查询可调配库存
-GET /api/warehouses/{warehouseId}/transferable-stock?sku=SKU-001
-# 返回：各仓库可用库存、调拨成本、时效
-
-# 创建调拨单
-POST /api/warehouses/transfers
-{
-  "from_warehouse": "WH-SH-001",
-  "to_warehouse": "WH-SZ-001",
+  "fromWarehouse": "WH-SH-001",
+  "toWarehouse": "WH-SZ-001",
   "items": [
     { "sku": "SKU-001", "qty": 500, "reason": "stock_balancing" }
   ],
-  "transport_mode": "truck",  // truck | rail | air | sea
-  "expected_arrival": "2026-07-25T10:00:00Z",
+  "transportMode": "truck",  // truck | rail | air | sea
+  "expectedArrival": "2026-07-25T10:00:00Z",
   "priority": "normal"
 }
 
-# 调拨跟踪
-GET /api/warehouses/transfers/{transferId}/tracking
-# 返回：当前位置、预计到达、状态
+# 更新草稿
+PUT /api/transfer-orders/{transferId}
+
+# 删除草稿
+DELETE /api/transfer-orders/{transferId}
+
+# 提交（出库扣减）
+POST /api/transfer-orders/{transferId}/submit
+
+# 确认收货
+POST /api/transfer-orders/{transferId}/receive
+
+# 绑定 / 解绑物流单
+PUT /api/transfer-orders/{transferId}/bind-transit
+PUT /api/transfer-orders/{transferId}/unbind-transit
 ```
+
+> 调拨跟踪：详情接口直接返回 `transitTrackingNo`，无需单独调用 tracking 端点。
+> 规划中：跨仓可调配库存查询（`GET /api/warehouses/{id}/transferable-stock`）尚未实现。
 
 ## 命令速查
 
-| 操作 | API 端点 | 方法 |
-|------|----------|------|
-| 创建仓库 | `/api/warehouses` | POST |
-| 配置仓库 | `/api/warehouses/{id}/settings` | PUT |
-| 创建库区 | `/api/warehouses/{id}/zones` | POST |
-| 创建库位 | `/api/warehouses/{id}/locations` | POST |
-| 容量查询 | `/api/warehouses/{id}/capacity/realtime` | GET |
-| 容量预测 | `/api/warehouses/{id}/capacity/forecast` | GET |
-| 创建调拨 | `/api/warehouses/transfers` | POST |
-| 调拨跟踪 | `/api/warehouses/transfers/{id}/tracking` | GET |
+| 操作 | API 端点 | 方法 | 状态 |
+|------|----------|------|------|
+| 创建仓库 | `/api/warehouses` | POST | ✅ |
+| 仓库列表 | `/api/warehouses` | GET | ✅ |
+| 查询仓库 | `/api/warehouses/{id}` | GET | ✅ |
+| 更新仓库 | `/api/warehouses/{id}` | PUT | ✅ |
+| 删除仓库 | `/api/warehouses/{id}` | DELETE | ✅ |
+| 仓库配置 | `/api/warehouses/{id}/settings` | PUT | 🚧 规划中 |
+| 创建库区 | `/api/warehouses/{id}/zones` | POST | 🚧 规划中 |
+| 创建库位 | `/api/warehouses/{id}/locations` | POST | 🚧 规划中 |
+| 容量查询 | `/api/warehouses/{id}/capacity/realtime` | GET | 🚧 规划中 |
+| 容量预测 | `/api/warehouses/{id}/capacity/forecast` | GET | 🚧 规划中 |
+| 创建调拨 | `/api/transfer-orders` | POST | ✅ |
+| 调拨列表 | `/api/transfer-orders` | GET | ✅ |
+| 调拨详情/跟踪 | `/api/transfer-orders/{id}` | GET | ✅ |
+| 调拨提交 | `/api/transfer-orders/{id}/submit` | POST | ✅ |
+| 调拨收货 | `/api/transfer-orders/{id}/receive` | POST | ✅ |
 
 ## 最佳实践
 
@@ -173,12 +158,12 @@ GET /api/warehouses/transfers/{transferId}/tracking
 - 通道（01-99）：主通道编号
 - 排（01-99）：通道内排位
 - 层（01-99）：货架层数/地面
+```
 
 特殊标识：
 - F：地面堆叠（Floor）
 - R：货架（Rack）
 - C：笼车（Cage）
-```
 
 ### 容积率优化
 

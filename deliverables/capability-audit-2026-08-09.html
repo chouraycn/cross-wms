@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CrossWMS 能力体系重复与运行补全审计</title>
+<style>
+  :root{
+    --bg:#ffffff; --fg:#1f2328; --muted:#6b7280; --line:#e5e7eb;
+    --accent:#2563eb; --red:#dc2626; --amber:#d97706; --green:#059669;
+    --soft:#f8fafc; --soft2:#f1f5f9;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;padding:32px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;color:var(--fg);background:var(--bg);line-height:1.6;font-size:14px}
+  h1{font-size:24px;margin:0 0 4px}
+  h2{font-size:18px;margin:28px 0 12px;border-left:4px solid var(--accent);padding-left:10px}
+  h3{font-size:15px;margin:18px 0 8px;color:#374151}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:20px}
+  .card{border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:14px 0;background:var(--soft)}
+  table{border-collapse:collapse;width:100%;margin:10px 0;font-size:13px}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:var(--soft2);font-weight:600}
+  tr:nth-child(even) td{background:var(--soft)}
+  .tag{display:inline-block;padding:1px 8px;border-radius:999px;font-size:12px;font-weight:600}
+  .p0{background:#fee2e2;color:var(--red)}
+  .p1{background:#fef3c7;color:var(--amber)}
+  .p2{background:#e0f2fe;color:#0369a1}
+  .ok{background:#dcfce7;color:var(--green)}
+  code{background:var(--soft2);padding:1px 6px;border-radius:5px;font-size:12px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  .ev{font-size:12px;color:var(--muted);margin-top:4px}
+  .kpi{display:flex;gap:12px;flex-wrap:wrap;margin:14px 0}
+  .kpi div{flex:1;min-width:140px;border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:var(--soft)}
+  .kpi b{font-size:22px;display:block;color:var(--accent)}
+  ul{margin:6px 0 6px 18px;padding:0}
+  li{margin:3px 0}
+  .note{border-left:3px solid var(--amber);background:#fffbeb;padding:10px 12px;margin:10px 0;border-radius:6px;font-size:13px}
+  .crit{border-left:3px solid var(--red);background:#fef2f2;padding:10px 12px;margin:10px 0;border-radius:6px;font-size:13px}
+  footer{margin-top:30px;color:var(--muted);font-size:12px;border-top:1px solid var(--line);padding-top:12px}
+</style>
+</head>
+<body>
+<h1>CrossWMS / CDF Know Claw · 能力体系重复与运行补全审计</h1>
+<div class="sub">分析范围：四套能力/技能体系全量盘点 · 重复诊断 · 端到端运行缺口补全 · 生成日期 2026-08-09</div>
+
+<div class="kpi">
+  <div><b>4</b>套并行能力体系</div>
+  <div><b>52</b>个 openclaw 技能三处重复存储</div>
+  <div><b>18</b>个前端技能重声明引擎技能</div>
+  <div><b>1</b>个 P0 文档契约断链（原报 2，1 误报）</div>
+</div>
+
+<div class="crit" style="border-left-color:#059669;background:#f0fdf4">
+  <b>二轮执行与更正（2026-08-09）：</b>已对清单逐项落地，并实测修正原报告两处前提偏差。
+  <ul style="margin:6px 0 0 18px">
+    <li><b>更正 R2（误报）</b>：原称 <code>src/types/builtin-skills.ts</code> 的 <code>../../shared/data/…</code> 解析到不存在的 <code>src/shared/data/</code>。实测 <code>../../</code> 从 <code>src/types/</code> 指向<b>仓库根</b>，文件 <code>shared/data/builtin-skills.json</code> 实际存在且被解析——<b>导入未断链，无需修复</b>。</li>
+    <li><b>更正"运行时双加载"前提</b>：<code>SkillLoader</code> 的 bundled 目录解析为 <code>server/skills/bundled</code>，该目录<b>不存在</b>（<code>server/engine/skills/builtin</code> 也未在任何加载路径被引用），按代码 <code>if(!fs.existsSync(dir)) continue;</code> bundled 源被跳过。<b>运行时仅加载 workspace <code>skills/</code></b>，"52 技能双加载"不成立。三重存储是<b>磁盘事实</b>，但运行时只有 workspace 一份。</li>
+    <li><b>更正 R3</b>：<code>src/skills</code> 在前端源码中零引用（无 import / 无 import.meta.glob），schema 还不同于引擎——属<b>孤儿声明</b>，而非"运行时重声明"。</li>
+  </ul>
+</div>
+
+<div class="card" style="border-color:#059669">
+  <h3 style="margin-top:0;color:#059669">已执行补全（对照原清单）</h3>
+  <ul style="margin:6px 0 0 18px">
+    <li><b>P0-2 ✅</b> 重写 <code>skills/builtin-warehouse/SKILL.md</code>：移除未实现的 zones/locations/capacity/settings/statistics/transferable-stock，transfer 改为真实端点 <code>/api/transfer-orders</code>，未实现项标注「🚧 规划中」。</li>
+    <li><b>P1-3 ✅</b> <code>git rm</code> 删除 <code>skills/_imported/openclaw/</code>（52 个未本地化上游副本，冗余迁移种子；52 id 已全部存在于 <code>skills/&lt;id&gt;</code> 故安全）。保留本地化 <code>skills/&lt;id&gt;</code> 为活源，<b>不改 loader</b>（bundled 本就不加载）。</li>
+    <li><b>P1-4 ✅</b> 新增 <code>scripts/check-frontend-skills.mjs</code>：诊断 <code>src/skills</code> 孤儿状态（实测 22 个全孤儿、18 个与引擎 builtin 重叠、0 实现文件）。</li>
+    <li><b>P2-5 ✅</b> 数字员工 <code>CapabilityRegistry</code> 接入 WMS 能力族：新增 <code>wms_runtime.py</code>（代理主引擎 <code>/api/*</code>），在 <code>local_registry.py</code> 中以 <code>STAFFDECK_WMS_CAPABILITIES=1</code> <b>默认关闭</b>注册 wms.warehouse/transfer/inventory/inbound/outbound/transit/reports（不影响现有启动）。</li>
+    <li><b>P2-6 / P2-7</b> 收敛建议见文末「架构收敛决策」。</li>
+  </ul>
+</div>
+
+<h2>一、四套能力体系概览</h2>
+<table>
+<thead><tr><th>体系</th><th>位置</th><th>数量</th><th>角色 / 运行时</th><th>加载方式</th></tr></thead>
+<tbody>
+<tr><td>① 引擎内置技能<br>(bundled)</td><td><code>server/engine/skills/builtin/</code></td><td>52</td><td>openclaw 上游内置技能，LLM prompt 注入式，运行时核心真相源</td><td><code>SkillLoader</code> 从 <code>__dirname/../../skills/builtin</code> 加载（bundled）</td></tr>
+<tr><td>② 工作区技能<br>(workspace)</td><td><code>skills/</code>（含 <code>_imported/openclaw/</code>）</td><td>顶层 79 + 导入 52</td><td>含 WMS 业务技能（<code>builtin-*</code>）+ openclaw 迁移种子副本</td><td><code>SkillLoader</code> 递归扫描 <code>&lt;cwd&gt;/skills</code>（workspace），同名碰撞时先到先得</td></tr>
+<tr><td>③ 前端技能 + 能力</td><td><code>src/skills/</code> + <code>src/capabilities/warehouse/</code></td><td>22 + 1 能力</td><td>前端声明式技能（中文名+id+parameters）与 React 仓库能力 store/api/hook</td><td>前端构建期打包；目录来自 <code>shared/data/builtin-skills.json</code></td></tr>
+<tr><td>④ 数字员工能力<br>(StaffDeck 后端)</td><td><code>StaffDeck-main/backend/app/capabilities/</code> + <code>skills/</code></td><td>注册表仅 1 族</td><td>Python 独立运行时，显式 <code>CapabilityRegistry</code>；skills/ 子目录是技能蒸馏/编辑/反思框架</td><td>启动期 <code>build_local_capability_registry()</code> 注册并 seal</td></tr>
+</tbody>
+</table>
+
+<div class="note">关键架构事实（二轮修正）：openclaw 技能在仓库内存在<b>三份物理副本</b>（磁盘事实）：① <code>server/engine/skills/builtin/</code>（上游参考源）；② <code>skills/&lt;id&gt;/</code>（<b>本地化中文</b>活源，被 workspace 加载器实际加载）；③ <code>skills/_imported/openclaw/&lt;id&gt;/</code>（未本地化上游副本，原迁移种子）。<b>运行时只加载 ②</b>——bundled 源目录 <code>server/skills/bundled</code> 不存在而被跳过，"双加载"不成立。<br><b>已执行</b>：删除冗余的 ③（52 副本），openclaw 技能降为双份（上游参考 + 本地化活源）。</div>
+
+<h2>二、重复诊断（按证据）</h2>
+
+<h3>重复 R1 · openclaw 内置技能三处物理重复（最严重）</h3>
+<table>
+<thead><tr><th>id 示例</th><th>副本 A：引擎 bundled</th><th>副本 B：工作区直装</th><th>副本 C：迁移种子</th></tr></thead>
+<tbody>
+<tr><td><code>github</code></td><td><code>server/engine/skills/builtin/github</code></td><td><code>skills/github</code></td><td><code>skills/_imported/openclaw/github</code></td></tr>
+<tr><td><code>weather</code></td><td><code>server/engine/skills/builtin/weather</code></td><td><code>skills/weather</code></td><td><code>skills/_imported/openclaw/weather</code></td></tr>
+<tr><td>… (共 <b>52</b> 个)</td><td colspan="3" style="text-align:center">engine ∩ _imported = <b>52/52</b>；top_direct ∩ _imported = <b>52/52</b></td></tr>
+</tbody>
+</table>
+<div class="ev">证据：<code>server/engine/skills/builtin/</code> 与 <code>skills/_imported/openclaw/</code> 各自 52 个 SKILL.md，id 集合 100% 重合；<code>skills/</code> 下 52 个 id 同时存在于顶层与 <code>_imported/openclaw/</code> 两处。<br>风险：① 编辑任一份而漏改其它 → 行为分叉；② <code>db-core.ts</code> 把 <code>_imported/openclaw</code> 迁入 <code>user_skills</code>，与 bundled 形成"双源"，引擎升级后种子不跟随 → 用户看到旧版技能。</div>
+
+<h3>重复 R2 · 前端内置技能目录路径错位（<span class="tag p2" style="background:#dcfce7;color:#059669">二轮更正：误报</span>）</h3>
+<div class="note" style="border-left-color:#059669;background:#f0fdf4"><b>实测未断链</b>：<code>src/types/builtin-skills.ts</code> 位于 <code>src/types/</code>，其 <code>../../shared/data/builtin-skills.json</code> 经两次 <code>../</code> 解析到<b>仓库根</b> <code>shared/data/builtin-skills.json</code>（非 <code>src/shared/data/</code>）。该文件实际存在且被正常解析，<code>vite.config.ts</code> 也无需 <code>shared</code> 别名。原报告把相对路径算术算错导致误报，<b>此条无需修复</b>。</div>
+
+<h3>重复 R3 · 前端 <code>src/skills</code> 重声明 18 个引擎技能</h3>
+<p><code>src/skills/</code> 共 22 个声明式技能，其中 <b>18 个</b>与引擎 builtin 同 id（<code>blucli camsnap clawhub gemini gifgrep github gog imsg notion openhue oracle sag songsee spike tmux trello weather xurl</code>），但采用不同 schema（中文 <code>name</code> + 显式 <code>id</code> + <code>parameters</code>），且目录下<b>无任何实现文件</b>（仅 SKILL.md）。</p>
+<div class="ev">判定：属"前端展示/工作区级元数据"与"引擎执行级技能"的概念重复。若两者由不同流程维护，会出现 UI 列表与引擎实际可调用集合不一致。</div>
+
+<h3>重复 R4 · WMS 业务能力语义重叠（技能 vs 前端能力）</h3>
+<p>体系②的 WMS 业务技能与体系③的 <code>src/capabilities/warehouse</code> 在"仓库/库存/出入库/在途/体积/指标/报表"主题上高度重叠：</p>
+<table>
+<thead><tr><th>主题</th><th>技能侧（SKILL.md）</th><th>前端能力侧</th><th>重叠性质</th></tr></thead>
+<tbody>
+<tr><td>仓库</td><td><code>builtin-warehouse</code></td><td rowspan="7"><code>src/capabilities/warehouse/</code><br>（<code>warehouseCapabilityStore</code> + <code>dashboardApi</code> + <code>useWarehouseCapability</code>）</td><td>功能重合：store 直连 API + 技能也调同一批 API</td></tr>
+<tr><td>库存</td><td><code>builtin-inventory</code> / <code>builtin-inventory-query</code> / <code>builtin-inventory-snapshot</code></td><td>同上</td></tr>
+<tr><td>入库</td><td><code>builtin-inbound</code></td><td>同上</td></tr>
+<tr><td>出库</td><td><code>builtin-outbound</code></td><td>同上</td></tr>
+<tr><td>在途</td><td><code>builtin-transit</code></td><td>同上（store 含 <code>getTransitOrders</code>）</td></tr>
+<tr><td>体积/指标</td><td><code>builtin-volume</code> / <code>builtin-metrics</code></td><td>同上</td></tr>
+<tr><td>报表</td><td><code>builtin-reports</code></td><td>同上</td></tr>
+</tbody>
+</table>
+<div class="ev">证据：<code>src/capabilities/warehouse/warehouseCapabilityStore.ts</code> 直接导出 <code>getInventoryItems / getTransitOrders / setWarehouses</code> 等，与 <code>builtin-*</code> 技能描述的 API 工作流指向同一后端。两路并存，职责边界未厘清。</div>
+
+<h3>重复 R5 · 双技能框架（TS 引擎 vs Python 数字员工）</h3>
+<p>体系①的 TS 引擎有完整技能生命周期（loader / discovery / sandbox / workshop / dependency-check / audit）；体系④ StaffDeck 后端 <code>skills/</code> 又实现了 <code>skill_distiller / skill_editor / skill_reflection / skill_schema</code> 等"技能蒸馏-编辑-反思"框架。两者概念同位但技术栈分裂，数字员工技能无法复用引擎已实现的审计/依赖检查能力。</p>
+
+<h2>三、完整运行缺口与补全（优先级）</h2>
+<table>
+<thead><tr><th>优先级</th><th>缺口</th><th>证据</th><th>补全动作</th></tr></thead>
+<tbody>
+<tr><td><span class="tag p0">P0</span></td><td>前端内置技能目录 import 断链</td><td><code>src/types/builtin-skills.ts</code> 指向 <code>src/shared/data/…</code>，文件在根 <code>shared/data/</code>，无别名</td><td>在 <code>vite.config.ts</code> 加 <code>resolve.alias</code> 映射 <code>shared → &lt;root&gt;/shared</code>（或把 JSON 移动到 <code>src/shared/data/</code>）；补一个 dev/build 冒烟测试断言该 import 可解析。</td></tr>
+<tr><td><span class="tag p0">P0</span></td><td>WMS 技能文档与后端路由契约不符</td><td><code>builtin-warehouse</code> 写 <code>POST /api/warehouses/transfers</code>；实现在 <code>server/routes/transfer.ts</code> 挂在 <code>/api/transfer-orders</code>。zones/locations/capacity/realtime 等子端点在 <code>warehouses.ts</code> 中不存在。</td><td>对齐 SKILL.md 与真实路由：要么改技能文档为 <code>/api/transfer-orders</code>，要么在 <code>warehouses.ts</code> 补挂 <code>/zones /locations /capacity/realtime</code> 等子路由并补齐实现。建立"技能文档端点 ↔ 路由"自动校验。</td></tr>
+<tr><td><span class="tag p1">P1</span></td><td>openclaw 技能三处存储双源不同步</td><td>engine/builtin 与 skills/_imported 与 skills/&lt;name&gt; 三副本</td><td>确立单一真相源：保留 <code>server/engine/skills/builtin</code> 为 bundled 源；<code>skills/_imported/openclaw</code> 改为只读软链或构建期生成；<code>db-core.ts</code> 迁移脚本直接引用 bundled 目录而非副本。删除 <code>skills/</code> 下 52 个与 engine 同 id 的直装副本。</td></tr>
+<tr><td><span class="tag p1">P1</span></td><td>前端 <code>src/skills</code> 22 个仅声明无实现</td><td>目录内除 SKILL.md 外 0 个文件；18 个 id 与引擎重合</td><td>明确 <code>src/skills</code> 定位：若为"前端展示元数据"，与引擎 builtin 建映射表并加一致性测试；若为"可独立执行技能"，补实现或改为引用引擎 builtin。</td></tr>
+<tr><td><span class="tag p2">P2</span></td><td>数字员工能力注册表仅 1 族</td><td><code>local_registry.py</code> 仅注册 <code>knowledge.*</code>（scopes/search/citation）</td><td>将 WMS 业务能力（仓库/库存/出入库/在途/报表）以 <code>CapabilityBinding</code> 形式接入 <code>CapabilityRegistry</code>，使数字员工后端能调用主引擎已实现的 <code>/api/*</code>；补充 contract 版本与 rehydrator。</td></tr>
+<tr><td><span class="tag p2">P2</span></td><td>R4 业务能力与前端能力职责重叠</td><td><code>src/capabilities/warehouse</code> 与 <code>builtin-*</code> 双路调同一 API</td><td>收敛为单一入口：建议前端 <code>useWarehouseCapability</code> 作为唯一数据层，技能仅做"意图→调用"编排，不在技能内重复描述 store 已封装的字段。</td></tr>
+<tr><td><span class="tag p2">P2</span></td><td>双技能框架未复用</td><td>TS 引擎审计/依赖检查 vs Python 蒸馏/反思</td><td>数字员工技能治理（蒸馏/反思）复用引擎已有的 audit/dependency-check 能力，避免两套独立实现漂移。</td></tr>
+</tbody>
+</table>
+
+<h2>四、补全优先级清单（可勾选）</h2>
+<div class="card">
+<h3>P0 — 阻断运行，先修</h3>
+<ul>
+<li>☐ 修复 <code>builtin-skills.json</code> import 路径（vite alias 或移动文件）+ 加解析冒烟测试</li>
+<li>☐ 对齐 <code>builtin-warehouse</code> 技能文档与 <code>transfer.ts</code>/<code>warehouses.ts</code> 真实路由（<code>/api/transfer-orders</code> 等）</li>
+</ul>
+<h3>P1 — 消除重复与漂移风险</h3>
+<ul>
+<li>☐ 确立 openclaw 技能单一真相源，删除 <code>skills/</code> 下 52 个直装副本 + 将 <code>_imported/openclaw</code> 改为构建期生成</li>
+<li>☐ 明确 <code>src/skills</code> 定位并与引擎 builtin 建一致性测试</li>
+</ul>
+<h3>P2 — 架构收敛</h3>
+<ul>
+<li>☐ 数字员工 <code>CapabilityRegistry</code> 接入 WMS 业务能力族</li>
+<li>☐ 收敛 <code>src/capabilities/warehouse</code> 与 <code>builtin-*</code> 职责边界</li>
+<li>☐ 复用引擎审计/依赖检查能力，替代数字员工侧重复框架</li>
+</ul>
+</div>
+
+<div class="note"><b>已验证可运行的部分（无需补全）：</b>WMS 域后端路由主体存在（<code>warehouses/inbound/outbound/inventory/transfer/transit/metrics/reports</code> 均有独立路由文件），引擎 <code>SkillLoader</code> 递归加载与碰撞去重逻辑完整，DB 迁移脚本能扫描 <code>skills/</code> 与 <code>_imported/openclaw</code> 并落盘 <code>user_skills</code>。问题集中在"重复存储"与"文档/接线契约错位"，而非能力缺失。</div>
+
+<h2>五、架构收敛决策（P2-6 / P2-7）</h2>
+<div class="card">
+<h3>R4 收敛：前端业务能力与 WMS 技能的职责边界</h3>
+<p>现状：<code>src/capabilities/warehouse/</code>（<code>warehouseCapabilityStore</code> + <code>dashboardApi</code> + <code>useWarehouseCapability</code>）与 <code>builtin-*</code> 技能都直连同一批 <code>/api/*</code>。二者并存，职责边界未厘清。</p>
+<p><b>建议（不改动业务逻辑）</b>：以 <code>useWarehouseCapability</code> 作为前端<b>唯一数据层</b>；WMS 技能（<code>builtin-warehouse</code> 等）仅做"意图 → 能力调用"的<b>编排</b>，不在技能文档里重复描述 store 已封装的字段与端点。技能文档只声明"可调用的能力名 + 真实端点契约"（已通过 P0-2 对齐）。避免同一 API 语义在两处漂移。</p>
+</div>
+<div class="card">
+<h3>R5 收敛：双技能框架的治理复用</h3>
+<p>现状：TS 引擎已有 <code>skill-dependency-checker</code> / <code>skill-audit</code> 等治理能力；StaffDeck 后端 <code>skills/</code> 另实现蒸馏/编辑/反思框架。概念同位、技术栈分裂。</p>
+<p><b>建议</b>：数字员工侧的技能治理（蒸馏产物校验、反思质量门）复用引擎已实现的 audit / dependency-check，而非两套独立实现。具体可让 StaffDeck 的蒸馏/反思结果回调主引擎的校验入口，统一"技能质量基线"。此项为中长期架构目标，不在本次执行范围。</p>
+</div>
+
+<footer>数据来源：静态扫描仓库 SKILL.md 元信息 + 加载器/迁移脚本/路由挂载源码核对（首轮）；二轮补充 import 解析实证、bundled 目录存在性验证、db-core 迁移分支与 src/skills 引用扫描。建议作为 QA 回归基线，与 tsc/vitest 门禁联动。</footer>
+</body>
+</html>
