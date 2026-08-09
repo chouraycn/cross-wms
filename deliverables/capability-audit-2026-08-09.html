@@ -64,6 +64,7 @@
     <li><b>P0-2 ✅</b> 重写 <code>skills/builtin-warehouse/SKILL.md</code>：移除未实现的 zones/locations/capacity/settings/statistics/transferable-stock，transfer 改为真实端点 <code>/api/transfer-orders</code>，未实现项标注「🚧 规划中」。</li>
     <li><b>P1-3 ✅</b> <code>git rm</code> 删除 <code>skills/_imported/openclaw/</code>（52 个未本地化上游副本，冗余迁移种子；52 id 已全部存在于 <code>skills/&lt;id&gt;</code> 故安全）。保留本地化 <code>skills/&lt;id&gt;</code> 为活源，<b>不改 loader</b>（bundled 本就不加载）。</li>
     <li><b>P1-4 ✅</b> 新增 <code>scripts/check-frontend-skills.mjs</code>：诊断 <code>src/skills</code> 孤儿状态（实测 22 个全孤儿、18 个与引擎 builtin 重叠、0 实现文件）。</li>
+    <li><b>P1-4 续 ✅（接入 builtin-skills.json）</b> 新增 <code>scripts/merge-frontend-skills.mjs</code>（幂等，<code>import * as yaml</code> 遵守 ESM 铁律）：把 22 个 <code>src/skills</code> 全局/工具技能映射为 <code>Skill</code> 接口条目并入 <code>shared/data/builtin-skills.json</code>（<b>17 → 39 条</b>），引擎原始字段（version/author/dependencies/permissions/parameters/正文）完整保真存入 <code>standardFields</code>；<code>check-frontend-skills.mjs</code> 同步改为<b>接入校验</b>（22/22 接入、无重复、缺失非零退出可作 CI 门禁）。<code>src/skills</code> 保留为这批全局技能的权威源，目录由 merge 脚本生成。</li>
     <li><b>P2-5 ✅</b> 数字员工 <code>CapabilityRegistry</code> 接入 WMS 能力族：新增 <code>wms_runtime.py</code>（代理主引擎 <code>/api/*</code>），在 <code>local_registry.py</code> 中以 <code>STAFFDECK_WMS_CAPABILITIES=1</code> <b>默认关闭</b>注册 wms.warehouse/transfer/inventory/inbound/outbound/transit/reports（不影响现有启动）。</li>
     <li><b>P2-6 / P2-7</b> 收敛建议见文末「架构收敛决策」。</li>
   </ul>
@@ -98,9 +99,9 @@
 <h3>重复 R2 · 前端内置技能目录路径错位（<span class="tag p2" style="background:#dcfce7;color:#059669">二轮更正：误报</span>）</h3>
 <div class="note" style="border-left-color:#059669;background:#f0fdf4"><b>实测未断链</b>：<code>src/types/builtin-skills.ts</code> 位于 <code>src/types/</code>，其 <code>../../shared/data/builtin-skills.json</code> 经两次 <code>../</code> 解析到<b>仓库根</b> <code>shared/data/builtin-skills.json</code>（非 <code>src/shared/data/</code>）。该文件实际存在且被正常解析，<code>vite.config.ts</code> 也无需 <code>shared</code> 别名。原报告把相对路径算术算错导致误报，<b>此条无需修复</b>。</div>
 
-<h3>重复 R3 · 前端 <code>src/skills</code> 重声明 18 个引擎技能</h3>
+<h3>重复 R3 · 前端 <code>src/skills</code> 重声明 18 个引擎技能（<span class="tag p2" style="background:#dcfce7;color:#059669">已解决：接入 builtin-skills.json</span>）</h3>
 <p><code>src/skills/</code> 共 22 个声明式技能，其中 <b>18 个</b>与引擎 builtin 同 id（<code>blucli camsnap clawhub gemini gifgrep github gog imsg notion openhue oracle sag songsee spike tmux trello weather xurl</code>），但采用不同 schema（中文 <code>name</code> + 显式 <code>id</code> + <code>parameters</code>），且目录下<b>无任何实现文件</b>（仅 SKILL.md）。</p>
-<div class="ev">判定：属"前端展示/工作区级元数据"与"引擎执行级技能"的概念重复。若两者由不同流程维护，会出现 UI 列表与引擎实际可调用集合不一致。</div>
+<div class="note" style="border-left-color:#059669;background:#f0fdf4"><b>后续已解决（"接入 builtin-skills.json"指令，2026-08-09）</b>：实测 <code>src/skills</code> 在前端源码中<b>零引用</b>（无 import / 无 import.meta.glob），原"重声明"实为<b>孤儿声明</b>。通过新增幂等脚本 <code>scripts/merge-frontend-skills.mjs</code> 把这 22 个全局/工具技能映射为 <code>Skill</code> 接口条目并入真实前端目录 <code>shared/data/builtin-skills.json</code>（<b>17 → 39 条</b>），引擎原始字段（version/author/dependencies/permissions/parameters/正文）完整保真存入 <code>standardFields</code>。<code>scripts/check-frontend-skills.mjs</code> 同步改为接入校验（22/22 接入、无重复、缺失非零退出）。<code>src/skills</code> 现作为这批全局技能的权威源，由 merge 脚本生成目录，孤儿问题闭环。</div>
 
 <h3>重复 R4 · WMS 业务能力语义重叠（技能 vs 前端能力）</h3>
 <p>体系②的 WMS 业务技能与体系③的 <code>src/capabilities/warehouse</code> 在"仓库/库存/出入库/在途/体积/指标/报表"主题上高度重叠：</p>

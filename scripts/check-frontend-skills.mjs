@@ -1,108 +1,78 @@
 #!/usr/bin/env node
 /**
- * check-frontend-skills.mjs
+ * 校验 src/skills 的引擎风格全局技能是否已全部接入前端真实目录
+ * shared/data/builtin-skills.json。
  *
- * 诊断 `src/skills/*` 这套"前端声明式技能"的真实状态。
+ * 背景（2026-08-09 能力审计 + 后续"接入 builtin-skills.json"指令）：
+ *  - src/skills 下是 22 个引擎风格的"全局/工具"技能声明（group: integration/util/
+ *    media/dev/runtime_exec/fs_read/memory），前端源码零引用，曾为孤儿声明。
+ *  - 2026-08-09 通过 scripts/merge-frontend-skills.mjs 把这 22 个技能映射为 Skill
+ *    接口条目并入 shared/data/builtin-skills.json（前端 skillStore 真正消费的目录）。
+ *  - 本脚本校验"接入"是否完整：每个 src/skills id 都必须存在于 builtin-skills.json；
+ *    若存在缺失，以非零码退出，可作 CI 门禁。
  *
- * 背景（2026-08-09 能力审计结论，已实测校正）：
- *  - src/skills 下的 SKILL.md 采用前端专属 schema（name/id/description/group/requires/
- *    userInvocable/gate/sandboxScope），与引擎 server/engine/skills/builtin 目录的 schema
- *    不同；且前端源码中既无 import 也无 import.meta.glob 消费它 => 当前是**孤儿声明**。
- *  - 前端实际使用的技能目录是 shared/data/builtin-skills.json（17 条），而非 src/skills。
+ * 注意：src/skills 仍是这批全局技能的权威源；builtin-skills.json 由 merge 脚本生成。
+ * 二者应保持一致。如需刷新目录，运行 merge-frontend-skills.mjs（幂等）。
  *
- * 本脚本输出三路交叉比对，供决定"接线"或"删除"：
- *   1) src/skills 中、但未出现在 shared/data/builtin-skills.json 的（孤儿）；
- *   2) src/skills 与引擎 builtin 同 id 的（概念重叠，需保持同步）；
- *   3) src/skills 中有实现文件（非仅 SKILL.md）的（潜在可执行技能）。
- *
- * 用法：node scripts/check-frontend-skills.mjs
- * 退出码：0（纯诊断，不阻断 CI）；发现结构性问题时在 stdout 中以 [WARN] 标注。
+ * 约束：项目铁律——ESM 中 js-yaml 必须 `import * as yaml`（禁止默认导入）。
  */
 
-import fs from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import * as yaml from 'js-yaml';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const ROOT = path.resolve(__dirname, "..");
+const ROOT = process.cwd();
+const SRC_SKILLS_DIR = path.join(ROOT, 'src/skills');
+const CATALOG = path.join(ROOT, 'shared/data/builtin-skills.json');
 
-function parseIdFromSkillMd(mdPath) {
-  const text = fs.readFileSync(mdPath, "utf-8");
-  const fm = text.match(/^---\s*\n([\s\S]*?)\n---\s*\n/);
-  if (!fm) return null;
-  for (const line of fm[1].split("\n")) {
-    const m = line.match(/^id:\s*(.+?)\s*$/);
-    if (m) return m[1].trim().replace(/^['"]|['"]$/g, "");
+function parseId(file) {
+  const raw = fs.readFileSync(file, 'utf8');
+  const m = raw.match(/^---\s*\n([\s\S]*?)\n---\s*\n?/);
+  if (!m) return null;
+  const fm = yaml.load(m[1]) || {};
+  return fm.id || null;
+}
+
+function main() {
+  if (!fs.existsSync(SRC_SKILLS_DIR)) {
+    console.error(`✗ 未找到 ${SRC_SKILLS_DIR}`);
+    process.exit(1);
   }
-  // 回退：用目录名作为 id
-  return path.basename(path.dirname(mdPath));
+  const srcIds = fs
+    .readdirSync(SRC_SKILLS_DIR)
+    .map((d) => path.join(SRC_SKILLS_DIR, d, 'SKILL.md'))
+    .filter((f) => fs.existsSync(f))
+    .map(parseId)
+    .filter(Boolean)
+    .sort();
+
+  if (!fs.existsSync(CATALOG)) {
+    console.error(`✗ 未找到目录文件 ${CATALOG}`);
+    process.exit(1);
+  }
+  const catalog = JSON.parse(fs.readFileSync(CATALOG, 'utf8'));
+  const catalogIds = new Set(catalog.map((s) => s.id));
+
+  const integrated = srcIds.filter((id) => catalogIds.has(id));
+  const missing = srcIds.filter((id) => !catalogIds.has(id));
+
+  // 目录内重复 id 检测
+  const seen = new Set();
+  const dupes = catalog
+    .map((s) => s.id)
+    .filter((id) => (seen.has(id) ? true : (seen.add(id), false)));
+
+  console.log('=== check-frontend-skills（接入校验）===');
+  console.log(`src/skills 技能数: ${srcIds.length}`);
+  console.log(`已接入目录: ${integrated.length} -> ${integrated.join(', ') || '(无)'}`);
+  console.log(`缺失未接入: ${missing.length} -> ${missing.join(', ') || '(无)'}`);
+  console.log(`目录总条目: ${catalog.length}；目录内重复 id: ${dupes.length ? dupes.join(', ') : '(无)'}`);
+
+  if (missing.length || dupes.length) {
+    console.log('✗ 接入不完整或存在重复，请运行 scripts/merge-frontend-skills.mjs');
+    process.exit(1);
+  }
+  console.log('✓ 全部 src/skills 已接入 builtin-skills.json，无重复');
 }
 
-function listDirs(p) {
-  if (!fs.existsSync(p)) return [];
-  return fs
-    .readdirSync(p, { withFileTypes: true })
-    .filter((e) => e.isDirectory())
-    .map((e) => e.name);
-}
-
-// 1) src/skills 声明
-const srcSkillsDir = path.join(ROOT, "src", "skills");
-const srcIds = listDirs(srcSkillsDir).map((name) => {
-  const md = path.join(srcSkillsDir, name, "SKILL.md");
-  return {
-    dir: name,
-    id: fs.existsSync(md) ? parseIdFromSkillMd(md) : name,
-    hasImpl: fs
-      .readdirSync(path.join(srcSkillsDir, name))
-      .some((f) => f !== "SKILL.md" && f !== "skill.md"),
-  };
-});
-
-// 2) 真实前端目录（shared/data/builtin-skills.json）
-const uiCatalogPath = path.join(ROOT, "shared", "data", "builtin-skills.json");
-let uiIds = new Set();
-if (fs.existsSync(uiCatalogPath)) {
-  const data = JSON.parse(fs.readFileSync(uiCatalogPath, "utf-8"));
-  uiIds = new Set(data.map((s) => s.id || s.name));
-}
-
-// 3) 引擎 builtin（上游真相源，按目录名）
-const engineBuiltinDir = path.join(ROOT, "server", "engine", "skills", "builtin");
-const engineIds = new Set(listDirs(engineBuiltinDir));
-
-// 交叉比对
-const srcIdSet = new Set(srcIds.map((s) => s.id));
-const orphanFromUi = srcIds.filter((s) => !uiIds.has(s.id));
-const overlapWithEngine = srcIds.filter((s) => engineIds.has(s.id));
-const withImpl = srcIds.filter((s) => s.hasImpl);
-
-console.log("=== src/skills 孤儿 / 重叠诊断 ===");
-console.log(`src/skills 声明总数        : ${srcIds.length}`);
-console.log(`前端真实目录 UI 条目数     : ${uiIds.size}`);
-console.log(`引擎 builtin 上游技能数    : ${engineIds.size}`);
-console.log("");
-
-console.log(`[1] 未进入前端真实目录 (${orphanFromUi.length}):`);
-orphanFromUi.forEach((s) => console.log(`    - ${s.id}  (dir=${s.dir})`));
-
-console.log(`\n[2] 与引擎 builtin 同 id（概念重叠，需同步）(${overlapWithEngine.length}):`);
-overlapWithEngine.forEach((s) => console.log(`    - ${s.id}`));
-
-console.log(`\n[3] 含实现文件（非仅 SKILL.md）(${withImpl.length}):`);
-withImpl.forEach((s) => console.log(`    - ${s.id}  (dir=${s.dir})`));
-
-console.log("\n=== 结论 ===");
-if (orphanFromUi.length === srcIds.length) {
-  console.log(
-    "[WARN] src/skills 全部未进入前端真实技能目录 shared/data/builtin-skills.json，" +
-      "且前端源码无 import/import.meta.glob 消费 => 当前为孤儿声明（legacy）。",
-  );
-  console.log("       建议：要么在构建期把 src/skills 接入 builtin-skills.json，要么删除该目录。");
-} else {
-  console.log("[OK] src/skills 部分已对接前端真实目录。");
-}
-if (withImpl.length === 0) {
-  console.log("[WARN] src/skills 下无任何实现文件，纯元数据声明。");
-}
-console.log("（本脚本为诊断用途，退出码 0，不阻断构建）");
+main();
