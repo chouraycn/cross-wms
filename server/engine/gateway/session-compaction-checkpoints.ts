@@ -19,7 +19,7 @@ import { streamSessionTranscriptLines } from "@openclaw-src/config/sessions/tran
 import { scanSessionTranscriptTree } from "@openclaw-src/config/sessions/transcript-tree.js";
 import { CURRENT_SESSION_VERSION } from "@openclaw-src/config/sessions/version.js";
 import type { OpenClawConfig } from "@openclaw-src/config/types.openclaw.js";
-import { createSubsystemLogger } from "@openclaw-src/logging/subsystem.js";
+import { createSubsystemLogger } from "../logging/subsystem.js";
 import { resolveGatewaySessionStoreTarget } from "./session-utils.js";
 
 const log = createSubsystemLogger("gateway/session-compaction-checkpoints");

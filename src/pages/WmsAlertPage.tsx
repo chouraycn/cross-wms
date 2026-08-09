@@ -23,6 +23,7 @@ import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
 import PageHeader from '../components/Common/PageHeader';
+import AskWarehouseAgentButton from '../components/wms/AskWarehouseAgentButton';
 import WmsAlertList from '../components/wms/WmsAlertList';
 import WmsPredictionDashboard from '../components/wms/WmsPredictionDashboard';
 import WmsPredictionDetail from '../components/wms/WmsPredictionDetail';
@@ -301,6 +302,17 @@ const WmsAlertPage: React.FC = () => {
                 </Button>
               </>
             )}
+            <AskWarehouseAgentButton
+              disabled={alerts.length === 0}
+              buildPrompt={() => {
+                const lowStock = filteredAlerts.filter(a => a.alertType === 'low_stock').length;
+                const expiry = filteredAlerts.filter(a => a.alertType === 'expiry').length;
+                const stagnant = filteredAlerts.filter(a => a.alertType === 'stagnant').length;
+                const predicted = filteredAlerts.filter(a => a.alertType === 'predicted_shortage' || a.alertType === 'predicted_overstock').length;
+                return `帮我分析当前库存预警：当前筛选下共 ${filteredAlerts.length} 条活跃预警（低库存 ${lowStock}、临期 ${expiry}、滞销 ${stagnant}、预测型 ${predicted}）。请按严重程度排序、给出 TOP5 最紧急 SKU 的处理方案，并推荐自动化预警策略。`;
+              }}
+              label="让仓库专员帮我查"
+            />
           </Box>
         }
       />

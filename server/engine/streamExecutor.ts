@@ -130,6 +130,8 @@ export interface ExecuteChatParams {
   staffHttpTools?: import('../aiClient.js').ToolDefinition[];
   /** 数字员工技能调用事件回调（写侧统计来源）。仅 staff 注入 */
   onSkillExecuted?: (p: { sessionId: string; skillId: string }) => void;
+  /** v9.4: 启用反思/动态重规划（映射到 reactExecutor 的 planningMode='dynamic'） */
+  enableReflection?: boolean;
 }
 
 export interface ExecuteChatStreamResult {
@@ -379,6 +381,8 @@ export async function executeChat(params: ExecuteChatParams): Promise<ExecuteCha
       extraSkillExecutor: params.extraSkillExecutor,
       staffHttpTools: params.staffHttpTools,
       onSkillExecuted: params.onSkillExecuted,
+      // v9.4: enableReflection → planningMode='dynamic'（启用反思式重规划）
+      planningMode: params.enableReflection ? 'dynamic' : undefined,
     };
 
     const toolResult: ToolExecutionResult = await strategy.execute(strategyOptions);

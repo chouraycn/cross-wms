@@ -29,6 +29,8 @@ export const CdfEvents = {
   NAVIGATE_CHAT: 'cdf-know-clow-navigate-chat',
   NEW_CHAT: 'cdf-know-clow-new-chat',
   CLEAR_SESSION: 'cdf-know-clow-clear-session',
+  /** 预填聊天输入框文本（从其他页面注入查询） */
+  CHAT_PREFILL: 'cdf-chat-prefill',
   /** CommandPalette 触发的新建聊天（简短名，历史遗留） */
   NEW_CHAT_SHORT: 'new-chat',
   /** CommandPalette 触发的清空聊天（简短名，历史遗留） */
@@ -82,6 +84,7 @@ export interface CdfEventDetailMap {
   [CdfEvents.NAVIGATE_CHAT]: { sessionId?: string; messageId?: string };
   [CdfEvents.NEW_CHAT]: void;
   [CdfEvents.CLEAR_SESSION]: void;
+  [CdfEvents.CHAT_PREFILL]: { text: string };
   [CdfEvents.NEW_CHAT_SHORT]: void;
   [CdfEvents.CLEAR_CHAT_SHORT]: void;
 

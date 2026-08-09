@@ -166,6 +166,16 @@ export default function StaffDeckEmbedPage({ warehouseMode = false, sidebarColla
         onLoad={() => {
           pushSessionToIframe();
           injectHideSidebarCSS();
+          // 仓库员工场景：iframe 加载后默认选中仓库专员（seed-agent-warehouse-specialist）
+          // StaffDeck 内部通过 localStorage 'ultrarag_enterprise_agent_scope' 读取当前员工
+          if (warehouseMode) {
+            try {
+              const win = iframeRef.current?.contentWindow as (Window & typeof globalThis) | null;
+              if (win) {
+                win.localStorage.setItem('ultrarag_enterprise_agent_scope', 'seed-agent-warehouse-specialist');
+              }
+            } catch { /* 跨域忽略 */ }
+          }
         }}
         style={{
           width: '100%',

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
@@ -72,6 +72,110 @@ interface MarkdownRendererProps {
   isStreaming?: boolean;
 }
 
+/** 单个代码块组件 — 每个实例持有独立的 copied 状态，避免多代码块状态共享 */
+const CodeBlock = React.memo(function CodeBlock({
+  codeString,
+  language,
+  gs,
+  isDark,
+}: {
+  codeString: string;
+  language: string;
+  gs: ReturnType<typeof getGrayScale>;
+  isDark: boolean;
+}) {
+  const [copied, setCopied] = useState(false);
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleCopy = useCallback(() => {
+    const doCopy = async () => {
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(codeString);
+        } else {
+          const el = document.createElement('textarea');
+          el.value = codeString;
+          el.style.position = 'fixed';
+          el.style.opacity = '0';
+          document.body.appendChild(el);
+          el.select();
+          document.execCommand('copy');
+          document.body.removeChild(el);
+        }
+      } catch {
+        // 静默失败
+      }
+    };
+    doCopy();
+    setCopied(true);
+    if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+    copyTimerRef.current = setTimeout(() => setCopied(false), 2000);
+  }, [codeString]);
+
+  useEffect(() => {
+    return () => {
+      if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+    };
+  }, []);
+
+  return (
+    <Box sx={{
+      position: 'relative',
+      my: 1,
+      borderRadius: 1,
+      overflow: 'hidden',
+      border: `1px solid ${gs.border}`,
+      '&:hover .copy-btn': { opacity: 1 },
+    }}>
+      <Box sx={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        px: 1.5,
+        py: 0.5,
+        bgcolor: isDark ? '#1A1A1A' : '#F3F4F6',
+        borderBottom: `1px solid ${gs.border}`,
+      }}>
+        <Typography sx={{
+          fontSize: 11,
+          fontFamily: "'JetBrains Mono', monospace",
+          color: gs.textMuted,
+          textTransform: 'lowercase',
+        }}>
+          {language || 'text'}
+        </Typography>
+        <IconButton
+          className="copy-btn"
+          onClick={handleCopy}
+          sx={{
+            color: gs.textDisabled,
+            p: 0.25,
+            opacity: 0,
+            transition: 'opacity 0.2s',
+            '&:hover': { color: gs.textPrimary, bgcolor: gs.bgHover },
+          }}
+        >
+          {copied ? <CheckIcon sx={{ fontSize: 14, color: '#16A34A' }} /> : <ContentCopyIcon sx={{ fontSize: 13 }} />}
+        </IconButton>
+      </Box>
+      <SyntaxHighlighter
+        style={isDark ? oneDark : oneLight}
+        language={language || 'text'}
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        PreTag={"div" as any}
+        customStyle={{
+          borderRadius: 0,
+          fontSize: 13,
+          margin: 0,
+          border: 'none',
+        }}
+      >
+        {codeString}
+      </SyntaxHighlighter>
+    </Box>
+  );
+});
+
 /**
  * Markdown 渲染器
  *
@@ -85,7 +189,6 @@ export const MarkdownRenderer = React.memo(function MarkdownRenderer({ content, 
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const gs = useMemo(() => getGrayScale(isDark), [isDark]);
-  const [copied, setCopied] = useState(false);
   const [, forceUpdate] = useState({});
 
   useEffect(() => {
@@ -182,83 +285,12 @@ export const MarkdownRenderer = React.memo(function MarkdownRenderer({ content, 
       }
 
       return (
-        <Box sx={{
-          position: 'relative',
-          my: 1,
-          borderRadius: 1,
-          overflow: 'hidden',
-          border: `1px solid ${gs.border}`,
-          '&:hover .copy-btn': { opacity: 1 },
-        }}>
-          {/* 代码块头部栏：语言标签 + 复制按钮 */}
-          <Box sx={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            px: 1.5,
-            py: 0.5,
-            bgcolor: isDark ? '#1A1A1A' : '#F3F4F6',
-            borderBottom: `1px solid ${gs.border}`,
-          }}>
-            <Typography sx={{
-              fontSize: 11,
-              fontFamily: "'JetBrains Mono', monospace",
-              color: gs.textMuted,
-              textTransform: 'lowercase',
-            }}>
-              {language || 'text'}
-            </Typography>
-            <IconButton
-              className="copy-btn"
-              onClick={() => {
-                const doCopy = async () => {
-                  try {
-                    if (navigator.clipboard && navigator.clipboard.writeText) {
-                      await navigator.clipboard.writeText(codeString);
-                    } else {
-                      const el = document.createElement('textarea');
-                      el.value = codeString;
-                      el.style.position = 'fixed';
-                      el.style.opacity = '0';
-                      document.body.appendChild(el);
-                      el.select();
-                      document.execCommand('copy');
-                      document.body.removeChild(el);
-                    }
-                  } catch {
-                    // 静默失败
-                  }
-                };
-                doCopy();
-                setCopied(true);
-                setTimeout(() => setCopied(false), 2000);
-              }}
-              sx={{
-                color: gs.textDisabled,
-                p: 0.25,
-                opacity: 0,
-                transition: 'opacity 0.2s',
-                '&:hover': { color: gs.textPrimary, bgcolor: gs.bgHover },
-              }}
-            >
-              {copied ? <CheckIcon sx={{ fontSize: 14, color: '#16A34A' }} /> : <ContentCopyIcon sx={{ fontSize: 13 }} />}
-            </IconButton>
-          </Box>
-          <SyntaxHighlighter
-            style={isDark ? oneDark : oneLight}
-            language={language || 'text'}
-            PreTag="div"
-            customStyle={{
-              borderRadius: 0,
-              fontSize: 13,
-              margin: 0,
-              border: 'none',
-            }}
-            {...props}
-          >
-            {codeString}
-          </SyntaxHighlighter>
-        </Box>
+        <CodeBlock
+          codeString={codeString}
+          language={language}
+          gs={gs}
+          isDark={isDark}
+        />
       );
     },
     // 表格

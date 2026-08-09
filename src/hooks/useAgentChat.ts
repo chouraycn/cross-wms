@@ -1109,6 +1109,57 @@ export function useAgentChat(
         break;
       }
 
+      case 'reflection_confidence': {
+        // v5.0: 反思置信度事件 — 写入 msg.reflectionConfidence 驱动 ReactPhaseIndicator 徽章
+        const confidenceEvt = chatEvent as SystemEvent & { type: 'reflection_confidence' };
+        const state = blockStateRef.current;
+        if (state.assistantMessageIndex >= 0) {
+          setMessages((prev) => {
+            if (state.assistantMessageIndex >= prev.length) return prev;
+            const msg = prev[state.assistantMessageIndex];
+            if (msg.role !== 'assistant') return prev;
+            const updated: Message = {
+              ...msg,
+              reflectionConfidence: {
+                confidenceScore: confidenceEvt.confidenceScore ?? 0,
+                selfScore: confidenceEvt.selfScore ?? 0,
+                shouldEarlyStop: Boolean(confidenceEvt.shouldEarlyStop),
+                reason: confidenceEvt.reason || '',
+              },
+            };
+            const newMessages = [...prev];
+            newMessages[state.assistantMessageIndex] = updated;
+            return newMessages;
+          });
+        }
+        break;
+      }
+
+      case 'replan_triggered': {
+        // v5.0: 重规划触发事件 — 写入 msg.replanTriggered 驱动 ReactPhaseIndicator 徽章
+        const replanEvt = chatEvent as SystemEvent & { type: 'replan_triggered' };
+        const state = blockStateRef.current;
+        if (state.assistantMessageIndex >= 0) {
+          setMessages((prev) => {
+            if (state.assistantMessageIndex >= prev.length) return prev;
+            const msg = prev[state.assistantMessageIndex];
+            if (msg.role !== 'assistant') return prev;
+            const updated: Message = {
+              ...msg,
+              replanTriggered: {
+                reason: replanEvt.reason || '',
+                oldPlanId: replanEvt.oldPlanId || '',
+                newPlanId: replanEvt.newPlanId || '',
+              },
+            };
+            const newMessages = [...prev];
+            newMessages[state.assistantMessageIndex] = updated;
+            return newMessages;
+          });
+        }
+        break;
+      }
+
       case 'command_output': {
         // v9.2: 命令输出事件 — 添加到 activeItems 供 UI 展示
         const cmdEvt = chatEvent as SystemEvent & { type: 'command_output' };

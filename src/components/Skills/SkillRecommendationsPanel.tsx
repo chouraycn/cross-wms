@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Box, Typography, Chip, Stack, Skeleton, Link } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { fetchSkillRecommendations, type SkillRecommendationItem } from '../../services/api';
-import { useToast } from '../../contexts/ToastContext';
 import { getGrayScale } from '../../constants/theme';
 
 const REASON_TYPE_LABELS: Record<string, { label: string; color: string; bg: string }> = {
@@ -22,7 +21,6 @@ interface SkillRecommendationsPanelProps {
 const SkillRecommendationsPanel: React.FC<SkillRecommendationsPanelProps> = ({ skillId, isDark = false }) => {
   const [recommendations, setRecommendations] = useState<SkillRecommendationItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const { showToast } = useToast();
   const navigate = useNavigate();
   const gs = getGrayScale(isDark);
 
@@ -34,7 +32,12 @@ const SkillRecommendationsPanel: React.FC<SkillRecommendationsPanelProps> = ({ s
         if (!cancelled) setRecommendations(res.recommendations);
       })
       .catch((e: any) => {
-        if (!cancelled) showToast(`推荐加载失败: ${e?.message || e}`, 'error');
+        // 推荐失败不中断用户体验：静默降级为空推荐，错误写入日志
+        // （后端已保证 404/路由冲突等常见异常返回 200 空列表；此处兜底网络/解析错误）
+        if (!cancelled) {
+          console.warn('[SkillRecommendationsPanel] load failed, fallback to empty:', e?.message || e);
+          setRecommendations([]);
+        }
       })
       .finally(() => {
         if (!cancelled) setLoading(false);

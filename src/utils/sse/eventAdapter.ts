@@ -92,6 +92,10 @@ export class EventAdapter {
         return this.adaptOutputReview(data);
       case 'react_phase':
         return this.adaptReactPhase(data);
+      case 'reflection_confidence':
+        return this.adaptReflectionConfidence(data);
+      case 'replan_triggered':
+        return this.adaptReplanTriggered(data);
       case 'tool_execution_started':
         return this.adaptToolExecution(data, 'tool_execution_started');
       case 'tool_execution_completed':
@@ -485,6 +489,27 @@ export class EventAdapter {
       step: (data.step as number) ?? undefined,
       totalSteps: (data.totalSteps as number) ?? undefined,
       description: (data.description as string) ?? undefined,
+    };
+  }
+
+  /** 反思置信度事件适配（confidenceScore ≥ 7 建议早停） */
+  private adaptReflectionConfidence(data: Record<string, any>): SystemEvent {
+    return {
+      type: 'reflection_confidence',
+      confidenceScore: (data.confidenceScore as number) ?? 0,
+      selfScore: (data.selfScore as number) ?? 0,
+      shouldEarlyStop: (data.shouldEarlyStop as boolean) ?? false,
+      reason: (data.reason as string) || undefined,
+    };
+  }
+
+  /** 重规划触发事件适配 */
+  private adaptReplanTriggered(data: Record<string, any>): SystemEvent {
+    return {
+      type: 'replan_triggered',
+      reason: (data.reason as string) || undefined,
+      oldPlanId: (data.oldPlanId as string) || undefined,
+      newPlanId: (data.newPlanId as string) || undefined,
     };
   }
 

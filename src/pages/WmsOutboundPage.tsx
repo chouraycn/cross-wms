@@ -40,6 +40,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import PageHeader from '../components/Common/PageHeader';
+import AskWarehouseAgentButton from '../components/wms/AskWarehouseAgentButton';
 import WmsOutboundForm from '../components/wms/WmsOutboundForm';
 import { subscribeRefresh } from '../App';
 import { useToast } from '../contexts/ToastContext';
@@ -243,6 +244,16 @@ const WmsOutboundPage: React.FC = () => {
                 {t('导出')}
               </Button>
             </Tooltip>
+            <AskWarehouseAgentButton
+              disabled={filteredData.length === 0}
+              buildPrompt={() => {
+                const passed = data.filter(i => i.reviewStatus === 'passed').length;
+                const pending = data.filter(i => i.reviewStatus === 'pending').length;
+                const failed = data.filter(i => i.reviewStatus === 'failed').length;
+                return `帮我分析当前出库复核情况：共 ${filteredData.length} 条记录（已通过 ${passed}、待复核 ${pending}、未通过 ${failed}）。请找出复核失败率高的 SKU、待复核积压时段，给出提升准确率和处理效率的建议。`;
+              }}
+              label={t('让仓库专员帮我查')}
+            />
           </Box>
         }
       />

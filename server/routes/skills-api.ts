@@ -35,6 +35,7 @@ import {
   getSkillUsageStats as dbGetSkillUsageStats,
 } from '../dao/chat.js';
 import { auditSkillMd, generateMarkdownReport } from '../services/securityAuditor.js';
+import { generateRecommendations } from '../services/skillRecommender.js';
 import { logger } from '../logger.js';
 import { ok, fail, notFound, created, serverError, BizCode } from './_shared/respond.js';
 
@@ -289,6 +290,27 @@ router.post('/templates/:id/create', (req: Request, res: Response) => {
   } catch (e) {
     logger.error('[Skills API] 使用模板创建技能失败:', e);
     errorResponse(res, `使用模板创建技能失败: ${e instanceof Error ? e.message : String(e)}`);
+  }
+});
+
+// GET /api/skills/recommendations?skillId=xxx&topN=10&days=30 — 技能推荐（必须在 /:id 之前，避免被当作技能 id）
+router.get('/recommendations', (req: Request, res: Response) => {
+  try {
+    const skillId = req.query.skillId as string | undefined;
+    const topN = Math.max(1, Math.min(50, parseInt(String(req.query.topN ?? '10'), 10) || 10));
+    const days = Math.max(1, Math.min(90, parseInt(String(req.query.days ?? '30'), 10) || 30));
+
+    const result = generateRecommendations(skillId, { topN, days });
+    return successResponse(res, result);
+  } catch (e) {
+    logger.error('[Skills API] recommendations failed:', e);
+    // 推荐失败不抛错，返回空列表（保证前端 UI 不中断）
+    return successResponse(res, {
+      targetSkillId: req.query.skillId,
+      recommendations: [],
+      generatedAt: new Date().toISOString(),
+      _error: e instanceof Error ? e.message : String(e),
+    });
   }
 });
 

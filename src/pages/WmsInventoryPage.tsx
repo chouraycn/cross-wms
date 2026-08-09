@@ -41,6 +41,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import FactCheckIcon from '@mui/icons-material/FactCheck';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import PageHeader from '../components/Common/PageHeader';
+import AskWarehouseAgentButton from '../components/wms/AskWarehouseAgentButton';
 import WmsInventoryForm from '../components/wms/WmsInventoryForm';
 import WmsInventoryStats from '../components/wms/WmsInventoryStats';
 import WmsInventoryBatchCreate from '../components/wms/WmsInventoryBatchCreate';
@@ -270,6 +271,16 @@ const WmsInventoryPage: React.FC = () => {
                 {t('导出')}
               </Button>
             </Tooltip>
+            <AskWarehouseAgentButton
+              disabled={filteredData.length === 0}
+              buildPrompt={() => {
+                const pending = data.filter(i => i.status === 'pending').length;
+                const counted = data.filter(i => i.status === 'counted').length;
+                const adjusted = data.filter(i => i.status === 'adjusted').length;
+                return `帮我分析当前库存盘点情况：共 ${filteredData.length} 条记录（待盘点 ${pending}、已盘点 ${counted}、已调整 ${adjusted}）。请找出差异率高的盘点单、待盘点积压项，给出盘点效率提升和差异管控建议。`;
+              }}
+              label={t('让仓库专员帮我查')}
+            />
           </Box>
         }
       />

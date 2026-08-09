@@ -8,6 +8,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Box } from '@mui/material';
 import PageHeader from '../components/Common/PageHeader';
+import AskWarehouseAgentButton from '../components/wms/AskWarehouseAgentButton';
 import WmsReportGenerator from '../components/wms/WmsReportGenerator';
 import { subscribeRefresh } from '../App';
 import { useToast, ToastMessages } from '../contexts/ToastContext';
@@ -118,6 +119,13 @@ const WmsReportPage: React.FC = () => {
         title="报表生成"
         subtitle="生成入库、出库、库存及自定义数据报表"
         summary={`共 ${reports.length} 条历史记录`}
+        action={
+          <AskWarehouseAgentButton
+            buildPrompt={() => `我需要生成一份仓储经营分析报表，请帮我梳理应该重点关注的 KPI：各仓库库龄分布、出入库周转率 TOP5/BOTTOM5 SKU、近 30 天预警处理率，并给出对应的报表查询步骤和分析思路。`}
+            label="让仓库专员帮我查"
+            variant="contained"
+          />
+        }
       />
 
       <WmsReportGenerator

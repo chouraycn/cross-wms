@@ -307,6 +307,10 @@ function ensureSampleScheduledTask(db: Database.Database): number {
  * 背景：fixture（staffdeck_admin_gallery_seed.json）仅含 5 个精选员工（财务/法务/人事/IT/行政），
  * 仓储能力需要第 6 个「仓库专员」员工。为避免修改 3.9MB 单行 JSON fixture，此处通过固定 id
  * 的 INSERT OR IGNORE 直接注入，与 fixture 迁移幂等共存。
+ *
+ * v2（2026-08-09）：将仓库专员设为默认员工（is_default_employee=true），并将 WMS 系统
+ * 中「免仓伧」agent 的完整能力（SOUL persona + 6 项核心能力 + 7 个 SKILL.md 技能 SOP）
+ * 整合为知识文档和技能定义注入到仓库专员名下，使其成为具备全链路仓储能力的默认数字员工。
  */
 function ensureWarehouseSpecialistAgent(db: Database.Database): number {
   const agentId = 'seed-agent-warehouse-specialist';
@@ -321,31 +325,54 @@ function ensureWarehouseSpecialistAgent(db: Database.Database): number {
     avatar_kind: 'preset',
     avatar_preset: 'warehouse-grid',
     onboarded_at: new Date().toISOString().slice(0, 10),
-    work_styles: ['数据准确', '流程规范', '异常预警'],
-    expertise_tags: ['入库管理', '出库管理', '库存盘点', '补货计划'],
-    work_modes: ['收货上架', '拣货发运', '盘点核对'],
+    work_styles: ['数据准确', '流程规范', '异常预警', '全局视野', '效率至上'],
+    expertise_tags: [
+      '库存全景查询', '出入库分析', '调拨优化', '补货预测', '预警管理', '数据导出',
+      '入库管理', '出库管理', '库存盘点', '仓储报表',
+    ],
+    work_modes: ['收货上架', '拣货发运', '盘点核对', '库存查询', '调拨优化', '报表分析'],
     published_to_gallery: true,
     gallery_published_by: 'admin',
     seed_source: 'cross-wms-warehouse-specialist',
     managed_by_seed: true,
+    is_default_employee: true,
+    system_prompt_summary: '仓储运营全链路管理：入库→库存→调拨→出库→盘点→补货→预警→报表',
   });
 
+  // 整合免仓伧（SOUL_mian_cang_cang.md）完整 persona + WMS 专家/分析师能力
   const personaPrompt = [
-    '你是「仓库专员」，由 CDFKnow 调度的企业数字员工，专注于仓储运营管理。',
+    '你是「仓库专员」，CDF Know Clow 仓库管理系统的专业数字员工，由 CDFKnow 调度。',
+    '你精通仓储管理的每一个环节：库存监控、出入库分析、调拨优化、补货预测、预警处理。',
+    '你的核心使命：让仓库数据说话，让库存管理从容不迫。',
     '',
-    '核心职责：',
-    '- 入库管理：收货验收、上架归位、入库单据核对',
-    '- 出库管理：拣货发运、出库复核、物流跟踪',
-    '- 库存盘点：库存核对、差异分析、账实相符',
-    '- 补货计划：安全库存监控、补货建议、呆滞料预警',
+    '## 价值观',
+    '1. 数据准确第一：所有结论必须基于实时库存数据，绝不猜测',
+    '2. 主动预警：发现低库存、呆滞、临期等问题时立即提醒',
+    '3. 效率至上：查询结果直接、actionable，不给冗余信息',
+    '4. 全局视野：分析时考虑在途、调拨、多仓联动',
     '',
-    '工作风格：数据准确、流程规范、异常预警。',
+    '## 核心职责',
+    '- 入库管理：收货验收、上架归位、入库单据核对、质检结果录入',
+    '- 出库管理：拣货发运、出库复核、物流跟踪、波次创建与路径优化',
+    '- 库存盘点：库存核对、差异分析、账实相符、ABC 分类与库龄分析',
+    '- 补货计划：安全库存监控、补货建议、呆滞料预警、EMA 消耗预测',
+    '- 调拨优化：多仓库存平衡、调拨路径推荐、在途跟踪',
+    '- 预警管理：低库存、临期、呆滞库存的扫描与报告',
+    '- 数据导出：库存报表、出入库明细的 CSV/Excel 导出',
     '',
-    '回答要求：',
+    '## 禁区',
+    '- 不执行未经确认的库存修改操作',
+    '- 不猜测不存在的数据',
+    '- 不给出与实时数据矛盾的结论',
+    '- 不忽略在途库存对可用库存的影响',
+    '',
+    '## 回答要求',
     '1. 涉及库存数据时优先核对，给出准确数字与单位',
     '2. 涉及流程时按 WMS 标准作业流程（SOP）分步骤说明',
     '3. 发现异常（库存差异、缺料、超期等）主动预警并给出建议',
     '4. 补货建议需结合安全库存、周转率、前置时间综合判断',
+    '5. 数据呈现用表格，趋势用简洁描述，使用仓储行业术语（SKU、批次、安全库存、周转率等）',
+    '6. 分析时考虑在途库存、调拨在途对可用库存的影响',
   ].join('\n');
 
   db.prepare(
@@ -356,13 +383,457 @@ function ensureWarehouseSpecialistAgent(db: Database.Database): number {
     agentId,
     TENANT_ID,
     '仓库专员',
-    '负责入库收货、出库拣货、库存盘点、补货建议和仓储报表分析。',
+    '仓储运营全链路管理：入库收货、出库拣货、库存盘点、补货预测、调拨优化、预警管理、报表分析。',
     personaPrompt,
     0,
     'active',
     JSON.stringify(metadata),
   );
+
+  // 注入 WMS 知识文档和技能
+  ensureWarehouseKnowledgeAndSkills(db, agentId);
+
   return 1;
+}
+
+/**
+ * 为仓库专员注入 WMS 知识文档和技能定义。
+ *
+ * 知识文档来源：skills/builtin-xxx 下的 SKILL.md（7 个仓库技能 SOP）+ 免仓伧 SOUL persona
+ * 技能定义来源：shared/data/builtin-skills.json 中的仓库相关技能
+ *
+ * 幂等：所有插入用 INSERT OR IGNORE（按固定 id 前缀 whs-）。
+ */
+function ensureWarehouseKnowledgeAndSkills(db: Database.Database, agentId: string): void {
+  const now = Math.floor(Date.now() / 1000);
+
+  // ===================== 1. 知识库 =====================
+  const kbId = 'whs-kb-warehouse-ops';
+  const kbVersionId = 'whs-kb-warehouse-ops-v1';
+
+  // 知识库
+  db.prepare(
+    `INSERT OR IGNORE INTO sd_knowledge_bases (
+      id, tenant_id, name, description, status, created_at, updated_at, metadata_json
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).run(
+    kbId,
+    TENANT_ID,
+    '仓储运营知识库',
+    '仓库专员专属知识库，包含入库、出库、库存、盘点、补货、调拨、报表等 WMS 全链路 SOP 文档。',
+    'active',
+    now,
+    now,
+    JSON.stringify(normalizeMetadata({ source: 'cross-wms-skills', managed_by_seed: true })),
+  );
+
+  // 知识库版本
+  db.prepare(
+    `INSERT OR IGNORE INTO sd_knowledge_base_versions (
+      id, tenant_id, knowledge_base_id, version, status, created_at, updated_at, metadata_json
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).run(
+    kbVersionId,
+    TENANT_ID,
+    kbId,
+    '1.0.0',
+    'active',
+    now,
+    now,
+    '{}',
+  );
+
+  // ===================== 2. 知识文档 =====================
+  // 从 SKILL.md 整合的 7 个仓库运营 SOP 文档
+  const knowledgeDocs = [
+    {
+      id: 'whs-doc-inbound',
+      title: '入库规划 SOP',
+      content: [
+        '# 入库规划标准作业流程',
+        '',
+        '## 适用场景',
+        '采购入库、退货入库、跨境入库（保税仓/直邮仓/海外仓）。',
+        '',
+        '## 操作步骤',
+        '1. 仓库容量查询：确认目标仓库剩余可用库位和容积',
+        '2. 入库批次规划：按 SKU 数量、体积、保质期要求规划入库批次',
+        '3. 库位分配策略：',
+        '   - zone_priority：按区域优先级分配（高频区→低频区）',
+        '   - volume_fit：按体积最佳匹配分配',
+        '   - temperature：按温控要求分配（常温/冷藏/冷冻/危险品）',
+        '4. 质检结果录入：到货验收后录入质检结果（合格/不合格/部分合格）',
+        '5. 上架归位：按分配库位完成上架，更新库存系统',
+        '',
+        '## 跨境入库特殊流程',
+        '- 保税仓：需记录报关单号、海关放行状态',
+        '- 直邮仓：需记录物流追踪号、清关状态',
+        '- 海外仓：需记录 FBA/Shipment ID、头程物流信息',
+        '',
+        '## 关键指标',
+        '- 入库时效：≤4 小时（从到货到上架完成）',
+        '- 验收准确率：≥99%',
+      ].join('\n'),
+    },
+    {
+      id: 'whs-doc-outbound',
+      title: '出库优化 SOP',
+      content: [
+        '# 出库优化标准作业流程',
+        '',
+        '## 适用场景',
+        '销售出库、调拨出库、跨境出库。',
+        '',
+        '## 波次创建策略',
+        '- single：单订单波次（高优先级订单）',
+        '- multi：多订单合并波次（同方向/同载体）',
+        '- bulk：批量波次（大批量出库）',
+        '',
+        '## 拣货路径优化',
+        '- s_shape（S 型路径）：适用于大仓库，按通道顺序拣货',
+        '- largest_gap（最大间隙）：适用于小仓库，跳过空通道',
+        '- combined（混合）：S 型 + 间隙优化，平衡效率',
+        '',
+        '## 操作步骤',
+        '1. 波次创建：按策略合并出库订单',
+        '2. 拣货员分配：按工作量和区域分配拣货员',
+        '3. 拣货执行：按优化路径拣货',
+        '4. 打包复核：核对 SKU、数量、包装规范',
+        '5. 出库确认：更新库存，生成出库记录',
+        '',
+        '## 跨境出库特殊流程',
+        '- 订单审核：需确认收件信息、申报价值',
+        '- 打包规范：需符合目的地国包装要求',
+        '- 报关申报：需生成报关单据、HS 编码',
+        '',
+        '## 关键指标',
+        '- 出库时效：≤2 小时（从下单到出库）',
+        '- 拣货准确率：≥99.5%',
+      ].join('\n'),
+    },
+    {
+      id: 'whs-doc-inventory',
+      title: '库存管理 SOP',
+      content: [
+        '# 库存管理标准作业流程',
+        '',
+        '## 库龄分布分析',
+        '按入库时间分段统计（0-30天/31-60天/61-90天/90天+），识别滞销品。',
+        '',
+        '## ABC 分类管理',
+        '- A 类（高价值高频次）：占总值 70-80%，重点管理',
+        '- B 类（中价值中频次）：占总值 15-25%，常规管理',
+        '- C 类（低价值低频次）：占总值 5-10%，简化管理',
+        '',
+        '## 安全库存计算',
+        '安全库存 = (最大日消耗 × 最大前置时间) - (平均日消耗 × 平均前置时间)',
+        '',
+        '## 盘点任务',
+        '- blind（盲盘）：不告知盘点人员系统库存数量',
+        '- known（明盘）：告知系统数量进行核对',
+        '- 盘点差异调整：记录差异原因，同步更新 inventory_items 和 inventory_transactions',
+        '',
+        '## 保质期预警（FIFO 先进先出）',
+        '按入库批次时间排序，优先出库早期批次，监控临期商品。',
+        '',
+        '## 滞销品识别',
+        '库龄 > 90 天且无近期出库记录的 SKU 标记为滞销，触发清理建议。',
+      ].join('\n'),
+    },
+    {
+      id: 'whs-doc-replenishment',
+      title: '补货预测 SOP',
+      content: [
+        '# 补货预测标准作业流程',
+        '',
+        '## EMA 日均消耗计算',
+        '使用指数移动平均（EMA）计算 SKU 日均消耗量，',
+        '公式：EMA_today = α × consumption_yesterday + (1-α) × EMA_yesterday',
+        'α 值推荐 0.3（平衡近期波动与长期趋势）。',
+        '',
+        '## 补货建议生成',
+        '1. 计算可用库存 = 当前库存 + 在途数量',
+        '2. 计算安全库存 = EMA日均消耗 × 安全库存天数',
+        '3. 判断是否触发补货：可用库存 < 安全库存',
+        '4. 计算建议补货量 = 目标库存 - 可用库存',
+        '   目标库存 = EMA日均消耗 × (前置时间 + 补货周期) × 补货倍数',
+        '',
+        '## 补货规则配置',
+        '- minStock：最低库存阈值',
+        '- maxStock：最高库存阈值',
+        '- safetyDays：安全库存天数',
+        '- replenishMultiplier：补货倍数（建议 1.5-2.0）',
+        '- leadTimeDays：前置时间（天）',
+        '- autoOrder：是否自动生成采购单',
+        '',
+        '## 呆滞料预警',
+        '库龄 > 90 天且日均消耗 < 0.1 的 SKU 标记为呆滞料，触发清理或调拨建议。',
+      ].join('\n'),
+    },
+    {
+      id: 'whs-doc-transfer',
+      title: '调拨优化 SOP',
+      content: [
+        '# 调拨优化标准作业流程',
+        '',
+        '## 适用场景',
+        '多仓库存平衡、紧急调拨、呆滞料调拨。',
+        '',
+        '## 调拨流程',
+        '1. 识别调拨需求：某仓库库存低于安全线，其他仓库有富余',
+        '2. 调拨路径推荐：选择成本最低、时效最快的调拨路径',
+        '3. 在途跟踪：记录调拨在途状态（已发起/运输中/已到货/已入库）',
+        '4. 到货确认：目标仓库验收入库，更新库存',
+        '',
+        '## 调拨优化原则',
+        '- 优先从呆滞仓库调拨到紧缺仓库',
+        '- 考虑运输成本与时效的平衡',
+        '- 跨境调拨需考虑清关时间',
+        '',
+        '## 在途库存影响',
+        '调拨在途数量计入可用库存计算，避免重复补货。',
+      ].join('\n'),
+    },
+    {
+      id: 'whs-doc-kpi',
+      title: '仓库 KPI 指标体系',
+      content: [
+        '# 仓库 KPI 指标体系',
+        '',
+        '## 运营效率类',
+        '- 入库时效：≤4 小时（从到货到上架完成）',
+        '- 出库时效：≤2 小时（从下单到出库）',
+        '- 日处理单量：每日入库+出库订单总数',
+        '- 人均效率：日处理单量 / 在岗人数',
+        '',
+        '## 质量类',
+        '- 库存准确率：≥99%（盘点账实差异率 ≤1%）',
+        '- 拣货准确率：≥99.5%',
+        '- 客诉率：≤0.5%',
+        '- 差错率：≤0.3%',
+        '',
+        '## 成本类',
+        '- 单件仓储成本：月仓储总成本 / 月均库存件数',
+        '- 单件操作成本：月操作总成本 / 月操作件数',
+        '- 单件物流成本：月物流总成本 / 月发货件数',
+        '',
+        '## 预警类',
+        '- 低库存预警：可用库存 < 安全库存',
+        '- 临期预警：保质期剩余 < 预警天数',
+        '- 呆滞预警：库龄 > 90 天且无近期出库',
+      ].join('\n'),
+    },
+    {
+      id: 'whs-doc-reports',
+      title: '统计报表 SOP',
+      content: [
+        '# 统计报表标准作业流程',
+        '',
+        '## 报表类型',
+        '- 库存报表：当前库存快照、库龄分布、ABC 分类统计',
+        '- 出入库报表：指定时段内的入库/出库明细汇总',
+        '- 在途报表：调拨在途、采购在途订单状态',
+        '- KPI 综合报表：运营效率、质量、成本指标汇总',
+        '',
+        '## 导出格式',
+        '- CSV：纯文本逗号分隔，适合程序处理',
+        '- XLSX：Excel 格式，适合人工查阅',
+        '- PDF：适合正式报告',
+        '',
+        '## 定期调度',
+        '支持按日/周/月自动生成报表并导出到指定路径。',
+        '',
+        '## 数据来源',
+        '- inventory_items 表：库存快照',
+        '- inbound_records 表：入库记录',
+        '- outbound_records 表：出库记录',
+        '- transfer_orders 表：调拨记录',
+        '- wms_alerts 表：预警记录',
+      ].join('\n'),
+    },
+  ];
+
+  // 插入知识文档
+  for (const doc of knowledgeDocs) {
+    db.prepare(
+      `INSERT OR IGNORE INTO sd_knowledge_documents (
+        id, tenant_id, knowledge_base_id, title, content, status, created_at, updated_at, metadata_json
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).run(
+      doc.id,
+      TENANT_ID,
+      kbId,
+      doc.title,
+      doc.content,
+      'active',
+      now,
+      now,
+      '{}',
+    );
+  }
+
+  // 绑定知识库到仓库专员
+  db.prepare(
+    `INSERT OR IGNORE INTO sd_agent_resource_bindings (
+      id, tenant_id, agent_id, resource_type, resource_id, status, created_at, updated_at, metadata_json
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).run(
+    `whs-bind-${agentId}-kb`,
+    TENANT_ID,
+    agentId,
+    'knowledge_base',
+    kbId,
+    'active',
+    now,
+    now,
+    JSON.stringify({ scope: 'agent_private', source: 'seed' }),
+  );
+
+  // 知识分支
+  db.prepare(
+    `INSERT OR IGNORE INTO sd_agent_knowledge_branches (
+      id, tenant_id, agent_id, knowledge_base_id, base_version, head_version, status, sync_state, metadata_json
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).run(
+    `akb_${agentId}_${kbId}`,
+    TENANT_ID,
+    agentId,
+    kbId,
+    '1.0.0',
+    '1.0.0',
+    'active',
+    'synced',
+    '{}',
+  );
+
+  // ===================== 3. 技能定义 =====================
+  const skills = [
+    {
+      id: 'whs-skill-inventory-query',
+      name: '库存查询',
+      description: '自然语言转 SQL 查询库存，支持 SKU/仓库/类别/时间多维度统计',
+      trigger: '库存查询|查库存|库存数量|sku查询|仓库余量',
+      steps: '1. 解析用户查询意图，提取 SKU/仓库/类别等条件\n2. 生成 SQL 查询 inventory_items 表\n3. 汇总结果并以表格形式返回\n4. 如有低库存情况主动预警',
+    },
+    {
+      id: 'whs-skill-inbound',
+      name: '入库规划',
+      description: '入库批次规划、库位分配、质检录入、上架归位',
+      trigger: '入库|收货|到货|验货|上架|采购入库',
+      steps: '1. 查询仓库可用容量\n2. 规划入库批次（按 SKU/体积/温控）\n3. 分配库位（zone_priority/volume_fit/temperature）\n4. 录入质检结果\n5. 确认上架，更新库存',
+    },
+    {
+      id: 'whs-skill-outbound',
+      name: '出库优化',
+      description: '波次创建、拣货路径优化、打包复核、出库确认',
+      trigger: '出库|发货|拣货|打包|销售出库|波次',
+      steps: '1. 按策略创建波次（single/multi/bulk）\n2. 分配拣货员\n3. 优化拣货路径（s_shape/largest_gap/combined）\n4. 打包复核\n5. 出库确认，更新库存',
+    },
+    {
+      id: 'whs-skill-inventory-count',
+      name: '库存盘点',
+      description: '盘点任务创建、差异分析、账实调整',
+      trigger: '盘点|清点|核查|库存盘点|盘点任务',
+      steps: '1. 创建盘点任务（blind/known）\n2. 执行盘点，录入实际数量\n3. 计算差异（variance = 实盘 - 系统数）\n4. 差异分析，记录原因\n5. 调整库存，同步 inventory_items 和 inventory_transactions',
+    },
+    {
+      id: 'whs-skill-replenishment',
+      name: '补货预测',
+      description: '基于 EMA 日均消耗 + 安全库存的补货建议生成',
+      trigger: '补货|补货建议|补货计划|安全库存|reorder',
+      steps: '1. 计算 SKU 的 EMA 日均消耗\n2. 查询当前库存 + 在途数量\n3. 对比安全库存阈值\n4. 生成补货建议（建议补货量 = 目标库存 - 可用库存）\n5. 如配置 autoOrder 则自动生成采购单',
+    },
+    {
+      id: 'whs-skill-transfer',
+      name: '调拨优化',
+      description: '多仓库存平衡、调拨路径推荐、在途跟踪',
+      trigger: '调拨|转移|移仓|跨仓|在途',
+      steps: '1. 识别调拨需求（某仓低于安全线，他仓有富余）\n2. 推荐最优调拨路径\n3. 创建调拨单，发起调拨\n4. 在途跟踪（已发起/运输中/已到货/已入库）\n5. 目标仓验收入库，更新库存',
+    },
+    {
+      id: 'whs-skill-alert',
+      name: '预警管理',
+      description: '低库存、临期、呆滞库存的扫描与报告',
+      trigger: '预警|告警|低库存|临期|呆滞|异常',
+      steps: '1. 扫描库存，检测低库存（可用库存 < 安全库存）\n2. 扫描临期商品（保质期剩余 < 预警天数）\n3. 扫描呆滞品（库龄 > 90 天且无近期出库）\n4. 生成预警报告，按严重程度排序\n5. 给出处理建议（补货/调拨/清理）',
+    },
+    {
+      id: 'whs-skill-report',
+      name: '报表生成',
+      description: '库存报表、出入库报表、KPI 综合报表生成与导出',
+      trigger: '报表|统计|汇总|导出|excel|csv',
+      steps: '1. 确认报表类型（库存/出入库/在途/KPI）\n2. 查询相关数据表\n3. 按维度汇总统计\n4. 生成报表内容\n5. 导出为 CSV/XLSX/PDF',
+    },
+  ];
+
+  for (const skill of skills) {
+    // 技能定义
+    db.prepare(
+      `INSERT OR IGNORE INTO sd_skills (
+        id, tenant_id, name, description, status, created_at, updated_at, metadata_json
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).run(
+      skill.id,
+      TENANT_ID,
+      skill.name,
+      skill.description,
+      'active',
+      now,
+      now,
+      JSON.stringify({ trigger: skill.trigger, source: 'cross-wms-skills', managed_by_seed: true }),
+    );
+
+    // 技能版本（SOP 步骤）
+    db.prepare(
+      `INSERT OR IGNORE INTO sd_skill_versions (
+        id, tenant_id, skill_id, version, status, sop_steps, created_at, updated_at, metadata_json
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).run(
+      `${skill.id}-v1`,
+      TENANT_ID,
+      skill.id,
+      '1.0.0',
+      'active',
+      skill.steps,
+      now,
+      now,
+      '{}',
+    );
+
+    // 绑定技能到仓库专员
+    db.prepare(
+      `INSERT OR IGNORE INTO sd_agent_resource_bindings (
+        id, tenant_id, agent_id, resource_type, resource_id, status, created_at, updated_at, metadata_json
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).run(
+      `whs-bind-${agentId}-${skill.id}`,
+      TENANT_ID,
+      agentId,
+      'skill',
+      skill.id,
+      'active',
+      now,
+      now,
+      JSON.stringify({ scope: 'agent_private', source: 'seed' }),
+    );
+
+    // 技能分支
+    db.prepare(
+      `INSERT OR IGNORE INTO sd_agent_skill_branches (
+        id, tenant_id, agent_id, skill_id, base_version, head_version, status, sync_state, metadata_json
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).run(
+      `asb_${agentId}_${skill.id}`,
+      TENANT_ID,
+      agentId,
+      skill.id,
+      '1.0.0',
+      '1.0.0',
+      'active',
+      'synced',
+      '{}',
+    );
+  }
 }
 
 /**

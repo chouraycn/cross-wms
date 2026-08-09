@@ -116,7 +116,7 @@ function setupSseHeaders(res: Response): void {
 // ===================== POST /turn — 同步 chat turn =====================
 router.post('/turn', async (req: Request, res: Response) => {
   const tenantId = tenantOf(req);
-  const { session_id, agent_id, user_id, message, model } = req.body ?? {};
+  const { session_id, agent_id, user_id, message, model, enableReflection } = req.body ?? {};
   if (!message || typeof message !== 'string' || message.trim() === '') {
     res.status(400).json({ code: 400, data: null, message: 'message 不能为空' });
     return;
@@ -153,7 +153,7 @@ router.post('/turn', async (req: Request, res: Response) => {
   let thinking = '';
   try {
     const out = await runStaffChatTurn(
-      { tenantId, sessionId: session.id, agentId: agent_id, message, history, model },
+      { tenantId, sessionId: session.id, agentId: agent_id, message, history, model, enableReflection: Boolean(enableReflection) },
       (ev) => {
         const d = ev.data as Record<string, any>;
         if (ev.type === 'text.delta') accumulated += (d?.text as string) || '';
@@ -196,7 +196,7 @@ router.post('/turn', async (req: Request, res: Response) => {
 // 事件名/字段不匹配而「假死」（不流式、用户气泡不出现，仅末尾 done）。
 router.post('/stream', async (req: Request, res: Response) => {
   const tenantId = tenantOf(req);
-  const { session_id, agent_id, user_id, message, model } = req.body ?? {};
+  const { session_id, agent_id, user_id, message, model, enableReflection } = req.body ?? {};
   if (!message || typeof message !== 'string' || message.trim() === '') {
     res.status(400).json({ code: 400, data: null, message: 'message 不能为空' });
     return;
@@ -241,7 +241,7 @@ router.post('/stream', async (req: Request, res: Response) => {
   let finalContent = '';
   try {
     const out = await runStaffChatTurn(
-      { tenantId, sessionId: sid, agentId: agent_id, message, history, model },
+      { tenantId, sessionId: sid, agentId: agent_id, message, history, model, enableReflection: Boolean(enableReflection) },
       (ev) => {
         const d = ev.data as Record<string, any>;
         // 只把前端能消费的事件映射到前端契约，其余（thinking.* / text.end）忽略。

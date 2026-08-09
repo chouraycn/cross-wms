@@ -39,6 +39,11 @@ import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined';
 import FindInPageOutlinedIcon from '@mui/icons-material/FindInPageOutlined';
 import VerifiedUserOutlinedIcon from '@mui/icons-material/VerifiedUserOutlined';
 import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
+import ImageIcon from '@mui/icons-material/Image';
+import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
+import WebIcon from '@mui/icons-material/Web';
+import PhonelinkIcon from '@mui/icons-material/Phonelink';
+import HubIcon from '@mui/icons-material/Hub';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import type { AppSettings } from '../../contexts/AppSettingsContext';
 import { getGrayScale } from '../../constants/theme';
@@ -82,7 +87,31 @@ export const SETTINGS_MENU: MenuEntry[] = [
   { key: 'modelManagement', label: '模型管理', icon: <AutoAwesomeIcon sx={{ fontSize: 20 }} />, description: 'AI 模型配置与默认模型', dialog: 'model' },
   { key: 'extensionsCenter', label: '扩展与工具', icon: <ExtensionOutlinedIcon sx={{ fontSize: 20 }} />, description: '插件、扩展与 MCP 工具统一管理', path: '/extensions-center' },
   { key: 'comms', label: '通讯', icon: <RecordVoiceOverIcon sx={{ fontSize: 20 }} />, description: '语音对话与通道配置', aiTab: { main: 'comms', sub: 'talk' } },
-  { key: 'observabilityCenter', label: '监控中心', icon: <MonitorHeartIcon sx={{ fontSize: 20 }} />, description: '系统监控、系统指标、审计、执行历史、事件账本与调用历史', path: '/observability-center' },
+  {
+    key: 'creation',
+    label: '创作',
+    icon: <StaffdeckIcon name="image" size={20} />,
+    description: '图像 · 音乐 · 视频',
+    children: [
+      { key: 'image-generation', label: '图像生成', icon: <ImageIcon sx={{ fontSize: 18 }} />, description: 'AI 绘图', path: '/image-generation' },
+      { key: 'music-generation', label: '音乐生成', icon: <AutoFixHighIcon sx={{ fontSize: 18 }} />, description: 'AI 作曲', path: '/music-generation' },
+      { key: 'video-generation', label: '视频生成', icon: <WebIcon sx={{ fontSize: 18 }} />, description: 'AI 视频创作', path: '/video-generation' },
+      { key: 'media-library', label: '媒体库', icon: <StorageIcon sx={{ fontSize: 18 }} />, description: '资产管理', path: '/media-library' },
+      { key: 'media-tools', label: '媒体工具', icon: <LanguageOutlinedIcon sx={{ fontSize: 18 }} />, description: '媒体 & 链接理解', path: '/media-tools' },
+    ],
+  },
+  {
+    key: 'system-group',
+    label: '系统',
+    icon: <MonitorHeartIcon sx={{ fontSize: 20 }} />,
+    description: '设置 · 监控',
+    children: [
+      { key: 'tts', label: '语音合成', icon: <RecordVoiceOverIcon sx={{ fontSize: 18 }} />, description: 'TTS 设置', path: '/tts' },
+      { key: 'pairing', label: '设备配对', icon: <PhonelinkIcon sx={{ fontSize: 18 }} />, description: 'Pairing', path: '/pairing' },
+      { key: 'monitoring', label: '监控中心', icon: <HubIcon sx={{ fontSize: 18 }} />, description: '进程 · 节点 · 集成', path: '/monitoring' },
+    ],
+  },
+  { key: 'observabilityCenter', label: '系统可观测性', icon: <MonitorHeartIcon sx={{ fontSize: 20 }} />, description: '系统监控、系统指标、审计、执行历史、事件账本与调用历史', path: '/observability-center' },
   { key: 'permissions', label: '权限管理', icon: <SecurityIcon sx={{ fontSize: 20 }} />, description: '屏幕录制、辅助功能、全盘访问等系统权限', path: '/permissions' },
   { key: 'memory', label: '记忆', icon: <StorageIcon sx={{ fontSize: 20 }} />, description: '打开记忆管理页面', path: '/memory' },
   {
@@ -371,7 +400,7 @@ const SettingsPopover: React.FC<SettingsPopoverProps> = ({ open, onClose, anchor
       TransitionComponent={Grow} TransitionProps={{ timeout: 200 }} disableScrollLock disableEnforceFocus
       slotProps={{
         paper: {
-          sx: { width: SIDEBAR_WIDTH_EXPANDED, maxHeight: '85vh', borderRadius: '12px', marginLeft: '-5px', boxShadow: isDark ? '0 8px 32px rgba(0,0,0,0.5)' : '0 8px 32px rgba(0,0,0,0.15)', border: `1px solid ${gs.border}`, overflow: 'hidden' },
+          sx: { width: SIDEBAR_WIDTH_EXPANDED, maxHeight: '95vh', minHeight: 'fit-content', borderRadius: '12px', marginLeft: '-5px', boxShadow: isDark ? '0 8px 32px rgba(0,0,0,0.5)' : '0 8px 32px rgba(0,0,0,0.15)', border: `1px solid ${gs.border}`, overflow: 'hidden' },
         },
       }}
       hideBackdrop

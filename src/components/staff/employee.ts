@@ -68,7 +68,7 @@ const PRESET_AVATAR_IMAGES: Record<string, string> = {
   'commerce-compass': staffdeckContent.staffdeckAvatarCommerce,
   'ops-grid': staffdeckContent.staffdeckAvatarOps,
   'quality-star': staffdeckContent.staffdeckAvatarQuality,
-  'warehouse-grid': staffdeckContent.appLogo,
+  'warehouse-grid': staffdeckContent.staffdeckAvatarWarehouse,
   overall: staffdeckContent.staffdeckAvatarOverall,
 }
 
@@ -135,10 +135,10 @@ export const EMPLOYEE_TEMPLATES: EmployeeTemplate[] = [
     avatarText: '仓',
     avatarTone: 'amber',
     avatarPreset: 'warehouse-grid',
-    description: '负责入库收货、出库拣货、库存盘点、补货建议和仓储报表分析。',
-    workStyles: ['数据准确', '流程规范', '异常预警'],
-    expertiseTags: ['入库管理', '出库管理', '库存盘点', '补货计划'],
-    workModes: ['收货上架', '拣货发运', '盘点核对'],
+    description: '仓储运营全链路管理：入库收货、出库拣货、库存盘点、补货预测、调拨优化、预警管理、报表分析。',
+    workStyles: ['数据准确', '流程规范', '异常预警', '全局视野', '效率至上'],
+    expertiseTags: ['库存全景查询', '出入库分析', '调拨优化', '补货预测', '预警管理', '数据导出', '入库管理', '出库管理', '库存盘点', '仓储报表'],
+    workModes: ['收货上架', '拣货发运', '盘点核对', '库存查询', '调拨优化', '报表分析'],
   },
 ]
 

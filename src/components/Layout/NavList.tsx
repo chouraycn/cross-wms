@@ -12,11 +12,9 @@ import {
   TextField,
   useTheme,
 } from '@mui/material';
-import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import { useChatSidebar } from '../../contexts/ChatContext';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
-import WebIcon from '@mui/icons-material/Web';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import PushPinOutlinedIcon from '@mui/icons-material/PushPinOutlined';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -25,13 +23,6 @@ import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import CircularProgress from '@mui/material/CircularProgress';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import ImageIcon from '@mui/icons-material/Image';
-import LanguageOutlinedIcon from '@mui/icons-material/LanguageOutlined';
-import StorageIcon from '@mui/icons-material/Storage';
-import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
-import RecordVoiceOverIcon from '@mui/icons-material/RecordVoiceOver';
-import PhonelinkIcon from '@mui/icons-material/Phonelink';
-import HubIcon from '@mui/icons-material/Hub';
 import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined';
 import MoveToInboxOutlinedIcon from '@mui/icons-material/MoveToInboxOutlined';
 import OutboxOutlinedIcon from '@mui/icons-material/OutboxOutlined';
@@ -200,29 +191,6 @@ const navItems: NavItem[] = [
     ],
   },
   { label: '自动化', path: '/automation', icon: <StaffdeckIcon name="clock" size={18} />, desc: '任务 & 调度' },
-  {
-    label: '创作',
-    icon: <StaffdeckIcon name="image" size={18} />,
-    desc: '图像 · 音乐 · 视频',
-    children: [
-      { label: '图像生成', path: '/image-generation', icon: <ImageIcon />, desc: 'AI 绘图' },
-      { label: '音乐生成', path: '/music-generation', icon: <AutoFixHighIcon />, desc: 'AI 作曲' },
-      { label: '视频生成', path: '/video-generation', icon: <WebIcon />, desc: 'AI 视频创作' },
-      { label: '媒体库', path: '/media-library', icon: <StorageIcon />, desc: '资产管理' },
-      { label: '媒体工具', path: '/media-tools', icon: <LanguageOutlinedIcon />, desc: '媒体 & 链接理解' },
-    ],
-  },
-  {
-    label: '系统',
-    icon: <SettingsOutlinedIcon />,
-    desc: '设置 · 监控',
-    children: [
-      { label: '语音合成', path: '/tts', icon: <RecordVoiceOverIcon />, desc: 'TTS 设置' },
-      { label: '设备配对', path: '/pairing', icon: <PhonelinkIcon />, desc: 'Pairing' },
-      // 2026-08-05：进程/节点/集成三页整合为「监控中心」统一入口
-      { label: '监控中心', path: '/monitoring', icon: <HubIcon />, desc: '进程 · 节点 · 集成' },
-    ],
-  },
 ];
 
 // ===================== Props =====================

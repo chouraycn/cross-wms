@@ -25,6 +25,7 @@ import {
 import { getGrayScale } from '../constants/theme';
 import AutorenewIcon from '@mui/icons-material/Autorenew';
 import PageHeader from '../components/Common/PageHeader';
+import AskWarehouseAgentButton from '../components/wms/AskWarehouseAgentButton';
 import WmsReplenishmentList from '../components/wms/WmsReplenishmentList';
 import { subscribeRefresh } from '../App';
 import { useToast } from '../contexts/ToastContext';
@@ -203,6 +204,16 @@ const WmsReplenishmentPage: React.FC = () => {
             >
               生成建议
             </Button>
+            <AskWarehouseAgentButton
+              disabled={total === 0}
+              buildPrompt={() => {
+                const critical = stats?.critical ?? 0;
+                const pendingCount = stats?.pending ?? 0;
+                const todayConfirmed = stats?.todayConfirmed ?? 0;
+                return `帮我分析当前补货建议：共 ${total} 条（紧急 ${critical} 条、待处理 ${pendingCount} 条、今日已确认 ${todayConfirmed} 条）。请优先排定紧急补货、给出按仓库的补货优先级排序，并评估整体缺货风险。`;
+              }}
+              label="让仓库专员帮我查"
+            />
           </Box>
         }
       />

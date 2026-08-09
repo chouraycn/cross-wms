@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Box, Button, Tooltip, useTheme } from '@mui/material';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
+import SupportAgentIcon from '@mui/icons-material/SupportAgent';
 import InventoryList from '../components/Inventory/InventoryList';
 import InboundDialog from '../components/Inventory/InboundDialog';
 import OutboundDialog from '../components/Inventory/OutboundDialog';
@@ -22,6 +24,7 @@ const InventoryPage: React.FC = () => {
   const gs = getGrayScale(isDark);
   const { t } = useI18n();
   const dateLocale = getDateLocale();
+  const navigate = useNavigate();
   const [refreshKey, setRefreshKey] = useState(0);
   const [inboundOpen, setInboundOpen] = useState(false);
   const [outboundOpen, setOutboundOpen] = useState(false);
@@ -65,6 +68,17 @@ const InventoryPage: React.FC = () => {
   const handleOperationSuccess = useCallback(() => {
     handleRefresh();
   }, [handleRefresh]);
+
+  /** 让仓库专员帮我查：将当前库存概况注入 AI 对话 */
+  const handleAskWarehouseAgent = useCallback(() => {
+    const parts: string[] = [`当前库存共 ${items.length} 件 SKU`];
+    if (warningCount > 0) parts.push(`库龄预警 ${warningCount} 件`);
+    const prompt = `帮我分析当前库存情况：${parts.join('，')}。请重点排查预警商品，给出补货或清理建议，并按品类汇总库存分布。`;
+    try {
+      sessionStorage.setItem('cdf-chat-prefill', prompt);
+    } catch { /* ignore */ }
+    navigate('/chat');
+  }, [items.length, warningCount, navigate]);
 
   return (
     <Box key={refreshKey} className={fadeCls}>
@@ -121,6 +135,26 @@ const InventoryPage: React.FC = () => {
                   }}
                 >
                   {t('导出')}
+                </Button>
+              </Tooltip>
+            )}
+            {items.length > 0 && (
+              <Tooltip title={t('让仓库专员帮我分析库存')}>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<SupportAgentIcon sx={{ fontSize: 16 }} />}
+                  onClick={handleAskWarehouseAgent}
+                  sx={{
+                    textTransform: 'none',
+                    borderRadius: '8px',
+                    fontSize: '0.8125rem',
+                    borderColor: '#2563EB',
+                    color: '#2563EB',
+                    '&:hover': { borderColor: '#1D4ED8', backgroundColor: '#EFF6FF' },
+                  }}
+                >
+                  {t('让仓库专员帮我查')}
                 </Button>
               </Tooltip>
             )}

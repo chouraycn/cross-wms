@@ -839,6 +839,9 @@ const MainLayout: React.FC = () => {
             open={settingsPopoverOpen}
             onClose={() => setSettingsPopoverOpen(false)}
             anchorEl={settingsButtonRef.current}
+            onOpenModelManagement={() => window.dispatchEvent(new CustomEvent('cdf-open-ai-settings-dialog', { detail: { mainTab: 'ai', subTab: 'model' } }))}
+            onOpenToolManagement={() => window.dispatchEvent(new CustomEvent('cdf-open-tool-management-dialog'))}
+            onOpenAITab={(main, sub) => window.dispatchEvent(new CustomEvent('cdf-open-ai-settings-dialog', { detail: { mainTab: main, subTab: sub } }))}
           />
         </Suspense>
 

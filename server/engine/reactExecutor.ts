@@ -512,6 +512,8 @@ ${stepsText}`;
     this._autoCompressor?.reset();
     // v9.1 [一]: 重置执行轨迹
     this._scratchpad = [];
+    // v9.4: 连续工具失败计数器（用于 replan_triggered MVP）
+    let consecutiveFailures = 0;
 
     // 获取工具定义（内置 + 插件 + MCP + 数字员工 per-call 注入：MCP/技能/HTTP工具）
     const builtinTools = getBuiltinToolDefinitions();
@@ -913,6 +915,35 @@ ${stepsText}`;
               logger.warn('[ReActExecutor] adjustPlan 失败:', adjErr instanceof Error ? adjErr.message : String(adjErr));
             }
           }
+        }
+      }
+
+      // v9.4: 连续失败触发式重规划 MVP — 独立于 planningMode
+      // 当连续 2 次工具返回 error（非用户拒绝）时，发射 replan_triggered 事件，
+      // 让前端 ReactPhaseIndicator 显示"已重规划"徽章；同时注入 system 消息提示 LLM 换思路。
+      {
+        const hasFailure = observations.some(o => o.assessment.level !== 'success');
+        const hasSuccess = observations.some(o => o.assessment.level === 'success');
+        if (hasFailure && !hasSuccess) {
+          consecutiveFailures++;
+        } else {
+          consecutiveFailures = 0;
+        }
+        if (consecutiveFailures >= 2 && onSSEEvent) {
+          const replanReason = `连续 ${consecutiveFailures} 次工具执行失败，建议调整策略`;
+          onSSEEvent({
+            type: 'replan_triggered',
+            reason: replanReason,
+            oldPlanId: this._activePlan?.id ?? String(turn),
+            newPlanId: String(turn + 1),
+          });
+          // 注入 system 消息提示 LLM 换一种方式
+          currentMessages.push({
+            role: 'system',
+            content: `[系统提示] ${replanReason}。请尝试换一种工具或调整参数，避免重复失败。`,
+          } as typeof currentMessages[number]);
+          consecutiveFailures = 0; // 重置计数，避免每轮都触发
+          logger.warn(`[ReActExecutor] replan_triggered: ${replanReason}`);
         }
       }
 

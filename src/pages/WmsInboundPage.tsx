@@ -33,14 +33,13 @@ import {
   TextField,
   Stack,
   CircularProgress,
-  useTheme,
 } from '@mui/material';
-import { getGrayScale } from '../constants/theme';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
-import PageHeader from '../components/Common/PageHeader';
+import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
+import AskWarehouseAgentButton from '../components/wms/AskWarehouseAgentButton';
 import { subscribeRefresh } from '../App';
 import { useToast } from '../contexts/ToastContext';
 import { exportToCsv } from '../utils/exportCsv';
@@ -53,9 +52,6 @@ const BASE_URL = API_BASE_URL;
 
 const WmsInboundPage: React.FC = () => {
   const { showToast } = useToast();
-  const theme = useTheme();
-  const isDark = theme.palette.mode === 'dark';
-  const gs = getGrayScale(isDark);
   const { t } = useI18n();
   const dateLocale = getDateLocale();
 
@@ -64,6 +60,13 @@ const WmsInboundPage: React.FC = () => {
     pending: { label: t('待入库'), color: 'warning' },
     completed: { label: t('已入库'), color: 'success' },
     cancelled: { label: t('已取消'), color: 'default' },
+  };
+
+  /** SOP 风格状态徽章色板 */
+  const STATUS_BADGE_STYLE: Record<string, { bg: string; color: string }> = {
+    warning: { bg: '#fff2e5', color: '#ff7f00' },
+    success: { bg: '#e9f7ef', color: '#2cb360' },
+    default: { bg: '#f2f3f7', color: '#858b9c' },
   };
 
   const [data, setData] = useState<InboundRecord[]>([]);
@@ -177,143 +180,188 @@ const WmsInboundPage: React.FC = () => {
 
   return (
     <Box>
-      <PageHeader
-        title={t('入库管理')}
-        subtitle={t('管理商品入库记录，跟踪入库状态')}
-        summary={t('共 {total} 条记录 · 已入库 {completed} 条', { total: filteredData.length, completed: data.filter((i) => i.status === 'completed').length })}
-        action={
-          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-            <FormControl size="small" sx={{ minWidth: 120 }}>
-              <InputLabel>{t('状态筛选')}</InputLabel>
-              <Select
-                value={filterStatus}
-                label={t('状态筛选')}
-                onChange={(e) => { setFilterStatus(e.target.value); setPage(0); }}
-              >
-                <MenuItem value="all">{t('全部')}</MenuItem>
-                <MenuItem value="pending">{t('待入库')}</MenuItem>
-                <MenuItem value="completed">{t('已入库')}</MenuItem>
-                <MenuItem value="cancelled">{t('已取消')}</MenuItem>
-              </Select>
-            </FormControl>
+      {/* SOP 风格页头 */}
+      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', minHeight: '40px' }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <Typography sx={{ fontSize: '16px', fontWeight: 500, color: '#464c5e', lineHeight: 'normal' }}>
+            {t('入库管理')}
+          </Typography>
+          <Typography sx={{ fontSize: '14px', color: '#757f9c', lineHeight: 'normal' }}>
+            {t('共 {total} 条记录 · 已入库 {completed} 条', { total: filteredData.length, completed: data.filter((i) => i.status === 'completed').length })}
+          </Typography>
+        </Box>
+        <Box sx={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <FormControl size="small" sx={{ minWidth: 120 }}>
+            <InputLabel>{t('状态筛选')}</InputLabel>
+            <Select
+              value={filterStatus}
+              label={t('状态筛选')}
+              onChange={(e) => { setFilterStatus(e.target.value); setPage(0); }}
+              sx={{ height: '34px', borderRadius: '10px', fontSize: '12px', color: '#464c5e' }}
+            >
+              <MenuItem value="all">{t('全部')}</MenuItem>
+              <MenuItem value="pending">{t('待入库')}</MenuItem>
+              <MenuItem value="completed">{t('已入库')}</MenuItem>
+              <MenuItem value="cancelled">{t('已取消')}</MenuItem>
+            </Select>
+          </FormControl>
+          <Button
+            variant="contained"
+            startIcon={<AddCircleOutlineIcon sx={{ fontSize: 16 }} />}
+            onClick={handleAdd}
+            sx={{
+              textTransform: 'none',
+              height: '34px',
+              borderRadius: '10px',
+              fontSize: '12px',
+              px: '20px',
+              backgroundColor: '#18181a',
+              '&:hover': { backgroundColor: '#303030' },
+              boxShadow: 'none',
+            }}
+          >
+            {t('新增入库')}
+          </Button>
+          <Tooltip title={t('导出 CSV')}>
             <Button
-              variant="contained"
-              size="small"
-              startIcon={<AddCircleOutlineIcon sx={{ fontSize: 16 }} />}
-              onClick={handleAdd}
+              variant="outlined"
+              startIcon={<FileDownloadIcon sx={{ fontSize: 16 }} />}
+              onClick={handleExport}
               sx={{
                 textTransform: 'none',
-                borderRadius: '8px',
-                fontSize: '0.8125rem',
-                backgroundColor: gs.textPrimary,
-                '&:hover': { backgroundColor: gs.textSecondary },
+                height: '34px',
+                borderRadius: '10px',
+                fontSize: '12px',
+                px: '20px',
+                border: '0.5px solid #e3e7f1',
+                backgroundColor: '#fff',
+                color: '#757f9c',
+                '&:hover': { borderColor: '#cbd3e6', backgroundColor: '#fff', color: '#18181a' },
               }}
             >
-              {t('新增入库')}
+              {t('导出')}
             </Button>
-            <Tooltip title={t('导出 CSV')}>
-              <Button
-                variant="outlined"
-                size="small"
-                startIcon={<FileDownloadIcon sx={{ fontSize: 16 }} />}
-                onClick={handleExport}
-                sx={{
-                  textTransform: 'none',
-                  borderRadius: '8px',
-                  fontSize: '0.8125rem',
-                  borderColor: gs.border,
-                  color: gs.textMuted,
-                  '&:hover': { borderColor: gs.textDisabled, backgroundColor: gs.bgHover },
-                }}
-              >
-                {t('导出')}
-              </Button>
-            </Tooltip>
-          </Box>
-        }
-      />
+          </Tooltip>
+          <AskWarehouseAgentButton
+            disabled={filteredData.length === 0}
+            buildPrompt={() => {
+              const completed = data.filter(i => i.status === 'completed').length;
+              const pending = data.filter(i => i.status === 'pending').length;
+              return `帮我分析当前入库情况：共 ${filteredData.length} 条记录（已入库 ${completed}、待入库 ${pending}）。请识别待入库积压原因、预估按时完成率，给出优化建议并按仓库汇总。`;
+            }}
+            label={t('让仓库专员帮我查')}
+          />
+        </Box>
+      </Box>
 
-      <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2 }}>
+      {/* SOP 风格主卡片 */}
+      <Box sx={{ mt: '20px', mb: '16px' }} />
+      <Card elevation={0} sx={{
+        borderRadius: '20px 20px 0 0',
+        boxShadow: '0 -4px 16px 0 rgba(0,0,0,0.05)',
+        p: '18px 18px 24px 18px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '24px',
+        backgroundColor: '#fff',
+      }}>
+        {/* 列表区标题 */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: '6px', px: '12px' }}>
+          <Inventory2OutlinedIcon sx={{ fontSize: 14, color: '#757f9c' }} />
+          <Typography sx={{ fontSize: '14px', fontWeight: 400, color: '#757f9c', lineHeight: 'normal' }}>
+            {t('入库记录列表')}
+          </Typography>
+        </Box>
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-            <Typography variant="body2" color="text.secondary">{t('正在加载数据...')}</Typography>
+            <Typography sx={{ fontSize: '13px', color: '#858b9c' }}>{t('正在加载数据...')}</Typography>
           </Box>
         ) : filteredData.length === 0 ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-            <Typography variant="body2" color="text.secondary">{t('暂无入库记录')}</Typography>
+            <Typography sx={{ fontSize: '13px', color: '#858b9c' }}>{t('暂无入库记录')}</Typography>
           </Box>
         ) : (
           <>
-            <TableContainer>
+            {/* SOP 风格表格容器 */}
+            <TableContainer sx={{ borderRadius: '14px', border: '1px solid #f2f3f7', overflow: 'hidden' }}>
               <Table size="small">
                 <TableHead>
-                  <TableRow sx={{ backgroundColor: gs.bgHover }}>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>{t('入库单号')}</TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>{t('仓库')}</TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>SKU</TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>{t('商品名称')}</TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>{t('数量')}</TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>{t('供应商')}</TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>{t('状态')}</TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>{t('创建时间')}</TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem', width: 120 }}>{t('操作')}</TableCell>
+                  <TableRow sx={{ backgroundColor: '#f2f3f7' }}>
+                    <TableCell sx={{ height: '36px', px: '16px', py: '12px', fontSize: '12px', fontWeight: 400, color: '#464c5e', borderBottom: '1px solid #f2f3f7' }}>{t('入库单号')}</TableCell>
+                    <TableCell sx={{ height: '36px', px: '16px', py: '12px', fontSize: '12px', fontWeight: 400, color: '#464c5e', borderBottom: '1px solid #f2f3f7' }}>{t('仓库')}</TableCell>
+                    <TableCell sx={{ height: '36px', px: '16px', py: '12px', fontSize: '12px', fontWeight: 400, color: '#464c5e', borderBottom: '1px solid #f2f3f7' }}>SKU</TableCell>
+                    <TableCell sx={{ height: '36px', px: '16px', py: '12px', fontSize: '12px', fontWeight: 400, color: '#464c5e', borderBottom: '1px solid #f2f3f7' }}>{t('商品名称')}</TableCell>
+                    <TableCell sx={{ height: '36px', px: '16px', py: '12px', fontSize: '12px', fontWeight: 400, color: '#464c5e', borderBottom: '1px solid #f2f3f7' }}>{t('数量')}</TableCell>
+                    <TableCell sx={{ height: '36px', px: '16px', py: '12px', fontSize: '12px', fontWeight: 400, color: '#464c5e', borderBottom: '1px solid #f2f3f7' }}>{t('供应商')}</TableCell>
+                    <TableCell sx={{ height: '36px', px: '16px', py: '12px', fontSize: '12px', fontWeight: 400, color: '#464c5e', borderBottom: '1px solid #f2f3f7' }}>{t('状态')}</TableCell>
+                    <TableCell sx={{ height: '36px', px: '16px', py: '12px', fontSize: '12px', fontWeight: 400, color: '#464c5e', borderBottom: '1px solid #f2f3f7' }}>{t('创建时间')}</TableCell>
+                    <TableCell sx={{ height: '36px', px: '16px', py: '12px', fontSize: '12px', fontWeight: 400, color: '#464c5e', borderBottom: '1px solid #f2f3f7', width: 120 }}>{t('操作')}</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {paginatedData.map((item) => {
                     const statusConf = STATUS_CONFIG[item.status] || { label: item.status, color: 'default' as const };
+                    const badgeStyle = STATUS_BADGE_STYLE[statusConf.color] || STATUS_BADGE_STYLE.default;
                     return (
-                      <TableRow key={item.id} hover sx={{ '&:last-child td': { borderBottom: 0 } }}>
-                        <TableCell>
-                          <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>
+                      <TableRow key={item.id} hover sx={{ '&:last-child td': { borderBottom: 0 }, minHeight: '64px', '&:hover': { backgroundColor: '#fafbfc' } }}>
+                        <TableCell sx={{ px: '16px', py: '12px', borderBottom: '1px solid #f2f3f7' }}>
+                          <Typography sx={{ fontFamily: 'monospace', fontSize: '12px', color: '#18181a' }}>
                             {item.id}
                           </Typography>
                         </TableCell>
-                        <TableCell>
-                          <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
+                        <TableCell sx={{ px: '16px', py: '12px', borderBottom: '1px solid #f2f3f7' }}>
+                          <Typography sx={{ fontSize: '12px', color: '#858b9c' }}>
                             {getWarehouseName(item.warehouseId)}
                           </Typography>
                         </TableCell>
-                        <TableCell>
-                          <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>
+                        <TableCell sx={{ px: '16px', py: '12px', borderBottom: '1px solid #f2f3f7' }}>
+                          <Typography sx={{ fontFamily: 'monospace', fontSize: '12px', color: '#858b9c' }}>
                             {item.sku}
                           </Typography>
                         </TableCell>
-                        <TableCell>
-                          <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
+                        <TableCell sx={{ px: '16px', py: '12px', borderBottom: '1px solid #f2f3f7' }}>
+                          <Typography sx={{ fontSize: '12px', color: '#18181a' }}>
                             {item.name || '-'}
                           </Typography>
                         </TableCell>
-                        <TableCell>
-                          <Typography variant="body2" sx={{ fontSize: '0.8rem', fontWeight: 600 }}>
+                        <TableCell sx={{ px: '16px', py: '12px', borderBottom: '1px solid #f2f3f7' }}>
+                          <Typography sx={{ fontSize: '12px', fontWeight: 600, color: '#18181a' }}>
                             {item.quantity}
                           </Typography>
                         </TableCell>
-                        <TableCell>
-                          <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
+                        <TableCell sx={{ px: '16px', py: '12px', borderBottom: '1px solid #f2f3f7' }}>
+                          <Typography sx={{ fontSize: '12px', color: '#858b9c' }}>
                             {item.supplier || '-'}
                           </Typography>
                         </TableCell>
-                        <TableCell>
+                        <TableCell sx={{ px: '16px', py: '12px', borderBottom: '1px solid #f2f3f7' }}>
                           <Chip
                             label={statusConf.label}
                             size="small"
-                            color={statusConf.color}
-                            sx={{ fontSize: '0.7rem', height: 22 }}
+                            sx={{
+                              fontSize: '10px',
+                              height: 'auto',
+                              borderRadius: '9999px',
+                              px: '12px',
+                              py: '4px',
+                              backgroundColor: badgeStyle.bg,
+                              color: badgeStyle.color,
+                              border: 'none',
+                            }}
                           />
                         </TableCell>
-                        <TableCell>
-                          <Typography variant="body2" sx={{ fontSize: '0.75rem', color: gs.textMuted }}>
+                        <TableCell sx={{ px: '16px', py: '12px', borderBottom: '1px solid #f2f3f7' }}>
+                          <Typography sx={{ fontSize: '12px', color: '#858b9c' }}>
                             {formatDate(item.createdAt)}
                           </Typography>
                         </TableCell>
-                        <TableCell>
-                          <Box sx={{ display: 'flex', gap: 0.5 }}>
-                            <IconButton size="small" onClick={() => handleEdit(item)} sx={{ color: '#2563EB' }}>
-                              <EditIcon sx={{ fontSize: 18 }} />
+                        <TableCell sx={{ px: '16px', py: '12px', borderBottom: '1px solid #f2f3f7' }}>
+                          <Box sx={{ display: 'flex', gap: '4px' }}>
+                            <IconButton size="small" onClick={() => handleEdit(item)} sx={{ color: '#1a71ff', borderRadius: '8px', '&:hover': { backgroundColor: 'rgba(0,0,0,0.05)', color: '#4a8dff' } }}>
+                              <EditIcon sx={{ fontSize: 16 }} />
                             </IconButton>
-                            <IconButton size="small" onClick={() => handleDeleteClick(item.id)} sx={{ color: '#DC2626' }}>
-                              <DeleteIcon sx={{ fontSize: 18 }} />
+                            <IconButton size="small" onClick={() => handleDeleteClick(item.id)} sx={{ color: '#1a71ff', borderRadius: '8px', '&:hover': { backgroundColor: 'rgba(0,0,0,0.05)', color: '#4a8dff' } }}>
+                              <DeleteIcon sx={{ fontSize: 16 }} />
                             </IconButton>
                           </Box>
                         </TableCell>
@@ -333,6 +381,7 @@ const WmsInboundPage: React.FC = () => {
               rowsPerPageOptions={[10, 20, 50]}
               labelRowsPerPage={t('每页行数：')}
               labelDisplayedRows={({ from, to, count }) => t('{from}-{to} / 共 {count} 条', { from, to, count })}
+              sx={{ mt: '16px' }}
             />
           </>
         )}
@@ -351,17 +400,18 @@ const WmsInboundPage: React.FC = () => {
         onClose={() => setDeleteDialogOpen(false)}
         maxWidth="xs"
         fullWidth
-        PaperProps={{ sx: { borderRadius: '12px', boxShadow: '0 8px 32px rgba(0,0,0,0.08)' } }}
+        PaperProps={{ sx: { borderRadius: '14px', boxShadow: '0 8px 32px rgba(0,0,0,0.08)' } }}
+        BackdropProps={{ sx: { backgroundColor: 'rgba(0,0,0,0.3)' } }}
       >
-        <DialogTitle sx={{ fontWeight: 600, px: 3, py: 2, borderBottom: `1px solid ${gs.border}` }}>
+        <DialogTitle sx={{ fontSize: '16px', fontWeight: 500, color: '#464c5e', px: '20px', py: '16px' }}>
           {t('确认删除')}
         </DialogTitle>
-        <DialogContent sx={{ px: 3, py: 2.5 }}>
-          <DialogContentText>{t('确定删除该入库记录吗？此操作不可撤销。')}</DialogContentText>
+        <DialogContent sx={{ px: '20px', py: '4px' }}>
+          <DialogContentText sx={{ fontSize: '13px', color: '#858b9c' }}>{t('确定删除该入库记录吗？此操作不可撤销。')}</DialogContentText>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2, pt: 2, borderTop: `1px solid ${gs.border}` }}>
-          <Button onClick={() => setDeleteDialogOpen(false)}>{t('取消')}</Button>
-          <Button variant="contained" color="error" onClick={handleDeleteConfirm}>{t('确认删除')}</Button>
+        <DialogActions sx={{ px: '20px', pb: '16px', pt: '12px' }}>
+          <Button onClick={() => setDeleteDialogOpen(false)} sx={{ textTransform: 'none', borderRadius: '10px', fontSize: '12px', color: '#757f9c' }}>{t('取消')}</Button>
+          <Button variant="contained" color="error" onClick={handleDeleteConfirm} sx={{ textTransform: 'none', borderRadius: '10px', fontSize: '12px', height: '34px', px: '20px', boxShadow: 'none' }}>{t('确认删除')}</Button>
         </DialogActions>
       </Dialog>
     </Box>
@@ -459,13 +509,13 @@ const WmsInboundFormDialog: React.FC<WmsInboundFormDialogProps> = ({ open, onClo
       onClose={onClose}
       maxWidth="sm"
       fullWidth
-      PaperProps={{ sx: { borderRadius: '12px', boxShadow: '0 8px 32px rgba(0,0,0,0.08)' } }}
+      PaperProps={{ sx: { borderRadius: '14px', boxShadow: '0 8px 32px rgba(0,0,0,0.08)' } }}
       BackdropProps={{ sx: { backgroundColor: 'rgba(0,0,0,0.3)' } }}
     >
-      <DialogTitle sx={{ fontWeight: 600, px: 3, py: 2, borderBottom: '1px solid #E5E7EB' }}>
+      <DialogTitle sx={{ fontSize: '16px', fontWeight: 500, color: '#464c5e', px: '20px', py: '16px' }}>
         {isEdit ? t('编辑入库记录') : t('新增入库')}
       </DialogTitle>
-      <DialogContent sx={{ px: 3, py: 2.5 }}>
+      <DialogContent sx={{ px: '20px', py: '4px' }}>
         <Stack spacing={2} sx={{ mt: 0.5 }}>
           {isEdit && (
             <TextField
@@ -554,13 +604,22 @@ const WmsInboundFormDialog: React.FC<WmsInboundFormDialogProps> = ({ open, onClo
           />
         </Stack>
       </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 2, pt: 2, borderTop: '1px solid #E5E7EB' }}>
-        <Button onClick={onClose} disabled={submitting}>{t('取消')}</Button>
+      <DialogActions sx={{ px: '20px', pb: '16px', pt: '12px' }}>
+        <Button onClick={onClose} disabled={submitting} sx={{ textTransform: 'none', borderRadius: '10px', fontSize: '12px', color: '#757f9c' }}>{t('取消')}</Button>
         <Button
           variant="contained"
           onClick={handleSubmit}
           disabled={submitting}
-          sx={{ backgroundColor: '#111827' }}
+          sx={{
+            textTransform: 'none',
+            borderRadius: '10px',
+            fontSize: '12px',
+            height: '34px',
+            px: '20px',
+            backgroundColor: '#18181a',
+            '&:hover': { backgroundColor: '#303030' },
+            boxShadow: 'none',
+          }}
         >
           {submitting ? (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>

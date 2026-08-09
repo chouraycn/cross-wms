@@ -389,12 +389,20 @@ export function generateRecommendations(
   const seen = new Set<string>();
   const hasUsageData = events.length > 0;
 
-  if (targetSkillId) {
+  // 如果传入了目标技能但本地扫描不存在（如临时访问已删除的技能详情页），
+  // 回退为全局推荐模式，避免前端出现红色"推荐加载失败"toast。
+  let effectiveTargetId = targetSkillId;
+  if (effectiveTargetId && !skillNames.has(effectiveTargetId)) {
+    logger.warn(`[Recommender] targetSkillId "${effectiveTargetId}" not found locally, falling back to global recommendations`);
+    effectiveTargetId = undefined;
+  }
+
+  if (effectiveTargetId) {
     // 基于目标技能的关联推荐
-    const cooccur = cooccurrenceRecommendations(targetSkillId, events, skillNames, topN);
-    const similar = similarityRecommendations(targetSkillId, skillNames, skillDescs, skillTags, topN);
-    const category = categoryRecommendations(targetSkillId, skillNames, skillDescs, skillTags, topN);
-    const collab = collaborativeRecommendations(targetSkillId, events, skillNames, topN);
+    const cooccur = cooccurrenceRecommendations(effectiveTargetId, events, skillNames, topN);
+    const similar = similarityRecommendations(effectiveTargetId, skillNames, skillDescs, skillTags, topN);
+    const category = categoryRecommendations(effectiveTargetId, skillNames, skillDescs, skillTags, topN);
+    const collab = collaborativeRecommendations(effectiveTargetId, events, skillNames, topN);
 
     // 合并并去重，按来源加权
     for (const r of cooccur) {

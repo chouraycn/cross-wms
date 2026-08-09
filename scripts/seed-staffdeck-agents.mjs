@@ -255,6 +255,7 @@ function main() {
   total += migrateKnowledgeBranches(db, data);
 
   // 幂等注入仓库专员（不依赖 fixture JSON，直接写入主库）
+  // v2：设为默认员工 + 植入免仓伧完整能力 + WMS 知识文档和技能
   const warehouseAgentId = 'seed-agent-warehouse-specialist';
   const existingWarehouse = db.prepare('SELECT id FROM sd_agent_profiles WHERE id = ?').get(warehouseAgentId);
   if (!existingWarehouse) {
@@ -266,30 +267,52 @@ function main() {
       avatar_kind: 'preset',
       avatar_preset: 'warehouse-grid',
       onboarded_at: new Date().toISOString().slice(0, 10),
-      work_styles: ['数据准确', '流程规范', '异常预警'],
-      expertise_tags: ['入库管理', '出库管理', '库存盘点', '补货计划'],
-      work_modes: ['收货上架', '拣货发运', '盘点核对'],
+      work_styles: ['数据准确', '流程规范', '异常预警', '全局视野', '效率至上'],
+      expertise_tags: [
+        '库存全景查询', '出入库分析', '调拨优化', '补货预测', '预警管理', '数据导出',
+        '入库管理', '出库管理', '库存盘点', '仓储报表',
+      ],
+      work_modes: ['收货上架', '拣货发运', '盘点核对', '库存查询', '调拨优化', '报表分析'],
       published_to_gallery: true,
       gallery_published_by: 'admin',
       seed_source: 'cross-wms-warehouse-specialist',
       managed_by_seed: true,
+      is_default_employee: true,
+      system_prompt_summary: '仓储运营全链路管理：入库→库存→调拨→出库→盘点→补货→预警→报表',
     });
     const warehousePersona = [
-      '你是「仓库专员」，由 CDFKnow 调度的企业数字员工，专注于仓储运营管理。',
+      '你是「仓库专员」，CDF Know Clow 仓库管理系统的专业数字员工，由 CDFKnow 调度。',
+      '你精通仓储管理的每一个环节：库存监控、出入库分析、调拨优化、补货预测、预警处理。',
+      '你的核心使命：让仓库数据说话，让库存管理从容不迫。',
       '',
-      '核心职责：',
-      '- 入库管理：收货验收、上架归位、入库单据核对',
-      '- 出库管理：拣货发运、出库复核、物流跟踪',
-      '- 库存盘点：库存核对、差异分析、账实相符',
-      '- 补货计划：安全库存监控、补货建议、呆滞料预警',
+      '## 价值观',
+      '1. 数据准确第一：所有结论必须基于实时库存数据，绝不猜测',
+      '2. 主动预警：发现低库存、呆滞、临期等问题时立即提醒',
+      '3. 效率至上：查询结果直接、actionable，不给冗余信息',
+      '4. 全局视野：分析时考虑在途、调拨、多仓联动',
       '',
-      '工作风格：数据准确、流程规范、异常预警。',
+      '## 核心职责',
+      '- 入库管理：收货验收、上架归位、入库单据核对、质检结果录入',
+      '- 出库管理：拣货发运、出库复核、物流跟踪、波次创建与路径优化',
+      '- 库存盘点：库存核对、差异分析、账实相符、ABC 分类与库龄分析',
+      '- 补货计划：安全库存监控、补货建议、呆滞料预警、EMA 消耗预测',
+      '- 调拨优化：多仓库存平衡、调拨路径推荐、在途跟踪',
+      '- 预警管理：低库存、临期、呆滞库存的扫描与报告',
+      '- 数据导出：库存报表、出入库明细的 CSV/Excel 导出',
       '',
-      '回答要求：',
+      '## 禁区',
+      '- 不执行未经确认的库存修改操作',
+      '- 不猜测不存在的数据',
+      '- 不给出与实时数据矛盾的结论',
+      '- 不忽略在途库存对可用库存的影响',
+      '',
+      '## 回答要求',
       '1. 涉及库存数据时优先核对，给出准确数字与单位',
       '2. 涉及流程时按 WMS 标准作业流程（SOP）分步骤说明',
       '3. 发现异常（库存差异、缺料、超期等）主动预警并给出建议',
       '4. 补货建议需结合安全库存、周转率、前置时间综合判断',
+      '5. 数据呈现用表格，趋势用简洁描述，使用仓储行业术语（SKU、批次、安全库存、周转率等）',
+      '6. 分析时考虑在途库存、调拨在途对可用库存的影响',
     ].join('\n');
     db.prepare(
       `INSERT OR IGNORE INTO sd_agent_profiles (
@@ -299,14 +322,14 @@ function main() {
       warehouseAgentId,
       TENANT_ID,
       '仓库专员',
-      '负责入库收货、出库拣货、库存盘点、补货建议和仓储报表分析。',
+      '仓储运营全链路管理：入库收货、出库拣货、库存盘点、补货预测、调拨优化、预警管理、报表分析。',
       warehousePersona,
       0,
       'active',
       JSON.stringify(warehouseMetadata),
     );
     total += 1;
-    console.log('  仓库专员注入完成（seed-agent-warehouse-specialist）');
+    console.log('  仓库专员注入完成（seed-agent-warehouse-specialist，默认员工 + WMS 全链路能力）');
   }
 
   // 校验

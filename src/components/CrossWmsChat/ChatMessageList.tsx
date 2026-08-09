@@ -20,6 +20,7 @@ import { ImageAttachment } from './ImageAttachment.js';
 import { BotMessageContent } from './BotMessageContent.js';
 import { CompactionDivider } from '../CDFChat/CompactionDivider.js';
 import { ReadingIndicator } from '../CDFChat/ReadingIndicator.js';
+import ReactPhaseIndicator from '../CDFChat/ReactPhaseIndicator.js';
 
 // ===================== v1.9.3: 文件类型图标工具 =====================
 
@@ -459,6 +460,14 @@ export const ChatMessageList = React.forwardRef<ChatMessageListRef, ChatMessageL
                 sx={{ height: 20, fontSize: 10, color: '#b45309', bgcolor: '#fef3c7', border: '1px solid #fcd34d' }}
               />
             )}
+            <ReactPhaseIndicator
+              reactPhase={msg.reactPhase}
+              complexityAssessment={msg.complexityAssessment}
+              budgetExceeded={msg.budgetExceeded}
+              reflectionConfidence={msg.reflectionConfidence}
+              replanTriggered={msg.replanTriggered}
+              contextCompressed={msg.contextCompressed}
+            />
           </Box>
         )}
         <Typography sx={{ fontSize: 11, color: gs.textDisabled }}>

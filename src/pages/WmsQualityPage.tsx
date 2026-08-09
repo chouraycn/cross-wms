@@ -36,6 +36,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import PageHeader from '../components/Common/PageHeader';
+import AskWarehouseAgentButton from '../components/wms/AskWarehouseAgentButton';
 import WmsQualityForm from '../components/wms/WmsQualityForm';
 import { subscribeRefresh } from '../App';
 import { useToast, ToastMessages } from '../contexts/ToastContext';
@@ -227,6 +228,16 @@ const WmsQualityPage: React.FC = () => {
                 导出
               </Button>
             </Tooltip>
+            <AskWarehouseAgentButton
+              disabled={filteredData.length === 0}
+              buildPrompt={() => {
+                const qualified = data.filter(i => i.qualityStatus === 'qualified').length;
+                const pending = data.filter(i => i.qualityStatus === 'pending').length;
+                const unqualified = data.filter(i => i.qualityStatus === 'unqualified').length;
+                return `帮我分析当前入库质检情况：共 ${filteredData.length} 条记录（合格 ${qualified}、待检 ${pending}、不合格 ${unqualified}）。请找出不合格率高的商品和批次、待检积压情况，给出质量管控和SOP优化建议。`;
+              }}
+              label="让仓库专员帮我查"
+            />
           </Box>
         }
       />

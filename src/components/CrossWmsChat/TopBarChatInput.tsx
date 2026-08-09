@@ -35,8 +35,10 @@ import { uploadFile, executeSkillChain } from '../../services/api';
 import { API_BASE_URL } from '../../constants/api';
 import { useAiEngineSettings } from '../../contexts/AppSettingsContext';
 import { SLASH_COMMANDS, SlashCommand } from '../../hooks/useSlashCommands';
+import { handleFloatingListKeyDown } from '../../hooks/useFloatingListNavigation';
 import { SlashCommandSelector } from './SlashCommandSelector';
 import { useI18n } from '../../components/staff/i18n/index.js';
+import { CdfEvents } from '../../events/events.js';
 
 
 // ===================== Props =====================
@@ -116,7 +118,6 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
   const [selectedSkill, setSelectedSkill] = useState<Skill | null>(initialSkill ?? null);
   const [inputValue, setInputValue] = useState('');
   const [skillFocusIndex, setSkillFocusIndex] = useState(-1);
-  const [caretPos, setCaretPos] = useState<{ x: number; y: number; h: number } | null>(null);
 
   // 斜杠命令状态
   const [showSlashCommands, setShowSlashCommands] = useState(false);
@@ -166,7 +167,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
     recognition.interimResults = true;
 
     let finalText = '';
-    const initialText = editableRef.current?.innerText || '';
+    const initialText = editableRef.current?.value || '';
 
     recognition.onresult = (event: any) => {
       let interim = '';
@@ -180,7 +181,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
       }
       if (editableRef.current) {
         const displayText = initialText + finalText + (interim ? '…' : '');
-        editableRef.current.innerText = displayText;
+        editableRef.current.value = displayText;
         setInputValue(initialText + finalText);
       }
     };
@@ -200,15 +201,14 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
       setIsRecording(false);
       if (editableRef.current) {
         const combined = initialText + finalText;
-        editableRef.current.innerText = combined;
+        editableRef.current.value = combined;
         setInputValue(combined);
 
-        const range = document.createRange();
-        const sel = window.getSelection();
-        range.selectNodeContents(editableRef.current);
-        range.collapse(false);
-        sel?.removeAllRanges();
-        sel?.addRange(range);
+        // textarea: 将光标移至末尾
+        const len = combined.length;
+        editableRef.current.selectionStart = len;
+        editableRef.current.selectionEnd = len;
+        editableRef.current.focus();
 
         handleInputChangeRef.current();
       }
@@ -421,21 +421,6 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
 
   const handleInputChangeRef = useRef<() => void>(() => {});
 
-  // 在光标位置插入文本
-  const insertTextAtCursor = useCallback((text: string) => {
-    if (!editableRef.current) return;
-    editableRef.current.focus();
-    const sel = window.getSelection();
-    if (!sel) return;
-    const range = sel.getRangeAt(0);
-    range.deleteContents();
-    range.insertNode(document.createTextNode(text));
-    range.collapse(false);
-    sel.removeAllRanges();
-    sel.addRange(range);
-    handleInputChangeRef.current();
-  }, []);
-
   // 获取当前斜杠命令过滤后的技能列表（用于键盘导航，缓存避免每次渲染重新计算）
   const slashFilteredSkills = useMemo(() => {
     if (!showSkillSelector) return [];
@@ -612,7 +597,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
     }
   }, [handleFileUpload]);
 
-  const editableRef = useRef<HTMLDivElement>(null);
+  const editableRef = useRef<HTMLTextAreaElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   /**
    * IME 组合状态追踪 — 三重检测机制
@@ -639,11 +624,11 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
         setShowSessionReference(false);
         if (!inputValue.trim()) {
           if (editableRef.current) {
-            editableRef.current.innerHTML = '';
+            editableRef.current.value = '';
           }
         } else {
           // 有输入内容时，派发失焦事件以更新预览
-          const text = editableRef.current?.innerText || '';
+          const text = editableRef.current?.value || '';
           window.dispatchEvent(new CustomEvent('cdf-chat-input-blur', {
             detail: { value: text },
           }));
@@ -654,27 +639,56 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [inputValue]);
 
-  // 跟踪光标位置
-  const updateCaretPos = useCallback(() => {
-    const sel = window.getSelection();
-    if (sel && sel.rangeCount > 0 && editableRef.current) {
-      const range = sel.getRangeAt(0).cloneRange();
-      // 强制 collapse 到 end，获取实际光标位置
-      range.collapse(false);
-      const rect = range.getClientRects()[0] || range.getBoundingClientRect();
-      const containerRect = editableRef.current.getBoundingClientRect();
-      setCaretPos({
-        x: rect.left - containerRect.left,
-        y: rect.top - containerRect.top,
-        h: rect.height,
-      });
-    }
+  // 预填聊天输入框：从其他页面（如库存页）注入查询文本
+  // 两种触发方式：sessionStorage（跨页面导航）+ CHAT_PREFILL 事件（同页面）
+  useEffect(() => {
+    const fillText = (text: string) => {
+      if (!text) return;
+      if (editableRef.current) {
+        editableRef.current.value = text;
+        const len = text.length;
+        editableRef.current.selectionStart = len;
+        editableRef.current.selectionEnd = len;
+        editableRef.current.focus();
+      }
+      setInputValue(text);
+    };
+
+    // 挂载时检查 sessionStorage（跨页面导航场景）
+    try {
+      const stored = sessionStorage.getItem('cdf-chat-prefill');
+      if (stored) {
+        sessionStorage.removeItem('cdf-chat-prefill');
+        // 延迟一帧确保 textarea 已渲染
+        requestAnimationFrame(() => fillText(stored));
+      }
+    } catch { /* ignore */ }
+
+    // 监听同页面事件
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ text: string }>).detail;
+      if (detail?.text) fillText(detail.text);
+    };
+    window.addEventListener(CdfEvents.CHAT_PREFILL, handler);
+    return () => window.removeEventListener(CdfEvents.CHAT_PREFILL, handler);
   }, []);
 
-  const handleInputChange = useCallback(() => {
-    const text = editableRef.current?.innerText || '';
+  // caretPos 不再需要（textarea 使用 selectionStart/End），保留空函数以兼容事件绑定
+  const updateCaretPos = useCallback(() => {}, []);
+
+  const handleInputChange = useCallback((e?: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const text = e?.target?.value ?? editableRef.current?.value ?? '';
     setInputValue(text);
     updateCaretPos();
+
+    // textarea 自动高度：随内容增长，上限后内部滚动
+    const el = editableRef.current;
+    if (el) {
+      el.style.height = 'auto';
+      const maxHeight = 200; // 上限约 10 行
+      el.style.height = Math.min(el.scrollHeight, maxHeight) + 'px';
+      el.style.overflowY = el.scrollHeight > maxHeight ? 'auto' : 'hidden';
+    }
 
     const currentLine = text.split('\n').pop() || '';
 
@@ -701,20 +715,14 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
       setSkillFocusIndex(-1);
     }
   }, []);
-  handleInputChangeRef.current = handleInputChange;
+  handleInputChangeRef.current = () => handleInputChange();
 
   const handleInputClick = () => {
     // v2.3.1-fix: 点击输入框时清除 composition 残留标记，防止回车被误判
     compositionJustEndedRef.current = false;
-    // 输入框始终保持展开高度，点击仅聚焦并将光标移至末尾（不再触发高度跳变）
+    // textarea 原生处理光标，只需聚焦
     if (editableRef.current) {
       editableRef.current.focus();
-      const range = document.createRange();
-      const sel = window.getSelection();
-      range.selectNodeContents(editableRef.current);
-      range.collapse(false);
-      sel?.removeAllRanges();
-      sel?.addRange(range);
     }
   };
 
@@ -729,19 +737,15 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
         if (lastLine.startsWith('/')) {
           lines[lines.length - 1] = '';
         }
-        editableRef.current.innerText = lines.join('\n');
+        editableRef.current.value = lines.join('\n');
       }
-      setInputValue(editableRef.current.innerText);
+      setInputValue(editableRef.current.value);
       setTimeout(() => {
         if (editableRef.current) {
-          const range = document.createRange();
-          const sel = window.getSelection();
-          range.selectNodeContents(editableRef.current);
-          range.collapse(false);
-          sel?.removeAllRanges();
-          sel?.addRange(range);
+          const len = editableRef.current.value.length;
+          editableRef.current.selectionStart = len;
+          editableRef.current.selectionEnd = len;
           editableRef.current.focus();
-          updateCaretPos();
         }
       }, 0);
     }
@@ -770,18 +774,14 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
       if (lines[lastLineIndex].startsWith('/')) {
         lines[lastLineIndex] = `/${cmd.name} `;
       }
-      editableRef.current.innerText = lines.join('\n');
-      setInputValue(editableRef.current.innerText);
+      editableRef.current.value = lines.join('\n');
+      setInputValue(editableRef.current.value);
       setTimeout(() => {
         if (editableRef.current) {
+          const len = editableRef.current.value.length;
+          editableRef.current.selectionStart = len;
+          editableRef.current.selectionEnd = len;
           editableRef.current.focus();
-          const range = document.createRange();
-          const sel = window.getSelection();
-          range.selectNodeContents(editableRef.current);
-          range.collapse(false);
-          sel?.removeAllRanges();
-          sel?.addRange(range);
-          updateCaretPos();
         }
       }, 0);
     }
@@ -835,7 +835,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
   const handleQuickExampleClick = (text: string) => {
     setInputValue(text);
     if (editableRef.current) {
-      editableRef.current.innerHTML = '';
+      editableRef.current.value = '';
     }
     setIntentAnchorEl(null);
     setExpandedIntent(null);
@@ -902,7 +902,10 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
       folderContext: folderContext || undefined,
     });
     if (editableRef.current) {
-      editableRef.current.innerHTML = '';
+      editableRef.current.value = '';
+      // 重置 textarea 高度
+      editableRef.current.style.height = 'auto';
+      editableRef.current.style.overflowY = 'hidden';
     }
     setInputValue('');
     window.dispatchEvent(new CustomEvent('cdf-chat-input-blur', {
@@ -931,7 +934,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
       setPendingAttachments([]);
       setInputValue('');
       if (editableRef.current) {
-        editableRef.current.innerHTML = '';
+        editableRef.current.value = '';
       }
       window.dispatchEvent(new CustomEvent('cdf-chat-clear'));
       showToast(t('对话已清空'), 'success', 2000);
@@ -990,10 +993,10 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
    * v1.5.73: compositionend 后标记 — 解决 WKWebView 中 compositionend 先于 keydown 触发的问题
    *
    * WKWebView 事件顺序（中文输入法按 Enter 确认选字时）：
-   *   compositionend → beforeinput(insertText) → keydown(Enter)
+   *   compositionend → keydown(Enter)
    *
-   * compositionend 会重置 isComposingRef / compositionTextInsertedRef，
-   * 导致后续 keydown(Enter) 三个检测全部失败，消息被误发送。
+   * compositionend 会重置 isComposingRef，
+   * 导致后续 keydown(Enter) 检测失败，消息被误发送。
    *
    * 此 ref 在 compositionend 中设为 true，在 keydown(Enter) 中检测并清除，
    * 确保 IME 确认用的 Enter 不会被当作发送快捷键。
@@ -1001,13 +1004,12 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
   const compositionJustEndedRef = useRef(false);
 
   /**
-   * 检测当前是否处于 IME 组合状态 — 五重检测
+   * 检测当前是否处于 IME 组合状态
    *
-   * 检测优先级（任一项为 true 即认为在组合中）：
-   * 1. nativeEvent.isComposing（标准浏览器）
+   * textarea 原生支持 IME，检测简化为：
+   * 1. nativeEvent.isComposing（标准浏览器最可靠）
    * 2. isComposingRef（onCompositionStart/End 维护）
-   * 3. compositionTextInsertedRef（beforeinput insertCompositionText 检测）
-   * 4. compositionJustEndedRef（compositionend → keydown 之间的过渡期）
+   * 3. compositionJustEndedRef（compositionend → keydown 之间的过渡期）
    */
   const isComposing = (e: React.KeyboardEvent | React.CompositionEvent): boolean => {
     // @ts-expect-error nativeEvent 类型兼容
@@ -1018,107 +1020,43 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
     return isComposingRef.current || compositionJustEndedRef.current;
   };
 
-  /**
-   * v2.3.0: beforeinput 事件处理 — 检测 IME 组合状态
-   *
-   * macOS 中文输入法在拼音模式下输入英文（不切换输入法），
-   * 按 Enter 确认时不会触发 onCompositionStart/End，
-   * 但会触发 beforeinput 事件且 inputType 为 'insertCompositionText'。
-   *
-   * 策略：
-   * - beforeinput 时如果 inputType 包含 'Composition'，标记为组合中
-   * - 下一个非组合的 beforeinput 事件触发时重置（不依赖超时，避免 WKWebView 下回车误发送）
-   */
-  const compositionTextInsertedRef = useRef(false);
-
-  const handleBeforeInput = useCallback((e: React.FormEvent<HTMLDivElement>) => {
-    const event = e.nativeEvent as InputEvent;
-    if (event.inputType?.includes('Composition')) {
-      isComposingRef.current = true;
-      compositionTextInsertedRef.current = true;
-    } else if (compositionTextInsertedRef.current) {
-      // 组合结束后的第一个非组合输入，重置状态（不依赖超时）
-      isComposingRef.current = false;
-      compositionTextInsertedRef.current = false;
-    }
-  }, []);
-
-  const handleInputWithComposition = useCallback((e: React.FormEvent<HTMLDivElement>) => {
-    const event = e.nativeEvent as InputEvent;
-    // 组合文本输入时维持组合标记（确保 WKWebView 下 isComposingRef 不丢失）
-    if (event.inputType?.includes('Composition')) {
-      isComposingRef.current = true;
-      compositionTextInsertedRef.current = true;
-    }
-    // 调用原有的 input 处理
-    handleInputChange();
-  }, [handleInputChange]);
-
   const handleKeyDown = (e: React.KeyboardEvent) => {
     const justEndedComposition = compositionJustEndedRef.current;
     compositionJustEndedRef.current = false;
+    const composing = isComposing(e);
 
     // 斜杠命令选择器键盘导航
-    if (showSlashCommands && filteredSlashCommands.length > 0) {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        setShowSlashCommands(false);
-        setSlashCommandFocusIndex(0);
-        return;
-      }
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        setSlashCommandFocusIndex(prev => (prev + 1) % filteredSlashCommands.length);
-        return;
-      }
-      if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        setSlashCommandFocusIndex(prev => prev <= 0 ? filteredSlashCommands.length - 1 : prev - 1);
-        return;
-      }
-      if (e.key === 'Tab' || (e.key === 'Enter' && !isComposing(e) && !justEndedComposition)) {
-        e.preventDefault();
-        const cmd = filteredSlashCommands[slashCommandFocusIndex];
-        if (cmd) {
-          handleSlashCommandSelect(cmd);
-        }
-        return;
-      }
-    }
+    if (handleFloatingListKeyDown(e, composing, justEndedComposition, {
+      isOpen: showSlashCommands,
+      itemCount: filteredSlashCommands.length,
+      focusIndex: slashCommandFocusIndex,
+      setFocusIndex: setSlashCommandFocusIndex,
+      onSelect: (idx) => {
+        const cmd = filteredSlashCommands[idx];
+        if (cmd) handleSlashCommandSelect(cmd);
+      },
+      onClose: () => { setShowSlashCommands(false); setSlashCommandFocusIndex(0); },
+      allowTabSelect: true,
+    })) return;
 
-    if (showSkillSelector) {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        setShowSkillSelector(false);
-        setSkillFocusIndex(-1);
-        return;
-      }
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        setSkillFocusIndex(prev => slashFilteredCount > 0 ? (prev + 1) % slashFilteredCount : -1);
-        return;
-      }
-      if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        setSkillFocusIndex(prev => prev <= 0 ? slashFilteredCount - 1 : prev - 1);
-        return;
-      }
-      if (e.key === 'Enter' && !isComposing(e) && !justEndedComposition) {
-        e.preventDefault();
-        if (skillFocusIndex >= 0 && skillFocusIndex < slashFilteredCount) {
-          if (slashFilteredSkills[skillFocusIndex]) {
-            handleSkillSelect(slashFilteredSkills[skillFocusIndex]);
-          }
+    // 技能选择器键盘导航
+    if (handleFloatingListKeyDown(e, composing, justEndedComposition, {
+      isOpen: showSkillSelector,
+      itemCount: slashFilteredCount,
+      focusIndex: skillFocusIndex,
+      setFocusIndex: setSkillFocusIndex,
+      onSelect: (idx) => {
+        if (idx >= 0 && idx < slashFilteredCount) {
+          if (slashFilteredSkills[idx]) handleSkillSelect(slashFilteredSkills[idx]);
         } else {
           handleSend();
         }
-        setSkillFocusIndex(-1);
-        return;
-      }
-    }
-    if (e.key === 'Enter' && !e.shiftKey && !isComposing(e) && !justEndedComposition) {
+      },
+      onClose: () => { setShowSkillSelector(false); },
+    })) return;
+
+    if (e.key === 'Enter' && !e.shiftKey && !composing && !justEndedComposition) {
       isComposingRef.current = false;
-      compositionTextInsertedRef.current = false;
       e.preventDefault();
       handleSend();
     }
@@ -1407,13 +1345,11 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
                   {t('今天帮你做些什么？')} <Box component="span" sx={{ color: gs.textDisabled, ml: 0.5 }}>{t('@ 引用对话文件，/ 调用技能与指令')}</Box>
                 </Typography>
               )}
-              <div
+              <textarea
                 ref={editableRef}
                 data-testid="chat-input"
-                contentEditable
-                suppressContentEditableWarning
-                onBeforeInput={handleBeforeInput}
-                onInput={handleInputWithComposition}
+                value={inputValue}
+                onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
                 onKeyUp={updateCaretPos}
                 onClick={updateCaretPos}
@@ -1423,7 +1359,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
                 }}
                 onBlur={() => {
                   setIsInputFocused(false);
-                  const text = editableRef.current?.innerText || '';
+                  const text = editableRef.current?.value || '';
                   window.dispatchEvent(new CustomEvent('cdf-chat-input-blur', {
                     detail: { value: text },
                   }));
@@ -1432,11 +1368,11 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
                 onCompositionEnd={() => {
                   const wasComposing = isComposingRef.current;
                   isComposingRef.current = false;
-                  compositionTextInsertedRef.current = false;
                   if (wasComposing) {
                     compositionJustEndedRef.current = true;
                   }
                 }}
+                rows={1}
                 style={{
                   fontSize: 14,
                   lineHeight: 1.5,
@@ -1448,6 +1384,11 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
                   whiteSpace: 'pre-wrap',
                   position: 'relative',
                   paddingTop: inputExpanded ? '6px' : '3px',
+                  resize: 'none',
+                  border: 'none',
+                  backgroundColor: 'transparent',
+                  fontFamily: 'inherit',
+                  overflow: 'hidden',
                 }}
               />
             </Box>

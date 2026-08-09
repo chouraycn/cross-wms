@@ -68,6 +68,8 @@ export interface StaffChatTurnInput {
   model?: string;
   /** 可选执行模式偏好；缺省走 ExecutionMode.REACT（保持历史默认行为） */
   executionMode?: ExecutionMode;
+  /** v9.4: 启用反思/动态重规划（透传到 reactExecutor planningMode='dynamic'） */
+  enableReflection?: boolean;
 }
 
 export interface StaffChatTurnOutput {
@@ -382,6 +384,8 @@ export async function runStaffChatTurn(
           else if (t === 'done') emitTextEnd();
         },
       },
+      // v9.4: 透传 enableReflection 到 executeChat → reactExecutor
+      enableReflection: input.enableReflection,
     });
 
     emitThinkingEnd();

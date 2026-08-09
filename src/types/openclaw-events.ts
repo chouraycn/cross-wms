@@ -256,6 +256,21 @@ export type SystemEvent =
       totalSteps?: number;
       description?: string;
     }
+  // 反思置信度（每轮自评估结果；confidenceScore≥7 建议早停）
+  | {
+      type: 'reflection_confidence';
+      confidenceScore: number;
+      selfScore: number;
+      shouldEarlyStop: boolean;
+      reason?: string;
+    }
+  // 动态重规划触发（plan drift / 连续失败等情形）
+  | {
+      type: 'replan_triggered';
+      reason?: string;
+      oldPlanId?: string;
+      newPlanId?: string;
+    }
   // 压缩通知
   | {
       type: 'compaction_notification';

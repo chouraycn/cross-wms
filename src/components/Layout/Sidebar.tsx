@@ -146,6 +146,8 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: se
     window.addEventListener('cdf-know-clow-clear-session', onClearSession);
     window.addEventListener('cdf-chat-input-blur', onChatInputBlur);
     window.addEventListener('cdf-open-ai-settings-dialog', onOpenAISettingsDialog);
+    const onOpenToolManagement = () => { setSettingsOpen(false); setToolManagementDialogOpen(true); };
+    window.addEventListener('cdf-open-tool-management-dialog', onOpenToolManagement);
     const onOpenSearch = () => setSearchOpen(true);
     window.addEventListener('cdf-open-search', onOpenSearch);
     return () => {
@@ -153,6 +155,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: se
       window.removeEventListener('cdf-know-clow-clear-session', onClearSession);
       window.removeEventListener('cdf-chat-input-blur', onChatInputBlur);
       window.removeEventListener('cdf-open-ai-settings-dialog', onOpenAISettingsDialog);
+      window.removeEventListener('cdf-open-tool-management-dialog', onOpenToolManagement);
       window.removeEventListener('cdf-open-search', onOpenSearch);
     };
   }, []);
@@ -270,7 +273,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: se
 
       {/* Bottom: Settings button */}
       <Box
-        sx={{ px: collapsed ? 0.5 : 1, pb: '22px', flexShrink: 0, display: collapsed ? 'none' : 'flex', flexDirection: 'column', gap: 0.25 }}
+        sx={{ px: collapsed ? 0.5 : 1, pb: '12px', flexShrink: 0, display: collapsed ? 'none' : 'flex', flexDirection: 'column', gap: 0.25 }}
         style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
       >
         <ListItemButton
