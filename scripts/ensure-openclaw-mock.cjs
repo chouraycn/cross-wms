@@ -222,20 +222,25 @@ for (const [mod, info] of modules) {
   lines.push('');
   fs.writeFileSync(stubPath, lines.join('\n'));
 
-  // 同时创建同名 .js 文件（CJS）。原因：
+  // 同时创建同名 .js 文件（ESM）。原因：
   // 代码中使用显式 .js 后缀导入，如 from "@openclaw-src/foo/session.js"。
   // TypeScript 的 paths + moduleResolution=bundler 会自动将 .js 解析到同路径 .ts，
   // 但 esbuild 对显式扩展名的导入严格匹配，不会降级找 .ts，必须有真实 .js。
+  // 注意：package.json 中 "type": "module"，所有 .js 默认是 ESM，必须使用
+  // `export const X` 语法，不能用 CJS `exports.X`，否则 esbuild 会
+  // 报 commonjs-variable-in-esm 警告并最终打包失败。
   const jsStubPath = stubPath.replace(/\.ts$/, '.js');
   if (!fs.existsSync(jsStubPath)) {
     const jsLines = [
-      '// Auto-generated mock stub (CJS) by ensure-openclaw-mock.cjs',
+      '// Auto-generated mock stub (ESM) by ensure-openclaw-mock.cjs',
       '// Companion to the .ts stub — required for esbuild which honours explicit .js extensions.',
+      '// ESM format because package.json sets "type": "module".',
     ];
-    for (const name of [...info.named].sort()) jsLines.push(`exports.${name} = undefined;`);
-    if (info.hasDefault) jsLines.push('exports.default = undefined;');
-    if (info.hasNamespace) jsLines.push('// namespace import supported via Object.keys(exports)');
-    if (jsLines.length === 2) jsLines.push('// no named exports');
+    for (const name of [...info.named].sort()) jsLines.push(`export const ${name} = undefined;`);
+    // Type exports don't exist at runtime — skip
+    if (info.hasDefault) jsLines.push('const _default = undefined;', 'export default _default;');
+    if (info.hasNamespace && jsLines.length === 3) jsLines.push('const _default = undefined;', 'export default _default;');
+    if (jsLines.length === 3) jsLines.push('export {};');
     jsLines.push('');
     fs.writeFileSync(jsStubPath, jsLines.join('\n'));
   }
