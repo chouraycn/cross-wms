@@ -14,8 +14,8 @@ function Textarea({ className, ...props }: React.ComponentProps<'textarea'> & { 
         className,
       )}
       sx={{
-        borderColor: 'divider',
-        '&:focus': { borderColor: 'primary.main', boxShadow: '0 0 0 2px rgba(25,118,210,0.2)' },
+        borderColor: 'var(--border)',
+        '&:focus': { borderColor: 'var(--primary)', boxShadow: '0 0 0 2px rgba(15,118,110,0.2)' },
         '&:disabled': { bgcolor: 'action.disabledBackground' },
       }}
       {...(props as Record<string, any>)}

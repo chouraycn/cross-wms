@@ -53,7 +53,7 @@ export function UnderlineTabs<T extends string = string>({
           display: 'flex',
           alignItems: 'flex-start',
         },
-        ...(isLine ? [{ borderBottom: '0.5px solid', borderColor: '#e3e7f1' }] : []),
+        ...(isLine ? [{ borderBottom: '0.5px solid', borderColor: 'var(--border)' }] : []),
         ...(Array.isArray(sx) ? sx : sx ? [sx] : []),
       ]}
     >
@@ -85,12 +85,12 @@ export function UnderlineTabs<T extends string = string>({
                 : { py: '6px' }),
               ...(isLine
                 ? active
-                  ? { borderColor: '#18181a', fontWeight: 500, color: '#18181a' }
+                  ? { borderColor: 'var(--foreground)', fontWeight: 500, color: 'var(--foreground)' }
                   : {
                       borderColor: 'transparent',
                       fontWeight: 400,
                       color: '#4f5669',
-                      '&:hover': { color: '#18181a' },
+                      '&:hover': { color: 'var(--foreground)' },
                     }
                 : active
                   ? { fontWeight: 500, color: '#18181A' }

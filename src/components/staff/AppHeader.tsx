@@ -41,10 +41,10 @@ export default function AppHeader({
         placeItems: 'center',
         borderRadius: '10px',
         outline: 'none',
-        '&:hover': { bgcolor: '#f6f6f6' },
+        '&:hover': { bgcolor: 'var(--surface-muted)' },
       }}
     >
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#464c5e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#343633" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M15 18l-6-6 6-6" />
       </svg>
     </Box>
@@ -55,10 +55,10 @@ export default function AppHeader({
       {(title !== undefined || description !== undefined) ? (
         <Box sx={{ display: 'flex', minWidth: 0, flexDirection: 'column', justifyContent: 'center', gap: '4px' }}>
           {title !== undefined && (
-            <Box component="p" sx={{ m: 0, fontSize: '16px', fontWeight: 500, lineHeight: 'normal', color: '#464c5e' }}>{title}</Box>
+            <Box component="p" sx={{ m: 0, fontSize: '16px', fontWeight: 500, lineHeight: 'normal', color: 'var(--ink-soft)' }}>{title}</Box>
           )}
           {description !== undefined && (
-            <Box component="p" sx={{ m: 0, fontSize: '14px', lineHeight: 'normal', color: '#757f9c' }}>{description}</Box>
+            <Box component="p" sx={{ m: 0, fontSize: '14px', lineHeight: 'normal', color: 'var(--muted-foreground)' }}>{description}</Box>
           )}
         </Box>
       ) : null}
@@ -89,7 +89,7 @@ export default function AppHeader({
                 pl: '4px',
                 pr: '8px',
                 outline: 'none',
-                '&:hover': { bgcolor: '#f6f6f6' },
+                '&:hover': { bgcolor: 'var(--surface-muted)' },
               }}
             >
               <Box
@@ -111,7 +111,7 @@ export default function AppHeader({
               >
                 {initial || 'U'}
               </Box>
-              <Box component="span" sx={{ fontSize: '12px', color: '#464c5e' }}>{userName}</Box>
+              <Box component="span" sx={{ fontSize: '12px', color: 'var(--ink-soft)' }}>{userName}</Box>
             </Box>
           ) : null
         )}

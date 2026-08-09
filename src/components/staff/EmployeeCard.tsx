@@ -111,7 +111,7 @@ export default function EmployeeCard({
           height: '68px',
           boxSizing: 'border-box',
           gap: '10px',
-          bgcolor: '#f6f6f6',
+          bgcolor: 'var(--surface-muted)',
           p: '8px',
           mt: '34px',
         }}
@@ -336,7 +336,7 @@ export default function EmployeeCard({
               py: '1px',
               fontSize: '10px',
               lineHeight: '13px',
-              color: '#757f9c',
+              color: 'var(--muted-foreground)',
               border: '1px solid',
               borderColor: '#E3E7F1',
             }}

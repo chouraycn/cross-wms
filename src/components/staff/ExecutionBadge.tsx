@@ -33,7 +33,7 @@ export function ExecutionBadge({ connected }: { connected: boolean }) {
         alignItems: 'center',
         gap: '4px',
         borderRadius: '50%',
-        bgcolor: '#f2f3f7',
+        bgcolor: 'var(--surface-muted)',
         px: '8px',
         py: '2px',
         fontSize: '11px',

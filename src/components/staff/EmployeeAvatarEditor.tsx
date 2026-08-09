@@ -137,7 +137,7 @@ export default function EmployeeAvatarEditor({
         }
       >
         <DialogHeader sx={{ px: '12px' } as SxProps<Theme>}>
-          <DialogTitle sx={{ fontSize: '14px', fontWeight: 400, lineHeight: 1, color: '#757f9c' } as SxProps<Theme>}>
+          <DialogTitle sx={{ fontSize: '14px', fontWeight: 400, lineHeight: 1, color: 'var(--muted-foreground)' } as SxProps<Theme>}>
             {agent ? `设置头像：${employeeDisplayName(agent)}` : '设置头像'}
           </DialogTitle>
         </DialogHeader>
@@ -151,7 +151,7 @@ export default function EmployeeAvatarEditor({
               gap: '18px',
               borderRadius: '16px',
               border: '1px solid',
-              borderColor: 'divider',
+              borderColor: 'var(--border)',
               bgcolor: '#fafbfc',
               p: '18px',
             }}
@@ -195,7 +195,7 @@ export default function EmployeeAvatarEditor({
                         gap: '10px',
                         borderRadius: '14px',
                         border: '1px solid',
-                        borderColor: 'divider',
+                        borderColor: 'var(--border)',
                         bgcolor: '#fff',
                         p: '12px',
                         textAlign: 'left',
@@ -204,7 +204,7 @@ export default function EmployeeAvatarEditor({
                       },
                       {
                         '&:hover': { transform: 'translateY(-1px)', borderColor: '#cbd3e6' },
-                        '&[data-active="true"]': { transform: 'translateY(-1px)', borderColor: '#18181a' },
+                        '&[data-active="true"]': { transform: 'translateY(-1px)', borderColor: 'var(--foreground)' },
                       },
                     ] as SxProps<Theme>}
                   >
@@ -221,7 +221,7 @@ export default function EmployeeAvatarEditor({
                     <Box component="span" sx={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'left', fontWeight: 600 }}>
                       {preset.label}
                     </Box>
-                    {active && <CheckOutlined size={16} style={{ color: '#18181a' }} />}
+                    {active && <CheckOutlined size={16} style={{ color: 'var(--foreground)' }} />}
                   </Box>
                 );
               })}
@@ -248,7 +248,7 @@ export default function EmployeeAvatarEditor({
                 transition: 'all 0.2s',
               },
               {
-                '&:hover': { borderColor: '#18181a', boxShadow: '0 12px 28px rgba(30,24,16,0.07)' },
+                '&:hover': { borderColor: 'var(--foreground)', boxShadow: '0 12px 28px rgba(30,24,16,0.07)' },
                 '&:focus-visible': { boxShadow: '0 0 0 3px rgba(24,24,26,0.12)', outline: 'none' },
               },
             ] as SxProps<Theme>}
@@ -273,7 +273,7 @@ export default function EmployeeAvatarEditor({
                 borderRadius: '12px',
                 bgcolor: '#f2f4f8',
                 fontSize: '18px',
-                color: '#18181a',
+                color: 'var(--foreground)',
               }}
             >
               <UploadOutlined size={20} />
@@ -298,8 +298,8 @@ export default function EmployeeAvatarEditor({
                 px: '12px',
                 fontSize: '14px',
                 fontWeight: 400,
-                color: '#464c5e',
-                '&:hover': { borderColor: '#e3e7f1', bgcolor: '#f6f6f6', color: '#18181a' },
+                color: 'var(--ink-soft)',
+                '&:hover': { borderColor: 'var(--border)', bgcolor: 'var(--surface-muted)', color: 'var(--foreground)' },
               },
             ] as SxProps<Theme>}
           >

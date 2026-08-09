@@ -128,7 +128,7 @@ export default function LoginPage() {
           sx={{
             mt: 2,
             fontSize: { xs: 14, md: 16 },
-            color: 'text.secondary',
+            color: 'var(--muted-foreground)',
             textAlign: 'center',
             maxWidth: 560,
             lineHeight: 1.7,
@@ -164,7 +164,7 @@ export default function LoginPage() {
                 borderRadius: '16px',
                 bgcolor: 'background.paper',
                 border: '1px solid',
-                borderColor: 'divider',
+                borderColor: 'var(--border)',
                 boxShadow: '0 20px 54px rgba(37,32,24,0.1)',
               }}
             >
@@ -232,7 +232,7 @@ export default function LoginPage() {
               <Typography
                 component="button"
                 onClick={() => setShowForm(false)}
-                sx={{ alignSelf: 'center', border: 'none', background: 'none', cursor: 'pointer', fontSize: 13, color: 'text.secondary' }}
+                sx={{ alignSelf: 'center', border: 'none', background: 'none', cursor: 'pointer', fontSize: 13, color: 'var(--muted-foreground)' }}
               >
                 返回
               </Typography>
@@ -256,7 +256,7 @@ export default function LoginPage() {
           objectFit: 'cover',
           objectPosition: 'center top',
           borderTop: '1px solid',
-          borderColor: 'divider',
+          borderColor: 'var(--border)',
           pointerEvents: 'none',
         }}
       />

@@ -38,7 +38,7 @@ const ELLIPSIS_SX: SxProps<Theme> = {
   px: '4px',
   fontSize: '10px',
   lineHeight: 'none',
-  color: '#999',
+  color: 'var(--muted-foreground)',
 };
 
 function getPaginationRange(
@@ -124,8 +124,8 @@ export function Paginator({
                       transition: 'background-color 0.2s',
                     },
                     item === page
-                      ? { bgcolor: '#f6f6f6', color: '#464c5e' }
-                      : { color: '#999', '&:hover': { bgcolor: '#f2f3f7', color: '#464c5e' } },
+                      ? { bgcolor: 'var(--surface-muted)', color: 'var(--ink-soft)' }
+                      : { color: 'var(--muted-foreground)', '&:hover': { bgcolor: 'var(--surface-muted)', color: 'var(--ink-soft)' } },
                   ] as SxProps<Theme>}
                 >
                   {label(item)}

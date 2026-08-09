@@ -114,10 +114,10 @@ export function ResourceImportDialog({
           '@media (min-width: 640px)': { maxWidth: '640px' },
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: '6px', px: '12px', color: '#757f9c' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: '6px', px: '12px', color: 'var(--muted-foreground)' }}>
           {icon}
           <DialogTitle
-            sx={{ fontSize: '14px', fontWeight: 400, lineHeight: 'none', color: '#757f9c' }}
+            sx={{ fontSize: '14px', fontWeight: 400, lineHeight: 'none', color: 'var(--muted-foreground)' }}
           >
             {title}
           </DialogTitle>
@@ -242,7 +242,7 @@ export function ResourceImportDialog({
                       borderRadius: '8px',
                       px: '8px',
                       py: '7px',
-                      '&:hover': { bgcolor: '#f6f6f6' },
+                      '&:hover': { bgcolor: 'var(--surface-muted)' },
                     }}
                   >
                     <Checkbox
@@ -258,7 +258,7 @@ export function ResourceImportDialog({
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
                         fontSize: '12px',
-                        color: '#18181a',
+                        color: 'var(--foreground)',
                       }}
                     >
                       {item.label}

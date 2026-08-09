@@ -69,7 +69,7 @@ export default function CodeBlock({ code, language, className, showCopy = true }
             px: '8px',
             py: '3px',
             fontSize: '11px',
-            color: '#464c5e',
+            color: 'var(--ink-soft)',
             opacity: 0,
             transition: 'opacity 0.2s',
             '&:hover': { bgcolor: '#fff' },

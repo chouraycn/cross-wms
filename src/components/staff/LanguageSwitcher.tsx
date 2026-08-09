@@ -30,7 +30,7 @@ export default function LanguageSwitcher({ className }: LanguageSwitcherProps) {
         data-i18n-ignore
         aria-label={locale === 'zh-CN' ? '切换语言' : 'Switch language'}
         className={[
-          'flex h-[32px] w-[74px] shrink-0 items-center justify-center gap-[6px] rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-[8px] text-[12px] font-medium text-[#757f9c] outline-none transition-colors hover:border-[#cbd3e6] hover:text-[#18181a]',
+          'flex h-[32px] w-[74px] shrink-0 items-center justify-center gap-[6px] rounded-[10px] border-[0.5px] border-[var(--border)] bg-white px-[8px] text-[12px] font-medium text-[var(--muted-foreground)] outline-none transition-colors hover:border-[var(--border)] hover:text-[var(--foreground)]',
           className,
         ]
           .filter(Boolean)
@@ -69,7 +69,7 @@ export default function LanguageSwitcher({ className }: LanguageSwitcherProps) {
                 borderRadius: '8px',
                 px: '10px',
                 fontSize: '13px',
-                color: '#464c5e',
+                color: 'var(--ink-soft)',
               } as SxProps<Theme>
             }
           >
@@ -77,7 +77,7 @@ export default function LanguageSwitcher({ className }: LanguageSwitcherProps) {
             <Check
               size={14}
               style={{
-                color: '#18181a',
+                color: 'var(--foreground)',
                 visibility: locale !== option.locale ? 'hidden' : 'visible',
               }}
             />

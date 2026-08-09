@@ -51,7 +51,7 @@ function CardDescription({ className, ...props }: React.ComponentProps<'div'> & 
       data-slot="card-description"
       className={cn(className)}
       variant="body2"
-      color="text.secondary"
+      color="var(--muted-foreground)"
       {...(props as Record<string, any>)}
     />
   )
@@ -82,7 +82,7 @@ function CardFooter({ className, ...props }: React.ComponentProps<'div'> & { sx?
     <Box
       data-slot="card-footer"
       className={cn('flex items-center gap-2 border-t px-4 py-3', className)}
-      sx={{ borderColor: 'divider' }}
+      sx={{ borderColor: 'var(--border)' }}
       {...(props as Record<string, any>)}
     />
   )

@@ -15,9 +15,8 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ComponentType, ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Box, useTheme } from '@mui/material';
+import { Box } from '@mui/material';
 import type { SxProps, Theme } from '@mui/material/styles';
-import { getGrayScale } from '../../constants/theme';
 import {
   Activity,
   Bell,
@@ -126,8 +125,14 @@ function StaffSidebar({
 }) {
   const primaryItems = isAdmin ? [...PRIMARY_NAV, ...SYSTEM_NAV] : PRIMARY_NAV;
 
-  const theme = useTheme();
-  const gs = getGrayScale(theme.palette.mode === 'dark');
+  // 员工调色板（与 src/styles/staffdeck.css 对齐）：侧栏白、内容暖、激活项 teal
+  const gs = {
+    bgSidebar: 'var(--sidebar)',
+    bgActive: 'var(--accent-soft)',
+    bgHover: 'var(--surface-muted)',
+    textPrimary: 'var(--primary)',
+    textSecondary: 'var(--muted-foreground)',
+  } as const;
 
   const renderNavButton = (item: NavItem) => {
     const active = selected === item.route;
@@ -185,28 +190,28 @@ function StaffSidebar({
           {primaryItems.map(renderNavButton)}
         </Box>
 
-        <Box sx={{ mt: '20px', mb: '8px', px: '14px', fontSize: '10px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#9aa0b5' }}>
+        <Box sx={{ mt: '20px', mb: '8px', px: '14px', fontSize: '10px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--sidebar-foreground)' }}>
           基本资料
         </Box>
         <Box component="nav" sx={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
           {PROFILE_NAV.map(renderNavButton)}
         </Box>
 
-        <Box sx={{ mt: '16px', mb: '8px', px: '14px', fontSize: '10px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#9aa0b5' }}>
+        <Box sx={{ mt: '16px', mb: '8px', px: '14px', fontSize: '10px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--sidebar-foreground)' }}>
           员工能力
         </Box>
         <Box component="nav" sx={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
           {CAPABILITY_NAV.map(renderNavButton)}
         </Box>
 
-        <Box sx={{ mt: '16px', mb: '8px', px: '14px', fontSize: '10px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#9aa0b5' }}>
+        <Box sx={{ mt: '16px', mb: '8px', px: '14px', fontSize: '10px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--sidebar-foreground)' }}>
           观测与调试
         </Box>
         <Box component="nav" sx={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
           {OBSERVE_NAV.map(renderNavButton)}
         </Box>
 
-        <Box sx={{ mt: '16px', mb: '8px', px: '14px', fontSize: '10px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#9aa0b5' }}>
+        <Box sx={{ mt: '16px', mb: '8px', px: '14px', fontSize: '10px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--sidebar-foreground)' }}>
           帮助
         </Box>
         <Box component="nav" sx={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
@@ -284,12 +289,12 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
               justifyContent: 'flex-end',
               gap: '8px',
               borderBottom: '1px solid',
-              borderColor: '#e3e7f1',
+              borderColor: 'var(--border)',
               bgcolor: '#fff',
               px: '16px',
             }}
           >
-            <Box component="span" sx={{ fontSize: '12px', color: '#757f9c' }}>
+            <Box component="span" sx={{ fontSize: '12px', color: 'var(--muted-foreground)' }}>
               {currentUser?.display_name || currentUser?.username || '未登录'}
             </Box>
             <Box
@@ -301,8 +306,8 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
                 px: '8px',
                 py: '4px',
                 fontSize: '12px',
-                color: '#757f9c',
-                '&:hover': { bgcolor: '#f6f6f6' },
+                color: 'var(--muted-foreground)',
+                '&:hover': { bgcolor: 'var(--surface-muted)' },
               }}
             >
               退出

@@ -31,7 +31,7 @@ function TableHeader({ className, sx, ...props }: React.ComponentProps<'thead'> 
       component="thead"
       data-slot="table-header"
       className={cn('[&_tr]:border-b', className)}
-      sx={mergeSx({ '& tr': { borderBottom: '1px solid', borderColor: 'divider' } }, sx)}
+      sx={mergeSx({ '& tr': { borderBottom: '1px solid', borderColor: 'var(--border)' } }, sx)}
       {...(props as Record<string, any>)}
     />
   )
@@ -56,7 +56,7 @@ function TableFooter({ className, sx, ...props }: React.ComponentProps<'tfoot'> 
       data-slot="table-footer"
       className={cn('border-t font-medium [&>tr]:last:border-b-0', className)}
       sx={mergeSx(
-        { borderTop: '1px solid', borderColor: 'divider', bgcolor: 'action.hover', fontWeight: 500, '& tr:last-child': { borderBottom: 0 } },
+        { borderTop: '1px solid', borderColor: 'var(--border)', bgcolor: 'action.hover', fontWeight: 500, '& tr:last-child': { borderBottom: 0 } },
         sx,
       )}
       {...(props as Record<string, any>)}
@@ -73,7 +73,7 @@ function TableRow({ className, sx, ...props }: React.ComponentProps<'tr'> & { sx
       sx={mergeSx(
         {
           borderBottom: '1px solid',
-          borderColor: 'divider',
+          borderColor: 'var(--border)',
           transition: 'background-color 0.2s',
           '&:hover': { bgcolor: 'action.hover' },
           '&[data-state="selected"]': { bgcolor: 'action.selected' },
@@ -91,7 +91,7 @@ function TableHead({ className, sx, ...props }: React.ComponentProps<'th'> & { s
       component="th"
       data-slot="table-head"
       className={cn('h-10 px-2 text-left align-middle font-medium', className)}
-      sx={mergeSx({ height: 40, px: 2, textAlign: 'left', verticalAlign: 'middle', fontWeight: 500, color: 'text.primary' }, sx)}
+      sx={mergeSx({ height: 40, px: 2, textAlign: 'left', verticalAlign: 'middle', fontWeight: 500, color: 'var(--foreground)' }, sx)}
       {...(props as Record<string, any>)}
     />
   )
@@ -115,7 +115,7 @@ function TableCaption({ className, sx, ...props }: React.ComponentProps<'caption
       component="caption"
       data-slot="table-caption"
       className={cn('mt-4 text-sm', className)}
-      sx={mergeSx({ mt: 4, fontSize: '0.875rem', color: 'text.secondary' }, sx)}
+      sx={mergeSx({ mt: 4, fontSize: '0.875rem', color: 'var(--muted-foreground)' }, sx)}
       {...(props as Record<string, any>)}
     />
   )

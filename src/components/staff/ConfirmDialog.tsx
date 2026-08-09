@@ -97,7 +97,7 @@ export function ConfirmDialog({
               fontSize: '14px',
               lineHeight: 'normal',
               fontWeight: 500,
-              color: '#18181a',
+              color: 'var(--foreground)',
               wordBreak: 'break-word',
             }}
           >

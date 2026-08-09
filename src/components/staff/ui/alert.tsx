@@ -24,9 +24,9 @@ const alertVariants = cva(
 const VARIANT_SX: Record<string, SxProps> = {
   default: {
     bgcolor: 'background.paper',
-    color: 'text.primary',
+    color: 'var(--foreground)',
     border: '1px solid',
-    borderColor: 'divider',
+    borderColor: 'var(--border)',
   },
   destructive: {
     bgcolor: 'error.main',
@@ -77,7 +77,7 @@ function AlertDescription({ className, ...props }: React.ComponentProps<'div'>) 
         'text-sm text-balance md:text-pretty [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-foreground [&_p:not(:last-child)]:mb-4',
         className,
       )}
-      sx={{ fontSize: '0.875rem', color: 'text.secondary' }}
+      sx={{ fontSize: '0.875rem', color: 'var(--muted-foreground)' }}
       {...(props as Record<string, any>)}
     />
   )

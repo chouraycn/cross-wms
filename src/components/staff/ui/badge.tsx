@@ -29,12 +29,12 @@ const badgeVariants = cva(
 type BadgeVariant = NonNullable<VariantProps<typeof badgeVariants>['variant']>
 
 const VARIANT_STYLE: Record<BadgeVariant, SxProps<Theme>> = {
-  default: { bgcolor: 'primary.main', color: 'primary.contrastText' },
+  default: { bgcolor: 'var(--primary)', color: 'var(--primary-foreground)' },
   secondary: { bgcolor: 'secondary.main', color: 'secondary.contrastText' },
   destructive: { bgcolor: 'error.main', color: 'error.contrastText' },
-  outline: { bgcolor: 'transparent', color: 'text.primary', border: '1px solid', borderColor: 'divider' },
-  ghost: { bgcolor: 'action.hover', color: 'text.primary' },
-  link: { bgcolor: 'transparent', color: 'primary.main', textDecoration: 'underline' },
+  outline: { bgcolor: 'transparent', color: 'var(--foreground)', border: '1px solid', borderColor: 'var(--border)' },
+  ghost: { bgcolor: 'action.hover', color: 'var(--foreground)' },
+  link: { bgcolor: 'transparent', color: 'var(--primary)', textDecoration: 'underline' },
 }
 
 function Badge({

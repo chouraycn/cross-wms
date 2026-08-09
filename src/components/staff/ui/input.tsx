@@ -17,11 +17,10 @@ function Input({ className, type, ...props }: React.ComponentProps<'input'> & { 
         className,
       )}
       sx={{
-        borderColor: 'divider',
+        borderColor: 'var(--border)',
         '&:focus': {
-          borderColor: 'primary.main',
-          boxShadow: (theme: any) =>
-            `0 0 0 2px ${(theme as { palette: { primary: { main: string } } }).palette.primary.main}33`,
+          borderColor: 'var(--primary)',
+          boxShadow: '0 0 0 2px rgba(15,118,110,0.2)',
         },
         '&:disabled': { bgcolor: 'action.disabledBackground' },
       }}

@@ -5,17 +5,17 @@ import { Box } from '@mui/material';
 export type StatCardTone = 'default' | 'green' | 'red';
 
 const SURFACE: Record<StatCardTone, string> = {
-  default: '#f6f6f6',
+  default: 'var(--surface-muted)',
   green: '#e9f7ef',
   red: '#fce7e7',
 };
 const VALUE_COLOR: Record<StatCardTone, string> = {
-  default: '#18181a',
+  default: 'var(--foreground)',
   green: '#2cb360',
   red: '#d20b0b',
 };
 const LABEL_COLOR: Record<StatCardTone, string> = {
-  default: '#464c5e',
+  default: 'var(--ink-soft)',
   green: '#2cb360',
   red: '#d20b0b',
 };

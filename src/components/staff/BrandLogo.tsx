@@ -42,7 +42,7 @@ export default function BrandLogo({
           className={wordmarkClassName}
           sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', lineHeight: 0 }}
         >
-          <Typography component="strong" sx={{ fontSize: 17, fontWeight: 600, lineHeight: 0, color: '#18181a' }}>
+          <Typography component="strong" sx={{ fontSize: 17, fontWeight: 600, lineHeight: 0, color: 'var(--foreground)' }}>
             StaffDeck
           </Typography>
         </Box>

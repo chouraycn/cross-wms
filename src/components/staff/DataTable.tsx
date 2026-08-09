@@ -56,13 +56,13 @@ const ALIGN_SX: Record<'left' | 'center' | 'right', SxProps<Theme>> = {
 
 const HEAD_CELL_SX: SxProps<Theme> = {
   height: '36px',
-  bgcolor: '#f2f3f7',
+  bgcolor: 'var(--surface-muted)',
   px: '16px',
   py: '12px',
   verticalAlign: 'middle',
   fontSize: '12px',
   fontWeight: 400,
-  color: '#464c5e',
+  color: 'var(--ink-soft)',
   textAlign: 'left',
 };
 
@@ -76,7 +76,7 @@ const BODY_CELL_SX: SxProps<Theme> = {
 
 const CELL_BORDER_SX: SxProps<Theme> = {
   border: '1px solid',
-  borderColor: '#f2f3f7',
+  borderColor: 'var(--surface-muted)',
 };
 
 const BODY_HEIGHT_SX: Record<'default' | 'compact', SxProps<Theme>> = {
@@ -106,7 +106,7 @@ export function DataTable<T>({
   const hasData = data.length > 0;
   return (
     <Box
-      sx={{ overflow: 'hidden', borderRadius: '14px', border: '1px solid', borderColor: '#f2f3f7' }}
+      sx={{ overflow: 'hidden', borderRadius: '14px', border: '1px solid', borderColor: 'var(--surface-muted)' }}
       className={className}
     >
       <Table
@@ -142,13 +142,13 @@ export function DataTable<T>({
                 sx={
                   {
                     cursor: onRowClick ? 'pointer' : undefined,
-                    borderBottom: bordered ? 'none' : '1px solid #f2f3f7',
+                    borderBottom: bordered ? 'none' : '1px solid var(--surface-muted)',
                     '&:last-child': { borderBottom: 'none' },
                     '&:has([aria-expanded])': { bgcolor: 'transparent' },
                     ...(striped
                       ? index % 2 === 1
-                        ? { bgcolor: '#fbfbff', '&:hover': { bgcolor: '#f2f3f7' } }
-                        : { bgcolor: '#fff', '&:hover': { bgcolor: '#f2f3f7' } }
+                        ? { bgcolor: 'var(--surface-subtle)', '&:hover': { bgcolor: 'var(--surface-muted)' } }
+                        : { bgcolor: '#fff', '&:hover': { bgcolor: 'var(--surface-muted)' } }
                       : { '&:hover': { bgcolor: '#fafbfc' } }),
                   } as SxProps<Theme>
                 }

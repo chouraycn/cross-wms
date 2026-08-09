@@ -150,7 +150,7 @@ function AlertDialogDescription({ className, ...props }: React.ComponentProps<'d
       component="div"
       data-slot="alert-dialog-description"
       className={cn('text-sm', className)}
-      sx={{ fontSize: '0.875rem', color: 'text.secondary' }}
+      sx={{ fontSize: '0.875rem', color: 'var(--muted-foreground)' }}
       {...(props as Record<string, any>)}
     />
   )

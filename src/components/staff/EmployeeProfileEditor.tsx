@@ -162,7 +162,7 @@ export default function EmployeeProfileEditor({
           '@media (min-width: 640px)': { maxWidth: '860px' },
         }}
       >
-        <DialogTitle sx={{ px: '12px', fontSize: '14px', fontWeight: 400, lineHeight: 'none', color: '#757f9c' }}>
+        <DialogTitle sx={{ px: '12px', fontSize: '14px', fontWeight: 400, lineHeight: 'none', color: 'var(--muted-foreground)' }}>
           {agent ? `编辑数字员工档案：${employeeDisplayName(agent)}` : '编辑数字员工档案'}
         </DialogTitle>
 
@@ -173,19 +173,19 @@ export default function EmployeeProfileEditor({
               <div>
                 <Box
                   component="span"
-                  sx={{ margin: 0, display: 'block', fontSize: '12px', color: 'text.secondary' }}
+                  sx={{ margin: 0, display: 'block', fontSize: '12px', color: 'var(--muted-foreground)' }}
                 >
                   数字员工档案
                 </Box>
                 <Box
                   component="h4"
-                  sx={{ mt: '4px', mb: '6px', fontSize: '18px', fontWeight: 600, color: '#18181a' }}
+                  sx={{ mt: '4px', mb: '6px', fontSize: '18px', fontWeight: 600, color: 'var(--foreground)' }}
                 >
                   {agent ? employeeDisplayName(agent) : '数字员工'}
                 </Box>
                 <Box
                   component="span"
-                  sx={{ margin: 0, display: 'block', fontSize: '12px', color: 'text.secondary' }}
+                  sx={{ margin: 0, display: 'block', fontSize: '12px', color: 'var(--muted-foreground)' }}
                 >
                   {profile.roleName}
                 </Box>
@@ -246,12 +246,12 @@ export default function EmployeeProfileEditor({
 
               <div className="employee-profile-publish">
                 <div>
-                  <Box component="strong" sx={{ fontSize: '13px', color: '#18181a' }}>
+                  <Box component="strong" sx={{ fontSize: '13px', color: 'var(--foreground)' }}>
                     发布到广场
                   </Box>
                   <Box
                     component="p"
-                    sx={{ margin: 0, mt: '4px', fontSize: '12px', color: 'text.secondary' }}
+                    sx={{ margin: 0, mt: '4px', fontSize: '12px', color: 'var(--muted-foreground)' }}
                   >
                     开启后，其他账号可以在对话端和数字员工广场中选择这个员工。
                   </Box>
@@ -287,7 +287,7 @@ export default function EmployeeProfileEditor({
 function LabeledField({ label, children }: { label: string; children: ReactNode }) {
   return (
     <Box component="label" sx={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-      <Box component="span" sx={{ fontSize: '12px', fontWeight: 500, color: '#464c5e' }}>
+      <Box component="span" sx={{ fontSize: '12px', fontWeight: 500, color: 'var(--ink-soft)' }}>
         {label}
       </Box>
       {children}
@@ -326,12 +326,12 @@ function TagsField({
           gap: '6px',
           borderRadius: '10px',
           border: '0.5px solid',
-          borderColor: '#e3e7f1',
+          borderColor: 'var(--border)',
           bgcolor: '#fff',
           px: '8px',
           py: '5px',
           transition: 'background-color 0.15s, color 0.15s',
-          '&:focus-within': { borderColor: '#18181a' },
+          '&:focus-within': { borderColor: 'var(--foreground)' },
         }}
       >
         {value.map((tag) => (
@@ -343,11 +343,11 @@ function TagsField({
               alignItems: 'center',
               gap: '4px',
               borderRadius: '6px',
-              bgcolor: '#f2f3f7',
+              bgcolor: 'var(--surface-muted)',
               px: '8px',
               py: '2px',
               fontSize: '12px',
-              color: '#18181a',
+              color: 'var(--foreground)',
             }}
           >
             {tag}
@@ -360,7 +360,7 @@ function TagsField({
                 display: 'grid',
                 placeItems: 'center',
                 color: '#858b9c',
-                '&:hover': { color: '#18181a' },
+                '&:hover': { color: 'var(--foreground)' },
               }}
             >
               <Box component={XIcon} sx={{ width: '12px', height: '12px' }} />
@@ -405,12 +405,12 @@ function TagsField({
               sx={{
                 borderRadius: '6px',
                 border: '0.5px solid',
-                borderColor: '#e3e7f1',
+                borderColor: 'var(--border)',
                 px: '8px',
                 py: '2px',
                 fontSize: '12px',
                 color: '#858b9c',
-                '&:hover': { borderColor: '#18181a', color: '#18181a' },
+                '&:hover': { borderColor: 'var(--foreground)', color: 'var(--foreground)' },
               }}
             >
               + {item}

@@ -31,7 +31,7 @@ export function DetailField({ label, children, className }: DetailFieldProps) {
       <Typography component="span" sx={{ fontSize: 11, fontWeight: 600, color: '#858b9c' }}>
         {label}
       </Typography>
-      <Box sx={{ minWidth: 0, overflowWrap: 'break-word', fontSize: 12, color: '#18181a' }}>{children}</Box>
+      <Box sx={{ minWidth: 0, overflowWrap: 'break-word', fontSize: 12, color: 'var(--foreground)' }}>{children}</Box>
     </Box>
   );
 }

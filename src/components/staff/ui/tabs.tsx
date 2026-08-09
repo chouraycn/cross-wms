@@ -138,7 +138,7 @@ function TabsTrigger({
           border: 'none',
           cursor: 'pointer',
           bgcolor: 'transparent',
-          color: active ? 'text.primary' : 'text.secondary',
+          color: active ? 'var(--foreground)' : 'var(--muted-foreground)',
           fontWeight: 500,
           px: 1.5,
           py: 0.5,
@@ -146,7 +146,7 @@ function TabsTrigger({
           transition: 'background-color 0.2s, color 0.2s',
           '&[data-state=active]': { boxShadow: 1 },
           '&:disabled': { opacity: 0.5, cursor: 'default' },
-          '&:focus-visible': { outline: '2px solid', outlineColor: 'primary.main', outlineOffset: 1 },
+          '&:focus-visible': { outline: '2px solid', outlineColor: 'var(--primary)', outlineOffset: 1 },
         },
         sx,
       )}
