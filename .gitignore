@@ -106,6 +106,13 @@ e2e/e2e-results/
 e2e/e2e-report/
 coverage/
 .vitest-cache/
+
+# StaffDeck 各子项目需要独立安装依赖，但源码文件必须跟踪
+StaffDeck-main/**/node_modules/
+StaffDeck-main/**/.next/
+StaffDeck-main/**/dist/
+StaffDeck-main/**/.turbo/
+StaffDeck-main/**/.output/
 daemon.pid
 .workbuddy/
 
