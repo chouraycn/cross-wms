@@ -221,7 +221,26 @@ for (const [mod, info] of modules) {
 
   lines.push('');
   fs.writeFileSync(stubPath, lines.join('\n'));
+
+  // 同时创建同名 .js 文件（CJS）。原因：
+  // 代码中使用显式 .js 后缀导入，如 from "@openclaw-src/foo/session.js"。
+  // TypeScript 的 paths + moduleResolution=bundler 会自动将 .js 解析到同路径 .ts，
+  // 但 esbuild 对显式扩展名的导入严格匹配，不会降级找 .ts，必须有真实 .js。
+  const jsStubPath = stubPath.replace(/\.ts$/, '.js');
+  if (!fs.existsSync(jsStubPath)) {
+    const jsLines = [
+      '// Auto-generated mock stub (CJS) by ensure-openclaw-mock.cjs',
+      '// Companion to the .ts stub — required for esbuild which honours explicit .js extensions.',
+    ];
+    for (const name of [...info.named].sort()) jsLines.push(`exports.${name} = undefined;`);
+    if (info.hasDefault) jsLines.push('exports.default = undefined;');
+    if (info.hasNamespace) jsLines.push('// namespace import supported via Object.keys(exports)');
+    if (jsLines.length === 2) jsLines.push('// no named exports');
+    jsLines.push('');
+    fs.writeFileSync(jsStubPath, jsLines.join('\n'));
+  }
+
   created++;
 }
 
-console.log(`[ensure-openclaw-mock] Generated ${created} stub file(s) under openclaw/src/ for ${modules.size} module(s). Added // @ts-nocheck to ${tsNocheckAdded} file(s).`);
+console.log(`[ensure-openclaw-mock] Generated ${created} stub pair(s) (.ts + .js) under openclaw/src/ for ${modules.size} module(s). Added // @ts-nocheck to ${tsNocheckAdded} file(s).`);

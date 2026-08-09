@@ -306,6 +306,12 @@ jobs:
       - name: Install dependencies
         run: npm install --legacy-peer-deps
 
+      # 与 Type Check job 保持一致：submodules=false 的 CI 上没有真实 openclaw，
+      # 需要扫描 @openclaw-src/* 导入并生成 stub 文件，否则 esbuild（Pre-build check 第 5 步）
+      # 会因 Cannot resolve "@openclaw-src/agents/sessions/session-manager.js" 等错误失败。
+      - name: Prepare openclaw mock (if submodule absent)
+        run: node scripts/ensure-openclaw-mock.cjs
+
       - name: Build frontend
         run: npm run build
 

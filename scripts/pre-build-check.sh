@@ -232,6 +232,7 @@ ESBUILD_OUTPUT=$(./node_modules/.bin/esbuild \
   --outfile="$TEMP_SERVER_BUNDLE" \
   --alias:@src="$ROOT_DIR/src" \
   --alias:@cdf-know/plugin-sdk/extension-shared="$ROOT_DIR/server/engine/plugin-sdk/extension-shared.ts" \
+  --alias:@openclaw-src="$ROOT_DIR/openclaw/src" \
   --external:better-sqlite3 \
   '--external:@cdfclaw/*' \
   --external:@modelcontextprotocol/sdk \
