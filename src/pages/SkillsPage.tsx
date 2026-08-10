@@ -197,8 +197,19 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
   const [openclawSelectedCategory, setOpenclawSelectedCategory] = useState<string>('all');
   const [openclawSelectedTags, setOpenclawSelectedTags] = useState<string[]>([]);
 
+  // 组件挂载即拉取 OpenClaw 技能列表（仅拉列表，用于 Tab 徽章计数），
+  // 避免用户不点 OpenClaw Tab 时徽章永远显示 0。categories/tags 仍走下方
+  // 的 tab-gated effect（只有真的要进入筛选面板才拉）。
+  useEffect(() => {
+    api.listOpenClawSkills().then((res) => {
+      setOpenclawSkills(res.entries);
+    }).catch(() => {});
+  }, []);
+
   useEffect(() => {
     if (activeTab !== 'openclaw') return;
+    // 切到 tab 时做一次补充刷新（防止 mount 拉取后外部有增删改），
+    // 同时拉取筛选依赖的 categories / tags。
     api.listOpenClawSkills().then((res) => {
       setOpenclawSkills(res.entries);
     }).catch(() => {});
