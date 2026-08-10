@@ -53,6 +53,10 @@ DMG_ICON_SIZE="${DMG_ICON_SIZE:-128}"
 DMG_APP_POS="${DMG_APP_POS:-130 165}"
 DMG_APPS_POS="${DMG_APPS_POS:-380 165}"
 DMG_EXTRA_SECTORS="${DMG_EXTRA_SECTORS:-2048}"
+# DMG_DSSTORE_TEMPLATE: 沙箱下 hdiutil attach 失败时，直接预写此 .DS_Store 到源目录
+# 打包进 DMG 后仍能获得 Finder 样式（前提：目录结构、文件名、卷名完全一致）
+DMG_DSSTORE_TEMPLATE="${DMG_DSSTORE_TEMPLATE:-$ROOT_DIR/apps/macos/Packaging/dmg-template/DS_Store}"
+DMG_BG_TEMPLATE="${DMG_BG_TEMPLATE:-$ROOT_DIR/apps/macos/Packaging/dmg-template/background.png}"
 
 require_integer_list() {
   local name="$1"
@@ -246,10 +250,44 @@ DMG_MOUNT_POINT="/tmp/openclaw-dmg-mount-$$"
 mkdir -p "$DMG_MOUNT_POINT"
 
 if ! hdiutil attach "$DMG_RW_PATH" -mountpoint "$DMG_MOUNT_POINT" 2>/dev/null; then
-  echo "WARN: hdiutil attach 被沙箱阻止（/dev/rdisk* 不可访问），回退到一步创建 DMG（无 Finder 样式）" >&2
+  echo "WARN: hdiutil attach 被沙箱阻止（/dev/rdisk* 不可访问），尝试预写 .DS_Store + .background 模板" >&2
   # 清理 RW 镜像和挂载点
   rm -f "$DMG_RW_PATH"
   rmdir "$DMG_MOUNT_POINT" 2>/dev/null
+
+  # 沙箱回退 v2: 把预生成的 .DS_Store 模板 和 .background/background.png
+  # 直接写入 DMG_SOURCE，再用 -srcfolder 打包。只要卷名/文件名/目录结构不变，
+  # Finder 会识别 .DS_Store 中的 icon view、背景图、图标位置、图标大小。
+  FALLBACK_HAS_STYLE=0
+  if [[ -f "$DMG_DSSTORE_TEMPLATE" ]]; then
+    mkdir -p "$DMG_SOURCE/.background"
+    cp "$DMG_DSSTORE_TEMPLATE" "$DMG_SOURCE/.DS_Store"
+    # 背景图：优先用模板目录的 background.png（与 .DS_Store 精确匹配大小），
+    # 否则回退到 DMG_BACKGROUND_SMALL / DMG_BACKGROUND_PATH
+    if [[ -f "$DMG_BG_TEMPLATE" ]]; then
+      cp "$DMG_BG_TEMPLATE" "$DMG_SOURCE/.background/background.png"
+      FALLBACK_HAS_STYLE=1
+    elif [[ -f "$DMG_BACKGROUND_SMALL" ]]; then
+      cp "$DMG_BACKGROUND_SMALL" "$DMG_SOURCE/.background/background.png"
+      FALLBACK_HAS_STYLE=1
+    elif [[ -f "$DMG_BACKGROUND_PATH" ]]; then
+      cp "$DMG_BACKGROUND_PATH" "$DMG_SOURCE/.background/background.png"
+      FALLBACK_HAS_STYLE=1
+    fi
+    # Volume icon: 把 app icon 拷到根目录，SetFile 不能无挂载执行，靠 Finder 自动识别
+    ICON_SRC="$APP_PATH/Contents/Resources/AppIcon.icns"
+    if [[ ! -f "$ICON_SRC" ]]; then
+      ICON_SRC="$APP_PATH/Contents/Resources/CDFKnowClow.icns"
+    fi
+    if [[ -f "$ICON_SRC" ]]; then
+      cp "$ICON_SRC" "$DMG_SOURCE/.VolumeIcon.icns"
+    fi
+  fi
+
+  if [[ "$FALLBACK_HAS_STYLE" == "1" ]]; then
+    echo "INFO: 使用预写 .DS_Store 模板 + .background 方案（样式完整，hdiutil attach 不可用时的首选）"
+  fi
+
   # 一步创建压缩只读 DMG（不挂载，不访问 /dev/rdisk*）
   hdiutil create \
     -volname "$DMG_VOLUME_NAME" \
@@ -257,7 +295,15 @@ if ! hdiutil attach "$DMG_RW_PATH" -mountpoint "$DMG_MOUNT_POINT" 2>/dev/null; t
     -ov \
     -format ULMO \
     "$OUT_PATH"
-  hdiutil verify "$OUT_PATH" >/dev/null 2>&1 && echo "✅ DMG 创建成功（沙箱回退模式，无 Finder 样式）: $OUT_PATH" || echo "⚠️ DMG 创建完成但校验失败: $OUT_PATH"
+  if hdiutil verify "$OUT_PATH" >/dev/null 2>&1; then
+    if [[ "$FALLBACK_HAS_STYLE" == "1" ]]; then
+      echo "✅ DMG 创建成功（沙箱回退 + Finder 样式模板）: $OUT_PATH"
+    else
+      echo "✅ DMG 创建成功（沙箱回退模式，无 Finder 样式）: $OUT_PATH"
+    fi
+  else
+    echo "⚠️ DMG 创建完成但校验失败: $OUT_PATH"
+  fi
   # 清理临时目录
   rm -rf "$DMG_SOURCE"
   exit 0

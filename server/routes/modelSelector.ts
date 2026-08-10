@@ -98,6 +98,8 @@ export interface ModelTagFilter {
   exclude?: ModelCapability[];
   /** 排除的 provider */
   excludeProviders?: string[];
+  /** 偏好的标签（命中时优先选择，不影响候选集过滤） */
+  preferCapabilities?: ModelCapability[];
 }
 
 /** 路由层级 */
@@ -153,28 +155,45 @@ const ROUTING_RULES: RoutingRule[] = [
     priority: 0,
     description: '上传图片、截图、PDF 解析 → 多模态模型',
   },
+  // Long Context 长上下文层 — 紧接多模态，避免大量上下文被小窗口模型截断
+  {
+    tier: 'tier2',
+    dimensionThreshold: { dimension: 'contextLength', min: 7 },
+    tagFilter: {
+      requireAny: ['longContext', 'general', 'reasoning'],
+      preferCapabilities: ['longContext', 'reasoning'],
+    },
+    priority: 1,
+    description: '上下文占窗口 70%+，优先选长上下文模型避免截断',
+  },
   // Tier3 强推理层 — 复杂任务
   {
     tier: 'tier3',
     minScore: 6.5,
-    tagFilter: { requireAny: ['reasoning', 'code'] },
-    priority: 1,
+    tagFilter: {
+      requireAny: ['reasoning', 'code', 'longContext'],
+      preferCapabilities: ['reasoning'],
+    },
+    priority: 2,
     description: '架构设计、深度分析、长代码重构、多步骤 MCP 串联 → 强推理模型',
   },
   // Code 代码专用层 — 代码特征突出
   {
     tier: 'tier2',
     dimensionThreshold: { dimension: 'code', min: 7 },
-    tagFilter: { requireAny: ['code'] },
-    priority: 2,
+    tagFilter: {
+      requireAny: ['code', 'reasoning'],
+      preferCapabilities: ['code'],
+    },
+    priority: 3,
     description: '含完整代码块、编译报错 → 代码专用模型',
   },
   // Tier2 均衡层 — 中等任务
   {
     tier: 'tier2',
     minScore: 3.5,
-    tagFilter: { requireAny: ['general', 'code', 'reasoning'] },
-    priority: 3,
+    tagFilter: { requireAny: ['general', 'code', 'reasoning', 'longContext'] },
+    priority: 4,
     description: '普通写作、单文件代码、常规文档处理 → 均衡中端模型',
   },
   // Tier1 轻量层 — 简单任务
@@ -182,7 +201,7 @@ const ROUTING_RULES: RoutingRule[] = [
     tier: 'tier1',
     minScore: 0,
     tagFilter: { requireAny: ['fast', 'costEffective', 'general'] },
-    priority: 4,
+    priority: 5,
     description: '心跳、简单问答、文本检索、短指令 → 轻量廉价模型',
   },
 ];
@@ -190,27 +209,75 @@ const ROUTING_RULES: RoutingRule[] = [
 /** 简单意图关键词（Tier1 轻量层） */
 const SIMPLE_INTENT_KEYWORDS = [
   // 中文
-  '你好', 'hello', 'hi', '在吗', '谢谢', '感谢', '再见', '拜拜',
-  '计算', '多少', '几', '翻译', '是什么', '什么是', '定义',
-  '天气', '时间', '日期',
+  '你好', '在吗', '请问', '谢谢', '感谢', '再见', '拜拜', '多谢',
+  '计算', '算一下', '多少', '几', '等于', '翻译', '译成',
+  '是什么', '什么是', '什么叫', '谁是', '告诉', '解释一下',
+  '定义', '含义', '意思', '查询', '查一下', '找',
+  '天气', '时间', '日期', '星期', '几点', '今天',
   // 英文
-  'hello', 'hi', 'hey', 'thanks', 'thank you', 'bye', 'goodbye',
-  'calculate', 'compute', 'translate', 'define', 'what is', 'who is',
-  'weather', 'time', 'date',
+  'hello', 'hi', 'hey', 'greetings', 'thanks', 'thank you', 'thx', 'ty',
+  'bye', 'goodbye', 'see you', 'see ya',
+  'calculate', 'compute', 'what is', 'who is', 'tell me', 'explain',
+  'define', 'definition', 'meaning', 'lookup', 'look up',
+  'translate', 'translation', 'convert',
+  'weather', 'time', 'date', 'today', 'what day',
+  'search', 'find', 'check', 'list', 'show me',
+  'yes', 'no', 'ok', 'okay', 'sure', 'right',
 ];
 
 /** 复杂意图关键词（Tier3 强推理层） */
 const COMPLEX_INTENT_KEYWORDS = [
   // 中文
-  '架构', '设计', '重构', '优化', '调试', 'debug', '排错',
-  '分析', '评估', '对比', '比较', '证明', '推导',
-  '多步骤', '流程', '方案', '策略', '规划',
-  '数学', '算法', '公式', '证明',
+  '架构', '系统设计', '设计方案', '重构', '代码重构',
+  '优化', '性能优化', '调优', '提升性能', '提速',
+  '调试', 'debug', '排错', '修复 bug', '定位问题', '报错', '异常',
+  '深度分析', '深入分析', '根因', '根本原因', '为什么会',
+  '评估', '可行性', '对比', '比较', '权衡', 'pros and cons',
+  '证明', '推导', '推理', '演绎', '归纳', '论证',
+  '多步骤', '流程', '工作流', '完整方案', '整体方案',
+  '策略', '规划', '路线图', 'roadmap', '蓝图',
+  '数学', '算法', '公式', '定理', '复杂度',
+  '创新', '发明', '专利', '研究', '方法论',
+  '审计', '审查', '代码审查', '安全审计', '渗透测试',
   // 英文
-  'architecture', 'design', 'refactor', 'optimize', 'debug', 'troubleshoot',
-  'analyze', 'evaluate', 'compare', 'benchmark', 'prove', 'derive',
-  'multi-step', 'workflow', 'pipeline', 'strategy', 'plan',
-  'math', 'algorithm', 'formula', 'proof',
+  'architecture', 'architect', 'system design', 'design doc',
+  'refactor', 'refactoring', 'restructure', 'rewrite',
+  'optimize', 'optimization', 'performance', 'speed up', 'bottleneck', 'latency', 'throughput',
+  'debug', 'debugging', 'troubleshoot', 'troubleshooting', 'diagnose', 'diagnostic',
+  'investigate', 'root cause', 'rca', 'why is', 'failing', 'crash', 'exception', 'stacktrace',
+  'analyze', 'analysis', 'analyze deeply', 'deep dive', 'explain why',
+  'evaluate', 'evaluation', 'feasibility', 'viability',
+  'compare', 'comparison', 'contrast', 'benchmark', 'trade-off', 'tradeoff', 'pros and cons',
+  'prove', 'proof', 'derive', 'deduct', 'reasoning', 'inference', 'deduction',
+  'multi-step', 'multi step', 'workflow', 'pipeline', 'orchestration', 'automation flow',
+  'strategy', 'strategic', 'plan', 'planning', 'roadmap', 'blueprint',
+  'algorithm', 'complexity', 'big o', 'time complexity', 'space complexity',
+  'math', 'mathematical', 'theorem', 'formula', 'equation', 'statistics',
+  'innovative', 'invention', 'research', 'methodology', 'framework design',
+  'audit', 'review', 'code review', 'security audit', 'penetration test', 'pentest',
+];
+
+/** 中等意图关键词（Tier2 均衡层） */
+const MEDIUM_INTENT_KEYWORDS = [
+  // 中文
+  '写一个', '帮我写', '生成', '创建', '新建', '构建', '编写', '起草',
+  '修改', '编辑', '调整', '改进', '变更', '更新',
+  '整理', '汇总', '归纳', '总结', '概括', '提炼', '提取要点',
+  '表格', '数据', '报表', '报告', '分析报告', '统计',
+  '文档', '说明', '教程', '指南', '手册', 'README',
+  '拆分', '拆解', '分解', '步骤', '清单', 'checklist',
+  '合并', '整合', '综合', '统一', '标准化',
+  // 英文
+  'write', 'write a', 'draft', 'compose', 'author',
+  'create', 'generate', 'build', 'make', 'implement', 'develop',
+  'modify', 'update', 'change', 'edit', 'adjust', 'improve', 'enhance',
+  'summarize', 'summary', 'recap', 'synthesis', 'synthesize', 'abstract',
+  'table', 'data', 'report', 'spreadsheet', 'chart', 'dashboard',
+  'document', 'documentation', 'guide', 'tutorial', 'how-to', 'how to', 'manual', 'readme',
+  'break down', 'decompose', 'split up', 'steps', 'checklist', 'outline',
+  'merge', 'integrate', 'consolidate', 'unify', 'standardize',
+  'format', 'convert', 'export', 'import', 'migrate',
+  'review', 'polish', 'refine', 'improve', 'improvement',
 ];
 
 /** 代码特征正则 */
@@ -223,12 +290,19 @@ const CODE_PATTERNS = [
   /(?:stack trace|stacktrace|at\s+\w+\.\w+\()/i,
 ];
 
-/** 上下文长度阈值 */
+/** 上下文长度阈值（ratio = 当前 token 数 / 模型实际窗口大小）
+ *
+ * 调整依据：对小窗口模型（8k/16k）的压力更敏感。
+ * 旧版：long=0.85 意味着 8k 模型需要 >=6.8k token 才触发 7 分 → 过于宽松，
+ *       极易在触发 long_context 路由前就被截短。
+ * 新版：0.4/0.7/0.9 三档，对应 8k 模型 3.2k/5.6k/7.2k 时分别升档，
+ *       能提前选中 longContext 能力模型，避免截断。
+ */
 const CONTEXT_LENGTH_THRESHOLDS = {
-  short: 0.3,     // < 30% → 低分
-  medium: 0.6,    // 30%~60% → 中分
-  long: 0.85,     // 60%~85% → 高分
-  veryLong: 1.0,  // > 85% → 最高分
+  short: 0.15,    // < 15% → 1 分
+  medium: 0.40,   // 15%~40% → 4 分
+  long: 0.70,     // 40%~70% → 7 分
+  veryLong: 0.90, // > 70% → 10 分
 } as const;
 
 // ===================== 5 维度评分引擎 =====================
@@ -275,14 +349,8 @@ function scoreIntent(message: string): number {
   if (complexMatches.length >= 2) return 9;   // 多个复杂关键词
   if (complexMatches.length >= 1) return 7;    // 单个复杂关键词
 
-  // 检测中等意图
-  const mediumKeywords = [
-    '写', '写一个', '帮我', '创建', '生成', '修改', '更新',
-    'write', 'create', 'generate', 'modify', 'update', 'build', 'make',
-    '整理', '汇总', '总结', 'summarize', 'organize',
-    '表格', '数据', '报告', 'report', 'table', 'chart',
-  ];
-  const mediumMatches = mediumKeywords.filter(kw => lower.includes(kw.toLowerCase()));
+  // 检测中等意图：复用 MEDIUM_INTENT_KEYWORDS 常量（已补充完整中英双语）
+  const mediumMatches = MEDIUM_INTENT_KEYWORDS.filter(kw => lower.includes(kw.toLowerCase()));
   if (mediumMatches.length >= 2) return 6;
   if (mediumMatches.length >= 1) return 5;
 
@@ -533,7 +601,7 @@ export interface ScoringInput {
   hasVideoAttachment?: boolean;
   /** 上下文 Token 数 */
   contextTokenCount?: number;
-  /** 上下文窗口大小 */
+  /** 上下文窗口大小（调用方可显式指定；留空则从候选模型推导） */
   contextWindowSize?: number;
   /** 历史工具调用次数 */
   toolCallCount?: number;
@@ -545,6 +613,36 @@ export interface ScoringInput {
   semanticIntentScore?: number;
   /** [六] 语义分类置信度（0~1），低于阈值时规则主导 */
   semanticIntentConfidence?: number;
+}
+
+/** 默认上下文窗口尺寸（当候选模型均未配置 contextWindow 时的兜底值） */
+const FALLBACK_CONTEXT_WINDOW = 128_000;
+
+/**
+ * 从候选模型列表中推导「合理参考上下文窗口」。
+ *
+ * 旧逻辑固定使用 128k，导致：
+ *   - 全是 8k/32k 小窗口模型时，ctx 占比被严重低估，误判为 tier1 简单任务
+ *   - 全是 200k+ 大窗口模型时，ctx 占比被高估，误判为 long_context
+ * 新逻辑：取候选模型 contextWindow 的「中位数」作为参考窗口，更贴近真实可用能力。
+ * 对于缺失 contextWindow 的模型，按能力标签粗略推断（longContext=200k，其他=128k）。
+ */
+function selectSensibleContextWindowSize(models: ModelsFile['models']): number {
+  const sizes: number[] = [];
+  for (const m of models) {
+    if (m.contextWindow && m.contextWindow > 0) {
+      sizes.push(m.contextWindow);
+    } else {
+      const caps = m.capabilities ?? [];
+      if (caps.includes('longContext')) sizes.push(200_000);
+      else sizes.push(FALLBACK_CONTEXT_WINDOW);
+    }
+  }
+  if (sizes.length === 0) return FALLBACK_CONTEXT_WINDOW;
+  // 中位数：抗极端值（比如混了一个 1M 窗口模型）影响
+  sizes.sort((a, b) => a - b);
+  const mid = sizes.length >> 1;
+  return sizes.length % 2 === 1 ? sizes[mid] : (sizes[mid - 1] + sizes[mid]) / 2;
 }
 
 /**
@@ -687,8 +785,15 @@ function selectModelByRoutingRules(
     const matched = filterModelsByTag(candidateModels, rule.tagFilter);
     if (matched.length === 0) continue;
 
-    // 选择最佳匹配
-    const selected = matched[0];
+    // 精确标签优先：例如 long_context 路由 requireAny=[longContext,general,reasoning]，
+    // 应当先挑明确标注 longContext 的模型，而不是排在最前面的 general 小模型
+    let selected = matched[0];
+    if (rule.tagFilter.preferCapabilities?.length) {
+      for (const prefCap of rule.tagFilter.preferCapabilities) {
+        const pref = matched.find(m => (m.capabilities ?? []).includes(prefCap));
+        if (pref) { selected = pref; break; }
+      }
+    }
 
     return {
       modelId: selected.id,
@@ -789,6 +894,12 @@ export function autoSelectModel(
     );
   }
 
+  // Step 0: 动态推导参考上下文窗口大小（基于候选模型实际能力，不再硬编码 128k）
+  // 如果调用方已显式传入 contextWindowSize，优先使用；否则从候选模型推导中位数。
+  const effectiveContextWindowSize = input?.contextWindowSize && input.contextWindowSize > 0
+    ? input.contextWindowSize
+    : selectSensibleContextWindowSize(candidateModels);
+
   // Step 1: 计算 5 维度评分
   const { scores, totalScore } = computeComplexityScore({
     message,
@@ -796,7 +907,7 @@ export function autoSelectModel(
     hasPdfAttachment: input?.hasPdfAttachment,
     hasVideoAttachment: input?.hasVideoAttachment,
     contextTokenCount: input?.contextTokenCount,
-    contextWindowSize: input?.contextWindowSize,
+    contextWindowSize: effectiveContextWindowSize,
     toolCallCount: input?.toolCallCount,
     activeMcpCount: input?.activeMcpCount,
     activeSkillCount: input?.activeSkillCount,

@@ -70,7 +70,6 @@ export default function AppHeader({
     <header className={cn('flex w-full items-start gap-[16px]', className)}>
       <div className="min-w-0 flex-1">{leftContent}</div>
       <div className="flex h-[32px] shrink-0 items-center gap-[8px]">
-        <LanguageSwitcher />
         {right !== undefined ? right : (
           <DropdownMenu>
             <DropdownMenuTrigger

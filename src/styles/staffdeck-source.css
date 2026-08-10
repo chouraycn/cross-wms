@@ -2571,8 +2571,8 @@ code {
 
 /* frontend-design polish: distinctive workspace shell, resilient layout, adaptive code surfaces */
 ::selection {
-  color: #ffffff;
-  background: var(--accent);
+  color: inherit;
+  background: rgba(59, 130, 246, 0.15);
 }
 
 .app-shell,

@@ -42,7 +42,6 @@ export default function ChatHeader({ chat }: { chat: UseChatSession }) {
       </div>
 
       <div className="flex shrink-0 items-center gap-[8px]">
-        <LanguageSwitcher />
         <DropdownMenu>
           <DropdownMenuTrigger
             aria-label="账户菜单"

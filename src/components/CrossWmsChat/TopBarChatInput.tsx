@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback, useMemo, Suspense } fr
 import { useNavigate } from 'react-router-dom';
 import {
   Box, Paper, Chip, Typography, Popover, useTheme, IconButton, Collapse, Tooltip,
-  Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button,
+  Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button, CircularProgress,
 } from '@mui/material';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
@@ -136,6 +136,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
   // folderContext: 用于传递给后端的上下文（原生=绝对路径；Web=拼接好的内容字符串）
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [folderContext, setFolderContext] = useState<string | null>(null);
+  const [isSelectingFolder, setIsSelectingFolder] = useState(false);
   const folderInputRef = useRef<HTMLInputElement | null>(null);
 
   // 语音输入状态
@@ -329,19 +330,19 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
     // @ts-expect-error FIXME: cdfAppNative 是宿主注入的非标准全局对象，应在 src/global.d.ts 补类型声明
     const native = window.cdfAppNative;
     if (native && typeof native.pickFolder === 'function') {
+      setIsSelectingFolder(true);
       try {
         const folderPath = await native.pickFolder();
         if (folderPath) {
-          // 原生场景：直接传路径给后端，由后端扫描文件夹内容
           setSelectedFolder(folderPath);
           setFolderContext(folderPath);
         }
       } catch {
-        // 原生调用失败，回退到 input
         folderInputRef.current?.click();
+      } finally {
+        setIsSelectingFolder(false);
       }
     } else {
-      // Web 环境：使用 input[webkitdirectory]
       folderInputRef.current?.click();
     }
   }, []);
@@ -356,6 +357,8 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
       return;
     }
 
+    setIsSelectingFolder(true);
+    try {
     // webkitRelativePath 是非标准 File 属性，TS 新版本内置 DOM lib 已声明
     const relPath: string = files[0].webkitRelativePath || '';
     const folderName = relPath.split('/')[0] || 'folder';
@@ -373,31 +376,56 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
     const MAX_TOTAL_SIZE = 800_000; // 总内容 800KB 上限
     const MAX_FILES_TO_READ = 100; // 最多读取 100 个文件
 
-    const parts: string[] = [`【文件夹】${folderName}（共 ${fileCount} 个文件）`];
-    let totalSize = 0;
-    let readCount = 0;
+    // 先过滤出可读文件，再并行读取
+    const readableFiles: Array<{ file: File; relativePath: string; ext: string }> = [];
+    const skippedFiles: string[] = [];
 
-    for (let i = 0; i < files.length && readCount < MAX_FILES_TO_READ && totalSize < MAX_TOTAL_SIZE; i++) {
+    for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      // webkitRelativePath 是非标准 File 属性，TS 新版本内置 DOM lib 已声明（见 line 359）
       const relativePath: string = file.webkitRelativePath || file.name;
       const ext = (relativePath.split('.').pop() || '').toLowerCase();
       if (!TEXT_EXTS.has(ext)) continue;
       if (file.size > MAX_FILE_SIZE) {
-        parts.push(`\n--- ${relativePath} (文件过大: ${(file.size / 1024).toFixed(1)}KB，已跳过) ---`);
+        skippedFiles.push(`\n--- ${relativePath} (文件过大: ${(file.size / 1024).toFixed(1)}KB，已跳过) ---`);
         continue;
       }
-      try {
-        const content = await file.text();
-        parts.push(`\n--- ${relativePath} ---\n\`\`\`${ext}\n${content}\n\`\`\``);
-        totalSize += content.length;
-        readCount++;
-      } catch {
-        parts.push(`\n--- ${relativePath} (读取失败) ---`);
-      }
+      readableFiles.push({ file, relativePath, ext });
+      if (readableFiles.length >= MAX_FILES_TO_READ) break;
     }
 
-    if (readCount === 0) {
+    // 并行读取所有文件内容
+    const readResults = await Promise.all(
+      readableFiles.map(async ({ file, relativePath, ext }) => {
+        try {
+          const content = await file.text();
+          return { relativePath, ext, content, ok: true };
+        } catch {
+          return { relativePath, ext, content: '', ok: false };
+        }
+      })
+    );
+
+    const parts: string[] = [`【文件夹】${folderName}（共 ${fileCount} 个文件）`];
+    parts.push(...skippedFiles);
+
+    let totalSize = 0;
+    let readCount = 0;
+
+    for (const result of readResults) {
+      if (totalSize >= MAX_TOTAL_SIZE) break;
+      if (!result.ok) {
+        parts.push(`\n--- ${result.relativePath} (读取失败) ---`);
+        continue;
+      }
+      const truncatedContent = totalSize + result.content.length > MAX_TOTAL_SIZE
+        ? result.content.slice(0, MAX_TOTAL_SIZE - totalSize)
+        : result.content;
+      parts.push(`\n--- ${result.relativePath} ---\n\`\`\`${result.ext}\n${truncatedContent}\n\`\`\``);
+      totalSize += truncatedContent.length;
+      readCount++;
+    }
+
+    if (readCount === 0 && skippedFiles.length === 0) {
       parts.push('\n（未发现可读取的文本文件）');
     } else if (readCount < fileCount) {
       parts.push(`\n（已读取 ${readCount} / ${fileCount} 个文本文件，其余被跳过）`);
@@ -408,6 +436,9 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
     const contextStr = `FOLDER_CONTENT_INLINE\n${parts.join('\n')}`;
     setSelectedFolder(`${folderName}（${fileCount} 个文件）`);
     setFolderContext(contextStr);
+    } finally {
+      setIsSelectingFolder(false);
+    }
 
     // 重置 input value 以便重复选择同一文件夹
     e.target.value = '';
@@ -1454,7 +1485,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
         >
             {/* 选择文件夹 */}
             <Box
-              onClick={selectedFolder ? undefined : handleSelectFolder}
+              onClick={selectedFolder || isSelectingFolder ? undefined : handleSelectFolder}
               sx={{
                 display: 'flex',
                 alignItems: 'center',
@@ -1462,14 +1493,14 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
                 px: 1.25,
                 py: 0.5,
                 borderRadius: '10px',
-                cursor: selectedFolder ? 'default' : 'pointer',
+                cursor: selectedFolder || isSelectingFolder ? 'default' : 'pointer',
                 color: selectedFolder ? '#6366f1' : gs.textMuted,
                 fontSize: 13,
                 bgcolor: 'transparent',
                 border: 'none',
                 maxWidth: 320,
                 transition: 'all 0.2s ease',
-                '&:hover': selectedFolder
+                '&:hover': selectedFolder || isSelectingFolder
                   ? {}
                   : {
                       bgcolor: 'transparent',
@@ -1490,9 +1521,17 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
                   flexShrink: 0,
                 }}
               >
-                <FolderOpenIcon sx={{ fontSize: 14, color: selectedFolder ? '#6366f1' : 'inherit' }} />
+                {isSelectingFolder ? (
+                  <CircularProgress size={14} sx={{ color: gs.textMuted }} />
+                ) : (
+                  <FolderOpenIcon sx={{ fontSize: 14, color: selectedFolder ? '#6366f1' : 'inherit' }} />
+                )}
               </Box>
-              {selectedFolder ? (
+              {isSelectingFolder ? (
+                <Typography sx={{ fontSize: 13, color: gs.textMuted }}>
+                  {t('读取中...')}
+                </Typography>
+              ) : selectedFolder ? (
                 <>
                   <Typography
                     sx={{

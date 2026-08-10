@@ -181,23 +181,25 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
 
   // 点击弹窗外部自动关闭（兜底处理，确保透明 backdrop 下也能关闭）
   useEffect(() => {
-    if (!activeDropdown) return;
+    if (!activeDropdown && !thinkingMenuOpen) return;
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as Node;
       if (
         modelBtnRef.current?.contains(target) ||
         skillsBtnRef.current?.contains(target) ||
-        chainsBtnRef.current?.contains(target)
+        chainsBtnRef.current?.contains(target) ||
+        thinkingBtnRef.current?.contains(target)
       ) return;
       // 如果点击在 Menu 的 Paper 内部，不关闭
       const menuPaper = document.querySelector('.MuiMenu-root .MuiPaper-root');
       if (menuPaper?.contains(target)) return;
       setActiveDropdown(null);
+      setThinkingMenuOpen(false);
     };
     // 使用 capture 阶段确保优先于 MUI 内部处理
     document.addEventListener('mousedown', handleClickOutside, true);
     return () => document.removeEventListener('mousedown', handleClickOutside, true);
-  }, [activeDropdown]);
+  }, [activeDropdown, thinkingMenuOpen]);
 
   const handleDropdownClick = (type: DropdownType) => {
     setActiveDropdown(prev => prev === type ? null : type);

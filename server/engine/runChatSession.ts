@@ -27,7 +27,7 @@ import { resolveSkillContext, extractContextTexts } from './skillRouter.js';
 import type { ModelCallConfig, MessageContent, ToolCall as AiToolCall } from '../aiClient.js';
 import { loadModelsConfig, isLocalModel } from '../modelsStore.js';
 import type { ModelCapability, ModelConfig, ModelsFile } from '../modelsStore.js';
-import { autoSelectModelAsync, generateMockResponse } from '../routes/modelSelector.js';
+import { autoSelectModelAsync, generateMockResponse, type ScoringInput } from '../routes/modelSelector.js';
 import { selectKey, reportKeyResult } from '../keyRotator.js';
 import { waitForBackoff } from './backoffWait.js';
 import { getBackoffCoordinator } from './backoffCoordinator.js';
@@ -37,7 +37,7 @@ import { getSessionMessages, addMessage, getSessions, createSession, updateSessi
 import { extractAndAppendMemory } from '../routes/memoryExtractor.js';
 import { triggerTurnEndSync, triggerPostCompactionSync } from './sessionMemorySync.js';
 import { compressContextWithSummary } from './contextCompress.js';
-import { truncateContextForModel } from './contextTruncate.js';
+import { estimateMessagesTokens, truncateContextForModel, type ApiMessage } from './contextTruncate.js';
 import contextWindowCache from './contextCache.js';
 import { getContextWindowGuard } from './contextWindowGuard.js';
 import { TokenBudgetManager } from './compaction/tokenBudget.js';
@@ -514,7 +514,20 @@ export async function runChatSession(
   let autoSemanticConfidence: number | undefined;
 
   if (model === 'auto') {
-    const autoResult = await autoSelectModelAsync(message, modelsConfig as ModelsFile, hasImageAttachment(input.attachments));
+    // v1.7.17x: 为 engine 路径补齐 ScoringInput，否则上下文窗口动态化 + 工具调用加分不会生效
+    const convHistory = input.conversationHistory || [];
+    const historyMsgs: ApiMessage[] = convHistory.map((m: any) => ({
+      role: m.role || 'user',
+      content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content || ''),
+    }));
+    const contextTokenCount = historyMsgs.length > 0 ? estimateMessagesTokens(historyMsgs) : 0;
+    const toolCallCount = convHistory.filter((m: any) =>
+      m.tool_calls || (Array.isArray(m.content) && m.content.some((c: any) => c.type === 'tool_use' || c.type === 'tool_result'))
+    ).length;
+    const activeSkillCount = input.skillId ? 1 : 0;
+    const scoringInput: Partial<ScoringInput> = { contextTokenCount, toolCallCount, activeSkillCount };
+
+    const autoResult = await autoSelectModelAsync(message, modelsConfig as ModelsFile, hasImageAttachment(input.attachments), scoringInput);
     effectiveModel = autoResult.modelId;
     effectiveModelName = autoResult.modelName;
     autoReason = `${autoResult.modelName} · ${autoResult.reason}`;

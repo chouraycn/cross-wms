@@ -20,7 +20,8 @@ import { getBuiltinToolDefinitions } from '../engine/toolRegistry.js';
 import { getSkillToolDefinitions } from '../engine/skillToolBridge.js';
 import { TimerManager } from '../sse/timerManager.js';
 import { loadModelsConfig, isLocalModel } from '../modelsStore.js';
-import { autoSelectModelAsync } from '../routes/modelSelector.js';
+import { autoSelectModelAsync, type ScoringInput } from '../routes/modelSelector.js';
+import { estimateMessagesTokens, type ApiMessage } from '../engine/contextTruncate.js';
 import { selectKey } from '../keyRotator.js';
 import * as agentDao from '../dao/staff/staffAgentDao.js';
 import * as skillDao from '../dao/staff/staffSkillDao.js';
@@ -273,7 +274,14 @@ export async function runStaffChatTurn(
       }
       // 绑定缺失或解析不到时回落全局 auto 选型（保持原行为）
       if (!effectiveModel) {
-        const auto = await autoSelectModelAsync(message, modelsConfig, false);
+        // v1.7.17x: 为员工 executor 补齐 ScoringInput。history 是 StaffChatHistoryItem[]，
+        // 直接转成 ApiMessage 估算 token；KB 检索 + 技能 SOP 已在 systemPrompt 中拼装，
+        // scoring 只按 history 估算即可（量级一致）。
+        const historyMsgs: ApiMessage[] = history.map(h => ({ role: h.role, content: h.content }));
+        const contextTokenCount = historyMsgs.length > 0 ? estimateMessagesTokens(historyMsgs) : 0;
+        const activeSkillCount = sops.length;
+        const scoringInput: Partial<ScoringInput> = { contextTokenCount, activeSkillCount };
+        const auto = await autoSelectModelAsync(message, modelsConfig, false, scoringInput);
         effectiveModel = auto.modelId;
         effectiveModelName = auto.modelName;
       }
