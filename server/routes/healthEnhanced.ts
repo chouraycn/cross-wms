@@ -327,8 +327,9 @@ router.post('/config/:key/rollback', (req, res) => {
     const success = configHotReload.rollback();
     res.json({ success, message: success ? 'Rolled back' : 'No snapshots available' });
   } else {
-    // 单个配置回滚（暂不支持，后续可扩展）
-    res.status(501).json({ error: 'Single config rollback not implemented' });
+    // 回滚单个配置 key
+    const success = configHotReload.rollbackKey(key);
+    res.json({ success, message: success ? `Key "${key}" rolled back` : `No snapshot available for key "${key}"` });
   }
 });
 

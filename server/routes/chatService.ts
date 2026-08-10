@@ -572,7 +572,7 @@ async function executeQueuedMessage(
       runId,
     });
 
-    extractAndAppendMemory(params.message, result.content, dbMessages.map((m) => ({ role: m.role, content: m.content }))).catch(() => {});
+    extractAndAppendMemory(params.message, result.content, dbMessages.map((m) => ({ role: m.role, content: m.content })), sessionId).catch(() => {});
 
     messageQueue.markCompleted(sessionId);
     activeSSEConnections.delete(sessionId);

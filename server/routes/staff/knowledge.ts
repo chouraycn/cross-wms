@@ -3,7 +3,7 @@
  *
  * 端点（16 个）：
  *   POST   /documents                       — 上传文档（创建 document + ingest job）
- *   POST   /okf/import                      — 导入 OKF 包（stub）
+ *   POST   /okf/import                      — 导入 OKF 包（JSON 兼容）
  *   GET    /documents                       — 列出文档
  *   GET    /documents/:documentId           — 获取文档
  *   PUT    /documents/:documentId           — 更新文档
@@ -98,12 +98,77 @@ router.post('/documents', async (req: Request, res: Response) => {
   res.status(201).json({ code: 0, data: { doc, job }, message: 'ok' });
 });
 
-// ===================== POST /okf/import — 功能未接入 =====================
+// ===================== POST /okf/import — JSON 兼容包导入 =====================
+// OKF 无正式公开 schema 规范，此处接受 JSON 兼容格式的概念包并 upsert 落库。
+// 请求体：{ knowledge_base_id, knowledge_base_version_id?, concepts: [...] }
+// concepts 元素字段对齐 ConceptInput（concept_id / concept_type / title / content_md ...）。
 router.post('/okf/import', (req: Request, res: Response) => {
+  const tenantId = tenantOf(req);
+  const { knowledge_base_id, knowledge_base_version_id, concepts } = req.body ?? {};
+
+  if (!knowledge_base_id || typeof knowledge_base_id !== 'string') {
+    res.status(400).json({
+      code: 400,
+      data: null,
+      message: 'knowledge_base_id 必填',
+    });
+    return;
+  }
+  const kb = kbDao.getKnowledgeBaseById(tenantId, knowledge_base_id);
+  if (!kb) {
+    res.status(404).json({ code: 404, data: null, message: '知识库不存在' });
+    return;
+  }
+
+  const rawConcepts = Array.isArray(concepts) ? concepts : [];
+  const versionId =
+    (knowledge_base_version_id as string | undefined) ??
+    kbDao.getEffectiveKnowledgeBaseVersions(tenantId).get(knowledge_base_id)?.id ??
+    'default';
+
+  const imported: ReturnType<typeof kDao.toConceptRead>[] = [];
+  let skipped = 0;
+  for (const item of rawConcepts) {
+    if (!item || typeof item !== 'object') {
+      skipped += 1;
+      continue;
+    }
+    const conceptId = String(item.concept_id || '').trim();
+    const contentMd = String(item.content_md || '');
+    if (!conceptId || !contentMd) {
+      skipped += 1;
+      continue;
+    }
+    const row = kDao.upsertConcept({
+      tenant_id: tenantId,
+      knowledge_base_id,
+      knowledge_base_version_id: versionId,
+      concept_id: conceptId,
+      concept_type: String(item.concept_type || item.frontmatter?.type || 'Topic'),
+      document_id: item.document_id ?? null,
+      title: String(item.title || item.frontmatter?.title || conceptId),
+      description: item.description ?? null,
+      content_md: contentMd,
+      frontmatter: item.frontmatter ?? {},
+      links: item.links ?? [],
+      citations: item.citations ?? [],
+      source_refs: item.source_refs ?? [],
+      status: item.status || 'active',
+    });
+    imported.push(kDao.toConceptRead(row));
+  }
+
   res.json({
     code: 0,
-    data: { implemented: false, imported: 0, concepts: [] },
-    message: '功能未接入：OKF 包导入尚未实现（无 OKF schema 规范），请使用「新增文档（文本入库）」入库',
+    data: {
+      implemented: true,
+      format: 'json-compatible',
+      knowledge_base_id,
+      imported: imported.length,
+      skipped,
+      concepts: imported,
+    },
+    message: 'ok',
   });
 });
 

@@ -410,6 +410,63 @@ export class ConfigHotReload extends EventEmitter {
   }
 
   /**
+   * 回滚单个配置 key 到上一个快照中的值
+   *
+   * 从最近的快照开始向前查找包含该 key 的快照，
+   * 将该 key 的旧值恢复到当前 entries，并从快照中移除该 key
+   * （避免下次全量回滚再覆盖已恢复的值）。
+   *
+   * @returns true 表示找到并回滚成功；false 表示无快照或 key 不存在于任何快照
+   */
+  rollbackKey(key: string): boolean {
+    if (this.snapshots.length === 0) {
+      logger.warn(`[ConfigHotReload] No snapshots to rollback key: ${key}`);
+      return false;
+    }
+
+    // 从最新快照向前查找包含该 key 的快照
+    for (let i = this.snapshots.length - 1; i >= 0; i--) {
+      const snapshot = this.snapshots[i];
+      const prevEntry = snapshot.entries.get(key);
+      if (prevEntry !== undefined) {
+        // 恢复该 key 的旧值
+        this.entries.set(key, { ...prevEntry });
+        // 从该快照及之后所有快照中移除该 key，避免后续全量回滚覆盖
+        for (let j = i; j < this.snapshots.length; j++) {
+          this.snapshots[j].entries.delete(key);
+        }
+
+        logger.info(`[ConfigHotReload] Rolled back key "${key}" to ${new Date(snapshot.timestamp).toISOString()}`);
+
+        this.emitEvent({
+          type: 'changed',
+          file: 'rollback',
+          key,
+          timestamp: Date.now(),
+        });
+
+        return true;
+      }
+    }
+
+    // key 不存在于任何快照 — 可能是新增后未保存快照，尝试删除当前值
+    if (this.entries.has(key)) {
+      this.entries.delete(key);
+      logger.info(`[ConfigHotReload] Removed key "${key}" (no previous snapshot found)`);
+      this.emitEvent({
+        type: 'removed',
+        file: 'rollback',
+        key,
+        timestamp: Date.now(),
+      });
+      return true;
+    }
+
+    logger.warn(`[ConfigHotReload] Key "${key}" not found in any snapshot or current entries`);
+    return false;
+  }
+
+  /**
    * 获取配置值
    */
   get<T = unknown>(key: string): T | undefined {

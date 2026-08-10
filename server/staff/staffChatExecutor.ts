@@ -23,6 +23,7 @@ import { loadModelsConfig, isLocalModel } from '../modelsStore.js';
 import { autoSelectModelAsync, type ScoringInput } from '../routes/modelSelector.js';
 import { estimateMessagesTokens, type ApiMessage } from '../engine/contextTruncate.js';
 import { selectKey } from '../keyRotator.js';
+import * as wikiStore from '../engine/wikiStore.js';
 import * as agentDao from '../dao/staff/staffAgentDao.js';
 import * as skillDao from '../dao/staff/staffSkillDao.js';
 import * as kbDao from '../dao/staff/staffKnowledgeDao.js';
@@ -143,28 +144,53 @@ function collectBoundSkills(tenantId: string, agentId: string): SkillSop[] {
   return sops;
 }
 
-/** 拉取 agent 绑定的知识库，并就用户问题检索相关 chunk，拼成上下文 */
+/** 拉取 agent 绑定的知识库，并就用户问题检索相关 chunk，拼成上下文。
+ *  同时检索 Wiki 向量索引，将 Wiki 命中与知识库 chunk 合并按 score 排序。 */
 async function collectKnowledgeContext(tenantId: string, agentId: string, query: string): Promise<string> {
-  const bindings = agentDao.listAgentResourceBindings(tenantId, agentId, 'knowledge_base');
-  if (bindings.length === 0) return '';
   const seen = new Set<string>();
-  const blocks: string[] = [];
+  const scored: Array<{ score: number; block: string }> = [];
+
+  // 1. 知识库 RAG 检索（tenant 隔离）
+  const bindings = agentDao.listAgentResourceBindings(tenantId, agentId, 'knowledge_base');
   for (const b of bindings) {
-    const hits = await kbDao.searchKnowledge({
-      tenant_id: tenantId,
-      knowledge_base_id: b.resource_id,
-      query,
-      limit: 3,
-    });
-    for (const h of hits) {
-      const content = h.chunk?.content;
-      if (!content || seen.has(content)) continue;
-      seen.add(content);
-      const src = h.document?.title || h.bucket?.title || '知识库';
-      blocks.push(`【来源：${src}】\n${content}`);
+    try {
+      const hits = await kbDao.searchKnowledge({
+        tenant_id: tenantId,
+        knowledge_base_id: b.resource_id,
+        query,
+        limit: 3,
+      });
+      for (const h of hits) {
+        const content = h.chunk?.content;
+        if (!content || seen.has(content)) continue;
+        seen.add(content);
+        const src = h.document?.title || h.bucket?.title || '知识库';
+        // knowledge chunks 的 score 是 cosineSimilarity (0-1)
+        const score = typeof h.score === 'number' ? h.score : 0.5;
+        scored.push({ score, block: `【来源：${src}】\n${content}` });
+      }
+    } catch {
+      // 单个知识库检索失败不阻断其他检索
     }
   }
-  return blocks.slice(0, 8).join('\n\n');
+
+  // 2. Wiki 向量检索（全局共享，无 tenant 隔离）
+  try {
+    const wikiHits = await wikiStore.vectorSearch(query, 5);
+    for (const w of wikiHits) {
+      const content = w.summary || '';
+      if (!content || seen.has(content)) continue;
+      seen.add(content);
+      // wiki similarity = 1 - distance，也是 0-1 的余弦相似度，与 knowledge chunks 可比
+      scored.push({ score: w.similarity, block: `【来源：Wiki - ${w.title}】\n${content}` });
+    }
+  } catch {
+    // Wiki 检索失败静默降级（不影响知识库检索结果）
+  }
+
+  // 3. 按 score 降序合并，取 top 8
+  scored.sort((a, b) => b.score - a.score);
+  return scored.slice(0, 8).map((s) => s.block).join('\n\n');
 }
 
 /** 组装 system prompt */

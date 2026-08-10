@@ -277,7 +277,16 @@ async function executeChannelTool(
     });
   }
 
-  throw new Error(`通道工具未实现: ${channelId}.${actionId}`);
+  // 降级：通道工具无匹配的 plugin agentTool，返回结构化降级结果而非抛错，
+  // 避免中断执行链。调用方可根据 success=false 决定后续处理。
+  return JSON.stringify({
+    actionId,
+    channelId,
+    success: false,
+    degraded: true,
+    message: `通道工具无匹配实现: ${channelId}.${actionId}`,
+    parameters,
+  });
 }
 
 /** 生成执行器键 */

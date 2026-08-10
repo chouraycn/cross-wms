@@ -25,6 +25,7 @@ import { runStaffChatTurn } from './staffChatExecutor.js';
 import { getCronScheduler, registerCronTask } from '../engine/cronScheduler.js';
 import { logger } from '../logger.js';
 import type { ScheduledTaskRow, ScheduledTaskRunRow } from '../types/staff.js';
+import { deliverToChannel } from '../routes/staff/channels.js';
 
 // ===================== 调度注册表（staff taskId → 主 cron jobId） =====================
 
@@ -209,6 +210,87 @@ function createRunningRun(task: ScheduledTaskRow, nonce: string): ScheduledTaskR
 }
 
 /**
+ * 尝试将定时任务产出投递到渠道。
+ *
+ * 读取任务 metadata_json 中的 deliver_to_channel 配置：
+ *   { deliver_to_channel: { binding_id?: string, channel?: string, chat_id?: string, max_length?: number } }
+ *
+ * 深度完善：
+ *   - 投递失败自动重试（最多 3 次，间隔 1s/2s/4s 指数退避）
+ *   - 长内容智能截断（默认 4000 字符，可配置 max_length），追加截断提示
+ *   - 投递状态记录到 run 的 metadata 中，便于前端展示
+ *   - 投递失败不影响任务执行状态（任务本身已成功）
+ *
+ * 返回投递结果摘要，供调用方记录到 run metadata。
+ */
+async function tryDeliverToChannel(
+  task: ScheduledTaskRow,
+  content: string,
+): Promise<{ delivered: boolean; deliveryId?: string; error?: string }> {
+  const meta = typeof task.metadata_json === 'string'
+    ? JSON.parse(task.metadata_json || '{}')
+    : (task.metadata_json || {});
+  const deliverCfg = meta?.deliver_to_channel;
+  if (!deliverCfg || typeof deliverCfg !== 'object') {
+    return { delivered: false };
+  }
+
+  // 智能截断：IM 消息通常有长度限制（飞书 4000 字、企微 2048 字）
+  const maxLength = deliverCfg.max_length || 4000;
+  let deliverContent = content;
+  if (content.length > maxLength) {
+    deliverContent = content.slice(0, maxLength) + '\n\n[内容过长，已截断]';
+  }
+
+  // 指数退避重试
+  const maxRetries = 3;
+  const delays = [1000, 2000, 4000];
+  let lastError = '';
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const result = deliverToChannel({
+        tenantId: task.tenant_id,
+        bindingId: deliverCfg.binding_id,
+        channel: deliverCfg.channel,
+        agentId: task.agent_id,
+        title: task.title,
+        content: deliverContent,
+        type: 'text',
+      });
+
+      if (result.ok) {
+        logger.info(
+          `[ScheduledTaskService] 任务 ${task.id} 产出已投递到渠道 (delivery=${result.delivery?.id}, attempt=${attempt + 1})`,
+        );
+        return {
+          delivered: true,
+          deliveryId: result.delivery?.id,
+        };
+      }
+
+      lastError = result.error || '未知错误';
+      logger.warn(
+        `[ScheduledTaskService] 任务 ${task.id} 渠道投递失败 (attempt=${attempt + 1}/${maxRetries + 1}): ${lastError}`,
+      );
+    } catch (err) {
+      lastError = err instanceof Error ? err.message : String(err);
+      logger.warn(
+        `[ScheduledTaskService] 任务 ${task.id} 渠道投递异常 (attempt=${attempt + 1}/${maxRetries + 1}): ${lastError}`,
+      );
+    }
+
+    // 非最后一次重试，等待退避
+    if (attempt < maxRetries) {
+      await new Promise((resolve) => setTimeout(resolve, delays[attempt]));
+    }
+  }
+
+  logger.warn(`[ScheduledTaskService] 任务 ${task.id} 渠道投递最终失败: ${lastError}`);
+  return { delivered: false, error: lastError };
+}
+
+/**
  * 真正执行一次任务：调用数字员工引擎产出回答，并回写运行记录与任务统计。
  * 与「对话」共用 runStaffChatTurn，因此拥有同等的人格 / SOP / RAG 能力。
  * 注意：once / 达 max_runs 的任务在此将 staff DB 状态翻为 completed；其调度熔断由
@@ -240,6 +322,20 @@ async function executeAndRecord(task: ScheduledTaskRow, run: ScheduledTaskRunRow
       finished_at: finishedAt,
       result_summary: summary || result.content.slice(0, 1000),
     });
+
+    // 投递产出到渠道（若任务配置了 deliver_to_channel）
+    const deliverContent = summary || result.content.slice(0, 1000);
+    const deliverResult = await tryDeliverToChannel(task, deliverContent);
+
+    // 将投递状态追加到 run 的 result_summary（便于前端展示投递结果）
+    if (deliverResult.delivered || deliverResult.error) {
+      const deliveryNote = deliverResult.delivered
+        ? `\n\n[已投递到渠道 delivery=${deliverResult.deliveryId}]`
+        : `\n\n[渠道投递失败: ${deliverResult.error}]`;
+      scheduledTaskDao.updateRun(task.tenant_id, run.id, {
+        result_summary: (summary || result.content.slice(0, 1000)) + deliveryNote,
+      });
+    }
 
     const runCount = (task.run_count || 0) + 1;
     let nextStatus = task.status;

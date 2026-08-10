@@ -1001,6 +1001,18 @@ server.listen(PORT, () => {
       logger.warn('[Server] CronScheduler 启动失败（非阻塞）:', err instanceof Error ? err.message : String(err));
     }
 
+    // 渠道消息路由服务：监听 channel:message:received 事件，
+    // 将入站 IM 消息路由到绑定的数字员工并推送回复。
+    import('./engine/channelMessageRouter.js').then(({ startChannelMessageRouter }) => {
+      try {
+        startChannelMessageRouter();
+      } catch (err) {
+        logger.warn('[Server] 渠道消息路由服务启动失败（非阻塞）:', err instanceof Error ? err.message : String(err));
+      }
+    }).catch(err => {
+      logger.warn('[Server] 渠道消息路由服务加载失败（非阻塞）:', err instanceof Error ? err.message : String(err));
+    });
+
     import('./services/sessionLifecycle.js').then(({ sessionLifecycleManager }) => {
       sessionLifecycleManager.start();
       logger.info('[SessionLifecycle] 已启动');
@@ -1048,6 +1060,15 @@ server.listen(PORT, () => {
       .catch(err => {
         logger.warn('[Server] ONNX / 语义路由意图锚点预热失败（非阻塞）:', err instanceof Error ? err.message : String(err));
       });
+
+    // 初始化向量记忆引擎：加载全局记忆 JSON + 注册 VecMemoryHost 以启用向量检索
+    // ensureContextEngineService 内部会 registerVecMemoryHost（使 memoryEngine 的向量搜索可用）
+    Promise.all([
+      import('./memoryEngine.js').then(({ memoryEngine }) => memoryEngine.init()),
+      import('./services/contextEngineService.js').then(({ ensureContextEngineService }) => ensureContextEngineService()),
+    ]).catch(err => {
+      logger.warn('[Server] 向量记忆引擎初始化失败（非阻塞，降级到 MEMORY.md）:', err instanceof Error ? err.message : String(err));
+    });
 
     const gracefulShutdown = () => {
       logger.info('[Server] 正在关闭自动化引擎...');

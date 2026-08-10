@@ -11,8 +11,8 @@
  *   GET    /:kbId/okf/concepts                     — 列出 OKF concepts
  *   GET    /:kbId/okf/concepts/:conceptId          — 获取 concept
  *   PUT    /:kbId/okf/concepts/:conceptId          — 更新 concept
- *   GET    /:kbId/okf/export                       — 导出 OKF（功能未接入）
- *   POST   /:kbId/okf/lint                         — 校验 OKF（功能未接入）
+ *   GET    /:kbId/okf/export                       — 导出 OKF（JSON 兼容）
+ *   POST   /:kbId/okf/lint                         — 校验 OKF（JSON 兼容）
  *   POST   /:kbId/sync-from-overall                — 从 overall 同步（已接入）
  *   POST   /:kbId/promote-to-overall               — 提升为 overall（已接入）
  *   POST   /:kbId/rollback                         — 回滚到指定版本
@@ -204,21 +204,207 @@ router.put('/:kbId/okf/concepts/:conceptId', (req: Request, res: Response) => {
   res.json({ code: 0, data: kDao.toConceptRead(row), message: 'ok' });
 });
 
-// ===================== GET /:kbId/okf/export — 功能未接入 =====================
+// ===================== GET /:kbId/okf/export — JSON 兼容导出 =====================
+// OKF 无正式公开 schema 规范，此处以 JSON 兼容格式导出知识库全部概念与文档，
+// 便于跨实例迁移与备份。响应中 format 标注当前处理格式。
 router.get('/:kbId/okf/export', (req: Request, res: Response) => {
+  const tenantId = tenantOf(req);
+  const kbId = req.params.kbId;
+  const kb = kbDao.getKnowledgeBaseById(tenantId, kbId);
+  if (!kb) {
+    res.status(404).json({ code: 404, data: null, message: '知识库不存在' });
+    return;
+  }
+  const agentId = req.query.agent_id as string | undefined;
+  const explicitVersion = req.query.knowledge_base_version_id as string | undefined;
+  const versionRow = kbDao.getEffectiveKnowledgeBaseVersions(tenantId, agentId).get(kbId);
+  const versionId = explicitVersion ?? versionRow?.id ?? 'default';
+
+  const concepts = kDao.listConcepts({
+    tenantId,
+    knowledgeBaseId: kbId,
+    knowledgeBaseVersionId: versionId,
+    status: 'active',
+  });
+  const documents = kDao.listDocuments({
+    tenantId,
+    knowledgeBaseId: kbId,
+    knowledgeBaseVersionId: versionId,
+  });
+
+  const bundle = {
+    okf_version: '0.1',
+    format: 'json-compatible' as const,
+    exported_at: Math.floor(Date.now() / 1000),
+    knowledge_base: {
+      id: kb.id,
+      name: versionRow?.name ?? kb.name,
+      description: versionRow ? versionRow.description : kb.description,
+      version: versionRow?.version,
+      status: kb.status,
+    },
+    concepts: concepts.map(kDao.toConceptRead),
+    documents: documents.map(kDao.toDocumentRead),
+  };
+
   res.json({
     code: 0,
-    data: { implemented: false, knowledge_base_id: req.params.kbId, bundle: null },
-    message: '功能未接入：OKF 导出尚未实现（无 OKF schema 规范）',
+    data: {
+      implemented: true,
+      format: 'json-compatible',
+      knowledge_base_id: kbId,
+      bundle,
+    },
+    message: 'ok',
   });
 });
 
-// ===================== POST /:kbId/okf/lint — 功能未接入 =====================
+// ===================== POST /:kbId/okf/lint — JSON 兼容结构校验 =====================
+// OKF 无正式公开 schema 规范，此处对已存储的概念做基础结构校验：
+// 缺失 type / 标题 / 正文、断链、孤儿概念、重复标题。
 router.post('/:kbId/okf/lint', (req: Request, res: Response) => {
+  const tenantId = tenantOf(req);
+  const kbId = req.params.kbId;
+  const kb = kbDao.getKnowledgeBaseById(tenantId, kbId);
+  if (!kb) {
+    res.status(404).json({ code: 404, data: null, message: '知识库不存在' });
+    return;
+  }
+  const agentId = req.body?.agent_id as string | undefined;
+  const explicitVersion =
+    (req.body?.knowledge_base_version_id as string | undefined) ??
+    (req.query.knowledge_base_version_id as string | undefined);
+  const versionRow = kbDao.getEffectiveKnowledgeBaseVersions(tenantId, agentId).get(kbId);
+  const versionId = explicitVersion ?? versionRow?.id ?? 'default';
+
+  const concepts = kDao
+    .listConcepts({
+      tenantId,
+      knowledgeBaseId: kbId,
+      knowledgeBaseVersionId: versionId,
+    })
+    .map(kDao.toConceptRead);
+
+  const conceptIdSet = new Set(concepts.map((c) => c.concept_id));
+  const inbound = new Map<string, number>();
+  for (const c of concepts) inbound.set(c.concept_id, 0);
+  const titleGroups = new Map<string, typeof concepts>();
+  const errors: Array<Record<string, any>> = [];
+  const warnings: Array<Record<string, any>> = [];
+
+  for (const c of concepts) {
+    const fm = c.frontmatter ?? {};
+    const type = (c.concept_type || fm.type || '').trim();
+
+    // 缺失 type — error
+    if (!type) {
+      errors.push({
+        issue_type: 'missing_type',
+        concept_id: c.concept_id,
+        title: c.title,
+        message: '概念缺少 type 字段。',
+      });
+    }
+
+    // 缺失标题 — error
+    if (!c.title || !c.title.trim()) {
+      errors.push({
+        issue_type: 'missing_title',
+        concept_id: c.concept_id,
+        title: c.title,
+        message: '概念缺少标题。',
+      });
+    }
+
+    // 缺失正文 — error
+    if (!c.content_md || !c.content_md.trim()) {
+      errors.push({
+        issue_type: 'missing_content',
+        concept_id: c.concept_id,
+        title: c.title,
+        message: '概念缺少正文内容。',
+      });
+    }
+
+    // 缺失 citation — warning（Topic / Query Analysis 豁免）
+    const citations = c.citations ?? [];
+    if (
+      citations.length === 0 &&
+      type !== 'Topic' &&
+      type !== 'Query Analysis'
+    ) {
+      warnings.push({
+        issue_type: 'missing_citation',
+        concept_id: c.concept_id,
+        title: c.title,
+        message: '概念没有 Citations 或外部来源引用。',
+      });
+    }
+
+    // 断链检测 + 入站计数
+    for (const link of c.links ?? []) {
+      const target = String(link?.target || '').trim();
+      if (!target) continue;
+      if (/^(https?:|ultrarag:)/i.test(target)) continue; // 外部链接跳过
+      const normalized = target.replace(/^\/+/, '').replace(/\.md$/i, '');
+      if (conceptIdSet.has(normalized)) {
+        inbound.set(normalized, (inbound.get(normalized) ?? 0) + 1);
+      } else {
+        errors.push({
+          issue_type: 'broken_link',
+          concept_id: c.concept_id,
+          title: c.title,
+          message: `链接目标不存在：${target}`,
+        });
+      }
+    }
+
+    // 重复标题分组
+    const titleKey = (c.title || '').trim().toLowerCase();
+    if (titleKey) {
+      const group = titleGroups.get(titleKey) ?? [];
+      group.push(c);
+      titleGroups.set(titleKey, group);
+    }
+  }
+
+  // 孤儿概念 — warning（Source Document 豁免）
+  for (const c of concepts) {
+    const type = (c.concept_type || c.frontmatter?.type || '').trim();
+    if (type === 'Source Document') continue;
+    if ((inbound.get(c.concept_id) ?? 0) === 0) {
+      warnings.push({
+        issue_type: 'orphan_concept',
+        concept_id: c.concept_id,
+        title: c.title,
+        message: '概念没有入站链接，可能难以被渐进发现。',
+      });
+    }
+  }
+
+  // 重复标题 — warning
+  for (const [, group] of titleGroups) {
+    if (group.length <= 1) continue;
+    for (const c of group) {
+      warnings.push({
+        issue_type: 'duplicate_title',
+        concept_id: c.concept_id,
+        title: c.title,
+        message: `存在重复标题：${c.title}`,
+      });
+    }
+  }
+
   res.json({
     code: 0,
-    data: { implemented: false, knowledge_base_id: req.params.kbId, errors: [], warnings: [] },
-    message: '功能未接入：OKF 校验尚未实现（无 OKF schema 规范）',
+    data: {
+      implemented: true,
+      format: 'json-compatible',
+      knowledge_base_id: kbId,
+      errors,
+      warnings,
+    },
+    message: 'ok',
   });
 });
 

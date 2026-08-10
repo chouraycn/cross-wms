@@ -18,6 +18,7 @@ import { resolveImageSanitizationLimits } from './imageSanitization.js';
 import { compressContextWithSummary } from './contextCompress.js';
 import type { ModelConfig } from '../modelsStore.js';
 import { readMemoryMd } from '../routes/memoryExtractor.js';
+import { memoryEngine } from '../memoryEngine.js';
 import { getSessionMessages, getSessions } from '../dao/chat.js';
 import { extractFileContent } from '../routes/chatHelpers/fileExtractor.js';
 import { getAppSettings } from '../dao/settings.js';
@@ -341,10 +342,29 @@ export async function buildApiMessages(params: BuildApiMessagesParams): Promise<
     apiMessages.push({ role: 'system', content: soulSystemMsg.trim() });
   }
 
-  // 3. Memory.md 内容
+  // 3. Memory.md 内容（基础记忆，全文注入）
   const memoryContent = await readMemoryMd();
   if (memoryContent.trim()) {
     apiMessages.push({ role: 'system', content: memoryContent.trim() });
+  }
+
+  // 3b. 向量记忆引擎：基于当前用户消息检索相关记忆片段（与 MEMORY.md 并存，失败时静默降级）
+  // 限制返回条数（3 global + 3 session）和总字符数（2000），避免 token 溢出
+  try {
+    const vecMemoryPrompt = await memoryEngine.getContextPrompt(sessionId, message, {
+      globalLimit: 3,
+      sessionLimit: 3,
+    });
+    if (vecMemoryPrompt.trim()) {
+      // 字符级预算控制：超过 2000 字符截断
+      const trimmed = vecMemoryPrompt.trim().slice(0, 2000);
+      apiMessages.push({
+        role: 'system',
+        content: `<vector_memory>\n以下是通过向量检索从记忆引擎获取的相关记忆片段（按重要性/相关性排序）：\n${trimmed}\n</vector_memory>`,
+      });
+    }
+  } catch (err) {
+    logger.warn('[Chat API] 向量记忆检索失败，降级到 MEMORY.md:', err instanceof Error ? err.message : String(err));
   }
 
   // 4. 技能上下文

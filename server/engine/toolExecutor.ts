@@ -23,7 +23,9 @@ import { CircuitBreaker } from './circuitBreaker.js';
 import { isSkillToolName, handleSkillToolCall } from './skillToolBridge.js';
 import type { SkillPermissionConfig } from '../types/skill-runtime.js';
 import toolPolicyEngine from './toolPolicyEngine.js';
-import approvalManager from './approvalManager.js';
+import approvalManager, { type ApprovalRequest } from './approvalManager.js';
+import approvalChain from './approval/approvalChain.js';
+import type { ApprovalLevel } from './approval/approvalChain.js';
 import pluginHooks from './pluginHooks.js';
 import { validateAndNormalizeToolParams } from './toolParams.js';
 import { toolLoopDetector } from './toolLoopDetection.js';
@@ -48,6 +50,18 @@ import { createToolCall, completeToolCall } from '../dao/taskMonitorDao.js';
 import { triggerBeforeToolCall, triggerAfterToolCall, triggerAfterToolResult } from './hooks/hooks.js';
 // release 用于在 executeToolLoop 结束时静默清理 runController（防止内存泄漏）
 const releaseRunController = (runId: string) => abortPrimitives.release(`run:${runId}`);
+
+/**
+ * 多级审批链默认级别配置
+ *
+ * 高危工具（high/critical）走 L1 → L2 两级审批：
+ * - L1: 中等风险及以上触发，1 人批准，60s 超时
+ * - L2: 高风险及以上触发，1 人批准，120s 超时
+ */
+const DEFAULT_APPROVAL_CHAIN_LEVELS: ApprovalLevel[] = [
+  { name: 'L1', requiredApprovers: 1, minRiskLevel: 'medium', timeoutMs: 60_000, allowSelfApprove: false },
+  { name: 'L2', requiredApprovers: 1, minRiskLevel: 'high', timeoutMs: 120_000, allowSelfApprove: false },
+];
 
 // ===================== 工具结果错误检测 =====================
 
@@ -495,31 +509,90 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
             continue;
           }
 
-          const approvalRequest = approvalManager.createRequest(
-            toolName,
-            parsedArgs,
-            policyResult.riskLevel,
-            policyResult.matchedRule?.description || `工具 '${toolName}' 需要用户审批`,
-            sessionId,
-          );
+          const approvalReason = policyResult.matchedRule?.description || `工具 '${toolName}' 需要用户审批`;
+          const isHighRisk = policyResult.riskLevel === 'high' || policyResult.riskLevel === 'critical';
 
-          // 通过 SSE 发送审批请求到前端
-          if (onSSEEvent) {
-            onSSEEvent({
-              type: 'approval',
-              requestId: approvalRequest.id,
+          // 统一审批结果
+          let approvalStatus: 'approved' | 'rejected' | 'timeout' | 'cancelled';
+          let approvalRejectReason: string | undefined;
+
+          if (isHighRisk) {
+            // 高危工具走多级审批链（L1 → L2）
+            const chainId = approvalChain.createChain(DEFAULT_APPROVAL_CHAIN_LEVELS);
+
+            // 监听 approvalManager 的 request_created 事件，将链中每级的审批请求通过 SSE 转发到前端
+            const onChainRequestCreated = (req: ApprovalRequest) => {
+              if (req.toolName !== toolName) return;
+              if (sessionId && req.sessionId !== sessionId) return;
+              if (onSSEEvent) {
+                onSSEEvent({
+                  type: 'approval',
+                  requestId: req.id,
+                  toolName,
+                  toolArgs: parsedArgs,
+                  riskLevel: policyResult.riskLevel,
+                  reason: req.reason,
+                  description: req.reason,
+                  sessionId,
+                  timeout: 300000,
+                  multiLevel: true,
+                  chainId,
+                });
+              }
+            };
+            approvalManager.on('request_created', onChainRequestCreated);
+
+            let chainResult;
+            try {
+              chainResult = await approvalChain.submit(chainId, {
+                toolName,
+                toolArgs: parsedArgs,
+                riskLevel: policyResult.riskLevel,
+                reason: approvalReason,
+                sessionId,
+              });
+            } finally {
+              approvalManager.off('request_created', onChainRequestCreated);
+            }
+
+            approvalStatus =
+              chainResult.status === 'approved' ? 'approved' :
+              chainResult.status === 'timeout' ? 'timeout' :
+              chainResult.status === 'cancelled' ? 'cancelled' : 'rejected';
+            approvalRejectReason = chainResult.reason;
+          } else {
+            // 低/中风险工具走单级审批
+            const approvalRequest = approvalManager.createRequest(
               toolName,
-              toolArgs: parsedArgs,
-              riskLevel: policyResult.riskLevel,
-              reason: approvalRequest.reason,
-              description: policyResult.matchedRule?.description || `工具 '${toolName}' 需要用户审批`,
+              parsedArgs,
+              policyResult.riskLevel,
+              approvalReason,
               sessionId,
-              timeout: 300000,
-            });
+            );
+
+            // 通过 SSE 发送审批请求到前端
+            if (onSSEEvent) {
+              onSSEEvent({
+                type: 'approval',
+                requestId: approvalRequest.id,
+                toolName,
+                toolArgs: parsedArgs,
+                riskLevel: policyResult.riskLevel,
+                reason: approvalRequest.reason,
+                description: approvalReason,
+                sessionId,
+                timeout: 300000,
+              });
+            }
+
+            const singleResult = await approvalManager.waitForApproval(approvalRequest.id);
+            // 单级审批可能返回 'pending'，映射到 'timeout'（理论上 waitForApproval 返回时不会是 pending）
+            approvalStatus = (['approved', 'rejected', 'timeout', 'cancelled'].includes(singleResult.status)
+              ? singleResult.status
+              : 'timeout') as typeof approvalStatus;
+            approvalRejectReason = singleResult.rejectReason;
           }
 
-          const approvalResult = await approvalManager.waitForApproval(approvalRequest.id);
-          
           if (managedSignal.aborted) {
             const abortResult = JSON.stringify({
               error: `工具 '${toolName}' 会话已超时取消`,
@@ -543,14 +616,14 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
             continue;
           }
 
-          if (approvalResult.status !== 'approved') {
-            const rejectReason = approvalResult.rejectReason || 
-              (approvalResult.status === 'timeout' ? '审批超时' : 
-               approvalResult.status === 'cancelled' ? '审批已取消' : '审批被拒绝');
+          if (approvalStatus !== 'approved') {
+            const rejectReason = approvalRejectReason ||
+              (approvalStatus === 'timeout' ? '审批超时' :
+               approvalStatus === 'cancelled' ? '审批已取消' : '审批被拒绝');
             const denyResult = JSON.stringify({
               error: `工具 '${toolName}' ${rejectReason}`,
               approvalDenied: true,
-              approvalStatus: approvalResult.status,
+              approvalStatus,
               riskLevel: policyResult.riskLevel,
             });
             executedToolCalls.push({

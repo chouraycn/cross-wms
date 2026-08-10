@@ -4,6 +4,7 @@ import { callAIModel } from '../aiClient.js';
 import { loadModelsConfig, isLocalModel } from '../modelsStore.js';
 import { selectKey } from '../keyRotator.js';
 import { writeMemory, searchMemory, extractKeywords } from '../engine/vecMemoryStore.js';
+import { memoryEngine } from '../memoryEngine.js';
 import { logger } from '../logger.js';
 import { AppPaths } from '../config/appPaths.js';
 
@@ -76,6 +77,7 @@ export async function extractAndAppendMemory(
   userMessage: string,
   assistantMessage: string,
   conversationHistory: Array<{ role: string; content: string }>,
+  sessionId?: string,
 ): Promise<{ updated: boolean; count: number }> {
   try {
     // v1.5.132: 提高最小对话长度阈值，避免短对话产生噪音记忆
@@ -226,17 +228,36 @@ export async function extractAndAppendMemory(
 
     // 同步写入 vecMemoryStore（向量语义索引）
     // 使用 extractKeywords 提取关键词，提升降级搜索准确率
+    // 传入真实 sessionId 以支持按会话隔离的向量检索
+    const vecSessionId = sessionId || 'auto-memory';
     for (const line of newLines) {
       try {
         await writeMemory({
           userId: 'default',
-          sessionId: 'auto-memory',
+          sessionId: vecSessionId,
           category: 'insight',
           content: line,
           keywords: extractKeywords(`${userMessage} ${line}`),
         });
       } catch (e) {
         logger.error('[Memory] Failed to store to vecMemoryStore:', e);
+      }
+    }
+
+    // 同步写入 memoryEngine（向量记忆引擎的会话记忆，与 MEMORY.md / vecMemoryStore 并存）
+    // 使 memoryEngine.getContextPrompt 能检索到当前会话的相关记忆
+    if (sessionId) {
+      for (const line of newLines) {
+        try {
+          memoryEngine.addSessionMemory(sessionId, line, {
+            type: 'fact',
+            importance: 6,
+            tags: ['auto-extracted'],
+            metadata: { source: 'memoryExtractor', userMessage: userMessage.slice(0, 100) },
+          });
+        } catch (e) {
+          logger.warn('[AutoMemory] 写入 memoryEngine 会话记忆失败（非阻塞）:', e instanceof Error ? e.message : String(e));
+        }
       }
     }
 

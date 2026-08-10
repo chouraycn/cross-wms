@@ -81,26 +81,191 @@ router.get('/buckets', (req: Request, res: Response) => {
   res.json({ code: 0, data, message: 'ok' });
 });
 
-// ===================== POST /probe — 探测工具（功能未接入） =====================
+// ===================== POST /probe — 探测工具 =====================
 // 注意：此路由必须在 GET /:tool_id 之前注册
 
-router.post('/probe', (req: Request, res: Response) => {
-  const { tool_type } = req.body;
-  res.json({
-    code: 0,
-    data: {
-      implemented: false,
-      success: false,
-      status_code: null,
-      data_preview: null,
-      inferred_output_schema: {},
-      error: {
-        code: 'PROBE_NOT_IMPLEMENTED',
-        message: `工具探测功能尚未实现（tool_type=${tool_type || 'http'}）`,
+/** 根据 JSON 值推断 output_schema（对齐原版 _infer_json_schema） */
+function inferJsonSchema(value: unknown): Record<string, any> {
+  if (value === null) return { type: 'null' };
+  if (typeof value === 'boolean') return { type: 'boolean' };
+  if (typeof value === 'number') return Number.isInteger(value) ? { type: 'integer' } : { type: 'number' };
+  if (typeof value === 'string') return { type: 'string' };
+  if (Array.isArray(value)) {
+    return { type: 'array', items: value.length > 0 ? inferJsonSchema(value[0]) : {} };
+  }
+  if (typeof value === 'object' && value !== null) {
+    const properties: Record<string, any> = {};
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      properties[String(k)] = inferJsonSchema(v);
+    }
+    return { type: 'object', properties, required: Object.keys(properties) };
+  }
+  return { type: 'string' };
+}
+
+/** 根据 input_schema.properties 生成测试参数（使用 default 值，无 default 则跳过） */
+function generateSampleArgs(inputSchema: unknown): Record<string, any> {
+  if (!inputSchema || typeof inputSchema !== 'object') return {};
+  const props = (inputSchema as Record<string, any>).properties;
+  if (!props || typeof props !== 'object') return {};
+  const result: Record<string, any> = {};
+  for (const [key, def] of Object.entries(props as Record<string, any>)) {
+    if (def && typeof def === 'object' && def.default !== undefined) {
+      result[key] = def.default;
+    }
+  }
+  return result;
+}
+
+router.post('/probe', async (req: Request, res: Response) => {
+  const { tool_type, method, url, headers, auth, input_schema, sample_arguments } = req.body;
+  const effectiveType = String(tool_type || 'http').toLowerCase();
+
+  // 非 HTTP 类工具（如 mcp）：暂不支持探测，不报错
+  if (effectiveType !== 'http') {
+    res.json({
+      code: 0,
+      data: {
+        implemented: false,
+        success: false,
+        status_code: null,
+        data_preview: null,
+        inferred_output_schema: {},
+        error: {
+          code: 'PROBE_UNSUPPORTED_TYPE',
+          message: `工具探测暂不支持该类型（tool_type=${effectiveType}），仅支持 http`,
+        },
       },
-    },
-    message: '功能未接入：工具探测尚未实现',
-  });
+      message: `工具探测暂不支持该类型：${effectiveType}`,
+    });
+    return;
+  }
+
+  // 校验 url
+  if (!url || typeof url !== 'string' || !url.trim()) {
+    res.json({
+      code: 0,
+      data: {
+        implemented: true,
+        success: false,
+        status_code: null,
+        data_preview: null,
+        inferred_output_schema: {},
+        error: {
+          code: 'PROBE_NO_URL',
+          message: 'HTTP 工具未配置 url',
+        },
+      },
+      message: '探测失败：缺少 url',
+    });
+    return;
+  }
+
+  // 构造请求头 + auth（bearer/basic/none 在 headers 中注入 Authorization）
+  const reqHeaders: Record<string, string> = {};
+  if (headers && typeof headers === 'object') {
+    for (const [k, v] of Object.entries(headers as Record<string, unknown>)) {
+      reqHeaders[k] = String(v);
+    }
+  }
+  const authConfig = auth && typeof auth === 'object' ? (auth as Record<string, any>) : {};
+  const authType = String(authConfig.type || 'none').toLowerCase();
+  if (authType === 'bearer' && authConfig.token) {
+    reqHeaders['Authorization'] = `Bearer ${String(authConfig.token)}`;
+  } else if (authType === 'basic') {
+    if (authConfig.username !== undefined || authConfig.password !== undefined) {
+      const credential = Buffer.from(`${authConfig.username ?? ''}:${authConfig.password ?? ''}`).toString('base64');
+      reqHeaders['Authorization'] = `Basic ${credential}`;
+    } else if (authConfig.token) {
+      reqHeaders['Authorization'] = `Basic ${String(authConfig.token)}`;
+    }
+  }
+
+  // 生成测试参数：优先使用 sample_arguments，否则从 input_schema 推断
+  const testArgs: Record<string, any> =
+    sample_arguments && typeof sample_arguments === 'object'
+      ? (sample_arguments as Record<string, any>)
+      : generateSampleArgs(input_schema);
+
+  const httpMethod = String(method || 'POST').toUpperCase();
+  const hasBody = !['GET', 'HEAD', 'DELETE'].includes(httpMethod);
+  const fetchOptions: RequestInit = { method: httpMethod, headers: reqHeaders };
+  if (hasBody) {
+    if (!reqHeaders['Content-Type'] && !reqHeaders['content-type']) {
+      reqHeaders['Content-Type'] = 'application/json';
+    }
+    fetchOptions.body = JSON.stringify(testArgs);
+  }
+
+  // 5 秒超时（AbortController）
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 5000);
+  fetchOptions.signal = controller.signal;
+
+  try {
+    let fetchUrl = url as string;
+    // GET 请求：把测试参数合并到 query string
+    if (httpMethod === 'GET' && Object.keys(testArgs).length > 0) {
+      const params = new URLSearchParams();
+      for (const [k, v] of Object.entries(testArgs)) {
+        if (v !== undefined && v !== null) {
+          params.set(k, String(v));
+        }
+      }
+      const qs = params.toString();
+      if (qs) {
+        fetchUrl = fetchUrl.includes('?') ? `${fetchUrl}&${qs}` : `${fetchUrl}?${qs}`;
+      }
+    }
+
+    const response = await fetch(fetchUrl, fetchOptions);
+    const respText = await response.text();
+
+    // data_preview：优先解析 JSON，否则截断到前 1000 字符
+    let dataPreview: unknown = null;
+    try {
+      dataPreview = JSON.parse(respText);
+    } catch {
+      dataPreview = respText.length > 1000 ? respText.slice(0, 1000) : respText;
+    }
+
+    const success = response.status >= 200 && response.status < 300;
+    const inferredSchema = success ? inferJsonSchema(dataPreview) : {};
+
+    res.json({
+      code: 0,
+      data: {
+        implemented: true,
+        success,
+        status_code: response.status,
+        data_preview: dataPreview,
+        inferred_output_schema: inferredSchema,
+        error: success
+          ? null
+          : { code: `HTTP_${response.status}`, message: `工具探测返回异常状态码：${response.status}` },
+      },
+      message: success ? '探测成功' : '探测失败：HTTP 状态码异常',
+    });
+  } catch (err) {
+    const isTimeout = err instanceof Error && err.name === 'AbortError';
+    res.json({
+      code: 0,
+      data: {
+        implemented: true,
+        success: false,
+        status_code: null,
+        data_preview: null,
+        inferred_output_schema: {},
+        error: {
+          code: isTimeout ? 'TIMEOUT' : 'PROBE_ERROR',
+          message: isTimeout ? '工具探测超时' : err instanceof Error ? err.message : String(err),
+        },
+      },
+      message: isTimeout ? '探测失败：请求超时' : '探测失败：网络错误',
+    });
+  } finally {
+    clearTimeout(timeoutId);
+  }
 });
 
 // ===================== GET /:tool_id — 详情 =====================

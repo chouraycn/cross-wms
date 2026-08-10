@@ -1096,6 +1096,7 @@ export async function runChatSession(
         role: m.role,
         content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content),
       })),
+      sessionId,
     ).catch(() => {});
 
     triggerTurnEndSync(sessionId).catch(() => {});
