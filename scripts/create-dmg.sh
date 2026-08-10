@@ -208,6 +208,43 @@ mkdir -p "$DMG_SOURCE"
 cp -R "$APP_PATH" "$DMG_SOURCE/"
 ln -s /Applications "$DMG_SOURCE/Applications"
 
+# v1.7.198: TRAE 沙箱主动探测。
+# 背景：UDRW 格式创建或任何 hdiutil attach 在 TRAE 沙箱内均会触发
+# /dev/rdisk* 访问限制而失败（且失败前会留下半开的 rdisk 节点残留），
+# 紧接着的模板回退路径（-format ULMO -srcfolder）内部 staging 会撞上残留
+# 节点而报"目录非空"。解决方案：在脚本入口主动探测是否处于 TRAE 沙箱，
+# 命中则强制 SKIP_DMG_STYLE=1，完全不进入 UDRW 分支，避免产生 rdisk 残留。
+is_trae_sandbox() {
+  # 1) TRAE 显式 env：只要任意一个非空即命中
+  if [[ -n "${TRAE_WORKSPACE:-}" ]]; then return 0; fi
+  if [[ -n "${TRAE_SESSION:-}" ]]; then return 0; fi
+  if [[ -n "${TRAE_IDE_VERSION:-}" ]]; then return 0; fi
+  if [[ -n "${TRAE_VERSION:-}" ]]; then return 0; fi
+  if [[ -n "${TRAE_PROJECT:-}" ]]; then return 0; fi
+  # 2) 通用 IDE 运行时标识：__CFBundleIdentifier 含 trae / workbuddy / cross-wms
+  local cfb="${__CFBundleIdentifier:-}"
+  if [[ -n "$cfb" ]]; then
+    case "$cfb" in
+      *trae*|*workbuddy*|*cross-wms*|*WorkBuddy*) return 0 ;;
+    esac
+  fi
+  # 3) 父进程名匹配
+  local pcomm
+  pcomm="$(ps -o comm= -p $PPID 2>/dev/null || true)"
+  if [[ -n "$pcomm" ]]; then
+    case "$pcomm" in
+      *trae*|*WorkBuddy*) return 0 ;;
+    esac
+  fi
+  return 1
+}
+
+if [[ "${SKIP_DMG_STYLE:-0}" != "1" ]] && is_trae_sandbox; then
+  echo "INFO: 检测到 TRAE 沙箱环境（/dev/rdisk* 不可访问），自动启用 SKIP_DMG_STYLE=1 快速模式，"
+  echo "      不尝试 UDRW 与 hdiutil attach，避免产生 rdisk 残留导致后续 hdiutil 报错。"
+  export SKIP_DMG_STYLE=1
+fi
+
 # 检测是否有背景图：有背景图时走完整 UDRW + Finder 样式流程，
 # 无背景图或沙箱环境走 srcfolder 快速模式
 HAS_BACKGROUND=0

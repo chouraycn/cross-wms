@@ -31,37 +31,31 @@ const InstalledSkillItem: React.FC<{
       sx={{
         display: 'flex',
         alignItems: 'center',
-        gap: 2,
-        p: 2,
+        // 基于上一版基线，每个技能高度缩小 10%
+        //   p: 2 (16px)     → p: 1.8 (14.4px, -10%)
+        //   gap: 2 (16px)   → gap: 1.8 (14.4px, -10%)
+        gap: 1.8,
+        p: 1.8,
         borderRadius: '12px',
         border: `1px solid ${gs.border}`,
         cursor: 'pointer',
-        backgroundColor: gs.bgPanel,
-        boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
         transition: 'all 0.2s ease',
-        '&:hover': {
-          backgroundColor: gs.bgHover,
-          borderColor: gs.borderDarker,
-          boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-          transform: 'translateY(-1px)',
-        },
+        '&:hover': { backgroundColor: gs.bgHover },
       }}
       onClick={() => onNavigate(skill.id)}
     >
-      {/* 图标 */}
+      {/* 图标：48px → 43px（-10.4%），font 24→22（-8.3%），r 10→9（-10%）*/}
       <Box sx={{
-        width: 48,
-        height: 48,
-        borderRadius: '12px',
+        width: 43,
+        height: 43,
+        borderRadius: '9px',
         background: getCategoryGradient(skill.category),
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         flexShrink: 0,
         color: gs.bgPanel,
-        boxShadow: '0 2px 6px rgba(0,0,0,0.12)',
-        transition: 'box-shadow 0.2s ease',
-        '& .MuiSvgIcon-root': { fontSize: 24, color: gs.bgPanel },
+        '& .MuiSvgIcon-root': { fontSize: 22, color: gs.bgPanel },
       }}>
         {iconNode}
       </Box>
@@ -72,18 +66,19 @@ const InstalledSkillItem: React.FC<{
           fontSize: '0.9375rem',
           fontWeight: 600,
           color: gs.textPrimary,
-          mb: 0.375,
+          // mb: 0.25 → 0.225（-10%）
+          mb: 0.225,
         }}>
           {skill.name}
         </Typography>
         <Typography sx={{
           fontSize: '0.8125rem',
           color: gs.textSecondary,
-          lineHeight: 1.5,
-          display: '-webkit-box',
-          WebkitLineClamp: 2,
-          WebkitBoxOrient: 'vertical',
+          // lineHeight: 1.5 → 1.4（约 -7%，配合整体紧凑）
+          lineHeight: 1.4,
           overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
         }}>
           {skill.desc}
         </Typography>
@@ -95,7 +90,6 @@ const InstalledSkillItem: React.FC<{
         onClick={(e) => e.stopPropagation()}
         onChange={(e) => onToggle(skill, e.target.checked)}
         sx={{
-          flexShrink: 0,
           '& .MuiSwitch-switchBase.Mui-checked': {
             color: '#22C55E',
           },
@@ -122,24 +116,19 @@ const InstalledSkillList: React.FC<InstalledSkillListProps> = ({ skills, onToggl
   const renderGroup = (title: string, items: Skill[]) => {
     if (items.length === 0) return null;
     return (
-      <Box key={title} sx={{ mb: 4 }}>
+      // 分组 mb: 4 → 3.6（-10%）
+      <Box key={title} sx={{ mb: 3.6 }}>
         <Typography sx={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          fontSize: '0.75rem',
+          fontSize: '0.875rem',
           fontWeight: 600,
-          color: gs.textSecondary,
-          mb: 1.5,
-          px: 1.5,
-          py: 0.5,
-          borderRadius: '6px',
-          backgroundColor: gs.bgHover,
-          borderLeft: `2px solid ${gs.textPrimary}`,
-          letterSpacing: '0.02em',
+          color: gs.textPrimary,
+          // mb: 1.5 → 1.35（-10%）
+          mb: 1.35,
         }}>
           {title}
         </Typography>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        {/* gap: 1.5 → 1.35（-10%） */}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.35 }}>
           {items.map((skill) => (
             <InstalledSkillItem
               key={skill.id}
