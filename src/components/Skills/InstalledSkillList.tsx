@@ -36,8 +36,15 @@ const InstalledSkillItem: React.FC<{
         borderRadius: '12px',
         border: `1px solid ${gs.border}`,
         cursor: 'pointer',
+        backgroundColor: gs.bgPanel,
+        boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
         transition: 'all 0.2s ease',
-        '&:hover': { backgroundColor: gs.bgHover },
+        '&:hover': {
+          backgroundColor: gs.bgHover,
+          borderColor: gs.borderDarker,
+          boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+          transform: 'translateY(-1px)',
+        },
       }}
       onClick={() => onNavigate(skill.id)}
     >
@@ -45,13 +52,15 @@ const InstalledSkillItem: React.FC<{
       <Box sx={{
         width: 48,
         height: 48,
-        borderRadius: '10px',
+        borderRadius: '12px',
         background: getCategoryGradient(skill.category),
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         flexShrink: 0,
         color: gs.bgPanel,
+        boxShadow: '0 2px 6px rgba(0,0,0,0.12)',
+        transition: 'box-shadow 0.2s ease',
         '& .MuiSvgIcon-root': { fontSize: 24, color: gs.bgPanel },
       }}>
         {iconNode}
@@ -63,7 +72,7 @@ const InstalledSkillItem: React.FC<{
           fontSize: '0.9375rem',
           fontWeight: 600,
           color: gs.textPrimary,
-          mb: 0.25,
+          mb: 0.375,
         }}>
           {skill.name}
         </Typography>
@@ -71,9 +80,10 @@ const InstalledSkillItem: React.FC<{
           fontSize: '0.8125rem',
           color: gs.textSecondary,
           lineHeight: 1.5,
+          display: '-webkit-box',
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: 'vertical',
           overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
         }}>
           {skill.desc}
         </Typography>
@@ -85,6 +95,7 @@ const InstalledSkillItem: React.FC<{
         onClick={(e) => e.stopPropagation()}
         onChange={(e) => onToggle(skill, e.target.checked)}
         sx={{
+          flexShrink: 0,
           '& .MuiSwitch-switchBase.Mui-checked': {
             color: '#22C55E',
           },
@@ -113,14 +124,22 @@ const InstalledSkillList: React.FC<InstalledSkillListProps> = ({ skills, onToggl
     return (
       <Box key={title} sx={{ mb: 4 }}>
         <Typography sx={{
-          fontSize: '0.875rem',
+          display: 'inline-flex',
+          alignItems: 'center',
+          fontSize: '0.75rem',
           fontWeight: 600,
-          color: gs.textPrimary,
+          color: gs.textSecondary,
           mb: 1.5,
+          px: 1.5,
+          py: 0.5,
+          borderRadius: '6px',
+          backgroundColor: gs.bgHover,
+          borderLeft: `2px solid ${gs.textPrimary}`,
+          letterSpacing: '0.02em',
         }}>
           {title}
         </Typography>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {items.map((skill) => (
             <InstalledSkillItem
               key={skill.id}
