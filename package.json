@@ -202,7 +202,7 @@
     "knip": "^6.26.0",
     "kysely-codegen": "^0.18.5",
     "lint-staged": "^17.0.8",
-    "markdown-it": "^14.3.0",
+    "markdown-it": "^15.0.0",
     "msw": "^2.14.6",
     "oxlint": "^1.67.0",
     "postcss": "^8.4.38",
