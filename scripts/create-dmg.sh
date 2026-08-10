@@ -235,25 +235,38 @@ echo "INFO: 走标准 UDRW + Finder 样式流程（含背景图、窗口大小�
 APP_SIZE_MB=$(du -sm "$APP_PATH" | awk '{print $1}')
 DMG_SIZE_MB=$((APP_SIZE_MB + 80))
 
-hdiutil create \
+# v1.7.195: UDRW 创建内部也访问 /dev/rdisk*，沙箱下同样会被阻止。
+# 用 UDRW_OK 标记是否成功，任一步失败都走同一套模板回退。
+UDRW_OK=0
+if hdiutil create \
   -volname "$DMG_VOLUME_NAME" \
   -srcfolder "$DMG_SOURCE" \
   -ov \
   -format UDRW \
   -fs HFS+ \
   -size "${DMG_SIZE_MB}m" \
-  "$DMG_RW_PATH"
+  "$DMG_RW_PATH" 2>/dev/null; then
+  UDRW_OK=1
+else
+  echo "WARN: hdiutil create UDRW 被沙箱阻止（/dev/rdisk* 不可访问）" >&2
+fi
 
 # v1.7.15: 使用自定义挂载点在 /tmp 下，避免 /Volumes 不在 Sandbox allowlist 中的问题
 # v1.7.162: 增加 hdiutil attach 失败时的沙箱回退（一步创建只读 DMG，无 Finder 样式）
+# v1.7.195: UDRW 创建失败也纳入同一回退路径
 DMG_MOUNT_POINT="/tmp/openclaw-dmg-mount-$$"
 mkdir -p "$DMG_MOUNT_POINT"
 
-if ! hdiutil attach "$DMG_RW_PATH" -mountpoint "$DMG_MOUNT_POINT" 2>/dev/null; then
-  echo "WARN: hdiutil attach 被沙箱阻止（/dev/rdisk* 不可访问），尝试预写 .DS_Store + .background 模板" >&2
+ATTACH_OK=0
+if [[ "$UDRW_OK" == "1" ]] && hdiutil attach "$DMG_RW_PATH" -mountpoint "$DMG_MOUNT_POINT" 2>/dev/null; then
+  ATTACH_OK=1
+fi
+
+if [[ "$UDRW_OK" == "0" || "$ATTACH_OK" == "0" ]]; then
+  echo "WARN: hdiutil UDRW/attach 被沙箱阻止（/dev/rdisk* 不可访问），尝试预写 .DS_Store + .background 模板" >&2
   # 清理 RW 镜像和挂载点
-  rm -f "$DMG_RW_PATH"
-  rmdir "$DMG_MOUNT_POINT" 2>/dev/null
+  rm -f "$DMG_RW_PATH" 2>/dev/null || true
+  rmdir "$DMG_MOUNT_POINT" 2>/dev/null || true
 
   # 沙箱回退 v2: 把预生成的 .DS_Store 模板 和 .background/background.png
   # 直接写入 DMG_SOURCE，再用 -srcfolder 打包。只要卷名/文件名/目录结构不变，
