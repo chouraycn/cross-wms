@@ -7,6 +7,7 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import { logger } from '../logger.js';
+import { ok } from './_shared/respond.js';
 import {
   skillWorkshop,
   type ProposalFilter,
@@ -56,7 +57,7 @@ skillWorkshopRouter.get('/proposals', asyncHandler(async (req, res) => {
   if (typeof req.query.skillName === 'string') filter.skillName = req.query.skillName;
 
   const proposals = skillWorkshop.listProposals(filter);
-  res.json({ proposals, count: proposals.length });
+  ok(res, { proposals, count: proposals.length });
 }));
 
 /**
@@ -67,7 +68,7 @@ skillWorkshopRouter.get('/proposals/:id', asyncHandler(async (req, res) => {
   if (!proposal) {
     return res.status(404).json({ error: 'Proposal not found' });
   }
-  res.json({ proposal });
+  ok(res, { proposal });
 }));
 
 /**
@@ -102,7 +103,7 @@ skillWorkshopRouter.post('/proposals', asyncHandler(async (req, res) => {
 skillWorkshopRouter.post('/proposals/:id/apply', asyncHandler(async (req, res) => {
   const { reviewerId } = req.body;
   const result = skillWorkshop.applyProposal(req.params.id, reviewerId);
-  res.json(result);
+  ok(res, result);
 }));
 
 /**
@@ -113,7 +114,7 @@ skillWorkshopRouter.post('/proposals/:id/reject', asyncHandler(async (req, res) 
   const { reason, reviewerId } = req.body;
   validateRequired(reason, 'reason');
   const result = skillWorkshop.rejectProposal(req.params.id, reason, reviewerId);
-  res.json(result);
+  ok(res, result);
 }));
 
 /**
@@ -124,7 +125,7 @@ skillWorkshopRouter.post('/proposals/:id/quarantine', asyncHandler(async (req, r
   const { reason } = req.body;
   validateRequired(reason, 'reason');
   const result = skillWorkshop.quarantineProposal(req.params.id, reason);
-  res.json(result);
+  ok(res, result);
 }));
 
 /**
@@ -132,14 +133,14 @@ skillWorkshopRouter.post('/proposals/:id/quarantine', asyncHandler(async (req, r
  */
 skillWorkshopRouter.post('/proposals/:id/rollback', asyncHandler(async (req, res) => {
   const result = skillWorkshop.rollbackProposal(req.params.id);
-  res.json(result);
+  ok(res, result);
 }));
 
 /**
  * GET /api/skill-workshop/stats
  */
 skillWorkshopRouter.get('/stats', asyncHandler(async (_req, res) => {
-  res.json({ stats: skillWorkshop.getStats() });
+  ok(res, { stats: skillWorkshop.getStats() });
 }));
 
 /**
@@ -181,7 +182,7 @@ skillWorkshopRouter.post('/install/cancel', asyncHandler(async (req, res) => {
   const { installId } = req.body;
   validateRequired(installId, 'installId');
   const cancelled = skillInstallManager.cancelInstall(installId);
-  res.json({ cancelled });
+  ok(res, { cancelled });
 }));
 
 /**
