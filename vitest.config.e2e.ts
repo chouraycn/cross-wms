@@ -86,8 +86,8 @@ export default defineConfig({
     globals: true,
     environment: 'node',
 
-    // 测试匹配模式
-    include: ['e2e/api/**/*.test.ts'],
+    // 测试匹配模式：contracts 目录是 P2-1 API 契约测试入口（与 npm run test:contracts 对齐）
+    include: ['e2e/api/**/*.test.ts', 'tests/contracts/**/*.test.ts'],
 
     // 超时设置
     testTimeout: 30000,

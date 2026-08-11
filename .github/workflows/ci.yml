@@ -155,8 +155,57 @@ jobs:
   engine-tests:
     name: Engine Tests (vitest engine config)
     runs-on: ubuntu-latest
-    timeout-minutes: 25
-    continue-on-error: true
+    timeout-minutes: 40
+    env:
+      CI: true
+      ONNX_DISABLE_NATIVE_DOWNLOAD: '1'
+    steps:
+      - name: Check out code (with openclaw submodule for real engine build)
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          submodules: true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      # H1: engine 测试通过相对路径 import openclaw/test/helpers，以及 openclaw/dist/*
+      # 的构建产物。先尝试真实构建 openclaw packages dist（成功则 engine 测试不再
+      # continue-on-error，是真正的门禁）；若子模块构建失败则回退 mock，允许
+      # non-blocking。
+      - name: Build openclaw packages (real dist, preferred)
+        id: build_openclaw
+        continue-on-error: true
+        run: |
+          if [ -f "openclaw/package.json" ] && grep -q '"name": "@openclaw' openclaw/package.json 2>/dev/null; then
+            echo "INFO: openclaw submodule present, building dist..."
+            (cd openclaw && npm ci --legacy-peer-deps 2>&1 | tail -5 && npm run build:packages 2>&1 | tail -10)
+          else
+            echo "WARN: openclaw submodule missing or invalid, skip real build"
+            exit 1
+          fi
+
+      - name: Prepare openclaw mock (fallback when real build unavailable)
+        if: steps.build_openclaw.outcome != 'success'
+        run: node scripts/ensure-openclaw-mock.cjs
+
+      - name: Run engine tests
+        run: npm run test:engine -- --reporter=basic --no-color 2>&1 | tail -300
+        # H1: 真实 openclaw dist 构建成功时 engine 测试为硬门禁；mock 模式仍宽容
+        continue-on-error: ${{ steps.build_openclaw.outcome != 'success' }}
+
+  # H4: P2-1 API 契约测试门禁 — 校验所有 respond / errorHandler envelope 一致性。
+  # 测试不依赖 DB / supertest（内存 mock），运行成本极低，作为 lint 级硬门禁。
+  contract-tests:
+    name: P2-1 API Contract Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
     env:
       CI: true
       ONNX_DISABLE_NATIVE_DOWNLOAD: '1'
@@ -176,13 +225,8 @@ jobs:
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
 
-      # engine 测试 import openclaw/dist/plugin-sdk；submodules=false 时用 mock 桩满足解析，
-      # 本地开发则需先 `npm run build:packages`。先以 mock 接入门禁，continue-on-error 不阻塞主干。
-      - name: Prepare openclaw mock (if submodule absent)
-        run: node scripts/ensure-openclaw-mock.cjs
-
-      - name: Run engine tests
-        run: npm run test:engine -- --reporter=basic --no-color 2>&1 | tail -200
+      - name: Run contract tests (envelope = { code, data, message })
+        run: npm run test:contracts -- --reporter=basic --no-color 2>&1 | tail -200
 
   deadcode:
     name: Dead Code (knip)

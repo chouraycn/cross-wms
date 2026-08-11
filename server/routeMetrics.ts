@@ -169,6 +169,17 @@ export function listTenantAgentMetrics(tenantId: string): RouteMetricsSnapshot[]
   return out;
 }
 
+/** 枚举所有租户的汇总快照（agentId 为空；用于 H5 global 端点） */
+export function getTenantMetricsList(): RouteMetricsSnapshot[] {
+  const out: RouteMetricsSnapshot[] = [];
+  for (const [tenantId, agents] of tenantCounters) {
+    const c = agents.get('*');
+    if (!c) continue;
+    out.push(snapshot(c, tenantId));
+  }
+  return out;
+}
+
 /** 清理过期数据（保留有计数的 agent，只清 recentMissReasons 超过阈值） */
 export function pruneRouteMetrics(olderThanMs: number): void {
   const threshold = Date.now() - olderThanMs;

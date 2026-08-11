@@ -681,6 +681,8 @@ app.use('/api/staffdeck/persona', lazyRouter(() => import('./routes/staff/person
 app.use('/api/staffdeck/sessions', lazyRouter(() => import('./routes/staff/sessions.js'), undefined, 'staff-sessions'));
 app.use('/api/staffdeck/auth', lazyRouter(() => import('./routes/staff/auth.js'), undefined, 'staff-auth'));
 app.use('/api/staffdeck/mock', lazyRouter(() => import('./routes/staff/mock.js'), undefined, 'staff-mock'));
+// H5: 路由命中率监控 API（全局/租户/员工命中率 + 冷启动 fallback 原因）
+app.use('/api/staffdeck/route-metrics', lazyRouter(() => import('./routes/staff/routeMetrics.js'), undefined, 'staff-route-metrics'));
 
 // ========== v1.5.220: 前端静态文件服务（供 Swift 原生 App 使用） ==========
 // 优先从 dist/ 加载前端构建产物（开发环境），其次从 process.env.FRONTEND_DIR 加载

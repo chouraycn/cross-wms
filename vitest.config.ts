@@ -84,47 +84,23 @@ export default defineConfig({
     cache: {
       dir: '.vitest-cache',
     },
-    include: isCI
-      ? [
-          // CI：仅包含核心源码目录的测试，跳过 engine/commands 桶文件（死代码）
-          'src/__tests__/**/*.test.{ts,tsx}',
-          'src/components/**/__tests__/**/*.test.{ts,tsx}',
-          'src/hooks/**/__tests__/**/*.test.{ts,tsx}',
-          'src/services/**/__tests__/**/*.test.{ts,tsx}',
-          'src/stores/**/__tests__/**/*.test.{ts,tsx}',
-          'server/__tests__/**/*.test.{ts,tsx}',
-          'server/**/__tests__/**/*.test.{ts,tsx}',
-          // engine 中除 commands 外的真实测试
-          'server/engine/agents/**/*.test.{ts,tsx}',
-          'server/engine/auto-reply/**/*.test.{ts,tsx}',
-          'server/engine/channels/**/*.test.{ts,tsx}',
-          'server/engine/cli/**/*.test.{ts,tsx}',
-          'server/engine/compaction/**/*.test.{ts,tsx}',
-          'server/engine/docs/**/*.test.{ts,tsx}',
-          'server/engine/gateway/**/*.test.{ts,tsx}',
-          'server/engine/skills/**/*.test.{ts,tsx}',
-          'server/engine/memory/**/*.test.{ts,tsx}',
-          'server/engine/plugins/**/*.test.{ts,tsx}',
-          'server/engine/routing/**/*.test.{ts,tsx}',
-          'server/engine/shared/**/*.test.{ts,tsx}',
-          'server/engine/storage/**/*.test.{ts,tsx}',
-          'server/engine/workflows/**/*.test.{ts,tsx}',
-          'server/engine/*.test.{ts,tsx}',
-          'packages/**/__tests__/**/*.test.{ts,tsx}',
-          'cli/src/**/__tests__/**/*.test.{ts,tsx}',
-        ]
-      : [
-          'src/__tests__/**/*.test.{ts,tsx}',
-          'src/components/**/__tests__/**/*.test.{ts,tsx}',
-          'src/hooks/**/__tests__/**/*.test.{ts,tsx}',
-          'src/services/**/__tests__/**/*.test.{ts,tsx}',
-          'src/stores/**/__tests__/**/*.test.{ts,tsx}',
-          'server/__tests__/**/*.test.{ts,tsx}',
-          'server/**/__tests__/**/*.test.{ts,tsx}',
-          'server/engine/**/*.test.{ts,tsx}',
-          'packages/**/__tests__/**/*.test.{ts,tsx}',
-          'cli/src/**/__tests__/**/*.test.{ts,tsx}',
-        ],
+    // H1: 主套件完全排除 server/engine/**，engine 重测试由 `npm run test:engine`
+    // 单独运行（vitest.config.engine.ts）。CI 中先构建 openclaw dist 再单独触发 engine
+    // 门禁，避免主套件出现 ~30 个 engine helper 别名解析失败、测试静默漏覆盖。
+    include: [
+      'src/__tests__/**/*.test.{ts,tsx}',
+      'src/components/**/__tests__/**/*.test.{ts,tsx}',
+      'src/hooks/**/__tests__/**/*.test.{ts,tsx}',
+      'src/services/**/__tests__/**/*.test.{ts,tsx}',
+      'src/stores/**/__tests__/**/*.test.{ts,tsx}',
+      'server/__tests__/**/*.test.{ts,tsx}',
+      'server/**/__tests__/**/*.test.{ts,tsx}',
+      'packages/**/__tests__/**/*.test.{ts,tsx}',
+      'cli/src/**/__tests__/**/*.test.{ts,tsx}',
+    ],
+    exclude: [
+      'server/engine/**',
+    ],
     deps: {
       optimizer: {
         exclude: ['onnxruntime-node'],

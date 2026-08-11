@@ -678,11 +678,17 @@ const SkillCreationListener: React.FC = () => {
   return null;
 };
 
-const SettingsRedirect: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSettings }) => {
+const SettingsRedirect: React.FC<{ onOpenSettings: () => void; onExpandSidebar?: () => void }> = ({ onOpenSettings, onExpandSidebar }) => {
   const navigate = useNavigate();
   React.useEffect(() => {
-    onOpenSettings();
-    navigate('/chat', { replace: true });
+    // 先展开侧边栏（确保设置按钮可见，anchorEl 能正确定位）
+    onExpandSidebar?.();
+    // 等待一帧让侧边栏渲染完成、ref 挂载后再打开弹窗
+    const raf = requestAnimationFrame(() => {
+      onOpenSettings();
+      navigate('/chat', { replace: true });
+    });
+    return () => cancelAnimationFrame(raf);
   }, []);
   return null;
 };
@@ -832,7 +838,7 @@ const MainLayout: React.FC = () => {
       <ProcessStatusProvider>
       <Box sx={{ display: 'flex', height: '100vh', backgroundColor: gs.bgSidebar, overflow: 'hidden' }}>
         {/* Sidebar — 单栏布局 */}
-        <Sidebar collapsed={sidebarCollapsed} onToggle={toggleSidebar} settingsOpen={settingsPopoverOpen} onSettingsOpenChange={setSettingsPopoverOpen} />
+        <Sidebar collapsed={sidebarCollapsed} onToggle={toggleSidebar} settingsOpen={settingsPopoverOpen} onSettingsOpenChange={setSettingsPopoverOpen} settingsButtonRef={settingsButtonRef} />
         {/* 统一设置弹窗 */}
         <Suspense fallback={null}>
           <SettingsPopover
@@ -966,7 +972,7 @@ const MainLayout: React.FC = () => {
                     <Route path="/wms/replenishment" element={<WmsReplenishmentPage />} />
                     <Route path="/transfer" element={<TransferPage />} />
                     <Route path="/pdf-tools" element={<PdfToolsPage />} />
-                    <Route path="/settings" element={<SettingsRedirect onOpenSettings={() => setSettingsPopoverOpen(true)} />} />
+                    <Route path="/settings" element={<SettingsRedirect onOpenSettings={() => setSettingsPopoverOpen(true)} onExpandSidebar={() => setSidebarCollapsed(false)} />} />
                     <Route path="/automation" element={<AutomationPage />} />
                     <Route path="/plugins" element={<PluginsPage />} />
                     <Route path="/extensions" element={<ExtensionsPage />} />

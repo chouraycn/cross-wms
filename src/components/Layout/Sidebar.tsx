@@ -58,9 +58,10 @@ interface SidebarProps {
   onToggle?: () => void;
   settingsOpen?: boolean;
   onSettingsOpenChange?: React.Dispatch<React.SetStateAction<boolean>>;
+  settingsButtonRef?: React.Ref<HTMLDivElement>;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: settingsOpenProp, onSettingsOpenChange }) => {
+const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: settingsOpenProp, onSettingsOpenChange, settingsButtonRef }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const theme = useTheme();
@@ -97,7 +98,6 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: se
   const [aiDialogInitialTab, setAiDialogInitialTab] = useState<{ main: string; sub: string } | undefined>(undefined);
   const [toolManagementDialogOpen, setToolManagementDialogOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const settingsBtnRef = useRef<HTMLDivElement>(null);
   const searchBtnRef = useRef<HTMLDivElement>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
 
@@ -237,7 +237,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: se
       sx={{
         width,
         height: '100%',
-        boxSizing: 'content-box',
+        boxSizing: 'border-box',
         paddingTop: 'var(--pw-top, 0px)',
         zIndex: 1200,
         flexShrink: 0,
@@ -273,11 +273,11 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: se
 
       {/* Bottom: Settings button */}
       <Box
-        sx={{ px: collapsed ? 0.5 : 1, pb: '12px', flexShrink: 0, display: collapsed ? 'none' : 'flex', flexDirection: 'column', gap: 0.25 }}
+        sx={{ px: collapsed ? 0.5 : 1, pb: '6px', flexShrink: 0, display: collapsed ? 'none' : 'flex', flexDirection: 'column', gap: 0.25 }}
         style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
       >
         <ListItemButton
-          ref={settingsBtnRef}
+          ref={settingsButtonRef}
           onClick={() => setSettingsOpen((prev) => !prev)}
           sx={{
             minHeight: collapsed ? 40 : 36,

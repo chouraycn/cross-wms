@@ -1,0 +1,472 @@
+{
+  "generatedAt": "2026-08-09T10:15:10.893Z",
+  "options": {
+    "live": false,
+    "baseUrl": "http://localhost:3000",
+    "samples": 10,
+    "concurrency": 3,
+    "agentId": "seed-agent-warehouse-specialist",
+    "userId": "bench-user-1",
+    "reportDir": "/Users/chouray/WorkBuddy/2026-05-25-10-01-22/cross-wms/scripts/benchmarks/reports",
+    "timeoutMs": 120000
+  },
+  "cases": [
+    {
+      "id": "S-01",
+      "category": "simple",
+      "prompt": "介绍一下 CDF Know Clow",
+      "expectedKeywords": [
+        "CDF",
+        "ReAct"
+      ]
+    },
+    {
+      "id": "S-02",
+      "category": "simple",
+      "prompt": "什么是 ReAct 框架？",
+      "expectedKeywords": [
+        "。"
+      ]
+    },
+    {
+      "id": "S-03",
+      "category": "simple",
+      "prompt": "1 分钟介绍仓库专员的职责",
+      "expectedKeywords": [
+        "CDF",
+        "ReAct"
+      ]
+    },
+    {
+      "id": "S-04",
+      "category": "simple",
+      "prompt": "解释\"库存周转率\"这个概念",
+      "expectedKeywords": [
+        "CDF",
+        "ReAct"
+      ]
+    },
+    {
+      "id": "W-01",
+      "category": "wms-complex",
+      "prompt": "查询 WH01 仓库 2026-07 月入库总金额 Top 10 的 SKU 列表，包含供应商、金额、占比",
+      "expectedKeywords": [
+        "SKU",
+        "仓库",
+        "WH0"
+      ]
+    },
+    {
+      "id": "W-02",
+      "category": "wms-complex",
+      "prompt": "帮我对比 6 月 vs 7 月 WH01/WH02 两仓的出库量，按品类分组，输出环比变化",
+      "expectedKeywords": [
+        "SKU",
+        "仓库",
+        "WH0"
+      ]
+    },
+    {
+      "id": "W-03",
+      "category": "wms-complex",
+      "prompt": "找出近 30 天 WH02 仓库里\"临期+库存≥100\"的 SKU，按到期日排序，给出促销建议",
+      "expectedKeywords": [
+        "SKU",
+        "仓库",
+        "WH0"
+      ]
+    },
+    {
+      "id": "W-04",
+      "category": "wms-complex",
+      "prompt": "查询 2026-Q3 滞销 SKU 清单：最后动销日距今 >90 天，且当前库存 >50，列出仓号/SKU/数量/库龄",
+      "expectedKeywords": [
+        "SKU",
+        "仓库",
+        "WH0"
+      ]
+    },
+    {
+      "id": "T-01",
+      "category": "multi-tool",
+      "prompt": "读取最近 7 天的 chat 日志文件，统计每天对话数并生成图表",
+      "expectedKeywords": [
+        "统计",
+        "列表"
+      ]
+    },
+    {
+      "id": "T-02",
+      "category": "multi-tool",
+      "prompt": "列出 src/components 下所有超过 90KB 的大文件，并给其中 Top5 生成拆分建议（拆辅助文件）",
+      "expectedKeywords": [
+        "统计",
+        "列表"
+      ]
+    }
+  ],
+  "results": [
+    {
+      "caseId": "S-01",
+      "mode": "reflection-off",
+      "durationMs": 3508,
+      "tokensIn": 400,
+      "tokensOut": 120,
+      "steps": 2,
+      "turns": 2,
+      "contentLength": 67,
+      "correctness": 1,
+      "toolCalls": 0
+    },
+    {
+      "caseId": "S-01",
+      "mode": "reflection-on",
+      "durationMs": 3244,
+      "tokensIn": 368,
+      "tokensOut": 106,
+      "steps": 1,
+      "turns": 1,
+      "contentLength": 66,
+      "correctness": 1,
+      "toolCalls": 0
+    },
+    {
+      "caseId": "S-02",
+      "mode": "reflection-off",
+      "durationMs": 3593,
+      "tokensIn": 400,
+      "tokensOut": 120,
+      "steps": 2,
+      "turns": 2,
+      "contentLength": 54,
+      "correctness": 0.975,
+      "toolCalls": 0
+    },
+    {
+      "caseId": "S-02",
+      "mode": "reflection-on",
+      "durationMs": 2768,
+      "tokensIn": 368,
+      "tokensOut": 106,
+      "steps": 1,
+      "turns": 1,
+      "contentLength": 53,
+      "correctness": 0.9708333333333333,
+      "toolCalls": 0
+    },
+    {
+      "caseId": "S-03",
+      "mode": "reflection-off",
+      "durationMs": 3900,
+      "tokensIn": 400,
+      "tokensOut": 120,
+      "steps": 2,
+      "turns": 2,
+      "contentLength": 62,
+      "correctness": 1,
+      "toolCalls": 0
+    },
+    {
+      "caseId": "S-03",
+      "mode": "reflection-on",
+      "durationMs": 3463,
+      "tokensIn": 368,
+      "tokensOut": 106,
+      "steps": 1,
+      "turns": 1,
+      "contentLength": 61,
+      "correctness": 1,
+      "toolCalls": 0
+    },
+    {
+      "caseId": "S-04",
+      "mode": "reflection-off",
+      "durationMs": 4118,
+      "tokensIn": 400,
+      "tokensOut": 120,
+      "steps": 2,
+      "turns": 2,
+      "contentLength": 62,
+      "correctness": 1,
+      "toolCalls": 0
+    },
+    {
+      "caseId": "S-04",
+      "mode": "reflection-on",
+      "durationMs": 4442,
+      "tokensIn": 472,
+      "tokensOut": 130,
+      "steps": 2,
+      "turns": 2,
+      "contentLength": 61,
+      "correctness": 1,
+      "toolCalls": 0
+    },
+    {
+      "caseId": "W-01",
+      "mode": "reflection-off",
+      "durationMs": 14252,
+      "tokensIn": 2500,
+      "tokensOut": 800,
+      "steps": 7,
+      "turns": 4,
+      "contentLength": 74,
+      "correctness": 1,
+      "toolCalls": 2
+    },
+    {
+      "caseId": "W-01",
+      "mode": "reflection-on",
+      "durationMs": 15871,
+      "tokensIn": 2950,
+      "tokensOut": 864,
+      "steps": 7,
+      "turns": 4,
+      "contentLength": 73,
+      "correctness": 1,
+      "toolCalls": 2
+    },
+    {
+      "caseId": "W-02",
+      "mode": "reflection-off",
+      "durationMs": 14256,
+      "tokensIn": 2500,
+      "tokensOut": 800,
+      "steps": 7,
+      "turns": 4,
+      "contentLength": 74,
+      "correctness": 1,
+      "toolCalls": 2
+    },
+    {
+      "caseId": "W-02",
+      "mode": "reflection-on",
+      "durationMs": 16068,
+      "tokensIn": 2950,
+      "tokensOut": 864,
+      "steps": 7,
+      "turns": 4,
+      "contentLength": 73,
+      "correctness": 1,
+      "toolCalls": 2
+    },
+    {
+      "caseId": "W-03",
+      "mode": "reflection-off",
+      "durationMs": 14589,
+      "tokensIn": 2500,
+      "tokensOut": 800,
+      "steps": 7,
+      "turns": 4,
+      "contentLength": 74,
+      "correctness": 1,
+      "toolCalls": 2
+    },
+    {
+      "caseId": "W-03",
+      "mode": "reflection-on",
+      "durationMs": 16215,
+      "tokensIn": 2950,
+      "tokensOut": 864,
+      "steps": 7,
+      "turns": 4,
+      "contentLength": 73,
+      "correctness": 1,
+      "toolCalls": 2
+    },
+    {
+      "caseId": "W-04",
+      "mode": "reflection-off",
+      "durationMs": 14151,
+      "tokensIn": 2500,
+      "tokensOut": 800,
+      "steps": 7,
+      "turns": 4,
+      "contentLength": 74,
+      "correctness": 1,
+      "toolCalls": 2
+    },
+    {
+      "caseId": "W-04",
+      "mode": "reflection-on",
+      "durationMs": 15976,
+      "tokensIn": 2950,
+      "tokensOut": 864,
+      "steps": 7,
+      "turns": 4,
+      "contentLength": 73,
+      "correctness": 1,
+      "toolCalls": 2
+    },
+    {
+      "caseId": "T-01",
+      "mode": "reflection-off",
+      "durationMs": 26412,
+      "tokensIn": 3800,
+      "tokensOut": 1400,
+      "steps": 10,
+      "turns": 6,
+      "contentLength": 69,
+      "correctness": 1,
+      "toolCalls": 3
+    },
+    {
+      "caseId": "T-01",
+      "mode": "reflection-on",
+      "durationMs": 29304,
+      "tokensIn": 4484,
+      "tokensOut": 1512,
+      "steps": 10,
+      "turns": 6,
+      "contentLength": 68,
+      "correctness": 1,
+      "toolCalls": 3
+    },
+    {
+      "caseId": "T-02",
+      "mode": "reflection-off",
+      "durationMs": 26700,
+      "tokensIn": 3800,
+      "tokensOut": 1400,
+      "steps": 10,
+      "turns": 6,
+      "contentLength": 69,
+      "correctness": 1,
+      "toolCalls": 3
+    },
+    {
+      "caseId": "T-02",
+      "mode": "reflection-on",
+      "durationMs": 29659,
+      "tokensIn": 4484,
+      "tokensOut": 1512,
+      "steps": 10,
+      "turns": 6,
+      "contentLength": 68,
+      "correctness": 1,
+      "toolCalls": 3
+    }
+  ],
+  "aggregates": [
+    {
+      "category": "simple",
+      "mode": "reflection-off",
+      "count": 4,
+      "errors": 0,
+      "avgTokensIn": 400,
+      "avgTokensOut": 120,
+      "avgTokensTotal": 520,
+      "avgSteps": 2,
+      "avgTurns": 2,
+      "avgDurationMs": 3779.75,
+      "avgCorrectness": 0.99375,
+      "correctnessGte70": 1,
+      "avgToolCalls": 0
+    },
+    {
+      "category": "simple",
+      "mode": "reflection-on",
+      "count": 4,
+      "errors": 0,
+      "avgTokensIn": 394,
+      "avgTokensOut": 112,
+      "avgTokensTotal": 506,
+      "avgSteps": 1.25,
+      "avgTurns": 1.25,
+      "avgDurationMs": 3479.25,
+      "avgCorrectness": 0.9927083333333333,
+      "correctnessGte70": 1,
+      "avgToolCalls": 0
+    },
+    {
+      "category": "wms-complex",
+      "mode": "reflection-off",
+      "count": 4,
+      "errors": 0,
+      "avgTokensIn": 2500,
+      "avgTokensOut": 800,
+      "avgTokensTotal": 3300,
+      "avgSteps": 7,
+      "avgTurns": 4,
+      "avgDurationMs": 14312,
+      "avgCorrectness": 1,
+      "correctnessGte70": 1,
+      "avgToolCalls": 2
+    },
+    {
+      "category": "wms-complex",
+      "mode": "reflection-on",
+      "count": 4,
+      "errors": 0,
+      "avgTokensIn": 2950,
+      "avgTokensOut": 864,
+      "avgTokensTotal": 3814,
+      "avgSteps": 7,
+      "avgTurns": 4,
+      "avgDurationMs": 16032.5,
+      "avgCorrectness": 1,
+      "correctnessGte70": 1,
+      "avgToolCalls": 2
+    },
+    {
+      "category": "multi-tool",
+      "mode": "reflection-off",
+      "count": 2,
+      "errors": 0,
+      "avgTokensIn": 3800,
+      "avgTokensOut": 1400,
+      "avgTokensTotal": 5200,
+      "avgSteps": 10,
+      "avgTurns": 6,
+      "avgDurationMs": 26556,
+      "avgCorrectness": 1,
+      "correctnessGte70": 1,
+      "avgToolCalls": 3
+    },
+    {
+      "category": "multi-tool",
+      "mode": "reflection-on",
+      "count": 2,
+      "errors": 0,
+      "avgTokensIn": 4484,
+      "avgTokensOut": 1512,
+      "avgTokensTotal": 5996,
+      "avgSteps": 10,
+      "avgTurns": 6,
+      "avgDurationMs": 29481.5,
+      "avgCorrectness": 1,
+      "correctnessGte70": 1,
+      "avgToolCalls": 3
+    },
+    {
+      "category": "ALL",
+      "mode": "reflection-off",
+      "count": 10,
+      "errors": 0,
+      "avgTokensIn": 1920,
+      "avgTokensOut": 648,
+      "avgTokensTotal": 2568,
+      "avgSteps": 5.6,
+      "avgTurns": 3.6,
+      "avgDurationMs": 12547.9,
+      "avgCorrectness": 0.9974999999999999,
+      "correctnessGte70": 1,
+      "avgToolCalls": 1.4
+    },
+    {
+      "category": "ALL",
+      "mode": "reflection-on",
+      "count": 10,
+      "errors": 0,
+      "avgTokensIn": 2234.4,
+      "avgTokensOut": 692.8,
+      "avgTokensTotal": 2927.2,
+      "avgSteps": 5.3,
+      "avgTurns": 3.3,
+      "avgDurationMs": 13701,
+      "avgCorrectness": 0.9970833333333333,
+      "correctnessGte70": 1,
+      "avgToolCalls": 1.4
+    }
+  ]
+}

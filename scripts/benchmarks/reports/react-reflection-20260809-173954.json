@@ -1,0 +1,802 @@
+{
+  "generatedAt": "2026-08-09T09:39:54.037Z",
+  "options": {
+    "live": false,
+    "baseUrl": "http://localhost:3000",
+    "samples": 20,
+    "concurrency": 5,
+    "agentId": "seed-agent-warehouse-specialist",
+    "userId": "bench-user-1",
+    "reportDir": "/Users/chouray/WorkBuddy/2026-05-25-10-01-22/cross-wms/scripts/benchmarks/reports",
+    "timeoutMs": 120000
+  },
+  "cases": [
+    {
+      "id": "S-01",
+      "category": "simple",
+      "prompt": "介绍一下 CDF Know Clow",
+      "expectedKeywords": [
+        "CDF",
+        "ReAct"
+      ]
+    },
+    {
+      "id": "S-02",
+      "category": "simple",
+      "prompt": "什么是 ReAct 框架？",
+      "expectedKeywords": [
+        "。"
+      ]
+    },
+    {
+      "id": "S-03",
+      "category": "simple",
+      "prompt": "1 分钟介绍仓库专员的职责",
+      "expectedKeywords": [
+        "CDF",
+        "ReAct"
+      ]
+    },
+    {
+      "id": "S-04",
+      "category": "simple",
+      "prompt": "解释\"库存周转率\"这个概念",
+      "expectedKeywords": [
+        "CDF",
+        "ReAct"
+      ]
+    },
+    {
+      "id": "S-05",
+      "category": "simple",
+      "prompt": "SKU 是什么的缩写？",
+      "expectedKeywords": [
+        "。"
+      ]
+    },
+    {
+      "id": "S-06",
+      "category": "simple",
+      "prompt": "跨境免税仓库和普通仓库最大的区别？",
+      "expectedKeywords": [
+        "。"
+      ]
+    },
+    {
+      "id": "S-07",
+      "category": "simple",
+      "prompt": "什么叫呆滞物料？",
+      "expectedKeywords": [
+        "。"
+      ]
+    },
+    {
+      "id": "S-08",
+      "category": "simple",
+      "prompt": "什么是 FIFO 和 LIFO？",
+      "expectedKeywords": [
+        "。"
+      ]
+    },
+    {
+      "id": "W-01",
+      "category": "wms-complex",
+      "prompt": "查询 WH01 仓库 2026-07 月入库总金额 Top 10 的 SKU 列表，包含供应商、金额、占比",
+      "expectedKeywords": [
+        "SKU",
+        "仓库",
+        "WH0"
+      ]
+    },
+    {
+      "id": "W-02",
+      "category": "wms-complex",
+      "prompt": "帮我对比 6 月 vs 7 月 WH01/WH02 两仓的出库量，按品类分组，输出环比变化",
+      "expectedKeywords": [
+        "SKU",
+        "仓库",
+        "WH0"
+      ]
+    },
+    {
+      "id": "W-03",
+      "category": "wms-complex",
+      "prompt": "找出近 30 天 WH02 仓库里\"临期+库存≥100\"的 SKU，按到期日排序，给出促销建议",
+      "expectedKeywords": [
+        "SKU",
+        "仓库",
+        "WH0"
+      ]
+    },
+    {
+      "id": "W-04",
+      "category": "wms-complex",
+      "prompt": "查询 2026-Q3 滞销 SKU 清单：最后动销日距今 >90 天，且当前库存 >50，列出仓号/SKU/数量/库龄",
+      "expectedKeywords": [
+        "SKU",
+        "仓库",
+        "WH0"
+      ]
+    },
+    {
+      "id": "W-05",
+      "category": "wms-complex",
+      "prompt": "基于最近 90 天出库量，预测 WH01 仓库未来 30 天的 Top 5 SKU 补货建议量（安全库存=3×日均）",
+      "expectedKeywords": [
+        "SKU",
+        "仓库",
+        "WH0"
+      ]
+    },
+    {
+      "id": "W-06",
+      "category": "wms-complex",
+      "prompt": "生成 2026-07 月的《出入库日报》表头结构，需要字段至少 10 个，并说明每个字段用途",
+      "expectedKeywords": [
+        "SKU",
+        "仓库",
+        "WH0"
+      ]
+    },
+    {
+      "id": "W-07",
+      "category": "wms-complex",
+      "prompt": "帮我分析最近 14 天 A 类商品（销售额 Top 20%）的缺货次数与缺货时长，输出 SKU 维度",
+      "expectedKeywords": [
+        "SKU",
+        "仓库",
+        "WH0"
+      ]
+    },
+    {
+      "id": "W-08",
+      "category": "wms-complex",
+      "prompt": "WH01 与 WH02 仓库的在途调拨单列表：单号/调出仓/调入仓/预计到达/状态，按出发时间倒序",
+      "expectedKeywords": [
+        "SKU",
+        "仓库",
+        "WH0"
+      ]
+    },
+    {
+      "id": "T-01",
+      "category": "multi-tool",
+      "prompt": "读取最近 7 天的 chat 日志文件，统计每天对话数并生成图表",
+      "expectedKeywords": [
+        "统计",
+        "列表"
+      ]
+    },
+    {
+      "id": "T-02",
+      "category": "multi-tool",
+      "prompt": "列出 src/components 下所有超过 90KB 的大文件，并给其中 Top5 生成拆分建议（拆辅助文件）",
+      "expectedKeywords": [
+        "统计",
+        "列表"
+      ]
+    },
+    {
+      "id": "T-03",
+      "category": "multi-tool",
+      "prompt": "检查 db-wms.ts 的 6 个仓储 CRUD 接口权限：是否所有写操作都校验了 tenantId",
+      "expectedKeywords": [
+        "统计",
+        "列表"
+      ]
+    },
+    {
+      "id": "T-04",
+      "category": "multi-tool",
+      "prompt": "对比 README.md 和实际 package.json scripts：列出文档中缺失或过时的命令描述",
+      "expectedKeywords": [
+        "统计",
+        "列表"
+      ]
+    }
+  ],
+  "results": [
+    {
+      "caseId": "S-01",
+      "mode": "reflection-off",
+      "durationMs": 3655,
+      "tokensIn": 400,
+      "tokensOut": 120,
+      "steps": 2,
+      "turns": 2,
+      "contentLength": 67,
+      "correctness": 1,
+      "toolCalls": 0
+    },
+    {
+      "caseId": "S-01",
+      "mode": "reflection-on",
+      "durationMs": 3541,
+      "tokensIn": 368,
+      "tokensOut": 106,
+      "steps": 1,
+      "turns": 1,
+      "contentLength": 66,
+      "correctness": 1,
+      "toolCalls": 0
+    },
+    {
+      "caseId": "S-02",
+      "mode": "reflection-off",
+      "durationMs": 3831,
+      "tokensIn": 400,
+      "tokensOut": 120,
+      "steps": 2,
+      "turns": 2,
+      "contentLength": 54,
+      "correctness": 0.975,
+      "toolCalls": 0
+    },
+    {
+      "caseId": "S-02",
+      "mode": "reflection-on",
+      "durationMs": 3202,
+      "tokensIn": 368,
+      "tokensOut": 106,
+      "steps": 1,
+      "turns": 1,
+      "contentLength": 53,
+      "correctness": 0.9708333333333333,
+      "toolCalls": 0
+    },
+    {
+      "caseId": "S-03",
+      "mode": "reflection-off",
+      "durationMs": 3587,
+      "tokensIn": 400,
+      "tokensOut": 120,
+      "steps": 2,
+      "turns": 2,
+      "contentLength": 62,
+      "correctness": 1,
+      "toolCalls": 0
+    },
+    {
+      "caseId": "S-03",
+      "mode": "reflection-on",
+      "durationMs": 4358,
+      "tokensIn": 472,
+      "tokensOut": 130,
+      "steps": 2,
+      "turns": 2,
+      "contentLength": 61,
+      "correctness": 1,
+      "toolCalls": 0
+    },
+    {
+      "caseId": "S-04",
+      "mode": "reflection-off",
+      "durationMs": 4194,
+      "tokensIn": 400,
+      "tokensOut": 120,
+      "steps": 2,
+      "turns": 2,
+      "contentLength": 62,
+      "correctness": 1,
+      "toolCalls": 0
+    },
+    {
+      "caseId": "S-04",
+      "mode": "reflection-on",
+      "durationMs": 4614,
+      "tokensIn": 472,
+      "tokensOut": 130,
+      "steps": 2,
+      "turns": 2,
+      "contentLength": 61,
+      "correctness": 1,
+      "toolCalls": 0
+    },
+    {
+      "caseId": "S-05",
+      "mode": "reflection-off",
+      "durationMs": 3887,
+      "tokensIn": 400,
+      "tokensOut": 120,
+      "steps": 2,
+      "turns": 2,
+      "contentLength": 52,
+      "correctness": 0.9666666666666667,
+      "toolCalls": 0
+    },
+    {
+      "caseId": "S-05",
+      "mode": "reflection-on",
+      "durationMs": 4441,
+      "tokensIn": 472,
+      "tokensOut": 130,
+      "steps": 2,
+      "turns": 2,
+      "contentLength": 51,
+      "correctness": 0.9625,
+      "toolCalls": 0
+    },
+    {
+      "caseId": "S-06",
+      "mode": "reflection-off",
+      "durationMs": 3584,
+      "tokensIn": 400,
+      "tokensOut": 120,
+      "steps": 2,
+      "turns": 2,
+      "contentLength": 58,
+      "correctness": 0.9916666666666667,
+      "toolCalls": 0
+    },
+    {
+      "caseId": "S-06",
+      "mode": "reflection-on",
+      "durationMs": 4272,
+      "tokensIn": 472,
+      "tokensOut": 130,
+      "steps": 2,
+      "turns": 2,
+      "contentLength": 57,
+      "correctness": 0.9875,
+      "toolCalls": 0
+    },
+    {
+      "caseId": "S-07",
+      "mode": "reflection-off",
+      "durationMs": 3964,
+      "tokensIn": 400,
+      "tokensOut": 120,
+      "steps": 2,
+      "turns": 2,
+      "contentLength": 49,
+      "correctness": 0.9541666666666666,
+      "toolCalls": 0
+    },
+    {
+      "caseId": "S-07",
+      "mode": "reflection-on",
+      "durationMs": 4574,
+      "tokensIn": 472,
+      "tokensOut": 130,
+      "steps": 2,
+      "turns": 2,
+      "contentLength": 48,
+      "correctness": 0.95,
+      "toolCalls": 0
+    },
+    {
+      "caseId": "S-08",
+      "mode": "reflection-off",
+      "durationMs": 3630,
+      "tokensIn": 400,
+      "tokensOut": 120,
+      "steps": 2,
+      "turns": 2,
+      "contentLength": 57,
+      "correctness": 0.9875,
+      "toolCalls": 0
+    },
+    {
+      "caseId": "S-08",
+      "mode": "reflection-on",
+      "durationMs": 3198,
+      "tokensIn": 368,
+      "tokensOut": 106,
+      "steps": 1,
+      "turns": 1,
+      "contentLength": 56,
+      "correctness": 0.9833333333333334,
+      "toolCalls": 0
+    },
+    {
+      "caseId": "W-01",
+      "mode": "reflection-off",
+      "durationMs": 14164,
+      "tokensIn": 2500,
+      "tokensOut": 800,
+      "steps": 7,
+      "turns": 4,
+      "contentLength": 74,
+      "correctness": 1,
+      "toolCalls": 2
+    },
+    {
+      "caseId": "W-01",
+      "mode": "reflection-on",
+      "durationMs": 16200,
+      "tokensIn": 2950,
+      "tokensOut": 864,
+      "steps": 7,
+      "turns": 4,
+      "contentLength": 73,
+      "correctness": 1,
+      "toolCalls": 2
+    },
+    {
+      "caseId": "W-02",
+      "mode": "reflection-off",
+      "durationMs": 14030,
+      "tokensIn": 2500,
+      "tokensOut": 800,
+      "steps": 7,
+      "turns": 4,
+      "contentLength": 74,
+      "correctness": 1,
+      "toolCalls": 2
+    },
+    {
+      "caseId": "W-02",
+      "mode": "reflection-on",
+      "durationMs": 16429,
+      "tokensIn": 2950,
+      "tokensOut": 864,
+      "steps": 7,
+      "turns": 4,
+      "contentLength": 73,
+      "correctness": 1,
+      "toolCalls": 2
+    },
+    {
+      "caseId": "W-03",
+      "mode": "reflection-off",
+      "durationMs": 14101,
+      "tokensIn": 2500,
+      "tokensOut": 800,
+      "steps": 7,
+      "turns": 4,
+      "contentLength": 74,
+      "correctness": 1,
+      "toolCalls": 2
+    },
+    {
+      "caseId": "W-03",
+      "mode": "reflection-on",
+      "durationMs": 16174,
+      "tokensIn": 2950,
+      "tokensOut": 864,
+      "steps": 7,
+      "turns": 4,
+      "contentLength": 73,
+      "correctness": 1,
+      "toolCalls": 2
+    },
+    {
+      "caseId": "W-04",
+      "mode": "reflection-off",
+      "durationMs": 14303,
+      "tokensIn": 2500,
+      "tokensOut": 800,
+      "steps": 7,
+      "turns": 4,
+      "contentLength": 74,
+      "correctness": 1,
+      "toolCalls": 2
+    },
+    {
+      "caseId": "W-04",
+      "mode": "reflection-on",
+      "durationMs": 15942,
+      "tokensIn": 2950,
+      "tokensOut": 864,
+      "steps": 7,
+      "turns": 4,
+      "contentLength": 73,
+      "correctness": 1,
+      "toolCalls": 2
+    },
+    {
+      "caseId": "W-05",
+      "mode": "reflection-off",
+      "durationMs": 14530,
+      "tokensIn": 2500,
+      "tokensOut": 800,
+      "steps": 7,
+      "turns": 4,
+      "contentLength": 74,
+      "correctness": 1,
+      "toolCalls": 2
+    },
+    {
+      "caseId": "W-05",
+      "mode": "reflection-on",
+      "durationMs": 15877,
+      "tokensIn": 2950,
+      "tokensOut": 864,
+      "steps": 7,
+      "turns": 4,
+      "contentLength": 73,
+      "correctness": 1,
+      "toolCalls": 2
+    },
+    {
+      "caseId": "W-06",
+      "mode": "reflection-off",
+      "durationMs": 14459,
+      "tokensIn": 2500,
+      "tokensOut": 800,
+      "steps": 7,
+      "turns": 4,
+      "contentLength": 74,
+      "correctness": 1,
+      "toolCalls": 2
+    },
+    {
+      "caseId": "W-06",
+      "mode": "reflection-on",
+      "durationMs": 16299,
+      "tokensIn": 2950,
+      "tokensOut": 864,
+      "steps": 7,
+      "turns": 4,
+      "contentLength": 73,
+      "correctness": 1,
+      "toolCalls": 2
+    },
+    {
+      "caseId": "W-07",
+      "mode": "reflection-off",
+      "durationMs": 14389,
+      "tokensIn": 2500,
+      "tokensOut": 800,
+      "steps": 7,
+      "turns": 4,
+      "contentLength": 74,
+      "correctness": 1,
+      "toolCalls": 2
+    },
+    {
+      "caseId": "W-07",
+      "mode": "reflection-on",
+      "durationMs": 16137,
+      "tokensIn": 2950,
+      "tokensOut": 864,
+      "steps": 7,
+      "turns": 4,
+      "contentLength": 73,
+      "correctness": 1,
+      "toolCalls": 2
+    },
+    {
+      "caseId": "W-08",
+      "mode": "reflection-off",
+      "durationMs": 14675,
+      "tokensIn": 2500,
+      "tokensOut": 800,
+      "steps": 7,
+      "turns": 4,
+      "contentLength": 74,
+      "correctness": 1,
+      "toolCalls": 2
+    },
+    {
+      "caseId": "W-08",
+      "mode": "reflection-on",
+      "durationMs": 16111,
+      "tokensIn": 2950,
+      "tokensOut": 864,
+      "steps": 7,
+      "turns": 4,
+      "contentLength": 73,
+      "correctness": 1,
+      "toolCalls": 2
+    },
+    {
+      "caseId": "T-01",
+      "mode": "reflection-off",
+      "durationMs": 26179,
+      "tokensIn": 3800,
+      "tokensOut": 1400,
+      "steps": 10,
+      "turns": 6,
+      "contentLength": 69,
+      "correctness": 1,
+      "toolCalls": 3
+    },
+    {
+      "caseId": "T-01",
+      "mode": "reflection-on",
+      "durationMs": 29814,
+      "tokensIn": 4484,
+      "tokensOut": 1512,
+      "steps": 10,
+      "turns": 6,
+      "contentLength": 68,
+      "correctness": 1,
+      "toolCalls": 3
+    },
+    {
+      "caseId": "T-02",
+      "mode": "reflection-off",
+      "durationMs": 26311,
+      "tokensIn": 3800,
+      "tokensOut": 1400,
+      "steps": 10,
+      "turns": 6,
+      "contentLength": 69,
+      "correctness": 1,
+      "toolCalls": 3
+    },
+    {
+      "caseId": "T-02",
+      "mode": "reflection-on",
+      "durationMs": 29148,
+      "tokensIn": 4484,
+      "tokensOut": 1512,
+      "steps": 10,
+      "turns": 6,
+      "contentLength": 68,
+      "correctness": 1,
+      "toolCalls": 3
+    },
+    {
+      "caseId": "T-03",
+      "mode": "reflection-off",
+      "durationMs": 26515,
+      "tokensIn": 3800,
+      "tokensOut": 1400,
+      "steps": 10,
+      "turns": 6,
+      "contentLength": 69,
+      "correctness": 1,
+      "toolCalls": 3
+    },
+    {
+      "caseId": "T-03",
+      "mode": "reflection-on",
+      "durationMs": 29849,
+      "tokensIn": 4484,
+      "tokensOut": 1512,
+      "steps": 10,
+      "turns": 6,
+      "contentLength": 68,
+      "correctness": 1,
+      "toolCalls": 3
+    },
+    {
+      "caseId": "T-04",
+      "mode": "reflection-off",
+      "durationMs": 26285,
+      "tokensIn": 3800,
+      "tokensOut": 1400,
+      "steps": 10,
+      "turns": 6,
+      "contentLength": 69,
+      "correctness": 1,
+      "toolCalls": 3
+    },
+    {
+      "caseId": "T-04",
+      "mode": "reflection-on",
+      "durationMs": 29205,
+      "tokensIn": 4484,
+      "tokensOut": 1512,
+      "steps": 10,
+      "turns": 6,
+      "contentLength": 68,
+      "correctness": 1,
+      "toolCalls": 3
+    }
+  ],
+  "aggregates": [
+    {
+      "category": "simple",
+      "mode": "reflection-off",
+      "count": 8,
+      "errors": 0,
+      "avgTokensIn": 400,
+      "avgTokensOut": 120,
+      "avgTokensTotal": 520,
+      "avgSteps": 2,
+      "avgTurns": 2,
+      "avgDurationMs": 3791.5,
+      "avgCorrectness": 0.984375,
+      "correctnessGte70": 1,
+      "avgToolCalls": 0
+    },
+    {
+      "category": "simple",
+      "mode": "reflection-on",
+      "count": 8,
+      "errors": 0,
+      "avgTokensIn": 433,
+      "avgTokensOut": 121,
+      "avgTokensTotal": 554,
+      "avgSteps": 1.625,
+      "avgTurns": 1.625,
+      "avgDurationMs": 4025,
+      "avgCorrectness": 0.9817708333333334,
+      "correctnessGte70": 1,
+      "avgToolCalls": 0
+    },
+    {
+      "category": "wms-complex",
+      "mode": "reflection-off",
+      "count": 8,
+      "errors": 0,
+      "avgTokensIn": 2500,
+      "avgTokensOut": 800,
+      "avgTokensTotal": 3300,
+      "avgSteps": 7,
+      "avgTurns": 4,
+      "avgDurationMs": 14331.375,
+      "avgCorrectness": 1,
+      "correctnessGte70": 1,
+      "avgToolCalls": 2
+    },
+    {
+      "category": "wms-complex",
+      "mode": "reflection-on",
+      "count": 8,
+      "errors": 0,
+      "avgTokensIn": 2950,
+      "avgTokensOut": 864,
+      "avgTokensTotal": 3814,
+      "avgSteps": 7,
+      "avgTurns": 4,
+      "avgDurationMs": 16146.125,
+      "avgCorrectness": 1,
+      "correctnessGte70": 1,
+      "avgToolCalls": 2
+    },
+    {
+      "category": "multi-tool",
+      "mode": "reflection-off",
+      "count": 4,
+      "errors": 0,
+      "avgTokensIn": 3800,
+      "avgTokensOut": 1400,
+      "avgTokensTotal": 5200,
+      "avgSteps": 10,
+      "avgTurns": 6,
+      "avgDurationMs": 26322.5,
+      "avgCorrectness": 1,
+      "correctnessGte70": 1,
+      "avgToolCalls": 3
+    },
+    {
+      "category": "multi-tool",
+      "mode": "reflection-on",
+      "count": 4,
+      "errors": 0,
+      "avgTokensIn": 4484,
+      "avgTokensOut": 1512,
+      "avgTokensTotal": 5996,
+      "avgSteps": 10,
+      "avgTurns": 6,
+      "avgDurationMs": 29504,
+      "avgCorrectness": 1,
+      "correctnessGte70": 1,
+      "avgToolCalls": 3
+    },
+    {
+      "category": "ALL",
+      "mode": "reflection-off",
+      "count": 20,
+      "errors": 0,
+      "avgTokensIn": 1920,
+      "avgTokensOut": 648,
+      "avgTokensTotal": 2568,
+      "avgSteps": 5.6,
+      "avgTurns": 3.6,
+      "avgDurationMs": 12513.65,
+      "avgCorrectness": 0.99375,
+      "correctnessGte70": 1,
+      "avgToolCalls": 1.4
+    },
+    {
+      "category": "ALL",
+      "mode": "reflection-on",
+      "count": 20,
+      "errors": 0,
+      "avgTokensIn": 2250,
+      "avgTokensOut": 696.4,
+      "avgTokensTotal": 2946.4,
+      "avgSteps": 5.45,
+      "avgTurns": 3.45,
+      "avgDurationMs": 13969.25,
+      "avgCorrectness": 0.9927083333333334,
+      "correctnessGte70": 1,
+      "avgToolCalls": 1.4
+    }
+  ]
+}
