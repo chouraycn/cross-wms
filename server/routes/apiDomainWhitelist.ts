@@ -9,6 +9,7 @@
  */
 
 import { Router } from 'express';
+import { ok } from './_shared/respond.js';
 import {
   listDomainWhitelist,
   addDomain,
@@ -28,7 +29,7 @@ router.get('/', (req, res) => {
     const pageSize = Number(req.query.pageSize) || 50;
 
     const result = listDomainWhitelist(category, search, page, pageSize);
-    res.json({ data: result });
+    ok(res, result);
   } catch (e) {
     res.status(500).json({ error: `获取域名白名单失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -55,7 +56,8 @@ router.post('/', (req, res) => {
       typeof description === 'string' ? description : '',
       typeof category === 'string' ? category : 'user',
     );
-    res.status(201).json({ data: row });
+    res.status(201);
+    ok(res, row);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     if (msg.includes('已在白名单中')) {
@@ -85,7 +87,7 @@ router.post('/check', (req, res) => {
     }
 
     const allowed = isDomainAllowed(target);
-    res.json({ data: { hostname: target, allowed } });
+    ok(res, { hostname: target, allowed });
   } catch (e) {
     res.status(500).json({ error: `校验失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -98,7 +100,7 @@ router.delete('/:id', (req, res) => {
     if (!success) {
       return res.status(404).json({ error: '域名不存在或无法删除' });
     }
-    res.json({ data: { success: true } });
+    ok(res, { success: true });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     if (msg.includes('不可删除')) {
@@ -112,7 +114,7 @@ router.delete('/:id', (req, res) => {
 router.post('/cache/clear', (req, res) => {
   try {
     clearDomainCache();
-    res.json({ data: { success: true, message: '域名白名单缓存已清除' } });
+    ok(res, { success: true, message: '域名白名单缓存已清除' });
   } catch (e) {
     res.status(500).json({ error: `清除缓存失败: ${e instanceof Error ? e.message : String(e)}` });
   }

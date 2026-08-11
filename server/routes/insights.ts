@@ -201,11 +201,9 @@ insightsRouter.get('/llm/pricings', (_req: Request, res: Response) => {
 
 insightsRouter.get('/config/migrations', (_req: Request, res: Response) => {
   try {
-    res.json({
-      data: {
-        currentVersion: CURRENT_CONFIG_VERSION,
-        migrations: configMigrationManager.listMigrations(),
-      },
+    ok(res, {
+      currentVersion: CURRENT_CONFIG_VERSION,
+      migrations: configMigrationManager.listMigrations(),
     });
   } catch (e) {
     res.status(500).json({ error: `获取迁移列表失败: ${e instanceof Error ? e.message : String(e)}` });
@@ -410,15 +408,13 @@ insightsRouter.get('/skills/dependency-check/recent', (_req: Request, res: Respo
       res.status(404).json({ error: '尚未执行过批量依赖检查' });
       return;
     }
-    res.json({
-      data: {
-        total: lastSkillDependencyCheck.total,
-        passed: lastSkillDependencyCheck.passed,
-        failed: lastSkillDependencyCheck.failed,
-        globalCycles: lastSkillDependencyCheck.globalCycles,
-        loadOrder: lastSkillDependencyCheck.loadOrder.map((e) => e.skill.name),
-        report: lastSkillDependencyCheck.report,
-      },
+    ok(res, {
+      total: lastSkillDependencyCheck.total,
+      passed: lastSkillDependencyCheck.passed,
+      failed: lastSkillDependencyCheck.failed,
+      globalCycles: lastSkillDependencyCheck.globalCycles,
+      loadOrder: lastSkillDependencyCheck.loadOrder.map((e) => e.skill.name),
+      report: lastSkillDependencyCheck.report,
     });
   } catch (e) {
     res.status(500).json({ error: `获取依赖检查结果失败: ${e instanceof Error ? e.message : String(e)}` });
@@ -434,14 +430,12 @@ insightsRouter.post('/skills/dependency-check', (req: Request, res: Response) =>
     }
     const result = postLoadCheck(entries);
     lastSkillDependencyCheck = result;
-    res.json({
-      data: {
-        total: result.total,
-        passed: result.passed,
-        failed: result.failed,
-        globalCycles: result.globalCycles,
-        loadOrder: result.loadOrder.map((e) => e.skill.name),
-      },
+    ok(res, {
+      total: result.total,
+      passed: result.passed,
+      failed: result.failed,
+      globalCycles: result.globalCycles,
+      loadOrder: result.loadOrder.map((e) => e.skill.name),
     });
   } catch (e) {
     res.status(500).json({ error: `批量依赖检查失败: ${e instanceof Error ? e.message : String(e)}` });

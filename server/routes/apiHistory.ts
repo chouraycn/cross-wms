@@ -9,6 +9,7 @@
  */
 
 import { Router } from 'express';
+import { ok } from './_shared/respond.js';
 import {
   listHistory,
   getHistory,
@@ -26,7 +27,7 @@ router.get('/', (req, res) => {
       page: Number(req.query.page) || 1,
       pageSize: Number(req.query.pageSize) || 50,
     });
-    res.json({ data: result });
+    ok(res, result);
   } catch (e) {
     res.status(500).json({ error: `获取请求历史失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -39,7 +40,7 @@ router.get('/:id', (req, res) => {
     if (!record) {
       return res.status(404).json({ error: `请求记录不存在: ${req.params.id}` });
     }
-    res.json({ data: record });
+    ok(res, record);
   } catch (e) {
     res.status(500).json({ error: `获取请求记录失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -52,7 +53,7 @@ router.delete('/:id', (req, res) => {
     if (!success) {
       return res.status(404).json({ error: `请求记录不存在: ${req.params.id}` });
     }
-    res.json({ data: { success: true } });
+    ok(res, { success: true });
   } catch (e) {
     res.status(500).json({ error: `删除请求记录失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -62,7 +63,7 @@ router.delete('/:id', (req, res) => {
 router.delete('/', (_req, res) => {
   try {
     const count = clearHistory();
-    res.json({ data: { success: true, deletedCount: count } });
+    ok(res, { success: true, deletedCount: count });
   } catch (e) {
     res.status(500).json({ error: `清空请求历史失败: ${e instanceof Error ? e.message : String(e)}` });
   }

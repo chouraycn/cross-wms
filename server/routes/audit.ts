@@ -5,6 +5,7 @@
  */
 
 import { Router } from 'express';
+import { ok } from './_shared/respond.js';
 import { messageAuditLog } from '../messaging/audit-log.js';
 
 const router = Router();
@@ -26,7 +27,7 @@ router.get('/', (req, res) => {
     };
 
     const result = messageAuditLog.query(query);
-    res.json({ data: result });
+    ok(res, result);
   } catch (e) {
     res.status(500).json({ error: `查询审计日志失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -36,7 +37,7 @@ router.get('/', (req, res) => {
 router.get('/summary', (_req, res) => {
   try {
     const summary = messageAuditLog.getSummary();
-    res.json({ data: summary });
+    ok(res, summary);
   } catch (e) {
     res.status(500).json({ error: `获取审计统计失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -46,7 +47,7 @@ router.get('/summary', (_req, res) => {
 router.get('/timeline/:sessionKey', (req, res) => {
   try {
     const entries = messageAuditLog.getSessionTimeline(req.params.sessionKey);
-    res.json({ data: entries });
+    ok(res, entries);
   } catch (e) {
     res.status(500).json({ error: `获取会话时间线失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -56,7 +57,7 @@ router.get('/timeline/:sessionKey', (req, res) => {
 router.get('/history/:messageId', (req, res) => {
   try {
     const entries = messageAuditLog.getMessageHistory(req.params.messageId);
-    res.json({ data: entries });
+    ok(res, entries);
   } catch (e) {
     res.status(500).json({ error: `获取消息历史失败: ${e instanceof Error ? e.message : String(e)}` });
   }
