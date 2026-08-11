@@ -4,6 +4,7 @@
 
 import { Router } from 'express';
 import { metricsCollector } from '../metrics/collector.js';
+import { ok } from './_shared/respond.js';
 
 const router = Router();
 
@@ -11,7 +12,7 @@ const router = Router();
 router.get('/current', (_req, res) => {
   try {
     const metrics = metricsCollector.collect();
-    res.json({ data: metrics });
+    ok(res, metrics);
   } catch (e) {
     res.status(500).json({ error: `获取系统指标失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -24,7 +25,7 @@ router.get('/latest', (_req, res) => {
     if (!metrics) {
       return res.status(404).json({ error: '暂无指标数据' });
     }
-    res.json({ data: metrics });
+    ok(res, metrics);
   } catch (e) {
     res.status(500).json({ error: `获取最新指标失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -35,7 +36,7 @@ router.get('/history', (req, res) => {
   try {
     const durationMinutes = req.query.minutes ? parseInt(req.query.minutes as string, 10) : 60;
     const history = metricsCollector.getHistory(durationMinutes * 60 * 1000);
-    res.json({ data: history });
+    ok(res, history);
   } catch (e) {
     res.status(500).json({ error: `获取历史指标失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -50,7 +51,7 @@ router.post('/custom/:name', (req, res) => {
     }
 
     metricsCollector.recordCustomMetric(req.params.name, value, labels);
-    res.json({ data: { success: true } });
+    ok(res, { success: true });
   } catch (e) {
     res.status(500).json({ error: `记录自定义指标失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -63,7 +64,7 @@ router.get('/custom/:name', (req, res) => {
     if (!series) {
       return res.status(404).json({ error: '指标不存在' });
     }
-    res.json({ data: series });
+    ok(res, series);
   } catch (e) {
     res.status(500).json({ error: `获取自定义指标失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -73,7 +74,7 @@ router.get('/custom/:name', (req, res) => {
 router.get('/custom', (_req, res) => {
   try {
     const names = metricsCollector.getCustomMetricNames();
-    res.json({ data: names });
+    ok(res, names);
   } catch (e) {
     res.status(500).json({ error: `获取自定义指标列表失败: ${e instanceof Error ? e.message : String(e)}` });
   }

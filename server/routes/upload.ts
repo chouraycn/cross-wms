@@ -5,6 +5,7 @@ import fs from 'fs';
 import type { Request } from 'express';
 import { logger } from '../logger.js';
 import { AppPaths } from '../config/appPaths.js';
+import { ok } from './_shared/respond.js';
 
 export const UPLOADS_DIR = AppPaths.uploadsDir;
 
@@ -284,7 +285,7 @@ router.post('/', async (req, res) => {
     };
 
     logger.info(`[Upload] 文件已保存: ${fileName} (${(data.length / 1024).toFixed(1)}KB) -> ${savedFileName}`);
-    res.json({ data: result });
+    ok(res, result);
   } catch (error) {
     logger.error('[Upload] 上传失败:', error);
     const msg = error instanceof Error ? error.message : '上传失败';

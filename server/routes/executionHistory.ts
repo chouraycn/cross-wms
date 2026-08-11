@@ -11,6 +11,7 @@ import {
   purgeExecutionHistory,
   type ExecutionHistoryFilter,
 } from '../engine/executionHistory.js';
+import { ok } from './_shared/respond.js';
 
 const router = Router();
 
@@ -57,7 +58,7 @@ router.get('/', (req: Request, res: Response) => {
     }
 
     const result = getExecutionHistory(limit, offset, filter);
-    res.json(result);
+    ok(res, result);
   } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     res.status(500).json({ error: message });
@@ -90,7 +91,7 @@ router.get('/stats', (req: Request, res: Response) => {
     }
 
     const stats = getExecutionHistoryStats(filter);
-    res.json(stats);
+    ok(res, stats);
   } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     res.status(500).json({ error: message });
@@ -110,7 +111,7 @@ router.get('/:id', (req: Request, res: Response) => {
       res.status(404).json({ error: 'Execution record not found' });
       return;
     }
-    res.json(record);
+    ok(res, record);
   } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     res.status(500).json({ error: message });

@@ -16,6 +16,7 @@ import { logger } from '../logger.js';
 import { activeSSEConnections } from './chatService.js';
 import { handleAgentChat } from './agentChat.js';
 import { compactionNotificationManager } from '../engine/compaction/compactionNotification.js';
+import { ok } from './_shared/respond.js';
 
 const router = Router();
 
@@ -27,7 +28,7 @@ router.post('/chat', async (req, res) => {
 // v7.0: 获取队列状态
 router.get('/queue-status/:sessionId', (req, res) => {
   const { sessionId } = req.params;
-  res.json({
+  ok(res, {
     sessionId,
     state: messageQueue.getSessionState(sessionId),
     queueLength: messageQueue.getQueueLength(sessionId),

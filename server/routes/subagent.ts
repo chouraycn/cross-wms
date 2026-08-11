@@ -34,6 +34,7 @@ import type {
   SubagentAnnouncement,
   SessionMetrics,
 } from '../engine/subagent/index.js';
+import { ok as okRes } from './_shared/respond.js';
 
 const router = Router();
 
@@ -71,7 +72,7 @@ router.post('/spawn', async (req, res) => {
     };
 
     const result = await spawnSubagent(params);
-    res.json({ data: result });
+    okRes(res, result);
   } catch (err) {
     logger.error('[Subagent API] 创建子代理失败:', err);
     res.status(500).json({ error: (err as Error).message });
@@ -91,7 +92,7 @@ router.get('/', (req, res) => {
       ...(definitionId !== undefined && { definitionId }),
       ...(parentSessionKey !== undefined && { parentSessionKey }),
     });
-    res.json({ data: instances });
+    okRes(res, instances);
   } catch (err) {
     logger.error('[Subagent API] 列出子代理失败:', err);
     res.status(500).json({ error: (err as Error).message });
@@ -106,7 +107,7 @@ router.get('/:id', (req, res) => {
     if (!instance) {
       return res.status(404).json({ error: '子代理不存在' });
     }
-    res.json({ data: instance });
+    okRes(res, instance);
   } catch (err) {
     logger.error('[Subagent API] 获取子代理状态失败:', err);
     res.status(500).json({ error: (err as Error).message });
@@ -120,7 +121,7 @@ router.post('/:id/cancel', (req, res) => {
     if (!ok) {
       return res.status(404).json({ error: '子代理不存在或已终止' });
     }
-    res.json({ data: { success: true } });
+    okRes(res, { success: true });
   } catch (err) {
     logger.error('[Subagent API] 取消子代理失败:', err);
     res.status(500).json({ error: (err as Error).message });
@@ -168,7 +169,7 @@ router.get('/:id/metrics', (req, res) => {
       };
     }
 
-    res.json({ data: metrics });
+    okRes(res, metrics);
   } catch (err) {
     logger.error('[Subagent API] 获取子代理指标失败:', err);
     res.status(500).json({ error: (err as Error).message });
@@ -226,7 +227,7 @@ router.get('/:id/announcements', (req, res) => {
       }
     }
 
-    res.json({ data: announcements });
+    okRes(res, announcements);
   } catch (err) {
     logger.error('[Subagent API] 获取子代理公告历史失败:', err);
     res.status(500).json({ error: (err as Error).message });

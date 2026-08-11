@@ -1,11 +1,12 @@
 import { Router, type Request, type Response } from 'express';
 import { t, i18n } from '../i18n/translate.js';
 import { SUPPORTED_LOCALES, DEFAULT_LOCALE } from '../i18n/registry.js';
+import { ok } from './_shared/respond.js';
 
 const router = Router();
 
 router.get('/locales', (_req: Request, res: Response) => {
-  res.json({
+  ok(res, {
     default: DEFAULT_LOCALE,
     supported: SUPPORTED_LOCALES,
     current: i18n.getLocale(),
@@ -17,7 +18,7 @@ router.get('/locales', (_req: Request, res: Response) => {
 });
 
 router.get('/current', (_req: Request, res: Response) => {
-  res.json({
+  ok(res, {
     locale: i18n.getLocale(),
     message: t('server.ready'),
   });
@@ -45,7 +46,7 @@ router.get('/translate/:key', (req: Request, res: Response) => {
   const { key } = req.params;
   const params = req.query as Record<string, string>;
   
-  res.json({
+  ok(res, {
     key,
     value: t(key, params),
     locale: i18n.getLocale(),
