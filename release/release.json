@@ -1,7 +1,15 @@
 {
-  "version": "1.7.198",
+  "version": "1.7.204",
+  "build": "743",
   "channel": "stable",
-  "pubDate": "2026-08-10",
-  "dmgUrl": "https://github.com/chouraycn/cross-wms/releases/download/v1.7.198/CDF%20Know%20Clow-1.7.198.dmg",
-  "minVersion": "1.0.0"
+  "publishedAt": "2026-08-11T00:51:00.252Z",
+  "files": [
+    {
+      "platform": "darwin",
+      "arch": "arm64",
+      "url": "https://github.com/chouraycn/cross-wms/releases/download/v1.7.204/CDF.Know.Clow-1.7.204.dmg",
+      "size": 198697939,
+      "sha256": "ba36d3c87e2358678b7e9c20f759bde174c17cb591b02df044b1d381a0913aab"
+    }
+  ]
 }

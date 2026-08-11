@@ -22,6 +22,7 @@
  * - 通过 DatabaseManager.getVecDb() 获取向量库连接
  */
 
+import crypto from 'node:crypto';
 import { logger } from '../logger.js';
 import { embedText, ONNX_EMBEDDING_DIMENSIONS } from './onnxEmbedding.js';
 import { DatabaseManager } from '../storage/databaseManager.js';
@@ -58,6 +59,109 @@ import {
 
 /** 向量维度（all-MiniLM-L6-v2: 384 维） */
 const VECTOR_DIMENSIONS = ONNX_EMBEDDING_DIMENSIONS;
+
+// ===================== D1：MEMORY.md ↔ Vec 记忆去重 =====================
+
+/** 记忆写入来源：'memory_md' = MEMORY.md 同步源（优先级高）；'vec' = 普通向量注入；'other' 兜底 */
+export type MemorySource = 'memory_md' | 'vec' | 'other';
+
+/**
+ * 生成内容 fingerprint（SHA-256 前 16 hex）。
+ * 规范化：trim + 压缩重复空白 → 保证 MEMORY.md 与 vec 记忆即使末尾换行不同也能命中。
+ */
+export function contentFingerprint(text: string): string {
+  const normalized = String(text || '').trim().replace(/\s+/g, ' ');
+  return crypto.createHash('sha256').update(normalized).digest('hex').slice(0, 16);
+}
+
+interface FingerprintLookup {
+  id: number;
+  source: MemorySource | string;
+  text: string;
+}
+
+/**
+ * 按 fingerprint 查询现有条目（若有）。
+ * 返回第一条（通常只有一条，但在历史数据没去重的情况下会有重复，这里按 id 取最早）。
+ */
+function findByFingerprint(db: any, fingerprint: string): FingerprintLookup | null {
+  try {
+    const row = db
+      .prepare(
+        `SELECT id, source, text FROM memory_entries WHERE content_fingerprint = ? ORDER BY id ASC LIMIT 1`,
+      )
+      .get(fingerprint);
+    return row ? row : null;
+  } catch {
+    // content_fingerprint 列还未迁移的老库 → 视为未找到
+    return null;
+  }
+}
+
+/**
+ * D1 去重决策：
+ *  - 若 fingerprint 没命中 → 正常写入（返回 'insert'）。
+ *  - 命中且 existing.source='memory_md'：
+ *      newSource='memory_md' 且内容相同 → 更新 updated_at 即可，不重复注入向量。
+ *      newSource='vec' → 跳过写入（MEMORY.md 优先）。
+ *  - 命中且 existing.source='vec'（旧条目） + newSource='memory_md'：
+ *      升级旧条目为 memory_md（保留其 id，避免重复），返回 'promote' 让外部跳过 insert，但会更新列。
+ *  - 命中且两者都为 vec：跳过写入，返回 'skip-dup-vec'。
+ */
+function dedupeBeforeInsert(params: {
+  db: any;
+  fingerprint: string;
+  text: string;
+  newSource: MemorySource;
+  newMetadataJson: string;
+  newCategory: string | undefined | null;
+  newImportance: number | undefined | null;
+}): { action: 'insert' | 'skip' | 'promote'; existingId?: number } {
+  const { db, fingerprint, text, newSource, newMetadataJson, newCategory, newImportance } = params;
+  const existing = findByFingerprint(db, fingerprint);
+  if (!existing) return { action: 'insert' };
+
+  // 完全相同文本（指纹一致已代表足够，这里不额外做字符串比较）
+  if (existing.source === 'memory_md') {
+    // 现有条目来自 MEMORY.md → 最高优先级
+    if (newSource === 'memory_md') {
+      // MEMORY.md 重新写入：更新 updated_at / metadata 等（不重复建向量）
+      try {
+        db.prepare(
+          `UPDATE memory_entries SET updated_at=datetime('now'), metadata=COALESCE(?,metadata), category=COALESCE(?,category), importance=COALESCE(?,importance) WHERE id=?`,
+        ).run(newMetadataJson || null, newCategory ?? null, newImportance ?? null, existing.id);
+      } catch {
+        // 列缺失 → 静默
+      }
+      logger.debug(
+        `[VecMemory] 跳过重复插入：MEMORY.md 已存在（id=${existing.id}），source=memory_md 优先。text="${text.slice(0, 40)}..."`,
+      );
+      return { action: 'skip', existingId: existing.id };
+    }
+    // newSource=vec：MEMORY.md 结构化内容优先，跳过 vec 注入
+    logger.debug(
+      `[VecMemory] 跳过向量注入：相同内容已在 MEMORY.md（id=${existing.id}）。text="${text.slice(0, 40)}..."`,
+    );
+    return { action: 'skip', existingId: existing.id };
+  }
+
+  // existing=vec，new=memory_md：升级为 memory_md，保留原 id（避免重复行）
+  if (newSource === 'memory_md') {
+    try {
+      db.prepare(
+        `UPDATE memory_entries SET source='memory_md', updated_at=datetime('now'), metadata=COALESCE(?,metadata), category=COALESCE(?,category), importance=COALESCE(?,importance) WHERE id=?`,
+      ).run(newMetadataJson || null, newCategory ?? null, newImportance ?? null, existing.id);
+    } catch {
+      // ignore missing columns
+    }
+    logger.info(`[VecMemory] 内容升级：已有 vec 记忆 id=${existing.id} 标记为 source=memory_md（MEMORY.md 优先）`);
+    return { action: 'promote', existingId: existing.id };
+  }
+
+  // vec ↔ vec 重复：跳过（避免同会话反复写入相同事实）
+  logger.debug(`[VecMemory] 跳过向量注入：内容重复（existing id=${existing.id}）。`);
+  return { action: 'skip', existingId: existing.id };
+}
 
 /** 最大返回记忆数 */
 const DEFAULT_TOP_K = 5;
@@ -133,6 +237,10 @@ function initSchema() {
       ['updated_at', 'TEXT'],
       ['access_count', 'INTEGER NOT NULL DEFAULT 0'],
       ['last_accessed_at', 'TEXT'],
+      // D1: 内容 hash 指纹（SHA-256 前 16 hex），用于与 MEMORY.md / 其他向量记忆去重
+      ['content_fingerprint', 'TEXT'],
+      // D1: 来源标记：'memory_md'（MEMORY.md 同步写入）| 'vec'（普通向量注入）| 'other'
+      ['source', 'TEXT NOT NULL DEFAULT \'vec\''],
     ];
     for (const [col, colType] of migrationColumns) {
       try {
@@ -140,6 +248,13 @@ function initSchema() {
       } catch {
         // 列已存在则忽略（SQLite 不支持 ADD COLUMN IF NOT EXISTS）
       }
+    }
+
+    // 1.2 D1：指纹索引（加快去重查询）。CREATE INDEX IF NOT EXISTS 幂等安全。
+    try {
+      db.exec(`CREATE INDEX IF NOT EXISTS idx_memory_entries_fingerprint ON memory_entries(content_fingerprint)`);
+    } catch (e) {
+      logger.warn('[VecMemory] content_fingerprint 索引创建跳过:', e instanceof Error ? e.message : String(e));
     }
 
     // 2. memory_vec_index 表（向量索引）
@@ -365,17 +480,51 @@ export async function insertMemory(
   text: string,
   metadata: Record<string, any> = {},
   category?: string,
-  importance?: number
+  importance?: number,
+  source: MemorySource = 'vec'
 ): Promise<number> {
   try {
     const db = getDb();
 
-    // 1. 插入记忆记录
+    // D1: 生成 fingerprint 并执行去重决策
+    const fingerprint = contentFingerprint(text);
     const metaJson = JSON.stringify(metadata);
+    const dedupe = dedupeBeforeInsert({
+      db,
+      fingerprint,
+      text,
+      newSource: source,
+      newMetadataJson: metaJson,
+      newCategory: category ?? null,
+      newImportance: typeof importance === 'number' ? importance : null,
+    });
+
+    if (dedupe.action === 'skip') {
+      logger.debug(
+        `[VecMemory] 跳过插入（去重命中）: existingId=${dedupe.existingId}, source=${source}, text="${text.slice(0, 40)}..."`,
+      );
+      return dedupe.existingId ?? -1;
+    }
+    if (dedupe.action === 'promote') {
+      // promote 时 dedupeBeforeInsert 已完成 UPDATE，这里无需 insert/embed
+      logger.info(
+        `[VecMemory] 升级为 MEMORY.md 源（去重）: existingId=${dedupe.existingId}`,
+      );
+      return dedupe.existingId ?? -1;
+    }
+
+    // 1. 插入记忆记录（含 fingerprint 和 source）
     const result = db.prepare(
-      `INSERT INTO memory_entries (text, metadata, category, importance, created_at)
-       VALUES (?, ?, ?, ?, datetime('now'))`
-    ).run(text, metaJson, category ?? null, typeof importance === 'number' ? importance : null);
+      `INSERT INTO memory_entries (text, metadata, category, importance, created_at, content_fingerprint, source)
+       VALUES (?, ?, ?, ?, datetime('now'), ?, ?)`
+    ).run(
+      text,
+      metaJson,
+      category ?? null,
+      typeof importance === 'number' ? importance : null,
+      fingerprint,
+      source,
+    );
     const id = Number(result.lastInsertRowid);
 
     // 2. 生成真实语义向量（ONNX all-MiniLM-L6-v2, 384维）
@@ -393,12 +542,27 @@ export async function insertMemory(
       ).run(id, embeddingBuf);
     }
 
-    logger.debug(`[VecMemory] 插入记忆: id=${id}, text="${text.slice(0, 50)}..."`);
+    logger.debug(
+      `[VecMemory] 插入记忆: id=${id}, source=${source}, text="${text.slice(0, 50)}..."`,
+    );
     return id;
   } catch (err) {
     logger.error('[VecMemory] 插入记忆失败:', err);
     throw new Error(`插入记忆失败: ${(err as Error).message}`);
   }
+}
+
+/**
+ * D1: 将 MEMORY.md 的内容 chunk 同步到向量记忆（自动标记 source='memory_md' 并去重）。
+ * 结构化的 MEMORY.md 内容具有最高优先级，不会被后续同文本的 vec 注入覆盖。
+ */
+export async function syncMemoryMdChunkToVec(
+  text: string,
+  metadata: Record<string, any> = {},
+  category?: string,
+  importance?: number,
+): Promise<number> {
+  return insertMemory(text, metadata, category, importance, 'memory_md');
 }
 
 /**

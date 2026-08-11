@@ -25,6 +25,11 @@ import {
   Badge,
   Slide,
   Zoom,
+  Stepper,
+  Step,
+  StepLabel,
+  StepContent,
+  LinearProgress,
 } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
@@ -44,7 +49,10 @@ import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import VolumeUpIcon from '@mui/icons-material/VolumeUp';
 import VibrationIcon from '@mui/icons-material/Vibration';
+import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
+import PendingIcon from '@mui/icons-material/PendingActions';
 import { type ExecAllowlistEntry, type CommandRisk } from '../../services/exec-approval/index';
+import type { ApprovalChainLevelStatus, ApprovalChainStatus, ApprovalLevelStatus } from '../../types/openclaw-events';
 
 export type RiskLevel = 'safe' | 'low' | 'medium' | 'high' | 'critical';
 
@@ -63,6 +71,17 @@ export interface ApprovalRequest {
   argv?: string[];
   timeout?: number; // 超时时间（毫秒）
   expiresAt?: number; // 过期时间戳
+  // v1.7.204: 多级审批链字段（单级审批全部 undefined）
+  /** 是否启用多级审批链（high/critical 走 L1→L2）。true 时前端显示 L1/L2 进度条 */
+  multiLevel?: boolean;
+  /** 审批链 ID（审计显示用） */
+  chainId?: string;
+  /** 链中每级状态快照（含 L1、L2）。状态随 SSE 更新 */
+  levels?: ApprovalChainLevelStatus[];
+  /** 链整体状态徽章（pending/in_progress/approved/rejected/timeout/cancelled/paused） */
+  chainStatus?: ApprovalChainStatus;
+  /** 链级拒绝原因（若某级被拒） */
+  chainRejectReason?: string;
 }
 
 export interface ApprovalHistoryItem {
@@ -137,12 +156,280 @@ const formatTime = (ts: number): string => {
   return d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 };
 
+// 将毫秒格式化成「N分M秒」或「M秒」的简短时间
+const formatMsShort = (ms: number): string => {
+  if (ms <= 0) return '0秒';
+  const total = Math.ceil(ms / 1000);
+  if (total < 60) return `${total}秒`;
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return s === 0 ? `${m}分` : `${m}分${s}秒`;
+};
+
 const formatParams = (params: Record<string, any>): string => {
   try {
     return JSON.stringify(params, null, 2);
   } catch {
     return String(params);
   }
+};
+
+// v1.7.204: 链状态 → 显示文本与色彩
+const CHAIN_STATUS_LABEL: Record<ApprovalChainStatus, { label: string; color: string; bg: string }> = {
+  pending: { label: '待启动', color: '#6B7280', bg: 'rgba(107,114,128,0.12)' },
+  in_progress: { label: '审批中', color: '#F97316', bg: 'rgba(249,115,22,0.12)' },
+  approved: { label: '已通过', color: '#16A34A', bg: 'rgba(22,163,74,0.12)' },
+  rejected: { label: '已拒绝', color: '#EF4444', bg: 'rgba(239,68,68,0.12)' },
+  timeout: { label: '超时', color: '#DC2626', bg: 'rgba(220,38,38,0.12)' },
+  cancelled: { label: '已取消', color: '#6B7280', bg: 'rgba(107,114,128,0.12)' },
+  paused: { label: '已暂停', color: '#CA8A04', bg: 'rgba(202,138,4,0.12)' },
+};
+
+/**
+ * 多级审批链进度条：
+ * - 仅当 request.multiLevel=true 且 levels 非空时渲染
+ * - 横向 Stepper：L1 → L2，每步显示当前状态图标 + 名称 + 剩余批准人 + 独立倒计时
+ * - StepContent 折叠详细信息（超时配置、触发条件、已批准人列表）
+ */
+const ApprovalChainStepper: React.FC<{
+  levels: ApprovalChainLevelStatus[];
+  chainId: string;
+  chainStatus?: ApprovalChainStatus;
+  darkMode?: boolean;
+}> = ({ levels, chainId, chainStatus, darkMode }) => {
+  if (!levels || levels.length === 0) return null;
+
+  const now = Date.now();
+
+  // 将后端的 ApprovalLevelStatus 映射为 Stepper StepIcon 自定义样式
+  const renderStepIcon = (level: ApprovalChainLevelStatus) => {
+    const { status, skipped } = level;
+    if (skipped) {
+      return <Chip size="small" label="跳过" sx={{ bgcolor: 'rgba(107,114,128,0.12)', color: '#6B7280', fontWeight: 600, height: 22, fontSize: 11 }} />;
+    }
+    switch (status) {
+      case 'approved':
+        return <CheckCircleIcon sx={{ fontSize: 22, color: '#16A34A' }} />;
+      case 'rejected':
+        return <CancelIcon sx={{ fontSize: 22, color: '#EF4444' }} />;
+      case 'timeout':
+        return <ErrorIcon sx={{ fontSize: 22, color: '#DC2626' }} />;
+      case 'in_progress':
+        return <HourglassEmptyIcon sx={{ fontSize: 22, color: '#F97316', animation: 'spin 1.2s linear infinite' }} />;
+      case 'waiting':
+      default:
+        return <PendingIcon sx={{ fontSize: 22, color: '#9CA3AF' }} />;
+    }
+  };
+
+  const levelBadgeColor = (status: ApprovalLevelStatus, skipped: boolean) => {
+    if (skipped) return '#9CA3AF';
+    switch (status) {
+      case 'approved': return '#16A34A';
+      case 'rejected': return '#EF4444';
+      case 'timeout': return '#DC2626';
+      case 'in_progress': return '#F97316';
+      case 'waiting':
+      default: return '#9CA3AF';
+    }
+  };
+
+  const levelBadgeBg = (status: ApprovalLevelStatus, skipped: boolean) => {
+    if (skipped) return 'rgba(156,163,175,0.1)';
+    switch (status) {
+      case 'approved': return 'rgba(22,163,74,0.1)';
+      case 'rejected': return 'rgba(239,68,68,0.1)';
+      case 'timeout': return 'rgba(220,38,38,0.1)';
+      case 'in_progress': return 'rgba(249,115,22,0.1)';
+      case 'waiting':
+      default: return 'rgba(156,163,175,0.1)';
+    }
+  };
+
+  const chainBadge = chainStatus ? CHAIN_STATUS_LABEL[chainStatus] : null;
+
+  return (
+    <Box
+      sx={{
+        p: 2,
+        mb: 2,
+        borderRadius: 2,
+        border: '1px solid',
+        borderColor: darkMode ? '#333' : '#E5E7EB',
+        bgcolor: darkMode ? '#1F1F1F' : '#FAFAFA',
+      }}
+    >
+      {/* 顶部：链 ID 徽章 + 链整体状态 */}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+        <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+          多级审批链
+        </Typography>
+        <Typography
+          variant="caption"
+          sx={{
+            fontFamily: 'JetBrains Mono, monospace',
+            fontSize: 11,
+            px: 1,
+            py: 0.25,
+            borderRadius: 1,
+            bgcolor: darkMode ? 'rgba(59,130,246,0.12)' : 'rgba(59,130,246,0.08)',
+            color: '#3B82F6',
+          }}
+        >
+          {chainId}
+        </Typography>
+        {chainBadge && (
+          <Chip
+            size="small"
+            label={chainBadge.label}
+            sx={{
+              height: 22,
+              fontSize: 11,
+              fontWeight: 600,
+              ml: 'auto',
+              color: chainBadge.color,
+              bgcolor: chainBadge.bg,
+            }}
+          />
+        )}
+      </Box>
+
+      {/* 横向 Stepper */}
+      <Box
+        sx={{
+          // 沙箱化 HourglassEmptyIcon 旋转动画 keyframes（避免依赖全局样式）
+          '@keyframes spin': {
+            from: { transform: 'rotate(0deg)' },
+            to: { transform: 'rotate(360deg)' },
+          },
+        }}
+      >
+        <Stepper
+          activeStep={-1} // 由我们自定义 StepIcon 控制外观，Stepper 本身不管理 activeStep 颜色
+          alternativeLabel
+          sx={{
+            '& .MuiStepConnector-line': {
+              borderColor: darkMode ? '#374151' : '#D1D5DB',
+            },
+            '& .MuiStepLabel-root': { p: 0 },
+            '& .MuiStepLabel-labelContainer': { mt: 1 },
+          }}
+        >
+        {levels.map((lv) => {
+          const remaining = lv.startedAt && lv.status === 'in_progress'
+            ? Math.max(0, (lv.startedAt + lv.timeoutMs) - now)
+            : null;
+          const progressPct = lv.status === 'in_progress' && remaining != null
+            ? Math.max(0, Math.min(100, 100 - (remaining / lv.timeoutMs) * 100))
+            : null;
+          const isDone = ['approved', 'rejected', 'timeout'].includes(lv.status);
+          return (
+            <Step key={`${lv.index}-${lv.name}`} expanded>
+              <StepLabel
+                StepIconComponent={() => renderStepIcon(lv)}
+                sx={{
+                  '& .MuiStepLabel-label': {
+                    fontSize: '0.8rem',
+                    fontWeight: 700,
+                    color: lv.skipped
+                      ? '#9CA3AF'
+                      : (isDone
+                          ? levelBadgeColor(lv.status, lv.skipped)
+                          : (darkMode ? '#E5E7EB' : '#111827')),
+                    mt: 0.75,
+                  },
+                }}
+              >
+                {lv.name}
+              </StepLabel>
+              <StepContent sx={{ mx: -1 }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75, py: 0.5 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap' }}>
+                    <Chip
+                      size="small"
+                      label={
+                        lv.skipped ? '未触发' :
+                        lv.status === 'waiting' ? '待启动' :
+                        lv.status === 'in_progress' ? '审批中' :
+                        lv.status === 'approved' ? '已通过' :
+                        lv.status === 'timeout' ? '超时' : '已拒绝'
+                      }
+                      sx={{
+                        height: 20,
+                        fontSize: 11,
+                        color: levelBadgeColor(lv.status, lv.skipped),
+                        bgcolor: levelBadgeBg(lv.status, lv.skipped),
+                      }}
+                    />
+                    <Typography variant="caption" sx={{ color: darkMode ? '#9CA3AF' : '#6B7280' }}>
+                      触发条件：风险 ≥ {riskLevelConfig[lv.minRiskLevel]?.label || lv.minRiskLevel}
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: darkMode ? '#9CA3AF' : '#6B7280' }}>
+                      批准人数：{lv.approvers.length}/{lv.requiredApprovers}
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: darkMode ? '#9CA3AF' : '#6B7280' }}>
+                      超时：{formatMsShort(lv.timeoutMs)}
+                    </Typography>
+                    {remaining != null && (
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          fontWeight: 600,
+                          color: remaining < 10_000 ? '#EF4444' : '#F97316',
+                        }}
+                      >
+                        剩余：{formatMsShort(remaining)}
+                      </Typography>
+                    )}
+                  </Box>
+                  {progressPct != null && (
+                    <LinearProgress
+                      variant="determinate"
+                      value={progressPct}
+                      sx={{
+                        height: 4,
+                        borderRadius: 2,
+                        bgcolor: darkMode ? '#374151' : '#E5E7EB',
+                        '& .MuiLinearProgress-bar': {
+                          bgcolor: (remaining ?? Infinity) < 10_000 ? '#EF4444' : '#F97316',
+                        },
+                      }}
+                    />
+                  )}
+                  {lv.approvers.length > 0 && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
+                      <Typography variant="caption" sx={{ color: darkMode ? '#9CA3AF' : '#6B7280' }}>
+                        已批准：
+                      </Typography>
+                      {lv.approvers.map((a, i) => (
+                        <Chip
+                          key={i}
+                          size="small"
+                          icon={<PersonIcon sx={{ fontSize: 12 }} />}
+                          label={a}
+                          sx={{ height: 18, fontSize: 10 }}
+                        />
+                      ))}
+                    </Box>
+                  )}
+                  {lv.rejectReason && (
+                    <Alert
+                      severity="error"
+                      variant="outlined"
+                      sx={{ py: 0.25, fontSize: 12, '& .MuiAlert-message': { py: 0.25 } }}
+                    >
+                      {lv.rejectReason}
+                    </Alert>
+                  )}
+                </Box>
+              </StepContent>
+            </Step>
+          );
+        })}
+        </Stepper>
+      </Box>
+    </Box>
+  );
 };
 
 export const ApprovalDialog: React.FC<ApprovalDialogProps> = React.memo(({
@@ -808,6 +1095,15 @@ export const ApprovalDialog: React.FC<ApprovalDialogProps> = React.memo(({
       <DialogContent sx={{ pt: 2, pb: 2, maxHeight: '60vh', overflow: 'auto' }}>
         {currentRequest && riskConfig && (
           <Box>
+            {/* v1.7.204：多级审批链进度（high/critical 工具走 L1→L2，单级审批不渲染） */}
+            {currentRequest.multiLevel && currentRequest.levels && currentRequest.levels.length > 0 && (
+              <ApprovalChainStepper
+                levels={currentRequest.levels}
+                chainId={currentRequest.chainId || currentRequest.id}
+                chainStatus={currentRequest.chainStatus}
+                darkMode={darkMode}
+              />
+            )}
             {/* 风险等级和基本信息 */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
               <Box

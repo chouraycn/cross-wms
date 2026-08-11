@@ -132,6 +132,40 @@ export type AssistantMessageEvent =
       message?: string;
     };
 
+// ===================== 多级审批链（SystemEvent.approval_request 子结构） =====================
+
+/** 链整体状态：pending 等待启动 / in_progress 进行中 / approved 通过 / rejected 被拒 / timeout 超时 / cancelled 取消 / paused 暂停 */
+export type ApprovalChainStatus = 'pending' | 'in_progress' | 'approved' | 'rejected' | 'timeout' | 'cancelled' | 'paused';
+
+/** 单级状态：waiting 未触发 / in_progress 正在等审批 / approved 已通过 / rejected 被拒 / timeout 超时 */
+export type ApprovalLevelStatus = 'waiting' | 'in_progress' | 'approved' | 'rejected' | 'timeout';
+
+/** 审批链中每个级别的实时状态（随 SSE 事件渐进更新） */
+export interface ApprovalChainLevelStatus {
+  /** 级别索引（0-based） */
+  index: number;
+  /** 级别名称，如 L1 / L2 */
+  name: string;
+  /** 触发该级别的最低风险等级（medium/high...） */
+  minRiskLevel: 'safe' | 'low' | 'medium' | 'high' | 'critical';
+  /** 该级别的审批超时（毫秒） */
+  timeoutMs: number;
+  /** 是否因为当前风险不够而跳过（未触发） */
+  skipped: boolean;
+  /** 该级状态 */
+  status: ApprovalLevelStatus;
+  /** 需要的批准人数 */
+  requiredApprovers: number;
+  /** 已批准的人（如果记录了） */
+  approvers: string[];
+  /** 级别被拒原因（若 status === rejected / timeout） */
+  rejectReason?: string;
+  /** 级别开始时间戳（毫秒，用于前端独立倒计时） */
+  startedAt?: number;
+  /** 级别结束时间戳（毫秒，approved/rejected/timeout 时填充） */
+  finishedAt?: number;
+}
+
 // ===================== 系统扩展事件（非 OpenClaw 标准） =====================
 
 /**
@@ -163,6 +197,17 @@ export type SystemEvent =
       filePath?: string;
       timeout?: number;
       expiresAt?: number;
+      // v1.7.204: 多级审批链字段（high/critical 走 L1→L2）。单级审批所有字段为 undefined。
+      /** 是否启用多级审批链（true 时前端显示 L1/L2 进度条） */
+      multiLevel?: boolean;
+      /** 审批链 ID（用于前端 chainId 展示和审计） */
+      chainId?: string;
+      /** 审批链所有级别，含每级状态、名称、已批准人等 */
+      levels?: ApprovalChainLevelStatus[];
+      /** 链整体状态（用于前端显示最终审批/拒绝/升级中徽章） */
+      chainStatus?: ApprovalChainStatus;
+      /** 链级拒绝原因（若某级被拒） */
+      chainRejectReason?: string;
     }
   // 上下文压缩
   | {

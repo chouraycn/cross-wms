@@ -127,6 +127,15 @@ mkdir -p "$OUT_DIR"
 
 echo "Creating DMG: $OUT_PATH"
 
+# v1.7.203: 创建前卸载同名卷，避免旧 DMG 仍挂载导致 hdiutil create 报"目录非空"
+if [[ -d "/Volumes/$DMG_VOLUME_NAME" ]]; then
+  echo "INFO: 检测到同名卷已挂载 (/Volumes/$DMG_VOLUME_NAME)，先卸载..."
+  hdiutil detach "/Volumes/$DMG_VOLUME_NAME" -force 2>/dev/null || true
+fi
+
+# 清理可能残留的输出文件（-ov 有时无法覆盖半写文件）
+rm -f "$OUT_PATH" 2>/dev/null || true
+
 DMG_TEMP="$(mktemp -d "${TMPDIR:-/tmp}/openclaw-dmg.XXXXXX")"
 DMG_SOURCE="$DMG_TEMP/source"
 MOUNT_POINT=""
@@ -260,10 +269,14 @@ if [[ "$HAS_BACKGROUND" == "0" || "${SKIP_DMG_STYLE:-0}" == "1" ]]; then
     -srcfolder "$DMG_SOURCE" \
     -ov \
     -format ULMO \
-    "$OUT_PATH" 2>/dev/null; then
+    "$OUT_PATH" 2>&1; then
     hdiutil verify "$OUT_PATH" >/dev/null 2>&1 && echo "✅ DMG 创建成功（快速模式，无 Finder 样式）: $OUT_PATH" || echo "⚠️ DMG 创建完成但校验失败: $OUT_PATH"
     rm -rf "$DMG_SOURCE"
     exit 0
+  else
+    # 快速模式失败：清理可能残留的半写 OUT_PATH，避免后续 hdiutil create 报"目录非空"
+    echo "WARN: srcfolder 快速模式失败，清理残留后继续尝试 UDRW 流程" >&2
+    rm -f "$OUT_PATH" 2>/dev/null || true
   fi
 fi
 
@@ -339,6 +352,8 @@ if [[ "$UDRW_OK" == "0" || "$ATTACH_OK" == "0" ]]; then
   fi
 
   # 一步创建压缩只读 DMG（不挂载，不访问 /dev/rdisk*）
+  # v1.7.204: 创建前再次清理 OUT_PATH 残留，避免快速模式或 UDRW 失败后的半写文件导致"目录非空"
+  rm -f "$OUT_PATH" 2>/dev/null || true
   hdiutil create \
     -volname "$DMG_VOLUME_NAME" \
     -srcfolder "$DMG_SOURCE" \

@@ -690,8 +690,8 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
       const stored = sessionStorage.getItem('cdf-chat-prefill');
       if (stored) {
         sessionStorage.removeItem('cdf-chat-prefill');
-        // 延迟一帧确保 textarea 已渲染
-        requestAnimationFrame(() => fillText(stored));
+        // 延迟一帧确保 textarea 已渲染（WKWebView 中 rAF 可能被节流，用 setTimeout(≈16ms 一帧) 更稳定）
+        setTimeout(() => fillText(stored), 16);
       }
     } catch { /* ignore */ }
 

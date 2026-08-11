@@ -31,9 +31,9 @@ try {
   root.render(<App />)
 
   // React 渲染完成后，通过 IPC 通知 Swift（AnimatedSplashView 切换为 WebView 的条件之一）
-  // 双重 rAF 确保首帧已绘制到屏幕
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
+  // 双层 setTimeout(≈ 2 帧) 确保首帧已绘制到屏幕（WKWebView 中 rAF 可能被节流，使用 setTimeout 更可靠）
+  setTimeout(() => {
+    setTimeout(() => {
       // __cdfIPC 可能在 didFinish 回调中才注入，需要轮询等待
       const notifyReactReady = () => {
         const w = window as any;
@@ -45,8 +45,8 @@ try {
         }
       };
       notifyReactReady();
-    });
-  });
+    }, 16);
+  }, 16);
 } catch (e: any) {
   const errMsg = e?.message || String(e);
   const errStack = e?.stack || '';

@@ -26,7 +26,7 @@ import { isMacOSApp, isPyWebView } from '../utils/env';
 import type { TaskType, AutomationExecution } from '../services/automation';
 import type { Automation } from '../services/automation/types';
 import { fetchAutomations, triggerAutomationApi, fetchExecutions } from '../services/automation/api';
-import { getAllSkills, onSkillsChange, setSkillStatus, loadAllUsageStats, refreshFromRemote, getUsageStats, loadAuditStatuses, refreshAuditForSkill } from '../stores/skillStore';
+import { getAllSkills, onSkillsChange, setSkillStatus, loadAllUsageStats, refreshFromRemote, getUsageStats, loadAuditStatuses, refreshAuditForSkill, removeSkill } from '../stores/skillStore';
 import type { Skill, SkillWatchEvent, UsageStats } from '../types/skill';
 import type { DependencyCheckResult } from '../utils/dependencyChecker';
 import { CATEGORY_LABELS, CATEGORY_ORDER, CATEGORY_COLORS } from '../constants/skillCategories';
@@ -561,6 +561,26 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
     setSkillVersion((v) => v + 1);
     showToast(`技能已${active ? '启用' : '禁用'}`, active ? 'success' : 'info');
   };
+
+  // 已安装标签：删除技能（内置技能不可删除，removeSkill 内部会拦截）
+  const handleDeleteSkill = useCallback(async (skill: Skill) => {
+    if (skill.source === 'builtin') {
+      showToast('内置技能不可删除', 'error');
+      return;
+    }
+    if (!window.confirm(`确定要删除技能「${skill.name}」吗？此操作不可恢复。`)) return;
+    try {
+      const ok = await removeSkill(skill.id);
+      if (ok) {
+        setSkillVersion((v) => v + 1);
+        showToast(`技能「${skill.name}」已删除`, 'success');
+      } else {
+        showToast('删除失败：技能可能已不存在', 'error');
+      }
+    } catch (e) {
+      showToast(`删除失败: ${e}`, 'error');
+    }
+  }, [showToast]);
 
   // 过滤技能（使用防抖后的查询，减少频繁过滤）
   const filteredSkills = useMemo(() => {
@@ -1735,6 +1755,7 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
           skills={filteredSkills}
           onToggle={handleToggleSkill}
           onNavigate={handlePreviewSkill}
+          onDelete={handleDeleteSkill}
         />
       ) : activeTab === 'market' && selectedCategory === 'all' ? (
         grouped.map(([category, items]) => (

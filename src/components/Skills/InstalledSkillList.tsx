@@ -1,8 +1,9 @@
 import React from 'react';
 import {
-  Box, Typography, Switch, Paper, useTheme,
+  Box, Typography, Switch, Paper, IconButton, useTheme,
 } from '@mui/material';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { getGrayScale } from '../../constants/theme';
 import { ICON_MAP } from '../../types/skill';
 import type { Skill } from '../../types/skill';
@@ -12,18 +13,23 @@ export interface InstalledSkillListProps {
   skills: Skill[];
   onToggle: (skill: Skill, active: boolean) => void;
   onNavigate: (skillId: string) => void;
+  /** 删除技能回调（仅 source !== 'builtin' 可删除） */
+  onDelete?: (skill: Skill) => void;
 }
 
 const InstalledSkillItem: React.FC<{
   skill: Skill;
   onToggle: (skill: Skill, active: boolean) => void;
   onNavigate: (skillId: string) => void;
-}> = ({ skill, onToggle, onNavigate }) => {
+  onDelete?: (skill: Skill) => void;
+}> = ({ skill, onToggle, onNavigate, onDelete }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
   const iconNode = ICON_MAP[skill.icon] || <AutoFixHighIcon sx={{ fontSize: 22 }} />;
   const isActive = skill.status === 'active';
+  // 内置技能不允许删除
+  const canDelete = onDelete && skill.source !== 'builtin';
 
   return (
     <Paper
@@ -40,7 +46,11 @@ const InstalledSkillItem: React.FC<{
         border: `1px solid ${gs.border}`,
         cursor: 'pointer',
         transition: 'all 0.2s ease',
-        '&:hover': { backgroundColor: gs.bgHover },
+        '&:hover': {
+          backgroundColor: gs.bgHover,
+          // 悬停整行时显示删除按钮（通过 [aria-label="删除技能"] 后代选择器，避免跨元素 sx 作用域问题）
+          '& [aria-label="删除技能"]': { opacity: 1 },
+        },
       }}
       onClick={() => onNavigate(skill.id)}
     >
@@ -84,6 +94,28 @@ const InstalledSkillItem: React.FC<{
         </Typography>
       </Box>
 
+      {/* 删除按钮：默认隐藏，悬停显示（参考 skill 标签样式：颜色 #64748b） */}
+      {canDelete && (
+        <IconButton
+          size="small"
+          aria-label="删除技能"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete!(skill);
+          }}
+          sx={{
+            // 与开关并列：默认透明，父 Paper 悬停时在 Paper 的 sx 后代选择器里把 opacity 置 1（避免跨元素 sx 作用域问题）
+            opacity: 0,
+            color: '#64748b',
+            transition: 'opacity 0.18s ease, color 0.18s ease',
+            // 删除按钮自身悬停：变红 + 浅红背景
+            '&:hover': { color: '#EF4444', backgroundColor: '#FEF2F2' },
+          }}
+        >
+          <DeleteOutlineIcon sx={{ fontSize: 18 }} />
+        </IconButton>
+      )}
+
       {/* 开关 */}
       <Switch
         checked={isActive}
@@ -105,7 +137,7 @@ const InstalledSkillItem: React.FC<{
   );
 };
 
-const InstalledSkillList: React.FC<InstalledSkillListProps> = ({ skills, onToggle, onNavigate }) => {
+const InstalledSkillList: React.FC<InstalledSkillListProps> = ({ skills, onToggle, onNavigate, onDelete }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
@@ -135,6 +167,7 @@ const InstalledSkillList: React.FC<InstalledSkillListProps> = ({ skills, onToggl
               skill={skill}
               onToggle={onToggle}
               onNavigate={onNavigate}
+              onDelete={onDelete}
             />
           ))}
         </Box>

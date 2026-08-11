@@ -34,6 +34,11 @@ import type { CronJob, CronJobCreate, CronStoreFile } from '../engine/cron/types
 import { scheduleNextRun, computePreviousRunAtMs } from '../engine/cron/schedule.js';
 import { parseAbsoluteTime } from '../engine/cron/parse.js';
 import { logger } from '../logger.js';
+import {
+  getCronRunHistoryPage,
+  type CronRunStatus,
+  type GetCronRunHistoryOptions,
+} from '../engine/cron/run-log.js';
 
 /** 任务调度（types.ts 的 CronSchedule，通过索引访问避免重复导入） */
 type Schedule = CronJob['schedule'];
@@ -385,5 +390,103 @@ router.delete('/:id', async (req: Request, res: Response) => {
     res.status(500).json({ success: false, error: message });
   }
 });
+
+// ===================== B2：自动化执行日志面板（运行历史 + 统计） =====================
+
+/**
+ * GET /api/cron/history
+ * 参数：jobId? status? statuses? query? limit? offset? sortDir?
+ * 返回：分页运行日志（含 total / hasMore / nextOffset），供员工页面 Timeline / Table 渲染
+ */
+router.get('/history', async (req: Request, res: Response) => {
+  try {
+    const { jobId, runId, status, query, limit, offset, sortDir } = req.query;
+    const statusesRaw = req.query['statuses[]'] ?? req.query.statuses;
+    let statuses: CronRunStatus[] | undefined;
+    if (Array.isArray(statusesRaw)) {
+      statuses = (statusesRaw as string[]).filter((s): s is CronRunStatus =>
+        ['running', 'ok', 'error', 'skipped'].includes(s),
+      );
+    } else if (typeof statusesRaw === 'string' && statusesRaw.trim()) {
+      statuses = statusesRaw
+        .split(',')
+        .map((s) => s.trim())
+        .filter((s): s is CronRunStatus => ['running', 'ok', 'error', 'skipped'].includes(s));
+    }
+    const opts: GetCronRunHistoryOptions = {
+      jobId: typeof jobId === 'string' ? jobId : undefined,
+      runId: typeof runId === 'string' ? runId : undefined,
+      status: typeof status === 'string' ? (status as CronRunStatus | 'all') : undefined,
+      statuses,
+      query: typeof query === 'string' ? query : undefined,
+      limit: typeof limit === 'string' && !isNaN(Number(limit)) ? Number(limit) : undefined,
+      offset: typeof offset === 'string' && !isNaN(Number(offset)) ? Number(offset) : undefined,
+      sortDir: sortDir === 'asc' ? 'asc' : sortDir === 'desc' ? 'desc' : undefined,
+    };
+    const page = getCronRunHistoryPage(opts);
+    res.json({ success: true, data: page });
+  } catch (err: any) {
+    const message = err instanceof Error ? err.message : 'failed to load cron history';
+    logger.error('[CronAPI] GET /history 失败:', message);
+    res.status(500).json({ success: false, error: message });
+  }
+});
+
+/**
+ * GET /api/cron/stats
+ * 参数：jobId? sinceMinutes?（默认 60）
+ * 返回：过去 N 分钟内的 OK/ERROR/RUNNING/SKIPPED 计数 + 最近一条失败详情，用于顶部摘要卡片
+ */
+router.get('/stats', async (req: Request, res: Response) => {
+  try {
+    const { jobId, sinceMinutes } = req.query;
+    const sinceMs = Date.now() - Math.max(1, Math.min(60 * 24 * 30, (Number(sinceMinutes) || 60))) * 60_000;
+    const all = getCronRunHistoryPage({
+      jobId: typeof jobId === 'string' ? jobId : undefined,
+      limit: 500,
+      sortDir: 'desc',
+    });
+    const recent = all.entries.filter((e) => e.startTime >= sinceMs);
+    const counts = { ok: 0, error: 0, running: 0, skipped: 0 };
+    for (const e of recent) {
+      if (e.status === 'ok') counts.ok++;
+      else if (e.status === 'error') counts.error++;
+      else if (e.status === 'running') counts.running++;
+      else if (e.status === 'skipped') counts.skipped++;
+    }
+    const latestFailure = all.entries.find((e) => e.status === 'error' || e.deliveryStatus === 'not-delivered');
+    res.json({
+      success: true,
+      data: {
+        counts,
+        totalWindow: recent.length,
+        totalAll: all.total,
+        latestFailure: latestFailure
+          ? {
+              runId: latestFailure.runId,
+              jobId: latestFailure.jobId,
+              jobName: latestFailure.jobName,
+              status: latestFailure.status,
+              deliveryStatus: latestFailure.deliveryStatus,
+              summary: latestFailure.summary,
+              error: latestFailure.error,
+              errorReason: latestFailure.errorReason,
+              startTime: latestFailure.startTime,
+              endTime: latestFailure.endTime,
+            }
+          : null,
+        sinceMs,
+      },
+    });
+  } catch (err: any) {
+    const message = err instanceof Error ? err.message : 'failed to load cron stats';
+    logger.error('[CronAPI] GET /stats 失败:', message);
+    res.status(500).json({ success: false, error: message });
+  }
+});
+
+// B2：失败 toast 告警（在运行日志记录失败时通过 notifier 推送 UI toast）
+// 这里只声明 API 入口；实际触发埋在 engine/cron/run-log.ts 中：recordCronRunFailure
+// 会 emit 'cron:failed' 事件，UI SSE 侧监听后显示 toast。
 
 export default router;

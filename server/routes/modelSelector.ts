@@ -16,6 +16,7 @@ import { loadModelsConfig, ModelsFile, isLocalModel } from '../modelsStore.js';
 import type { ModelCapability } from '../../shared/types/models.js';
 import { logger } from '../logger.js';
 import { generateBatchEmbeddings, generateEmbedding } from '../engine/embeddingProvider.js';
+import { shouldDowngradeSemanticForMessage } from '../autoModelFeedback.js';
 
 // ===================== 类型定义 =====================
 
@@ -493,6 +494,20 @@ async function ensureAnchorCache(): Promise<AnchorCache> {
  */
 export async function classifyIntentSemantic(message: string): Promise<SemanticIntentResult> {
   const ruleScore = scoreIntent(message);
+
+  // A3：人工纠错闭环 —— 如果该消息 hash 命中 thumbs down 集合，
+  // 直接回退关键词规则，不再调用 embedding（避免重复误判）。
+  const dg = shouldDowngradeSemanticForMessage(message);
+  if (dg.downgrade) {
+    logger.info(`[semantic-router] 命中人工纠错降级：hash=${dg.hash}，采用关键词规则分=${ruleScore}`);
+    return {
+      score: ruleScore,
+      confidence: 0,
+      method: 'rule-fallback',
+      ruleScore,
+    };
+  }
+
   try {
     const cache = await ensureAnchorCache();
     const msgEmb = (await generateEmbedding(message, 'query')).embedding;

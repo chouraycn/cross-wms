@@ -7,6 +7,7 @@
  */
 
 import { logger } from "../../logger.js";
+import eventBus from "../eventBus.js";
 
 /** cron 运行状态 */
 export type CronRunStatus = "running" | "ok" | "error" | "skipped";
@@ -186,7 +187,10 @@ export function recordCronRunSuccess(
   });
 }
 
-/** 标记一次运行失败（便捷方法） */
+/** 标记一次运行失败（便捷方法）
+ *
+ *  B2：额外 emit 'cron:failed' 事件，UI SSE / in-app 通知监听后弹出 toast 告警。
+ */
 export function recordCronRunFailure(
   runId: string,
   endTime: number,
@@ -198,7 +202,7 @@ export function recordCronRunFailure(
     logger.warn(`[cron-run-log] failure update missed runId=${runId}`);
     return undefined;
   }
-  return recordCronRun({
+  const updated = recordCronRun({
     ...existing,
     status: "error",
     endTime,
@@ -206,6 +210,23 @@ export function recordCronRunFailure(
     error,
     errorReason,
   });
+  // 触发 toast 告警（UI 侧通过 eventBus SSE 桥显示）
+  try {
+    eventBus.emit('cron:failed', {
+      runId: updated.runId,
+      jobId: updated.jobId,
+      jobName: updated.jobName,
+      error: updated.error,
+      errorReason: updated.errorReason,
+      summary: updated.summary,
+      startTime: updated.startTime,
+      endTime: updated.endTime,
+      durationMs: updated.durationMs,
+    });
+  } catch (e) {
+    logger.warn('[cron-run-log] emit cron:failed 失败（非阻塞）：', e instanceof Error ? e.message : String(e));
+  }
+  return updated;
 }
 
 /** 历史查询选项 */

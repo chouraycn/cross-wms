@@ -15,6 +15,10 @@ import { v4 as uuidv4 } from 'uuid';
 import { getSessionMessages } from '../../dao/chat.js';
 import { FileStorage } from '../../storage/FileStorage.js';
 import { logger } from '../../logger.js';
+import {
+  readRootMemory,
+  writeRootMemory,
+} from '../memory/root-memory-files.js';
 
 // ===================== 类型定义 =====================
 
@@ -271,6 +275,54 @@ export async function compactSession(
   }
 
   logger.info(`[compactSession] 会话 ${sessionId} 压缩完成: ${messages.length} → ${newMessages.length} 条消息`);
+
+  // D2: 压缩成功后，将 summary 追加到 MEMORY.md（同步到向量记忆时会自动去重）
+  try {
+    // 从会话文件中提取 agentId（如果存在），决定写入 agent 维度还是根 MEMORY.md
+    let agentId: string | undefined;
+    let sessionTitle = sessionId;
+    try {
+      const sessionLines = FileStorage.readSessionLines(sessionId);
+      if (sessionLines.length > 0) {
+        const sess = (sessionLines[0] as any)?.session;
+        if (sess) {
+          agentId = typeof sess.agentId === 'string' ? sess.agentId : undefined;
+          if (typeof sess.id === 'string' && sess.id) sessionTitle = sess.id;
+          if (typeof sess.title === 'string' && sess.title) sessionTitle = sess.title;
+        }
+      }
+    } catch {
+      // 解析失败，使用默认值
+    }
+
+    const nowStr = new Date().toISOString();
+    const appendBlock = [
+      '',
+      `## 压缩摘要 - ${nowStr.slice(0, 10)} ${nowStr.slice(11, 19)}`,
+      `> 会话: ${sessionTitle}`,
+      `> 压缩: ${toCompress.length} 条 → 保留 ${toKeep.length} 条`,
+      '',
+      summary.trim(),
+      '',
+      '---',
+      '',
+    ].join('\n');
+
+    const existing = (await readRootMemory(agentId)) ?? '';
+    const merged = existing.trimEnd() + '\n' + appendBlock;
+    // 写回会触发 root-memory-files.writeRootMemory 内的向量同步（含 D1 去重）
+    await writeRootMemory(merged, agentId);
+    logger.debug(
+      `[compactSession] D2: summary 已追加到 MEMORY.md${agentId ? ` (agentId=${agentId})` : ''}, 追加长度=${appendBlock.length}`,
+    );
+  } catch (mdErr) {
+    // MEMORY.md 追加失败不应影响压缩结果
+    logger.warn(
+      `[compactSession] D2: MEMORY.md summary 追加失败（不影响压缩）: ${
+        mdErr instanceof Error ? mdErr.message : String(mdErr)
+      }`,
+    );
+  }
 
   return {
     success: true,

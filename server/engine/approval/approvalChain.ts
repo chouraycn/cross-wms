@@ -59,6 +59,14 @@ export interface ApprovalRequestPayload {
   sessionId?: string;
   /** 请求者（可选） */
   requester?: string;
+  /**
+   * v1.7.204 — 超时自动升级（early escalation）
+   * 默认 false：任何级 timeout 直接整体链 timeout。
+   * true：当前级被拒仍整体拒绝；但当前级 timeout 时，如果后面还有级别，
+   * 不立即终止链，而是标记该级 status=timeout/skipped 并 continue 进入下一级，
+   * 这样 L1 无人响应时不会阻塞 L2 处理。
+   */
+  earlyEscalation?: boolean;
 }
 
 /**
@@ -406,6 +414,13 @@ export class ApprovalChain extends EventEmitter {
           return;
         }
         if (result.status === 'timeout') {
+          // C2：开启 earlyEscalation 且后面还有级别 → 不终止链，自动升级进入下一级
+          const hasNextLevel = i < chain.levels.length - 1;
+          if (request.earlyEscalation && hasNextLevel) {
+            this.emit('level_escalated', chain, i, result, 'timeout');
+            // levelResults.push & completedLevels++ 已在 if 块外完成，直接进入下一级
+            continue;
+          }
           this.finalizeChain(chain, 'timeout', `级别 ${level.name} 超时`);
           return;
         }

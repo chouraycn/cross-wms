@@ -11,6 +11,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ApprovalRequest, ApprovalHistoryItem, ApprovalConfig } from '../components/CDFChat/ApprovalDialog.js';
+import type { ApprovalChainLevelStatus, ApprovalChainStatus } from '../types/openclaw-events.js';
 import { API_BASE } from '../constants/api.js';
 import {
   analyzeCommandRisks,
@@ -31,6 +32,17 @@ export interface ApprovalEventData {
   reason?: string;
   timeout?: number;
   expiresAt?: number;
+  // v1.7.204: 多级审批链字段。单级审批时为 undefined。
+  /** 是否启用多级审批链（true 时显示 L1/L2 进度条） */
+  multiLevel?: boolean;
+  /** 审批链 ID */
+  chainId?: string;
+  /** 每级状态快照 */
+  levels?: ApprovalChainLevelStatus[];
+  /** 链整体状态 */
+  chainStatus?: ApprovalChainStatus;
+  /** 链级拒绝原因 */
+  chainRejectReason?: string;
 }
 
 export interface ApprovalResponse {
@@ -156,6 +168,12 @@ export function useApprovalEvents(options: UseApprovalEventsOptions = {}): UseAp
       timeout: eventData.timeout || approvalConfig.defaultTimeout || DEFAULT_APPROVAL_TIMEOUT,
       expiresAt: eventData.expiresAt || Date.now() + (eventData.timeout || approvalConfig.defaultTimeout || DEFAULT_APPROVAL_TIMEOUT),
       argv: argv && argv.length > 0 ? argv : undefined,
+      // v1.7.204: 多级审批链字段
+      multiLevel: eventData.multiLevel,
+      chainId: eventData.chainId,
+      levels: eventData.levels,
+      chainStatus: eventData.chainStatus,
+      chainRejectReason: eventData.chainRejectReason,
     };
 
     setApprovalRequests(prev => [...prev, request]);

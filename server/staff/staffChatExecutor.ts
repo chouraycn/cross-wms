@@ -36,6 +36,7 @@ import { getStaffHttpToolDefinitions } from './staffHttpToolBridge.js';
 import type { ModelConfig, ModelsFile } from '../modelsStore.js';
 import { logger } from '../logger.js';
 import { recordSkillCall } from './skillEvents.js';
+import { recordRouteDecision, type RouteHitKind } from '../routeMetrics.js';
 
 // ===================== 类型 =====================
 
@@ -227,6 +228,138 @@ function buildSystemPrompt(
   return lines.join('\n');
 }
 
+// ===================== 模型决策（A1：员工绑定 vs Auto Model 冲突仲裁 + 审计日志） =====================
+
+/** 模型决策来源：前端显式选择 > 员工绑定 > Auto Model */
+export type StaffModelDecisionSource = 'explicit' | 'binding' | 'auto';
+
+export interface StaffModelDecision {
+  /** 决策来源 */
+  source: StaffModelDecisionSource;
+  /** 最终采用的 model id（models.json 原生 id） */
+  modelId: string;
+  /** 最终采用的模型显示名 */
+  modelName: string;
+  /** 如果 source=binding：采用的绑定角色 primary/default；source=auto：返回空 */
+  bindingRole?: 'primary' | 'default' | 'fallback';
+  /** 如果 source=auto：autoSelect 返回的 reason */
+  autoReason?: string;
+  /** 被「更高优先级」命中从而被忽略的来源（用于审计说明） */
+  overriddenSources?: StaffModelDecisionSource[];
+  /** 降级标记：绑定存在但 model_configs.model 为空 → 回落 auto */
+  bindingMissedFallback?: boolean;
+  /** 调试/审计说明 */
+  details: string;
+}
+
+/**
+ * 模型决策统一裁决：
+ *  1) 调用方显式传 model 且 != 'auto'  → explicit （直接通过前端切换而来，优先级最高）
+ *  2) 员工绑定（primary > default > 第一条）→ binding
+ *  3) 全局 CDF Auto Model → auto
+ * 返回结构化 decision，调用方可通过 SSE/logger 输出审计。
+ */
+async function resolveStaffChatModelDecision(
+  input: StaffChatTurnInput,
+  sops: SkillSop[],
+): Promise<{
+  modelsConfig: ModelsFile | null;
+  decision: StaffModelDecision | null;
+}> {
+  const { tenantId, agentId, model: explicitModel, message, history } = input;
+  try {
+    const modelsConfig = await loadModelsConfig();
+    const overriddenSources: StaffModelDecisionSource[] = [];
+
+    // ----- 1) 显式选择（前端切换非 auto） -----
+    if (explicitModel && explicitModel !== 'auto') {
+      overriddenSources.push('binding', 'auto');
+      const cfg = modelConfigDao.getModelConfigById(tenantId, explicitModel);
+      if (cfg && cfg.model) {
+        return {
+          modelsConfig,
+          decision: {
+            source: 'explicit',
+            modelId: cfg.model,
+            modelName: cfg.name || cfg.model,
+            overriddenSources,
+            details: `用户/前端显式指定模型配置 id=${explicitModel}，解析为 model=${cfg.model}。覆盖：binding + auto`,
+          },
+        };
+      }
+      // 兜底：把 explicitModel 视为 models.json 原生 id
+      const raw = modelsConfig.models.find((m) => m.id === explicitModel);
+      return {
+        modelsConfig,
+        decision: {
+          source: 'explicit',
+          modelId: explicitModel,
+          modelName: raw?.name || explicitModel,
+          overriddenSources,
+          details: `用户显式指定 models.json 原生 id=${explicitModel}（sd_model_configs 无匹配）。覆盖：binding + auto`,
+        },
+      };
+    }
+
+    // ----- 2) 员工绑定 -----
+    const boundConfigId = resolveBoundModelConfigId(tenantId, agentId);
+    if (boundConfigId) {
+      const cfg = modelConfigDao.getModelConfigById(tenantId, boundConfigId);
+      if (cfg && cfg.model) {
+        overriddenSources.push('auto');
+        const bindings = agentDao.listAgentModelBindings(tenantId, agentId);
+        const byRole = new Map(bindings.map((b) => [b.role, b.model_config_id]));
+        const role: 'primary' | 'default' | 'fallback' =
+          byRole.get('primary') === boundConfigId
+            ? 'primary'
+            : byRole.get('default') === boundConfigId
+            ? 'default'
+            : 'fallback';
+        return {
+          modelsConfig,
+          decision: {
+            source: 'binding',
+            bindingRole: role,
+            modelId: cfg.model,
+            modelName: cfg.name || cfg.model,
+            overriddenSources,
+            details: `员工绑定命中(${role} 角色)：model_config_id=${boundConfigId} → model=${cfg.model}。覆盖：auto`,
+          },
+        };
+      }
+      // 绑定存在但 model_configs.model 为空 → 降级 auto（记审计）
+      overriddenSources.push('binding');
+      logger.info(
+        `[ModelDecision] 员工绑定 model_config_id=${boundConfigId} 存在但 model 字段为空，降级 auto。tenant=${tenantId} agent=${agentId}`,
+      );
+    }
+
+    // ----- 3) CDF Auto Model -----
+    const historyMsgs: ApiMessage[] = history.map((h) => ({ role: h.role, content: h.content }));
+    const contextTokenCount = historyMsgs.length > 0 ? estimateMessagesTokens(historyMsgs) : 0;
+    const activeSkillCount = sops.length;
+    const scoringInput: Partial<ScoringInput> = { contextTokenCount, activeSkillCount };
+    const auto = await autoSelectModelAsync(message, modelsConfig, false, scoringInput);
+    return {
+      modelsConfig,
+      decision: {
+        source: 'auto',
+        modelId: auto.modelId,
+        modelName: auto.modelName,
+        autoReason: auto.reason,
+        overriddenSources: boundConfigId ? ['binding'] : [],
+        bindingMissedFallback: !!boundConfigId,
+        details: boundConfigId
+          ? `员工绑定解析失败（绑定 id=${boundConfigId} 但 model 为空），降级 Auto Model：${auto.reason}`
+          : `员工无模型绑定，采用 CDF Auto Model：${auto.reason}`,
+      },
+    };
+  } catch (err) {
+    logger.warn('[StaffChatExecutor] 模型决策解析失败，走 mock 兜底:', err instanceof Error ? err.message : String(err));
+    return { modelsConfig: null, decision: null };
+  }
+}
+
 // ===================== Mock 兜底 =====================
 
 function generateStaffMockResponse(
@@ -267,54 +400,53 @@ export async function runStaffChatTurn(
   const kbContext = await collectKnowledgeContext(tenantId, agentId, message);
   const systemPrompt = buildSystemPrompt(agent, sops, kbContext);
 
-  // ===== 模型解析（失败则降级 mock） =====
-  // 优先级：调用方显式 model > 员工模型绑定(sd_agent_model_bindings, primary 优先) > 全局 auto
-  let modelsConfig: ModelsFile | null = null;
-  let effectiveModel = '';
-  let effectiveModelName = '';
-  try {
-    modelsConfig = await loadModelsConfig();
-    if (model && model !== 'auto') {
-      // 前端发来的 model 字段实为 sd_model_configs.id（如 ollama-llama3.1），
-      // 必须先在员工模型配置表中解析为 models.json 的真实模型 id（如 llama3.1），
-      // 否则按 id 直查 models.json 会落空 → 误入 mock 兜底（违反 id 与 ollama tag 一致铁律）。
-      const cfg = modelConfigDao.getModelConfigById(tenantId, model);
-      if (cfg && cfg.model) {
-        effectiveModel = cfg.model;
-        effectiveModelName = cfg.name || cfg.model;
-      } else {
-        // model 即 models.json 原生 id（如直接 curl 传 llama3.1）时按原逻辑处理
-        effectiveModel = model;
-        effectiveModelName = modelsConfig.models.find((m) => m.id === model)?.name || model;
-      }
-    } else {
-      // 读取员工级模型绑定：把 model_config_id 解析为 models.json 里的实际模型 id
-      const boundConfigId = resolveBoundModelConfigId(tenantId, agentId);
-      if (boundConfigId) {
-        const cfg = modelConfigDao.getModelConfigById(tenantId, boundConfigId);
-        // sd_model_configs.model 即 models.json 的模型 id（铁律：id 需与 ollama tag 等一致）
-        if (cfg && cfg.model) {
-          effectiveModel = cfg.model;
-          effectiveModelName = cfg.name || cfg.model;
-        }
-      }
-      // 绑定缺失或解析不到时回落全局 auto 选型（保持原行为）
-      if (!effectiveModel) {
-        // v1.7.17x: 为员工 executor 补齐 ScoringInput。history 是 StaffChatHistoryItem[]，
-        // 直接转成 ApiMessage 估算 token；KB 检索 + 技能 SOP 已在 systemPrompt 中拼装，
-        // scoring 只按 history 估算即可（量级一致）。
-        const historyMsgs: ApiMessage[] = history.map(h => ({ role: h.role, content: h.content }));
-        const contextTokenCount = historyMsgs.length > 0 ? estimateMessagesTokens(historyMsgs) : 0;
-        const activeSkillCount = sops.length;
-        const scoringInput: Partial<ScoringInput> = { contextTokenCount, activeSkillCount };
-        const auto = await autoSelectModelAsync(message, modelsConfig, false, scoringInput);
-        effectiveModel = auto.modelId;
-        effectiveModelName = auto.modelName;
-      }
+  // ===== 模型决策（A1：显式 > 员工绑定 > CDF Auto Model；统一审计 + SSE） =====
+  const { modelsConfig, decision } = await resolveStaffChatModelDecision(
+    { tenantId, sessionId, agentId, message, history, model: input.model, executionMode: input.executionMode, enableReflection: input.enableReflection },
+    sops,
+  );
+  const effectiveModel = decision?.modelId ?? '';
+  const effectiveModelName = decision?.modelName ?? '';
+  if (decision) {
+    // A2：路由命中率计数 + 冷启动 fallback 告警
+    const missKind: RouteHitKind =
+      decision.source === 'binding' ? 'hit_binding' :
+      decision.source === 'explicit' ? 'hit_explicit' :
+      'miss_fallback';
+    recordRouteDecision(tenantId, agentId, decision.source, missKind, decision.details);
+
+    // 冷启动 / 绑定配置缺失时，额外 emit SSE 告警 route.miss 给前端顶部 banner
+    if (decision.source === 'auto') {
+      emit({
+        type: 'route.miss',
+        data: {
+          reason: decision.bindingMissedFallback ? '绑定配置为空，已回落 Auto Model' : '员工无绑定，已回落 Auto Model',
+          bindingMissedFallback: !!decision.bindingMissedFallback,
+          modelId: decision.modelId,
+          modelName: decision.modelName,
+          autoReason: decision.autoReason ?? null,
+          details: decision.details,
+        },
+      });
     }
-  } catch (err) {
-    logger.warn('[StaffChatExecutor] 模型配置加载失败，走 mock 兜底:', err instanceof Error ? err.message : String(err));
-    modelsConfig = null;
+
+    // 结构化审计日志（供运营/问题排查）
+    logger.info('[ModelDecision] 员工对话模型裁决结果', {
+      tenantId,
+      agentId,
+      agentName: agent.name,
+      sessionId,
+      source: decision.source,
+      bindingRole: decision.bindingRole ?? null,
+      bindingMissedFallback: decision.bindingMissedFallback ?? false,
+      overriddenSources: decision.overriddenSources ?? [],
+      modelId: decision.modelId,
+      modelName: decision.modelName,
+      autoReason: decision.autoReason ?? null,
+      details: decision.details,
+    });
+    // SSE 事件：把决策理由传给前端，供 AI 对话框顶部徽章/下拉说明
+    emit({ type: 'model.decision', data: decision });
   }
 
   const emitThinking = (text: string) => emit({ type: 'thinking.delta', data: { text } });
