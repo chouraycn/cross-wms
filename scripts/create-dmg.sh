@@ -254,6 +254,50 @@ if [[ "${SKIP_DMG_STYLE:-0}" != "1" ]] && is_trae_sandbox; then
   export SKIP_DMG_STYLE=1
 fi
 
+# v1.7.206: 将 .DS_Store + .background 模板注入提取为函数。
+# 沙箱快速模式和 fallback v2 路径共用，确保任何模式创建的 DMG 都有 Finder 样式。
+inject_dsstore_template() {
+  local target_dir="$1"
+  local has_style=0
+
+  if [[ ! -f "$DMG_DSSTORE_TEMPLATE" ]]; then
+    echo "WARN: .DS_Store 模板不存在: $DMG_DSSTORE_TEMPLATE" >&2
+    return 1
+  fi
+
+  # 注入 .DS_Store（Finder 窗口布局、图标位置、图标大小、背景图引用）
+  cp "$DMG_DSSTORE_TEMPLATE" "$target_dir/.DS_Store"
+
+  # 注入背景图到 .background/background.png
+  mkdir -p "$target_dir/.background"
+  if [[ -f "$DMG_BG_TEMPLATE" ]]; then
+    cp "$DMG_BG_TEMPLATE" "$target_dir/.background/background.png"
+    has_style=1
+  elif [[ -f "$DMG_BACKGROUND_SMALL" ]]; then
+    cp "$DMG_BACKGROUND_SMALL" "$target_dir/.background/background.png"
+    has_style=1
+  elif [[ -f "$DMG_BACKGROUND_PATH" ]]; then
+    cp "$DMG_BACKGROUND_PATH" "$target_dir/.background/background.png"
+    has_style=1
+  fi
+
+  # 注入卷图标
+  local icon_src="$APP_PATH/Contents/Resources/AppIcon.icns"
+  if [[ ! -f "$icon_src" ]]; then
+    icon_src="$APP_PATH/Contents/Resources/CDFKnowClow.icns"
+  fi
+  if [[ -f "$icon_src" ]]; then
+    cp "$icon_src" "$target_dir/.VolumeIcon.icns"
+  fi
+
+  if [[ "$has_style" == "1" ]]; then
+    echo "INFO: 已注入 .DS_Store 模板 + .background/background.png + 卷图标"
+  else
+    echo "WARN: .DS_Store 已注入，但未找到背景图" >&2
+  fi
+  return 0
+}
+
 # 检测是否有背景图：有背景图时走完整 UDRW + Finder 样式流程，
 # 无背景图或沙箱环境走 srcfolder 快速模式
 HAS_BACKGROUND=0
@@ -262,15 +306,24 @@ if [[ -f "$DMG_BACKGROUND_SMALL" || -f "$DMG_BACKGROUND_PATH" ]]; then
 fi
 
 # 无背景图或显式跳过样式时，走 srcfolder 快速模式
+# v1.7.206: 快速模式也注入 .DS_Store + .background 模板，确保沙箱下 DMG 仍有 Finder 样式
 if [[ "$HAS_BACKGROUND" == "0" || "${SKIP_DMG_STYLE:-0}" == "1" ]]; then
-  echo "INFO: 无背景图或跳过样式，走 srcfolder 快速模式"
+  if [[ "${SKIP_DMG_STYLE:-0}" == "1" ]]; then
+    echo "INFO: 跳过 Finder 样式（SKIP_DMG_STYLE=1），但仍注入 .DS_Store 模板"
+  else
+    echo "INFO: 无背景图，走 srcfolder 快速模式"
+  fi
+
+  # v1.7.206: 即使在快速模式，也尝试注入 .DS_Store + .background 模板
+  inject_dsstore_template "$DMG_SOURCE" 2>/dev/null || true
+
   if hdiutil create \
     -volname "$DMG_VOLUME_NAME" \
     -srcfolder "$DMG_SOURCE" \
     -ov \
     -format ULMO \
     "$OUT_PATH" 2>&1; then
-    hdiutil verify "$OUT_PATH" >/dev/null 2>&1 && echo "✅ DMG 创建成功（快速模式，无 Finder 样式）: $OUT_PATH" || echo "⚠️ DMG 创建完成但校验失败: $OUT_PATH"
+    hdiutil verify "$OUT_PATH" >/dev/null 2>&1 && echo "✅ DMG 创建成功（快速模式 + .DS_Store 模板）: $OUT_PATH" || echo "⚠️ DMG 创建完成但校验失败: $OUT_PATH"
     rm -rf "$DMG_SOURCE"
     exit 0
   else
@@ -318,36 +371,10 @@ if [[ "$UDRW_OK" == "0" || "$ATTACH_OK" == "0" ]]; then
   rm -f "$DMG_RW_PATH" 2>/dev/null || true
   rmdir "$DMG_MOUNT_POINT" 2>/dev/null || true
 
-  # 沙箱回退 v2: 把预生成的 .DS_Store 模板 和 .background/background.png
-  # 直接写入 DMG_SOURCE，再用 -srcfolder 打包。只要卷名/文件名/目录结构不变，
-  # Finder 会识别 .DS_Store 中的 icon view、背景图、图标位置、图标大小。
+  # v1.7.206: 使用统一的 inject_dsstore_template 函数注入样式
   FALLBACK_HAS_STYLE=0
-  if [[ -f "$DMG_DSSTORE_TEMPLATE" ]]; then
-    mkdir -p "$DMG_SOURCE/.background"
-    cp "$DMG_DSSTORE_TEMPLATE" "$DMG_SOURCE/.DS_Store"
-    # 背景图：优先用模板目录的 background.png（与 .DS_Store 精确匹配大小），
-    # 否则回退到 DMG_BACKGROUND_SMALL / DMG_BACKGROUND_PATH
-    if [[ -f "$DMG_BG_TEMPLATE" ]]; then
-      cp "$DMG_BG_TEMPLATE" "$DMG_SOURCE/.background/background.png"
-      FALLBACK_HAS_STYLE=1
-    elif [[ -f "$DMG_BACKGROUND_SMALL" ]]; then
-      cp "$DMG_BACKGROUND_SMALL" "$DMG_SOURCE/.background/background.png"
-      FALLBACK_HAS_STYLE=1
-    elif [[ -f "$DMG_BACKGROUND_PATH" ]]; then
-      cp "$DMG_BACKGROUND_PATH" "$DMG_SOURCE/.background/background.png"
-      FALLBACK_HAS_STYLE=1
-    fi
-    # Volume icon: 把 app icon 拷到根目录，SetFile 不能无挂载执行，靠 Finder 自动识别
-    ICON_SRC="$APP_PATH/Contents/Resources/AppIcon.icns"
-    if [[ ! -f "$ICON_SRC" ]]; then
-      ICON_SRC="$APP_PATH/Contents/Resources/CDFKnowClow.icns"
-    fi
-    if [[ -f "$ICON_SRC" ]]; then
-      cp "$ICON_SRC" "$DMG_SOURCE/.VolumeIcon.icns"
-    fi
-  fi
-
-  if [[ "$FALLBACK_HAS_STYLE" == "1" ]]; then
+  if inject_dsstore_template "$DMG_SOURCE" 2>/dev/null; then
+    FALLBACK_HAS_STYLE=1
     echo "INFO: 使用预写 .DS_Store 模板 + .background 方案（样式完整，hdiutil attach 不可用时的首选）"
   fi
 
