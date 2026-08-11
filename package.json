@@ -10,10 +10,10 @@
     "packages/*"
   ],
   "scripts": {
-    "dev:server": "NODE_TLS_REJECT_UNAUTHORIZED=0 tsx watch --tsconfig server/tsconfig.json server/index.ts",
-    "server": "NODE_TLS_REJECT_UNAUTHORIZED=0 tsx --tsconfig server/tsconfig.json server/index.ts",
+    "dev:server": "sh -c 'if [ \"$CDFKNOW_DEV_TLS_DISABLE\" = \"1\" ]; then export NODE_TLS_REJECT_UNAUTHORIZED=0; fi; tsx watch --tsconfig server/tsconfig.json server/index.ts'",
+    "server": "sh -c 'if [ \"$CDFKNOW_DEV_TLS_DISABLE\" = \"1\" ]; then export NODE_TLS_REJECT_UNAUTHORIZED=0; fi; tsx --tsconfig server/tsconfig.json server/index.ts'",
     "build:server": "node build-server.mjs",
-    "dev:fast": "node build-server.mjs && NODE_TLS_REJECT_UNAUTHORIZED=0 STAFF_AUTH_ALLOW_DEFAULT=1 node server_dist/index.cjs",
+    "dev:fast": "node build-server.mjs && sh -c 'if [ \"$CDFKNOW_DEV_TLS_DISABLE\" = \"1\" ]; then export NODE_TLS_REJECT_UNAUTHORIZED=0; fi; STAFF_AUTH_ALLOW_DEFAULT=1 node server_dist/index.cjs'",
     "dev": "concurrently \"npm run dev:server\" \"vite\"",
     "build": "tsc && vite build && npm run staffdeck:build",
     "staffdeck:build": "node scripts/build-staffdeck-app.mjs",

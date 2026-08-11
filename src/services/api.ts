@@ -56,7 +56,9 @@ export async function request<T>(method: string, path: string, body?: any): Prom
   const res = await fetchWithTimeout(`${BASE_URL}${path}`, opts);
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }));
-    const apiError = createApiError(new Error(err.error || `API error ${res.status}`));
+    const apiError = createApiError(
+      new Error(err.message || err.error || `API error ${res.status}`),
+    );
     throw apiError;
   }
   const json = await res.json();

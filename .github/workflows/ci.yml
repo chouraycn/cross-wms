@@ -152,6 +152,38 @@ jobs:
       - name: Run unit tests (vitest)
         run: npx vitest run --reporter=basic --no-color 2>&1 | tail -200
 
+  engine-tests:
+    name: Engine Tests (vitest engine config)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    continue-on-error: true
+    env:
+      CI: true
+      ONNX_DISABLE_NATIVE_DOWNLOAD: '1'
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      # engine 测试 import openclaw/dist/plugin-sdk；submodules=false 时用 mock 桩满足解析，
+      # 本地开发则需先 `npm run build:packages`。先以 mock 接入门禁，continue-on-error 不阻塞主干。
+      - name: Prepare openclaw mock (if submodule absent)
+        run: node scripts/ensure-openclaw-mock.cjs
+
+      - name: Run engine tests
+        run: npm run test:engine -- --reporter=basic --no-color 2>&1 | tail -200
+
   deadcode:
     name: Dead Code (knip)
     runs-on: ubuntu-latest

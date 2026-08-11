@@ -11,20 +11,20 @@ import {
   getAppSettings as dbGet,
   setAppSettings as dbSet,
 } from '../dao/settings.js';
+import { ok, fail, notFound, BizCode } from './_shared/respond.js';
 
 const router = Router();
 
 router.get('/:key', (req: Request, res: Response) => {
   const value = dbGet(req.params.key);
   if (value === null) {
-    res.status(404).json({ error: t('errors.notFound') });
-    return;
+    return notFound(res, t('errors.notFound'));
   }
   try {
     const data = JSON.parse(value);
-    res.json({ data });
+    return ok(res, data);
   } catch {
-    res.json({ data: value });
+    return ok(res, value);
   }
 });
 
@@ -32,9 +32,9 @@ router.put('/:key', (req: Request, res: Response) => {
   try {
     const value = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
     dbSet(req.params.key, value);
-    res.json({ ok: true, message: t('common.success') });
+    return ok(res, { ok: true }, t('common.success'));
   } catch (e) {
-    res.status(400).json({ error: (e as Error).message });
+    return fail(res, BizCode.BAD_REQUEST, (e as Error).message, 400);
   }
 });
 

@@ -1,20 +1,14 @@
 #!/bin/sh
-# Pre-commit hook: ESLint on staged files + TypeScript full project check
-# Blocks commits with syntax errors or type errors
+# Pre-commit hook: ESLint on staged files only.
+#
+# 设计说明（2026-08-11 修复）：
+# 此前钩子跑全量 `npx tsc --noEmit`（200 万行 → OOM exit137）且 server/tsconfig.json
+# 含 OpenClaw fork 既有错误，导致门禁必失败、长期被 `git commit --no-verify` 绕过。
+# 改为只对在暂存文件中做 ESLint（快、可靠、覆盖改动行的真实问题）；
+# 全量 TypeScript 检查由 CI 承担（ci.yml / pr-quality-gate.yml 的 typecheck job）。
+# 这样恢复一个「能过且真在挡问题」的门禁，而不是一个永远失败的摆设。
 
 # 1. ESLint on staged files (errors block commit, warnings are allowed)
 npx lint-staged
 
-# 2. TypeScript full project check (catches cross-file type errors)
-echo "Running TypeScript check..."
-npx tsc --noEmit 2>&1 | head -30
-if [ ${PIPESTATUS[0]} -ne 0 ]; then
-  echo "❌ TypeScript errors found. Fix them before committing."
-  exit 1
-fi
-npx tsc --noEmit --project server/tsconfig.json 2>&1 | head -30
-if [ ${PIPESTATUS[0]} -ne 0 ]; then
-  echo "❌ Backend TypeScript errors found. Fix them before committing."
-  exit 1
-fi
-echo "✅ TypeScript check passed"
+echo "✅ Pre-commit lint passed (full type check runs in CI)"
