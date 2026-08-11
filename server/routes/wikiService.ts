@@ -31,6 +31,7 @@ import {
   getEntryVersions,
 } from '../engine/wikiStore.js';
 import type { WikiEntryCreateParams, WikiEntryUpdateParams, WikiSearchOptions } from '../engine/wikiTypes.js';
+import { ok } from './_shared/respond.js';
 
 const router = Router();
 
@@ -41,7 +42,7 @@ const router = Router();
 router.get('/stats', (_req, res) => {
   try {
     const stats = getWikiStats();
-    res.json({ stats });
+    ok(res, { stats });
   } catch (e) {
     res.status(500).json({
       error: `获取统计失败: ${e instanceof Error ? e.message : String(e)}`,
@@ -57,7 +58,7 @@ router.get('/recent', async (req, res) => {
   try {
     const limit = parseInt(req.query.limit as string || '10', 10);
     const entries = getRecentEntries(Math.min(limit, 50));
-    res.json({ entries });
+    ok(res, { entries });
   } catch (e) {
     res.status(500).json({
       error: `获取最近条目失败: ${e instanceof Error ? e.message : String(e)}`,
@@ -87,7 +88,7 @@ router.post('/search', async (req, res) => {
     };
 
     const results = await hybridSearch(options);
-    res.json({ results });
+    ok(res, { results });
   } catch (e) {
     res.status(500).json({
       error: `搜索失败: ${e instanceof Error ? e.message : String(e)}`,
@@ -113,7 +114,7 @@ router.get('/entry/:id', (req, res) => {
       return res.status(404).json({ error: '条目不存在' });
     }
 
-    res.json({ entry });
+    ok(res, { entry });
   } catch (e) {
     res.status(500).json({
       error: `获取条目失败: ${e instanceof Error ? e.message : String(e)}`,
@@ -155,7 +156,7 @@ router.post('/entry', async (req, res) => {
       }
     }
 
-    res.json({ entry });
+    ok(res, { entry });
   } catch (e) {
     res.status(500).json({
       error: `创建条目失败: ${e instanceof Error ? e.message : String(e)}`,
@@ -208,7 +209,7 @@ router.put('/entry/:id', async (req, res) => {
       }
     }
 
-    res.json({ entry: updated });
+    ok(res, { entry: updated });
   } catch (e) {
     res.status(500).json({
       error: `更新条目失败: ${e instanceof Error ? e.message : String(e)}`,
@@ -255,7 +256,7 @@ router.get('/entry/:id/tags', (req, res) => {
     }
 
     const tags = getEntryTags(id);
-    res.json({ tags });
+    ok(res, { tags });
   } catch (e) {
     res.status(500).json({
       error: `获取标签失败: ${e instanceof Error ? e.message : String(e)}`,
@@ -324,7 +325,7 @@ router.get('/entry/:id/versions', (req, res) => {
     }
 
     const versions = getEntryVersions(id);
-    res.json({ versions });
+    ok(res, { versions });
   } catch (e) {
     res.status(500).json({
       error: `获取版本历史失败: ${e instanceof Error ? e.message : String(e)}`,
@@ -339,7 +340,7 @@ router.get('/entry/:id/versions', (req, res) => {
 router.get('/tags', (req, res) => {
   try {
     const stats = getWikiStats();
-    res.json({ tags: stats.tagDistribution });
+    ok(res, { tags: stats.tagDistribution });
   } catch (e) {
     res.status(500).json({
       error: `获取标签失败: ${e instanceof Error ? e.message : String(e)}`,

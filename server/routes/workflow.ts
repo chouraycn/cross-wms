@@ -12,6 +12,7 @@ import type {
   WorkflowExecution,
   WorkflowTemplate,
 } from '../engine/workflow/types.js';
+import { ok } from './_shared/respond.js';
 
 const router = Router();
 
@@ -28,8 +29,8 @@ router.get('/', (req: Request, res: Response) => {
 
     const workflows = workflowStore.getAll({ status, search });
 
-    res.json({
-      data: workflows,
+    ok(res, {
+      workflows,
       total: workflows.length,
     });
   } catch (err: any) {
@@ -52,7 +53,7 @@ router.get('/:id', (req: Request, res: Response) => {
       return res.status(404).json({ error: '工作流不存在' });
     }
 
-    res.json({ data: workflow });
+    ok(res, workflow);
   } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     logger.error('[WorkflowAPI] 获取工作流详情失败:', message);
@@ -84,7 +85,7 @@ router.post('/', (req: Request, res: Response) => {
     });
 
     logger.info('[WorkflowAPI] 创建工作流:', { id: workflow.id, name: workflow.name });
-    res.json({ data: workflow, message: '工作流创建成功' });
+    ok(res, workflow, '工作流创建成功');
   } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     logger.error('[WorkflowAPI] 创建工作流失败:', message);
@@ -108,7 +109,7 @@ router.put('/:id', (req: Request, res: Response) => {
     }
 
     logger.info('[WorkflowAPI] 更新工作流:', { id, version: workflow.version });
-    res.json({ data: workflow, message: '工作流更新成功' });
+    ok(res, workflow, '工作流更新成功');
   } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     logger.error('[WorkflowAPI] 更新工作流失败:', message);
@@ -167,7 +168,7 @@ router.post('/:id/execute', async (req: Request, res: Response) => {
 
     logger.info('[WorkflowAPI] 执行工作流:', { workflowId: id, executionId });
 
-    res.json({
+    ok(res, {
       executionId,
       message: '工作流执行已启动',
     });
@@ -190,8 +191,8 @@ router.get('/:id/history', (req: Request, res: Response) => {
 
     const history = workflowStore.getExecutionHistory(id, limit, offset);
 
-    res.json({
-      data: history,
+    ok(res, {
+      history,
       total: history.length,
     });
   } catch (err: any) {
@@ -212,8 +213,8 @@ router.get('/executions', (req: Request, res: Response) => {
 
     const executions = workflowStore.getAllExecutions(limit, offset);
 
-    res.json({
-      data: executions,
+    ok(res, {
+      executions,
       total: executions.length,
     });
   } catch (err: any) {
@@ -236,7 +237,7 @@ router.get('/execution/:executionId', (req: Request, res: Response) => {
       return res.status(404).json({ error: '执行记录不存在' });
     }
 
-    res.json({ data: execution });
+    ok(res, execution);
   } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     logger.error('[WorkflowAPI] 获取执行详情失败:', message);
@@ -277,8 +278,8 @@ router.get('/:id/versions', (req: Request, res: Response) => {
     const { id } = req.params;
     const versions = workflowStore.getVersionHistory(id);
 
-    res.json({
-      data: versions,
+    ok(res, {
+      versions,
       total: versions.length,
     });
   } catch (err: any) {
@@ -308,7 +309,7 @@ router.post('/:id/rollback', (req: Request, res: Response) => {
     }
 
     logger.info('[WorkflowAPI] 回滚工作流:', { workflowId: id, targetVersion: version });
-    res.json({ data: workflow, message: '回滚成功' });
+    ok(res, workflow, '回滚成功');
   } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     logger.error('[WorkflowAPI] 回滚失败:', message);
@@ -327,8 +328,8 @@ router.get('/templates', (req: Request, res: Response) => {
     const category = req.query.category as string | undefined;
     const templates = workflowStore.getTemplates(category);
 
-    res.json({
-      data: templates,
+    ok(res, {
+      templates,
       total: templates.length,
     });
   } catch (err: any) {
@@ -360,7 +361,7 @@ router.post('/templates', (req: Request, res: Response) => {
     });
 
     logger.info('[WorkflowAPI] 创建模板:', { id: template.id, name: template.name });
-    res.json({ data: template, message: '模板创建成功' });
+    ok(res, template, '模板创建成功');
   } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     logger.error('[WorkflowAPI] 创建模板失败:', message);
@@ -387,7 +388,7 @@ router.post('/from-template', (req: Request, res: Response) => {
     }
 
     logger.info('[WorkflowAPI] 从模板创建工作流:', { templateId, workflowId: workflow.id });
-    res.json({ data: workflow, message: '工作流创建成功' });
+    ok(res, workflow, '工作流创建成功');
   } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     logger.error('[WorkflowAPI] 从模板创建失败:', message);
@@ -439,7 +440,7 @@ router.post('/import', (req: Request, res: Response) => {
     }
 
     logger.info('[WorkflowAPI] 导入工作流:', { id: workflow.id, name: workflow.name });
-    res.json({ data: workflow, message: '工作流导入成功' });
+    ok(res, workflow, '工作流导入成功');
   } catch (err: any) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     logger.error('[WorkflowAPI] 导入失败:', message);
