@@ -31,6 +31,7 @@ import { toolAuditLog } from '../engine/toolAuditLog.js';
 import { mcpServerHealth } from '../engine/mcpServerHealth.js';
 import { mcpClientManager } from '../engine/mcpClientManager.js';
 import { logger } from '../logger.js';
+import { ok } from './_shared/respond.js';
 
 const router = Router();
 
@@ -56,7 +57,7 @@ router.get('/stats', (_req: Request, res: Response) => {
     tools: toolExecutionStats.getAllStats(),
     health: toolExecutionStats.getAllHealthStatus(),
   }));
-  res.json(result);
+  ok(res, result);
 });
 
 /**
@@ -71,7 +72,7 @@ router.get('/stats/:toolName', (req: Request, res: Response) => {
     timeout: getToolTimeout(toolName),
     fallback: toolFallbackManager.getState(toolName),
   }));
-  res.json(result);
+  ok(res, result);
 });
 
 // ===================== 工具健康状态 =====================
@@ -82,7 +83,7 @@ router.get('/stats/:toolName', (req: Request, res: Response) => {
  */
 router.get('/health', (_req: Request, res: Response) => {
   const result = safe(() => toolExecutionStats.getAllHealthStatus());
-  res.json(result);
+  ok(res, result);
 });
 
 /**
@@ -92,7 +93,7 @@ router.get('/health', (_req: Request, res: Response) => {
 router.get('/health/:toolName', (req: Request, res: Response) => {
   const { toolName } = req.params;
   const result = safe(() => toolExecutionStats.getHealthStatus(toolName));
-  res.json(result);
+  ok(res, result);
 });
 
 // ===================== 队列管理 =====================
@@ -106,7 +107,7 @@ router.get('/queue', (_req: Request, res: Response) => {
     stats: toolExecutionQueue.getStats(),
     status: toolExecutionQueue.getQueueStatus(),
   }));
-  res.json(result);
+  ok(res, result);
 });
 
 /**
@@ -118,7 +119,7 @@ router.delete('/queue', (_req: Request, res: Response) => {
     toolExecutionQueue.clear();
     return { ok: true, message: 'Queue cleared' };
   });
-  res.json(result);
+  ok(res, result);
 });
 
 // ===================== 降级策略 =====================
@@ -129,7 +130,7 @@ router.delete('/queue', (_req: Request, res: Response) => {
  */
 router.get('/fallback', (_req: Request, res: Response) => {
   const result = safe(() => toolFallbackManager.getAllStates());
-  res.json(result);
+  ok(res, result);
 });
 
 /**
@@ -146,7 +147,7 @@ router.post('/fallback/recover', (req: Request, res: Response) => {
     const recovered = toolFallbackManager.forceRecover(toolName);
     return { ok: recovered, toolName };
   });
-  res.json(result);
+  ok(res, result);
 });
 
 /**
@@ -163,7 +164,7 @@ router.post('/fallback/degrade', (req: Request, res: Response) => {
     const fallbackTool = toolFallbackManager.forceFallback(toolName);
     return { ok: fallbackTool !== null, toolName, fallbackTool };
   });
-  res.json(result);
+  ok(res, result);
 });
 
 // ===================== 超时配置 =====================
@@ -174,7 +175,7 @@ router.post('/fallback/degrade', (req: Request, res: Response) => {
  */
 router.get('/timeout/config', (_req: Request, res: Response) => {
   const result = safe(() => toolTimeoutConfig.getConfig());
-  res.json(result);
+  ok(res, result);
 });
 
 /**
@@ -225,7 +226,7 @@ router.post('/timeout/config', (req: Request, res: Response) => {
     toolTimeoutConfig.updateConfig(body);
     return { ok: true, config: toolTimeoutConfig.getConfig() };
   });
-  res.json(result);
+  ok(res, result);
 });
 
 /**
@@ -238,7 +239,7 @@ router.get('/timeout/:toolName', (req: Request, res: Response) => {
     toolName,
     timeoutMs: getToolTimeout(toolName),
   }));
-  res.json(result);
+  ok(res, result);
 });
 
 /**
@@ -256,7 +257,7 @@ router.post('/timeout/:toolName', (req: Request, res: Response) => {
     toolTimeoutConfig.setToolTimeout(toolName, timeoutMs);
     return { ok: true, toolName, timeoutMs };
   });
-  res.json(result);
+  ok(res, result);
 });
 
 // ===================== 审计日志 =====================
@@ -283,7 +284,7 @@ router.get('/audit', (req: Request, res: Response) => {
     }
     return toolAuditLog.getRecentEntries(count);
   });
-  res.json(result);
+  ok(res, result);
 });
 
 /**
@@ -306,7 +307,7 @@ router.get('/mcp/health', (_req: Request, res: Response) => {
     health: mcpServerHealth.getAllHealth(),
     servers: mcpClientManager.getServerStates(),
   }));
-  res.json(result);
+  ok(res, result);
 });
 
 /**

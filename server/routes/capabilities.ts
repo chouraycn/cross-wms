@@ -17,6 +17,7 @@
 
 import { Router, type Request, type Response } from 'express';
 import { logger } from '../logger.js';
+import { ok } from './_shared/respond.js';
 
 // ===================== 候选能力单例导入 =====================
 
@@ -114,7 +115,7 @@ router.get('/thinking-modes', (req: Request, res: Response) => {
     options: listThinkingLevelOptions(provider, model),
     profile: resolveThinkingProfile({ provider, model }),
   }));
-  res.json(result);
+  ok(res, result);
 });
 
 /**
@@ -137,7 +138,7 @@ router.get('/tool-search', (req: Request, res: Response) => {
     }
     return { type: 'stats', stats: catalog.getStats() };
   });
-  res.json(result);
+  ok(res, result);
 });
 
 /**
@@ -153,7 +154,7 @@ router.get('/fast-mode', (_req: Request, res: Response) => {
       progressText: mgr.getProgressText(),
     };
   });
-  res.json(result);
+  ok(res, result);
 });
 
 /**
@@ -171,7 +172,7 @@ router.get('/model-metadata', (_req: Request, res: Response) => {
       capabilities: m.capabilities,
     })) };
   });
-  res.json(result);
+  ok(res, result);
 });
 
 /**
@@ -204,7 +205,7 @@ router.get('/tool-policy', (req: Request, res: Response) => {
       })),
     };
   });
-  res.json(result);
+  ok(res, result);
 });
 
 /**
@@ -216,7 +217,7 @@ router.get('/few-shot-templates', (_req: Request, res: Response) => {
     total: fewShotTemplates.getTemplates().length,
     templates: fewShotTemplates.getTemplates().map((t) => ({ id: t.id, name: t.name, triggerPatterns: t.triggerPatterns.map((p) => p.source) })),
   }));
-  res.json(result);
+  ok(res, result);
 });
 
 /**
@@ -239,7 +240,7 @@ router.get('/session-fingerprint', (req: Request, res: Response) => {
       fingerprint: computeSessionFingerprint(config),
     };
   });
-  res.json(result);
+  ok(res, result);
 });
 
 /**
@@ -255,7 +256,7 @@ router.get('/envelope', (_req: Request, res: Response) => {
       sampleMetaKeys: sample.meta ? Object.keys(sample.meta) : [],
     };
   });
-  res.json(result);
+  ok(res, result);
 });
 
 /**
@@ -269,7 +270,7 @@ router.get('/config', (req: Request, res: Response) => {
     entries: getConfig().listEntries(prefix ? { prefix } : undefined)
       .map((e) => ({ key: e.key, value: e.value, scope: e.scope, type: e.type })),
   }));
-  res.json(result);
+  ok(res, result);
 });
 
 /**
@@ -288,7 +289,7 @@ router.get('/infra/retry', (req: Request, res: Response) => {
       channelRetryConfig: createChannelRetryConfig().attempts,
     };
   });
-  res.json(result);
+  ok(res, result);
 });
 
 /**
@@ -300,7 +301,7 @@ router.get('/infra/dedupe', (_req: Request, res: Response) => {
     const cache = resolveGlobalDedupeCache();
     return { size: cache.size };
   });
-  res.json(result);
+  ok(res, result);
 });
 
 /**
@@ -308,7 +309,7 @@ router.get('/infra/dedupe', (_req: Request, res: Response) => {
  * 暴露 infra/file-lock 的能力描述（函数式，无状态）。
  */
 router.get('/infra/file-lock', (_req: Request, res: Response) => {
-  res.json({
+  ok(res, {
     available: true,
     methods: ['acquireFileLock', 'withFileLock'],
     timeoutError: FileLockTimeoutError.name,
@@ -335,7 +336,7 @@ router.get('/errors/failover', (req: Request, res: Response) => {
       },
     };
   });
-  res.json(result);
+  ok(res, result);
 });
 
 /**
@@ -344,7 +345,7 @@ router.get('/errors/failover', (req: Request, res: Response) => {
  */
 router.get('/streaming', (_req: Request, res: Response) => {
   const result = safe(() => getStreamingHandler().getStats());
-  res.json(result);
+  ok(res, result);
 });
 
 /**
@@ -353,7 +354,7 @@ router.get('/streaming', (_req: Request, res: Response) => {
  */
 router.get('/hooks', (_req: Request, res: Response) => {
   const result = safe(() => getHooksManager().getStats());
-  res.json(result);
+  ok(res, result);
 });
 
 /**
@@ -362,7 +363,7 @@ router.get('/hooks', (_req: Request, res: Response) => {
  */
 router.get('/context-cache', (_req: Request, res: Response) => {
   const result = safe(() => ({ size: contextWindowCache.size, stats: contextWindowCache.stats }));
-  res.json(result);
+  ok(res, result);
 });
 
 /**
@@ -370,7 +371,7 @@ router.get('/context-cache', (_req: Request, res: Response) => {
  * 暴露 heartbeat 的默认配置常量（只读）。
  */
 router.get('/heartbeat', (_req: Request, res: Response) => {
-  res.json({
+  ok(res, {
     defaultIntervalMs: DEFAULT_HEARTBEAT_INTERVAL_MS,
     defaultMaxHeartbeats: DEFAULT_MAX_HEARTBEATS,
   });
