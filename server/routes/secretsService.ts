@@ -10,6 +10,7 @@
  */
 
 import { Router } from 'express';
+import { ok } from './_shared/respond.js';
 import {
   listSecrets,
   createSecret,
@@ -64,7 +65,7 @@ router.get('/list', (req, res) => {
 router.get('/stats', (req, res) => {
   try {
     const stats = getSecretsStats();
-    res.json({ data: stats });
+    ok(res, stats);
   } catch (e) {
     res.status(500).json({
       error: `获取统计信息失败: ${e instanceof Error ? e.message : String(e)}`,
@@ -79,7 +80,7 @@ router.get('/stats', (req, res) => {
 router.get('/status', (req, res) => {
   try {
     const status = getSecretsManagerStatus();
-    res.json({ data: status });
+    ok(res, status);
   } catch (e) {
     res.status(500).json({
       error: `获取状态失败: ${e instanceof Error ? e.message : String(e)}`,
@@ -95,7 +96,7 @@ router.get('/runtime-config', (req, res) => {
   try {
     const sessionId = req.query.sessionId as string | undefined;
     const config = getActiveSecretsRuntimeConfigSnapshot(sessionId);
-    res.json({ data: config });
+    ok(res, config);
   } catch (e) {
     res.status(500).json({
       error: `获取运行时配置失败: ${e instanceof Error ? e.message : String(e)}`,

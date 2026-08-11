@@ -14,6 +14,7 @@
  */
 
 import express from 'express';
+import { ok } from './_shared/respond.js';
 import type { SkillChainRow, SkillChainNodeRow } from '../db.js';
 import {
   getSkillChain as dbGetChain,
@@ -77,7 +78,7 @@ router.get('/', (_req, res) => {
       const nodes = dbGetNodes(c.id);
       return { ...rowToChain(c), nodes: nodes.map(nodeToJson) };
     });
-    res.json({ data: enriched });
+    ok(res, enriched);
   } catch (e) {
     res.status(500).json({ error: (e as Error).message });
   }
@@ -92,7 +93,7 @@ router.get('/:id', (req, res) => {
       return;
     }
     const nodes = dbGetNodes(req.params.id);
-    res.json({ data: { ...rowToChain(chain), nodes: nodes.map(nodeToJson) } });
+    ok(res, { ...rowToChain(chain), nodes: nodes.map(nodeToJson) });
   } catch (e) {
     res.status(500).json({ error: (e as Error).message });
   }
@@ -176,7 +177,7 @@ router.put('/:id', (req, res) => {
 
     const chain = dbGetChain(req.params.id);
     const chainNodes = dbGetNodes(req.params.id);
-    res.json({ data: { ...rowToChain(chain!), nodes: chainNodes.map(nodeToJson) } });
+    ok(res, { ...rowToChain(chain!), nodes: chainNodes.map(nodeToJson) });
   } catch (e) {
     res.status(400).json({ error: (e as Error).message });
   }
@@ -186,7 +187,7 @@ router.put('/:id', (req, res) => {
 router.delete('/:id', (req, res) => {
   try {
     dbDeleteChain(req.params.id);
-    res.json({ data: { ok: true } });
+    ok(res, { ok: true });
   } catch (e) {
     res.status(400).json({ error: (e as Error).message });
   }
@@ -198,7 +199,7 @@ router.delete('/:id', (req, res) => {
 router.post('/:id/execute', async (req, res) => {
   try {
     const result = await executeChain(req.params.id);
-    res.json({ data: result });
+    ok(res, result);
   } catch (e) {
     res.status(500).json({ data: null, error: (e as Error).message });
   }
@@ -220,7 +221,7 @@ router.post('/:id/duplicate', (req, res) => {
 
     const newChain = dbGetChain(newChainId);
     const newNodes = dbGetNodes(newChainId);
-    res.json({ data: { ...rowToChain(newChain!), nodes: newNodes.map(nodeToJson) } });
+    ok(res, { ...rowToChain(newChain!), nodes: newNodes.map(nodeToJson) });
   } catch (e) {
     res.status(500).json({ error: (e as Error).message });
   }
@@ -233,7 +234,7 @@ router.post('/:id/abort', (req, res) => {
     if (execId) {
       abortExecution(execId);
     }
-    res.json({ data: { ok: true } });
+    ok(res, { ok: true });
   } catch (e) {
     res.status(500).json({ error: (e as Error).message });
   }

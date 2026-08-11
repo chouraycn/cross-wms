@@ -40,6 +40,7 @@
  */
 
 import { Router, type Request, type Response } from 'express';
+import { ok } from './_shared/respond.js';
 import { agentAuditTrail } from '../engine/agents/agent-audit-trail.js';
 import { channelHealthMonitor } from '../channels/channel-health-monitor.js';
 import { llmCostTracker } from '../engine/llm/cost-tracker.js';
@@ -89,7 +90,7 @@ insightsRouter.get('/audit-trail', (req: Request, res: Response) => {
       offset: req.query.offset ? parseInt(req.query.offset as string, 10) : 0,
       descending: req.query.descending === 'false' ? false : true,
     });
-    res.json({ data: result });
+    ok(res, result);
   } catch (e) {
     res.status(500).json({ error: `查询审计跟踪失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -97,7 +98,7 @@ insightsRouter.get('/audit-trail', (req: Request, res: Response) => {
 
 insightsRouter.get('/audit-trail/stats', (_req: Request, res: Response) => {
   try {
-    res.json({ data: agentAuditTrail.getStats() });
+    ok(res, agentAuditTrail.getStats());
   } catch (e) {
     res.status(500).json({ error: `获取审计统计失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -109,7 +110,7 @@ insightsRouter.get('/audit-trail/timeline/:agentId', (req: Request, res: Respons
     const fromTimestamp = req.query.fromTimestamp ? parseInt(req.query.fromTimestamp as string, 10) : undefined;
     const toTimestamp = req.query.toTimestamp ? parseInt(req.query.toTimestamp as string, 10) : undefined;
     const timeline = agentAuditTrail.getTimeline(agentId, { fromTimestamp, toTimestamp });
-    res.json({ data: timeline });
+    ok(res, timeline);
   } catch (e) {
     res.status(500).json({ error: `获取时间线失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -121,7 +122,7 @@ insightsRouter.get('/audit-trail/timeline/:agentId', (req: Request, res: Respons
 
 insightsRouter.get('/channels/health', (_req: Request, res: Response) => {
   try {
-    res.json({ data: channelHealthMonitor.getAllHealth() });
+    ok(res, channelHealthMonitor.getAllHealth());
   } catch (e) {
     res.status(500).json({ error: `获取通道健康度失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -134,7 +135,7 @@ insightsRouter.get('/channels/health/:channelId', (req: Request, res: Response) 
       res.status(404).json({ error: `通道 ${req.params.channelId} 未注册` });
       return;
     }
-    res.json({ data: health });
+    ok(res, health);
   } catch (e) {
     res.status(500).json({ error: `获取通道健康度失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -142,7 +143,7 @@ insightsRouter.get('/channels/health/:channelId', (req: Request, res: Response) 
 
 insightsRouter.get('/channels/unhealthy', (_req: Request, res: Response) => {
   try {
-    res.json({ data: channelHealthMonitor.getUnhealthyChannels() });
+    ok(res, channelHealthMonitor.getUnhealthyChannels());
   } catch (e) {
     res.status(500).json({ error: `获取不健康通道失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -162,7 +163,7 @@ insightsRouter.get('/llm/cost/aggregate', (req: Request, res: Response) => {
       fromTimestamp: req.query.fromTimestamp ? parseInt(req.query.fromTimestamp as string, 10) : undefined,
       toTimestamp: req.query.toTimestamp ? parseInt(req.query.toTimestamp as string, 10) : undefined,
     };
-    res.json({ data: llmCostTracker.aggregate(filter) });
+    ok(res, llmCostTracker.aggregate(filter));
   } catch (e) {
     res.status(500).json({ error: `获取用量聚合失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -171,7 +172,7 @@ insightsRouter.get('/llm/cost/aggregate', (req: Request, res: Response) => {
 insightsRouter.get('/llm/cost/recent', (req: Request, res: Response) => {
   try {
     const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 20;
-    res.json({ data: llmCostTracker.getRecent(limit) });
+    ok(res, llmCostTracker.getRecent(limit));
   } catch (e) {
     res.status(500).json({ error: `获取最近用量失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -180,7 +181,7 @@ insightsRouter.get('/llm/cost/recent', (req: Request, res: Response) => {
 insightsRouter.get('/llm/cost/agent/:agentId', (req: Request, res: Response) => {
   try {
     const cost = llmCostTracker.getAgentTotalCost(req.params.agentId);
-    res.json({ data: { agentId: req.params.agentId, totalCost: cost } });
+    ok(res, { agentId: req.params.agentId, totalCost: cost });
   } catch (e) {
     res.status(500).json({ error: `获取 Agent 成本失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -188,7 +189,7 @@ insightsRouter.get('/llm/cost/agent/:agentId', (req: Request, res: Response) => 
 
 insightsRouter.get('/llm/pricings', (_req: Request, res: Response) => {
   try {
-    res.json({ data: llmCostTracker.listPricings() });
+    ok(res, llmCostTracker.listPricings());
   } catch (e) {
     res.status(500).json({ error: `获取定价表失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -222,7 +223,7 @@ insightsRouter.post('/config/migrate', async (req: Request, res: Response) => {
       dryRun: dryRun === true,
       force: force === true,
     });
-    res.json({ data: result });
+    ok(res, result);
   } catch (e) {
     res.status(500).json({ error: `配置迁移失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -242,7 +243,7 @@ insightsRouter.post('/config/rollback', async (req: Request, res: Response) => {
     const result = await configMigrationManager.rollback(config, targetVersion, {
       dryRun: dryRun === true,
     });
-    res.json({ data: result });
+    ok(res, result);
   } catch (e) {
     res.status(500).json({ error: `配置回滚失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -255,7 +256,7 @@ insightsRouter.post('/config/rollback', async (req: Request, res: Response) => {
 insightsRouter.get('/skills/versions/:name', (req: Request, res: Response) => {
   try {
     const versions = skillVersionRegistry.listVersions(req.params.name);
-    res.json({ data: versions });
+    ok(res, versions);
   } catch (e) {
     res.status(500).json({ error: `获取技能版本失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -268,7 +269,7 @@ insightsRouter.get('/skills/versions/:name/latest', (req: Request, res: Response
       res.status(404).json({ error: `技能 ${req.params.name} 未注册` });
       return;
     }
-    res.json({ data: latest });
+    ok(res, latest);
   } catch (e) {
     res.status(500).json({ error: `获取最新版本失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -277,7 +278,7 @@ insightsRouter.get('/skills/versions/:name/latest', (req: Request, res: Response
 insightsRouter.get('/skills/aliases/:name', (req: Request, res: Response) => {
   try {
     const aliases = skillVersionRegistry.getAliases(req.params.name);
-    res.json({ data: aliases });
+    ok(res, aliases);
   } catch (e) {
     res.status(500).json({ error: `获取别名失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -285,7 +286,7 @@ insightsRouter.get('/skills/aliases/:name', (req: Request, res: Response) => {
 
 insightsRouter.get('/skills/version-stats', (_req: Request, res: Response) => {
   try {
-    res.json({ data: skillVersionRegistry.getStats() });
+    ok(res, skillVersionRegistry.getStats());
   } catch (e) {
     res.status(500).json({ error: `获取版本统计失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -340,7 +341,7 @@ function deriveIntegrationStatus() {
 
 insightsRouter.get('/integration/status', (_req: Request, res: Response) => {
   try {
-    res.json({ data: deriveIntegrationStatus() });
+    ok(res, deriveIntegrationStatus());
   } catch (e) {
     res.status(500).json({ error: `获取集成模块状态失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -350,7 +351,7 @@ insightsRouter.get('/integration/status', (_req: Request, res: Response) => {
 
 insightsRouter.get('/llm/circuit-breakers', (_req: Request, res: Response) => {
   try {
-    res.json({ data: listLlmCircuitBreakers() });
+    ok(res, listLlmCircuitBreakers());
   } catch (e) {
     res.status(500).json({ error: `获取 LLM 熔断器失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -359,7 +360,7 @@ insightsRouter.get('/llm/circuit-breakers', (_req: Request, res: Response) => {
 insightsRouter.delete('/llm/circuit-breakers', (_req: Request, res: Response) => {
   try {
     clearCircuitBreakers();
-    res.json({ data: { cleared: true } });
+    ok(res, { cleared: true });
   } catch (e) {
     res.status(500).json({ error: `重置 LLM 熔断器失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -369,7 +370,7 @@ insightsRouter.delete('/llm/circuit-breakers', (_req: Request, res: Response) =>
 
 insightsRouter.get('/channels/circuit-breakers', (_req: Request, res: Response) => {
   try {
-    res.json({ data: channelCircuitBreakerManager.listBreakers() });
+    ok(res, channelCircuitBreakerManager.listBreakers());
   } catch (e) {
     res.status(500).json({ error: `获取通道熔断器失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -377,7 +378,7 @@ insightsRouter.get('/channels/circuit-breakers', (_req: Request, res: Response) 
 
 insightsRouter.get('/channels/circuit-breakers/open', (_req: Request, res: Response) => {
   try {
-    res.json({ data: channelCircuitBreakerManager.listOpenCircuits() });
+    ok(res, channelCircuitBreakerManager.listOpenCircuits());
   } catch (e) {
     res.status(500).json({ error: `获取已熔断通道失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -386,7 +387,7 @@ insightsRouter.get('/channels/circuit-breakers/open', (_req: Request, res: Respo
 insightsRouter.post('/channels/circuit-breakers/sync', (_req: Request, res: Response) => {
   try {
     channelCircuitBreakerManager.syncAllFromHealthMonitor();
-    res.json({ data: { synced: true, breakers: channelCircuitBreakerManager.listBreakers().length } });
+    ok(res, { synced: true, breakers: channelCircuitBreakerManager.listBreakers().length });
   } catch (e) {
     res.status(500).json({ error: `同步通道熔断器失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -395,7 +396,7 @@ insightsRouter.post('/channels/circuit-breakers/sync', (_req: Request, res: Resp
 insightsRouter.delete('/channels/circuit-breakers', (_req: Request, res: Response) => {
   try {
     channelCircuitBreakerManager.resetAll();
-    res.json({ data: { reset: true } });
+    ok(res, { reset: true });
   } catch (e) {
     res.status(500).json({ error: `重置通道熔断器失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -455,7 +456,7 @@ insightsRouter.post('/skills/dependency-check/pre-install', (req: Request, res: 
       return;
     }
     const result = preInstallCheck(newEntry, existingEntries, options ?? {});
-    res.json({ data: result });
+    ok(res, result);
   } catch (e) {
     res.status(500).json({ error: `安装前检查失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -465,7 +466,7 @@ insightsRouter.post('/skills/dependency-check/pre-install', (req: Request, res: 
 
 insightsRouter.get('/permissions/policies', (_req: Request, res: Response) => {
   try {
-    res.json({ data: listLoadedPolicies() });
+    ok(res, listLoadedPolicies());
   } catch (e) {
     res.status(500).json({ error: `获取已加载策略失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -473,7 +474,7 @@ insightsRouter.get('/permissions/policies', (_req: Request, res: Response) => {
 
 insightsRouter.get('/permissions/templates', (_req: Request, res: Response) => {
   try {
-    res.json({ data: listTemplates() });
+    ok(res, listTemplates());
   } catch (e) {
     res.status(500).json({ error: `获取策略模板失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -488,7 +489,7 @@ insightsRouter.post('/permissions/load', (req: Request, res: Response) => {
     }
     const audit = req.body?.audit !== false;
     const result = loadPolicies(inputs as PolicyConfigInput[], { audit });
-    res.json({ data: result });
+    ok(res, result);
   } catch (e) {
     res.status(500).json({ error: `加载策略失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -502,7 +503,7 @@ insightsRouter.post('/permissions/validate', (req: Request, res: Response) => {
       return;
     }
     const result = validatePolicyInputs(inputs as PolicyConfigInput[]);
-    res.json({ data: result });
+    ok(res, result);
   } catch (e) {
     res.status(500).json({ error: `验证策略失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -516,7 +517,7 @@ insightsRouter.post('/permissions/load-from-file', (req: Request, res: Response)
       return;
     }
     const result = loadPoliciesFromFile(configPath);
-    res.json({ data: result });
+    ok(res, result);
   } catch (e) {
     res.status(500).json({ error: `从文件加载策略失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -546,7 +547,7 @@ insightsRouter.post('/config/bootstrap', async (req: Request, res: Response) => 
       backupDir,
       createBackup,
     });
-    res.json({ data: result });
+    ok(res, result);
   } catch (e) {
     res.status(500).json({ error: `配置引导失败: ${e instanceof Error ? e.message : String(e)}` });
   }

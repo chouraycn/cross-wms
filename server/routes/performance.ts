@@ -3,6 +3,7 @@
  */
 
 import { Router } from 'express';
+import { ok } from './_shared/respond.js';
 import {
   getLatestSnapshot,
   getSnapshots,
@@ -22,7 +23,7 @@ router.post('/snapshot', (req, res) => {
       return res.status(400).json({ error: '缺少 data 字段' });
     }
     recordSnapshot(payload);
-    res.json({ data: { success: true } });
+    ok(res, { success: true });
   } catch (e) {
     res.status(500).json({ error: `记录性能快照失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -33,7 +34,7 @@ router.get('/summary', (req, res) => {
   try {
     const minutes = req.query.minutes ? parseInt(req.query.minutes as string, 10) : undefined;
     const summary = getSummary(minutes ? minutes * 60 * 1000 : undefined);
-    res.json({ data: summary });
+    ok(res, summary);
   } catch (e) {
     res.status(500).json({ error: `获取性能摘要失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -46,7 +47,7 @@ router.get('/latest', (_req, res) => {
     if (!snapshot) {
       return res.status(404).json({ error: '暂无性能快照' });
     }
-    res.json({ data: snapshot });
+    ok(res, snapshot);
   } catch (e) {
     res.status(500).json({ error: `获取最新快照失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -57,7 +58,7 @@ router.get('/history', (req, res) => {
   try {
     const minutes = req.query.minutes ? parseInt(req.query.minutes as string, 10) : undefined;
     const history = getSnapshots(minutes ? minutes * 60 * 1000 : undefined);
-    res.json({ data: history });
+    ok(res, history);
   } catch (e) {
     res.status(500).json({ error: `获取历史快照失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -66,7 +67,7 @@ router.get('/history', (req, res) => {
 // GET /api/performance/phases — 后端启动阶段
 router.get('/phases', (_req, res) => {
   try {
-    res.json({ data: getBackendPhases() });
+    ok(res, getBackendPhases());
   } catch (e) {
     res.status(500).json({ error: `获取后端阶段失败: ${e instanceof Error ? e.message : String(e)}` });
   }

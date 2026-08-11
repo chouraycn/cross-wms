@@ -1,4 +1,5 @@
 import express from 'express';
+import { ok } from './_shared/respond.js';
 import {
   findTasksBySession,
   findTaskById,
@@ -31,7 +32,7 @@ const router = express.Router();
 router.get('/tasks/session/:sessionId', (req, res) => {
   try {
     const tasks = findTasksBySession(req.params.sessionId);
-    res.json({ data: tasks });
+    ok(res, tasks);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
@@ -41,7 +42,7 @@ router.get('/tasks/:id', (req, res) => {
   try {
     const task = findTaskById(req.params.id);
     if (!task) return res.status(404).json({ error: '任务不存在' });
-    res.json({ data: task });
+    ok(res, task);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
@@ -50,7 +51,7 @@ router.get('/tasks/:id', (req, res) => {
 router.get('/tasks/:id/subtasks', (req, res) => {
   try {
     const subtasks = findSubtasks(req.params.id);
-    res.json({ data: subtasks });
+    ok(res, subtasks);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
@@ -59,7 +60,7 @@ router.get('/tasks/:id/subtasks', (req, res) => {
 router.get('/tasks/:id/blocking', (req, res) => {
   try {
     const blocking = getBlockingTasks(req.params.id);
-    res.json({ data: blocking });
+    ok(res, blocking);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
@@ -68,7 +69,7 @@ router.get('/tasks/:id/blocking', (req, res) => {
 router.get('/tasks/:id/blocked-by', (req, res) => {
   try {
     const blockedBy = getBlockedByTasks(req.params.id);
-    res.json({ data: blockedBy });
+    ok(res, blockedBy);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
@@ -101,7 +102,7 @@ router.post('/tasks', (req, res) => {
       assignedTo,
       dependsOn: Array.isArray(dependsOn) ? dependsOn : undefined,
     });
-    res.json({ data: task });
+    ok(res, task);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
@@ -131,7 +132,7 @@ router.put('/tasks/:id', (req, res) => {
       ...(dependsOn !== undefined && { dependsOn: Array.isArray(dependsOn) ? dependsOn : [] }),
     });
     if (!task) return res.status(404).json({ error: '任务不存在' });
-    res.json({ data: task });
+    ok(res, task);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
@@ -141,7 +142,7 @@ router.delete('/tasks/:id', (req, res) => {
   try {
     const success = daoDeleteTask(req.params.id);
     if (!success) return res.status(404).json({ error: '任务不存在' });
-    res.json({ data: { success: true } });
+    ok(res, { success: true });
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
@@ -154,7 +155,7 @@ router.post('/tasks/:id/claim', (req, res) => {
 
     const task = daoClaimTask(req.params.id, workerId);
     if (!task) return res.status(400).json({ error: '任务无法认领（状态不匹配或已分配给其他人）' });
-    res.json({ data: task });
+    ok(res, task);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
@@ -164,7 +165,7 @@ router.post('/tasks/:id/complete', (req, res) => {
   try {
     const task = daoCompleteTask(req.params.id);
     if (!task) return res.status(404).json({ error: '任务不存在' });
-    res.json({ data: task });
+    ok(res, task);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
@@ -183,7 +184,7 @@ router.get('/workers', (req, res) => {
     } else {
       workers = findAllWorkers();
     }
-    res.json({ data: workers });
+    ok(res, workers);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
@@ -193,7 +194,7 @@ router.get('/workers/:id', (req, res) => {
   try {
     const worker = findWorkerById(req.params.id);
     if (!worker) return res.status(404).json({ error: 'Worker 不存在' });
-    res.json({ data: worker });
+    ok(res, worker);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
@@ -209,7 +210,7 @@ router.post('/workers', (req, res) => {
       type: type as WorkerType | undefined,
       status: status as WorkerStatus | undefined,
     });
-    res.json({ data: worker });
+    ok(res, worker);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
@@ -226,7 +227,7 @@ router.put('/workers/:id', (req, res) => {
       ...(currentTaskId !== undefined && { currentTaskId }),
     });
     if (!worker) return res.status(404).json({ error: 'Worker 不存在' });
-    res.json({ data: worker });
+    ok(res, worker);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
@@ -236,7 +237,7 @@ router.delete('/workers/:id', (req, res) => {
   try {
     const success = daoDeleteWorker(req.params.id);
     if (!success) return res.status(404).json({ error: 'Worker 不存在' });
-    res.json({ data: { success: true } });
+    ok(res, { success: true });
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
@@ -246,7 +247,7 @@ router.post('/workers/:id/heartbeat', (req, res) => {
   try {
     const worker = workerHeartbeat(req.params.id);
     if (!worker) return res.status(404).json({ error: 'Worker 不存在' });
-    res.json({ data: worker });
+    ok(res, worker);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }

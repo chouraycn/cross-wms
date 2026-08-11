@@ -5,6 +5,7 @@
  */
 
 import { Router } from 'express';
+import { ok } from './_shared/respond.js';
 import { extensionLoader } from '../../extensions/index.js';
 
 const router = Router();
@@ -75,7 +76,7 @@ router.post('/:id/load', async (req, res) => {
       return res.status(400).json({ error: '扩展加载失败' });
     }
 
-    res.json({ data: { success: true, message: '扩展已加载' } });
+    ok(res, { success: true, message: '扩展已加载' });
   } catch (e) {
     res.status(500).json({ error: `加载扩展失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -91,7 +92,7 @@ router.post('/:id/enable', async (req, res) => {
       return res.status(404).json({ error: '扩展启用失败' });
     }
 
-    res.json({ data: { success: true, message: '扩展已启用' } });
+    ok(res, { success: true, message: '扩展已启用' });
   } catch (e) {
     res.status(500).json({ error: `启用扩展失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -106,7 +107,7 @@ router.post('/:id/disable', async (req, res) => {
       return res.status(404).json({ error: '扩展禁用失败' });
     }
 
-    res.json({ data: { success: true, message: '扩展已禁用' } });
+    ok(res, { success: true, message: '扩展已禁用' });
   } catch (e) {
     res.status(500).json({ error: `禁用扩展失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -116,7 +117,7 @@ router.post('/:id/disable', async (req, res) => {
 router.post('/load-all', async (req, res) => {
   try {
     const count = await extensionLoader.loadAll();
-    res.json({ data: { success: true, loadedCount: count } });
+    ok(res, { success: true, loadedCount: count });
   } catch (e) {
     res.status(500).json({ error: `加载扩展失败: ${e instanceof Error ? e.message : String(e)}` });
   }

@@ -5,6 +5,7 @@
  */
 
 import { Router } from 'express';
+import { ok } from './_shared/respond.js';
 import { messageLifecycleManager, retryQueue } from '../channels/outbound/index.js';
 
 const router = Router();
@@ -13,7 +14,7 @@ const router = Router();
 router.get('/stats', (_req, res) => {
   try {
     const stats = messageLifecycleManager.getStats();
-    res.json({ data: stats });
+    ok(res, stats);
   } catch (e) {
     res.status(500).json({ error: `获取生命周期统计失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -23,7 +24,7 @@ router.get('/stats', (_req, res) => {
 router.get('/active', (_req, res) => {
   try {
     const states = messageLifecycleManager.getActiveStates();
-    res.json({ data: states });
+    ok(res, states);
   } catch (e) {
     res.status(500).json({ error: `获取活跃消息失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -33,7 +34,7 @@ router.get('/active', (_req, res) => {
 router.get('/failed', (_req, res) => {
   try {
     const states = messageLifecycleManager.getFailedStates();
-    res.json({ data: states });
+    ok(res, states);
   } catch (e) {
     res.status(500).json({ error: `获取失败消息失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -46,7 +47,7 @@ router.get('/:id', (req, res) => {
     if (!state) {
       return res.status(404).json({ error: '消息不存在' });
     }
-    res.json({ data: state });
+    ok(res, state);
   } catch (e) {
     res.status(500).json({ error: `获取消息状态失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -56,7 +57,7 @@ router.get('/:id', (req, res) => {
 router.get('/:id/audit', (req, res) => {
   try {
     const transitions = messageLifecycleManager.getAuditLog(req.params.id);
-    res.json({ data: transitions });
+    ok(res, transitions);
   } catch (e) {
     res.status(500).json({ error: `获取审计日志失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -70,7 +71,7 @@ router.post('/:id/cancel', (req, res) => {
     if (!state) {
       return res.status(404).json({ error: '消息不存在或无法取消' });
     }
-    res.json({ data: state });
+    ok(res, state);
   } catch (e) {
     res.status(500).json({ error: `取消消息失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -80,7 +81,7 @@ router.post('/:id/cancel', (req, res) => {
 router.post('/cleanup', (req, res) => {
   try {
     const cleaned = messageLifecycleManager.cleanupExpired();
-    res.json({ data: { cleaned } });
+    ok(res, { cleaned });
   } catch (e) {
     res.status(500).json({ error: `清理过期消息失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -90,7 +91,7 @@ router.post('/cleanup', (req, res) => {
 router.get('/retry/stats', (_req, res) => {
   try {
     const stats = retryQueue.getStats();
-    res.json({ data: stats });
+    ok(res, stats);
   } catch (e) {
     res.status(500).json({ error: `获取重试队列统计失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -113,7 +114,7 @@ router.get('/retry/dead-letter', (req, res) => {
   try {
     const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : undefined;
     const items = retryQueue.getDeadLetterItems(limit);
-    res.json({ data: items });
+    ok(res, items);
   } catch (e) {
     res.status(500).json({ error: `获取死信队列失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -123,7 +124,7 @@ router.get('/retry/dead-letter', (req, res) => {
 router.post('/retry/process', async (_req, res) => {
   try {
     const item = await retryQueue.processNext();
-    res.json({ data: item });
+    ok(res, item);
   } catch (e) {
     res.status(500).json({ error: `处理重试项失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -133,7 +134,7 @@ router.post('/retry/process', async (_req, res) => {
 router.post('/retry/start', (_req, res) => {
   try {
     retryQueue.start();
-    res.json({ data: { success: true, message: '重试队列已启动' } });
+    ok(res, { success: true, message: '重试队列已启动' });
   } catch (e) {
     res.status(500).json({ error: `启动重试队列失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -143,7 +144,7 @@ router.post('/retry/start', (_req, res) => {
 router.post('/retry/stop', (_req, res) => {
   try {
     retryQueue.stop();
-    res.json({ data: { success: true, message: '重试队列已停止' } });
+    ok(res, { success: true, message: '重试队列已停止' });
   } catch (e) {
     res.status(500).json({ error: `停止重试队列失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -153,7 +154,7 @@ router.post('/retry/stop', (_req, res) => {
 router.delete('/retry/dead-letter', (_req, res) => {
   try {
     retryQueue.clearDeadLetter();
-    res.json({ data: { success: true, message: '死信队列已清空' } });
+    ok(res, { success: true, message: '死信队列已清空' });
   } catch (e) {
     res.status(500).json({ error: `清空死信队列失败: ${e instanceof Error ? e.message : String(e)}` });
   }

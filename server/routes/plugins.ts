@@ -6,6 +6,7 @@
  */
 
 import { Router } from 'express';
+import { ok } from './_shared/respond.js';
 import path from 'path';
 import fs from 'fs';
 import { pluginRegistry, pluginManager } from '../engine/plugins/index.js';
@@ -43,7 +44,7 @@ router.get('/', (req, res) => {
     const pageSize = Number(req.query.pageSize) || 20;
 
     const result = listPlugins(status, search, page, pageSize);
-    res.json({ data: result });
+    ok(res, result);
   } catch (e) {
     res.status(500).json({ error: `获取插件列表失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -53,7 +54,7 @@ router.get('/', (req, res) => {
 router.get('/health', (req, res) => {
   try {
     const health = pluginRegistry.getHealth();
-    res.json({ data: health });
+    ok(res, health);
   } catch (e) {
     res.status(500).json({ error: `获取插件健康状态失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -66,7 +67,7 @@ router.get('/:id', (req, res) => {
     if (!plugin) {
       return res.status(404).json({ error: '插件不存在' });
     }
-    res.json({ data: plugin });
+    ok(res, plugin);
   } catch (e) {
     res.status(500).json({ error: `获取插件详情失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -105,7 +106,7 @@ router.post('/install', async (req, res) => {
     try {
       // 执行安装
       const pluginRow = await pluginRegistry.install(tmpFilePath);
-      res.json({ data: pluginRow });
+      ok(res, pluginRow);
     } finally {
       // 清理临时文件
       try {
@@ -133,7 +134,7 @@ router.post('/install/git', async (req, res) => {
       branch: typeof branch === 'string' ? branch : undefined,
       subdir: typeof subdir === 'string' ? subdir : undefined,
     });
-    res.json({ data: pluginRow });
+    ok(res, pluginRow);
   } catch (e) {
     res.status(500).json({ error: `Git 插件安装失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -150,7 +151,7 @@ router.post('/install/npm', async (req, res) => {
     const pluginRow = await pluginRegistry.installFromNpm(packageName, {
       version: typeof version === 'string' ? version : undefined,
     });
-    res.json({ data: pluginRow });
+    ok(res, pluginRow);
   } catch (e) {
     res.status(500).json({ error: `npm 插件安装失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -167,7 +168,7 @@ router.post('/:id/enable', async (req, res) => {
     if (!updated) {
       return res.status(404).json({ error: '插件启用失败' });
     }
-    res.json({ data: updated });
+    ok(res, updated);
   } catch (e) {
     res.status(500).json({ error: `插件启用失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -184,7 +185,7 @@ router.post('/:id/disable', async (req, res) => {
     if (!updated) {
       return res.status(404).json({ error: '插件禁用失败' });
     }
-    res.json({ data: updated });
+    ok(res, updated);
   } catch (e) {
     res.status(500).json({ error: `插件禁用失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -197,7 +198,7 @@ router.delete('/:id', async (req, res) => {
     if (!success) {
       return res.status(404).json({ error: '插件不存在或卸载失败' });
     }
-    res.json({ data: { success: true } });
+    ok(res, { success: true });
   } catch (e) {
     res.status(500).json({ error: `插件卸载失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -214,7 +215,7 @@ router.post('/:id/reload', async (req, res) => {
     if (!updated) {
       return res.status(404).json({ error: '插件重新加载失败' });
     }
-    res.json({ data: updated });
+    ok(res, updated);
   } catch (e) {
     res.status(500).json({ error: `插件重新加载失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -266,7 +267,7 @@ router.put('/:id/config', (req, res) => {
       return res.status(500).json({ error: '更新插件配置失败' });
     }
 
-    res.json({ data: { config: getPluginConfig(req.params.id) } });
+    ok(res, { config: getPluginConfig(req.params.id) });
   } catch (e) {
     res.status(500).json({ error: `更新插件配置失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -301,7 +302,7 @@ router.post('/:id/config/reset', (req, res) => {
       return res.status(500).json({ error: '重置插件配置失败' });
     }
 
-    res.json({ data: { config: defaultConfig } });
+    ok(res, { config: defaultConfig });
   } catch (e) {
     res.status(500).json({ error: `重置插件配置失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -313,7 +314,7 @@ router.post('/:id/config/reset', (req, res) => {
 router.get('/stats/summary', (req, res) => {
   try {
     const stats = pluginManager.getStats();
-    res.json({ data: stats });
+    ok(res, stats);
   } catch (e) {
     res.status(500).json({ error: `获取插件统计失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -323,7 +324,7 @@ router.get('/stats/summary', (req, res) => {
 router.get('/health/status', (req, res) => {
   try {
     const health = pluginManager.getHealth();
-    res.json({ data: health });
+    ok(res, health);
   } catch (e) {
     res.status(500).json({ error: `获取插件健康状态失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -336,7 +337,7 @@ router.get('/:id/info', (req, res) => {
     if (!info) {
       return res.status(404).json({ error: '插件不存在' });
     }
-    res.json({ data: info });
+    ok(res, info);
   } catch (e) {
     res.status(500).json({ error: `获取插件详情失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -349,7 +350,7 @@ router.post('/:id/activate', async (req, res) => {
     if (!result) {
       return res.status(404).json({ error: '插件不存在' });
     }
-    res.json({ data: result });
+    ok(res, result);
   } catch (e) {
     res.status(500).json({ error: `激活插件失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -362,7 +363,7 @@ router.post('/:id/deactivate', async (req, res) => {
     if (!result) {
       return res.status(404).json({ error: '插件不存在' });
     }
-    res.json({ data: result });
+    ok(res, result);
   } catch (e) {
     res.status(500).json({ error: `停用插件失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -376,7 +377,7 @@ router.post('/bulk/activate', async (req, res) => {
       return res.status(400).json({ error: 'pluginIds 必须是数组' });
     }
     const result = await pluginManager.bulkActivate(pluginIds);
-    res.json({ data: result });
+    ok(res, result);
   } catch (e) {
     res.status(500).json({ error: `批量激活失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -390,7 +391,7 @@ router.post('/bulk/deactivate', async (req, res) => {
       return res.status(400).json({ error: 'pluginIds 必须是数组' });
     }
     const result = await pluginManager.bulkDeactivate(pluginIds);
-    res.json({ data: result });
+    ok(res, result);
   } catch (e) {
     res.status(500).json({ error: `批量停用失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -404,7 +405,7 @@ router.get('/:id/dependencies', (req, res) => {
       return res.status(404).json({ error: '插件不存在' });
     }
     const deps = getPluginDependencies(req.params.id);
-    res.json({ data: deps });
+    ok(res, deps);
   } catch (e) {
     res.status(500).json({ error: `获取插件依赖失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -423,7 +424,7 @@ router.put('/:id/dependencies', (req, res) => {
     }
     setPluginDependencies(req.params.id, dependencies);
     const deps = getPluginDependencies(req.params.id);
-    res.json({ data: deps });
+    ok(res, deps);
   } catch (e) {
     res.status(500).json({ error: `设置插件依赖失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -437,7 +438,7 @@ router.get('/:id/dependents', (req, res) => {
       return res.status(404).json({ error: '插件不存在' });
     }
     const dependents = getPluginDependents(plugin.name);
-    res.json({ data: dependents });
+    ok(res, dependents);
   } catch (e) {
     res.status(500).json({ error: `获取依赖插件失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -460,7 +461,7 @@ router.get('/:id/config-v2', (req, res) => {
       // 忽略
     }
     
-    res.json({ data: { config, configSchema } });
+    ok(res, { config, configSchema });
   } catch (e) {
     res.status(500).json({ error: `获取插件配置失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -481,7 +482,7 @@ router.put('/:id/config-v2', (req, res) => {
     if (!updated) {
       return res.status(500).json({ error: '更新插件配置失败' });
     }
-    res.json({ data: { config: getPluginConfigJson(req.params.id) } });
+    ok(res, { config: getPluginConfigJson(req.params.id) });
   } catch (e) {
     res.status(500).json({ error: `更新插件配置失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -495,7 +496,7 @@ router.post('/:id/config-v2/reset', (req, res) => {
       return res.status(404).json({ error: '插件不存在' });
     }
     const defaultConfig = pluginManager.resetConfig(req.params.id);
-    res.json({ data: { config: defaultConfig } });
+    ok(res, { config: defaultConfig });
   } catch (e) {
     res.status(500).json({ error: `重置插件配置失败: ${e instanceof Error ? e.message : String(e)}` });
   }
@@ -510,7 +511,7 @@ router.get('/list/enhanced', (req, res) => {
     const pageSize = Number(req.query.pageSize) || 20;
 
     const result = pluginManager.listPlugins(status, search, page, pageSize);
-    res.json({ data: result });
+    ok(res, result);
   } catch (e) {
     res.status(500).json({ error: `获取插件列表失败: ${e instanceof Error ? e.message : String(e)}` });
   }

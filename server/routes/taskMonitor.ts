@@ -1,4 +1,5 @@
 import express from 'express';
+import { ok } from './_shared/respond.js';
 import {
   findTodosBySession,
   findTodoById,
@@ -72,7 +73,7 @@ router.get('/todos/session/:sessionId', (req, res) => {
       sortBy: sortBy as 'orderIndex' | 'createdAt' | 'updatedAt' | 'priority' | undefined,
       sortOrder: sortOrder as 'asc' | 'desc' | undefined,
     });
-    res.json({ data: todos });
+    ok(res, todos);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
@@ -81,7 +82,7 @@ router.get('/todos/session/:sessionId', (req, res) => {
 router.get('/todos/session/:sessionId/stats', (req, res) => {
   try {
     const stats = getTodoStats(req.params.sessionId);
-    res.json({ data: stats });
+    ok(res, stats);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
@@ -93,7 +94,7 @@ router.put('/todos/:id/priority', (req, res) => {
     if (!priority) return res.status(400).json({ error: 'priority 不能为空' });
     const todo = updateTodoPriority(req.params.id, priority as TodoPriority);
     if (!todo) return res.status(404).json({ error: '待办不存在' });
-    res.json({ data: todo });
+    ok(res, todo);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
@@ -107,7 +108,7 @@ router.put('/todos/:id/order', (req, res) => {
     }
     const todo = updateTodoOrder(req.params.id, Number(orderIndex));
     if (!todo) return res.status(404).json({ error: '待办不存在' });
-    res.json({ data: todo });
+    ok(res, todo);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
@@ -120,7 +121,7 @@ router.delete('/todos/batch', (req, res) => {
       return res.status(400).json({ error: 'ids 数组不能为空' });
     }
     const count = deleteTodosBatch(ids);
-    res.json({ data: { success: true, deletedCount: count } });
+    ok(res, { success: true, deletedCount: count });
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
@@ -133,7 +134,7 @@ router.post('/todos/reorder', (req, res) => {
       return res.status(400).json({ error: 'sessionId 和 orderedIds 数组不能为空' });
     }
     const count = reorderTodos(sessionId, orderedIds);
-    res.json({ data: { success: true, updatedCount: count } });
+    ok(res, { success: true, updatedCount: count });
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
@@ -153,7 +154,7 @@ router.post('/todos', (req, res) => {
       orderIndex,
     });
     publishTodoCreated(sessionId, todo);
-    res.json({ data: todo });
+    ok(res, todo);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
@@ -176,7 +177,7 @@ router.post('/todos/batch', (req, res) => {
     for (const todo of created) {
       publishTodoCreated(sessionId, todo);
     }
-    res.json({ data: created });
+    ok(res, created);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
@@ -193,7 +194,7 @@ router.put('/todos/:id', (req, res) => {
     });
     if (!todo) return res.status(404).json({ error: '待办不存在' });
     publishTodoUpdated(todo.sessionId, todo);
-    res.json({ data: todo });
+    ok(res, todo);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
@@ -206,7 +207,7 @@ router.delete('/todos/:id', (req, res) => {
     const success = daoDeleteTodo(req.params.id);
     if (!success) return res.status(404).json({ error: '待办不存在' });
     publishTodoDeleted(todo.sessionId, { id: req.params.id });
-    res.json({ data: { success: true } });
+    ok(res, { success: true });
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
@@ -223,7 +224,7 @@ router.get('/artifacts/session/:sessionId', (req, res) => {
       sortBy: sortBy as 'createdAt' | 'fileName' | 'fileSize' | undefined,
       sortOrder: sortOrder as 'asc' | 'desc' | undefined,
     });
-    res.json({ data: artifacts });
+    ok(res, artifacts);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
@@ -243,7 +244,7 @@ router.delete('/artifacts/batch', (req, res) => {
         publishArtifactDeleted(sessionId, { id });
       }
     }
-    res.json({ data: { success: true, deletedCount: count } });
+    ok(res, { success: true, deletedCount: count });
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
@@ -253,7 +254,7 @@ router.get('/artifacts/:id', (req, res) => {
   try {
     const artifact = findArtifactById(req.params.id);
     if (!artifact) return res.status(404).json({ error: '产物不存在' });
-    res.json({ data: artifact });
+    ok(res, artifact);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
@@ -356,7 +357,7 @@ router.post('/artifacts', (req, res) => {
       description,
     });
     publishArtifactCreated(sessionId, artifact);
-    res.json({ data: artifact });
+    ok(res, artifact);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
@@ -374,7 +375,7 @@ router.get('/tool-calls/session/:sessionId', (req, res) => {
       sortBy: sortBy as 'startedAt' | 'completedAt' | 'duration' | 'toolName' | undefined,
       sortOrder: sortOrder as 'asc' | 'desc' | undefined,
     });
-    res.json({ data: toolCalls });
+    ok(res, toolCalls);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
@@ -383,7 +384,7 @@ router.get('/tool-calls/session/:sessionId', (req, res) => {
 router.get('/tool-calls/session/:sessionId/stats', (req, res) => {
   try {
     const stats = getToolCallStats(req.params.sessionId);
-    res.json({ data: stats });
+    ok(res, stats);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
@@ -393,7 +394,7 @@ router.get('/tool-calls/:id', (req, res) => {
   try {
     const toolCall = findToolCallById(req.params.id);
     if (!toolCall) return res.status(404).json({ error: '工具调用不存在' });
-    res.json({ data: toolCall });
+    ok(res, toolCall);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
@@ -404,7 +405,7 @@ router.get('/tool-calls/:id', (req, res) => {
 router.get('/trajectory/session/:sessionId', (req, res) => {
   try {
     const events = getTrajectoryBySession(req.params.sessionId);
-    res.json({ data: events });
+    ok(res, events);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
@@ -417,7 +418,7 @@ router.get('/trajectory/session/:sessionId/search', (req, res) => {
       return res.status(400).json({ error: 'keyword 查询参数不能为空' });
     }
     const events = searchTrajectoryEvents(req.params.sessionId, keyword);
-    res.json({ data: events });
+    ok(res, events);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
@@ -426,7 +427,7 @@ router.get('/trajectory/session/:sessionId/search', (req, res) => {
 router.get('/trajectory/session/:sessionId/stats', (req, res) => {
   try {
     const stats = getTrajectoryStats(req.params.sessionId);
-    res.json({ data: stats });
+    ok(res, stats);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
@@ -435,7 +436,7 @@ router.get('/trajectory/session/:sessionId/stats', (req, res) => {
 router.get('/trajectory/session/:sessionId/traces', (req, res) => {
   try {
     const traces = getSessionTraces(req.params.sessionId);
-    res.json({ data: traces });
+    ok(res, traces);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
@@ -462,7 +463,7 @@ router.post('/todos/session/:sessionId/import', (req, res) => {
       return res.status(400).json({ error: 'items 数组不能为空' });
     }
     const result = importTodos(req.params.sessionId, items);
-    res.json({ data: result });
+    ok(res, result);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
@@ -534,7 +535,7 @@ router.post('/tool-calls/:id/retry', (req, res) => {
   try {
     const toolCall = retryToolCall(req.params.id);
     if (!toolCall) return res.status(404).json({ error: '工具调用不存在' });
-    res.json({ data: toolCall });
+    ok(res, toolCall);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
@@ -543,7 +544,7 @@ router.post('/tool-calls/:id/retry', (req, res) => {
 router.post('/tool-calls/session/:sessionId/retry-all-failed', (req, res) => {
   try {
     const count = scheduleRetryForFailedToolCalls(req.params.sessionId);
-    res.json({ data: { success: true, retriedCount: count } });
+    ok(res, { success: true, retriedCount: count });
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
@@ -558,7 +559,7 @@ router.post('/task-flows', (req, res) => {
       return res.status(400).json({ error: 'sessionId, name 和 steps 数组不能为空' });
     }
     const flow = createTaskFlow({ sessionId, name, description, syncMode, steps });
-    res.json({ data: flow });
+    ok(res, flow);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
@@ -567,7 +568,7 @@ router.post('/task-flows', (req, res) => {
 router.get('/task-flows/session/:sessionId', (req, res) => {
   try {
     const flows = findTaskFlowsBySession(req.params.sessionId);
-    res.json({ data: flows });
+    ok(res, flows);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
@@ -577,7 +578,7 @@ router.get('/task-flows/:id', (req, res) => {
   try {
     const flow = findTaskFlowById(req.params.id);
     if (!flow) return res.status(404).json({ error: '任务流不存在' });
-    res.json({ data: flow });
+    ok(res, flow);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
@@ -586,7 +587,7 @@ router.get('/task-flows/:id', (req, res) => {
 router.get('/task-flows/:id/steps', (req, res) => {
   try {
     const steps = findTaskFlowSteps(req.params.id);
-    res.json({ data: steps });
+    ok(res, steps);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
@@ -596,7 +597,7 @@ router.post('/task-flows/:id/start', (req, res) => {
   try {
     const flow = startTaskFlow(req.params.id);
     if (!flow) return res.status(400).json({ error: '无法启动任务流' });
-    res.json({ data: flow });
+    ok(res, flow);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
@@ -607,7 +608,7 @@ router.post('/task-flows/steps/:stepId/complete', (req, res) => {
     const { success, result, error } = req.body;
     const step = completeTaskFlowStep(req.params.stepId, { success, result, error });
     if (!step) return res.status(404).json({ error: '步骤不存在' });
-    res.json({ data: step });
+    ok(res, step);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
@@ -617,7 +618,7 @@ router.post('/task-flows/:id/cancel', (req, res) => {
   try {
     const flow = cancelTaskFlow(req.params.id);
     if (!flow) return res.status(404).json({ error: '任务流不存在' });
-    res.json({ data: flow });
+    ok(res, flow);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
@@ -627,7 +628,7 @@ router.post('/task-flows/:id/retry', (req, res) => {
   try {
     const flow = retryTaskFlow(req.params.id);
     if (!flow) return res.status(400).json({ error: '无法重试任务流' });
-    res.json({ data: flow });
+    ok(res, flow);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
@@ -638,7 +639,7 @@ router.post('/task-flows/:id/retry', (req, res) => {
 router.get('/cleanup/stats', (req, res) => {
   try {
     const stats = getCleanupStats();
-    res.json({ data: stats });
+    ok(res, stats);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
@@ -648,7 +649,7 @@ router.post('/cleanup/run', (req, res) => {
   try {
     cleanupOldRecords();
     const stats = getCleanupStats();
-    res.json({ data: { success: true, remaining: stats } });
+    ok(res, { success: true, remaining: stats });
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
