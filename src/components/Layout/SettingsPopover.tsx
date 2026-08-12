@@ -86,7 +86,16 @@ export const SETTINGS_MENU: MenuEntry[] = [
   { key: 'appearance', label: '外观', icon: <PaletteOutlinedIcon sx={{ fontSize: 20 }} />, description: '主题、颜色与显示偏好', appearanceInline: true },
   { key: 'modelManagement', label: '模型管理', icon: <AutoAwesomeIcon sx={{ fontSize: 20 }} />, description: 'AI 模型配置与默认模型', dialog: 'model' },
   { key: 'extensionsCenter', label: '扩展与工具', icon: <ExtensionOutlinedIcon sx={{ fontSize: 20 }} />, description: '插件、扩展与 MCP 工具统一管理', path: '/extensions-center' },
-  { key: 'comms', label: '通讯', icon: <RecordVoiceOverIcon sx={{ fontSize: 20 }} />, description: '语音对话与通道配置', aiTab: { main: 'comms', sub: 'talk' } },
+  {
+    key: 'comms',
+    label: '通讯 & 语音',
+    icon: <RecordVoiceOverIcon sx={{ fontSize: 20 }} />,
+    description: '语音对话 · TTS · 通道',
+    children: [
+      { key: 'comms-talk', label: '语音对话', icon: <RecordVoiceOverIcon sx={{ fontSize: 18 }} />, description: '通道配置', aiTab: { main: 'comms', sub: 'talk' } },
+      { key: 'tts', label: '语音合成', icon: <RecordVoiceOverIcon sx={{ fontSize: 18 }} />, description: 'TTS 设置', path: '/tts' },
+    ],
+  },
   {
     key: 'creation',
     label: '创作',
@@ -104,16 +113,14 @@ export const SETTINGS_MENU: MenuEntry[] = [
     key: 'system-group',
     label: '系统',
     icon: <MonitorHeartIcon sx={{ fontSize: 20 }} />,
-    description: '设置 · 监控',
+    description: '设备 · 监控 · 权限',
     children: [
-      { key: 'tts', label: '语音合成', icon: <RecordVoiceOverIcon sx={{ fontSize: 18 }} />, description: 'TTS 设置', path: '/tts' },
       { key: 'pairing', label: '设备配对', icon: <PhonelinkIcon sx={{ fontSize: 18 }} />, description: 'Pairing', path: '/pairing' },
       { key: 'monitoring', label: '监控中心', icon: <HubIcon sx={{ fontSize: 18 }} />, description: '进程 · 节点 · 集成', path: '/monitoring' },
+      { key: 'observabilityCenter', label: '系统可观测性', icon: <MonitorHeartIcon sx={{ fontSize: 18 }} />, description: '指标 · 审计 · 事件账本', path: '/observability-center' },
+      { key: 'permissions', label: '权限管理', icon: <SecurityIcon sx={{ fontSize: 18 }} />, description: '屏幕录制 · 辅助功能 · 全盘访问', path: '/permissions' },
     ],
   },
-  { key: 'observabilityCenter', label: '系统可观测性', icon: <MonitorHeartIcon sx={{ fontSize: 20 }} />, description: '系统监控、系统指标、审计、执行历史、事件账本与调用历史', path: '/observability-center' },
-  { key: 'permissions', label: '权限管理', icon: <SecurityIcon sx={{ fontSize: 20 }} />, description: '屏幕录制、辅助功能、全盘访问等系统权限', path: '/permissions' },
-  { key: 'memory', label: '记忆', icon: <StorageIcon sx={{ fontSize: 20 }} />, description: '打开记忆管理页面', path: '/memory' },
   {
     key: 'triggers',
     label: '触发 & 通知',
@@ -142,9 +149,10 @@ export const SETTINGS_MENU: MenuEntry[] = [
     key: 'knowledge',
     label: '知识 & 记忆',
     icon: <BookOutlinedIcon sx={{ fontSize: 20 }} />,
-    description: 'Wiki·消息·缓存·文档',
+    description: 'Wiki·消息·缓存·记忆·文档',
     children: [
       { key: 'wiki', label: 'Wiki 知识库', icon: <BookOutlinedIcon sx={{ fontSize: 18 }} />, description: '知识管理', path: '/wiki' },
+      { key: 'memory', label: '记忆', icon: <StorageIcon sx={{ fontSize: 18 }} />, description: '记忆管理', path: '/memory' },
       { key: 'message-lifecycle', label: '消息生命周期', icon: <TrackChangesIcon sx={{ fontSize: 18 }} />, description: '生命周期监控', path: '/message-lifecycle' },
       { key: 'cache-manager', label: '缓存管理', icon: <StorageIcon sx={{ fontSize: 18 }} />, description: '缓存管理', path: '/cache-manager' },
       { key: 'tencent-docs', label: '腾讯文档', icon: <DescriptionOutlinedIcon sx={{ fontSize: 18 }} />, description: '在线文档', path: '/tencent-docs' },
@@ -219,19 +227,19 @@ const SettingsPanel: React.FC<{ onClose?: () => void; onOpenModelManagement?: ()
         key={entry.key}
         onClick={() => { if (!isAppearance) handleLeafClick(entry); }}
         sx={{
-          display: 'flex', alignItems: 'center', gap: 1.25,
-          px: indent ? 2.5 : 1.25, py: 1,
+          display: 'flex', alignItems: 'center', gap: 1.5,
+          px: indent ? 3 : 2, py: 1.5,
           cursor: isAppearance ? 'default' : 'pointer',
           borderRadius: '8px',
           '&:hover': { backgroundColor: isAppearance ? 'transparent' : gs.bgHover },
         }}
       >
-        <Box sx={{ color: gs.textMuted, display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: 18 }}>
-          {entry.icon || (indent ? <FiberManualRecordIcon sx={{ fontSize: 7 }} /> : null)}
+        <Box sx={{ color: gs.textMuted, display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: 20 }}>
+          {entry.icon || (indent ? <FiberManualRecordIcon sx={{ fontSize: 8 }} /> : null)}
         </Box>
         <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Typography sx={{ fontSize: indent ? '0.77rem' : '0.8rem', fontWeight: 500, color: gs.textPrimary }}>{entry.label}</Typography>
-          {entry.description && <Typography sx={{ fontSize: '0.68rem', color: gs.textMuted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{entry.description}</Typography>}
+          <Typography sx={{ fontSize: indent ? '0.78rem' : '0.8125rem', fontWeight: 500, color: gs.textPrimary }}>{entry.label}</Typography>
+          {entry.description && <Typography sx={{ fontSize: '0.7rem', color: gs.textMuted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{entry.description}</Typography>}
         </Box>
         {/* 外观项：胶囊按钮切换浅色/深色 */}
         {isAppearance && (
@@ -280,19 +288,19 @@ const SettingsPanel: React.FC<{ onClose?: () => void; onOpenModelManagement?: ()
   if (activeTab === 'menu') {
     return (
       <Box className="settings-panel" sx={{ width: '100%', color: textPrimary }}>
-          <Box sx={{ px: 2, pt: 1.25, pb: 1, display: 'flex', alignItems: 'center', gap: 1.25 }}>
-            <Box sx={{ width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <svg width="22" height="22" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <Box sx={{ px: 2.5, pt: 2, pb: 1.5, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box sx={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <svg width="24" height="24" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
                 <g fill={gs.textPrimary}>
                   <path d="M93.45,36.53l-11.5,16.57,10.03,14.41c2.25-5.4,3.5-11.32,3.5-17.53,0-4.68-.71-9.2-2.02-13.45Z" />
                   <path d="M57.48,88.15c-2.65.57-5.4.88-8.23.88-6.04,0-11.77-1.37-16.88-3.83V18.56c0-2.38,1.47-4.54,3.71-5.34,4.11-1.47,8.55-2.28,13.17-2.28.91,0,1.81.03,2.71.1v44.36c0,2.49,3.21,3.5,4.64,1.45l26.5-38.08c-7.87-8.37-18.87-13.77-31.13-14.32v.03c-.9-.05-1.8-.08-2.71-.08C24.07,4.39,3.66,24.8,3.66,49.99s20.41,45.59,45.59,45.59c1.04,0,2.07-.04,3.09-.11l-.03.04c10.67-.56,20.36-4.8,27.85-11.46l-6.65-9.55c-1.56-2.25-4.89-2.25-6.46-.01l-9.57,13.65Z" />
                 </g>
               </svg>
             </Box>
-            <Box><Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: textPrimary, lineHeight: 1.25 }}>CDF Know Claw</Typography><Typography sx={{ fontSize: '0.68rem', color: textMuted }}>v{APP_VERSION}</Typography></Box>
+            <Box><Typography sx={{ fontSize: '0.875rem', fontWeight: 600, color: textPrimary, lineHeight: 1.3 }}>CDF Know Claw</Typography><Typography sx={{ fontSize: '0.7rem', color: textMuted }}>v{APP_VERSION}</Typography></Box>
           </Box>
-          <Divider sx={{ mb: 0.5 }} />
-          <Box sx={{ px: 1.25, pb: 1, flex: 1, overflow: 'auto', minHeight: 0 }}>
+          <Divider sx={{ mb: 1 }} />
+          <Box sx={{ px: 2, pb: 2, flex: 1, overflow: 'auto', minHeight: 0 }}>
             {SETTINGS_MENU.map((entry) => {
               if (entry.children) {
                 const expanded = expandedGroup === entry.key;
@@ -301,24 +309,24 @@ const SettingsPanel: React.FC<{ onClose?: () => void; onOpenModelManagement?: ()
                   <Box key={entry.key}>
                     <Box
                       sx={{
-                        display: 'flex', alignItems: 'center', gap: 1.25, px: 1.25, py: 1, borderRadius: '8px',
+                        display: 'flex', alignItems: 'center', gap: 1.5, px: 2, py: 1.5, borderRadius: '8px',
                         '&:hover': { backgroundColor: gs.bgHover },
                       }}
                     >
                       <Box
-                        sx={{ display: 'flex', alignItems: 'center', gap: 1.25, flex: 1, minWidth: 0, cursor: 'pointer' }}
+                        sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flex: 1, minWidth: 0, cursor: 'pointer' }}
                         onClick={() => { if (hasAiTab) handleLeafClick(entry); }}
                       >
                         <Box sx={{ color: gs.textMuted, display: 'flex', alignItems: 'center' }}>{entry.icon}</Box>
                         <Box sx={{ flex: 1, minWidth: 0 }}>
-                          <Typography sx={{ fontSize: '0.8rem', fontWeight: 500, color: gs.textPrimary }}>{entry.label}</Typography>
-                          <Typography sx={{ fontSize: '0.68rem', color: gs.textMuted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{entry.description}</Typography>
+                          <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500, color: gs.textPrimary }}>{entry.label}</Typography>
+                          <Typography sx={{ fontSize: '0.7rem', color: gs.textMuted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{entry.description}</Typography>
                         </Box>
                       </Box>
                       <StaffdeckIcon
                         name="arrow"
                         onClick={() => setExpandedGroup(expanded ? null : entry.key)}
-                        sx={{ fontSize: 16 }}
+                        sx={{ fontSize: 18 }}
                         style={{ color: gs.textMuted, transform: expanded ? 'rotate(90deg)' : 'rotate(-90deg)', transition: 'transform 0.2s', cursor: 'pointer' }}
                       />
                     </Box>
@@ -336,22 +344,22 @@ const SettingsPanel: React.FC<{ onClose?: () => void; onOpenModelManagement?: ()
   // ---- Detail view — delegate to sub-components ----
   return (
     <Box className="settings-panel" sx={{ width: '100%', color: textPrimary }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, px: 1.5, pt: 1, pb: 0.5 }}>
-        <IconButton size="small" onClick={() => setActiveTab('menu')} sx={{ color: gs.textMuted }}><StaffdeckIcon name="arrow" sx={{ fontSize: 16 }} rotate={180} /></IconButton>
-        <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: gs.textPrimary, flex: 1 }}>{currentLabel}</Typography>
-        <IconButton size="small" onClick={() => onClose?.()} sx={{ color: gs.textMuted, '&:hover': { color: gs.textPrimary } }}><StaffdeckIcon name="close" sx={{ fontSize: 16 }} /></IconButton>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, pt: 2, pb: 1 }}>
+        <IconButton size="small" onClick={() => setActiveTab('menu')} sx={{ color: gs.textMuted }}><StaffdeckIcon name="arrow" sx={{ fontSize: 18 }} rotate={180} /></IconButton>
+        <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, color: gs.textPrimary, flex: 1 }}>{currentLabel}</Typography>
+        <IconButton size="small" onClick={() => onClose?.()} sx={{ color: gs.textMuted, '&:hover': { color: gs.textPrimary } }}><StaffdeckIcon name="close" sx={{ fontSize: 18 }} /></IconButton>
       </Box>
-      <Divider sx={{ mb: 0.5 }} />
-      <Box sx={{ px: 1.5, pb: 1, flex: 1, overflow: 'auto', minHeight: 0 }}>
+      <Divider sx={{ mb: 1 }} />
+      <Box sx={{ px: 2, pb: 2, flex: 1, overflow: 'auto', minHeight: 0 }}>
         {activeTab === 'appearance' && <SettingsGeneral draft={draft} setDraft={setDraft} />}
         {activeTab === 'about' && <SettingsAbout draft={draft} setDraft={setDraft} />}
         {/* 仅 appearance/about 显示底部保存/重置按钮 */}
         {(activeTab === 'appearance' || activeTab === 'about') && (
           <>
-            <Divider sx={{ mt: 1, mb: 1 }} />
+            <Divider sx={{ mt: 2, mb: 1.5 }} />
             <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
-              <Button variant="outlined" size="small" startIcon={<StaffdeckIcon name="refresh" />} onClick={handleReset} sx={{ borderColor: gs.border, color: gs.textMuted, fontSize: '0.72rem', '&:hover': { borderColor: gs.textDisabled } }}>重置</Button>
-              <Button variant="contained" size="small" startIcon={<StaffdeckIcon name="save" />} onClick={handleSave} disabled={hasErrors} sx={{ backgroundColor: gs.textPrimary, '&:hover': { backgroundColor: gs.textSecondary }, fontSize: '0.72rem', '&.Mui-disabled': { backgroundColor: gs.border, color: gs.textDisabled } }}>保存</Button>
+              <Button variant="outlined" size="small" startIcon={<StaffdeckIcon name="refresh" />} onClick={handleReset} sx={{ borderColor: gs.border, color: gs.textMuted, fontSize: '0.75rem', '&:hover': { borderColor: gs.textDisabled } }}>重置</Button>
+              <Button variant="contained" size="small" startIcon={<StaffdeckIcon name="save" />} onClick={handleSave} disabled={hasErrors} sx={{ backgroundColor: gs.textPrimary, '&:hover': { backgroundColor: gs.textSecondary }, fontSize: '0.75rem', '&.Mui-disabled': { backgroundColor: gs.border, color: gs.textDisabled } }}>保存</Button>
             </Box>
           </>
         )}
