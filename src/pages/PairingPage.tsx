@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { showConfirm } from '../utils/confirmDialog';
 import {
   Box, Typography, Button, Chip, IconButton, Paper, Table, TableBody,
   TableCell, TableContainer, TableHead, TableRow, Tooltip, CircularProgress,
@@ -218,7 +219,7 @@ const PairingPage: React.FC = () => {
   };
 
   const handleUnpair = async (deviceId: string) => {
-    if (!window.confirm(t('确定要取消与该设备的配对吗？（{id}）', { id: deviceId }))) return;
+    if (!(await showConfirm(t('确定要取消与该设备的配对吗？（{id}）', { id: deviceId })))) return;
     try {
       await unpairDevice(deviceId);
       showToast(t('已取消配对'), 'success');

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { showConfirm } from '../utils/confirmDialog';
 import {
   Box, Typography, Button, Chip, IconButton, Paper, Table, TableBody,
   TableCell, TableContainer, TableHead, TableRow, Tooltip, CircularProgress,
@@ -158,7 +159,7 @@ const ProcessManagementPage: React.FC = () => {
   };
 
   const handleStop = async (id: string) => {
-    if (!window.confirm('确定要停止该进程吗？')) return;
+    if (!(await showConfirm('确定要停止该进程吗？'))) return;
     setActioningId(id);
     try {
       await stopProcess(id);

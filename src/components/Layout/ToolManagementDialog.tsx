@@ -8,6 +8,7 @@
  */
 
 import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
+import { showConfirm } from '../../utils/confirmDialog';
 import {
   Box,
   Typography,
@@ -279,7 +280,7 @@ const ToolManagementDialog: React.FC<ToolManagementDialogProps> = ({ open, onClo
 
   const handleUninstall = useCallback(
     async (tool: PluginInfo) => {
-      if (!window.confirm(`确定要卸载工具「${tool.name}」吗？此操作不可撤销。`)) return;
+      if (!(await showConfirm(`确定要卸载工具「${tool.name}」吗？此操作不可撤销。`))) return;
       try {
         await uninstallPluginAction(tool.id);
         showToast(`已卸载 ${tool.name}`, 'success');

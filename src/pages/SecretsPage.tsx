@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { showConfirm } from '../utils/confirmDialog';
 import {
   Box, Typography, Button, Chip, IconButton, Dialog, DialogTitle, DialogContent,
   DialogActions, TextField, Paper, Tabs, Tab, Table, TableBody, TableCell,
@@ -93,7 +94,7 @@ const SecretsPage: React.FC = () => {
   };
 
   const handleDelete = async (provider: string, key: string) => {
-    if (!window.confirm(`确定要删除密钥 "${key}" 吗？`)) return;
+    if (!(await showConfirm(`确定要删除密钥 "${key}" 吗？`))) return;
     try {
       await deleteSecretApi(provider, key);
       showToast(ToastMessages.KEY_DELETED, 'success');

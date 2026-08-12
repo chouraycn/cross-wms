@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { showConfirm } from '../utils/confirmDialog';
 import { useNavigate } from 'react-router-dom';
 import {
   Box, Typography,
@@ -392,7 +393,7 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
   }, []);
 
   const handleDeletePlugin = useCallback(async (plugin: PluginInfo) => {
-    if (!window.confirm(`确定要删除插件 "${plugin.name}" 吗？`)) return;
+    if (!(await showConfirm(`确定要删除插件 "${plugin.name}" 吗？`))) return;
     try {
       await uninstallPluginAction(plugin.id);
       setPluginVersion((v) => v + 1);
@@ -563,24 +564,35 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
   };
 
   // 已安装标签：删除技能（内置技能不可删除，removeSkill 内部会拦截）
-  const handleDeleteSkill = useCallback(async (skill: Skill) => {
+  const [deleteConfirmSkill, setDeleteConfirmSkill] = useState<Skill | null>(null);
+  const [deletingSkill, setDeletingSkill] = useState(false);
+  const handleDeleteSkill = useCallback((skill: Skill) => {
     if (skill.source === 'builtin') {
       showToast('内置技能不可删除', 'error');
       return;
     }
-    if (!window.confirm(`确定要删除技能「${skill.name}」吗？此操作不可恢复。`)) return;
+    // 打开 MUI Dialog 确认（不用 window.confirm，WKWebView 下不弹窗）
+    setDeleteConfirmSkill(skill);
+  }, [showToast]);
+  const confirmDeleteSkill = useCallback(async () => {
+    const skill = deleteConfirmSkill;
+    if (!skill) return;
+    setDeletingSkill(true);
     try {
       const ok = await removeSkill(skill.id);
       if (ok) {
         setSkillVersion((v) => v + 1);
         showToast(`技能「${skill.name}」已删除`, 'success');
+        setDeleteConfirmSkill(null);
       } else {
         showToast('删除失败：技能可能已不存在', 'error');
       }
     } catch (e) {
       showToast(`删除失败: ${e}`, 'error');
+    } finally {
+      setDeletingSkill(false);
     }
-  }, [showToast]);
+  }, [deleteConfirmSkill, showToast]);
 
   // 过滤技能（使用防抖后的查询，减少频繁过滤）
   const filteredSkills = useMemo(() => {
@@ -695,7 +707,7 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
 
   const handleOpenClawUninstall = async (skill: OpenClawSkillEntry, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!window.confirm(`确定要卸载技能 "${skill.name}" 吗？`)) return;
+    if (!(await showConfirm(`确定要卸载技能 "${skill.name}" 吗？`))) return;
     try {
       const result = await api.uninstallOpenClawSkill(skill.id);
       if (result.success) {
@@ -2008,6 +2020,42 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
           </DialogActions>
         </Dialog>
       )}
+
+      {/* 删除技能确认 Dialog（替代 window.confirm，兼容 WKWebView） */}
+      <Dialog
+        open={!!deleteConfirmSkill}
+        onClose={() => deletingSkill ? undefined : setDeleteConfirmSkill(null)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle sx={{ fontWeight: 600 }}>
+          删除技能
+        </DialogTitle>
+        <DialogContent>
+          <Typography sx={{ fontSize: '0.875rem', color: 'text.secondary' }}>
+            确定要删除技能「{deleteConfirmSkill?.name}」吗？此操作不可恢复。
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2.5 }}>
+          <Button
+            onClick={() => setDeleteConfirmSkill(null)}
+            disabled={deletingSkill}
+            sx={{ textTransform: 'none' }}
+          >
+            取消
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={confirmDeleteSkill}
+            disabled={deletingSkill}
+            startIcon={deletingSkill ? <CircularProgress size={16} color="inherit" /> : undefined}
+            sx={{ textTransform: 'none' }}
+          >
+            {deletingSkill ? '删除中…' : '删除'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

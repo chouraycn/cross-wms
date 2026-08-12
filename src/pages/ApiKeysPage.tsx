@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { showConfirm } from '../utils/confirmDialog';
 import {
   Box,
   Typography,
@@ -106,7 +107,7 @@ const ApiKeysPage: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('确定要删除此 API Key 吗？此操作不可撤销。')) return;
+    if (!(await showConfirm('确定要删除此 API Key 吗？此操作不可撤销。'))) return;
     try {
       await deleteApiKey(id);
       await loadData();

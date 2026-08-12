@@ -13,6 +13,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { showConfirm } from '../../utils/confirmDialog';
 import {
   Box,
   Typography,
@@ -181,7 +182,7 @@ const CronPanel: React.FC = () => {
   }, [showToast]);
 
   const handleDelete = useCallback(async (id: string) => {
-    if (!window.confirm(`确定要删除 Cron 任务 "${id}" 吗？`)) return;
+    if (!(await showConfirm(`确定要删除 Cron 任务 "${id}" 吗？`))) return;
     try {
       await deleteCronJob(id);
       setJobs(prev => prev.filter(j => j.id !== id));

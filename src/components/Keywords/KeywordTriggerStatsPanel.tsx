@@ -10,6 +10,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { showConfirm } from '../../utils/confirmDialog';
 import {
   Box,
   Typography,
@@ -68,7 +69,7 @@ const KeywordTriggerStatsPanel: React.FC<KeywordTriggerStatsPanelProps> = () => 
   }, [loadStats]);
 
   const handleResetStats = async () => {
-    if (!window.confirm('确定要重置所有统计信息吗？')) return;
+    if (!(await showConfirm('确定要重置所有统计信息吗？'))) return;
     try {
       await resetKeywordTriggerStats();
       showToast('统计已重置', 'success');

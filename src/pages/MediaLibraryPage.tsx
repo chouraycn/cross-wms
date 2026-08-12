@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { showPrompt } from '../utils/confirmDialog';
 import {
   Box,
   Typography,
@@ -200,7 +201,7 @@ export default function MediaLibraryPage() {
       setError('');
     } catch {
       // 降级：使用 prompt 让用户手动复制
-      window.prompt('复制链接:', url);
+      await showPrompt('复制链接:', url);
     }
   };
 

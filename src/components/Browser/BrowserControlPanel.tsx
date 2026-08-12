@@ -10,6 +10,7 @@
  */
 
 import React, { useState, useCallback, useEffect } from 'react';
+import { showPrompt } from '../../utils/confirmDialog';
 import {
   Box,
   Typography,
@@ -442,7 +443,8 @@ const BrowserControlPanel: React.FC<BrowserControlPanelProps> = ({
     // 询问可选 URL（留空则新建空白标签页）
     let targetUrl = '';
     try {
-      targetUrl = window.prompt('请输入新标签页的 URL（留空则新建空白页）', '') || '';
+      const _promptResult = await showPrompt('请输入新标签页的 URL（留空则新建空白页）', '');
+      targetUrl = _promptResult ?? '';
     } catch {
       targetUrl = '';
     }

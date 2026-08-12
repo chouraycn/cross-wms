@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { showConfirm, showPrompt } from '../utils/confirmDialog';
 import {
   Box,
   Typography,
@@ -261,7 +262,7 @@ const ChannelsPage: React.FC = () => {
   };
 
   const handleDeleteChannel = async (name: string) => {
-    if (!window.confirm(t('确定要删除通道 "{name}" 吗？', { name }))) return;
+    if (!(await showConfirm(t('确定要删除通道 "{name}" 吗？', { name })))) return;
     setOperationLoading(`delete-${name}`);
     try {
       await deleteChannel(name);
@@ -335,9 +336,9 @@ const ChannelsPage: React.FC = () => {
 
   const handleAddAccount = async () => {
     if (!detailChannel) return;
-    const accountName = window.prompt(t('请输入账户名称：'));
+    const accountName = await showPrompt(t('请输入账户名称：'));
     if (!accountName) return;
-    const accountId = window.prompt(t('请输入账户 ID：'));
+    const accountId = await showPrompt(t('请输入账户 ID：'));
     if (!accountId) return;
     try {
       await addChannelAccount(detailChannel.name, { accountId, accountName });
@@ -351,7 +352,7 @@ const ChannelsPage: React.FC = () => {
 
   const handleRemoveAccount = async (accountId: string) => {
     if (!detailChannel) return;
-    if (!window.confirm(t('确定要删除账户 "{id}" 吗？', { id: accountId }))) return;
+    if (!(await showConfirm(t('确定要删除账户 "{id}" 吗？', { id: accountId })))) return;
     try {
       await removeChannelAccount(detailChannel.name, accountId);
       setNotice(t('账户删除成功'));

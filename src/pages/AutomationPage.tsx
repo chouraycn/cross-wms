@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { showConfirm } from '../utils/confirmDialog';
 import { useSearchParams } from 'react-router-dom';
 import {
   Box,
@@ -832,7 +833,7 @@ const AutomationPage: React.FC = () => {
           onRetry={handleRetry}
           onViewDetail={handleViewDetail}
           onClearLogs={async () => {
-            if (!window.confirm('确定要清空所有执行日志吗？此操作不可恢复。')) return;
+            if (!(await showConfirm('确定要清空所有执行日志吗？此操作不可恢复。'))) return;
             try {
               const result = await clearExecutionLogs();
               showToast(`已清空 ${result.deleted} 条执行记录`, 'success');

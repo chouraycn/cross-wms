@@ -11,6 +11,7 @@
  */
 
 import React, { useState, useEffect, useCallback, memo } from 'react';
+import { showConfirm } from '../../utils/confirmDialog';
 import {
   Drawer,
   Box,
@@ -151,7 +152,7 @@ const MemoryDetailDrawer: React.FC<MemoryDetailDrawerProps> = memo(({
 
   const handleDelete = useCallback(async () => {
     if (!memory) return;
-    if (!window.confirm('确认删除此记忆吗？此操作不可撤销。')) return;
+    if (!(await showConfirm('确认删除此记忆吗？此操作不可撤销。'))) return;
     try {
       await onDelete(memory.id);
       onClose();

@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { showConfirm } from '../utils/confirmDialog';
 import {
   Box,
   Typography,
@@ -152,7 +153,7 @@ const WorkflowPage: React.FC = () => {
 
   // 删除工作流
   const handleDelete = useCallback(async (id: string) => {
-    if (!window.confirm('确定要删除这个工作流吗？')) return;
+    if (!(await showConfirm('确定要删除这个工作流吗？'))) return;
 
     try {
       const response = await fetch(`/api/workflow/${id}`, { method: 'DELETE' });
