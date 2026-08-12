@@ -1,5 +1,6 @@
 import { chromium } from 'playwright';
 (async()=>{
+const BASE_URL = process.env.VERIFY_BASE_URL || 'http://127.0.0.1:5173';
 const b=await chromium.launch({headless:true});
 const c=await b.newContext({viewport:{width:1440,height:900}});
 const p=await c.newPage();
@@ -116,13 +117,13 @@ const audit = (labelKeywords) => {
 };
 
 console.log('--- WIKI ---');
-await p.goto('http://127.0.0.1:5173/#/wiki',{waitUntil:'networkidle',timeout:30000});
+await p.goto(BASE_URL + '/#/wiki',{waitUntil:'networkidle',timeout:30000});
 await p.waitForTimeout(3500);
 const W = await p.evaluate(audit, [['知识库'],['Wiki'],['新建条目']]);
 console.log(JSON.stringify(W,null,2));
 
 console.log('\n--- EXTENSIONS-CENTER ---');
-await p.goto('http://127.0.0.1:5173/#/extensions-center',{waitUntil:'networkidle',timeout:30000});
+await p.goto(BASE_URL + '/#/extensions-center',{waitUntil:'networkidle',timeout:30000});
 await p.waitForTimeout(3500);
 const E = await p.evaluate(audit, [['扩展管理'],['扩展'],['发现扩展']]);
 console.log(JSON.stringify(E,null,2));

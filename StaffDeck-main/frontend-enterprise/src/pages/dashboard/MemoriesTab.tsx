@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from '@/components/ui';
 import { notify } from '@/components/ui/app-toast';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { cn } from '@/lib/utils';
 import { MOBILE_CARD_CLASS, formatDateTime } from '@/lib/enterprise-ui';
 
@@ -61,6 +62,7 @@ export default function MemoriesTab({
   const [detail, setDetail] = useState<MemoryUserGroup | null>(null);
   const [loading, setLoading] = useState(false);
   const [clearing, setClearing] = useState(false);
+  const [clearingConfirmOpen, setClearingConfirmOpen] = useState(false);
   const [agentId, setAgentId] = useState(
     () => window.localStorage.getItem(ENTERPRISE_AGENT_STORAGE_KEY) || '',
   );
@@ -122,11 +124,14 @@ export default function MemoriesTab({
     void load(EMPTY_FILTER);
   }
 
-  async function clearOwnMemories() {
-    const scopeText = agentId ? '当前员工下你的长期记忆' : '当前租户下你的长期记忆';
-    if (!window.confirm(`将清空${scopeText}，不会影响其他用户。确定继续？`)) {
-      return;
-    }
+  const clearScopeText = agentId ? '当前员工下你的长期记忆' : '当前租户下你的长期记忆';
+
+  function clearOwnMemories() {
+    setClearingConfirmOpen(true);
+  }
+
+  async function confirmClearMemories() {
+    setClearingConfirmOpen(false);
     setClearing(true);
     try {
       const params = new URLSearchParams({ tenant_id: TENANT_ID });
@@ -366,6 +371,20 @@ export default function MemoriesTab({
       </section>
 
       <MemoryDetailDialog detail={detail} onClose={() => setDetail(null)} />
+
+      <ConfirmDialog
+        open={clearingConfirmOpen}
+        onOpenChange={(open) => {
+          if (!open) setClearingConfirmOpen(false);
+        }}
+        title="清空记忆"
+        description={`将清空${clearScopeText}，不会影响其他用户。确定继续？`}
+        confirmText="清空"
+        cancelText="取消"
+        destructive
+        loading={clearing}
+        onConfirm={() => void confirmClearMemories()}
+      />
     </>
   );
 }

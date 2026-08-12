@@ -228,6 +228,59 @@ jobs:
       - name: Run contract tests (envelope = { code, data, message })
         run: npm run test:contracts -- --reporter=basic --no-color 2>&1 | tail -200
 
+  # P1-4: verify.mjs (Playwright) 接入 CI — 替代旧 CLI check+test 流程。
+  # 审计主前端 /wiki 与 /extensions-center 视觉一致性（DOM 结构 + 样式）。
+  # 软门禁 (continue-on-error)：UI 一致性为趋势指标，不阻塞主流程；仅 PR 触发。
+  ui-visual-verify:
+    name: UI Visual Consistency (verify.mjs)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [typecheck]
+    if: github.event_name == 'pull_request'
+    continue-on-error: true
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Install Playwright chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Start dev server
+        run: npm run dev -- --host 127.0.0.1 --port 5173 &
+        env:
+          CI: true
+
+      - name: Wait for server ready
+        run: |
+          for i in $(seq 1 30); do
+            if curl -s http://127.0.0.1:5173 > /dev/null; then
+              echo "Server ready"
+              break
+            fi
+            echo "Waiting ($i/30)"
+            sleep 2
+          done
+
+      - name: Run visual verify (verify.mjs)
+        run: node scripts/verify.mjs
+        env:
+          VERIFY_BASE_URL: 'http://127.0.0.1:5173'
+
   deadcode:
     name: Dead Code (knip)
     runs-on: ubuntu-latest
