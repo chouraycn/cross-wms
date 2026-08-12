@@ -2,8 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
   Grid,
   LinearProgress,
   Chip,
@@ -322,229 +320,219 @@ const CacheManagerPage: React.FC = () => {
         <>
           <Grid container spacing={2} sx={{ mb: 3 }}>
             <Grid item xs={12} sm={6} md={3}>
-              <Card>
-                <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                    <FolderIcon color="primary" />
-                    <Typography variant="body2" color="text.secondary">
-                      命名空间数
-                    </Typography>
-                  </Box>
-                  <Typography variant="h4" fontWeight={600}>
-                    {stats?.totalCaches ?? 0}
+              <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                  <FolderIcon color="primary" />
+                  <Typography variant="body2" color="text.secondary">
+                    命名空间数
                   </Typography>
-                </CardContent>
-              </Card>
+                </Box>
+                <Typography variant="h4" fontWeight={600}>
+                  {stats?.totalCaches ?? 0}
+                </Typography>
+              </Box>
             </Grid>
 
             <Grid item xs={12} sm={6} md={3}>
-              <Card>
-                <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                    <StorageIcon color="secondary" />
-                    <Typography variant="body2" color="text.secondary">
-                      缓存条目数
-                    </Typography>
-                  </Box>
-                  <Typography variant="h4" fontWeight={600}>
-                    {stats?.totalEntries ?? 0}
+              <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                  <StorageIcon color="secondary" />
+                  <Typography variant="body2" color="text.secondary">
+                    缓存条目数
                   </Typography>
-                </CardContent>
-              </Card>
+                </Box>
+                <Typography variant="h4" fontWeight={600}>
+                  {stats?.totalEntries ?? 0}
+                </Typography>
+              </Box>
             </Grid>
 
             <Grid item xs={12} sm={6} md={3}>
-              <Card>
-                <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                    <MemoryIcon color="warning" />
-                    <Typography variant="body2" color="text.secondary">
-                      内存占用
-                    </Typography>
-                  </Box>
-                  <Typography variant="h4" fontWeight={600}>
-                    {stats?.totalMemoryFormatted ?? '-'}
+              <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                  <MemoryIcon color="warning" />
+                  <Typography variant="body2" color="text.secondary">
+                    内存占用
                   </Typography>
-                </CardContent>
-              </Card>
+                </Box>
+                <Typography variant="h4" fontWeight={600}>
+                  {stats?.totalMemoryFormatted ?? '-'}
+                </Typography>
+              </Box>
             </Grid>
 
             <Grid item xs={12} sm={6} md={3}>
-              <Card>
-                <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                    <BarChartIcon color="success" />
-                    <Typography variant="body2" color="text.secondary">
-                      命中率
-                    </Typography>
-                  </Box>
-                  <Typography variant="h4" fontWeight={600}>
-                    {stats?.overallHitRatePercent ?? '-'}
+              <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                  <BarChartIcon color="success" />
+                  <Typography variant="body2" color="text.secondary">
+                    命中率
                   </Typography>
-                  <Box sx={{ mt: 1 }}>
-                    <LinearProgress
-                      variant="determinate"
-                      value={stats?.overallHitRate ? stats.overallHitRate * 100 : 0}
-                      color={(stats?.overallHitRate ?? 0) >= 0.8 ? 'success' : (stats?.overallHitRate ?? 0) >= 0.5 ? 'warning' : 'error'}
-                      sx={{ height: 6, borderRadius: 3 }}
-                    />
-                  </Box>
-                </CardContent>
-              </Card>
+                </Box>
+                <Typography variant="h4" fontWeight={600}>
+                  {stats?.overallHitRatePercent ?? '-'}
+                </Typography>
+                <Box sx={{ mt: 1 }}>
+                  <LinearProgress
+                    variant="determinate"
+                    value={stats?.overallHitRate ? stats.overallHitRate * 100 : 0}
+                    color={(stats?.overallHitRate ?? 0) >= 0.8 ? 'success' : (stats?.overallHitRate ?? 0) >= 0.5 ? 'warning' : 'error'}
+                    sx={{ height: 6, borderRadius: 3 }}
+                  />
+                </Box>
+              </Box>
             </Grid>
           </Grid>
 
-          <Card>
-            <CardContent>
-              <Typography variant="h6" fontWeight={600} gutterBottom>
-                命名空间列表
+          <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+            <Typography variant="h6" fontWeight={600} gutterBottom>
+              命名空间列表
+            </Typography>
+            {namespaces?.active.length === 0 ? (
+              <Typography color="text.secondary" align="center" sx={{ py: 4 }}>
+                暂无缓存命名空间
               </Typography>
-              {namespaces?.active.length === 0 ? (
-                <Typography color="text.secondary" align="center" sx={{ py: 4 }}>
-                  暂无缓存命名空间
-                </Typography>
-              ) : (
-                <List>
-                  {namespaces?.active.map((name) => {
-                    const info = namespaceInfo[name];
-                    const keys = namespaceKeys[name];
-                    const isExpanded = expandedNamespace === name;
+            ) : (
+              <List>
+                {namespaces?.active.map((name) => {
+                  const info = namespaceInfo[name];
+                  const keys = namespaceKeys[name];
+                  const isExpanded = expandedNamespace === name;
 
-                    return (
-                      <React.Fragment key={name}>
-                        <ListItem
-                          button
-                          onClick={() => handleExpandNamespace(name)}
-                          sx={{
-                            borderBottom: `1px solid ${gs.border}`,
-                            '&:last-child': { borderBottom: 'none' },
-                          }}
-                        >
-                          <IconButton edge="start">
-                            {isExpanded ? <FolderOpenIcon /> : <FolderIcon />}
-                          </IconButton>
-                          <ListItemText
-                            primary={name}
-                            secondary={
-                              info ? (
-                                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mt: 0.5 }}>
-                                  <Chip label={`${info.stats.totalEntries} 条目`} size="small" variant="outlined" />
-                                  <Chip label={info.stats.memoryEstimateFormatted} size="small" variant="outlined" />
-                                  <Chip
-                                    label={info.stats.hitRatePercent}
-                                    size="small"
-                                    color={info.stats.hitRate >= 0.8 ? 'success' : info.stats.hitRate >= 0.5 ? 'warning' : 'error'}
-                                  />
-                                </Box>
-                              ) : (
-                                '点击展开查看详情'
-                              )
-                            }
-                          />
-                          <ListItemSecondaryAction>
-                            <Tooltip title="清空此命名空间">
-                              <IconButton
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleClearNamespace(name);
-                                }}
-                                disabled={operationLoading}
-                                color="warning"
-                              >
-                                <ClearAllIcon />
-                              </IconButton>
-                            </Tooltip>
-                            <Tooltip title="删除此命名空间">
-                              <IconButton
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setDeleteNamespaceDialogOpen(name);
-                                }}
-                                disabled={operationLoading}
-                                color="error"
-                              >
-                                <DeleteIcon />
-                              </IconButton>
-                            </Tooltip>
-                          </ListItemSecondaryAction>
-                        </ListItem>
-
-                        {isExpanded && info && (
-                          <Box sx={{ px: 8, pb: 2, borderBottom: `1px solid ${gs.border}` }}>
-                            <Grid container spacing={2} sx={{ mb: 2 }}>
-                              <Grid item xs={12} sm={4}>
-                                <Typography variant="body2" color="text.secondary">
-                                  TTL: {info.options.ttl ? formatTTL(info.options.ttl) : '无限制'}
-                                </Typography>
-                              </Grid>
-                              <Grid item xs={12} sm={4}>
-                                <Typography variant="body2" color="text.secondary">
-                                  最大条目: {info.options.maxEntries ?? '无限制'}
-                                </Typography>
-                              </Grid>
-                              <Grid item xs={12} sm={4}>
-                                <Typography variant="body2" color="text.secondary">
-                                  最大大小: {info.options.maxSize ? formatBytes(info.options.maxSize) : '无限制'}
-                                </Typography>
-                              </Grid>
-                            </Grid>
-
-                            <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>
-                              缓存键列表 ({keys?.total ?? 0} 个)
-                            </Typography>
-                            {keys?.keys.length === 0 ? (
-                              <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
-                                此命名空间暂无缓存条目
-                              </Typography>
+                  return (
+                    <React.Fragment key={name}>
+                      <ListItem
+                        button
+                        onClick={() => handleExpandNamespace(name)}
+                        sx={{
+                          borderBottom: `1px solid ${gs.border}`,
+                          '&:last-child': { borderBottom: 'none' },
+                        }}
+                      >
+                        <IconButton edge="start">
+                          {isExpanded ? <FolderOpenIcon /> : <FolderIcon />}
+                        </IconButton>
+                        <ListItemText
+                          primary={name}
+                          secondary={
+                            info ? (
+                              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mt: 0.5 }}>
+                                <Chip label={`${info.stats.totalEntries} 条目`} size="small" variant="outlined" />
+                                <Chip label={info.stats.memoryEstimateFormatted} size="small" variant="outlined" />
+                                <Chip
+                                  label={info.stats.hitRatePercent}
+                                  size="small"
+                                  color={info.stats.hitRate >= 0.8 ? 'success' : info.stats.hitRate >= 0.5 ? 'warning' : 'error'}
+                                />
+                              </Box>
                             ) : (
-                              <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: 300 }}>
-                                <Table size="small" stickyHeader>
-                                  <TableHead>
-                                    <TableRow>
-                                      <TableCell>键名</TableCell>
-                                      <TableCell align="right">操作</TableCell>
+                              '点击展开查看详情'
+                            )
+                          }
+                        />
+                        <ListItemSecondaryAction>
+                          <Tooltip title="清空此命名空间">
+                            <IconButton
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleClearNamespace(name);
+                              }}
+                              disabled={operationLoading}
+                              color="warning"
+                            >
+                              <ClearAllIcon />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="删除此命名空间">
+                            <IconButton
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDeleteNamespaceDialogOpen(name);
+                              }}
+                              disabled={operationLoading}
+                              color="error"
+                            >
+                              <DeleteIcon />
+                            </IconButton>
+                          </Tooltip>
+                        </ListItemSecondaryAction>
+                      </ListItem>
+
+                      {isExpanded && info && (
+                        <Box sx={{ px: 8, pb: 2, borderBottom: `1px solid ${gs.border}` }}>
+                          <Grid container spacing={2} sx={{ mb: 2 }}>
+                            <Grid item xs={12} sm={4}>
+                              <Typography variant="body2" color="text.secondary">
+                                TTL: {info.options.ttl ? formatTTL(info.options.ttl) : '无限制'}
+                              </Typography>
+                            </Grid>
+                            <Grid item xs={12} sm={4}>
+                              <Typography variant="body2" color="text.secondary">
+                                最大条目: {info.options.maxEntries ?? '无限制'}
+                              </Typography>
+                            </Grid>
+                            <Grid item xs={12} sm={4}>
+                              <Typography variant="body2" color="text.secondary">
+                                最大大小: {info.options.maxSize ? formatBytes(info.options.maxSize) : '无限制'}
+                              </Typography>
+                            </Grid>
+                          </Grid>
+
+                          <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>
+                            缓存键列表 ({keys?.total ?? 0} 个)
+                          </Typography>
+                          {keys?.keys.length === 0 ? (
+                            <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
+                              此命名空间暂无缓存条目
+                            </Typography>
+                          ) : (
+                            <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: 300 }}>
+                              <Table size="small" stickyHeader>
+                                <TableHead>
+                                  <TableRow>
+                                    <TableCell>键名</TableCell>
+                                    <TableCell align="right">操作</TableCell>
+                                  </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                  {keys?.keys.map((key) => (
+                                    <TableRow key={key}>
+                                      <TableCell>{key}</TableCell>
+                                      <TableCell align="right">
+                                        <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+                                          <Tooltip title="查看详情">
+                                            <IconButton
+                                              onClick={() => handleViewEntry(name, key)}
+                                              size="small"
+                                            >
+                                              <ZoomInIcon />
+                                            </IconButton>
+                                          </Tooltip>
+                                          <Tooltip title="删除">
+                                            <IconButton
+                                              onClick={() => setDeleteEntryDialogOpen({ namespace: name, key })}
+                                              size="small"
+                                              color="error"
+                                            >
+                                              <DeleteIcon />
+                                            </IconButton>
+                                          </Tooltip>
+                                        </Box>
+                                      </TableCell>
                                     </TableRow>
-                                  </TableHead>
-                                  <TableBody>
-                                    {keys?.keys.map((key) => (
-                                      <TableRow key={key}>
-                                        <TableCell>{key}</TableCell>
-                                        <TableCell align="right">
-                                          <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
-                                            <Tooltip title="查看详情">
-                                              <IconButton
-                                                onClick={() => handleViewEntry(name, key)}
-                                                size="small"
-                                              >
-                                                <ZoomInIcon />
-                                              </IconButton>
-                                            </Tooltip>
-                                            <Tooltip title="删除">
-                                              <IconButton
-                                                onClick={() => setDeleteEntryDialogOpen({ namespace: name, key })}
-                                                size="small"
-                                                color="error"
-                                              >
-                                                <DeleteIcon />
-                                              </IconButton>
-                                            </Tooltip>
-                                          </Box>
-                                        </TableCell>
-                                      </TableRow>
-                                    ))}
-                                  </TableBody>
-                                </Table>
-                              </TableContainer>
-                            )}
-                          </Box>
-                        )}
-                      </React.Fragment>
-                    );
-                  })}
-                </List>
-              )}
-            </CardContent>
-          </Card>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            </TableContainer>
+                          )}
+                        </Box>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+              </List>
+            )}
+          </Box>
         </>
       )}
 

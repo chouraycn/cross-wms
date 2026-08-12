@@ -8,8 +8,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
   Grid,
   Button,
   Table,
@@ -299,169 +297,161 @@ const WebhookPage: React.FC = () => {
 
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid item xs={12} sm={6} md={4}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                <WebhookIcon color="primary" />
-                <Typography variant="body2" color="text.secondary">
-                  总 Webhook
-                </Typography>
-              </Box>
-              <Typography variant="h4" fontWeight={600}>
-                {stats?.total ?? '-'}
+          <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+              <WebhookIcon color="primary" />
+              <Typography variant="body2" color="text.secondary">
+                总 Webhook
               </Typography>
-            </CardContent>
-          </Card>
+            </Box>
+            <Typography variant="h4" fontWeight={600}>
+              {stats?.total ?? '-'}
+            </Typography>
+          </Box>
         </Grid>
 
         <Grid item xs={12} sm={6} md={4}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                <CheckCircleIcon color="success" />
-                <Typography variant="body2" color="text.secondary">
-                  成功数
-                </Typography>
-              </Box>
-              <Typography variant="h4" fontWeight={600}>
-                {stats?.successCount ?? '-'}
+          <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+              <CheckCircleIcon color="success" />
+              <Typography variant="body2" color="text.secondary">
+                成功数
               </Typography>
-            </CardContent>
-          </Card>
+            </Box>
+            <Typography variant="h4" fontWeight={600}>
+              {stats?.successCount ?? '-'}
+            </Typography>
+          </Box>
         </Grid>
 
         <Grid item xs={12} sm={6} md={4}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                <ErrorIcon color="error" />
-                <Typography variant="body2" color="text.secondary">
-                  失败数
-                </Typography>
-              </Box>
-              <Typography variant="h4" fontWeight={600}>
-                {stats?.failedCount ?? '-'}
+          <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+              <ErrorIcon color="error" />
+              <Typography variant="body2" color="text.secondary">
+                失败数
               </Typography>
-            </CardContent>
-          </Card>
+            </Box>
+            <Typography variant="h4" fontWeight={600}>
+              {stats?.failedCount ?? '-'}
+            </Typography>
+          </Box>
         </Grid>
       </Grid>
 
-      <Card>
-        <CardContent>
-          <Typography variant="h6" fontWeight={600} gutterBottom>
-            Webhook 列表
+      <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+        <Typography variant="h6" fontWeight={600} gutterBottom>
+          Webhook 列表
+        </Typography>
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+            <CircularProgress />
+          </Box>
+        ) : webhooks.length === 0 ? (
+          <Typography color="text.secondary" align="center" sx={{ py: 4 }}>
+            暂无 Webhook 配置，点击上方按钮创建
           </Typography>
-          {loading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-              <CircularProgress />
-            </Box>
-          ) : webhooks.length === 0 ? (
-            <Typography color="text.secondary" align="center" sx={{ py: 4 }}>
-              暂无 Webhook 配置，点击上方按钮创建
-            </Typography>
-          ) : (
-            <TableContainer component={Paper} variant="outlined">
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>名称</TableCell>
-                    <TableCell>URL</TableCell>
-                    <TableCell>事件</TableCell>
-                    <TableCell>状态</TableCell>
-                    <TableCell>操作</TableCell>
+        ) : (
+          <TableContainer component={Paper} variant="outlined">
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>名称</TableCell>
+                  <TableCell>URL</TableCell>
+                  <TableCell>事件</TableCell>
+                  <TableCell>状态</TableCell>
+                  <TableCell>操作</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {webhooks.map((webhook) => (
+                  <TableRow key={webhook.id}>
+                    <TableCell>
+                      <Typography fontWeight={500}>
+                        {webhook.name}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ maxWidth: 250, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                      >
+                        {webhook.url}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                        {webhook.events.map((event) => (
+                          <Chip
+                            key={event}
+                            label={event}
+                            size="small"
+                            variant="outlined"
+                          />
+                        ))}
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        icon={webhook.enabled ? <CheckCircleIcon /> : <PendingIcon />}
+                        label={webhook.enabled ? '启用' : '禁用'}
+                        color={webhook.enabled ? 'success' : 'default'}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', gap: 1 }}>
+                        <Tooltip title="编辑">
+                          <IconButton
+                            size="small"
+                            onClick={() => handleOpenDialog(webhook)}
+                          >
+                            <EditIcon />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="测试">
+                          <IconButton
+                            size="small"
+                            onClick={() => handleTest(webhook.id)}
+                            disabled={testingId === webhook.id}
+                          >
+                            {testingId === webhook.id ? (
+                              <CircularProgress size={16} />
+                            ) : (
+                              <PlayArrowIcon />
+                            )}
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="查看日志">
+                          <IconButton
+                            size="small"
+                            onClick={() => handleOpenLogs(webhook.id)}
+                          >
+                            <HistoryIcon />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="删除">
+                          <IconButton
+                            size="small"
+                            onClick={() => {
+                              setDeleteId(webhook.id);
+                              setOpenDeleteDialog(true);
+                            }}
+                            color="error"
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
+                    </TableCell>
                   </TableRow>
-                </TableHead>
-                <TableBody>
-                  {webhooks.map((webhook) => (
-                    <TableRow key={webhook.id}>
-                      <TableCell>
-                        <Typography fontWeight={500}>
-                          {webhook.name}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography
-                          variant="body2"
-                          color="text.secondary"
-                          sx={{ maxWidth: 250, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-                        >
-                          {webhook.url}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                          {webhook.events.map((event) => (
-                            <Chip
-                              key={event}
-                              label={event}
-                              size="small"
-                              variant="outlined"
-                            />
-                          ))}
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          icon={webhook.enabled ? <CheckCircleIcon /> : <PendingIcon />}
-                          label={webhook.enabled ? '启用' : '禁用'}
-                          color={webhook.enabled ? 'success' : 'default'}
-                          size="small"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Box sx={{ display: 'flex', gap: 1 }}>
-                          <Tooltip title="编辑">
-                            <IconButton
-                              size="small"
-                              onClick={() => handleOpenDialog(webhook)}
-                            >
-                              <EditIcon />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="测试">
-                            <IconButton
-                              size="small"
-                              onClick={() => handleTest(webhook.id)}
-                              disabled={testingId === webhook.id}
-                            >
-                              {testingId === webhook.id ? (
-                                <CircularProgress size={16} />
-                              ) : (
-                                <PlayArrowIcon />
-                              )}
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="查看日志">
-                            <IconButton
-                              size="small"
-                              onClick={() => handleOpenLogs(webhook.id)}
-                            >
-                              <HistoryIcon />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="删除">
-                            <IconButton
-                              size="small"
-                              onClick={() => {
-                                setDeleteId(webhook.id);
-                                setOpenDeleteDialog(true);
-                              }}
-                              color="error"
-                            >
-                              <DeleteIcon />
-                            </IconButton>
-                          </Tooltip>
-                        </Box>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          )}
-        </CardContent>
-      </Card>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
+      </Box>
 
       {testResult && (
         <Dialog

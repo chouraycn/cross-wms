@@ -8,8 +8,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
   Grid,
   Button,
   TextField,
@@ -284,60 +282,53 @@ const LspServersPage: React.FC = () => {
       )}
 
       {/* 健康状态卡片 */}
-      <Card sx={{ mb: 3, bgcolor: gs.bgPanel, borderColor: gs.border }}>
-        <CardContent>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-            <HealthAndSafetyIcon fontSize="small" />
-            <Typography variant="h6" fontWeight={600}>
-              服务健康状态
-            </Typography>
-            {healthStatus && (
-              <Chip
-                label={healthStatus.ok ? '正常' : '异常'}
-                color={healthStatus.ok ? 'success' : 'error'}
-                size="small"
-                sx={{ ml: 1 }}
-              />
-            )}
-          </Box>
+      <Box sx={{ mb: 3, bgcolor: gs.bgPanel, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+          <HealthAndSafetyIcon fontSize="small" />
+          <Typography variant="h6" fontWeight={600}>
+            服务健康状态
+          </Typography>
+          {healthStatus && (
+            <Chip
+              label={healthStatus.ok ? '正常' : '异常'}
+              color={healthStatus.ok ? 'success' : 'error'}
+              size="small"
+              sx={{ ml: 1 }}
+            />
+          )}
+        </Box>
 
-          {healthStatus ? (
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={4}>
-                <Card variant="outlined" sx={{ bgcolor: gs.bgHover }}>
-                  <CardContent>
-                    <Typography variant="body2" color={gs.textSecondary}>
-                      已注册
-                    </Typography>
-                    <Typography variant="h4" fontWeight={600}>
-                      {healthStatus.stats.registered}
-                    </Typography>
-                  </CardContent>
-                </Card>
+        {healthStatus ? (
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={4}>
+                <Box sx={{ bgcolor: gs.bgHover, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+                  <Typography variant="body2" color={gs.textSecondary}>
+                    已注册
+                  </Typography>
+                  <Typography variant="h4" fontWeight={600}>
+                    {healthStatus.stats.registered}
+                  </Typography>
+                </Box>
               </Grid>
               <Grid item xs={12} sm={4}>
-                <Card variant="outlined" sx={{ bgcolor: gs.bgHover }}>
-                  <CardContent>
-                    <Typography variant="body2" color={gs.textSecondary}>
-                      运行中
-                    </Typography>
-                    <Typography variant="h4" fontWeight={600} color="success.main">
-                      {healthStatus.stats.running}
-                    </Typography>
-                  </CardContent>
-                </Card>
+                <Box sx={{ bgcolor: gs.bgHover, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+                  <Typography variant="body2" color={gs.textSecondary}>
+                    运行中
+                  </Typography>
+                  <Typography variant="h4" fontWeight={600} color="success.main">
+                    {healthStatus.stats.running}
+                  </Typography>
+                </Box>
               </Grid>
               <Grid item xs={12} sm={4}>
-                <Card variant="outlined" sx={{ bgcolor: gs.bgHover }}>
-                  <CardContent>
-                    <Typography variant="body2" color={gs.textSecondary}>
-                      已初始化
-                    </Typography>
-                    <Typography variant="h4" fontWeight={600} color="info.main">
-                      {healthStatus.stats.initialized}
-                    </Typography>
-                  </CardContent>
-                </Card>
+                <Box sx={{ bgcolor: gs.bgHover, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+                  <Typography variant="body2" color={gs.textSecondary}>
+                    已初始化
+                  </Typography>
+                  <Typography variant="h4" fontWeight={600} color="info.main">
+                    {healthStatus.stats.initialized}
+                  </Typography>
+                </Box>
               </Grid>
             </Grid>
           ) : (
@@ -345,310 +336,301 @@ const LspServersPage: React.FC = () => {
               {healthLoading ? '加载中…' : '暂无健康状态数据'}
             </Typography>
           )}
-        </CardContent>
-      </Card>
+      </Box>
 
       {/* 服务器列表 */}
-      <Card sx={{ mb: 3, bgcolor: gs.bgPanel, borderColor: gs.border }}>
-        <CardContent>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-            <DNSIcon fontSize="small" />
-            <Typography variant="h6" fontWeight={600}>
-              服务器列表
-            </Typography>
-            <Chip label={servers.length} size="small" sx={{ ml: 1 }} />
-          </Box>
+      <Box sx={{ mb: 3, bgcolor: gs.bgPanel, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+          <DNSIcon fontSize="small" />
+          <Typography variant="h6" fontWeight={600}>
+            服务器列表
+          </Typography>
+          <Chip label={servers.length} size="small" sx={{ ml: 1 }} />
+        </Box>
 
-          <TableContainer component={Paper} variant="outlined">
-            <Table size="small">
-              <TableHead>
-                <TableRow sx={{ bgcolor: gs.bgHover }}>
-                  <TableCell>名称</TableCell>
-                  <TableCell>命令</TableCell>
-                  <TableCell>状态</TableCell>
-                  <TableCell align="right">PID</TableCell>
-                  <TableCell align="center">操作</TableCell>
+        <TableContainer component={Paper} variant="outlined">
+          <Table size="small">
+            <TableHead>
+              <TableRow sx={{ bgcolor: gs.bgHover }}>
+                <TableCell>名称</TableCell>
+                <TableCell>命令</TableCell>
+                <TableCell>状态</TableCell>
+                <TableCell align="right">PID</TableCell>
+                <TableCell align="center">操作</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {servers.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} align="center" sx={{ py: 4, color: gs.textMuted }}>
+                    暂无服务器数据
+                  </TableCell>
                 </TableRow>
-              </TableHead>
-              <TableBody>
-                {servers.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} align="center" sx={{ py: 4, color: gs.textMuted }}>
-                      暂无服务器数据
+              ) : (
+                servers.map((server) => (
+                  <TableRow key={server.id} hover>
+                    <TableCell>
+                      <Typography variant="body2" fontWeight={500}>
+                        {server.name}
+                      </Typography>
+                      <Typography variant="caption" color={gs.textMuted}>
+                        {server.id}
+                      </Typography>
                     </TableCell>
-                  </TableRow>
-                ) : (
-                  servers.map((server) => (
-                    <TableRow key={server.id} hover>
-                      <TableCell>
-                        <Typography variant="body2" fontWeight={500}>
-                          {server.name}
-                        </Typography>
-                        <Typography variant="caption" color={gs.textMuted}>
-                          {server.id}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>
-                          {server.command}
-                          {server.args && server.args.length > 0 && ` ${server.args.join(' ')}`}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={getServerStatusText(server)}
-                          color={getServerStatusColor(server)}
-                          size="small"
-                          icon={server.running ? <CheckCircleIcon /> : <CancelIcon />}
-                        />
-                      </TableCell>
-                      <TableCell align="right">
-                        <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
-                          {server.pid || '-'}
-                        </Typography>
-                      </TableCell>
-                      <TableCell align="center">
-                        <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
-                          {server.running ? (
-                            <IconButton
-                              size="small"
-                              color="error"
-                              onClick={() => handleStopServer(server.id)}
-                              title="停止服务器"
-                            >
-                              <StopIcon fontSize="small" />
-                            </IconButton>
-                          ) : (
-                            <IconButton
-                              size="small"
-                              color="success"
-                              onClick={() => handleStartServer(server.id)}
-                              title="启动服务器"
-                            >
-                              <PlayArrowIcon fontSize="small" />
-                            </IconButton>
-                          )}
+                    <TableCell>
+                      <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>
+                        {server.command}
+                        {server.args && server.args.length > 0 && ` ${server.args.join(' ')}`}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={getServerStatusText(server)}
+                        color={getServerStatusColor(server)}
+                        size="small"
+                        icon={server.running ? <CheckCircleIcon /> : <CancelIcon />}
+                      />
+                    </TableCell>
+                    <TableCell align="right">
+                      <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                        {server.pid || '-'}
+                      </Typography>
+                    </TableCell>
+                    <TableCell align="center">
+                      <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
+                        {server.running ? (
                           <IconButton
                             size="small"
-                            color="primary"
-                            onClick={() => handleViewLogs(server)}
-                            title="查看日志"
+                            color="error"
+                            onClick={() => handleStopServer(server.id)}
+                            title="停止服务器"
                           >
-                            <DescriptionIcon fontSize="small" />
+                            <StopIcon fontSize="small" />
                           </IconButton>
-                        </Box>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </CardContent>
-      </Card>
+                        ) : (
+                          <IconButton
+                            size="small"
+                            color="success"
+                            onClick={() => handleStartServer(server.id)}
+                            title="启动服务器"
+                          >
+                            <PlayArrowIcon fontSize="small" />
+                          </IconButton>
+                        )}
+                        <IconButton
+                          size="small"
+                          color="primary"
+                          onClick={() => handleViewLogs(server)}
+                          title="查看日志"
+                        >
+                          <DescriptionIcon fontSize="small" />
+                        </IconButton>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Box>
 
       {/* 测试功能区域 */}
       <Grid container spacing={3}>
         {/* 补全测试 */}
         <Grid item xs={12} md={6}>
-          <Card sx={{ bgcolor: gs.bgPanel, borderColor: gs.border, height: '100%' }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                <CodeIcon fontSize="small" />
-                <Typography variant="h6" fontWeight={600}>
-                  补全测试
-                </Typography>
-              </Box>
+          <Box sx={{ bgcolor: gs.bgPanel,  height: '100%', border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+              <CodeIcon fontSize="small" />
+              <Typography variant="h6" fontWeight={600}>
+                补全测试
+              </Typography>
+            </Box>
 
-              <Grid container spacing={2}>
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    label="服务器 ID"
-                    value={completionServerId}
-                    onChange={(e) => setCompletionServerId(e.target.value)}
-                    placeholder="例如: typescript-language-server"
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    label="文件路径"
-                    value={completionFilePath}
-                    onChange={(e) => setCompletionFilePath(e.target.value)}
-                    placeholder="/path/to/file.ts"
-                  />
-                </Grid>
-                <Grid item xs={6}>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    type="number"
-                    label="行号"
-                    value={completionLine}
-                    onChange={(e) => setCompletionLine(Number(e.target.value))}
-                    inputProps={{ min: 1 }}
-                  />
-                </Grid>
-                <Grid item xs={6}>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    type="number"
-                    label="列号"
-                    value={completionColumn}
-                    onChange={(e) => setCompletionColumn(Number(e.target.value))}
-                    inputProps={{ min: 1 }}
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <Button
-                    variant="contained"
-                    startIcon={completionLoading ? <CircularProgress size={16} /> : <PlayArrowIcon />}
-                    onClick={handleTestCompletion}
-                    disabled={completionLoading}
-                    fullWidth
-                  >
-                    测试补全
-                  </Button>
-                </Grid>
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="服务器 ID"
+                  value={completionServerId}
+                  onChange={(e) => setCompletionServerId(e.target.value)}
+                  placeholder="例如: typescript-language-server"
+                />
               </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="文件路径"
+                  value={completionFilePath}
+                  onChange={(e) => setCompletionFilePath(e.target.value)}
+                  placeholder="/path/to/file.ts"
+                />
+              </Grid>
+              <Grid item xs={6}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  type="number"
+                  label="行号"
+                  value={completionLine}
+                  onChange={(e) => setCompletionLine(Number(e.target.value))}
+                  inputProps={{ min: 1 }}
+                />
+              </Grid>
+              <Grid item xs={6}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  type="number"
+                  label="列号"
+                  value={completionColumn}
+                  onChange={(e) => setCompletionColumn(Number(e.target.value))}
+                  inputProps={{ min: 1 }}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <Button
+                  variant="contained"
+                  startIcon={completionLoading ? <CircularProgress size={16} /> : <PlayArrowIcon />}
+                  onClick={handleTestCompletion}
+                  disabled={completionLoading}
+                  fullWidth
+                >
+                  测试补全
+                </Button>
+              </Grid>
+            </Grid>
 
-              <Collapse in={completions.length > 0}>
-                <Box sx={{ mt: 2 }}>
-                  <Typography variant="subtitle2" gutterBottom>
-                    补全建议 ({completions.length})
-                  </Typography>
-                  <TableContainer component={Paper} variant="outlined">
-                    <Table size="small">
-                      <TableHead>
-                        <TableRow sx={{ bgcolor: gs.bgHover }}>
-                          <TableCell>标签</TableCell>
-                          <TableCell>类型</TableCell>
-                          <TableCell>详情</TableCell>
+            <Collapse in={completions.length > 0}>
+              <Box sx={{ mt: 2 }}>
+                <Typography variant="subtitle2" gutterBottom>
+                  补全建议 ({completions.length})
+                </Typography>
+                <TableContainer component={Paper} variant="outlined">
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow sx={{ bgcolor: gs.bgHover }}>
+                        <TableCell>标签</TableCell>
+                        <TableCell>类型</TableCell>
+                        <TableCell>详情</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {completions.slice(0, 20).map((item, idx) => (
+                        <TableRow key={idx} hover>
+                          <TableCell>
+                            <Chip label={item.label} size="small" variant="outlined" />
+                          </TableCell>
+                          <TableCell>{item.kind}</TableCell>
+                          <TableCell>
+                            <Typography variant="caption" color={gs.textMuted}>
+                              {item.detail || '-'}
+                            </Typography>
+                          </TableCell>
                         </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {completions.slice(0, 20).map((item, idx) => (
-                          <TableRow key={idx} hover>
-                            <TableCell>
-                              <Chip label={item.label} size="small" variant="outlined" />
-                            </TableCell>
-                            <TableCell>{item.kind}</TableCell>
-                            <TableCell>
-                              <Typography variant="caption" color={gs.textMuted}>
-                                {item.detail || '-'}
-                              </Typography>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                  {completions.length > 20 && (
-                    <Typography variant="caption" color={gs.textMuted} sx={{ mt: 1, display: 'block' }}>
-                      仅显示前 20 条，共 {completions.length} 条
-                    </Typography>
-                  )}
-                </Box>
-              </Collapse>
-            </CardContent>
-          </Card>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+                {completions.length > 20 && (
+                  <Typography variant="caption" color={gs.textMuted} sx={{ mt: 1, display: 'block' }}>
+                    仅显示前 20 条，共 {completions.length} 条
+                  </Typography>
+                )}
+              </Box>
+            </Collapse>
+          </Box>
         </Grid>
 
         {/* 悬停测试 */}
         <Grid item xs={12} md={6}>
-          <Card sx={{ bgcolor: gs.bgPanel, borderColor: gs.border, height: '100%' }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                <InfoIcon fontSize="small" />
-                <Typography variant="h6" fontWeight={600}>
-                  悬停测试
-                </Typography>
-              </Box>
+          <Box sx={{ bgcolor: gs.bgPanel,  height: '100%', border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+              <InfoIcon fontSize="small" />
+              <Typography variant="h6" fontWeight={600}>
+                悬停测试
+              </Typography>
+            </Box>
 
-              <Grid container spacing={2}>
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    label="服务器 ID"
-                    value={hoverServerId}
-                    onChange={(e) => setHoverServerId(e.target.value)}
-                    placeholder="例如: typescript-language-server"
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    label="文件路径"
-                    value={hoverFilePath}
-                    onChange={(e) => setHoverFilePath(e.target.value)}
-                    placeholder="/path/to/file.ts"
-                  />
-                </Grid>
-                <Grid item xs={6}>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    type="number"
-                    label="行号"
-                    value={hoverLine}
-                    onChange={(e) => setHoverLine(Number(e.target.value))}
-                    inputProps={{ min: 1 }}
-                  />
-                </Grid>
-                <Grid item xs={6}>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    type="number"
-                    label="列号"
-                    value={hoverColumn}
-                    onChange={(e) => setHoverColumn(Number(e.target.value))}
-                    inputProps={{ min: 1 }}
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <Button
-                    variant="contained"
-                    startIcon={hoverLoading ? <CircularProgress size={16} /> : <PlayArrowIcon />}
-                    onClick={handleTestHover}
-                    disabled={hoverLoading}
-                    fullWidth
-                  >
-                    测试悬停
-                  </Button>
-                </Grid>
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="服务器 ID"
+                  value={hoverServerId}
+                  onChange={(e) => setHoverServerId(e.target.value)}
+                  placeholder="例如: typescript-language-server"
+                />
               </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="文件路径"
+                  value={hoverFilePath}
+                  onChange={(e) => setHoverFilePath(e.target.value)}
+                  placeholder="/path/to/file.ts"
+                />
+              </Grid>
+              <Grid item xs={6}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  type="number"
+                  label="行号"
+                  value={hoverLine}
+                  onChange={(e) => setHoverLine(Number(e.target.value))}
+                  inputProps={{ min: 1 }}
+                />
+              </Grid>
+              <Grid item xs={6}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  type="number"
+                  label="列号"
+                  value={hoverColumn}
+                  onChange={(e) => setHoverColumn(Number(e.target.value))}
+                  inputProps={{ min: 1 }}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <Button
+                  variant="contained"
+                  startIcon={hoverLoading ? <CircularProgress size={16} /> : <PlayArrowIcon />}
+                  onClick={handleTestHover}
+                  disabled={hoverLoading}
+                  fullWidth
+                >
+                  测试悬停
+                </Button>
+              </Grid>
+            </Grid>
 
-              <Collapse in={hoverResult !== null}>
-                <Box sx={{ mt: 2 }}>
-                  <Typography variant="subtitle2" gutterBottom>
-                    悬停信息
-                  </Typography>
-                  <Card variant="outlined" sx={{ bgcolor: gs.bgHover }}>
-                    <CardContent>
-                      <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', fontFamily: 'monospace' }}>
-                        {hoverResult?.content || '无内容'}
-                      </Typography>
-                      {hoverResult?.range && (
-                        <Box sx={{ mt: 1 }}>
-                          <Typography variant="caption" color={gs.textMuted}>
-                            范围: 行 {hoverResult.range.start.line + 1}, 列 {hoverResult.range.start.character + 1} -{' '}
-                            行 {hoverResult.range.end.line + 1}, 列 {hoverResult.range.end.character + 1}
-                          </Typography>
-                        </Box>
-                      )}
-                    </CardContent>
-                  </Card>
+            <Collapse in={hoverResult !== null}>
+              <Box sx={{ mt: 2 }}>
+                <Typography variant="subtitle2" gutterBottom>
+                  悬停信息
+                </Typography>
+                  <Box sx={{ bgcolor: gs.bgHover, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+                    <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', fontFamily: 'monospace' }}>
+                      {hoverResult?.content || '无内容'}
+                    </Typography>
+                    {hoverResult?.range && (
+                      <Box sx={{ mt: 1 }}>
+                        <Typography variant="caption" color={gs.textMuted}>
+                          范围: 行 {hoverResult.range.start.line + 1}, 列 {hoverResult.range.start.character + 1} -{' '}
+                          行 {hoverResult.range.end.line + 1}, 列 {hoverResult.range.end.character + 1}
+                        </Typography>
+                      </Box>
+                    )}
+                  </Box>
                 </Box>
               </Collapse>
-            </CardContent>
-          </Card>
+          </Box>
         </Grid>
       </Grid>
 

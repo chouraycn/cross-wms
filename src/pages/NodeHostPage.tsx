@@ -3,7 +3,7 @@ import {
   Box, Typography, Button, Chip, IconButton, Paper, Table, TableBody,
   TableCell, TableContainer, TableHead, TableRow, Tooltip, CircularProgress,
   Dialog, DialogTitle, DialogContent, DialogActions, useTheme, Alert, Divider,
-  LinearProgress, Stack, TextField, MenuItem, Card, CardContent, Grid,
+  LinearProgress, Stack, TextField, MenuItem, Grid,
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
@@ -231,117 +231,111 @@ const NodeHostPage: React.FC = () => {
         <Grid container spacing={2}>
           {/* 节点信息卡片 */}
           <Grid item xs={12} md={6}>
-            <Card variant="outlined" sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
-              <CardContent>
-                <Typography sx={{ fontSize: '0.9rem', fontWeight: 600, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <DnsIcon fontSize="small" /> 节点信息
-                </Typography>
-                <Stack spacing={1}>
-                  <DetailRow label="主机名" value={info.hostname} mono />
-                  <DetailRow label="节点 ID" value={info.nodeId} mono />
-                  <DetailRow label="版本" value={info.version} />
-                  <DetailRow label="运行时间" value={formatUptime(info.uptimeMs)} />
-                  <DetailRow label="PID" value={String(info.pid)} mono />
-                  <DetailRow label="平台" value={info.platform} mono />
-                  <DetailRow label="Node 版本" value={info.nodeVersion} mono />
-                  <DetailRow label="启动时间" value={formatDateTime(info.startedAtMs)} />
-                </Stack>
-                {info.capabilities.length > 0 && (
-                  <Box sx={{ mt: 1.5 }}>
-                    <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary', mb: 0.5 }}>能力</Typography>
-                    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                      {info.capabilities.map((cap) => (
-                        <Chip
-                          key={cap}
-                          label={cap}
-                          size="small"
-                          sx={{ fontSize: '0.65rem', height: 20 }}
-                        />
-                      ))}
-                    </Box>
+            <Box sx={{ height: '100%', border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+              <Typography sx={{ fontSize: '0.9rem', fontWeight: 600, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+                <DnsIcon fontSize="small" /> 节点信息
+              </Typography>
+              <Stack spacing={1}>
+                <DetailRow label="主机名" value={info.hostname} mono />
+                <DetailRow label="节点 ID" value={info.nodeId} mono />
+                <DetailRow label="版本" value={info.version} />
+                <DetailRow label="运行时间" value={formatUptime(info.uptimeMs)} />
+                <DetailRow label="PID" value={String(info.pid)} mono />
+                <DetailRow label="平台" value={info.platform} mono />
+                <DetailRow label="Node 版本" value={info.nodeVersion} mono />
+                <DetailRow label="启动时间" value={formatDateTime(info.startedAtMs)} />
+              </Stack>
+              {info.capabilities.length > 0 && (
+                <Box sx={{ mt: 1.5 }}>
+                  <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary', mb: 0.5 }}>能力</Typography>
+                  <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                    {info.capabilities.map((cap) => (
+                      <Chip
+                        key={cap}
+                        label={cap}
+                        size="small"
+                        sx={{ fontSize: '0.65rem', height: 20 }}
+                      />
+                    ))}
                   </Box>
-                )}
-              </CardContent>
-            </Card>
+                </Box>
+              )}
+            </Box>
           </Grid>
 
           {/* 调用队列状态 */}
           <Grid item xs={12} md={6}>
-            <Card variant="outlined" sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
-              <CardContent>
-                <Typography sx={{ fontSize: '0.9rem', fontWeight: 600, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <QueueIcon fontSize="small" /> 调用队列状态
-                </Typography>
-                {queue ? (
-                  <Box>
-                    <Grid container spacing={1.5}>
-                      <Grid item xs={6} sm={3}>
-                        <StatBox label="排队中" value={queue.pending} color="#2563EB" />
-                      </Grid>
-                      <Grid item xs={6} sm={3}>
-                        <StatBox label="运行中" value={queue.running} color="#D97706" />
-                      </Grid>
-                      <Grid item xs={6} sm={3}>
-                        <StatBox label="已完成" value={queue.completed} color="#059669" />
-                      </Grid>
-                      <Grid item xs={6} sm={3}>
-                        <StatBox label="失败" value={queue.failed} color="#DC2626" />
-                      </Grid>
+            <Box sx={{ height: '100%', border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+              <Typography sx={{ fontSize: '0.9rem', fontWeight: 600, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+                <QueueIcon fontSize="small" /> 调用队列状态
+              </Typography>
+              {queue ? (
+                <Box>
+                  <Grid container spacing={1.5}>
+                    <Grid item xs={6} sm={3}>
+                      <StatBox label="排队中" value={queue.pending} color="#2563EB" />
                     </Grid>
-                    <Divider sx={{ my: 1.5 }} />
-                    <Stack spacing={1}>
-                      <DetailRow label="总处理数" value={String(queue.totalProcessed)} mono />
-                      <DetailRow label="平均耗时" value={`${queue.averageDurationMs.toFixed(0)}ms`} mono />
-                    </Stack>
-                  </Box>
-                ) : (
-                  <Typography sx={{ fontSize: '0.75rem', color: 'text.disabled' }}>暂无队列数据</Typography>
-                )}
-              </CardContent>
-            </Card>
+                    <Grid item xs={6} sm={3}>
+                      <StatBox label="运行中" value={queue.running} color="#D97706" />
+                    </Grid>
+                    <Grid item xs={6} sm={3}>
+                      <StatBox label="已完成" value={queue.completed} color="#059669" />
+                    </Grid>
+                    <Grid item xs={6} sm={3}>
+                      <StatBox label="失败" value={queue.failed} color="#DC2626" />
+                    </Grid>
+                  </Grid>
+                  <Divider sx={{ my: 1.5 }} />
+                  <Stack spacing={1}>
+                    <DetailRow label="总处理数" value={String(queue.totalProcessed)} mono />
+                    <DetailRow label="平均耗时" value={`${queue.averageDurationMs.toFixed(0)}ms`} mono />
+                  </Stack>
+                </Box>
+              ) : (
+                <Typography sx={{ fontSize: '0.75rem', color: 'text.disabled' }}>暂无队列数据</Typography>
+              )}
+            </Box>
           </Grid>
 
           {/* 资源监控 */}
           <Grid item xs={12}>
-            <Card variant="outlined" sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
-              <CardContent>
-                <Typography sx={{ fontSize: '0.9rem', fontWeight: 600, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <MemoryIcon fontSize="small" /> 资源监控
-                </Typography>
-                {resources ? (
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6}>
-                      <ResourceBar
-                        label="CPU 使用率"
-                        value={resources.current?.cpuPercent ?? 0}
-                        max={resources.limits.maxCpuPercent}
-                        unit="%"
-                        color={(resources.current?.cpuPercent ?? 0) > 80 ? '#DC2626' : '#2563EB'}
-                      />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                      <ResourceBar
-                        label="内存使用"
-                        value={resources.current ? resources.current.memoryBytes / (1024 * 1024) : 0}
-                        max={resources.limits.maxMemoryMB}
-                        unit="MB"
-                        color={(resources.current?.memoryBytes ?? 0) > resources.limits.maxMemoryMB * 1024 * 1024 * 0.8 ? '#DC2626' : '#059669'}
-                      />
-                    </Grid>
-                    <Grid item xs={12}>
-                      <Stack direction="row" spacing={3} sx={{ flexWrap: 'wrap', gap: 1 }}>
-                        <DetailRow label="当前内存" value={formatBytes(resources.current?.memoryBytes)} mono />
-                        <DetailRow label="内存上限" value={`${resources.limits.maxMemoryMB} MB`} mono />
-                        <DetailRow label="CPU 上限" value={`${resources.limits.maxCpuPercent}%`} mono />
-                        <DetailRow label="采样时间" value={formatDateTime(resources.current?.timestamp)} />
-                      </Stack>
-                    </Grid>
+            <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+              <Typography sx={{ fontSize: '0.9rem', fontWeight: 600, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+                <MemoryIcon fontSize="small" /> 资源监控
+              </Typography>
+              {resources ? (
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={6}>
+                    <ResourceBar
+                      label="CPU 使用率"
+                      value={resources.current?.cpuPercent ?? 0}
+                      max={resources.limits.maxCpuPercent}
+                      unit="%"
+                      color={(resources.current?.cpuPercent ?? 0) > 80 ? '#DC2626' : '#2563EB'}
+                    />
                   </Grid>
-                ) : (
-                  <Typography sx={{ fontSize: '0.75rem', color: 'text.disabled' }}>暂无资源监控数据</Typography>
-                )}
-              </CardContent>
-            </Card>
+                  <Grid item xs={12} sm={6}>
+                    <ResourceBar
+                      label="内存使用"
+                      value={resources.current ? resources.current.memoryBytes / (1024 * 1024) : 0}
+                      max={resources.limits.maxMemoryMB}
+                      unit="MB"
+                      color={(resources.current?.memoryBytes ?? 0) > resources.limits.maxMemoryMB * 1024 * 1024 * 0.8 ? '#DC2626' : '#059669'}
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <Stack direction="row" spacing={3} sx={{ flexWrap: 'wrap', gap: 1 }}>
+                      <DetailRow label="当前内存" value={formatBytes(resources.current?.memoryBytes)} mono />
+                      <DetailRow label="内存上限" value={`${resources.limits.maxMemoryMB} MB`} mono />
+                      <DetailRow label="CPU 上限" value={`${resources.limits.maxCpuPercent}%`} mono />
+                      <DetailRow label="采样时间" value={formatDateTime(resources.current?.timestamp)} />
+                    </Stack>
+                  </Grid>
+                </Grid>
+              ) : (
+                <Typography sx={{ fontSize: '0.75rem', color: 'text.disabled' }}>暂无资源监控数据</Typography>
+              )}
+            </Box>
           </Grid>
         </Grid>
       )}

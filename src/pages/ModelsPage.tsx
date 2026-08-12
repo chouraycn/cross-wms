@@ -2,8 +2,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
   Grid,
   Chip,
   Table,
@@ -373,306 +371,298 @@ export default function ModelsPage() {
 
       <Grid container spacing={3}>
         <Grid item xs={12} md={8}>
-          <Card sx={{ bgcolor: gs.bgPanel }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                <Typography variant="h6">模型列表</Typography>
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <Chip
-                    size="small"
-                    icon={<TrendingUpIcon />}
-                    label={`累计 ${totalUsageCount.toLocaleString()} 次调用`}
-                    color="primary"
-                    variant="outlined"
-                  />
-                  <Chip
-                    size="small"
-                    label={`置顶 ${prefs.preferences.pinned.length}`}
-                    variant="outlined"
-                  />
-                  <Chip
-                    size="small"
-                    label={`收藏 ${prefs.preferences.favorites.length}`}
-                    variant="outlined"
-                  />
-                  <Chip
-                    size="small"
-                    label={`隐藏 ${prefs.preferences.hidden.length}`}
-                    variant="outlined"
-                  />
-                </Stack>
-              </Box>
-
-              <Stack direction="row" spacing={1} sx={{ mb: 2 }} alignItems="center">
-                <TextField
+          <Box sx={{ bgcolor: gs.bgPanel, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Typography variant="h6">模型列表</Typography>
+              <Stack direction="row" spacing={1} alignItems="center">
+                <Chip
                   size="small"
-                  placeholder="按名称 / ID / Provider 搜索"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  InputProps={{ startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} /> }}
-                  sx={{ minWidth: 220 }}
+                  icon={<TrendingUpIcon />}
+                  label={`累计 ${totalUsageCount.toLocaleString()} 次调用`}
+                  color="primary"
+                  variant="outlined"
                 />
-                <FormControl size="small" sx={{ minWidth: 160 }}>
-                  <InputLabel>按 Provider 分组</InputLabel>
-                  <Select
-                    label="按 Provider 分组"
-                    value={providerFilter}
-                    onChange={(e) => setProviderFilter(e.target.value as string)}
-                  >
-                    <MenuItem value="__all__">全部 Provider</MenuItem>
-                    {providerOptions.map(p => (
-                      <MenuItem key={p} value={p}>{p}</MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={showHidden}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setShowHidden(e.target.checked)}
-                      size="small"
-                    />
-                  }
-                  label="显示已隐藏"
+                <Chip
+                  size="small"
+                  label={`置顶 ${prefs.preferences.pinned.length}`}
+                  variant="outlined"
+                />
+                <Chip
+                  size="small"
+                  label={`收藏 ${prefs.preferences.favorites.length}`}
+                  variant="outlined"
+                />
+                <Chip
+                  size="small"
+                  label={`隐藏 ${prefs.preferences.hidden.length}`}
+                  variant="outlined"
                 />
               </Stack>
+            </Box>
 
-              <TableContainer component={Paper}>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell width={40}></TableCell>
-                      <TableCell>名称</TableCell>
-                      <TableCell>提供商</TableCell>
-                      <TableCell>使用</TableCell>
-                      <TableCell>健康</TableCell>
-                      {/* v2.x: 运行时故障转移状态（冷却中/连续失败，区别于一次性健康检查） */}
-                      <TableCell>运行时</TableCell>
-                      <TableCell>状态</TableCell>
-                      <TableCell>操作</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {visibleModels.map(model => {
-                      const health = getHealthStatus(model.id);
-                      const usage = model.usageStats;
-                      const failover = getFailoverStatus(model.id);
-                      return (
-                        <TableRow key={model.id}>
-                          <TableCell>
-                            <Stack direction="row" spacing={0.5}>
-                              <Tooltip title={prefs.isPinned(model.id) ? '取消置顶' : '置顶'}>
-                                <IconButton size="small" onClick={() => prefs.togglePin(model.id)}>
-                                  {prefs.isPinned(model.id)
-                                    ? <PushPinIcon fontSize="small" color="primary" />
-                                    : <PushPinOutlinedIcon fontSize="small" />}
-                                </IconButton>
-                              </Tooltip>
-                              <Tooltip title={prefs.isFavorite(model.id) ? '取消收藏' : '收藏'}>
-                                <IconButton size="small" onClick={() => prefs.toggleFavorite(model.id)}>
-                                  {prefs.isFavorite(model.id)
-                                    ? <StarIcon fontSize="small" color="warning" />
-                                    : <StarBorderIcon fontSize="small" />}
-                                </IconButton>
-                              </Tooltip>
-                              <Tooltip title={prefs.isHidden(model.id) ? '取消隐藏' : '隐藏'}>
-                                <IconButton size="small" onClick={() => prefs.toggleHidden(model.id)}>
-                                  {prefs.isHidden(model.id)
-                                    ? <VisibilityIcon fontSize="small" />
-                                    : <VisibilityOffIcon fontSize="small" />}
-                                </IconButton>
-                              </Tooltip>
-                            </Stack>
-                          </TableCell>
-                          <TableCell>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              {prefs.isPinned(model.id) && <Chip size="small" label="📌" />}
-                              {prefs.isFavorite(model.id) && <StarIcon sx={{ fontSize: 14 }} color="warning" />}
-                              {model.id === defaultModelId && (
-                                <Chip size="small" label="默认" color="primary" />
-                              )}
-                              {prefs.isHidden(model.id) && <Chip size="small" label="已隐藏" color="default" />}
-                              <Typography>{model.name}</Typography>
-                            </Box>
-                          </TableCell>
-                          <TableCell>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              {getProviderIcon(model.provider)}
-                              <Typography>{model.provider}</Typography>
-                            </Box>
-                          </TableCell>
-                          <TableCell>
-                            {usage ? (
-                              <Stack spacing={0.25}>
-                                <Typography variant="caption">
-                                  {usage.callCount.toLocaleString()} 次调用
+            <Stack direction="row" spacing={1} sx={{ mb: 2 }} alignItems="center">
+              <TextField
+                size="small"
+                placeholder="按名称 / ID / Provider 搜索"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                InputProps={{ startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} /> }}
+                sx={{ minWidth: 220 }}
+              />
+              <FormControl size="small" sx={{ minWidth: 160 }}>
+                <InputLabel>按 Provider 分组</InputLabel>
+                <Select
+                  label="按 Provider 分组"
+                  value={providerFilter}
+                  onChange={(e) => setProviderFilter(e.target.value as string)}
+                >
+                  <MenuItem value="__all__">全部 Provider</MenuItem>
+                  {providerOptions.map(p => (
+                    <MenuItem key={p} value={p}>{p}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={showHidden}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setShowHidden(e.target.checked)}
+                    size="small"
+                  />
+                }
+                label="显示已隐藏"
+              />
+            </Stack>
+
+            <TableContainer component={Paper}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell width={40}></TableCell>
+                    <TableCell>名称</TableCell>
+                    <TableCell>提供商</TableCell>
+                    <TableCell>使用</TableCell>
+                    <TableCell>健康</TableCell>
+                    {/* v2.x: 运行时故障转移状态（冷却中/连续失败，区别于一次性健康检查） */}
+                    <TableCell>运行时</TableCell>
+                    <TableCell>状态</TableCell>
+                    <TableCell>操作</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {visibleModels.map(model => {
+                    const health = getHealthStatus(model.id);
+                    const usage = model.usageStats;
+                    const failover = getFailoverStatus(model.id);
+                    return (
+                      <TableRow key={model.id}>
+                        <TableCell>
+                          <Stack direction="row" spacing={0.5}>
+                            <Tooltip title={prefs.isPinned(model.id) ? '取消置顶' : '置顶'}>
+                              <IconButton size="small" onClick={() => prefs.togglePin(model.id)}>
+                                {prefs.isPinned(model.id)
+                                  ? <PushPinIcon fontSize="small" color="primary" />
+                                  : <PushPinOutlinedIcon fontSize="small" />}
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title={prefs.isFavorite(model.id) ? '取消收藏' : '收藏'}>
+                              <IconButton size="small" onClick={() => prefs.toggleFavorite(model.id)}>
+                                {prefs.isFavorite(model.id)
+                                  ? <StarIcon fontSize="small" color="warning" />
+                                  : <StarBorderIcon fontSize="small" />}
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title={prefs.isHidden(model.id) ? '取消隐藏' : '隐藏'}>
+                              <IconButton size="small" onClick={() => prefs.toggleHidden(model.id)}>
+                                {prefs.isHidden(model.id)
+                                  ? <VisibilityIcon fontSize="small" />
+                                  : <VisibilityOffIcon fontSize="small" />}
+                              </IconButton>
+                            </Tooltip>
+                          </Stack>
+                        </TableCell>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            {prefs.isPinned(model.id) && <Chip size="small" label="📌" />}
+                            {prefs.isFavorite(model.id) && <StarIcon sx={{ fontSize: 14 }} color="warning" />}
+                            {model.id === defaultModelId && (
+                              <Chip size="small" label="默认" color="primary" />
+                            )}
+                            {prefs.isHidden(model.id) && <Chip size="small" label="已隐藏" color="default" />}
+                            <Typography>{model.name}</Typography>
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            {getProviderIcon(model.provider)}
+                            <Typography>{model.provider}</Typography>
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          {usage ? (
+                            <Stack spacing={0.25}>
+                              <Typography variant="caption">
+                                {usage.callCount.toLocaleString()} 次调用
+                              </Typography>
+                              {usage.avgResponseTime != null && (
+                                <Typography variant="caption" color="text.secondary">
+                                  平均 {usage.avgResponseTime.toFixed(0)}ms
                                 </Typography>
-                                {usage.avgResponseTime != null && (
-                                  <Typography variant="caption" color="text.secondary">
-                                    平均 {usage.avgResponseTime.toFixed(0)}ms
-                                  </Typography>
-                                )}
-                                {usage.lastUsedAt && (
-                                  <Typography variant="caption" color="text.secondary">
-                                    最近 {new Date(usage.lastUsedAt).toLocaleDateString('zh-CN')}
-                                  </Typography>
-                                )}
-                              </Stack>
-                            ) : (
-                              <Typography variant="caption" color="text.secondary">无数据</Typography>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {health ? (
-                              health.status === 'healthy' ? (
-                                <Chip icon={<CheckCircleIcon />} label="正常" color="success" size="small" />
-                              ) : health.status === 'timeout' ? (
-                                <Chip icon={<ScheduleIcon />} label="超时" color="warning" size="small" />
-                              ) : health.status === 'skipped' ? (
-                                <Chip icon={<WifiOffIcon />} label="跳过" size="small" />
-                              ) : (
-                                <Chip icon={<ErrorIcon />} label="异常" color="error" size="small" />
-                              )
-                            ) : (
-                              <Chip icon={<WifiIcon />} label="未检查" size="small" />
-                            )}
-                          </TableCell>
-                          {/* v2.x: 运行时故障转移状态 — 冷却中/连续失败计数（运行时累积，区别于一次性健康检查） */}
-                          <TableCell>
-                            {failover ? (
-                              failover.isInCooldown ? (
-                                <Tooltip title={failover.consecutiveFailures > 0 ? `连续失败 ${failover.consecutiveFailures} 次，已进入冷却` : '模型冷却中'}>
-                                  <Chip icon={<ErrorIcon />} label="冷却中" color="error" size="small" />
-                                </Tooltip>
-                              ) : failover.consecutiveFailures > 0 ? (
-                                <Tooltip title={`连续失败 ${failover.consecutiveFailures} 次（未达冷却阈值）`}>
-                                  <Chip icon={<ScheduleIcon />} label={`失败 ${failover.consecutiveFailures}`} color="warning" size="small" />
-                                </Tooltip>
-                              ) : (
-                                <Chip icon={<CheckCircleIcon />} label="健康" color="success" size="small" />
-                              )
-                            ) : (
-                              <Chip label="—" size="small" variant="outlined" />
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <Switch
-                              checked={model.enabled}
-                              onChange={() => handleToggleModel(model.id)}
-                              color="primary"
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Stack direction="row" spacing={1}>
-                              <Button
-                                size="small"
-                                onClick={() => handleSetDefault(model.id)}
-                                disabled={model.id === defaultModelId}
-                              >
-                                {model.id === defaultModelId ? '默认' : '设为默认'}
-                              </Button>
+                              )}
+                              {usage.lastUsedAt && (
+                                <Typography variant="caption" color="text.secondary">
+                                  最近 {new Date(usage.lastUsedAt).toLocaleDateString('zh-CN')}
+                                </Typography>
+                              )}
                             </Stack>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                    {visibleModels.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={8} align="center" sx={{ py: 4, color: 'text.secondary' }}>
-                          暂无符合条件的模型
+                          ) : (
+                            <Typography variant="caption" color="text.secondary">无数据</Typography>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {health ? (
+                            health.status === 'healthy' ? (
+                              <Chip icon={<CheckCircleIcon />} label="正常" color="success" size="small" />
+                            ) : health.status === 'timeout' ? (
+                              <Chip icon={<ScheduleIcon />} label="超时" color="warning" size="small" />
+                            ) : health.status === 'skipped' ? (
+                              <Chip icon={<WifiOffIcon />} label="跳过" size="small" />
+                            ) : (
+                              <Chip icon={<ErrorIcon />} label="异常" color="error" size="small" />
+                            )
+                          ) : (
+                            <Chip icon={<WifiIcon />} label="未检查" size="small" />
+                          )}
+                        </TableCell>
+                        {/* v2.x: 运行时故障转移状态 — 冷却中/连续失败计数（运行时累积，区别于一次性健康检查） */}
+                        <TableCell>
+                          {failover ? (
+                            failover.isInCooldown ? (
+                              <Tooltip title={failover.consecutiveFailures > 0 ? `连续失败 ${failover.consecutiveFailures} 次，已进入冷却` : '模型冷却中'}>
+                                <Chip icon={<ErrorIcon />} label="冷却中" color="error" size="small" />
+                              </Tooltip>
+                            ) : failover.consecutiveFailures > 0 ? (
+                              <Tooltip title={`连续失败 ${failover.consecutiveFailures} 次（未达冷却阈值）`}>
+                                <Chip icon={<ScheduleIcon />} label={`失败 ${failover.consecutiveFailures}`} color="warning" size="small" />
+                              </Tooltip>
+                            ) : (
+                              <Chip icon={<CheckCircleIcon />} label="健康" color="success" size="small" />
+                            )
+                          ) : (
+                            <Chip label="—" size="small" variant="outlined" />
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Switch
+                            checked={model.enabled}
+                            onChange={() => handleToggleModel(model.id)}
+                            color="primary"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Stack direction="row" spacing={1}>
+                            <Button
+                              size="small"
+                              onClick={() => handleSetDefault(model.id)}
+                              disabled={model.id === defaultModelId}
+                            >
+                              {model.id === defaultModelId ? '默认' : '设为默认'}
+                            </Button>
+                          </Stack>
                         </TableCell>
                       </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </CardContent>
-          </Card>
+                    );
+                  })}
+                  {visibleModels.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={8} align="center" sx={{ py: 4, color: 'text.secondary' }}>
+                        暂无符合条件的模型
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Box>
         </Grid>
 
         <Grid item xs={12} md={4}>
-          <Card sx={{ bgcolor: gs.bgPanel }}>
-            <CardContent>
-              <Typography variant="h6" mb={2}>推荐模型</Typography>
-              {recommendedModels.length > 0 ? (
-                <Box sx={{ mb: 2 }}>
-                  <Button fullWidth onClick={handleAddAllRecommended} startIcon={<AddIcon />} sx={{ mb: 2 }}>
-                    添加全部推荐模型
-                  </Button>
-                  <List>
-                    {recommendedModels.map(model => (
-                      <ListItem key={model.id} secondaryAction={
-                        <IconButton onClick={() => handleAddRecommendedModel(model.id)}>
-                          <AddIcon />
-                        </IconButton>
-                      }>
-                        <ListItemText primary={model.name} secondary={model.provider} />
-                      </ListItem>
-                    ))}
-                  </List>
-                </Box>
-              ) : (
-                <Typography variant="body2" color="textSecondary">暂无推荐模型</Typography>
-              )}
-            </CardContent>
-          </Card>
-
-          {discoveredModels.length > 0 && (
-            <Card sx={{ bgcolor: gs.bgPanel, mt: 3 }}>
-              <CardContent>
-                <Typography variant="h6" mb={2}>发现的本地模型</Typography>
+          <Box sx={{ bgcolor: gs.bgPanel, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+            <Typography variant="h6" mb={2}>推荐模型</Typography>
+            {recommendedModels.length > 0 ? (
+              <Box sx={{ mb: 2 }}>
+                <Button fullWidth onClick={handleAddAllRecommended} startIcon={<AddIcon />} sx={{ mb: 2 }}>
+                  添加全部推荐模型
+                </Button>
                 <List>
-                  {discoveredModels.map(model => (
+                  {recommendedModels.map(model => (
                     <ListItem key={model.id} secondaryAction={
-                      <IconButton onClick={() => handleAddDiscoveredModel(model)}>
+                      <IconButton onClick={() => handleAddRecommendedModel(model.id)}>
                         <AddIcon />
                       </IconButton>
                     }>
-                      <ListItemText
-                        primary={model.name}
-                        secondary={`${model.provider} · ${model.size || ''}`}
-                      />
+                      <ListItemText primary={model.name} secondary={model.provider} />
                     </ListItem>
                   ))}
                 </List>
-              </CardContent>
-            </Card>
+              </Box>
+            ) : (
+              <Typography variant="body2" color="textSecondary">暂无推荐模型</Typography>
+            )}
+          </Box>
+
+          {discoveredModels.length > 0 && (
+            <Box sx={{ bgcolor: gs.bgPanel, mt: 3, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+              <Typography variant="h6" mb={2}>发现的本地模型</Typography>
+              <List>
+                {discoveredModels.map(model => (
+                  <ListItem key={model.id} secondaryAction={
+                    <IconButton onClick={() => handleAddDiscoveredModel(model)}>
+                      <AddIcon />
+                    </IconButton>
+                  }>
+                    <ListItemText
+                      primary={model.name}
+                      secondary={`${model.provider} · ${model.size || ''}`}
+                    />
+                  </ListItem>
+                ))}
+              </List>
+            </Box>
           )}
 
-          <Card sx={{ bgcolor: gs.bgPanel, mt: 3 }}>
-            <CardContent>
-              <Typography variant="h6" mb={2}>测试连接</Typography>
-              <TextField
-                fullWidth
-                label="API 端点"
-                placeholder="https://api.openai.com/v1"
-                sx={{ mb: 2 }}
-              />
-              <TextField
-                fullWidth
-                label="API Key"
-                type="password"
-                sx={{ mb: 2 }}
-              />
-              <TextField
-                fullWidth
-                label="模型 ID"
-                placeholder="gpt-4o"
-                sx={{ mb: 2 }}
-              />
-              <Button fullWidth onClick={() => {}} startIcon={<PlayArrowIcon />} disabled={testConnectionLoading}>
-                {testConnectionLoading ? '测试中...' : '测试连接'}
-              </Button>
-              {testConnectionResult && (
-                <Alert
-                  severity={testConnectionResult.success ? 'success' : 'error'}
-                  sx={{ mt: 2 }}
-                >
-                  {testConnectionResult.message}
-                </Alert>
-              )}
-            </CardContent>
-          </Card>
+          <Box sx={{ bgcolor: gs.bgPanel, mt: 3, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+            <Typography variant="h6" mb={2}>测试连接</Typography>
+            <TextField
+              fullWidth
+              label="API 端点"
+              placeholder="https://api.openai.com/v1"
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              fullWidth
+              label="API Key"
+              type="password"
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              fullWidth
+              label="模型 ID"
+              placeholder="gpt-4o"
+              sx={{ mb: 2 }}
+            />
+            <Button fullWidth onClick={() => {}} startIcon={<PlayArrowIcon />} disabled={testConnectionLoading}>
+              {testConnectionLoading ? '测试中...' : '测试连接'}
+            </Button>
+            {testConnectionResult && (
+              <Alert
+                severity={testConnectionResult.success ? 'success' : 'error'}
+                sx={{ mt: 2 }}
+              >
+                {testConnectionResult.message}
+              </Alert>
+            )}
+          </Box>
         </Grid>
       </Grid>
     </Box>

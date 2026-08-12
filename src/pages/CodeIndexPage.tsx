@@ -8,8 +8,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
   Grid,
   Button,
   TextField,
@@ -303,478 +301,462 @@ const CodeIndexPage: React.FC = () => {
       )}
 
       {/* 索引状态卡片 */}
-      <Card sx={{ mb: 3, bgcolor: gs.bgPanel, borderColor: gs.border }}>
-        <CardContent>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-            <StorageIcon fontSize="small" />
-            <Typography variant="h6" fontWeight={600}>
-              索引状态
-            </Typography>
-            {indexStatus?.isIndexing && (
-              <Chip
-                icon={<CircularProgress size={14} />}
-                label="索引中..."
-                color="primary"
-                size="small"
-              />
-            )}
-            {indexStatus && !indexStatus.isIndexing && indexStatus.indexedFiles > 0 && (
-              <Chip
-                icon={<CheckCircleIcon />}
-                label="已索引"
-                color="success"
-                size="small"
-              />
-            )}
-          </Box>
-
-          {/* 进度条 */}
+      <Box sx={{ mb: 3, bgcolor: gs.bgPanel, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+          <StorageIcon fontSize="small" />
+          <Typography variant="h6" fontWeight={600}>
+            索引状态
+          </Typography>
           {indexStatus?.isIndexing && (
-            <Box sx={{ mb: 3 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                <Typography variant="body2" color="text.secondary">
-                  索引进度
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {indexStatus.indexedFiles} / {indexStatus.totalFiles} 文件
-                </Typography>
-              </Box>
-              <LinearProgress
-                variant="determinate"
-                value={indexStatus.progress || 0}
-                sx={{ height: 8, borderRadius: 4 }}
-              />
-            </Box>
+            <Chip
+              icon={<CircularProgress size={14} />}
+              label="索引中..."
+              color="primary"
+              size="small"
+            />
           )}
+          {indexStatus && !indexStatus.isIndexing && indexStatus.indexedFiles > 0 && (
+            <Chip
+              icon={<CheckCircleIcon />}
+              label="已索引"
+              color="success"
+              size="small"
+            />
+          )}
+        </Box>
 
-          {/* 构建索引 */}
+        {/* 进度条 */}
+        {indexStatus?.isIndexing && (
           <Box sx={{ mb: 3 }}>
-            <Typography variant="body2" color={gs.textSecondary} sx={{ mb: 1 }}>
-              构建索引
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 1 }}>
-              <TextField
-                fullWidth
-                size="small"
-                placeholder="索引路径（留空使用工作区根目录）"
-                value={rootPath}
-                onChange={(e) => setRootPath(e.target.value)}
-                disabled={building || indexStatus?.isIndexing}
-              />
-              <Button
-                variant="contained"
-                startIcon={building ? <CircularProgress size={16} /> : <BuildIcon />}
-                onClick={handleBuildIndex}
-                disabled={building || indexStatus?.isIndexing}
-              >
-                构建索引
-              </Button>
-            </Box>
-          </Box>
-
-          {/* 状态指标 */}
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={6} md={3}>
-              <Card variant="outlined" sx={{ bgcolor: gs.bgHover }}>
-                <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                    <FolderIcon color="primary" fontSize="small" />
-                    <Typography variant="body2" color="text.secondary">
-                      已索引文件
-                    </Typography>
-                  </Box>
-                  <Typography variant="h4" fontWeight={600}>
-                    {indexStatus?.indexedFiles ?? 0}
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <Card variant="outlined" sx={{ bgcolor: gs.bgHover }}>
-                <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                    <CodeIcon color="secondary" fontSize="small" />
-                    <Typography variant="body2" color="text.secondary">
-                      符号数量
-                    </Typography>
-                  </Box>
-                  <Typography variant="h4" fontWeight={600}>
-                    {indexStatus?.totalSymbols ?? 0}
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <Card variant="outlined" sx={{ bgcolor: gs.bgHover }}>
-                <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                    <TimerIcon color="info" fontSize="small" />
-                    <Typography variant="body2" color="text.secondary">
-                      索引耗时
-                    </Typography>
-                  </Box>
-                  <Typography variant="h6" fontWeight={600}>
-                    {indexStatus?.startTime && indexStatus?.endTime
-                      ? formatDuration(indexStatus.endTime - indexStatus.startTime)
-                      : indexStatus?.isIndexing
-                      ? '进行中...'
-                      : '-'}
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <Card variant="outlined" sx={{ bgcolor: gs.bgHover }}>
-                <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                    <TrendingUpIcon color="success" fontSize="small" />
-                    <Typography variant="body2" color="text.secondary">
-                      进度
-                    </Typography>
-                  </Box>
-                  <Typography variant="h4" fontWeight={600}>
-                    {indexStatus?.progress ? `${indexStatus.progress.toFixed(1)}%` : '-'}
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-          </Grid>
-        </CardContent>
-      </Card>
-
-      {/* 索引统计 */}
-      {indexStats && (
-        <Card sx={{ mb: 3, bgcolor: gs.bgPanel, borderColor: gs.border }}>
-          <CardContent>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-              <TrendingUpIcon fontSize="small" />
-              <Typography variant="h6" fontWeight={600}>
-                索引统计
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+              <Typography variant="body2" color="text.secondary">
+                索引进度
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {indexStatus.indexedFiles} / {indexStatus.totalFiles} 文件
               </Typography>
             </Box>
-
-            <Grid container spacing={3}>
-              {/* 符号类型分布 */}
-              <Grid item xs={12} md={6}>
-                <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 1 }}>
-                  符号类型分布
-                </Typography>
-                <TableContainer component={Paper} variant="outlined">
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow sx={{ bgcolor: gs.bgHover }}>
-                        <TableCell>类型</TableCell>
-                        <TableCell align="right">数量</TableCell>
-                        <TableCell>占比</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {Object.keys(indexStats.symbolsByKind).length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={3} align="center" sx={{ py: 3, color: gs.textMuted }}>
-                            暂无数据
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        Object.entries(indexStats.symbolsByKind)
-                          .sort(([, a], [, b]) => b - a)
-                          .slice(0, 10)
-                          .map(([kind, count]) => {
-                            const total = indexStats.totalSymbols || 1;
-                            const percent = (count / total) * 100;
-                            return (
-                              <TableRow key={kind} hover>
-                                <TableCell>
-                                  <Chip
-                                    label={kind}
-                                    size="small"
-                                    color={getKindColor(kind)}
-                                    variant="outlined"
-                                  />
-                                </TableCell>
-                                <TableCell align="right">{count}</TableCell>
-                                <TableCell>
-                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                    <LinearProgress
-                                      variant="determinate"
-                                      value={percent}
-                                      sx={{ flex: 1, height: 6, borderRadius: 3 }}
-                                    />
-                                    <Typography variant="caption" sx={{ minWidth: 40 }}>
-                                      {percent.toFixed(1)}%
-                                    </Typography>
-                                  </Box>
-                                </TableCell>
-                              </TableRow>
-                            );
-                          })
-                      )}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              </Grid>
-
-              {/* 语言分布 */}
-              <Grid item xs={12} md={6}>
-                <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 1 }}>
-                  语言分布
-                </Typography>
-                <TableContainer component={Paper} variant="outlined">
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow sx={{ bgcolor: gs.bgHover }}>
-                        <TableCell>语言</TableCell>
-                        <TableCell align="right">文件数</TableCell>
-                        <TableCell align="right">符号数</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {Object.keys(indexStats.filesByLanguage).length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={3} align="center" sx={{ py: 3, color: gs.textMuted }}>
-                            暂无数据
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        Object.entries(indexStats.filesByLanguage)
-                          .sort(([, a], [, b]) => b - a)
-                          .slice(0, 10)
-                          .map(([language, fileCount]) => (
-                            <TableRow key={language} hover>
-                              <TableCell>
-                                <Chip label={language} size="small" variant="outlined" />
-                              </TableCell>
-                              <TableCell align="right">{fileCount}</TableCell>
-                              <TableCell align="right">
-                                {indexStats.symbolsByLanguage[language] || 0}
-                              </TableCell>
-                            </TableRow>
-                          ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              </Grid>
-            </Grid>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* 符号搜索 */}
-      <Card sx={{ mb: 3, bgcolor: gs.bgPanel, borderColor: gs.border }}>
-        <CardContent>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-            <SearchIcon fontSize="small" />
-            <Typography variant="h6" fontWeight={600}>
-              符号搜索
-            </Typography>
+            <LinearProgress
+              variant="determinate"
+              value={indexStatus.progress || 0}
+              sx={{ height: 8, borderRadius: 4 }}
+            />
           </Box>
+        )}
 
-          <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+        {/* 构建索引 */}
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="body2" color={gs.textSecondary} sx={{ mb: 1 }}>
+            构建索引
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 1 }}>
             <TextField
               fullWidth
               size="small"
-              placeholder="输入符号名称搜索..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyPress={(e) => {
-                if (e.key === 'Enter') {
-                  handleSearchSymbols();
-                }
-              }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon color="action" />
-                  </InputAdornment>
-                ),
-                endAdornment: searchQuery && (
-                  <InputAdornment position="end">
-                    <IconButton
-                      size="small"
-                      onClick={() => {
-                        setSearchQuery('');
-                        setSearchResults([]);
-                      }}
-                    >
-                      <ClearIcon fontSize="small" />
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
-              disabled={searching}
+              placeholder="索引路径（留空使用工作区根目录）"
+              value={rootPath}
+              onChange={(e) => setRootPath(e.target.value)}
+              disabled={building || indexStatus?.isIndexing}
             />
             <Button
               variant="contained"
-              startIcon={searching ? <CircularProgress size={16} /> : <SearchIcon />}
-              onClick={handleSearchSymbols}
-              disabled={searching || !searchQuery.trim()}
+              startIcon={building ? <CircularProgress size={16} /> : <BuildIcon />}
+              onClick={handleBuildIndex}
+              disabled={building || indexStatus?.isIndexing}
             >
-              搜索
+              构建索引
             </Button>
           </Box>
+        </Box>
 
-          {searchResults.length > 0 && (
-            <TableContainer component={Paper} variant="outlined">
-              <Table size="small">
-                <TableHead>
-                  <TableRow sx={{ bgcolor: gs.bgHover }}>
-                    <TableCell>符号名称</TableCell>
-                    <TableCell>类型</TableCell>
-                    <TableCell>文件路径</TableCell>
-                    <TableCell align="right">位置</TableCell>
-                    <TableCell align="right">评分</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {searchResults.map((result, idx) => (
-                    <TableRow key={`${result.name}-${result.filePath}-${idx}`} hover>
-                      <TableCell>
-                        <Box>
-                          <Typography variant="body2" fontWeight={500}>
-                            {result.name}
-                          </Typography>
-                          {result.containerName && (
-                            <Typography variant="caption" color={gs.textMuted}>
-                              {result.containerName}
-                            </Typography>
-                          )}
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={result.kind}
-                          size="small"
-                          color={getKindColor(result.kind)}
-                          variant="outlined"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="caption" sx={{ fontFamily: 'monospace' }}>
-                          {result.filePath}
-                        </Typography>
-                      </TableCell>
-                      <TableCell align="right">
-                        <Typography variant="caption">
-                          {result.line}:{result.column}
-                        </Typography>
-                      </TableCell>
-                      <TableCell align="right">
-                        <Typography variant="body2" fontWeight={600}>
-                          {result.score.toFixed(2)}
-                        </Typography>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          )}
-        </CardContent>
-      </Card>
+        {/* 状态指标 */}
+        <Grid container spacing={2}>
+          <Grid item xs={12} sm={6} md={3}>
+              <Box sx={{ bgcolor: gs.bgHover, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                  <FolderIcon color="primary" fontSize="small" />
+                  <Typography variant="body2" color="text.secondary">
+                    已索引文件
+                  </Typography>
+                </Box>
+                <Typography variant="h4" fontWeight={600}>
+                  {indexStatus?.indexedFiles ?? 0}
+                </Typography>
+              </Box>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <Box sx={{ bgcolor: gs.bgHover, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                  <CodeIcon color="secondary" fontSize="small" />
+                  <Typography variant="body2" color="text.secondary">
+                    符号数量
+                  </Typography>
+                </Box>
+                <Typography variant="h4" fontWeight={600}>
+                  {indexStatus?.totalSymbols ?? 0}
+                </Typography>
+              </Box>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <Box sx={{ bgcolor: gs.bgHover, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                  <TimerIcon color="info" fontSize="small" />
+                  <Typography variant="body2" color="text.secondary">
+                    索引耗时
+                  </Typography>
+                </Box>
+                <Typography variant="h6" fontWeight={600}>
+                  {indexStatus?.startTime && indexStatus?.endTime
+                    ? formatDuration(indexStatus.endTime - indexStatus.startTime)
+                    : indexStatus?.isIndexing
+                    ? '进行中...'
+                    : '-'}
+                </Typography>
+              </Box>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <Box sx={{ bgcolor: gs.bgHover, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                  <TrendingUpIcon color="success" fontSize="small" />
+                  <Typography variant="body2" color="text.secondary">
+                    进度
+                  </Typography>
+                </Box>
+                <Typography variant="h4" fontWeight={600}>
+                  {indexStatus?.progress ? `${indexStatus.progress.toFixed(1)}%` : '-'}
+                </Typography>
+              </Box>
+            </Grid>
+          </Grid>
+      </Box>
 
-      {/* 已索引文件列表 */}
-      <Card sx={{ bgcolor: gs.bgPanel, borderColor: gs.border }}>
-        <CardContent>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <ListAltIcon fontSize="small" />
-              <Typography variant="h6" fontWeight={600}>
-                已索引文件
+      {/* 索引统计 */}
+      {indexStats && (
+        <Box sx={{ mb: 3, bgcolor: gs.bgPanel, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+            <TrendingUpIcon fontSize="small" />
+            <Typography variant="h6" fontWeight={600}>
+              索引统计
+            </Typography>
+          </Box>
+
+          <Grid container spacing={3}>
+            {/* 符号类型分布 */}
+            <Grid item xs={12} md={6}>
+              <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 1 }}>
+                符号类型分布
               </Typography>
-              <Chip label={indexedFiles.length} size="small" />
-            </Box>
-          </Box>
+              <TableContainer component={Paper} variant="outlined">
+                <Table size="small">
+                  <TableHead>
+                    <TableRow sx={{ bgcolor: gs.bgHover }}>
+                      <TableCell>类型</TableCell>
+                      <TableCell align="right">数量</TableCell>
+                      <TableCell>占比</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {Object.keys(indexStats.symbolsByKind).length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={3} align="center" sx={{ py: 3, color: gs.textMuted }}>
+                          暂无数据
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      Object.entries(indexStats.symbolsByKind)
+                        .sort(([, a], [, b]) => b - a)
+                        .slice(0, 10)
+                        .map(([kind, count]) => {
+                          const total = indexStats.totalSymbols || 1;
+                          const percent = (count / total) * 100;
+                          return (
+                            <TableRow key={kind} hover>
+                              <TableCell>
+                                <Chip
+                                  label={kind}
+                                  size="small"
+                                  color={getKindColor(kind)}
+                                  variant="outlined"
+                                />
+                              </TableCell>
+                              <TableCell align="right">{count}</TableCell>
+                              <TableCell>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                  <LinearProgress
+                                    variant="determinate"
+                                    value={percent}
+                                    sx={{ flex: 1, height: 6, borderRadius: 3 }}
+                                  />
+                                  <Typography variant="caption" sx={{ minWidth: 40 }}>
+                                    {percent.toFixed(1)}%
+                                  </Typography>
+                                </Box>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Grid>
 
-          {/* 过滤器 */}
-          <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-            <TextField
-              size="small"
-              placeholder="过滤文件路径..."
-              value={fileFilter}
-              onChange={(e) => setFileFilter(e.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon color="action" fontSize="small" />
-                  </InputAdornment>
-                ),
-              }}
-              sx={{ flex: 1 }}
-            />
-            <FormControl size="small" sx={{ minWidth: 150 }}>
-              <InputLabel>语言</InputLabel>
-              <Select
-                value={languageFilter}
-                label="语言"
-                onChange={(e) => setLanguageFilter(e.target.value)}
-              >
-                <MenuItem value="">全部</MenuItem>
-                {indexStats &&
-                  Object.keys(indexStats.filesByLanguage).map((lang) => (
-                    <MenuItem key={lang} value={lang}>
-                      {lang}
-                    </MenuItem>
-                  ))}
-              </Select>
-            </FormControl>
-          </Box>
+            {/* 语言分布 */}
+            <Grid item xs={12} md={6}>
+              <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 1 }}>
+                语言分布
+              </Typography>
+              <TableContainer component={Paper} variant="outlined">
+                <Table size="small">
+                  <TableHead>
+                    <TableRow sx={{ bgcolor: gs.bgHover }}>
+                      <TableCell>语言</TableCell>
+                      <TableCell align="right">文件数</TableCell>
+                      <TableCell align="right">符号数</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {Object.keys(indexStats.filesByLanguage).length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={3} align="center" sx={{ py: 3, color: gs.textMuted }}>
+                          暂无数据
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      Object.entries(indexStats.filesByLanguage)
+                        .sort(([, a], [, b]) => b - a)
+                        .slice(0, 10)
+                        .map(([language, fileCount]) => (
+                          <TableRow key={language} hover>
+                            <TableCell>
+                              <Chip label={language} size="small" variant="outlined" />
+                            </TableCell>
+                            <TableCell align="right">{fileCount}</TableCell>
+                            <TableCell align="right">
+                              {indexStats.symbolsByLanguage[language] || 0}
+                            </TableCell>
+                          </TableRow>
+                        ))
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Grid>
+          </Grid>
+        </Box>
+      )}
 
+      {/* 符号搜索 */}
+      <Box sx={{ mb: 3, bgcolor: gs.bgPanel, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+          <SearchIcon fontSize="small" />
+          <Typography variant="h6" fontWeight={600}>
+            符号搜索
+          </Typography>
+        </Box>
+
+        <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+          <TextField
+            fullWidth
+            size="small"
+            placeholder="输入符号名称搜索..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyPress={(e) => {
+              if (e.key === 'Enter') {
+                handleSearchSymbols();
+              }
+            }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon color="action" />
+                </InputAdornment>
+              ),
+              endAdornment: searchQuery && (
+                <InputAdornment position="end">
+                  <IconButton
+                    size="small"
+                    onClick={() => {
+                      setSearchQuery('');
+                      setSearchResults([]);
+                    }}
+                  >
+                    <ClearIcon fontSize="small" />
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+            disabled={searching}
+          />
+          <Button
+            variant="contained"
+            startIcon={searching ? <CircularProgress size={16} /> : <SearchIcon />}
+            onClick={handleSearchSymbols}
+            disabled={searching || !searchQuery.trim()}
+          >
+            搜索
+          </Button>
+        </Box>
+
+        {searchResults.length > 0 && (
           <TableContainer component={Paper} variant="outlined">
             <Table size="small">
               <TableHead>
                 <TableRow sx={{ bgcolor: gs.bgHover }}>
+                  <TableCell>符号名称</TableCell>
+                  <TableCell>类型</TableCell>
                   <TableCell>文件路径</TableCell>
-                  <TableCell>语言</TableCell>
-                  <TableCell align="right">符号数</TableCell>
-                  <TableCell align="right">文件大小</TableCell>
-                  <TableCell align="right">行数</TableCell>
-                  <TableCell>状态</TableCell>
+                  <TableCell align="right">位置</TableCell>
+                  <TableCell align="right">评分</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {indexedFiles.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} align="center" sx={{ py: 4, color: gs.textMuted }}>
-                      暂无已索引文件
+                {searchResults.map((result, idx) => (
+                  <TableRow key={`${result.name}-${result.filePath}-${idx}`} hover>
+                    <TableCell>
+                      <Box>
+                        <Typography variant="body2" fontWeight={500}>
+                          {result.name}
+                        </Typography>
+                        {result.containerName && (
+                          <Typography variant="caption" color={gs.textMuted}>
+                            {result.containerName}
+                          </Typography>
+                        )}
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={result.kind}
+                        size="small"
+                        color={getKindColor(result.kind)}
+                        variant="outlined"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="caption" sx={{ fontFamily: 'monospace' }}>
+                        {result.filePath}
+                      </Typography>
+                    </TableCell>
+                    <TableCell align="right">
+                      <Typography variant="caption">
+                        {result.line}:{result.column}
+                      </Typography>
+                    </TableCell>
+                    <TableCell align="right">
+                      <Typography variant="body2" fontWeight={600}>
+                        {result.score.toFixed(2)}
+                      </Typography>
                     </TableCell>
                   </TableRow>
-                ) : (
-                  indexedFiles.slice(0, 50).map((file, idx) => (
-                    <TableRow key={`${file.filePath}-${idx}`} hover>
-                      <TableCell>
-                        <Typography variant="caption" sx={{ fontFamily: 'monospace' }}>
-                          {file.filePath}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Chip label={file.language} size="small" variant="outlined" />
-                      </TableCell>
-                      <TableCell align="right">{file.symbolCount}</TableCell>
-                      <TableCell align="right">{formatFileSize(file.fileSize)}</TableCell>
-                      <TableCell align="right">{file.lineCount}</TableCell>
-                      <TableCell>
-                        <Chip
-                          icon={file.status === 'indexed' ? <CheckCircleIcon /> : <ErrorIcon />}
-                          label={file.status === 'indexed' ? '已索引' : '错误'}
-                          color={file.status === 'indexed' ? 'success' : 'error'}
-                          size="small"
-                        />
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
+                ))}
               </TableBody>
             </Table>
           </TableContainer>
+        )}
+      </Box>
 
-          {indexedFiles.length > 50 && (
-            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-              仅显示前 50 条记录，共 {indexedFiles.length} 条
+      {/* 已索引文件列表 */}
+      <Box sx={{ bgcolor: gs.bgPanel, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <ListAltIcon fontSize="small" />
+            <Typography variant="h6" fontWeight={600}>
+              已索引文件
             </Typography>
-          )}
-        </CardContent>
-      </Card>
+            <Chip label={indexedFiles.length} size="small" />
+          </Box>
+        </Box>
+
+        {/* 过滤器 */}
+        <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+          <TextField
+            size="small"
+            placeholder="过滤文件路径..."
+            value={fileFilter}
+            onChange={(e) => setFileFilter(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon color="action" fontSize="small" />
+                </InputAdornment>
+              ),
+            }}
+            sx={{ flex: 1 }}
+          />
+          <FormControl size="small" sx={{ minWidth: 150 }}>
+            <InputLabel>语言</InputLabel>
+            <Select
+              value={languageFilter}
+              label="语言"
+              onChange={(e) => setLanguageFilter(e.target.value)}
+            >
+              <MenuItem value="">全部</MenuItem>
+              {indexStats &&
+                Object.keys(indexStats.filesByLanguage).map((lang) => (
+                  <MenuItem key={lang} value={lang}>
+                    {lang}
+                  </MenuItem>
+                ))}
+            </Select>
+          </FormControl>
+        </Box>
+
+        <TableContainer component={Paper} variant="outlined">
+          <Table size="small">
+            <TableHead>
+              <TableRow sx={{ bgcolor: gs.bgHover }}>
+                <TableCell>文件路径</TableCell>
+                <TableCell>语言</TableCell>
+                <TableCell align="right">符号数</TableCell>
+                <TableCell align="right">文件大小</TableCell>
+                <TableCell align="right">行数</TableCell>
+                <TableCell>状态</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {indexedFiles.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} align="center" sx={{ py: 4, color: gs.textMuted }}>
+                    暂无已索引文件
+                  </TableCell>
+                </TableRow>
+              ) : (
+                indexedFiles.slice(0, 50).map((file, idx) => (
+                  <TableRow key={`${file.filePath}-${idx}`} hover>
+                    <TableCell>
+                      <Typography variant="caption" sx={{ fontFamily: 'monospace' }}>
+                        {file.filePath}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Chip label={file.language} size="small" variant="outlined" />
+                    </TableCell>
+                    <TableCell align="right">{file.symbolCount}</TableCell>
+                    <TableCell align="right">{formatFileSize(file.fileSize)}</TableCell>
+                    <TableCell align="right">{file.lineCount}</TableCell>
+                    <TableCell>
+                      <Chip
+                        icon={file.status === 'indexed' ? <CheckCircleIcon /> : <ErrorIcon />}
+                        label={file.status === 'indexed' ? '已索引' : '错误'}
+                        color={file.status === 'indexed' ? 'success' : 'error'}
+                        size="small"
+                      />
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+
+        {indexedFiles.length > 50 && (
+          <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+            仅显示前 50 条记录，共 {indexedFiles.length} 条
+          </Typography>
+        )}
+      </Box>
     </Box>
   );
 };

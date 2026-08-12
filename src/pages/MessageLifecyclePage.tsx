@@ -8,8 +8,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
   Grid,
   LinearProgress,
   Chip,
@@ -319,97 +317,89 @@ const MessageLifecyclePage: React.FC = () => {
       <Grid container spacing={2} sx={{ mb: 3 }}>
         {/* 总消息数 */}
         <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                <MessageIcon color="primary" />
-                <Typography variant="body2" color="text.secondary">
-                  总消息数
-                </Typography>
-              </Box>
-              <Typography variant="h4" fontWeight={600}>
-                {stats?.total ?? '-'}
+          <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+              <MessageIcon color="primary" />
+              <Typography variant="body2" color="text.secondary">
+                总消息数
               </Typography>
-              <Typography variant="caption" color="text.secondary">
-                累计消息数量
-              </Typography>
-            </CardContent>
-          </Card>
+            </Box>
+            <Typography variant="h4" fontWeight={600}>
+              {stats?.total ?? '-'}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              累计消息数量
+            </Typography>
+          </Box>
         </Grid>
 
         {/* 活跃消息 */}
         <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                <PendingIcon color="info" />
-                <Typography variant="body2" color="text.secondary">
-                  活跃消息
-                </Typography>
-              </Box>
-              <Typography variant="h4" fontWeight={600}>
-                {stats?.active ?? '-'}
+          <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+              <PendingIcon color="info" />
+              <Typography variant="body2" color="text.secondary">
+                活跃消息
               </Typography>
-              <Box sx={{ mt: 1 }}>
-                <LinearProgress
-                  variant="determinate"
-                  value={activePercent}
-                  color="info"
-                  sx={{ height: 6, borderRadius: 3 }}
-                />
-              </Box>
-            </CardContent>
-          </Card>
+            </Box>
+            <Typography variant="h4" fontWeight={600}>
+              {stats?.active ?? '-'}
+            </Typography>
+            <Box sx={{ mt: 1 }}>
+              <LinearProgress
+                variant="determinate"
+                value={activePercent}
+                color="info"
+                sx={{ height: 6, borderRadius: 3 }}
+              />
+            </Box>
+          </Box>
         </Grid>
 
         {/* 成功消息 */}
         <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                <CheckCircleIcon color="success" />
-                <Typography variant="body2" color="text.secondary">
-                  成功消息
-                </Typography>
-              </Box>
-              <Typography variant="h4" fontWeight={600}>
-                {stats?.completed ?? '-'}
+          <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+              <CheckCircleIcon color="success" />
+              <Typography variant="body2" color="text.secondary">
+                成功消息
               </Typography>
-              <Box sx={{ mt: 1 }}>
-                <LinearProgress
-                  variant="determinate"
-                  value={stats ? (stats.completed / (stats.total || 1)) * 100 : 0}
-                  color="success"
-                  sx={{ height: 6, borderRadius: 3 }}
-                />
-              </Box>
-            </CardContent>
-          </Card>
+            </Box>
+            <Typography variant="h4" fontWeight={600}>
+              {stats?.completed ?? '-'}
+            </Typography>
+            <Box sx={{ mt: 1 }}>
+              <LinearProgress
+                variant="determinate"
+                value={stats ? (stats.completed / (stats.total || 1)) * 100 : 0}
+                color="success"
+                sx={{ height: 6, borderRadius: 3 }}
+              />
+            </Box>
+          </Box>
         </Grid>
 
         {/* 失败消息 */}
         <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                <ErrorOutlineIcon color="error" />
-                <Typography variant="body2" color="text.secondary">
-                  失败消息
-                </Typography>
-              </Box>
-              <Typography variant="h4" fontWeight={600}>
-                {stats?.failed ?? '-'}
+          <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+              <ErrorOutlineIcon color="error" />
+              <Typography variant="body2" color="text.secondary">
+                失败消息
               </Typography>
-              <Box sx={{ mt: 1 }}>
-                <LinearProgress
-                  variant="determinate"
-                  value={failedPercent}
-                  color={failedPercent >= 10 ? 'error' : failedPercent >= 5 ? 'warning' : 'success'}
-                  sx={{ height: 6, borderRadius: 3 }}
-                />
-              </Box>
-            </CardContent>
-          </Card>
+            </Box>
+            <Typography variant="h4" fontWeight={600}>
+              {stats?.failed ?? '-'}
+            </Typography>
+            <Box sx={{ mt: 1 }}>
+              <LinearProgress
+                variant="determinate"
+                value={failedPercent}
+                color={failedPercent >= 10 ? 'error' : failedPercent >= 5 ? 'warning' : 'success'}
+                sx={{ height: 6, borderRadius: 3 }}
+              />
+            </Box>
+          </Box>
         </Grid>
       </Grid>
 
@@ -417,132 +407,47 @@ const MessageLifecyclePage: React.FC = () => {
       <Grid container spacing={3}>
         {/* 活跃消息列表 */}
         <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                <Typography variant="h6" fontWeight={600}>
-                  活跃消息
-                </Typography>
-                <Chip label={activeMessages.length} color="info" size="small" />
-              </Box>
-              {activeMessages.length > 0 ? (
-                <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: 400 }}>
-                  <Table size="small" stickyHeader>
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>状态</TableCell>
-                        <TableCell>ID</TableCell>
-                        <TableCell>创建时间</TableCell>
-                        <TableCell>更新时间</TableCell>
-                        <TableCell align="right">操作</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {activeMessages.slice(0, 20).map((msg) => {
-                        const statusConfig = getStatusChip(msg.status);
-                        return (
-                          <TableRow key={msg.id}>
-                            <TableCell>
-                              <Chip
-                                icon={statusConfig.icon}
-                                label={statusConfig.label}
-                                color={statusConfig.color}
-                                size="small"
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <Typography variant="caption" sx={{ maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>
-                                {msg.id}
-                              </Typography>
-                            </TableCell>
-                            <TableCell>
-                              <Typography variant="caption" color="text.secondary">
-                                {formatRelativeTime(msg.createdAt)}
-                              </Typography>
-                            </TableCell>
-                            <TableCell>
-                              <Typography variant="caption" color="text.secondary">
-                                {formatRelativeTime(msg.updatedAt)}
-                              </Typography>
-                            </TableCell>
-                            <TableCell align="right">
-                              <Tooltip title="查看详情">
-                                <IconButton size="small" onClick={() => handleViewDetail(msg.id)}>
-                                  <VisibilityIcon fontSize="small" />
-                                </IconButton>
-                              </Tooltip>
-                              <Tooltip title="取消消息">
-                                <IconButton
-                                  size="small"
-                                  onClick={() => {
-                                    setCancelTargetId(msg.id);
-                                    setCancelDialogOpen(true);
-                                  }}
-                                >
-                                  <CancelIcon fontSize="small" />
-                                </IconButton>
-                              </Tooltip>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              ) : (
-                <Typography color="text.secondary" align="center" sx={{ py: 4 }}>
-                  暂无活跃消息
-                </Typography>
-              )}
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* 失败消息列表 */}
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                <Typography variant="h6" fontWeight={600}>
-                  失败消息
-                </Typography>
-                <Chip label={failedMessages.length} color="error" size="small" />
-              </Box>
-              {failedMessages.length > 0 ? (
-                <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: 400 }}>
-                  <Table size="small" stickyHeader>
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>ID</TableCell>
-                        <TableCell>错误信息</TableCell>
-                        <TableCell align="right">重试次数</TableCell>
-                        <TableCell>失败时间</TableCell>
-                        <TableCell align="right">操作</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {failedMessages.slice(0, 20).map((msg) => (
+          <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+              <Typography variant="h6" fontWeight={600}>
+                活跃消息
+              </Typography>
+              <Chip label={activeMessages.length} color="info" size="small" />
+            </Box>
+            {activeMessages.length > 0 ? (
+              <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: 400 }}>
+                <Table size="small" stickyHeader>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>状态</TableCell>
+                      <TableCell>ID</TableCell>
+                      <TableCell>创建时间</TableCell>
+                      <TableCell>更新时间</TableCell>
+                      <TableCell align="right">操作</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {activeMessages.slice(0, 20).map((msg) => {
+                      const statusConfig = getStatusChip(msg.status);
+                      return (
                         <TableRow key={msg.id}>
+                          <TableCell>
+                            <Chip
+                              icon={statusConfig.icon}
+                              label={statusConfig.label}
+                              color={statusConfig.color}
+                              size="small"
+                            />
+                          </TableCell>
                           <TableCell>
                             <Typography variant="caption" sx={{ maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>
                               {msg.id}
                             </Typography>
                           </TableCell>
                           <TableCell>
-                            <Typography
-                              variant="caption"
-                              color="error"
-                              sx={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}
-                            >
-                              {msg.error || '-'}
+                            <Typography variant="caption" color="text.secondary">
+                              {formatRelativeTime(msg.createdAt)}
                             </Typography>
-                          </TableCell>
-                          <TableCell align="right">
-                            <Chip
-                              label={`${msg.retryCount}/${msg.maxRetries}`}
-                              size="small"
-                              color={msg.retryCount >= msg.maxRetries ? 'error' : 'warning'}
-                            />
                           </TableCell>
                           <TableCell>
                             <Typography variant="caption" color="text.secondary">
@@ -555,228 +460,303 @@ const MessageLifecyclePage: React.FC = () => {
                                 <VisibilityIcon fontSize="small" />
                               </IconButton>
                             </Tooltip>
+                            <Tooltip title="取消消息">
+                              <IconButton
+                                size="small"
+                                onClick={() => {
+                                  setCancelTargetId(msg.id);
+                                  setCancelDialogOpen(true);
+                                }}
+                              >
+                                <CancelIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
                           </TableCell>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              ) : (
-                <Typography color="text.secondary" align="center" sx={{ py: 4 }}>
-                  暂无失败消息
-                </Typography>
-              )}
-            </CardContent>
-          </Card>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            ) : (
+              <Typography color="text.secondary" align="center" sx={{ py: 4 }}>
+                暂无活跃消息
+              </Typography>
+            )}
+          </Box>
+        </Grid>
+
+        {/* 失败消息列表 */}
+        <Grid item xs={12} md={6}>
+          <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+              <Typography variant="h6" fontWeight={600}>
+                失败消息
+              </Typography>
+              <Chip label={failedMessages.length} color="error" size="small" />
+            </Box>
+            {failedMessages.length > 0 ? (
+              <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: 400 }}>
+                <Table size="small" stickyHeader>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>ID</TableCell>
+                      <TableCell>错误信息</TableCell>
+                      <TableCell align="right">重试次数</TableCell>
+                      <TableCell>失败时间</TableCell>
+                      <TableCell align="right">操作</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {failedMessages.slice(0, 20).map((msg) => (
+                      <TableRow key={msg.id}>
+                        <TableCell>
+                          <Typography variant="caption" sx={{ maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>
+                            {msg.id}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography
+                            variant="caption"
+                            color="error"
+                            sx={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}
+                          >
+                            {msg.error || '-'}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Chip
+                            label={`${msg.retryCount}/${msg.maxRetries}`}
+                            size="small"
+                            color={msg.retryCount >= msg.maxRetries ? 'error' : 'warning'}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="caption" color="text.secondary">
+                            {formatRelativeTime(msg.updatedAt)}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Tooltip title="查看详情">
+                            <IconButton size="small" onClick={() => handleViewDetail(msg.id)}>
+                              <VisibilityIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            ) : (
+              <Typography color="text.secondary" align="center" sx={{ py: 4 }}>
+                暂无失败消息
+              </Typography>
+            )}
+          </Box>
         </Grid>
 
         {/* 重试队列 */}
         <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                <Typography variant="h6" fontWeight={600}>
-                  重试队列
-                </Typography>
-                <Box sx={{ display: 'flex', gap: 1 }}>
-                  <Button
-                    size="small"
-                    variant={retryStats?.isRunning ? 'outlined' : 'contained'}
-                    color={retryStats?.isRunning ? 'error' : 'primary'}
-                    startIcon={retryStats?.isRunning ? <StopIcon /> : <PlayArrowIcon />}
-                    onClick={handleToggleRetryQueue}
-                  >
-                    {retryStats?.isRunning ? '停止' : '启动'}
-                  </Button>
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    startIcon={<ReplayIcon />}
-                    onClick={handleProcessNextRetry}
-                  >
-                    手动处理
-                  </Button>
-                </Box>
+          <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+              <Typography variant="h6" fontWeight={600}>
+                重试队列
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Button
+                  size="small"
+                  variant={retryStats?.isRunning ? 'outlined' : 'contained'}
+                  color={retryStats?.isRunning ? 'error' : 'primary'}
+                  startIcon={retryStats?.isRunning ? <StopIcon /> : <PlayArrowIcon />}
+                  onClick={handleToggleRetryQueue}
+                >
+                  {retryStats?.isRunning ? '停止' : '启动'}
+                </Button>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  startIcon={<ReplayIcon />}
+                  onClick={handleProcessNextRetry}
+                >
+                  手动处理
+                </Button>
               </Box>
-              <Grid container spacing={2}>
-                <Grid item xs={4}>
-                  <Box sx={{ textAlign: 'center', p: 2, bgcolor: gs.bgHover, borderRadius: 2 }}>
-                    <InboxIcon color="info" sx={{ fontSize: 32, mb: 1 }} />
-                    <Typography variant="h5" fontWeight={600}>
-                      {retryStats?.size ?? retryQueueSize?.data ?? '-'}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      队列中
-                    </Typography>
-                  </Box>
-                </Grid>
-                <Grid item xs={4}>
-                  <Box sx={{ textAlign: 'center', p: 2, bgcolor: gs.bgHover, borderRadius: 2 }}>
-                    <ReplayIcon color="warning" sx={{ fontSize: 32, mb: 1 }} />
-                    <Typography variant="h5" fontWeight={600}>
-                      {retryStats?.processing ?? '-'}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      处理中
-                    </Typography>
-                  </Box>
-                </Grid>
-                <Grid item xs={4}>
-                  <Box sx={{ textAlign: 'center', p: 2, bgcolor: gs.bgHover, borderRadius: 2 }}>
-                    <TimerIcon color="success" sx={{ fontSize: 32, mb: 1 }} />
-                    <Typography variant="h5" fontWeight={600}>
-                      {retryStats?.successCount ?? '-'}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      成功数
-                    </Typography>
-                  </Box>
-                </Grid>
-              </Grid>
-              <Box sx={{ mt: 2 }}>
-                <Typography variant="body2" color="text.secondary">
-                  运行状态: {retryStats?.isRunning ? '运行中' : '已停止'}
-                </Typography>
-                {retryStats?.avgProcessingTime && (
-                  <Typography variant="body2" color="text.secondary">
-                    平均处理时间: {retryStats.avgProcessingTime.toFixed(2)} ms
+            </Box>
+            <Grid container spacing={2}>
+              <Grid item xs={4}>
+                <Box sx={{ textAlign: 'center', p: 2, bgcolor: gs.bgHover, borderRadius: 2 }}>
+                  <InboxIcon color="info" sx={{ fontSize: 32, mb: 1 }} />
+                  <Typography variant="h5" fontWeight={600}>
+                    {retryStats?.size ?? retryQueueSize?.data ?? '-'}
                   </Typography>
-                )}
-              </Box>
-            </CardContent>
-          </Card>
+                  <Typography variant="body2" color="text.secondary">
+                    队列中
+                  </Typography>
+                </Box>
+              </Grid>
+              <Grid item xs={4}>
+                <Box sx={{ textAlign: 'center', p: 2, bgcolor: gs.bgHover, borderRadius: 2 }}>
+                  <ReplayIcon color="warning" sx={{ fontSize: 32, mb: 1 }} />
+                  <Typography variant="h5" fontWeight={600}>
+                    {retryStats?.processing ?? '-'}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    处理中
+                  </Typography>
+                </Box>
+              </Grid>
+              <Grid item xs={4}>
+                <Box sx={{ textAlign: 'center', p: 2, bgcolor: gs.bgHover, borderRadius: 2 }}>
+                  <TimerIcon color="success" sx={{ fontSize: 32, mb: 1 }} />
+                  <Typography variant="h5" fontWeight={600}>
+                    {retryStats?.successCount ?? '-'}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    成功数
+                  </Typography>
+                </Box>
+              </Grid>
+            </Grid>
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="body2" color="text.secondary">
+                运行状态: {retryStats?.isRunning ? '运行中' : '已停止'}
+              </Typography>
+              {retryStats?.avgProcessingTime && (
+                <Typography variant="body2" color="text.secondary">
+                  平均处理时间: {retryStats.avgProcessingTime.toFixed(2)} ms
+                </Typography>
+              )}
+            </Box>
+          </Box>
         </Grid>
 
         {/* 死信队列 */}
         <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                <Typography variant="h6" fontWeight={600}>
-                  死信队列
-                </Typography>
-                <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-                  <Chip label={retryStats?.deadLetterSize ?? retryQueueSize?.deadLetter ?? 0} color="error" size="small" />
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    color="error"
-                    startIcon={<DeleteIcon />}
-                    onClick={() => setClearDeadLetterDialogOpen(true)}
-                    disabled={(retryStats?.deadLetterSize ?? retryQueueSize?.deadLetter ?? 0) === 0}
-                  >
-                    清空
-                  </Button>
-                </Box>
+          <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+              <Typography variant="h6" fontWeight={600}>
+                死信队列
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                <Chip label={retryStats?.deadLetterSize ?? retryQueueSize?.deadLetter ?? 0} color="error" size="small" />
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color="error"
+                  startIcon={<DeleteIcon />}
+                  onClick={() => setClearDeadLetterDialogOpen(true)}
+                  disabled={(retryStats?.deadLetterSize ?? retryQueueSize?.deadLetter ?? 0) === 0}
+                >
+                  清空
+                </Button>
               </Box>
-              {deadLetterItems.length > 0 ? (
-                <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: 300 }}>
-                  <Table size="small" stickyHeader>
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>ID</TableCell>
-                        <TableCell>错误</TableCell>
-                        <TableCell align="right">重试次数</TableCell>
-                        <TableCell>失败时间</TableCell>
+            </Box>
+            {deadLetterItems.length > 0 ? (
+              <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: 300 }}>
+                <Table size="small" stickyHeader>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>ID</TableCell>
+                      <TableCell>错误</TableCell>
+                      <TableCell align="right">重试次数</TableCell>
+                      <TableCell>失败时间</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {deadLetterItems.slice(0, 10).map((item) => (
+                      <TableRow key={item.messageId}>
+                        <TableCell>
+                          <Typography variant="caption" sx={{ maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>
+                            {item.messageId}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography
+                            variant="caption"
+                            color="error"
+                            sx={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}
+                          >
+                            {item.originalError}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right">{item.retryCount}</TableCell>
+                        <TableCell>
+                          <Typography variant="caption" color="text.secondary">
+                            {formatRelativeTime(item.failedAt)}
+                          </Typography>
+                        </TableCell>
                       </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {deadLetterItems.slice(0, 10).map((item) => (
-                        <TableRow key={item.messageId}>
-                          <TableCell>
-                            <Typography variant="caption" sx={{ maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>
-                              {item.messageId}
-                            </Typography>
-                          </TableCell>
-                          <TableCell>
-                            <Typography
-                              variant="caption"
-                              color="error"
-                              sx={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}
-                            >
-                              {item.originalError}
-                            </Typography>
-                          </TableCell>
-                          <TableCell align="right">{item.retryCount}</TableCell>
-                          <TableCell>
-                            <Typography variant="caption" color="text.secondary">
-                              {formatRelativeTime(item.failedAt)}
-                            </Typography>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              ) : (
-                <Typography color="text.secondary" align="center" sx={{ py: 4 }}>
-                  死信队列已清空
-                </Typography>
-              )}
-            </CardContent>
-          </Card>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            ) : (
+              <Typography color="text.secondary" align="center" sx={{ py: 4 }}>
+                死信队列已清空
+              </Typography>
+            )}
+          </Box>
         </Grid>
 
         {/* 状态分布 */}
         <Grid item xs={12}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" fontWeight={600} gutterBottom>
-                状态分布
-              </Typography>
-              {stats && Object.keys(stats.byStatus).length > 0 ? (
-                <TableContainer component={Paper} variant="outlined">
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>状态</TableCell>
-                        <TableCell align="right">数量</TableCell>
-                        <TableCell>占比</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {Object.entries(stats.byStatus)
-                        .sort(([, a], [, b]) => b - a)
-                        .map(([status, count]) => {
-                          const total = stats.total || 1;
-                          const percent = (count / total) * 100;
-                          const statusConfig = getStatusChip(status as MessageState['status']);
-                          return (
-                            <TableRow key={status}>
-                              <TableCell>
-                                <Chip
-                                  icon={statusConfig.icon}
-                                  label={statusConfig.label}
-                                  color={statusConfig.color}
-                                  size="small"
+          <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+            <Typography variant="h6" fontWeight={600} gutterBottom>
+              状态分布
+            </Typography>
+            {stats && Object.keys(stats.byStatus).length > 0 ? (
+              <TableContainer component={Paper} variant="outlined">
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>状态</TableCell>
+                      <TableCell align="right">数量</TableCell>
+                      <TableCell>占比</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {Object.entries(stats.byStatus)
+                      .sort(([, a], [, b]) => b - a)
+                      .map(([status, count]) => {
+                        const total = stats.total || 1;
+                        const percent = (count / total) * 100;
+                        const statusConfig = getStatusChip(status as MessageState['status']);
+                        return (
+                          <TableRow key={status}>
+                            <TableCell>
+                              <Chip
+                                icon={statusConfig.icon}
+                                label={statusConfig.label}
+                                color={statusConfig.color}
+                                size="small"
+                              />
+                            </TableCell>
+                            <TableCell align="right">{count}</TableCell>
+                            <TableCell sx={{ width: '50%' }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <LinearProgress
+                                  variant="determinate"
+                                  value={percent}
+                                  sx={{ flex: 1, height: 8, borderRadius: 4 }}
                                 />
-                              </TableCell>
-                              <TableCell align="right">{count}</TableCell>
-                              <TableCell sx={{ width: '50%' }}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                  <LinearProgress
-                                    variant="determinate"
-                                    value={percent}
-                                    sx={{ flex: 1, height: 8, borderRadius: 4 }}
-                                  />
-                                  <Typography variant="caption" sx={{ minWidth: 40 }}>
-                                    {percent.toFixed(1)}%
-                                  </Typography>
-                                </Box>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              ) : (
-                <Typography color="text.secondary" align="center" sx={{ py: 4 }}>
-                  暂无状态分布数据
-                </Typography>
-              )}
-            </CardContent>
-          </Card>
+                                <Typography variant="caption" sx={{ minWidth: 40 }}>
+                                  {percent.toFixed(1)}%
+                                </Typography>
+                              </Box>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            ) : (
+              <Typography color="text.secondary" align="center" sx={{ py: 4 }}>
+                暂无状态分布数据
+              </Typography>
+            )}
+          </Box>
         </Grid>
       </Grid>
 

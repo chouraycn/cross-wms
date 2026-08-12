@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
   Grid,
   Chip,
   Table,
@@ -170,74 +168,72 @@ export default function InventoryTransactionsPage() {
 
       <Grid container spacing={3}>
         <Grid item xs={12}>
-          <Card sx={{ bgcolor: gs.bgPanel }}>
-            <CardContent>
-              <Typography variant="h6" mb={2}>交易记录列表</Typography>
-              <TableContainer component={Paper}>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>类型</TableCell>
-                      <TableCell>SKU</TableCell>
-                      <TableCell>数量</TableCell>
-                      <TableCell>仓库</TableCell>
-                      <TableCell>状态</TableCell>
-                      <TableCell>创建时间</TableCell>
-                      <TableCell>操作</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {transactions.map(transaction => {
-                      const typeInfo = getTransactionTypeInfo(transaction.type);
-                      return (
-                        <TableRow key={transaction.id}>
-                          <TableCell>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              {typeInfo.icon}
-                              <Chip label={typeInfo.label} color={typeInfo.color} size="small" />
-                            </Box>
-                          </TableCell>
-                          <TableCell>
-                            <Typography>{transaction.sku}</Typography>
-                          </TableCell>
-                          <TableCell>
-                            <Typography color={transaction.type === 'outbound' ? 'error' : 'success'}>
-                              {transaction.type === 'outbound' ? '-' : '+'}{transaction.quantity}
-                            </Typography>
-                          </TableCell>
-                          <TableCell>
-                            <Typography>{transaction.warehouseName}</Typography>
-                          </TableCell>
-                          <TableCell>
-                            <Chip
-                              label={transaction.status === 'pending' ? '待处理' : transaction.status === 'completed' ? '已完成' : '已取消'}
-                              color={transaction.status === 'completed' ? 'success' : transaction.status === 'cancelled' ? 'default' : 'warning'}
-                              size="small"
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Typography variant="body2" color="textSecondary">
-                              {new Date(transaction.createdAt).toLocaleString()}
-                            </Typography>
-                          </TableCell>
-                          <TableCell>
-                            <Box sx={{ display: 'flex', gap: 1 }}>
-                              <IconButton onClick={() => { setDialogMode('edit'); setCurrentTransaction(transaction); setDialogOpen(true); }}>
-                                <EditIcon />
-                              </IconButton>
-                              <IconButton onClick={() => handleDeleteTransaction(transaction.id)}>
-                                <DeleteIcon />
-                              </IconButton>
-                            </Box>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </CardContent>
-          </Card>
+          <Box sx={{ bgcolor: gs.bgPanel, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+            <Typography variant="h6" mb={2}>交易记录列表</Typography>
+            <TableContainer component={Paper}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>类型</TableCell>
+                    <TableCell>SKU</TableCell>
+                    <TableCell>数量</TableCell>
+                    <TableCell>仓库</TableCell>
+                    <TableCell>状态</TableCell>
+                    <TableCell>创建时间</TableCell>
+                    <TableCell>操作</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {transactions.map(transaction => {
+                    const typeInfo = getTransactionTypeInfo(transaction.type);
+                    return (
+                      <TableRow key={transaction.id}>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            {typeInfo.icon}
+                            <Chip label={typeInfo.label} color={typeInfo.color} size="small" />
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <Typography>{transaction.sku}</Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography color={transaction.type === 'outbound' ? 'error' : 'success'}>
+                            {transaction.type === 'outbound' ? '-' : '+'}{transaction.quantity}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography>{transaction.warehouseName}</Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            label={transaction.status === 'pending' ? '待处理' : transaction.status === 'completed' ? '已完成' : '已取消'}
+                            color={transaction.status === 'completed' ? 'success' : transaction.status === 'cancelled' ? 'default' : 'warning'}
+                            size="small"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" color="textSecondary">
+                            {new Date(transaction.createdAt).toLocaleString()}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', gap: 1 }}>
+                            <IconButton onClick={() => { setDialogMode('edit'); setCurrentTransaction(transaction); setDialogOpen(true); }}>
+                              <EditIcon />
+                            </IconButton>
+                            <IconButton onClick={() => handleDeleteTransaction(transaction.id)}>
+                              <DeleteIcon />
+                            </IconButton>
+                          </Box>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Box>
         </Grid>
       </Grid>
 

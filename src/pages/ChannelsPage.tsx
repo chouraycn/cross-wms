@@ -3,8 +3,6 @@ import { showConfirm, showPrompt } from '../utils/confirmDialog';
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
   Grid,
   Chip,
   useTheme,
@@ -626,198 +624,190 @@ const ChannelsPage: React.FC = () => {
   // ===================== Runtime 渲染 =====================
 
   const renderChannelManagerPanel = () => (
-    <Card sx={{ bgcolor: gs.bgPanel }}>
-      <CardContent>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <HubIcon color="primary" />
-            <Typography variant="h6">{t('ChannelManager（运行时）')}</Typography>
-            {managedChannelsDemo && <Chip size="small" color="warning" label={t('演示')} />}
-          </Box>
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <Button size="small" startIcon={<RefreshIcon />} onClick={loadRuntime}>{t('刷新')}</Button>
-            <Button size="small" variant="contained" startIcon={<CampaignIcon />} onClick={() => setBroadcastDialogOpen(true)}>
-              {t('广播测试')}
-            </Button>
-          </Box>
+    <Box sx={{ bgcolor: gs.bgPanel, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <HubIcon color="primary" />
+          <Typography variant="h6">{t('ChannelManager（运行时）')}</Typography>
+          {managedChannelsDemo && <Chip size="small" color="warning" label={t('演示')} />}
         </Box>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          {t('列出所有已注册通道实例，提供 <code>register / unregister / list / broadcast</code> 能力。')}
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button size="small" startIcon={<RefreshIcon />} onClick={loadRuntime}>{t('刷新')}</Button>
+          <Button size="small" variant="contained" startIcon={<CampaignIcon />} onClick={() => setBroadcastDialogOpen(true)}>
+            {t('广播测试')}
+          </Button>
+        </Box>
+      </Box>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        {t('列出所有已注册通道实例，提供 <code>register / unregister / list / broadcast</code> 能力。')}
+      </Typography>
+      {managedChannels.length === 0 ? (
+        <Typography variant="body2" color="text.secondary" sx={{ py: 2, textAlign: 'center' }}>
+          {t('暂无已注册的运行时通道')}
         </Typography>
-        {managedChannels.length === 0 ? (
-          <Typography variant="body2" color="text.secondary" sx={{ py: 2, textAlign: 'center' }}>
-            {t('暂无已注册的运行时通道')}
-          </Typography>
-        ) : (
-          <TableContainer component={Paper} variant="outlined">
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>{t('通道 ID')}</TableCell>
-                  <TableCell>{t('类型')}</TableCell>
-                  <TableCell>{t('运行时状态')}</TableCell>
-                  <TableCell>{t('启动时间')}</TableCell>
+      ) : (
+        <TableContainer component={Paper} variant="outlined">
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell>{t('通道 ID')}</TableCell>
+                <TableCell>{t('类型')}</TableCell>
+                <TableCell>{t('运行时状态')}</TableCell>
+                <TableCell>{t('启动时间')}</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {managedChannels.map(c => (
+                <TableRow key={c.id}>
+                  <TableCell>{c.id}</TableCell>
+                  <TableCell><Chip size="small" label={c.type} /></TableCell>
+                  <TableCell>
+                    <Chip
+                      size="small"
+                      color={c.status === 'ready' ? 'success' : c.status === 'error' ? 'error' : 'default'}
+                      label={c.status}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    {c.startedAtMs ? new Date(c.startedAtMs).toLocaleString() : '—'}
+                  </TableCell>
                 </TableRow>
-              </TableHead>
-              <TableBody>
-                {managedChannels.map(c => (
-                  <TableRow key={c.id}>
-                    <TableCell>{c.id}</TableCell>
-                    <TableCell><Chip size="small" label={c.type} /></TableCell>
-                    <TableCell>
-                      <Chip
-                        size="small"
-                        color={c.status === 'ready' ? 'success' : c.status === 'error' ? 'error' : 'default'}
-                        label={c.status}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      {c.startedAtMs ? new Date(c.startedAtMs).toLocaleString() : '—'}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        )}
-      </CardContent>
-    </Card>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
+    </Box>
   );
 
   const renderTypingPanel = () => (
-    <Card sx={{ bgcolor: gs.bgPanel }}>
-      <CardContent>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-          <KeyboardIcon color="primary" />
-          <Typography variant="h6">TypingCallbacks</Typography>
-          {typersDemo && <Chip size="small" color="warning" label={t('演示')} />}
-        </Box>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          {t('实时显示哪些用户正在某个通道中输入（typing）。')}
+    <Box sx={{ bgcolor: gs.bgPanel, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+        <KeyboardIcon color="primary" />
+        <Typography variant="h6">TypingCallbacks</Typography>
+        {typersDemo && <Chip size="small" color="warning" label={t('演示')} />}
+      </Box>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        {t('实时显示哪些用户正在某个通道中输入（typing）。')}
+      </Typography>
+      {typers.length === 0 ? (
+        <Typography variant="body2" color="text.secondary" sx={{ py: 2, textAlign: 'center' }}>
+          {t('当前没有用户正在 typing')}
         </Typography>
-        {typers.length === 0 ? (
-          <Typography variant="body2" color="text.secondary" sx={{ py: 2, textAlign: 'center' }}>
-            {t('当前没有用户正在 typing')}
-          </Typography>
-        ) : (
-          <List dense>
-            {typers.map(tp => (
-              <ListItem key={`${tp.channelId}-${tp.userId}`}>
-                <ListItemText
-                  primary={`${tp.userId} ${t('在 {channel} 中正在输入', { channel: tp.channelId })}`}
-                  secondary={`${t('起始：')}${new Date(tp.startedAtMs).toLocaleTimeString()} · ${t('过期：')}${new Date(tp.expiresAtMs).toLocaleTimeString()}`}
-                />
-              </ListItem>
-            ))}
-          </List>
-        )}
-      </CardContent>
-    </Card>
+      ) : (
+        <List dense>
+          {typers.map(tp => (
+            <ListItem key={`${tp.channelId}-${tp.userId}`}>
+              <ListItemText
+                primary={`${tp.userId} ${t('在 {channel} 中正在输入', { channel: tp.channelId })}`}
+                secondary={`${t('起始：')}${new Date(tp.startedAtMs).toLocaleTimeString()} · ${t('过期：')}${new Date(tp.expiresAtMs).toLocaleTimeString()}`}
+              />
+            </ListItem>
+          ))}
+        </List>
+      )}
+    </Box>
   );
 
   const renderPairingPanel = () => (
-    <Card sx={{ bgcolor: gs.bgPanel }}>
-      <CardContent>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-          <LinkIcon color="primary" />
-          <Typography variant="h6">PairingStore</Typography>
-          {pairingsDemo && <Chip size="small" color="warning" label={t('演示')} />}
-        </Box>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          {t('已配对通道：双向桥接，用于跨通道消息转发。')}
+    <Box sx={{ bgcolor: gs.bgPanel, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+        <LinkIcon color="primary" />
+        <Typography variant="h6">PairingStore</Typography>
+        {pairingsDemo && <Chip size="small" color="warning" label={t('演示')} />}
+      </Box>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        {t('已配对通道：双向桥接，用于跨通道消息转发。')}
+      </Typography>
+      {pairings.length === 0 ? (
+        <Typography variant="body2" color="text.secondary" sx={{ py: 2, textAlign: 'center' }}>
+          {t('暂无配对通道')}
         </Typography>
-        {pairings.length === 0 ? (
-          <Typography variant="body2" color="text.secondary" sx={{ py: 2, textAlign: 'center' }}>
-            {t('暂无配对通道')}
-          </Typography>
-        ) : (
-          <List dense>
-            {pairings.map((p, i) => (
-              <ListItem key={i}>
-                <ListItemText
-                  primary={
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Chip size="small" label={p.a} />
-                      <LinkOffIcon fontSize="small" sx={{ transform: 'rotate(90deg)' }} />
-                      <Chip size="small" label={p.b} />
-                    </Box>
-                  }
-                  secondary={`${p.a} ↔ ${p.b}`}
-                />
-              </ListItem>
-            ))}
-          </List>
-        )}
-      </CardContent>
-    </Card>
+      ) : (
+        <List dense>
+          {pairings.map((p, i) => (
+            <ListItem key={i}>
+              <ListItemText
+                primary={
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Chip size="small" label={p.a} />
+                    <LinkOffIcon fontSize="small" sx={{ transform: 'rotate(90deg)' }} />
+                    <Chip size="small" label={p.b} />
+                  </Box>
+                }
+                secondary={`${p.a} ↔ ${p.b}`}
+              />
+            </ListItem>
+          ))}
+        </List>
+      )}
+    </Box>
   );
 
   const renderPipelinePanel = () => {
     const total = pipelineStages.reduce((s, st) => s + st.received, 0) || pipelineTotal;
     return (
-      <Card sx={{ bgcolor: gs.bgPanel }}>
-        <CardContent>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-            <AccountTreeIcon color="primary" />
-            <Typography variant="h6">InboundReplyPipeline</Typography>
-            {pipelineDemo && <Chip size="small" color="warning" label={t('演示')} />}
-            <Box sx={{ flex: 1 }} />
-            <Chip size="small" label={t('已处理 {total} 条消息', { total })} />
-          </Box>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            {t('入站消息处理流水线：<code>normalize → filter → route → enrich</code>。')}
+      <Box sx={{ bgcolor: gs.bgPanel, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+          <AccountTreeIcon color="primary" />
+          <Typography variant="h6">InboundReplyPipeline</Typography>
+          {pipelineDemo && <Chip size="small" color="warning" label={t('演示')} />}
+          <Box sx={{ flex: 1 }} />
+          <Chip size="small" label={t('已处理 {total} 条消息', { total })} />
+        </Box>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          {t('入站消息处理流水线：<code>normalize → filter → route → enrich</code>。')}
+        </Typography>
+        {pipelineStages.length === 0 ? (
+          <Typography variant="body2" color="text.secondary" sx={{ py: 2, textAlign: 'center' }}>
+            {t('暂无流水线数据')}
           </Typography>
-          {pipelineStages.length === 0 ? (
-            <Typography variant="body2" color="text.secondary" sx={{ py: 2, textAlign: 'center' }}>
-              {t('暂无流水线数据')}
-            </Typography>
-          ) : (
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'stretch' }}>
-              {pipelineStages.map((stage, i) => {
-                const passRate = stage.received > 0 ? (stage.passed / stage.received) * 100 : 0;
-                return (
-                  <Box key={stage.name} sx={{ flex: '1 1 220px', minWidth: 220 }}>
-                    <Box sx={{ p: 1.5, border: `1px solid ${gs.border}`, borderRadius: 1, bgcolor: gs.bgPanel }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                        <Chip
-                          size="small"
-                          color={i === 0 ? 'info' : i === pipelineStages.length - 1 ? 'success' : 'primary'}
-                          label={`${i + 1}. ${stage.label}`}
-                        />
-                        <Typography variant="caption" color="text.secondary">
-                          {stage.avgDurationMs ? `${stage.avgDurationMs.toFixed(1)} ms` : '—'}
-                        </Typography>
-                      </Box>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-                        {stage.description}
-                      </Typography>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.25 }}>
-                        <Typography variant="caption" color="text.secondary">{t('通过率')}</Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {stage.passed} / {stage.received || 0}
-                        </Typography>
-                      </Box>
-                      <LinearProgress
-                        variant="determinate"
-                        value={passRate}
-                        sx={{ height: 4, borderRadius: 1 }}
+        ) : (
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'stretch' }}>
+            {pipelineStages.map((stage, i) => {
+              const passRate = stage.received > 0 ? (stage.passed / stage.received) * 100 : 0;
+              return (
+                <Box key={stage.name} sx={{ flex: '1 1 220px', minWidth: 220 }}>
+                  <Box sx={{ p: 1.5, border: `1px solid ${gs.border}`, borderRadius: 1, bgcolor: gs.bgPanel }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                      <Chip
+                        size="small"
+                        color={i === 0 ? 'info' : i === pipelineStages.length - 1 ? 'success' : 'primary'}
+                        label={`${i + 1}. ${stage.label}`}
                       />
-                      {stage.dropped > 0 && (
-                        <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }}>
-                          {t('丢弃 {count}', { count: stage.dropped })}
-                        </Typography>
-                      )}
+                      <Typography variant="caption" color="text.secondary">
+                        {stage.avgDurationMs ? `${stage.avgDurationMs.toFixed(1)} ms` : '—'}
+                      </Typography>
                     </Box>
-                    {i < pipelineStages.length - 1 && (
-                      <Box sx={{ textAlign: 'center', color: gs.textDisabled, my: 0.25 }}>↓</Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                      {stage.description}
+                    </Typography>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.25 }}>
+                      <Typography variant="caption" color="text.secondary">{t('通过率')}</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {stage.passed} / {stage.received || 0}
+                      </Typography>
+                    </Box>
+                    <LinearProgress
+                      variant="determinate"
+                      value={passRate}
+                      sx={{ height: 4, borderRadius: 1 }}
+                    />
+                    {stage.dropped > 0 && (
+                      <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }}>
+                        {t('丢弃 {count}', { count: stage.dropped })}
+                      </Typography>
                     )}
                   </Box>
-                );
-              })}
-            </Box>
-          )}
-        </CardContent>
-      </Card>
+                  {i < pipelineStages.length - 1 && (
+                    <Box sx={{ textAlign: 'center', color: gs.textDisabled, my: 0.25 }}>↓</Box>
+                  )}
+                </Box>
+              );
+            })}
+          </Box>
+        )}
+      </Box>
     );
   };
 
@@ -907,114 +897,108 @@ const ChannelsPage: React.FC = () => {
       {activeTab === 'config' && (
         <Grid container spacing={3}>
           <Grid item xs={12} md={8}>
-            <Card sx={{ bgcolor: gs.bgPanel }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                  <Typography variant="h6">{t('通道列表')}</Typography>
-                  <Button onClick={handleOpenCreateDialog} startIcon={<AddIcon />}>
-                    {t('创建通道')}
-                  </Button>
+            <Box sx={{ bgcolor: gs.bgPanel, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                <Typography variant="h6">{t('通道列表')}</Typography>
+                <Button onClick={handleOpenCreateDialog} startIcon={<AddIcon />}>
+                  {t('创建通道')}
+                </Button>
+              </Box>
+              {loading ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                  <CircularProgress />
                 </Box>
-                {loading ? (
-                  <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                    <CircularProgress />
-                  </Box>
-                ) : channels.length === 0 ? (
-                  <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
-                    {t('暂无通道，请创建一个')}
-                  </Typography>
-                ) : (
-                  <TableContainer component={Paper}>
-                    <Table>
-                      <TableHead>
-                        <TableRow>
-                          <TableCell>{t('名称')}</TableCell>
-                          <TableCell>{t('类型')}</TableCell>
-                          <TableCell>{t('状态')}</TableCell>
-                          <TableCell>{t('账户数')}</TableCell>
-                          <TableCell>{t('启用')}</TableCell>
-                          <TableCell>{t('操作')}</TableCell>
+              ) : channels.length === 0 ? (
+                <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+                  {t('暂无通道，请创建一个')}
+                </Typography>
+              ) : (
+                <TableContainer component={Paper}>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>{t('名称')}</TableCell>
+                        <TableCell>{t('类型')}</TableCell>
+                        <TableCell>{t('状态')}</TableCell>
+                        <TableCell>{t('账户数')}</TableCell>
+                        <TableCell>{t('启用')}</TableCell>
+                        <TableCell>{t('操作')}</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {channels.map(channel => (
+                        <TableRow key={channel.name}>
+                          <TableCell>
+                            <Button onClick={() => handleOpenDetail(channel.name)} sx={{ p: 0 }}>
+                              <LinkIcon sx={{ mr: 1 }} />
+                              {channel.name}
+                            </Button>
+                          </TableCell>
+                          <TableCell>{channel.type}</TableCell>
+                          <TableCell>
+                            {(() => {
+                              const status = getStatusChip(channel.status);
+                              return <Chip label={status.label} color={status.color} icon={status.icon} />;
+                            })()}
+                          </TableCell>
+                          <TableCell>{channel.accountCount || 0}</TableCell>
+                          <TableCell>
+                            <Switch
+                              checked={channel.enabled ?? true}
+                              onChange={(e) => handleToggleChannel(channel.name, e.target.checked)}
+                              disabled={operationLoading?.startsWith('toggle')}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <IconButton onClick={() => handleOpenEditDialog(channel)}>
+                              <EditIcon />
+                            </IconButton>
+                            <IconButton onClick={() => handleOpenSendDialog(channel.name)}>
+                              <SendIcon />
+                            </IconButton>
+                            <IconButton onClick={() => handleDeleteChannel(channel.name)}>
+                              <DeleteIcon />
+                            </IconButton>
+                          </TableCell>
                         </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {channels.map(channel => (
-                          <TableRow key={channel.name}>
-                            <TableCell>
-                              <Button onClick={() => handleOpenDetail(channel.name)} sx={{ p: 0 }}>
-                                <LinkIcon sx={{ mr: 1 }} />
-                                {channel.name}
-                              </Button>
-                            </TableCell>
-                            <TableCell>{channel.type}</TableCell>
-                            <TableCell>
-                              {(() => {
-                                const status = getStatusChip(channel.status);
-                                return <Chip label={status.label} color={status.color} icon={status.icon} />;
-                              })()}
-                            </TableCell>
-                            <TableCell>{channel.accountCount || 0}</TableCell>
-                            <TableCell>
-                              <Switch
-                                checked={channel.enabled ?? true}
-                                onChange={(e) => handleToggleChannel(channel.name, e.target.checked)}
-                                disabled={operationLoading?.startsWith('toggle')}
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <IconButton onClick={() => handleOpenEditDialog(channel)}>
-                                <EditIcon />
-                              </IconButton>
-                              <IconButton onClick={() => handleOpenSendDialog(channel.name)}>
-                                <SendIcon />
-                              </IconButton>
-                              <IconButton onClick={() => handleDeleteChannel(channel.name)}>
-                                <DeleteIcon />
-                              </IconButton>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                )}
-              </CardContent>
-            </Card>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
+            </Box>
           </Grid>
 
           <Grid item xs={12} md={4}>
-            <Card sx={{ bgcolor: gs.bgPanel }}>
-              <CardContent>
-                <Typography variant="h6" mb={2}>{t('支持的通道类型')}</Typography>
-                <List>
-                  {channelTypes.map(ct => (
-                    <ListItem key={ct.type} sx={{ py: 1 }}>
-                      <ListItemText
-                        primary={ct.label}
-                        secondary={ct.description}
-                      />
-                      {ct.bidirectional && (
-                        <Chip label={t('双向')} size="small" color="info" />
-                      )}
-                    </ListItem>
-                  ))}
-                </List>
-              </CardContent>
-            </Card>
+            <Box sx={{ bgcolor: gs.bgPanel, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+              <Typography variant="h6" mb={2}>{t('支持的通道类型')}</Typography>
+              <List>
+                {channelTypes.map(ct => (
+                  <ListItem key={ct.type} sx={{ py: 1 }}>
+                    <ListItemText
+                      primary={ct.label}
+                      secondary={ct.description}
+                    />
+                    {ct.bidirectional && (
+                      <Chip label={t('双向')} size="small" color="info" />
+                    )}
+                  </ListItem>
+                ))}
+              </List>
+            </Box>
 
-            <Card sx={{ bgcolor: gs.bgPanel, mt: 3 }}>
-              <CardContent>
-                <Typography variant="h6" mb={2}>{t('快捷操作')}</Typography>
-                <Button fullWidth onClick={handleOpenCreateDialog} startIcon={<AddIcon />}>
-                  {t('创建新通道')}
-                </Button>
-                <Button fullWidth onClick={loadChannels} startIcon={<RefreshIcon />} sx={{ mt: 1 }}>
-                  {t('刷新列表')}
-                </Button>
-                <Button fullWidth onClick={() => setActiveTab('runtime')} startIcon={<HubIcon />} sx={{ mt: 1 }}>
-                  {t('查看运行时')}
-                </Button>
-              </CardContent>
-            </Card>
+            <Box sx={{ bgcolor: gs.bgPanel, mt: 3, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+              <Typography variant="h6" mb={2}>{t('快捷操作')}</Typography>
+              <Button fullWidth onClick={handleOpenCreateDialog} startIcon={<AddIcon />}>
+                {t('创建新通道')}
+              </Button>
+              <Button fullWidth onClick={loadChannels} startIcon={<RefreshIcon />} sx={{ mt: 1 }}>
+                {t('刷新列表')}
+              </Button>
+              <Button fullWidth onClick={() => setActiveTab('runtime')} startIcon={<HubIcon />} sx={{ mt: 1 }}>
+                {t('查看运行时')}
+              </Button>
+            </Box>
           </Grid>
         </Grid>
       )}
