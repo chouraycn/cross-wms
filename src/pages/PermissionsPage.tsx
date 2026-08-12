@@ -220,8 +220,7 @@ const PermissionsPage: React.FC = () => {
         </Grid>
       </Grid>
 
-      <Card>
-        <CardContent>
+      <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
           <Typography variant="h6" fontWeight={600} gutterBottom>
             权限列表
           </Typography>
@@ -314,11 +313,9 @@ const PermissionsPage: React.FC = () => {
               暂无权限数据
             </Typography>
           )}
-        </CardContent>
-      </Card>
+      </Box>
 
-      <Card sx={{ mt: 3 }}>
-        <CardContent>
+      <Box sx={{ mt: 3, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
           <Typography variant="h6" fontWeight={600} gutterBottom>
             权限说明
           </Typography>
@@ -362,8 +359,7 @@ const PermissionsPage: React.FC = () => {
               </Box>
             </Grid>
           </Grid>
-        </CardContent>
-      </Card>
+      </Box>
     </Box>
   );
 };

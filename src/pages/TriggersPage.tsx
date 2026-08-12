@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
   Grid,
   Chip,
   Table,
@@ -203,93 +201,89 @@ export default function TriggersPage() {
 
       <Grid container spacing={3}>
         <Grid item xs={12} md={8}>
-          <Card sx={{ bgcolor: gs.bgPanel }}>
-            <CardContent>
-              <Typography variant="h6" mb={2}>触发器列表</Typography>
-              <TableContainer component={Paper}>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>名称</TableCell>
-                      <TableCell>类型</TableCell>
-                      <TableCell>目标</TableCell>
-                      <TableCell>状态</TableCell>
-                      <TableCell>操作</TableCell>
+          <Box sx={{ bgcolor: gs.bgPanel, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+            <Typography variant="h6" mb={2}>触发器列表</Typography>
+            <TableContainer component={Paper}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>名称</TableCell>
+                    <TableCell>类型</TableCell>
+                    <TableCell>目标</TableCell>
+                    <TableCell>状态</TableCell>
+                    <TableCell>操作</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {triggers.map(trigger => (
+                    <TableRow key={trigger.id}>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          {getTriggerTypeIcon(trigger.type)}
+                          <Typography>{trigger.name}</Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Chip label={getTriggerTypeLabel(trigger.type)} size="small" />
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2">
+                          {trigger.targetType}: {trigger.targetId}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        {trigger.enabled ? (
+                          <Chip icon={<ToggleOnIcon />} label="启用" color="success" size="small" />
+                        ) : (
+                          <Chip icon={<ToggleOffIcon />} label="禁用" color="default" size="small" />
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', gap: 1 }}>
+                          <IconButton onClick={() => trigger.enabled ? handleDisableTrigger(trigger.id) : handleEnableTrigger(trigger.id)}>
+                            {trigger.enabled ? <ToggleOffIcon /> : <ToggleOnIcon />}
+                          </IconButton>
+                          <IconButton onClick={() => handleExecuteTrigger(trigger.id)} disabled={executingTrigger === trigger.id}>
+                            <PlayArrowIcon />
+                          </IconButton>
+                          <IconButton onClick={() => { setDialogMode('edit'); setCurrentTrigger(trigger); setDialogOpen(true); }}>
+                            <EditIcon />
+                          </IconButton>
+                          <IconButton onClick={() => handleDeleteTrigger(trigger.id)}>
+                            <DeleteIcon />
+                          </IconButton>
+                        </Box>
+                      </TableCell>
                     </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {triggers.map(trigger => (
-                      <TableRow key={trigger.id}>
-                        <TableCell>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            {getTriggerTypeIcon(trigger.type)}
-                            <Typography>{trigger.name}</Typography>
-                          </Box>
-                        </TableCell>
-                        <TableCell>
-                          <Chip label={getTriggerTypeLabel(trigger.type)} size="small" />
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2">
-                            {trigger.targetType}: {trigger.targetId}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          {trigger.enabled ? (
-                            <Chip icon={<ToggleOnIcon />} label="启用" color="success" size="small" />
-                          ) : (
-                            <Chip icon={<ToggleOffIcon />} label="禁用" color="default" size="small" />
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Box sx={{ display: 'flex', gap: 1 }}>
-                            <IconButton onClick={() => trigger.enabled ? handleDisableTrigger(trigger.id) : handleEnableTrigger(trigger.id)}>
-                              {trigger.enabled ? <ToggleOffIcon /> : <ToggleOnIcon />}
-                            </IconButton>
-                            <IconButton onClick={() => handleExecuteTrigger(trigger.id)} disabled={executingTrigger === trigger.id}>
-                              <PlayArrowIcon />
-                            </IconButton>
-                            <IconButton onClick={() => { setDialogMode('edit'); setCurrentTrigger(trigger); setDialogOpen(true); }}>
-                              <EditIcon />
-                            </IconButton>
-                            <IconButton onClick={() => handleDeleteTrigger(trigger.id)}>
-                              <DeleteIcon />
-                            </IconButton>
-                          </Box>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </CardContent>
-          </Card>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Box>
         </Grid>
 
         <Grid item xs={12} md={4}>
-          <Card sx={{ bgcolor: gs.bgPanel }}>
-            <CardContent>
-              <Typography variant="h6" mb={2}>执行历史</Typography>
-              <List>
-                {executions.map(exec => (
-                  <ListItem key={exec.id} sx={{ py: 1 }}>
-                    <ListItemText
-                      primary={exec.triggerName}
-                      secondary={`状态: ${exec.status} · ${new Date(exec.startedAt).toLocaleString()}`}
-                    />
-                    <Chip
-                      label={exec.status}
-                      color={exec.status === 'completed' ? 'success' : exec.status === 'failed' ? 'error' : 'default'}
-                      size="small"
-                    />
-                  </ListItem>
-                ))}
-              </List>
-              {executions.length === 0 && (
-                <Typography variant="body2" color="textSecondary">暂无执行记录</Typography>
-              )}
-            </CardContent>
-          </Card>
+          <Box sx={{ bgcolor: gs.bgPanel, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+            <Typography variant="h6" mb={2}>执行历史</Typography>
+            <List>
+              {executions.map(exec => (
+                <ListItem key={exec.id} sx={{ py: 1 }}>
+                  <ListItemText
+                    primary={exec.triggerName}
+                    secondary={`状态: ${exec.status} · ${new Date(exec.startedAt).toLocaleString()}`}
+                  />
+                  <Chip
+                    label={exec.status}
+                    color={exec.status === 'completed' ? 'success' : exec.status === 'failed' ? 'error' : 'default'}
+                    size="small"
+                  />
+                </ListItem>
+              ))}
+            </List>
+            {executions.length === 0 && (
+              <Typography variant="body2" color="textSecondary">暂无执行记录</Typography>
+            )}
+          </Box>
         </Grid>
       </Grid>
 
