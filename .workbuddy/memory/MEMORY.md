@@ -16,6 +16,7 @@
 - 提交必须精确列文件名 add，禁 `git add -A`。`.workbuddy/` 被 gitignore，但 `MEMORY.md` 已跟踪——混进 `git add` 会报 ignored 让整条命令失败
 - `.npmrc` 需 `legacy-peer-deps=true`；DMG 验证 `grep -c "关键字符串" server_dist/index.cjs`
 - 本地分支无 upstream，推送须 `git push -u origin <branch>`
+- `git pull --rebase`（远端有 ahead 导致 push rejected）后，**必须 `git show HEAD:<关键文件>` 验证关键改动未被静默改写**（2026-08-12 实测：收口 commit 的 SettingsPopover 嵌套菜单在 rebase 到远端仅改 package.json 的 version-bump commit 时，扁平→嵌套 diff 被丢弃、远端版变扁平，需补 fix commit 才修复）。rebase 无冲突报告 ≠ 改动完整
 
 ### 运行时
 - 日志统一 `server/logger.ts`，禁裸 `console.*`
