@@ -10,7 +10,7 @@
  */
 
 import React, { useState } from 'react';
-import { Box, Tabs, Tab, Typography, useTheme } from '@mui/material';
+import { Box, Tabs, Tab, useTheme } from '@mui/material';
 import { getGrayScale } from '../../constants/theme';
 
 export interface CenterTabDef {
@@ -34,16 +34,7 @@ const CenterPage: React.FC<CenterPageProps> = ({ title, description, icon, tabs 
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, color: gs.textPrimary }}>
-      <Box sx={{ px: 3, pt: 2.5, pb: 1.5, borderBottom: `1px solid ${gs.border}` }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          {icon && <Box sx={{ color: gs.textMuted, display: 'flex' }}>{icon}</Box>}
-          <Box>
-            <Typography variant="h5" sx={{ fontWeight: 600, lineHeight: 1.2 }}>{title}</Typography>
-            {description && <Typography variant="body2" sx={{ color: gs.textMuted, mt: 0.25 }}>{description}</Typography>}
-          </Box>
-        </Box>
-      </Box>
-      <Box sx={{ borderBottom: `1px solid ${gs.border}`, px: 1.5 }}>
+      <Box sx={{ borderBottom: `1px solid ${gs.border}`, px: 2, pt: 1 }}>
         <Tabs
           value={value}
           onChange={(_e, v) => setValue(v)}
@@ -58,7 +49,7 @@ const CenterPage: React.FC<CenterPageProps> = ({ title, description, icon, tabs 
           ))}
         </Tabs>
       </Box>
-      <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', p: 3 }}>
+      <Box sx={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
         {tabs.map((t, i) => (value === i ? <React.Fragment key={i}>{t.render()}</React.Fragment> : null))}
       </Box>
     </Box>

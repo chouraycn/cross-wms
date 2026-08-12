@@ -2,18 +2,18 @@
  * ExtensionsPage — 扩展管理面板
  *
  * 展示已安装扩展列表，支持启用/禁用/加载/发现等操作。
+ * 视觉风格对齐 WikiPanel（扁平 Box+border，无 Card 阴影）。
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
   Switch,
   Button,
   Chip,
   Tooltip,
+  IconButton,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -26,10 +26,8 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
   useTheme,
   LinearProgress,
-  Grid,
   FormControl,
   InputLabel,
   Select,
@@ -222,22 +220,24 @@ const ExtensionsPage: React.FC = () => {
   }, [kinds]);
 
   return (
-    <Box sx={{ p: 3, height: '100%', overflow: 'auto' }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
-        <Typography variant="h4" fontWeight={600}>
-          扩展管理
-        </Typography>
+    <Box sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column' }}>
+      {/* Header — 对齐 WikiPanel 风格 */}
+      <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <ExtensionOutlinedIcon sx={{ fontSize: 24, color: gs.textPrimary }} />
+          <Typography sx={{ fontSize: '1.25rem', fontWeight: 700, color: gs.textPrimary }}>
+            扩展管理
+          </Typography>
+        </Box>
         <Box sx={{ display: 'flex', gap: 1 }}>
+          <Tooltip title="刷新">
+            <IconButton size="small" onClick={() => refreshExtensionsFromApi()} disabled={loading}>
+              <RefreshIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
           <Button
             variant="outlined"
-            startIcon={<RefreshIcon />}
-            onClick={() => refreshExtensionsFromApi()}
-            disabled={loading}
-          >
-            刷新
-          </Button>
-          <Button
-            variant="outlined"
+            size="small"
             startIcon={<DownloadOutlinedIcon />}
             onClick={handleLoadAll}
             disabled={loading}
@@ -246,6 +246,7 @@ const ExtensionsPage: React.FC = () => {
           </Button>
           <Button
             variant="contained"
+            size="small"
             startIcon={<AddIcon />}
             onClick={handleDiscover}
             disabled={discovering}
@@ -255,130 +256,119 @@ const ExtensionsPage: React.FC = () => {
         </Box>
       </Box>
 
-      {/* 统计卡片 */}
+      {/* Stats — 单个 Box 内联，对齐 WikiPanel */}
       {stats && (
-        <Grid container spacing={2} sx={{ mb: 3 }}>
-          <Grid item xs={12} sm={4}>
-            <Card>
-              <CardContent>
-                <Typography variant="body2" color="text.secondary">
-                  扩展总数
-                </Typography>
-                <Typography variant="h4" fontWeight={600}>
-                  {stats.total}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} sm={4}>
-            <Card>
-              <CardContent>
-                <Typography variant="body2" color="text.secondary">
-                  已启用
-                </Typography>
-                <Typography variant="h4" fontWeight={600} color="success.main">
-                  {stats.enabled}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} sm={4}>
-            <Card>
-              <CardContent>
-                <Typography variant="body2" color="text.secondary">
-                  已禁用
-                </Typography>
-                <Typography variant="h4" fontWeight={600} color="warning.main">
-                  {stats.disabled}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
+        <Box sx={{ mb: 2, p: 1.5, borderRadius: 2, border: `1px solid ${gs.border}`, bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' }}>
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+            <Box>
+              <Typography variant="caption" sx={{ color: gs.textMuted }}>
+                扩展总数
+              </Typography>
+              <Typography sx={{ fontWeight: 600, color: gs.textPrimary }}>
+                {stats.total}
+              </Typography>
+            </Box>
+            <Box>
+              <Typography variant="caption" sx={{ color: gs.textMuted }}>
+                已启用
+              </Typography>
+              <Typography sx={{ fontWeight: 600, color: '#10b981' }}>
+                {stats.enabled}
+              </Typography>
+            </Box>
+            <Box>
+              <Typography variant="caption" sx={{ color: gs.textMuted }}>
+                已禁用
+              </Typography>
+              <Typography sx={{ fontWeight: 600, color: '#f59e0b' }}>
+                {stats.disabled}
+              </Typography>
+            </Box>
+          </Box>
+        </Box>
       )}
 
-      {/* 过滤器 */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} sm={4}>
-              <TextField
-                fullWidth
-                placeholder="搜索扩展..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon fontSize="small" />
-                    </InputAdornment>
-                  ),
-                }}
-                size="small"
-              />
-            </Grid>
-            <Grid item xs={12} sm={3}>
-              <FormControl fullWidth size="small">
-                <InputLabel>扩展类型</InputLabel>
-                <Select
-                  value={kindFilter}
-                  label="扩展类型"
-                  onChange={(e) => setKindFilter(e.target.value)}
-                >
-                  <MenuItem value="all">全部类型</MenuItem>
-                  {kinds.map((kind: ExtensionKind) => (
-                    <MenuItem key={kind.kind} value={kind.kind}>
-                      {kind.label}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={3}>
-              <FormControl fullWidth size="small">
-                <InputLabel>状态</InputLabel>
-                <Select
-                  value={statusFilter}
-                  label="状态"
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                >
-                  <MenuItem value="all">全部状态</MenuItem>
-                  <MenuItem value="enabled">已启用</MenuItem>
-                  <MenuItem value="disabled">已禁用</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-          </Grid>
-        </CardContent>
-      </Card>
+      {/* Filter — 对齐 WikiPanel：Box+flex 替代 Card+Grid */}
+      <Box sx={{ mb: 2, display: 'flex', gap: 1, alignItems: 'center' }}>
+        <TextField
+          placeholder="搜索扩展..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon fontSize="small" />
+              </InputAdornment>
+            ),
+          }}
+          size="small"
+          sx={{ minWidth: 200, flex: 1 }}
+        />
+        <FormControl size="small" sx={{ minWidth: 120 }}>
+          <InputLabel>扩展类型</InputLabel>
+          <Select
+            value={kindFilter}
+            label="扩展类型"
+            onChange={(e) => setKindFilter(e.target.value)}
+          >
+            <MenuItem value="all">全部类型</MenuItem>
+            {kinds.map((kind: ExtensionKind) => (
+              <MenuItem key={kind.kind} value={kind.kind}>
+                {kind.label}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        <FormControl size="small" sx={{ minWidth: 120 }}>
+          <InputLabel>状态</InputLabel>
+          <Select
+            value={statusFilter}
+            label="状态"
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
+            <MenuItem value="all">全部状态</MenuItem>
+            <MenuItem value="enabled">已启用</MenuItem>
+            <MenuItem value="disabled">已禁用</MenuItem>
+          </Select>
+        </FormControl>
+      </Box>
 
-      {/* 扩展列表 */}
-      <Card>
-        <CardContent>
-          {(loading || discovering) && <LinearProgress sx={{ mb: 2 }} />}
+      {/* 扩展列表 — 与 WikiPanel Content 对称：外层"裸"盒 + 内层带边框盒 */}
+      <Box sx={{ display: 'flex', gap: 2, flex: 1, minHeight: 0 }}>
+        <Box
+          sx={{
+            flex: 1,
+            border: `1px solid ${gs.border}`,
+            borderRadius: 2,
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+          {(loading || discovering) && <LinearProgress />}
 
-          <TableContainer component={Paper} variant="outlined">
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>扩展</TableCell>
-                  <TableCell>类型</TableCell>
-                  <TableCell>版本</TableCell>
-                  <TableCell>状态</TableCell>
-                  <TableCell>依赖</TableCell>
-                  <TableCell align="right">操作</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {filteredExtensions.length === 0 ? (
+          {filteredExtensions.length === 0 ? (
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, p: 3, gap: 1 }}>
+              <ExtensionOutlinedIcon sx={{ fontSize: 48, opacity: 0.3 }} />
+              <Typography variant="body2" sx={{ color: gs.textMuted }}>
+                暂无扩展
+              </Typography>
+            </Box>
+          ) : (
+            <TableContainer sx={{ flex: 1, overflow: 'auto' }}>
+              <Table size="small" stickyHeader>
+                <TableHead>
                   <TableRow>
-                    <TableCell colSpan={6} align="center" sx={{ py: 4, color: gs.textMuted }}>
-                      <ExtensionOutlinedIcon sx={{ fontSize: 40, mb: 1, opacity: 0.5 }} />
-                      <Typography variant="body1">暂无扩展</Typography>
-                    </TableCell>
+                    <TableCell>扩展</TableCell>
+                    <TableCell>类型</TableCell>
+                    <TableCell>版本</TableCell>
+                    <TableCell>状态</TableCell>
+                    <TableCell>依赖</TableCell>
+                    <TableCell align="right">操作</TableCell>
                   </TableRow>
-                ) : (
-                  filteredExtensions.map((ext: ExtensionInfo) => {
+                </TableHead>
+                <TableBody>
+                  {filteredExtensions.map((ext: ExtensionInfo) => {
                     const status = getStatusConfig(ext.enabled);
                     const isLoading = isExtensionActionLoading(ext.id);
 
@@ -386,10 +376,10 @@ const ExtensionsPage: React.FC = () => {
                       <TableRow key={ext.id} hover>
                         <TableCell>
                           <Box>
-                            <Typography variant="body1" fontWeight={500}>
+                            <Typography variant="body2" sx={{ fontWeight: 500 }}>
                               {ext.name}
                             </Typography>
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography variant="caption" sx={{ color: gs.textMuted }}>
                               {ext.id} — {ext.description}
                             </Typography>
                           </Box>
@@ -401,7 +391,9 @@ const ExtensionsPage: React.FC = () => {
                             size="small"
                           />
                         </TableCell>
-                        <TableCell>{ext.version}</TableCell>
+                        <TableCell>
+                          <Typography variant="body2">{ext.version}</Typography>
+                        </TableCell>
                         <TableCell>
                           <Chip
                             icon={status.icon}
@@ -417,13 +409,13 @@ const ExtensionsPage: React.FC = () => {
                               {Object.keys(ext.dependencies).length} 个依赖
                             </Typography>
                           ) : (
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography variant="caption" sx={{ color: gs.textMuted }}>
                               无
                             </Typography>
                           )}
                         </TableCell>
                         <TableCell align="right">
-                          <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+                          <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end', alignItems: 'center' }}>
                             {!ext.enabled && (
                               <Button
                                 size="small"
@@ -439,19 +431,20 @@ const ExtensionsPage: React.FC = () => {
                                 checked={ext.enabled}
                                 onChange={() => handleToggleEnable(ext)}
                                 disabled={isLoading}
+                                size="small"
                               />
                             </Tooltip>
                           </Box>
                         </TableCell>
                       </TableRow>
                     );
-                  })
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </CardContent>
-      </Card>
+                  })}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </Box>
+      </Box>
 
       {/* 发现扩展对话框 */}
       <Dialog
@@ -464,7 +457,7 @@ const ExtensionsPage: React.FC = () => {
         <DialogContent>
           {discovered.length === 0 ? (
             <Box sx={{ py: 4, textAlign: 'center' }}>
-              <Typography color="text.secondary">未发现新扩展</Typography>
+              <Typography sx={{ color: gs.textMuted }}>未发现新扩展</Typography>
             </Box>
           ) : (
             <TableContainer>
@@ -481,10 +474,10 @@ const ExtensionsPage: React.FC = () => {
                   {discovered.map((ext: ExtensionInfo) => (
                     <TableRow key={ext.id}>
                       <TableCell>
-                        <Typography variant="body1" fontWeight={500}>
+                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
                           {ext.name}
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="caption" sx={{ color: gs.textMuted }}>
                           {ext.id} — {ext.description}
                         </Typography>
                       </TableCell>
@@ -495,7 +488,9 @@ const ExtensionsPage: React.FC = () => {
                           size="small"
                         />
                       </TableCell>
-                      <TableCell>{ext.version}</TableCell>
+                      <TableCell>
+                        <Typography variant="body2">{ext.version}</Typography>
+                      </TableCell>
                       <TableCell align="right">
                         <Button
                           size="small"
