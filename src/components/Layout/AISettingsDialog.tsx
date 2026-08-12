@@ -275,7 +275,8 @@ const AISettingsDialog: React.FC<AISettingsDialogProps> = ({ open, onClose, init
         maxWidth="md"
         fullWidth
         sx={{
-          zIndex: 1600,
+          // L4：设置弹窗内嵌的二级 Dialog，必须高于 SettingsDialogShell (2000)
+          zIndex: 2400,
           '& .MuiDialog-paper': {
             height: '80vh',
             borderRadius: 2,

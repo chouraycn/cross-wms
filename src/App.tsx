@@ -212,6 +212,20 @@ function buildTheme(appearance: AppearanceConfig) {
       shadows.lg,
       shadows.lg,
     ],
+    // 全局弹窗层级（严格递增）：
+    //   L0 页面底座 (0-999) / L1 侧边栏/抽屉 (1000-1499) / L2 Popover/浮层 (1500-1999)
+    //   L3 设置对话框外壳 (2000) / L4 内嵌二级 Dialog (2400)  / L5 审批/强阻断 (2800)
+    //   L6 拖拽顶栏/全局指令 (9990+)
+    zIndex: {
+      mobileStepper: 900,
+      fab: 950,
+      speedDial: 950,
+      appBar: 1000,
+      drawer: 1100,
+      modal: 1300,
+      snackbar: 1400,
+      tooltip: 1450,
+    },
     transitions: {
       duration: {
         shortest: appearance.enableAnimations ? 150 : 0,
@@ -270,6 +284,12 @@ function buildTheme(appearance: AppearanceConfig) {
           root: { '&:last-child td': { borderBottom: 0 } },
         },
       },
+      MuiModal: {
+        styleOverrides: {
+          // SettingsDialogShell 等可再以 sx 覆盖；此处为所有 Modal(Dialog) 基准，避免被 Popover/Sidebar 压
+          root: { zIndex: 2000 },
+        },
+      },
       MuiDialog: {
         styleOverrides: {
           paper: {
@@ -281,6 +301,8 @@ function buildTheme(appearance: AppearanceConfig) {
       },
       MuiPopover: {
         styleOverrides: {
+          // SettingsPopover 等显式通过 sx/container zIndex 覆盖到 1700；此处设基准，确保 Popover 在侧边栏之上
+          root: { zIndex: 1550 },
           paper: {
             backgroundColor: gs.bgPanel,
             border: `1px solid ${gs.border}`,

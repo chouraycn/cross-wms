@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import ReactDOM from 'react-dom';
 import {
   Dialog,
   DialogTitle,
@@ -661,9 +662,9 @@ export const ApprovalDialog: React.FC<ApprovalDialogProps> = React.memo(({
 
   const riskConfig = currentRequest ? riskLevelConfig[currentRequest.riskLevel] : null;
 
-  // 最小化视图
+  // 最小化视图（Portal 到 body，避免父组件 stacking context 压盖）
   if (open && isMinimized) {
-    return (
+    const node = (
       <Zoom in={open}>
         <Fab
           color="warning"
@@ -673,7 +674,8 @@ export const ApprovalDialog: React.FC<ApprovalDialogProps> = React.memo(({
             position: 'fixed',
             bottom: 16,
             right: 16,
-            zIndex: 9999,
+            // L5：审批/强阻断层（高于设置 Dialog 2000/内嵌 Dialog 2400）
+            zIndex: 2800,
             bgcolor: '#F97316',
             '&:hover': { bgcolor: '#EA580C' },
           }}
@@ -684,11 +686,12 @@ export const ApprovalDialog: React.FC<ApprovalDialogProps> = React.memo(({
         </Fab>
       </Zoom>
     );
+    return typeof document !== 'undefined' ? ReactDOM.createPortal(node, document.body) : node;
   }
 
-  // 浮动气泡视图
+  // 浮动气泡视图（Portal 到 body）
   if (open && positionMode === 'float-bubble') {
-    return (
+    const node = (
       <Paper
         ref={dialogRef}
         data-testid="approval-dialog"
@@ -704,7 +707,7 @@ export const ApprovalDialog: React.FC<ApprovalDialogProps> = React.memo(({
           borderRadius: 3,
           bgcolor: darkMode ? '#1A1A1A' : '#FFFFFF',
           color: darkMode ? '#F3F4F6' : '#111827',
-          zIndex: 9999,
+          zIndex: 2800,
           overflow: 'hidden',
           boxShadow: darkMode ? '0 8px 32px rgba(0,0,0,0.6)' : '0 8px 32px rgba(0,0,0,0.3)',
           border: darkMode ? '1px solid #333' : '1px solid #E5E7EB',
@@ -877,11 +880,12 @@ export const ApprovalDialog: React.FC<ApprovalDialogProps> = React.memo(({
         </Box>
       </Paper>
     );
+    return typeof document !== 'undefined' ? ReactDOM.createPortal(node, document.body) : node;
   }
 
-  // 固定底部视图
+  // 固定底部视图（Portal 到 body）
   if (open && positionMode === 'fixed-bottom') {
-    return (
+    const node = (
       <Slide direction="up" in={open}>
         <Paper
           data-testid="approval-dialog"
@@ -896,7 +900,7 @@ export const ApprovalDialog: React.FC<ApprovalDialogProps> = React.memo(({
             borderRadius: '16px 16px 0 0',
             bgcolor: darkMode ? '#1A1A1A' : '#FFFFFF',
             color: darkMode ? '#F3F4F6' : '#111827',
-            zIndex: 9999,
+            zIndex: 2800,
             overflow: 'hidden',
             borderTop: darkMode ? '1px solid #333' : '1px solid #E5E7EB',
           }}
@@ -1013,6 +1017,7 @@ export const ApprovalDialog: React.FC<ApprovalDialogProps> = React.memo(({
         </Paper>
       </Slide>
     );
+    return typeof document !== 'undefined' ? ReactDOM.createPortal(node, document.body) : node;
   }
 
   // 模态对话框视图（默认）
@@ -1022,6 +1027,10 @@ export const ApprovalDialog: React.FC<ApprovalDialogProps> = React.memo(({
       onClose={onClose}
       maxWidth="sm"
       fullWidth
+      sx={{
+        // L5：审批/强阻断层（高于设置 Dialog 2000/内嵌 Dialog 2400）
+        zIndex: 2800,
+      }}
       PaperProps={{
         sx: {
           bgcolor: darkMode ? '#1A1A1A' : '#FFFFFF',

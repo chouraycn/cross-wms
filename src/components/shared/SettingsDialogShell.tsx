@@ -102,7 +102,8 @@ const SettingsDialogShell: React.FC<SettingsDialogShellProps> = ({
       onClose={onClose}
       maxWidth={false}
       sx={{
-        zIndex: 1500,
+        // L3：设置类 Dialog，高于 Sidebar/Popover（L1/L2）
+        zIndex: 2000,
         '& .MuiBackdrop-root': {
           backgroundColor: isDark ? 'rgba(0, 0, 0, 0.7)' : 'rgba(0, 0, 0, 0.5)',
           backdropFilter: 'blur(4px)',
