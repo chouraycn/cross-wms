@@ -221,10 +221,19 @@ if [[ "$SKIP_RELEASE" != "true" ]]; then
   TAG="v${VERSION}"
   cd "$ROOT_DIR"
 
-  # Check if tag already exists
-  if git tag -l "$TAG" | grep -q "$TAG"; then
-    echo "⚠️  Tag $TAG already exists, deleting old tag..."
+  # Check if tag already exists (local OR remote)
+  # 1) 本地 tag：git tag -l 只能看到本地 tag
+  # 2) 远程 tag：git ls-remote --tags 检查 origin 上是否已存在该 tag
+  #    覆盖"本地无 tag 但远程有"的场景（re-tag / re-release 时常见）
+  LOCAL_TAG=$(git tag -l "$TAG")
+  REMOTE_TAG=$(git ls-remote --tags origin "refs/tags/${TAG}" 2>/dev/null | awk -F'\t' '{print $2}' | sed 's@^refs/tags/@@' | head -1)
+
+  if [[ -n "$LOCAL_TAG" ]]; then
+    echo "⚠️  Local tag $TAG already exists, deleting..."
     git tag -d "$TAG" 2>/dev/null || true
+  fi
+  if [[ -n "$REMOTE_TAG" ]]; then
+    echo "⚠️  Remote tag $TAG already exists on origin, deleting..."
     git push origin ":refs/tags/$TAG" 2>/dev/null || true
   fi
 
