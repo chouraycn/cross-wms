@@ -235,7 +235,7 @@ const WmsReplenishmentPage: React.FC = () => {
       </Grid>
 
       {/* 状态 Tab */}
-      <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2, mb: 2 }}>
+      <Box sx={{ mb: 2, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
         <Tabs
           value={statusTab}
           onChange={handleStatusTabChange}
@@ -248,7 +248,7 @@ const WmsReplenishmentPage: React.FC = () => {
             <Tab key={tab.value} label={tab.label} />
           ))}
         </Tabs>
-      </Card>
+      </Box>
 
       {/* 数据表格 */}
       <WmsReplenishmentList

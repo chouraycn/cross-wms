@@ -359,125 +359,119 @@ export default function MediaLibraryPage() {
       <Grid container spacing={3}>
         {/* 左侧：上传区域 */}
         <Grid item xs={12} md={3}>
-          <Card sx={{ bgcolor: gs.bgPanel, position: 'sticky', top: 16 }}>
-            <CardContent>
-              <Typography variant="h6" mb={2}>上传资产</Typography>
-              <Box
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-                onClick={() => fileInputRef.current?.click()}
-                sx={{
-                  border: `2px dashed ${dragOver ? gs.bgActive : gs.borderDarker}`,
-                  borderRadius: 2,
-                  p: 3,
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  bgcolor: dragOver ? gs.bgHover : 'transparent',
-                  '&:hover': { bgcolor: gs.bgHover },
-                }}
-              >
-                {uploading ? (
-                  <Stack spacing={1} alignItems="center">
-                    <CircularProgress size={32} />
-                    <Typography variant="body2" color="text.secondary">
-                      上传中…
-                    </Typography>
-                  </Stack>
-                ) : (
-                  <Stack spacing={1} alignItems="center">
-                    <CloudUploadIcon sx={{ fontSize: 40, color: gs.textMuted }} />
-                    <Typography variant="body2">
-                      拖拽文件到此处
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      或点击选择文件
-                    </Typography>
-                  </Stack>
-                )}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  multiple
-                  hidden
-                  onChange={handleFileInputChange}
-                />
-              </Box>
-              <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                支持图片 / 音频 / 视频文件，单文件最大 10MB
-              </Typography>
-            </CardContent>
-          </Card>
+          <Box sx={{ bgcolor: gs.bgPanel, position: 'sticky', top: 16, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+            <Typography variant="h6" mb={2}>上传资产</Typography>
+            <Box
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              onClick={() => fileInputRef.current?.click()}
+              sx={{
+                border: `2px dashed ${dragOver ? gs.bgActive : gs.borderDarker}`,
+                borderRadius: 2,
+                p: 3,
+                textAlign: 'center',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                bgcolor: dragOver ? gs.bgHover : 'transparent',
+                '&:hover': { bgcolor: gs.bgHover },
+              }}
+            >
+              {uploading ? (
+                <Stack spacing={1} alignItems="center">
+                  <CircularProgress size={32} />
+                  <Typography variant="body2" color="text.secondary">
+                    上传中…
+                  </Typography>
+                </Stack>
+              ) : (
+                <Stack spacing={1} alignItems="center">
+                  <CloudUploadIcon sx={{ fontSize: 40, color: gs.textMuted }} />
+                  <Typography variant="body2">
+                    拖拽文件到此处
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    或点击选择文件
+                  </Typography>
+                </Stack>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                hidden
+                onChange={handleFileInputChange}
+              />
+            </Box>
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+              支持图片 / 音频 / 视频文件，单文件最大 10MB
+            </Typography>
+          </Box>
         </Grid>
 
         {/* 右侧：筛选与资产列表 */}
         <Grid item xs={12} md={9}>
-          <Card sx={{ bgcolor: gs.bgPanel, mb: 2 }}>
-            <CardContent>
-              <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap alignItems="center">
-                <ToggleButtonGroup
+          <Box sx={{ bgcolor: gs.bgPanel, mb: 2, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+            <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap alignItems="center">
+              <ToggleButtonGroup
+                size="small"
+                exclusive
+                value={typeFilter}
+                onChange={(_e, v: MediaType | '') => setTypeFilter(v ?? '')}
+              >
+                {TYPE_FILTERS.map((t) => (
+                  <ToggleButton key={t.value} value={t.value}>
+                    {t.label}
+                  </ToggleButton>
+                ))}
+              </ToggleButtonGroup>
+              <TextField
+                size="small"
+                placeholder="按格式筛选（如 mp3、png）"
+                value={formatFilter}
+                onChange={(e) => setFormatFilter(e.target.value)}
+                sx={{ minWidth: 180 }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon fontSize="small" />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+              <TextField
+                size="small"
+                type="date"
+                label="开始日期"
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+              />
+              {(typeFilter || formatFilter || dateFilter) && (
+                <Button
                   size="small"
-                  exclusive
-                  value={typeFilter}
-                  onChange={(_e, v: MediaType | '') => setTypeFilter(v ?? '')}
-                >
-                  {TYPE_FILTERS.map((t) => (
-                    <ToggleButton key={t.value} value={t.value}>
-                      {t.label}
-                    </ToggleButton>
-                  ))}
-                </ToggleButtonGroup>
-                <TextField
-                  size="small"
-                  placeholder="按格式筛选（如 mp3、png）"
-                  value={formatFilter}
-                  onChange={(e) => setFormatFilter(e.target.value)}
-                  sx={{ minWidth: 180 }}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <SearchIcon fontSize="small" />
-                      </InputAdornment>
-                    ),
+                  onClick={() => {
+                    setTypeFilter('');
+                    setFormatFilter('');
+                    setDateFilter('');
                   }}
-                />
-                <TextField
-                  size="small"
-                  type="date"
-                  label="开始日期"
-                  value={dateFilter}
-                  onChange={(e) => setDateFilter(e.target.value)}
-                  InputLabelProps={{ shrink: true }}
-                />
-                {(typeFilter || formatFilter || dateFilter) && (
-                  <Button
-                    size="small"
-                    onClick={() => {
-                      setTypeFilter('');
-                      setFormatFilter('');
-                      setDateFilter('');
-                    }}
-                  >
-                    清除筛选
-                  </Button>
-                )}
-              </Stack>
-            </CardContent>
-          </Card>
+                >
+                  清除筛选
+                </Button>
+              )}
+            </Stack>
+          </Box>
 
           {loading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
               <CircularProgress />
             </Box>
           ) : assets.length === 0 ? (
-            <Card sx={{ bgcolor: gs.bgPanel }}>
-              <CardContent>
-                <Typography variant="body2" color="text.secondary" sx={{ py: 4, textAlign: 'center' }}>
-                  暂无符合条件的资产，请上传文件或调整筛选条件。
-                </Typography>
-              </CardContent>
-            </Card>
+            <Box sx={{ bgcolor: gs.bgPanel, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ py: 4, textAlign: 'center' }}>
+                暂无符合条件的资产，请上传文件或调整筛选条件。
+              </Typography>
+            </Box>
           ) : (
             <>
               <Grid container spacing={2}>
@@ -494,37 +488,35 @@ export default function MediaLibraryPage() {
                       <CardActionArea onClick={() => setPreviewAsset(asset)}>
                         {renderThumbnail(asset)}
                       </CardActionArea>
-                      <CardContent sx={{ flex: 1, pb: '12px !important' }}>
-                        <Tooltip title={asset.originalName}>
-                          <Typography
-                            variant="body2"
-                            noWrap
-                            sx={{ fontWeight: 500, mb: 0.5 }}
-                          >
-                            {asset.originalName}
-                          </Typography>
-                        </Tooltip>
-                        <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap sx={{ mb: 1 }}>
+                      <Tooltip title={asset.originalName}>
+                        <Typography
+                          variant="body2"
+                          noWrap
+                          sx={{ fontWeight: 500, mb: 0.5 }}
+                        >
+                          {asset.originalName}
+                        </Typography>
+                      </Tooltip>
+                      <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap sx={{ mb: 1 }}>
+                        <Chip
+                          size="small"
+                          icon={getTypeIcon(asset.type)}
+                          label={asset.type}
+                          color={getTypeColor(asset.type)}
+                          variant="outlined"
+                        />
+                        <Chip size="small" label={asset.format} variant="outlined" />
+                        {asset.duration != null && (
                           <Chip
                             size="small"
-                            icon={getTypeIcon(asset.type)}
-                            label={asset.type}
-                            color={getTypeColor(asset.type)}
+                            label={formatDuration(asset.duration)}
                             variant="outlined"
                           />
-                          <Chip size="small" label={asset.format} variant="outlined" />
-                          {asset.duration != null && (
-                            <Chip
-                              size="small"
-                              label={formatDuration(asset.duration)}
-                              variant="outlined"
-                            />
-                          )}
-                        </Stack>
-                        <Typography variant="caption" color="text.secondary" display="block">
-                          {formatSize(asset.size)} · {formatDate(asset.createdAt)}
-                        </Typography>
-                      </CardContent>
+                        )}
+                      </Stack>
+                      <Typography variant="caption" color="text.secondary" display="block">
+                        {formatSize(asset.size)} · {formatDate(asset.createdAt)}
+                      </Typography>
                       <Box sx={{ p: 1, borderTop: `1px solid ${gs.border}` }}>
                         <Stack direction="row" spacing={0.5} justifyContent="flex-end">
                           <Tooltip title="下载">
