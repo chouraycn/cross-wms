@@ -8,8 +8,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
   Button,
   Chip,
   Table,
@@ -171,146 +169,142 @@ const AuditLogPage: React.FC = () => {
       </Box>
 
       {/* 过滤器 */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} sm={3}>
-              <TextField
-                fullWidth
-                placeholder="搜索 actor..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon fontSize="small" />
-                    </InputAdornment>
-                  ),
-                }}
-                size="small"
-              />
-            </Grid>
-            <Grid item xs={12} sm={3}>
-              <FormControl fullWidth size="small">
-                <InputLabel>严重级别</InputLabel>
-                <Select value={severityFilter} label="严重级别" onChange={(e) => setSeverityFilter(e.target.value)}>
-                  <MenuItem value="all">全部</MenuItem>
-                  <MenuItem value="debug">Debug</MenuItem>
-                  <MenuItem value="info">Info</MenuItem>
-                  <MenuItem value="warning">Warning</MenuItem>
-                  <MenuItem value="error">Error</MenuItem>
-                  <MenuItem value="critical">Critical</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={3}>
-              <FormControl fullWidth size="small">
-                <InputLabel>动作</InputLabel>
-                <Select value={actionFilter} label="动作" onChange={(e) => setActionFilter(e.target.value)}>
-                  <MenuItem value="all">全部</MenuItem>
-                  {Object.entries(ACTION_LABELS).map(([key, label]) => (
-                    <MenuItem key={key} value={key}>
-                      {label}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
+      <Box sx={{ mb: 3, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+        <Grid container spacing={2} alignItems="center">
+          <Grid item xs={12} sm={3}>
+            <TextField
+              fullWidth
+              placeholder="搜索 actor..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon fontSize="small" />
+                  </InputAdornment>
+                ),
+              }}
+              size="small"
+            />
           </Grid>
-        </CardContent>
-      </Card>
+          <Grid item xs={12} sm={3}>
+            <FormControl fullWidth size="small">
+              <InputLabel>严重级别</InputLabel>
+              <Select value={severityFilter} label="严重级别" onChange={(e) => setSeverityFilter(e.target.value)}>
+                <MenuItem value="all">全部</MenuItem>
+                <MenuItem value="debug">Debug</MenuItem>
+                <MenuItem value="info">Info</MenuItem>
+                <MenuItem value="warning">Warning</MenuItem>
+                <MenuItem value="error">Error</MenuItem>
+                <MenuItem value="critical">Critical</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} sm={3}>
+            <FormControl fullWidth size="small">
+              <InputLabel>动作</InputLabel>
+              <Select value={actionFilter} label="动作" onChange={(e) => setActionFilter(e.target.value)}>
+                <MenuItem value="all">全部</MenuItem>
+                {Object.entries(ACTION_LABELS).map(([key, label]) => (
+                  <MenuItem key={key} value={key}>
+                    {label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+        </Grid>
+      </Box>
 
       {/* 日志列表 */}
-      <Card>
-        <CardContent>
-          {loading && <LinearProgress sx={{ mb: 2 }} />}
+      <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+        {loading && <LinearProgress sx={{ mb: 2 }} />}
 
-          <TableContainer component={Paper} variant="outlined">
-            <Table size="small">
-              <TableHead>
+        <TableContainer component={Paper} variant="outlined">
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell>时间</TableCell>
+                <TableCell>严重级别</TableCell>
+                <TableCell>动作</TableCell>
+                <TableCell>Actor</TableCell>
+                <TableCell>描述</TableCell>
+                <TableCell>会话</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {entries.length === 0 ? (
                 <TableRow>
-                  <TableCell>时间</TableCell>
-                  <TableCell>严重级别</TableCell>
-                  <TableCell>动作</TableCell>
-                  <TableCell>Actor</TableCell>
-                  <TableCell>描述</TableCell>
-                  <TableCell>会话</TableCell>
+                  <TableCell colSpan={6} align="center" sx={{ py: 4, color: gs.textMuted }}>
+                    <Typography>暂无审计日志</Typography>
+                  </TableCell>
                 </TableRow>
-              </TableHead>
-              <TableBody>
-                {entries.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} align="center" sx={{ py: 4, color: gs.textMuted }}>
-                      <Typography>暂无审计日志</Typography>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  entries.map((entry) => {
-                    const severity = SEVERITY_CONFIG[entry.severity];
-                    return (
-                      <TableRow key={entry.id} hover>
-                        <TableCell sx={{ whiteSpace: 'nowrap' }}>
-                          {formatTimestamp(entry.timestamp)}
-                        </TableCell>
-                        <TableCell>
-                          <Chip
-                            icon={severity.icon}
-                            label={entry.severity.toUpperCase()}
-                            color={severity.color}
-                            size="small"
-                            variant="outlined"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Chip label={ACTION_LABELS[entry.action] || entry.action} size="small" />
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2" fontWeight={500}>
-                            {entry.actor}
+              ) : (
+                entries.map((entry) => {
+                  const severity = SEVERITY_CONFIG[entry.severity];
+                  return (
+                    <TableRow key={entry.id} hover>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>
+                        {formatTimestamp(entry.timestamp)}
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          icon={severity.icon}
+                          label={entry.severity.toUpperCase()}
+                          color={severity.color}
+                          size="small"
+                          variant="outlined"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Chip label={ACTION_LABELS[entry.action] || entry.action} size="small" />
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" fontWeight={500}>
+                          {entry.actor}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {entry.actorType}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>{entry.description}</TableCell>
+                      <TableCell>
+                        <Tooltip title={entry.sessionKey}>
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              maxWidth: 120,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                              display: 'block',
+                            }}
+                          >
+                            {entry.sessionKey}
                           </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {entry.actorType}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>{entry.description}</TableCell>
-                        <TableCell>
-                          <Tooltip title={entry.sessionKey}>
-                            <Typography
-                              variant="caption"
-                              sx={{
-                                maxWidth: 120,
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap',
-                                display: 'block',
-                              }}
-                            >
-                              {entry.sessionKey}
-                            </Typography>
-                          </Tooltip>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                        </Tooltip>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
 
-          {totalPages > 1 && (
-            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
-              <Pagination
-                count={totalPages}
-                page={page}
-                onChange={(_, value) => setPage(value)}
-                color="primary"
-                showFirstButton
-                showLastButton
-              />
-            </Box>
-          )}
-        </CardContent>
-      </Card>
+        {totalPages > 1 && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+            <Pagination
+              count={totalPages}
+              page={page}
+              onChange={(_, value) => setPage(value)}
+              color="primary"
+              showFirstButton
+              showLastButton
+            />
+          </Box>
+        )}
+      </Box>
 
       <Snackbar
         open={Boolean(error)}

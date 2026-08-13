@@ -10,7 +10,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Button,
-  Card,
   Table,
   TableBody,
   TableCell,
@@ -275,20 +274,20 @@ const TransferPage: React.FC = () => {
       <Grid container spacing={2} sx={{ mb: 3 }}>
         {statCards.map((card) => (
           <Grid item xs={3} key={card.label}>
-            <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2, p: 2 }}>
+            <Box sx={{ p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
               <Typography variant="body2" sx={{ color: gs.textMuted, fontSize: '0.75rem', mb: 0.5 }}>
                 {card.label}
               </Typography>
               <Typography variant="h5" sx={{ fontWeight: 700, color: card.color }}>
                 {card.value}
               </Typography>
-            </Card>
+            </Box>
           </Grid>
         ))}
       </Grid>
 
       {/* 数据表格 */}
-      <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2 }}>
+      <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
             <Typography variant="body2" color="text.secondary">{t('正在加载数据...')}</Typography>
@@ -448,7 +447,7 @@ const TransferPage: React.FC = () => {
             />
           </>
         )}
-      </Card>
+      </Box>
 
       {/* 新增/编辑调拨单弹窗 */}
       <TransferFormDialog

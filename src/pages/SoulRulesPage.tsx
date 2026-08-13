@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
   Grid,
   Chip,
   Table,
@@ -204,105 +202,99 @@ export default function SoulRulesPage() {
 
       <Grid container spacing={3}>
         <Grid item xs={12} md={8}>
-          <Card sx={{ bgcolor: gs.bgPanel }}>
-            <CardContent>
-              <Typography variant="h6" mb={2}>规则列表</Typography>
-              <TableContainer component={Paper}>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>名称</TableCell>
-                      <TableCell>类型</TableCell>
-                      <TableCell>优先级</TableCell>
-                      <TableCell>状态</TableCell>
-                      <TableCell>操作</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {rules.map(rule => {
-                      const typeInfo = getRuleTypeInfo(rule.type);
-                      return (
-                        <TableRow key={rule.id} hover onClick={() => setSelectedRule(rule)}>
-                          <TableCell>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              {typeInfo.icon}
-                              <Typography>{rule.name}</Typography>
-                            </Box>
-                          </TableCell>
-                          <TableCell>
-                            <Chip label={typeInfo.label} color={typeInfo.color} size="small" />
-                          </TableCell>
-                          <TableCell>
-                            <Chip label={rule.priority} size="small" />
-                          </TableCell>
-                          <TableCell>
-                            {rule.enabled ? (
-                              <Chip label="启用" color="success" size="small" />
-                            ) : (
-                              <Chip label="禁用" color="default" size="small" />
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <Box sx={{ display: 'flex', gap: 1 }}>
-                              <IconButton onClick={(e) => { e.stopPropagation(); handleToggleRule(rule.id, !rule.enabled); }}>
-                                {rule.enabled ? <ToggleOffIcon /> : <ToggleOnIcon />}
-                              </IconButton>
-                              <IconButton onClick={(e) => { e.stopPropagation(); setDialogMode('edit'); setCurrentRule(rule); setDialogOpen(true); }}>
-                                <EditIcon />
-                              </IconButton>
-                              <IconButton onClick={(e) => { e.stopPropagation(); handleDeleteRule(rule.id); }}>
-                                <DeleteIcon />
-                              </IconButton>
-                            </Box>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </CardContent>
-          </Card>
+          <Box sx={{ bgcolor: gs.bgPanel, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+            <Typography variant="h6" mb={2}>规则列表</Typography>
+            <TableContainer component={Paper}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>名称</TableCell>
+                    <TableCell>类型</TableCell>
+                    <TableCell>优先级</TableCell>
+                    <TableCell>状态</TableCell>
+                    <TableCell>操作</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {rules.map(rule => {
+                    const typeInfo = getRuleTypeInfo(rule.type);
+                    return (
+                      <TableRow key={rule.id} hover onClick={() => setSelectedRule(rule)}>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            {typeInfo.icon}
+                            <Typography>{rule.name}</Typography>
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <Chip label={typeInfo.label} color={typeInfo.color} size="small" />
+                        </TableCell>
+                        <TableCell>
+                          <Chip label={rule.priority} size="small" />
+                        </TableCell>
+                        <TableCell>
+                          {rule.enabled ? (
+                            <Chip label="启用" color="success" size="small" />
+                          ) : (
+                            <Chip label="禁用" color="default" size="small" />
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', gap: 1 }}>
+                            <IconButton onClick={(e) => { e.stopPropagation(); handleToggleRule(rule.id, !rule.enabled); }}>
+                              {rule.enabled ? <ToggleOffIcon /> : <ToggleOnIcon />}
+                            </IconButton>
+                            <IconButton onClick={(e) => { e.stopPropagation(); setDialogMode('edit'); setCurrentRule(rule); setDialogOpen(true); }}>
+                              <EditIcon />
+                            </IconButton>
+                            <IconButton onClick={(e) => { e.stopPropagation(); handleDeleteRule(rule.id); }}>
+                              <DeleteIcon />
+                            </IconButton>
+                          </Box>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Box>
         </Grid>
 
         <Grid item xs={12} md={4}>
           {selectedRule ? (
-            <Card sx={{ bgcolor: gs.bgPanel }}>
-              <CardContent>
-                <Typography variant="h6" mb={2}>规则详情</Typography>
-                <Typography variant="subtitle1">{selectedRule.name}</Typography>
-                <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
-                  <Chip label={getRuleTypeInfo(selectedRule.type).label} color={getRuleTypeInfo(selectedRule.type).color} size="small" />
-                  <Chip label={`优先级 ${selectedRule.priority}`} size="small" />
-                </Box>
-                <Divider sx={{ my: 2 }} />
-                <Typography variant="subtitle2" mb={1}>规则内容</Typography>
-                <Box sx={{ maxHeight: 300, overflow: 'auto', bgcolor: gs.bgPage, p: 2, borderRadius: 1 }}>
-                  <Typography variant="body2" whiteSpace="pre-wrap">
-                    {selectedRule.content}
-                  </Typography>
-                </Box>
-                {selectedRule.tags.length > 0 && (
-                  <Box sx={{ mt: 2 }}>
-                    <Typography variant="subtitle2" mb={1}>标签</Typography>
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                      {selectedRule.tags.map(tag => (
-                        <Chip key={tag} label={tag} size="small" />
-                      ))}
-                    </Box>
-                  </Box>
-                )}
-              </CardContent>
-            </Card>
-          ) : (
-            <Card sx={{ bgcolor: gs.bgPanel }}>
-              <CardContent>
-                <Typography variant="h6" mb={2}>操作提示</Typography>
-                <Typography variant="body2" color="textSecondary">
-                  点击左侧规则列表查看详情，或创建新规则
+            <Box sx={{ bgcolor: gs.bgPanel, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+              <Typography variant="h6" mb={2}>规则详情</Typography>
+              <Typography variant="subtitle1">{selectedRule.name}</Typography>
+              <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+                <Chip label={getRuleTypeInfo(selectedRule.type).label} color={getRuleTypeInfo(selectedRule.type).color} size="small" />
+                <Chip label={`优先级 ${selectedRule.priority}`} size="small" />
+              </Box>
+              <Divider sx={{ my: 2 }} />
+              <Typography variant="subtitle2" mb={1}>规则内容</Typography>
+              <Box sx={{ maxHeight: 300, overflow: 'auto', bgcolor: gs.bgPage, p: 2, borderRadius: 1 }}>
+                <Typography variant="body2" whiteSpace="pre-wrap">
+                  {selectedRule.content}
                 </Typography>
-              </CardContent>
-            </Card>
+              </Box>
+              {selectedRule.tags.length > 0 && (
+                <Box sx={{ mt: 2 }}>
+                  <Typography variant="subtitle2" mb={1}>标签</Typography>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                    {selectedRule.tags.map(tag => (
+                      <Chip key={tag} label={tag} size="small" />
+                    ))}
+                  </Box>
+                </Box>
+              )}
+            </Box>
+          ) : (
+            <Box sx={{ bgcolor: gs.bgPanel, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+              <Typography variant="h6" mb={2}>操作提示</Typography>
+              <Typography variant="body2" color="textSecondary">
+                点击左侧规则列表查看详情，或创建新规则
+              </Typography>
+            </Box>
           )}
         </Grid>
       </Grid>

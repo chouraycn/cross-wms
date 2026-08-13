@@ -8,8 +8,6 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
   Grid,
   Button,
   TextField,
@@ -378,228 +376,216 @@ const TasksPage: React.FC = () => {
       {/* 统计卡片 */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ bgcolor: gs.bgPanel }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                <AssignmentIcon color="primary" />
-                <Typography variant="body2" color="text.secondary">
-                  任务总数
-                </Typography>
-              </Box>
-              <Typography variant="h4" fontWeight={600}>
-                {stats.total}
+          <Box sx={{ bgcolor: gs.bgPanel, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+              <AssignmentIcon color="primary" />
+              <Typography variant="body2" color="text.secondary">
+                任务总数
               </Typography>
-            </CardContent>
-          </Card>
+            </Box>
+            <Typography variant="h4" fontWeight={600}>
+              {stats.total}
+            </Typography>
+          </Box>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ bgcolor: gs.bgPanel }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                <PendingIcon color="action" />
-                <Typography variant="body2" color="text.secondary">
-                  待处理
-                </Typography>
-              </Box>
-              <Typography variant="h4" fontWeight={600}>
-                {stats.pending}
+          <Box sx={{ bgcolor: gs.bgPanel, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+              <PendingIcon color="action" />
+              <Typography variant="body2" color="text.secondary">
+                待处理
               </Typography>
-            </CardContent>
-          </Card>
+            </Box>
+            <Typography variant="h4" fontWeight={600}>
+              {stats.pending}
+            </Typography>
+          </Box>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ bgcolor: gs.bgPanel }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                <PlayCircleIcon color="primary" />
-                <Typography variant="body2" color="text.secondary">
-                  进行中
-                </Typography>
-              </Box>
-              <Typography variant="h4" fontWeight={600}>
-                {stats.in_progress}
+          <Box sx={{ bgcolor: gs.bgPanel, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+              <PlayCircleIcon color="primary" />
+              <Typography variant="body2" color="text.secondary">
+                进行中
               </Typography>
-            </CardContent>
-          </Card>
+            </Box>
+            <Typography variant="h4" fontWeight={600}>
+              {stats.in_progress}
+            </Typography>
+          </Box>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ bgcolor: gs.bgPanel }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                <CheckCircleIcon color="success" />
-                <Typography variant="body2" color="text.secondary">
-                  已完成
-                </Typography>
-              </Box>
-              <Typography variant="h4" fontWeight={600}>
-                {stats.completed}
+          <Box sx={{ bgcolor: gs.bgPanel, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+              <CheckCircleIcon color="success" />
+              <Typography variant="body2" color="text.secondary">
+                已完成
               </Typography>
-            </CardContent>
-          </Card>
+            </Box>
+            <Typography variant="h4" fontWeight={600}>
+              {stats.completed}
+            </Typography>
+          </Box>
         </Grid>
       </Grid>
 
       {/* 过滤器 */}
-      <Card sx={{ mb: 3, bgcolor: gs.bgPanel }}>
-        <CardContent>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-            <FilterListIcon fontSize="small" />
-            <Typography variant="h6" fontWeight={600}>
-              过滤条件
-            </Typography>
-          </Box>
+      <Box sx={{ mb: 3, bgcolor: gs.bgPanel, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+          <FilterListIcon fontSize="small" />
+          <Typography variant="h6" fontWeight={600}>
+            过滤条件
+          </Typography>
+        </Box>
 
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={4}>
-              <TextField
-                fullWidth
-                size="small"
-                placeholder="搜索任务..."
-                value={filters.search}
-                onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon fontSize="small" />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <FormControl fullWidth size="small">
-                <InputLabel>状态</InputLabel>
-                <Select
-                  value={filters.status}
-                  label="状态"
-                  onChange={(e) => setFilters((prev) => ({ ...prev, status: e.target.value }))}
-                >
-                  <MenuItem value="">全部</MenuItem>
-                  {Object.entries(STATUS_CONFIG).map(([value, config]) => (
-                    <MenuItem key={value} value={value}>
-                      {config.label}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <FormControl fullWidth size="small">
-                <InputLabel>优先级</InputLabel>
-                <Select
-                  value={filters.priority}
-                  label="优先级"
-                  onChange={(e) => setFilters((prev) => ({ ...prev, priority: e.target.value }))}
-                >
-                  <MenuItem value="">全部</MenuItem>
-                  {Object.entries(PRIORITY_CONFIG).map(([value, config]) => (
-                    <MenuItem key={value} value={value}>
-                      {config.label}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
+        <Grid container spacing={2}>
+          <Grid item xs={12} sm={4}>
+            <TextField
+              fullWidth
+              size="small"
+              placeholder="搜索任务..."
+              value={filters.search}
+              onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon fontSize="small" />
+                  </InputAdornment>
+                ),
+              }}
+            />
           </Grid>
-        </CardContent>
-      </Card>
+          <Grid item xs={12} sm={4}>
+            <FormControl fullWidth size="small">
+              <InputLabel>状态</InputLabel>
+              <Select
+                value={filters.status}
+                label="状态"
+                onChange={(e) => setFilters((prev) => ({ ...prev, status: e.target.value }))}
+              >
+                <MenuItem value="">全部</MenuItem>
+                {Object.entries(STATUS_CONFIG).map(([value, config]) => (
+                  <MenuItem key={value} value={value}>
+                    {config.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} sm={4}>
+            <FormControl fullWidth size="small">
+              <InputLabel>优先级</InputLabel>
+              <Select
+                value={filters.priority}
+                label="优先级"
+                onChange={(e) => setFilters((prev) => ({ ...prev, priority: e.target.value }))}
+              >
+                <MenuItem value="">全部</MenuItem>
+                {Object.entries(PRIORITY_CONFIG).map(([value, config]) => (
+                  <MenuItem key={value} value={value}>
+                    {config.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+        </Grid>
+      </Box>
 
       {/* 任务列表 */}
-      <Card sx={{ bgcolor: gs.bgPanel }}>
-        <CardContent>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-            <Typography variant="h6" fontWeight={600}>
-              任务列表
-            </Typography>
-            <Chip label={`${filteredTasks.length} 条记录`} size="small" />
-          </Box>
+      <Box sx={{ bgcolor: gs.bgPanel, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+          <Typography variant="h6" fontWeight={600}>
+            任务列表
+          </Typography>
+          <Chip label={`${filteredTasks.length} 条记录`} size="small" />
+        </Box>
 
-          {loading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-              <CircularProgress />
-            </Box>
-          ) : filteredTasks.length === 0 ? (
-            <Box sx={{ textAlign: 'center', py: 4 }}>
-              <Typography color="text.secondary">
-                {tasks.length === 0 ? '暂无任务，点击"新建任务"开始创建' : '没有符合条件的任务'}
-              </Typography>
-            </Box>
-          ) : (
-            <List>
-              {filteredTasks.map((task, index) => (
-                <React.Fragment key={task.id}>
-                  {index > 0 && <Divider />}
-                  <ListItem
-                    sx={{
-                      '&:hover': { bgcolor: gs.bgHover },
-                      borderRadius: 1,
-                    }}
-                  >
-                    <ListItemText
-                      primary={
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                          <Typography variant="body1" fontWeight={500}>
-                            {task.title}
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+            <CircularProgress />
+          </Box>
+        ) : filteredTasks.length === 0 ? (
+          <Box sx={{ textAlign: 'center', py: 4 }}>
+            <Typography color="text.secondary">
+              {tasks.length === 0 ? '暂无任务，点击"新建任务"开始创建' : '没有符合条件的任务'}
+            </Typography>
+          </Box>
+        ) : (
+          <List>
+            {filteredTasks.map((task, index) => (
+              <React.Fragment key={task.id}>
+                {index > 0 && <Divider />}
+                <ListItem
+                  sx={{
+                    '&:hover': { bgcolor: gs.bgHover },
+                    borderRadius: 1,
+                  }}
+                >
+                  <ListItemText
+                    primary={
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                        <Typography variant="body1" fontWeight={500}>
+                          {task.title}
+                        </Typography>
+                        <Chip
+                          size="small"
+                          icon={STATUS_CONFIG[task.status].icon}
+                          label={STATUS_CONFIG[task.status].label}
+                          color={STATUS_CONFIG[task.status].color}
+                        />
+                        <Chip
+                          size="small"
+                          icon={PRIORITY_CONFIG[task.priority].icon}
+                          label={PRIORITY_CONFIG[task.priority].label}
+                          color={PRIORITY_CONFIG[task.priority].color}
+                          variant="outlined"
+                        />
+                      </Box>
+                    }
+                    secondary={
+                      <Box>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                          {task.description || '暂无描述'}
+                        </Typography>
+                        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                          <Typography variant="caption" color="text.secondary">
+                            创建于: {new Date(task.createdAt).toLocaleString()}
                           </Typography>
-                          <Chip
-                            size="small"
-                            icon={STATUS_CONFIG[task.status].icon}
-                            label={STATUS_CONFIG[task.status].label}
-                            color={STATUS_CONFIG[task.status].color}
-                          />
-                          <Chip
-                            size="small"
-                            icon={PRIORITY_CONFIG[task.priority].icon}
-                            label={PRIORITY_CONFIG[task.priority].label}
-                            color={PRIORITY_CONFIG[task.priority].color}
-                            variant="outlined"
-                          />
+                          {task.tags.length > 0 && (
+                            <Box sx={{ display: 'flex', gap: 0.5 }}>
+                              {task.tags.slice(0, 3).map((tag) => (
+                                <Chip key={tag} label={tag} size="small" variant="outlined" />
+                              ))}
+                              {task.tags.length > 3 && (
+                                <Typography variant="caption" color="text.secondary">
+                                  +{task.tags.length - 3}
+                                </Typography>
+                              )}
+                            </Box>
+                          )}
                         </Box>
-                      }
-                      secondary={
-                        <Box>
-                          <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                            {task.description || '暂无描述'}
-                          </Typography>
-                          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-                            <Typography variant="caption" color="text.secondary">
-                              创建于: {new Date(task.createdAt).toLocaleString()}
-                            </Typography>
-                            {task.tags.length > 0 && (
-                              <Box sx={{ display: 'flex', gap: 0.5 }}>
-                                {task.tags.slice(0, 3).map((tag) => (
-                                  <Chip key={tag} label={tag} size="small" variant="outlined" />
-                                ))}
-                                {task.tags.length > 3 && (
-                                  <Typography variant="caption" color="text.secondary">
-                                    +{task.tags.length - 3}
-                                  </Typography>
-                                )}
-                              </Box>
-                            )}
-                          </Box>
-                        </Box>
-                      }
-                    />
-                    <ListItemSecondaryAction>
-                      <Tooltip title="编辑">
-                        <IconButton edge="end" onClick={() => handleOpenEdit(task)} sx={{ mr: 0.5 }}>
-                          <EditIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="删除">
-                        <IconButton edge="end" onClick={() => handleOpenDeleteConfirm(task)}>
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    </ListItemSecondaryAction>
-                  </ListItem>
-                </React.Fragment>
-              ))}
-            </List>
-          )}
-        </CardContent>
-      </Card>
+                      </Box>
+                    }
+                  />
+                  <ListItemSecondaryAction>
+                    <Tooltip title="编辑">
+                      <IconButton edge="end" onClick={() => handleOpenEdit(task)} sx={{ mr: 0.5 }}>
+                        <EditIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="删除">
+                      <IconButton edge="end" onClick={() => handleOpenDeleteConfirm(task)}>
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </ListItemSecondaryAction>
+                </ListItem>
+              </React.Fragment>
+            ))}
+          </List>
+        )}
+      </Box>
 
       {/* 创建/编辑对话框 */}
       <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="sm" fullWidth>

@@ -3,7 +3,7 @@ import {
   Box, Typography, Button, Chip, IconButton, Paper, CircularProgress,
   useTheme, Alert, Stack, List, ListItem, ListItemText,
   Dialog, DialogTitle, DialogContent, DialogActions,
-  TextField, Divider, Tabs, Tab, Card, CardContent, Tooltip,
+  TextField, Divider, Tabs, Tab, Tooltip,
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import AddIcon from '@mui/icons-material/Add';
@@ -146,51 +146,49 @@ const AgentsPage: React.FC = () => {
             </Alert>
           ) : (
             agents.map((agent) => (
-              <Card key={agent.id} sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
-                <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                    <Stack direction="row" alignItems="center" spacing={1}>
-                      <Typography sx={{ fontWeight: 700, fontSize: '0.95rem' }}>
-                        {agent.name}
-                      </Typography>
-                      <Chip
-                        label={agent.role}
-                        size="small"
-                        sx={{
-                          fontSize: '0.65rem',
-                          height: 20,
-                          backgroundColor: '#EFF6FF',
-                          color: '#2563EB',
-                        }}
-                      />
-                      <Chip
-                        label={agent.status === 'active' ? '活跃' : '未激活'}
-                        size="small"
-                        sx={{
-                          fontSize: '0.65rem',
-                          height: 20,
-                          backgroundColor: agent.status === 'active' ? '#D1FAE5' : '#F3F4F6',
-                          color: agent.status === 'active' ? '#059669' : '#6B7280',
-                        }}
-                      />
-                    </Stack>
-                  </Box>
-                  <Typography sx={{ fontSize: '0.8rem', color: 'text.secondary', mb: 1.5 }}>
-                    {agent.description}
-                  </Typography>
-                  <Stack direction="row" flexWrap="wrap" spacing={1}>
-                    {agent.capabilities.map((cap) => (
-                      <Chip
-                        key={cap.name}
-                        label={cap.description}
-                        size="small"
-                        variant="outlined"
-                        sx={{ fontSize: '0.7rem', height: 22 }}
-                      />
-                    ))}
+              <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                  <Stack direction="row" alignItems="center" spacing={1}>
+                    <Typography sx={{ fontWeight: 700, fontSize: '0.95rem' }}>
+                      {agent.name}
+                    </Typography>
+                    <Chip
+                      label={agent.role}
+                      size="small"
+                      sx={{
+                        fontSize: '0.65rem',
+                        height: 20,
+                        backgroundColor: '#EFF6FF',
+                        color: '#2563EB',
+                      }}
+                    />
+                    <Chip
+                      label={agent.status === 'active' ? '活跃' : '未激活'}
+                      size="small"
+                      sx={{
+                        fontSize: '0.65rem',
+                        height: 20,
+                        backgroundColor: agent.status === 'active' ? '#D1FAE5' : '#F3F4F6',
+                        color: agent.status === 'active' ? '#059669' : '#6B7280',
+                      }}
+                    />
                   </Stack>
-                </CardContent>
-              </Card>
+                </Box>
+                <Typography sx={{ fontSize: '0.8rem', color: 'text.secondary', mb: 1.5 }}>
+                  {agent.description}
+                </Typography>
+                <Stack direction="row" flexWrap="wrap" spacing={1}>
+                  {agent.capabilities.map((cap) => (
+                    <Chip
+                      key={cap.name}
+                      label={cap.description}
+                      size="small"
+                      variant="outlined"
+                      sx={{ fontSize: '0.7rem', height: 22 }}
+                    />
+                  ))}
+                </Stack>
+              </Box>
             ))
           )}
         </Stack>

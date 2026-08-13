@@ -7,7 +7,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
-  Card,
   Typography,
   Table,
   TableBody,
@@ -203,7 +202,7 @@ const PartnersPage: React.FC = () => {
       />
 
       {/* 筛选栏 */}
-      <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2, mb: 2 }}>
+      <Box sx={{ mb: 2, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, px: 2, py: 1 }}>
           <Tabs
             value={filterType}
@@ -232,10 +231,10 @@ const PartnersPage: React.FC = () => {
             />
           </Box>
         </Box>
-      </Card>
+      </Box>
 
       {/* 数据表格 */}
-      <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2 }}>
+      <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
         <TableContainer>
           <Table size="small">
             <TableHead>
@@ -348,7 +347,7 @@ const PartnersPage: React.FC = () => {
           labelRowsPerPage={t('每页行数：')}
           labelDisplayedRows={({ from, to, count }) => t('{from}-{to} / 共 {count} 条', { from, to, count })}
         />
-      </Card>
+      </Box>
 
       {/* 新增/编辑弹窗 */}
       <PartnerDialog

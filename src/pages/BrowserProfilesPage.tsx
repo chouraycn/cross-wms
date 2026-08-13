@@ -2,8 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
   Button,
   Table,
   TableBody,
@@ -161,100 +159,98 @@ const BrowserProfilesPage: React.FC = () => {
         </Alert>
       )}
 
-      <Card>
-        <CardContent>
-          <Typography variant="h6" fontWeight={600} gutterBottom>
-            配置文件列表
-          </Typography>
+      <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+        <Typography variant="h6" fontWeight={600} gutterBottom>
+          配置文件列表
+        </Typography>
 
-          {loading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-              <CircularProgress />
-            </Box>
-          ) : profiles.length === 0 ? (
-            <Typography color="text.secondary" align="center" sx={{ py: 8 }}>
-              暂无浏览器配置文件，点击上方按钮创建
-            </Typography>
-          ) : (
-            <TableContainer component={Paper} variant="outlined">
-              <Table size="medium">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>名称</TableCell>
-                    <TableCell>用户数据目录</TableCell>
-                    <TableCell align="center">是否默认</TableCell>
-                    <TableCell align="right">操作</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {profiles.map((profile) => (
-                    <TableRow key={profile.id} hover>
-                      <TableCell sx={{ minWidth: 150 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Typography fontWeight={500}>{profile.name}</Typography>
-                          {profile.isDefault && (
-                            <Chip
-                              icon={<StarIcon fontSize="small" />}
-                              label="默认"
-                              size="small"
-                              color="primary"
-                            />
-                          )}
-                        </Box>
-                      </TableCell>
-                      <TableCell sx={{ minWidth: 200 }}>
-                        <Typography
-                          variant="body2"
-                          color="text.secondary"
-                          sx={{
-                            maxWidth: { xs: 150, sm: 300, md: 400 },
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                            display: 'block',
-                          }}
-                        >
-                          {profile.userDataDir || '-'}
-                        </Typography>
-                      </TableCell>
-                      <TableCell align="center">
-                        <Chip
-                          label={profile.isDefault ? '是' : '否'}
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+            <CircularProgress />
+          </Box>
+        ) : profiles.length === 0 ? (
+          <Typography color="text.secondary" align="center" sx={{ py: 8 }}>
+            暂无浏览器配置文件，点击上方按钮创建
+          </Typography>
+        ) : (
+          <TableContainer component={Paper} variant="outlined">
+            <Table size="medium">
+              <TableHead>
+                <TableRow>
+                  <TableCell>名称</TableCell>
+                  <TableCell>用户数据目录</TableCell>
+                  <TableCell align="center">是否默认</TableCell>
+                  <TableCell align="right">操作</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {profiles.map((profile) => (
+                  <TableRow key={profile.id} hover>
+                    <TableCell sx={{ minWidth: 150 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography fontWeight={500}>{profile.name}</Typography>
+                        {profile.isDefault && (
+                          <Chip
+                            icon={<StarIcon fontSize="small" />}
+                            label="默认"
+                            size="small"
+                            color="primary"
+                          />
+                        )}
+                      </Box>
+                    </TableCell>
+                    <TableCell sx={{ minWidth: 200 }}>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{
+                          maxWidth: { xs: 150, sm: 300, md: 400 },
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          display: 'block',
+                        }}
+                      >
+                        {profile.userDataDir || '-'}
+                      </Typography>
+                    </TableCell>
+                    <TableCell align="center">
+                      <Chip
+                        label={profile.isDefault ? '是' : '否'}
+                        size="small"
+                        color={profile.isDefault ? 'success' : 'default'}
+                        variant={profile.isDefault ? 'filled' : 'outlined'}
+                      />
+                    </TableCell>
+                    <TableCell align="right">
+                      <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+                        <Button
                           size="small"
-                          color={profile.isDefault ? 'success' : 'default'}
-                          variant={profile.isDefault ? 'filled' : 'outlined'}
-                        />
-                      </TableCell>
-                      <TableCell align="right">
-                        <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
-                          <Button
-                            size="small"
-                            variant="outlined"
-                            startIcon={<StarIcon />}
-                            onClick={() => handleSetDefault(profile)}
-                            disabled={profile.isDefault || submitting}
-                          >
-                            {profile.isDefault ? '已默认' : '设为默认'}
-                          </Button>
-                          <IconButton
-                            size="small"
-                            color="error"
-                            onClick={() => openDeleteDialog(profile)}
-                            disabled={profile.isDefault || submitting}
-                            title="删除"
-                          >
-                            <DeleteIcon />
-                          </IconButton>
-                        </Box>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          )}
-        </CardContent>
-      </Card>
+                          variant="outlined"
+                          startIcon={<StarIcon />}
+                          onClick={() => handleSetDefault(profile)}
+                          disabled={profile.isDefault || submitting}
+                        >
+                          {profile.isDefault ? '已默认' : '设为默认'}
+                        </Button>
+                        <IconButton
+                          size="small"
+                          color="error"
+                          onClick={() => openDeleteDialog(profile)}
+                          disabled={profile.isDefault || submitting}
+                          title="删除"
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
+      </Box>
 
       <Dialog open={createDialogOpen} onClose={() => setCreateDialogOpen(false)}>
         <DialogTitle>创建新配置文件</DialogTitle>

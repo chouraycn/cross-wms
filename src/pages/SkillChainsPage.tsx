@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
   Grid,
   Chip,
   Table,
@@ -189,107 +187,101 @@ export default function SkillChainsPage() {
 
       <Grid container spacing={3}>
         <Grid item xs={12} md={8}>
-          <Card sx={{ bgcolor: gs.bgPanel }}>
-            <CardContent>
-              <Typography variant="h6" mb={2}>链列表</Typography>
-              <TableContainer component={Paper}>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>名称</TableCell>
-                      <TableCell>节点数</TableCell>
-                      <TableCell>失败策略</TableCell>
-                      <TableCell>创建时间</TableCell>
-                      <TableCell>操作</TableCell>
+          <Box sx={{ bgcolor: gs.bgPanel, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+            <Typography variant="h6" mb={2}>链列表</Typography>
+            <TableContainer component={Paper}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>名称</TableCell>
+                    <TableCell>节点数</TableCell>
+                    <TableCell>失败策略</TableCell>
+                    <TableCell>创建时间</TableCell>
+                    <TableCell>操作</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {chains.map(chain => (
+                    <TableRow key={chain.id} hover onClick={() => setSelectedChain(chain)}>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <ChevronRightIcon />
+                          <Typography>{chain.name}</Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Chip label={chain.nodes.length} size="small" />
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={chain.failStrategy === 'stop' ? '停止' : '继续'}
+                          color={chain.failStrategy === 'stop' ? 'warning' : 'success'}
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" color="textSecondary">
+                          {new Date(chain.createdAt).toLocaleString()}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', gap: 1 }}>
+                          <IconButton onClick={(e) => { e.stopPropagation(); handleExecuteChain(chain.id); }} disabled={executingChain === chain.id}>
+                            <PlayArrowIcon />
+                          </IconButton>
+                          <IconButton onClick={(e) => { e.stopPropagation(); handleDuplicateChain(chain.id); }}>
+                            <CopyIcon />
+                          </IconButton>
+                          <IconButton onClick={(e) => { e.stopPropagation(); setDialogMode('edit'); setCurrentChain(chain); setDialogOpen(true); }}>
+                            <EditIcon />
+                          </IconButton>
+                          <IconButton onClick={(e) => { e.stopPropagation(); handleDeleteChain(chain.id); }}>
+                            <DeleteIcon />
+                          </IconButton>
+                        </Box>
+                      </TableCell>
                     </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {chains.map(chain => (
-                      <TableRow key={chain.id} hover onClick={() => setSelectedChain(chain)}>
-                        <TableCell>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <ChevronRightIcon />
-                            <Typography>{chain.name}</Typography>
-                          </Box>
-                        </TableCell>
-                        <TableCell>
-                          <Chip label={chain.nodes.length} size="small" />
-                        </TableCell>
-                        <TableCell>
-                          <Chip
-                            label={chain.failStrategy === 'stop' ? '停止' : '继续'}
-                            color={chain.failStrategy === 'stop' ? 'warning' : 'success'}
-                            size="small"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2" color="textSecondary">
-                            {new Date(chain.createdAt).toLocaleString()}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Box sx={{ display: 'flex', gap: 1 }}>
-                            <IconButton onClick={(e) => { e.stopPropagation(); handleExecuteChain(chain.id); }} disabled={executingChain === chain.id}>
-                              <PlayArrowIcon />
-                            </IconButton>
-                            <IconButton onClick={(e) => { e.stopPropagation(); handleDuplicateChain(chain.id); }}>
-                              <CopyIcon />
-                            </IconButton>
-                            <IconButton onClick={(e) => { e.stopPropagation(); setDialogMode('edit'); setCurrentChain(chain); setDialogOpen(true); }}>
-                              <EditIcon />
-                            </IconButton>
-                            <IconButton onClick={(e) => { e.stopPropagation(); handleDeleteChain(chain.id); }}>
-                              <DeleteIcon />
-                            </IconButton>
-                          </Box>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </CardContent>
-          </Card>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Box>
         </Grid>
 
         <Grid item xs={12} md={4}>
           {selectedChain ? (
-            <Card sx={{ bgcolor: gs.bgPanel }}>
-              <CardContent>
-                <Typography variant="h6" mb={2}>链详情</Typography>
-                <Typography variant="subtitle1">{selectedChain.name}</Typography>
-                {selectedChain.description && (
-                  <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
-                    {selectedChain.description}
-                  </Typography>
-                )}
-                <Divider sx={{ my: 2 }} />
-                <Typography variant="subtitle2" mb={1}>节点列表</Typography>
-                <List>
-                  {selectedChain.nodes.map((node, index) => (
-                    <ListItem key={node.id} sx={{ py: 1 }}>
-                      <ListItemText
-                        primary={node.skillName || '未知技能'}
-                        secondary={`模式: ${node.dataPassMode}`}
-                      />
-                      <ArrowRightIcon />
-                    </ListItem>
-                  ))}
-                </List>
-                {selectedChain.nodes.length === 0 && (
-                  <Typography variant="body2" color="textSecondary">暂无节点</Typography>
-                )}
-              </CardContent>
-            </Card>
-          ) : (
-            <Card sx={{ bgcolor: gs.bgPanel }}>
-              <CardContent>
-                <Typography variant="h6" mb={2}>操作提示</Typography>
-                <Typography variant="body2" color="textSecondary">
-                  点击左侧链列表查看详情，或创建新链
+            <Box sx={{ bgcolor: gs.bgPanel, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+              <Typography variant="h6" mb={2}>链详情</Typography>
+              <Typography variant="subtitle1">{selectedChain.name}</Typography>
+              {selectedChain.description && (
+                <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+                  {selectedChain.description}
                 </Typography>
-              </CardContent>
-            </Card>
+              )}
+              <Divider sx={{ my: 2 }} />
+              <Typography variant="subtitle2" mb={1}>节点列表</Typography>
+              <List>
+                {selectedChain.nodes.map((node, index) => (
+                  <ListItem key={node.id} sx={{ py: 1 }}>
+                    <ListItemText
+                      primary={node.skillName || '未知技能'}
+                      secondary={`模式: ${node.dataPassMode}`}
+                    />
+                    <ArrowRightIcon />
+                  </ListItem>
+                ))}
+              </List>
+              {selectedChain.nodes.length === 0 && (
+                <Typography variant="body2" color="textSecondary">暂无节点</Typography>
+              )}
+            </Box>
+          ) : (
+            <Box sx={{ bgcolor: gs.bgPanel, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+              <Typography variant="h6" mb={2}>操作提示</Typography>
+              <Typography variant="body2" color="textSecondary">
+                点击左侧链列表查看详情，或创建新链
+              </Typography>
+            </Box>
           )}
         </Grid>
       </Grid>

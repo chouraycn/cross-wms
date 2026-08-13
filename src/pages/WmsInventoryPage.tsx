@@ -10,7 +10,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Button,
-  Card,
   Table,
   TableBody,
   TableCell,
@@ -294,7 +293,7 @@ const WmsInventoryPage: React.FC = () => {
       </Box>
 
       {/* 数据表格 */}
-      <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2 }}>
+      <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
             <Typography variant="body2" color="text.secondary">{t('正在加载数据...')}</Typography>
@@ -464,7 +463,7 @@ const WmsInventoryPage: React.FC = () => {
             />
           </>
         )}
-      </Card>
+      </Box>
 
       {/* 新增/编辑/录入实盘表单 */}
       <WmsInventoryForm

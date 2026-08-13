@@ -9,7 +9,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Button,
-  Card,
   Table,
   TableBody,
   TableCell,
@@ -242,7 +241,7 @@ const WmsQualityPage: React.FC = () => {
         }
       />
 
-      <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2 }}>
+      <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
             <Typography variant="body2" color="text.secondary">正在加载数据...</Typography>
@@ -351,7 +350,7 @@ const WmsQualityPage: React.FC = () => {
             />
           </>
         )}
-      </Card>
+      </Box>
 
       {/* 表单弹窗 */}
       <WmsQualityForm

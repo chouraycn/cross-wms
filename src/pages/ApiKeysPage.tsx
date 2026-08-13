@@ -9,8 +9,6 @@ import { showConfirm } from '../utils/confirmDialog';
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
   Button,
   Chip,
   Table,
@@ -146,97 +144,89 @@ const ApiKeysPage: React.FC = () => {
       {stats && (
         <Grid container spacing={2} sx={{ mb: 3 }}>
           <Grid item xs={12} sm={4}>
-            <Card>
-              <CardContent>
-                <Typography variant="body2" color="text.secondary">总数</Typography>
-                <Typography variant="h4" fontWeight={600}>{stats.total}</Typography>
-              </CardContent>
-            </Card>
+            <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+              <Typography variant="body2" color="text.secondary">总数</Typography>
+              <Typography variant="h4" fontWeight={600}>{stats.total}</Typography>
+            </Box>
           </Grid>
           <Grid item xs={12} sm={4}>
-            <Card>
-              <CardContent>
-                <Typography variant="body2" color="text.secondary">已启用</Typography>
-                <Typography variant="h4" fontWeight={600} color="success.main">{stats.enabled}</Typography>
-              </CardContent>
-            </Card>
+            <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+              <Typography variant="body2" color="text.secondary">已启用</Typography>
+              <Typography variant="h4" fontWeight={600} color="success.main">{stats.enabled}</Typography>
+            </Box>
           </Grid>
           <Grid item xs={12} sm={4}>
-            <Card>
-              <CardContent>
-                <Typography variant="body2" color="text.secondary">已禁用</Typography>
-                <Typography variant="h4" fontWeight={600} color="warning.main">{stats.disabled}</Typography>
-              </CardContent>
-            </Card>
+            <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+              <Typography variant="body2" color="text.secondary">已禁用</Typography>
+              <Typography variant="h4" fontWeight={600} color="warning.main">{stats.disabled}</Typography>
+            </Box>
           </Grid>
         </Grid>
       )}
 
       {/* 列表 */}
-      <Card>
-        <CardContent>
-          {loading && <LinearProgress sx={{ mb: 2 }} />}
+      <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+        {loading && <LinearProgress sx={{ mb: 2 }} />}
 
-          <TableContainer component={Paper} variant="outlined">
-            <Table size="small">
-              <TableHead>
+        <TableContainer component={Paper} variant="outlined">
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell>名称</TableCell>
+                <TableCell>前缀</TableCell>
+                <TableCell>状态</TableCell>
+                <TableCell>速率限制</TableCell>
+                <TableCell>创建时间</TableCell>
+                <TableCell align="right">操作</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {keys.length === 0 ? (
                 <TableRow>
-                  <TableCell>名称</TableCell>
-                  <TableCell>前缀</TableCell>
-                  <TableCell>状态</TableCell>
-                  <TableCell>速率限制</TableCell>
-                  <TableCell>创建时间</TableCell>
-                  <TableCell align="right">操作</TableCell>
+                  <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
+                    <VpnKeyIcon sx={{ fontSize: 40, mb: 1, opacity: 0.5 }} />
+                    <Typography>暂无 API Key</Typography>
+                  </TableCell>
                 </TableRow>
-              </TableHead>
-              <TableBody>
-                {keys.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
-                      <VpnKeyIcon sx={{ fontSize: 40, mb: 1, opacity: 0.5 }} />
-                      <Typography>暂无 API Key</Typography>
+              ) : (
+                keys.map((key) => (
+                  <TableRow key={key.id} hover>
+                    <TableCell>
+                      <Typography variant="body1" fontWeight={500}>{key.name}</Typography>
+                    </TableCell>
+                    <TableCell>
+                      <code>{key.prefix}...</code>
+                    </TableCell>
+                    <TableCell>
+                      {key.enabled ? (
+                        <Chip icon={<CheckCircleIcon />} label="已启用" color="success" size="small" variant="outlined" />
+                      ) : (
+                        <Chip icon={<RemoveCircleIcon />} label="已禁用" color="warning" size="small" variant="outlined" />
+                      )}
+                    </TableCell>
+                    <TableCell>{key.rateLimitPerMinute} / 分钟</TableCell>
+                    <TableCell>{formatDate(key.createdAt)}</TableCell>
+                    <TableCell align="right">
+                      <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          onClick={() => handleToggle(key)}
+                        >
+                          {key.enabled ? '禁用' : '启用'}
+                        </Button>
+                        <IconButton size="small" color="error" onClick={() => handleDelete(key.id)}>
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </Box>
                     </TableCell>
                   </TableRow>
-                ) : (
-                  keys.map((key) => (
-                    <TableRow key={key.id} hover>
-                      <TableCell>
-                        <Typography variant="body1" fontWeight={500}>{key.name}</Typography>
-                      </TableCell>
-                      <TableCell>
-                        <code>{key.prefix}...</code>
-                      </TableCell>
-                      <TableCell>
-                        {key.enabled ? (
-                          <Chip icon={<CheckCircleIcon />} label="已启用" color="success" size="small" variant="outlined" />
-                        ) : (
-                          <Chip icon={<RemoveCircleIcon />} label="已禁用" color="warning" size="small" variant="outlined" />
-                        )}
-                      </TableCell>
-                      <TableCell>{key.rateLimitPerMinute} / 分钟</TableCell>
-                      <TableCell>{formatDate(key.createdAt)}</TableCell>
-                      <TableCell align="right">
-                        <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
-                          <Button
-                            size="small"
-                            variant="outlined"
-                            onClick={() => handleToggle(key)}
-                          >
-                            {key.enabled ? '禁用' : '启用'}
-                          </Button>
-                          <IconButton size="small" color="error" onClick={() => handleDelete(key.id)}>
-                            <DeleteIcon fontSize="small" />
-                          </IconButton>
-                        </Box>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </CardContent>
-      </Card>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Box>
 
       {/* 创建对话框 */}
       <Dialog open={createDialogOpen} onClose={() => { setCreateDialogOpen(false); setCreatedKey(null); }} maxWidth="sm" fullWidth>

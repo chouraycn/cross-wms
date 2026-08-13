@@ -13,8 +13,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
   CardActions,
   Grid,
   Chip,
@@ -256,213 +254,205 @@ const IntegrationDashboardPage: React.FC = () => {
       <Grid container spacing={2} sx={{ mb: 3 }}>
         {moduleCards.map((card) => (
           <Grid item xs={12} sm={6} md={4} lg={2.4} key={card.moduleKey}>
-            <Card sx={{ height: '100%' }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                  {card.icon}
-                  <Typography variant="subtitle1" fontWeight={600}>
-                    {card.title}
-                  </Typography>
-                </Box>
-                <Chip
-                  size="small"
-                  color={card.statusColor}
-                  label={card.statusColor === 'success' ? '运行中' : card.statusColor === 'error' ? '异常' : '就绪'}
-                  sx={{ mb: 1 }}
-                />
-                <Typography variant="body2" color="text.secondary">
-                  {card.summary}
+            <Box sx={{ height: '100%', border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                {card.icon}
+                <Typography variant="subtitle1" fontWeight={600}>
+                  {card.title}
                 </Typography>
-              </CardContent>
-            </Card>
+              </Box>
+              <Chip
+                size="small"
+                color={card.statusColor}
+                label={card.statusColor === 'success' ? '运行中' : card.statusColor === 'error' ? '异常' : '就绪'}
+                sx={{ mb: 1 }}
+              />
+              <Typography variant="body2" color="text.secondary">
+                {card.summary}
+              </Typography>
+            </Box>
           </Grid>
         ))}
       </Grid>
 
       {/* LLM Circuit Breakers Table */}
-      <Card sx={{ mb: 2 }}>
-        <CardContent>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }} onClick={() => setExpandedLlm(!expandedLlm)}>
-              <Typography variant="subtitle1" fontWeight={600}>
-                LLM 熔断器 ({llmBreakers.length})
-              </Typography>
-              {expandedLlm ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-            </Box>
-            <Button size="small" startIcon={<ReplayIcon />} onClick={handleResetLlmBreakers} disabled={llmBreakers.length === 0}>
+      <Box sx={{ mb: 2, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }} onClick={() => setExpandedLlm(!expandedLlm)}>
+            <Typography variant="subtitle1" fontWeight={600}>
+              LLM 熔断器 ({llmBreakers.length})
+            </Typography>
+            {expandedLlm ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+          </Box>
+          <Button size="small" startIcon={<ReplayIcon />} onClick={handleResetLlmBreakers} disabled={llmBreakers.length === 0}>
+            重置全部
+          </Button>
+        </Box>
+        <Collapse in={expandedLlm}>
+          {llmBreakers.length === 0 ? (
+            <Typography variant="body2" color="text.secondary">
+              暂无熔断器注册
+            </Typography>
+          ) : (
+            <TableContainer component={Paper} variant="outlined">
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Provider</TableCell>
+                    <TableCell>状态</TableCell>
+                    <TableCell>失败次数</TableCell>
+                    <TableCell>成功次数</TableCell>
+                    <TableCell>最后失败</TableCell>
+                    <TableCell>最后成功</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {llmBreakers.map((b) => (
+                    <TableRow key={b.provider}>
+                      <TableCell>{b.provider}</TableCell>
+                      <TableCell>
+                        <CircuitStateChip state={b.state} />
+                      </TableCell>
+                      <TableCell>{b.snapshot.failures}</TableCell>
+                      <TableCell>{b.snapshot.successes}</TableCell>
+                      <TableCell>{formatTimestamp(b.snapshot.lastFailure)}</TableCell>
+                      <TableCell>{formatTimestamp(b.snapshot.lastSuccess)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </Collapse>
+      </Box>
+
+      {/* Channel Circuit Breakers Table */}
+      <Box sx={{ mb: 2, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }} onClick={() => setExpandedChannel(!expandedChannel)}>
+            <Typography variant="subtitle1" fontWeight={600}>
+              通道熔断器 ({channelBreakers.length})
+            </Typography>
+            {expandedChannel ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+          </Box>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Button size="small" startIcon={<SyncIcon />} onClick={handleSyncChannelBreakers}>
+              同步健康度
+            </Button>
+            <Button size="small" startIcon={<ReplayIcon />} onClick={handleResetChannelBreakers} disabled={channelBreakers.length === 0}>
               重置全部
             </Button>
           </Box>
-          <Collapse in={expandedLlm}>
-            {llmBreakers.length === 0 ? (
-              <Typography variant="body2" color="text.secondary">
-                暂无熔断器注册
-              </Typography>
-            ) : (
-              <TableContainer component={Paper} variant="outlined">
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Provider</TableCell>
-                      <TableCell>状态</TableCell>
-                      <TableCell>失败次数</TableCell>
-                      <TableCell>成功次数</TableCell>
-                      <TableCell>最后失败</TableCell>
-                      <TableCell>最后成功</TableCell>
+        </Box>
+        <Collapse in={expandedChannel}>
+          {channelBreakers.length === 0 ? (
+            <Typography variant="body2" color="text.secondary">
+              暂无通道熔断器注册（等待绑定到健康监控）
+            </Typography>
+          ) : (
+            <TableContainer component={Paper} variant="outlined">
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>通道 ID</TableCell>
+                    <TableCell>状态</TableCell>
+                    <TableCell>失败次数</TableCell>
+                    <TableCell>成功次数</TableCell>
+                    <TableCell>健康状态</TableCell>
+                    <TableCell>最后失败</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {channelBreakers.map((b) => (
+                    <TableRow key={b.channelId}>
+                      <TableCell>{b.channelId}</TableCell>
+                      <TableCell>
+                        <CircuitStateChip state={b.state} />
+                      </TableCell>
+                      <TableCell>{b.snapshot.failures}</TableCell>
+                      <TableCell>{b.snapshot.successes}</TableCell>
+                      <TableCell>{b.snapshot.lastHealthStatus ?? '-'}</TableCell>
+                      <TableCell>{formatTimestamp(b.snapshot.lastFailure)}</TableCell>
                     </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {llmBreakers.map((b) => (
-                      <TableRow key={b.provider}>
-                        <TableCell>{b.provider}</TableCell>
-                        <TableCell>
-                          <CircuitStateChip state={b.state} />
-                        </TableCell>
-                        <TableCell>{b.snapshot.failures}</TableCell>
-                        <TableCell>{b.snapshot.successes}</TableCell>
-                        <TableCell>{formatTimestamp(b.snapshot.lastFailure)}</TableCell>
-                        <TableCell>{formatTimestamp(b.snapshot.lastSuccess)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            )}
-          </Collapse>
-        </CardContent>
-      </Card>
-
-      {/* Channel Circuit Breakers Table */}
-      <Card sx={{ mb: 2 }}>
-        <CardContent>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }} onClick={() => setExpandedChannel(!expandedChannel)}>
-              <Typography variant="subtitle1" fontWeight={600}>
-                通道熔断器 ({channelBreakers.length})
-              </Typography>
-              {expandedChannel ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-            </Box>
-            <Box sx={{ display: 'flex', gap: 1 }}>
-              <Button size="small" startIcon={<SyncIcon />} onClick={handleSyncChannelBreakers}>
-                同步健康度
-              </Button>
-              <Button size="small" startIcon={<ReplayIcon />} onClick={handleResetChannelBreakers} disabled={channelBreakers.length === 0}>
-                重置全部
-              </Button>
-            </Box>
-          </Box>
-          <Collapse in={expandedChannel}>
-            {channelBreakers.length === 0 ? (
-              <Typography variant="body2" color="text.secondary">
-                暂无通道熔断器注册（等待绑定到健康监控）
-              </Typography>
-            ) : (
-              <TableContainer component={Paper} variant="outlined">
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>通道 ID</TableCell>
-                      <TableCell>状态</TableCell>
-                      <TableCell>失败次数</TableCell>
-                      <TableCell>成功次数</TableCell>
-                      <TableCell>健康状态</TableCell>
-                      <TableCell>最后失败</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {channelBreakers.map((b) => (
-                      <TableRow key={b.channelId}>
-                        <TableCell>{b.channelId}</TableCell>
-                        <TableCell>
-                          <CircuitStateChip state={b.state} />
-                        </TableCell>
-                        <TableCell>{b.snapshot.failures}</TableCell>
-                        <TableCell>{b.snapshot.successes}</TableCell>
-                        <TableCell>{b.snapshot.lastHealthStatus ?? '-'}</TableCell>
-                        <TableCell>{formatTimestamp(b.snapshot.lastFailure)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            )}
-          </Collapse>
-        </CardContent>
-      </Card>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </Collapse>
+      </Box>
 
       {/* Permission Policies */}
-      <Card>
-        <CardContent>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }} onClick={() => setExpandedPermissions(!expandedPermissions)}>
-              <Typography variant="subtitle1" fontWeight={600}>
-                权限策略 ({policies.length}) / 模板 ({templates.length})
-              </Typography>
-              {expandedPermissions ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-            </Box>
+      <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }} onClick={() => setExpandedPermissions(!expandedPermissions)}>
+            <Typography variant="subtitle1" fontWeight={600}>
+              权限策略 ({policies.length}) / 模板 ({templates.length})
+            </Typography>
+            {expandedPermissions ? <ExpandLessIcon /> : <ExpandMoreIcon />}
           </Box>
-          <Collapse in={expandedPermissions}>
-            <Grid container spacing={2}>
-              <Grid item xs={12} md={6}>
-                <Typography variant="subtitle2" gutterBottom>
-                  已加载策略
+        </Box>
+        <Collapse in={expandedPermissions}>
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={6}>
+              <Typography variant="subtitle2" gutterBottom>
+                已加载策略
+              </Typography>
+              {policies.length === 0 ? (
+                <Typography variant="body2" color="text.secondary">
+                  暂无策略加载
                 </Typography>
-                {policies.length === 0 ? (
-                  <Typography variant="body2" color="text.secondary">
-                    暂无策略加载
-                  </Typography>
-                ) : (
-                  <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: 300 }}>
-                    <Table size="small" stickyHeader>
-                      <TableHead>
-                        <TableRow>
-                          <TableCell>Agent ID</TableCell>
-                          <TableCell>允许</TableCell>
-                          <TableCell>拒绝</TableCell>
-                          <TableCell>需审批</TableCell>
+              ) : (
+                <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: 300 }}>
+                  <Table size="small" stickyHeader>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Agent ID</TableCell>
+                        <TableCell>允许</TableCell>
+                        <TableCell>拒绝</TableCell>
+                        <TableCell>需审批</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {policies.map((p) => (
+                        <TableRow key={p.agentId}>
+                          <TableCell>{p.agentId}</TableCell>
+                          <TableCell>
+                            <Typography variant="caption" sx={{ whiteSpace: 'normal', wordBreak: 'break-all' }}>
+                              {p.policy.allowed.slice(0, 3).join(', ')}
+                              {p.policy.allowed.length > 3 && ` +${p.policy.allowed.length - 3}`}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="caption">
+                              {p.policy.denied.length > 0 ? `${p.policy.denied.length} 项` : '-'}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="caption">
+                              {p.policy.requireApproval.length > 0 ? `${p.policy.requireApproval.length} 项` : '-'}
+                            </Typography>
+                          </TableCell>
                         </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {policies.map((p) => (
-                          <TableRow key={p.agentId}>
-                            <TableCell>{p.agentId}</TableCell>
-                            <TableCell>
-                              <Typography variant="caption" sx={{ whiteSpace: 'normal', wordBreak: 'break-all' }}>
-                                {p.policy.allowed.slice(0, 3).join(', ')}
-                                {p.policy.allowed.length > 3 && ` +${p.policy.allowed.length - 3}`}
-                              </Typography>
-                            </TableCell>
-                            <TableCell>
-                              <Typography variant="caption">
-                                {p.policy.denied.length > 0 ? `${p.policy.denied.length} 项` : '-'}
-                              </Typography>
-                            </TableCell>
-                            <TableCell>
-                              <Typography variant="caption">
-                                {p.policy.requireApproval.length > 0 ? `${p.policy.requireApproval.length} 项` : '-'}
-                              </Typography>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                )}
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <Typography variant="subtitle2" gutterBottom>
-                  可用模板
-                </Typography>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                  {templates.map((t) => (
-                    <Chip key={t.name} label={t.name} variant="outlined" size="small" />
-                  ))}
-                </Box>
-              </Grid>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
             </Grid>
-          </Collapse>
-        </CardContent>
-      </Card>
+            <Grid item xs={12} md={6}>
+              <Typography variant="subtitle2" gutterBottom>
+                可用模板
+              </Typography>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                {templates.map((t) => (
+                  <Chip key={t.name} label={t.name} variant="outlined" size="small" />
+                ))}
+              </Box>
+            </Grid>
+          </Grid>
+        </Collapse>
+      </Box>
     </Box>
   );
 };

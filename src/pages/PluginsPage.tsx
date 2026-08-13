@@ -9,8 +9,6 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
   CardActions,
   Switch,
   IconButton,
@@ -506,22 +504,20 @@ const PluginsPage: React.FC = () => {
 
       {/* 空状态 */}
       {plugins.length === 0 && !installing && (
-        <Card variant="outlined" sx={{ textAlign: 'center', py: 6, borderColor: gs.border }}>
-          <CardContent>
-            <ExtensionOutlinedIcon sx={{ fontSize: 48, color: gs.textMuted, mb: 1 }} />
-            <Typography color="text.secondary" sx={{ mb: 2 }}>
-              暂无已安装的插件
-            </Typography>
-            <Button
-              variant="outlined"
-              startIcon={<UploadFileIcon />}
-              onClick={handleInstallClick}
-              size="small"
-            >
-              安装第一个插件
-            </Button>
-          </CardContent>
-        </Card>
+        <Box sx={{ textAlign: 'center', py: 6, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+          <ExtensionOutlinedIcon sx={{ fontSize: 48, color: gs.textMuted, mb: 1 }} />
+          <Typography color="text.secondary" sx={{ mb: 2 }}>
+            暂无已安装的插件
+          </Typography>
+          <Button
+            variant="outlined"
+            startIcon={<UploadFileIcon />}
+            onClick={handleInstallClick}
+            size="small"
+          >
+            安装第一个插件
+          </Button>
+        </Box>
       )}
 
       {/* 插件表格 */}
