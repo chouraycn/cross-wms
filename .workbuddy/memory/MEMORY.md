@@ -49,14 +49,17 @@
 
 ## 分支拓扑与收口状态
 - `backup/wip-2026-08-04`(5976f186)：全量安全网。丢文件：`git cat-file -p 5976f186:<path>`
-- `sync/openclaw-2026-08-04`(5976f186)：401 上游新文件，待审阅合入
-- `refactor/staff-dedup-mcp`：数字员工整合 + P1.1 + README，待真机 e2e 后合 main
+- `sync/openclaw-2026-08-04`：**3335 文件 / +346K −62K vs main（全仓级分叉，远不止早期"401 文件"估计）**。治理方针=**选择性 cherry-pick 非冲突通用修复 + 冲突走适配层，绝不幻想全量 merge**（灾难级冲突）。本迭代须出 runbook 文档。
+- `refactor/staff-dedup-mcp`：**已退役**（2026-08-12，内容被 main 完全取代，`git branch -D` + 远端删；合入会造成 6 类回退）。安全网同 backup/wip。
 - 整合收口：双套 UI 收敛已**代码级收口**（删 39 MUI 员工页，仅留 5 例外页；`/staff /enterprise /workspace` → `/staffdeck`）；`tsc --noEmit` EXIT=0。`localStorage cdfknow.legacyStaffUI` 已失效。`vite.config.ts` 禁开 `emptyOutDir:true`（会删 `dist/staffdeck-app`）
 - git 瘦身 ✅ 2026-08-06：`.git` 732M→89M(削88%)，剥离 `server_dist/ coverage/ report/`。⚠️ 全员须重 clone
 
 ## 剩余技术债 & 当前进度（路线图原始素材）
 - **P2-1 API 契约对齐**（已收口 6 批）：102 路由文件发 `res.json`，55 已用信封。信封基建 `server/routes/_shared/respond.ts`(ok/fail/notFound/serverError + BizCode)。**已迁移 6 批 / 25 文件 / 251 调用**（f9660a08 首批9/138、7cd4bc54 二批6/20、d259973a 三批2/32、c24f0801 四批2/23、fe9d1842 五批2/23、08aee5a5 六批4/15），均 eslint 0 错误，全部手工逐文件（codemod 不可靠）。**核心安全规则（实测固化）**：① 仅消费者走中央 `request()`(`json.data??json`) 的端点包裹透明；② body 含 `data` 顶层键的（如 `{data:X}`）改 `ok(res,X)` 防双包，已是新信封 payload 形态（`{data,total}`）则**不迁**（automation/trigger）；③ raw fetch 直读顶层键的前端须排除——已确认 `git`/`memory`/`taskMonitor`/`secretsService`/`goalsService`(前端 raw fetch) + 独立前缀 `browser/mcp/soul/contextEngine/process/cron/nodeHost/pairing/plugins` **整文件跳过**；`skillWorkshop`/`keywordTrigger`/`audit`/`apiHistory`/`apiDomainWhitelist`/`insights` 仅中央 consumer → 全迁安全；④ 已合规 `{code:0,data,message}`(transfer/wms-*) / 全手动信封 `{ok/success}`(cache/codeIndex/pdf/lsp/tts/stt/video/music/image/pluginSdk/mediaLibrary/webhook) / 协议契约(acp/codeUnderstanding) / 第三方平台契约(channel-webhook) 一律跳过；⑤ `staff/*` 14 文件走剥包中间件(`server/index.ts:394-419`)保留 envelope。DEFER 仅剩 automation/trigger 双包敏感形（待专门验证）；其余未逐个核小文件各 1-5 调用必属 A-E 类，边际收益极低，**收口**。详见 `2026-08-12.md`。
 - **⚠️ codemod 不可靠(2026-08-11 实测)**：自动迁移脚本对 ① multiline 裸对象(`res.json({ sessionId, ... }`)会截断错位丢 `{`；② 路由内有 `const ok` 局部变量时 `ok(res,...)` 遮蔽导入→运行时崩溃+TS 重复标识符。结论：**API 信封迁移必须人工逐文件**，且每文件 eslint 验证 0 error + 查 `ok` 冲突。
+- **P1-2 UI 视觉统一（Card→Box 扁平化，进行中）**：规范见 `deliverables/2026-08-12-P1执行.md` §4.2（KPI/功能性卡**保留 Card**；仅页面级 section 容器迁 Box，BORDER=`border:'1px solid',borderColor:'divider',borderRadius:2,p:2`）。**进度 2026-08-13：12/42 页完成**（第一批 Triggers/Tts/Permissions-部分；第二批 Webhook/Models/NodeHost/CacheManager/InventoryTransactions/Channels/CodeIndex/LspServers/MessageLifecycle）。剩余 ~19 页：12 纯容器（脚本 v4）+ 5 复杂(CardMedia/Actions 手工)+ SystemMonitorPage(KPI 评估)+ MetricsPage(用户 in-flight 勿碰)。**迁移脚本 `/tmp/migrate-card-to-box4.mjs`（修复 v3 的 `extractSx` 大括号 off-by-one + 单行/多行 import 清理 + `borderColor:gs.border`→`'divider'` 归一）**。
+- **⚠️ git stash 恢复坑（2026-08-13 实测）**：一次 `git stash pop` 误戳到**旧无关 stash**（索引因多次 push 漂移），把 15 个 2026-08-08 备份文件污染进工作树。修复：`git checkout HEAD -- <15文件>` 还原 + `git checkout stash@{N} -- <精确文件>` 外科手术式恢复在飞改动（勿用裸 `git stash pop` 在有多 stash 时）。**铁律补丁：pop 前必 `git stash show --name-only stash@{N}` 确认内容，且恢复用 `checkout stash@{N} -- <files>` 而非 pop**。
+- **在飞用户任务（勿碰）**：`server/metrics/collector.ts` / `src/pages/MetricsPage.tsx` / `src/services/metricsApi.ts`（metrics 对齐）+ stray `scripts/package-mac-app.sh`。任何 commit/rebase 前 `git stash push` 保护，操作后 `git stash list` 核对 0 丢失。
 - **engine 测试隔离**：`vitest.config.engine.ts` + `test:engine` 就绪。阻塞（knip 2026-08-11 实测）：**851 unresolved imports**，多为 engine 测试 import `../../test/helpers/*` 与 `openclaw/dist/plugin-sdk` → 须 CI 先 build openclaw。最终从主配置移除 `server/engine/**` + CI 接 `test:engine` 仍待门禁
 - **重复实现（2026-08-11 修正）**：markdown 渲染 110 处引用绝大多数是同一库（react-markdown/markdown-it）的消费者，非 2 份副本；真正风险=渲染选项/消毒不一致 + 是否藏第 2 手写渲染器（待验证）。API client 全仓 0 候选（grep 未命中），原「2 份近亲」判断不成立
 - `server/engine`：11,537 .ts / 272.9 万行（测试占57%）。抽样 12%同上游/55%已改/33%独有 → 不宜回退 submodule

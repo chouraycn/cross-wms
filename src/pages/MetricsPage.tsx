@@ -196,10 +196,18 @@ const MetricsPage: React.FC = () => {
     }
   };
 
-  const cpuHistory = useMemo(() => historyMetrics.map(m => m.cpu.usage), [historyMetrics]);
-  const memoryHistory = useMemo(() => historyMetrics.map(m => m.memory.percentage), [historyMetrics]);
-  const diskHistory = useMemo(() => historyMetrics.map(m => m.disk.percentage), [historyMetrics]);
-  const networkHistory = useMemo(() => historyMetrics.map(m => m.network.rx + m.network.tx), [historyMetrics]);
+  const cpuHistory = useMemo(() =>
+    historyMetrics.map(m => m.cpu?.usage ?? m.cpu ?? 0),
+    [historyMetrics]);
+  const memoryHistory = useMemo(() =>
+    historyMetrics.map(m => m.memory?.percentage ?? m.memory ?? 0),
+    [historyMetrics]);
+  const diskHistory = useMemo(() =>
+    historyMetrics.map(m => m.disk?.percentage ?? m.disk ?? 0),
+    [historyMetrics]);
+  const networkHistory = useMemo(() =>
+    historyMetrics.map(m => (m.network?.rx ?? 0) + (m.network?.tx ?? 0)),
+    [historyMetrics]);
 
   const getStatusColor = (value: number, highThreshold: number = 80, lowThreshold: number = 60): 'success' | 'warning' | 'error' => {
     if (value >= highThreshold) return 'error';
@@ -255,18 +263,18 @@ const MetricsPage: React.FC = () => {
                     <Typography variant="body2" color="text.secondary">CPU 使用率</Typography>
                   </Box>
                   <Typography variant="h4" fontWeight={600} sx={{ color: gs.textPrimary }}>
-                    {currentMetrics ? currentMetrics.cpu.usage.toFixed(1) : '-'}%
+                    {currentMetrics?.cpu?.usage != null ? currentMetrics.cpu.usage.toFixed(1) : '-'}%
                   </Typography>
                   <Box sx={{ mt: 1 }}>
                     <LinearProgress
                       variant="determinate"
-                      value={currentMetrics?.cpu.usage || 0}
-                      color={getStatusColor(currentMetrics?.cpu.usage || 0)}
+                      value={currentMetrics?.cpu?.usage ?? 0}
+                      color={getStatusColor(currentMetrics?.cpu?.usage ?? 0)}
                       sx={{ height: 6, borderRadius: 3 }}
                     />
                   </Box>
                   <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-                    {currentMetrics ? `${currentMetrics.cpu.cores} 核` : '-'}
+                    {currentMetrics?.cpu?.cores ? `${currentMetrics.cpu.cores} 核` : '-'}
                   </Typography>
                   <MiniChart data={cpuHistory} color={theme.palette.primary.main} />
                 </CardContent>
@@ -281,18 +289,20 @@ const MetricsPage: React.FC = () => {
                     <Typography variant="body2" color="text.secondary">内存使用</Typography>
                   </Box>
                   <Typography variant="h4" fontWeight={600} sx={{ color: gs.textPrimary }}>
-                    {currentMetrics ? formatBytes(currentMetrics.memory.used) : '-'}
+                    {currentMetrics?.memory?.used != null ? formatBytes(currentMetrics.memory.used) : '-'}
                   </Typography>
                   <Box sx={{ mt: 1 }}>
                     <LinearProgress
                       variant="determinate"
-                      value={currentMetrics?.memory.percentage || 0}
-                      color={getStatusColor(currentMetrics?.memory.percentage || 0, 90, 70)}
+                      value={currentMetrics?.memory?.percentage ?? 0}
+                      color={getStatusColor(currentMetrics?.memory?.percentage ?? 0, 90, 70)}
                       sx={{ height: 6, borderRadius: 3 }}
                     />
                   </Box>
                   <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-                    {currentMetrics ? `${currentMetrics.memory.percentage.toFixed(1)}% / ${formatBytes(currentMetrics.memory.total)}` : '-'}
+                    {currentMetrics?.memory?.percentage != null
+                      ? `${currentMetrics.memory.percentage.toFixed(1)}% / ${formatBytes(currentMetrics.memory.total ?? 0)}`
+                      : '-'}
                   </Typography>
                   <MiniChart data={memoryHistory} color={theme.palette.secondary.main} />
                 </CardContent>
@@ -307,18 +317,20 @@ const MetricsPage: React.FC = () => {
                     <Typography variant="body2" color="text.secondary">磁盘使用</Typography>
                   </Box>
                   <Typography variant="h4" fontWeight={600} sx={{ color: gs.textPrimary }}>
-                    {currentMetrics ? formatBytes(currentMetrics.disk.used) : '-'}
+                    {currentMetrics?.disk?.used != null ? formatBytes(currentMetrics.disk.used) : '-'}
                   </Typography>
                   <Box sx={{ mt: 1 }}>
                     <LinearProgress
                       variant="determinate"
-                      value={currentMetrics?.disk.percentage || 0}
-                      color={getStatusColor(currentMetrics?.disk.percentage || 0, 95, 80)}
+                      value={currentMetrics?.disk?.percentage ?? 0}
+                      color={getStatusColor(currentMetrics?.disk?.percentage ?? 0, 95, 80)}
                       sx={{ height: 6, borderRadius: 3 }}
                     />
                   </Box>
                   <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-                    {currentMetrics ? `${currentMetrics.disk.percentage.toFixed(1)}% / ${formatBytes(currentMetrics.disk.total)}` : '-'}
+                    {currentMetrics?.disk?.percentage != null
+                      ? `${currentMetrics.disk.percentage.toFixed(1)}% / ${formatBytes(currentMetrics.disk.total ?? 0)}`
+                      : '-'}
                   </Typography>
                   <MiniChart data={diskHistory} color={theme.palette.info.main} />
                 </CardContent>
@@ -333,16 +345,16 @@ const MetricsPage: React.FC = () => {
                     <Typography variant="body2" color="text.secondary">网络 I/O</Typography>
                   </Box>
                   <Typography variant="h4" fontWeight={600} sx={{ color: gs.textPrimary }}>
-                    {currentMetrics ? `${formatBytes(currentMetrics.network.rx)}/s` : '-'}
+                    {currentMetrics?.network?.rx != null ? `${formatBytes(currentMetrics.network.rx)}/s` : '-'}
                   </Typography>
                   <Box sx={{ mt: 1 }}>
                     <Chip
-                      label={`上传: ${currentMetrics ? formatBytes(currentMetrics.network.tx) : '-'}s`}
+                      label={`上传: ${currentMetrics?.network?.tx != null ? formatBytes(currentMetrics.network.tx) : '-'}s`}
                       size="small"
                       sx={{ mr: 1 }}
                     />
                     <Chip
-                      label={`下载: ${currentMetrics ? formatBytes(currentMetrics.network.rx) : '-'}s`}
+                      label={`下载: ${currentMetrics?.network?.rx != null ? formatBytes(currentMetrics.network.rx) : '-'}s`}
                       size="small"
                     />
                   </Box>
@@ -370,37 +382,37 @@ const MetricsPage: React.FC = () => {
                     <TableRow>
                       <TableCell sx={{ color: gs.textSecondary }}>进程 ID</TableCell>
                       <TableCell align="right" sx={{ color: gs.textPrimary }}>
-                        {currentMetrics?.process.pid || '-'}
+                        {currentMetrics?.process?.pid ?? '-'}
                       </TableCell>
                     </TableRow>
                     <TableRow>
                       <TableCell sx={{ color: gs.textSecondary }}>进程内存</TableCell>
                       <TableCell align="right" sx={{ color: gs.textPrimary }}>
-                        {currentMetrics ? formatBytes(currentMetrics.process.memoryUsage) : '-'}
+                        {currentMetrics?.process?.memoryUsage != null ? formatBytes(currentMetrics.process.memoryUsage) : '-'}
                       </TableCell>
                     </TableRow>
                     <TableRow>
                       <TableCell sx={{ color: gs.textSecondary }}>进程 CPU</TableCell>
                       <TableCell align="right" sx={{ color: gs.textPrimary }}>
-                        {currentMetrics ? `${currentMetrics.process.cpuUsage.toFixed(1)}%` : '-'}
+                        {currentMetrics?.process?.cpuUsage != null ? `${currentMetrics.process.cpuUsage.toFixed(1)}%` : '-'}
                       </TableCell>
                     </TableRow>
                     <TableRow>
                       <TableCell sx={{ color: gs.textSecondary }}>CPU 负载</TableCell>
                       <TableCell align="right" sx={{ color: gs.textPrimary }}>
-                        {currentMetrics ? currentMetrics.cpu.loadAverage.slice(0, 3).join(', ') : '-'}
+                        {currentMetrics?.cpu?.loadAverage?.length ? currentMetrics.cpu.loadAverage.slice(0, 3).join(', ') : '-'}
                       </TableCell>
                     </TableRow>
                     <TableRow>
                       <TableCell sx={{ color: gs.textSecondary }}>可用内存</TableCell>
                       <TableCell align="right" sx={{ color: gs.textPrimary }}>
-                        {currentMetrics ? formatBytes(currentMetrics.memory.available) : '-'}
+                        {currentMetrics?.memory?.available != null ? formatBytes(currentMetrics.memory.available) : '-'}
                       </TableCell>
                     </TableRow>
                     <TableRow>
                       <TableCell sx={{ color: gs.textSecondary }}>磁盘剩余</TableCell>
                       <TableCell align="right" sx={{ color: gs.textPrimary }}>
-                        {currentMetrics ? formatBytes(currentMetrics.disk.free) : '-'}
+                        {currentMetrics?.disk?.free != null ? formatBytes(currentMetrics.disk.free) : '-'}
                       </TableCell>
                     </TableRow>
                   </TableBody>
