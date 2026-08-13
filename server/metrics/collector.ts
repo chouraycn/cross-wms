@@ -97,10 +97,8 @@ export class MetricsCollector {
   /** 基于进程 cwd() 所在挂载点估算磁盘使用（节点内置 fs.statfs + fallback） */
   private sampleDisk() {
     try {
-      // @ts-expect-error statfs 在 Node ≥ 19.6 的 fs 上可用
-      if (typeof fs.statfsSync === 'function') {
-        // @ts-expect-error 存在
-        const st = fs.statfsSync(process.cwd());
+      if (typeof (fs as any).statfsSync === 'function') {
+        const st = (fs as any).statfsSync(process.cwd());
         const total = Number(st.blocks) * Number(st.bsize);
         const free = Number(st.bavail) * Number(st.bsize);
         const used = total - free;

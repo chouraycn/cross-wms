@@ -1,49 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Box, Typography, Divider, IconButton, Popover, Grow, Button, useTheme } from '@mui/material';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import CloseIcon from '@mui/icons-material/Close';
-import RestartAltIcon from '@mui/icons-material/RestartAlt';
-import SaveIcon from '@mui/icons-material/Save';
-import InfoIcon from '@mui/icons-material/Info';
-import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
-import ExtensionOutlinedIcon from '@mui/icons-material/ExtensionOutlined';
-import PaletteOutlinedIcon from '@mui/icons-material/PaletteOutlined';
-import SecurityIcon from '@mui/icons-material/Security';
-import RecordVoiceOverIcon from '@mui/icons-material/RecordVoiceOver';
-import StorageIcon from '@mui/icons-material/Storage';
-import MonitorHeartIcon from '@mui/icons-material/MonitorHeart';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
-import MemoryIcon from '@mui/icons-material/Memory';
-import NotificationsActiveOutlinedIcon from '@mui/icons-material/NotificationsActiveOutlined';
-import TimerIcon from '@mui/icons-material/Timer';
-import FlashOnIcon from '@mui/icons-material/FlashOn';
-import WebhookIcon from '@mui/icons-material/Webhook';
-import CodeOutlinedIcon from '@mui/icons-material/CodeOutlined';
-import GitHubIcon from '@mui/icons-material/GitHub';
-import LanguageOutlinedIcon from '@mui/icons-material/LanguageOutlined';
-import TaskAltIcon from '@mui/icons-material/TaskAlt';
-import PublicIcon from '@mui/icons-material/Public';
-import BookOutlinedIcon from '@mui/icons-material/BookOutlined';
-import TrackChangesIcon from '@mui/icons-material/TrackChanges';
-import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
-import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined';
-import DashboardOutlinedIcon from '@mui/icons-material/DashboardOutlined';
-import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
-import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined';
-import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined';
-import InventoryOutlinedIcon from '@mui/icons-material/InventoryOutlined';
-import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
-import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
-import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined';
-import FindInPageOutlinedIcon from '@mui/icons-material/FindInPageOutlined';
-import VerifiedUserOutlinedIcon from '@mui/icons-material/VerifiedUserOutlined';
-import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
-import ImageIcon from '@mui/icons-material/Image';
-import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
-import WebIcon from '@mui/icons-material/Web';
-import PhonelinkIcon from '@mui/icons-material/Phonelink';
-import HubIcon from '@mui/icons-material/Hub';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import type { AppSettings } from '../../contexts/AppSettingsContext';
 import { getGrayScale } from '../../constants/theme';
@@ -54,132 +11,12 @@ import { useToast, ToastMessages } from '../../contexts/ToastContext';
 import { useNavigate } from 'react-router-dom';
 // StaffDeck 程序化图标（currentColor 主题化，与设置面板文字色联动）
 import StaffdeckIcon from '../staff/StaffdeckIcon';
-
-const SIDEBAR_WIDTH_EXPANDED = 360;
-
-// 已移除的 Tab（迁移到 AI 对话 / Skill 体系 / Swift 原生）：
-// - tencentDocs: 腾讯文档配置 → 通过腾讯文档 Skill 实现（功能页 /tencent-docs 仍保留）
-// - dashboardCalc: 仪表盘参数 → 通过 AI 对话分析仪表盘
-// - dashboardIndicators: 指标控制 → 通过 Skill 配置指标维度
-// - systemAuthorization: 系统授权 → Swift 原生 App 内置权限管理，Web 端无需配置（状态已移除）
+import { MenuEntry, SETTINGS_MENU } from './settingsMenuData.tsx';
 
 /** 设置详情视图可用的 tab（仅这些走内联详情视图；其余走 navigate / dialog） */
 type SettingsTab = 'menu' | 'appearance' | 'about';
 
-/** 菜单条目：带 children 即为可展开分组 */
-export interface MenuEntry {
-  key: string;
-  label: string;
-  icon?: React.ReactNode;
-  description?: string;
-  children?: MenuEntry[];
-  // 叶子动作（无 children 时生效）
-  tab?: SettingsTab;
-  path?: string;
-  dialog?: 'tool' | 'model';
-  appearanceInline?: boolean;
-  // 打开 AISettingsDialog 并定位到指定标签页
-  aiTab?: { main: string; sub: string };
-}
-
-export const SETTINGS_MENU: MenuEntry[] = [
-  { key: 'appearance', label: '外观', icon: <PaletteOutlinedIcon sx={{ fontSize: 20 }} />, description: '主题、颜色与显示偏好', appearanceInline: true },
-  { key: 'modelManagement', label: '模型管理', icon: <AutoAwesomeIcon sx={{ fontSize: 20 }} />, description: 'AI 模型配置与默认模型', dialog: 'model' },
-  { key: 'extensionsCenter', label: '扩展与工具', icon: <ExtensionOutlinedIcon sx={{ fontSize: 20 }} />, description: '插件、扩展与 MCP 工具统一管理', path: '/extensions-center' },
-  {
-    key: 'comms',
-    label: '通讯 & 语音',
-    icon: <RecordVoiceOverIcon sx={{ fontSize: 20 }} />,
-    description: '语音对话 · TTS · 通道',
-    children: [
-      { key: 'comms-talk', label: '语音对话', icon: <RecordVoiceOverIcon sx={{ fontSize: 18 }} />, description: '通道配置', aiTab: { main: 'comms', sub: 'talk' } },
-      { key: 'tts', label: '语音合成', icon: <RecordVoiceOverIcon sx={{ fontSize: 18 }} />, description: 'TTS 设置', path: '/tts' },
-    ],
-  },
-  {
-    key: 'creation',
-    label: '创作',
-    icon: <StaffdeckIcon name="image" size={20} />,
-    description: '图像 · 音乐 · 视频',
-    children: [
-      { key: 'image-generation', label: '图像生成', icon: <ImageIcon sx={{ fontSize: 18 }} />, description: 'AI 绘图', path: '/image-generation' },
-      { key: 'music-generation', label: '音乐生成', icon: <AutoFixHighIcon sx={{ fontSize: 18 }} />, description: 'AI 作曲', path: '/music-generation' },
-      { key: 'video-generation', label: '视频生成', icon: <WebIcon sx={{ fontSize: 18 }} />, description: 'AI 视频创作', path: '/video-generation' },
-      { key: 'media-library', label: '媒体库', icon: <StorageIcon sx={{ fontSize: 18 }} />, description: '资产管理', path: '/media-library' },
-      { key: 'media-tools', label: '媒体工具', icon: <LanguageOutlinedIcon sx={{ fontSize: 18 }} />, description: '媒体 & 链接理解', path: '/media-tools' },
-    ],
-  },
-  {
-    key: 'system-group',
-    label: '系统',
-    icon: <MonitorHeartIcon sx={{ fontSize: 20 }} />,
-    description: '设备 · 监控 · 权限',
-    children: [
-      { key: 'pairing', label: '设备配对', icon: <PhonelinkIcon sx={{ fontSize: 18 }} />, description: 'Pairing', path: '/pairing' },
-      { key: 'monitoring', label: '监控中心', icon: <HubIcon sx={{ fontSize: 18 }} />, description: '进程 · 节点 · 集成', path: '/monitoring' },
-      { key: 'observabilityCenter', label: '系统可观测性', icon: <MonitorHeartIcon sx={{ fontSize: 18 }} />, description: '指标 · 审计 · 事件账本', path: '/observability-center' },
-      { key: 'permissions', label: '权限管理', icon: <SecurityIcon sx={{ fontSize: 18 }} />, description: '屏幕录制 · 辅助功能 · 全盘访问', path: '/permissions' },
-    ],
-  },
-  {
-    key: 'triggers',
-    label: '触发 & 通知',
-    icon: <NotificationsActiveOutlinedIcon sx={{ fontSize: 20 }} />,
-    description: '触发·关键词·Webhook',
-    children: [
-      { key: 'triggers-list', label: '触发器', icon: <TimerIcon sx={{ fontSize: 18 }} />, description: '事件触发', path: '/triggers' },
-      { key: 'keyword-trigger', label: '关键词触发', icon: <FlashOnIcon sx={{ fontSize: 18 }} />, description: '触发配置', path: '/keyword-trigger' },
-      { key: 'webhook', label: 'Webhook', icon: <WebhookIcon sx={{ fontSize: 18 }} />, description: '钩子管理', path: '/webhook' },
-    ],
-  },
-  {
-    key: 'devTools',
-    label: '开发工具',
-    icon: <CodeOutlinedIcon sx={{ fontSize: 20 }} />,
-    description: 'Git·索引·LSP·任务',
-    children: [
-      { key: 'git', label: 'Git 管理', icon: <GitHubIcon sx={{ fontSize: 18 }} />, description: '版本控制', path: '/git' },
-      { key: 'code-index', label: '代码索引', icon: <CodeOutlinedIcon sx={{ fontSize: 18 }} />, description: '符号搜索', path: '/code-index' },
-      { key: 'lsp', label: 'LSP 服务器', icon: <LanguageOutlinedIcon sx={{ fontSize: 18 }} />, description: '语言服务', path: '/lsp' },
-      { key: 'tasks', label: '任务管理', icon: <TaskAltIcon sx={{ fontSize: 18 }} />, description: 'CRUD 管理', path: '/tasks' },
-      { key: 'browser-profiles', label: '浏览器配置', icon: <PublicIcon sx={{ fontSize: 18 }} />, description: '浏览器管理', path: '/browser-profiles' },
-    ],
-  },
-  {
-    key: 'knowledge',
-    label: '知识 & 记忆',
-    icon: <BookOutlinedIcon sx={{ fontSize: 20 }} />,
-    description: 'Wiki·消息·缓存·记忆·文档',
-    children: [
-      { key: 'wiki', label: 'Wiki 知识库', icon: <BookOutlinedIcon sx={{ fontSize: 18 }} />, description: '知识管理', path: '/wiki' },
-      { key: 'memory', label: '记忆', icon: <StorageIcon sx={{ fontSize: 18 }} />, description: '记忆管理', path: '/memory' },
-      { key: 'message-lifecycle', label: '消息生命周期', icon: <TrackChangesIcon sx={{ fontSize: 18 }} />, description: '生命周期监控', path: '/message-lifecycle' },
-      { key: 'cache-manager', label: '缓存管理', icon: <StorageIcon sx={{ fontSize: 18 }} />, description: '缓存管理', path: '/cache-manager' },
-      { key: 'tencent-docs', label: '腾讯文档', icon: <DescriptionOutlinedIcon sx={{ fontSize: 18 }} />, description: '在线文档', path: '/tencent-docs' },
-    ],
-  },
-  {
-    key: 'wms',
-    label: '仓储管理',
-    icon: <WarehouseOutlinedIcon sx={{ fontSize: 20 }} />,
-    description: '仓库·在途·库存',
-    children: [
-      { key: 'dashboard', label: '仪表盘', icon: <DashboardOutlinedIcon sx={{ fontSize: 18 }} />, description: '总览', path: '/dashboard' },
-      { key: 'warehouses', label: '仓库管理', icon: <FolderOutlinedIcon sx={{ fontSize: 18 }} />, description: '仓库列表', path: '/warehouses' },
-      { key: 'partners', label: '客商管理', icon: <GroupsOutlinedIcon sx={{ fontSize: 18 }} />, description: '供应商 & 客户', path: '/partners' },
-      { key: 'in-transit', label: '在途管理', icon: <LocalShippingOutlinedIcon sx={{ fontSize: 18 }} />, description: '在途跟踪', path: '/in-transit' },
-      { key: 'inventory', label: '库存管理', icon: <InventoryOutlinedIcon sx={{ fontSize: 18 }} />, description: '库存查询', path: '/inventory' },
-      { key: 'transfer', label: '仓库调拨', icon: <SwapHorizIcon sx={{ fontSize: 18 }} />, description: '多仓调拨', path: '/transfer' },
-      { key: 'inventory-transactions', label: '库存交易', icon: <ArrowUpwardIcon sx={{ fontSize: 18 }} />, description: '流水记录', path: '/inventory-transactions' },
-      { key: 'wms-quality', label: '入库质检', icon: <FactCheckOutlinedIcon sx={{ fontSize: 18 }} />, description: '质检管理', path: '/wms/quality' },
-      { key: 'wms-inventory', label: '库存盘点', icon: <FindInPageOutlinedIcon sx={{ fontSize: 18 }} />, description: '盘点管理', path: '/wms/inventory' },
-      { key: 'wms-outbound', label: '出库复核', icon: <VerifiedUserOutlinedIcon sx={{ fontSize: 18 }} />, description: '复核管理', path: '/wms/outbound' },
-      { key: 'wms-alerts', label: '预警 & 补货', icon: <NotificationsActiveOutlinedIcon sx={{ fontSize: 18 }} />, description: '预警中心 & 智能补货', path: '/wms/alerts' },
-      { key: 'reports', label: '报表', icon: <AssessmentOutlinedIcon sx={{ fontSize: 18 }} />, description: '数据报表 & 报表中心', path: '/reports' },
-    ],
-  },
-  { key: 'about', label: '关于', icon: <StaffdeckIcon name="info" sx={{ fontSize: 20 }} />, description: '系统信息与版本', tab: 'about' },
-];
+const SIDEBAR_WIDTH_EXPANDED = 360;
 
 // 详情视图标题查找表（含子项）
 const LABEL_BY_KEY: Record<string, string> = {};
@@ -188,7 +25,7 @@ SETTINGS_MENU.forEach((e) => {
   if (e.children) e.children.forEach((c) => { LABEL_BY_KEY[c.key] = c.label; });
 });
 
-const SettingsPanel: React.FC<{ onClose?: () => void; onOpenModelManagement?: () => void; onOpenToolManagement?: () => void; onOpenAITab?: (main: string, sub: string) => void }> = ({ onClose, onOpenModelManagement, onOpenToolManagement, onOpenAITab }) => {
+const SettingsPanel: React.FC<{ onClose?: () => void; onOpenModelManagement?: () => void; onOpenToolManagement?: () => void; onOpenAITab?: (main: string, sub: string) => void; onOpenGroups?: (groupKey: string) => void }> = ({ onClose, onOpenModelManagement, onOpenToolManagement, onOpenAITab, onOpenGroups }) => {
   const { settings, updateSettings, resetSettings } = useAppSettings();
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
@@ -197,7 +34,6 @@ const SettingsPanel: React.FC<{ onClose?: () => void; onOpenModelManagement?: ()
   const textMuted = gs.textMuted;
 
   const [activeTab, setActiveTab] = useState<SettingsTab>('menu');
-  const [activeGroup, setActiveGroup] = useState<MenuEntry | null>(null);
   const [draft, setDraft] = useState<AppSettings>({ ...settings });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { showToast } = useToast();
@@ -287,7 +123,7 @@ const SettingsPanel: React.FC<{ onClose?: () => void; onOpenModelManagement?: ()
   // ---- Menu view ----
   if (activeTab === 'menu') {
     return (
-      <Box className="settings-panel" sx={{ width: '100%', color: textPrimary }}>
+      <Box className="settings-panel" sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', color: textPrimary }}>
           <Box sx={{ px: 1.5, pt: 1, pb: 0.75, display: 'flex', alignItems: 'center', gap: 1.25 }}>
             <Box sx={{ width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <svg width="22" height="22" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
@@ -306,7 +142,7 @@ const SettingsPanel: React.FC<{ onClose?: () => void; onOpenModelManagement?: ()
                 return (
                   <Box
                     key={entry.key}
-                    onClick={() => setActiveGroup(entry)}
+                    onClick={() => { onClose?.(); onOpenGroups?.(entry.key); }}
                     sx={{
                       display: 'flex', alignItems: 'center', gap: 1.25, px: 1.5, py: 0.75, borderRadius: '8px',
                       cursor: 'pointer',
@@ -318,7 +154,6 @@ const SettingsPanel: React.FC<{ onClose?: () => void; onOpenModelManagement?: ()
                       <Typography sx={{ fontSize: '0.8rem', fontWeight: 500, color: gs.textPrimary }}>{entry.label}</Typography>
                       <Typography sx={{ fontSize: '0.68rem', color: gs.textMuted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{entry.description}</Typography>
                     </Box>
-                    <StaffdeckIcon name="arrow" sx={{ fontSize: 16 }} style={{ color: gs.textMuted }} />
                   </Box>
                 );
               }
@@ -329,27 +164,9 @@ const SettingsPanel: React.FC<{ onClose?: () => void; onOpenModelManagement?: ()
     );
   }
 
-  // ---- Group sub-view (children as a dedicated view, like model dialog) ----
-  if (activeGroup && activeGroup.children) {
-    return (
-      <Box className="settings-panel" sx={{ width: '100%', color: textPrimary }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, px: 1.5, pt: 0.75, pb: 0.5 }}>
-          <IconButton size="small" onClick={() => setActiveGroup(null)} sx={{ color: gs.textMuted }}><StaffdeckIcon name="arrow" sx={{ fontSize: 16 }} rotate={180} /></IconButton>
-          <Box sx={{ color: gs.textMuted, display: 'flex', alignItems: 'center' }}>{activeGroup.icon}</Box>
-          <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: gs.textPrimary, flex: 1 }}>{activeGroup.label}</Typography>
-          <IconButton size="small" onClick={() => onClose?.()} sx={{ color: gs.textMuted, '&:hover': { color: gs.textPrimary } }}><StaffdeckIcon name="close" sx={{ fontSize: 16 }} /></IconButton>
-        </Box>
-        <Divider sx={{ mb: 0.5 }} />
-        <Box sx={{ px: 1.5, pb: 0.75, flex: 1, overflow: 'auto', minHeight: 0 }}>
-          {activeGroup.children.map((child) => renderLeaf(child, false))}
-        </Box>
-      </Box>
-    );
-  }
-
   // ---- Detail view — delegate to sub-components ----
   return (
-    <Box className="settings-panel" sx={{ width: '100%', color: textPrimary }}>
+    <Box className="settings-panel" sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', color: textPrimary }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, px: 1.5, pt: 0.75, pb: 0.5 }}>
         <IconButton size="small" onClick={() => setActiveTab('menu')} sx={{ color: gs.textMuted }}><StaffdeckIcon name="arrow" sx={{ fontSize: 16 }} rotate={180} /></IconButton>
         <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: gs.textPrimary, flex: 1 }}>{currentLabel}</Typography>
@@ -374,9 +191,9 @@ const SettingsPanel: React.FC<{ onClose?: () => void; onOpenModelManagement?: ()
   );
 };
 
-export interface SettingsPopoverProps { open: boolean; onClose: () => void; anchorEl: HTMLElement | null; onOpenModelManagement?: () => void; onOpenToolManagement?: () => void; onOpenAITab?: (main: string, sub: string) => void; }
+export interface SettingsPopoverProps { open: boolean; onClose: () => void; anchorEl: HTMLElement | null; onOpenModelManagement?: () => void; onOpenToolManagement?: () => void; onOpenAITab?: (main: string, sub: string) => void; onOpenGroups?: (groupKey: string) => void; }
 
-const SettingsPopover: React.FC<SettingsPopoverProps> = ({ open, onClose, anchorEl, onOpenModelManagement, onOpenToolManagement, onOpenAITab }) => {
+const SettingsPopover: React.FC<SettingsPopoverProps> = ({ open, onClose, anchorEl, onOpenModelManagement, onOpenToolManagement, onOpenAITab, onOpenGroups }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
@@ -420,7 +237,7 @@ const SettingsPopover: React.FC<SettingsPopoverProps> = ({ open, onClose, anchor
       }}
       hideBackdrop
     >
-      <SettingsPanel onClose={onClose} onOpenModelManagement={onOpenModelManagement} onOpenToolManagement={onOpenToolManagement} onOpenAITab={onOpenAITab} />
+      <SettingsPanel onClose={onClose} onOpenModelManagement={onOpenModelManagement} onOpenToolManagement={onOpenToolManagement} onOpenAITab={onOpenAITab} onOpenGroups={onOpenGroups} />
     </Popover>
   );
 };

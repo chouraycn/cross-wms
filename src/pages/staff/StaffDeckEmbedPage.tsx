@@ -1,10 +1,5 @@
 import { Box } from '@mui/material';
 import { useEffect, useRef } from 'react';
-import {
-  ensureDefaultSession,
-  getEnterpriseAuthSession,
-  type EnterpriseAuthSession,
-} from '../../components/staff/auth.js';
 
 /**
  * StaffDeckEmbedPage — 员工栏目 100% 复刻入口。
@@ -13,11 +8,8 @@ import {
  * 该产物是独立的 shadcn/Tailwind 构建，自带 Teal 设计系统，iframe 天然隔离主程序
  * MUI 主题，确保视觉与 StaffDeck-main 完全一致（不重写任何组件）。
  *
- * 登录态透传：
- * - 嵌入前端(iframe)在嵌入模式下以 default-user 直接进入、跳过登录页（后端无 token 时回退 default-user）。
- * - 若主程序已登录(本地有真实会话)，本页通过 postMessage 把会话下发给 iframe，iframe 接收后
- *   写入其 localStorage 并刷新以应用真实身份 —— 实现真正的「主程序登录态透传」。
- * - 生产环境父子同源(localStorage 共享)，本页 ensureDefaultSession 写入的会话 iframe 也能直接读到。
+ * 桌面端无员工认证登录体系：前后端均默认 default-user（admin）身份直接进入，
+ * 无需单独登录页或登录态透传。
  *
  * 侧边栏整合：
  * - 注入 CSS 隐藏 iframe 内 StaffDeck 自带侧边栏，由主程序侧边栏统一承载导航。
@@ -27,8 +19,6 @@ import {
  * warehouseMode：仓库员工场景下 iframe 直接打开 /staffdeck-app/#/workspace/chat，
  * 让用户进入工作区聊天界面选择仓库相关 agent；默认场景下打开 /staffdeck-app/ 入口。
  */
-const STAFFDECK_MSG_REQUEST_AUTH = 'STAFFDECK_REQUEST_AUTH';
-const STAFFDECK_MSG_AUTH = 'STAFFDECK_AUTH';
 const STAFFDECK_NAVIGATE = 'STAFFDECK_NAVIGATE';
 
 /** 隐藏 iframe 内 StaffDeck 侧边栏，让主程序侧边栏统一承载导航 */
@@ -74,18 +64,6 @@ const ROUTE_TRACKER_JS = `
 export default function StaffDeckEmbedPage({ warehouseMode = false, sidebarCollapsed = false }: { warehouseMode?: boolean; sidebarCollapsed?: boolean }) {
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
-  // 向 iframe 推送当前(或默认的)会话
-  const pushSessionToIframe = () => {
-    const iframe = iframeRef.current;
-    if (!iframe?.contentWindow) return;
-    const session: EnterpriseAuthSession =
-      getEnterpriseAuthSession() ?? ensureDefaultSession();
-    iframe.contentWindow.postMessage(
-      { type: STAFFDECK_MSG_AUTH, session },
-      '*',
-    );
-  };
-
   /** 注入 CSS 隐藏 iframe 内的 StaffDeck 侧边栏 + 注入路由追踪脚本 */
   const injectHideSidebarCSS = () => {
     const iframe = iframeRef.current;
@@ -122,14 +100,8 @@ export default function StaffDeckEmbedPage({ warehouseMode = false, sidebarColla
   };
 
   useEffect(() => {
-    // 确保本地有默认会话（同源时 iframe 可直接读到；也用于下发）
-    ensureDefaultSession();
-
     const onMessage = (event: MessageEvent) => {
-      if (event.data?.type === STAFFDECK_MSG_REQUEST_AUTH) {
-        // iframe 请求会话 → 下发当前/默认会话
-        pushSessionToIframe();
-      } else if (event.data?.type === STAFFDECK_NAVIGATE && event.data?.route) {
+      if (event.data?.type === STAFFDECK_NAVIGATE && event.data?.route) {
         // 主程序侧边栏导航指令 → 驱动 iframe 内 React Router
         navigateIframe(event.data.route);
       }
@@ -164,7 +136,6 @@ export default function StaffDeckEmbedPage({ warehouseMode = false, sidebarColla
         src={iframeSrc}
         title={warehouseMode ? '仓库员工 StaffDeck' : '员工 StaffDeck'}
         onLoad={() => {
-          pushSessionToIframe();
           injectHideSidebarCSS();
           // 仓库员工场景：iframe 加载后默认选中仓库专员（seed-agent-warehouse-specialist）
           // StaffDeck 内部通过 localStorage 'ultrarag_enterprise_agent_scope' 读取当前员工

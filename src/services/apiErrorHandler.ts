@@ -67,6 +67,18 @@ export function createApiError(error: any, context?: string): ApiError {
     };
   }
 
+  // 已是 ApiError 形状（如被 createApiError 二次包装，或被 request 透传）— 原样保留，避免丢失 message/userMessage
+  if (error && typeof error === 'object' && ('userMessage' in error || 'message' in error)) {
+    const maybe = error as Partial<ApiError>;
+    return {
+      code: maybe.code ?? -1,
+      message: maybe.message ?? String(error),
+      userMessage: maybe.userMessage ?? maybe.message ?? '发生未知错误，请稍后重试',
+      details: maybe.details,
+      retryable: maybe.retryable ?? true,
+    };
+  }
+
   return {
     code: -1,
     message: String(error),

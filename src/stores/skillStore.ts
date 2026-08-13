@@ -17,6 +17,7 @@
 import type { Skill, SkillAudit, UsageStats } from '../types/skill';
 import { getBuiltinSkillsSync, loadBuiltinSkills } from '../types/skill';
 import * as api from '../services/api';
+import { getErrorMessage } from '../services/apiErrorHandler';
 
 // ====== 内存缓存 ======
 
@@ -124,7 +125,7 @@ export async function refreshFromRemote(): Promise<void> {
     await loadAllUsageStats();
     notifyAll();
   } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
+    const msg = getErrorMessage(e);
     skillLoadError = msg;
     window.dispatchEvent(new CustomEvent('cdf-know-clow-api-error', { detail: { action: 'refreshFromRemote', error: msg } }));
   }
@@ -328,7 +329,7 @@ export async function initFromApi(): Promise<void> {
     notifyAll();
     // 使用统计由 SkillsPage / CommandPalette 等按需延迟加载，避免启动时额外请求
   } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
+    const msg = getErrorMessage(e);
     skillLoadError = msg;
     window.dispatchEvent(new CustomEvent('cdf-know-clow-api-error', { detail: { action: 'initFromApi', error: msg } }));
   }

@@ -153,6 +153,7 @@ const SettingsDialogShell: React.FC<SettingsDialogShellProps> = ({
             flexDirection: 'column',
             gap: 0.125,
             flexShrink: 0,
+            overflowY: 'auto',
           }}
         >
           {tabs.map(tab => {

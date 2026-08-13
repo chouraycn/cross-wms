@@ -133,11 +133,6 @@ body {
   transform: translateY(0);
 }
 
-/* 隐藏 SettingsPopover 的黑色透明遮罩 */
-.MuiPopover-root .MuiBackdrop-root {
-  display: none !important;
-}
-
 /* v2.2.1: ThinkingBlock 折叠态 hover 时显示复制按钮 */
 .Box-root:hover > .thinking-action-btn,
 [class*="MuiBox-root"]:hover > .thinking-action-btn {

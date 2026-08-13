@@ -2,14 +2,13 @@
  * StaffLayout — StaffDeck 模块的外层布局
  *
  * 职责：
- * 1. 随主应用启动注入默认桌面身份（ensureDefaultSession），不要求 admin 登录
- * 2. 渲染简化版侧边栏 + 顶部用户菜单
- * 3. 通过 React Context 将 currentUser/isAdmin/onLogout 注入到所有子页面
- * 4. 拦截 AppSidebar 的 onNavigate 回调，转换为 react-router 的 navigate 调用
+ * 1. 渲染简化版侧边栏 + 顶部用户条（桌面端无员工认证登录体系，始终默认身份）
+ * 2. 通过 React Context 将 currentUser/isAdmin 注入到所有子页面
+ * 3. 拦截 AppSidebar 的 onNavigate 回调，转换为 react-router 的 navigate 调用
  *
- * 设计原则：与 cross-wms 主应用联动 — 数字员工作为子模块随应用启动即获得身份，
- * 仅在 /staff, /enterprise, /workspace 路径下挂载。后端 staffAuth 中间件对无 token
- * 请求兜底 default-user，因此前端无需强制登录门。
+ * 设计原则：与 cross-wms 主应用联动 — 数字员工作为子模块随应用启动直接使用
+ * 默认身份（default-user / admin）。后端 staffAuth 中间件对无 token 请求兜底
+ * default-user，因此前端无需登录页、登录门或退出按钮。
  */
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
@@ -21,25 +20,23 @@ import {
   Activity,
   Bell,
   BookOpen,
-  Briefcase,
   Bug,
   CalendarClock,
-  ClipboardList,
   FileText,
-  Folder,
   Globe,
   History,
   Settings,
-  Sparkles,
   User,
   Users,
 } from 'lucide-react';
 
 import {
-  ensureDefaultSession,
+  DEFAULT_DESKTOP_USER,
   isEnterpriseAdmin,
   type EnterpriseAuthSession,
   type EnterpriseAuthUser,
+  getEnterpriseAuthSession,
+  ENTERPRISE_AUTH_STORAGE_KEY,
 } from './auth.js';
 import { EnterpriseRoute } from './enums/routes.js';
 import BrandLogo from './BrandLogo.js';
@@ -80,13 +77,6 @@ const PROFILE_NAV: NavItem[] = [
   { route: EnterpriseRoute.Persona, label: '岗位人设', Icon: User },
 ];
 
-const CAPABILITY_NAV: NavItem[] = [
-  { route: EnterpriseRoute.Knowledge, label: '知识库', Icon: Folder },
-  { route: EnterpriseRoute.GeneralSkills, label: '技能', Icon: Sparkles },
-  { route: EnterpriseRoute.Skills, label: 'SOP', Icon: ClipboardList },
-  { route: EnterpriseRoute.Tools, label: '工具', Icon: Briefcase },
-];
-
 const OBSERVE_NAV: NavItem[] = [
   { route: EnterpriseRoute.Traces, label: '会话 Trace', Icon: Activity },
   { route: EnterpriseRoute.Debug, label: 'Agent 调试', Icon: Bug },
@@ -103,7 +93,7 @@ const SYSTEM_NAV: NavItem[] = [
 
 function resolveSelected(pathname: string): string {
   // 精确匹配优先，其次前缀匹配
-  const all = [...PRIMARY_NAV, ...PROFILE_NAV, ...CAPABILITY_NAV, ...OBSERVE_NAV, ...HELP_NAV, ...SYSTEM_NAV];
+  const all = [...PRIMARY_NAV, ...PROFILE_NAV, ...OBSERVE_NAV, ...HELP_NAV, ...SYSTEM_NAV];
   const exact = all.find((item) => pathname === item.route);
   if (exact) return exact.route;
   const prefix = all
@@ -198,13 +188,6 @@ function StaffSidebar({
         </Box>
 
         <Box sx={{ mt: '16px', mb: '8px', px: '14px', fontSize: '10px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--sidebar-foreground)' }}>
-          员工能力
-        </Box>
-        <Box component="nav" sx={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-          {CAPABILITY_NAV.map(renderNavButton)}
-        </Box>
-
-        <Box sx={{ mt: '16px', mb: '8px', px: '14px', fontSize: '10px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--sidebar-foreground)' }}>
           观测与调试
         </Box>
         <Box component="nav" sx={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
@@ -231,26 +214,26 @@ export type StaffLayoutProps = {
 export default function StaffLayout({ children }: StaffLayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  // CDF Know Claw 桌面应用：数字员工随主应用启动即获得默认身份，无需 admin 登录门
+  // 桌面端：无员工认证登录体系；直接从 localStorage 读取已有会话(可空)，
+  // 若无会话则使用 DEFAULT_DESKTOP_USER(admin) 作为上下文，避免登录门。
   const [session, setSession] = useState<EnterpriseAuthSession | null>(() =>
-    ensureDefaultSession(),
+    getEnterpriseAuthSession(),
   );
 
-  // 监听其他标签页的登出事件
+  // 监听其他标签页的 storage 变更：保持 currentUser 一致
   useEffect(() => {
     const onStorage = (event: StorageEvent) => {
-      if (event.key === 'ultrarag_auth' && !event.newValue) {
-        setSession(null);
+      if (event.key === ENTERPRISE_AUTH_STORAGE_KEY) {
+        setSession(getEnterpriseAuthSession());
       }
     };
     window.addEventListener('storage', onStorage);
     return () => window.removeEventListener('storage', onStorage);
   }, []);
 
-  // 无登录门场景：退出即重置为默认桌面身份，避免进入无 session 的退化态
+  // 桌面端无真实登录/退出概念；onLogout 保持空函数以维持 Context 形状兼容
   const handleLogout = useCallback(() => {
-    const next = ensureDefaultSession();
-    setSession(next);
+    // no-op：桌面端始终默认身份
   }, []);
 
   const handleNavigate = useCallback(
@@ -260,7 +243,7 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
     [navigate],
   );
 
-  const currentUser = session?.user ?? null;
+  const currentUser = session?.user ?? DEFAULT_DESKTOP_USER;
   const isAdmin = isEnterpriseAdmin(currentUser);
   const selected = useMemo(() => resolveSelected(location.pathname), [location.pathname]);
 
@@ -295,22 +278,7 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
             }}
           >
             <Box component="span" sx={{ fontSize: '12px', color: 'var(--muted-foreground)' }}>
-              {currentUser?.display_name || currentUser?.username || '未登录'}
-            </Box>
-            <Box
-              component="button"
-              type="button"
-              onClick={handleLogout}
-              sx={{
-                borderRadius: '6px',
-                px: '8px',
-                py: '4px',
-                fontSize: '12px',
-                color: 'var(--muted-foreground)',
-                '&:hover': { bgcolor: 'var(--surface-muted)' },
-              }}
-            >
-              退出
+              {currentUser?.display_name || currentUser?.username || '默认用户'}
             </Box>
           </Box>
           {/* 主内容区 */}

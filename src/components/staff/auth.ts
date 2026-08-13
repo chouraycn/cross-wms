@@ -1,117 +1,119 @@
 /**
- * StaffDeck auth session utilities. Stores the enterprise auth session in
- * `localStorage` and exposes helpers for the API client to attach the
- * bearer token.
+ * StaffDeck 会话上下文工具（2026-08-13 简化版）。
+ *
+ * 变更：删除独立「员工认证登录」体系 — 移除登录页、真实 token 登录门、
+ * ensureDefaultSession 等确保会话的强制逻辑。
+ *
+ * 保留：
+ * - EnterpriseAuthUser / EnterpriseAuthSession 类型结构：被 StaffLayout
+ *   Context、权限判定、employee.ts、client.ts、EmployeeProfileEditor 等下游
+ *   直接使用的 currentUser 上下文类型，保持字段兼容。
+ * - isEnterpriseAdmin / isEmployeeOwnedBy / isGalleryEmployee / isAdmin：权限判定
+ * - getEnterpriseAuthSession / setEnterpriseAuthSession / clearEnterpriseAuthSession /
+ *   getToken / setToken / removeToken / getCurrentUser / isAuthenticated：
+ *   API 客户端(client.ts) 仍通过 getToken() 读取 Bearer 头；桌面端 token 为空，
+ *   后端 staffAuth 中间件会兜底 default-user（admin）。
+ *
+ * 桌面端无强制登录：session 可存在(本地缓存或 iframe 透传)或不存在，不存在时
+ * 所有下游均使用 null/undefined + 后端 default-user 兜底，不再报错或重定向到登录页。
  */
 
 export type EnterpriseAuthUser = {
-  id: string
-  tenant_id: string
-  username: string
-  display_name?: string
-  role: 'admin' | 'member'
-}
+  id: string;
+  tenant_id: string;
+  username: string;
+  display_name?: string;
+  role: 'admin' | 'member';
+};
 
 export type EnterpriseAuthSession = {
-  token: string
-  user: EnterpriseAuthUser
-}
+  token: string;
+  user: EnterpriseAuthUser;
+};
 
-export const ENTERPRISE_AUTH_STORAGE_KEY = 'ultrarag_auth'
+export const ENTERPRISE_AUTH_STORAGE_KEY = 'ultrarag_auth';
+
+/** 桌面端默认身份（内存常量，不再写入 localStorage 作为登录门） */
+export const DEFAULT_DESKTOP_USER: EnterpriseAuthUser = {
+  id: 'default-user',
+  tenant_id: 'default',
+  username: 'default-user',
+  display_name: '默认用户',
+  role: 'admin',
+};
 
 export function getEnterpriseAuthSession(): EnterpriseAuthSession | null {
-  return readStoredSession(ENTERPRISE_AUTH_STORAGE_KEY)
+  return readStoredSession(ENTERPRISE_AUTH_STORAGE_KEY);
 }
 
 export function setEnterpriseAuthSession(session: EnterpriseAuthSession): void {
-  window.localStorage.setItem(ENTERPRISE_AUTH_STORAGE_KEY, JSON.stringify(session))
+  if (typeof window === 'undefined' || !window.localStorage) return;
+  window.localStorage.setItem(ENTERPRISE_AUTH_STORAGE_KEY, JSON.stringify(session));
 }
 
 export function clearEnterpriseAuthSession(): void {
-  window.localStorage.removeItem(ENTERPRISE_AUTH_STORAGE_KEY)
-}
-
-/**
- * 确保存在有效 session：无登录态时自动注入默认桌面身份。
- * 用于 CDF Know Claw 桌面应用 — 主应用本身无登录体系，
- * 数字员工模块作为其子模块，随应用启动即获得默认身份（default-user / admin），
- * 不需要用户手动 admin/admin 登录。
- *
- * 后端 staffAuth 中间件已对无 token 请求兜底 default-user，因此此处即使
- * 不写 token 也能正常访问 API；写入默认 session 仅为保持前端上下文一致性。
- */
-export function ensureDefaultSession(): EnterpriseAuthSession {
-  const existing = getEnterpriseAuthSession()
-  if (existing?.token && existing?.user?.id) return existing
-
-  const defaultSession: EnterpriseAuthSession = {
-    token: '',
-    user: {
-      id: 'default-user',
-      tenant_id: 'default',
-      username: 'default-user',
-      display_name: '默认用户',
-      role: 'admin',
-    },
-  }
-  setEnterpriseAuthSession(defaultSession)
-  return defaultSession
+  if (typeof window === 'undefined' || !window.localStorage) return;
+  window.localStorage.removeItem(ENTERPRISE_AUTH_STORAGE_KEY);
 }
 
 function readStoredSession(key: string): EnterpriseAuthSession | null {
-  const raw = window.localStorage.getItem(key)
-  if (!raw) return null
+  if (typeof window === 'undefined' || !window.localStorage) return null;
+  const raw = window.localStorage.getItem(key);
+  if (!raw) return null;
   try {
-    const parsed = JSON.parse(raw) as EnterpriseAuthSession
-    // 允许 token='' 的 desktop 默认会话（后端对无 token 请求兜底 default-user）。
-    // 原先 !parsed.token 把空字符串视为无效，导致 iframe 内 getEnterpriseAuthSession()
-    // 一直返回 null，反复向父窗口请求 AUTH，父窗口发送 token='' 又被忽略 → 闪动循环。
-    if (!parsed.user?.id) return null
-    return parsed
+    const parsed = JSON.parse(raw) as EnterpriseAuthSession;
+    if (!parsed.user?.id) return null;
+    return parsed;
   } catch {
-    return null
+    return null;
   }
 }
 
 export function isEnterpriseAdmin(user?: EnterpriseAuthUser | null): boolean {
-  return user?.role === 'admin'
+  // 桌面端未登录时：视为 admin（后端兜底 default-user = admin）
+  if (!user) return true;
+  return user.role === 'admin';
 }
 
 export function isGalleryEmployee(agent?: { metadata?: Record<string, any> } | null): boolean {
-  return agent?.metadata?.published_to_gallery === true
+  return agent?.metadata?.published_to_gallery === true;
 }
 
 export function isEmployeeOwnedBy(
   agent: { metadata?: Record<string, any> },
   user?: EnterpriseAuthUser | null,
 ): boolean {
-  if (!user) return false
-  const metadata = agent.metadata || {}
-  const ownerUserId = metadata.owner_user_id
-  return ownerUserId === user.id
+  if (!user) {
+    // 桌面端默认 admin：视为拥有所有非 gallery 员工
+    return !isGalleryEmployee(agent);
+  }
+  const metadata = agent.metadata || {};
+  const ownerUserId = metadata.owner_user_id;
+  return ownerUserId === user.id;
 }
 
 // --- Token / current-user convenience helpers -------------------------------
 
 export function getToken(): string | null {
-  return getEnterpriseAuthSession()?.token || null
+  return getEnterpriseAuthSession()?.token || null;
 }
 
 export function setToken(token: string): void {
-  const existing = getEnterpriseAuthSession()
+  const existing = getEnterpriseAuthSession();
   if (existing) {
-    setEnterpriseAuthSession({ ...existing, token })
+    setEnterpriseAuthSession({ ...existing, token });
   }
 }
 
 export function removeToken(): void {
-  clearEnterpriseAuthSession()
+  clearEnterpriseAuthSession();
 }
 
 export function getCurrentUser(): EnterpriseAuthUser | null {
-  return getEnterpriseAuthSession()?.user || null
+  const stored = getEnterpriseAuthSession();
+  return stored?.user ?? null;
 }
 
 export function isAuthenticated(): boolean {
-  return Boolean(getToken())
+  return Boolean(getToken());
 }

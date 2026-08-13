@@ -23,6 +23,7 @@ import StaffDeckPortal from './components/staff/StaffDeckPortal';
 import { automationEngine } from './services/automation';
 import { isWKWebView, isMacOSApp } from './utils/env';
 import { recordRender, markPhase, endPhase } from './services/performanceTelemetry';
+import SettingsGroupsDialog from './components/Layout/SettingsGroupsDialog';
 const SettingsPopover = React.lazy(() => import('./components/Layout/SettingsPopover'));
 
 // v3.2: WKWebView 环境检测，用于禁用高成本效果
@@ -117,12 +118,12 @@ const MonitoringHubPage = React.lazy(() => import('./pages/MonitoringHubPage'));
 
 // ===================== StaffDeck 模块懒加载 =====================
 // 2026-08-05：存量 MUI 版数字员工页面已全部清理，统一收敛到 iframe 版（/staffdeck）。
-// 仅保留 3 个 iframe 版未覆盖的运维页（traces/debug/tutorial）与登录页。
+// 仅保留 3 个 iframe 版未覆盖的运维页（traces/debug/tutorial）。
+// 2026-08-13：删除员工认证登录体系（不再有独立登录页/强制登录门），桌面端始终默认身份。
 import StaffLayout, { withStaffAuth as wrapStaffAuth } from './components/staff/StaffLayout';
 const StaffTracesPage = React.lazy(() => import('./pages/staff/TracesPage').then(m => ({ default: wrapStaffAuth(m.default) })));
 const StaffDebugPage = React.lazy(() => import('./pages/staff/DebugPage').then(m => ({ default: wrapStaffAuth(m.default) })));
 const StaffTutorialPage = React.lazy(() => import('./pages/staff/TutorialPage').then(m => ({ default: wrapStaffAuth(m.default) })));
-const StaffLoginPage = React.lazy(() => import('./pages/staff/LoginPage'));
 
 /** 强调色映射 */
 const ACCENT_MAP: Record<AccentColor, { main: string; light: string }> = {
@@ -609,8 +610,9 @@ function getPageRefreshKey(pathname: string): string {
 
 /* ===================== 存量 MUI 版数字员工 UI 已清理 =====================
  * 2026-08-05：src/pages/staff/* 下 39 个 MUI 版数字员工页面文件已物理删除（整目录重定向到 /staffdeck），
- * 统一收敛到 iframe 版（/staffdeck）。仅保留 5 个 iframe 版未覆盖的页面
- * （DebugPage / TracesPage / TutorialPage / LoginPage / StaffDeckEmbedPage）。iframe 是数字员工的唯一复刻实现。
+ * 统一收敛到 iframe 版（/staffdeck）。仅保留 4 个 iframe 版未覆盖的页面
+ * （DebugPage / TracesPage / TutorialPage / StaffDeckEmbedPage）。iframe 是数字员工的唯一复刻实现。
+ * 2026-08-13：删除独立「员工认证登录」体系，桌面端默认 default-user，不再保留登录页。
  */
 
 /** 主布局（需要在 Router 内部以使用 useLocation / useNavigate） */
@@ -670,7 +672,16 @@ const SkillLoadErrorListener: React.FC = () => {
     const handler = (e: Event) => {
       const detail = (e as CustomEvent).detail;
       if (detail?.action !== 'initFromApi' && detail?.action !== 'refreshFromRemote') return;
-      const msg = detail?.error ? String(detail.error) : '未知错误';
+      // 安全字符串化：避免 error 为对象时显示 [object Object]
+      const raw = detail?.error;
+      let msg: string;
+      if (raw == null) msg = '未知错误';
+      else if (typeof raw === 'string') msg = raw;
+      else if (raw instanceof Error) msg = raw.message;
+      else if (typeof raw === 'object') {
+        const r = raw as any;
+        msg = r.userMessage || r.message || (() => { try { return JSON.stringify(raw); } catch { return String(raw); } })();
+      } else msg = String(raw);
       const prefix = detail?.action === 'refreshFromRemote' ? '技能刷新失败' : '技能加载失败';
       showToast(`${prefix}：${msg}`, 'error', 8000);
     };
@@ -825,6 +836,19 @@ const MainLayout: React.FC = () => {
   const [settingsPopoverOpen, setSettingsPopoverOpen] = useState(false);
   const settingsButtonRef = useRef<HTMLDivElement | null>(null);
 
+  // 设置分组弹窗（点击设置 Popover 内的分组 → 弹出两栏弹窗）
+  const [groupsDialogOpen, setGroupsDialogOpen] = useState(false);
+  const [groupsDialogKey, setGroupsDialogKey] = useState<string | undefined>(undefined);
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ groupKey?: string }>).detail;
+      setGroupsDialogKey(detail?.groupKey);
+      setGroupsDialogOpen(true);
+    };
+    window.addEventListener('cdf-open-settings-groups-dialog', handler as EventListener);
+    return () => window.removeEventListener('cdf-open-settings-groups-dialog', handler as EventListener);
+  }, []);
+
   // 自动隐藏滚动条：在 pywebview 环境下禁用（改用始终可见的宽滚动条）
   const scrollRef = useAutoHideScrollbar(!isPy);
 
@@ -867,11 +891,19 @@ const MainLayout: React.FC = () => {
             open={settingsPopoverOpen}
             onClose={() => setSettingsPopoverOpen(false)}
             anchorEl={settingsButtonRef.current}
-            onOpenModelManagement={() => window.dispatchEvent(new CustomEvent('cdf-open-ai-settings-dialog', { detail: { mainTab: 'ai', subTab: 'model' } }))}
+            onOpenModelManagement={() => window.dispatchEvent(new CustomEvent('cdf-open-ai-settings-dialog', { detail: { mainTab: 'basic', subTab: 'model' } }))}
             onOpenToolManagement={() => window.dispatchEvent(new CustomEvent('cdf-open-tool-management-dialog'))}
             onOpenAITab={(main, sub) => window.dispatchEvent(new CustomEvent('cdf-open-ai-settings-dialog', { detail: { mainTab: main, subTab: sub } }))}
+            onOpenGroups={(key) => window.dispatchEvent(new CustomEvent('cdf-open-settings-groups-dialog', { detail: { groupKey: key } }))}
           />
         </Suspense>
+
+        {/* 设置分组弹窗：点击设置 Popover 内的分组（通讯→仓储）弹出 */}
+        <SettingsGroupsDialog
+          open={groupsDialogOpen}
+          initialGroupKey={groupsDialogKey}
+          onClose={() => setGroupsDialogOpen(false)}
+        />
 
       {/* Main content area */}
       {/* v1.7.15: 收起侧边栏后左边距也要保持，让灰色背景可见 */}
@@ -1071,8 +1103,6 @@ const MainLayout: React.FC = () => {
                     <Route path="/enterprise/traces" element={<StaffLayout><StaffTracesPage /></StaffLayout>} />
                     <Route path="/enterprise/debug" element={<StaffLayout><StaffDebugPage /></StaffLayout>} />
                     <Route path="/enterprise/tutorial" element={<StaffLayout><StaffTutorialPage /></StaffLayout>} />
-                    {/* 登录页（独立入口，不收敛：iframe 版嵌入模式跳过登录，此处是唯一可路由的登录页） */}
-                    <Route path="/staff/login" element={<StaffLoginPage />} />
 
                     {/* ===================== 员工 100% 复刻入口 =====================
                         实际 iframe 由 App 层的 StaffDeckPortal 常驻挂载并控制显隐，

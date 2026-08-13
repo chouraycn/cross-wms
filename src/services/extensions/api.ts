@@ -52,6 +52,7 @@ export interface ExtensionStats {
   total: number;
   enabled: number;
   disabled: number;
+  draft: number;
   byKind: Record<string, number>;
 }
 
@@ -182,4 +183,53 @@ export async function fetchExtensionKinds(): Promise<ExtensionKind[]> {
   }
   const json = await res.json();
   return (json.data ?? json) as ExtensionKind[];
+}
+
+/** 创建扩展 */
+export interface CreateExtensionInput {
+  id: string;
+  name: string;
+  description?: string;
+  kind?: ExtensionInfo['kind'];
+  version?: string;
+}
+export async function createExtension(
+  input: CreateExtensionInput,
+): Promise<ExtensionInfo> {
+  const res = await fetchWithTimeout(`${BASE}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(err.error || `API error ${res.status}`);
+  }
+  const json = await res.json();
+  return (json.data ?? json) as ExtensionInfo;
+}
+
+/** 删除扩展 */
+export async function deleteExtension(id: string): Promise<{ success: boolean; message: string }> {
+  const res = await fetchWithTimeout(`${BASE}/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(err.error || `API error ${res.status}`);
+  }
+  return await res.json().then((j) => j.data ?? j);
+}
+
+/** 从发现列表加载一个扩展（未在运行时列表中的） */
+export async function importDiscoveredExtension(id: string): Promise<{ success: boolean; message: string }> {
+  const res = await fetchWithTimeout(`${BASE}/import-discovered/${encodeURIComponent(id)}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(err.error || `API error ${res.status}`);
+  }
+  return await res.json().then((j) => j.data ?? j);
 }

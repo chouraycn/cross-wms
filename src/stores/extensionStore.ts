@@ -6,6 +6,7 @@
 
 import * as api from '../services/extensions/api';
 import type {
+  CreateExtensionInput,
   ExtensionInfo,
   ExtensionStats,
   ExtensionKind,
@@ -198,6 +199,62 @@ export async function loadAllExtensionsAction(): Promise<void> {
     error = e instanceof Error ? e.message : String(e);
   } finally {
     loading = false;
+    notifyAll();
+  }
+}
+
+export async function createExtensionAction(input: CreateExtensionInput): Promise<ExtensionInfo | null> {
+  loading = true;
+  error = null;
+  notifyAll();
+
+  try {
+    const created = await api.createExtension(input);
+    await refreshExtensionsFromApi();
+    await refreshExtensionStats();
+    await discoverExtensionsFromApi();
+    return created;
+  } catch (e) {
+    error = e instanceof Error ? e.message : String(e);
+    return null;
+  } finally {
+    loading = false;
+    notifyAll();
+  }
+}
+
+export async function deleteExtensionAction(id: string): Promise<void> {
+  actionLoading.add(id);
+  error = null;
+  notifyAll();
+
+  try {
+    await api.deleteExtension(id);
+    await refreshExtensionsFromApi();
+    await refreshExtensionStats();
+    await discoverExtensionsFromApi();
+  } catch (e) {
+    error = e instanceof Error ? e.message : String(e);
+  } finally {
+    actionLoading.delete(id);
+    notifyAll();
+  }
+}
+
+export async function importDiscoveredExtensionAction(id: string): Promise<void> {
+  actionLoading.add(id);
+  error = null;
+  notifyAll();
+
+  try {
+    await api.importDiscoveredExtension(id);
+    await refreshExtensionsFromApi();
+    await refreshExtensionStats();
+    await discoverExtensionsFromApi();
+  } catch (e) {
+    error = e instanceof Error ? e.message : String(e);
+  } finally {
+    actionLoading.delete(id);
     notifyAll();
   }
 }
