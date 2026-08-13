@@ -353,7 +353,7 @@ setTimeout(() => {
 }, 400);
 
 // ========== 数字员工(StaffDeck) API 适配层 ==========
-// 原前端(StaffDeck-main)调用 /api/auth|/api/enterprise|/api/chat/*，后端实际挂在 /api/staffdeck/*。
+// 原前端(StaffDeck-main)调用 /api/enterprise|/api/chat/*，后端实际挂在 /api/staffdeck/*。
 // 此处只改写 req.url 前缀，转发给已注册的真实 staff 路由，不做任何业务逻辑。
 // 关键约束：
 //  1) 必须注册在所有 API 路由(含 chatRouter、registerStaffRoutes)之前，否则改写后的请求无法命中目标路由。
@@ -361,6 +361,7 @@ setTimeout(() => {
 //     后者是主程序遗留 chat 端点(chatRouter 挂载于 /api)，改写会破坏主程序聊天。
 //  3) 原前端 /api/chat/* 命名空间整体对应后端 /api/staffdeck/chat/*(chatStream 承载完整命名空间)，
 //     仅 scheduled-tasks / ui-config / agents(列表) 在 chat 之外，需精确优先覆盖。
+// 2026-08-13：删除员工认证登录体系（auth 路由/重写映射全部移除），桌面端默认 default-user。
 const STAFFDECK_API_REWRITES: Array<[RegExp, string]> = [
   // 精确优先：覆盖 chatStream 命名空间之外、或位置不同的独立路由
   [/^\/api\/chat\/scheduled-tasks\b/, '/api/staffdeck/scheduled-tasks'],
@@ -370,8 +371,6 @@ const STAFFDECK_API_REWRITES: Array<[RegExp, string]> = [
   [/^\/api\/chat\//, '/api/staffdeck/chat/'],
   // enterprise 命名空间 → staffdeck
   [/^\/api\/enterprise\b/, '/api/staffdeck'],
-  // auth 命名空间 → staffdeck/auth
-  [/^\/api\/auth\b/, '/api/staffdeck/auth'],
 ];
 app.use((req, _res, next) => {
   for (const [pattern, replacement] of STAFFDECK_API_REWRITES) {
@@ -494,7 +493,7 @@ app.use('/api/inventory-transactions', lazyRouter(() => import('./routes/invento
 // ========== v3.0+: 低频路由延迟加载（参照 openclaw 轻量入口设计） ==========
 // 这些路由在首次请求时才动态 import，减少启动时间和内存占用
 // P2 安全加固：插件路由认证中间件（仅对写操作/敏感路径强制认证，需在 lazyRouter 之前注册）
-import { pluginRouteAuthMiddleware } from './gateway/pluginRouteAuth.js';
+import { pluginRouteAuthMiddleware, configurePluginRouteAuth } from './gateway/pluginRouteAuth.js';
 app.use('/api/plugins', pluginRouteAuthMiddleware);
 app.use('/api/extensions', pluginRouteAuthMiddleware);
 app.use('/api/plugins', lazyRouter(() => import('./routes/plugins.js'), undefined, 'plugins'));
@@ -606,6 +605,9 @@ if (gatewayApiKeys.length > 0) {
   const devKey = generateDevApiKey();
   addApiKey(devKey);
   logger.info(`[Gateway] 开发模式 API Key: ${devKey}`);
+  // 开发模式下禁用插件路由认证，方便前端本地调试
+  configurePluginRouteAuth({ disabled: true });
+  logger.info('[PluginRouteAuth] 开发模式：插件路由认证已禁用');
 }
 
 app.use('/v1', gatewayRouter);           // OpenAI 兼容 API: /v1/chat/completions, /v1/models
@@ -679,7 +681,6 @@ app.use('/api/staffdeck/traces', lazyRouter(() => import('./routes/staff/traces.
 app.use('/api/staffdeck/ui-config', lazyRouter(() => import('./routes/staff/uiConfig.js'), undefined, 'staff-ui-config'));
 app.use('/api/staffdeck/persona', lazyRouter(() => import('./routes/staff/persona.js'), undefined, 'staff-persona'));
 app.use('/api/staffdeck/sessions', lazyRouter(() => import('./routes/staff/sessions.js'), undefined, 'staff-sessions'));
-app.use('/api/staffdeck/auth', lazyRouter(() => import('./routes/staff/auth.js'), undefined, 'staff-auth'));
 app.use('/api/staffdeck/mock', lazyRouter(() => import('./routes/staff/mock.js'), undefined, 'staff-mock'));
 // H5: 路由命中率监控 API（全局/租户/员工命中率 + 冷启动 fallback 原因）
 app.use('/api/staffdeck/route-metrics', lazyRouter(() => import('./routes/staff/routeMetrics.js'), undefined, 'staff-route-metrics'));
@@ -807,8 +808,17 @@ server.listen(PORT, () => {
           logger.info('[Plugin Registry] 插件工具已加载:', pluginToolNames.join(', '));
         }
       }),
-      extensionLoader.loadAll().then((count) => {
+      extensionLoader.loadAll().then(async (count) => {
         logger.info(`[Extension Loader] 扩展加载完成: ${count} 个扩展已加载`);
+        // 恢复 DB 中标记为已启用的扩展，使其能力重新注册到 server 端注册表
+        try {
+          const restored = await extensionLoader.restoreEnabledOnStartup();
+          if (restored > 0) {
+            logger.info(`[Extension Loader] 已恢复 ${restored} 个已启用扩展的能力注册`);
+          }
+        } catch (err) {
+          logger.warn('[Extension Loader] 恢复已启用扩展失败（非阻塞）:', err instanceof Error ? err.message : String(err));
+        }
       }).catch((err) => {
         logger.warn('[Extension Loader] 扩展加载失败（非阻塞）:', err instanceof Error ? err.message : String(err));
       }),

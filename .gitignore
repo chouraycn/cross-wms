@@ -32,6 +32,7 @@ venv/
 
 # OS
 .DS_Store
+DS_Store
 Thumbs.db
 
 # Env
@@ -125,3 +126,40 @@ apps/macos/Package.resolved
 # package-lock.json
 .wip-unfinished/
 .dev-data/
+
+# Temp / diagnostic scripts（一次性或 Agent 草稿脚本）
+_tmp*
+.tmp-*/
+_*.mjs
+_*.js
+_*.py
+.*.py
+*.mjs.tmp
+
+# Deliverables / reports generated locally
+deliverables/
+TEST_REPORT_*.md
+*.md.draft
+*.png.tmp
+
+# Screenshot & e2e-artifacts that aren't fixtures
+screenshot-*.png
+e2e_screenshots/
+preview-extensions*.mjs
+diagnose*.mjs
+compare-pages.mjs
+precise-compare*.mjs
+verify-structure.js
+
+# One-off scripts under scripts/（仅保留 verify.mjs 等持久脚本）
+scripts/audit.mjs
+scripts/clean-audit.mjs
+scripts/debug-pages.mjs
+scripts/final.mjs
+scripts/screenshot-compare*.mjs
+
+# CLI temp workspace
+cli/
+
+# Runbook & misc draft markdown
+UPSTREAM_SYNC.md

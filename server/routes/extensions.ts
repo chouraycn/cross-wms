@@ -10,6 +10,58 @@ import { extensionLoader } from '../../extensions/index.js';
 
 const router = Router();
 
+// POST /api/extensions — 创建扩展（写入 manifest + index.ts 模板并注册）
+router.post('/', async (req, res) => {
+  try {
+    const body = req.body || {};
+    if (!body.id || !String(body.id).trim()) {
+      return res.status(400).json({ error: 'id 必填' });
+    }
+    const manifest = await extensionLoader.create({
+      id: String(body.id),
+      name: String(body.name ?? body.id),
+      description: body.description ? String(body.description) : '',
+      kind: body.kind,
+      version: body.version,
+    });
+    if (!manifest) {
+      return res.status(400).json({ error: '创建失败（id 可能重复）' });
+    }
+    res.status(201).json({ data: manifest, message: '扩展已创建' });
+  } catch (e) {
+    res.status(500).json({ error: `创建扩展失败: ${e instanceof Error ? e.message : String(e)}` });
+  }
+});
+
+// POST /api/extensions/import-discovered/:id — 将 discover 结果加载到运行时
+router.post('/import-discovered/:id', async (req, res) => {
+  try {
+    const manifests = await extensionLoader.discover();
+    const manifest = manifests.find((m) => m.id === req.params.id);
+    if (!manifest) return res.status(404).json({ error: '未发现该扩展 manifest' });
+    const loaded = await extensionLoader.load(manifest);
+    res.json({
+      success: loaded,
+      message: loaded ? '扩展已加载' : '扩展加载失败或已存在',
+    });
+  } catch (e) {
+    res.status(500).json({ error: `加载发现扩展失败: ${e instanceof Error ? e.message : String(e)}` });
+  }
+});
+
+// DELETE /api/extensions/:id — 删除扩展
+router.delete('/:id', async (req, res) => {
+  try {
+    const result = await extensionLoader.remove(req.params.id);
+    if (!result.success) {
+      return res.status(404).json({ error: result.message || '删除失败' });
+    }
+    ok(res, { success: true, message: result.message });
+  } catch (e) {
+    res.status(500).json({ error: `删除扩展失败: ${e instanceof Error ? e.message : String(e)}` });
+  }
+});
+
 // GET /api/extensions — 列表
 router.get('/', (req, res) => {
   try {
@@ -124,10 +176,15 @@ router.post('/load-all', async (req, res) => {
 });
 
 // GET /api/extensions/stats/summary — 统计信息
-router.get('/stats/summary', (req, res) => {
+router.get('/stats/summary', async (req, res) => {
   try {
     const extensions = extensionLoader.list();
     const enabled = extensions.filter((e) => e.enabled).length;
+
+    // 草稿 = 已发现但未加载的扩展（磁盘上有 manifest 但未注册到运行时）
+    const discovered = await extensionLoader.discover();
+    const loadedIds = new Set(extensions.map((e) => e.id));
+    const draft = discovered.filter((m) => !loadedIds.has(m.id)).length;
 
     const byKind: Record<string, number> = {};
     for (const ext of extensions) {
@@ -139,6 +196,7 @@ router.get('/stats/summary', (req, res) => {
         total: extensions.length,
         enabled,
         disabled: extensions.length - enabled,
+        draft,
         byKind,
       },
     });
@@ -183,10 +241,53 @@ router.get('/:id', (req, res) => {
         kind: ext.manifest.kind,
         enabled: ext.enabled,
         manifest: ext.manifest,
+        config: extensionLoader.getConfig(ext.id),
+        registeredTools: extensionLoader.getRegisteredToolNames(ext.id),
       },
     });
   } catch (e) {
     res.status(500).json({ error: `获取扩展详情失败: ${e instanceof Error ? e.message : String(e)}` });
+  }
+});
+
+// GET /api/extensions/:id/tools — 扩展注册的工具名列表
+router.get('/:id/tools', (req, res) => {
+  try {
+    const ext = extensionLoader.get(req.params.id);
+    if (!ext) {
+      return res.status(404).json({ error: '扩展不存在' });
+    }
+    ok(res, { tools: extensionLoader.getRegisteredToolNames(req.params.id) });
+  } catch (e) {
+    res.status(500).json({ error: `获取扩展工具失败: ${e instanceof Error ? e.message : String(e)}` });
+  }
+});
+
+// POST /api/extensions/:id/tools/:name/invoke — 冒烟测试：调用扩展注册的工具
+router.post('/:id/tools/:name/invoke', async (req, res) => {
+  try {
+    const ext = extensionLoader.get(req.params.id);
+    if (!ext) {
+      return res.status(404).json({ error: '扩展不存在' });
+    }
+    if (!ext.enabled) {
+      return res.status(400).json({ error: '扩展未启用' });
+    }
+    const toolName = req.params.name;
+    const registered = extensionLoader.getRegisteredToolNames(req.params.id);
+    if (!registered.includes(toolName)) {
+      return res.status(404).json({ error: `工具 ${toolName} 不属于扩展 ${req.params.id}` });
+    }
+    const { executeToolCall } = await import('../engine/toolRegistry.js');
+    const args = (req.body?.args ?? req.body?.input ?? {}) as Record<string, unknown>;
+    const result = await executeToolCall({
+      id: `smoke-${Date.now()}`,
+      type: 'function',
+      function: { name: toolName, arguments: JSON.stringify(args) },
+    } as never);
+    ok(res, { result });
+  } catch (e) {
+    res.status(500).json({ error: `调用工具失败: ${e instanceof Error ? e.message : String(e)}` });
   }
 });
 

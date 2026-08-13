@@ -19,6 +19,8 @@ import { initTaskMonitorTables } from './db-task-monitor.js';
 import { initWorkboardTables } from './db-workboard.js';
 // StaffDeck 表结构（sd_ 前缀命名空间，与既有表隔离）
 import { initStaffTables } from './db-staff.js';
+// 扩展启用状态持久化
+import { initExtensionStateTables } from './dao/extensionStateDao.js';
 
 import { SQLiteEngine } from './storage/SQLiteEngine.js';
 import { FileStorage } from './storage/FileStorage.js';
@@ -878,6 +880,9 @@ export function initDb(): Database.Database {
 
   // StaffDeck 表结构初始化（sd_ 前缀命名空间，与既有表完全隔离）
   initStaffTables(db);
+
+  // 扩展启用状态持久化（extensions_state 表）
+  initExtensionStateTables(db);
 
   // v2.11+: 把 shared/data/builtin-skills.json 中的老技能一次性迁入新 user_skills + SKILL.md
   // 幂等：通过 app_settings 中的 builtin_skills_migrated_v1 标记。

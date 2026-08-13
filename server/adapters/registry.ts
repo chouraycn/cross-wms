@@ -82,7 +82,14 @@ function createLazyRegistry<TFactory extends () => unknown>() {
     return registry.has(apiType);
   }
 
-  return { register, get, has };
+  function remove(apiType: ModelApiType): boolean {
+    const existed = registry.delete(apiType);
+    cache.delete(apiType);
+    loading.delete(apiType);
+    return existed;
+  }
+
+  return { register, get, has, remove };
 }
 
 /** 适配器注册表 — 存储 apiType → 加载器 */
@@ -171,6 +178,19 @@ export function hasAdapter(apiType: string): boolean {
 }
 
 /**
+ * 注销适配器（扩展禁用时清理）
+ */
+export function unregisterAdapter(apiType: ModelApiType): boolean {
+  const existed = adapterRegistry.delete(apiType);
+  factoryCache.delete(apiType);
+  loadingPromises.delete(apiType);
+  if (existed) {
+    logger.info(`[AdapterRegistry] 已注销适配器: ${apiType}`);
+  }
+  return existed;
+}
+
+/**
  * 获取所有已注册的 API 类型
  */
 export function getRegisteredApiTypes(): ModelApiType[] {
@@ -210,6 +230,13 @@ export function hasSttAdapter(apiType: string): boolean {
 }
 
 /**
+ * 注销 STT 适配器（扩展禁用时清理）
+ */
+export function unregisterSttAdapter(apiType: ModelApiType): boolean {
+  return sttRegistry.remove(apiType);
+}
+
+/**
  * 注册多媒体生成适配器（图像 / 视频）
  */
 export function registerMediaGenAdapter(
@@ -232,6 +259,13 @@ export async function getMediaGenAdapter(apiType: ModelApiType): Promise<IMediaG
  */
 export function hasMediaGenAdapter(apiType: string): boolean {
   return mediaGenRegistry.has(apiType as ModelApiType);
+}
+
+/**
+ * 注销多媒体生成适配器（扩展禁用时清理）
+ */
+export function unregisterMediaGenAdapter(apiType: ModelApiType): boolean {
+  return mediaGenRegistry.remove(apiType);
 }
 
 /**
