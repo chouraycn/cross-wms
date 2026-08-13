@@ -189,8 +189,8 @@ export default class DiffsTool implements ExtensionProvider {
               right: { type: 'string', description: '右侧文本（无 id 时使用）' },
               layout: { type: 'string', description: '布局：unified 或 split', enum: ['unified', 'split'] },
             },
+            required: [],
           },
-          required: [],
         },
       },
       async (args) => {

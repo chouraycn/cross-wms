@@ -52,13 +52,24 @@ export interface ExtensionContext {
 // 这些类型为扩展层提供与 server 端注册表对接的结构化契约，
 // 同时保持 extension-types.ts 不直接依赖 server 模块（仅类型层面）。
 
+/**
+ * JSON Schema-style 工具参数描述（简化版，允许 type/properties/required 以及任意
+ * 附加 JSONSchema 关键字；描述由扩展负责与 OpenAI function calling 语义对齐）。
+ */
+export interface BridgeToolParameters {
+  type?: string;
+  properties?: Record<string, unknown>;
+  required?: string[];
+  [key: string]: unknown;
+}
+
 /** 工具定义（结构对齐 server 的 ToolDefinition） */
 export interface BridgeToolDefinition {
   type: 'function';
   function: {
     name: string;
     description: string;
-    parameters: Record<string, unknown>;
+    parameters: BridgeToolParameters;
   };
 }
 

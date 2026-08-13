@@ -39,7 +39,7 @@ const SettingsGroupsDialog: React.FC<SettingsGroupsDialogProps> = ({ open, initi
   // 每次打开时，定位到该分组的第一个子项
   useEffect(() => {
     if (open && activeGroup) setActiveChildKey(activeGroup.children?.[0]?.key ?? '');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // 注意：依赖列表故意不含 activeGroup（由 initialGroupKey 派生），避免重渲染抖动
   }, [open, initialGroupKey]);
 
   const activeChild = children.find((c) => c.key === activeChildKey) ?? children[0];
