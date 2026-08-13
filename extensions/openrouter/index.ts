@@ -166,50 +166,26 @@ export default class OpenRouterProvider implements ExtensionProvider {
 
     const baseUrl = resolveOpenRouterBaseUrl(context.config);
 
-    this.registerAdapter(context);
     this.registerModels(context, baseUrl);
 
     context.logger.info(`OpenRouter provider registered (baseUrl=${baseUrl})`);
   }
 
-  private registerAdapter(context: ExtensionContext): void {
-    try {
-      import('../../server/adapters/registry.js').then(({ registerAdapter }) => {
-        registerAdapter('openrouter-chat', () => {
-          return () => new OpenRouterExtensionAdapter();
-        });
-        context.logger.info('OpenRouter adapter registered in adapter registry');
-      }).catch((err: unknown) => {
-        context.logger.warn('Could not register OpenRouter adapter in global registry:', err);
-      });
-    } catch {
-      context.logger.warn('Could not import adapter registry for OpenRouter registration');
-    }
-  }
-
   private registerModels(context: ExtensionContext, baseUrl: string): void {
-    try {
-      import('../../server/engine/llm/model-registry.js').then(({ registerModel }) => {
-        for (const model of OPENROUTER_MODELS) {
-          registerModel({
-            id: model.id,
-            name: model.name,
-            provider: 'openrouter',
-            apiType: 'openrouter-chat',
-            contextWindow: model.contextWindow,
-            capabilities: ['streaming', 'tool-calling'],
-            defaultConfig: {
-              maxTokens: model.maxTokens,
-            },
-          });
-        }
-        context.logger.info(`Registered ${OPENROUTER_MODELS.length} OpenRouter models`);
-      }).catch((err: unknown) => {
-        context.logger.warn('Could not register OpenRouter models:', err);
+    for (const model of OPENROUTER_MODELS) {
+      context.bridge.registerModel({
+        id: model.id,
+        name: model.name,
+        provider: 'openrouter',
+        apiType: 'openrouter-chat',
+        contextWindow: model.contextWindow,
+        capabilities: ['streaming', 'tool-calling'],
+        defaultConfig: {
+          maxTokens: model.maxTokens,
+        },
       });
-    } catch {
-      context.logger.warn('Could not import model registry for OpenRouter registration');
     }
+    context.logger.info(`Registered ${OPENROUTER_MODELS.length} OpenRouter models`);
   }
 
   unregister(): void {

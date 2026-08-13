@@ -79,50 +79,26 @@ export default class MoonshotProvider implements ExtensionProvider {
 
     const baseUrl = resolveMoonshotBaseUrl(context.config);
 
-    this.registerAdapter(context);
     this.registerModels(context, baseUrl);
 
     context.logger.info(`Moonshot provider registered (baseUrl=${baseUrl})`);
   }
 
-  private registerAdapter(context: ExtensionContext): void {
-    try {
-      import('../../server/adapters/registry.js').then(({ registerAdapter }) => {
-        registerAdapter('moonshot-chat', () => {
-          return () => new MoonshotExtensionAdapter();
-        });
-        context.logger.info('Moonshot adapter registered in adapter registry');
-      }).catch((err: unknown) => {
-        context.logger.warn('Could not register Moonshot adapter in global registry:', err);
-      });
-    } catch {
-      context.logger.warn('Could not import adapter registry for Moonshot registration');
-    }
-  }
-
   private registerModels(context: ExtensionContext, baseUrl: string): void {
-    try {
-      import('../../server/engine/llm/model-registry.js').then(({ registerModel }) => {
-        for (const model of MOONSHOT_MODELS) {
-          registerModel({
-            id: model.id,
-            name: model.name,
-            provider: 'moonshot',
-            apiType: 'moonshot-chat',
-            contextWindow: model.contextWindow,
-            capabilities: ['streaming', 'tool-calling'],
-            defaultConfig: {
-              maxTokens: model.maxTokens,
-            },
-          });
-        }
-        context.logger.info(`Registered ${MOONSHOT_MODELS.length} Moonshot models`);
-      }).catch((err: unknown) => {
-        context.logger.warn('Could not register Moonshot models:', err);
+    for (const model of MOONSHOT_MODELS) {
+      context.bridge.registerModel({
+        id: model.id,
+        name: model.name,
+        provider: 'moonshot',
+        apiType: 'moonshot-chat',
+        contextWindow: model.contextWindow,
+        capabilities: ['streaming', 'tool-calling'],
+        defaultConfig: {
+          maxTokens: model.maxTokens,
+        },
       });
-    } catch {
-      context.logger.warn('Could not import model registry for Moonshot registration');
     }
+    context.logger.info(`Registered ${MOONSHOT_MODELS.length} Moonshot models`);
   }
 
   unregister(): void {

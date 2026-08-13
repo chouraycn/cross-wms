@@ -97,55 +97,34 @@ export default class DeepSeekProvider implements ExtensionProvider {
 
     const baseUrl = resolveConfiguredDeepSeekBaseUrl(context.config);
 
-    this.registerAdapter(context);
     this.registerModels(context, baseUrl);
 
     context.logger.info(`DeepSeek provider registered (baseUrl=${baseUrl})`);
   }
 
   /**
-   * 注册 DeepSeek Chat Completions 适配器
-   */
-  private registerAdapter(context: ExtensionContext): void {
-    try {
-      import('../../server/adapters/registry.js').then(({ registerAdapter }) => {
-        registerAdapter('deepseek-chat', () => {
-          return () => new DeepSeekExtensionAdapter();
-        });
-        context.logger.info('DeepSeek adapter registered in adapter registry');
-      }).catch((err: unknown) => {
-        context.logger.warn('Could not register DeepSeek adapter in global registry:', err);
-      });
-    } catch {
-      context.logger.warn('Could not import adapter registry for DeepSeek registration');
-    }
-  }
-
-  /**
    * 注册 DeepSeek 模型目录
    */
   private registerModels(context: ExtensionContext, baseUrl: string): void {
-    try {
-      import('../../server/engine/llm/model-registry.js').then(({ registerModel }) => {
-        for (const model of DEEPSEEK_MODELS) {
-          registerModel({
-            id: model.id,
-            name: model.name,
-            provider: 'deepseek',
-            api: 'deepseek-chat',
-            contextWindow: model.contextWindow,
-            maxOutputTokens: model.maxTokens,
-            cost: { ...model.cost },
-            reasoning: model.reasoning,
-          });
-        }
-        context.logger.info(`Registered ${DEEPSEEK_MODELS.length} DeepSeek models`);
-      }).catch((err: unknown) => {
-        context.logger.warn('Could not register DeepSeek models:', err);
-      });
-    } catch {
-      context.logger.warn('Could not import model registry for DeepSeek registration');
+    for (const model of DEEPSEEK_MODELS) {
+      const capabilities: string[] = [];
+      if ((model.input as readonly string[]).includes('image')) capabilities.push('vision');
+      if (model.reasoning) capabilities.push('reasoning');
+
+      const registeredModel = {
+        id: model.id,
+        name: model.name,
+        provider: 'deepseek',
+        apiType: 'deepseek-chat',
+        contextWindow: model.contextWindow,
+        capabilities,
+        maxOutputTokens: model.maxTokens,
+        cost: { ...model.cost },
+        reasoning: model.reasoning,
+      };
+      context.bridge.registerModel(registeredModel);
     }
+    context.logger.info(`Registered ${DEEPSEEK_MODELS.length} DeepSeek models`);
   }
 
   unregister(): void {

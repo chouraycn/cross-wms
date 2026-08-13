@@ -120,50 +120,26 @@ export default class AzureOpenAiProvider implements ExtensionProvider {
     const baseUrl = resolveAzureOpenAiBaseUrl(context.config);
     const apiVersion = resolveAzureOpenAiApiVersion(context.config);
 
-    this.registerAdapter(context);
     this.registerModels(context, baseUrl, apiVersion);
 
     context.logger.info(`Azure OpenAI provider registered (baseUrl=${baseUrl}, apiVersion=${apiVersion})`);
   }
 
-  private registerAdapter(context: ExtensionContext): void {
-    try {
-      import('../../server/adapters/registry.js').then(({ registerAdapter }) => {
-        registerAdapter('azure-openai', () => {
-          return () => new AzureOpenAiExtensionAdapter();
-        });
-        context.logger.info('Azure OpenAI adapter registered in adapter registry');
-      }).catch((err: unknown) => {
-        context.logger.warn('Could not register Azure OpenAI adapter in global registry:', err);
-      });
-    } catch {
-      context.logger.warn('Could not import adapter registry for Azure OpenAI registration');
-    }
-  }
-
   private registerModels(context: ExtensionContext, baseUrl: string, apiVersion: string): void {
-    try {
-      import('../../server/engine/llm/model-registry.js').then(({ registerModel }) => {
-        for (const model of AZURE_OPENAI_MODELS) {
-          registerModel({
-            id: model.id,
-            name: model.name,
-            provider: 'azure-openai',
-            apiType: 'azure-openai',
-            contextWindow: model.contextWindow,
-            capabilities: ['streaming', 'tool-calling', 'vision'],
-            defaultConfig: {
-              maxTokens: model.maxTokens,
-            },
-          });
-        }
-        context.logger.info(`Registered ${AZURE_OPENAI_MODELS.length} Azure OpenAI models`);
-      }).catch((err: unknown) => {
-        context.logger.warn('Could not register Azure OpenAI models:', err);
+    for (const model of AZURE_OPENAI_MODELS) {
+      context.bridge.registerModel({
+        id: model.id,
+        name: model.name,
+        provider: 'azure-openai',
+        apiType: 'azure-openai',
+        contextWindow: model.contextWindow,
+        capabilities: ['streaming', 'tool-calling', 'vision'],
+        defaultConfig: {
+          maxTokens: model.maxTokens,
+        },
       });
-    } catch {
-      context.logger.warn('Could not import model registry for Azure OpenAI registration');
     }
+    context.logger.info(`Registered ${AZURE_OPENAI_MODELS.length} Azure OpenAI models`);
   }
 
   unregister(): void {

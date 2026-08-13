@@ -141,50 +141,26 @@ export default class QwenProvider implements ExtensionProvider {
 
     const baseUrl = resolveQwenBaseUrl(context.config);
 
-    this.registerAdapter(context);
     this.registerModels(context, baseUrl);
 
     context.logger.info(`Qwen provider registered (baseUrl=${baseUrl})`);
   }
 
-  private registerAdapter(context: ExtensionContext): void {
-    try {
-      import('../../server/adapters/registry.js').then(({ registerAdapter }) => {
-        registerAdapter('qwen-chat', () => {
-          return () => new QwenExtensionAdapter();
-        });
-        context.logger.info('Qwen adapter registered in adapter registry');
-      }).catch((err: unknown) => {
-        context.logger.warn('Could not register Qwen adapter in global registry:', err);
-      });
-    } catch {
-      context.logger.warn('Could not import adapter registry for Qwen registration');
-    }
-  }
-
   private registerModels(context: ExtensionContext, baseUrl: string): void {
-    try {
-      import('../../server/engine/llm/model-registry.js').then(({ registerModel }) => {
-        for (const model of QWEN_MODELS) {
-          registerModel({
-            id: model.id,
-            name: model.name,
-            provider: 'qwen',
-            apiType: 'qwen-chat',
-            contextWindow: model.contextWindow,
-            capabilities: ['streaming', 'tool-calling'],
-            defaultConfig: {
-              maxTokens: model.maxTokens,
-            },
-          });
-        }
-        context.logger.info(`Registered ${QWEN_MODELS.length} Qwen models`);
-      }).catch((err: unknown) => {
-        context.logger.warn('Could not register Qwen models:', err);
+    for (const model of QWEN_MODELS) {
+      context.bridge.registerModel({
+        id: model.id,
+        name: model.name,
+        provider: 'qwen',
+        apiType: 'qwen-chat',
+        contextWindow: model.contextWindow,
+        capabilities: ['streaming', 'tool-calling'],
+        defaultConfig: {
+          maxTokens: model.maxTokens,
+        },
       });
-    } catch {
-      context.logger.warn('Could not import model registry for Qwen registration');
     }
+    context.logger.info(`Registered ${QWEN_MODELS.length} Qwen models`);
   }
 
   unregister(): void {

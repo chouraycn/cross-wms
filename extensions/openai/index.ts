@@ -123,9 +123,6 @@ export default class OpenAIProvider implements ExtensionProvider {
 
     const baseUrl = resolveConfiguredOpenAIBaseUrl(context.config);
 
-    // 注册适配器到全局 registry
-    this.registerAdapters(context);
-
     // 注册模型到 registry
     this.registerModels(context, baseUrl);
 
@@ -133,55 +130,28 @@ export default class OpenAIProvider implements ExtensionProvider {
   }
 
   /**
-   * 注册 OpenAI Chat Completions 和 Responses API 适配器
-   */
-  private registerAdapters(context: ExtensionContext): void {
-    try {
-      import('../../server/adapters/registry.js').then(({ registerAdapter }) => {
-        // Chat Completions 适配器
-        registerAdapter('openai-chat', () => {
-          return () => new OpenAIChatExtensionAdapter();
-        });
-
-        // Responses API 适配器
-        registerAdapter('openai-responses', () => {
-          return () => new OpenAIResponsesExtensionAdapter();
-        });
-
-        context.logger.info('OpenAI adapters registered in adapter registry');
-      }).catch((err: unknown) => {
-        context.logger.warn('Could not register OpenAI adapters in global registry:', err);
-      });
-    } catch {
-      context.logger.warn('Could not import adapter registry for OpenAI registration');
-    }
-  }
-
-  /**
    * 注册 OpenAI 模型目录
    */
   private registerModels(context: ExtensionContext, baseUrl: string): void {
-    try {
-      import('../../server/engine/llm/model-registry.js').then(({ registerModel }) => {
-        for (const model of OPENAI_MODELS) {
-          registerModel({
-            id: model.id,
-            name: model.name,
-            provider: 'openai',
-            api: model.api,
-            contextWindow: model.contextWindow,
-            maxOutputTokens: model.maxTokens,
-            cost: { ...model.cost },
-            reasoning: model.reasoning,
-          });
-        }
-        context.logger.info(`Registered ${OPENAI_MODELS.length} OpenAI models`);
-      }).catch((err: unknown) => {
-        context.logger.warn('Could not register OpenAI models:', err);
-      });
-    } catch {
-      context.logger.warn('Could not import model registry for OpenAI registration');
+    for (const model of OPENAI_MODELS) {
+      const capabilities: string[] = [];
+      if ((model.input as readonly string[]).includes('image')) capabilities.push('vision');
+      if (model.reasoning) capabilities.push('reasoning');
+
+      const registeredModel = {
+        id: model.id,
+        name: model.name,
+        provider: 'openai',
+        apiType: model.api,
+        contextWindow: model.contextWindow,
+        capabilities,
+        maxOutputTokens: model.maxTokens,
+        cost: { ...model.cost },
+        reasoning: model.reasoning,
+      };
+      context.bridge.registerModel(registeredModel);
     }
+    context.logger.info(`Registered ${OPENAI_MODELS.length} OpenAI models`);
   }
 
   unregister(): void {

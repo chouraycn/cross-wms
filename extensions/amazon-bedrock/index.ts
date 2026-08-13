@@ -168,50 +168,26 @@ export default class AmazonBedrockProvider implements ExtensionProvider {
     const baseUrl = resolveBedrockBaseUrl(context.config);
     const region = resolveBedrockRegion(context.config);
 
-    this.registerAdapter(context);
     this.registerModels(context, baseUrl, region);
 
     context.logger.info(`Amazon Bedrock provider registered (baseUrl=${baseUrl}, region=${region})`);
   }
 
-  private registerAdapter(context: ExtensionContext): void {
-    try {
-      import('../../server/adapters/registry.js').then(({ registerAdapter }) => {
-        registerAdapter('bedrock-chat', () => {
-          return () => new AmazonBedrockExtensionAdapter();
-        });
-        context.logger.info('Amazon Bedrock adapter registered in adapter registry');
-      }).catch((err: unknown) => {
-        context.logger.warn('Could not register Amazon Bedrock adapter in global registry:', err);
-      });
-    } catch {
-      context.logger.warn('Could not import adapter registry for Amazon Bedrock registration');
-    }
-  }
-
   private registerModels(context: ExtensionContext, baseUrl: string, region: string): void {
-    try {
-      import('../../server/engine/llm/model-registry.js').then(({ registerModel }) => {
-        for (const model of BEDROCK_MODELS) {
-          registerModel({
-            id: model.id,
-            name: model.name,
-            provider: 'amazon-bedrock',
-            apiType: 'bedrock-chat',
-            contextWindow: model.contextWindow,
-            capabilities: ['streaming', 'tool-calling'],
-            defaultConfig: {
-              maxTokens: model.maxTokens,
-            },
-          });
-        }
-        context.logger.info(`Registered ${BEDROCK_MODELS.length} Amazon Bedrock models`);
-      }).catch((err: unknown) => {
-        context.logger.warn('Could not register Amazon Bedrock models:', err);
+    for (const model of BEDROCK_MODELS) {
+      context.bridge.registerModel({
+        id: model.id,
+        name: model.name,
+        provider: 'amazon-bedrock',
+        apiType: 'bedrock-chat',
+        contextWindow: model.contextWindow,
+        capabilities: ['streaming', 'tool-calling'],
+        defaultConfig: {
+          maxTokens: model.maxTokens,
+        },
       });
-    } catch {
-      context.logger.warn('Could not import model registry for Amazon Bedrock registration');
     }
+    context.logger.info(`Registered ${BEDROCK_MODELS.length} Amazon Bedrock models`);
   }
 
   unregister(): void {

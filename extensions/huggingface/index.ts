@@ -131,50 +131,26 @@ export default class HuggingFaceProvider implements ExtensionProvider {
 
     const baseUrl = resolveHuggingFaceBaseUrl(context.config);
 
-    this.registerAdapter(context);
     this.registerModels(context, baseUrl);
 
     context.logger.info(`Hugging Face provider registered (baseUrl=${baseUrl})`);
   }
 
-  private registerAdapter(context: ExtensionContext): void {
-    try {
-      import('../../server/adapters/registry.js').then(({ registerAdapter }) => {
-        registerAdapter('huggingface-chat', () => {
-          return () => new HuggingFaceExtensionAdapter();
-        });
-        context.logger.info('Hugging Face adapter registered in adapter registry');
-      }).catch((err: unknown) => {
-        context.logger.warn('Could not register Hugging Face adapter in global registry:', err);
-      });
-    } catch {
-      context.logger.warn('Could not import adapter registry for Hugging Face registration');
-    }
-  }
-
   private registerModels(context: ExtensionContext, baseUrl: string): void {
-    try {
-      import('../../server/engine/llm/model-registry.js').then(({ registerModel }) => {
-        for (const model of HUGGINGFACE_MODELS) {
-          registerModel({
-            id: model.id,
-            name: model.name,
-            provider: 'huggingface',
-            apiType: 'huggingface-chat',
-            contextWindow: model.contextWindow,
-            capabilities: ['streaming'],
-            defaultConfig: {
-              maxTokens: model.maxTokens,
-            },
-          });
-        }
-        context.logger.info(`Registered ${HUGGINGFACE_MODELS.length} Hugging Face models`);
-      }).catch((err: unknown) => {
-        context.logger.warn('Could not register Hugging Face models:', err);
+    for (const model of HUGGINGFACE_MODELS) {
+      context.bridge.registerModel({
+        id: model.id,
+        name: model.name,
+        provider: 'huggingface',
+        apiType: 'huggingface-chat',
+        contextWindow: model.contextWindow,
+        capabilities: ['streaming'],
+        defaultConfig: {
+          maxTokens: model.maxTokens,
+        },
       });
-    } catch {
-      context.logger.warn('Could not import model registry for Hugging Face registration');
     }
+    context.logger.info(`Registered ${HUGGINGFACE_MODELS.length} Hugging Face models`);
   }
 
   unregister(): void {

@@ -97,9 +97,6 @@ export default class AnthropicProvider implements ExtensionProvider {
 
     const baseUrl = resolveAnthropicBaseUrl(context.config);
 
-    // 注册适配器到全局 registry
-    this.registerAdapter(context);
-
     // 注册模型到 registry
     this.registerModels(context, baseUrl);
 
@@ -107,53 +104,28 @@ export default class AnthropicProvider implements ExtensionProvider {
   }
 
   /**
-   * 注册 Anthropic Messages API 适配器
-   *
-   * 通过动态 import 注入到 server/adapters/registry，
-   * 使得 'anthropic-messages' apiType 可被运行时发现。
-   */
-  private registerAdapter(context: ExtensionContext): void {
-    try {
-      // 动态导入适配器注册表并注册
-      import('../../server/adapters/registry.js').then(({ registerAdapter }) => {
-        registerAdapter('anthropic-messages', () => {
-          // 返回适配器工厂 — 使用扩展内的 API 封装
-          return () => new AnthropicExtensionAdapter();
-        });
-        context.logger.info('Anthropic adapter registered in adapter registry');
-      }).catch((err: unknown) => {
-        context.logger.warn('Could not register Anthropic adapter in global registry:', err);
-      });
-    } catch {
-      context.logger.warn('Could not import adapter registry for Anthropic registration');
-    }
-  }
-
-  /**
    * 注册 Anthropic 模型目录
    */
   private registerModels(context: ExtensionContext, baseUrl: string): void {
-    try {
-      import('../../server/engine/llm/model-registry.js').then(({ registerModel }) => {
-        for (const model of ANTHROPIC_MODELS) {
-          registerModel({
-            id: model.id,
-            name: model.name,
-            provider: 'anthropic',
-            api: 'anthropic-messages',
-            contextWindow: model.contextWindow,
-            maxOutputTokens: model.maxTokens,
-            cost: { ...model.cost },
-            reasoning: model.reasoning,
-          });
-        }
-        context.logger.info(`Registered ${ANTHROPIC_MODELS.length} Anthropic models`);
-      }).catch((err: unknown) => {
-        context.logger.warn('Could not register Anthropic models:', err);
-      });
-    } catch {
-      context.logger.warn('Could not import model registry for Anthropic registration');
+    for (const model of ANTHROPIC_MODELS) {
+      const capabilities: string[] = [];
+      if ((model.input as readonly string[]).includes('image')) capabilities.push('vision');
+      if (model.reasoning) capabilities.push('reasoning');
+
+      const registeredModel = {
+        id: model.id,
+        name: model.name,
+        provider: 'anthropic',
+        apiType: 'anthropic-messages',
+        contextWindow: model.contextWindow,
+        capabilities,
+        maxOutputTokens: model.maxTokens,
+        cost: { ...model.cost },
+        reasoning: model.reasoning,
+      };
+      context.bridge.registerModel(registeredModel);
     }
+    context.logger.info(`Registered ${ANTHROPIC_MODELS.length} Anthropic models`);
   }
 
   unregister(): void {

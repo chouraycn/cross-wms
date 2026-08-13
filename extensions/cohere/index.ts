@@ -109,50 +109,26 @@ export default class CohereProvider implements ExtensionProvider {
 
     const baseUrl = resolveCohereBaseUrl(context.config);
 
-    this.registerAdapter(context);
     this.registerModels(context, baseUrl);
 
     context.logger.info(`Cohere provider registered (baseUrl=${baseUrl})`);
   }
 
-  private registerAdapter(context: ExtensionContext): void {
-    try {
-      import('../../server/adapters/registry.js').then(({ registerAdapter }) => {
-        registerAdapter('cohere-chat', () => {
-          return () => new CohereExtensionAdapter();
-        });
-        context.logger.info('Cohere adapter registered in adapter registry');
-      }).catch((err: unknown) => {
-        context.logger.warn('Could not register Cohere adapter in global registry:', err);
-      });
-    } catch {
-      context.logger.warn('Could not import adapter registry for Cohere registration');
-    }
-  }
-
   private registerModels(context: ExtensionContext, baseUrl: string): void {
-    try {
-      import('../../server/engine/llm/model-registry.js').then(({ registerModel }) => {
-        for (const model of COHERE_MODELS) {
-          registerModel({
-            id: model.id,
-            name: model.name,
-            provider: 'cohere',
-            apiType: 'cohere-chat',
-            contextWindow: model.contextWindow,
-            capabilities: ['streaming', 'tool-calling'],
-            defaultConfig: {
-              maxTokens: model.maxTokens,
-            },
-          });
-        }
-        context.logger.info(`Registered ${COHERE_MODELS.length} Cohere models`);
-      }).catch((err: unknown) => {
-        context.logger.warn('Could not register Cohere models:', err);
+    for (const model of COHERE_MODELS) {
+      context.bridge.registerModel({
+        id: model.id,
+        name: model.name,
+        provider: 'cohere',
+        apiType: 'cohere-chat',
+        contextWindow: model.contextWindow,
+        capabilities: ['streaming', 'tool-calling'],
+        defaultConfig: {
+          maxTokens: model.maxTokens,
+        },
       });
-    } catch {
-      context.logger.warn('Could not import model registry for Cohere registration');
     }
+    context.logger.info(`Registered ${COHERE_MODELS.length} Cohere models`);
   }
 
   unregister(): void {
