@@ -14,10 +14,11 @@
  *   GET    /:bindingId/agents                 — 挂载员工列表
  *   PUT    /:bindingId                        — 更新挂载员工 / 智能分发
  *   DELETE /:bindingId                        — 删除绑定
- *   POST   /:bindingId/wechat/qrcode          — 微信二维码（demo）
- *   GET    /:bindingId/wechat/qrcode-status   — 轮询扫码状态（demo 直接 confirmed）
- *   POST   /:bindingId/wecom/credentials      — 企微凭证（demo 本地激活）
- *   POST   /:bindingId/feishu/credentials     — 飞书凭证（demo 本地激活）
+ *   POST   /:bindingId/wechat/qrcode          — 微信二维码（个人微信网关路径）
+ *   GET    /:bindingId/wechat/qrcode-status   — 轮询扫码状态（个人微信网关路径）
+ *   POST   /:bindingId/wechat/credentials     — 微信公众号凭证（官方 API 探测校验后激活）
+ *   POST   /:bindingId/wecom/credentials      — 企微凭证（官方 API 探测校验后激活）
+ *   POST   /:bindingId/feishu/credentials     — 飞书凭证（本地激活）
  *   POST   /:bindingId/deliver                — 投递消息（复用 Channel Gateway）
  *   GET    /:bindingId/deliveries             — 投递日志（读 sd_channel_deliveries）
  *   GET    /:bindingId/deliveries/days        — 按天分组（空）
@@ -27,9 +28,10 @@
  * 说明：
  *   - 所有成功响应统一返回 { code:0, data, message:'ok' }；数字员工嵌入前端无 envelope
  *     unwrap，由 server/index.ts 的剥离中间件在 /api/staffdeck/* 上拆出 data（仅 code===0）。
- *   - 真实渠道服务（微信/企微/飞书长连接）不在桌面端，凭证保存走「本地 demo 激活」：
- *     存储配置并标记 active，使页面完成「接入」流程、状态可见；不发起外部连接。
- *   - 渠道描述 CHANNEL_META 即从 StaffDeck-main 后端迁移过来的「基础信息」。
+ *   - 企业微信/微信公众号凭证端点（wecom/wechat credentials）：2026-08-15 起真实化 —
+ *     保存前用官方 API 探测（gettoken / agent/get）校验凭证有效性，通过才激活；
+ *     deliverToChannel 对已激活且有凭证的绑定发起真实 HTTP 推送（不再只记日志）。
+ *   - 微信 qrcode 端点保留：个人微信走外部网关时使用（demo/网关形态）。
  */
 import { Router, type Request, type Response } from 'express';
 import { initDb } from '../../db.js';
@@ -38,6 +40,9 @@ import {
   newStaffId,
   StaffIdPrefix,
 } from '../../db-staff.js';
+import { sendWeComMessage, sendWeComWebhook, probeWeCom } from '../../../extensions/wecom/index.js';
+import { sendWeChatCustomerMessage, probeWeChat } from '../../../extensions/wechat/index.js';
+import { logger } from '../../logger.js';
 import type Database from 'better-sqlite3';
 
 const router = Router();
@@ -421,23 +426,26 @@ export interface DeliverToChannelOptions {
   title?: string;
   content: string;
   type?: 'text' | 'alert' | 'card';
+  /** 企微 userid / 公众号 openid（缺省：企微 @all，公众号用绑定配置 openid） */
+  toUser?: string;
 }
 
 /**
- * 将消息投递到已接入的 IM 渠道（企业微信/飞书/微信）。
+ * 将消息投递到已接入的 IM 渠道（企业微信/微信公众号/飞书）。
  *
  * 这是「渠道反哺主程序」的核心：主程序任意 agent / automation 的执行结果，
  * 都可经此复用数字员工已配好的渠道绑定，主动推给 IM。
  *
- * 桌面端无真实 IM 网关：demo 投递 —— 写入 sd_channel_deliveries 并标记 delivered，
- * 记录即视为已送达（与凭证端点「本地 demo 激活」一致）。
- * 真实环境中接入外部网关时，只需在此处对 status='active' 且有凭证的绑定发起 HTTP 推送。
+ * 2026-08-15 真实化：企业微信（自建应用 / 群机器人 webhook）与微信公众号
+ * （客服消息）在有凭证的绑定上发起真实 HTTP 推送，投递日志记录真实状态
+ * （delivered / failed + error + 渠道侧 external_id）；无凭证或飞书仍走
+ * demo 记录（飞书真实推送由 channel plugin / 网关承担）。
  */
-export function deliverToChannel(opts: DeliverToChannelOptions): {
+export async function deliverToChannel(opts: DeliverToChannelOptions): Promise<{
   ok: boolean;
   delivery?: Record<string, any>;
   error?: string;
-} {
+}> {
   const tenantId = opts.tenantId || DEFAULT_TENANT_ID;
   const db = getDb();
   let binding: any = null;
@@ -465,10 +473,84 @@ export function deliverToChannel(opts: DeliverToChannelOptions): {
   const id = newStaffId(StaffIdPrefix.channelDelivery);
   const t = nowUnix();
   const type = opts.type || 'text';
+  const config = parseJson(binding.config_json);
+
+  // ===== 真实推送（有凭证才发；失败不阻断投递记录）=====
+  let status = 'delivered';
+  let errorMsg: string | null = null;
+  let externalId: string | null = null;
+
+  try {
+    if (binding.channel === 'wecom') {
+      const corpId = String(config.corp_id || config.corpId || '');
+      const corpSecret = String(config.corp_secret || config.corpSecret || '');
+      const agentId = String(config.agent_id || config.bot_id || '');
+      const webhookUrl = String(config.webhook_url || '');
+      if (webhookUrl) {
+        const result = await sendWeComWebhook(webhookUrl, { msgtype: 'text', content: opts.content });
+        if (!result.success) {
+          status = 'failed';
+          errorMsg = result.error ?? null;
+        } else {
+          externalId = result.messageId ?? null;
+        }
+      } else if (corpId && corpSecret && agentId) {
+        const result = await sendWeComMessage({
+          account: {
+            corpId,
+            corpSecret,
+            agentId,
+            token: config.token !== undefined ? String(config.token) : undefined,
+            encodingAesKey: config.encoding_aes_key !== undefined ? String(config.encoding_aes_key) : undefined,
+          },
+          toUser: opts.toUser,
+          msgtype: 'markdown',
+          markdown: opts.content,
+        });
+        if (!result.success) {
+          status = 'failed';
+          errorMsg = result.error ?? null;
+        } else {
+          externalId = result.messageId ?? null;
+        }
+      } else {
+        // 无凭证：demo 记录
+        status = 'delivered';
+      }
+    } else if (binding.channel === 'wechat') {
+      const appId = String(config.app_id || '');
+      const appSecret = String(config.app_secret || '');
+      const openid = String(opts.toUser || config.openid || '');
+      if (appId && appSecret && openid) {
+        const result = await sendWeChatCustomerMessage({
+          account: { appId, appSecret },
+          toUser: openid,
+          msgtype: 'text',
+          content: opts.content,
+        });
+        if (!result.success) {
+          status = 'failed';
+          errorMsg = result.error ?? null;
+        } else {
+          externalId = result.messageId ?? null;
+        }
+      } else if (!openid) {
+        status = 'failed';
+        errorMsg = '公众号投递缺少接收用户 openid（绑定配置 openid 或 opts.toUser）';
+      } else {
+        status = 'delivered'; // 无凭证：demo 记录
+      }
+    }
+    // feishu 及其他渠道：真实推送由 channel plugin / 外部网关承担，此处保留 demo 记录
+  } catch (err) {
+    status = 'failed';
+    errorMsg = err instanceof Error ? err.message : String(err);
+  }
+
   db.prepare(
     `INSERT INTO sd_channel_deliveries
-      (id, tenant_id, binding_id, channel, agent_id, title, content, type, status, delivered_at, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'delivered', ?, ?)`,
+      (id, tenant_id, binding_id, channel, agent_id, title, content, type, status, error, external_id, delivered_at, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   ).run(
     id,
     tenantId,
@@ -478,25 +560,33 @@ export function deliverToChannel(opts: DeliverToChannelOptions): {
     opts.title || null,
     opts.content,
     type,
-    t,
+    status,
+    errorMsg,
+    externalId,
+    status === 'delivered' ? t : null,
     t,
   );
   const row = db.prepare('SELECT * FROM sd_channel_deliveries WHERE id = ?').get(id) as any;
-  return {
-    ok: true,
-    delivery: {
-      id: row.id,
-      binding_id: row.binding_id,
-      channel: row.channel,
-      agent_id: row.agent_id,
-      title: row.title,
-      content: row.content,
-      type: row.type,
-      status: row.status,
-      delivered_at: isoFromUnix(row.delivered_at),
-      created_at: isoFromUnix(row.created_at),
-    },
+  const delivery: Record<string, any> = {
+    id: row.id,
+    binding_id: row.binding_id,
+    channel: row.channel,
+    agent_id: row.agent_id,
+    title: row.title,
+    content: row.content,
+    type: row.type,
+    status: row.status,
+    delivered_at: isoFromUnix(row.delivered_at),
+    created_at: isoFromUnix(row.created_at),
   };
+  if (row.error) delivery.error = row.error;
+  if (row.external_id) delivery.external_id = row.external_id;
+  if (status === 'failed') {
+    logger.warn(`[Channels] 渠道投递失败: channel=${binding.channel} delivery=${id} error=${errorMsg}`);
+  } else if (externalId) {
+    logger.info(`[Channels] 渠道投递成功: channel=${binding.channel} delivery=${id} external=${externalId}`);
+  }
+  return { ok: status !== 'failed', delivery, error: errorMsg ?? undefined };
 }
 
 // 微信二维码（demo）：返回可渲染的二维码内容，轮询即 confirmed
@@ -539,15 +629,19 @@ router.get('/:bindingId/wechat/qrcode-status', (req: Request, res: Response) => 
   ok(res, { status: 'confirmed', binding: updated });
 });
 
-// 企微凭证（demo 本地激活）
-router.post('/:bindingId/wecom/credentials', (req: Request, res: Response) => {
+// 企微凭证（真实：官方 API 探测校验后激活）
+// 字段映射（与前端 WecomSetup.tsx 对齐）：bot_id=应用 AgentId，secret=应用 Secret，corp_id=企业 ID
+router.post('/:bindingId/wecom/credentials', async (req: Request, res: Response) => {
   const tenantId = tenantOf(req);
   const bindingId = req.params.bindingId;
   const botId = String(req.body?.bot_id || '').trim();
   const secret = String(req.body?.secret || '').trim();
   const corpId = String(req.body?.corp_id || '').trim();
-  if (!botId || !secret || !corpId) {
-    fail(res, 400, 'corp_id、bot_id 与 secret 均不能为空');
+  const token = String(req.body?.token || '').trim();
+  const encodingAesKey = String(req.body?.encoding_aes_key || '').trim();
+  const webhookUrl = String(req.body?.webhook_url || '').trim();
+  if (!corpId || !secret) {
+    fail(res, 400, 'corp_id 与 secret（企业微信应用 Secret）均不能为空');
     return;
   }
   const db = getDb();
@@ -559,11 +653,75 @@ router.post('/:bindingId/wecom/credentials', (req: Request, res: Response) => {
     fail(res, 404, '渠道绑定不存在');
     return;
   }
+  // 官方 API 探测：gettoken（corpId/corpSecret）+ agent/get（agentId 有效）
+  const probe = await probeWeCom({
+    corpId,
+    corpSecret: secret,
+    agentId: botId || undefined,
+    token: token || undefined,
+    encodingAesKey: encodingAesKey || undefined,
+  });
+  if (!probe.ok) {
+    logger.info(`[Channels] 企微凭证探测未通过: ${probe.error}`);
+    fail(res, 400, `凭证校验失败: ${probe.error}`);
+    return;
+  }
   const updated = activateBindingLocal(db, bindingId, {
     bot_id: botId,
     corp_id: corpId,
+    corp_secret: secret,
+    agent_id: botId,
+    agent_name: probe.detail?.agentName,
+    ...(token ? { token } : {}),
+    ...(encodingAesKey ? { encoding_aes_key: encodingAesKey } : {}),
+    ...(webhookUrl ? { webhook_url: webhookUrl } : {}),
     bot_open_id: botId,
+    probed_at: new Date().toISOString(),
   });
+  logger.info(`[Channels] 企微渠道激活成功: binding=${bindingId} corp=${corpId} agent=${botId || '(webhook)'}`);
+  ok(res, updated);
+});
+
+// 微信公众号凭证（真实：官方 API 探测校验后激活）
+// 字段：app_id=公众号 AppID，app_secret=AppSecret，token/encoding_aes_key=服务器配置（回调用）
+router.post('/:bindingId/wechat/credentials', async (req: Request, res: Response) => {
+  const tenantId = tenantOf(req);
+  const bindingId = req.params.bindingId;
+  const appId = String(req.body?.app_id || '').trim();
+  const appSecret = String(req.body?.app_secret || '').trim();
+  const token = String(req.body?.token || '').trim();
+  const encodingAesKey = String(req.body?.encoding_aes_key || '').trim();
+  const openid = String(req.body?.openid || '').trim();
+  if (!appId || !appSecret) {
+    fail(res, 400, 'app_id 与 app_secret（公众号 AppID/AppSecret）均不能为空');
+    return;
+  }
+  const db = getDb();
+  const binding = db.prepare('SELECT * FROM sd_channel_bindings WHERE id = ? AND tenant_id = ?').get(
+    bindingId,
+    tenantId,
+  );
+  if (!binding) {
+    fail(res, 404, '渠道绑定不存在');
+    return;
+  }
+  const probe = await probeWeChat({ appId, appSecret });
+  if (!probe.ok) {
+    logger.info(`[Channels] 公众号凭证探测未通过: ${probe.error}`);
+    fail(res, 400, `凭证校验失败: ${probe.error}`);
+    return;
+  }
+  const updated = activateBindingLocal(db, bindingId, {
+    app_id: appId,
+    app_secret: appSecret,
+    ...(token ? { token } : {}),
+    ...(encodingAesKey ? { encoding_aes_key: encodingAesKey } : {}),
+    ...(openid ? { openid } : {}),
+    bot_open_id: openid || `mp_${appId.slice(-6)}`,
+    bot_name: '公众号',
+    probed_at: new Date().toISOString(),
+  });
+  logger.info(`[Channels] 公众号渠道激活成功: binding=${bindingId} app=${appId}`);
   ok(res, updated);
 });
 
@@ -596,7 +754,7 @@ router.post('/:bindingId/feishu/credentials', (req: Request, res: Response) => {
 
 // ===================== 详情子资源 =====================
 // 投递消息（复用 deliverToChannel；嵌入前端「渠道接入」投递日志、主程序工具共用）
-router.post('/:bindingId/deliver', (req: Request, res: Response) => {
+router.post('/:bindingId/deliver', async (req: Request, res: Response) => {
   const tenantId = tenantOf(req);
   const bindingId = req.params.bindingId;
   const db = getDb();
@@ -613,12 +771,13 @@ router.post('/:bindingId/deliver', (req: Request, res: Response) => {
     fail(res, 400, 'content 不能为空');
     return;
   }
-  const result = deliverToChannel({
+  const result = await deliverToChannel({
     tenantId,
     bindingId,
     content,
     title: req.body?.title ? String(req.body.title) : undefined,
     type: req.body?.type ? (String(req.body.type) as 'text' | 'alert' | 'card') : 'text',
+    toUser: req.body?.to_user ? String(req.body.to_user) : undefined,
   });
   if (!result.ok) {
     fail(res, 400, result.error || '投递失败');

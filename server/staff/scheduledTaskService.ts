@@ -249,7 +249,7 @@ async function tryDeliverToChannel(
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      const result = deliverToChannel({
+      const result = await deliverToChannel({
         tenantId: task.tenant_id,
         bindingId: deliverCfg.binding_id,
         channel: deliverCfg.channel,

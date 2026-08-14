@@ -903,6 +903,15 @@ export function initStaffTables(db: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_sd_channel_deliveries_channel ON sd_channel_deliveries(channel);
   `);
 
+  // 投递日志补充列：error（失败原因）/ external_id（渠道侧消息 ID）——旧库幂等补充
+  const deliveryColumns = db.prepare(`PRAGMA table_info(sd_channel_deliveries)`).all() as { name: string }[];
+  if (!deliveryColumns.some((c) => c.name === 'error')) {
+    db.exec(`ALTER TABLE sd_channel_deliveries ADD COLUMN error TEXT`);
+  }
+  if (!deliveryColumns.some((c) => c.name === 'external_id')) {
+    db.exec(`ALTER TABLE sd_channel_deliveries ADD COLUMN external_id TEXT`);
+  }
+
   // ============================ 默认租户与 UI 配置初始化 ============================
 
   const existingTenant = db.prepare('SELECT id FROM sd_tenants WHERE id = ?').get(DEFAULT_TENANT_ID);

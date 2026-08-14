@@ -97,6 +97,7 @@ export default defineConfig({
       'server/**/__tests__/**/*.test.{ts,tsx}',
       'packages/**/__tests__/**/*.test.{ts,tsx}',
       'cli/src/**/__tests__/**/*.test.{ts,tsx}',
+      'extensions/**/__tests__/**/*.test.{ts,tsx}',
     ],
     exclude: [
       'server/engine/**',

@@ -988,7 +988,7 @@ export async function initDefaultTools(): Promise<void> {
         if (!content.trim()) {
           return JSON.stringify({ ok: false, error: 'content 不能为空' });
         }
-        const result = deliverToChannel({
+        const result = await deliverToChannel({
           channel,
           bindingId: args.bindingId ? String(args.bindingId) : undefined,
           agentId: args.agentId ? String(args.agentId) : undefined,

@@ -185,8 +185,8 @@ function persistMessages(
 /**
  * 通过 channel plugin 真实推送消息到 IM
  *
- * 优先使用 channel registry 中已注册的 plugin（feishu/wecom 有真实 send.send 实现），
- * 调用失败时降级到 deliverToChannel（仅写库标记 delivered）。
+ * 优先经 deliverToChannel 真实推送（企业微信/公众号有凭证时直接发官方 API），
+ * 未覆盖的渠道再走 channel registry 中已注册的 plugin（feishu 等）。
  */
 async function pushToChannel(
   channel: string,
@@ -195,7 +195,7 @@ async function pushToChannel(
   binding: ChannelBindingRow,
 ): Promise<{ ok: boolean; delivered: boolean; error?: string }> {
   // 先写投递记录（确保即使推送失败也有日志）
-  const deliverResult = deliverToChannel({
+  const deliverResult = await deliverToChannel({
     tenantId: binding.tenant_id,
     bindingId: binding.id,
     channel: binding.channel,
@@ -203,6 +203,12 @@ async function pushToChannel(
     content,
     type: 'text',
   });
+
+  // 若 deliverToChannel 已完成真实推送（企业微信/公众号有凭证时返回 external_id），
+  // 无需再走 channel plugin（避免重复推送）
+  if (deliverResult.delivery?.external_id) {
+    return { ok: true, delivered: true };
+  }
 
   // 尝试通过 channel plugin 真实推送
   try {
