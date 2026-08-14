@@ -23,7 +23,7 @@
     "typecheck:server": "tsgo --noEmit -p server/tsconfig.json",
     "typecheck:server:tsc": "tsc --noEmit -p server/tsconfig.json",
     "typecheck:tsgo": "tsgo --noEmit -p server/tsconfig.json",
-    "typecheck:fast": "tsgo --noEmit -p server/tsconfig.json && tsgo --noEmit -p tsconfig.json",
+    "typecheck:fast": "NODE_OPTIONS=--max-old-space-size=8192 tsc --noEmit && node build-server.mjs",
     "bump": "node scripts/bump-version.cjs",
     "bump:patch": "node scripts/bump-version.cjs patch",
     "bump:minor": "node scripts/bump-version.cjs minor",
