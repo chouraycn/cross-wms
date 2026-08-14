@@ -36,10 +36,11 @@ const DEFAULT_MODEL_CONFIG_ID = 'llama3.1';
 /** seed 完成标记（防每次启动重复扫描 fixture），存于内存即可（进程级幂等已靠 INSERT OR IGNORE） */
 let seededThisProcess = false;
 
-/** 解析 fixture 路径：优先仓库根 StaffDeck-main；其次本模块上层回溯。 */
+/** 解析 fixture 路径：优先仓库根 StaffDeck-main；其次打包后 Resources/seed_fixtures/。 */
 function resolveFixturePath(): string | null {
   const candidates = [
     resolve(__dirname, '../../StaffDeck-main/backend/app/db/seed_fixtures/staffdeck_admin_gallery_seed.json'),
+    resolve(__dirname, '../seed_fixtures/staffdeck_admin_gallery_seed.json'),
     resolve(process.cwd(), 'StaffDeck-main/backend/app/db/seed_fixtures/staffdeck_admin_gallery_seed.json'),
   ];
   for (const c of candidates) {

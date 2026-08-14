@@ -204,6 +204,20 @@ cd "$ROOT_DIR"
 
 echo "✅ Server compiled ($SERVER_DIST_DIR/index.cjs)"
 
+# ===================== 4.4 拷贝 seed fixture =====================
+# 将 StaffDeck 数字员工 seed JSON 拷进 Resources/seed_fixtures/，
+# 使打包后 seedStaffDeckOnBoot() 能通过 __dirname/../seed_fixtures/ 找到 fixture，
+# 否则新电脑安装后 sd_agent_profiles 表为空，前端看不到任何员工。
+SEED_FIXTURE_SRC="$ROOT_DIR/StaffDeck-main/backend/app/db/seed_fixtures/staffdeck_admin_gallery_seed.json"
+SEED_FIXTURE_DEST="$RESOURCES_DIR/seed_fixtures"
+if [ -f "$SEED_FIXTURE_SRC" ]; then
+  mkdir -p "$SEED_FIXTURE_DEST"
+  cp "$SEED_FIXTURE_SRC" "$SEED_FIXTURE_DEST/"
+  echo "✅ Seed fixture bundled -> $SEED_FIXTURE_DEST ($(du -sh "$SEED_FIXTURE_DEST" | cut -f1))"
+else
+  echo "⚠️  Seed fixture not found at $SEED_FIXTURE_SRC; 新电脑将看不到数字员工"
+fi
+
 # 生成 server_dist/package.json — 打包后 getPackageDir() 从 __dirname 向上查找 package.json，
 # 安装到 /Applications 后找不到会崩溃，这里在 server_dist/ 下放一份避免 ENOENT。
 cat > "$SERVER_DIST_DIR/package.json" <<PKGJSON
