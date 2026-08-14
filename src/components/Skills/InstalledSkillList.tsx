@@ -4,7 +4,7 @@ import {
 } from '@mui/material';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import { getGrayScale } from '../../constants/theme';
+import { getGrayScale, toggleSwitchSx } from '../../constants/theme';
 import { ICON_MAP } from '../../types/skill';
 import type { Skill } from '../../types/skill';
 import { getCategoryGradient } from '../../constants/skillCategories';
@@ -121,17 +121,7 @@ const InstalledSkillItem: React.FC<{
         checked={isActive}
         onClick={(e) => e.stopPropagation()}
         onChange={(e) => onToggle(skill, e.target.checked)}
-        sx={{
-          '& .MuiSwitch-switchBase.Mui-checked': {
-            color: '#22C55E',
-          },
-          '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-            backgroundColor: '#86EFAC',
-          },
-          '& .MuiSwitch-track': {
-            backgroundColor: gs.borderDarker,
-          },
-        }}
+        sx={toggleSwitchSx(isDark)}
       />
     </Paper>
   );

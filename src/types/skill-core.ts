@@ -237,6 +237,25 @@ export const AVAILABLE_ICON_NAMES: string[] = [
   'Calculate', 'Savings', 'AccountBalance', 'RequestQuote', 'Percent', 'LocalOffer',
   // 设计与媒体
   'Palette', 'Image', 'MusicNote', 'VideoCamera',
+  // 通用能力扩展：搜索、文档、写作、翻译、头脑风暴、任务
+  'Search', 'FindInPage', 'Draw', 'Translate', 'TaskAlt',
+  // 通用能力扩展：WMS、海关、贸易、日志、PDF、浏览器/UI、天气、位置
+  'Receipt', 'PictureAsPdf', 'CloudQueue', 'LocationOn', 'WbSunny',
+  // 通用能力扩展：Apple 生态、密码、GitHub / 代码仓库 / DevOps
+  'Password', 'StickyNote2', 'Alarm', 'IntegrationInstructions',
+  'Source', 'BugFix', 'DeployedCode', 'Token',
+  // 通用能力扩展：Sonos/Hue 音响灯光、Spotify/Apple Music、语音/TTS/转写
+  'Speaker', 'Lightbulb', 'Audiotrack', 'Mic', 'ClosedCaption',
+  // 通用能力扩展：图/白板、Meme、PDF / 数据、雷达 / 网络
+  'InsertChart', 'AutoAwesome', 'Movie', 'Radar',
+  // 通用能力扩展：Node/Debug/连接、Trello/Notion/Obsidian、Things、iMessage/SMS
+  'Cable', 'Adjust', 'AppRegistration', 'StickyNote', 'SmartButton',
+  // 通用能力扩展：视频抽帧、截图、监控、X/Twitter、Google、外卖/订单
+  'MovieFilter', 'PhotoCamera', 'Sensors', 'AltRoute', 'Attractions', 'Fastfood',
+  // 通用能力扩展：ClawHub / Skill / 插件
+  'Widgets', 'Store',
+  // 通用能力扩展：健康/安全/加固、MCP、tmux、代理/任务编排
+  'HealthAndSafety', 'ExtensionOff', 'Grid3x3', 'AccountTree', 'Schema',
 ];
 
 // ===================== 内置技能数据 =====================

@@ -198,6 +198,11 @@ export async function setSkillStatus(id: string, status: Skill['status']): Promi
   }
 }
 
+/** 获取 builtin status patches 快照（用于前端合并 openclaw 技能时应用 patch） */
+export function getBuiltinStatusPatchesSnapshot(): Record<string, string> {
+  return { ...builtinStatusPatches };
+}
+
 /** 删除技能（只能删除 source: 'user' 的技能，内置技能禁止删除） */
 export async function removeSkill(id: string): Promise<boolean> {
   const skill = userSkills.find((s) => s.id === id);
@@ -317,20 +322,31 @@ export async function refreshAuditForSkill(skillId: string): Promise<void> {
   notifyAll();
 }
 
-/** 从 API 初始化缓存（启动路径：只加载技能列表，不加载非关键的使用统计） */
+/** 从 API 初始化缓存（启动路径：只加载技能列表，不加载非关键的使用统计）
+ *  包含自动重试（3 次，间隔 1s），避免服务重启时序导致的"技能加载失败"误报
+ */
 export async function initFromApi(): Promise<void> {
-  try {
-    const [skills, patches] = await Promise.all([
-      api.getUserSkills(),
-      api.getBuiltinPatches(),
-    ]);
-    userSkills = skills;
-    builtinStatusPatches = patches;
-    notifyAll();
-    // 使用统计由 SkillsPage / CommandPalette 等按需延迟加载，避免启动时额外请求
-  } catch (e) {
-    const msg = getErrorMessage(e);
-    skillLoadError = msg;
-    window.dispatchEvent(new CustomEvent('cdf-know-clow-api-error', { detail: { action: 'initFromApi', error: msg } }));
+  const maxRetries = 3;
+  let lastError: unknown = null;
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const [skills, patches] = await Promise.all([
+        api.getUserSkills(),
+        api.getBuiltinPatches(),
+      ]);
+      userSkills = skills;
+      builtinStatusPatches = patches;
+      skillLoadError = null;
+      notifyAll();
+      return;
+    } catch (e) {
+      lastError = e;
+      if (attempt < maxRetries - 1) {
+        await new Promise((r) => setTimeout(r, 1000));
+      }
+    }
   }
+  const msg = getErrorMessage(lastError);
+  skillLoadError = msg;
+  window.dispatchEvent(new CustomEvent('cdf-know-clow-api-error', { detail: { action: 'initFromApi', error: msg } }));
 }

@@ -403,3 +403,40 @@ export function getGrayScale(isDark: boolean): GrayScale {
  * 修改此常量即可统一调整整个聊天区域宽度
  */
 export const CHAT_MAX_WIDTH = 920;
+
+// ===================== 统一开关滑动样式 =====================
+
+/**
+ * 统一开关（Toggle Switch）样式 —— 去除"开"/"关"文字
+ * 用于 Skill 已安装页面 与 设置-扩展与工具，共用一套代码
+ * @param isDark 是否暗色模式（决定未选中时 track 颜色）
+ */
+export function toggleSwitchSx(isDark: boolean) {
+  return {
+    width: 52,
+    height: 28,
+    padding: 0,
+    '& .MuiSwitch-switchBase': {
+      padding: '4px',
+      color: '#fff',
+      '&.Mui-checked': {
+        color: '#fff',
+        transform: 'translateX(24px)',
+        '& + .MuiSwitch-track': {
+          bgcolor: '#10B981',
+          opacity: 1,
+        },
+      },
+      '& + .MuiSwitch-track': {
+        bgcolor: isDark ? '#4B5563' : '#D1D5DB',
+        opacity: 1,
+        borderRadius: '14px',
+      },
+    },
+    '& .MuiSwitch-thumb': {
+      width: 20,
+      height: 20,
+      boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+    },
+  };
+}
