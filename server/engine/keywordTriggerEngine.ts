@@ -20,7 +20,25 @@
 import { logger } from '../logger.js';
 import { skillRegistry } from './skillRegistry.js';
 import { SkillDiscovery } from './skillDiscovery.js';
+import { getBuiltinPatches } from '../dao/skills.js';
 import type { RegisteredSkill } from '../types/skill-runtime.js';
+
+/**
+ * 拉取当前被用户停用（patch=available）的内置技能 ID 集合
+ * 供 KeywordTriggerEngine 在构建索引 / 实际触发时过滤
+ */
+function getDisabledBuiltinSkillIds(): Set<string> {
+  try {
+    const patches = getBuiltinPatches();
+    const disabled = new Set<string>();
+    for (const [id, status] of Object.entries(patches)) {
+      if (status === 'available') disabled.add(id);
+    }
+    return disabled;
+  } catch {
+    return new Set();
+  }
+}
 
 // ===================== 类型定义 =====================
 
@@ -347,6 +365,7 @@ export class KeywordTriggerEngine {
 
   /**
    * 从 Skill Registry 加载触发规则
+   * R2b-3：构建触发索引时额外跳过已被用户停用（patch=available）的内置技能
    */
   private loadRulesFromRegistry(): void {
     this.keywordIndex.clear();
@@ -355,8 +374,11 @@ export class KeywordTriggerEngine {
     this.synonymIndex.clear();
     this.skillRules.clear();
 
+    const disabledBuiltinIds = getDisabledBuiltinSkillIds();
     const skills = skillRegistry.getAllSkills();
     for (const skill of skills) {
+      // 停用技能不进入触发索引
+      if (disabledBuiltinIds.has(skill.definition.id)) continue;
       const rule = this.extractTriggerRule(skill);
       if (rule && (rule.keywords.length > 0 || rule.toolNames.length > 0)) {
         this.registerRule(rule);
@@ -887,6 +909,7 @@ export class KeywordTriggerEngine {
 
   /**
    * 执行匹配到的 Skill（返回触发结果，由上层决定是否实际执行）
+   * R2b-3：实时核对 builtin patches — 若索引构建后被用户停用，此处也剔除
    */
   async triggerMatchedSkills(
     message: string,
@@ -897,9 +920,15 @@ export class KeywordTriggerEngine {
       return [];
     }
 
+    const disabledBuiltinIds = getDisabledBuiltinSkillIds();
     const results: Array<{ result: KeywordMatchResult; skill?: RegisteredSkill }> = [];
 
     for (const match of matches) {
+      // 实时剔除：索引构建后被用户停用的技能不再触发
+      if (disabledBuiltinIds.has(match.skillId)) {
+        logger.debug(`[KeywordTriggerEngine] 跳过已停用技能触发: ${match.skillId}`);
+        continue;
+      }
       const skill = skillRegistry.getSkill(match.skillId);
 
       if (skill) {
