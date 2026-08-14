@@ -1,6 +1,7 @@
 {
   "name": "@cdf-know/media-understanding-common",
   "version": "1.0.0",
+  "type": "module",
   "description": "CDFKnow MediaUnderstandingCommon - 媒体理解公共模块",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

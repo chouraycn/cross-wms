@@ -1,6 +1,7 @@
 {
   "name": "@cdf-know/speech-core",
   "version": "1.0.0",
+  "type": "module",
   "description": "CDFKnow SpeechCore - 语音核心",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

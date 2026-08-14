@@ -1,6 +1,6 @@
-import path from 'path';
 /** Loads capability providers from bundled plugin public runtime artifacts. */
 import fs from "node:fs";
+import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { openRootFileSync } from "../infra/boundary-file-read.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
@@ -32,6 +32,9 @@ import {
   normalizePluginToolContractNames,
 } from "./tool-contracts.js";
 import type { OpenClawPluginDefinition, OpenClawPluginModule } from "./types.js";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 
 const log = createSubsystemLogger("plugins");
 

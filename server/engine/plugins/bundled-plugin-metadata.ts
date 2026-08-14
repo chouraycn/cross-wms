@@ -36,6 +36,9 @@ import {
   resolveBundledPluginScanDir,
   trimBundledPluginString,
 } from "./bundled-plugin-scan.js";
+import { fileURLToPath } from "node:url";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // ============================================================================
 // 内联降级类型占位：./manifest.js

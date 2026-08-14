@@ -28,7 +28,7 @@ type SetupCliBackendRuntimeLookupParams = {
   env?: NodeJS.ProcessEnv;
 };
 
-const require = createRequire(__filename);
+const require = createRequire(import.meta.url);
 const SETUP_REGISTRY_RUNTIME_CANDIDATES = ["./setup-registry.js", "./setup-registry.ts"] as const;
 
 type SetupCliBackendDescriptorCache = {

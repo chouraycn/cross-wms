@@ -7,8 +7,8 @@ import { isRecord } from "@openclaw/normalization-core/record-coerce";
 import { addActiveManagedProxyTlsOptions } from "../managed-proxy-undici.js";
 import { resolveUndiciAutoSelectFamilyConnectOptions } from "./undici-family-policy.js";
 
-// 降级：tsconfig module 为 commonjs，import.meta.url 不可用，改用 __filename（CJS 全局变量）
-const nodeRequire = createRequire(__filename);
+// 根 package.json 为 "type": "module"，运行时为 ESM，使用 import.meta.url
+const nodeRequire = createRequire(import.meta.url);
 
 export const TEST_UNDICI_RUNTIME_DEPS_KEY = "__OPENCLAW_TEST_UNDICI_RUNTIME_DEPS__";
 

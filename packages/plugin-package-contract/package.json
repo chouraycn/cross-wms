@@ -1,6 +1,7 @@
 {
   "name": "@cdf-know/plugin-package-contract",
   "version": "1.0.0",
+  "type": "module",
   "description": "CDFKnow PluginPackageContract - 插件包契约",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

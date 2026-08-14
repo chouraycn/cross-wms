@@ -1,6 +1,7 @@
 {
   "name": "@cdf-know/memory-host-sdk",
   "version": "1.0.0",
+  "type": "module",
   "description": "CDFKnow Memory Host SDK - 记忆系统宿主开发工具包",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

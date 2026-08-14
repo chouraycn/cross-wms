@@ -24,6 +24,10 @@ import path from "node:path";
 import { normalizeOptionalLowercaseString } from "../infra/string-coerce.js";
 import { uniqueStrings } from "../infra/string-normalization.js";
 import { isPathInside } from "../infra/path-safety.js";
+import { fileURLToPath } from "node:url";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 
 // ============================================================================
 // 内联降级：../infra/openclaw-root.js —— resolveOpenClawPackageRootSync

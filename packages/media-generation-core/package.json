@@ -1,6 +1,7 @@
 {
   "name": "@cdf-know/media-generation-core",
   "version": "1.0.0",
+  "type": "module",
   "description": "CDFKnow MediaGenerationCore - 媒体生成核心",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

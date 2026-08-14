@@ -1,6 +1,7 @@
 {
   "name": "@cdf-know/acp-core",
   "version": "1.0.0",
+  "type": "module",
   "description": "CDFKnow ACPCore - Access Control Policy Core",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

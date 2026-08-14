@@ -3,8 +3,8 @@ import { createRequire } from "node:module";
 import { formatErrorMessage } from "./errors.js";
 import { installProcessWarningFilter } from "./warning-filter.js";
 
-// 降级：tsconfig module 非 esnext，import.meta.url 不可用，改用 __filename（CJS 全局变量）
-const nodeRequire = createRequire(__filename);
+// 根 package.json 为 "type": "module"，运行时为 ESM，使用 import.meta.url
+const nodeRequire = createRequire(import.meta.url);
 
 // node:sqlite 在不同 Node 版本中是可选的，所以调用者会得到
 // 明确的运行时错误，而不是低级模块解析失败。

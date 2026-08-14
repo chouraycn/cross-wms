@@ -30,6 +30,10 @@ import { compareSemverStrings, resolveNpmChannelTag, checkUpdateStatus } from ".
 import { CONTROL_PLANE_UPDATE_HANDOFF_STARTED_REASON } from "./update-control-plane-sentinel.js";
 import { startManagedServiceUpdateHandoff } from "./update-managed-service-handoff.js";
 import { runCommandWithTimeout } from "./update-runner.js";
+import { fileURLToPath } from "node:url";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 
 // VERSION 降级为运行时解析（来自 _runtime-stubs.js 的 resolveRuntimeServiceVersion）
 const VERSION = resolveRuntimeServiceVersion();

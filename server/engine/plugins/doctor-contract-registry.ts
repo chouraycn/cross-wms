@@ -19,6 +19,9 @@ import {
   type PluginModuleLoaderCache,
 } from "./plugin-module-loader-cache.js";
 import { loadPluginManifestRegistryForPluginRegistry } from "./plugin-registry.js";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 
 const CONTRACT_API_EXTENSIONS = [".js", ".mjs", ".cjs", ".ts", ".mts", ".cts"] as const;
 const CURRENT_MODULE_PATH = __filename;

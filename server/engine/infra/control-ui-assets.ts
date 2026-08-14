@@ -10,6 +10,9 @@ import { normalizeStringEntries } from "./string-normalization.js";
 import { runCommandWithTimeout } from "./update-runner.js";
 import * as controlUiFsRuntime from "./control-ui-assets.fs.runtime.js";
 import { resolveOpenClawPackageRoot, resolveOpenClawPackageRootSync } from "./openclaw-root.js";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 
 const CONTROL_UI_DIST_PATH_SEGMENTS = ["dist", "control-ui", "index.html"] as const;
 

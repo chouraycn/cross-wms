@@ -23,6 +23,10 @@ import {
   type PluginModuleLoaderCache,
 } from "./plugin-module-loader-cache.js";
 import { PUBLIC_SURFACE_SOURCE_EXTENSIONS } from "./public-surface-runtime.js";
+import { fileURLToPath } from "node:url";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 
 const SOURCE_CONFIG_SCHEMA_CANDIDATES = [
   path.join("src", "config-schema.ts"),

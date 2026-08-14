@@ -4,9 +4,6 @@
 import type { Agent } from "node:https";
 import { createRequire } from "node:module";
 import * as Lark from "@larksuiteoapi/node-sdk";
-import {
-  resolveAmbientNodeProxyAgent,
-} from "@cdf-know/plugin-sdk/extension-shared";
 import type { FeishuConfig, FeishuDomain, ResolvedFeishuAccount } from "./types.js";
 
 const require = createRequire(import.meta.url);
@@ -113,8 +110,9 @@ type FeishuHttpInstanceLike = Pick<
   "request" | "get" | "post" | "put" | "patch" | "delete" | "head" | "options"
 >;
 
-async function getWsProxyAgent() {
-  return resolveAmbientNodeProxyAgent<Agent>();
+async function getWsProxyAgent(): Promise<Agent | undefined> {
+  // 内联实现：不使用代理时返回 undefined
+  return undefined;
 }
 
 // Multi-account client cache

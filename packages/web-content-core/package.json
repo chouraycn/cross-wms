@@ -1,6 +1,7 @@
 {
   "name": "@cdf-know/web-content-core",
   "version": "1.0.0",
+  "type": "module",
   "description": "CDFKnow WebContentCore - Web 内容核心",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

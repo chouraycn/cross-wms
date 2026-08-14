@@ -1,6 +1,7 @@
 {
   "name": "@cdf-know/tool-call-repair",
   "version": "1.0.0",
+  "type": "module",
   "description": "CDFKnow ToolCallRepair - 工具调用修复",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

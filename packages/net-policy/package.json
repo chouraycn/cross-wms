@@ -2,9 +2,19 @@
   "name": "@cdf-know/net-policy",
   "version": "1.0.0",
   "description": "CDFKnow NetPolicy - 网络策略",
+  "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "files": ["dist"],
+  "exports": {
+    ".": "./dist/index.js",
+    "./ip": "./dist/ip.js",
+    "./ipv4": "./dist/ipv4.js",
+    "./redact-sensitive-url": "./dist/redact-sensitive-url.js",
+    "./url-userinfo": "./dist/url-userinfo.js"
+  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "tsc -w",

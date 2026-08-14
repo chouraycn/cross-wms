@@ -1,10 +1,13 @@
 {
   "name": "@cdf-know/media-core",
   "version": "1.0.0",
+  "type": "module",
   "description": "CDFKnow MediaCore - 媒体处理核心",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "tsc -w",

@@ -21,6 +21,10 @@ import {
   type PluginManifest,
 } from "../../manifest.js";
 import { resolveLoaderPackageRoot } from "../../sdk-alias.js";
+import { fileURLToPath } from "node:url";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 
 /** 内联实现：返回去重后的规范化字符串数组，保持首次出现的顺序。 */
 function uniqueStrings(

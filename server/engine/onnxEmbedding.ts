@@ -19,6 +19,10 @@ import { createHash } from 'crypto';
 import https from 'https';
 import { logger } from '../logger.js';
 import { AppPaths } from '../config/appPaths.js';
+import { fileURLToPath } from "node:url";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 
 // ===================== 常量 =====================
 

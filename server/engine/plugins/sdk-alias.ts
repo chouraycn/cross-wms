@@ -8,6 +8,9 @@ import { tryReadJsonSync } from "../infra/json-files.js";
 import { resolveOpenClawPackageRootSync } from "../infra/openclaw-root.js";
 import { resolveOpenClawDevSourceRoot } from "./dev-source-root.js";
 import { PluginLruCache } from "./plugin-cache-primitives.js";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 
 type PluginSdkAliasCandidateKind = "dist" | "src";
 export type PluginSdkResolutionPreference = "auto" | "dist" | "src";

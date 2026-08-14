@@ -717,7 +717,6 @@ export * from './enable.js';
 export * from './externalized-bundled-plugins.js';
 export * from './gateway-startup-plugin-ids.js';
 export * from './gateway-startup-speech-providers.js';
-export * from './generated-plugin-test-helpers.js';
 export * from './git-install.js';
 export * from './hardlink-policy.js';
 export * from './http-registry.js';

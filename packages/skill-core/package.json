@@ -1,6 +1,7 @@
 {
   "name": "@cdf-know/skill-core",
   "version": "1.0.0",
+  "type": "module",
   "description": "CDFKnow Skill Core - 技能系统核心模块",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
