@@ -12,7 +12,7 @@
 
 ### 构建与提交
 - 提交前 `NODE_OPTIONS=--max-old-space-size=8192 tsc --noEmit`（默认小堆 OOM exit137）；vite build 须绿
-- pre-commit 钩子（`.husky/pre-commit`）2026-08-11 已修为**仅 lint-staged**（对暂存文件 eslint），全量类型检查交给 CI。⚠️ 别再被旧记忆误导：**tsgo（@typescript/native-preview 7.0-dev）与两个 tsconfig 不兼容**（TS7 移除 `baseUrl`(TS5102)/`node10` resolution(TS5108)），`typecheck:fast` 已改为 `NODE_OPTIONS=8192 tsc --noEmit + node build-server.mjs`（2026-08-15）。本地可靠门禁 = web `tsc --noEmit`(8GB) + `node build-server.mjs`(esbuild)
+- pre-commit 钩子（`.husky/pre-commit`）2026-08-11 已修为**仅 lint-staged**（对暂存文件 eslint），全量类型检查交给 CI。⚠️ 别再被旧记忆误导：**tsgo（@typescript/native-preview 7.0-dev）与两个 tsconfig 不兼容**（TS7 移除 `baseUrl`(TS5102)/`node10` resolution(TS5108)），`typecheck:fast` 已改为 `NODE_OPTIONS=8192 tsc --noEmit + node build-server.mjs`（2026-08-15）。本地可靠门禁 = web `tsc --noEmit`(8GB) + `node build-server.mjs`(esbuild)；`typecheck:server` 亦已改回 tsc。**server/tsconfig.json 的 `module` 必须为 `esnext`**（源码已用 import.meta.url，commonjs 会 TS1343 全灭——2026-08-15 实测）
 - 提交必须精确列文件名 add，禁 `git add -A`。`.workbuddy/` 被 gitignore，但 `MEMORY.md` 已跟踪——混进 `git add` 会报 ignored 让整条命令失败；`release/release.json` 同坑（`release/` 在 ignore 中但文件已跟踪，须 `git add -f`）
 - `.npmrc` 需 `legacy-peer-deps=true`；DMG 验证 `grep -c "关键字符串" server_dist/index.cjs`
 - 本地分支无 upstream，推送须 `git push -u origin <branch>`
